@@ -18,7 +18,8 @@ const {createAdminUser}=require('../../services/user-mutation-service');
 const {markE2eTestAccount}=require('./staging-e2e-provision');
 const {preseedG6BuyerOtp}=require('../../services/g6-staging-buyer-identity-guard');
 const ORIGIN='https://komerce-backend-production.up.railway.app';
-const PRODUCT='76dacd6c-c1d8-4313-9455-f0d8f063835b',REF='KPR-000099';
+const REF='KPR-000165', EXPECTED_PRICE_KMF=5990;
+let PRODUCT=null;
 const OUT=path.resolve('test-results/g6-p2-buyer-order');
 fs.mkdirSync(OUT,{recursive:true});
 const run=crypto.randomBytes(4).toString('hex');
@@ -35,6 +36,23 @@ async function runtime(){
  const v=await r.json();
  check(/^[a-f0-9]{40}$/.test(String(v.commit||''))&&v.commit===process.env.E2E_EXPECTED_DEPLOY_SHA,'SHA_DEPLOY_DRIFT');
  report.runtime_sha=v.commit;
+}
+async function resolveCurrentSaleableProduct(){
+ const {rows}=await db.query(`
+  SELECT p.id,p.product_ref,p.name,d.amount
+  FROM products p
+  JOIN markets m ON m.code='KM'
+  JOIN product_market_price_drafts d ON d.product_id=p.id AND d.market_id=m.id AND d.status='LOCAL_ACTIVE'
+  JOIN product_market_exposure e ON e.product_id=p.id AND e.market_id=m.id
+  WHERE p.product_ref=$1 AND p.lifecycle_status='active' AND p.is_active=TRUE
+    AND p.is_available=TRUE AND e.commercial_exposure='ENABLED'
+    AND EXISTS (SELECT 1 FROM product_skus sku
+      WHERE sku.product_id=p.id AND sku.is_active=TRUE AND sku.stock>0)`,[REF]);
+ check(rows.length===1,'G6_RECIPE_PRODUCT_OR_PRICE_NOT_UNIQUE');
+ check(Number(rows[0].amount)===EXPECTED_PRICE_KMF,'G6_RECIPE_PRICE_DRIFT');
+ PRODUCT=rows[0].id;
+ report.product_id=PRODUCT;
+ record('CURRENT_SALEABLE_PRODUCT',{ref:REF,price_kmf:EXPECTED_PRICE_KMF,stocked:true});
 }
 async function queryOrders(userId){
  const {rows}=await db.query(
@@ -208,7 +226,9 @@ async function browserCheckout({buyer,phone,code}){
   check(report.preview_http_statuses.length>0&&report.preview_http_statuses.every(x=>x===200),
     'G6_AUTHENTICATED_SERVER_QUOTE_NOT_200');
   const total=await page.locator('#ck-final-total-amount').innerText();
-  check(/17[\s\u202f.,]*990/.test(total),'G6_CHECKOUT_TOTAL_NOT_17990');
+  const checkoutTotal=Number(total.replace(/[^0-9]/g,''));
+  check(checkoutTotal===EXPECTED_PRICE_KMF,'G6_CHECKOUT_TOTAL_NOT_CURRENT_PRICE');
+  report.checkout_expected_total_kmf=checkoutTotal;
   record('REAL_CHECKOUT',{display_total:total,relay:await page.locator('#ck-relais-summary').innerText().catch(()=>null)});
   await page.screenshot({path:path.join(OUT,'04-real-checkout-before-POST.png')});
   const response=page.waitForResponse(r=>r.url().endsWith('/api/orders')&&r.request().method()==='POST',{timeout:25000});
@@ -230,6 +250,7 @@ async function browserCheckout({buyer,phone,code}){
   const target=await confirmTarget({db,env:process.env});
   check(target.confirmed,'STAGING_DB_IDENTITY_MISMATCH');
   report.db_fingerprint=target.fingerprint;await runtime();
+  await resolveCurrentSaleableProduct();
   const fixture=await setup();
   check((await queryOrders(fixture.buyer.id)).length===0,'BUYER_HAS_PREEXISTING_ORDERS');
   const order=await browserCheckout(fixture);
@@ -237,7 +258,7 @@ async function browserCheckout({buyer,phone,code}){
   check(orders.length===1,'G6_EXACTLY_ONE_ORDER_NOT_SATISFIED');
   const o=orders[0];
   check(o.id===order.id&&o.reference===order.reference&&o.simulation_scope==='G6-BUYER'&&
-    o.market==='KM'&&Number(o.total_kmf)===17990&&o.payment_mode==='cash_relais'&&
+    o.market==='KM'&&Number(o.total_kmf)===report.checkout_expected_total_kmf&&o.payment_mode==='cash_relais'&&
     o.status==='pending'&&o.payment_status!=='paid'&&o.lines===1&&o.qty===1&&o.products?.includes(REF),
     'G6_POSTGRES_CANONICAL_ORDER_MISMATCH');
   report.order={id:o.id,reference:o.reference,status:o.status,payment_status:o.payment_status,
