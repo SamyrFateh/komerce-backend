@@ -68,7 +68,8 @@ test('order fixture is committed as simulated BEFORE notifier and real POST rout
  expect(scope).toBeGreaterThan(run);
  expect(commit).toBeGreaterThan(scope);
  expect(hook).toBeGreaterThan(commit);
- expect(s).toContain("payment_mode!=='cash_relais'");
+ expect(s).toContain("['cash_relais','mobile_money'].includes(payment_mode)");
+ expect(s).not.toContain('items.length!==1');
  const route=fs.readFileSync(path.join(__dirname,'../../routes/orders/create.js'),'utf8');
  expect(route).toMatch(/runOrderCheckout\(\{\s*user:\s*req\.user,\s*body:\s*req\.body,\s*idempotencyKey\s*\}/);
  expect(route).toContain("const idempotencyKey = req.get('Idempotency-Key') || null");

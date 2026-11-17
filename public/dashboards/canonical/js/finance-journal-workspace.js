@@ -32,6 +32,8 @@
     { id: 'movements', label: 'Journal' },
     { id: 'reconciliation', label: 'Rapprochements' },
     { id: 'documents', label: 'Pièces justificatives' },
+    // Point d'entrée réel du responsable marché vers la réception des dépôts de caisse (garde des espèces).
+    { id: 'custody', label: 'Garde des espèces & dépôts' },
   ]);
 
   function text(doc, tag, className, value) {
@@ -187,6 +189,14 @@
       content.replaceChildren();
       ui.UIState.render(content, 'loading', 'Chargement…');
       try {
+        if (state.tab === 'custody') {
+          const custodyView = options.accountingWorkspace
+            || (typeof globalThis !== 'undefined' ? globalThis.KomerceCanonicalFinanceAccountingWorkspace : null);
+          if (!custodyView) throw new Error('canonical_accounting_custody_module_missing');
+          content.replaceChildren();
+          await custodyView.mount({ ...options, root: content });
+          return;
+        }
         const data = await getJson(fetchFn, endpointFor(marketCode, state.tab, { from: state.from, to: state.to }));
         content.replaceChildren();
         RENDERERS[state.tab](doc, content, data);

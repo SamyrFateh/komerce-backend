@@ -124,3 +124,20 @@ test('consultation des dossiers limitée au relais de l’agent, pas de montants
   expect(executor.query.mock.calls[0][1]).toEqual([RELAY,50]);
   expect(executor.query.mock.calls[0][0]).not.toMatch(/refund_kmf|refund_eur/);
 });
+
+describe('SAV : commandes de recette (simulation_scope)', () => {
+  const run = async env => {
+    const prev = process.env.KOMERCE_ENV;
+    process.env.KOMERCE_ENV = env;
+    const {db,ops} = makeDb();
+    try { await returns.eligibleOrder({actor:agent,reference:'KOM-00458',executor:(await db.getClient())}); } catch (_) { /* seule la requête compte */ }
+    process.env.KOMERCE_ENV = prev;
+    return ops.find(o => /SELECT o.id, o.reference/.test(o.sql)).sql;
+  };
+  test('production : exclusion stricte des commandes de recette', async () => {
+    expect(await run('production')).toMatch(/o\.simulation_scope IS NULL(?! OR)/);
+  });
+  test('staging : commandes de recette acceptées', async () => {
+    expect(await run('staging')).toContain('o.simulation_scope IS NOT NULL');
+  });
+});
