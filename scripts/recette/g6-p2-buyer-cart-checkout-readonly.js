@@ -178,10 +178,15 @@ async function run(){
   if(JSON.stringify(report.before)!==JSON.stringify(report.after))
     throw Error('READONLY_BIZ_DB_CHANGED');
   if(report.blocked_requests.length)throw Error('UNEXPECTED_BROWSER_WRITE_ATTEMPTS');
-  if(!report.preview_http_statuses.length||report.preview_http_statuses.some(x=>x!==401))
-    throw Error('UNAUTHENTICATED_PREVIEW_MUST_BE_401');
+  // Un utilisateur anonyme ne peut pas confirmer : le bouton est désactivé.
+  // Zéro appel preview n'atteste aucun 401 (et ne doit pas en inventer).
+  // Si le navigateur tente un aperçu, la garde serveur doit répondre 401.
+  if(report.preview_http_statuses.some(x=>x!==401))
+    throw Error('ANONYMOUS_PREVIEW_WRONG_STATUS');
   await version();
-  report.verdict='P2_PREAUTH_CART_QUOTE_401_BROWSER_PASS_ORDER_NOT_ATTEMPTED';
+  report.verdict=report.preview_http_statuses.length
+   ? 'P2_PREAUTH_CART_QUOTE_401_BROWSER_PASS_ORDER_NOT_ATTEMPTED'
+   : 'P2_PREAUTH_CART_NO_QUOTE_BROWSER_PASS_ORDER_NOT_ATTEMPTED';
  }catch(e){
   report.verdict='BLOCKED';report.error=String(e.message||e).slice(0,350);process.exitCode=2;
  }finally{
