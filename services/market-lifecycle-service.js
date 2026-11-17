@@ -199,11 +199,14 @@ async function updateMarketStorefront(executor, { marketCode, storefrontTexts })
   if (rows[0].lifecycle_status === 'CLOSED') {
     throw lifecycleError('MARKET_CLOSED', 'Marché fermé : édition interdite.', 409);
   }
+  // Preserve historical/future non-public metadata; only caller-supplied
+  // whitelisted display fields may be modified through this command.
+  const merged = { ...(rows[0].storefront_texts || {}), ...texts };
   const { rows: edited } = await db.query(
     `UPDATE markets SET storefront_texts=$2::jsonb WHERE id=$1::uuid
         AND storefront_texts IS DISTINCT FROM $2::jsonb
       RETURNING id,code,storefront_texts`,
-    [rows[0].id, JSON.stringify(texts)]
+    [rows[0].id, JSON.stringify(merged)]
   );
   return { changed: edited.length > 0, before: rows[0], after: edited[0] || rows[0] };
 }
