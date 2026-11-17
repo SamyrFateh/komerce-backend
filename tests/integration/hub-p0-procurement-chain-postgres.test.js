@@ -555,6 +555,79 @@ describeDb('Hub P0 — chaîne d\'approvisionnement complète (REAL_DB)', () => 
         .rejects.toMatchObject({ code: 'HUB_BOX_SHIPMENT_MARKET_MISMATCH' });
     });
 
+    test('T5/HB-01 PG16 : COMMIT de réception puis interruption simulée, reprise cron sans doublon', async () => {
+      // Test de la couture de reprise sur PG16 jetable : writer physique réel
+      // committe, le callback post-COMMIT est volontairement NON appelé.
+      // Aucun redémarrage Railway réel n'est simulé ni certifié ici.
+      const physical = require('../../services/hub-physical-identity');
+      const completion = require('../../services/purchasing-completion-service');
+      const o = await makeOrder({
+        market: km, relais: relaisKm, supplier: supplierA,
+        items: [{ sku: sku2, qty: 1 }],
+      });
+      const pl = o.lines[0];
+      const prepared = await grouped.preparePurchaseOrder(
+        { supplier_id: supplierA, procurement_hub_ref: 'DXB', line_ids: [pl.lineId] },
+        { actor: actor() });
+      const po = prepared.purchase_order.id;
+      await submitAuthorized(engagement, po, { actor: actor() });
+      await engagement.recordPurchaseOrderSent(
+        po, { channel: 'whatsapp', note: 'T5 COMMIT puis process down (PG jetable)' },
+        { actor: actor() });
+      await engagement.confirmGroupedPurchaseOrder(po, {
+        purchase_proof_ref: 'T5-HB01-' + tag,
+        seller_label: 'Fournisseur test',
+        supplier_order_id: 'T5-' + tag,
+        lines: [{ purchase_line_id: pl.lineId, confirmed_quantity: 1 }],
+      }, { actor: actor() });
+
+      // Séparation exacte de deux phases de l'API publique :
+      // la réception physique/allocations est validée dans une transaction,
+      // puis le service normalement déclenché après COMMIT n'est pas exécuté.
+      const receivedUnit = await db.withTransaction((client) =>
+        physical.receiveSupplierPackage(client, {
+          reference: tag + '-T5-RECEIPT',
+          locationRef: 'HUB-DXB-T5',
+          actorId: admin,
+          contents: [{
+            purchase_order_id: po, product_sku_id: sku2.id, quantity: 1,
+            evidence_method: 'MANUAL', evidence_ref: 'T5-PHYSICAL-ATTESTATION-' + tag,
+          }],
+        }));
+      expect(receivedUnit.quarantined).toBe(false);
+      expect(await received(pl.lineId)).toBe(1);
+      const physicalAudit = (await q(
+        "SELECT COUNT(*)::int AS n FROM hub_custody_events WHERE physical_unit_id=$1 AND event_type='PLACEMENT_IN'",
+        [receivedUnit.unit.id])).rows[0].n;
+      expect(physicalAudit).toBe(1);
+      expect((await q('SELECT status::text AS status FROM orders WHERE id=$1',
+        [o.orderId])).rows[0].status).toBe('ordered');
+      expect((await q(
+        'SELECT COUNT(*)::int AS n FROM parcel_items pi JOIN order_items oi ON oi.id=pi.order_item_id WHERE oi.order_id=$1',
+        [o.orderId])).rows[0].n).toBe(0);
+
+      // Reprise périodique réelle, après la frontière transactionnelle.
+      const swept = await completion.sweepStalledOrders({ limit: 500 });
+      expect(swept.ordered).toBeGreaterThanOrEqual(1);
+      expect((await q('SELECT status::text AS status FROM orders WHERE id=$1',
+        [o.orderId])).rows[0].status).toBe('preparation');
+      expect((await q('SELECT status::text AS status FROM purchase_orders WHERE id=$1',
+        [po])).rows[0].status).toBe('hub_received');
+      const lines = async () => (await q(
+        'SELECT COUNT(*)::int AS n, COALESCE(SUM(pi.quantity),0)::int AS qty ' +
+        'FROM parcel_items pi JOIN order_items oi ON oi.id=pi.order_item_id ' +
+        'JOIN parcels p ON p.id=pi.parcel_id AND p.cancelled_at IS NULL WHERE oi.order_id=$1',
+        [o.orderId])).rows[0];
+      expect(await lines()).toEqual({ n: 1, qty: 1 });
+
+      // Second balayage : la commande et le colis restent exactement-once.
+      await completion.sweepStalledOrders({ limit: 500 });
+      expect(await lines()).toEqual({ n: 1, qty: 1 });
+      expect((await q(
+        "SELECT COUNT(*)::int AS n FROM hub_custody_events WHERE physical_unit_id=$1 AND event_type='PLACEMENT_IN'",
+        [receivedUnit.unit.id])).rows[0].n).toBe(1);
+    });
+
     test('T4/HB-06 PG16 : réception en quarantaine exclue du reçu et de la complétude', async () => {
       // Le test porte sur la vérité physique PostgreSQL. L'action UI de mise
       // en quarantaine reste une preuve séparée, jamais simulée comme un clic.
