@@ -21,9 +21,21 @@
   'use strict';
 
   const LIMIT_CAPS = [
+    ['cash.custody.receive','Réception de caisse'],
     ['execution.cash.confirm','Confirmation cash'],
     ['settlement.receive','Réception settlement'],
     ['finance.act','Action finance'],
+  ];
+
+  const STOREFRONT_FIELDS = [
+    ['welcome','Accueil'], ['seo_title','Titre du site'], ['seo_description','Description SEO'],
+    ['gentile','Accroche pays'], ['gentile_short','Nom court'],
+    ['delivery_line','Livraison'], ['payment_label','Libellé paiement (éditorial uniquement)'],
+    ['pickup_label','Retrait'], ['relay_group_label','Regroupement relais'],
+    ['relay_default_zone','Zone relais suggérée'],
+    ['og_title','Titre partage'], ['og_description','Description partage'],
+    ['footer_tagline','Pied de page'], ['free_ship_label','Information livraison'],
+    ['price_label','Libellé devise']
   ];
 
   function esc(v) {
@@ -81,6 +93,11 @@
     try{
       const c=await global.KmcApi.getMarketControlPlane(code);
       const r=c.readiness||{};
+      const texts=c.market?.storefront_texts||{};
+      const editorFields=STOREFRONT_FIELDS.map(([key,label])=>
+        '<div class="mv-field '+(key.includes('description')||key==='footer_tagline'?'full':'')+'"><label>'+esc(label)+'</label>'+
+        '<input name="'+esc(key)+'" maxlength="500" value="'+esc(texts[key]??'')+'"></div>'
+      ).join('');
       box.innerHTML=`
         <strong>${esc(code)} — ${esc(c.market?.lifecycle_status||'')}</strong>
         <div class="mv-ready">
@@ -89,7 +106,40 @@
         </div>
         ${r.ready_for_activation && c.market.lifecycle_status!=='ACTIVE'
           ? '<div class="mv-actions"><button class="mv-btn mv-success" id="mv-activate">Activer le marché</button></div>' : ''}
-        <div class="mv-muted" style="margin-top:8px">${(c.gaps||[]).map(g=>esc(g.message)).join(' · ')||'Aucun écart.'}</div>`;
+        ${c.market?.lifecycle_status==='ACTIVE'
+          ? '<div class="mv-actions"><button class="mv-btn" id="mv-suspend">Suspendre le marché</button></div>' : ''}
+        <div class="mv-muted" style="margin-top:8px">${(c.gaps||[]).map(g=>esc(g.message)).join(' · ')||'Aucun écart.'}</div>
+        <details class="mv-editor" style="margin-top:14px">
+          <summary style="cursor:pointer;font-weight:700">Présentation boutique — administrer les textes</summary>
+          <form id="mv-storefront-form" class="mv-fields" style="margin-top:12px">
+            ${editorFields}
+            <div class="mv-actions full"><button type="submit" class="mv-btn mv-primary">Enregistrer les textes</button></div>
+          </form>
+          <div id="mv-storefront-result" class="mv-muted" role="status"></div>
+        </details>`;
+      const editor=box.querySelector('#mv-storefront-form');
+      if(editor) editor.addEventListener('submit',async event=>{
+        event.preventDefault();
+        const submit=editor.querySelector('button[type=submit]');
+        const result=box.querySelector('#mv-storefront-result');
+        const fd=new FormData(editor); const values={};
+        STOREFRONT_FIELDS.forEach(([key])=>{
+          const value=String(fd.get(key)||'').trim();
+          values[key]=key==='relay_default_zone'&&!value?null:value;
+        });
+        submit.disabled=true; result.textContent='Enregistrement…';
+        try{
+          const reply=await global.KmcApi.updateMarketStorefront(code,values);
+          result.textContent=reply.changed?'Présentation sauvegardée en base.':'Présentation déjà à jour.';
+        }catch(error){result.textContent='Erreur : '+error.message;}
+        finally{submit.disabled=false;}
+      });
+      const suspend=box.querySelector('#mv-suspend');
+      if(suspend) suspend.addEventListener('click',async()=>{
+        suspend.disabled=true;
+        try{await global.KmcApi.setMarketLifecycle(code,'SUSPENDED'); await load(root); await showControl(root,code);}
+        catch(error){box.insertAdjacentHTML('beforeend','<div class="mv-status">'+esc(error.message)+'</div>');suspend.disabled=false;}
+      });
       const btn=box.querySelector('#mv-activate');
       if(btn) btn.addEventListener('click',async()=>{
         btn.disabled=true;

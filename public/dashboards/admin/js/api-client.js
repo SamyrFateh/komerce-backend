@@ -450,6 +450,13 @@
       { status }
     );
   }
+  function updateMarketStorefront(code, storefrontTexts) {
+    return fetchMutation(
+      `${BASE_API}/admin/markets/${encodeURIComponent(code)}/storefront`,
+      'PUT',
+      { storefront_texts: storefrontTexts }
+    );
+  }
 
   // ── Lot 6 — Simulator ─────────────────────────────────────────────────────
 
@@ -614,6 +621,7 @@
     getMarketControlPlane,
     provisionMarket,
     setMarketLifecycle,
+    updateMarketStorefront,
 
     // Lot 6 — Simulator (5)
     simStatus,
