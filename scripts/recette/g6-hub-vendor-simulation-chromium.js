@@ -50,6 +50,29 @@ function verifyBase(s){
    s.payment_status==='paid'&&s.trigger_mode!=='auto'&&Number(s.commitments)===1&&
    Number(s.payment_authorizations)===0,'G6_SIM_ORDER_PO_COMMITMENT_DRIFT');
 }
+// Prefer pointer clicks. If the repeatedly repainted cockpit never gives
+// Playwright a stable pointer target, use the actual keyboard action on the
+// SAME visible/enabled button (not a request or a DOM .click() shortcut).
+// Missing or disabled controls remain BLOCKED, never bypassed.
+async function openByChromiumGesture(page, action, kind) {
+ const btn=page.locator('[data-hlc-action="'+action+'"]');
+ const form=page.locator('form[data-hlc-form="'+kind+'"]');
+ await btn.waitFor({state:'visible',timeout:18000});
+ check(await btn.isEnabled(),'G6_SIM_'+action+'_ACTION_DISABLED');
+ let gesture='pointer';
+ try { await btn.click({timeout:7000}); }
+ catch (err) {
+  if (!(await form.isVisible().catch(()=>false))) {
+    // Keyboard Enter is an accessible operator action, unlike force:true.
+    await btn.press('Enter',{timeout:7000});
+    gesture='keyboard-enter';
+  }
+ }
+ await form.waitFor({state:'visible',timeout:14000});
+ (report.gestures=report.gestures||[]).push({action,gesture});save();
+ return form;
+}
+
 async function main(){
  let browser;
  try{
@@ -73,12 +96,7 @@ async function main(){
   const actor=await login(browser,'E2E_AGENT_HUB_',{allowedWrites:['sent','confirm']});
   try{
    await openPo(actor.page);
-   const send=actor.page.locator('[data-hlc-action="record-sent"]');
-   await send.waitFor({state:'visible',timeout:18000});
-   check(await send.isEnabled(),'G6_SIM_SEND_ACTION_DISABLED');
-   await send.click();
-   const form=actor.page.locator('form[data-hlc-form="sent"]');
-   await form.waitFor({state:'visible'});
+   const form=await openByChromiumGesture(actor.page,'record-sent','sent');
    check((await form.locator('select option').evaluateAll(x=>x.map(i=>i.value))).join(',')==='other',
      'G6_SIM_EXTERNAL_CHANNEL_PRESENT');
    check(await form.locator('[name="supplier_order_id"]').inputValue()==='SIM-STAGING-'+REF,
@@ -98,12 +116,7 @@ async function main(){
      'G6_SIM_SEND_PG_ORACLE_FAILED');
    await actor.page.screenshot({path:path.join(OUT,'sent-simulated.png')});
    await openPo(actor.page);
-   const confirm=actor.page.locator('[data-hlc-action="confirm-po"]');
-   await confirm.waitFor({state:'visible',timeout:18000});
-   check(await confirm.isEnabled(),'G6_SIM_CONFIRM_ACTION_DISABLED');
-   await confirm.click();
-   const cf=actor.page.locator('form[data-hlc-form="confirm"]');
-   await cf.waitFor({state:'visible'});
+   const cf=await openByChromiumGesture(actor.page,'confirm-po','confirm');
    check(await cf.locator('[name="supplier_order_id"]').inputValue()==='SIM-STAGING-'+REF&&
      await cf.locator('[name="purchase_proof_ref"]').inputValue()==='SIM-STAGING-ACHAT-'+REF&&
      await cf.locator('[name="seller_label"]').inputValue()==='SIMULATED-STAGING-FOURNISSEUR-'+REF,
@@ -134,7 +147,7 @@ async function main(){
   report.next_stage='HUB_RECEIVING';
   report.verdict='G6_VENDOR_SIMULATED_SEND_AND_CONFIRM_CHROMIUM_PASS_NOT_RECEIPT_GO';
   save();
- }catch(e){report.verdict='BLOCKED';report.error=String(e.message||e).slice(0,350);save();process.exitCode=2;}
+ }catch(e){report.verdict='BLOCKED';report.error=String(e.message||e).slice(0,1800);if(browser){try{const pages=browser.contexts().flatMap(c=>c.pages());if(pages.length)await pages[0].screenshot({path:path.join(OUT,'blocked-screen.png')});}catch(_){}}save();process.exitCode=2;}
  finally{if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify(report));}
 }
 if(require.main===module)main();
