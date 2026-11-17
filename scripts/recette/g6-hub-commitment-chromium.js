@@ -48,7 +48,7 @@ async function stableSha(){
  check(v.commit===env.E2E_EXPECTED_DEPLOY_SHA,'G6_COMMITMENT_SHA_CHANGED');
  return v.commit;
 }
-async function login(browser,prefix,{readOnly=false}={}){
+async function login(browser,prefix,{readOnly=false,allowedWrites=['authorize-commitment','submit']}={}){
  const email=env[prefix+'EMAIL'],password=env[prefix+'PASSWORD'];
  check(email&&password,'G6_COMMITMENT_IDENTITY_MISSING_'+prefix);
  const ctx=await browser.newContext({viewport:{width:1440,height:900},baseURL:ORIGIN});
@@ -59,8 +59,7 @@ async function login(browser,prefix,{readOnly=false}={}){
   if(['GET','HEAD','OPTIONS'].includes(req.method()))return route.continue();
   const allowed=url.origin===ORIGIN&&req.method()==='POST'&&(
    url.pathname==='/api/auth/login'||
-   (!readOnly&&(url.pathname==='/api/purchasing/po/'+env.G6_CANONICAL_PO_ID+'/authorize-commitment'||
-   url.pathname==='/api/purchasing/po/'+env.G6_CANONICAL_PO_ID+'/submit')));
+   (!readOnly&&allowedWrites.some(action=>url.pathname==='/api/purchasing/po/'+env.G6_CANONICAL_PO_ID+'/'+action)));
   if(allowed)return route.continue();
   blocked.push({method:req.method(),path:url.pathname});
   return route.abort('blockedbyclient');
