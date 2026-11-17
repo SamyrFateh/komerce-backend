@@ -6,6 +6,7 @@
  * @owner backend-core
  * @purpose Parcourir les vrais écrans via Chromium, capter les anomalies et le contexte marchés sans écritures métier.
  * @impact-areas dashboard, market, staging-only
+ * @test-kind e2e @test-runner playwright @test-requires staging
  */
 'use strict';
 const fs=require('fs'),path=require('path');
@@ -13,6 +14,7 @@ const {test,expect}=require('@playwright/test');
 const {markets,pages,dimensions,processes}=require('./matrix');
 const {expectedPath,resolveNavigationHttp}=require('./navigation-audit-policy');
 const {clickDiscoveredLink}=require('./link-replay');
+const {inspectMarketNetwork}=require('./market-network-stage');
 const ORIGIN=process.env.E2E_STAGING_BASE_URL||'https://komerce-backend-production.up.railway.app';
 const ROOT=path.resolve('test-results/staging-chromium/evidence');
 const QUICK=process.env.E2E_AUDIT_QUICK==='1';
@@ -24,7 +26,7 @@ test('real staging: full navigation, market context and browser errors',async({p
  const role=info.project.name.replace(/-(mobile|desktop)$/,'');
  const mobile=info.project.name.endsWith('-mobile');
  const result={target:ORIGIN,role,mode:QUICK?'QUICK_READONLY':'EXHAUSTIVE_READONLY',viewport:mobile?'390x844':'1440x900',version:null,
-  markets,dimensions,processes,context:null,routes:[],edges:[],marketViews:[],
+  markets,dimensions,processes,context:null,routes:[],edges:[],marketViews:[],networkViews:[],
   blockedWrites:[],apiErrors:[],jsErrors:[],canonicalRedirects:[],expectedDenials:[],findings:[]};
  const fail=(severity,code,detail)=>result.findings.push({severity,code,detail:short(detail)});
  const file=path.join(ROOT,info.project.name+'.json');
@@ -212,6 +214,23 @@ test('real staging: full navigation, market context and browser errors',async({p
        }
      }
    }
+   // Étape d'écran commune : preuve de l'accès réseau dans le Market ID réel.
+   if(['admin','market_operator'].includes(role)){
+     const granted=(result.context?.allowedMarkets||[]).filter(m=>/^[A-Z]{2}$/.test(m));
+     const selected=QUICK?granted.slice(0,1):granted;
+     for(const market of selected){
+       try{
+         const network=await inspectMarketNetwork(page,{
+           origin:ORIGIN,market,
+           accessRequired:role==='admin'||process.env.E2E_NETWORK_ACCESS_REQUIRED==='1'
+         });
+         result.networkViews.push(network);
+         if(network.verdict==='BLOCKED')
+           fail('P1','NETWORK_STAGE_BLOCKED',market+' '+network.reason);
+       }catch(e){fail('P1','NETWORK_STAGE_EXCEPTION',market+' '+short(e.message));}
+       save();
+     }
+   }
    if(role==='market_operator'){
      // Server guard: disallowed market must NEVER return full dashboard data.
      const unauthorized=markets.filter(m=>!result.context.allowedMarkets.includes(m));
@@ -221,6 +240,15 @@ test('real staging: full navigation, market context and browser errors',async({p
        if(r.ok())fail('P0','CROSS_MARKET_DATA_LEAK','market='+market+' GET /unified/market/'+market);
      }
    }
+   // Le dernier SHA doit être relevé APRÈS toutes les étapes de navigation,
+   // y compris Réseau local et les contrôles négatifs multi-marchés.
+   const finalResp=await page.request.get('/health/version',{timeout:20000}).catch(()=>null);
+   const finalVersion=finalResp&&finalResp.ok()?
+     await finalResp.json().catch(()=>({})):{};
+   result.versionAtEnd=finalVersion.commit||finalVersion.sha||null;
+   if(!result.versionAtEnd||result.versionAtEnd!==result.version)
+     fail('P0','DEPLOY_SHA_CHANGED_DURING_NETWORK_REPLAY',
+       'start='+short(result.version)+' end='+short(result.versionAtEnd));
    for(const e of result.apiErrors.filter(x=>x.status>=500))fail('P1','API_5XX',e.api+' '+e.status);
    for(const e of result.jsErrors)fail('P1','JS_EXCEPTION',e.at+': '+e.message);
    for(const e of result.blockedWrites)fail('P2','READ_ONLY_GUARD_TRIGGERED',e.method+' '+e.path);
