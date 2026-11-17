@@ -94,10 +94,12 @@ describe('G6 canonical journey — same order, original matrix, real staging gua
       'scripts/recette/g6-canonical-replay.js',
       '.github/workflows/staging-g6-canonical-buyer-cash.yml',
       'tests/unit/g6-canonical-journey-replay.test.js',
-      'tests/staging-clicks/g6-p3-kuyiyuk.spec.js'
+      'tests/staging-clicks/g6-p3-kuyiyuk.spec.js',
+      'docs/chantier/STATUS.md'
     ])).toBe(true);
     expect(isToolingOnlyResumeDiff([])).toBe(false);
     expect(isToolingOnlyResumeDiff(['server.js'])).toBe(false);
+    expect(isToolingOnlyResumeDiff(['docs/chantier/STATUS.md','services/order-checkout-service.js'])).toBe(false);
     expect(isToolingOnlyResumeDiff([
       'scripts/recette/g6-canonical-replay.js','public/boutique/js/b-komerce.js'
     ])).toBe(false);
