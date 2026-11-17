@@ -50,7 +50,7 @@ function redirectToGroup(res, token, extra = '') {
   res.redirect(302, '/boutique/?' + params.toString());
 }
 
-function mountHtmlRoutes(app, rootDir, marketExecutor = require('../db')) {
+function mountHtmlRoutes(app, rootDir, marketExecutor) {
   const publicDir = path.join(rootDir, 'public');
   const { listPublicMarkets } = require('../services/public-market-storefront');
 
