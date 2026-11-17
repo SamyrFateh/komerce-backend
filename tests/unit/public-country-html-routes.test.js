@@ -19,7 +19,18 @@ function setup(rows = countries.map(([code,name,currency])=>({
   return {app,query};
 }
 
+const fs=require('fs');
+const serverSource=fs.readFileSync(path.join(__dirname,'../..','server.js'),'utf8');
+
 describe('Routes publiques des catalogues pays dynamiques (PostgreSQL)',()=>{
+  test('la garde des entrées statiques précède express.static',()=>{
+    const guard=serverSource.indexOf("app.get(['/', '/boutique', '/boutique/', '/boutique/index.html']");
+    const staticMount=serverSource.indexOf("app.use(express.static(");
+    expect(guard).toBeGreaterThan(0);
+    expect(guard).toBeLessThan(staticMount);
+    expect(serverSource).toContain("app.get('/boutique/js/market-registry.js'");
+  });
+
   test.each(countries)('/%s retourne la boutique pour un marché ACTIVE',async code=>{
     const {app}=setup();const res=await request(app).get('/'+code);
     expect(res.status).toBe(200);
