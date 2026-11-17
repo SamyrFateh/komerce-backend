@@ -236,7 +236,7 @@ async function browserCheckout({buyer,phone,code}){
   const total=await page.locator('#ck-final-total-amount').innerText();
   const checkoutTotal=Number(total.replace(/[^0-9]/g,''));
   check(checkoutTotal===EXPECTED_PRICE,'G6_CHECKOUT_TOTAL_NOT_CURRENT_PRICE');
-  report.checkout_expected_total_kmf=checkoutTotal;
+  report.checkout_display_total=checkoutTotal;
   record('REAL_CHECKOUT',{display_total:total,relay:await page.locator('#ck-relais-summary').innerText().catch(()=>null)});
   await page.screenshot({path:path.join(OUT,'04-real-checkout-before-POST.png')});
   const response=page.waitForResponse(r=>r.url().endsWith('/api/orders')&&r.request().method()==='POST',{timeout:25000});
