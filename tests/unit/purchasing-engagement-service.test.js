@@ -533,7 +533,7 @@ describe('G6 vendor simulation — backend boundaries', () => {
   const scope = [/SELECT DISTINCT NULLIF\(to_jsonb\(o\)/, { rows: [{ simulation_scope:'G6-BUYER', reference:'KL1WGP6' }] }];
   it('refuse la déclaration d’envoi réel non marquée pour une PO G6', async () => {
     const { calls } = scripted([
-      [/FROM purchase_orders WHERE id = \\$1 FOR UPDATE/, { rows: [poRow({ status:'notified', trigger_mode:'manual' })] }],
+      [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status:'notified', trigger_mode:'manual' })] }],
       scope,
     ]);
     await expect(engagement.recordPurchaseOrderSent(PO, { channel:'email', supplier_order_id:'FAKE' }))
@@ -542,7 +542,7 @@ describe('G6 vendor simulation — backend boundaries', () => {
   });
   it('refuse une simulation fournisseur pour une commande réelle', async () => {
     scripted([
-      [/FROM purchase_orders WHERE id = \\$1 FOR UPDATE/, { rows: [poRow({ status:'notified', trigger_mode:'manual' })] }],
+      [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status:'notified', trigger_mode:'manual' })] }],
     ]);
     await expect(engagement.recordPurchaseOrderSent(PO, { channel:'other', simulated:true, supplier_order_id:'SIM-STAGING-LEGACY-UNIT' }))
       .rejects.toMatchObject({ status:409, code:'G6_SUPPLIER_SIMULATION_DECLARATION_REQUIRED' });
@@ -552,7 +552,7 @@ describe('G6 vendor simulation — backend boundaries', () => {
     process.env.KOMERCE_ENV='production';
     try {
       scripted([
-        [/FROM purchase_orders WHERE id = \\$1 FOR UPDATE/, { rows: [poRow({ status:'notified', trigger_mode:'manual' })] }],
+        [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status:'notified', trigger_mode:'manual' })] }],
         scope,
       ]);
       await expect(engagement.recordPurchaseOrderSent(PO, { channel:'other', simulated:true, supplier_order_id:'SIM-STAGING-KL1WGP6' }))
