@@ -27,7 +27,7 @@ describe('admin MarketsView',()=>{
     expect(view).toContain('relay_default_zone');
     expect(api).toMatch(/function updateMarketStorefront/);
     expect(api).toContain('/storefront');
-    expect(view).not.toMatch(/fetch\\(/);
+    expect(view).not.toContain('fetch(');
   });
   test('form gathers governance, limits, payment, cash and first relay',()=>{
     for(const token of ['central_referent_user_id','execution.cash.confirm','settlement.receive','finance.act','payment_provider','initial_relais']){
