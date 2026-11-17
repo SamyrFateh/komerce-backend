@@ -56,8 +56,35 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - name: Pin actual shared Railway staging and PostgreSQL identity
+        env:
+          E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
         run: |
-          node scripts/recette/resolve-staging-deploy-pin.js
+          export E2E_EXPECTED_DEPLOY_SHA="$(git rev-parse HEAD)"
+          node scripts/recette/staging-chromium-deployment-preflight.js
+          node <<'NODE'
+          const fs=require('node:fs');
+          const {execFileSync}=require('node:child_process');
+          const p=JSON.parse(fs.readFileSync('test-results/staging-chromium/deployment-preflight.json','utf8'));
+          const allowed=new Set([
+            '.github/workflows/staging-g6-canonical-buyer-cash.yml',
+            'docs/chantier/STATUS.md',
+            'docs/recette/PARCOURS_REFERENCE_UNIQUE.md',
+            'scripts/recette/g6-canonical-replay.js',
+            'scripts/recette/g6-hub-commitment-chromium.js',
+            'tests/unit/g6-canonical-journey-replay.test.js',
+            'tests/staging-clicks/g6-p3-kuyiyuk.spec.js'
+          ]);
+          if(!['DEPLOY_SHA_MATCHED','DEPLOY_RUNTIME_EQUIVALENT'].includes(p.status)) {
+            throw Error('G6_PIN_INVALID_'+p.status);
+          }
+          if(p.status==='DEPLOY_RUNTIME_EQUIVALENT'){
+            const files=p.tooling_diff||[];
+            if(!files.length||files.some(f=>!allowed.has(f))) throw Error('G6_PIN_NON_CANONICAL_TOOLING_CHANGE');
+            try{execFileSync('git',['merge-base','--is-ancestor',p.observed_sha,p.expected_sha],{stdio:'pipe'});}
+            catch(_){throw Error('G6_PIN_STAGING_SHA_NOT_ANCESTOR');}
+          }
+          console.log('[G6_PIN_STRICT_CANONICAL] '+JSON.stringify({status:p.status,staging_sha:p.observed_sha,non_deployed_files:p.tooling_diff||[]}));
+          NODE
           node scripts/recette/target-guard.js
       - id: resume
         name: Validate optional prior-run checkpoint (owner request only)
