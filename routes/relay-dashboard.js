@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       services/relay-return-request-service.js, services/relay-product-return-intake-service.js, db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-delegated-capability.js, services/*, services/live-projection.js
  * @used-by       bootstrap/api-routes.js
- * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, orders
+ * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, orders, local_cash_refund_authorizations, local_item_refund_reservations
  * @db-write      order_comments, order_incidents
  * @db-write-via:dispute-mutation-service disputes; catalog-product-quality-service catalog_product_quality_notes; relay-product-return-intake-service relay_product_return_receipts
  * @db-txn        resolve_before_behavior_change

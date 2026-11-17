@@ -51862,6 +51862,19 @@
       "lifecycleOwner": "notifications",
       "resolution": "single-writer"
     },
+    "customs_shipment_holds": {
+      "writers": [
+        {
+          "feature": "dashboard",
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "dashboard",
+      "resolution": "single-writer"
+    },
     "exchange_rates": {
       "writers": [
         {
