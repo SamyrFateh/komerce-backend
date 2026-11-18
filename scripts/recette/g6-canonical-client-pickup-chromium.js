@@ -174,9 +174,10 @@ async function main(){
   check(owner.role==='client'&&!!owner.phone&&!!owner.pickup_secret_hash&&before.scans.length===0&&
     Number(before.lines[0].qty_received)===1&&Number(before.lines[0].qty_collected)===0,
     'G6_PICKUP_PRECONDITION_PHYSICAL_INVALID');
-  check(await verifyMarkedG6Buyer(db,owner,env),'G6_PICKUP_EXISTING_MARKED_BUYER_REQUIRED');
+  const buyer={id:owner.user_id,email:owner.email,phone:owner.phone,role:owner.role};
+  check(await verifyMarkedG6Buyer(db,buyer,env),'G6_PICKUP_EXISTING_MARKED_BUYER_REQUIRED');
   browser=await chromium.launch({headless:true});
-  const c=await customer(browser,owner);clientContext=c.ctx;
+  const c=await customer(browser,buyer);clientContext=c.ctx;
   const agent=await relay(browser,c.code,owner.relais_id);
   // Never include the code in any log, screenshot or report. Wipe local reference.
   c.code=null;
