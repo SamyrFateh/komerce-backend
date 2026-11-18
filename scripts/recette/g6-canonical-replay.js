@@ -15,6 +15,7 @@ const path=require('node:path');
 const {spawnSync,execFileSync}=require('node:child_process');
 const {resolveCanonicalReplay}=require('./g6-canonical-journey-binding');
 const {loadGoldenStages,stageGraph,resolvePhase,requiresResumeProof}=require('./canonical/stage-registry');
+const {validateFinalMileCheckpoint}=require('./canonical/final-mile-checkpoints');
 
 const ROOT=path.resolve(__dirname,'../..');
 const OUT=path.join(ROOT,'test-results/g6-canonical-replay');
@@ -442,6 +443,8 @@ async function main(env=process.env) {
        throw Error('G6_PICKUP_EXACT_RELAY_ARTIFACT_REQUIRED');
       const previous=JSON.parse(fs.readFileSync(RESUME_CANONICAL,'utf8'));
       const prior=JSON.parse(fs.readFileSync(path.join(ROOT,'test-results/g6-canonical-resume/g6-canonical-relay-receipt/report.json'),'utf8'));
+      // Additional same-order, same-staging proof boundary; no mutation authority.
+      validateFinalMileCheckpoint('CLIENT_PICKUP',previous,prior);
       const a=prior.after?.base;
       if(scope.id!=='M01'||scope.market!=='KM'||previous.scenario_id!=='M01'||previous.market!=='KM'||
        previous.order?.id!==id||previous.order?.reference!=='KL1WGP6'||previous.po_id!==po||
@@ -511,6 +514,8 @@ async function main(env=process.env) {
       const prior=JSON.parse(fs.readFileSync(path.join(ROOT,'test-results/g6-canonical-resume/g6-canonical-customs/report.json'),'utf8'));
       const id='56adad65-d1fa-4e80-8d69-c25e0fe92a76',sid='ff8591fc-78bb-49a4-b154-247508368d16';
       const fingerprint='8acbf99fef010c23eac7d252',po='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3';
+      // Additional same-order, same-staging proof boundary; no mutation authority.
+      validateFinalMileCheckpoint('RELAY_RECEIPT',previous,prior);
       const a=prior.after?.base;
       if(scope.id!=='M01'||scope.market!=='KM'||previous.scenario_id!=='M01'||previous.market!=='KM'||
         previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||previous.production_permitted!==false||
@@ -565,6 +570,8 @@ async function main(env=process.env) {
       if(resumeRun!=='44257485638'||!fs.existsSync(RESUME_CANONICAL))throw Error('G6_CUSTOMS_EXACT_ARTIFACT_REQUIRED');
       const previous=JSON.parse(fs.readFileSync(RESUME_CANONICAL,'utf8'));
       const prior=JSON.parse(fs.readFileSync(path.join(ROOT,'test-results/g6-canonical-resume/g6-canonical-forwarder/report.json'),'utf8'));
+      // Additional same-order, same-staging proof boundary; no mutation authority.
+      validateFinalMileCheckpoint('CUSTOMS',previous,prior);
       const a=prior.after?.base,id='56adad65-d1fa-4e80-8d69-c25e0fe92a76',sid='ff8591fc-78bb-49a4-b154-247508368d16';
       const fingerprint='8acbf99fef010c23eac7d252',po='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3';
       const box='6ca614e5-869c-40ab-80d7-3684974092fe',bag='bcf810c9-33b2-438a-b4c3-857b024e2247';
