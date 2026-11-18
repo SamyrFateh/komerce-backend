@@ -55,9 +55,10 @@
     wrapper.appendChild(control);
     return {wrapper,control};
   }
-  function task(doc,ctx,host,{title,action,fields,transform,disabled=false}){
+  function task(doc,ctx,host,{title,action,fields,transform,disabled=false,openByDefault=false}){
     const outer=put(host,doc.createElement('details'));
     outer.className='kmc-journey-task';
+    if(openByDefault)outer.open=true;
     put(outer,text(doc,'summary','kmc-journey-task-heading',title));
     const form=put(outer,doc.createElement('form'));
     form.className='kmc-journey-form';
@@ -221,6 +222,7 @@
        ctx.journeyTab==='relay'&&['local_delivery','relay_received'].includes(step))){
       task(doc,ctx,dossier,{
         title:'Confirmer : '+STAGE_LABEL[step],
+        openByDefault:step==='handed_over',
         action:ref+'/transition',
         fields:step==='handed_over'&&s.hub_draft
           ?[{name:'forwarder_name',label:'Transitaire qui prend physiquement les cartons',required:true},
