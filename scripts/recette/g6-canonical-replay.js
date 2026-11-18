@@ -395,7 +395,7 @@ async function main(env=process.env) {
   try{
     const scope=validateGuard(env);
     const phase=String(env.G6_CANONICAL_PHASE||'BUYER_CASH');
-    if(!['BUYER_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS'].includes(phase) || (['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS'].includes(phase)&&(scope.id!=='M01'||scope.market!=='KM')))
+    if(!['BUYER_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT'].includes(phase) || (['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT'].includes(phase)&&(scope.id!=='M01'||scope.market!=='KM')))
       throw new Error('G6_CANONICAL_PHASE_NOT_BOUND');
     report.scenario_id=scope.id;report.market=scope.market;
     report.source_matrix_version=scope.source_version;
@@ -408,8 +408,50 @@ async function main(env=process.env) {
     // must fail closed, not rebuild or silently switch to a new buyer.
     let buyer, resumeDiff=null;
     const resumeRun=String(env.G6_CANONICAL_RESUME_RUN_ID||'');
-    if(['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS'].includes(phase)&&!resumeRun)
+    if(['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT'].includes(phase)&&!resumeRun)
       throw new Error('G6_CANONICAL_HUB_REQUIRES_PREVIOUS_STAGE_PROOF');
+    if(phase==='RELAY_RECEIPT'){
+      if(resumeRun!=='44260374187'||!fs.existsSync(RESUME_CANONICAL)||
+         !fs.existsSync(path.join(ROOT,'test-results/g6-canonical-resume/g6-canonical-customs/report.json')))
+        throw Error('G6_RELAY_EXACT_CUSTOMS_ARTIFACT_REQUIRED');
+      const previous=JSON.parse(fs.readFileSync(RESUME_CANONICAL,'utf8'));
+      const prior=JSON.parse(fs.readFileSync(path.join(ROOT,'test-results/g6-canonical-resume/g6-canonical-customs/report.json'),'utf8'));
+      const id='56adad65-d1fa-4e80-8d69-c25e0fe92a76',sid='ff8591fc-78bb-49a4-b154-247508368d16';
+      const fingerprint='8acbf99fef010c23eac7d252',po='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3';
+      const a=prior.after?.base;
+      if(scope.id!=='M01'||scope.market!=='KM'||previous.scenario_id!=='M01'||previous.market!=='KM'||
+        previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||previous.production_permitted!==false||
+        previous.next_stage!=='RELAY_RECEIPT'||previous.order?.id!==id||previous.order?.reference!=='KL1WGP6'||
+        previous.po_id!==po||previous.db_fingerprint!==fingerprint||
+        !previous.stages?.some(x=>x.id==='CUSTOMS_LOCAL'&&x.verdict==='PASS_SIMULATED_STAGING'&&x.shipment_id===sid)||
+        prior.verdict!=='G6_CUSTOMS_LOCAL_SIMULATED_CHROMIUM_PG_PASS'||prior.shipment_id!==sid||
+        prior.order_id!==id||prior.db_fingerprint!==fingerprint||prior.provenance!=='SIMULATED / STAGING ONLY'||
+        prior.external_payment_executed!==false||prior.external_supplier_calls!==0||
+        prior.events?.length!==5||!prior.events.every((e,i)=>e.http===[201,200,200,200,200][i]&&
+          e.key===['customs_create','customs_link','customs_amount','customs_released','local_delivery'][i])||
+        a?.shipments?.length!==1||a.shipments[0].id!==sid||a.shipments[0].stage!=='local_delivery'||
+        a.box?.length!==1||a.box[0].id!=='6ca614e5-869c-40ab-80d7-3684974092fe'||
+        a.box[0].state!=='DISPATCHED'||a.parcels?.length!==1||
+        a.parcels[0].id!=='95045ede-d5b8-405b-b65f-d9dbdddb4756'||a.parcels[0].status!=='shipped'||
+        !prior.after.linked||prior.after.customs?.length!==1)
+        throw Error('G6_RELAY_CUSTOMS_PROVENANCE_INVALID');
+      report.resumed_from_run_id=resumeRun;report.order=previous.order;report.po_id=po;
+      report.db_fingerprint=fingerprint;report.stages=previous.stages;report.next_stage='RELAY_RECEIPT';save();
+      const result=executeExisting('scripts/recette/g6-canonical-relay-receipt-chromium.js',
+        path.join(ROOT,'test-results/g6-canonical-relay-receipt/report.json'),{...env,PGOPTIONS:'-c default_transaction_read_only=on',
+          G6_CANONICAL_ORDER_ID:id,G6_CANONICAL_ORDER_REFERENCE:'KL1WGP6',
+          G6_CANONICAL_DB_FINGERPRINT:fingerprint});
+      if(result.verdict!=='G6_RELAY_RECEIPT_SIMULATED_CHROMIUM_PG_PASS_AVAILABLE'||
+        result.shipment_id!==sid||result.order_id!==id||result.db_fingerprint!==fingerprint||
+        result.events?.length!==1||result.events[0].http!==201||
+        result.external_supplier_calls!==0||result.external_payment_executed!==false||
+        result.after?.base?.shipments?.[0]?.stage!=='relay_received'||
+        result.after?.base?.parcels?.[0]?.status!=='available')
+        throw Error('G6_RELAY_FINAL_PROOF_INVALID');
+      report.stages.push({id:'RELAY_RECEIPT',verdict:'PASS_SIMULATED_STAGING',via:'Chromium_UI',shipment_id:sid,
+        evidence:'test-results/g6-canonical-relay-receipt/report.json'});
+      report.next_stage='CLIENT_PICKUP';report.verdict='NOT_PROVEN';save();return report;
+    }
     if(phase==='CUSTOMS'){
       if(resumeRun!=='44257485638'||!fs.existsSync(RESUME_CANONICAL))throw Error('G6_CUSTOMS_EXACT_ARTIFACT_REQUIRED');
       const previous=JSON.parse(fs.readFileSync(RESUME_CANONICAL,'utf8'));
