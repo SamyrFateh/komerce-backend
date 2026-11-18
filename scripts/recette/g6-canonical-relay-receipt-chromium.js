@@ -159,7 +159,7 @@ async function main(){
   // The role-based login may redirect to this canonical page concurrently.
   // Require the actual shipment card after navigation; do not bypass UI.
   const card=await openRelayLive(actor.page,{
-   selector:'[data-relay-shipment="'+REF+'"]',timeout:25000
+   selector:'[data-relay-shipment="'+REF+'"]',timeout:25000,execute:true
   });
   check(await card.getAttribute('data-relay-receivable')==='true','G6_RELAY_UI_NOT_RECEIVABLE');
   if(!await card.evaluate(el=>el.open))await humanClick(null,card.locator('summary').first());

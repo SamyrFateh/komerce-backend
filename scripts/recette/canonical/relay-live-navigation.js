@@ -12,7 +12,7 @@ function isRelayPage(url){
  try {const parsed=new URL(String(url));return parsed.origin===BASE&&parsed.pathname==='/admin/relais-live';}
  catch(_){return false}
 }
-async function openRelayLive(page,{selector,timeout=30000}={}){
+async function openRelayLive(page,{selector,timeout=30000,execute=false}={}){
  if(!page||typeof page.goto!=='function'||typeof selector!=='string'||!selector)
   throw Error('G6_RELAY_NAVIGATION_ARGUMENTS_INVALID');
  if(!isRelayPage(page.url())){
@@ -30,6 +30,14 @@ async function openRelayLive(page,{selector,timeout=30000}={}){
  }
  await page.waitForURL(u=>u.origin===BASE&&u.pathname==='/admin/relais-live',{timeout:20000});
  await page.waitForLoadState('domcontentloaded',{timeout:20000});
+ // Les cartes d'expédition vivent dans l'atelier d'exécution (?view=execute). L'atterrissage du rôle
+ // est le Flux Relais : on y entre comme un humain, par le lien « Atelier réception ».
+ if(execute&&new URL(page.url()).searchParams.get('view')!=='execute'){
+  const {humanClick}=require('./actors/human-gestures');
+  await humanClick(null,page.locator('a',{hasText:'Atelier réception'}).first());
+  await page.waitForURL(u=>u.origin===BASE&&u.pathname==='/admin/relais-live'&&u.searchParams.get('view')==='execute',{timeout:20000});
+  await page.waitForLoadState('domcontentloaded',{timeout:20000});
+ }
  const target=page.locator(selector);
  await target.waitFor({state:'visible',timeout});
  if(!isRelayPage(page.url()))throw Error('G6_RELAY_NAVIGATION_DESTINATION_DRIFT');
