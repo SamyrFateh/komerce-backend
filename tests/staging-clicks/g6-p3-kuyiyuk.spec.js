@@ -189,6 +189,13 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
         afterCash=await orderState();
       }
       evidence.auto_line_after_cash=Number(afterCash.line_count)===1;
+      // Si la ligne est arrivée pendant l'attente, l'écran affiché est périmé (« Sourcing requis ») :
+      // un humain rechargerait la page avant d'agir.
+      if(evidence.auto_line_after_cash){
+        await page.reload({waitUntil:'domcontentloaded'});
+        await page.waitForLoadState('networkidle').catch(()=>{});
+        await page.locator('[data-hlc-need]').filter({hasText:REF}).first().waitFor({timeout:25000});
+      }
       if(Number(afterCash.line_count)===0){
         const need=page.locator('[data-hlc-need]').filter({hasText:REF});
         await need.first().waitFor({timeout:20000});
