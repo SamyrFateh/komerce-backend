@@ -77,7 +77,7 @@ async function main(){
   const prior=JSON.parse(fs.readFileSync('test-results/g6-canonical-resume/g6-canonical-forwarder/report.json','utf8'));
   const placement=prior.after.base.effective[0].placement_id;
   let last=await readState('arrived',placement);report.before=last;save();
-  check(isDeepStrictEqual(last.base,prior.after.base)&&isDeepStrictEqual(last.tracking,prior.after.tracking)&&last.customs.length===0&&last.linked===null,
+  check(isDeepStrictEqual(last.base,prior.after.base)&&isDeepStrictEqual(JSON.parse(JSON.stringify(last.tracking)),prior.after.tracking)&&last.customs.length===0&&last.linked===null,
    'G6_CUSTOMS_PRIOR_DRIFT');
   browser=await chromium.launch({headless:true});
   const admin=await login(browser,'E2E_ADMIN_','admin');
