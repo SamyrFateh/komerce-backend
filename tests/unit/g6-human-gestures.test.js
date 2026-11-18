@@ -54,6 +54,12 @@ test('HTTP confirmation is observed in the browser; unexpected status is BLOCKED
  const p2=fakePage({samples:[stable],locators:[inp,inp]});
  await expect(humanFill(p2,'[data-y]','value')).rejects.toThrow('G6_GESTURE_FILL_VALUE_NOT_STABLE');
 });
+test('fill accepts display formatting (spaces) but still rejects a different value',async()=>{
+ const inp={fill:jest.fn(),inputValue:async()=> '32 12 345'};
+ await expect(humanFill(fakePage({samples:[stable],locators:[inp,inp]}),'[data-p]','3212345')).resolves.toBeDefined();
+ const bad={fill:jest.fn(),inputValue:async()=> '32 12 346'};
+ await expect(humanFill(fakePage({samples:[stable],locators:[bad,bad]}),'[data-p]','3212345')).rejects.toThrow('G6_GESTURE_FILL_VALUE_NOT_STABLE');
+});
 test('chromium-policy refuses gestures written outside the helper; all 13 scripts comply',()=>{
  expect(()=>assertGestureSourceUsesHelper('s.js',"await page.locator('#a').click();")).toThrow('G6_GESTURE_OUTSIDE_HELPER_FORBIDDEN');
  expect(()=>assertGestureSourceUsesHelper('s.js',"await x.fill('v');")).toThrow('G6_GESTURE_OUTSIDE_HELPER_FORBIDDEN');

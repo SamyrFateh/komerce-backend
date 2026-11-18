@@ -87,7 +87,9 @@ const humanClick=(page,target,{mutation=null,...opts}={})=>
 const humanFill=(page,target,value,{mutation=null,...opts}={})=>
  gesture(page,target,{action:'fill',args:[value,opts],mutation,
   verify:async loc=>{let v;try{v=await loc.inputValue({timeout:2000});}catch(_){return;}
-   if(v!==String(value))throw Error('G6_GESTURE_FILL_VALUE_NOT_STABLE');}});
+   // Les champs à format d'affichage (téléphone « 32 12 345 ») ajoutent des espaces : comparaison hors espaces.
+   const n=x=>String(x).replace(/\s+/g,'');
+   if(n(v)!==n(value))throw Error('G6_GESTURE_FILL_VALUE_NOT_STABLE');}});
 const humanSelect=(page,target,value,{mutation=null,...opts}={})=>
  gesture(page,target,{action:'selectOption',args:[value,opts],mutation});
 const humanCheck=(page,target,{mutation=null,...opts}={})=>
