@@ -62,7 +62,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          head="$(git rev-parse HEAD)"
+          live="$(curl -fsS "$STAGING_BASE_URL/health/version" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(String(JSON.parse(s).commit||"")))')"
+          expected="$head"
+          # Railway saute les merges docs-only (SKIPPED) : on épingle alors le SHA servi,
+          # uniquement si main n'en diffère que par docs/ ou des fichiers .md.
+          if [ "$live" != "$head" ] && [[ "$live" =~ ^[0-9a-f]{40}$ ]] && git merge-base --is-ancestor "$live" "$head"; then
+            if [ -z "$(git diff --name-only "$live" "$head" | grep -vE '^docs/|\.md$' || true)" ]; then
+              expected="$live"
+              echo "Docs-only drift: pinning served SHA $live (main $head)"
+            fi
+          fi
+          echo "E2E_EXPECTED_DEPLOY_SHA=$expected" >> "$GITHUB_ENV"
       - name: Verify actual Railway staging and database identity before any fixture
         run: |
           set -euo pipefail
