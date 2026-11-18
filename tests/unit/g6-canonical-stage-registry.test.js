@@ -1,6 +1,6 @@
 /** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
-const {STAGE_IDS,loadGoldenStages,stageGraph,resolvePhase,prerequisiteIds,validateProofBoundary,planGolden}
+const {STAGE_IDS,loadGoldenStages,stageGraph,resolvePhase,prerequisiteIds,requiresResumeProof,validateProofBoundary,planGolden}
  =require('../../scripts/recette/canonical/stage-registry');
 const step=(id,requires=[])=>({id,requires,produces:[id.toLowerCase()+'_proof'],roles:['client'],
  run:async()=>null,validate:()=>true});
@@ -12,6 +12,14 @@ describe('G6 Golden declarative stage registry (non-mutating)',()=>{
   expect(resolvePhase('BUYER_CASH',g).id).toBe('RELAY_CASH');
   expect(resolvePhase('CLIENT_PICKUP',g).roles).toEqual(['client','agent_relais']);
   expect(prerequisiteIds('CLIENT_PICKUP',g)).toContain('RELAY_RECEIPT');
+ });
+ test('checkpoint requirements derive from DAG, preserving buyer cash legacy entry',()=>{
+  const graph=stageGraph(loadGoldenStages());
+  expect(requiresResumeProof('BUYER',graph)).toBe(false);
+  expect(requiresResumeProof('BUYER_CASH',graph)).toBe(true);
+  expect(requiresResumeProof('HUB_PO',graph)).toBe(true);
+  expect(requiresResumeProof('CLIENT_PICKUP',graph)).toBe(true);
+  expect(()=>requiresResumeProof('UNKNOWN',graph)).toThrow(/NOT_REGISTERED/);
  });
  test('reject missing, cyclic or duplicate dependency without side effects',()=>{
   expect(()=>stageGraph([step('A',['MISSING'])])).toThrow(/G6_STAGE_DEPENDENCY_MISSING/);

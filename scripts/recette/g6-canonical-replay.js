@@ -14,7 +14,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {spawnSync,execFileSync}=require('node:child_process');
 const {resolveCanonicalReplay}=require('./g6-canonical-journey-binding');
-const {loadGoldenStages,stageGraph,resolvePhase}=require('./canonical/stage-registry');
+const {loadGoldenStages,stageGraph,resolvePhase,requiresResumeProof}=require('./canonical/stage-registry');
 
 const ROOT=path.resolve(__dirname,'../..');
 const OUT=path.join(ROOT,'test-results/g6-canonical-replay');
@@ -413,7 +413,7 @@ async function main(env=process.env) {
     // must fail closed, not rebuild or silently switch to a new buyer.
     let buyer, resumeDiff=null;
     const resumeRun=String(env.G6_CANONICAL_RESUME_RUN_ID||'');
-    if(['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP'].includes(phase)&&!resumeRun)
+    if(phase!=='BUYER_CASH'&&requiresResumeProof(phase,graph)&&!resumeRun)
       throw new Error('G6_CANONICAL_HUB_REQUIRES_PREVIOUS_STAGE_PROOF');
     if(phase==='CLIENT_PICKUP'){
       const id='56adad65-d1fa-4e80-8d69-c25e0fe92a76',sid='ff8591fc-78bb-49a4-b154-247508368d16';
