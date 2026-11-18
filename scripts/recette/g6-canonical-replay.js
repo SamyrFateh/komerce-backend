@@ -635,18 +635,29 @@ async function main(env=process.env) {
         source_run_id:resumeRun,reference:bound.order.reference
       }));
       report.next_stage='HUB_KOM_BOX';save();
-      const box=executeExisting('scripts/recette/g6-hub-kom-box-chromium.js',
+      const box=await graph.byId.get('HUB_KOM_BOX').run({
+        runCertifiedStage(stageId){
+          if(stageId!=='HUB_KOM_BOX')throw Error('G6_STAGE_ID_MISMATCH_HUB_KOM_BOX');
+          return executeExisting('scripts/recette/g6-hub-kom-box-chromium.js',
         HUB_KOM_BOX,{...env,PGOPTIONS:'-c default_transaction_read_only=on',
           G6_CANONICAL_ORDER_ID:bound.order.id,G6_CANONICAL_ORDER_REFERENCE:bound.order.reference,
           G6_CANONICAL_PO_ID:bound.poId,G6_CANONICAL_DB_FINGERPRINT:bound.dbFingerprint,
           G6_CANONICAL_BAG_ID:bound.bagId,G6_CANONICAL_BAG_REF:bound.bagRef,
           G6_CANONICAL_PARCEL_ID:bound.parcelId,G6_CANONICAL_ALLOCATION_ID:bound.allocationId});
-      if(box.verdict!=='G6_KOM_BOX_SIMULATED_CHROMIUM_PG_PASS_PACKED'||box.order_id!==bound.order.id||
+        }
+      });
+      graph.byId.get('HUB_KOM_BOX').validate({
+        validateCertifiedStage(stageId,proof){
+          if(stageId!=='HUB_KOM_BOX'||proof!==box)throw Error('G6_STAGE_PROOF_CONTEXT_HUB_KOM_BOX');
+          if(box.verdict!=='G6_KOM_BOX_SIMULATED_CHROMIUM_PG_PASS_PACKED'||box.order_id!==bound.order.id||
          box.po_id!==bound.poId||box.bag_id!==bound.bagId||box.parcel_id!==bound.parcelId||
          box.allocation_id!==bound.allocationId||box.db_fingerprint!==bound.dbFingerprint||
          box.external_supplier_calls!==0||box.external_payment_executed!==false||
          box.provenance!=='SIMULATED / STAGING ONLY'||!box.box_id||box.events?.length!==8)
         throw Error('G6_KOM_BOX_FINAL_PROOF_INVALID');
+          return true;
+        }
+      },box);
       report.stages.push({id:'HUB_KOM_BOX',verdict:'PASS_SIMULATED_STAGING',via:'Chromium_UI',
         reference:bound.order.reference,box_id:box.box_id,box_ref:box.box_ref,
         evidence:'test-results/g6-hub-kom-box/report.json'});
@@ -667,17 +678,28 @@ async function main(env=process.env) {
         source_run_id:resumeRun,reference:bound.order.reference
       }));
       report.next_stage='HUB_CUSTOMER_BAG';save();
-      const bag=executeExisting('scripts/recette/g6-hub-customer-bag-chromium.js',
+      const bag=await graph.byId.get('HUB_CUSTOMER_BAG').run({
+        runCertifiedStage(stageId){
+          if(stageId!=='HUB_CUSTOMER_BAG')throw Error('G6_STAGE_ID_MISMATCH_HUB_CUSTOMER_BAG');
+          return executeExisting('scripts/recette/g6-hub-customer-bag-chromium.js',
         CUSTOMER_BAG,{...env,PGOPTIONS:'-c default_transaction_read_only=on',
           G6_CANONICAL_ORDER_ID:bound.order.id,G6_CANONICAL_ORDER_REFERENCE:bound.order.reference,
           G6_CANONICAL_PO_ID:bound.poId,G6_CANONICAL_DB_FINGERPRINT:bound.dbFingerprint,
           G6_CANONICAL_RECEIPT_REFERENCE:bound.sourceRef});
-      if(bag.verdict!=='G6_CUSTOMER_BAG_SIMULATED_CHROMIUM_PG_PASS'||bag.order_id!==bound.order.id||
+        }
+      });
+      graph.byId.get('HUB_CUSTOMER_BAG').validate({
+        validateCertifiedStage(stageId,proof){
+          if(stageId!=='HUB_CUSTOMER_BAG'||proof!==bag)throw Error('G6_STAGE_PROOF_CONTEXT_HUB_CUSTOMER_BAG');
+          if(bag.verdict!=='G6_CUSTOMER_BAG_SIMULATED_CHROMIUM_PG_PASS'||bag.order_id!==bound.order.id||
          bag.po_id!==bound.poId||bag.source_ref!==bound.sourceRef||
          bag.db_fingerprint!==bound.dbFingerprint||bag.provenance!=='SIMULATED / STAGING ONLY'||
          bag.external_supplier_calls!==0||bag.external_payment_executed!==false||
          !bag.bag_id||!bag.bag_ref||bag.events?.length!==3)
         throw Error('G6_CUSTOMER_BAG_FINAL_PROOF_INVALID');
+          return true;
+        }
+      },bag);
       report.stages.push({id:'HUB_CUSTOMER_BAG',verdict:'PASS_SIMULATED_STAGING',via:'Chromium_UI',
         reference:bound.order.reference,bag_id:bag.bag_id,bag_ref:bag.bag_ref,
         evidence:'test-results/g6-hub-customer-bag/report.json'});
@@ -712,18 +734,29 @@ async function main(env=process.env) {
         id:st.id,verdict:'PREVIOUS_RUN_PASS',source_run_id:resumeRun,reference:previous.order.reference
       }));
       report.next_stage='HUB_RECEIVING_READBACK';save();
-      const reread=executeExisting('scripts/recette/g6-hub-receiving-readback.js',
+      const reread=await graph.byId.get('HUB_RECEIVING_READBACK').run({
+        runCertifiedStage(stageId){
+          if(stageId!=='HUB_RECEIVING_READBACK')throw Error('G6_STAGE_ID_MISMATCH_HUB_RECEIVING_READBACK');
+          return executeExisting('scripts/recette/g6-hub-receiving-readback.js',
         HUB_RECEIVING_READBACK,{...env,PGOPTIONS:'-c default_transaction_read_only=on',
           G6_CANONICAL_ORDER_ID:previous.order.id,
           G6_CANONICAL_ORDER_REFERENCE:previous.order.reference,
           G6_CANONICAL_PO_ID:previous.po_id,
           G6_CANONICAL_DB_FINGERPRINT:previous.db_fingerprint,
           G6_CANONICAL_RECEIPT_REFERENCE:receipt.receipt.reference});
-      if(reread.verdict!=='G6_HUB_RECEIPT_SIMULATED_CHROMIUM_HISTORICAL_UI_PG_READBACK_PASS'||
+        }
+      });
+      graph.byId.get('HUB_RECEIVING_READBACK').validate({
+        validateCertifiedStage(stageId,proof){
+          if(stageId!=='HUB_RECEIVING_READBACK'||proof!==reread)throw Error('G6_STAGE_PROOF_CONTEXT_HUB_RECEIVING_READBACK');
+          if(reread.verdict!=='G6_HUB_RECEIPT_SIMULATED_CHROMIUM_HISTORICAL_UI_PG_READBACK_PASS'||
          reread.reference!=='KL1WGP6'||reread.po_id!==previous.po_id||
          reread.db_fingerprint!==previous.db_fingerprint||
          reread.physical_ref!==receipt.receipt.reference||reread.read_only!==true)
         throw Error('G6_RECEIPT_READBACK_FINAL_EVIDENCE_INVALID');
+          return true;
+        }
+      },reread);
       report.stages.push({id:'HUB_RECEIVING',verdict:'PASS_SIMULATED_STAGING',
         via:'Chromium_UI_PREVIOUS_RUN_PLUS_INDEPENDENT_PG',po_id:previous.po_id,
         reference:previous.order.reference,evidence:'test-results/g6-hub-receiving-readback/report.json'});
@@ -746,17 +779,28 @@ async function main(env=process.env) {
         reference:bound.order.reference
       }));
       report.next_stage='HUB_RECEIVING';save();
-      const received=executeExisting('scripts/recette/g6-hub-receiving-chromium.js',
+      const received=await graph.byId.get('HUB_RECEIVING').run({
+        runCertifiedStage(stageId){
+          if(stageId!=='HUB_RECEIVING')throw Error('G6_STAGE_ID_MISMATCH_HUB_RECEIVING');
+          return executeExisting('scripts/recette/g6-hub-receiving-chromium.js',
         HUB_RECEIVING,{...env,G6_CANONICAL_ORDER_ID:bound.order.id,
           G6_CANONICAL_ORDER_REFERENCE:bound.order.reference,
           G6_CANONICAL_PO_ID:bound.poId,G6_CANONICAL_DB_FINGERPRINT:bound.dbFingerprint});
-      if(received.verdict!=='G6_HUB_RECEIPT_SIMULATED_CHROMIUM_PASS_NOT_KOM_BOX_GO'||
+        }
+      });
+      graph.byId.get('HUB_RECEIVING').validate({
+        validateCertifiedStage(stageId,proof){
+          if(stageId!=='HUB_RECEIVING'||proof!==received)throw Error('G6_STAGE_PROOF_CONTEXT_HUB_RECEIVING');
+          if(received.verdict!=='G6_HUB_RECEIPT_SIMULATED_CHROMIUM_PASS_NOT_KOM_BOX_GO'||
          received.reference!==bound.order.reference||received.po_id!==bound.poId||
          received.db_fingerprint!==bound.dbFingerprint||
          received.physical_receipt_certified!==true||
          received.external_supplier_calls!==0||received.external_payment_executed!==false||
          received.provenance!=='SIMULATED / STAGING ONLY')
         throw Error('G6_RECEIVING_CHROMIUM_PROOF_INVALID');
+          return true;
+        }
+      },received);
       report.stages.push({id:'HUB_RECEIVING',verdict:'PASS_SIMULATED_STAGING',
         via:'Chromium_UI',po_id:bound.poId,reference:bound.order.reference,
         evidence:'test-results/g6-hub-receiving/report.json'});
@@ -781,17 +825,28 @@ async function main(env=process.env) {
       report.order=bound.order;report.po_id=bound.poId;report.db_fingerprint=bound.dbFingerprint;
       report.stages=previous.stages.map(st=>({id:st.id,verdict:'PREVIOUS_RUN_PASS',source_run_id:resumeRun,reference:bound.order.reference}));
       report.next_stage='HUB_VENDOR_SIMULATION';save();
-      const vendor=executeExisting('scripts/recette/g6-hub-vendor-simulation-chromium.js',
+      const vendor=await graph.byId.get('HUB_VENDOR_SIMULATION').run({
+        runCertifiedStage(stageId){
+          if(stageId!=='HUB_VENDOR_SIMULATION')throw Error('G6_STAGE_ID_MISMATCH_HUB_VENDOR_SIMULATION');
+          return executeExisting('scripts/recette/g6-hub-vendor-simulation-chromium.js',
         VENDOR_SIMULATION,{...env,G6_CANONICAL_ORDER_ID:bound.order.id,
           G6_CANONICAL_ORDER_REFERENCE:bound.order.reference,
           G6_CANONICAL_PO_ID:bound.poId,G6_CANONICAL_DB_FINGERPRINT:bound.dbFingerprint});
-      if(vendor.verdict!=='G6_VENDOR_SIMULATED_SEND_AND_CONFIRM_CHROMIUM_PASS_NOT_RECEIPT_GO'||
+        }
+      });
+      graph.byId.get('HUB_VENDOR_SIMULATION').validate({
+        validateCertifiedStage(stageId,proof){
+          if(stageId!=='HUB_VENDOR_SIMULATION'||proof!==vendor)throw Error('G6_STAGE_PROOF_CONTEXT_HUB_VENDOR_SIMULATION');
+          if(vendor.verdict!=='G6_VENDOR_SIMULATED_SEND_AND_CONFIRM_CHROMIUM_PASS_NOT_RECEIPT_GO'||
          vendor.reference!==bound.order.reference||vendor.po_id!==bound.poId||
          vendor.db_fingerprint!==bound.dbFingerprint||
          vendor.supplier_send_certified!==true||vendor.supplier_confirmation_certified!==true||
          vendor.physical_receipt_certified!==false||vendor.external_supplier_calls!==0||
          vendor.external_payment_executed!==false||vendor.provenance!=='SIMULATED / STAGING ONLY')
         throw Error('G6_VENDOR_SIMULATION_EVIDENCE_INVALID');
+          return true;
+        }
+      },vendor);
       report.stages.push({id:'HUB_VENDOR_SIMULATED',verdict:'PASS_SIMULATED_STAGING',via:'Chromium_UI',
         po_id:bound.poId,reference:bound.order.reference,
         evidence:'test-results/g6-hub-vendor-simulation/report.json'});
@@ -817,12 +872,20 @@ async function main(env=process.env) {
         reference:bound.order.reference
       }));
       report.next_stage='HUB_VENDOR_READINESS';save();
-      const vendor=executeExisting('scripts/recette/g6-hub-vendor-readiness-chromium.js',
+      const vendor=await graph.byId.get('HUB_VENDOR_READINESS').run({
+        runCertifiedStage(stageId){
+          if(stageId!=='HUB_VENDOR_READINESS')throw Error('G6_STAGE_ID_MISMATCH_HUB_VENDOR_READINESS');
+          return executeExisting('scripts/recette/g6-hub-vendor-readiness-chromium.js',
         VENDOR_READY,{...env,G6_CANONICAL_ORDER_ID:bound.order.id,
           G6_CANONICAL_ORDER_REFERENCE:bound.order.reference,
           G6_CANONICAL_PO_ID:bound.poId,
           G6_CANONICAL_DB_FINGERPRINT:bound.dbFingerprint});
-      if(vendor.verdict!=='G6_VENDOR_SEND_UI_READY_BUT_EXTERNAL_EVENT_NOT_PROVEN'||
+        }
+      });
+      graph.byId.get('HUB_VENDOR_READINESS').validate({
+        validateCertifiedStage(stageId,proof){
+          if(stageId!=='HUB_VENDOR_READINESS'||proof!==vendor)throw Error('G6_STAGE_PROOF_CONTEXT_HUB_VENDOR_READINESS');
+          if(vendor.verdict!=='G6_VENDOR_SEND_UI_READY_BUT_EXTERNAL_EVENT_NOT_PROVEN'||
          vendor.reference!==bound.order.reference||vendor.po_id!==bound.poId||
          vendor.db_fingerprint!==bound.dbFingerprint||
          vendor.supplier_send_certified!==false||
@@ -832,6 +895,9 @@ async function main(env=process.env) {
          vendor.external_payment_executed!==false||
          vendor.screen?.external_send_form_not_submitted!==true)
         throw Error('G6_VENDOR_READONLY_SCREEN_EVIDENCE_INVALID');
+          return true;
+        }
+      },vendor);
       report.stages.push({id:'HUB_VENDOR_UI',verdict:'PASS_READONLY',via:'Chromium_UI',
         po_id:bound.poId,reference:bound.order.reference,
         evidence:'test-results/g6-hub-vendor-readiness/report.json'});
@@ -861,12 +927,20 @@ async function main(env=process.env) {
         id:s.id,verdict:'PREVIOUS_RUN_PASS',source_run_id:resumeRun,reference:bound.order.reference
       }));
       report.next_stage='HUB_COMMITMENT';save();
-      const commitment=executeExisting('scripts/recette/g6-hub-commitment-chromium.js',
+      const commitment=await graph.byId.get('HUB_COMMITMENT').run({
+        runCertifiedStage(stageId){
+          if(stageId!=='HUB_COMMITMENT')throw Error('G6_STAGE_ID_MISMATCH_HUB_COMMITMENT');
+          return executeExisting('scripts/recette/g6-hub-commitment-chromium.js',
         HUB_COMMITMENT,{...env,G6_CANONICAL_ORDER_ID:bound.order.id,
           G6_CANONICAL_ORDER_REFERENCE:bound.order.reference,
           G6_CANONICAL_PO_ID:bound.poId,
           G6_CANONICAL_DB_FINGERPRINT:bound.dbFingerprint});
-      if(commitment.verdict!=='G6_HUB_COMMITMENT_AND_INTERNAL_SUBMIT_CHROMIUM_PASS_NOT_VENDOR_OR_RECEIPT_GO'||
+        }
+      });
+      graph.byId.get('HUB_COMMITMENT').validate({
+        validateCertifiedStage(stageId,proof){
+          if(stageId!=='HUB_COMMITMENT'||proof!==commitment)throw Error('G6_STAGE_PROOF_CONTEXT_HUB_COMMITMENT');
+          if(commitment.verdict!=='G6_HUB_COMMITMENT_AND_INTERNAL_SUBMIT_CHROMIUM_PASS_NOT_VENDOR_OR_RECEIPT_GO'||
          commitment.reference!==bound.order.reference||
          commitment.po_id!==bound.poId||
          commitment.db_fingerprint!==bound.dbFingerprint||
@@ -874,6 +948,9 @@ async function main(env=process.env) {
          commitment.after?.commitment_count!==1||
          commitment.after?.payment_authorization_count!==0)
         throw new Error('G6_CANONICAL_HUB_COMMITMENT_PROOF_INVALID');
+          return true;
+        }
+      },commitment);
       report.stages.push({id:'HUB_COMMITMENT',verdict:'PASS',via:'Chromium_UI',
         reference:bound.order.reference,po_id:bound.poId,
         evidence:'test-results/g6-hub-commitment/report.json'});
