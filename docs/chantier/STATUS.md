@@ -22,7 +22,7 @@
 3. **Recette, commandes orphelines.** Des commandes de recette restent orphelines après les essais interrompus du 18/11 (KM : KG6BRN8, KEUV1BR, KFV1J2A, KG2R3C4 ; CM : KHE0W13 et sa ligne hors PO). Il faut les nettoyer par l'écran : annulation ou clôture du PO brouillon.
 4. **Produit, sélection d'un PO.** Le centre de la carte PO tombe sur le lien commande d'une ligne, qui appelle `stopPropagation`. Un humain peut sélectionner la commande en croyant sélectionner le PO. Ce point d'ergonomie est à revoir avec G6-F (#4566).
 5. **Produit, atterrissage du rôle relais.** L'agent relais arrive sur Flux Relais. La réception passe par « Atelier réception » et le retrait par l'onglet « Remises » (#4568, #4570). Ce parcours d'écran est à confirmer par G6-F et par le propriétaire.
-7. **Produit, PO groupé.** La référence fournisseur simulée et la preuve d'achat sont figées sur la commande de la 1re ligne (FIFO) plutôt que propres au PO (#4587). Il faut une référence par PO.
+7. **Produit, PO groupé.** La référence fournisseur simulée et la preuve d'achat sont figées sur la commande de la 1re ligne (FIFO) plutôt que propres au PO (#4587). Il faut une référence par PO. **Lot 2 · [#4609](https://github.com/SamyrFateh/komerce-backend/pull/4609)** : référence et justificatifs rattachés au PO, simulation réservée aux groupes intégralement G6. Reprise après fusion : Opus rejoue M01 KM, CM et CG sur GO, puis lot 3.
 8. **Produit, Expéditions & Douane.** Un repaint asynchrone referme la tâche `<details>` qu'on vient d'ouvrir, avant la saisie. C'est un défaut réel pour un humain (#4591, même famille que P1 Hub).
 6. **Runner.** `g6-canonical-replay.js` garde `KM` en dur, hors du chemin dynamique (#4575). Il faut l'aligner sur le profil de marché ou le retirer.
 
