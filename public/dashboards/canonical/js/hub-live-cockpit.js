@@ -100,13 +100,34 @@
     const roleLabel = !viewer ? 'lecture' : (viewer.can_authorize_commitment || viewer.can_authorize_payment) ? 'responsable Hub' : viewer.role === 'admin' ? 'admin central' : 'agent Hub';
     const poRef = (po) => po.ref || `PO ${short(po.id)}`;
 
+    // P1 FIAB : les saisies et le focus du formulaire en cours survivent au rendu (state.form.values).
+    const activeEl = doc.activeElement;
+    const oldForm = host.querySelector && host.querySelector('form[data-hlc-form]');
+    if (oldForm && state.form && oldForm.getAttribute('data-hlc-form') === state.form.kind) {
+      const fields = [...oldForm.querySelectorAll('input,select,textarea')];
+      state.form.values = {
+        kind: state.form.kind,
+        items: fields.map((f) => (['hidden', 'button', 'submit'].includes(f.type) ? null : { v: f.value, c: f.checked })),
+        focus: fields.indexOf(activeEl),
+        sel: activeEl && typeof activeEl.selectionStart === 'number' ? [activeEl.selectionStart, activeEl.selectionEnd] : null,
+      };
+    }
+    state.epoch = (state.epoch || 0) + 1;
     host.replaceChildren();
     const rootEl = el(doc, 'div', 'hlc');
     rootEl.setAttribute('data-hub-cockpit', '');
+    const markReady = () => {
+      const r = host.querySelector && host.querySelector('[data-hub-cockpit]');
+      if (r) r.setAttribute('data-hlc-ready', state.pending > 0 ? 'false' : 'true');
+    };
+    rootEl.setAttribute('data-render-epoch', String(state.epoch));
+    rootEl.setAttribute('data-hlc-ready', state.pending > 0 ? 'false' : 'true');
     host.appendChild(rootEl);
 
     // ── Actions : un seul point d'exécution, désactivé pendant la requête, état incertain → recharger et vérifier.
     async function execute(btn, options) {
+      state.pending = (state.pending || 0) + 1;
+      markReady();
       try {
         return await ctx.act(btn, options);
       } catch (error) {
@@ -115,6 +136,9 @@
           ctx.reload().catch(() => {});
         }
         return null;
+      } finally {
+        state.pending = Math.max(0, (state.pending || 1) - 1);
+        markReady();
       }
     }
     const purchasing = (path) => `/api/purchasing/${path}`;
@@ -816,6 +840,23 @@
     }
     panel.appendChild(rightP);
     rootEl.appendChild(panel);
+    const saved = state.form && state.form.values;
+    const liveForm = rightP.querySelector('form[data-hlc-form]');
+    if (saved && liveForm && saved.kind === liveForm.getAttribute('data-hlc-form')) {
+      const fields = [...liveForm.querySelectorAll('input,select,textarea')];
+      if (fields.length === saved.items.length) {
+        fields.forEach((f, i) => {
+          const it = saved.items[i];
+          if (!it) return;
+          if (f.type === 'checkbox' || f.type === 'radio') f.checked = it.c; else f.value = it.v;
+        });
+        const target = fields[saved.focus];
+        if (target && typeof target.focus === 'function') {
+          target.focus();
+          if (saved.sel && target.setSelectionRange) { try { target.setSelectionRange(saved.sel[0], saved.sel[1]); } catch (e) { /* type sans sélection */ } }
+        }
+      }
+    }
     return rootEl;
   }
 
