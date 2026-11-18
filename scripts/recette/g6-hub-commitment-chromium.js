@@ -25,6 +25,7 @@ const report={schema:'komerce-g6-hub-commitment/1',scenario_id:'M01',market:'KM'
  verdict:'BLOCKED',external_supplier_calls:0,external_payment_executed:false,events:[],stage:'PREFLIGHT'};
 const save=()=>{fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n');};
 function check(ok,code){if(!ok)throw Error(code);}
+let PEERS={other_lines:0,non_test_lines:0};
 async function getState(){
  const {rows}=await db.query([
   'SELECT po.id AS po_id, po.status::text AS po_status, o.id AS order_id,',
@@ -42,7 +43,15 @@ async function getState(){
   'COALESCE(octet_length(commitment_pdf),0) AS pdf_bytes',
   'FROM purchase_order_authorizations WHERE purchase_order_id=$1 ORDER BY authorization_type'
  ].join(' '),[env.G6_CANONICAL_PO_ID])).rows;
- return {order:rows[0]||null,decisions};
+ // PO groupé par le Hub (mêmes fournisseur, SKU et marché) : les autres lignes doivent toutes
+ // appartenir à des commandes de recette staging (simulation_scope), jamais à une commande réelle.
+ const peers=(await db.query([
+  'SELECT COUNT(*)::int AS other_lines,',
+  'COUNT(*) FILTER (WHERE o.simulation_scope IS NULL)::int AS non_test_lines',
+  'FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id JOIN orders o ON o.id=oi.order_id',
+  'WHERE pl.purchase_order_id=$1 AND pl.cancelled_at IS NULL AND o.id<>$2'
+ ].join(' '),[env.G6_CANONICAL_PO_ID,env.G6_CANONICAL_ORDER_ID])).rows[0];
+ return {order:rows[0]||null,decisions,peers};
 }
 async function stableSha(){
  const r=await fetch(ORIGIN+'/health/version');
@@ -87,7 +96,8 @@ async function openPo(page){
  await humanSelect(null,sel,{label:'KM · Comores'}).catch(()=>{});
  const po=page.locator('[data-hlc-po="'+env.G6_CANONICAL_PO_ID+'"]');
  await po.waitFor({state:'visible',timeout:25000});
- check(await po.locator('[data-hlc-po-line]').count()===1,'G6_COMMITMENT_PO_MULTILINE');
+ const shown=await po.locator('[data-hlc-po-line]').count();
+ check(shown>=1&&shown===1+Number(PEERS.other_lines),'G6_COMMITMENT_PO_LINES_UI_PG_MISMATCH');
  check(await po.locator('[data-hlc-line-order="'+env.G6_CANONICAL_ORDER_ID+'"]').count()===1,
   'G6_COMMITMENT_UI_ORDER_MISMATCH');
  await humanClick(null,po);
@@ -110,6 +120,9 @@ async function main(){
    'G6_COMMITMENT_DATABASE_NOT_SAME_AS_PO');
   report.db_fingerprint=target.fingerprint;report.sha=await stableSha();
   const before=await getState();
+  PEERS=before.peers;
+  report.peer_lines=before.peers;
+  check(Number(before.peers.non_test_lines)===0,'G6_COMMITMENT_PO_GROUPS_NON_TEST_ORDER');
   report.before={po_status:before.order?.po_status,order_reference:before.order?.order_reference,
    payment_status:before.order?.payment_status,scope:before.order?.simulation_scope,
    purchase_lines:before.order?.purchase_lines,authorization_types:before.decisions.map(x=>x.authorization_type)};
