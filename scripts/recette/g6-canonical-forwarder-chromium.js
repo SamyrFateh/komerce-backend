@@ -19,6 +19,7 @@ const env=process.env, BASE='https://komerce-backend-production.up.railway.app';
 const REF=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_REF:'SIM-STAGING-EXP-KL1WGP6', ID=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_ID:'ff8591fc-78bb-49a4-b154-247508368d16';
 const BOX=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_BOX_ID:'6ca614e5-869c-40ab-80d7-3684974092fe', TRACK='SIM-STAGING-TRK-'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6');
 const OUT=path.resolve('test-results/g6-canonical-forwarder');
+const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const API='/api/admin/workspaces/shipping-customs/market/KM/international/'+REF;
 const report={schema:'komerce-g6-forwarder/1',shipment_id:ID,shipment_ref:REF,order_id:env.G6_CANONICAL_ORDER_ID,
  reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',scenario_id:'M01',market:'KM',role:'agent_transitaire',events:[],verdict:'BLOCKED',
@@ -120,7 +121,7 @@ async function main(){
   const placement=prior.after.effective[0].placement_id;
   const before=await snapshot('handed_over',placement);report.before=before;save();
   check(isDeepStrictEqual(before.base,prior.after)&&!before.tracking.tracking_reference&&!before.tracking.bill_of_lading_ref,'G6_FORWARDER_PRIOR_DRIFT');
-  browser=await chromium.launch({headless:true});actor=await login(browser);
+  browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);actor=await login(browser);
   const steps=[
    ['forwarder_received','Confirmer : Réceptionné par le transitaire','transition',{proof_ref:proof('RECEPTION-TRANSITAIRE')},{proof_ref:proof('RECEPTION-TRANSITAIRE'),to_stage:'forwarder_received'},'forwarder_received','stage_changed'],
    ['tracking','Suivi conteneur','tracking',{tracking_reference:TRACK,proof_ref:proof('SUIVI')},{tracking_reference:TRACK,proof_ref:proof('SUIVI')},'forwarder_received','tracking_updated'],
@@ -140,8 +141,8 @@ async function main(){
    last=state;report.after=state;save();await runtime();
   }
   report.verdict='G6_FORWARDER_SIMULATED_CHROMIUM_PG_PASS_ARRIVED';report.next_stage='CUSTOMS';save();
- }catch(e){report.error=String(e.message||e).slice(0,700);try{if(report.db_fingerprint)report.failure_readback=await readback()}catch(_){};save();process.exitCode=2}
- finally{if(browser)await browser.close();await db.pool.end();console.log(JSON.stringify(report))}
+ }catch(e){report.error=fullError(e);try{if(report.db_fingerprint)report.failure_readback=await readback()}catch(_){};save();process.exitCode=2}
+ finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close();await db.pool.end();console.log(JSON.stringify(report))}
 }
 if(require.main===module)main();
 module.exports={login,task,snapshot,proof};

@@ -25,6 +25,7 @@ const PARCEL=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_PARCEL_ID:'95045e
 const SHIPMENT=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_ID:'ff8591fc-78bb-49a4-b154-247508368d16';
 const ITEM=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ITEM_ID:'8c999eec-7322-4676-8db6-585c4d4545f9';
 const OUT=path.resolve('test-results/g6-canonical-client-pickup');
+const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const report={schema:'komerce-g6-client-pickup/1',scenario_id:'M01',market:'KM',reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',
  order_id:ID,parcel_id:PARCEL,shipment_id:SHIPMENT,provenance:'SIMULATED / STAGING ONLY',
  verdict:'BLOCKED',events:[],external_supplier_calls:0,external_payment_executed:false,
@@ -185,7 +186,7 @@ async function main(){
     'G6_PICKUP_PRECONDITION_PHYSICAL_INVALID');
   const buyer={id:owner.user_id,email:owner.email,phone:owner.phone,role:owner.role};
   check(await verifyMarkedG6Buyer(db,buyer,env),'G6_PICKUP_EXISTING_MARKED_BUYER_REQUIRED');
-  browser=await chromium.launch({headless:true});
+  browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   const c=await customer(browser,buyer);clientContext=c.ctx;
   const agent=await relay(browser,c.code,owner.relais_id);
   // Never include the code in any log, screenshot or report. Wipe local reference.
@@ -204,8 +205,8 @@ async function main(){
   await runtime();
   report.verdict='G6_CLIENT_PICKUP_SIMULATED_CHROMIUM_PG_PASS_COLLECTED';
   report.next_stage='COMPLETED_M01';save();
- }catch(e){report.error=String(e.message||e).slice(0,400);try{const s=await state();report.failure_readback={order:s.orders[0]?.status,parcel:s.base.parcels[0]?.status,shipment:s.base.shipments[0]?.stage,scans:s.scans.length}}catch(_){};
+ }catch(e){report.error=fullError(e);try{const s=await state();report.failure_readback={order:s.orders[0]?.status,parcel:s.base.parcels[0]?.status,shipment:s.base.shipments[0]?.stage,scans:s.scans.length}}catch(_){};
   save();process.exitCode=2}
- finally{if(clientContext)await clientContext.close().catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end();console.log(JSON.stringify(report))}
+ finally{if(clientContext)await clientContext.close().catch(()=>{});if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end();console.log(JSON.stringify(report))}
 }
 if(require.main===module)main();

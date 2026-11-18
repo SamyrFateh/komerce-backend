@@ -12,6 +12,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {test,expect}=require('@playwright/test');
 const OUT=path.resolve('test-results/g6-p3-kuyiyuk');
+const {observe}=require("../../scripts/recette/canonical/observability");let OBS=null,FAILED=false;
 const CANONICAL=process.env.G6_CANONICAL_HUB_STAGE==='1';
 const REF=CANONICAL?String(process.env.G6_CANONICAL_ORDER_REFERENCE||''):'KUYIYUK';
 const evidence={schema:'komerce-g6-p3-kuyiyuk/1',reference:REF,verdict:'NOT_PROVEN',external_supplier_calls:0,external_payment_executed:false,staging_cash_confirmation_recorded:false,gestures:[]};
@@ -32,6 +33,7 @@ const orderState=async()=> {
   return o||null;
 };
 async function login(browser,baseURL,actor='hub'){
+  if(!OBS)OBS=observe(browser,OUT);
   const prefix=actor==='relay'?'E2E_AGENT_RELAIS':actor==='admin'?'E2E_ADMIN':'E2E_AGENT_HUB';
   const email=process.env[prefix+'_EMAIL'],password=process.env[prefix+'_PASSWORD'];
   expect(email&&password,'E2E '+actor+' credentials').toBeTruthy();
@@ -53,6 +55,8 @@ async function capture(page,name){
   await page.screenshot({path:path.join(OUT,'captures',name+'.png')});
 }
 test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
+  test.afterEach(async({},info)=>{if(info.status!==info.expectedStatus)FAILED=true;});
+  test.afterAll(async()=>{if(OBS)await OBS.finish(FAILED).catch(()=>{});});
   test.beforeAll(async()=>{
     db=require('../../db');
     const env=process.env;

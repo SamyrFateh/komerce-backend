@@ -16,6 +16,7 @@ const {confirmTarget}=require('./target-guard');
 const {login,openPo}=require('./g6-hub-commitment-chromium');
 const env=process.env;
 const OUT=path.resolve('test-results/g6-hub-vendor-simulation');
+const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const REF=env.G6_CANONICAL_ORDER_REFERENCE||'';
 const PO=env.G6_CANONICAL_PO_ID||'';
 const ORDER=env.G6_CANONICAL_ORDER_ID||'';
@@ -120,7 +121,7 @@ async function main(){
     !before.supplier_order_id&&before.confirmed_quantity===null&&Number(before.manual_executions)===0,
     'G6_SIM_EXPECT_PRIOR_READONLY_CHECKPOINT');
   report.before={po_status:before.po_status,sent_at:null,confirmed_quantity:null,manual_executions:0};save();
-  browser=await chromium.launch({headless:true});
+  browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   const actor=await login(browser,'E2E_AGENT_HUB_',{allowedWrites:['sent','confirm']});
   try{
    await openPo(actor.page);
@@ -175,8 +176,8 @@ async function main(){
   report.next_stage='HUB_RECEIVING';
   report.verdict='G6_VENDOR_SIMULATED_SEND_AND_CONFIRM_CHROMIUM_PASS_NOT_RECEIPT_GO';
   save();
- }catch(e){report.verdict='BLOCKED';report.error=String(e.message||e).slice(0,1800);if(browser){try{const pages=browser.contexts().flatMap(c=>c.pages());if(pages.length)await pages[0].screenshot({path:path.join(OUT,'blocked-screen.png')});}catch(_){}}save();process.exitCode=2;}
- finally{if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify(report));}
+ }catch(e){report.verdict='BLOCKED';report.error=fullError(e);if(browser){try{const pages=browser.contexts().flatMap(c=>c.pages());if(pages.length)await pages[0].screenshot({path:path.join(OUT,'blocked-screen.png')});}catch(_){}}save();process.exitCode=2;}
+ finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify(report));}
 }
 if(require.main===module)main();
 module.exports={verifyBase};

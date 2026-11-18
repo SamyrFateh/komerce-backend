@@ -16,6 +16,7 @@ const {confirmTarget}=require('./target-guard');
 const {login}=require('./g6-hub-commitment-chromium');
 const env=process.env;
 const OUT=path.resolve('test-results/g6-hub-shipment');
+const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const ORDER=env.G6_CANONICAL_ORDER_ID,PO=env.G6_CANONICAL_PO_ID,REF=env.G6_CANONICAL_ORDER_REFERENCE;
 const BAG=env.G6_CANONICAL_BAG_ID,BAGREF=env.G6_CANONICAL_BAG_REF,PARCEL=env.G6_CANONICAL_PARCEL_ID;
 const ALLOCATION=env.G6_CANONICAL_ALLOCATION_ID;
@@ -283,7 +284,7 @@ async function main(){
     Number(before.parcelItems[0].quantity)===1&&Number(before.parcelItems[0].qty_shipped)===0&&
     before.parcelEvents.length===0,'G6_SHIPMENT_ALREADY_STARTED_OR_INVALID');
   const placementId=before.placement[0].placement_id;
-  browser=await chromium.launch({headless:true});
+  browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   const actor=await login(browser,'E2E_AGENT_HUB_',{readOnly:true});
   try{
    if(!partialId){
@@ -331,10 +332,10 @@ async function main(){
     'G6_SHIPMENT_HANDOVER_PG_INVALID');
    await runtime();report.next_stage='FORWARDER_RECEIPT';report.verdict='G6_HUB_SHIPMENT_SIMULATED_CHROMIUM_PG_PASS_HANDED_OVER';save();
   }finally{await actor.ctx.close();}
- }catch(e){report.error=String(e.message||e).slice(0,1500);report.verdict='BLOCKED';
+ }catch(e){report.error=fullError(e);report.verdict='BLOCKED';
   try{if(report.db_fingerprint)report.failure_readback=await readback();}catch(_){}
   save();process.exitCode=2;
- }finally{if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify(report));}
+ }finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify(report));}
 }
 if(require.main===module)main();
 module.exports={readback,checkShipment,runtime};
