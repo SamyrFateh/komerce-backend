@@ -71,7 +71,8 @@ async function main(){
   check(po.length===1&&po[0].reference===env.G6_CANONICAL_ORDER_REFERENCE&&
    po[0].simulation_scope==='G6-BUYER'&&po[0].payment_status==='paid'&&
    po[0].sent_note?.startsWith('[SIMULATED / STAGING ONLY]')&&
-   po[0].supplier_order_id==='SIM-STAGING-'+env.G6_CANONICAL_ORDER_REFERENCE&&
+   // PO groupé : référence simulée figée sur la commande de recette de la 1re ligne (étape fournisseur).
+   /^SIM-STAGING-[A-Z0-9][A-Z0-9-]{5,63}$/.test(po[0].supplier_order_id||'')&&
    Number(po[0].manual_executions)===1&&Number(po[0].payment_authorizations)===0,
    'G6_RECEIPT_READBACK_ORDER_NOT_SAME_SIMULATION');
   check(unit.length===1&&unit[0].unit_type==='SUPPLIER_PACKAGE'&&

@@ -20,6 +20,7 @@ const OUT=path.resolve('test-results/g6-hub-vendor-simulation');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const REF=env.G6_CANONICAL_ORDER_REFERENCE||'';
+let SREF=REF;
 const PO=env.G6_CANONICAL_PO_ID||'';
 const ORDER=env.G6_CANONICAL_ORDER_ID||'';
 const UUID=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
@@ -131,45 +132,53 @@ async function main(){
    const form=await openByChromiumGesture(actor.page,'record-sent','sent');
    check((await form.locator('select option').evaluateAll(x=>x.map(i=>i.value))).join(',')==='other',
      'G6_SIM_EXTERNAL_CHANNEL_PRESENT');
-   check(await form.locator('[name="supplier_order_id"]').inputValue()==='SIM-STAGING-'+REF,
-     'G6_SIM_REFERENCE_INCORRECT');
+   // PO groupé : l'écran fige la référence simulée sur la commande de la 1re ligne (FIFO), qui peut être
+   // une autre commande de recette du même PO. Elle doit appartenir à ce PO et être une commande de recette.
+   const prefilled=await form.locator('[name="supplier_order_id"]').inputValue();
+   const m=/^SIM-STAGING-([A-Z0-9][A-Z0-9-]{5,63})$/.exec(prefilled);
+   check(m,'G6_SIM_REFERENCE_INCORRECT');
+   const {rows:onPo}=await db.query(`SELECT 1 FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id
+     JOIN orders o ON o.id=oi.order_id WHERE pl.purchase_order_id=$1 AND pl.cancelled_at IS NULL
+     AND o.reference=$2 AND o.simulation_scope IS NOT NULL LIMIT 1`,[PO,m[1]]);
+   check(onPo.length===1,'G6_SIM_REFERENCE_INCORRECT');
+   SREF=m[1];report.simulation_reference_order=SREF;
    const sentResp=actor.page.waitForResponse(x=>new URL(x.url()).pathname==='/api/purchasing/po/'+PO+'/sent'&&x.request().method()==='POST');
    await humanClick(null,form.locator('[data-hlc-action="submit-sent"]'));
    const sent=await sentResp;
    check(sent.status()===200,'G6_SIM_SEND_HTTP_'+sent.status());
    const sentJson=await sent.json();
    check(sentJson.simulated===true,'G6_SIM_SEND_RESPONSE_UNLABELLED');
-   report.send={http:sent.status(),channel:'other',reference:'SIM-STAGING-'+REF};
+   report.send={http:sent.status(),channel:'other',reference:'SIM-STAGING-'+SREF};
    const afterSend=await state();verifyBase(afterSend);
    check(afterSend.po_status==='notified'&&!!afterSend.sent_at&&afterSend.sent_channel==='other'&&
      afterSend.sent_note?.startsWith('[SIMULATED / STAGING ONLY]')&&
-     afterSend.supplier_order_id==='SIM-STAGING-'+REF&&
+     afterSend.supplier_order_id==='SIM-STAGING-'+SREF&&
      afterSend.confirmed_quantity===null&&Number(afterSend.manual_executions)===0,
      'G6_SIM_SEND_PG_ORACLE_FAILED');
    await actor.page.screenshot({path:path.join(OUT,'sent-simulated.png')});
    await openPo(actor.page);
    const cf=await openByChromiumGesture(actor.page,'confirm-po','confirm');
-   check(await cf.locator('[name="supplier_order_id"]').inputValue()==='SIM-STAGING-'+REF&&
-     await cf.locator('[name="purchase_proof_ref"]').inputValue()==='SIM-STAGING-ACHAT-'+REF&&
-     await cf.locator('[name="seller_label"]').inputValue()==='SIMULATED-STAGING-FOURNISSEUR-'+REF,
+   check(await cf.locator('[name="supplier_order_id"]').inputValue()==='SIM-STAGING-'+SREF&&
+     await cf.locator('[name="purchase_proof_ref"]').inputValue()==='SIM-STAGING-ACHAT-'+SREF&&
+     await cf.locator('[name="seller_label"]').inputValue()==='SIMULATED-STAGING-FOURNISSEUR-'+SREF,
      'G6_SIM_CONFIRM_FORM_PROVENANCE_MISSING');
    const confirmResp=actor.page.waitForResponse(x=>new URL(x.url()).pathname==='/api/purchasing/po/'+PO+'/confirm'&&x.request().method()==='POST');
    await humanClick(null,cf.locator('[data-hlc-action="submit-confirm"]'));
    const confirmed=await confirmResp;
    check(confirmed.status()===200,'G6_SIM_CONFIRM_HTTP_'+confirmed.status());
-   report.confirmation={http:confirmed.status(),proof:'SIM-STAGING-ACHAT-'+REF,
-     seller:'SIMULATED-STAGING-FOURNISSEUR-'+REF};
+   report.confirmation={http:confirmed.status(),proof:'SIM-STAGING-ACHAT-'+SREF,
+     seller:'SIMULATED-STAGING-FOURNISSEUR-'+SREF};
    check(actor.blocked.length===0,'G6_SIM_UNEXPECTED_BROWSER_WRITE');
    await actor.page.screenshot({path:path.join(OUT,'confirmed-simulated.png')});
   }finally{await actor.ctx.close();}
   const after=await state();verifyBase(after);
   check(after.po_status==='confirmed'&&after.sent_channel==='other'&&
     after.sent_note?.startsWith('[SIMULATED / STAGING ONLY]')&&
-    after.supplier_order_id==='SIM-STAGING-'+REF&&
+    after.supplier_order_id==='SIM-STAGING-'+SREF&&
     Number(after.confirmed_quantity)===Number(after.quantity)&&
     Number(after.manual_executions)===1&&
-    after.seller_label==='SIMULATED-STAGING-FOURNISSEUR-'+REF&&
-    after.proof_ref==='SIM-STAGING-ACHAT-'+REF,
+    after.seller_label==='SIMULATED-STAGING-FOURNISSEUR-'+SREF&&
+    after.proof_ref==='SIM-STAGING-ACHAT-'+SREF,
     'G6_SIM_CONFIRM_PG_ORACLE_FAILED');
   await checkedRuntimeSha(report.sha);
   report.after={po_status:after.po_status,sent_channel:after.sent_channel,
