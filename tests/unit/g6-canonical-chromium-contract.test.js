@@ -48,7 +48,7 @@ test('Chromium ActorPool reuses one context per role and separates roles',async(
  expect(await pool.get('agent_relais')).toBe(await pool.get('agent_relais'));
  expect(await pool.get('client')).not.toBe(await pool.get('agent_relais'));
  expect(browser.newContext).toHaveBeenCalledTimes(2);
- expect(()=>pool.get('untrusted_role')).rejects.toThrow('G6_ACTOR_ROLE_UNKNOWN_untrusted_role');
+ await expect(pool.get('untrusted_role')).rejects.toThrow('G6_ACTOR_ROLE_UNKNOWN_untrusted_role');
  await pool.close();expect(closes).toHaveLength(2);
 });
 test('PASS evidence cannot omit human gestures, read-only PG or explicit approved external response',()=>{
