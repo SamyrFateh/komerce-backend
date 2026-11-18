@@ -143,7 +143,7 @@ async function relay(browser,code,expectedRelay){
   actor.page.on('dialog',d=>d.type()==='confirm'?d.accept():d.dismiss());
   // Reuse the role landing page; the real pickup form must still be visible.
   const box=await openRelayLive(actor.page,{
-   selector:'[data-manual-pickup-code]',timeout:30000
+   selector:'[data-manual-pickup-code]',timeout:30000,entry:'remises'
   });
   const input=box.locator('[data-pickup-code-input]');
   check(await input.getAttribute('type')==='password','G6_PICKUP_RELAY_FIELD_MUST_BE_MASKED');
