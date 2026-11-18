@@ -179,7 +179,27 @@ async function main(){
   report.db_fingerprint=target.fingerprint;report.sha=await runtime();
   const before=await readback();checkLink(before,BOX,before.placement[0]?.placement_id);
   report.before=before;save();
-  check(before.box[0].state==='PACKED'&&before.shipments.length===0&&before.shipmentLinks.length===0&&
+  const partialId=env.G6_CANONICAL_PARTIAL_SHIPMENT_ID;
+  const partialPath=env.G6_CANONICAL_PARTIAL_SHIPMENT_REPORT;
+  let shipmentId;
+  if(partialId||partialPath){
+   check(partialId==='ff8591fc-78bb-49a4-b154-247508368d16'&&env.G6_CANONICAL_RESUME_RUN_ID==='44203777890'&&
+    partialPath===path.resolve('test-results/g6-canonical-resume/g6-hub-shipment/report.json'),'G6_SHIPMENT_PARTIAL_BINDING_INVALID');
+   const prior=JSON.parse(fs.readFileSync(partialPath,'utf8'));
+   check(require('node:util').isDeepStrictEqual(before,prior.failure_readback)&&
+    require('node:util').isDeepStrictEqual(before,prior.after_dispatch),'G6_SHIPMENT_PARTIAL_LIVE_DRIFT');
+   checkShipment(before,partialId,'hub_ready');
+   check(before.box[0].state==='DISPATCHED'&&before.shipments[0].hub_draft===true&&
+    before.shipments[0].forwarder_name===null&&before.shipments[0].transport_mode===null&&
+    before.parcels[0].status==='preparation'&&before.parcelItems.length===1&&
+    Number(before.parcelItems[0].qty_shipped)===0&&Number(before.parcelItems[0].quantity)===1&&
+    before.parcelEvents.length===0&&before.shipmentEvents.length===1&&before.shipmentEvents[0].event_type==='opened'&&
+    prior.events?.length===2&&prior.events[0].key==='open-shipment'&&prior.events[0].http===201&&
+    prior.events[1].key==='dispatch-box'&&prior.events[1].http===200,'G6_SHIPMENT_PARTIAL_NOT_READY');
+   shipmentId=partialId;report.shipment_id=shipmentId;report.resumed_from_run_id='44203777890';
+   report.events=prior.events.map(e=>({...e,source_run_id:'44203777890'}));
+   report.after_open=prior.after_open;report.after_dispatch=prior.after_dispatch;save();
+  }else check(before.box[0].state==='PACKED'&&before.shipments.length===0&&before.shipmentLinks.length===0&&
     before.parcels[0].status==='preparation'&&before.parcelItems.length===1&&
     Number(before.parcelItems[0].quantity)===1&&Number(before.parcelItems[0].qty_shipped)===0&&
     before.parcelEvents.length===0,'G6_SHIPMENT_ALREADY_STARTED_OR_INVALID');
@@ -187,6 +207,7 @@ async function main(){
   browser=await chromium.launch({headless:true});
   const actor=await login(browser,'E2E_AGENT_HUB_',{readOnly:true});
   try{
+   if(!partialId){
    let section=await openDetails(actor.page);
    let row=boxRow(section,actor.page);
    await row.waitFor({state:'visible',timeout:25000});
@@ -196,7 +217,7 @@ async function main(){
     b=>b?.reference===SHIPMENT&&b.hub_unit_ids?.length===1&&b.hub_unit_ids[0]===BOX&&Object.keys(b).length===2);
    const opened=await readback();report.after_open=opened;save();
    check(opened.shipments.length===1,'G6_SHIPMENT_NOT_CREATED');
-   const shipmentId=opened.shipments[0].id;
+   shipmentId=opened.shipments[0].id;
    report.shipment_id=shipmentId;save();
    checkShipment(opened,shipmentId,'hub_ready');
    check(opened.box[0].state==='PACKED'&&opened.shipments[0].hub_draft===true&&
@@ -212,6 +233,7 @@ async function main(){
    check(dispatched.box[0].state==='DISPATCHED'&&dispatched.parcels[0].status==='preparation'&&
     dispatched.placement[0].placement_id===placementId&&dispatched.custody.some(e=>e.event_type==='STATE_TRANSITION'&&
       e.from_state==='PACKED'&&e.to_state==='DISPATCHED'&&e.actor_id),'G6_SHIPMENT_DISPATCH_PG_INVALID');
+   }
    const task=await openTransport(actor.page);
    await task.locator('[name="forwarder_name"]').fill(FORWARDER);
    await task.locator('[name="transport_mode"]').selectOption('sea');
