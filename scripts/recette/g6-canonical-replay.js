@@ -395,7 +395,7 @@ async function main(env=process.env) {
   try{
     const scope=validateGuard(env);
     const phase=String(env.G6_CANONICAL_PHASE||'BUYER_CASH');
-    if(!['BUYER_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER'].includes(phase) || (['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER'].includes(phase)&&(scope.id!=='M01'||scope.market!=='KM')))
+    if(!['BUYER_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS'].includes(phase) || (['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS'].includes(phase)&&(scope.id!=='M01'||scope.market!=='KM')))
       throw new Error('G6_CANONICAL_PHASE_NOT_BOUND');
     report.scenario_id=scope.id;report.market=scope.market;
     report.source_matrix_version=scope.source_version;
@@ -408,8 +408,46 @@ async function main(env=process.env) {
     // must fail closed, not rebuild or silently switch to a new buyer.
     let buyer, resumeDiff=null;
     const resumeRun=String(env.G6_CANONICAL_RESUME_RUN_ID||'');
-    if(['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER'].includes(phase)&&!resumeRun)
+    if(['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS'].includes(phase)&&!resumeRun)
       throw new Error('G6_CANONICAL_HUB_REQUIRES_PREVIOUS_STAGE_PROOF');
+    if(phase==='CUSTOMS'){
+      if(resumeRun!=='44257485638'||!fs.existsSync(RESUME_CANONICAL))throw Error('G6_CUSTOMS_EXACT_ARTIFACT_REQUIRED');
+      const previous=JSON.parse(fs.readFileSync(RESUME_CANONICAL,'utf8'));
+      const prior=JSON.parse(fs.readFileSync(path.join(ROOT,'test-results/g6-canonical-resume/g6-canonical-forwarder/report.json'),'utf8'));
+      const a=prior.after?.base,id='56adad65-d1fa-4e80-8d69-c25e0fe92a76',sid='ff8591fc-78bb-49a4-b154-247508368d16';
+      const fingerprint='8acbf99fef010c23eac7d252',po='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3';
+      const box='6ca614e5-869c-40ab-80d7-3684974092fe',bag='bcf810c9-33b2-438a-b4c3-857b024e2247';
+      const parcel='95045ede-d5b8-405b-b65f-d9dbdddb4756',allocation='3b430dcf-8662-44b4-a29f-27e38df19253';
+      if(scope.id!=='M01'||scope.market!=='KM'||previous.scenario_id!=='M01'||previous.market!=='KM'||
+        previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||previous.production_permitted!==false||
+        previous.next_stage!=='CUSTOMS'||previous.order?.id!==id||previous.order?.reference!=='KL1WGP6'||previous.po_id!==po||
+        previous.db_fingerprint!==fingerprint||!previous.stages?.some(x=>x.id==='FORWARDER'&&x.verdict==='PASS_SIMULATED_STAGING'&&x.shipment_id===sid)||
+        prior.verdict!=='G6_FORWARDER_SIMULATED_CHROMIUM_PG_PASS_ARRIVED'||prior.shipment_id!==sid||prior.order_id!==id||
+        prior.db_fingerprint!==fingerprint||prior.role!=='agent_transitaire'||prior.provenance!=='SIMULATED / STAGING ONLY'||
+        prior.external_payment_executed!==false||prior.external_supplier_calls!==0||prior.events?.length!==4||
+        !prior.events.every((e,i)=>e.http===200&&e.key===['forwarder_received','tracking','in_transit','arrived'][i])||
+        a?.shipments?.length!==1||a.shipments[0].id!==sid||a.shipments[0].stage!=='arrived'||
+        a.box?.length!==1||a.box[0].id!==box||a.box[0].state!=='DISPATCHED'||a.bag?.length!==1||a.bag[0].id!==bag||
+        a.parcels?.length!==1||a.parcels[0].id!==parcel||a.parcels[0].status!=='shipped'||
+        a.effective?.length!==1||a.effective[0].allocation_id!==allocation||Number(a.effective[0].quantity)!==1||
+        prior.after.tracking?.tracking_reference!=='SIM-STAGING-TRK-KL1WGP6'||!prior.after.tracking.arrived_at)
+        throw Error('G6_CUSTOMS_FORWARDER_PROVENANCE_INVALID');
+      report.resumed_from_run_id=resumeRun;report.order=previous.order;report.po_id=po;report.db_fingerprint=fingerprint;
+      report.stages=previous.stages;report.next_stage='CUSTOMS';save();
+      const result=executeExisting('scripts/recette/g6-canonical-customs-chromium.js',
+        path.join(ROOT,'test-results/g6-canonical-customs/report.json'),{...env,PGOPTIONS:'-c default_transaction_read_only=on',
+        G6_CANONICAL_ORDER_ID:id,G6_CANONICAL_ORDER_REFERENCE:'KL1WGP6',G6_CANONICAL_PO_ID:po,
+        G6_CANONICAL_DB_FINGERPRINT:fingerprint,G6_CANONICAL_BAG_ID:bag,G6_CANONICAL_BAG_REF:a.bag[0].reference,
+        G6_CANONICAL_PARCEL_ID:parcel,G6_CANONICAL_ALLOCATION_ID:allocation,G6_CANONICAL_BOX_ID:box});
+      if(result.verdict!=='G6_CUSTOMS_LOCAL_SIMULATED_CHROMIUM_PG_PASS'||result.shipment_id!==sid||
+        result.order_id!==id||result.db_fingerprint!==fingerprint||result.events?.length!==5||
+        result.external_payment_executed!==false||result.external_supplier_calls!==0||
+        result.after?.base?.shipments?.[0]?.stage!=='local_delivery'||!result.after.linked)
+        throw Error('G6_CUSTOMS_FINAL_PROOF_INVALID');
+      report.stages.push({id:'CUSTOMS_LOCAL',verdict:'PASS_SIMULATED_STAGING',via:'Chromium_UI',shipment_id:sid,
+        evidence:'test-results/g6-canonical-customs/report.json'});
+      report.next_stage='RELAY_RECEIPT';report.verdict='NOT_PROVEN';save();return report;
+    }
     if(phase==='FORWARDER'){
       if(resumeRun!=='44210239102'||!fs.existsSync(RESUME_CANONICAL)||!fs.existsSync(RESUME_SHIPMENT))
         throw Error('G6_FORWARDER_EXACT_ARTIFACT_REQUIRED');
