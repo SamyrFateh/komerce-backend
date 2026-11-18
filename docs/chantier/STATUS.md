@@ -26,7 +26,13 @@
 8. **Produit, Expéditions & Douane.** Un repaint asynchrone referme la tâche `<details>` qu'on vient d'ouvrir, avant la saisie. C'est un défaut réel pour un humain (#4591, même famille que P1 Hub).
 6. **Runner.** `g6-canonical-replay.js` garde `KM` en dur, hors du chemin dynamique (#4575). Il faut l'aligner sur le profil de marché ou le retirer.
 
-**G6-MARKET — M01/CM (Opus) : CRITÈRE CM ATTEINT, 3 runs consécutifs à 15/15** sur le SHA `6e06bdc5`, avec les commandes neuves K74B6WQ (#4592), K1TBS8T (#4593) et KUHZB3Z (#4594). La non-régression M01/KM est PASS 15/15 sur le même SHA (K8RQG02, #4595). Correctifs du runner pendant la campagne CM : #4575 (marché paramétré), #4578 (500 devenu 409), #4580, #4582, #4585, #4587, #4589 et #4591. Aucun défaut métier bloquant. **Prochaine action :** 3 runs M01/CG (#4596 en cours), puis la revue indépendante G6-F, puis le traitement de G6-SUIVIS.
+**G6-MARKET — M01 RÉPÉTABLE SUR KM, CM ET CG (Opus)** : 3 runs consécutifs à 15/15 par marché.
+- **CM :** K74B6WQ, K1TBS8T, KUHZB3Z (#4592 à #4594).
+- **CG :** KF6YBVR, KL320KI, KRB936P (#4601 à #4603).
+- **Non-régression sur le SHA final `2f1915ef` :** KM KP3X5BG (#4604) et CM K6RS4S6 (#4605), toutes deux en PASS.
+- **Correctifs runner et produit :** #4575, #4578, #4580, #4582, #4585, #4587, #4589, #4591, #4598, ainsi que #4600 (règle de simulation G6 étendue au PO 100 % G6, sur arbitrage du propriétaire).
+- Synthèse : #4550.
+- **Prochaine action :** revue indépendante G6-F, puis correction de G6-SUIVIS (prompt GPT remis au propriétaire), puis extension aux 46 scénarios, sur GO du propriétaire.
 
 **G6-FIAB — répétabilité M01/KM (Opus) : CRITÈRE KM ATTEINT, 3 runs consécutifs à 15/15** sur le SHA `52d643da0`, avec trois commandes neuves : K7P4MUF (#4571), KZ4QJ61 (#4572) et K66JA0T (#4573), dans Chromium avec les oracles PG. Les 7 correctifs du runner, chacun diagnostiqué par trace : #4558, #4560, #4562, #4564, #4566, #4568, #4570. Aucun défaut métier. Synthèse : [#4550](https://github.com/SamyrFateh/komerce-backend/issues/4550#issuecomment-6989600030). **Prochaine action :** 3 runs M01 à 15/15 en CM ou CG (passe différentielle), puis revue indépendante G6-F, qui doit valider la navigation de #4566, #4568 et #4570, puis nettoyage par l'écran des commandes de recette orphelines. Extension aux 46 scénarios ensuite, sur GO du propriétaire.
 
