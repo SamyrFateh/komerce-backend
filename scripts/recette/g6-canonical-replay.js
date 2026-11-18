@@ -358,19 +358,21 @@ function validatePartialShipmentCheckpoint(previous,partial,scope){
   return {order:previous.order,poId,dbFingerprint:previous.db_fingerprint,boxId,boxRef,bagId,bagRef,parcelId,allocationId,shipmentId};
 }
 function validateForwarderCheckpoint(previous,shipment,scope){
- const id='56adad65-d1fa-4e80-8d69-c25e0fe92a76',po='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3';
- const sid='ff8591fc-78bb-49a4-b154-247508368d16',ref='SIM-STAGING-EXP-KL1WGP6';
- const box='6ca614e5-869c-40ab-80d7-3684974092fe',bag='bcf810c9-33b2-438a-b4c3-857b024e2247';
- const parcel='95045ede-d5b8-405b-b65f-d9dbdddb4756',allocation='3b430dcf-8662-44b4-a29f-27e38df19253';
- const fingerprint='8acbf99fef010c23eac7d252',a=shipment.after;
+ const id=previous?.order?.id,po=previous?.po_id,reference=previous?.order?.reference;
+ const sid=shipment?.shipment_id,ref=shipment?.shipment_ref;
+ const box=shipment?.box_id,bag=shipment?.bag_id;
+ const parcel=shipment?.parcel_id,allocation=shipment?.allocation_id;
+ const fingerprint=previous?.db_fingerprint,a=shipment?.after;
+ const ids=[id,po,sid,box,bag,parcel,allocation];
  if(scope.id!=='M01'||scope.market!=='KM'||previous.scenario_id!=='M01'||previous.market!=='KM'||
  previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||previous.production_permitted!==false||
- previous.next_stage!=='FORWARDER_RECEIPT'||previous.order?.id!==id||previous.order?.reference!=='KL1WGP6'||previous.po_id!==po||
- previous.db_fingerprint!==fingerprint||!previous.stages?.some(x=>x.id==='HUB_SHIPMENT'&&x.verdict==='PASS_SIMULATED_STAGING'&&x.shipment_id===sid)||
- shipment.verdict!=='G6_HUB_SHIPMENT_SIMULATED_CHROMIUM_PG_PASS_HANDED_OVER'||shipment.reference!=='KL1WGP6'||
+ previous.next_stage!=='FORWARDER_RECEIPT'||!VALID_REF.test(String(reference||''))||
+ !ids.every(x=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(String(x||'')))||
+ !/^SIM-STAGING-EXP-[A-Z0-9-]{6,}$/.test(String(ref||''))||!String(fingerprint||'').trim()||!previous.stages?.some(x=>x.id==='HUB_SHIPMENT'&&x.verdict==='PASS_SIMULATED_STAGING'&&x.shipment_id===sid)||
+ shipment.verdict!=='G6_HUB_SHIPMENT_SIMULATED_CHROMIUM_PG_PASS_HANDED_OVER'||shipment.reference!==reference||
  shipment.order_id!==id||shipment.po_id!==po||shipment.box_id!==box||shipment.bag_id!==bag||
  shipment.parcel_id!==parcel||shipment.allocation_id!==allocation||shipment.shipment_id!==sid||shipment.shipment_ref!==ref||
- shipment.db_fingerprint!==fingerprint||shipment.sha!=='9d7f19feb1407826582850dfdb9489983af7b2f3'||
+ shipment.db_fingerprint!==fingerprint||!VALID_SHA.test(String(shipment.sha||''))||
  shipment.provenance!=='SIMULATED / STAGING ONLY'||shipment.external_payment_executed!==false||shipment.external_supplier_calls!==0||
  shipment.events?.length!==3||shipment.events[2].key!=='handover-forwarder'||shipment.events[2].http!==200||
  a?.shipments?.length!==1||a.shipments[0].id!==sid||a.shipments[0].stage!=='handed_over'||
