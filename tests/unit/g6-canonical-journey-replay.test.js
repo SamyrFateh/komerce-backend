@@ -170,6 +170,33 @@ describe('G6 canonical journey — same order, original matrix, real staging gua
     expect(()=>validateHubProof({...h,final:{...h.final,cash_collection_count:2}},order,{reference:'K123456'})).toThrow();
     expect(()=>validateHubProof({...h,external_payment_executed:true},order,{reference:'K123456'})).toThrow();
   });
+  test('HUB_PO passe par le contrat des étapes et vérifie la commande déjà payée',async()=>{
+    const stage=stageGraph(loadGoldenStages()).byId.get('HUB_PO');
+    const order={id:buyer.order.id,reference:buyer.order.reference};
+    const paid={reference:buyer.order.reference,paid:true};
+    const hub={verdict:'G6_P3_MANUAL_LINE_AND_DRAFT_PO_CHROMIUM_PASS',
+      reference:order.reference,external_supplier_calls:0,external_payment_executed:false,
+      final:{order_id:order.id,payment_status:'paid',line_count:1,po_count:1,
+        cash_collection_count:1,cash_control_confirmed_count:1}};
+    const execute=jest.fn(id=>{expect(id).toBe('HUB_PO');return hub;});
+    expect(await stage.run({runCertifiedStage:execute})).toBe(hub);
+    expect(execute).toHaveBeenCalledTimes(1);
+    const oracle=jest.fn((id,proof)=>{
+      expect(id).toBe('HUB_PO');
+      return validateHubProof(proof,order,paid);
+    });
+    expect(stage.validate({validateCertifiedStage:oracle},hub)).toMatchObject({
+      reference:order.reference,po_count:1
+    });
+    expect(oracle).toHaveBeenCalledTimes(1);
+    expect(()=>stage.validate({validateCertifiedStage:oracle},{...hub,reference:'FOREIGN'})).toThrow();
+    expect(()=>stage.validate({validateCertifiedStage:oracle},{
+      ...hub,external_payment_executed:true
+    })).toThrow();
+    await expect(stage.run({runCertifiedStage:()=>{throw Error('HUB_UI_UNAVAILABLE');}}))
+      .rejects.toThrow('HUB_UI_UNAVAILABLE');
+    expect(()=>stage.validate({},hub)).toThrow('G6_STAGE_VALIDATOR_NOT_BOUND_HUB_PO');
+  });
   test('la reprise directrice est attachée à une PO unique, à la même commande payée et au vrai rapport G6',()=>{
     const poId='11111111-1111-4111-8111-111111111111';
     const prior={
