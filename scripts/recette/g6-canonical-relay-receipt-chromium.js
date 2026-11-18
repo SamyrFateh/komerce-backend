@@ -75,7 +75,25 @@ async function attachDedicatedRelayByUI(browser,agentId,orderRelay){
   await runtime();
   await admin.page.goto('/dashboards/canonical/market-autonomy.html?market=KM',{waitUntil:'domcontentloaded'});
   const panel=admin.page.locator('[data-market-network]');
-  await panel.waitFor({state:'visible',timeout:25000});
+  try{await panel.waitFor({state:'visible',timeout:15000})}catch(error){
+   const ui=await admin.page.locator('#market-autonomy-root').evaluate(e=>({
+    class_name:e.className,heading:e.querySelector('h1')?.textContent?.slice(0,90)||null,
+    body:e.textContent?.trim().slice(0,180)||null
+   })).catch(()=>({class_name:'ROOT_MISSING'}));
+   const requests={};
+   for(const [label,url] of [
+    ['context','/api/admin/dashboard/context'],
+    ['pricing','/api/admin/workspaces/pricing/market/KM'],
+    ['network','/api/market-delegation/markets/KM/network/relais']
+   ]){
+    const response=await admin.page.request.get(url).catch(()=>null);
+    requests[label]=response?.status()||0;
+   }
+   report.network_ui_diagnostic={path:new URL(admin.page.url()).pathname,ui,requests};
+   save();
+   throw Error('G6_RELAY_NETWORK_SCREEN_UNAVAILABLE_'+
+    [ui.class_name,requests.context,requests.pricing,requests.network].join('_'));
+  }
   const card=admin.page.locator('.kmc-team-member').filter({has:admin.page.locator('strong',{hasText:relay[0].name})});
   check(await card.count()===1,'G6_RELAY_ASSIGNMENT_CARD_NOT_UNIQUE');
   const select=card.locator('select[data-agent-select]');
