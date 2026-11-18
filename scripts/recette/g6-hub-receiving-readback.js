@@ -28,9 +28,13 @@ async function main(){
    env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&
    env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&
    env.G6_CANONICAL_PHASE==='HUB_RECEIVING_READBACK'&&
-   env.G6_CANONICAL_ORDER_REFERENCE==='KL1WGP6'&&
-   env.G6_CANONICAL_PO_ID==='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3'&&
-   env.G6_CANONICAL_ORDER_ID==='56adad65-d1fa-4e80-8d69-c25e0fe92a76'&&
+   ((env.G6_CANONICAL_ORDER_REFERENCE==='KL1WGP6'&&
+     env.G6_CANONICAL_PO_ID==='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3'&&
+     env.G6_CANONICAL_ORDER_ID==='56adad65-d1fa-4e80-8d69-c25e0fe92a76')||
+    (env.G6_DYNAMIC_FRESH_ORDER==='1'&&
+     /^[A-Z0-9][A-Z0-9-]{5,63}$/.test(env.G6_CANONICAL_ORDER_REFERENCE||'')&&
+     /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(env.G6_CANONICAL_PO_ID||'')&&
+     /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(env.G6_CANONICAL_ORDER_ID||'')))&&
    /^SUPPLIER_PACKAGE-[a-f0-9-]{36}$/i.test(env.G6_CANONICAL_RECEIPT_REFERENCE||'')&&
    !!env.DATABASE_URL,'G6_RECEIPT_READBACK_SCOPE_INVALID');
   const target=await confirmTarget({db,env});
@@ -64,15 +68,15 @@ async function main(){
     +'WHERE pl.purchase_order_id=$1 AND NOT v.cancelled',[env.G6_CANONICAL_PO_ID])).rows[0]?.remaining;
   report.readback={po:po[0]||null,placements:unit,remaining};
   save();
-  check(po.length===1&&po[0].reference==='KL1WGP6'&&
+  check(po.length===1&&po[0].reference===env.G6_CANONICAL_ORDER_REFERENCE&&
    po[0].simulation_scope==='G6-BUYER'&&po[0].payment_status==='paid'&&
    po[0].sent_note?.startsWith('[SIMULATED / STAGING ONLY]')&&
-   po[0].supplier_order_id==='SIM-STAGING-KL1WGP6'&&
+   po[0].supplier_order_id==='SIM-STAGING-'+env.G6_CANONICAL_ORDER_REFERENCE&&
    Number(po[0].manual_executions)===1&&Number(po[0].payment_authorizations)===0,
    'G6_RECEIPT_READBACK_ORDER_NOT_SAME_SIMULATION');
   check(unit.length===1&&unit[0].unit_type==='SUPPLIER_PACKAGE'&&
    unit[0].operation_type==='RECEIVE'&&unit[0].evidence_method==='MANUAL'&&
-   unit[0].evidence_ref==='[SIMULATED / STAGING ONLY] G6-M01-RECEPTION-KL1WGP6'&&
+   unit[0].evidence_ref==='[SIMULATED / STAGING ONLY] G6-M01-RECEPTION-'+env.G6_CANONICAL_ORDER_REFERENCE&&
    Number(unit[0].quantity)===1&&unit[0].purchase_line_id===po[0].line_id&&
    remaining===0,'G6_RECEIPT_READBACK_PHYSICAL_ALLOCATION_INCOMPLETE');
   report.verdict='G6_HUB_RECEIPT_SIMULATED_CHROMIUM_HISTORICAL_UI_PG_READBACK_PASS';
