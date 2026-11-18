@@ -395,6 +395,11 @@ async function main(env=process.env) {
   save();
   try{
     const scope=validateGuard(env);
+    // Explicit dynamic-resume requests must never fall back to a historical
+    // fixture run. They require independently attested checkpoint verification,
+    // which is not yet an executable capability of this legacy runner.
+    if(env.G6_CANONICAL_FROM_STAGE)
+      throw Error('G6_CANONICAL_DYNAMIC_RESUME_REQUIRES_CERTIFIED_CHECKPOINT_RUNNER');
     const phase=String(env.G6_CANONICAL_PHASE||'BUYER_CASH');
     // The registry verifies declared stages before the certified legacy executor
     // handles their proven Chromium/PG implementation. NO stage may self-authorize.
