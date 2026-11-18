@@ -140,7 +140,36 @@ async function main(){
    check(await form.locator('input[name="amount"]').count()===0,
     'G6_COMMITMENT_SUPPLIER_PRICE_MISSING_NO_FICTITIOUS_AMOUNT');
    const proof='E2E-STAGING-ENGAGEMENT-'+env.G6_CANONICAL_ORDER_REFERENCE;
-   await form.locator('input[name="proof_ref"]').fill(proof);
+   const proofField=form.locator('input[name="proof_ref"]');
+   check(await proofField.isVisible()&&await proofField.isEnabled()&&
+     await proofField.isEditable(),'G6_COMMITMENT_PROOF_FIELD_NOT_EDITABLE');
+   let inputGesture='playwright-fill';
+   try{
+     // The live Hub cockpit may repaint the form during Playwright fill.
+     // Make a bounded attempt before an actual pointer+keyboard gesture.
+     await proofField.fill(proof,{timeout:6500});
+   }catch(fillError){
+     inputGesture='pointer-keyboard';
+     try{
+       await proofField.click({timeout:6500});
+       await director.page.keyboard.press('ControlOrMeta+A');
+       await director.page.keyboard.type(proof,{delay:0});
+     }catch(keyboardError){
+       report.proof_input_diagnostic={gesture:inputGesture,
+         visible:await proofField.isVisible().catch(()=>false),
+         enabled:await proofField.isEnabled().catch(()=>false),
+         editable:await proofField.isEditable().catch(()=>false),
+         fill_error:String(fillError.message||fillError).slice(0,190),
+         keyboard_error:String(keyboardError.message||keyboardError).slice(0,190)};
+       save();
+       await director.page.screenshot({path:path.join(OUT,'director-proof-input-blocked.png')}).catch(()=>{});
+       throw Error('G6_COMMITMENT_REAL_CHROMIUM_PROOF_INPUT_BLOCKED');
+     }
+   }
+   check(await proofField.inputValue()===proof,
+     'G6_COMMITMENT_PROOF_INPUT_VALUE_NOT_STABLE');
+   report.proof_input_diagnostic={gesture:inputGesture,stable:true};
+   save();
    const response=director.page.waitForResponse(x=>new URL(x.url()).pathname===
     '/api/purchasing/po/'+env.G6_CANONICAL_PO_ID+'/authorize-commitment'&&
     x.request().method()==='POST',{timeout:30000});
