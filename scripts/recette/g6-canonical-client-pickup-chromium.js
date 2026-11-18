@@ -84,8 +84,8 @@ async function customer(browser,owner){
   await page.locator('#k-id-step-phone').waitFor({state:'visible',timeout:20000});
   await humanFill(null,page.locator('#k-id-name'),'G6');
   await humanFill(null,page.locator('#k-id-lastname'),'E2E');
-  await humanSelect(null,page.locator('#k-id-phone-country'),'+269');
-  await humanFill(null,page.locator('#k-id-phone'),owner.phone.slice(4));
+  await humanSelect(null,page.locator('#k-id-phone-country'),MK.dial);
+  await humanFill(null,page.locator('#k-id-phone'),owner.phone.slice(MK.dial.length));
   const req=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/otp/request'&&r.request().method()==='POST',{timeout:20000});
   await humanClick(null,page.locator('#k-id-phone-cta'));
   check((await req).status()===200,'G6_PICKUP_OTP_REQUEST_REJECTED');
