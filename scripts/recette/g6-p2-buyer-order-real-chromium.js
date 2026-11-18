@@ -152,9 +152,39 @@ async function browserCheckout({buyer,phone,code}){
   await page.locator('#k-id-lastname').fill('E2E');
   await page.locator('#k-id-phone-country').selectOption(COUNTRY_PREFIX[MARKET]);
   await page.locator('#k-id-phone').fill(phone.slice(COUNTRY_PREFIX[MARKET].length));
-  const req=page.waitForResponse(r=>r.url().endsWith('/api/auth/otp/request')&&r.request().method()==='POST',{timeout:15000});
+  // Check the actual rendered form's eligibility BEFORE the UI click. An
+  // incomplete form silently returns from requestCode without a network POST.
+  // This is a real Chromium readback only; never alter DOM state to bypass it.
+  const eligibility=await page.locator('#k-id-step-phone').evaluate(step=>{
+   const phone=step.querySelector('#k-id-phone');
+   const country=step.querySelector('#k-id-phone-country');
+   const cta=step.querySelector('#k-id-phone-cta');
+   return {step_visible:!step.hidden,phone_length:(phone?.value||'').replace(/\\D/g,'').length,
+     country_code:country?.value||null,aria_disabled:cta?.getAttribute('aria-disabled'),
+     native_disabled:!!cta?.disabled,name_present:!!step.querySelector('#k-id-name')?.value?.trim(),
+     surname_present:!!step.querySelector('#k-id-lastname')?.value?.trim(),
+     form_error:step.querySelector('#k-id-err-phone')?.textContent?.slice(0,100)||null};
+  });
+  record('OTP_UI_FORM_PRECHECK',eligibility);
+  await page.screenshot({path:path.join(OUT,'00-real-otp-form-precheck.png')});
+  check(eligibility.step_visible&&eligibility.phone_length===
+    (MARKET==='KM'?7:9)&&eligibility.aria_disabled==='false'&&
+    !eligibility.native_disabled&&eligibility.name_present&&eligibility.surname_present,
+    'G6_OTP_CHROMIUM_FORM_NOT_SUBMITTABLE');
+  const otpPath='/api/auth/otp/request';
+  const otpRequest=page.waitForRequest(r=>new URL(r.url()).pathname===otpPath&&
+     r.method()==='POST',{timeout:15000}).catch(()=>null);
+  const otpResponse=page.waitForResponse(r=>new URL(r.url()).pathname===otpPath&&
+     r.request().method()==='POST',{timeout:18000}).catch(()=>null);
   await page.locator('#k-id-phone-cta').click();
-  const rr=await req,rb=await rr.json().catch(()=>null);
+  const sent=await otpRequest,rr=await otpResponse;
+  if(!sent||!rr){
+   record('OTP_UI_NO_RESPONSE',{request_seen:!!sent,response_seen:!!rr,
+    blocked_paths:report.blocked_requests.map(x=>x.path)});
+   await page.screenshot({path:path.join(OUT,'00-real-otp-request-blocked.png')});
+   throw Error(sent?'G6_OTP_REQUEST_WITHOUT_RESPONSE':'G6_OTP_UI_CLICK_DID_NOT_SEND_REQUEST');
+  }
+  const rb=await rr.json().catch(()=>null);
   check(rr.status()===200&&rb?.success===true&&!rb?._test&&!rb?._dev,'OTP_REQUEST_NOT_ISOLATED');
   await page.locator('#k-id-step-otp').waitFor({state:'visible',timeout:12000});
   await page.screenshot({path:path.join(OUT,'01-real-otp-without-whatsapp.png')});
