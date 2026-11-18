@@ -16,6 +16,7 @@ const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
 const {readback,runtime}=require('./g6-hub-shipment-chromium');
 const {login}=require('./g6-canonical-forwarder-chromium');
+const {openRelayLive}=require('./canonical/relay-live-navigation');
 const env=process.env,BASE='https://komerce-backend-production.up.railway.app';
 const ID=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_ID:'ff8591fc-78bb-49a4-b154-247508368d16',REF=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_REF:'SIM-STAGING-EXP-KL1WGP6';
 const ORDER=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ID:'56adad65-d1fa-4e80-8d69-c25e0fe92a76', PARCEL=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_PARCEL_ID:'95045ede-d5b8-405b-b65f-d9dbdddb4756';
@@ -153,9 +154,11 @@ async function main(){
   const {rows:bound}=await db.query('SELECT relais_id FROM users WHERE id=$1',[profile.id]);
   check(bound.length===1&&bound[0].relais_id===before.orders[0].relais_id,
     'G6_RELAY_ACTOR_NOT_ORDER_RELAY');
-  await actor.page.goto('/admin/relais-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
-  const card=actor.page.locator('[data-relay-shipment="'+REF+'"]');
-  await card.waitFor({state:'visible',timeout:25000});
+  // The role-based login may redirect to this canonical page concurrently.
+  // Require the actual shipment card after navigation; do not bypass UI.
+  const card=await openRelayLive(actor.page,{
+   selector:'[data-relay-shipment="'+REF+'"]',timeout:25000
+  });
   check(await card.getAttribute('data-relay-receivable')==='true','G6_RELAY_UI_NOT_RECEIVABLE');
   if(!await card.evaluate(el=>el.open))await card.locator('summary').first().click();
   const field=card.locator('input[data-relay-received]');
