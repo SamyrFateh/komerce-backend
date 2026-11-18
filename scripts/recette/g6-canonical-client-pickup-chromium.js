@@ -170,7 +170,7 @@ async function main(){
   const owner=before.orders[0];
   check(isDeepStrictEqual(before.base,prior.after.base)&&before.base.shipments[0].stage==='relay_received'&&
     before.base.parcels[0].status==='available'&&owner.status==='available'&&owner.payment_status==='paid'&&
-    owner.user_id===owner.pickup_code_recipient_user_id||false,'G6_PICKUP_PRECONDITION_OWNER_INVALID');
+    (!owner.pickup_code_recipient_user_id||owner.user_id===owner.pickup_code_recipient_user_id),'G6_PICKUP_PRECONDITION_OWNER_INVALID');
   check(owner.role==='client'&&!!owner.phone&&!!owner.pickup_secret_hash&&before.scans.length===0&&
     Number(before.lines[0].qty_received)===1&&Number(before.lines[0].qty_collected)===0,
     'G6_PICKUP_PRECONDITION_PHYSICAL_INVALID');
@@ -188,7 +188,7 @@ async function main(){
     after.base.shipments[0].stage==='relay_received'&&
     Number(after.lines[0].qty_collected)===1&&after.scans.length===1&&
     after.scans[0].scanned_by===agent&&after.scans[0].pickup_relais_id===owner.relais_id&&
-    after.scans[0].pickup_method==='code'&&after.receipts.length===1&&
+    after.scans[0].pickup_method==='PICKUP_CODE'&&after.receipts.length===1&&
     isDeepStrictEqual(after.receipts,before.receipts),
     'G6_PICKUP_FINAL_PG_INVALID');
   await runtime();
