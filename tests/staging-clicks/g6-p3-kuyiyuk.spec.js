@@ -8,7 +8,8 @@
  * @impact-areas  purchasing, admin-dashboard, staging-only
  */
 'use strict';
-const MK=require('../../scripts/recette/canonical/market-profile').marketProfile(process.env);
+const {marketProfile,marketOption}=require('../../scripts/recette/canonical/market-profile');
+const MK=marketProfile(process.env);
 const {humanGoto}=require('../../scripts/recette/canonical/actors/human-gestures');
 const fs=require('node:fs');
 const path=require('node:path');
@@ -127,7 +128,7 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
       try{
         await humanGoto(relayPage,'/admin/relais-live?view=execute',{waitUntil:'domcontentloaded'});
         await relayPage.locator('select').first().waitFor({timeout:20000});
-        await relayPage.locator('select').first().selectOption({label:MK.label});
+        await relayPage.locator('select').first().selectOption(await marketOption(MK,relayPage.locator('select').first()));
         await relayPage.waitForLoadState('networkidle').catch(()=>{});
         const cashScope=await relayPage.evaluate(async(mk)=>{
           const [meResponse,workspaceResponse]=await Promise.all([
@@ -174,7 +175,7 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
     try{
       await humanGoto(page,'/admin/hub-live?view=execute',{waitUntil:'domcontentloaded'});
       await page.locator('select').first().waitFor({timeout:20000});
-      await page.locator('select').first().selectOption({label:MK.label}).catch(()=>{});
+      await page.locator('select').first().selectOption(await marketOption(MK,page.locator('select').first()));
       await page.waitForLoadState('networkidle').catch(()=>{});
       const dossiers=page.getByRole('tab',{name:'Dossiers'});
       if(await dossiers.count())await dossiers.click();

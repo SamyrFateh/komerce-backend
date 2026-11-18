@@ -19,4 +19,13 @@ function marketProfile(env=process.env){
  if(!Object.hasOwn(PROFILES,code))throw Error('G6_UNSUPPORTED_MARKET');
  return PROFILES[code];
 }
-module.exports={marketProfile,PROFILES};
+// Option du sélecteur de marché de l'admin : libellés issus de la base (« CG · République du Congo »…),
+// donc reconnue par son code (valeur ou préfixe « CG · »), jamais par un libellé figé.
+async function marketOption(profile,select){
+ const opts=await select.locator('option').evaluateAll(es=>es.map(e=>({v:e.value||'',t:(e.textContent||'').trim()})));
+ const c=profile.code;
+ const o=opts.find(x=>x.v.toUpperCase()===c)||opts.find(x=>x.t.startsWith(c+' ·')||x.t.startsWith(c+' -')||x.t.startsWith(c+' '));
+ if(!o)throw Error('G6_MARKET_OPTION_MISSING_'+c);
+ return {value:o.v};
+}
+module.exports={marketProfile,marketOption,PROFILES};

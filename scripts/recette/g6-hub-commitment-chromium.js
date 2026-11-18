@@ -96,7 +96,7 @@ async function openPo(page){
  await humanGoto(page,'/admin/hub-live?view=execute&market='+MK.code+'',{waitUntil:'domcontentloaded'});
  const sel=page.locator('select').first();
  await sel.waitFor({timeout:20000});
- await humanSelect(null,sel,{label:MK.label}).catch(()=>{});
+ await humanSelect(null,sel,await require('./canonical/market-profile').marketOption(MK,sel));
  const po=page.locator('[data-hlc-po="'+env.G6_CANONICAL_PO_ID+'"]');
  await po.waitFor({state:'visible',timeout:25000});
  const shown=await po.locator('[data-hlc-po-line]').count();
