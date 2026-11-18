@@ -49,6 +49,19 @@ describe('G6 real Chromium/PG adapter — strict scope and no historical fallbac
     .rejects.toThrow('G6_DYNAMIC_BUYER_CHECKPOINT_MISSING');
   }
  );
+ test('physical receipt is read only for stages after HUB_RECEIVING',()=>{
+  const fs=require('node:fs'),path=require('node:path');
+  const src=fs.readFileSync(path.resolve(__dirname,
+   '../../scripts/recette/canonical/real-buyer-cash-adapters.js'),'utf8');
+  expect(src).toContain("const receipt=needsReceipt?report('HUB_RECEIVING').data:null");
+  const start=src.indexOf('const needsReceipt=');
+  const end=src.indexOf(';',start);
+  const text=src.slice(start,end);
+  for(const stage of ['HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING'])
+   expect(text).not.toContain("'"+stage+"'");
+  for(const stage of ['HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX'])
+   expect(text).toContain("'"+stage+"'");
+ });
  test('requires database adapter and stage evidence',()=>{
   expect(()=>createRealBuyerCashAdapters({env})).toThrow('G6_DYNAMIC_DATABASE_REQUIRED');
  });
