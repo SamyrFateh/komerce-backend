@@ -66,6 +66,18 @@ describe('G6 Golden declarative stage registry (non-mutating)',()=>{
    .rejects.toThrow('CHROMIUM_FAIL_CLOSED');
   expect(()=>stage.validate({},proof)).toThrow('G6_STAGE_VALIDATOR_NOT_BOUND_'+id);
  });
+ test('historical phase aliases and all registered stage IDs remain unambiguous',()=>{
+  const graph=stageGraph(loadGoldenStages());
+  expect(graph.order).toHaveLength(15);
+  expect(new Set(graph.order).size).toBe(15);
+  expect(resolvePhase('BUYER_CASH',graph).id).toBe('RELAY_CASH');
+  expect(graph.order.slice(3)).toEqual([
+   'HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION',
+   'HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG',
+   'HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP'
+  ]);
+  expect(()=>resolvePhase('UNKNOWN_STAGE',graph)).toThrow(/NOT_REGISTERED/);
+ });
  test('dry run is a graph plan, not a new shipment or a certified execution',()=>{
   const plan=planGolden({fromStage:'RELAY_RECEIPT',toStage:'CLIENT_PICKUP'});
   expect(plan).toMatchObject({contract:'G6-CANONICAL-JOURNEY-v1',mode:'dry-run',
