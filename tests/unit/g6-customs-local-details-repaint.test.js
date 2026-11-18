@@ -8,7 +8,7 @@ describe('G6 customs local delivery — repaint can close details without losing
   expect(()=>new vm.Script(source)).not.toThrow();
   expect(source).toContain("G6_JOURNEY_SUBMIT_HIDDEN_AFTER_REAL_UI_DISCLOSURE");
   expect(source).toContain("G6_JOURNEY_DETAILS_NOT_OPEN");
-  expect(source).toContain("item.locator('summary').click({timeout:8000})");
+  expect(source).toContain("humanClick(null,item.locator('summary'),{timeout:8000})");
   expect(source).toContain("submit.waitFor({state:'visible',timeout:5000})");
   expect(source).not.toContain("submit.click({force:true})");
  });

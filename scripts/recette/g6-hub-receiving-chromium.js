@@ -9,6 +9,7 @@
  * @impact-areas hub, purchasing, staging-only
  */
 'use strict';
+const MK=require('./canonical/market-profile').marketProfile(process.env);
 const fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('playwright');
 const db=require('../../db');
@@ -17,12 +18,14 @@ const {login}=require('./g6-hub-commitment-chromium');
 const env=process.env;
 const ROOT=path.resolve(__dirname,'../..');
 const OUT=path.join(ROOT,'test-results/g6-hub-receiving');
+const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const ORDER=env.G6_CANONICAL_ORDER_ID||'';
 const PO=env.G6_CANONICAL_PO_ID||'';
 const REF=env.G6_CANONICAL_ORDER_REFERENCE||'';
 const SHA=/^[a-f0-9]{40}$/i;
 const UUID=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
-const report={schema:'komerce-g6-hub-receiving/1',scenario_id:'M01',market:'KM',
+const report={schema:'komerce-g6-hub-receiving/1',scenario_id:'M01',market:MK.code,
   reference:REF,order_id:ORDER,po_id:PO,verdict:'BLOCKED',
   provenance:'SIMULATED / STAGING ONLY',physical_receipt_certified:false,
   external_supplier_calls:0,external_payment_executed:false};
@@ -82,7 +85,7 @@ async function main(){
     env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.NODE_ENV==='test'&&
     env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&
     env.G6_CANONICAL_PHASE==='HUB_RECEIVING'&&env.G6_CANONICAL_SCENARIO==='M01'&&
-    env.G6_TARGET_MARKET==='KM'&&(REF==='KL1WGP6'||(env.G6_DYNAMIC_FRESH_ORDER==='1'&&/^[A-Z0-9][A-Z0-9-]{5,63}$/.test(REF)))&&UUID.test(PO)&&UUID.test(ORDER)&&
+    env.G6_TARGET_MARKET===MK.code&&(REF==='KL1WGP6'||(env.G6_DYNAMIC_FRESH_ORDER==='1'&&/^[A-Z0-9][A-Z0-9-]{5,63}$/.test(REF)))&&UUID.test(PO)&&UUID.test(ORDER)&&
     SHA.test(env.E2E_EXPECTED_DEPLOY_SHA||'')&&!!env.DATABASE_URL&&
     env.STAGING_BASE_URL==='https://komerce-backend-production.up.railway.app',
     'G6_RECEIPT_OWNER_STAGING_GUARD');
@@ -97,7 +100,7 @@ async function main(){
   check(progress.rows[0]?.remaining===1,'G6_RECEIPT_ALREADY_RECEIVED_OR_WRONG_REMAINING');
   report.before={po_status:before.po_status,expected:1,remaining:1,physical_received:false};
   save();
-  browser=await chromium.launch({headless:true});
+  browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   // Allow precisely one real UI receipt write, never a direct test request or external transport.
   const actor=await login(browser,'E2E_AGENT_HUB_',{readOnly:true});
   try {
@@ -106,20 +109,20 @@ async function main(){
        return route.continue();
      return route.abort('blockedbyclient');
    });
-   await actor.page.goto('/admin/hub-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
-   await actor.page.getByRole('tab',{name:'Réceptions'}).click();
+   await humanGoto(actor.page,'/admin/hub-live?view=execute&market='+MK.code+'',{waitUntil:'domcontentloaded'});
+   await humanClick(null,actor.page.getByRole('tab',{name:'Réceptions'}));
    const card=actor.page.locator('[data-receive-po="'+PO+'"]');
    await card.waitFor({state:'visible',timeout:25000});
    const proof='[SIMULATED / STAGING ONLY] G6-M01-RECEPTION-'+REF;
    const toggle=card.locator('[data-receive-manual-toggle]');
-   await toggle.check();
-   await card.locator('[data-receive-manual-proof]').fill(proof);
-   await card.locator('[data-receive-line="0"]').fill('1');
-   await card.locator('.kmc-workspace-receive-tracking').fill('SIM-STAGING-RECEPTION-'+REF);
+   await humanCheck(null,toggle);
+   await humanFill(null,card.locator('[data-receive-manual-proof]'),proof);
+   await humanFill(null,card.locator('[data-receive-line="0"]'),'1');
+   await humanFill(null,card.locator('.kmc-workspace-receive-tracking'),'SIM-STAGING-RECEPTION-'+REF);
    const button=card.locator('[data-workspace-action="receive-supplier"]');
    check(await button.isEnabled(),'G6_RECEIPT_UI_ACTION_DISABLED');
    const responsePromise=actor.page.waitForResponse(r=>new URL(r.url()).pathname==='/api/scans/hub/receive'&&r.request().method()==='POST',{timeout:30000});
-   await button.click();
+   await humanClick(null,button);
    const response=await responsePromise;
    const json=await response.json().catch(()=>({}));
    check(response.status()===200||response.status()===201,'G6_RECEIPT_UI_HTTP_'+response.status()+'_'+(json.code||''));
@@ -145,10 +148,10 @@ async function main(){
   report.verdict='G6_HUB_RECEIPT_SIMULATED_CHROMIUM_PASS_NOT_KOM_BOX_GO';
   save();
  } catch(e){
-  report.verdict='BLOCKED';report.error=String(e.message||e).slice(0,1500);
+  report.verdict='BLOCKED';report.error=fullError(e);
   if(browser){try{const pages=browser.contexts().flatMap(c=>c.pages());if(pages.length)await pages[0].screenshot({path:path.join(OUT,'blocked.png')});}catch(_){}}
   save();process.exitCode=2;
- }finally{if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify(report));}
+ }finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify(report));}
 }
 if(require.main===module)main();
 module.exports={base};

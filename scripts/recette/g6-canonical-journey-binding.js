@@ -12,6 +12,8 @@
 // Business truth lives only in the original G6 catalogue, NOT in a new matrix.
 const business = require('../../docs/recette/G6_PRE_STRESS_BUSINESS_SCENARIOS.json');
 const REPLAYABLE_IMPORT_CASH = new Set(['M01', 'M04', 'M05']);
+// Dynamic fresh-buyer replay: the M01 journey in CM/CG is catalogued as M04/M05 (same chain, market actors).
+const DYNAMIC_ALIAS = Object.freeze({ M01: Object.freeze({ CM: 'M04', CG: 'M05' }) });
 const ORDER_REF = /^[A-Z0-9][A-Z0-9-]{5,63}$/;
 const LEGACY_REFS = Object.freeze({KM:'K18SFYN', CM:'KW34OBY', CG:'KSJWLND'});
 
@@ -44,8 +46,9 @@ function resolveRelayCashRefs(env = process.env) {
   const supplied = [id, market, reference].filter(v => v !== undefined && v !== '').length;
   if (supplied === 0) return { ...LEGACY_REFS };
   if (supplied !== 3) throw new Error('G6_CANONICAL_CASH_BINDING_INCOMPLETE');
+  const alias = env.G6_DYNAMIC_FRESH_BUYER === '1' ? DYNAMIC_ALIAS[id]?.[market] : undefined;
   const checked = resolveCanonicalReplay({
-    G6_CANONICAL_SCENARIO: id,
+    G6_CANONICAL_SCENARIO: alias || id,
     G6_TARGET_MARKET: market
   });
   if (!ORDER_REF.test(String(reference))) throw new Error('G6_CANONICAL_ORDER_REFERENCE_INVALID');

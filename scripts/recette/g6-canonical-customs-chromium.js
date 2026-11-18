@@ -9,19 +9,22 @@
  * @impact-areas logistics, staging-only
  */
 'use strict';
+const MK=require('./canonical/market-profile').marketProfile(process.env);
 const fs=require('node:fs'),path=require('node:path');
 const {isDeepStrictEqual}=require('node:util');
 const {chromium}=require('playwright');
 const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
 const {readback,runtime}=require('./g6-hub-shipment-chromium');
-const {login,task,snapshot,proof}=require('./g6-canonical-forwarder-chromium');
+const {login,task,snapshot,proof,fillTask}=require('./g6-canonical-forwarder-chromium');
 const env=process.env, BASE='https://komerce-backend-production.up.railway.app';
 const REF=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_REF:'SIM-STAGING-EXP-KL1WGP6', ID=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_ID:'ff8591fc-78bb-49a4-b154-247508368d16', CUSTOMS='SIM-STAGING-DOU-'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6');
-const API='/api/admin/workspaces/shipping-customs/market/KM';
+const API='/api/admin/workspaces/shipping-customs/market/'+MK.code;
 const OUT=path.resolve('test-results/g6-canonical-customs');
+const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const report={schema:'komerce-g6-customs/1',shipment_id:ID,shipment_ref:REF,order_id:env.G6_CANONICAL_ORDER_ID,
- reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',scenario_id:'M01',market:'KM',events:[],verdict:'BLOCKED',
+ reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',scenario_id:'M01',market:MK.code,events:[],verdict:'BLOCKED',
  provenance:'SIMULATED / STAGING ONLY',external_payment_executed:false,external_supplier_calls:0};
 const check=(ok,code)=>{if(!ok)throw Error(code)};
 function save(){fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n')}
@@ -48,14 +51,14 @@ async function click(actor,key,endpoint,button,validate,role){
   await button.waitFor({state:'visible',timeout:25000});
   check(await button.isEnabled(),'G6_CUSTOMS_DISABLED_'+key);
   const pending=actor.page.waitForResponse(r=>r.url()===url&&r.request().method()==='POST',{timeout:30000});
-  await button.click();
+  await humanClick(null,button);
   const response=await pending;report.events.push({key,role,http:response.status()});save();
   check(count===1&&response.ok()&&actor.blocked.length===0,'G6_CUSTOMS_HTTP_'+key+'_'+response.status());
  }finally{await actor.page.unroute(url,handler)}
 }
 async function journey(actor,key,title,tab,tail,fields,expected,role){
  const item=await task(actor.page,title,tab);
- for(const [name,val] of Object.entries(fields))await item.locator('[name="'+name+'"]').fill(val);
+ for(const [name,val] of Object.entries(fields))await fillTask(item,name,val);
  await click(actor,key,API+'/international/'+REF+'/'+tail,item.locator('button[type="submit"]'),b=>isDeepStrictEqual(b,expected),role);
 }
 function eventProof(prev,next,type,ref,stage){
@@ -70,7 +73,7 @@ async function main(){
   check(env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.GITHUB_EVENT_NAME==='issues'&&env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER&&
    env.NODE_ENV==='test'&&env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&
    env.STAGING_BASE_URL===BASE&&env.G6_CANONICAL_PHASE==='CUSTOMS'&&(env.G6_CANONICAL_RESUME_RUN_ID==='44257485638'||env.G6_DYNAMIC_FRESH_ORDER==='1')&&
-   env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET==='KM'&&(env.G6_CANONICAL_ORDER_ID==='56adad65-d1fa-4e80-8d69-c25e0fe92a76'||(env.G6_DYNAMIC_FRESH_ORDER==='1'&&/^[a-f0-9-]{36}$/i.test(env.G6_CANONICAL_ORDER_ID||'')&&/^[a-f0-9-]{36}$/i.test(ID||''))),
+   env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET===MK.code&&(env.G6_CANONICAL_ORDER_ID==='56adad65-d1fa-4e80-8d69-c25e0fe92a76'||(env.G6_DYNAMIC_FRESH_ORDER==='1'&&/^[a-f0-9-]{36}$/i.test(env.G6_CANONICAL_ORDER_ID||'')&&/^[a-f0-9-]{36}$/i.test(ID||''))),
    'G6_CUSTOMS_OWNER_GUARD');
   const target=await confirmTarget({db,env});check(target.confirmed&&target.fingerprint===env.G6_CANONICAL_DB_FINGERPRINT,'G6_CUSTOMS_DB_DRIFT');
   report.db_fingerprint=target.fingerprint;report.sha=await runtime();
@@ -79,12 +82,12 @@ async function main(){
   let last=await readState('arrived',placement);report.before=last;save();
   check(isDeepStrictEqual(last.base,prior.after.base)&&isDeepStrictEqual(JSON.parse(JSON.stringify(last.tracking)),prior.after.tracking)&&last.customs.length===0&&last.linked===null,
    'G6_CUSTOMS_PRIOR_DRIFT');
-  browser=await chromium.launch({headless:true});
+  browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   const admin=await login(browser,'E2E_ADMIN_','admin');
   try{
-   await admin.page.goto('/admin/workspaces/shipping-customs?market=KM',{waitUntil:'domcontentloaded'});
+   await humanGoto(admin.page,'/admin/workspaces/shipping-customs?market='+MK.code+'',{waitUntil:'domcontentloaded'});
    await admin.page.locator('[data-international-journey]').first().waitFor({state:'visible',timeout:25000});
-   await admin.page.locator('.kmc-journey-tab').filter({hasText:'Arrivée & douane'}).click();
+   await humanClick(null,admin.page.locator('.kmc-journey-tab').filter({hasText:'Arrivée & douane'}));
    const date=new Date().toISOString().slice(0,10), answers=[CUSTOMS,date,'1000',''];
    admin.page.on('dialog',async d=>{
     if(d.type()==='prompt'&&answers.length)return d.accept(answers.shift());
@@ -121,7 +124,7 @@ async function main(){
    report.after=now;save();await runtime();
   }finally{await hub.ctx.close()}
   report.verdict='G6_CUSTOMS_LOCAL_SIMULATED_CHROMIUM_PG_PASS';report.next_stage='RELAY_RECEIPT';save();
- }catch(e){report.error=String(e.message||e).slice(0,700);try{if(report.db_fingerprint)report.failure_readback=await readback()}catch(_){};save();process.exitCode=2}
- finally{if(browser)await browser.close();await db.pool.end();console.log(JSON.stringify(report))}
+ }catch(e){report.error=fullError(e);try{if(report.db_fingerprint)report.failure_readback=await readback()}catch(_){};save();process.exitCode=2}
+ finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close();await db.pool.end();console.log(JSON.stringify(report))}
 }
 if(require.main===module)main();

@@ -24,6 +24,32 @@ function assertStageSourceSafe(filename,source=fs.readFileSync(filename,'utf8'))
  for(const f of FORBIDDEN)if(f.test(source))throw Error('G6_STAGE_DIRECT_WRITE_FORBIDDEN_'+path.basename(filename));
  return true;
 }
+// Raw locator gestures bypass render-ready, relocation and the no-retry-after-mutation rule.
+const RAW_GESTURE=/(?<!keyboard)\.(?:click|fill|selectOption|check|press|dblclick|tap|setInputFiles|dispatchEvent)\s*\(/;
+function assertGestureSourceUsesHelper(filename,source=fs.readFileSync(filename,'utf8')){
+ const code=source.replace(/\/\*[\s\S]*?\*\//g,'').replace(/^\s*\/\/.*$/gm,'');
+ if(RAW_GESTURE.test(code))throw Error('G6_GESTURE_OUTSIDE_HELPER_FORBIDDEN_'+path.basename(filename));
+ return true;
+}
+function validateChromiumScriptSources(){
+ const dir=path.join(__dirname,'..');
+ const files=fs.readdirSync(dir).filter(f=>/^g6-.*chromium\.js$/.test(f));
+ for(const f of files){assertGestureSourceUsesHelper(path.join(dir,f));assertTraceStartsAfterAuth(path.join(dir,f));}
+ assertTraceStartsAfterAuth(path.join(__dirname,'../../../tests/staging-clicks/g6-p3-kuyiyuk.spec.js'));
+ return files.length;
+}
+// Trace must start only after login/OTP/redirect: no raw tracing.start, and every
+// startTraceAfterAuth call is preceded by an authentication-completion step.
+function assertTraceStartsAfterAuth(filename,source=fs.readFileSync(filename,'utf8')){
+ const code=source.replace(/\/\*[\s\S]*?\*\//g,'').replace(/^\s*\/\/.*$/gm,'');
+ const base=path.basename(filename);
+ if(/tracing\s*\.\s*(?:start|startChunk)\s*\(/.test(code))throw Error('G6_TRACE_STARTED_OUTSIDE_HELPER_'+base);
+ const call=/startTraceAfterAuth\s*\(/g,done=/waitForURL\s*\(|await\s+ver\b|await\s+pending\b/;
+ let m,n=0;
+ while((m=call.exec(code))){n++;if(!done.test(code.slice(0,m.index)))throw Error('G6_TRACE_BEFORE_AUTH_COMPLETE_'+base);}
+ if(/\.newContext\s*\(/.test(code)&&!n)throw Error('G6_TRACE_AFTER_AUTH_MISSING_'+base);
+ return true;
+}
 function validateStageModuleSources(){
  for(const id of STAGE_IDS)assertStageSourceSafe(path.join(__dirname,'stages',id+'.js'));
  return STAGE_IDS.length;
@@ -46,4 +72,4 @@ function assertCanonicalProof(proof){
   if(!approved.has(e.id))throw Error('G6_EXTERNAL_RESPONSE_NOT_OWNER_APPROVED_'+e.id);
  return true;
 }
-module.exports={assertStageSourceSafe,validateStageModuleSources,assertCanonicalProof};
+module.exports={assertTraceStartsAfterAuth,assertGestureSourceUsesHelper,validateChromiumScriptSources,assertStageSourceSafe,validateStageModuleSources,assertCanonicalProof};

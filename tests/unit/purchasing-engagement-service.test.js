@@ -58,7 +58,7 @@ function scripted(handlers) {
       }
       // Legacy unit fixtures exercise non-simulated PO flows and mock only the
       // queries under test; their linked order remains a real (unmarked) one.
-      if (/SELECT DISTINCT NULLIF\(to_jsonb\(o\)/.test(sql)) return { rows: [{ simulation_scope: null, reference: 'LEGACY-UNIT' }] };
+      if (/ORDER BY o\.created_at, pl\.id/.test(sql)) return { rows: [{ simulation_scope: null, reference: 'LEGACY-UNIT' }] };
       return { rows: [] };
     }),
   };
@@ -506,6 +506,18 @@ describe('createManualLine', () => {
     await expect(engagement.createManualLine(body)).rejects.toThrow('boom');
   });
 
+  it('prix fournisseur indisponible (mapping sans prix) → 409 SUPPLIER_MONEY_UNAVAILABLE en FR, jamais une 500', async () => {
+    scripted(handlers({ ps: { ...ps, supplier_name: 'Audit CJ Supplier' } }));
+    snapshot.buildPurchaseTarget.mockImplementationOnce(() => { throw new Error('SUPPLIER_MONEY_UNAVAILABLE'); });
+    await expect(engagement.createManualLine(body)).rejects.toMatchObject({
+      status: 409, code: 'SUPPLIER_MONEY_UNAVAILABLE', message: expect.stringContaining('Audit CJ Supplier'),
+    });
+    expect(snapshot.insertOpenPurchaseLine).not.toHaveBeenCalled();
+    scripted(handlers());
+    snapshot.buildPurchaseTarget.mockImplementationOnce(() => { throw new Error('autre'); });
+    await expect(engagement.createManualLine(body)).rejects.toThrow('autre');
+  });
+
   it('sur-engagement refusé par I1 (base) → 409 PURCHASE_LINE_OVERCOMMITTED', async () => {
     scripted(handlers());
     snapshot.insertOpenPurchaseLine.mockRejectedValueOnce(Object.assign(new Error('purchase_line_overcommitted: besoin 2'), { code: '23514' }));
@@ -530,7 +542,7 @@ describe('createManualLine', () => {
 
 
 describe('G6 vendor simulation — backend boundaries', () => {
-  const scope = [/SELECT DISTINCT NULLIF\(to_jsonb\(o\)/, { rows: [{ simulation_scope:'G6-BUYER', reference:'KL1WGP6' }] }];
+  const scope = [/ORDER BY o\.created_at, pl\.id/, { rows: [{ simulation_scope:'G6-BUYER', reference:'KL1WGP6' }] }];
   it('refuse la déclaration d’envoi réel non marquée pour une PO G6', async () => {
     const { calls } = scripted([
       [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status:'notified', trigger_mode:'manual' })] }],
@@ -558,5 +570,44 @@ describe('G6 vendor simulation — backend boundaries', () => {
       await expect(engagement.recordPurchaseOrderSent(PO, { channel:'other', simulated:true, supplier_order_id:'SIM-STAGING-KL1WGP6' }))
         .rejects.toMatchObject({ status:403, code:'G6_SUPPLIER_SIMULATION_STAGING_ONLY' });
     } finally { if (previous === undefined) delete process.env.KOMERCE_ENV; else process.env.KOMERCE_ENV=previous; }
+  });
+
+  const sentG6 = (rows, body, env = 'staging') => {
+    const previous = process.env.KOMERCE_ENV; process.env.KOMERCE_ENV = env;
+    const s = scripted([
+      [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status:'notified', trigger_mode:'manual' })] }],
+      [/ORDER BY o\.created_at, pl\.id/, { rows }],
+      [/SELECT sent_at, sent_channel, supplier_order_id/, { rows: [{ sent_at: null }] }],
+      [/UPDATE purchase_orders/, { rows: [{ id: PO, status:'notified', sent_at: new Date(), sent_channel:'other', sent_by:null, sent_note:'x', supplier_order_id: body.supplier_order_id }] }],
+    ]);
+    const restore = () => { if (previous === undefined) delete process.env.KOMERCE_ENV; else process.env.KOMERCE_ENV = previous; };
+    return { ...s, restore };
+  };
+  const g6 = (reference) => ({ simulation_scope:'G6-BUYER', reference });
+  it('accepte une PO dont 2 commandes sont G6 ; référence = 1re ligne FIFO', async () => {
+    const body = { channel:'other', simulated:true, supplier_order_id:'SIM-STAGING-KFIRST1' };
+    const t = sentG6([g6('KFIRST1'), g6('KSECOND2')], body);
+    try { await expect(engagement.recordPurchaseOrderSent(PO, body)).resolves.toMatchObject({ simulated:true });
+      expect(t.calls.find(c => /ORDER BY o\.created_at, pl\.id/.test(c.sql)).sql).toMatch(/ORDER BY o\.created_at, pl\.id/); } finally { t.restore(); }
+  });
+  it('refuse la référence de la 2e commande (pas la 1re FIFO)', async () => {
+    const body = { channel:'other', simulated:true, supplier_order_id:'SIM-STAGING-KSECOND2' };
+    const t = sentG6([g6('KFIRST1'), g6('KSECOND2')], body);
+    try { await expect(engagement.recordPurchaseOrderSent(PO, body)).rejects.toMatchObject({ status:400, code:'G6_SUPPLIER_SIMULATED_SEND_PROOF_INVALID' }); } finally { t.restore(); }
+  });
+  it('refuse une PO mixte G6 et réelle déclarée simulée', async () => {
+    const body = { channel:'other', simulated:true, supplier_order_id:'SIM-STAGING-KFIRST1' };
+    const t = sentG6([g6('KFIRST1'), { simulation_scope:null, reference:'REAL1' }], body);
+    try { await expect(engagement.recordPurchaseOrderSent(PO, body)).rejects.toMatchObject({ status:409, code:'G6_SUPPLIER_SIMULATION_DECLARATION_REQUIRED' }); } finally { t.restore(); }
+  });
+  it('PO avec 1 seule commande G6 : inchangé', async () => {
+    const body = { channel:'other', simulated:true, supplier_order_id:'SIM-STAGING-KONLY1' };
+    const t = sentG6([g6('KONLY1')], body);
+    try { await expect(engagement.recordPurchaseOrderSent(PO, body)).resolves.toMatchObject({ simulated:true }); } finally { t.restore(); }
+  });
+  it('PO réelle : inchangé (déclaration simulée refusée)', async () => {
+    const body = { channel:'other', simulated:true, supplier_order_id:'SIM-STAGING-REAL1' };
+    const t = sentG6([{ simulation_scope:null, reference:'REAL1' }, { simulation_scope:null, reference:'REAL2' }], body);
+    try { await expect(engagement.recordPurchaseOrderSent(PO, body)).rejects.toMatchObject({ status:409, code:'G6_SUPPLIER_SIMULATION_DECLARATION_REQUIRED' }); } finally { t.restore(); }
   });
 });

@@ -9,6 +9,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path');
 const selectors=require('./selectors');
+const gestures=require('./human-gestures');
 const ROLES=new Set(Object.keys(selectors));
 const SENSITIVE=Object.freeze(['input[type=password]','[data-pickup-code-input]','.k-pickup-code-output']);
 class ActorPool{
@@ -65,4 +66,4 @@ class ChromiumActor{
   throw Error('SCREEN_MISSING_RELAY_SHORTAGE_UNBOUND');
  }
 }
-module.exports={ActorPool,ChromiumActor,ROLES,SENSITIVE};
+module.exports={ActorPool,ChromiumActor,ROLES,SENSITIVE,...gestures};

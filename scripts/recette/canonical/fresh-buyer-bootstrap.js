@@ -7,6 +7,7 @@
  * @impact-areas staging-only
  */
 'use strict';
+const {marketProfile}=require('./market-profile');
 const {executeBoundJourney}=require('./dynamic-runner');
 const {stageGraph,loadGoldenStages}=require('./stage-registry');
 const SHA=/^[a-f0-9]{40}$/;
@@ -19,7 +20,7 @@ async function bootstrapFreshM01({toStage='CLIENT_PICKUP',adapters}={}){
  if(!adapters||REQUIRE.some(name=>typeof adapters[name]!=='function'))
   throw Error('G6_FRESH_BOOTSTRAP_ADAPTERS_REQUIRED');
  const runtime=await adapters.attestRuntimeBeforeBuyer();
- if(runtime?.environment!=='staging'||runtime.scenario_id!=='M01'||runtime.market!=='KM'||
+ if(runtime?.environment!=='staging'||runtime.scenario_id!=='M01'||runtime.market!==marketProfile(process.env).code||
   !SHA.test(String(runtime.staging_sha||''))||!String(runtime.db_fingerprint||'').trim()||
   runtime.production_permitted!==false||
   runtime.attestation_origin!=='INDEPENDENT_CHROMIUM_POSTGRESQL')
@@ -32,7 +33,7 @@ async function bootstrapFreshM01({toStage='CLIENT_PICKUP',adapters}={}){
   }
  });
  if(buyer?.verdict!=='G6_P2_REAL_OTP_CHROMIUM_ORDER_CREATED_NO_EXTERNAL_EFFECTS'||
-  buyer.market!=='KM'||buyer.order?.market!=='KM'||
+  buyer.market!==runtime.market||buyer.order?.market!==runtime.market||
   buyer.order?.scope!=='G6-BUYER'||buyer.order?.status!=='pending'||
   buyer.order?.payment_status!=='pending'||
   !UUID.test(String(buyer.order?.id||''))||!REF.test(String(buyer.order?.reference||''))||
@@ -41,7 +42,7 @@ async function bootstrapFreshM01({toStage='CLIENT_PICKUP',adapters}={}){
   buyer.payment_real!==false||buyer.supplier_order_real!==false||
   buyer.blocked_requests?.length)
   throw Error('G6_FRESH_BOOTSTRAP_BUYER_PROOF_INVALID');
- const context=Object.freeze({scenario_id:'M01',market:'KM',
+ const context=Object.freeze({scenario_id:'M01',market:runtime.market,
   order_id:buyer.order.id,order_reference:buyer.order.reference,
   staging_sha:runtime.staging_sha,db_fingerprint:runtime.db_fingerprint,
   production_permitted:false});
@@ -55,7 +56,7 @@ async function bootstrapFreshM01({toStage='CLIENT_PICKUP',adapters}={}){
   attested.order_reference!==context.order_reference||
   attested.db_fingerprint!==context.db_fingerprint||
   attested.staging_sha!==context.staging_sha||
-  attested.scenario_id!=='M01'||attested.market!=='KM'||
+  attested.scenario_id!=='M01'||attested.market!==context.market||
   attested.production_permitted!==false||
   attested.attestation_origin!=='INDEPENDENT_CHROMIUM_POSTGRESQL'||
   attested.external_supplier_calls!==0||attested.external_payment_executed!==false||

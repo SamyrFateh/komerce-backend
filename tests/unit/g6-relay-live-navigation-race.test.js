@@ -43,6 +43,18 @@ describe('G6 canonical relay navigation: same-route Chromium redirect',()=>{
   await expect(openRelayLive(bad.page,{selector:'[data-manual-pickup-code]'}))
    .rejects.toThrow('URL is not the expected relay cockpit');
  });
+ test('execute view is entered by clicking « Atelier réception », never by a direct URL',async()=>{
+  const {page}=actor({initial:'/admin/relais-live'});
+  const link={click:jest.fn(async()=>{}),waitFor:jest.fn(async()=>{}),first(){return this;}};
+  const target={waitFor:jest.fn(async()=>{})};
+  page.locator=jest.fn((sel)=>sel==='a'?link:target);
+  page.evaluate=jest.fn(async()=>({signal:false,ready:true,epoch:null}));
+  page.waitForURL=jest.fn(async()=>{});
+  link.page=()=>page;
+  await openRelayLive(page,{selector:'[data-relay-shipment="S"]',execute:true}).catch(()=>{});
+  expect(page.goto).not.toHaveBeenCalled();
+  expect(page.locator).toHaveBeenCalledWith('a',{hasText:'Atelier réception'});
+ });
  test('foreign origins, login, or blank selector cannot satisfy the proof',async()=>{
   expect(isRelayPage(BASE+'/admin/relais-live')).toBe(true);
   expect(isRelayPage(BASE+'/login.html')).toBe(false);

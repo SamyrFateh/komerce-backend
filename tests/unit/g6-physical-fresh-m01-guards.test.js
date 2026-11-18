@@ -22,7 +22,8 @@ describe('G6 physical Hub dynamic proof refactor: syntax and fail-closed boundar
  });
  test('dynamic stages never allow final mile before the rest of the chain migrates',()=>{
   const entry=fs.readFileSync(path.join(ROOT,'scripts/recette/g6-dynamic-buyer-cash.js'),'utf8');
-  expect(entry).toContain("'HUB_KOM_BOX'");
+  expect(entry).toContain('STAGE_IDS'); // single registry-driven allowlist
+  expect(entry).not.toContain("'HUB_KOM_BOX'");
   expect(entry).not.toContain("'CLIENT_PICKUP'].includes(toStage)");
  });
 });

@@ -8,10 +8,14 @@
  * @impact-areas  purchasing, admin-dashboard, staging-only
  */
 'use strict';
+const {marketProfile,marketOption}=require('../../scripts/recette/canonical/market-profile');
+const MK=marketProfile(process.env);
+const {humanGoto}=require('../../scripts/recette/canonical/actors/human-gestures');
 const fs=require('node:fs');
 const path=require('node:path');
 const {test,expect}=require('@playwright/test');
 const OUT=path.resolve('test-results/g6-p3-kuyiyuk');
+const {observe,startTraceAfterAuth}=require("../../scripts/recette/canonical/observability");let OBS=null,FAILED=false;
 const CANONICAL=process.env.G6_CANONICAL_HUB_STAGE==='1';
 const REF=CANONICAL?String(process.env.G6_CANONICAL_ORDER_REFERENCE||''):'KUYIYUK';
 const evidence={schema:'komerce-g6-p3-kuyiyuk/1',reference:REF,verdict:'NOT_PROVEN',external_supplier_calls:0,external_payment_executed:false,staging_cash_confirmation_recorded:false,gestures:[]};
@@ -32,13 +36,14 @@ const orderState=async()=> {
   return o||null;
 };
 async function login(browser,baseURL,actor='hub'){
+  if(!OBS)OBS=observe(browser,OUT);
   const prefix=actor==='relay'?'E2E_AGENT_RELAIS':actor==='admin'?'E2E_ADMIN':'E2E_AGENT_HUB';
   const email=process.env[prefix+'_EMAIL'],password=process.env[prefix+'_PASSWORD'];
   expect(email&&password,'E2E '+actor+' credentials').toBeTruthy();
   const ctx=await browser.newContext({baseURL,viewport:{width:1440,height:900}});
   const page=await ctx.newPage();
   page.on('dialog',d=>d.accept());
-  await page.goto('/login.html');
+  await humanGoto(page,'/login.html');
   await page.locator('#email').fill(email);
   await page.locator('#password').fill(password);
   const response=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/login'&&r.request().method()==='POST');
@@ -46,6 +51,7 @@ async function login(browser,baseURL,actor='hub'){
   expect((await response).status()).toBe(200);
   await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:20000});
   await page.waitForLoadState('load').catch(()=>{});
+  await startTraceAfterAuth(ctx);
   return {ctx,page};
 }
 async function capture(page,name){
@@ -53,6 +59,8 @@ async function capture(page,name){
   await page.screenshot({path:path.join(OUT,'captures',name+'.png')});
 }
 test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
+  test.afterEach(async({},info)=>{if(info.status!==info.expectedStatus)FAILED=true;});
+  test.afterAll(async()=>{if(OBS)await OBS.finish(FAILED).catch(()=>{});});
   test.beforeAll(async()=>{
     db=require('../../db');
     const env=process.env;
@@ -63,7 +71,7 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
     expect(env.STAGING_BASE_URL).toBe(base);
     if(CANONICAL){
       expect(env.G6_CANONICAL_SCENARIO).toBe('M01');
-      expect(env.G6_TARGET_MARKET).toBe('KM');
+      expect(env.G6_TARGET_MARKET).toBe(MK.code);
       expect(REF).toMatch(/^[A-Z0-9][A-Z0-9-]{5,63}$/);
       expect(buyer).toMatch(/^[a-f0-9-]{36}$/);
       expect(orderId).toMatch(/^[a-f0-9-]{36}$/);
@@ -118,24 +126,24 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
     if(before.status==='pending'){
       const {ctx:relayCtx,page:relayPage}=await login(browser,baseURL,'relay');
       try{
-        await relayPage.goto('/admin/relais-live?view=execute',{waitUntil:'domcontentloaded'});
+        await humanGoto(relayPage,'/admin/relais-live?view=execute',{waitUntil:'domcontentloaded'});
         await relayPage.locator('select').first().waitFor({timeout:20000});
-        await relayPage.locator('select').first().selectOption({label:'KM · Comores'});
+        await relayPage.locator('select').first().selectOption(await marketOption(MK,relayPage.locator('select').first()));
         await relayPage.waitForLoadState('networkidle').catch(()=>{});
-        const cashScope=await relayPage.evaluate(async()=>{
+        const cashScope=await relayPage.evaluate(async(mk)=>{
           const [meResponse,workspaceResponse]=await Promise.all([
             fetch('/api/auth/me',{credentials:'same-origin'}),
-            fetch('/api/admin/workspaces/operations/market/KM',{credentials:'same-origin'})
+            fetch('/api/admin/workspaces/operations/market/'+mk,{credentials:'same-origin'})
           ]);
           const me=await meResponse.json(),workspace=await workspaceResponse.json();
           return {actor_role:me.role,actor_id:me.id,workspace_status:workspaceResponse.status,cash_pending_count:workspace.summary?.relay_cash_pending,cash_pending_references:(workspace.queues?.relay?.cash_pending||[]).map(o=>o.reference)};
-        });
+        },MK.code);
         console.log('[G6_P3_CASH_SCOPE]',JSON.stringify(cashScope));
         await relayPage.locator('[data-relay-execution-jump="cash"]').click();
         const cashRow=relayPage.locator('tr',{hasText:REF});
         await cashRow.waitFor({timeout:20000});
         await capture(relayPage,'00-cash-pending');
-        const cashResponse=relayPage.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/workspaces/operations/market/KM/orders/'+REF+'/confirm-cash'&&r.request().method()==='POST',{timeout:30000});
+        const cashResponse=relayPage.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/workspaces/operations/market/'+MK.code+'/orders/'+REF+'/confirm-cash'&&r.request().method()==='POST',{timeout:30000});
         await cashRow.locator('[data-workspace-action="confirm-cash"]').click();
         const cr=await cashResponse;
         const cbody=await cr.json().catch(()=>({}));
@@ -165,16 +173,30 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
     expect(Number(before.cash_control_confirmed_count)).toBe(1);
     const {ctx,page}=await login(browser,baseURL);
     try{
-      await page.goto('/admin/hub-live?view=execute',{waitUntil:'domcontentloaded'});
+      await humanGoto(page,'/admin/hub-live?view=execute',{waitUntil:'domcontentloaded'});
       await page.locator('select').first().waitFor({timeout:20000});
-      await page.locator('select').first().selectOption({label:'KM · Comores'}).catch(()=>{});
+      await page.locator('select').first().selectOption(await marketOption(MK,page.locator('select').first()));
       await page.waitForLoadState('networkidle').catch(()=>{});
       const dossiers=page.getByRole('tab',{name:'Dossiers'});
       if(await dossiers.count())await dossiers.click();
       const orderCard=page.locator('[data-hlc-order]').filter({hasText:REF});
       await orderCard.first().waitFor({timeout:25000});
       await capture(page,'01-order-visible');
-      const afterCash=await orderState();
+      // Le déclencheur d'achat automatique (post-encaissement cash) est asynchrone côté serveur :
+      // on lui laisse le temps de créer la ligne (lecture PG seule) avant tout sourcing manuel.
+      let afterCash=await orderState();
+      for(let i=0;i<24&&Number(afterCash.line_count)===0;i++){
+        await page.waitForTimeout(5000);
+        afterCash=await orderState();
+      }
+      evidence.auto_line_after_cash=Number(afterCash.line_count)===1;
+      // Si la ligne est arrivée pendant l'attente, l'écran affiché est périmé (« Sourcing requis ») :
+      // un humain rechargerait la page avant d'agir.
+      if(evidence.auto_line_after_cash){
+        await page.reload({waitUntil:'domcontentloaded'});
+        await page.waitForLoadState('networkidle').catch(()=>{});
+        await page.locator('[data-hlc-need]').filter({hasText:REF}).first().waitFor({timeout:25000});
+      }
       if(Number(afterCash.line_count)===0){
         const need=page.locator('[data-hlc-need]').filter({hasText:REF});
         await need.first().waitFor({timeout:20000});

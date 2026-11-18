@@ -29,7 +29,7 @@ function checkAttestation(v,c,stageId){
   throw Error('G6_DYNAMIC_STAGE_ATTESTATION_INVALID_'+stageId);
 }
 function contextIdentity(context){
- if(!context||context.scenario_id!=='M01'||context.market!=='KM'||
+ if(!context||context.scenario_id!=='M01'||!Object.hasOwn(require('./market-profile').PROFILES,context.market)||
   !UUID.test(String(context.order_id||''))||
   !REFERENCE.test(String(context.order_reference||''))||
   !SHA.test(String(context.staging_sha||''))||

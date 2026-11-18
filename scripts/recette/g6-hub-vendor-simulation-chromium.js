@@ -9,6 +9,7 @@
  * @impact-areas purchasing, hub, staging-only
  */
 'use strict';
+const MK=require('./canonical/market-profile').marketProfile(process.env);
 const fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('playwright');
 const db=require('../../db');
@@ -16,12 +17,15 @@ const {confirmTarget}=require('./target-guard');
 const {login,openPo}=require('./g6-hub-commitment-chromium');
 const env=process.env;
 const OUT=path.resolve('test-results/g6-hub-vendor-simulation');
+const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const REF=env.G6_CANONICAL_ORDER_REFERENCE||'';
+let SREF=REF;
 const PO=env.G6_CANONICAL_PO_ID||'';
 const ORDER=env.G6_CANONICAL_ORDER_ID||'';
 const UUID=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 const SHA=/^[a-f0-9]{40}$/i;
-const report={schema:'komerce-g6-vendor-simulation/1',scenario_id:'M01',market:'KM',
+const report={schema:'komerce-g6-vendor-simulation/1',scenario_id:'M01',market:MK.code,
  reference:REF,po_id:PO,order_id:ORDER,verdict:'BLOCKED',
  supplier_send_certified:false,supplier_confirmation_certified:false,physical_receipt_certified:false,
  external_supplier_calls:0,external_payment_executed:false,provenance:'SIMULATED / STAGING ONLY'};
@@ -85,11 +89,12 @@ async function openByChromiumGesture(page, action, kind) {
  await btn.waitFor({state:'visible',timeout:18000});
  check(await btn.isEnabled(),'G6_SIM_'+action+'_ACTION_DISABLED');
  let gesture='pointer';
- try { await btn.click({timeout:7000}); }
+ try { await humanClick(null,btn,{timeout:7000}); }
  catch (err) {
+  if (err&&err.verdict==='BLOCKED')throw err;
   if (!(await form.isVisible().catch(()=>false))) {
     // Keyboard Enter is an accessible operator action, unlike force:true.
-    await btn.press('Enter',{timeout:7000});
+    await humanPress(null,btn,'Enter',{timeout:7000});
     gesture='keyboard-enter';
   }
  }
@@ -105,7 +110,7 @@ async function main(){
   check(env.GITHUB_EVENT_NAME==='issues'&&env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER&&
     env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.NODE_ENV==='test'&&
     env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&
-    env.G6_CANONICAL_PHASE==='HUB_VENDOR_SIMULATION'&&env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET==='KM'&&
+    env.G6_CANONICAL_PHASE==='HUB_VENDOR_SIMULATION'&&env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET===MK.code&&
     env.G6_CANONICAL_DB_FINGERPRINT&&(env.G6_CANONICAL_ORDER_REFERENCE==='KL1WGP6'||
     (env.G6_DYNAMIC_FRESH_ORDER==='1'&&
      /^[A-Z0-9][A-Z0-9-]{5,63}$/.test(env.G6_CANONICAL_ORDER_REFERENCE||'')&&
@@ -120,52 +125,60 @@ async function main(){
     !before.supplier_order_id&&before.confirmed_quantity===null&&Number(before.manual_executions)===0,
     'G6_SIM_EXPECT_PRIOR_READONLY_CHECKPOINT');
   report.before={po_status:before.po_status,sent_at:null,confirmed_quantity:null,manual_executions:0};save();
-  browser=await chromium.launch({headless:true});
+  browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   const actor=await login(browser,'E2E_AGENT_HUB_',{allowedWrites:['sent','confirm']});
   try{
    await openPo(actor.page);
    const form=await openByChromiumGesture(actor.page,'record-sent','sent');
    check((await form.locator('select option').evaluateAll(x=>x.map(i=>i.value))).join(',')==='other',
      'G6_SIM_EXTERNAL_CHANNEL_PRESENT');
-   check(await form.locator('[name="supplier_order_id"]').inputValue()==='SIM-STAGING-'+REF,
-     'G6_SIM_REFERENCE_INCORRECT');
+   // PO groupé : l'écran fige la référence simulée sur la commande de la 1re ligne (FIFO), qui peut être
+   // une autre commande de recette du même PO. Elle doit appartenir à ce PO et être une commande de recette.
+   const prefilled=await form.locator('[name="supplier_order_id"]').inputValue();
+   const m=/^SIM-STAGING-([A-Z0-9][A-Z0-9-]{5,63})$/.exec(prefilled);
+   check(m,'G6_SIM_REFERENCE_INCORRECT');
+   const {rows:onPo}=await db.query(`SELECT 1 FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id
+     JOIN orders o ON o.id=oi.order_id WHERE pl.purchase_order_id=$1 AND pl.cancelled_at IS NULL
+     AND o.reference=$2 AND o.simulation_scope IS NOT NULL LIMIT 1`,[PO,m[1]]);
+   check(onPo.length===1,'G6_SIM_REFERENCE_INCORRECT');
+   SREF=m[1];report.simulation_reference_order=SREF;
    const sentResp=actor.page.waitForResponse(x=>new URL(x.url()).pathname==='/api/purchasing/po/'+PO+'/sent'&&x.request().method()==='POST');
-   await form.locator('[data-hlc-action="submit-sent"]').click();
+   await humanClick(null,form.locator('[data-hlc-action="submit-sent"]'));
    const sent=await sentResp;
    check(sent.status()===200,'G6_SIM_SEND_HTTP_'+sent.status());
    const sentJson=await sent.json();
    check(sentJson.simulated===true,'G6_SIM_SEND_RESPONSE_UNLABELLED');
-   report.send={http:sent.status(),channel:'other',reference:'SIM-STAGING-'+REF};
+   report.send={http:sent.status(),channel:'other',reference:'SIM-STAGING-'+SREF};
    const afterSend=await state();verifyBase(afterSend);
    check(afterSend.po_status==='notified'&&!!afterSend.sent_at&&afterSend.sent_channel==='other'&&
      afterSend.sent_note?.startsWith('[SIMULATED / STAGING ONLY]')&&
-     afterSend.supplier_order_id==='SIM-STAGING-'+REF&&
+     afterSend.supplier_order_id==='SIM-STAGING-'+SREF&&
      afterSend.confirmed_quantity===null&&Number(afterSend.manual_executions)===0,
      'G6_SIM_SEND_PG_ORACLE_FAILED');
    await actor.page.screenshot({path:path.join(OUT,'sent-simulated.png')});
    await openPo(actor.page);
    const cf=await openByChromiumGesture(actor.page,'confirm-po','confirm');
-   check(await cf.locator('[name="supplier_order_id"]').inputValue()==='SIM-STAGING-'+REF&&
-     await cf.locator('[name="purchase_proof_ref"]').inputValue()==='SIM-STAGING-ACHAT-'+REF&&
-     await cf.locator('[name="seller_label"]').inputValue()==='SIMULATED-STAGING-FOURNISSEUR-'+REF,
+   check(await cf.locator('[name="supplier_order_id"]').inputValue()==='SIM-STAGING-'+SREF&&
+     await cf.locator('[name="purchase_proof_ref"]').inputValue()==='SIM-STAGING-ACHAT-'+SREF&&
+     await cf.locator('[name="seller_label"]').inputValue()==='SIMULATED-STAGING-FOURNISSEUR-'+SREF,
      'G6_SIM_CONFIRM_FORM_PROVENANCE_MISSING');
    const confirmResp=actor.page.waitForResponse(x=>new URL(x.url()).pathname==='/api/purchasing/po/'+PO+'/confirm'&&x.request().method()==='POST');
-   await cf.locator('[data-hlc-action="submit-confirm"]').click();
+   await humanClick(null,cf.locator('[data-hlc-action="submit-confirm"]'));
    const confirmed=await confirmResp;
    check(confirmed.status()===200,'G6_SIM_CONFIRM_HTTP_'+confirmed.status());
-   report.confirmation={http:confirmed.status(),proof:'SIM-STAGING-ACHAT-'+REF,
-     seller:'SIMULATED-STAGING-FOURNISSEUR-'+REF};
+   report.confirmation={http:confirmed.status(),proof:'SIM-STAGING-ACHAT-'+SREF,
+     seller:'SIMULATED-STAGING-FOURNISSEUR-'+SREF};
    check(actor.blocked.length===0,'G6_SIM_UNEXPECTED_BROWSER_WRITE');
    await actor.page.screenshot({path:path.join(OUT,'confirmed-simulated.png')});
   }finally{await actor.ctx.close();}
   const after=await state();verifyBase(after);
   check(after.po_status==='confirmed'&&after.sent_channel==='other'&&
     after.sent_note?.startsWith('[SIMULATED / STAGING ONLY]')&&
-    after.supplier_order_id==='SIM-STAGING-'+REF&&
+    after.supplier_order_id==='SIM-STAGING-'+SREF&&
     Number(after.confirmed_quantity)===Number(after.quantity)&&
     Number(after.manual_executions)===1&&
-    after.seller_label==='SIMULATED-STAGING-FOURNISSEUR-'+REF&&
-    after.proof_ref==='SIM-STAGING-ACHAT-'+REF,
+    after.seller_label==='SIMULATED-STAGING-FOURNISSEUR-'+SREF&&
+    after.proof_ref==='SIM-STAGING-ACHAT-'+SREF,
     'G6_SIM_CONFIRM_PG_ORACLE_FAILED');
   await checkedRuntimeSha(report.sha);
   report.after={po_status:after.po_status,sent_channel:after.sent_channel,
@@ -175,8 +188,8 @@ async function main(){
   report.next_stage='HUB_RECEIVING';
   report.verdict='G6_VENDOR_SIMULATED_SEND_AND_CONFIRM_CHROMIUM_PASS_NOT_RECEIPT_GO';
   save();
- }catch(e){report.verdict='BLOCKED';report.error=String(e.message||e).slice(0,1800);if(browser){try{const pages=browser.contexts().flatMap(c=>c.pages());if(pages.length)await pages[0].screenshot({path:path.join(OUT,'blocked-screen.png')});}catch(_){}}save();process.exitCode=2;}
- finally{if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify(report));}
+ }catch(e){report.verdict='BLOCKED';report.error=fullError(e);if(browser){try{const pages=browser.contexts().flatMap(c=>c.pages());if(pages.length)await pages[0].screenshot({path:path.join(OUT,'blocked-screen.png')});}catch(_){}}save();process.exitCode=2;}
+ finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify(report));}
 }
 if(require.main===module)main();
 module.exports={verifyBase};

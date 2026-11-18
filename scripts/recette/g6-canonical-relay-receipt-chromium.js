@@ -9,6 +9,7 @@
  * @impact-areas logistics, staging-only
  */
 'use strict';
+const MK=require('./canonical/market-profile').marketProfile(process.env);
 const fs=require('node:fs'),path=require('node:path');
 const {isDeepStrictEqual}=require('node:util');
 const {chromium}=require('playwright');
@@ -22,9 +23,11 @@ const ID=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_ID:'ff8591fc
 const ORDER=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ID:'56adad65-d1fa-4e80-8d69-c25e0fe92a76', PARCEL=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_PARCEL_ID:'95045ede-d5b8-405b-b65f-d9dbdddb4756';
 const ITEM=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ITEM_ID:'8c999eec-7322-4676-8db6-585c4d4545f9', PROOF='[SIMULATED / STAGING ONLY] G6-M01-RECEPTION-RELAIS-'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6');
 const OUT=path.resolve('test-results/g6-canonical-relay-receipt');
-const RECEIPT_PATH='/api/admin/workspaces/operations/market/KM/relay-shipments/'+REF+'/receive';
+const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
+const RECEIPT_PATH='/api/admin/workspaces/operations/market/'+MK.code+'/relay-shipments/'+REF+'/receive';
 const report={schema:'komerce-g6-relay-receipt/1',reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',shipment_id:ID,shipment_ref:REF,
- order_id:ORDER,parcel_id:PARCEL,market:'KM',scenario_id:'M01',provenance:'SIMULATED / STAGING ONLY',
+ order_id:ORDER,parcel_id:PARCEL,market:MK.code,scenario_id:'M01',provenance:'SIMULATED / STAGING ONLY',
  verdict:'BLOCKED',events:[],external_supplier_calls:0,external_payment_executed:false};
 const check=(ok,code)=>{if(!ok)throw Error(code)};
 function save(){fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n')}
@@ -46,8 +49,8 @@ async function attachDedicatedRelayByUI(browser,agentId,orderRelay){
   'G6_RELAY_ASSIGNMENT_NOT_DEDICATED_E2E');
  const {rows:staff}=await db.query('SELECT id,role,relais_id FROM users WHERE id=$1',[agentId]);
  const {rows:relay}=await db.query(
-  "SELECT id,name,is_active,market_id FROM relais WHERE id=$1 AND market_id=(SELECT id FROM markets WHERE code='KM')",
-  [orderRelay]);
+  "SELECT id,name,is_active,market_id FROM relais WHERE id=$1 AND market_id=(SELECT id FROM markets WHERE code=$2)",
+  [orderRelay,MK.code]);
  check(staff.length===1&&staff[0].role==='agent_relais'&&relay.length===1&&relay[0].is_active===true,
   'G6_RELAY_ASSIGNMENT_SCOPE_INVALID');
  const {rows:membership}=await db.query(
@@ -60,7 +63,7 @@ async function attachDedicatedRelayByUI(browser,agentId,orderRelay){
   [agentId,relay[0].market_id,['execution.parcel.receive','execution.parcel.collect']]);
  check(membership.length===1,'G6_RELAY_ASSIGNMENT_MARKET_MEMBERSHIP_MISSING');
  const admin=await login(browser,'E2E_ADMIN_','admin');
- const endpoint='/api/market-delegation/markets/KM/network/relais/'+orderRelay+'/agents';
+ const endpoint='/api/market-delegation/markets/'+MK.code+'/network/relais/'+orderRelay+'/agents';
  const url=BASE+endpoint;
  let count=0;
  const handler=async route=>{
@@ -74,7 +77,7 @@ async function attachDedicatedRelayByUI(browser,agentId,orderRelay){
  };
  try{
   await runtime();
-  await admin.page.goto('/dashboards/canonical/market-autonomy.html?market=KM',{waitUntil:'domcontentloaded'});
+  await humanGoto(admin.page,'/dashboards/canonical/market-autonomy.html?market='+MK.code+'',{waitUntil:'domcontentloaded'});
   const panel=admin.page.locator('[data-market-network]');
   try{await panel.waitFor({state:'visible',timeout:15000})}catch(error){
    const ui=await admin.page.locator('#market-autonomy-root').evaluate(e=>({
@@ -84,8 +87,8 @@ async function attachDedicatedRelayByUI(browser,agentId,orderRelay){
    const requests={};
    for(const [label,url] of [
     ['context','/api/admin/dashboard/context'],
-    ['pricing','/api/admin/workspaces/pricing/market/KM'],
-    ['network','/api/market-delegation/markets/KM/network/relais']
+    ['pricing','/api/admin/workspaces/pricing/market/'+MK.code],
+    ['network','/api/market-delegation/markets/'+MK.code+'/network/relais']
    ]){
     const response=await admin.page.request.get(url).catch(()=>null);
     requests[label]=response?.status()||0;
@@ -101,11 +104,11 @@ async function attachDedicatedRelayByUI(browser,agentId,orderRelay){
   await select.waitFor({state:'visible',timeout:20000});
   check(await select.locator('option').evaluateAll((xs,id)=>xs.some(x=>x.value===id),agentId),
    'G6_RELAY_ASSIGNMENT_ACTOR_NOT_ELIGIBLE');
-  await select.selectOption(agentId);
+  await humanSelect(null,select,agentId);
   await admin.page.route(url,handler);
   try{
    const pending=admin.page.waitForResponse(r=>r.url()===url&&r.request().method()==='POST',{timeout:30000});
-   await card.getByRole('button',{name:'Rattacher',exact:true}).click();
+   await humanClick(null,card.getByRole('button',{name:'Rattacher',exact:true}));
    const response=await pending;
    check(response.status()===200&&count===1&&admin.blocked.length===0,
     'G6_RELAY_ASSIGNMENT_UI_HTTP_'+response.status());
@@ -126,7 +129,7 @@ async function main(){
   check(env.GITHUB_EVENT_NAME==='issues'&&env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER&&
    env.NODE_ENV==='test'&&env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&
    env.STAGING_BASE_URL===BASE&&env.G6_CANONICAL_PHASE==='RELAY_RECEIPT'&&(env.G6_CANONICAL_RESUME_RUN_ID==='44260374187'||env.G6_DYNAMIC_FRESH_ORDER==='1')&&
-   env.G6_CANONICAL_ORDER_ID===ORDER&&env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET==='KM',
+   env.G6_CANONICAL_ORDER_ID===ORDER&&env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET===MK.code,
    'G6_RELAY_OWNER_STAGING_GUARD');
   const guard=await confirmTarget({db,env});
   check(guard.confirmed&&guard.fingerprint===env.G6_CANONICAL_DB_FINGERPRINT,'G6_RELAY_DB_FINGERPRINT_INVALID');
@@ -140,7 +143,7 @@ async function main(){
     before.orders[0].id===ORDER&&before.orders[0].reference===(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6')&&before.orders[0].payment_status==='paid'&&
     before.receipts.length===0&&Number(before.items[0].qty_received)===0&&Number(before.items[0].qty_collected)===0&&
     Number(before.items[0].qty_shipped)===1,'G6_RELAY_PRECONDITION_INVALID');
-  browser=await chromium.launch({headless:true});
+  browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   actor=await login(browser,'E2E_AGENT_RELAIS_','agent_relais');
   const me=await actor.page.request.get('/api/auth/me');
   check(me.ok(),'G6_RELAY_SESSION_MISSING');
@@ -157,14 +160,14 @@ async function main(){
   // The role-based login may redirect to this canonical page concurrently.
   // Require the actual shipment card after navigation; do not bypass UI.
   const card=await openRelayLive(actor.page,{
-   selector:'[data-relay-shipment="'+REF+'"]',timeout:25000
+   selector:'[data-relay-shipment="'+REF+'"]',timeout:25000,execute:true
   });
   check(await card.getAttribute('data-relay-receivable')==='true','G6_RELAY_UI_NOT_RECEIVABLE');
-  if(!await card.evaluate(el=>el.open))await card.locator('summary').first().click();
+  if(!await card.evaluate(el=>el.open))await humanClick(null,card.locator('summary').first());
   const field=card.locator('input[data-relay-received]');
   check(await field.count()===1&&await field.getAttribute('data-relay-received')===ITEM,'G6_RELAY_UI_ITEM_NOT_UNIQUE');
-  await field.fill('1');
-  await card.locator('input[data-relay-proof]').fill(PROOF);
+  await humanFill(null,field,'1');
+  await humanFill(null,card.locator('input[data-relay-proof]'),PROOF);
   const expected={proof_ref:PROOF,lines:[{order_item_id:ITEM,received_qty:1}]};
   let count=0;const url=BASE+RECEIPT_PATH;
   const handler=async route=>{
@@ -179,7 +182,7 @@ async function main(){
    await button.waitFor({state:'visible',timeout:20000});
    check(await button.isEnabled(),'G6_RELAY_BUTTON_DISABLED');
    const pending=actor.page.waitForResponse(r=>r.url()===url&&r.request().method()==='POST',{timeout:30000});
-   await button.click();const response=await pending;
+   await humanClick(null,button);const response=await pending;
    report.events.push({key:'relay-receipt',http:response.status(),role:'agent_relais'});save();
    check(count===1&&response.status()===201&&actor.blocked.length===0,'G6_RELAY_RECEIPT_HTTP_'+response.status());
    await actor.page.screenshot({path:path.join(OUT,'reception-relais.png')});
@@ -196,7 +199,7 @@ async function main(){
    after.events.at(-1).proof_ref===PROOF,'G6_RELAY_RECEIPT_PG_INVALID');
   await runtime();report.verdict='G6_RELAY_RECEIPT_SIMULATED_CHROMIUM_PG_PASS_AVAILABLE';
   report.next_stage='CLIENT_PICKUP';save();
- }catch(e){report.error=String(e.message||e).slice(0,700);try{if(report.db_fingerprint)report.failure_readback=await state()}catch(_){};save();process.exitCode=2}
- finally{if(browser)await browser.close().catch(()=>{});await db.pool.end();console.log(JSON.stringify(report))}
+ }catch(e){report.error=fullError(e);try{if(report.db_fingerprint)report.failure_readback=await state()}catch(_){};save();process.exitCode=2}
+ finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end();console.log(JSON.stringify(report))}
 }
 if(require.main===module)main();
