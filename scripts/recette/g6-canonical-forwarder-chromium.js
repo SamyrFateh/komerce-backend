@@ -35,8 +35,8 @@ async function snapshot(stage,placement){
  check(rows.length===1,'G6_FORWARDER_SHIPMENT_NOT_UNIQUE');
  return {base,tracking:rows[0]};
 }
-async function login(browser){
- const email=env.E2E_AGENT_TRANSITAIRE_EMAIL,password=env.E2E_AGENT_TRANSITAIRE_PASSWORD;
+async function login(browser,prefix='E2E_AGENT_TRANSITAIRE_',role='agent_transitaire'){
+ const email=env[prefix+'EMAIL'],password=env[prefix+'PASSWORD'];
  check(email&&password,'G6_FORWARDER_CREDENTIALS_MISSING');
  const ctx=await browser.newContext({baseURL:BASE,viewport:{width:1440,height:900}});
  const page=await ctx.newPage(),blocked=[];
@@ -54,13 +54,13 @@ async function login(browser){
  check((await pending).status()===200,'G6_FORWARDER_LOGIN_FAILED');
  await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:20000});
  const me=await page.request.get('/api/auth/me');
- const user=await me.json();check(me.ok()&&user.role==='agent_transitaire','G6_FORWARDER_ROLE_INVALID');
+ const user=await me.json();check(me.ok()&&user.role===role,'G6_FORWARDER_ROLE_INVALID');
  return {ctx,page,blocked};
 }
-async function task(page,title){
+async function task(page,title,tabName='Transport & fret'){
  await page.goto('/admin/workspaces/shipping-customs?market=KM',{waitUntil:'domcontentloaded'});
  await page.locator('[data-international-journey]').first().waitFor({state:'visible',timeout:25000});
- const tab=page.locator('.kmc-journey-tab').filter({hasText:'Transport & fret'});
+ const tab=page.locator('.kmc-journey-tab').filter({hasText:tabName});
  if(!await tab.evaluate(e=>e.classList.contains('is-active')))await tab.click();
  const row=page.locator('tr').filter({has:page.getByText(REF,{exact:true})});
  await row.waitFor({state:'visible',timeout:25000});
@@ -131,3 +131,4 @@ async function main(){
  finally{if(browser)await browser.close();await db.pool.end();console.log(JSON.stringify(report))}
 }
 if(require.main===module)main();
+module.exports={login,task,snapshot,proof};
