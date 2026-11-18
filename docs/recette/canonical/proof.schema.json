@@ -1,0 +1,260 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "komerce-g6-canonical-proof/1",
+  "title": "Komerce G6 canonical stage proof (never substitute API requests for Chromium actor gestures)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "scenario_id",
+    "cohort",
+    "market",
+    "staging_sha",
+    "db_fingerprint",
+    "steps",
+    "gestures",
+    "oracles",
+    "external_responses",
+    "screen_coverage",
+    "verdict"
+  ],
+  "properties": {
+    "schema": {
+      "const": "komerce-g6-canonical-proof/1"
+    },
+    "scenario_id": {
+      "type": "string",
+      "pattern": "^(M0[1-6]|N(0[1-9]|[1-3][0-9]|40))$"
+    },
+    "cohort": {
+      "enum": [
+        "GPT-G6",
+        "CLAUDE-PAR"
+      ]
+    },
+    "market": {
+      "enum": [
+        "KM",
+        "CM",
+        "CG"
+      ]
+    },
+    "staging_sha": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "db_fingerprint": {
+      "type": "string",
+      "minLength": 8
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "verdict"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "verdict": {
+            "enum": [
+              "PASS",
+              "FAIL",
+              "BLOCKED",
+              "NOT_PROVEN",
+              "NOT_READY",
+              "NOT_APPLICABLE"
+            ]
+          }
+        }
+      }
+    },
+    "gestures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "step",
+          "role",
+          "page",
+          "selector",
+          "action",
+          "screenshots",
+          "observed_request"
+        ],
+        "properties": {
+          "step": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "page": {
+            "type": "string"
+          },
+          "selector": {
+            "type": "string",
+            "minLength": 1
+          },
+          "action": {
+            "type": "string",
+            "minLength": 1
+          },
+          "screenshots": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "before",
+              "after"
+            ],
+            "properties": {
+              "before": {
+                "type": "string",
+                "minLength": 1
+              },
+              "after": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "observed_request": {
+            "type": "object",
+            "required": [
+              "method",
+              "path",
+              "status"
+            ],
+            "properties": {
+              "method": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "status": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 599
+              }
+            }
+          }
+        }
+      }
+    },
+    "oracles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "scope",
+          "read_only",
+          "verdict"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "read_only": {
+            "const": true
+          },
+          "verdict": {
+            "enum": [
+              "PASS",
+              "FAIL",
+              "NOT_PROVEN"
+            ]
+          }
+        }
+      }
+    },
+    "external_responses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "approved"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "approved": {
+            "const": true
+          }
+        }
+      }
+    },
+    "screen_coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "covered",
+        "required",
+        "percent"
+      ],
+      "properties": {
+        "covered": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "required": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "percent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "verdict": {
+      "enum": [
+        "PASS",
+        "FAIL",
+        "BLOCKED",
+        "NOT_PROVEN",
+        "NOT_READY",
+        "NOT_APPLICABLE"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "verdict": {
+            "const": "PASS"
+          }
+        },
+        "required": [
+          "verdict"
+        ]
+      },
+      "then": {
+        "properties": {
+          "screen_coverage": {
+            "properties": {
+              "percent": {
+                "const": 100
+              }
+            },
+            "required": [
+              "percent"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
