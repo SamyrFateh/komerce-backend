@@ -255,3 +255,11 @@ test('L6 : l’en-tête order-360 ne porte pas de lien « ← » concurrent du r
   const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/order-360.js'), 'utf8');
   expect(src).not.toMatch(/'← (Opérations|Commerce)'/);
 });
+
+test('l’action de nettoyage cible une commande de recette cash et protège les états terminaux',()=>{
+  const source=require('node:fs').readFileSync(require.resolve('../../public/dashboards/canonical/js/order-360'),'utf8');
+  expect(source).toContain("options.user?.role !== 'admin'");
+  expect(source).toContain("order.simulation_scope !== 'G6-BUYER'");
+  expect(source).toContain("order.payment?.mode !== 'cash_relais'");
+  expect(source).toContain("['cancelled','collected','refunded'].includes(order.status)");
+});
