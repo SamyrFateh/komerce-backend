@@ -56,7 +56,10 @@ function git(args, allowFailure = false) {
   const r = cp.spawnSync('git', args, { encoding: 'utf8' });
   if (r.status !== 0) {
     if (allowFailure) return null;
-    throw new Error((r.stderr || r.stdout || 'git failed').trim());
+    // Binary-heavy PRs can exceed spawnSync's output buffer. Never expose a
+    // multiline git error as a GitHub Actions output; fall back to full CI.
+    if (r.error) throw new Error(`git-${args[0]}-${r.error.code || 'spawn-error'}`);
+    throw new Error(String(r.stderr || r.stdout || 'git failed').trim().replace(/[\r\n]+/g, ' ').slice(0, 240));
   }
   return String(r.stdout || '').trim();
 }
