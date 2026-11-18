@@ -12,6 +12,7 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {isDeepStrictEqual}=require('node:util');
 const {chromium}=require('playwright');
+const {normalizeCode}=require('../../services/pickup-code-helpers');
 const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
 const {preseedG6BuyerOtp,verifyMarkedG6Buyer}=require('../../services/g6-staging-buyer-identity-guard');
@@ -109,13 +110,14 @@ async function customer(browser,owner){
   check(response.status()===200&&rotateCount===1&&
     !blocked.some(x=>x.path===revealPath),
     'G6_PICKUP_CLIENT_ROTATION_FAILED');
-  check(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/.test(plaintext||''),'G6_PICKUP_SECRET_FORMAT_INVALID');
+  const normalized=normalizeCode(plaintext);
+  check(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/.test(normalized),'G6_PICKUP_SECRET_FORMAT_INVALID');
   const shown=await action.locator('.k-pickup-code-output').textContent();
   check(shown.includes(plaintext)&&shown.startsWith('Votre code : '),'G6_PICKUP_CLIENT_SECRET_NOT_DISPLAYED');
   check(await action.locator('.k-order-pickup-code-reveal').isHidden(),'G6_PICKUP_REVEAL_NOT_HIDDEN');
   report.events.push({key:'client-code-rotation',http:response.status(),role:'client',ui:true,code_masked:'********'});
   save();await runtime();
-  return {ctx,page,code:plaintext};
+  return {ctx,page,code:normalized};
  }catch(e){await ctx.close();throw e}
 }
 async function relay(browser,code,expectedRelay){
