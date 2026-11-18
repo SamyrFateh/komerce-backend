@@ -12,7 +12,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {test,expect}=require('@playwright/test');
 const OUT=path.resolve('test-results/g6-p3-kuyiyuk');
-const {observe}=require("../../scripts/recette/canonical/observability");let OBS=null,FAILED=false;
+const {observe,startTraceAfterAuth}=require("../../scripts/recette/canonical/observability");let OBS=null,FAILED=false;
 const CANONICAL=process.env.G6_CANONICAL_HUB_STAGE==='1';
 const REF=CANONICAL?String(process.env.G6_CANONICAL_ORDER_REFERENCE||''):'KUYIYUK';
 const evidence={schema:'komerce-g6-p3-kuyiyuk/1',reference:REF,verdict:'NOT_PROVEN',external_supplier_calls:0,external_payment_executed:false,staging_cash_confirmation_recorded:false,gestures:[]};
@@ -48,6 +48,7 @@ async function login(browser,baseURL,actor='hub'){
   expect((await response).status()).toBe(200);
   await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:20000});
   await page.waitForLoadState('load').catch(()=>{});
+  await startTraceAfterAuth(ctx);
   return {ctx,page};
 }
 async function capture(page,name){

@@ -7,8 +7,8 @@ describe('G6 director engagement keeps a real editable Chromium proof field',()=
   const code=fs.readFileSync(src,'utf8');
   expect(()=>new vm.Script(code,{filename:src})).not.toThrow();
   expect(code).toContain('G6_COMMITMENT_PROOF_FIELD_NOT_EDITABLE');
-  expect(code).toContain('proofField.fill(proof,{timeout:6500})');
-  expect(code).toContain('proofField.click({timeout:6500})');
+  expect(code).toContain('humanFill(null,proofField,proof,{timeout:6500})');
+  expect(code).toContain('humanClick(null,proofField,{timeout:6500})');
   expect(code).toContain("director.page.keyboard.type(proof,{delay:0})");
   expect(code).toContain('proofField.inputValue()===proof');
   expect(code).toContain('G6_COMMITMENT_REAL_CHROMIUM_PROOF_INPUT_BLOCKED');
