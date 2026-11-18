@@ -204,10 +204,10 @@ describe('GET /api/purchasing/suppliers', () => {
   it('filtre produit : retourne la correspondance sans modifier les paramètres existants', async () => {
     const productId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
     const mappingId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
-    db.query.mockResolvedValueOnce({ rows: [{ id: 's1', matching_product_supplier_id: mappingId }] });
+    db.query.mockResolvedValueOnce({ rows: [{ id: 's1', matching_product_supplier_id: mappingId, matching_price_aed: null }] });
     const res = await request(app).get('/api/purchasing/suppliers?active=true&product_id=' + productId);
     expect(res.status).toBe(200);
-    expect(res.body[0].matching_product_supplier_id).toBe(mappingId);
+    expect(res.body[0]).toMatchObject({matching_product_supplier_id:mappingId,matching_price_aed:null});
     const [sql, params] = db.query.mock.calls[0];
     expect(sql).toContain('ps.product_id = $2::uuid');
     expect(params).toEqual([true, productId]);

@@ -900,6 +900,13 @@
       supplierPrice.min = '0.01';
       supplierPrice.placeholder = '0,00';
       supplierPrice.setAttribute('data-sourcing-price', '');
+      const actualPrice = field('Prix unitaire réel', doc.createElement('input'), supplierPanel);
+      actualPrice.type = 'number';
+      actualPrice.step = '0.0001';
+      actualPrice.min = '0.0001';
+      const actualCurrency = field('Devise du prix réel (code à 3 lettres)', doc.createElement('input'), supplierPanel);
+      actualCurrency.maxLength = 3;
+      actualCurrency.placeholder = 'AED';
       const mappingNote = text(doc, 'p', 'kmc-hub-sourcing-help', 
         'Association existante : référence et prix enregistrés réutilisés.');
       mappingNote.hidden = true;
@@ -936,7 +943,14 @@
         supplierRef.disabled = mapped;
         supplierPrice.disabled = mapped;
         supplierDetails.hidden = mapped;
-        mappingNote.hidden = !mapped;
+        const quoteNeeded = mapped && supplier.matching_price_aed === null;
+        for (const input of [actualPrice, actualCurrency]) {
+          input.parentNode.hidden = !quoteNeeded;
+          input.disabled = !quoteNeeded;
+          input.required = quoteNeeded;
+          input.value = '';
+        }
+        mappingNote.hidden = !mapped || quoteNeeded;
       }
       function updateItemSummary() {
         const quantity = Number(chosenItem()?.purchasing_missing || 0);
@@ -1029,6 +1043,8 @@
             body: {
               order_item_id: item.id, product_supplier_id: mappingId,
               quantity, execution_mode: 'manual',
+              ...(supplier?.matching_product_supplier_id && supplier.matching_price_aed === null
+                ? {actual_unit_price: actualPrice.value, actual_currency: actualCurrency.value.trim().toUpperCase()} : {}),
             },
           });
           wrote = true;
