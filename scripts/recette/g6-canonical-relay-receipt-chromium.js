@@ -64,7 +64,7 @@ async function main(){
   const me=await actor.page.request.get('/api/auth/me');
   check(me.ok(),'G6_RELAY_SESSION_MISSING');
   const profile=await me.json();
-  check(profile.relais_id===before.orders[0].relais_id,'G6_RELAY_ACTOR_NOT_ORDER_RELAY');
+  // /api/auth/me intentionally exposes a public profile without staff relais_id.\n  // Verify staff assignment independently via read-only PostgreSQL, never by editing it.\n  const {rows:staff}=await db.query('SELECT id, role, relais_id FROM users WHERE id=$1',[profile.id]);\n  check(staff.length===1&&staff[0].role==='agent_relais'&&\n    staff[0].relais_id===before.orders[0].relais_id&&!!staff[0].relais_id,\n    'G6_RELAY_ACTOR_NOT_ORDER_RELAY');
   await actor.page.goto('/admin/relais-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
   const card=actor.page.locator('[data-relay-shipment="'+REF+'"]');
   await card.waitFor({state:'visible',timeout:25000});
