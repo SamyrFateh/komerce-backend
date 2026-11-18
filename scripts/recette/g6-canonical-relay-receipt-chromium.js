@@ -52,7 +52,9 @@ async function main(){
   report.db_fingerprint=guard.fingerprint;report.sha=await runtime();
   const prior=JSON.parse(fs.readFileSync('test-results/g6-canonical-resume/g6-canonical-customs/report.json','utf8'));
   const before=await state();report.before=before;save();
-  check(isDeepStrictEqual(before.base,prior.after.base)&&before.base.shipments[0].stage==='local_delivery'&&
+  check(before.base.order.length===1&&before.base.order[0].id===ORDER&&before.base.parcelItems.length===1&&
+    before.base.parcelEvents.length===1&&before.base.parcelEvents[0].event_type==='shipped'&&
+    isDeepStrictEqual(before.base,prior.after.base)&&before.base.shipments[0].stage==='local_delivery'&&
     before.base.parcels[0].id===PARCEL&&before.base.parcels[0].status==='shipped'&&
     before.orders[0].id===ORDER&&before.orders[0].reference==='KL1WGP6'&&before.orders[0].payment_status==='paid'&&
     before.receipts.length===0&&Number(before.items[0].qty_received)===0&&Number(before.items[0].qty_collected)===0&&
