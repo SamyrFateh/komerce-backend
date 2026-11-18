@@ -41,7 +41,7 @@ async function state(){
 
 async function attachDedicatedRelayByUI(browser,agentId,orderRelay){
  const email=String(env.E2E_AGENT_RELAIS_EMAIL||'').toLowerCase();
- check(/^[^@\\s]*(e2e|rct1|recette)[^@\\s]*@(komerce\\.test|recette\\.komerce\\.invalid)$/.test(email),
+ check(/^[^@\s]*(e2e|rct1|recette)[^@\s]*@(komerce\.test|recette\\.komerce\.invalid)$/.test(email),
   'G6_RELAY_ASSIGNMENT_NOT_DEDICATED_E2E');
  const {rows:staff}=await db.query('SELECT id,role,relais_id FROM users WHERE id=$1',[agentId]);
  const {rows:relay}=await db.query(
