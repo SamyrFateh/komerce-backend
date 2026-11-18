@@ -20,6 +20,7 @@ const REF=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_REF:'SIM-ST
 const BOX=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_BOX_ID:'6ca614e5-869c-40ab-80d7-3684974092fe', TRACK='SIM-STAGING-TRK-'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6');
 const OUT=path.resolve('test-results/g6-canonical-forwarder');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const API='/api/admin/workspaces/shipping-customs/market/KM/international/'+REF;
 const report={schema:'komerce-g6-forwarder/1',shipment_id:ID,shipment_ref:REF,order_id:env.G6_CANONICAL_ORDER_ID,
  reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',scenario_id:'M01',market:'KM',role:'agent_transitaire',events:[],verdict:'BLOCKED',
@@ -49,9 +50,9 @@ async function login(browser,prefix='E2E_AGENT_TRANSITAIRE_',role='agent_transit
   blocked.push({method:r.method(),path:u.pathname});return route.abort('blockedbyclient');
  });
  await page.goto('/login.html?next='+encodeURIComponent('/admin/workspaces/shipping-customs?market=KM'));
- await page.locator('#email').fill(email);await page.locator('#password').fill(password);
+ await humanFill(null,page.locator('#email'),email);await humanFill(null,page.locator('#password'),password);
  const pending=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/login'&&r.request().method()==='POST');
- await page.locator('#btn-submit').click();
+ await humanClick(null,page.locator('#btn-submit'));
  check((await pending).status()===200,'G6_FORWARDER_LOGIN_FAILED');
  await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:20000});
  const me=await page.request.get('/api/auth/me');
@@ -62,11 +63,11 @@ async function task(page,title,tabName='Transport & fret'){
  await page.goto('/admin/workspaces/shipping-customs?market=KM',{waitUntil:'domcontentloaded'});
  await page.locator('[data-international-journey]').first().waitFor({state:'visible',timeout:25000});
  const tab=page.locator('.kmc-journey-tab').filter({hasText:tabName});
- if(!await tab.evaluate(e=>e.classList.contains('is-active')))await tab.click();
+ if(!await tab.evaluate(e=>e.classList.contains('is-active')))await humanClick(null,tab);
  const row=page.locator('tr').filter({has:page.getByText(REF,{exact:true})});
  await row.waitFor({state:'visible',timeout:25000});
  const open=row.getByRole('button',{name:'Consulter',exact:true});
- if(await open.count())await open.click();
+ if(await open.count())await humanClick(null,open);
  const item=page.locator('details.kmc-journey-task').filter({has:page.locator('summary').filter({hasText:title})});
  await item.waitFor({state:'visible',timeout:25000});
  // The workspace may repaint after switching transport/relay tabs and
@@ -75,7 +76,7 @@ async function task(page,title,tabName='Transport & fret'){
  const submit=item.locator('button[type="submit"]');
  let visible=false;
  for(let attempt=0;attempt<4;attempt++){
-  if(!await item.evaluate(e=>e.open))await item.locator('summary').click({timeout:8000});
+  if(!await item.evaluate(e=>e.open))await humanClick(null,item.locator('summary'),{timeout:8000});
   try{
    await submit.waitFor({state:'visible',timeout:5000});
    if(await item.evaluate(e=>e.open)){visible=true;break}
@@ -89,7 +90,7 @@ async function task(page,title,tabName='Transport & fret'){
 async function gesture(actor,key,title,tail,fields,expected){
  await runtime();
  const item=await task(actor.page,title);
- for(const [name,value] of Object.entries(fields))await item.locator('[name="'+name+'"]').fill(value);
+ for(const [name,value] of Object.entries(fields))await humanFill(null,item.locator('[name="'+name+'"]'),value);
  const url=BASE+API+'/'+tail;let count=0;
  const handler=async route=>{
   const req=route.request();
@@ -101,7 +102,7 @@ async function gesture(actor,key,title,tail,fields,expected){
  await actor.page.route(url,handler);
  try{
   const pending=actor.page.waitForResponse(r=>r.url()===url&&r.request().method()==='POST',{timeout:30000});
-  await item.locator('button[type="submit"]').click();
+  await humanClick(null,item.locator('button[type="submit"]'));
   const response=await pending;report.events.push({key,http:response.status()});save();
   check(count===1&&response.ok()&&actor.blocked.length===0,'G6_FORWARDER_HTTP_'+key+'_'+response.status());
  }finally{await actor.page.unroute(url,handler)}

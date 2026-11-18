@@ -17,6 +17,7 @@ const {login,openPo}=require('./g6-hub-commitment-chromium');
 const env=process.env;
 const OUT=path.resolve('test-results/g6-hub-vendor-simulation');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const REF=env.G6_CANONICAL_ORDER_REFERENCE||'';
 const PO=env.G6_CANONICAL_PO_ID||'';
 const ORDER=env.G6_CANONICAL_ORDER_ID||'';
@@ -86,11 +87,12 @@ async function openByChromiumGesture(page, action, kind) {
  await btn.waitFor({state:'visible',timeout:18000});
  check(await btn.isEnabled(),'G6_SIM_'+action+'_ACTION_DISABLED');
  let gesture='pointer';
- try { await btn.click({timeout:7000}); }
+ try { await humanClick(null,btn,{timeout:7000}); }
  catch (err) {
+  if (err&&err.verdict==='BLOCKED')throw err;
   if (!(await form.isVisible().catch(()=>false))) {
     // Keyboard Enter is an accessible operator action, unlike force:true.
-    await btn.press('Enter',{timeout:7000});
+    await humanPress(null,btn,'Enter',{timeout:7000});
     gesture='keyboard-enter';
   }
  }
@@ -131,7 +133,7 @@ async function main(){
    check(await form.locator('[name="supplier_order_id"]').inputValue()==='SIM-STAGING-'+REF,
      'G6_SIM_REFERENCE_INCORRECT');
    const sentResp=actor.page.waitForResponse(x=>new URL(x.url()).pathname==='/api/purchasing/po/'+PO+'/sent'&&x.request().method()==='POST');
-   await form.locator('[data-hlc-action="submit-sent"]').click();
+   await humanClick(null,form.locator('[data-hlc-action="submit-sent"]'));
    const sent=await sentResp;
    check(sent.status()===200,'G6_SIM_SEND_HTTP_'+sent.status());
    const sentJson=await sent.json();
@@ -151,7 +153,7 @@ async function main(){
      await cf.locator('[name="seller_label"]').inputValue()==='SIMULATED-STAGING-FOURNISSEUR-'+REF,
      'G6_SIM_CONFIRM_FORM_PROVENANCE_MISSING');
    const confirmResp=actor.page.waitForResponse(x=>new URL(x.url()).pathname==='/api/purchasing/po/'+PO+'/confirm'&&x.request().method()==='POST');
-   await cf.locator('[data-hlc-action="submit-confirm"]').click();
+   await humanClick(null,cf.locator('[data-hlc-action="submit-confirm"]'));
    const confirmed=await confirmResp;
    check(confirmed.status()===200,'G6_SIM_CONFIRM_HTTP_'+confirmed.status());
    report.confirmation={http:confirmed.status(),proof:'SIM-STAGING-ACHAT-'+REF,

@@ -15,6 +15,7 @@ const db=require('../../db'),{confirmTarget}=require('./target-guard');
 const ORIGIN='https://komerce-backend-production.up.railway.app';
 const OUT=path.resolve('test-results/g6-hub-commitment');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const env=process.env;
 const UUID=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const SHA=/^[0-9a-f]{40}$/i;
@@ -66,10 +67,10 @@ async function login(browser,prefix,{readOnly=false,allowedWrites=['authorize-co
   return route.abort('blockedbyclient');
  });
  await page.goto('/login.html?next='+encodeURIComponent('/admin/hub-live?view=execute&market=KM'));
- await page.locator('#email').fill(email);
- await page.locator('#password').fill(password);
+ await humanFill(null,page.locator('#email'),email);
+ await humanFill(null,page.locator('#password'),password);
  const promise=page.waitForResponse(x=>new URL(x.url()).pathname==='/api/auth/login'&&x.request().method()==='POST');
- await page.locator('#btn-submit').click();
+ await humanClick(null,page.locator('#btn-submit'));
  const auth=await promise;
  check(auth.status()===200,'G6_COMMITMENT_LOGIN_'+prefix+'_'+auth.status());
  await page.waitForURL(x=>x.pathname!=='/login.html',{timeout:15000});
@@ -81,13 +82,13 @@ async function openPo(page){
  await page.goto('/admin/hub-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
  const sel=page.locator('select').first();
  await sel.waitFor({timeout:20000});
- await sel.selectOption({label:'KM · Comores'}).catch(()=>{});
+ await humanSelect(null,sel,{label:'KM · Comores'}).catch(()=>{});
  const po=page.locator('[data-hlc-po="'+env.G6_CANONICAL_PO_ID+'"]');
  await po.waitFor({state:'visible',timeout:25000});
  check(await po.locator('[data-hlc-po-line]').count()===1,'G6_COMMITMENT_PO_MULTILINE');
  check(await po.locator('[data-hlc-line-order="'+env.G6_CANONICAL_ORDER_ID+'"]').count()===1,
   'G6_COMMITMENT_UI_ORDER_MISMATCH');
- await po.click();
+ await humanClick(null,po);
 }
 async function main(){
  let browser;
@@ -135,7 +136,7 @@ async function main(){
    await openPo(director.page);
    const button=director.page.locator('[data-hlc-action="authorize-commitment"]');
    check(await button.isEnabled(),'G6_COMMITMENT_DIRECTOR_ACTION_DISABLED');
-   await button.click();
+   await humanClick(null,button);
    const form=director.page.locator('form[data-hlc-form="commitment"]');
    await form.waitFor({state:'visible',timeout:14000});
    check(await form.locator('input[name="amount"]').count()===0,
@@ -148,11 +149,12 @@ async function main(){
    try{
      // The live Hub cockpit may repaint the form during Playwright fill.
      // Make a bounded attempt before an actual pointer+keyboard gesture.
-     await proofField.fill(proof,{timeout:6500});
+     await humanFill(null,proofField,proof,{timeout:6500});
    }catch(fillError){
+     if(fillError&&fillError.verdict==='BLOCKED')throw fillError;
      inputGesture='pointer-keyboard';
      try{
-       await proofField.click({timeout:6500});
+       await humanClick(null,proofField,{timeout:6500});
        await director.page.keyboard.press('ControlOrMeta+A');
        await director.page.keyboard.type(proof,{delay:0});
      }catch(keyboardError){
@@ -174,7 +176,7 @@ async function main(){
    const response=director.page.waitForResponse(x=>new URL(x.url()).pathname===
     '/api/purchasing/po/'+env.G6_CANONICAL_PO_ID+'/authorize-commitment'&&
     x.request().method()==='POST',{timeout:30000});
-   await form.locator('[data-hlc-action="submit-commitment"]').click();
+   await humanClick(null,form.locator('[data-hlc-action="submit-commitment"]'));
    const actual=await response;
    report.events.push({name:'DIRECTOR_COMMITMENT_UI',http:actual.status()});
    check(actual.status()===201,'G6_COMMITMENT_DIRECTOR_HTTP_'+actual.status());
@@ -197,7 +199,7 @@ async function main(){
    const response=hub.page.waitForResponse(x=>new URL(x.url()).pathname===
     '/api/purchasing/po/'+env.G6_CANONICAL_PO_ID+'/submit'&&
     x.request().method()==='POST',{timeout:30000});
-   await button.click();
+   await humanClick(null,button);
    const actual=await response;
    report.events.push({name:'HUB_SUBMIT_UI',http:actual.status()});
    check(actual.status()===200,'G6_COMMITMENT_SUBMIT_HTTP_'+actual.status());

@@ -26,6 +26,7 @@ const EXPECTED_PRICE=MARKET_PRICE[MARKET];
 let PRODUCT=null;
 const OUT=path.resolve('test-results/g6-p2-buyer-order');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 fs.mkdirSync(OUT,{recursive:true});
 const run=crypto.randomBytes(4).toString('hex');
 const report={run_id:process.env.GITHUB_RUN_ID||null,run8:run.toUpperCase(),
@@ -146,13 +147,13 @@ async function browserCheckout({buyer,phone,code}){
   });
   const d=await page.goto(ORIGIN+'/boutique/?market='+MARKET,{waitUntil:'domcontentloaded'});
   check(d?.status()===200,'BOUTIQUE_DOC_NOT_200');
-  await page.locator('.k-header-nav-btn[data-tab="komerce"]').first().click();
-  await page.locator('#k-kmc-identify').click();
+  await humanClick(null,page.locator('.k-header-nav-btn[data-tab="komerce"]').first());
+  await humanClick(null,page.locator('#k-kmc-identify'));
   await page.locator('#k-id-step-phone').waitFor({state:'visible',timeout:15000});
-  await page.locator('#k-id-name').fill('G6');
-  await page.locator('#k-id-lastname').fill('E2E');
-  await page.locator('#k-id-phone-country').selectOption(COUNTRY_PREFIX[MARKET]);
-  await page.locator('#k-id-phone').fill(phone.slice(COUNTRY_PREFIX[MARKET].length));
+  await humanFill(null,page.locator('#k-id-name'),'G6');
+  await humanFill(null,page.locator('#k-id-lastname'),'E2E');
+  await humanSelect(null,page.locator('#k-id-phone-country'),COUNTRY_PREFIX[MARKET]);
+  await humanFill(null,page.locator('#k-id-phone'),phone.slice(COUNTRY_PREFIX[MARKET].length));
   // Check the actual rendered form's eligibility BEFORE the UI click. An
   // incomplete form silently returns from requestCode without a network POST.
   // This is a real Chromium readback only; never alter DOM state to bypass it.
@@ -177,7 +178,7 @@ async function browserCheckout({buyer,phone,code}){
      r.method()==='POST',{timeout:15000}).catch(()=>null);
   const otpResponse=page.waitForResponse(r=>new URL(r.url()).pathname===otpPath&&
      r.request().method()==='POST',{timeout:18000}).catch(()=>null);
-  await page.locator('#k-id-phone-cta').click();
+  await humanClick(null,page.locator('#k-id-phone-cta'));
   const sent=await otpRequest,rr=await otpResponse;
   if(!sent||!rr){
    record('OTP_UI_NO_RESPONSE',{request_seen:!!sent,response_seen:!!rr,
@@ -190,7 +191,7 @@ async function browserCheckout({buyer,phone,code}){
   await page.locator('#k-id-step-otp').waitFor({state:'visible',timeout:12000});
   await page.screenshot({path:path.join(OUT,'01-real-otp-without-whatsapp.png')});
   const ver=page.waitForResponse(r=>r.url().endsWith('/api/auth/otp/verify')&&r.request().method()==='POST',{timeout:16000});
-  for(let i=0;i<6;i++)await page.locator('.k-id-otp-box').nth(i).fill(code[i]);
+  for(let i=0;i<6;i++)await humanFill(null,page.locator('.k-id-otp-box').nth(i),code[i]);
   const vr=await ver,vb=await vr.json().catch(()=>null);
   check(vr.status()===200&&vb?.user?.id===buyer.id&&!vb?._test,'OTP_REAL_BCRYPT_SESSION_FAIL');
   check((await ctx.cookies()).some(x=>x.name.endsWith('kmrc_jwt')&&x.httpOnly),'OTP_HTTPONLY_SESSION_NOT_SET');
@@ -203,9 +204,9 @@ async function browserCheckout({buyer,phone,code}){
   },null,{timeout:30000});
   const {rows:[actualProduct]}=await db.query('SELECT name,product_ref FROM products WHERE id=$1',[PRODUCT]);
   check(actualProduct?.product_ref===REF&&!!actualProduct.name,'G6_PRODUCT_PROVENANCE_MISMATCH');
-  await page.locator('#k-search-input').fill(actualProduct.name);
+  await humanFill(null,page.locator('#k-search-input'),actualProduct.name);
   const item=page.locator('#k-search-dropdown .k-search-item[data-id="'+PRODUCT+'"]');
-  await item.waitFor({state:'visible',timeout:25000});await item.click();
+  await item.waitFor({state:'visible',timeout:25000});await humanClick(null,item);
   await page.locator('#k-modal-name').waitFor({state:'visible',timeout:13000});
   // Wait for the canonical desktop Product Detail renderer, not a legacy carousel
   // image that may already be loaded before SKU options finish rendering.
@@ -239,7 +240,7 @@ async function browserCheckout({buyer,phone,code}){
    if(!await choices.count())throw Error('G6_NO_AVAILABLE_OPTION_IN_AXIS_'+axisKey);
    const choice=choices.first();
    const value=await choice.getAttribute('data-option-value');
-   await choice.click();
+   await humanClick(null,choice);
    await page.waitForFunction(({index,selectedValue})=>{
     const root=document.querySelectorAll('#k-modal-variants [data-axis-key]')[index];
     return !!root && Array.from(root.querySelectorAll('button[data-option-value]')).some(
@@ -256,13 +257,13 @@ async function browserCheckout({buyer,phone,code}){
   });
   check(addEnabled,'NO_PURCHASABLE_VARIANT');
   const before=Number(await page.locator('#k-modal-cart-badge').innerText().catch(()=>'0'))||0;
-  await add.click();
+  await humanClick(null,add);
   await page.waitForFunction(n=>Number(document.querySelector('#k-modal-cart-badge')?.textContent||0)>n,before,{timeout:10000});
-  await page.locator('#k-modal-close').click();
+  await humanClick(null,page.locator('#k-modal-close'));
   await page.locator('#k-side-cart.has-items').waitFor({state:'visible',timeout:12000});
   await page.screenshot({path:path.join(OUT,'03-real-cart.png')});
   const checkout=page.locator('#k-sc-checkout');
-  if(await checkout.isVisible())await checkout.click();else await page.locator('#k-cart-btn').click();
+  if(await checkout.isVisible())await humanClick(null,checkout);else await humanClick(null,page.locator('#k-cart-btn'));
   await page.locator('#k-order-modal.open').waitFor({state:'visible',timeout:15000});
   const confirm=page.locator('#btn-confirm-order');
   await confirm.waitFor({state:'visible',timeout:15000});
@@ -276,7 +277,7 @@ async function browserCheckout({buyer,phone,code}){
   record('REAL_CHECKOUT',{display_total:total,relay:await page.locator('#ck-relais-summary').innerText().catch(()=>null)});
   await page.screenshot({path:path.join(OUT,'04-real-checkout-before-POST.png')});
   const response=page.waitForResponse(r=>r.url().endsWith('/api/orders')&&r.request().method()==='POST',{timeout:25000});
-  await confirm.click();
+  await humanClick(null,confirm);
   const created=await response,body=await created.json().catch(()=>null);
   record('CANONICAL_ORDER_HTTP',{status:created.status(),reference:body?.order?.reference||null,code:body?.code||null,error:body?.error||null});
   check(created.status()===201&&!!body?.order?.id,'G6_CANONICAL_ORDER_POST_NOT_201');
