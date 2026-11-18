@@ -944,16 +944,26 @@ async function main(env=process.env) {
       report.next_stage='HUB_PO';save();
       if(!/^[a-f0-9-]{36}$/.test(String(buyer.buyer_id||'')))
         throw new Error('G6_CANONICAL_BUYER_ID_NOT_PROVEN');
-      const hub=executeExistingHub({
-        ...env,
-        PGOPTIONS:'-c default_transaction_read_only=on',
-        E2E_CLICKS_BASE_URL:ORIGIN,
-        G6_CANONICAL_HUB_STAGE:'1',
-        G6_CANONICAL_ORDER_REFERENCE:order.reference,
-        G6_CANONICAL_ORDER_ID:order.id,
-        G6_CANONICAL_BUYER_ID:buyer.buyer_id
+      const hub=await graph.byId.get('HUB_PO').run({
+        runCertifiedStage(stageId){
+          if(stageId!=='HUB_PO')throw Error('G6_HUB_PO_STAGE_ID_MISMATCH');
+          return executeExistingHub({
+            ...env,
+            PGOPTIONS:'-c default_transaction_read_only=on',
+            E2E_CLICKS_BASE_URL:ORIGIN,
+            G6_CANONICAL_HUB_STAGE:'1',
+            G6_CANONICAL_ORDER_REFERENCE:order.reference,
+            G6_CANONICAL_ORDER_ID:order.id,
+            G6_CANONICAL_BUYER_ID:buyer.buyer_id
+          });
+        }
       });
-      const hubProof=validateHubProof(hub,order,paid);
+      const hubProof=graph.byId.get('HUB_PO').validate({
+        validateCertifiedStage(stageId,proof){
+          if(stageId!=='HUB_PO')throw Error('G6_HUB_PO_STAGE_ID_MISMATCH');
+          return validateHubProof(proof,order,paid);
+        }
+      },hub);
       report.stages.push({id:'HUB_PO',verdict:'PASS',via:'Chromium_UI',
         evidence:'test-results/g6-p3-kuyiyuk/evidence.json',reference:hubProof.reference,
         readback:hubProof});
