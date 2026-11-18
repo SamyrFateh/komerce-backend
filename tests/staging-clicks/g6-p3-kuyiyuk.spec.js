@@ -181,7 +181,14 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
       const orderCard=page.locator('[data-hlc-order]').filter({hasText:REF});
       await orderCard.first().waitFor({timeout:25000});
       await capture(page,'01-order-visible');
-      const afterCash=await orderState();
+      // Le déclencheur d'achat automatique (post-encaissement cash) est asynchrone côté serveur :
+      // on lui laisse le temps de créer la ligne (lecture PG seule) avant tout sourcing manuel.
+      let afterCash=await orderState();
+      for(let i=0;i<24&&Number(afterCash.line_count)===0;i++){
+        await page.waitForTimeout(5000);
+        afterCash=await orderState();
+      }
+      evidence.auto_line_after_cash=Number(afterCash.line_count)===1;
       if(Number(afterCash.line_count)===0){
         const need=page.locator('[data-hlc-need]').filter({hasText:REF});
         await need.first().waitFor({timeout:20000});
