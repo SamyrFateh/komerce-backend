@@ -1,7 +1,20 @@
 {
   "schema": "komerce-g6-external-responses/1",
   "policy": "ONLY_RESPONSES_FROM_ACTORS_WITHOUT_KOMERCE_UI",
-  "approved": [],
+  "approved": [
+    {
+      "id": "SIMULATED_SUPPLIER_STAGING_PO",
+      "actor": "fournisseur simulé (aucune UI Komerce)",
+      "declared_by": "Hub (UI)",
+      "rule": "Le Hub déclare l'envoi et la confirmation pour un PO composé uniquement de commandes simulation_scope=G6-BUYER, en staging (KOMERCE_ENV=staging), sur un PO manuel (trigger_mode != auto), avec une référence SIM-STAGING-*.",
+      "routes": [
+        "POST /api/purchasing/po/:id/sent",
+        "POST /api/purchasing/po/:id/confirm"
+      ],
+      "reason": "Aucun fournisseur réel ni UI fournisseur dans Komerce : la réponse fournisseur est simulée, étiquetée [SIMULATED / STAGING ONLY], sans appel externe.",
+      "approved_by": "validé par le propriétaire le 18/11 (#4600)"
+    }
+  ],
   "forbidden_human_decisions": [
     "accept",
     "reject",
@@ -12,5 +25,5 @@
     "customer_pickup",
     "cash_confirmation"
   ],
-  "note": "Empty allowlist: no stage may invent an external response. Each future exception requires owner-reviewed PR and must never replace a Komerce UI choice."
+  "note": "Allowlist: only responses from actors without Komerce UI. Each exception requires an owner-reviewed PR and must never replace a Komerce UI choice (forbidden_human_decisions)."
 }

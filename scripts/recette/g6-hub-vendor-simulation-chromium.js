@@ -132,15 +132,15 @@ async function main(){
    const form=await openByChromiumGesture(actor.page,'record-sent','sent');
    check((await form.locator('select option').evaluateAll(x=>x.map(i=>i.value))).join(',')==='other',
      'G6_SIM_EXTERNAL_CHANNEL_PRESENT');
-   // PO groupé : l'écran fige la référence simulée sur la commande de la 1re ligne (FIFO), qui peut être
-   // une autre commande de recette du même PO. Elle doit appartenir à ce PO et être une commande de recette.
+   // PO groupé : le serveur (g6SupplierSimulation) fige la référence sur la 1re ligne exacte, tri
+   // `o.created_at, pl.id`. On compare à CETTE ligne, pas à une commande de recette quelconque du PO.
    const prefilled=await form.locator('[name="supplier_order_id"]').inputValue();
    const m=/^SIM-STAGING-([A-Z0-9][A-Z0-9-]{5,63})$/.exec(prefilled);
    check(m,'G6_SIM_REFERENCE_INCORRECT');
-   const {rows:onPo}=await db.query(`SELECT 1 FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id
-     JOIN orders o ON o.id=oi.order_id WHERE pl.purchase_order_id=$1 AND pl.cancelled_at IS NULL
-     AND o.reference=$2 AND o.simulation_scope IS NOT NULL LIMIT 1`,[PO,m[1]]);
-   check(onPo.length===1,'G6_SIM_REFERENCE_INCORRECT');
+   const {rows:first}=await db.query(`SELECT o.reference,o.simulation_scope FROM purchase_lines pl
+     JOIN order_items oi ON oi.id=pl.order_item_id JOIN orders o ON o.id=oi.order_id
+     WHERE pl.purchase_order_id=$1 AND pl.cancelled_at IS NULL ORDER BY o.created_at, pl.id LIMIT 1`,[PO]);
+   check(first.length===1&&first[0].simulation_scope==='G6-BUYER'&&first[0].reference===m[1],'G6_SIM_REFERENCE_INCORRECT');
    SREF=m[1];report.simulation_reference_order=SREF;
    const sentResp=actor.page.waitForResponse(x=>new URL(x.url()).pathname==='/api/purchasing/po/'+PO+'/sent'&&x.request().method()==='POST');
    await humanClick(null,form.locator('[data-hlc-action="submit-sent"]'));
