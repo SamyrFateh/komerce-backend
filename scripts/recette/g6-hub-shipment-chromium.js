@@ -156,7 +156,9 @@ async function openTransport(page){
  if(await open.count())await open.click();
  const task=page.locator('details.kmc-journey-task').filter({has:page.locator('summary',{hasText:'Confirmer : Remis au transitaire'})});
  await task.waitFor({state:'visible',timeout:25000});
- await task.locator('summary').click();
+ // The primary handover action is visible by default in the product.
+ // Do not toggle the disclosure closed or force a hidden control.
+ await task.locator('button[type="submit"]').waitFor({state:'visible',timeout:25000});
  return task;
 }
 async function main(){
