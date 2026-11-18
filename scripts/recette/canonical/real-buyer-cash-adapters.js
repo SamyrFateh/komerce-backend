@@ -10,6 +10,7 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {spawnSync}=require('node:child_process');
 const {confirmTarget}=require('../target-guard');
+const {redact}=require('./observability');
 const ROOT=path.resolve(__dirname,'../../..');
 const BASE='https://komerce-backend-production.up.railway.app';
 const REPORT_PATH=Object.freeze({
@@ -141,7 +142,18 @@ function execute(script,env){
  const r=spawnSync(process.execPath,[path.join(ROOT,script)],{
   cwd:ROOT,env,stdio:'inherit',timeout:12*60*1000
  });
- if(r.error||r.status!==0)throw Error('G6_DYNAMIC_CHROMIUM_STAGE_FAILED_'+script);
+ if(r.error||r.status!==0){
+  // Full, redacted child error (no truncation) plus where trace/screenshot/network journal live.
+  const stage=Object.keys(SCRIPTS).find(k=>SCRIPTS[k]===script);
+  let detail='';
+  try{
+   const rel=REPORT_PATH[stage];
+   const child=JSON.parse(fs.readFileSync(path.join(ROOT,rel),'utf8'));
+   detail=' | child_error='+redact(child.error||child.verdict||'')+' | artifacts='+path.dirname(rel);
+  }catch(_){}
+  throw Error('G6_DYNAMIC_CHROMIUM_STAGE_FAILED_'+script+' status='+r.status+
+   ' signal='+r.signal+(r.error?' spawn_error='+redact(r.error.message):'')+detail);
+ }
 }
 function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
  if(!db||typeof db.query!=='function')throw Error('G6_DYNAMIC_DATABASE_REQUIRED');

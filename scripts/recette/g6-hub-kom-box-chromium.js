@@ -16,6 +16,7 @@ const {confirmTarget}=require('./target-guard');
 const {login}=require('./g6-hub-commitment-chromium');
 const env=process.env;
 const OUT=path.resolve('test-results/g6-hub-kom-box');
+const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const ORDER=env.G6_CANONICAL_ORDER_ID,PO=env.G6_CANONICAL_PO_ID,REF=env.G6_CANONICAL_ORDER_REFERENCE;
 const BAG=env.G6_CANONICAL_BAG_ID,BAGREF=env.G6_CANONICAL_BAG_REF,PARCEL=env.G6_CANONICAL_PARCEL_ID;
 const ALLOCATION=env.G6_CANONICAL_ALLOCATION_ID;
@@ -148,7 +149,7 @@ async function main(){
   const before=await readback();checkBase(before);report.before=before;save();
   check(before.box.length===0&&before.links.length===0&&before.effective.length===0,'G6_BOX_ALREADY_STARTED_STOP');
   const placementId=before.placement[0].placement_id;
-  browser=await chromium.launch({headless:true});
+  browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   const actor=await login(browser,'E2E_AGENT_HUB_',{readOnly:true});
   try{
    let section=await openDetails(actor.page);
@@ -191,9 +192,9 @@ async function main(){
    report.next_stage='HUB_SHIPMENT';report.verdict='G6_KOM_BOX_SIMULATED_CHROMIUM_PG_PASS_PACKED';save();
   }finally{await actor.ctx.close();}
  }catch(e){
-  report.error=String(e.message||e).slice(0,1500);report.verdict='BLOCKED';
+  report.error=fullError(e);report.verdict='BLOCKED';
   try{if(report.db_fingerprint)report.failure_readback=await readback();}catch(_){}
   save();process.exitCode=2;
- }finally{if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify(report));}
+ }finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify(report));}
 }
 if(require.main===module)main();

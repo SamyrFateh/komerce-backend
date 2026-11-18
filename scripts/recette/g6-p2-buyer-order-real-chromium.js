@@ -25,6 +25,7 @@ const MARKET_PRICE={KM:5990,CM:7987,CG:7987};
 const EXPECTED_PRICE=MARKET_PRICE[MARKET];
 let PRODUCT=null;
 const OUT=path.resolve('test-results/g6-p2-buyer-order');
+const {observe,fullError}=require("./canonical/observability");let OBS=null;
 fs.mkdirSync(OUT,{recursive:true});
 const run=crypto.randomBytes(4).toString('hex');
 const report={run_id:process.env.GITHUB_RUN_ID||null,run8:run.toUpperCase(),
@@ -110,7 +111,7 @@ async function setup(){
  finally{c.release()}
 }
 async function browserCheckout({buyer,phone,code}){
- const browser=await chromium.launch({headless:true});
+ const browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
  try{
   const ctx=await browser.newContext({viewport:{width:1440,height:900},locale:'fr-FR'});
   const page=await ctx.newPage();let orderRequests=0;
@@ -282,7 +283,7 @@ async function browserCheckout({buyer,phone,code}){
   await page.screenshot({path:path.join(OUT,'05-real-order-confirmation.png')});
   check(report.blocked_requests.length===0,'G6_UNEXPECTED_BROWSER_WRITE');
   return body.order;
- }finally{await browser.close()}
+ }finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});await browser.close()}
 }
 (async()=>{
  try{
@@ -313,7 +314,7 @@ async function browserCheckout({buyer,phone,code}){
     checkout_display_total:report.checkout_display_total,market:o.market,lines:o.lines,quantity:o.qty,products:o.products};
   record('INDEPENDENT_POSTGRES_READBACK',report.order);await runtime();
   report.verdict='G6_P2_REAL_OTP_CHROMIUM_ORDER_CREATED_NO_EXTERNAL_EFFECTS';
- }catch(e){report.verdict='BLOCKED';report.error=String(e.message||e).slice(0,480);process.exitCode=2}
+ }catch(e){report.verdict='BLOCKED';report.error=fullError(e);process.exitCode=2}
  finally{save();await db.pool.end();
   console.log(JSON.stringify({verdict:report.verdict,error:report.error||null,
     order_id:report.order?.id||null,reference:report.order?.reference||null,

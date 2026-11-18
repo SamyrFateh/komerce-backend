@@ -23,6 +23,7 @@ const {projectAssignment}=require('../../services/market-scope-projector');
 const BASE='https://komerce-backend-production.up.railway.app';
 const REFS=Object.freeze(require('./g6-canonical-journey-binding').resolveRelayCashRefs(process.env));
 const OUT=path.resolve('test-results/g6-a-relay-cash');
+const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const report={run_id:process.env.GITHUB_RUN_ID||null,verdict:'NOT_PROVEN',
   staging_only:true,real_external_payment:false,orders:[],steps:[],business_transition_via:'Chromium_UI_only'};
 let browser=null;
@@ -224,7 +225,7 @@ async function cashByUI(code,o,actor){
   report.sha=await sha();
   const {byMarket,users,operator}=await prepare();
   await sha();
-  browser=await chromium.launch({headless:true});
+  browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   for(const code of Object.keys(REFS)){
     await sha();
     await attachByUI(code,byMarket[code],users[code],operator);
@@ -234,10 +235,10 @@ async function cashByUI(code,o,actor){
   }
   report.verdict='G6_A_RELAY_UI_ASSIGNMENT_AND_CASH_CHROMIUM_PG_PASS_NOT_PICKUP_GO';
  }catch(e){
-  report.verdict='BLOCKED';report.error=String(e.message||'UNKNOWN').split('\n')[0].slice(0,230);
+  report.verdict='BLOCKED';report.error=fullError(e);
   process.exitCode=2;
  }finally{
-  save();if(browser)await browser.close().catch(()=>{});
+  save();if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});
   await db.pool.end();console.log(JSON.stringify(report));
  }
 })();

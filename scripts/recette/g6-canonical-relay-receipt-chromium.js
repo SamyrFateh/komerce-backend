@@ -22,6 +22,7 @@ const ID=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_ID:'ff8591fc
 const ORDER=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ID:'56adad65-d1fa-4e80-8d69-c25e0fe92a76', PARCEL=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_PARCEL_ID:'95045ede-d5b8-405b-b65f-d9dbdddb4756';
 const ITEM=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ITEM_ID:'8c999eec-7322-4676-8db6-585c4d4545f9', PROOF='[SIMULATED / STAGING ONLY] G6-M01-RECEPTION-RELAIS-'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6');
 const OUT=path.resolve('test-results/g6-canonical-relay-receipt');
+const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const RECEIPT_PATH='/api/admin/workspaces/operations/market/KM/relay-shipments/'+REF+'/receive';
 const report={schema:'komerce-g6-relay-receipt/1',reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',shipment_id:ID,shipment_ref:REF,
  order_id:ORDER,parcel_id:PARCEL,market:'KM',scenario_id:'M01',provenance:'SIMULATED / STAGING ONLY',
@@ -140,7 +141,7 @@ async function main(){
     before.orders[0].id===ORDER&&before.orders[0].reference===(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6')&&before.orders[0].payment_status==='paid'&&
     before.receipts.length===0&&Number(before.items[0].qty_received)===0&&Number(before.items[0].qty_collected)===0&&
     Number(before.items[0].qty_shipped)===1,'G6_RELAY_PRECONDITION_INVALID');
-  browser=await chromium.launch({headless:true});
+  browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   actor=await login(browser,'E2E_AGENT_RELAIS_','agent_relais');
   const me=await actor.page.request.get('/api/auth/me');
   check(me.ok(),'G6_RELAY_SESSION_MISSING');
@@ -196,7 +197,7 @@ async function main(){
    after.events.at(-1).proof_ref===PROOF,'G6_RELAY_RECEIPT_PG_INVALID');
   await runtime();report.verdict='G6_RELAY_RECEIPT_SIMULATED_CHROMIUM_PG_PASS_AVAILABLE';
   report.next_stage='CLIENT_PICKUP';save();
- }catch(e){report.error=String(e.message||e).slice(0,700);try{if(report.db_fingerprint)report.failure_readback=await state()}catch(_){};save();process.exitCode=2}
- finally{if(browser)await browser.close().catch(()=>{});await db.pool.end();console.log(JSON.stringify(report))}
+ }catch(e){report.error=fullError(e);try{if(report.db_fingerprint)report.failure_readback=await state()}catch(_){};save();process.exitCode=2}
+ finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end();console.log(JSON.stringify(report))}
 }
 if(require.main===module)main();

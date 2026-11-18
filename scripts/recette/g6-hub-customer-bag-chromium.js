@@ -16,6 +16,7 @@ const {confirmTarget}=require('./target-guard');
 const {login}=require('./g6-hub-commitment-chromium');
 const env=process.env,ROOT=path.resolve(__dirname,'../..');
 const OUT=path.join(ROOT,'test-results/g6-hub-customer-bag');
+const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const ORDER=env.G6_CANONICAL_ORDER_ID,PO=env.G6_CANONICAL_PO_ID,REF=env.G6_CANONICAL_ORDER_REFERENCE;
 const SOURCE=env.G6_CANONICAL_RECEIPT_REFERENCE;
 const API='/api/admin/workspaces/operations/market/KM';
@@ -139,7 +140,7 @@ async function main(){
   const before=await snapshot(),receipt=validateBase(before);
   report.before=before;save();
   check(before.bags.length===0&&receipt.active&&receipt.state==='RECEIVED','G6_BAG_ALREADY_STARTED_OR_SOURCE_INVALID');
-  browser=await chromium.launch({headless:true});
+  browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   const actor=await login(browser,'E2E_AGENT_HUB_',{readOnly:true});
   try{
    let prep=await openDetails(actor.page);
@@ -202,11 +203,11 @@ async function main(){
    save();
   }finally{await actor.ctx.close();}
  }catch(e){
-  report.verdict='BLOCKED';report.error=String(e.message||e).slice(0,1500);
+  report.verdict='BLOCKED';report.error=fullError(e);
   if(browser){try{const pages=browser.contexts().flatMap(c=>c.pages());if(pages.length)await pages[0].screenshot({path:path.join(OUT,'blocked.png')});}catch(_){}}
   // A partial sequence may already have committed a move. Never restart automatically.
   try{if(report.db_fingerprint)report.failure_readback=await snapshot();}catch(_){}
   save();process.exitCode=2;
- }finally{if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify(report));}
+ }finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify(report));}
 }
 if(require.main===module)main();
