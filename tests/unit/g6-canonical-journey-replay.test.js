@@ -8,6 +8,8 @@ const {
   validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,validateHubReceivingCheckpoint,validateCustomerBagCheckpoint,validateKomBoxCheckpoint,validateShipmentCheckpoint,validatePartialShipmentCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling
 }=require('../../scripts/recette/g6-canonical-replay');
 
+const {loadGoldenStages,stageGraph}=require('../../scripts/recette/canonical/stage-registry');
+
 const sha='a'.repeat(40);
 const env={
   G6_CANONICAL_SCENARIO:'M01',G6_TARGET_MARKET:'KM',
@@ -71,6 +73,28 @@ describe('G6 canonical journey — same order, original matrix, real staging gua
       {DATABASE_URL:''},{G6_CANONICAL_ACCEPT_PARTIAL_REPLAY:'0'}]){
       expect(()=>validateGuard({...env,...edit})).toThrow('G6_CANONICAL_OWNER_STAGING_GUARD');
     }
+  });
+  test('BUYER passe par le contrat run/validate du registre sans fabriquer de preuve',async()=>{
+    const stage=stageGraph(loadGoldenStages()).byId.get('BUYER');
+    const execution=jest.fn(id=>{
+      expect(id).toBe('BUYER');
+      return buyer;
+    });
+    const proof=await stage.run({runCertifiedStage:execution});
+    expect(execution).toHaveBeenCalledTimes(1);
+    expect(proof).toBe(buyer);
+    const oracle=jest.fn((id,result)=>{
+      expect(id).toBe('BUYER');
+      return validateBuyerProof(result,scope,env);
+    });
+    expect(stage.validate({validateCertifiedStage:oracle},proof)).toMatchObject({
+      reference:'K123456',market:'KM'
+    });
+    expect(oracle).toHaveBeenCalledTimes(1);
+    expect(()=>stage.validate({validateCertifiedStage:oracle},{...buyer,market:'CM'})).toThrow();
+    await expect(stage.run({runCertifiedStage:()=>{throw Error('CHROMIUM_BLOCKED');}}))
+      .rejects.toThrow('CHROMIUM_BLOCKED');
+    expect(()=>stage.validate({},buyer)).toThrow('G6_STAGE_VALIDATOR_NOT_BOUND_BUYER');
   });
   test('une preuve client doit être réelle et sur la même commande pending',()=>{
     expect(validateBuyerProof(buyer,scope,env)).toMatchObject({reference:'K123456',market:'KM'});

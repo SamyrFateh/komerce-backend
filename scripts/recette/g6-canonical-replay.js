@@ -897,9 +897,19 @@ async function main(env=process.env) {
       report.resumed_from_run_id=resumeRun;
       report.resume_tooling_diff=resumeDiff.changedFiles;
     } else {
-      buyer=executeExisting('scripts/recette/g6-p2-buyer-order-real-chromium.js',BUYER,env);
+      buyer=await graph.byId.get('BUYER').run({
+        runCertifiedStage(stageId){
+          if(stageId!=='BUYER')throw Error('G6_BUYER_STAGE_ID_MISMATCH');
+          return executeExisting('scripts/recette/g6-p2-buyer-order-real-chromium.js',BUYER,env);
+        }
+      });
     }
-    const order=validateBuyerProof(buyer,scope,env,{toolingEquivalent:!!resumeDiff?.equivalent});
+    const order=graph.byId.get('BUYER').validate({
+      validateCertifiedStage(stageId,proof){
+        if(stageId!=='BUYER')throw Error('G6_BUYER_STAGE_ID_MISMATCH');
+        return validateBuyerProof(proof,scope,env,{toolingEquivalent:!!resumeDiff?.equivalent});
+      }
+    },buyer);
     report.db_fingerprint=buyer.db_fingerprint;report.order=order;
     report.stages.push({id:'BUYER',verdict:'PASS',via:'Chromium_UI',
       evidence:'test-results/g6-p2-buyer-order/report.json',reference:order.reference});
