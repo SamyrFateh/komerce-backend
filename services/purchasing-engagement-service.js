@@ -931,15 +931,18 @@ async function changeLineSupplier(lineId, body = {}, { actor = null, context = {
 // Read source orders under the PO lock; no fixture API/SQL path is offered to the operator.
 const G6_SUPPLIER_SIM_TAG = '[SIMULATED / STAGING ONLY]';
 async function g6SupplierSimulation(client, po, body) {
+  // Ordre FIFO identique au dossier Hub (cockpit : po.lines[0]) : commande la plus ancienne, puis ligne.
   const { rows } = await client.query(`
-    SELECT DISTINCT NULLIF(to_jsonb(o)->>'simulation_scope','') AS simulation_scope, o.reference
+    SELECT NULLIF(to_jsonb(o)->>'simulation_scope','') AS simulation_scope, o.reference
       FROM purchase_lines pl
       JOIN order_items oi ON oi.id = pl.order_item_id
       JOIN orders o ON o.id = oi.order_id
      WHERE pl.purchase_order_id = $1 AND pl.cancelled_at IS NULL
+     ORDER BY o.created_at, pl.id
   `, [po.id]);
   if (!rows.length) throw fail(409, 'SIMULATED_PO_WITHOUT_ORDER', 'PO sans commande liée');
-  const isG6 = rows.length === 1 && rows[0].simulation_scope === 'G6-BUYER';
+  // G6 si toutes les commandes sont de recette G6-BUYER, quel que soit leur nombre.
+  const isG6 = rows.every((r) => r.simulation_scope === 'G6-BUYER');
   if (Boolean(body.simulated) !== isG6) {
     throw fail(409, 'G6_SUPPLIER_SIMULATION_DECLARATION_REQUIRED',
       'Une commande G6 requiert une preuve fournisseur explicitement SIMULATED / STAGING ONLY ; une commande réelle ne peut pas utiliser cette voie');
