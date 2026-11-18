@@ -931,9 +931,14 @@ async function main(env=process.env) {
       }
       const compat=verifyResumeTooling(priorCash.sha,env.E2E_EXPECTED_DEPLOY_SHA);
       report.cash_resume_tooling_diff=compat.changedFiles;
-      const paid=validateCashProof(priorCash,buyer,scope,{
-        ...env,E2E_EXPECTED_DEPLOY_SHA:priorCash.sha
-      });
+      const paid=graph.byId.get('RELAY_CASH').validate({
+        validateCertifiedStage(stageId,proof){
+          if(stageId!=='RELAY_CASH')throw Error('G6_CASH_STAGE_ID_MISMATCH');
+          return validateCashProof(proof,buyer,scope,{
+            ...env,E2E_EXPECTED_DEPLOY_SHA:priorCash.sha
+          });
+        }
+      },priorCash);
       report.stages.push({id:'RELAY_CASH',verdict:'PASS',via:'Chromium_UI',
         reference:paid.reference,evidence:'test-results/g6-canonical-resume/g6-a-relay-cash/report.json'});
       report.next_stage='HUB_PO';save();
@@ -963,11 +968,21 @@ async function main(env=process.env) {
     // Binding is the exact order returned by Chromium; not one of the hardcoded
     // historical refs. This script creates only marked test accounts and the
     // CASH business transition is still performed by a real relay UI click.
-    const cash=executeExisting('scripts/recette/g6-a-relay-cash-real-chromium.js',CASH,{
-      ...env,G6_CANONICAL_SCENARIO:scope.id,G6_CANONICAL_MARKET:scope.market,
-      G6_CANONICAL_ORDER_REFERENCE:order.reference
+    const cash=await graph.byId.get('RELAY_CASH').run({
+      runCertifiedStage(stageId){
+        if(stageId!=='RELAY_CASH')throw Error('G6_CASH_STAGE_ID_MISMATCH');
+        return executeExisting('scripts/recette/g6-a-relay-cash-real-chromium.js',CASH,{
+          ...env,G6_CANONICAL_SCENARIO:scope.id,G6_CANONICAL_MARKET:scope.market,
+          G6_CANONICAL_ORDER_REFERENCE:order.reference
+        });
+      }
     });
-    const paid=validateCashProof(cash,buyer,scope,env);
+    const paid=graph.byId.get('RELAY_CASH').validate({
+      validateCertifiedStage(stageId,proof){
+        if(stageId!=='RELAY_CASH')throw Error('G6_CASH_STAGE_ID_MISMATCH');
+        return validateCashProof(proof,buyer,scope,env);
+      }
+    },cash);
     report.stages.push({id:'RELAY_CASH',verdict:'PASS',via:'Chromium_UI',
       evidence:'test-results/g6-a-relay-cash/report.json',
       reference:paid.reference,readback:paid});
