@@ -11,6 +11,9 @@ describe('G6 buyer OTP never silently bypasses Chromium form validation',()=>{
   expect(eligibility).toBeGreaterThan(0);
   expect(click).toBeGreaterThan(eligibility);
   expect(s).toContain('G6_OTP_CHROMIUM_FORM_NOT_SUBMITTABLE');
+  expect(s).toContain(String.raw`replace(/\D/g,'')`);
+  expect(s).not.toContain(String.raw`replace(/\\D/g,'')`);
+  expect('326 62 88'.replace(/\D/g,'')).toBe('3266288');
   expect(s).toContain('G6_OTP_REQUEST_WITHOUT_RESPONSE');
   expect(s).toContain('G6_OTP_UI_CLICK_DID_NOT_SEND_REQUEST');
  });

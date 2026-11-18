@@ -159,7 +159,7 @@ async function browserCheckout({buyer,phone,code}){
    const phone=step.querySelector('#k-id-phone');
    const country=step.querySelector('#k-id-phone-country');
    const cta=step.querySelector('#k-id-phone-cta');
-   return {step_visible:!step.hidden,phone_length:(phone?.value||'').replace(/\\D/g,'').length,
+   return {step_visible:!step.hidden,phone_length:(phone?.value||'').replace(/\D/g,'').length,
      country_code:country?.value||null,aria_disabled:cta?.getAttribute('aria-disabled'),
      native_disabled:!!cta?.disabled,name_present:!!step.querySelector('#k-id-name')?.value?.trim(),
      surname_present:!!step.querySelector('#k-id-lastname')?.value?.trim(),
