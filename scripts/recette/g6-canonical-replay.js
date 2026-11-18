@@ -40,6 +40,7 @@ const RESUME_CUSTOMER_BAG=path.join(ROOT,'test-results/g6-canonical-resume/g6-hu
 const HUB_KOM_BOX=path.join(ROOT,'test-results/g6-hub-kom-box/report.json');
 const RESUME_KOM_BOX=path.join(ROOT,'test-results/g6-canonical-resume/g6-hub-kom-box/report.json');
 const HUB_SHIPMENT=path.join(ROOT,'test-results/g6-hub-shipment/report.json');
+const RESUME_SHIPMENT=path.join(ROOT,'test-results/g6-canonical-resume/g6-hub-shipment/report.json');
 const ORIGIN='https://komerce-backend-production.up.railway.app';
 const VALID_SHA=/^[a-f0-9]{40}$/;
 const VALID_REF=/^[A-Z0-9][A-Z0-9-]{5,63}$/;
@@ -309,6 +310,45 @@ function validateShipmentCheckpoint(previous,box,scope){
     throw Error('G6_SHIPMENT_PRIOR_BOX_PROVENANCE_INVALID');
  return {order:previous.order,poId:po,dbFingerprint:previous.db_fingerprint,boxId,boxRef,bagId,bagRef,parcelId,allocationId};
 }
+function validatePartialShipmentCheckpoint(previous,partial,scope){
+  const orderId='56adad65-d1fa-4e80-8d69-c25e0fe92a76',poId='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3';
+  const bagId='bcf810c9-33b2-438a-b4c3-857b024e2247',bagRef='KOM-ITEM-178D0AEA488AA4B5B9';
+  const parcelId='95045ede-d5b8-405b-b65f-d9dbdddb4756',allocationId='3b430dcf-8662-44b4-a29f-27e38df19253';
+  const boxId='6ca614e5-869c-40ab-80d7-3684974092fe',boxRef='KOM-BOX-SIM-STAGING-KL1WGP6';
+  const shipmentId='ff8591fc-78bb-49a4-b154-247508368d16',shipmentRef='SIM-STAGING-EXP-KL1WGP6';
+  const a=partial.after_dispatch;
+  if(scope.id!=='M01'||scope.market!=='KM'||previous.scenario_id!=='M01'||previous.market!=='KM'||
+     previous.verdict!=='BLOCKED'||previous.full_chain_certified!==false||previous.production_permitted!==false||
+     previous.next_stage!=='HUB_SHIPMENT'||previous.resumed_from_run_id!=='44199423921'||
+     previous.order?.id!==orderId||previous.order?.reference!=='KL1WGP6'||previous.po_id!==poId||
+     previous.db_fingerprint!=='8acbf99fef010c23eac7d252'||
+     !previous.stages?.some(x=>x.id==='HUB_KOM_BOX'&&x.verdict==='PASS_SIMULATED_STAGING')||
+     partial.schema!=='komerce-g6-hub-shipment/1'||partial.verdict!=='BLOCKED'||partial.scenario_id!=='M01'||partial.market!=='KM'||
+     partial.reference!=='KL1WGP6'||partial.order_id!==orderId||partial.po_id!==poId||partial.bag_id!==bagId||
+     partial.bag_ref!==bagRef||partial.parcel_id!==parcelId||partial.allocation_id!==allocationId||
+     partial.box_id!==boxId||partial.box_ref!==boxRef||partial.shipment_id!==shipmentId||partial.shipment_ref!==shipmentRef||
+     partial.db_fingerprint!==previous.db_fingerprint||partial.sha!=='1fc4e7eac6295f00e56802611bb5e87db081c15a'||
+     partial.provenance!=='SIMULATED / STAGING ONLY'||partial.external_supplier_calls!==0||partial.external_payment_executed!==false||
+     partial.events?.length!==2||partial.events[0].key!=='open-shipment'||partial.events[0].http!==201||
+     partial.events[1].key!=='dispatch-box'||partial.events[1].http!==200||partial.events[1].unit_id!==boxId||
+     partial.before?.box?.length!==1||partial.before.box[0].id!==boxId||partial.before.box[0].state!=='PACKED'||
+     partial.before.shipments?.length!==0||partial.after_open?.box?.[0]?.state!=='PACKED'||
+     partial.after_open?.shipments?.[0]?.id!==shipmentId||
+     !require('node:util').isDeepStrictEqual(a,partial.failure_readback)||
+     a?.box?.length!==1||a.box[0].id!==boxId||a.box[0].state!=='DISPATCHED'||
+     a.shipments?.length!==1||a.shipments[0].id!==shipmentId||a.shipments[0].reference!==shipmentRef||
+     a.shipments[0].stage!=='hub_ready'||a.shipments[0].hub_draft!==true||
+     a.shipmentLinks?.length!==1||a.shipmentLinks[0].shipment_id!==shipmentId||a.shipmentLinks[0].physical_unit_id!==boxId||
+     a.shipmentEvents?.length!==1||a.shipmentEvents[0].event_type!=='opened'||a.shipmentEvents[0].proof_ref!==null||
+     a.parcels?.length!==1||a.parcels[0].id!==parcelId||a.parcels[0].status!=='preparation'||
+     a.parcelItems?.length!==1||Number(a.parcelItems[0].qty_shipped)!==0||Number(a.parcelItems[0].quantity)!==1||
+     a.parcelEvents?.length!==0||a.effective?.length!==1||a.effective[0].allocation_id!==allocationId||
+     Number(a.effective[0].quantity)!==1||a.links?.length!==1||a.links[0].bag_unit_id!==bagId||
+     a.links[0].box_unit_id!==boxId||a.links[0].parcel_id!==parcelId||
+     !a.custody?.some(e=>e.event_type==='STATE_TRANSITION'&&e.from_state==='PACKED'&&e.to_state==='DISPATCHED'&&e.actor_id))
+    throw Error('G6_SHIPMENT_PARTIAL_PROVENANCE_INVALID');
+  return {order:previous.order,poId,dbFingerprint:previous.db_fingerprint,boxId,boxRef,bagId,bagRef,parcelId,allocationId,shipmentId};
+}
 function executeExistingHub(env) {
   fs.rmSync(HUB_PROOF,{force:true});
   const p=spawnSync(process.platform==='win32'?'npx.cmd':'npx',[
@@ -348,11 +388,14 @@ async function main(env=process.env) {
     if(['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT'].includes(phase)&&!resumeRun)
       throw new Error('G6_CANONICAL_HUB_REQUIRES_PREVIOUS_STAGE_PROOF');
     if(phase==='HUB_SHIPMENT'){
-      if(!/^\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_CANONICAL)||!fs.existsSync(RESUME_KOM_BOX))
-        throw Error('G6_SHIPMENT_BOX_ARTIFACT_MISSING');
+      const partialResume=resumeRun==='44203777890';
+      if(!/^\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_CANONICAL)||
+         !fs.existsSync(partialResume?RESUME_SHIPMENT:RESUME_KOM_BOX))
+        throw Error('G6_SHIPMENT_PRIOR_ARTIFACT_MISSING');
       const previous=JSON.parse(fs.readFileSync(RESUME_CANONICAL,'utf8'));
-      const box=JSON.parse(fs.readFileSync(RESUME_KOM_BOX,'utf8'));
-      const bound=validateShipmentCheckpoint(previous,box,scope);
+      const bound=partialResume
+        ?validatePartialShipmentCheckpoint(previous,JSON.parse(fs.readFileSync(RESUME_SHIPMENT,'utf8')),scope)
+        :validateShipmentCheckpoint(previous,JSON.parse(fs.readFileSync(RESUME_KOM_BOX,'utf8')),scope);
       report.resumed_from_run_id=resumeRun;report.order=bound.order;report.po_id=bound.poId;
       report.db_fingerprint=bound.dbFingerprint;
       report.stages=previous.stages.map(st=>({
@@ -366,14 +409,19 @@ async function main(env=process.env) {
           G6_CANONICAL_PO_ID:bound.poId,G6_CANONICAL_DB_FINGERPRINT:bound.dbFingerprint,
           G6_CANONICAL_BAG_ID:bound.bagId,G6_CANONICAL_BAG_REF:bound.bagRef,
           G6_CANONICAL_PARCEL_ID:bound.parcelId,G6_CANONICAL_ALLOCATION_ID:bound.allocationId,
-          G6_CANONICAL_BOX_ID:bound.boxId});
+          G6_CANONICAL_BOX_ID:bound.boxId,
+          G6_CANONICAL_PARTIAL_SHIPMENT_ID:partialResume?bound.shipmentId:'',
+          G6_CANONICAL_PARTIAL_SHIPMENT_REPORT:partialResume?RESUME_SHIPMENT:''});
       if(shipment.verdict!=='G6_HUB_SHIPMENT_SIMULATED_CHROMIUM_PG_PASS_HANDED_OVER'||
          shipment.order_id!==bound.order.id||shipment.po_id!==bound.poId||
          shipment.box_id!==bound.boxId||shipment.bag_id!==bound.bagId||
          shipment.parcel_id!==bound.parcelId||shipment.allocation_id!==bound.allocationId||
          shipment.db_fingerprint!==bound.dbFingerprint||shipment.external_supplier_calls!==0||
          shipment.external_payment_executed!==false||shipment.provenance!=='SIMULATED / STAGING ONLY'||
-         !shipment.shipment_id||shipment.shipment_ref!=='SIM-STAGING-EXP-KL1WGP6'||shipment.events?.length!==3)
+         !shipment.shipment_id||shipment.shipment_ref!=='SIM-STAGING-EXP-KL1WGP6'||shipment.events?.length!==3||
+         (partialResume&&(shipment.shipment_id!==bound.shipmentId||shipment.resumed_from_run_id!==resumeRun||
+           shipment.events[0].source_run_id!==resumeRun||shipment.events[1].source_run_id!==resumeRun||
+           shipment.events[2].key!=='handover-forwarder'||shipment.events[2].source_run_id)))
         throw Error('G6_SHIPMENT_FINAL_PROOF_INVALID');
       report.stages.push({id:'HUB_SHIPMENT',verdict:'PASS_SIMULATED_STAGING',via:'Chromium_UI',
         reference:bound.order.reference,shipment_id:shipment.shipment_id,shipment_ref:shipment.shipment_ref,
@@ -738,4 +786,4 @@ async function main(env=process.env) {
 }
 
 if(require.main===module)main().catch(e=>{console.error(e.message);process.exitCode=2});
-module.exports={validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,validateVendorSimulationCheckpoint,validateHubReceivingCheckpoint,validateCustomerBagCheckpoint,validateKomBoxCheckpoint,validateShipmentCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling,main};
+module.exports={validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,validateVendorSimulationCheckpoint,validateHubReceivingCheckpoint,validateCustomerBagCheckpoint,validateKomBoxCheckpoint,validateShipmentCheckpoint,validatePartialShipmentCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling,main};

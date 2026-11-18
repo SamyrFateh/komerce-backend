@@ -5,7 +5,7 @@ const {
   business,canonicalScenario,resolveCanonicalReplay,resolveRelayCashRefs
 }=require('../../scripts/recette/g6-canonical-journey-binding');
 const {
-  validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,validateHubReceivingCheckpoint,validateCustomerBagCheckpoint,validateKomBoxCheckpoint,validateShipmentCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling
+  validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,validateHubReceivingCheckpoint,validateCustomerBagCheckpoint,validateKomBoxCheckpoint,validateShipmentCheckpoint,validatePartialShipmentCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling
 }=require('../../scripts/recette/g6-canonical-replay');
 
 const sha='a'.repeat(40);
@@ -271,4 +271,36 @@ describe('G6 canonical journey — same order, original matrix, real staging gua
     expect(()=>validateCashProof({...cash,steps:cash.steps.map(s=>s.name==='CASH_UI_PAID'?{...s,cash_collection_count:0}:s)},buyer,scope,env)).toThrow();
     expect(()=>validateCashProof({...cash,sha:'b'.repeat(40)},buyer,scope,env)).toThrow();
   });
+});
+
+test('partial shipment checkpoint requires exact historical two clicks and rejects any handover or changed lineage',()=>{
+  const orderId='56adad65-d1fa-4e80-8d69-c25e0fe92a76',poId='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3';
+  const bagId='bcf810c9-33b2-438a-b4c3-857b024e2247',bagRef='KOM-ITEM-178D0AEA488AA4B5B9';
+  const parcelId='95045ede-d5b8-405b-b65f-d9dbdddb4756',allocationId='3b430dcf-8662-44b4-a29f-27e38df19253';
+  const boxId='6ca614e5-869c-40ab-80d7-3684974092fe',boxRef='KOM-BOX-SIM-STAGING-KL1WGP6';
+  const shipmentId='ff8591fc-78bb-49a4-b154-247508368d16',shipmentRef='SIM-STAGING-EXP-KL1WGP6';
+  const fingerprint='8acbf99fef010c23eac7d252';
+  const previous={scenario_id:'M01',market:'KM',verdict:'BLOCKED',full_chain_certified:false,production_permitted:false,
+    next_stage:'HUB_SHIPMENT',resumed_from_run_id:'44199423921',order:{id:orderId,reference:'KL1WGP6'},po_id:poId,
+    db_fingerprint:fingerprint,stages:[{id:'HUB_KOM_BOX',verdict:'PASS_SIMULATED_STAGING'}]};
+  const after={box:[{id:boxId,state:'DISPATCHED'}],shipments:[{id:shipmentId,reference:shipmentRef,stage:'hub_ready',hub_draft:true}],
+    shipmentLinks:[{shipment_id:shipmentId,physical_unit_id:boxId}],shipmentEvents:[{event_type:'opened',proof_ref:null}],
+    parcels:[{id:parcelId,status:'preparation'}],parcelItems:[{quantity:1,qty_shipped:0}],parcelEvents:[],
+    effective:[{allocation_id:allocationId,quantity:1}],links:[{bag_unit_id:bagId,box_unit_id:boxId,parcel_id:parcelId}],
+    custody:[{event_type:'STATE_TRANSITION',from_state:'PACKED',to_state:'DISPATCHED',actor_id:'actor'}]};
+  const partial={schema:'komerce-g6-hub-shipment/1',scenario_id:'M01',market:'KM',verdict:'BLOCKED',reference:'KL1WGP6',
+    order_id:orderId,po_id:poId,bag_id:bagId,bag_ref:bagRef,parcel_id:parcelId,allocation_id:allocationId,box_id:boxId,
+    box_ref:boxRef,shipment_id:shipmentId,shipment_ref:shipmentRef,db_fingerprint:fingerprint,
+    sha:'1fc4e7eac6295f00e56802611bb5e87db081c15a',external_supplier_calls:0,external_payment_executed:false,
+    provenance:'SIMULATED / STAGING ONLY',events:[{key:'open-shipment',http:201},{key:'dispatch-box',http:200,unit_id:boxId}],
+    before:{box:[{id:boxId,state:'PACKED'}],shipments:[]},after_open:{box:[{id:boxId,state:'PACKED'}],shipments:[{id:shipmentId}]},
+    after_dispatch:after,failure_readback:JSON.parse(JSON.stringify(after))};
+  expect(validatePartialShipmentCheckpoint(previous,partial,scope)).toMatchObject({shipmentId,boxId,parcelId});
+  for(const mutation of [{db_fingerprint:'other'},{shipment_id:'other'},{events:[...partial.events,{key:'handover-forwarder',http:200}]},
+    {failure_readback:{...after,parcelEvents:[{}]}},{external_payment_executed:true}]){
+    expect(()=>validatePartialShipmentCheckpoint(previous,{...partial,...mutation},scope)).toThrow('G6_SHIPMENT_PARTIAL_PROVENANCE_INVALID');
+  }
+  const handed={...after,shipments:[{...after.shipments[0],stage:'handed_over'}]};
+  expect(()=>validatePartialShipmentCheckpoint(previous,{...partial,after_dispatch:handed,failure_readback:handed},scope)).toThrow();
+  expect(()=>validatePartialShipmentCheckpoint({...previous,resumed_from_run_id:'other'},partial,scope)).toThrow();
 });

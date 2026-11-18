@@ -126,6 +126,8 @@ jobs:
             if(a)fs.appendFileSync(process.env.GITHUB_OUTPUT,'artifact_id='+a[1]+'\n');
             if(process.env.ISSUE_TITLE==='[staging-op] g6-canonical-hub-shipment-M01-KM'&&!a)
               throw Error('G6_SHIPMENT_EXACT_ARTIFACT_ID_REQUIRED');
+            if(process.env.ISSUE_TITLE==='[staging-op] g6-canonical-hub-shipment-M01-KM'&&m[1]==='44203777890'&&a?.[1]!=='14382262298')
+              throw Error('G6_SHIPMENT_PARTIAL_EXACT_ARTIFACT_REQUIRED');
           }
           NODE
       - name: Retrieve exact prior stage proof from verified GitHub Actions artifact
