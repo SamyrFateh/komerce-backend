@@ -431,7 +431,12 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
     const draftPo=(record.gestures||[]).find(x=>x.key==='prepare-draft-po'&&x.verdict==='PASS');
     if(draftPo?.purchase_order_id!==poId)
      throw Error('G6_DYNAMIC_HUB_PO_IDENTITY_DRIFT');
-    const receipt=stageId==='HUB_RECEIVING'?null:report('HUB_RECEIVING').data;
+    // The physical supplier package does not exist during director commitment
+    // or supplier readiness. Read it only after a successful HUB_RECEIVING.
+    const needsReceipt=['HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG',
+     'HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS',
+     'RELAY_RECEIPT','CLIENT_PICKUP'].includes(stageId);
+    const receipt=needsReceipt?report('HUB_RECEIVING').data:null;
     const bag=stageId==='HUB_KOM_BOX'?report('HUB_CUSTOMER_BAG').data:null;
     const source=receipt?.receipt?.reference||'';
     if(stageId!=='HUB_RECEIVING'&&['HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX'].includes(stageId)&&
