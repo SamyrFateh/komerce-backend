@@ -24,6 +24,7 @@ const BASE='https://komerce-backend-production.up.railway.app';
 const REFS=Object.freeze(require('./g6-canonical-journey-binding').resolveRelayCashRefs(process.env));
 const OUT=path.resolve('test-results/g6-a-relay-cash');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {startTraceAfterAuth}=require('./canonical/observability');
 const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const report={run_id:process.env.GITHUB_RUN_ID||null,verdict:'NOT_PROVEN',
   staging_only:true,real_external_payment:false,orders:[],steps:[],business_transition_via:'Chromium_UI_only'};
@@ -140,6 +141,7 @@ async function openUI(email,password,allowMutation){
   const lr=await wait;
   check(lr.status()===200,'G6_A_UI_LOGIN_'+lr.status());
   await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:15000});
+  await startTraceAfterAuth(ctx);
   return {ctx,page};
 }
 async function attachByUI(code,o,actor,operator){

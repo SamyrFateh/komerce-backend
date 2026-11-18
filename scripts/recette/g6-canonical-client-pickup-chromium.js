@@ -26,6 +26,7 @@ const SHIPMENT=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_ID:'ff
 const ITEM=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ITEM_ID:'8c999eec-7322-4676-8db6-585c4d4545f9';
 const OUT=path.resolve('test-results/g6-canonical-client-pickup');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {startTraceAfterAuth}=require('./canonical/observability');
 const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const report={schema:'komerce-g6-client-pickup/1',scenario_id:'M01',market:'KM',reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',
  order_id:ID,parcel_id:PARCEL,shipment_id:SHIPMENT,provenance:'SIMULATED / STAGING ONLY',
@@ -93,6 +94,7 @@ async function customer(browser,owner){
   const res=await pending,session=await res.json().catch(()=>null);
   check(res.status()===200&&session?.user?.id===owner.id,'G6_PICKUP_OTP_SESSION_OWNER_INVALID');
   check((await ctx.cookies()).some(x=>x.name.endsWith('kmrc_jwt')&&x.httpOnly),'G6_PICKUP_SESSION_NOT_HTTPONLY');
+  await startTraceAfterAuth(ctx);
   await runtime();
   report.events.push({key:'client-otp',http:200,role:'client'});save();
   await page.goto('/boutique/?market=KM&tab=track',{waitUntil:'domcontentloaded'});

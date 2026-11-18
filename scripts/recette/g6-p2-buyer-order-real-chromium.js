@@ -26,6 +26,7 @@ const EXPECTED_PRICE=MARKET_PRICE[MARKET];
 let PRODUCT=null;
 const OUT=path.resolve('test-results/g6-p2-buyer-order');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {startTraceAfterAuth}=require('./canonical/observability');
 const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 fs.mkdirSync(OUT,{recursive:true});
 const run=crypto.randomBytes(4).toString('hex');
@@ -195,6 +196,7 @@ async function browserCheckout({buyer,phone,code}){
   const vr=await ver,vb=await vr.json().catch(()=>null);
   check(vr.status()===200&&vb?.user?.id===buyer.id&&!vb?._test,'OTP_REAL_BCRYPT_SESSION_FAIL');
   check((await ctx.cookies()).some(x=>x.name.endsWith('kmrc_jwt')&&x.httpOnly),'OTP_HTTPONLY_SESSION_NOT_SET');
+  await startTraceAfterAuth(ctx);
   record('CHROMIUM_OTP_VERIFIED',{request_status:rr.status(),verify_status:vr.status(),session:true,external_notification:false});
   await page.goto(ORIGIN+'/boutique/?market='+MARKET,{waitUntil:'domcontentloaded'});
   // The catalog's async load must finish before the first search input event.
