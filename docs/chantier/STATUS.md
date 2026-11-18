@@ -21,6 +21,8 @@
 **G6-FIAB — lot RUNNER (agent 1) :** P0-A [#4551](https://github.com/SamyrFateh/komerce-backend/pull/4551) et P0-B [#4553](https://github.com/SamyrFateh/komerce-backend/pull/4553) FUSIONNÉS (observabilité à l'échec ; gestes `humanClick`/`humanFill`, `next_stage` via `stage-registry`). Lot COCKPIT (P1) : voir sa propre ligne. Prochaine action : Opus prépare les 3 runs M01 KM 15/15 après fusion de P1 ; aucun run lancé par ce lot.
 
 **G6-FIAB — lot COCKPIT (agent 2) :** P1 [#4552](https://github.com/SamyrFateh/komerce-backend/pull/4552) FUSIONNÉ (saisies et focus conservés au repaint, file direction à hauteur réservée, `data-render-epoch` / `data-hlc-ready`). Tests Chromium locaux 20/20. Prochaine action : Opus prépare les 3 runs M01 KM ; le helper `humanClick` peut attendre `[data-hlc-ready="true"]`.
+**G6-MARKET — marché paramétré du runner dynamique (Sonnet) : [#4575](https://github.com/SamyrFateh/komerce-backend/pull/4575) FUSIONNÉ.** `G6_TARGET_MARKET` in KM|CM|CG (profil unique `scripts/recette/canonical/market-profile.js`), titres workflow `g6-dynamic-fresh-full-M01-CM`/`-CG`, KM inchangé, aucun run staging. Prochaine action (Opus) : lancer le run CM puis CG ; vérifier la membership marché du relais `E2E_AGENT_RELAIS_*` (secret unique) ; +242 déjà présent dans `b-phone.js`.
+
 
 ## Décision propriétaire du 17 novembre 2026 — certification exclusivement sur staging
 
