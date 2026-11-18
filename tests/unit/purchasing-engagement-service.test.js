@@ -506,6 +506,18 @@ describe('createManualLine', () => {
     await expect(engagement.createManualLine(body)).rejects.toThrow('boom');
   });
 
+  it('prix fournisseur indisponible (mapping sans prix) → 409 SUPPLIER_MONEY_UNAVAILABLE en FR, jamais une 500', async () => {
+    scripted(handlers({ ps: { ...ps, supplier_name: 'Audit CJ Supplier' } }));
+    snapshot.buildPurchaseTarget.mockImplementationOnce(() => { throw new Error('SUPPLIER_MONEY_UNAVAILABLE'); });
+    await expect(engagement.createManualLine(body)).rejects.toMatchObject({
+      status: 409, code: 'SUPPLIER_MONEY_UNAVAILABLE', message: expect.stringContaining('Audit CJ Supplier'),
+    });
+    expect(snapshot.insertOpenPurchaseLine).not.toHaveBeenCalled();
+    scripted(handlers());
+    snapshot.buildPurchaseTarget.mockImplementationOnce(() => { throw new Error('autre'); });
+    await expect(engagement.createManualLine(body)).rejects.toThrow('autre');
+  });
+
   it('sur-engagement refusé par I1 (base) → 409 PURCHASE_LINE_OVERCOMMITTED', async () => {
     scripted(handlers());
     snapshot.insertOpenPurchaseLine.mockRejectedValueOnce(Object.assign(new Error('purchase_line_overcommitted: besoin 2'), { code: '23514' }));
