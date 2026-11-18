@@ -14,6 +14,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {spawnSync,execFileSync}=require('node:child_process');
 const {resolveCanonicalReplay}=require('./g6-canonical-journey-binding');
+const {loadGoldenStages,stageGraph,resolvePhase}=require('./canonical/stage-registry');
 
 const ROOT=path.resolve(__dirname,'../..');
 const OUT=path.join(ROOT,'test-results/g6-canonical-replay');
@@ -395,7 +396,11 @@ async function main(env=process.env) {
   try{
     const scope=validateGuard(env);
     const phase=String(env.G6_CANONICAL_PHASE||'BUYER_CASH');
-    if(!['BUYER_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP'].includes(phase) || (['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP'].includes(phase)&&(scope.id!=='M01'||scope.market!=='KM')))
+    // The registry verifies declared stages before the certified legacy executor
+    // handles their proven Chromium/PG implementation. NO stage may self-authorize.
+    const graph=stageGraph(loadGoldenStages());
+    const declaredStage=resolvePhase(phase,graph);
+    if(!declaredStage || ['BUYER','RELAY_CASH'].includes(phase) || (phase!=='BUYER_CASH' && (scope.id!=='M01'||scope.market!=='KM')))
       throw new Error('G6_CANONICAL_PHASE_NOT_BOUND');
     report.scenario_id=scope.id;report.market=scope.market;
     report.source_matrix_version=scope.source_version;
