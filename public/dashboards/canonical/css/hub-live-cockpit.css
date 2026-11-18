@@ -67,7 +67,7 @@
 .hlc-need-title { font-size: 13px; min-width: 0; overflow-wrap: anywhere; }
 .hlc-chips { gap: 6px; }
 .hlc-chip { font-family: ui-monospace, Menlo, monospace; font-size: 11px; font-weight: 600; border-radius: 6px; padding: 2px 7px; background: #f0f1f4; color: #2e343d; border: 0; }
-button.hlc-chip.is-link { cursor: pointer; background: #dce7fb; color: #163b8c; }
+button.hlc-chip.is-link { width: fit-content; flex: 0 0 auto; cursor: pointer; background: #dce7fb; color: #163b8c; }
 .hlc-supplier { font-size: 12px; color: #2e343d; }
 .hlc-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
 .hlc-step { display: flex; flex-direction: column; gap: 3px; font-size: 10px; font-weight: 500; color: #8a93a0; }

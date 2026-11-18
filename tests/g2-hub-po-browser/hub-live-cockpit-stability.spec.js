@@ -120,3 +120,41 @@ test('submit-commitment : rerender forcé juste avant le submit, une seule requ�
   expect(await page.evaluate(() => window.__fiab.calls.length)).toBe(1);
   await expect(page.locator('[data-hub-cockpit]')).toHaveAttribute('data-hlc-ready', 'true');
 });
+
+test('centre de la carte sélectionne le PO et seule la puce sélectionne la commande', async ({ page }) => {
+  await setup(page, { step: 'draft', status: 'draft', commitment: false });
+  const card = page.locator('[data-hlc-po]');
+  await card.click();
+  await expect(card).toHaveClass(/is-selected/);
+  await card.locator('[data-hlc-goto-order]').click();
+  await expect(card).not.toHaveClass(/is-selected/);
+});
+
+test('expédition : repeindre pendant la saisie conserve tâche, valeur et curseur', async ({ page }) => {
+  await page.setContent('<main></main>');
+  await page.addScriptTag({ content: JS('international-journey-panel.js') });
+  await page.evaluate(() => {
+    const panel = window.KomerceInternationalJourneyPanel;
+    const root = document.querySelector('main');
+    const row = {reference: 'INT-TEST', stage: 'arrived'};
+    const ctx = {user: {role: 'admin'}, marketCode: 'CM', journeyRef: row.reference, journeyTab: 'arrival'};
+    window.repaint = () => {
+      const saved = panel.capture(root, document);
+      root.replaceChildren();
+      panel.restore(panel.render(document,root,ctx,[row]),saved);
+    };
+    window.repaint();
+  });
+  const task = page.locator('details').filter({hasText:'Lier le dossier douane existant'});
+  await task.locator('summary').click();
+  const input = task.locator('[name=proof_ref]');
+  await input.fill('PREUVE');
+  await input.press('ArrowLeft');
+  await page.evaluate(() => window.repaint());
+  await expect(task).toHaveJSProperty('open',true);
+  await expect(input).toBeFocused();
+  await page.keyboard.type('-1');
+  await expect(input).toHaveValue('PREUV-1E');
+  await expect(page.locator('[data-international-journey]')).toHaveAttribute('data-render-epoch','2');
+  await expect(page.locator('[data-international-journey]')).toHaveAttribute('data-ready','true');
+});
