@@ -18,6 +18,8 @@
 
 **G6-FIAB — lot RUNNER (agent 1) :** P0-A [#4551](https://github.com/SamyrFateh/komerce-backend/pull/4551) et P0-B [#4553](https://github.com/SamyrFateh/komerce-backend/pull/4553) FUSIONNÉS (observabilité à l'échec ; gestes `humanClick`/`humanFill`, `next_stage` via `stage-registry`). Lot COCKPIT (P1) : voir sa propre ligne. Prochaine action : Opus prépare les 3 runs M01 KM 15/15 après fusion de P1 ; aucun run lancé par ce lot.
 
+**G6-FIAB — lot COCKPIT (agent 2) :** P1 [#4552](https://github.com/SamyrFateh/komerce-backend/pull/4552) FUSIONNÉ (saisies et focus conservés au repaint, file direction à hauteur réservée, `data-render-epoch` / `data-hlc-ready`). Tests Chromium locaux 20/20. Prochaine action : Opus prépare les 3 runs M01 KM ; le helper `humanClick` peut attendre `[data-hlc-ready="true"]`.
+
 ## Décision propriétaire du 17 novembre 2026 — certification exclusivement sur staging
 
 **RÈGLE TRANSVERSALE ET OBLIGATOIRE — GPT, Work, Sonnet, Opus : on valide TOUT sur le staging Railway réel de Komerce et on arrête les campagnes de validation isolées.** Le staging partagé est le terrain de recette ; ne plus substituer une base locale, un environnement éphémère, un test unitaire, un mock, un simulateur ou une preuve API seule à une validation fonctionnelle réelle. Ne pas inventer un « staging isolé » ni repartir sur une autre instance sans décision propriétaire expresse.
