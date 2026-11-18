@@ -446,7 +446,10 @@ async function main(env=process.env) {
        throw Error('G6_PICKUP_RELAY_PROVENANCE_INVALID');
       report.resumed_from_run_id=resumeRun;report.order=previous.order;report.po_id=po;
       report.db_fingerprint=fingerprint;report.stages=previous.stages;report.next_stage='CLIENT_PICKUP';save();
-      const result=executeExisting('scripts/recette/g6-canonical-client-pickup-chromium.js',
+      const result=await graph.byId.get('CLIENT_PICKUP').run({
+        runCertifiedStage(stageId){
+          if(stageId!=='CLIENT_PICKUP')throw Error('G6_STAGE_ID_MISMATCH_CLIENT_PICKUP');
+          return executeExisting('scripts/recette/g6-canonical-client-pickup-chromium.js',
        path.join(ROOT,'test-results/g6-canonical-client-pickup/report.json'),{...env,
         // OTP fixture is the sole intentional non-UI write. The guarded writer
         // seeds a bcrypt OTP for the SAME marked buyer. Other business writes
@@ -459,7 +462,12 @@ async function main(env=process.env) {
         G6_CANONICAL_PARCEL_ID:parcel,
         G6_CANONICAL_ALLOCATION_ID:'3b430dcf-8662-44b4-a29f-27e38df19253',
         G6_CANONICAL_BOX_ID:'6ca614e5-869c-40ab-80d7-3684974092fe'});
-      if(result.verdict!=='G6_CLIENT_PICKUP_SIMULATED_CHROMIUM_PG_PASS_COLLECTED'||
+        }
+      });
+      graph.byId.get('CLIENT_PICKUP').validate({
+        validateCertifiedStage(stageId,proof){
+          if(stageId!=='CLIENT_PICKUP'||proof!==result)throw Error('G6_STAGE_PROOF_CONTEXT_CLIENT_PICKUP');
+          if(result.verdict!=='G6_CLIENT_PICKUP_SIMULATED_CHROMIUM_PG_PASS_COLLECTED'||
         result.order_id!==id||result.shipment_id!==sid||result.parcel_id!==parcel||
         result.db_fingerprint!==fingerprint||result.external_payment_executed!==false||
         result.external_supplier_calls!==0||result.plaintext_pickup_code_logged!==false||
@@ -469,6 +477,9 @@ async function main(env=process.env) {
         result.after?.base?.parcels?.[0]?.status!=='collected'||result.after?.scans?.length!==1||
         result.after?.base?.shipments?.[0]?.stage!=='relay_received')
         throw Error('G6_PICKUP_FINAL_PROOF_INVALID');
+          return true;
+        }
+      },result);
       report.stages.push({id:'CLIENT_PICKUP',verdict:'PASS_SIMULATED_STAGING',via:'Chromium_UI',shipment_id:sid,
         evidence:'test-results/g6-canonical-client-pickup/report.json'});
       report.next_stage='COMPLETED_M01';report.verdict='G6_M01_SIMULATED_CHROMIUM_PG_PASS_COLLECTED';
@@ -501,7 +512,10 @@ async function main(env=process.env) {
         throw Error('G6_RELAY_CUSTOMS_PROVENANCE_INVALID');
       report.resumed_from_run_id=resumeRun;report.order=previous.order;report.po_id=po;
       report.db_fingerprint=fingerprint;report.stages=previous.stages;report.next_stage='RELAY_RECEIPT';save();
-      const result=executeExisting('scripts/recette/g6-canonical-relay-receipt-chromium.js',
+      const result=await graph.byId.get('RELAY_RECEIPT').run({
+        runCertifiedStage(stageId){
+          if(stageId!=='RELAY_RECEIPT')throw Error('G6_STAGE_ID_MISMATCH_RELAY_RECEIPT');
+          return executeExisting('scripts/recette/g6-canonical-relay-receipt-chromium.js',
         path.join(ROOT,'test-results/g6-canonical-relay-receipt/report.json'),{...env,PGOPTIONS:'-c default_transaction_read_only=on',
           G6_CANONICAL_ORDER_ID:id,G6_CANONICAL_ORDER_REFERENCE:'KL1WGP6',
           G6_CANONICAL_DB_FINGERPRINT:fingerprint,
@@ -510,13 +524,21 @@ async function main(env=process.env) {
           G6_CANONICAL_PARCEL_ID:'95045ede-d5b8-405b-b65f-d9dbdddb4756',
           G6_CANONICAL_ALLOCATION_ID:'3b430dcf-8662-44b4-a29f-27e38df19253',
           G6_CANONICAL_BOX_ID:'6ca614e5-869c-40ab-80d7-3684974092fe'});
-      if(result.verdict!=='G6_RELAY_RECEIPT_SIMULATED_CHROMIUM_PG_PASS_AVAILABLE'||
+        }
+      });
+      graph.byId.get('RELAY_RECEIPT').validate({
+        validateCertifiedStage(stageId,proof){
+          if(stageId!=='RELAY_RECEIPT'||proof!==result)throw Error('G6_STAGE_PROOF_CONTEXT_RELAY_RECEIPT');
+          if(result.verdict!=='G6_RELAY_RECEIPT_SIMULATED_CHROMIUM_PG_PASS_AVAILABLE'||
         result.shipment_id!==sid||result.order_id!==id||result.db_fingerprint!==fingerprint||
         result.events?.length!==1||result.events[0].http!==201||
         result.external_supplier_calls!==0||result.external_payment_executed!==false||
         result.after?.base?.shipments?.[0]?.stage!=='relay_received'||
         result.after?.base?.parcels?.[0]?.status!=='available')
         throw Error('G6_RELAY_FINAL_PROOF_INVALID');
+          return true;
+        }
+      },result);
       report.stages.push({id:'RELAY_RECEIPT',verdict:'PASS_SIMULATED_STAGING',via:'Chromium_UI',shipment_id:sid,
         evidence:'test-results/g6-canonical-relay-receipt/report.json'});
       report.next_stage='CLIENT_PICKUP';report.verdict='NOT_PROVEN';save();return report;
@@ -545,16 +567,27 @@ async function main(env=process.env) {
         throw Error('G6_CUSTOMS_FORWARDER_PROVENANCE_INVALID');
       report.resumed_from_run_id=resumeRun;report.order=previous.order;report.po_id=po;report.db_fingerprint=fingerprint;
       report.stages=previous.stages;report.next_stage='CUSTOMS';save();
-      const result=executeExisting('scripts/recette/g6-canonical-customs-chromium.js',
+      const result=await graph.byId.get('CUSTOMS').run({
+        runCertifiedStage(stageId){
+          if(stageId!=='CUSTOMS')throw Error('G6_STAGE_ID_MISMATCH_CUSTOMS');
+          return executeExisting('scripts/recette/g6-canonical-customs-chromium.js',
         path.join(ROOT,'test-results/g6-canonical-customs/report.json'),{...env,PGOPTIONS:'-c default_transaction_read_only=on',
         G6_CANONICAL_ORDER_ID:id,G6_CANONICAL_ORDER_REFERENCE:'KL1WGP6',G6_CANONICAL_PO_ID:po,
         G6_CANONICAL_DB_FINGERPRINT:fingerprint,G6_CANONICAL_BAG_ID:bag,G6_CANONICAL_BAG_REF:a.bag[0].reference,
         G6_CANONICAL_PARCEL_ID:parcel,G6_CANONICAL_ALLOCATION_ID:allocation,G6_CANONICAL_BOX_ID:box});
-      if(result.verdict!=='G6_CUSTOMS_LOCAL_SIMULATED_CHROMIUM_PG_PASS'||result.shipment_id!==sid||
+        }
+      });
+      graph.byId.get('CUSTOMS').validate({
+        validateCertifiedStage(stageId,proof){
+          if(stageId!=='CUSTOMS'||proof!==result)throw Error('G6_STAGE_PROOF_CONTEXT_CUSTOMS');
+          if(result.verdict!=='G6_CUSTOMS_LOCAL_SIMULATED_CHROMIUM_PG_PASS'||result.shipment_id!==sid||
         result.order_id!==id||result.db_fingerprint!==fingerprint||result.events?.length!==5||
         result.external_payment_executed!==false||result.external_supplier_calls!==0||
         result.after?.base?.shipments?.[0]?.stage!=='local_delivery'||!result.after.linked)
         throw Error('G6_CUSTOMS_FINAL_PROOF_INVALID');
+          return true;
+        }
+      },result);
       report.stages.push({id:'CUSTOMS_LOCAL',verdict:'PASS_SIMULATED_STAGING',via:'Chromium_UI',shipment_id:sid,
         evidence:'test-results/g6-canonical-customs/report.json'});
       report.next_stage='RELAY_RECEIPT';report.verdict='NOT_PROVEN';save();return report;
@@ -566,15 +599,26 @@ async function main(env=process.env) {
       const bound=validateForwarderCheckpoint(previous,JSON.parse(fs.readFileSync(RESUME_SHIPMENT,'utf8')),scope);
       report.resumed_from_run_id=resumeRun;report.order=bound.order;report.po_id=bound.poId;report.db_fingerprint=bound.dbFingerprint;
       report.stages=previous.stages;report.next_stage='FORWARDER_RECEIPT';save();
-      const result=executeExisting('scripts/recette/g6-canonical-forwarder-chromium.js',
+      const result=await graph.byId.get('FORWARDER').run({
+        runCertifiedStage(stageId){
+          if(stageId!=='FORWARDER')throw Error('G6_STAGE_ID_MISMATCH_FORWARDER');
+          return executeExisting('scripts/recette/g6-canonical-forwarder-chromium.js',
         path.join(ROOT,'test-results/g6-canonical-forwarder/report.json'),{...env,PGOPTIONS:'-c default_transaction_read_only=on',
         G6_CANONICAL_ORDER_ID:bound.order.id,G6_CANONICAL_ORDER_REFERENCE:bound.order.reference,G6_CANONICAL_PO_ID:bound.poId,
         G6_CANONICAL_DB_FINGERPRINT:bound.dbFingerprint,G6_CANONICAL_BAG_ID:bound.bagId,G6_CANONICAL_BAG_REF:bound.bagRef,
         G6_CANONICAL_PARCEL_ID:bound.parcelId,G6_CANONICAL_ALLOCATION_ID:bound.allocationId,G6_CANONICAL_BOX_ID:bound.boxId});
-      if(result.verdict!=='G6_FORWARDER_SIMULATED_CHROMIUM_PG_PASS_ARRIVED'||result.shipment_id!==bound.shipmentId||
+        }
+      });
+      graph.byId.get('FORWARDER').validate({
+        validateCertifiedStage(stageId,proof){
+          if(stageId!=='FORWARDER'||proof!==result)throw Error('G6_STAGE_PROOF_CONTEXT_FORWARDER');
+          if(result.verdict!=='G6_FORWARDER_SIMULATED_CHROMIUM_PG_PASS_ARRIVED'||result.shipment_id!==bound.shipmentId||
         result.order_id!==bound.order.id||result.db_fingerprint!==bound.dbFingerprint||result.events?.length!==4||
         result.external_payment_executed!==false||result.external_supplier_calls!==0)
         throw Error('G6_FORWARDER_FINAL_PROOF_INVALID');
+          return true;
+        }
+      },result);
       report.stages.push({id:'FORWARDER',verdict:'PASS_SIMULATED_STAGING',via:'Chromium_UI',shipment_id:bound.shipmentId,
         evidence:'test-results/g6-canonical-forwarder/report.json'});
       report.next_stage='CUSTOMS';report.verdict='NOT_PROVEN';save();return report;
@@ -595,7 +639,10 @@ async function main(env=process.env) {
         source_run_id:resumeRun,reference:bound.order.reference
       }));
       report.next_stage='HUB_SHIPMENT';save();
-      const shipment=executeExisting('scripts/recette/g6-hub-shipment-chromium.js',
+      const shipment=await graph.byId.get('HUB_SHIPMENT').run({
+        runCertifiedStage(stageId){
+          if(stageId!=='HUB_SHIPMENT')throw Error('G6_STAGE_ID_MISMATCH_HUB_SHIPMENT');
+          return executeExisting('scripts/recette/g6-hub-shipment-chromium.js',
         HUB_SHIPMENT,{...env,PGOPTIONS:'-c default_transaction_read_only=on',
           G6_CANONICAL_ORDER_ID:bound.order.id,G6_CANONICAL_ORDER_REFERENCE:bound.order.reference,
           G6_CANONICAL_PO_ID:bound.poId,G6_CANONICAL_DB_FINGERPRINT:bound.dbFingerprint,
@@ -604,7 +651,12 @@ async function main(env=process.env) {
           G6_CANONICAL_BOX_ID:bound.boxId,
           G6_CANONICAL_PARTIAL_SHIPMENT_ID:partialResume?bound.shipmentId:'',
           G6_CANONICAL_PARTIAL_SHIPMENT_REPORT:partialResume?RESUME_SHIPMENT:''});
-      if(shipment.verdict!=='G6_HUB_SHIPMENT_SIMULATED_CHROMIUM_PG_PASS_HANDED_OVER'||
+        }
+      });
+      graph.byId.get('HUB_SHIPMENT').validate({
+        validateCertifiedStage(stageId,proof){
+          if(stageId!=='HUB_SHIPMENT'||proof!==shipment)throw Error('G6_STAGE_PROOF_CONTEXT_HUB_SHIPMENT');
+          if(shipment.verdict!=='G6_HUB_SHIPMENT_SIMULATED_CHROMIUM_PG_PASS_HANDED_OVER'||
          shipment.order_id!==bound.order.id||shipment.po_id!==bound.poId||
          shipment.box_id!==bound.boxId||shipment.bag_id!==bound.bagId||
          shipment.parcel_id!==bound.parcelId||shipment.allocation_id!==bound.allocationId||
@@ -615,6 +667,9 @@ async function main(env=process.env) {
            shipment.events[0].source_run_id!==resumeRun||shipment.events[1].source_run_id!==resumeRun||
            shipment.events[2].key!=='handover-forwarder'||shipment.events[2].source_run_id)))
         throw Error('G6_SHIPMENT_FINAL_PROOF_INVALID');
+          return true;
+        }
+      },shipment);
       report.stages.push({id:'HUB_SHIPMENT',verdict:'PASS_SIMULATED_STAGING',via:'Chromium_UI',
         reference:bound.order.reference,shipment_id:shipment.shipment_id,shipment_ref:shipment.shipment_ref,
         evidence:'test-results/g6-hub-shipment/report.json'});
