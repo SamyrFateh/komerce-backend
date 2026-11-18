@@ -100,7 +100,11 @@ async function openPo(page){
  check(shown>=1&&shown===1+Number(PEERS.other_lines),'G6_COMMITMENT_PO_LINES_UI_PG_MISMATCH');
  check(await po.locator('[data-hlc-line-order="'+env.G6_CANONICAL_ORDER_ID+'"]').count()===1,
   'G6_COMMITMENT_UI_ORDER_MISMATCH');
- await humanClick(null,po);
+ // Clic humain sur la référence du PO (titre de la carte) : le centre de la carte peut tomber sur le
+ // lien commande d'une ligne (stopPropagation → sélection de la commande, pas du PO).
+ await humanClick(null,po.locator('.hlc-ref').first());
+ await po.and(page.locator('.is-selected')).waitFor({state:'visible',timeout:10000})
+  .catch(()=>{throw Error('G6_COMMITMENT_PO_NOT_SELECTED');});
 }
 async function main(){
  let browser;
