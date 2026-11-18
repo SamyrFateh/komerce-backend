@@ -29,10 +29,17 @@ describe('G6 real Chromium/PG adapter — strict scope and no historical fallbac
  });
  test('does not dispatch HUB or final-mile scripts through legacy hardcoded fixtures',async()=>{
   const a=createRealBuyerCashAdapters({db,env});
-  for(const stageId of ['HUB_PO','FORWARDER','CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP']){
+  for(const stageId of ['FORWARDER','CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP']){
    await expect(a.executeStage({stageId,context:{}}))
     .rejects.toThrow('G6_DYNAMIC_DOWNSTREAM_STAGE_NOT_MIGRATED_'+stageId);
   }
+  expect(db.query).not.toHaveBeenCalled();
+ });
+ test('HUB_PO refuses to proceed without an attested fresh buyer checkpoint',async()=>{
+  const a=createRealBuyerCashAdapters({db,env});
+  await expect(a.executeStage({stageId:'HUB_PO',context:{
+   order_id:'550e8400-e29b-41d4-a716-446655440000'
+  }})).rejects.toThrow('G6_DYNAMIC_BUYER_CHECKPOINT_MISSING');
   expect(db.query).not.toHaveBeenCalled();
  });
  test('requires database adapter and stage evidence',()=>{
