@@ -100,27 +100,27 @@ async function poState(db,context){
   throw Error('G6_DYNAMIC_HUB_PO_STATE_INVALID');
  return {id,...rows[0]};
 }
-async function finalMileIdentity(db,context){
- const [shipment,items]=await Promise.all([
-  db.query(`
-   SELECT s.id,s.reference FROM international_shipments s
-   JOIN international_shipment_parcels sp ON sp.international_shipment_id=s.id
-   JOIN parcels p ON p.id=sp.parcel_id
-   WHERE p.order_id=$1 ORDER BY s.id
-  `,[context.order_id]),
-  db.query('SELECT id FROM order_items WHERE order_id=$1',[context.order_id])
- ]);
- if(shipment.rows.length!==1||items.rows.length!==1||
-    !UUID.test(String(shipment.rows[0].id||''))||
-    !REF.test(String(shipment.rows[0].reference||''))||
-    !UUID.test(String(items.rows[0].id||'')))
-  throw Error('G6_DYNAMIC_FINAL_MILE_IDENTITY_NOT_UNIQUE');
+async function finalMileIdentity(db,context,{beforeShipment=false}={}){
  const packed=report('HUB_KOM_BOX').data,bag=report('HUB_CUSTOMER_BAG').data;
  const parcel=packed.parcel_id,box=packed.box_id;
  if(!UUID.test(String(parcel||''))||!UUID.test(String(box||''))||
+    !UUID.test(String(packed.allocation_id||''))||
     packed.bag_id!==bag.bag_id)
   throw Error('G6_DYNAMIC_FINAL_MILE_BOX_DRIFT');
- return {shipment_id:shipment.rows[0].id,shipment_ref:shipment.rows[0].reference,
+ const items=await db.query('SELECT id FROM order_items WHERE order_id=$1',[context.order_id]);
+ if(items.rows.length!==1||!UUID.test(String(items.rows[0].id||'')))
+  throw Error('G6_DYNAMIC_FINAL_MILE_ORDER_ITEM_NOT_UNIQUE');
+ const shipment=await db.query(`
+  SELECT s.id,s.reference FROM international_shipments s
+  JOIN international_shipment_hub_units h ON h.shipment_id=s.id
+  WHERE h.physical_unit_id=$1 ORDER BY s.id
+ `,[box]);
+ if(shipment.rows.length!==(beforeShipment?0:1)||
+    (!beforeShipment&&(!UUID.test(String(shipment.rows[0].id||''))||
+      !REF.test(String(shipment.rows[0].reference||'')))))
+  throw Error('G6_DYNAMIC_FINAL_MILE_SHIPMENT_NOT_UNIQUE');
+ return {shipment_id:shipment.rows[0]?.id||null,
+  shipment_ref:shipment.rows[0]?.reference||null,
   order_item_id:items.rows[0].id,parcel_id:parcel,box_id:box,
   bag_id:bag.bag_id,bag_ref:bag.bag_ref,
   allocation_id:packed.allocation_id};
@@ -438,7 +438,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
       !/^SUPPLIER_PACKAGE-[A-Z0-9-]{8,}$/i.test(source))
      throw Error('G6_DYNAMIC_PHYSICAL_RECEIPT_REFERENCE_MISSING');
     const finalStages=['HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP'];
-    const finalIds=finalStages.includes(stageId)?await finalMileIdentity(db,context):null;
+    const finalIds=finalStages.includes(stageId)?await finalMileIdentity(db,context,{beforeShipment:stageId==='HUB_SHIPMENT'}):null;
     const parcel=bag?.after?.parcels?.[0]?.id;
     const allocation=bag?.after?.order?.allocation_id;
     if(stageId==='HUB_KOM_BOX'&&
