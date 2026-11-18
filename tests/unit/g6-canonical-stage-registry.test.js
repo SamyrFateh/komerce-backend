@@ -34,6 +34,24 @@ describe('G6 Golden declarative stage registry (non-mutating)',()=>{
   expect(()=>validateProofBoundary(s,{})).toThrow(/G6_STAGE_PROOF_INVALID/);
   expect(validateProofBoundary(s,{pickup_scan:{count:1}})).toBe(true);
  });
+ test.each([
+  'HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION',
+  'HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX'
+ ])('%s requires actual executor and independent oracle',async id=>{
+  const stage=resolvePhase(id);
+  const proof={stage_id:id,reference:'TEST-ORDER',external_supplier_calls:0};
+  const execution=jest.fn(stageId=>{expect(stageId).toBe(id);return proof;});
+  expect(await stage.run({runCertifiedStage:execution})).toBe(proof);
+  expect(execution).toHaveBeenCalledTimes(1);
+  const oracle=jest.fn((stageId,provided)=>{
+   expect(stageId).toBe(id);expect(provided).toBe(proof);
+   return {reference:provided.reference};
+  });
+  expect(stage.validate({validateCertifiedStage:oracle},proof)).toEqual({reference:'TEST-ORDER'});
+  expect(oracle).toHaveBeenCalledTimes(1);
+  await expect(stage.run({runCertifiedStage:()=>{throw Error('UI_BLOCKED');}})).rejects.toThrow('UI_BLOCKED');
+  expect(()=>stage.validate({},proof)).toThrow('G6_STAGE_VALIDATOR_NOT_BOUND_'+id);
+ });
  test('dry run is a graph plan, not a new shipment or a certified execution',()=>{
   const plan=planGolden({fromStage:'RELAY_RECEIPT',toStage:'CLIENT_PICKUP'});
   expect(plan).toMatchObject({contract:'G6-CANONICAL-JOURNEY-v1',mode:'dry-run',
