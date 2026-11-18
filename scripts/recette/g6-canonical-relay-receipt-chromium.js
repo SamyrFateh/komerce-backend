@@ -38,6 +38,68 @@ async function state(){
  Number(base.effective[0].quantity)===1,'G6_RELAY_SCOPE_DRIFT');
  return {base,orders,items,receipts,events};
 }
+
+async function attachDedicatedRelayByUI(browser,agentId,orderRelay){
+ const email=String(env.E2E_AGENT_RELAIS_EMAIL||'').toLowerCase();
+ check(/^[^@\\s]*(e2e|rct1|recette)[^@\\s]*@(komerce\\.test|recette\\.komerce\\.invalid)$/.test(email),
+  'G6_RELAY_ASSIGNMENT_NOT_DEDICATED_E2E');
+ const {rows:staff}=await db.query('SELECT id,role,relais_id FROM users WHERE id=$1',[agentId]);
+ const {rows:relay}=await db.query(
+  "SELECT id,name,is_active,market_id FROM relais WHERE id=$1 AND market_id=(SELECT id FROM markets WHERE code='KM')",
+  [orderRelay]);
+ check(staff.length===1&&staff[0].role==='agent_relais'&&relay.length===1&&relay[0].is_active===true,
+  'G6_RELAY_ASSIGNMENT_SCOPE_INVALID');
+ const {rows:membership}=await db.query(
+  `SELECT 1 FROM assignment_memberships am
+     JOIN market_operating_assignments moa ON moa.id=am.assignment_id
+     JOIN membership_capabilities mc ON mc.membership_id=am.id
+    WHERE am.user_id=$1 AND am.status='ACTIVE' AND moa.market_id=$2
+      AND moa.status='ACTIVE' AND mc.revoked_at IS NULL
+      AND mc.capability=ANY($3::text[]) LIMIT 1`,
+  [agentId,relay[0].market_id,['execution.parcel.receive','execution.parcel.collect']]);
+ check(membership.length===1,'G6_RELAY_ASSIGNMENT_MARKET_MEMBERSHIP_MISSING');
+ const admin=await login(browser,'E2E_ADMIN_','admin');
+ const endpoint='/api/market-delegation/markets/KM/network/relais/'+orderRelay+'/agents';
+ const url=BASE+endpoint;
+ let count=0;
+ const handler=async route=>{
+  const req=route.request();
+  let body;try{body=req.postDataJSON()}catch(_){}
+  if(req.method()==='POST'&&count===0&&isDeepStrictEqual(body,{user_id:agentId})){
+   count++;return route.continue();
+  }
+  admin.blocked.push({method:req.method(),path:new URL(req.url()).pathname});
+  return route.abort('blockedbyclient');
+ };
+ try{
+  await runtime();
+  await admin.page.goto('/dashboards/canonical/market-autonomy.html?market=KM',{waitUntil:'domcontentloaded'});
+  const panel=admin.page.locator('[data-market-network]');
+  await panel.waitFor({state:'visible',timeout:25000});
+  const card=admin.page.locator('.kmc-team-member').filter({has:admin.page.locator('strong',{hasText:relay[0].name})});
+  check(await card.count()===1,'G6_RELAY_ASSIGNMENT_CARD_NOT_UNIQUE');
+  const select=card.locator('select[data-agent-select]');
+  await select.waitFor({state:'visible',timeout:20000});
+  check(await select.locator('option').evaluateAll((xs,id)=>xs.some(x=>x.value===id),agentId),
+   'G6_RELAY_ASSIGNMENT_ACTOR_NOT_ELIGIBLE');
+  await select.selectOption(agentId);
+  await admin.page.route(url,handler);
+  try{
+   const pending=admin.page.waitForResponse(r=>r.url()===url&&r.request().method()==='POST',{timeout:30000});
+   await card.getByRole('button',{name:'Rattacher',exact:true}).click();
+   const response=await pending;
+   check(response.status()===200&&count===1&&admin.blocked.length===0,
+    'G6_RELAY_ASSIGNMENT_UI_HTTP_'+response.status());
+  }finally{await admin.page.unroute(url,handler)}
+  const {rows:after}=await db.query('SELECT relais_id FROM users WHERE id=$1',[agentId]);
+  check(after.length===1&&after[0].relais_id===orderRelay,'G6_RELAY_ASSIGNMENT_PG_INVALID');
+  await runtime();
+  report.assignment={via:'Chromium_UI',role:'admin',changed:true,
+   old_relais_id:staff[0].relais_id,new_relais_id:orderRelay,http:200};
+  save();
+ }finally{await admin.ctx.close()}
+}
+
 async function main(){
  let browser,actor;
  try{
@@ -67,8 +129,11 @@ async function main(){
   // /api/auth/me intentionally exposes a public profile without staff relais_id.
   // Verify staff assignment independently via read-only PostgreSQL, never by editing it.
   const {rows:staff}=await db.query('SELECT id, role, relais_id FROM users WHERE id=$1',[profile.id]);
-  check(staff.length===1&&staff[0].role==='agent_relais'&&
-    staff[0].relais_id===before.orders[0].relais_id&&!!staff[0].relais_id,
+  check(staff.length===1&&staff[0].role==='agent_relais','G6_RELAY_ACTOR_ROLE_INVALID');
+  if(staff[0].relais_id!==before.orders[0].relais_id)
+   await attachDedicatedRelayByUI(browser,profile.id,before.orders[0].relais_id);
+  const {rows:bound}=await db.query('SELECT relais_id FROM users WHERE id=$1',[profile.id]);
+  check(bound.length===1&&bound[0].relais_id===before.orders[0].relais_id,
     'G6_RELAY_ACTOR_NOT_ORDER_RELAY');
   await actor.page.goto('/admin/relais-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
   const card=actor.page.locator('[data-relay-shipment="'+REF+'"]');
