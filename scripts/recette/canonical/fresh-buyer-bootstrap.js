@@ -79,7 +79,7 @@ async function bootstrapFreshM01({toStage='CLIENT_PICKUP',adapters}={}){
  });
  const checkpoint=Object.freeze({...context,stage_id:'BUYER',
   source_run_id:String(persisted.source_run_id),
-  evidence_path:persisted.evidence_path,verdict:'PASS'});
+  evidence_path:persisted.evidence_path,evidence_sha256:attested.evidence_sha256,verdict:'PASS'});
  return executeBoundJourney({fromStage:'RELAY_CASH',toStage,context,
   checkpoints:[checkpoint],adapters});
 }
