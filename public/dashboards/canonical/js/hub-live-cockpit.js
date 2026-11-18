@@ -506,7 +506,7 @@
     function poForm(po, kind) {
       const form = el(doc, 'form', 'hlc-form');
       const simulated = po.simulation_scope === 'G6-BUYER';
-      const simulationRef = 'SIM-STAGING-' + (po.lines[0]?.order_ref || '');
+      const simulationRef = 'SIM-STAGING-' + po.simulation_reference;
       if (simulated && (kind === 'sent' || kind === 'confirm')) {
         form.appendChild(el(doc, 'p', 'hlc-zone-hint', 'SIMULATION STAGING UNIQUEMENT — aucune commande, confirmation ou transmission vers un fournisseur extérieur. Les justificatifs et le vendeur sont fictifs.'));
       }
@@ -550,7 +550,7 @@
         confirmProof = field(form, 'Justificatif d’achat (obligatoire)', textInput('Facture, capture, reçu…', 'purchase_proof_ref'));
         confirmSeller = field(form, simulated ? 'Fournisseur fictif — recette uniquement' : 'Vendeur réel (obligatoire pour un achat manuel, pas le Hub central)', textInput('Magasin ou vendeur', 'seller_label'));
         if (simulated) {
-          const ref = po.lines[0]?.order_ref || '';
+          const ref = po.simulation_reference;
           supplierOrder.value = simulationRef; supplierOrder.readOnly = true;
           confirmProof.value = 'SIM-STAGING-ACHAT-' + ref; confirmProof.readOnly = true;
           confirmSeller.value = 'SIMULATED-STAGING-FOURNISSEUR-' + ref; confirmSeller.readOnly = true;

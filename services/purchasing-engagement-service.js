@@ -931,7 +931,7 @@ async function changeLineSupplier(lineId, body = {}, { actor = null, context = {
 // Read source orders under the PO lock; no fixture API/SQL path is offered to the operator.
 const G6_SUPPLIER_SIM_TAG = '[SIMULATED / STAGING ONLY]';
 async function g6SupplierSimulation(client, po, body) {
-  // Ordre FIFO identique au dossier Hub (cockpit : po.lines[0]) : commande la plus ancienne, puis ligne.
+  // Toute ligne active participe au contrôle de portée.
   const { rows } = await client.query(`
     SELECT NULLIF(to_jsonb(o)->>'simulation_scope','') AS simulation_scope, o.reference
       FROM purchase_lines pl
@@ -943,16 +943,16 @@ async function g6SupplierSimulation(client, po, body) {
   if (!rows.length) throw fail(409, 'SIMULATED_PO_WITHOUT_ORDER', 'PO sans commande liée');
   // G6 si toutes les commandes sont de recette G6-BUYER, quel que soit leur nombre.
   const isG6 = rows.every((r) => r.simulation_scope === 'G6-BUYER');
-  if (Boolean(body.simulated) !== isG6) {
+  if (Boolean(body.simulated) !== isG6 || (!isG6 && rows.some(r => r.simulation_scope === 'G6-BUYER'))) {
     throw fail(409, 'G6_SUPPLIER_SIMULATION_DECLARATION_REQUIRED',
       'Une commande G6 requiert une preuve fournisseur explicitement SIMULATED / STAGING ONLY ; une commande réelle ne peut pas utiliser cette voie');
   }
   if (isG6 && (process.env.KOMERCE_ENV !== 'staging' || po.trigger_mode === 'auto' || body.simulated !== true)) {
     throw fail(403, 'G6_SUPPLIER_SIMULATION_STAGING_ONLY', 'Simulation fournisseur autorisée uniquement en staging, sur PO manuelle');
   }
-  return isG6 ? { reference: rows[0].reference, supplierOrderRef: 'SIM-STAGING-' + rows[0].reference,
-    purchaseProof: 'SIM-STAGING-ACHAT-' + rows[0].reference,
-    sellerLabel: 'SIMULATED-STAGING-FOURNISSEUR-' + rows[0].reference } : null;
+  return isG6 ? { reference: po.id, supplierOrderRef: 'SIM-STAGING-' + po.id,
+    purchaseProof: 'SIM-STAGING-ACHAT-' + po.id,
+    sellerLabel: 'SIMULATED-STAGING-FOURNISSEUR-' + po.id } : null;
 }
 
 // ─── Preuve d'envoi : « bon émis » (submit) ≠ « envoyé au fournisseur » ─────────────────────────
@@ -973,7 +973,7 @@ async function recordPurchaseOrderSent(poId, body = {}, { actor = null } = {}) {
     const po = await lockGroupedPo(client, poId, { requireDraft: false });
     const simulation = await g6SupplierSimulation(client, po, body);
     if (simulation && (channel !== 'other' || supplierOrderId !== simulation.supplierOrderRef)) {
-      throw fail(400, 'G6_SUPPLIER_SIMULATED_SEND_PROOF_INVALID', 'Canal interne other et référence SIM-STAGING-<commande> obligatoires');
+      throw fail(400, 'G6_SUPPLIER_SIMULATED_SEND_PROOF_INVALID', 'Canal interne other et référence SIM-STAGING-<id PO> obligatoires');
     }
     if (po.status !== 'notified') {
       throw fail(409, 'PURCHASE_ORDER_NOT_SUBMITTED', `PO au statut "${po.status}" : seule une PO soumise (notified) peut être déclarée envoyée`, {
