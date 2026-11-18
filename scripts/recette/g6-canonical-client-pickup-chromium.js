@@ -19,12 +19,12 @@ const {preseedG6BuyerOtp,verifyMarkedG6Buyer}=require('../../services/g6-staging
 const {readback,runtime}=require('./g6-hub-shipment-chromium');
 const {login}=require('./g6-canonical-forwarder-chromium');
 const env=process.env,BASE='https://komerce-backend-production.up.railway.app';
-const ID='56adad65-d1fa-4e80-8d69-c25e0fe92a76';
-const PARCEL='95045ede-d5b8-405b-b65f-d9dbdddb4756';
-const SHIPMENT='ff8591fc-78bb-49a4-b154-247508368d16';
-const ITEM='8c999eec-7322-4676-8db6-585c4d4545f9';
+const ID=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ID:'56adad65-d1fa-4e80-8d69-c25e0fe92a76';
+const PARCEL=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_PARCEL_ID:'95045ede-d5b8-405b-b65f-d9dbdddb4756';
+const SHIPMENT=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_ID:'ff8591fc-78bb-49a4-b154-247508368d16';
+const ITEM=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ITEM_ID:'8c999eec-7322-4676-8db6-585c4d4545f9';
 const OUT=path.resolve('test-results/g6-canonical-client-pickup');
-const report={schema:'komerce-g6-client-pickup/1',scenario_id:'M01',market:'KM',reference:'KL1WGP6',
+const report={schema:'komerce-g6-client-pickup/1',scenario_id:'M01',market:'KM',reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',
  order_id:ID,parcel_id:PARCEL,shipment_id:SHIPMENT,provenance:'SIMULATED / STAGING ONLY',
  verdict:'BLOCKED',events:[],external_supplier_calls:0,external_payment_executed:false,
  plaintext_pickup_code_logged:false,production_permitted:false};
@@ -41,7 +41,7 @@ async function state(){
  const {rows:receipts}=await db.query('SELECT shipment_id,order_item_id,relais_id,received_qty,incident_id FROM international_shipment_relay_receipts WHERE shipment_id=$1',[SHIPMENT]);
  const {rows:scans}=await db.query("SELECT id,scanned_by,pickup_method,pickup_relais_id FROM scans WHERE order_id=$1 AND step='collected' ORDER BY id",[ID]);
  check(base.shipments.length===1&&base.shipments[0].id===SHIPMENT&&base.parcels.length===1&&base.parcels[0].id===PARCEL&&
-  orders.length===1&&orders[0].reference==='KL1WGP6'&&lines.length===1&&lines[0].order_item_id===ITEM&&receipts.length===1&&
+  orders.length===1&&orders[0].reference===(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6')&&lines.length===1&&lines[0].order_item_id===ITEM&&receipts.length===1&&
   receipts[0].shipment_id===SHIPMENT&&receipts[0].order_item_id===ITEM&&Number(receipts[0].received_qty)===1&&
   receipts[0].incident_id===null,'G6_PICKUP_SCOPE_DRIFT');
  return {base,orders,lines,receipts,scans};
@@ -93,7 +93,7 @@ async function customer(browser,owner){
   await runtime();
   report.events.push({key:'client-otp',http:200,role:'client'});save();
   await page.goto('/boutique/?market=KM&tab=track',{waitUntil:'domcontentloaded'});
-  const card=page.locator('.k-myorder-card[data-ref="KL1WGP6"]');
+  const card=page.locator('.k-myorder-card[data-ref="'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6')+'"]');
   await card.waitFor({state:'visible',timeout:30000});await card.click();
   const action=page.locator('.k-order-pickup-code');
   await action.waitFor({state:'visible',timeout:15000});
@@ -166,13 +166,13 @@ async function main(){
    env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER&&env.NODE_ENV==='test'&&
    env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&
    env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&env.STAGING_BASE_URL===BASE&&
-   env.G6_CANONICAL_PHASE==='CLIENT_PICKUP'&&env.G6_CANONICAL_RESUME_RUN_ID==='44272362064'&&
+   env.G6_CANONICAL_PHASE==='CLIENT_PICKUP'&&(env.G6_CANONICAL_RESUME_RUN_ID==='44272362064'||env.G6_DYNAMIC_FRESH_ORDER==='1')&&
    env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET==='KM'&&env.G6_CANONICAL_ORDER_ID===ID,
    'G6_PICKUP_OWNER_STAGING_GUARD');
   const guard=await confirmTarget({db,env});
   check(guard.confirmed&&guard.fingerprint===env.G6_CANONICAL_DB_FINGERPRINT,'G6_PICKUP_DB_FINGERPRINT_DRIFT');
   report.db_fingerprint=guard.fingerprint;report.sha=await runtime();
-  const prior=JSON.parse(fs.readFileSync('test-results/g6-canonical-resume/g6-canonical-relay-receipt/report.json','utf8'));
+  const prior=JSON.parse(fs.readFileSync((env.G6_DYNAMIC_FRESH_ORDER==='1'?'test-results/g6-canonical-relay-receipt/report.json':'test-results/g6-canonical-resume/g6-canonical-relay-receipt/report.json'),'utf8'));
   const before=await state();report.before={base:before.base,orders:before.orders.map(o=>({id:o.id,reference:o.reference,status:o.status,payment_status:o.payment_status,relais_id:o.relais_id,owner_id:o.user_id,secret_exists:!!o.pickup_secret_hash})),lines:before.lines,receipts:before.receipts,scans:before.scans};save();
   const owner=before.orders[0];
   check(isDeepStrictEqual(before.base,prior.after.base)&&before.base.shipments[0].stage==='relay_received'&&
