@@ -16,6 +16,8 @@ const {confirmTarget}=require('./target-guard');
 const {login,openPo,stableSha}=require('./g6-hub-commitment-chromium');
 const env=process.env;
 const OUT=path.resolve('test-results/g6-hub-vendor-readiness');
+const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const REPORT=path.join(OUT,'report.json');
 const UUID=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 const SHA=/^[a-f0-9]{40}$/i;
@@ -84,7 +86,7 @@ async function main(){
   report.sha=await stableSha();report.db_fingerprint=target.fingerprint;
   const before=await state();verifyBoundary(before);
   report.before={...before,sent_at:null};save();
-  browser=await chromium.launch({headless:true});
+  browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   const actor=await login(browser,'E2E_AGENT_HUB_',{readOnly:true});
   try{
    await openPo(actor.page);
@@ -97,12 +99,13 @@ async function main(){
    // pointer click, then a real keyboard Enter on the same visible control.
    // Never force-click, mutate the DOM, or POST directly in a read-only stage.
    let gesture='pointer';
-   try{await send.click({timeout:7000});}
+   try{await humanClick(null,send,{timeout:7000});}
    catch(e){
+    if(e&&e.verdict==='BLOCKED')throw e;
     if(!(await form.isVisible().catch(()=>false))){
      await send.waitFor({state:'visible',timeout:10000});
      check(await send.isEnabled(),'G6_VENDOR_SEND_ACTION_DISABLED_ON_RETRY');
-     await send.press('Enter',{timeout:7000});
+     await humanPress(null,send,'Enter',{timeout:7000});
      gesture='keyboard-enter';
     }
    }
@@ -131,8 +134,8 @@ async function main(){
   report.verdict='G6_VENDOR_SEND_UI_READY_BUT_EXTERNAL_EVENT_NOT_PROVEN';
   report.next_stage='REAL_SUPPLIER_SEND_EVIDENCE_REQUIRED';
   save();
- }catch(e){report.error=String(e.message||e).slice(0,330);report.verdict='BLOCKED';save();process.exitCode=2;}
- finally{if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify(report));}
+ }catch(e){report.error=fullError(e);report.verdict='BLOCKED';save();process.exitCode=2;}
+ finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify(report));}
 }
 if(require.main===module)main();
 module.exports={verifyBoundary};

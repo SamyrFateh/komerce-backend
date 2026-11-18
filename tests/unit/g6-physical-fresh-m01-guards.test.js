@@ -20,12 +20,10 @@ describe('G6 physical Hub dynamic proof refactor: syntax and fail-closed boundar
   expect(source).toContain("G6_CANONICAL_DB_FINGERPRINT");
   expect(source).toContain('KL1WGP6'); // historical compatibility only, not default dynamic identity
  });
- test('dynamic final mile is migrated but remains owner-only staging and NOT_PROVEN until certified',()=>{
+ test('dynamic stages never allow final mile before the rest of the chain migrates',()=>{
   const entry=fs.readFileSync(path.join(ROOT,'scripts/recette/g6-dynamic-buyer-cash.js'),'utf8');
-  expect(entry).toContain("'HUB_KOM_BOX'");
-  expect(entry).toContain("'CLIENT_PICKUP'].includes(toStage)");
-  expect(entry).toContain("G6_DYNAMIC_OWNER_STAGING_GUARD");
-  expect(entry).toContain("full_chain_certified:false,production_permitted:false");
-  expect(entry).toContain("bootstrapFreshM01({toStage,adapters})");
+  expect(entry).toContain('STAGE_IDS'); // single registry-driven allowlist
+  expect(entry).not.toContain("'HUB_KOM_BOX'");
+  expect(entry).not.toContain("'CLIENT_PICKUP'].includes(toStage)");
  });
 });

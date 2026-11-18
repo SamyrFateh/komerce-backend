@@ -12,7 +12,7 @@ describe('G6 staging real buyer axis selection',()=>{
    expect(src).toContain('axisIndex++');
  });
  test('uses genuine Chromium pointer click and observes rerendered selected option',()=>{
-   expect(src).toContain('await choice.click()');
+   expect(src).toContain('await humanClick(null,choice)');
    expect(src).toContain('await page.waitForFunction(({index,selectedValue})=>');
    expect(src).toContain("b.getAttribute('aria-pressed')==='true'");
    expect(src).toContain("throw Error('G6_NO_AVAILABLE_OPTION_IN_AXIS_'+axisKey)");

@@ -12,9 +12,9 @@ describe('G6 handover form repaint: no API shortcut or duplicate submit',()=>{
   expect(source).toContain("current.parcelEvents.length===0");
   expect(source).toContain("current.shipmentEvents.length===1");
   expect(source).toContain("['forwarder_name','transport_mode','proof_ref'].includes(x.name)");
-  expect(source).toContain("await form.locator('[name=\"forwarder_name\"]').fill(FORWARDER)");
-  expect(source).toContain("await form.locator('[name=\"transport_mode\"]').selectOption('sea')");
-  expect(source).toContain("await form.locator('[name=\"proof_ref\"]').fill(HANDOVER_PROOF)");
+  expect(source).toContain("await humanFill(null,form.locator('[name=\"forwarder_name\"]'),FORWARDER)");
+  expect(source).toContain("await humanSelect(null,form.locator('[name=\"transport_mode\"]'),'sea')");
+  expect(source).toContain("await humanFill(null,form.locator('[name=\"proof_ref\"]'),HANDOVER_PROOF)");
  });
  test('repair precedes any button click and retries are strictly bounded',()=>{
   const start=source.indexOf("if(key==='handover-forwarder'){");

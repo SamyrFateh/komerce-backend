@@ -16,6 +16,8 @@ const {confirmTarget}=require('./target-guard');
 const {login}=require('./g6-hub-commitment-chromium');
 const env=process.env,ROOT=path.resolve(__dirname,'../..');
 const OUT=path.join(ROOT,'test-results/g6-hub-customer-bag');
+const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const ORDER=env.G6_CANONICAL_ORDER_ID,PO=env.G6_CANONICAL_PO_ID,REF=env.G6_CANONICAL_ORDER_REFERENCE;
 const SOURCE=env.G6_CANONICAL_RECEIPT_REFERENCE;
 const API='/api/admin/workspaces/operations/market/KM';
@@ -74,11 +76,11 @@ async function openDetails(page){
  await page.goto('/admin/hub-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
  const tab=page.getByRole('tab',{name:'Dossiers'});
  await tab.waitFor({state:'visible',timeout:25000});
- await tab.click();
+ await humanClick(null,tab);
  const details=page.locator('[data-hub-physical-details]');
  await details.waitFor({state:'attached',timeout:25000});
  const summary=details.locator('summary').first();
- if(!await details.evaluate(x=>x.open))await summary.click();
+ if(!await details.evaluate(x=>x.open))await humanClick(null,summary);
  await page.locator('[data-hub-bag-preparation]').waitFor({state:'visible',timeout:25000});
  return page.locator('[data-hub-bag-preparation]');
 }
@@ -105,7 +107,7 @@ async function gesture(actor,key,endpoint,button,validatePayload){
    check(await button.isEnabled(),'G6_BAG_UI_DISABLED_'+key);
    const responsePromise=actor.page.waitForResponse(r=>r.url()===url&&r.request().method()==='POST',{timeout:30000});
    // Pointer action only; no DOM click or request substitution.
-   await button.click({timeout:15000});
+   await humanClick(null,button,{timeout:15000});
    const response=await responsePromise;
    const body=await response.json().catch(()=>({}));
    report.events.push({key,http:response.status(),code:body.code||null,
@@ -139,7 +141,7 @@ async function main(){
   const before=await snapshot(),receipt=validateBase(before);
   report.before=before;save();
   check(before.bags.length===0&&receipt.active&&receipt.state==='RECEIVED','G6_BAG_ALREADY_STARTED_OR_SOURCE_INVALID');
-  browser=await chromium.launch({headless:true});
+  browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   const actor=await login(browser,'E2E_AGENT_HUB_',{readOnly:true});
   try{
    let prep=await openDetails(actor.page);
@@ -148,7 +150,7 @@ async function main(){
    const choices=await select.locator('option').evaluateAll(xs=>xs.map(x=>({value:x.value,text:x.textContent})));
    const exact=choices.filter(c=>c.text.startsWith(REF+' · 1 unité(s)'));
    check(exact.length===1,'G6_BAG_EXACT_ORDER_NOT_AVAILABLE');
-   await select.selectOption(exact[0].value);
+   await humanSelect(null,select,exact[0].value);
    await gesture(actor,'create-bag',API+'/bags',prep.locator('[data-workspace-action="create-customer-bag"]'),
      b=>b?.order_id===ORDER&&b.bag_plan?.length===1&&
        b.bag_plan[0].order_item_id===before.order.order_item_id&&Number(b.bag_plan[0].quantity)===1);
@@ -165,10 +167,10 @@ async function main(){
    const opts=await sources.locator('option').evaluateAll(xs=>xs.map(x=>({value:x.value,text:x.textContent})));
    const source=opts.filter(x=>x.text.endsWith('('+SOURCE+')')&&x.text.includes('1 disponible(s)'));
    check(source.length===1,'G6_BAG_EXACT_SOURCE_NOT_AVAILABLE');
-   await sources.selectOption(source[0].value);
-   await holder.locator('[data-hub-bag-evidence-method]').selectOption('MANUAL');
-   await holder.locator('[data-hub-bag-manual-proof]').fill(PROOF);
-   await holder.locator('input[type="number"]').fill('1');
+   await humanSelect(null,sources,source[0].value);
+   await humanSelect(null,holder.locator('[data-hub-bag-evidence-method]'),'MANUAL');
+   await humanFill(null,holder.locator('[data-hub-bag-manual-proof]'),PROOF);
+   await humanFill(null,holder.locator('input[type="number"]'),'1');
    await gesture(actor,'deposit-bag',API+'/bags/'+bag.id+'/deposit',
      holder.locator('[data-workspace-action="scan-bag-deposit"]'),
      b=>b?.from_unit_id===receipt.id&&b.allocation_id===before.order.allocation_id&&
@@ -202,11 +204,11 @@ async function main(){
    save();
   }finally{await actor.ctx.close();}
  }catch(e){
-  report.verdict='BLOCKED';report.error=String(e.message||e).slice(0,1500);
+  report.verdict='BLOCKED';report.error=fullError(e);
   if(browser){try{const pages=browser.contexts().flatMap(c=>c.pages());if(pages.length)await pages[0].screenshot({path:path.join(OUT,'blocked.png')});}catch(_){}}
   // A partial sequence may already have committed a move. Never restart automatically.
   try{if(report.db_fingerprint)report.failure_readback=await snapshot();}catch(_){}
   save();process.exitCode=2;
- }finally{if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify(report));}
+ }finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify(report));}
 }
 if(require.main===module)main();

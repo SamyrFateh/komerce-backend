@@ -19,6 +19,9 @@ const env=process.env, BASE='https://komerce-backend-production.up.railway.app';
 const REF=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_REF:'SIM-STAGING-EXP-KL1WGP6', ID=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_ID:'ff8591fc-78bb-49a4-b154-247508368d16';
 const BOX=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_BOX_ID:'6ca614e5-869c-40ab-80d7-3684974092fe', TRACK='SIM-STAGING-TRK-'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6');
 const OUT=path.resolve('test-results/g6-canonical-forwarder');
+const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {startTraceAfterAuth}=require('./canonical/observability');
+const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const API='/api/admin/workspaces/shipping-customs/market/KM/international/'+REF;
 const report={schema:'komerce-g6-forwarder/1',shipment_id:ID,shipment_ref:REF,order_id:env.G6_CANONICAL_ORDER_ID,
  reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',scenario_id:'M01',market:'KM',role:'agent_transitaire',events:[],verdict:'BLOCKED',
@@ -48,24 +51,25 @@ async function login(browser,prefix='E2E_AGENT_TRANSITAIRE_',role='agent_transit
   blocked.push({method:r.method(),path:u.pathname});return route.abort('blockedbyclient');
  });
  await page.goto('/login.html?next='+encodeURIComponent('/admin/workspaces/shipping-customs?market=KM'));
- await page.locator('#email').fill(email);await page.locator('#password').fill(password);
+ await humanFill(null,page.locator('#email'),email);await humanFill(null,page.locator('#password'),password);
  const pending=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/login'&&r.request().method()==='POST');
- await page.locator('#btn-submit').click();
+ await humanClick(null,page.locator('#btn-submit'));
  check((await pending).status()===200,'G6_FORWARDER_LOGIN_FAILED');
  await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:20000});
  const me=await page.request.get('/api/auth/me');
  const user=await me.json();check(me.ok()&&user.role===role,'G6_FORWARDER_ROLE_INVALID');
+ await startTraceAfterAuth(ctx);
  return {ctx,page,blocked};
 }
 async function task(page,title,tabName='Transport & fret'){
  await page.goto('/admin/workspaces/shipping-customs?market=KM',{waitUntil:'domcontentloaded'});
  await page.locator('[data-international-journey]').first().waitFor({state:'visible',timeout:25000});
  const tab=page.locator('.kmc-journey-tab').filter({hasText:tabName});
- if(!await tab.evaluate(e=>e.classList.contains('is-active')))await tab.click();
+ if(!await tab.evaluate(e=>e.classList.contains('is-active')))await humanClick(null,tab);
  const row=page.locator('tr').filter({has:page.getByText(REF,{exact:true})});
  await row.waitFor({state:'visible',timeout:25000});
  const open=row.getByRole('button',{name:'Consulter',exact:true});
- if(await open.count())await open.click();
+ if(await open.count())await humanClick(null,open);
  const item=page.locator('details.kmc-journey-task').filter({has:page.locator('summary').filter({hasText:title})});
  await item.waitFor({state:'visible',timeout:25000});
  // The workspace may repaint after switching transport/relay tabs and
@@ -74,7 +78,7 @@ async function task(page,title,tabName='Transport & fret'){
  const submit=item.locator('button[type="submit"]');
  let visible=false;
  for(let attempt=0;attempt<4;attempt++){
-  if(!await item.evaluate(e=>e.open))await item.locator('summary').click({timeout:8000});
+  if(!await item.evaluate(e=>e.open))await humanClick(null,item.locator('summary'),{timeout:8000});
   try{
    await submit.waitFor({state:'visible',timeout:5000});
    if(await item.evaluate(e=>e.open)){visible=true;break}
@@ -88,7 +92,7 @@ async function task(page,title,tabName='Transport & fret'){
 async function gesture(actor,key,title,tail,fields,expected){
  await runtime();
  const item=await task(actor.page,title);
- for(const [name,value] of Object.entries(fields))await item.locator('[name="'+name+'"]').fill(value);
+ for(const [name,value] of Object.entries(fields))await humanFill(null,item.locator('[name="'+name+'"]'),value);
  const url=BASE+API+'/'+tail;let count=0;
  const handler=async route=>{
   const req=route.request();
@@ -100,7 +104,7 @@ async function gesture(actor,key,title,tail,fields,expected){
  await actor.page.route(url,handler);
  try{
   const pending=actor.page.waitForResponse(r=>r.url()===url&&r.request().method()==='POST',{timeout:30000});
-  await item.locator('button[type="submit"]').click();
+  await humanClick(null,item.locator('button[type="submit"]'));
   const response=await pending;report.events.push({key,http:response.status()});save();
   check(count===1&&response.ok()&&actor.blocked.length===0,'G6_FORWARDER_HTTP_'+key+'_'+response.status());
  }finally{await actor.page.unroute(url,handler)}
@@ -120,7 +124,7 @@ async function main(){
   const placement=prior.after.effective[0].placement_id;
   const before=await snapshot('handed_over',placement);report.before=before;save();
   check(isDeepStrictEqual(before.base,prior.after)&&!before.tracking.tracking_reference&&!before.tracking.bill_of_lading_ref,'G6_FORWARDER_PRIOR_DRIFT');
-  browser=await chromium.launch({headless:true});actor=await login(browser);
+  browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);actor=await login(browser);
   const steps=[
    ['forwarder_received','Confirmer : Réceptionné par le transitaire','transition',{proof_ref:proof('RECEPTION-TRANSITAIRE')},{proof_ref:proof('RECEPTION-TRANSITAIRE'),to_stage:'forwarder_received'},'forwarder_received','stage_changed'],
    ['tracking','Suivi conteneur','tracking',{tracking_reference:TRACK,proof_ref:proof('SUIVI')},{tracking_reference:TRACK,proof_ref:proof('SUIVI')},'forwarder_received','tracking_updated'],
@@ -140,8 +144,8 @@ async function main(){
    last=state;report.after=state;save();await runtime();
   }
   report.verdict='G6_FORWARDER_SIMULATED_CHROMIUM_PG_PASS_ARRIVED';report.next_stage='CUSTOMS';save();
- }catch(e){report.error=String(e.message||e).slice(0,700);try{if(report.db_fingerprint)report.failure_readback=await readback()}catch(_){};save();process.exitCode=2}
- finally{if(browser)await browser.close();await db.pool.end();console.log(JSON.stringify(report))}
+ }catch(e){report.error=fullError(e);try{if(report.db_fingerprint)report.failure_readback=await readback()}catch(_){};save();process.exitCode=2}
+ finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close();await db.pool.end();console.log(JSON.stringify(report))}
 }
 if(require.main===module)main();
 module.exports={login,task,snapshot,proof};

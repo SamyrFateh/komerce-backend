@@ -23,6 +23,9 @@ const {projectAssignment}=require('../../services/market-scope-projector');
 const BASE='https://komerce-backend-production.up.railway.app';
 const REFS=Object.freeze(require('./g6-canonical-journey-binding').resolveRelayCashRefs(process.env));
 const OUT=path.resolve('test-results/g6-a-relay-cash');
+const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {startTraceAfterAuth}=require('./canonical/observability');
+const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const report={run_id:process.env.GITHUB_RUN_ID||null,verdict:'NOT_PROVEN',
   staging_only:true,real_external_payment:false,orders:[],steps:[],business_transition_via:'Chromium_UI_only'};
 let browser=null;
@@ -131,13 +134,14 @@ async function openUI(email,password,allowMutation){
     return route.abort();
   });
   await page.goto(BASE+'/login.html',{waitUntil:'domcontentloaded'});
-  await page.locator('#email').fill(email);
-  await page.locator('#password').fill(password);
+  await humanFill(null,page.locator('#email'),email);
+  await humanFill(null,page.locator('#password'),password);
   const wait=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/login'&&r.request().method()==='POST');
-  await page.locator('#btn-submit').click();
+  await humanClick(null,page.locator('#btn-submit'));
   const lr=await wait;
   check(lr.status()===200,'G6_A_UI_LOGIN_'+lr.status());
   await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:15000});
+  await startTraceAfterAuth(ctx);
   return {ctx,page};
 }
 async function attachByUI(code,o,actor,operator){
@@ -169,10 +173,10 @@ async function attachByUI(code,o,actor,operator){
     await select.waitFor({state:'visible',timeout:18000});
     const eligible=await select.locator('option').evaluateAll((opts,id)=>opts.some(o=>o.value===id),actor.id);
     check(eligible,'G6_A_UI_ACTOR_NOT_ELIGIBLE_'+code);
-    await select.selectOption(actor.id);
+    await humanSelect(null,select,actor.id);
     const action=target.getByRole('button',{name:'Rattacher',exact:true});
     const wait=p.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname===pathPrefix,{timeout:20000});
-    await action.click();
+    await humanClick(null,action);
     const rr=await wait;
     check(rr.status()===200,'G6_A_UI_ASSIGN_HTTP_'+rr.status()+'_'+code);
     const binding=(await db.query('SELECT relais_id FROM users WHERE id=$1',[actor.id])).rows[0];
@@ -189,13 +193,13 @@ async function cashByUI(code,o,actor){
     const workspace=p.locator('[data-workspace-mode="relay-execution"]');
     await workspace.waitFor({state:'visible',timeout:25000});
     const jump=workspace.locator('[data-relay-execution-jump="cash"]');
-    await jump.waitFor({state:'visible',timeout:15000});await jump.click();
+    await jump.waitFor({state:'visible',timeout:15000});await humanClick(null,jump);
     const row=workspace.locator('tr',{hasText:o.reference});
     await row.waitFor({state:'visible',timeout:25000});
     const action=row.locator('[data-workspace-action="confirm-cash"]');
     await action.waitFor({state:'visible',timeout:15000});
     const wait=p.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname===cashPath,{timeout:25000});
-    await action.click();
+    await humanClick(null,action);
     const response=await wait;
     check(response.status()===200,'G6_A_CASH_CONFIRM_HTTP_'+response.status()+'_'+code);
     const actual=(await orderRows()).find(x=>x.market===code);
@@ -224,7 +228,7 @@ async function cashByUI(code,o,actor){
   report.sha=await sha();
   const {byMarket,users,operator}=await prepare();
   await sha();
-  browser=await chromium.launch({headless:true});
+  browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   for(const code of Object.keys(REFS)){
     await sha();
     await attachByUI(code,byMarket[code],users[code],operator);
@@ -234,10 +238,10 @@ async function cashByUI(code,o,actor){
   }
   report.verdict='G6_A_RELAY_UI_ASSIGNMENT_AND_CASH_CHROMIUM_PG_PASS_NOT_PICKUP_GO';
  }catch(e){
-  report.verdict='BLOCKED';report.error=String(e.message||'UNKNOWN').split('\n')[0].slice(0,230);
+  report.verdict='BLOCKED';report.error=fullError(e);
   process.exitCode=2;
  }finally{
-  save();if(browser)await browser.close().catch(()=>{});
+  save();if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});
   await db.pool.end();console.log(JSON.stringify(report));
  }
 })();

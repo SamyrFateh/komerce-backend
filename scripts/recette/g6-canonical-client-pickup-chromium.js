@@ -25,6 +25,9 @@ const PARCEL=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_PARCEL_ID:'95045e
 const SHIPMENT=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_ID:'ff8591fc-78bb-49a4-b154-247508368d16';
 const ITEM=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ITEM_ID:'8c999eec-7322-4676-8db6-585c4d4545f9';
 const OUT=path.resolve('test-results/g6-canonical-client-pickup');
+const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {startTraceAfterAuth}=require('./canonical/observability');
+const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const report={schema:'komerce-g6-client-pickup/1',scenario_id:'M01',market:'KM',reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',
  order_id:ID,parcel_id:PARCEL,shipment_id:SHIPMENT,provenance:'SIMULATED / STAGING ONLY',
  verdict:'BLOCKED',events:[],external_supplier_calls:0,external_payment_executed:false,
@@ -75,27 +78,28 @@ async function customer(browser,owner){
  });
  try{
   await page.goto('/boutique/?market=KM',{waitUntil:'domcontentloaded'});
-  await page.locator('.k-header-nav-btn[data-tab="komerce"]').first().click();
-  await page.locator('#k-kmc-identify').click();
+  await humanClick(null,page.locator('.k-header-nav-btn[data-tab="komerce"]').first());
+  await humanClick(null,page.locator('#k-kmc-identify'));
   await page.locator('#k-id-step-phone').waitFor({state:'visible',timeout:20000});
-  await page.locator('#k-id-name').fill('G6');
-  await page.locator('#k-id-lastname').fill('E2E');
-  await page.locator('#k-id-phone-country').selectOption('+269');
-  await page.locator('#k-id-phone').fill(owner.phone.slice(4));
+  await humanFill(null,page.locator('#k-id-name'),'G6');
+  await humanFill(null,page.locator('#k-id-lastname'),'E2E');
+  await humanSelect(null,page.locator('#k-id-phone-country'),'+269');
+  await humanFill(null,page.locator('#k-id-phone'),owner.phone.slice(4));
   const req=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/otp/request'&&r.request().method()==='POST',{timeout:20000});
-  await page.locator('#k-id-phone-cta').click();
+  await humanClick(null,page.locator('#k-id-phone-cta'));
   check((await req).status()===200,'G6_PICKUP_OTP_REQUEST_REJECTED');
   await page.locator('#k-id-step-otp').waitFor({state:'visible',timeout:15000});
   const pending=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/otp/verify'&&r.request().method()==='POST',{timeout:20000});
-  for(let i=0;i<6;i++)await page.locator('.k-id-otp-box').nth(i).fill(otp[i]);
+  for(let i=0;i<6;i++)await humanFill(null,page.locator('.k-id-otp-box').nth(i),otp[i]);
   const res=await pending,session=await res.json().catch(()=>null);
   check(res.status()===200&&session?.user?.id===owner.id,'G6_PICKUP_OTP_SESSION_OWNER_INVALID');
   check((await ctx.cookies()).some(x=>x.name.endsWith('kmrc_jwt')&&x.httpOnly),'G6_PICKUP_SESSION_NOT_HTTPONLY');
+  await startTraceAfterAuth(ctx);
   await runtime();
   report.events.push({key:'client-otp',http:200,role:'client'});save();
   await page.goto('/boutique/?market=KM&tab=track',{waitUntil:'domcontentloaded'});
   const card=page.locator('.k-myorder-card[data-ref="'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6')+'"]');
-  await card.waitFor({state:'visible',timeout:30000});await card.click();
+  await card.waitFor({state:'visible',timeout:30000});await humanClick(null,card);
   const action=page.locator('.k-order-pickup-code');
   await action.waitFor({state:'visible',timeout:15000});
   check(await action.getByText('Code de retrait',{exact:true}).isVisible(),'G6_PICKUP_CODE_CLIENT_UI_MISSING');
@@ -104,7 +108,7 @@ async function customer(browser,owner){
   page.on('dialog',d=>d.type()==='confirm'?d.accept():d.dismiss());
   const button=action.getByRole('button',{name:'Générer un nouveau code',exact:true});
   const rotating=page.waitForResponse(r=>new URL(r.url()).pathname===revealPath&&r.request().method()==='POST',{timeout:25000});
-  await button.click();const response=await rotating;
+  await humanClick(null,button);const response=await rotating;
   report.rotation_gate={http:response.status(),rotation_requests:rotateCount,
     blocked_paths:blocked.map(x=>x.path).filter(x=>!x.startsWith('/api/auth/otp/'))};
   save();
@@ -143,11 +147,11 @@ async function relay(browser,code,expectedRelay){
   });
   const input=box.locator('[data-pickup-code-input]');
   check(await input.getAttribute('type')==='password','G6_PICKUP_RELAY_FIELD_MUST_BE_MASKED');
-  await input.fill(code);
+  await humanFill(null,input,code);
   const pending=actor.page.waitForResponse(r=>r.url()===url&&r.request().method()==='POST',{timeout:30000});
   const button=box.locator('[data-pickup-code-confirm]');
   check(await button.isEnabled(),'G6_PICKUP_RELAY_ACTION_DISABLED');
-  await button.click();const res=await pending;
+  await humanClick(null,button);const res=await pending;
   check(res.status()===200&&calls===1&&actor.blocked.length===0,'G6_PICKUP_RELAY_COLLECT_REJECTED_'+res.status());
   report.events.push({key:'relay-code-collect',http:200,role:'agent_relais',ui:true,code_masked:'********'});
   save();await runtime();
@@ -185,7 +189,7 @@ async function main(){
     'G6_PICKUP_PRECONDITION_PHYSICAL_INVALID');
   const buyer={id:owner.user_id,email:owner.email,phone:owner.phone,role:owner.role};
   check(await verifyMarkedG6Buyer(db,buyer,env),'G6_PICKUP_EXISTING_MARKED_BUYER_REQUIRED');
-  browser=await chromium.launch({headless:true});
+  browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   const c=await customer(browser,buyer);clientContext=c.ctx;
   const agent=await relay(browser,c.code,owner.relais_id);
   // Never include the code in any log, screenshot or report. Wipe local reference.
@@ -204,8 +208,8 @@ async function main(){
   await runtime();
   report.verdict='G6_CLIENT_PICKUP_SIMULATED_CHROMIUM_PG_PASS_COLLECTED';
   report.next_stage='COMPLETED_M01';save();
- }catch(e){report.error=String(e.message||e).slice(0,400);try{const s=await state();report.failure_readback={order:s.orders[0]?.status,parcel:s.base.parcels[0]?.status,shipment:s.base.shipments[0]?.stage,scans:s.scans.length}}catch(_){};
+ }catch(e){report.error=fullError(e);try{const s=await state();report.failure_readback={order:s.orders[0]?.status,parcel:s.base.parcels[0]?.status,shipment:s.base.shipments[0]?.stage,scans:s.scans.length}}catch(_){};
   save();process.exitCode=2}
- finally{if(clientContext)await clientContext.close().catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end();console.log(JSON.stringify(report))}
+ finally{if(clientContext)await clientContext.close().catch(()=>{});if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end();console.log(JSON.stringify(report))}
 }
 if(require.main===module)main();

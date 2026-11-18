@@ -255,6 +255,7 @@
     const panel=make(doc,'details','hlc-director');
     panel.setAttribute('data-hub-director-todo','');
     panel.open=true;
+    panel.setAttribute('data-hub-director-state','loading');
     const heading=make(doc,'summary','hlc-director-summary','Direction Hub · Tous marchés · Chargement…');
     panel.appendChild(heading);
     const body=make(doc,'div','hlc-director-body','Chargement des tâches et de leur ancienneté…');
@@ -303,6 +304,8 @@
         body.textContent='La supervision ne peut pas être chargée : '+safe(error.message||error);
       }
       return null;
+    } finally {
+      panel.setAttribute('data-hub-director-state','ready');
     }
   }
 

@@ -20,6 +20,8 @@ const env=process.env, BASE='https://komerce-backend-production.up.railway.app';
 const REF=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_REF:'SIM-STAGING-EXP-KL1WGP6', ID=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_ID:'ff8591fc-78bb-49a4-b154-247508368d16', CUSTOMS='SIM-STAGING-DOU-'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6');
 const API='/api/admin/workspaces/shipping-customs/market/KM';
 const OUT=path.resolve('test-results/g6-canonical-customs');
+const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const report={schema:'komerce-g6-customs/1',shipment_id:ID,shipment_ref:REF,order_id:env.G6_CANONICAL_ORDER_ID,
  reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',scenario_id:'M01',market:'KM',events:[],verdict:'BLOCKED',
  provenance:'SIMULATED / STAGING ONLY',external_payment_executed:false,external_supplier_calls:0};
@@ -48,14 +50,14 @@ async function click(actor,key,endpoint,button,validate,role){
   await button.waitFor({state:'visible',timeout:25000});
   check(await button.isEnabled(),'G6_CUSTOMS_DISABLED_'+key);
   const pending=actor.page.waitForResponse(r=>r.url()===url&&r.request().method()==='POST',{timeout:30000});
-  await button.click();
+  await humanClick(null,button);
   const response=await pending;report.events.push({key,role,http:response.status()});save();
   check(count===1&&response.ok()&&actor.blocked.length===0,'G6_CUSTOMS_HTTP_'+key+'_'+response.status());
  }finally{await actor.page.unroute(url,handler)}
 }
 async function journey(actor,key,title,tab,tail,fields,expected,role){
  const item=await task(actor.page,title,tab);
- for(const [name,val] of Object.entries(fields))await item.locator('[name="'+name+'"]').fill(val);
+ for(const [name,val] of Object.entries(fields))await humanFill(null,item.locator('[name="'+name+'"]'),val);
  await click(actor,key,API+'/international/'+REF+'/'+tail,item.locator('button[type="submit"]'),b=>isDeepStrictEqual(b,expected),role);
 }
 function eventProof(prev,next,type,ref,stage){
@@ -79,12 +81,12 @@ async function main(){
   let last=await readState('arrived',placement);report.before=last;save();
   check(isDeepStrictEqual(last.base,prior.after.base)&&isDeepStrictEqual(JSON.parse(JSON.stringify(last.tracking)),prior.after.tracking)&&last.customs.length===0&&last.linked===null,
    'G6_CUSTOMS_PRIOR_DRIFT');
-  browser=await chromium.launch({headless:true});
+  browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   const admin=await login(browser,'E2E_ADMIN_','admin');
   try{
    await admin.page.goto('/admin/workspaces/shipping-customs?market=KM',{waitUntil:'domcontentloaded'});
    await admin.page.locator('[data-international-journey]').first().waitFor({state:'visible',timeout:25000});
-   await admin.page.locator('.kmc-journey-tab').filter({hasText:'Arrivée & douane'}).click();
+   await humanClick(null,admin.page.locator('.kmc-journey-tab').filter({hasText:'Arrivée & douane'}));
    const date=new Date().toISOString().slice(0,10), answers=[CUSTOMS,date,'1000',''];
    admin.page.on('dialog',async d=>{
     if(d.type()==='prompt'&&answers.length)return d.accept(answers.shift());
@@ -121,7 +123,7 @@ async function main(){
    report.after=now;save();await runtime();
   }finally{await hub.ctx.close()}
   report.verdict='G6_CUSTOMS_LOCAL_SIMULATED_CHROMIUM_PG_PASS';report.next_stage='RELAY_RECEIPT';save();
- }catch(e){report.error=String(e.message||e).slice(0,700);try{if(report.db_fingerprint)report.failure_readback=await readback()}catch(_){};save();process.exitCode=2}
- finally{if(browser)await browser.close();await db.pool.end();console.log(JSON.stringify(report))}
+ }catch(e){report.error=fullError(e);try{if(report.db_fingerprint)report.failure_readback=await readback()}catch(_){};save();process.exitCode=2}
+ finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close();await db.pool.end();console.log(JSON.stringify(report))}
 }
 if(require.main===module)main();

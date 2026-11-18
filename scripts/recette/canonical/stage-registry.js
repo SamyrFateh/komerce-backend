@@ -49,6 +49,10 @@ function stageGraph(stages){
  for(const id of byId.keys())visit(id);
  return Object.freeze({byId,order:Object.freeze(ordered),producers});
 }
+function nextStageId(id){
+ const i=STAGE_IDS.indexOf(LEGACY_PHASE_MAP[id]||id);
+ return i>=0&&i<STAGE_IDS.length-1?STAGE_IDS[i+1]:null;
+}
 function resolvePhase(phase,graph=stageGraph(loadGoldenStages())){
  const canonical=LEGACY_PHASE_MAP[phase]||phase;
  if(!graph.byId.has(canonical))throw Error('G6_CANONICAL_PHASE_NOT_REGISTERED_'+phase);
@@ -82,4 +86,4 @@ function planGolden({fromStage='BUYER',toStage='CLIENT_PICKUP'}={}){
  return {contract:'G6-CANONICAL-JOURNEY-v1',mode:'dry-run',stages:g.order.slice(start,end+1),
   missing_prerequisites:prerequisiteIds(from.id,g),mutations:0,verdict:'NOT_PROVEN'};
 }
-module.exports={STAGE_IDS,LEGACY_PHASE_MAP,loadGoldenStages,stageGraph,resolvePhase,prerequisiteIds,requiresResumeProof,validateProofBoundary,planGolden};
+module.exports={STAGE_IDS,nextStageId,LEGACY_PHASE_MAP,loadGoldenStages,stageGraph,resolvePhase,prerequisiteIds,requiresResumeProof,validateProofBoundary,planGolden};

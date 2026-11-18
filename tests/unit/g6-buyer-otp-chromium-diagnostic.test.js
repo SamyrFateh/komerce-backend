@@ -7,7 +7,7 @@ describe('G6 buyer OTP never silently bypasses Chromium form validation',()=>{
   const s=fs.readFileSync(file,'utf8');
   expect(()=>new vm.Script(s,{filename:file})).not.toThrow();
   const eligibility=s.indexOf("record('OTP_UI_FORM_PRECHECK'");
-  const click=s.indexOf("await page.locator('#k-id-phone-cta').click()");
+  const click=s.indexOf("await humanClick(null,page.locator('#k-id-phone-cta'))");
   expect(eligibility).toBeGreaterThan(0);
   expect(click).toBeGreaterThan(eligibility);
   expect(s).toContain('G6_OTP_CHROMIUM_FORM_NOT_SUBMITTABLE');
