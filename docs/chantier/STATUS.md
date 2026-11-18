@@ -24,7 +24,7 @@
 5. **Produit, atterrissage du rôle relais.** L'agent relais arrive sur Flux Relais. La réception passe par « Atelier réception » et le retrait par l'onglet « Remises » (#4568, #4570). Ce parcours d'écran est à confirmer par G6-F et par le propriétaire.
 7. **Produit, PO groupé.** La référence fournisseur simulée et la preuve d'achat sont figées sur la commande de la 1re ligne (FIFO) plutôt que propres au PO (#4587). Il faut une référence par PO.
 8. **Produit, Expéditions & Douane.** Un repaint asynchrone referme la tâche `<details>` qu'on vient d'ouvrir, avant la saisie. C'est un défaut réel pour un humain (#4591, même famille que P1 Hub).
-6. **Runner.** `g6-canonical-replay.js` garde `KM` en dur, hors du chemin dynamique (#4575). Il faut l'aligner sur le profil de marché ou le retirer.
+6. **Runner.** `g6-canonical-replay.js` garde `KM` en dur, hors du chemin dynamique (#4575). Il faut l'aligner sur le profil de marché ou le retirer. **Lot 6 · [#4612](https://github.com/SamyrFateh/komerce-backend/pull/4612)** : replay historique conservé et relié au profil marché. Prochaine action : rapprocher les preuves Opus et les références orphelines après GO.
 
 **G6-MARKET — M01/CM (Opus) : CRITÈRE CM ATTEINT, 3 runs consécutifs à 15/15** sur le SHA `6e06bdc5`, avec les commandes neuves K74B6WQ (#4592), K1TBS8T (#4593) et KUHZB3Z (#4594). La non-régression M01/KM est PASS 15/15 sur le même SHA (K8RQG02, #4595). Correctifs du runner pendant la campagne CM : #4575 (marché paramétré), #4578 (500 devenu 409), #4580, #4582, #4585, #4587, #4589 et #4591. Aucun défaut métier bloquant. **Prochaine action :** 3 runs M01/CG (#4596 en cours), puis la revue indépendante G6-F, puis le traitement de G6-SUIVIS.
 
