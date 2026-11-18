@@ -1,0 +1,36 @@
+{
+  "schema": "komerce-g6-scenario-manifest/1",
+  "scenario_id": "N27",
+  "matrix_ref": {
+    "path": "docs/recette/G6_PRE_STRESS_BUSINESS_SCENARIOS.json",
+    "id": "N27",
+    "version": "G6-PRE-STRESS-2"
+  },
+  "market_options": [
+    "KM",
+    "CM",
+    "CG"
+  ],
+  "cohort_options": [
+    "GPT-G6",
+    "CLAUDE-PAR"
+  ],
+  "configuration": {
+    "market": null,
+    "cohort": null,
+    "basket": {
+      "source": null,
+      "lines": []
+    },
+    "payment": {
+      "method": null,
+      "simulated_only": true
+    },
+    "steps": [],
+    "branches": []
+  },
+  "expected_oracle_ids": [
+    "O-FIN"
+  ],
+  "binding_status": "NOT_BOUND"
+}
