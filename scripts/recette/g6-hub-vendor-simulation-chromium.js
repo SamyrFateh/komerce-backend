@@ -9,6 +9,7 @@
  * @impact-areas purchasing, hub, staging-only
  */
 'use strict';
+const MK=require('./canonical/market-profile').marketProfile(process.env);
 const fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('playwright');
 const db=require('../../db');
@@ -23,7 +24,7 @@ const PO=env.G6_CANONICAL_PO_ID||'';
 const ORDER=env.G6_CANONICAL_ORDER_ID||'';
 const UUID=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 const SHA=/^[a-f0-9]{40}$/i;
-const report={schema:'komerce-g6-vendor-simulation/1',scenario_id:'M01',market:'KM',
+const report={schema:'komerce-g6-vendor-simulation/1',scenario_id:'M01',market:MK.code,
  reference:REF,po_id:PO,order_id:ORDER,verdict:'BLOCKED',
  supplier_send_certified:false,supplier_confirmation_certified:false,physical_receipt_certified:false,
  external_supplier_calls:0,external_payment_executed:false,provenance:'SIMULATED / STAGING ONLY'};
@@ -108,7 +109,7 @@ async function main(){
   check(env.GITHUB_EVENT_NAME==='issues'&&env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER&&
     env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.NODE_ENV==='test'&&
     env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&
-    env.G6_CANONICAL_PHASE==='HUB_VENDOR_SIMULATION'&&env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET==='KM'&&
+    env.G6_CANONICAL_PHASE==='HUB_VENDOR_SIMULATION'&&env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET===MK.code&&
     env.G6_CANONICAL_DB_FINGERPRINT&&(env.G6_CANONICAL_ORDER_REFERENCE==='KL1WGP6'||
     (env.G6_DYNAMIC_FRESH_ORDER==='1'&&
      /^[A-Z0-9][A-Z0-9-]{5,63}$/.test(env.G6_CANONICAL_ORDER_REFERENCE||'')&&

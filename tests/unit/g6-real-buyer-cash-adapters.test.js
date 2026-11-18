@@ -18,7 +18,7 @@ describe('G6 real Chromium/PG adapter — strict scope and no historical fallbac
   for(const change of [
    {GITHUB_ACTOR:'other'},{GITHUB_EVENT_NAME:'workflow_dispatch'},
    {GITHUB_REPOSITORY:'untrusted/repo'},{KOMERCE_ENV:'production'},
-   {KOMERCE_TARGET_ENV:'production'},{G6_TARGET_MARKET:'CM'},
+   {KOMERCE_TARGET_ENV:'production'},{G6_TARGET_MARKET:'FR'},
    {G6_CANONICAL_SCENARIO:'N01'},{E2E_EXPECTED_DEPLOY_SHA:'invalid'},
    {GITHUB_RUN_ID:'7'},{DATABASE_URL:''}
   ]){

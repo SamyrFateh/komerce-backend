@@ -9,6 +9,7 @@
  * @impact-areas logistics, staging-only
  */
 'use strict';
+const MK=require('./canonical/market-profile').marketProfile(process.env);
 const fs=require('node:fs'),path=require('node:path');
 const {isDeepStrictEqual}=require('node:util');
 const {chromium}=require('playwright');
@@ -22,9 +23,9 @@ const OUT=path.resolve('test-results/g6-canonical-forwarder');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const {startTraceAfterAuth}=require('./canonical/observability');
 const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
-const API='/api/admin/workspaces/shipping-customs/market/KM/international/'+REF;
+const API='/api/admin/workspaces/shipping-customs/market/'+MK.code+'/international/'+REF;
 const report={schema:'komerce-g6-forwarder/1',shipment_id:ID,shipment_ref:REF,order_id:env.G6_CANONICAL_ORDER_ID,
- reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',scenario_id:'M01',market:'KM',role:'agent_transitaire',events:[],verdict:'BLOCKED',
+ reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',scenario_id:'M01',market:MK.code,role:'agent_transitaire',events:[],verdict:'BLOCKED',
  provenance:'SIMULATED / STAGING ONLY',external_payment_executed:false,external_supplier_calls:0};
 const check=(ok,code)=>{if(!ok)throw Error(code)};
 function save(){fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n')}
@@ -50,7 +51,7 @@ async function login(browser,prefix='E2E_AGENT_TRANSITAIRE_',role='agent_transit
   if(authAllowed&&r.method()==='POST'&&u.origin===BASE&&u.pathname==='/api/auth/login'){authAllowed=false;return route.continue()}
   blocked.push({method:r.method(),path:u.pathname});return route.abort('blockedbyclient');
  });
- await humanGoto(page,'/login.html?next='+encodeURIComponent('/admin/workspaces/shipping-customs?market=KM'));
+ await humanGoto(page,'/login.html?next='+encodeURIComponent('/admin/workspaces/shipping-customs?market='+MK.code+''));
  await humanFill(null,page.locator('#email'),email);await humanFill(null,page.locator('#password'),password);
  const pending=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/login'&&r.request().method()==='POST');
  await humanClick(null,page.locator('#btn-submit'));
@@ -62,7 +63,7 @@ async function login(browser,prefix='E2E_AGENT_TRANSITAIRE_',role='agent_transit
  return {ctx,page,blocked};
 }
 async function task(page,title,tabName='Transport & fret'){
- await humanGoto(page,'/admin/workspaces/shipping-customs?market=KM',{waitUntil:'domcontentloaded'});
+ await humanGoto(page,'/admin/workspaces/shipping-customs?market='+MK.code+'',{waitUntil:'domcontentloaded'});
  await page.locator('[data-international-journey]').first().waitFor({state:'visible',timeout:25000});
  const tab=page.locator('.kmc-journey-tab').filter({hasText:tabName});
  if(!await tab.evaluate(e=>e.classList.contains('is-active')))await humanClick(null,tab);
@@ -116,7 +117,7 @@ async function main(){
   check(env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.GITHUB_EVENT_NAME==='issues'&&env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER&&
    env.NODE_ENV==='test'&&env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&
    env.STAGING_BASE_URL===BASE&&env.G6_CANONICAL_PHASE==='FORWARDER'&&(env.G6_CANONICAL_RESUME_RUN_ID==='44210239102'||env.G6_DYNAMIC_FRESH_ORDER==='1')&&
-   env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET==='KM'&&(env.G6_CANONICAL_ORDER_ID==='56adad65-d1fa-4e80-8d69-c25e0fe92a76'||(env.G6_DYNAMIC_FRESH_ORDER==='1'&&/^[a-f0-9-]{36}$/i.test(env.G6_CANONICAL_ORDER_ID||'')&&/^[a-f0-9-]{36}$/i.test(ID||''))),
+   env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET===MK.code&&(env.G6_CANONICAL_ORDER_ID==='56adad65-d1fa-4e80-8d69-c25e0fe92a76'||(env.G6_DYNAMIC_FRESH_ORDER==='1'&&/^[a-f0-9-]{36}$/i.test(env.G6_CANONICAL_ORDER_ID||'')&&/^[a-f0-9-]{36}$/i.test(ID||''))),
    'G6_FORWARDER_OWNER_GUARD');
   const target=await confirmTarget({db,env});check(target.confirmed&&target.fingerprint===env.G6_CANONICAL_DB_FINGERPRINT,'G6_FORWARDER_DB_DRIFT');
   report.db_fingerprint=target.fingerprint;report.sha=await runtime();

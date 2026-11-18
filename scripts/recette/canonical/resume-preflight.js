@@ -20,7 +20,7 @@ function planBoundResume({fromStage,toStage='CLIENT_PICKUP',context,checkpoints}
  const from=resolvePhase(fromStage,graph),to=resolvePhase(toStage,graph);
  const start=graph.order.indexOf(from.id),end=graph.order.indexOf(to.id);
  if(start>end)throw Error('G6_RESUME_STAGE_RANGE_INVALID');
- if(!context||context.scenario_id!=='M01'||context.market!=='KM'||
+ if(!context||context.scenario_id!=='M01'||!Object.hasOwn(require('./market-profile').PROFILES,context.market)||
     !UUID.test(String(context.order_id||''))||!REF.test(String(context.order_reference||''))||
     !SHA.test(String(context.staging_sha||''))||!String(context.db_fingerprint||'').trim()||
     context.production_permitted!==false)

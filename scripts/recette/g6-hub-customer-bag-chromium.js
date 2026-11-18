@@ -9,6 +9,7 @@
  * @impact-areas hub, staging-only
  */
 'use strict';
+const MK=require('./canonical/market-profile').marketProfile(process.env);
 const fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('playwright');
 const db=require('../../db');
@@ -20,9 +21,9 @@ const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const ORDER=env.G6_CANONICAL_ORDER_ID,PO=env.G6_CANONICAL_PO_ID,REF=env.G6_CANONICAL_ORDER_REFERENCE;
 const SOURCE=env.G6_CANONICAL_RECEIPT_REFERENCE;
-const API='/api/admin/workspaces/operations/market/KM';
+const API='/api/admin/workspaces/operations/market/'+MK.code;
 const PROOF='[SIMULATED / STAGING ONLY] G6-M01-DEPOT-SAC-'+REF;
-const report={schema:'komerce-g6-hub-customer-bag/1',scenario_id:'M01',market:'KM',
+const report={schema:'komerce-g6-hub-customer-bag/1',scenario_id:'M01',market:MK.code,
   reference:REF,order_id:ORDER,po_id:PO,source_ref:SOURCE,verdict:'BLOCKED',
   provenance:'SIMULATED / STAGING ONLY',events:[],external_supplier_calls:0,external_payment_executed:false};
 function save(){fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n');}
@@ -73,7 +74,7 @@ function validateBase(s){
  return receipt[0];
 }
 async function openDetails(page){
- await humanGoto(page,'/admin/hub-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
+ await humanGoto(page,'/admin/hub-live?view=execute&market='+MK.code+'',{waitUntil:'domcontentloaded'});
  const tab=page.getByRole('tab',{name:'Dossiers'});
  await tab.waitFor({state:'visible',timeout:25000});
  await humanClick(null,tab);
@@ -127,7 +128,7 @@ async function main(){
    env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.NODE_ENV==='test'&&
    env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&
    env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&env.STAGING_BASE_URL==='https://komerce-backend-production.up.railway.app'&&
-   env.G6_CANONICAL_PHASE==='HUB_CUSTOMER_BAG'&&env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET==='KM'&&
+   env.G6_CANONICAL_PHASE==='HUB_CUSTOMER_BAG'&&env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET===MK.code&&
    ((REF==='KL1WGP6'&&ORDER==='56adad65-d1fa-4e80-8d69-c25e0fe92a76'&&
      PO==='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3'&&SOURCE==='SUPPLIER_PACKAGE-17824209-30d1-41be-87ad-1ef55c8a2994')||
     (env.G6_DYNAMIC_FRESH_ORDER==='1'&&/^[A-Z0-9][A-Z0-9-]{5,63}$/.test(REF||'')&&

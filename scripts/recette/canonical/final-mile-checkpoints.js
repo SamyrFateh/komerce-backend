@@ -32,7 +32,7 @@ function validateFinalMileCheckpoint(stageId,previous,prior){
  const eventKeys=prior?.events?.map(x=>x.key);
  const eventHttp=stageId==='RELAY_RECEIPT'?[201,200,200,200,200]:stageId==='CLIENT_PICKUP'?[201]:[200,200,200,200];
  const uuidFields=[orderId,poId,shipmentId,parcelId];
- if(previous?.scenario_id!=='M01'||previous?.market!=='KM'||
+ if(previous?.scenario_id!=='M01'||!Object.hasOwn(require('./market-profile').PROFILES,previous?.market)||
     previous?.verdict!=='NOT_PROVEN'||previous?.full_chain_certified!==false||
     previous?.production_permitted!==false||previous?.next_stage!==policy.nextStage||
     !REFERENCE.test(String(reference||''))||

@@ -7,6 +7,7 @@
  * @impact-areas staging-only
  */
 'use strict';
+const {marketProfile,PROFILES}=require('./market-profile');
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {spawnSync}=require('node:child_process');
 const {confirmTarget}=require('../target-guard');
@@ -52,13 +53,13 @@ const REF=/^[A-Z0-9][A-Z0-9-]{5,63}$/;
 const UUID=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 const same=(c,p)=>p?.order_id===c.order_id&&p?.order_reference===c.order_reference&&
  p?.staging_sha===c.staging_sha&&p?.db_fingerprint===c.db_fingerprint&&
- p?.market==='KM'&&p?.scenario_id==='M01'&&p?.production_permitted===false;
+ p?.market===c.market&&p?.scenario_id==='M01'&&p?.production_permitted===false;
 function guard(env){
  if(env.GITHUB_EVENT_NAME!=='issues'||env.GITHUB_ACTOR!==env.GITHUB_REPOSITORY_OWNER||
     env.GITHUB_REPOSITORY!=='SamyrFateh/komerce-backend'||
     env.NODE_ENV!=='test'||env.KOMERCE_ENV!=='staging'||env.KOMERCE_TARGET_ENV!=='staging'||
     env.EXPECTED_RAILWAY_ENVIRONMENT!=='staging'||env.STAGING_BASE_URL!==BASE||
-    env.G6_CANONICAL_SCENARIO!=='M01'||env.G6_TARGET_MARKET!=='KM'||
+    env.G6_CANONICAL_SCENARIO!=='M01'||!Object.hasOwn(PROFILES,env.G6_TARGET_MARKET)||
     !SHA.test(String(env.E2E_EXPECTED_DEPLOY_SHA||''))||
     !/^\d{8,}$/.test(String(env.GITHUB_RUN_ID||''))||
     !env.DATABASE_URL||!env.E2E_ADMIN_EMAIL||!env.E2E_ADMIN_PASSWORD)
@@ -134,7 +135,7 @@ async function orderPg(db,context){
   (SELECT count(*)::int FROM cash_confirmation_controls c WHERE c.order_id=o.id AND c.state='CONFIRMED') AS control_count
  FROM orders o JOIN markets m ON m.id=o.market_id WHERE o.id=$1 AND o.reference=$2
  `,[context.order_id,context.order_reference]);
- if(rows.length!==1||rows[0].market!=='KM'||rows[0].simulation_scope!=='G6-BUYER'||
+ if(rows.length!==1||rows[0].market!==context.market||rows[0].simulation_scope!=='G6-BUYER'||
    rows[0].payment_mode!=='cash_relais')throw Error('G6_DYNAMIC_ORDER_PG_IDENTITY_INVALID');
  return rows[0];
 }
@@ -180,7 +181,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
   if(context&&(context.db_fingerprint!==fingerprint||
     context.staging_sha!==env.E2E_EXPECTED_DEPLOY_SHA))
    throw Error('G6_DYNAMIC_RUNTIME_CONTEXT_DRIFT');
-  return {scenario_id:'M01',market:'KM',environment:'staging',
+  return {scenario_id:'M01',market:marketProfile(env).code,environment:'staging',
    staging_sha:env.E2E_EXPECTED_DEPLOY_SHA,db_fingerprint:fingerprint,
    production_permitted:false,attestation_origin:'INDEPENDENT_CHROMIUM_POSTGRESQL',
    ...(context?{order_id:context.order_id,order_reference:context.order_reference}:{})};
@@ -204,12 +205,12 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
       ((pg.payment_status==='paid')&&(pg.cash_count!==1||pg.control_count!==1)))
     throw Error('G6_DYNAMIC_BUYER_PG_READBACK_INVALID');
   }else if(stageId==='RELAY_CASH'){
-   const matches=(data.steps||[]).filter(s=>s.name==='CASH_UI_PAID'&&s.market==='KM');
+   const matches=(data.steps||[]).filter(s=>s.name==='CASH_UI_PAID'&&s.market===marketProfile(env).code);
    const pre=(data.steps||[]).find(s=>s.name==='PRECHECK_TARGET_CASH_ORDERS');
    if(data.verdict!=='G6_A_RELAY_UI_ASSIGNMENT_AND_CASH_CHROMIUM_PG_PASS_NOT_PICKUP_GO'||
       data.sha!==context.staging_sha||data.db_fingerprint!==context.db_fingerprint||
       data.real_external_payment!==false||matches.length!==1||
-      pre?.references?.KM!==context.order_reference||
+      pre?.references?.[marketProfile(env).code]!==context.order_reference||
       matches[0].reference!==context.order_reference||matches[0].http!==200||
       matches[0].payment_status!=='paid'||matches[0].cash_collection_count!==1||
       matches[0].cash_control_confirmed_count!==1)
@@ -418,7 +419,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
     await verifyStage('BUYER',context);
     fs.rmSync(path.join(ROOT,REPORT_PATH.RELAY_CASH),{force:true});
     execute(SCRIPTS.RELAY_CASH,{
-     ...env,G6_CANONICAL_MARKET:'KM',
+     ...env,G6_CANONICAL_MARKET:marketProfile(env).code,G6_DYNAMIC_FRESH_BUYER:'1',
      G6_CANONICAL_ORDER_REFERENCE:context.order_reference
     });
     return report('RELAY_CASH').data;
