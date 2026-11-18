@@ -25,7 +25,7 @@ const REFS=Object.freeze(require('./g6-canonical-journey-binding').resolveRelayC
 const OUT=path.resolve('test-results/g6-a-relay-cash');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const {startTraceAfterAuth}=require('./canonical/observability');
-const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
+const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const report={run_id:process.env.GITHUB_RUN_ID||null,verdict:'NOT_PROVEN',
   staging_only:true,real_external_payment:false,orders:[],steps:[],business_transition_via:'Chromium_UI_only'};
 let browser=null;
@@ -133,7 +133,7 @@ async function openUI(email,password,allowMutation){
     // No supplier, PSP, payment gateway, reassign-by-API or unrelated business mutation.
     return route.abort();
   });
-  await page.goto(BASE+'/login.html',{waitUntil:'domcontentloaded'});
+  await humanGoto(page,BASE+'/login.html',{waitUntil:'domcontentloaded'});
   await humanFill(null,page.locator('#email'),email);
   await humanFill(null,page.locator('#password'),password);
   const wait=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/login'&&r.request().method()==='POST');
@@ -149,7 +149,7 @@ async function attachByUI(code,o,actor,operator){
   const s=await openUI(operator.email,operator.password,p=>p===pathPrefix);
   try {
     const p=s.page;
-    await p.goto(BASE+'/dashboards/canonical/market-autonomy.html?market='+code,{waitUntil:'domcontentloaded'});
+    await humanGoto(p,BASE+'/dashboards/canonical/market-autonomy.html?market='+code,{waitUntil:'domcontentloaded'});
     // The canonical autonomy shell loads pricing workspace before mounting network.
     // An operator needs pricing.read even when this test only mutates the network.
     const root=p.locator('#market-autonomy-root');
@@ -189,7 +189,7 @@ async function cashByUI(code,o,actor){
   const s=await openUI(actor.email,actor.password,p=>p===cashPath);
   try{
     const p=s.page;
-    await p.goto(BASE+'/admin/relais-live?view=execute&market='+code+'&focus=cash',{waitUntil:'domcontentloaded'});
+    await humanGoto(p,BASE+'/admin/relais-live?view=execute&market='+code+'&focus=cash',{waitUntil:'domcontentloaded'});
     const workspace=p.locator('[data-workspace-mode="relay-execution"]');
     await workspace.waitFor({state:'visible',timeout:25000});
     const jump=workspace.locator('[data-relay-execution-jump="cash"]');

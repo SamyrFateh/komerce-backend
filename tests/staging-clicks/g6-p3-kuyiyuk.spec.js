@@ -8,6 +8,7 @@
  * @impact-areas  purchasing, admin-dashboard, staging-only
  */
 'use strict';
+const {humanGoto}=require('../../scripts/recette/canonical/actors/human-gestures');
 const fs=require('node:fs');
 const path=require('node:path');
 const {test,expect}=require('@playwright/test');
@@ -40,7 +41,7 @@ async function login(browser,baseURL,actor='hub'){
   const ctx=await browser.newContext({baseURL,viewport:{width:1440,height:900}});
   const page=await ctx.newPage();
   page.on('dialog',d=>d.accept());
-  await page.goto('/login.html');
+  await humanGoto(page,'/login.html');
   await page.locator('#email').fill(email);
   await page.locator('#password').fill(password);
   const response=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/login'&&r.request().method()==='POST');
@@ -123,7 +124,7 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
     if(before.status==='pending'){
       const {ctx:relayCtx,page:relayPage}=await login(browser,baseURL,'relay');
       try{
-        await relayPage.goto('/admin/relais-live?view=execute',{waitUntil:'domcontentloaded'});
+        await humanGoto(relayPage,'/admin/relais-live?view=execute',{waitUntil:'domcontentloaded'});
         await relayPage.locator('select').first().waitFor({timeout:20000});
         await relayPage.locator('select').first().selectOption({label:'KM · Comores'});
         await relayPage.waitForLoadState('networkidle').catch(()=>{});
@@ -170,7 +171,7 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
     expect(Number(before.cash_control_confirmed_count)).toBe(1);
     const {ctx,page}=await login(browser,baseURL);
     try{
-      await page.goto('/admin/hub-live?view=execute',{waitUntil:'domcontentloaded'});
+      await humanGoto(page,'/admin/hub-live?view=execute',{waitUntil:'domcontentloaded'});
       await page.locator('select').first().waitFor({timeout:20000});
       await page.locator('select').first().selectOption({label:'KM · Comores'}).catch(()=>{});
       await page.waitForLoadState('networkidle').catch(()=>{});

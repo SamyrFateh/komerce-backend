@@ -17,7 +17,7 @@ const {login}=require('./g6-hub-commitment-chromium');
 const env=process.env,ROOT=path.resolve(__dirname,'../..');
 const OUT=path.join(ROOT,'test-results/g6-hub-customer-bag');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
-const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
+const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const ORDER=env.G6_CANONICAL_ORDER_ID,PO=env.G6_CANONICAL_PO_ID,REF=env.G6_CANONICAL_ORDER_REFERENCE;
 const SOURCE=env.G6_CANONICAL_RECEIPT_REFERENCE;
 const API='/api/admin/workspaces/operations/market/KM';
@@ -73,7 +73,7 @@ function validateBase(s){
  return receipt[0];
 }
 async function openDetails(page){
- await page.goto('/admin/hub-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
+ await humanGoto(page,'/admin/hub-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
  const tab=page.getByRole('tab',{name:'Dossiers'});
  await tab.waitFor({state:'visible',timeout:25000});
  await humanClick(null,tab);

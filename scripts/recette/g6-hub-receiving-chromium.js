@@ -18,7 +18,7 @@ const env=process.env;
 const ROOT=path.resolve(__dirname,'../..');
 const OUT=path.join(ROOT,'test-results/g6-hub-receiving');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
-const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
+const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const ORDER=env.G6_CANONICAL_ORDER_ID||'';
 const PO=env.G6_CANONICAL_PO_ID||'';
 const REF=env.G6_CANONICAL_ORDER_REFERENCE||'';
@@ -108,7 +108,7 @@ async function main(){
        return route.continue();
      return route.abort('blockedbyclient');
    });
-   await actor.page.goto('/admin/hub-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
+   await humanGoto(actor.page,'/admin/hub-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
    await humanClick(null,actor.page.getByRole('tab',{name:'Réceptions'}));
    const card=actor.page.locator('[data-receive-po="'+PO+'"]');
    await card.waitFor({state:'visible',timeout:25000});

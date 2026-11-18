@@ -21,7 +21,7 @@ const REF=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_REF:'SIM-ST
 const API='/api/admin/workspaces/shipping-customs/market/KM';
 const OUT=path.resolve('test-results/g6-canonical-customs');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
-const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
+const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const report={schema:'komerce-g6-customs/1',shipment_id:ID,shipment_ref:REF,order_id:env.G6_CANONICAL_ORDER_ID,
  reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',scenario_id:'M01',market:'KM',events:[],verdict:'BLOCKED',
  provenance:'SIMULATED / STAGING ONLY',external_payment_executed:false,external_supplier_calls:0};
@@ -84,7 +84,7 @@ async function main(){
   browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   const admin=await login(browser,'E2E_ADMIN_','admin');
   try{
-   await admin.page.goto('/admin/workspaces/shipping-customs?market=KM',{waitUntil:'domcontentloaded'});
+   await humanGoto(admin.page,'/admin/workspaces/shipping-customs?market=KM',{waitUntil:'domcontentloaded'});
    await admin.page.locator('[data-international-journey]').first().waitFor({state:'visible',timeout:25000});
    await humanClick(null,admin.page.locator('.kmc-journey-tab').filter({hasText:'Arrivée & douane'}));
    const date=new Date().toISOString().slice(0,10), answers=[CUSTOMS,date,'1000',''];

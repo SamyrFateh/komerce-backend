@@ -27,7 +27,7 @@ let PRODUCT=null;
 const OUT=path.resolve('test-results/g6-p2-buyer-order');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const {startTraceAfterAuth}=require('./canonical/observability');
-const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
+const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 fs.mkdirSync(OUT,{recursive:true});
 const run=crypto.randomBytes(4).toString('hex');
 const report={run_id:process.env.GITHUB_RUN_ID||null,run8:run.toUpperCase(),
@@ -146,7 +146,7 @@ async function browserCheckout({buyer,phone,code}){
     if(method==='POST'&&u.origin==='https://m.stripe.com'&&u.pathname==='/6'&&req.resourceType()==='xhr')return route.abort();
     report.blocked_requests.push(meta);return route.abort();
   });
-  const d=await page.goto(ORIGIN+'/boutique/?market='+MARKET,{waitUntil:'domcontentloaded'});
+  const d=await humanGoto(page,ORIGIN+'/boutique/?market='+MARKET,{waitUntil:'domcontentloaded'});
   check(d?.status()===200,'BOUTIQUE_DOC_NOT_200');
   await humanClick(null,page.locator('.k-header-nav-btn[data-tab="komerce"]').first());
   await humanClick(null,page.locator('#k-kmc-identify'));
@@ -198,7 +198,7 @@ async function browserCheckout({buyer,phone,code}){
   check((await ctx.cookies()).some(x=>x.name.endsWith('kmrc_jwt')&&x.httpOnly),'OTP_HTTPONLY_SESSION_NOT_SET');
   await startTraceAfterAuth(ctx);
   record('CHROMIUM_OTP_VERIFIED',{request_status:rr.status(),verify_status:vr.status(),session:true,external_notification:false});
-  await page.goto(ORIGIN+'/boutique/?market='+MARKET,{waitUntil:'domcontentloaded'});
+  await humanGoto(page,ORIGIN+'/boutique/?market='+MARKET,{waitUntil:'domcontentloaded'});
   // The catalog's async load must finish before the first search input event.
   await page.waitForFunction(() => {
     const count=document.getElementById('k-hero-count');

@@ -16,7 +16,7 @@ const ORIGIN='https://komerce-backend-production.up.railway.app';
 const OUT=path.resolve('test-results/g6-hub-commitment');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const {startTraceAfterAuth}=require('./canonical/observability');
-const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
+const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const env=process.env;
 const UUID=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const SHA=/^[0-9a-f]{40}$/i;
@@ -67,7 +67,7 @@ async function login(browser,prefix,{readOnly=false,allowedWrites=['authorize-co
   blocked.push({method:req.method(),path:url.pathname});
   return route.abort('blockedbyclient');
  });
- await page.goto('/login.html?next='+encodeURIComponent('/admin/hub-live?view=execute&market=KM'));
+ await humanGoto(page,'/login.html?next='+encodeURIComponent('/admin/hub-live?view=execute&market=KM'));
  await humanFill(null,page.locator('#email'),email);
  await humanFill(null,page.locator('#password'),password);
  const promise=page.waitForResponse(x=>new URL(x.url()).pathname==='/api/auth/login'&&x.request().method()==='POST');
@@ -81,7 +81,7 @@ async function login(browser,prefix,{readOnly=false,allowedWrites=['authorize-co
  return {ctx,page,blocked};
 }
 async function openPo(page){
- await page.goto('/admin/hub-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
+ await humanGoto(page,'/admin/hub-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
  const sel=page.locator('select').first();
  await sel.waitFor({timeout:20000});
  await humanSelect(null,sel,{label:'KM · Comores'}).catch(()=>{});
