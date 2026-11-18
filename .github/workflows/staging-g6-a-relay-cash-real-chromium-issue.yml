@@ -1,0 +1,59 @@
+# One-shot owner-only staging G6-A. Explicit Chromium UI for relay attachment and cash confirmation.
+# Creates only isolated marked G6-A relay identities/memberships through canonical provisioning services.
+name: G6 A — relay assignment and cash via real Chromium
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-g6-a-relay-cash-real-ui
+  cancel-in-progress: false
+jobs:
+  real-ui:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[staging-op] g6-a-assign-relays-and-cash-chromium'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Pin actual Railway staging runtime and protected PostgreSQL
+        run: |
+          node scripts/recette/resolve-staging-deploy-pin.js
+          node scripts/recette/target-guard.js
+      - name: Install real Chromium
+        run: npx playwright install chromium --only-shell
+      - name: Assign G6-A agents through market UI then confirm cash through relay UI
+        run: node scripts/recette/g6-a-relay-cash-real-chromium.js
+      - name: Archive redacted Chromium and PostgreSQL proofs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g6-a-relay-cash-real-${{ github.run_id }}
+          path: |
+            test-results/g6-a-relay-cash/
+            test-results/hub-v1-http/deploy-pin.json
+          if-no-files-found: warn
+          retention-days: 21

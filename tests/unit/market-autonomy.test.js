@@ -18,13 +18,19 @@ function fakeNode(tag = 'div') {
   };
 }
 
-async function boot(context, search) {
+async function boot(context, search, options = {}) {
   jest.resetModules();
   const root = fakeNode('main');
   const document = { getElementById: id => (id === 'market-autonomy-root' ? root : null), createElement: fakeNode, body: fakeNode('body') };
   const calls = [];
   const fetch = jest.fn(async url => {
     calls.push(url);
+    if (options.deniedDashboard && url.includes('/api/admin/dashboard/context')) {
+      return { ok: false, status: 403, json: async () => ({ code: 'dashboard_access_denied' }) };
+    }
+    if (options.deniedNetwork && url.includes('/network/relais')) {
+      return { ok: false, status: 403, json: async () => ({ code: 'MARKET_CAPABILITY_REQUIRED' }) };
+    }
     const json = url.includes('/api/admin/dashboard/context') ? context : url.includes('/api/auth/me') ? { id: 'u', role: 'admin' } : {};
     return { ok: true, status: 200, json: async () => json };
   });
@@ -69,4 +75,25 @@ test('délégation mono-marché : CM automatique', async () => {
   const { calls } = await boot(monoCtx, '');
   expect(marketCalls(calls).length).toBeGreaterThan(0);
   expect(marketCalls(calls).every(u => /\/CM(\/|$)/.test(u))).toBe(true);
+});
+
+test('délégation réseau granulaire : contexte dashboard refusé, accès réseau serveur autorisé', async () => {
+  const { root, calls } = await boot(monoCtx, '?market=KM', { deniedDashboard: true });
+  expect(calls).toContain('/api/market-delegation/markets/KM/network/relais');
+  expect(root.className).toBe('kmc-workspace');
+  expect(root.dataset.networkOnlyMarket).toBe('KM');
+  expect(calls.some(url => url.includes('/workspaces/pricing/'))).toBe(false);
+});
+
+test('délégation réseau refusée : aucune section accordée par la query string', async () => {
+  const { root, calls } = await boot(monoCtx, '?market=KM', { deniedDashboard: true, deniedNetwork: true });
+  expect(calls).toContain('/api/market-delegation/markets/KM/network/relais');
+  expect(root.dataset.networkOnlyMarket).toBeUndefined();
+  expect(root.className).toBe('canonical-boot');
+});
+
+test('sans marché explicite : aucune tentative de fallback réseau', async () => {
+  const { root, calls } = await boot(monoCtx, '', { deniedDashboard: true });
+  expect(calls.some(url => url.includes('/network/relais'))).toBe(false);
+  expect(root.dataset.networkOnlyMarket).toBeUndefined();
 });

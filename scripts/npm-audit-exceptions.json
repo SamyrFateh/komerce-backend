@@ -4,5 +4,11 @@
     "advisory": "GHSA-vfj7-8cjw-p6xm",
     "expires": "2026-11-02",
     "reason": "GHSA-vfj7-8cjw-p6xm (déni de service par motifs imbriqués, braces <=3.0.3). Dépendance transitive de développement uniquement (nodemon > chokidar), absente de l'arbre de production (npm ls --omit=dev vide). Aucune version corrigée publiée au 2026-10-03 (dernière : 3.0.3). À l'échéance : retirer l'entrée si un correctif existe ; toute prolongation exige une validation humaine."
+  },
+  {
+    "package": "picomatch",
+    "advisory": "GHSA-fc5q-39xc-vjpf",
+    "expires": "2026-12-01",
+    "reason": "ACCEPTATION DE RISQUE TEMPORAIRE STAGING par propriétaire (17/11/2026), suivie dans #4419, liée à #4421. CVE-2026-112366/ReDoS sur picomatch <=4.0.7 ; aucune version npm officielle corrigée disponible au 17/11. Versions vulnérables verrouillées comme dépendances exclusivement DEV (jest-haste-map, jest-util, jest-message-util, @parcel/watcher ; package-lock packages[*].dev=true), pas de branchement runtime commercial ; portée de risque limitée aux outils de test/CI et à l'absence de prod commerciale. Ne vaut PAS correction : après publication amont, supprimer cette exception, mettre à jour le manifeste/lock et repasser le gate strict. Le gate actuel indexe sur le nom du paquet et peut couvrir une nouvelle advisory sur picomatch durant cette fenêtre ; durée 14 jours, toute prolongation exige revue propriétaire."
   }
 ]

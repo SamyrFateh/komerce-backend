@@ -95,3 +95,21 @@ test('un dossier KOM-BOX distingue les vrais cartons des colis historiques et de
   expect(names).toContain('transport_mode');
   expect(names).toContain('proof_ref');
 });
+
+test('remise transitaire visible par défaut pour le Hub, sans ouvrir les actions secondaires ni élargir les droits',()=>{
+  const data={stage:'hub_ready',hub_draft:true,forwarder_name:null,transport_mode:null};
+  const findTask=root=>all(root,n=>n.tagName==='DETAILS'&&n.children[0]?.textContent==='Confirmer : Remis au transitaire');
+  for(const role of ['agent_hub','admin']){
+    const {root}=mount(role,'transport',data);
+    const tasks=findTask(root);
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0].open).toBe(true);
+    expect(all(tasks[0],n=>n.tagName==='BUTTON'&&n.type==='submit')).toHaveLength(1);
+    expect(all(tasks[0],n=>n.name==='proof_ref')[0].required).toBe(true);
+    expect(all(root,n=>n.tagName==='DETAILS'&&n!==tasks[0]).every(n=>!n.open)).toBe(true);
+  }
+  for(const role of ['agent_transitaire','market_operator','agent_relais']){
+    expect(findTask(mount(role,'transport',data).root)).toHaveLength(0);
+  }
+  expect(findTask(mount('agent_hub','transport',{...data,stage:'handed_over'}).root)).toHaveLength(0);
+});
