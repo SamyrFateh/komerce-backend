@@ -258,3 +258,4 @@ async function main(){
  }finally{if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify(report));}
 }
 if(require.main===module)main();
+module.exports={readback,checkShipment,runtime};
