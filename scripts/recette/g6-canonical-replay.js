@@ -205,9 +205,9 @@ function validateVendorSimulationCheckpoint(previous,ready,scope) {
     previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||
     previous.production_permitted!==false||
     previous.next_stage!=='REAL_SUPPLIER_SEND_EVIDENCE_REQUIRED'||
-    previous.order?.reference!=='KL1WGP6'||
-    !/^[a-f0-9-]{36}$/i.test(String(previous.order?.id||''))||
-    !/^[a-f0-9-]{36}$/i.test(String(previous.po_id||''))||
+    !VALID_REF.test(String(previous.order?.reference||''))||
+    !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(String(previous.order?.id||''))||
+    !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(String(previous.po_id||''))||
     !previous.db_fingerprint||
     !previous.stages?.some(st=>st.id==='HUB_VENDOR_UI'&&st.verdict==='PASS_READONLY')||
     ready.verdict!=='G6_VENDOR_SEND_UI_READY_BUT_EXTERNAL_EVENT_NOT_PROVEN'||
@@ -221,18 +221,19 @@ function validateVendorSimulationCheckpoint(previous,ready,scope) {
 }
 
 function validateHubReceivingCheckpoint(previous,simulated,scope) {
-  const po='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3';
-  const orderId='56adad65-d1fa-4e80-8d69-c25e0fe92a76';
+  const po=previous?.po_id,orderId=previous?.order?.id,reference=previous?.order?.reference;
   if(scope.id!=='M01'||scope.market!=='KM'||
      previous.scenario_id!=='M01'||previous.market!=='KM'||
      previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||
      previous.production_permitted!==false||previous.next_stage!=='HUB_RECEIVING'||
-     previous.po_id!==po||previous.order?.reference!=='KL1WGP6'||previous.order?.id!==orderId||
+     !VALID_REF.test(String(reference||''))||
+     !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(String(orderId||''))||
+     !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(String(po||''))||
      !previous.db_fingerprint||
      !previous.stages?.some(s=>s.id==='HUB_VENDOR_SIMULATED'&&
        s.verdict==='PASS_SIMULATED_STAGING'&&s.po_id===po)||
      simulated.verdict!=='G6_VENDOR_SIMULATED_SEND_AND_CONFIRM_CHROMIUM_PASS_NOT_RECEIPT_GO'||
-     simulated.reference!=='KL1WGP6'||simulated.po_id!==po||simulated.order_id!==orderId||
+     simulated.reference!==reference||simulated.po_id!==po||simulated.order_id!==orderId||
      simulated.db_fingerprint!==previous.db_fingerprint||
      simulated.after?.po_status!=='confirmed'||
      Number(simulated.after?.confirmed_quantity)!==1||
@@ -245,16 +246,17 @@ function validateHubReceivingCheckpoint(previous,simulated,scope) {
 }
 
 function validateCustomerBagCheckpoint(previous,receipt,scope){
-  const po='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3';
-  const orderId='56adad65-d1fa-4e80-8d69-c25e0fe92a76';
-  const sourceRef='SUPPLIER_PACKAGE-17824209-30d1-41be-87ad-1ef55c8a2994';
+  const po=previous?.po_id,orderId=previous?.order?.id,reference=previous?.order?.reference;
+  const sourceRef=receipt?.physical_ref;
   if(scope.id!=='M01'||scope.market!=='KM'||previous.scenario_id!=='M01'||previous.market!=='KM'||
     previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||previous.production_permitted!==false||
-    previous.next_stage!=='KOM_BOX'||previous.order?.id!==orderId||previous.order?.reference!=='KL1WGP6'||
-    previous.po_id!==po||!previous.db_fingerprint||
+    previous.next_stage!=='KOM_BOX'||!VALID_REF.test(String(reference||''))||
+    !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(String(orderId||''))||
+    !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(String(po||''))||
+    !/^SUPPLIER_PACKAGE-[A-Za-z0-9-]{8,}$/.test(String(sourceRef||''))||!previous.db_fingerprint||
     !previous.stages?.some(x=>x.id==='HUB_RECEIVING'&&x.verdict==='PASS_SIMULATED_STAGING')||
     receipt.verdict!=='G6_HUB_RECEIPT_SIMULATED_CHROMIUM_HISTORICAL_UI_PG_READBACK_PASS'||
-    receipt.reference!=='KL1WGP6'||receipt.order_id!==orderId||receipt.po_id!==po||
+    receipt.reference!==reference||receipt.order_id!==orderId||receipt.po_id!==po||
     receipt.physical_ref!==sourceRef||receipt.db_fingerprint!==previous.db_fingerprint||
     receipt.read_only!==true||receipt.external_supplier_calls!==0||receipt.external_payment_executed!==false||
     receipt.readback?.po?.status!=='hub_received'||receipt.readback?.remaining!==0||
