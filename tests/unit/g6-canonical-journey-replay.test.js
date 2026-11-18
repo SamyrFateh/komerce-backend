@@ -5,7 +5,7 @@ const {
   business,canonicalScenario,resolveCanonicalReplay,resolveRelayCashRefs
 }=require('../../scripts/recette/g6-canonical-journey-binding');
 const {
-  validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,validateHubReceivingCheckpoint,validateCustomerBagCheckpoint,validateKomBoxCheckpoint,validateShipmentCheckpoint,validatePartialShipmentCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling
+  validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,validateVendorSimulationCheckpoint,validateHubReceivingCheckpoint,validateCustomerBagCheckpoint,validateKomBoxCheckpoint,validateShipmentCheckpoint,validatePartialShipmentCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling
 }=require('../../scripts/recette/g6-canonical-replay');
 
 const {loadGoldenStages,stageGraph}=require('../../scripts/recette/canonical/stage-registry');
@@ -258,6 +258,54 @@ describe('G6 canonical journey — same order, original matrix, real staging gua
     expect(()=>validateVendorReadinessCheckpoint({...prior,stages:prior.stages.slice(0,3)},commitment,scope)).toThrow();
     expect(()=>validateVendorReadinessCheckpoint(prior,{...commitment,after:{...commitment.after,payment_authorization_count:1}},scope)).toThrow();
     expect(()=>validateVendorReadinessCheckpoint(prior,{...commitment,external_supplier_calls:1},scope)).toThrow();
+  });
+  test('les trois checkpoints fournisseur/reception/sac utilisent une commande neuve, pas KL1WGP6',()=>{
+    const orderId='6f519f8f-ea47-4a0d-b385-123456789abc';
+    const poId='5f9d8f52-aeaa-4ba3-88b5-901234567abc';
+    const reference='KNEW123';
+    const db='fresh-staging-db';
+    const base={scenario_id:'M01',market:'KM',verdict:'NOT_PROVEN',
+      full_chain_certified:false,production_permitted:false,db_fingerprint:db,
+      order:{id:orderId,reference},po_id:poId};
+    const readyPrevious={...base,next_stage:'REAL_SUPPLIER_SEND_EVIDENCE_REQUIRED',
+      stages:[{id:'HUB_VENDOR_UI',verdict:'PASS_READONLY'}]};
+    const ready={verdict:'G6_VENDOR_SEND_UI_READY_BUT_EXTERNAL_EVENT_NOT_PROVEN',
+      reference,po_id:poId,db_fingerprint:db,external_supplier_calls:0,
+      external_payment_executed:false,supplier_send_certified:false,supplier_confirmation_certified:false};
+    expect(validateVendorSimulationCheckpoint(readyPrevious,ready,scope)).toMatchObject({
+      poId,order:{id:orderId,reference}
+    });
+    expect(()=>validateVendorSimulationCheckpoint(readyPrevious,{...ready,reference:'FOREIGN'},scope)).toThrow();
+
+    const receivingPrevious={...base,next_stage:'HUB_RECEIVING',
+      stages:[{id:'HUB_VENDOR_SIMULATED',verdict:'PASS_SIMULATED_STAGING',po_id:poId}]};
+    const simulated={verdict:'G6_VENDOR_SIMULATED_SEND_AND_CONFIRM_CHROMIUM_PASS_NOT_RECEIPT_GO',
+      reference,po_id:poId,order_id:orderId,db_fingerprint:db,
+      after:{po_status:'confirmed',confirmed_quantity:1,manual_executions:1,payment_authorizations:0},
+      provenance:'SIMULATED / STAGING ONLY',external_supplier_calls:0,
+      external_payment_executed:false,physical_receipt_certified:false};
+    expect(validateHubReceivingCheckpoint(receivingPrevious,simulated,scope)).toMatchObject({
+      poId,order:{id:orderId,reference}
+    });
+    expect(()=>validateHubReceivingCheckpoint(receivingPrevious,{...simulated,po_id:'FOREIGN'},scope)).toThrow();
+    expect(()=>validateHubReceivingCheckpoint(receivingPrevious,{...simulated,db_fingerprint:'FOREIGN'},scope)).toThrow();
+
+    const sourceRef='SUPPLIER_PACKAGE-NEW123456789';
+    const receiptPrevious={...base,next_stage:'KOM_BOX',
+      stages:[{id:'HUB_RECEIVING',verdict:'PASS_SIMULATED_STAGING'}]};
+    const receipt={verdict:'G6_HUB_RECEIPT_SIMULATED_CHROMIUM_HISTORICAL_UI_PG_READBACK_PASS',
+      reference,order_id:orderId,po_id:poId,physical_ref:sourceRef,db_fingerprint:db,
+      read_only:true,external_supplier_calls:0,external_payment_executed:false,
+      readback:{po:{status:'hub_received'},remaining:0,
+        placements:[{reference:sourceRef,evidence_method:'MANUAL',quantity:1}]}};
+    expect(validateCustomerBagCheckpoint(receiptPrevious,receipt,scope)).toMatchObject({
+      poId,sourceRef,order:{id:orderId,reference}
+    });
+    expect(()=>validateCustomerBagCheckpoint(receiptPrevious,{...receipt,reference:'FOREIGN'},scope)).toThrow();
+    expect(()=>validateCustomerBagCheckpoint(receiptPrevious,{...receipt,
+      readback:{...receipt.readback,placements:[{reference:'FOREIGN',evidence_method:'MANUAL',quantity:1}]}
+    },scope)).toThrow();
+    expect(()=>validateCustomerBagCheckpoint(receiptPrevious,{...receipt,physical_ref:'BAD'},scope)).toThrow();
   });
   test('reçoit uniquement le PO M01 ayant une preuve fournisseur simulée liée au même ordre',()=>{
     const po='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3';
