@@ -19,8 +19,8 @@ const OUT=path.resolve('test-results/g6-hub-kom-box');
 const ORDER=env.G6_CANONICAL_ORDER_ID,PO=env.G6_CANONICAL_PO_ID,REF=env.G6_CANONICAL_ORDER_REFERENCE;
 const BAG=env.G6_CANONICAL_BAG_ID,BAGREF=env.G6_CANONICAL_BAG_REF,PARCEL=env.G6_CANONICAL_PARCEL_ID;
 const ALLOCATION=env.G6_CANONICAL_ALLOCATION_ID;
-const BOXREF='KOM-BOX-SIM-STAGING-KL1WGP6';
-const PROOF='[SIMULATED / STAGING ONLY] G6-M01-KOM-BOX-KL1WGP6';
+const BOXREF='KOM-BOX-SIM-STAGING-'+REF;
+const PROOF='[SIMULATED / STAGING ONLY] G6-M01-KOM-BOX-'+REF;
 const API='/api/admin/workspaces/operations/market/KM';
 const report={schema:'komerce-g6-kom-box/1',reference:REF,order_id:ORDER,po_id:PO,bag_id:BAG,bag_ref:BAGREF,
  parcel_id:PARCEL,allocation_id:ALLOCATION,box_ref:BOXREF,scenario_id:'M01',market:'KM',
@@ -70,9 +70,9 @@ function checkBase(s){
   s.placement.length===1&&s.placement[0].physical_unit_id===BAG&&s.placement[0].allocation_id===ALLOCATION&&
   Number(s.placement[0].quantity)===1&&s.placement[0].operation_type==='REPACK'&&
   s.placement[0].evidence_method==='MANUAL'&&
-  s.placement[0].evidence_ref==='[SIMULATED / STAGING ONLY] G6-M01-DEPOT-SAC-KL1WGP6',
+  s.placement[0].evidence_ref==='[SIMULATED / STAGING ONLY] G6-M01-DEPOT-SAC-'+REF,
   'G6_BOX_BAG_PHYSICAL_CONTENT_CHANGED');
- check(s.parcels.length===1&&s.parcels[0].id===PARCEL&&s.parcels[0].reference==='KOM-P-2026-000226',
+ check(s.parcels.length===1&&s.parcels[0].id===PARCEL&&/^[A-Z0-9][A-Z0-9-]{5,63}$/.test(String(s.parcels[0].reference||'')),
   'G6_BOX_CLIENT_PARCEL_NOT_UNIQUE');
 }
 function checkLink(s,boxId,placementId){
@@ -135,9 +135,12 @@ async function main(){
    env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&
    env.STAGING_BASE_URL==='https://komerce-backend-production.up.railway.app'&&
    env.G6_CANONICAL_PHASE==='HUB_KOM_BOX'&&env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET==='KM'&&
-   REF==='KL1WGP6'&&ORDER==='56adad65-d1fa-4e80-8d69-c25e0fe92a76'&&PO==='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3'&&
-   BAG==='bcf810c9-33b2-438a-b4c3-857b024e2247'&&BAGREF==='KOM-ITEM-178D0AEA488AA4B5B9'&&
-   PARCEL==='95045ede-d5b8-405b-b65f-d9dbdddb4756'&&ALLOCATION==='3b430dcf-8662-44b4-a29f-27e38df19253'&&
+   ((REF==='KL1WGP6'&&ORDER==='56adad65-d1fa-4e80-8d69-c25e0fe92a76'&&PO==='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3'&&
+      BAG==='bcf810c9-33b2-438a-b4c3-857b024e2247'&&BAGREF==='KOM-ITEM-178D0AEA488AA4B5B9'&&
+      PARCEL==='95045ede-d5b8-405b-b65f-d9dbdddb4756'&&ALLOCATION==='3b430dcf-8662-44b4-a29f-27e38df19253')||
+    (env.G6_DYNAMIC_FRESH_ORDER==='1'&&/^[A-Z0-9][A-Z0-9-]{5,63}$/.test(REF||'')&&
+      [ORDER,PO,BAG,PARCEL,ALLOCATION].every(x=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(String(x||'')))&&
+      /^KOM-ITEM-[A-Z0-9-]{8,}$/i.test(BAGREF||'')))&&
    !!env.DATABASE_URL,'G6_BOX_OWNER_STAGING_GUARD');
   const target=await confirmTarget({db,env});
   check(target.confirmed&&target.fingerprint===env.G6_CANONICAL_DB_FINGERPRINT,'G6_BOX_DB_MISMATCH');

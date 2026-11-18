@@ -16,16 +16,16 @@ const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
 const {readback,checkShipment,runtime}=require('./g6-hub-shipment-chromium');
 const env=process.env, BASE='https://komerce-backend-production.up.railway.app';
-const REF='SIM-STAGING-EXP-KL1WGP6', ID='ff8591fc-78bb-49a4-b154-247508368d16';
-const BOX='6ca614e5-869c-40ab-80d7-3684974092fe', TRACK='SIM-STAGING-TRK-KL1WGP6';
+const REF=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_REF:'SIM-STAGING-EXP-KL1WGP6', ID=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_ID:'ff8591fc-78bb-49a4-b154-247508368d16';
+const BOX=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_BOX_ID:'6ca614e5-869c-40ab-80d7-3684974092fe', TRACK='SIM-STAGING-TRK-'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6');
 const OUT=path.resolve('test-results/g6-canonical-forwarder');
 const API='/api/admin/workspaces/shipping-customs/market/KM/international/'+REF;
 const report={schema:'komerce-g6-forwarder/1',shipment_id:ID,shipment_ref:REF,order_id:env.G6_CANONICAL_ORDER_ID,
- reference:'KL1WGP6',scenario_id:'M01',market:'KM',role:'agent_transitaire',events:[],verdict:'BLOCKED',
+ reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',scenario_id:'M01',market:'KM',role:'agent_transitaire',events:[],verdict:'BLOCKED',
  provenance:'SIMULATED / STAGING ONLY',external_payment_executed:false,external_supplier_calls:0};
 const check=(ok,code)=>{if(!ok)throw Error(code)};
 function save(){fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n')}
-function proof(key){return '[SIMULATED / STAGING ONLY] G6-M01-'+key+'-KL1WGP6'}
+function proof(key){return '[SIMULATED / STAGING ONLY] G6-M01-'+key+'-'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6')}
 async function snapshot(stage,placement){
  const base=await readback();checkShipment(base,ID,stage);
  check(base.box[0].id===BOX&&base.box[0].state==='DISPATCHED'&&base.parcels[0].status==='shipped'&&
@@ -68,8 +68,21 @@ async function task(page,title,tabName='Transport & fret'){
  if(await open.count())await open.click();
  const item=page.locator('details.kmc-journey-task').filter({has:page.locator('summary').filter({hasText:title})});
  await item.waitFor({state:'visible',timeout:25000});
- if(!await item.evaluate(e=>e.open))await item.locator('summary').click();
- await item.locator('button[type="submit"]').waitFor({state:'visible',timeout:20000});
+ // The workspace may repaint after switching transport/relay tabs and
+ // reset a <details> disclosure to closed. Reopen via its real summary,
+ // never force a hidden submit or mutate DOM state in Playwright.
+ const submit=item.locator('button[type="submit"]');
+ let visible=false;
+ for(let attempt=0;attempt<4;attempt++){
+  if(!await item.evaluate(e=>e.open))await item.locator('summary').click({timeout:8000});
+  try{
+   await submit.waitFor({state:'visible',timeout:5000});
+   if(await item.evaluate(e=>e.open)){visible=true;break}
+  }catch(error){
+   if(attempt===3)throw Error('G6_JOURNEY_SUBMIT_HIDDEN_AFTER_REAL_UI_DISCLOSURE: '+title);
+  }
+ }
+ if(!visible)throw Error('G6_JOURNEY_DETAILS_NOT_OPEN: '+title);
  return item;
 }
 async function gesture(actor,key,title,tail,fields,expected){
@@ -98,12 +111,12 @@ async function main(){
   save();
   check(env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.GITHUB_EVENT_NAME==='issues'&&env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER&&
    env.NODE_ENV==='test'&&env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&
-   env.STAGING_BASE_URL===BASE&&env.G6_CANONICAL_PHASE==='FORWARDER'&&env.G6_CANONICAL_RESUME_RUN_ID==='44210239102'&&
-   env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET==='KM'&&env.G6_CANONICAL_ORDER_ID==='56adad65-d1fa-4e80-8d69-c25e0fe92a76',
+   env.STAGING_BASE_URL===BASE&&env.G6_CANONICAL_PHASE==='FORWARDER'&&(env.G6_CANONICAL_RESUME_RUN_ID==='44210239102'||env.G6_DYNAMIC_FRESH_ORDER==='1')&&
+   env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET==='KM'&&(env.G6_CANONICAL_ORDER_ID==='56adad65-d1fa-4e80-8d69-c25e0fe92a76'||(env.G6_DYNAMIC_FRESH_ORDER==='1'&&/^[a-f0-9-]{36}$/i.test(env.G6_CANONICAL_ORDER_ID||'')&&/^[a-f0-9-]{36}$/i.test(ID||''))),
    'G6_FORWARDER_OWNER_GUARD');
   const target=await confirmTarget({db,env});check(target.confirmed&&target.fingerprint===env.G6_CANONICAL_DB_FINGERPRINT,'G6_FORWARDER_DB_DRIFT');
   report.db_fingerprint=target.fingerprint;report.sha=await runtime();
-  const prior=JSON.parse(fs.readFileSync('test-results/g6-canonical-resume/g6-hub-shipment/report.json','utf8'));
+  const prior=JSON.parse(fs.readFileSync((env.G6_DYNAMIC_FRESH_ORDER==='1'?'test-results/g6-hub-shipment/report.json':'test-results/g6-canonical-resume/g6-hub-shipment/report.json'),'utf8'));
   const placement=prior.after.effective[0].placement_id;
   const before=await snapshot('handed_over',placement);report.before=before;save();
   check(isDeepStrictEqual(before.base,prior.after)&&!before.tracking.tracking_reference&&!before.tracking.bill_of_lading_ref,'G6_FORWARDER_PRIOR_DRIFT');

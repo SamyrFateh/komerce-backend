@@ -16,13 +16,14 @@ const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
 const {readback,runtime}=require('./g6-hub-shipment-chromium');
 const {login}=require('./g6-canonical-forwarder-chromium');
+const {openRelayLive}=require('./canonical/relay-live-navigation');
 const env=process.env,BASE='https://komerce-backend-production.up.railway.app';
-const ID='ff8591fc-78bb-49a4-b154-247508368d16',REF='SIM-STAGING-EXP-KL1WGP6';
-const ORDER='56adad65-d1fa-4e80-8d69-c25e0fe92a76', PARCEL='95045ede-d5b8-405b-b65f-d9dbdddb4756';
-const ITEM='8c999eec-7322-4676-8db6-585c4d4545f9', PROOF='[SIMULATED / STAGING ONLY] G6-M01-RECEPTION-RELAIS-KL1WGP6';
+const ID=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_ID:'ff8591fc-78bb-49a4-b154-247508368d16',REF=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_REF:'SIM-STAGING-EXP-KL1WGP6';
+const ORDER=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ID:'56adad65-d1fa-4e80-8d69-c25e0fe92a76', PARCEL=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_PARCEL_ID:'95045ede-d5b8-405b-b65f-d9dbdddb4756';
+const ITEM=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ITEM_ID:'8c999eec-7322-4676-8db6-585c4d4545f9', PROOF='[SIMULATED / STAGING ONLY] G6-M01-RECEPTION-RELAIS-'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6');
 const OUT=path.resolve('test-results/g6-canonical-relay-receipt');
 const RECEIPT_PATH='/api/admin/workspaces/operations/market/KM/relay-shipments/'+REF+'/receive';
-const report={schema:'komerce-g6-relay-receipt/1',reference:'KL1WGP6',shipment_id:ID,shipment_ref:REF,
+const report={schema:'komerce-g6-relay-receipt/1',reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',shipment_id:ID,shipment_ref:REF,
  order_id:ORDER,parcel_id:PARCEL,market:'KM',scenario_id:'M01',provenance:'SIMULATED / STAGING ONLY',
  verdict:'BLOCKED',events:[],external_supplier_calls:0,external_payment_executed:false};
 const check=(ok,code)=>{if(!ok)throw Error(code)};
@@ -124,19 +125,19 @@ async function main(){
   save();
   check(env.GITHUB_EVENT_NAME==='issues'&&env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER&&
    env.NODE_ENV==='test'&&env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&
-   env.STAGING_BASE_URL===BASE&&env.G6_CANONICAL_PHASE==='RELAY_RECEIPT'&&env.G6_CANONICAL_RESUME_RUN_ID==='44260374187'&&
+   env.STAGING_BASE_URL===BASE&&env.G6_CANONICAL_PHASE==='RELAY_RECEIPT'&&(env.G6_CANONICAL_RESUME_RUN_ID==='44260374187'||env.G6_DYNAMIC_FRESH_ORDER==='1')&&
    env.G6_CANONICAL_ORDER_ID===ORDER&&env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET==='KM',
    'G6_RELAY_OWNER_STAGING_GUARD');
   const guard=await confirmTarget({db,env});
   check(guard.confirmed&&guard.fingerprint===env.G6_CANONICAL_DB_FINGERPRINT,'G6_RELAY_DB_FINGERPRINT_INVALID');
   report.db_fingerprint=guard.fingerprint;report.sha=await runtime();
-  const prior=JSON.parse(fs.readFileSync('test-results/g6-canonical-resume/g6-canonical-customs/report.json','utf8'));
+  const prior=JSON.parse(fs.readFileSync((env.G6_DYNAMIC_FRESH_ORDER==='1'?'test-results/g6-canonical-customs/report.json':'test-results/g6-canonical-resume/g6-canonical-customs/report.json'),'utf8'));
   const before=await state();report.before=before;save();
   check(before.base.order.length===1&&before.base.order[0].id===ORDER&&before.base.parcelItems.length===1&&
     before.base.parcelEvents.length===1&&before.base.parcelEvents[0].event_type==='shipped'&&
     isDeepStrictEqual(before.base,prior.after.base)&&before.base.shipments[0].stage==='local_delivery'&&
     before.base.parcels[0].id===PARCEL&&before.base.parcels[0].status==='shipped'&&
-    before.orders[0].id===ORDER&&before.orders[0].reference==='KL1WGP6'&&before.orders[0].payment_status==='paid'&&
+    before.orders[0].id===ORDER&&before.orders[0].reference===(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6')&&before.orders[0].payment_status==='paid'&&
     before.receipts.length===0&&Number(before.items[0].qty_received)===0&&Number(before.items[0].qty_collected)===0&&
     Number(before.items[0].qty_shipped)===1,'G6_RELAY_PRECONDITION_INVALID');
   browser=await chromium.launch({headless:true});
@@ -153,9 +154,11 @@ async function main(){
   const {rows:bound}=await db.query('SELECT relais_id FROM users WHERE id=$1',[profile.id]);
   check(bound.length===1&&bound[0].relais_id===before.orders[0].relais_id,
     'G6_RELAY_ACTOR_NOT_ORDER_RELAY');
-  await actor.page.goto('/admin/relais-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
-  const card=actor.page.locator('[data-relay-shipment="'+REF+'"]');
-  await card.waitFor({state:'visible',timeout:25000});
+  // The role-based login may redirect to this canonical page concurrently.
+  // Require the actual shipment card after navigation; do not bypass UI.
+  const card=await openRelayLive(actor.page,{
+   selector:'[data-relay-shipment="'+REF+'"]',timeout:25000
+  });
   check(await card.getAttribute('data-relay-receivable')==='true','G6_RELAY_UI_NOT_RECEIVABLE');
   if(!await card.evaluate(el=>el.open))await card.locator('summary').first().click();
   const field=card.locator('input[data-relay-received]');

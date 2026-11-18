@@ -95,3 +95,71 @@ Le contrôle buyer+cash M01/KM a été confirmé sur le staging réel par [run #
 Le déclencheur propriétaire `[staging-op] g6-canonical-hub-po-M01-KM` avec `resume_run_id: 44169528939` réutilise **le même orchestrateur G6** pour lire le checkpoint buyer+cash vérifié et exécuter directement le test Hub Chromium existant `tests/staging-clicks/g6-p3-kuyiyuk.spec.js`, maintenant paramétrable par `order_id`, `reference`, `buyer_id` plutôt que fixé à `KUYIYUK`. Ce test réalise la ligne d'achat (si nécessaire) et le brouillon de PO depuis le cockpit Hub, puis vérifie en PG la même commande, la caisse unique, une ligne et un PO.
 
 **Pas d'engagement/paiement fournisseur réel** et aucune facture fictive créée par le harnais. Si l'ordre est introuvable à l'écran, le fournisseur lié manque ou l'état physique est inéligible : `BLOCKED`, pas de simulation de PO via API. Une preuve Hub PO positive ne clôture ni les deux validations directrice, ni réception, KOM-BOX, transitaire, douane, relais, remise et documents. Verdict M01 complet `NOT_PROVEN` tant que le parcours n'a pas traversé ces gestes réels.
+
+
+## Contrat de contribution G6-CANONICAL-JOURNEY-v1 — ajout d'étapes par Opus / Sonnet (18 novembre 2026)
+
+**État du socle à cette date :** M01/KM Golden *historique* PASS staging ([run #44280122740](https://github.com/SamyrFateh/komerce-backend/actions/runs/44280122740), artefact #14416158709), mais son ordre `KL1WGP6` est **déjà `collected` : aucun rejeu mutatif de cette même commande**. Le registre, les 46 manifestes non liés, les schémas et l'API d'acteurs Chromium sont des **contrats de migration**. Ils ne prouvent pas à eux seuls que les 46 scénarios sont exécutables ni que les chemins historiques `main()` ont tous été extraits.
+
+### 1. Autorité et ordre des contributions
+
+- **GPT reste propriétaire du noyau** : `scripts/recette/canonical/stage-registry.js`, `scripts/recette/g6-canonical-replay.js`, `docs/recette/canonical/*.schema.json`, `scripts/recette/canonical/actors/`, politique de preuve et workflow canonique. Une modification du noyau exige sa revue et une PR spécifique.
+- **Opus / Sonnet ajoutent des modules indépendants** `scripts/recette/canonical/stages/<ID>.js` et des variantes qui se composent avec le graphe. Ne recopier ni le parcours entier ni la matrice ; `docs/recette/G6_PRE_STRESS_BUSINESS_SCENARIOS.json` demeure l'unique autorité métier. Une entrée `docs/recette/scenarios/<ID>.json` **référence** son scénario et ne devient exécutable qu'avec binding, cohorte, preuves et validation.
+- Une PR de variante contient **Pourquoi, Quoi, Tests, Reprise**, un test unitaire négatif et un test du scénario sur **le vrai staging partagé** avant PASS. Avant push, `npm run pr:preflight`, jamais `--no-verify`.
+- La revue d'un autre agent ne vaut pas certification. La campagne globale M01–N40 exige un GO propriétaire explicite.
+
+### 2. Contrat d'étape et règle Chromium
+
+```js
+module.exports = {
+  id: 'RELAY_RECEIPT',
+  requires: ['CUSTOMS'],
+  produces: ['relay_receipt'],
+  roles: ['agent_relais'],
+  async run(ctx) {
+    // Uniquement les méthodes Chromium du bon rôle : pas de POST API de substitution.
+    return ctx.actors.agent_relais.receiveShipment(ctx.order, ctx.proof);
+  },
+  validate(ctx, proof) {
+    // Oracles PG READ ONLY liés à la cohorte et aux identifiants réels.
+    return ctx.oracles.verifyRelayReceipt({ order: ctx.order, proof });
+  }
+};
+```
+
+**Règle impérative :** chaque décision, acceptation, refus, déclaration, validation, mainlevée, remboursement, encaissement ou remise fait l'objet d'un **vrai geste Chromium** de l'acteur habilité. L'appel API/SQL ne remplace jamais ce clic. Aucune étape ne peut autoriser seule son exception. L'API peut seulement simuler un **retour d'acteur extérieur sans écran Komerce** s'il figure préalablement dans `docs/recette/canonical/external-responses.json` et a été approuvé par le propriétaire. **Liste initiale vide**. Le préchargement OTP historique de M01, de portée fixture, ne doit pas être copié comme méthode d'authentification générale ; sa suppression ou son remplacement doit être revue et certifiée séparément pour éviter de briser le parcours prouvé.
+
+La bibliothèque `scripts/recette/canonical/actors/` fournit le contexte par rôle et les sélecteurs **vérifiés** ; les rôles sans sélecteurs confirmés sont **non liés**, pas inventés. L'action produit obligatoirement : rôle, page, sélecteur, requête HTTP observée, capture **avant/après** (champs secrets masqués), oracle PostgreSQL **lecture seule**. **Écran/action absent = `SCREEN_MISSING` ; HTTP 429 = `NOT_PROVEN`**. N'exposer aucun OTP, code complet, téléphone réel ou secret dans les captures, logs et artefacts.
+
+### 3. Exemple de variante : RELAY_RECEIPT / SHORTAGE (lot E)
+
+Ajouter **la branche** `SHORTAGE` à la configuration du manifeste concerné, **sans modifier** le comportement nominal M01. La branche reste `NOT_BOUND` jusqu'à preuve du vrai bouton et du geste dans Chromium. Exemple de contrat à implémenter dans un module séparé :
+
+```js
+const shortage = {
+  id: 'RELAY_RECEIPT_SHORTAGE',
+  requires: ['RELAY_RECEIPT'],
+  produces: ['shortage_incident'],
+  roles: ['agent_relais'],
+  async run(ctx) {
+    // La méthode ne sera raccordée QU'APRÈS vérification de l'écran réel.
+    return ctx.actors.agent_relais.declareShortage(ctx.order, ctx.line, ctx.missingQty);
+  },
+  async validate(ctx, proof) {
+    return ctx.oracles.readOnlyShortageIncident({
+      scenarioId: ctx.scenarioId, orderId: ctx.order.id,
+      lineId: ctx.line.id, expectedQty: ctx.missingQty, proof
+    });
+  }
+};
+```
+
+Le résultat attendu n'est **pas** `orders.status=collected` par défaut : un écart partiel garde les quantités et l'incident traçables, puis une étape de solde apporte sa propre preuve. **Deuxième remise refusée, code erroné ou rôle interdit : `PASS` du scénario négatif uniquement si le refus attendu est constaté à l'écran et si la relecture PG démontre l'absence de mutation interdite.** Un HTTP 403 ou 409 isolé, sans écran, ne vaut pas PASS.
+
+### 4. Reprise, preuves, préflight et anti-concurrence
+
+- **Preflight avant tout geste** : catalogue et stock réel du marché, affectation du compte relais, indicatifs (+237 et +242 selon l'écran), flags FABLE_LOCAL_*/E7, SHA Railway servi et fingerprint PG. La fonction `scripts/recette/canonical/preflight.js` accepte uniquement des sondes **read-only** ; si une dépendance/identité/sonde manque, verdict `NOT_READY`, zéro mutation. Les cohortes dans `docs/recette/canonical/cohorts.json` ne contiennent **que les noms de variables de secrets**, jamais leurs valeurs. CLAUDE-PAR reste non liée tant que ses comptes indépendants ne sont pas configurés.
+- **Cadence G0c** : 1 commande/12 s, 1 retrait/20 s, 1 cash/30 s ; arrêter sur 429. Séquencer les écritures staging par marché/cohorte, ne pas laisser deux campagnes modifier le même colis.
+- **Schéma** : `docs/recette/canonical/proof.schema.json` ; PASS exige une couverture écran complète et une preuve pour chaque geste humain. Des oracles I1–I15, H1–H9, ECO-Q1..Q3 et la portée de `simulation_scope` s'ajoutent dans les modules concernés, sans changer l'autorité métier. Le rapport doit distinguer preuve historique, donnée de scénario et action du run courant.
+- **SHA pin + reprise** : vérification explicite de la provenance d'artefact, de la même commande/cohorte/marché et du fingerprint, puis whitelist de diff **outillage seulement**. Une variante nouvelle n'hérite jamais automatiquement d'un PASS M01. Les historiques terminés `collected` sont immuables : une nouvelle cohorte utilise une **nouvelle commande** dans le même staging, après cadrage/GO du scénario.
+- **Critère de disponibilité pour Opus / Sonnet** : seuls registre et contrats sont prêts tant que les adapters historiques `run/validate` n'ont pas été extraits et reliés au moteur, que les rôles nécessaires n'ont pas de page objects vérifiés et que le rejeu de non-régression sur une **cohorte distincte** n'est pas certifié. Ne pas annoncer le moteur industrialisé complet avant ces preuves.

@@ -1,0 +1,100 @@
+# Owner-only new-order replay; independent from the historical KL1WGP6 workflow.
+name: G6 dynamic — fresh M01 buyer and relay cash (staging only)
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: komerce-g6-canonical-real-transaction
+  cancel-in-progress: false
+jobs:
+  buyer-cash:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      (github.event.issue.title == '[staging-op] g6-dynamic-fresh-buyer-cash-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-buyer-cash-hub-po-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-commitment-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-vendor-readiness-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-vendor-simulation-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-receiving-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-receiving-readback-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-customer-bag-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-kom-box-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M01-KM')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      G6_CANONICAL_SCENARIO: M01
+      G6_TARGET_MARKET: KM
+      G6_DYNAMIC_TO_STAGE: ${{ github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M01-KM' && 'CLIENT_PICKUP' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-kom-box-M01-KM' && 'HUB_KOM_BOX' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-customer-bag-M01-KM' && 'HUB_CUSTOMER_BAG' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-receiving-readback-M01-KM' && 'HUB_RECEIVING_READBACK' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-receiving-M01-KM' && 'HUB_RECEIVING' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-vendor-simulation-M01-KM' && 'HUB_VENDOR_SIMULATION' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-vendor-readiness-M01-KM' && 'HUB_VENDOR_READINESS' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-commitment-M01-KM' && 'HUB_COMMITMENT' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-buyer-cash-hub-po-M01-KM' && 'HUB_PO' || 'RELAY_CASH' }}
+      E2E_AGENT_TRANSITAIRE_EMAIL: ${{ secrets.E2E_AGENT_TRANSITAIRE_EMAIL }}
+      E2E_AGENT_TRANSITAIRE_PASSWORD: ${{ secrets.E2E_AGENT_TRANSITAIRE_PASSWORD }}
+      E2E_HUB_DIRECTOR_EMAIL: ${{ secrets.E2E_HUB_DIRECTOR_EMAIL }}
+      E2E_HUB_DIRECTOR_PASSWORD: ${{ secrets.E2E_HUB_DIRECTOR_PASSWORD }}
+      E2E_AGENT_HUB_EMAIL: ${{ secrets.E2E_AGENT_HUB_EMAIL }}
+      E2E_AGENT_HUB_PASSWORD: ${{ secrets.E2E_AGENT_HUB_PASSWORD }}
+      E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
+      E2E_AGENT_RELAIS_PASSWORD: ${{ secrets.E2E_AGENT_RELAIS_PASSWORD }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Pin immutable main SHA for a real staging deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Verify actual Railway staging and database identity before any fixture
+        run: |
+          set -euo pipefail
+          node scripts/recette/target-guard.js
+          node -e '(async()=>{const v=await(await fetch(process.env.STAGING_BASE_URL+"/health/version")).json();if(v.commit!==process.env.E2E_EXPECTED_DEPLOY_SHA)throw Error("G6_DYNAMIC_STAGING_SHA_DRIFT")})().catch(e=>{console.error(e.message);process.exit(1)})'
+      - name: Install Chromium headless for actual UI gestures
+        run: npx playwright install chromium --only-shell
+      - name: Execute fresh M01 buyer checkout and relay cash only
+        run: node scripts/recette/g6-dynamic-buyer-cash.js
+      - name: Preserve complete stage and proof checkpoints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g6-dynamic-fresh-buyer-cash-${{ github.run_id }}
+          path: |
+            test-results/g6-dynamic-buyer-cash/
+            test-results/g6-dynamic-checkpoints/
+            test-results/g6-p2-buyer-order/
+            test-results/g6-a-relay-cash/
+            test-results/g6-p3-kuyiyuk/
+            test-results/g6-hub-commitment/
+            test-results/g6-hub-vendor-readiness/
+            test-results/g6-hub-vendor-simulation/
+            test-results/g6-hub-receiving/
+            test-results/g6-hub-receiving-readback/
+            test-results/g6-hub-customer-bag/
+            test-results/g6-hub-kom-box/
+            test-results/g6-hub-shipment/
+            test-results/g6-canonical-forwarder/
+            test-results/g6-canonical-customs/
+            test-results/g6-canonical-relay-receipt/
+            test-results/g6-canonical-client-pickup/
+            test-results/hub-v1-clicks/
+          retention-days: 21
+          if-no-files-found: warn
