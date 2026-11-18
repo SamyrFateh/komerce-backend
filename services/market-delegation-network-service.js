@@ -103,7 +103,7 @@ const RELAY_MEMBER_CAPABILITIES = ['execution.parcel.receive', 'execution.parcel
 async function authorizeNetwork(db, { marketCode, actorUserId, actorRole, capability }) {
   if (actorRole === 'admin') {
     const a = await resolveActiveAssignmentByMarketCode(db, marketCode);
-    return { ...a, membership_id: null, capabilities: ['network.read','network.create','network.update','network.suspend','provider.manage'] };
+    return { ...a, membership_id: null, capabilities: ['network.read','network.create','network.update','network.suspend'] };
   }
   return resolveAuthorization(db, { userId: actorUserId, marketCode, requiredCapability: capability });
 }
