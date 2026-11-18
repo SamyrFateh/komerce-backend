@@ -14,11 +14,13 @@ const ROOT=path.resolve(__dirname,'../../..');
 const BASE='https://komerce-backend-production.up.railway.app';
 const REPORT_PATH=Object.freeze({
  BUYER:'test-results/g6-p2-buyer-order/report.json',
- RELAY_CASH:'test-results/g6-a-relay-cash/report.json'
+ RELAY_CASH:'test-results/g6-a-relay-cash/report.json',
+ HUB_PO:'test-results/g6-p3-kuyiyuk/evidence.json'
 });
 const SCRIPTS=Object.freeze({
  BUYER:'scripts/recette/g6-p2-buyer-order-real-chromium.js',
- RELAY_CASH:'scripts/recette/g6-a-relay-cash-real-chromium.js'
+ RELAY_CASH:'scripts/recette/g6-a-relay-cash-real-chromium.js',
+ HUB_PO:'tests/staging-clicks/g6-p3-kuyiyuk.spec.js'
 });
 const SHA=/^[a-f0-9]{40}$/;
 const REF=/^[A-Z0-9][A-Z0-9-]{5,63}$/;
@@ -102,8 +104,13 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
     data.payment_real!==false||data.supplier_order_real!==false||
     data.blocked_requests?.length)throw Error('G6_DYNAMIC_BUYER_UI_PROOF_INVALID');
    const pg=await orderPg(db,context);
-   if(pg.status!=='pending'||pg.payment_status!=='pending'||
-     pg.cash_count!==0||pg.control_count!==0)
+   // BUYER's original proof remains valid after legitimate cash payment.
+   // A checkpoint authenticated on a later stage must not require cash
+   // to still be pending, but must reject duplicate or unconfirmed cash.
+   if(!['pending','confirmed','ordered'].includes(pg.status)||
+      !['pending','paid'].includes(pg.payment_status)||
+      ((pg.payment_status==='pending')&&(pg.cash_count!==0||pg.control_count!==0))||
+      ((pg.payment_status==='paid')&&(pg.cash_count!==1||pg.control_count!==1)))
     throw Error('G6_DYNAMIC_BUYER_PG_READBACK_INVALID');
   }else if(stageId==='RELAY_CASH'){
    const matches=(data.steps||[]).filter(s=>s.name==='CASH_UI_PAID'&&s.market==='KM');
@@ -119,6 +126,38 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
    const pg=await orderPg(db,context);
    if(pg.payment_status!=='paid'||pg.cash_count!==1||pg.control_count!==1)
     throw Error('G6_DYNAMIC_CASH_PG_READBACK_INVALID');
+  }else if(stageId==='HUB_PO'){
+   const cash=stageProofs.get('RELAY_CASH');
+   if(!cash||cash.order_id!==context.order_id||cash.order_reference!==context.order_reference)
+    throw Error('G6_DYNAMIC_HUB_CASH_CHECKPOINT_INVALID');
+   if(data.verdict!=='G6_P3_MANUAL_LINE_AND_DRAFT_PO_CHROMIUM_PASS'||
+      data.reference!==context.order_reference||
+      data.db_fingerprint!==context.db_fingerprint||
+      data.external_supplier_calls!==0||data.external_payment_executed!==false||
+      data.final?.order_id!==context.order_id||
+      data.final?.payment_status!=='paid'||
+      Number(data.final?.line_count)!==1||Number(data.final?.po_count)!==1||
+      Number(data.final?.cash_collection_count)!==1||
+      Number(data.final?.cash_control_confirmed_count)!==1)
+    throw Error('G6_DYNAMIC_HUB_UI_PROOF_INVALID');
+   const poIds=(data.gestures||[]).filter(x=>x.key==='prepare-draft-po'&&x.verdict==='PASS')
+     .map(x=>x.purchase_order_id);
+   if(poIds.length!==1||!UUID.test(String(poIds[0]||'')))
+    throw Error('G6_DYNAMIC_HUB_PO_NOT_UNIQUE');
+   const pg=await orderPg(db,context);
+   if(pg.payment_status!=='paid'||pg.cash_count!==1||pg.control_count!==1)
+    throw Error('G6_DYNAMIC_HUB_PG_CASH_INVALID');
+   const {rows}=await db.query(`
+    SELECT COUNT(DISTINCT pl.id)::int AS line_count,
+      COUNT(DISTINCT pl.purchase_order_id)::int AS po_count,
+      MIN(pl.purchase_order_id::text) AS po_id
+    FROM purchase_lines pl
+    JOIN order_items oi ON oi.id=pl.order_item_id
+    WHERE oi.order_id=$1 AND pl.cancelled_at IS NULL
+   `,[context.order_id]);
+   if(rows.length!==1||rows[0].line_count!==1||rows[0].po_count!==1||
+      rows[0].po_id!==poIds[0])
+    throw Error('G6_DYNAMIC_HUB_PG_PO_MISMATCH');
   }else throw Error('G6_REAL_BUYER_CASH_STAGE_NOT_IMPLEMENTED_'+stageId);
   return {...context,stage_id:stageId,
    attestation_origin:'INDEPENDENT_CHROMIUM_POSTGRESQL',
@@ -153,33 +192,59 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
   },
   verifyBuyerIndependently:async({buyer,context})=>{
    if(buyer!==issuedBuyer)throw Error('G6_DYNAMIC_BUYER_NOT_FROM_CHROMIUM');
-   return verifyStage('BUYER',context);
+   return verifyStage(checkpoint.stage_id,context);
   },
   attestRuntime:async({context})=>attestedRuntime(context),
   authenticateCheckpoint:async({checkpoint,context})=>{
-   if(checkpoint.stage_id!=='BUYER'||checkpoint.source_run_id!==String(env.GITHUB_RUN_ID)||
-     checkpoint.evidence_path!==REPORT_PATH.BUYER)
+   if(!['BUYER','RELAY_CASH'].includes(checkpoint.stage_id)||
+     checkpoint.source_run_id!==String(env.GITHUB_RUN_ID)||
+     checkpoint.evidence_path!==REPORT_PATH[checkpoint.stage_id])
     throw Error('G6_DYNAMIC_CROSS_RUN_REQUIRES_AUTHENTICATED_GITHUB_ARTIFACT');
-   const saved=stageProofs.get('BUYER');
+   const saved=stageProofs.get(checkpoint.stage_id);
    if(!saved||!same(context,saved)||saved.evidence_sha256!==checkpoint.evidence_sha256)
     throw Error('G6_DYNAMIC_CHECKPOINT_NOT_PERSISTED_LOCALLY');
    return verifyStage('BUYER',context);
   },
   executeStage:async({stageId,context})=>{
-   if(stageId!=='RELAY_CASH')
+   if(!['RELAY_CASH','HUB_PO'].includes(stageId))
     throw Error('G6_DYNAMIC_DOWNSTREAM_STAGE_NOT_MIGRATED_'+stageId);
    if(!stageProofs.has('BUYER'))throw Error('G6_DYNAMIC_BUYER_CHECKPOINT_MISSING');
-   await verifyStage('BUYER',context);
-   fs.rmSync(path.join(ROOT,REPORT_PATH.RELAY_CASH),{force:true});
-   execute(SCRIPTS.RELAY_CASH,{
-    ...env,G6_CANONICAL_MARKET:'KM',
-    G6_CANONICAL_ORDER_REFERENCE:context.order_reference
-   });
-   return report('RELAY_CASH').data;
+   await attestedRuntime(context);
+   if(stageId==='RELAY_CASH'){
+    await verifyStage('BUYER',context);
+    fs.rmSync(path.join(ROOT,REPORT_PATH.RELAY_CASH),{force:true});
+    execute(SCRIPTS.RELAY_CASH,{
+     ...env,G6_CANONICAL_MARKET:'KM',
+     G6_CANONICAL_ORDER_REFERENCE:context.order_reference
+    });
+    return report('RELAY_CASH').data;
+   }
+   if(!stageProofs.has('RELAY_CASH'))
+    throw Error('G6_DYNAMIC_CASH_CHECKPOINT_MISSING');
+   await verifyStage('RELAY_CASH',context);
+   const buyer=report('BUYER').data;
+   if(!UUID.test(String(buyer.buyer_id||''))||
+      buyer.order?.id!==context.order_id||
+      !env.E2E_AGENT_HUB_EMAIL||!env.E2E_AGENT_HUB_PASSWORD||
+      !env.E2E_AGENT_RELAIS_EMAIL||!env.E2E_AGENT_RELAIS_PASSWORD)
+    throw Error('G6_DYNAMIC_HUB_IDENTITY_NOT_BOUND');
+   fs.rmSync(path.join(ROOT,REPORT_PATH.HUB_PO),{force:true});
+   const runner=spawnSync(process.platform==='win32'?'npx.cmd':'npx',[
+    'playwright','test','--config=playwright.hub-v1-clicks.config.js',
+    SCRIPTS.HUB_PO
+   ],{cwd:ROOT,env:{...env,PGOPTIONS:'-c default_transaction_read_only=on',
+    E2E_CLICKS_BASE_URL:BASE,G6_CANONICAL_HUB_STAGE:'1',
+    G6_CANONICAL_ORDER_REFERENCE:context.order_reference,
+    G6_CANONICAL_ORDER_ID:context.order_id,
+    G6_CANONICAL_BUYER_ID:buyer.buyer_id
+   },stdio:'inherit',timeout:16*60*1000});
+   if(runner.error||runner.status!==0)
+    throw Error('G6_DYNAMIC_HUB_CHROMIUM_FAILED');
+   return report('HUB_PO').data;
   },
   verifyStageProof:async({stageId,proof,context})=>{
-   if(stageId!=='RELAY_CASH'||proof!==report('RELAY_CASH').data&&
-      JSON.stringify(proof)!==JSON.stringify(report('RELAY_CASH').data))
+   if(!['RELAY_CASH','HUB_PO'].includes(stageId)||
+      JSON.stringify(proof)!==JSON.stringify(report(stageId).data))
     throw Error('G6_DYNAMIC_STAGE_PROOF_MISMATCH');
    return verifyStage(stageId,context);
   },
