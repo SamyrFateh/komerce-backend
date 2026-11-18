@@ -267,7 +267,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
      po.status!=='confirmed'||po.commitments!==1||po.payments!==0||po.executions!==1)
      throw Error('G6_DYNAMIC_HUB_VENDOR_SIMULATION_INVALID');
    }
-  }else if(['HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP'].includes(stageId)){
+  }else if(['HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX'].includes(stageId)){
    const po=await poState(db,context);
    const receipt=stageId==='HUB_RECEIVING' ? data : report('HUB_RECEIVING').data;
    const source=receipt?.receipt?.reference;
@@ -398,7 +398,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
    return verifyStage(checkpoint.stage_id,context);
   },
   executeStage:async({stageId,context})=>{
-   if(!['RELAY_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX'].includes(stageId))
+   if(!['RELAY_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP'].includes(stageId))
     throw Error('G6_DYNAMIC_DOWNSTREAM_STAGE_NOT_MIGRATED_'+stageId);
    if(!stageProofs.has('BUYER'))throw Error('G6_DYNAMIC_BUYER_CHECKPOINT_MISSING');
    await attestedRuntime(context);
