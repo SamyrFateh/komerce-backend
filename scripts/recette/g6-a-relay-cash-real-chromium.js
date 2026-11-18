@@ -21,7 +21,7 @@ const {markE2eTestAccount,ensureRelayAgentMembership}=require('./staging-e2e-pro
 const delegation=require('../../services/market-delegation-service');
 const {projectAssignment}=require('../../services/market-scope-projector');
 const BASE='https://komerce-backend-production.up.railway.app';
-const REFS=Object.freeze({KM:'K18SFYN',CM:'KW34OBY',CG:'KSJWLND'});
+const REFS=Object.freeze(require('./g6-canonical-journey-binding').resolveRelayCashRefs(process.env));
 const OUT=path.resolve('test-results/g6-a-relay-cash');
 const report={run_id:process.env.GITHUB_RUN_ID||null,verdict:'NOT_PROVEN',
   staging_only:true,real_external_payment:false,orders:[],steps:[],business_transition_via:'Chromium_UI_only'};
@@ -50,7 +50,7 @@ async function orderRows(){
 }
 async function prepare(){
   const rows=await orderRows();
-  check(rows.length===3,'G6_A_EXACT_3_ORDERS_REQUIRED');
+  check(rows.length===Object.keys(REFS).length,'G6_A_EXACT_TARGET_ORDERS_REQUIRED');
   const byMarket=Object.fromEntries(rows.map(r=>[r.market,r]));
   for(const code of Object.keys(REFS)){
     const o=byMarket[code];
@@ -64,7 +64,7 @@ async function prepare(){
     "SELECT id FROM users WHERE lower(email)=lower($1) AND role::text='admin'",
     [process.env.E2E_ADMIN_EMAIL])).rows;
   check(a.length===1,'E2E_ADMIN_NOT_PROVEN');
-  step('PRECHECK_3_CASH_ORDERS',{markets:Object.keys(REFS),pending:true,marked:true});
+  step('PRECHECK_TARGET_CASH_ORDERS',{markets:Object.keys(REFS),references:REFS,pending:true,marked:true});
   // Isolated E2E identities/memberships only, using the same official
   // provisioning writers as staging-e2e-provision. No business-state writes.
   const run8=crypto.randomBytes(4).toString('hex');

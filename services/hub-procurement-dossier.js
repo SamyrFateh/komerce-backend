@@ -664,9 +664,9 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
      ORDER BY s.name, pl.created_at, pl.id`, [marketId, supplierId]);
 
   const { rows: poRows } = await q.query(`
-    SELECT po.id AS po_id, po.status, po.sent_at, po.sent_channel, po.supplier_order_id, po.supplier_id,
+    SELECT po.id AS po_id, po.status, po.sent_at, po.sent_channel, po.sent_note, po.supplier_order_id, po.supplier_id,
            s.name AS supplier_name, po.procurement_hub_ref, po.created_at, po.updated_at, po.ordered_at,
-           pl.id AS line_id, pl.order_item_id, oi.order_id, o.reference AS order_ref, p.name AS product_name,
+           pl.id AS line_id, pl.order_item_id, oi.order_id, o.reference AS order_ref, NULLIF(to_jsonb(o)->>'simulation_scope','') AS simulation_scope, p.name AS product_name,
            pl.product_sku_id, pl.quantity AS ordered, vp.effective_quantity AS effective, vp.received_quantity AS received,
            po.trigger_mode, po.confirmed_at, po.market_id AS po_market_id,
            pl.supplier_unit_price, pl.supplier_currency, o.created_at AS order_created_at
@@ -698,7 +698,8 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
     if (!pos.has(r.po_id)) {
       pos.set(r.po_id, {
         id: r.po_id, status: r.status, supplier_id: r.supplier_id, supplier_name: r.supplier_name,
-        procurement_hub_ref: r.procurement_hub_ref, sent_at: r.sent_at, sent_channel: r.sent_channel,
+        procurement_hub_ref: r.procurement_hub_ref, sent_at: r.sent_at, sent_channel: r.sent_channel, sent_note: r.sent_note,
+        simulation_scope: r.simulation_scope || null,
         supplier_order_id: r.supplier_order_id, created_at: r.created_at, updated_at: r.updated_at, ordered_at: r.ordered_at,
         trigger_mode: r.trigger_mode || null, confirmed_at: r.confirmed_at || null, market_id: r.po_market_id || marketId,
         lines: [],

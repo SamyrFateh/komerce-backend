@@ -389,6 +389,8 @@
       refNode.title = `Identifiant technique : ${po.id}`;
       head.appendChild(refNode);
       head.appendChild(el(doc, 'span', 'hlc-supplier', po.supplier_name));
+      if (po.simulation_scope === 'G6-BUYER') head.appendChild(el(doc, 'span', 'hlc-chip', 'SIMULATION STAGING · aucun fournisseur contacté'));
+
       const eff = po.totals.effective || po.lines.reduce((t, l) => t + l.ordered, 0);
       const auth = `${po.authorizations.commitment ? 'engagement validé' : 'engagement non validé'} · ${po.authorizations.payment ? 'paiement autorisé' : 'paiement non autorisé'}`;
       head.appendChild(el(doc, 'small', 'hlc-meta', `${marketCode} · ${num(eff)} u · ${auth}`));
@@ -479,6 +481,11 @@
     }
     function poForm(po, kind) {
       const form = el(doc, 'form', 'hlc-form');
+      const simulated = po.simulation_scope === 'G6-BUYER';
+      const simulationRef = 'SIM-STAGING-' + (po.lines[0]?.order_ref || '');
+      if (simulated && (kind === 'sent' || kind === 'confirm')) {
+        form.appendChild(el(doc, 'p', 'hlc-zone-hint', 'SIMULATION STAGING UNIQUEMENT — aucune commande, confirmation ou transmission vers un fournisseur extérieur. Les justificatifs et le vendeur sont fictifs.'));
+      }
       form.setAttribute('data-hlc-form', kind);
       form.addEventListener('click', (event) => event.stopPropagation());
       const close = button(doc, 'Fermer', 'close-form', 'is-link');
@@ -504,9 +511,10 @@
       }
       let channel; let supplierOrder; let confirmProof; let confirmSeller; let confirmQty = [];
       if (kind === 'sent') {
-        channel = field(form, 'Canal d’envoi réel', doc.createElement('select'));
-        CHANNELS.forEach(([v, l]) => channel.appendChild(Object.assign(doc.createElement('option'), { value: v, textContent: l })));
-        supplierOrder = field(form, 'Référence de commande fournisseur (facultative)', textInput('', 'supplier_order_id'));
+        channel = field(form, simulated ? 'Canal interne de simulation (aucun envoi)' : 'Canal d’envoi réel', doc.createElement('select'));
+        (simulated ? [['other', 'Simulation interne — sans contact']] : CHANNELS).forEach(([v, l]) => channel.appendChild(Object.assign(doc.createElement('option'), { value: v, textContent: l })));
+        supplierOrder = field(form, simulated ? 'Référence fictive de recette' : 'Référence de commande fournisseur (facultative)', textInput('', 'supplier_order_id'));
+        if (simulated) { supplierOrder.value = simulationRef; supplierOrder.readOnly = true; }
       }
       if (kind === 'confirm') {
         form.appendChild(el(doc, 'p', 'hlc-zone-hint', 'Quantités confirmées par le fournisseur (déclaratif, pas une réception). Le reliquat éventuel redevient un besoin ouvert.'));
@@ -516,7 +524,13 @@
         });
         supplierOrder = field(form, 'Référence de commande fournisseur', textInput('', 'supplier_order_id'));
         confirmProof = field(form, 'Justificatif d’achat (obligatoire)', textInput('Facture, capture, reçu…', 'purchase_proof_ref'));
-        confirmSeller = field(form, 'Vendeur réel (obligatoire pour un achat manuel, pas le Hub central)', textInput('Magasin ou vendeur', 'seller_label'));
+        confirmSeller = field(form, simulated ? 'Fournisseur fictif — recette uniquement' : 'Vendeur réel (obligatoire pour un achat manuel, pas le Hub central)', textInput('Magasin ou vendeur', 'seller_label'));
+        if (simulated) {
+          const ref = po.lines[0]?.order_ref || '';
+          supplierOrder.value = simulationRef; supplierOrder.readOnly = true;
+          confirmProof.value = 'SIM-STAGING-ACHAT-' + ref; confirmProof.readOnly = true;
+          confirmSeller.value = 'SIMULATED-STAGING-FOURNISSEUR-' + ref; confirmSeller.readOnly = true;
+        }
       }
       const submit = button(doc, { commitment: 'Valider l’engagement', payment: 'Autoriser le paiement', sent: 'Enregistrer l’envoi', confirm: 'Enregistrer la confirmation' }[kind], `submit-${kind}`, 'is-primary');
       submit.type = 'submit';
@@ -543,8 +557,8 @@
           });
         } else if (kind === 'sent') {
           execute(submit, {
-            url: purchasing(`po/${id}/sent`), body: { channel: channel.value, ...(supplierOrder.value.trim() ? { supplier_order_id: supplierOrder.value.trim() } : {}) },
-            runningMessage: 'Enregistrement de l’envoi…', successMessage: 'Envoi enregistré (canal, auteur, heure).', onSuccess: () => { state.form = null; },
+            url: purchasing(`po/${id}/sent`), body: { channel: channel.value, ...(supplierOrder.value.trim() ? { supplier_order_id: supplierOrder.value.trim() } : {}), ...(simulated ? { simulated: true } : {}) },
+            runningMessage: simulated ? 'Enregistrement de la simulation interne…' : 'Enregistrement de l’envoi…', successMessage: simulated ? 'Étape fournisseur simulée enregistrée — aucun contact extérieur.' : 'Envoi enregistré (canal, auteur, heure).', onSuccess: () => { state.form = null; },
           });
         } else if (kind === 'confirm') {
           const lines = confirmQty.map(([l, q]) => ({ purchase_line_id: l.line_id, confirmed_quantity: Number(q.value) }));
@@ -552,9 +566,9 @@
           if (lines.some((x) => x.confirmed_quantity > 0) && confirmProof.value.trim().length < 4) { note.textContent = 'Justificatif d’achat obligatoire (4 caractères minimum).'; return; }
           execute(submit, {
             url: purchasing(`po/${id}/confirm`),
-            body: { lines, ...(supplierOrder.value.trim() ? { supplier_order_id: supplierOrder.value.trim() } : {}), ...(confirmProof.value.trim() ? { purchase_proof_ref: confirmProof.value.trim() } : {}), ...(confirmSeller.value.trim() ? { seller_label: confirmSeller.value.trim() } : {}) },
-            confirmMessage: 'Enregistrer la confirmation fournisseur ? Toute quantité non confirmée redevient un besoin ouvert.',
-            runningMessage: 'Enregistrement de la confirmation…', successMessage: 'Confirmation fournisseur enregistrée.', onSuccess: () => { state.form = null; },
+            body: { lines, ...(supplierOrder.value.trim() ? { supplier_order_id: supplierOrder.value.trim() } : {}), ...(confirmProof.value.trim() ? { purchase_proof_ref: confirmProof.value.trim() } : {}), ...(confirmSeller.value.trim() ? { seller_label: confirmSeller.value.trim() } : {}), ...(simulated ? { simulated: true } : {}) },
+            confirmMessage: simulated ? 'Confirmer les quantités et l’achat FICTIFS sur staging, sans fournisseur ni paiement réel ?' : 'Enregistrer la confirmation fournisseur ? Toute quantité non confirmée redevient un besoin ouvert.',
+            runningMessage: 'Enregistrement de la confirmation…', successMessage: simulated ? 'Confirmation et achat fictifs tracés — aucun fournisseur contacté.' : 'Confirmation fournisseur enregistrée.', onSuccess: () => { state.form = null; },
           });
         }
       });

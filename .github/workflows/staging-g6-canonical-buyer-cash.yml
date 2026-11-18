@@ -1,0 +1,197 @@
+# A single reusable entrypoint for G6 nominal imported orders, not a new scenario.
+# Owner-only, same official Railway staging, serialized writes, no PSP or suppliers.
+name: G6 canonical — buyer to relay cash via real Chromium
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: komerce-g6-canonical-real-transaction
+  cancel-in-progress: false
+jobs:
+  canonical:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      (github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M04-CM' ||
+       github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M05-CG' ||
+       github.event.issue.title == '[staging-op] g6-canonical-resume-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-canonical-hub-po-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-canonical-commitment-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-canonical-vendor-readiness-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-canonical-vendor-simulation-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-canonical-hub-receiving-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-canonical-hub-receiving-readback-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-canonical-customer-bag-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-canonical-kom-box-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-canonical-hub-shipment-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-canonical-forwarder-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-canonical-customs-M01-KM')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      G6_CANONICAL_ACCEPT_PARTIAL_REPLAY: '1'
+      G6_CANONICAL_PHASE: ${{ github.event.issue.title == '[staging-op] g6-canonical-customs-M01-KM' && 'CUSTOMS' || github.event.issue.title == '[staging-op] g6-canonical-forwarder-M01-KM' && 'FORWARDER' || github.event.issue.title == '[staging-op] g6-canonical-hub-shipment-M01-KM' && 'HUB_SHIPMENT' || (github.event.issue.title == '[staging-op] g6-canonical-kom-box-M01-KM' && 'HUB_KOM_BOX' || (github.event.issue.title == '[staging-op] g6-canonical-customer-bag-M01-KM' && 'HUB_CUSTOMER_BAG' || (github.event.issue.title == '[staging-op] g6-canonical-hub-receiving-readback-M01-KM' && 'HUB_RECEIVING_READBACK' || (github.event.issue.title == '[staging-op] g6-canonical-hub-receiving-M01-KM' && 'HUB_RECEIVING' || (github.event.issue.title == '[staging-op] g6-canonical-vendor-simulation-M01-KM' && 'HUB_VENDOR_SIMULATION' || (github.event.issue.title == '[staging-op] g6-canonical-vendor-readiness-M01-KM' && 'HUB_VENDOR_READINESS' || (github.event.issue.title == '[staging-op] g6-canonical-commitment-M01-KM' && 'HUB_COMMITMENT' || (github.event.issue.title == '[staging-op] g6-canonical-hub-po-M01-KM' && 'HUB_PO' || 'BUYER_CASH')))))))) }}
+      G6_CANONICAL_SCENARIO: ${{ github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M04-CM' && 'M04' || (github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M05-CG' && 'M05' || 'M01') }}
+      G6_TARGET_MARKET: ${{ github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M04-CM' && 'CM' || (github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M05-CG' && 'CG' || 'KM') }}
+      KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_AGENT_HUB_EMAIL: ${{ secrets.E2E_AGENT_HUB_EMAIL }}
+      E2E_AGENT_HUB_PASSWORD: ${{ secrets.E2E_AGENT_HUB_PASSWORD }}
+      E2E_HUB_DIRECTOR_EMAIL: ${{ secrets.E2E_HUB_DIRECTOR_EMAIL }}
+      E2E_HUB_DIRECTOR_PASSWORD: ${{ secrets.E2E_HUB_DIRECTOR_PASSWORD }}
+      E2E_AGENT_TRANSITAIRE_EMAIL: ${{ secrets.E2E_AGENT_TRANSITAIRE_EMAIL }}
+      E2E_AGENT_TRANSITAIRE_PASSWORD: ${{ secrets.E2E_AGENT_TRANSITAIRE_PASSWORD }}
+      E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
+      E2E_AGENT_RELAIS_PASSWORD: ${{ secrets.E2E_AGENT_RELAIS_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Pin actual shared Railway staging and PostgreSQL identity
+        env:
+          E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+        run: |
+          export E2E_EXPECTED_DEPLOY_SHA="$(git rev-parse HEAD)"
+          node scripts/recette/staging-chromium-deployment-preflight.js
+          node <<'NODE'
+          const fs=require('node:fs');
+          const {execFileSync}=require('node:child_process');
+          const p=JSON.parse(fs.readFileSync('test-results/staging-chromium/deployment-preflight.json','utf8'));
+          const allowed=new Set([
+            '.github/workflows/staging-g6-canonical-buyer-cash.yml',
+            'docs/chantier/STATUS.md',
+            'docs/recette/PARCOURS_REFERENCE_UNIQUE.md',
+            'scripts/recette/g6-canonical-replay.js',
+            'scripts/recette/g6-hub-commitment-chromium.js',
+            'scripts/recette/g6-hub-vendor-readiness-chromium.js',
+            'scripts/recette/g6-hub-vendor-simulation-chromium.js',
+            'scripts/recette/g6-hub-receiving-chromium.js',
+            'scripts/recette/g6-hub-receiving-readback.js',
+            'scripts/recette/g6-hub-customer-bag-chromium.js',
+            'scripts/recette/g6-hub-kom-box-chromium.js',
+            'scripts/recette/g6-hub-shipment-chromium.js',
+            'scripts/recette/g6-canonical-forwarder-chromium.js',
+            'scripts/recette/g6-canonical-customs-chromium.js',
+            'tests/unit/g6-canonical-journey-replay.test.js',
+            'tests/staging-clicks/g6-p3-kuyiyuk.spec.js'
+          ]);
+          if(!['DEPLOY_SHA_MATCHED','DEPLOY_RUNTIME_EQUIVALENT'].includes(p.status)) {
+            throw Error('G6_PIN_INVALID_'+p.status);
+          }
+          if(p.status==='DEPLOY_RUNTIME_EQUIVALENT'){
+            const files=p.tooling_diff||[];
+            if(!files.length||files.some(f=>!allowed.has(f))) throw Error('G6_PIN_NON_CANONICAL_TOOLING_CHANGE');
+            try{execFileSync('git',['merge-base','--is-ancestor',p.observed_sha,p.expected_sha],{stdio:'pipe'});}
+            catch(_){throw Error('G6_PIN_STAGING_SHA_NOT_ANCESTOR');}
+          }
+          console.log('[G6_PIN_STRICT_CANONICAL] '+JSON.stringify({status:p.status,staging_sha:p.observed_sha,non_deployed_files:p.tooling_diff||[]}));
+          NODE
+          node scripts/recette/target-guard.js
+      - name: Restore full Git ancestry for same-order historical proof
+        run: |
+          # Runtime equivalence may fetch a depth-1 deployed SHA. The previous
+          # PO was created at an OLDER SHA: the canonical runner must still
+          # verify actual Git ancestry and every changed file, fail closed.
+          if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+            git fetch --no-tags --unshallow origin main
+          fi
+      - id: resume
+        name: Validate optional prior-run checkpoint (owner request only)
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const isResume=['[staging-op] g6-canonical-resume-M01-KM','[staging-op] g6-canonical-hub-po-M01-KM','[staging-op] g6-canonical-commitment-M01-KM','[staging-op] g6-canonical-vendor-readiness-M01-KM','[staging-op] g6-canonical-vendor-simulation-M01-KM','[staging-op] g6-canonical-hub-receiving-M01-KM','[staging-op] g6-canonical-hub-receiving-readback-M01-KM','[staging-op] g6-canonical-customer-bag-M01-KM','[staging-op] g6-canonical-kom-box-M01-KM','[staging-op] g6-canonical-hub-shipment-M01-KM','[staging-op] g6-canonical-forwarder-M01-KM','[staging-op] g6-canonical-customs-M01-KM'].includes(process.env.ISSUE_TITLE);
+          if(isResume) {
+            const m=String(process.env.ISSUE_BODY||'').match(/^resume_run_id:\s*(\d{8,})\s*$/m);
+            if(!m)throw Error('G6_RESUME_RUN_ID_REQUIRED');
+            fs.appendFileSync(process.env.GITHUB_OUTPUT,'run_id='+m[1]+'\n');
+            fs.appendFileSync(process.env.GITHUB_ENV,'G6_CANONICAL_RESUME_RUN_ID='+m[1]+'\n');
+            const a=String(process.env.ISSUE_BODY||'').match(/^resume_artifact_id:\s*(\d{8,})\s*$/m);
+            if(a)fs.appendFileSync(process.env.GITHUB_OUTPUT,'artifact_id='+a[1]+'\n');
+            if(process.env.ISSUE_TITLE==='[staging-op] g6-canonical-hub-shipment-M01-KM'&&!a)
+              throw Error('G6_SHIPMENT_EXACT_ARTIFACT_ID_REQUIRED');
+            if(process.env.ISSUE_TITLE==='[staging-op] g6-canonical-hub-shipment-M01-KM'&&m[1]==='44203777890'&&a?.[1]!=='14382262298')
+              throw Error('G6_SHIPMENT_PARTIAL_EXACT_ARTIFACT_REQUIRED');
+            if(process.env.ISSUE_TITLE==='[staging-op] g6-canonical-forwarder-M01-KM'&&(m[1]!=='44210239102'||a?.[1]!=='14386778073'))
+              throw Error('G6_FORWARDER_EXACT_ARTIFACT_REQUIRED');
+            if(process.env.ISSUE_TITLE==='[staging-op] g6-canonical-customs-M01-KM'&&(m[1]!=='44257485638'||a?.[1]!=='14405269914'))
+              throw Error('G6_CUSTOMS_EXACT_ARTIFACT_REQUIRED');
+          }
+          NODE
+      - name: Retrieve exact prior stage proof from verified GitHub Actions artifact
+        if: steps.resume.outputs.run_id != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RESUME_RUN_ID: ${{ steps.resume.outputs.run_id }}
+          RESUME_ARTIFACT_ID: ${{ steps.resume.outputs.artifact_id }}
+        run: |
+          # Re-runs may retain distinct artifacts with the SAME name. Never let
+          # a name-only download silently select an earlier failed attempt.
+          set -euo pipefail
+          expected="g6-canonical-buyer-cash-$RESUME_RUN_ID"
+          matches="$(gh api --paginate "/repos/$GITHUB_REPOSITORY/actions/runs/$RESUME_RUN_ID/artifacts?per_page=100" --jq '.artifacts[] | select(.expired == false)' | jq -s --arg name "$expected" '[.[] | select(.name == $name)]')"
+          if [ -n "$RESUME_ARTIFACT_ID" ]; then
+            selected="$(jq -ce --arg id "$RESUME_ARTIFACT_ID" '[.[] | select((.id|tostring)==$id)] | if length==1 then .[0] else error("G6_EXACT_ARTIFACT_ID_INVALID") end' <<<"$matches")"
+          else
+            selected="$(jq -ce 'if length==1 then .[0] else error("G6_RESUME_ARTIFACT_AMBIGUOUS_OR_MISSING: specify resume_artifact_id") end' <<<"$matches")"
+          fi
+          id="$(jq -er '.id' <<<"$selected")"
+          digest="$(jq -er '.digest | select(test("^sha256:[a-f0-9]{64}$"))' <<<"$selected")"
+          archive="$(mktemp -p "$RUNNER_TEMP" g6-resume-XXXXXX.zip)"
+          trap 'rm -f "$archive"' EXIT
+          curl --fail --silent --show-error --location --retry 2 \
+            -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/artifacts/$id/zip" -o "$archive"
+          printf '%s  %s\n' "${digest#sha256:}" "$archive" | sha256sum --check --status
+          mkdir -p test-results/g6-canonical-resume
+          unzip -q "$archive" -d test-results/g6-canonical-resume
+          echo "[G6_RESUME_EXACT_ARTIFACT] run=$RESUME_RUN_ID artifact=$id digest=$digest"
+      - name: Install real Chromium
+        run: npx playwright install chromium --only-shell
+      - name: Replay same order through the selected canonical Chromium stage (UI only)
+        run: node scripts/recette/g6-canonical-replay.js
+      - name: Archive stage evidence with order ID, market and SHA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g6-canonical-buyer-cash-${{ github.run_id }}
+          path: |
+            test-results/g6-canonical-replay/report.json
+            test-results/g6-p2-buyer-order/
+            test-results/g6-a-relay-cash/
+            test-results/g6-p3-kuyiyuk/
+            test-results/g6-hub-commitment/
+            test-results/g6-hub-vendor-readiness/
+            test-results/g6-hub-vendor-simulation/
+            test-results/g6-hub-receiving/
+            test-results/g6-hub-receiving-readback/
+            test-results/g6-hub-customer-bag/
+            test-results/g6-hub-kom-box/
+            test-results/g6-hub-shipment/
+            test-results/g6-canonical-forwarder/
+            test-results/g6-canonical-customs/
+            test-results/hub-v1-http/deploy-pin.json
+          if-no-files-found: warn
+          retention-days: 21
