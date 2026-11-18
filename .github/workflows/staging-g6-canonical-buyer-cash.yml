@@ -29,7 +29,8 @@ jobs:
        github.event.issue.title == '[staging-op] g6-canonical-customer-bag-M01-KM' ||
        github.event.issue.title == '[staging-op] g6-canonical-kom-box-M01-KM' ||
        github.event.issue.title == '[staging-op] g6-canonical-hub-shipment-M01-KM' ||
-       github.event.issue.title == '[staging-op] g6-canonical-forwarder-M01-KM')
+       github.event.issue.title == '[staging-op] g6-canonical-forwarder-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-canonical-customs-M01-KM')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
@@ -40,7 +41,7 @@ jobs:
       STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
       EXPECTED_RAILWAY_ENVIRONMENT: staging
       G6_CANONICAL_ACCEPT_PARTIAL_REPLAY: '1'
-      G6_CANONICAL_PHASE: ${{ github.event.issue.title == '[staging-op] g6-canonical-forwarder-M01-KM' && 'FORWARDER' || github.event.issue.title == '[staging-op] g6-canonical-hub-shipment-M01-KM' && 'HUB_SHIPMENT' || (github.event.issue.title == '[staging-op] g6-canonical-kom-box-M01-KM' && 'HUB_KOM_BOX' || (github.event.issue.title == '[staging-op] g6-canonical-customer-bag-M01-KM' && 'HUB_CUSTOMER_BAG' || (github.event.issue.title == '[staging-op] g6-canonical-hub-receiving-readback-M01-KM' && 'HUB_RECEIVING_READBACK' || (github.event.issue.title == '[staging-op] g6-canonical-hub-receiving-M01-KM' && 'HUB_RECEIVING' || (github.event.issue.title == '[staging-op] g6-canonical-vendor-simulation-M01-KM' && 'HUB_VENDOR_SIMULATION' || (github.event.issue.title == '[staging-op] g6-canonical-vendor-readiness-M01-KM' && 'HUB_VENDOR_READINESS' || (github.event.issue.title == '[staging-op] g6-canonical-commitment-M01-KM' && 'HUB_COMMITMENT' || (github.event.issue.title == '[staging-op] g6-canonical-hub-po-M01-KM' && 'HUB_PO' || 'BUYER_CASH')))))))) }}
+      G6_CANONICAL_PHASE: ${{ github.event.issue.title == '[staging-op] g6-canonical-customs-M01-KM' && 'CUSTOMS' || github.event.issue.title == '[staging-op] g6-canonical-forwarder-M01-KM' && 'FORWARDER' || github.event.issue.title == '[staging-op] g6-canonical-hub-shipment-M01-KM' && 'HUB_SHIPMENT' || (github.event.issue.title == '[staging-op] g6-canonical-kom-box-M01-KM' && 'HUB_KOM_BOX' || (github.event.issue.title == '[staging-op] g6-canonical-customer-bag-M01-KM' && 'HUB_CUSTOMER_BAG' || (github.event.issue.title == '[staging-op] g6-canonical-hub-receiving-readback-M01-KM' && 'HUB_RECEIVING_READBACK' || (github.event.issue.title == '[staging-op] g6-canonical-hub-receiving-M01-KM' && 'HUB_RECEIVING' || (github.event.issue.title == '[staging-op] g6-canonical-vendor-simulation-M01-KM' && 'HUB_VENDOR_SIMULATION' || (github.event.issue.title == '[staging-op] g6-canonical-vendor-readiness-M01-KM' && 'HUB_VENDOR_READINESS' || (github.event.issue.title == '[staging-op] g6-canonical-commitment-M01-KM' && 'HUB_COMMITMENT' || (github.event.issue.title == '[staging-op] g6-canonical-hub-po-M01-KM' && 'HUB_PO' || 'BUYER_CASH')))))))) }}
       G6_CANONICAL_SCENARIO: ${{ github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M04-CM' && 'M04' || (github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M05-CG' && 'M05' || 'M01') }}
       G6_TARGET_MARKET: ${{ github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M04-CM' && 'CM' || (github.event.issue.title == '[staging-op] g6-canonical-buyer-cash-M05-CG' && 'CG' || 'KM') }}
       KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
@@ -89,6 +90,7 @@ jobs:
             'scripts/recette/g6-hub-kom-box-chromium.js',
             'scripts/recette/g6-hub-shipment-chromium.js',
             'scripts/recette/g6-canonical-forwarder-chromium.js',
+            'scripts/recette/g6-canonical-customs-chromium.js',
             'tests/unit/g6-canonical-journey-replay.test.js',
             'tests/staging-clicks/g6-p3-kuyiyuk.spec.js'
           ]);
@@ -120,7 +122,7 @@ jobs:
         run: |
           node <<'NODE'
           const fs=require('node:fs');
-          const isResume=['[staging-op] g6-canonical-resume-M01-KM','[staging-op] g6-canonical-hub-po-M01-KM','[staging-op] g6-canonical-commitment-M01-KM','[staging-op] g6-canonical-vendor-readiness-M01-KM','[staging-op] g6-canonical-vendor-simulation-M01-KM','[staging-op] g6-canonical-hub-receiving-M01-KM','[staging-op] g6-canonical-hub-receiving-readback-M01-KM','[staging-op] g6-canonical-customer-bag-M01-KM','[staging-op] g6-canonical-kom-box-M01-KM','[staging-op] g6-canonical-hub-shipment-M01-KM','[staging-op] g6-canonical-forwarder-M01-KM'].includes(process.env.ISSUE_TITLE);
+          const isResume=['[staging-op] g6-canonical-resume-M01-KM','[staging-op] g6-canonical-hub-po-M01-KM','[staging-op] g6-canonical-commitment-M01-KM','[staging-op] g6-canonical-vendor-readiness-M01-KM','[staging-op] g6-canonical-vendor-simulation-M01-KM','[staging-op] g6-canonical-hub-receiving-M01-KM','[staging-op] g6-canonical-hub-receiving-readback-M01-KM','[staging-op] g6-canonical-customer-bag-M01-KM','[staging-op] g6-canonical-kom-box-M01-KM','[staging-op] g6-canonical-hub-shipment-M01-KM','[staging-op] g6-canonical-forwarder-M01-KM','[staging-op] g6-canonical-customs-M01-KM'].includes(process.env.ISSUE_TITLE);
           if(isResume) {
             const m=String(process.env.ISSUE_BODY||'').match(/^resume_run_id:\s*(\d{8,})\s*$/m);
             if(!m)throw Error('G6_RESUME_RUN_ID_REQUIRED');
@@ -134,6 +136,8 @@ jobs:
               throw Error('G6_SHIPMENT_PARTIAL_EXACT_ARTIFACT_REQUIRED');
             if(process.env.ISSUE_TITLE==='[staging-op] g6-canonical-forwarder-M01-KM'&&(m[1]!=='44210239102'||a?.[1]!=='14386778073'))
               throw Error('G6_FORWARDER_EXACT_ARTIFACT_REQUIRED');
+            if(process.env.ISSUE_TITLE==='[staging-op] g6-canonical-customs-M01-KM'&&(m[1]!=='44257485638'||a?.[1]!=='14405269914'))
+              throw Error('G6_CUSTOMS_EXACT_ARTIFACT_REQUIRED');
           }
           NODE
       - name: Retrieve exact prior stage proof from verified GitHub Actions artifact
@@ -187,6 +191,7 @@ jobs:
             test-results/g6-hub-kom-box/
             test-results/g6-hub-shipment/
             test-results/g6-canonical-forwarder/
+            test-results/g6-canonical-customs/
             test-results/hub-v1-http/deploy-pin.json
           if-no-files-found: warn
           retention-days: 21
