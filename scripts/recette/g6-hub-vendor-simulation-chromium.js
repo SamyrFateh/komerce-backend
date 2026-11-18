@@ -106,7 +106,10 @@ async function main(){
     env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.NODE_ENV==='test'&&
     env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&
     env.G6_CANONICAL_PHASE==='HUB_VENDOR_SIMULATION'&&env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET==='KM'&&
-    env.G6_CANONICAL_DB_FINGERPRINT&&env.G6_CANONICAL_ORDER_REFERENCE==='KL1WGP6'&&
+    env.G6_CANONICAL_DB_FINGERPRINT&&(env.G6_CANONICAL_ORDER_REFERENCE==='KL1WGP6'||
+    (env.G6_DYNAMIC_FRESH_ORDER==='1'&&
+     /^[A-Z0-9][A-Z0-9-]{5,63}$/.test(env.G6_CANONICAL_ORDER_REFERENCE||'')&&
+     env.STAGING_BASE_URL==='https://komerce-backend-production.up.railway.app'))&&
     UUID.test(PO)&&UUID.test(ORDER)&&SHA.test(env.E2E_EXPECTED_DEPLOY_SHA||'')&&!!env.DATABASE_URL,
     'G6_VENDOR_SIMULATION_STAGING_OWNER_GUARD');
   const t=await confirmTarget({db,env});

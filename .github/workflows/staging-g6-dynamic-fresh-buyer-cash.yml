@@ -16,7 +16,10 @@ jobs:
       github.actor == github.repository_owner &&
       github.event.issue.user.login == github.repository_owner &&
       (github.event.issue.title == '[staging-op] g6-dynamic-fresh-buyer-cash-M01-KM' ||
-       github.event.issue.title == '[staging-op] g6-dynamic-fresh-buyer-cash-hub-po-M01-KM')
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-buyer-cash-hub-po-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-commitment-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-vendor-readiness-M01-KM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-vendor-simulation-M01-KM')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
@@ -28,7 +31,9 @@ jobs:
       EXPECTED_RAILWAY_ENVIRONMENT: staging
       G6_CANONICAL_SCENARIO: M01
       G6_TARGET_MARKET: KM
-      G6_DYNAMIC_TO_STAGE: ${{ github.event.issue.title == '[staging-op] g6-dynamic-fresh-buyer-cash-hub-po-M01-KM' && 'HUB_PO' || 'RELAY_CASH' }}
+      G6_DYNAMIC_TO_STAGE: ${{ github.event.issue.title == '[staging-op] g6-dynamic-fresh-vendor-simulation-M01-KM' && 'HUB_VENDOR_SIMULATION' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-vendor-readiness-M01-KM' && 'HUB_VENDOR_READINESS' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-commitment-M01-KM' && 'HUB_COMMITMENT' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-buyer-cash-hub-po-M01-KM' && 'HUB_PO' || 'RELAY_CASH' }}
+      E2E_HUB_DIRECTOR_EMAIL: ${{ secrets.E2E_HUB_DIRECTOR_EMAIL }}
+      E2E_HUB_DIRECTOR_PASSWORD: ${{ secrets.E2E_HUB_DIRECTOR_PASSWORD }}
       E2E_AGENT_HUB_EMAIL: ${{ secrets.E2E_AGENT_HUB_EMAIL }}
       E2E_AGENT_HUB_PASSWORD: ${{ secrets.E2E_AGENT_HUB_PASSWORD }}
       E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
@@ -71,6 +76,9 @@ jobs:
             test-results/g6-p2-buyer-order/
             test-results/g6-a-relay-cash/
             test-results/g6-p3-kuyiyuk/
+            test-results/g6-hub-commitment/
+            test-results/g6-hub-vendor-readiness/
+            test-results/g6-hub-vendor-simulation/
             test-results/hub-v1-clicks/
           retention-days: 21
           if-no-files-found: warn

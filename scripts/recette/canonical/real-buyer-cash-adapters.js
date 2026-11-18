@@ -15,12 +15,18 @@ const BASE='https://komerce-backend-production.up.railway.app';
 const REPORT_PATH=Object.freeze({
  BUYER:'test-results/g6-p2-buyer-order/report.json',
  RELAY_CASH:'test-results/g6-a-relay-cash/report.json',
- HUB_PO:'test-results/g6-p3-kuyiyuk/evidence.json'
+ HUB_PO:'test-results/g6-p3-kuyiyuk/evidence.json',
+ HUB_COMMITMENT:'test-results/g6-hub-commitment/report.json',
+ HUB_VENDOR_READINESS:'test-results/g6-hub-vendor-readiness/report.json',
+ HUB_VENDOR_SIMULATION:'test-results/g6-hub-vendor-simulation/report.json'
 });
 const SCRIPTS=Object.freeze({
  BUYER:'scripts/recette/g6-p2-buyer-order-real-chromium.js',
  RELAY_CASH:'scripts/recette/g6-a-relay-cash-real-chromium.js',
- HUB_PO:'tests/staging-clicks/g6-p3-kuyiyuk.spec.js'
+ HUB_PO:'tests/staging-clicks/g6-p3-kuyiyuk.spec.js',
+ HUB_COMMITMENT:'scripts/recette/g6-hub-commitment-chromium.js',
+ HUB_VENDOR_READINESS:'scripts/recette/g6-hub-vendor-readiness-chromium.js',
+ HUB_VENDOR_SIMULATION:'scripts/recette/g6-hub-vendor-simulation-chromium.js'
 });
 const SHA=/^[a-f0-9]{40}$/;
 const REF=/^[A-Z0-9][A-Z0-9-]{5,63}$/;
@@ -45,6 +51,36 @@ function report(stage){
  const full=path.join(ROOT,rel);
  const bytes=fs.readFileSync(full);
  return {data:JSON.parse(bytes.toString('utf8')),digest:crypto.createHash('sha256').update(bytes).digest('hex'),rel};
+}
+async function uniquePoId(db,orderId){
+ const {rows}=await db.query(`
+  SELECT COUNT(DISTINCT pl.id)::int AS line_count,
+    COUNT(DISTINCT pl.purchase_order_id)::int AS po_count,
+    MIN(pl.purchase_order_id::text) AS po_id
+  FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id
+  WHERE oi.order_id=$1 AND pl.cancelled_at IS NULL
+ `,[orderId]);
+ const item=rows[0];
+ if(rows.length!==1||Number(item.line_count)!==1||
+    Number(item.po_count)!==1||!UUID.test(String(item.po_id||'')))
+  throw Error('G6_DYNAMIC_HUB_PO_ID_NOT_UNIQUE');
+ return item.po_id;
+}
+async function poState(db,context){
+ const id=await uniquePoId(db,context.order_id);
+ const {rows}=await db.query(`
+ SELECT po.status::text AS status, po.trigger_mode,
+   (SELECT count(*)::int FROM purchase_order_authorizations a
+    WHERE a.purchase_order_id=po.id AND a.authorization_type='purchase_commitment') AS commitments,
+   (SELECT count(*)::int FROM purchase_order_authorizations a
+    WHERE a.purchase_order_id=po.id AND a.authorization_type='supplier_payment') AS payments,
+   (SELECT count(*)::int FROM manual_purchase_executions e
+    WHERE e.purchase_order_id=po.id) AS executions
+ FROM purchase_orders po WHERE po.id=$1
+ `,[id]);
+ if(rows.length!==1||rows[0].trigger_mode==='auto')
+  throw Error('G6_DYNAMIC_HUB_PO_STATE_INVALID');
+ return {id,...rows[0]};
 }
 async function orderPg(db,context){
  const {rows}=await db.query(`
@@ -158,6 +194,36 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
    if(rows.length!==1||rows[0].line_count!==1||rows[0].po_count!==1||
       rows[0].po_id!==poIds[0])
     throw Error('G6_DYNAMIC_HUB_PG_PO_MISMATCH');
+  }else if(['HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION'].includes(stageId)){
+   const po=await poState(db,context);
+   if(data.reference!==context.order_reference||data.po_id!==po.id||
+      data.db_fingerprint!==context.db_fingerprint||
+      data.external_supplier_calls!==0||data.external_payment_executed!==false||
+      data.sha!==context.staging_sha)
+    throw Error('G6_DYNAMIC_HUB_STAGE_PROVENANCE_INVALID_'+stageId);
+   if(stageId==='HUB_COMMITMENT'){
+    if(data.verdict!=='G6_HUB_COMMITMENT_AND_INTERNAL_SUBMIT_CHROMIUM_PASS_NOT_VENDOR_OR_RECEIPT_GO'||
+     data.commitment?.http!==201||data.commitment?.pdf_generated!==true||
+     data.after?.po_status!=='notified'||data.after?.commitment_count!==1||
+     data.after?.payment_authorization_count!==0||
+     po.status!=='notified'||po.commitments!==1||po.payments!==0||po.executions!==0)
+     throw Error('G6_DYNAMIC_HUB_COMMITMENT_PG_INVALID');
+   }else if(stageId==='HUB_VENDOR_READINESS'){
+    if(data.verdict!=='G6_VENDOR_SEND_UI_READY_BUT_EXTERNAL_EVENT_NOT_PROVEN'||
+     data.supplier_send_certified!==false||
+     data.supplier_confirmation_certified!==false||
+     data.physical_receipt_certified!==false||
+     data.screen?.external_send_form_not_submitted!==true||
+     po.status!=='notified'||po.commitments!==1||po.payments!==0||po.executions!==0)
+     throw Error('G6_DYNAMIC_HUB_VENDOR_READINESS_INVALID');
+   }else{
+    if(data.verdict!=='G6_VENDOR_SIMULATED_SEND_AND_CONFIRM_CHROMIUM_PASS_NOT_RECEIPT_GO'||
+     data.provenance!=='SIMULATED / STAGING ONLY'||
+     data.after?.po_status!=='confirmed'||data.after?.simulation_marker!==true||
+     data.after?.manual_executions!==1||data.after?.payment_authorizations!==0||
+     po.status!=='confirmed'||po.commitments!==1||po.payments!==0||po.executions!==1)
+     throw Error('G6_DYNAMIC_HUB_VENDOR_SIMULATION_INVALID');
+   }
   }else throw Error('G6_REAL_BUYER_CASH_STAGE_NOT_IMPLEMENTED_'+stageId);
   return {...context,stage_id:stageId,
    attestation_origin:'INDEPENDENT_CHROMIUM_POSTGRESQL',
@@ -192,21 +258,21 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
   },
   verifyBuyerIndependently:async({buyer,context})=>{
    if(buyer!==issuedBuyer)throw Error('G6_DYNAMIC_BUYER_NOT_FROM_CHROMIUM');
-   return verifyStage(checkpoint.stage_id,context);
+   return verifyStage('BUYER',context);
   },
   attestRuntime:async({context})=>attestedRuntime(context),
   authenticateCheckpoint:async({checkpoint,context})=>{
-   if(!['BUYER','RELAY_CASH'].includes(checkpoint.stage_id)||
+   if(!['BUYER','RELAY_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS'].includes(checkpoint.stage_id)||
      checkpoint.source_run_id!==String(env.GITHUB_RUN_ID)||
      checkpoint.evidence_path!==REPORT_PATH[checkpoint.stage_id])
     throw Error('G6_DYNAMIC_CROSS_RUN_REQUIRES_AUTHENTICATED_GITHUB_ARTIFACT');
    const saved=stageProofs.get(checkpoint.stage_id);
    if(!saved||!same(context,saved)||saved.evidence_sha256!==checkpoint.evidence_sha256)
     throw Error('G6_DYNAMIC_CHECKPOINT_NOT_PERSISTED_LOCALLY');
-   return verifyStage('BUYER',context);
+   return verifyStage(checkpoint.stage_id,context);
   },
   executeStage:async({stageId,context})=>{
-   if(!['RELAY_CASH','HUB_PO'].includes(stageId))
+   if(!['RELAY_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION'].includes(stageId))
     throw Error('G6_DYNAMIC_DOWNSTREAM_STAGE_NOT_MIGRATED_'+stageId);
    if(!stageProofs.has('BUYER'))throw Error('G6_DYNAMIC_BUYER_CHECKPOINT_MISSING');
    await attestedRuntime(context);
@@ -218,6 +284,29 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
      G6_CANONICAL_ORDER_REFERENCE:context.order_reference
     });
     return report('RELAY_CASH').data;
+   }
+   if(stageId!=='HUB_PO'){
+    const predecessor={
+     HUB_COMMITMENT:'HUB_PO',
+     HUB_VENDOR_READINESS:'HUB_COMMITMENT',
+     HUB_VENDOR_SIMULATION:'HUB_VENDOR_READINESS'
+    }[stageId];
+    if(!stageProofs.has(predecessor))
+     throw Error('G6_DYNAMIC_HUB_PREDECESSOR_MISSING_'+predecessor);
+    await verifyStage(predecessor,context);
+    const poId=await uniquePoId(db,context.order_id);
+    const record=report('HUB_PO').data;
+    const draftPo=(record.gestures||[]).find(x=>x.key==='prepare-draft-po'&&x.verdict==='PASS');
+    if(draftPo?.purchase_order_id!==poId)
+     throw Error('G6_DYNAMIC_HUB_PO_IDENTITY_DRIFT');
+    fs.rmSync(path.join(ROOT,REPORT_PATH[stageId]),{force:true});
+    execute(SCRIPTS[stageId],{
+     ...env,G6_DYNAMIC_FRESH_ORDER:'1',G6_CANONICAL_PHASE:stageId,
+     G6_CANONICAL_ORDER_ID:context.order_id,
+     G6_CANONICAL_ORDER_REFERENCE:context.order_reference,
+     G6_CANONICAL_PO_ID:poId,G6_CANONICAL_DB_FINGERPRINT:context.db_fingerprint
+    });
+    return report(stageId).data;
    }
    if(!stageProofs.has('RELAY_CASH'))
     throw Error('G6_DYNAMIC_CASH_CHECKPOINT_MISSING');
@@ -243,7 +332,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
    return report('HUB_PO').data;
   },
   verifyStageProof:async({stageId,proof,context})=>{
-   if(!['RELAY_CASH','HUB_PO'].includes(stageId)||
+   if(!['RELAY_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION'].includes(stageId)||
       JSON.stringify(proof)!==JSON.stringify(report(stageId).data))
     throw Error('G6_DYNAMIC_STAGE_PROOF_MISMATCH');
    return verifyStage(stageId,context);
