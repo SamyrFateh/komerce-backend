@@ -349,6 +349,29 @@ function validatePartialShipmentCheckpoint(previous,partial,scope){
     throw Error('G6_SHIPMENT_PARTIAL_PROVENANCE_INVALID');
   return {order:previous.order,poId,dbFingerprint:previous.db_fingerprint,boxId,boxRef,bagId,bagRef,parcelId,allocationId,shipmentId};
 }
+function validateForwarderCheckpoint(previous,shipment,scope){
+ const id='56adad65-d1fa-4e80-8d69-c25e0fe92a76',po='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3';
+ const sid='ff8591fc-78bb-49a4-b154-247508368d16',ref='SIM-STAGING-EXP-KL1WGP6';
+ const box='6ca614e5-869c-40ab-80d7-3684974092fe',bag='bcf810c9-33b2-438a-b4c3-857b024e2247';
+ const parcel='95045ede-d5b8-405b-b65f-d9dbdddb4756',allocation='3b430dcf-8662-44b4-a29f-27e38df19253';
+ const fingerprint='8acbf99fef010c23eac7d252',a=shipment.after;
+ if(scope.id!=='M01'||scope.market!=='KM'||previous.scenario_id!=='M01'||previous.market!=='KM'||
+ previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||previous.production_permitted!==false||
+ previous.next_stage!=='FORWARDER_RECEIPT'||previous.order?.id!==id||previous.order?.reference!=='KL1WGP6'||previous.po_id!==po||
+ previous.db_fingerprint!==fingerprint||!previous.stages?.some(x=>x.id==='HUB_SHIPMENT'&&x.verdict==='PASS_SIMULATED_STAGING'&&x.shipment_id===sid)||
+ shipment.verdict!=='G6_HUB_SHIPMENT_SIMULATED_CHROMIUM_PG_PASS_HANDED_OVER'||shipment.reference!=='KL1WGP6'||
+ shipment.order_id!==id||shipment.po_id!==po||shipment.box_id!==box||shipment.bag_id!==bag||
+ shipment.parcel_id!==parcel||shipment.allocation_id!==allocation||shipment.shipment_id!==sid||shipment.shipment_ref!==ref||
+ shipment.db_fingerprint!==fingerprint||shipment.sha!=='9d7f19feb1407826582850dfdb9489983af7b2f3'||
+ shipment.provenance!=='SIMULATED / STAGING ONLY'||shipment.external_payment_executed!==false||shipment.external_supplier_calls!==0||
+ shipment.events?.length!==3||shipment.events[2].key!=='handover-forwarder'||shipment.events[2].http!==200||
+ a?.shipments?.length!==1||a.shipments[0].id!==sid||a.shipments[0].stage!=='handed_over'||
+ a.box?.length!==1||a.box[0].id!==box||a.box[0].state!=='DISPATCHED'||a.parcels?.length!==1||
+ a.parcels[0].id!==parcel||a.parcels[0].status!=='shipped'||a.parcelItems?.length!==1||
+ Number(a.parcelItems[0].qty_shipped)!==1||a.parcelEvents?.length!==1)
+ throw Error('G6_FORWARDER_HANDOVER_PROVENANCE_INVALID');
+ return {order:previous.order,poId:po,dbFingerprint:fingerprint,boxId:box,bagId:bag,bagRef:shipment.bag_ref,parcelId:parcel,allocationId:allocation,shipmentId:sid};
+}
 function executeExistingHub(env) {
   fs.rmSync(HUB_PROOF,{force:true});
   const p=spawnSync(process.platform==='win32'?'npx.cmd':'npx',[
@@ -372,7 +395,7 @@ async function main(env=process.env) {
   try{
     const scope=validateGuard(env);
     const phase=String(env.G6_CANONICAL_PHASE||'BUYER_CASH');
-    if(!['BUYER_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT'].includes(phase) || (['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT'].includes(phase)&&(scope.id!=='M01'||scope.market!=='KM')))
+    if(!['BUYER_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER'].includes(phase) || (['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER'].includes(phase)&&(scope.id!=='M01'||scope.market!=='KM')))
       throw new Error('G6_CANONICAL_PHASE_NOT_BOUND');
     report.scenario_id=scope.id;report.market=scope.market;
     report.source_matrix_version=scope.source_version;
@@ -385,8 +408,28 @@ async function main(env=process.env) {
     // must fail closed, not rebuild or silently switch to a new buyer.
     let buyer, resumeDiff=null;
     const resumeRun=String(env.G6_CANONICAL_RESUME_RUN_ID||'');
-    if(['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT'].includes(phase)&&!resumeRun)
+    if(['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER'].includes(phase)&&!resumeRun)
       throw new Error('G6_CANONICAL_HUB_REQUIRES_PREVIOUS_STAGE_PROOF');
+    if(phase==='FORWARDER'){
+      if(resumeRun!=='44210239102'||!fs.existsSync(RESUME_CANONICAL)||!fs.existsSync(RESUME_SHIPMENT))
+        throw Error('G6_FORWARDER_EXACT_ARTIFACT_REQUIRED');
+      const previous=JSON.parse(fs.readFileSync(RESUME_CANONICAL,'utf8'));
+      const bound=validateForwarderCheckpoint(previous,JSON.parse(fs.readFileSync(RESUME_SHIPMENT,'utf8')),scope);
+      report.resumed_from_run_id=resumeRun;report.order=bound.order;report.po_id=bound.poId;report.db_fingerprint=bound.dbFingerprint;
+      report.stages=previous.stages;report.next_stage='FORWARDER_RECEIPT';save();
+      const result=executeExisting('scripts/recette/g6-canonical-forwarder-chromium.js',
+        path.join(ROOT,'test-results/g6-canonical-forwarder/report.json'),{...env,PGOPTIONS:'-c default_transaction_read_only=on',
+        G6_CANONICAL_ORDER_ID:bound.order.id,G6_CANONICAL_ORDER_REFERENCE:bound.order.reference,G6_CANONICAL_PO_ID:bound.poId,
+        G6_CANONICAL_DB_FINGERPRINT:bound.dbFingerprint,G6_CANONICAL_BAG_ID:bound.bagId,G6_CANONICAL_BAG_REF:bound.bagRef,
+        G6_CANONICAL_PARCEL_ID:bound.parcelId,G6_CANONICAL_ALLOCATION_ID:bound.allocationId,G6_CANONICAL_BOX_ID:bound.boxId});
+      if(result.verdict!=='G6_FORWARDER_SIMULATED_CHROMIUM_PG_PASS_ARRIVED'||result.shipment_id!==bound.shipmentId||
+        result.order_id!==bound.order.id||result.db_fingerprint!==bound.dbFingerprint||result.events?.length!==4||
+        result.external_payment_executed!==false||result.external_supplier_calls!==0)
+        throw Error('G6_FORWARDER_FINAL_PROOF_INVALID');
+      report.stages.push({id:'FORWARDER',verdict:'PASS_SIMULATED_STAGING',via:'Chromium_UI',shipment_id:bound.shipmentId,
+        evidence:'test-results/g6-canonical-forwarder/report.json'});
+      report.next_stage='CUSTOMS';report.verdict='NOT_PROVEN';save();return report;
+    }
     if(phase==='HUB_SHIPMENT'){
       const partialResume=resumeRun==='44203777890';
       if(!/^\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_CANONICAL)||
@@ -786,4 +829,4 @@ async function main(env=process.env) {
 }
 
 if(require.main===module)main().catch(e=>{console.error(e.message);process.exitCode=2});
-module.exports={validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,validateVendorSimulationCheckpoint,validateHubReceivingCheckpoint,validateCustomerBagCheckpoint,validateKomBoxCheckpoint,validateShipmentCheckpoint,validatePartialShipmentCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling,main};
+module.exports={validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,validateVendorSimulationCheckpoint,validateHubReceivingCheckpoint,validateCustomerBagCheckpoint,validateKomBoxCheckpoint,validateShipmentCheckpoint,validatePartialShipmentCheckpoint,validateForwarderCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling,main};
