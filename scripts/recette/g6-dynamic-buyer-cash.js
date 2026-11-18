@@ -47,7 +47,7 @@ async function main({env=process.env}={}){
   save();
   return state;
  }catch(err){
-  state.verdict='BLOCKED';state.error=String(err?.message||err).slice(0,350);
+  state.verdict='BLOCKED';state.error=require("./canonical/observability").fullError(err);
   save();throw err;
  }finally{await db.pool.end();}
 }

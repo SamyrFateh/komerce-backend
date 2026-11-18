@@ -14,6 +14,7 @@ const {chromium}=require('playwright');
 const db=require('../../db'),{confirmTarget}=require('./target-guard');
 const ORIGIN='https://komerce-backend-production.up.railway.app';
 const OUT=path.resolve('test-results/g6-hub-commitment');
+const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const env=process.env;
 const UUID=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const SHA=/^[0-9a-f]{40}$/i;
@@ -115,7 +116,7 @@ async function main(){
    before.order.purchase_lines===1&&before.decisions.length===0,
    'G6_COMMITMENT_EXISTING_DRAFT_PRECONDITION_FAILED');
   check(before.order.trigger_mode!=='auto','G6_COMMITMENT_AUTO_PROVIDER_FORBIDDEN');
-  browser=await chromium.launch({headless:true});
+  browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   const agent=await login(browser,'E2E_AGENT_HUB_');
   try{
    await openPo(agent.page);
@@ -159,8 +160,8 @@ async function main(){
          visible:await proofField.isVisible().catch(()=>false),
          enabled:await proofField.isEnabled().catch(()=>false),
          editable:await proofField.isEditable().catch(()=>false),
-         fill_error:String(fillError.message||fillError).slice(0,190),
-         keyboard_error:String(keyboardError.message||keyboardError).slice(0,190)};
+         fill_error:fullError(fillError),
+         keyboard_error:fullError(keyboardError)};
        save();
        await director.page.screenshot({path:path.join(OUT,'director-proof-input-blocked.png')}).catch(()=>{});
        throw Error('G6_COMMITMENT_REAL_CHROMIUM_PROOF_INPUT_BLOCKED');
@@ -211,8 +212,8 @@ async function main(){
   report.stage='VENDOR_PROOF_PENDING';
   report.verdict='G6_HUB_COMMITMENT_AND_INTERNAL_SUBMIT_CHROMIUM_PASS_NOT_VENDOR_OR_RECEIPT_GO';
   save();
- }catch(e){report.error=String(e.message||e).slice(0,350);report.verdict='BLOCKED';save();process.exitCode=2;}
- finally{if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify(report));}
+ }catch(e){report.error=fullError(e);report.verdict='BLOCKED';save();process.exitCode=2;}
+ finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify(report));}
 }
 if(require.main===module)main();
 module.exports={login,openPo,stableSha};
