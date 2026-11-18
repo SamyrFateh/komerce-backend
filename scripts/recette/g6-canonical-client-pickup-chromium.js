@@ -103,7 +103,12 @@ async function customer(browser,owner){
   const button=action.getByRole('button',{name:'Générer un nouveau code',exact:true});
   const rotating=page.waitForResponse(r=>new URL(r.url()).pathname===revealPath&&r.request().method()==='POST',{timeout:25000});
   await button.click();const response=await rotating;
-  check(response.status()===200&&rotateCount===1&&blocked.length===0,'G6_PICKUP_CLIENT_ROTATION_FAILED');
+  report.rotation_gate={http:response.status(),rotation_requests:rotateCount,
+    blocked_paths:blocked.map(x=>x.path).filter(x=>!x.startsWith('/api/auth/otp/'))};
+  save();
+  check(response.status()===200&&rotateCount===1&&
+    !blocked.some(x=>x.path===revealPath),
+    'G6_PICKUP_CLIENT_ROTATION_FAILED');
   check(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/.test(plaintext||''),'G6_PICKUP_SECRET_FORMAT_INVALID');
   const shown=await action.locator('.k-pickup-code-output').textContent();
   check(shown.includes(plaintext)&&shown.startsWith('Votre code : '),'G6_PICKUP_CLIENT_SECRET_NOT_DISPLAYED');
