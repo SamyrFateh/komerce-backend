@@ -395,7 +395,7 @@ async function main(env=process.env) {
   try{
     const scope=validateGuard(env);
     const phase=String(env.G6_CANONICAL_PHASE||'BUYER_CASH');
-    if(!['BUYER_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT'].includes(phase) || (['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT'].includes(phase)&&(scope.id!=='M01'||scope.market!=='KM')))
+    if(!['BUYER_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP'].includes(phase) || (['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP'].includes(phase)&&(scope.id!=='M01'||scope.market!=='KM')))
       throw new Error('G6_CANONICAL_PHASE_NOT_BOUND');
     report.scenario_id=scope.id;report.market=scope.market;
     report.source_matrix_version=scope.source_version;
@@ -408,8 +408,67 @@ async function main(env=process.env) {
     // must fail closed, not rebuild or silently switch to a new buyer.
     let buyer, resumeDiff=null;
     const resumeRun=String(env.G6_CANONICAL_RESUME_RUN_ID||'');
-    if(['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT'].includes(phase)&&!resumeRun)
+    if(['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP'].includes(phase)&&!resumeRun)
       throw new Error('G6_CANONICAL_HUB_REQUIRES_PREVIOUS_STAGE_PROOF');
+    if(phase==='CLIENT_PICKUP'){
+      const id='56adad65-d1fa-4e80-8d69-c25e0fe92a76',sid='ff8591fc-78bb-49a4-b154-247508368d16';
+      const parcel='95045ede-d5b8-405b-b65f-d9dbdddb4756',fingerprint='8acbf99fef010c23eac7d252';
+      const po='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3';
+      if(resumeRun!=='44272362064'||!fs.existsSync(RESUME_CANONICAL)||
+       !fs.existsSync(path.join(ROOT,'test-results/g6-canonical-resume/g6-canonical-relay-receipt/report.json')))
+       throw Error('G6_PICKUP_EXACT_RELAY_ARTIFACT_REQUIRED');
+      const previous=JSON.parse(fs.readFileSync(RESUME_CANONICAL,'utf8'));
+      const prior=JSON.parse(fs.readFileSync(path.join(ROOT,'test-results/g6-canonical-resume/g6-canonical-relay-receipt/report.json'),'utf8'));
+      const a=prior.after?.base;
+      if(scope.id!=='M01'||scope.market!=='KM'||previous.scenario_id!=='M01'||previous.market!=='KM'||
+       previous.order?.id!==id||previous.order?.reference!=='KL1WGP6'||previous.po_id!==po||
+       previous.db_fingerprint!==fingerprint||previous.next_stage!=='CLIENT_PICKUP'||
+       previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||
+       previous.production_permitted!==false||
+       !previous.stages?.some(x=>x.id==='RELAY_RECEIPT'&&x.verdict==='PASS_SIMULATED_STAGING'&&x.shipment_id===sid)||
+       prior.schema!=='komerce-g6-relay-receipt/1'||prior.verdict!=='G6_RELAY_RECEIPT_SIMULATED_CHROMIUM_PG_PASS_AVAILABLE'||
+       prior.shipment_id!==sid||prior.order_id!==id||prior.parcel_id!==parcel||
+       prior.db_fingerprint!==fingerprint||prior.provenance!=='SIMULATED / STAGING ONLY'||
+       prior.external_supplier_calls!==0||prior.external_payment_executed!==false||
+       prior.events?.length!==1||prior.events[0].key!=='relay-receipt'||prior.events[0].http!==201||
+       prior.events[0].role!=='agent_relais'||prior.assignment?.via!=='Chromium_UI'||
+       prior.assignment?.http!==200||a?.shipments?.length!==1||a.shipments[0].id!==sid||
+       a.shipments[0].stage!=='relay_received'||a.parcels?.length!==1||
+       a.parcels[0].id!==parcel||a.parcels[0].status!=='available'||
+       prior.after.orders?.length!==1||prior.after.orders[0].id!==id||
+       prior.after.orders[0].status!=='available'||prior.after.receipts?.length!==1||
+       Number(prior.after.receipts[0].received_qty)!==1||prior.after.receipts[0].incident_id!==null)
+       throw Error('G6_PICKUP_RELAY_PROVENANCE_INVALID');
+      report.resumed_from_run_id=resumeRun;report.order=previous.order;report.po_id=po;
+      report.db_fingerprint=fingerprint;report.stages=previous.stages;report.next_stage='CLIENT_PICKUP';save();
+      const result=executeExisting('scripts/recette/g6-canonical-client-pickup-chromium.js',
+       path.join(ROOT,'test-results/g6-canonical-client-pickup/report.json'),{...env,
+        // OTP fixture is the sole intentional non-UI write. The guarded writer
+        // seeds a bcrypt OTP for the SAME marked buyer. Other business writes
+        // must originate solely from the actual Chromium customer/relay controls.
+        PGOPTIONS:'',
+        G6_CANONICAL_ORDER_ID:id,G6_CANONICAL_ORDER_REFERENCE:'KL1WGP6',
+        G6_CANONICAL_DB_FINGERPRINT:fingerprint,G6_CANONICAL_PO_ID:po,
+        G6_CANONICAL_BAG_ID:'bcf810c9-33b2-438a-b4c3-857b024e2247',
+        G6_CANONICAL_BAG_REF:'KOM-ITEM-178D0AEA488AA4B5B9',
+        G6_CANONICAL_PARCEL_ID:parcel,
+        G6_CANONICAL_ALLOCATION_ID:'3b430dcf-8662-44b4-a29f-27e38df19253',
+        G6_CANONICAL_BOX_ID:'6ca614e5-869c-40ab-80d7-3684974092fe'});
+      if(result.verdict!=='G6_CLIENT_PICKUP_SIMULATED_CHROMIUM_PG_PASS_COLLECTED'||
+        result.order_id!==id||result.shipment_id!==sid||result.parcel_id!==parcel||
+        result.db_fingerprint!==fingerprint||result.external_payment_executed!==false||
+        result.external_supplier_calls!==0||result.plaintext_pickup_code_logged!==false||
+        result.events?.length!==3||result.events[0].key!=='client-otp'||
+        result.events[1].key!=='client-code-rotation'||result.events[2].key!=='relay-code-collect'||
+        !result.events.every(x=>x.http===200)||result.after?.orders?.[0]?.status!=='collected'||
+        result.after?.base?.parcels?.[0]?.status!=='collected'||result.after?.scans?.length!==1||
+        result.after?.base?.shipments?.[0]?.stage!=='relay_received')
+        throw Error('G6_PICKUP_FINAL_PROOF_INVALID');
+      report.stages.push({id:'CLIENT_PICKUP',verdict:'PASS_SIMULATED_STAGING',via:'Chromium_UI',shipment_id:sid,
+        evidence:'test-results/g6-canonical-client-pickup/report.json'});
+      report.next_stage='COMPLETED_M01';report.verdict='G6_M01_SIMULATED_CHROMIUM_PG_PASS_COLLECTED';
+      report.full_chain_certified=true;report.production_permitted=false;save();return report;
+    }
     if(phase==='RELAY_RECEIPT'){
       if(resumeRun!=='44260374187'||!fs.existsSync(RESUME_CANONICAL)||
          !fs.existsSync(path.join(ROOT,'test-results/g6-canonical-resume/g6-canonical-customs/report.json')))
