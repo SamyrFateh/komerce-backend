@@ -387,6 +387,50 @@ describe('G6 canonical journey — same order, original matrix, real staging gua
     expect(()=>validateShipmentCheckpoint(previous,{...box,after:{...box.after,links:[...box.after.links,...box.after.links]}},scope)).toThrow();
     expect(()=>validateShipmentCheckpoint(previous,{...box,external_payment_executed:true},scope)).toThrow();
   });
+  test('nouvelle commande M01: sac PACKED et colis vers KOM-BOX sans IDs historiques',()=>{
+    const po='5f9d8f52-aeaa-4ba3-88b5-901234567abc',id='6f519f8f-ea47-4a0d-b385-123456789abc';
+    const bagId='1fa104ca-c9f0-4e42-99dd-218fc92a2b2c',bagRef='KOM-ITEM-NEWTEST12345';
+    const parcelId='2c5fa38b-b75a-4f99-b982-0fd36149e174',allocationId='3e940467-d30a-4167-9174-a04da39a37d5';
+    const previous={scenario_id:'M01',market:'KM',verdict:'NOT_PROVEN',full_chain_certified:false,
+      production_permitted:false,next_stage:'KOM_BOX',order:{id,reference:'KNEW123'},po_id:po,db_fingerprint:'same',
+      stages:[{id:'HUB_CUSTOMER_BAG',verdict:'PASS_SIMULATED_STAGING',bag_id:bagId}]};
+    const bag={verdict:'G6_CUSTOMER_BAG_SIMULATED_CHROMIUM_PG_PASS',order_id:id,po_id:po,bag_id:bagId,bag_ref:bagRef,
+      db_fingerprint:'same',external_supplier_calls:0,external_payment_executed:false,provenance:'SIMULATED / STAGING ONLY',
+      events:[{},{},{}],after:{order:{allocation_id:allocationId},bags:[{id:bagId,state:'PACKED'}],
+        units:[{id:bagId,active:true,quantity:1,evidence_method:'MANUAL'}],links:[],parcels:[{id:parcelId}]}};
+    expect(validateKomBoxCheckpoint(previous,bag,scope)).toMatchObject({bagId,parcelId,allocationId});
+    expect(()=>validateKomBoxCheckpoint({...previous,stages:[{id:'HUB_CUSTOMER_BAG',verdict:'PASS_SIMULATED_STAGING',bag_id:'00000000-0000-4000-8000-000000000001'}]},bag,scope)).toThrow();
+    expect(()=>validateKomBoxCheckpoint({...previous,order:{...previous.order,reference:'FOREIGN'}},bag,scope)).toThrow();
+    expect(()=>validateKomBoxCheckpoint(previous,{...bag,db_fingerprint:'other'},scope)).toThrow();
+    expect(()=>validateKomBoxCheckpoint(previous,{...bag,after:{...bag.after,bags:[{id:bagId,state:'RECEIVED'}]}},scope)).toThrow();
+    expect(()=>validateKomBoxCheckpoint(previous,{...bag,after:{...bag.after,links:[{}]}},scope)).toThrow();
+    expect(()=>validateKomBoxCheckpoint(previous,{...bag,after:{...bag.after,parcels:[{id:parcelId},{id:'other'}]}},scope)).toThrow();
+    expect(()=>validateKomBoxCheckpoint(previous,{...bag,external_payment_executed:true},scope)).toThrow();
+  });
+  test('nouvelle commande M01: KOM-BOX PACKED et colis client pour expédition',()=>{
+    const po='5f9d8f52-aeaa-4ba3-88b5-901234567abc',orderId='6f519f8f-ea47-4a0d-b385-123456789abc';
+    const bagId='1fa104ca-c9f0-4e42-99dd-218fc92a2b2c',bagRef='KOM-ITEM-NEWTEST12345';
+    const parcelId='2c5fa38b-b75a-4f99-b982-0fd36149e174',allocationId='3e940467-d30a-4167-9174-a04da39a37d5';
+    const boxId='4b48b432-c012-4d53-8d1a-5bebf2d39229',boxRef='KOM-BOX-SIM-STAGING-NEWTEST123';
+    const previous={scenario_id:'M01',market:'KM',verdict:'NOT_PROVEN',full_chain_certified:false,
+      production_permitted:false,next_stage:'HUB_SHIPMENT',order:{id:orderId,reference:'KNEW123'},po_id:po,
+      db_fingerprint:'same',stages:[{id:'HUB_KOM_BOX',verdict:'PASS_SIMULATED_STAGING',box_id:boxId}]};
+    const box={verdict:'G6_KOM_BOX_SIMULATED_CHROMIUM_PG_PASS_PACKED',order_id:orderId,po_id:po,
+      box_id:boxId,box_ref:boxRef,bag_id:bagId,bag_ref:bagRef,parcel_id:parcelId,allocation_id:allocationId,
+      db_fingerprint:'same',external_supplier_calls:0,external_payment_executed:false,provenance:'SIMULATED / STAGING ONLY',
+      events:Array(8).fill({}),after:{box:[{id:boxId,state:'PACKED'}],bag:[{id:bagId,state:'PACKED'}],
+      links:[{bag_unit_id:bagId,box_unit_id:boxId,parcel_id:parcelId,evidence_method:'MANUAL'}],
+      effective:[{allocation_id:allocationId,quantity:1}],parcels:[{id:parcelId,status:'preparation'}]}};
+    expect(validateShipmentCheckpoint(previous,box,scope)).toMatchObject({boxId,parcelId,allocationId});
+    expect(()=>validateShipmentCheckpoint({...previous,stages:[]},box,scope)).toThrow();
+    expect(()=>validateShipmentCheckpoint({...previous,stages:[{id:'HUB_KOM_BOX',verdict:'PASS_SIMULATED_STAGING',box_id:'00000000-0000-4000-8000-000000000001'}]},box,scope)).toThrow();
+    expect(()=>validateShipmentCheckpoint({...previous,order:{...previous.order,id:'00000000-0000-4000-8000-000000000001'}},box,scope)).toThrow();
+    expect(()=>validateShipmentCheckpoint(previous,{...box,db_fingerprint:'other'},scope)).toThrow();
+    expect(()=>validateShipmentCheckpoint(previous,{...box,parcel_id:'foreign'},scope)).toThrow();
+    expect(()=>validateShipmentCheckpoint(previous,{...box,after:{...box.after,box:[{id:boxId,state:'RECEIVED'}]}},scope)).toThrow();
+    expect(()=>validateShipmentCheckpoint(previous,{...box,after:{...box.after,links:[...box.after.links,...box.after.links]}},scope)).toThrow();
+    expect(()=>validateShipmentCheckpoint(previous,{...box,external_payment_executed:true},scope)).toThrow();
+  });
   test('refuse cash sur un autre ordre, une autre DB, ou un état financier incomplet',()=>{
     expect(validateCashProof(cash,buyer,scope,env)).toMatchObject({reference:'K123456',paid:true});
     expect(()=>validateCashProof({...cash,db_fingerprint:'other-db'},buyer,scope,env)).toThrow();
