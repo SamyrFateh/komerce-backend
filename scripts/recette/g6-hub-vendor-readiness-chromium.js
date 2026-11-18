@@ -92,9 +92,22 @@ async function main(){
    await send.waitFor({state:'visible',timeout:18000});
    check(await send.isEnabled(),'G6_VENDOR_SEND_SCREEN_ACTION_UNAVAILABLE');
    // Clicking only opens the existing form. Never submit, contact, or mark a vendor as sent.
-   await send.click();
    const form=actor.page.locator('form[data-hlc-form="sent"]');
+   // The Hub cockpit repaints this action frequently. First attempt an actual
+   // pointer click, then a real keyboard Enter on the same visible control.
+   // Never force-click, mutate the DOM, or POST directly in a read-only stage.
+   let gesture='pointer';
+   try{await send.click({timeout:7000});}
+   catch(e){
+    if(!(await form.isVisible().catch(()=>false))){
+     await send.waitFor({state:'visible',timeout:10000});
+     check(await send.isEnabled(),'G6_VENDOR_SEND_ACTION_DISABLED_ON_RETRY');
+     await send.press('Enter',{timeout:7000});
+     gesture='keyboard-enter';
+    }
+   }
    await form.waitFor({state:'visible',timeout:10000});
+   report.screen_gesture=gesture;save();
    const choices=await form.locator('select option').evaluateAll(items=>items.map(x=>x.value));
    // Staging must expose the safe simulated/manual channel. Production
    // delivery channels may be hidden or disabled under the staging fixture:
