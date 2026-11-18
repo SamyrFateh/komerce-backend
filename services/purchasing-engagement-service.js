@@ -792,6 +792,13 @@ async function settleLine(lineId, body = {}, { actor = null } = {}) {
 
 // ─── Création manuelle d'une ligne ouverte ────────────────────────────────────────────────────────
 
+// Condition métier prévisible (mapping sans prix fournisseur exploitable) : blocage explicite, jamais une 500.
+function supplierMoneyUnavailable(ps) {
+  return fail(409, 'SUPPLIER_MONEY_UNAVAILABLE',
+    'Prix fournisseur indisponible pour ce produit chez ' + (ps?.supplier_name || 'ce fournisseur') +
+    ' : renseigner un prix fournisseur positif sur l\u2019association produit-fournisseur (écran Sourcing), puis réessayer.');
+}
+
 async function createLineInTransaction(client, { orderItemId, productSupplierId, quantity, actor, context, executionMode, parentLineId = null }) {
   const { rows: [item] } = await client.query(`
     SELECT oi.*, p.name AS product_name, o.status AS order_status
@@ -844,7 +851,12 @@ async function createLineInTransaction(client, { orderItemId, productSupplierId,
   }
   let snapshot;
   if (exactSku) {
-    snapshot = { ...buildPurchaseTarget(ps, exactSku, readiness), productSkuId: exactSku.id };
+    try {
+      snapshot = { ...buildPurchaseTarget(ps, exactSku, readiness), productSkuId: exactSku.id };
+    } catch (error) {
+      if (error && error.message === 'SUPPLIER_MONEY_UNAVAILABLE') throw supplierMoneyUnavailable(ps);
+      throw error;
+    }
   } else {
     const amount = Number(ps.supplier_price_aed);
     snapshot = {
