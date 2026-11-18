@@ -5,8 +5,10 @@ const {
   business,canonicalScenario,resolveCanonicalReplay,resolveRelayCashRefs
 }=require('../../scripts/recette/g6-canonical-journey-binding');
 const {
-  validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,validateHubReceivingCheckpoint,validateCustomerBagCheckpoint,validateKomBoxCheckpoint,validateShipmentCheckpoint,validatePartialShipmentCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling
+  validateGuard,validateBuyerProof,validateCashProof,validateHubProof,validateCommitmentCheckpoint,validateVendorReadinessCheckpoint,validateVendorSimulationCheckpoint,validateHubReceivingCheckpoint,validateCustomerBagCheckpoint,validateKomBoxCheckpoint,validateShipmentCheckpoint,validatePartialShipmentCheckpoint,isToolingOnlyResumeDiff,verifyResumeTooling
 }=require('../../scripts/recette/g6-canonical-replay');
+
+const {loadGoldenStages,stageGraph}=require('../../scripts/recette/canonical/stage-registry');
 
 const sha='a'.repeat(40);
 const env={
@@ -72,6 +74,52 @@ describe('G6 canonical journey — same order, original matrix, real staging gua
       expect(()=>validateGuard({...env,...edit})).toThrow('G6_CANONICAL_OWNER_STAGING_GUARD');
     }
   });
+  test('BUYER passe par le contrat run/validate du registre sans fabriquer de preuve',async()=>{
+    const stage=stageGraph(loadGoldenStages()).byId.get('BUYER');
+    const execution=jest.fn(id=>{
+      expect(id).toBe('BUYER');
+      return buyer;
+    });
+    const proof=await stage.run({runCertifiedStage:execution});
+    expect(execution).toHaveBeenCalledTimes(1);
+    expect(proof).toBe(buyer);
+    const oracle=jest.fn((id,result)=>{
+      expect(id).toBe('BUYER');
+      return validateBuyerProof(result,scope,env);
+    });
+    expect(stage.validate({validateCertifiedStage:oracle},proof)).toMatchObject({
+      reference:'K123456',market:'KM'
+    });
+    expect(oracle).toHaveBeenCalledTimes(1);
+    expect(()=>stage.validate({validateCertifiedStage:oracle},{...buyer,market:'CM'})).toThrow();
+    await expect(stage.run({runCertifiedStage:()=>{throw Error('CHROMIUM_BLOCKED');}}))
+      .rejects.toThrow('CHROMIUM_BLOCKED');
+    expect(()=>stage.validate({},buyer)).toThrow('G6_STAGE_VALIDATOR_NOT_BOUND_BUYER');
+  });
+  test('RELAY_CASH utilise le contrat run/validate et refuse une autre commande',async()=>{
+    const stage=stageGraph(loadGoldenStages()).byId.get('RELAY_CASH');
+    const execution=jest.fn(id=>{
+      expect(id).toBe('RELAY_CASH');
+      return cash;
+    });
+    const proof=await stage.run({runCertifiedStage:execution});
+    expect(execution).toHaveBeenCalledTimes(1);
+    expect(proof).toBe(cash);
+    const oracle=jest.fn((id,result)=>{
+      expect(id).toBe('RELAY_CASH');
+      return validateCashProof(result,buyer,scope,env);
+    });
+    expect(stage.validate({validateCertifiedStage:oracle},proof)).toMatchObject({
+      reference:'K123456',paid:true,collection_count:1
+    });
+    expect(oracle).toHaveBeenCalledTimes(1);
+    const foreign={...cash,steps:cash.steps.map(s=>s.name==='CASH_UI_PAID'?
+      {...s,reference:'FOREIGN'}:s)};
+    expect(()=>stage.validate({validateCertifiedStage:oracle},foreign)).toThrow();
+    await expect(stage.run({runCertifiedStage:()=>{throw Error('RELAY_UI_BLOCKED');}}))
+      .rejects.toThrow('RELAY_UI_BLOCKED');
+    expect(()=>stage.validate({},cash)).toThrow('G6_STAGE_VALIDATOR_NOT_BOUND_RELAY_CASH');
+  });
   test('une preuve client doit être réelle et sur la même commande pending',()=>{
     expect(validateBuyerProof(buyer,scope,env)).toMatchObject({reference:'K123456',market:'KM'});
     expect(()=>validateBuyerProof({...buyer,market:'CM'},scope,env)).toThrow();
@@ -121,6 +169,33 @@ describe('G6 canonical journey — same order, original matrix, real staging gua
     expect(()=>validateHubProof({...h,final:{...h.final,po_count:0}},order,{reference:'K123456'})).toThrow();
     expect(()=>validateHubProof({...h,final:{...h.final,cash_collection_count:2}},order,{reference:'K123456'})).toThrow();
     expect(()=>validateHubProof({...h,external_payment_executed:true},order,{reference:'K123456'})).toThrow();
+  });
+  test('HUB_PO passe par le contrat des étapes et vérifie la commande déjà payée',async()=>{
+    const stage=stageGraph(loadGoldenStages()).byId.get('HUB_PO');
+    const order={id:buyer.order.id,reference:buyer.order.reference};
+    const paid={reference:buyer.order.reference,paid:true};
+    const hub={verdict:'G6_P3_MANUAL_LINE_AND_DRAFT_PO_CHROMIUM_PASS',
+      reference:order.reference,external_supplier_calls:0,external_payment_executed:false,
+      final:{order_id:order.id,payment_status:'paid',line_count:1,po_count:1,
+        cash_collection_count:1,cash_control_confirmed_count:1}};
+    const execute=jest.fn(id=>{expect(id).toBe('HUB_PO');return hub;});
+    expect(await stage.run({runCertifiedStage:execute})).toBe(hub);
+    expect(execute).toHaveBeenCalledTimes(1);
+    const oracle=jest.fn((id,proof)=>{
+      expect(id).toBe('HUB_PO');
+      return validateHubProof(proof,order,paid);
+    });
+    expect(stage.validate({validateCertifiedStage:oracle},hub)).toMatchObject({
+      reference:order.reference,po_count:1
+    });
+    expect(oracle).toHaveBeenCalledTimes(1);
+    expect(()=>stage.validate({validateCertifiedStage:oracle},{...hub,reference:'FOREIGN'})).toThrow();
+    expect(()=>stage.validate({validateCertifiedStage:oracle},{
+      ...hub,external_payment_executed:true
+    })).toThrow();
+    await expect(stage.run({runCertifiedStage:()=>{throw Error('HUB_UI_UNAVAILABLE');}}))
+      .rejects.toThrow('HUB_UI_UNAVAILABLE');
+    expect(()=>stage.validate({},hub)).toThrow('G6_STAGE_VALIDATOR_NOT_BOUND_HUB_PO');
   });
   test('la reprise directrice est attachée à une PO unique, à la même commande payée et au vrai rapport G6',()=>{
     const poId='11111111-1111-4111-8111-111111111111';
@@ -183,6 +258,54 @@ describe('G6 canonical journey — same order, original matrix, real staging gua
     expect(()=>validateVendorReadinessCheckpoint({...prior,stages:prior.stages.slice(0,3)},commitment,scope)).toThrow();
     expect(()=>validateVendorReadinessCheckpoint(prior,{...commitment,after:{...commitment.after,payment_authorization_count:1}},scope)).toThrow();
     expect(()=>validateVendorReadinessCheckpoint(prior,{...commitment,external_supplier_calls:1},scope)).toThrow();
+  });
+  test('les trois checkpoints fournisseur/reception/sac utilisent une commande neuve, pas KL1WGP6',()=>{
+    const orderId='6f519f8f-ea47-4a0d-b385-123456789abc';
+    const poId='5f9d8f52-aeaa-4ba3-88b5-901234567abc';
+    const reference='KNEW123';
+    const db='fresh-staging-db';
+    const base={scenario_id:'M01',market:'KM',verdict:'NOT_PROVEN',
+      full_chain_certified:false,production_permitted:false,db_fingerprint:db,
+      order:{id:orderId,reference},po_id:poId};
+    const readyPrevious={...base,next_stage:'REAL_SUPPLIER_SEND_EVIDENCE_REQUIRED',
+      stages:[{id:'HUB_VENDOR_UI',verdict:'PASS_READONLY'}]};
+    const ready={verdict:'G6_VENDOR_SEND_UI_READY_BUT_EXTERNAL_EVENT_NOT_PROVEN',
+      reference,po_id:poId,db_fingerprint:db,external_supplier_calls:0,
+      external_payment_executed:false,supplier_send_certified:false,supplier_confirmation_certified:false};
+    expect(validateVendorSimulationCheckpoint(readyPrevious,ready,scope)).toMatchObject({
+      poId,order:{id:orderId,reference}
+    });
+    expect(()=>validateVendorSimulationCheckpoint(readyPrevious,{...ready,reference:'FOREIGN'},scope)).toThrow();
+
+    const receivingPrevious={...base,next_stage:'HUB_RECEIVING',
+      stages:[{id:'HUB_VENDOR_SIMULATED',verdict:'PASS_SIMULATED_STAGING',po_id:poId}]};
+    const simulated={verdict:'G6_VENDOR_SIMULATED_SEND_AND_CONFIRM_CHROMIUM_PASS_NOT_RECEIPT_GO',
+      reference,po_id:poId,order_id:orderId,db_fingerprint:db,
+      after:{po_status:'confirmed',confirmed_quantity:1,manual_executions:1,payment_authorizations:0},
+      provenance:'SIMULATED / STAGING ONLY',external_supplier_calls:0,
+      external_payment_executed:false,physical_receipt_certified:false};
+    expect(validateHubReceivingCheckpoint(receivingPrevious,simulated,scope)).toMatchObject({
+      poId,order:{id:orderId,reference}
+    });
+    expect(()=>validateHubReceivingCheckpoint(receivingPrevious,{...simulated,po_id:'FOREIGN'},scope)).toThrow();
+    expect(()=>validateHubReceivingCheckpoint(receivingPrevious,{...simulated,db_fingerprint:'FOREIGN'},scope)).toThrow();
+
+    const sourceRef='SUPPLIER_PACKAGE-NEW123456789';
+    const receiptPrevious={...base,next_stage:'KOM_BOX',
+      stages:[{id:'HUB_RECEIVING',verdict:'PASS_SIMULATED_STAGING'}]};
+    const receipt={verdict:'G6_HUB_RECEIPT_SIMULATED_CHROMIUM_HISTORICAL_UI_PG_READBACK_PASS',
+      reference,order_id:orderId,po_id:poId,physical_ref:sourceRef,db_fingerprint:db,
+      read_only:true,external_supplier_calls:0,external_payment_executed:false,
+      readback:{po:{status:'hub_received'},remaining:0,
+        placements:[{reference:sourceRef,evidence_method:'MANUAL',quantity:1}]}};
+    expect(validateCustomerBagCheckpoint(receiptPrevious,receipt,scope)).toMatchObject({
+      poId,sourceRef,order:{id:orderId,reference}
+    });
+    expect(()=>validateCustomerBagCheckpoint(receiptPrevious,{...receipt,reference:'FOREIGN'},scope)).toThrow();
+    expect(()=>validateCustomerBagCheckpoint(receiptPrevious,{...receipt,
+      readback:{...receipt.readback,placements:[{reference:'FOREIGN',evidence_method:'MANUAL',quantity:1}]}
+    },scope)).toThrow();
+    expect(()=>validateCustomerBagCheckpoint(receiptPrevious,{...receipt,physical_ref:'BAD'},scope)).toThrow();
   });
   test('reçoit uniquement le PO M01 ayant une preuve fournisseur simulée liée au même ordre',()=>{
     const po='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3';
@@ -258,6 +381,50 @@ describe('G6 canonical journey — same order, original matrix, real staging gua
       effective:[{allocation_id:allocationId,quantity:1}],parcels:[{id:parcelId,status:'preparation'}]}};
     expect(validateShipmentCheckpoint(previous,box,scope)).toMatchObject({boxId,parcelId,allocationId});
     expect(()=>validateShipmentCheckpoint({...previous,stages:[]},box,scope)).toThrow();
+    expect(()=>validateShipmentCheckpoint(previous,{...box,db_fingerprint:'other'},scope)).toThrow();
+    expect(()=>validateShipmentCheckpoint(previous,{...box,parcel_id:'foreign'},scope)).toThrow();
+    expect(()=>validateShipmentCheckpoint(previous,{...box,after:{...box.after,box:[{id:boxId,state:'RECEIVED'}]}},scope)).toThrow();
+    expect(()=>validateShipmentCheckpoint(previous,{...box,after:{...box.after,links:[...box.after.links,...box.after.links]}},scope)).toThrow();
+    expect(()=>validateShipmentCheckpoint(previous,{...box,external_payment_executed:true},scope)).toThrow();
+  });
+  test('nouvelle commande M01: sac PACKED et colis vers KOM-BOX sans IDs historiques',()=>{
+    const po='5f9d8f52-aeaa-4ba3-88b5-901234567abc',id='6f519f8f-ea47-4a0d-b385-123456789abc';
+    const bagId='1fa104ca-c9f0-4e42-99dd-218fc92a2b2c',bagRef='KOM-ITEM-NEWTEST12345';
+    const parcelId='2c5fa38b-b75a-4f99-b982-0fd36149e174',allocationId='3e940467-d30a-4167-9174-a04da39a37d5';
+    const previous={scenario_id:'M01',market:'KM',verdict:'NOT_PROVEN',full_chain_certified:false,
+      production_permitted:false,next_stage:'KOM_BOX',order:{id,reference:'KNEW123'},po_id:po,db_fingerprint:'same',
+      stages:[{id:'HUB_CUSTOMER_BAG',verdict:'PASS_SIMULATED_STAGING',bag_id:bagId}]};
+    const bag={verdict:'G6_CUSTOMER_BAG_SIMULATED_CHROMIUM_PG_PASS',order_id:id,po_id:po,bag_id:bagId,bag_ref:bagRef,
+      db_fingerprint:'same',external_supplier_calls:0,external_payment_executed:false,provenance:'SIMULATED / STAGING ONLY',
+      events:[{},{},{}],after:{order:{allocation_id:allocationId},bags:[{id:bagId,state:'PACKED'}],
+        units:[{id:bagId,active:true,quantity:1,evidence_method:'MANUAL'}],links:[],parcels:[{id:parcelId}]}};
+    expect(validateKomBoxCheckpoint(previous,bag,scope)).toMatchObject({bagId,parcelId,allocationId});
+    expect(()=>validateKomBoxCheckpoint({...previous,stages:[{id:'HUB_CUSTOMER_BAG',verdict:'PASS_SIMULATED_STAGING',bag_id:'00000000-0000-4000-8000-000000000001'}]},bag,scope)).toThrow();
+    expect(()=>validateKomBoxCheckpoint({...previous,order:{...previous.order,id:'00000000-0000-4000-8000-000000000001'}},bag,scope)).toThrow();
+    expect(()=>validateKomBoxCheckpoint(previous,{...bag,db_fingerprint:'other'},scope)).toThrow();
+    expect(()=>validateKomBoxCheckpoint(previous,{...bag,after:{...bag.after,bags:[{id:bagId,state:'RECEIVED'}]}},scope)).toThrow();
+    expect(()=>validateKomBoxCheckpoint(previous,{...bag,after:{...bag.after,links:[{}]}},scope)).toThrow();
+    expect(()=>validateKomBoxCheckpoint(previous,{...bag,after:{...bag.after,parcels:[{id:parcelId},{id:'other'}]}},scope)).toThrow();
+    expect(()=>validateKomBoxCheckpoint(previous,{...bag,external_payment_executed:true},scope)).toThrow();
+  });
+  test('nouvelle commande M01: KOM-BOX PACKED et colis client pour expédition',()=>{
+    const po='5f9d8f52-aeaa-4ba3-88b5-901234567abc',orderId='6f519f8f-ea47-4a0d-b385-123456789abc';
+    const bagId='1fa104ca-c9f0-4e42-99dd-218fc92a2b2c',bagRef='KOM-ITEM-NEWTEST12345';
+    const parcelId='2c5fa38b-b75a-4f99-b982-0fd36149e174',allocationId='3e940467-d30a-4167-9174-a04da39a37d5';
+    const boxId='4b48b432-c012-4d53-8d1a-5bebf2d39229',boxRef='KOM-BOX-SIM-STAGING-NEWTEST123';
+    const previous={scenario_id:'M01',market:'KM',verdict:'NOT_PROVEN',full_chain_certified:false,
+      production_permitted:false,next_stage:'HUB_SHIPMENT',order:{id:orderId,reference:'KNEW123'},po_id:po,
+      db_fingerprint:'same',stages:[{id:'HUB_KOM_BOX',verdict:'PASS_SIMULATED_STAGING',box_id:boxId}]};
+    const box={verdict:'G6_KOM_BOX_SIMULATED_CHROMIUM_PG_PASS_PACKED',order_id:orderId,po_id:po,
+      box_id:boxId,box_ref:boxRef,bag_id:bagId,bag_ref:bagRef,parcel_id:parcelId,allocation_id:allocationId,
+      db_fingerprint:'same',external_supplier_calls:0,external_payment_executed:false,provenance:'SIMULATED / STAGING ONLY',
+      events:Array(8).fill({}),after:{box:[{id:boxId,state:'PACKED'}],bag:[{id:bagId,state:'PACKED'}],
+      links:[{bag_unit_id:bagId,box_unit_id:boxId,parcel_id:parcelId,evidence_method:'MANUAL'}],
+      effective:[{allocation_id:allocationId,quantity:1}],parcels:[{id:parcelId,status:'preparation'}]}};
+    expect(validateShipmentCheckpoint(previous,box,scope)).toMatchObject({boxId,parcelId,allocationId});
+    expect(()=>validateShipmentCheckpoint({...previous,stages:[]},box,scope)).toThrow();
+    expect(()=>validateShipmentCheckpoint({...previous,stages:[{id:'HUB_KOM_BOX',verdict:'PASS_SIMULATED_STAGING',box_id:'00000000-0000-4000-8000-000000000001'}]},box,scope)).toThrow();
+    expect(()=>validateShipmentCheckpoint({...previous,order:{...previous.order,id:'00000000-0000-4000-8000-000000000001'}},box,scope)).toThrow();
     expect(()=>validateShipmentCheckpoint(previous,{...box,db_fingerprint:'other'},scope)).toThrow();
     expect(()=>validateShipmentCheckpoint(previous,{...box,parcel_id:'foreign'},scope)).toThrow();
     expect(()=>validateShipmentCheckpoint(previous,{...box,after:{...box.after,box:[{id:boxId,state:'RECEIVED'}]}},scope)).toThrow();

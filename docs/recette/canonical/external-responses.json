@@ -1,0 +1,16 @@
+{
+  "schema": "komerce-g6-external-responses/1",
+  "policy": "ONLY_RESPONSES_FROM_ACTORS_WITHOUT_KOMERCE_UI",
+  "approved": [],
+  "forbidden_human_decisions": [
+    "accept",
+    "reject",
+    "declare",
+    "release_customs",
+    "refund",
+    "supplier_payment_authorization",
+    "customer_pickup",
+    "cash_confirmation"
+  ],
+  "note": "Empty allowlist: no stage may invent an external response. Each future exception requires owner-reviewed PR and must never replace a Komerce UI choice."
+}

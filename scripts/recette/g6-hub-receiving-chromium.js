@@ -35,6 +35,11 @@ async function runtimeSha(initial){
  check(SHA.test(sha),'G6_RECEIPT_RUNTIME_SHA_INVALID');
  // Runtime equivalence is established ONLY by the workflow's authenticated
  // preflight / ancestry proof; do not assume any changed application files.
+ if(env.G6_DYNAMIC_FRESH_ORDER==='1'){
+  check(sha===env.E2E_EXPECTED_DEPLOY_SHA,'G6_RECEIPT_DYNAMIC_RUNTIME_SHA_DRIFT');
+  if(initial)check(sha===initial,'G6_RECEIPT_SHA_CHANGED_DURING_RUN');
+  return sha;
+ }
  const p=JSON.parse(fs.readFileSync(path.join(ROOT,'test-results/staging-chromium/deployment-preflight.json'),'utf8'));
  check((p.status==='DEPLOY_SHA_MATCHED'&&sha===env.E2E_EXPECTED_DEPLOY_SHA)||
    (p.status==='DEPLOY_RUNTIME_EQUIVALENT'&&p.observed_sha===sha&&
@@ -77,7 +82,7 @@ async function main(){
     env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.NODE_ENV==='test'&&
     env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&
     env.G6_CANONICAL_PHASE==='HUB_RECEIVING'&&env.G6_CANONICAL_SCENARIO==='M01'&&
-    env.G6_TARGET_MARKET==='KM'&&REF==='KL1WGP6'&&UUID.test(PO)&&UUID.test(ORDER)&&
+    env.G6_TARGET_MARKET==='KM'&&(REF==='KL1WGP6'||(env.G6_DYNAMIC_FRESH_ORDER==='1'&&/^[A-Z0-9][A-Z0-9-]{5,63}$/.test(REF)))&&UUID.test(PO)&&UUID.test(ORDER)&&
     SHA.test(env.E2E_EXPECTED_DEPLOY_SHA||'')&&!!env.DATABASE_URL&&
     env.STAGING_BASE_URL==='https://komerce-backend-production.up.railway.app',
     'G6_RECEIPT_OWNER_STAGING_GUARD');

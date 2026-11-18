@@ -19,7 +19,7 @@ const OUT=path.join(ROOT,'test-results/g6-hub-customer-bag');
 const ORDER=env.G6_CANONICAL_ORDER_ID,PO=env.G6_CANONICAL_PO_ID,REF=env.G6_CANONICAL_ORDER_REFERENCE;
 const SOURCE=env.G6_CANONICAL_RECEIPT_REFERENCE;
 const API='/api/admin/workspaces/operations/market/KM';
-const PROOF='[SIMULATED / STAGING ONLY] G6-M01-DEPOT-SAC-KL1WGP6';
+const PROOF='[SIMULATED / STAGING ONLY] G6-M01-DEPOT-SAC-'+REF;
 const report={schema:'komerce-g6-hub-customer-bag/1',scenario_id:'M01',market:'KM',
   reference:REF,order_id:ORDER,po_id:PO,source_ref:SOURCE,verdict:'BLOCKED',
   provenance:'SIMULATED / STAGING ONLY',events:[],external_supplier_calls:0,external_payment_executed:false};
@@ -65,7 +65,7 @@ function validateBase(s){
    Number(o.quantity)===1&&Number(o.payment_authorizations)===0,'G6_BAG_ORDER_SCOPE_DRIFT');
  const receipt=s.units.filter(u=>u.reference===SOURCE&&u.operation_type==='RECEIVE'&&
    u.unit_type==='SUPPLIER_PACKAGE'&&Number(u.quantity)===1&&u.evidence_method==='MANUAL'&&
-   u.evidence_ref==='[SIMULATED / STAGING ONLY] G6-M01-RECEPTION-KL1WGP6');
+   u.evidence_ref==='[SIMULATED / STAGING ONLY] G6-M01-RECEPTION-'+REF);
  check(receipt.length===1&&s.units.filter(u=>u.active).reduce((n,u)=>n+Number(u.quantity),0)===1&&
    s.links.length===0,'G6_BAG_PHYSICAL_SCOPE_DRIFT');
  return receipt[0];
@@ -126,8 +126,12 @@ async function main(){
    env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&
    env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&env.STAGING_BASE_URL==='https://komerce-backend-production.up.railway.app'&&
    env.G6_CANONICAL_PHASE==='HUB_CUSTOMER_BAG'&&env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET==='KM'&&
-   REF==='KL1WGP6'&&ORDER==='56adad65-d1fa-4e80-8d69-c25e0fe92a76'&&
-   PO==='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3'&&SOURCE==='SUPPLIER_PACKAGE-17824209-30d1-41be-87ad-1ef55c8a2994'&&
+   ((REF==='KL1WGP6'&&ORDER==='56adad65-d1fa-4e80-8d69-c25e0fe92a76'&&
+     PO==='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3'&&SOURCE==='SUPPLIER_PACKAGE-17824209-30d1-41be-87ad-1ef55c8a2994')||
+    (env.G6_DYNAMIC_FRESH_ORDER==='1'&&/^[A-Z0-9][A-Z0-9-]{5,63}$/.test(REF||'')&&
+      /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(ORDER||'')&&
+      /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(PO||'')&&
+      /^SUPPLIER_PACKAGE-[A-Z0-9-]{8,}$/i.test(SOURCE||'')))&&
    !!env.DATABASE_URL,'G6_BAG_OWNER_STAGING_GUARD');
   const target=await confirmTarget({db,env});
   check(target.confirmed&&target.fingerprint===env.G6_CANONICAL_DB_FINGERPRINT,'G6_BAG_DB_MISMATCH');
