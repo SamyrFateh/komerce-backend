@@ -21,7 +21,7 @@ const ID='ff8591fc-78bb-49a4-b154-247508368d16',REF='SIM-STAGING-EXP-KL1WGP6';
 const ORDER='56adad65-d1fa-4e80-8d69-c25e0fe92a76', PARCEL='95045ede-d5b8-405b-b65f-d9dbdddb4756';
 const ITEM='8c999eec-7322-4676-8db6-585c4d4545f9', PROOF='[SIMULATED / STAGING ONLY] G6-M01-RECEPTION-RELAIS-KL1WGP6';
 const OUT=path.resolve('test-results/g6-canonical-relay-receipt');
-const URL='/api/admin/workspaces/operations/market/KM/relay-shipments/'+REF+'/receive';
+const RECEIPT_PATH='/api/admin/workspaces/operations/market/KM/relay-shipments/'+REF+'/receive';
 const report={schema:'komerce-g6-relay-receipt/1',reference:'KL1WGP6',shipment_id:ID,shipment_ref:REF,
  order_id:ORDER,parcel_id:PARCEL,market:'KM',scenario_id:'M01',provenance:'SIMULATED / STAGING ONLY',
  verdict:'BLOCKED',events:[],external_supplier_calls:0,external_payment_executed:false};
@@ -163,7 +163,7 @@ async function main(){
   await field.fill('1');
   await card.locator('input[data-relay-proof]').fill(PROOF);
   const expected={proof_ref:PROOF,lines:[{order_item_id:ITEM,received_qty:1}]};
-  let count=0;const url=BASE+URL;
+  let count=0;const url=BASE+RECEIPT_PATH;
   const handler=async route=>{
    const req=route.request();if(req.method()!=='POST')return route.fallback();
    let payload;try{payload=req.postDataJSON()}catch(_){}
