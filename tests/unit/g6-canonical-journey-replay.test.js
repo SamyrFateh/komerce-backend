@@ -96,6 +96,30 @@ describe('G6 canonical journey — same order, original matrix, real staging gua
       .rejects.toThrow('CHROMIUM_BLOCKED');
     expect(()=>stage.validate({},buyer)).toThrow('G6_STAGE_VALIDATOR_NOT_BOUND_BUYER');
   });
+  test('RELAY_CASH utilise le contrat run/validate et refuse une autre commande',async()=>{
+    const stage=stageGraph(loadGoldenStages()).byId.get('RELAY_CASH');
+    const execution=jest.fn(id=>{
+      expect(id).toBe('RELAY_CASH');
+      return cash;
+    });
+    const proof=await stage.run({runCertifiedStage:execution});
+    expect(execution).toHaveBeenCalledTimes(1);
+    expect(proof).toBe(cash);
+    const oracle=jest.fn((id,result)=>{
+      expect(id).toBe('RELAY_CASH');
+      return validateCashProof(result,buyer,scope,env);
+    });
+    expect(stage.validate({validateCertifiedStage:oracle},proof)).toMatchObject({
+      reference:'K123456',paid:true,collection_count:1
+    });
+    expect(oracle).toHaveBeenCalledTimes(1);
+    const foreign={...cash,steps:cash.steps.map(s=>s.name==='CASH_UI_PAID'?
+      {...s,reference:'FOREIGN'}:s)};
+    expect(()=>stage.validate({validateCertifiedStage:oracle},foreign)).toThrow();
+    await expect(stage.run({runCertifiedStage:()=>{throw Error('RELAY_UI_BLOCKED');}}))
+      .rejects.toThrow('RELAY_UI_BLOCKED');
+    expect(()=>stage.validate({},cash)).toThrow('G6_STAGE_VALIDATOR_NOT_BOUND_RELAY_CASH');
+  });
   test('une preuve client doit être réelle et sur la même commande pending',()=>{
     expect(validateBuyerProof(buyer,scope,env)).toMatchObject({reference:'K123456',market:'KM'});
     expect(()=>validateBuyerProof({...buyer,market:'CM'},scope,env)).toThrow();
