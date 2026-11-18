@@ -268,14 +268,16 @@ function validateCustomerBagCheckpoint(previous,receipt,scope){
 }
 
 function validateKomBoxCheckpoint(previous,bag,scope){
- const po='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3',orderId='56adad65-d1fa-4e80-8d69-c25e0fe92a76';
- const bagId='bcf810c9-33b2-438a-b4c3-857b024e2247',bagRef='KOM-ITEM-178D0AEA488AA4B5B9';
- const parcelId='95045ede-d5b8-405b-b65f-d9dbdddb4756',allocationId='3b430dcf-8662-44b4-a29f-27e38df19253';
+ const po=previous?.po_id,orderId=previous?.order?.id,reference=previous?.order?.reference;
+ const bagId=bag?.bag_id,bagRef=bag?.bag_ref;
+ const parcelId=bag?.after?.parcels?.[0]?.id,allocationId=bag?.after?.order?.allocation_id;
+ const ids=[po,orderId,bagId,parcelId,allocationId];
  const after=bag.after,active=after?.units?.filter(u=>u.active)||[];
  if(scope.id!=='M01'||scope.market!=='KM'||previous.scenario_id!=='M01'||previous.market!=='KM'||
    previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||previous.production_permitted!==false||
-   previous.next_stage!=='KOM_BOX'||previous.order?.reference!=='KL1WGP6'||previous.order?.id!==orderId||
-   previous.po_id!==po||!previous.db_fingerprint||
+   previous.next_stage!=='KOM_BOX'||!VALID_REF.test(String(reference||''))||
+   !ids.every(id=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(String(id||'')))||
+   !/^KOM-ITEM-[A-Z0-9-]{8,}$/.test(String(bagRef||''))||!previous.db_fingerprint||
    !previous.stages?.some(x=>x.id==='HUB_CUSTOMER_BAG'&&x.verdict==='PASS_SIMULATED_STAGING'&&x.bag_id===bagId)||
    bag.verdict!=='G6_CUSTOMER_BAG_SIMULATED_CHROMIUM_PG_PASS'||bag.order_id!==orderId||bag.po_id!==po||
    bag.bag_id!==bagId||bag.bag_ref!==bagRef||bag.db_fingerprint!==previous.db_fingerprint||
@@ -290,15 +292,18 @@ function validateKomBoxCheckpoint(previous,bag,scope){
 }
 
 function validateShipmentCheckpoint(previous,box,scope){
- const po='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3',orderId='56adad65-d1fa-4e80-8d69-c25e0fe92a76';
- const bagId='bcf810c9-33b2-438a-b4c3-857b024e2247',bagRef='KOM-ITEM-178D0AEA488AA4B5B9';
- const parcelId='95045ede-d5b8-405b-b65f-d9dbdddb4756',allocationId='3b430dcf-8662-44b4-a29f-27e38df19253';
- const boxId='6ca614e5-869c-40ab-80d7-3684974092fe',boxRef='KOM-BOX-SIM-STAGING-KL1WGP6';
+ const po=previous?.po_id,orderId=previous?.order?.id,reference=previous?.order?.reference;
+ const bagId=box?.bag_id,bagRef=box?.bag_ref;
+ const parcelId=box?.parcel_id,allocationId=box?.allocation_id;
+ const boxId=box?.box_id,boxRef=box?.box_ref;
+ const ids=[po,orderId,bagId,parcelId,allocationId,boxId];
  const a=box.after;
  if(scope.id!=='M01'||scope.market!=='KM'||previous.scenario_id!=='M01'||previous.market!=='KM'||
    previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||previous.production_permitted!==false||
-   previous.next_stage!=='HUB_SHIPMENT'||previous.order?.id!==orderId||previous.order?.reference!=='KL1WGP6'||
-   previous.po_id!==po||!previous.db_fingerprint||
+   previous.next_stage!=='HUB_SHIPMENT'||!VALID_REF.test(String(reference||''))||
+   !ids.every(id=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(String(id||'')))||
+   !/^KOM-ITEM-[A-Z0-9-]{8,}$/.test(String(bagRef||''))||
+   !/^KOM-BOX-[A-Z0-9-]{8,}$/.test(String(boxRef||''))||!previous.db_fingerprint||
    !previous.stages?.some(x=>x.id==='HUB_KOM_BOX'&&x.verdict==='PASS_SIMULATED_STAGING'&&x.box_id===boxId)||
    box.verdict!=='G6_KOM_BOX_SIMULATED_CHROMIUM_PG_PASS_PACKED'||box.order_id!==orderId||box.po_id!==po||
    box.box_id!==boxId||box.box_ref!==boxRef||box.bag_id!==bagId||box.bag_ref!==bagRef||
