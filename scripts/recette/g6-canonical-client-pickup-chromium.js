@@ -174,6 +174,30 @@ async function main(){
   check(owner.role==='client'&&!!owner.phone&&!!owner.pickup_secret_hash&&before.scans.length===0&&
     Number(before.lines[0].qty_received)===1&&Number(before.lines[0].qty_collected)===0,
     'G6_PICKUP_PRECONDITION_PHYSICAL_INVALID');
+  // The existing fixture buyer can lose its marker during staging fixture cleanup.
+  // Restore ONLY the marker for the SAME pre-existing G6-named client attached
+  // to the exact canonical order. No creation, password or business-state write.
+  const {rows:marker}=await db.query('SELECT 1 FROM e2e_test_accounts WHERE user_id=$1',[owner.user_id]);
+  if(marker.length!==1){
+   const {rows:scope}=await db.query('SELECT simulation_scope FROM orders WHERE id=$1',[ID]);
+   const {rows:admin}=await db.query(
+    "SELECT id FROM users WHERE lower(email)=lower($1) AND role='admin'",[env.E2E_ADMIN_EMAIL]);
+   check(scope.length===1&&scope[0].simulation_scope==='G6-BUYER'&&
+    /^g6-e2e-[a-f0-9]{8}@komerce\.test$/i.test(owner.email)&&
+    admin.length===1&&owner.user_id===owner.id&&
+    env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER&&env.GITHUB_EVENT_NAME==='issues',
+    'G6_PICKUP_MARKER_REPAIR_REFUSED');
+   const {markE2eTestAccount}=require('./staging-e2e-provision');
+   const tx=await db.getClient();
+   try{
+    await tx.query('BEGIN');
+    const status=await markE2eTestAccount(tx,{userId:owner.user_id,actorId:admin[0].id});
+    check(['marked','unchanged'].includes(status),'G6_PICKUP_MARKER_REPAIR_FAILED');
+    await tx.query('COMMIT');
+    report.fixture_buyer_marker_reconciled=true;save();
+   }catch(e){await tx.query('ROLLBACK').catch(()=>{});throw e}
+   finally{tx.release()}
+  }
   check(await verifyMarkedG6Buyer(db,owner,env),'G6_PICKUP_EXISTING_MARKED_BUYER_REQUIRED');
   browser=await chromium.launch({headless:true});
   const c=await customer(browser,owner);clientContext=c.ctx;
