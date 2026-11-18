@@ -26,7 +26,7 @@ async function main({env=process.env}={}){
    throw Error('G6_DYNAMIC_OWNER_STAGING_GUARD');
   const adapters=createRealBuyerCashAdapters({db,env});
   const toStage=env.G6_DYNAMIC_TO_STAGE||'RELAY_CASH';
-  if(!['RELAY_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION'].includes(toStage))
+  if(!['RELAY_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX'].includes(toStage))
    throw Error('G6_DYNAMIC_UNMIGRATED_TO_STAGE');
   const result=await bootstrapFreshM01({toStage,adapters});
   state.order_id=result.order_id;state.reference=result.order_reference;
@@ -35,7 +35,11 @@ async function main({env=process.env}={}){
    RELAY_CASH:'HUB_PO',HUB_PO:'HUB_COMMITMENT',
    HUB_COMMITMENT:'HUB_VENDOR_READINESS',
    HUB_VENDOR_READINESS:'HUB_VENDOR_SIMULATION',
-   HUB_VENDOR_SIMULATION:'HUB_RECEIVING'
+   HUB_VENDOR_SIMULATION:'HUB_RECEIVING',
+   HUB_RECEIVING:'HUB_RECEIVING_READBACK',
+   HUB_RECEIVING_READBACK:'HUB_CUSTOMER_BAG',
+   HUB_CUSTOMER_BAG:'HUB_KOM_BOX',
+   HUB_KOM_BOX:'HUB_SHIPMENT'
   }[toStage];
   state.verdict='G6_DYNAMIC_FRESH_'+toStage+'_CHROMIUM_PG_PASS_NOT_FULL_M01';
   save();
