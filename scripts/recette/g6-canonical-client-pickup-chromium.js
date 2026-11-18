@@ -18,6 +18,7 @@ const {confirmTarget}=require('./target-guard');
 const {preseedG6BuyerOtp,verifyMarkedG6Buyer}=require('../../services/g6-staging-buyer-identity-guard');
 const {readback,runtime}=require('./g6-hub-shipment-chromium');
 const {login}=require('./g6-canonical-forwarder-chromium');
+const {openRelayLive}=require('./canonical/relay-live-navigation');
 const env=process.env,BASE='https://komerce-backend-production.up.railway.app';
 const ID=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ID:'56adad65-d1fa-4e80-8d69-c25e0fe92a76';
 const PARCEL=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_PARCEL_ID:'95045ede-d5b8-405b-b65f-d9dbdddb4756';
@@ -136,9 +137,10 @@ async function relay(browser,code,expectedRelay){
    actor.blocked.push({method:req.method(),path});return route.abort('blockedbyclient');
   });
   actor.page.on('dialog',d=>d.type()==='confirm'?d.accept():d.dismiss());
-  await actor.page.goto('/admin/relais-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
-  const box=actor.page.locator('[data-manual-pickup-code]');
-  await box.waitFor({state:'visible',timeout:30000});
+  // Reuse the role landing page; the real pickup form must still be visible.
+  const box=await openRelayLive(actor.page,{
+   selector:'[data-manual-pickup-code]',timeout:30000
+  });
   const input=box.locator('[data-pickup-code-input]');
   check(await input.getAttribute('type')==='password','G6_PICKUP_RELAY_FIELD_MUST_BE_MASKED');
   await input.fill(code);
