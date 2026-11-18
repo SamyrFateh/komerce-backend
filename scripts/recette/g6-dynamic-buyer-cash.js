@@ -8,6 +8,7 @@
  * @impact-areas staging-only
  */
 'use strict';
+const {marketProfile}=require('./canonical/market-profile');
 const fs=require('node:fs'),path=require('node:path');
 const {STAGE_IDS,nextStageId}=require('./canonical/stage-registry');
 const {bootstrapFreshM01}=require('./canonical/fresh-buyer-bootstrap');
@@ -17,11 +18,12 @@ const ROOT=path.resolve(__dirname,'../..');
 const OUT=path.join(ROOT,'test-results/g6-dynamic-buyer-cash/report.json');
 async function main({env=process.env}={}){
  fs.mkdirSync(path.dirname(OUT),{recursive:true});
- const state={schema:'komerce-g6-dynamic-buyer-cash/1',scenario_id:'M01',market:'KM',
+ const state={schema:'komerce-g6-dynamic-buyer-cash/1',scenario_id:'M01',market:marketProfile(env).code,
   verdict:'NOT_PROVEN',full_chain_certified:false,production_permitted:false,stages:[]};
  const save=()=>fs.writeFileSync(OUT,JSON.stringify(state,null,2)+'\n');
  save();
  try{
+  marketProfile(env);
   if(env.GITHUB_EVENT_NAME!=='issues'||env.GITHUB_ACTOR!==env.GITHUB_REPOSITORY_OWNER||
    env.GITHUB_REPOSITORY!=='SamyrFateh/komerce-backend'||env.KOMERCE_ENV!=='staging')
    throw Error('G6_DYNAMIC_OWNER_STAGING_GUARD');

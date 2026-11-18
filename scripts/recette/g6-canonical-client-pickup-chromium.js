@@ -9,6 +9,7 @@
  * @impact-areas staging-only, pickup, checkout, logistics
  */
 'use strict';
+const MK=require('./canonical/market-profile').marketProfile(process.env);
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {isDeepStrictEqual}=require('node:util');
 const {chromium}=require('playwright');
@@ -28,7 +29,7 @@ const OUT=path.resolve('test-results/g6-canonical-client-pickup');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const {startTraceAfterAuth}=require('./canonical/observability');
 const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
-const report={schema:'komerce-g6-client-pickup/1',scenario_id:'M01',market:'KM',reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',
+const report={schema:'komerce-g6-client-pickup/1',scenario_id:'M01',market:MK.code,reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',
  order_id:ID,parcel_id:PARCEL,shipment_id:SHIPMENT,provenance:'SIMULATED / STAGING ONLY',
  verdict:'BLOCKED',events:[],external_supplier_calls:0,external_payment_executed:false,
  plaintext_pickup_code_logged:false,production_permitted:false};
@@ -77,7 +78,7 @@ async function customer(browser,owner){
   blocked.push({method:m,path:url.pathname});return route.abort('blockedbyclient');
  });
  try{
-  await humanGoto(page,'/boutique/?market=KM',{waitUntil:'domcontentloaded'});
+  await humanGoto(page,'/boutique/?market='+MK.code+'',{waitUntil:'domcontentloaded'});
   await humanClick(null,page.locator('.k-header-nav-btn[data-tab="komerce"]').first());
   await humanClick(null,page.locator('#k-kmc-identify'));
   await page.locator('#k-id-step-phone').waitFor({state:'visible',timeout:20000});
@@ -97,7 +98,7 @@ async function customer(browser,owner){
   await startTraceAfterAuth(ctx);
   await runtime();
   report.events.push({key:'client-otp',http:200,role:'client'});save();
-  await humanGoto(page,'/boutique/?market=KM&tab=track',{waitUntil:'domcontentloaded'});
+  await humanGoto(page,'/boutique/?market='+MK.code+'&tab=track',{waitUntil:'domcontentloaded'});
   const card=page.locator('.k-myorder-card[data-ref="'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6')+'"]');
   await card.waitFor({state:'visible',timeout:30000});await humanClick(null,card);
   const action=page.locator('.k-order-pickup-code');
@@ -173,7 +174,7 @@ async function main(){
    env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&
    env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&env.STAGING_BASE_URL===BASE&&
    env.G6_CANONICAL_PHASE==='CLIENT_PICKUP'&&(env.G6_CANONICAL_RESUME_RUN_ID==='44272362064'||env.G6_DYNAMIC_FRESH_ORDER==='1')&&
-   env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET==='KM'&&env.G6_CANONICAL_ORDER_ID===ID,
+   env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET===MK.code&&env.G6_CANONICAL_ORDER_ID===ID,
    'G6_PICKUP_OWNER_STAGING_GUARD');
   const guard=await confirmTarget({db,env});
   check(guard.confirmed&&guard.fingerprint===env.G6_CANONICAL_DB_FINGERPRINT,'G6_PICKUP_DB_FINGERPRINT_DRIFT');

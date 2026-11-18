@@ -9,6 +9,7 @@
  * @impact-areas hub, purchasing, staging-only
  */
 'use strict';
+const MK=require('./canonical/market-profile').marketProfile(process.env);
 const fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('playwright');
 const db=require('../../db'),{confirmTarget}=require('./target-guard');
@@ -20,7 +21,7 @@ const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require
 const env=process.env;
 const UUID=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const SHA=/^[0-9a-f]{40}$/i;
-const report={schema:'komerce-g6-hub-commitment/1',scenario_id:'M01',market:'KM',
+const report={schema:'komerce-g6-hub-commitment/1',scenario_id:'M01',market:MK.code,
  reference:env.G6_CANONICAL_ORDER_REFERENCE||null,po_id:env.G6_CANONICAL_PO_ID||null,
  verdict:'BLOCKED',external_supplier_calls:0,external_payment_executed:false,events:[],stage:'PREFLIGHT'};
 const save=()=>{fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n');};
@@ -76,7 +77,7 @@ async function login(browser,prefix,{readOnly=false,allowedWrites=['authorize-co
   blocked.push({method:req.method(),path:url.pathname});
   return route.abort('blockedbyclient');
  });
- await humanGoto(page,'/login.html?next='+encodeURIComponent('/admin/hub-live?view=execute&market=KM'));
+ await humanGoto(page,'/login.html?next='+encodeURIComponent('/admin/hub-live?view=execute&market='+MK.code+''));
  await humanFill(null,page.locator('#email'),email);
  await humanFill(null,page.locator('#password'),password);
  const promise=page.waitForResponse(x=>new URL(x.url()).pathname==='/api/auth/login'&&x.request().method()==='POST');
@@ -90,10 +91,10 @@ async function login(browser,prefix,{readOnly=false,allowedWrites=['authorize-co
  return {ctx,page,blocked};
 }
 async function openPo(page){
- await humanGoto(page,'/admin/hub-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
+ await humanGoto(page,'/admin/hub-live?view=execute&market='+MK.code+'',{waitUntil:'domcontentloaded'});
  const sel=page.locator('select').first();
  await sel.waitFor({timeout:20000});
- await humanSelect(null,sel,{label:'KM · Comores'}).catch(()=>{});
+ await humanSelect(null,sel,{label:MK.label}).catch(()=>{});
  const po=page.locator('[data-hlc-po="'+env.G6_CANONICAL_PO_ID+'"]');
  await po.waitFor({state:'visible',timeout:25000});
  const shown=await po.locator('[data-hlc-po-line]').count();
@@ -114,7 +115,7 @@ async function main(){
    env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.NODE_ENV==='test'&&
    env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&
    env.STAGING_BASE_URL===ORIGIN&&env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&
-   env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET==='KM'&&
+   env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET===MK.code&&
    env.G6_CANONICAL_PHASE==='HUB_COMMITMENT'&&SHA.test(env.E2E_EXPECTED_DEPLOY_SHA||'')&&
    UUID.test(env.G6_CANONICAL_PO_ID||'')&&UUID.test(env.G6_CANONICAL_ORDER_ID||'')&&
    /^[A-Z0-9-]{6,64}$/.test(env.G6_CANONICAL_ORDER_REFERENCE||'')&&

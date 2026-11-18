@@ -9,6 +9,7 @@
  * @impact-areas logistics, staging-only
  */
 'use strict';
+const MK=require('./canonical/market-profile').marketProfile(process.env);
 const fs=require('node:fs'),path=require('node:path');
 const {isDeepStrictEqual}=require('node:util');
 const {chromium}=require('playwright');
@@ -24,9 +25,9 @@ const ITEM=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ITEM_ID:'8c99
 const OUT=path.resolve('test-results/g6-canonical-relay-receipt');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
-const RECEIPT_PATH='/api/admin/workspaces/operations/market/KM/relay-shipments/'+REF+'/receive';
+const RECEIPT_PATH='/api/admin/workspaces/operations/market/'+MK.code+'/relay-shipments/'+REF+'/receive';
 const report={schema:'komerce-g6-relay-receipt/1',reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',shipment_id:ID,shipment_ref:REF,
- order_id:ORDER,parcel_id:PARCEL,market:'KM',scenario_id:'M01',provenance:'SIMULATED / STAGING ONLY',
+ order_id:ORDER,parcel_id:PARCEL,market:MK.code,scenario_id:'M01',provenance:'SIMULATED / STAGING ONLY',
  verdict:'BLOCKED',events:[],external_supplier_calls:0,external_payment_executed:false};
 const check=(ok,code)=>{if(!ok)throw Error(code)};
 function save(){fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n')}
@@ -48,8 +49,8 @@ async function attachDedicatedRelayByUI(browser,agentId,orderRelay){
   'G6_RELAY_ASSIGNMENT_NOT_DEDICATED_E2E');
  const {rows:staff}=await db.query('SELECT id,role,relais_id FROM users WHERE id=$1',[agentId]);
  const {rows:relay}=await db.query(
-  "SELECT id,name,is_active,market_id FROM relais WHERE id=$1 AND market_id=(SELECT id FROM markets WHERE code='KM')",
-  [orderRelay]);
+  "SELECT id,name,is_active,market_id FROM relais WHERE id=$1 AND market_id=(SELECT id FROM markets WHERE code=$2)",
+  [orderRelay,MK.code]);
  check(staff.length===1&&staff[0].role==='agent_relais'&&relay.length===1&&relay[0].is_active===true,
   'G6_RELAY_ASSIGNMENT_SCOPE_INVALID');
  const {rows:membership}=await db.query(
@@ -62,7 +63,7 @@ async function attachDedicatedRelayByUI(browser,agentId,orderRelay){
   [agentId,relay[0].market_id,['execution.parcel.receive','execution.parcel.collect']]);
  check(membership.length===1,'G6_RELAY_ASSIGNMENT_MARKET_MEMBERSHIP_MISSING');
  const admin=await login(browser,'E2E_ADMIN_','admin');
- const endpoint='/api/market-delegation/markets/KM/network/relais/'+orderRelay+'/agents';
+ const endpoint='/api/market-delegation/markets/'+MK.code+'/network/relais/'+orderRelay+'/agents';
  const url=BASE+endpoint;
  let count=0;
  const handler=async route=>{
@@ -76,7 +77,7 @@ async function attachDedicatedRelayByUI(browser,agentId,orderRelay){
  };
  try{
   await runtime();
-  await humanGoto(admin.page,'/dashboards/canonical/market-autonomy.html?market=KM',{waitUntil:'domcontentloaded'});
+  await humanGoto(admin.page,'/dashboards/canonical/market-autonomy.html?market='+MK.code+'',{waitUntil:'domcontentloaded'});
   const panel=admin.page.locator('[data-market-network]');
   try{await panel.waitFor({state:'visible',timeout:15000})}catch(error){
    const ui=await admin.page.locator('#market-autonomy-root').evaluate(e=>({
@@ -86,8 +87,8 @@ async function attachDedicatedRelayByUI(browser,agentId,orderRelay){
    const requests={};
    for(const [label,url] of [
     ['context','/api/admin/dashboard/context'],
-    ['pricing','/api/admin/workspaces/pricing/market/KM'],
-    ['network','/api/market-delegation/markets/KM/network/relais']
+    ['pricing','/api/admin/workspaces/pricing/market/'+MK.code],
+    ['network','/api/market-delegation/markets/'+MK.code+'/network/relais']
    ]){
     const response=await admin.page.request.get(url).catch(()=>null);
     requests[label]=response?.status()||0;
@@ -128,7 +129,7 @@ async function main(){
   check(env.GITHUB_EVENT_NAME==='issues'&&env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER&&
    env.NODE_ENV==='test'&&env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&
    env.STAGING_BASE_URL===BASE&&env.G6_CANONICAL_PHASE==='RELAY_RECEIPT'&&(env.G6_CANONICAL_RESUME_RUN_ID==='44260374187'||env.G6_DYNAMIC_FRESH_ORDER==='1')&&
-   env.G6_CANONICAL_ORDER_ID===ORDER&&env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET==='KM',
+   env.G6_CANONICAL_ORDER_ID===ORDER&&env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET===MK.code,
    'G6_RELAY_OWNER_STAGING_GUARD');
   const guard=await confirmTarget({db,env});
   check(guard.confirmed&&guard.fingerprint===env.G6_CANONICAL_DB_FINGERPRINT,'G6_RELAY_DB_FINGERPRINT_INVALID');

@@ -8,6 +8,7 @@
  * @impact-areas  purchasing, admin-dashboard, staging-only
  */
 'use strict';
+const MK=require('../../scripts/recette/canonical/market-profile').marketProfile(process.env);
 const {humanGoto}=require('../../scripts/recette/canonical/actors/human-gestures');
 const fs=require('node:fs');
 const path=require('node:path');
@@ -69,7 +70,7 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
     expect(env.STAGING_BASE_URL).toBe(base);
     if(CANONICAL){
       expect(env.G6_CANONICAL_SCENARIO).toBe('M01');
-      expect(env.G6_TARGET_MARKET).toBe('KM');
+      expect(env.G6_TARGET_MARKET).toBe(MK.code);
       expect(REF).toMatch(/^[A-Z0-9][A-Z0-9-]{5,63}$/);
       expect(buyer).toMatch(/^[a-f0-9-]{36}$/);
       expect(orderId).toMatch(/^[a-f0-9-]{36}$/);
@@ -126,22 +127,22 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
       try{
         await humanGoto(relayPage,'/admin/relais-live?view=execute',{waitUntil:'domcontentloaded'});
         await relayPage.locator('select').first().waitFor({timeout:20000});
-        await relayPage.locator('select').first().selectOption({label:'KM · Comores'});
+        await relayPage.locator('select').first().selectOption({label:MK.label});
         await relayPage.waitForLoadState('networkidle').catch(()=>{});
-        const cashScope=await relayPage.evaluate(async()=>{
+        const cashScope=await relayPage.evaluate(async(mk)=>{
           const [meResponse,workspaceResponse]=await Promise.all([
             fetch('/api/auth/me',{credentials:'same-origin'}),
-            fetch('/api/admin/workspaces/operations/market/KM',{credentials:'same-origin'})
+            fetch('/api/admin/workspaces/operations/market/'+mk,{credentials:'same-origin'})
           ]);
           const me=await meResponse.json(),workspace=await workspaceResponse.json();
           return {actor_role:me.role,actor_id:me.id,workspace_status:workspaceResponse.status,cash_pending_count:workspace.summary?.relay_cash_pending,cash_pending_references:(workspace.queues?.relay?.cash_pending||[]).map(o=>o.reference)};
-        });
+        },MK.code);
         console.log('[G6_P3_CASH_SCOPE]',JSON.stringify(cashScope));
         await relayPage.locator('[data-relay-execution-jump="cash"]').click();
         const cashRow=relayPage.locator('tr',{hasText:REF});
         await cashRow.waitFor({timeout:20000});
         await capture(relayPage,'00-cash-pending');
-        const cashResponse=relayPage.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/workspaces/operations/market/KM/orders/'+REF+'/confirm-cash'&&r.request().method()==='POST',{timeout:30000});
+        const cashResponse=relayPage.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/workspaces/operations/market/'+MK.code+'/orders/'+REF+'/confirm-cash'&&r.request().method()==='POST',{timeout:30000});
         await cashRow.locator('[data-workspace-action="confirm-cash"]').click();
         const cr=await cashResponse;
         const cbody=await cr.json().catch(()=>({}));
@@ -173,7 +174,7 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
     try{
       await humanGoto(page,'/admin/hub-live?view=execute',{waitUntil:'domcontentloaded'});
       await page.locator('select').first().waitFor({timeout:20000});
-      await page.locator('select').first().selectOption({label:'KM · Comores'}).catch(()=>{});
+      await page.locator('select').first().selectOption({label:MK.label}).catch(()=>{});
       await page.waitForLoadState('networkidle').catch(()=>{});
       const dossiers=page.getByRole('tab',{name:'Dossiers'});
       if(await dossiers.count())await dossiers.click();

@@ -9,6 +9,7 @@
  * @impact-areas hub, logistics, staging-only
  */
 'use strict';
+const MK=require('./canonical/market-profile').marketProfile(process.env);
 const fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('playwright');
 const db=require('../../db');
@@ -27,9 +28,9 @@ const SHIPMENT='SIM-STAGING-EXP-'+REF;
 const HANDOVER_PROOF='[SIMULATED / STAGING ONLY] G6-M01-REMISE-TRANSITAIRE-'+REF;
 const FORWARDER='SIMULATED-STAGING-TRANSITAIRE-'+REF;
 const PROOF='[SIMULATED / STAGING ONLY] G6-M01-KOM-BOX-'+REF;
-const API='/api/admin/workspaces/operations/market/KM';
+const API='/api/admin/workspaces/operations/market/'+MK.code;
 const report={schema:'komerce-g6-hub-shipment/1',reference:REF,order_id:ORDER,po_id:PO,bag_id:BAG,bag_ref:BAGREF,
- parcel_id:PARCEL,allocation_id:ALLOCATION,box_ref:BOXREF,box_id:BOX,shipment_ref:SHIPMENT,scenario_id:'M01',market:'KM',
+ parcel_id:PARCEL,allocation_id:ALLOCATION,box_ref:BOXREF,box_id:BOX,shipment_ref:SHIPMENT,scenario_id:'M01',market:MK.code,
  provenance:'SIMULATED / STAGING ONLY',verdict:'BLOCKED',events:[],external_supplier_calls:0,external_payment_executed:false};
 function save(){fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n');}
 function check(ok,code){if(!ok)throw Error(code);}
@@ -100,7 +101,7 @@ function checkLink(s,boxId,placementId){
   s.placement[0].placement_id===placementId,'G6_BOX_LINK_OR_SINGLE_PLACEMENT_INVALID');
 }
 async function openDetails(page){
- await humanGoto(page,'/admin/hub-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
+ await humanGoto(page,'/admin/hub-live?view=execute&market='+MK.code+'',{waitUntil:'domcontentloaded'});
  const tab=page.getByRole('tab',{name:'Dossiers'});
  await tab.waitFor({state:'visible',timeout:25000});await humanClick(null,tab);
  const details=page.locator('[data-hub-physical-details]');
@@ -222,7 +223,7 @@ function checkShipment(s,shipmentId,stage){
   s.shipmentLinks[0].physical_unit_id===BOX,'G6_SHIPMENT_LINEAGE_INVALID');
 }
 async function openTransport(page){
- await humanGoto(page,'/admin/workspaces/shipping-customs?market=KM',{waitUntil:'domcontentloaded'});
+ await humanGoto(page,'/admin/workspaces/shipping-customs?market='+MK.code+'',{waitUntil:'domcontentloaded'});
  await page.locator('[data-international-journey]').first().waitFor({state:'visible',timeout:25000});
  const tab=page.locator('.kmc-journey-tab').filter({hasText:'Transport & fret'});
  await humanClick(null,tab);
@@ -245,7 +246,7 @@ async function main(){
    env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.NODE_ENV==='test'&&
    env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&
    env.STAGING_BASE_URL==='https://komerce-backend-production.up.railway.app'&&
-   env.G6_CANONICAL_PHASE==='HUB_SHIPMENT'&&env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET==='KM'&&
+   env.G6_CANONICAL_PHASE==='HUB_SHIPMENT'&&env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET===MK.code&&
    ((REF==='KL1WGP6'&&ORDER==='56adad65-d1fa-4e80-8d69-c25e0fe92a76'&&PO==='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3'&&
      BAG==='bcf810c9-33b2-438a-b4c3-857b024e2247'&&BAGREF==='KOM-ITEM-178D0AEA488AA4B5B9'&&
      PARCEL==='95045ede-d5b8-405b-b65f-d9dbdddb4756'&&ALLOCATION==='3b430dcf-8662-44b4-a29f-27e38df19253'&&
@@ -319,7 +320,7 @@ async function main(){
    await humanFill(null,task.locator('[name="forwarder_name"]'),FORWARDER);
    await humanSelect(null,task.locator('[name="transport_mode"]'),'sea');
    await humanFill(null,task.locator('[name="proof_ref"]'),HANDOVER_PROOF);
-   await gesture(actor,'handover-forwarder','/api/admin/workspaces/shipping-customs/market/KM/international/'+SHIPMENT+'/transition',
+   await gesture(actor,'handover-forwarder','/api/admin/workspaces/shipping-customs/market/'+MK.code+'/international/'+SHIPMENT+'/transition',
     task.locator('button[type="submit"]'),b=>b?.to_stage==='handed_over'&&b.forwarder_name===FORWARDER&&
       b.transport_mode==='sea'&&b.proof_ref===HANDOVER_PROOF&&Object.keys(b).length===4);
    const after=await readback();report.after=after;save();checkShipment(after,shipmentId,'handed_over');
