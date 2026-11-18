@@ -26,6 +26,7 @@ const { islandOptionsFor } = require('../services/relais-mutation-service');
 const { authenticate } = require('../middleware/auth');
 const {
   resolveAuthorization,
+  authorizeNetwork,
   listRelais,
   createRelais,
   updateRelais,
@@ -74,10 +75,11 @@ function rejectMarketId(body) {
 router.get('/markets/:marketCode/network/relais', authenticate, async (req, res, next) => {
   try {
     const result = await withTransaction(async (client) => {
-      const authz = await resolveAuthorization(client, {
-        userId: req.user.id,
+      const authz = await authorizeNetwork(client, {
+        actorUserId: req.user.id,
+        actorRole: req.user.role,
         marketCode: req.params.marketCode,
-        requiredCapability: 'network.read',
+        capability: 'network.read',
       });
       const relais = await listRelais(client, { marketId: authz.market_id });
       return { authz, relais };
