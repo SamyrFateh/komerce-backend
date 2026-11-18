@@ -60,6 +60,13 @@ function prerequisiteIds(id,graph=stageGraph(loadGoldenStages())){
  walk(stage);
  return graph.order.filter(x=>visited.has(x));
 }
+// Checkpoint enforcement comes from the declared dependency graph, not a
+// separate hand-maintained phase allowlist. This is authorization only:
+ // it never loads old evidence or executes a business gesture.
+function requiresResumeProof(phase,graph=stageGraph(loadGoldenStages())){
+ const stage=resolvePhase(phase,graph);
+ return prerequisiteIds(stage.id,graph).length>0;
+}
 function validateProofBoundary(stage,proof){
  if(!proof || typeof proof!=='object'||Array.isArray(proof)||
     !stage.produces.every(k=>Object.prototype.hasOwnProperty.call(proof,k)))
@@ -75,4 +82,4 @@ function planGolden({fromStage='BUYER',toStage='CLIENT_PICKUP'}={}){
  return {contract:'G6-CANONICAL-JOURNEY-v1',mode:'dry-run',stages:g.order.slice(start,end+1),
   missing_prerequisites:prerequisiteIds(from.id,g),mutations:0,verdict:'NOT_PROVEN'};
 }
-module.exports={STAGE_IDS,LEGACY_PHASE_MAP,loadGoldenStages,stageGraph,resolvePhase,prerequisiteIds,validateProofBoundary,planGolden};
+module.exports={STAGE_IDS,LEGACY_PHASE_MAP,loadGoldenStages,stageGraph,resolvePhase,prerequisiteIds,requiresResumeProof,validateProofBoundary,planGolden};
