@@ -68,8 +68,21 @@ async function task(page,title,tabName='Transport & fret'){
  if(await open.count())await open.click();
  const item=page.locator('details.kmc-journey-task').filter({has:page.locator('summary').filter({hasText:title})});
  await item.waitFor({state:'visible',timeout:25000});
- if(!await item.evaluate(e=>e.open))await item.locator('summary').click();
- await item.locator('button[type="submit"]').waitFor({state:'visible',timeout:20000});
+ // The workspace may repaint after switching transport/relay tabs and
+ // reset a <details> disclosure to closed. Reopen via its real summary,
+ // never force a hidden submit or mutate DOM state in Playwright.
+ const submit=item.locator('button[type="submit"]');
+ let visible=false;
+ for(let attempt=0;attempt<4;attempt++){
+  if(!await item.evaluate(e=>e.open))await item.locator('summary').click({timeout:8000});
+  try{
+   await submit.waitFor({state:'visible',timeout:5000});
+   if(await item.evaluate(e=>e.open)){visible=true;break}
+  }catch(error){
+   if(attempt===3)throw Error('G6_JOURNEY_SUBMIT_HIDDEN_AFTER_REAL_UI_DISCLOSURE: '+title);
+  }
+ }
+ if(!visible)throw Error('G6_JOURNEY_DETAILS_NOT_OPEN: '+title);
  return item;
 }
 async function gesture(actor,key,title,tail,fields,expected){
