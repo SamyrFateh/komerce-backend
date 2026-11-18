@@ -29,7 +29,7 @@ describe('G6 real Chromium/PG adapter — strict scope and no historical fallbac
  });
  test('does not dispatch HUB or final-mile scripts through legacy hardcoded fixtures',async()=>{
   const a=createRealBuyerCashAdapters({db,env});
-  for(const stageId of ['HUB_RECEIVING','FORWARDER','CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP']){
+  for(const stageId of ['HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP']){
    await expect(a.executeStage({stageId,context:{}}))
     .rejects.toThrow('G6_DYNAMIC_DOWNSTREAM_STAGE_NOT_MIGRATED_'+stageId);
   }
@@ -42,7 +42,7 @@ describe('G6 real Chromium/PG adapter — strict scope and no historical fallbac
   }})).rejects.toThrow('G6_DYNAMIC_BUYER_CHECKPOINT_MISSING');
   expect(db.query).not.toHaveBeenCalled();
  });
- test.each(['HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION'])(
+ test.each(['HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX'])(
   '%s refuses to run without authenticated previous Hub checkpoint',async stageId=>{
    const a=createRealBuyerCashAdapters({db,env});
    await expect(a.executeStage({stageId,context:{}}))
