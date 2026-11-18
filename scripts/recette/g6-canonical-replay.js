@@ -415,7 +415,11 @@ async function main(env=process.env) {
     const resumeRun=String(env.G6_CANONICAL_RESUME_RUN_ID||'');
     if(phase!=='BUYER_CASH'&&requiresResumeProof(phase,graph)&&!resumeRun)
       throw new Error('G6_CANONICAL_HUB_REQUIRES_PREVIOUS_STAGE_PROOF');
-    if(phase==='CLIENT_PICKUP'){
+    // Legacy Chromium adapters retain their strict historical checkpoint and PG
+    // assertions. Dispatch is registry-driven; this map is temporary until the
+    // per-stage adapters are fully independent of historical fixtures.
+    const legacyStageHandlers={
+      'CLIENT_PICKUP': async()=>{
       const id='56adad65-d1fa-4e80-8d69-c25e0fe92a76',sid='ff8591fc-78bb-49a4-b154-247508368d16';
       const parcel='95045ede-d5b8-405b-b65f-d9dbdddb4756',fingerprint='8acbf99fef010c23eac7d252';
       const po='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3';
@@ -484,8 +488,8 @@ async function main(env=process.env) {
         evidence:'test-results/g6-canonical-client-pickup/report.json'});
       report.next_stage='COMPLETED_M01';report.verdict='G6_M01_SIMULATED_CHROMIUM_PG_PASS_COLLECTED';
       report.full_chain_certified=true;report.production_permitted=false;save();return report;
-    }
-    if(phase==='RELAY_RECEIPT'){
+          },
+      'RELAY_RECEIPT': async()=>{
       if(resumeRun!=='44260374187'||!fs.existsSync(RESUME_CANONICAL)||
          !fs.existsSync(path.join(ROOT,'test-results/g6-canonical-resume/g6-canonical-customs/report.json')))
         throw Error('G6_RELAY_EXACT_CUSTOMS_ARTIFACT_REQUIRED');
@@ -542,8 +546,8 @@ async function main(env=process.env) {
       report.stages.push({id:'RELAY_RECEIPT',verdict:'PASS_SIMULATED_STAGING',via:'Chromium_UI',shipment_id:sid,
         evidence:'test-results/g6-canonical-relay-receipt/report.json'});
       report.next_stage='CLIENT_PICKUP';report.verdict='NOT_PROVEN';save();return report;
-    }
-    if(phase==='CUSTOMS'){
+          },
+      'CUSTOMS': async()=>{
       if(resumeRun!=='44257485638'||!fs.existsSync(RESUME_CANONICAL))throw Error('G6_CUSTOMS_EXACT_ARTIFACT_REQUIRED');
       const previous=JSON.parse(fs.readFileSync(RESUME_CANONICAL,'utf8'));
       const prior=JSON.parse(fs.readFileSync(path.join(ROOT,'test-results/g6-canonical-resume/g6-canonical-forwarder/report.json'),'utf8'));
@@ -591,8 +595,8 @@ async function main(env=process.env) {
       report.stages.push({id:'CUSTOMS_LOCAL',verdict:'PASS_SIMULATED_STAGING',via:'Chromium_UI',shipment_id:sid,
         evidence:'test-results/g6-canonical-customs/report.json'});
       report.next_stage='RELAY_RECEIPT';report.verdict='NOT_PROVEN';save();return report;
-    }
-    if(phase==='FORWARDER'){
+          },
+      'FORWARDER': async()=>{
       if(resumeRun!=='44210239102'||!fs.existsSync(RESUME_CANONICAL)||!fs.existsSync(RESUME_SHIPMENT))
         throw Error('G6_FORWARDER_EXACT_ARTIFACT_REQUIRED');
       const previous=JSON.parse(fs.readFileSync(RESUME_CANONICAL,'utf8'));
@@ -622,8 +626,8 @@ async function main(env=process.env) {
       report.stages.push({id:'FORWARDER',verdict:'PASS_SIMULATED_STAGING',via:'Chromium_UI',shipment_id:bound.shipmentId,
         evidence:'test-results/g6-canonical-forwarder/report.json'});
       report.next_stage='CUSTOMS';report.verdict='NOT_PROVEN';save();return report;
-    }
-    if(phase==='HUB_SHIPMENT'){
+          },
+      'HUB_SHIPMENT': async()=>{
       const partialResume=resumeRun==='44203777890';
       if(!/^\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_CANONICAL)||
          !fs.existsSync(partialResume?RESUME_SHIPMENT:RESUME_KOM_BOX))
@@ -676,8 +680,8 @@ async function main(env=process.env) {
       report.next_stage='FORWARDER_RECEIPT';report.verdict='NOT_PROVEN';save();
       console.log('[g6-canonical] same KOM-BOX dispatched and handed over by Hub; forwarder receipt NOT_PROVEN');
       return report;
-    }
-    if(phase==='HUB_KOM_BOX'){
+          },
+      'HUB_KOM_BOX': async()=>{
       if(!/^\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_CANONICAL)||!fs.existsSync(RESUME_CUSTOMER_BAG))
         throw Error('G6_KOM_BOX_CUSTOMER_BAG_ARTIFACT_MISSING');
       const previous=JSON.parse(fs.readFileSync(RESUME_CANONICAL,'utf8'));
@@ -719,8 +723,8 @@ async function main(env=process.env) {
       report.next_stage='HUB_SHIPMENT';report.verdict='NOT_PROVEN';save();
       console.log('[g6-canonical] same sealed bag in PACKED KOM-BOX; shipment NOT_PROVEN');
       return report;
-    }
-    if(phase==='HUB_CUSTOMER_BAG'){
+          },
+      'HUB_CUSTOMER_BAG': async()=>{
       if(!/^\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_CANONICAL)||!fs.existsSync(RESUME_RECEIVING_READBACK))
         throw Error('G6_CUSTOMER_BAG_RECEIVING_ARTIFACT_MISSING');
       const previous=JSON.parse(fs.readFileSync(RESUME_CANONICAL,'utf8'));
@@ -761,8 +765,8 @@ async function main(env=process.env) {
       report.next_stage='KOM_BOX';report.verdict='NOT_PROVEN';save();
       console.log('[g6-canonical] customer bag packed on SAME order; KOM-BOX NOT_PROVEN');
       return report;
-    }
-    if(phase==='HUB_RECEIVING_READBACK'){
+          },
+      'HUB_RECEIVING_READBACK': async()=>{
       if(!/^\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_CANONICAL)||
          !fs.existsSync(RESUME_HUB_RECEIVING))
         throw Error('G6_RECEIPT_READBACK_PRIOR_ARTIFACT_MISSING');
@@ -818,8 +822,8 @@ async function main(env=process.env) {
       report.next_stage='KOM_BOX';report.verdict='NOT_PROVEN';save();
       console.log('[g6-canonical] receipt recognized from existing UI 201 + independent PG; KOM-BOX NOT_PROVEN');
       return report;
-    }
-    if(phase==='HUB_RECEIVING'){
+          },
+      'HUB_RECEIVING': async()=>{
       if(!/^\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_CANONICAL)||
          !fs.existsSync(RESUME_VENDOR_SIMULATION))
         throw Error('G6_RECEIVING_PREVIOUS_VENDOR_ARTIFACT_MISSING');
@@ -862,8 +866,8 @@ async function main(env=process.env) {
       report.next_stage='KOM_BOX';report.verdict='NOT_PROVEN';save();
       console.log('[g6-canonical] same PO Hub reception PASS simulated staging; KOM-BOX NOT_PROVEN');
       return report;
-    }
-    if(phase==='HUB_VENDOR_SIMULATION'){
+          },
+      'HUB_VENDOR_SIMULATION': async()=>{
       if(!/^\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_CANONICAL)||
          !fs.existsSync(RESUME_VENDOR_READY))
         throw Error('G6_VENDOR_SIMULATION_PRIOR_ARTIFACT_MISSING');
@@ -908,8 +912,8 @@ async function main(env=process.env) {
       report.next_stage='HUB_RECEIVING';report.verdict='NOT_PROVEN';save();
       console.log('[g6-canonical] same PO simulated supplier send and confirmation PASS staging; Hub receipt NOT_PROVEN');
       return report;
-    }
-    if(phase==='HUB_VENDOR_READINESS'){
+          },
+      'HUB_VENDOR_READINESS': async()=>{
       if(!/^\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_CANONICAL)||
          !fs.existsSync(RESUME_COMMITMENT))
         throw Error('G6_VENDOR_PRIOR_COMMITMENT_ARTIFACT_MISSING');
@@ -960,8 +964,8 @@ async function main(env=process.env) {
       report.verdict='NOT_PROVEN';save();
       console.log('[g6-canonical] vendor send screen visible, no external supplier event; M01 NOT_PROVEN');
       return report;
-    }
-    if(phase==='HUB_COMMITMENT'){
+          },
+      'HUB_COMMITMENT': async()=>{
       if(!/^\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_CANONICAL)||
          !fs.existsSync(RESUME_HUB_PROOF)||!fs.existsSync(RESUME_BUYER))
         throw new Error('G6_COMMITMENT_PREVIOUS_HUB_ARTIFACT_MISSING');
@@ -1013,6 +1017,11 @@ async function main(env=process.env) {
       report.verdict='NOT_PROVEN';save();
       console.log('[g6-canonical] same order director commitment and internal PO submit PASS; vendor/physical chain NOT_PROVEN');
       return report;
+          }
+    };
+    const requestedHandler=legacyStageHandlers[declaredStage.id];
+    if(requestedHandler){
+      return await requestedHandler();
     }
     if(resumeRun) {
       if(!/^\d{8,}$/.test(resumeRun)||!fs.existsSync(RESUME_BUYER))
