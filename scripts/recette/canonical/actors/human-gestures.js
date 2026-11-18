@@ -81,6 +81,21 @@ async function gesture(page,target,{action,args=[],mutation=null,readyTimeout,ve
   return {attempts,mutations,response:seen};
  }finally{pg.off('request',onRequest);}
 }
+// Navigation GET (pas une mutation) : une navigation client encore en cours (redirection après login)
+// peut annuler page.goto (net::ERR_ABORTED). On attend la fin du chargement ; si l'URL visée est atteinte,
+// c'est accepté, sinon une seule nouvelle navigation.
+async function humanGoto(page,url,opts={}){
+ const target=u=>{try{const a=new URL(u),b=new URL(url,a.origin);return a.pathname===b.pathname&&a.search===b.search;}catch(_){return false;}};
+ for(let i=0;i<2;i++){
+  try{return await page.goto(url,opts);}
+  catch(err){
+   if(!/ERR_ABORTED|frame was detached|interrupted by another navigation/i.test(String(err&&err.message)))throw err;
+   await page.waitForLoadState(opts.waitUntil==='load'?'load':'domcontentloaded',{timeout:15000}).catch(()=>{});
+   if(target(page.url()))return null;
+   if(i===1)throw err;
+  }
+ }
+}
 const humanClick=(page,target,{mutation=null,...opts}={})=>
  gesture(page,target,{action:'click',args:[opts],mutation});
 // The value is never logged; it is only compared after fill.
@@ -96,4 +111,4 @@ const humanCheck=(page,target,{mutation=null,...opts}={})=>
  gesture(page,target,{action:'check',args:[opts],mutation});
 const humanPress=(page,target,key,{mutation=null,...opts}={})=>
  gesture(page,target,{action:'press',args:[key,opts],mutation});
-module.exports={humanClick,humanFill,humanSelect,humanCheck,humanPress,waitReady,GestureBlockedError};
+module.exports={humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress,waitReady,GestureBlockedError};

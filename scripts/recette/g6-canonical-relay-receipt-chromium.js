@@ -23,7 +23,7 @@ const ORDER=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ID:'56adad65
 const ITEM=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ITEM_ID:'8c999eec-7322-4676-8db6-585c4d4545f9', PROOF='[SIMULATED / STAGING ONLY] G6-M01-RECEPTION-RELAIS-'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6');
 const OUT=path.resolve('test-results/g6-canonical-relay-receipt');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
-const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
+const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const RECEIPT_PATH='/api/admin/workspaces/operations/market/KM/relay-shipments/'+REF+'/receive';
 const report={schema:'komerce-g6-relay-receipt/1',reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',shipment_id:ID,shipment_ref:REF,
  order_id:ORDER,parcel_id:PARCEL,market:'KM',scenario_id:'M01',provenance:'SIMULATED / STAGING ONLY',
@@ -76,7 +76,7 @@ async function attachDedicatedRelayByUI(browser,agentId,orderRelay){
  };
  try{
   await runtime();
-  await admin.page.goto('/dashboards/canonical/market-autonomy.html?market=KM',{waitUntil:'domcontentloaded'});
+  await humanGoto(admin.page,'/dashboards/canonical/market-autonomy.html?market=KM',{waitUntil:'domcontentloaded'});
   const panel=admin.page.locator('[data-market-network]');
   try{await panel.waitFor({state:'visible',timeout:15000})}catch(error){
    const ui=await admin.page.locator('#market-autonomy-root').evaluate(e=>({

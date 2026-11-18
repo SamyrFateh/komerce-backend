@@ -17,7 +17,7 @@ const {login}=require('./g6-hub-commitment-chromium');
 const env=process.env;
 const OUT=path.resolve('test-results/g6-hub-shipment');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
-const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
+const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const ORDER=env.G6_CANONICAL_ORDER_ID,PO=env.G6_CANONICAL_PO_ID,REF=env.G6_CANONICAL_ORDER_REFERENCE;
 const BAG=env.G6_CANONICAL_BAG_ID,BAGREF=env.G6_CANONICAL_BAG_REF,PARCEL=env.G6_CANONICAL_PARCEL_ID;
 const ALLOCATION=env.G6_CANONICAL_ALLOCATION_ID;
@@ -100,7 +100,7 @@ function checkLink(s,boxId,placementId){
   s.placement[0].placement_id===placementId,'G6_BOX_LINK_OR_SINGLE_PLACEMENT_INVALID');
 }
 async function openDetails(page){
- await page.goto('/admin/hub-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
+ await humanGoto(page,'/admin/hub-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
  const tab=page.getByRole('tab',{name:'Dossiers'});
  await tab.waitFor({state:'visible',timeout:25000});await humanClick(null,tab);
  const details=page.locator('[data-hub-physical-details]');
@@ -222,7 +222,7 @@ function checkShipment(s,shipmentId,stage){
   s.shipmentLinks[0].physical_unit_id===BOX,'G6_SHIPMENT_LINEAGE_INVALID');
 }
 async function openTransport(page){
- await page.goto('/admin/workspaces/shipping-customs?market=KM',{waitUntil:'domcontentloaded'});
+ await humanGoto(page,'/admin/workspaces/shipping-customs?market=KM',{waitUntil:'domcontentloaded'});
  await page.locator('[data-international-journey]').first().waitFor({state:'visible',timeout:25000});
  const tab=page.locator('.kmc-journey-tab').filter({hasText:'Transport & fret'});
  await humanClick(null,tab);
