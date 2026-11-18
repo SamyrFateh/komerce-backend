@@ -127,9 +127,54 @@ async function gesture(actor,key,endpoint,button,validatePayload){
  try{
   await button.waitFor({state:'visible',timeout:20000});
   check(await button.isEnabled(),'G6_BOX_UI_DISABLED_'+key);
-  const pending=actor.page.waitForResponse(r=>r.url()===url&&r.request().method()==='POST',{timeout:30000});
+  if(key==='handover-forwarder'){
+   // HTML constraint validation may suppress the submit event entirely:
+   // inspect the genuine UI before assuming a network fault.
+   const form=button.locator('xpath=ancestor::form[1]');
+   const eligibility=await form.evaluate(el=>({
+    valid:el.checkValidity(),
+    invalid:Array.from(el.elements).filter(x=>x.willValidate&&!x.validity.valid)
+     .map(x=>({name:x.name||x.tagName,required:x.required,valid:false}))
+   }));
+   report.handover_form_preflight=eligibility;save();
+   check(eligibility.valid,'G6_HANDOVER_FORM_INVALID');
+  }
+  const waitResponse=timeout=>actor.page.waitForResponse(
+   r=>r.url()===url&&r.request().method()==='POST',{timeout}
+  ).catch(()=>null);
+  let pending=waitResponse(key==='handover-forwarder'?12000:30000);
   await button.click({timeout:15000});
-  const response=await pending;
+  let response=await pending;
+  if(!response&&key==='handover-forwarder'&&count===0&&actor.blocked.length===0){
+   // Never retry if PG recorded any transition, or a POST has been seen.
+   // The only fallback is a genuine Enter key on the same valid UI form.
+   const current=await readback();
+   const unchanged=current.shipments.length===1&&
+    current.shipments[0].id===report.shipment_id&&
+    current.shipments[0].stage==='hub_ready'&&
+    current.parcelEvents.length===0&&
+    current.shipmentEvents.length===1&&
+    current.shipmentEvents[0].event_type==='opened';
+   report.handover_retry_preflight={
+    original_post_count:count,unexpected_writes:actor.blocked.length,
+    pg_unmodified:unchanged,button_enabled:await button.isEnabled()
+   };save();
+   check(unchanged&&report.handover_retry_preflight.button_enabled,
+    'G6_HANDOVER_RETRY_NOT_SAFE');
+   await button.locator('xpath=ancestor::form[1]').evaluate(el=>{
+    if(!el.checkValidity())throw Error('G6_HANDOVER_FORM_BECAME_INVALID');
+   });
+   pending=waitResponse(15000);
+   await button.press('Enter',{timeout:10000});
+   response=await pending;
+   report.handover_retry_preflight.keyboard_enter_attempted=true;save();
+  }
+  if(!response){
+   report.handover_network_diagnostic={expected_path:endpoint,observed_post_count:count,
+    unexpected_writes:actor.blocked.map(x=>x.path),button_enabled:await button.isEnabled().catch(()=>null)};
+   save();await actor.page.screenshot({path:path.join(OUT,key+'-no-response.png')}).catch(()=>{});
+   throw Error(count?'G6_HANDOVER_POST_WITHOUT_RESPONSE':'G6_HANDOVER_UI_POST_NOT_EMITTED_'+key);
+  }
   const b=await response.json().catch(()=>({}));
   report.events.push({key,http:response.status(),code:b.code||null,unit_id:b.physical_unit?.id||b.unit?.id||null});
   save();await actor.page.screenshot({path:path.join(OUT,key+'.png')});
