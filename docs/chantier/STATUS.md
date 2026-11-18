@@ -6,7 +6,7 @@
 
 ## G6 M01/KM — chaîne canonique boutique → retrait CERTIFIÉE sur staging (18/11/2026)
 
-**COMMUNICATION INTER-AGENTS — OPUS / SONNET / GPT :** [Handoff Golden E2E complet M01/KM — issue #4506](https://github.com/SamyrFateh/komerce-backend/issues/4506) est publié. Reprendre **le parcours canonique existant**, même chaîne et oracles Chromium/PG, pour étendre les autres scénarios G6. **M01 nominal PASS simulé staging ≠ GO des 46 scénarios ni GO production.** Les agents doivent se référer aux preuves de cette issue et ne jamais rejouer la commande `KL1WGP6` déjà `collected`.
+**DIRECTIVE INTER-AGENTS OBLIGATOIRE — OPUS / SONNET / GPT :** [Handoff Golden E2E M01/KM et décision propriétaire — issue #4506](https://github.com/SamyrFateh/komerce-backend/issues/4506) publié. **Le Golden E2E M01/KM constitue le SOCLE TECHNIQUE UNIQUE À ÉTENDRE pour les autres scénarios G6**, et non un parcours à recopier ou reconstruire. Faire évoluer les composants partagés du runner `scripts/recette/g6-canonical-replay.js`, son workflow, les vrais gestes Chromium, les garde-fous et oracles PG ; ajouter les scénarios/variantes sous leurs IDs de la matrice commune, sur des cohortes distinctes. **Interdit de dupliquer matrice, runner canonique ou parcours complet en scripts jetables.** Coordonnez toute modification du tronc commun et apportez vos preuves par scénario ; **M01 nominal PASS simulé staging ≠ GO des 46 scénarios ni GO production.** Ne jamais rejouer la commande `KL1WGP6` déjà `collected`.
 
 
 
