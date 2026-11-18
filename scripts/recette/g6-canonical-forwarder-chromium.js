@@ -90,10 +90,19 @@ async function task(page,title,tabName='Transport & fret'){
  if(!visible)throw Error('G6_JOURNEY_DETAILS_NOT_OPEN: '+title);
  return item;
 }
+// Saisie dans une tâche <details> : un repaint asynchrone peut la refermer entre l'ouverture et la
+// saisie. On la rouvre par son vrai résumé (geste humain) ; la saisie n'est pas une mutation serveur.
+async function fillTask(item,name,val){
+ for(let attempt=0;attempt<3;attempt++){
+  if(!await item.evaluate(e=>e.open))await humanClick(null,item.locator('summary'),{timeout:8000});
+  try{await humanFill(null,item.locator('[name="'+name+'"]'),val,{timeout:6000});return;}
+  catch(error){if(attempt===2||!/not visible|Timeout/i.test(String(error&&error.message)))throw error;}
+ }
+}
 async function gesture(actor,key,title,tail,fields,expected){
  await runtime();
  const item=await task(actor.page,title);
- for(const [name,value] of Object.entries(fields))await humanFill(null,item.locator('[name="'+name+'"]'),value);
+ for(const [name,value] of Object.entries(fields))await fillTask(item,name,value);
  const url=BASE+API+'/'+tail;let count=0;
  const handler=async route=>{
   const req=route.request();
@@ -149,4 +158,4 @@ async function main(){
  finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close();await db.pool.end();console.log(JSON.stringify(report))}
 }
 if(require.main===module)main();
-module.exports={login,task,snapshot,proof};
+module.exports={fillTask,login,task,snapshot,proof};

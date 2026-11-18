@@ -16,7 +16,7 @@ const {chromium}=require('playwright');
 const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
 const {readback,runtime}=require('./g6-hub-shipment-chromium');
-const {login,task,snapshot,proof}=require('./g6-canonical-forwarder-chromium');
+const {login,task,snapshot,proof,fillTask}=require('./g6-canonical-forwarder-chromium');
 const env=process.env, BASE='https://komerce-backend-production.up.railway.app';
 const REF=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_REF:'SIM-STAGING-EXP-KL1WGP6', ID=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_ID:'ff8591fc-78bb-49a4-b154-247508368d16', CUSTOMS='SIM-STAGING-DOU-'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6');
 const API='/api/admin/workspaces/shipping-customs/market/'+MK.code;
@@ -58,7 +58,7 @@ async function click(actor,key,endpoint,button,validate,role){
 }
 async function journey(actor,key,title,tab,tail,fields,expected,role){
  const item=await task(actor.page,title,tab);
- for(const [name,val] of Object.entries(fields))await humanFill(null,item.locator('[name="'+name+'"]'),val);
+ for(const [name,val] of Object.entries(fields))await fillTask(item,name,val);
  await click(actor,key,API+'/international/'+REF+'/'+tail,item.locator('button[type="submit"]'),b=>isDeepStrictEqual(b,expected),role);
 }
 function eventProof(prev,next,type,ref,stage){
