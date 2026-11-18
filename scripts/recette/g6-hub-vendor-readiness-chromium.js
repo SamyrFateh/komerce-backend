@@ -73,7 +73,10 @@ async function main(){
    env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET==='KM'&&
    env.G6_CANONICAL_PHASE==='HUB_VENDOR_READINESS'&&
    SHA.test(env.E2E_EXPECTED_DEPLOY_SHA||'')&&UUID.test(env.G6_CANONICAL_PO_ID||'')&&
-   UUID.test(env.G6_CANONICAL_ORDER_ID||'')&&env.G6_CANONICAL_ORDER_REFERENCE==='KL1WGP6'&&
+   UUID.test(env.G6_CANONICAL_ORDER_ID||'')&&(env.G6_CANONICAL_ORDER_REFERENCE==='KL1WGP6'||
+    (env.G6_DYNAMIC_FRESH_ORDER==='1'&&
+     /^[A-Z0-9][A-Z0-9-]{5,63}$/.test(env.G6_CANONICAL_ORDER_REFERENCE||'')&&
+     env.STAGING_BASE_URL==='https://komerce-backend-production.up.railway.app'))&&
    !!env.DATABASE_URL,'G6_VENDOR_OWNER_STAGING_GUARD');
   const target=await confirmTarget({db,env});
   check(target.confirmed&&target.fingerprint===env.G6_CANONICAL_DB_FINGERPRINT,
