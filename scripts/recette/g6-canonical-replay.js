@@ -440,7 +440,12 @@ async function main(env=process.env) {
       const result=executeExisting('scripts/recette/g6-canonical-relay-receipt-chromium.js',
         path.join(ROOT,'test-results/g6-canonical-relay-receipt/report.json'),{...env,PGOPTIONS:'-c default_transaction_read_only=on',
           G6_CANONICAL_ORDER_ID:id,G6_CANONICAL_ORDER_REFERENCE:'KL1WGP6',
-          G6_CANONICAL_DB_FINGERPRINT:fingerprint});
+          G6_CANONICAL_DB_FINGERPRINT:fingerprint,
+          G6_CANONICAL_PO_ID:po,G6_CANONICAL_BAG_ID:'bcf810c9-33b2-438a-b4c3-857b024e2247',
+          G6_CANONICAL_BAG_REF:'KOM-ITEM-178D0AEA488AA4B5B9',
+          G6_CANONICAL_PARCEL_ID:'95045ede-d5b8-405b-b65f-d9dbdddb4756',
+          G6_CANONICAL_ALLOCATION_ID:'3b430dcf-8662-44b4-a29f-27e38df19253',
+          G6_CANONICAL_BOX_ID:'6ca614e5-869c-40ab-80d7-3684974092fe'});
       if(result.verdict!=='G6_RELAY_RECEIPT_SIMULATED_CHROMIUM_PG_PASS_AVAILABLE'||
         result.shipment_id!==sid||result.order_id!==id||result.db_fingerprint!==fingerprint||
         result.events?.length!==1||result.events[0].http!==201||
