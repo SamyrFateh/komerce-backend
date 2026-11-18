@@ -1,0 +1,82 @@
+{
+  "schema": "komerce-g6-cohorts/1",
+  "runtime": "Railway shared staging",
+  "secret_policy": "ENV_KEYS_ONLY_NO_VALUES",
+  "cohorts": {
+    "GPT-G6": {
+      "binding_status": "NOT_READY",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "roles": {
+        "client": {
+          "secret_keys": []
+        },
+        "agent_relais": {
+          "secret_keys": [
+            "E2E_AGENT_RELAIS_EMAIL",
+            "E2E_AGENT_RELAIS_PASSWORD"
+          ]
+        },
+        "agent_hub": {
+          "secret_keys": []
+        },
+        "transitaire": {
+          "secret_keys": []
+        },
+        "responsable_marche": {
+          "secret_keys": []
+        },
+        "admin": {
+          "secret_keys": [
+            "E2E_ADMIN_EMAIL",
+            "E2E_ADMIN_PASSWORD"
+          ]
+        },
+        "admin_finance": {
+          "secret_keys": []
+        },
+        "admin_invendus": {
+          "secret_keys": []
+        }
+      }
+    },
+    "CLAUDE-PAR": {
+      "binding_status": "NOT_READY",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "roles": {
+        "client": {
+          "secret_keys": []
+        },
+        "agent_relais": {
+          "secret_keys": []
+        },
+        "agent_hub": {
+          "secret_keys": []
+        },
+        "transitaire": {
+          "secret_keys": []
+        },
+        "responsable_marche": {
+          "secret_keys": []
+        },
+        "admin": {
+          "secret_keys": []
+        },
+        "admin_finance": {
+          "secret_keys": []
+        },
+        "admin_invendus": {
+          "secret_keys": []
+        }
+      }
+    }
+  },
+  "note": "Unpopulated keys mean NOT_READY. No account, phone number, token or secret value is embedded. Independent CLAUDE-PAR identities must be explicitly mapped before any run."
+}
