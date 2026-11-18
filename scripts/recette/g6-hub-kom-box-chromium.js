@@ -17,6 +17,7 @@ const {login}=require('./g6-hub-commitment-chromium');
 const env=process.env;
 const OUT=path.resolve('test-results/g6-hub-kom-box');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const ORDER=env.G6_CANONICAL_ORDER_ID,PO=env.G6_CANONICAL_PO_ID,REF=env.G6_CANONICAL_ORDER_REFERENCE;
 const BAG=env.G6_CANONICAL_BAG_ID,BAGREF=env.G6_CANONICAL_BAG_REF,PARCEL=env.G6_CANONICAL_PARCEL_ID;
 const ALLOCATION=env.G6_CANONICAL_ALLOCATION_ID;
@@ -89,10 +90,10 @@ function checkLink(s,boxId,placementId){
 async function openDetails(page){
  await page.goto('/admin/hub-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
  const tab=page.getByRole('tab',{name:'Dossiers'});
- await tab.waitFor({state:'visible',timeout:25000});await tab.click();
+ await tab.waitFor({state:'visible',timeout:25000});await humanClick(null,tab);
  const details=page.locator('[data-hub-physical-details]');
  await details.waitFor({state:'attached',timeout:25000});
- if(!await details.evaluate(x=>x.open))await details.locator('summary').first().click();
+ if(!await details.evaluate(x=>x.open))await humanClick(null,details.locator('summary').first());
  const section=page.locator('[data-supply-boxes]');
  await section.waitFor({state:'visible',timeout:25000});
  return section;
@@ -117,7 +118,7 @@ async function gesture(actor,key,endpoint,button,validatePayload){
   await button.waitFor({state:'visible',timeout:20000});
   check(await button.isEnabled(),'G6_BOX_UI_DISABLED_'+key);
   const pending=actor.page.waitForResponse(r=>r.url()===url&&r.request().method()==='POST',{timeout:30000});
-  await button.click({timeout:15000});
+  await humanClick(null,button,{timeout:15000});
   const response=await pending;
   const b=await response.json().catch(()=>({}));
   report.events.push({key,http:response.status(),code:b.code||null,unit_id:b.physical_unit?.id||b.unit?.id||null});
@@ -153,7 +154,7 @@ async function main(){
   const actor=await login(browser,'E2E_AGENT_HUB_',{readOnly:true});
   try{
    let section=await openDetails(actor.page);
-   await section.getByRole('textbox',{name:'Référence de la nouvelle KOM-BOX'}).fill(BOXREF);
+   await humanFill(null,section.getByRole('textbox',{name:'Référence de la nouvelle KOM-BOX'}),BOXREF);
    await gesture(actor,'create-box',API+'/boxes',section.locator('[data-workspace-action="create-box"]'),
     (b,req)=>b?.reference===BOXREF&&Object.keys(b).length===1&&!!req.headers()['idempotency-key']);
    const created=await readback();checkBase(created);report.after_create=created;save();
@@ -163,13 +164,13 @@ async function main(){
    const boxId=created.box[0].id;report.box_id=boxId;save();
    section=await openDetails(actor.page);
    let row=boxRow(section,actor.page);await row.waitFor({state:'visible',timeout:25000});
-   await row.locator('[data-hub-box-scan]').fill(BOXREF);
-   await row.locator('[data-hub-bag-scan]').fill(BAGREF);
-   await row.locator('[data-hub-bag-scan]').press('Enter');
+   await humanFill(null,row.locator('[data-hub-box-scan]'),BOXREF);
+   await humanFill(null,row.locator('[data-hub-bag-scan]'),BAGREF);
+   await humanPress(null,row.locator('[data-hub-bag-scan]'),'Enter');
    const parcelChoice=row.getByRole('combobox',{name:'Colis client si plusieurs colis pour ce sac'});
    check(!(await parcelChoice.isVisible()),'G6_BOX_UNEXPECTED_PARCEL_AMBIGUITY');
-   await row.locator('[data-hub-box-evidence-method]').selectOption('MANUAL');
-   await row.locator('[data-hub-box-manual-proof]').fill(PROOF);
+   await humanSelect(null,row.locator('[data-hub-box-evidence-method]'),'MANUAL');
+   await humanFill(null,row.locator('[data-hub-box-manual-proof]'),PROOF);
    await gesture(actor,'attach-bag',API+'/boxes/'+boxId+'/bags',row.locator('[data-workspace-action="put-bag-in-box"]'),
      b=>b?.bag_unit_id===BAG&&(!b.parcel_id||b.parcel_id===PARCEL)&&b.bag_reference_scan===BAGREF&&
         b.box_reference_scan===BOXREF&&b.evidence_method==='MANUAL'&&b.evidence_ref===PROOF);

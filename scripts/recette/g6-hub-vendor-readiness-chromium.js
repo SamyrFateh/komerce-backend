@@ -17,6 +17,7 @@ const {login,openPo,stableSha}=require('./g6-hub-commitment-chromium');
 const env=process.env;
 const OUT=path.resolve('test-results/g6-hub-vendor-readiness');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const REPORT=path.join(OUT,'report.json');
 const UUID=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 const SHA=/^[a-f0-9]{40}$/i;
@@ -98,12 +99,13 @@ async function main(){
    // pointer click, then a real keyboard Enter on the same visible control.
    // Never force-click, mutate the DOM, or POST directly in a read-only stage.
    let gesture='pointer';
-   try{await send.click({timeout:7000});}
+   try{await humanClick(null,send,{timeout:7000});}
    catch(e){
+    if(e&&e.verdict==='BLOCKED')throw e;
     if(!(await form.isVisible().catch(()=>false))){
      await send.waitFor({state:'visible',timeout:10000});
      check(await send.isEnabled(),'G6_VENDOR_SEND_ACTION_DISABLED_ON_RETRY');
-     await send.press('Enter',{timeout:7000});
+     await humanPress(null,send,'Enter',{timeout:7000});
      gesture='keyboard-enter';
     }
    }

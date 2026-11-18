@@ -21,6 +21,7 @@ const REF=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_REF:'SIM-ST
 const API='/api/admin/workspaces/shipping-customs/market/KM';
 const OUT=path.resolve('test-results/g6-canonical-customs');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const report={schema:'komerce-g6-customs/1',shipment_id:ID,shipment_ref:REF,order_id:env.G6_CANONICAL_ORDER_ID,
  reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',scenario_id:'M01',market:'KM',events:[],verdict:'BLOCKED',
  provenance:'SIMULATED / STAGING ONLY',external_payment_executed:false,external_supplier_calls:0};
@@ -49,14 +50,14 @@ async function click(actor,key,endpoint,button,validate,role){
   await button.waitFor({state:'visible',timeout:25000});
   check(await button.isEnabled(),'G6_CUSTOMS_DISABLED_'+key);
   const pending=actor.page.waitForResponse(r=>r.url()===url&&r.request().method()==='POST',{timeout:30000});
-  await button.click();
+  await humanClick(null,button);
   const response=await pending;report.events.push({key,role,http:response.status()});save();
   check(count===1&&response.ok()&&actor.blocked.length===0,'G6_CUSTOMS_HTTP_'+key+'_'+response.status());
  }finally{await actor.page.unroute(url,handler)}
 }
 async function journey(actor,key,title,tab,tail,fields,expected,role){
  const item=await task(actor.page,title,tab);
- for(const [name,val] of Object.entries(fields))await item.locator('[name="'+name+'"]').fill(val);
+ for(const [name,val] of Object.entries(fields))await humanFill(null,item.locator('[name="'+name+'"]'),val);
  await click(actor,key,API+'/international/'+REF+'/'+tail,item.locator('button[type="submit"]'),b=>isDeepStrictEqual(b,expected),role);
 }
 function eventProof(prev,next,type,ref,stage){
@@ -85,7 +86,7 @@ async function main(){
   try{
    await admin.page.goto('/admin/workspaces/shipping-customs?market=KM',{waitUntil:'domcontentloaded'});
    await admin.page.locator('[data-international-journey]').first().waitFor({state:'visible',timeout:25000});
-   await admin.page.locator('.kmc-journey-tab').filter({hasText:'Arrivée & douane'}).click();
+   await humanClick(null,admin.page.locator('.kmc-journey-tab').filter({hasText:'Arrivée & douane'}));
    const date=new Date().toISOString().slice(0,10), answers=[CUSTOMS,date,'1000',''];
    admin.page.on('dialog',async d=>{
     if(d.type()==='prompt'&&answers.length)return d.accept(answers.shift());
