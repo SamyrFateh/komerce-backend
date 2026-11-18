@@ -17,6 +17,7 @@ const {login}=require('./g6-hub-commitment-chromium');
 const env=process.env;
 const OUT=path.resolve('test-results/g6-hub-shipment');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const ORDER=env.G6_CANONICAL_ORDER_ID,PO=env.G6_CANONICAL_PO_ID,REF=env.G6_CANONICAL_ORDER_REFERENCE;
 const BAG=env.G6_CANONICAL_BAG_ID,BAGREF=env.G6_CANONICAL_BAG_REF,PARCEL=env.G6_CANONICAL_PARCEL_ID;
 const ALLOCATION=env.G6_CANONICAL_ALLOCATION_ID;
@@ -101,10 +102,10 @@ function checkLink(s,boxId,placementId){
 async function openDetails(page){
  await page.goto('/admin/hub-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
  const tab=page.getByRole('tab',{name:'Dossiers'});
- await tab.waitFor({state:'visible',timeout:25000});await tab.click();
+ await tab.waitFor({state:'visible',timeout:25000});await humanClick(null,tab);
  const details=page.locator('[data-hub-physical-details]');
  await details.waitFor({state:'attached',timeout:25000});
- if(!await details.evaluate(x=>x.open))await details.locator('summary').first().click();
+ if(!await details.evaluate(x=>x.open))await humanClick(null,details.locator('summary').first());
  const section=page.locator('[data-supply-boxes]');
  await section.waitFor({state:'visible',timeout:25000});
  return section;
@@ -155,10 +156,10 @@ async function gesture(actor,key,endpoint,button,validatePayload){
     for(let attempt=0;attempt<3&&!eligibility.valid;attempt++){
      const details=form.locator('xpath=ancestor::details[1]');
      if(await details.count()===1&&!await details.evaluate(el=>el.open))
-      await details.locator('summary').first().click();
-     await form.locator('[name="forwarder_name"]').fill(FORWARDER);
-     await form.locator('[name="transport_mode"]').selectOption('sea');
-     await form.locator('[name="proof_ref"]').fill(HANDOVER_PROOF);
+      await humanClick(null,details.locator('summary').first());
+     await humanFill(null,form.locator('[name="forwarder_name"]'),FORWARDER);
+     await humanSelect(null,form.locator('[name="transport_mode"]'),'sea');
+     await humanFill(null,form.locator('[name="proof_ref"]'),HANDOVER_PROOF);
      refillAttempts++;
      eligibility=await inspect();
     }
@@ -173,7 +174,7 @@ async function gesture(actor,key,endpoint,button,validatePayload){
    r=>r.url()===url&&r.request().method()==='POST',{timeout}
   ).catch(()=>null);
   let pending=waitResponse(key==='handover-forwarder'?12000:30000);
-  await button.click({timeout:15000});
+  await humanClick(null,button,{timeout:15000});
   let response=await pending;
   if(!response&&key==='handover-forwarder'&&count===0&&actor.blocked.length===0){
    // Never retry if PG recorded any transition, or a POST has been seen.
@@ -195,7 +196,7 @@ async function gesture(actor,key,endpoint,button,validatePayload){
     if(!el.checkValidity())throw Error('G6_HANDOVER_FORM_BECAME_INVALID');
    });
    pending=waitResponse(15000);
-   await button.press('Enter',{timeout:10000});
+   await humanPress(null,button,'Enter',{timeout:10000});
    response=await pending;
    report.handover_retry_preflight.keyboard_enter_attempted=true;save();
   }
@@ -224,11 +225,11 @@ async function openTransport(page){
  await page.goto('/admin/workspaces/shipping-customs?market=KM',{waitUntil:'domcontentloaded'});
  await page.locator('[data-international-journey]').first().waitFor({state:'visible',timeout:25000});
  const tab=page.locator('.kmc-journey-tab').filter({hasText:'Transport & fret'});
- await tab.click();
+ await humanClick(null,tab);
  const row=page.locator('tr').filter({has:page.getByText(SHIPMENT,{exact:true})});
  await row.waitFor({state:'visible',timeout:25000});
  const open=row.getByRole('button',{name:'Consulter',exact:true});
- if(await open.count())await open.click();
+ if(await open.count())await humanClick(null,open);
  const task=page.locator('details.kmc-journey-task').filter({has:page.locator('summary',{hasText:'Confirmer : Remis au transitaire'})});
  await task.waitFor({state:'visible',timeout:25000});
  // The primary handover action is visible by default in the product.
@@ -291,8 +292,8 @@ async function main(){
    let section=await openDetails(actor.page);
    let row=boxRow(section,actor.page);
    await row.waitFor({state:'visible',timeout:25000});
-   await section.getByRole('textbox',{name:'Référence de la nouvelle expédition'}).fill(SHIPMENT);
-   await row.getByRole('checkbox',{name:'Inclure '+BOXREF}).check();
+   await humanFill(null,section.getByRole('textbox',{name:'Référence de la nouvelle expédition'}),SHIPMENT);
+   await humanCheck(null,row.getByRole('checkbox',{name:'Inclure '+BOXREF}));
    await gesture(actor,'open-shipment',API+'/boxes/shipment',section.locator('[data-workspace-action="create-shipment-from-boxes"]'),
     b=>b?.reference===SHIPMENT&&b.hub_unit_ids?.length===1&&b.hub_unit_ids[0]===BOX&&Object.keys(b).length===2);
    const opened=await readback();report.after_open=opened;save();
@@ -315,9 +316,9 @@ async function main(){
       e.from_state==='PACKED'&&e.to_state==='DISPATCHED'&&e.actor_id),'G6_SHIPMENT_DISPATCH_PG_INVALID');
    }
    const task=await openTransport(actor.page);
-   await task.locator('[name="forwarder_name"]').fill(FORWARDER);
-   await task.locator('[name="transport_mode"]').selectOption('sea');
-   await task.locator('[name="proof_ref"]').fill(HANDOVER_PROOF);
+   await humanFill(null,task.locator('[name="forwarder_name"]'),FORWARDER);
+   await humanSelect(null,task.locator('[name="transport_mode"]'),'sea');
+   await humanFill(null,task.locator('[name="proof_ref"]'),HANDOVER_PROOF);
    await gesture(actor,'handover-forwarder','/api/admin/workspaces/shipping-customs/market/KM/international/'+SHIPMENT+'/transition',
     task.locator('button[type="submit"]'),b=>b?.to_stage==='handed_over'&&b.forwarder_name===FORWARDER&&
       b.transport_mode==='sea'&&b.proof_ref===HANDOVER_PROOF&&Object.keys(b).length===4);

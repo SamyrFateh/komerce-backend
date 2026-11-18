@@ -23,6 +23,7 @@ const ORDER=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ID:'56adad65
 const ITEM=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ITEM_ID:'8c999eec-7322-4676-8db6-585c4d4545f9', PROOF='[SIMULATED / STAGING ONLY] G6-M01-RECEPTION-RELAIS-'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6');
 const OUT=path.resolve('test-results/g6-canonical-relay-receipt');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const RECEIPT_PATH='/api/admin/workspaces/operations/market/KM/relay-shipments/'+REF+'/receive';
 const report={schema:'komerce-g6-relay-receipt/1',reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',shipment_id:ID,shipment_ref:REF,
  order_id:ORDER,parcel_id:PARCEL,market:'KM',scenario_id:'M01',provenance:'SIMULATED / STAGING ONLY',
@@ -102,11 +103,11 @@ async function attachDedicatedRelayByUI(browser,agentId,orderRelay){
   await select.waitFor({state:'visible',timeout:20000});
   check(await select.locator('option').evaluateAll((xs,id)=>xs.some(x=>x.value===id),agentId),
    'G6_RELAY_ASSIGNMENT_ACTOR_NOT_ELIGIBLE');
-  await select.selectOption(agentId);
+  await humanSelect(null,select,agentId);
   await admin.page.route(url,handler);
   try{
    const pending=admin.page.waitForResponse(r=>r.url()===url&&r.request().method()==='POST',{timeout:30000});
-   await card.getByRole('button',{name:'Rattacher',exact:true}).click();
+   await humanClick(null,card.getByRole('button',{name:'Rattacher',exact:true}));
    const response=await pending;
    check(response.status()===200&&count===1&&admin.blocked.length===0,
     'G6_RELAY_ASSIGNMENT_UI_HTTP_'+response.status());
@@ -161,11 +162,11 @@ async function main(){
    selector:'[data-relay-shipment="'+REF+'"]',timeout:25000
   });
   check(await card.getAttribute('data-relay-receivable')==='true','G6_RELAY_UI_NOT_RECEIVABLE');
-  if(!await card.evaluate(el=>el.open))await card.locator('summary').first().click();
+  if(!await card.evaluate(el=>el.open))await humanClick(null,card.locator('summary').first());
   const field=card.locator('input[data-relay-received]');
   check(await field.count()===1&&await field.getAttribute('data-relay-received')===ITEM,'G6_RELAY_UI_ITEM_NOT_UNIQUE');
-  await field.fill('1');
-  await card.locator('input[data-relay-proof]').fill(PROOF);
+  await humanFill(null,field,'1');
+  await humanFill(null,card.locator('input[data-relay-proof]'),PROOF);
   const expected={proof_ref:PROOF,lines:[{order_item_id:ITEM,received_qty:1}]};
   let count=0;const url=BASE+RECEIPT_PATH;
   const handler=async route=>{
@@ -180,7 +181,7 @@ async function main(){
    await button.waitFor({state:'visible',timeout:20000});
    check(await button.isEnabled(),'G6_RELAY_BUTTON_DISABLED');
    const pending=actor.page.waitForResponse(r=>r.url()===url&&r.request().method()==='POST',{timeout:30000});
-   await button.click();const response=await pending;
+   await humanClick(null,button);const response=await pending;
    report.events.push({key:'relay-receipt',http:response.status(),role:'agent_relais'});save();
    check(count===1&&response.status()===201&&actor.blocked.length===0,'G6_RELAY_RECEIPT_HTTP_'+response.status());
    await actor.page.screenshot({path:path.join(OUT,'reception-relais.png')});
