@@ -400,7 +400,7 @@ describe('G6 canonical journey — same order, original matrix, real staging gua
         units:[{id:bagId,active:true,quantity:1,evidence_method:'MANUAL'}],links:[],parcels:[{id:parcelId}]}};
     expect(validateKomBoxCheckpoint(previous,bag,scope)).toMatchObject({bagId,parcelId,allocationId});
     expect(()=>validateKomBoxCheckpoint({...previous,stages:[{id:'HUB_CUSTOMER_BAG',verdict:'PASS_SIMULATED_STAGING',bag_id:'00000000-0000-4000-8000-000000000001'}]},bag,scope)).toThrow();
-    expect(()=>validateKomBoxCheckpoint({...previous,order:{...previous.order,reference:'FOREIGN'}},bag,scope)).toThrow();
+    expect(()=>validateKomBoxCheckpoint({...previous,order:{...previous.order,id:'00000000-0000-4000-8000-000000000001'}},bag,scope)).toThrow();
     expect(()=>validateKomBoxCheckpoint(previous,{...bag,db_fingerprint:'other'},scope)).toThrow();
     expect(()=>validateKomBoxCheckpoint(previous,{...bag,after:{...bag.after,bags:[{id:bagId,state:'RECEIVED'}]}},scope)).toThrow();
     expect(()=>validateKomBoxCheckpoint(previous,{...bag,after:{...bag.after,links:[{}]}},scope)).toThrow();
