@@ -131,12 +131,41 @@ async function gesture(actor,key,endpoint,button,validatePayload){
    // HTML constraint validation may suppress the submit event entirely:
    // inspect the genuine UI before assuming a network fault.
    const form=button.locator('xpath=ancestor::form[1]');
-   const eligibility=await form.evaluate(el=>({
+   const inspect=()=>form.evaluate(el=>({
     valid:el.checkValidity(),
     invalid:Array.from(el.elements).filter(x=>x.willValidate&&!x.validity.valid)
      .map(x=>({name:x.name||x.tagName,required:x.required,valid:false}))
    }));
-   report.handover_form_preflight=eligibility;save();
+   let eligibility=await inspect(),refillAttempts=0;
+   const initial=eligibility;
+   if(!eligibility.valid){
+    // A cockpit reload can recreate the form *after* Playwright filled it.
+    // Only refill known mandatory controls through the real Chromium inputs,
+    // and only if the physical shipment is still untouched in PostgreSQL.
+    check(eligibility.invalid.length>0&&eligibility.invalid.every(x=>
+     ['forwarder_name','transport_mode','proof_ref'].includes(x.name))&&
+     count===0&&actor.blocked.length===0,
+     'G6_HANDOVER_INVALID_FORM_UNSAFE_TO_REPAIR');
+    const current=await readback();
+    check(current.shipments.length===1&&current.shipments[0].id===report.shipment_id&&
+     current.shipments[0].stage==='hub_ready'&&current.parcelEvents.length===0&&
+     current.shipmentEvents.length===1&&current.shipmentEvents[0].event_type==='opened',
+     'G6_HANDOVER_REFILL_PG_ALREADY_MUTATED');
+    for(let attempt=0;attempt<3&&!eligibility.valid;attempt++){
+     const details=form.locator('xpath=ancestor::details[1]');
+     if(await details.count()===1&&!await details.evaluate(el=>el.open))
+      await details.locator('summary').first().click();
+     await form.locator('[name="forwarder_name"]').fill(FORWARDER);
+     await form.locator('[name="transport_mode"]').selectOption('sea');
+     await form.locator('[name="proof_ref"]').fill(HANDOVER_PROOF);
+     refillAttempts++;
+     eligibility=await inspect();
+    }
+   }
+   report.handover_form_preflight={
+    original:initial,final:eligibility,refill_attempts:refillAttempts,
+    refill_gesture:refillAttempts?'Chromium_UI_fill_only':null
+   };save();
    check(eligibility.valid,'G6_HANDOVER_FORM_INVALID');
   }
   const waitResponse=timeout=>actor.page.waitForResponse(
