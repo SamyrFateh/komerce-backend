@@ -16,6 +16,8 @@
 
 **Portée :** chaîne nominale M01/KM réalisée en simulation fournisseur/transitaire sur **staging partagé**, sans fournisseur/contact/PSP externe. Ne pas confondre cette preuve de parcours nominal avec achat fournisseur réel, paiement fournisseur réel, revue indépendante, concurrence/anti-double-retrait multi-colis, SAV, documents/finance non joués dans cette frontière, autres marchés M04/M05, ni **GO global des 46 scénarios G6**. Ne jamais rejouer la remise sur cette commande déjà `collected`. Les lignes historiques ci-dessous conservent leurs verdicts à leur date et ne décrivent pas l'état final M01.
 
+**G6-FIAB — lot RUNNER (agent 1) :** P0-A [#4551](https://github.com/SamyrFateh/komerce-backend/pull/4551) et P0-B [#4553](https://github.com/SamyrFateh/komerce-backend/pull/4553) FUSIONNÉS (observabilité à l'échec ; gestes `humanClick`/`humanFill`, `next_stage` via `stage-registry`). Lot COCKPIT (P1) : voir sa propre ligne. Prochaine action : Opus prépare les 3 runs M01 KM 15/15 après fusion de P1 ; aucun run lancé par ce lot.
+
 ## Décision propriétaire du 17 novembre 2026 — certification exclusivement sur staging
 
 **RÈGLE TRANSVERSALE ET OBLIGATOIRE — GPT, Work, Sonnet, Opus : on valide TOUT sur le staging Railway réel de Komerce et on arrête les campagnes de validation isolées.** Le staging partagé est le terrain de recette ; ne plus substituer une base locale, un environnement éphémère, un test unitaire, un mock, un simulateur ou une preuve API seule à une validation fonctionnelle réelle. Ne pas inventer un « staging isolé » ni repartir sur une autre instance sans décision propriétaire expresse.
