@@ -15,6 +15,7 @@ const db=require('../../db'),{confirmTarget}=require('./target-guard');
 const ORIGIN='https://komerce-backend-production.up.railway.app';
 const OUT=path.resolve('test-results/g6-hub-commitment');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {startTraceAfterAuth}=require('./canonical/observability');
 const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const env=process.env;
 const UUID=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
@@ -76,6 +77,7 @@ async function login(browser,prefix,{readOnly=false,allowedWrites=['authorize-co
  await page.waitForURL(x=>x.pathname!=='/login.html',{timeout:15000});
  const me=await page.request.get('/api/auth/me');
  check(me.status()===200&&(await me.json()).role==='agent_hub','G6_COMMITMENT_ROLE_'+prefix);
+ await startTraceAfterAuth(ctx);
  return {ctx,page,blocked};
 }
 async function openPo(page){

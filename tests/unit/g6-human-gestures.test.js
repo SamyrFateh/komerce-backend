@@ -1,7 +1,7 @@
 /** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 const {humanClick,humanFill,GestureBlockedError}=require('../../scripts/recette/canonical/actors/human-gestures');
-const {assertGestureSourceUsesHelper,validateChromiumScriptSources}=require('../../scripts/recette/canonical/chromium-policy');
+const {assertTraceStartsAfterAuth,assertGestureSourceUsesHelper,validateChromiumScriptSources}=require('../../scripts/recette/canonical/chromium-policy');
 function fakePage({samples,locators}){
  const h={};let i=0;
  const page={
@@ -59,4 +59,10 @@ test('chromium-policy refuses gestures written outside the helper; all 13 script
  expect(()=>assertGestureSourceUsesHelper('s.js',"await x.fill('v');")).toThrow('G6_GESTURE_OUTSIDE_HELPER_FORBIDDEN');
  expect(assertGestureSourceUsesHelper('s.js',"// .click() in comment\nawait humanClick(page,'#a');")).toBe(true);
  expect(validateChromiumScriptSources()).toBe(13);
+});
+test('chromium-policy: trace may start only after authentication completes',()=>{
+ expect(()=>assertTraceStartsAfterAuth('s.js',"const c=await b.newContext();await c.tracing.start({});")).toThrow('G6_TRACE_STARTED_OUTSIDE_HELPER');
+ expect(()=>assertTraceStartsAfterAuth('s.js',"const c=await b.newContext();await startTraceAfterAuth(c);await page.waitForURL(u=>1);")).toThrow('G6_TRACE_BEFORE_AUTH_COMPLETE');
+ expect(()=>assertTraceStartsAfterAuth('s.js',"const c=await b.newContext();await page.waitForURL(u=>1);")).toThrow('G6_TRACE_AFTER_AUTH_MISSING');
+ expect(assertTraceStartsAfterAuth('s.js',"const c=await b.newContext();await page.waitForURL(u=>1);await startTraceAfterAuth(c);")).toBe(true);
 });

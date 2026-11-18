@@ -10,7 +10,7 @@ describe('G6 fresh Hub shipment handover: one safe UI commit only',()=>{
   expect(source).toContain("handover_form_preflight");
   expect(source).toContain("handover_network_diagnostic");
   expect(source).toContain("G6_HANDOVER_UI_POST_NOT_EMITTED_");
-  expect(source).toContain("await button.press('Enter',{timeout:10000})");
+  expect(source).toContain("await humanPress(null,button,'Enter',{timeout:10000})");
   expect(source).not.toContain("page.request.post");
   expect(source).not.toContain("button.click({force:true})");
  });
@@ -25,7 +25,7 @@ describe('G6 fresh Hub shipment handover: one safe UI commit only',()=>{
   expect(block).toContain("current.shipmentEvents.length===1");
   expect(block).toContain('G6_HANDOVER_RETRY_NOT_SAFE');
   expect(block).toContain("G6_HANDOVER_FORM_BECAME_INVALID");
-  expect(block).toContain("await button.press('Enter'");
+  expect(block).toContain("await humanPress(null,button,'Enter'");
  });
  test('script still requires the entire handover PG oracle',()=>{
   expect(source).toContain('G6_SHIPMENT_HANDOVER_PG_INVALID');

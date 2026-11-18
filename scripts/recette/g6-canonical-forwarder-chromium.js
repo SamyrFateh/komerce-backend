@@ -20,6 +20,7 @@ const REF=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_REF:'SIM-ST
 const BOX=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_BOX_ID:'6ca614e5-869c-40ab-80d7-3684974092fe', TRACK='SIM-STAGING-TRK-'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6');
 const OUT=path.resolve('test-results/g6-canonical-forwarder');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
+const {startTraceAfterAuth}=require('./canonical/observability');
 const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const API='/api/admin/workspaces/shipping-customs/market/KM/international/'+REF;
 const report={schema:'komerce-g6-forwarder/1',shipment_id:ID,shipment_ref:REF,order_id:env.G6_CANONICAL_ORDER_ID,
@@ -57,6 +58,7 @@ async function login(browser,prefix='E2E_AGENT_TRANSITAIRE_',role='agent_transit
  await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:20000});
  const me=await page.request.get('/api/auth/me');
  const user=await me.json();check(me.ok()&&user.role===role,'G6_FORWARDER_ROLE_INVALID');
+ await startTraceAfterAuth(ctx);
  return {ctx,page,blocked};
 }
 async function task(page,title,tabName='Transport & fret'){
