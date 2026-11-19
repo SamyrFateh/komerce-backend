@@ -4,7 +4,7 @@
  * @layer service
  * @owner purchasing
  * @purpose Annule atomiquement une PO engagée de recette exclusivement G6-BUYER, sans contact fournisseur.
- * @db-read purchase_orders, purchase_lines, order_items, orders, v_purchase_line_progress, alerts
+ * @db-read purchase_orders, purchase_lines, order_items, orders, v_purchase_line_progress, supplier_execution_payments, alerts
  * @db-write purchase_orders, purchase_lines, alerts
  * @db-txn single_atomic_recipe_po_cancellation
  * @impact-areas purchasing, orders, staging-recette
@@ -49,7 +49,7 @@ async function cancelG6RecipePo(poId,reason,actor){
      WHERE line_id=ANY($1::uuid[])`,[ids]);
   if(received.some(x=>Number(x.received_quantity)>0))throw fail(409,'G6_PO_PHYSICAL_RECEIPT','PO avec marchandise reçue : clôture physique requise');
   const orderIds=[...new Set(lines.map(l=>l.order_id))];
-  const {rows:paid}=await client.query(`SELECT id FROM supplier_payments WHERE purchase_order_id=$1 AND real_debit_verified IS TRUE LIMIT 1`,[poId]);
+  const {rows:paid}=await client.query(`SELECT id FROM supplier_execution_payments WHERE purchase_order_id=$1 AND real_debit_verified IS TRUE LIMIT 1`,[poId]);
   if(paid.length)throw fail(409,'G6_PO_REAL_DEBIT','Débit fournisseur réel détecté : annulation de recette refusée');
   await client.query(`UPDATE purchase_lines SET purchase_order_id=NULL,cancelled_at=NOW(),
       cancel_reason=$2,updated_at=NOW() WHERE id=ANY($1::uuid[])`,[ids,['G6-RECIPE] '+motif]);
