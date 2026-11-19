@@ -31,6 +31,7 @@ async function recipePoEligibility(poId,q=db){
  return scopeVerdict(rows,po.status);
 }
 async function cancelG6RecipePo(poId,reason,actor){
+ if(process.env.KOMERCE_ENV!=='staging')throw fail(403,'G6_PO_STAGING_ONLY','Annulation de recette réservée au staging');
  requireUuid(poId,'po_id');
  const motif=typeof reason==='string'?reason.trim():'';
  if(motif.length<8 || motif.length>500)throw fail(400,'G6_REASON_REQUIRED','Motif obligatoire (8–500 caractères)');
