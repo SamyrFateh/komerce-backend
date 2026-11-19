@@ -247,7 +247,7 @@ router.get('/board', ...hubBoardRead, attachHubReadAuthority, async (req, res, n
     // lire que ses markets operations.read, filtrés côté SQL avant lecture des dossiers.
     const marketIds = req.user.role === 'market_operator'
       ? Array.from(req.authorizedMarkets || []) : null;
-    return res.json(await globalHubBoard.getGlobalBoard(db, undefined, { marketIds });
+    return res.json(await globalHubBoard.getGlobalBoard(db, undefined, { marketIds }));
   } catch (err) { return next(err); }
 });
 
