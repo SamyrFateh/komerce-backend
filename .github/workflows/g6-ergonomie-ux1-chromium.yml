@@ -11,7 +11,7 @@ permissions:
   contents: read
 jobs:
   ux1-chromium:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 25
     env:
       CI: 'true'
@@ -24,6 +24,7 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - run: npm run pr:preflight
       - run: npx playwright install --with-deps chromium
       - name: Local mock Chromium 20 repeated runs, no staging
         run: npx playwright test tests/e2e/hub-live-execution.spec.js --grep 'UX1 — nouvelle ligne fournisseur' --repeat-each=20 --workers=1
