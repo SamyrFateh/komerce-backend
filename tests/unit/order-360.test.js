@@ -34,7 +34,7 @@ describe('G6-CLEANUP D — Order 360 contrôle admin',()=>{
  test('bouton visible seulement admin G6 à statut avancé',()=>{
   expect(source).toContain("order.simulation_scope!=='G6-BUYER'");
   expect(source).toContain("options.user?.role!=='admin'");
-  expect(source).toContain("['preparation','shipped','in_transit','available']");
+  expect(source).toContain("['ordered','preparation','shipped','in_transit','available']");
   expect(source).toContain('Clôturer la recette (marchandise au Hub)');
  });
  test('ne clique que sur la route spécialisée avec motif et relecture',()=>{
