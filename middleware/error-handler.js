@@ -42,6 +42,7 @@ try {
 }
 
 function classifyError(err) {
+  if (typeof err.code === 'string' && /^G6_(?:PO|HUB)_/.test(err.code)) return 'g6_business';
   if (err.isJoi || err.type === 'entity.parse.failed') return 'validation';
   if (err.name === 'UnauthorizedError' || err.status === 401) return 'auth';
   if (err.name === 'ForbiddenError' || err.status === 403) return 'forbidden';
@@ -60,6 +61,7 @@ function classifyError(err) {
 function getStatusCode(err, classification) {
   if (err.status || err.statusCode) return err.status || err.statusCode;
   switch (classification) {
+    case 'g6_business':    return 409;
     case 'validation':     return 400;
     case 'auth':           return 401;
     case 'forbidden':      return 403;
@@ -76,6 +78,7 @@ function getStatusCode(err, classification) {
 
 function getUserMessage(classification, err) {
   switch (classification) {
+    case 'g6_business':    return err.message || err.code;
     case 'validation':     return err.message || 'Données invalides';
     case 'auth':           return 'Authentification requise';
     case 'forbidden':      return 'Accès interdit';
@@ -110,6 +113,10 @@ function errorHandler(err, req, res, _next) {
     err: statusCode >= 500 ? err : undefined,
     requestId, method: req.method, url: req.originalUrl,
     status: statusCode, classification, userId: req.user?.id || null,
+    businessCode: /^G6_(?:PO|HUB)_/.test(err.code || '') ? err.code : null,
+    pgCode: err.pgCode || (/^23[0-9A-Z]{3}$/.test(err.code || '') ? err.code : null),
+    dbConstraint: /^[a-zA-Z0-9_]+$/.test(err.constraint || '') ? err.constraint : null,
+    dbReason: /^[a-zA-Z0-9_]+$/.test(err.dbReason || '') ? err.dbReason : null,
   };
 
   if (statusCode >= 500) {
@@ -118,7 +125,11 @@ function errorHandler(err, req, res, _next) {
     log.warn(logData, `${req.method} ${req.originalUrl} → ${statusCode} [${classification}]`);
   }
 
-  const response = { error: userMessage, code: classification, requestId };
+  const g6Business = classification === 'g6_business';
+  const response = { error: userMessage, code: g6Business ? err.code : classification, requestId };
+  if (g6Business && err.pgCode) response.pg_code = err.pgCode;
+  if (g6Business && /^[a-zA-Z0-9_]+$/.test(err.constraint || '')) response.constraint = err.constraint;
+  if (g6Business && /^[a-zA-Z0-9_]+$/.test(err.dbReason || '')) response.db_reason = err.dbReason;
 
   if (process.env.NODE_ENV !== 'production') {
     response.detail = err.message;
