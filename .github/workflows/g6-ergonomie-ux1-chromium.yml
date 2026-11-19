@@ -32,12 +32,14 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Local mock Chromium 20 repeated runs, no staging
         run: npx playwright test tests/e2e/hub-live-execution.spec.js --grep 'UX1 — nouvelle ligne fournisseur' --repeat-each=20 --workers=1
+      - name: Verify UX1 before/after screenshots exist
+        run: test -s test-artifacts/ux1/ux1-avant.png && test -s test-artifacts/ux1/ux1-apres.png
       - name: UX1 targeted unit tests
         run: npx jest --config jest.unit.config.js --runInBand tests/unit/canonical-operations-workspace.test.js
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: g6-ergonomie-ux1-before-after-${{ github.run_id }}
-          path: .playwright-output/
+          path: test-artifacts/ux1/
           retention-days: 14
-          if-no-files-found: warn
+          if-no-files-found: error
