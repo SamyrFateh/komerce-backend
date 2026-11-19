@@ -78,13 +78,14 @@ const payload = {
   comments: [],
 };
 
-async function mount(page, {data=payload, role='admin', cancel}={}) {
+async function mount(page, {data=payload, role='admin', cancel, closeRecipe}={}) {
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
-    if (cancel && url.pathname === '/api/orders/'+REF) return route.fulfill({json:{
-      id:'00000000-0000-4000-8000-000000000042', reference:REF,status:data.order.status,payment_mode:data.order.payment.mode
+    if ((cancel || closeRecipe) && url.pathname === '/api/orders/'+REF) return route.fulfill({json:{
+      id:'00000000-0000-4000-8000-000000000042', reference:REF,status:data.order.status,payment_mode:data.order.payment.mode,simulation_scope:data.order.simulation_scope
     }});
     if (cancel && url.pathname === '/api/orders/00000000-0000-4000-8000-000000000042/cancel') return cancel(route);
+    if (closeRecipe && url.pathname === '/api/orders/00000000-0000-4000-8000-000000000042/g6-recipe-close') return closeRecipe(route);
     if (url.pathname === PAGE_PATH) {
       return route.fulfill({
         contentType: 'text/html',
@@ -183,4 +184,32 @@ test('admin : annuler une recette cash confirmée et relire le statut en fiche',
   await expect(page.getByText('Commande de recette '+REF+' annulée.')).toBeVisible();
   await expect(action).toHaveCount(0);
   expect(posts).toEqual([{reason:'Annulation de recette G6 depuis Order 360 · '+REF}]);
+});
+
+test('G6 D : administrateur clôture une recette Hub via Order 360 avec motif, sans PSP',async({page},testInfo)=>{
+ const data=structuredClone(payload);
+ Object.assign(data.order,{status:'preparation',simulation_scope:'G6-BUYER'});
+ data.order.payment.mode='cash_relais';
+ let writes=0;
+ page.on('dialog',dialog=>dialog.accept('Fin de recette G6, stock isolé au Hub'));
+ await mount(page,{data,role:'admin',closeRecipe:route=>{
+   writes++;
+   expect(route.request().postDataJSON().reason).toContain('Fin de recette G6');
+   data.order.status='cancelled';
+   return route.fulfill({json:{order_id:'00000000-0000-4000-8000-000000000042',status:'cancelled',psp_refunds:0,supplier_contacts:0}});
+ }});
+ const button=page.locator('[data-g6-recipe-hub-close]');
+ await expect(button).toBeVisible();
+ if(testInfo.repeatEachIndex===0){fs.mkdirSync('test-artifacts/g6-order',{recursive:true});await page.screenshot({path:'test-artifacts/g6-order/avant.png',fullPage:true});}
+ await button.click();
+ await expect(page.getByText('Clôture de recette G6 enregistrée et auditée.')).toBeVisible();
+ expect(writes).toBe(1);
+ if(testInfo.repeatEachIndex===0) await page.screenshot({path:'test-artifacts/g6-order/apres.png',fullPage:true});
+});
+test('G6 D : toute commande non G6 ou tout compte non admin masque l’action de clôture',async({page})=>{
+ const data=structuredClone(payload);
+ Object.assign(data.order,{status:'available',simulation_scope:null});
+ data.order.payment.mode='cash_relais';
+ await mount(page,{data});
+ await expect(page.locator('[data-g6-recipe-hub-close]')).toHaveCount(0);
 });
