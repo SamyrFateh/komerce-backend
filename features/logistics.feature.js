@@ -80,6 +80,7 @@ module.exports = {
       'migrations/392_hub_order_bag_ownership.sql',
       'migrations/393_hub_order_bag_scan_evidence.sql',
       'migrations/394_hub_packed_bag_box_link.sql',
+      'migrations/465_g6_recipe_hub_placement_release.sql',
       'migrations/401_relay_product_return_intake.sql',
       'migrations/309_hub_placement_guard_exclude_outcomes.sql',
       'migrations/313_market_transport_sale_rates.sql',
