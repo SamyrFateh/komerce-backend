@@ -192,12 +192,14 @@ test('G6-D : Order 360 ferme seulement une recette au Hub avec motif, relecture 
  data.order.simulation_scope='G6-BUYER';
  data.order.payment.mode='cash_relais';
  let posts=[];
+ await mount(page,{data,cancel:route=>route.fulfill({status:409,json:{error:'Interdit'}})});
+ // Le mock POST exact doit être enregistré après la route générique de mount.
  await page.route(`${ORIGIN}/api/orders/00000000-0000-4000-8000-000000000042/close-g6-hub-recipe`,async route=>{
    posts.push(route.request().postDataJSON());
    data.order.status='cancelled';
    await route.fulfill({json:{status:'cancelled',psp_refund:false}});
  });
- await mount(page,{data,cancel:route=>route.fulfill({status:409,json:{error:'Interdit'}})});
+
  const button=page.locator('[data-order360-g6-hub-close]');
  await expect(button).toBeVisible();
  if(info.repeatEachIndex===0){fs.mkdirSync('test-artifacts/g6-hub',{recursive:true});await page.screenshot({path:'test-artifacts/g6-hub/avant.png',fullPage:true});}
@@ -205,7 +207,6 @@ test('G6-D : Order 360 ferme seulement une recette au Hub avec motif, relecture 
  await button.click();
  // La confirmation est une deuxième boîte : Playwright accepte automatiquement
  // les confirmations si aucun handler n'est installé.
-  console.log('G6-D diagnostic',JSON.stringify({posts,root:await page.locator('#canonical-admin-root').innerText()}));
  await expect(page.getByText('Commande de recette '+REF+' clôturée au Hub.')).toBeVisible();
  expect(posts).toEqual([{reason:'Fin de recette G6'}]);
  if(info.repeatEachIndex===0)await page.screenshot({path:'test-artifacts/g6-hub/apres.png',fullPage:true});
