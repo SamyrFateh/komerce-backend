@@ -1278,6 +1278,68 @@ async function recordPhysicalUnitOutcome(executor, {
   return { noop: false, unit, outbox_event_id: outboxEventId };
 }
 
+/**
+ * G6 recette seulement : sortie du stock physique affecté à la commande.
+ * Les liens immuables sac ↔ box et les identités achats restent historiques.
+ * Le retrait est un événement de garde ; il n'invente jamais de réception,
+ * d'invendu revendable, de dommage ni un mouvement physique vers un autre client.
+ */
+async function releaseG6RecipeHubPlacements(executor,{orderId,actorId,reason}){
+ const q=requireExecutor(executor);
+ if(!orderId || !actorId || !reason || reason.trim().length<8)fail('G6_RECIPE_PHYSICAL_SCOPE_REQUIRED');
+ const {rows:placements}=await q.query(`SELECT p.id,p.physical_unit_id,p.allocation_id,p.quantity,u.state,u.unit_type,u.order_id AS unit_order_id
+   FROM hub_physical_unit_placements p
+   JOIN hub_purchase_allocations a ON a.id=p.allocation_id
+   JOIN hub_physical_units u ON u.id=p.physical_unit_id
+   WHERE a.order_id=$1 AND p.removed_at IS NULL
+   ORDER BY p.id FOR UPDATE OF p`,[orderId]);
+ const direct=[...new Set(placements.map(p=>p.physical_unit_id))];
+ if(!direct.length)return {released_placements:0,quarantined_units:0,quantity:0};
+ const {rows:linkedBoxes}=await q.query(`SELECT DISTINCT box_unit_id FROM hub_box_bags
+   WHERE bag_unit_id=ANY($1::uuid[])`,[direct]);
+ const allUnits=[...new Set([...direct,...linkedBoxes.map(x=>x.box_unit_id)])].sort();
+ const {rows:shipped}=await q.query(`SELECT physical_unit_id FROM international_shipment_hub_units
+   WHERE physical_unit_id=ANY($1::uuid[]) LIMIT 1`,[allUnits]);
+ if(shipped.length)fail('G6_RECIPE_HUB_ALREADY_SHIPPED','Une unité de cette commande est déjà remise à une expédition');
+ for(const p of placements){
+   if(!['RECEIVED','IDENTIFIED','QUALITY_CHECKED','LOCATED','ALLOCATED','PICKED','PACKED'].includes(p.state))
+     fail('G6_RECIPE_HUB_STATE_REFUSED','Unité physique hors du Hub ou déjà en quarantaine');
+   if(p.unit_type==='HANDLING_UNIT' && p.unit_order_id!==orderId)
+     fail('G6_RECIPE_HUB_BAG_OWNERSHIP_REFUSED');
+ }
+ let quantity=0;
+ for(const p of placements){
+   const {rowCount}=await q.query(`UPDATE hub_physical_unit_placements SET removed_at=clock_timestamp()
+      WHERE id=$1 AND removed_at IS NULL`,[p.id]);
+   if(rowCount!==1)fail('G6_RECIPE_HUB_CONCURRENT_RELEASE');
+   quantity+=Number(p.quantity);
+   await insertCustodyEvent(q,{
+     physicalUnitId:p.physical_unit_id,eventType:'PLACEMENT_OUT',
+     allocationId:p.allocation_id,quantity:Number(p.quantity),actorId,
+     details:{reason_code:'G6_RECIPE_UNSOLD_AT_HUB',order_id:orderId,reason,
+       historical_bag_box_link_preserved:true,stock_not_invented:true},
+   });
+ }
+ let quarantined=0;
+ const {rows:units}=await q.query(`SELECT id,state,unit_type FROM hub_physical_units
+    WHERE id=ANY($1::uuid[]) ORDER BY id FOR UPDATE`,[allUnits]);
+ for(const unit of units){
+   const {rows:[count]}=await q.query(`SELECT COALESCE(SUM(e.quantity),0)::int AS n
+     FROM hub_box_effective_placements e WHERE e.box_unit_id=$1`,[unit.id]);
+   const {rows:[own]}=await q.query(`SELECT COUNT(*)::int AS n FROM hub_physical_unit_placements
+     WHERE physical_unit_id=$1 AND removed_at IS NULL`,[unit.id]);
+   if(Number(count?.n)>0 || Number(own?.n)>0)continue;
+   if(unit.state==='QUARANTINED')continue;
+   if(unit.state==='DISPATCHED' || unit.state==='SUPERSEDED')
+     fail('G6_RECIPE_HUB_UNIT_TERMINAL','Unité physique déjà sortie du Hub');
+   await transitionPhysicalUnit(q,{unitId:unit.id,toState:'QUARANTINED',actorId,
+     details:{reason_code:'G6_RECIPE_UNSOLD_AT_HUB',order_id:orderId,reason,
+       historical_links_preserved:true}});
+   quarantined++;
+ }
+ return {released_placements:placements.length,quarantined_units:quarantined,quantity};
+}
+
 module.exports = {
   HubPhysicalError,
   UNIT_TYPES,
@@ -1294,4 +1356,5 @@ module.exports = {
   transitionPhysicalUnit,
   moveAllocationQuantity,
   recordPhysicalUnitOutcome,
+  releaseG6RecipeHubPlacements,
 };
