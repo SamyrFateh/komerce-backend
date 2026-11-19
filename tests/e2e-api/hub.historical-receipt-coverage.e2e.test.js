@@ -34,6 +34,7 @@ describeE2E('C2 — réception physique d\'une PO historique → préparation', 
     cleanup.trackSql(`
       SET session_replication_role = replica;
       DELETE FROM hub_custody_events WHERE physical_unit_id IN (SELECT id FROM hub_physical_units WHERE reference LIKE '${REF}%');
+      DELETE FROM incidents WHERE details->>'physical_unit_id' IN (SELECT id::text FROM hub_physical_units WHERE reference LIKE '${REF}%');
       DELETE FROM hub_physical_unit_placements WHERE allocation_id IN (SELECT id FROM hub_purchase_allocations WHERE order_id = '${orderId}');
       DELETE FROM hub_purchase_allocations WHERE order_id = '${orderId}';
       DELETE FROM hub_physical_units WHERE reference LIKE '${REF}%';
@@ -113,4 +114,36 @@ describeE2E('C2 — réception physique d\'une PO historique → préparation', 
     expect(po.status).toBe('hub_received');
     expect(po.hub_received_at).not.toBeNull();
   });
+  // La suite C2 a créé de vrais snapshots d'allocation et placements Hub par
+  // receiveSupplierPackageCommand. Tester G6-D sur cette matière, sans mock SQL.
+  test('G6-D — close depuis preparation / PO hub_received avec preuve Hub réelle',async()=>{
+    await q("UPDATE orders SET simulation_scope='G6-BUYER' WHERE id=$1",[orderId]);
+    const physical=await q(`SELECT DISTINCT u.id,u.state FROM hub_physical_units u
+      JOIN hub_physical_unit_placements hp ON hp.physical_unit_id=u.id AND hp.removed_at IS NULL
+      JOIN hub_purchase_allocations a ON a.id=hp.allocation_id
+      WHERE a.order_id=$1`,[orderId]);
+    expect(physical.rows.length).toBeGreaterThan(0);
+    const {closeG6HubOrder}=require('../../services/g6-hub-recipe-closure');
+    const productStockBefore=Number((await q('SELECT stock FROM products WHERE id=$1',[productId])).rows[0].stock);
+    const skuStockBefore=Number((await q('SELECT stock FROM product_skus WHERE id=$1',[skuId])).rows[0].stock);
+    const result=await closeG6HubOrder(orderId,{actor:{id:userId,role:'admin'},
+      reason:'Fin campagne G6, matière contrôlée au Hub'});
+    expect(result).toMatchObject({status:'cancelled',psp_refund:false,external_calls:0});
+    expect(result.units_quarantined).toBeGreaterThan(0);
+    expect(await status()).toBe('cancelled');
+    const states=await q('SELECT id,state FROM hub_physical_units WHERE id=ANY($1::uuid[])',
+      [physical.rows.map(u=>u.id)]);
+    expect(states.rows.every(u=>u.state==='QUARANTINED')).toBe(true);
+    const incidents=await q(`SELECT i.status,i.details->>'type' AS subtype,i.details->>'physical_unit_id' AS unit_id
+       FROM incidents i WHERE i.details->>'physical_unit_id'=ANY($1::text[])`,
+       [physical.rows.map(u=>String(u.id))]);
+    expect(incidents.rows).toHaveLength(physical.rows.length);
+    expect(incidents.rows.every(i=>['open','investigating'].includes(i.status)&&
+      i.subtype==='g6_hub_recipe_quarantine')).toBe(true);
+    expect((await q('SELECT status FROM purchase_orders WHERE id=$1',[poId])).rows[0].status).toBe('hub_received');
+    // Une unité mise en quarantaine n'est pas une restitution en stock vendable.
+    expect(Number((await q('SELECT stock FROM products WHERE id=$1',[productId])).rows[0].stock)).toBe(productStockBefore);
+    expect(Number((await q('SELECT stock FROM product_skus WHERE id=$1',[skuId])).rows[0].stock)).toBe(skuStockBefore);
+  });
+
 });

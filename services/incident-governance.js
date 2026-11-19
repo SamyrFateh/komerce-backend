@@ -75,6 +75,9 @@ const RECONCILIATION_SUBTYPE_MAPPING = Object.freeze({
   stale_parcel:         Object.freeze({ origin_domain: 'LOGISTICS', resolver_domain: 'LOGISTICS', resolution_class: 'PHYSICAL_PROOF' }),
   over_allocation:      Object.freeze({ origin_domain: 'LOGISTICS', resolver_domain: 'LOGISTICS', resolution_class: 'PHYSICAL_PROOF' }),
   unallocated_item:     Object.freeze({ origin_domain: 'LOGISTICS', resolver_domain: 'LOGISTICS', resolution_class: 'PHYSICAL_PROOF' }),
+  // Une commande fictive clôturée laisse sa marchandise identifiée physiquement
+  // en quarantaine Hub : sa levée exige une nouvelle preuve physique.
+  g6_hub_recipe_quarantine: Object.freeze({ origin_domain: 'LOGISTICS', resolver_domain: 'LOGISTICS', resolution_class: 'PHYSICAL_PROOF' }),
   order_status_drift:   Object.freeze({ origin_domain: 'ORDERS', resolver_domain: 'ORDERS', resolution_class: 'UPSTREAM_TRUTH' }),
   hub_purchase_identity_conflict: Object.freeze({ origin_domain: 'PURCHASING', resolver_domain: 'PURCHASING', resolution_class: 'UPSTREAM_TRUTH' }),
   hub_purchase_quantity_conflict: Object.freeze({ origin_domain: 'PURCHASING', resolver_domain: 'PURCHASING', resolution_class: 'UPSTREAM_TRUTH' }),

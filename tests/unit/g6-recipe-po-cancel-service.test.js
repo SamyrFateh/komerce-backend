@@ -35,6 +35,8 @@ describe('G6 recipe PO transaction',()=>{
    client={query:jest.fn(async(sql)=>{
      if(sql.startsWith('SELECT id,status,order_id'))return {rows:rows.po?[rows.po]:[]};
      if(sql.includes('SELECT pl.id AS line_id'))return {rows:rows.lines};
+     if(sql.includes('SELECT id AS line_id,cancelled_at FROM purchase_lines'))
+       return {rows:rows.afterHeader||rows.lines.map(l=>({line_id:l.line_id,cancelled_at:l.cancelled_at||null}))};
      if(sql.includes('SELECT 1 FROM hub_purchase_allocations'))return {rows:rows.physical};
      if(sql.includes('SELECT 1 FROM supplier_execution_payments'))return {rows:rows.debits};
      if(sql.includes('UPDATE purchase_lines'))return {rows:rows.detached};
@@ -44,13 +46,38 @@ describe('G6 recipe PO transaction',()=>{
  });
  test('notified/confirmed all G6: one commit, purchase lines detached, no providers',async()=>{
    const result=await cancelRecipePo(PO,{actor:ACTOR,reason:'Fin recette contrôlée'});
-   expect(result).toMatchObject({status:'cancelled',external_calls:0,detached:[ITEM.line_id]});
+   expect(result).toMatchObject({status:'cancelled',external_calls:0,cancelled_lines:[ITEM.line_id]});
    const sql=client.query.mock.calls.map(x=>x[0]);
    expect(sql).toContain('BEGIN');expect(sql).toContain('COMMIT');
    expect(sql.join('\n')).toContain('UPDATE purchase_orders SET status=\'cancelled\'');
-   expect(sql.join('\n')).toContain('UPDATE purchase_lines SET purchase_order_id=NULL');
+   expect(sql.join('\n')).toContain('UPDATE purchase_lines SET');
+   expect(sql.join('\n')).not.toContain('SET purchase_order_id=NULL');
+   expect(sql.join('\n')).toContain('cancelled_at=NOW()');
    expect(sql.join('\n')).toContain('UPDATE alerts SET resolved_at=NOW()');
    expect(sql).not.toContain('ROLLBACK');expect(client.release).toHaveBeenCalledTimes(1);
+ });
+ test('annulation automatique par transition de PO : détectée par relecture, jamais réécrite',async()=>{
+   rows.lines=[{...ITEM,cancelled_at:null}];
+   rows.afterHeader=[{line_id:ITEM.line_id,cancelled_at:new Date('2026-11-19T11:00:00Z')}];
+   rows.detached=[];
+   const result=await cancelRecipePo(PO,{actor:ACTOR,reason:'Fin recette contrôlée'});
+   expect(result).toMatchObject({status:'cancelled',cancelled_lines:[ITEM.line_id],newly_cancelled_lines:[]});
+   expect(client.query.mock.calls.map(x=>x[0])).toContain('COMMIT');
+ });
+ test('PO engagé avec ligne déjà annulée : conserve preuve historique et commit sans double annulation',async()=>{
+   rows.lines=[{...ITEM,cancelled_at:new Date('2026-11-18T00:00:00Z')}];
+   rows.detached=[];
+   const result=await cancelRecipePo(PO,{actor:ACTOR,reason:'Fin recette contrôlée'});
+   expect(result).toMatchObject({status:'cancelled',cancelled_lines:[ITEM.line_id],newly_cancelled_lines:[]});
+   expect(client.query.mock.calls.map(x=>x[0])).toContain('COMMIT');
+   expect(client.query.mock.calls.map(x=>x[0])).not.toContain('ROLLBACK');
+ });
+ test('une ligne active non annulée par UPDATE est un changement concurrent interdit',async()=>{
+   rows.lines=[{...ITEM,cancelled_at:null}];
+   rows.detached=[];
+   await expect(cancelRecipePo(PO,{actor:ACTOR,reason:'Fin recette contrôlée'}))
+     .rejects.toMatchObject({code:'G6_PO_CONCURRENT_CHANGE'});
+   expect(client.query.mock.calls.map(x=>x[0])).toContain('ROLLBACK');
  });
  for(const [kind,change,code] of [
    ['mixed',r=>r.lines.push({...ITEM,simulation_scope:'REAL'}),'G6_PO_MIXED_SCOPE'],
@@ -71,4 +98,22 @@ test('les paramètres texte des UPDATE sont typés (pas de "could not determine 
   const src = require('fs').readFileSync(require('path').join(__dirname, '../../services/g6-recipe-po-cancel-service.js'), 'utf8');
   expect(src).toMatch(/CONCAT\(COALESCE\(notes,''\),\$2::text\)/);
   expect(src).toMatch(/cancel_reason=\$2::text/);
+});
+
+
+test('erreur PostgreSQL G6 est classée avec SQLSTATE, contrainte et raison, sans fuite de SQL',async()=>{
+ jest.resetAllMocks();
+ const pgError=Object.assign(new Error('purchase_line_detach_forbidden: refus'),{code:'23514',constraint:'trg_purchase_lines_guard_attachment'});
+ const client={query:jest.fn(async(sql)=>{
+   if(sql.startsWith('SELECT id,status,order_id'))return {rows:[{id:PO,status:'notified',order_id:null}]};
+   if(sql.includes('SELECT pl.id AS line_id'))return {rows:[ITEM]};
+   if(sql.includes('UPDATE purchase_orders'))throw pgError;
+   return {rows:[]};
+ }),release:jest.fn()};
+ db.getClient.mockResolvedValue(client);
+ await expect(cancelRecipePo(PO,{actor:ACTOR,reason:'Nettoyage sécurisé de recette'}))
+  .rejects.toMatchObject({code:'G6_PO_DB_CONSTRAINT',status:409,pgCode:'23514',
+    constraint:'trg_purchase_lines_guard_attachment',dbReason:'purchase_line_detach_forbidden'});
+ expect(client.query.mock.calls.map(x=>x[0])).toContain('ROLLBACK');
+ expect(client.query.mock.calls.map(x=>x[0])).not.toContain('COMMIT');
 });

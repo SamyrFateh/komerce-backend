@@ -40,7 +40,7 @@ async function cancelRecipePo(poId,{actor,reason}={}){
     if(!po)throw reject(404,'G6_PO_NOT_FOUND');
     if(po.order_id!==null||!['notified','confirmed'].includes(po.status))
       throw reject(409,'G6_PO_STATUS_FORBIDDEN','Seul un PO groupé notifié ou confirmé est éligible');
-    const {rows:lines}=await client.query(`SELECT pl.id AS line_id,o.id AS order_id,o.simulation_scope,o.payment_mode
+    const {rows:lines}=await client.query(`SELECT pl.id AS line_id,pl.cancelled_at,o.id AS order_id,o.simulation_scope,o.payment_mode
       FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id
       JOIN orders o ON o.id=oi.order_id
       WHERE pl.purchase_order_id=$1 ORDER BY pl.id FOR UPDATE OF pl`,[poId]);
@@ -55,14 +55,42 @@ async function cancelRecipePo(poId,{actor,reason}={}){
     await client.query(`UPDATE purchase_orders SET status='cancelled',updated_at=NOW(),
       notes=CONCAT(COALESCE(notes,''),$2::text) WHERE id=$1`,
       [poId,'\n[G6-CLEANUP PO] '+new Date().toISOString()+' actor='+actor.id+' reason='+why]);
-    const {rows:detached}=await client.query(`UPDATE purchase_lines SET purchase_order_id=NULL,
-      cancelled_at=COALESCE(cancelled_at,NOW()),cancel_reason=$2::text,updated_at=NOW()
-      WHERE purchase_order_id=$1 RETURNING id`,[poId,'G6-CLEANUP PO · '+why]);
-    if(detached.length!==lines.length)throw reject(409,'G6_PO_CONCURRENT_CHANGE');
+    // La transition du PO peut déclencher l'annulation des lignes en DB.
+    // Relire les liens APRÈS ce changement, sous les verrous de transaction :
+    // aucune FK historique ne doit être détachée ni supprimée.
+    const {rows:afterHeader}=await client.query(
+      'SELECT id AS line_id,cancelled_at FROM purchase_lines WHERE purchase_order_id=$1 ORDER BY id FOR UPDATE',[poId]);
+    const beforeIds=lines.map(l=>String(l.line_id)).sort();
+    const afterIds=afterHeader.map(l=>String(l.line_id)).sort();
+    if(beforeIds.length!==afterIds.length||
+       beforeIds.some((id,i)=>id!==afterIds[i]))
+      throw reject(409,'G6_PO_CONCURRENT_CHANGE','Lien historique PO modifié pendant la clôture');
+    // I3 interdit de détacher un PO engagé ; I5 interdit de réécrire un motif
+    // d'annulation déjà enregistré. Modifier uniquement le reliquat actif.
+    const remainingActive=afterHeader.filter(l=>l.cancelled_at==null).length;
+    const {rows:cancelled}=await client.query(`UPDATE purchase_lines SET
+      cancelled_at=NOW(),cancel_reason=$2::text,updated_at=NOW()
+      WHERE purchase_order_id=$1 AND cancelled_at IS NULL RETURNING id`,
+      [poId,'G6-CLEANUP PO · '+why]);
+    if(cancelled.length!==remainingActive)
+      throw reject(409,'G6_PO_CONCURRENT_CHANGE',`G6_PO_CONCURRENT_CHANGE remaining=${remainingActive} updated=${cancelled.length}`);
     await resolveRecipePurchaseOrderAlerts(client,{poId,orderIds:orders,actorId:actor.id});
     await client.query('COMMIT');
-    return {purchase_order_id:poId,status:'cancelled',detached:detached.map(x=>x.id),orders,external_calls:0};
-  }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e;}
+    return {purchase_order_id:poId,status:'cancelled',cancelled_lines:lines.map(x=>x.line_id),newly_cancelled_lines:cancelled.map(x=>x.id),orders,external_calls:0};
+  }catch(e){
+    await client.query('ROLLBACK').catch(()=>{});
+    if(/^23[0-9A-Z]{3}$/.test(e.code||'')){
+      // Le SQLSTATE et le nom de contrainte sont exposés sans révéler de SQL,
+      // de preuve fournisseur ni de données personnelles dans le JSON.
+      const error=reject(409,'G6_PO_DB_CONSTRAINT','Annulation PO bloquée par une contrainte PostgreSQL');
+      error.pgCode=e.code;
+      if(/^[a-zA-Z0-9_]+$/.test(e.constraint||''))error.constraint=e.constraint;
+      const match=/^([a-zA-Z0-9_]+):/.exec(e.message||'');
+      if(match)error.dbReason=match[1];
+      throw error;
+    }
+    throw e;
+  }
   finally{client.release();}
 }
 module.exports={assertPeers,readEligibility,cancelRecipePo};
