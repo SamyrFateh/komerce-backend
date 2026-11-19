@@ -113,4 +113,25 @@ describeE2E('C2 — réception physique d\'une PO historique → préparation', 
     expect(po.status).toBe('hub_received');
     expect(po.hub_received_at).not.toBeNull();
   });
+  // La suite C2 a créé de vrais snapshots d'allocation et placements Hub par
+  // receiveSupplierPackageCommand. Tester G6-D sur cette matière, sans mock SQL.
+  test('G6-D — close depuis preparation / PO hub_received avec preuve Hub réelle',async()=>{
+    await q("UPDATE orders SET simulation_scope='G6-BUYER' WHERE id=$1",[orderId]);
+    const physical=await q(`SELECT DISTINCT u.id,u.state FROM hub_physical_units u
+      JOIN hub_physical_unit_placements hp ON hp.physical_unit_id=u.id AND hp.removed_at IS NULL
+      JOIN hub_purchase_allocations a ON a.id=hp.allocation_id
+      WHERE a.order_id=$1`,[orderId]);
+    expect(physical.rows.length).toBeGreaterThan(0);
+    const {closeG6HubOrder}=require('../../services/g6-hub-recipe-closure');
+    const result=await closeG6HubOrder(orderId,{actor:{id:userId,role:'admin'},
+      reason:'Fin campagne G6, matière contrôlée au Hub'});
+    expect(result).toMatchObject({status:'cancelled',psp_refund:false,external_calls:0});
+    expect(result.units_quarantined).toBeGreaterThan(0);
+    expect(await status()).toBe('cancelled');
+    const states=await q('SELECT id,state FROM hub_physical_units WHERE id=ANY($1::uuid[])',
+      [physical.rows.map(u=>u.id)]);
+    expect(states.rows.every(u=>u.state==='QUARANTINED')).toBe(true);
+    expect((await q('SELECT status FROM purchase_orders WHERE id=$1',[poId])).rows[0].status).toBe('hub_received');
+  });
+
 });
