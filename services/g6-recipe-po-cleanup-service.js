@@ -52,12 +52,20 @@ async function cancelG6RecipePo(poId,reason,actor){
   const orderIds=[...new Set(lines.map(l=>l.order_id))];
   const {rows:paid}=await client.query(`SELECT id FROM supplier_execution_payments WHERE purchase_order_id=$1 AND real_debit_verified IS TRUE LIMIT 1`,[poId]);
   if(paid.length)throw fail(409,'G6_PO_REAL_DEBIT','Débit fournisseur réel détecté : annulation de recette refusée');
-  await client.query(`UPDATE purchase_lines SET purchase_order_id=NULL,cancelled_at=NOW(),
-      cancel_reason=$2,updated_at=NOW() WHERE id=ANY($1::uuid[])`,[ids,'[G6-RECIPE] '+motif]);
-  const {rowCount}=await client.query(`UPDATE purchase_orders SET status='cancelled',updated_at=NOW(),
-      notes=CONCAT(COALESCE(notes,''),$2::text) WHERE id=$1 AND status IN ('notified','confirmed')`,
-      [poId,'\\n[G6-RECIPE-PO] actor='+actor.id+' reason='+motif+' (sans contact fournisseur)']);
+  // PostgreSQL triggers own the cancellation of these committed lines.
+  // The G6-only detachment is permitted only after the PO becomes terminal
+  // and the trigger has archived cancelled_at / cancel_reason.
+  await client.query("SELECT set_config('komerce.g6_recipe_po_id',$1,true)",[poId]);
+  const {rowCount}=await client.query(`UPDATE purchase_orders
+    SET status='cancelled',updated_at=NOW(),
+        notes=CONCAT(COALESCE(notes,''),$2::text)
+    WHERE id=$1 AND status IN ('notified','confirmed')`,
+    [poId,'\\n[G6-RECIPE-PO] actor='+actor.id+' reason='+motif+' (sans contact fournisseur)']);
   if(rowCount!==1)throw fail(409,'G6_PO_CONCURRENT_CHANGE','Statut PO modifié en parallèle');
+  const {rowCount:detached}=await client.query(`UPDATE purchase_lines
+    SET purchase_order_id=NULL, updated_at=NOW()
+    WHERE id=ANY($1::uuid[]) AND purchase_order_id=$2 AND cancelled_at IS NOT NULL`,[ids,poId]);
+  if(detached!==ids.length)throw fail(409,'G6_PO_LINES_NOT_CANCELLED','Toutes les lignes de recette doivent être annulées avant détachement');
   const {resolveRecipePoAlerts}=require('../utils/alerts');
   await resolveRecipePoAlerts(client,{poId,orderIds,actorId:actor.id});
   return {purchase_order_id:poId,status:'cancelled',detached:ids,orders:orderIds,external_calls:0};
