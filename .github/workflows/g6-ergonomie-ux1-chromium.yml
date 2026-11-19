@@ -19,6 +19,10 @@ jobs:
       KOMERCE_DISABLE_CRONS: 'true'
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Ensure origin/main available for pr:preflight
+        run: git fetch origin main:refs/remotes/origin/main
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
