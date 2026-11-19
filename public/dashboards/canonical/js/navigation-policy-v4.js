@@ -887,6 +887,20 @@
     unsold: '▦',
   });
 
+  // Menu métier complet pour le responsable marché : une entrée n'accorde
+  // aucun droit API. Les anciennes destinations admin-only sont remplacées
+  // par des projections marché existantes (autorité résolue côté serveur).
+  const MARKET_MENU_PROJECTIONS = Object.freeze({
+    'workspace-catalog': Object.freeze({ href:'/dashboards/canonical/market-catalog.html', label:'Catalogue · Mon marché' }),
+    'workspace-purchasing': Object.freeze({ href:'/admin/hub', label:'Achats fournisseurs · Suivi marché' }),
+    'live-import-runtime': Object.freeze({ href:'/admin/hub', label:'Sourcing · Suivi commandes' }),
+    'live-relais': Object.freeze({ href:'/admin/operations', label:'Relais · Suivi marché' }),
+    'markets-home': Object.freeze({ href:'/dashboards/canonical/market-autonomy.html#market-team', label:'Équipe et délégations' }),
+    'admin-users': Object.freeze({ href:'/dashboards/canonical/market-autonomy.html#market-team', label:'Utilisateurs de mon marché' }),
+    'admin-providers': Object.freeze({ href:'/dashboards/canonical/market-autonomy.html#market-network', label:'Prestataires de mon marché' }),
+    'settings': Object.freeze({ href:'/dashboards/canonical/market-autonomy.html#market-cash-control', label:'Paramètres de mon marché' }),
+  });
+
   const SIDEBAR_GROUPS = Object.freeze([
     Object.freeze({
       id: 'pilot',
@@ -1046,6 +1060,12 @@
 
   function sidebarItemVisible(item, user, adminContext) {
     const role = roleOf(user);
+    // La visibilité d'une rubrique métier n'est pas une autorisation d'action.
+    // Les données affichées restent soumises aux capabilities READ du serveur.
+    if (role === 'market_operator') {
+      return (item.roles || []).includes(role)
+        || Object.prototype.hasOwnProperty.call(MARKET_MENU_PROJECTIONS, item.id);
+    }
     if (!(item.roles || []).includes(role)) return false;
     // Les agents terrain possèdent leur propre garde serveur /api/agent/action-center.
     // Une délégation commerciale de marché n'est pas l'autorité de cette page.
@@ -1055,10 +1075,19 @@
   }
 
   function sidebarGroupsFor(user, adminContext) {
+    const market = roleOf(user) === 'market_operator';
     return SIDEBAR_GROUPS
       .map(group => Object.freeze({
         ...group,
-        items: Object.freeze(group.items.filter(item => sidebarItemVisible(item, user, adminContext))),
+        items: Object.freeze(group.items
+          .filter(item => sidebarItemVisible(item, user, adminContext))
+          .map(item => {
+            if (!market) return item;
+            const scoped = MARKET_MENU_PROJECTIONS[item.id];
+            if (scoped) return Object.freeze({...item, ...scoped, market_scoped:true});
+            if (item.id === 'live-hub') return Object.freeze({...item, label:'Hub · Mes marchés', market_scoped:true});
+            return Object.freeze({...item, market_scoped:true});
+          })),
       }))
       .filter(group => group.items.length > 0);
   }
@@ -1181,7 +1210,8 @@
     }
     const local = LOCAL_TABS[domainId];
     if (local) {
-      return local.filter(tab => tab.roles.includes(role) && tabCapabilityGranted(tab, adminContext));
+      return local.filter(tab => tab.roles.includes(role)
+        && (role === 'market_operator' || tabCapabilityGranted(tab, adminContext)));
     }
 
     const domain = visibleDomainsFor(user).find(row => row.id === domainId);
