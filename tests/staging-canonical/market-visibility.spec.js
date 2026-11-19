@@ -118,8 +118,11 @@ test('Responsable marché : Hub et Order 360 isolés, lecture seule par capabili
     // Open every distinct dashboard destination in the authenticated market session.
     // No mocked API, no mutation and no silent redirect to the login page.
     for(const href of [...new Set(menu.map(item=>item.href))]) {
+      // A hash-only transition can return a null Playwright Response; probe the
+      // actual same-origin GET to prove HTTP 200, then verify the browser's URL.
+      const probe=await fetchJSON(href);
       const navigation=await page.goto(href,{waitUntil:'domcontentloaded'});
-      const status=navigation?.status()||0;
+      const status=navigation?.status()||probe.status;
       proof.navigation.visited.push({href,http:status,path:new URL(page.url()).pathname});
       expect(status,'Dashboard unavailable for '+href).toBe(200);
       expect(new URL(page.url()).pathname,'Session lost on '+href).not.toBe('/login.html');
