@@ -15,7 +15,7 @@ fs.mkdirSync(root,{recursive:true});
 // La preuve Hub Director a son propre schéma et ne représente pas un graphe
 // de navigation. Ne pas l'interpréter comme un profil Chromium ordinaire.
 const files=fs.existsSync(dir)?fs.readdirSync(dir)
-  .filter(x=>x.endsWith('.json')&&x!=='hub-director-readonly.json'&&x!=='g8-refunds-readonly.json'):[];
+  .filter(x=>x.endsWith('.json')&&x!=='hub-director-readonly.json'&&x!=='g8-refunds-readonly.json'&&x!=='market-visibility.json'):[];
 const runs=files.map(f=>{
   const evidence=JSON.parse(fs.readFileSync(path.join(dir,f),'utf8'));
   if(!evidence.role || !Array.isArray(evidence.findings) ||
@@ -59,6 +59,66 @@ if (process.env.E2E_CHROMIUM_SPEC_FILTER === 'g8-refunds-readonly') {
   fs.writeFileSync(path.join(root, 'rapport.md'), report);
   console.log('[G8-readonly-summary] ' + JSON.stringify({ status: valid ? 'PASS' : 'FAIL', sha_match: shaMatches }));
   if (!valid) process.exitCode = 2;
+} else if (process.env.E2E_CHROMIUM_SPEC_FILTER === 'market-visibility') {
+  // Strict standalone certification: this proof is NOT a generic navigation graph.
+  // Never accept missing evidence, partial menus, missing positive business views,
+  // a session loss, a third-party market leak, or an unverified staging SHA.
+  const proofFile=path.join(dir,'market-visibility.json');
+  if(!fs.existsSync(proofFile)) throw new Error('MARKET_VISIBILITY_PROOF_MISSING');
+  const proof=JSON.parse(fs.readFileSync(proofFile,'utf8'));
+  const expectedSha=String(process.env.E2E_EXPECTED_DEPLOY_SHA||'');
+  const expectedMenu=[
+    'control-tower','action-center','flow-commerce','flow-orders','entity-clients',
+    'workspace-pricing','workspace-catalog','flow-operations','workspace-shipping',
+    'workspace-purchasing','flow-finance','workspace-accounting',
+    'live-import-runtime','live-hub','live-relais','markets-home',
+    'market-autonomy','market-catalog','unsold','admin-users',
+    'admin-providers','settings','help-docs'
+  ];
+  const codes=Array.isArray(proof.allowedMarkets)?proof.allowedMarkets:[];
+  const menu=Array.isArray(proof.navigation?.items)?proof.navigation.items:[];
+  const visited=Array.isArray(proof.navigation?.visited)?proof.navigation.visited:[];
+  const reads=Array.isArray(proof.checkedReads)?proof.checkedReads:[];
+  const denied=Array.isArray(proof.unauthorized)?proof.unauthorized:[];
+  const actualMarkets=Array.isArray(proof.boardMarkets)?proof.boardMarkets:[];
+  const shaOk=/^[0-9a-f]{40}$/.test(expectedSha)
+    && proof.version===expectedSha && proof.finalVersion===expectedSha;
+  const menuOk=JSON.stringify(menu)===JSON.stringify(expectedMenu)
+    && visited.length>=12
+    && visited.every(row=>row && row.http===200 && row.path!=='/login.html');
+  const scopeOk=codes.length>0 && codes.every(code=>/^[A-Z]{2}$/.test(code))
+    && actualMarkets.every(code=>codes.includes(code))
+    && Number(proof.boardOrderCount)>0
+    && reads.length>0 && reads.every(row=>row && row.http===200 && codes.includes(row.market))
+    && denied.length>0 && denied.every(row=>row && !codes.includes(row.market) && row.status>=400 && row.status<500);
+  const po=proof.order360||{};
+  const poOk=po.status===200 && po.readOnly===true && Number.isInteger(po.poCount) && po.poCount>=0;
+  const zeroErrors=Array.isArray(proof.jsErrors)&&proof.jsErrors.length===0
+    && Array.isArray(proof.blockedWrites)&&proof.blockedWrites.length===0;
+  const checks={sha:shaOk,login:proof.loginStatus===200,role:proof.role==='market_operator',
+    menu:menuOk,market_scope:scopeOk,order360:poOk,zero_errors:zeroErrors};
+  const valid=proof.result==='PASS'&&Object.values(checks).every(Boolean);
+  const summary={status:valid?'PASS':'FAIL',checks,menu_items:menu.length,
+    dashboard_destinations:visited.length,authorized_market_codes:codes,
+    foreign_market_refusals:denied.length,read_views_checked:reads.length,
+    board_order_count:proof.boardOrderCount,sha_match:shaOk};
+  fs.writeFileSync(path.join(root,'market-visibility-summary.json'),JSON.stringify(summary,null,2)+'\n');
+  fs.writeFileSync(path.join(root,'rapport.md'),[
+    '# Komerce — Responsable Marché, Chromium staging réel', '',
+    'Verdict: '+summary.status,
+    'Version deployee stable: '+(shaOk?expectedSha:'NON PROUVE'),
+    'Connexion reelle market_operator: '+(checks.login?'PASS':'FAIL'),
+    'Menu metier complet 23 rubriques et destinations HTTP 200: '+(checks.menu?'PASS':'FAIL'),
+    'Marchés autorises: '+codes.join(', '),
+    'Isolation Hub, consultations métier et refus inter-marchés: '+(checks.market_scope?'PASS':'FAIL'),
+    'Order 360 et achats fournisseurs en lecture seule: '+(checks.order360?'PASS':'FAIL'),
+    'Aucune ecriture ni erreur JavaScript: '+(checks.zero_errors?'PASS':'FAIL'),
+    '',
+    'Aucun cookie, jeton, identite ni information sensible ne figure dans ce rapport.',
+    'Ce controle de lecture seule ne prouve pas les transitions transactionnelles.',
+  ].join('\n')+'\n');
+  console.log('[market-visibility-summary] '+JSON.stringify(summary));
+  if(!valid)process.exitCode=2;
 } else if (process.env.E2E_CHROMIUM_SPEC_FILTER === 'hub-director-readonly') {
   const file = path.join(dir,'hub-director-readonly.json');
   if (!fs.existsSync(file)) throw new Error('HUB_DIRECTOR_PROOF_MISSING');

@@ -22,9 +22,25 @@ test('Responsable marché : Hub et Order 360 isolés, lecture seule par capabili
     allowedMarkets:[],boardMarkets:[],boardOrderCount:null,order360:null,
     checkedReads:[],unauthorized:[],blockedWrites:[],jsErrors:[]};
   const save=()=>{fs.mkdirSync(path.dirname(OUT),{recursive:true});fs.writeFileSync(OUT,JSON.stringify(proof,null,2)+'\n')};
+  // Browser fetch is intentionally used after login: Playwright APIRequest
+  // timeout call logs can expose httpOnly Cookie headers inside raw artifacts.
+  // The initial public /health/version call before navigation has no session.
   const fetchJSON=async url=>{
-    const r=await page.request.get(url,{timeout:20000});
-    return {status:r.status(),body:await r.json().catch(()=>({}))};
+    if(page.url()==='about:blank') {
+      const r=await page.request.get(url,{timeout:20000});
+      return {status:r.status(),body:await r.json().catch(()=>({}))};
+    }
+    return page.evaluate(async endpoint=>{
+      const controller=new AbortController();
+      const timer=setTimeout(()=>controller.abort(),20000);
+      try{
+        const response=await fetch(endpoint,{method:'GET',credentials:'same-origin',
+          redirect:'manual',headers:{Accept:'application/json'},signal:controller.signal});
+        return {status:response.status,body:await response.json().catch(()=>({}))};
+      }catch(error){
+        return {status:0,body:{},error_code:String(error?.name||'FETCH_FAILED')};
+      }finally{clearTimeout(timer);}
+    },url);
   };
   try {
     expect(new URL(process.env.E2E_STAGING_BASE_URL||BASE).origin).toBe(BASE);
@@ -169,7 +185,9 @@ test('Responsable marché : Hub et Order 360 isolés, lecture seule par capabili
     proof.result='PASS';
   } catch(error) {
     proof.result='FAIL';
-    proof.error=String(error.message||error).slice(0,600);
+    // Never archive a Playwright call log: it can contain the authenticated Cookie.
+    proof.error=String(error?.message||error).split(/Call log:|\\n\\s*- →/)[0]
+      .replace(/eyJ[A-Za-z0-9._-]+/g,'[REDACTED]').slice(0,240);
     throw error;
   } finally {
     save();
