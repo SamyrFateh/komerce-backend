@@ -4,13 +4,15 @@
  * @layer service
  * @owner backend-core
  * @purpose Admin-only local cancellation of a supplier PO exclusively linked to G6-BUYER cash recipes.
- * @db-read purchase_orders, purchase_lines, order_items, orders, hub_purchase_allocations, supplier_execution_payments, alerts
+ * @db-read purchase_orders, purchase_lines, order_items, orders, hub_purchase_allocations, supplier_execution_payments
+ * @db-write-via:alerts-persistence-boundary alerts
  * @db-write purchase_orders, purchase_lines, alerts
  * @db-txn owned
  * @impact-areas purchasing, orders, alerts, staging-only
  */
 'use strict';
 const db = require('../db');
+const {resolveRecipePurchaseOrderAlerts}=require('../utils/alerts');
 const UUID = /^[a-f\d]{8}(-[a-f\d]{4}){3}-[a-f\d]{12}$/i;
 const SCOPE = 'G6-BUYER';
 function reject(status,code,message){const e=new Error(message||code);e.status=status;e.code=code;return e;}
@@ -57,12 +59,7 @@ async function cancelRecipePo(poId,{actor,reason}={}){
       cancelled_at=COALESCE(cancelled_at,NOW()),cancel_reason=$2,updated_at=NOW()
       WHERE purchase_order_id=$1 RETURNING id`,[poId,'G6-CLEANUP PO · '+why]);
     if(detached.length!==lines.length)throw reject(409,'G6_PO_CONCURRENT_CHANGE');
-    await client.query(`UPDATE alerts SET resolved_at=NOW(),resolved_by=$2
-      WHERE resolved_at IS NULL AND (
-        (entity_type='purchase_order' AND entity_id=$1)
-        OR (entity_type='order' AND entity_id=ANY($3::uuid[])
-          AND type='order_cancel_purchasing_blocked' AND description LIKE '%' || $1::text || '%')
-      )`,[poId,actor.id,orders]);
+    await resolveRecipePurchaseOrderAlerts(client,{poId,orderIds:orders,actorId:actor.id});
     await client.query('COMMIT');
     return {purchase_order_id:poId,status:'cancelled',detached:detached.map(x=>x.id),orders,external_calls:0};
   }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e;}
