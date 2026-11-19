@@ -584,24 +584,24 @@ describe('G6 vendor simulation — backend boundaries', () => {
     return { ...s, restore };
   };
   const g6 = (reference) => ({ simulation_scope:'G6-BUYER', reference });
-  it('accepte une PO dont 2 commandes sont G6 ; référence = 1re ligne FIFO', async () => {
-    const body = { channel:'other', simulated:true, supplier_order_id:'SIM-STAGING-KFIRST1' };
+  it('accepte une PO dont 2 commandes sont G6 ; référence propre au PO', async () => {
+    const body = { channel:'other', simulated:true, supplier_order_id:'SIM-STAGING-'+PO };
     const t = sentG6([g6('KFIRST1'), g6('KSECOND2')], body);
     try { await expect(engagement.recordPurchaseOrderSent(PO, body)).resolves.toMatchObject({ simulated:true });
       expect(t.calls.find(c => /ORDER BY o\.created_at, pl\.id/.test(c.sql)).sql).toMatch(/ORDER BY o\.created_at, pl\.id/); } finally { t.restore(); }
   });
-  it('refuse la référence de la 2e commande (pas la 1re FIFO)', async () => {
+  it('refuse la référence d’une commande du groupe', async () => {
     const body = { channel:'other', simulated:true, supplier_order_id:'SIM-STAGING-KSECOND2' };
     const t = sentG6([g6('KFIRST1'), g6('KSECOND2')], body);
     try { await expect(engagement.recordPurchaseOrderSent(PO, body)).rejects.toMatchObject({ status:400, code:'G6_SUPPLIER_SIMULATED_SEND_PROOF_INVALID' }); } finally { t.restore(); }
   });
   it('refuse une PO mixte G6 et réelle déclarée simulée', async () => {
-    const body = { channel:'other', simulated:true, supplier_order_id:'SIM-STAGING-KFIRST1' };
+    const body = { channel:'other', simulated:true, supplier_order_id:'SIM-STAGING-'+PO };
     const t = sentG6([g6('KFIRST1'), { simulation_scope:null, reference:'REAL1' }], body);
     try { await expect(engagement.recordPurchaseOrderSent(PO, body)).rejects.toMatchObject({ status:409, code:'G6_SUPPLIER_SIMULATION_DECLARATION_REQUIRED' }); } finally { t.restore(); }
   });
   it('PO avec 1 seule commande G6 : inchangé', async () => {
-    const body = { channel:'other', simulated:true, supplier_order_id:'SIM-STAGING-KONLY1' };
+    const body = { channel:'other', simulated:true, supplier_order_id:'SIM-STAGING-'+PO };
     const t = sentG6([g6('KONLY1')], body);
     try { await expect(engagement.recordPurchaseOrderSent(PO, body)).resolves.toMatchObject({ simulated:true }); } finally { t.restore(); }
   });
