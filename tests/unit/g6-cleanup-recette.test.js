@@ -81,3 +81,56 @@ test('G6-C grouped PO deduped and G6-D Hub closure ordered after C',()=>{
  const mixed=classify(E({ref:'D2',status:'available',lines:[L('d','p3','received')],peers:{p3:[peer('D2'),peer('LIVE','LIVE')]}}));
  expect(mixed).toMatchObject({verdict:'REFUSED',reason:'MIXED_PO'});
 });
+
+
+test('C_PO: commandes déjà annulées, PO engagé 100% G6 cash : geste unique sans annuler de commande',()=>{
+ const po={po_id:'po-orphan',po_status:'confirmed',legacy_order_id:null,line_count:2,
+  has_physical:false,has_debit:false,peers:[
+   {order_id:'o-a',reference:'C-A',simulation_scope:G6,payment_mode:'cash_relais',order_status:'cancelled'},
+   {order_id:'o-b',reference:'C-B',simulation_scope:G6,payment_mode:'cash_relais',order_status:'cancelled'}]};
+ const plan=buildPlan([],{orphanPos:[po]});
+ expect(plan.poItems[0]).toMatchObject({class:'C_PO',verdict:'PLANNED'});
+ expect(plan.steps).toEqual([{action:'cancel_g6_po',po_id:'po-orphan',reference:'C-A',class:'C_PO'}]);
+ expect(assertGestureAllowed(plan.steps[0],plan)).toBe(true);
+ expect(()=>assertGestureAllowed({...plan.steps[0],po_id:'another-po'},plan))
+  .toThrow('G6_CLEANUP_ORDER_NOT_PLANNED');
+});
+
+test('C_PO fail-closed : PO mixte, commande vivante, réception, débit, ligne sans pair et PO non groupé',()=>{
+ const {classifyOrphanPo}=require('../../scripts/recette/canonical/g6-cleanup-core');
+ const safe={po_id:'po-1',po_status:'notified',legacy_order_id:null,line_count:1,
+  has_physical:false,has_debit:false,peers:[
+   {order_id:'o-a',reference:'C-A',simulation_scope:G6,payment_mode:'cash_relais',order_status:'cancelled'}]};
+ for(const [edit,reason] of [
+  [x=>x.peers[0].simulation_scope='REAL','MIXED_PO'],
+  [x=>x.peers[0].payment_mode='stripe_eur','PAYMENT_MODE'],
+  [x=>x.peers[0].order_status='ordered','PO_PEER_NOT_CANCELLED'],
+  [x=>x.has_physical=true,'PO_PHYSICAL_RECEIVED'],
+  [x=>x.has_debit=true,'PO_REAL_SUPPLIER_DEBIT'],
+  [x=>x.line_count=2,'PO_PEER_INCOMPLETE'],
+  [x=>x.legacy_order_id='o-a','PO_NOT_GROUPED'],
+ ]) {
+  const po=JSON.parse(JSON.stringify(safe));edit(po);
+  expect(classifyOrphanPo(po)).toMatchObject({verdict:'REFUSED',reason,gestures:[]});
+  expect(buildPlan([],{orphanPos:[po]}).steps).toEqual([]);
+ }
+});
+
+test('C_PO ne duplique pas le geste d’un PO déjà traité en classe C vivante',()=>{
+ const po={po_id:'p1',po_status:'notified',legacy_order_id:null,line_count:1,
+  has_physical:false,has_debit:false,peers:[
+   {order_id:'o-K1',reference:'K1',simulation_scope:G6,payment_mode:'cash_relais',order_status:'ordered'}]};
+ const plan=buildPlan([E({ref:'K1',status:'ordered',lines:[L('l1','p1','notified')],peers:{p1:[peer('K1')]}})],{orphanPos:[po]});
+ expect(plan.steps.filter(s=>s.action==='cancel_g6_po')).toHaveLength(1);
+ expect(plan.poItems[0].reason).toBe('PO_PEER_NOT_CANCELLED');
+});
+
+test('G6 PO orphan inventory is independently read-only, not restricted to live order IDs',()=>{
+ const src=fs.readFileSync(SCRIPT,'utf8');
+ expect(src).toContain('BEGIN READ ONLY');
+ expect(src).toContain('FROM purchase_orders po');
+ expect(src).toContain('po.status::text IN (\'notified\',\'confirmed\')');
+ expect(src).toContain('WHERE scoped.purchase_order_id=po.id AND so.simulation_scope=$1');
+ expect(src).toContain('report.po_audit=');
+ expect(src).not.toMatch(/(?:UPDATE|DELETE FROM)\s+purchase_orders\b/i);
+});
