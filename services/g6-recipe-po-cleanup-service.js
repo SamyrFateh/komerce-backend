@@ -53,7 +53,7 @@ async function cancelG6RecipePo(poId,reason,actor){
   const {rows:paid}=await client.query(`SELECT id FROM supplier_execution_payments WHERE purchase_order_id=$1 AND real_debit_verified IS TRUE LIMIT 1`,[poId]);
   if(paid.length)throw fail(409,'G6_PO_REAL_DEBIT','Débit fournisseur réel détecté : annulation de recette refusée');
   await client.query(`UPDATE purchase_lines SET purchase_order_id=NULL,cancelled_at=NOW(),
-      cancel_reason=$2,updated_at=NOW() WHERE id=ANY($1::uuid[])`,[ids,['G6-RECIPE] '+motif]);
+      cancel_reason=$2,updated_at=NOW() WHERE id=ANY($1::uuid[])`,[ids,'[G6-RECIPE] '+motif]);
   const {rowCount}=await client.query(`UPDATE purchase_orders SET status='cancelled',updated_at=NOW(),
       notes=CONCAT(COALESCE(notes,''),$2::text) WHERE id=$1 AND status IN ('notified','confirmed')`,
       [poId,'\\n[G6-RECIPE-PO] actor='+actor.id+' reason='+motif+' (sans contact fournisseur)']);
