@@ -64,10 +64,7 @@ router.post('/:id/close-g6-hub-recipe',authenticate,requireRole(['admin']),async
   try{
     const result=await closeG6HubOrder(req.params.id,{actor:req.user,reason:(req.body||{}).reason});
     res.json(result);
-  }catch(error){
-    if(error.status)return res.status(error.status).json({error:error.message,code:error.code});
-    next(error);
-  }
+  }catch(error){next(error);} // code G6_HUB_* conservé et journalisé par error-handler
 });
 
 router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (req, res, next) => {
