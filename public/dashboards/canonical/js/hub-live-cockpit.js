@@ -88,6 +88,14 @@
     const state = ctx.state;
     const orders = [...(d.orders || [])].sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
     const pos = (d.purchase_orders || []).filter((p) => p.status !== 'cancelled');
+    // UX2 : les PO partiellement reçus restent EN COURS ; seuls les PO achevés
+    // passent en historique. Le dossier complet reste dans poById et sélectionnable.
+    const isHistoricalPo = po => !po.step?.partial &&
+      (['received','closed','completed'].includes(po.status) ||
+       (po.step?.key === 'received' && Number(po.totals?.effective) > 0 &&
+        Number(po.totals?.received) >= Number(po.totals?.effective)));
+    const activePos = pos.filter(po => !isHistoricalPo(po));
+    const historyPos = pos.filter(isHistoricalPo);
     const batches = cockpit.need_batches || [];
     const todo = cockpit.todo || [];
     const physical = cockpit.physical || [];
@@ -112,6 +120,8 @@
         sel: activeEl && typeof activeEl.selectionStart === 'number' ? [activeEl.selectionStart, activeEl.selectionEnd] : null,
       };
     }
+    const oldHistory = host.querySelector && host.querySelector('[data-hlc-po-history]');
+    if (oldHistory) state.poHistoryOpen = oldHistory.open;
     state.epoch = (state.epoch || 0) + 1;
     host.replaceChildren();
     const rootEl = el(doc, 'div', 'hlc');
@@ -405,8 +415,19 @@
       c.appendChild(chips);
       center.appendChild(c);
     });
-    if (pos.length) center.appendChild(el(doc, 'span', 'hlc-label', 'PO fournisseurs'));
-    pos.forEach((po) => {
+    if (pos.length) {
+      const counts = el(doc, 'div', 'hlc-po-counts');
+      counts.setAttribute('data-hlc-po-counts', '');
+      ['draft','validation','engaged','sent','received'].forEach(key => {
+        const count = pos.filter(po => po.step?.key === key).length;
+        const item = el(doc, 'span', 'hlc-po-count', `${STEP_LABELS[key] || key} : ${num(count)}`);
+        item.setAttribute('data-hlc-po-count', key);
+        counts.appendChild(item);
+      });
+      center.appendChild(counts);
+    }
+    if (activePos.length) center.appendChild(el(doc, 'span', 'hlc-label', `En cours (${activePos.length})`));
+    const renderPoCard = (po, destination) => {
       const c = card('hlc-po', { 'data-hlc-po': po.id }, selKey === `po:${po.id}`, rel.pos.has(po.id), () => select('po', po.id));
       const head = el(doc, 'div', 'hlc-row');
       const refNode = el(doc, 'span', 'hlc-ref', poRef(po));
@@ -457,8 +478,21 @@
         feeds.appendChild(row);
       });
       c.appendChild(feeds);
-      center.appendChild(c);
-    });
+      destination.appendChild(c);
+    };
+    activePos.forEach(po => renderPoCard(po,center));
+    if (historyPos.length) {
+      const history=doc.createElement('details');
+      history.className='hlc-po-history';
+      history.setAttribute('data-hlc-po-history','');
+      history.open=Boolean(state.poHistoryOpen);
+      const summary=el(doc,'summary','hlc-po-history-summary',`Historique (${historyPos.length})`);
+      history.appendChild(summary);
+      historyPos.forEach(po => renderPoCard(po,history));
+      center.appendChild(history);
+    }
+    if (!activePos.length && !needGroups.length && !sourcingNeeds.length && historyPos.length)
+      center.appendChild(el(doc,'p','hlc-empty','Aucun PO en cours ; consulter l’historique.'));
     if (!pos.length && !needGroups.length && !sourcingNeeds.length) center.appendChild(el(doc, 'p', 'hlc-empty', 'Aucun besoin ouvert ni PO sur ce marché.'));
 
     // ── Colonne 3 : exécution physique ──

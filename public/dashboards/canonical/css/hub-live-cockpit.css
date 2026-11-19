@@ -147,3 +147,11 @@ button.hlc-chip.is-link { width: fit-content; flex: 0 0 auto; cursor: pointer; b
   .hlc-director-task { grid-template-columns: 32px minmax(0, 1fr) 65px; }
   .hlc-director-open { grid-column: 2 / 4; }
 }
+
+/* G6 ergonomie UX2 : actions du Hub en premier, PO terminés repliés. */
+.hlc-po-counts {display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px;}
+.hlc-po-count {font-size:11px;font-weight:750;padding:5px 8px;border:1px solid #d8e0e7;border-radius:20px;background:#f4f7f9;color:#344557;}
+.hlc-po-history {margin-top:12px;border:1px solid #d6dfe8;border-radius:9px;padding:9px 10px;background:#f8fafb;}
+.hlc-po-history-summary {cursor:pointer;font-size:13px;font-weight:800;color:#293c4b;padding:5px 1px;}
+.hlc-po-history-summary:focus-visible {outline:2px solid #267548;outline-offset:2px;}
+.hlc-po-history > .hlc-card {margin-top:8px;background:#fff;}
