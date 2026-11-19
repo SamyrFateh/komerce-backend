@@ -4,8 +4,9 @@
  * @layer service
  * @owner purchasing
  * @purpose Annule atomiquement une PO engagée de recette exclusivement G6-BUYER, sans contact fournisseur.
- * @db-read purchase_orders, purchase_lines, order_items, orders, v_purchase_line_progress, supplier_execution_payments, alerts
- * @db-write purchase_orders, purchase_lines, alerts
+ * @db-read purchase_orders, purchase_lines, order_items, orders, v_purchase_line_progress, supplier_execution_payments
+ * @db-write purchase_orders, purchase_lines
+ * @db-write-via:utils/alerts.js alerts
  * @db-txn single_atomic_recipe_po_cancellation
  * @impact-areas purchasing, orders, staging-recette
  */
@@ -57,10 +58,8 @@ async function cancelG6RecipePo(poId,reason,actor){
       notes=CONCAT(COALESCE(notes,''),$2::text) WHERE id=$1 AND status IN ('notified','confirmed')`,
       [poId,'\\n[G6-RECIPE-PO] actor='+actor.id+' reason='+motif+' (sans contact fournisseur)']);
   if(rowCount!==1)throw fail(409,'G6_PO_CONCURRENT_CHANGE','Statut PO modifié en parallèle');
-  await client.query(`UPDATE alerts SET resolved_at=NOW(),resolved_by=$3
-     WHERE type='order_cancel_purchasing_blocked' AND entity_type='order'
-       AND entity_id=ANY($1::uuid[]) AND resolved_at IS NULL
-       AND description LIKE '%'||$2::text||'%'`,[orderIds,poId,actor.id]);
+  const {resolveRecipePoAlerts}=require('../utils/alerts');
+  await resolveRecipePoAlerts(client,{poId,orderIds,actorId:actor.id});
   return {purchase_order_id:poId,status:'cancelled',detached:ids,orders:orderIds,external_calls:0};
  });
 }

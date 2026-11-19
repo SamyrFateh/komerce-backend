@@ -196,4 +196,15 @@ async function createAlert(dbOrClient, alert) {
   return row;
 }
 
-module.exports = { createAlert, mapSeverity, SEVERITY_MAP };
+/** Notifications owns alerts: resolve only alerts explicitly mentioning this recipe PO. */
+async function resolveRecipePoAlerts(client, {poId,orderIds,actorId}){
+ if(!client || typeof client.query!=='function')throw new TypeError('transactional client required');
+ if(!poId || !Array.isArray(orderIds) || !orderIds.length || !actorId)throw new TypeError('recipe PO alert scope required');
+ const {rowCount}=await client.query(`UPDATE alerts SET resolved_at=NOW(),resolved_by=$3
+   WHERE type='order_cancel_purchasing_blocked' AND entity_type='order'
+     AND entity_id=ANY($1::uuid[]) AND resolved_at IS NULL
+     AND description LIKE '%'||$2::text||'%'`,[orderIds,poId,actorId]);
+ return rowCount;
+}
+
+module.exports = { createAlert, resolveRecipePoAlerts, mapSeverity, SEVERITY_MAP };
