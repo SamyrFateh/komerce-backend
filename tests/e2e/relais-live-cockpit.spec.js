@@ -96,6 +96,32 @@ test.describe('Cockpit Relais — navigation canonique', () => {
     });
   }
 
+  test('Flux Relais : accès rapides vers réception et remises, sans geste métier', async ({page})=>{
+    const state=await mountRelay(page,'',{role:'agent_relais'});
+    const actions=page.locator('[data-relay-quick-actions]');
+    await expect(actions).toBeVisible();
+    await expect(actions.getByRole('link')).toHaveCount(2);
+    await expect(actions.getByRole('link',{name:/Réceptionner un colis/}))
+      .toHaveAttribute('href','/admin/relais-live?view=execute&focus=shipments');
+    await expect(actions.getByRole('link',{name:/Remettre un colis/}))
+      .toHaveAttribute('href','/admin/relais-live?view=remises');
+    expect(state.writes).toEqual([]);
+    await actions.getByRole('link',{name:/Réceptionner un colis/}).click();
+    await expect(page).toHaveURL(/\\?view=execute&focus=shipments$/);
+    expect(state.writes).toEqual([]);
+  });
+
+  test('Flux Relais : raccourci de remise et adaptation mobile',async({page})=>{
+    const state=await mountRelay(page,'',{role:'agent_relais'});
+    await page.setViewportSize({width:390,height:844});
+    const actions=page.locator('[data-relay-quick-actions]');
+    await expect(actions.getByRole('link',{name:/Remettre un colis/})).toBeVisible();
+    await expect(actions).toHaveCSS('grid-template-columns',/\\d+px/);
+    await actions.getByRole('link',{name:/Remettre un colis/}).click();
+    await expect(page).toHaveURL(/\\?view=remises$/);
+    expect(state.writes).toEqual([]);
+  });
+
   test('Flux Relais : Kanban quatre étapes et états physiques non inventés', async ({page})=>{
     const state=await mountRelay(page);
     await expect(page.locator('.kmc-relay-flow-heading h1')).toHaveText('Préparer les colis');
