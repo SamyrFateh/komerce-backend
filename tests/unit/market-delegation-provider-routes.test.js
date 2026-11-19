@@ -51,3 +51,11 @@ describe('market-delegation provider routes', () => {
     expect(mounts).toHaveLength(1);
   });
 });
+
+test('prestataires lisibles via network.read sans accorder provider.manage',()=>{
+  expect(routeSource).toContain("primaryCapability: 'network.read'");
+  expect(routeSource).toContain("fallbackCapability: 'provider.manage'");
+  expect(routeSource).toContain('createProvider(client');
+  expect(routeSource).toContain('updateProvider(client');
+  expect(routeSource).toContain('setProviderStatus(client');
+});

@@ -13,8 +13,9 @@ const BASELINE_ROLES=Object.freeze(['admin','market_operator']);
 function selectedRoles(raw='all') {
   const mode=String(raw||'all').trim().toLowerCase();
   if(mode==='admin')return ['admin'];
+  if(mode==='market')return ['market_operator'];
   if(mode==='baseline')return [...BASELINE_ROLES];
   if(mode==='all')return [...ALL_ROLES];
-  throw new Error('INVALID_E2E_AUDIT_ROLES: admin, baseline or all only');
+  throw new Error('INVALID_E2E_AUDIT_ROLES: admin, market, baseline or all only');
 }
 module.exports={ALL_ROLES,BASELINE_ROLES,selectedRoles};

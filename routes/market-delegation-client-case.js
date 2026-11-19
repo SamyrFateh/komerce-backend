@@ -23,6 +23,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { authenticate } = require('../middleware/auth');
+const { resolveReadAuthority } = require('../services/market-delegation-read-authority');
 const {
   resolveAuthorization,
   listDisputes,
@@ -80,8 +81,9 @@ function rejectMarketId(body) {
 router.get('/markets/:marketCode/client-cases/disputes', authenticate, async (req, res, next) => {
   try {
     const result = await withTransaction(async (client) => {
-      const authz = await resolveAuthorization(client, {
-        userId: req.user.id, marketCode: req.params.marketCode, requiredCapability: 'client.case.handle',
+      const authz = await resolveReadAuthority(resolveAuthorization, client, {
+        userId: req.user.id, marketCode: req.params.marketCode,
+        primaryCapability: 'client.read', fallbackCapability: 'client.case.handle',
       });
       const disputes = await listDisputes(client, { marketId: authz.market_id });
       return { authz, disputes };

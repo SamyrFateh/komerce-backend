@@ -5867,14 +5867,16 @@
       "key": "GET /api/unsold/stats/summary",
       "level": "PROTECTED",
       "roles": [
-        "admin"
+        "admin",
+        "market_operator"
       ]
     },
     {
       "key": "GET /api/unsold",
       "level": "PROTECTED",
       "roles": [
-        "admin"
+        "admin",
+        "market_operator"
       ]
     },
     {

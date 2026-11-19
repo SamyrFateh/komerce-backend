@@ -103,7 +103,7 @@ test('operations.read CM permet de lire une commande CM après résolution serve
   expect(JSON.stringify(res.body)).not.toContain('market-cm-id');
 });
 
-test('market_operator garde Order 360 mais sans projection Achats admin-only', async () => {
+test('market_operator garde Order 360 avec un suivi Achats limité et en lecture seule', async () => {
   mockRole = 'market_operator';
 
   const res = await request(app()).get('/api/admin/entities/orders/CMD-CM-001');
@@ -111,7 +111,7 @@ test('market_operator garde Order 360 mais sans projection Achats admin-only', a
   expect(res.status).toBe(200);
   expect(mockLoadOrder360).toHaveBeenCalledWith(
     expect.objectContaining({ market_id: 'market-cm-id' }),
-    { includePurchasing: false, includeCosts: false }
+    { includePurchasing: 'market', includeCosts: false }
   );
 });
 

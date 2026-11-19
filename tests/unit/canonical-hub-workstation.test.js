@@ -232,3 +232,11 @@ test('Hub global refuse agent_transitaire (acces limite a Expeditions & Douane)'
   expect(() => app.mount({root:el('main'),user:{role:'agent_transitaire'},document:doc,location:{search:''},
     fetch:mockFetch({orders:[]}),renderAdministrative:jest.fn(),renderOperations:jest.fn()})).toThrow('hub_workstation_role_not_allowed');
 });
+
+test('Responsable pays voit Hub · Mes marchés (et pas le cockpit central)', () => {
+  const app=load(),root=el('main');
+  app.mount({root,user:{role:'market_operator'},document:doc,location:{search:''},
+    fetch:mockFetch({}),renderAdministrative:jest.fn(),renderOperations:jest.fn()});
+  const heading=root.children[0].children[0].children.find(x=>x.tagName==='H1');
+  expect(heading.textContent).toBe('Hub · Mes marchés');
+});

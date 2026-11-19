@@ -42,6 +42,7 @@ const DASHBOARD_SPECS = [
   'pricing-atelier-mock',
   'pricing-atelier-views',
   'hub-live-execution',
+  'hub-global-board',
   'hub-live-supply',
   'dashboard-role-matrix',
   'order-360-lineage',

@@ -240,10 +240,14 @@ router.get('/director-todo', authenticate, requireRole(['admin', 'agent_hub']), 
   } catch (err) { return next(err); }
 });
 
-router.get('/board', ...hubBoardRead, async (req, res, next) => {
+router.get('/board', ...hubBoardRead, attachHubReadAuthority, async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
-    return res.json(await globalHubBoard.getGlobalBoard());
+    // La vue centrale reste globale pour les rôles centraux. Un responsable marché ne peut
+    // lire que ses markets operations.read, filtrés côté SQL avant lecture des dossiers.
+    const marketIds = req.user.role === 'market_operator'
+      ? Array.from(req.authorizedMarkets || []) : null;
+    return res.json(await globalHubBoard.getGlobalBoard(db, undefined, { marketIds }));
   } catch (err) { return next(err); }
 });
 
