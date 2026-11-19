@@ -34,6 +34,12 @@
 
 6. **Runner.** `g6-canonical-replay.js` garde `KM` en dur, hors du chemin dynamique (#4575). Il faut l'aligner sur le profil de marché ou le retirer. **Lot 6 · [#4612](https://github.com/SamyrFateh/komerce-backend/pull/4612)** : runner historique maintenu et aligné sur profil marché, contrôles M01 KM/CM/CG. Prochaine action : vérifier les preuves et le comportement post-fusion ; aucun run Golden sans GO.
 
+**G6-CLEANUP — nettoyage de la recette par les écrans (Opus, 19/11)** : outil `[staging-op] g6-cleanup-recette` (#4639, #4641).
+- Plan #4642, apply #4643 et #4644 : **24 commandes G6 nettoyées en Chromium admin**, sans écriture SQL.
+- **Restent 12 commandes en classe D** (marchandise reçue au Hub) : K2IBRN7, KCWKF7Q, KH2OIGF, KHGKPBH, KN9NZ0Z, K5XM5J1, K6E8SGA, KA6UUH6, KF37QGF, KI9NF95, KJNBOVP, KN98ZRF.
+- Les 13 PO de classe C restent engagés, avec une alerte.
+- **Prochaine action :** GPT crée deux écrans, « Clôturer la recette » (Order 360) et « Annuler le PO de recette » (PO 100 % G6). Opus relance ensuite le nettoyage. L'outil doit être enchaîné en fin de chaque campagne.
+
 **G6-RECERT — M01 recertifié après G6-SUIVIS et Ergonomie (Opus, 19/11) : PASS 15/15 sur les 3 marchés**, SHA unique `a9a625c9`, oracles G6-F renforcés. KM KNS1G99 (#4635), CM KX87NSI (#4636), CG K50ID0Q (#4637). Lots couverts : #4607, #4609, #4610, #4611, #4612, #4630, #4632, #4633, #4634. **Reste avant les 46 scénarios :** inventaire puis nettoyage par l'écran des commandes orphelines (lot 5, GO du propriétaire), prix de référence KPR-000165 (point 2), puis GO du propriétaire.
 
 **G6-MARKET — M01 RÉPÉTABLE SUR KM, CM ET CG (Opus)** : 3 runs consécutifs à 15/15 par marché.
