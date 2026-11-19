@@ -163,3 +163,17 @@ Le résultat attendu n'est **pas** `orders.status=collected` par défaut : un é
 - **Schéma** : `docs/recette/canonical/proof.schema.json` ; PASS exige une couverture écran complète et une preuve pour chaque geste humain. Des oracles I1–I15, H1–H9, ECO-Q1..Q3 et la portée de `simulation_scope` s'ajoutent dans les modules concernés, sans changer l'autorité métier. Le rapport doit distinguer preuve historique, donnée de scénario et action du run courant.
 - **SHA pin + reprise** : vérification explicite de la provenance d'artefact, de la même commande/cohorte/marché et du fingerprint, puis whitelist de diff **outillage seulement**. Une variante nouvelle n'hérite jamais automatiquement d'un PASS M01. Les historiques terminés `collected` sont immuables : une nouvelle cohorte utilise une **nouvelle commande** dans le même staging, après cadrage/GO du scénario.
 - **Critère de disponibilité pour Opus / Sonnet** : seuls registre et contrats sont prêts tant que les adapters historiques `run/validate` n'ont pas été extraits et reliés au moteur, que les rôles nécessaires n'ont pas de page objects vérifiés et que le rejeu de non-régression sur une **cohorte distincte** n'est pas certifié. Ne pas annoncer le moteur industrialisé complet avant ces preuves.
+
+### 5. Écritures PG autorisées (exception du propriétaire, 19/11 00h47)
+
+Les étapes jouent chaque geste métier dans Chromium ; **PG reste en lecture seule pour tout état métier**. Seule exception : préparer des **identités de test**, par les writers canoniques, comptes marqués `e2e_test_accounts` : client E2E, OTP haché préchargé (le canal WhatsApp est externe), comptes et memberships relais. Jamais pour une commande, un achat, un cash, un colis ou un retrait.
+
+Tables autorisées (`IDENTITY_TABLES` dans `scripts/recette/canonical/chromium-policy.js`) et tables réellement utilisées :
+
+| Script | Tables écrites |
+|---|---|
+| `g6-p2-buyer-order-real-chromium.js` | `users`, `e2e_test_accounts`, `otp_codes` |
+| `g6-canonical-client-pickup-chromium.js` | `otp_codes` |
+| `g6-a-relay-cash-real-chromium.js` | `users`, `e2e_test_accounts`, `assignment_memberships`, `membership_capabilities`, `operator_market_scopes` |
+
+Le test `tests/unit/g6-identity-writes-only.test.js` échoue si un script d'étape (`g6-*chromium.js`, spec p3) contient un INSERT, UPDATE ou DELETE hors de ces tables. La spec p3 est aussi soumise à la garde de gestes (`humanClick`/`humanFill`/`humanSelect`) ; `page.reload` y reste permis (rechargement humain, aucune mutation).
