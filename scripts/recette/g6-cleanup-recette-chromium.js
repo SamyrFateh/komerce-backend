@@ -45,6 +45,28 @@ async function inventory(){
    `SELECT DISTINCT pl.purchase_order_id AS po_id,o.reference,o.simulation_scope
       FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id JOIN orders o ON o.id=oi.order_id
      WHERE pl.purchase_order_id=ANY($1::uuid[]) AND pl.cancelled_at IS NULL`,[poIds]):{rows:[]};
+
+  // Audit indépendant des commandes vivantes : un PO peut rester engagé
+  // après l'annulation de toutes ses commandes. Aucun filtre sur cancelled_at.
+  // Chaque ligne et chaque pair du PO est lu, pour refuser un lien mixte.
+  const {rows:poRows}=await c.query(`
+   SELECT po.id AS po_id,po.status::text AS po_status,po.order_id AS legacy_order_id,
+          pl.id AS line_id,o.id AS order_id,o.reference,o.simulation_scope,
+          o.payment_mode::text AS payment_mode,o.status::text AS order_status,
+          EXISTS(SELECT 1 FROM hub_purchase_allocations hpa
+                  WHERE hpa.purchase_order_id=po.id) AS has_physical,
+          EXISTS(SELECT 1 FROM supplier_execution_payments sep
+                  WHERE sep.purchase_order_id=po.id AND sep.real_debit_verified=TRUE) AS has_debit
+     FROM purchase_orders po
+     LEFT JOIN purchase_lines pl ON pl.purchase_order_id=po.id
+     LEFT JOIN order_items oi ON oi.id=pl.order_item_id
+     LEFT JOIN orders o ON o.id=oi.order_id
+    WHERE po.status::text IN ('notified','confirmed')
+      AND EXISTS (SELECT 1 FROM purchase_lines scoped
+                   JOIN order_items si ON si.id=scoped.order_item_id
+                   JOIN orders so ON so.id=si.order_id
+                  WHERE scoped.purchase_order_id=po.id AND so.simulation_scope=$1)
+    ORDER BY po.id,pl.id`,[SCOPE]);
   const {rows:[rule]}=await c.query("SELECT value FROM business_rules WHERE key='CANCEL_CUTOFF_STATUS' AND is_active=TRUE");
   await c.query('COMMIT');
   const po_peers={};
@@ -55,7 +77,17 @@ async function inventory(){
   if(typeof v==='string'&&v)cutoff=v;
   const entries=orders.map(o=>({order:o,po_peers,
    lines:lines.filter(l=>l.order_id===o.id).map(l=>({line_id:l.line_id,po_id:l.po_id,po_status:l.po_status}))}));
-  return {entries,cutoff};
+  const byPo=new Map();
+  for(const p of poRows){
+   if(!byPo.has(p.po_id))byPo.set(p.po_id,{po_id:p.po_id,po_status:p.po_status,
+    legacy_order_id:p.legacy_order_id,has_physical:p.has_physical,has_debit:p.has_debit,
+    line_count:0,peers:[]});
+   const record=byPo.get(p.po_id);
+   if(p.line_id)record.line_count++;
+   record.peers.push({order_id:p.order_id,reference:p.reference,simulation_scope:p.simulation_scope,
+    payment_mode:p.payment_mode,order_status:p.order_status});
+  }
+  return {entries,cutoff,orphanPos:[...byPo.values()]};
  }catch(e){await c.query('ROLLBACK').catch(()=>{});throw e;}
  finally{c.release();}
 }
@@ -162,9 +194,15 @@ async function main(){
   const target=await confirmTarget({db,env});
   check(target.confirmed,'G6_CLEANUP_DATABASE_IDENTITY_DRIFT');
   report.db_fingerprint=target.fingerprint;
-  const {entries,cutoff}=await inventory();
-  const plan=buildPlan(entries,{cutoff});
-  report.cutoff=cutoff;report.before=summarize(plan);report.planned_steps=plan.steps.length;save();
+  const {entries,cutoff,orphanPos}=await inventory();
+  const plan=buildPlan(entries,{cutoff,orphanPos});
+  report.cutoff=cutoff;report.before=summarize(plan);
+  report.po_audit=plan.poItems.map(p=>({po_id:p.po_id,po_status:p.po_status,reference:p.reference,
+   commandes_du_po:p.references,verdict:p.verdict,reason:p.reason,has_physical:p.has_physical,has_debit:p.has_debit,
+   gestes:p.gestures.map(g=>g.action)}));
+  report.po_candidates=plan.poItems.length;
+  report.po_eligible=plan.poItems.filter(p=>p.verdict==='PLANNED').length;
+  report.planned_steps=plan.steps.length;save();
   if(mode==='plan'){report.verdict='PLAN_READY_NO_WRITE';save();return;}
   browser=await require('playwright').chromium.launch({headless:true});OBS=observe(browser,OUT);
   const actor=await login(browser,plan.steps);
@@ -190,10 +228,12 @@ async function main(){
     if(stopped)break;
    }
   }finally{report.blocked_requests=actor.blocked.length;await actor.ctx.close().catch(()=>{});}
-  const after=buildPlan((await inventory()).entries,{cutoff});
+  const finalInventory=await inventory();
+  const after=buildPlan(finalInventory.entries,{cutoff,orphanPos:finalInventory.orphanPos});
   report.remaining=after.items.filter(i=>i.verdict!=='SKIPPED').map(i=>({reference:i.reference,market:i.market,class:i.class,
    order_status:i.order_status,verdict:i.verdict,reason:i.reason||i.residual||'ENCORE_OUVERTE_APRES_GESTES'}));
-  report.remaining_count=report.remaining.length;
+  report.remaining_po=after.poItems.map(i=>({po_id:i.po_id,reference:i.reference,verdict:i.verdict,reason:i.reason}));
+  report.remaining_count=report.remaining.length+after.poItems.filter(i=>i.verdict==='PLANNED').length;
   report.verdict=stopped?'NOT_PROVEN_429':(report.steps.every(x=>x.result==='DONE')?'G6_CLEANUP_APPLIED':'G6_CLEANUP_PARTIAL');
   save();
  }catch(e){report.error=fullError(e);report.verdict=/429/.test(String(e.message))?'NOT_PROVEN_429':'BLOCKED';save();process.exitCode=2;}

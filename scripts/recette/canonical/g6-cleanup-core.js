@@ -58,9 +58,34 @@ function classify(entry,{cutoff='shipped'}={}){
  res.gestures.push({action:'cancel_order',order_id:order.id,reference:order.reference});
  return res;
 }
+
+/** PO engagés dont les commandes sont DÉJÀ annulées : jamais convertir une
+ * commande vivante, un achat physique ou un débit réel en annulation implicite. */
+function classifyOrphanPo(po){
+ const peers=po.peers||[];
+ const references=[...new Set(peers.map(p=>p.reference).filter(Boolean))].sort();
+ const item={po_id:po.po_id,po_status:po.po_status,reference:references[0]||null,
+  references,class:'C_PO',verdict:'REFUSED',reason:null,gestures:[],
+  has_physical:!!po.has_physical,has_debit:!!po.has_debit};
+ const reject=reason=>{item.reason=reason;return item;};
+ if(!ENGAGED_PO.includes(po.po_status))return reject('PO_NOT_ENGAGED');
+ if(po.legacy_order_id!==null&&po.legacy_order_id!==undefined)return reject('PO_NOT_GROUPED');
+ if(!peers.length||!po.line_count||peers.length!==po.line_count||
+   peers.some(p=>!p.order_id||!p.reference))return reject('PO_PEER_INCOMPLETE');
+ if(peers.some(p=>p.simulation_scope!==SCOPE))return reject('MIXED_PO');
+ if(peers.some(p=>p.payment_mode!=='cash_relais'))return reject('PAYMENT_MODE');
+ if(po.has_physical)return reject('PO_PHYSICAL_RECEIVED');
+ if(po.has_debit)return reject('PO_REAL_SUPPLIER_DEBIT');
+ if(peers.some(p=>p.order_status!=='cancelled'))return reject('PO_PEER_NOT_CANCELLED');
+ item.verdict='PLANNED';
+ item.gestures=[{action:'cancel_g6_po',po_id:po.po_id,reference:item.reference}];
+ return item;
+}
+
 /** Ordre imposé : PO brouillons, lignes, PO G6 notifiés/confirmés, commandes, clôtures Hub D. */
-function buildPlan(entries,opts){
+function buildPlan(entries,opts={}){
  const items=entries.map(e=>classify(e,opts));
+ const poItems=(opts.orphanPos||[]).map(classifyOrphanPo);
  const rank={A:0,B:0,C:1,D:2};
  const todo=items.filter(i=>i.verdict==='PLANNED').sort((a,b)=>rank[a.class]-rank[b.class]||a.reference.localeCompare(b.reference));
  const seen=new Set(),steps=[];
@@ -69,16 +94,24 @@ function buildPlan(entries,opts){
   for(const grp of [['A','B'],['C'],['D']])
    for(const i of todo.filter(x=>grp.includes(x.class)))
     for(const g of i.gestures.filter(x=>x.action===a))push(g,i);
- return {items,steps};
+ // Les PO orphelins éligibles sont annulés avant les commandes D, jamais en doublon.
+ const known=new Set(steps.filter(x=>x.action==='cancel_g6_po').map(x=>x.po_id));
+ for(const po of poItems.filter(p=>p.verdict==='PLANNED')){
+  if(known.has(po.po_id))continue;
+  known.add(po.po_id);steps.unshift({...po.gestures[0],class:'C_PO'});
+ }
+ return {items,poItems,steps};
 }
 /** Garde exécutée avant chaque geste : seule une commande G6-BUYER du plan peut être touchée. */
 function assertGestureAllowed(step,plan){
  if(!ACTIONS.includes(step.action))throw Error('G6_CLEANUP_ACTION_FORBIDDEN');
- const item=plan.items.find(i=>i.reference===step.reference);
+ const item=step.class==='C_PO'
+  ?(plan.poItems||[]).find(i=>i.po_id===step.po_id)
+  :plan.items.find(i=>i.reference===step.reference);
  if(!item||item.verdict!=='PLANNED')throw Error('G6_CLEANUP_ORDER_NOT_PLANNED');
  if(item.class==='OUT_OF_SCOPE')throw Error('G6_CLEANUP_OUT_OF_SCOPE');
  if(!plan.steps.some(s=>s.action===step.action&&(s.po_id||s.line_id||s.order_id)===(step.po_id||step.line_id||step.order_id)))
   throw Error('G6_CLEANUP_GESTURE_NOT_IN_PLAN');
  return true;
 }
-module.exports={SCOPE,STATUS_ORDER,MISSING,ACTIONS,cutoffBlocks,classify,buildPlan,assertGestureAllowed};
+module.exports={SCOPE,STATUS_ORDER,MISSING,ACTIONS,cutoffBlocks,classify,classifyOrphanPo,buildPlan,assertGestureAllowed};
