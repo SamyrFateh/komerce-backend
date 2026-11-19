@@ -78,6 +78,37 @@ test('Responsable marché : Hub et Order 360 isolés, lecture seule par capabili
 
     await page.goto('/admin/hub',{waitUntil:'domcontentloaded'});
     await expect(page.locator('.kmc-hub-app-title h1')).toHaveText('Hub · Mes marchés',{timeout:20000});
+    // The complete canonical business menu must remain visible, including
+    // central domains through their explicit market-scoped read-only projections.
+    const requiredMenu=[
+      'control-tower','action-center','flow-commerce','flow-orders','entity-clients',
+      'workspace-pricing','workspace-catalog','flow-operations','workspace-shipping',
+      'workspace-purchasing','flow-finance','workspace-accounting',
+      'live-import-runtime','live-hub','live-relais',
+      'markets-home','market-autonomy','market-catalog','unsold',
+      'admin-users','admin-providers','settings','help-docs'
+    ];
+    await expect(page.locator('.kmc-admin-primary-link[data-dashboard]'))
+      .toHaveCount(requiredMenu.length,{timeout:20000});
+    const menu=await page.locator('.kmc-admin-primary-link[data-dashboard]')
+      .evaluateAll(nodes=>nodes.map(node=>({id:node.getAttribute('data-dashboard'),href:node.getAttribute('href')})));
+    proof.navigation={items:menu.map(item=>item.id),visited:[]};
+    expect(menu.map(item=>item.id)).toEqual(requiredMenu);
+    for(const item of menu)expect(item.href,'Missing scoped navigation for '+item.id).toMatch(/^\\//);
+    const forbiddenCentral=['/admin/workspaces/catalog','/admin/workspaces/purchasing',
+      '/admin/import-runtime','/admin/relais-live','/admin/users','/admin/providers','/admin/settings'];
+    for(const item of menu)expect(forbiddenCentral,'Unsafe direct central route in menu '+item.id)
+      .not.toContain(item.href);
+    // Open every distinct dashboard destination in the authenticated market session.
+    // No mocked API, no mutation and no silent redirect to the login page.
+    for(const href of [...new Set(menu.map(item=>item.href))]) {
+      const navigation=await page.goto(href,{waitUntil:'domcontentloaded'});
+      const status=navigation?.status()||0;
+      proof.navigation.visited.push({href,http:status,path:new URL(page.url()).pathname});
+      expect(status,'Dashboard unavailable for '+href).toBe(200);
+      expect(new URL(page.url()).pathname,'Session lost on '+href).not.toBe('/login.html');
+    }
+    await page.goto('/admin/hub',{waitUntil:'domcontentloaded'});
     await expect(page.locator('[data-hub-global-order]')).toHaveCount(board.body.orders.length,{timeout:20000});
     const own=board.body.orders.find(o=>o.reference);
     expect(Boolean(own)).toBe(true);
