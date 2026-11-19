@@ -32,7 +32,7 @@
       return 'Refusé : invendu introuvable, déjà résolu, ou commande payée (jamais liquidable).';
     }
     if (status === 400) return 'Refusé : ' + ((body && body.error) || 'requête invalide') + '.';
-    if (status === 401 || status === 403) return 'Accès réservé à l’administrateur.';
+    if (status === 401 || status === 403) return 'Accès non autorisé pour ce compte et ce marché.';
     return 'Erreur serveur (' + status + ').';
   }
 
@@ -80,8 +80,9 @@
     feedback.className = 'unsold-feedback' + (isError ? ' unsold-feedback--error' : '');
   }
 
-  function rowActions(row) {
+  function rowActions(row, readOnly = false) {
     const td = el('td', 'unsold-actions');
+    if (readOnly) { td.appendChild(el('small', null, 'Suivi en lecture seule')); return td; }
     if (!isActionable(row)) { td.appendChild(el('small', null, 'Aucune action')); return td; }
     const price = el('input'); price.type = 'number'; price.min = '0'; price.value = row.unsold_price_kmf;
     price.setAttribute('aria-label', 'Prix soldé'); price.setAttribute('data-unsold-price', '');
@@ -121,7 +122,7 @@
     return td;
   }
 
-  function render(rows, stats) {
+  function render(rows, stats, readOnly = false) {
     body.textContent = '';
     const kpis = el('p', 'unsold-kpis',
       'Articles actifs : ' + (stats.total_actifs || 0) + ' · Valeur liquidation : ' + fmt(stats.valeur_liquidation_kmf));
@@ -139,19 +140,32 @@
         (row.remise_pct != null ? row.remise_pct + ' %' : '—'), row.channel,
         row.jours_en_stock != null ? Math.floor(Number(row.jours_en_stock)) : '—']
         .forEach((v) => tr.appendChild(el('td', null, v)));
-      tr.appendChild(rowActions(row));
+      tr.appendChild(rowActions(row, readOnly));
       table.appendChild(tr);
     });
     body.appendChild(table);
   }
 
   async function load() {
-    const [list, stats] = await Promise.all([call('GET', '/api/unsold'), call('GET', '/api/unsold/stats/summary')]);
-    if (!list.ok) { say(refusalMessage(list.status, list.data), true); return; }
-    render(Array.isArray(list.data) ? list.data : [], stats.ok ? stats.data : {});
+    // Le contexte serveur décide de la projection, pas un paramètre `market`
+    // modifiable dans l'URL. Aucune API globale en cas de contexte non prouvé.
+    const ctx = await call('GET','/api/admin/dashboard/context');
+    if (!ctx.ok) return say(refusalMessage(ctx.status,ctx.data),true);
+    const role=ctx.data.actor?.role;
+    const market=role==='market_operator' && ctx.data.access?.mode==='market';
+    if (!market && role!=='admin') return say('Profil non autorisé.',true);
+    scan.hidden=market;
+    const prefix=market?'/api/unsold/my':'/api/unsold';
+    const [list,stats]=await Promise.all([call('GET',prefix),call('GET',prefix+'/stats/summary')]);
+    if (!list.ok) { say(refusalMessage(list.status,list.data),true); return; }
+    root.querySelector('.unsold-doctrine').textContent=market
+      ? 'Suivi des seuls invendus non payés liés à vos marchés autorisés. Aucune mutation ni liquidation depuis ce compte.'
+      : 'Garde F3 : une commande payée n’est jamais liquidée ni revendue. Seuls les invendus non payés sont listés et actionnables.';
+    render(Array.isArray(list.data)?list.data:[],stats.ok?stats.data:{},market);
   }
 
   const scan = el('button', null, 'Lancer le scan automatique des colis non retirés');
+  scan.hidden = true; // cacher tant que le rôle Admin central n'est pas confirmé
   scan.type = 'button'; scan.setAttribute('data-unsold-scan', '');
   scan.onclick = async () => {
     const r = await call('POST', '/api/unsold/scan');

@@ -23,7 +23,55 @@
 const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
-const { authenticate, requireAdmin } = require('../middleware/auth');
+const { authenticate, requireAdmin, requireRole } = require('../middleware/auth');
+const { listAuthorizedMarketsForCapability } = require('../services/market-delegation-service');
+
+// Toujours résoudre les marchés depuis la délégation active : jamais depuis
+// les query params, ni depuis le rôle market_operator pris isolément.
+async function requireUnsoldMarketRead(req, res, next) {
+  try {
+    const markets = await listAuthorizedMarketsForCapability(db, {
+      userId: req.user.id, requiredCapability: 'operations.read',
+    });
+    if (!markets.length) return res.status(403).json({
+      code: 'MARKET_READ_CAPABILITY_REQUIRED',
+      error: 'Lecture des invendus non autorisée sur un marché actif.',
+    });
+    req.unsoldMarketIds = markets.map(m => m.market_id);
+    next();
+  } catch (error) { next(error); }
+}
+
+// Projection de consultation uniquement : les mutations historiques restent
+// strictement Admin, et les commandes payées restent exclues.
+router.get('/my', authenticate, requireRole(['market_operator']), requireUnsoldMarketRead, async (req,res,next) => {
+  try {
+    const {rows} = await db.query(`SELECT v.* FROM v_unsold_pipeline v
+      JOIN unsold_items ui ON ui.id = v.id
+      JOIN orders o ON o.id = ui.order_id
+      WHERE o.market_id = ANY($1::uuid[])
+        AND o.payment_status IS DISTINCT FROM 'paid'
+      ORDER BY o.created_at DESC`, [req.unsoldMarketIds]);
+    res.set('Cache-Control','private, no-store');
+    res.json(rows);
+  } catch(error) { next(error); }
+});
+
+router.get('/my/stats/summary', authenticate, requireRole(['market_operator']), requireUnsoldMarketRead, async(req,res,next) => {
+  try {
+    const {rows} = await db.query(`SELECT COUNT(*) AS total_actifs,
+      COALESCE(SUM(v.unsold_price_kmf),0) AS valeur_liquidation_kmf,
+      COALESCE(SUM(v.original_price_kmf),0) AS valeur_initiale_kmf
+      FROM v_unsold_pipeline v
+      JOIN unsold_items ui ON ui.id = v.id
+      JOIN orders o ON o.id = ui.order_id
+      WHERE o.market_id = ANY($1::uuid[])
+        AND o.payment_status IS DISTINCT FROM 'paid'`,[req.unsoldMarketIds]);
+    res.set('Cache-Control','private, no-store');
+    res.json(rows[0]||{total_actifs:0,valeur_liquidation_kmf:0,valeur_initiale_kmf:0});
+  } catch(error) { next(error); }
+});
+
 
 // ── GET /api/unsold — liste des invendus disponibles ──────────────────────────
 router.get('/', authenticate, requireAdmin, async (req, res, next) => {

@@ -22,3 +22,11 @@ describe('unsold-workspace (F3)', () => {
     expect(isActionable(null)).toBe(false);
   });
 });
+
+test('le rendu des invendus marché est strictement lecture seule',()=>{
+  const source=require('fs').readFileSync(require('path').resolve(__dirname,'../../public/dashboards/canonical/js/unsold-workspace.js'),'utf8');
+  expect(source).toContain('if (readOnly)');
+  expect(source).toContain("market?'/api/unsold/my':'/api/unsold'");
+  expect(source).toContain('scan.hidden=market');
+  expect(source).toContain('root.querySelector');
+});

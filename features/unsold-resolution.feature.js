@@ -30,6 +30,7 @@ module.exports = {
     in: [
       "scan historique J+14 bloqué faute de clôture de garde et de droits client certifiée",
       "mutation de l'invendu uniquement pour des commandes non payées et un état available",
+      "projection GET en lecture seule pour le responsable pays, filtrée en SQL sur les marchés operations.read délégués",
       "prohibition de la promotion ou cession de marchandises payées tant que les droits de retrait persistent",
     ],
     out: [
@@ -79,13 +80,15 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_PROTECTED',
-    authedRoutesDetected: 7,
-    totalRoutes: 7,
-    note: '7/7 routes protégées — hérité de inventory (audit gen-security-360.js), à revérifier au prochain passage.',
+    authedRoutesDetected: 9,
+    totalRoutes: 9,
+    note: '9/9 routes protégées — hérité de inventory (audit gen-security-360.js), à revérifier au prochain passage.',
   },
   contract: {
     exposes: [
       'GET /api/unsold',
+      'GET /api/unsold/my',
+      'GET /api/unsold/my/stats/summary',
       'GET /api/unsold/:id',
       'PATCH /api/unsold/:id',
       'POST /api/unsold/:id/resolve',

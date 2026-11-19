@@ -896,6 +896,7 @@
     'live-import-runtime': Object.freeze({ href:'/admin/hub', label:'Sourcing · Suivi commandes' }),
     'live-relais': Object.freeze({ href:'/admin/operations', label:'Relais · Suivi marché' }),
     'markets-home': Object.freeze({ href:'/dashboards/canonical/market-autonomy.html#market-team', label:'Équipe et délégations' }),
+    'unsold': Object.freeze({ href:'/dashboards/canonical/unsold.html', label:'Invendus · Mes marchés' }),
     'admin-users': Object.freeze({ href:'/dashboards/canonical/market-autonomy.html#market-team', label:'Utilisateurs de mon marché' }),
     'admin-providers': Object.freeze({ href:'/dashboards/canonical/market-autonomy.html#market-network', label:'Prestataires de mon marché' }),
     'settings': Object.freeze({ href:'/dashboards/canonical/market-autonomy.html#market-cash-control', label:'Paramètres de mon marché' }),
