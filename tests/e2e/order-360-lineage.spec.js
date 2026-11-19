@@ -205,6 +205,7 @@ test('G6-D : Order 360 ferme seulement une recette au Hub avec motif, relecture 
  await button.click();
  // La confirmation est une deuxième boîte : Playwright accepte automatiquement
  // les confirmations si aucun handler n'est installé.
+  console.log('G6-D diagnostic',JSON.stringify({posts,root:await page.locator('#canonical-admin-root').innerText()}));
  await expect(page.getByText('Commande de recette '+REF+' clôturée au Hub.')).toBeVisible();
  expect(posts).toEqual([{reason:'Fin de recette G6'}]);
  if(info.repeatEachIndex===0)await page.screenshot({path:'test-artifacts/g6-hub/apres.png',fullPage:true});
