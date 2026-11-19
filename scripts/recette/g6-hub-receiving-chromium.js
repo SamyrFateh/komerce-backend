@@ -9,6 +9,7 @@
  * @impact-areas hub, purchasing, staging-only
  */
 'use strict';
+const MK=require('./canonical/market-profile').marketProfile(process.env);
 const fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('playwright');
 const db=require('../../db');
@@ -18,13 +19,13 @@ const env=process.env;
 const ROOT=path.resolve(__dirname,'../..');
 const OUT=path.join(ROOT,'test-results/g6-hub-receiving');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
-const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
+const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const ORDER=env.G6_CANONICAL_ORDER_ID||'';
 const PO=env.G6_CANONICAL_PO_ID||'';
 const REF=env.G6_CANONICAL_ORDER_REFERENCE||'';
 const SHA=/^[a-f0-9]{40}$/i;
 const UUID=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
-const report={schema:'komerce-g6-hub-receiving/1',scenario_id:'M01',market:'KM',
+const report={schema:'komerce-g6-hub-receiving/1',scenario_id:'M01',market:MK.code,
   reference:REF,order_id:ORDER,po_id:PO,verdict:'BLOCKED',
   provenance:'SIMULATED / STAGING ONLY',physical_receipt_certified:false,
   external_supplier_calls:0,external_payment_executed:false};
@@ -84,7 +85,7 @@ async function main(){
     env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.NODE_ENV==='test'&&
     env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&
     env.G6_CANONICAL_PHASE==='HUB_RECEIVING'&&env.G6_CANONICAL_SCENARIO==='M01'&&
-    env.G6_TARGET_MARKET==='KM'&&(REF==='KL1WGP6'||(env.G6_DYNAMIC_FRESH_ORDER==='1'&&/^[A-Z0-9][A-Z0-9-]{5,63}$/.test(REF)))&&UUID.test(PO)&&UUID.test(ORDER)&&
+    env.G6_TARGET_MARKET===MK.code&&(REF==='KL1WGP6'||(env.G6_DYNAMIC_FRESH_ORDER==='1'&&/^[A-Z0-9][A-Z0-9-]{5,63}$/.test(REF)))&&UUID.test(PO)&&UUID.test(ORDER)&&
     SHA.test(env.E2E_EXPECTED_DEPLOY_SHA||'')&&!!env.DATABASE_URL&&
     env.STAGING_BASE_URL==='https://komerce-backend-production.up.railway.app',
     'G6_RECEIPT_OWNER_STAGING_GUARD');
@@ -108,7 +109,7 @@ async function main(){
        return route.continue();
      return route.abort('blockedbyclient');
    });
-   await actor.page.goto('/admin/hub-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
+   await humanGoto(actor.page,'/admin/hub-live?view=execute&market='+MK.code+'',{waitUntil:'domcontentloaded'});
    await humanClick(null,actor.page.getByRole('tab',{name:'Réceptions'}));
    const card=actor.page.locator('[data-receive-po="'+PO+'"]');
    await card.waitFor({state:'visible',timeout:25000});

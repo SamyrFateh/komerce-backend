@@ -8,11 +8,17 @@
  * @impact-areas  purchasing, admin-dashboard, staging-only
  */
 'use strict';
+const {marketProfile,marketOption}=require('../../scripts/recette/canonical/market-profile');
+const MK=marketProfile(process.env);
+const {humanGoto,humanClick,humanFill,humanSelect}=require('../../scripts/recette/canonical/actors/human-gestures');
 const fs=require('node:fs');
 const path=require('node:path');
 const {test,expect}=require('@playwright/test');
 const OUT=path.resolve('test-results/g6-p3-kuyiyuk');
 const {observe,startTraceAfterAuth}=require("../../scripts/recette/canonical/observability");let OBS=null,FAILED=false;
+// Statuts HTTP laissés au spec (evidence + assertions métier inchangées) ; la garde reste : réponse attendue, jamais de re-clic après mutation.
+const ANY_STATUS=Array.from({length:400},(_,i)=>i+200);
+// page.reload reste un geste humain (F5) : il n'émet aucune mutation, d'où l'absence de helper.
 const CANONICAL=process.env.G6_CANONICAL_HUB_STAGE==='1';
 const REF=CANONICAL?String(process.env.G6_CANONICAL_ORDER_REFERENCE||''):'KUYIYUK';
 const evidence={schema:'komerce-g6-p3-kuyiyuk/1',reference:REF,verdict:'NOT_PROVEN',external_supplier_calls:0,external_payment_executed:false,staging_cash_confirmation_recorded:false,gestures:[]};
@@ -40,11 +46,11 @@ async function login(browser,baseURL,actor='hub'){
   const ctx=await browser.newContext({baseURL,viewport:{width:1440,height:900}});
   const page=await ctx.newPage();
   page.on('dialog',d=>d.accept());
-  await page.goto('/login.html');
-  await page.locator('#email').fill(email);
-  await page.locator('#password').fill(password);
+  await humanGoto(page,'/login.html');
+  await humanFill(null,page.locator('#email'),email);
+  await humanFill(null,page.locator('#password'),password);
   const response=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/login'&&r.request().method()==='POST');
-  await page.locator('#btn-submit').click();
+  await humanClick(null,page.locator('#btn-submit'));
   expect((await response).status()).toBe(200);
   await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:20000});
   await page.waitForLoadState('load').catch(()=>{});
@@ -68,7 +74,7 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
     expect(env.STAGING_BASE_URL).toBe(base);
     if(CANONICAL){
       expect(env.G6_CANONICAL_SCENARIO).toBe('M01');
-      expect(env.G6_TARGET_MARKET).toBe('KM');
+      expect(env.G6_TARGET_MARKET).toBe(MK.code);
       expect(REF).toMatch(/^[A-Z0-9][A-Z0-9-]{5,63}$/);
       expect(buyer).toMatch(/^[a-f0-9-]{36}$/);
       expect(orderId).toMatch(/^[a-f0-9-]{36}$/);
@@ -123,25 +129,25 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
     if(before.status==='pending'){
       const {ctx:relayCtx,page:relayPage}=await login(browser,baseURL,'relay');
       try{
-        await relayPage.goto('/admin/relais-live?view=execute',{waitUntil:'domcontentloaded'});
+        await humanGoto(relayPage,'/admin/relais-live?view=execute',{waitUntil:'domcontentloaded'});
         await relayPage.locator('select').first().waitFor({timeout:20000});
-        await relayPage.locator('select').first().selectOption({label:'KM · Comores'});
+        await humanSelect(null,relayPage.locator('select').first(),await marketOption(MK,relayPage.locator('select').first()));
         await relayPage.waitForLoadState('networkidle').catch(()=>{});
-        const cashScope=await relayPage.evaluate(async()=>{
+        const cashScope=await relayPage.evaluate(async(mk)=>{
           const [meResponse,workspaceResponse]=await Promise.all([
             fetch('/api/auth/me',{credentials:'same-origin'}),
-            fetch('/api/admin/workspaces/operations/market/KM',{credentials:'same-origin'})
+            fetch('/api/admin/workspaces/operations/market/'+mk,{credentials:'same-origin'})
           ]);
           const me=await meResponse.json(),workspace=await workspaceResponse.json();
           return {actor_role:me.role,actor_id:me.id,workspace_status:workspaceResponse.status,cash_pending_count:workspace.summary?.relay_cash_pending,cash_pending_references:(workspace.queues?.relay?.cash_pending||[]).map(o=>o.reference)};
-        });
+        },MK.code);
         console.log('[G6_P3_CASH_SCOPE]',JSON.stringify(cashScope));
-        await relayPage.locator('[data-relay-execution-jump="cash"]').click();
+        await humanClick(null,relayPage.locator('[data-relay-execution-jump="cash"]'));
         const cashRow=relayPage.locator('tr',{hasText:REF});
         await cashRow.waitFor({timeout:20000});
         await capture(relayPage,'00-cash-pending');
-        const cashResponse=relayPage.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/workspaces/operations/market/KM/orders/'+REF+'/confirm-cash'&&r.request().method()==='POST',{timeout:30000});
-        await cashRow.locator('[data-workspace-action="confirm-cash"]').click();
+        const cashResponse=relayPage.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/workspaces/operations/market/'+MK.code+'/orders/'+REF+'/confirm-cash'&&r.request().method()==='POST',{timeout:30000});
+        await humanClick(null,cashRow.locator('[data-workspace-action="confirm-cash"]'));
         const cr=await cashResponse;
         const cbody=await cr.json().catch(()=>({}));
         evidence.gestures.push({key:'relay-confirm-cash',http:cr.status(),code:cbody.code||null,verdict:cr.status()===200?'PASS':'FAIL'});
@@ -170,23 +176,37 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
     expect(Number(before.cash_control_confirmed_count)).toBe(1);
     const {ctx,page}=await login(browser,baseURL);
     try{
-      await page.goto('/admin/hub-live?view=execute',{waitUntil:'domcontentloaded'});
+      await humanGoto(page,'/admin/hub-live?view=execute',{waitUntil:'domcontentloaded'});
       await page.locator('select').first().waitFor({timeout:20000});
-      await page.locator('select').first().selectOption({label:'KM · Comores'}).catch(()=>{});
+      await humanSelect(null,page.locator('select').first(),await marketOption(MK,page.locator('select').first()));
       await page.waitForLoadState('networkidle').catch(()=>{});
       const dossiers=page.getByRole('tab',{name:'Dossiers'});
-      if(await dossiers.count())await dossiers.click();
+      if(await dossiers.count())await humanClick(null,dossiers);
       const orderCard=page.locator('[data-hlc-order]').filter({hasText:REF});
       await orderCard.first().waitFor({timeout:25000});
       await capture(page,'01-order-visible');
-      const afterCash=await orderState();
+      // Le déclencheur d'achat automatique (post-encaissement cash) est asynchrone côté serveur :
+      // on lui laisse le temps de créer la ligne (lecture PG seule) avant tout sourcing manuel.
+      let afterCash=await orderState();
+      for(let i=0;i<24&&Number(afterCash.line_count)===0;i++){
+        await page.waitForTimeout(5000);
+        afterCash=await orderState();
+      }
+      evidence.auto_line_after_cash=Number(afterCash.line_count)===1;
+      // Si la ligne est arrivée pendant l'attente, l'écran affiché est périmé (« Sourcing requis ») :
+      // un humain rechargerait la page avant d'agir.
+      if(evidence.auto_line_after_cash){
+        await page.reload({waitUntil:'domcontentloaded'});
+        await page.waitForLoadState('networkidle').catch(()=>{});
+        await page.locator('[data-hlc-need]').filter({hasText:REF}).first().waitFor({timeout:25000});
+      }
       if(Number(afterCash.line_count)===0){
         const need=page.locator('[data-hlc-need]').filter({hasText:REF});
         await need.first().waitFor({timeout:20000});
-        await need.first().click();
+        await humanClick(null,need.first());
         const resolve=page.locator('[data-hlc-action="resolve-sourcing"]');
         await resolve.waitFor({timeout:15000});
-        await resolve.click();
+        await humanClick(null,resolve);
         const form=page.locator('form[data-hub-sourcing-form="'+REF+'"]');
         await form.waitFor({timeout:15000});
         const supplier=form.locator('[data-sourcing-supplier]');
@@ -194,10 +214,10 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
         const opts=await supplier.locator('option').evaluateAll(es=>es.map((e,i)=>({i,value:e.value,label:e.textContent||''})));
         const match=opts.find(x=>x.value&&/déjà associé/i.test(x.label));
         expect(match,'an existing supplier-to-product mapping is visible').toBeTruthy();
-        await supplier.selectOption(match.value);
+        await humanSelect(null,supplier,match.value);
         await capture(page,'02-supplier-mapping-selected');
         const lineResponse=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/purchasing/lines'&&r.request().method()==='POST',{timeout:30000});
-        await form.getByRole('button',{name:'Créer la ligne d’achat'}).click();
+        await humanClick(null,form.getByRole('button',{name:'Créer la ligne d’achat'}),{mutation:{path:'/api/purchasing/lines',statuses:ANY_STATUS}});
         const lr=await lineResponse;
         const lbody=await lr.json().catch(()=>({}));
         evidence.gestures.push({key:'create-manual-purchase-line',http:lr.status(),line_id:lbody?.line?.line_id||null,verdict:lr.status()===201?'PASS':'FAIL'});
@@ -218,11 +238,11 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
       }
       const activeNeed=page.locator('[data-hlc-need]').filter({hasText:REF}).last();
       await activeNeed.waitFor({timeout:25000});
-      await activeNeed.click();
+      await humanClick(null,activeNeed);
       const prepare=page.locator('[data-hlc-action="prepare-po"]');
       await prepare.waitFor({timeout:15000});
       const poResponse=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/purchasing/po/prepare'&&r.request().method()==='POST',{timeout:30000});
-      await prepare.click();
+      await humanClick(null,prepare,{mutation:{path:'/api/purchasing/po/prepare',statuses:ANY_STATUS}});
       const pr=await poResponse;
       const pbody=await pr.json().catch(()=>({}));
       evidence.gestures.push({key:'prepare-draft-po',http:pr.status(),purchase_order_id:pbody?.purchase_order?.id||pbody?.id||null,verdict:pr.status()===201?'PASS':'FAIL'});
@@ -240,6 +260,23 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
       expect(after.payment_status).toBe('paid');
       expect(Number(after.cash_collection_count)).toBe(1);
       expect(Number(after.cash_control_confirmed_count)).toBe(1);
+      // Oracle HUB_PO (lecture PG seule) : la ligne de NOTRE commande, pas seulement des comptages.
+      const [hub]=await q(`SELECT pl.quantity AS line_qty, oi.quantity AS item_qty, pl.supplier_id AS line_supplier, po.supplier_id AS po_supplier,
+          ps.supplier_id AS mapped_supplier, po.status::text AS po_status, po.trigger_mode, m.code AS market_code,
+          NULLIF(to_jsonb(o)->>'simulation_scope','') AS simulation_scope
+        FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id JOIN orders o ON o.id=oi.order_id
+        JOIN purchase_orders po ON po.id=pl.purchase_order_id LEFT JOIN markets m ON m.id=o.market_id
+        LEFT JOIN product_suppliers ps ON ps.id=pl.product_supplier_id
+        WHERE o.id=$1 AND pl.cancelled_at IS NULL`,[orderId]);
+      expect(hub,'HUB_PO oracle: line of our order on a PO').toBeTruthy();
+      expect(Number(hub.line_qty)).toBe(Number(hub.item_qty));
+      expect(hub.line_supplier).toBeTruthy();
+      expect(hub.line_supplier).toBe(hub.po_supplier);
+      if(hub.mapped_supplier)expect(hub.mapped_supplier).toBe(hub.line_supplier);
+      expect(hub.po_status).toBe('draft');
+      expect(hub.market_code).toBe(MK.code);
+      expect(hub.simulation_scope).toBe('G6-BUYER');
+      evidence.hub_po_oracle={quantity:Number(hub.line_qty),supplier_consistent:true,po_status:hub.po_status,market:hub.market_code,simulation_scope:hub.simulation_scope,manual_sourcing_path_played:!evidence.auto_line_after_cash};
       evidence.db_readback='same order, one cash collection and confirmed control, one purchase line, one draft PO';
       save();
     }catch(error){

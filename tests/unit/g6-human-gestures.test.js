@@ -54,6 +54,24 @@ test('HTTP confirmation is observed in the browser; unexpected status is BLOCKED
  const p2=fakePage({samples:[stable],locators:[inp,inp]});
  await expect(humanFill(p2,'[data-y]','value')).rejects.toThrow('G6_GESTURE_FILL_VALUE_NOT_STABLE');
 });
+test('fill accepts display formatting (spaces) but still rejects a different value',async()=>{
+ const inp={fill:jest.fn(),inputValue:async()=> '32 12 345'};
+ await expect(humanFill(fakePage({samples:[stable],locators:[inp,inp]}),'[data-p]','3212345')).resolves.toBeDefined();
+ const bad={fill:jest.fn(),inputValue:async()=> '32 12 346'};
+ await expect(humanFill(fakePage({samples:[stable],locators:[bad,bad]}),'[data-p]','3212345')).rejects.toThrow('G6_GESTURE_FILL_VALUE_NOT_STABLE');
+});
+test('humanGoto: aborted navigation accepted only if target URL reached, otherwise one retry',async()=>{
+ const {humanGoto}=require('../../scripts/recette/canonical/actors/human-gestures');
+ let url='https://s.invalid/admin/hub-live?view=execute',calls=0;
+ const page={goto:async()=>{calls++;throw Error('net::ERR_ABORTED');},waitForLoadState:async()=>{},url:()=>url};
+ await expect(humanGoto(page,'/admin/hub-live?view=execute')).resolves.toBeNull();
+ expect(calls).toBe(1);
+ url='https://s.invalid/admin/other';calls=0;
+ await expect(humanGoto(page,'/admin/hub-live?view=execute')).rejects.toThrow('ERR_ABORTED');
+ expect(calls).toBe(2);
+ const p2={goto:async()=>{throw Error('net::ERR_NAME_NOT_RESOLVED');},waitForLoadState:async()=>{},url:()=>url};
+ await expect(humanGoto(p2,'/x')).rejects.toThrow('ERR_NAME_NOT_RESOLVED');
+});
 test('chromium-policy refuses gestures written outside the helper; all 13 scripts comply',()=>{
  expect(()=>assertGestureSourceUsesHelper('s.js',"await page.locator('#a').click();")).toThrow('G6_GESTURE_OUTSIDE_HELPER_FORBIDDEN');
  expect(()=>assertGestureSourceUsesHelper('s.js',"await x.fill('v');")).toThrow('G6_GESTURE_OUTSIDE_HELPER_FORBIDDEN');

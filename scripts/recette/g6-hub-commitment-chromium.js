@@ -9,6 +9,7 @@
  * @impact-areas hub, purchasing, staging-only
  */
 'use strict';
+const MK=require('./canonical/market-profile').marketProfile(process.env);
 const fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('playwright');
 const db=require('../../db'),{confirmTarget}=require('./target-guard');
@@ -16,11 +17,11 @@ const ORIGIN='https://komerce-backend-production.up.railway.app';
 const OUT=path.resolve('test-results/g6-hub-commitment');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const {startTraceAfterAuth}=require('./canonical/observability');
-const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
+const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const env=process.env;
 const UUID=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const SHA=/^[0-9a-f]{40}$/i;
-const report={schema:'komerce-g6-hub-commitment/1',scenario_id:'M01',market:'KM',
+const report={schema:'komerce-g6-hub-commitment/1',scenario_id:'M01',market:MK.code,
  reference:env.G6_CANONICAL_ORDER_REFERENCE||null,po_id:env.G6_CANONICAL_PO_ID||null,
  verdict:'BLOCKED',external_supplier_calls:0,external_payment_executed:false,events:[],stage:'PREFLIGHT'};
 const save=()=>{fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n');};
@@ -42,7 +43,18 @@ async function getState(){
   'COALESCE(octet_length(commitment_pdf),0) AS pdf_bytes',
   'FROM purchase_order_authorizations WHERE purchase_order_id=$1 ORDER BY authorization_type'
  ].join(' '),[env.G6_CANONICAL_PO_ID])).rows;
- return {order:rows[0]||null,decisions};
+ // PO groupé par le Hub (mêmes fournisseur, SKU et marché) : les autres lignes doivent toutes
+ // appartenir à des commandes de recette staging (simulation_scope), jamais à une commande réelle.
+ const peers=await loadPeers();
+ return {order:rows[0]||null,decisions,peers};
+}
+async function loadPeers(){
+ return (await db.query([
+  'SELECT COUNT(*)::int AS other_lines,',
+  'COUNT(*) FILTER (WHERE o.simulation_scope IS NULL)::int AS non_test_lines',
+  'FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id JOIN orders o ON o.id=oi.order_id',
+  'WHERE pl.purchase_order_id=$1 AND pl.cancelled_at IS NULL AND o.id<>$2'
+ ].join(' '),[env.G6_CANONICAL_PO_ID,env.G6_CANONICAL_ORDER_ID])).rows[0];
 }
 async function stableSha(){
  const r=await fetch(ORIGIN+'/health/version');
@@ -67,7 +79,7 @@ async function login(browser,prefix,{readOnly=false,allowedWrites=['authorize-co
   blocked.push({method:req.method(),path:url.pathname});
   return route.abort('blockedbyclient');
  });
- await page.goto('/login.html?next='+encodeURIComponent('/admin/hub-live?view=execute&market=KM'));
+ await humanGoto(page,'/login.html?next='+encodeURIComponent('/admin/hub-live?view=execute&market='+MK.code+''));
  await humanFill(null,page.locator('#email'),email);
  await humanFill(null,page.locator('#password'),password);
  const promise=page.waitForResponse(x=>new URL(x.url()).pathname==='/api/auth/login'&&x.request().method()==='POST');
@@ -81,16 +93,30 @@ async function login(browser,prefix,{readOnly=false,allowedWrites=['authorize-co
  return {ctx,page,blocked};
 }
 async function openPo(page){
- await page.goto('/admin/hub-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
+ await humanGoto(page,'/admin/hub-live?view=execute&market='+MK.code+'',{waitUntil:'domcontentloaded'});
  const sel=page.locator('select').first();
  await sel.waitFor({timeout:20000});
- await humanSelect(null,sel,{label:'KM · Comores'}).catch(()=>{});
+ // Le marché est déjà porté par l'URL : ne le resélectionner que s'il diffère. Un changement de marché
+ // remonte l'espace de travail de façon asynchrone et efface la sélection faite entre-temps.
+ const wanted=await require('./canonical/market-profile').marketOption(MK,sel);
+ if(await sel.inputValue()!==wanted.value)await humanSelect(null,sel,wanted);
+ const dq=page.locator('[data-hub-director-state]');
+ if(await dq.count())await page.locator('[data-hub-director-state="ready"]').first().waitFor({timeout:20000}).catch(()=>{});
+ await page.locator('[data-hub-cockpit][data-hlc-ready="true"]').first().waitFor({timeout:20000}).catch(()=>{});
  const po=page.locator('[data-hlc-po="'+env.G6_CANONICAL_PO_ID+'"]');
  await po.waitFor({state:'visible',timeout:25000});
- check(await po.locator('[data-hlc-po-line]').count()===1,'G6_COMMITMENT_PO_MULTILINE');
+ const shown=await po.locator('[data-hlc-po-line]').count();
+ // Relu à chaque ouverture (openPo est réutilisé par les étapes fournisseur, hors main de cette étape).
+ const peers=await loadPeers();
+ check(Number(peers.non_test_lines)===0,'G6_COMMITMENT_PO_GROUPS_NON_TEST_ORDER');
+ check(shown>=1&&shown===1+Number(peers.other_lines),'G6_COMMITMENT_PO_LINES_UI_PG_MISMATCH');
  check(await po.locator('[data-hlc-line-order="'+env.G6_CANONICAL_ORDER_ID+'"]').count()===1,
   'G6_COMMITMENT_UI_ORDER_MISMATCH');
- await humanClick(null,po);
+ // Clic humain sur la référence du PO (titre de la carte) : le centre de la carte peut tomber sur le
+ // lien commande d'une ligne (stopPropagation → sélection de la commande, pas du PO).
+ await humanClick(null,po.locator('.hlc-ref').first());
+ await po.and(page.locator('.is-selected')).waitFor({state:'visible',timeout:10000})
+  .catch(()=>{throw Error('G6_COMMITMENT_PO_NOT_SELECTED');});
 }
 async function main(){
  let browser;
@@ -100,7 +126,7 @@ async function main(){
    env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.NODE_ENV==='test'&&
    env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&
    env.STAGING_BASE_URL===ORIGIN&&env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&
-   env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET==='KM'&&
+   env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET===MK.code&&
    env.G6_CANONICAL_PHASE==='HUB_COMMITMENT'&&SHA.test(env.E2E_EXPECTED_DEPLOY_SHA||'')&&
    UUID.test(env.G6_CANONICAL_PO_ID||'')&&UUID.test(env.G6_CANONICAL_ORDER_ID||'')&&
    /^[A-Z0-9-]{6,64}$/.test(env.G6_CANONICAL_ORDER_REFERENCE||'')&&
@@ -110,6 +136,9 @@ async function main(){
    'G6_COMMITMENT_DATABASE_NOT_SAME_AS_PO');
   report.db_fingerprint=target.fingerprint;report.sha=await stableSha();
   const before=await getState();
+
+  report.peer_lines=before.peers;
+  check(Number(before.peers.non_test_lines)===0,'G6_COMMITMENT_PO_GROUPS_NON_TEST_ORDER');
   report.before={po_status:before.order?.po_status,order_reference:before.order?.order_reference,
    payment_status:before.order?.payment_status,scope:before.order?.simulation_scope,
    purchase_lines:before.order?.purchase_lines,authorization_types:before.decisions.map(x=>x.authorization_type)};
@@ -137,6 +166,8 @@ async function main(){
    check(data.viewer_grants?.purchase_commitment===true,'G6_COMMITMENT_DIRECTOR_GRANT_MISSING');
    await openPo(director.page);
    const button=director.page.locator('[data-hlc-action="authorize-commitment"]');
+   // Avant toute mutation : si un rendu tardif a perdu la sélection, la refaire une fois (geste humain).
+   if(!await button.count()){await openPo(director.page);}
    check(await button.isEnabled(),'G6_COMMITMENT_DIRECTOR_ACTION_DISABLED');
    await humanClick(null,button);
    const form=director.page.locator('form[data-hlc-form="commitment"]');

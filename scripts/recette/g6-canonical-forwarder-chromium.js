@@ -9,6 +9,7 @@
  * @impact-areas logistics, staging-only
  */
 'use strict';
+const MK=require('./canonical/market-profile').marketProfile(process.env);
 const fs=require('node:fs'),path=require('node:path');
 const {isDeepStrictEqual}=require('node:util');
 const {chromium}=require('playwright');
@@ -21,10 +22,10 @@ const BOX=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_BOX_ID:'6ca614e5-869
 const OUT=path.resolve('test-results/g6-canonical-forwarder');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const {startTraceAfterAuth}=require('./canonical/observability');
-const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
-const API='/api/admin/workspaces/shipping-customs/market/KM/international/'+REF;
+const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
+const API='/api/admin/workspaces/shipping-customs/market/'+MK.code+'/international/'+REF;
 const report={schema:'komerce-g6-forwarder/1',shipment_id:ID,shipment_ref:REF,order_id:env.G6_CANONICAL_ORDER_ID,
- reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',scenario_id:'M01',market:'KM',role:'agent_transitaire',events:[],verdict:'BLOCKED',
+ reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',scenario_id:'M01',market:MK.code,role:'agent_transitaire',events:[],verdict:'BLOCKED',
  provenance:'SIMULATED / STAGING ONLY',external_payment_executed:false,external_supplier_calls:0};
 const check=(ok,code)=>{if(!ok)throw Error(code)};
 function save(){fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n')}
@@ -50,7 +51,7 @@ async function login(browser,prefix='E2E_AGENT_TRANSITAIRE_',role='agent_transit
   if(authAllowed&&r.method()==='POST'&&u.origin===BASE&&u.pathname==='/api/auth/login'){authAllowed=false;return route.continue()}
   blocked.push({method:r.method(),path:u.pathname});return route.abort('blockedbyclient');
  });
- await page.goto('/login.html?next='+encodeURIComponent('/admin/workspaces/shipping-customs?market=KM'));
+ await humanGoto(page,'/login.html?next='+encodeURIComponent('/admin/workspaces/shipping-customs?market='+MK.code+''));
  await humanFill(null,page.locator('#email'),email);await humanFill(null,page.locator('#password'),password);
  const pending=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/login'&&r.request().method()==='POST');
  await humanClick(null,page.locator('#btn-submit'));
@@ -62,7 +63,7 @@ async function login(browser,prefix='E2E_AGENT_TRANSITAIRE_',role='agent_transit
  return {ctx,page,blocked};
 }
 async function task(page,title,tabName='Transport & fret'){
- await page.goto('/admin/workspaces/shipping-customs?market=KM',{waitUntil:'domcontentloaded'});
+ await humanGoto(page,'/admin/workspaces/shipping-customs?market='+MK.code+'',{waitUntil:'domcontentloaded'});
  await page.locator('[data-international-journey]').first().waitFor({state:'visible',timeout:25000});
  const tab=page.locator('.kmc-journey-tab').filter({hasText:tabName});
  if(!await tab.evaluate(e=>e.classList.contains('is-active')))await humanClick(null,tab);
@@ -89,10 +90,19 @@ async function task(page,title,tabName='Transport & fret'){
  if(!visible)throw Error('G6_JOURNEY_DETAILS_NOT_OPEN: '+title);
  return item;
 }
+// Saisie dans une tâche <details> : un repaint asynchrone peut la refermer entre l'ouverture et la
+// saisie. On la rouvre par son vrai résumé (geste humain) ; la saisie n'est pas une mutation serveur.
+async function fillTask(item,name,val){
+ for(let attempt=0;attempt<3;attempt++){
+  if(!await item.evaluate(e=>e.open))await humanClick(null,item.locator('summary'),{timeout:8000});
+  try{await humanFill(null,item.locator('[name="'+name+'"]'),val,{timeout:6000});return;}
+  catch(error){if(attempt===2||!/not visible|Timeout/i.test(String(error&&error.message)))throw error;}
+ }
+}
 async function gesture(actor,key,title,tail,fields,expected){
  await runtime();
  const item=await task(actor.page,title);
- for(const [name,value] of Object.entries(fields))await humanFill(null,item.locator('[name="'+name+'"]'),value);
+ for(const [name,value] of Object.entries(fields))await fillTask(item,name,value);
  const url=BASE+API+'/'+tail;let count=0;
  const handler=async route=>{
   const req=route.request();
@@ -116,7 +126,7 @@ async function main(){
   check(env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.GITHUB_EVENT_NAME==='issues'&&env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER&&
    env.NODE_ENV==='test'&&env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&
    env.STAGING_BASE_URL===BASE&&env.G6_CANONICAL_PHASE==='FORWARDER'&&(env.G6_CANONICAL_RESUME_RUN_ID==='44210239102'||env.G6_DYNAMIC_FRESH_ORDER==='1')&&
-   env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET==='KM'&&(env.G6_CANONICAL_ORDER_ID==='56adad65-d1fa-4e80-8d69-c25e0fe92a76'||(env.G6_DYNAMIC_FRESH_ORDER==='1'&&/^[a-f0-9-]{36}$/i.test(env.G6_CANONICAL_ORDER_ID||'')&&/^[a-f0-9-]{36}$/i.test(ID||''))),
+   env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET===MK.code&&(env.G6_CANONICAL_ORDER_ID==='56adad65-d1fa-4e80-8d69-c25e0fe92a76'||(env.G6_DYNAMIC_FRESH_ORDER==='1'&&/^[a-f0-9-]{36}$/i.test(env.G6_CANONICAL_ORDER_ID||'')&&/^[a-f0-9-]{36}$/i.test(ID||''))),
    'G6_FORWARDER_OWNER_GUARD');
   const target=await confirmTarget({db,env});check(target.confirmed&&target.fingerprint===env.G6_CANONICAL_DB_FINGERPRINT,'G6_FORWARDER_DB_DRIFT');
   report.db_fingerprint=target.fingerprint;report.sha=await runtime();
@@ -138,7 +148,11 @@ async function main(){
    check(events.length===last.base.shipmentEvents.length+1&&isDeepStrictEqual(events.slice(0,-1),last.base.shipmentEvents)&&
      events.at(-1).event_type===type&&events.at(-1).proof_ref===fields.proof_ref&&!!events.at(-1).actor_id&&events.at(-1).to_stage===stage,
      'G6_FORWARDER_PG_EVENT_'+key);
+   // Valeurs attendues = valeurs saisies (TRACK, proof_ref) : tracking absent avant la saisie, exact après.
+   if(key==='forwarder_received')check(!state.tracking.tracking_reference,'G6_FORWARDER_TRACKING_BEFORE_ENTRY');
    if(key!=='forwarder_received')check(state.tracking.tracking_reference===TRACK,'G6_FORWARDER_TRACKING_MISSING');
+   if(key==='tracking'||key==='forwarder_received')check(!state.tracking.departed_at&&!state.tracking.arrived_at,'G6_FORWARDER_DATES_TOO_EARLY');
+   if(key==='in_transit')check(!state.tracking.arrived_at,'G6_FORWARDER_ARRIVAL_TOO_EARLY');
    if(key==='in_transit'||key==='arrived')check(!!state.tracking.departed_at,'G6_FORWARDER_DEPARTURE_MISSING');
    if(key==='arrived')check(!!state.tracking.arrived_at,'G6_FORWARDER_ARRIVAL_MISSING');
    last=state;report.after=state;save();await runtime();
@@ -148,4 +162,4 @@ async function main(){
  finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close();await db.pool.end();console.log(JSON.stringify(report))}
 }
 if(require.main===module)main();
-module.exports={login,task,snapshot,proof};
+module.exports={fillTask,login,task,snapshot,proof};

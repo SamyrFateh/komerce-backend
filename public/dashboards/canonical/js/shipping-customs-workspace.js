@@ -673,14 +673,16 @@
   function renderPayload(rootNode, ui, doc, payload, context) {
     rootNode.className = 'kmc-operations-workspace';
     rootNode.setAttribute('data-workspace-kind', 'shipping-customs');
+    const panel = globalThis.KomerceInternationalJourneyPanel;
+    const tasks = panel?.capture?.(rootNode, doc);
     rootNode.replaceChildren();
     rootNode.appendChild(createHeader(doc, payload, context));
     // The three real-world stages share this ONE workspace and retain the
     // original customs/transit owners. No second technical dashboard.
-    const panel = globalThis.KomerceInternationalJourneyPanel;
     if (panel && typeof panel.render === 'function') {
-      panel.render(doc, rootNode, context, payload.international || [],
+      const section = panel.render(doc, rootNode, context, payload.international || [],
         payload.internationalDetail || null, payload.internationalError || null);
+      if (tasks) panel.restore(section, tasks);
     } else {
       rootNode.appendChild(text(doc, 'p', 'kmc-workspace-empty',
         'Chaîne internationale indisponible : module visuel absent.'));

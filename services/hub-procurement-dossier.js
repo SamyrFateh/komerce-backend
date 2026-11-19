@@ -678,7 +678,7 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
       JOIN orders o ON o.id = oi.order_id
       LEFT JOIN products p ON p.id = oi.product_id
      WHERE o.market_id = $1 AND ($2::uuid IS NULL OR po.supplier_id = $2::uuid)
-     ORDER BY po.created_at DESC, po.id, pl.id`, [marketId, supplierId]);
+     ORDER BY po.created_at DESC, po.id, o.created_at, pl.id`, [marketId, supplierId]);
 
   const lineIds = poRows.map((r) => r.line_id);
   const anomalyByLine = new Map();
@@ -713,11 +713,15 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
       ordered: Number(r.ordered), confirmed: effective, received, missing: Math.max(effective - received, 0),
       anomaly: anomalyByLine.get(r.line_id) || 0,
       order_created_at: r.order_created_at || null,
+      simulation_scope: r.simulation_scope || null,
       unit_price: r.supplier_unit_price == null ? null : Number(r.supplier_unit_price),
       currency: r.supplier_currency || null,
     });
   }
   const purchaseOrders = [...pos.values()].map((po) => {
+    // Simulé seulement si TOUTES les lignes partagent la même portée (règle serveur g6SupplierSimulation).
+    po.simulation_scope = new Set(po.lines.map((l) => l.simulation_scope)).size === 1 ? po.lines[0].simulation_scope : null;
+    po.simulation_reference = po.simulation_scope === 'G6-BUYER' ? po.id : null;
     const totals = po.lines.reduce((t, l) => ({
       effective: t.effective + l.confirmed, received: t.received + l.received,
       missing: t.missing + l.missing, anomaly: t.anomaly + l.anomaly,

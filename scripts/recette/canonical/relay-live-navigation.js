@@ -12,7 +12,8 @@ function isRelayPage(url){
  try {const parsed=new URL(String(url));return parsed.origin===BASE&&parsed.pathname==='/admin/relais-live';}
  catch(_){return false}
 }
-async function openRelayLive(page,{selector,timeout=30000}={}){
+const ENTRIES={execute:{view:'execute',link:'Atelier réception'},remises:{view:'remises',link:/^\s*Remises\s*$/}};
+async function openRelayLive(page,{selector,timeout=30000,execute=false,entry=execute?'execute':null}={}){
  if(!page||typeof page.goto!=='function'||typeof selector!=='string'||!selector)
   throw Error('G6_RELAY_NAVIGATION_ARGUMENTS_INVALID');
  if(!isRelayPage(page.url())){
@@ -30,6 +31,16 @@ async function openRelayLive(page,{selector,timeout=30000}={}){
  }
  await page.waitForURL(u=>u.origin===BASE&&u.pathname==='/admin/relais-live',{timeout:20000});
  await page.waitForLoadState('domcontentloaded',{timeout:20000});
+ // Réception : atelier d'exécution (?view=execute) ; retrait : comptoir des remises (?view=remises).
+ // L'atterrissage du rôle est le Flux Relais : on y entre comme un humain, par le lien de l'écran.
+ const want=entry&&ENTRIES[entry];
+ if(entry&&!want)throw Error('G6_RELAY_NAVIGATION_ARGUMENTS_INVALID');
+ if(want&&new URL(page.url()).searchParams.get('view')!==want.view){
+  const {humanClick}=require('./actors/human-gestures');
+  await humanClick(null,page.locator('a',{hasText:want.link}).first());
+  await page.waitForURL(u=>u.origin===BASE&&u.pathname==='/admin/relais-live'&&u.searchParams.get('view')===want.view,{timeout:20000});
+  await page.waitForLoadState('domcontentloaded',{timeout:20000});
+ }
  const target=page.locator(selector);
  await target.waitFor({state:'visible',timeout});
  if(!isRelayPage(page.url()))throw Error('G6_RELAY_NAVIGATION_DESTINATION_DRIFT');

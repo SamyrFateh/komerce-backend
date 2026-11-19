@@ -9,6 +9,7 @@
  * @impact-areas staging-only, pickup, checkout, logistics
  */
 'use strict';
+const MK=require('./canonical/market-profile').marketProfile(process.env);
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {isDeepStrictEqual}=require('node:util');
 const {chromium}=require('playwright');
@@ -27,8 +28,8 @@ const ITEM=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ITEM_ID:'8c99
 const OUT=path.resolve('test-results/g6-canonical-client-pickup');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const {startTraceAfterAuth}=require('./canonical/observability');
-const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
-const report={schema:'komerce-g6-client-pickup/1',scenario_id:'M01',market:'KM',reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',
+const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
+const report={schema:'komerce-g6-client-pickup/1',scenario_id:'M01',market:MK.code,reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',
  order_id:ID,parcel_id:PARCEL,shipment_id:SHIPMENT,provenance:'SIMULATED / STAGING ONLY',
  verdict:'BLOCKED',events:[],external_supplier_calls:0,external_payment_executed:false,
  plaintext_pickup_code_logged:false,production_permitted:false};
@@ -77,14 +78,14 @@ async function customer(browser,owner){
   blocked.push({method:m,path:url.pathname});return route.abort('blockedbyclient');
  });
  try{
-  await page.goto('/boutique/?market=KM',{waitUntil:'domcontentloaded'});
+  await humanGoto(page,'/boutique/?market='+MK.code+'',{waitUntil:'domcontentloaded'});
   await humanClick(null,page.locator('.k-header-nav-btn[data-tab="komerce"]').first());
   await humanClick(null,page.locator('#k-kmc-identify'));
   await page.locator('#k-id-step-phone').waitFor({state:'visible',timeout:20000});
   await humanFill(null,page.locator('#k-id-name'),'G6');
   await humanFill(null,page.locator('#k-id-lastname'),'E2E');
-  await humanSelect(null,page.locator('#k-id-phone-country'),'+269');
-  await humanFill(null,page.locator('#k-id-phone'),owner.phone.slice(4));
+  await humanSelect(null,page.locator('#k-id-phone-country'),MK.dial);
+  await humanFill(null,page.locator('#k-id-phone'),owner.phone.slice(MK.dial.length));
   const req=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/otp/request'&&r.request().method()==='POST',{timeout:20000});
   await humanClick(null,page.locator('#k-id-phone-cta'));
   check((await req).status()===200,'G6_PICKUP_OTP_REQUEST_REJECTED');
@@ -97,7 +98,7 @@ async function customer(browser,owner){
   await startTraceAfterAuth(ctx);
   await runtime();
   report.events.push({key:'client-otp',http:200,role:'client'});save();
-  await page.goto('/boutique/?market=KM&tab=track',{waitUntil:'domcontentloaded'});
+  await humanGoto(page,'/boutique/?market='+MK.code+'&tab=track',{waitUntil:'domcontentloaded'});
   const card=page.locator('.k-myorder-card[data-ref="'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6')+'"]');
   await card.waitFor({state:'visible',timeout:30000});await humanClick(null,card);
   const action=page.locator('.k-order-pickup-code');
@@ -143,7 +144,7 @@ async function relay(browser,code,expectedRelay){
   actor.page.on('dialog',d=>d.type()==='confirm'?d.accept():d.dismiss());
   // Reuse the role landing page; the real pickup form must still be visible.
   const box=await openRelayLive(actor.page,{
-   selector:'[data-manual-pickup-code]',timeout:30000
+   selector:'[data-manual-pickup-code]',timeout:30000,entry:'remises'
   });
   const input=box.locator('[data-pickup-code-input]');
   check(await input.getAttribute('type')==='password','G6_PICKUP_RELAY_FIELD_MUST_BE_MASKED');
@@ -155,12 +156,21 @@ async function relay(browser,code,expectedRelay){
   check(res.status()===200&&calls===1&&actor.blocked.length===0,'G6_PICKUP_RELAY_COLLECT_REJECTED_'+res.status());
   report.events.push({key:'relay-code-collect',http:200,role:'agent_relais',ui:true,code_masked:'********'});
   save();await runtime();
-  // A fresh relay queue must not display an actionable pickup field for this
-  // completed one-parcel order. Anti-double-write is independently checked via PG.
+  // `[data-manual-pickup-code]` est le comptoir GÉNÉRIQUE de l'onglet Remises (operations-workspace.js
+  // renderPickupCodeSection) : affiché dès qu'un colis du relais attend un retrait, sans lien avec cette
+  // commande (le POST ne porte que {pickup_code}). Il reste donc visible pour le client suivant (1 en KM/CM).
+  // Oracle = PG lecture seule : retrait unique, code consommé, aucun second retrait.
   await actor.page.reload({waitUntil:'domcontentloaded'});
   await actor.page.locator('[data-relay-execution-jump="collect"]').waitFor({state:'visible',timeout:20000}).catch(()=>{});
   const available=await actor.page.locator('[data-manual-pickup-code]').count();
-  report.second_handoff_ui={after_refresh_code_form_count:available,second_post_attempted:false};
+  const {rows:[once]}=await db.query(`SELECT o.status::text AS status,o.pickup_secret_hash IS NULL AS code_consumed,
+     (SELECT COUNT(*)::int FROM scans s WHERE s.order_id=o.id AND s.step='collected') AS collect_scans,
+     (SELECT COUNT(*)::int FROM scans s WHERE s.order_id=o.id AND s.step='collected' AND s.pickup_method='PICKUP_CODE') AS code_scans
+    FROM orders o WHERE o.id=$1`,[ID]);
+  check(once&&once.status==='collected'&&once.code_consumed===true&&once.collect_scans===1&&once.code_scans===1&&calls===1&&
+    actor.blocked.length===0,'G6_PICKUP_SECOND_HANDOFF_OR_CODE_NOT_CONSUMED');
+  report.second_handoff_ui={generic_counter_forms_visible:available,generic_counter_note:'comptoir générique Remises, non lié à la commande',
+    pg_collect_scans:once.collect_scans,pg_code_consumed:once.code_consumed,second_post_attempted:false};
   return user.id;
  }finally{await actor.ctx.close()}
 }
@@ -173,7 +183,7 @@ async function main(){
    env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&
    env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&env.STAGING_BASE_URL===BASE&&
    env.G6_CANONICAL_PHASE==='CLIENT_PICKUP'&&(env.G6_CANONICAL_RESUME_RUN_ID==='44272362064'||env.G6_DYNAMIC_FRESH_ORDER==='1')&&
-   env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET==='KM'&&env.G6_CANONICAL_ORDER_ID===ID,
+   env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET===MK.code&&env.G6_CANONICAL_ORDER_ID===ID,
    'G6_PICKUP_OWNER_STAGING_GUARD');
   const guard=await confirmTarget({db,env});
   check(guard.confirmed&&guard.fingerprint===env.G6_CANONICAL_DB_FINGERPRINT,'G6_PICKUP_DB_FINGERPRINT_DRIFT');

@@ -68,6 +68,8 @@ describe('G6 canonical journey — same order, original matrix, real staging gua
   });
   test('refuse exécution hors staging propriétaire, sans pin, sans DB',()=>{
     expect(validateGuard(env)).toMatchObject({id:'M01',market:'KM'});
+    expect(validateGuard({...env,G6_CANONICAL_SCENARIO:'M05',G6_TARGET_MARKET:' cg '})).toMatchObject({id:'M05',market:'CG'});
+    expect(()=>validateGuard({...env,G6_TARGET_MARKET:'ZZ'})).toThrow('G6_UNSUPPORTED_MARKET');
     for(const edit of [{GITHUB_ACTOR:'other'},{KOMERCE_ENV:'production'},
       {STAGING_BASE_URL:'https://komerce.co'},{E2E_EXPECTED_DEPLOY_SHA:'?'},
       {DATABASE_URL:''},{G6_CANONICAL_ACCEPT_PARTIAL_REPLAY:'0'}]){
