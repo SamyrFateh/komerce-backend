@@ -94,7 +94,7 @@ test('Responsable marché : Hub et Order 360 isolés, lecture seule par capabili
       .evaluateAll(nodes=>nodes.map(node=>({id:node.getAttribute('data-dashboard'),href:node.getAttribute('href')})));
     proof.navigation={items:menu.map(item=>item.id),visited:[]};
     expect(menu.map(item=>item.id)).toEqual(requiredMenu);
-    for(const item of menu)expect(item.href,'Missing scoped navigation for '+item.id).toMatch(/^\\//);
+    for(const item of menu)expect(String(item.href||'').startsWith('/'),'Missing scoped navigation for '+item.id).toBe(true);
     const forbiddenCentral=['/admin/workspaces/catalog','/admin/workspaces/purchasing',
       '/admin/import-runtime','/admin/relais-live','/admin/users','/admin/providers','/admin/settings'];
     for(const item of menu)expect(forbiddenCentral,'Unsafe direct central route in menu '+item.id)
