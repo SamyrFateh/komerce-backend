@@ -80,15 +80,13 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_PROTECTED',
-    authedRoutesDetected: 9,
-    totalRoutes: 9,
-    note: '9/9 routes protégées — hérité de inventory (audit gen-security-360.js), à revérifier au prochain passage.',
+    authedRoutesDetected: 7,
+    totalRoutes: 7,
+    note: '7/7 routes protégées — hérité de inventory (audit gen-security-360.js), à revérifier au prochain passage.',
   },
   contract: {
     exposes: [
       'GET /api/unsold',
-      'GET /api/unsold/my',
-      'GET /api/unsold/my/stats/summary',
       'GET /api/unsold/:id',
       'PATCH /api/unsold/:id',
       'POST /api/unsold/:id/resolve',
@@ -96,7 +94,7 @@ module.exports = {
       'POST /api/unsold/scan',
       'GET /api/unsold/stats/summary',
     ],
-    consumes: ['orders (commande source de l\'invendu)', 'catalog (produit concerné)', 'auth', 'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)'],
+    consumes: ['orders (commande source de l\'invendu)', 'catalog (produit concerné)', 'auth', 'market-delegation', 'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)'],
   },
 
   // ── Dette assumée / documentée ────────────────────────────────────────────

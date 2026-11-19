@@ -155,7 +155,8 @@
     const market=role==='market_operator' && ctx.data.access?.mode==='market';
     if (!market && role!=='admin') return say('Profil non autorisé.',true);
     scan.hidden=market;
-    const prefix=market?'/api/unsold/my':'/api/unsold';
+    // Même dashboard et mêmes API, filtrage d'autorité exclusivement serveur.
+    const prefix='/api/unsold';
     const [list,stats]=await Promise.all([call('GET',prefix),call('GET',prefix+'/stats/summary')]);
     if (!list.ok) { say(refusalMessage(list.status,list.data),true); return; }
     root.querySelector('.unsold-doctrine').textContent=market

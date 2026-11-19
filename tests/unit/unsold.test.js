@@ -60,7 +60,7 @@ describe('GET /api/unsold — liste', () => {
     expect(res.status).toBe(401);
   });
 
-  it('non-admin → 403', async () => {
+  it('client non autorisé → 403', async () => {
     mockUser = { id: 'u1', role: 'client' };
     const res = await request(buildApp()).get('/api/unsold');
     expect(res.status).toBe(403);
@@ -263,7 +263,7 @@ describe('Invendus Responsable Marché — scopes READ stricts',()=>{
   test('GET /my ne lit que les invendus des marchés délégués, sans écriture',async()=>{
     const rows=[{id:'unsold-own',order_ref:'KM-101'}];
     mockDbQuery.mockResolvedValueOnce({rows});
-    const res=await request(buildApp()).get('/api/unsold/my');
+    const res=await request(buildApp()).get('/api/unsold');
     expect(res.status).toBe(200);
     expect(res.body).toEqual(rows);
     expect(mockAuthorizedMarkets).toHaveBeenCalledWith(expect.anything(),{
@@ -274,7 +274,7 @@ describe('Invendus Responsable Marché — scopes READ stricts',()=>{
   });
   test('GET /my/stats/summary calcule uniquement le périmètre autorisé',async()=>{
     mockDbQuery.mockResolvedValueOnce({rows:[{total_actifs:'1',valeur_liquidation_kmf:'800'}]});
-    const res=await request(buildApp()).get('/api/unsold/my/stats/summary');
+    const res=await request(buildApp()).get('/api/unsold/stats/summary');
     expect(res.status).toBe(200);
     expect(res.body.total_actifs).toBe('1');
     expect(mockDbQuery).toHaveBeenCalledWith(expect.stringContaining('o.market_id = ANY($1::uuid[])'),[[marketId]]);
