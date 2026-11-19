@@ -32,7 +32,7 @@
 - **UX3, sélection par défaut sans rapport.** À l'ouverture, une commande en anomalie arbitraire est sélectionnée. De plus, changer de marché efface la sélection en cours (#4616).
 - Rappels : le parcours de l'agent relais (point 5), l'achat manuel sans prix (point 1) et la référence du PO groupé (point 7) sont déjà listés.
 
-6. **Runner.** `g6-canonical-replay.js` garde `KM` en dur, hors du chemin dynamique (#4575). Il faut l'aligner sur le profil de marché ou le retirer.
+6. **Runner.** `g6-canonical-replay.js` garde `KM` en dur, hors du chemin dynamique (#4575). Il faut l'aligner sur le profil de marché ou le retirer. **Lot 6 · [#4612](https://github.com/SamyrFateh/komerce-backend/pull/4612)** : runner historique maintenu et aligné sur profil marché, contrôles M01 KM/CM/CG. Prochaine action : vérifier les preuves et le comportement post-fusion ; aucun run Golden sans GO.
 
 **G6-MARKET — M01 RÉPÉTABLE SUR KM, CM ET CG (Opus)** : 3 runs consécutifs à 15/15 par marché.
 - **CM :** K74B6WQ, K1TBS8T, KUHZB3Z (#4592 à #4594).
