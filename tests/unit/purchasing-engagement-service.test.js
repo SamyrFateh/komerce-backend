@@ -506,6 +506,24 @@ describe('createManualLine', () => {
     await expect(engagement.createManualLine(body)).rejects.toThrow('boom');
   });
 
+  it('achat manuel sans prix de mapping : conserve le prix réel et la devise sur la nouvelle ligne', async () => {
+    scripted(handlers({ps:{...ps,supplier_price_aed:null}}));
+    db.query.mockResolvedValue({rows:[{line_id:uuid(60),market_id:'m',market_code:'CM',effective_quantity:2,cancelled:false}]});
+    snapshot.loadExactSoldSku.mockResolvedValueOnce({...item,id:item.sku_id,supplier_unit_ref:'EXACT'});
+    await engagement.createManualLine({...body,execution_mode:'manual',actual_unit_price:'21.75',actual_currency:'usd'});
+    expect(snapshot.buildPurchaseTarget).toHaveBeenCalledWith(expect.anything(),expect.anything(),
+      expect.objectContaining({unit_price:21.75,currency:'USD',supplier_unit_ref:'EXACT'}));
+    expect(snapshot.resolveExactSkuProcurementReadiness).not.toHaveBeenCalled();
+  });
+
+  it('refuse une cotation partielle et la substitution du prix mappé', async () => {
+    await expect(engagement.createManualLine({...body,actual_unit_price:12})).rejects.toMatchObject({status:400});
+    scripted(handlers({ps:{...ps,supplier_price_aed:7}}));
+    await expect(engagement.createManualLine({...body,execution_mode:'manual',actual_unit_price:12,actual_currency:'USD'}))
+      .rejects.toMatchObject({code:'MANUAL_PRICE_NOT_APPLICABLE'});
+    expect(snapshot.insertOpenPurchaseLine).not.toHaveBeenCalled();
+  });
+
   it('prix fournisseur indisponible (mapping sans prix) → 409 SUPPLIER_MONEY_UNAVAILABLE en FR, jamais une 500', async () => {
     scripted(handlers({ ps: { ...ps, supplier_name: 'Audit CJ Supplier' } }));
     snapshot.buildPurchaseTarget.mockImplementationOnce(() => { throw new Error('SUPPLIER_MONEY_UNAVAILABLE'); });
