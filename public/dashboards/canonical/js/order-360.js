@@ -653,6 +653,47 @@
     });
   }
 
+  // Classe D : geste de recette isolé du refund normal, autorité revue au serveur.
+  function renderG6HubClosure(options,payload) {
+    const order=payload.order;
+    const hubReceived=(payload.purchasing?.purchase_orders||[]).some(po=>
+      ['hub_received','received','partially_received'].includes(po.status));
+    if(options.user?.role!=='admin'||order.simulation_scope!=='G6-BUYER'||
+       order.payment?.mode!=='cash_relais'||
+       !(['preparation','shipped','in_transit','available'].includes(order.status)||hubReceived)||
+       ['cancelled','collected','refunded'].includes(order.status))return;
+    const doc=options.document,section=doc.createElement('section');
+    const button=text(doc,'button','kmc-workspace-action is-secondary','Clôturer la recette (marchandise au Hub)');
+    button.type='button';button.setAttribute('data-g6-recipe-hub-close','');
+    const message=text(doc,'p','','');message.setAttribute('role','status');
+    section.appendChild(button);section.appendChild(message);options.root.appendChild(section);
+    button.addEventListener('click',async()=>{
+      const reason=doc.defaultView.prompt('Motif obligatoire de clôture G6 (8 caractères minimum)');
+      if(!reason||reason.trim().length<8){message.textContent='Motif obligatoire (8 caractères minimum).';return;}
+      if(!doc.defaultView.confirm('Clôturer uniquement cette commande de recette G6 ? Les marchandises seront isolées au Hub, les colis annulés, sans remboursement PSP.'))return;
+      button.disabled=true;
+      try{
+        const actual=await jsonRequest(options.fetch,'/api/orders/'+encodeURIComponent(order.reference));
+        if(!actual.id||actual.reference!==order.reference||actual.simulation_scope!=='G6-BUYER'||
+           actual.status!==order.status)throw Error('La commande a changé : recharger sa fiche');
+        const response=await options.fetch('/api/orders/'+encodeURIComponent(actual.id)+'/g6-recipe-close',{
+          method:'POST',credentials:'include',
+          headers:{'Content-Type':'application/json',Accept:'application/json'},
+          body:JSON.stringify({reason:reason.trim()})
+        });
+        const result=await response.json();
+        if(!response.ok)throw Error(result.error||'Clôture de recette refusée');
+        const refreshed=await mount(options);
+        if(refreshed.payload.order.status!=='cancelled')throw Error('Clôture non vérifiée par relecture');
+        const note=text(doc,'p','','Clôture de recette G6 enregistrée et auditée.');
+        note.setAttribute('role','status');options.root.appendChild(note);
+      }catch(error){
+        message.textContent=error.message+' Vérifier le dossier avant toute nouvelle tentative.';
+        if(!message.isConnected)options.root.appendChild(text(doc,'p','',message.textContent));
+      }
+    });
+  }
+
   async function mount(options) {
     const rootNode = options.root;
     const doc = options.document;
@@ -672,6 +713,7 @@
       const payload = await jsonRequest(fetchFn, endpoint);
       renderPayload(rootNode, ui, doc, payload);
       renderRecipeCancellation(options, payload.order);
+      renderG6HubClosure(options, payload);
       // Ancre #couts (lien depuis Finance) : la section n'existe qu'après le rendu, le navigateur ne peut pas y défiler seul.
       const hash = options.location ? options.location.hash : (globalThis.location && globalThis.location.hash);
       if (hash === '#couts') {

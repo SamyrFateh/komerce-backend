@@ -43,7 +43,7 @@
 const express = require('express');
 const router  = express.Router();
 const db      = require('../../db');
-const { authenticate }             = require('../../middleware/auth');
+const { authenticate, requireRole }             = require('../../middleware/auth');
 const { validate }                 = require('../../middleware/validate');
 const { orders }                   = require('../../validators');
 const { getRule }                  = require('../../utils/rules');
@@ -57,6 +57,18 @@ const { createAlert } = require('../../utils/alerts');
 const log = require('../../utils/logger').child({ module: 'cancel' });
 
 // ─── POST /api/orders/:id/cancel ─────────────────────────────────────────────
+
+// G6 staging-only, administrateur central : jamais le chemin PSP de l’annulation ordinaire.
+router.post('/:id/g6-recipe-close', authenticate, requireRole(['admin']), async(req,res,next)=>{
+ try {
+  const {closeG6RecipeAtHub}=require('../../services/g6-recipe-order-closure-service');
+  const result=await closeG6RecipeAtHub(req.params.id,(req.body||{}).reason,req.user);
+  res.json(result);
+ } catch(error) {
+  if(error.status)return res.status(error.status).json({error:error.message,code:error.code});
+  next(error);
+ }
+});
 
 router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (req, res, next) => {
   const client = await db.getClient();
