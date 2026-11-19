@@ -50,7 +50,9 @@ async function inventory(){
   const po_peers={};
   for(const p of peers)(po_peers[p.po_id]=po_peers[p.po_id]||[]).push({reference:p.reference,simulation_scope:p.simulation_scope});
   let cutoff='shipped';
-  if(rule&&rule.value!=null){try{cutoff=String(JSON.parse(rule.value));}catch(_){cutoff=String(rule.value);}}
+  // Même lecture que utils/rules.js (getRule) : business_rules.value est un JSONB { value: ... }.
+  const v=rule&&rule.value&&typeof rule.value==='object'?rule.value.value:undefined;
+  if(typeof v==='string'&&v)cutoff=v;
   const entries=orders.map(o=>({order:o,po_peers,
    lines:lines.filter(l=>l.order_id===o.id).map(l=>({line_id:l.line_id,po_id:l.po_id,po_status:l.po_status}))}));
   return {entries,cutoff};
