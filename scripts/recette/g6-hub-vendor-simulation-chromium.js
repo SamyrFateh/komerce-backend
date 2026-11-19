@@ -20,6 +20,7 @@ const OUT=path.resolve('test-results/g6-hub-vendor-simulation');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const {humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const REF=env.G6_CANONICAL_ORDER_REFERENCE||'';
+let simulationPoId=null; // référence simulée propre au PO (#4609), lue aussi après le bloc navigateur
 
 const PO=env.G6_CANONICAL_PO_ID||'';
 const ORDER=env.G6_CANONICAL_ORDER_ID||'';
@@ -132,7 +133,7 @@ async function main(){
    const form=await openByChromiumGesture(actor.page,'record-sent','sent');
    check((await form.locator('select option').evaluateAll(x=>x.map(i=>i.value))).join(',')==='other',
      'G6_SIM_EXTERNAL_CHANNEL_PRESENT');
-   const simulationPoId=before.po_id;
+   simulationPoId=before.po_id;
    check(await form.locator('[name="supplier_order_id"]').inputValue()==='SIM-STAGING-'+simulationPoId,'G6_SIM_REFERENCE_INCORRECT');
    report.simulation_reference_po=simulationPoId;
    const sentResp=actor.page.waitForResponse(x=>new URL(x.url()).pathname==='/api/purchasing/po/'+PO+'/sent'&&x.request().method()==='POST');
