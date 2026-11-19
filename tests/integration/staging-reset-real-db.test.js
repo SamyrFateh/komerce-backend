@@ -343,4 +343,94 @@ if (!process.env.DATABASE_URL) {
       expect(dry.report.fixture_blockers).toEqual([expect.objectContaining({ table: 'economic_structure_cost_events', columns: ['recorded_by'] })]);
     });
   });
+
+  describe('STAGING RESET — REAL_DB — portee activity (catalogue et sourcing preserves)', () => {
+    let eph; let c; let rows; let baseline;
+    const env = { KOMERCE_STAGING_RESET_MODE: 'activity' };
+    const stockOf = async (t, id) => Number((await c.query(`SELECT stock FROM ${t} WHERE id = $1`, [id])).rows[0].stock);
+    beforeAll(async () => {
+      eph = await helpers.createEphemeralDatabase(process.env.DATABASE_URL);
+      c = new Client({ connectionString: eph.url });
+      await c.connect();
+      rows = {};
+      rows.admin = await insertRow(c, 'users', { email: 'admin@komerce.km', role: 'admin', full_name: 'Admin Komerce' });
+      rows.client = await insertRow(c, 'users', { email: '26912345678@komerce.km', role: 'client', full_name: 'Client reel' });
+      rows.fix = await insertRow(c, 'users', { email: 'rct1.op@recette.komerce.invalid', role: 'market_operator', full_name: 'RCT1 Op' });
+      rows.fixFree = await insertRow(c, 'users', { email: 'e2e.free@e2e-cash.test', role: 'client', full_name: 'E2E Free' });
+      // Catalogue : produit legacy (stock 7 apres une commande confirmee de 3 -> 10), produit SKU (sku 4 apres 2 -> 6).
+      rows.legacy = await insertRow(c, 'products', { stock: 7, inventory_model: 'LEGACY_VARIANTS' });
+      rows.skuProduct = await insertRow(c, 'products', { inventory_model: 'SKU' });
+      rows.sku = await insertRow(c, 'product_skus', { product_id: rows.skuProduct.id, stock: 4 });
+      rows.local = await insertRow(c, 'local_stock', { product_id: rows.legacy.id, qty_physical: 5 });
+      // Ligne de catalogue signee par une fixture : le compte est conserve (jamais de NULL/DELETE sur une ligne preservee).
+      rows.price = await insertRow(c, 'price_history', { product_id: rows.legacy.id, applied_by: rows.fix.id });
+      await insertRow(c, 'sourcing_captures');
+      await insertRow(c, 'supplier_catalog_imports');
+      // Activite : commandes confirmee / en attente / annulee + allocation locale consommee.
+      const mkOrder = (status) => insertRow(c, 'orders', { user_id: rows.client.id, status });
+      rows.oConfirmed = await mkOrder('confirmed');
+      rows.oPending = await mkOrder('pending');
+      rows.oCancelled = await mkOrder('cancelled');
+      await insertRow(c, 'order_items', { order_id: rows.oConfirmed.id, product_id: rows.legacy.id, quantity: 3 });
+      await insertRow(c, 'order_items', { order_id: rows.oConfirmed.id, product_id: rows.skuProduct.id, sku_id: rows.sku.id, quantity: 2 });
+      await insertRow(c, 'order_items', { order_id: rows.oPending.id, product_id: rows.legacy.id, quantity: 9 });
+      await insertRow(c, 'order_items', { order_id: rows.oCancelled.id, product_id: rows.legacy.id, quantity: 8 });
+      await c.query(
+        `INSERT INTO local_stock_allocations (local_stock_id, order_id, quantity, consumed_at) VALUES ($1, $2, 2, now())`,
+        [rows.local.id, rows.oConfirmed.id]);
+      for (const t of ['purchase_orders', 'parcels', 'shipments', 'cash_collections', 'wallets', 'alerts', 'client_notifications', 'financial_movements']) await insertRow(c, t);
+      baseline = await fingerprintAll(c);
+    });
+    afterAll(async () => {
+      if (c) await c.end().catch(() => {});
+      if (eph) await eph.drop().catch(() => {});
+    });
+
+    test('dry-run : aucune table preservee dans le plan, la cascade ne touche rien de preserve, 0 mutation', async () => {
+      const out = drive(eph.url, 'dry-run', env);
+      expect({ ok: out.ok, message: out.message }).toEqual({ ok: true, message: undefined });
+      const r = out.report;
+      expect(r.scope).toBe('activity');
+      expect(r.status).toBe('DRY_RUN_OK');
+      const emptied = Object.keys(r.tables_emptied);
+      for (const t of emptied) expect({ t, kept: classification.ACTIVITY_PRESERVED.has(t) }).toEqual({ t, kept: false });
+      expect(emptied).toEqual(expect.arrayContaining(['orders', 'order_items', 'purchase_orders', 'parcels', 'cash_collections']));
+      expect(r.preserved_activity_tables_total).toBeGreaterThan(40);
+      expect(r.foundation_rows_before).toMatchObject({ products: 2, product_skus: 1, sourcing_captures: 1, supplier_catalog_imports: 1 });
+      expect(r.stock_restoration_preview.order_items_by_inventory_model).toEqual({
+        LEGACY_VARIANTS: { items: 1, units: 3 }, SKU: { items: 1, units: 2 },
+      });
+      expect(r.fixtures.summary.users_retained_due_to_preserved_catalog).toBe(1);
+      expect(sameExcept(baseline, await fingerprintAll(c), new Set())).toEqual([]);
+      const sim = drive(eph.url, 'dry-run', { ...env, KOMERCE_STAGING_RESET_SIMULATE: '1' });
+      expect(sim.report.simulation).toMatchObject({ ok: true, rolled_back: true });
+      expect(sameExcept(baseline, await fingerprintAll(c), new Set())).toEqual([]);
+    });
+
+    test('execute : activite videe, catalogue/sourcing intacts, stock remis en etat, fixture non auteur retiree, verify vert, idempotent', async () => {
+      const out = drive(eph.url, 'execute', env);
+      expect({ ok: out.ok, message: out.message }).toEqual({ ok: true, message: undefined });
+      expect(out.report.status).toBe('RESET_OK');
+      expect(out.report.stock_restored).toMatchObject({ products: 1, product_skus: 1, local_stock: 1 });
+      expect(await stockOf('products', rows.legacy.id)).toBe(10);
+      expect(await stockOf('product_skus', rows.sku.id)).toBe(6);
+      expect(Number((await c.query('SELECT qty_physical FROM local_stock')).rows[0].qty_physical)).toBe(7);
+      const after = await fingerprintAll(c);
+      const activityTables = [...classification.namesOf('purge_root'), ...classification.namesOf('purge_via_fk')].filter((t) => !classification.ACTIVITY_PRESERVED.has(t));
+      for (const t of activityTables) expect({ t, n: after[t].split(':')[0] }).toEqual({ t, n: '0' });
+      // preserves : lignes inchangees, hors les 3 tables dont un compteur de stock est remis en etat
+      const skip = new Set([...activityTables, ...classification.namesOf('fixture_scoped'), 'products', 'product_skus', 'local_stock']);
+      expect(sameExcept(baseline, after, skip)).toEqual([]);
+      for (const t of ['products', 'product_skus', 'local_stock', 'price_history', 'sourcing_captures', 'supplier_catalog_imports']) {
+        expect({ t, same: after[t].split(':')[0] === baseline[t].split(':')[0] }).toEqual({ t, same: true });
+      }
+      expect((await c.query('SELECT email FROM users ORDER BY email')).rows.map((u) => u.email))
+        .toEqual(['26912345678@komerce.km', 'admin@komerce.km', 'rct1.op@recette.komerce.invalid']);
+      expect((await c.query('SELECT applied_by FROM price_history')).rows[0].applied_by).toBe(rows.fix.id);
+      const again = drive(eph.url, 'execute', env);
+      expect(again.report.status).toBe('RESET_OK');
+      expect(again.report.tables_emptied).toEqual({});
+      expect(await stockOf('products', rows.legacy.id)).toBe(10);
+    });
+  });
 }
