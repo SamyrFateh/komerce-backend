@@ -270,6 +270,7 @@ module.exports = {
   db: {
     tables: [
       'order_items: R',
+      'alerts: RW', // Résolution des alertes de PO engagées ; propriétaire notifications
       'orders: R',
       'product_skus: R',
       'product_suppliers: RW',
