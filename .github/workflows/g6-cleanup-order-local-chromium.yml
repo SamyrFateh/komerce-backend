@@ -1,0 +1,51 @@
+name: G6 CLEANUP class D — local order and Hub Chromium
+on:
+  pull_request:
+    paths:
+      - 'services/g6-recipe-order-closure-service.js'
+      - 'services/hub-physical-identity.js'
+      - 'routes/orders/cancel.js'
+      - 'public/dashboards/canonical/js/order-360.js'
+      - 'migrations/465_g6_recipe_hub_placement_release.sql'
+      - 'scripts/recette/canonical/g6-cleanup-core.js'
+      - 'scripts/recette/g6-cleanup-recette-chromium.js'
+      - 'tests/unit/g6-recipe-order-closure.test.js'
+      - 'tests/unit/g6-cleanup-recette.test.js'
+      - 'tests/e2e/order-360-lineage.spec.js'
+      - '.github/workflows/g6-cleanup-order-local-chromium.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  local:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: git fetch origin main:refs/remotes/origin/main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run pr:preflight
+      - name: G6 D unit and planner
+        run: npx jest --config jest.unit.config.js --runInBand tests/unit/g6-recipe-order-closure.test.js tests/unit/g6-cleanup-recette.test.js
+      - run: npx playwright install --with-deps chromium
+      - name: G6 D Order 360 full Chromium UI with mock HTTP
+        run: npx playwright test tests/e2e/order-360-lineage.spec.js --grep 'G6 D :'
+      - name: Require before/after
+        run: test -s test-artifacts/g6-order/avant.png && test -s test-artifacts/g6-order/apres.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g6-cleanup-d-local-${{ github.run_id }}
+          path: test-artifacts/g6-order/
+          if-no-files-found: warn
+          retention-days: 14
