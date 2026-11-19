@@ -282,7 +282,12 @@ const STATE_MACHINE_PAYMENT_SOURCES = new Set([
 // Sources avec validation de preuve physique dans la state machine :
 // NEVER qualify as generic forward-only; local_relay_receipt requires paid
 // order, assigned relay actor and an authenticated relais_received scan.
-const STATE_MACHINE_ATTESTED_SOURCES = new Set(['local_relay_receipt', 'relay_attestation']);
+const STATE_MACHINE_ATTESTED_SOURCES = new Set([
+  'local_relay_receipt', 'relay_attestation',
+  // Source G6-Hub réservée à une transaction admin, scope et absence de wallet
+  // revérifiés dans order-status-machine. Jamais forward-only générique.
+  'g6_hub_recipe',
+]);
 
 // Source de remboursement PSP vérifié : branche spéciale de la state machine
 // (newStatus='refunded' uniquement). Ne pas classer comme forward-only.
