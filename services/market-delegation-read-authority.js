@@ -3,6 +3,7 @@
  * @role market-scoped-read-capability-fallback
  * @domain market-delegation
  * @layer service
+ * @owner backend-core
  * @purpose Grant read-only projections through an existing read capability without granting writer rights.
  * @depends services/market-delegation-service.js
  * @impact-areas market-authorization, dashboard
