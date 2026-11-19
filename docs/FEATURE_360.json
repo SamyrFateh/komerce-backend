@@ -29699,11 +29699,16 @@
             ]
           },
           "services": {
-            "count": 52,
+            "count": 53,
             "files": [
               {
                 "declared": "scripts/recette/audit-sku-supplier-link.js",
                 "resolvedPath": "scripts/recette/audit-sku-supplier-link.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "services/g6-recipe-po-cancel-service.js",
+                "resolvedPath": "services/g6-recipe-po-cancel-service.js",
                 "status": "resolved-on-disk-no-header"
               },
               {
@@ -30429,7 +30434,7 @@
             ]
           }
         },
-        "totalFiles": 176,
+        "totalFiles": 177,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
