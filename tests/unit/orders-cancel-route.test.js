@@ -36,6 +36,7 @@ jest.mock('../../db', () => ({ getClient: jest.fn(), query: jest.fn() }));
 const mockState = { user: { id: 'user-1', role: 'client' } };
 jest.mock('../../middleware/auth', () => ({
   authenticate: (req, _res, next) => { req.user = mockState.user; next(); },
+  requireRole: roles => (req,res,next)=> roles.includes(req.user?.role)?next():res.status(403).json({error:'role_forbidden'}),
 }));
 
 jest.mock('../../middleware/validate', () => ({
