@@ -38,14 +38,16 @@ async function verify(q = db, { env = process.env, migrationFiles = listMigratio
   const { unclassified } = classification.diffAgainstSchema(tables);
   add('classification_complete', unclassified.length === 0, unclassified);
 
+  const scope = classification.resetScope(env);
+  const isPurge = (t) => classification.isPurgeClass(t, scope);
   const nonEmpty = {};
-  for (const t of tables.filter(classification.isPurgeClass)) {
+  for (const t of tables.filter(isPurge)) {
     const { rows: [r] } = await q.query(`SELECT COUNT(*)::bigint AS c FROM ${ident(t)}`);
     if (Number(r.c) > 0) nonEmpty[t] = Number(r.c);
   }
   add('purge_tables_empty', Object.keys(nonEmpty).length === 0, nonEmpty);
 
-  const plan = await fixtures.buildFixturePlan(q, { env, purgeTables: tables.filter(classification.isPurgeClass) });
+  const plan = await fixtures.buildFixturePlan(q, { env, purgeTables: tables.filter(isPurge) });
   const residual = plan.summary.users + plan.summary.relais + plan.summary.partners;
   add('no_residual_fixture', residual === 0 && Object.keys(plan.would_delete).length === 0,
     { users: plan.summary.users, relais: plan.summary.relais, partners: plan.summary.partners, would_delete: plan.would_delete });

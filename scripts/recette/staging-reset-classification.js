@@ -179,14 +179,47 @@ const FIXTURE_OWNER_COLUMNS = Object.freeze({
 /** Racines de ciblage : leurs lignes sont designees par les regles ci-dessous. */
 const FIXTURE_ROOT_TABLES = Object.freeze(['users', 'relais', 'partners']);
 
+// ── Portee ACTIVITY (arbitrage proprietaire 2026-11-19 « garder le catalogue et le sourcing ») ──
+// KOMERCE_STAGING_RESET_MODE=activity : seule l'ACTIVITE est videe (commandes, paniers, achats, Hub, expeditions, douane, relais,
+// colis, retraits, cash, paiements, remboursements, ecritures financieres, alertes, notifications, reservations, SAV, invendus).
+// Catalogue, sourcing, prix et medias passent en « preserves » : ils restent classes purge_* pour les portees prudent/full
+// (comportement inchange) mais sont retires des racines ET ajoutes aux tables PROTEGEES, donc couverts par la garde « fondation »
+// (la fermeture FK du TRUNCATE ... CASCADE ne doit en toucher aucune, sinon PURGE_ABORTED_PROTECTED_CASCADE).
+// Fixtures (comptes E2E) : retirees comme en prudent ; un compte de test qui a signe une ligne preservee est CONSERVE (rapporte).
+// Arbitrages FK (verifies contre le schema PostgreSQL) : catalog_product_quality_notes (-> order_items) et
+// pricing_maturity_disposition_events (-> orders) referencent l'activite : classes ACTIVITE (purgees), pas preservees.
+// local_stock (quantites physiques locales) est preserve ; ses allocations (-> orders) sont purgees et qty_physical est remis en etat
+// (voir staging-reset-stock.js).
+const ACTIVITY_PRESERVED_GROUPS = Object.freeze({
+  catalogue: `products product_skus product_variants product_attributes product_suppliers product_content_profile product_content_sections
+    product_sku_physical_codes catalog_field_overrides catalog_field_sync_state catalog_enrichment_runs catalog_publication_decision_audit
+    catalog_stock_sync_state catalog_product_sale_holds local_stock`,
+  medias: 'catalog_media catalog_media_recovery_audit catalog_media_visual_fr_reviews product_sku_media',
+  prix: `product_market_exposure product_market_price_drafts product_market_price_draft_events pricing_strategies pricing_strategy_history
+    price_history competitor_prices market_price_observations market_price_observation_events`,
+  sourcing: `supplier_catalog_imports supplier_catalog_sync_checkpoints supplier_catalog_import_rejections import_runtime_runs
+    import_runtime_item_events sourcing_candidates sourcing_observations sourcing_candidate_events sourcing_canonical_entities
+    sourcing_canonical_entity_refs sourcing_captures sourcing_candidate_observations sourcing_identity_constraints sourcing_match_proposals
+    sourcing_observation_evidence sourcing_resolution_bindings sourcing_resolution_decisions`,
+  divers: 'inquiries demo_kpr_backup_20261024 demo_kpr_exposure_backup_20261024',
+});
+const ACTIVITY_PRESERVED = Object.freeze(new Set(
+  Object.values(ACTIVITY_PRESERVED_GROUPS).flatMap((g) => g.split(/\s+/).filter(Boolean))
+));
+
 const classOf = (t) => (TABLES.has(t) ? TABLES.get(t).class : null);
 const namesOf = (cls) => [...TABLES.values()].filter((e) => e.class === cls).map((e) => e.name);
-const isPurgeClass = (t) => ['purge_root', 'purge_via_fk'].includes(classOf(t));
+/** Scope 'activity' : les tables preservees ne sont plus des tables a purger. */
+const isPurgeClass = (t, scope = 'prudent') => ['purge_root', 'purge_via_fk'].includes(classOf(t)) && !(scope === 'activity' && ACTIVITY_PRESERVED.has(t));
 const isProtectedClass = (t) => ['foundation', 'fixture_scoped'].includes(classOf(t));
 
 const ROOTS_TRUNCATE = Object.freeze(namesOf('purge_root').filter((t) => TABLES.get(t).mode !== 'delete'));
 const ROOTS_DELETE = Object.freeze(namesOf('purge_root').filter((t) => TABLES.get(t).mode === 'delete'));
 const PROTECTED = Object.freeze(new Set([...namesOf('foundation'), ...namesOf('fixture_scoped')]));
+/** Racines/protegees selon la portee (prudent et full : identiques a ROOTS_*, PROTECTED). */
+const rootsTruncate = (scope = 'prudent') => (scope === 'activity' ? ROOTS_TRUNCATE.filter((t) => !ACTIVITY_PRESERVED.has(t)) : ROOTS_TRUNCATE);
+const rootsDelete = (scope = 'prudent') => (scope === 'activity' ? ROOTS_DELETE.filter((t) => !ACTIVITY_PRESERVED.has(t)) : ROOTS_DELETE);
+const protectedSet = (scope = 'prudent') => (scope === 'activity' ? new Set([...PROTECTED, ...ACTIVITY_PRESERVED]) : PROTECTED);
 const UNCERTAIN_FOUNDATION = Object.freeze(namesOf('foundation').filter((t) => TABLES.get(t).uncertain).sort());
 const UNCERTAIN_PURGE = Object.freeze(namesOf('purge_root').filter((t) => TABLES.get(t).uncertain).sort());
 
@@ -255,7 +288,7 @@ function userFixtureReason(user, allow = allowlistFrom()) {
 // sont purgees, UNIQUEMENT pour les colonnes nominatives ci-dessous (table.colonne). Toute autre reference reste un BLOCAGE.
 // Defaut (absent ou 'prudent') = comportement prudent. Les 5 premieres colonnes viennent de l'arbitrage ; la derniere est
 // la consequence FK directe (RESTRICT) de la suppression de market_operating_assignments.
-const RESET_SCOPES = Object.freeze(['prudent', 'full']);
+const RESET_SCOPES = Object.freeze(['prudent', 'full', 'activity']);
 const FULL_MODE_PURGE_COLUMNS = Object.freeze([
   'assignment_capability_ceiling.granted_by',
   'market_delegation_audit.actor_user_id',
@@ -283,7 +316,7 @@ function partnerFixtureReason(p) {
 
 module.exports = {
   TABLES, ENTRIES, FIXTURE_OWNER_COLUMNS, FIXTURE_ROOT_TABLES, ROOTS_TRUNCATE, ROOTS_DELETE, PROTECTED, UNCERTAIN_FOUNDATION, UNCERTAIN_PURGE,
-  RESET_SCOPES, FULL_MODE_PURGE_COLUMNS, resetScope,
+  RESET_SCOPES, FULL_MODE_PURGE_COLUMNS, resetScope, ACTIVITY_PRESERVED, ACTIVITY_PRESERVED_GROUPS, rootsTruncate, rootsDelete, protectedSet,
   ALLOWLIST_EMAILS, USER_EMAIL_REGEXES, NAME_FIXTURE_REGEX,
   classOf, namesOf, isPurgeClass, isProtectedClass, listSchemaTablesStatic, diffAgainstSchema, allowlistFrom,
   userFixtureReason, relaisFixtureReason, partnerFixtureReason,

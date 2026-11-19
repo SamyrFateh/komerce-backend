@@ -29,7 +29,7 @@
 
 const {
   FIXTURE_OWNER_COLUMNS, FIXTURE_ROOT_TABLES, classOf, allowlistFrom,
-  userFixtureReason, relaisFixtureReason, partnerFixtureReason, resetScope, FULL_MODE_PURGE_COLUMNS,
+  userFixtureReason, relaisFixtureReason, partnerFixtureReason, resetScope, FULL_MODE_PURGE_COLUMNS, ACTIVITY_PRESERVED,
 } = require('./staging-reset-classification');
 
 const ident = (name) => {
@@ -92,7 +92,20 @@ async function findFixtures(q, env = process.env) {
     const retained = new Set(rows.map((row) => String(row.actor_user_id)));
     auditRetainedUsers = fixtureUsers.filter(({ u }) => retained.has(String(u.id)));
   }
-  const auditRetainedIds = new Set(auditRetainedUsers.map(({ u }) => String(u.id)));
+  // Portee activity : un compte de test qui a signe une ligne du catalogue/sourcing/prix PRESERVE est conserve (rapporte),
+  // jamais supprime ni annule (FK) : on ne touche pas aux lignes preservees pour retirer un auteur.
+  const catalogRetained = new Set();
+  if (resetScope(env) === 'activity' && fixtureUsers.length) {
+    const ids = fixtureUsers.map(({ u }) => u.id);
+    for (const e of await foreignKeys(q)) {
+      if (e.parent !== 'users' || e.cols.length !== 1 || !ACTIVITY_PRESERVED.has(e.child)) continue;
+      const { rows } = await q.query(
+        `SELECT DISTINCT ${ident(e.cols[0])} AS id FROM ${ident(e.child)} WHERE ${ident(e.cols[0])} = ANY($1::uuid[])`, [ids]);
+      for (const r of rows) catalogRetained.add(String(r.id));
+    }
+  }
+  const catalogRetainedCount = fixtureUsers.filter(({ u }) => catalogRetained.has(String(u.id)) && !auditRetainedUsers.some((a) => a.u.id === u.id)).length;
+  const auditRetainedIds = new Set([...auditRetainedUsers.map(({ u }) => String(u.id)), ...catalogRetained]);
   const fx = {
     users: fixtureUsers.filter(({ u }) => !auditRetainedIds.has(String(u.id))),
     relais: relais.map((r) => ({ r, reason: relaisFixtureReason(r) })).filter((x) => x.reason),
@@ -107,6 +120,7 @@ async function findFixtures(q, env = process.env) {
     summary: {
       users: fx.users.length,
       users_retained_due_to_delegation_audit: auditRetainedUsers.length,
+      users_retained_due_to_preserved_catalog: catalogRetainedCount,
       users_retained_audit_sample: auditRetainedUsers.slice(0, 20).map(({ u }) => ({ email: maskEmail(u.email), role: u.role })),
       relais: fx.relais.length,
       relais_removed: fx.relais.map((x) => ({ id: x.r.id, market: x.r.market_code, name: x.r.name, island: x.r.island, reason: x.reason })),

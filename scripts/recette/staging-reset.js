@@ -56,7 +56,7 @@ function assertResetAllowed(mode, env = process.env) {
   if (!pin || env.KOMERCE_STAGING_RESET_DB_PIN !== pin) {
     throw new ResetRefusal('STAGING_RESET_DATABASE_NOT_PINNED', 'KOMERCE_STAGING_RESET_DB_PIN doit egaler host:port/base de DATABASE_URL');
   }
-  try { resetScope(env); } catch (e) { throw new ResetRefusal('STAGING_RESET_SCOPE_INVALID', 'KOMERCE_STAGING_RESET_MODE doit valoir prudent (defaut) ou full'); }
+  try { resetScope(env); } catch (e) { throw new ResetRefusal('STAGING_RESET_SCOPE_INVALID', 'KOMERCE_STAGING_RESET_MODE doit valoir prudent (defaut), full ou activity'); }
   if (mode === 'execute') {
     if (env.KOMERCE_STAGING_RESET_ACK !== ACK_VALUE) throw new ResetRefusal('STAGING_RESET_ACK_MISSING', `KOMERCE_STAGING_RESET_ACK=${ACK_VALUE}`);
     if (env.KOMERCE_CONTROLLED_PURGE_CONFIRM !== purge.CONFIRM_TOKEN) throw new ResetRefusal('STAGING_RESET_PURGE_TOKEN_MISSING', 'KOMERCE_CONTROLLED_PURGE_CONFIRM');
@@ -176,6 +176,11 @@ async function runReset(mode, { env = process.env, deps = {} } = {}) {
     uncertain_foundation: purgeReport.uncertain_foundation,
     reference_drift: drift,
     scope: resetScope(env),
+    code_sha: env.GITHUB_SHA || null,
+    preserved_activity_tables_total: (purgeReport.preserved_activity_tables || []).length,
+    preserved_activity_tables: purgeReport.preserved_activity_tables || null,
+    stock_restoration_preview: purgeReport.stock_restoration || null,
+    stock_restored: purgeReport.stock_restored || null,
     rows_to_purge_total: Object.values(purgeReport.before || {}).reduce((n, v) => n + Number(v), 0),
     stripe_events_processed: stripeBefore,
     simulation: purgeReport.simulation || null,
