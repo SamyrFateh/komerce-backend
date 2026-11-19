@@ -83,8 +83,10 @@ const EXECUTION_SQL = `
 async function getPurchaseOrderDetail(poId, q = db) {
   // Preserve UUID validation, 404 and rejection of historical POs before reading execution.
   const detail = await getGroupedPurchaseOrder(poId, q);
+  const {recipePoEligibility} = require('./g6-recipe-po-cleanup-service');
+  const g6_recipe_cleanup = await recipePoEligibility(poId,q);
   const { rows: [{ execution }] } = await q.query(EXECUTION_SQL, [detail.purchase_order.id]);
-  return { ...detail, supplier_execution: execution };
+  return { ...detail, supplier_execution: execution, g6_recipe_cleanup };
 }
 
 module.exports = { getPurchaseOrderDetail };

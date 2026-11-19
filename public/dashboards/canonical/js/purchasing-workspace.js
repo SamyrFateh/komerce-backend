@@ -354,6 +354,23 @@
     table.appendChild(tbody);
     card.appendChild(wrapTable(doc, table));
 
+    // La projection serveur valide TOUTES les commandes ; le navigateur ne recalcule jamais le droit.
+    if (context.user?.role==='admin' && detail.g6_recipe_cleanup?.eligible===true &&
+        ['notified','confirmed'].includes(po.status)) {
+      const cancelRecipe = makeButton(doc,'Annuler le PO de recette','cancel-g6-recipe-po',true);
+      cancelRecipe.addEventListener('click',()=>{
+        const reason=context.prompt('Motif obligatoire de l’annulation du PO de recette');
+        if (!reason || reason.trim().length<8) {setFeedback(rootNode,'Motif obligatoire (8 caractères minimum).','critical');return;}
+        if (!context.confirm('Annuler ce PO exclusivement G6-BUYER et détacher ses lignes ? Aucun fournisseur ne sera contacté.'))return;
+        context.act(cancelRecipe,'g6-recipe-po-cancel',{
+          url:`${ENDPOINT}/po/${encodeURIComponent(po.id)}/g6-recipe-cancel`,
+          body:{reason:reason.trim()},
+          successMessage:'PO de recette annulé. Lignes détachées et alerte levée.',
+          onSuccess:()=>context.closePo(),
+        });
+      });
+      slot.appendChild(cancelRecipe);
+    }
     const bar = doc.createElement('div');
     bar.className = 'kmc-workspace-section-actions';
     prepare.addEventListener('click', () => {

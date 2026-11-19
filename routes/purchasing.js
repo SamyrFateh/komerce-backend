@@ -154,6 +154,14 @@ router.post('/po/:po_id/detach', ...groupedGuard, async (req, res, next) => {
   try { res.json(await grouped.detachLines(req.params.po_id, (req.body || {}).line_ids)); } catch (err) { groupedError(err, res, next); }
 });
 
+// Clôture exceptionnelle de recette : admin, 100 % G6, aucun appel fournisseur.
+router.post('/po/:po_id/g6-recipe-cancel', ...guard, async (req,res,next)=>{
+ try {
+  const {cancelG6RecipePo}=require('../services/g6-recipe-po-cleanup-service');
+  res.json(await cancelG6RecipePo(req.params.po_id,(req.body||{}).reason,req.user));
+ } catch(err){groupedError(err,res,next);}
+});
+
 router.post('/po/:po_id/discard', ...groupedGuard, async (req, res, next) => {
   try { res.json(await grouped.discardPurchaseOrder(req.params.po_id)); } catch (err) { groupedError(err, res, next); }
 });

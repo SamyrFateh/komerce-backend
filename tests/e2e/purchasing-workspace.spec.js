@@ -515,3 +515,33 @@ test.describe('Achats fournisseurs — espace canonique', () => {
     });
   }
 });
+
+test('G6 classe C : geste admin uniquement si tous les acheteurs sont G6, sans appel fournisseur',async({page},testInfo)=>{
+ const api=createFakeApi();
+ const id='cccccccc-cccc-4ccc-8ccc-000000000008';
+ const line=api.state.lines[0];line.purchase_order_id=id;
+ api.state.pos.set(id,{id,status:'confirmed',procurement_hub_ref:HUB,trigger_mode:'manual'});
+ const old=api.handle;
+ let eligible=true;
+ api.handle=async(method,pathname,search,body)=>{
+  if(method==='GET'&&pathname==='/api/purchasing/po/'+id){
+    const d=await old(method,pathname,search,body);
+    d.json.g6_recipe_cleanup={eligible,code:eligible?'G6_PO_ALLOWED':'G6_PO_MIXED_OR_UNREADABLE'};
+    return d;
+  }
+  if(method==='POST'&&pathname==='/api/purchasing/po/'+id+'/g6-recipe-cancel'){
+    api.state.calls.push({key:method+' '+pathname,body});
+    api.state.pos.get(id).status='cancelled';line.cancelled=true;line.purchase_order_id=null;
+    return {status:200,json:{purchase_order_id:id,status:'cancelled',external_calls:0}};
+  }
+  return old(method,pathname,search,body);
+ };
+ await mountWorkspace(page,api,{search:'?po='+id});
+ const action=page.getByRole('button',{name:'Annuler le PO de recette'});
+ await expect(action).toBeVisible();
+ if(testInfo.repeatEachIndex===0){fs.mkdirSync('test-artifacts/g6-po',{recursive:true});await page.screenshot({path:'test-artifacts/g6-po/avant.png',fullPage:true});}
+ await action.click();
+ await expect(page.getByText('PO de recette annulé. Lignes détachées et alerte levée.')).toBeVisible();
+ expect(api.state.calls.filter(x=>x.key.endsWith('/g6-recipe-cancel'))).toHaveLength(1);
+ if(testInfo.repeatEachIndex===0) await page.screenshot({path:'test-artifacts/g6-po/apres.png',fullPage:true});
+});
