@@ -25,6 +25,28 @@ describe('Documentation produit Canonical', () => {
     expect(styles).toContain('> .kmc-documentation { display:block;');
   });
 
+  test('centre d’aide orienté tâches et première réception Hub sourcée', () => {
+    const operations = read('public/dashboards/canonical/js/operations-workspace.js');
+    const hub = read('public/dashboards/canonical/js/hub-workstation.js');
+    const css = read('public/dashboards/canonical/css/documentation.css');
+    expect(html).toContain('id="doc-help-home-title"');
+    expect(html).toContain('id="fiche-reception-fournisseur"');
+    expect(html).toContain('href="/admin/hub?branch=operations"');
+    expect(hub).toContain("return HUB_PATH + '?' + params.toString()");
+    [
+      'Hub · Réception fournisseur', 'Identifier la référence reçue',
+      'Enregistrer la réception', 'Arrivée fournisseur sans manifeste',
+      'Attester l’arrivée sans manifeste', 'Saisie manuelle'
+    ].forEach(label => {
+      expect(html).toContain(label);
+      expect(operations).toContain(label);
+    });
+    expect(html).toContain('data-guide-status="source-verified-chromium-pending"');
+    expect(html).toContain('captures Chromium à certifier');
+    expect(css).toContain('.doc-help-home');
+    expect(css).toContain('.doc-task-step');
+  });
+
   test('une seule entrée documentaire, hors des domaines métier', () => {
     expect(nav).toContain("label: 'Documentation', href: '/admin/documentation'");
     expect(nav).toContain("id: 'help'");
