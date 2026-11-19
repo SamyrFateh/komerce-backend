@@ -39,6 +39,7 @@ jest.mock('../../middleware/require-dashboard-global-authority', () => ({
 // détention réelle de la capability déléguée (distincte du scope legacy
 // simulé plus haut).
 let mockGrantedMarketCodes = new Set(['CM']);
+let mockOperationsReadMarkets = new Set();
 let mockTransitMarketCodes = new Set(['CM']);
 const mockResolveAuthorization = jest.fn();
 jest.mock('../../services/market-delegation-service', () => ({
@@ -138,6 +139,7 @@ beforeEach(() => {
   mockGlobalAllowed = false;
   mockUserRole = 'admin';
   mockGrantedMarketCodes = new Set(['CM']);
+  mockOperationsReadMarkets = new Set();
   mockTransitMarketCodes = new Set(['CM']);
   mockSuperviseMarketCodes = new Set(['CM']);
   mockHoldCustomsShipment.mockResolvedValue({ customs_held: true });
@@ -145,6 +147,8 @@ beforeEach(() => {
   mockResolveAuthorization.mockImplementation(async (_db, { marketCode, requiredCapability }) => {
     const allowed = requiredCapability === 'logistics.read'
       ? mockGrantedMarketCodes.has(marketCode)
+      : requiredCapability === 'operations.read'
+        ? mockOperationsReadMarkets.has(marketCode)
       : requiredCapability === 'execution.transit.confirm'
         ? mockTransitMarketCodes.has(marketCode)
         : requiredCapability === 'hub.supervise'
@@ -230,7 +234,19 @@ test('market_operator avec logistics.read sur CM lit le Workspace (capability ex
   }));
 });
 
-test('révocation de logistics.read retire l’accès market_operator', async () => {
+test('market_operator voit sa logistique en lecture seule avec operations.read', async () => {
+  mockUserRole = 'market_operator';
+  mockGrantedMarketCodes = new Set();
+  mockOperationsReadMarkets = new Set(['CM']);
+  const own = await request(app()).get('/api/admin/workspaces/shipping-customs/market/CM');
+  expect(own.status).toBe(200);
+  expect(mockResolveAuthorization).toHaveBeenCalledWith(expect.anything(),
+    expect.objectContaining({marketCode:'CM',requiredCapability:'operations.read'}));
+  const foreign = await request(app()).get('/api/admin/workspaces/shipping-customs/market/CG');
+  expect(foreign.status).toBe(403);
+});
+
+test('sans logistics.read ni operations.read le manager ne lit pas le workspace', async () => {
   mockUserRole = 'market_operator';
   mockGrantedMarketCodes = new Set();
 

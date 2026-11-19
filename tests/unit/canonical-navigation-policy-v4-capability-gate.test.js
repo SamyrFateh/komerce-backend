@@ -154,12 +154,12 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     const nav = loadPolicy();
     const expected = {
       'control-tower': 'dashboard.market.read',
-      'action-center': 'decision_signal.manage',
+      'action-center': 'dashboard.market.read',
       'flow-commerce': 'dashboard.market.read',
       'entity-clients': 'client.read',
       'workspace-pricing': 'pricing.read',
       'flow-operations': 'operations.read',
-      'workspace-shipping': 'operations.read',
+      'workspace-shipping': null,
       'flow-finance': 'finance.read',
       'workspace-accounting': 'finance.read',
     };
@@ -168,6 +168,18 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
       expect([item.id, item.capability]).toEqual([item.id, expected[item.id]]);
     });
     expect(items.map(item => item.id)).toEqual(expect.arrayContaining(Object.keys(expected)));
+    expect(items.find(item => item.id === 'workspace-shipping').capabilitiesAny).toEqual(['logistics.read','operations.read']);
+  });
+
+  test('Action Center reste visible en lecture seule et Expéditions via les deux lectures', () => {
+    const nav=loadPolicy();
+    const ids=caps=>nav.sidebarGroupsFor({role:'market_operator'}, marketAdminContext(caps))
+      .flatMap(group=>group.items.map(item=>item.id));
+    expect(ids(['dashboard.market.read'])).toContain('action-center');
+    expect(ids(['decision_signal.manage'])).not.toContain('action-center');
+    expect(ids(['operations.read'])).toContain('workspace-shipping');
+    expect(ids(['logistics.read'])).toContain('workspace-shipping');
+    expect(ids([])).not.toContain('workspace-shipping');
   });
 
   test('un market_operator sans capability déléguée ne voit que les entrées sans capability', () => {
