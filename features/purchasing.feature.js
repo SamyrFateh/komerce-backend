@@ -269,6 +269,7 @@ module.exports = {
 
   db: {
     tables: [
+      'alerts: RW', // Résolution ciblée des alertes PO G6 de recette (writer technique, non propriétaire)
       'order_items: R',
       'orders: R',
       'product_skus: R',
