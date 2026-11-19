@@ -53,10 +53,10 @@ async function cancelRecipePo(poId,{actor,reason}={}){
     if(debits.length)throw reject(409,'G6_PO_REAL_DEBIT','Débit fournisseur réel : action de recette refusée');
     // Une seule transaction : aucune requête fournisseur, aucun PSP.
     await client.query(`UPDATE purchase_orders SET status='cancelled',updated_at=NOW(),
-      notes=CONCAT(COALESCE(notes,''),$2) WHERE id=$1`,
+      notes=CONCAT(COALESCE(notes,''),$2::text) WHERE id=$1`,
       [poId,'\n[G6-CLEANUP PO] '+new Date().toISOString()+' actor='+actor.id+' reason='+why]);
     const {rows:detached}=await client.query(`UPDATE purchase_lines SET purchase_order_id=NULL,
-      cancelled_at=COALESCE(cancelled_at,NOW()),cancel_reason=$2,updated_at=NOW()
+      cancelled_at=COALESCE(cancelled_at,NOW()),cancel_reason=$2::text,updated_at=NOW()
       WHERE purchase_order_id=$1 RETURNING id`,[poId,'G6-CLEANUP PO · '+why]);
     if(detached.length!==lines.length)throw reject(409,'G6_PO_CONCURRENT_CHANGE');
     await resolveRecipePurchaseOrderAlerts(client,{poId,orderIds:orders,actorId:actor.id});
