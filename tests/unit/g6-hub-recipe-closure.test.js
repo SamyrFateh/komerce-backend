@@ -41,7 +41,7 @@ describe('G6 Hub closure no provider/PSP',()=>{
     expect(result).toMatchObject({status:'cancelled',external_calls:0,psp_refund:false,units_quarantined:1});
     expect(transitionPhysicalUnit).toHaveBeenCalledWith(client,expect.objectContaining({toState:'QUARANTINED',unitId:data.units[0].id}));
     expect(transitionParcelStatus).toHaveBeenCalledWith(client,data.parcels[0].id,'cancelled',expect.anything());
-    expect(transitionOrderStatus).toHaveBeenCalledWith(expect.objectContaining({dbClient:client,source:'cancel',newStatus:'cancelled'}));
+    expect(transitionOrderStatus).toHaveBeenCalledWith(expect.objectContaining({dbClient:client,source:'g6_hub_recipe',newStatus:'cancelled'}));
     expect(client.query.mock.calls.map(x=>x[0])).toContain('COMMIT');
   });
   for(const [name,property,value,code] of [
