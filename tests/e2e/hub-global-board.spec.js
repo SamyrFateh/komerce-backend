@@ -58,8 +58,8 @@ async function mount(page,role='agent_relais',search='',board=BOARD) {
 }
 
 test.describe('Hub global sans scope marché',()=>{
-  test.each(['admin','agent_hub','market_operator','agent_relais','finance','sourcing','support'])(
-    '%s peut voir les commandes KM et CM sans contexte marché ni droit de mutation',async({page},role)=>{
+  for (const role of ['admin','agent_hub','market_operator','agent_relais','finance','sourcing','support']) {
+    test(`${role} peut voir les commandes autorisées sans droit de mutation`,async({page})=>{
       const calls=await mount(page,role);
       await expect(page.getByText(role === 'market_operator' ? 'Commandes import · Mes marchés autorisés' : 'Toutes les commandes import · Tous les marchés')).toBeVisible();
       await expect(page.locator('[data-hub-global-order="KM-100"]')).toContainText('2 non reçue(s)');
@@ -76,8 +76,8 @@ test.describe('Hub global sans scope marché',()=>{
         await expect(page.locator('[data-hub-global-menu]')).toContainText('PO');
       }
       expect(calls).toEqual(['GET /api/hub/board']);
-    }
-  );
+    });
+  }
 
   test('Responsable marché : écran Hub limité au scope autorisé et aucun geste physique', async ({page}) => {
     // La réponse représente la projection serveur filtrée. La SQL isolation est
