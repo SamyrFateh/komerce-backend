@@ -263,7 +263,13 @@
           orders.some(o => o.items.some(i => `src:${o.id}:${i.id}` === state.sel.id))) :
         state.sel.type === 'bag' ? [...(d.bags_open || []),...(d.bags_ready || [])].some(b => b.unit_id === state.sel.id) :
         state.sel.type === 'box' ? (d.boxes || []).some(b => b.unit_id === state.sel.id) : false;
-      if (!known) state.sel = null;
+      // La tâche serveur est une référence métier valide même si la liste
+      // compacte n'inclut pas le dossier : conserver sa sélection au clic.
+      const inTodo = todo.some(item => {
+        const target = todoSel(item);
+        return target && target.type === state.sel.type && target.id === state.sel.id;
+      });
+      if (!known && !inTodo) state.sel = null;
     }
     const sel = state.sel;
     const selKey = sel ? `${sel.type}:${sel.id}` : '';
