@@ -55,19 +55,25 @@ async function cancelRecipePo(poId,{actor,reason}={}){
     await client.query(`UPDATE purchase_orders SET status='cancelled',updated_at=NOW(),
       notes=CONCAT(COALESCE(notes,''),$2::text) WHERE id=$1`,
       [poId,'\n[G6-CLEANUP PO] '+new Date().toISOString()+' actor='+actor.id+' reason='+why]);
-    // I3 (migration 263) interdit de détacher une ligne d'un PO engagé.
-    // Conserver la FK historique et sa preuve de transmission ; seule l'annulation
-    // métier de chaque ligne est autorisée (I5, écriture unique). Aucun trigger affaibli.
+    // La transition du PO peut déclencher l'annulation des lignes en DB.
+    // Relire les liens APRÈS ce changement, sous les verrous de transaction :
+    // aucune FK historique ne doit être détachée ni supprimée.
+    const {rows:afterHeader}=await client.query(
+      'SELECT id AS line_id,cancelled_at FROM purchase_lines WHERE purchase_order_id=$1 ORDER BY id FOR UPDATE',[poId]);
+    const beforeIds=lines.map(l=>String(l.line_id)).sort();
+    const afterIds=afterHeader.map(l=>String(l.line_id)).sort();
+    if(beforeIds.length!==afterIds.length||
+       beforeIds.some((id,i)=>id!==afterIds[i]))
+      throw reject(409,'G6_PO_CONCURRENT_CHANGE','Lien historique PO modifié pendant la clôture');
+    // I3 interdit de détacher un PO engagé ; I5 interdit de réécrire un motif
+    // d'annulation déjà enregistré. Modifier uniquement le reliquat actif.
+    const remainingActive=afterHeader.filter(l=>l.cancelled_at==null).length;
     const {rows:cancelled}=await client.query(`UPDATE purchase_lines SET
       cancelled_at=NOW(),cancel_reason=$2::text,updated_at=NOW()
       WHERE purchase_order_id=$1 AND cancelled_at IS NULL RETURNING id`,
       [poId,'G6-CLEANUP PO · '+why]);
-    // Certaines commandes G6 sont déjà annulées et leurs lignes aussi.
-    // La garde I5 rend cancelled_at/cancel_reason immuables : ne jamais les
-    // réécrire. Les lignes sont verrouillées ; seul le sous-ensemble encore
-    // actif doit avoir été effectivement annulé par notre UPDATE.
-    const openBefore=lines.filter(l=>l.cancelled_at==null).length;
-    if(cancelled.length!==openBefore)throw reject(409,'G6_PO_CONCURRENT_CHANGE',`G6_PO_CONCURRENT_CHANGE expected_active=${openBefore} updated=${cancelled.length} locked_lines=${lines.length}`);
+    if(cancelled.length!==remainingActive)
+      throw reject(409,'G6_PO_CONCURRENT_CHANGE',`G6_PO_CONCURRENT_CHANGE remaining=${remainingActive} updated=${cancelled.length}`);
     await resolveRecipePurchaseOrderAlerts(client,{poId,orderIds:orders,actorId:actor.id});
     await client.query('COMMIT');
     return {purchase_order_id:poId,status:'cancelled',cancelled_lines:lines.map(x=>x.line_id),newly_cancelled_lines:cancelled.map(x=>x.id),orders,external_calls:0};
