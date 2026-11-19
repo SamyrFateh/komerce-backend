@@ -38,6 +38,6 @@ jobs:
         if: always()
         with:
           name: g6-ergonomie-ux1-before-after-${{ github.run_id }}
-          path: test-results/
+          path: .playwright-output/
           retention-days: 14
           if-no-files-found: warn
