@@ -18,6 +18,6 @@ test('code métier atomique et sans appel fournisseur',()=>{
  expect(src).toContain('received_quantity');
  expect(src).toContain('supplier_execution_payments');
  expect(src).toContain("status='cancelled'");
- expect(src).toContain('resolved_at=NOW()');
+ expect(src).toContain('resolveRecipePoAlerts');
  expect(src).not.toMatch(/fetch\(|axios\.|sendEmail|sendWhatsApp|supplier\.order/);
 });
