@@ -4,6 +4,9 @@
  * @layer service
  * @owner backend-core
  * @purpose Admin-only local cancellation of a supplier PO exclusively linked to G6-BUYER cash recipes.
+ * @db-read purchase_orders, purchase_lines, order_items, orders, hub_purchase_allocations, supplier_execution_payments, alerts
+ * @db-write purchase_orders, purchase_lines, alerts
+ * @db-txn owned
  * @impact-areas purchasing, orders, alerts, staging-only
  */
 'use strict';
