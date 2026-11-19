@@ -82,7 +82,7 @@ async function mount(page, {data=payload, role='admin', cancel}={}) {
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
     if (cancel && url.pathname === '/api/orders/'+REF) return route.fulfill({json:{
-      id:'00000000-0000-4000-8000-000000000042', reference:REF,status:data.order.status,payment_mode:data.order.payment.mode
+      id:'00000000-0000-4000-8000-000000000042', reference:REF,status:data.order.status,payment_mode:data.order.payment.mode,simulation_scope:data.order.simulation_scope
     }});
     if (cancel && url.pathname === '/api/orders/00000000-0000-4000-8000-000000000042/cancel') return cancel(route);
     if (url.pathname === PAGE_PATH) {
@@ -201,7 +201,7 @@ test('G6-D : Order 360 ferme seulement une recette au Hub avec motif, relecture 
  const button=page.locator('[data-order360-g6-hub-close]');
  await expect(button).toBeVisible();
  if(info.repeatEachIndex===0){fs.mkdirSync('test-artifacts/g6-hub',{recursive:true});await page.screenshot({path:'test-artifacts/g6-hub/avant.png',fullPage:true});}
- page.once('dialog',async d=>d.accept('Fin de recette G6'));
+ page.on('dialog',async d=>d.accept(d.type()==='prompt'?'Fin de recette G6':undefined));
  await button.click();
  // La confirmation est une deuxième boîte : Playwright accepte automatiquement
  // les confirmations si aucun handler n'est installé.
