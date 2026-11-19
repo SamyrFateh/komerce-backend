@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 331,
+    "businessDependencies": 332,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -14192,6 +14192,13 @@
           ]
         },
         {
+          "consumer": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "payments",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -26374,6 +26381,13 @@
         },
         {
           "provider": "economic-engine",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "incident-management",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"

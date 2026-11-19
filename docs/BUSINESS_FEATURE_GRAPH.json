@@ -30285,6 +30285,12 @@
       },
       {
         "from": "orders",
+        "to": "incident-management",
+        "raw": "incident-management (G6-CLEANUP : création gouvernée d’un incident de quarantaine pour chaque unité physique conservée au Hub, via incident-write-service)",
+        "resolved": true
+      },
+      {
+        "from": "orders",
         "to": "business-rules",
         "raw": "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: routes/orders/create.js -> utils/rules.js ; routes/orders/qr.js -> utils/rules.js ; routes/orders/list.js -> utils/rules.js ; +1)",
         "resolved": true
@@ -41954,6 +41960,10 @@
                 "targetFile": "services/order-status-machine.js"
               },
               {
+                "sourceFileId": "tests/e2e-api/hub.historical-receipt-coverage.e2e.test.js",
+                "targetFile": "services/g6-hub-recipe-closure.js"
+              },
+              {
                 "sourceFileId": "tests/unit/pickup-secret-issuer.test.js",
                 "targetFile": "services/order-mutation-service.js"
               },
@@ -44293,6 +44303,22 @@
               {
                 "sourceFileId": "tests/unit/orders-status-route.test.js",
                 "targetFile": "services/cost-allocation/canonical-margin-writer.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "orders",
+        "to": "incident-management",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/g6-hub-recipe-closure.js",
+                "targetFile": "services/incident-write-service.js"
               }
             ]
           }
