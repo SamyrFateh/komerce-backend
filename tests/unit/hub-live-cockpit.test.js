@@ -48,3 +48,23 @@ test('le formulaire de simulation fournisseur utilise la référence du dossier 
   expect(source).toContain("'SIM-STAGING-' + po.simulation_reference");
   expect(source).not.toContain("po.lines[0]?.order_ref");
 });
+
+describe('G6 ergonomie UX3 — sélection explicite et alertes métier', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/hub-live-cockpit.js'), 'utf8');
+  test('le cockpit ne choisit pas une commande arbitraire au chargement', () => {
+    expect(source).toContain('if (!state.selectionInitialized)');
+    expect(source).toContain('item.viewer_can_act !== false');
+    expect(source).toContain("title: 'Sélectionnez un élément'");
+  });
+  test('la sélection reste partageable et suit la navigation navigateur', () => {
+    expect(source).toContain('function readUrlSelection()');
+    expect(source).toContain('function putUrlSelection(type, id)');
+    expect(source).toContain("win.history.pushState");
+    expect(source).toContain("win.addEventListener('popstate'");
+  });
+  test('une alerte serveur garde son dossier sélectionnable même absent de la file compacte', () => {
+    expect(source).toContain('const inTodo = todo.some(item =>');
+    expect(source).toContain('target.type === state.sel.type && target.id === state.sel.id');
+    expect(source).toContain('if (!known && !inTodo) state.sel = null;');
+  });
+});
