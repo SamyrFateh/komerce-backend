@@ -25,6 +25,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createOperationsWorkspace() {
   const ENDPOINT_PREFIX = '/api/admin/workspaces/operations/market/';
   const MARKET_CODE = /^[A-Z]{2}$/;
+  const activeHubMounts = new WeakMap();
 
   function endpointFor(marketCode, suffix = '') {
     const code = String(marketCode || '').trim().toUpperCase();
@@ -2626,6 +2627,11 @@
       throw new Error('canonical_operations_workspace_primitives_missing');
     }
     if (!MARKET_CODE.test(marketCode)) throw new Error('canonical_operations_workspace_market_required');
+    // UX3 : réentrer dans le même marché ne doit pas effacer la sélection ni tout recharger.
+    const previous = activeHubMounts.get(rootNode);
+    if (options.mode === 'execution' && previous &&
+        previous.marketCode === marketCode && previous.role === options.user?.role &&
+        rootNode.querySelector?.('[data-hub-cockpit]')) return previous.handle;
 
     if(options.mode==='relay-execution' && options.focusOnly && options.user?.role==='finance') {
       rootNode.replaceChildren();
@@ -2714,12 +2720,15 @@
         const anchor=rootNode.querySelector?.('#relay-execution-'+context.initialFocus);
         anchor?.scrollIntoView?.({block:'start',behavior:'auto'});
       }
-      return Object.freeze({
+      const handle = Object.freeze({
         marketCode,
         endpoint: endpointFor(marketCode),
         payload: currentPayload,
         reload,
       });
+      if (context.mode === 'execution')
+        activeHubMounts.set(rootNode, { marketCode, role: options.user?.role, handle });
+      return handle;
     } catch (error) {
       ui.UIState.render(rootNode, 'error', error.message);
       throw error;
