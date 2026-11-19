@@ -148,7 +148,11 @@ async function main(){
    check(events.length===last.base.shipmentEvents.length+1&&isDeepStrictEqual(events.slice(0,-1),last.base.shipmentEvents)&&
      events.at(-1).event_type===type&&events.at(-1).proof_ref===fields.proof_ref&&!!events.at(-1).actor_id&&events.at(-1).to_stage===stage,
      'G6_FORWARDER_PG_EVENT_'+key);
+   // Valeurs attendues = valeurs saisies (TRACK, proof_ref) : tracking absent avant la saisie, exact après.
+   if(key==='forwarder_received')check(!state.tracking.tracking_reference,'G6_FORWARDER_TRACKING_BEFORE_ENTRY');
    if(key!=='forwarder_received')check(state.tracking.tracking_reference===TRACK,'G6_FORWARDER_TRACKING_MISSING');
+   if(key==='tracking'||key==='forwarder_received')check(!state.tracking.departed_at&&!state.tracking.arrived_at,'G6_FORWARDER_DATES_TOO_EARLY');
+   if(key==='in_transit')check(!state.tracking.arrived_at,'G6_FORWARDER_ARRIVAL_TOO_EARLY');
    if(key==='in_transit'||key==='arrived')check(!!state.tracking.departed_at,'G6_FORWARDER_DEPARTURE_MISSING');
    if(key==='arrived')check(!!state.tracking.arrived_at,'G6_FORWARDER_ARRIVAL_MISSING');
    last=state;report.after=state;save();await runtime();

@@ -50,6 +50,7 @@ async function cockpit(page, { step = 'draft', status = 'draft',
       lines: [line], order_ids: [], totals: { effective: 2, received: 0, missing: 2 },
       authorizations: { commitment, payment }, amount: { derived: true, amount: 2000, currency: 'KMF' },
       sent_at: sentAt, simulation_scope: simulation ? 'G6-BUYER' : null,
+       simulation_reference: simulation ? poId : null,
     };
     const dossier = {
       market: { code: 'KM' }, orders: [], purchase_orders: need ? [] : [po],
@@ -223,10 +224,10 @@ test('08 - G6 fournisseur fictif: envoi interne seulement, preuve marquée sans 
   const form=page.locator('form[data-hlc-form="sent"]');
   await expect(form).toContainText('aucune commande, confirmation ou transmission');
   expect(await form.locator('select option').evaluateAll(a=>a.map(x=>x.value))).toEqual(['other']);
-  await expect(form.locator('[name="supplier_order_id"]')).toHaveValue('SIM-STAGING-G2-ISOLATED');
+  await expect(form.locator('[name="supplier_order_id"]')).toHaveValue('SIM-STAGING-' + PO_ID);
   await form.locator('[data-hlc-action="submit-sent"]').click();
   await capture(page,'08-sent-simulation','/api/purchasing/po/'+PO_ID+'/sent',
-    {channel:'other',supplier_order_id:'SIM-STAGING-G2-ISOLATED',simulated:true});
+    {channel:'other',supplier_order_id:'SIM-STAGING-' + PO_ID,simulated:true});
   expect(attempted).toEqual([]);
 });
 
@@ -235,11 +236,11 @@ test('09 - G6 confirmation fictive : justificatif et vendeur explicitement simul
   await page.locator('[data-hlc-po]').click();
   await page.locator('[data-hlc-action="confirm-po"]').click();
   const form=page.locator('form[data-hlc-form="confirm"]');
-  await expect(form.locator('[name="supplier_order_id"]')).toHaveValue('SIM-STAGING-G2-ISOLATED');
-  await expect(form.locator('[name="purchase_proof_ref"]')).toHaveValue('SIM-STAGING-ACHAT-G2-ISOLATED');
-  await expect(form.locator('[name="seller_label"]')).toHaveValue('SIMULATED-STAGING-FOURNISSEUR-G2-ISOLATED');
+  await expect(form.locator('[name="supplier_order_id"]')).toHaveValue('SIM-STAGING-' + PO_ID);
+  await expect(form.locator('[name="purchase_proof_ref"]')).toHaveValue('SIM-STAGING-ACHAT-' + PO_ID);
+  await expect(form.locator('[name="seller_label"]')).toHaveValue('SIMULATED-STAGING-FOURNISSEUR-' + PO_ID);
   await form.locator('[data-hlc-action="submit-confirm"]').click();
   await capture(page,'09-confirm-simulation','/api/purchasing/po/'+PO_ID+'/confirm',
-    {simulated:true,purchase_proof_ref:'SIM-STAGING-ACHAT-G2-ISOLATED',seller_label:'SIMULATED-STAGING-FOURNISSEUR-G2-ISOLATED'});
+    {simulated:true,purchase_proof_ref:'SIM-STAGING-ACHAT-' + PO_ID,seller_label:'SIMULATED-STAGING-FOURNISSEUR-' + PO_ID});
   expect(attempted).toEqual([]);
 });

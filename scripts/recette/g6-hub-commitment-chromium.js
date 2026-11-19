@@ -96,7 +96,13 @@ async function openPo(page){
  await humanGoto(page,'/admin/hub-live?view=execute&market='+MK.code+'',{waitUntil:'domcontentloaded'});
  const sel=page.locator('select').first();
  await sel.waitFor({timeout:20000});
- await humanSelect(null,sel,await require('./canonical/market-profile').marketOption(MK,sel));
+ // Le marché est déjà porté par l'URL : ne le resélectionner que s'il diffère. Un changement de marché
+ // remonte l'espace de travail de façon asynchrone et efface la sélection faite entre-temps.
+ const wanted=await require('./canonical/market-profile').marketOption(MK,sel);
+ if(await sel.inputValue()!==wanted.value)await humanSelect(null,sel,wanted);
+ const dq=page.locator('[data-hub-director-state]');
+ if(await dq.count())await page.locator('[data-hub-director-state="ready"]').first().waitFor({timeout:20000}).catch(()=>{});
+ await page.locator('[data-hub-cockpit][data-hlc-ready="true"]').first().waitFor({timeout:20000}).catch(()=>{});
  const po=page.locator('[data-hlc-po="'+env.G6_CANONICAL_PO_ID+'"]');
  await po.waitFor({state:'visible',timeout:25000});
  const shown=await po.locator('[data-hlc-po-line]').count();
@@ -160,6 +166,8 @@ async function main(){
    check(data.viewer_grants?.purchase_commitment===true,'G6_COMMITMENT_DIRECTOR_GRANT_MISSING');
    await openPo(director.page);
    const button=director.page.locator('[data-hlc-action="authorize-commitment"]');
+   // Avant toute mutation : si un rendu tardif a perdu la sélection, la refaire une fois (geste humain).
+   if(!await button.count()){await openPo(director.page);}
    check(await button.isEnabled(),'G6_COMMITMENT_DIRECTOR_ACTION_DISABLED');
    await humanClick(null,button);
    const form=director.page.locator('form[data-hlc-form="commitment"]');

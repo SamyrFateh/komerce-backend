@@ -42,3 +42,9 @@ describe('H4 #3998 — branchement global de la directrice dans le vrai poste Hu
     expect(css).toContain('.hlc-director-task.is-overdue');
   });
 });
+
+test('le formulaire de simulation fournisseur utilise la référence du dossier PO',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-live-cockpit.js'),'utf8');
+  expect(source).toContain("'SIM-STAGING-' + po.simulation_reference");
+  expect(source).not.toContain("po.lines[0]?.order_ref");
+});
