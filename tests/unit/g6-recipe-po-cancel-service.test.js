@@ -35,6 +35,8 @@ describe('G6 recipe PO transaction',()=>{
    client={query:jest.fn(async(sql)=>{
      if(sql.startsWith('SELECT id,status,order_id'))return {rows:rows.po?[rows.po]:[]};
      if(sql.includes('SELECT pl.id AS line_id'))return {rows:rows.lines};
+     if(sql.includes('SELECT id AS line_id,cancelled_at FROM purchase_lines'))
+       return {rows:rows.afterHeader||rows.lines.map(l=>({line_id:l.line_id,cancelled_at:l.cancelled_at||null}))};
      if(sql.includes('SELECT 1 FROM hub_purchase_allocations'))return {rows:rows.physical};
      if(sql.includes('SELECT 1 FROM supplier_execution_payments'))return {rows:rows.debits};
      if(sql.includes('UPDATE purchase_lines'))return {rows:rows.detached};
@@ -53,6 +55,14 @@ describe('G6 recipe PO transaction',()=>{
    expect(sql.join('\n')).toContain('cancelled_at=NOW()');
    expect(sql.join('\n')).toContain('UPDATE alerts SET resolved_at=NOW()');
    expect(sql).not.toContain('ROLLBACK');expect(client.release).toHaveBeenCalledTimes(1);
+ });
+ test('annulation automatique par transition de PO : détectée par relecture, jamais réécrite',async()=>{
+   rows.lines=[{...ITEM,cancelled_at:null}];
+   rows.afterHeader=[{line_id:ITEM.line_id,cancelled_at:new Date('2026-11-19T11:00:00Z')}];
+   rows.detached=[];
+   const result=await cancelRecipePo(PO,{actor:ACTOR,reason:'Fin recette contrôlée'});
+   expect(result).toMatchObject({status:'cancelled',cancelled_lines:[ITEM.line_id],newly_cancelled_lines:[]});
+   expect(client.query.mock.calls.map(x=>x[0])).toContain('COMMIT');
  });
  test('PO engagé avec ligne déjà annulée : conserve preuve historique et commit sans double annulation',async()=>{
    rows.lines=[{...ITEM,cancelled_at:new Date('2026-11-18T00:00:00Z')}];
