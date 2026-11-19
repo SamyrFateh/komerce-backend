@@ -656,7 +656,7 @@
   // G6-CLEANUP D : le serveur garde la preuve physique et l'autorité de la transaction.
   function renderHubRecipeClosure(options,order) {
     if(options.user?.role!=='admin'||order.simulation_scope!=='G6-BUYER'||
-       !['preparation','shipped','in_transit','available'].includes(order.status))return;
+       !['ordered','preparation','shipped','in_transit','available'].includes(order.status))return;
     const doc=options.document,section=doc.createElement('section');
     const btn=text(doc,'button','kmc-workspace-action','Clôturer la recette (marchandise au Hub)');
     btn.type='button';btn.setAttribute('data-order360-g6-hub-close','');
