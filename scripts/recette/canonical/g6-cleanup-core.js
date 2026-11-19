@@ -14,7 +14,7 @@ const RECEIVED_PO=Object.freeze(['hub_received','received','partially_received']
 const RECEIVED_ORDER=Object.freeze(['preparation','shipped','in_transit','available']);
 const ENGAGED_PO=Object.freeze(['notified','confirmed']);
 const TERMINAL=Object.freeze(['collected','cancelled','refunded']);
-const ACTIONS=Object.freeze(['discard_po','cancel_line','cancel_order','cancel_recipe_po']);
+const ACTIONS=Object.freeze(['discard_po','cancel_line','cancel_order','cancel_recipe_po','close_recipe_order']);
 const MISSING=Object.freeze({
  D_RECEIVED_GOODS:'Aucun écran de retour, invendu, remise en stock ou clôture de recette pour marchandise reçue au Hub.',
  CUTOFF:'Annulation Order 360 refusée par la règle de coupure serveur (statut au-delà du seuil).',
@@ -48,7 +48,11 @@ function classify(entry,{cutoff='shipped'}={}){
  }
  // Un PO partagé avec une commande non G6 (ou sans pairs lisibles) n'est jamais touché.
  if(mixed.length){res.verdict='REFUSED';res.reason='MIXED_PO';res.mixed_po_ids=mixed;return res;}
- if(res.class==='D'){res.verdict='SCREEN_MISSING';res.missing.push('D_RECEIVED_GOODS');res.reason=MISSING.D_RECEIVED_GOODS;return res;}
+ if(res.class==='D'){
+   if(order.payment_mode!=='cash_relais'){res.verdict='REFUSED';res.reason='PAYMENT_MODE';return res;}
+   res.gestures.push({action:'close_recipe_order',order_id:order.id,reference:order.reference});
+   return res;
+ }
  if(order.payment_mode!=='cash_relais'){res.verdict='SCREEN_MISSING';res.missing.push('PAYMENT_MODE');res.reason=MISSING.PAYMENT_MODE;return res;}
  if(cutoffBlocks(order.status,cutoff) && res.class!=='C'){res.verdict='SCREEN_MISSING';res.missing.push('CUTOFF');res.reason=MISSING.CUTOFF;return res;}
  if(res.class==='C'){
@@ -77,6 +81,7 @@ function buildPlan(entries,opts){
  for(const [group,actions] of [
    [['A','B'],['discard_po','cancel_line','cancel_order']],
    [['C'],['cancel_recipe_po','cancel_order']],
+   [['D'],['close_recipe_order']],
  ]){
    for(const action of actions)for(const item of todo.filter(i=>group.includes(i.class)))
      for(const g of item.gestures.filter(x=>x.action===action))push(g,item);

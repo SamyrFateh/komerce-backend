@@ -70,7 +70,7 @@ async function readState(step){
  if(step.action==='cancel_line')return (await q('SELECT cancelled_at IS NOT NULL AS s FROM purchase_lines WHERE id=$1',[step.line_id]))?.s;
  return (await q('SELECT status::text AS s FROM orders WHERE id=$1 AND simulation_scope=$2',[step.order_id,SCOPE]))?.s;
 }
-const EXPECTED={discard_po:'cancelled',cancel_line:true,cancel_order:'cancelled',cancel_recipe_po:'cancelled'};
+const EXPECTED={discard_po:'cancelled',cancel_line:true,cancel_order:'cancelled',cancel_recipe_po:'cancelled',close_recipe_order:'cancelled'};
 const summarize=plan=>plan.items.map(i=>({reference:i.reference,market:i.market,class:i.class,order_status:i.order_status,
  verdict:i.verdict,reason:i.reason,po_ids:i.po_ids,commandes_du_po:i.po_peers,
  gestes:i.gestures.map(g=>g.action),residual:i.residual||null}));
@@ -82,6 +82,7 @@ async function login(browser,steps){
  for(const s of steps){
   if(s.action==='discard_po')allowed.add('/api/purchasing/po/'+s.po_id+'/discard');
   if(s.action==='cancel_recipe_po')allowed.add('/api/purchasing/po/'+s.po_id+'/g6-recipe-cancel');
+  if(s.action==='close_recipe_order')allowed.add('/api/orders/'+s.order_id+'/g6-recipe-close');
   if(s.action==='cancel_line')allowed.add('/api/purchasing/lines/'+s.line_id+'/cancel');
   if(s.action==='cancel_order')allowed.add('/api/orders/'+s.order_id+'/cancel');
  }
@@ -121,6 +122,13 @@ async function perform(actor,step){
   const btn=page.locator('[data-purchasing-po="'+step.po_id+'"] [data-workspace-action="discard-po"]');
   await btn.waitFor({state:'visible',timeout:20000});
   return humanClick(null,btn,{mutation:{path:'/api/purchasing/po/'+step.po_id+'/discard'}});
+ }
+ if(step.action==='close_recipe_order'){
+  await humanGoto(page,'/admin/orders/'+encodeURIComponent(step.reference),{waitUntil:'domcontentloaded'});
+  const btn=page.locator('[data-g6-recipe-hub-close]');
+  await btn.waitFor({state:'visible',timeout:20000});
+  state.dialogReason=reason;
+  return humanClick(null,btn,{mutation:{path:'/api/orders/'+step.order_id+'/g6-recipe-close'}});
  }
  if(step.action==='cancel_recipe_po'){
   await humanGoto(page,'/admin/workspaces/purchasing?po='+encodeURIComponent(step.po_id),{waitUntil:'domcontentloaded'});

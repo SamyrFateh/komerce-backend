@@ -26,7 +26,7 @@ test('gestures per class and screen-missing cases',()=>{
  expect(c.gestures.map(g=>g.action)).toEqual(['cancel_recipe_po','cancel_order']);
  expect(c.missing).toEqual([]);
  const d=classify(E({status:'preparation',lines:[L('l1','p1','hub_received')],peers:{p1:[peer('K1')]}}));
- expect(d.verdict).toBe('SCREEN_MISSING');expect(d.gestures).toEqual([]);
+ expect(d.verdict).toBe('PLANNED');expect(d.gestures.map(g=>g.action)).toEqual(['close_recipe_order']);
  expect(classify(E({status:'ordered'}),{cutoff:'ordered'}).missing).toContain('CUTOFF');
  expect(classify(E({mode:'stripe_eur'})).missing).toContain('PAYMENT_MODE');
 });
@@ -81,4 +81,15 @@ test('classe C : un PO partagé avec commande non G6 ne produit aucun geste',()=
  const r=classify(E({lines:[L('l1','p1','notified')],peers:{p1:[peer('K1'),peer('REAL','OTHER') ]}}));
  expect(r.verdict).toBe('REFUSED');
  expect(r.gestures).toEqual([]);
+});
+
+test('classe D : uniquement G6, cash et aucun mélange, après les PO C',()=>{
+ const d=E({ref:'D1',status:'preparation',lines:[L('d1','pd','hub_received')],peers:{pd:[peer('D1')]}});
+ const c=E({ref:'C1',status:'ordered',lines:[L('c1','pc','confirmed')],peers:{pc:[peer('C1')]}});
+ const p=buildPlan([d,c]);
+ expect(p.steps.map(x=>x.action)).toEqual(['cancel_recipe_po','cancel_order','close_recipe_order']);
+ expect(classify(E({status:'available',scope:null})).verdict).toBe('REFUSED');
+ expect(classify(E({status:'available',mode:'stripe_eur'})).verdict).toBe('REFUSED');
+ const shared=E({status:'preparation',lines:[L('d1','pd','hub_received')],peers:{pd:[peer('D1'),peer('real','OTHER')]}});
+ expect(classify(shared).verdict).toBe('REFUSED');
 });
