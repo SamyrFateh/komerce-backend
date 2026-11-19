@@ -9,6 +9,7 @@ on:
       - 'scripts/recette/canonical/g6-cleanup-core.js'
       - 'scripts/recette/g6-cleanup-recette-chromium.js'
       - 'tests/unit/g6-recipe-po-cleanup.test.js'
+      - 'tests/unit/purchasing-order-detail.test.js'
       - 'tests/unit/g6-cleanup-recette.test.js'
       - 'tests/e2e/purchasing-workspace.spec.js'
       - '.github/workflows/g6-cleanup-po-local-chromium.yml'
@@ -36,7 +37,7 @@ jobs:
       - name: Mandatory preflight
         run: npm run pr:preflight
       - name: Local unit tests C and recorder guard
-        run: npx jest --config jest.unit.config.js --runInBand tests/unit/g6-recipe-po-cleanup.test.js tests/unit/g6-cleanup-recette.test.js
+        run: npx jest --config jest.unit.config.js --runInBand tests/unit/g6-recipe-po-cleanup.test.js tests/unit/g6-cleanup-recette.test.js tests/unit/purchasing-order-detail.test.js
       - run: npx playwright install --with-deps chromium
       - name: PO class C — click in Chromium with fake API, never staging
         run: npx playwright test tests/e2e/purchasing-workspace.spec.js --grep 'G6 classe C'
