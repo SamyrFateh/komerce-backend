@@ -40,7 +40,7 @@ async function cancelRecipePo(poId,{actor,reason}={}){
     if(!po)throw reject(404,'G6_PO_NOT_FOUND');
     if(po.order_id!==null||!['notified','confirmed'].includes(po.status))
       throw reject(409,'G6_PO_STATUS_FORBIDDEN','Seul un PO groupé notifié ou confirmé est éligible');
-    const {rows:lines}=await client.query(`SELECT pl.id AS line_id,o.id AS order_id,o.simulation_scope,o.payment_mode
+    const {rows:lines}=await client.query(`SELECT pl.id AS line_id,pl.cancelled_at,o.id AS order_id,o.simulation_scope,o.payment_mode
       FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id
       JOIN orders o ON o.id=oi.order_id
       WHERE pl.purchase_order_id=$1 ORDER BY pl.id FOR UPDATE OF pl`,[poId]);
@@ -62,10 +62,15 @@ async function cancelRecipePo(poId,{actor,reason}={}){
       cancelled_at=NOW(),cancel_reason=$2::text,updated_at=NOW()
       WHERE purchase_order_id=$1 AND cancelled_at IS NULL RETURNING id`,
       [poId,'G6-CLEANUP PO · '+why]);
-    if(cancelled.length!==lines.length)throw reject(409,'G6_PO_CONCURRENT_CHANGE');
+    // Certaines commandes G6 sont déjà annulées et leurs lignes aussi.
+    // La garde I5 rend cancelled_at/cancel_reason immuables : ne jamais les
+    // réécrire. Les lignes sont verrouillées ; seul le sous-ensemble encore
+    // actif doit avoir été effectivement annulé par notre UPDATE.
+    const openBefore=lines.filter(l=>l.cancelled_at==null).length;
+    if(cancelled.length!==openBefore)throw reject(409,'G6_PO_CONCURRENT_CHANGE');
     await resolveRecipePurchaseOrderAlerts(client,{poId,orderIds:orders,actorId:actor.id});
     await client.query('COMMIT');
-    return {purchase_order_id:poId,status:'cancelled',cancelled_lines:cancelled.map(x=>x.id),orders,external_calls:0};
+    return {purchase_order_id:poId,status:'cancelled',cancelled_lines:lines.map(x=>x.line_id),newly_cancelled_lines:cancelled.map(x=>x.id),orders,external_calls:0};
   }catch(e){
     await client.query('ROLLBACK').catch(()=>{});
     if(/^23[0-9A-Z]{3}$/.test(e.code||'')){
