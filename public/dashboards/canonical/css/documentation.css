@@ -91,7 +91,7 @@ body.kmc-shell-v4:has(.kmc-documentation) > .kmc-documentation { display:block; 
 .doc-help-eyebrow{color:#cf6554;font-size:.72rem;font-weight:850;letter-spacing:.13em}
 .doc-help-home h2{margin:8px 0 8px;font-size:clamp(1.5rem,2.4vw,2.1rem);color:#152844}
 .doc-help-home-head p{margin:0;max-width:670px;color:#53677f;line-height:1.6}
-.doc-task-featured{flex:0 0 220px;padding:12px 16px;color:#fff!important;background:#263c63;border-radius:10px;text-decoration:none;font-weight:700;line-height:1.45}
+.kmc-documentation a.doc-task-featured{flex:0 0 220px;padding:12px 16px;color:#fff;background:#263c63;border-radius:10px;text-decoration:none;font-weight:700;line-height:1.45}
 .doc-help-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .doc-help-grid a{border:1px solid #e0e7f2;border-radius:12px;padding:19px;display:flex;flex-direction:column;gap:8px;background:#f8fafe;text-decoration:none}
 .doc-help-grid a:hover,.doc-help-grid a:focus-visible{background:#edf2ff;border-color:#a8bee9}
