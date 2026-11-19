@@ -900,6 +900,13 @@
       supplierPrice.min = '0.01';
       supplierPrice.placeholder = '0,00';
       supplierPrice.setAttribute('data-sourcing-price', '');
+      const actualPrice = field('Prix unitaire réel', doc.createElement('input'), supplierPanel);
+      actualPrice.type = 'number';
+      actualPrice.step = '0.0001';
+      actualPrice.min = '0.0001';
+      const actualCurrency = field('Devise du prix réel (code à 3 lettres)', doc.createElement('input'), supplierPanel);
+      actualCurrency.maxLength = 3;
+      actualCurrency.placeholder = 'AED';
       const mappingNote = text(doc, 'p', 'kmc-hub-sourcing-help', 
         'Association existante : référence et prix enregistrés réutilisés.');
       mappingNote.hidden = true;
@@ -936,7 +943,14 @@
         supplierRef.disabled = mapped;
         supplierPrice.disabled = mapped;
         supplierDetails.hidden = mapped;
-        mappingNote.hidden = !mapped;
+        const quoteNeeded = mapped && supplier.matching_price_aed === null;
+        for (const input of [actualPrice, actualCurrency]) {
+          input.parentNode.hidden = !quoteNeeded;
+          input.disabled = !quoteNeeded;
+          input.required = quoteNeeded;
+          input.value = '';
+        }
+        mappingNote.hidden = !mapped || quoteNeeded;
       }
       function updateItemSummary() {
         const quantity = Number(chosenItem()?.purchasing_missing || 0);
@@ -1029,6 +1043,8 @@
             body: {
               order_item_id: item.id, product_supplier_id: mappingId,
               quantity, execution_mode: 'manual',
+              ...(supplier?.matching_product_supplier_id && supplier.matching_price_aed === null
+                ? {actual_unit_price: actualPrice.value, actual_currency: actualCurrency.value.trim().toUpperCase()} : {}),
             },
           });
           wrote = true;
@@ -2638,6 +2654,69 @@
       return Object.freeze({ marketCode });
     }
 
+    // UX1 : l'état fournisseur peut évoluer après encaissement sans requête opérateur.
+    // La relecture est GET uniquement et ne touche jamais aux formulaires ouverts.
+    const supplySignature = dossier => JSON.stringify({
+      orders: (dossier?.orders || []).map(o => [o.id, o.status, o.totals, o.items, o.readiness, o.po_ids]),
+      purchase_orders: dossier?.purchase_orders || [],
+      need_batches: dossier?.cockpit?.need_batches || [],
+      todo: dossier?.cockpit?.todo || [],
+    });
+    function hubInputBusy() {
+      const active = doc.activeElement;
+      return (context.cockpitState?.pending || 0) > 0 ||
+        Boolean(rootNode.querySelector('form:not([hidden]), [contenteditable="true"]')) ||
+        Boolean(active && rootNode.contains(active) && active.matches?.('input,textarea,select,[contenteditable="true"]'));
+    }
+    function hubRefreshNotice() {
+      if (rootNode.querySelector('[data-hub-live-refresh]')) return;
+      const notice = doc.createElement('div');
+      notice.setAttribute('data-hub-live-refresh', '');
+      notice.setAttribute('role', 'status');
+      notice.className = 'kmc-workspace-note';
+      const label = doc.createElement('span');
+      label.textContent = 'Nouvelles données disponibles — ';
+      const button = doc.createElement('button');
+      button.type = 'button';
+      button.textContent = 'Actualiser';
+      button.addEventListener('click', () => {
+        if (hubInputBusy()) {
+          label.textContent = 'Terminez ou fermez le formulaire avant d’actualiser — ';
+          return;
+        }
+        context.reload().catch(() => { label.textContent = 'Actualisation indisponible — réessayer. '; });
+      });
+      notice.append(label, button);
+      rootNode.insertBefore(notice, rootNode.children[1] || null);
+    }
+    function watchHubSupply() {
+      if (context.mode !== 'execution') return;
+      const win = doc.defaultView || globalThis;
+      if (typeof win.setInterval !== 'function') return;
+      let inFlight = false;
+      const watch = { signature: supplySignature(context.dossier), stop: null, check: null };
+      watch.check = async () => {
+        if (inFlight || doc.visibilityState === 'hidden' || !rootNode.isConnected) return;
+        // Le dossier ne se recompose jamais en arrière-plan pendant une saisie.
+        inFlight = true;
+        try {
+          const fresh = await jsonRequest(fetchFn, endpointFor(marketCode, 'supply'));
+          if (supplySignature(fresh) === watch.signature) return;
+          if (hubInputBusy()) { hubRefreshNotice(); return; }
+          await reload();
+        } catch (_error) {
+          // Lecture opportuniste : une panne réseau ne masque pas le dossier en cours.
+        } finally { inFlight = false; }
+      };
+      const timer = win.setInterval(() => {
+        if (!rootNode.isConnected) { win.clearInterval(timer); return; }
+        watch.check().catch(() => {});
+      }, 10000);
+      timer?.unref?.();
+      watch.stop = () => win.clearInterval(timer);
+      context.hubRefresh = watch;
+    }
+
     let currentPayload = null;
     const context = {
       root: rootNode,
@@ -2683,6 +2762,7 @@
         }
       }
       currentPayload = payload;
+      if (context.hubRefresh) context.hubRefresh.signature = supplySignature(context.dossier);
       renderPayload(rootNode, ui, doc, payload, context);
       return payload;
     }
@@ -2692,6 +2772,7 @@
     ui.UIState.render(rootNode, 'loading', `Chargement du Workspace Opérations · ${marketCode}…`);
     try {
       await reload();
+      watchHubSupply();
       // Orientation de l'agent vers la file demandée depuis le cockpit.
       // Seules les files existantes sont navigables ; aucune action métier n'est exécutée ici.
       if (context.mode==='relay-execution' && !context.focusOnly && ['shipments','cash','receive','collect'].includes(context.initialFocus)) {

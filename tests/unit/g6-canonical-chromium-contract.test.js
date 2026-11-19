@@ -14,7 +14,8 @@ test('all existing Golden stage modules reject direct business API or PostgreSQL
  expect(()=>assertStageSourceSafe('stage.js',"page.request.post('/api/orders')")).toThrow('G6_STAGE_DIRECT_WRITE_FORBIDDEN');
 });
 test('no external response is automatically approved',()=>{
- expect(external.approved).toEqual([]);
+ expect(external.approved.map(e=>e.id)).toEqual(['SIMULATED_SUPPLIER_STAGING_PO']);
+ expect(external.approved[0].approved_by).toMatch(/4600/);
  expect(cohorts.cohorts['CLAUDE-PAR'].binding_status).toBe('NOT_READY');
  for(const c of Object.values(cohorts.cohorts))
   for(const p of Object.values(c.roles))

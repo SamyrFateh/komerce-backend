@@ -36,8 +36,10 @@ describe('dossier Hub - portee de simulation et ordre FIFO des lignes de PO', ()
   });
   it('PO simulee seulement si toutes les lignes sont G6-BUYER', async () => {
     const all = await dossierFor([poRow(1, 'KA', 'G6-BUYER', '2026-11-01'), poRow(2, 'KB', 'G6-BUYER', '2026-11-02')]);
+    expect(all.d.purchase_orders[0].simulation_reference).toBe(id(50));
     expect(all.d.purchase_orders[0].simulation_scope).toBe('G6-BUYER');
     const mixed = await dossierFor([poRow(1, 'KA', 'G6-BUYER', '2026-11-01'), poRow(2, 'KB', null, '2026-11-02')]);
+    expect(mixed.d.purchase_orders[0].simulation_reference).toBeNull();
     expect(mixed.d.purchase_orders[0].simulation_scope).toBeNull();
   });
 });

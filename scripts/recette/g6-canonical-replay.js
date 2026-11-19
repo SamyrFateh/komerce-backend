@@ -13,7 +13,9 @@
 const fs=require('node:fs');
 const path=require('node:path');
 const {spawnSync,execFileSync}=require('node:child_process');
-const {resolveCanonicalReplay}=require('./g6-canonical-journey-binding');
+const {business,resolveCanonicalReplay}=require('./g6-canonical-journey-binding');
+const {marketProfile}=require('./canonical/market-profile');
+const historicalMarkets=business.scenarios.find(scenario=>scenario.id==='M01').markets;
 const {loadGoldenStages,stageGraph,resolvePhase,requiresResumeProof}=require('./canonical/stage-registry');
 const {validateFinalMileCheckpoint}=require('./canonical/final-mile-checkpoints');
 
@@ -57,7 +59,7 @@ function validateGuard(env=process.env) {
       env.G6_CANONICAL_ACCEPT_PARTIAL_REPLAY!=='1') {
     throw new Error('G6_CANONICAL_OWNER_STAGING_GUARD');
   }
-  return resolveCanonicalReplay(env);
+  return resolveCanonicalReplay({...env,G6_TARGET_MARKET:marketProfile(env).code});
 }
 
 // Resuming from a previous GitHub run is only allowed after a Git-authenticated
@@ -150,7 +152,7 @@ function validateHubProof(proof, order, cash) {
 }
 
 function validateCommitmentCheckpoint(previous,hub,buyer,scope) {
-  if(scope.id!=='M01'||scope.market!=='KM'||
+  if(scope.id!=='M01'||!historicalMarkets.includes(scope.market)||
      previous.scenario_id!==scope.id||previous.market!==scope.market||
      previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||
      previous.production_permitted!==false||previous.buyer_cash_verdict!=='PASS'||
@@ -173,7 +175,7 @@ function validateCommitmentCheckpoint(previous,hub,buyer,scope) {
 function validateVendorReadinessCheckpoint(previous,commitment,scope) {
   const ref=String(previous.order?.reference||'');
   const po=String(previous.po_id||'');
-  if(scope.id!=='M01'||scope.market!=='KM'||
+  if(scope.id!=='M01'||!historicalMarkets.includes(scope.market)||
      previous.reference_contract!=='G6-CANONICAL-JOURNEY-v1'||
      previous.scenario_id!==scope.id||previous.market!==scope.market||
      previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||
@@ -201,8 +203,8 @@ function validateVendorReadinessCheckpoint(previous,commitment,scope) {
 }
 
 function validateVendorSimulationCheckpoint(previous,ready,scope) {
-  if(scope.id!=='M01'||scope.market!=='KM'||
-    previous.scenario_id!=='M01'||previous.market!=='KM'||
+  if(scope.id!=='M01'||!historicalMarkets.includes(scope.market)||
+    previous.scenario_id!=='M01'||previous.market!==scope.market||
     previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||
     previous.production_permitted!==false||
     previous.next_stage!=='REAL_SUPPLIER_SEND_EVIDENCE_REQUIRED'||
@@ -223,8 +225,8 @@ function validateVendorSimulationCheckpoint(previous,ready,scope) {
 
 function validateHubReceivingCheckpoint(previous,simulated,scope) {
   const po=previous?.po_id,orderId=previous?.order?.id,reference=previous?.order?.reference;
-  if(scope.id!=='M01'||scope.market!=='KM'||
-     previous.scenario_id!=='M01'||previous.market!=='KM'||
+  if(scope.id!=='M01'||!historicalMarkets.includes(scope.market)||
+     previous.scenario_id!=='M01'||previous.market!==scope.market||
      previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||
      previous.production_permitted!==false||previous.next_stage!=='HUB_RECEIVING'||
      !VALID_REF.test(String(reference||''))||
@@ -249,7 +251,7 @@ function validateHubReceivingCheckpoint(previous,simulated,scope) {
 function validateCustomerBagCheckpoint(previous,receipt,scope){
   const po=previous?.po_id,orderId=previous?.order?.id,reference=previous?.order?.reference;
   const sourceRef=receipt?.physical_ref;
-  if(scope.id!=='M01'||scope.market!=='KM'||previous.scenario_id!=='M01'||previous.market!=='KM'||
+  if(scope.id!=='M01'||!historicalMarkets.includes(scope.market)||previous.scenario_id!=='M01'||previous.market!==scope.market||
     previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||previous.production_permitted!==false||
     previous.next_stage!=='KOM_BOX'||!VALID_REF.test(String(reference||''))||
     !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(String(orderId||''))||
@@ -274,7 +276,7 @@ function validateKomBoxCheckpoint(previous,bag,scope){
  const parcelId=bag?.after?.parcels?.[0]?.id,allocationId=bag?.after?.order?.allocation_id;
  const ids=[po,orderId,bagId,parcelId,allocationId];
  const after=bag.after,active=after?.units?.filter(u=>u.active)||[];
- if(scope.id!=='M01'||scope.market!=='KM'||previous.scenario_id!=='M01'||previous.market!=='KM'||
+ if(scope.id!=='M01'||!historicalMarkets.includes(scope.market)||previous.scenario_id!=='M01'||previous.market!==scope.market||
    previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||previous.production_permitted!==false||
    previous.next_stage!=='KOM_BOX'||!VALID_REF.test(String(reference||''))||
    !ids.every(id=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(String(id||'')))||
@@ -299,7 +301,7 @@ function validateShipmentCheckpoint(previous,box,scope){
  const boxId=box?.box_id,boxRef=box?.box_ref;
  const ids=[po,orderId,bagId,parcelId,allocationId,boxId];
  const a=box.after;
- if(scope.id!=='M01'||scope.market!=='KM'||previous.scenario_id!=='M01'||previous.market!=='KM'||
+ if(scope.id!=='M01'||!historicalMarkets.includes(scope.market)||previous.scenario_id!=='M01'||previous.market!==scope.market||
    previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||previous.production_permitted!==false||
    previous.next_stage!=='HUB_SHIPMENT'||!VALID_REF.test(String(reference||''))||
    !ids.every(id=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(String(id||'')))||
@@ -326,13 +328,13 @@ function validatePartialShipmentCheckpoint(previous,partial,scope){
   const boxId='6ca614e5-869c-40ab-80d7-3684974092fe',boxRef='KOM-BOX-SIM-STAGING-KL1WGP6';
   const shipmentId='ff8591fc-78bb-49a4-b154-247508368d16',shipmentRef='SIM-STAGING-EXP-KL1WGP6';
   const a=partial.after_dispatch;
-  if(scope.id!=='M01'||scope.market!=='KM'||previous.scenario_id!=='M01'||previous.market!=='KM'||
+  if(scope.id!=='M01'||!historicalMarkets.includes(scope.market)||previous.scenario_id!=='M01'||previous.market!==scope.market||
      previous.verdict!=='BLOCKED'||previous.full_chain_certified!==false||previous.production_permitted!==false||
      previous.next_stage!=='HUB_SHIPMENT'||previous.resumed_from_run_id!=='44199423921'||
      previous.order?.id!==orderId||previous.order?.reference!=='KL1WGP6'||previous.po_id!==poId||
      previous.db_fingerprint!=='8acbf99fef010c23eac7d252'||
      !previous.stages?.some(x=>x.id==='HUB_KOM_BOX'&&x.verdict==='PASS_SIMULATED_STAGING')||
-     partial.schema!=='komerce-g6-hub-shipment/1'||partial.verdict!=='BLOCKED'||partial.scenario_id!=='M01'||partial.market!=='KM'||
+     partial.schema!=='komerce-g6-hub-shipment/1'||partial.verdict!=='BLOCKED'||partial.scenario_id!=='M01'||partial.market!==scope.market||
      partial.reference!=='KL1WGP6'||partial.order_id!==orderId||partial.po_id!==poId||partial.bag_id!==bagId||
      partial.bag_ref!==bagRef||partial.parcel_id!==parcelId||partial.allocation_id!==allocationId||
      partial.box_id!==boxId||partial.box_ref!==boxRef||partial.shipment_id!==shipmentId||partial.shipment_ref!==shipmentRef||
@@ -365,7 +367,7 @@ function validateForwarderCheckpoint(previous,shipment,scope){
  const parcel=shipment?.parcel_id,allocation=shipment?.allocation_id;
  const fingerprint=previous?.db_fingerprint,a=shipment?.after;
  const ids=[id,po,sid,box,bag,parcel,allocation];
- if(scope.id!=='M01'||scope.market!=='KM'||previous.scenario_id!=='M01'||previous.market!=='KM'||
+ if(scope.id!=='M01'||!historicalMarkets.includes(scope.market)||previous.scenario_id!=='M01'||previous.market!==scope.market||
  previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||previous.production_permitted!==false||
  previous.next_stage!=='FORWARDER_RECEIPT'||!VALID_REF.test(String(reference||''))||
  !ids.every(x=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(String(x||'')))||
@@ -415,7 +417,7 @@ async function main(env=process.env) {
     // handles their proven Chromium/PG implementation. NO stage may self-authorize.
     const graph=stageGraph(loadGoldenStages());
     const declaredStage=resolvePhase(phase,graph);
-    if(!declaredStage || ['BUYER','RELAY_CASH'].includes(phase) || (phase!=='BUYER_CASH' && (scope.id!=='M01'||scope.market!=='KM')))
+    if(!declaredStage || ['BUYER','RELAY_CASH'].includes(phase) || (phase!=='BUYER_CASH' && (scope.id!=='M01'||!historicalMarkets.includes(scope.market))))
       throw new Error('G6_CANONICAL_PHASE_NOT_BOUND');
     report.scenario_id=scope.id;report.market=scope.market;
     report.source_matrix_version=scope.source_version;
@@ -446,7 +448,7 @@ async function main(env=process.env) {
       // Additional same-order, same-staging proof boundary; no mutation authority.
       validateFinalMileCheckpoint('CLIENT_PICKUP',previous,prior);
       const a=prior.after?.base;
-      if(scope.id!=='M01'||scope.market!=='KM'||previous.scenario_id!=='M01'||previous.market!=='KM'||
+      if(scope.id!=='M01'||!historicalMarkets.includes(scope.market)||previous.scenario_id!=='M01'||previous.market!==scope.market||
        previous.order?.id!==id||previous.order?.reference!=='KL1WGP6'||previous.po_id!==po||
        previous.db_fingerprint!==fingerprint||previous.next_stage!=='CLIENT_PICKUP'||
        previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||
@@ -517,7 +519,7 @@ async function main(env=process.env) {
       // Additional same-order, same-staging proof boundary; no mutation authority.
       validateFinalMileCheckpoint('RELAY_RECEIPT',previous,prior);
       const a=prior.after?.base;
-      if(scope.id!=='M01'||scope.market!=='KM'||previous.scenario_id!=='M01'||previous.market!=='KM'||
+      if(scope.id!=='M01'||!historicalMarkets.includes(scope.market)||previous.scenario_id!=='M01'||previous.market!==scope.market||
         previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||previous.production_permitted!==false||
         previous.next_stage!=='RELAY_RECEIPT'||previous.order?.id!==id||previous.order?.reference!=='KL1WGP6'||
         previous.po_id!==po||previous.db_fingerprint!==fingerprint||
@@ -576,7 +578,7 @@ async function main(env=process.env) {
       const fingerprint='8acbf99fef010c23eac7d252',po='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3';
       const box='6ca614e5-869c-40ab-80d7-3684974092fe',bag='bcf810c9-33b2-438a-b4c3-857b024e2247';
       const parcel='95045ede-d5b8-405b-b65f-d9dbdddb4756',allocation='3b430dcf-8662-44b4-a29f-27e38df19253';
-      if(scope.id!=='M01'||scope.market!=='KM'||previous.scenario_id!=='M01'||previous.market!=='KM'||
+      if(scope.id!=='M01'||!historicalMarkets.includes(scope.market)||previous.scenario_id!=='M01'||previous.market!==scope.market||
         previous.verdict!=='NOT_PROVEN'||previous.full_chain_certified!==false||previous.production_permitted!==false||
         previous.next_stage!=='CUSTOMS'||previous.order?.id!==id||previous.order?.reference!=='KL1WGP6'||previous.po_id!==po||
         previous.db_fingerprint!==fingerprint||!previous.stages?.some(x=>x.id==='FORWARDER'&&x.verdict==='PASS_SIMULATED_STAGING'&&x.shipment_id===sid)||
@@ -794,7 +796,7 @@ async function main(env=process.env) {
       const previous=JSON.parse(fs.readFileSync(RESUME_CANONICAL,'utf8'));
       const receipt=JSON.parse(fs.readFileSync(RESUME_HUB_RECEIVING,'utf8'));
       const ref='SUPPLIER_PACKAGE-';
-      if(previous.scenario_id!=='M01'||previous.market!=='KM'||
+      if(previous.scenario_id!=='M01'||previous.market!==scope.market||
          previous.verdict!=='BLOCKED'||previous.next_stage!=='HUB_RECEIVING'||
          previous.po_id!=='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3'||
          previous.order?.reference!=='KL1WGP6'||!previous.db_fingerprint||

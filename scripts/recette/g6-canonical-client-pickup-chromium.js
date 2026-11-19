@@ -156,12 +156,21 @@ async function relay(browser,code,expectedRelay){
   check(res.status()===200&&calls===1&&actor.blocked.length===0,'G6_PICKUP_RELAY_COLLECT_REJECTED_'+res.status());
   report.events.push({key:'relay-code-collect',http:200,role:'agent_relais',ui:true,code_masked:'********'});
   save();await runtime();
-  // A fresh relay queue must not display an actionable pickup field for this
-  // completed one-parcel order. Anti-double-write is independently checked via PG.
+  // `[data-manual-pickup-code]` est le comptoir GÉNÉRIQUE de l'onglet Remises (operations-workspace.js
+  // renderPickupCodeSection) : affiché dès qu'un colis du relais attend un retrait, sans lien avec cette
+  // commande (le POST ne porte que {pickup_code}). Il reste donc visible pour le client suivant (1 en KM/CM).
+  // Oracle = PG lecture seule : retrait unique, code consommé, aucun second retrait.
   await actor.page.reload({waitUntil:'domcontentloaded'});
   await actor.page.locator('[data-relay-execution-jump="collect"]').waitFor({state:'visible',timeout:20000}).catch(()=>{});
   const available=await actor.page.locator('[data-manual-pickup-code]').count();
-  report.second_handoff_ui={after_refresh_code_form_count:available,second_post_attempted:false};
+  const {rows:[once]}=await db.query(`SELECT o.status::text AS status,o.pickup_secret_hash IS NULL AS code_consumed,
+     (SELECT COUNT(*)::int FROM scans s WHERE s.order_id=o.id AND s.step='collected') AS collect_scans,
+     (SELECT COUNT(*)::int FROM scans s WHERE s.order_id=o.id AND s.step='collected' AND s.pickup_method='PICKUP_CODE') AS code_scans
+    FROM orders o WHERE o.id=$1`,[ID]);
+  check(once&&once.status==='collected'&&once.code_consumed===true&&once.collect_scans===1&&once.code_scans===1&&calls===1&&
+    actor.blocked.length===0,'G6_PICKUP_SECOND_HANDOFF_OR_CODE_NOT_CONSUMED');
+  report.second_handoff_ui={generic_counter_forms_visible:available,generic_counter_note:'comptoir générique Remises, non lié à la commande',
+    pg_collect_scans:once.collect_scans,pg_code_consumed:once.code_consumed,second_post_attempted:false};
   return user.id;
  }finally{await actor.ctx.close()}
 }

@@ -2,6 +2,13 @@ name: G2 Hub PO — genuine Chromium clicks on isolated in-memory dossiers
 on:
   issues:
     types: [opened]
+  pull_request:
+    paths:
+      - 'public/dashboards/canonical/js/international-journey-panel.js'
+      - 'public/dashboards/canonical/js/shipping-customs-workspace.js'
+      - 'public/dashboards/canonical/js/hub-live-cockpit.js'
+      - 'public/dashboards/canonical/css/hub-live-cockpit.css'
+      - 'tests/g2-hub-po-browser/hub-live-cockpit-stability.spec.js'
   workflow_dispatch:
 
 permissions:
@@ -15,6 +22,7 @@ jobs:
   chromium:
     name: 10 isolated Hub UI click and alert proofs · no staging/credentials/database
     if: >-
+      github.event_name == 'pull_request' ||
       (github.event_name == 'issues' &&
        github.event.issue.user.login == github.repository_owner &&
        github.event.issue.title == '[cert-op] g2-hub-po-chromium-isolated') ||
@@ -29,7 +37,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event.pull_request.head.sha || 'main' }}
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -39,6 +48,25 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Seven PO clicks and three T3/T9/T10 tasks in real Chromium, without HTTP
         run: npx playwright test --config=playwright.g2-hub-po-isolated.config.js
+      - name: Repeat journey repaint and PO selection on the PR head
+        if: github.event_name == 'pull_request'
+        run: npx playwright test --config=playwright.g2-hub-po-isolated.config.js --grep 'centre de la carte|repeindre pendant' --repeat-each=20
+      - name: UX2 — ensure origin/main and execute required PR preflight
+        if: github.event_name == 'pull_request' && github.head_ref == 'fix/g6-ergonomie-ux2-hub-po-history'
+        run: |
+          git fetch origin main:refs/remotes/origin/main
+          npm run pr:preflight
+      - name: UX2 — verify before/after synthetic screenshots
+        if: github.event_name == 'pull_request' && github.head_ref == 'fix/g6-ergonomie-ux2-hub-po-history'
+        run: test -s test-artifacts/ux2/ux2-apres.png && test -s test-artifacts/ux2/ux2-historique-ouvert.png
+      - name: UX2 — publish local Chromium screenshots
+        if: always() && github.event_name == 'pull_request' && github.head_ref == 'fix/g6-ergonomie-ux2-hub-po-history'
+        uses: actions/upload-artifact@v4
+        with:
+          name: g6-ergonomie-ux2-${{ github.run_id }}
+          path: test-artifacts/ux2/
+          if-no-files-found: error
+          retention-days: 14
       - name: Archive only synthetic data and screenshots (no secrets)
         if: always()
         uses: actions/upload-artifact@v4

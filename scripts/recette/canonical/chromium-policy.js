@@ -24,6 +24,7 @@ function assertStageSourceSafe(filename,source=fs.readFileSync(filename,'utf8'))
  for(const f of FORBIDDEN)if(f.test(source))throw Error('G6_STAGE_DIRECT_WRITE_FORBIDDEN_'+path.basename(filename));
  return true;
 }
+// page.reload / page.goto ne sont pas dans la liste : navigation humaine (F5), sans mutation. Couvre aussi la spec p3.
 // Raw locator gestures bypass render-ready, relocation and the no-retry-after-mutation rule.
 const RAW_GESTURE=/(?<!keyboard)\.(?:click|fill|selectOption|check|press|dblclick|tap|setInputFiles|dispatchEvent)\s*\(/;
 function assertGestureSourceUsesHelper(filename,source=fs.readFileSync(filename,'utf8')){
@@ -31,11 +32,34 @@ function assertGestureSourceUsesHelper(filename,source=fs.readFileSync(filename,
  if(RAW_GESTURE.test(code))throw Error('G6_GESTURE_OUTSIDE_HELPER_FORBIDDEN_'+path.basename(filename));
  return true;
 }
+// Exception propriétaire (19/11 00h47) : les écritures PG ne servent QU'À préparer des identités de test
+// (client E2E, OTP haché préchargé, comptes et memberships relais), jamais un état métier.
+// Tables réellement écrites (par les writers canoniques) par g6-p2-buyer-order-real, g6-canonical-client-pickup
+// et g6-a-relay-cash-real : voir IDENTITY_WRITES_BY_SCRIPT.
+const IDENTITY_TABLES=Object.freeze(['users','e2e_test_accounts','otp_codes','assignment_memberships','membership_capabilities','operator_market_scopes']);
+const IDENTITY_WRITES_BY_SCRIPT=Object.freeze({
+ 'g6-p2-buyer-order-real-chromium.js':['users','e2e_test_accounts','otp_codes'],
+ 'g6-canonical-client-pickup-chromium.js':['otp_codes'],
+ 'g6-a-relay-cash-real-chromium.js':['users','e2e_test_accounts','assignment_memberships','membership_capabilities','operator_market_scopes']
+});
+function sqlWriteTables(source){
+ const code=source.replace(/\/\*[\s\S]*?\*\//g,'').replace(/^\s*\/\/.*$/gm,'');
+ const re=/\b(?:INSERT\s+INTO|DELETE\s+FROM|UPDATE(?=\s+[\w."]+\s+SET\b)|MERGE\s+INTO|TRUNCATE(?:\s+TABLE)?|ALTER\s+TABLE|DROP\s+TABLE)\s+([\w."]+)/gi;
+ const out=[];let m;
+ while((m=re.exec(code)))out.push(m[1].replace(/"/g,'').replace(/^public\./,'').toLowerCase());
+ return out;
+}
+function assertStageSqlWritesIdentityOnly(filename,source=fs.readFileSync(filename,'utf8')){
+ for(const t of sqlWriteTables(source))
+  if(!IDENTITY_TABLES.includes(t))throw Error('G6_STAGE_SQL_WRITE_OUTSIDE_IDENTITY_TABLES_'+path.basename(filename)+'_'+t);
+ return true;
+}
 function validateChromiumScriptSources(){
  const dir=path.join(__dirname,'..');
  const files=fs.readdirSync(dir).filter(f=>/^g6-.*chromium\.js$/.test(f));
  for(const f of files){assertGestureSourceUsesHelper(path.join(dir,f));assertTraceStartsAfterAuth(path.join(dir,f));}
- assertTraceStartsAfterAuth(path.join(__dirname,'../../../tests/staging-clicks/g6-p3-kuyiyuk.spec.js'));
+ const spec=path.join(__dirname,'../../../tests/staging-clicks/g6-p3-kuyiyuk.spec.js');
+ assertGestureSourceUsesHelper(spec);assertTraceStartsAfterAuth(spec);
  return files.length;
 }
 // Trace must start only after login/OTP/redirect: no raw tracing.start, and every
@@ -72,4 +96,4 @@ function assertCanonicalProof(proof){
   if(!approved.has(e.id))throw Error('G6_EXTERNAL_RESPONSE_NOT_OWNER_APPROVED_'+e.id);
  return true;
 }
-module.exports={assertTraceStartsAfterAuth,assertGestureSourceUsesHelper,validateChromiumScriptSources,assertStageSourceSafe,validateStageModuleSources,assertCanonicalProof};
+module.exports={IDENTITY_TABLES,IDENTITY_WRITES_BY_SCRIPT,sqlWriteTables,assertStageSqlWritesIdentityOnly,assertTraceStartsAfterAuth,assertGestureSourceUsesHelper,validateChromiumScriptSources,assertStageSourceSafe,validateStageModuleSources,assertCanonicalProof};
