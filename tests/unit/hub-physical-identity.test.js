@@ -23,3 +23,15 @@ describe('hub-physical-identity — réception regroupée', () => {
     expect(src).toMatch(/fail\('HUB_ALLOCATION_OVERRECEIVED', 'Réception simultanée/);
   });
 });
+
+describe('G6 D — retrait physique gouverné',()=>{
+ test('aucun DELETE ni faux REPACK : retrait audité puis mise en quarantaine Hub',()=>{
+  expect(src).toContain('async function releaseG6RecipeHubPlacements');
+  expect(src).toContain("eventType:'PLACEMENT_OUT'");
+  expect(src).toContain("reason_code:'G6_RECIPE_UNSOLD_AT_HUB'");
+  expect(src).toContain("toState:'QUARANTINED'");
+  expect(src).toContain('G6_RECIPE_HUB_ALREADY_SHIPPED');
+  const region=src.slice(src.indexOf('async function releaseG6RecipeHubPlacements'));
+  expect(region).not.toContain('DELETE FROM hub_box_bags');
+ });
+});
