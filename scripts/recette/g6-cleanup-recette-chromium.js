@@ -114,12 +114,26 @@ async function login(browser,steps){
   if(s.action==='cancel_order')allowed.add('/api/orders/'+s.order_id+'/cancel');
  }
  const ctx=await browser.newContext({viewport:{width:1440,height:900},baseURL:ORIGIN});
- const page=await ctx.newPage(),blocked=[],state={limited:false,dialogReason:null,confirmed:0};
+ const page=await ctx.newPage(),blocked=[],state={limited:false,dialogReason:null,confirmed:0,
+  httpFailures:[],pendingHttpErrors:[]};
  page.on('dialog',d=>{
   if(d.type()==='prompt')return d.accept(state.dialogReason||'');
   state.confirmed++;return d.accept();
  });
- page.on('response',r=>{if(r.status()===429)state.limited=true;});
+ page.on('response',r=>{
+  if(r.status()===429)state.limited=true;
+  const req=r.request(),p=new URL(r.url()).pathname;
+  if(req.method()!=='POST'||r.status()<400||
+     !(/\\/cancel-g6-recipe$|\\/close-g6-hub-recipe$/.test(p)))return;
+  // Garder le code métier de la réponse, sans enregistrer de corps brut,
+  // de trace SQL, de cookie ou de données personnelles.
+  state.pendingHttpErrors.push(r.json().then(body=>{
+    state.httpFailures.push({path:p,status:r.status(),code:body.code||null,
+      error:typeof body.error==='string'?body.error.slice(0,240):null,
+      pg_code:body.pg_code||null,constraint:body.constraint||null,
+      db_reason:body.db_reason||null});
+  }).catch(()=>{}));
+ });
  await page.route('**/*',route=>{
   const req=route.request(),url=new URL(req.url());
   if(['GET','HEAD','OPTIONS'].includes(req.method()))return route.continue();
@@ -212,6 +226,7 @@ async function main(){
     if(failed.has(step.reference)){report.steps.push({...step,result:'SKIPPED_PREVIOUS_FAILURE'});continue;}
     assertGestureAllowed(step,plan);
     for(;;){try{gate.reserve('order');break;}catch(_){await sleep(1000);}}
+    actor.state.httpFailures=[];actor.state.pendingHttpErrors=[];
     const rec={action:step.action,reference:step.reference,class:step.class,po_id:step.po_id||null,line_id:step.line_id||null};
     try{
      const r=await perform(actor,step);
@@ -220,6 +235,8 @@ async function main(){
      rec.result=rec.readback===EXPECTED[step.action]?'DONE':'READBACK_MISMATCH';
      if(rec.result!=='DONE')failed.add(step.reference);
     }catch(e){
+     await Promise.allSettled(actor.state.pendingHttpErrors);
+     rec.http_error=actor.state.httpFailures.slice(-1)[0]||null;
      rec.result=actor.state.limited||/429/.test(String(e.message))?'NOT_PROVEN_429':(e.verdict==='BLOCKED'?'BLOCKED':'FAILED');
      rec.error=fullError(e);failed.add(step.reference);
      if(rec.result==='NOT_PROVEN_429')stopped=true;
