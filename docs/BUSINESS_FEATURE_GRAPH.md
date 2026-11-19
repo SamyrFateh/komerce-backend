@@ -463,7 +463,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - migrations: 23
 - config: 1
 - middleware: 4
-- services: 18
+- services: 19
 - routes: 15
 - tests: 52
 - tables owned (lifecycle): 10 — `market_operating_assignments`, `assignment_memberships`, `membership_capabilities`, `assignment_capability_ceiling`, `market_cash_control_policies`, `capability_registry`, `ceiling_templates`, `ceiling_template_capabilities`, `market_delegation_audit`, `market_team_invitations`
@@ -471,7 +471,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 33
 - internal APIs: 35
 - dependencies (consumes): 14 — local-stock, market, auth, auth-identity, infrastructure, logistics, catalog, providers-services, orders, settlement, economic-engine, market-autonomy, dashboard, payments
-- consumers: 10 — dashboard, dashboard, economic-engine, logistics, market-autonomy, market-control-plane, market-operator-dashboard, payments, settlement, decision-signals
+- consumers: 11 — dashboard, dashboard, economic-engine, logistics, market-autonomy, market-control-plane, market-operator-dashboard, payments, settlement, unsold-resolution, decision-signals
 
 ### market-operator-dashboard _(unclassified)_
 
@@ -702,7 +702,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 1
 - interfaces exposed: 7
 - internal APIs: 0
-- dependencies (consumes): 4 — orders, catalog, auth, infrastructure
+- dependencies (consumes): 5 — orders, catalog, auth, market-delegation, infrastructure
 - consumers: 0
 
 ### wallet _(business-feature)_
@@ -2200,6 +2200,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | unsold-resolution | orders (`orders (commande source de l'invendu)`) | ✔ |
 | unsold-resolution | catalog (`catalog (produit concerné)`) | ✔ |
 | unsold-resolution | auth (`auth`) | ✔ |
+| unsold-resolution | market-delegation (`market-delegation`) | ✔ |
 | unsold-resolution | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
 | wallet | market (`market (2026-11-13 #3927 — conversion KMF↔devise du marché via la seule autorité fx-authority/currency_parities ; preuve: services/wallet-service.js -> services/fx-authority.js)`) | ✔ |
 | wallet | orders (`orders (persistence via order-mutation-service ? LOT11)`) | ✔ |
@@ -2325,7 +2326,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2362 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2363 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 216 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2409,7 +2410,7 @@ Meta Graph monté : oui.
 | dashboard | loyalty | static-code | 1 | **OBSERVED_UNDECLARED** |
 | dashboard | market | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | dashboard | market-autonomy | data-read | 1 | **DECLARED_AND_OBSERVED** |
-| dashboard | market-delegation | static-code | 29 | **DECLARED_AND_OBSERVED** |
+| dashboard | market-delegation | static-code | 31 | **DECLARED_AND_OBSERVED** |
 | dashboard | notifications | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | dashboard | orders | static-code, data-write, data-read | 16 | **DECLARED_AND_OBSERVED** |
 | dashboard | payments | static-code | 5 | **DECLARED_AND_OBSERVED** |
@@ -2695,6 +2696,7 @@ Meta Graph monté : oui.
 | unsold-resolution | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | unsold-resolution | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | unsold-resolution | infrastructure | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| unsold-resolution | market-delegation | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | unsold-resolution | orders | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | wallet | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | wallet | auth-identity | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
