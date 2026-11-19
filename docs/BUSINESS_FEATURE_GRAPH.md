@@ -586,7 +586,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Transformer un besoin d'approvisionnement issu d'une commande en engagement fournisseur traçable (bon de commande), puis constater sa réception.
 
-- services: 52
+- services: 53
 - routes: 1
 - migrations: 17
 - scripts: 14
@@ -2325,7 +2325,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2359 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2360 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 216 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2643,9 +2643,9 @@ Meta Graph monté : oui.
 | purchasing | economic-engine | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | purchasing | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | incident-management | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| purchasing | infrastructure | static-code | 60 | **DECLARED_AND_OBSERVED** |
+| purchasing | infrastructure | static-code | 61 | **DECLARED_AND_OBSERVED** |
 | purchasing | logistics | static-code, data-read | 17 | **DECLARED_AND_OBSERVED** |
-| purchasing | notifications | static-code | 10 | **DECLARED_AND_OBSERVED** |
+| purchasing | notifications | static-code | 11 | **DECLARED_AND_OBSERVED** |
 | purchasing | orders | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | purchasing | refunds | static-code | 1 | **OBSERVED_UNDECLARED** |
 | purchasing | sourcing | static-code | 4 | **DECLARED_AND_OBSERVED** |
