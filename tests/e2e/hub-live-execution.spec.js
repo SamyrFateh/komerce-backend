@@ -192,6 +192,21 @@ async function mount(page, { posts = [], failShip = false, receiveReply = null, 
   if (view) await page.locator(`[data-workspace-view="${view}"]`).click();
 }
 
+// UX1 : fixtures serveur isolées, sans staging ; répéter 20 fois avec --repeat-each=20.
+test('UX1 — nouvelle ligne fournisseur visible sans page.reload et sans perdre une saisie', async ({page}, testInfo) => {
+  const source=structuredClone(UNSOURCED_DOSSIER);
+  await page.clock.install();
+  await mount(page,{view:null,dossier:source});
+  const card=page.locator('[data-hlc-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"]');
+  await expect(card.locator('[data-hlc-order-state]')).toContainText('Anomalie fournisseur');
+  if(testInfo.repeatEachIndex===0) await page.screenshot({path:testInfo.outputPath('ux1-avant.png'),fullPage:true});
+  // Une nouvelle projection API se présente après l'encaissement, sans écriture dans le test.
+  source.orders[0].items.forEach(item=>{item.purchasing_missing=0;item.sourcing_required=false;});
+  await page.clock.fastForward(10100);
+  await expect(card.locator('[data-hlc-order-state]')).not.toContainText('Anomalie fournisseur');
+  if(testInfo.repeatEachIndex===0) await page.screenshot({path:testInfo.outputPath('ux1-apres.png'),fullPage:true});
+});
+
 async function scanConfirmedSku(card) {
   const scanner = card.locator('.kmc-workspace-receive-scan-input');
   await scanner.fill(PHYSICAL_CODE);
