@@ -65,3 +65,8 @@ test('dossier lié à une expédition : « Déclarer »/« Corriger » ancienne 
   expect(source).toContain('data-customs-journey-linked');
   expect(source).toMatch(/row\.status === 'declared' && row\.is_active && !row\.journey_reference/);
 });
+
+test('le workspace capture avant le remplacement DOM et restaure après le rendu du panneau',()=>{
+  const body=source.slice(source.indexOf('function renderPayload'),source.indexOf('async function mount'));
+  expect(body).toMatch(/panel\?\.capture[\s\S]+rootNode\.replaceChildren\(\)[\s\S]+panel\.render\([\s\S]+panel\.restore\(section, tasks\)/);
+});

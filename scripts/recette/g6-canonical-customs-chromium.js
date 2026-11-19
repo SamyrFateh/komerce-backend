@@ -27,6 +27,8 @@ const report={schema:'komerce-g6-customs/1',shipment_id:ID,shipment_ref:REF,orde
  reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',scenario_id:'M01',market:MK.code,events:[],verdict:'BLOCKED',
  provenance:'SIMULATED / STAGING ONLY',external_payment_executed:false,external_supplier_calls:0};
 const check=(ok,code)=>{if(!ok)throw Error(code)};
+// Valeurs saisies par le script = valeurs attendues à la relecture PG (oracle explicite).
+const CIF_KMF=1000,PAID_KMF=0;
 function save(){fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n')}
 async function readState(stage,placement){
  const physical=await snapshot(stage,placement);
@@ -57,8 +59,19 @@ async function click(actor,key,endpoint,button,validate,role){
  }finally{await actor.page.unroute(url,handler)}
 }
 async function journey(actor,key,title,tab,tail,fields,expected,role){
- const item=await task(actor.page,title,tab);
- for(const [name,val] of Object.entries(fields))await fillTask(item,name,val);
+ // L'espace Expéditions & Douane se redessine encore après l'action précédente (G6-SUIVIS 8) : on laisse
+ // le réseau se calmer, puis on vérifie juste avant l'envoi que la tâche est ouverte et la saisie intacte ;
+ // sinon on rouvre et on ressaisit (aucune mutation n'a encore eu lieu).
+ await actor.page.waitForLoadState('networkidle',{timeout:15000}).catch(()=>{});
+ let item;
+ for(let attempt=0;attempt<3;attempt++){
+  item=await task(actor.page,title,tab);
+  for(const [name,val] of Object.entries(fields))await fillTask(item,name,val);
+  await actor.page.waitForTimeout(400);
+  const intact=await item.evaluate((e,f)=>e.open&&Object.entries(f).every(([n,v])=>{const i=e.querySelector('[name="'+n+'"]');return i&&i.value===String(v);}),fields).catch(()=>false);
+  if(intact)break;
+  if(attempt===2)throw Error('G6_CUSTOMS_TASK_RESET_BEFORE_SUBMIT_'+key);
+ }
  await click(actor,key,API+'/international/'+REF+'/'+tail,item.locator('button[type="submit"]'),b=>isDeepStrictEqual(b,expected),role);
 }
 function eventProof(prev,next,type,ref,stage){
@@ -88,28 +101,30 @@ async function main(){
    await humanGoto(admin.page,'/admin/workspaces/shipping-customs?market='+MK.code+'',{waitUntil:'domcontentloaded'});
    await admin.page.locator('[data-international-journey]').first().waitFor({state:'visible',timeout:25000});
    await humanClick(null,admin.page.locator('.kmc-journey-tab').filter({hasText:'Arrivée & douane'}));
-   const date=new Date().toISOString().slice(0,10), answers=[CUSTOMS,date,'1000',''];
+   const date=new Date().toISOString().slice(0,10), answers=[CUSTOMS,date,String(CIF_KMF),''];
    admin.page.on('dialog',async d=>{
     if(d.type()==='prompt'&&answers.length)return d.accept(answers.shift());
     if(d.type()==='confirm'&&d.message().includes(CUSTOMS)&&answers.length===0)return d.accept();
     return d.dismiss();
    });
    await click(admin,'customs_create',API+'/customs/shipments',admin.page.locator('[data-workspace-action="create-customs"]'),
-    b=>isDeepStrictEqual(b,{reference:CUSTOMS,shipment_date:date,cif_value_kmf:1000,parcel_refs:[]}),'admin');
+    b=>isDeepStrictEqual(b,{reference:CUSTOMS,shipment_date:date,cif_value_kmf:CIF_KMF,parcel_refs:[]}),'admin');
    let now=await readState('arrived',placement);
-   check(answers.length===0&&now.customs.length===1&&now.customs[0].reference===CUSTOMS&&Number(now.customs[0].cif_value_kmf)===1000&&
+   check(answers.length===0&&now.customs.length===1&&now.customs[0].reference===CUSTOMS&&Number(now.customs[0].cif_value_kmf)===CIF_KMF&&
     now.linked===null&&isDeepStrictEqual(last.base,now.base),'G6_CUSTOMS_CREATE_PG_INVALID');
    const cid=now.customs[0].id;last=now;report.after=now;save();
    const steps=[
     ['customs_link','Lier le dossier douane','link-customs',{customs_reference:CUSTOMS,proof_ref:proof('LIEN-DOUANE')},{customs_reference:CUSTOMS,proof_ref:proof('LIEN-DOUANE')},'arrived','customs_linked'],
-    ['customs_amount','Constater les droits et taxes','customs-amount',{amount_kmf:'0',proof_ref:proof('DROITS-DOUANE')},{amount_kmf:'0',proof_ref:proof('DROITS-DOUANE')},'arrived','customs_amount_confirmed'],
+    ['customs_amount','Constater les droits et taxes','customs-amount',{amount_kmf:String(PAID_KMF),proof_ref:proof('DROITS-DOUANE')},{amount_kmf:String(PAID_KMF),proof_ref:proof('DROITS-DOUANE')},'arrived','customs_amount_confirmed'],
     ['customs_released','Confirmer : Mainlevée confirmée','transition',{proof_ref:proof('MAINLEVEE')},{proof_ref:proof('MAINLEVEE'),to_stage:'customs_released'},'customs_released','stage_changed']
    ];
    for(const [key,title,tail,fields,expected,stage,type] of steps){
     await journey(admin,key,title,'Arrivée & douane',tail,fields,expected,'admin');
     now=await readState(stage,placement);eventProof(last,now,type,fields.proof_ref,stage);
     check(now.linked===cid&&now.customs[0].id===cid,'G6_CUSTOMS_LINK_INVALID');
-    if(key!=='customs_link')check(now.customs[0].customs_paid_kmf!==null&&Number(now.customs[0].customs_paid_kmf)===0&&
+    check(now.customs[0].reference===CUSTOMS&&Number(now.customs[0].cif_value_kmf)===CIF_KMF,'G6_CUSTOMS_CIF_OR_REFERENCE_DRIFT');
+    if(key==='customs_link')check(now.customs[0].customs_paid_kmf===null,'G6_CUSTOMS_PAID_BEFORE_AMOUNT');
+    if(key!=='customs_link')check(now.customs[0].customs_paid_kmf!==null&&Number(now.customs[0].customs_paid_kmf)===PAID_KMF&&
      ['declared','confirmed'].includes(now.customs[0].status),'G6_CUSTOMS_AMOUNT_INVALID');
     last=now;report.after=now;save();await runtime();
    }
