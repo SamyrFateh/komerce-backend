@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 330,
+    "businessDependencies": 331,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -22999,7 +22999,7 @@
             ]
           },
           "services": {
-            "count": 18,
+            "count": 19,
             "files": [
               {
                 "declared": "services/capability-registry.js",
@@ -23055,6 +23055,11 @@
                 "declared": "services/market-delegation-provider-service.js",
                 "resolvedPath": "services/market-delegation-provider-service.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-delegation-read-authority.js",
+                "resolvedPath": "services/market-delegation-read-authority.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/market-delegation-service.js",
@@ -23359,7 +23364,7 @@
             ]
           }
         },
-        "totalFiles": 113,
+        "totalFiles": 114,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -24035,6 +24040,13 @@
           "channels": [
             "static-code",
             "data-read"
+          ]
+        },
+        {
+          "consumer": "unsold-resolution",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         }
       ],
@@ -35113,6 +35125,7 @@
         "in": [
           "scan historique J+14 bloqué faute de clôture de garde et de droits client certifiée",
           "mutation de l'invendu uniquement pour des commandes non payées et un état available",
+          "projection GET en lecture seule pour le responsable pays, filtrée en SQL sur les marchés operations.read délégués",
           "prohibition de la promotion ou cession de marchandises payées tant que les droits de retrait persistent"
         ],
         "out": [
@@ -35296,6 +35309,13 @@
         },
         {
           "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "market-delegation",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
