@@ -18,7 +18,7 @@ const {transitionOrderStatus}=require('./order-status-machine');
 const {transitionParcelStatus}=require('./parcel-operations');
 const {transitionPhysicalUnit}=require('./hub-physical-identity');
 const UUID=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
-const ELIGIBLE=new Set(['preparation','shipped','in_transit','available']);
+const ELIGIBLE=new Set(['ordered','preparation','shipped','in_transit','available']);
 const PARCEL_AT_HUB=new Set(['draft','preparation']);
 const HUB_STATES=new Set(['RECEIVED','IDENTIFIED','QUALITY_CHECKED','LOCATED','ALLOCATED','PICKED','PACKED']);
 function refusal(status,code,message=code){const e=new Error(message);e.status=status;e.code=code;return e;}
