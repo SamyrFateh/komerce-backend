@@ -59,8 +59,19 @@ async function click(actor,key,endpoint,button,validate,role){
  }finally{await actor.page.unroute(url,handler)}
 }
 async function journey(actor,key,title,tab,tail,fields,expected,role){
- const item=await task(actor.page,title,tab);
- for(const [name,val] of Object.entries(fields))await fillTask(item,name,val);
+ // L'espace Expéditions & Douane se redessine encore après l'action précédente (G6-SUIVIS 8) : on laisse
+ // le réseau se calmer, puis on vérifie juste avant l'envoi que la tâche est ouverte et la saisie intacte ;
+ // sinon on rouvre et on ressaisit (aucune mutation n'a encore eu lieu).
+ await actor.page.waitForLoadState('networkidle',{timeout:15000}).catch(()=>{});
+ let item;
+ for(let attempt=0;attempt<3;attempt++){
+  item=await task(actor.page,title,tab);
+  for(const [name,val] of Object.entries(fields))await fillTask(item,name,val);
+  await actor.page.waitForTimeout(400);
+  const intact=await item.evaluate((e,f)=>e.open&&Object.entries(f).every(([n,v])=>{const i=e.querySelector('[name="'+n+'"]');return i&&i.value===String(v);}),fields).catch(()=>false);
+  if(intact)break;
+  if(attempt===2)throw Error('G6_CUSTOMS_TASK_RESET_BEFORE_SUBMIT_'+key);
+ }
  await click(actor,key,API+'/international/'+REF+'/'+tail,item.locator('button[type="submit"]'),b=>isDeepStrictEqual(b,expected),role);
 }
 function eventProof(prev,next,type,ref,stage){
