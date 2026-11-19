@@ -26,6 +26,12 @@
 7. **Produit, PO groupé.** La référence fournisseur simulée et la preuve d'achat sont figées sur la commande de la 1re ligne (FIFO) plutôt que propres au PO (#4587). Il faut une référence par PO. **Lot 2 · [#4609](https://github.com/SamyrFateh/komerce-backend/pull/4609)** : référence et justificatifs rattachés au PO, simulation réservée aux groupes intégralement G6. Après fusion : Opus rejoue M01 KM, CM et CG sur GO propriétaire.
 8. **Produit, Expéditions & Douane.** Un repaint asynchrone referme la tâche `<details>` qu'on vient d'ouvrir, avant la saisie. C'est un défaut réel pour un humain (#4591, même famille que P1 Hub).
 9. **Recette, sourcing manuel jamais rejoué (G6-F B2).** Les 3 runs KM/CM/CG ont pris la branche « ligne automatique » (`auto_line_after_cash:true`) : le chemin « sourcing manuel » (formulaire cockpit) n'est pas couvert par M01. Il faut un scénario dédié parmi les 46. Le cockpit ne se rafraîchit pas seul après l'arrivée de la ligne automatique (défaut produit, rechargement humain requis, lié au point 4).
+**Ergonomie (relevé par les runs, 19/11) :**
+- **UX1, cockpit Hub sans rafraîchissement.** La ligne d'achat automatique arrive en arrière-plan, mais l'écran reste sur « Sourcing requis » et garde « Constituer un PO » grisé. Il faut un rafraîchissement live ou un bandeau « nouvelles données, recharger ».
+- **UX2, cockpit Hub trop long** (environ 4 000 px). Il liste tous les PO, y compris ceux déjà reçus. Il faut un filtre par défaut « en cours » et un repli de l'historique.
+- **UX3, sélection par défaut sans rapport.** À l'ouverture, une commande en anomalie arbitraire est sélectionnée. De plus, changer de marché efface la sélection en cours (#4616).
+- Rappels : le parcours de l'agent relais (point 5), l'achat manuel sans prix (point 1) et la référence du PO groupé (point 7) sont déjà listés.
+
 6. **Runner.** `g6-canonical-replay.js` garde `KM` en dur, hors du chemin dynamique (#4575). Il faut l'aligner sur le profil de marché ou le retirer.
 
 **G6-MARKET — M01 RÉPÉTABLE SUR KM, CM ET CG (Opus)** : 3 runs consécutifs à 15/15 par marché.
