@@ -199,12 +199,12 @@ test('UX1 — nouvelle ligne fournisseur visible sans page.reload et sans perdre
   await mount(page,{view:null,dossier:source});
   const card=page.locator('[data-hlc-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"]');
   await expect(card.locator('[data-hlc-order-state]')).toContainText('Anomalie fournisseur');
-  if(testInfo.repeatEachIndex===0) await page.screenshot({path:testInfo.outputPath('ux1-avant.png'),fullPage:true});
+  if(testInfo.repeatEachIndex===0) { fs.mkdirSync('test-artifacts/ux1',{recursive:true}); await page.screenshot({path:'test-artifacts/ux1/ux1-avant.png',fullPage:true}); }
   // Une nouvelle projection API se présente après l'encaissement, sans écriture dans le test.
   source.orders[0].items.forEach(item=>{item.purchasing_missing=0;item.sourcing_required=false;});
   await page.clock.fastForward(10100);
   await expect(card.locator('[data-hlc-order-state]')).not.toContainText('Anomalie fournisseur');
-  if(testInfo.repeatEachIndex===0) await page.screenshot({path:testInfo.outputPath('ux1-apres.png'),fullPage:true});
+  if(testInfo.repeatEachIndex===0) await page.screenshot({path:'test-artifacts/ux1/ux1-apres.png',fullPage:true});
 });
 
 async function scanConfirmedSku(card) {
