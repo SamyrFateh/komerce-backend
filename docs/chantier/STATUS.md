@@ -34,6 +34,8 @@
 
 6. **Runner.** `g6-canonical-replay.js` garde `KM` en dur, hors du chemin dynamique (#4575). Il faut l'aligner sur le profil de marché ou le retirer. **Lot 6 · [#4612](https://github.com/SamyrFateh/komerce-backend/pull/4612)** : runner historique maintenu et aligné sur profil marché, contrôles M01 KM/CM/CG. Prochaine action : vérifier les preuves et le comportement post-fusion ; aucun run Golden sans GO.
 
+**G6-RECERT — M01 recertifié après G6-SUIVIS et Ergonomie (Opus, 19/11) : PASS 15/15 sur les 3 marchés**, SHA unique `a9a625c9`, oracles G6-F renforcés. KM KNS1G99 (#4635), CM KX87NSI (#4636), CG K50ID0Q (#4637). Lots couverts : #4607, #4609, #4610, #4611, #4612, #4630, #4632, #4633, #4634. **Reste avant les 46 scénarios :** inventaire puis nettoyage par l'écran des commandes orphelines (lot 5, GO du propriétaire), prix de référence KPR-000165 (point 2), puis GO du propriétaire.
+
 **G6-MARKET — M01 RÉPÉTABLE SUR KM, CM ET CG (Opus)** : 3 runs consécutifs à 15/15 par marché.
 - **CM :** K74B6WQ, K1TBS8T, KUHZB3Z (#4592 à #4594).
 - **CG :** KF6YBVR, KL320KI, KRB936P (#4601 à #4603).
