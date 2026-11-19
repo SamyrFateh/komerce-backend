@@ -82,7 +82,7 @@ async function mount(page, {data=payload, role='admin', cancel}={}) {
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
     if (cancel && url.pathname === '/api/orders/'+REF) return route.fulfill({json:{
-      id:'00000000-0000-4000-8000-000000000042', reference:REF,status:data.order.status,payment_mode:data.order.payment.mode
+      id:'00000000-0000-4000-8000-000000000042', reference:REF,status:data.order.status,payment_mode:data.order.payment.mode,simulation_scope:data.order.simulation_scope
     }});
     if (cancel && url.pathname === '/api/orders/00000000-0000-4000-8000-000000000042/cancel') return cancel(route);
     if (url.pathname === PAGE_PATH) {
@@ -183,4 +183,37 @@ test('admin : annuler une recette cash confirmée et relire le statut en fiche',
   await expect(page.getByText('Commande de recette '+REF+' annulée.')).toBeVisible();
   await expect(action).toHaveCount(0);
   expect(posts).toEqual([{reason:'Annulation de recette G6 depuis Order 360 · '+REF}]);
+});
+
+test('G6-D : Order 360 ferme seulement une recette au Hub avec motif, relecture et sans PSP',async({page},info)=>{
+ const data=structuredClone(payload);
+ data.order.id='00000000-0000-4000-8000-000000000042';
+ data.order.status='preparation';
+ data.order.simulation_scope='G6-BUYER';
+ data.order.payment.mode='cash_relais';
+ let posts=[];
+ await mount(page,{data,cancel:route=>route.fulfill({status:409,json:{error:'Interdit'}})});
+ // Le mock POST exact doit être enregistré après la route générique de mount.
+ await page.route(`${ORIGIN}/api/orders/00000000-0000-4000-8000-000000000042/close-g6-hub-recipe`,async route=>{
+   posts.push(route.request().postDataJSON());
+   data.order.status='cancelled';
+   await route.fulfill({json:{status:'cancelled',psp_refund:false}});
+ });
+
+ const button=page.locator('[data-order360-g6-hub-close]');
+ await expect(button).toBeVisible();
+ if(info.repeatEachIndex===0){fs.mkdirSync('test-artifacts/g6-hub',{recursive:true});await page.screenshot({path:'test-artifacts/g6-hub/avant.png',fullPage:true});}
+ page.on('dialog',async d=>d.accept(d.type()==='prompt'?'Fin de recette G6':undefined));
+ await button.click();
+ // La confirmation est une deuxième boîte : Playwright accepte automatiquement
+ // les confirmations si aucun handler n'est installé.
+ await expect(page.getByText('Commande de recette '+REF+' clôturée au Hub.')).toBeVisible();
+ expect(posts).toEqual([{reason:'Fin de recette G6'}]);
+ if(info.repeatEachIndex===0)await page.screenshot({path:'test-artifacts/g6-hub/apres.png',fullPage:true});
+});
+test('G6-D : aucune action sur commande hors simulation G6',async({page})=>{
+ const data=structuredClone(payload);
+ Object.assign(data.order,{status:'preparation',simulation_scope:null});
+ await mount(page,{data});
+ await expect(page.locator('[data-order360-g6-hub-close]')).toHaveCount(0);
 });

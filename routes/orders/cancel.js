@@ -41,9 +41,10 @@
 'use strict';
 
 const express = require('express');
+const { closeG6HubOrder } = require('../../services/g6-hub-recipe-closure');
 const router  = express.Router();
 const db      = require('../../db');
-const { authenticate }             = require('../../middleware/auth');
+const { authenticate, requireRole } = require('../../middleware/auth');
 const { validate }                 = require('../../middleware/validate');
 const { orders }                   = require('../../validators');
 const { getRule }                  = require('../../utils/rules');
@@ -57,6 +58,17 @@ const { createAlert } = require('../../utils/alerts');
 const log = require('../../utils/logger').child({ module: 'cancel' });
 
 // ─── POST /api/orders/:id/cancel ─────────────────────────────────────────────
+
+// G6-CLEANUP : action distincte de l'annulation commerciale, aucun PSP/fournisseur.
+router.post('/:id/close-g6-hub-recipe',authenticate,requireRole(['admin']),async(req,res,next)=>{
+  try{
+    const result=await closeG6HubOrder(req.params.id,{actor:req.user,reason:(req.body||{}).reason});
+    res.json(result);
+  }catch(error){
+    if(error.status)return res.status(error.status).json({error:error.message,code:error.code});
+    next(error);
+  }
+});
 
 router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (req, res, next) => {
   const client = await db.getClient();

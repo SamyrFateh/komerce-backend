@@ -56,16 +56,18 @@ Workflow `staging-g6-cleanup-recette.yml`, déclenché par un titre d’issue du
 |---|---|---|
 | A | PO brouillon | Achats fournisseurs : **Écarter le brouillon**, puis **Annuler** les lignes devenues ouvertes, puis Order 360 **Annuler la commande de recette** |
 | B | sans PO | **Annuler** la ligne (si elle existe), puis Order 360 **Annuler la commande de recette** |
-| C | PO `notified` ou `confirmed` | Order 360 **Annuler la commande de recette** (si le statut est avant la coupure). Le PO groupé reste engagé avec une alerte : `SCREEN_MISSING` pour l’annulation du PO |
-| D | marchandise reçue (PO `hub_received`/`received`/`partially_received`, ou commande `preparation`, `shipped`, `in_transit`, `available`) | `SCREEN_MISSING`, aucun geste |
+| C | PO `notified` ou `confirmed` | Achats fournisseurs **Annuler le PO de recette** (100 % G6, cash, sans débit réel ni réception), puis Order 360 **Annuler la commande de recette** |
+| D | marchandise reçue (PO `hub_received`/`received`/`partially_received`, ou commande `preparation`, `shipped`, `in_transit`, `available`) | Order 360 **Clôturer la recette (marchandise au Hub)**. Refus explicite si un colis est sorti, une unité est partagée, un sac est lié immuablement à une KOM-BOX ou une expédition existe |
 
 Règles : seul `simulation_scope='G6-BUYER'` est touché ; un PO qui contient une commande non G6 (ou dont les commandes ne sont pas lisibles) est refusé (`MIXED_PO`) ; le paiement doit être `cash_relais` ; la règle de coupure serveur `CANCEL_CUTOFF_STATUS` (défaut `shipped`, exclu) est lue et appliquée avant tout geste. Ordre d’exécution : PO brouillons, lignes, commandes A et B, puis C.
 
-### Écrans manquants (non codés, plus petit écran proposé)
+### Deux écrans G6-CLEANUP (PRs de clôture, validation CI requise)
 
-1. **D, marchandise reçue** : sur Order 360 admin, une action « Clôturer la recette (marchandise au Hub) » réservée aux commandes `G6-BUYER`, qui passe outre la coupure, restitue la marchandise en stock Hub (ou la déclare invendue) et clôt la commande, avec motif obligatoire.
-2. **C, PO engagé** : sur le détail d’un PO groupé `notified`/`confirmed` entièrement G6, une action « Annuler le PO de recette » qui annule le PO et ses lignes, sans appel fournisseur.
+1. **D, marchandise reçue** : Order 360 admin « Clôturer la recette (marchandise au Hub) », uniquement G6 cash et avec motif. La marchandise reste traçable en **quarantaine Hub** ; aucun retour fictif en stock vendable. Refus si sac–KOM-BOX scellé/immuable, colis hors Hub, unité partagée ou expédition liée.
+2. **C, PO engagé** : Achats fournisseurs « Annuler le PO de recette », PO `notified`/`confirmed` entièrement G6 cash sans réception ni débit fournisseur vérifié. Annule/détache les lignes, résout ses alertes ciblées, aucun appel fournisseur.
 
 ### Usage et enchaînement
 
 Lancer `plan`, relire le rapport, puis `apply` sur GO du propriétaire. **Recommandation : l’enchaîner en fin de campagne Golden** pour laisser le staging propre.
+
+**Attention :** les clôtures physiques hors Hub ne sont jamais forcées. Elles restent en `REFUSED` avec preuve et motif pour revue humaine. Aucun SQL d’effacement de lien `hub_box_bags` n’est permis.

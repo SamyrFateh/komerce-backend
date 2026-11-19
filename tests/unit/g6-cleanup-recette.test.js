@@ -23,10 +23,10 @@ test('gestures per class and screen-missing cases',()=>{
  const a=classify(E({lines:[L('l1','p1','draft'),L('l2',null,null)],peers:{p1:[peer('K1')]}}));
  expect(a.gestures.map(g=>g.action)).toEqual(['discard_po','cancel_line','cancel_line','cancel_order']);
  const c=classify(E({lines:[L('l1','p1','notified')],peers:{p1:[peer('K1')]}}));
- expect(c.gestures.map(g=>g.action)).toEqual(['cancel_order']);
- expect(c.missing).toContain('PO_ENGAGED');
+ expect(c.gestures.map(g=>g.action)).toEqual(['cancel_g6_po','cancel_order']);
+ expect(c.missing).toEqual([]);
  const d=classify(E({status:'preparation',lines:[L('l1','p1','hub_received')],peers:{p1:[peer('K1')]}}));
- expect(d.verdict).toBe('SCREEN_MISSING');expect(d.gestures).toEqual([]);
+ expect(d.verdict).toBe('PLANNED');expect(d.gestures.map(g=>g.action)).toEqual(['close_hub_order']);
  expect(classify(E({status:'ordered'}),{cutoff:'ordered'}).missing).toContain('CUTOFF');
  expect(classify(E({mode:'stripe_eur'})).missing).toContain('PAYMENT_MODE');
 });
@@ -46,7 +46,7 @@ test('no gesture outside G6-BUYER, plan order and guard',()=>{
   E({ref:'A1',lines:[L('a','pa','draft')],peers:{pa:[peer('A1')]}}),
   E({ref:'N1',scope:null})]);
  expect(plan.steps.map(s=>s.action+':'+s.reference)).toEqual(
-  ['discard_po:A1','cancel_line:A1','cancel_line:B1','cancel_order:A1','cancel_order:B1','cancel_order:C1']);
+  ['discard_po:A1','cancel_line:A1','cancel_line:B1','cancel_g6_po:C1','cancel_order:A1','cancel_order:B1','cancel_order:C1']);
  expect(assertGestureAllowed(plan.steps[0],plan)).toBe(true);
  expect(()=>assertGestureAllowed({action:'cancel_order',order_id:'o-N1',reference:'N1'},plan)).toThrow('G6_CLEANUP_ORDER_NOT_PLANNED');
  expect(()=>assertGestureAllowed({action:'cancel_order',order_id:'o-X',reference:'A1'},plan)).toThrow('G6_CLEANUP_GESTURE_NOT_IN_PLAN');
@@ -68,4 +68,16 @@ test('cutoff bloque à partir du statut de coupure, pas avant',()=>{
  expect(cutoffBlocks('ordered','shipped')).toBe(false);
  expect(cutoffBlocks('preparation','shipped')).toBe(false);
  expect(cutoffBlocks('available','shipped')).toBe(true);
+});
+
+test('G6-C grouped PO deduped and G6-D Hub closure ordered after C',()=>{
+ const c1=E({ref:'C1',status:'ordered',lines:[L('a','po1','confirmed')],peers:{po1:[peer('C1'),peer('C2')]}});
+ const c2=E({ref:'C2',status:'ordered',lines:[L('b','po1','confirmed')],peers:{po1:[peer('C1'),peer('C2')]}});
+ const d=E({ref:'D1',status:'available',lines:[L('d','po2','hub_received')],peers:{po2:[peer('D1')]}});
+ const plan=buildPlan([c1,c2,d]);
+ expect(plan.steps.filter(g=>g.action==='cancel_g6_po')).toHaveLength(1);
+ expect(plan.steps.filter(g=>g.action==='close_hub_order')).toHaveLength(1);
+ expect(plan.steps.at(-1)).toMatchObject({action:'close_hub_order',reference:'D1'});
+ const mixed=classify(E({ref:'D2',status:'available',lines:[L('d','p3','received')],peers:{p3:[peer('D2'),peer('LIVE','LIVE')]}}));
+ expect(mixed).toMatchObject({verdict:'REFUSED',reason:'MIXED_PO'});
 });
