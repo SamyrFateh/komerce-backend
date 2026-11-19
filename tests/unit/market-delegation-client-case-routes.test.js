@@ -46,3 +46,9 @@ describe('market-delegation client-case routes', () => {
     expect(mounts).toHaveLength(1);
   });
 });
+
+test('la consultation des litiges repose sur client.read, pas sur le droit de traitement',()=>{
+  expect(routeSource).toContain("primaryCapability: 'client.read'");
+  expect(routeSource).toContain("fallbackCapability: 'client.case.handle'");
+  expect(routeSource).toContain("updateDisputeWorkflow(client");
+});
