@@ -158,7 +158,7 @@ router.post('/po/:po_id/detach', ...groupedGuard, async (req, res, next) => {
 // G6-CLEANUP : admin seulement, aucun fournisseur ni PSP contacté.
 router.post('/po/:po_id/cancel-g6-recipe', ...guard, async (req,res,next)=>{
   try{res.json(await g6RecipePo.cancelRecipePo(req.params.po_id,{actor:req.user,reason:(req.body||{}).reason}));}
-  catch(err){groupedError(err,res,next);}
+  catch(err){next(err);} // error-handler journalise code métier, SQLSTATE et contrainte.
 });
 
 router.post('/po/:po_id/discard', ...groupedGuard, async (req, res, next) => {
