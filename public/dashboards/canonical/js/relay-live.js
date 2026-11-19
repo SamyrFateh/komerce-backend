@@ -253,7 +253,7 @@
             <strong>Remettre un colis</strong><small>Ouvrir le comptoir Remises →</small>
           </a>
         </nav>
-        ${relayWorkboard(p,data)}`
+        ${relayWorkboard(p,data)}
         ${num(k.incidents_ouverts)>0?`<div class="kmc-relay-attention">
           <strong>${num(k.incidents_ouverts)} incident(s) ouvert(s)</strong>
           <a href="${BASE}?view=incidents" data-cockpit-nav>Consulter les anomalies →</a></div>`:''}
