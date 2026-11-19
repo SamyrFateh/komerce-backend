@@ -167,3 +167,20 @@ describe('POST /api/v2/alerts/:id/ack', () => {
     expect(res.status).toBe(500);
   });
 });
+
+describe('G6 : résolution ciblée des alertes PO engagées par le propriétaire Notifications',()=>{
+ const {resolveRecipePoAlerts}=require('../../utils/alerts');
+ test('ne résout que les alertes des commandes G6 du PO exact dans une transaction fournie',async()=>{
+  const q={query:jest.fn().mockResolvedValue({rowCount:2})};
+  await expect(resolveRecipePoAlerts(q,{poId:'po-test',orderIds:['order-g6'],actorId:'admin'})).resolves.toBe(2);
+  const [sql,params]=q.query.mock.calls[0];
+  expect(sql).toContain("type='order_cancel_purchasing_blocked'");
+  expect(sql).toContain("resolved_at IS NULL");
+  expect(sql).toContain("description LIKE '%'||$2::text||'%'");
+  expect(params).toEqual([['order-g6'],'po-test','admin']);
+ });
+ test('n’accepte aucun périmètre absent ni client hors transaction',async()=>{
+  await expect(resolveRecipePoAlerts(null,{poId:'po',orderIds:['x'],actorId:'admin'})).rejects.toThrow();
+  await expect(resolveRecipePoAlerts({query:jest.fn()},{poId:'po',orderIds:[],actorId:'admin'})).rejects.toThrow();
+ });
+});
