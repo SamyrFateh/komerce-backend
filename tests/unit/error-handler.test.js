@@ -271,3 +271,26 @@ describe('notFoundHandler', () => {
     expect(res.json.mock.calls[0][0].requestId).toBeNull();
   });
 });
+
+
+describe('G6-CLEANUP — diagnostics métier sans fuite SQL', () => {
+  it('conserve le code G6_HUB_* et le journalise', () => {
+    const req=makeReq({method:'POST',originalUrl:'/api/orders/id/close-g6-hub-recipe'});
+    const res=makeRes();
+    errorHandler({status:409,code:'G6_HUB_PHYSICAL_PROOF_MISSING',message:'Aucune unité Hub vérifiable'},req,res,jest.fn());
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json.mock.calls[0][0]).toMatchObject({code:'G6_HUB_PHYSICAL_PROOF_MISSING',error:'Aucune unité Hub vérifiable'});
+    expect(mockLogWarn).toHaveBeenCalledWith(expect.objectContaining({businessCode:'G6_HUB_PHYSICAL_PROOF_MISSING'}),expect.any(String));
+  });
+  it('journalise le SQLSTATE et la contrainte du refus G6_PO, sans SQL brut',()=>{
+    const req=makeReq({method:'POST',originalUrl:'/api/purchasing/po/id/cancel-g6-recipe'});
+    const res=makeRes();
+    errorHandler({status:409,code:'G6_PO_DB_CONSTRAINT',message:'Annulation PO bloquée',
+      pgCode:'23514',constraint:'trg_purchase_lines_guard_attachment',
+      dbReason:'purchase_line_detach_forbidden'},req,res,jest.fn());
+    expect(res.json.mock.calls[0][0]).toMatchObject({code:'G6_PO_DB_CONSTRAINT',pg_code:'23514',
+      constraint:'trg_purchase_lines_guard_attachment',db_reason:'purchase_line_detach_forbidden'});
+    expect(mockLogWarn).toHaveBeenCalledWith(expect.objectContaining({businessCode:'G6_PO_DB_CONSTRAINT',
+      pgCode:'23514',dbConstraint:'trg_purchase_lines_guard_attachment'}),expect.any(String));
+  });
+});
