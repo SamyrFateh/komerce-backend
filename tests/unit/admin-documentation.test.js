@@ -18,6 +18,13 @@ describe('Documentation produit Canonical', () => {
   const routes = read('bootstrap/html-routes.js');
   const guide = read('public/dashboards/canonical/js/documentation.js');
 
+  test('coque documentaire visible : N1 borné avant le bootstrap asynchrone', () => {
+    const styles = read('public/dashboards/canonical/css/documentation.css');
+    expect(html).toContain('<body class="kmc-shell-v4" data-admin-generation="canonical">');
+    expect(styles).toMatch(/\.kmc-admin-navigation\s*\{\s*width:var\(--kmc-shell-sidebar-width/);
+    expect(styles).toContain('> .kmc-documentation { display:block;');
+  });
+
   test('une seule entrée documentaire, hors des domaines métier', () => {
     expect(nav).toContain("label: 'Documentation', href: '/admin/documentation'");
     expect(nav).toContain("id: 'help'");
