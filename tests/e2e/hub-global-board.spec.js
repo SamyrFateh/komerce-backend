@@ -61,7 +61,7 @@ test.describe('Hub global sans scope marché',()=>{
   test.each(['admin','agent_hub','market_operator','agent_relais','finance','sourcing','support'])(
     '%s peut voir les commandes KM et CM sans contexte marché ni droit de mutation',async({page},role)=>{
       const calls=await mount(page,role);
-      await expect(page.getByText('Toutes les commandes import · Tous les marchés')).toBeVisible();
+      await expect(page.getByText(role === 'market_operator' ? 'Commandes import · Mes marchés autorisés' : 'Toutes les commandes import · Tous les marchés')).toBeVisible();
       await expect(page.locator('[data-hub-global-order="KM-100"]')).toContainText('2 non reçue(s)');
       await expect(page.locator('[data-hub-global-order="CM-101"]')).toContainText('1 à contrôler');
       expect(calls).toEqual(['GET /api/hub/board']);
