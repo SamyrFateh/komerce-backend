@@ -653,6 +653,38 @@
     });
   }
 
+  // G6-CLEANUP D : le serveur garde la preuve physique et l'autorité de la transaction.
+  function renderHubRecipeClosure(options,order) {
+    if(options.user?.role!=='admin'||order.simulation_scope!=='G6-BUYER'||
+       !['preparation','shipped','in_transit','available'].includes(order.status))return;
+    const doc=options.document,section=doc.createElement('section');
+    const btn=text(doc,'button','kmc-workspace-action','Clôturer la recette (marchandise au Hub)');
+    btn.type='button';btn.setAttribute('data-order360-g6-hub-close','');
+    const feedback=text(doc,'p','','');feedback.setAttribute('role','status');
+    section.appendChild(btn);section.appendChild(feedback);options.root.appendChild(section);
+    btn.addEventListener('click',async()=>{
+      if(btn.disabled)return;
+      const reason=doc.defaultView.prompt('Motif obligatoire de clôture G6 (8 caractères minimum) :');
+      if(!reason||reason.trim().length<8)return;
+      if(!doc.defaultView.confirm('Clôturer la recette '+order.reference+' uniquement si la marchandise est toujours au Hub ?'))return;
+      btn.disabled=true;
+      try{
+        const latest=await jsonRequest(options.fetch,'/api/orders/'+encodeURIComponent(order.reference));
+        if(latest.reference!==order.reference||latest.status!==order.status||
+           latest.simulation_scope!=='G6-BUYER'||latest.payment_mode!=='cash_relais')
+          throw Error('Dossier G6 modifié ou hors périmètre');
+        const response=await options.fetch('/api/orders/'+encodeURIComponent(latest.id)+'/close-g6-hub-recipe',{
+          method:'POST',credentials:'include',headers:{'Content-Type':'application/json',Accept:'application/json'},
+          body:JSON.stringify({reason:reason.trim()})});
+        const body=await response.json().catch(()=>({}));
+        if(!response.ok)throw Error(body.error||'Clôture G6 refusée');
+        const refreshed=await mount(options);
+        if(refreshed.payload.order.status!=='cancelled')throw Error('Relire la fiche : annulation non prouvée');
+        options.root.appendChild(text(doc,'p','','Commande de recette '+order.reference+' clôturée au Hub.'));
+      }catch(error){feedback.textContent=error.message+' Vérifier la fiche avant tout nouvel essai.';btn.disabled=false;}
+    });
+  }
+
   async function mount(options) {
     const rootNode = options.root;
     const doc = options.document;
@@ -672,6 +704,7 @@
       const payload = await jsonRequest(fetchFn, endpoint);
       renderPayload(rootNode, ui, doc, payload);
       renderRecipeCancellation(options, payload.order);
+      renderHubRecipeClosure(options, payload.order);
       // Ancre #couts (lien depuis Finance) : la section n'existe qu'après le rendu, le navigateur ne peut pas y défiler seul.
       const hash = options.location ? options.location.hash : (globalThis.location && globalThis.location.hash);
       if (hash === '#couts') {
