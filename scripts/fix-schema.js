@@ -64,6 +64,49 @@ async function fixAdminHash() {
 // otherwise acquire a table lock even when the object exists in PostgreSQL.
 // Catalog checks never become the source of truth for missing objects: the
 // original idempotent DDL still runs whenever the object is not found.
+/**
+ * Lock timeout only for legacy startup DDL. Avoid SET on a shared pool session.
+ * A dedicated client and SET LOCAL ensure the 3s bound disappears on COMMIT or
+ * ROLLBACK; a failed ROLLBACK discards the client entirely.
+ *
+ * This is a per-lock wait limit, not a 3-second deadline for all migrations.
+ */
+async function runStartupDdlWithLockTimeout(query, sql) {
+  const statement = String(sql).trim();
+  const isDdl = /^(?:ALTER\\s+(?:TABLE|TYPE|VIEW)|CREATE\\s+(?:UNIQUE\\s+)?INDEX|CREATE\\s+(?:TABLE|VIEW)|DROP\\s+(?:TABLE|INDEX|VIEW)|DO\\s+\\$\\$)\\b/i.test(statement)
+    || /^DO\\s+\\$\\$/i.test(statement);
+  const concurrentIndex = /^CREATE\\s+(?:UNIQUE\\s+)?INDEX\\s+CONCURRENTLY\\b/i.test(statement);
+  // Ineligible scripts retain their existing behavior. CREATE INDEX CONCURRENTLY
+  // must not run inside a transaction.
+  if (!isDdl || concurrentIndex) return query.query(sql);
+
+  if (typeof query.connect !== 'function') {
+    // Old Jest stubs supply query() only; production must NEVER silently run
+    // a DDL without its dedicated, transaction-local 3s lock timeout.
+    if (process.env.NODE_ENV === 'test') return query.query(sql);
+    throw new Error('STARTUP_DDL_DEDICATED_CLIENT_REQUIRED');
+  }
+
+  const client = await query.connect();
+  let discard = false;
+  try {
+    await client.query('BEGIN');
+    await client.query("SET LOCAL lock_timeout = '3s'");
+    const result = await client.query(sql);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (_) {
+      discard = true;
+    }
+    throw error;
+  } finally {
+    client.release(discard);
+  }
+}
+
 async function applySchemaDdlWhenMissing(query, sql) {
   const statement = String(sql).trim();
   // Only classify a *single* DDL statement; never skip a multi-statement migration.
@@ -93,7 +136,7 @@ async function applySchemaDdlWhenMissing(query, sql) {
       if (result.rows?.[0]?.exists === true) return { skipped: true, kind: index ? 'index' : 'table' };
     }
   }
-  return query.query(sql);
+  return runStartupDdlWithLockTimeout(query, sql);
 }
 
 async function fixMissingSchema() {
@@ -433,4 +476,4 @@ await run('customs_taux_mensuel view', `
   console.log('🔧 Schema migrations complete.');
 }
 
-module.exports = { fixAdminHash, fixMissingSchema, applySchemaDdlWhenMissing };
+module.exports = { fixAdminHash, fixMissingSchema, applySchemaDdlWhenMissing, runStartupDdlWithLockTimeout };
