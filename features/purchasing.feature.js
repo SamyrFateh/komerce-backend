@@ -142,6 +142,7 @@ module.exports = {
       'migrations/225_purchase_orders_exact_supplier_identity.sql',
       'migrations/239_purchase_orders_canonical_supplier_money.sql',
       'migrations/263_purchase_lines_foundation.sql',
+      'migrations/464_g6_recipe_po_detachment.sql',
       'migrations/264_purchase_line_progress_view.sql',
       'migrations/266_purchase_orders_grouped_form.sql',
       'migrations/357_purchase_orders_market_scope.sql',
