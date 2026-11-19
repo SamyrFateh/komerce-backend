@@ -309,7 +309,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 0
 - internal APIs: 17
 - dependencies (consumes): 4 — orders, infrastructure, logistics, decision-signals
-- consumers: 6 — dashboard, logistics, notifications, payments, platform-ops, purchasing
+- consumers: 7 — dashboard, logistics, notifications, orders, payments, platform-ops, purchasing
 
 ### infrastructure _(technical-foundation)_
 
@@ -515,7 +515,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 13
 - interfaces exposed: 27
 - internal APIs: 30
-- dependencies (consumes): 23 — dashboard, market-control-plane, platform-ops, infrastructure, decision-signals, business-rules, wallet, economic-engine, logistics, catalog, market-autonomy, local-stock, market, purchasing, loyalty, payments, auth, auth-identity, customs, documents, notifications, refunds, shared-cart
+- dependencies (consumes): 24 — dashboard, market-control-plane, platform-ops, infrastructure, decision-signals, incident-management, business-rules, wallet, economic-engine, logistics, catalog, market-autonomy, local-stock, market, purchasing, loyalty, payments, auth, auth-identity, customs, documents, notifications, refunds, shared-cart
 - consumers: 24 — auth-identity, catalog, customs, dashboard, documents, economic-engine, incident-management, infrastructure, inventory, logistics, loyalty, market-control-plane, market-delegation, market-operator-dashboard, notifications, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, unsold-resolution, wallet, admin-dashboard
 
 ### payments _(business-feature)_
@@ -2092,6 +2092,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | orders | platform-ops (`platform-ops (monitoring/exploitation transverse observé dans le code)`) | ✔ |
 | orders | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
 | orders | decision-signals (`decision-signals (sink durable Action Center pour le signal de clôture financière en attente des faits économiques via signal-service)`) | ✔ |
+| orders | incident-management (`incident-management (G6-CLEANUP : création gouvernée d’un incident de quarantaine pour chaque unité physique conservée au Hub, via incident-write-service)`) | ✔ |
 | orders | business-rules (`business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: routes/orders/create.js -> utils/rules.js ; routes/orders/qr.js -> utils/rules.js ; routes/orders/list.js -> utils/rules.js ; +1)`) | ✔ |
 | orders | wallet (`wallet (application credit)`) | ✔ |
 | orders | economic-engine (`economic-engine (cout figure a la commande)`) | ✔ |
@@ -2514,7 +2515,7 @@ Meta Graph monté : oui.
 | logistics | market | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | logistics | market-delegation | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | logistics | notifications | static-code | 17 | **DECLARED_AND_OBSERVED** |
-| logistics | orders | static-code, data-write, data-read | 42 | **DECLARED_AND_OBSERVED** |
+| logistics | orders | static-code, data-write, data-read | 43 | **DECLARED_AND_OBSERVED** |
 | logistics | payments | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | logistics | purchasing | static-code, data-read | 16 | **DECLARED_AND_OBSERVED** |
 | logistics | refunds | static-code | 4 | **DECLARED_AND_OBSERVED** |
@@ -2584,6 +2585,7 @@ Meta Graph monté : oui.
 | orders | decision-signals | static-code, data-write | 2 | **DECLARED_AND_OBSERVED** |
 | orders | documents | static-code, interface | 10 | **DECLARED_AND_OBSERVED** |
 | orders | economic-engine | static-code | 10 | **DECLARED_AND_OBSERVED** |
+| orders | incident-management | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | orders | infrastructure | static-code, interface | 71 | **DECLARED_AND_OBSERVED** |
 | orders | local-stock | static-code, interface | 5 | **DECLARED_AND_OBSERVED** |
 | orders | logistics | static-code, interface, data-read | 40 | **DECLARED_AND_OBSERVED** |
