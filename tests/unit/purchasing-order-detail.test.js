@@ -3,22 +3,25 @@
 
 jest.mock('../../db', () => ({ query: jest.fn() }));
 jest.mock('../../services/purchasing-grouped-service', () => ({ getGroupedPurchaseOrder: jest.fn() }));
+jest.mock('../../services/g6-recipe-po-cleanup-service', () => ({ recipePoEligibility: jest.fn() }));
 const db = require('../../db');
 const { getGroupedPurchaseOrder } = require('../../services/purchasing-grouped-service');
 const { getPurchaseOrderDetail } = require('../../services/purchasing-order-detail');
+const { recipePoEligibility } = require('../../services/g6-recipe-po-cleanup-service');
 
 const PO = '00000000-0000-0000-0000-000000000001';
 const detail = { purchase_order: { id: PO }, lines: [{ market_id: 'KM' }, { market_id: 'CM' }], markets: ['KM', 'CM'], multi_market: true };
 const empty = { orders: [], order_lines: [], groups: [], group_members: [], payments: [], proofs: [], events: [] };
 
-beforeEach(() => { jest.resetAllMocks(); });
+beforeEach(() => { jest.resetAllMocks(); recipePoEligibility.mockResolvedValue({ eligible: false, code: 'G6_PO_STATUS_REFUSED' }); });
 
 test('adds the execution projection without changing the existing detail or market scope', async () => {
   getGroupedPurchaseOrder.mockResolvedValueOnce(detail);
   db.query.mockResolvedValueOnce({ rows: [{ execution: empty }] });
   const result = await getPurchaseOrderDetail(PO);
   expect(getGroupedPurchaseOrder).toHaveBeenCalledWith(PO, db);
-  expect(result).toEqual({ ...detail, supplier_execution: empty });
+  expect(result).toEqual({ ...detail, supplier_execution: empty, g6_recipe_cleanup: { eligible: false, code: 'G6_PO_STATUS_REFUSED' } });
+  expect(recipePoEligibility).toHaveBeenCalledWith(PO, db);
   expect(result.lines).toBe(detail.lines);
   expect(db.query).toHaveBeenCalledTimes(1);
   expect(db.query.mock.calls[0][1]).toEqual([PO]);
@@ -59,4 +62,14 @@ test('l’état bloquant api_ambiguous_blocked est calculé côté serveur avec 
   expect(sql).toContain('DISTINCT ON (provider)');
   expect(sql).toContain("l.outcome = 'ambiguous'");
   expect(sql).toContain("(l.facts->>'replay_blocked')::boolean");
+});
+
+
+test('projection PO : le serveur décide seul si le geste G6 apparaît', async () => {
+  getGroupedPurchaseOrder.mockResolvedValueOnce(detail);
+  recipePoEligibility.mockResolvedValueOnce({eligible:true,code:'G6_PO_ALLOWED'});
+  db.query.mockResolvedValueOnce({rows:[{execution:empty}]});
+  const result=await getPurchaseOrderDetail(PO);
+  expect(result.g6_recipe_cleanup).toEqual({eligible:true,code:'G6_PO_ALLOWED'});
+  expect(result.lines).toBe(detail.lines);
 });
