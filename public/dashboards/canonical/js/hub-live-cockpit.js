@@ -88,6 +88,14 @@
     const state = ctx.state;
     const orders = [...(d.orders || [])].sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
     const pos = (d.purchase_orders || []).filter((p) => p.status !== 'cancelled');
+    // UX2 : les PO partiellement reçus restent EN COURS ; seuls les PO achevés
+    // passent en historique. Le dossier complet reste dans poById et sélectionnable.
+    const isHistoricalPo = po => !po.step?.partial &&
+      (['received','closed','completed'].includes(po.status) ||
+       (po.step?.key === 'received' && Number(po.totals?.effective) > 0 &&
+        Number(po.totals?.received) >= Number(po.totals?.effective)));
+    const activePos = pos.filter(po => !isHistoricalPo(po));
+    const historyPos = pos.filter(isHistoricalPo);
     const batches = cockpit.need_batches || [];
     const todo = cockpit.todo || [];
     const physical = cockpit.physical || [];
@@ -112,6 +120,8 @@
         sel: activeEl && typeof activeEl.selectionStart === 'number' ? [activeEl.selectionStart, activeEl.selectionEnd] : null,
       };
     }
+    const oldHistory = host.querySelector && host.querySelector('[data-hlc-po-history]');
+    if (oldHistory) state.poHistoryOpen = oldHistory.open;
     state.epoch = (state.epoch || 0) + 1;
     host.replaceChildren();
     const rootEl = el(doc, 'div', 'hlc');
@@ -143,8 +153,38 @@
     }
     const purchasing = (path) => `/api/purchasing/${path}`;
     function paint() { render(host, ctx); }
+    // UX3 — partage d'une sélection sans perdre marché, vue ni filtres dans l'URL.
+    const win = doc.defaultView;
+    const isHubRoute = () => win?.location?.pathname === '/admin/hub-live';
+    function readUrlSelection() {
+      if (!isHubRoute()) return null;
+      const value = new win.URLSearchParams(win.location.search).get('sel') || '';
+      const i = value.indexOf(':');
+      if (i < 1) return null;
+      const type = value.slice(0, i), id = value.slice(i + 1);
+      return ['po','order','need','bag','box'].includes(type) && id.length > 0 && id.length < 160 ? {type,id} : null;
+    }
+    function putUrlSelection(type, id) {
+      if (!isHubRoute() || !win.history?.pushState) return;
+      const url = new win.URL(win.location.href);
+      const key = type && id ? type + ':' + id : '';
+      if (url.searchParams.get('sel') === key) return;
+      if (key) url.searchParams.set('sel',key);
+      else url.searchParams.delete('sel');
+      win.history.pushState(win.history.state,'',url.pathname+url.search+url.hash);
+    }
+    if (!state.urlSelectionListener && isHubRoute() && win.addEventListener) {
+      state.urlSelectionListener = true;
+      win.addEventListener('popstate', () => {
+        state.sel = readUrlSelection();
+        state.selectionInitialized = true;
+        state.form = null;
+        render(host,ctx);
+      });
+    }
     function select(type, id) {
       state.sel = { type, id };
+      putUrlSelection(type,id);
       if (state.form && !((type === 'po' && state.form.po === id) || (type === 'box' && state.form.box === id))) state.form = null;
       paint();
     }
@@ -210,9 +250,26 @@
       if (s.box_unit_id) return { type: 'box', id: s.box_unit_id };
       return null;
     }
-    if (!state.sel) {
-      const first = todo.map(todoSel).find(Boolean);
-      state.sel = first || (orders[0] ? { type: 'order', id: orders[0].id } : null);
+    if (!state.selectionInitialized) {
+      const linked = readUrlSelection();
+      const actionable = todo.filter(item => item.viewer_can_act !== false).map(todoSel).find(Boolean);
+      state.sel = linked || actionable || null;
+      state.selectionInitialized = true;
+    }
+    if (state.sel) {
+      const known = state.sel.type === 'po' ? poById.has(state.sel.id) :
+        state.sel.type === 'order' ? orderById.has(state.sel.id) :
+        state.sel.type === 'need' ? (batches.some(b => b.groups.some(g => g.key === state.sel.id)) ||
+          orders.some(o => o.items.some(i => `src:${o.id}:${i.id}` === state.sel.id))) :
+        state.sel.type === 'bag' ? [...(d.bags_open || []),...(d.bags_ready || [])].some(b => b.unit_id === state.sel.id) :
+        state.sel.type === 'box' ? (d.boxes || []).some(b => b.unit_id === state.sel.id) : false;
+      // La tâche serveur est une référence métier valide même si la liste
+      // compacte n'inclut pas le dossier : conserver sa sélection au clic.
+      const inTodo = todo.some(item => {
+        const target = todoSel(item);
+        return target && target.type === state.sel.type && target.id === state.sel.id;
+      });
+      if (!known && !inTodo) state.sel = null;
     }
     const sel = state.sel;
     const selKey = sel ? `${sel.type}:${sel.id}` : '';
@@ -405,8 +462,19 @@
       c.appendChild(chips);
       center.appendChild(c);
     });
-    if (pos.length) center.appendChild(el(doc, 'span', 'hlc-label', 'PO fournisseurs'));
-    pos.forEach((po) => {
+    if (pos.length) {
+      const counts = el(doc, 'div', 'hlc-po-counts');
+      counts.setAttribute('data-hlc-po-counts', '');
+      ['draft','validation','engaged','sent','received'].forEach(key => {
+        const count = pos.filter(po => po.step?.key === key).length;
+        const item = el(doc, 'span', 'hlc-po-count', `${STEP_LABELS[key] || key} : ${num(count)}`);
+        item.setAttribute('data-hlc-po-count', key);
+        counts.appendChild(item);
+      });
+      center.appendChild(counts);
+    }
+    if (activePos.length) center.appendChild(el(doc, 'span', 'hlc-label', `En cours (${activePos.length})`));
+    const renderPoCard = (po, destination) => {
       const c = card('hlc-po', { 'data-hlc-po': po.id }, selKey === `po:${po.id}`, rel.pos.has(po.id), () => select('po', po.id));
       const head = el(doc, 'div', 'hlc-row');
       const refNode = el(doc, 'span', 'hlc-ref', poRef(po));
@@ -457,8 +525,21 @@
         feeds.appendChild(row);
       });
       c.appendChild(feeds);
-      center.appendChild(c);
-    });
+      destination.appendChild(c);
+    };
+    activePos.forEach(po => renderPoCard(po,center));
+    if (historyPos.length) {
+      const history=doc.createElement('details');
+      history.className='hlc-po-history';
+      history.setAttribute('data-hlc-po-history','');
+      history.open=Boolean(state.poHistoryOpen);
+      const summary=el(doc,'summary','hlc-po-history-summary',`Historique (${historyPos.length})`);
+      history.appendChild(summary);
+      historyPos.forEach(po => renderPoCard(po,history));
+      center.appendChild(history);
+    }
+    if (!activePos.length && !needGroups.length && !sourcingNeeds.length && historyPos.length)
+      center.appendChild(el(doc,'p','hlc-empty','Aucun PO en cours ; consulter l’historique.'));
     if (!pos.length && !needGroups.length && !sourcingNeeds.length) center.appendChild(el(doc, 'p', 'hlc-empty', 'Aucun besoin ouvert ni PO sur ce marché.'));
 
     // ── Colonne 3 : exécution physique ──
@@ -610,7 +691,7 @@
     }
     function lineageFor() {
       let title = ''; let sub = ''; let nodes = []; let blocker = '';
-      if (!sel) return { title: '—', sub: '', nodes, blocker };
+      if (!sel) return { title: 'Sélectionnez un élément', sub: 'Choisissez un dossier, un besoin ou une PO dans les colonnes du Hub.', nodes, blocker };
       if (sel.type === 'order') {
         const o = orderById.get(sel.id);
         if (o) {

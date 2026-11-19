@@ -62,6 +62,7 @@ jest.mock('../../services/purchasing-grouped-service', () => ({
 }));
 
 jest.mock('../../services/purchasing-order-detail', () => ({ getPurchaseOrderDetail: jest.fn() }));
+jest.mock('../../services/g6-recipe-po-cancel-service',()=>({cancelRecipePo:jest.fn(),readEligibility:jest.fn()}));
 jest.mock('../../services/purchasing-canonical-money', () => ({ resolveCanonicalMappingMoney: jest.fn() }));
 
 jest.mock('../../services/purchasing-engagement-service', () => ({
@@ -688,5 +689,22 @@ describe('forme regroupée — routes (PR 4)', () => {
       expect(res.status).toBe(409);
       expect(res.body.code).toBe('PURCHASE_ORDER_GROUPED_USE_PO_ROUTES');
     }
+  });
+});
+
+describe('G6-CLEANUP : annulation PO réservée à admin',()=>{
+  const service=require('../../services/g6-recipe-po-cancel-service');
+  const po='00000000-0000-4000-8000-000000000011';
+  it('refuse un agent Hub et ne contacte pas le service',async()=>{
+    currentUser={id:'agent',role:'agent_hub'};
+    const response=await request(app).post('/api/purchasing/po/'+po+'/cancel-g6-recipe').send({reason:'Nettoyage G6'});
+    expect(response.status).toBe(403);
+    expect(service.cancelRecipePo).not.toHaveBeenCalled();
+  });
+  it('transmet le motif et l acteur admin',async()=>{
+    service.cancelRecipePo.mockResolvedValueOnce({purchase_order_id:po,status:'cancelled',external_calls:0});
+    const response=await request(app).post('/api/purchasing/po/'+po+'/cancel-g6-recipe').send({reason:'Nettoyage recette autorisé'});
+    expect(response.status).toBe(200);
+    expect(service.cancelRecipePo).toHaveBeenCalledWith(po,{actor:currentUser,reason:'Nettoyage recette autorisé'});
   });
 });

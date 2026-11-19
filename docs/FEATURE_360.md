@@ -1918,10 +1918,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Architectural debt** (1) :
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "market-control-plane" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 109 fichier(s) déclaré(s), boutique: 19 fichier(s)
+**Implementation** : 110 fichier(s) déclaré(s), boutique: 19 fichier(s)
   - boutique : 3
   - routes : 11
-  - services : 30
+  - services : 31
   - tests : 64
   - utils : 1
 
@@ -2290,11 +2290,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 176 fichier(s) déclaré(s)
+**Implementation** : 177 fichier(s) déclaré(s)
   - migrations : 17
   - routes : 1
   - scripts : 14
-  - services : 52
+  - services : 53
   - tests : 92
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="purchasing"]_

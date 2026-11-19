@@ -66,6 +66,7 @@ module.exports = {
       'services/order-cost-snapshot.js',
       'services/order-display-snapshot.js',
       'services/order-status-machine.js',
+      'services/g6-hub-recipe-closure.js',
       'services/order-financial-closure-reconciliation.js',
       'services/order-financial-closure-signal.js',
       'services/order-checkout-service.js',

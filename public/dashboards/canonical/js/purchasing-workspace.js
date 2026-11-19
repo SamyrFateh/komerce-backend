@@ -916,6 +916,21 @@
       bar.appendChild(discard);
       bar.appendChild(submit);
     }
+    if (context.user?.role==='admin' && ['notified','confirmed'].includes(po.status) &&
+        detail.g6_recipe?.eligible===true) {
+      const cancelG6=makeButton(doc,'Annuler le PO de recette','cancel-g6-po',true);
+      cancelG6.addEventListener('click',()=>{
+        const reason=context.prompt('Motif de clôture G6 (obligatoire) :');
+        if(!reason||reason.trim().length<8)return;
+        if(!context.confirm('Annuler le PO de recette '+po.id+' et détacher ses lignes, sans contact fournisseur ?'))return;
+        context.act(cancelG6,'cancel-g6-po',{
+          url:`${ENDPOINT}/po/${encodeURIComponent(po.id)}/cancel-g6-recipe`,
+          body:{reason:reason.trim()},successMessage:'PO de recette annulé ; lignes détachées.',
+          onSuccess:()=>context.closePo(),
+        });
+      });
+      bar.appendChild(cancelG6);
+    }
     const close = makeButton(doc, 'Retour à la liste', 'close-po', true);
     close.addEventListener('click', () => context.closePo());
     bar.appendChild(close);

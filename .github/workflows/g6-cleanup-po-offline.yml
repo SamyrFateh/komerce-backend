@@ -1,0 +1,49 @@
+name: G6 cleanup PO engaged — local guards and Chromium
+on:
+  pull_request:
+    paths:
+      - 'services/g6-recipe-po-cancel-service.js'
+      - 'services/purchasing-order-detail.js'
+      - 'routes/purchasing.js'
+      - 'public/dashboards/canonical/js/purchasing-workspace.js'
+      - 'tests/unit/g6-recipe-po-cancel-service.test.js'
+      - 'tests/unit/purchasing-route.test.js'
+      - 'tests/e2e/purchasing-workspace.spec.js'
+      - '.github/workflows/g6-cleanup-po-offline.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  g6-po:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    env:
+      NODE_ENV: test
+      CI: 'true'
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: git fetch origin main:refs/remotes/origin/main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Preflight obligatoire
+        run: npm run pr:preflight
+      - name: Jest refus hors G6 et transactions PO
+        run: npx jest --config jest.unit.config.js --runInBand tests/unit/g6-recipe-po-cancel-service.test.js tests/unit/purchasing-route.test.js
+      - run: npx playwright install --with-deps chromium
+      - name: Deux parcours Chromium PO G6 sans serveur
+        run: npx playwright test tests/e2e/purchasing-workspace.spec.js --grep 'G6-C'
+      - name: Captures PO avant et après
+        run: test -s test-artifacts/g6-po/avant.png && test -s test-artifacts/g6-po/apres.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g6-cleanup-po-${{ github.run_id }}
+          path: test-artifacts/g6-po/
+          retention-days: 14
+          if-no-files-found: warn

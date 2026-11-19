@@ -25119,7 +25119,7 @@
             ]
           },
           "services": {
-            "count": 30,
+            "count": 31,
             "files": [
               {
                 "declared": "services/admin-order-refund.js",
@@ -25140,6 +25140,11 @@
                 "declared": "services/dispute-mutation-service.js",
                 "resolvedPath": "services/dispute-mutation-service.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/g6-hub-recipe-closure.js",
+                "resolvedPath": "services/g6-hub-recipe-closure.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/hub-v1-fixture-checkout-guard.js",
@@ -25609,7 +25614,7 @@
             ]
           }
         },
-        "totalFiles": 109,
+        "totalFiles": 110,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 19,
@@ -29699,11 +29704,16 @@
             ]
           },
           "services": {
-            "count": 52,
+            "count": 53,
             "files": [
               {
                 "declared": "scripts/recette/audit-sku-supplier-link.js",
                 "resolvedPath": "scripts/recette/audit-sku-supplier-link.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "services/g6-recipe-po-cancel-service.js",
+                "resolvedPath": "services/g6-recipe-po-cancel-service.js",
                 "status": "resolved-on-disk-no-header"
               },
               {
@@ -30429,7 +30439,7 @@
             ]
           }
         },
-        "totalFiles": 176,
+        "totalFiles": 177,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

@@ -47,6 +47,7 @@ async function setup(page, { step, status, commitment, director = true, queueDel
       act: async (_, a) => { w.calls.push({ route: a.url, body: a.body }); await new Promise((r) => setTimeout(r, 30)); return null; },
       feedback() {}, async reload() {}, openPhysical() {}, openSourcing() {}, renderReception() { return null; },
     };
+    w.ctx = ctx;
     w.render = () => window.KomerceHubLiveCockpit.render(document.getElementById('workplace'), ctx);
     const tasks = Array.from({ length: 8 }, (_, i) => ({ kind: 'T' + i, missing: 'Tâche ' + i, why: 'x', market: { code: 'KM' }, age_hours: 5 }));
     const fetchFn = () => new Promise((r) => setTimeout(() => r({ ok: true, status: 200, json: async () => ({ scope: 'ALL_MARKETS', tasks, overdue_count: 0 }), text: async () => '' }), queueDelay));
@@ -128,6 +129,36 @@ test('centre de la carte sélectionne le PO et seule la puce sélectionne la com
   await expect(card).toHaveClass(/is-selected/);
   await card.locator('[data-hlc-goto-order]').click();
   await expect(card).not.toHaveClass(/is-selected/);
+});
+
+test('UX2 : PO reçues dans Historique, PO active visible, compteurs et sélection conservés', async ({page}, testInfo)=>{
+  await setup(page,{step:'draft',status:'draft',commitment:false});
+  await page.evaluate(()=>{
+    const w=window.__fiab;
+    const historical=JSON.parse(JSON.stringify(w.ctx.dossier.purchase_orders[0]));
+    historical.id='00000000-0000-4000-8000-000000000099';
+    historical.ref='PO-TERMINEE';
+    historical.status='received';
+    historical.step={key:'received',index:5,partial:false};
+    historical.totals={effective:2,received:2,missing:0};
+    w.ctx.dossier.purchase_orders.push(historical);
+    w.render();
+  });
+  const current=page.locator('[data-hlc-po="'+PO_ID+'"]');
+  await expect(current).toBeVisible();
+  const history=page.locator('[data-hlc-po-history]');
+  await expect(history).not.toHaveAttribute('open','');
+  await expect(history.locator('[data-hlc-po]')).toHaveCount(1);
+  await expect(page.locator('[data-hlc-po-count="received"]')).toContainText('1');
+  await expect(page.locator('[data-hlc-po-count="draft"]')).toContainText('1');
+  if(testInfo.repeatEachIndex===0){fs.mkdirSync('test-artifacts/ux2',{recursive:true});await page.screenshot({path:'test-artifacts/ux2/ux2-apres.png',fullPage:true});}
+  await history.locator('summary').click();
+  await expect(history).toHaveAttribute('open','');
+  await history.locator('[data-hlc-po]').click();
+  await expect(history.locator('[data-hlc-po]')).toHaveClass(/is-selected/);
+  await page.evaluate(()=>window.__fiab.render());
+  await expect(page.locator('[data-hlc-po-history]')).toHaveAttribute('open','');
+  if(testInfo.repeatEachIndex===0) await page.screenshot({path:'test-artifacts/ux2/ux2-historique-ouvert.png',fullPage:true});
 });
 
 test('expédition : repeindre pendant la saisie conserve tâche, valeur et curseur', async ({ page }) => {

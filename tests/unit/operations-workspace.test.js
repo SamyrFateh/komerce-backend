@@ -121,3 +121,18 @@ describe('T8 — arrivée fournisseur sans manifeste (HB-08)', () => {
     expect(ui).toContain('Aucun article n’est attribué à une commande avant déballage et rapprochement.');
   });
 });
+
+describe('G6 Ergonomie UX3 — marché et sélection du Hub', () => {
+  const src = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/operations-workspace.js'), 'utf8');
+  test('un remontage de la même session et du même marché conserve le cockpit', () => {
+    expect(src).toContain('const activeHubMounts = new WeakMap()');
+    expect(src).toContain("previous.marketCode === marketCode && previous.role === options.user?.role");
+    expect(src).toContain("rootNode.querySelector?.('[data-hub-cockpit]')");
+    expect(src).toContain('return previous.handle');
+  });
+  test('le changement de marché exige un nouveau dossier et garde les routes existantes', () => {
+    expect(src).toContain('if (!MARKET_CODE.test(marketCode))');
+    expect(src).toContain("endpointFor(marketCode, 'supply')");
+    expect(src).toContain("context.mode === 'execution'");
+  });
+});
