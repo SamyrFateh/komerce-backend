@@ -67,7 +67,7 @@ async function cancelRecipePo(poId,{actor,reason}={}){
     // réécrire. Les lignes sont verrouillées ; seul le sous-ensemble encore
     // actif doit avoir été effectivement annulé par notre UPDATE.
     const openBefore=lines.filter(l=>l.cancelled_at==null).length;
-    if(cancelled.length!==openBefore)throw reject(409,'G6_PO_CONCURRENT_CHANGE');
+    if(cancelled.length!==openBefore)throw reject(409,'G6_PO_CONCURRENT_CHANGE',`G6_PO_CONCURRENT_CHANGE expected_active=${openBefore} updated=${cancelled.length} locked_lines=${lines.length}`);
     await resolveRecipePurchaseOrderAlerts(client,{poId,orderIds:orders,actorId:actor.id});
     await client.query('COMMIT');
     return {purchase_order_id:poId,status:'cancelled',cancelled_lines:lines.map(x=>x.line_id),newly_cancelled_lines:cancelled.map(x=>x.id),orders,external_calls:0};
