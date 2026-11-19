@@ -243,6 +243,16 @@
         <div class="kmc-relay-heading-controls"><span class="kmc-relay-live-state">LIVE</span>${relaySimToggle()}</div>
       </header>`,
       body:`${relayMainNav('flux')}
+        <nav class="kmc-relay-quick-actions" data-relay-quick-actions aria-label="Actions rapides du Relais">
+          <a class="kmc-relay-quick-action" data-relay-quick-action="receive"
+            href="${esc(executionUrl('','shipments'))}">
+            <strong>Réceptionner un colis</strong><small>Ouvrir l’Atelier réception →</small>
+          </a>
+          <a class="kmc-relay-quick-action" data-relay-quick-action="collect"
+            href="${esc(remisesUrl(''))}">
+            <strong>Remettre un colis</strong><small>Ouvrir le comptoir Remises →</small>
+          </a>
+        </nav>
         ${relayWorkboard(p,data)}
         ${num(k.incidents_ouverts)>0?`<div class="kmc-relay-attention">
           <strong>${num(k.incidents_ouverts)} incident(s) ouvert(s)</strong>
