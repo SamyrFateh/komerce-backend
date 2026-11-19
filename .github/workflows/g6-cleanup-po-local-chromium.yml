@@ -1,0 +1,51 @@
+name: G6 CLEANUP class C PO — local Chromium and unit
+on:
+  pull_request:
+    paths:
+      - 'services/g6-recipe-po-cleanup-service.js'
+      - 'services/purchasing-order-detail.js'
+      - 'routes/purchasing.js'
+      - 'public/dashboards/canonical/js/purchasing-workspace.js'
+      - 'scripts/recette/canonical/g6-cleanup-core.js'
+      - 'scripts/recette/g6-cleanup-recette-chromium.js'
+      - 'tests/unit/g6-recipe-po-cleanup.test.js'
+      - 'tests/unit/g6-cleanup-recette.test.js'
+      - 'tests/e2e/purchasing-workspace.spec.js'
+      - '.github/workflows/g6-cleanup-po-local-chromium.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  local:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: git fetch origin main:refs/remotes/origin/main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Mandatory preflight
+        run: npm run pr:preflight
+      - name: Local unit tests C and recorder guard
+        run: npx jest --config jest.unit.config.js --runInBand tests/unit/g6-recipe-po-cleanup.test.js tests/unit/g6-cleanup-recette.test.js
+      - run: npx playwright install --with-deps chromium
+      - name: PO class C — click in Chromium with fake API, never staging
+        run: npx playwright test tests/e2e/purchasing-workspace.spec.js --grep 'G6 classe C'
+      - name: Verify before/after screenshots
+        run: test -s test-artifacts/g6-po/avant.png && test -s test-artifacts/g6-po/apres.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g6-cleanup-c-po-local-${{ github.run_id }}
+          path: test-artifacts/g6-po/
+          if-no-files-found: warn
+          retention-days: 14
