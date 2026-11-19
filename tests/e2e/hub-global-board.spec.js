@@ -79,6 +79,20 @@ test.describe('Hub global sans scope marché',()=>{
     }
   );
 
+  test('Responsable marché : écran Hub limité au scope autorisé et aucun geste physique', async ({page}) => {
+    // La réponse représente la projection serveur filtrée. La SQL isolation est
+    // indépendamment prouvée par tests/unit/hub-global-board.test.js.
+    const marketOnly = {...BOARD, audience:'MARKET_SCOPED', markets:['KM'], orders:[BOARD.orders[0]]};
+    const calls = await mount(page,'market_operator','',marketOnly);
+    await expect(page.getByText('Commandes import · Mes marchés autorisés')).toBeVisible();
+    await expect(page.locator('[data-hub-global-order]')).toHaveCount(1);
+    await expect(page.locator('[data-hub-global-order="KM-100"]')).toBeVisible();
+    await expect(page.locator('[data-hub-global-order="CM-101"]')).toHaveCount(0);
+    await page.locator('[data-hub-global-order="KM-100"] [data-hub-global-stage="PO"]').click();
+    await expect(page.locator('[data-hub-global-menu]')).toContainText('Consultation seule');
+    expect(calls).toEqual(['GET /api/hub/board']);
+  });
+
   test('une URL héritée ?market=KM ne filtre pas le Hub et est nettoyée',async({page})=>{
     const calls=await mount(page,'agent_hub','?market=KM');
     await expect(page).toHaveURL(ORIGIN+'/admin/hub');
