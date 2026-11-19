@@ -117,12 +117,12 @@ function createFakeApi({ submitRefusal = false, triggerMode = 'manual' } = {}) {
       state.lines.forEach((l) => { if (body.line_ids.includes(l.line_id)) l.purchase_order_id = id; });
       return { status: 201, json: { purchase_order: po, line_ids: body.line_ids, lines: poLines(id), ...summarize(poLines(id)) } };
     }
-    const poMatch = pathname.match(/^\/api\/purchasing\/po\/([^/]+)(?:\/(detach|discard|submit|confirm))?$/);
+    const poMatch = pathname.match(/^\/api\/purchasing\/po\/([^/]+)(?:\/(detach|discard|submit|confirm|cancel-g6-recipe))?$/);
     if (poMatch) {
       const po = state.pos.get(poMatch[1]);
       if (!po) return { status: 404, json: { error: 'PO introuvable', code: 'PURCHASE_ORDER_NOT_FOUND' } };
       const action = poMatch[2];
-      if (!action && method === 'GET') return { status: 200, json: { purchase_order: po, lines: poLines(po.id), ...summarize(poLines(po.id)), supplier_execution: state.executions.get(po.id) || emptyExecution() } };
+      if (!action && method === 'GET') return { status: 200, json: { purchase_order: po, lines: poLines(po.id), ...summarize(poLines(po.id)), supplier_execution: state.executions.get(po.id) || emptyExecution(), g6_recipe: po.g6_recipe || {eligible:false} } };
       if (action === 'detach') {
         state.lines.forEach((l) => { if (body.line_ids.includes(l.line_id)) l.purchase_order_id = null; });
         return { status: 200, json: { purchase_order_id: po.id, detached: body.line_ids, remaining_lines: poLines(po.id).length } };
@@ -131,6 +131,12 @@ function createFakeApi({ submitRefusal = false, triggerMode = 'manual' } = {}) {
         state.lines.forEach((l) => { if (l.purchase_order_id === po.id) l.purchase_order_id = null; });
         po.status = 'cancelled';
         return { status: 200, json: { purchase_order_id: po.id, status: 'cancelled', detached: [] } };
+      }
+      if (action === 'cancel-g6-recipe') {
+        if (!po.g6_recipe?.eligible) return {status:403,json:{code:'G6_PO_MIXED_SCOPE',error:'PO non G6'}};
+        po.status='cancelled';
+        state.lines.forEach(l=>{if(l.purchase_order_id===po.id){l.purchase_order_id=null;l.cancelled=true;}});
+        return {status:200,json:{purchase_order_id:po.id,status:'cancelled',external_calls:0}};
       }
       if (action === 'submit') {
         if (submitRefusal) {
@@ -211,6 +217,32 @@ async function expectNoHorizontalOverflow(page) {
 const mutatingCalls = (api, suffix) => api.state.calls.filter((c) => c.key === `POST /api/purchasing${suffix}`);
 
 test.describe('Achats fournisseurs — espace canonique', () => {
+  test('G6-C : bouton PO réservé au scope G6, annulation uniquement par écran sans appel fournisseur',async({page},info)=>{
+    const api=createFakeApi();
+    const poId='cccccccc-cccc-4ccc-8ccc-000000000009';
+    api.state.lines[0].purchase_order_id=poId;
+    api.state.pos.set(poId,{id:poId,status:'notified',procurement_hub_ref:HUB,trigger_mode:'manual',g6_recipe:{eligible:true}});
+    await mountWorkspace(page,api,{search:'?po='+poId});
+    const action=page.locator('[data-workspace-action="cancel-g6-po"]');
+    await expect(action).toBeVisible();
+    if(info.repeatEachIndex===0){fs.mkdirSync('test-artifacts/g6-po',{recursive:true});await page.screenshot({path:'test-artifacts/g6-po/avant.png',fullPage:true});}
+    await action.click();
+    await expect(page.locator('[data-workspace-feedback]')).toContainText('PO de recette annulé');
+    expect(mutatingCalls(api,'/po/'+poId+'/cancel-g6-recipe')).toEqual([expect.objectContaining({
+      body:{reason:'Raison de test'}
+    })]);
+    expect(api.state.pos.get(poId).status).toBe('cancelled');
+    if(info.repeatEachIndex===0)await page.screenshot({path:'test-artifacts/g6-po/apres.png',fullPage:true});
+  });
+  test('G6-C : PO notifié avec commande hors G6 ne propose aucun bouton',async({page})=>{
+    const api=createFakeApi();const poId='cccccccc-cccc-4ccc-8ccc-000000000008';
+    api.state.lines[0].purchase_order_id=poId;
+    api.state.pos.set(poId,{id:poId,status:'notified',procurement_hub_ref:HUB,trigger_mode:'manual',g6_recipe:{eligible:false,reason:'G6_PO_MIXED_SCOPE'}});
+    await mountWorkspace(page,api,{search:'?po='+poId});
+    await expect(page.locator('[data-workspace-action="cancel-g6-po"]')).toHaveCount(0);
+    expect(mutatingCalls(api,'/po/'+poId+'/cancel-g6-recipe')).toHaveLength(0);
+  });
+
   test('consigne uniquement un débit vérifié et clôture sur la quantité physique lue', async ({ page }) => {
     const api = createFakeApi();
     const poId = 'cccccccc-cccc-4ccc-8ccc-000000000001';
