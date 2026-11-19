@@ -28,7 +28,10 @@ describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => 
     // Les cockpits Live (coque noire dédiée) sont des documents complets par
     // conception : ils ne passent volontairement pas par le routeur client.
     const LIVE_DOCUMENT_ROUTES = ['/admin/import-runtime', '/admin/hub-live', '/admin/relais-live'];
-    const adminRoutes = hrefs.filter(href => href.startsWith('/admin') && !LIVE_DOCUMENT_ROUTES.includes(new URL(href, 'https://komerce.test').pathname));
+    // La documentation reste un document HTML autonome protégé côté serveur,
+    // jamais un écran monté en SPA ni une route à authentification simulée.
+    const SERVER_DOCUMENT_ROUTES = [...LIVE_DOCUMENT_ROUTES, '/admin/documentation'];
+    const adminRoutes = hrefs.filter(href => href.startsWith('/admin') && !SERVER_DOCUMENT_ROUTES.includes(new URL(href, 'https://komerce.test').pathname));
     expect(adminRoutes.length).toBeGreaterThan(0);
     adminRoutes.forEach(href => {
       const url = new URL(href, 'https://komerce.test');
@@ -36,6 +39,7 @@ describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => 
     });
     // Vue Commandes distincte : routable côté client comme Commerce.
     expect(router.canonicalPath('/admin/orders')).toBe(true);
+    expect(router.canonicalPath('/admin/documentation')).toBe(false);
   });
 
   test('Sourcing Live → Hub central ne demande jamais le contexte Dashboard interdit au rôle sourcing', () => {

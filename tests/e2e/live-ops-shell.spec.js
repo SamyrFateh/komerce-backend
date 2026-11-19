@@ -125,6 +125,8 @@ test.describe('Coque Live — rôle sourcing', () => {
   test('voit Sourcing et le tableau Hub global, sans faux Dashboard ni Opérations', async ({ page }) => {
     await mountShell(page, { role: 'sourcing' });
     const ids = await page.$$eval('.kmc-admin-primary-link', (els) => els.map((el) => el.getAttribute('data-dashboard')));
-    expect(ids).toEqual(['live-import-runtime', 'live-hub']);
+    // Le guide Aide est une destination documentaire autorisée,
+    // sans donner accès aux domaines commerciaux ou financiers.
+    expect(ids).toEqual(['live-import-runtime', 'live-hub', 'help-docs']);
   });
 });

@@ -125,7 +125,7 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     const nav = loadPolicy();
     const groups = nav.sidebarGroupsFor({ role: 'admin' }, null);
     expect(groups.map(group => group.id)).toEqual([
-      'pilot', 'commerce', 'economy', 'operations', 'finance', 'live', 'markets', 'administration',
+      'pilot', 'commerce', 'economy', 'operations', 'finance', 'live', 'markets', 'administration', 'help',
     ]);
     const labels = id => groups.find(group => group.id === id).items.map(item => item.label);
     expect(labels('pilot')).toEqual(['Tour de contrôle', 'À traiter']);
@@ -136,6 +136,7 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     expect(groups.find(group => group.id === 'live').items.map(item => item.href))
       .toEqual(['/admin/import-runtime', '/admin/hub', '/admin/relais-live']);
     expect(labels('markets')).toEqual(['Responsables pays', 'Catalogue pays', 'Invendus']);
+    expect(labels('help')).toEqual(['Documentation']);
     const all = groups.flatMap(group => group.items);
     expect(all.some(item => item.href === '/admin/suppliers')).toBe(false);
     // « Produits » n'est plus une entrée de menu : onglet local du Catalogue uniquement.
@@ -210,9 +211,10 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     const nav = loadPolicy();
     const transitaire = nav.sidebarGroupsFor({ role: 'agent_transitaire' }, null);
     // Les agents voient l'Action Center canonique filtré par le serveur (périmètre + actions autorisées) et leur workspace.
-    expect(transitaire.map(group => group.id)).toEqual(['pilot', 'operations']);
+    expect(transitaire.map(group => group.id)).toEqual(['pilot', 'operations', 'help']);
     expect(transitaire[0].items.map(item => item.id)).toEqual(['action-center']);
     expect(transitaire[1].items.map(item => item.id)).toEqual(['workspace-shipping']);
+    expect(transitaire[2].items.map(item => item.id)).toEqual(['help-docs']);
 
     // Les cockpits Live restent accessibles depuis la sidebar, chacun à son seul rôle.
     const ids = role => nav.sidebarGroupsFor({ role }, null).flatMap(group => group.items.map(item => item.id));
@@ -223,8 +225,9 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     expect(ids('sourcing').filter(id => id.startsWith('live-'))).toEqual(['live-import-runtime', 'live-hub']);
 
     const finance = nav.sidebarGroupsFor({ role: 'finance' }, null);
-    expect(finance.map(group => group.id)).toEqual(['finance', 'live']);
+    expect(finance.map(group => group.id)).toEqual(['finance', 'live', 'help']);
     expect(finance[0].items.map(item => item.id)).toEqual(['workspace-accounting']);
+    expect(finance[2].items.map(item => item.id)).toEqual(['help-docs']);
   });
 });
 

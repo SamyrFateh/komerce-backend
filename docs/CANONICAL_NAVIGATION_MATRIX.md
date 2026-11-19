@@ -120,6 +120,14 @@ Order 360 et Client 360 restent des drill-downs.
 | Sourcing | Opérations | Sourcing |
 | Comptabilité | Finance | Comptabilité |
 
+## Documentation produit — utilitaire non métier
+
+- La destination `/admin/documentation` figure dans le groupe **Aide** du menu commun, et non comme un nouveau domaine N1.
+- Accès réservé aux huit rôles internes : `admin`, `market_operator`, `finance`, `sourcing`, `agent_hub`, `agent_relais`, `agent_transitaire`, `support` via `authenticate` et `requireRole` côté serveur.
+- Le filtrage des chapitres par rôle est un confort de lecture, sans transfert de privilèges.
+- Les 11 images du manuel sont des **maquettes de référence** et non des captures de staging ; les captures Chromium réelles anonymisées restent à intégrer et à certifier.
+- La destination est une page HTML autonome ; le routeur SPA ne l’intercepte pas et laisse le navigateur charger son entrée authentifiée.
+
 ## Invariants V4
 
 1. N1 est vertical, jamais une top-nav métier concurrente.

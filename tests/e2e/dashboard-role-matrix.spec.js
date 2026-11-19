@@ -82,7 +82,11 @@ test.describe('Navigation V4 — matrice des 8 rôles', () => {
       const ids = await page.$$eval('.kmc-admin-primary-link', (links) =>
         links.map((link) => link.getAttribute('data-dashboard'))
       );
-      expect(ids).toEqual(expected);
+      // Documentation est un utilitaire Aide autorisé pour les huit rôles
+      // professionnels. Les autres domaines restent ceux de la matrice métier.
+      expect(ids).toEqual([...expected, 'help-docs']);
+      await expect(page.locator('.kmc-admin-primary-link[data-dashboard="help-docs"]'))
+        .toHaveAttribute('href', '/admin/documentation');
 
       const home = await page.evaluate(() =>
         window.KomerceCanonicalNavigation.defaultLandingFor(window.KOMERCE_CANONICAL_AUTH_USER)
