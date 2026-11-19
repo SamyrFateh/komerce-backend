@@ -1,0 +1,42 @@
+name: G6 ergonomie UX2 — Hub PO active and history Chromium
+on:
+  pull_request:
+    paths:
+      - 'public/dashboards/canonical/js/hub-live-cockpit.js'
+      - 'public/dashboards/canonical/css/hub-live-cockpit.css'
+      - 'tests/g2-hub-po-browser/hub-live-cockpit-stability.spec.js'
+      - '.github/workflows/g6-ergonomie-ux2-chromium.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ux2:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: git fetch origin main:refs/remotes/origin/main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run pr:preflight
+      - run: npx playwright install --with-deps chromium
+      - name: UX2 PO filter and preserved history with Chromium
+        run: npx playwright test -c playwright.g2-hub-po-isolated.config.js --grep 'UX2 : PO reçues'
+      - name: Verify local screenshots exist
+        run: test -s test-artifacts/ux2/ux2-apres.png && test -s test-artifacts/ux2/ux2-historique-ouvert.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g6-ergonomie-ux2-${{ github.run_id }}
+          path: test-artifacts/ux2/
+          if-no-files-found: error
+          retention-days: 14
