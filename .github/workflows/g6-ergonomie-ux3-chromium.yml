@@ -1,0 +1,42 @@
+name: G6 ergonomie UX3 — Hub URL selection Chromium
+on:
+  pull_request:
+    paths:
+      - 'public/dashboards/canonical/js/hub-live-cockpit.js'
+      - 'public/dashboards/canonical/js/operations-workspace.js'
+      - 'tests/e2e/hub-live-execution.spec.js'
+      - '.github/workflows/g6-ergonomie-ux3-chromium.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ux3:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: git fetch origin main:refs/remotes/origin/main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run pr:preflight
+      - run: npx playwright install --with-deps chromium
+      - name: URL selection and browser history, local mocked HTTP only
+        run: npx playwright test tests/e2e/hub-live-execution.spec.js --grep 'UX3 — aucune sélection arbitraire'
+      - name: Check screenshots
+        run: test -s test-artifacts/ux3/ux3-avant.png && test -s test-artifacts/ux3/ux3-apres.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g6-ergonomie-ux3-${{ github.run_id }}
+          path: test-artifacts/ux3/
+          if-no-files-found: error
+          retention-days: 14
