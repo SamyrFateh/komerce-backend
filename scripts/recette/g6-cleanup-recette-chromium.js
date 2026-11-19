@@ -124,7 +124,7 @@ async function login(browser,steps){
   if(r.status()===429)state.limited=true;
   const req=r.request(),p=new URL(r.url()).pathname;
   if(req.method()!=='POST'||r.status()<400||
-     !(/\\/cancel-g6-recipe$|\\/close-g6-hub-recipe$/.test(p)))return;
+     !(p.endsWith('/cancel-g6-recipe')||p.endsWith('/close-g6-hub-recipe')))return;
   // Garder le code métier de la réponse, sans enregistrer de corps brut,
   // de trace SQL, de cookie ou de données personnelles.
   state.pendingHttpErrors.push(r.json().then(body=>{
