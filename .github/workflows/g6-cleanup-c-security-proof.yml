@@ -1,0 +1,43 @@
+name: G6 class C — regenerate security proof with protected preflight
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/g6-cleanup-c-security-proof.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  regenerate:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/g6-cleanup-po-engaged'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - run: git fetch origin main:refs/remotes/origin/main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Regenerate genuine Security 360 snapshot and baseline
+        run: npm run security:360:save
+      - name: Verify all mandatory preflight gates before pushing
+        run: npm run pr:preflight
+      - name: Commit generated proof to feature branch after preflight
+        run: |
+          git add docs/SECURITY_360.json docs/SECURITY_360.md scripts/.security-360-baseline.json
+          if git diff --cached --quiet; then
+            echo 'Security proof already current'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m "docs(security): refresh G6 admin route projection after preflight"
+          git push origin HEAD:fix/g6-cleanup-po-engaged
