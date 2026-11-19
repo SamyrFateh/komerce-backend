@@ -272,12 +272,14 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
   for (const poStatusBefore of ['notified', 'confirmed']) {
     it('G6-CLEANUP — PO '+poStatusBefore+' envoyé, liens immuables conservés, annulation atomique', async () => {
       const n=await seedNeed('g6-'+poStatusBefore,{market:'KM',quantity:1,supplier:supplier1});
-      await q("UPDATE orders SET simulation_scope='G6-BUYER', status='cancelled' WHERE id=$1",[n.orderId]);
+      // Préparer et engager la PO pendant que la commande est encore vivante ;
+      // reproduire ensuite la commande de recette déjà annulée, comme le staging.
       const prepared=await grouped.preparePurchaseOrder({
         supplier_id:supplier1,procurement_hub_ref:hubRef,line_ids:[n.lineId]});
       const poId=prepared.purchase_order.id;
       await q("UPDATE purchase_orders SET status=$2,sent_at=NOW(),sent_channel='email' WHERE id=$1",
         [poId,poStatusBefore]);
+      await q("UPDATE orders SET simulation_scope='G6-BUYER', status='cancelled' WHERE id=$1",[n.orderId]);
       const old=await one('SELECT sent_at,sent_channel FROM purchase_orders WHERE id=$1',[poId]);
       expect(old.sent_at).toBeTruthy();
       const actor={id:clientId,role:'admin'};
