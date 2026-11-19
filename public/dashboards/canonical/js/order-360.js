@@ -614,6 +614,45 @@
     return body;
   }
 
+  function renderRecipeCancellation(options, order) {
+    if (options.user?.role !== 'admin' || order.simulation_scope !== 'G6-BUYER' ||
+        order.payment?.mode !== 'cash_relais' || ['cancelled','collected','refunded'].includes(order.status)) return;
+    const doc = options.document;
+    const section = doc.createElement('section');
+    const button = text(doc, 'button', 'kmc-workspace-action', 'Annuler la commande de recette');
+    button.type = 'button';
+    const feedback = text(doc, 'p', '', '');
+    feedback.setAttribute('role', 'status');
+    section.appendChild(button);
+    section.appendChild(feedback);
+    options.root.appendChild(section);
+    button.addEventListener('click', async () => {
+      if (button.disabled || !doc.defaultView.confirm('Annuler la commande de recette ' + order.reference + ' ?')) return;
+      button.disabled = true;
+      try {
+        const current = await jsonRequest(options.fetch, '/api/orders/' + encodeURIComponent(order.reference));
+        if (!current.id || current.reference !== order.reference || current.payment_mode !== 'cash_relais' ||
+            current.status !== order.status) throw Error('La commande a changé. Recharger sa fiche.');
+        const response = await options.fetch('/api/orders/' + encodeURIComponent(current.id) + '/cancel', {
+          method: 'POST', credentials: 'include',
+          headers: {'Content-Type':'application/json', Accept:'application/json'},
+          body: JSON.stringify({reason:'Annulation de recette G6 depuis Order 360 · ' + order.reference}),
+        });
+        const result = await response.json();
+        if (!response.ok) throw Error(result.error || 'Annulation refusée.');
+        const refreshed = await mount(options);
+        if (refreshed.payload.order.status !== 'cancelled') throw Error('Annulation à vérifier dans la fiche commande.');
+        const note = text(doc, 'p', '', 'Commande de recette ' + order.reference + ' annulée.');
+        note.setAttribute('role','status');
+        options.root.appendChild(note);
+      } catch (error) {
+        const message = error.message + ' Vérifier la fiche avant toute nouvelle tentative.';
+        feedback.textContent = message;
+        if (!feedback.isConnected) options.root.appendChild(text(doc, 'p', '', message));
+      }
+    });
+  }
+
   async function mount(options) {
     const rootNode = options.root;
     const doc = options.document;
@@ -632,6 +671,7 @@
       const endpoint = ENDPOINT_PREFIX + encodeURIComponent(reference);
       const payload = await jsonRequest(fetchFn, endpoint);
       renderPayload(rootNode, ui, doc, payload);
+      renderRecipeCancellation(options, payload.order);
       // Ancre #couts (lien depuis Finance) : la section n'existe qu'après le rendu, le navigateur ne peut pas y défiler seul.
       const hash = options.location ? options.location.hash : (globalThis.location && globalThis.location.hash);
       if (hash === '#couts') {
