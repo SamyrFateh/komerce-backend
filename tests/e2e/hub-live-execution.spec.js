@@ -635,3 +635,23 @@ test.describe('L9c — Hub live Exécution (l’ancien workspace Hub & Relais es
     await expect(page).toHaveURL(/\/admin\/hub-live\?view=execute&market=KM$/);
   });
 });
+
+test('UX3 — aucune sélection arbitraire, sélection PO dans URL et retour navigateur', async ({page}, testInfo) => {
+  const posts = [];
+  await mount(page,{view:null,posts,dossier:DOSSIER});
+  const selection=page.locator('[data-hub-cockpit]');
+  await expect(selection).toHaveAttribute('data-hlc-selection','');
+  await expect(page.getByText('Sélectionnez un élément')).toBeVisible();
+  if(testInfo.repeatEachIndex===0) {
+    fs.mkdirSync('test-artifacts/ux3',{recursive:true});
+    await page.screenshot({path:'test-artifacts/ux3/ux3-avant.png',fullPage:true});
+  }
+  await page.locator('[data-hlc-po="'+PO_ID+'"]').click();
+  await expect(selection).toHaveAttribute('data-hlc-selection','po:'+PO_ID);
+  await expect(page).toHaveURL(new RegExp('sel=po%3A'+PO_ID));
+  if(testInfo.repeatEachIndex===0) await page.screenshot({path:'test-artifacts/ux3/ux3-apres.png',fullPage:true});
+  await page.goBack();
+  await expect(selection).toHaveAttribute('data-hlc-selection','');
+  expect(posts).toEqual([]);
+});
+
