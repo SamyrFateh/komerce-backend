@@ -62,3 +62,10 @@ test('chromium-policy: only human helpers, no SQL write, trace after auth',()=>{
  expect(src).toMatch(/BEGIN READ ONLY/);
  expect(src).toMatch(/simulation_scope=\$1/);
 });
+
+test('cutoff bloque à partir du statut de coupure, pas avant',()=>{
+ const {cutoffBlocks}=require('../../scripts/recette/canonical/g6-cleanup-core');
+ expect(cutoffBlocks('ordered','shipped')).toBe(false);
+ expect(cutoffBlocks('preparation','shipped')).toBe(false);
+ expect(cutoffBlocks('available','shipped')).toBe(true);
+});
