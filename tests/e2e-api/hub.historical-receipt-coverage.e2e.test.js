@@ -132,6 +132,9 @@ describeE2E('C2 — réception physique d\'une PO historique → préparation', 
       [physical.rows.map(u=>u.id)]);
     expect(states.rows.every(u=>u.state==='QUARANTINED')).toBe(true);
     expect((await q('SELECT status FROM purchase_orders WHERE id=$1',[poId])).rows[0].status).toBe('hub_received');
+    // Une unité mise en quarantaine n'est pas une restitution en stock vendable.
+    expect((await q('SELECT stock FROM products WHERE id=$1',[productId])).rows[0].stock).toBe(0);
+    expect(Number((await q('SELECT stock FROM product_skus WHERE id=$1',[skuId])).rows[0].stock)).toBe(0);
   });
 
 });
