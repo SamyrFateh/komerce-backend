@@ -198,12 +198,12 @@ function summarizeMarket(market, payload) {
 // Aucun filtrage client ne peut servir de garde de sécurité.
 async function getGlobalBoard(query = db, dossierReader = (marketId) => dossier.getDossier({ marketId }, query), { marketIds = null } = {}) {
   const scoped = Array.isArray(marketIds);
-  const { rows: markets } = await query.query(
-    scoped
-      ? 'SELECT id, code, name FROM markets WHERE is_active = TRUE AND id = ANY($1::uuid[]) ORDER BY code'
-      : 'SELECT id, code, name FROM markets WHERE is_active = TRUE ORDER BY code',
-    scoped ? [marketIds] : []
-  );
+  const { rows: markets } = scoped
+    ? await query.query(
+      'SELECT id, code, name FROM markets WHERE is_active = TRUE AND id = ANY($1::uuid[]) ORDER BY code',
+      [marketIds]
+    )
+    : await query.query('SELECT id, code, name FROM markets WHERE is_active = TRUE ORDER BY code');
   const orders = [];
   for (const market of markets) {
     orders.push(...summarizeMarket(market, await dossierReader(market.id)));
