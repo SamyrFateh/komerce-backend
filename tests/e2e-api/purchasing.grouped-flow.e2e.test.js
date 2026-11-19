@@ -284,7 +284,13 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
       expect(old.sent_at).toBeTruthy();
       const actor={id:clientId,role:'admin'};
       const {cancelRecipePo}=require('../../services/g6-recipe-po-cancel-service');
-      const result=await cancelRecipePo(poId,{actor,reason:'Clôture contrôlée G6 campagne'});
+      let result;
+      try { result=await cancelRecipePo(poId,{actor,reason:'Clôture contrôlée G6 campagne'}); }
+      catch(error) {
+        throw new Error('G6_PO_REAL_PG_REASON '+JSON.stringify({code:error.code,
+          pgCode:error.pgCode,constraint:error.constraint,dbReason:error.dbReason,
+          message:error.message}),{cause:error});
+      }
       expect(result).toMatchObject({status:'cancelled',cancelled_lines:[n.lineId],external_calls:0});
       const updated=await one('SELECT status,sent_at,sent_channel FROM purchase_orders WHERE id=$1',[poId]);
       const line=await one('SELECT purchase_order_id,cancelled_at,cancel_reason FROM purchase_lines WHERE id=$1',[n.lineId]);
