@@ -272,6 +272,7 @@ router.get('/suppliers', ...groupedGuard, async (req, res, next) => {
       SELECT
         s.*,
         ${matchingProductSql} AS matching_product_supplier_id,
+        ${productPlaceholder ? 'MAX(ps.supplier_price_aed) FILTER (WHERE ps.product_id = ' + productPlaceholder + '::uuid)' : 'NULL::numeric'} AS matching_price_aed,
         COUNT(DISTINCT ps.product_id) AS products_mapped,
         COUNT(DISTINCT po.id)         AS purchase_orders_total
       FROM suppliers s

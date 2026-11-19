@@ -799,7 +799,7 @@ function supplierMoneyUnavailable(ps) {
     ' : renseigner un prix fournisseur positif sur l\u2019association produit-fournisseur (écran Sourcing), puis réessayer.');
 }
 
-async function createLineInTransaction(client, { orderItemId, productSupplierId, quantity, actor, context, executionMode, parentLineId = null }) {
+async function createLineInTransaction(client, { orderItemId, productSupplierId, quantity, actor, context, executionMode, actualMoney = null, parentLineId = null }) {
   const { rows: [item] } = await client.query(`
     SELECT oi.*, p.name AS product_name, o.status AS order_status
       FROM order_items oi
@@ -819,6 +819,9 @@ async function createLineInTransaction(client, { orderItemId, productSupplierId,
   `, [productSupplierId, item.product_id]);
   if (!ps) throw fail(404, 'PRODUCT_SUPPLIER_NOT_FOUND', 'Mapping fournisseur actif introuvable pour ce produit');
 
+  if (actualMoney && (executionMode !== 'manual' || ps.supplier_price_aed != null)) {
+    throw fail(409, 'MANUAL_PRICE_NOT_APPLICABLE', 'Le prix réel se saisit pour une association sans prix en achat manuel.');
+  }
   // Seule une unité à identité exacte est regroupable (I4) : même instantané que le déclencheur.
   let exactSku;
   let readiness;
@@ -838,7 +841,7 @@ async function createLineInTransaction(client, { orderItemId, productSupplierId,
       // Exécution manuelle : l'identité du SKU reste l'identité produit ; le Hub achète où il veut, au prix réel du mapping.
       // Aucune préparation distante : l'achat réel est enregistré par le Hub.
       readiness = {
-        unit_price: Number(ps.supplier_price_aed), currency: 'AED',
+        unit_price: actualMoney?.amount ?? Number(ps.supplier_price_aed), currency: actualMoney?.currency || 'AED',
         supplier_unit_ref: exactSku.supplier_unit_ref, supplier_order_identity: exactSku.supplier_order_identity,
       };
       if (!exactSku.supplier_unit_ref) throw fail(409, 'EXACT_IDENTITY_REQUIRED', 'supplier_unit_ref absent sur le SKU vendu');
@@ -861,7 +864,7 @@ async function createLineInTransaction(client, { orderItemId, productSupplierId,
     const amount = Number(ps.supplier_price_aed);
     snapshot = {
       purchaseTarget: ps, productSkuId: null, supplierUnitRef: null, supplierOrderIdentity: null,
-      money: Number.isFinite(amount) && amount > 0 ? { amount, currency: 'AED' } : null,
+      money: actualMoney || (Number.isFinite(amount) && amount > 0 ? { amount, currency: 'AED' } : null),
     };
   }
   // I1 (base) refuse tout sur-engagement de l'article ; mapDbError le remonte en 409.
@@ -884,8 +887,18 @@ async function createManualLine(body = {}, { actor = null, context = {} } = {}) 
   const quantity = requirePositiveInt(body.quantity, 'quantity');
   const executionMode = parseExecutionMode(body.execution_mode);
 
+  let actualMoney = null;
+  if (body.actual_unit_price !== undefined || body.actual_currency !== undefined) {
+    const amount = Number(body.actual_unit_price);
+    const currency = String(body.actual_currency || '').trim().toUpperCase();
+    if (!/^\d+(?:\.\d{1,4})?$/.test(String(body.actual_unit_price)) || !Number.isFinite(amount) ||
+        amount <= 0 || !/^[A-Z]{3}$/.test(currency)) {
+      throw fail(400, 'INVALID_INPUT', 'Le prix unitaire réel positif et sa devise à trois lettres sont obligatoires.');
+    }
+    actualMoney = {amount, currency};
+  }
   const lineId = await withTransaction((client) => createLineInTransaction(client, {
-    orderItemId, productSupplierId, quantity, actor, context, executionMode,
+    orderItemId, productSupplierId, quantity, actor, context, executionMode, actualMoney,
   }));
   const [line] = await loadLinesByIds(db, [lineId]);
   return { line, ...summarizeMarkets([line]) };
