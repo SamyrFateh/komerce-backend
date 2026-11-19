@@ -25119,7 +25119,7 @@
             ]
           },
           "services": {
-            "count": 30,
+            "count": 31,
             "files": [
               {
                 "declared": "services/admin-order-refund.js",
@@ -25140,6 +25140,11 @@
                 "declared": "services/dispute-mutation-service.js",
                 "resolvedPath": "services/dispute-mutation-service.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/g6-hub-recipe-closure.js",
+                "resolvedPath": "services/g6-hub-recipe-closure.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/hub-v1-fixture-checkout-guard.js",
@@ -25609,7 +25614,7 @@
             ]
           }
         },
-        "totalFiles": 109,
+        "totalFiles": 110,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 19,
