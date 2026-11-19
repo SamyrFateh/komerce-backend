@@ -113,3 +113,12 @@ test('remise transitaire visible par défaut pour le Hub, sans ouvrir les action
   }
   expect(findTask(mount('agent_hub','transport',{...data,stage:'handed_over'}).root)).toHaveLength(0);
 });
+
+test('chaque tâche possède une clé distincte et le panneau expose sa génération',()=>{
+  const {root,ctx,row}=mount();
+  const keys=all(root,n=>n.tagName==='DETAILS').map(n=>n.attributes['data-journey-task']);
+  expect(new Set(keys).size).toBe(keys.length);
+  expect(keys.every(k=>JSON.parse(k).includes(ctx.marketCode))).toBe(true);
+  const section=panel.render({createElement:node},root,ctx,[row]);
+  expect(section.attributes).toMatchObject({'data-ready':'true','data-render-epoch':'2'});
+});

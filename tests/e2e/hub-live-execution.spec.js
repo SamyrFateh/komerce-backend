@@ -343,6 +343,37 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       });
     });
 
+    test('L8 : un mapping sans prix permet de saisir le montant réel et sa devise', async ({ page }) => {
+      const posts = [];
+      await mount(page, {
+        view: null, dossier: UNSOURCED_DOSSIER, posts,
+        suppliers: [{
+          id: 'supplier-existing-1', name: 'Fournisseur connu', is_active: true,
+          matching_product_supplier_id: 'mapping-existing-1', matching_price_aed: null, owner_scope: null,
+        }],
+      });
+      await page.locator('[data-hlc-order="cf9520d0-84ff-4fe1-ab9b-a5e972b1365b"]').click();
+      await page.locator('[data-hlc-actions] [data-hlc-action="resolve-sourcing"]').click();
+      const form = page.locator('[data-hub-sourcing-form="KRGNX5O"]');
+      await expect(form.locator('[data-sourcing-supplier]')).toBeEnabled();
+      await form.locator('[data-sourcing-supplier]').selectOption('supplier-existing-1');
+      await expect(form.locator('[data-sourcing-name]')).toBeHidden();
+      await expect(form.locator('[data-sourcing-ref]')).toBeHidden();
+      await expect(form.locator('[data-sourcing-price]')).toBeHidden();
+      await form.getByLabel('Prix unitaire réel').fill('21.75');
+      await form.getByLabel('Devise du prix réel', {exact:false}).fill('USD');
+      await form.locator('[data-workspace-action="create-manual-purchase-line"]').click();
+      await expect.poll(() => posts.length).toBe(1);
+      expect(posts[0]).toEqual({
+        path: '/api/purchasing/lines',
+        body: {
+          order_item_id: '8e4d7630-db62-4a4f-aea8-5fd1dfbe6798',
+          product_supplier_id: 'mapping-existing-1',
+          quantity: 2, execution_mode: 'manual', actual_unit_price:'21.75', actual_currency:'USD',
+        },
+      });
+    });
+
     test('L8 : échec réseau sur création de ligne interdit tout second POST aveugle', async ({ page }) => {
       const posts = [];
       await mount(page, {

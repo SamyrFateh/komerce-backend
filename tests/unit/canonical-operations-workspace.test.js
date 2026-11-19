@@ -141,3 +141,10 @@ test('l’onglet Cash & dépôts de Relais live reçoit la vraie session (décla
   expect(SOURCE).toContain('user: context.user || {}');
   expect(SOURCE).not.toMatch(/cashModule\.mount\(\{\s*root: host, document: doc, ui, fetch: context\.fetch, user: \{\}/);
 });
+
+test('sourcing manuel : la cotation réelle cible la création de ligne pour une association sans prix',()=>{
+  const source=require('node:fs').readFileSync(require.resolve('../../public/dashboards/canonical/js/operations-workspace'),'utf8');
+  expect(source).toContain('mapped && supplier.matching_price_aed === null');
+  expect(source).toContain('actual_unit_price: actualPrice.value');
+  expect(source).toContain("supplier_price_aed: price");
+});
