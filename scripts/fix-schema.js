@@ -73,9 +73,9 @@ async function fixAdminHash() {
  */
 async function runStartupDdlWithLockTimeout(query, sql) {
   const statement = String(sql).trim();
-  const isDdl = /^(?:ALTER\\s+(?:TABLE|TYPE|VIEW)|CREATE\\s+(?:UNIQUE\\s+)?INDEX|CREATE\\s+(?:TABLE|VIEW)|DROP\\s+(?:TABLE|INDEX|VIEW)|DO\\s+\\$\\$)\\b/i.test(statement)
-    || /^DO\\s+\\$\\$/i.test(statement);
-  const concurrentIndex = /^CREATE\\s+(?:UNIQUE\\s+)?INDEX\\s+CONCURRENTLY\\b/i.test(statement);
+  const isDdl = /^(?:ALTER\s+(?:TABLE|TYPE|VIEW)|CREATE\s+(?:UNIQUE\s+)?INDEX|CREATE\s+(?:TABLE|VIEW)|DROP\s+(?:TABLE|INDEX|VIEW))\b/i.test(statement)
+    || /^DO\s+\$\$/i.test(statement);
+  const concurrentIndex = /^CREATE\s+(?:UNIQUE\s+)?INDEX\s+CONCURRENTLY\b/i.test(statement);
   // Ineligible scripts retain their existing behavior. CREATE INDEX CONCURRENTLY
   // must not run inside a transaction.
   if (!isDdl || concurrentIndex) return query.query(sql);
