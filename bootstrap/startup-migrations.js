@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       scripts/migration-037-fix-products.js, scripts/migration-038-replace-products.js, scripts/migration-039-french-descriptions.js, scripts/run-migrations.js, utils/logger.js
+ * @depends       scripts/fix-schema.js, scripts/migration-037-fix-products.js, scripts/migration-038-replace-products.js, scripts/migration-039-french-descriptions.js, scripts/run-migrations.js, utils/logger.js
  * @db-write      charges, finance_config, users
  * @db-read      charges, columns, pg_constraint, pg_enum, pg_type
  * @used-by       server.js
@@ -18,6 +18,7 @@
 'use strict';
 
 const log = require('../utils/logger').child({ module: 'startup-migrations' });
+const { applySchemaDdlWhenMissing } = require('../scripts/fix-schema');
 
 /**
  * H1F — Startup migrations bootstrap.
@@ -149,8 +150,10 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
     `);
   } catch(e) { log.warn({ err: e }, 'Pending enum migration (non-fatal):'); }
 
-  await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pending_at TIMESTAMPTZ`);
-  await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS confirmed_at TIMESTAMPTZ`);
+  // Already-provisioned columns must not take an ACCESS EXCLUSIVE lock on orders.
+  // Missing columns still execute exactly the previous DDL, with fatal errors preserved.
+  await applySchemaDdlWhenMissing(db, `ALTER TABLE orders ADD COLUMN IF NOT EXISTS pending_at TIMESTAMPTZ`);
+  await applySchemaDdlWhenMissing(db, `ALTER TABLE orders ADD COLUMN IF NOT EXISTS confirmed_at TIMESTAMPTZ`);
   log.info('[MIGRATION] pending_at + confirmed_at columns ensured');
 
   try {

@@ -59,11 +59,48 @@ async function fixAdminHash() {
   }
 }
 
+// Avoid taking ACCESS EXCLUSIVE locks on hot orders/order_items/parcels when
+// legacy boot-time "IF NOT EXISTS" DDL is already satisfied. These DDL statements
+// otherwise acquire a table lock even when the object exists in PostgreSQL.
+// Catalog checks never become the source of truth for missing objects: the
+// original idempotent DDL still runs whenever the object is not found.
+async function applySchemaDdlWhenMissing(query, sql) {
+  const statement = String(sql).trim();
+  // Only classify a *single* DDL statement; never skip a multi-statement migration.
+  const oneStatement = statement.replace(/;\s*$/, '').indexOf(';') === -1;
+  if (oneStatement) {
+    const column = /^ALTER\s+TABLE\s+([a-z_][\w]*)\s+ADD\s+COLUMN\s+IF\s+NOT\s+EXISTS\s+([a-z_][\w]*)\b/i.exec(statement);
+    const constraint = /^ALTER\s+TABLE\s+([a-z_][\w]*)\s+DROP\s+CONSTRAINT\s+IF\s+EXISTS\s+([a-z_][\w]*)\b/i.exec(statement);
+    const index = /^CREATE\s+(?:UNIQUE\s+)?INDEX\s+IF\s+NOT\s+EXISTS\s+([a-z_][\w]*)\s+ON\s+/i.exec(statement);
+    const table = /^CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+([a-z_][\w]*)\s*\(/i.exec(statement);
+    if (column) {
+      const result = await query.query(
+        'SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_attribute WHERE attrelid = to_regclass($1) AND attname = $2 AND attnum > 0 AND NOT attisdropped) AS exists',
+        [column[1], column[2]]
+      );
+      if (result.rows?.[0]?.exists === true) return { skipped: true, kind: 'column' };
+    } else if (constraint) {
+      const result = await query.query(
+        'SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = to_regclass($1) AND conname = $2) AS exists',
+        [constraint[1], constraint[2]]
+      );
+      if (result.rows?.[0]?.exists === false) return { skipped: true, kind: 'constraint' };
+    } else if (index || table) {
+      const object = index?.[1] || table?.[1];
+      const result = await query.query(
+        'SELECT to_regclass($1) IS NOT NULL AS exists', [object]
+      );
+      if (result.rows?.[0]?.exists === true) return { skipped: true, kind: index ? 'index' : 'table' };
+    }
+  }
+  return query.query(sql);
+}
+
 async function fixMissingSchema() {
   const run = async (label, sql) => {
     try {
-      await db.query(sql);
-      console.log(`  ✅ ${label}`);
+      const applied = await applySchemaDdlWhenMissing(db, sql);
+      console.log(`  ✅ ${label}${applied?.skipped ? ' (déjà présent)' : ''}`);
     } catch (err) {
       console.error(`  ⚠️ ${label}: ${err.message}`);
     }
@@ -396,4 +433,4 @@ await run('customs_taux_mensuel view', `
   console.log('🔧 Schema migrations complete.');
 }
 
-module.exports = { fixAdminHash, fixMissingSchema };
+module.exports = { fixAdminHash, fixMissingSchema, applySchemaDdlWhenMissing };
