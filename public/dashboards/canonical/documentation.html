@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
-  <title>Documentation produit · Komerce</title>
+  <title>Centre d’aide · Komerce</title>
   <link rel="icon" href="/icons/favicon-32.png">
   <link rel="stylesheet" href="/dashboards/canonical/css/base.css">
   <link rel="stylesheet" href="/dashboards/canonical/css/tokens.css">
   <link rel="stylesheet" href="/dashboards/canonical/css/navigation.css">
   <link rel="stylesheet" href="/dashboards/canonical/css/canonical-theme-v2.css">
   <link rel="stylesheet" href="/dashboards/canonical/css/canonical-shell-v4.css">
-  <link rel="stylesheet" href="/dashboards/canonical/css/documentation.css?v=20261119-shellfix">
+  <link rel="stylesheet" href="/dashboards/canonical/css/documentation.css?v=20261119-helpcenter">
 </head>
 <body class="kmc-shell-v4" data-admin-generation="canonical">
   <main id="canonical-admin-root" class="kmc-documentation" aria-label="Guide utilisateur Komerce">
@@ -19,7 +19,7 @@
       <div class="doc-heading-kicker">CENTRE D'AIDE · KOMERCE</div>
       <div class="doc-heading-row">
         <div>
-          <h1>Documentation produit</h1>
+          <h1>Centre d’aide Komerce</h1>
           <p>Comprendre les fonctionnalités, accomplir les opérations courantes et retrouver les bons écrans, selon votre rôle.</p>
         </div>
         <button id="doc-print" class="doc-print" type="button">⎙ Imprimer / PDF</button>
@@ -29,6 +29,21 @@
     <div class="doc-alert" role="note">
       <strong>À propos des illustrations.</strong> Les 11 images du guide sont des <strong>maquettes de référence validées</strong> (septembre 2026), avec données de démonstration. Ce ne sont pas des captures de l’application sur staging. Les captures réelles anonymisées devront être ajoutées après la recette Chromium. Le guide ne vaut pas certification des fonctionnalités.
     </div>
+    <section class="doc-help-home" aria-labelledby="doc-help-home-title">
+      <div class="doc-help-home-head">
+        <div><span class="doc-help-eyebrow">COMMENCER PAR UNE ACTION</span><h2 id="doc-help-home-title">Que souhaitez-vous accomplir ?</h2><p>Choisissez un métier, puis une tâche. Les fiches décrivent les gestes dans l'application, les contrôles et les exceptions.</p></div>
+        <a class="doc-task-featured" href="#fiche-reception-fournisseur">Voir la première fiche opératoire complète <span aria-hidden="true">→</span></a>
+      </div>
+      <div class="doc-help-grid">
+        <a href="#boutique"><strong>Commerce & commandes</strong><span>Devis, paiement et suivi client</span></a>
+        <a href="#sourcing"><strong>Catalogue & sourcing</strong><span>Produit, qualification et fournisseur</span></a>
+        <a href="#fiche-reception-fournisseur"><strong>Hub & réception</strong><span>Réception fournisseur : procédure pas à pas</span></a>
+        <a href="#relais"><strong>Relais & retrait</strong><span>Réception, encaissement et remise</span></a>
+        <a href="#sav"><strong>Finance & SAV</strong><span>Retour, avoir et remboursement</span></a>
+        <a href="#processus"><strong>Processus transverses</strong><span>Huit parcours multi-acteurs à consolider</span></a>
+      </div>
+      <p class="doc-help-transparency">Les liens autres que « Hub & réception » mènent pour l'instant aux chapitres existants, qui restent à transformer en fiches opératoires. Les anciennes illustrations sont des maquettes, pas des captures réelles.</p>
+    </section>
     <div class="doc-layout">
       <aside class="doc-side" aria-label="Sommaire de la documentation">
         <label for="doc-role">Parcours métier</label>
@@ -145,6 +160,34 @@
           <p>Le <a href="/admin/hub">Hub</a> relie la branche administrative (achats / décisions) à la branche physique (colis, sacs, cartons, expéditions), autour du même dossier.</p>
           <ol><li>Consulter les dossiers attendus et repérer les blocages ou pièces manquantes.</li><li>Réceptionner physiquement les objets avec les preuves prévues.</li><li>Contrôler les quantités, le rattachement commande / fournisseur / marché.</li><li>Constituer les regroupements, sacs et cartons <strong>KOM-BOX</strong> lorsqu’ils sont disponibles.</li><li>Remettre au transport avec traçabilité ; ne jamais considérer une commande « reçue » sur la seule base d’un bon de commande.</li></ol>
           <p>La directrice Hub intervient dans les décisions d’engagement et de paiement selon ses habilitations. L’opérateur physique ne remplace pas cette autorité.</p>
+          <article class="doc-task-guide" id="fiche-reception-fournisseur" aria-labelledby="doc-task-receive-title" data-guide-status="source-verified-chromium-pending">
+            <div class="doc-task-topline"><span>FICHE OPÉRATOIRE · HUB-01</span><span class="doc-task-state">Parcours vérifié dans le code · captures Chromium à certifier</span></div>
+            <h3 id="doc-task-receive-title">Réceptionner des articles d'un fournisseur au Hub</h3>
+            <p class="doc-task-intro">Objectif : enregistrer <strong>uniquement les unités physiquement arrivées</strong>, rattachées à une commande fournisseur (PO), en conservant une preuve du scan ou de la saisie manuelle.</p>
+            <dl class="doc-task-facts">
+              <div><dt>Rôle opérateur</dt><dd>Administrateur ou agent Hub habilité à la réception ; le serveur conserve le contrôle des droits.</dd></div>
+              <div><dt>Point d'entrée</dt><dd><a href="/admin/hub?branch=operations">Hub → Opérations</a>, puis la section <strong>Hub · Réception fournisseur</strong>.</dd></div>
+              <div><dt>Avant de commencer</dt><dd>Colis physiquement présent, PO identifiable et quantités réellement comptées ; une PO « expédiée » n'est pas une réception.</dd></div>
+              <div><dt>Résultat attendu</dt><dd>Réception persistée, quantités restantes actualisées, justificatifs cohérents et éventuels reliquats toujours visibles.</dd></div>
+            </dl>
+            <div class="doc-task-walkthrough">
+              <div class="doc-task-step"><span class="doc-task-step-number">01</span><div><h4>Ouvrir le poste Hub en mode Opérations</h4><p>Dans le back-office, ouvrir <a href="/admin/hub?branch=operations">Hub · Tous les marchés</a> et sélectionner la branche <strong>Opérations</strong>. Descendre jusqu'à <strong>Hub · Réception fournisseur</strong>. Ne pas confondre avec <em>Administration</em>, qui suit les achats et engagements.</p><p class="doc-task-check">À vérifier : la liste des PO en attente de réception est affichée. Si elle est indisponible, signaler le blocage plutôt que d'inventer une réception.</p></div></div>
+              <div class="doc-task-step"><span class="doc-task-step-number">02</span><div><h4>Identifier la bonne commande fournisseur</h4><p>Dans la carte de réception, contrôler le <strong>fournisseur</strong>, l'identifiant <strong>PO</strong>, la référence fournisseur et les lignes attendues. Le statut fournisseur affiché est une information ; il ne prouve pas l'arrivée physique.</p><p class="doc-task-check">À vérifier : chaque ligne et variante correspondent aux articles réellement déballés.</p></div></div>
+              <div class="doc-task-step"><span class="doc-task-step-number">03</span><div><h4>Identifier les références reçues</h4><p>Utiliser le champ <strong>Identifier la référence reçue</strong>, puis scanner le code EAN, le code-barres fournisseur ou l'étiquette de lot et valider par Entrée. Si le code est inconnu, utiliser la confirmation de rattachement à la variante attendue sur <em>cette PO</em>, colis en main.</p><p class="doc-task-check">À vérifier : la référence est reconnue et associée à la bonne variante ; un scan ne signifie pas que toute la quantité commandée a été reçue.</p></div></div>
+              <div class="doc-task-step"><span class="doc-task-step-number">04</span><div><h4>Saisir les quantités réellement comptées</h4><p>Dans la colonne des quantités reçues maintenant, indiquer un <strong>entier positif</strong> pour chaque ligne réellement présente. Les champs sont vides au départ. Le maximum autorisé est la quantité restante ; laisser les lignes absentes vides.</p><p class="doc-task-check">À vérifier : les écarts sont conservés comme restants à recevoir, sans sur-réception.</p></div></div>
+              <div class="doc-task-step"><span class="doc-task-step-number">05</span><div><h4>Ajouter la preuve et confirmer</h4><p>Si disponible, saisir le <strong>Suivi / référence du colis</strong>. Cliquer sur <strong>Enregistrer la réception</strong> seulement lorsque toutes les références ont leur preuve et les quantités sont valides ; lire puis confirmer le récapitulatif physique de la PO.</p><p class="doc-task-check">À vérifier : retour de confirmation de réception et mise à jour de la PO / des quantités restantes après actualisation.</p></div></div>
+              <div class="doc-task-step"><span class="doc-task-step-number">06</span><div><h4>Vérifier et transmettre</h4><p>Contrôler la réception et ses quantités dans le dossier Hub, puis suivre la préparation physique sur le même poste selon les tâches encore ouvertes. Une réponse réseau perdue ne justifie jamais une deuxième réception automatique : rechercher d'abord la référence enregistrée.</p><p class="doc-task-check">Preuve finale : référence de réception, quantité par ligne, provenance du code et état restant cohérents.</p></div></div>
+            </div>
+            <div class="doc-task-exceptions"><h4>Cas particuliers et refus attendus</h4>
+              <dl><dt>Scanner indisponible</dt><dd>Activer « Saisie manuelle » et fournir une justification d'au moins six caractères. La provenance enregistrée doit rester <code>MANUAL</code>, jamais <code>SCAN</code>.</dd>
+              <dt>Réception partielle</dt><dd>Déclarer seulement les quantités présentes : le reliquat reste à recevoir. Ne pas saisir les articles absents.</dd>
+              <dt>Colis sans manifeste / sans PO identifiable</dt><dd>Utiliser la carte distincte <strong>Arrivée fournisseur sans manifeste</strong> : saisir une référence physique unique (au moins six caractères), la zone de réception réelle (au moins quatre caractères), et éventuellement le tracking, puis <strong>Attester l’arrivée sans manifeste</strong>. Aucun article, SKU ou quantité n'est attribué avant rapprochement.</dd>
+              <dt>Quantité invalide ou preuve manquante</dt><dd>Le bouton reste désactivé. Corriger le champ ou scanner / justifier les références, sans passer par une API ou un SQL direct.</dd>
+              <dt>Réseau incertain ou référence en conflit</dt><dd>Consulter le dossier avant de réessayer ; en cas de conflit de référence avec contenu différent, relire les quantités restantes puis recommencer avec une référence correcte.</dd></dl>
+            </div>
+            <div class="doc-task-media-pending"><strong>Captures réelles à intégrer</strong><p>Six captures anonymisées sont requises : poste Opérations, carte PO, scan / rattachement, quantités, confirmation, preuve après rafraîchissement. Aucune des 11 maquettes existantes ne tient lieu de capture Chromium certifiée.</p></div>
+            <p class="doc-task-source">Source fonctionnelle examinée : <code>public/dashboards/canonical/js/hub-workstation.js</code> et <code>public/dashboards/canonical/js/operations-workspace.js</code>. Procédure documentaire uniquement, sans déclenchement de réception réelle.</p>
+          </article>
           <figure class="doc-figure"><a href="/dashboards/canonical/manual/screens/08_Hub_Relais.png" target="_blank" rel="noopener"><img src="/dashboards/canonical/manual/screens/08_Hub_Relais.png" alt="Maquette de gestion Hub et Relais" loading="lazy"></a><figcaption>Maquette de référence — Hub & Relais (pas le cockpit Live actuel).</figcaption></figure>
           <figure class="doc-figure"><a href="/dashboards/canonical/manual/screens/07_Operations.png" target="_blank" rel="noopener"><img src="/dashboards/canonical/manual/screens/07_Operations.png" alt="Maquette de pilotage des opérations" loading="lazy"></a><figcaption>Maquette de référence — Opérations.</figcaption></figure>
         </section>

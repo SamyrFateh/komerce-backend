@@ -84,3 +84,42 @@ body.kmc-shell-v4:has(.kmc-documentation) > .kmc-documentation { display:block; 
 .doc-process > p:last-child{margin-bottom:2px}
 @media(max-width:620px){.doc-process-index{grid-template-columns:1fr}}
 @media print{.doc-process{break-before:auto;break-inside:auto}.doc-process h3{break-after:avoid}}
+
+/* Centre d'aide : entrée par tâches, limitée au guide, sans surcharger le shell Canonical. */
+.doc-help-home{margin:0 0 28px;padding:28px;border:1px solid #dbe5f3;border-radius:18px;background:#fff;box-shadow:0 8px 28px rgb(22 39 69 / .04)}
+.doc-help-home-head{display:flex;align-items:center;justify-content:space-between;gap:22px;margin-bottom:20px}
+.doc-help-eyebrow{color:#cf6554;font-size:.72rem;font-weight:850;letter-spacing:.13em}
+.doc-help-home h2{margin:8px 0 8px;font-size:clamp(1.5rem,2.4vw,2.1rem);color:#152844}
+.doc-help-home-head p{margin:0;max-width:670px;color:#53677f;line-height:1.6}
+.doc-task-featured{flex:0 0 220px;padding:12px 16px;color:#fff!important;background:#263c63;border-radius:10px;text-decoration:none;font-weight:700;line-height:1.45}
+.doc-help-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.doc-help-grid a{border:1px solid #e0e7f2;border-radius:12px;padding:19px;display:flex;flex-direction:column;gap:8px;background:#f8fafe;text-decoration:none}
+.doc-help-grid a:hover,.doc-help-grid a:focus-visible{background:#edf2ff;border-color:#a8bee9}
+.doc-help-grid strong{color:#173053;font-size:.94rem}
+.doc-help-grid span{font-size:.82rem;color:#667990}
+.doc-help-transparency{color:#667990;font-size:.8rem;margin:16px 0 0}
+.doc-task-guide{scroll-margin-top:75px;border:1px solid #cbd7e9;background:#fbfcff;border-radius:15px;padding:28px;margin:28px 0}
+.doc-task-topline{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:.7rem;letter-spacing:.07em;font-weight:850;color:#cf6554}
+.doc-task-state{color:#697c96;letter-spacing:0}
+.doc-task-guide h3{font-size:1.45rem;color:#172e50;margin:12px 0}
+.doc-task-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:20px 0}
+.doc-task-facts>div{padding:14px;border-radius:10px;background:#eaf0fa}
+.doc-task-facts dt{font-size:.78rem;font-weight:850;color:#243e61;margin-bottom:6px}
+.doc-task-facts dd{margin:0;font-size:.87rem;line-height:1.55;color:#415773}
+.doc-task-walkthrough{border-top:1px solid #dce5f1;margin-top:22px}
+.doc-task-step{display:grid;grid-template-columns:42px minmax(0,1fr);gap:12px;padding:21px 0;border-bottom:1px solid #e1e9f3}
+.doc-task-step-number{display:inline-flex;justify-content:center;align-items:center;width:38px;height:38px;border-radius:50%;background:#203c67;color:#fff;font-weight:850;font-size:.83rem}
+.doc-task-guide .doc-task-step h4{font-size:1.02rem;margin:0 0 6px;color:#173150}
+.doc-task-guide .doc-task-step p{margin:7px 0}
+.doc-task-guide .doc-task-check{border-left:3px solid #ef9f84;padding-left:12px;color:#4b5d74;font-size:.88rem}
+.doc-task-exceptions{margin:24px 0;padding:22px;background:#fff5ee;border-radius:13px}
+.doc-task-exceptions h4{margin:0 0 14px;font-size:1.05rem;color:#593d30}
+.doc-task-exceptions dl{display:grid;grid-template-columns:170px 1fr;gap:12px 14px}
+.doc-task-exceptions dt{font-weight:800;color:#704d3e}
+.doc-task-exceptions dd{margin:0;line-height:1.6;color:#644f47}
+.doc-task-media-pending{border:1px dashed #aebed5;border-radius:12px;padding:18px;background:#f4f7fc}
+.doc-task-media-pending strong{color:#354d6a}
+.doc-task-guide .doc-task-source{font-size:.78rem;color:#647790}
+@media(max-width:1100px){.doc-help-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.doc-help-home-head{display:block}.doc-task-featured{display:inline-block;margin-top:16px}}
+@media(max-width:620px){.doc-help-home{padding:18px}.doc-help-grid,.doc-task-facts{grid-template-columns:1fr}.doc-task-guide{padding:18px}.doc-task-exceptions dl{display:block}.doc-task-exceptions dd{margin:5px 0 14px}}
+@media print{.doc-help-home{display:none}.doc-task-guide{break-before:page;border:0;padding:0}.doc-task-step{break-inside:avoid}}
