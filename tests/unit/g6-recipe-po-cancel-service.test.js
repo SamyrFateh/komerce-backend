@@ -54,6 +54,21 @@ describe('G6 recipe PO transaction',()=>{
    expect(sql.join('\n')).toContain('UPDATE alerts SET resolved_at=NOW()');
    expect(sql).not.toContain('ROLLBACK');expect(client.release).toHaveBeenCalledTimes(1);
  });
+ test('PO engagé avec ligne déjà annulée : conserve preuve historique et commit sans double annulation',async()=>{
+   rows.lines=[{...ITEM,cancelled_at:new Date('2026-11-18T00:00:00Z')}];
+   rows.detached=[];
+   const result=await cancelRecipePo(PO,{actor:ACTOR,reason:'Fin recette contrôlée'});
+   expect(result).toMatchObject({status:'cancelled',cancelled_lines:[ITEM.line_id],newly_cancelled_lines:[]});
+   expect(client.query.mock.calls.map(x=>x[0])).toContain('COMMIT');
+   expect(client.query.mock.calls.map(x=>x[0])).not.toContain('ROLLBACK');
+ });
+ test('une ligne active non annulée par UPDATE est un changement concurrent interdit',async()=>{
+   rows.lines=[{...ITEM,cancelled_at:null}];
+   rows.detached=[];
+   await expect(cancelRecipePo(PO,{actor:ACTOR,reason:'Fin recette contrôlée'}))
+     .rejects.toMatchObject({code:'G6_PO_CONCURRENT_CHANGE'});
+   expect(client.query.mock.calls.map(x=>x[0])).toContain('ROLLBACK');
+ });
  for(const [kind,change,code] of [
    ['mixed',r=>r.lines.push({...ITEM,simulation_scope:'REAL'}),'G6_PO_MIXED_SCOPE'],
    ['physical',r=>r.physical.push({exists:1}),'G6_PO_PHYSICAL_RECEIVED'],
