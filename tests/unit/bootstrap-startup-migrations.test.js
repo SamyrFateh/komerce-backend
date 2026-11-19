@@ -205,7 +205,13 @@ describe('bootstrap/startup-migrations', () => {
     });
 
     test('runStartupMigrations se résout normalement même si TOUTES les migrations non-fatales échouent', async () => {
-      mockDbQuery.mockImplementation((sql) => {
+      mockDbQuery.mockImplementation((sql, params) => {
+        // Les deux métadonnées préliminaires sont des lectures nécessaires
+        // à la décision d'appliquer le DDL fatal, et doivent réussir ici.
+        if (typeof sql === 'string' && sql.includes('pg_catalog.pg_attribute')
+            && params?.[0] === 'orders' && ['pending_at', 'confirmed_at'].includes(params?.[1])) {
+          return Promise.resolve({ rows: [{ exists: false }] });
+        }
         if (typeof sql === 'string' &&
             (sql.includes('ADD COLUMN IF NOT EXISTS pending_at') ||
              sql.includes('ADD COLUMN IF NOT EXISTS confirmed_at'))) {
