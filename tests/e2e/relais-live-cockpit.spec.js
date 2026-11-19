@@ -107,7 +107,7 @@ test.describe('Cockpit Relais — navigation canonique', () => {
       .toHaveAttribute('href','/admin/relais-live?view=remises');
     expect(state.writes).toEqual([]);
     await actions.getByRole('link',{name:/Réceptionner un colis/}).click();
-    await expect(page).toHaveURL(/\\?view=execute&focus=shipments$/);
+    await expect(page).toHaveURL(/\?view=execute&focus=shipments$/);
     expect(state.writes).toEqual([]);
   });
 
@@ -116,9 +116,9 @@ test.describe('Cockpit Relais — navigation canonique', () => {
     await page.setViewportSize({width:390,height:844});
     const actions=page.locator('[data-relay-quick-actions]');
     await expect(actions.getByRole('link',{name:/Remettre un colis/})).toBeVisible();
-    await expect(actions).toHaveCSS('grid-template-columns',/\\d+px/);
+    await expect(actions).toHaveCSS('grid-template-columns',/\d+px/);
     await actions.getByRole('link',{name:/Remettre un colis/}).click();
-    await expect(page).toHaveURL(/\\?view=remises$/);
+    await expect(page).toHaveURL(/\?view=remises$/);
     expect(state.writes).toEqual([]);
   });
 
