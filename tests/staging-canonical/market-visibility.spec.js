@@ -22,9 +22,25 @@ test('Responsable marché : Hub et Order 360 isolés, lecture seule par capabili
     allowedMarkets:[],boardMarkets:[],boardOrderCount:null,order360:null,
     checkedReads:[],unauthorized:[],blockedWrites:[],jsErrors:[]};
   const save=()=>{fs.mkdirSync(path.dirname(OUT),{recursive:true});fs.writeFileSync(OUT,JSON.stringify(proof,null,2)+'\n')};
+  // Browser fetch is intentionally used after login: Playwright APIRequest
+  // timeout call logs can expose httpOnly Cookie headers inside raw artifacts.
+  // The initial public /health/version call before navigation has no session.
   const fetchJSON=async url=>{
-    const r=await page.request.get(url,{timeout:20000});
-    return {status:r.status(),body:await r.json().catch(()=>({}))};
+    if(page.url()==='about:blank') {
+      const r=await page.request.get(url,{timeout:20000});
+      return {status:r.status(),body:await r.json().catch(()=>({}))};
+    }
+    return page.evaluate(async endpoint=>{
+      const controller=new AbortController();
+      const timer=setTimeout(()=>controller.abort(),20000);
+      try{
+        const response=await fetch(endpoint,{method:'GET',credentials:'same-origin',
+          redirect:'manual',headers:{Accept:'application/json'},signal:controller.signal});
+        return {status:response.status,body:await response.json().catch(()=>({}))};
+      }catch(error){
+        return {status:0,body:{},error_code:String(error?.name||'FETCH_FAILED')};
+      }finally{clearTimeout(timer);}
+    },url);
   };
   try {
     expect(new URL(process.env.E2E_STAGING_BASE_URL||BASE).origin).toBe(BASE);
@@ -102,8 +118,11 @@ test('Responsable marché : Hub et Order 360 isolés, lecture seule par capabili
     // Open every distinct dashboard destination in the authenticated market session.
     // No mocked API, no mutation and no silent redirect to the login page.
     for(const href of [...new Set(menu.map(item=>item.href))]) {
+      // A hash-only transition can return a null Playwright Response; probe the
+      // actual same-origin GET to prove HTTP 200, then verify the browser's URL.
+      const probe=await fetchJSON(href);
       const navigation=await page.goto(href,{waitUntil:'domcontentloaded'});
-      const status=navigation?.status()||0;
+      const status=navigation?.status()||probe.status;
       proof.navigation.visited.push({href,http:status,path:new URL(page.url()).pathname});
       expect(status,'Dashboard unavailable for '+href).toBe(200);
       expect(new URL(page.url()).pathname,'Session lost on '+href).not.toBe('/login.html');
@@ -169,7 +188,9 @@ test('Responsable marché : Hub et Order 360 isolés, lecture seule par capabili
     proof.result='PASS';
   } catch(error) {
     proof.result='FAIL';
-    proof.error=String(error.message||error).slice(0,600);
+    // Never archive a Playwright call log: it can contain the authenticated Cookie.
+    proof.error=String(error?.message||error).split(/Call log:|\\n\\s*- →/)[0]
+      .replace(/eyJ[A-Za-z0-9._-]+/g,'[REDACTED]').slice(0,240);
     throw error;
   } finally {
     save();
