@@ -153,8 +153,38 @@
     }
     const purchasing = (path) => `/api/purchasing/${path}`;
     function paint() { render(host, ctx); }
+    // UX3 — partage d'une sélection sans perdre marché, vue ni filtres dans l'URL.
+    const win = doc.defaultView;
+    const isHubRoute = () => win?.location?.pathname === '/admin/hub-live';
+    function readUrlSelection() {
+      if (!isHubRoute()) return null;
+      const value = new win.URLSearchParams(win.location.search).get('sel') || '';
+      const i = value.indexOf(':');
+      if (i < 1) return null;
+      const type = value.slice(0, i), id = value.slice(i + 1);
+      return ['po','order','need','bag','box'].includes(type) && id.length > 0 && id.length < 160 ? {type,id} : null;
+    }
+    function putUrlSelection(type, id) {
+      if (!isHubRoute() || !win.history?.pushState) return;
+      const url = new win.URL(win.location.href);
+      const key = type && id ? type + ':' + id : '';
+      if (url.searchParams.get('sel') === key) return;
+      if (key) url.searchParams.set('sel',key);
+      else url.searchParams.delete('sel');
+      win.history.pushState(win.history.state,'',url.pathname+url.search+url.hash);
+    }
+    if (!state.urlSelectionListener && isHubRoute() && win.addEventListener) {
+      state.urlSelectionListener = true;
+      win.addEventListener('popstate', () => {
+        state.sel = readUrlSelection();
+        state.selectionInitialized = true;
+        state.form = null;
+        render(host,ctx);
+      });
+    }
     function select(type, id) {
       state.sel = { type, id };
+      putUrlSelection(type,id);
       if (state.form && !((type === 'po' && state.form.po === id) || (type === 'box' && state.form.box === id))) state.form = null;
       paint();
     }
@@ -220,9 +250,26 @@
       if (s.box_unit_id) return { type: 'box', id: s.box_unit_id };
       return null;
     }
-    if (!state.sel) {
-      const first = todo.map(todoSel).find(Boolean);
-      state.sel = first || (orders[0] ? { type: 'order', id: orders[0].id } : null);
+    if (!state.selectionInitialized) {
+      const linked = readUrlSelection();
+      const actionable = todo.filter(item => item.viewer_can_act !== false).map(todoSel).find(Boolean);
+      state.sel = linked || actionable || null;
+      state.selectionInitialized = true;
+    }
+    if (state.sel) {
+      const known = state.sel.type === 'po' ? poById.has(state.sel.id) :
+        state.sel.type === 'order' ? orderById.has(state.sel.id) :
+        state.sel.type === 'need' ? (batches.some(b => b.groups.some(g => g.key === state.sel.id)) ||
+          orders.some(o => o.items.some(i => `src:${o.id}:${i.id}` === state.sel.id))) :
+        state.sel.type === 'bag' ? [...(d.bags_open || []),...(d.bags_ready || [])].some(b => b.unit_id === state.sel.id) :
+        state.sel.type === 'box' ? (d.boxes || []).some(b => b.unit_id === state.sel.id) : false;
+      // La tâche serveur est une référence métier valide même si la liste
+      // compacte n'inclut pas le dossier : conserver sa sélection au clic.
+      const inTodo = todo.some(item => {
+        const target = todoSel(item);
+        return target && target.type === state.sel.type && target.id === state.sel.id;
+      });
+      if (!known && !inTodo) state.sel = null;
     }
     const sel = state.sel;
     const selKey = sel ? `${sel.type}:${sel.id}` : '';
@@ -644,7 +691,7 @@
     }
     function lineageFor() {
       let title = ''; let sub = ''; let nodes = []; let blocker = '';
-      if (!sel) return { title: '—', sub: '', nodes, blocker };
+      if (!sel) return { title: 'Sélectionnez un élément', sub: 'Choisissez un dossier, un besoin ou une PO dans les colonnes du Hub.', nodes, blocker };
       if (sel.type === 'order') {
         const o = orderById.get(sel.id);
         if (o) {
