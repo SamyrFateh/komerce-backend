@@ -23,6 +23,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { authenticate } = require('../middleware/auth');
+const { resolveReadAuthority } = require('../services/market-delegation-read-authority');
 const {
   resolveAuthorization,
   listServices,
@@ -69,8 +70,9 @@ function rejectMarketId(body) {
 router.get('/markets/:marketCode/local-offer/services', authenticate, async (req, res, next) => {
   try {
     const result = await withTransaction(async (client) => {
-      const authz = await resolveAuthorization(client, {
-        userId: req.user.id, marketCode: req.params.marketCode, requiredCapability: 'local_offer.manage',
+      const authz = await resolveReadAuthority(resolveAuthorization, client, {
+        userId: req.user.id, marketCode: req.params.marketCode,
+        primaryCapability: 'catalog.read', fallbackCapability: 'local_offer.manage',
       });
       const services = await listServices(client, { marketId: authz.market_id });
       return { authz, services };
@@ -107,8 +109,9 @@ router.put('/markets/:marketCode/local-offer/services/:serviceId', authenticate,
 router.get('/markets/:marketCode/local-offer/physical-offers', authenticate, async (req, res, next) => {
   try {
     const result = await withTransaction(async (client) => {
-      const authz = await resolveAuthorization(client, {
-        userId: req.user.id, marketCode: req.params.marketCode, requiredCapability: 'local_offer.manage',
+      const authz = await resolveReadAuthority(resolveAuthorization, client, {
+        userId: req.user.id, marketCode: req.params.marketCode,
+        primaryCapability: 'catalog.read', fallbackCapability: 'local_offer.manage',
       });
       const physicalOffers = await listPhysicalOffers(client, { marketId: authz.market_id });
       return { authz, physicalOffers };

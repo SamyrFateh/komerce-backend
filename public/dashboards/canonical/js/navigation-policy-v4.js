@@ -893,7 +893,7 @@
       label: 'Piloter',
       items: Object.freeze([
         Object.freeze({ id: 'control-tower', label: 'Tour de contrôle', href: '/admin/pilotage', roles: ['admin', 'market_operator'], capability: 'dashboard.market.read', surfaces: ['pilotage'] }),
-        Object.freeze({ id: 'action-center', label: 'À traiter', href: '/admin/action-center', roles: ['admin', 'market_operator', 'agent_hub', 'agent_relais', 'agent_transitaire'], capability: 'decision_signal.manage', surfaces: ['action-center'] }),
+        Object.freeze({ id: 'action-center', label: 'À traiter', href: '/admin/action-center', roles: ['admin', 'market_operator', 'agent_hub', 'agent_relais', 'agent_transitaire'], capability: 'dashboard.market.read', surfaces: ['action-center'] }),
       ]),
     }),
     Object.freeze({
@@ -918,7 +918,7 @@
       label: 'Opérations',
       items: Object.freeze([
         Object.freeze({ id: 'flow-operations', label: 'Vue opérations', href: '/admin/operations', roles: ['admin', 'market_operator'], capability: 'operations.read', surfaces: ['operations'] }),
-        Object.freeze({ id: 'workspace-shipping', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: ['admin', 'agent_hub', 'agent_transitaire', 'market_operator'], capability: 'operations.read', surfaces: ['shipping-customs-workspace'] }),
+        Object.freeze({ id: 'workspace-shipping', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: ['admin', 'agent_hub', 'agent_transitaire', 'market_operator'], capabilitiesAny: ['logistics.read', 'operations.read'], surfaces: ['shipping-customs-workspace'] }),
 
         Object.freeze({ id: 'workspace-purchasing', label: 'Achats fournisseurs', href: '/admin/workspaces/purchasing', roles: ['admin'], surfaces: ['purchasing-workspace'] }),
       ]),
@@ -1092,7 +1092,8 @@
           link.setAttribute('aria-current', 'page');
         }
         link.appendChild(createNode(doc, 'span', 'kmc-admin-primary-icon', ICONS[item.id] || '•'));
-        link.appendChild(createNode(doc, 'span', 'kmc-admin-primary-label', item.label));
+        link.appendChild(createNode(doc, 'span', 'kmc-admin-primary-label',
+          item.id === 'live-hub' && roleOf(user) === 'market_operator' ? 'Hub · Mes marchés' : item.label));
         wrap.appendChild(link);
       });
       primary.appendChild(wrap);
@@ -1145,11 +1146,12 @@
   // où la capability DELEGATION ne s'applique pas) garde le comportement
   // role-only historique plutôt que de masquer la tab par défaut.
   function tabCapabilityGranted(tab, adminContext) {
-    if (!tab.capability) return true;
+    const candidates = tab.capabilitiesAny || (tab.capability ? [tab.capability] : []);
+    if (!candidates.length) return true;
     if (!adminContext || adminContext.access?.mode !== 'market') return true;
     const market = adminContext.access.defaultMarket;
     const granted = adminContext.access.delegatedCapabilities?.[market] || [];
-    return granted.includes(tab.capability);
+    return candidates.some(capability => granted.includes(capability));
   }
 
   function localTabsFor(domainId, user, adminContext) {
@@ -1164,7 +1166,7 @@
     // Masquer uniquement sur /admin/hub les onglets N2 Sourcing et Relais ;
     // ils restent disponibles depuis leurs espaces respectifs.
     if (domainId === 'live' && String(global.location?.pathname || '') === '/admin/hub') {
-      return [{ id:'hub-live', label:'Hub · Tous les marchés', href:'/admin/hub' }];
+      return [{ id:'hub-live', label:role === 'market_operator' ? 'Hub · Mes marchés' : 'Hub · Tous les marchés', href:'/admin/hub' }];
     }
     // Sourcing Live et Hub Live : une porte de travail métier, pas trois
     // sous-menus concurrents. Les vues legacy directes restent lisibles via

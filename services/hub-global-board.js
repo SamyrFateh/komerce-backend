@@ -193,12 +193,16 @@ function summarizeMarket(market, payload) {
   return result;
 }
 
-// Le marché n'est JAMAIS un filtre d'autorité du Hub central. Cette projection
-// n'expose que les états de travail, jamais contacts clients, prix, paiements,
-// pièces fournisseurs ou contenu détaillé des produits.
-async function getGlobalBoard(query = db, dossierReader = (marketId) => dossier.getDossier({ marketId }, query)) {
+// La vérité Hub reste centrale. Le responsable marché ne reçoit qu'une projection
+// filtrée par ses market_id résolus côté serveur, AVANT lecture des dossiers.
+// Aucun filtrage client ne peut servir de garde de sécurité.
+async function getGlobalBoard(query = db, dossierReader = (marketId) => dossier.getDossier({ marketId }, query), { marketIds = null } = {}) {
+  const scoped = Array.isArray(marketIds);
   const { rows: markets } = await query.query(
-    'SELECT id, code, name FROM markets WHERE is_active = TRUE ORDER BY code'
+    scoped
+      ? 'SELECT id, code, name FROM markets WHERE is_active = TRUE AND id = ANY($1::uuid[]) ORDER BY code'
+      : 'SELECT id, code, name FROM markets WHERE is_active = TRUE ORDER BY code',
+    scoped ? [marketIds] : []
   );
   const orders = [];
   for (const market of markets) {
@@ -206,6 +210,7 @@ async function getGlobalBoard(query = db, dossierReader = (marketId) => dossier.
   }
   return {
     scope: 'HUB_GLOBAL',
+    ...(scoped ? { audience: 'MARKET_SCOPED' } : {}),
     markets: markets.map(m => m.code),
     orders: orders.sort((a, b) => a.market.localeCompare(b.market) || a.reference.localeCompare(b.reference)),
   };
