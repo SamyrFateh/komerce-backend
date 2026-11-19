@@ -58,6 +58,7 @@
   function task(doc,ctx,host,{title,action,fields,transform,disabled=false,openByDefault=false}){
     const outer=put(host,doc.createElement('details'));
     outer.className='kmc-journey-task';
+    outer.setAttribute('data-journey-task', JSON.stringify([ctx.marketCode,ctx.journeyTab,action,title]));
     if(openByDefault)outer.open=true;
     put(outer,text(doc,'summary','kmc-journey-task-heading',title));
     const form=put(outer,doc.createElement('form'));
@@ -67,6 +68,7 @@
       const f=field(doc,def.name,def.label,def.type,def.required,def.options);
       if(def.value!=null)f.control.value=def.value;
       if(def.placeholder)f.control.placeholder=def.placeholder;
+      f.control.addEventListener('input',()=>f.control.setAttribute('data-edited',''));
       controls[def.name]=f.control;
       form.appendChild(f.wrapper);
     }
@@ -91,6 +93,7 @@
         });
         const body=await response.json().catch(()=>({}));
         if(!response.ok)throw Error(body.error||'Opération refusée');
+        outer.removeAttribute('data-journey-task');
         note.textContent='Fait enregistré.';
         await ctx.reload();
       }catch(error){note.textContent=error.message||'Erreur';submit.disabled=false;}
@@ -110,10 +113,44 @@
     if(ctx.user?.role==='agent_transitaire')return ['forwarder_received','in_transit','arrived'].includes(next);
     return false;
   }
+  function capture(root,doc){
+    const tasks=new Map();
+    for(const task of root.querySelectorAll?.('[data-journey-task]')||[]){
+      const values=new Map();
+      for(const field of task.querySelectorAll('[data-edited]'))values.set(field.name,field.value);
+      const active=task.contains(doc.activeElement)?doc.activeElement:null;
+      tasks.set(task.getAttribute('data-journey-task'),{
+        open:task.open,values,focus:active?.name||active?.tagName,
+        start:active?.selectionStart,end:active?.selectionEnd,
+      });
+    }
+    return tasks;
+  }
+  function restore(section,tasks){
+    for(const task of section.querySelectorAll?.('[data-journey-task]')||[]){
+      const saved=tasks.get(task.getAttribute('data-journey-task'));
+      if(!saved)continue;
+      task.open=saved.open;
+      for(const field of task.querySelectorAll('[name]')){
+        if(!saved.values.has(field.name))continue;
+        field.value=saved.values.get(field.name);
+        field.setAttribute('data-edited','');
+      }
+      const focus=Array.from(task.querySelectorAll('input,select,button,summary'))
+        .find(node=>saved.focus===(node.name||node.tagName));
+      if(focus){
+        focus.focus({preventScroll:true});
+        if(saved.start!=null)focus.setSelectionRange(saved.start,saved.end);
+      }
+    }
+  }
   function render(doc,root,ctx,rows=[],detail=null,error=null){
     const section=put(root,doc.createElement('section'));
     section.className='kmc-journey-panel';
     section.setAttribute('data-international-journey','');
+    ctx.renderEpoch=(ctx.renderEpoch||0)+1;
+    section.setAttribute('data-render-epoch',String(ctx.renderEpoch));
+    section.setAttribute('data-ready',String(!error));
     put(section,text(doc,'h2','kmc-journey-title','Expéditions internationales · chaîne réelle'));
     put(section,text(doc,'p','kmc-journey-intro',
       'Hub → transitaire → fret → arrivée → douane → transport local → relais. Chaque étape nécessite une preuve.'));
@@ -285,6 +322,7 @@
     }
     if(detail){
       const extra=put(dossier,doc.createElement('details'));extra.className='kmc-journey-task';
+      extra.setAttribute('data-journey-task',JSON.stringify([ctx.marketCode,ctx.journeyTab,s.reference,'history']));
       put(extra,text(doc,'summary','','Preuves et historique · '+(detail.events?.length||0)+' événement(s)'));
       for(const e of detail.events||[])
         put(extra,text(doc,'p','kmc-journey-history',date(e.occurred_at)+' · '+e.event_type+' · '+(e.proof_ref||'Événement sans preuve de remise')));
@@ -293,5 +331,5 @@
     }
     return section;
   }
-  return Object.freeze({render,STAGES,STAGE_LABEL,TABS,nextStage,endpoint});
+  return Object.freeze({render,capture,restore,STAGES,STAGE_LABEL,TABS,nextStage,endpoint});
 });
