@@ -124,6 +124,8 @@ describeE2E('C2 — réception physique d\'une PO historique → préparation', 
       WHERE a.order_id=$1`,[orderId]);
     expect(physical.rows.length).toBeGreaterThan(0);
     const {closeG6HubOrder}=require('../../services/g6-hub-recipe-closure');
+    const productStockBefore=Number((await q('SELECT stock FROM products WHERE id=$1',[productId])).rows[0].stock);
+    const skuStockBefore=Number((await q('SELECT stock FROM product_skus WHERE id=$1',[skuId])).rows[0].stock);
     const result=await closeG6HubOrder(orderId,{actor:{id:userId,role:'admin'},
       reason:'Fin campagne G6, matière contrôlée au Hub'});
     expect(result).toMatchObject({status:'cancelled',psp_refund:false,external_calls:0});
@@ -140,8 +142,8 @@ describeE2E('C2 — réception physique d\'une PO historique → préparation', 
       i.subtype==='g6_hub_recipe_quarantine')).toBe(true);
     expect((await q('SELECT status FROM purchase_orders WHERE id=$1',[poId])).rows[0].status).toBe('hub_received');
     // Une unité mise en quarantaine n'est pas une restitution en stock vendable.
-    expect((await q('SELECT stock FROM products WHERE id=$1',[productId])).rows[0].stock).toBe(0);
-    expect(Number((await q('SELECT stock FROM product_skus WHERE id=$1',[skuId])).rows[0].stock)).toBe(0);
+    expect(Number((await q('SELECT stock FROM products WHERE id=$1',[productId])).rows[0].stock)).toBe(productStockBefore);
+    expect(Number((await q('SELECT stock FROM product_skus WHERE id=$1',[skuId])).rows[0].stock)).toBe(skuStockBefore);
   });
 
 });
