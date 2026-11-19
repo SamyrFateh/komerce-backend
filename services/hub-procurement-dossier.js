@@ -721,6 +721,7 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
   const purchaseOrders = [...pos.values()].map((po) => {
     // Simulé seulement si TOUTES les lignes partagent la même portée (règle serveur g6SupplierSimulation).
     po.simulation_scope = new Set(po.lines.map((l) => l.simulation_scope)).size === 1 ? po.lines[0].simulation_scope : null;
+    po.simulation_reference = po.simulation_scope === 'G6-BUYER' ? po.id : null;
     const totals = po.lines.reduce((t, l) => ({
       effective: t.effective + l.confirmed, received: t.received + l.received,
       missing: t.missing + l.missing, anomaly: t.anomaly + l.anomaly,
