@@ -1,3 +1,6 @@
+/* Documentation : fixer la largeur N1 héritée du menu horizontal V2, même avant le bootstrap asynchrone. */
+body.kmc-shell-v4:has(.kmc-documentation) > .kmc-admin-navigation { width:var(--kmc-shell-sidebar-width,176px); max-width:var(--kmc-shell-sidebar-width,176px); }
+body.kmc-shell-v4:has(.kmc-documentation) > .kmc-documentation { display:block; min-height:100vh; position:relative; z-index:1; }
 /* Guide produit Komerce, surface documentaire isolée et sans API métier. */
 .kmc-documentation{--doc-navy:#15233b;--doc-coral:#f47862;--doc-line:#dce3ed;--doc-muted:#55677b;color:var(--doc-navy);max-width:1510px;margin:0 auto;padding:32px clamp(20px,3.8vw,60px) 110px;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 .kmc-documentation *{box-sizing:border-box}
