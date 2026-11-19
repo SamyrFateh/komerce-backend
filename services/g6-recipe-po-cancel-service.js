@@ -55,13 +55,17 @@ async function cancelRecipePo(poId,{actor,reason}={}){
     await client.query(`UPDATE purchase_orders SET status='cancelled',updated_at=NOW(),
       notes=CONCAT(COALESCE(notes,''),$2::text) WHERE id=$1`,
       [poId,'\n[G6-CLEANUP PO] '+new Date().toISOString()+' actor='+actor.id+' reason='+why]);
-    const {rows:detached}=await client.query(`UPDATE purchase_lines SET purchase_order_id=NULL,
-      cancelled_at=COALESCE(cancelled_at,NOW()),cancel_reason=$2::text,updated_at=NOW()
-      WHERE purchase_order_id=$1 RETURNING id`,[poId,'G6-CLEANUP PO · '+why]);
-    if(detached.length!==lines.length)throw reject(409,'G6_PO_CONCURRENT_CHANGE');
+    // I3 (migration 263) interdit de détacher une ligne d'un PO engagé.
+    // Conserver la FK historique et sa preuve de transmission ; seule l'annulation
+    // métier de chaque ligne est autorisée (I5, écriture unique). Aucun trigger affaibli.
+    const {rows:cancelled}=await client.query(`UPDATE purchase_lines SET
+      cancelled_at=NOW(),cancel_reason=$2::text,updated_at=NOW()
+      WHERE purchase_order_id=$1 AND cancelled_at IS NULL RETURNING id`,
+      [poId,'G6-CLEANUP PO · '+why]);
+    if(cancelled.length!==lines.length)throw reject(409,'G6_PO_CONCURRENT_CHANGE');
     await resolveRecipePurchaseOrderAlerts(client,{poId,orderIds:orders,actorId:actor.id});
     await client.query('COMMIT');
-    return {purchase_order_id:poId,status:'cancelled',detached:detached.map(x=>x.id),orders,external_calls:0};
+    return {purchase_order_id:poId,status:'cancelled',cancelled_lines:cancelled.map(x=>x.id),orders,external_calls:0};
   }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e;}
   finally{client.release();}
 }
