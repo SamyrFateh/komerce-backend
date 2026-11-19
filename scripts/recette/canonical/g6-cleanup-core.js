@@ -14,7 +14,7 @@ const RECEIVED_PO=Object.freeze(['hub_received','received','partially_received']
 const RECEIVED_ORDER=Object.freeze(['preparation','shipped','in_transit','available']);
 const ENGAGED_PO=Object.freeze(['notified','confirmed']);
 const TERMINAL=Object.freeze(['collected','cancelled','refunded']);
-const ACTIONS=Object.freeze(['discard_po','cancel_line','cancel_order']);
+const ACTIONS=Object.freeze(['discard_po','cancel_line','cancel_order','cancel_recipe_po']);
 const MISSING=Object.freeze({
  D_RECEIVED_GOODS:'Aucun écran de retour, invendu, remise en stock ou clôture de recette pour marchandise reçue au Hub.',
  CUTOFF:'Annulation Order 360 refusée par la règle de coupure serveur (statut au-delà du seuil).',
@@ -36,35 +36,51 @@ function classify(entry,{cutoff='shipped'}={}){
   po_ids:pos,po_peers:Object.fromEntries(pos.map(p=>[p,(po_peers[p]||[]).map(x=>x.reference).sort()])),
   class:null,gestures:[],verdict:'PLANNED',reason:null,missing:[]};
  if(order.simulation_scope!==SCOPE){res.class='OUT_OF_SCOPE';res.verdict='REFUSED';res.reason='NOT_G6_BUYER';return res;}
- if(TERMINAL.includes(order.status)){res.class='TERMINAL';res.verdict='SKIPPED';return res;}
  const mixed=pos.filter(p=>(po_peers[p]||[]).length===0||(po_peers[p]||[]).some(x=>x.simulation_scope!==SCOPE));
  const st=pos.map(p=>poStatus.get(p));
  if(st.some(s=>RECEIVED_PO.includes(s))||RECEIVED_ORDER.includes(order.status))res.class='D';
  else if(st.some(s=>ENGAGED_PO.includes(s)))res.class='C';
  else if(st.includes('draft'))res.class='A';
  else res.class='B';
+ // Un dossier déjà annulé peut conserver une PO engagée : la classe C doit être nettoyable.
+ if(TERMINAL.includes(order.status) && !(order.status==='cancelled' && res.class==='C')){
+   res.class='TERMINAL';res.verdict='SKIPPED';return res;
+ }
  // Un PO partagé avec une commande non G6 (ou sans pairs lisibles) n'est jamais touché.
  if(mixed.length){res.verdict='REFUSED';res.reason='MIXED_PO';res.mixed_po_ids=mixed;return res;}
  if(res.class==='D'){res.verdict='SCREEN_MISSING';res.missing.push('D_RECEIVED_GOODS');res.reason=MISSING.D_RECEIVED_GOODS;return res;}
  if(order.payment_mode!=='cash_relais'){res.verdict='SCREEN_MISSING';res.missing.push('PAYMENT_MODE');res.reason=MISSING.PAYMENT_MODE;return res;}
- if(cutoffBlocks(order.status,cutoff)){res.verdict='SCREEN_MISSING';res.missing.push('CUTOFF');res.reason=MISSING.CUTOFF;return res;}
+ if(cutoffBlocks(order.status,cutoff) && res.class!=='C'){res.verdict='SCREEN_MISSING';res.missing.push('CUTOFF');res.reason=MISSING.CUTOFF;return res;}
+ if(res.class==='C'){
+   for(const p of pos.filter(x=>ENGAGED_PO.includes(poStatus.get(x))))res.gestures.push({action:'cancel_recipe_po',po_id:p});
+   if(!TERMINAL.includes(order.status)){
+     if(cutoffBlocks(order.status,cutoff)){res.missing.push('CUTOFF');res.residual=MISSING.CUTOFF;}
+     else res.gestures.push({action:'cancel_order',order_id:order.id,reference:order.reference});
+   }
+   return res;
+ }
  if(res.class==='A')for(const p of pos.filter(x=>poStatus.get(x)==='draft'))res.gestures.push({action:'discard_po',po_id:p});
  for(const l of lines.filter(x=>!x.po_id||(x.po_status==='draft')))res.gestures.push({action:'cancel_line',line_id:l.line_id});
  res.gestures.push({action:'cancel_order',order_id:order.id,reference:order.reference});
- if(res.class==='C'){res.missing.push('PO_ENGAGED');res.residual=MISSING.PO_ENGAGED;}
  return res;
 }
-/** Ordre imposé : PO brouillons, puis lignes, puis commandes A et B, puis C. D n'a aucun geste. */
+/** Ordre impératif : A/B, puis annulation des PO de classe C AVANT commande C.
+ * Une PO partagée est traitée une seule fois, avec garde atomique serveur 100 % G6.
+ * D reste SCREEN_MISSING jusqu'à l'intégration du lot D séparé.
+ */
 function buildPlan(entries,opts){
  const items=entries.map(e=>classify(e,opts));
- const rank={A:0,B:0,C:1};
- const todo=items.filter(i=>i.verdict==='PLANNED').sort((a,b)=>rank[a.class]-rank[b.class]||a.reference.localeCompare(b.reference));
+ const todo=items.filter(i=>i.verdict==='PLANNED').sort((a,b)=>a.reference.localeCompare(b.reference));
  const seen=new Set(),steps=[];
- const push=(g,i)=>{const k=g.action+':'+(g.po_id||g.line_id||g.order_id);if(seen.has(k))return;seen.add(k);steps.push({...g,reference:i.reference,class:i.class});};
- for(const a of ['discard_po','cancel_line','cancel_order'])
-  for(const grp of [['A','B'],['C']])
-   for(const i of todo.filter(x=>grp.includes(x.class)))
-    for(const g of i.gestures.filter(x=>x.action===a))push(g,i);
+ const push=(g,i)=>{const k=g.action+':'+(g.po_id||g.line_id||g.order_id);
+   if(seen.has(k))return;seen.add(k);steps.push({...g,reference:i.reference,class:i.class});};
+ for(const [group,actions] of [
+   [['A','B'],['discard_po','cancel_line','cancel_order']],
+   [['C'],['cancel_recipe_po','cancel_order']],
+ ]){
+   for(const action of actions)for(const item of todo.filter(i=>group.includes(i.class)))
+     for(const g of item.gestures.filter(x=>x.action===action))push(g,item);
+ }
  return {items,steps};
 }
 /** Garde exécutée avant chaque geste : seule une commande G6-BUYER du plan peut être touchée. */

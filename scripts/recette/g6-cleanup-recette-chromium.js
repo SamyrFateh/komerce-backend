@@ -32,7 +32,12 @@ async function inventory(){
    `SELECT o.id,o.reference,o.status::text AS status,o.payment_mode::text AS payment_mode,
            o.simulation_scope,m.code AS market
       FROM orders o LEFT JOIN markets m ON m.id=o.market_id
-     WHERE o.simulation_scope=$1 AND o.status::text NOT IN ('collected','cancelled')
+     WHERE o.simulation_scope=$1 AND
+       (o.status::text NOT IN ('collected','cancelled','refunded') OR
+        (o.status::text='cancelled' AND EXISTS (
+          SELECT 1 FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id
+          JOIN purchase_orders po ON po.id=pl.purchase_order_id
+          WHERE oi.order_id=o.id AND po.status::text IN ('notified','confirmed'))))
      ORDER BY m.code,o.reference`,[SCOPE]);
   const ids=orders.map(o=>o.id);
   const {rows:lines}=ids.length?await c.query(
@@ -61,11 +66,11 @@ async function inventory(){
 }
 async function readState(step){
  const q=(s,p)=>db.query(s,p).then(r=>r.rows[0]||null);
- if(step.action==='discard_po')return (await q('SELECT status::text AS s FROM purchase_orders WHERE id=$1',[step.po_id]))?.s;
+ if(step.action==='discard_po'||step.action==='cancel_recipe_po')return (await q('SELECT status::text AS s FROM purchase_orders WHERE id=$1',[step.po_id]))?.s;
  if(step.action==='cancel_line')return (await q('SELECT cancelled_at IS NOT NULL AS s FROM purchase_lines WHERE id=$1',[step.line_id]))?.s;
  return (await q('SELECT status::text AS s FROM orders WHERE id=$1 AND simulation_scope=$2',[step.order_id,SCOPE]))?.s;
 }
-const EXPECTED={discard_po:'cancelled',cancel_line:true,cancel_order:'cancelled'};
+const EXPECTED={discard_po:'cancelled',cancel_line:true,cancel_order:'cancelled',cancel_recipe_po:'cancelled'};
 const summarize=plan=>plan.items.map(i=>({reference:i.reference,market:i.market,class:i.class,order_status:i.order_status,
  verdict:i.verdict,reason:i.reason,po_ids:i.po_ids,commandes_du_po:i.po_peers,
  gestes:i.gestures.map(g=>g.action),residual:i.residual||null}));
@@ -76,6 +81,7 @@ async function login(browser,steps){
  const allowed=new Set(['/api/auth/login']);
  for(const s of steps){
   if(s.action==='discard_po')allowed.add('/api/purchasing/po/'+s.po_id+'/discard');
+  if(s.action==='cancel_recipe_po')allowed.add('/api/purchasing/po/'+s.po_id+'/g6-recipe-cancel');
   if(s.action==='cancel_line')allowed.add('/api/purchasing/lines/'+s.line_id+'/cancel');
   if(s.action==='cancel_order')allowed.add('/api/orders/'+s.order_id+'/cancel');
  }
@@ -115,6 +121,13 @@ async function perform(actor,step){
   const btn=page.locator('[data-purchasing-po="'+step.po_id+'"] [data-workspace-action="discard-po"]');
   await btn.waitFor({state:'visible',timeout:20000});
   return humanClick(null,btn,{mutation:{path:'/api/purchasing/po/'+step.po_id+'/discard'}});
+ }
+ if(step.action==='cancel_recipe_po'){
+  await humanGoto(page,'/admin/workspaces/purchasing?po='+encodeURIComponent(step.po_id),{waitUntil:'domcontentloaded'});
+  const btn=page.locator('[data-purchasing-po="'+step.po_id+'"] [data-workspace-action="cancel-g6-recipe-po"]');
+  await btn.waitFor({state:'visible',timeout:20000});
+  state.dialogReason=reason;
+  return humanClick(null,btn,{mutation:{path:'/api/purchasing/po/'+step.po_id+'/g6-recipe-cancel'}});
  }
  if(step.action==='cancel_line'){
   await humanGoto(page,'/admin/workspaces/purchasing',{waitUntil:'domcontentloaded'});
