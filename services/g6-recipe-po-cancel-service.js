@@ -66,7 +66,20 @@ async function cancelRecipePo(poId,{actor,reason}={}){
     await resolveRecipePurchaseOrderAlerts(client,{poId,orderIds:orders,actorId:actor.id});
     await client.query('COMMIT');
     return {purchase_order_id:poId,status:'cancelled',cancelled_lines:cancelled.map(x=>x.id),orders,external_calls:0};
-  }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e;}
+  }catch(e){
+    await client.query('ROLLBACK').catch(()=>{});
+    if(/^23[0-9A-Z]{3}$/.test(e.code||'')){
+      // Le SQLSTATE et le nom de contrainte sont exposés sans révéler de SQL,
+      // de preuve fournisseur ni de données personnelles dans le JSON.
+      const error=reject(409,'G6_PO_DB_CONSTRAINT','Annulation PO bloquée par une contrainte PostgreSQL');
+      error.pgCode=e.code;
+      if(/^[a-zA-Z0-9_]+$/.test(e.constraint||''))error.constraint=e.constraint;
+      const match=/^([a-zA-Z0-9_]+):/.exec(e.message||'');
+      if(match)error.dbReason=match[1];
+      throw error;
+    }
+    throw e;
+  }
   finally{client.release();}
 }
 module.exports={assertPeers,readEligibility,cancelRecipePo};
