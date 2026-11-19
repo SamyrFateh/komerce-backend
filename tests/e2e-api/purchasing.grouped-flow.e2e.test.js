@@ -298,7 +298,10 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
       expect(updated.sent_at).toEqual(old.sent_at);
       expect(line.purchase_order_id).toBe(poId); // I3: lien du PO engagé immuable
       expect(line.cancelled_at).toBeTruthy();
-      expect(line.cancel_reason).toMatch(/G6-CLEANUP/);
+      // Le trigger PO annule déjà ses lignes avec son propre motif canonique.
+      // Il est immuable (I5) : on le conserve tel quel, sans seconde annulation.
+      expect(line.cancel_reason).toBe('purchase_order_cancelled');
+      expect(result.newly_cancelled_lines).toEqual([]);
       expect((await one('SELECT status FROM orders WHERE id=$1',[n.orderId])).status).toBe('cancelled');
     });
   }
