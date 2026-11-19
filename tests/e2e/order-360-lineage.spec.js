@@ -78,9 +78,13 @@ const payload = {
   comments: [],
 };
 
-async function mount(page) {
+async function mount(page, {data=payload, role='admin', cancel}={}) {
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
+    if (cancel && url.pathname === '/api/orders/'+REF) return route.fulfill({json:{
+      id:'00000000-0000-4000-8000-000000000042', reference:REF,status:data.order.status,payment_mode:data.order.payment.mode
+    }});
+    if (cancel && url.pathname === '/api/orders/00000000-0000-4000-8000-000000000042/cancel') return cancel(route);
     if (url.pathname === PAGE_PATH) {
       return route.fulfill({
         contentType: 'text/html',
@@ -95,7 +99,7 @@ async function mount(page) {
       });
     }
     if (url.pathname === `/api/admin/entities/orders/${REF}`) {
-      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(payload) });
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(data) });
     }
     if (url.pathname.startsWith('/dashboards/canonical/')) {
       const file = path.join(CANONICAL, url.pathname.replace('/dashboards/canonical/', ''));
@@ -105,15 +109,15 @@ async function mount(page) {
   });
 
   await page.goto(`${ORIGIN}${PAGE_PATH}`);
-  await page.evaluate(async () => {
+  await page.evaluate(async role => {
     await window.KomerceCanonicalOrder360.mount({
       root: document.getElementById('canonical-admin-root'),
-      document,
+      document, user:{role},
       ui: window.KomerceCanonicalUI,
       fetch: window.fetch.bind(window),
       pathname: window.location.pathname,
     });
-  });
+  }, role);
   await expect(page.locator('.kmc-entity-title')).toHaveText(REF);
 }
 
@@ -158,4 +162,25 @@ test.describe('Order 360 — lignage métier', () => {
     await expect(page.locator('#canonical-admin-root button')).toHaveCount(0);
     await expect(page.locator('#canonical-admin-root [data-workspace-action], #canonical-admin-root [data-admin-action]')).toHaveCount(0);
   });
+});
+
+test('admin : annuler une recette cash confirmée et relire le statut en fiche',async({page})=>{
+  const data=structuredClone(payload);
+  Object.assign(data.order,{status:'confirmed',simulation_scope:'G6-BUYER'});
+  data.order.payment.mode='cash_relais';
+  const posts=[];
+  await mount(page,{data,cancel:route=>{
+    posts.push(route.request().postDataJSON());
+    data.order.status='cancelled';
+    return route.fulfill({json:{success:true,status:'cancelled'}});
+  }});
+  const action=page.getByRole('button',{name:'Annuler la commande de recette'});
+  page.once('dialog',dialog=>dialog.dismiss());
+  await action.click();
+  expect(posts).toHaveLength(0);
+  page.once('dialog',dialog=>dialog.accept());
+  await action.click();
+  await expect(page.getByText('Commande de recette '+REF+' annulée.')).toBeVisible();
+  await expect(action).toHaveCount(0);
+  expect(posts).toEqual([{reason:'Annulation de recette G6 depuis Order 360 · '+REF}]);
 });
