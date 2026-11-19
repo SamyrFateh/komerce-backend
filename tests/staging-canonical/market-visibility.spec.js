@@ -77,7 +77,7 @@ test('Responsable marché : Hub et Order 360 isolés, lecture seule par capabili
     expect(board.body.orders.length,'No market Hub order available for Chromium proof').toBeGreaterThan(0);
 
     await page.goto('/admin/hub',{waitUntil:'domcontentloaded'});
-    await expect(page.getByText('Hub · Mes marchés',{exact:true})).toBeVisible({timeout:20000});
+    await expect(page.locator('.kmc-hub-app-title h1')).toHaveText('Hub · Mes marchés',{timeout:20000});
     await expect(page.locator('[data-hub-global-order]')).toHaveCount(board.body.orders.length,{timeout:20000});
     const own=board.body.orders.find(o=>o.reference);
     expect(Boolean(own)).toBe(true);
