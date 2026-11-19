@@ -5437,6 +5437,104 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/documentation.html",
+        "resolvedPath": "public/dashboards/canonical/documentation.html",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/documentation.css",
+        "resolvedPath": "public/dashboards/canonical/css/documentation.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/documentation.js",
+        "resolvedPath": "public/dashboards/canonical/js/documentation.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/manual/screens/01_Pilotage.png",
+        "resolvedPath": "public/dashboards/canonical/manual/screens/01_Pilotage.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/manual/screens/02_Commerce.png",
+        "resolvedPath": "public/dashboards/canonical/manual/screens/02_Commerce.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/manual/screens/03_Atelier_economique.png",
+        "resolvedPath": "public/dashboards/canonical/manual/screens/03_Atelier_economique.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/manual/screens/04_Catalogue_pays.png",
+        "resolvedPath": "public/dashboards/canonical/manual/screens/04_Catalogue_pays.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/manual/screens/05_Commandes.png",
+        "resolvedPath": "public/dashboards/canonical/manual/screens/05_Commandes.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/manual/screens/06_Marches.png",
+        "resolvedPath": "public/dashboards/canonical/manual/screens/06_Marches.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/manual/screens/07_Operations.png",
+        "resolvedPath": "public/dashboards/canonical/manual/screens/07_Operations.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/manual/screens/08_Hub_Relais.png",
+        "resolvedPath": "public/dashboards/canonical/manual/screens/08_Hub_Relais.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/manual/screens/09_Expeditions_Douane.png",
+        "resolvedPath": "public/dashboards/canonical/manual/screens/09_Expeditions_Douane.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/manual/screens/10_Sourcing.png",
+        "resolvedPath": "public/dashboards/canonical/manual/screens/10_Sourcing.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/manual/screens/11_Finance.png",
+        "resolvedPath": "public/dashboards/canonical/manual/screens/11_Finance.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/css/base.css",
         "resolvedPath": "public/dashboards/canonical/css/base.css",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -39558,6 +39656,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "bootstrap/html-routes.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
                 "sourceFileId": "server.js",
                 "targetFile": "middleware/csrf-origin.js"
               },
@@ -50237,7 +50339,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2361
+        "filesObserved": 2362
       },
       "boutique": {
         "filesObserved": 216,
