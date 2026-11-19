@@ -27,7 +27,7 @@ const withoutG6RecipeActions = (name, source) => {
   expect(actions).toContain("order.simulation_scope !== 'G6-BUYER'");
   expect(actions).toContain("options.user?.role !== 'admin'");
   expect(actions).toContain("cash_relais");
-  expect(actions).toMatch(/method:\\s*['"]POST['"]/);
+  expect(actions).toMatch(/method:\s*['"]POST['"]/);
   return source.slice(0, begin) + source.slice(end);
 };
 
