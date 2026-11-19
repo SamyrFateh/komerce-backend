@@ -17,6 +17,7 @@ const db=require('../db');
 const {transitionOrderStatus}=require('./order-status-machine');
 const {transitionParcelStatus}=require('./parcel-operations');
 const {transitionPhysicalUnit}=require('./hub-physical-identity');
+const {createHubPhysicalReconciliationIncident}=require('./incident-write-service');
 const UUID=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const ELIGIBLE=new Set(['ordered','preparation','shipped','in_transit','available']);
 const PARCEL_AT_HUB=new Set(['draft','preparation']);
@@ -75,6 +76,15 @@ async function closeG6HubOrder(orderId,{actor,reason}={}){
     for(const unit of units){
       await transitionPhysicalUnit(client,{unitId:unit.id,toState:'QUARANTINED',actorId:actor.id,
         details:{g6_cleanup:true,order_id:orderId,reason:why}});
+      // Migration 234 : une unité QUARANTINED non destructive exige un
+      // incident actif portant physical_unit_id au COMMIT. L'insérer dans
+      // la MÊME transaction, sans contourner le trigger différé.
+      await createHubPhysicalReconciliationIncident(client,{
+        physicalUnitId:unit.id,subtype:'g6_hub_recipe_quarantine',
+        reasonCode:'G6_HUB_RECIPE_CLOSED',orderId,
+        message:'Marchandise G6 clôturée, conservée sous garde Hub',
+        details:{g6_cleanup:true,reason:why,actor_id:actor.id},
+      });
     }
     for(const parcel of parcels){
       const result=await transitionParcelStatus(client,parcel.id,'cancelled',{cancelReason:'G6-CLEANUP HUB · '+why});
