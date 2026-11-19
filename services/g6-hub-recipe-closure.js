@@ -80,7 +80,7 @@ async function closeG6HubOrder(orderId,{actor,reason}={}){
       const result=await transitionParcelStatus(client,parcel.id,'cancelled',{cancelReason:'G6-CLEANUP HUB · '+why});
       if(!result.ok)throw refusal(409,'G6_HUB_PARCEL_TRANSITION_REFUSED',result.body?.error);
     }
-    const transition=await transitionOrderStatus({orderId,newStatus:'cancelled',actor,source:'cancel',
+    const transition=await transitionOrderStatus({orderId,newStatus:'cancelled',actor,source:'g6_hub_recipe',
       cancelReason:'G6-CLEANUP HUB · '+why,
       note:'Clôture recette G6 au Hub · '+why,dbClient:client});
     if(!transition.success||transition.noop)throw refusal(409,'G6_HUB_ORDER_TRANSITION_REFUSED',transition.error);
