@@ -15678,6 +15678,13 @@
       {
         "feature": "market-delegation",
         "category": "services",
+        "declared": "services/market-delegation-read-authority.js",
+        "resolvedPath": "services/market-delegation-read-authority.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "services",
         "declared": "services/market-scope-projector.js",
         "resolvedPath": "services/market-scope-projector.js",
         "status": "resolved-in-technical-graph"
@@ -30926,6 +30933,12 @@
       },
       {
         "from": "unsold-resolution",
+        "to": "market-delegation",
+        "raw": "market-delegation",
+        "resolved": true
+      },
+      {
+        "from": "unsold-resolution",
         "to": "infrastructure",
         "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
         "resolved": true
@@ -37673,6 +37686,14 @@
               {
                 "sourceFileId": "routes/admin-shipping-customs-workspace.js",
                 "targetFile": "middleware/require-market-delegated-capability.js"
+              },
+              {
+                "sourceFileId": "routes/admin-shipping-customs-workspace.js",
+                "targetFile": "services/market-delegation-service.js"
+              },
+              {
+                "sourceFileId": "routes/admin-shipping-customs-workspace.js",
+                "targetFile": "services/market-delegation-read-authority.js"
               },
               {
                 "sourceFileId": "routes/admin-finance-accounting-workspace.js",
@@ -49854,6 +49875,22 @@
       },
       {
         "from": "unsold-resolution",
+        "to": "market-delegation",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/unsold.js",
+                "targetFile": "services/market-delegation-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "unsold-resolution",
         "to": "orders",
         "channels": [
           {
@@ -50339,7 +50376,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2362
+        "filesObserved": 2363
       },
       "boutique": {
         "filesObserved": 216,

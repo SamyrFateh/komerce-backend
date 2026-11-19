@@ -177,6 +177,30 @@ test('loadOrder360 agrège les facettes sans exposer leurs UUID', async () => {
 });
 
 
+test('market_operator : achats uniquement de son marché, données fournisseur internes expurgées', async () => {
+  mockGetOrderControlSnapshot.mockResolvedValue({
+    stage: 'PURCHASING', health: 'GREEN',
+    envelope: { type: 'PURCHASE_ORDER', refs: ['private-po-ref'] },
+  });
+  mockQuery.mockImplementation(async sql => String(sql).includes('FROM purchase_orders po')
+    ? { rows: [{ id:'po-cm', status:'confirmed', supplier_name:'A', supplier_platform:'cj',
+        supplier_order_id:'PRIVATE-ID', procurement_hub_ref:'PRIVATE-HUB' }] }
+    : { rows: [] });
+  const result = await service.loadOrder360(
+    {id:'order-id', reference:'CMD-CM-003', market_id:'market-cm-id', market_code:'CM'},
+    {includePurchasing:'market'}
+  );
+  expect(result.purchasing.read_only).toBe(true);
+  expect(result.purchasing.purchase_orders[0]).toMatchObject({id:'po-cm',status:'confirmed',supplier_name:'A'});
+  const poCall=mockQuery.mock.calls.find(([sql])=>String(sql).includes('FROM purchase_orders po'));
+  expect(poCall[0]).toContain('AND po.market_id = $2::uuid');
+  expect(poCall[1]).toEqual(['order-id','market-cm-id']);
+  expect(result.control_position.envelope.refs).toEqual([]);
+  expect(JSON.stringify(result)).not.toContain('PRIVATE-ID');
+  expect(JSON.stringify(result)).not.toContain('PRIVATE-HUB');
+  expect(JSON.stringify(result)).not.toContain('private-po-ref');
+});
+
 test('loadOrder360 n’expose pas la projection Purchasing quand le caller n’a pas le guard Achats', async () => {
   mockQuery.mockResolvedValue({ rows: [] });
   mockGetOrderControlSnapshot.mockResolvedValue({

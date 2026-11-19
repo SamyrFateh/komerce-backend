@@ -320,7 +320,8 @@
     boardDisposers.delete(root);
     root.replaceChildren();
     const header = make(doc, 'div', 'kmc-hub-global-toolbar');
-    header.appendChild(make(doc, 'strong', '', 'Toutes les commandes import · Tous les marchés'));
+    header.appendChild(make(doc, 'strong', '', user?.role === 'market_operator'
+      ? 'Commandes import · Mes marchés autorisés' : 'Toutes les commandes import · Tous les marchés'));
     header.appendChild(make(doc, 'span', 'kmc-hub-global-count', 'Chargement…'));
     root.appendChild(header);
     const search = make(doc, 'input', 'kmc-hub-app-search');
@@ -330,7 +331,8 @@
     root.appendChild(search);
     const scroll = make(doc, 'div', 'kmc-hub-board-scroll');
     const table = make(doc, 'table', 'kmc-hub-board kmc-hub-global-table');
-    table.setAttribute('aria-label', 'Tableau central Hub, tous les marchés');
+    table.setAttribute('aria-label', user?.role === 'market_operator'
+      ? 'Suivi Hub, marchés autorisés' : 'Tableau central Hub, tous les marchés');
     const head = make(doc, 'thead');
     const titleRow = make(doc, 'tr');
     for (const label of ['Commande / Marché', 'PO', 'Fournisseur', 'Réception', 'Cartons', 'Départ', 'Reste à solder']) {
@@ -798,7 +800,7 @@
     const header=make(doc,'header','kmc-hub-app-header');
     const heading=make(doc,'div','kmc-hub-app-title');
     heading.appendChild(make(doc,'span','kmc-hub-app-eyebrow','KOMERCE · HUB'));
-    heading.appendChild(make(doc,'h1','','Hub · Tous les marchés'));
+    heading.appendChild(make(doc,'h1','',role === 'market_operator' ? 'Hub · Mes marchés' : 'Hub · Tous les marchés'));
     heading.appendChild(make(doc,'p','','Achats fournisseurs, réception, préparation et expéditions'));
     header.appendChild(heading);
     // Mode plein poste : garder l'action dans le Kanban, libérer l'espace

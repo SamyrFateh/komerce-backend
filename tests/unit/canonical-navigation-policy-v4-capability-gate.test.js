@@ -41,10 +41,10 @@ function marketAdminContext(delegated) {
 }
 
 describe('navigation-policy-v4 — capability gate (A2)', () => {
-  test('market_operator sans client.read délégué ne voit pas la tab Clients', () => {
+  test('market_operator sans client.read voit la tab Clients mais API reste autorité', () => {
     const nav = loadPolicy();
     const tabs = nav._localTabsFor('orders', { role: 'market_operator' }, marketAdminContext([]));
-    expect(tabs.map(t => t.id)).not.toContain('clients');
+    expect(tabs.map(t => t.id)).toContain('clients');
   });
 
   test('market_operator avec client.read délégué sur son marché voit la tab Clients', () => {
@@ -86,7 +86,7 @@ describe('navigation-policy-v4 — capability gate (A2)', () => {
       },
     };
     const tabs = nav._localTabsFor('orders', { role: 'market_operator' }, context);
-    expect(tabs.map(t => t.id)).not.toContain('clients');
+    expect(tabs.map(t => t.id)).toContain('clients');
   });
 });
 
@@ -121,6 +121,32 @@ describe('navigation-policy-v4 — domaine Live (coque noire des cockpits opéra
 
 
 describe('navigation-policy-v4 — grouped sidebar information architecture', () => {
+  test('les neuf groupes et tous les tableaux de bord métier restent visibles en lecture seule',()=>{
+    const nav=loadPolicy();
+    const groups=nav.sidebarGroupsFor({role:'market_operator'},marketAdminContext([]));
+    expect(groups.map(g=>g.id)).toEqual(['pilot','commerce','economy','operations','finance','live','markets','administration','help']);
+    const links=Object.fromEntries(groups.flatMap(g=>g.items).map(i=>[i.id,i.href]));
+    for(const id of ['control-tower','action-center','flow-commerce','flow-orders',
+      'entity-clients','workspace-pricing','workspace-catalog','flow-operations',
+      'workspace-shipping','workspace-purchasing','flow-finance','workspace-accounting',
+      'live-import-runtime','live-hub','live-relais','markets-home',
+      'market-autonomy','market-catalog','unsold','admin-users','admin-providers','settings']) {
+      expect(links[id]).toBeDefined();
+    }
+    expect(links['workspace-catalog']).toBe('/dashboards/canonical/market-catalog.html');
+    expect(links['workspace-purchasing']).toBe('/admin/hub');
+    expect(links['live-import-runtime']).toBe('/admin/hub');
+    expect(links['live-relais']).toBe('/admin/operations');
+    expect(links['admin-users']).toContain('#market-team');
+    expect(links['admin-providers']).toContain('#market-network');
+    expect(links['settings']).toContain('#market-cash-control');
+    expect(links.unsold).toBe('/dashboards/canonical/unsold.html');
+    for(const central of ['/admin/workspaces/purchasing','/admin/workspaces/catalog',
+      '/admin/import-runtime','/admin/relais-live','/admin/users','/admin/providers','/admin/settings']) {
+      expect(Object.values(links)).not.toContain(central);
+    }
+  });
+
   test('admin sees domain groups (Commerce / Opérations / Finance) with existing destinations only', () => {
     const nav = loadPolicy();
     const groups = nav.sidebarGroupsFor({ role: 'admin' }, null);
@@ -154,12 +180,12 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     const nav = loadPolicy();
     const expected = {
       'control-tower': 'dashboard.market.read',
-      'action-center': 'decision_signal.manage',
+      'action-center': 'dashboard.market.read',
       'flow-commerce': 'dashboard.market.read',
       'entity-clients': 'client.read',
       'workspace-pricing': 'pricing.read',
       'flow-operations': 'operations.read',
-      'workspace-shipping': 'operations.read',
+      'workspace-shipping': null,
       'flow-finance': 'finance.read',
       'workspace-accounting': 'finance.read',
     };
@@ -168,26 +194,38 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
       expect([item.id, item.capability]).toEqual([item.id, expected[item.id]]);
     });
     expect(items.map(item => item.id)).toEqual(expect.arrayContaining(Object.keys(expected)));
+    expect(items.find(item => item.id === 'workspace-shipping').capabilitiesAny).toEqual(['logistics.read','operations.read']);
   });
 
-  test('un market_operator sans capability déléguée ne voit que les entrées sans capability', () => {
+  test('Action Center reste visible en lecture seule et Expéditions via les deux lectures', () => {
+    const nav=loadPolicy();
+    const ids=caps=>nav.sidebarGroupsFor({role:'market_operator'}, marketAdminContext(caps))
+      .flatMap(group=>group.items.map(item=>item.id));
+    expect(ids(['dashboard.market.read'])).toContain('action-center');
+    expect(ids(['decision_signal.manage'])).toContain('action-center');
+    expect(ids(['operations.read'])).toContain('workspace-shipping');
+    expect(ids(['logistics.read'])).toContain('workspace-shipping');
+    expect(ids([])).toContain('workspace-shipping');
+  });
+
+  test('un market_operator conserve toutes ses rubriques sans capacité d’action', () => {
     const nav = loadPolicy();
     const none = nav.sidebarGroupsFor({ role: 'market_operator' }, marketAdminContext([]))
       .flatMap(group => group.items.map(item => item.id));
     expect(none).toEqual(expect.arrayContaining(['market-autonomy', 'market-catalog']));
     ['control-tower', 'flow-finance', 'flow-operations', 'entity-clients', 'workspace-pricing', 'workspace-accounting']
-      .forEach(id => expect(none).not.toContain(id));
+      .forEach(id => expect(none).toContain(id));
 
     const finance = nav.sidebarGroupsFor({ role: 'market_operator' }, marketAdminContext(['finance.read']))
       .flatMap(group => group.items.map(item => item.id));
     expect(finance).toEqual(expect.arrayContaining(['flow-finance', 'workspace-accounting']));
-    expect(finance).not.toContain('flow-operations');
+    expect(finance).toContain('flow-operations');
   });
 
-  test('client entity remains capability-gated for a market operator', () => {
+  test('client entity is visible; server READ gate still enforces market scope', () => {
     const nav = loadPolicy();
     const ids = ctx => nav.sidebarGroupsFor({ role: 'market_operator' }, ctx).flatMap(group => group.items.map(item => item.id));
-    expect(ids(marketAdminContext([]))).not.toContain('entity-clients');
+    expect(ids(marketAdminContext([]))).toContain('entity-clients');
     expect(ids(marketAdminContext(['client.read']))).toContain('entity-clients');
   });
 
@@ -202,8 +240,8 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
       else expect(items).toContain('workspace-shipping');
     }
     const market = nav.sidebarGroupsFor({ role: 'market_operator' }, ctx).flatMap(g => g.items.map(i => i.id));
-    expect(market).not.toContain('action-center');
-    expect(market).not.toContain('workspace-shipping');
+    expect(market).toContain('action-center');
+    expect(market).toContain('workspace-shipping');
     expect(market).not.toContain('workspace-relais-exec');
   });
 

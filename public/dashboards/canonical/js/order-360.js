@@ -212,12 +212,14 @@
         row.procurement_hub_ref ? `Hub ${row.procurement_hub_ref}` : null,
         row.supplier_order_id ? `Commande fournisseur ${row.supplier_order_id}` : null,
       ].filter(Boolean).join(' · '),
-      href: contextualHref(
-        `/admin/workspaces/purchasing?po=${encodeURIComponent(row.id)}`,
-        `/admin/orders/${encodeURIComponent(orderReference)}`,
-        'Retour à la commande'
-      ),
-      actionLabel: 'Ouvrir dans Achats',
+      ...(purchasing.read_only ? {} : {
+        href: contextualHref(
+          `/admin/workspaces/purchasing?po=${encodeURIComponent(row.id)}`,
+          `/admin/orders/${encodeURIComponent(orderReference)}`,
+          'Retour à la commande'
+        ),
+        actionLabel: 'Ouvrir dans Achats',
+      }),
     }));
   }
 
@@ -504,7 +506,7 @@
       const purchasing = doc.createElement('section');
       moreContent.appendChild(purchasing);
       ui.AlertPanel.render(purchasing, {
-        title: 'Achats fournisseurs',
+        title: payload.purchasing.read_only ? 'Achats fournisseurs · suivi en lecture seule' : 'Achats fournisseurs',
         emptyText: 'Aucun bon de commande fournisseur lié à cette commande.',
         items: purchaseOrderDrills(payload.purchasing, payload.order.reference),
       });

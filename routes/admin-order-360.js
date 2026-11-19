@@ -108,10 +108,10 @@ router.get(
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
-      // Parité stricte avec routes/purchasing.js : le drill Achats n'est projeté
-      // que pour un acteur déjà admis par le guard requireRole(['admin']).
+      // Deux projections: détails Achats pour Admin uniquement ; statut fournisseur
+      // expurgé et non navigable pour le responsable du marché déjà autorisé.
       const payload = await order360.loadOrder360(req.order360Order, {
-        includePurchasing: Boolean(req.user && req.user.role === 'admin'),
+        includePurchasing: req.user.role === 'admin' ? true : 'market',
         includeCosts: await canReadOrderCosts(req),
       });
       return res.json(payload);

@@ -30,6 +30,7 @@ module.exports = {
     in: [
       "scan historique J+14 bloqué faute de clôture de garde et de droits client certifiée",
       "mutation de l'invendu uniquement pour des commandes non payées et un état available",
+      "projection GET en lecture seule pour le responsable pays, filtrée en SQL sur les marchés operations.read délégués",
       "prohibition de la promotion ou cession de marchandises payées tant que les droits de retrait persistent",
     ],
     out: [
@@ -93,7 +94,7 @@ module.exports = {
       'POST /api/unsold/scan',
       'GET /api/unsold/stats/summary',
     ],
-    consumes: ['orders (commande source de l\'invendu)', 'catalog (produit concerné)', 'auth', 'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)'],
+    consumes: ['orders (commande source de l\'invendu)', 'catalog (produit concerné)', 'auth', 'market-delegation', 'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)'],
   },
 
   // ── Dette assumée / documentée ────────────────────────────────────────────

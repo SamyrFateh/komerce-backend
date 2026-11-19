@@ -887,13 +887,28 @@
     unsold: '▦',
   });
 
+  // Menu métier complet pour le responsable marché : une entrée n'accorde
+  // aucun droit API. Les anciennes destinations admin-only sont remplacées
+  // par des projections marché existantes (autorité résolue côté serveur).
+  const MARKET_MENU_PROJECTIONS = Object.freeze({
+    'workspace-catalog': Object.freeze({ href:'/dashboards/canonical/market-catalog.html', label:'Catalogue · Mon marché' }),
+    'workspace-purchasing': Object.freeze({ href:'/admin/hub', label:'Achats fournisseurs · Suivi marché' }),
+    'live-import-runtime': Object.freeze({ href:'/admin/hub', label:'Sourcing · Suivi commandes' }),
+    'live-relais': Object.freeze({ href:'/admin/operations', label:'Relais · Suivi marché' }),
+    'markets-home': Object.freeze({ href:'/dashboards/canonical/market-autonomy.html#market-team', label:'Équipe et délégations' }),
+    'unsold': Object.freeze({ href:'/dashboards/canonical/unsold.html', label:'Invendus · Mes marchés' }),
+    'admin-users': Object.freeze({ href:'/dashboards/canonical/market-autonomy.html#market-team', label:'Utilisateurs de mon marché' }),
+    'admin-providers': Object.freeze({ href:'/dashboards/canonical/market-autonomy.html#market-network', label:'Prestataires de mon marché' }),
+    'settings': Object.freeze({ href:'/dashboards/canonical/market-autonomy.html#market-cash-control', label:'Paramètres de mon marché' }),
+  });
+
   const SIDEBAR_GROUPS = Object.freeze([
     Object.freeze({
       id: 'pilot',
       label: 'Piloter',
       items: Object.freeze([
         Object.freeze({ id: 'control-tower', label: 'Tour de contrôle', href: '/admin/pilotage', roles: ['admin', 'market_operator'], capability: 'dashboard.market.read', surfaces: ['pilotage'] }),
-        Object.freeze({ id: 'action-center', label: 'À traiter', href: '/admin/action-center', roles: ['admin', 'market_operator', 'agent_hub', 'agent_relais', 'agent_transitaire'], capability: 'decision_signal.manage', surfaces: ['action-center'] }),
+        Object.freeze({ id: 'action-center', label: 'À traiter', href: '/admin/action-center', roles: ['admin', 'market_operator', 'agent_hub', 'agent_relais', 'agent_transitaire'], capability: 'dashboard.market.read', surfaces: ['action-center'] }),
       ]),
     }),
     Object.freeze({
@@ -918,7 +933,7 @@
       label: 'Opérations',
       items: Object.freeze([
         Object.freeze({ id: 'flow-operations', label: 'Vue opérations', href: '/admin/operations', roles: ['admin', 'market_operator'], capability: 'operations.read', surfaces: ['operations'] }),
-        Object.freeze({ id: 'workspace-shipping', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: ['admin', 'agent_hub', 'agent_transitaire', 'market_operator'], capability: 'operations.read', surfaces: ['shipping-customs-workspace'] }),
+        Object.freeze({ id: 'workspace-shipping', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: ['admin', 'agent_hub', 'agent_transitaire', 'market_operator'], capabilitiesAny: ['logistics.read', 'operations.read'], surfaces: ['shipping-customs-workspace'] }),
 
         Object.freeze({ id: 'workspace-purchasing', label: 'Achats fournisseurs', href: '/admin/workspaces/purchasing', roles: ['admin'], surfaces: ['purchasing-workspace'] }),
       ]),
@@ -1046,6 +1061,12 @@
 
   function sidebarItemVisible(item, user, adminContext) {
     const role = roleOf(user);
+    // La visibilité d'une rubrique métier n'est pas une autorisation d'action.
+    // Les données affichées restent soumises aux capabilities READ du serveur.
+    if (role === 'market_operator') {
+      return (item.roles || []).includes(role)
+        || Object.prototype.hasOwnProperty.call(MARKET_MENU_PROJECTIONS, item.id);
+    }
     if (!(item.roles || []).includes(role)) return false;
     // Les agents terrain possèdent leur propre garde serveur /api/agent/action-center.
     // Une délégation commerciale de marché n'est pas l'autorité de cette page.
@@ -1055,10 +1076,19 @@
   }
 
   function sidebarGroupsFor(user, adminContext) {
+    const market = roleOf(user) === 'market_operator';
     return SIDEBAR_GROUPS
       .map(group => Object.freeze({
         ...group,
-        items: Object.freeze(group.items.filter(item => sidebarItemVisible(item, user, adminContext))),
+        items: Object.freeze(group.items
+          .filter(item => sidebarItemVisible(item, user, adminContext))
+          .map(item => {
+            if (!market) return item;
+            const scoped = MARKET_MENU_PROJECTIONS[item.id];
+            if (scoped) return Object.freeze({...item, ...scoped, market_scoped:true});
+            if (item.id === 'live-hub') return Object.freeze({...item, label:'Hub · Mes marchés', market_scoped:true});
+            return Object.freeze({...item, market_scoped:true});
+          })),
       }))
       .filter(group => group.items.length > 0);
   }
@@ -1092,7 +1122,8 @@
           link.setAttribute('aria-current', 'page');
         }
         link.appendChild(createNode(doc, 'span', 'kmc-admin-primary-icon', ICONS[item.id] || '•'));
-        link.appendChild(createNode(doc, 'span', 'kmc-admin-primary-label', item.label));
+        link.appendChild(createNode(doc, 'span', 'kmc-admin-primary-label',
+          item.id === 'live-hub' && roleOf(user) === 'market_operator' ? 'Hub · Mes marchés' : item.label));
         wrap.appendChild(link);
       });
       primary.appendChild(wrap);
@@ -1145,11 +1176,12 @@
   // où la capability DELEGATION ne s'applique pas) garde le comportement
   // role-only historique plutôt que de masquer la tab par défaut.
   function tabCapabilityGranted(tab, adminContext) {
-    if (!tab.capability) return true;
+    const candidates = tab.capabilitiesAny || (tab.capability ? [tab.capability] : []);
+    if (!candidates.length) return true;
     if (!adminContext || adminContext.access?.mode !== 'market') return true;
     const market = adminContext.access.defaultMarket;
     const granted = adminContext.access.delegatedCapabilities?.[market] || [];
-    return granted.includes(tab.capability);
+    return candidates.some(capability => granted.includes(capability));
   }
 
   function localTabsFor(domainId, user, adminContext) {
@@ -1164,7 +1196,7 @@
     // Masquer uniquement sur /admin/hub les onglets N2 Sourcing et Relais ;
     // ils restent disponibles depuis leurs espaces respectifs.
     if (domainId === 'live' && String(global.location?.pathname || '') === '/admin/hub') {
-      return [{ id:'hub-live', label:'Hub · Tous les marchés', href:'/admin/hub' }];
+      return [{ id:'hub-live', label:role === 'market_operator' ? 'Hub · Mes marchés' : 'Hub · Tous les marchés', href:'/admin/hub' }];
     }
     // Sourcing Live et Hub Live : une porte de travail métier, pas trois
     // sous-menus concurrents. Les vues legacy directes restent lisibles via
@@ -1179,7 +1211,8 @@
     }
     const local = LOCAL_TABS[domainId];
     if (local) {
-      return local.filter(tab => tab.roles.includes(role) && tabCapabilityGranted(tab, adminContext));
+      return local.filter(tab => tab.roles.includes(role)
+        && (role === 'market_operator' || tabCapabilityGranted(tab, adminContext)));
     }
 
     const domain = visibleDomainsFor(user).find(row => row.id === domainId);

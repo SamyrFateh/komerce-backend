@@ -41,3 +41,10 @@ describe('market-delegation local-offer routes', () => {
     expect(mounts).toHaveLength(1);
   });
 });
+
+test('les listes des offres sont lisibles avec catalog.read et ne délèguent pas de mutation',()=>{
+  expect((routeSource.match(/primaryCapability: 'catalog.read'/g)||[])).toHaveLength(2);
+  expect((routeSource.match(/fallbackCapability: 'local_offer.manage'/g)||[])).toHaveLength(2);
+  expect(routeSource).toContain('setServiceExposure(client');
+  expect(routeSource).toContain('setPhysicalOfferExposure(client');
+});

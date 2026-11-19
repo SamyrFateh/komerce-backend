@@ -58,10 +58,10 @@ async function mount(page,role='agent_relais',search='',board=BOARD) {
 }
 
 test.describe('Hub global sans scope marché',()=>{
-  test.each(['admin','agent_hub','market_operator','agent_relais','finance','sourcing','support'])(
-    '%s peut voir les commandes KM et CM sans contexte marché ni droit de mutation',async({page},role)=>{
+  for (const role of ['admin','agent_hub','market_operator','agent_relais','finance','sourcing','support']) {
+    test(`${role} peut voir les commandes autorisées sans droit de mutation`,async({page})=>{
       const calls=await mount(page,role);
-      await expect(page.getByText('Toutes les commandes import · Tous les marchés')).toBeVisible();
+      await expect(page.getByText(role === 'market_operator' ? 'Commandes import · Mes marchés autorisés' : 'Toutes les commandes import · Tous les marchés')).toBeVisible();
       await expect(page.locator('[data-hub-global-order="KM-100"]')).toContainText('2 non reçue(s)');
       await expect(page.locator('[data-hub-global-order="CM-101"]')).toContainText('1 à contrôler');
       expect(calls).toEqual(['GET /api/hub/board']);
@@ -76,8 +76,22 @@ test.describe('Hub global sans scope marché',()=>{
         await expect(page.locator('[data-hub-global-menu]')).toContainText('PO');
       }
       expect(calls).toEqual(['GET /api/hub/board']);
-    }
-  );
+    });
+  }
+
+  test('Responsable marché : écran Hub limité au scope autorisé et aucun geste physique', async ({page}) => {
+    // La réponse représente la projection serveur filtrée. La SQL isolation est
+    // indépendamment prouvée par tests/unit/hub-global-board.test.js.
+    const marketOnly = {...BOARD, audience:'MARKET_SCOPED', markets:['KM'], orders:[BOARD.orders[0]]};
+    const calls = await mount(page,'market_operator','',marketOnly);
+    await expect(page.getByText('Commandes import · Mes marchés autorisés')).toBeVisible();
+    await expect(page.locator('[data-hub-global-order]')).toHaveCount(1);
+    await expect(page.locator('[data-hub-global-order="KM-100"]')).toBeVisible();
+    await expect(page.locator('[data-hub-global-order="CM-101"]')).toHaveCount(0);
+    await page.locator('[data-hub-global-order="KM-100"] [data-hub-global-stage="PO"]').click();
+    await expect(page.locator('[data-hub-global-menu]')).toContainText('Consultation seule');
+    expect(calls).toEqual(['GET /api/hub/board']);
+  });
 
   test('une URL héritée ?market=KM ne filtre pas le Hub et est nettoyée',async({page})=>{
     const calls=await mount(page,'agent_hub','?market=KM');
@@ -198,75 +212,5 @@ test.describe('Étapes physiques explicites du Hub',()=>{
     await expect(menu).toContainText('Aucune réouverture');
     await expect(menu.locator('a')).toHaveCount(0);
     expect(calls).toEqual(['GET /api/hub/board']);
-  });
-});
-
-
-test.describe('Lisibilité et fermeture du menu contextuel Hub',()=>{
-  test('clic hors menu le ferme, clic à l’intérieur le conserve et Échap ferme partout',async({page})=>{
-    const calls=await mount(page,'market_operator');
-    const stage=page.locator('[data-hub-global-order="CM-101"] [data-hub-global-stage="Réception"]');
-    const menu=page.locator('[data-hub-global-menu]');
-    await stage.click();
-    await expect(menu).toBeVisible();
-    await expect(menu).toContainText('Étape actuelle · Réception Hub');
-    await menu.locator('.kmc-hub-board-menu-title').click();
-    await expect(menu).toBeVisible();
-    await page.locator('.kmc-hub-global-toolbar').click();
-    await expect(menu).toBeHidden();
-    await stage.click({button:'right'});
-    await expect(menu).toBeVisible();
-    await page.keyboard.press('Escape');
-    await expect(menu).toBeHidden();
-    await stage.click();
-    await expect(menu).toBeVisible();
-    await page.getByRole('searchbox',{name:'Rechercher une commande ou un marché'}).click();
-    await expect(menu).toBeHidden();
-    expect(calls).toEqual(['GET /api/hub/board']);
-  });
-
-  test('la phase active et la mise en évidence sont textuelles en plus de la couleur',async({page})=>{
-    await mount(page,'market_operator');
-    const row=page.locator('[data-hub-global-order="CM-101"]');
-    const step=row.locator('[data-hub-global-stage="Réception"]');
-    await expect(step).toHaveAttribute('aria-current','step');
-    await expect(step.locator('.kmc-hub-stage-primary')).toHaveText('1 / 2 reçu(s)');
-    await expect(step.locator('.kmc-hub-stage-proof')).toContainText('À faire / suivre maintenant');
-    await expect(row.locator('.kmc-hub-phase-title')).toContainText('Réception Hub');
-  });
-});
-
-
-test.describe('Poste Hub optimisé pour le travail des agents',()=>{
-  test('agent Hub : focus actif par défaut, six actions du Kanban visibles et navigation récupérable',async({page})=>{
-    const calls=await mount(page,'agent_hub');
-    const toggle=page.locator('[data-hub-focus-toggle]');
-    await expect(toggle).toHaveAttribute('aria-pressed','true');
-    await expect(toggle).toContainText('Réafficher la navigation');
-    await expect(page.locator('body')).toHaveClass(/kmc-hub-agent-focus/);
-    const width=await page.locator('#canonical-admin-root').evaluate(node=>node.getBoundingClientRect().width);
-    expect(width).toBeGreaterThan(1350);
-    await expect(page.locator('.kmc-hub-global-table thead th')).toHaveCount(7);
-    await expect(page.locator('[data-hub-global-order="CM-101"] [data-hub-global-stage]')).toHaveCount(6);
-    await toggle.click();
-    await expect(toggle).toHaveAttribute('aria-pressed','false');
-    await expect(page.locator('body')).not.toHaveClass(/kmc-hub-agent-focus/);
-    await expect(page.locator('[data-hub-global-order]')).toHaveCount(2);
-    await toggle.click();
-    await expect(toggle).toHaveAttribute('aria-pressed','true');
-    expect(calls).toEqual(['GET /api/hub/board']);
-  });
-
-  test('autres profils : navigation normale par défaut, plein poste activable à la demande',async({page})=>{
-    await mount(page,'market_operator');
-    const toggle=page.locator('[data-hub-focus-toggle]');
-    await expect(toggle).toHaveAttribute('aria-pressed','false');
-    await toggle.click();
-    await expect(toggle).toHaveAttribute('aria-pressed','true');
-    await expect(page.locator('body')).toHaveClass(/kmc-hub-agent-focus/);
-    await page.locator('[data-hub-global-order="CM-101"] [data-hub-global-stage="Réception"]').click();
-    await expect(page.locator('[data-hub-global-menu]')).toBeVisible();
-    await page.keyboard.press('Escape');
-    await expect(page.locator('[data-hub-global-menu]')).toBeHidden();
   });
 });

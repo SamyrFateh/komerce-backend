@@ -24,6 +24,7 @@ jest.mock('../../middleware/auth', () => ({
     req.user = mockUser;
     next();
   },
+  requireRole: roles => (req,res,next) => roles.includes(req.user?.role) ? next() : res.status(403).json({error:'role forbidden'}),
   requireAdmin: (req, res, next) => {
     if (!req.user || req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Accès réservé admin' });
@@ -32,6 +33,10 @@ jest.mock('../../middleware/auth', () => ({
   },
 }));
 
+const mockAuthorizedMarkets = jest.fn();
+jest.mock('../../services/market-delegation-service',()=>({
+  listAuthorizedMarketsForCapability:(...args)=>mockAuthorizedMarkets(...args)
+}));
 const unsoldRouter = require('../../routes/unsold');
 
 function buildApp() {
@@ -45,6 +50,7 @@ function buildApp() {
 beforeEach(() => {
   jest.clearAllMocks();
   mockUser = { id: 'admin-1', role: 'admin' };
+  mockAuthorizedMarkets.mockResolvedValue([{market_id:'11111111-1111-4111-8111-111111111111'}]);
 });
 
 describe('GET /api/unsold — liste', () => {
@@ -54,7 +60,7 @@ describe('GET /api/unsold — liste', () => {
     expect(res.status).toBe(401);
   });
 
-  it('non-admin → 403', async () => {
+  it('client non autorisé → 403', async () => {
     mockUser = { id: 'u1', role: 'client' };
     const res = await request(buildApp()).get('/api/unsold');
     expect(res.status).toBe(403);
@@ -248,5 +254,48 @@ describe('F3 — protection anti-revente / anti-communication commerciale', () =
     for (const [sql] of mockDbQuery.mock.calls) {
       expect(sql).toContain("o.payment_status IS DISTINCT FROM 'paid'");
     }
+  });
+});
+
+describe('Invendus Responsable Marché — scopes READ stricts',()=>{
+  const marketId='11111111-1111-4111-8111-111111111111';
+  beforeEach(()=>{mockUser={id:'operator-1',role:'market_operator'};});
+  test('GET /my ne lit que les invendus des marchés délégués, sans écriture',async()=>{
+    const rows=[{id:'unsold-own',order_ref:'KM-101'}];
+    mockDbQuery.mockResolvedValueOnce({rows});
+    const res=await request(buildApp()).get('/api/unsold');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(rows);
+    expect(mockAuthorizedMarkets).toHaveBeenCalledWith(expect.anything(),{
+      userId:'operator-1',requiredCapability:'operations.read'
+    });
+    expect(mockDbQuery).toHaveBeenCalledWith(expect.stringContaining('o.market_id = ANY($1::uuid[])'),[[marketId]]);
+    expect(mockDbQuery.mock.calls[0][0]).toContain("o.payment_status IS DISTINCT FROM 'paid'");
+  });
+  test('GET /my/stats/summary calcule uniquement le périmètre autorisé',async()=>{
+    mockDbQuery.mockResolvedValueOnce({rows:[{total_actifs:'1',valeur_liquidation_kmf:'800'}]});
+    const res=await request(buildApp()).get('/api/unsold/stats/summary');
+    expect(res.status).toBe(200);
+    expect(res.body.total_actifs).toBe('1');
+    expect(mockDbQuery).toHaveBeenCalledWith(expect.stringContaining('o.market_id = ANY($1::uuid[])'),[[marketId]]);
+  });
+  test('sans marché operations.read: 403 et aucune lecture DB métier',async()=>{
+    mockAuthorizedMarkets.mockResolvedValueOnce([]);
+    const res=await request(buildApp()).get('/api/unsold/my');
+    expect(res.status).toBe(403);
+    expect(mockDbQuery).not.toHaveBeenCalled();
+  });
+  test('le responsable marché ne peut pas utiliser PATCH, résolution ou scan',async()=>{
+    for(const [method,url] of [
+      ['post','/api/unsold/scan'],['patch','/api/unsold/x'],['post','/api/unsold/x/resolve']
+    ]) {
+      const res=await request(buildApp())[method](url).send({});
+      expect(res.status).toBe(403);
+    }
+    expect(mockDbQuery).not.toHaveBeenCalled();
+  });
+  test('un client ne peut pas obtenir la projection marché',async()=>{
+    mockUser={id:'client-1',role:'client'};
+    expect((await request(buildApp()).get('/api/unsold/my')).status).toBe(403);
   });
 });

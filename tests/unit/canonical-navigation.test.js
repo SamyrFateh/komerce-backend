@@ -181,7 +181,12 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
 
     const operatorEnv = loadNavigation('/admin/pilotage', 'pilotage');
     const operatorIds = operatorEnv.api.sidebarGroupsFor({ role: 'market_operator' }, null).flatMap(group => group.items.map(item => item.id));
-    expect(operatorIds).not.toContain('settings');
+    // Le responsable marché voit la rubrique Paramètres ; sa destination est une vue
+    // limitée à ses marchés et n'accorde aucun pouvoir d'administration centrale.
+    expect(operatorIds.filter(id => id === 'settings')).toHaveLength(1);
+    const operatorSettings = operatorEnv.api.sidebarGroupsFor({ role: 'market_operator' }, null)
+      .flatMap(group => group.items).find(item => item.id === 'settings');
+    expect(operatorSettings.href).toBe('/dashboards/canonical/market-autonomy.html#market-cash-control');
   });
 
   test('Atelier économique est un domaine direct actif, sans bouton Retour parasite', () => {
