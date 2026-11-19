@@ -28,3 +28,25 @@ describe('L3 — Order 360 : date au fuseau métier du marché', () => {
     }
   });
 });
+
+describe('G6-CLEANUP D — Order 360 contrôle admin',()=>{
+ const source=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/order-360.js'),'utf8');
+ test('bouton visible seulement admin G6 à statut avancé',()=>{
+  expect(source).toContain("order.simulation_scope!=='G6-BUYER'");
+  expect(source).toContain("options.user?.role!=='admin'");
+  expect(source).toContain("['ordered','preparation','shipped','in_transit','available']");
+  expect(source).toContain('Clôturer la recette (marchandise au Hub)');
+ });
+ test('ne clique que sur la route spécialisée avec motif et relecture',()=>{
+  expect(source).toContain('/close-g6-hub-recipe');
+  expect(source).toContain('reason:reason.trim()');
+  expect(source).toContain("refreshed.payload.order.status!=='cancelled'");
+ });
+});
+
+test('clôture Hub G6 : la relecture ne dépend pas de simulation_scope, absent de GET /api/orders/:ref', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/order-360.js'), 'utf8');
+  const block = src.slice(src.indexOf('const latest=await jsonRequest'), src.indexOf('/close-g6-hub-recipe'));
+  expect(block).not.toMatch(/latest\.simulation_scope/);
+  expect(block).toMatch(/latest\.payment_mode!=='cash_relais'/);
+});

@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 330,
+    "businessDependencies": 332,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -6904,7 +6904,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 177,
+            "count": 191,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -7327,6 +7327,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/css/documentation.css",
+                "resolvedPath": "public/dashboards/canonical/css/documentation.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/css/entity-360.css",
                 "resolvedPath": "public/dashboards/canonical/css/entity-360.css",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7452,6 +7457,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/documentation.html",
+                "resolvedPath": "public/dashboards/canonical/documentation.html",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/index.html",
                 "resolvedPath": "public/dashboards/canonical/index.html",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7529,6 +7539,11 @@
               {
                 "declared": "dashboards/canonical/js/demo-order-flow.js",
                 "resolvedPath": "public/dashboards/canonical/js/demo-order-flow.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/documentation.js",
+                "resolvedPath": "public/dashboards/canonical/js/documentation.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7734,6 +7749,61 @@
               {
                 "declared": "dashboards/canonical/js/users-admin.js",
                 "resolvedPath": "public/dashboards/canonical/js/users-admin.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/manual/screens/01_Pilotage.png",
+                "resolvedPath": "public/dashboards/canonical/manual/screens/01_Pilotage.png",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/manual/screens/02_Commerce.png",
+                "resolvedPath": "public/dashboards/canonical/manual/screens/02_Commerce.png",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/manual/screens/03_Atelier_economique.png",
+                "resolvedPath": "public/dashboards/canonical/manual/screens/03_Atelier_economique.png",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/manual/screens/04_Catalogue_pays.png",
+                "resolvedPath": "public/dashboards/canonical/manual/screens/04_Catalogue_pays.png",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/manual/screens/05_Commandes.png",
+                "resolvedPath": "public/dashboards/canonical/manual/screens/05_Commandes.png",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/manual/screens/06_Marches.png",
+                "resolvedPath": "public/dashboards/canonical/manual/screens/06_Marches.png",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/manual/screens/07_Operations.png",
+                "resolvedPath": "public/dashboards/canonical/manual/screens/07_Operations.png",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/manual/screens/08_Hub_Relais.png",
+                "resolvedPath": "public/dashboards/canonical/manual/screens/08_Hub_Relais.png",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/manual/screens/09_Expeditions_Douane.png",
+                "resolvedPath": "public/dashboards/canonical/manual/screens/09_Expeditions_Douane.png",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/manual/screens/10_Sourcing.png",
+                "resolvedPath": "public/dashboards/canonical/manual/screens/10_Sourcing.png",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/manual/screens/11_Finance.png",
+                "resolvedPath": "public/dashboards/canonical/manual/screens/11_Finance.png",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -9259,7 +9329,7 @@
             ]
           }
         },
-        "totalFiles": 465,
+        "totalFiles": 479,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -14119,6 +14189,13 @@
           "channels": [
             "static-code",
             "data-read"
+          ]
+        },
+        {
+          "consumer": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -22929,7 +23006,7 @@
             ]
           },
           "services": {
-            "count": 18,
+            "count": 19,
             "files": [
               {
                 "declared": "services/capability-registry.js",
@@ -22985,6 +23062,11 @@
                 "declared": "services/market-delegation-provider-service.js",
                 "resolvedPath": "services/market-delegation-provider-service.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/market-delegation-read-authority.js",
+                "resolvedPath": "services/market-delegation-read-authority.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/market-delegation-service.js",
@@ -23289,7 +23371,7 @@
             ]
           }
         },
-        "totalFiles": 113,
+        "totalFiles": 114,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -23965,6 +24047,13 @@
           "channels": [
             "static-code",
             "data-read"
+          ]
+        },
+        {
+          "consumer": "unsold-resolution",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         }
       ],
@@ -25119,7 +25208,7 @@
             ]
           },
           "services": {
-            "count": 30,
+            "count": 31,
             "files": [
               {
                 "declared": "services/admin-order-refund.js",
@@ -25140,6 +25229,11 @@
                 "declared": "services/dispute-mutation-service.js",
                 "resolvedPath": "services/dispute-mutation-service.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/g6-hub-recipe-closure.js",
+                "resolvedPath": "services/g6-hub-recipe-closure.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/hub-v1-fixture-checkout-guard.js",
@@ -25609,7 +25703,7 @@
             ]
           }
         },
-        "totalFiles": 109,
+        "totalFiles": 110,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 19,
@@ -26287,6 +26381,13 @@
         },
         {
           "provider": "economic-engine",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "incident-management",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -29699,11 +29800,16 @@
             ]
           },
           "services": {
-            "count": 52,
+            "count": 53,
             "files": [
               {
                 "declared": "scripts/recette/audit-sku-supplier-link.js",
                 "resolvedPath": "scripts/recette/audit-sku-supplier-link.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "services/g6-recipe-po-cancel-service.js",
+                "resolvedPath": "services/g6-recipe-po-cancel-service.js",
                 "status": "resolved-on-disk-no-header"
               },
               {
@@ -30429,7 +30535,7 @@
             ]
           }
         },
-        "totalFiles": 176,
+        "totalFiles": 177,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -35033,6 +35139,7 @@
         "in": [
           "scan historique J+14 bloqué faute de clôture de garde et de droits client certifiée",
           "mutation de l'invendu uniquement pour des commandes non payées et un état available",
+          "projection GET en lecture seule pour le responsable pays, filtrée en SQL sur les marchés operations.read délégués",
           "prohibition de la promotion ou cession de marchandises payées tant que les droits de retrait persistent"
         ],
         "out": [
@@ -35216,6 +35323,13 @@
         },
         {
           "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "market-delegation",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"

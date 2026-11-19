@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result
- * @depends       utils/logger.js, services/public-market-storefront.js
+ * @depends       utils/logger.js, services/public-market-storefront.js, middleware/auth.js
  * @db-write      none
  * @db-read      none
  * @db-read-via:public-market-storefront markets
@@ -20,6 +20,19 @@
 
 const path = require('path');
 const log  = require('../utils/logger').child({ module: 'html-routes' });
+// Ne pas charger auth/db pendant l'enregistrement des routes HTML publiques :
+// plusieurs consommateurs de ce bootstrap n'utilisent jamais la documentation.
+// Authentification et rôles restent obligatoires à CHAQUE requête documentaire.
+const DOCUMENTATION_ROLES = Object.freeze([
+  'admin', 'market_operator', 'finance', 'sourcing',
+  'agent_hub', 'agent_relais', 'agent_transitaire', 'support',
+]);
+function documentationAuthenticate(req, res, next) {
+  return require('../middleware/auth').authenticate(req, res, next);
+}
+function documentationRequireRole(req, res, next) {
+  return require('../middleware/auth').requireRole(DOCUMENTATION_ROLES)(req, res, next);
+}
 
 function sendHtml(res, filePath, cache = 'no-cache') {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -121,6 +134,13 @@ function mountHtmlRoutes(app, rootDir, marketExecutor) {
   app.get('/admin/pilotage', (req, res) => {
     if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
     sendCanonicalAdmin(res);
+  });
+
+  // Guide produit documentaire : même authentification que les API staff,
+  // aucune API métier / aucun droit supplémentaire accordé par le document.
+  app.get('/admin/documentation', documentationAuthenticate, documentationRequireRole, (_req, res) => {
+    res.setHeader('X-Admin-Generation', 'canonical');
+    sendHtml(res, path.join(publicDir, 'dashboards', 'canonical', 'documentation.html'));
   });
 
   // Golden E2E cockpit — guide de recette humaine, lecture/navigation uniquement.

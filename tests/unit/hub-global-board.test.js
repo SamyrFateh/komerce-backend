@@ -82,6 +82,23 @@ describe('Hub central : tous les marchés, lecture seule', () => {
     expect(result.orders.map(x=>x.market)).toEqual(['CM','KM']);
   });
 
+  test('tableau Hub marché: SQL filtre AVANT lecture des dossiers, même si scope vide', async () => {
+    const query={query:jest.fn(async (_sql, params)=>({rows:params?.[0]?.length
+      ? [{id:'market-km',code:'KM',name:'Comores'}] : []}))};
+    const reader=jest.fn(async id=>empty([order('o-'+id,'CMD-KM-1',1)]));
+    const result=await getGlobalBoard(query,reader,{marketIds:['market-km']});
+    expect(query.query.mock.calls[0][0]).toContain('id = ANY($1::uuid[])');
+    expect(query.query.mock.calls[0][1]).toEqual([['market-km']]);
+    expect(reader).toHaveBeenCalledTimes(1);
+    expect(reader).toHaveBeenCalledWith('market-km');
+    expect(result.audience).toBe('MARKET_SCOPED');
+    expect(result.markets).toEqual(['KM']);
+    expect(result.orders.map(o=>o.market)).toEqual(['KM']);
+    const denied=await getGlobalBoard(query,reader,{marketIds:[]});
+    expect(denied.orders).toEqual([]);
+    expect(reader).toHaveBeenCalledTimes(1);
+  });
+
   test('aucune ligne de commande import : tableau vide, sans inventer des mouvements', async () => {
     const r=await getGlobalBoard({query:async ()=>({rows:[]})},jest.fn());
     expect(r).toEqual({scope:'HUB_GLOBAL',markets:[],orders:[]});

@@ -40,6 +40,18 @@ describe('incident-governance — F2/F3', () => {
     });
   });
 
+  test('G6 Hub quarantine is governed by Logistics physical proof, not generic dismissal', () => {
+    const subtype='g6_hub_recipe_quarantine';
+    expect(resolveGovernanceOrThrow({incident_type:'reconciliation_error',subtype})).toEqual({
+      origin_domain:'LOGISTICS',resolver_domain:'LOGISTICS',resolution_class:'PHYSICAL_PROOF',
+    });
+    expect(validateGovernance({incident_type:'reconciliation_error',subtype,
+      origin_domain:'LOGISTICS',resolver_domain:'LOGISTICS',resolution_class:'PHYSICAL_PROOF'}))
+      .toMatchObject({ok:true});
+    expect(() => assertTerminalResolutionAllowed({incident_type:'reconciliation_error',subtype},'dismissed'))
+      .toThrow(/PHYSICAL_PROOF/);
+  });
+
   test('partial_allocation is not an incident governance subtype', () => {
     expect(RECONCILIATION_SUBTYPE_MAPPING.partial_allocation).toBeUndefined();
     expect(resolveGovernance('reconciliation_error', { subtype: 'partial_allocation' })).toBeNull();

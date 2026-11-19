@@ -23,6 +23,8 @@ const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const { requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
+const { resolveAuthorization } = require('../services/market-delegation-service');
+const { resolveReadAuthority } = require('../services/market-delegation-read-authority');
 const workspace = require('../services/shipping-customs-workspace');
 const journey = require('../services/international-shipment-journey');
 const internationalN1 = require('../services/international-n1-reconciliation');
@@ -53,6 +55,22 @@ function isCentralTransitAccess(req) {
     && req.workspaceMarket && req.workspaceMarket.lifecycle_status === 'ACTIVE');
 }
 
+async function requireMarketOperatorLogisticsRead(req, res, next) {
+  try {
+    const authz = await resolveReadAuthority(resolveAuthorization, db, {
+      userId: req.user.id, marketCode: req.workspaceMarket.code,
+      primaryCapability: 'logistics.read', fallbackCapability: 'operations.read',
+    });
+    if (String(authz.market_id) !== String(req.workspaceMarket.id)) {
+      return res.status(403).json({ error: 'Marché hors périmètre.', code: 'MARKET_SCOPE_DENIED' });
+    }
+    return next();
+  } catch (error) {
+    if (error && error.status) return res.status(error.status).json({ error: error.message, code: error.code });
+    return next(error);
+  }
+}
+
 function requireWorkspaceMarketAccess(req, res, next) {
   if (isCentralTransitAccess(req)) {
     req.workspaceCentralTransit = true;
@@ -64,7 +82,9 @@ function requireWorkspaceMarketAccess(req, res, next) {
         req.workspaceGlobalAuthority = true;
         return next();
       }
-      return requireLogisticsRead(req, res, next);
+      return req.user.role === 'market_operator'
+        ? requireMarketOperatorLogisticsRead(req, res, next)
+        : requireLogisticsRead(req, res, next);
     })
     .catch(next);
 }

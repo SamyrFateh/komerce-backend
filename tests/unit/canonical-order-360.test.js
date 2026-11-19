@@ -263,3 +263,13 @@ test('l’action de nettoyage cible une commande de recette cash et protège les
   expect(source).toContain("order.payment?.mode !== 'cash_relais'");
   expect(source).toContain("['cancelled','collected','refunded'].includes(order.status)");
 });
+
+test('suivi PO marché : aucune navigation vers Achats centraux', () => {
+  const po = { id:'po-1',status:'confirmed',supplier_name:'Fournisseur A' };
+  const market=order360.purchaseOrderDrills({read_only:true,purchase_orders:[po]},'CMD-CM-003');
+  expect(market).toHaveLength(1);
+  expect(market[0]).not.toHaveProperty('href');
+  expect(market[0]).not.toHaveProperty('actionLabel');
+  const admin=order360.purchaseOrderDrills({read_only:false,purchase_orders:[po]},'CMD-CM-003');
+  expect(admin[0].href).toContain('/admin/workspaces/purchasing');
+});

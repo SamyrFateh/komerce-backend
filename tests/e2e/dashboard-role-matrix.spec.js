@@ -26,10 +26,12 @@ const EXPECTED = Object.freeze({
   ],
   market_operator: [
     'control-tower', 'action-center',
-    'flow-commerce', 'flow-orders', 'entity-clients', 'workspace-pricing',
-    'flow-operations', 'workspace-shipping',
-    'flow-finance', 'workspace-accounting', 'live-hub',
-    'market-autonomy', 'market-catalog',
+    'flow-commerce', 'flow-orders', 'entity-clients', 'workspace-pricing', 'workspace-catalog',
+    'flow-operations', 'workspace-shipping', 'workspace-purchasing',
+    'flow-finance', 'workspace-accounting',
+    'live-import-runtime', 'live-hub', 'live-relais',
+    'markets-home', 'market-autonomy', 'market-catalog', 'unsold',
+    'admin-users', 'admin-providers', 'settings',
   ],
   agent_hub: ['action-center', 'workspace-shipping', 'live-hub'],
   agent_relais: ['action-center', 'live-hub', 'live-relais'],
@@ -82,7 +84,11 @@ test.describe('Navigation V4 — matrice des 8 rôles', () => {
       const ids = await page.$$eval('.kmc-admin-primary-link', (links) =>
         links.map((link) => link.getAttribute('data-dashboard'))
       );
-      expect(ids).toEqual(expected);
+      // Documentation est un utilitaire Aide autorisé pour les huit rôles
+      // professionnels. Les autres domaines restent ceux de la matrice métier.
+      expect(ids).toEqual([...expected, 'help-docs']);
+      await expect(page.locator('.kmc-admin-primary-link[data-dashboard="help-docs"]'))
+        .toHaveAttribute('href', '/admin/documentation');
 
       const home = await page.evaluate(() =>
         window.KomerceCanonicalNavigation.defaultLandingFor(window.KOMERCE_CANONICAL_AUTH_USER)
@@ -110,4 +116,21 @@ test.describe('Navigation V4 — matrice des 8 rôles', () => {
     expect(ids).toContain('action-center');
     expect(ids).toContain('live-hub');
   });
+});
+
+test('navigation Chromium Responsable marché : mêmes menus, routes alternatives sûres',async({page})=>{
+  await mount(page,'market_operator');
+  const links=Object.fromEntries(await page.$$eval('.kmc-admin-primary-link',
+    els=>els.map(e=>[e.dataset.dashboard,e.getAttribute('href')])));
+  expect(links['workspace-catalog']).toBe('/dashboards/canonical/market-catalog.html');
+  expect(links['workspace-purchasing']).toBe('/admin/hub');
+  expect(links['live-import-runtime']).toBe('/admin/hub');
+  expect(links['live-relais']).toBe('/admin/operations');
+  expect(links.unsold).toBe('/dashboards/canonical/unsold.html');
+  expect(links['admin-users']).toContain('#market-team');
+  expect(links['admin-providers']).toContain('#market-network');
+  expect(links.settings).toContain('#market-cash-control');
+  expect(Object.values(links)).not.toContain('/admin/workspaces/purchasing');
+  expect(Object.values(links)).not.toContain('/admin/import-runtime');
+  expect(Object.values(links)).not.toContain('/admin/settings');
 });

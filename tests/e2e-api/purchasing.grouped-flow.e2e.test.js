@@ -267,6 +267,45 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
     expect(counts).toEqual({ lines: 1, pos: 1 });
   });
 
+  // Régression G6-CLEANUP : vrai PostgreSQL + triggers I3/I5 + preuve d'envoi 358.
+  // Le service ne peut jamais détacher un PO engagé ; il annule les lignes sur place.
+  for (const poStatusBefore of ['notified', 'confirmed']) {
+    it('G6-CLEANUP — PO '+poStatusBefore+' envoyé, liens immuables conservés, annulation atomique', async () => {
+      const n=await seedNeed('g6-'+poStatusBefore,{market:'KM',quantity:1,supplier:supplier1});
+      // Préparer et engager la PO pendant que la commande est encore vivante ;
+      // reproduire ensuite la commande de recette déjà annulée, comme le staging.
+      const prepared=await grouped.preparePurchaseOrder({
+        supplier_id:supplier1,procurement_hub_ref:hubRef,line_ids:[n.lineId]});
+      const poId=prepared.purchase_order.id;
+      await q("UPDATE purchase_orders SET status=$2,sent_at=NOW(),sent_channel='email' WHERE id=$1",
+        [poId,poStatusBefore]);
+      await q("UPDATE orders SET simulation_scope='G6-BUYER', status='cancelled' WHERE id=$1",[n.orderId]);
+      const old=await one('SELECT sent_at,sent_channel FROM purchase_orders WHERE id=$1',[poId]);
+      expect(old.sent_at).toBeTruthy();
+      const actor={id:clientId,role:'admin'};
+      const {cancelRecipePo}=require('../../services/g6-recipe-po-cancel-service');
+      let result;
+      try { result=await cancelRecipePo(poId,{actor,reason:'Clôture contrôlée G6 campagne'}); }
+      catch(error) {
+        throw new Error('G6_PO_REAL_PG_REASON '+JSON.stringify({code:error.code,
+          pgCode:error.pgCode,constraint:error.constraint,dbReason:error.dbReason,
+          message:error.message}),{cause:error});
+      }
+      expect(result).toMatchObject({status:'cancelled',cancelled_lines:[n.lineId],external_calls:0});
+      const updated=await one('SELECT status,sent_at,sent_channel FROM purchase_orders WHERE id=$1',[poId]);
+      const line=await one('SELECT purchase_order_id,cancelled_at,cancel_reason FROM purchase_lines WHERE id=$1',[n.lineId]);
+      expect(updated).toMatchObject({status:'cancelled',sent_channel:'email'});
+      expect(updated.sent_at).toEqual(old.sent_at);
+      expect(line.purchase_order_id).toBe(poId); // I3: lien du PO engagé immuable
+      expect(line.cancelled_at).toBeTruthy();
+      // Le trigger PO annule déjà ses lignes avec son propre motif canonique.
+      // Il est immuable (I5) : on le conserve tel quel, sans seconde annulation.
+      expect(line.cancel_reason).toBe('purchase_order_cancelled');
+      expect(result.newly_cancelled_lines).toEqual([]);
+      expect((await one('SELECT status FROM orders WHERE id=$1',[n.orderId])).status).toBe('cancelled');
+    });
+  }
+
   it('3 commandes / 2 fournisseurs : préparation, soumission, confirmation partielle, réceptions, complétude', async () => {
     const a = await seedNeed('a', { market: 'KM', quantity: 2, supplier: supplier1 });
     const b = await seedNeed('b', { market: 'KM', quantity: 3, supplier: supplier1 });

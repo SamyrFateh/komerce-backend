@@ -302,6 +302,19 @@ async function transitionOrderStatus({
       newStatus: previousStatus,
       error: `Source Mobile Money non reconnue: ${source}`,
     };
+  } else if (source === 'g6_hub_recipe') {
+    // Clôture de marchandise PHYSIQUEMENT conservée au Hub en quarantaine.
+    // Ce chemin n'est ouvert qu'à la transaction admin du service G6 ;
+    // il ne saurait servir à contourner les contrôles d'une commande normale.
+    if (!dbClient || !actor?.id || actor.role !== 'admin' || newStatus !== 'cancelled') {
+      return {success:false,code:'G6_HUB_SSOT_FORBIDDEN',error:'Clôture Hub G6 réservée à la transaction admin'};
+    }
+    const {rows:[g6]}=await q.query(
+      'SELECT simulation_scope,payment_mode,wallet_applied_kmf FROM orders WHERE id=$1 FOR UPDATE',[orderId]);
+    if (g6?.simulation_scope !== 'G6-BUYER' || g6?.payment_mode !== 'cash_relais' ||
+        Number(g6?.wallet_applied_kmf || 0)!==0) {
+      return {success:false,code:'G6_HUB_SSOT_SCOPE',error:'Clôture Hub G6 hors périmètre financier'};
+    }
   } else if (source === 'refund_external') {
     // Remboursement externe (PayPal/Stripe) : * → refunded autorisé
     // L'argent a DÉJÀ été rendu — bloquer la transition = incohérence DB.
@@ -497,7 +510,13 @@ async function transitionOrderStatus({
     // Annuler une commande jamais confirmée (pending) ne doit
     // PAS rendre de stock, sinon on crée du stock fantôme.
     const stockWasDecremented = STATUS_RANK[previousStatus] >= STATUS_RANK.confirmed;
-    if (stockWasDecremented) {
+    if (source === 'g6_hub_recipe') {
+      // La marchandise est toujours au Hub et vient d'être mise en QUARANTINED
+      // par le service métier dans la même transaction. Ce n'est PAS du stock
+      // commercial restitué. Les restaurations normales restent inchangées.
+      cancelEffects.stockItemsRestored = 0;
+      cancelEffects.g6HubStockQuarantined = true;
+    } else if (stockWasDecremented) {
       // Symétrie avec le décrément : restaurer stock produit ET stock variantes.
       // PDC-7 (Lot 7) — même correctif que parcel-operations.js:497-523 : oi.sku_id
       // et p.inventory_model sont OBLIGATOIRES ici. Sans eux, adjustStock() route

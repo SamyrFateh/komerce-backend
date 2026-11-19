@@ -19,6 +19,7 @@
 
 const db = require('../db');
 const { getGroupedPurchaseOrder } = require('./purchasing-grouped-service');
+const {readEligibility} = require('./g6-recipe-po-cancel-service');
 
 // One statement gives the execution collections a shared PostgreSQL snapshot.
 // Explicit columns exclude raw facts/messages. Collections keep their identities:
@@ -84,7 +85,9 @@ async function getPurchaseOrderDetail(poId, q = db) {
   // Preserve UUID validation, 404 and rejection of historical POs before reading execution.
   const detail = await getGroupedPurchaseOrder(poId, q);
   const { rows: [{ execution }] } = await q.query(EXECUTION_SQL, [detail.purchase_order.id]);
-  return { ...detail, supplier_execution: execution };
+  const g6_recipe = ['notified','confirmed'].includes(detail.purchase_order.status)
+    ? await readEligibility(poId,q) : {eligible:false};
+  return { ...detail, supplier_execution: execution, g6_recipe };
 }
 
 module.exports = { getPurchaseOrderDetail };

@@ -167,3 +167,23 @@ describe('POST /api/v2/alerts/:id/ack', () => {
     expect(res.status).toBe(500);
   });
 });
+
+describe('G6-CLEANUP: notifications-owned targeted PO alert resolution',()=>{
+ const {resolveRecipePurchaseOrderAlerts}=require('../../utils/alerts');
+ test('only matching PO ID and order IDs can be resolved',async()=>{
+  const query=jest.fn().mockResolvedValue({rowCount:2});
+  const executor={query},poId='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  const orders=['bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'];
+  await expect(resolveRecipePurchaseOrderAlerts(executor,{poId,orderIds:orders,actorId:'cccccccc-cccc-4ccc-8ccc-cccccccccccc'})).resolves.toBe(2);
+  const [sql,params]=query.mock.calls[0];
+  expect(sql).toContain("type='order_cancel_purchasing_blocked'");
+  expect(sql).toContain('resolved_at IS NULL');
+  expect(sql).toContain('description LIKE');
+  expect(params).toEqual([poId,'cccccccc-cccc-4ccc-8ccc-cccccccccccc',orders]);
+ });
+ test('refuses missing scope and never queries',async()=>{
+  const q={query:jest.fn()};
+  await expect(resolveRecipePurchaseOrderAlerts(q,{poId:'x'})).rejects.toThrow();
+  expect(q.query).not.toHaveBeenCalled();
+ });
+});

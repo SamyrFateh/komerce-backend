@@ -2,8 +2,8 @@
   "generatedAt": "2026-11-17T10:03:37.604Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 850,
-    "protected": 791,
+    "total": 852,
+    "protected": 793,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -404,6 +404,13 @@
     },
     {
       "key": "DELETE /api/admin/boutique-categories/{key}/subcategories/{subKey}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/orders/{id}/close-g6-hub-recipe",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -5860,14 +5867,16 @@
       "key": "GET /api/unsold/stats/summary",
       "level": "PROTECTED",
       "roles": [
-        "admin"
+        "admin",
+        "market_operator"
       ]
     },
     {
       "key": "GET /api/unsold",
       "level": "PROTECTED",
       "roles": [
-        "admin"
+        "admin",
+        "market_operator"
       ]
     },
     {
@@ -6210,6 +6219,13 @@
       "key": "POST /webhook/meta-whatsapp",
       "level": "PUBLIC",
       "roles": []
+    },
+    {
+      "key": "POST /api/purchasing/po/{po_id}/cancel-g6-recipe",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
     }
   ]
 }

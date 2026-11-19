@@ -36,6 +36,7 @@ jest.mock('../../db', () => ({ getClient: jest.fn(), query: jest.fn() }));
 const mockState = { user: { id: 'user-1', role: 'client' } };
 jest.mock('../../middleware/auth', () => ({
   authenticate: (req, _res, next) => { req.user = mockState.user; next(); },
+  requireRole: roles => (req,res,next)=> roles.includes(req.user?.role)?next():res.status(403).json({error:'role_forbidden'}),
 }));
 
 jest.mock('../../middleware/validate', () => ({
@@ -69,6 +70,7 @@ jest.mock('../../services/notification-service', () => ({
 jest.mock('../../services/order-status-machine', () => ({
   transitionOrderStatus: jest.fn(),
 }));
+jest.mock('../../services/g6-hub-recipe-closure',()=>({closeG6HubOrder:jest.fn()}));
 
 jest.mock('../../services/documents/refund-receipt', () => ({
   issue: jest.fn().mockResolvedValue(undefined),
@@ -512,5 +514,26 @@ describe('FA-08 — annulation Stripe par intention durable', () => {
     expect(res.body.refund.intent_id).toBe('intent-old');
     expect(executeReservedStripeRefund).not.toHaveBeenCalled();
     expectTransactionRolledBack(client);
+  });
+});
+
+describe('G6-CLEANUP D : route dédiée sans PSP',()=>{
+  const {closeG6HubOrder}=require('../../services/g6-hub-recipe-closure');
+  test('admin peut clôturer une recette uniquement via le service protégé',async()=>{
+    mockState.user={id:'admin',role:'admin'};
+    closeG6HubOrder.mockResolvedValueOnce({status:'cancelled',external_calls:0});
+    const res=await request(app).post('/api/orders/o1/close-g6-hub-recipe').send({reason:'Fin de campagne'});
+    expect(res.status).toBe(200);
+    expect(closeG6HubOrder).toHaveBeenCalledWith('o1',{actor:mockState.user,reason:'Fin de campagne'});
+    expect(processRefund).not.toHaveBeenCalled();
+    expect(executeReservedStripeRefund).not.toHaveBeenCalled();
+  });
+  test('le refus métier est explicite et aucun PSP n est appelé',async()=>{
+    mockState.user={id:'admin',role:'admin'};
+    closeG6HubOrder.mockRejectedValueOnce(Object.assign(new Error('non G6'),{status:403,code:'G6_HUB_NOT_RECIPE'}));
+    const res=await request(app).post('/api/orders/o1/close-g6-hub-recipe').send({reason:'Fin de campagne'});
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('G6_HUB_NOT_RECIPE');
+    expect(processRefund).not.toHaveBeenCalled();
   });
 });

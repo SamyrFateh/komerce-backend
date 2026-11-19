@@ -1,0 +1,50 @@
+name: G6 cleanup Hub Order360 — local guards and Chromium
+on:
+  pull_request:
+    paths:
+      - 'services/g6-hub-recipe-closure.js'
+      - 'routes/orders/cancel.js'
+      - 'public/dashboards/canonical/js/order-360.js'
+      - 'scripts/recette/g6-cleanup-recette-chromium.js'
+      - 'scripts/recette/canonical/g6-cleanup-core.js'
+      - 'tests/unit/g6-hub-recipe-closure.test.js'
+      - 'tests/unit/g6-cleanup-recette.test.js'
+      - 'tests/e2e/order-360-lineage.spec.js'
+      - '.github/workflows/g6-cleanup-hub-offline.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  g6-hub:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    env:
+      NODE_ENV: test
+      CI: 'true'
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: git fetch origin main:refs/remotes/origin/main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Mandatory preflight
+        run: npm run pr:preflight
+      - name: Jest scope, custody, planning, no bypass
+        run: npx jest --config jest.unit.config.js --runInBand tests/unit/g6-hub-recipe-closure.test.js tests/unit/g6-cleanup-recette.test.js tests/unit/order-360.test.js
+      - run: npx playwright install --with-deps chromium
+      - name: Synthetic Order 360 only — no staging or external mutations
+        run: npx playwright test tests/e2e/order-360-lineage.spec.js --grep 'G6-D'
+      - name: Before and after PNG
+        run: test -s test-artifacts/g6-hub/avant.png && test -s test-artifacts/g6-hub/apres.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g6-cleanup-hub-${{ github.run_id }}
+          path: test-artifacts/g6-hub/
+          if-no-files-found: warn
+          retention-days: 14

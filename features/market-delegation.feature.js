@@ -150,6 +150,7 @@ module.exports = {
     services: [
       'services/capability-registry.js',
       'services/market-delegation-service.js',
+      'services/market-delegation-read-authority.js',
       'services/market-scope-projector.js',
       'services/market-operator-provisioning.js',
       'services/market-delegation-team-service.js',

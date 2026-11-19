@@ -287,6 +287,21 @@ function runFamily(family, files, { verbose } = {}) {
       });
     }
 
+    // Les suites E2E en sous-processus avaient uniquement le tail stderr.
+    // Préserver la cause exacte des assertions ratées depuis le JSON Jest.
+    if (result.status !== 0 && report) {
+      for (const fileResult of report.testResults || []) {
+        const failures=(fileResult.assertionResults || []).filter(a=>a.status==='failed');
+        for (const assertion of failures) {
+          const message=(assertion.failureMessages || []).join('\n')
+            .replace(/\\x1b\\[[0-9;]*m/g,'').slice(0,1400);
+          console.error('[feature-invariant-check] FAIL',
+            path.relative(ROOT,fileResult.name || fileResult.testFilePath || ''),
+            assertion.fullName, message);
+        }
+      }
+    }
+
     const byFile = new Map(
       (report?.testResults || []).map(r => [
         path.relative(ROOT, r.name || r.testFilePath || '')

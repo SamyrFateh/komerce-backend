@@ -16,11 +16,18 @@ function envFor(roles) {
 describe('preflight GitHub secrets pour Chromium staging',()=>{
  test('admin, baseline et all sélectionnent exactement les rôles prévus',()=>{
    expect(selectedRoles('admin')).toEqual(['admin']);
+   expect(selectedRoles('market')).toEqual(['market_operator']);
    expect(selectedRoles('baseline')).toEqual(['admin','market_operator']);
    expect(selectedRoles('all')).toEqual(ALL_ROLES);
    expect(BASELINE_ROLES).toEqual(['admin','market_operator']);
    expect(()=>selectedRoles('unknown')).toThrow('INVALID_E2E_AUDIT_ROLES');
  });
+ test('le parcours marché ciblé exige un seul profil Chromium',()=>{
+   const r=inspect({...envFor('market'),E2E_CHROMIUM_SPEC_FILTER:'market-visibility'});
+   expect(r.missing_secret_names).toEqual([]);
+   expect(r.selected_roles).toEqual(['market_operator']);
+ });
+
  test('la baseline n exige aucun secret Finance, Sourcing ou Transitaire',()=>{
    const r=inspect(envFor('baseline'));
    expect(r.status).toBe('CREDENTIAL_NAMES_CONFIGURED_LOGIN_UNVERIFIED');

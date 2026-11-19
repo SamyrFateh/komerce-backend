@@ -144,6 +144,8 @@ function toSafeRefs(value) {
 
 async function loadOrder360(order, { includePurchasing = false, includeCosts = false } = {}) {
   if (!order || !order.id) throw new Error('order_360_resolved_order_required');
+  const marketPurchasing = includePurchasing === 'market';
+  const readPurchasing = includePurchasing === true || marketPurchasing;
 
   const orderId = order.id;
   const [itemsResult, parcelsResult, parcelItemsResult, historyResult, scansResult,
@@ -221,23 +223,24 @@ async function loadOrder360(order, { includePurchasing = false, includeCosts = f
       WHERE order_id = $1::uuid
       ORDER BY issued_at DESC
     `, [orderId]),
-    includePurchasing
+    readPurchasing
       ? db.query(`
           SELECT po.id, po.status::text AS status, po.procurement_hub_ref,
                  po.supplier_order_id, po.created_at, po.updated_at,
                  s.name AS supplier_name, s.platform AS supplier_platform
             FROM purchase_orders po
             JOIN suppliers s ON s.id = po.supplier_id
-           WHERE po.order_id = $1::uuid
+           WHERE (po.order_id = $1::uuid
               OR EXISTS (
                    SELECT 1
                      FROM purchase_lines pl
                      JOIN order_items poi ON poi.id = pl.order_item_id
                     WHERE pl.purchase_order_id = po.id
                       AND poi.order_id = $1::uuid
-                 )
+                 ))
+             ${marketPurchasing ? 'AND po.market_id = $2::uuid' : ''}
            ORDER BY po.created_at ASC, po.id ASC
-        `, [orderId])
+        `, marketPurchasing ? [orderId, order.market_id] : [orderId])
       : Promise.resolve({ rows: [] }),
     controlChain.getOrderControlSnapshot(order),
   ]);
@@ -312,15 +315,17 @@ async function loadOrder360(order, { includePurchasing = false, includeCosts = f
     status: row.status,
     supplier_name: row.supplier_name || null,
     supplier_platform: row.supplier_platform || null,
-    procurement_hub_ref: row.procurement_hub_ref || null,
-    supplier_order_id: row.supplier_order_id || null,
+    ...(marketPurchasing ? {} : {
+      procurement_hub_ref: row.procurement_hub_ref || null,
+      supplier_order_id: row.supplier_order_id || null,
+    }),
     created_at: row.created_at,
     updated_at: row.updated_at,
   }));
 
   return Object.freeze({
     order: publicOrder(order),
-    control_position: publicControlPosition(controlPosition, { includePurchasing }),
+    control_position: publicControlPosition(controlPosition, { includePurchasing: includePurchasing === true }),
     summary: Object.freeze({
       items: items.length,
       quantity: totalQuantity,
@@ -358,8 +363,9 @@ async function loadOrder360(order, { includePurchasing = false, includeCosts = f
     // Coûts & écarts : projection Finance canonique d'une seule commande, jamais recalculée ici. Présente seulement
     // pour un acteur autorisé finance.read ; null = non applicable (commande annulée/remboursée).
     ...(includeCosts ? { costs: publicCosts(await financeCanonical.getOrderCosting(order.id)) } : {}),
-    ...(includePurchasing ? {
+    ...(readPurchasing ? {
       purchasing: Object.freeze({
+        read_only: marketPurchasing,
         purchase_orders: Object.freeze(purchaseOrders),
       }),
     } : {}),
@@ -369,7 +375,7 @@ async function loadOrder360(order, { includePurchasing = false, includeCosts = f
         'orders', 'order_items', 'products', 'parcels', 'parcel_items',
         'order_status_history', 'scans', 'order_incidents', 'order_comments',
         'client_notifications', 'invoices', 'transaction_documents',
-        ...(includePurchasing ? ['purchase_orders', 'purchase_lines', 'suppliers'] : []),
+        ...(readPurchasing ? ['purchase_orders', 'purchase_lines', 'suppliers'] : []),
       ]),
     }),
   });

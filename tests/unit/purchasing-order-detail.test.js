@@ -3,9 +3,11 @@
 
 jest.mock('../../db', () => ({ query: jest.fn() }));
 jest.mock('../../services/purchasing-grouped-service', () => ({ getGroupedPurchaseOrder: jest.fn() }));
+jest.mock('../../services/g6-recipe-po-cancel-service',()=>({readEligibility:jest.fn()}));
 const db = require('../../db');
 const { getGroupedPurchaseOrder } = require('../../services/purchasing-grouped-service');
 const { getPurchaseOrderDetail } = require('../../services/purchasing-order-detail');
+const {readEligibility}=require('../../services/g6-recipe-po-cancel-service');
 
 const PO = '00000000-0000-0000-0000-000000000001';
 const detail = { purchase_order: { id: PO }, lines: [{ market_id: 'KM' }, { market_id: 'CM' }], markets: ['KM', 'CM'], multi_market: true };
@@ -18,7 +20,7 @@ test('adds the execution projection without changing the existing detail or mark
   db.query.mockResolvedValueOnce({ rows: [{ execution: empty }] });
   const result = await getPurchaseOrderDetail(PO);
   expect(getGroupedPurchaseOrder).toHaveBeenCalledWith(PO, db);
-  expect(result).toEqual({ ...detail, supplier_execution: empty });
+  expect(result).toEqual({ ...detail, supplier_execution: empty, g6_recipe:{eligible:false} });
   expect(result.lines).toBe(detail.lines);
   expect(db.query).toHaveBeenCalledTimes(1);
   expect(db.query.mock.calls[0][1]).toEqual([PO]);
@@ -59,4 +61,20 @@ test('l’état bloquant api_ambiguous_blocked est calculé côté serveur avec 
   expect(sql).toContain('DISTINCT ON (provider)');
   expect(sql).toContain("l.outcome = 'ambiguous'");
   expect(sql).toContain("(l.facts->>'replay_blocked')::boolean");
+});
+
+test('G6-C : expose l éligibilité serveur seulement pour un PO notifié ou confirmé',async()=>{
+  const engaged={...detail,purchase_order:{id:PO,status:'confirmed'}};
+  getGroupedPurchaseOrder.mockResolvedValueOnce(engaged);
+  db.query.mockResolvedValueOnce({rows:[{execution:empty}]});
+  readEligibility.mockResolvedValueOnce({eligible:true});
+  const result=await getPurchaseOrderDetail(PO);
+  expect(readEligibility).toHaveBeenCalledWith(PO,db);
+  expect(result.g6_recipe).toEqual({eligible:true});
+});
+test('G6-C : PO draft ne propose jamais le bouton même avec données de recette',async()=>{
+  getGroupedPurchaseOrder.mockResolvedValueOnce({...detail,purchase_order:{id:PO,status:'draft'}});
+  db.query.mockResolvedValueOnce({rows:[{execution:empty}]});
+  expect((await getPurchaseOrderDetail(PO)).g6_recipe).toEqual({eligible:false});
+  expect(readEligibility).not.toHaveBeenCalled();
 });

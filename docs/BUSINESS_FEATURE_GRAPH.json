@@ -5437,6 +5437,104 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/documentation.html",
+        "resolvedPath": "public/dashboards/canonical/documentation.html",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/documentation.css",
+        "resolvedPath": "public/dashboards/canonical/css/documentation.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/documentation.js",
+        "resolvedPath": "public/dashboards/canonical/js/documentation.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/manual/screens/01_Pilotage.png",
+        "resolvedPath": "public/dashboards/canonical/manual/screens/01_Pilotage.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/manual/screens/02_Commerce.png",
+        "resolvedPath": "public/dashboards/canonical/manual/screens/02_Commerce.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/manual/screens/03_Atelier_economique.png",
+        "resolvedPath": "public/dashboards/canonical/manual/screens/03_Atelier_economique.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/manual/screens/04_Catalogue_pays.png",
+        "resolvedPath": "public/dashboards/canonical/manual/screens/04_Catalogue_pays.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/manual/screens/05_Commandes.png",
+        "resolvedPath": "public/dashboards/canonical/manual/screens/05_Commandes.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/manual/screens/06_Marches.png",
+        "resolvedPath": "public/dashboards/canonical/manual/screens/06_Marches.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/manual/screens/07_Operations.png",
+        "resolvedPath": "public/dashboards/canonical/manual/screens/07_Operations.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/manual/screens/08_Hub_Relais.png",
+        "resolvedPath": "public/dashboards/canonical/manual/screens/08_Hub_Relais.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/manual/screens/09_Expeditions_Douane.png",
+        "resolvedPath": "public/dashboards/canonical/manual/screens/09_Expeditions_Douane.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/manual/screens/10_Sourcing.png",
+        "resolvedPath": "public/dashboards/canonical/manual/screens/10_Sourcing.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/manual/screens/11_Finance.png",
+        "resolvedPath": "public/dashboards/canonical/manual/screens/11_Finance.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/css/base.css",
         "resolvedPath": "public/dashboards/canonical/css/base.css",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -15580,6 +15678,13 @@
       {
         "feature": "market-delegation",
         "category": "services",
+        "declared": "services/market-delegation-read-authority.js",
+        "resolvedPath": "services/market-delegation-read-authority.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "services",
         "declared": "services/market-scope-projector.js",
         "resolvedPath": "services/market-scope-projector.js",
         "status": "resolved-in-technical-graph"
@@ -16584,6 +16689,13 @@
         "declared": "services/order-status-machine.js",
         "resolvedPath": "services/order-status-machine.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
+        "declared": "services/g6-hub-recipe-closure.js",
+        "resolvedPath": "services/g6-hub-recipe-closure.js",
+        "status": "resolved-on-disk-no-header"
       },
       {
         "feature": "orders",
@@ -18341,6 +18453,13 @@
         "declared": "services/purchasing-order-detail.js",
         "resolvedPath": "services/purchasing-order-detail.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
+        "declared": "services/g6-recipe-po-cancel-service.js",
+        "resolvedPath": "services/g6-recipe-po-cancel-service.js",
+        "status": "resolved-on-disk-no-header"
       },
       {
         "feature": "purchasing",
@@ -30166,6 +30285,12 @@
       },
       {
         "from": "orders",
+        "to": "incident-management",
+        "raw": "incident-management (G6-CLEANUP : création gouvernée d’un incident de quarantaine pour chaque unité physique conservée au Hub, via incident-write-service)",
+        "resolved": true
+      },
+      {
+        "from": "orders",
         "to": "business-rules",
         "raw": "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: routes/orders/create.js -> utils/rules.js ; routes/orders/qr.js -> utils/rules.js ; routes/orders/list.js -> utils/rules.js ; +1)",
         "resolved": true
@@ -30810,6 +30935,12 @@
         "from": "unsold-resolution",
         "to": "auth",
         "raw": "auth",
+        "resolved": true
+      },
+      {
+        "from": "unsold-resolution",
+        "to": "market-delegation",
+        "raw": "market-delegation",
         "resolved": true
       },
       {
@@ -37563,6 +37694,14 @@
                 "targetFile": "middleware/require-market-delegated-capability.js"
               },
               {
+                "sourceFileId": "routes/admin-shipping-customs-workspace.js",
+                "targetFile": "services/market-delegation-service.js"
+              },
+              {
+                "sourceFileId": "routes/admin-shipping-customs-workspace.js",
+                "targetFile": "services/market-delegation-read-authority.js"
+              },
+              {
                 "sourceFileId": "routes/admin-finance-accounting-workspace.js",
                 "targetFile": "middleware/require-market-delegated-capability.js"
               },
@@ -39543,6 +39682,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "bootstrap/html-routes.js",
+                "targetFile": "middleware/auth.js"
+              },
               {
                 "sourceFileId": "server.js",
                 "targetFile": "middleware/csrf-origin.js"
@@ -41815,6 +41958,10 @@
               {
                 "sourceFileId": "tests/e2e-api/hub.historical-receipt-coverage.e2e.test.js",
                 "targetFile": "services/order-status-machine.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/hub.historical-receipt-coverage.e2e.test.js",
+                "targetFile": "services/g6-hub-recipe-closure.js"
               },
               {
                 "sourceFileId": "tests/unit/pickup-secret-issuer.test.js",
@@ -44164,6 +44311,22 @@
       },
       {
         "from": "orders",
+        "to": "incident-management",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/g6-hub-recipe-closure.js",
+                "targetFile": "services/incident-write-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "orders",
         "to": "infrastructure",
         "channels": [
           {
@@ -44204,6 +44367,10 @@
               {
                 "sourceFileId": "services/order-status-machine.js",
                 "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "services/g6-hub-recipe-closure.js",
+                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "services/order-financial-closure-signal.js",
@@ -44528,6 +44695,14 @@
               {
                 "sourceFileId": "services/order-status-machine.js",
                 "targetFile": "services/pickup-secret-service.js"
+              },
+              {
+                "sourceFileId": "services/g6-hub-recipe-closure.js",
+                "targetFile": "services/parcel-operations.js"
+              },
+              {
+                "sourceFileId": "services/g6-hub-recipe-closure.js",
+                "targetFile": "services/hub-physical-identity.js"
               },
               {
                 "sourceFileId": "services/order-financial-closure-reconciliation.js",
@@ -47314,6 +47489,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/g6-recipe-po-cancel-service.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/hub-administration-board.js",
                 "targetFile": "db.js"
               },
@@ -47646,6 +47825,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "services/g6-recipe-po-cancel-service.js",
+                "targetFile": "utils/alerts.js"
+              },
               {
                 "sourceFileId": "services/purchasing-trigger-service.js",
                 "targetFile": "services/notification-service.js"
@@ -49718,6 +49901,22 @@
       },
       {
         "from": "unsold-resolution",
+        "to": "market-delegation",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/unsold.js",
+                "targetFile": "services/market-delegation-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "unsold-resolution",
         "to": "orders",
         "channels": [
           {
@@ -50203,7 +50402,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2359
+        "filesObserved": 2363
       },
       "boutique": {
         "filesObserved": 216,
