@@ -43,3 +43,10 @@ describe('G6-CLEANUP D — Order 360 contrôle admin',()=>{
   expect(source).toContain("refreshed.payload.order.status!=='cancelled'");
  });
 });
+
+test('clôture Hub G6 : la relecture ne dépend pas de simulation_scope, absent de GET /api/orders/:ref', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/js/order-360.js'), 'utf8');
+  const block = src.slice(src.indexOf('const latest=await jsonRequest'), src.indexOf('/close-g6-hub-recipe'));
+  expect(block).not.toMatch(/latest\.simulation_scope/);
+  expect(block).toMatch(/latest\.payment_mode!=='cash_relais'/);
+});

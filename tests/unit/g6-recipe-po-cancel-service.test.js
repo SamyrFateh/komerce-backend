@@ -66,3 +66,9 @@ describe('G6 recipe PO transaction',()=>{
    });
  }
 });
+
+test('les paramètres texte des UPDATE sont typés (pas de "could not determine data type")', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../../services/g6-recipe-po-cancel-service.js'), 'utf8');
+  expect(src).toMatch(/CONCAT\(COALESCE\(notes,''\),\$2::text\)/);
+  expect(src).toMatch(/cancel_reason=\$2::text/);
+});

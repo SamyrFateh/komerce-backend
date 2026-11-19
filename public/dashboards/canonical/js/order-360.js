@@ -672,8 +672,9 @@
       btn.disabled=true;
       try{
         const latest=await jsonRequest(options.fetch,'/api/orders/'+encodeURIComponent(order.reference));
-        if(latest.reference!==order.reference||latest.status!==order.status||
-           latest.simulation_scope!=='G6-BUYER'||latest.payment_mode!=='cash_relais')
+        // GET /api/orders/:ref n'expose pas simulation_scope : le périmètre G6 est revérifié par le serveur.
+        if(!latest.id||latest.reference!==order.reference||latest.status!==order.status||
+           latest.payment_mode!=='cash_relais')
           throw Error('Dossier G6 modifié ou hors périmètre');
         const response=await options.fetch('/api/orders/'+encodeURIComponent(latest.id)+'/close-g6-hub-recipe',{
           method:'POST',credentials:'include',headers:{'Content-Type':'application/json',Accept:'application/json'},
