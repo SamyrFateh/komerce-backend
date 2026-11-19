@@ -81,6 +81,7 @@ module.exports = {
     services: [
       'services/suppliers/central-hub-supplier.js',
       'services/purchasing-order-detail.js',
+      'services/g6-recipe-po-cancel-service.js',
       'services/hub-administration-board.js',
       'services/suppliers/allegro-fulfillment-adapter.js',
       'services/suppliers/allegro-fulfillment-reader.js',

@@ -2,8 +2,8 @@
   "generatedAt": "2026-11-17T10:03:37.604Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 850,
-    "protected": 791,
+    "total": 851,
+    "protected": 792,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -6210,6 +6210,13 @@
       "key": "POST /webhook/meta-whatsapp",
       "level": "PUBLIC",
       "roles": []
+    },
+    {
+      "key": "POST /api/purchasing/po/{po_id}/cancel-g6-recipe",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
     }
   ]
 }

@@ -70,6 +70,7 @@ const { deleteSupplier, confirmPurchaseOrder, cancelPurchaseOrder } = require('.
 const grouped = require('../services/purchasing-grouped-service');
 const { getPurchaseOrderDetail } = require('../services/purchasing-order-detail');
 const engagement = require('../services/purchasing-engagement-service');
+const g6RecipePo = require('../services/g6-recipe-po-cancel-service');
 const settlements = require('../services/supplier-payment-settlement-service');
 const hubAuth = require('../services/hub-authorization-service');
 
@@ -152,6 +153,12 @@ router.post('/po/:po_id/attach', ...groupedGuard, async (req, res, next) => {
 
 router.post('/po/:po_id/detach', ...groupedGuard, async (req, res, next) => {
   try { res.json(await grouped.detachLines(req.params.po_id, (req.body || {}).line_ids)); } catch (err) { groupedError(err, res, next); }
+});
+
+// G6-CLEANUP : admin seulement, aucun fournisseur ni PSP contacté.
+router.post('/po/:po_id/cancel-g6-recipe', ...guard, async (req,res,next)=>{
+  try{res.json(await g6RecipePo.cancelRecipePo(req.params.po_id,{actor:req.user,reason:(req.body||{}).reason}));}
+  catch(err){groupedError(err,res,next);}
 });
 
 router.post('/po/:po_id/discard', ...groupedGuard, async (req, res, next) => {

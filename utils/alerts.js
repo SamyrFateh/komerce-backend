@@ -196,4 +196,20 @@ async function createAlert(dbOrClient, alert) {
   return row;
 }
 
-module.exports = { createAlert, mapSeverity, SEVERITY_MAP };
+/**
+ * Résolution ciblée par le domaine propriétaire Notifications.
+ * `purchase_order_id` et `order_ids` viennent d'une transaction Purchasing
+ * ayant déjà verrouillé et certifié les scopes G6. Aucune suppression d'alerte.
+ */
+async function resolveRecipePurchaseOrderAlerts(q,{poId,orderIds,actorId}={}){
+  if(!q||typeof q.query!=='function')throw new TypeError('executor.query required');
+  if(!poId||!Array.isArray(orderIds)||!actorId)throw new TypeError('scope and actor required');
+  const result=await q.query(`UPDATE alerts SET resolved_at=NOW(),resolved_by=$2
+    WHERE resolved_at IS NULL AND (
+      (entity_type='purchase_order' AND entity_id=$1)
+      OR (entity_type='order' AND entity_id=ANY($3::uuid[])
+        AND type='order_cancel_purchasing_blocked' AND description LIKE '%' || $1::text || '%')
+    )`,[poId,actorId,orderIds]);
+  return result.rowCount||0;
+}
+module.exports = { createAlert, resolveRecipePurchaseOrderAlerts, mapSeverity, SEVERITY_MAP };
