@@ -16,8 +16,24 @@ const JS = path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical',
 const SURFACES = ['order-360.js', 'product-360.js', 'supplier-360.js', 'client-360.js', 'client-index.js'];
 const read = name => fs.readFileSync(path.join(JS, name), 'utf8');
 
+// Order 360 garde deux gestes administratifs de recette G6, isolés du reste des 360.
+// Le contrat de lecture seule continue de couvrir tous les autres écrans et chemins.
+const withoutG6RecipeActions = (name, source) => {
+  if (name !== 'order-360.js') return source;
+  const begin = source.indexOf('  function renderRecipeCancellation(');
+  const end = source.indexOf('  async function mount(options)', begin);
+  if (begin < 0 || end < 0) throw Error('Bornes des actions G6 modifiées : revue nécessaire');
+  const actions = source.slice(begin, end);
+  expect(actions).toContain("order.simulation_scope !== 'G6-BUYER'");
+  expect(actions).toContain("options.user?.role !== 'admin'");
+  expect(actions).toContain("cash_relais");
+  expect(actions).toMatch(/method:\\s*['"]POST['"]/);
+  return source.slice(0, begin) + source.slice(end);
+};
+
+
 describe.each(SURFACES)('%s — lecture seule', name => {
-  const source = read(name);
+  const source = withoutG6RecipeActions(name, read(name));
 
   test('aucun verbe HTTP mutant', () => {
     expect(source).not.toMatch(/method:\s*['"](POST|PUT|PATCH|DELETE)['"]/i);
