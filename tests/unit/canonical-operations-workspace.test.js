@@ -148,3 +148,14 @@ test('sourcing manuel : la cotation réelle cible la création de ligne pour une
   expect(source).toContain('actual_unit_price: actualPrice.value');
   expect(source).toContain("supplier_price_aed: price");
 });
+
+
+test('UX1 : veille Hub GET seule, pas de repaint pendant formulaire et sélection préservée',()=>{
+  expect(SOURCE).toContain("endpointFor(marketCode, 'supply')");
+  expect(SOURCE).toContain("doc.visibilityState === 'hidden'");
+  expect(SOURCE).toContain("rootNode.querySelector('form:not([hidden])");
+  expect(SOURCE).toContain('hubInputBusy()');
+  expect(SOURCE).toContain('Nouvelles données disponibles — ');
+  expect(SOURCE).toContain('context.hubRefresh.signature = supplySignature(context.dossier)');
+  expect(SOURCE).toContain('watchHubSupply();');
+});
