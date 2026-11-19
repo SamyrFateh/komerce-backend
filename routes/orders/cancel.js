@@ -64,7 +64,16 @@ router.post('/:id/close-g6-hub-recipe',authenticate,requireRole(['admin']),async
   try{
     const result=await closeG6HubOrder(req.params.id,{actor:req.user,reason:(req.body||{}).reason});
     res.json(result);
-  }catch(error){next(error);} // code G6_HUB_* conservé et journalisé par error-handler
+  }catch(error){
+    if(error.status){
+      // Les clients et les tests isolés reçoivent toujours le code métier,
+      // même si le routeur n'est pas monté avec le middleware global.
+      log.warn({businessCode:error.code,order_id:req.params.id,status:error.status},
+        '[G6-CLEANUP] clôture Hub refusée');
+      return res.status(error.status).json({error:error.message,code:error.code});
+    }
+    next(error); // Erreurs inconnues : diagnostic central, pas de réponse 500 masquée.
+  }
 });
 
 router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (req, res, next) => {
