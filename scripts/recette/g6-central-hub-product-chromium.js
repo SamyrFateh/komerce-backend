@@ -145,15 +145,17 @@ async function main(){
   report.db_fingerprint=guard.fingerprint;
   let state={sellable:await readSellable(),candidate:await readCandidate()};
   let step=nextStep(state);
-  if(step.step==='manual-import'){
+  if(step.step==='manual-import'||step.step==='promote-candidate'){
    const {chromium}=require('playwright');
    browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
    const actor=await loginAdmin(browser);
    try{
-    if(!await manualImport(actor))return;
-    state={sellable:await readSellable(),candidate:await readCandidate()};
-    check(state.candidate,'G6_CENTRAL_CANDIDATE_NOT_FOUND_AFTER_IMPORT');
-    step=nextStep(state);
+    if(step.step==='manual-import'){
+     if(!await manualImport(actor))return;
+     state={sellable:await readSellable(),candidate:await readCandidate()};
+     check(state.candidate,'G6_CENTRAL_CANDIDATE_NOT_FOUND_AFTER_IMPORT');
+     step=nextStep(state);
+    }
     if(step.step==='promote-candidate'){
      const productRef=await promoteCandidate(actor,step.candidate_ref);
      if(!productRef){process.exitCode=3;return}
@@ -168,7 +170,8 @@ async function main(){
   if(step.step==='catalog-review'){
    report.verdict='G6_CENTRAL_HUB_DRAFT_PROMOTED_CATALOG_REVIEW_REQUIRED';
    report.next_step='Qualifier et approuver dans Catalogue global, puis vérifier prix local et exposition dans Catalogue pays.';
-  }else report.verdict=step.verdict;
+  }else if(step.verdict)report.verdict=step.verdict;
+  else throw Error('G6_CENTRAL_UNEXPECTED_NEXT_STEP_'+String(step.step));
   if(step.fail||/^SCREEN_MISSING/.test(step.verdict))process.exitCode=3;
   save();
  }catch(e){report.error=fullError(e);save();process.exitCode=2}
