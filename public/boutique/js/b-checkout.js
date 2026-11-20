@@ -1771,7 +1771,7 @@ function _buildRecapItemsBlock(
         ? '<span class="ck-recap-item-qty ck-recap-item-variant">' + sanitize(variantText) + '</span>'
         : '')
       + '<span class="ck-recap-item-qty">'
-      + qty + ' \u00D7 ' + fmt(unitPrice, 'KMF')
+      + qty + ' \u00D7 ' + fmtLocalProductPrice(product)
       + '</span>';
 
     const price = document.createElement('span');
@@ -2328,7 +2328,7 @@ export function renderCheckout() {
     confirmBtn.disabled = true;
     // Règle §8 — même gabarit de libellé qu'à l'état stabilisé (refreshCheckoutComputedUI) ;
     // seul le sous-texte change tant que le relais n'est pas chargé.
-    setCheckoutConfirmButton(confirmBtn, 'Confirmer la commande · ' + fmt(_checkoutTotal(), 'KMF'), 'Chargement du relais…');
+    setCheckoutConfirmButton(confirmBtn, 'Confirmer la commande · ' + fmtLocalLinesTotal(_checkoutItems()), 'Chargement du relais…');
     // Le CTA appartient à la colonne de finalisation. Sur desktop il suit le
     // total au lieu d'être artificiellement plaqué au bas du viewport.
     // Desktop : le CTA appartient à la colonne récapitulative, immédiatement
