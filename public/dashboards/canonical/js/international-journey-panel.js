@@ -195,6 +195,38 @@
     if(!s)return section;
     const dossier=put(section,doc.createElement('div'));dossier.className='kmc-journey-dossier';
     put(dossier,text(doc,'h3','',s.reference+' · '+(STAGE_LABEL[s.stage]||s.stage)));
+    // Décision-first : la prochaine étape est déjà déduite du parcours canonique.
+    // Ce bandeau n'exécute aucune transition ; il pointe vers le writer et sa preuve.
+    const step=nextStage(s);
+    const stepTab=step==='customs_released'?'arrival':
+      ['local_delivery','relay_received'].includes(step)?'relay':'transport';
+    const canAct=Boolean(step&&canTransition(ctx,step));
+    const inCorrectTab=ctx.journeyTab===stepTab;
+    let transitionTask=null;
+    const nextBox=put(dossier,doc.createElement('section'));
+    nextBox.className='kmc-journey-next';
+    nextBox.setAttribute('data-journey-next-action','');
+    put(nextBox,text(doc,'strong','kmc-journey-next-heading','À faire maintenant'));
+    const nextCopy=put(nextBox,doc.createElement('div'));
+    nextCopy.className='kmc-journey-next-copy';
+    put(nextCopy,text(doc,'span','kmc-journey-next-state','Actuel : '+(STAGE_LABEL[s.stage]||s.stage)));
+    put(nextCopy,text(doc,'span','kmc-journey-next-state',
+      step?'Prochaine preuve : '+(STAGE_LABEL[step]||step):
+        'Parcours physique terminé : vérifier les pièces et la clôture économique si nécessaire.'));
+    if(step){
+      if(canAct){
+        const label=inCorrectTab?'Ouvrir la prochaine action':'Aller à '+(TABS.find(tab=>tab[0]===stepTab)||[])[1];
+        const go=put(nextBox,text(doc,'button','kmc-journey-next-button',label));
+        go.type='button';go.setAttribute('data-journey-next-cta',inCorrectTab?'open':'switch-tab');
+        go.addEventListener('click',()=>{
+          if(!inCorrectTab){ctx.journeyTab=stepTab;ctx.reload();return;}
+          if(!transitionTask)return;
+          transitionTask.open=true;
+          transitionTask.scrollIntoView?.({block:'start',behavior:'auto'});
+        });
+      } else put(nextBox,text(doc,'small','kmc-journey-next-wait',
+        'Action réservée à l’acteur habilité : suivi disponible en lecture seule.'));
+    }
     const snapshot=put(dossier,doc.createElement('div'));snapshot.className='kmc-journey-facts';
     const facts=[
       ['Transport',s.transport_mode==='sea'?'Bateau':s.transport_mode==='air'?'Avion':'À définir'],
@@ -252,12 +284,11 @@
           transform:raw=>({...raw,complete_attested:raw.complete_attested==='yes',close:true}),
         });
     }
-    const step=nextStage(s);
     if(canTransition(ctx,step)&&(
        ctx.journeyTab==='transport'&&['handed_over','forwarder_received','in_transit','arrived'].includes(step)||
        ctx.journeyTab==='arrival'&&step==='customs_released'||
        ctx.journeyTab==='relay'&&['local_delivery','relay_received'].includes(step))){
-      task(doc,ctx,dossier,{
+      transitionTask=task(doc,ctx,dossier,{
         title:'Confirmer : '+STAGE_LABEL[step],
         openByDefault:step==='handed_over',
         action:ref+'/transition',
@@ -267,6 +298,7 @@
           :[proof,note],
         transform:raw=>({...raw,to_stage:step}),
       });
+      transitionTask.setAttribute('data-journey-next-task','');
     }
     if(ctx.journeyTab==='transport'){
       if(actorCan(ctx,['admin','agent_transitaire']))task(doc,ctx,dossier,{
