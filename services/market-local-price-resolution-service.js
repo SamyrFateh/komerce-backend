@@ -84,11 +84,26 @@ async function projectLocalToKmf(amount, currency) {
   return rounded;
 }
 
+// The LOCAL_ACTIVE decision is denominated in the market's own currency.
+// Never derive the buyer-visible amount from the rounded KMF accounting pivot.
+function effectiveLocalPrice(amount, minorUnit, product = {}, now = new Date()) {
+  const base = Number(amount);
+  const digits = Number(minorUnit);
+  if (!Number.isFinite(base) || base <= 0 || !Number.isInteger(digits) || digits < 0 || digits > 3) {
+    throw new MarketCommercialPriceError(409, 'market_local_price_invalid', 'Prix local actif invalide.');
+  }
+  const active = Boolean(product.is_promo) && Number(product.promo_pct) > 0 &&
+    (!product.promo_until || new Date(product.promo_until) >= now);
+  if (!active) return base;
+  const factor = 10 ** digits;
+  return Math.round((base * (1 - Number(product.promo_pct) / 100) + Number.EPSILON) * factor) / factor;
+}
+
 async function resolveActiveProductMarketPricing(executor = db, { marketId, product }) {
   if (!marketId || !product?.id) return null;
 
   const { rows } = await executor.query(
-    `SELECT d.amount, d.currency, d.status, d.active_at, m.currency AS market_currency
+    `SELECT d.amount, d.currency, d.status, d.active_at, m.currency AS market_currency, m.minor_unit AS market_minor_unit
        FROM product_market_price_drafts d
        JOIN markets m ON m.id = d.market_id AND m.is_active = TRUE
       WHERE d.market_id = $1::uuid
@@ -107,12 +122,14 @@ async function resolveActiveProductMarketPricing(executor = db, { marketId, prod
   await assertProductPriceShapeCompatible(executor, product.id);
   const baseUnitPriceKmf = await projectLocalToKmf(decision.amount, decision.currency);
   const effectiveUnitPriceKmf = applyCanonicalPromotion(baseUnitPriceKmf, product);
+  const effectiveLocalAmount = effectiveLocalPrice(decision.amount, decision.market_minor_unit, product);
 
   return {
     source: PRICE_STATUSES.ACTIVE,
     buyer_effective: true,
     market_id: marketId,
     local_amount: Number(decision.amount),
+    local_effective_amount: effectiveLocalAmount,
     local_currency: decision.currency,
     base_unit_price_kmf: baseUnitPriceKmf,
     effective_unit_price_kmf: effectiveUnitPriceKmf,
@@ -160,6 +177,8 @@ async function assertProductExposedForMarket(executor, { marketId, productId }) 
  */
 async function applyActiveMarketPricesToCheckoutItems(executor = db, { marketId, items, productMap }) {
   let totalKmf = 0;
+  let localTotal = 0;
+  let localCurrency = null;
   const cache = new Map();
 
   for (const item of items || []) {
@@ -182,6 +201,7 @@ async function applyActiveMarketPricesToCheckoutItems(executor = db, { marketId,
         source: pricing.source,
         market_id: pricing.market_id,
         local_amount: pricing.local_amount,
+        local_effective_amount: pricing.local_effective_amount,
         local_currency: pricing.local_currency,
         base_unit_price_kmf: pricing.base_unit_price_kmf,
         effective_unit_price_kmf: pricing.effective_unit_price_kmf,
@@ -199,9 +219,16 @@ async function applyActiveMarketPricesToCheckoutItems(executor = db, { marketId,
 
     const qty = parseInt(item.quantity, 10) || 1;
     totalKmf += (Number(item._effective_unit_price_kmf) || 0) * qty;
+    if (pricing) {
+      if (localCurrency && localCurrency !== pricing.local_currency) {
+        throw new MarketCommercialPriceError(409, 'market_local_price_currency_mismatch', 'Devises locales mélangées.');
+      }
+      localCurrency = pricing.local_currency;
+      localTotal += pricing.local_effective_amount * qty;
+    }
   }
 
-  return { total_kmf: totalKmf };
+  return { total_kmf: totalKmf, local_total_amount: localCurrency ? Number(localTotal.toFixed(3)) : null, local_currency: localCurrency };
 }
 
 /**
@@ -275,13 +302,15 @@ async function applyActiveMarketPricesToCatalogRows(executor = db, { marketCode,
     }
     const baseUnitPriceKmf = await projectLocalToKmf(decision.amount, decision.currency);
     const effectiveUnitPriceKmf = applyCanonicalPromotion(baseUnitPriceKmf, product);
-    const promoApplied = effectiveUnitPriceKmf < baseUnitPriceKmf;
+    const effectiveLocalAmount = effectiveLocalPrice(decision.amount, market.minor_unit, product);
+    const promoApplied = effectiveLocalAmount < Number(decision.amount);
     output.push({
       ...product,
       price_kmf: effectiveUnitPriceKmf,
       purchasable: true,
       market_price_source: PRICE_STATUSES.ACTIVE,
       market_price_amount: Number(decision.amount),
+      market_price_effective_amount: effectiveLocalAmount,
       market_price_currency: decision.currency,
       market_price_base_kmf: baseUnitPriceKmf,
       market_price_promo_applied: promoApplied,
@@ -296,6 +325,7 @@ module.exports = {
   resolveMarketByCode,
   assertProductPriceShapeCompatible,
   projectLocalToKmf,
+  effectiveLocalPrice,
   resolveActiveProductMarketPricing,
   resolveActiveProductMarketPricingById,
   applyActiveMarketPricesToCheckoutItems,
