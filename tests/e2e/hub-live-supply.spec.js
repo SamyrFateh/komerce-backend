@@ -58,7 +58,7 @@ const TRACE = { chain: [{
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
-async function mount(page, posts, openPhysical = true) {
+async function mount(page, posts, openPhysical = true, receivable = { purchase_orders: [] }) {
   page.on('dialog', (dialog) => dialog.accept());
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
@@ -75,7 +75,7 @@ async function mount(page, posts, openPhysical = true) {
     if (url.pathname === '/api/auth/me') return json(FX.auth_me);
     if (url.pathname === '/api/admin/dashboard/context') return json(FX.context);
     if (url.pathname === API) return json(WORKSPACE);
-    if (url.pathname === '/api/scans/hub/receivable') return json({ purchase_orders: [] });
+    if (url.pathname === '/api/scans/hub/receivable') return json(receivable);
     if (url.pathname === `${API}/supply`) return json(shapeDossier(DOSSIER));
     if (url.pathname === `${API}/supply/trace`) return json(TRACE);
     return route.fulfill({ status: 404, body: '' });
@@ -195,6 +195,31 @@ test.describe('Hub UX guidée — contrat Golden conservé', () => {
     await expect(page.locator('[data-supply-box-create]')).toBeInViewport();
     await page.locator('[data-hlc-physical-shortcut="shipments"]').click();
     await expect(page.locator('[data-supply-shipment-bar]')).toBeInViewport();
+    expect(posts).toEqual([]);
+  });
+
+
+  test('réception fournisseur : libellés persistants et justification manuelle visible', async ({ page }) => {
+    const posts = [];
+    await mount(page, posts, false, { purchase_orders: [{
+      purchase_order_id: PO,
+      po_status: 'notified',
+      supplier: { name: 'Fournisseur A' },
+      supplier_order_ref: 'A-001',
+      lines: [{
+        product_name: 'Câble USB', product_sku_id: 'sku-1',
+        expected_quantity: 3, received_quantity: 2, remaining_quantity: 1,
+        reception_state: 'partial',
+      }],
+    }] });
+    await page.locator('[data-hlc-physical-shortcut="reception"]').click();
+    const form = page.locator(`[data-receive-po="${PO}"]`);
+    await expect(form.getByText('Suivi ou référence du colis · facultatif')).toBeVisible();
+    await expect(form.locator('[data-receive-manual-proof]')).toBeHidden();
+    await form.locator('[data-receive-manual-toggle]').check();
+    await expect(form.getByText('Justification manuelle · obligatoire (6 caractères minimum)')).toBeVisible();
+    await expect(form.locator('[data-receive-manual-proof]')).toBeVisible();
+    await expect(form.locator('[data-workspace-action="receive-supplier"]')).toBeDisabled();
     expect(posts).toEqual([]);
   });
 
