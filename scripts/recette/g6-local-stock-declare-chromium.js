@@ -98,14 +98,13 @@ async function main(){
      actor.blocked.push({method:req.method(),path:'/local-stock/:id/exposure'});return route.abort('blockedbyclient');
     });
     await humanGoto(actor.page,'/dashboards/canonical/market-autonomy.html?market='+MK.code,{waitUntil:'domcontentloaded'});
-    const card=actor.page.locator('[data-market-local-offer] .kmc-team-member')
-     .filter({has:actor.page.locator('strong',{hasText:prod.name||prod.id})})
-     .filter({has:actor.page.locator('small',{hasText:'en stock'})});
+    // Select the exact product ID, never a localized or duplicate display name.
+    const card=actor.page.locator('[data-market-local-offer] [data-local-stock-card="'+prod.id+'"]');
     try{await card.first().waitFor({state:'visible',timeout:30000})}
     catch(_){report.verdict='SCREEN_MISSING_STOCK_EXPOSURE';save();process.exitCode=3;return}
     check(await card.count()===1,'G6_LOCAL_STOCK_CARD_NOT_UNIQUE');
     const waitPut=actor.page.waitForResponse(r=>r.url()===expUrl&&r.request().method()==='PUT',{timeout:30000});
-    await humanClick(null,card.getByRole('button',{name:'Exposer',exact:true}));
+    await humanClick(null,card.locator('[data-local-stock-expose]'));
     const er=await waitPut;
     check(er.ok()&&put===1&&actor.blocked.length===0,'G6_LOCAL_STOCK_EXPOSE_REJECTED_'+er.status());
     report.events.push({key:'local-stock-expose',http:er.status(),role:'market_operator',ui:true,mutations:1});save();
