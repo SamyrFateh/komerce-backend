@@ -27,6 +27,7 @@
  */
 
 import { fmt, sanitize, optimizeImgUrl } from './b-utils.js';
+import { fmtMarketAmount, fmtLocalProductPrice } from './b-market-price-format.js';
 
 /**
  * Rayon de continuité affiché sous le récapitulatif desktop.
@@ -111,10 +112,7 @@ export function renderCheckoutRecentProducts(container, entries = [], actions = 
 
     const price = document.createElement('span');
     price.className = 'ck-checkout-recent-price';
-    price.textContent = fmt(
-      Number(product.price_kmf ?? product.price ?? 0) || 0,
-      'KMF'
-    );
+    price.textContent = fmtLocalProductPrice(product);
     footer.appendChild(price);
 
     if (entry.action === 'included') {
@@ -393,14 +391,16 @@ export function buildOrderSuccessDOM(body, order) {
   wrap.appendChild(refBlock);
 
   const orderQty   = order.items_count || (order.items && order.items.length) || null;
-  const orderTotal = order.total_kmf != null ? order.total_kmf : null;
+  const orderTotal = order.display_total_amount ?? order.total_kmf ?? null;
   if (orderQty && orderTotal) {
     const recapLine = document.createElement('div');
     recapLine.className = 'k-confirm-recap';
     recapLine.innerHTML =
       '<span class="k-confirm-recap-qty">' + orderQty + ' article' + (orderQty > 1 ? 's' : '') + '</span>' +
       '<span class="k-confirm-recap-sep">•</span>' +
-      '<span class="k-confirm-recap-amount">' + fmt(orderTotal, 'KMF') + '</span>';
+      '<span class="k-confirm-recap-amount">' + (order.display_total_amount != null && order.display_currency
+        ? fmtMarketAmount(order.display_total_amount, order.display_currency)
+        : fmt(orderTotal, 'KMF')) + '</span>';
     wrap.appendChild(recapLine);
   }
 

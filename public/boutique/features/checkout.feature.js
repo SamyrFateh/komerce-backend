@@ -54,6 +54,7 @@ module.exports = {
 
   files: {
     js: [
+      '../js/b-market-price-format.js', // LOCAL_ACTIVE exact, projection de présentation
       '../js/b-checkout-render.js',
       '../js/b-checkout.js',
       '../js/checkout-desktop-style.js',
@@ -65,6 +66,7 @@ module.exports = {
     tests: [
       '../tests/unit/b-checkout.test.js',
       '../tests/unit/b-checkout-render.test.js',
+      '../tests/unit/market-price-format.test.js',
       '../tests/unit/checkout-responsive-css.test.js',
       '../tests/unit/checkout-desktop-style.test.js',
       '../tests/unit/checkout-desktop-v2-css.test.js',

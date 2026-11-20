@@ -730,7 +730,7 @@ describe('effectiveUnitPriceForMarket — doctrine L1 only_LOCAL_ACTIVE_is_buyer
         .mockResolvedValueOnce({ rows: [{ commercial_exposure: 'ENABLED' }] }) // exposition ENABLED
         .mockResolvedValueOnce({ rows: [{ id: 'p1', price_kmf: 5000 }] }) // products SELECT
         .mockResolvedValueOnce({ rows: [{
-          amount: '10000', currency: 'KMF', status: 'LOCAL_ACTIVE', active_at: null, market_currency: 'KMF',
+          amount: '10000', currency: 'KMF', status: 'LOCAL_ACTIVE', active_at: null, market_currency: 'KMF', market_minor_unit: 0,
         }] })
         .mockResolvedValueOnce({ rows: [{ has_explicit_sku_price: false, has_explicit_variant_price: false }] }),
     };

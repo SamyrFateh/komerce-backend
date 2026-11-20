@@ -37,11 +37,18 @@ function refundError(message, code, statusCode = 409) {
   return err;
 }
 
-async function buildOrderFxSnapshot({ totalKmf, marketId, marketCurrency, client }) {
+async function buildOrderFxSnapshot({ totalKmf, marketId, marketCurrency, client, exactMarketAmount = null }) {
   const mc = String(marketCurrency || '').trim().toUpperCase();
   if (!mc) throw refundError('Devise du marché inconnue : commande refusée.', 'ORDER_MARKET_CURRENCY_MISSING');
-  const eur = await fx.convert({ amount: String(totalKmf), from: BASE, to: 'EUR', client });
-  const market = mc === 'EUR' ? eur : await fx.convert({ amount: String(totalKmf), from: BASE, to: mc, client });
+  // A market-local decision is the commercial source of truth. Resolve EUR
+  // from the approved market amount through the same FX authority; do not
+  // invert an already-rounded KMF accounting projection for cash/refunds.
+  const useExactLocal = exactMarketAmount !== null && Number.isFinite(Number(exactMarketAmount)) &&
+    Number(exactMarketAmount) >= 0;
+  const from = useExactLocal ? mc : BASE;
+  const amount = useExactLocal ? String(exactMarketAmount) : String(totalKmf);
+  const eur = await fx.convert({ amount, from, to: 'EUR', client });
+  const market = mc === 'EUR' ? eur : await fx.convert({ amount, from, to: mc, client });
   const snapshot = {
     version: 1,
     pivot_currency: 'EUR',
@@ -49,6 +56,7 @@ async function buildOrderFxSnapshot({ totalKmf, marketId, marketCurrency, client
     market: {
       market_id: marketId || null, currency: mc, amount: market.amount, amount_text: market.amount_text,
       minor_unit: market.rounding.minor_unit, legs: market.legs,
+      price_authority: useExactLocal ? 'LOCAL_ACTIVE_MARKET_AMOUNT' : 'KMF_PROJECTION',
     },
     eur: { currency: 'EUR', amount: eur.amount, amount_text: eur.amount_text, legs: eur.legs },
     rounding: { mode: 'half_even' },

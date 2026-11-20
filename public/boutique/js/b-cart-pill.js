@@ -32,7 +32,8 @@ import { bus }                         from './b-bus.js';
 import { isDesktop }               from './b-scroll-owner.js';
 import { state }                       from './b-store.js';
 import { cartQty, cartTotal }          from './b-cart-core.js';
-import { fmt, sanitize }               from './b-utils.js';
+import { sanitize } from './b-utils.js';
+import { fmtLocalProductPrice, fmtLocalLinesTotal } from './b-market-price-format.js';
 
 // ─── Constantes ────────────────────────────────────────────────────────────
 const STORAGE_KEY = 'kmrc_pill_pos';
@@ -106,7 +107,7 @@ function _buildPopover() {
         ${img ? `<img class="kpill-pop-img" src="${sanitize(img)}" alt="" loading="lazy">` : '<div class="kpill-pop-img kpill-pop-img--empty">📦</div>'}
         <div class="kpill-pop-info">
           <span class="kpill-pop-name">${sanitize(label)}</span>
-          <span class="kpill-pop-meta">×${q} · ${fmt(price, 'KMF')}</span>
+          <span class="kpill-pop-meta">×${q} · ${fmtLocalProductPrice(p, q)}</span>
         </div>
       </div>`;
   }).join('');
@@ -119,7 +120,7 @@ function _buildPopover() {
     <div class="kpill-pop-list">${rows}</div>
     <div class="kpill-pop-footer">
       <span class="kpill-pop-label">Total</span>
-      <span class="kpill-pop-total">${fmt(total, 'KMF')}</span>
+      <span class="kpill-pop-total">${fmtLocalLinesTotal(state.cart)}</span>
     </div>`;
 
   popover.querySelector('.kpill-pop-close').onclick = _closePopover;
@@ -161,7 +162,7 @@ function _renderPill() {
   pill.innerHTML = `
     <span class="kpill-icon">🛒</span>
     <span class="kpill-badge">${qty}</span>
-    <span class="kpill-total">${fmt(total, 'KMF')}</span>`;
+    <span class="kpill-total">${fmtLocalLinesTotal(state.cart)}</span>`;
 }
 
 // ─── Drag (mouse + touch) ──────────────────────────────────────────────────
