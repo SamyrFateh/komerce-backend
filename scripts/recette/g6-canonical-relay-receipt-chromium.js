@@ -202,4 +202,5 @@ async function main(){
  }catch(e){report.error=fullError(e);try{if(report.db_fingerprint)report.failure_readback=await state()}catch(_){};save();process.exitCode=2}
  finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end();console.log(JSON.stringify(report))}
 }
+module.exports={attachDedicatedRelayByUI};
 if(require.main===module)main();
