@@ -31,7 +31,7 @@ describe('market local price buyer boundary', () => {
     const executor = {
       query: jest.fn()
         .mockResolvedValueOnce({ rows: [{
-          amount: '10000', currency: 'XAF', status: 'LOCAL_ACTIVE', active_at: '2026-09-07T10:00:00Z', market_currency: 'XAF',
+          amount: '10000', currency: 'XAF', status: 'LOCAL_ACTIVE', active_at: '2026-09-07T10:00:00Z', market_currency: 'XAF', market_minor_unit: 0,
         }] })
         .mockResolvedValueOnce({ rows: [{ has_explicit_sku_price: false, has_explicit_variant_price: false }] }),
     };
@@ -66,7 +66,7 @@ describe('market local price buyer boundary', () => {
       query: jest.fn()
         .mockResolvedValueOnce({ rows: [{ commercial_exposure: 'ENABLED' }] }) // exposition ENABLED
         .mockResolvedValueOnce({ rows: [{
-          amount: '10000', currency: 'XAF', status: 'LOCAL_ACTIVE', active_at: null, market_currency: 'XAF',
+          amount: '10000', currency: 'XAF', status: 'LOCAL_ACTIVE', active_at: null, market_currency: 'XAF', market_minor_unit: 0,
         }] })
         .mockResolvedValueOnce({ rows: [{ has_explicit_sku_price: false, has_explicit_variant_price: false }] }),
     };
@@ -109,7 +109,7 @@ describe('market local price buyer boundary', () => {
   test('catalog marks a product NOT_DECISIONAL when the market has zero LOCAL_ACTIVE decisions at all (early-return path)', async () => {
     const executor = {
       query: jest.fn()
-        .mockResolvedValueOnce({ rows: [{ id: 'market-1', code: 'CM', currency: 'XAF' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'market-1', code: 'CM', currency: 'XAF', minor_unit: 0 }] })
         .mockResolvedValueOnce({ rows: [] }),
     };
     const [product] = await service.applyActiveMarketPricesToCatalogRows(executor, {
@@ -124,7 +124,7 @@ describe('market local price buyer boundary', () => {
   test('catalog marks only the uncovered product NOT_DECISIONAL when some products in the batch have LOCAL_ACTIVE', async () => {
     const executor = {
       query: jest.fn()
-        .mockResolvedValueOnce({ rows: [{ id: 'market-1', code: 'CM', currency: 'XAF' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'market-1', code: 'CM', currency: 'XAF', minor_unit: 0 }] })
         .mockResolvedValueOnce({ rows: [{ product_id: 'p1', amount: '9000', currency: 'XAF', active_at: null }] })
         .mockResolvedValueOnce({ rows: [] }),
     };
@@ -136,6 +136,34 @@ describe('market local price buyer boundary', () => {
     expect(p1.market_price_source).toBe('LOCAL_ACTIVE');
     expect(p2.purchasable).toBe(false);
     expect(p2.market_price_source).toBe('NOT_DECISIONAL');
+  });
+});
+
+describe('M02 CG: exact market price survives an XAF/KMF round trip', () => {
+  test('approved 6654 XAF is not represented as a reconstructed 6655 XAF', async () => {
+    const executor = {
+      query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ commercial_exposure: 'ENABLED' }] })
+        .mockResolvedValueOnce({ rows: [{
+          amount: '6654', currency: 'XAF', status: 'LOCAL_ACTIVE', active_at: null,
+          market_currency: 'XAF', market_minor_unit: 0,
+        }] })
+        .mockResolvedValueOnce({ rows: [{ has_explicit_sku_price: false, has_explicit_variant_price: false }] }),
+    };
+    const items = [{ product_id: 'product-235', quantity: 1 }];
+    const result = await service.applyActiveMarketPricesToCheckoutItems(executor, {
+      marketId: 'cg-market', items, productMap: { 'product-235': { id: 'product-235', price_kmf: 8000 } },
+    });
+    expect(result.local_total_amount).toBe(6654);
+    expect(result.local_currency).toBe('XAF');
+    expect(items[0]._market_price_snapshot.local_effective_amount).toBe(6654);
+    expect(result.total_kmf).toBe(4991); // mocked 0.75 conversion
+    expect(result.total_kmf / 0.75).not.toBe(6654);
+  });
+
+  test('promotion applies in market currency before any KMF accounting conversion', () => {
+    expect(service.effectiveLocalPrice(6654, 0, { is_promo: true, promo_pct: 10 })).toBe(5989);
+    expect(service.effectiveLocalPrice(6654, 0, { is_promo: false, promo_pct: 10 })).toBe(6654);
   });
 });
 
