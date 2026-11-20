@@ -291,3 +291,25 @@
 @media (prefers-reduced-motion: reduce) {
   .kmc-dashboard-drill-link { transition: none; }
 }
+
+/* Consultation cross-market autorisée : ne pas confondre filtre de lecture
+   et sélection du marché cible exigée par les writers métiers. */
+.kmc-market-global-overview {
+  box-sizing: border-box;
+  width: min(100% - 32px, 1440px);
+  margin: 12px auto 8px;
+  padding: 12px 16px;
+  display: grid;
+  gap: 5px;
+  border: 1px solid #d7e3ec;
+  border-left: 4px solid #266b94;
+  border-radius: 9px;
+  background: #f7fbff;
+  color: #1e3b52;
+}
+.kmc-market-global-overview strong { font-size: 14px; font-weight: 750; }
+.kmc-market-global-overview p { margin: 0; color: #50677c; font-size: 12px; line-height: 1.5; }
+[data-market-global-body] { min-width: 0; }
+@media (max-width: 760px) {
+  .kmc-market-global-overview { width: min(100% - 24px, 1440px); padding: 11px 12px; }
+}
