@@ -816,3 +816,51 @@
 .kmc-hub-app .kmc-hub-global-table .kmc-hub-kanban-action:hover{
   background:#384b40;filter:none;
 }
+
+/* Trois vues de navigation pour deux branches métier : Direction est une
+   supervision dédiée, jamais un second writer financier ou physique. */
+.kmc-hub-app .kmc-hub-app-branches {flex-wrap:wrap;}
+.kmc-hub-app .kmc-hub-app-branch[data-hub-branch="direction"] {
+  border-color:#d6e1eb;
+  background:#f7fafc;
+}
+.kmc-hub-app .kmc-hub-app-branch[data-hub-branch="direction"].is-active {
+  background:#eaf3f8;
+  border-color:#99bdcf;
+  color:#184b67;
+}
+.kmc-hub-app [data-hub-active-branch="direction"] .hlc-director-body {
+  height:auto;
+  max-height:none;
+  overflow:visible;
+  padding:10px 14px 18px;
+}
+.kmc-hub-app [data-hub-active-branch="direction"] .hlc-director {
+  min-width:0;
+  max-width:100%;
+}
+.kmc-hub-app [data-hub-active-branch="direction"] .hlc-director-list {
+  max-height:none;
+  overflow:visible;
+}
+/* Consultation d'étape terminée : commentaire séparé des actes verrouillés. */
+.kmc-hub-app .kmc-hub-board-menu-action.is-comment {
+  order:2;
+  padding:11px 13px;
+  border:1px solid #87b5ce;
+  border-radius:8px;
+  background:#edf7fd;
+  color:#174d71;
+  font-weight:800;
+}
+.kmc-hub-app .kmc-hub-board-menu-action.is-comment:hover {background:#deeff9;}
+.kmc-hub-app .kmc-hub-board-menu-action.is-comment:focus-visible {
+  outline:2px solid #0873b8;
+  outline-offset:2px;
+}
+@media(max-width:760px){
+  .kmc-hub-app .kmc-hub-app-branches {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;}
+  .kmc-hub-app .kmc-hub-app-branch {min-width:0;padding:9px 8px;}
+  .kmc-hub-app .kmc-hub-app-branch-copy strong {font-size:11px;}
+  .kmc-hub-app .kmc-hub-app-branch-copy small {display:none;}
+}
