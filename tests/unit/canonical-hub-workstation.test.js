@@ -240,3 +240,37 @@ test('Responsable pays voit Hub · Mes marchés (et pas le cockpit central)', ()
   const heading=root.children[0].children[0].children.find(x=>x.tagName==='H1');
   expect(heading.textContent).toBe('Hub · Mes marchés');
 });
+
+test('Direction Hub : engagements, paiements, arbitrages, exécution séparés et liens de dossiers contextuels', async () => {
+  const app=load(), host=el('section'), po='11111111-1111-4111-8111-111111111111';
+  const tasks=[
+    {kind:'BOX_BAGS',owner:'agent_hub',market:{code:'CG'},missing:'Sac à emballer',age_hours:9},
+    {kind:'AUTHORIZE_PAYMENT',owner:'responsable_hub',market:{code:'KM'},subject:{po_id:po},
+      missing:'Autoriser le paiement',why:'Engagement distinct',viewer_can_act:false,
+      blocked_reason:'réservé à la responsable Hub',age_hours:50,overdue:true},
+    {kind:'AUTHORIZE_COMMITMENT',owner:'responsable_hub',market:{code:'KM'},subject:{po_id:po},
+      missing:'Valider engagement',age_hours:8,viewer_can_act:true},
+    {kind:'BLOCKED_BY_SHORTFALL',owner:'responsable_hub',market:{code:'CM'},
+      subject:{order_id:'22222222-2222-4222-8222-222222222222'},missing:'Rupture à arbitrer',age_hours:12},
+  ];
+  const fetch=jest.fn(async ()=>({ok:true,json:async()=>({
+    scope:'ALL_MARKETS',total:4,overdue_count:1,tasks,
+  })}));
+  const data=await app.renderDirectorQueue(host,{document:doc,fetch,user:{role:'admin'}});
+  expect(data.total).toBe(4);
+  expect(host.querySelectorAll('[data-hub-director-list]')).toHaveLength(1);
+  expect(host.querySelectorAll('[data-hub-director-group="commitment"]')).toHaveLength(1);
+  expect(host.querySelectorAll('[data-hub-director-group="payment"]')).toHaveLength(1);
+  expect(host.querySelectorAll('[data-hub-director-group="arbitrage"]')).toHaveLength(1);
+  expect(host.querySelectorAll('[data-hub-director-group="execution"]')).toHaveLength(1);
+  const payments=host.querySelectorAll('[data-hub-director-task="AUTHORIZE_PAYMENT"]');
+  expect(payments).toHaveLength(1);
+  expect(payments[0].className).toContain('is-readonly');
+  expect(payments[0].children.some(x=>x.getAttribute('href')===
+    '/admin/hub-live?view=execute&market=KM&sel=po%3A'+po)).toBe(true);
+  const physical=host.querySelectorAll('[data-hub-director-task="BOX_BAGS"]')[0];
+  expect(physical.children.some(x=>x.getAttribute('href')===
+    '/admin/hub-live?view=execute&market=CG')).toBe(true);
+  expect(fetch).toHaveBeenCalledWith('/api/hub/director-todo',expect.objectContaining({method:'GET'}));
+  expect(fetch).toHaveBeenCalledTimes(1);
+});
