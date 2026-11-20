@@ -20,6 +20,7 @@
 const db = require('../db');
 const classification = require('./recette/staging-reset-classification');
 const fixtures = require('./recette/staging-reset-fixtures');
+const stock = require('./recette/staging-reset-stock');
 
 const CONFIRM_TOKEN = 'PURGE_BUSINESS_DATA_KEEP_FOUNDATION';
 
@@ -53,8 +54,8 @@ function computeCascadeClosure(roots, edges) {
   return [...closure].sort();
 }
 
-function protectedHits(tables) {
-  return tables.filter((table) => PROTECTED_TABLES.has(table)).sort();
+function protectedHits(tables, protectedSet = PROTECTED_TABLES) {
+  return tables.filter((table) => protectedSet.has(table)).sort();
 }
 
 async function listPublicTables(q = db) {
@@ -97,24 +98,26 @@ function nonZeroEntries(counts) {
 }
 
 async function buildPlan(q = db, { withFixtures = false, env = process.env } = {}) {
+  const scope = classification.resetScope(env);
+  const protectedSet = classification.protectedSet(scope); // activity : + catalogue/sourcing/prix/medias preserves
   const allTables = await listPublicTables(q);
   const existing = new Set(allTables);
-  const roots = ROOT_CANDIDATES.filter((table) => existing.has(table));
-  const deleteRoots = DELETE_ROOTS.filter((table) => existing.has(table));
+  const roots = classification.rootsTruncate(scope).filter((table) => existing.has(table));
+  const deleteRoots = classification.rootsDelete(scope).filter((table) => existing.has(table));
   const edges = await foreignKeyEdges(q);
   const cascadeTables = computeCascadeClosure(roots, edges);
-  const protectedCascadeHits = protectedHits(cascadeTables);
+  const protectedCascadeHits = protectedHits(cascadeTables, protectedSet);
 
   // Garde anti-derive : toute table doit etre classee ; la fermeture FK doit coincider avec la classe purge_*.
   const { unclassified } = classification.diffAgainstSchema(allTables);
-  const purgeClassed = allTables.filter((t) => classification.isPurgeClass(t) && !deleteRoots.includes(t));
+  const purgeClassed = allTables.filter((t) => classification.isPurgeClass(t, scope) && !deleteRoots.includes(t));
   const classificationDrift = {
     unclassified_tables: unclassified,
     purge_class_outside_closure: purgeClassed.filter((t) => !cascadeTables.includes(t)),
-    closure_outside_purge_class: cascadeTables.filter((t) => !classification.isPurgeClass(t)),
+    closure_outside_purge_class: cascadeTables.filter((t) => !classification.isPurgeClass(t, scope)),
   };
 
-  const protectedExisting = [...PROTECTED_TABLES].filter((table) => existing.has(table)).sort();
+  const protectedExisting = [...protectedSet].filter((table) => existing.has(table)).sort();
   const cascadeCounts = await countTables(cascadeTables, q);
   const deleteRootCounts = await countTables(deleteRoots, q);
   const protectedCounts = await countTables(protectedExisting, q);
@@ -122,10 +125,11 @@ async function buildPlan(q = db, { withFixtures = false, env = process.env } = {
   const hintedOutsideCascade = allTables
     .filter((table) => TRANSIENT_HINT_RE.test(table))
     .filter((table) => !cascadeTables.includes(table))
-    .filter((table) => !PROTECTED_TABLES.has(table) && !deleteRoots.includes(table));
+    .filter((table) => !protectedSet.has(table) && !deleteRoots.includes(table));
   const hintedOutsideCounts = await countTables(hintedOutsideCascade, q);
 
   const plan = {
+    scope,
     roots,
     delete_roots: deleteRoots,
     cascade_tables: cascadeTables,
@@ -136,6 +140,11 @@ async function buildPlan(q = db, { withFixtures = false, env = process.env } = {
     nonzero_transient_hints_outside_plan: nonZeroEntries(hintedOutsideCounts),
     uncertain_foundation: classification.UNCERTAIN_FOUNDATION.filter((t) => existing.has(t)),
   };
+  if (scope === 'activity') {
+    plan.preserved_activity_tables = classification.namesOf('purge_root').concat(classification.namesOf('purge_via_fk'))
+      .filter((t) => classification.ACTIVITY_PRESERVED.has(t) && existing.has(t)).sort();
+    plan.stock_restoration = await stock.previewStockRestoration(q);
+  }
   if (withFixtures) {
     const { _exec, ...report } = await fixtures.buildFixturePlan(q, { env, purgeTables: [...cascadeTables, ...deleteRoots] });
     plan.fixtures = report;
@@ -231,8 +240,9 @@ async function applyPurge(client, plan, { withFixtures, env }) {
 
   // Freeze acquisition before deleting its captures/candidates. Keep source
   // definitions so operators can deliberately re-enable one source afterwards.
+  // Portee activity : le sourcing est PRESERVE, aucune source n'est touchee.
   let sourcesDisabled = 0;
-  if ((await listPublicTables(client)).includes('sourcing_sources')) {
+  if (plan.scope !== 'activity' && (await listPublicTables(client)).includes('sourcing_sources')) {
     const disabled = await client.query(
       `UPDATE sourcing_sources
           SET autopilot_enabled = FALSE,
@@ -241,6 +251,9 @@ async function applyPurge(client, plan, { withFixtures, env }) {
     );
     sourcesDisabled = disabled.rowCount;
   }
+
+  // Portee activity : restituer le stock decremente par les commandes AVANT leur purge (le catalogue est conserve).
+  const stockRestored = plan.scope === 'activity' ? await stock.applyStockRestoration(client) : null;
 
   await client.query(
     `TRUNCATE TABLE ${plan.roots.map(quoteIdent).join(', ')} RESTART IDENTITY CASCADE`
@@ -281,6 +294,7 @@ async function applyPurge(client, plan, { withFixtures, env }) {
 
   return {
     sourcing_sources_disabled: sourcesDisabled,
+    stock_restored: stockRestored,
     fixtures_deleted: fixturesDeleted,
     after: residual,
     protected_after: protectedAfter,

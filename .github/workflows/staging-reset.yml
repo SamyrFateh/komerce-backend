@@ -16,13 +16,14 @@ on:
           - dry-run
           - execute
       scope:
-        description: 'prudent (defaut) = fixtures reconnues seulement, blocage si reference par la fondation ; full = tout compte hors allowlist + purge nominative des lignes de fondation dont l auteur est retire'
+        description: 'prudent (defaut) = fixtures reconnues seulement, blocage si reference par la fondation ; full = tout compte hors allowlist + purge nominative des lignes de fondation dont l auteur est retire ; activity = ACTIVITE seulement (commandes, achats, Hub, expeditions, douane, relais, cash, paiements, ecritures financieres, alertes, SAV), catalogue/sourcing/prix/medias PRESERVES et stock remis en etat'
         required: false
         type: choice
         default: prudent
         options:
           - prudent
           - full
+          - activity
       simulate:
         description: 'dry-run seulement : repetition generale dans une transaction annulee (verrous exclusifs bref sur les tables purgees) - hors activite uniquement'
         required: false
