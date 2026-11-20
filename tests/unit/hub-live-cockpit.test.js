@@ -31,7 +31,11 @@ describe('H4 #3998 — branchement global de la directrice dans le vrai poste Hu
   const central = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/hub-workstation.js'), 'utf8');
   const operations = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/operations-workspace.js'), 'utf8');
   test('le panneau est dans /admin/hub, pas un deuxième cockpit par marché', () => {
-    expect(central).toContain('renderDirectorQueue(content,{document:doc,fetch:fetchFn,user})');
+    // Le tableau de direction vit dans sa branche dédiée du poste Hub.
+    // La surface interne `host` conserve son propre cycle de rendu :
+    // l'ancien contrat attendait le conteneur `content` et était obsolète.
+    expect(central).toContain("branch === 'direction'");
+    expect(central).toContain('renderDirectorQueue(host,{document:doc,fetch:fetchFn,user})');
     expect(central).toContain("requestJSON(fetchFn,'/api/hub/director-todo')");
     expect(central).toContain("['admin', 'agent_hub'].includes(user && user.role)");
     expect(central).toContain('data-hub-director-list');
