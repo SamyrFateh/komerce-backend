@@ -13,7 +13,7 @@ const MK=require('./canonical/market-profile').marketProfile(process.env);
 const fs=require('node:fs'),path=require('node:path');
 const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
-const {observe,fullError}=require('./canonical/observability');
+const {observe,fullError,startTraceAfterAuth}=require('./canonical/observability');
 const {humanGoto,humanClick,humanFill,humanSelect}=require('./canonical/actors/human-gestures');
 const env=process.env,BASE='https://komerce-backend-production.up.railway.app';
 const OUT=path.resolve('test-results/g6-central-hub-product');
@@ -62,7 +62,7 @@ async function loginAdmin(browser){
  check(email&&password,'G6_CENTRAL_ADMIN_CREDENTIALS_MISSING');
  const ctx=await browser.newContext({baseURL:BASE,viewport:{width:1440,height:900}});
  const page=await ctx.newPage(),blocked=[];let authAllowed=true;
- await page.route('**/*',route=>{
+ await page.route(/.*/,route=>{
   const r=route.request(),u=new URL(r.url());
   if(['GET','HEAD','OPTIONS'].includes(r.method()))return route.continue();
   if(authAllowed&&r.method()==='POST'&&u.origin===BASE&&u.pathname==='/api/auth/login'){authAllowed=false;return route.continue()}
@@ -74,6 +74,7 @@ async function loginAdmin(browser){
  await humanClick(null,page.locator('#btn-submit'));
  check((await pending).status()===200,'G6_CENTRAL_LOGIN_FAILED');
  await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:20000});
+ await startTraceAfterAuth(ctx);
  const me=await page.request.get('/api/auth/me');const user=await me.json();
  check(me.ok()&&(user.role||user.user?.role)==='admin','G6_CENTRAL_ROLE_INVALID');
  return {ctx,page,blocked};
@@ -81,8 +82,8 @@ async function loginAdmin(browser){
 // Un seul geste mutant : « Import manuel » (Sourcing), Fournisseur central Hub présélectionné par l'écran.
 async function manualImport(actor){
  const url=BASE+'/api/admin/workspaces/sourcing/imports';let calls=0;
- await actor.page.unroute('**/*');
- await actor.page.route('**/*',route=>{
+ await actor.page.unroute(/.*/);
+ await actor.page.route(/.*/,route=>{
   const req=route.request(),u=new URL(req.url());
   if(['GET','HEAD','OPTIONS'].includes(req.method()))return route.continue();
   if(req.url()===url&&req.method()==='POST'&&calls++===0)return route.continue();
