@@ -84,7 +84,10 @@ async function mount(page, posts, openPhysical = true) {
   await page.locator('select').first().selectOption({ label: 'KM · Comores' });
   await expect(page.locator('h1')).toHaveText('Hub live · Dossiers');
   await page.locator('[data-workspace-view="supply"]').click();
-  if (openPhysical) await page.locator('[data-hub-physical-details] > summary').click();
+  if (openPhysical) {
+    const physical = page.locator('[data-hub-physical-details]');
+    if (!(await physical.evaluate(node => node.open))) await physical.locator('summary').click();
+  }
 }
 
 test.describe('Hub live · Approvisionnement — desktop 1440', () => {
@@ -173,5 +176,38 @@ test.describe('Hub live · Approvisionnement — mobile 390', () => {
     await expect(page.locator('[data-hlc-order]').first()).toContainText('Câble USB');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
+  });
+});
+
+test.describe('Hub UX guidée — contrat Golden conservé', () => {
+  test('atelier physique visible par défaut ; quatre accès directs ; aucune écriture', async ({ page }) => {
+    const posts = [];
+    await mount(page, posts, false);
+    const details = page.locator('[data-hub-physical-details]');
+    await expect(details).toHaveJSProperty('open', true);
+    await expect(page.locator('[data-hub-bag-preparation]')).toBeVisible();
+    await expect(page.locator('[data-supply-boxes]')).toBeVisible();
+    const shortcuts = page.locator('[data-hlc-physical-shortcut]');
+    await expect(shortcuts).toHaveCount(4);
+    await page.locator('[data-hlc-physical-shortcut="bags"]').click();
+    await expect(page.locator('[data-hub-bag-preparation]')).toBeInViewport();
+    await page.locator('[data-hlc-physical-shortcut="boxes"]').click();
+    await expect(page.locator('[data-supply-box-create]')).toBeInViewport();
+    await page.locator('[data-hlc-physical-shortcut="shipments"]').click();
+    await expect(page.locator('[data-supply-shipment-bar]')).toBeInViewport();
+    expect(posts).toEqual([]);
+  });
+
+  test('prochain geste unique en troisième colonne ; réception reste un vrai onglet', async ({ page }) => {
+    const posts = [];
+    await mount(page, posts, false);
+    await page.locator('[data-hlc-po]').first().click();
+    const quick = page.locator('[data-hlc-zone="physical"] [data-hlc-next-action]');
+    await expect(quick).toBeVisible();
+    await expect(quick).toContainText('À faire sur ce dossier');
+    expect(await quick.locator('.hlc-btn.is-primary').count()).toBeLessThanOrEqual(1);
+    await page.locator('[data-hlc-physical-shortcut="reception"]').click();
+    await expect(page.locator('[data-workspace-view="reception"]')).toHaveAttribute('aria-selected', 'true');
+    expect(posts).toEqual([]);
   });
 });
