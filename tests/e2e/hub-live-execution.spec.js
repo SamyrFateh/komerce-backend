@@ -202,9 +202,71 @@ test('UX1 — nouvelle ligne fournisseur visible sans page.reload et sans perdre
   if(testInfo.repeatEachIndex===0) { fs.mkdirSync('test-artifacts/ux1',{recursive:true}); await page.screenshot({path:'test-artifacts/ux1/ux1-avant.png',fullPage:true}); }
   // Une nouvelle projection API se présente après l'encaissement, sans écriture dans le test.
   source.orders[0].items.forEach(item=>{item.purchasing_missing=0;item.sourcing_required=false;});
-  await page.clock.fastForward(10100);
+  await page.clock.runFor(30100);
   await expect(card.locator('[data-hlc-order-state]')).not.toContainText('Anomalie fournisseur');
   if(testInfo.repeatEachIndex===0) await page.screenshot({path:'test-artifacts/ux1/ux1-apres.png',fullPage:true});
+});
+
+
+test('UX1 — un 429 respecte Retry-After sans déclencher de rafraîchissement agressif', async ({page}) => {
+  await page.clock.install();
+  await mount(page, { view: null });
+  let supplyCalls = 0;
+  await page.route(`${ORIGIN}${API}/supply`, async route => {
+    supplyCalls += 1;
+    if (supplyCalls === 1) {
+      return route.fulfill({
+        status: 429, contentType: 'application/json',
+        headers: { 'Retry-After': '120' },
+        body: JSON.stringify({ error: 'Trop de requêtes' }),
+      });
+    }
+    return route.fallback();
+  });
+  await page.clock.runFor(30100);
+  expect(supplyCalls).toBe(1);
+  await page.clock.runFor(110000); // avant les 120 s Retry-After
+  expect(supplyCalls).toBe(1);
+  await page.clock.runFor(11000);
+  expect(supplyCalls).toBe(2);
+  await expect(page.locator('h1')).toHaveText('Hub live · Dossiers');
+});
+
+test('UX1 — trois onglets Hub / quinze minutes simulées sans 429 ni reload inutile', async ({page, context}) => {
+  // Fixture HTTP locale (même IP), horloge Playwright sur 15 min ; jamais de staging.
+  // Les trois onglets sont volontairement visibles pour éprouver le pire cas.
+  const tabs = [page, await context.newPage(), await context.newPage()];
+  let requests = 0;
+  let supplyReads = 0;
+  let workspaceReloads = 0;
+  let responses429 = 0;
+  try {
+    for (const tab of tabs) {
+      await tab.addInitScript(() => {
+        Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+      });
+      await tab.clock.install();
+      await mount(tab, { view: null });
+      await tab.route(`${ORIGIN}/api/**`, async route => {
+        requests++;
+        if (route.request().url().includes(`${API}/supply`)) supplyReads++;
+        if (new URL(route.request().url()).pathname === API) workspaceReloads++;
+        if (requests > 500) {
+          responses429++;
+          return route.fulfill({ status: 429, contentType: 'application/json', body: '{"error":"quota"}' });
+        }
+        return route.fallback();
+      });
+    }
+    await Promise.all(tabs.map(tab => tab.clock.runFor(15 * 60 * 1000)));
+    expect(supplyReads).toBeGreaterThanOrEqual(60);
+    expect(requests).toBeLessThan(500);
+    expect(responses429).toBe(0);
+    expect(workspaceReloads).toBe(0); // empreinte identique : pas de rechargement complet
+    for (const tab of tabs) await expect(tab.locator('h1')).toHaveText('Hub live · Dossiers');
+  } finally {
+    await Promise.all(tabs.slice(1).map(tab => tab.close()));
+  }
 });
 
 async function scanConfirmedSku(card) {
