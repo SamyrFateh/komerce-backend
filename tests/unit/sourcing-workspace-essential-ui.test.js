@@ -9,6 +9,7 @@ const fs=require('fs');
 const path=require('path');
 const workspace=fs.readFileSync(path.join(__dirname,'..','..','public','dashboards','canonical','js','sourcing-workspace.js'),'utf8');
 const decision=fs.readFileSync(path.join(__dirname,'..','..','public','dashboards','canonical','js','sourcing-workspace-decision.js'),'utf8');
+const sourcingWorkspace=require('../../public/dashboards/canonical/js/sourcing-workspace');
 
 test('Sourcing garde Hero + décisions puis ses vrais outils métier',()=>{
   expect(workspace).toContain("data-workspace-kind', 'sourcing");
@@ -39,4 +40,12 @@ test('front sourcing shows commercial suggestion and hides customs category corr
   expect(workspace).toContain("'/admin/workspaces/catalog?search='");
   expect(workspace).toContain('sourcingRemedy');
   expect(workspace).not.toContain('Catégorie Komerce ·');
+});
+
+test('promotion UI is limited to scanned TEST candidates without an existing product',()=>{
+  expect(sourcingWorkspace.candidatePromotionEligible({state:'scanned',scan_result:{sourcing_decision:'TEST'}})).toBe(true);
+  expect(sourcingWorkspace.candidatePromotionEligible({state:'scanned',scan_result:{sourcing_decision:'WATCH'}})).toBe(false);
+  expect(sourcingWorkspace.candidatePromotionEligible({state:'quarantined',scan_result:{sourcing_decision:'TEST'}})).toBe(false);
+  expect(sourcingWorkspace.candidatePromotionEligible({state:'scanned',product_ref:'KPR-000001',scan_result:{sourcing_decision:'TEST'}})).toBe(false);
+  expect(sourcingWorkspace.candidatePromotionEligible({state:'scanned',scan_result:{sourcing_decision:'EXCLUDED'}})).toBe(false);
 });

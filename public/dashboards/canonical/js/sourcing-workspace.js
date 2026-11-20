@@ -166,7 +166,7 @@
     try {
       const result = await jsonRequest(context.fetch, options.url, { method: 'POST', body: options.body || {} });
       setFeedback(context.root, options.successMessage || 'Action appliquée.', 'positive');
-      if (typeof options.onSuccess === 'function') options.onSuccess(result);
+      if (typeof options.onSuccess === 'function') await options.onSuccess(result);
       else await context.reload();
       return result;
     } catch (error) {
@@ -209,6 +209,14 @@
       return { key: 'view-product', label: 'Voir le produit transmis' };
     return sourcingRemedy(row) ||
       { key: 'view-catalog', label: 'Consulter dans le Catalogue' };
+  }
+
+  function candidatePromotionEligible(row = {}) {
+    const state = String(row.state || '').toLowerCase();
+    const decision = String(row.scan_result?.sourcing_decision || '').toUpperCase();
+    return !row.product_ref
+      && ['scanned', 'test_ready'].includes(state)
+      && decision === 'TEST';
   }
 
   function openCandidateForm(context, title, help, trigger) {
@@ -287,7 +295,7 @@
       'Uniquement les faits fournisseur corrigeables ici. Les classements, traductions et validations sont dans le Catalogue.');
     const rows = (payload.candidates || []).filter(row =>
       context.focusCandidateRef ? row.candidate_ref === context.focusCandidateRef
-        : Boolean(sourcingRemedy(row)));
+        : Boolean(sourcingRemedy(row) || candidatePromotionEligible(row)));
     if (!rows.length) {
       slot.appendChild(text(doc, 'div', 'kmc-workspace-empty',
         'Aucun problème fournisseur directement corrigeable ici. Les autres produits restent suivis dans les passages et le Catalogue.'));
@@ -304,9 +312,15 @@
     rows.forEach(row => {
       const tr = doc.createElement('tr');
       tr.setAttribute('data-candidate-ref', row.candidate_ref || '');
+      tr.setAttribute('data-sourcing-candidate', row.candidate_ref || '');
       const product = doc.createElement('td');
       product.appendChild(text(doc, 'strong', 'kmc-cand-product', row.product_name || row.candidate_ref));
       product.appendChild(text(doc, 'small', 'kmc-cand-ref', row.candidate_ref || '—'));
+      if (row.product_ref) {
+        const promoted = text(doc, 'small', 'kmc-cand-ref', `Produit Catalogue : ${row.product_ref}`);
+        promoted.setAttribute('data-sourcing-product-ref', row.product_ref);
+        product.appendChild(promoted);
+      }
       tr.appendChild(product);
       tr.appendChild(td(doc, row.supplier_name || '—'));
 
@@ -368,6 +382,29 @@
           successMessage: row.candidate_ref + ' : contrôle fournisseur exécuté.',
         }));
         actions.appendChild(scan);
+      }
+      if (candidatePromotionEligible(row)) {
+        const promote = makeButton(doc, 'Transmettre au Catalogue', 'promote-candidate');
+        promote.setAttribute('data-sourcing-promote', '');
+        promote.addEventListener('click', () => runAction(context, promote, {
+          url: ENDPOINT + '/candidates/' + encodeURIComponent(row.candidate_ref) + '/promote',
+          body: {},
+          runningMessage: 'Transmission du candidat en cours…',
+          onSuccess: response => {
+            const productRef = response?.result?.product_ref || null;
+            if (productRef) {
+              row.product_ref = productRef;
+              const promoted = text(doc, 'small', 'kmc-cand-ref', `Produit Catalogue : ${productRef}`);
+              promoted.setAttribute('data-sourcing-product-ref', productRef);
+              product.appendChild(promoted);
+              promote.remove();
+            }
+            setFeedback(context.root, productRef
+              ? `${productRef} créé inactif dans le Catalogue. Le prix et l’exposition restent à décider dans leurs écrans dédiés.`
+              : 'Candidat transmis au Catalogue sous forme de brouillon inactif.', 'positive');
+          },
+        }));
+        actions.appendChild(promote);
       }
       const link = text(doc, 'a', 'kmc-workspace-nav-link', 'Catalogue');
       link.href = '/admin/workspaces/catalog?search=' + encodeURIComponent(
@@ -746,13 +783,17 @@
     metrics.className = 'kmc-workspace-metrics';
     rootNode.appendChild(metrics);
     ui.MetricStrip.render(metrics, { items: metricItems(payload.summary) });
-    const open = (payload.candidates || []).filter(sourcingRemedy).length;
+    const open = (payload.candidates || []).filter(row =>
+      sourcingRemedy(row) || candidatePromotionEligible(row)).length;
     // Technical fallback only: legacy path is no longer a parallel Sourcing dashboard.
     const pages = context.partnerManagement
       ? [{key:'suppliers',label:'Partenaires fournisseurs',count:(payload.suppliers || []).length,render:renderSuppliers}]
       : context.focusCandidateRef
-        ? [{key:'candidates',label:'Corriger les faits fournisseur',count:open,render:renderCandidates}]
-        : [{key:'imports',label:'Importer',count:(payload.imports || []).length,render:renderImports}];
+        ? [{key:'candidates',label:'Candidats Sourcing',count:open,render:renderCandidates}]
+        : [
+            {key:'imports',label:'Importer',count:(payload.imports || []).length,render:renderImports},
+            {key:'candidates',label:'Candidats Sourcing',count:open,render:renderCandidates},
+          ];
     const nav = doc.createElement('nav');
     nav.className = 'kmc-sourcing-tabs';
     nav.setAttribute('role','tablist');
@@ -853,5 +894,5 @@
     return context.reload();
   }
 
-  return Object.freeze({ ENDPOINT, metricItems, sourcingRemedy, nextCandidateAction, mount });
+  return Object.freeze({ ENDPOINT, metricItems, sourcingRemedy, nextCandidateAction, candidatePromotionEligible, mount });
 });
