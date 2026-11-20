@@ -6767,20 +6767,6 @@
       {
         "feature": "dashboard",
         "category": "tests",
-        "declared": "tests/staging-canonical/market-visibility-mono.spec.js",
-        "resolvedPath": "tests/staging-canonical/market-visibility-mono.spec.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "dashboard",
-        "category": "tests",
-        "declared": "tests/unit/staging-market-visibility-mono-summary.test.js",
-        "resolvedPath": "tests/unit/staging-market-visibility-mono-summary.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "dashboard",
-        "category": "tests",
         "declared": "tests/unit/staging-five-market-matrix.test.js",
         "resolvedPath": "tests/unit/staging-five-market-matrix.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -10582,27 +10568,6 @@
       {
         "feature": "infrastructure",
         "category": "scripts",
-        "declared": "scripts/recette/staging-e2e-provision.js",
-        "resolvedPath": "scripts/recette/staging-e2e-provision.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "scripts",
-        "declared": "scripts/recette/staging-chromium-credentials-preflight.js",
-        "resolvedPath": "scripts/recette/staging-chromium-credentials-preflight.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "scripts",
-        "declared": "scripts/recette/summarize-staging-chromium.js",
-        "resolvedPath": "scripts/recette/summarize-staging-chromium.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "scripts",
         "declared": "scripts/.boutique-360-baseline.json",
         "resolvedPath": "scripts/.boutique-360-baseline.json",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -11835,20 +11800,6 @@
       {
         "feature": "infrastructure",
         "category": "ci",
-        "declared": ".github/workflows/staging-e2e-provision.yml",
-        "resolvedPath": ".github/workflows/staging-e2e-provision.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "ci",
-        "declared": ".github/workflows/staging-canonical-chromium-audit.yml",
-        "resolvedPath": ".github/workflows/staging-canonical-chromium-audit.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "ci",
         "declared": ".github/workflows/nightly-e2e-certification.yml",
         "resolvedPath": ".github/workflows/nightly-e2e-certification.yml",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -12628,13 +12579,6 @@
         "category": "tests",
         "declared": "tests/unit/staging-e2e-provision.test.js",
         "resolvedPath": "tests/unit/staging-e2e-provision.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "tests",
-        "declared": "tests/unit/staging-chromium-credentials-preflight.test.js",
-        "resolvedPath": "tests/unit/staging-chromium-credentials-preflight.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -29735,12 +29679,6 @@
       },
       {
         "from": "infrastructure",
-        "to": "auth-identity",
-        "raw": "auth-identity — le provisionneur E2E appelle le writer canonique createAdminUser / setUserPasswordHash pour les comptes de recette",
-        "resolved": true
-      },
-      {
-        "from": "infrastructure",
         "to": "catalog",
         "raw": "catalog — bootstrap/api-routes.js monte les routes catalog",
         "resolved": true
@@ -29773,12 +29711,6 @@
         "from": "infrastructure",
         "to": "logistics",
         "raw": "logistics — bootstrap/api-routes.js monte les routes logistics",
-        "resolved": true
-      },
-      {
-        "from": "infrastructure",
-        "to": "market-delegation",
-        "raw": "market-delegation — le provisionneur E2E attribue les scopes opérateur via grantOperatorScope et les memberships via addMembership",
         "resolved": true
       },
       {
@@ -39801,15 +39733,11 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/auth-step-up-otp.js"
-              },
-              {
-                "sourceFileId": "scripts/recette/staging-e2e-provision.js",
-                "targetFile": "services/user-mutation-service.js"
               }
             ]
           }
         ],
-        "conformanceStatus": "DECLARED_AND_OBSERVED"
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "infrastructure",
@@ -40215,10 +40143,6 @@
                 "targetFile": "routes/auto-distribute-api.js"
               },
               {
-                "sourceFileId": "scripts/recette/staging-e2e-provision.js",
-                "targetFile": "services/relais-mutation-service.js"
-              },
-              {
                 "sourceFileId": "scripts/backfill-boot-data.js",
                 "targetFile": "services/routing.js"
               },
@@ -40385,27 +40309,11 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/market-delegation-market-config.js"
-              },
-              {
-                "sourceFileId": "scripts/recette/staging-e2e-provision.js",
-                "targetFile": "services/market-operator-provisioning.js"
-              },
-              {
-                "sourceFileId": "scripts/recette/staging-e2e-provision.js",
-                "targetFile": "services/market-delegation-service.js"
-              },
-              {
-                "sourceFileId": "scripts/recette/staging-e2e-provision.js",
-                "targetFile": "services/market-delegation-team-service.js"
-              },
-              {
-                "sourceFileId": "scripts/recette/staging-e2e-provision.js",
-                "targetFile": "services/market-scope-projector.js"
               }
             ]
           }
         ],
-        "conformanceStatus": "DECLARED_AND_OBSERVED"
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "infrastructure",
@@ -40597,10 +40505,6 @@
               {
                 "sourceFileId": "bootstrap/crons.js",
                 "targetFile": "services/purchasing-completion-service.js"
-              },
-              {
-                "sourceFileId": "scripts/recette/staging-e2e-provision.js",
-                "targetFile": "services/hub-authorization-service.js"
               },
               {
                 "sourceFileId": "tests/integration/o9-1-critical-runtime-proofs.test.js",
@@ -50506,7 +50410,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2369
+        "filesObserved": 2363
       },
       "boutique": {
         "filesObserved": 216,
@@ -50541,7 +50445,7 @@
     ],
     "familySummary": {
       "PROJECTION": 0,
-      "COMPOSITION_ROOT_WIRING": 18,
+      "COMPOSITION_ROOT_WIRING": 20,
       "NON_RUNTIME_TEST": 18,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
@@ -50578,6 +50482,21 @@
         ],
         "couplingObserved": "business-file-import",
         "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "infrastructure",
+        "to": "auth-identity",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-foundation",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "application-wiring-not-consumption",
         "exceptionRequired": false,
         "exceptionReasons": []
       },
@@ -50703,6 +50622,21 @@
       },
       {
         "from": "infrastructure",
+        "to": "market-delegation",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-foundation",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "infrastructure",
         "to": "providers-services",
         "family": "COMPOSITION_ROOT_WIRING",
         "evidenceRole": "RUNTIME_AND_TEST",
@@ -50720,7 +50654,7 @@
         "from": "infrastructure",
         "to": "purchasing",
         "family": "COMPOSITION_ROOT_WIRING",
-        "evidenceRole": "MIXED",
+        "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "technical-foundation",
         "providerKind": "business-feature",
         "channels": [
@@ -51096,12 +51030,11 @@
     "matrix": {
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|frontend-transversal|business-file-import": 1,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 6,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 8,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 2,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-foundation|business-feature|business-file-import": 2,
-      "COMPOSITION_ROOT_WIRING|MIXED|technical-foundation|business-feature|business-file-import": 1,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-foundation|business-feature|business-file-import": 3,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 7,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-transversal|business-file-import": 3,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|unclassified|business-file-import": 1,
@@ -54728,6 +54661,11 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> auth-identity",
+        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"auth-identity\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> auth-passkey",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"auth-passkey\""
       },
@@ -54768,13 +54706,18 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> market-delegation",
+        "msg": "dépendance cross-feature observée (canal: static-code, 15 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"market-delegation\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> providers-services",
         "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"providers-services\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> purchasing",
-        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"purchasing\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"purchasing\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -55007,9 +54950,9 @@
     "summary": {
       "signals": 6,
       "debt": 6,
-      "expectedTopology": 47,
+      "expectedTopology": 49,
       "generatorLimitations": 12,
-      "classifiedCandidates": 65
+      "classifiedCandidates": 67
     }
   }
 }

@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 334,
+    "businessDependencies": 332,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -1621,13 +1621,6 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "data-read"
-          ]
-        },
-        {
-          "consumer": "infrastructure",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
           ]
         },
         {
@@ -8276,7 +8269,7 @@
             ]
           },
           "tests": {
-            "count": 213,
+            "count": 211,
             "files": [
               {
                 "declared": "playwright.config.js",
@@ -8466,11 +8459,6 @@
               {
                 "declared": "tests/staging-business/market-chromium-real-readonly.spec.js",
                 "resolvedPath": "tests/staging-business/market-chromium-real-readonly.spec.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/staging-canonical/market-visibility-mono.spec.js",
-                "resolvedPath": "tests/staging-canonical/market-visibility-mono.spec.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -9309,11 +9297,6 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "tests/unit/staging-market-visibility-mono-summary.test.js",
-                "resolvedPath": "tests/unit/staging-market-visibility-mono-summary.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
                 "declared": "tests/unit/supplier-360-service.test.js",
                 "resolvedPath": "tests/unit/supplier-360-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -9346,7 +9329,7 @@
             ]
           }
         },
-        "totalFiles": 481,
+        "totalFiles": 479,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -14585,7 +14568,7 @@
             ]
           },
           "ci": {
-            "count": 26,
+            "count": 24,
             "files": [
               {
                 "declared": ".github/CODEOWNERS",
@@ -14703,18 +14686,8 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": ".github/workflows/staging-canonical-chromium-audit.yml",
-                "resolvedPath": ".github/workflows/staging-canonical-chromium-audit.yml",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
                 "declared": ".github/workflows/staging-discovery-ops.yml",
                 "resolvedPath": ".github/workflows/staging-discovery-ops.yml",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": ".github/workflows/staging-e2e-provision.yml",
-                "resolvedPath": ".github/workflows/staging-e2e-provision.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -15280,7 +15253,7 @@
             ]
           },
           "scripts": {
-            "count": 114,
+            "count": 111,
             "files": [
               {
                 "declared": ".claude/settings.json",
@@ -15753,21 +15726,6 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "scripts/recette/staging-chromium-credentials-preflight.js",
-                "resolvedPath": "scripts/recette/staging-chromium-credentials-preflight.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "scripts/recette/staging-e2e-provision.js",
-                "resolvedPath": "scripts/recette/staging-e2e-provision.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "scripts/recette/summarize-staging-chromium.js",
-                "resolvedPath": "scripts/recette/summarize-staging-chromium.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
                 "declared": "scripts/refine-komerce-arch-quality.js",
                 "resolvedPath": "scripts/refine-komerce-arch-quality.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -15875,7 +15833,7 @@
             ]
           },
           "tests": {
-            "count": 107,
+            "count": 106,
             "files": [
               {
                 "declared": "tests/e2e-api/infrastructure.audit-logic-detectors.e2e.test.js",
@@ -16363,11 +16321,6 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "tests/unit/staging-chromium-credentials-preflight.test.js",
-                "resolvedPath": "tests/unit/staging-chromium-credentials-preflight.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
                 "declared": "tests/unit/staging-e2e-provision.test.js",
                 "resolvedPath": "tests/unit/staging-e2e-provision.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -16455,7 +16408,7 @@
             ]
           }
         },
-        "totalFiles": 404,
+        "totalFiles": 398,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -16691,13 +16644,6 @@
           ]
         },
         {
-          "provider": "auth-identity",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
-          ]
-        },
-        {
           "provider": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -16741,13 +16687,6 @@
         },
         {
           "provider": "market",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
-          ]
-        },
-        {
-          "provider": "market-delegation",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -17045,8 +16984,12 @@
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
-        "compositionRootRelations": 13,
+        "compositionRootRelations": 15,
         "details": [
+          {
+            "to": "auth-identity",
+            "family": "COMPOSITION_ROOT_WIRING"
+          },
           {
             "to": "auth-passkey",
             "family": "COMPOSITION_ROOT_WIRING"
@@ -17077,6 +17020,10 @@
           },
           {
             "to": "market-control-plane",
+            "family": "COMPOSITION_ROOT_WIRING"
+          },
+          {
+            "to": "market-delegation",
             "family": "COMPOSITION_ROOT_WIRING"
           },
           {
@@ -24059,13 +24006,6 @@
         },
         {
           "consumer": "economic-engine",
-          "disposition": "DECLARED_AND_OBSERVED",
-          "channels": [
-            "static-code"
-          ]
-        },
-        {
-          "consumer": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
