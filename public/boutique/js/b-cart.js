@@ -29,7 +29,7 @@ import {
 }                         from './b-store.js';
 import { scrollToCategorySection } from './b-catalog.js';
 import {
-  sanitize, fmt, fmtPrice, optimizeImgUrl,
+  sanitize, fmt, fmtPrice, fmtLocalProductPrice, fmtLocalLinesTotal, fmtMarketAmount, optimizeImgUrl,
   productEmoji, _currency, apiGet, apiPost,
   productImageFallbackAttr, PRODUCT_IMAGE_FALLBACK_URL,
 }                         from './b-utils.js';
@@ -1533,13 +1533,13 @@ export function cleanupCartSnapshotDom() {
       if (item.qty > 1) {
         const unitLine = document.createElement('div');
         unitLine.className = 'k-cart-item-unit';
-        unitLine.textContent = fmt(unitKmf, 'KMF') + ' × ' + item.qty;
+        unitLine.textContent = fmtLocalProductPrice(p) + ' × ' + item.qty;
         info.appendChild(unitLine);
       }
 
       const price = document.createElement('div');
       price.className = 'k-cart-item-price';
-      price.textContent = fmt(unitKmf * item.qty, 'KMF');
+      price.textContent = fmtLocalProductPrice(p, item.qty);
       info.appendChild(price);
 
       // Stepper compact — .k-qty-ctrl (classe CSS canonique dans cart.css).
@@ -1613,13 +1613,13 @@ export function cleanupCartSnapshotDom() {
     const subtotalEl = document.getElementById('k-cart-subtotal-val');
     if (itemCountEl) itemCountEl.textContent = qty;
     if (itemPluralEl) itemPluralEl.textContent = qty > 1 ? 's' : '';
-    if (subtotalEl) subtotalEl.textContent = fmt(total, 'KMF');
+    if (subtotalEl) subtotalEl.textContent = fmtLocalLinesTotal(state.cart);
 
     // Total — affiché une seule fois dans la ligne récap (mandat §3, suppression
     // du doublon .k-cart-total-row masquée par CSS). Le bouton Commander
     // porte également le montant pour visibilité immédiate.
     // aucun montant vert dans le panier personnel (mandat §3).
-    dom.cartTotalVal.textContent = fmt(total, 'KMF');
+    dom.cartTotalVal.textContent = fmtLocalLinesTotal(state.cart);
     if (_currency === 'EUR') {
       dom.cartTotalConv.textContent = '≈ ' + fmt(total, 'EUR');
     } else {
@@ -1629,7 +1629,7 @@ export function cleanupCartSnapshotDom() {
     // Commander · 17 000 KMF — aucun emoji ✅ (mandat §3)
     const checkoutBtn = document.getElementById('k-cart-checkout');
     if (checkoutBtn) {
-      checkoutBtn.textContent = 'Commander · ' + fmt(total, 'KMF');
+      checkoutBtn.textContent = 'Commander · ' + fmtLocalLinesTotal(state.cart);
     }
   }
 
@@ -1907,7 +1907,7 @@ function renderSideCart() {
   // Mobile bnav label : "Panier" → total ou retour
   if (bnavLbl) {
     if (hasItems) {
-      bnavLbl.textContent = fmtPrice(cartTotal());
+      bnavLbl.textContent = fmtLocalLinesTotal(state.cart);
       bnavLbl.classList.add('has-total');
     } else {
       bnavLbl.textContent = 'Panier';
@@ -1956,14 +1956,14 @@ function renderSideCart() {
 
   // Sous-total
   const totalEl = sc.querySelector('#k-sc-total');
-  if (totalEl) totalEl.textContent = fmtPrice(cartTotal());
+  if (totalEl) totalEl.textContent = fmtLocalLinesTotal(state.cart);
 
   // CTA Commander — libellé "Commander · montant" (doctrine 2026-08)
   // Le span #k-sc-count-inline est conservé dans le DOM pour compat,
   // mais le bouton complet est mis à jour avec le montant total.
   const checkoutBtn = sc.querySelector('#k-sc-checkout');
   if (checkoutBtn) {
-    checkoutBtn.textContent = 'Commander · ' + fmtPrice(cartTotal());
+    checkoutBtn.textContent = 'Commander · ' + fmtLocalLinesTotal(state.cart);
     checkoutBtn.disabled = false;
   }
 
@@ -1977,7 +1977,7 @@ function renderSideCart() {
       el.className   = 'k-sc-item';
       const imgSrc   = item.product.image_url ? optimizeImgUrl(item.product.image_url, 120) : '';
       const unitPrice = item.product.price_kmf || 0;
-      const linePrice = fmtPrice(unitPrice * item.qty);
+      const linePrice = fmtLocalProductPrice(item.product, item.qty);
       const pid      = String(item.product.id || item.id || '');
       el.dataset.pid = pid;
       el.dataset.cartIndex = String(lineIndex);
@@ -1985,7 +1985,9 @@ function renderSideCart() {
       // Prix barré si promo
       const promoPct = item.product.promo_pct || 0;
       const oldPriceHtml = promoPct > 0
-        ? `<span class="k-sc-item-old-price">${fmtPrice(Math.round(unitPrice / (1 - promoPct / 100)) * item.qty)}</span>`
+        ? \`<span class="k-sc-item-old-price">\${item.product.market_price_source === 'LOCAL_ACTIVE' && item.product.market_price_amount != null
+            ? fmtMarketAmount(Number(item.product.market_price_amount) * item.qty, item.product.market_price_currency)
+            : fmtPrice(Math.round(unitPrice / (1 - promoPct / 100)) * item.qty)}</span>\`
         : '';
 
       // Variant sélectionné (taille, couleur…)
