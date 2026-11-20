@@ -1302,3 +1302,39 @@ body.kmc-shell-v4 .kmc-operations-workspace[data-relay-counter="true"] > .kmc-wo
 }
 .kmc-domain-cockpit .kmc-relay-quick-action:focus-visible {outline:2px solid #267548;outline-offset:2px;}
 @media(max-width:700px){.kmc-domain-cockpit .kmc-relay-quick-actions{grid-template-columns:minmax(0,1fr);}}
+
+/* Relais live : même grammaire Voir → Comprendre → Agir que le Hub.
+   La file active reste le SEUL contrôle d'accès aux gestes métier. */
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-next {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  min-width: 0;
+  gap: 7px 18px;
+  padding: 11px 14px;
+  border: 1px solid #e0d4c9;
+  border-left: 4px solid #d66927;
+  border-radius: 9px;
+  background: #fffaf6;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-next-title {
+  flex: 0 1 auto;
+  color: #703c19;
+  font-size: 13px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-next-detail {
+  flex: 1 1 200px;
+  font-size: 12px;
+  color: #506070;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 650px) {
+  .kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-next {
+    display: grid;
+    grid-template-columns: minmax(0,1fr);
+    gap: 5px;
+    padding: 10px 12px;
+  }
+}

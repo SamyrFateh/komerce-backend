@@ -1647,6 +1647,18 @@
       }
     }
     rootNode.setAttribute('data-relay-active-operation',key);
+    // Guidage compact dérivé de la file déjà active, sans seconde logique métier.
+    const activeLink=rootNode.querySelector('[data-relay-execution-jump="'+key+'"]');
+    const title=rootNode.querySelector('[data-relay-next-title]');
+    const detail=rootNode.querySelector('[data-relay-next-detail]');
+    if(activeLink&&title&&detail) {
+      const label=activeLink.querySelector('strong')?.textContent||'File sélectionnée';
+      const pending=activeLink.getAttribute('data-relay-item-count');
+      title.textContent='À faire maintenant · '+label;
+      detail.textContent=pending==null?'Consulter les arrivages de ce marché.':
+        Number(pending)>0?pending+' dossier(s) dans cette file à examiner.':
+          'Aucun dossier en attente dans cette file.';
+    }
   }
 
   // V1 SAV — une demande rattachée au VRAI article remis, sans réception
@@ -2030,6 +2042,17 @@
           relay.cash_pending?.length?'cash':
           relay.local_receipt_pending?.length || relay.to_receive?.some(x=>x.local_receivable===true)?'receive':'shipments');
       }
+      const guide=doc.createElement('section');
+      guide.className='kmc-relay-next';
+      guide.setAttribute('data-relay-next', '');
+      guide.setAttribute('aria-label','Prochain geste au relais');
+      const nextTitle=text(doc,'strong','kmc-relay-next-title','À faire maintenant');
+      nextTitle.setAttribute('data-relay-next-title','');
+      guide.appendChild(nextTitle);
+      const nextDetail=text(doc,'span','kmc-relay-next-detail','Choisissez une file ci-dessous.');
+      nextDetail.setAttribute('data-relay-next-detail','');
+      guide.appendChild(nextDetail);
+      rootNode.appendChild(guide);
       const dock=doc.createElement('nav');
       dock.className='kmc-relay-execution-jumpbar';
       dock.setAttribute('aria-label','Choisir une opération du relais');
@@ -2038,6 +2061,7 @@
         link.className='kmc-relay-execution-jump';
         link.href='#relay-execution-'+choice.key;
         link.setAttribute('data-relay-execution-jump',choice.key);
+        if(choice.count!==null)link.setAttribute('data-relay-item-count',String(choice.count));
         link.appendChild(text(doc,'strong','',choice.label));
         if(choice.count!==null)link.appendChild(text(doc,'b','',String(choice.count)));
         link.addEventListener('click',()=>{

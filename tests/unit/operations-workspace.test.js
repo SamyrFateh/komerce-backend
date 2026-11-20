@@ -168,3 +168,12 @@ test('Hub UX : accès directs Sacs puis KOM-BOX puis Expéditions sans animation
   expect(src).toContain("anchor.scrollIntoView?.({ block: 'start', behavior: 'auto' });");
   expect(src).not.toContain("anchor.scrollIntoView?.({ block: 'start', behavior: 'smooth' });");
 });
+
+test('Relais guidé : zone unique synchronisée sur le choix de file, non sur un nouveau writer',()=>{
+  const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+  expect(src).toContain("guide.setAttribute('data-relay-next', '')");
+  expect(src).toContain("link.setAttribute('data-relay-item-count',String(choice.count))");
+  expect(src).toContain("title.textContent='À faire maintenant · '+label;");
+  expect(src).toContain("rootNode.setAttribute('data-relay-active-operation',key)");
+  expect(src).toContain('showRelayOperation(rootNode,context.activeRelayQueue)');
+});

@@ -394,3 +394,20 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
     });
   });
 }
+
+test('Relais guidé : la seule file active explique le prochain geste sans POST implicite',async({page})=>{
+  const posts=[];
+  await mount(page,posts);
+  const guide=page.locator('[data-relay-next]');
+  await expect(guide).toContainText('À faire maintenant · Arrivages');
+  await expect(guide).toContainText('1 dossier(s)');
+  for(const [key,title,count] of [
+    ['cash','Encaisser','1'],['receive','Réception locale','2'],['collect','Remise client','1']
+  ]){
+    await page.locator('[data-relay-execution-jump="'+key+'"]').click();
+    await expect(page.locator('[data-relay-active-operation="'+key+'"]')).toHaveCount(1);
+    await expect(guide).toContainText('À faire maintenant · '+title);
+    await expect(guide).toContainText(count+' dossier(s)');
+  }
+  expect(posts).toEqual([]);
+});
