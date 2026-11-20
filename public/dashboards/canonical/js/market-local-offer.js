@@ -139,6 +139,8 @@
     if (!(data.stock || []).length) list.appendChild(el('div', 'kmc-team-empty', 'Aucun stock local déclaré pour ce Market ID.'));
     (data.stock || []).forEach((row) => {
       const card = el('article', 'kmc-team-member');
+      // Stable despite localization, duplicate product names and W3 repaint.
+      card.dataset.localStockCard = String(row.product_id);
       const head = el('div', 'kmc-team-member-head');
       const copy = el('div', 'kmc-team-member-copy');
       copy.appendChild(el('strong', '', row.name || row.product_id));
@@ -149,6 +151,7 @@
       const next = row.commercial_exposure === 'ENABLED' ? 'DISABLED' : 'ENABLED';
       const btn = el('button', 'kmc-workspace-action is-secondary', next === 'ENABLED' ? 'Exposer' : 'Masquer');
       btn.type = 'button';
+      btn.dataset.localStockExpose = '';
       btn.addEventListener('click', async () => {
         btn.disabled = true;
         try {
