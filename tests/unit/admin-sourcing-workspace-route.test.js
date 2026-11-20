@@ -216,6 +216,23 @@ test('mutation candidat délègue candidate_ref et jamais UUID', async () => {
   expect(mockCalls.scanCandidate).toHaveBeenCalledWith('KSC-000001', expect.objectContaining({ id: 'central-sourcing' }));
 });
 
+test('promotion candidat délègue la référence métier et garde le grant Sourcing', async () => {
+  mockCalls.promoteCandidate.mockResolvedValue({ candidate_ref: 'KSC-000001', product_ref: 'KPR-000002' });
+  const url = '/api/admin/workspaces/sourcing/candidates/KSC-000001/promote';
+  const res = await request(app()).post(url).send({});
+  expect(res.status).toBe(200);
+  expect(mockCalls.promoteCandidate).toHaveBeenCalledWith(
+    'KSC-000001', {}, expect.objectContaining({ id: 'central-sourcing', role: 'admin' })
+  );
+
+  mockCalls.promoteCandidate.mockClear();
+  mockSourcingAllowed = false;
+  const refused = await request(app()).post(url).send({});
+  expect(refused.status).toBe(403);
+  expect(refused.body.code).toBe('sourcing_global_access_denied');
+  expect(mockCalls.promoteCandidate).not.toHaveBeenCalled();
+});
+
 test('remédiation catégorie : uniquement les choix actifs sur la référence métier demandée', async () => {
   mockCalls.getCandidateCategoryOptions.mockResolvedValue({
     candidate_ref:'KSC-000050', categories:[{key:'home',label:'Maison'}],
