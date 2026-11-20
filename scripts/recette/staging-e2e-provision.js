@@ -42,6 +42,18 @@ const PASSWORD_ROUNDS = 12;
 const PROFILES = Object.freeze([
   { key: 'admin', prefix: 'ADMIN', role: 'admin', name: 'E2E Admin central', existingOnly: true },
   { key: 'market_operator', prefix: 'MARKET_OPERATOR', role: 'market_operator', name: 'E2E Responsable pays', scope: { market: HOME_MARKET, scopeRole: 'manager' } },
+  // Independent single-market identities for the strict MKT-READ recertification.
+  // Optional during ordinary reset provisioning; the dedicated certification
+  // mode below makes all three pairs mandatory. Never inherit extraMarkets.
+  ...['KM', 'CM', 'CG'].map((market) => ({
+    key: `market_operator_${market.toLowerCase()}`,
+    prefix: `MARKET_OPERATOR_${market}`,
+    role: 'market_operator',
+    name: `E2E Responsable ${market} mono-marché`,
+    scope: { market, scopeRole: 'manager' },
+    singleMarket: market,
+    optional: true,
+  })),
   { key: 'finance', prefix: 'FINANCE', role: 'finance', name: 'E2E Finance', scope: { market: HOME_MARKET, scopeRole: 'viewer' } },
   { key: 'sourcing', prefix: 'SOURCING', role: 'sourcing', name: 'E2E Sourcing', sourcingGrant: true },
   { key: 'agent_hub', prefix: 'AGENT_HUB', role: 'agent_hub', name: 'E2E Agent Hub' },
@@ -79,10 +91,14 @@ function passwordPolicyError(password) {
 /** Lit les profils depuis l'environnement. Jamais de valeur dans les erreurs : seulement des NOMS de variables. */
 function readProfiles(env = process.env) {
   const accounts = []; const skipped = []; const seen = new Set();
+  const requireSingleMarket = env.E2E_REQUIRE_MARKET_OPERATOR_MONO === '1';
   for (const p of PROFILES) {
     const emailKey = `E2E_${p.prefix}_EMAIL`; const passKey = `E2E_${p.prefix}_PASSWORD`;
     const email = String(env[emailKey] || '').trim().toLowerCase(); const password = String(env[passKey] || '');
     if (!email || !password) {
+      if (p.singleMarket && requireSingleMarket) {
+        throw new ProvisionRefusal('E2E_SECRET_MISSING', [!email && emailKey, !password && passKey].filter(Boolean).join(', '));
+      }
       if (p.optional) { skipped.push({ profile: p.key, reason: `secrets absents : ${emailKey} / ${passKey}`, action: 'créer ces 2 secrets puis relancer' }); continue; }
       throw new ProvisionRefusal('E2E_SECRET_MISSING', [!email && emailKey, !password && passKey].filter(Boolean).join(', '));
     }

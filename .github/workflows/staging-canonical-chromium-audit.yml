@@ -18,6 +18,11 @@ on:
         required: false
         type: string
         default: ''
+      mkt_read_order_refs:
+        description: 'Références M01 sous la forme KM:REF,CM:REF,CG:REF pour market-visibility-mono'
+        required: false
+        type: string
+        default: ''
   issues:
     types: [opened]
 permissions:
@@ -41,14 +46,23 @@ jobs:
     env:
       CI: 'true'
       E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      E2E_READONLY_ORACLE_DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      E2E_ORACLE_EXPECTED_DB_PIN: ${{ vars.STAGING_DB_PIN }}
       E2E_AUDIT_QUICK: ${{ github.event_name == 'issues' && github.event.issue.title == '[staging-op] canonical-chromium-audit-baseline' && '1' || '0' }}
       E2E_CHROMIUM_SPEC_FILTER: ${{ github.event_name == 'workflow_dispatch' && inputs.spec_filter || (github.event.issue.title == '[staging-op] canonical-chromium-audit-baseline' && 'real-navigation' || (github.event.issue.title == '[staging-op] canonical-chromium-market-visibility' && 'market-visibility' || (github.event.issue.title == '[staging-op] canonical-chromium-hub-director' && 'hub-director-readonly' || (github.event.issue.title == '[staging-op] canonical-chromium-sourcing-hub' && 'sourcing-hub-probe' || (github.event.issue.title == '[staging-op] g8-refunds-readonly' && 'g8-refunds-readonly' || ''))))) }}
       E2E_PROOF_ORDER_REFS: ${{ github.event_name == 'workflow_dispatch' && inputs.proof_order_refs || '' }}
-      E2E_AUDIT_ROLES: ${{ github.event_name == 'workflow_dispatch' && inputs.roles || (github.event.issue.title == '[staging-op] canonical-chromium-hub-director' && 'admin' || (github.event.issue.title == '[staging-op] canonical-chromium-audit-baseline' && 'baseline' || (github.event.issue.title == '[staging-op] canonical-chromium-market-visibility' && 'market' || (github.event.issue.title == '[staging-op] g8-refunds-readonly' && 'admin' || 'all')))) }}
+      E2E_MKT_READ_ORDER_REFS: ${{ github.event_name == 'workflow_dispatch' && inputs.mkt_read_order_refs || '' }}
+      E2E_AUDIT_ROLES: ${{ github.event_name == 'workflow_dispatch' && inputs.spec_filter == 'market-visibility-mono' && 'market' || (github.event_name == 'workflow_dispatch' && inputs.roles || (github.event.issue.title == '[staging-op] canonical-chromium-hub-director' && 'admin' || (github.event.issue.title == '[staging-op] canonical-chromium-audit-baseline' && 'baseline' || (github.event.issue.title == '[staging-op] canonical-chromium-market-visibility' && 'market' || (github.event.issue.title == '[staging-op] g8-refunds-readonly' && 'admin' || 'all'))))) }}
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
       E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
       E2E_MARKET_OPERATOR_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_PASSWORD }}
+      E2E_MARKET_OPERATOR_KM_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_KM_EMAIL }}
+      E2E_MARKET_OPERATOR_KM_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_KM_PASSWORD }}
+      E2E_MARKET_OPERATOR_CM_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_CM_EMAIL }}
+      E2E_MARKET_OPERATOR_CM_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_CM_PASSWORD }}
+      E2E_MARKET_OPERATOR_CG_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_CG_EMAIL }}
+      E2E_MARKET_OPERATOR_CG_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_CG_PASSWORD }}
       E2E_FINANCE_EMAIL: ${{ secrets.E2E_FINANCE_EMAIL }}
       E2E_FINANCE_PASSWORD: ${{ secrets.E2E_FINANCE_PASSWORD }}
       E2E_SOURCING_EMAIL: ${{ secrets.E2E_SOURCING_EMAIL }}
@@ -111,6 +125,8 @@ jobs:
           name: real-canonical-chromium-${{ github.run_id }}
           path: |
             test-results/staging-chromium/rapport.md
+            test-results/staging-chromium/market-visibility-*.md
+            test-results/staging-chromium/market-visibility-mono-summary.json
             test-results/staging-chromium/evidence/**
             test-results/staging-chromium/live-proof/**
             test-results/staging-chromium/raw/**/*.png
