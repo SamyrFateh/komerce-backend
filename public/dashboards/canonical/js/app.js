@@ -310,7 +310,8 @@
     }
 
     const choices = [];
-    if (access.mode === 'global' && !options.requireMarket) {
+    if ((access.mode === 'global' && (!options.requireMarket || options.allowGlobalOverview)) ||
+        (access.mode === 'hub' && options.allowHubOverview)) {
       choices.push(Object.freeze({ value: '', marketCode: null, label: 'Global · Tous les marchés' }));
     }
     if (options.requireMarket && options.withPlaceholder) {
@@ -386,7 +387,10 @@
     });
     const choices = marketChoices(adminContext, {
       requireMarket: Boolean(options.requireMarket),
-      withPlaceholder: Boolean(options.requireMarket) && !initialMarket,
+      allowGlobalOverview: Boolean(options.allowGlobalOverview),
+      allowHubOverview: Boolean(options.allowHubOverview),
+      withPlaceholder: Boolean(options.requireMarket) && !initialMarket &&
+        !options.allowGlobalOverview && !options.allowHubOverview,
     });
     let selectedMarket = initialMarket;
     let placeholderOption = null;
@@ -400,12 +404,15 @@
     copy.appendChild(textNode(doc, 'span', 'kmc-market-context-kicker', options.requireMarket ? 'CONTEXTE D’ACTION' : 'PÉRIMÈTRE'));
     copy.appendChild(textNode(doc, 'strong', 'kmc-market-context-title', options.title || 'Vue de pilotage'));
     const description = textNode(doc, 'span', 'kmc-market-context-description',
-      options.requireMarket && !initialMarket ? 'Aucun marché sélectionné' : scopeDescription(initialMarket));
+      options.requireMarket && !initialMarket && !options.allowGlobalOverview && !options.allowHubOverview
+        ? 'Aucun marché sélectionné'
+        : scopeDescription(initialMarket));
     copy.appendChild(description);
 
     const field = doc.createElement('label');
     field.className = 'kmc-market-context-field';
-    field.appendChild(textNode(doc, 'span', 'kmc-market-context-label', 'Marché'));
+    field.appendChild(textNode(doc, 'span', 'kmc-market-context-label',
+      options.allowGlobalOverview || options.allowHubOverview ? 'Vue / marché d’action' : 'Marché'));
 
     const select = doc.createElement('select');
     select.className = 'kmc-market-context-select';
@@ -425,8 +432,13 @@
       let resolved;
       try {
         const requestedMarket = select.value || null;
-        if (options.requireMarket && !requestedMarket) throw new Error('canonical_workspace_market_required');
-        resolved = contextContract.resolveMarketView(adminContext, requestedMarket);
+        if (options.requireMarket && !requestedMarket && !options.allowGlobalOverview && !options.allowHubOverview)
+          throw new Error('canonical_workspace_market_required');
+        // Seul le contexte global explicitement autorisé, ou la lecture Hub
+        // centrale, peut utiliser la valeur nulle. Aucun writer ne reçoit null.
+        resolved = requestedMarket
+          ? contextContract.resolveMarketView(adminContext, requestedMarket)
+          : { marketCode: null };
       } catch (error) {
         select.value = previousMarket || '';
         console.error('[canonical-admin] market selection rejected', error);
@@ -540,6 +552,16 @@
       title: 'Hub live · Exécution',
       requireMarket: true,
       render: renderHubExecution,
+      allowHubOverview: true,
+      renderGlobalOverview: (host, actor) => {
+        const api = global.KomerceCanonicalHubWorkstation;
+        if (!api || typeof api.renderGlobalBoard !== 'function') {
+          throw new Error('canonical_hub_global_board_module_missing');
+        }
+        return api.renderGlobalBoard(host, {
+          document: global.document, fetch: global.fetch.bind(global), user: actor,
+        });
+      },
     });
   }
 
@@ -769,9 +791,38 @@
     const surface = global.document.createElement('div');
     surface.setAttribute('data-canonical-surface', options.surface);
 
+    const accessMode = adminContext?.access?.mode;
+    const allowGlobalOverview = typeof options.renderGlobalOverview === 'function' &&
+      (accessMode === 'global' || (accessMode === 'hub' && options.allowHubOverview === true));
     let promptShown = false;
+    let overviewShown = false;
     const renderCurrent = requestedMarket => {
-      if (promptShown) { surface.replaceChildren(); promptShown = false; }
+      if (requestedMarket === null && allowGlobalOverview) {
+        // Jamais de writer actionnel avec marketCode=null. La projection
+        // consolidée appelle une route GET déjà autorisée côté serveur.
+        surface.replaceChildren();
+        promptShown = false;
+        overviewShown = true;
+        const banner = global.document.createElement('section');
+        banner.className = 'kmc-market-global-overview';
+        banner.setAttribute('data-market-global-overview', '');
+        const heading = global.document.createElement('strong');
+        heading.textContent = 'Vue consolidée · Tous les marchés autorisés';
+        banner.appendChild(heading);
+        const note = global.document.createElement('p');
+        note.textContent = 'Pour exécuter une opération, choisissez son marché. La sélection ne modifie pas vos habilitations.';
+        banner.appendChild(note);
+        const host = global.document.createElement('div');
+        host.setAttribute('data-market-global-body', '');
+        surface.appendChild(banner);
+        surface.appendChild(host);
+        return options.renderGlobalOverview(host, user, adminContext);
+      }
+      if (promptShown || overviewShown) {
+        surface.replaceChildren();
+        promptShown = false;
+        overviewShown = false;
+      }
       return options.render(surface, user, adminContext, requestedMarket);
     };
     const renderAtomically = async requestedMarket => {
@@ -794,6 +845,8 @@
       contextContract: global.KomerceAdminContext,
       title: options.title,
       requireMarket: Boolean(options.requireMarket),
+      allowGlobalOverview,
+      allowHubOverview: allowGlobalOverview && accessMode === 'hub',
       onChange: requestedMarket => options.atomicSwap
         ? renderAtomically(requestedMarket)
         : renderCurrent(requestedMarket),
@@ -801,8 +854,12 @@
 
     root.appendChild(surface);
     if (options.requireMarket && !selector.initialMarket) {
-      // L1 : aucune surface marché montée, donc aucune requête /market/ avant le choix.
+      // Une URL demandant un marché interdit ne devient pas une lecture globale.
+      // Même un admin global doit corriger explicitement le mauvais paramètre.
       const explicit = explicitMarketState(adminContext, global.KomerceAdminContext);
+      if (allowGlobalOverview && explicit.state === 'prompt') {
+        return renderCurrent(null);
+      }
       promptShown = true;
       if (global.KomerceMarketPrompt) {
         global.KomerceMarketPrompt.render(global.document, surface, {
@@ -890,6 +947,9 @@
       title: 'Workspace Expéditions & Douane',
       requireMarket: true,
       render: renderShippingCustomsWorkspace,
+      // GET /api/admin/dashboard/unified en scope global serveur :
+      // aucune expédition ni acte de douane exécuté sans marché ciblé.
+      renderGlobalOverview: (host, actor, ctx) => renderOperations(host, actor, ctx, null),
     });
   }
 
@@ -899,6 +959,8 @@
       title: 'Workspace Finance / Comptabilité',
       requireMarket: true,
       render: renderFinanceAccountingWorkspace,
+      // Agrégat finance global existant ; aucune écriture comptable ici.
+      renderGlobalOverview: (host, actor, ctx) => renderFinance(host, actor, ctx, null),
     });
   }
 
