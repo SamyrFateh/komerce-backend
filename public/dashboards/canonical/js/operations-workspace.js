@@ -1181,9 +1181,21 @@
           const order = (d.orders || []).find(row => String(row.id) === String(orderId));
           if (order) showSourcingResolution({ id: order.id, reference: order.reference, items: order.items || [] });
         },
-        openPhysical: () => {
+        openReception: () => {
+          context.view = 'reception';
+          context.renderCurrent();
+        },
+        openPhysical: (target = 'all') => {
           const details = physicalDetails();
-          if (details) { details.open = true; details.scrollIntoView?.({ block: 'start', behavior: 'smooth' }); }
+          if (!details) return;
+          details.open = true;
+          const targets = {
+            bags: '[data-hub-bag-preparation]',
+            boxes: '[data-supply-box-create]',
+            shipments: '[data-supply-shipment-bar]',
+          };
+          const anchor = details.querySelector(targets[target] || '') || details;
+          anchor.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
         },
       });
       } catch (error) {
@@ -1575,7 +1587,10 @@
     const secondary = doc.createElement('details');
     secondary.className = 'kmc-hub-physical-secondary';
     secondary.setAttribute('data-hub-physical-details', '');
-    secondary.appendChild(text(doc, 'summary', '', 'Détails physiques exhaustifs · réceptions, sacs, KOM-BOX, expéditions'));
+    // Atelier opérationnel visible par défaut : le repli est réservé aux détails
+    // et ne doit jamais dissimuler les gestes attendus au Golden M01.
+    secondary.open = true;
+    secondary.appendChild(text(doc, 'summary', '', 'Ateliers physiques · Sacs, KOM-BOX et expéditions'));
     [...rootNode.children].slice(secondaryStart).forEach(node => secondary.appendChild(node));
     rootNode.appendChild(secondary);
   }
