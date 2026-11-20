@@ -10,6 +10,8 @@
 const {marketProfile,PROFILES}=require('./market-profile');
 const {SCENARIO_STAGE_IDS}=require('./stage-registry');
 const oracles=require('./local-stock-oracles');
+const m03=require('./m03-oracles');
+const {readSellable,selectMixedBasket}=require('./m03-prereq');
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {spawnSync}=require('node:child_process');
 const {confirmTarget}=require('../target-guard');
@@ -33,7 +35,9 @@ const REPORT_PATH=Object.freeze({
  RELAY_RECEIPT:'test-results/g6-canonical-relay-receipt/report.json',
  CLIENT_PICKUP:'test-results/g6-canonical-client-pickup/report.json',
  LOCAL_RELAY_AVAILABLE:'test-results/g6-local-relay-available/report.json',
- LOCAL_CLIENT_PICKUP:'test-results/g6-local-client-pickup/report.json'
+ LOCAL_CLIENT_PICKUP:'test-results/g6-local-client-pickup/report.json',
+ M03_NOT_COLLECTED:'test-results/g6-m03-not-collected/report.json',
+ M03_COLLECTED_FINAL:'test-results/g6-m03-collected-final/report.json'
 });
 const SCRIPTS=Object.freeze({
  BUYER:'scripts/recette/g6-p2-buyer-order-real-chromium.js',
@@ -56,6 +60,10 @@ const SCRIPTS=Object.freeze({
 });
 const DOWNSTREAM_M01=Object.freeze(['RELAY_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP']);
 const M02_STAGES=Object.freeze(['LOCAL_RELAY_AVAILABLE','LOCAL_CLIENT_PICKUP']);
+const M03_ORACLE_STAGES=Object.freeze(['M03_NOT_COLLECTED','M03_COLLECTED_FINAL']);
+// M03 : branche locale = étapes M02 ; oracles M03 en lecture seule ; la branche import M01 est déclarée mais bloquée (SCREEN_MISSING).
+const M03_IMPORT_BLOCKED=Object.freeze(DOWNSTREAM_M01.filter(x=>x!=='RELAY_CASH'));
+const M03_SCREEN_MISSING_DETAIL='les scripts import M01 (HUB_PO..CLIENT_PICKUP) sont écrits pour 1 ligne, 1 PO, 1 colis (item_count=1, po_count<=1, un seul colis KOM-BOX) ; la boucle par PO mono-fournisseur et la consolidation Hub multi-lignes ne sont pas paramétrées';
 const SHA=/^[a-f0-9]{40}$/;
 const REF=/^[A-Z0-9][A-Z0-9-]{5,63}$/;
 const UUID=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
@@ -214,6 +222,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
       ((pg.payment_status==='paid')&&(pg.cash_count!==1||pg.control_count!==1)))
     throw Error('G6_DYNAMIC_BUYER_PG_READBACK_INVALID');
    if(SCENARIO==='M02')await oracles.assertNoHubOrTransport(db,context.order_id,'any');
+   if(SCENARIO==='M03')await m03.assertMixedPhase(db,context.order_id,'structure');
   }else if(stageId==='RELAY_CASH'){
    const matches=(data.steps||[]).filter(s=>s.name==='CASH_UI_PAID'&&s.market===marketProfile(env).code);
    const pre=(data.steps||[]).find(s=>s.name==='PRECHECK_TARGET_CASH_ORDERS');
@@ -229,8 +238,12 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
    if(pg.payment_status!=='paid'||pg.cash_count!==1||pg.control_count!==1)
     throw Error('G6_DYNAMIC_CASH_PG_READBACK_INVALID');
    if(SCENARIO==='M02')await oracles.assertNoHubOrTransport(db,context.order_id,'any');
+   if(SCENARIO==='M03')await m03.assertMixedPhase(db,context.order_id,'structure');
+  }else if(M03_ORACLE_STAGES.includes(stageId)){
+   if(SCENARIO!=='M03'||data.order_id!==context.order_id||data.oracle_verdict!=='PASS')
+    throw Error('G6_M03_ORACLE_PROOF_INVALID_'+stageId);
   }else if(M02_STAGES.includes(stageId)){
-   if(SCENARIO!=='M02')throw Error('G6_REAL_BUYER_CASH_STAGE_NOT_IMPLEMENTED_'+stageId);
+   if(!['M02','M03'].includes(SCENARIO))throw Error('G6_REAL_BUYER_CASH_STAGE_NOT_IMPLEMENTED_'+stageId);
    const expected={LOCAL_RELAY_AVAILABLE:'G6_LOCAL_RELAY_AVAILABLE_SIMULATED_CHROMIUM_PG_PASS',
     LOCAL_CLIENT_PICKUP:'G6_LOCAL_CLIENT_PICKUP_SIMULATED_CHROMIUM_PG_PASS_COLLECTED'}[stageId];
    if(data.verdict!==expected||data.db_fingerprint!==context.db_fingerprint||
@@ -239,12 +252,15 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
       data.external_payment_executed!==false||data.plaintext_pickup_code_logged===true)
     throw Error('G6_M02_UI_PROOF_INVALID_'+stageId);
    const phase=stageId==='LOCAL_RELAY_AVAILABLE'?'available':'collected';
-   const negative=await oracles.assertNoHubOrTransport(db,context.order_id,phase);
+   const negative=SCENARIO==='M03'?await m03.assertMixedPhase(db,context.order_id,phase==='available'?'local_available':'local_collected')
+    :await oracles.assertNoHubOrTransport(db,context.order_id,phase);
    if(stageId==='LOCAL_CLIENT_PICKUP'){
     const {rows:[scan]}=await db.query(
      "SELECT id FROM scans WHERE order_id=$1 AND step='collected' AND pickup_method='PICKUP_CODE'",[context.order_id]);
     if(!scan)throw Error('G6_M02_PICKUP_SCAN_MISSING');
-    const proof={negative,o_fin:await oracles.financeOracle(db,{orderId:context.order_id,reference:context.order_reference}),
+    const proof=SCENARIO==='M03'?{negative,o_fin:await oracles.financeOracle(db,{orderId:context.order_id,reference:context.order_reference}),
+     o_notif:await oracles.notificationOracle(db,{orderId:context.order_id,reference:context.order_reference})}
+     :{negative,o_fin:await oracles.financeOracle(db,{orderId:context.order_id,reference:context.order_reference}),
      o_doc:await oracles.documentOracle(db,{orderId:context.order_id,scanId:scan.id}),
      o_notif:await oracles.notificationOracle(db,{orderId:context.order_id,reference:context.order_reference})};
     const out=path.join(ROOT,'test-results/g6-local-client-pickup/oracles.json');
@@ -441,10 +457,19 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
    if(rows.length!==1)throw Error('G6_M02_LOCAL_STOCK_PRODUCT_MISSING_'+marketProfile(env).code);
    return {id:rows[0].id,product_ref:rows[0].product_ref,price:Number(rows[0].amount)};
   },
-  executeBuyerChromium:async({product}={})=>{
+  // M03 : panier mixte choisi en lecture seule (1 local != KPR-000165 + imports de >=3 sources distinctes), jamais créé ici.
+  resolveMixedBasket:async()=>{
+   const market=marketProfile(env).code;
+   let basket;
+   try{basket=selectMixedBasket(await readSellable(db,market))}
+   catch(e){throw Error(String(e.message).replace(/^G6_M03_/,'G6_M03_PRODUCT_GAP_'+market+'_'))}
+   const line=p=>({product_ref:p.product_ref,price:p.price,source_key:p.source_key});
+   return {basket:{local:line(basket.local),imports:basket.imports.map(line)}};
+  },
+  executeBuyerChromium:async({product,basket}={})=>{
    if(!runtimePin)throw Error('G6_DYNAMIC_RUNTIME_ATTESTATION_REQUIRED');
    fs.rmSync(path.join(ROOT,REPORT_PATH.BUYER),{force:true});
-   execute(SCRIPTS.BUYER,product?{...env,G6_BUYER_PRODUCT_REF:product.product_ref,
+   execute(SCRIPTS.BUYER,basket?{...env,G6_M03_BASKET:JSON.stringify(basket)}:product?{...env,G6_BUYER_PRODUCT_REF:product.product_ref,
     G6_BUYER_EXPECTED_PRICE:String(product.price)}:env);
    issuedBuyer=report('BUYER').data;
    return issuedBuyer;
@@ -455,7 +480,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
   },
   attestRuntime:async({context})=>attestedRuntime(context),
   authenticateCheckpoint:async({checkpoint,context})=>{
-   if(!['BUYER',...DOWNSTREAM_M01.slice(0,-1),...(SCENARIO==='M02'?M02_STAGES:[])].includes(checkpoint.stage_id)||
+   if(!['BUYER',...DOWNSTREAM_M01.slice(0,-1),...(['M02','M03'].includes(SCENARIO)?M02_STAGES:[]),...(SCENARIO==='M03'?M03_ORACLE_STAGES:[])].includes(checkpoint.stage_id)||
      checkpoint.source_run_id!==String(env.GITHUB_RUN_ID)||
      checkpoint.evidence_path!==REPORT_PATH[checkpoint.stage_id])
     throw Error('G6_DYNAMIC_CROSS_RUN_REQUIRES_AUTHENTICATED_GITHUB_ARTIFACT');
@@ -465,7 +490,9 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
    return verifyStage(checkpoint.stage_id,context);
   },
   executeStage:async({stageId,context})=>{
-   if(![...DOWNSTREAM_M01,...(SCENARIO==='M02'?M02_STAGES:[])].includes(stageId))
+   if(SCENARIO==='M03'&&M03_IMPORT_BLOCKED.includes(stageId))
+    throw Error('G6_M03_SCREEN_MISSING_'+stageId+': '+M03_SCREEN_MISSING_DETAIL);
+   if(![...DOWNSTREAM_M01,...(['M02','M03'].includes(SCENARIO)?M02_STAGES:[]),...(SCENARIO==='M03'?M03_ORACLE_STAGES:[])].includes(stageId))
     throw Error('G6_DYNAMIC_DOWNSTREAM_STAGE_NOT_MIGRATED_'+stageId);
    if(!stageProofs.has('BUYER'))throw Error('G6_DYNAMIC_BUYER_CHECKPOINT_MISSING');
    await attestedRuntime(context);
@@ -478,9 +505,25 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
     });
     return report('RELAY_CASH').data;
    }
+   if(M03_ORACLE_STAGES.includes(stageId)){
+    // Oracle clé M03 (lecture seule PG) : jamais collected avant la remise des lignes import.
+    const predecessor=stageId==='M03_NOT_COLLECTED'?'LOCAL_CLIENT_PICKUP':'CLIENT_PICKUP';
+    if(!stageProofs.has(predecessor))throw Error('G6_M03_PREDECESSOR_MISSING_'+predecessor);
+    await verifyStage(predecessor,context);
+    const phase=stageId==='M03_NOT_COLLECTED'?'local_collected':'final';
+    const oracle=await m03.assertMixedPhase(db,context.order_id,phase);
+    const out=path.join(ROOT,REPORT_PATH[stageId]);
+    fs.mkdirSync(path.dirname(out),{recursive:true});
+    const rec={schema:'komerce-g6-m03-oracle/1',scenario_id:'M03',market:context.market,order_id:context.order_id,
+     reference:context.order_reference,oracle_verdict:'PASS',oracle,db_fingerprint:context.db_fingerprint,sha:context.staging_sha,
+     external_supplier_calls:0,external_payment_executed:false,production_permitted:false};
+    if(stageId==='M03_COLLECTED_FINAL')rec.o_fin=await oracles.financeOracle(db,{orderId:context.order_id,reference:context.order_reference});
+    fs.writeFileSync(out,JSON.stringify(rec,null,2)+'\n');
+    return report(stageId).data;
+   }
    if(M02_STAGES.includes(stageId)){
     const predecessor=stageId==='LOCAL_RELAY_AVAILABLE'?'RELAY_CASH':'LOCAL_RELAY_AVAILABLE';
-    if(SCENARIO!=='M02'||!stageProofs.has(predecessor))
+    if(!['M02','M03'].includes(SCENARIO)||!stageProofs.has(predecessor))
      throw Error('G6_M02_PREDECESSOR_MISSING_'+predecessor);
     await verifyStage(predecessor,context);
     fs.rmSync(path.join(ROOT,REPORT_PATH[stageId]),{force:true});
@@ -568,7 +611,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
    return report('HUB_PO').data;
   },
   verifyStageProof:async({stageId,proof,context})=>{
-   if(![...DOWNSTREAM_M01,...(SCENARIO==='M02'?M02_STAGES:[])].includes(stageId)||
+   if(![...DOWNSTREAM_M01,...(['M02','M03'].includes(SCENARIO)?M02_STAGES:[]),...(SCENARIO==='M03'?M03_ORACLE_STAGES:[])].includes(stageId)||
       JSON.stringify(proof)!==JSON.stringify(report(stageId).data))
     throw Error('G6_DYNAMIC_STAGE_PROOF_MISMATCH');
    return verifyStage(stageId,context);

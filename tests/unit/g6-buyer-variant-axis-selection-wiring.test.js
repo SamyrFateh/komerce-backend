@@ -21,7 +21,7 @@ describe('G6 staging real buyer axis selection',()=>{
  test('fail closed if checkout does not persist a unique scoped cash order',()=>{
    expect(src).toContain("o.simulation_scope==='G6-BUYER'");
    expect(src).toContain("o.payment_mode==='cash_relais'");
-   expect(src).toContain("o.products?.includes(REF)");
+   expect(src).toContain("LINES.every(l=>o.products?.includes(l.product_ref))");
    expect(src).toContain("check(orders.length===1,'G6_EXACTLY_ONE_ORDER_NOT_SATISFIED')");
  });
 });
