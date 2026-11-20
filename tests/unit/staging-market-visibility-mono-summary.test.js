@@ -18,7 +18,7 @@ const MENU=[
 function proof(market){return {
  market,result:'PASS',role:'market_operator',version:SHA,finalVersion:SHA,loginStatus:200,
  allowedMarkets:[market],hubMarkets:[market],hubOrderCount:1,
- oracle:{markets:MARKETS,hub:{count:1,market_codes:[market]}},
+ oracle:{markets:MARKETS,hub:{count:1,market_codes:[market],active_match:true,active_refs:['ORDER-1'],board_refs:['ORDER-1']}},
  navigation:{items:MENU,visited:Array.from({length:23},(_,i)=>({href:`/admin/example-${i}`,http:200,path:`/admin/example-${i}`}))},
  consultations:[{capability:'catalog.read',path:'/local-offer/services',http:200,market,collection:true}],
  order360:[{market,status:200,readOnly:true,poCount:1}],
@@ -58,10 +58,21 @@ test.each([
  ['écriture réseau',p=>p.blockedWrites.push('POST /api/orders')],
  ['erreur JavaScript',p=>p.jsErrors.push('ReferenceError')],
  ['oracle PG absent',p=>p.readOnlyOracle=false],
+ ['Hub actif différent du PG',p=>p.oracle.hub.active_refs.push('ORDER-UNLISTED')],
 ])('%s : statut global FAIL',(name,corrupt)=>{
  const cm=proof('CM');corrupt(cm);
  const result=run({CM:cm});
  expect(result.exit).not.toBe(0);
  expect(result.summary.status).toBe('FAIL');
  expect(result.summary.markets.find(x=>x.market==='CM').status).toBe('FAIL');
+});
+
+
+test('Un marché sans commande Hub active reste certifiable si oracle PG et tableau sont tous deux vides',()=>{
+ const cm=proof('CM');
+ cm.hubOrderCount=0;
+ cm.oracle.hub={count:0,market_codes:['CM'],active_match:true,active_refs:[],board_refs:[]};
+ const result=run({CM:cm});
+ expect(result.exit).toBe(0);
+ expect(result.summary.markets.find(x=>x.market==='CM').checks.oracle).toBe(true);
 });
