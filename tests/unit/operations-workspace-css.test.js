@@ -54,3 +54,11 @@ test('les tables workspace gardent de vraies cellules (pas de display:grid/flex 
   expect(ops).not.toMatch(/\.kmc-catalog-curation-table td:nth-child\(1\)[^}]*width:\s*42%/);
   expect(read('catalog-control-tower.css')).not.toMatch(/\.kmc-cbt-table td:first-child \{[^}]*display:\s*grid/);
 });
+
+test('Hub exécution : header compact et labels de réception lisibles sans changer Relais', () => {
+  expect(css).toContain('body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="execution"] > .kmc-workspace-header');
+  expect(css).toContain('.kmc-workspace-receive-field-label');
+  expect(css).toContain('.kmc-workspace-receive-field-label[hidden] { display: none; }');
+  expect(css).toContain('.kmc-workspace-receive-qty');
+  expect(css).toContain('min-height: 40px');
+});
