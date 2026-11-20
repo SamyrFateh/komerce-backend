@@ -6,15 +6,15 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 821
+- Scanned code files: 822
 - Files with full headers: 762
-- Files with lite headers: 59
-- Files with any headers: 821
+- Files with lite headers: 60
+- Files with any headers: 822
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2095
-- Edges: 10431
+- Graph nodes: 2096
+- Edges: 10437
 - DB tables: 244
 - Doctrines: 820
 - Impact areas: 210
@@ -33,7 +33,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - boutique: 24
 - business-rules: 1
 - catalog: 139
-- checkout: 3
+- checkout: 4
 - customs: 8
 - dashboard: 32
 - decision-signals: 14
@@ -103,6 +103,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - ui-component: 41
 - ui-controller: 3
 - ui-enhancer: 3
+- ui-helper: 1
 - ui-infrastructure: 1
 - ui-page: 5
 - ui-renderer: 11
@@ -725,6 +726,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/b-desktop-upgrade.js -> owner public/boutique/js/b-catalog.js (boutique-b-desktop-upgrade)
 - public/boutique/js/b-greeting.js -> owner public/boutique/js/b-catalog.js (boutique-b-greeting)
 - public/boutique/js/b-home-premium-v1.js -> owner public/boutique/js/b-catalog.js (boutique-b-home-premium-v1)
+- public/boutique/js/b-market-price-format.js -> owner public/boutique/js/b-utils.js (market-local-price-format)
 - public/boutique/js/b-modal-cart.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-cart)
 - public/boutique/js/b-modal-discovery-detail.js -> owner public/boutique/js/discovery-rail.js (catalog-modal-discovery-detail)
 - public/boutique/js/b-modal-nav.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-nav)
