@@ -103,3 +103,11 @@ describe('Hub UX guidée — sans nouvel acte métier', () => {
     expect(css).toContain('.hlc-next-action .hlc-btn.is-primary');
   });
 });
+
+test('Hub UX : le conteneur data-hlc-actions englobe les actions du fil et le seul CTA déplacé', () => {
+  const js = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/hub-live-cockpit.js'), 'utf8');
+  expect(js).toContain("rootEl.setAttribute('data-hlc-actions', '');");
+  expect(js).not.toContain("list.setAttribute('data-hlc-actions', '');");
+  expect(js).toContain('nextAction.appendChild(primaryRow)');
+  expect(js).toContain('rightP.appendChild(list)');
+});
