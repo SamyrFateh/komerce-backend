@@ -223,11 +223,19 @@ test('UX1 — un 429 respecte Retry-After sans déclencher de rafraîchissement 
     }
     return route.fallback();
   });
+  // L'horloge avance les timers, mais la réponse route.fulfill reste asynchrone.
+  // Attendre la réponse réelle avant de mesurer la prochaine échéance.
+  const firstReply = page.waitForResponse(response =>
+    new URL(response.url()).pathname === `${API}/supply` && response.status() === 429);
   await page.clock.runFor(30100);
+  await firstReply;
   expect(supplyCalls).toBe(1);
   await page.clock.runFor(110000); // avant les 120 s Retry-After
   expect(supplyCalls).toBe(1);
+  const secondReply = page.waitForResponse(response =>
+    new URL(response.url()).pathname === `${API}/supply` && response.status() === 200);
   await page.clock.runFor(11000);
+  await secondReply;
   expect(supplyCalls).toBe(2);
   await expect(page.locator('h1')).toHaveText('Hub live · Dossiers');
 });
@@ -258,8 +266,18 @@ test('UX1 — trois onglets Hub / quinze minutes simulées sans 429 ni reload in
         return route.fallback();
       });
     }
-    await Promise.all(tabs.map(tab => tab.clock.runFor(15 * 60 * 1000)));
-    expect(supplyReads).toBeGreaterThanOrEqual(60);
+    // Trente créneaux de 30 s. Chaque cycle attend sa réponse réseau avant
+    // d'avancer : runFor(15 min) d'un seul coup ne laisse pas les callbacks
+    // asynchrones finir et reprogrammer leur prochain setTimeout.
+    test.setTimeout(180000);
+    for (let minute = 0; minute < 30; minute++) {
+      const responses = tabs.map(tab => tab.waitForResponse(response =>
+        new URL(response.url()).pathname === `${API}/supply`, { timeout: 10000 }));
+      await Promise.all(tabs.map(tab => tab.clock.runFor(30100)));
+      await Promise.all(responses);
+      await Promise.all(tabs.map(tab => tab.evaluate(() => Promise.resolve())));
+    }
+    expect(supplyReads).toBeGreaterThanOrEqual(90);
     expect(requests).toBeLessThan(500);
     expect(responses429).toBe(0);
     expect(workspaceReloads).toBe(0); // empreinte identique : pas de rechargement complet
