@@ -53,9 +53,8 @@ function nextStep({sellable,candidate}){
  if(sellable&&sellable.length===1)return {verdict:'G6_CENTRAL_HUB_PRODUCT_ALREADY_SELLABLE_PASS',done:true};
  if(sellable&&sellable.length>1)return {verdict:'G6_CENTRAL_HUB_PRODUCT_DUPLICATE',done:true,fail:true};
  if(!candidate)return {step:'manual-import'};
- // Ni le Sourcing ni le Catalogue n'exposent de bouton « Promouvoir » (POST /candidates/:ref/promote jamais appelé par l'UI).
- if(!candidate.product_ref)return {verdict:'SCREEN_MISSING_CANDIDATE_PROMOTE',done:true};
- return {verdict:'SCREEN_MISSING_CENTRAL_PRODUCT_PRICE_EXPOSURE_DRIVER',done:true};
+ if(!candidate.product_ref)return {step:'promote-candidate',candidate_ref:candidate.candidate_ref};
+ return {step:'catalog-review',product_ref:candidate.product_ref};
 }
 async function loginAdmin(browser){
  const email=env.E2E_ADMIN_EMAIL,password=env.E2E_ADMIN_PASSWORD;
@@ -108,6 +107,35 @@ async function manualImport(actor){
  report.events.push({key:'manual-import-central-hub',http:res.status(),role:'admin',ui:true,mutations:1});save();
  return true;
 }
+// Le promoteur Sourcing appelle la route existante depuis son écran. Toute autre
+// écriture reste bloquée ; la relecture produit est faite séparément en SQL RO.
+async function promoteCandidate(actor,candidateRef){
+ const url=BASE+'/api/admin/workspaces/sourcing/candidates/'+encodeURIComponent(candidateRef)+'/promote';
+ let calls=0;
+ await actor.page.unroute(/.*/);
+ await actor.page.route(/.*/,route=>{
+  const req=route.request(),u=new URL(req.url());
+  if(['GET','HEAD','OPTIONS'].includes(req.method()))return route.continue();
+  if(req.url()===url&&req.method()==='POST'&&calls++===0)return route.continue();
+  actor.blocked.push({method:req.method(),path:u.pathname});return route.abort('blockedbyclient');
+ });
+ await humanGoto(actor.page,'/admin/workspaces/sourcing?candidate_ref='+encodeURIComponent(candidateRef),{waitUntil:'domcontentloaded'});
+ const row=actor.page.locator('[data-sourcing-candidate="'+candidateRef+'"]');
+ try{await row.waitFor({state:'visible',timeout:20000})}
+ catch(_){report.verdict='SCREEN_MISSING_CANDIDATE_ROW';save();return null}
+ const button=row.locator('[data-sourcing-promote]');
+ try{await button.waitFor({state:'visible',timeout:15000})}
+ catch(_){report.verdict='CANDIDATE_PROMOTION_NOT_ELIGIBLE';save();return null}
+ const pending=actor.page.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/workspaces/sourcing/candidates/'+candidateRef+'/promote'&&r.request().method()==='POST',{timeout:30000});
+ await humanClick(null,button);
+ const response=await pending;
+ const body=await response.json().catch(()=>({}));
+ check(response.ok()&&calls===1&&actor.blocked.length===0,'G6_CENTRAL_PROMOTION_REJECTED_'+response.status());
+ const productRef=body?.result?.product_ref||null;
+ check(productRef,'G6_CENTRAL_PROMOTION_PRODUCT_REF_MISSING');
+ report.events.push({key:'promote-candidate-to-inactive-catalogue-draft',http:response.status(),role:'admin',ui:true,mutations:1,product_ref:productRef});save();
+ return productRef;
+}
 async function main(){
  let browser,OBS=null;
  try{
@@ -117,21 +145,37 @@ async function main(){
   report.db_fingerprint=guard.fingerprint;
   let state={sellable:await readSellable(),candidate:await readCandidate()};
   let step=nextStep(state);
-  if(step.step==='manual-import'){
+  if(step.step==='manual-import'||step.step==='promote-candidate'){
    const {chromium}=require('playwright');
    browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
    const actor=await loginAdmin(browser);
-   try{if(!await manualImport(actor))return}finally{await actor.ctx.close()}
-   state={sellable:await readSellable(),candidate:await readCandidate()};
-   check(state.candidate,'G6_CENTRAL_CANDIDATE_NOT_FOUND_AFTER_IMPORT');
-   step=nextStep(state);
+   try{
+    if(step.step==='manual-import'){
+     if(!await manualImport(actor))return;
+     state={sellable:await readSellable(),candidate:await readCandidate()};
+     check(state.candidate,'G6_CENTRAL_CANDIDATE_NOT_FOUND_AFTER_IMPORT');
+     step=nextStep(state);
+    }
+    if(step.step==='promote-candidate'){
+     const productRef=await promoteCandidate(actor,step.candidate_ref);
+     if(!productRef){process.exitCode=3;return}
+     state={sellable:await readSellable(),candidate:await readCandidate()};
+     check(state.candidate?.product_ref===productRef,'G6_CENTRAL_PROMOTION_READBACK_MISMATCH');
+     step=nextStep(state);
+    }
+   }finally{await actor.ctx.close()}
   }
   report.candidate=state.candidate&&{candidate_ref:state.candidate.candidate_ref,state:state.candidate.state,product_ref:state.candidate.product_ref||null};
-  report.verdict=step.verdict;
+  report.product_ref=state.candidate?.product_ref||null;
+  if(step.step==='catalog-review'){
+   report.verdict='G6_CENTRAL_HUB_DRAFT_PROMOTED_CATALOG_REVIEW_REQUIRED';
+   report.next_step='Qualifier et approuver dans Catalogue global, puis vérifier prix local et exposition dans Catalogue pays.';
+  }else if(step.verdict)report.verdict=step.verdict;
+  else throw Error('G6_CENTRAL_UNEXPECTED_NEXT_STEP_'+String(step.step));
   if(step.fail||/^SCREEN_MISSING/.test(step.verdict))process.exitCode=3;
   save();
  }catch(e){report.error=fullError(e);save();process.exitCode=2}
  finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end();console.log(JSON.stringify(report))}
 }
 if(require.main===module)main();
-module.exports={main,ownerStagingGuard,nextStep,SELLABLE_SQL,G6_PREFIX,G6_SUPPLIER_PRODUCT_ID};
+module.exports={main,ownerStagingGuard,nextStep,promoteCandidate,SELLABLE_SQL,G6_PREFIX,G6_SUPPLIER_PRODUCT_ID};
