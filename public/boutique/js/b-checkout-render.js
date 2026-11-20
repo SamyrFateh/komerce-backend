@@ -26,7 +26,8 @@
  * (risque de cycle). Il peut importer b-utils.js pour sanitize/fmt.
  */
 
-import { fmt, fmtMarketAmount, fmtLocalProductPrice, sanitize, optimizeImgUrl } from './b-utils.js';
+import { fmt, sanitize, optimizeImgUrl } from './b-utils.js';
+import { fmtMarketAmount, fmtLocalProductPrice } from './b-market-price-format.js';
 
 /**
  * Rayon de continuité affiché sous le récapitulatif desktop.
