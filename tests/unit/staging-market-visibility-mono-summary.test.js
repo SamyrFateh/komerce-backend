@@ -23,7 +23,8 @@ function proof(market){return {
  consultations:[{capability:'catalog.read',path:'/local-offer/services',http:200,market,collection:true}],
  order360:[{market,status:200,readOnly:true,poCount:1}],
  foreign_order_denials:[{status:403},{status:404}],foreign_po_denials:[{status:403}],
- foreign_client_denials:[{status:404},{status:404}],visible_mutation_controls:[],foreignDataLeaks:[],foreignMarketLeaks:[],blockedWrites:[],jsErrors:[],readOnlyOracle:true
+ foreign_client_denials:[{status:404},{status:404}],visible_mutation_controls:[],foreignDataLeaks:[],foreignMarketLeaks:[],blockedWrites:[],jsErrors:[],readOnlyOracle:true,
+ apiResponseAuditComplete:true,apiResponseAuditReplayed:0
 };}
 function run(overrides={}){
  const cwd=fs.mkdtempSync(path.join(os.tmpdir(),'kmrc-market-mono-'));
@@ -60,6 +61,7 @@ test.each([
  ['écriture réseau',p=>p.blockedWrites.push('POST /api/orders')],
  ['erreur JavaScript',p=>p.jsErrors.push('ReferenceError')],
  ['oracle PG absent',p=>p.readOnlyOracle=false],
+ ['audit JSON incomplet',p=>p.apiResponseAuditComplete=false],
  ['Hub actif différent du PG',p=>p.oracle.hub.active_refs.push('ORDER-UNLISTED')],
 ])('%s : statut global FAIL',(name,corrupt)=>{
  const cm=proof('CM');corrupt(cm);
