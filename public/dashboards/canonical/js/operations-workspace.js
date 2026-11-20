@@ -795,7 +795,7 @@
       rootNode,
       ui,
       'Hub · Réception fournisseur',
-      'Enregistrez ce qui est physiquement arrivé au Hub. Le statut fournisseur (par exemple SHIPPED) n’est jamais une réception ; les réceptions partielles sont acceptées.'
+      'Enregistrez uniquement les quantités physiquement arrivées au Hub. La mention « expédié par le fournisseur » ne prouve pas une réception ; les réceptions partielles sont acceptées.'
     );
     // Accessible même sans PO en attente : c’est précisément le cas d’un colis à rapprocher.
     slot.appendChild(createUnmanifestedArrivalCard(doc, context));
@@ -805,7 +805,7 @@
     }
     const orders = (context.receivable && context.receivable.purchase_orders) || [];
     if (!orders.length) {
-      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune Purchase Order en attente de réception.'));
+      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun bon fournisseur en attente de réception.'));
       return;
     }
     orders.forEach(po => slot.appendChild(createReceptionCard(doc, context, po)));
