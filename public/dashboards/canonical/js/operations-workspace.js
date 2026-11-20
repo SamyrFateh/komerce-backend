@@ -1194,7 +1194,8 @@
             boxes: '[data-supply-box-create]',
             shipments: '[data-supply-shipment-bar]',
           };
-          const anchor = details.querySelector(targets[target] || '') || details;
+          const selector = targets[target];
+          const anchor = (selector && details.querySelector(selector)) || details;
           anchor.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
         },
       });
