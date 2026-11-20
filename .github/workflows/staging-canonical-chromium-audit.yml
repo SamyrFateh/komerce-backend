@@ -38,6 +38,7 @@ jobs:
        (github.event.issue.title == '[staging-op] canonical-chromium-audit' ||
         github.event.issue.title == '[staging-op] canonical-chromium-audit-baseline' ||
         github.event.issue.title == '[staging-op] canonical-chromium-market-visibility' ||
+        github.event.issue.title == '[staging-op] canonical-chromium-market-visibility-mono' ||
         github.event.issue.title == '[staging-op] canonical-chromium-sourcing-hub' ||
         github.event.issue.title == '[staging-op] canonical-chromium-hub-director' ||
         github.event.issue.title == '[staging-op] g8-refunds-readonly'))
@@ -49,10 +50,10 @@ jobs:
       E2E_READONLY_ORACLE_DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
       E2E_ORACLE_EXPECTED_DB_PIN: ${{ vars.STAGING_DB_PIN }}
       E2E_AUDIT_QUICK: ${{ github.event_name == 'issues' && github.event.issue.title == '[staging-op] canonical-chromium-audit-baseline' && '1' || '0' }}
-      E2E_CHROMIUM_SPEC_FILTER: ${{ github.event_name == 'workflow_dispatch' && inputs.spec_filter || (github.event.issue.title == '[staging-op] canonical-chromium-audit-baseline' && 'real-navigation' || (github.event.issue.title == '[staging-op] canonical-chromium-market-visibility' && 'market-visibility' || (github.event.issue.title == '[staging-op] canonical-chromium-hub-director' && 'hub-director-readonly' || (github.event.issue.title == '[staging-op] canonical-chromium-sourcing-hub' && 'sourcing-hub-probe' || (github.event.issue.title == '[staging-op] g8-refunds-readonly' && 'g8-refunds-readonly' || ''))))) }}
+      E2E_CHROMIUM_SPEC_FILTER: ${{ github.event_name == 'issues' && github.event.issue.title == '[staging-op] canonical-chromium-market-visibility-mono' && 'market-visibility-mono' || (github.event_name == 'workflow_dispatch' && inputs.spec_filter || (github.event.issue.title == '[staging-op] canonical-chromium-audit-baseline' && 'real-navigation' || (github.event.issue.title == '[staging-op] canonical-chromium-market-visibility' && 'market-visibility' || (github.event.issue.title == '[staging-op] canonical-chromium-hub-director' && 'hub-director-readonly' || (github.event.issue.title == '[staging-op] canonical-chromium-sourcing-hub' && 'sourcing-hub-probe' || (github.event.issue.title == '[staging-op] g8-refunds-readonly' && 'g8-refunds-readonly' || '')))))) }}
       E2E_PROOF_ORDER_REFS: ${{ github.event_name == 'workflow_dispatch' && inputs.proof_order_refs || '' }}
-      E2E_MKT_READ_ORDER_REFS: ${{ github.event_name == 'workflow_dispatch' && inputs.mkt_read_order_refs || '' }}
-      E2E_AUDIT_ROLES: ${{ github.event_name == 'workflow_dispatch' && inputs.spec_filter == 'market-visibility-mono' && 'market' || (github.event_name == 'workflow_dispatch' && inputs.roles || (github.event.issue.title == '[staging-op] canonical-chromium-hub-director' && 'admin' || (github.event.issue.title == '[staging-op] canonical-chromium-audit-baseline' && 'baseline' || (github.event.issue.title == '[staging-op] canonical-chromium-market-visibility' && 'market' || (github.event.issue.title == '[staging-op] g8-refunds-readonly' && 'admin' || 'all'))))) }}
+      E2E_MKT_READ_ORDER_REFS: ${{ github.event_name == 'workflow_dispatch' && inputs.mkt_read_order_refs || (github.event_name == 'issues' && github.event.issue.title == '[staging-op] canonical-chromium-market-visibility-mono' && github.event.issue.body || '') }}
+      E2E_AUDIT_ROLES: ${{ github.event_name == 'issues' && github.event.issue.title == '[staging-op] canonical-chromium-market-visibility-mono' && 'market' || (github.event_name == 'workflow_dispatch' && inputs.spec_filter == 'market-visibility-mono' && 'market' || (github.event_name == 'workflow_dispatch' && inputs.roles || (github.event.issue.title == '[staging-op] canonical-chromium-hub-director' && 'admin' || (github.event.issue.title == '[staging-op] canonical-chromium-audit-baseline' && 'baseline' || (github.event.issue.title == '[staging-op] canonical-chromium-market-visibility' && 'market' || (github.event.issue.title == '[staging-op] g8-refunds-readonly' && 'admin' || 'all')))))) }}
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
       E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
