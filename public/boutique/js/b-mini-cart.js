@@ -29,7 +29,8 @@
 
 import { state }              from './b-store.js';
 import { cartQty, cartTotal } from './b-cart-core.js';
-import { optimizeImgUrl, fmtLocalLinesTotal } from './b-utils.js';
+import { optimizeImgUrl } from './b-utils.js';
+import { fmtLocalLinesTotal } from './b-market-price-format.js';
 import { bus }                from './b-bus.js';
 
 // ── Constantes ───────────────────────────────────────────────────────
