@@ -49,6 +49,13 @@
 - **Écrans G6-CLEANUP fusionnés (19/11)** : #4649 (annulation PO 100 % G6) et #4650 (clôture Order 360 marchandise au Hub + gestes C/D du runner), tous deux `Required verdict: SUCCESS` au merge. Refus strict hors G6, sans débit fournisseur/PSP ni effacement de lien physique immuable. **État recette : pas encore rejouée après fusion** ; 12 commandes D et 13 PO C restent à recontrôler sur staging. **Reprise réservée à Opus** : lancer `plan`, relire le périmètre, puis `apply` sur GO propriétaire, et publier le bilan. Aucun SQL de contournement ; ne pas déclarer G6-CLEANUP clôturé avant preuve.
 - **G6-CLEANUP — nouveau plan après fusion (#4655, 19/11)** : workflow owner-only [44541728180] lecture seule, `PLAN_READY_NO_WRITE` sur staging, 12 gestes D `close_hub_order` ; **0 geste C** (les 13 PO historiquement engagés ne sont pas découverts par le filtrage des seules commandes non annulées). Correctif dans cette PR : inventaire READ ONLY de tous les PO notifiés/confirmés liés G6, y compris commandes `cancelled`, contrôle de tous les pairs, des débits fournisseur et des allocations physiques avant tout geste C ; nouvelles preuves `po_audit` et refus explicites. **Ne pas lancer apply avant plan de contrôle et GO distinct**.
 
+**G6-RESET — staging remis à zéro, puis M01 recertifié (Opus, 20/11)** :
+- **Reset :** `staging-reset`, portée `activity` (#4682), run 44688839721, statut RESET_OK. 3 779 lignes d'activité purgées ; catalogue, sourcing, prix et médias conservés ; stock restitué.
+- **Comptes E2E reprovisionnés :** `staging-e2e-provision`, run 44689718797.
+- **M01 à 15/15, SHA `f87a8e7e` :** KM KHTR2PS (#4684), CM K51JZNA (#4685), CG KNVW3OS (#4687).
+- **Défaut produit ouvert (GPT) :** le rafraîchissement UX1, toutes les 10 s, déclenche des 429 sur le limiteur global par IP (500 requêtes / 15 min). Il a été observé sur le run CG 44691201929.
+- **À faire :** enchaîner automatiquement le reprovisionnement E2E après tout reset ; GPT recertifie MKT-READ avec des comptes mono-marché.
+
 **G6-RECERT — M01 recertifié après G6-SUIVIS et Ergonomie (Opus, 19/11) : PASS 15/15 sur les 3 marchés**, SHA unique `a9a625c9`, oracles G6-F renforcés. KM KNS1G99 (#4635), CM KX87NSI (#4636), CG K50ID0Q (#4637). Lots couverts : #4607, #4609, #4610, #4611, #4612, #4630, #4632, #4633, #4634. **Reste avant les 46 scénarios :** inventaire puis nettoyage par l'écran des commandes orphelines (lot 5, GO du propriétaire), prix de référence KPR-000165 (point 2), puis GO du propriétaire.
 
 **G6-MARKET — M01 RÉPÉTABLE SUR KM, CM ET CG (Opus)** : 3 runs consécutifs à 15/15 par marché.
