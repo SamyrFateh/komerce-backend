@@ -33,6 +33,13 @@
   const nf = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 });
   const num = (v) => nf.format(Number(v) || 0);
   const short = (v) => String(v || '').slice(0, 8);
+  // Traduction strictement visuelle : les états API et le Golden restent inchangés.
+  const PHYSICAL_STATE_LABELS = Object.freeze({
+    PICKED: 'Prélevé', PACKED: 'Emballé', DISPATCHED: 'Prêt au départ',
+  });
+  const humanPhysicalState = (value) => String(value ?? '').replace(
+    /\b(PICKED|PACKED|DISPATCHED)\b/g, key => PHYSICAL_STATE_LABELS[key]
+  );
 
   function el(doc, tag, cls, txt) {
     const node = doc.createElement(tag);
@@ -562,9 +569,9 @@
         const r = el(doc, 'div', 'hlc-row');
         r.appendChild(el(doc, 'span', 'hlc-ref', it.ref));
         r.appendChild(el(doc, 'span', 'hlc-spacer'));
-        r.appendChild(el(doc, 'small', 'hlc-meta', it.meta));
+        r.appendChild(el(doc, 'small', 'hlc-meta', humanPhysicalState(it.meta)));
         c.appendChild(r);
-        c.appendChild(el(doc, 'span', 'hlc-phys-text', it.text));
+        c.appendChild(el(doc, 'span', 'hlc-phys-text', humanPhysicalState(it.text)));
         block.appendChild(c);
       });
       if (!section.items.length) block.appendChild(el(doc, 'span', 'hlc-empty', section.empty_text));
@@ -758,7 +765,7 @@
         const b = (d.boxes || []).find((x) => x.unit_id === sel.id);
         if (b) {
           title = b.reference; sub = `KOM-BOX · ${b.state}`;
-          nodes = [node('Sac', [...new Set((b.contents || []).map((c) => c.order_ref))].join(', ') || '—', 'dans la KOM-BOX', 'ok'), node('KOM-BOX', b.reference, b.state, 'on'), node('Expédition', b.shipment_ref || '—', b.shipment_ref ? (b.shipment_stage || 'ouverte') : 'à rattacher', b.shipment_ref ? 'ok' : ''), node('Relais', '—', 'attestation à la réception', '')];
+          nodes = [node('Sac', [...new Set((b.contents || []).map((c) => c.order_ref))].join(', ') || '—', 'dans la KOM-BOX', 'ok'), node('KOM-BOX', b.reference, humanPhysicalState(b.state), 'on'), node('Expédition', b.shipment_ref || '—', b.shipment_ref ? (b.shipment_stage || 'ouverte') : 'à rattacher', b.shipment_ref ? 'ok' : ''), node('Relais', '—', 'attestation à la réception', '')];
         }
       }
       return { title: title || selKey, sub, nodes, blocker };
