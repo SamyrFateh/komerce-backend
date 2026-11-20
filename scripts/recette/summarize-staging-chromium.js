@@ -141,7 +141,7 @@ if (process.env.E2E_CHROMIUM_SPEC_FILTER === 'g8-refunds-readonly') {
       login:proof.loginStatus===200,
       one_market:JSON.stringify(proof.allowedMarkets)===JSON.stringify([market])&&JSON.stringify(proof.hubMarkets)===JSON.stringify([market]),
       navigation:JSON.stringify(proof.navigation?.items)===JSON.stringify(menu)&&Array.isArray(proof.navigation?.visited)&&
-        proof.navigation.visited.length===23&&proof.navigation.visited.every(x=>x.http===200&&x.path!=='/login.html'),
+        proof.navigation.visited.length===18&&proof.navigation.visited.every(x=>x.http===200&&x.path!=='/login.html'),
       consultations:Array.isArray(proof.consultations)&&proof.consultations.length>0&&proof.consultations.every(x=>x.http===200&&x.market===market&&x.collection),
       oracle:proof.readOnlyOracle===true&&proof.oracle?.hub?.count===proof.hubOrderCount&&
         proof.oracle?.hub?.active_match===true&&

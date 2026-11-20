@@ -19,7 +19,7 @@ function proof(market){return {
  market,result:'PASS',role:'market_operator',version:SHA,finalVersion:SHA,loginStatus:200,
  allowedMarkets:[market],hubMarkets:[market],hubOrderCount:1,
  oracle:{markets:MARKETS,hub:{count:1,market_codes:[market],active_match:true,active_refs:['ORDER-1'],board_refs:['ORDER-1']}},
- navigation:{items:MENU,visited:Array.from({length:23},(_,i)=>({href:`/admin/example-${i}`,http:200,path:`/admin/example-${i}`}))},
+ navigation:{items:MENU.slice(),visited:Array.from({length:18},(_,i)=>({href:`/admin/example-${i}`,http:200,path:`/admin/example-${i}`}))},
  consultations:[{capability:'catalog.read',path:'/local-offer/services',http:200,market,collection:true}],
  order360:[{market,status:200,readOnly:true,poCount:1}],
  foreign_order_denials:[{status:403},{status:404}],foreign_po_denials:[{status:403}],
@@ -52,6 +52,8 @@ test('PASS global seulement si les trois rapports mono-marché sont complets',()
 test.each([
  ['scope CM supplémentaire',p=>p.allowedMarkets.push('CM')],
  ['destination manquante',p=>p.navigation.visited[0].http=403],
+ ['rubrique manquante',p=>p.navigation.items.pop()],
+ ['18e destination absente',p=>p.navigation.visited.pop()],
  ['client étranger exposé',p=>p.foreign_client_denials[0].status=200],
  ['bouton de mutation',p=>p.visible_mutation_controls.push({label:'Confirmer'})],
  ['fuite de données d’un autre marché',p=>p.foreignDataLeaks.push({path:'/api/admin/entities/orders',kind:'order'})],

@@ -228,7 +228,7 @@ for(const market of MARKETS){
      })));
      proof.navigation.items=menu.map(item=>item.id);
      expect(proof.navigation.items).toEqual(MENU);
-     expect(new Set(menu.map(item=>item.href)).size,'All 23 menu rubriques must have distinct destinations').toBe(23);
+     expect(new Set(menu.map(item=>item.href)).size,'23 menu rubriques must resolve to the 18 canonical market destinations').toBe(18);
      for(const item of menu)expect(String(item.href||'').startsWith('/')).toBe(true);
      const forbiddenCentral=['/admin/workspaces/catalog','/admin/workspaces/purchasing','/admin/import-runtime',
        '/admin/relais-live','/admin/users','/admin/providers','/admin/settings'];
