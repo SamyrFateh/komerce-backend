@@ -126,7 +126,7 @@ async function main(){
    env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.NODE_ENV==='test'&&
    env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&
    env.STAGING_BASE_URL===ORIGIN&&env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&
-   env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET===MK.code&&
+   ['M01','M03'].includes(env.G6_CANONICAL_SCENARIO)&&env.G6_TARGET_MARKET===MK.code&&
    env.G6_CANONICAL_PHASE==='HUB_COMMITMENT'&&SHA.test(env.E2E_EXPECTED_DEPLOY_SHA||'')&&
    UUID.test(env.G6_CANONICAL_PO_ID||'')&&UUID.test(env.G6_CANONICAL_ORDER_ID||'')&&
    /^[A-Z0-9-]{6,64}$/.test(env.G6_CANONICAL_ORDER_REFERENCE||'')&&

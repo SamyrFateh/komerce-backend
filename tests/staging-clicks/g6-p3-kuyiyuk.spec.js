@@ -20,6 +20,13 @@ const {observe,startTraceAfterAuth}=require("../../scripts/recette/canonical/obs
 const ANY_STATUS=Array.from({length:400},(_,i)=>i+200);
 // page.reload reste un geste humain (F5) : il n'émet aucune mutation, d'où l'absence de helper.
 const CANONICAL=process.env.G6_CANONICAL_HUB_STAGE==='1';
+// M03 (multi-PO) : une itération = un PO (le suivant à constituer) ; M01 : MULTI=false, comportement strictement historique.
+const MULTI=CANONICAL&&process.env.G6_CANONICAL_PO_ITERATION!==undefined&&process.env.G6_CANONICAL_PO_ITERATION!=='';
+const ITER=MULTI?Number(process.env.G6_CANONICAL_PO_ITERATION):0;
+const N_IMPORT=MULTI?Number(process.env.G6_CANONICAL_IMPORT_ITEMS):1;
+const EXPECT_PO=MULTI?ITER+1:1,EXPECT_LINES=MULTI?N_IMPORT:1;
+// M03 : la partie locale est déjà remise, le statut de la commande n'est plus « confirmed/ordered » (jamais « collected »).
+const STATUS_OK=(st,extra=[])=>MULTI?!['collected','cancelled'].includes(st):[...extra,'confirmed','ordered'].includes(st);
 const REF=CANONICAL?String(process.env.G6_CANONICAL_ORDER_REFERENCE||''):'KUYIYUK';
 const evidence={schema:'komerce-g6-p3-kuyiyuk/1',reference:REF,verdict:'NOT_PROVEN',external_supplier_calls:0,external_payment_executed:false,staging_cash_confirmation_recorded:false,gestures:[]};
 const save=()=>{fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'evidence.json'),JSON.stringify(evidence,null,2)+'\n');};
@@ -28,11 +35,12 @@ const q=async(sql,params=[]) => (await db.query(sql,params)).rows;
 const base='https://komerce-backend-production.up.railway.app';
 const buyer=CANONICAL?String(process.env.G6_CANONICAL_BUYER_ID||''):'aedfc0cb-db52-4f58-be1b-f709374151ad';
 const orderId=CANONICAL?String(process.env.G6_CANONICAL_ORDER_ID||''):'af34f91c-bfa2-45a2-87c2-ec611cc8c850';
+const IMPORT_ONLY=MULTI?" AND oi.fulfillment_source='IMPORT'":'';
 const orderState=async()=> {
   const [o]=await q(`SELECT o.id,o.reference,o.user_id,o.relais_id,o.simulation_scope,o.status::text AS status,o.payment_mode::text AS payment_mode,o.payment_status::text AS payment_status,
-     (SELECT COUNT(*)::int FROM order_items oi WHERE oi.order_id=o.id) AS item_count,
-     (SELECT COUNT(*)::int FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id WHERE oi.order_id=o.id AND pl.cancelled_at IS NULL) AS line_count,
-     (SELECT COUNT(DISTINCT pl.purchase_order_id)::int FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id WHERE oi.order_id=o.id AND pl.cancelled_at IS NULL AND pl.purchase_order_id IS NOT NULL) AS po_count,
+     (SELECT COUNT(*)::int FROM order_items oi WHERE oi.order_id=o.id${IMPORT_ONLY}) AS item_count,
+     (SELECT COUNT(*)::int FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id WHERE oi.order_id=o.id AND pl.cancelled_at IS NULL${IMPORT_ONLY}) AS line_count,
+     (SELECT COUNT(DISTINCT pl.purchase_order_id)::int FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id WHERE oi.order_id=o.id AND pl.cancelled_at IS NULL AND pl.purchase_order_id IS NOT NULL${IMPORT_ONLY}) AS po_count,
      (SELECT COUNT(*)::int FROM cash_collections cc WHERE cc.order_id=o.id) AS cash_collection_count,
      (SELECT COUNT(*)::int FROM cash_confirmation_controls ccc WHERE ccc.order_id=o.id AND ccc.state='CONFIRMED') AS cash_control_confirmed_count
     FROM orders o WHERE o.id=$1 AND o.reference=$2`,[orderId,REF]);
@@ -73,7 +81,8 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
     expect(env.GITHUB_ACTOR).toBe(env.GITHUB_REPOSITORY_OWNER);
     expect(env.STAGING_BASE_URL).toBe(base);
     if(CANONICAL){
-      expect(env.G6_CANONICAL_SCENARIO).toBe('M01');
+      expect(env.G6_CANONICAL_SCENARIO).toBe(MULTI?'M03':'M01');
+      if(MULTI){expect(Number.isInteger(ITER)&&ITER>=0&&ITER<N_IMPORT&&N_IMPORT>=3).toBe(true);}
       expect(env.G6_TARGET_MARKET).toBe(MK.code);
       expect(REF).toMatch(/^[A-Z0-9][A-Z0-9-]{5,63}$/);
       expect(buyer).toMatch(/^[a-f0-9-]{36}$/);
@@ -86,16 +95,16 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
     expect(o,'same canonical G6 order exists').toBeTruthy();
     expect(o.user_id).toBe(buyer);
     expect(o.simulation_scope).toBe('G6-BUYER');
-    expect(['pending','confirmed','ordered']).toContain(o.status);
+    expect(STATUS_OK(o.status,['pending'])).toBe(true);
     expect(o.payment_mode).toBe('cash_relais');
     expect(o.payment_status).toBe(o.status==='pending'?'pending':'paid');
     if(o.status==='ordered'){
       expect(Number(o.cash_collection_count)).toBe(1);
       expect(Number(o.cash_control_confirmed_count)).toBe(1);
     }
-    expect(Number(o.item_count)).toBe(1);
-    expect(Number(o.line_count)).toBeLessThanOrEqual(1);
-    expect(Number(o.po_count)).toBeLessThanOrEqual(1);
+    expect(Number(o.item_count)).toBe(MULTI?N_IMPORT:1);
+    expect(Number(o.line_count)).toBeLessThanOrEqual(MULTI?N_IMPORT:1);
+    expect(Number(o.po_count)).toBeLessThanOrEqual(MULTI?N_IMPORT:1);
     const [relayIdentity]=await q(
       `SELECT u.id,u.role::text AS role,u.relais_id,
               EXISTS(SELECT 1 FROM e2e_test_accounts e WHERE e.user_id=u.id) AS is_e2e_test_account
@@ -112,7 +121,7 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
       const o=await orderState();
       if(o)evidence.final={order_id:o.id,status:o.status,payment_status:o.payment_status,line_count:Number(o.line_count),po_count:Number(o.po_count),cash_collection_count:Number(o.cash_collection_count),cash_control_confirmed_count:Number(o.cash_control_confirmed_count)};
     }catch(e){evidence.readback_error=String(e.message||e).slice(0,250);}
-    if(evidence.final&&['confirmed','ordered'].includes(evidence.final.status)&&evidence.final.payment_status==='paid'&&evidence.final.cash_collection_count===1&&evidence.final.cash_control_confirmed_count===1&&evidence.final.line_count===1&&evidence.final.po_count===1){
+    if(evidence.final&&STATUS_OK(evidence.final.status)&&evidence.final.payment_status==='paid'&&evidence.final.cash_collection_count===1&&evidence.final.cash_control_confirmed_count===1&&evidence.final.line_count===EXPECT_LINES&&evidence.final.po_count===EXPECT_PO){
       evidence.verdict='G6_P3_MANUAL_LINE_AND_DRAFT_PO_CHROMIUM_PASS';
     }else if(evidence.error){
       evidence.verdict='G6_P3_BLOCKED_NOT_PROVEN';
@@ -122,7 +131,7 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
   });
   test('Créer la ligne manuelle puis préparer le PO depuis le cockpit canonique',async({browser,baseURL})=>{
     let before=await orderState();
-    if(Number(before.line_count)===1&&Number(before.po_count)===1){
+    if(MULTI?Number(before.po_count)>=EXPECT_PO:(Number(before.line_count)===1&&Number(before.po_count)===1)){
       evidence.gestures.push({key:'resume-existing-draft',verdict:'ALREADY_PRESENT_NO_REPLAY'});
       await test.skip();
     }
@@ -170,7 +179,7 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
       evidence.gestures.push({key:'cash-payment-recorded-in-staging',verdict:'PASS',external_payment:false});
       before=await orderState();
     }
-    expect(['confirmed','ordered']).toContain(before.status);
+    expect(STATUS_OK(before.status)).toBe(true);
     expect(before.payment_status).toBe('paid');
     expect(Number(before.cash_collection_count)).toBe(1);
     expect(Number(before.cash_control_confirmed_count)).toBe(1);
@@ -188,11 +197,11 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
       // Le déclencheur d'achat automatique (post-encaissement cash) est asynchrone côté serveur :
       // on lui laisse le temps de créer la ligne (lecture PG seule) avant tout sourcing manuel.
       let afterCash=await orderState();
-      for(let i=0;i<24&&Number(afterCash.line_count)===0;i++){
+      for(let i=0;i<24&&Number(afterCash.line_count)<(MULTI?N_IMPORT:1)&&(MULTI||Number(afterCash.line_count)===0);i++){
         await page.waitForTimeout(5000);
         afterCash=await orderState();
       }
-      evidence.auto_line_after_cash=Number(afterCash.line_count)===1;
+      evidence.auto_line_after_cash=Number(afterCash.line_count)===EXPECT_LINES;
       // Si la ligne est arrivée pendant l'attente, l'écran affiché est périmé (« Sourcing requis ») :
       // un humain rechargerait la page avant d'agir.
       if(evidence.auto_line_after_cash){
@@ -200,7 +209,13 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
         await page.waitForLoadState('networkidle').catch(()=>{});
         await page.locator('[data-hlc-need]').filter({hasText:REF}).first().waitFor({timeout:25000});
       }
-      if(Number(afterCash.line_count)===0){
+      // Multi-PO : aucune création manuelle de ligne par l'écran de sourcing n'est jouée (il traite une commande, pas une ligne) ;
+      // des lignes d'achat manquantes sont un manque produit déclaré, jamais contourné.
+      if(MULTI&&Number(afterCash.line_count)!==N_IMPORT){
+        evidence.error='G6_HUB_PO_PRODUCT_GAP_AUTO_PURCHASE_LINES_'+Number(afterCash.line_count)+'_OF_'+N_IMPORT;
+        throw new Error(evidence.error);
+      }
+      if(!MULTI&&Number(afterCash.line_count)===0){
         const need=page.locator('[data-hlc-need]').filter({hasText:REF});
         await need.first().waitFor({timeout:20000});
         await humanClick(null,need.first());
@@ -229,14 +244,15 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
         await page.waitForTimeout(1200);
       }
       const current=await orderState();
-      expect(Number(current.line_count)).toBe(1);
-      expect(Number(current.po_count)).toBe(0);
+      expect(Number(current.line_count)).toBe(EXPECT_LINES);
+      expect(Number(current.po_count)).toBe(MULTI?ITER:0);
       const need=page.locator('[data-hlc-need]').filter({hasText:REF});
       if(!(await need.count())){
         await page.reload({waitUntil:'domcontentloaded'});
         await page.waitForLoadState('networkidle').catch(()=>{});
       }
-      const activeNeed=page.locator('[data-hlc-need]').filter({hasText:REF}).last();
+      const needs=page.locator('[data-hlc-need]').filter({hasText:REF});
+      const activeNeed=MULTI?needs.first():needs.last();
       await activeNeed.waitFor({timeout:25000});
       await humanClick(null,activeNeed);
       const prepare=page.locator('[data-hlc-action="prepare-po"]');
@@ -254,9 +270,9 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
       await capture(page,'03-draft-po-created');
       const after=await orderState();
       evidence.final={order_id:after.id,status:after.status,payment_status:after.payment_status,line_count:Number(after.line_count),po_count:Number(after.po_count)};
-      expect(Number(after.line_count)).toBe(1);
-      expect(Number(after.po_count)).toBe(1);
-      expect(['confirmed','ordered']).toContain(after.status);
+      expect(Number(after.line_count)).toBe(EXPECT_LINES);
+      expect(Number(after.po_count)).toBe(EXPECT_PO);
+      expect(STATUS_OK(after.status)).toBe(true);
       expect(after.payment_status).toBe('paid');
       expect(Number(after.cash_collection_count)).toBe(1);
       expect(Number(after.cash_control_confirmed_count)).toBe(1);
@@ -267,7 +283,8 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
         FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id JOIN orders o ON o.id=oi.order_id
         JOIN purchase_orders po ON po.id=pl.purchase_order_id LEFT JOIN markets m ON m.id=o.market_id
         LEFT JOIN product_suppliers ps ON ps.id=pl.product_supplier_id
-        WHERE o.id=$1 AND pl.cancelled_at IS NULL`,[orderId]);
+        WHERE o.id=$1 AND pl.cancelled_at IS NULL${MULTI?' AND po.id=$2':''}`,
+        MULTI?[orderId,evidence.gestures.find(g=>g.key==='prepare-draft-po'&&g.verdict==='PASS').purchase_order_id]:[orderId]);
       expect(hub,'HUB_PO oracle: line of our order on a PO').toBeTruthy();
       expect(Number(hub.line_qty)).toBe(Number(hub.item_qty));
       expect(hub.line_supplier).toBeTruthy();

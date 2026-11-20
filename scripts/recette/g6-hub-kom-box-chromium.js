@@ -22,6 +22,10 @@ const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require
 const ORDER=env.G6_CANONICAL_ORDER_ID,PO=env.G6_CANONICAL_PO_ID,REF=env.G6_CANONICAL_ORDER_REFERENCE;
 const BAG=env.G6_CANONICAL_BAG_ID,BAGREF=env.G6_CANONICAL_BAG_REF,PARCEL=env.G6_CANONICAL_PARCEL_ID;
 const ALLOCATION=env.G6_CANONICAL_ALLOCATION_ID;
+// Multi-PO (M03) : un seul sac consolidé, N placements (un par allocation) ; défauts = chemin historique.
+const SC=require('./canonical/multi-po').importScope(env,{po:PO,allocation:ALLOCATION});
+const sameSet=(a,b)=>JSON.stringify([...a].sort())===JSON.stringify([...b].sort());
+const placementIdsOf=s=>s.placement.map(p=>p.placement_id);
 const BOXREF='KOM-BOX-SIM-STAGING-'+REF;
 const PROOF='[SIMULATED / STAGING ONLY] G6-M01-KOM-BOX-'+REF;
 const API='/api/admin/workspaces/operations/market/'+MK.code;
@@ -42,7 +46,7 @@ async function readback(){
   "SELECT o.id,o.reference,o.simulation_scope,o.payment_status::text payment_status,po.status::text po_status,"
   +"po.sent_note,(SELECT COUNT(*)::int FROM purchase_order_authorizations x WHERE x.purchase_order_id=po.id AND x.authorization_type='supplier_payment') payment_authorizations "
   +"FROM orders o JOIN order_items oi ON oi.order_id=o.id JOIN purchase_lines pl ON pl.order_item_id=oi.id "
-  +"JOIN purchase_orders po ON po.id=pl.purchase_order_id WHERE o.id=$1 AND po.id=$2 AND pl.cancelled_at IS NULL",[ORDER,PO])).rows;
+  +"JOIN purchase_orders po ON po.id=pl.purchase_order_id WHERE o.id=$1 AND po.id=ANY($2::uuid[]) AND pl.cancelled_at IS NULL",[ORDER,SC.pos])).rows;
  const bag=(await db.query("SELECT id,reference,order_id,state::text state,unit_type::text unit_type,bag_plan FROM hub_physical_units WHERE order_id=$1 AND unit_type='HANDLING_UNIT'",[ORDER])).rows;
  const placement=(await db.query(
   "SELECT p.id placement_id,p.allocation_id,p.physical_unit_id,p.quantity,p.operation_type,p.evidence_method,p.evidence_ref,p.created_by "
@@ -65,28 +69,29 @@ async function readback(){
  return {order,bag,placement,parcels,box,links,effective,custody};
 }
 function checkBase(s){
- check(s.order.length===1&&s.order[0].id===ORDER&&s.order[0].reference===REF&&
-  s.order[0].simulation_scope==='G6-BUYER'&&s.order[0].payment_status==='paid'&&
-  s.order[0].po_status==='hub_received'&&s.order[0].sent_note?.startsWith('[SIMULATED / STAGING ONLY]')&&
-  Number(s.order[0].payment_authorizations)===0,'G6_BOX_ORDER_SCOPE_INVALID');
+ check(s.order.length===SC.pos.length&&s.order.every(o=>o.id===ORDER&&o.reference===REF&&
+  o.simulation_scope==='G6-BUYER'&&o.payment_status==='paid'&&
+  o.po_status==='hub_received'&&o.sent_note?.startsWith('[SIMULATED / STAGING ONLY]')&&
+  Number(o.payment_authorizations)===0),'G6_BOX_ORDER_SCOPE_INVALID');
  check(s.bag.length===1&&s.bag[0].id===BAG&&s.bag[0].reference===BAGREF&&s.bag[0].state==='PACKED'&&
-  s.placement.length===1&&s.placement[0].physical_unit_id===BAG&&s.placement[0].allocation_id===ALLOCATION&&
-  Number(s.placement[0].quantity)===1&&s.placement[0].operation_type==='REPACK'&&
-  s.placement[0].evidence_method==='MANUAL'&&
-  s.placement[0].evidence_ref==='[SIMULATED / STAGING ONLY] G6-M01-DEPOT-SAC-'+REF,
+  s.placement.length===SC.items&&sameSet(s.placement.map(p=>p.allocation_id),SC.allocations)&&
+  s.placement.every(p=>p.physical_unit_id===BAG&&Number(p.quantity)===1&&p.operation_type==='REPACK'&&
+  p.evidence_method==='MANUAL'&&
+  p.evidence_ref==='[SIMULATED / STAGING ONLY] G6-M01-DEPOT-SAC-'+REF),
   'G6_BOX_BAG_PHYSICAL_CONTENT_CHANGED');
  check(s.parcels.length===1&&s.parcels[0].id===PARCEL&&/^[A-Z0-9][A-Z0-9-]{5,63}$/.test(String(s.parcels[0].reference||'')),
   'G6_BOX_CLIENT_PARCEL_NOT_UNIQUE');
 }
-function checkLink(s,boxId,placementId){
+function checkLink(s,boxId,placementIds){
  checkBase(s);
  check(s.box.length===1&&s.box[0].id===boxId&&s.box[0].unit_type==='MARKET_PARCEL'&&
   s.links.length===1&&s.links[0].box_unit_id===boxId&&s.links[0].bag_unit_id===BAG&&s.links[0].parcel_id===PARCEL&&
   s.links[0].linked_by&&s.links[0].evidence_method==='MANUAL'&&s.links[0].evidence_ref===PROOF&&
   s.links[0].bag_reference_scan===BAGREF&&s.links[0].box_reference_scan===BOXREF&&
-  s.effective.length===1&&s.effective[0].placement_id===placementId&&s.effective[0].bag_unit_id===BAG&&
-  s.effective[0].allocation_id===ALLOCATION&&Number(s.effective[0].quantity)===1&&
-  s.placement[0].placement_id===placementId,'G6_BOX_LINK_OR_SINGLE_PLACEMENT_INVALID');
+  s.effective.length===SC.items&&sameSet(s.effective.map(e=>e.placement_id),placementIds)&&
+  s.effective.every(e=>e.bag_unit_id===BAG&&Number(e.quantity)===1)&&
+  sameSet(s.effective.map(e=>e.allocation_id),SC.allocations)&&
+  sameSet(placementIdsOf(s),placementIds),'G6_BOX_LINK_OR_SINGLE_PLACEMENT_INVALID');
 }
 async function openDetails(page){
  await humanGoto(page,'/admin/hub-live?view=execute&market='+MK.code+'',{waitUntil:'domcontentloaded'});
@@ -137,12 +142,13 @@ async function main(){
    env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.NODE_ENV==='test'&&
    env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&
    env.STAGING_BASE_URL==='https://komerce-backend-production.up.railway.app'&&
-   env.G6_CANONICAL_PHASE==='HUB_KOM_BOX'&&env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET===MK.code&&
+   env.G6_CANONICAL_PHASE==='HUB_KOM_BOX'&&['M01','M03'].includes(env.G6_CANONICAL_SCENARIO)&&env.G6_TARGET_MARKET===MK.code&&
    ((REF==='KL1WGP6'&&ORDER==='56adad65-d1fa-4e80-8d69-c25e0fe92a76'&&PO==='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3'&&
       BAG==='bcf810c9-33b2-438a-b4c3-857b024e2247'&&BAGREF==='KOM-ITEM-178D0AEA488AA4B5B9'&&
       PARCEL==='95045ede-d5b8-405b-b65f-d9dbdddb4756'&&ALLOCATION==='3b430dcf-8662-44b4-a29f-27e38df19253')||
     (env.G6_DYNAMIC_FRESH_ORDER==='1'&&/^[A-Z0-9][A-Z0-9-]{5,63}$/.test(REF||'')&&
-      [ORDER,PO,BAG,PARCEL,ALLOCATION].every(x=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(String(x||'')))&&
+      [ORDER,PO,BAG,PARCEL,ALLOCATION,...SC.pos,...SC.allocations].every(x=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(String(x||'')))&&
+      SC.pos[0]===PO&&SC.allocations[0]===ALLOCATION&&SC.pos.length===SC.items&&SC.allocations.length===SC.items&&SC.units===SC.items&&
       /^KOM-ITEM-[A-Z0-9-]{8,}$/i.test(BAGREF||'')))&&
    !!env.DATABASE_URL,'G6_BOX_OWNER_STAGING_GUARD');
   const target=await confirmTarget({db,env});
@@ -150,7 +156,7 @@ async function main(){
   report.db_fingerprint=target.fingerprint;report.sha=await runtime();
   const before=await readback();checkBase(before);report.before=before;save();
   check(before.box.length===0&&before.links.length===0&&before.effective.length===0,'G6_BOX_ALREADY_STARTED_STOP');
-  const placementId=before.placement[0].placement_id;
+  const placementIds=placementIdsOf(before);
   browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   const actor=await login(browser,'E2E_AGENT_HUB_',{readOnly:true});
   try{
@@ -160,7 +166,7 @@ async function main(){
     (b,req)=>b?.reference===BOXREF&&Object.keys(b).length===1&&!!req.headers()['idempotency-key']);
    const created=await readback();checkBase(created);report.after_create=created;save();
    check(created.box.length===1&&created.box[0].unit_type==='MARKET_PARCEL'&&created.box[0].state==='RECEIVED'&&
-      created.links.length===0&&created.effective.length===0&&created.placement[0].placement_id===placementId,
+      created.links.length===0&&created.effective.length===0&&sameSet(placementIdsOf(created),placementIds),
       'G6_BOX_CREATED_PG_INVALID');
    const boxId=created.box[0].id;report.box_id=boxId;save();
    section=await openDetails(actor.page);
@@ -175,7 +181,7 @@ async function main(){
    await gesture(actor,'attach-bag',API+'/boxes/'+boxId+'/bags',row.locator('[data-workspace-action="put-bag-in-box"]'),
      b=>b?.bag_unit_id===BAG&&(!b.parcel_id||b.parcel_id===PARCEL)&&b.bag_reference_scan===BAGREF&&
         b.box_reference_scan===BOXREF&&b.evidence_method==='MANUAL'&&b.evidence_ref===PROOF);
-   let linked=await readback();report.after_link=linked;save();checkLink(linked,boxId,placementId);
+   let linked=await readback();report.after_link=linked;save();checkLink(linked,boxId,placementIds);
    // Follow the exact UI states in order; verify each state and custody before the next gesture.
    let prior='RECEIVED';
    for(const state of ['IDENTIFIED','QUALITY_CHECKED','LOCATED','ALLOCATED','PICKED','PACKED']){
@@ -185,7 +191,7 @@ async function main(){
     check((await next.textContent()).includes(state),'G6_BOX_UNEXPECTED_NEXT_STATE_'+state);
     await gesture(actor,'advance-'+state.toLowerCase(),API+'/boxes/'+boxId+'/advance',next,
       b=>b?.to_state===state&&Object.keys(b).length===1);
-    linked=await readback();report.after=linked;save();checkLink(linked,boxId,placementId);
+    linked=await readback();report.after=linked;save();checkLink(linked,boxId,placementIds);
     check(linked.box[0].state===state&&linked.custody.some(e=>e.event_type==='STATE_TRANSITION'&&
       e.from_state===prior&&e.to_state===state&&e.actor_id),'G6_BOX_ADVANCE_PG_INVALID_'+state);
     prior=state;
