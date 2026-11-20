@@ -1953,6 +1953,31 @@
   [data-relay-return-create] button { justify-self: stretch; }
 }
 
+/* La vue exécution Hub est une grille : empêcher le contenu des ateliers
+   ouverts de réimposer la largeur minimale intrinsèque des tables au document.
+   Les tables larges défilent localement et restent entièrement opérables. */
+.kmc-operations-workspace[data-workspace-mode="execution"] {
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+.kmc-operations-workspace[data-workspace-mode="execution"] > *,
+.kmc-operations-workspace[data-workspace-mode="execution"] [data-hub-physical-details],
+.kmc-operations-workspace[data-workspace-mode="execution"] [data-supply-boxes] {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+.kmc-operations-workspace[data-workspace-mode="execution"] [data-hub-physical-details] {
+  width: 100%;
+  overflow: hidden;
+}
+.kmc-operations-workspace[data-workspace-mode="execution"] [data-hub-physical-details] .kmc-workspace-table-wrap {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 /* Hub uniquement : réduire le hero pour libérer le premier écran opérateur.
    N'affecte ni le cockpit Relais, ni le pilotage central. */
 body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="execution"] > .kmc-workspace-header {
