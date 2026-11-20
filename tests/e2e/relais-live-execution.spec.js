@@ -227,6 +227,28 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
     });
 
 
+    test('à faire maintenant : prochaine preuve et file active changent sans POST ni débordement', async ({page}) => {
+      const posts=[];
+      await mount(page,posts);
+      const guide=page.locator('[data-relay-active-guide]');
+      await expect(guide).toBeVisible();
+      await expect(guide.locator('[data-relay-guide-title]')).toHaveText('Contrôler les arrivages');
+      await expect(guide.locator('[data-relay-guide-volume]')).toHaveText('1 tâche(s) signalée(s)');
+      await expect(guide.locator('[data-relay-guide-hint]')).toContainText('quantités réellement reçues');
+      await page.locator('[data-relay-execution-jump="cash"]').click();
+      await expect(guide.locator('[data-relay-guide-title]')).toHaveText('Encaisser au relais');
+      await expect(guide.locator('[data-relay-guide-hint]')).toContainText('espèces réellement remises');
+      await page.locator('[data-relay-execution-jump="receive"]').click();
+      await expect(guide.locator('[data-relay-guide-title]')).toHaveText('Réceptionner les colis locaux');
+      await expect(guide.locator('[data-relay-guide-volume]')).toHaveText('2 tâche(s) signalée(s)');
+      await page.locator('[data-relay-execution-jump="collect"]').click();
+      await expect(guide.locator('[data-relay-guide-title]')).toHaveText('Remettre au client');
+      await expect(guide.locator('[data-relay-guide-hint]')).toContainText('code client complet');
+      expect(posts).toEqual([]);
+      const overflow=await page.evaluate(() => document.documentElement.scrollWidth-document.documentElement.clientWidth);
+      expect(overflow).toBeLessThanOrEqual(1);
+    });
+
     test('arrivages déjà réceptionnés : rien de déplié, historique disponible à la demande',async({page})=>{
       await mount(page,[],{shipments:ARCHIVED_SHIPMENTS,focus:'shipments'});
       await expect(page.locator('#relay-execution-shipments')).toBeVisible();
