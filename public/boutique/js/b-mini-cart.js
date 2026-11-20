@@ -29,7 +29,7 @@
 
 import { state }              from './b-store.js';
 import { cartQty, cartTotal } from './b-cart-core.js';
-import { optimizeImgUrl }     from './b-utils.js';
+import { optimizeImgUrl, fmtLocalLinesTotal } from './b-utils.js';
 import { bus }                from './b-bus.js';
 
 // ── Constantes ───────────────────────────────────────────────────────
@@ -292,7 +292,7 @@ function _render() {
   // Total + count
   const totalEl = _el.querySelector('.kmc__total');
   const countEl = _el.querySelector('.kmc__count');
-  if (totalEl) totalEl.textContent = _fmt(total);
+  if (totalEl) totalEl.textContent = fmtLocalLinesTotal(state.cart);
   if (countEl) countEl.textContent = qty === 1 ? '1 article' : `${qty} articles`;
 
   // Badge CTA
