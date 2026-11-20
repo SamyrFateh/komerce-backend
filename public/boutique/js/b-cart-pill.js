@@ -32,7 +32,8 @@ import { bus }                         from './b-bus.js';
 import { isDesktop }               from './b-scroll-owner.js';
 import { state }                       from './b-store.js';
 import { cartQty, cartTotal }          from './b-cart-core.js';
-import { fmtLocalProductPrice, fmtLocalLinesTotal, sanitize } from './b-utils.js';
+import { sanitize } from './b-utils.js';
+import { fmtLocalProductPrice, fmtLocalLinesTotal } from './b-market-price-format.js';
 
 // ─── Constantes ────────────────────────────────────────────────────────────
 const STORAGE_KEY = 'kmrc_pill_pos';
