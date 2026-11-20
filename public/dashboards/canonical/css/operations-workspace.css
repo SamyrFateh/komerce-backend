@@ -1981,3 +1981,32 @@ body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="execution"] > .
     padding: 9px 12px;
   }
 }
+
+/* Réception Hub : l'opérateur ne doit pas deviner un champ via son placeholder. */
+.kmc-operations-workspace[data-workspace-mode="execution"] .kmc-workspace-receive-field-label {
+  display: grid;
+  gap: 5px;
+  flex: 1 1 250px;
+  min-width: min(100%, 230px);
+  color: #26394d;
+  font-size: 12px;
+  font-weight: 700;
+}
+.kmc-operations-workspace[data-workspace-mode="execution"] .kmc-workspace-receive-field-label[hidden] { display: none; }
+.kmc-operations-workspace[data-workspace-mode="execution"] .kmc-workspace-receive-field-label input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  font-weight: 500;
+}
+.kmc-operations-workspace[data-workspace-mode="execution"] .kmc-workspace-receive-qty {
+  width: 94px;
+  min-width: 86px;
+  min-height: 38px;
+}
+.kmc-operations-workspace[data-workspace-mode="execution"] .kmc-workspace-receive-scanner input:not([type="checkbox"]) {
+  min-height: 40px;
+  max-width: 100%;
+}
