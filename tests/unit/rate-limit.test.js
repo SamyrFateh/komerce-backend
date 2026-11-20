@@ -212,3 +212,65 @@ describe('rate-limit — avec REDIS_URL', () => {
     await new Promise((resolve) => setImmediate(resolve));
   });
 });
+
+
+describe('UX1 — identité du quota global sans affaiblir les protections IP', () => {
+  const secret = 'ux1-unit-jwt-secret';
+  const jwt = require('jsonwebtoken');
+  const session = overrides => jwt.sign({
+    id: 'hub-user-1', token_use: 'session', jti: 'ux1-jti-1',
+    auth_time: Math.floor(Date.now() / 1000), amr: ['password'], ...overrides,
+  }, secret, { algorithm: 'HS256', expiresIn: '1h' });
+
+  it('partage le quota entre onglets du même utilisateur et isole deux comptes sous la même IP', () => {
+    const { globalRateLimitKey } = loadFreshModule({
+      REDIS_URL: '', NODE_ENV: 'test', DISABLE_RATE_LIMIT: '0', JWT_SECRET: secret,
+    });
+    const req = token => ({
+      originalUrl: '/api/admin/workspaces/operations/market/CG?view=supply',
+      method: 'GET', ip: '203.0.113.7',
+      headers: { authorization: 'Bearer ' + token },
+    });
+    expect(globalRateLimitKey(req(session()))).toBe('user:hub-user-1');
+    expect(globalRateLimitKey(req(session()))).toBe('user:hub-user-1');
+    expect(globalRateLimitKey(req(session({ id: 'hub-user-2' })))).toBe('user:hub-user-2');
+    expect(globalRateLimitKey({ ...req(session()), cookies: { kmrc_jwt: session({ id: 'cookie-user' }) } }))
+      .toBe('user:cookie-user');
+  });
+
+  it('garde une clé IP pour requête anonyme, JWT invalide, expiré ou scoped', () => {
+    const { globalRateLimitKey } = loadFreshModule({
+      REDIS_URL: '', NODE_ENV: 'test', DISABLE_RATE_LIMIT: '0', JWT_SECRET: secret,
+    });
+    const req = token => ({
+      originalUrl: '/api/admin/workspaces/operations/market/CG/supply',
+      method: 'GET', ip: '203.0.113.7',
+      headers: token ? { authorization: 'Bearer ' + token } : {},
+    });
+    const expected = 'ip:203.0.113.7';
+    expect(globalRateLimitKey(req())).toBe(expected);
+    expect(globalRateLimitKey(req('forged.invalid.token'))).toBe(expected);
+    expect(globalRateLimitKey(req(session({ scope: 'otp' })))).toBe(expected);
+    const expired = jwt.sign({
+      id: 'hub-user-1', token_use: 'session', jti: 'expired',
+      auth_time: 12345, amr: ['password'],
+      exp: Math.floor(Date.now() / 1000) - 5,
+    }, secret, { algorithm: 'HS256' });
+    expect(globalRateLimitKey(req(expired))).toBe(expected);
+  });
+
+  it('conserve les mutations, login et OTP sur quota IP même avec une session valide', () => {
+    const { globalRateLimitKey } = loadFreshModule({
+      REDIS_URL: '', NODE_ENV: 'test', DISABLE_RATE_LIMIT: '0', JWT_SECRET: secret,
+    });
+    const token = session();
+    const request = (method, originalUrl) => ({
+      method, originalUrl, ip: '203.0.113.7',
+      headers: { authorization: 'Bearer ' + token },
+    });
+    expect(globalRateLimitKey(request('POST', '/api/admin/orders/close'))).toBe('ip:203.0.113.7');
+    expect(globalRateLimitKey(request('GET', '/api/auth/login'))).toBe('ip:203.0.113.7');
+    expect(globalRateLimitKey(request('POST', '/api/auth/otp'))).toBe('ip:203.0.113.7');
+    expect(globalRateLimitKey(request('GET', '/api/administer/something'))).toBe('ip:203.0.113.7');
+  });
+});
