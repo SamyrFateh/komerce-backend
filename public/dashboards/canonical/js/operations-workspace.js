@@ -1204,7 +1204,9 @@
           };
           const selector = targets[target];
           const anchor = (selector && details.querySelector(selector)) || details;
-          anchor.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
+          // Navigation opérateur déterministe : ne pas lancer une animation
+          // avant le prochain clic Chromium (Sacs -> KOM-BOX -> Expéditions).
+          anchor.scrollIntoView?.({ block: 'start', behavior: 'auto' });
         },
       });
       } catch (error) {
