@@ -66,6 +66,8 @@
 
 **G6-RECERT-UX — M01 recertifié après les lots ergonomie Hub, Direction, Expéditions et Relais, et MarketScope (Opus, 20/11) : PASS 15/15 sur les 3 marchés**, SHA unique `7fb8898f`. KM KAWCH30 (run 44768493817), CM KWSQQC9 (run 44769353001), CG KVS9FY3 (run 44770379133). Lots couverts : #4703, #4705, #4707, #4708, #4712, #4722. Synthèse : #4550 (commentaire 7044481701). **Reste :** revue visuelle Kanban/Direction, puis GO du propriétaire pour les 46 scénarios.
 
+**G6-C1 — M02 (stock local) sur le socle Golden (Sonnet, 20/11)** : code fusionné (#4728) : `G6_CANONICAL_SCENARIO` ∈ {M01, M02}, séquence BUYER → RELAY_CASH → LOCAL_RELAY_AVAILABLE → LOCAL_CLIENT_PICKUP (aucun Hub/PO/transport, assertions négatives PG, O-FIN/O-DOC/O-NOTIF lecture seule), titres `[staging-op] g6-dynamic-fresh-full-M02-{KM|CM|CG}`. **Aucun run staging** ; prochaine action Opus : vérifier un lot local ENABLED par marché (déclaré par l'écran W3, jamais en SQL), puis lancer les 3 runs.
+
 **G6-RECERT — M01 recertifié après G6-SUIVIS et Ergonomie (Opus, 19/11) : PASS 15/15 sur les 3 marchés**, SHA unique `a9a625c9`, oracles G6-F renforcés. KM KNS1G99 (#4635), CM KX87NSI (#4636), CG K50ID0Q (#4637). Lots couverts : #4607, #4609, #4610, #4611, #4612, #4630, #4632, #4633, #4634. **Reste avant les 46 scénarios :** inventaire puis nettoyage par l'écran des commandes orphelines (lot 5, GO du propriétaire), prix de référence KPR-000165 (point 2), puis GO du propriétaire.
 
 **G6-MARKET — M01 RÉPÉTABLE SUR KM, CM ET CG (Opus)** : 3 runs consécutifs à 15/15 par marché.
