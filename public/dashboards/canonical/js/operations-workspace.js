@@ -424,7 +424,7 @@
     scannerInput.type = 'text';
     scannerInput.autocomplete = 'off';
     scannerInput.className = 'kmc-workspace-receive-scan-input';
-    scannerInput.placeholder = 'Scanner EAN / code fournisseur puis Entrée';
+    scannerInput.placeholder = 'EAN, GTIN ou code fournisseur — Entrée';
     scannerInput.setAttribute('aria-label', 'Scanner le code physique de la référence fournisseur');
     scannerLabel.appendChild(scannerInput);
     scannerPanel.appendChild(scannerLabel);
@@ -437,7 +437,7 @@
     manualProof.type = 'text';
     manualProof.maxLength = 500;
     manualProof.className = 'kmc-workspace-receive-manual-proof';
-    manualProof.placeholder = 'Mode dégradé : justification de la saisie manuelle (6 caractères min.)';
+    manualProof.placeholder = 'Ex. scanner indisponible, contrôle visuel';
     manualProof.setAttribute('aria-label', 'Justification de la réception en saisie manuelle');
     manualProof.setAttribute('data-receive-manual-proof', '');
     manualProof.hidden = true;
@@ -449,7 +449,11 @@
     manualToggle.setAttribute('aria-label', 'Saisie manuelle : provenance MANUAL avec justification obligatoire');
     manualToggleLabel.appendChild(manualToggle);
     scannerPanel.appendChild(manualToggleLabel);
-    scannerPanel.appendChild(manualProof);
+    const manualProofLabel = text(doc, 'label', 'kmc-workspace-receive-field-label',
+      'Justification manuelle · obligatoire (6 caractères minimum)');
+    manualProofLabel.hidden = true;
+    manualProofLabel.appendChild(manualProof);
+    scannerPanel.appendChild(manualProofLabel);
     card.appendChild(scannerPanel);
 
     const wrap = doc.createElement('div');
@@ -498,7 +502,10 @@
     tracking.maxLength = 120;
     tracking.placeholder = 'Suivi / référence du colis (facultatif)';
     tracking.setAttribute('aria-label', 'Suivi ou référence du colis reçu');
-    footer.appendChild(tracking);
+    const trackingLabel = text(doc, 'label', 'kmc-workspace-receive-field-label',
+      'Suivi ou référence du colis · facultatif');
+    trackingLabel.appendChild(tracking);
+    footer.appendChild(trackingLabel);
     const hint = text(doc, 'span', 'kmc-workspace-muted kmc-workspace-receive-hint', 'Saisissez la quantité réellement reçue. Aucune quantité n’est préremplie.');
     footer.appendChild(hint);
     const button = makeActionButton(doc, 'Enregistrer la réception', 'receive-supplier');
@@ -545,6 +552,7 @@
     manualProof.addEventListener('input', sync);
     manualToggle.addEventListener('change', () => {
       manualProof.hidden = !manualToggle.checked;
+      manualProofLabel.hidden = !manualToggle.checked;
       scannerResult.textContent = manualToggle.checked
         ? 'Saisie manuelle active : provenance MANUAL, justification obligatoire.'
         : 'Scanner la référence avant de déclarer sa quantité reçue.';
