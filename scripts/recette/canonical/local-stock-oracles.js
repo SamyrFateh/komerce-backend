@@ -27,7 +27,7 @@ async function assertNoHubOrTransport(db,orderId,phase){
  if(expect===undefined)throw Error('G6_M02_PHASE_UNKNOWN');
  // 'any' : contrôle de non-régression à tout moment (zéro Hub/PO/transport, provenance locale) ; les autres phases fixent l'état attendu.
  if(expect!==null&&parcels!==expect)bad.push('parcel_count_'+parcels);
- if(phase!=='cash'){
+ if(phase==='available'||phase==='collected'){
   const want=phase==='collected'?'collected':'available',qty=lines.reduce((n,l)=>n+Number(l.quantity),0);
   if(s.order.status!==want||s.parcels[0].status!==want)bad.push('status_not_'+want);
   if(lines.some(l=>Number(l.qty_received)!==Number(l.quantity)||
