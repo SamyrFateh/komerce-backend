@@ -159,3 +159,26 @@ test('UX1 : veille Hub GET seule, pas de repaint pendant formulaire et sélectio
   expect(SOURCE).toContain('context.hubRefresh.signature = supplySignature(context.dossier)');
   expect(SOURCE).toContain('watchHubSupply();');
 });
+
+
+test('UX1 : backoff exponentiel des lectures 429/5xx et Retry-After respecté', () => {
+  expect(workspace.hubPollDelayMs(0)).toBe(30000);
+  expect(workspace.hubPollDelayMs(1)).toBe(60000);
+  expect(workspace.hubPollDelayMs(2)).toBe(120000);
+  expect(workspace.hubPollDelayMs(5)).toBe(300000);
+  expect(workspace.hubPollDelayMs(1, '180')).toBe(180000);
+  expect(workspace.hubPollDelayMs(1, 'Fri, 20 Nov 2026 10:05:00 GMT', Date.parse('2026-11-20T10:00:00Z'))).toBe(300000);
+  expect(workspace.hubPollDelayMs(1, 'invalid')).toBe(60000);
+  expect(SOURCE).toContain('await reload({ freshDossier: fresh });');
+  expect(SOURCE).toContain('if (supplySignature(fresh) !== watch.signature)');
+});
+
+test('UX1 : jsonRequest propage le Retry-After en cas de réponse 429', async () => {
+  const fetch = jest.fn().mockResolvedValue({
+    ok: false, status: 429,
+    headers: { get: jest.fn(() => '120') },
+    json: jest.fn().mockResolvedValue({ error: 'rate limited' }),
+  });
+  await expect(workspace.jsonRequest(fetch, '/api/admin/workspaces/operations/market/CG/supply'))
+    .rejects.toMatchObject({ status: 429, retryAfter: '120' });
+});
