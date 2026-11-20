@@ -24,7 +24,8 @@ describe('g6 local stock declare',()=>{
  test('quantity is 10 and a single receipt mutation is allowed',()=>{
   expect(mod.QTY).toBe(10);
   expect(src).toContain('calls++===0');
-  expect((src.match(/humanClick\(/g)||[]).length).toBe(1);
+  expect((src.match(/humanClick\(/g)||[]).length).toBe(2); // déclaration puis « Exposer », une mutation chacun
+  expect(src).toContain('put++===0');
   expect(src).toContain("mutations:1");
  });
  test('no SQL write and no raw gesture or direct HTTP',()=>{
@@ -37,7 +38,7 @@ describe('g6 local stock declare',()=>{
  });
  test('candidate selection: SCREEN_MISSING verdicts and ENABLED stock preference',()=>{
   expect(mod.pickCandidate([]).verdict).toBe('SCREEN_MISSING_PRICE_OR_EXPOSURE');
-  expect(mod.pickCandidate([{id:'a',stock_exposure:'DISABLED'},{id:'b',stock_exposure:null}]).verdict).toBe('SCREEN_MISSING_STOCK_EXPOSURE');
+  expect(mod.pickCandidate([{id:'a',stock_exposure:'DISABLED'},{id:'b',stock_exposure:null}]).candidate.id).toBe('a');
   expect(mod.pickCandidate([{id:'a',stock_exposure:'DISABLED'},{id:'b',stock_exposure:'ENABLED'}]).candidate.id).toBe('b');
  });
  test('workflow is owner-only, staging-only, per-market titles, mono-market secrets',()=>{

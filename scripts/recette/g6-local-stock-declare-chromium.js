@@ -33,7 +33,7 @@ const ownerStagingGuard=e=>e.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&e
 // Lecture seule : produit éligible (prix LOCAL_ACTIVE, exposition produit, SKU actif) ; ligne de stock du marché préférée ENABLED.
 async function eligible(onlyId=null){
  const {rows}=await db.query(`
-  SELECT p.id,p.product_ref,ls.commercial_exposure AS stock_exposure,COALESCE(ls.qty_physical,0)::int AS qty_physical,
+  SELECT p.id,p.product_ref,p.name,ls.commercial_exposure AS stock_exposure,COALESCE(ls.qty_physical,0)::int AS qty_physical,
    COALESCE(ls.qty_physical-(SELECT SUM(a.quantity) FROM local_stock_allocations a WHERE a.local_stock_id=ls.id
     AND a.consumed_at IS NULL AND a.released_at IS NULL),COALESCE(ls.qty_physical,0))::int AS available
   FROM products p JOIN markets m ON m.code=$1
@@ -49,8 +49,8 @@ async function eligible(onlyId=null){
 const readAvailable=async id=>(await eligible(id))[0];
 function pickCandidate(rows){
  if(!rows.length)return {verdict:'SCREEN_MISSING_PRICE_OR_EXPOSURE'};
- const c=rows.find(r=>r.stock_exposure==='ENABLED');
- return c?{candidate:c}:{verdict:'SCREEN_MISSING_STOCK_EXPOSURE'};
+ // Ligne déjà exposée préférée ; sinon la déclaration crée/complète une ligne masquée, exposée ensuite par le bouton « Exposer » du même écran.
+ return {candidate:rows.find(r=>r.stock_exposure==='ENABLED')||rows[0]};
 }
 async function main(){
  let browser;
@@ -89,10 +89,31 @@ async function main(){
    const res=await pending;
    check(res.status()===201&&calls===1&&actor.blocked.length===0,'G6_LOCAL_STOCK_RECEIPT_REJECTED_'+res.status());
    report.events.push({key:'local-stock-receipt',http:201,role:'market_operator',ui:true,mutations:1});save();
+   if((await readAvailable(prod.id))?.stock_exposure!=='ENABLED'){
+    // 2e geste distinct, une seule mutation : bouton « Exposer » de la carte stock du produit.
+    const expUrl=BASE+'/api/markets/'+MK.code+'/local-stock/'+encodeURIComponent(prod.id)+'/exposure';let put=0;
+    await actor.page.route(expUrl,route=>{
+     const req=route.request();let body;try{body=req.postDataJSON()}catch(_){}
+     if(req.method()==='PUT'&&put++===0&&body?.commercial_exposure==='ENABLED')return route.continue();
+     actor.blocked.push({method:req.method(),path:'/local-stock/:id/exposure'});return route.abort('blockedbyclient');
+    });
+    await humanGoto(actor.page,'/dashboards/canonical/market-autonomy.html?market='+MK.code,{waitUntil:'domcontentloaded'});
+    const card=actor.page.locator('[data-market-local-offer] .kmc-team-member')
+     .filter({has:actor.page.locator('strong',{hasText:prod.name||prod.id})})
+     .filter({has:actor.page.locator('small',{hasText:'en stock'})});
+    try{await card.first().waitFor({state:'visible',timeout:30000})}
+    catch(_){report.verdict='SCREEN_MISSING_STOCK_EXPOSURE';save();process.exitCode=3;return}
+    check(await card.count()===1,'G6_LOCAL_STOCK_CARD_NOT_UNIQUE');
+    const waitPut=actor.page.waitForResponse(r=>r.url()===expUrl&&r.request().method()==='PUT',{timeout:30000});
+    await humanClick(null,card.getByRole('button',{name:'Exposer',exact:true}));
+    const er=await waitPut;
+    check(er.ok()&&put===1&&actor.blocked.length===0,'G6_LOCAL_STOCK_EXPOSE_REJECTED_'+er.status());
+    report.events.push({key:'local-stock-expose',http:er.status(),role:'market_operator',ui:true,mutations:1});save();
+   }
   }finally{await actor.ctx.close()}
   const after=await readAvailable(prod.id);
   report.after={qty_physical:after&&after.qty_physical,available:after&&after.available};
-  check(after&&after.available===prod.available+QTY&&after.qty_physical===prod.qty_physical+QTY,'G6_LOCAL_STOCK_READBACK_MISMATCH');
+  check(after&&after.stock_exposure==='ENABLED'&&after.available===prod.available+QTY&&after.qty_physical===prod.qty_physical+QTY,'G6_LOCAL_STOCK_READBACK_MISMATCH');
   report.verdict='G6_LOCAL_STOCK_DECLARED_SIMULATED_CHROMIUM_PG_PASS';save();
  }catch(e){report.error=fullError(e);save();process.exitCode=2}
  finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end();console.log(JSON.stringify(report))}
