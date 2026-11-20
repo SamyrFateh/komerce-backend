@@ -1,0 +1,83 @@
+# Owner-only: produit manuel Fournisseur central Hub par les écrans (staging uniquement), idempotent.
+name: G6 central Hub product (staging only)
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: komerce-g6-canonical-real-transaction
+  cancel-in-progress: false
+jobs:
+  create:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      (github.event.issue.title == '[staging-op] g6-central-hub-product-KM' ||
+       github.event.issue.title == '[staging-op] g6-central-hub-product-CM' ||
+       github.event.issue.title == '[staging-op] g6-central-hub-product-CG')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      PGOPTIONS: '-c default_transaction_read_only=on'
+      G6_TARGET_MARKET: ${{ endsWith(github.event.issue.title, '-CM') && 'CM' || endsWith(github.event.issue.title, '-CG') && 'CG' || 'KM' }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Pin immutable main SHA for a real staging deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          head="$(git rev-parse HEAD)"
+          live="$(curl -fsS "$STAGING_BASE_URL/health/version" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(String(JSON.parse(s).commit||"")))')"
+          expected="$head"
+          # Railway saute (SKIPPED) les merges hors watchPatterns de railway.toml : on épingle alors
+          # le SHA servi, uniquement si aucun fichier modifié depuis ne relève de ces watchPatterns.
+          if [ "$live" != "$head" ] && [[ "$live" =~ ^[0-9a-f]{40}$ ]] && git merge-base --is-ancestor "$live" "$head"; then
+            if git diff --name-only "$live" "$head" | node -e '
+              const fs=require("fs");const t=fs.readFileSync("railway.toml","utf8");
+              const m=/watchPatterns\s*=\s*\[([\s\S]*?)\]/.exec(t);if(!m)process.exit(1);
+              const pats=[...m[1].matchAll(/"([^"]+)"/g)].map(x=>x[1]);
+              const hit=f=>pats.some(p=>p.endsWith("/**")?f.startsWith(p.slice(0,-2)):f===p);
+              const files=fs.readFileSync(0,"utf8").split("\n").filter(Boolean);
+              process.exit(files.length&&!files.some(hit)?0:1)'; then
+              expected="$live"
+              echo "Undeployed-only drift: pinning served SHA $live (main $head)"
+            fi
+          fi
+          echo "E2E_EXPECTED_DEPLOY_SHA=$expected" >> "$GITHUB_ENV"
+      - name: Verify actual Railway staging and database identity before any fixture
+        run: |
+          set -euo pipefail
+          node scripts/recette/target-guard.js
+          node -e '(async()=>{const v=await(await fetch(process.env.STAGING_BASE_URL+"/health/version")).json();if(v.commit!==process.env.E2E_EXPECTED_DEPLOY_SHA)throw Error("G6_DYNAMIC_STAGING_SHA_DRIFT")})().catch(e=>{console.error(e.message);process.exit(1)})'
+      - name: Install Chromium headless for actual UI gestures
+        run: npx playwright install chromium --only-shell
+      - name: Create the central Hub manual product through the screens (one mutation per gesture)
+        run: node scripts/recette/g6-central-hub-product-chromium.js
+      - name: Preserve report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g6-central-hub-product-${{ github.run_id }}
+          path: test-results/g6-central-hub-product/
+          retention-days: 21
+          if-no-files-found: warn
