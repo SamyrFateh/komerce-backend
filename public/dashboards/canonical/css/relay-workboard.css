@@ -1302,3 +1302,55 @@ body.kmc-shell-v4 .kmc-operations-workspace[data-relay-counter="true"] > .kmc-wo
 }
 .kmc-domain-cockpit .kmc-relay-quick-action:focus-visible {outline:2px solid #267548;outline-offset:2px;}
 @media(max-width:700px){.kmc-domain-cockpit .kmc-relay-quick-actions{grid-template-columns:minmax(0,1fr);}}
+
+/* Poste Relais · une seule file active, une seule action physique propriétaire.
+   Le guide explique le geste ; seul l'atelier situé dessous exécute le POST. */
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-guided-task {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 16px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 12px 15px;
+  border-radius: 10px;
+  border: 1px solid #d5dfd8;
+  border-left: 4px solid #227554;
+  background: #f7faf8;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-guided-eyebrow {
+  grid-column: 1 / -1;
+  color: #446b53;
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: .045em;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-guided-title {
+  min-width: 0;
+  color: #1c3d2e;
+  font-size: 15px;
+  line-height: 1.3;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-guided-volume {
+  font-size: 11px;
+  font-weight: 750;
+  color: #496a55;
+  white-space: normal;
+  text-align: right;
+}
+.kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-guided-hint {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #52695c;
+}
+@media(max-width:760px) {
+  .kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-guided-task {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .kmc-operations-workspace[data-workspace-mode="relay-execution"] .kmc-relay-guided-volume {
+    text-align: left;
+  }
+}
