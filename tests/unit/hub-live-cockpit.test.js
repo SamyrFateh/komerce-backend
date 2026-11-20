@@ -68,3 +68,46 @@ describe('G6 ergonomie UX3 — sélection explicite et alertes métier', () => {
     expect(source).toContain('if (!known && !inTodo) state.sel = null;');
   });
 });
+
+describe('Hub UX guidée — sans nouvel acte métier', () => {
+  const cockpit = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/hub-live-cockpit.js'), 'utf8');
+  const operations = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/operations-workspace.js'), 'utf8');
+  const opsCss = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/css/operations-workspace.css'), 'utf8');
+
+  test('un seul CTA actif est déplacé, jamais recréé ou redirigé vers un nouveau writer', () => {
+    expect(cockpit).toContain('const primaryRow = Array.from(list.children).find');
+    expect(cockpit).toContain('nextAction.appendChild(primaryRow)');
+    expect(cockpit).toContain("right.insertBefore(nextAction, right.children[1]);");
+    expect(cockpit).toContain("nextAction.setAttribute('data-hlc-next-action', '');");
+  });
+
+  test('ateliers accessibles, détails ouverts, raccourci réception vers le véritable onglet', () => {
+    expect(operations).toContain('secondary.open = true');
+    expect(operations).toContain("secondary.setAttribute('data-hub-physical-details', '');");
+    expect(operations).toContain("context.view = 'reception';");
+    expect(operations).toContain("context.renderCurrent();");
+    expect(cockpit).toContain("['reception', 'Réception fournisseur']");
+    expect(cockpit).toContain("['bags', 'Préparer les sacs']");
+    expect(cockpit).toContain("['boxes', 'KOM-BOX']");
+    expect(cockpit).toContain("['shipments', 'Expéditions']");
+  });
+
+  test('français métier seulement dans le rendu ; preuves et droits canoniques maintenus', () => {
+    expect(cockpit).toContain("PICKED: 'Prélevé', PACKED: 'Emballé', DISPATCHED: 'Prêt au départ'");
+    expect(cockpit).toContain("Ordre d’arrivée n°");
+    expect(cockpit).toContain("Signification des états");
+    expect(operations).toContain('manualProofLabel.hidden = !manualToggle.checked');
+    expect(operations).toContain("data-receive-line");
+    expect(operations).toContain("data-hub-box-scan");
+    expect(opsCss).toContain('.kmc-workspace-receive-field-label');
+    expect(css).toContain('.hlc-next-action .hlc-btn.is-primary');
+  });
+});
+
+test('Hub UX : le conteneur data-hlc-actions englobe les actions du fil et le seul CTA déplacé', () => {
+  const js = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/hub-live-cockpit.js'), 'utf8');
+  expect(js).toContain("rootEl.setAttribute('data-hlc-actions', '');");
+  expect(js).not.toContain("list.setAttribute('data-hlc-actions', '');");
+  expect(js).toContain('nextAction.appendChild(primaryRow)');
+  expect(js).toContain('rightP.appendChild(list)');
+});

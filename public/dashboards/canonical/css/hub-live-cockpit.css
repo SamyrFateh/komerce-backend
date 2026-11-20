@@ -155,3 +155,49 @@ button.hlc-chip.is-link { width: fit-content; flex: 0 0 auto; cursor: pointer; b
 .hlc-po-history-summary {cursor:pointer;font-size:13px;font-weight:800;color:#293c4b;padding:5px 1px;}
 .hlc-po-history-summary:focus-visible {outline:2px solid #267548;outline-offset:2px;}
 .hlc-po-history > .hlc-card {margin-top:8px;background:#fff;}
+
+/* Hub ergonomie guidée : le vrai CTA métier est dans la colonne physique,
+   sans dupliquer le writer ou la protection anti-double-clic. */
+.hlc-next-action {
+  border: 1px solid #f0bd82;
+  border-radius: 10px;
+  background: #fff8f0;
+  padding: 12px;
+  display: grid;
+  gap: 9px;
+}
+.hlc-next-action-title { font-size: 13px; color: #873f06; }
+.hlc-next-action .hlc-action-row { display: grid; gap: 7px; }
+.hlc-next-action .hlc-btn.is-primary {
+  width: 100%;
+  min-height: 42px;
+  text-align: center;
+  background: #162b4b;
+  border-color: #162b4b;
+}
+.hlc-next-action .hlc-reason { color: #5b6577; }
+.hlc-physical-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+.hlc-physical-shortcuts .hlc-btn.is-link {
+  text-decoration: none;
+  border: 1px solid #d7e0e9;
+  background: #f7fafc;
+  border-radius: 7px;
+  color: #173450;
+  padding: 9px 8px;
+  min-height: 42px;
+  width: 100%;
+  text-align: center;
+}
+.hlc-physical-shortcuts .hlc-btn.is-link:hover { border-color: #8baccb; background: #eef4f9; }
+.hlc-physical-shortcuts .hlc-btn.is-link:focus-visible { outline: 2px solid #ce7327; outline-offset: 2px; }
+.hlc-legend-title { font-size: 11px; width: 100%; color: #394d62; }
+.kmc-hub-physical-secondary[open] { background: #fff; border-color: #ccd8e3; }
+.kmc-hub-physical-secondary > summary { cursor: pointer; }
+@media (max-width: 760px) {
+  .hlc-next-action { padding: 10px; }
+  .hlc-physical-shortcuts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

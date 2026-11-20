@@ -424,7 +424,7 @@
     scannerInput.type = 'text';
     scannerInput.autocomplete = 'off';
     scannerInput.className = 'kmc-workspace-receive-scan-input';
-    scannerInput.placeholder = 'Scanner EAN / code fournisseur puis Entrée';
+    scannerInput.placeholder = 'EAN, GTIN ou code fournisseur — Entrée';
     scannerInput.setAttribute('aria-label', 'Scanner le code physique de la référence fournisseur');
     scannerLabel.appendChild(scannerInput);
     scannerPanel.appendChild(scannerLabel);
@@ -437,7 +437,7 @@
     manualProof.type = 'text';
     manualProof.maxLength = 500;
     manualProof.className = 'kmc-workspace-receive-manual-proof';
-    manualProof.placeholder = 'Mode dégradé : justification de la saisie manuelle (6 caractères min.)';
+    manualProof.placeholder = 'Ex. scanner indisponible, contrôle visuel';
     manualProof.setAttribute('aria-label', 'Justification de la réception en saisie manuelle');
     manualProof.setAttribute('data-receive-manual-proof', '');
     manualProof.hidden = true;
@@ -449,7 +449,11 @@
     manualToggle.setAttribute('aria-label', 'Saisie manuelle : provenance MANUAL avec justification obligatoire');
     manualToggleLabel.appendChild(manualToggle);
     scannerPanel.appendChild(manualToggleLabel);
-    scannerPanel.appendChild(manualProof);
+    const manualProofLabel = text(doc, 'label', 'kmc-workspace-receive-field-label',
+      'Justification manuelle · obligatoire (6 caractères minimum)');
+    manualProofLabel.hidden = true;
+    manualProofLabel.appendChild(manualProof);
+    scannerPanel.appendChild(manualProofLabel);
     card.appendChild(scannerPanel);
 
     const wrap = doc.createElement('div');
@@ -498,7 +502,10 @@
     tracking.maxLength = 120;
     tracking.placeholder = 'Suivi / référence du colis (facultatif)';
     tracking.setAttribute('aria-label', 'Suivi ou référence du colis reçu');
-    footer.appendChild(tracking);
+    const trackingLabel = text(doc, 'label', 'kmc-workspace-receive-field-label',
+      'Suivi ou référence du colis · facultatif');
+    trackingLabel.appendChild(tracking);
+    footer.appendChild(trackingLabel);
     const hint = text(doc, 'span', 'kmc-workspace-muted kmc-workspace-receive-hint', 'Saisissez la quantité réellement reçue. Aucune quantité n’est préremplie.');
     footer.appendChild(hint);
     const button = makeActionButton(doc, 'Enregistrer la réception', 'receive-supplier');
@@ -545,6 +552,7 @@
     manualProof.addEventListener('input', sync);
     manualToggle.addEventListener('change', () => {
       manualProof.hidden = !manualToggle.checked;
+      manualProofLabel.hidden = !manualToggle.checked;
       scannerResult.textContent = manualToggle.checked
         ? 'Saisie manuelle active : provenance MANUAL, justification obligatoire.'
         : 'Scanner la référence avant de déclarer sa quantité reçue.';
@@ -787,7 +795,7 @@
       rootNode,
       ui,
       'Hub · Réception fournisseur',
-      'Enregistrez ce qui est physiquement arrivé au Hub. Le statut fournisseur (par exemple SHIPPED) n’est jamais une réception ; les réceptions partielles sont acceptées.'
+      'Enregistrez uniquement les quantités physiquement arrivées au Hub. La mention « expédié par le fournisseur » ne prouve pas une réception ; les réceptions partielles sont acceptées.'
     );
     // Accessible même sans PO en attente : c’est précisément le cas d’un colis à rapprocher.
     slot.appendChild(createUnmanifestedArrivalCard(doc, context));
@@ -797,7 +805,7 @@
     }
     const orders = (context.receivable && context.receivable.purchase_orders) || [];
     if (!orders.length) {
-      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune Purchase Order en attente de réception.'));
+      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun bon fournisseur en attente de réception.'));
       return;
     }
     orders.forEach(po => slot.appendChild(createReceptionCard(doc, context, po)));
@@ -1181,9 +1189,22 @@
           const order = (d.orders || []).find(row => String(row.id) === String(orderId));
           if (order) showSourcingResolution({ id: order.id, reference: order.reference, items: order.items || [] });
         },
-        openPhysical: () => {
+        openReception: () => {
+          context.view = 'reception';
+          context.renderCurrent();
+        },
+        openPhysical: (target = 'all') => {
           const details = physicalDetails();
-          if (details) { details.open = true; details.scrollIntoView?.({ block: 'start', behavior: 'smooth' }); }
+          if (!details) return;
+          details.open = true;
+          const targets = {
+            bags: '[data-hub-bag-preparation]',
+            boxes: '[data-supply-box-create]',
+            shipments: '[data-supply-shipment-bar]',
+          };
+          const selector = targets[target];
+          const anchor = (selector && details.querySelector(selector)) || details;
+          anchor.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
         },
       });
       } catch (error) {
@@ -1575,7 +1596,10 @@
     const secondary = doc.createElement('details');
     secondary.className = 'kmc-hub-physical-secondary';
     secondary.setAttribute('data-hub-physical-details', '');
-    secondary.appendChild(text(doc, 'summary', '', 'Détails physiques exhaustifs · réceptions, sacs, KOM-BOX, expéditions'));
+    // Atelier opérationnel visible par défaut : le repli est réservé aux détails
+    // et ne doit jamais dissimuler les gestes attendus au Golden M01.
+    secondary.open = true;
+    secondary.appendChild(text(doc, 'summary', '', 'Ateliers physiques · Sacs, KOM-BOX et expéditions'));
     [...rootNode.children].slice(secondaryStart).forEach(node => secondary.appendChild(node));
     rootNode.appendChild(secondary);
   }
