@@ -111,3 +111,13 @@ test('Hub UX : le conteneur data-hlc-actions englobe les actions du fil et le se
   expect(js).toContain('nextAction.appendChild(primaryRow)');
   expect(js).toContain('rightP.appendChild(list)');
 });
+
+test('la file de la direction Hub garde une hauteur réservée et des groupes lisibles', () => {
+  const css = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/css/hub-live-cockpit.css'), 'utf8');
+  const src = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/hub-workstation.js'), 'utf8');
+  expect(css).toContain('.hlc-director-body {\n  height: 220px;');
+  expect(css).toContain('.hlc-director-group-heading');
+  expect(css).toContain('.hlc-director-task.is-readonly');
+  expect(src).toContain("group.setAttribute('data-hub-director-group',spec.key)");
+  expect(src).toContain("task.viewer_can_act===false");
+});

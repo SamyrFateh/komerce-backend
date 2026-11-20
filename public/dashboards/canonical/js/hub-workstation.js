@@ -274,27 +274,70 @@
         body.appendChild(make(doc,'p','hlc-director-empty','Aucune tâche Hub en attente sur les marchés actifs.'));
         return payload;
       }
+      // Regroupement visuel d'une projection déjà autorisée côté serveur :
+      // engagements et paiements sont DEUX décisions différentes. Aucune mutation ici.
+      const groupSpecs = [
+        { key:'commitment', title:'1 · Engagements à valider', hint:'Autoriser l’achat fournisseur avant soumission' },
+        { key:'payment', title:'2 · Paiements à autoriser', hint:'Autorisation distincte du paiement effectivement exécuté' },
+        { key:'arbitrage', title:'3 · Arbitrages et anomalies', hint:'Situations bloquées nécessitant une décision' },
+        { key:'execution', title:'4 · Suivi de l’exécution', hint:'Gestes confiés aux agents du Hub' },
+      ];
+      const groupOf = task => task.kind === 'AUTHORIZE_COMMITMENT' ? 'commitment'
+        : task.kind === 'AUTHORIZE_PAYMENT' ? 'payment'
+          : task.owner === 'responsable_hub' ? 'arbitrage' : 'execution';
+      const groups = new Map(groupSpecs.map(spec => [spec.key, []]));
+      payload.tasks.forEach(task => groups.get(groupOf(task)).push(task));
+      const decisionCount = ['commitment','payment','arbitrage'].reduce((n,key) => n+groups.get(key).length,0);
+      const intro=make(doc,'div','hlc-director-intro');
+      intro.appendChild(make(doc,'strong','',decisionCount+' décision(s) à examiner'));
+      intro.appendChild(make(doc,'span','',
+        'Engagement, autorisation de paiement et réalisation financière restent séparés. Les liens ouvrent le dossier sans valider à votre place.'));
+      body.appendChild(intro);
       const list=make(doc,'div','hlc-director-list');
       list.setAttribute('data-hub-director-list','');
-      for(const task of payload.tasks) {
-        const row=make(doc,'div','hlc-director-task'+(task.overdue?' is-overdue':''));
-        row.setAttribute('data-hub-director-task',safe(task.kind||'TASK'));
-        const market=safe(task.market&&task.market.code||'—');
-        row.appendChild(make(doc,'strong','hlc-director-market',market));
-        const detail=make(doc,'span','hlc-director-detail');
-        detail.appendChild(make(doc,'strong','hlc-director-name',task.missing||task.kind||'Tâche Hub'));
-        if (task.why) detail.appendChild(make(doc,'span','hlc-director-why',task.why));
-        row.appendChild(detail);
-        const age=task.age_hours == null?'Âge inconnu':
-          task.age_hours>=48?Math.floor(task.age_hours/24)+' j':task.age_hours+' h';
-        row.appendChild(make(doc,'span','hlc-director-age'+(task.overdue?' is-overdue':''),
-          (task.overdue?'⚠ ':'')+age));
-        if (/^[A-Z]{2}$/.test(market)) {
-          const link=make(doc,'a','hlc-director-open','Ouvrir le marché');
-          link.setAttribute('href','/admin/hub-live?view=execute&market='+encodeURIComponent(market));
-          row.appendChild(link);
+      for (const spec of groupSpecs) {
+        const tasks=groups.get(spec.key);
+        if (!tasks.length) continue;
+        const group=make(doc,'section','hlc-director-group');
+        group.setAttribute('data-hub-director-group',spec.key);
+        const groupHeading=make(doc,'div','hlc-director-group-heading');
+        groupHeading.appendChild(make(doc,'strong','',spec.title));
+        groupHeading.appendChild(make(doc,'span','hlc-director-group-count',String(tasks.length)));
+        group.appendChild(groupHeading);
+        group.appendChild(make(doc,'small','hlc-director-group-hint',spec.hint));
+        const rows=make(doc,'div','hlc-director-group-rows');
+        for(const task of tasks) {
+          const row=make(doc,'div','hlc-director-task'+(task.overdue?' is-overdue':'')+
+            (task.viewer_can_act===false?' is-readonly':''));
+          row.setAttribute('data-hub-director-task',safe(task.kind||'TASK'));
+          const market=safe(task.market&&task.market.code||'—');
+          row.appendChild(make(doc,'strong','hlc-director-market',market));
+          const detail=make(doc,'span','hlc-director-detail');
+          detail.appendChild(make(doc,'strong','hlc-director-name',task.missing||task.kind||'Tâche Hub'));
+          if (task.why) detail.appendChild(make(doc,'span','hlc-director-why',task.why));
+          if (task.viewer_can_act===false) detail.appendChild(make(doc,'small','hlc-director-access',
+            task.blocked_reason||'Action réservée à un profil habilité'));
+          row.appendChild(detail);
+          const age=task.age_hours == null?'Âge inconnu':
+            task.age_hours>=48?Math.floor(task.age_hours/24)+' j':task.age_hours+' h';
+          row.appendChild(make(doc,'span','hlc-director-age'+(task.overdue?' is-overdue':''),
+            (task.overdue?'⚠ ':'')+age));
+          if (/^[A-Z]{2}$/.test(market)) {
+            const subject=task.subject||{};
+            const id=(subject.po_id && /^[A-Za-z0-9-]{1,128}$/.test(String(subject.po_id)))
+              ? 'po:'+String(subject.po_id)
+              : (subject.order_id && /^[A-Za-z0-9-]{1,128}$/.test(String(subject.order_id)))
+                ? 'order:'+String(subject.order_id) : '';
+            const link=make(doc,'a','hlc-director-open',
+              id.startsWith('po:')?'Examiner la PO':id.startsWith('order:')?'Examiner la commande':'Ouvrir le marché');
+            link.setAttribute('href','/admin/hub-live?view=execute&market='+encodeURIComponent(market)+
+              (id?'&sel='+encodeURIComponent(id):''));
+            row.appendChild(link);
+          }
+          rows.appendChild(row);
         }
-        list.appendChild(row);
+        group.appendChild(rows);
+        list.appendChild(group);
       }
       body.appendChild(list);
       return payload;

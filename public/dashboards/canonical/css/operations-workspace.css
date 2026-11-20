@@ -1969,7 +1969,9 @@
 }
 .kmc-operations-workspace[data-workspace-mode="execution"] [data-hub-physical-details] {
   width: 100%;
-  overflow: hidden;
+  /* clip ne transforme pas le panneau en conteneur scrollable :
+     scrollIntoView peut remonter la page jusqu’aux actions. */
+  overflow: clip;
 }
 .kmc-operations-workspace[data-workspace-mode="execution"] [data-hub-physical-details] .kmc-workspace-table-wrap {
   box-sizing: border-box;
