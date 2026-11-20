@@ -220,6 +220,7 @@ button.hlc-chip.is-link { width: fit-content; flex: 0 0 auto; cursor: pointer; b
 }
 .hlc-director-intro strong { font-size: 12px; color: #633d13; }
 .hlc-director-intro span { font-size: 11px; line-height: 1.4; color: #67533b; }
+.hlc-director .hlc-director-list { max-height: none; overflow: visible; }
 .hlc-director-group { display: grid; gap: 5px; margin: 0 0 13px; }
 .hlc-director-group-heading {
   display: flex;
