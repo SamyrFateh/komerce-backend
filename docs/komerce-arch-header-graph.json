@@ -13,15 +13,15 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 821,
+    "scannedCodeFiles": 822,
     "filesWithFullHeaders": 762,
-    "filesWithLiteHeaders": 59,
-    "filesWithAnyHeaders": 821,
+    "filesWithLiteHeaders": 60,
+    "filesWithAnyHeaders": 822,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2095,
-    "edges": 10431,
+    "graphNodes": 2096,
+    "edges": 10437,
     "dbTables": 244,
     "doctrines": 820,
     "impactAreas": 210,
@@ -44,7 +44,7 @@
     "sourcing": 37,
     "logistics": 71,
     "boutique": 24,
-    "checkout": 3,
+    "checkout": 4,
     "shared-cart": 25,
     "account": 2,
     "payment": 30,
@@ -91,6 +91,7 @@
     "ui-renderer": 11,
     "ui-page": 5,
     "ui-service": 5,
+    "ui-helper": 1,
     "ui-boundary": 2,
     "view-model": 7,
     "ui-controller": 3,
@@ -124,7 +125,7 @@
     "critical": 128,
     "medium": 155,
     "high": 469,
-    "low": 68,
+    "low": 69,
     "unknown": 1
   },
   "nodes": [
@@ -2704,6 +2705,35 @@
         "boutique-navigation"
       ],
       "version": "2026-08-documents"
+    },
+    {
+      "id": "public/boutique/js/b-market-price-format.js",
+      "file": "public/boutique/js/b-market-price-format.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "market-local-price-format",
+      "domain": "checkout",
+      "layer": "ui-helper",
+      "criticality": "low",
+      "owner": "public/boutique/js/b-utils.js",
+      "purpose": "Display exact LOCAL_ACTIVE market prices without converting through rounded KMF",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [
+        "boutique",
+        "catalog",
+        "cart",
+        "checkout",
+        "market"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "public/boutique/js/b-mini-cart.js",
@@ -50262,6 +50292,42 @@
       "to": "impact:boutique-navigation",
       "type": "impact",
       "label": "boutique-navigation"
+    },
+    {
+      "from": "public/boutique/js/b-market-price-format.js",
+      "to": "public/boutique/js/b-utils.js",
+      "type": "owned-by",
+      "label": "public/boutique/js/b-utils.js"
+    },
+    {
+      "from": "public/boutique/js/b-market-price-format.js",
+      "to": "impact:boutique",
+      "type": "impact",
+      "label": "boutique"
+    },
+    {
+      "from": "public/boutique/js/b-market-price-format.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "public/boutique/js/b-market-price-format.js",
+      "to": "impact:cart",
+      "type": "impact",
+      "label": "cart"
+    },
+    {
+      "from": "public/boutique/js/b-market-price-format.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "public/boutique/js/b-market-price-format.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
     },
     {
       "from": "public/boutique/js/b-mini-cart.js",
@@ -112030,6 +112096,36 @@
         "routes/documents.js"
       ]
     },
+    "public/boutique/js/b-market-price-format.js": {
+      "role": "market-local-price-format",
+      "domain": "checkout",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "public/boutique/js/b-utils.js",
+      "purpose": "Display exact LOCAL_ACTIVE market prices without converting through rounded KMF",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [
+        "boutique",
+        "catalog",
+        "cart",
+        "checkout",
+        "market"
+      ],
+      "mustCheck": [
+        "impact:boutique",
+        "impact:cart",
+        "impact:catalog",
+        "impact:checkout",
+        "impact:market",
+        "public/boutique/js/b-utils.js"
+      ]
+    },
     "public/boutique/js/b-mini-cart.js": {
       "role": "mini-cart-summary",
       "domain": "boutique",
@@ -113574,7 +113670,9 @@
       "directUsedBy": [
         "all-boutique-js-modules"
       ],
-      "ownedFiles": [],
+      "ownedFiles": [
+        "public/boutique/js/b-market-price-format.js"
+      ],
       "dbRead": [],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -113606,6 +113704,7 @@
         "public/boutique/js/b-checkout-render.js",
         "public/boutique/js/b-identity.js",
         "public/boutique/js/b-komerce.js",
+        "public/boutique/js/b-market-price-format.js",
         "public/boutique/js/b-mini-cart.js",
         "public/boutique/js/b-mobile-money.js",
         "public/boutique/js/b-modal-buybox-shared.js",

@@ -1,4 +1,7 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
+jest.mock('../../db',()=>({query:jest.fn(),pool:{end:jest.fn()}}));
+jest.mock('../../scripts/recette/target-guard',()=>({confirmTarget:jest.fn()}));
 process.env.G6_TARGET_MARKET='KM';
 const fs=require('node:fs');
 const {ownerStagingGuard,nextStep,SELLABLE_SQL,G6_PREFIX}=require('../../scripts/recette/g6-central-hub-product-chromium');
