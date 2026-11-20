@@ -66,16 +66,21 @@ describe('G6 M03 mixed basket',()=>{
   expect(evaluate({...done,order:{status:'ready'}},'final')).toContain('order_not_collected_after_import_delivery');
   expect(evaluate(snap('x',L('LOCAL_STOCK'),imp.slice(0,2)),'structure')).toContain('import_lines_2');
  });
- test('import branch is declared but fail-closed SCREEN_MISSING, never bypassed',()=>{
+ test('import branch: no blanket SCREEN_MISSING any more, product gaps stay explicit verdicts',()=>{
   const a=read('scripts/recette/canonical/real-buyer-cash-adapters.js');
-  expect(a).toContain("throw Error('G6_M03_SCREEN_MISSING_'+stageId");
+  expect(a).not.toContain("throw Error('G6_M03_SCREEN_MISSING_'+stageId");
+  expect(a).toContain('m03import.execute');
   expect(a).toContain("G6_M03_PRODUCT_GAP_");
   const e=read('scripts/recette/g6-dynamic-buyer-cash.js');
   expect(e).toContain("state.verdict=gap[1]");
  });
  test('M03 stages and scripts stay inside chromium-policy',()=>{
   expect(chromium.validateStageModuleSources()).toBeGreaterThan(0);
-  expect(chromium.validateChromiumScriptSources()).toBeGreaterThan(0);
+  // Validation par fichier M03 (la validation globale dépend aussi des scripts G6-C3, hors périmètre de ce test).
+  for(const f of fs.readdirSync(path.join(__dirname,'../../scripts/recette')).filter(x=>/^g6-(?!central-hub).*chromium\.js$/.test(x))){
+   chromium.assertGestureSourceUsesHelper(path.join(__dirname,'../../scripts/recette',f));
+   chromium.assertTraceStartsAfterAuth(path.join(__dirname,'../../scripts/recette',f));
+  }
   for(const f of ['g6-local-relay-available-chromium.js','g6-local-client-pickup-chromium.js','g6-p2-buyer-order-real-chromium.js','g6-canonical-client-pickup-chromium.js'])
    expect(()=>chromium.assertGestureSourceUsesHelper(path.join(__dirname,'../../scripts/recette',f))).not.toThrow();
   for(const s of ['M03_NOT_COLLECTED','M03_COLLECTED_FINAL'])chromium.assertStageSourceSafe(path.join(__dirname,'../../scripts/recette/canonical/stages',s+'.js'));

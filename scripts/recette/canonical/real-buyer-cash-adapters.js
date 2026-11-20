@@ -9,6 +9,8 @@
 'use strict';
 const {marketProfile,PROFILES}=require('./market-profile');
 const {SCENARIO_STAGE_IDS}=require('./stage-registry');
+const {createM03ImportStages}=require('./m03-import-stages');
+const multiPo=require('./multi-po');
 const oracles=require('./local-stock-oracles');
 const m03=require('./m03-oracles');
 const {readSellable,selectMixedBasket}=require('./m03-prereq');
@@ -61,9 +63,8 @@ const SCRIPTS=Object.freeze({
 const DOWNSTREAM_M01=Object.freeze(['RELAY_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP']);
 const M02_STAGES=Object.freeze(['LOCAL_RELAY_AVAILABLE','LOCAL_CLIENT_PICKUP']);
 const M03_ORACLE_STAGES=Object.freeze(['M03_NOT_COLLECTED','M03_COLLECTED_FINAL']);
-// M03 : branche locale = étapes M02 ; oracles M03 en lecture seule ; la branche import M01 est déclarée mais bloquée (SCREEN_MISSING).
-const M03_IMPORT_BLOCKED=Object.freeze(DOWNSTREAM_M01.filter(x=>x!=='RELAY_CASH'));
-const M03_SCREEN_MISSING_DETAIL='les scripts import M01 (HUB_PO..CLIENT_PICKUP) sont écrits pour 1 ligne, 1 PO, 1 colis (item_count=1, po_count<=1, un seul colis KOM-BOX) ; la boucle par PO mono-fournisseur et la consolidation Hub multi-lignes ne sont pas paramétrées';
+// M03 : branche locale = étapes M02 ; oracles M03 en lecture seule ; branche import (HUB_PO..CLIENT_PICKUP) = boucle par PO (m03-import-stages).
+const M03_IMPORT_STAGES=Object.freeze(DOWNSTREAM_M01.filter(x=>x!=='RELAY_CASH'));
 const SHA=/^[a-f0-9]{40}$/;
 const REF=/^[A-Z0-9][A-Z0-9-]{5,63}$/;
 const UUID=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
@@ -102,8 +103,8 @@ async function uniquePoId(db,orderId){
   throw Error('G6_DYNAMIC_HUB_PO_ID_NOT_UNIQUE');
  return item.po_id;
 }
-async function poState(db,context){
- const id=await uniquePoId(db,context.order_id);
+async function poState(db,context,poId){
+ const id=poId||await uniquePoId(db,context.order_id);
  const {rows}=await db.query(`
  SELECT po.status::text AS status, po.trigger_mode,
    (SELECT count(*)::int FROM purchase_order_authorizations a
@@ -118,15 +119,16 @@ async function poState(db,context){
   throw Error('G6_DYNAMIC_HUB_PO_STATE_INVALID');
  return {id,...rows[0]};
 }
-async function finalMileIdentity(db,context,{beforeShipment=false}={}){
+async function finalMileIdentity(db,context,{beforeShipment=false,m03=false}={}){
  const packed=report('HUB_KOM_BOX').data,bag=report('HUB_CUSTOMER_BAG').data;
  const parcel=packed.parcel_id,box=packed.box_id;
  if(!UUID.test(String(parcel||''))||!UUID.test(String(box||''))||
     !UUID.test(String(packed.allocation_id||''))||
     packed.bag_id!==bag.bag_id)
   throw Error('G6_DYNAMIC_FINAL_MILE_BOX_DRIFT');
- const items=await db.query('SELECT id FROM order_items WHERE order_id=$1',[context.order_id]);
- if(items.rows.length!==1||!UUID.test(String(items.rows[0].id||'')))
+ // M03 : toutes les lignes IMPORT (une par PO) voyagent dans l'unique colis ; M01 : l'unique ligne de la commande.
+ const items=await db.query('SELECT id FROM order_items WHERE order_id=$1'+(m03?" AND fulfillment_source='IMPORT' ORDER BY created_at,id":''),[context.order_id]);
+ if(m03?items.rows.length<multiPo.MIN_IMPORT_POS||items.rows.some(r=>!UUID.test(String(r.id||''))):(items.rows.length!==1||!UUID.test(String(items.rows[0].id||''))))
   throw Error('G6_DYNAMIC_FINAL_MILE_ORDER_ITEM_NOT_UNIQUE');
  const shipment=await db.query(`
   SELECT s.id,s.reference FROM international_shipments s
@@ -267,6 +269,10 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
     fs.mkdirSync(path.dirname(out),{recursive:true});
     fs.writeFileSync(out,JSON.stringify({scenario_id:SCENARIO,market:context.market,order_id:context.order_id,...proof},null,2)+'\n');
    }
+  }else if(SCENARIO==='M03'&&M03_IMPORT_STAGES.includes(stageId)&&
+    ['HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX'].includes(stageId)){
+   // M03 : preuves par PO / sac consolidé (m03-import-stages) ; l'oracle PG reste indépendant du script.
+   await m03import.verify(stageId,context,data,digest);
   }else if(stageId==='HUB_PO'){
    const cash=stageProofs.get('RELAY_CASH');
    if(!cash||cash.order_id!==context.order_id||cash.order_reference!==context.order_reference)
@@ -378,7 +384,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
       throw Error('G6_DYNAMIC_KOM_BOX_INVALID');
    }
   }else if(['HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP'].includes(stageId)){
-   const ids=await finalMileIdentity(db,context);
+   const ids=await finalMileIdentity(db,context,{m03:SCENARIO==='M03'});
    if(data.db_fingerprint!==context.db_fingerprint||
       data.sha!==context.staging_sha||
       data.external_supplier_calls!==0||data.external_payment_executed!==false||
@@ -408,7 +414,8 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
     const checks=await db.query(
      "SELECT COUNT(*)::int AS n FROM scans WHERE order_id=$1 AND step='collected'",
      [context.order_id]);
-    if(pg.status!=='collected'||checks.rows[0]?.n!==1||
+    // M03 : la remise locale a déjà laissé 1 scan « collected » ; la remise import en ajoute exactement 1.
+    if(pg.status!=='collected'||checks.rows[0]?.n!==(SCENARIO==='M03'?2:1)||
        data.plaintext_pickup_code_logged!==false)
      throw Error('G6_DYNAMIC_PICKUP_ANTI_DOUBLE_INVALID');
    }
@@ -435,6 +442,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
   stageProofs.set(stageId,stored);
   return {...stored,persisted:true};
  }
+ const m03import=createM03ImportStages({db,env,ROOT,REPORT_PATH,SCRIPTS,execute,report,stageProofs,verifyStage,orderPg,poState,marketProfile});
  return {
   attestRuntimeBeforeBuyer:async()=>{runtimePin=await attestedRuntime();return runtimePin;},
   resolveLocalStockProduct:async()=>{
@@ -490,12 +498,12 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
    return verifyStage(checkpoint.stage_id,context);
   },
   executeStage:async({stageId,context})=>{
-   if(SCENARIO==='M03'&&M03_IMPORT_BLOCKED.includes(stageId))
-    throw Error('G6_M03_SCREEN_MISSING_'+stageId+': '+M03_SCREEN_MISSING_DETAIL);
    if(![...DOWNSTREAM_M01,...(['M02','M03'].includes(SCENARIO)?M02_STAGES:[]),...(SCENARIO==='M03'?M03_ORACLE_STAGES:[])].includes(stageId))
     throw Error('G6_DYNAMIC_DOWNSTREAM_STAGE_NOT_MIGRATED_'+stageId);
    if(!stageProofs.has('BUYER'))throw Error('G6_DYNAMIC_BUYER_CHECKPOINT_MISSING');
    await attestedRuntime(context);
+   if(SCENARIO==='M03'&&M03_IMPORT_STAGES.includes(stageId))
+    return m03import.execute(stageId,context,finalMileIdentity);
    if(stageId==='RELAY_CASH'){
     await verifyStage('BUYER',context);
     fs.rmSync(path.join(ROOT,REPORT_PATH.RELAY_CASH),{force:true});

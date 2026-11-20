@@ -86,12 +86,12 @@ async function main(){
   check(env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.GITHUB_EVENT_NAME==='issues'&&env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER&&
    env.NODE_ENV==='test'&&env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&
    env.STAGING_BASE_URL===BASE&&env.G6_CANONICAL_PHASE==='CUSTOMS'&&(env.G6_CANONICAL_RESUME_RUN_ID==='44257485638'||env.G6_DYNAMIC_FRESH_ORDER==='1')&&
-   env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET===MK.code&&(env.G6_CANONICAL_ORDER_ID==='56adad65-d1fa-4e80-8d69-c25e0fe92a76'||(env.G6_DYNAMIC_FRESH_ORDER==='1'&&/^[a-f0-9-]{36}$/i.test(env.G6_CANONICAL_ORDER_ID||'')&&/^[a-f0-9-]{36}$/i.test(ID||''))),
+   ['M01','M03'].includes(env.G6_CANONICAL_SCENARIO)&&env.G6_TARGET_MARKET===MK.code&&(env.G6_CANONICAL_ORDER_ID==='56adad65-d1fa-4e80-8d69-c25e0fe92a76'||(env.G6_DYNAMIC_FRESH_ORDER==='1'&&/^[a-f0-9-]{36}$/i.test(env.G6_CANONICAL_ORDER_ID||'')&&/^[a-f0-9-]{36}$/i.test(ID||''))),
    'G6_CUSTOMS_OWNER_GUARD');
   const target=await confirmTarget({db,env});check(target.confirmed&&target.fingerprint===env.G6_CANONICAL_DB_FINGERPRINT,'G6_CUSTOMS_DB_DRIFT');
   report.db_fingerprint=target.fingerprint;report.sha=await runtime();
   const prior=JSON.parse(fs.readFileSync((env.G6_DYNAMIC_FRESH_ORDER==='1'?'test-results/g6-canonical-forwarder/report.json':'test-results/g6-canonical-resume/g6-canonical-forwarder/report.json'),'utf8'));
-  const placement=prior.after.base.effective[0].placement_id;
+  const placement=prior.after.base.effective.map(e=>e.placement_id);
   let last=await readState('arrived',placement);report.before=last;save();
   check(isDeepStrictEqual(last.base,prior.after.base)&&isDeepStrictEqual(JSON.parse(JSON.stringify(last.tracking)),prior.after.tracking)&&last.customs.length===0&&last.linked===null,
    'G6_CUSTOMS_PRIOR_DRIFT');

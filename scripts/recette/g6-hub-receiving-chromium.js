@@ -84,7 +84,7 @@ async function main(){
   check(env.GITHUB_EVENT_NAME==='issues'&&env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER&&
     env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.NODE_ENV==='test'&&
     env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&
-    env.G6_CANONICAL_PHASE==='HUB_RECEIVING'&&env.G6_CANONICAL_SCENARIO==='M01'&&
+    env.G6_CANONICAL_PHASE==='HUB_RECEIVING'&&['M01','M03'].includes(env.G6_CANONICAL_SCENARIO)&&
     env.G6_TARGET_MARKET===MK.code&&(REF==='KL1WGP6'||(env.G6_DYNAMIC_FRESH_ORDER==='1'&&/^[A-Z0-9][A-Z0-9-]{5,63}$/.test(REF)))&&UUID.test(PO)&&UUID.test(ORDER)&&
     SHA.test(env.E2E_EXPECTED_DEPLOY_SHA||'')&&!!env.DATABASE_URL&&
     env.STAGING_BASE_URL==='https://komerce-backend-production.up.railway.app',
