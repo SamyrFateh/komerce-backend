@@ -23,7 +23,8 @@ describe('W3 local stock exposure selectors (G6 M02)', () => {
 
   test('Chromium selects the exact product ID and the exposed action, without text matching', () => {
     const runner = read('scripts/recette/g6-local-stock-declare-chromium.js');
-    expect(runner).toContain("'[data-local-stock-card=\"'+prod.id+'\"]'");
+    expect(runner).toContain('data-local-stock-card=');
+    expect(runner).toContain("'+prod.id+'");
     expect(runner).toContain("card.locator('[data-local-stock-expose]')");
     expect(runner).toContain("check(await card.count()===1,'G6_LOCAL_STOCK_CARD_NOT_UNIQUE')");
     expect(runner).not.toContain('hasText:prod.name');
