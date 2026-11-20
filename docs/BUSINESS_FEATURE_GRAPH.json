@@ -39683,6 +39683,14 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "middleware/rate-limit.js",
+                "targetFile": "utils/auth-cookie.js"
+              },
+              {
+                "sourceFileId": "middleware/rate-limit.js",
+                "targetFile": "utils/auth-token-policy.js"
+              },
+              {
                 "sourceFileId": "bootstrap/html-routes.js",
                 "targetFile": "middleware/auth.js"
               },
