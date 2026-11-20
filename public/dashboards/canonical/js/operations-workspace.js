@@ -1629,6 +1629,14 @@
   // mais sont masquées (et inaccessibles au clavier) jusqu'à sélection explicite.
   // Aucune requête ou mutation métier n'est déclenchée par cet aiguillage.
   const RELAY_OPERATION_KEYS=Object.freeze(['shipments','cash','receive','collect']);
+  // Consignes métier exclusivement informatives. Le writer et les preuves
+  // obligatoires restent dans les ateliers canoniques, sans raccourci POST.
+  const RELAY_GUIDANCE=Object.freeze({
+    shipments: {title:'Contrôler les arrivages',hint:'Vérifiez le contenu expédié et attestez les quantités réellement reçues, article par article.'},
+    cash: {title:'Encaisser au relais',hint:'Confirmez uniquement les espèces réellement remises au guichet.'},
+    receive: {title:'Réceptionner les colis locaux',hint:'Distinguez commande locale directe et colis expédié du Hub ; chaque réception demande sa preuve.'},
+    collect: {title:'Remettre au client',hint:'Vérifiez le code client complet et la bonne unité avant toute remise. Une seconde remise est interdite.'},
+  });
   const isShipmentReceivable=shipment=>Boolean(shipment?.receivable && (shipment.boxes||[]).some(
     box=>(box.orders||[]).some(order=>(order.items||[]).some(item=>item.received===null))
   ));
@@ -1647,6 +1655,19 @@
       }
     }
     rootNode.setAttribute('data-relay-active-operation',key);
+    const guide=rootNode.querySelector('[data-relay-active-guide]');
+    const descriptor=RELAY_GUIDANCE[key];
+    if (guide && descriptor) {
+      const currentLink=rootNode.querySelector('[data-relay-execution-jump="'+key+'"]');
+      const count=currentLink?.getAttribute('data-relay-pending-count');
+      const heading=guide.querySelector('[data-relay-guide-title]');
+      const hint=guide.querySelector('[data-relay-guide-hint]');
+      const volume=guide.querySelector('[data-relay-guide-volume]');
+      if (heading) heading.textContent=descriptor.title;
+      if (hint) hint.textContent=descriptor.hint;
+      if (volume) volume.textContent=count===null || count==='unknown' ?
+        'File à consulter' : count+' tâche(s) signalée(s)';
+    }
   }
 
   // V1 SAV — une demande rattachée au VRAI article remis, sans réception
@@ -2038,6 +2059,7 @@
         link.className='kmc-relay-execution-jump';
         link.href='#relay-execution-'+choice.key;
         link.setAttribute('data-relay-execution-jump',choice.key);
+        link.setAttribute('data-relay-pending-count',choice.count===null?'unknown':String(choice.count));
         link.appendChild(text(doc,'strong','',choice.label));
         if(choice.count!==null)link.appendChild(text(doc,'b','',String(choice.count)));
         link.addEventListener('click',()=>{
@@ -2046,6 +2068,22 @@
         });
         dock.appendChild(link);
       }
+      const guide=doc.createElement('section');
+      guide.className='kmc-relay-guided-task';
+      guide.setAttribute('data-relay-active-guide','');
+      guide.setAttribute('aria-label','À faire maintenant au relais');
+      guide.appendChild(text(doc,'span','kmc-relay-guided-eyebrow','À faire maintenant'));
+      const guideHeader=text(doc,'strong','kmc-relay-guided-title','Choisir une file');
+      guideHeader.setAttribute('data-relay-guide-title','');
+      guide.appendChild(guideHeader);
+      const guideVolume=text(doc,'span','kmc-relay-guided-volume','File à consulter');
+      guideVolume.setAttribute('data-relay-guide-volume','');
+      guide.appendChild(guideVolume);
+      const guideHint=text(doc,'p','kmc-relay-guided-hint',
+        'Choisissez une file puis effectuez le geste dans le formulaire canonique.');
+      guideHint.setAttribute('data-relay-guide-hint','');
+      guide.appendChild(guideHint);
+      rootNode.appendChild(guide);
       rootNode.appendChild(dock);
     }
 
