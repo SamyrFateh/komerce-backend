@@ -18,11 +18,12 @@ const {createAdminUser}=require('../../services/user-mutation-service');
 const {markE2eTestAccount}=require('./staging-e2e-provision');
 const {preseedG6BuyerOtp}=require('../../services/g6-staging-buyer-identity-guard');
 const ORIGIN='https://komerce-backend-production.up.railway.app';
-const REF='KPR-000165';
 const MARKET=String(process.env.G6_TARGET_MARKET||'KM').toUpperCase();
+// M01 : produit et prix historiques ; M02 : produit LOCAL_STOCK résolu en lecture seule par l'orchestrateur.
+const PARAMS=require('./canonical/scenario-profile').buyerParams(process.env);
+const REF=PARAMS.product_ref;
 const COUNTRY_PREFIX={KM:'+269',CM:'+237',CG:'+242'};
-const MARKET_PRICE={KM:5990,CM:7987,CG:7987};
-const EXPECTED_PRICE=MARKET_PRICE[MARKET];
+const EXPECTED_PRICE=PARAMS.expected_price;
 let PRODUCT=null;
 const OUT=path.resolve('test-results/g6-p2-buyer-order');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
@@ -54,7 +55,7 @@ async function resolveCurrentSaleableProduct(){
   WHERE p.product_ref=$1 AND p.lifecycle_status='active' AND p.is_active=TRUE
     AND p.is_available=TRUE AND e.commercial_exposure='ENABLED'
     AND EXISTS (SELECT 1 FROM product_skus sku
-      WHERE sku.product_id=p.id AND sku.is_active=TRUE AND sku.stock>0)`,[REF,MARKET]);
+      WHERE sku.product_id=p.id AND sku.is_active=TRUE ${PARAMS.fulfillment?'':'AND sku.stock>0'})`,[REF,MARKET]);
  check(rows.length===1,'G6_RECIPE_PRODUCT_OR_PRICE_NOT_UNIQUE');
  check(Number(rows[0].amount)===EXPECTED_PRICE,'G6_RECIPE_PRICE_DRIFT');
  PRODUCT=rows[0].id;
@@ -311,6 +312,11 @@ async function browserCheckout({buyer,phone,code}){
     (MARKET!=='KM'||Number(o.total_kmf)===report.checkout_display_total)&&o.payment_mode==='cash_relais'&&
     o.status==='pending'&&o.payment_status!=='paid'&&o.lines===1&&o.qty===1&&o.products?.includes(REF),
     'G6_POSTGRES_CANONICAL_ORDER_MISMATCH');
+ if(PARAMS.fulfillment){
+  const {rows:src}=await db.query('SELECT DISTINCT fulfillment_source FROM order_items WHERE order_id=$1',[o.id]);
+  check(src.length===1&&src[0].fulfillment_source===PARAMS.fulfillment,'G6_M02_ORDER_NOT_LOCAL_STOCK');
+  report.fulfillment_source=PARAMS.fulfillment;
+ }
   report.order={id:o.id,reference:o.reference,status:o.status,payment_status:o.payment_status,
     scope:o.simulation_scope,total_kmf:Number(o.total_kmf),
     display_total_amount:Number(o.display_total_amount),display_currency:o.display_currency,

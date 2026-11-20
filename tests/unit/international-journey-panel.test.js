@@ -122,3 +122,49 @@ test('chaque tâche possède une clé distincte et le panneau expose sa généra
   const section=panel.render({createElement:node},root,ctx,[row]);
   expect(section.attributes).toMatchObject({'data-ready':'true','data-render-epoch':'2'});
 });
+
+test('Prochain geste Hub : remonter à la remise transitaire avec la preuve existante, sans POST',()=>{
+  const {root,ctx}=mount('agent_hub','transport',{stage:'hub_ready',hub_draft:true});
+  const cards=all(root,n=>n.attributes?.['data-journey-next-action']!==undefined);
+  expect(cards).toHaveLength(1);
+  expect(all(cards[0],n=>n.className==='kmc-journey-next-state').map(n=>n.textContent))
+    .toEqual(expect.arrayContaining(['Actuel : En préparation au Hub','Prochaine preuve : Remis au transitaire']));
+  const go=all(cards[0],n=>n.attributes?.['data-journey-next-cta']==='open');
+  expect(go).toHaveLength(1);
+  const physical=all(root,n=>n.attributes?.['data-journey-next-task']!==undefined);
+  expect(physical).toHaveLength(1);
+  physical[0].open=false;
+  go[0].events.click();
+  expect(physical[0].open).toBe(true);
+  expect(ctx.fetch).not.toHaveBeenCalled();
+  expect(ctx.reload).not.toHaveBeenCalled();
+});
+
+test('Seul un acteur habilité voit une action ; la transition douane change seulement d’onglet',()=>{
+  const readOnly=mount('market_operator','transport',{stage:'hub_ready'});
+  expect(all(readOnly.root,n=>n.attributes?.['data-journey-next-cta']!==undefined)).toHaveLength(0);
+  expect(all(readOnly.root,n=>n.className==='kmc-journey-next-wait')).toHaveLength(1);
+  const otherActor=mount('agent_transitaire','transport',{stage:'hub_ready'});
+  expect(all(otherActor.root,n=>n.attributes?.['data-journey-next-cta']!==undefined)).toHaveLength(0);
+  const admin=mount('admin','transport',{stage:'arrived'});
+  const switchTab=all(admin.root,n=>n.attributes?.['data-journey-next-cta']==='switch-tab');
+  expect(switchTab).toHaveLength(1);
+  expect(switchTab[0].textContent).toBe('Aller à Arrivée & douane');
+  switchTab[0].events.click();
+  expect(admin.ctx.journeyTab).toBe('arrival');
+  expect(admin.ctx.reload).toHaveBeenCalledTimes(1);
+  expect(admin.ctx.fetch).not.toHaveBeenCalled();
+  const arrival=mount('admin','arrival',{stage:'arrived'});
+  expect(all(arrival.root,n=>n.attributes?.['data-journey-next-task']!==undefined)).toHaveLength(1);
+});
+
+test('Bloc de guidage Shipping responsive, sans modifier les états ni créer un second writer',()=>{
+  const css=fs.readFileSync(path.resolve(__dirname,'../../public/dashboards/canonical/css/international-journey-panel.css'),'utf8');
+  expect(css).toContain('.kmc-journey-next {');
+  expect(css).toContain('@media(max-width:760px)');
+  expect(css).toContain('.kmc-journey-next-button:focus-visible');
+  const source=fs.readFileSync(path.resolve(__dirname,'../../public/dashboards/canonical/js/international-journey-panel.js'),'utf8');
+  expect(source).toContain("transitionTask.setAttribute('data-journey-next-task','');");
+  expect(source).toContain("transitionTask.scrollIntoView?.({block:'start',behavior:'auto'});");
+  expect(source).not.toContain('window.prompt');
+});

@@ -33,6 +33,13 @@
   const nf = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 });
   const num = (v) => nf.format(Number(v) || 0);
   const short = (v) => String(v || '').slice(0, 8);
+  // Traduction strictement visuelle : les états API et le Golden restent inchangés.
+  const PHYSICAL_STATE_LABELS = Object.freeze({
+    PICKED: 'Prélevé', PACKED: 'Emballé', DISPATCHED: 'Prêt au départ',
+  });
+  const humanPhysicalState = (value) => String(value ?? '').replace(
+    /\b(PICKED|PACKED|DISPATCHED)\b/g, key => PHYSICAL_STATE_LABELS[key]
+  );
 
   function el(doc, tag, cls, txt) {
     const node = doc.createElement(tag);
@@ -126,6 +133,9 @@
     host.replaceChildren();
     const rootEl = el(doc, 'div', 'hlc');
     rootEl.setAttribute('data-hub-cockpit', '');
+    // Zone d'actions unique : contient le CTA du cockpit ET les actions du fil.
+    // Les sélecteurs du Golden restent valides sans dupliquer un seul bouton.
+    rootEl.setAttribute('data-hlc-actions', '');
     const markReady = () => {
       const r = host.querySelector && host.querySelector('[data-hub-cockpit]');
       if (r) r.setAttribute('data-hlc-ready', state.pending > 0 ? 'false' : 'true');
@@ -387,7 +397,7 @@
       const relayMeta = el(doc, 'span', 'hlc-meta', `${marketCode} · ${order.relay_name || 'relais —'}`);
       if (order.relay_id) relayMeta.title = `Relais · identifiant technique : ${order.relay_id}`;
       head.appendChild(relayMeta);
-      head.appendChild(el(doc, 'small', 'hlc-fifo', `n° ${index + 1} FIFO`));
+      head.appendChild(el(doc, 'small', 'hlc-fifo', `Ordre d’arrivée n° ${index + 1}`));
       head.appendChild(el(doc, 'span', 'hlc-spacer'));
       const st = pill(order.status.label, order.status.tone);
       st.setAttribute('data-hlc-order-state', '');
@@ -419,6 +429,8 @@
       left.appendChild(c);
     });
     const leg = el(doc, 'div', 'hlc-legend');
+    leg.setAttribute('aria-label', 'Signification des états · légende non interactive');
+    leg.appendChild(el(doc, 'strong', 'hlc-legend-title', 'Signification des états'));
     legend.forEach((g) => { const i = el(doc, 'span', 'hlc-legend-item'); i.appendChild(el(doc, 'span', `hlc-pip is-${g.state}`)); i.appendChild(doc.createTextNode(g.label)); leg.appendChild(i); });
     left.appendChild(leg);
 
@@ -560,15 +572,30 @@
         const r = el(doc, 'div', 'hlc-row');
         r.appendChild(el(doc, 'span', 'hlc-ref', it.ref));
         r.appendChild(el(doc, 'span', 'hlc-spacer'));
-        r.appendChild(el(doc, 'small', 'hlc-meta', it.meta));
+        r.appendChild(el(doc, 'small', 'hlc-meta', humanPhysicalState(it.meta)));
         c.appendChild(r);
-        c.appendChild(el(doc, 'span', 'hlc-phys-text', it.text));
+        c.appendChild(el(doc, 'span', 'hlc-phys-text', humanPhysicalState(it.text)));
         block.appendChild(c);
       });
       if (!section.items.length) block.appendChild(el(doc, 'span', 'hlc-empty', section.empty_text));
       right.appendChild(block);
     });
-    const details = button(doc, 'Détails physiques exhaustifs', 'open-physical-details', 'is-link');
+    // Un accès direct par geste physique, toujours vers le writer existant.
+    const shortcuts = el(doc, 'nav', 'hlc-physical-shortcuts');
+    shortcuts.setAttribute('aria-label', 'Accès direct aux ateliers physiques');
+    for (const [key, label] of [
+      ['reception', 'Réception fournisseur'],
+      ['bags', 'Préparer les sacs'],
+      ['boxes', 'KOM-BOX'],
+      ['shipments', 'Expéditions'],
+    ]) {
+      const shortcut = button(doc, label, 'physical-' + key, 'is-link');
+      shortcut.setAttribute('data-hlc-physical-shortcut', key);
+      shortcut.addEventListener('click', () => key === 'reception' ? ctx.openReception() : ctx.openPhysical(key));
+      shortcuts.appendChild(shortcut);
+    }
+    right.appendChild(shortcuts);
+    const details = button(doc, 'Voir tous les ateliers physiques', 'open-physical-details', 'is-link');
     details.addEventListener('click', () => ctx.openPhysical());
     right.appendChild(details);
 
@@ -741,7 +768,7 @@
         const b = (d.boxes || []).find((x) => x.unit_id === sel.id);
         if (b) {
           title = b.reference; sub = `KOM-BOX · ${b.state}`;
-          nodes = [node('Sac', [...new Set((b.contents || []).map((c) => c.order_ref))].join(', ') || '—', 'dans la KOM-BOX', 'ok'), node('KOM-BOX', b.reference, b.state, 'on'), node('Expédition', b.shipment_ref || '—', b.shipment_ref ? (b.shipment_stage || 'ouverte') : 'à rattacher', b.shipment_ref ? 'ok' : ''), node('Relais', '—', 'attestation à la réception', '')];
+          nodes = [node('Sac', [...new Set((b.contents || []).map((c) => c.order_ref))].join(', ') || '—', 'dans la KOM-BOX', 'ok'), node('KOM-BOX', b.reference, humanPhysicalState(b.state), 'on'), node('Expédition', b.shipment_ref || '—', b.shipment_ref ? (b.shipment_stage || 'ouverte') : 'à rattacher', b.shipment_ref ? 'ok' : ''), node('Relais', '—', 'attestation à la réception', '')];
         }
       }
       return { title: title || selKey, sub, nodes, blocker };
@@ -894,7 +921,8 @@
     const rightP = el(doc, 'div', 'hlc-panel-right');
     rightP.appendChild(el(doc, 'span', 'hlc-label', `Actions autorisées · ${roleLabel}`));
     const list = el(doc, 'div', 'hlc-actions');
-    list.setAttribute('data-hlc-actions', '');
+    // Le marqueur data-hlc-actions est porté par l'unique ancêtre commun
+    // aux deux emplacements d'actions après déplacement du CTA principal.
     let primaryUsed = false;
     actionsFor().forEach((a) => {
       if (a.primary && !a.disabled) { if (primaryUsed) a.primary = false; else primaryUsed = true; } else if (a.disabled) a.primary = false;
@@ -919,6 +947,17 @@
         if (po) rightP.appendChild(state.form.kind === 'detach' ? detachForm(po) : poForm(po, state.form.kind));
       }
     }
+    // Le seul bouton principal est déplacé (non dupliqué) au-dessus de la file
+    // physique : même handler, même protection contre le double POST.
+    const nextAction = el(doc, 'section', 'hlc-next-action');
+    nextAction.setAttribute('data-hlc-next-action', '');
+    nextAction.appendChild(el(doc, 'strong', 'hlc-next-action-title', 'À faire sur ce dossier'));
+    const primaryRow = Array.from(list.children).find(row => row.querySelector && row.querySelector('.hlc-btn.is-primary:not(:disabled)'));
+    if (primaryRow) nextAction.appendChild(primaryRow);
+    else nextAction.appendChild(el(doc, 'span', 'hlc-meta',
+      sel ? 'Aucun geste immédiat : consultez les actions et prérequis dans le fil ci-dessous.'
+          : 'Sélectionnez une commande, un besoin ou une unité physique.'));
+    right.insertBefore(nextAction, right.children[1]);
     panel.appendChild(rightP);
     rootEl.appendChild(panel);
     const saved = state.form && state.form.values;

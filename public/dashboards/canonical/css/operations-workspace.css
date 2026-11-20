@@ -1952,3 +1952,88 @@
   [data-relay-return-create] label:has(textarea), [data-relay-return-create] button { grid-column: 1; }
   [data-relay-return-create] button { justify-self: stretch; }
 }
+
+/* La vue exécution Hub est une grille : empêcher le contenu des ateliers
+   ouverts de réimposer la largeur minimale intrinsèque des tables au document.
+   Les tables larges défilent localement et restent entièrement opérables. */
+.kmc-operations-workspace[data-workspace-mode="execution"] {
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+.kmc-operations-workspace[data-workspace-mode="execution"] > *,
+.kmc-operations-workspace[data-workspace-mode="execution"] [data-hub-physical-details],
+.kmc-operations-workspace[data-workspace-mode="execution"] [data-supply-boxes] {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+.kmc-operations-workspace[data-workspace-mode="execution"] [data-hub-physical-details] {
+  width: 100%;
+  /* clip ne transforme pas le panneau en conteneur scrollable :
+     scrollIntoView peut remonter la page jusqu’aux actions. */
+  overflow: clip;
+}
+.kmc-operations-workspace[data-workspace-mode="execution"] [data-hub-physical-details] .kmc-workspace-table-wrap {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* Hub uniquement : réduire le hero pour libérer le premier écran opérateur.
+   N'affecte ni le cockpit Relais, ni le pilotage central. */
+body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="execution"] > .kmc-workspace-header {
+  min-height: 0;
+  padding: 9px 15px;
+  background-image: none;
+  gap: 10px;
+}
+.kmc-operations-workspace[data-workspace-mode="execution"] .kmc-workspace-title {
+  font-size: clamp(18px, 1.8vw, 22px);
+  line-height: 1.2;
+}
+.kmc-operations-workspace[data-workspace-mode="execution"] .kmc-workspace-subtitle {
+  margin: 3px 0 0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.kmc-operations-workspace[data-workspace-mode="execution"] .kmc-workspace-kicker {
+  margin-bottom: 2px;
+}
+.kmc-operations-workspace[data-workspace-mode="execution"] .kmc-hub-physical-secondary[open] {
+  margin-top: 4px;
+}
+@media (max-width: 760px) {
+  body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="execution"] > .kmc-workspace-header {
+    padding: 9px 12px;
+  }
+}
+
+/* Réception Hub : l'opérateur ne doit pas deviner un champ via son placeholder. */
+.kmc-operations-workspace[data-workspace-mode="execution"] .kmc-workspace-receive-field-label {
+  display: grid;
+  gap: 5px;
+  flex: 1 1 250px;
+  min-width: min(100%, 230px);
+  color: #26394d;
+  font-size: 12px;
+  font-weight: 700;
+}
+.kmc-operations-workspace[data-workspace-mode="execution"] .kmc-workspace-receive-field-label[hidden] { display: none; }
+.kmc-operations-workspace[data-workspace-mode="execution"] .kmc-workspace-receive-field-label input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  font-weight: 500;
+}
+.kmc-operations-workspace[data-workspace-mode="execution"] .kmc-workspace-receive-qty {
+  width: 94px;
+  min-width: 86px;
+  min-height: 38px;
+}
+.kmc-operations-workspace[data-workspace-mode="execution"] .kmc-workspace-receive-scanner input:not([type="checkbox"]) {
+  min-height: 40px;
+  max-width: 100%;
+}

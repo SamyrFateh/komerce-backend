@@ -9,7 +9,7 @@
 | Family | N |
 |---|---|
 | PROJECTION | 0 |
-| COMPOSITION_ROOT_WIRING | 20 |
+| COMPOSITION_ROOT_WIRING | 18 |
 | NON_RUNTIME_TEST | 18 |
 | TECHNICAL_PRIMITIVE | 0 |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 |
@@ -17,7 +17,7 @@
 | BUSINESS_FEATURE_INTERFACE | 0 |
 | PILOTING_CAPABILITY | 0 |
 | UNCLASSIFIED | 0 |
-| **TOTAL** | **38** |
+| **TOTAL** | **36** |
 
 ## The 94 pairs (from → to)
 
@@ -25,7 +25,6 @@
 |---|---|---|---|---|---|---|---|---|---|
 | dashboard → loyalty | NON_RUNTIME_TEST | TEST_ONLY | business-transversal | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
 | dashboard → platform | NON_RUNTIME_TEST | TEST_ONLY | business-transversal | frontend-transversal | static-code | business-file-import | non-runtime-evidence | — | `` |
-| infrastructure → auth-identity | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → auth-passkey | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → business-rules | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-transversal | static-code | import-mixed | application-wiring-not-consumption | — | `` |
 | infrastructure → decision-signals | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | piloting-capability | static-code | business-file-import | application-wiring-not-consumption | — | `` |
@@ -34,9 +33,8 @@
 | infrastructure → local-stock | COMPOSITION_ROOT_WIRING | RUNTIME_AND_TEST | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → loyalty | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → market-control-plane | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
-| infrastructure → market-delegation | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → providers-services | COMPOSITION_ROOT_WIRING | RUNTIME_AND_TEST | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
-| infrastructure → purchasing | COMPOSITION_ROOT_WIRING | RUNTIME_AND_TEST | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
+| infrastructure → purchasing | COMPOSITION_ROOT_WIRING | MIXED | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → settlement | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → sourcing | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → unsold-resolution | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |

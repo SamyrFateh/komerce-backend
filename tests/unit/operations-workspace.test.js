@@ -136,3 +136,44 @@ describe('G6 Ergonomie UX3 — marché et sélection du Hub', () => {
     expect(src).toContain("context.mode === 'execution'");
   });
 });
+
+describe('Hub UX guidée — atelier physique canonique', () => {
+  const src = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/operations-workspace.js'), 'utf8');
+
+  test('réception et ateliers ouvrent les gestes existants, jamais une seconde écriture', () => {
+    expect(src).toContain("secondary.setAttribute('data-hub-physical-details', '');");
+    expect(src).toContain('secondary.open = true');
+    expect(src).toContain("context.view = 'reception';");
+    expect(src).toContain("context.renderCurrent();");
+    expect(src).toContain("bags: '[data-hub-bag-preparation]'");
+    expect(src).toContain("boxes: '[data-supply-box-create]'");
+    expect(src).toContain("shipments: '[data-supply-shipment-bar]'");
+    expect(src).toContain("'create-shipment-from-boxes'");
+    expect(src).toContain("'receive-supplier'");
+  });
+
+  test('les champs de réception ont des labels visibles avec état manuel explicite', () => {
+    expect(src).toContain("const manualProofLabel = text(doc, 'label'");
+    expect(src).toContain("const trackingLabel = text(doc, 'label'");
+    expect(src).toContain('manualProofLabel.hidden = !manualToggle.checked;');
+    expect(src).toContain("scannerInput.setAttribute('aria-label'");
+  });
+});
+
+test('Hub UX : accès directs Sacs puis KOM-BOX puis Expéditions sans animation parasite', () => {
+  const src=fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+  expect(src).toContain("bags: '[data-hub-bag-preparation]'");
+  expect(src).toContain("boxes: '[data-supply-box-create]'");
+  expect(src).toContain("shipments: '[data-supply-shipment-bar]'");
+  expect(src).toContain("anchor.scrollIntoView?.({ block: 'start', behavior: 'auto' });");
+  expect(src).not.toContain("anchor.scrollIntoView?.({ block: 'start', behavior: 'smooth' });");
+});
+
+test('Relais guidé : zone unique synchronisée sur le choix de file, non sur un nouveau writer',()=>{
+  const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+  expect(src).toContain("guide.setAttribute('data-relay-next', '')");
+  expect(src).toContain("link.setAttribute('data-relay-item-count',String(choice.count))");
+  expect(src).toContain("title.textContent='À faire maintenant · '+label;");
+  expect(src).toContain("rootNode.setAttribute('data-relay-active-operation',key)");
+  expect(src).toContain('showRelayOperation(rootNode,context.activeRelayQueue)');
+});

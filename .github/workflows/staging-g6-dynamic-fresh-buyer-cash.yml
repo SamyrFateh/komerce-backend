@@ -1,5 +1,5 @@
 # Owner-only new-order replay; independent from the historical KL1WGP6 workflow.
-name: G6 dynamic — fresh M01 buyer and relay cash (staging only)
+name: G6 dynamic — fresh M01/M02 buyer and relay cash (staging only)
 on:
   issues:
     types: [opened]
@@ -26,7 +26,10 @@ jobs:
        github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-kom-box-M01-KM' ||
        github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M01-KM' ||
        github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M01-CM' ||
-       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M01-CG')
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M01-CG' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M02-KM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M02-CM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M02-CG')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
@@ -36,9 +39,9 @@ jobs:
       KOMERCE_DISABLE_CRONS: 'true'
       STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
       EXPECTED_RAILWAY_ENVIRONMENT: staging
-      G6_CANONICAL_SCENARIO: M01
-      G6_TARGET_MARKET: ${{ endsWith(github.event.issue.title, '-M01-CM') && 'CM' || endsWith(github.event.issue.title, '-M01-CG') && 'CG' || 'KM' }}
-      G6_DYNAMIC_TO_STAGE: ${{ (github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M01-KM' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M01-CM' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M01-CG') && 'CLIENT_PICKUP' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-kom-box-M01-KM' && 'HUB_KOM_BOX' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-customer-bag-M01-KM' && 'HUB_CUSTOMER_BAG' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-receiving-readback-M01-KM' && 'HUB_RECEIVING_READBACK' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-receiving-M01-KM' && 'HUB_RECEIVING' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-vendor-simulation-M01-KM' && 'HUB_VENDOR_SIMULATION' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-vendor-readiness-M01-KM' && 'HUB_VENDOR_READINESS' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-commitment-M01-KM' && 'HUB_COMMITMENT' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-buyer-cash-hub-po-M01-KM' && 'HUB_PO' || 'RELAY_CASH' }}
+      G6_CANONICAL_SCENARIO: ${{ contains(github.event.issue.title, '-full-M02-') && 'M02' || 'M01' }}
+      G6_TARGET_MARKET: ${{ endsWith(github.event.issue.title, '-M01-CM') && 'CM' || endsWith(github.event.issue.title, '-M02-CM') && 'CM' || endsWith(github.event.issue.title, '-M01-CG') && 'CG' || endsWith(github.event.issue.title, '-M02-CG') && 'CG' || 'KM' }}
+      G6_DYNAMIC_TO_STAGE: ${{ (github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M02-KM' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M02-CM' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M02-CG') && 'LOCAL_CLIENT_PICKUP' || (github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M01-KM' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M01-CM' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M01-CG') && 'CLIENT_PICKUP' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-kom-box-M01-KM' && 'HUB_KOM_BOX' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-customer-bag-M01-KM' && 'HUB_CUSTOMER_BAG' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-receiving-readback-M01-KM' && 'HUB_RECEIVING_READBACK' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-receiving-M01-KM' && 'HUB_RECEIVING' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-vendor-simulation-M01-KM' && 'HUB_VENDOR_SIMULATION' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-vendor-readiness-M01-KM' && 'HUB_VENDOR_READINESS' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-commitment-M01-KM' && 'HUB_COMMITMENT' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-buyer-cash-hub-po-M01-KM' && 'HUB_PO' || 'RELAY_CASH' }}
       E2E_AGENT_TRANSITAIRE_EMAIL: ${{ secrets.E2E_AGENT_TRANSITAIRE_EMAIL }}
       E2E_AGENT_TRANSITAIRE_PASSWORD: ${{ secrets.E2E_AGENT_TRANSITAIRE_PASSWORD }}
       E2E_HUB_DIRECTOR_EMAIL: ${{ secrets.E2E_HUB_DIRECTOR_EMAIL }}
@@ -114,6 +117,8 @@ jobs:
             test-results/g6-canonical-customs/
             test-results/g6-canonical-relay-receipt/
             test-results/g6-canonical-client-pickup/
+            test-results/g6-local-relay-available/
+            test-results/g6-local-client-pickup/
             test-results/hub-v1-clicks/
           retention-days: 21
           if-no-files-found: warn

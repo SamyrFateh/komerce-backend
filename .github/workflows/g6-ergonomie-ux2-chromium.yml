@@ -30,7 +30,9 @@ jobs:
       - run: npm run pr:preflight
       - run: npx playwright install --with-deps chromium
       - name: UX2 PO filter and preserved history with Chromium
-        run: npx playwright test -c playwright.g2-hub-po-isolated.config.js --grep 'UX2 : PO reçues'
+        # YAML plain scalars forbid ': ' even inside shell quotes. Preserve the grep as a block scalar.
+        run: |
+          npx playwright test -c playwright.g2-hub-po-isolated.config.js --grep 'UX2 : PO reçues'
       - name: Verify local screenshots exist
         run: test -s test-artifacts/ux2/ux2-apres.png && test -s test-artifacts/ux2/ux2-historique-ouvert.png
       - uses: actions/upload-artifact@v4

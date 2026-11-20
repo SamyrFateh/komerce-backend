@@ -575,7 +575,7 @@
     return button;
   }
 
-  function currentRequestedMarket(adminContext, requireMarket = false) {
+  function currentRequestedMarket(adminContext, requireMarket = false, allowHubOverview = false) {
     const access = adminContext && adminContext.access;
     if (!access || !Array.isArray(access.allowedMarkets)) return null;
 
@@ -584,7 +584,11 @@
     if (requireMarket) {
       const contract = global.KomerceAdminContext;
       if (contract && typeof contract.resolveExplicitMarket === 'function') {
-        try { return contract.resolveExplicitMarket(adminContext, (global.location && global.location.search) || '').marketCode; } catch (_) { return null; }
+        try {
+          const explicit = contract.resolveExplicitMarket(adminContext, (global.location && global.location.search) || '');
+          if (allowHubOverview && access.mode === 'hub' && !explicit.requested) return null;
+          return explicit.marketCode;
+        } catch (_) { return null; }
       }
       return null;
     }
@@ -602,16 +606,18 @@
     return access.allowedMarkets[0] || null;
   }
 
-  function marketChoices(adminContext, requireMarket = false) {
+  function marketChoices(adminContext, requireMarket = false, allowOverview = false) {
     const app = global.KomerceCanonicalAdmin;
     if (app && typeof app.marketChoices === 'function') {
-      try { return app.marketChoices(adminContext, { requireMarket }); } catch (_) { /* fallback ci-dessous */ }
+      try { return app.marketChoices(adminContext, { requireMarket, allowGlobalOverview: allowOverview,
+        allowHubOverview: allowOverview && adminContext?.access?.mode === 'hub' }); } catch (_) { /* fallback ci-dessous */ }
     }
 
     const access = adminContext && adminContext.access;
     if (!access || !Array.isArray(access.allowedMarkets)) return [];
     const choices = [];
-    if (access.mode === 'global' && !requireMarket) choices.push({ value: '', label: 'Tous les marchés' });
+    if ((access.mode === 'global' && (!requireMarket || allowOverview)) ||
+        (access.mode === 'hub' && allowOverview)) choices.push({ value: '', label: 'Tous les marchés' });
     access.allowedMarkets.forEach(code => choices.push({ value: code, label: code }));
     return choices;
   }
@@ -651,8 +657,8 @@
     }
   }
 
-  function createMarketControl(doc, adminContext, requireMarket = false) {
-    const choices = marketChoices(adminContext, requireMarket);
+  function createMarketControl(doc, adminContext, requireMarket = false, allowOverview = false) {
+    const choices = marketChoices(adminContext, requireMarket, allowOverview);
     if (!choices.length) return null;
 
     const wrap = doc.createElement('label');
@@ -667,7 +673,8 @@
     const select = doc.createElement('select');
     select.className = 'kmc-admin-market-select';
     select.setAttribute('aria-label', 'Sélectionner le marché');
-    const current = currentRequestedMarket(adminContext, requireMarket);
+    const current = currentRequestedMarket(adminContext, requireMarket,
+      allowOverview && adminContext?.access?.mode === 'hub');
 
     const syncFlag = marketCode => {
       const asset = marketFlagAsset(marketCode);
@@ -677,7 +684,7 @@
       select.className = `kmc-admin-market-select${asset ? ' has-flag' : ''}`;
     };
 
-    if (requireMarket && !current) {
+    if (requireMarket && !current && !allowOverview) {
       const placeholder = doc.createElement('option');
       placeholder.value = '';
       placeholder.textContent = 'Choisir un marché…';
@@ -766,7 +773,14 @@
 
     const requireMarket = ['pricing-workspace', 'market-catalog', 'market-autonomy', 'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace'].includes(surface)
       || ((surface === 'hub-live' || surface === 'relais-live') && new URLSearchParams(String((global.location && global.location.search) || '')).get('view') === 'execute');
-    const marketControl = createMarketControl(doc, adminContext, requireMarket);
+    const accessMode = adminContext?.access?.mode;
+    const consolidatedActionView =
+      ['shipping-customs-workspace', 'accounting-workspace'].includes(surface) ||
+      (surface === 'hub-live' &&
+       new URLSearchParams(String(global.location?.search || '')).get('view') === 'execute');
+    const allowOverview = consolidatedActionView &&
+      (accessMode === 'global' || (surface === 'hub-live' && accessMode === 'hub'));
+    const marketControl = createMarketControl(doc, adminContext, requireMarket, allowOverview);
     if (marketControl) utilities.appendChild(marketControl);
 
     const account = textNode(doc, 'span', 'kmc-admin-account', roleLabel(user));

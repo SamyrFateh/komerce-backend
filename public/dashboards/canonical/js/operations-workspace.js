@@ -424,7 +424,7 @@
     scannerInput.type = 'text';
     scannerInput.autocomplete = 'off';
     scannerInput.className = 'kmc-workspace-receive-scan-input';
-    scannerInput.placeholder = 'Scanner EAN / code fournisseur puis Entrée';
+    scannerInput.placeholder = 'EAN, GTIN ou code fournisseur — Entrée';
     scannerInput.setAttribute('aria-label', 'Scanner le code physique de la référence fournisseur');
     scannerLabel.appendChild(scannerInput);
     scannerPanel.appendChild(scannerLabel);
@@ -437,7 +437,7 @@
     manualProof.type = 'text';
     manualProof.maxLength = 500;
     manualProof.className = 'kmc-workspace-receive-manual-proof';
-    manualProof.placeholder = 'Mode dégradé : justification de la saisie manuelle (6 caractères min.)';
+    manualProof.placeholder = 'Ex. scanner indisponible, contrôle visuel';
     manualProof.setAttribute('aria-label', 'Justification de la réception en saisie manuelle');
     manualProof.setAttribute('data-receive-manual-proof', '');
     manualProof.hidden = true;
@@ -449,7 +449,11 @@
     manualToggle.setAttribute('aria-label', 'Saisie manuelle : provenance MANUAL avec justification obligatoire');
     manualToggleLabel.appendChild(manualToggle);
     scannerPanel.appendChild(manualToggleLabel);
-    scannerPanel.appendChild(manualProof);
+    const manualProofLabel = text(doc, 'label', 'kmc-workspace-receive-field-label',
+      'Justification manuelle · obligatoire (6 caractères minimum)');
+    manualProofLabel.hidden = true;
+    manualProofLabel.appendChild(manualProof);
+    scannerPanel.appendChild(manualProofLabel);
     card.appendChild(scannerPanel);
 
     const wrap = doc.createElement('div');
@@ -498,7 +502,10 @@
     tracking.maxLength = 120;
     tracking.placeholder = 'Suivi / référence du colis (facultatif)';
     tracking.setAttribute('aria-label', 'Suivi ou référence du colis reçu');
-    footer.appendChild(tracking);
+    const trackingLabel = text(doc, 'label', 'kmc-workspace-receive-field-label',
+      'Suivi ou référence du colis · facultatif');
+    trackingLabel.appendChild(tracking);
+    footer.appendChild(trackingLabel);
     const hint = text(doc, 'span', 'kmc-workspace-muted kmc-workspace-receive-hint', 'Saisissez la quantité réellement reçue. Aucune quantité n’est préremplie.');
     footer.appendChild(hint);
     const button = makeActionButton(doc, 'Enregistrer la réception', 'receive-supplier');
@@ -545,6 +552,7 @@
     manualProof.addEventListener('input', sync);
     manualToggle.addEventListener('change', () => {
       manualProof.hidden = !manualToggle.checked;
+      manualProofLabel.hidden = !manualToggle.checked;
       scannerResult.textContent = manualToggle.checked
         ? 'Saisie manuelle active : provenance MANUAL, justification obligatoire.'
         : 'Scanner la référence avant de déclarer sa quantité reçue.';
@@ -787,7 +795,7 @@
       rootNode,
       ui,
       'Hub · Réception fournisseur',
-      'Enregistrez ce qui est physiquement arrivé au Hub. Le statut fournisseur (par exemple SHIPPED) n’est jamais une réception ; les réceptions partielles sont acceptées.'
+      'Enregistrez uniquement les quantités physiquement arrivées au Hub. La mention « expédié par le fournisseur » ne prouve pas une réception ; les réceptions partielles sont acceptées.'
     );
     // Accessible même sans PO en attente : c’est précisément le cas d’un colis à rapprocher.
     slot.appendChild(createUnmanifestedArrivalCard(doc, context));
@@ -797,7 +805,7 @@
     }
     const orders = (context.receivable && context.receivable.purchase_orders) || [];
     if (!orders.length) {
-      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune Purchase Order en attente de réception.'));
+      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun bon fournisseur en attente de réception.'));
       return;
     }
     orders.forEach(po => slot.appendChild(createReceptionCard(doc, context, po)));
@@ -1181,9 +1189,24 @@
           const order = (d.orders || []).find(row => String(row.id) === String(orderId));
           if (order) showSourcingResolution({ id: order.id, reference: order.reference, items: order.items || [] });
         },
-        openPhysical: () => {
+        openReception: () => {
+          context.view = 'reception';
+          context.renderCurrent();
+        },
+        openPhysical: (target = 'all') => {
           const details = physicalDetails();
-          if (details) { details.open = true; details.scrollIntoView?.({ block: 'start', behavior: 'smooth' }); }
+          if (!details) return;
+          details.open = true;
+          const targets = {
+            bags: '[data-hub-bag-preparation]',
+            boxes: '[data-supply-box-create]',
+            shipments: '[data-supply-shipment-bar]',
+          };
+          const selector = targets[target];
+          const anchor = (selector && details.querySelector(selector)) || details;
+          // Navigation opérateur déterministe : ne pas lancer une animation
+          // avant le prochain clic Chromium (Sacs -> KOM-BOX -> Expéditions).
+          anchor.scrollIntoView?.({ block: 'start', behavior: 'auto' });
         },
       });
       } catch (error) {
@@ -1575,7 +1598,10 @@
     const secondary = doc.createElement('details');
     secondary.className = 'kmc-hub-physical-secondary';
     secondary.setAttribute('data-hub-physical-details', '');
-    secondary.appendChild(text(doc, 'summary', '', 'Détails physiques exhaustifs · réceptions, sacs, KOM-BOX, expéditions'));
+    // Atelier opérationnel visible par défaut : le repli est réservé aux détails
+    // et ne doit jamais dissimuler les gestes attendus au Golden M01.
+    secondary.open = true;
+    secondary.appendChild(text(doc, 'summary', '', 'Ateliers physiques · Sacs, KOM-BOX et expéditions'));
     [...rootNode.children].slice(secondaryStart).forEach(node => secondary.appendChild(node));
     rootNode.appendChild(secondary);
   }
@@ -1621,6 +1647,18 @@
       }
     }
     rootNode.setAttribute('data-relay-active-operation',key);
+    // Guidage compact dérivé de la file déjà active, sans seconde logique métier.
+    const activeLink=rootNode.querySelector('[data-relay-execution-jump="'+key+'"]');
+    const title=rootNode.querySelector('[data-relay-next-title]');
+    const detail=rootNode.querySelector('[data-relay-next-detail]');
+    if(activeLink&&title&&detail) {
+      const label=activeLink.querySelector('strong')?.textContent||'File sélectionnée';
+      const pending=activeLink.getAttribute('data-relay-item-count');
+      title.textContent='À faire maintenant · '+label;
+      detail.textContent=pending==null?'Consulter les arrivages de ce marché.':
+        Number(pending)>0?pending+' dossier(s) dans cette file à examiner.':
+          'Aucun dossier en attente dans cette file.';
+    }
   }
 
   // V1 SAV — une demande rattachée au VRAI article remis, sans réception
@@ -2004,6 +2042,17 @@
           relay.cash_pending?.length?'cash':
           relay.local_receipt_pending?.length || relay.to_receive?.some(x=>x.local_receivable===true)?'receive':'shipments');
       }
+      const guide=doc.createElement('section');
+      guide.className='kmc-relay-next';
+      guide.setAttribute('data-relay-next', '');
+      guide.setAttribute('aria-label','Prochain geste au relais');
+      const nextTitle=text(doc,'strong','kmc-relay-next-title','À faire maintenant');
+      nextTitle.setAttribute('data-relay-next-title','');
+      guide.appendChild(nextTitle);
+      const nextDetail=text(doc,'span','kmc-relay-next-detail','Choisissez une file ci-dessous.');
+      nextDetail.setAttribute('data-relay-next-detail','');
+      guide.appendChild(nextDetail);
+      rootNode.appendChild(guide);
       const dock=doc.createElement('nav');
       dock.className='kmc-relay-execution-jumpbar';
       dock.setAttribute('aria-label','Choisir une opération du relais');
@@ -2012,6 +2061,7 @@
         link.className='kmc-relay-execution-jump';
         link.href='#relay-execution-'+choice.key;
         link.setAttribute('data-relay-execution-jump',choice.key);
+        if(choice.count!==null)link.setAttribute('data-relay-item-count',String(choice.count));
         link.appendChild(text(doc,'strong','',choice.label));
         if(choice.count!==null)link.appendChild(text(doc,'b','',String(choice.count)));
         link.addEventListener('click',()=>{

@@ -58,7 +58,7 @@ const TRACE = { chain: [{
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
-async function mount(page, posts, openPhysical = true) {
+async function mount(page, posts, openPhysical = true, receivable = { purchase_orders: [] }) {
   page.on('dialog', (dialog) => dialog.accept());
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
@@ -75,7 +75,7 @@ async function mount(page, posts, openPhysical = true) {
     if (url.pathname === '/api/auth/me') return json(FX.auth_me);
     if (url.pathname === '/api/admin/dashboard/context') return json(FX.context);
     if (url.pathname === API) return json(WORKSPACE);
-    if (url.pathname === '/api/scans/hub/receivable') return json({ purchase_orders: [] });
+    if (url.pathname === '/api/scans/hub/receivable') return json(receivable);
     if (url.pathname === `${API}/supply`) return json(shapeDossier(DOSSIER));
     if (url.pathname === `${API}/supply/trace`) return json(TRACE);
     return route.fulfill({ status: 404, body: '' });
@@ -84,7 +84,10 @@ async function mount(page, posts, openPhysical = true) {
   await page.locator('select').first().selectOption({ label: 'KM · Comores' });
   await expect(page.locator('h1')).toHaveText('Hub live · Dossiers');
   await page.locator('[data-workspace-view="supply"]').click();
-  if (openPhysical) await page.locator('[data-hub-physical-details] > summary').click();
+  if (openPhysical) {
+    const physical = page.locator('[data-hub-physical-details]');
+    if (!(await physical.evaluate(node => node.open))) await physical.locator('summary').click();
+  }
 }
 
 test.describe('Hub live · Approvisionnement — desktop 1440', () => {
@@ -173,5 +176,63 @@ test.describe('Hub live · Approvisionnement — mobile 390', () => {
     await expect(page.locator('[data-hlc-order]').first()).toContainText('Câble USB');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
+  });
+});
+
+test.describe('Hub UX guidée — contrat Golden conservé', () => {
+  test('atelier physique visible par défaut ; quatre accès directs ; aucune écriture', async ({ page }) => {
+    const posts = [];
+    await mount(page, posts, false);
+    const details = page.locator('[data-hub-physical-details]');
+    await expect(details).toHaveJSProperty('open', true);
+    await expect(page.locator('[data-hub-bag-preparation]')).toBeVisible();
+    await expect(page.locator('[data-supply-boxes]')).toBeVisible();
+    const shortcuts = page.locator('[data-hlc-physical-shortcut]');
+    await expect(shortcuts).toHaveCount(4);
+    await page.locator('[data-hlc-physical-shortcut="bags"]').click();
+    await expect(page.locator('[data-hub-bag-preparation]')).toBeInViewport();
+    await page.locator('[data-hlc-physical-shortcut="boxes"]').click();
+    await expect(page.locator('[data-supply-box-create]')).toBeInViewport();
+    await page.locator('[data-hlc-physical-shortcut="shipments"]').click();
+    await expect(page.locator('[data-supply-shipment-bar]')).toBeInViewport();
+    expect(posts).toEqual([]);
+  });
+
+
+  test('réception fournisseur : libellés persistants et justification manuelle visible', async ({ page }) => {
+    const posts = [];
+    await mount(page, posts, false, { purchase_orders: [{
+      purchase_order_id: PO,
+      po_status: 'notified',
+      supplier: { name: 'Fournisseur A' },
+      supplier_order_ref: 'A-001',
+      lines: [{
+        product_name: 'Câble USB', product_sku_id: 'sku-1',
+        expected_quantity: 3, received_quantity: 2, remaining_quantity: 1,
+        reception_state: 'partial',
+      }],
+    }] });
+    await page.locator('[data-hlc-physical-shortcut="reception"]').click();
+    const form = page.locator(`[data-receive-po="${PO}"]`);
+    await expect(form.getByText('Suivi ou référence du colis · facultatif')).toBeVisible();
+    await expect(form.locator('[data-receive-manual-proof]')).toBeHidden();
+    await form.locator('[data-receive-manual-toggle]').check();
+    await expect(form.getByText('Justification manuelle · obligatoire (6 caractères minimum)')).toBeVisible();
+    await expect(form.locator('[data-receive-manual-proof]')).toBeVisible();
+    await expect(form.locator('[data-workspace-action="receive-supplier"]')).toBeDisabled();
+    expect(posts).toEqual([]);
+  });
+
+  test('prochain geste unique en troisième colonne ; réception reste un vrai onglet', async ({ page }) => {
+    const posts = [];
+    await mount(page, posts, false);
+    await page.locator('[data-hlc-po]').first().click();
+    const quick = page.locator('[data-hlc-zone="physical"] [data-hlc-next-action]');
+    await expect(quick).toBeVisible();
+    await expect(quick).toContainText('À faire sur ce dossier');
+    expect(await quick.locator('.hlc-btn.is-primary').count()).toBeLessThanOrEqual(1);
+    await page.locator('[data-hlc-physical-shortcut="reception"]').click();
+    await expect(page.locator('[data-workspace-view="reception"]')).toHaveAttribute('aria-selected', 'true');
+    expect(posts).toEqual([]);
   });
 });

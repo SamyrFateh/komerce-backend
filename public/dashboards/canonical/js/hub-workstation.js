@@ -24,6 +24,8 @@
   const BRANCHES = Object.freeze({
     administrative: { label: 'Administration', hint: 'Achats, fournisseurs et engagements' },
     operations: { label: 'Opérations', hint: 'Réception, contrôle et expéditions' },
+    // Vue de supervision, pas une troisième branche métier ni un nouveau writer.
+    direction: { label: 'Direction Hub', hint: 'Décisions, paiements et arbitrages' },
   });
   const PO_STAGE = Object.freeze({
     draft: 'À préparer', notified: 'En cours', confirmed: 'En cours',
@@ -221,13 +223,20 @@
           'Journal indisponible : '+(err.message||'accès impossible')));
       }
     }
+    const openJournal=()=>{
+      if(!content.hidden) return;
+      content.hidden=false;
+      heading.setAttribute('aria-expanded','true');
+      heading.textContent='Journal de suivi · Masquer les notes';
+      void load();
+    };
     heading.addEventListener('click',()=>{
-      const open=content.hidden;
-      content.hidden=!open;
-      heading.setAttribute('aria-expanded',String(open));
-      heading.textContent=open?'Journal de suivi · Masquer les notes':'Journal de suivi · Voir les notes';
-      if(open) void load();
+      if(content.hidden) return openJournal();
+      content.hidden=true;
+      heading.setAttribute('aria-expanded','false');
+      heading.textContent='Journal de suivi · Voir les notes';
     });
+    return {open:openJournal, section};
   }
   const smallRef = value => safe(value).slice(0, 8);
   const getPO = location => new URLSearchParams(safe(location && location.search)).get('po') || '';
@@ -274,27 +283,70 @@
         body.appendChild(make(doc,'p','hlc-director-empty','Aucune tâche Hub en attente sur les marchés actifs.'));
         return payload;
       }
+      // Regroupement visuel d'une projection déjà autorisée côté serveur :
+      // engagements et paiements sont DEUX décisions différentes. Aucune mutation ici.
+      const groupSpecs = [
+        { key:'commitment', title:'1 · Engagements à valider', hint:'Autoriser l’achat fournisseur avant soumission' },
+        { key:'payment', title:'2 · Paiements à autoriser', hint:'Autorisation distincte du paiement effectivement exécuté' },
+        { key:'arbitrage', title:'3 · Arbitrages et anomalies', hint:'Situations bloquées nécessitant une décision' },
+        { key:'execution', title:'4 · Suivi de l’exécution', hint:'Gestes confiés aux agents du Hub' },
+      ];
+      const groupOf = task => task.kind === 'AUTHORIZE_COMMITMENT' ? 'commitment'
+        : task.kind === 'AUTHORIZE_PAYMENT' ? 'payment'
+          : task.owner === 'responsable_hub' ? 'arbitrage' : 'execution';
+      const groups = new Map(groupSpecs.map(spec => [spec.key, []]));
+      payload.tasks.forEach(task => groups.get(groupOf(task)).push(task));
+      const decisionCount = ['commitment','payment','arbitrage'].reduce((n,key) => n+groups.get(key).length,0);
+      const intro=make(doc,'div','hlc-director-intro');
+      intro.appendChild(make(doc,'strong','',decisionCount+' décision(s) à examiner'));
+      intro.appendChild(make(doc,'span','',
+        'Engagement, autorisation de paiement et réalisation financière restent séparés. Les liens ouvrent le dossier sans valider à votre place.'));
+      body.appendChild(intro);
       const list=make(doc,'div','hlc-director-list');
       list.setAttribute('data-hub-director-list','');
-      for(const task of payload.tasks) {
-        const row=make(doc,'div','hlc-director-task'+(task.overdue?' is-overdue':''));
-        row.setAttribute('data-hub-director-task',safe(task.kind||'TASK'));
-        const market=safe(task.market&&task.market.code||'—');
-        row.appendChild(make(doc,'strong','hlc-director-market',market));
-        const detail=make(doc,'span','hlc-director-detail');
-        detail.appendChild(make(doc,'strong','hlc-director-name',task.missing||task.kind||'Tâche Hub'));
-        if (task.why) detail.appendChild(make(doc,'span','hlc-director-why',task.why));
-        row.appendChild(detail);
-        const age=task.age_hours == null?'Âge inconnu':
-          task.age_hours>=48?Math.floor(task.age_hours/24)+' j':task.age_hours+' h';
-        row.appendChild(make(doc,'span','hlc-director-age'+(task.overdue?' is-overdue':''),
-          (task.overdue?'⚠ ':'')+age));
-        if (/^[A-Z]{2}$/.test(market)) {
-          const link=make(doc,'a','hlc-director-open','Ouvrir le marché');
-          link.setAttribute('href','/admin/hub-live?view=execute&market='+encodeURIComponent(market));
-          row.appendChild(link);
+      for (const spec of groupSpecs) {
+        const tasks=groups.get(spec.key);
+        if (!tasks.length) continue;
+        const group=make(doc,'section','hlc-director-group');
+        group.setAttribute('data-hub-director-group',spec.key);
+        const groupHeading=make(doc,'div','hlc-director-group-heading');
+        groupHeading.appendChild(make(doc,'strong','',spec.title));
+        groupHeading.appendChild(make(doc,'span','hlc-director-group-count',String(tasks.length)));
+        group.appendChild(groupHeading);
+        group.appendChild(make(doc,'small','hlc-director-group-hint',spec.hint));
+        const rows=make(doc,'div','hlc-director-group-rows');
+        for(const task of tasks) {
+          const row=make(doc,'div','hlc-director-task'+(task.overdue?' is-overdue':'')+
+            (task.viewer_can_act===false?' is-readonly':''));
+          row.setAttribute('data-hub-director-task',safe(task.kind||'TASK'));
+          const market=safe(task.market&&task.market.code||'—');
+          row.appendChild(make(doc,'strong','hlc-director-market',market));
+          const detail=make(doc,'span','hlc-director-detail');
+          detail.appendChild(make(doc,'strong','hlc-director-name',task.missing||task.kind||'Tâche Hub'));
+          if (task.why) detail.appendChild(make(doc,'span','hlc-director-why',task.why));
+          if (task.viewer_can_act===false) detail.appendChild(make(doc,'small','hlc-director-access',
+            task.blocked_reason||'Action réservée à un profil habilité'));
+          row.appendChild(detail);
+          const age=task.age_hours == null?'Âge inconnu':
+            task.age_hours>=48?Math.floor(task.age_hours/24)+' j':task.age_hours+' h';
+          row.appendChild(make(doc,'span','hlc-director-age'+(task.overdue?' is-overdue':''),
+            (task.overdue?'⚠ ':'')+age));
+          if (/^[A-Z]{2}$/.test(market)) {
+            const subject=task.subject||{};
+            const id=(subject.po_id && /^[A-Za-z0-9-]{1,128}$/.test(String(subject.po_id)))
+              ? 'po:'+String(subject.po_id)
+              : (subject.order_id && /^[A-Za-z0-9-]{1,128}$/.test(String(subject.order_id)))
+                ? 'order:'+String(subject.order_id) : '';
+            const link=make(doc,'a','hlc-director-open',
+              id.startsWith('po:')?'Examiner la PO':id.startsWith('order:')?'Examiner la commande':'Ouvrir le marché');
+            link.setAttribute('href','/admin/hub-live?view=execute&market='+encodeURIComponent(market)+
+              (id?'&sel='+encodeURIComponent(id):''));
+            row.appendChild(link);
+          }
+          rows.appendChild(row);
         }
-        list.appendChild(row);
+        group.appendChild(rows);
+        list.appendChild(group);
       }
       body.appendChild(list);
       return payload;
@@ -373,7 +425,7 @@
       menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-summary', value));
       const stageKey = ({ PO:'po', Fournisseur:'supplier', Réception:'reception', Cartons:'cartons', Départ:'departure', 'Reste à solder':'remaining' })[label];
       const state = stageKey && order.stage_states && order.stage_states[stageKey];
-      const locked = state === 'locked';
+      const locked = state === 'locked' || state === 'complete';
       menu.setAttribute('data-hub-menu-stage-state', state || 'unknown');
       if (stageKey === order.current_key && order.current_phase) {
         menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-current',
@@ -408,8 +460,20 @@
             ? 'Consultation seule : cette étape ne peut pas être modifiée avec ce profil.'
             : 'Les actions de cette étape ne sont pas chargées. Actualiser la page.'));
       }
-      mountStageJournal(menu, {doc, fetch:fetchFn, user, order, stageKey,
+      const journal=mountStageJournal(menu, {doc, fetch:fetchFn, user, order, stageKey,
         isCurrent:()=>!menu.hidden && menu.getAttribute('data-hub-request')===requestId});
+      if (locked && canOperate && journal) {
+        // Un commentaire de suivi n'est jamais une réouverture d'étape.
+        const comment=make(doc,'button','kmc-hub-board-menu-action is-comment','Ajouter un commentaire à cette étape');
+        comment.type='button';
+        comment.setAttribute('data-hub-completed-comment','');
+        comment.addEventListener('click',()=>{
+          menu.classList.add('is-editing');
+          journal.open();
+          anchor.move();
+        });
+        menu.insertBefore(comment,journal.section);
+      }
       anchor.select(event?.currentTarget);
       menu.querySelector?.('a,button')?.focus?.();
     };
@@ -794,7 +858,7 @@
       history.replaceState(null,'',HUB_PATH + (params.toString() ? '?' + params.toString() : ''));
     }
     const requested=parseBranch(safe(location?.search));
-    const branch=requested === 'administrative' && !administrativeAllowed ? 'operations' : requested;
+    const branch=(requested === 'administrative' || requested === 'direction') && !administrativeAllowed ? 'operations' : requested;
     root.replaceChildren();
     root.className='kmc-hub-app';
     const header=make(doc,'header','kmc-hub-app-header');
@@ -827,8 +891,8 @@
     root.appendChild(header);
     const nav=make(doc,'nav','kmc-hub-app-branches');
     nav.setAttribute('aria-label','Postes de travail Hub');
-    for(const id of ['administrative','operations']){
-      if(id === 'administrative' && !administrativeAllowed)continue;
+    for(const id of ['operations','administrative','direction']){
+      if(id !== 'operations' && !administrativeAllowed)continue;
       const spec=BRANCHES[id];
       const link=make(doc,'a','kmc-hub-app-branch');
       link.setAttribute('href',href(id,safe(location?.search)));
@@ -844,17 +908,20 @@
     const layout=make(doc,'div','kmc-hub-app-layout is-table');
     const content=make(doc,'section','kmc-hub-app-content');
     content.setAttribute('data-hub-active-branch',branch);
-    // La file direction reste visible dans le poste global, quel que soit l'onglet.
-    const directorLoad=administrativeAllowed && typeof fetchFn === 'function'
-      ? renderDirectorQueue(content,{document:doc,fetch:fetchFn,user}) : Promise.resolve(null);
+    // La Direction dispose d'un onglet de lecture propre. Le Kanban reste
+    // le premier contenu de la vue Opérations, sans file déployée au-dessus.
     const host=make(doc,'div','kmc-hub-app-workspace');
     host.setAttribute('data-hub-branch-workspace',branch);
     content.appendChild(host);
     layout.appendChild(content);
     root.appendChild(layout);
-    const reloadCases=()=>Promise.resolve(branch === 'administrative'
-      ? renderAdministrative(host) : renderOperations(host));
+    const reloadCases=()=>Promise.resolve(
+      branch === 'direction'
+        ? renderDirectorQueue(host,{document:doc,fetch:fetchFn,user})
+        : branch === 'administrative' ? renderAdministrative(host) : renderOperations(host)
+    );
     const selected=reloadCases();
+    const directorLoad=branch==='direction' ? selected : Promise.resolve(null);
     selected.catch?.(()=>{});
     const selectPO=id=>{
       if(branch !== 'administrative')return;

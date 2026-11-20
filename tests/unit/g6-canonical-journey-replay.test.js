@@ -52,7 +52,8 @@ describe('G6 canonical journey — same order, original matrix, real staging gua
   test('réutilise M01/M04/M05 sans prétendre supporter les autres branches',()=>{
     expect(resolveCanonicalReplay(env)).toMatchObject({id:'M01',market:'KM'});
     expect(resolveCanonicalReplay({...env,G6_CANONICAL_SCENARIO:'M04',G6_TARGET_MARKET:'CM'}).market).toBe('CM');
-    expect(()=>resolveCanonicalReplay({...env,G6_CANONICAL_SCENARIO:'M02'})).toThrow();
+    for(const m of ['KM','CM','CG'])expect(resolveCanonicalReplay({...env,G6_CANONICAL_SCENARIO:'M02',G6_TARGET_MARKET:m})).toMatchObject({id:'M02',market:m});
+    expect(()=>resolveCanonicalReplay({...env,G6_CANONICAL_SCENARIO:'M03'})).toThrow(/NOT_BOUND/);
     expect(()=>resolveCanonicalReplay({...env,G6_CANONICAL_SCENARIO:'M06'})).toThrow();
   });
   test('pas de régression pour les 3 références historiques',()=>{

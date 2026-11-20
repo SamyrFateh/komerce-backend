@@ -36,3 +36,42 @@
 .kmc-journey-error{margin:0;color:#a52a20;font-size:13px;}
 .kmc-journey-history{padding:4px 14px;margin:6px 0;color:#49566d;font-size:12px;overflow-wrap:anywhere;}
 @media(max-width:820px){.kmc-journey-panel{padding:12px}.kmc-journey-form{grid-template-columns:1fr}}
+
+/* Expéditions & Douane : décision d'abord, puis dossier, preuves et historique.
+   Ne crée pas de second bouton de mutation : accès direct au writer existant. */
+.kmc-journey-next {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  gap: 9px 18px;
+  align-items: center;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid #d7dfeb;
+  border-left: 4px solid #bf681d;
+  border-radius: 10px;
+  background: #fffaf4;
+}
+.kmc-journey-next-heading { grid-column: 1 / -1; font-size: 13px; color: #603814; }
+.kmc-journey-next-copy { display: grid; gap: 5px; min-width: 0; }
+.kmc-journey-next-state { font-size: 12px; color: #374b60; overflow-wrap: anywhere; }
+.kmc-journey-next-button {
+  cursor: pointer;
+  min-height: 42px;
+  max-width: 100%;
+  padding: 9px 13px;
+  background: #1b3450;
+  border: 1px solid #1b3450;
+  border-radius: 8px;
+  color: white;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+.kmc-journey-next-button:hover { background: #284967; }
+.kmc-journey-next-button:focus-visible { outline: 2px solid #bb691a; outline-offset: 3px; }
+.kmc-journey-next-wait { justify-self: end; max-width: 240px; color: #6c5b44; font-size: 11px; }
+.kmc-journey-task[data-journey-next-task] { border-color: #bd8f56; }
+@media(max-width:760px) {
+  .kmc-journey-next { grid-template-columns: minmax(0,1fr); }
+  .kmc-journey-next-button,.kmc-journey-next-wait { justify-self: stretch; width: 100%; }
+}

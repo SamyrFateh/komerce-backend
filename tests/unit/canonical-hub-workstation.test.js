@@ -69,7 +69,8 @@ test('Administration et Opérations occupent toute la largeur sans rail doublon'
     location:{search:'?branch=administrative&market=KM'},fetch:mockFetch({}),
     renderAdministrative:admin,renderOperations:ops});
   expect(api.branch).toBe('administrative');
-  expect(root.children[1].querySelectorAll('[data-hub-branch]')).toHaveLength(2);
+  expect(root.children[1].querySelectorAll('[data-hub-branch]')).toHaveLength(3);
+  expect(root.querySelectorAll('[data-hub-director-todo]')).toHaveLength(0);
   expect(root.children[2].className).toContain('is-table');
   expect(root.querySelectorAll('[data-hub-case-list]')).toHaveLength(0);
   expect(admin).toHaveBeenCalledTimes(1);
@@ -78,12 +79,12 @@ test('Administration et Opérations occupent toute la largeur sans rail doublon'
   expect(admin).toHaveBeenCalledTimes(2);
 });
 
-test('un agent Hub voit les deux branches, sans autorisation de paiement ajoutée', () => {
+test('un agent Hub voit les deux branches et la supervision dédiée, sans autorisation ajoutée', () => {
   const app=load(),root=el('main'),admin=jest.fn();
   const mounted=app.mount({root,user:{role:'agent_hub'},document:doc,location:{search:'?branch=administrative'},
     renderAdministrative:admin,renderOperations:jest.fn()});
   expect(mounted.branch).toBe('administrative');
-  expect(root.querySelectorAll('[data-hub-branch]')).toHaveLength(2);
+  expect(root.querySelectorAll('[data-hub-branch]')).toHaveLength(3);
   expect(admin).toHaveBeenCalledTimes(1);
 });
 
@@ -93,6 +94,7 @@ test('un relais reste sur la consultation Opérations malgré une URL Administra
     renderAdministrative:admin,renderOperations:ops});
   expect(mounted.branch).toBe('operations');
   expect(root.querySelectorAll('[data-hub-branch]')).toHaveLength(1);
+  expect(root.querySelectorAll('[data-hub-branch="direction"]')).toHaveLength(0);
   expect(admin).not.toHaveBeenCalled();
   expect(ops).toHaveBeenCalledTimes(1);
 });
@@ -153,11 +155,12 @@ test('H4 : la directrice voit les tâches CM et KM depuis /admin/hub, sans write
     return {ok:true,json:async()=>({scope:'HUB_GLOBAL',orders:[]})};
   });
   const mounted=app.mount({
-    root,user:{role:'agent_hub'},document:doc,location:{search:'?branch=operations'},fetch,
+    root,user:{role:'agent_hub'},document:doc,location:{search:'?branch=direction'},fetch,
     renderAdministrative:jest.fn(),renderOperations:jest.fn(),
   });
   await mounted.directorLoad;
   expect(fetch).toHaveBeenCalledWith('/api/hub/director-todo', expect.objectContaining({method:'GET',credentials:'include'}));
+  expect(mounted.branch).toBe('direction');
   expect(root.querySelectorAll('[data-hub-director-todo]')).toHaveLength(1);
   expect(root.querySelectorAll('[data-hub-director-task="BOX_BAGS"]')).toHaveLength(2);
   const rows=root.querySelectorAll('[data-hub-director-task="BOX_BAGS"]');
@@ -176,6 +179,8 @@ test('les liens Hub ne conservent jamais le paramètre market', () => {
   const app=load();
   expect(app.href('operations','?market=KM&po=PO-42')).toBe('/admin/hub?branch=operations');
   expect(app.href('administrative','?market=KM')).toBe('/admin/hub?branch=administrative');
+  expect(app.href('direction','?market=CM&po=PO-42')).toBe('/admin/hub?branch=direction');
+  expect(app.parseBranch('?branch=direction')).toBe('direction');
   expect(app.parseBranch('?branch=unknown')).toBe('operations');
 });
 test('le poste intégré est raccordé au vrai routeur, pas à une page de démonstration', () => {
@@ -239,4 +244,77 @@ test('Responsable pays voit Hub · Mes marchés (et pas le cockpit central)', ()
     fetch:mockFetch({}),renderAdministrative:jest.fn(),renderOperations:jest.fn()});
   const heading=root.children[0].children[0].children.find(x=>x.tagName==='H1');
   expect(heading.textContent).toBe('Hub · Mes marchés');
+});
+
+test('Direction Hub : engagements, paiements, arbitrages, exécution séparés et liens de dossiers contextuels', async () => {
+  const app=load(), host=el('section'), po='11111111-1111-4111-8111-111111111111';
+  const tasks=[
+    {kind:'BOX_BAGS',owner:'agent_hub',market:{code:'CG'},missing:'Sac à emballer',age_hours:9},
+    {kind:'AUTHORIZE_PAYMENT',owner:'responsable_hub',market:{code:'KM'},subject:{po_id:po},
+      missing:'Autoriser le paiement',why:'Engagement distinct',viewer_can_act:false,
+      blocked_reason:'réservé à la responsable Hub',age_hours:50,overdue:true},
+    {kind:'AUTHORIZE_COMMITMENT',owner:'responsable_hub',market:{code:'KM'},subject:{po_id:po},
+      missing:'Valider engagement',age_hours:8,viewer_can_act:true},
+    {kind:'BLOCKED_BY_SHORTFALL',owner:'responsable_hub',market:{code:'CM'},
+      subject:{order_id:'22222222-2222-4222-8222-222222222222'},missing:'Rupture à arbitrer',age_hours:12},
+  ];
+  const fetch=jest.fn(async ()=>({ok:true,json:async()=>({
+    scope:'ALL_MARKETS',total:4,overdue_count:1,tasks,
+  })}));
+  const data=await app.renderDirectorQueue(host,{document:doc,fetch,user:{role:'admin'}});
+  expect(data.total).toBe(4);
+  expect(host.querySelectorAll('[data-hub-director-list]')).toHaveLength(1);
+  expect(host.querySelectorAll('[data-hub-director-group="commitment"]')).toHaveLength(1);
+  expect(host.querySelectorAll('[data-hub-director-group="payment"]')).toHaveLength(1);
+  expect(host.querySelectorAll('[data-hub-director-group="arbitrage"]')).toHaveLength(1);
+  expect(host.querySelectorAll('[data-hub-director-group="execution"]')).toHaveLength(1);
+  const payments=host.querySelectorAll('[data-hub-director-task="AUTHORIZE_PAYMENT"]');
+  expect(payments).toHaveLength(1);
+  expect(payments[0].className).toContain('is-readonly');
+  expect(payments[0].children.some(x=>x.getAttribute('href')===
+    '/admin/hub-live?view=execute&market=KM&sel=po%3A'+po)).toBe(true);
+  const physical=host.querySelectorAll('[data-hub-director-task="BOX_BAGS"]')[0];
+  expect(physical.children.some(x=>x.getAttribute('href')===
+    '/admin/hub-live?view=execute&market=CG')).toBe(true);
+  expect(fetch).toHaveBeenCalledWith('/api/hub/director-todo',expect.objectContaining({method:'GET'}));
+  expect(fetch).toHaveBeenCalledTimes(1);
+});
+
+test('la vue Kanban conserve la priorité et ne charge plus la file Direction', async()=>{
+  const app=load(),root=el('main'),admin=jest.fn(),ops=jest.fn();
+  const fetch=mockFetch({});
+  const mounted=app.mount({root,user:{role:'admin'},document:doc,fetch,
+    location:{search:'?branch=operations'},renderAdministrative:admin,renderOperations:ops});
+  await mounted.directorLoad;
+  expect(mounted.branch).toBe('operations');
+  expect(ops).toHaveBeenCalledTimes(1);
+  expect(admin).not.toHaveBeenCalled();
+  expect(root.querySelectorAll('[data-hub-director-todo]')).toHaveLength(0);
+  expect(fetch).not.toHaveBeenCalledWith('/api/hub/director-todo',expect.anything());
+});
+
+test('les profils non autorisés ne peuvent ouvrir Direction Hub via URL', async()=>{
+  const app=load(),root=el('main'),ops=jest.fn(),admin=jest.fn();
+  const mounted=app.mount({root,user:{role:'market_operator'},document:doc,
+    location:{search:'?branch=direction'},fetch:mockFetch({}),
+    renderAdministrative:admin,renderOperations:ops});
+  expect(mounted.branch).toBe('operations');
+  expect(root.querySelectorAll('[data-hub-branch="direction"]')).toHaveLength(0);
+  expect(root.querySelectorAll('[data-hub-director-todo]')).toHaveLength(0);
+  expect(ops).toHaveBeenCalledTimes(1);
+  expect(admin).not.toHaveBeenCalled();
+});
+
+test('Direction Hub ne rend aucun workspace administratif ou physique concurrent', async()=>{
+  const app=load(),root=el('main'),ops=jest.fn(),admin=jest.fn();
+  const fetch=jest.fn(async ()=>({ok:true,json:async()=>({scope:'ALL_MARKETS',tasks:[],overdue_count:0})}));
+  const mounted=app.mount({root,user:{role:'admin'},document:doc,
+    location:{search:'?branch=direction'},fetch,
+    renderAdministrative:admin,renderOperations:ops});
+  await mounted.directorLoad;
+  expect(mounted.branch).toBe('direction');
+  expect(ops).not.toHaveBeenCalled();
+  expect(admin).not.toHaveBeenCalled();
+  expect(root.querySelectorAll('[data-hub-director-todo]')).toHaveLength(1);
+  expect(fetch).toHaveBeenCalledTimes(1);
 });

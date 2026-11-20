@@ -9,27 +9,36 @@
 'use strict';
 const {marketProfile}=require('./market-profile');
 const {executeBoundJourney}=require('./dynamic-runner');
-const {stageGraph,loadGoldenStages}=require('./stage-registry');
+const {graphFor,scenarioProfile,SCENARIO_STAGE_IDS}=require('./stage-registry');
 const SHA=/^[a-f0-9]{40}$/;
 const UUID=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 const REF=/^[A-Z0-9][A-Z0-9-]{5,63}$/;
 const DIGEST=/^[a-f0-9]{64}$/;
 const REQUIRE=['attestRuntimeBeforeBuyer','executeBuyerChromium','verifyBuyerIndependently',
  'persistEvidence','authenticateCheckpoint','attestRuntime','executeStage','verifyStageProof'];
-async function bootstrapFreshM01({toStage='CLIENT_PICKUP',adapters}={}){
+async function bootstrapFreshScenario({scenario='M01',toStage='CLIENT_PICKUP',adapters}={}){
+ scenarioProfile(scenario);
  if(!adapters||REQUIRE.some(name=>typeof adapters[name]!=='function'))
   throw Error('G6_FRESH_BOOTSTRAP_ADAPTERS_REQUIRED');
  const runtime=await adapters.attestRuntimeBeforeBuyer();
- if(runtime?.environment!=='staging'||runtime.scenario_id!=='M01'||runtime.market!==marketProfile(process.env).code||
+ if(runtime?.environment!=='staging'||runtime.scenario_id!==scenario||runtime.market!==marketProfile(process.env).code||
   !SHA.test(String(runtime.staging_sha||''))||!String(runtime.db_fingerprint||'').trim()||
   runtime.production_permitted!==false||
   runtime.attestation_origin!=='INDEPENDENT_CHROMIUM_POSTGRESQL')
   throw Error('G6_FRESH_BOOTSTRAP_RUNTIME_INVALID');
- const graph=stageGraph(loadGoldenStages()),stage=graph.byId.get('BUYER');
+ const graph=graphFor(scenario),stage=graph.byId.get('BUYER');
+ // M02 : le produit LOCAL_STOCK vendable est choisi ici, en lecture seule ; M01 garde son produit historique.
+ let product=null;
+ if(scenario!=='M01'){
+  if(typeof adapters.resolveLocalStockProduct!=='function')throw Error('G6_FRESH_BOOTSTRAP_PRODUCT_RESOLVER_REQUIRED');
+  product=await adapters.resolveLocalStockProduct({runtime});
+  if(!product||!REF.test(String(product.product_ref||''))||!Number.isInteger(product.price)||product.price<=0)
+   throw Error('G6_FRESH_BOOTSTRAP_LOCAL_STOCK_PRODUCT_INVALID');
+ }
  const buyer=await stage.run({
   runCertifiedStage:async id=>{
    if(id!=='BUYER')throw Error('G6_FRESH_BOOTSTRAP_STAGE_MISMATCH');
-   return adapters.executeBuyerChromium({runtime});
+   return product?adapters.executeBuyerChromium({runtime,product}):adapters.executeBuyerChromium({runtime});
   }
  });
  if(buyer?.verdict!=='G6_P2_REAL_OTP_CHROMIUM_ORDER_CREATED_NO_EXTERNAL_EFFECTS'||
@@ -42,7 +51,7 @@ async function bootstrapFreshM01({toStage='CLIENT_PICKUP',adapters}={}){
   buyer.payment_real!==false||buyer.supplier_order_real!==false||
   buyer.blocked_requests?.length)
   throw Error('G6_FRESH_BOOTSTRAP_BUYER_PROOF_INVALID');
- const context=Object.freeze({scenario_id:'M01',market:runtime.market,
+ const context=Object.freeze({scenario_id:scenario,market:runtime.market,
   order_id:buyer.order.id,order_reference:buyer.order.reference,
   staging_sha:runtime.staging_sha,db_fingerprint:runtime.db_fingerprint,
   production_permitted:false});
@@ -56,7 +65,7 @@ async function bootstrapFreshM01({toStage='CLIENT_PICKUP',adapters}={}){
   attested.order_reference!==context.order_reference||
   attested.db_fingerprint!==context.db_fingerprint||
   attested.staging_sha!==context.staging_sha||
-  attested.scenario_id!=='M01'||attested.market!==context.market||
+  attested.scenario_id!==scenario||attested.market!==context.market||
   attested.production_permitted!==false||
   attested.attestation_origin!=='INDEPENDENT_CHROMIUM_POSTGRESQL'||
   attested.external_supplier_calls!==0||attested.external_payment_executed!==false||
@@ -84,4 +93,5 @@ async function bootstrapFreshM01({toStage='CLIENT_PICKUP',adapters}={}){
  return executeBoundJourney({fromStage:'RELAY_CASH',toStage,context,
   checkpoints:[checkpoint],adapters});
 }
-module.exports={bootstrapFreshM01};
+const bootstrapFreshM01=(args={})=>bootstrapFreshScenario({...args,scenario:'M01'});
+module.exports={bootstrapFreshM01,bootstrapFreshScenario};

@@ -561,6 +561,7 @@ module.exports = {
       'dashboards/canonical/js/finance-accounting-workspace.js',
       'dashboards/canonical/js/finance-journal-workspace.js',
       'dashboards/canonical/js/international-journey-panel.js',
+      'dashboards/canonical/css/international-journey-panel.css',
       'dashboards/canonical/js/finance-accounting-workspace-decision.js',
       'dashboards/canonical/js/sourcing-workspace.js',
       'dashboards/canonical/js/catalog-workspace.js',
@@ -702,6 +703,8 @@ module.exports = {
       'css/ct-inventory.css',
     ],
     tests: [
+      'tests/staging-canonical/market-visibility-mono.spec.js',
+      'tests/unit/staging-market-visibility-mono-summary.test.js',
       'tests/unit/staging-five-market-matrix.test.js',
       'tests/staging-business/market-chromium-real-readonly.spec.js',
       'tests/integration/signal-simulation-scope-postgres.test.js',

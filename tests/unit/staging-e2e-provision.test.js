@@ -11,7 +11,7 @@ function baseEnv(over = {}) {
     STAGING_BASE_URL: 'https://staging.example', EXPECTED_RAILWAY_ENVIRONMENT: 'staging',
     KOMERCE_STAGING_RESET_DB_PIN: 'db.example:5432/staging',
   };
-  for (const p of PROFILES.filter((x) => x.key !== 'hub_director')) {
+  for (const p of PROFILES.filter((x) => x.key !== 'hub_director' && !x.singleMarket)) {
     env[`E2E_${p.prefix}_EMAIL`] = `${p.key}@komerce.test`; env[`E2E_${p.prefix}_PASSWORD`] = PW(p.key);
   }
   return { ...env, ...over };
@@ -87,8 +87,8 @@ describe('profils et secrets', () => {
   test('responsable Hub sans secrets : sautée avec avertissement, pas d\'échec', () => {
     const { accounts, skipped } = readProfiles(baseEnv());
     expect(accounts.map((a) => a.key)).not.toContain('hub_director');
-    expect(skipped).toHaveLength(1);
-    expect(skipped[0].reason).toContain('E2E_HUB_DIRECTOR_EMAIL');
+    expect(skipped.map((x) => x.profile)).toEqual(['market_operator_km','market_operator_cm','market_operator_cg','hub_director']);
+    expect(skipped.find(x=>x.profile==='hub_director').reason).toContain('E2E_HUB_DIRECTOR_EMAIL');
   });
   test('responsable Hub avec secrets : incluse avec les deux grants', () => {
     const { accounts } = readProfiles(baseEnv({ E2E_HUB_DIRECTOR_EMAIL: 'hd@komerce.test', E2E_HUB_DIRECTOR_PASSWORD: PW('hd') }));
@@ -101,6 +101,19 @@ describe('profils et secrets', () => {
     try { readProfiles(baseEnv({ E2E_FINANCE_PASSWORD: 'faible' })); } catch (e) { msg = e.message; }
     expect(msg).toContain('E2E_FINANCE_PASSWORD');
     expect(msg).not.toContain('faible');
+  });
+  test('mode MKT-READ exige les trois couples mono-marché et n’affiche aucune valeur', () => {
+    const env = baseEnv({ E2E_REQUIRE_MARKET_OPERATOR_MONO: '1' });
+    expect(() => readProfiles(env)).toThrow('E2E_MARKET_OPERATOR_KM_EMAIL');
+    for (const market of ['KM', 'CM', 'CG']) {
+      env[`E2E_MARKET_OPERATOR_${market}_EMAIL`] = `operator-${market}@komerce.test`;
+      env[`E2E_MARKET_OPERATOR_${market}_PASSWORD`] = PW(market);
+    }
+    const { accounts, skipped } = readProfiles(env);
+    const mono = accounts.filter((x) => x.singleMarket);
+    expect(mono.map((x) => [x.singleMarket, x.scope.market])).toEqual([['KM', 'KM'], ['CM', 'CM'], ['CG', 'CG']]);
+    expect(skipped.some((x) => x.profile === 'market_operator_km')).toBe(false);
+    expect(JSON.stringify({ accounts: mono.map(({ key, prefix, scope }) => ({ key, prefix, scope })) })).not.toContain('@komerce.test');
   });
 });
 
@@ -166,6 +179,21 @@ describe('run', () => {
     expect(dry.committed).toBe(false); expect(w.tx).toContain('ROLLBACK');
     const exec = await run({ db, mode: 'execute', env, deps, guard });
     expect(exec.profiles.every((p) => ['marked', 'unchanged'].includes(p.e2e_marker))).toBe(true);
+  });
+  test('execute les trois comptes mono-marché avec leurs scopes propres', async () => {
+    const { db, deps, guard } = fakeWorld();
+    const env = { ...baseEnv({ KOMERCE_STAGING_E2E_PROVISION_ACK: ACK_VALUE, E2E_REQUIRE_MARKET_OPERATOR_MONO: '1' }) };
+    for (const market of ['KM', 'CM', 'CG']) {
+      env[`E2E_MARKET_OPERATOR_${market}_EMAIL`] = `operator-${market}@komerce.test`;
+      env[`E2E_MARKET_OPERATOR_${market}_PASSWORD`] = PW(market);
+    }
+    const report = await run({ db, mode: 'execute', env, deps, guard });
+    const mono = report.profiles.filter((x) => x.profile.startsWith('market_operator_'));
+    expect(mono.map((x) => [x.profile, x.market_scope.market])).toEqual([
+      ['market_operator_km', 'KM'], ['market_operator_cm', 'CM'], ['market_operator_cg', 'CG'],
+    ]);
+    expect(JSON.stringify(report)).not.toContain('@komerce.test');
+    expect(JSON.stringify(report)).not.toContain('SECRETVALUE');
   });
 
   test('mot de passe changé dans le secret : mis à jour via le writer canonique', async () => {

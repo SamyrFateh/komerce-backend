@@ -1,0 +1,61 @@
+# Owner-only: le responsable pays déclare 10 unités de stock local par l'écran W3 (staging uniquement).
+name: G6 local stock declare (staging only)
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: komerce-g6-local-stock-declare
+  cancel-in-progress: false
+jobs:
+  declare:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      (github.event.issue.title == '[staging-op] g6-local-stock-declare-KM' ||
+       github.event.issue.title == '[staging-op] g6-local-stock-declare-CM' ||
+       github.event.issue.title == '[staging-op] g6-local-stock-declare-CG')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      G6_TARGET_MARKET: ${{ endsWith(github.event.issue.title, '-CM') && 'CM' || endsWith(github.event.issue.title, '-CG') && 'CG' || 'KM' }}
+      E2E_MARKET_OPERATOR_KM_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_KM_EMAIL }}
+      E2E_MARKET_OPERATOR_KM_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_KM_PASSWORD }}
+      E2E_MARKET_OPERATOR_CM_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_CM_EMAIL }}
+      E2E_MARKET_OPERATOR_CM_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_CM_PASSWORD }}
+      E2E_MARKET_OPERATOR_CG_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_CG_EMAIL }}
+      E2E_MARKET_OPERATOR_CG_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_CG_PASSWORD }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Verify actual Railway staging and database identity before any action
+        run: node scripts/recette/target-guard.js
+      - name: Install Chromium headless for actual UI gestures
+        run: npx playwright install chromium --only-shell
+      - name: Declare local stock through the W3 screen (one mutation)
+        run: node scripts/recette/g6-local-stock-declare-chromium.js
+      - name: Preserve report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g6-local-stock-declare-${{ github.run_id }}
+          path: test-results/g6-local-stock-declare/
+          retention-days: 21
+          if-no-files-found: warn

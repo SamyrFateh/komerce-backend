@@ -11,7 +11,8 @@
 
 // Business truth lives only in the original G6 catalogue, NOT in a new matrix.
 const business = require('../../docs/recette/G6_PRE_STRESS_BUSINESS_SCENARIOS.json');
-const REPLAYABLE_IMPORT_CASH = new Set(['M01', 'M04', 'M05']);
+// M02 (LOCAL_STOCK) reuses the same real relay cash gesture; no import chain behind it.
+const REPLAYABLE_IMPORT_CASH = new Set(['M01', 'M02', 'M04', 'M05']);
 // Dynamic fresh-buyer replay: the M01 journey in CM/CG is catalogued as M04/M05 (same chain, market actors).
 const DYNAMIC_ALIAS = Object.freeze({ M01: Object.freeze({ CM: 'M04', CG: 'M05' }) });
 const ORDER_REF = /^[A-Z0-9][A-Z0-9-]{5,63}$/;

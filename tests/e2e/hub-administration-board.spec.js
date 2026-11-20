@@ -67,7 +67,8 @@ test('Admin — PO en deux marchés, tableau compact, paiement non autorisé fic
   await expect(page.locator('.kmc-admin-domain-tabs')).toHaveCount(0);
   await expect(page.getByText('Sourcing live',{exact:true})).toHaveCount(0);
   await expect(page.getByText('Relais live',{exact:true})).toHaveCount(0);
-  await expect(page.locator('[data-hub-branch]')).toHaveCount(2);
+  await expect(page.locator('[data-hub-branch]')).toHaveCount(3);
+  await expect(page.locator('[data-hub-director-todo]')).toHaveCount(0);
   await expect(page.getByText('Global · Tous les marchés')).toBeVisible();
   await expect(page.locator('.kmc-market-context-select')).toHaveCount(0);
   await page.locator('[data-hub-admin-po="'+PO2+'"] [data-hub-admin-stage="Engagement"]').click({button:'right'});
