@@ -9,7 +9,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path');
 const Ajv=require('ajv');
-const {STAGE_IDS,loadGoldenStages}=require('./stage-registry');
+const {STAGE_IDS,M02_STAGE_IDS,loadGoldenStages}=require('./stage-registry');
 const schema=require('../../../docs/recette/canonical/proof.schema.json');
 const exceptions=require('../../../docs/recette/canonical/external-responses.json');
 const validate=new Ajv({allErrors:true,strict:false}).compile(schema);
@@ -75,7 +75,8 @@ function assertTraceStartsAfterAuth(filename,source=fs.readFileSync(filename,'ut
  return true;
 }
 function validateStageModuleSources(){
- for(const id of STAGE_IDS)assertStageSourceSafe(path.join(__dirname,'stages',id+'.js'));
+ const ids=[...new Set([...STAGE_IDS,...M02_STAGE_IDS])];
+ for(const id of ids)assertStageSourceSafe(path.join(__dirname,'stages',id+'.js'));
  return STAGE_IDS.length;
 }
 function assertCanonicalProof(proof){

@@ -8,7 +8,7 @@
  */
 'use strict';
 const {createHash}=require('node:crypto');
-const {loadGoldenStages,stageGraph}=require('./stage-registry');
+const {graphFor,SCENARIO_STAGE_IDS}=require('./stage-registry');
 const {planBoundResume}=require('./resume-preflight');
 const SHA=/^[a-f0-9]{40}$/;
 const DIGEST=/^[a-f0-9]{64}$/;
@@ -29,7 +29,7 @@ function checkAttestation(v,c,stageId){
   throw Error('G6_DYNAMIC_STAGE_ATTESTATION_INVALID_'+stageId);
 }
 function contextIdentity(context){
- if(!context||context.scenario_id!=='M01'||!Object.hasOwn(require('./market-profile').PROFILES,context.market)||
+ if(!context||!Object.hasOwn(SCENARIO_STAGE_IDS,String(context.scenario_id))||!Object.hasOwn(require('./market-profile').PROFILES,context.market)||
   !UUID.test(String(context.order_id||''))||
   !REFERENCE.test(String(context.order_reference||''))||
   !SHA.test(String(context.staging_sha||''))||
@@ -50,7 +50,7 @@ async function executeBoundJourney({
  if(!adapters||REQUIRE_ADAPTERS.some(k=>typeof adapters[k]!=='function'))
   throw Error('G6_DYNAMIC_CERTIFIED_ADAPTERS_REQUIRED');
  const plan=planBoundResume({fromStage,toStage,context:bound,checkpoints});
- const graph=stageGraph(loadGoldenStages());
+ const graph=graphFor(bound.scenario_id);
  // Never accept an attestation from the downloaded report itself. Callers
  // must supply trusted, out-of-process verification services through adapters.
  const runtime=await adapters.attestRuntime({context:bound,plan});
@@ -104,7 +104,7 @@ async function executeBoundJourney({
   contract:'G6-DYNAMIC-CHAIN-v1',scenario_id:bound.scenario_id,market:bound.market,
   order_id:bound.order_id,order_reference:bound.order_reference,
   stages:Object.freeze(executed),chain_sha256:chainHash,
-  next_action:plan.to_stage==='CLIENT_PICKUP'?
+  next_action:plan.to_stage===SCENARIO_STAGE_IDS[bound.scenario_id].at(-1)?
    'INDEPENDENT_FINAL_CHROMIUM_PG_CERTIFICATION_REQUIRED':'CONTINUE_ON_STAGING',
   verdict:'NOT_PROVEN',full_chain_certified:false,production_permitted:false
  });

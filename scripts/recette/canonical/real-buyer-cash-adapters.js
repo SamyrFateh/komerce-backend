@@ -8,6 +8,8 @@
  */
 'use strict';
 const {marketProfile,PROFILES}=require('./market-profile');
+const {SCENARIO_STAGE_IDS}=require('./stage-registry');
+const oracles=require('./local-stock-oracles');
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {spawnSync}=require('node:child_process');
 const {confirmTarget}=require('../target-guard');
@@ -29,7 +31,9 @@ const REPORT_PATH=Object.freeze({
  FORWARDER:'test-results/g6-canonical-forwarder/report.json',
  CUSTOMS:'test-results/g6-canonical-customs/report.json',
  RELAY_RECEIPT:'test-results/g6-canonical-relay-receipt/report.json',
- CLIENT_PICKUP:'test-results/g6-canonical-client-pickup/report.json'
+ CLIENT_PICKUP:'test-results/g6-canonical-client-pickup/report.json',
+ LOCAL_RELAY_AVAILABLE:'test-results/g6-local-relay-available/report.json',
+ LOCAL_CLIENT_PICKUP:'test-results/g6-local-client-pickup/report.json'
 });
 const SCRIPTS=Object.freeze({
  BUYER:'scripts/recette/g6-p2-buyer-order-real-chromium.js',
@@ -46,20 +50,24 @@ const SCRIPTS=Object.freeze({
  FORWARDER:'scripts/recette/g6-canonical-forwarder-chromium.js',
  CUSTOMS:'scripts/recette/g6-canonical-customs-chromium.js',
  RELAY_RECEIPT:'scripts/recette/g6-canonical-relay-receipt-chromium.js',
- CLIENT_PICKUP:'scripts/recette/g6-canonical-client-pickup-chromium.js'
+ CLIENT_PICKUP:'scripts/recette/g6-canonical-client-pickup-chromium.js',
+ LOCAL_RELAY_AVAILABLE:'scripts/recette/g6-local-relay-available-chromium.js',
+ LOCAL_CLIENT_PICKUP:'scripts/recette/g6-local-client-pickup-chromium.js'
 });
+const DOWNSTREAM_M01=Object.freeze(['RELAY_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP']);
+const M02_STAGES=Object.freeze(['LOCAL_RELAY_AVAILABLE','LOCAL_CLIENT_PICKUP']);
 const SHA=/^[a-f0-9]{40}$/;
 const REF=/^[A-Z0-9][A-Z0-9-]{5,63}$/;
 const UUID=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 const same=(c,p)=>p?.order_id===c.order_id&&p?.order_reference===c.order_reference&&
  p?.staging_sha===c.staging_sha&&p?.db_fingerprint===c.db_fingerprint&&
- p?.market===c.market&&p?.scenario_id==='M01'&&p?.production_permitted===false;
+ p?.market===c.market&&p?.scenario_id===c.scenario_id&&p?.production_permitted===false;
 function guard(env){
  if(env.GITHUB_EVENT_NAME!=='issues'||env.GITHUB_ACTOR!==env.GITHUB_REPOSITORY_OWNER||
     env.GITHUB_REPOSITORY!=='SamyrFateh/komerce-backend'||
     env.NODE_ENV!=='test'||env.KOMERCE_ENV!=='staging'||env.KOMERCE_TARGET_ENV!=='staging'||
     env.EXPECTED_RAILWAY_ENVIRONMENT!=='staging'||env.STAGING_BASE_URL!==BASE||
-    env.G6_CANONICAL_SCENARIO!=='M01'||!Object.hasOwn(PROFILES,env.G6_TARGET_MARKET)||
+    !Object.hasOwn(SCENARIO_STAGE_IDS,String(env.G6_CANONICAL_SCENARIO))||!Object.hasOwn(PROFILES,env.G6_TARGET_MARKET)||
     !SHA.test(String(env.E2E_EXPECTED_DEPLOY_SHA||''))||
     !/^\d{8,}$/.test(String(env.GITHUB_RUN_ID||''))||
     !env.DATABASE_URL||!env.E2E_ADMIN_EMAIL||!env.E2E_ADMIN_PASSWORD)
@@ -159,6 +167,7 @@ function execute(script,env){
 function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
  if(!db||typeof db.query!=='function')throw Error('G6_DYNAMIC_DATABASE_REQUIRED');
  guard(env);
+ const SCENARIO=env.G6_CANONICAL_SCENARIO;
  let issuedBuyer=null;
  let runtimePin=null;
  const stageProofs=new Map();
@@ -181,7 +190,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
   if(context&&(context.db_fingerprint!==fingerprint||
     context.staging_sha!==env.E2E_EXPECTED_DEPLOY_SHA))
    throw Error('G6_DYNAMIC_RUNTIME_CONTEXT_DRIFT');
-  return {scenario_id:'M01',market:marketProfile(env).code,environment:'staging',
+  return {scenario_id:SCENARIO,market:marketProfile(env).code,environment:'staging',
    staging_sha:env.E2E_EXPECTED_DEPLOY_SHA,db_fingerprint:fingerprint,
    production_permitted:false,attestation_origin:'INDEPENDENT_CHROMIUM_POSTGRESQL',
    ...(context?{order_id:context.order_id,order_reference:context.order_reference}:{})};
@@ -204,6 +213,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
       ((pg.payment_status==='pending')&&(pg.cash_count!==0||pg.control_count!==0))||
       ((pg.payment_status==='paid')&&(pg.cash_count!==1||pg.control_count!==1)))
     throw Error('G6_DYNAMIC_BUYER_PG_READBACK_INVALID');
+   if(SCENARIO==='M02')await oracles.assertNoHubOrTransport(db,context.order_id,'any');
   }else if(stageId==='RELAY_CASH'){
    const matches=(data.steps||[]).filter(s=>s.name==='CASH_UI_PAID'&&s.market===marketProfile(env).code);
    const pre=(data.steps||[]).find(s=>s.name==='PRECHECK_TARGET_CASH_ORDERS');
@@ -218,6 +228,29 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
    const pg=await orderPg(db,context);
    if(pg.payment_status!=='paid'||pg.cash_count!==1||pg.control_count!==1)
     throw Error('G6_DYNAMIC_CASH_PG_READBACK_INVALID');
+   if(SCENARIO==='M02')await oracles.assertNoHubOrTransport(db,context.order_id,'any');
+  }else if(M02_STAGES.includes(stageId)){
+   if(SCENARIO!=='M02')throw Error('G6_REAL_BUYER_CASH_STAGE_NOT_IMPLEMENTED_'+stageId);
+   const expected={LOCAL_RELAY_AVAILABLE:'G6_LOCAL_RELAY_AVAILABLE_SIMULATED_CHROMIUM_PG_PASS',
+    LOCAL_CLIENT_PICKUP:'G6_LOCAL_CLIENT_PICKUP_SIMULATED_CHROMIUM_PG_PASS_COLLECTED'}[stageId];
+   if(data.verdict!==expected||data.db_fingerprint!==context.db_fingerprint||
+      data.sha!==context.staging_sha||data.order_id!==context.order_id||
+      data.reference!==context.order_reference||data.external_supplier_calls!==0||
+      data.external_payment_executed!==false||data.plaintext_pickup_code_logged===true)
+    throw Error('G6_M02_UI_PROOF_INVALID_'+stageId);
+   const phase=stageId==='LOCAL_RELAY_AVAILABLE'?'available':'collected';
+   const negative=await oracles.assertNoHubOrTransport(db,context.order_id,phase);
+   if(stageId==='LOCAL_CLIENT_PICKUP'){
+    const {rows:[scan]}=await db.query(
+     "SELECT id FROM scans WHERE order_id=$1 AND step='collected' AND pickup_method='PICKUP_CODE'",[context.order_id]);
+    if(!scan)throw Error('G6_M02_PICKUP_SCAN_MISSING');
+    const proof={negative,o_fin:await oracles.financeOracle(db,{orderId:context.order_id,reference:context.order_reference}),
+     o_doc:await oracles.documentOracle(db,{orderId:context.order_id,scanId:scan.id}),
+     o_notif:await oracles.notificationOracle(db,{orderId:context.order_id,reference:context.order_reference})};
+    const out=path.join(ROOT,'test-results/g6-local-client-pickup/oracles.json');
+    fs.mkdirSync(path.dirname(out),{recursive:true});
+    fs.writeFileSync(out,JSON.stringify({scenario_id:SCENARIO,market:context.market,order_id:context.order_id,...proof},null,2)+'\n');
+   }
   }else if(stageId==='HUB_PO'){
    const cash=stageProofs.get('RELAY_CASH');
    if(!cash||cash.order_id!==context.order_id||cash.order_reference!==context.order_reference)
@@ -388,10 +421,30 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
  }
  return {
   attestRuntimeBeforeBuyer:async()=>{runtimePin=await attestedRuntime();return runtimePin;},
-  executeBuyerChromium:async()=>{
+  resolveLocalStockProduct:async()=>{
+   const {rows}=await db.query(`
+    SELECT p.id,p.product_ref,d.amount
+    FROM local_stock ls
+    JOIN markets m ON m.id=ls.market_id AND m.code=$1
+    JOIN products p ON p.id=ls.product_id
+    JOIN product_market_price_drafts d ON d.product_id=p.id AND d.market_id=m.id AND d.status='LOCAL_ACTIVE'
+    JOIN product_market_exposure e ON e.product_id=p.id AND e.market_id=m.id
+    WHERE ls.location='KM_MAIN' AND ls.commercial_exposure='ENABLED'
+      AND ls.qty_physical-COALESCE((SELECT SUM(a.quantity) FROM local_stock_allocations a
+        WHERE a.local_stock_id=ls.id AND a.consumed_at IS NULL AND a.released_at IS NULL),0)>=1
+      AND p.lifecycle_status='active' AND p.is_active=TRUE AND p.is_available=TRUE
+      AND e.commercial_exposure='ENABLED'
+      AND EXISTS (SELECT 1 FROM product_skus sku WHERE sku.product_id=p.id AND sku.is_active=TRUE)
+    ORDER BY p.product_ref LIMIT 1`,[marketProfile(env).code]);
+   // Prérequis catalogue/stock (déclaré par l'écran W3), jamais créé ici : absent = bloqué.
+   if(rows.length!==1)throw Error('G6_M02_LOCAL_STOCK_PRODUCT_MISSING_'+marketProfile(env).code);
+   return {id:rows[0].id,product_ref:rows[0].product_ref,price:Number(rows[0].amount)};
+  },
+  executeBuyerChromium:async({product}={})=>{
    if(!runtimePin)throw Error('G6_DYNAMIC_RUNTIME_ATTESTATION_REQUIRED');
    fs.rmSync(path.join(ROOT,REPORT_PATH.BUYER),{force:true});
-   execute(SCRIPTS.BUYER,env);
+   execute(SCRIPTS.BUYER,product?{...env,G6_BUYER_PRODUCT_REF:product.product_ref,
+    G6_BUYER_EXPECTED_PRICE:String(product.price)}:env);
    issuedBuyer=report('BUYER').data;
    return issuedBuyer;
   },
@@ -401,7 +454,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
   },
   attestRuntime:async({context})=>attestedRuntime(context),
   authenticateCheckpoint:async({checkpoint,context})=>{
-   if(!['BUYER','RELAY_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT'].includes(checkpoint.stage_id)||
+   if(!['BUYER',...DOWNSTREAM_M01.slice(0,-1),...(SCENARIO==='M02'?M02_STAGES:[])].includes(checkpoint.stage_id)||
      checkpoint.source_run_id!==String(env.GITHUB_RUN_ID)||
      checkpoint.evidence_path!==REPORT_PATH[checkpoint.stage_id])
     throw Error('G6_DYNAMIC_CROSS_RUN_REQUIRES_AUTHENTICATED_GITHUB_ARTIFACT');
@@ -411,7 +464,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
    return verifyStage(checkpoint.stage_id,context);
   },
   executeStage:async({stageId,context})=>{
-   if(!['RELAY_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP'].includes(stageId))
+   if(![...DOWNSTREAM_M01,...(SCENARIO==='M02'?M02_STAGES:[])].includes(stageId))
     throw Error('G6_DYNAMIC_DOWNSTREAM_STAGE_NOT_MIGRATED_'+stageId);
    if(!stageProofs.has('BUYER'))throw Error('G6_DYNAMIC_BUYER_CHECKPOINT_MISSING');
    await attestedRuntime(context);
@@ -423,6 +476,20 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
      G6_CANONICAL_ORDER_REFERENCE:context.order_reference
     });
     return report('RELAY_CASH').data;
+   }
+   if(M02_STAGES.includes(stageId)){
+    const predecessor=stageId==='LOCAL_RELAY_AVAILABLE'?'RELAY_CASH':'LOCAL_RELAY_AVAILABLE';
+    if(SCENARIO!=='M02'||!stageProofs.has(predecessor))
+     throw Error('G6_M02_PREDECESSOR_MISSING_'+predecessor);
+    await verifyStage(predecessor,context);
+    fs.rmSync(path.join(ROOT,REPORT_PATH[stageId]),{force:true});
+    execute(SCRIPTS[stageId],{
+     ...env,G6_DYNAMIC_FRESH_ORDER:'1',G6_CANONICAL_PHASE:stageId,
+     G6_CANONICAL_ORDER_ID:context.order_id,
+     G6_CANONICAL_ORDER_REFERENCE:context.order_reference,
+     G6_CANONICAL_DB_FINGERPRINT:context.db_fingerprint
+    });
+    return report(stageId).data;
    }
    if(stageId!=='HUB_PO'){
     const predecessor={
@@ -500,7 +567,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
    return report('HUB_PO').data;
   },
   verifyStageProof:async({stageId,proof,context})=>{
-   if(!['RELAY_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP'].includes(stageId)||
+   if(![...DOWNSTREAM_M01,...(SCENARIO==='M02'?M02_STAGES:[])].includes(stageId)||
       JSON.stringify(proof)!==JSON.stringify(report(stageId).data))
     throw Error('G6_DYNAMIC_STAGE_PROOF_MISMATCH');
    return verifyStage(stageId,context);

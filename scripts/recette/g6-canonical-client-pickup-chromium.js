@@ -223,3 +223,5 @@ async function main(){
  finally{if(clientContext)await clientContext.close().catch(()=>{});if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end();console.log(JSON.stringify(report))}
 }
 if(require.main===module)main();
+// M02 (LOCAL_STOCK) réutilise les gestes client (code) et relais (saisie clavier) sans les dupliquer.
+module.exports={customer,relay};
