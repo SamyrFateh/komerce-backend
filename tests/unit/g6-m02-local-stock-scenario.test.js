@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 const fs=require('node:fs'),path=require('node:path');
 const {STAGE_IDS,M02_STAGE_IDS,graphFor,scenarioProfile,loadScenarioStages,loadGoldenStages,stageGraph}=require('../../scripts/recette/canonical/stage-registry');
