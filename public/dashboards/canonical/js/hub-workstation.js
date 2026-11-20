@@ -24,6 +24,8 @@
   const BRANCHES = Object.freeze({
     administrative: { label: 'Administration', hint: 'Achats, fournisseurs et engagements' },
     operations: { label: 'Opérations', hint: 'Réception, contrôle et expéditions' },
+    // Vue de supervision, pas une troisième branche métier ni un nouveau writer.
+    direction: { label: 'Direction Hub', hint: 'Décisions, paiements et arbitrages' },
   });
   const PO_STAGE = Object.freeze({
     draft: 'À préparer', notified: 'En cours', confirmed: 'En cours',
@@ -221,13 +223,20 @@
           'Journal indisponible : '+(err.message||'accès impossible')));
       }
     }
+    const openJournal=()=>{
+      if(!content.hidden) return;
+      content.hidden=false;
+      heading.setAttribute('aria-expanded','true');
+      heading.textContent='Journal de suivi · Masquer les notes';
+      void load();
+    };
     heading.addEventListener('click',()=>{
-      const open=content.hidden;
-      content.hidden=!open;
-      heading.setAttribute('aria-expanded',String(open));
-      heading.textContent=open?'Journal de suivi · Masquer les notes':'Journal de suivi · Voir les notes';
-      if(open) void load();
+      if(content.hidden) return openJournal();
+      content.hidden=true;
+      heading.setAttribute('aria-expanded','false');
+      heading.textContent='Journal de suivi · Voir les notes';
     });
+    return {open:openJournal, section};
   }
   const smallRef = value => safe(value).slice(0, 8);
   const getPO = location => new URLSearchParams(safe(location && location.search)).get('po') || '';
@@ -416,7 +425,7 @@
       menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-summary', value));
       const stageKey = ({ PO:'po', Fournisseur:'supplier', Réception:'reception', Cartons:'cartons', Départ:'departure', 'Reste à solder':'remaining' })[label];
       const state = stageKey && order.stage_states && order.stage_states[stageKey];
-      const locked = state === 'locked';
+      const locked = state === 'locked' || state === 'complete';
       menu.setAttribute('data-hub-menu-stage-state', state || 'unknown');
       if (stageKey === order.current_key && order.current_phase) {
         menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-current',
@@ -451,8 +460,20 @@
             ? 'Consultation seule : cette étape ne peut pas être modifiée avec ce profil.'
             : 'Les actions de cette étape ne sont pas chargées. Actualiser la page.'));
       }
-      mountStageJournal(menu, {doc, fetch:fetchFn, user, order, stageKey,
+      const journal=mountStageJournal(menu, {doc, fetch:fetchFn, user, order, stageKey,
         isCurrent:()=>!menu.hidden && menu.getAttribute('data-hub-request')===requestId});
+      if (locked && canOperate && journal) {
+        // Un commentaire de suivi n'est jamais une réouverture d'étape.
+        const comment=make(doc,'button','kmc-hub-board-menu-action is-comment','Ajouter un commentaire à cette étape');
+        comment.type='button';
+        comment.setAttribute('data-hub-completed-comment','');
+        comment.addEventListener('click',()=>{
+          menu.classList.add('is-editing');
+          journal.open();
+          anchor.move();
+        });
+        menu.insertBefore(comment,journal.section);
+      }
       anchor.select(event?.currentTarget);
       menu.querySelector?.('a,button')?.focus?.();
     };
@@ -837,7 +858,7 @@
       history.replaceState(null,'',HUB_PATH + (params.toString() ? '?' + params.toString() : ''));
     }
     const requested=parseBranch(safe(location?.search));
-    const branch=requested === 'administrative' && !administrativeAllowed ? 'operations' : requested;
+    const branch=(requested === 'administrative' || requested === 'direction') && !administrativeAllowed ? 'operations' : requested;
     root.replaceChildren();
     root.className='kmc-hub-app';
     const header=make(doc,'header','kmc-hub-app-header');
@@ -870,7 +891,7 @@
     root.appendChild(header);
     const nav=make(doc,'nav','kmc-hub-app-branches');
     nav.setAttribute('aria-label','Postes de travail Hub');
-    for(const id of ['administrative','operations']){
+    for(const id of ['operations','administrative','direction']){
       if(id === 'administrative' && !administrativeAllowed)continue;
       const spec=BRANCHES[id];
       const link=make(doc,'a','kmc-hub-app-branch');
@@ -887,17 +908,20 @@
     const layout=make(doc,'div','kmc-hub-app-layout is-table');
     const content=make(doc,'section','kmc-hub-app-content');
     content.setAttribute('data-hub-active-branch',branch);
-    // La file direction reste visible dans le poste global, quel que soit l'onglet.
-    const directorLoad=administrativeAllowed && typeof fetchFn === 'function'
-      ? renderDirectorQueue(content,{document:doc,fetch:fetchFn,user}) : Promise.resolve(null);
+    // La Direction dispose d'un onglet de lecture propre. Le Kanban reste
+    // le premier contenu de la vue Opérations, sans file déployée au-dessus.
     const host=make(doc,'div','kmc-hub-app-workspace');
     host.setAttribute('data-hub-branch-workspace',branch);
     content.appendChild(host);
     layout.appendChild(content);
     root.appendChild(layout);
-    const reloadCases=()=>Promise.resolve(branch === 'administrative'
-      ? renderAdministrative(host) : renderOperations(host));
+    const reloadCases=()=>Promise.resolve(
+      branch === 'direction'
+        ? renderDirectorQueue(host,{document:doc,fetch:fetchFn,user})
+        : branch === 'administrative' ? renderAdministrative(host) : renderOperations(host)
+    );
     const selected=reloadCases();
+    const directorLoad=branch==='direction' ? selected : Promise.resolve(null);
     selected.catch?.(()=>{});
     const selectPO=id=>{
       if(branch !== 'administrative')return;
