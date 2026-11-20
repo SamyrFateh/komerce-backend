@@ -387,7 +387,7 @@
       const relayMeta = el(doc, 'span', 'hlc-meta', `${marketCode} · ${order.relay_name || 'relais —'}`);
       if (order.relay_id) relayMeta.title = `Relais · identifiant technique : ${order.relay_id}`;
       head.appendChild(relayMeta);
-      head.appendChild(el(doc, 'small', 'hlc-fifo', `n° ${index + 1} FIFO`));
+      head.appendChild(el(doc, 'small', 'hlc-fifo', `Ordre d’arrivée n° ${index + 1}`));
       head.appendChild(el(doc, 'span', 'hlc-spacer'));
       const st = pill(order.status.label, order.status.tone);
       st.setAttribute('data-hlc-order-state', '');
@@ -419,6 +419,8 @@
       left.appendChild(c);
     });
     const leg = el(doc, 'div', 'hlc-legend');
+    leg.setAttribute('aria-label', 'Signification des états · légende non interactive');
+    leg.appendChild(el(doc, 'strong', 'hlc-legend-title', 'Signification des états'));
     legend.forEach((g) => { const i = el(doc, 'span', 'hlc-legend-item'); i.appendChild(el(doc, 'span', `hlc-pip is-${g.state}`)); i.appendChild(doc.createTextNode(g.label)); leg.appendChild(i); });
     left.appendChild(leg);
 
@@ -568,7 +570,22 @@
       if (!section.items.length) block.appendChild(el(doc, 'span', 'hlc-empty', section.empty_text));
       right.appendChild(block);
     });
-    const details = button(doc, 'Détails physiques exhaustifs', 'open-physical-details', 'is-link');
+    // Un accès direct par geste physique, toujours vers le writer existant.
+    const shortcuts = el(doc, 'nav', 'hlc-physical-shortcuts');
+    shortcuts.setAttribute('aria-label', 'Accès direct aux ateliers physiques');
+    for (const [key, label] of [
+      ['reception', 'Réception fournisseur'],
+      ['bags', 'Préparer les sacs'],
+      ['boxes', 'KOM-BOX'],
+      ['shipments', 'Expéditions'],
+    ]) {
+      const shortcut = button(doc, label, 'physical-' + key, 'is-link');
+      shortcut.setAttribute('data-hlc-physical-shortcut', key);
+      shortcut.addEventListener('click', () => key === 'reception' ? ctx.openReception() : ctx.openPhysical(key));
+      shortcuts.appendChild(shortcut);
+    }
+    right.appendChild(shortcuts);
+    const details = button(doc, 'Voir tous les ateliers physiques', 'open-physical-details', 'is-link');
     details.addEventListener('click', () => ctx.openPhysical());
     right.appendChild(details);
 
@@ -919,6 +936,17 @@
         if (po) rightP.appendChild(state.form.kind === 'detach' ? detachForm(po) : poForm(po, state.form.kind));
       }
     }
+    // Le seul bouton principal est déplacé (non dupliqué) au-dessus de la file
+    // physique : même handler, même protection contre le double POST.
+    const nextAction = el(doc, 'section', 'hlc-next-action');
+    nextAction.setAttribute('data-hlc-next-action', '');
+    nextAction.appendChild(el(doc, 'strong', 'hlc-next-action-title', 'À faire sur ce dossier'));
+    const primaryRow = Array.from(list.children).find(row => row.querySelector && row.querySelector('.hlc-btn.is-primary:not(:disabled)'));
+    if (primaryRow) nextAction.appendChild(primaryRow);
+    else nextAction.appendChild(el(doc, 'span', 'hlc-meta',
+      sel ? 'Aucun geste immédiat : consultez les actions et prérequis dans le fil ci-dessous.'
+          : 'Sélectionnez une commande, un besoin ou une unité physique.'));
+    right.insertBefore(nextAction, right.children[1]);
     panel.appendChild(rightP);
     rootEl.appendChild(panel);
     const saved = state.form && state.form.values;
