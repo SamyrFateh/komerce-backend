@@ -27,6 +27,22 @@ describe('preflight GitHub secrets pour Chromium staging',()=>{
    expect(r.missing_secret_names).toEqual([]);
    expect(r.selected_roles).toEqual(['market_operator']);
  });
+ test('MKT-READ mono exige les six secrets ciblés sans afficher leurs valeurs',()=>{
+   const env={...envFor('market'),E2E_CHROMIUM_SPEC_FILTER:'market-visibility-mono'};
+   const missing=inspect(env);
+   expect(missing.missing_secret_names).toEqual([
+     'E2E_MARKET_OPERATOR_KM_EMAIL','E2E_MARKET_OPERATOR_KM_PASSWORD',
+     'E2E_MARKET_OPERATOR_CM_EMAIL','E2E_MARKET_OPERATOR_CM_PASSWORD',
+     'E2E_MARKET_OPERATOR_CG_EMAIL','E2E_MARKET_OPERATOR_CG_PASSWORD'
+   ]);
+   for(const market of ['KM','CM','CG']) {
+     env[`E2E_MARKET_OPERATOR_${market}_EMAIL`]=`${market}@example.test`;
+     env[`E2E_MARKET_OPERATOR_${market}_PASSWORD`]=`opaque-${market}`;
+   }
+   const ready=inspect(env);
+   expect(ready.missing_secret_names).toEqual([]);
+   expect(JSON.stringify(ready)).not.toContain('opaque-');
+ });
 
  test('la baseline n exige aucun secret Finance, Sourcing ou Transitaire',()=>{
    const r=inspect(envFor('baseline'));
