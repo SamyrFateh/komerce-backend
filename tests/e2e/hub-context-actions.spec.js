@@ -73,6 +73,11 @@ async function mount(page,{role='agent_hub',row=baseOrder,dossierData=dossier,ad
     if(url.pathname==='/api/auth/me')return route.fulfill({contentType:'application/json',body:JSON.stringify({role,id:'f761a3ed-0000-4000-8000-000000000001'})});
     let data;
     if(url.pathname==='/api/hub/board')data={scope:'HUB_GLOBAL',markets:['KM'],orders:[row]};
+    if(url.pathname==='/api/hub/director-todo')data={scope:'ALL_MARKETS',overdue_count:1,tasks:[{
+      kind:'AUTHORIZE_COMMITMENT',owner:'responsable_hub',
+      market:{code:'KM'},subject:{po_id:PO},missing:'Engagement à décider',
+      age_hours:52,overdue:true,viewer_can_act:false,
+    }]};
     if(url.pathname==='/api/hub/administration')data=administration;
     if(url.pathname==='/api/hub/dossier')data=dossierData;
     if(url.pathname==='/api/hub-dash/orders/'+ORDER)data={id:ORDER,comments:notes};
@@ -468,19 +473,43 @@ test.describe('Journal immuable par étape',()=>{
     await expect(journal.getByRole('button',{name:/modifier|supprimer/i})).toHaveCount(0);
   });
 
-  test('étape verrouillée : consulter et commenter sans rouvrir le geste physique',async({page})=>{
+  test('étape verrouillée : publier une note sans réouverture ni seconde mutation',async({page})=>{
     const locked={...baseOrder,current_key:'remaining',
       stage_states:{...baseOrder.stage_states,departure:'locked'}};
     const {posts}=await mount(page,{row:locked,stageNotes:existing});
-    const step=page.locator('[data-hub-global-stage="Départ"]');
-    await step.click();
+    await page.locator('[data-hub-global-stage="Départ"]').click();
     const menu=page.locator('[data-hub-global-menu]');
     await expect(menu).toContainText('Aucune réouverture');
-    await menu.locator('[data-hub-stage-journal-toggle]').click();
+    const comment=menu.locator('[data-hub-completed-comment]');
+    await expect(comment).toBeVisible();
+    await comment.click();
+    await expect(menu).toHaveClass(/is-editing/);
     const journal=menu.locator('[data-hub-stage-journal="departure"]');
     await expect(journal.locator('[data-hub-journal-input]')).toBeVisible();
-    await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);
+    await journal.locator('[data-hub-journal-input]').fill('Colis remis au transitaire, preuve consultée.');
     expect(posts).toHaveLength(0);
+    await journal.locator('[data-hub-journal-publish]').click();
+    await expect(journal).toContainText('Colis remis au transitaire, preuve consultée.');
+    await expect(journal.locator('.kmc-hub-journal-item')).toHaveCount(1);
+    await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);
+    expect(posts).toEqual([{url:'/api/hub-dash/orders/'+ORDER+'/comment',
+      body:{content:'Colis remis au transitaire, preuve consultée.',hub_stage_key:'departure'}}]);
+    await expect(page.locator('[data-hub-global-stage="Départ"]')).toHaveClass(/is-stage-locked/);
+  });
+
+  test('étape complète : commentaire accessible, mais aucun nouveau geste métier',async({page})=>{
+    const {posts}=await mount(page);
+    await page.locator('[data-hub-global-stage="PO"]').click();
+    const menu=page.locator('[data-hub-global-menu]');
+    await expect(menu).toContainText('Aucune réouverture');
+    await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);
+    await menu.locator('[data-hub-completed-comment]').click();
+    const journal=menu.locator('[data-hub-stage-journal="po"]');
+    await journal.locator('[data-hub-journal-input]').fill('PO vérifiée après réception fournisseur.');
+    await journal.locator('[data-hub-journal-publish]').click();
+    await expect(journal).toContainText('PO vérifiée après réception fournisseur.');
+    expect(posts).toEqual([{url:'/api/hub-dash/orders/'+ORDER+'/comment',
+      body:{content:'PO vérifiée après réception fournisseur.',hub_stage_key:'po'}}]);
   });
 
   test('profil marché : journal en lecture seule',async({page})=>{
@@ -491,5 +520,23 @@ test.describe('Journal immuable par étape',()=>{
     await expect(journal).toContainText('Fournisseur relancé');
     await expect(journal).toContainText('Consultation seulement');
     await expect(journal.locator('[data-hub-journal-publish]')).toHaveCount(0);
+    await expect(page.locator('[data-hub-completed-comment]')).toHaveCount(0);
   });
+});
+
+test('Navigation Hub : Opérations ouvre directement le Kanban ; Direction est un onglet séparé',async({page})=>{
+  const {posts,reads}=await mount(page,{role:'admin'});
+  await expect(page.locator('[data-hub-branch]')).toHaveCount(3);
+  await expect(page.locator('[data-hub-director-todo]')).toHaveCount(0);
+  await expect(page.locator('[data-hub-global-order]')).toHaveCount(1);
+  expect(reads.some(url=>url.startsWith('/api/hub/director-todo'))).toBe(false);
+  await page.locator('[data-hub-branch="direction"]').click();
+  await expect(page).toHaveURL(/branch=direction/);
+  await expect(page.locator('[data-hub-director-todo]')).toBeVisible();
+  await expect(page.locator('[data-hub-director-task="AUTHORIZE_COMMITMENT"]')).toBeVisible();
+  await expect(page.locator('[data-hub-global-order]')).toHaveCount(0);
+  await page.locator('[data-hub-branch="operations"]').click();
+  await expect(page.locator('[data-hub-global-order]')).toHaveCount(1);
+  await expect(page.locator('[data-hub-director-todo]')).toHaveCount(0);
+  expect(posts).toHaveLength(0);
 });
