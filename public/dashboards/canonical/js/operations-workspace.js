@@ -94,7 +94,7 @@
       ? Math.min(HUB_POLL_MAX_BACKOFF_MS, HUB_POLL_INTERVAL_MS * (2 ** Math.min(attempts, 4)))
       : HUB_POLL_INTERVAL_MS;
     let serverDelay = 0;
-    if (typeof retryAfter === 'string' && /^\\d+(?:\\.\\d+)?$/.test(retryAfter.trim())) {
+    if (typeof retryAfter === 'string' && /^\d+(?:\.\d+)?$/.test(retryAfter.trim())) {
       serverDelay = Number(retryAfter.trim()) * 1000;
     } else if (retryAfter) {
       const until = Date.parse(String(retryAfter));
