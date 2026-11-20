@@ -1985,9 +1985,9 @@ function renderSideCart() {
       // Prix barré si promo
       const promoPct = item.product.promo_pct || 0;
       const oldPriceHtml = promoPct > 0
-        ? \`<span class="k-sc-item-old-price">\${item.product.market_price_source === 'LOCAL_ACTIVE' && item.product.market_price_amount != null
+        ? `<span class="k-sc-item-old-price">${item.product.market_price_source === 'LOCAL_ACTIVE' && item.product.market_price_amount != null
             ? fmtMarketAmount(Number(item.product.market_price_amount) * item.qty, item.product.market_price_currency)
-            : fmtPrice(Math.round(unitPrice / (1 - promoPct / 100)) * item.qty)}</span>\`
+            : fmtPrice(Math.round(unitPrice / (1 - promoPct / 100)) * item.qty)}</span>`
         : '';
 
       // Variant sélectionné (taille, couleur…)
