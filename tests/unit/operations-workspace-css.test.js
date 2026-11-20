@@ -62,3 +62,11 @@ test('Hub exécution : header compact et labels de réception lisibles sans chan
   expect(css).toContain('.kmc-workspace-receive-qty');
   expect(css).toContain('min-height: 40px');
 });
+
+test('Hub UX : les ateliers visibles ne peuvent agrandir la grille desktop ou mobile', () => {
+  const scoped = '.kmc-operations-workspace[data-workspace-mode="execution"]';
+  expect(css).toContain(scoped + ' {\n  grid-template-columns: minmax(0, 1fr);');
+  expect(css).toContain(scoped + ' [data-hub-physical-details] {\n  width: 100%;\n  overflow: hidden;');
+  expect(css).toContain(scoped + ' [data-hub-physical-details] .kmc-workspace-table-wrap {');
+  expect(css).toContain('overflow-x: auto;');
+});
