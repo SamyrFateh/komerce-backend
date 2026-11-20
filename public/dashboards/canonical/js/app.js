@@ -338,9 +338,13 @@
     }
 
     if (options.requireMarket) {
-      // L1 : aucun repli implicite. Marché retenu seulement s'il est explicite (?market= autorisé)
-      // ou si la délégation est mono-marché ; sinon null (invite « Choisir un marché »).
+      // Une lecture Hub centrale demeure globale même si un seul marché est
+      // actif ; aucune action physique n'est déduite d'un premier pays arbitraire.
       const explicit = explicitMarketState(adminContext, contextContract);
+      if (options.allowHubOverview && adminContext?.access?.mode === 'hub' &&
+          !explicit.requested) return null;
+      // Les écrans de mutation sans vue globale conservent L1 : marché
+      // explicitement autorisé, ou scope mono-marché résolu par le serveur.
       return explicit.marketCode
         ? contextContract.resolveMarketView(adminContext, explicit.marketCode).marketCode
         : null;
@@ -384,6 +388,7 @@
 
     const initialMarket = initialRequestedMarket(adminContext, contextContract, {
       requireMarket: Boolean(options.requireMarket),
+      allowHubOverview: Boolean(options.allowHubOverview),
     });
     const choices = marketChoices(adminContext, {
       requireMarket: Boolean(options.requireMarket),
