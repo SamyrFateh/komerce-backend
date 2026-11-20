@@ -168,3 +168,16 @@ test('Hub UX : accès directs Sacs puis KOM-BOX puis Expéditions sans animation
   expect(src).toContain("anchor.scrollIntoView?.({ block: 'start', behavior: 'auto' });");
   expect(src).not.toContain("anchor.scrollIntoView?.({ block: 'start', behavior: 'smooth' });");
 });
+
+describe('Relais — guide explicite sans second writer', () => {
+  const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+  test('les quatre guides indiquent le prochain geste sans ajouter d’API',()=>{
+    expect(src).toContain('const RELAY_GUIDANCE=Object.freeze({');
+    for(const label of ['Contrôler les arrivages','Encaisser au relais','Réceptionner les colis locaux','Remettre au client'])
+      expect(src).toContain(label);
+    expect(src).toContain("guide.setAttribute('data-relay-active-guide','');");
+    expect(src).toContain("link.setAttribute('data-relay-pending-count'");
+    expect(src).toContain("rootNode.setAttribute('data-relay-active-operation',key);");
+    expect(src).toContain("showRelayOperation(rootNode,choice.key);");
+  });
+});
