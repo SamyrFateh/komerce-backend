@@ -41,7 +41,7 @@ function marketOrderRefs(){
  return refs;
 }
 
-async function readOrderOracle(references){
+async function readOrderOracle(references,{activeHubMarket=null}={}){
  const connectionString=process.env.E2E_READONLY_ORACLE_DATABASE_URL;
  if(!connectionString)throw new Error('MKT_READ_READONLY_ORACLE_URL_MISSING');
  const expectedPin=String(process.env.E2E_ORACLE_EXPECTED_DB_PIN||'');
@@ -53,8 +53,15 @@ async function readOrderOracle(references){
  try{
    await client.query('BEGIN');
    await client.query('SET TRANSACTION READ ONLY');
-   const {rows}=await client.query(`
-     SELECT o.id::text AS order_id,o.reference,m.code AS market,
+   const {rows}=activeHubMarket ? await client.query(`
+     SELECT DISTINCT o.reference, m.code AS market,
+       o.total_kmf::text AS total_kmf, o.total_eur::text AS total_eur
+     FROM orders o
+     JOIN markets m ON m.id=o.market_id
+     JOIN order_items oi ON oi.order_id=o.id AND oi.fulfillment_source='IMPORT'
+     WHERE m.code=$1 AND o.status NOT IN ('pending','cancelled','refunded','collected')
+     ORDER BY o.reference`,[activeHubMarket]) : await client.query(`
+     SELECT o.id::text AS order_id,o.reference,o.status AS status,m.code AS market,
        COALESCE(u.phone,r.phone) AS customer_phone,
        o.total_kmf::text AS total_kmf,o.total_eur::text AS total_eur,
        COALESCE(po.ids,'{}'::text[]) AS purchase_order_ids
@@ -114,6 +121,7 @@ for(const market of MARKETS){
      const oracleRows=await readOrderOracle(allRefs);
      expect(oracleRows.map(x=>x.reference).sort()).toEqual(allRefs.slice().sort());
      expect(oracleRows.map(x=>x.market).sort()).toEqual(MARKETS.slice().sort());
+     expect(oracleRows.every(x=>x.status==='collected'),'M01 witness orders must have completed client pickup').toBe(true);
      const oracle=Object.fromEntries(oracleRows.map(row=>[row.reference,row]));
      proof.oracle.order_refs=allRefs.slice().sort();
      proof.oracle.markets=oracleRows.map(row=>row.market).sort();
@@ -190,16 +198,24 @@ for(const market of MARKETS){
      proof.hubMarkets=board.body.markets.slice().sort();
      proof.hubOrderCount=board.body.orders.length;
      expect(proof.hubMarkets).toEqual([market]);
-     expect(board.body.orders.length).toBeGreaterThan(0);
      expect(board.body.orders.every(row=>row.market===market)).toBe(true);
      const boardRefs=board.body.orders.map(row=>row.reference);
+     // The Hub board is an ACTIVE IMPORT dossier: completed M01 orders
+     // are historical witnesses for Order 360, never expected in this queue.
+     // Verify the entire active projection against the independent PG oracle,
+     // including the legitimate zero-active-order case for one market.
+     const activeOracle=await readOrderOracle([],{activeHubMarket:market});
+     const activeRefs=activeOracle.map(row=>row.reference).sort();
+     expect(boardRefs.slice().sort(),'Hub board must match all active IMPORT orders for its one market').toEqual(activeRefs);
+     expect(activeOracle.every(row=>row.market===market)).toBe(true);
      const boardOracle=await readOrderOracle(boardRefs);
      expect(boardOracle.length).toBe(boardRefs.length);
      expect(boardOracle.every(row=>row.market===market)).toBe(true);
-     expect(boardRefs).toContain(ownRef);
+     expect(boardRefs,'Collected M01 order must not reappear as active Hub work').not.toContain(ownRef);
      // Count and amount aggregates are independently recalculated from the exact
      // PG rows represented in the Hub projection; no other market may contribute.
-     proof.oracle.hub={count:boardOracle.length,market_codes:[...new Set(boardOracle.map(row=>row.market))].sort(),
+     proof.oracle.hub={count:boardOracle.length,market_codes:boardOracle.length?[...new Set(boardOracle.map(row=>row.market))].sort():[market],
+       active_match:true,active_refs:activeRefs,board_refs:boardRefs.slice().sort(),
        total_kmf:boardOracle.reduce((sum,row)=>sum+Number(row.total_kmf||0),0),
        total_eur:boardOracle.reduce((sum,row)=>sum+Number(row.total_eur||0),0)};
      expect(proof.oracle.hub.count).toBe(board.body.orders.length);
