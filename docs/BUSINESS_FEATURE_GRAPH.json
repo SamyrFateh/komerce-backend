@@ -5885,6 +5885,13 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/css/international-journey-panel.css",
+        "resolvedPath": "public/dashboards/canonical/css/international-journey-panel.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/js/finance-accounting-workspace-decision.js",
         "resolvedPath": "public/dashboards/canonical/js/finance-accounting-workspace-decision.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
