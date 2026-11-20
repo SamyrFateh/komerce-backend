@@ -167,7 +167,10 @@ async function relay(browser,code,expectedRelay){
      (SELECT COUNT(*)::int FROM scans s WHERE s.order_id=o.id AND s.step='collected') AS collect_scans,
      (SELECT COUNT(*)::int FROM scans s WHERE s.order_id=o.id AND s.step='collected' AND s.pickup_method='PICKUP_CODE') AS code_scans
     FROM orders o WHERE o.id=$1`,[ID]);
-  check(once&&once.status==='collected'&&once.code_consumed===true&&once.collect_scans===1&&once.code_scans===1&&calls===1&&
+  // M03 (panier mixte) : la remise de la partie locale ne doit PAS clôturer la commande ; M01/M02 inchangés.
+  const MIXED=process.env.G6_CANONICAL_SCENARIO==='M03'&&process.env.G6_CANONICAL_PHASE==='LOCAL_CLIENT_PICKUP';
+  if(MIXED&&once?.status==='collected')throw Error('G6_M03_ORDER_COLLECTED_BEFORE_IMPORT_DELIVERY');
+  check(once&&(MIXED?true:once.status==='collected'&&once.code_consumed===true)&&once.collect_scans===1&&once.code_scans===1&&calls===1&&
     actor.blocked.length===0,'G6_PICKUP_SECOND_HANDOFF_OR_CODE_NOT_CONSUMED');
   report.second_handoff_ui={generic_counter_forms_visible:available,generic_counter_note:'comptoir générique Remises, non lié à la commande',
     pg_collect_scans:once.collect_scans,pg_code_consumed:once.code_consumed,second_post_attempted:false};

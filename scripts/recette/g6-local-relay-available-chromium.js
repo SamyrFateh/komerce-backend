@@ -19,13 +19,17 @@ const {login}=require('./g6-canonical-forwarder-chromium');
 const {openRelayLive}=require('./canonical/relay-live-navigation');
 const {attachDedicatedRelayByUI}=require('./g6-canonical-relay-receipt-chromium');
 const {assertNoHubOrTransport}=require('./canonical/local-stock-oracles');
+const {assertMixedPhase}=require('./canonical/m03-oracles');
 const {observe,fullError}=require('./canonical/observability');
 const {humanClick,humanFill,humanCheck}=require('./canonical/actors/human-gestures');
 const env=process.env,BASE='https://komerce-backend-production.up.railway.app';
 const ID=env.G6_CANONICAL_ORDER_ID,REF=env.G6_CANONICAL_ORDER_REFERENCE;
 const OUT=path.resolve('test-results/g6-local-relay-available');
 let OBS=null;
-const report={schema:'komerce-g6-local-relay-available/1',scenario_id:'M02',market:MK.code,reference:REF,order_id:ID,
+const SCEN=process.env.G6_CANONICAL_SCENARIO==='M03'?'M03':'M02';
+// M02 : oracles stricts de commande 100 % locale ; M03 : mêmes gestes, oracles de panier mixte (branche locale seulement).
+const oracle=(db,id,phase)=>SCEN==='M03'?assertMixedPhase(db,id,phase==='cash'?'structure':'local_available'):assertNoHubOrTransport(db,id,phase);
+const report={schema:'komerce-g6-local-relay-available/1',scenario_id:SCEN,market:MK.code,reference:REF,order_id:ID,
  provenance:'SIMULATED / STAGING ONLY',verdict:'BLOCKED',events:[],external_supplier_calls:0,
  external_payment_executed:false,production_permitted:false};
 const check=(v,e)=>{if(!v)throw Error(e)};
@@ -37,7 +41,7 @@ async function main(){
   check(env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.GITHUB_EVENT_NAME==='issues'&&
    env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER&&env.NODE_ENV==='test'&&env.KOMERCE_ENV==='staging'&&
    env.KOMERCE_TARGET_ENV==='staging'&&env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&env.STAGING_BASE_URL===BASE&&
-   env.G6_CANONICAL_PHASE==='LOCAL_RELAY_AVAILABLE'&&env.G6_CANONICAL_SCENARIO==='M02'&&
+   env.G6_CANONICAL_PHASE==='LOCAL_RELAY_AVAILABLE'&&['M02','M03'].includes(env.G6_CANONICAL_SCENARIO)&&
    env.G6_DYNAMIC_FRESH_ORDER==='1'&&env.G6_TARGET_MARKET===MK.code&&/^[a-f0-9-]{36}$/i.test(ID||''),
    'G6_LOCAL_RELAY_OWNER_STAGING_GUARD');
   const guard=await confirmTarget({db,env});
@@ -45,7 +49,7 @@ async function main(){
   report.db_fingerprint=guard.fingerprint;report.sha=await runtime();
   const {rows:[o]}=await db.query('SELECT reference,relais_id,status::text AS status,payment_status::text AS payment_status FROM orders WHERE id=$1',[ID]);
   check(o&&o.reference===REF&&o.payment_status==='paid','G6_LOCAL_RELAY_PRECONDITION_INVALID');
-  report.before=await assertNoHubOrTransport(db,ID,'cash');save();
+  report.before=await oracle(db,ID,'cash');save();
   browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   const actor=await login(browser,'E2E_AGENT_RELAIS_','agent_relais');
   try{
@@ -79,7 +83,7 @@ async function main(){
    check(res.status()===200&&calls===1&&actor.blocked.length===0,'G6_LOCAL_RELAY_RECEIPT_REJECTED_'+res.status());
    report.events.push({key:'local-relay-receipt',http:200,role:'agent_relais',ui:true});save();
   }finally{await actor.ctx.close()}
-  report.after=await assertNoHubOrTransport(db,ID,'available');
+  report.after=await oracle(db,ID,'available');
   await runtime();
   report.verdict='G6_LOCAL_RELAY_AVAILABLE_SIMULATED_CHROMIUM_PG_PASS';save();
  }catch(e){report.error=fullError(e);save();process.exitCode=2}

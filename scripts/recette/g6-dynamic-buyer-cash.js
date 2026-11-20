@@ -42,6 +42,11 @@ async function main({env=process.env}={}){
   return state;
  }catch(err){
   state.verdict='BLOCKED';state.error=require("./canonical/observability").fullError(err);
+  // M03 : un écran ou un produit manquant est un verdict explicite, jamais un contournement.
+  const msg=String(err&&err.message||'');
+  const gap=/G6_M03_(SCREEN_MISSING|PRODUCT_GAP)/.exec(msg)||(/G6_M03_ORDER_COLLECTED_BEFORE_IMPORT_DELIVERY/.test(msg)?[null,'PRODUCT_GAP']:null);
+  if(state.scenario_id==='M03'&&gap){state.verdict=gap[1];state.detail=msg.slice(0,600)}
+  try{const b=JSON.parse(fs.readFileSync(path.join(ROOT,'test-results/g6-p2-buyer-order/report.json'),'utf8'));state.reference=state.reference||b.order?.reference||null}catch(_){}
   save();throw err;
  }finally{await db.pool.end();}
 }

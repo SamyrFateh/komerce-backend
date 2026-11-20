@@ -28,8 +28,16 @@ async function bootstrapFreshScenario({scenario='M01',toStage='CLIENT_PICKUP',ad
   throw Error('G6_FRESH_BOOTSTRAP_RUNTIME_INVALID');
  const graph=graphFor(scenario),stage=graph.byId.get('BUYER');
  // M02 : le produit LOCAL_STOCK vendable est choisi ici, en lecture seule ; M01 garde son produit historique.
- let product=null;
- if(scenario!=='M01'){
+ let product=null,basket=null;
+ // M03 : panier mixte résolu en lecture seule (refus sous 3 sources import distinctes), ajouté par l'écran boutique.
+ if(scenario==='M03'){
+  if(typeof adapters.resolveMixedBasket!=='function')throw Error('G6_FRESH_BOOTSTRAP_BASKET_RESOLVER_REQUIRED');
+  const resolved=await adapters.resolveMixedBasket({runtime});
+  basket=resolved?.basket;
+  if(!basket?.local||!Array.isArray(basket.imports)||basket.imports.length<3||
+   new Set(basket.imports.map(p=>p.source_key)).size<3||!REF.test(String(basket.local.product_ref||'').toUpperCase()))
+   throw Error('G6_FRESH_BOOTSTRAP_MIXED_BASKET_INVALID');
+ }else if(scenario!=='M01'){
   if(typeof adapters.resolveLocalStockProduct!=='function')throw Error('G6_FRESH_BOOTSTRAP_PRODUCT_RESOLVER_REQUIRED');
   product=await adapters.resolveLocalStockProduct({runtime});
   if(!product||!REF.test(String(product.product_ref||''))||!Number.isInteger(product.price)||product.price<=0)
@@ -38,7 +46,7 @@ async function bootstrapFreshScenario({scenario='M01',toStage='CLIENT_PICKUP',ad
  const buyer=await stage.run({
   runCertifiedStage:async id=>{
    if(id!=='BUYER')throw Error('G6_FRESH_BOOTSTRAP_STAGE_MISMATCH');
-   return product?adapters.executeBuyerChromium({runtime,product}):adapters.executeBuyerChromium({runtime});
+   return basket?adapters.executeBuyerChromium({runtime,basket}):product?adapters.executeBuyerChromium({runtime,product}):adapters.executeBuyerChromium({runtime});
   }
  });
  if(buyer?.verdict!=='G6_P2_REAL_OTP_CHROMIUM_ORDER_CREATED_NO_EXTERNAL_EFFECTS'||

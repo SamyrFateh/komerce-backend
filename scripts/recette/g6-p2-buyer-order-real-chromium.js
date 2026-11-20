@@ -22,6 +22,7 @@ const MARKET=String(process.env.G6_TARGET_MARKET||'KM').toUpperCase();
 // M01 : produit et prix historiques ; M02 : produit LOCAL_STOCK résolu en lecture seule par l'orchestrateur.
 const PARAMS=require('./canonical/scenario-profile').buyerParams(process.env);
 const REF=PARAMS.product_ref;
+const LINES=require('./canonical/scenario-profile').basketLines(PARAMS).map(l=>({...l,id:null}));
 const COUNTRY_PREFIX={KM:'+269',CM:'+237',CG:'+242'};
 const EXPECTED_PRICE=PARAMS.expected_price;
 let PRODUCT=null;
@@ -46,7 +47,11 @@ async function runtime(){
  report.runtime_sha=v.commit;
 }
 async function resolveCurrentSaleableProduct(){
- const {rows}=await db.query(`
+ // Une ligne par produit du panier ; M01/M02 n'en ont qu'une (requête et contrôles inchangés).
+ for(const [i,line] of LINES.entries()){
+  const lineRef=line.product_ref,linePrice=PARAMS.basket?line.price:EXPECTED_PRICE;
+  const local=PARAMS.basket?line.fulfillment==='LOCAL_STOCK':!!PARAMS.fulfillment;
+  const {rows}=await db.query(`
   SELECT p.id,p.product_ref,p.name,d.amount
   FROM products p
   JOIN markets m ON m.code=$2
@@ -55,18 +60,20 @@ async function resolveCurrentSaleableProduct(){
   WHERE p.product_ref=$1 AND p.lifecycle_status='active' AND p.is_active=TRUE
     AND p.is_available=TRUE AND e.commercial_exposure='ENABLED'
     AND EXISTS (SELECT 1 FROM product_skus sku
-      WHERE sku.product_id=p.id AND sku.is_active=TRUE ${PARAMS.fulfillment?'':'AND sku.stock>0'})`,[REF,MARKET]);
- check(rows.length===1,'G6_RECIPE_PRODUCT_OR_PRICE_NOT_UNIQUE');
- check(Number(rows[0].amount)===EXPECTED_PRICE,'G6_RECIPE_PRICE_DRIFT');
- if(!PARAMS.fulfillment){
-  // M01 = parcours import : un stock local exposé du même produit détournerait la commande du Hub.
-  const {rows:ls}=await db.query(`SELECT 1 FROM local_stock ls JOIN markets m ON m.id=ls.market_id AND m.code=$2
-    WHERE ls.product_id=$1 AND ls.commercial_exposure='ENABLED'`,[rows[0].id,MARKET]);
-  check(ls.length===0,'G6_M01_PRODUCT_SERVED_FROM_LOCAL_STOCK');
+      WHERE sku.product_id=p.id AND sku.is_active=TRUE ${local?'':'AND sku.stock>0'})`,[lineRef,MARKET]);
+  check(rows.length===1,'G6_RECIPE_PRODUCT_OR_PRICE_NOT_UNIQUE');
+  check(Number(rows[0].amount)===linePrice,'G6_RECIPE_PRICE_DRIFT');
+  if(!local){
+   // M01 = parcours import : un stock local exposé du même produit détournerait la commande du Hub.
+   const {rows:ls}=await db.query(`SELECT 1 FROM local_stock ls JOIN markets m ON m.id=ls.market_id AND m.code=$2
+     WHERE ls.product_id=$1 AND ls.commercial_exposure='ENABLED'`,[rows[0].id,MARKET]);
+   check(ls.length===0,PARAMS.basket?'G6_M03_IMPORT_PRODUCT_SERVED_FROM_LOCAL_STOCK':'G6_M01_PRODUCT_SERVED_FROM_LOCAL_STOCK');
+  }
+  line.id=rows[0].id;
+  if(i===0){PRODUCT=rows[0].id;report.product_id=PRODUCT}
  }
- PRODUCT=rows[0].id;
- report.product_id=PRODUCT;
- record('CURRENT_SALEABLE_PRODUCT',{market:MARKET,ref:REF,price_market_minor:EXPECTED_PRICE,stocked:true});
+ if(PARAMS.basket)report.basket=LINES.map(l=>({product_ref:l.product_ref,price:l.price,fulfillment:l.fulfillment,source_key:l.source_key||null}));
+ record('CURRENT_SALEABLE_PRODUCT',{market:MARKET,ref:REF,price_market_minor:EXPECTED_PRICE,stocked:true,...(PARAMS.basket?{lines:LINES.length}:{})});
 }
 async function queryOrders(userId){
  const {rows}=await db.query(
@@ -118,6 +125,68 @@ async function setup(){
   return {buyer,phone,code};
  }catch(e){if(tx)await c.query('ROLLBACK').catch(()=>{});throw e}
  finally{c.release()}
+}
+async function addLineToCart(page,line,idx){
+  // M01/M02 : une seule ligne (suffixe vide, comportement historique) ; M03 : une itération par ligne du panier.
+  const sfx=idx===0?'':'_LINE'+(idx+1);
+  const {rows:[actualProduct]}=await db.query('SELECT name,product_ref FROM products WHERE id=$1',[line.id]);
+  check(actualProduct?.product_ref===line.product_ref&&!!actualProduct.name,'G6_PRODUCT_PROVENANCE_MISMATCH');
+  await humanFill(null,page.locator('#k-search-input'),actualProduct.name);
+  const item=page.locator('#k-search-dropdown .k-search-item[data-id="'+line.id+'"]');
+  await item.waitFor({state:'visible',timeout:25000});await humanClick(null,item);
+  await page.locator('#k-modal-name').waitFor({state:'visible',timeout:13000});
+  // Wait for the canonical desktop Product Detail renderer, not a legacy carousel
+  // image that may already be loaded before SKU options finish rendering.
+  await page.locator('#k-modal-variants [data-pdc5-root]').waitFor({state:'attached',timeout:20000});
+  const variantEvidence=await page.locator('#k-modal-variants').evaluate(el=>({
+   root:!!el.querySelector('[data-pdc5-root]'),
+   axes:[...el.querySelectorAll('.k-vg')].map(group=>({
+    key:group.dataset.axisKey,
+    options:[...group.querySelectorAll('button[data-option-value]')].map(button=>({
+     value:button.dataset.optionValue,state:button.dataset.optionState,
+     selected:button.getAttribute('aria-pressed')
+    }))
+   }))
+  }));
+  record('PDP_VARIANT_MATRIX'+sfx,variantEvidence);
+  await page.waitForFunction(()=>[...document.querySelectorAll('#k-modal-carousel-track img')].some(x=>x.complete&&x.naturalWidth>0),null,{timeout:25000});
+  const add=page.locator('#k-add-cart-btn');
+  // Select axes in canonical Product Detail order. A global "first unselected"
+  // selector can oscillate between available colors and never choose a size.
+  // Each click below is a genuine Playwright pointer gesture; the next axis
+  // is read only AFTER the current selection's DOM rerender has completed.
+  const axisLocator=page.locator('#k-modal-variants [data-axis-key]');
+  const axisCount=await axisLocator.count();
+  check(axisCount>0,'G6_VARIANT_AXES_NOT_RENDERED');
+  for(let axisIndex=0;axisIndex<axisCount;axisIndex++){
+   const axis=axisLocator.nth(axisIndex);
+   const axisKey=await axis.getAttribute('data-axis-key');
+   const selected=axis.locator('button[data-option-state="AVAILABLE"][aria-pressed="true"]');
+   if(await selected.count())continue;
+   const choices=axis.locator('button[data-option-state="AVAILABLE"][data-option-value]');
+   if(!await choices.count())throw Error('G6_NO_AVAILABLE_OPTION_IN_AXIS_'+axisKey);
+   const choice=choices.first();
+   const value=await choice.getAttribute('data-option-value');
+   await humanClick(null,choice);
+   await page.waitForFunction(({index,selectedValue})=>{
+    const root=document.querySelectorAll('#k-modal-variants [data-axis-key]')[index];
+    return !!root && Array.from(root.querySelectorAll('button[data-option-value]')).some(
+      b=>b.dataset.optionValue===selectedValue && b.getAttribute('aria-pressed')==='true');
+   },{index:axisIndex,selectedValue:value},{timeout:8000});
+  }
+  const addEnabled=await add.isEnabled();
+  await page.screenshot({path:path.join(OUT,'02-real-authenticated-product'+sfx+'.png')});
+  record('PDP_SELECTION_RESULT'+sfx,{
+   add_enabled:addEnabled,
+   selected_options:await page.locator('#k-modal-variants button[data-option-value][aria-pressed="true"]').evaluateAll(buttons=>buttons.map(button=>({
+    axis:button.closest('.k-vg')?.dataset.axisKey,value:button.dataset.optionValue
+   })))
+  });
+  check(addEnabled,'NO_PURCHASABLE_VARIANT');
+  const before=Number(await page.locator('#k-modal-cart-badge').innerText().catch(()=>'0'))||0;
+  await humanClick(null,add);
+  await page.waitForFunction(n=>Number(document.querySelector('#k-modal-cart-badge')?.textContent||0)>n,before,{timeout:10000});
+  await humanClick(null,page.locator('#k-modal-close'));
 }
 async function browserCheckout({buyer,phone,code}){
  const browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
@@ -211,64 +280,7 @@ async function browserCheckout({buyer,phone,code}){
     const count=document.getElementById('k-hero-count');
     return !!count && !count.hidden && /[1-9]/.test(count.textContent||'');
   },null,{timeout:30000});
-  const {rows:[actualProduct]}=await db.query('SELECT name,product_ref FROM products WHERE id=$1',[PRODUCT]);
-  check(actualProduct?.product_ref===REF&&!!actualProduct.name,'G6_PRODUCT_PROVENANCE_MISMATCH');
-  await humanFill(null,page.locator('#k-search-input'),actualProduct.name);
-  const item=page.locator('#k-search-dropdown .k-search-item[data-id="'+PRODUCT+'"]');
-  await item.waitFor({state:'visible',timeout:25000});await humanClick(null,item);
-  await page.locator('#k-modal-name').waitFor({state:'visible',timeout:13000});
-  // Wait for the canonical desktop Product Detail renderer, not a legacy carousel
-  // image that may already be loaded before SKU options finish rendering.
-  await page.locator('#k-modal-variants [data-pdc5-root]').waitFor({state:'attached',timeout:20000});
-  const variantEvidence=await page.locator('#k-modal-variants').evaluate(el=>({
-   root:!!el.querySelector('[data-pdc5-root]'),
-   axes:[...el.querySelectorAll('.k-vg')].map(group=>({
-    key:group.dataset.axisKey,
-    options:[...group.querySelectorAll('button[data-option-value]')].map(button=>({
-     value:button.dataset.optionValue,state:button.dataset.optionState,
-     selected:button.getAttribute('aria-pressed')
-    }))
-   }))
-  }));
-  record('PDP_VARIANT_MATRIX',variantEvidence);
-  await page.waitForFunction(()=>[...document.querySelectorAll('#k-modal-carousel-track img')].some(x=>x.complete&&x.naturalWidth>0),null,{timeout:25000});
-  const add=page.locator('#k-add-cart-btn');
-  // Select axes in canonical Product Detail order. A global "first unselected"
-  // selector can oscillate between available colors and never choose a size.
-  // Each click below is a genuine Playwright pointer gesture; the next axis
-  // is read only AFTER the current selection's DOM rerender has completed.
-  const axisLocator=page.locator('#k-modal-variants [data-axis-key]');
-  const axisCount=await axisLocator.count();
-  check(axisCount>0,'G6_VARIANT_AXES_NOT_RENDERED');
-  for(let axisIndex=0;axisIndex<axisCount;axisIndex++){
-   const axis=axisLocator.nth(axisIndex);
-   const axisKey=await axis.getAttribute('data-axis-key');
-   const selected=axis.locator('button[data-option-state="AVAILABLE"][aria-pressed="true"]');
-   if(await selected.count())continue;
-   const choices=axis.locator('button[data-option-state="AVAILABLE"][data-option-value]');
-   if(!await choices.count())throw Error('G6_NO_AVAILABLE_OPTION_IN_AXIS_'+axisKey);
-   const choice=choices.first();
-   const value=await choice.getAttribute('data-option-value');
-   await humanClick(null,choice);
-   await page.waitForFunction(({index,selectedValue})=>{
-    const root=document.querySelectorAll('#k-modal-variants [data-axis-key]')[index];
-    return !!root && Array.from(root.querySelectorAll('button[data-option-value]')).some(
-      b=>b.dataset.optionValue===selectedValue && b.getAttribute('aria-pressed')==='true');
-   },{index:axisIndex,selectedValue:value},{timeout:8000});
-  }
-  const addEnabled=await add.isEnabled();
-  await page.screenshot({path:path.join(OUT,'02-real-authenticated-product.png')});
-  record('PDP_SELECTION_RESULT',{
-   add_enabled:addEnabled,
-   selected_options:await page.locator('#k-modal-variants button[data-option-value][aria-pressed="true"]').evaluateAll(buttons=>buttons.map(button=>({
-    axis:button.closest('.k-vg')?.dataset.axisKey,value:button.dataset.optionValue
-   })))
-  });
-  check(addEnabled,'NO_PURCHASABLE_VARIANT');
-  const before=Number(await page.locator('#k-modal-cart-badge').innerText().catch(()=>'0'))||0;
-  await humanClick(null,add);
-  await page.waitForFunction(n=>Number(document.querySelector('#k-modal-cart-badge')?.textContent||0)>n,before,{timeout:10000});
-  await humanClick(null,page.locator('#k-modal-close'));
+  for(let i=0;i<LINES.length;i++)await addLineToCart(page,LINES[i],i);
   await page.locator('#k-side-cart.has-items').waitFor({state:'visible',timeout:12000});
   await page.screenshot({path:path.join(OUT,'03-real-cart.png')});
   const checkout=page.locator('#k-sc-checkout');
@@ -316,9 +328,13 @@ async function browserCheckout({buyer,phone,code}){
     o.market===MARKET&&Number(o.display_total_amount)===report.checkout_display_total&&
     o.display_currency===(MARKET==='KM'?'KMF':'XAF')&&Number(o.total_kmf)>0&&
     (MARKET!=='KM'||Number(o.total_kmf)===report.checkout_display_total)&&o.payment_mode==='cash_relais'&&
-    o.status==='pending'&&o.payment_status!=='paid'&&o.lines===1&&o.qty===1&&o.products?.includes(REF),
+    o.status==='pending'&&o.payment_status!=='paid'&&o.lines===LINES.length&&o.qty===LINES.length&&LINES.every(l=>o.products?.includes(l.product_ref)),
     'G6_POSTGRES_CANONICAL_ORDER_MISMATCH');
- if(PARAMS.fulfillment){
+ if(PARAMS.basket){
+  const {rows:src}=await db.query('SELECT p.product_ref,i.fulfillment_source::text AS fulfillment_source FROM order_items i JOIN products p ON p.id=i.product_id WHERE i.order_id=$1',[o.id]);
+  check(src.length===LINES.length&&LINES.every(l=>src.some(x=>x.product_ref===l.product_ref&&x.fulfillment_source===l.fulfillment)),'G6_M03_ORDER_NOT_MIXED_AS_EXPECTED');
+  report.fulfillment_source='MIXED';
+ }else if(PARAMS.fulfillment){
   const {rows:src}=await db.query('SELECT DISTINCT fulfillment_source FROM order_items WHERE order_id=$1',[o.id]);
   check(src.length===1&&src[0].fulfillment_source===PARAMS.fulfillment,'G6_M02_ORDER_NOT_LOCAL_STOCK');
   report.fulfillment_source=PARAMS.fulfillment;

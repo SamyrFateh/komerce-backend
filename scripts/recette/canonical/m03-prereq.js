@@ -18,6 +18,7 @@ const SELLABLE_SQL=`
     WHERE ps.product_id=p.id AND ps.is_active=TRUE AND ps.deleted_at IS NULL
       AND s.is_active=TRUE AND s.deleted_at IS NULL AND (s.owner_scope IS NULL OR s.system_key='central_hub')
     ORDER BY ps.priority ASC,ps.created_at ASC,ps.id ASC LIMIT 1) AS source_key,
+  EXISTS (SELECT 1 FROM product_skus k WHERE k.product_id=p.id AND k.is_active=TRUE AND k.stock>0) AS import_ready,
   COALESCE((SELECT SUM(ls.qty_physical-COALESCE((SELECT SUM(a.quantity) FROM local_stock_allocations a
       WHERE a.local_stock_id=ls.id AND a.consumed_at IS NULL AND a.released_at IS NULL),0))
     FROM local_stock ls WHERE ls.product_id=p.id AND ls.market_id=m.id
@@ -32,12 +33,13 @@ const SELLABLE_SQL=`
 async function readSellable(client,market){
  const {rows}=await client.query(SELLABLE_SQL,[market]);
  return rows.map(r=>({id:r.id,product_ref:r.product_ref,price:Number(r.amount),
-  source_key:r.source_key||null,local_available:Number(r.local_available)||0}));
+  source_key:r.source_key||null,import_ready:r.import_ready!==false,local_available:Number(r.local_available)||0}));
 }
 // Pur : classe les produits vendables, calcule le verdict et le panier candidat.
 function classify(products){
  const local=products.filter(p=>p.local_available>=1&&p.product_ref!==M01_PRODUCT_REF);
- const imp=products.filter(p=>p.local_available<1&&p.source_key);
+ // Import achetable comme M01 : SKU actif avec stock fournisseur > 0 (même précondition que l'écran boutique M01).
+ const imp=products.filter(p=>p.local_available<1&&p.source_key&&p.import_ready!==false);
  const bySource={};
  for(const p of products){const k=p.source_key||'NO_SOURCE';(bySource[k]=bySource[k]||[]).push(p.product_ref)}
  const importSources=new Set(imp.map(p=>p.source_key));
@@ -57,7 +59,7 @@ function selectMixedBasket(products,{minSources=MIN_IMPORT_SOURCES}={}){
  if(!local)throw Error('G6_M03_LOCAL_STOCK_PRODUCT_MISSING');
  const seen=new Set(),imports=[];
  // Fournisseur central Hub en premier (critère multi_sourcing), puis une ligne par source distincte.
- const pool=products.filter(p=>p.local_available<1&&p.source_key&&p.product_ref!==local.product_ref)
+ const pool=products.filter(p=>p.local_available<1&&p.source_key&&p.import_ready!==false&&p.product_ref!==local.product_ref)
   .sort((a,b)=>(b.source_key==='central_hub')-(a.source_key==='central_hub'));
  for(const p of pool)if(!seen.has(p.source_key)){seen.add(p.source_key);imports.push(p)}
  if(imports.length<minSources)throw Error('G6_M03_IMPORT_SOURCES_BELOW_'+minSources+'_GOT_'+imports.length);
