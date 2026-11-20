@@ -133,6 +133,9 @@
     host.replaceChildren();
     const rootEl = el(doc, 'div', 'hlc');
     rootEl.setAttribute('data-hub-cockpit', '');
+    // Zone d'actions unique : contient le CTA du cockpit ET les actions du fil.
+    // Les sélecteurs du Golden restent valides sans dupliquer un seul bouton.
+    rootEl.setAttribute('data-hlc-actions', '');
     const markReady = () => {
       const r = host.querySelector && host.querySelector('[data-hub-cockpit]');
       if (r) r.setAttribute('data-hlc-ready', state.pending > 0 ? 'false' : 'true');
@@ -918,7 +921,8 @@
     const rightP = el(doc, 'div', 'hlc-panel-right');
     rightP.appendChild(el(doc, 'span', 'hlc-label', `Actions autorisées · ${roleLabel}`));
     const list = el(doc, 'div', 'hlc-actions');
-    list.setAttribute('data-hlc-actions', '');
+    // Le marqueur data-hlc-actions est porté par l'unique ancêtre commun
+    // aux deux emplacements d'actions après déplacement du CTA principal.
     let primaryUsed = false;
     actionsFor().forEach((a) => {
       if (a.primary && !a.disabled) { if (primaryUsed) a.primary = false; else primaryUsed = true; } else if (a.disabled) a.primary = false;
