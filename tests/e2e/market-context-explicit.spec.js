@@ -1,7 +1,7 @@
 /**
  * @e2e   market-context-explicit.spec.js
- * @feature dashboard (L1 — contexte marché explicite sur les 7 surfaces marché)
- * @brief Aucun marché n'est choisi implicitement depuis Global ; aucune requête marché avant le choix ;
+ * @feature dashboard (MarketScope : lecture globale autorisée distincte des writers marché)
+ * @brief Depuis Global : lecture consolidée si endpoint sûr, sans writer marché implicite ;
  *        ?market=XX non autorisé -> invite ; le choix explicite survit au rechargement ; shell = surface ;
  *        délégation mono-marché sélectionnée automatiquement. API simulée : aucun serveur, aucune base.
  */
@@ -27,6 +27,7 @@ const OPS_WORKSPACE = {
   inventory: { items: [], open_parcels: [] },
 };
 const OPS_SURFACES = new Set(['Hub live · Exécution']);
+const GLOBAL_OVERVIEWS = new Set(['Expéditions & Douane', 'Comptabilité', 'Hub live · Exécution']);
 
 const SHELL_SURFACES = [
   ['Prix & économie', '/admin/workspaces/pricing'],
@@ -51,6 +52,11 @@ async function mount(page, ctx) {
     if (url.pathname.startsWith('/admin/')) return route.fulfill({ contentType: 'text/html', path: path.join(CANONICAL, 'index.html') });
     if (url.pathname === '/api/auth/me') return json({ id: ctx.actor.id, role: ctx.actor.role, email: 'x@komerce.test' });
     if (url.pathname === '/api/admin/dashboard/context') return json(ctx);
+    if (url.pathname === '/api/admin/dashboard/operations' ||
+        url.pathname === '/api/admin/dashboard/finance') return json({});
+    if (url.pathname === '/api/hub/board') return json({
+      scope: 'HUB_GLOBAL', markets: ['KM', 'CM', 'CG'], orders: [],
+    });
     if (MARKET_API.test(url.pathname)) {
       marketCalls.push(url.pathname);
       if (/\/api\/admin\/workspaces\/operations\/market\/[A-Z]{2}$/.test(url.pathname)) return json(OPS_WORKSPACE);
@@ -68,12 +74,20 @@ const go = (page, target, query = '') => {
 
 test.describe('L1 — surfaces à shell marché (5)', () => {
   for (const [label, target] of SHELL_SURFACES) {
-    test(`${label} : Global -> invite, aucun appel marché, sélecteur sans marché`, async ({ page }) => {
+    test(`${label} : Global -> vue autorisée si elle existe, jamais de writer implicite`, async ({ page }) => {
       const calls = await mount(page, GLOBAL_CTX);
       await go(page, target);
-      await expect(page.locator('[data-market-prompt="prompt"]')).toBeVisible();
       await expect(page.locator('.kmc-admin-market-select')).toHaveValue('');
-      await expect(page.locator('.kmc-admin-market-select option').first()).toHaveText('Choisir un marché…');
+      if (GLOBAL_OVERVIEWS.has(label)) {
+        await expect(page.locator('[data-market-global-overview]')).toBeVisible();
+        await expect(page.locator('[data-market-prompt]')).toHaveCount(0);
+        await expect(page.locator('.kmc-admin-market-select option').first())
+          .toContainText('Global');
+      } else {
+        await expect(page.locator('[data-market-prompt="prompt"]')).toBeVisible();
+        await expect(page.locator('.kmc-admin-market-select option').first())
+          .toHaveText('Choisir un marché…');
+      }
       await page.waitForTimeout(400);
       expect(calls).toEqual([]);
     });
@@ -105,6 +119,7 @@ test.describe('L1 — surfaces à shell marché (5)', () => {
       const calls = await mount(page, GLOBAL_CTX);
       await go(page, target, 'market=KM');
       await expect(page.locator('[data-market-prompt]')).toHaveCount(0);
+      await expect(page.locator('[data-market-global-overview]')).toHaveCount(0);
       await expect(page.locator('.kmc-admin-market-select')).toHaveValue('KM');
       await page.reload();
       await expect(page.locator('.kmc-admin-market-select')).toHaveValue('KM');
