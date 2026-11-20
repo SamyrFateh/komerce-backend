@@ -29,10 +29,11 @@ import {
 }                         from './b-store.js';
 import { scrollToCategorySection } from './b-catalog.js';
 import {
-  sanitize, fmt, fmtPrice, fmtLocalProductPrice, fmtLocalLinesTotal, fmtMarketAmount, optimizeImgUrl,
+  sanitize, fmt, fmtPrice, optimizeImgUrl,
   productEmoji, _currency, apiGet, apiPost,
   productImageFallbackAttr, PRODUCT_IMAGE_FALLBACK_URL,
 }                         from './b-utils.js';
+import { fmtLocalProductPrice, fmtLocalLinesTotal, fmtMarketAmount } from './b-market-price-format.js';
 import {
   showToast, saveCart, cartQty, cartTotal, saveFavs,
 }                         from './b-cart-core.js';
