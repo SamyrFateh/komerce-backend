@@ -2,6 +2,10 @@
 # Declenchement MANUEL uniquement. dry-run par defaut (lecture seule) ; execute exige la confirmation texte
 # RESET-STAGING-BUSINESS-DATA, le proprietaire du depot, et l'epingle de base STAGING_DB_PIN (variable de depot
 # host:port/base, non secrete). Jamais lance automatiquement. Code : scripts/recette/staging-reset.js.
+# Apres un execute RESET_OK, le job `provision` reprovisionne les comptes E2E (workflow reutilisable
+# staging-e2e-provision.yml, memes script et secrets) puis verifie en lecture seule que chaque compte existe. Aucune saisie
+# supplementaire : la confirmation RESET-STAGING-BUSINESS-DATA, deja exigee et verifiee par le job reset, vaut confirmation de
+# provisionnement (la valeur PROVISION-STAGING-E2E est passee en interne, jamais saisie). skip_provision=true l'omet.
 name: Staging reset
 
 on:
@@ -34,6 +38,16 @@ on:
         required: false
         type: boolean
         default: false
+      provision_markets:
+        description: 'execute : marches de recette supplementaires reprovisionnes apres le reset (sous-ensemble de CM,CG ; KM toujours inclus ; vide = KM seul)'
+        required: false
+        type: string
+        default: 'CM,CG'
+      skip_provision:
+        description: 'execute : ne PAS reprovisionner les comptes E2E apres le reset'
+        required: false
+        type: boolean
+        default: false
       confirmation:
         description: 'Pour execute uniquement : saisir exactement RESET-STAGING-BUSINESS-DATA'
         required: false
@@ -52,6 +66,8 @@ jobs:
     if: github.actor == github.repository_owner
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      reset_status: ${{ steps.status.outputs.reset_status }}
     env:
       KOMERCE_ENV: staging
       NODE_ENV: test
@@ -97,6 +113,20 @@ jobs:
             export KOMERCE_CONTROLLED_PURGE_CONFIRM='PURGE_BUSINESS_DATA_KEEP_FOUNDATION'
           fi
           node scripts/recette/staging-reset.js "--$RESET_MODE" | tee test-results/staging-reset/report.json
+      - name: Reset status
+        id: status
+        shell: bash
+        run: |
+          set -euo pipefail
+          st=$(node -e "process.stdout.write(String(JSON.parse(require('fs').readFileSync('test-results/staging-reset/report.json','utf8')).status||''))")
+          echo "reset_status=$st" >> "$GITHUB_OUTPUT"
+      - name: E2E provisioning plan (dry-run, nothing executed)
+        if: ${{ inputs.mode == 'dry-run' }}
+        shell: bash
+        run: |
+          echo "Plan (dry-run) : apres un execute RESET_OK, staging-e2e-provision.yml sera appele en mode execute (marches KM + ${PROVISION_MARKETS:-aucun}), puis verification lecture seule des 8 comptes E2E. Rien n'est execute maintenant."
+        env:
+          PROVISION_MARKETS: ${{ inputs.provision_markets }}
       - name: Independent verification (execute only)
         if: ${{ inputs.mode == 'execute' }}
         run: node scripts/recette/staging-verify-empty.js | tee test-results/staging-reset/verify.json
@@ -108,3 +138,16 @@ jobs:
           path: test-results/staging-reset
           retention-days: 30
           if-no-files-found: warn
+
+  # Reprovisionnement E2E : uniquement apres un reset execute RESET_OK (needs = succes du job reset), sauf skip_provision.
+  # Meme script et memes secrets que staging-e2e-provision.yml (appel reutilisable, secrets: inherit). Confirmation interne.
+  provision:
+    name: E2E provision after reset
+    needs: reset
+    if: ${{ inputs.mode == 'execute' && inputs.skip_provision != true && needs.reset.outputs.reset_status == 'RESET_OK' }}
+    uses: ./.github/workflows/staging-e2e-provision.yml
+    with:
+      mode: execute
+      extra_markets: ${{ inputs.provision_markets }}
+      confirmation: PROVISION-STAGING-E2E
+    secrets: inherit

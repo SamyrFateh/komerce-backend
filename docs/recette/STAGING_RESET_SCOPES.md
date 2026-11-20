@@ -33,3 +33,17 @@ Retirées comme en `prudent`. Un compte de test qui a signé une ligne préserv�
 Dry-run par défaut ; execute exige la confirmation texte `RESET-STAGING-BUSINESS-DATA`, `PURGE_BUSINESS_DATA_KEEP_FOUNDATION`, l'épingle de base `STAGING_DB_PIN` et l'identité live (empreinte de base). Le rapport porte `code_sha` (`GITHUB_SHA`), `preserved_activity_tables`, `stock_restored`. Vérification indépendante : `staging-verify-empty.js` lit la même portée.
 
 Preuves : `tests/unit/staging-reset-activity-scope.test.js`, `tests/integration/staging-reset-real-db.test.js` (bloc « portée activity »).
+
+## Reprovisionnement E2E automatique après un reset `execute`
+
+Un reset (surtout `activity`/`full`) supprime des comptes E2E (20/11 : responsable Hub, transitaire, finance, sourcing) et le M01 suivant échoue en 401. Le workflow `staging-reset.yml` enchaîne donc le job `provision` :
+
+- **Condition** : `mode=execute`, job `reset` réussi avec statut `RESET_OK`, et `skip_provision` différent de `true`. En `dry-run`, rien n'est exécuté : le workflow affiche seulement le plan.
+- **Réutilisation** : appel de `staging-e2e-provision.yml` (`workflow_call`, `secrets: inherit`), donc exactement le même script `staging-e2e-provision.js` et les mêmes secrets `E2E_*`. Aucune copie.
+- **Marchés** : KM toujours ; entrée `provision_markets` (défaut `CM,CG`, vide = KM seul).
+- **Confirmation** : aucune saisie supplémentaire. La confirmation `RESET-STAGING-BUSINESS-DATA` du reset, vérifiée par le job `reset`, vaut confirmation ; `PROVISION-STAGING-E2E` est passée en interne par le workflow, jamais saisie. Le provisionnement garde son propre contrôle de cette valeur.
+- **Vérification finale (lecture seule)** : `staging-e2e-verify-accounts.js` contrôle les 8 comptes (admin, agent Hub, responsable Hub, agent relais, transitaire, responsable marché, finance, sourcing) : existence, rôle, marqueur E2E, périmètres de marché (KM + `provision_markets`), relais, autorisations Hub, autorité Sourcing. Un compte manquant fait échouer le workflow. Aucune valeur de secret n'est affichée.
+- **Gardes inchangées** : propriétaire du dépôt, SHA (`code_sha`), épingle `STAGING_DB_PIN`, identité live. Si les secrets du responsable Hub manquent, le provisionnement le saute et la vérification échoue (compte attendu).
+- Reprise manuelle : `staging-e2e-provision` seul reste utilisable.
+
+Preuves : `tests/unit/staging-reset-provision-chain.test.js`.

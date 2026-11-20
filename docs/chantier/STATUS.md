@@ -54,7 +54,7 @@
 - **Comptes E2E reprovisionnés :** `staging-e2e-provision`, run 44689718797.
 - **M01 à 15/15, SHA `f87a8e7e` :** KM KHTR2PS (#4684), CM K51JZNA (#4685), CG KNVW3OS (#4687).
 - **Défaut produit ouvert (GPT) :** le rafraîchissement UX1, toutes les 10 s, déclenche des 429 sur le limiteur global par IP (500 requêtes / 15 min). Il a été observé sur le run CG 44691201929.
-- **À faire :** enchaîner automatiquement le reprovisionnement E2E après tout reset ; GPT recertifie MKT-READ avec des comptes mono-marché.
+- **Reprovisionnement automatique (Opus, PR ouverte, 20/11) :** `staging-reset` enchaîne `staging-e2e-provision` (appel réutilisable) après un execute `RESET_OK` (`provision_markets` défaut CM,CG ; `skip_provision`), puis vérification lecture seule des 8 comptes ; aucun run lancé. Doc [`STAGING_RESET_SCOPES.md`](../recette/STAGING_RESET_SCOPES.md). Reste : GPT recertifie MKT-READ avec des comptes mono-marché.
 
 **G6-RECERT — M01 recertifié après G6-SUIVIS et Ergonomie (Opus, 19/11) : PASS 15/15 sur les 3 marchés**, SHA unique `a9a625c9`, oracles G6-F renforcés. KM KNS1G99 (#4635), CM KX87NSI (#4636), CG K50ID0Q (#4637). Lots couverts : #4607, #4609, #4610, #4611, #4612, #4630, #4632, #4633, #4634. **Reste avant les 46 scénarios :** inventaire puis nettoyage par l'écran des commandes orphelines (lot 5, GO du propriétaire), prix de référence KPR-000165 (point 2), puis GO du propriétaire.
 
