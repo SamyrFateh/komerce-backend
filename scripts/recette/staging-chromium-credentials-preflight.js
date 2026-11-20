@@ -18,16 +18,23 @@ const OUTPUT=path.resolve('test-results/staging-chromium/credentials-preflight.j
 function inspect(env=process.env) {
   const roles=selectedRoles(env.E2E_AUDIT_ROLES||'all');
   const missing=[];
+  const filter=String(env.E2E_CHROMIUM_SPEC_FILTER||'').trim();
   for(const role of roles) {
+    if(filter==='market-visibility-mono'&&role==='market_operator')continue;
     const prefix='E2E_'+role.toUpperCase()+'_';
     for(const suffix of ['EMAIL','PASSWORD']){
       const key=prefix+suffix;
       if(!String(env[key]||'').trim())missing.push(key);
     }
   }
+  if(filter==='market-visibility-mono') {
+    for(const market of ['KM','CM','CG']) for(const suffix of ['EMAIL','PASSWORD']) {
+      const key=`E2E_MARKET_OPERATOR_${market}_${suffix}`;
+      if(!String(env[key]||'').trim()&&!missing.includes(key))missing.push(key);
+    }
+  }
   // A targeted Hub Director proof uses the admin runner but authenticates two
   // distinct agent_hub identities. An exhaustive unfiltered run includes it too.
-  const filter=String(env.E2E_CHROMIUM_SPEC_FILTER||'').trim();
   const directorIncluded=env.E2E_AUDIT_QUICK!=='1' &&
     (filter.includes('hub-director-readonly') ||
      (!filter && String(env.E2E_AUDIT_ROLES||'all').toLowerCase()==='all'));

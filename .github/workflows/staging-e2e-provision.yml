@@ -41,6 +41,11 @@ on:
         required: false
         default: ''
         type: string
+      include_single_market_operators:
+        description: 'Inclure les trois comptes market_operator mono-marché KM/CM/CG pour MKT-READ'
+        required: false
+        default: false
+        type: boolean
       confirmation:
         description: 'Pour execute uniquement : saisir exactement PROVISION-STAGING-E2E'
         required: false
@@ -73,11 +78,18 @@ jobs:
       KOMERCE_STAGING_RESET_DB_PIN: ${{ vars.STAGING_DB_PIN }}
       PROVISION_MODE: ${{ github.event_name == 'issues' && 'execute' || inputs.mode }}
       E2E_PROVISION_EXTRA_MARKETS: ${{ inputs.extra_markets }}
+      E2E_REQUIRE_MARKET_OPERATOR_MONO: ${{ inputs.include_single_market_operators && '1' || '0' }}
       PROVISION_CONFIRMATION: ${{ github.event_name == 'issues' && 'PROVISION-STAGING-E2E' || inputs.confirmation }}
       E2E_ADMIN_EMAIL: ${{ github.event_name == 'issues' && 'admin@komerce.km' || secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
       E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
       E2E_MARKET_OPERATOR_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_PASSWORD }}
+      E2E_MARKET_OPERATOR_KM_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_KM_EMAIL }}
+      E2E_MARKET_OPERATOR_KM_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_KM_PASSWORD }}
+      E2E_MARKET_OPERATOR_CM_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_CM_EMAIL }}
+      E2E_MARKET_OPERATOR_CM_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_CM_PASSWORD }}
+      E2E_MARKET_OPERATOR_CG_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_CG_EMAIL }}
+      E2E_MARKET_OPERATOR_CG_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_CG_PASSWORD }}
       E2E_FINANCE_EMAIL: ${{ secrets.E2E_FINANCE_EMAIL }}
       E2E_FINANCE_PASSWORD: ${{ secrets.E2E_FINANCE_PASSWORD }}
       E2E_SOURCING_EMAIL: ${{ secrets.E2E_SOURCING_EMAIL }}
@@ -106,6 +118,15 @@ jobs:
           [ -n "${KOMERCE_STAGING_RESET_DB_PIN:-}" ] || { echo "::error::variable de depot STAGING_DB_PIN absente (host:port/base)"; exit 1; }
           if [ -z "${E2E_HUB_DIRECTOR_EMAIL:-}" ] || [ -z "${E2E_HUB_DIRECTOR_PASSWORD:-}" ]; then
             echo "::warning::secrets E2E_HUB_DIRECTOR_EMAIL / E2E_HUB_DIRECTOR_PASSWORD absents : profil responsable Hub saute"
+          fi
+          if [ "${E2E_REQUIRE_MARKET_OPERATOR_MONO:-0}" = '1' ]; then
+            for suffix in KM CM CG; do
+              for kind in EMAIL PASSWORD; do
+                key="E2E_MARKET_OPERATOR_${suffix}_${kind}"
+                [ -n "${!key:-}" ] || { echo "::error::secret $key absent"; exit 1; }
+              done
+            done
+            [ -z "${E2E_PROVISION_EXTRA_MARKETS:-}" ] || { echo "::error::extra_markets doit rester vide en mode mono-marché"; exit 1; }
           fi
           case "$PROVISION_MODE" in
             dry-run) ;;

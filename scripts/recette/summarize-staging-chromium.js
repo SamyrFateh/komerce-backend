@@ -15,7 +15,8 @@ fs.mkdirSync(root,{recursive:true});
 // La preuve Hub Director a son propre schéma et ne représente pas un graphe
 // de navigation. Ne pas l'interpréter comme un profil Chromium ordinaire.
 const files=fs.existsSync(dir)?fs.readdirSync(dir)
-  .filter(x=>x.endsWith('.json')&&x!=='hub-director-readonly.json'&&x!=='g8-refunds-readonly.json'&&x!=='market-visibility.json'):[];
+  .filter(x=>x.endsWith('.json')&&x!=='hub-director-readonly.json'&&x!=='g8-refunds-readonly.json'&&
+    x!=='market-visibility.json'&&!/^market-visibility-(KM|CM|CG)\.json$/.test(x)):[];
 const runs=files.map(f=>{
   const evidence=JSON.parse(fs.readFileSync(path.join(dir,f),'utf8'));
   if(!evidence.role || !Array.isArray(evidence.findings) ||
@@ -118,6 +119,89 @@ if (process.env.E2E_CHROMIUM_SPEC_FILTER === 'g8-refunds-readonly') {
     'Ce controle de lecture seule ne prouve pas les transitions transactionnelles.',
   ].join('\n')+'\n');
   console.log('[market-visibility-summary] '+JSON.stringify(summary));
+  if(!valid)process.exitCode=2;
+} else if(process.env.E2E_CHROMIUM_SPEC_FILTER==='market-visibility-mono') {
+  const markets=['KM','CM','CG'];
+  const menu=[
+    'control-tower','action-center','flow-commerce','flow-orders','entity-clients',
+    'workspace-pricing','workspace-catalog','flow-operations','workspace-shipping',
+    'workspace-purchasing','flow-finance','workspace-accounting','live-import-runtime',
+    'live-hub','live-relais','markets-home','market-autonomy','market-catalog','unsold',
+    'admin-users','admin-providers','settings','help-docs'
+  ];
+  const expectedSha=String(process.env.E2E_EXPECTED_DEPLOY_SHA||'');
+  const runId=String(process.env.GITHUB_RUN_ID||'NOT_ASSIGNED');
+  const runUrl=runId==='NOT_ASSIGNED'?'NOT_ASSIGNED':`https://github.com/${process.env.GITHUB_REPOSITORY||'SamyrFateh/komerce-backend'}/actions/runs/${runId}`;
+  const perMarket=[];
+  for(const market of markets){
+    const file=path.join(dir,`market-visibility-${market}.json`);
+    const proof=fs.existsSync(file)?JSON.parse(fs.readFileSync(file,'utf8')):null;
+    const checks=proof?{
+      sha:/^[0-9a-f]{40}$/.test(expectedSha)&&proof.version===expectedSha&&proof.finalVersion===expectedSha,
+      login:proof.loginStatus===200,
+      one_market:JSON.stringify(proof.allowedMarkets)===JSON.stringify([market])&&JSON.stringify(proof.hubMarkets)===JSON.stringify([market]),
+      navigation:JSON.stringify(proof.navigation?.items)===JSON.stringify(menu)&&Array.isArray(proof.navigation?.visited)&&
+        proof.navigation.visited.length===23&&proof.navigation.visited.every(x=>x.http===200&&x.path!=='/login.html'),
+      consultations:Array.isArray(proof.consultations)&&proof.consultations.length>0&&proof.consultations.every(x=>x.http===200&&x.market===market&&x.collection),
+      oracle:proof.readOnlyOracle===true&&proof.oracle?.hub?.count===proof.hubOrderCount&&
+        JSON.stringify(proof.oracle?.hub?.market_codes)===JSON.stringify([market])&&proof.oracle?.markets?.length===3,
+      order360:Array.isArray(proof.order360)&&proof.order360.length===1&&proof.order360[0].status===200&&
+        proof.order360[0].readOnly===true&&proof.order360[0].poCount>0,
+      direct_order_refusals:Array.isArray(proof.foreign_order_denials)&&proof.foreign_order_denials.length===2&&
+        proof.foreign_order_denials.every(x=>[403,404,409].includes(x.status)),
+      direct_po_refusals:Array.isArray(proof.foreign_po_denials)&&proof.foreign_po_denials.length>0&&
+        proof.foreign_po_denials.every(x=>[403,404,409].includes(x.status)),
+      direct_client_refusals:Array.isArray(proof.foreign_client_denials)&&proof.foreign_client_denials.length===2&&
+        proof.foreign_client_denials.every(x=>[403,404,409].includes(x.status)),
+      no_actions:Array.isArray(proof.visible_mutation_controls)&&proof.visible_mutation_controls.length===0,
+      no_foreign_data:Array.isArray(proof.foreignDataLeaks)&&proof.foreignDataLeaks.length===0,
+      no_foreign_markets:Array.isArray(proof.foreignMarketLeaks)&&proof.foreignMarketLeaks.length===0,
+      no_writes:Array.isArray(proof.blockedWrites)&&proof.blockedWrites.length===0&&proof.readOnlyOracle===true,
+      no_js_errors:Array.isArray(proof.jsErrors)&&proof.jsErrors.length===0
+    }:Object.fromEntries(['sha','login','one_market','navigation','consultations','oracle','order360',
+      'direct_order_refusals','direct_po_refusals','direct_client_refusals','no_actions','no_foreign_data','no_foreign_markets','no_writes','no_js_errors'].map(k=>[k,false]));
+    const pass=Boolean(proof&&proof.result==='PASS'&&Object.values(checks).every(Boolean));
+    const summary={market,status:pass?'PASS':'FAIL',checks,
+      rubric_count:proof?.navigation?.items?.length||0,destination_count:proof?.navigation?.visited?.length||0,
+      allowed_markets:proof?.allowedMarkets||[],hub_orders:proof?.hubOrderCount??null,
+      direct_order_refusals:proof?.foreign_order_denials?.length||0,
+      direct_po_refusals:proof?.foreign_po_denials?.length||0,
+      direct_client_refusals:proof?.foreign_client_denials?.length||0,
+      javascript_errors:proof?.jsErrors?.length??null,network_writes:proof?.blockedWrites?.length??null,
+      run_id:runId,run_url:runUrl,sha:checks.sha?expectedSha:'NOT_PROVEN',
+      artifact_name:runId==='NOT_ASSIGNED'?'NOT_ASSIGNED':`real-canonical-chromium-${runId}`};
+    perMarket.push(summary);
+    fs.writeFileSync(path.join(root,`market-visibility-${market}.md`),[
+      `# MKT-READ — Responsable Marché ${market}`,'',
+      `Verdict : **${summary.status}**`,
+      `Run : ${runId} (${runUrl})`,
+      `Artefact : ${summary.artifact_name}`,
+      `SHA staging stable : ${summary.sha}`,
+      `Rubriques : ${summary.rubric_count}/23 ; destinations HTTP 200 : ${summary.destination_count}`,
+      `Marché autorisé : ${(summary.allowed_markets||[]).join(', ')||'NOT_PROVEN'}`,
+      `Hub : ${summary.hub_orders===null?'NOT_PROVEN':summary.hub_orders+' commandes, vérifiées par oracle PG'}`,
+      `Refus directs : commande ${summary.direct_order_refusals}, PO ${summary.direct_po_refusals}, client ${summary.direct_client_refusals}`,
+      `Boutons d'action : ${checks.no_actions?'0':'FAIL'} ; écritures réseau/PG : ${checks.no_writes?'0':'FAIL'} ; erreurs JS : ${summary.javascript_errors}`,
+      '', 'Portée : lecture seule uniquement ; ne vaut pas GO production ni GO transactionnel.'
+    ].join('\n')+'\n');
+  }
+  const valid=perMarket.every(x=>x.status==='PASS');
+  const summary={status:valid?'PASS':'FAIL',run_id:runId,run_url:runUrl,
+    artifact_name:runId==='NOT_ASSIGNED'?'NOT_ASSIGNED':`real-canonical-chromium-${runId}`,markets:perMarket,
+    production_go:false,transactional_go:false};
+  fs.writeFileSync(path.join(root,'market-visibility-mono-summary.json'),JSON.stringify(summary,null,2)+'\n');
+  fs.writeFileSync(path.join(root,'rapport.md'),[
+    '# MKT-READ — responsables marché mono-marché, Chromium staging','',
+    `Verdict global : **${summary.status}** (PASS exige les trois marchés).`,
+    `Run : ${runId} (${runUrl})`,`Artefact : ${summary.artifact_name}`,'',
+    ...perMarket.flatMap(x=>[`## ${x.market} — ${x.status}`,
+      `SHA : ${x.sha} ; rubriques : ${x.rubric_count}/23 ; destinations HTTP 200 : ${x.destination_count}`,
+      `Refus directs : commande ${x.direct_order_refusals}, PO ${x.direct_po_refusals}, client ${x.direct_client_refusals}`,
+      `Contrôles : ${Object.entries(x.checks).map(([k,v])=>`${k}=${v?'PASS':'FAIL'}`).join(', ')}`,'']),
+    'Lecture seule uniquement : aucun GO production ni GO transactionnel.'
+  ].join('\n')+'\n');
+  console.log('[market-visibility-mono-summary] '+JSON.stringify({status:summary.status,run_id:runId,
+    markets:perMarket.map(x=>({market:x.market,status:x.status}))}));
   if(!valid)process.exitCode=2;
 } else if (process.env.E2E_CHROMIUM_SPEC_FILTER === 'hub-director-readonly') {
   const file = path.join(dir,'hub-director-readonly.json');

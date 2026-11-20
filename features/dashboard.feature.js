@@ -702,6 +702,8 @@ module.exports = {
       'css/ct-inventory.css',
     ],
     tests: [
+      'tests/staging-canonical/market-visibility-mono.spec.js',
+      'tests/unit/staging-market-visibility-mono-summary.test.js',
       'tests/unit/staging-five-market-matrix.test.js',
       'tests/staging-business/market-chromium-real-readonly.spec.js',
       'tests/integration/signal-simulation-scope-postgres.test.js',
