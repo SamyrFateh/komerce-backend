@@ -47,9 +47,22 @@ describe('market-operator-provisioning', () => {
     const out = await svc.ensureOperatorMembership(client, { ...base, scope: 'manager' });
     expect(out).toEqual({ status: 'created', assignmentId: 'a1', membershipId: 'mem1' });
     expect(delegation.addMembership).toHaveBeenCalledWith(client, {
-      assignmentId: 'a1', userId: 'u1', capabilities: ['pricing.decide'], actorUserId: 'admin1', actorIsCentral: true,
+      assignmentId: 'a1', userId: 'u1', capabilities: ['pricing.decide'], capabilityLimits: {}, actorUserId: 'admin1', actorIsCentral: true,
     });
     expect(projector.projectAssignment).toHaveBeenCalledWith(client, 'a1');
+  });
+
+  test('manager : applique les limites finies du plafond à ses capacités à montant', async () => {
+    client.query
+      .mockResolvedValueOnce({ rows: [{ capability: 'cash.custody.receive' }] })
+      .mockResolvedValueOnce({ rows: [{ capability: 'cash.custody.receive', limit_amount: '15000' }] });
+
+    await svc.ensureOperatorMembership(client, { ...base, scope: 'manager' });
+
+    expect(delegation.addMembership).toHaveBeenCalledWith(client, {
+      assignmentId: 'a1', userId: 'u1', capabilities: ['cash.custody.receive'],
+      capabilityLimits: { 'cash.custody.receive': 15000 }, actorUserId: 'admin1', actorIsCentral: true,
+    });
   });
 
   test('viewer : capabilities = baseline lecture du projecteur', async () => {
@@ -105,7 +118,7 @@ describe('market-operator-provisioning', () => {
     const out = await svc.ensureOperatorMembership(client, { ...base, scope: 'manager', allowRoleChange: true });
     expect(out.status).toBe('replaced');
     expect(delegation.replaceMembershipCapabilities).toHaveBeenCalledWith(client, {
-      membershipId: 'mem1', capabilities: ['pricing.decide'], actorUserId: 'admin1', actorIsCentral: true,
+      membershipId: 'mem1', capabilities: ['pricing.decide'], capabilityLimits: {}, actorUserId: 'admin1', actorIsCentral: true,
     });
     expect(projector.projectAssignment).toHaveBeenCalledWith(client, 'a1');
   });

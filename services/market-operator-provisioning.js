@@ -64,6 +64,25 @@ async function targetCapabilitiesForScope(executor, { assignmentId, scope }) {
   return LEGACY_VIEWER_CAPABILITIES.slice();
 }
 
+// Le plafond de l'assignment est aussi la limite maximale de chaque capacité à montant
+// portée par la membership du manager. Passer ces limites explicitement au writer évite
+// qu'une capacité telle que cash.custody.receive soit créée avec limit_amount=NULL.
+async function targetCapabilityLimits(executor, { assignmentId, capabilities }) {
+  if (!Array.isArray(capabilities) || capabilities.length === 0) return {};
+  const { rows } = await executor.query(
+    `SELECT capability, limit_amount
+       FROM assignment_capability_ceiling
+      WHERE assignment_id=$1::uuid
+        AND capability=ANY($2::text[])
+        AND revoked_at IS NULL
+        AND limit_amount IS NOT NULL`,
+    [assignmentId, capabilities]
+  );
+  return Object.fromEntries(rows
+    .filter(row => row.limit_amount !== null && row.limit_amount !== undefined)
+    .map(row => [row.capability, Number(row.limit_amount)]));
+}
+
 // Rôle viewer/manager d'un utilisateur dérivé EXACTEMENT comme le fait projectAssignment().
 // null = membership aux capabilities personnalisées : on échoue fermé plutôt que de deviner.
 async function derivedRoleForUser(executor, { assignmentId, userId }) {
@@ -123,16 +142,18 @@ async function ensureOperatorMembership(client, {
       throw scopeMismatchError({ scope, derivedRole, marketCode, membershipId: existing.id });
     }
     const capabilities = await targetCapabilitiesForScope(client, { assignmentId, scope });
+    const capabilityLimits = await targetCapabilityLimits(client, { assignmentId, capabilities });
     await delegation.replaceMembershipCapabilities(client, {
-      membershipId: existing.id, capabilities, actorUserId, actorIsCentral: true,
+      membershipId: existing.id, capabilities, capabilityLimits, actorUserId, actorIsCentral: true,
     });
     await projectAssignment(client, assignmentId);
     return { status: 'replaced', assignmentId, membershipId: existing.id };
   }
 
   const capabilities = await targetCapabilitiesForScope(client, { assignmentId, scope });
+  const capabilityLimits = await targetCapabilityLimits(client, { assignmentId, capabilities });
   const membership = await delegation.addMembership(client, {
-    assignmentId, userId, capabilities, actorUserId, actorIsCentral: true,
+    assignmentId, userId, capabilities, capabilityLimits, actorUserId, actorIsCentral: true,
   });
   await projectAssignment(client, assignmentId);
   return { status: 'created', assignmentId, membershipId: membership && membership.id };
@@ -238,4 +259,5 @@ module.exports = {
   revokeAllOperatorScopes,
   resolveOrCreateAssignment,
   targetCapabilitiesForScope,
+  targetCapabilityLimits,
 };

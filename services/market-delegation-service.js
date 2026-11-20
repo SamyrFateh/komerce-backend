@@ -544,7 +544,7 @@ async function assertTeamGrantContinuity(db, { assignmentId, targetMembershipId,
   }
 }
 
-async function replaceMembershipCapabilities(executor, { membershipId, capabilities, actorUserId = null, actorIsCentral = false, correlationId = null }) {
+async function replaceMembershipCapabilities(executor, { membershipId, capabilities, capabilityLimits = {}, actorUserId = null, actorIsCentral = false, correlationId = null }) {
   const db = requireExecutor(executor);
   const { rows: targetRows } = await db.query(
     `SELECT id, assignment_id, user_id
@@ -603,6 +603,7 @@ async function replaceMembershipCapabilities(executor, { membershipId, capabilit
     await grantMembershipCapabilities(db, {
       membershipId,
       capabilities: added,
+      capabilityLimits,
       actorUserId,
       actorIsCentral,
       correlationId,

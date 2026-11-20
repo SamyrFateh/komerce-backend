@@ -112,6 +112,7 @@ describe('provision-market-operator — ensureDelegationMembership', () => {
       assignmentId: 'a1',
       userId: 'u1',
       capabilities: projector.LEGACY_VIEWER_CAPABILITIES,
+      capabilityLimits: {},
       actorUserId: null,
       actorIsCentral: true,
     });
@@ -140,6 +141,7 @@ describe('provision-market-operator — ensureDelegationMembership', () => {
       assignmentId: 'a1',
       userId: 'u1',
       capabilities: ['pricing.decide', 'catalog.read'],
+      capabilityLimits: {},
       actorUserId: null,
       actorIsCentral: true,
     });
