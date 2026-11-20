@@ -77,7 +77,9 @@ function loadNavigation(pathname, surface, options = {}) {
       marketChoices: jest.fn((context, opts = {}) => {
         const access = context && context.access;
         if (!access) return [];
-        const rows = access.mode === 'global' && !opts.requireMarket ? [{ value: '', marketCode: null, label: 'Global · Tous les marchés' }] : [];
+        const globalAllowed=(access.mode==='global' && (!opts.requireMarket || opts.allowGlobalOverview)) ||
+          (access.mode==='hub' && opts.allowHubOverview);
+        const rows = globalAllowed ? [{ value: '', marketCode: null, label: 'Global · Tous les marchés' }] : [];
         access.allowedMarkets.forEach(code => rows.push({ value: code, marketCode: code, label: code }));
         return rows;
       }),
@@ -437,7 +439,7 @@ describe('canonical admin navigation — zone utilitaire et marché', () => {
     expect(select.children.map(option => option.value)).toEqual(['CM']);
   });
 
-  test('Catalogue pays, Autonomie marché et Hub live › Exécution exigent un Market ID explicite (L1)', () => {
+  test('Catalogue pays et Autonomie marché exigent une cible d’action explicite (L1)', () => {
     const globalCtx = {
       actor: { id: 'a', role: 'admin' },
       access: { mode: 'global', defaultMarket: null, allowedMarkets: ['CG', 'CM'], capabilities: [] },
@@ -445,7 +447,6 @@ describe('canonical admin navigation — zone utilitaire et marché', () => {
     [
       ['/dashboards/canonical/market-catalog.html', 'market-catalog', ''],
       ['/dashboards/canonical/market-autonomy.html', 'market-autonomy', ''],
-      ['/admin/hub-live', 'hub-live', '?view=execute'],
     ].forEach(([pathname, surface, search]) => {
       const env = loadNavigation(pathname, surface, { window: { location: { pathname, search, href: `https://komerce.test${pathname}${search}` } } });
       const header = mountFor(env, pathname, surface, { role: 'admin' }, { adminContext: globalCtx });
@@ -453,6 +454,53 @@ describe('canonical admin navigation — zone utilitaire et marché', () => {
       expect(select.value).toBe('');
       expect(select.children.map(option => option.value)).toEqual(['', 'CG', 'CM']);
     });
+  });
+
+
+  test('Global dans la topbar pour Douane/Comptabilité, pas pour Pricing ; aucun droit déduit du rôle', () => {
+    const globalCtx={actor:{id:'g',role:'admin'},access:{
+      mode:'global',defaultMarket:null,allowedMarkets:['KM','CM'],capabilities:['dashboard.global.read'],
+    }};
+    for(const [pathname,surface] of [
+      ['/admin/workspaces/shipping-customs','shipping-customs-workspace'],
+      ['/admin/workspaces/accounting','accounting-workspace'],
+    ]) {
+      const env=loadNavigation(pathname,surface);
+      const header=mountFor(env,pathname,surface,{role:'admin'},{adminContext:globalCtx});
+      const select=utilitiesOf(header).children[0].children[1];
+      expect(select.children.map(x=>x.value)).toEqual(['','KM','CM']);
+      expect(select.children[0].textContent).toBe('Global · Tous les marchés');
+      expect(select.value).toBe('');
+    }
+    const pricing=loadNavigation('/admin/workspaces/pricing','pricing-workspace');
+    const h=mountFor(pricing,'/admin/workspaces/pricing','pricing-workspace',{role:'admin'},{adminContext:globalCtx});
+    expect(utilitiesOf(h).children[0].children[1].children[0].textContent).toBe('Choisir un marché…');
+  });
+
+  test('Hub central ne prend pas un premier marché arbitraire dans la topbar', () => {
+    const pathname='/admin/hub-live';
+    const env=loadNavigation(pathname,'hub-live',{window:{location:{
+      pathname,search:'?view=execute',href:'https://komerce.test/admin/hub-live?view=execute',
+    }}});
+    const hub={actor:{id:'h',role:'agent_hub'},access:{
+      mode:'hub',defaultMarket:'KM',allowedMarkets:['KM'],capabilities:[],
+    }};
+    const header=mountFor(env,pathname,'hub-live',{role:'agent_hub'},{adminContext:hub});
+    const select=utilitiesOf(header).children[0].children[1];
+    expect(select.children.map(x=>x.value)).toEqual(['','KM']);
+    expect(select.value).toBe('');
+  });
+
+  test('un opérateur limité à CM ne reçoit jamais Tous les marchés sur Douane', () => {
+    const pathname='/admin/workspaces/shipping-customs';
+    const env=loadNavigation(pathname,'shipping-customs-workspace');
+    const scoped={actor:{id:'a',role:'admin'},access:{
+      mode:'market',defaultMarket:'CM',allowedMarkets:['CM'],capabilities:[],
+    }};
+    const header=mountFor(env,pathname,'shipping-customs-workspace',{role:'admin'},{adminContext:scoped});
+    const select=utilitiesOf(header).children[0].children[1];
+    expect(select.children.map(x=>x.value)).toEqual(['CM']);
+    expect(select.value).toBe('CM');
   });
 
   test('Hub live hors Exécution reste en vue Global (pas de marché exigé)', () => {
