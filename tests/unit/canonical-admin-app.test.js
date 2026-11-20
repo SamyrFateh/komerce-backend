@@ -666,3 +666,120 @@ test('Produit 360 reçoit le contexte admin (capabilities des liens du fil P1)',
   env.api.renderProduct360(env.root, { role: 'admin' }, adminContext);
   expect(mount).toHaveBeenCalledWith(expect.objectContaining({ adminContext }));
 });
+
+describe('Global en lecture, marché ciblé uniquement pour les actes', () => {
+  const admin = { id: 'hq-admin', role: 'admin' };
+  const globalContext = { actor: admin, access: {
+    mode: 'global', allowedMarkets: ['KM','CM','CG'], defaultMarket: null,
+    capabilities: ['dashboard.global.read', 'dashboard.market.read'],
+  } };
+
+  test('Expéditions & Douane : l’admin autorisé voit la consolidation, puis cible CM pour agir', async () => {
+    const env = loadCanonicalApp();
+    const globalOps = jest.fn(({root,requestedMarket}) => {
+      const marker = fakeNode('div');
+      marker.textContent = 'vue-'+String(requestedMarket);
+      root.appendChild(marker);
+      return Promise.resolve({});
+    });
+    const scopedWriter = jest.fn().mockResolvedValue({});
+    env.window.KomerceCanonicalOperations = {mount:globalOps};
+    env.window.KomerceCanonicalShippingCustomsWorkspace = {mount:scopedWriter};
+    await env.api.renderShippingCustomsWorkspaceShell(env.root,admin,globalContext);
+    const select=env.root.children[0].children[1].children[1];
+    expect(select.value).toBe('');
+    expect(select.children.map(option=>option.value)).toEqual(['','KM','CM','CG']);
+    expect(env.root.children[1].children[0].attributes['data-market-global-overview']).toBe('');
+    expect(globalOps).toHaveBeenCalledWith(expect.objectContaining({requestedMarket:null}));
+    expect(scopedWriter).not.toHaveBeenCalled();
+    select.value='CM';
+    await select._listeners.change();
+    expect(scopedWriter).toHaveBeenCalledWith(expect.objectContaining({requestedMarket:'CM'}));
+    expect(env.root.children[1].children.some(x=>x.attributes['data-market-global-overview']==='')).toBe(false);
+    select.value='';
+    await select._listeners.change();
+    expect(globalOps).toHaveBeenCalledTimes(2);
+    expect(scopedWriter).toHaveBeenCalledTimes(1);
+  });
+
+  test('Comptabilité : la vue Finance globale n’autorise aucune écriture ; une cible est requise pour le writer',async()=>{
+    const env=loadCanonicalApp();
+    const overview=jest.fn().mockResolvedValue({});
+    const writer=jest.fn().mockResolvedValue({});
+    env.window.KomerceCanonicalFinance={mount:overview};
+    env.window.KomerceCanonicalFinanceAccountingWorkspace={mount:writer};
+    await env.api.renderFinanceAccountingWorkspaceShell(env.root,admin,globalContext);
+    expect(overview).toHaveBeenCalledWith(expect.objectContaining({requestedMarket:null}));
+    expect(writer).not.toHaveBeenCalled();
+    const select=env.root.children[0].children[1].children[1];
+    select.value='KM';
+    await select._listeners.change();
+    expect(writer).toHaveBeenCalledWith(expect.objectContaining({requestedMarket:'KM'}));
+  });
+
+  test('un compte limité à CM ne reçoit ni le Global ni un accès CG',async()=>{
+    const env=loadCanonicalApp();
+    const actor={id:'market-admin',role:'admin'};
+    const ctx={actor,access:{mode:'market',allowedMarkets:['CM'],defaultMarket:'CM',capabilities:[]}};
+    const overview=jest.fn().mockResolvedValue({});
+    const writer=jest.fn().mockResolvedValue({});
+    env.window.KomerceCanonicalOperations={mount:overview};
+    env.window.KomerceCanonicalShippingCustomsWorkspace={mount:writer};
+    await env.api.renderShippingCustomsWorkspaceShell(env.root,actor,ctx);
+    const select=env.root.children[0].children[1].children[1];
+    expect(select.children.map(o=>o.value)).toEqual(['CM']);
+    expect(writer).toHaveBeenCalledWith(expect.objectContaining({requestedMarket:'CM'}));
+    expect(overview).not.toHaveBeenCalled();
+    const spy=jest.spyOn(console,'error').mockImplementation(()=>{});
+    select.value='CG'; await select._listeners.change();
+    expect(writer).toHaveBeenCalledTimes(1);
+    expect(select.value).toBe('CM');
+    spy.mockRestore();
+  });
+
+  test('un marché non autorisé dans l’URL ne déclenche même pas un GET global de repli',async()=>{
+    const env=loadCanonicalApp();
+    env.window.location.search='?market=ZZ';
+    const overview=jest.fn().mockResolvedValue({});
+    const writer=jest.fn().mockResolvedValue({});
+    env.window.KomerceCanonicalFinance={mount:overview};
+    env.window.KomerceCanonicalFinanceAccountingWorkspace={mount:writer};
+    await env.api.renderFinanceAccountingWorkspaceShell(env.root,admin,globalContext);
+    expect(overview).not.toHaveBeenCalled();
+    expect(writer).not.toHaveBeenCalled();
+    expect(env.root.children[1].children[0].attributes['data-market-prompt']).toBe('unauthorized');
+  });
+
+  test('opérateur multi-marché sans grant global : une vue transversale ne peut pas être fabriquée',async()=>{
+    const env=loadCanonicalApp();
+    const actor={id:'op',role:'market_operator'};
+    const scoped={actor,access:{mode:'market',allowedMarkets:['KM','CM'],defaultMarket:'KM',capabilities:[]}};
+    const overview=jest.fn().mockResolvedValue({});
+    const writer=jest.fn().mockResolvedValue({});
+    env.window.KomerceCanonicalOperations={mount:overview};
+    env.window.KomerceCanonicalShippingCustomsWorkspace={mount:writer};
+    await env.api.renderShippingCustomsWorkspaceShell(env.root,actor,scoped);
+    expect(overview).not.toHaveBeenCalled();
+    expect(writer).not.toHaveBeenCalled();
+    expect(env.root.children[1].children[0].attributes['data-market-prompt']).toBe('prompt');
+  });
+
+  test('un Hub central voit ses dossiers globaux, sans revendiquer le grant dashboard.global.read',async()=>{
+    const env=loadCanonicalApp();
+    const actor={id:'hub',role:'agent_hub'};
+    const hubCtx={actor,access:{mode:'hub',allowedMarkets:['KM','CM'],defaultMarket:'KM',capabilities:[]}};
+    const board=jest.fn().mockResolvedValue({});
+    const writer=jest.fn().mockResolvedValue({});
+    env.window.KomerceCanonicalHubWorkstation={renderGlobalBoard:board};
+    env.window.KomerceCanonicalOperationsWorkspace={mount:writer};
+    await env.api.renderHubExecutionShell(env.root,actor,hubCtx);
+    expect(board).toHaveBeenCalledTimes(1);
+    expect(writer).not.toHaveBeenCalled();
+    const select=env.root.children[0].children[1].children[1];
+    expect(select.children.map(o=>o.value)).toEqual(['','KM','CM']);
+    select.value='CM'; await select._listeners.change();
+    expect(writer).toHaveBeenCalledWith(expect.objectContaining({requestedMarket:'CM',mode:'execution'}));
+    select.value=''; await select._listeners.change();
+    expect(board).toHaveBeenCalledTimes(2);
+  });
+});
