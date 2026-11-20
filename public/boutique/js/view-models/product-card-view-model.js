@@ -30,7 +30,8 @@
  * - docs/BOUTIQUE_PRODUCT_DISPLAY_CONTRACT.md
  */
 
-import { sanitize, fmt, fmtPrice, fmtMarketAmount, fmtLocalProductPrice, optimizeImgUrl } from '../b-utils.js';
+import { sanitize, fmt, fmtPrice, optimizeImgUrl } from '../b-utils.js';
+import { fmtMarketAmount, fmtLocalProductPrice } from '../b-market-price-format.js';
 
 'use strict';
 
