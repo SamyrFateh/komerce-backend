@@ -79,9 +79,28 @@
       const error = new Error(body.error || `Erreur HTTP ${response.status}`);
       error.code = body.code || null;
       error.status = response.status;
+      error.retryAfter = response.headers?.get?.('Retry-After') || null;
       throw error;
     }
     return body;
+  }
+
+  const HUB_POLL_INTERVAL_MS = 30 * 1000;
+  const HUB_POLL_MAX_BACKOFF_MS = 5 * 60 * 1000;
+
+  function hubPollDelayMs(failures, retryAfter = null, now = Date.now()) {
+    const attempts = Math.max(0, Number(failures) || 0);
+    const exponential = attempts
+      ? Math.min(HUB_POLL_MAX_BACKOFF_MS, HUB_POLL_INTERVAL_MS * (2 ** Math.min(attempts, 4)))
+      : HUB_POLL_INTERVAL_MS;
+    let serverDelay = 0;
+    if (typeof retryAfter === 'string' && /^\d+(?:\.\d+)?$/.test(retryAfter.trim())) {
+      serverDelay = Number(retryAfter.trim()) * 1000;
+    } else if (retryAfter) {
+      const until = Date.parse(String(retryAfter));
+      if (Number.isFinite(until)) serverDelay = Math.max(0, until - now);
+    }
+    return Math.max(exponential, Number.isFinite(serverDelay) ? serverDelay : 0);
   }
 
   function createHeader(doc, payload, mode) {
@@ -2698,29 +2717,57 @@
     function watchHubSupply() {
       if (context.mode !== 'execution') return;
       const win = doc.defaultView || globalThis;
-      if (typeof win.setInterval !== 'function') return;
+      if (typeof win.setTimeout !== 'function') return;
       let inFlight = false;
+      let timer = null;
+      let failures = 0;
       const watch = { signature: supplySignature(context.dossier), stop: null, check: null };
+      const schedule = delay => {
+        if (timer !== null) win.clearTimeout(timer);
+        timer = win.setTimeout(() => {
+          timer = null;
+          watch.check().catch(() => {});
+        }, delay);
+        timer?.unref?.();
+      };
+      watch.stop = () => {
+        if (timer !== null) win.clearTimeout(timer);
+        timer = null;
+      };
       watch.check = async () => {
-        if (inFlight || doc.visibilityState === 'hidden' || !rootNode.isConnected) return;
-        // Le dossier ne se recompose jamais en arrière-plan pendant une saisie.
+        if (!rootNode.isConnected) { watch.stop(); return; }
+        if (inFlight) return;
+        // Onglet masqué : aucun appel réseau et reprise douce au prochain créneau.
+        if (doc.visibilityState === 'hidden') { schedule(HUB_POLL_INTERVAL_MS); return; }
         inFlight = true;
+        let nextDelay = HUB_POLL_INTERVAL_MS;
         try {
           const fresh = await jsonRequest(fetchFn, endpointFor(marketCode, 'supply'));
-          if (supplySignature(fresh) === watch.signature) return;
-          if (hubInputBusy()) { hubRefreshNotice(); return; }
-          await reload();
-        } catch (_error) {
-          // Lecture opportuniste : une panne réseau ne masque pas le dossier en cours.
-        } finally { inFlight = false; }
+          failures = 0;
+          if (supplySignature(fresh) !== watch.signature) {
+            if (hubInputBusy()) {
+              hubRefreshNotice();
+            } else {
+              // La projection GET est déjà récupérée : éviter une seconde lecture
+              // /supply lors du reload (et ne rien redessiner si elle est inchangée).
+              await reload({ freshDossier: fresh });
+            }
+          }
+        } catch (error) {
+          // Lecture opportuniste : laisser intact le dossier en cours en cas d'échec.
+          // 429 / 5xx : backoff exponentiel, en respectant Retry-After si plus long.
+          if (error.status === 429 || error.status >= 500) {
+            failures += 1;
+            nextDelay = hubPollDelayMs(failures, error.retryAfter);
+          }
+        } finally {
+          inFlight = false;
+          if (rootNode.isConnected) schedule(nextDelay);
+          else watch.stop();
+        }
       };
-      const timer = win.setInterval(() => {
-        if (!rootNode.isConnected) { win.clearInterval(timer); return; }
-        watch.check().catch(() => {});
-      }, 10000);
-      timer?.unref?.();
-      watch.stop = () => win.clearInterval(timer);
       context.hubRefresh = watch;
+      schedule(HUB_POLL_INTERVAL_MS);
     }
 
     let currentPayload = null;
@@ -2740,7 +2787,7 @@
       reload: null,
     };
 
-    async function reload() {
+    async function reload({ freshDossier } = {}) {
       const payload = await jsonRequest(fetchFn, endpointFor(marketCode));
       if (context.mode === 'execution') {
         try {
@@ -2750,12 +2797,17 @@
           context.receivable = null;
           context.receivableError = error.message;
         }
-        try {
-          context.dossier = await jsonRequest(fetchFn, endpointFor(marketCode, 'supply'));
+        if (freshDossier !== undefined) {
+          context.dossier = freshDossier;
           context.dossierError = null;
-        } catch (error) {
-          context.dossier = null;
-          context.dossierError = error.message;
+        } else {
+          try {
+            context.dossier = await jsonRequest(fetchFn, endpointFor(marketCode, 'supply'));
+            context.dossierError = null;
+          } catch (error) {
+            context.dossier = null;
+            context.dossierError = error.message;
+          }
         }
       }
       if (context.mode === 'relay-execution') {
@@ -2808,6 +2860,7 @@
     formatDate,
     metricItems,
     jsonRequest,
+    hubPollDelayMs,
     renderPayload,
     openManualSourcing,
     mount,

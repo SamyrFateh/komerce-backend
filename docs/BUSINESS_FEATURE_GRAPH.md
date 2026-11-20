@@ -81,7 +81,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 36 | 36 | 713 | 713 | 0 |
+| backend | 36 | 36 | 716 | 716 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 105 | 105 | 0 |
 
@@ -2460,7 +2460,7 @@ Meta Graph monté : oui.
 | incident-management | infrastructure | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | incident-management | logistics | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
 | incident-management | orders | data-read | 1 | **DECLARED_AND_OBSERVED** |
-| infrastructure | auth | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| infrastructure | auth | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | infrastructure | auth-identity | static-code | 4 | **OBSERVED_UNDECLARED** |
 | infrastructure | auth-passkey | static-code | 1 | **OBSERVED_UNDECLARED** |
 | infrastructure | business-rules | static-code | 2 | **OBSERVED_UNDECLARED** |

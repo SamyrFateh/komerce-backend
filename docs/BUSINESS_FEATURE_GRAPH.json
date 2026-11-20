@@ -15680,7 +15680,7 @@
         "category": "services",
         "declared": "services/market-delegation-read-authority.js",
         "resolvedPath": "services/market-delegation-read-authority.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "market-delegation",
@@ -16695,7 +16695,7 @@
         "category": "services",
         "declared": "services/g6-hub-recipe-closure.js",
         "resolvedPath": "services/g6-hub-recipe-closure.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "orders",
@@ -18459,7 +18459,7 @@
         "category": "services",
         "declared": "services/g6-recipe-po-cancel-service.js",
         "resolvedPath": "services/g6-recipe-po-cancel-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "purchasing",
@@ -39683,6 +39683,14 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "middleware/rate-limit.js",
+                "targetFile": "utils/auth-cookie.js"
+              },
+              {
+                "sourceFileId": "middleware/rate-limit.js",
+                "targetFile": "utils/auth-token-policy.js"
+              },
+              {
                 "sourceFileId": "bootstrap/html-routes.js",
                 "targetFile": "middleware/auth.js"
               },
@@ -54466,8 +54474,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 713,
-        "technicalNodesOwned": 713,
+        "technicalNodesTotal": 716,
+        "technicalNodesOwned": 716,
         "technicalOrphans": 0
       },
       "dash": {

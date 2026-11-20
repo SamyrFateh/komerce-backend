@@ -23066,7 +23066,7 @@
               {
                 "declared": "services/market-delegation-read-authority.js",
                 "resolvedPath": "services/market-delegation-read-authority.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/market-delegation-service.js",
@@ -25233,7 +25233,7 @@
               {
                 "declared": "services/g6-hub-recipe-closure.js",
                 "resolvedPath": "services/g6-hub-recipe-closure.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/hub-v1-fixture-checkout-guard.js",
@@ -29810,7 +29810,7 @@
               {
                 "declared": "services/g6-recipe-po-cancel-service.js",
                 "resolvedPath": "services/g6-recipe-po-cancel-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/hub-administration-board.js",

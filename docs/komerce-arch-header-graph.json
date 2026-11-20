@@ -13,20 +13,20 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 818,
+    "scannedCodeFiles": 821,
     "filesWithFullHeaders": 762,
-    "filesWithLiteHeaders": 56,
-    "filesWithAnyHeaders": 818,
+    "filesWithLiteHeaders": 59,
+    "filesWithAnyHeaders": 821,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2090,
-    "edges": 10393,
+    "graphNodes": 2095,
+    "edges": 10431,
     "dbTables": 244,
     "doctrines": 820,
-    "impactAreas": 208,
-    "unresolvedCodeEdges": 986,
-    "dbWriteViaOverlapWarnings": 12,
+    "impactAreas": 210,
+    "unresolvedCodeEdges": 990,
+    "dbWriteViaOverlapWarnings": 13,
     "multiWriterTables": 99
   },
   "byDomain": {
@@ -34,7 +34,7 @@
     "bootstrap": 2,
     "notification": 22,
     "auth": 14,
-    "market-delegation": 38,
+    "market-delegation": 39,
     "platform-ops": 2,
     "catalog": 139,
     "admin-dashboard": 39,
@@ -60,13 +60,13 @@
     "market-control-plane": 5,
     "settlement": 2,
     "business-rules": 1,
-    "orders": 40,
+    "orders": 41,
     "documents": 16,
     "auth-identity": 12,
     "operations": 11,
     "inventory": 2,
     "local-stock": 4,
-    "purchasing": 52,
+    "purchasing": 53,
     "unsold-resolution": 1,
     "external-provider-contracts": 1,
     "finance": 3,
@@ -112,7 +112,7 @@
     "schema": 1,
     "route": 138,
     "entrypoint": 1,
-    "service": 498,
+    "service": 501,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -124,7 +124,7 @@
     "critical": 128,
     "medium": 155,
     "high": 469,
-    "low": 65,
+    "low": 68,
     "unknown": 1
   },
   "nodes": [
@@ -409,7 +409,8 @@
       ],
       "depends": [
         "utils/logger.js",
-        "services/public-market-storefront.js"
+        "services/public-market-storefront.js",
+        "middleware/auth.js"
       ],
       "usedBy": [
         "server.js"
@@ -520,6 +521,7 @@
         "side_effects"
       ],
       "depends": [
+        "scripts/fix-schema.js",
         "scripts/migration-037-fix-products.js",
         "scripts/migration-038-replace-products.js",
         "scripts/migration-039-french-descriptions.js",
@@ -19766,6 +19768,114 @@
       "version": "2026-10"
     },
     {
+      "id": "services/g6-hub-recipe-closure.js",
+      "file": "services/g6-hub-recipe-closure.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "g6-hub-recipe-closure",
+      "domain": "orders",
+      "layer": "service",
+      "criticality": "low",
+      "owner": "backend-core",
+      "purpose": "Admin-only G6-BUYER closure with physical Hub custody preserved and no PSP or supplier contact.",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [
+        "orders",
+        "parcels",
+        "hub_physical_units",
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations",
+        "hub_box_bags",
+        "international_shipment_hub_units"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "order-status-machine",
+          "tables": [
+            "orders",
+            "order_status_history"
+          ]
+        },
+        {
+          "via": "parcel-operations",
+          "tables": [
+            "parcels"
+          ]
+        },
+        {
+          "via": "hub-physical-identity",
+          "tables": [
+            "hub_physical_units",
+            "hub_custody_events"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "owned"
+      ],
+      "doctrine": [],
+      "impactAreas": [
+        "orders",
+        "hub",
+        "logistics",
+        "staging-only"
+      ],
+      "version": null
+    },
+    {
+      "id": "services/g6-recipe-po-cancel-service.js",
+      "file": "services/g6-recipe-po-cancel-service.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "g6-recipe-po-cancel-service",
+      "domain": "purchasing",
+      "layer": "service",
+      "criticality": "low",
+      "owner": "backend-core",
+      "purpose": "Admin-only local cancellation of a supplier PO exclusively linked to G6-BUYER cash recipes.",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [
+        "purchase_orders",
+        "purchase_lines",
+        "order_items",
+        "orders",
+        "hub_purchase_allocations",
+        "supplier_execution_payments"
+      ],
+      "dbWrite": [
+        "purchase_orders",
+        "purchase_lines",
+        "alerts"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "alerts-persistence-boundary",
+          "tables": [
+            "alerts"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "owned"
+      ],
+      "doctrine": [],
+      "impactAreas": [
+        "purchasing",
+        "orders",
+        "alerts",
+        "staging-only"
+      ],
+      "version": null,
+      "dbWriteViaOverlapWarning": "services/g6-recipe-po-cancel-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> alerts"
+    },
+    {
       "id": "services/g6-staging-buyer-identity-guard.js",
       "file": "services/g6-staging-buyer-identity-guard.js",
       "type": "file-lite",
@@ -23013,6 +23123,34 @@
         "providers-services"
       ],
       "version": "2026-09"
+    },
+    {
+      "id": "services/market-delegation-read-authority.js",
+      "file": "services/market-delegation-read-authority.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "market-scoped-read-capability-fallback",
+      "domain": "market-delegation",
+      "layer": "service",
+      "criticality": "low",
+      "owner": "backend-core",
+      "purpose": "Grant read-only projections through an existing read capability without granting writer rights.",
+      "inputs": [],
+      "outputs": [],
+      "depends": [
+        "services/market-delegation-service.js"
+      ],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [
+        "market-authorization",
+        "dashboard"
+      ],
+      "version": null
     },
     {
       "id": "services/market-delegation-service.js",
@@ -40700,6 +40838,16 @@
       "table": "fx_pegs"
     },
     {
+      "id": "db:international_shipment_hub_units",
+      "type": "db-table",
+      "table": "international_shipment_hub_units"
+    },
+    {
+      "id": "db:hub_custody_events",
+      "type": "db-table",
+      "table": "hub_custody_events"
+    },
+    {
       "id": "db:e2e_test_accounts",
       "type": "db-table",
       "table": "e2e_test_accounts"
@@ -40735,19 +40883,9 @@
       "table": "manual_purchase_executions"
     },
     {
-      "id": "db:international_shipment_hub_units",
-      "type": "db-table",
-      "table": "international_shipment_hub_units"
-    },
-    {
       "id": "db:international_shipment_events",
       "type": "db-table",
       "table": "international_shipment_events"
-    },
-    {
-      "id": "db:hub_custody_events",
-      "type": "db-table",
-      "table": "hub_custody_events"
     },
     {
       "id": "db:outbox_events",
@@ -46010,6 +46148,16 @@
       "area": "transport"
     },
     {
+      "id": "impact:staging-only",
+      "type": "impact-area",
+      "area": "staging-only"
+    },
+    {
+      "id": "impact:alerts",
+      "type": "impact-area",
+      "area": "alerts"
+    },
+    {
       "id": "impact:e2e-certification",
       "type": "impact-area",
       "area": "e2e-certification"
@@ -46720,6 +46868,12 @@
       "label": "services/public-market-storefront.js"
     },
     {
+      "from": "bootstrap/html-routes.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
       "from": "server.js",
       "to": "bootstrap/html-routes.js",
       "type": "uses",
@@ -46790,6 +46944,12 @@
       "to": "impact:bootstrap",
       "type": "impact",
       "label": "bootstrap"
+    },
+    {
+      "from": "bootstrap/startup-migrations.js",
+      "to": "scripts/fix-schema.js",
+      "type": "depends",
+      "label": "scripts/fix-schema.js"
     },
     {
       "from": "bootstrap/startup-migrations.js",
@@ -76878,6 +77038,204 @@
       "label": "payments"
     },
     {
+      "from": "services/g6-hub-recipe-closure.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
+    },
+    {
+      "from": "services/g6-hub-recipe-closure.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/g6-hub-recipe-closure.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/g6-hub-recipe-closure.js",
+      "to": "db:hub_physical_units",
+      "type": "db-read",
+      "label": "hub_physical_units"
+    },
+    {
+      "from": "services/g6-hub-recipe-closure.js",
+      "to": "db:hub_physical_unit_placements",
+      "type": "db-read",
+      "label": "hub_physical_unit_placements"
+    },
+    {
+      "from": "services/g6-hub-recipe-closure.js",
+      "to": "db:hub_purchase_allocations",
+      "type": "db-read",
+      "label": "hub_purchase_allocations"
+    },
+    {
+      "from": "services/g6-hub-recipe-closure.js",
+      "to": "db:hub_box_bags",
+      "type": "db-read",
+      "label": "hub_box_bags"
+    },
+    {
+      "from": "services/g6-hub-recipe-closure.js",
+      "to": "db:international_shipment_hub_units",
+      "type": "db-read",
+      "label": "international_shipment_hub_units"
+    },
+    {
+      "from": "services/g6-hub-recipe-closure.js",
+      "to": "db:orders",
+      "type": "db-write-via",
+      "label": "orders",
+      "via": "order-status-machine"
+    },
+    {
+      "from": "services/g6-hub-recipe-closure.js",
+      "to": "db:order_status_history",
+      "type": "db-write-via",
+      "label": "order_status_history",
+      "via": "order-status-machine"
+    },
+    {
+      "from": "services/g6-hub-recipe-closure.js",
+      "to": "db:parcels",
+      "type": "db-write-via",
+      "label": "parcels",
+      "via": "parcel-operations"
+    },
+    {
+      "from": "services/g6-hub-recipe-closure.js",
+      "to": "db:hub_physical_units",
+      "type": "db-write-via",
+      "label": "hub_physical_units",
+      "via": "hub-physical-identity"
+    },
+    {
+      "from": "services/g6-hub-recipe-closure.js",
+      "to": "db:hub_custody_events",
+      "type": "db-write-via",
+      "label": "hub_custody_events",
+      "via": "hub-physical-identity"
+    },
+    {
+      "from": "services/g6-hub-recipe-closure.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/g6-hub-recipe-closure.js",
+      "to": "impact:hub",
+      "type": "impact",
+      "label": "hub"
+    },
+    {
+      "from": "services/g6-hub-recipe-closure.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/g6-hub-recipe-closure.js",
+      "to": "impact:staging-only",
+      "type": "impact",
+      "label": "staging-only"
+    },
+    {
+      "from": "services/g6-recipe-po-cancel-service.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
+    },
+    {
+      "from": "services/g6-recipe-po-cancel-service.js",
+      "to": "db:purchase_orders",
+      "type": "db-read",
+      "label": "purchase_orders"
+    },
+    {
+      "from": "services/g6-recipe-po-cancel-service.js",
+      "to": "db:purchase_lines",
+      "type": "db-read",
+      "label": "purchase_lines"
+    },
+    {
+      "from": "services/g6-recipe-po-cancel-service.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/g6-recipe-po-cancel-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/g6-recipe-po-cancel-service.js",
+      "to": "db:hub_purchase_allocations",
+      "type": "db-read",
+      "label": "hub_purchase_allocations"
+    },
+    {
+      "from": "services/g6-recipe-po-cancel-service.js",
+      "to": "db:supplier_execution_payments",
+      "type": "db-read",
+      "label": "supplier_execution_payments"
+    },
+    {
+      "from": "services/g6-recipe-po-cancel-service.js",
+      "to": "db:purchase_orders",
+      "type": "db-write",
+      "label": "purchase_orders"
+    },
+    {
+      "from": "services/g6-recipe-po-cancel-service.js",
+      "to": "db:purchase_lines",
+      "type": "db-write",
+      "label": "purchase_lines"
+    },
+    {
+      "from": "services/g6-recipe-po-cancel-service.js",
+      "to": "db:alerts",
+      "type": "db-write",
+      "label": "alerts"
+    },
+    {
+      "from": "services/g6-recipe-po-cancel-service.js",
+      "to": "db:alerts",
+      "type": "db-write-via",
+      "label": "alerts",
+      "via": "alerts-persistence-boundary"
+    },
+    {
+      "from": "services/g6-recipe-po-cancel-service.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/g6-recipe-po-cancel-service.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/g6-recipe-po-cancel-service.js",
+      "to": "impact:alerts",
+      "type": "impact",
+      "label": "alerts"
+    },
+    {
+      "from": "services/g6-recipe-po-cancel-service.js",
+      "to": "impact:staging-only",
+      "type": "impact",
+      "label": "staging-only"
+    },
+    {
       "from": "services/g6-staging-buyer-identity-guard.js",
       "to": "backend-core",
       "type": "owned-by",
@@ -82650,6 +83008,30 @@
       "to": "impact:providers-services",
       "type": "impact",
       "label": "providers-services"
+    },
+    {
+      "from": "services/market-delegation-read-authority.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
+    },
+    {
+      "from": "services/market-delegation-read-authority.js",
+      "to": "services/market-delegation-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-service.js"
+    },
+    {
+      "from": "services/market-delegation-read-authority.js",
+      "to": "impact:market-authorization",
+      "type": "impact",
+      "label": "market-authorization"
+    },
+    {
+      "from": "services/market-delegation-read-authority.js",
+      "to": "impact:dashboard",
+      "type": "impact",
+      "label": "dashboard"
     },
     {
       "from": "services/market-delegation-service.js",
@@ -109242,7 +109624,8 @@
       "purpose": null,
       "directDependsOn": [
         "utils/logger.js",
-        "services/public-market-storefront.js"
+        "services/public-market-storefront.js",
+        "middleware/auth.js"
       ],
       "directUsedBy": [
         "server.js"
@@ -109260,6 +109643,7 @@
       "mustCheck": [
         "doctrine:resolve_before_behavior_change",
         "impact:bootstrap",
+        "middleware/auth.js",
         "server.js",
         "services/public-market-storefront.js",
         "utils/logger.js"
@@ -109334,6 +109718,7 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
+        "scripts/fix-schema.js",
         "scripts/migration-037-fix-products.js",
         "scripts/migration-038-replace-products.js",
         "scripts/migration-039-french-descriptions.js",
@@ -109564,6 +109949,7 @@
         "auth"
       ],
       "mustCheck": [
+        "bootstrap/html-routes.js",
         "db:revoked_tokens",
         "db:users",
         "doctrine:canonical_session_claims_only",
@@ -128916,6 +129302,125 @@
         "impact:sourcing"
       ]
     },
+    "services/g6-hub-recipe-closure.js": {
+      "role": "g6-hub-recipe-closure",
+      "domain": "orders",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "backend-core",
+      "purpose": "Admin-only G6-BUYER closure with physical Hub custody preserved and no PSP or supplier contact.",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "parcels",
+        "hub_physical_units",
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations",
+        "hub_box_bags",
+        "international_shipment_hub_units"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "order-status-machine",
+          "tables": [
+            "orders",
+            "order_status_history"
+          ]
+        },
+        {
+          "via": "parcel-operations",
+          "tables": [
+            "parcels"
+          ]
+        },
+        {
+          "via": "hub-physical-identity",
+          "tables": [
+            "hub_physical_units",
+            "hub_custody_events"
+          ]
+        }
+      ],
+      "doctrines": [],
+      "impactAreas": [
+        "orders",
+        "hub",
+        "logistics",
+        "staging-only"
+      ],
+      "mustCheck": [
+        "backend-core",
+        "db:hub_box_bags",
+        "db:hub_custody_events",
+        "db:hub_physical_unit_placements",
+        "db:hub_physical_units",
+        "db:hub_purchase_allocations",
+        "db:international_shipment_hub_units",
+        "db:order_status_history",
+        "db:orders",
+        "db:parcels",
+        "impact:hub",
+        "impact:logistics",
+        "impact:orders",
+        "impact:staging-only"
+      ]
+    },
+    "services/g6-recipe-po-cancel-service.js": {
+      "role": "g6-recipe-po-cancel-service",
+      "domain": "purchasing",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "backend-core",
+      "purpose": "Admin-only local cancellation of a supplier PO exclusively linked to G6-BUYER cash recipes.",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [
+        "purchase_orders",
+        "purchase_lines",
+        "order_items",
+        "orders",
+        "hub_purchase_allocations",
+        "supplier_execution_payments"
+      ],
+      "dbWrite": [
+        "purchase_orders",
+        "purchase_lines",
+        "alerts"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "alerts-persistence-boundary",
+          "tables": [
+            "alerts"
+          ]
+        }
+      ],
+      "doctrines": [],
+      "impactAreas": [
+        "purchasing",
+        "orders",
+        "alerts",
+        "staging-only"
+      ],
+      "mustCheck": [
+        "backend-core",
+        "db:alerts",
+        "db:hub_purchase_allocations",
+        "db:order_items",
+        "db:orders",
+        "db:purchase_lines",
+        "db:purchase_orders",
+        "db:supplier_execution_payments",
+        "impact:alerts",
+        "impact:orders",
+        "impact:purchasing",
+        "impact:staging-only"
+      ]
+    },
     "services/g6-staging-buyer-identity-guard.js": {
       "role": "g6-staging-buyer-identity-guard",
       "domain": "auth-identity",
@@ -132250,6 +132755,33 @@
         "services/providers-service.js"
       ]
     },
+    "services/market-delegation-read-authority.js": {
+      "role": "market-scoped-read-capability-fallback",
+      "domain": "market-delegation",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "backend-core",
+      "purpose": "Grant read-only projections through an existing read capability without granting writer rights.",
+      "directDependsOn": [
+        "services/market-delegation-service.js"
+      ],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [
+        "market-authorization",
+        "dashboard"
+      ],
+      "mustCheck": [
+        "backend-core",
+        "impact:dashboard",
+        "impact:market-authorization",
+        "services/market-delegation-service.js"
+      ]
+    },
     "services/market-delegation-service.js": {
       "role": "market-delegation-write-service",
       "domain": "market-delegation",
@@ -132329,6 +132861,7 @@
         "services/market-delegation-local-stock-service.js",
         "services/market-delegation-network-service.js",
         "services/market-delegation-provider-service.js",
+        "services/market-delegation-read-authority.js",
         "services/market-delegation-settlement-service.js",
         "services/market-delegation-structure-event-service.js",
         "services/market-delegation-team-service.js",
@@ -148939,6 +149472,7 @@
   "dbWriteViaOverlapWarnings": [
     "routes/sourcing-scanner.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> sourcing_candidates",
     "services/customs-shipment-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> order_item_real_cost_allocations",
+    "services/g6-recipe-po-cancel-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> alerts",
     "services/local-relay-receipt-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> parcels, parcel_items, parcel_events",
     "services/market-delegation-team-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> assignment_memberships",
     "services/order-financial-closure-signal.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> signals",
@@ -148995,11 +149529,12 @@
     },
     {
       "table": "alerts",
-      "writerCount": 23,
+      "writerCount": 24,
       "writers": [
         "services/admin-order-refund.js",
         "services/cash-operations.js",
         "services/confirm-pickup-cash-payment.js",
+        "services/g6-recipe-po-cancel-service.js",
         "services/notification-service.js",
         "services/notifications/notification-service.js",
         "services/order-payment-confirmation.js",
@@ -149201,6 +149736,19 @@
       ]
     },
     {
+      "table": "purchase_lines",
+      "writerCount": 7,
+      "writers": [
+        "services/g6-recipe-po-cancel-service.js",
+        "services/purchase-line-snapshot.js",
+        "services/purchasing-admin-service.js",
+        "services/purchasing-cancel-service.js",
+        "services/purchasing-engagement-service.js",
+        "services/purchasing-grouped-service.js",
+        "services/purchasing-trigger-service.js"
+      ]
+    },
+    {
       "table": "refund_execution_intents",
       "writerCount": 7,
       "writers": [
@@ -149226,15 +149774,15 @@
       ]
     },
     {
-      "table": "purchase_lines",
+      "table": "purchase_orders",
       "writerCount": 6,
       "writers": [
-        "services/purchase-line-snapshot.js",
+        "services/g6-recipe-po-cancel-service.js",
         "services/purchasing-admin-service.js",
         "services/purchasing-cancel-service.js",
+        "services/purchasing-completion-service.js",
         "services/purchasing-engagement-service.js",
-        "services/purchasing-grouped-service.js",
-        "services/purchasing-trigger-service.js"
+        "services/purchasing-grouped-service.js"
       ]
     },
     {
@@ -149339,17 +149887,6 @@
         "services/cost-allocation/manual-cost-entry-service.js",
         "services/customs-shipment-service.js",
         "services/transport-cost-allocation.js"
-      ]
-    },
-    {
-      "table": "purchase_orders",
-      "writerCount": 5,
-      "writers": [
-        "services/purchasing-admin-service.js",
-        "services/purchasing-cancel-service.js",
-        "services/purchasing-completion-service.js",
-        "services/purchasing-engagement-service.js",
-        "services/purchasing-grouped-service.js"
       ]
     },
     {
@@ -149995,6 +150532,12 @@
       "to": "node:http",
       "type": "depends",
       "label": "node:http"
+    },
+    {
+      "from": "bootstrap/startup-migrations.js",
+      "to": "scripts/fix-schema.js",
+      "type": "depends",
+      "label": "scripts/fix-schema.js"
     },
     {
       "from": "bootstrap/startup-migrations.js",
@@ -153189,6 +153732,18 @@
       "label": "db.js"
     },
     {
+      "from": "services/g6-hub-recipe-closure.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
+    },
+    {
+      "from": "services/g6-recipe-po-cancel-service.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
+    },
+    {
       "from": "services/g6-staging-buyer-identity-guard.js",
       "to": "backend-core",
       "type": "owned-by",
@@ -153655,6 +154210,12 @@
       "to": "services/market-cost-attribution-service.js",
       "type": "uses",
       "label": "scripts/market-cost-attribution-conservation-check.js"
+    },
+    {
+      "from": "services/market-delegation-read-authority.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
     },
     {
       "from": "market-delegation routes",

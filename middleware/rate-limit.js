@@ -38,6 +38,9 @@
 'use strict';
 
 const rateLimit = require('express-rate-limit');
+const jwt = require('jsonwebtoken');
+const { readAuthToken } = require('../utils/auth-cookie');
+const { sessionClaimsVerdict } = require('../utils/auth-token-policy');
 const log = require('../utils/logger').forModule('rate-limit');
 
 // ── Store Redis conditionnel (Vague 3) ──────────────────────────────────────────
@@ -89,10 +92,37 @@ function createLimiter(options, redisPrefix) {
   return rateLimit(options);
 }
 
-// ── Global limiter: 500 requests per 15 minutes per IP ──────────────────────────
+// ── Global limiter: 500 requests per 15 minutes per identity ──────────────────
+// Le limiteur global s'exécute avant les middlewares d'authentification des
+// routes : req.user n'est PAS disponible ici. Pour les seules lectures admin,
+// on valide la signature + les claims de SESSION canonique avant de répartir
+// les quotas par utilisateur. Aucune exemption de requête, et aucune confiance
+// dans un JWT simplement décodé : l'auth route reste seule autorité d'accès.
+// Anonymes, tokens invalides/scoped, mutations, login et OTP gardent leur IP.
+// Les limiteurs stricts par route restent inchangés.
+function globalRateLimitKey(req) {
+  const ipKey = 'ip:' + (req.ip || req.socket?.remoteAddress || 'unknown');
+  const pathname = String(req.originalUrl || `${req.baseUrl || ''}${req.path || ''}`).split('?')[0];
+  if (req.method !== 'GET' || !/^\/api\/admin(?:\/|$)/.test(pathname)) return ipKey;
+
+  const token = readAuthToken(req);
+  if (!token || !process.env.JWT_SECRET) return ipKey;
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
+    if (sessionClaimsVerdict(decoded).ok && ['string', 'number'].includes(typeof decoded.id)) {
+      return 'user:' + String(decoded.id);
+    }
+  } catch (_error) {
+    // Signature invalide / token expiré : ne JAMAIS faire confiance au sujet.
+  }
+  return ipKey;
+}
+
+
 const globalLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
   max: 500,
+  keyGenerator: globalRateLimitKey,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Trop de requêtes, réessayez plus tard' },
@@ -168,6 +198,7 @@ const sharedCartLimiter = createLimiter({
 }, 'shared-cart');
 
 module.exports = {
+  globalRateLimitKey,
   globalLimiter,
   authLimiter,
   cashConfirmLimiter,
