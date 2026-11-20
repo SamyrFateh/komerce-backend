@@ -7,7 +7,7 @@
  * @impact-areas staging-only
  */
 'use strict';
-const {stageGraph,loadGoldenStages,resolvePhase,prerequisiteIds}=require('./stage-registry');
+const {graphFor,SCENARIO_STAGE_IDS,resolvePhase,prerequisiteIds}=require('./stage-registry');
 const SHA=/^[a-f0-9]{40}$/;
 const UUID=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 const REF=/^[A-Z0-9][A-Z0-9-]{5,63}$/;
@@ -16,11 +16,11 @@ const RUN=/^\d{8,}$/;
 // A workflow must separately download attested artifacts, verify SHA and do
 // independent PostgreSQL/Chromium readback before any business mutation.
 function planBoundResume({fromStage,toStage='CLIENT_PICKUP',context,checkpoints}={}){
- const graph=stageGraph(loadGoldenStages());
+ const graph=graphFor(Object.hasOwn(SCENARIO_STAGE_IDS,String(context?.scenario_id))?context.scenario_id:'M01');
  const from=resolvePhase(fromStage,graph),to=resolvePhase(toStage,graph);
  const start=graph.order.indexOf(from.id),end=graph.order.indexOf(to.id);
  if(start>end)throw Error('G6_RESUME_STAGE_RANGE_INVALID');
- if(!context||context.scenario_id!=='M01'||!Object.hasOwn(require('./market-profile').PROFILES,context.market)||
+ if(!context||!Object.hasOwn(SCENARIO_STAGE_IDS,String(context.scenario_id))||!Object.hasOwn(require('./market-profile').PROFILES,context.market)||
     !UUID.test(String(context.order_id||''))||!REF.test(String(context.order_reference||''))||
     !SHA.test(String(context.staging_sha||''))||!String(context.db_fingerprint||'').trim()||
     context.production_permitted!==false)

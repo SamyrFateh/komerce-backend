@@ -13,10 +13,20 @@ const STAGE_IDS=Object.freeze([
  'HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER',
  'CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP'
 ]);
+// M02 (LOCAL_STOCK) : mêmes BUYER et RELAY_CASH, puis réception locale au relais et remise ; aucun étage Hub/transport.
+const M02_STAGE_IDS=Object.freeze(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','LOCAL_CLIENT_PICKUP']);
+const SCENARIO_STAGE_IDS=Object.freeze({M01:STAGE_IDS,M02:M02_STAGE_IDS});
+function scenarioProfile(raw){
+ if(typeof raw!=='string'||!Object.hasOwn(SCENARIO_STAGE_IDS,raw))throw Error('G6_UNSUPPORTED_SCENARIO');
+ return raw;
+}
 const LEGACY_PHASE_MAP=Object.freeze({BUYER_CASH:'RELAY_CASH'});
 const CONTRACT_KEYS=['id','requires','produces','run','validate','roles'];
 function loadGoldenStages(){
  return STAGE_IDS.map(id=>require('./stages/'+id));
+}
+function loadScenarioStages(scenario){
+ return SCENARIO_STAGE_IDS[scenarioProfile(scenario)].map(id=>require('./stages/'+id));
 }
 function stageGraph(stages){
  if(!Array.isArray(stages)||!stages.length)throw Error('G6_STAGE_REGISTRY_EMPTY');
@@ -49,6 +59,7 @@ function stageGraph(stages){
  for(const id of byId.keys())visit(id);
  return Object.freeze({byId,order:Object.freeze(ordered),producers});
 }
+function graphFor(scenario){return stageGraph(loadScenarioStages(scenario))}
 function nextStageId(id){
  const i=STAGE_IDS.indexOf(LEGACY_PHASE_MAP[id]||id);
  return i>=0&&i<STAGE_IDS.length-1?STAGE_IDS[i+1]:null;
@@ -86,4 +97,4 @@ function planGolden({fromStage='BUYER',toStage='CLIENT_PICKUP'}={}){
  return {contract:'G6-CANONICAL-JOURNEY-v1',mode:'dry-run',stages:g.order.slice(start,end+1),
   missing_prerequisites:prerequisiteIds(from.id,g),mutations:0,verdict:'NOT_PROVEN'};
 }
-module.exports={STAGE_IDS,nextStageId,LEGACY_PHASE_MAP,loadGoldenStages,stageGraph,resolvePhase,prerequisiteIds,requiresResumeProof,validateProofBoundary,planGolden};
+module.exports={M02_STAGE_IDS,SCENARIO_STAGE_IDS,scenarioProfile,loadScenarioStages,graphFor,STAGE_IDS,nextStageId,LEGACY_PHASE_MAP,loadGoldenStages,stageGraph,resolvePhase,prerequisiteIds,requiresResumeProof,validateProofBoundary,planGolden};
