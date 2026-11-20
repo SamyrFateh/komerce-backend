@@ -23,7 +23,8 @@
 
 import { bus }           from './b-bus.js';
 import { state, dom, $, $$, scroll }  from './b-store.js';
-import { fmt, fmtMarketAmount, fmtLocalProductPrice, fmtLocalLinesTotal, sanitize, genIdempotencyKey, apiGet, apiPost, optimizeImgUrl } from './b-utils.js';
+import { fmt, sanitize, genIdempotencyKey, apiGet, apiPost, optimizeImgUrl } from './b-utils.js';
+import { fmtMarketAmount, fmtLocalProductPrice, fmtLocalLinesTotal } from './b-market-price-format.js';
 import { showToast, saveCart } from './b-cart-core.js';
 import { renderPayPalButton, isPayPalEnabled, ensurePayPalSDK } from './b-paypal.js'; // Migration 079
 import { getMobileMoneyAvailabilityForRelay, initiateMobileMoneyPayment, waitForMobileMoneyPayment } from './b-mobile-money.js'; // Migration 169
