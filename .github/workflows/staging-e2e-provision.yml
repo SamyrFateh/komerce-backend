@@ -10,6 +10,20 @@
 name: Staging E2E provision
 
 on:
+  # Appel par staging-reset.yml (job provision apres RESET_OK) : memes script, secrets et gardes.
+  workflow_call:
+    inputs:
+      mode:
+        required: true
+        type: string
+      extra_markets:
+        required: false
+        default: ''
+        type: string
+      confirmation:
+        required: false
+        default: ''
+        type: string
   issues:
     types: [opened]
   workflow_dispatch:
@@ -117,6 +131,9 @@ jobs:
             export KOMERCE_STAGING_E2E_PROVISION_ACK="$PROVISION_CONFIRMATION"
           fi
           node scripts/recette/staging-e2e-provision.js "--$PROVISION_MODE" | tee test-results/staging-e2e-provision/report.json
+      - name: Verify E2E accounts (read-only, execute only)
+        if: ${{ env.PROVISION_MODE == 'execute' }}
+        run: node scripts/recette/staging-e2e-verify-accounts.js | tee test-results/staging-e2e-provision/verify.json
       - name: Publish report (no secret in it)
         if: always()
         uses: actions/upload-artifact@v4
