@@ -64,6 +64,8 @@
 - **Défaut produit ouvert (GPT) :** le rafraîchissement UX1, toutes les 10 s, déclenche des 429 sur le limiteur global par IP (500 requêtes / 15 min). Il a été observé sur le run CG 44691201929.
 - **Reprovisionnement automatique (Opus, PR ouverte, 20/11) :** `staging-reset` enchaîne `staging-e2e-provision` (appel réutilisable) après un execute `RESET_OK` (`provision_markets` défaut CM,CG ; `skip_provision`), puis vérification lecture seule des 8 comptes ; aucun run lancé. Doc [`STAGING_RESET_SCOPES.md`](../recette/STAGING_RESET_SCOPES.md). Reste : GPT recertifie MKT-READ avec des comptes mono-marché.
 
+**G6-RECERT-UX — M01 recertifié après les lots ergonomie Hub, Direction, Expéditions et Relais, et MarketScope (Opus, 20/11) : PASS 15/15 sur les 3 marchés**, SHA unique `7fb8898f`. KM KAWCH30 (run 44768493817), CM KWSQQC9 (run 44769353001), CG KVS9FY3 (run 44770379133). Lots couverts : #4703, #4705, #4707, #4708, #4712, #4722. Synthèse : #4550 (commentaire 7044481701). **Reste :** revue visuelle Kanban/Direction, puis GO du propriétaire pour les 46 scénarios.
+
 **G6-RECERT — M01 recertifié après G6-SUIVIS et Ergonomie (Opus, 19/11) : PASS 15/15 sur les 3 marchés**, SHA unique `a9a625c9`, oracles G6-F renforcés. KM KNS1G99 (#4635), CM KX87NSI (#4636), CG K50ID0Q (#4637). Lots couverts : #4607, #4609, #4610, #4611, #4612, #4630, #4632, #4633, #4634. **Reste avant les 46 scénarios :** inventaire puis nettoyage par l'écran des commandes orphelines (lot 5, GO du propriétaire), prix de référence KPR-000165 (point 2), puis GO du propriétaire.
 
 **G6-MARKET — M01 RÉPÉTABLE SUR KM, CM ET CG (Opus)** : 3 runs consécutifs à 15/15 par marché.
