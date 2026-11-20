@@ -772,7 +772,8 @@ describe('Global en lecture, marché ciblé uniquement pour les actes', () => {
     const writer=jest.fn().mockResolvedValue({});
     env.window.KomerceCanonicalHubWorkstation={renderGlobalBoard:board};
     env.window.KomerceCanonicalOperationsWorkspace={mount:writer};
-    await env.api.renderHubExecutionShell(env.root,actor,hubCtx);
+    env.window.location.search='?view=execute';
+    await env.api.renderHubLive(env.root,actor,hubCtx);
     expect(board).toHaveBeenCalledTimes(1);
     expect(writer).not.toHaveBeenCalled();
     const select=env.root.children[0].children[1].children[1];
