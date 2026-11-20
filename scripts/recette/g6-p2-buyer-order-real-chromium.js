@@ -58,6 +58,12 @@ async function resolveCurrentSaleableProduct(){
       WHERE sku.product_id=p.id AND sku.is_active=TRUE ${PARAMS.fulfillment?'':'AND sku.stock>0'})`,[REF,MARKET]);
  check(rows.length===1,'G6_RECIPE_PRODUCT_OR_PRICE_NOT_UNIQUE');
  check(Number(rows[0].amount)===EXPECTED_PRICE,'G6_RECIPE_PRICE_DRIFT');
+ if(!PARAMS.fulfillment){
+  // M01 = parcours import : un stock local exposé du même produit détournerait la commande du Hub.
+  const {rows:ls}=await db.query(`SELECT 1 FROM local_stock ls JOIN markets m ON m.id=ls.market_id AND m.code=$2
+    WHERE ls.product_id=$1 AND ls.commercial_exposure='ENABLED'`,[rows[0].id,MARKET]);
+  check(ls.length===0,'G6_M01_PRODUCT_SERVED_FROM_LOCAL_STOCK');
+ }
  PRODUCT=rows[0].id;
  report.product_id=PRODUCT;
  record('CURRENT_SALEABLE_PRODUCT',{market:MARKET,ref:REF,price_market_minor:EXPECTED_PRICE,stocked:true});

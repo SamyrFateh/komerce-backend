@@ -10,6 +10,7 @@
  */
 'use strict';
 const MK=require('./canonical/market-profile').marketProfile(process.env);
+const {M01_PRODUCT_REF}=require('./canonical/scenario-profile');
 const fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('playwright');
 const db=require('../../db');
@@ -43,7 +44,8 @@ async function eligible(onlyId=null){
   WHERE p.lifecycle_status='active' AND p.is_active=TRUE AND p.is_available=TRUE
    AND EXISTS (SELECT 1 FROM product_skus sku WHERE sku.product_id=p.id AND sku.is_active=TRUE)
    AND ($2::uuid IS NULL OR p.id=$2::uuid)
-  ORDER BY (ls.commercial_exposure='ENABLED') DESC NULLS LAST,p.product_ref LIMIT 5`,[MK.code,onlyId]);
+   AND ($2::uuid IS NOT NULL OR p.product_ref<>$3)
+  ORDER BY (ls.commercial_exposure='ENABLED') DESC NULLS LAST,p.product_ref LIMIT 5`,[MK.code,onlyId,M01_PRODUCT_REF]);
  return rows;
 }
 const readAvailable=async id=>(await eligible(id))[0];
@@ -52,6 +54,40 @@ function pickCandidate(rows){
  // Ligne déjà exposée préférée ; sinon la déclaration crée/complète une ligne masquée, exposée ensuite par le bouton « Exposer » du même écran.
  return {candidate:rows.find(r=>r.stock_exposure==='ENABLED')||rows[0]};
 }
+// Bouton Exposer/Masquer de la carte stock (data-local-stock-card/-expose, #4750) : une seule mutation, route verrouillée.
+async function toggleExposure(actor,productId,target,key){
+ const expUrl=BASE+'/api/markets/'+MK.code+'/local-stock/'+encodeURIComponent(productId)+'/exposure';let put=0;
+ await actor.page.route(expUrl,route=>{
+  const req=route.request();let body;try{body=req.postDataJSON()}catch(_){}
+  if(req.method()==='PUT'&&put++===0&&body?.commercial_exposure===target)return route.continue();
+  actor.blocked.push({method:req.method(),path:'/local-stock/:id/exposure'});return route.abort('blockedbyclient');
+ });
+ await humanGoto(actor.page,'/dashboards/canonical/market-autonomy.html?market='+MK.code,{waitUntil:'domcontentloaded'});
+ const card=actor.page.locator('[data-market-local-offer] [data-local-stock-card="'+productId+'"]');
+ try{await card.first().waitFor({state:'visible',timeout:30000})}
+ catch(_){report.verdict='SCREEN_MISSING_STOCK_EXPOSURE';save();process.exitCode=3;return false}
+ check(await card.count()===1,'G6_LOCAL_STOCK_CARD_NOT_UNIQUE');
+ const waitPut=actor.page.waitForResponse(r=>r.url()===expUrl&&r.request().method()==='PUT',{timeout:30000});
+ await humanClick(null,card.locator('[data-local-stock-expose]'));
+ const er=await waitPut;
+ check(er.ok()&&put===1&&actor.blocked.length===0,'G6_LOCAL_STOCK_EXPOSURE_REJECTED_'+er.status());
+ await actor.page.unroute(expUrl);
+ report.events.push({key,http:er.status(),role:'market_operator',ui:true,mutations:1,target});save();
+ return true;
+}
+
+// Isolation des fixtures : le produit M01 (import) ne doit jamais être servi depuis le stock local,
+// sinon la commande M01 n'atteint jamais le Hub (run 44800666963, K4QXNJD). Masquage par l'écran.
+async function isolateM01Product(actor){
+ const {rows:[r]}=await db.query(`SELECT p.id,ls.commercial_exposure FROM products p JOIN markets m ON m.code=$1
+   JOIN local_stock ls ON ls.product_id=p.id AND ls.market_id=m.id AND ls.location='KM_MAIN' WHERE p.product_ref=$2`,[MK.code,M01_PRODUCT_REF]);
+ if(!r||r.commercial_exposure!=='ENABLED')return true;
+ if(!await toggleExposure(actor,r.id,'DISABLED','m01-product-local-stock-masked'))return false;
+ const {rows:[a]}=await db.query('SELECT commercial_exposure FROM local_stock WHERE product_id=$1 AND market_id=(SELECT id FROM markets WHERE code=$2) AND location=$3',[r.id,MK.code,'KM_MAIN']);
+ check(a?.commercial_exposure==='DISABLED','G6_M01_PRODUCT_LOCAL_STOCK_STILL_EXPOSED');
+ return true;
+}
+
 async function main(){
  let browser;
  try{
@@ -67,6 +103,7 @@ async function main(){
   browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   const actor=await login(browser,'E2E_MARKET_OPERATOR_'+MK.code+'_','market_operator');
   try{
+   if(!await isolateM01Product(actor))return;
    const url=BASE+'/api/markets/'+MK.code+'/local-stock/receipts';let calls=0;
    await actor.page.route(url,route=>{
     const req=route.request();let body;try{body=req.postDataJSON()}catch(_){}
@@ -91,23 +128,7 @@ async function main(){
    report.events.push({key:'local-stock-receipt',http:201,role:'market_operator',ui:true,mutations:1});save();
    if((await readAvailable(prod.id))?.stock_exposure!=='ENABLED'){
     // 2e geste distinct, une seule mutation : bouton « Exposer » de la carte stock du produit.
-    const expUrl=BASE+'/api/markets/'+MK.code+'/local-stock/'+encodeURIComponent(prod.id)+'/exposure';let put=0;
-    await actor.page.route(expUrl,route=>{
-     const req=route.request();let body;try{body=req.postDataJSON()}catch(_){}
-     if(req.method()==='PUT'&&put++===0&&body?.commercial_exposure==='ENABLED')return route.continue();
-     actor.blocked.push({method:req.method(),path:'/local-stock/:id/exposure'});return route.abort('blockedbyclient');
-    });
-    await humanGoto(actor.page,'/dashboards/canonical/market-autonomy.html?market='+MK.code,{waitUntil:'domcontentloaded'});
-    // Select the exact product ID, never a localized or duplicate display name.
-    const card=actor.page.locator('[data-market-local-offer] [data-local-stock-card="'+prod.id+'"]');
-    try{await card.first().waitFor({state:'visible',timeout:30000})}
-    catch(_){report.verdict='SCREEN_MISSING_STOCK_EXPOSURE';save();process.exitCode=3;return}
-    check(await card.count()===1,'G6_LOCAL_STOCK_CARD_NOT_UNIQUE');
-    const waitPut=actor.page.waitForResponse(r=>r.url()===expUrl&&r.request().method()==='PUT',{timeout:30000});
-    await humanClick(null,card.locator('[data-local-stock-expose]'));
-    const er=await waitPut;
-    check(er.ok()&&put===1&&actor.blocked.length===0,'G6_LOCAL_STOCK_EXPOSE_REJECTED_'+er.status());
-    report.events.push({key:'local-stock-expose',http:er.status(),role:'market_operator',ui:true,mutations:1});save();
+    if(!await toggleExposure(actor,prod.id,'ENABLED','local-stock-expose'))return;
    }
   }finally{await actor.ctx.close()}
   const after=await readAvailable(prod.id);

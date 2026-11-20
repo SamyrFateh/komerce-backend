@@ -435,7 +435,8 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
       AND p.lifecycle_status='active' AND p.is_active=TRUE AND p.is_available=TRUE
       AND e.commercial_exposure='ENABLED'
       AND EXISTS (SELECT 1 FROM product_skus sku WHERE sku.product_id=p.id AND sku.is_active=TRUE)
-    ORDER BY p.product_ref LIMIT 1`,[marketProfile(env).code]);
+      AND p.product_ref<>$2
+    ORDER BY p.product_ref LIMIT 1`,[marketProfile(env).code,require('./scenario-profile').M01_PRODUCT_REF]);
    // Prérequis catalogue/stock (déclaré par l'écran W3), jamais créé ici : absent = bloqué.
    if(rows.length!==1)throw Error('G6_M02_LOCAL_STOCK_PRODUCT_MISSING_'+marketProfile(env).code);
    return {id:rows[0].id,product_ref:rows[0].product_ref,price:Number(rows[0].amount)};
