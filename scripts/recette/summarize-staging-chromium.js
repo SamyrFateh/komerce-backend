@@ -156,12 +156,13 @@ if (process.env.E2E_CHROMIUM_SPEC_FILTER === 'g8-refunds-readonly') {
       direct_client_refusals:Array.isArray(proof.foreign_client_denials)&&proof.foreign_client_denials.length===2&&
         proof.foreign_client_denials.every(x=>[403,404,409].includes(x.status)),
       no_actions:Array.isArray(proof.visible_mutation_controls)&&proof.visible_mutation_controls.length===0,
+      api_audit:proof.apiResponseAuditComplete===true,
       no_foreign_data:Array.isArray(proof.foreignDataLeaks)&&proof.foreignDataLeaks.length===0,
       no_foreign_markets:Array.isArray(proof.foreignMarketLeaks)&&proof.foreignMarketLeaks.length===0,
       no_writes:Array.isArray(proof.blockedWrites)&&proof.blockedWrites.length===0&&proof.readOnlyOracle===true,
       no_js_errors:Array.isArray(proof.jsErrors)&&proof.jsErrors.length===0
     }:Object.fromEntries(['sha','login','one_market','navigation','consultations','oracle','order360',
-      'direct_order_refusals','direct_po_refusals','direct_client_refusals','no_actions','no_foreign_data','no_foreign_markets','no_writes','no_js_errors'].map(k=>[k,false]));
+      'direct_order_refusals','direct_po_refusals','direct_client_refusals','no_actions','api_audit','no_foreign_data','no_foreign_markets','no_writes','no_js_errors'].map(k=>[k,false]));
     const pass=Boolean(proof&&proof.result==='PASS'&&Object.values(checks).every(Boolean));
     const summary={market,status:pass?'PASS':'FAIL',checks,
       rubric_count:proof?.navigation?.items?.length||0,destination_count:proof?.navigation?.visited?.length||0,

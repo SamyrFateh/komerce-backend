@@ -107,7 +107,8 @@ for(const market of MARKETS){
      hubOrderCount:null,oracle:{order_refs:[],markets:[],purchase_order_counts:[],customer_targets_present:0},
      navigation:{items:[],visited:[]},consultations:[],order360:[],foreign_order_denials:[],
      foreign_po_denials:[],foreign_client_denials:[],visible_mutation_controls:[],
-     foreignDataLeaks:[],foreignMarketLeaks:[],blockedWrites:[],jsErrors:[],readOnlyOracle:true};
+     foreignDataLeaks:[],foreignMarketLeaks:[],blockedWrites:[],jsErrors:[],readOnlyOracle:true,
+     apiResponseAuditComplete:false,apiResponseAuditReplayed:0};
    const save=()=>{fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,`market-visibility-${market}.json`),JSON.stringify(proof,null,2)+'\n');};
    const user=account(market);
    const ownRef=refs[market];
@@ -135,31 +136,50 @@ for(const market of MARKETS){
 
      context=await browser.newContext({baseURL:process.env.E2E_STAGING_BASE_URL||BASE,viewport:{width:1440,height:900}});
      const page=await context.newPage();
-     const responseAudits=[];
-     page.on('response',response=>{
-       const request=response.request();
-       if(request.method()!=='GET'||new URL(response.url()).origin!==BASE||!apiPath(response.url()).startsWith('/api/'))return;
-       responseAudits.push((async()=>{
-         if(!String(response.headers()['content-type']||'').includes('json'))return;
-         const body=await response.text();
-         for(const marker of forbiddenMarkers)if(marker&&body.includes(marker)){
-           proof.foreignDataLeaks.push({path:apiPath(response.url()),kind:
-             foreignRefs.includes(marker)?'order':foreignPos.some(x=>x.id===marker)?'purchase_order':'client'});
-         }
-         let payload;try{payload=JSON.parse(body);}catch(_){return;}
-         const inspect=value=>{
-           if(Array.isArray(value)){for(const item of value)inspect(item);return;}
-           if(!value||typeof value!=='object')return;
-           for(const [key,item] of Object.entries(value)){
-             if(['market','market_code','marketCode'].includes(key)&&CODES.includes(String(item).toUpperCase())&&String(item).toUpperCase()!==market){
-               proof.foreignMarketLeaks.push({path:apiPath(response.url()),market:String(item).toUpperCase()});
-             }
-             inspect(item);
+     const responseAudits=[],unreadableJsonUrls=new Set(),auditErrors=[];
+     const auditJsonBody=(url,body)=>{
+       for(const marker of forbiddenMarkers)if(marker&&body.includes(marker)){
+         proof.foreignDataLeaks.push({path:apiPath(url),kind:
+           foreignRefs.includes(marker)?'order':foreignPos.some(x=>x.id===marker)?'purchase_order':'client'});
+       }
+       let payload;
+       try{payload=JSON.parse(body);}catch(_){throw new Error('MKT_READ_JSON_AUDIT_INVALID_RESPONSE');}
+       const inspect=value=>{
+         if(Array.isArray(value)){for(const item of value)inspect(item);return;}
+         if(!value||typeof value!=='object')return;
+         for(const [key,item] of Object.entries(value)){
+           if(['market','market_code','marketCode'].includes(key)&&CODES.includes(String(item).toUpperCase())&&String(item).toUpperCase()!==market){
+             proof.foreignMarketLeaks.push({path:apiPath(url),market:String(item).toUpperCase()});
            }
-         };
-         inspect(payload);
-       })());
-     });
+           inspect(item);
+         }
+       };
+       inspect(payload);
+     };
+     const onResponse=response=>{
+       const request=response.request(),url=response.url();
+       if(request.method()!=='GET'||new URL(url).origin!==BASE||!apiPath(url).startsWith('/api/'))return;
+       // Handle all promise rejections synchronously: navigation may evict
+       // Network.getResponseBody before Playwright can read it.
+       const task=(async()=>{
+         if(!String(response.headers()['content-type']||'').includes('json'))return;
+         let body;
+         try{body=await response.text();}
+         catch(error){
+           if(/No resource with given identifier found/.test(String(error?.message||error))){
+             unreadableJsonUrls.add(url);
+             return;
+           }
+           throw error;
+         }
+         auditJsonBody(url,body);
+       })().catch(error=>{
+         auditErrors.push({path:apiPath(url),code:'MKT_READ_API_RESPONSE_AUDIT_ERROR',
+           message:String(error?.message||error).slice(0,120)});
+       });
+       responseAudits.push(task);
+     };
+     page.on('response',onResponse);
      await page.route('**/*',route=>{
        const request=route.request(),url=new URL(request.url());
        if(url.origin!==BASE)return route.continue();
@@ -297,7 +317,29 @@ for(const market of MARKETS){
        expect(JSON.stringify(client.body)).not.toContain(ref);
      }
      const final=await fetchJSON(page,'/health/version');
-     await Promise.allSettled(responseAudits);
+     page.off('response',onResponse);
+     await Promise.all(responseAudits);
+     expect(auditErrors,'Every API JSON response must be auditable').toEqual([]);
+     // Re-fetch each evicted JSON body with an authenticated same-origin GET.
+     // A missing, non-JSON or server-error replay remains a hard FAIL.
+     const replayUrls=[...unreadableJsonUrls];
+     if(replayUrls.length){
+       const replays=await page.evaluate(async urls=>Promise.all(urls.map(async url=>{
+         const response=await fetch(url,{method:'GET',credentials:'same-origin',redirect:'manual',
+           headers:{Accept:'application/json'},signal:AbortSignal.timeout(20000)});
+         return {url,status:response.status,contentType:response.headers.get('content-type')||'',
+           body:await response.text()};
+       })),replayUrls);
+       expect(replays.length).toBe(replayUrls.length);
+       for(const replay of replays){
+         expect(replay.status,'Replayed GET must return HTTP').toBeGreaterThanOrEqual(200);
+         expect(replay.status,'Replayed GET cannot be a server error').toBeLessThan(500);
+         expect(replay.contentType,'Replayed GET must be JSON').toContain('json');
+         auditJsonBody(replay.url,replay.body);
+       }
+       proof.apiResponseAuditReplayed=replays.length;
+     }
+     proof.apiResponseAuditComplete=true;
      expect(proof.foreignDataLeaks,'No fetched API projection may contain foreign order, PO or client data').toEqual([]);
      expect(proof.foreignMarketLeaks,'No fetched API projection may expose another market').toEqual([]);
      expect(final.status).toBe(200);
