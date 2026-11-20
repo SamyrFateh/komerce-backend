@@ -892,7 +892,7 @@
     const nav=make(doc,'nav','kmc-hub-app-branches');
     nav.setAttribute('aria-label','Postes de travail Hub');
     for(const id of ['operations','administrative','direction']){
-      if(id === 'administrative' && !administrativeAllowed)continue;
+      if(id !== 'operations' && !administrativeAllowed)continue;
       const spec=BRANCHES[id];
       const link=make(doc,'a','kmc-hub-app-branch');
       link.setAttribute('href',href(id,safe(location?.search)));
