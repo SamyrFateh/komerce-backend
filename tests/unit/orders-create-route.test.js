@@ -31,7 +31,22 @@
  *   ✓ Erreur DB → rollback + next(err)
  */
 
-const { makeClient, expectTransactionRolledBack } = require('../integration/test-harness/mock-db');
+const { makeClient: baseMakeClient, expectTransactionRolledBack } = require('../integration/test-harness/mock-db');
+
+// Les fixtures positionnelles portent sur recipient/produit/commande.
+// La lecture lifecycle serveur reste simulée explicitement et ne décale pas
+// les réponses SQL ; les refus marché sont couverts par les tests dédiés.
+function makeClient(responses) {
+  const client = baseMakeClient(responses);
+  const baseQuery = client.query;
+  client.query = jest.fn((sql, ...args) => {
+    if (/SELECT lifecycle_status, code, currency, minor_unit FROM markets/i.test(String(sql))) {
+      return Promise.resolve({ rows: [{ lifecycle_status: 'ACTIVE', code: 'KM', currency: 'KMF', minor_unit: 0 }] });
+    }
+    return baseQuery(sql, ...args);
+  });
+  return client;
+}
 
 jest.mock('../../db', () => ({ getClient: jest.fn(), query: jest.fn() }));
 // FA-22 : la clé est désormais obligatoire ; l'arbitrage PG de la clé est prouvé

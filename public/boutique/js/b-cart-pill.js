@@ -162,7 +162,7 @@ function _renderPill() {
   pill.innerHTML = `
     <span class="kpill-icon">🛒</span>
     <span class="kpill-badge">${qty}</span>
-    <span class="kpill-total">${fmt(total, 'KMF')}</span>`;
+    <span class="kpill-total">${fmtLocalLinesTotal(state.cart)}</span>`;
 }
 
 // ─── Drag (mouse + touch) ──────────────────────────────────────────────────

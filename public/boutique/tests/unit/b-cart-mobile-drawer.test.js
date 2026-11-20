@@ -164,15 +164,15 @@ describe('Drawer mobile — mandat §8', () => {
     expect(document.getElementById('k-cart-checkout')).toBeTruthy();
   });
 
-  // ── §8.6 — montant formaté "17 000 KMF" ────────────────────────────────
-  test('6. montant total formaté avec espace insécable (17 000 KMF)', () => {
-    cartTotal.mockReturnValue(17000);
+  // ── §8.6 — montant formaté depuis les cinq lignes réelles (13 000 KMF) ────────────────────────────────
+  test('6. montant total formaté depuis les lignes, indépendamment d’un mock cartTotal périmé', () => {
+    cartTotal.mockReturnValue(17000); // oracle volontairement divergent : ne pas afficher ce montant fictif
     renderCartBody();
     const subtotal = document.getElementById('k-cart-subtotal-val');
     expect(subtotal).toBeTruthy();
-    // fmt(17000, 'KMF') via le mock → "17 000 KMF"
+    // 3400 + 2800 + 1500 + 4200 + 1100 = 13000 KMF, prix des lignes
     expect(subtotal.textContent).toContain('KMF');
-    expect(subtotal.textContent).toMatch(/17[\s\u00a0]?000/);
+    expect(subtotal.textContent).toMatch(/13[\s\u00a0\u202f]?000/);
   });
 
   // ── §8.7 — pas de "Partager cette liste" dans le panier personnel ───────

@@ -277,9 +277,9 @@ export function resolveCheckoutPayable(items, relaisId, quote) {
       total: Number(quote.total_kmf),
       transport: Number(quote.transport_price_kmf) || 0,
       discount: Number(quote.discount_kmf) || 0,
-      marketAmount: quote.total_market_amount != null && Number.isFinite(Number(quote.total_market_amount))
-        ? Number(quote.total_market_amount) : null,
-      marketCurrency: quote.market_currency || null,
+      ...(quote.total_market_amount != null && Number.isFinite(Number(quote.total_market_amount)) && quote.market_currency
+        ? { marketAmount: Number(quote.total_market_amount), marketCurrency: quote.market_currency }
+        : {}),
     };
   }
   return { ready: false, total: _checkoutSelectionTotal(items), transport: 0, discount: 0 };
