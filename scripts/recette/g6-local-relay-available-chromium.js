@@ -17,6 +17,7 @@ const {confirmTarget}=require('./target-guard');
 const {runtime}=require('./g6-hub-shipment-chromium');
 const {login}=require('./g6-canonical-forwarder-chromium');
 const {openRelayLive}=require('./canonical/relay-live-navigation');
+const {attachDedicatedRelayByUI}=require('./g6-canonical-relay-receipt-chromium');
 const {assertNoHubOrTransport}=require('./canonical/local-stock-oracles');
 const {observe,fullError}=require('./canonical/observability');
 const {humanClick,humanFill,humanCheck}=require('./canonical/actors/human-gestures');
@@ -49,8 +50,15 @@ async function main(){
   const actor=await login(browser,'E2E_AGENT_RELAIS_','agent_relais');
   try{
    const me=await (await actor.page.request.get('/api/auth/me')).json();
-   const {rows:[staff]}=await db.query('SELECT role::text AS role,relais_id FROM users WHERE id=$1',[me.id]);
-   check(staff?.role==='agent_relais'&&staff.relais_id===o.relais_id,'G6_LOCAL_RELAY_ACTOR_MISMATCH');
+   let {rows:[staff]}=await db.query('SELECT role::text AS role,relais_id FROM users WHERE id=$1',[me.id]);
+   check(staff?.role==='agent_relais','G6_LOCAL_RELAY_ACTOR_ROLE_INVALID');
+   // Même geste que M01 (g6-canonical-relay-receipt) : rattachement par l'écran Réseau admin, jamais en SQL.
+   if(staff.relais_id!==o.relais_id){
+    await attachDedicatedRelayByUI(browser,me.id,o.relais_id);
+    ({rows:[staff]}=await db.query('SELECT role::text AS role,relais_id FROM users WHERE id=$1',[me.id]));
+    report.events.push({key:'relay-agent-attached-by-ui',role:'admin',ui:true});
+   }
+   check(staff.relais_id===o.relais_id,'G6_LOCAL_RELAY_ACTOR_MISMATCH');
    const url=BASE+'/api/orders/'+ID+'/local-relay-receipt';let calls=0;
    await actor.page.route(url,route=>{
     const req=route.request();let body;try{body=req.postDataJSON()}catch(_){}
