@@ -55,6 +55,11 @@ describe('G6 canonical relay navigation: same-route Chromium redirect',()=>{
   expect(page.goto).not.toHaveBeenCalled();
   expect(page.locator).toHaveBeenCalledWith('a',{hasText:'Atelier réception'});
  });
+ test('net::ERR_ABORTED during the redirect is tolerated like an interrupted navigation',async()=>{
+  const {page}=actor({initial:'/admin/login'});
+  page.goto=jest.fn(async()=>{throw Error('page.goto: net::ERR_ABORTED at https://x/admin/relais-live');});
+  await openRelayLive(page,{selector:'[data-relay-shipment="S"]'}).catch(e=>{expect(String(e.message)).not.toMatch(/ERR_ABORTED/);});
+ });
  test('foreign origins, login, or blank selector cannot satisfy the proof',async()=>{
   expect(isRelayPage(BASE+'/admin/relais-live')).toBe(true);
   expect(isRelayPage(BASE+'/login.html')).toBe(false);

@@ -22,7 +22,8 @@ async function openRelayLive(page,{selector,timeout=30000,execute=false,entry=ex
    // another query-string navigation caused Playwright to be interrupted.
    await page.goto('/admin/relais-live',{waitUntil:'commit',timeout:20000});
   }catch(error){
-   if(!/is interrupted by another navigation/i.test(String(error?.message||error)))
+   // ERR_ABORTED : même course que la redirection post-login (#4562) ; on vérifie ensuite l'URL atteinte.
+   if(!/is interrupted by another navigation|ERR_ABORTED|frame was detached/i.test(String(error?.message||error)))
     throw error;
    // Never accept an interrupted navigation unless the browser itself reaches
    // the exact canonical staging cockpit without any API or DOM bypass.
