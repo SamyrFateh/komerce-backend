@@ -279,10 +279,7 @@
       heading.textContent='Direction Hub · Tous marchés · '+payload.tasks.length+
         ' tâche(s) · '+Number(payload.overdue_count||0)+' alerte(s) ≥ 48 h';
       body.replaceChildren();
-      if (!payload.tasks.length) {
-        body.appendChild(make(doc,'p','hlc-director-empty','Aucune tâche Hub en attente sur les marchés actifs.'));
-        return payload;
-      }
+      // Une file vide rend les quatre colonnes : rien à traiter reste explicite.
       // Regroupement visuel d'une projection déjà autorisée côté serveur :
       // engagements et paiements sont DEUX décisions différentes. Aucune mutation ici.
       const groupSpecs = [
@@ -306,7 +303,7 @@
       list.setAttribute('data-hub-director-list','');
       for (const spec of groupSpecs) {
         const tasks=groups.get(spec.key);
-        if (!tasks.length) continue;
+        // Quatre colonnes stables, même si l'une ne contient aucune tâche.
         const group=make(doc,'section','hlc-director-group');
         group.setAttribute('data-hub-director-group',spec.key);
         const groupHeading=make(doc,'div','hlc-director-group-heading');
@@ -315,6 +312,7 @@
         group.appendChild(groupHeading);
         group.appendChild(make(doc,'small','hlc-director-group-hint',spec.hint));
         const rows=make(doc,'div','hlc-director-group-rows');
+        if (!tasks.length) rows.appendChild(make(doc,'p','hlc-director-empty','Aucune action en attente.'));
         for(const task of tasks) {
           const row=make(doc,'div','hlc-director-task'+(task.overdue?' is-overdue':'')+
             (task.viewer_can_act===false?' is-readonly':''));
