@@ -351,7 +351,7 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
       expect(model.tasks.some(t => String(t.missing || '').includes(reference)),
         'T8 unique unmanifested fixture absent before click').toBe(false);
       const original = await p.evaluate(() => ({signal:window.__t8Cross.signals, y:window.scrollY}));
-      observers.push({ ...session, role, stats, original, count:model.tasks.length });
+      observers.push({ ...session, role, stats, original, count:model.tasks.length, readsBefore:stats.reads });
     }
     const clickStarted = Date.now();
     const recorded = await gesture(page, {
@@ -392,7 +392,7 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
       await obs.page.waitForFunction(before => window.__t8Cross.signals > before, obs.original.signal, {timeout:20000});
       await expect(obs.page.locator('[data-hub-director-task="RECONCILE_PARCEL"]').filter({hasText:reference}),
         'T8 live Director task ' + obs.role).toBeVisible({timeout:20000});
-      await expect.poll(() => obs.stats.reads, {timeout:15000}).toBeGreaterThan(0);
+      await expect.poll(() => obs.stats.reads, {timeout:15000}).toBeGreaterThan(obs.readsBefore);
       const afterApi = await obs.page.request.get('/api/hub/director-todo');
       expect(afterApi.status()).toBe(200);
       const current = await afterApi.json();
