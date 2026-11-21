@@ -77,29 +77,21 @@ L'artefact du run contient `test-results/` :
 | `PREREQ_MISSING_*` | Donnée de test manquante (§ 3). |
 | `BLOCKED` ou `NOT_PROVEN` | Le runner n'a pas conclu. Lire `err` et `child_error` avant toute conclusion. |
 
-## 6. Dernier état connu côté Opus (21/11)
+## 6. Dernier état connu côté Opus (21/11, 11h)
 
-| Scénario | KM | CM | CG | Remarque |
-|---|---|---|---|---|
-| M01 (M04, M05) | PASS | PASS | PASS | KERKYQK, KCMHGQ6, KOQVJ22 |
-| M02 | PASS | PASS | PASS | KM0VKLQ, KD47HXA, KWISEXJ |
-| M03 | — | — | — | Codé (#4766, #4771), bloqué par le produit central |
-| M06 | — | — | — | Bloqué par le produit central (certification Catalogue) |
-| N04 | PASS | PASS | PASS | Refus au preview 409, sans message visible (ergonomie) |
-| N07 | PASS | PASS | PASS | |
-| N09 | PASS | PASS | PASS | |
-| N11 | PASS | PASS | PASS | |
-| N12 | PASS | PASS | PASS | |
-| N13 | PASS | PASS | PASS | Nettoyer après (§ 2.5) |
-| N14 | PASS | PASS | PASS | |
-| N15 | PRODUCT_GAP | PRODUCT_GAP | PRODUCT_GAP | Expédition vide créée (201) |
-| N16 | PASS | PASS | PASS | |
-| N20 | PASS | PASS | PASS | |
-| N21 et N22 | PRODUCT_GAP | PRODUCT_GAP | PRODUCT_GAP | Lecture inter-relais (`orders/:id`, `:ref`, `parcels`) |
-| N23 | PASS | PASS | PASS | Verrou de 15 minutes |
-| N24 | PASS | PASS | PASS | |
-| N29 | PASS | PASS | PASS | |
-| N33 | PASS | PASS | PASS | |
-| N01 à N03, N05, N06, N08, N10, N17 à N19, N25 à N28, N30 à N32, N34 à N40 | | | | En cours de montage (lots G6-G5A, G5B et G5C) |
+| Statut | Scénarios |
+|---|---|
+| **PASS sur KM, CM et CG** | M01 (M04, M05), M02, N04, N07, N09, N11, N12, N13, N14, N16, N17, N20, N23, N24, N29, N33 ; N28 (KM et CG, CM en cours) |
+| **PRODUCT_GAP** (à corriger côté produit) | N15 : expédition vide créée en 201 (#4550, commentaire 7059719837). N21, N22, N32 : `GET /api/orders/:id` et `:ref` divulguent la commande d'autrui à un client et à un agent relais (commentaires 7057245307 et 7061005484). **Priorité 1.** |
+| **Montés, à jouer** | N18, N19 (corrigés par #4922), N25, N26a, N26b, N27, N30, N31, N35, N36, N37, N38, N39F1, N39F2, N39F3, N40 |
+| **Montés ou en fin de montage (lot G5A)** | N08, N10 (#4918) ; N01, N02, N03, N05, N06 |
+| **Bloqués par le produit** | M03, M06, N34 : le produit central Hub ne peut pas être certifié par l'écran (image et contrat source, #4550) |
+
+**Verdicts prévisibles d'après le code**, à confirmer par un run :
+- `SCREEN_MISSING` : N26a (remboursement de ligne), N26b (décision de compensation), N27 (annulation de reliquat), N39F1 si le bouton Annuler est absent.
+- `PRODUCT_GAP` : N39F2 (pas de « demande admin » après engagement), N40 (prix fournisseur à +10 % accepté), N30 (commandes de recette comptées dans les KPI, **arbitrage du propriétaire**).
+- `NOT_PROVEN` partiel, documenté dans le rapport : N38 (panne post-commit non injectable), N35 (plancher et N3 non persistés), N31 (jambe remboursement), N10 (doublon signé : pas de secret PSP).
+
+**Pour reprendre** : jouer la ligne « Montés, à jouer » scénario par scénario sur KM, puis CM, puis CG, en respectant le § 2. Faire le nettoyage (§ 4) en fin de série. Après les correctifs produit, rejouer N15, N21, N22 et N32.
 
 Le détail des runs et des PR est dans #4550 (synthèses de lots) et dans STATUS.md.
