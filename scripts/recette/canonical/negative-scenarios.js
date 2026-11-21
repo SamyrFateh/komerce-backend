@@ -10,7 +10,7 @@
  */
 'use strict';
 const {isDeepStrictEqual}=require('node:util');
-const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29','N11','N12','N13','N14','N15','N16','N17','N18','N19','N28','N32','N35','N36','N37','N38','N30','N31','N39F1','N39F2','N39F3','N25','N26b','N40','N26a','N27']);
+const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29','N11','N12','N13','N14','N15','N16','N17','N18','N19','N28','N32','N35','N36','N37','N38','N30','N31','N39F1','N39F2','N39F3','N25','N26b','N40','N26a','N27','N08','N10']);
 const isNegative=s=>NEGATIVE.includes(String(s));
 // Produit vendable (prix LOCAL_ACTIVE, exposition ENABLED, actif) servi par l'import (aucun stock local exposé), SKU actifs en stock.
 const MULTI_SKU_SQL=`
@@ -584,4 +584,36 @@ function classifyNegative(scenario,message){
  const g=new RegExp('G6_'+scenario+'_(SCREEN_MISSING|PRODUCT_GAP)').exec(m);
  return g?g[1]:null;
 }
-module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,oracleN15,oracleN16,oracleN28,oracleN32,oracleN30,oracleN31,oracleN35,oracleN36,oracleN37,oracleN38,ecoControls,snapN16,shipmentForOrder,snapJourney,snapLocalTransport,oracleN17,oracleN18,oracleN19,cancelEffects,oracleN39F1,oracleN39F2,oracleN39F3,oracleN25,oracleN40,importPo,classifyNegative};
+module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,oracleN15,oracleN16,oracleN28,oracleN32,oracleN30,oracleN31,oracleN35,oracleN36,oracleN37,oracleN38,ecoControls,snapN16,shipmentForOrder,snapJourney,snapLocalTransport,oracleN17,oracleN18,oracleN19,cancelEffects,oracleN39F1,oracleN39F2,oracleN39F3,oracleN25,oracleN40,importPo,classifyNegative,oracleN08,snapN10,oracleN10};
+// N08 : une seule commande, une seule ligne, une unité, une clé consommée, aucun paiement ni réservation en double.
+async function oracleN08(db,{orderId,buyerId}){
+ const {rows:[n]}=await db.query('SELECT count(*)::int AS n FROM orders WHERE user_id=$1',[buyerId]);
+ ok(n.n===1,'G6_N08_PRODUCT_GAP_ORDERS_'+n.n);
+ const o=await orderRows(db,orderId);
+ ok(o.user_id===buyerId&&o.lines===1&&o.qty===1,'G6_N08_PRODUCT_GAP_ORDER_LINES_'+o.lines+'_'+o.qty);
+ ok(o.cash_count===0&&o.control_count===0&&o.payment_status!=='paid','G6_N08_PRODUCT_GAP_PAYMENT_EFFECT');
+ ok(o.allocations<=1&&o.purchase_lines<=1,'G6_N08_PRODUCT_GAP_DOUBLE_RESERVATION');
+ const {rows:[k]}=await db.query('SELECT count(*)::int AS keys FROM order_checkout_idempotency WHERE user_id=$1 AND response_snapshot IS NOT NULL',[buyerId]);
+ ok(k.keys===1,'G6_N08_PRODUCT_GAP_COMPLETED_KEYS_'+k.keys);
+ return {orders_for_buyer:n.n,lines:o.lines,qty:o.qty,completed_keys:k.keys,cash_collections:o.cash_count,allocations:o.allocations,purchase_lines:o.purchase_lines};
+}
+// N10 : instantané PG lecture seule de la commande, des événements PSP portant le préfixe du scénario et de la transaction mobile money ciblée.
+async function snapN10(db,{orderId,prefix,txId=null}){
+ const {rows:[o]}=await db.query(`SELECT o.payment_status::text AS payment_status,o.status::text AS status,
+  (SELECT count(*)::int FROM cash_collections c WHERE c.order_id=o.id) AS cash_count,
+  (SELECT count(*)::int FROM stripe_events_processed e WHERE e.stripe_event_id LIKE $2) AS psp_events
+  FROM orders o WHERE o.id=$1`,[orderId,prefix+'%']);
+ ok(!!o,'G6_N10_ORDER_NOT_FOUND');
+ let tx=null;
+ if(txId){const {rows}=await db.query('SELECT status::text AS status,updated_at FROM mobile_money_transactions WHERE id=$1',[txId]);tx=rows[0]||null}
+ return {...o,tx_status:tx?tx.status:null,tx_updated_at:tx?String(tx.updated_at):null};
+}
+// N10 : aucun règlement ni événement PSP après webhooks non signés/dupliqués ; la transaction mobile money est inchangée.
+function oracleN10(before,after){
+ ok(!!before&&!!after,'G6_N10_SNAPSHOT_MISSING');
+ ok(after.payment_status===before.payment_status&&after.payment_status!=='paid'&&after.status===before.status,'G6_N10_PRODUCT_GAP_ORDER_SETTLED_BY_UNSIGNED_WEBHOOK');
+ ok(after.cash_count===before.cash_count&&after.cash_count===0,'G6_N10_PRODUCT_GAP_PAYMENT_RECORDED');
+ ok(after.psp_events===0&&before.psp_events===0,'G6_N10_PRODUCT_GAP_UNSIGNED_EVENT_RECORDED');
+ ok(after.tx_status===before.tx_status&&after.tx_updated_at===before.tx_updated_at,'G6_N10_PRODUCT_GAP_MOBILE_MONEY_TX_CHANGED');
+ return {payment_status:after.payment_status,cash_collections:after.cash_count,psp_events:after.psp_events,mobile_money_tx:after.tx_status};
+}
