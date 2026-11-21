@@ -6,11 +6,13 @@ on:
 permissions:
   contents: read
   actions: read
-concurrency:
-  group: komerce-g6-canonical-real-transaction
-  cancel-in-progress: false
 jobs:
   cleanup:
+    # Only this guarded job participates in the shared G6 writer lock.
+    # Unrelated issue-open events must never reserve or cancel a real run.
+    concurrency:
+      group: komerce-g6-canonical-real-transaction
+      cancel-in-progress: false
     if: >-
       github.repository == 'SamyrFateh/komerce-backend' &&
       github.actor == github.repository_owner &&
