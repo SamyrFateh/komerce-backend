@@ -154,6 +154,7 @@ async function resolveCheckoutItems({
         return { ok: false, status: 400, body: { error: 'Quantité cumulée invalide pour ce SKU' } };
       }
       const procureOnOrder = Number(resolvedSku.stock) === 0
+        && Boolean(product.procurement_supplier_id)
         && await isCentralHubOnOrderSku(client, product.id, resolvedSku.id);
       if (!procureOnOrder && resolvedSku.stock < totalSkuQuantity) {
         return {
