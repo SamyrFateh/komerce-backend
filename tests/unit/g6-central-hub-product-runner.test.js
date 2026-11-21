@@ -42,6 +42,15 @@ describe('G6 central Hub product: resume by step read from PG', () => {
       .toEqual({ step: 'catalog-visual-review', product_ref: 'KPR-1', product_id: 'product-id' });
   });
 
+  test('prepares an internal default unit for a variant-free Hub product before approval', () => {
+    const hub = { ...P, pid: 'product-id', media_count: 1, visual_review_ready: true,
+      has_variants: false, inventory_model: 'LEGACY_VARIANTS', default_sku_exists: false };
+    expect(step(hub)).toEqual({ step: 'catalog-default-sku', product_ref: 'KPR-1', product_id: 'product-id' });
+    expect(step({ ...hub, default_sku_exists: true, default_sku_active: false }))
+      .toMatchObject({ verdict: 'G6_CENTRAL_DEFAULT_SKU_INACTIVE_REQUIRES_REVIEW', fail: true });
+    expect(step({ ...hub, default_sku_exists: true, default_sku_active: true }).step).toBe('catalog-editorial');
+  });
+
   test('WATCH without calculation family: one human category gesture, then a screen-missing verdict, never forced', () => {
     const w = { candidate_ref: 'K', product_ref: null, state: 'scanned', decision: 'WATCH', komerce_category: null, category_source: 'default' };
     expect(step(w)).toEqual({ step: 'resolve-category', candidate_ref: 'K' });

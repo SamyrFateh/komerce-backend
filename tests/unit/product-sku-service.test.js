@@ -11,6 +11,7 @@ const {
   resolveActiveSku,
   auditProductSkuReadiness,
   activateProductSkuInventoryModel,
+  ensureCentralHubManualDefaultSku,
 } = require('../../services/product-sku-service');
 
 describe('product-sku-service', () => {
@@ -89,5 +90,39 @@ describe('product-sku-service', () => {
       reasons: ['Déjà en mode SKU'],
     });
     expect(db.query).toHaveBeenCalledTimes(1);
+  });
+
+  test('prépare une unité catalogue interne Hub avec zéro stock sans créer de SKU fournisseur', async () => {
+    const db = { query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{ id: 'p1', has_variants: false, inventory_model: 'LEGACY_VARIANTS',
+        lifecycle_status: 'candidate', is_active: false, hub_manual: true }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'internal-sku', product_id: 'p1', sku: null,
+        variant_combo: null, stock: 0, is_active: true }] }) };
+    await expect(ensureCentralHubManualDefaultSku(db, 'p1')).resolves.toMatchObject({
+      created: true, supplier_identity_created: false, sku: { sku: null, stock: 0, is_active: true },
+    });
+    expect(db.query.mock.calls[1][0]).toContain('ON CONFLICT (product_id) WHERE variant_combo IS NULL DO NOTHING');
+    expect(db.query.mock.calls[1][1]).toEqual(['p1']);
+  });
+
+  test('refuse la préparation d’une unité interne hors candidat Hub sans variantes', async () => {
+    const db = { query: jest.fn().mockResolvedValueOnce({ rows: [{ id: 'p1', has_variants: true,
+      inventory_model: 'LEGACY_VARIANTS', lifecycle_status: 'candidate', is_active: false, hub_manual: true }] }) };
+    await expect(ensureCentralHubManualDefaultSku(db, 'p1'))
+      .rejects.toMatchObject({ status: 409, code: 'HUB_DEFAULT_SKU_NOT_ELIGIBLE' });
+    expect(db.query).toHaveBeenCalledTimes(1);
+  });
+
+  test('un conflit idempotent conserve le SKU existant et son stock', async () => {
+    const db = { query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{ id: 'p1', has_variants: false, inventory_model: 'LEGACY_VARIANTS',
+        lifecycle_status: 'candidate', is_active: false, hub_manual: true }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ id: 'existing', product_id: 'p1', sku: null,
+        variant_combo: null, stock: 4, is_active: true }] }) };
+    await expect(ensureCentralHubManualDefaultSku(db, 'p1')).resolves.toMatchObject({
+      created: false, already_ready: true, sku: { id: 'existing', stock: 4 },
+    });
+    expect(db.query.mock.calls[1][0]).toContain('DO NOTHING');
   });
 });

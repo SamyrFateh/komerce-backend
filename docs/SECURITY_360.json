@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-21T15:14:48.381Z",
+  "generatedAt": "2026-11-21T17:28:49.908Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 854,
-    "protected": 795,
+    "total": 855,
+    "protected": 796,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -404,13 +404,6 @@
     },
     {
       "key": "DELETE /api/admin/boutique-categories/{key}/subcategories/{subKey}",
-      "level": "PROTECTED",
-      "roles": [
-        "admin"
-      ]
-    },
-    {
-      "key": "POST /api/orders/{id}/close-g6-hub-recipe",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -896,6 +889,14 @@
       "level": "PROTECTED",
       "roles": [
         "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/dashboard/events",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
       ]
     },
     {
@@ -2187,6 +2188,13 @@
     },
     {
       "key": "POST /api/admin/workspaces/catalog/approval/{productRef}/prepare-fr",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/catalog/approval/{productRef}/prepare-hub-default-sku",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -4597,6 +4605,13 @@
       "roles": []
     },
     {
+      "key": "POST /api/orders/{id}/close-g6-hub-recipe",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
       "key": "PATCH /api/orders/{id}/cost",
       "level": "PROTECTED",
       "roles": [
@@ -5304,6 +5319,13 @@
       "roles": [
         "admin",
         "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/purchasing/po/{po_id}/cancel-g6-recipe",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
       ]
     },
     {
@@ -6226,21 +6248,6 @@
       "key": "POST /webhook/meta-whatsapp",
       "level": "PUBLIC",
       "roles": []
-    },
-    {
-      "key": "POST /api/purchasing/po/{po_id}/cancel-g6-recipe",
-      "level": "PROTECTED",
-      "roles": [
-        "admin"
-      ]
-    },
-    {
-      "key": "GET /api/admin/dashboard/events",
-      "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "agent_hub"
-      ]
     }
   ]
 }

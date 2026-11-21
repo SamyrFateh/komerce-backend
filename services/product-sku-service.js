@@ -8,7 +8,7 @@
  * @outputs       product_sku_row, sku_candidates, sku_readiness_audit, sku_inventory_cutover
  * @depends       none
  * @used-by       services/product-admin-service.js, routes/orders/create.js (via product-admin-service.js), routes/products.js (via product-admin-service.js)
- * @db-read       product_skus, product_variants, products
+ * @db-read       product_skus, product_variants, products, sourcing_candidates, suppliers
  * @db-write      product_skus, products
  * @db-txn        none
  * @doctrine      docs/specs/DECISION_MODELE_STOCK_SKU.md
@@ -253,6 +253,47 @@ async function upsertProductSku(dbPool, productId, payload = {}) {
 }
 
 /**
+ * Prepare the internal default unit for a central Hub manual candidate.
+ * This unit is a Komerce inventory identity, not a supplier SKU. Create it
+ * with zero stock, never overwrite an existing row, and only for a
+ * no-variant candidate that is still unpublished.
+ */
+async function ensureCentralHubManualDefaultSku(dbPool, productId) {
+  const { rows: [product] } = await dbPool.query(
+    `SELECT p.id, p.has_variants, p.inventory_model, p.lifecycle_status, p.is_active,
+            EXISTS (SELECT 1 FROM sourcing_candidates sc
+              JOIN suppliers s ON s.id = sc.supplier_id
+             WHERE sc.product_id = p.id AND sc.state = 'imported_to_catalog'
+               AND sc.normalized_source_contract->>'source_kind' = 'central_hub_manual'
+               AND s.system_key = 'central_hub') AS hub_manual
+       FROM products p WHERE p.id = $1`, [productId]
+  );
+  if (!product) { const e = new Error('Produit introuvable'); e.status = 404; throw e; }
+  if (product.hub_manual !== true || product.has_variants === true ||
+      product.lifecycle_status !== 'candidate' || product.is_active === true ||
+      product.inventory_model === 'SKU') {
+    const e = new Error('Préparation réservée à un candidat manuel Hub sans variantes et non publié');
+    e.status = 409; e.code = 'HUB_DEFAULT_SKU_NOT_ELIGIBLE'; throw e;
+  }
+  const { rows: [created] } = await dbPool.query(
+    `INSERT INTO product_skus (product_id, sku, variant_combo, stock, price_kmf, is_active)
+     VALUES ($1, NULL, NULL, 0, NULL, TRUE)
+     ON CONFLICT (product_id) WHERE variant_combo IS NULL DO NOTHING
+     RETURNING id, product_id, sku, variant_combo, stock, is_active`, [productId]
+  );
+  if (created) return { created: true, sku: created, supplier_identity_created: false };
+  const { rows: [existing] } = await dbPool.query(
+    `SELECT id, product_id, sku, variant_combo, stock, is_active
+       FROM product_skus WHERE product_id=$1 AND variant_combo IS NULL`, [productId]
+  );
+  if (existing?.is_active === true) {
+    return { created: false, already_ready: true, sku: existing, supplier_identity_created: false };
+  }
+  const e = new Error('Un SKU catalogue par défaut existe déjà mais reste désactivé ; revue opérateur requise');
+  e.status = 409; e.code = 'HUB_DEFAULT_SKU_INACTIVE'; throw e;
+}
+
+/**
  * Désactive un SKU (soft — jamais de DELETE, cohérent avec la doctrine
  * "produit désactivé, non supprimé" appliquée ailleurs au catalogue).
  */
@@ -386,6 +427,7 @@ module.exports = {
   resolveActiveSku,
   getSkuCandidates,
   upsertProductSku,
+  ensureCentralHubManualDefaultSku,
   deactivateProductSku,
   auditProductSkuReadiness,
   activateProductSkuInventoryModel,

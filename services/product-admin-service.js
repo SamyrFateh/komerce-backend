@@ -72,6 +72,7 @@ const {
   canonicalizeVariantCombo,
   getSkuCandidates,
   upsertProductSku,
+  ensureCentralHubManualDefaultSku,
   deactivateProductSku,
   auditProductSkuReadiness,
 } = require('./product-sku-service');
@@ -521,6 +522,7 @@ module.exports = {
   resolveSellableUnit,
   canonicalizeVariantCombo,
   upsertProductSku,
+  ensureCentralHubManualDefaultSku,
   deactivateProductSku,
   auditProductSkuReadiness,
   adjustStock,

@@ -199,6 +199,13 @@ router.post('/approval/:productRef/prepare-fr', async (req, res, next) => {
   } catch (err) { sendError(err, res, next); }
 });
 
+router.post('/approval/:productRef/prepare-hub-default-sku', ...guard, async (req, res, next) => {
+  try {
+    const result = await workspace.prepareCentralHubDefaultSku(req.params.productRef, req.user);
+    return res.json({ ok: true, action: 'hub_internal_default_sku_prepared', result });
+  } catch (err) { sendError(err, res, next); }
+});
+
 router.post('/approval/:productRef/approve', async (req, res, next) => {
   try {
     res.json({ ok: true, action: 'catalog_candidate_approved', result: await workspace.approveCandidate(req.params.productRef, req.user) });

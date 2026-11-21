@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-20T22:40:03.124Z",
+  "generatedAt": "2026-11-21T17:28:06.553Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 841,
+  "count": 844,
   "routes": [
     {
       "method": "GET",
@@ -655,6 +655,16 @@
       "mountPrefix": "/api/admin/dashboard",
       "localPath": "/costing",
       "routeFile": "routes/admin-dashboard.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/dashboard/events",
+      "mountPrefix": "/api/admin/dashboard",
+      "localPath": "/events",
+      "routeFile": "routes/admin-dashboard-events.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]
@@ -2511,6 +2521,16 @@
     },
     {
       "method": "POST",
+      "fullPath": "/api/admin/workspaces/catalog/approval/:productRef/prepare-hub-default-sku",
+      "mountPrefix": "/api/admin/workspaces/catalog",
+      "localPath": "/approval/:productRef/prepare-hub-default-sku",
+      "routeFile": "routes/admin-catalog-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
       "fullPath": "/api/admin/workspaces/catalog/approval/:productRef/reject",
       "mountPrefix": "/api/admin/workspaces/catalog",
       "localPath": "/approval/:productRef/reject",
@@ -2604,6 +2624,16 @@
       "fullPath": "/api/admin/workspaces/catalog/products/:productRef/deactivate",
       "mountPrefix": "/api/admin/workspaces/catalog",
       "localPath": "/products/:productRef/deactivate",
+      "routeFile": "routes/admin-catalog-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/catalog/products/:productRef/media",
+      "mountPrefix": "/api/admin/workspaces/catalog",
+      "localPath": "/products/:productRef/media",
       "routeFile": "routes/admin-catalog-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

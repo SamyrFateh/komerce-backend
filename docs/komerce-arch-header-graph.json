@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 2101,
-    "edges": 10462,
+    "edges": 10464,
     "dbTables": 244,
     "doctrines": 823,
     "impactAreas": 210,
@@ -29843,7 +29843,9 @@
       "dbRead": [
         "product_skus",
         "product_variants",
-        "products"
+        "products",
+        "sourcing_candidates",
+        "suppliers"
       ],
       "dbWrite": [
         "product_skus",
@@ -93931,6 +93933,18 @@
     },
     {
       "from": "services/product-sku-service.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-read",
+      "label": "sourcing_candidates"
+    },
+    {
+      "from": "services/product-sku-service.js",
+      "to": "db:suppliers",
+      "type": "db-read",
+      "label": "suppliers"
+    },
+    {
+      "from": "services/product-sku-service.js",
       "to": "db:product_skus",
       "type": "db-write",
       "label": "product_skus"
@@ -139839,7 +139853,9 @@
       "dbRead": [
         "product_skus",
         "product_variants",
-        "products"
+        "products",
+        "sourcing_candidates",
+        "suppliers"
       ],
       "dbWrite": [
         "product_skus",
@@ -139858,6 +139874,8 @@
         "db:product_skus",
         "db:product_variants",
         "db:products",
+        "db:sourcing_candidates",
+        "db:suppliers",
         "doctrine:docs/specs/DECISION_MODELE_STOCK_SKU.md",
         "impact:admin-dashboard",
         "impact:catalog",
