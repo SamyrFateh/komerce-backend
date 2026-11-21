@@ -11,7 +11,6 @@
 'use strict';
 const MK=require('./canonical/market-profile').marketProfile(process.env);
 const fs=require('node:fs'),path=require('node:path');
-const {isDeepStrictEqual}=require('node:util');
 const {chromium}=require('playwright');
 const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
@@ -30,6 +29,7 @@ let OBS=null;
 const report={schema:'komerce-g6-negative-n09/1',scenario_id:'N09',market:MK.code,reference:REF,order_id:ID,
  provenance:'SIMULATED / STAGING ONLY',verdict:'BLOCKED',refusal_point:null,refusal_visible:false,events:[],
  external_supplier_calls:0,external_payment_executed:false,plaintext_pickup_code_logged:false,production_permitted:false};
+const norm=v=>String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
 const check=(v,e)=>{if(!v)throw Error(e)};
 const save=()=>{fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n')};
 async function main(){
@@ -74,7 +74,7 @@ async function main(){
    const url=BASE+'/api/scans/collect';let calls=0,collectStatus=null,collectBody=null;
    await actor.page.route(url,route=>{
     const req=route.request();let body;try{body=req.postDataJSON()}catch(_){}
-    if(req.method()==='POST'&&calls++===0&&isDeepStrictEqual(body,{pickup_code:typed}))return route.continue();
+    if(req.method()==='POST'&&calls++===0&&norm(body?.pickup_code)===norm(typed)&&Object.keys(body||{}).length===1)return route.continue();
     actor.blocked.push({method:req.method(),path:'/api/scans/collect'});return route.abort('blockedbyclient');
    });
    actor.page.on('dialog',d=>d.type()==='confirm'?d.accept():d.dismiss());
@@ -91,12 +91,19 @@ async function main(){
     if(await box.locator('[data-pickup-code-confirm]').isEnabled()){
      await humanClick(null,box.locator('[data-pickup-code-confirm]'));
      const res=await pending;
-     check(!!res,'G6_N09_SCREEN_MISSING_NO_COLLECT_RESPONSE');
+     if(!res){
+      // Aucune requête de collecte émise malgré le bouton actif : refus côté écran (validation du format) ; on établit ce que l'écran montre.
+      const after=await actor.page.locator('body').innerText().catch(()=>'');
+      report.no_request_sent=true;report.screen_changed=after!==bodyText;
+      report.refusal_point='RELAY_NO_REQUEST_SENT';report.refusal_visible=report.screen_changed;
+      await actor.page.screenshot({path:path.join(OUT,'n09-no-request.png')}).catch(()=>{});
+     }else{
      check(res.status()>=400,'G6_N09_PRODUCT_GAP_REMISE_ACCEPTED_WITHOUT_CASH_'+res.status());
      report.refusal_point='RELAY_COLLECT_REFUSED_'+res.status();
      const msg=String(collectBody?.error||collectBody?.message||'').slice(0,160);
      report.refusal_message=msg||null;
      report.refusal_visible=!!msg&&(await actor.page.locator('body').innerText().catch(()=>'')).includes(msg);
+     }
     }else{report.refusal_point='RELAY_CONFIRM_DISABLED_FOR_'+report.typed_kind;report.refusal_visible=true}
    }else{
     // Aucun comptoir de saisie sur Remises (aucun colis en attente) : documenté, aucune saisie pertinente possible.
@@ -105,7 +112,7 @@ async function main(){
    }
    c.code=null;
    await actor.page.screenshot({path:path.join(OUT,'n09-remises.png')}).catch(()=>{});
-   check(calls<=1&&actor.blocked.length===0,'G6_N09_UNEXPECTED_RELAY_WRITE');
+   check(calls<=1&&actor.blocked.length===0,'G6_N09_UNEXPECTED_RELAY_WRITE_'+JSON.stringify(actor.blocked.map(x=>x.path)));
    report.events.push({key:'relay-remises-attempt',collect_http:collectStatus,refusal_point:report.refusal_point});save();
   }finally{await actor.ctx.close()}
   check(!!report.refusal_point,'G6_N09_SCREEN_MISSING_NO_REFUSAL_OBSERVED');

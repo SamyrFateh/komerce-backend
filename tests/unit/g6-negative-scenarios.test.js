@@ -67,11 +67,10 @@ describe('G6-G4A scénarios négatifs N07, N09, N04, N33',()=>{
   await expect(N.oracleN09(row({consumed_allocations:1}),{orderId:'o'})).rejects.toThrow('G6_N09_PRODUCT_GAP_STOCK_CONSUMED');
   await expect(N.oracleN09(row({cash_count:1}),{orderId:'o'})).rejects.toThrow('G6_N09_PRODUCT_GAP_CASH_EFFECT');
  });
- it('N04 : quantité saisie sur la fiche (stepper du panier recouvert) ; N09 : saisie de la référence à Remises',()=>{
+ it('N04 : clics répétés sur Ajouter (fiche sans champ quantité, stepper recouvert) ; N09 : saisie de la référence à Remises',()=>{
   const b=read('scripts/recette/g6-p2-buyer-order-real-chromium.js'),n=read('scripts/recette/g6-negative-n09-remise-chromium.js');
-  expect(b).toMatch(/#k-qty-plus/);expect(b).not.toMatch(/k-sc-step-plus'\)\.first/);
-  expect(b).toMatch(/PDP_QTY_CAPPED/);
-  expect(n).toMatch(/ORDER_REFERENCE/);expect(n).toMatch(/RELAY_REMISES_COUNTER_ABSENT/);
+  expect(b).toMatch(/PDP_ADD_CAPPED/);expect(b).not.toMatch(/humanClick\(null,page\.locator\('#k-qty-plus'\)\)/);
+  expect(n).toMatch(/ORDER_REFERENCE/);expect(n).toMatch(/RELAY_REMISES_COUNTER_ABSENT/);expect(n).toMatch(/RELAY_NO_REQUEST_SENT/);
  });
  it('workflow : titres N07/N09/N04/N33 pour KM, CM et CG',()=>{
   const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
