@@ -26,14 +26,19 @@ describe('G6 preparer source Hub centrale — contrat #4920 + media canonique',(
   expect(nextStep({sellable:[],candidate:{...candidate,media_count:0}})).toEqual({
    step:'catalog-media',product_ref:'KPR-1'});
   expect(nextStep({sellable:[],candidate:{...candidate,media_count:1}})).toEqual({
+   step:'catalog-visual-review',product_ref:'KPR-1',product_id:undefined});
+  expect(nextStep({sellable:[],candidate:{...candidate,media_count:1,visual_review_ready:true}})).toEqual({
    step:'catalog-approve',product_ref:'KPR-1'});
+  expect(CANDIDATE_SQL).toContain('catalog_media_visual_fr_reviews');
+  expect(SOURCE).toContain("'catalog-visual-review':'admin'");
+  expect(SOURCE).toContain("'catalog-visual-review':(a,s)=>catalogVisualReview(a,s.product_ref,s.product_id)");
   expect(SOURCE).toContain("catalog-media':'admin'");
   expect(SOURCE).toContain("catalog-media':(a,s)=>catalogMedia(a,s.product_ref)");
  });
  test('l upload intervient sur l input Chromium officiel #4920 : 1 POST, jamais un URL injecté',()=>{
   expect(SOURCE).toContain("[data-catalog-media-upload-file]");
   expect(SOURCE).toContain("details[data-catalog-complementary-info] > summary");
-  expect(SOURCE).toContain("await input.setInputFiles(media.file)");
+  expect(SOURCE).toContain("await humanSetInputFiles(null,input,media.file)");
   expect(SOURCE).toContain("const endpoint=CAT+'/products/'+ref+'/media'");
   expect(SOURCE).toContain("await arm(actor,'POST',endpoint)");
   expect(SOURCE).toContain("await fire(actor,'POST',endpoint");

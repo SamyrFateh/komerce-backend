@@ -2111,7 +2111,9 @@
     source.href = item.url;
     source.target = '_blank';
     source.rel = 'noopener noreferrer';
-    source.textContent = 'Agrandir l’image fournisseur originale';
+    source.textContent = media.canonical_hub_media
+      ? 'Agrandir l’image canonique importée au Hub'
+      : 'Agrandir l’image fournisseur originale';
     detail.appendChild(source);
     if (review.reviewed_by) detail.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
       (String(review.reviewed_by).startsWith('automation:github-actions:')
@@ -2153,8 +2155,9 @@
     const confirmed = doc.createElement('input');
     confirmed.type = 'checkbox';
     confirmation.appendChild(confirmed);
-    confirmation.appendChild(text(doc, 'span', '',
-      ' Je confirme avoir réellement examiné les pixels de CETTE source et variante.'));
+    const confirmationCopy = text(doc, 'span', '',
+      ' Je confirme avoir réellement examiné les pixels de CETTE source et variante.');
+    confirmation.appendChild(confirmationCopy);
     detail.appendChild(confirmation);
     let execution = null;
     let runId = null;
@@ -2173,6 +2176,11 @@
       runId.setAttribute('data-review-run-id', '');
       runId.inputMode = 'numeric';
       runId.parentNode.hidden = true;
+      execution.addEventListener('change', () => {
+        confirmationCopy.textContent = execution.value === 'AUTOMATED_STAGING'
+          ? ' Je confirme que cette preuve est une revue automatisée de recette, sans attestation humaine.'
+          : ' Je confirme avoir réellement examiné les pixels de CETTE source et variante.';
+      });
     }
     const feedback = text(doc, 'p', 'kmc-catalog-correction-hint', 'Aucune attestation enregistrée automatiquement.');
     feedback.setAttribute('role', 'status');
