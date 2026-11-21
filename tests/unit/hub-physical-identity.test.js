@@ -20,7 +20,7 @@ describe('hub-physical-identity — réception regroupée', () => {
       src.indexOf('// Un contenu déclaré', src.indexOf('async function resolveGroupedLineEntries('))
     );
     const poLock = method.indexOf('SELECT id, status FROM purchase_orders WHERE id=$1 FOR SHARE');
-    const linesLock = method.indexOf('FOR UPDATE OF pl');
+    const linesLock = method.lastIndexOf('FOR UPDATE OF pl');
     const receivedRead = method.indexOf('SELECT purchase_line_received_quantity($1) AS received');
     expect(poLock).toBeGreaterThanOrEqual(0);
     expect(linesLock).toBeGreaterThan(poLock);
