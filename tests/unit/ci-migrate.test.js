@@ -97,4 +97,20 @@ describe('ci-migrate — structural baseline reconciliation', () => {
 
     expect(result.has('225_purchase_orders_exact_supplier_identity.sql')).toBe(false);
   });
+  test('migration 423 NOTIFY probe refuses baselining without real database triggers', async () => {
+    const probe = STRUCTURAL_PROBES['423_dashboard_refresh_notifications.sql'];
+    expect(String(probe)).toContain('notify_dashboard_refresh');
+    expect(String(probe)).toContain('dashboard_refresh_after_write');
+    expect(String(probe)).toContain('purchase_orders');
+    expect(String(probe)).toContain('products');
+    expect(String(probe)).toContain('orders');
+    await expect(probe({query:jest.fn().mockResolvedValue({rows:[{represented:false}]})})).resolves.toBe(false);
+    await expect(probe({query:jest.fn().mockResolvedValue({rows:[{represented:true}]})})).resolves.toBe(true);
+    const baseline = new Set(['423_dashboard_refresh_notifications.sql']);
+    const reconciled = await reconcileStructuralBaseline(
+      {query:jest.fn().mockResolvedValue({rows:[{represented:false}]})}, baseline);
+    expect(reconciled.has('423_dashboard_refresh_notifications.sql')).toBe(false);
+    expect(baseline.has('423_dashboard_refresh_notifications.sql')).toBe(true);
+  });
+
 });
