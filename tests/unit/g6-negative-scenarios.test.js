@@ -376,7 +376,7 @@ describe('G6-G5B N17 (transitaire hors rôle ou marché), N18 (douane retenue pu
   const r=read('scripts/recette/canonical/negative-runner.js');
   expect(r).toMatch(/N17:\{script:N1718_SCRIPT[^}]*to:'HUB_SHIPMENT'/);expect(r).toMatch(/N18:\{script:N1718_SCRIPT[^}]*to:'FORWARDER'/);expect(r).toMatch(/N19:\{script:N19_SCRIPT[^}]*to:'CUSTOMS'/);
   expect(r).toMatch(/N20:\{script:N20_SCRIPT[^}]*to:'CUSTOMS'/);
-  expect(read('scripts/recette/canonical/real-buyer-cash-adapters.js')).toMatch(/'N17','N18','N19'\]\.includes\(SCENARIO\)/);
+  expect(read('scripts/recette/canonical/real-buyer-cash-adapters.js')).toMatch(/'N17','N18','N19'(?:,'N\d+')*\]\.includes\(SCENARIO\)/);
  });
  it('workflow : titres N17 à N19 pour KM, CM et CG',()=>{
   const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
@@ -418,5 +418,60 @@ describe('G6-G5C N28 (échec réseau puis réessai) et N32 (marché et rôles cr
   for(const id of ['N28','N32'])for(const m of ['KM','CM','CG'])expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
   expect(wf).toContain("'-full-N28-') && 'N28'");expect(wf).toContain("'-full-N32-') && 'N32'");
   expect(N.isNegative('N28')&&N.isNegative('N32')).toBe(true);
+ });
+});
+
+describe('G6-G5C N35 à N38 : modalités de M01 et oracles O-ECO, O-DOC, O-NOTIF',()=>{
+ const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]||[]})}};
+ const ord=(o={})=>({id:'o',user_id:'u',status:'collected',payment_status:'paid',display_total_amount:1,lines:1,qty:1,cash_count:1,control_count:1,allocations:1,consumed_allocations:1,purchase_lines:0,collected_scans:1,parcels:1,...o});
+ it('séquences : M01 + un oracle, M01 inchangé et non dupliqué',()=>{
+  expect(graphFor('N35').order).toEqual([...STAGE_IDS,'N35_ECO_ORACLE']);
+  expect(graphFor('N36').order).toEqual([...STAGE_IDS,'N36_MANUAL_PROVENANCE_ORACLE']);
+  expect(graphFor('N37').order).toEqual([...STAGE_IDS,'N37_DOCUMENT_ACCESS','N37_DOCUMENTS_ORACLE']);
+  expect(graphFor('N38').order).toEqual([...STAGE_IDS,'N38_RESUME_DRY_RUN','N38_POSTCOMMIT_ORACLE']);
+  expect(graphFor('M01').order).toEqual(STAGE_IDS);
+  expect(validateStageModuleSources()).toBeGreaterThan(0);
+ });
+ it('contrôles O-ECO : instructions SELECT du fichier SQL, jamais d\'écriture',()=>{
+  const q=N.ecoControls();expect(q.length).toBe(4);expect(q.every(x=>/^SELECT/i.test(x)&&!/\b(INSERT|UPDATE|DELETE)\b/i.test(x))).toBe(true);
+ });
+ const al=[{order_item_id:'i',cost_type:'freight',shipment_id:'s',is_actual:true,amount_kmf:'10',causal:true}];
+ it('oracle N35 : fret non doublé et allocations causales',async()=>{
+  const ok=[[ord()],al,[],[],[],[],[]];
+  await expect(N.oracleN35(mk(ok),{orderId:'o'})).resolves.toMatchObject({allocations:1,freight_doubled:0,floor_total_equals_detail:'NOT_PROVEN_NO_PERSISTED_FLOOR_ON_ORDER_OBJECTS'});
+  await expect(N.oracleN35(mk([[ord()],[]]),{orderId:'o'})).rejects.toThrow('G6_N35_PRODUCT_GAP_NO_REAL_COST_ALLOCATIONS');
+  await expect(N.oracleN35(mk([[ord()],[{...al[0],causal:false}]]),{orderId:'o'})).rejects.toThrow('G6_N35_PRODUCT_GAP_ALLOCATION_NOT_CAUSAL');
+  await expect(N.oracleN35(mk([[ord()],al,[{cost_type:'freight',n:2}]]),{orderId:'o'})).rejects.toThrow('G6_N35_PRODUCT_GAP_COST_COMPONENT_DOUBLED_freight');
+ });
+ it('oracle N36 : toute preuve physique en MANUAL avec référence',async()=>{
+  const good=[[{evidence_method:'MANUAL',ref_ok:true}],[{evidence_method:'MANUAL',ref_ok:true}],[{n:3}],[{n:1}]];
+  await expect(N.oracleN36(mk(good),{orderId:'o'})).resolves.toMatchObject({placements_manual:1,bag_links_manual:1,collected_scans:1});
+  await expect(N.oracleN36(mk([[{evidence_method:'SCAN',ref_ok:false}]]),{orderId:'o'})).rejects.toThrow('G6_N36_PRODUCT_GAP_PLACEMENT_NOT_MANUAL_SCAN');
+  await expect(N.oracleN36(mk([good[0],[{evidence_method:null,ref_ok:false}]]),{orderId:'o'})).rejects.toThrow('G6_N36_PRODUCT_GAP_BAG_LINK_NOT_MANUAL_NULL');
+ });
+ const docs=(o={})=>[[{n:1,pdf:1}],[{id:'s1'}],[{subject_id:'s1',n:1}],[],...[]];
+ it('oracle N37 : un document par événement, aucun envoi réel',async()=>{
+  const base=[[ord()],...docs(),[{n:1}],[{channel:'in_app',event:'available',status:'skipped'}]];
+  await expect(N.oracleN37(mk(base),{orderId:'o',reference:'R',poId:'p'})).resolves.toMatchObject({invoices:1,pickup_proofs:1,real_sends:0});
+  const sent=[[ord()],...docs(),[{n:1}],[{channel:'whatsapp',event:'collected',status:'sent'}]];
+  await expect(N.oracleN37(mk(sent),{orderId:'o',reference:'R',poId:'p'})).rejects.toThrow('G6_N37_PRODUCT_GAP_REAL_SEND_ON_STAGING');
+  await expect(N.oracleN37(mk([[ord()],[{n:2,pdf:2}]]),{orderId:'o',reference:'R'})).rejects.toThrow('G6_N37_PRODUCT_GAP_INVOICE_COUNT_2');
+ });
+ it('oracle N38 : événement conservé, reprise sans angle mort, sans doublon',async()=>{
+  const dry=(inv,pp)=>({dry_run:true,issued:0,families:{invoice:{missing:inv},pickup_proof:{missing:pp},refund_receipt:{missing:0}}});
+  const full=[[ord()],...docs(),[]];
+  await expect(N.oracleN38(mk(full),{orderId:'o',reference:'R',dryRun:dry(0,0)})).resolves.toMatchObject({resume_detects_missing:false,failure_leg:'NOT_PROVEN_NO_FAULT_INJECTION_ON_STAGING'});
+  const gone=[[ord()],[{n:1,pdf:1}],[{id:'s1'}],[],[],[]];
+  await expect(N.oracleN38(mk(gone),{orderId:'o',reference:'R',dryRun:dry(0,1)})).resolves.toMatchObject({resume_detects_missing:true});
+  await expect(N.oracleN38(mk(gone),{orderId:'o',reference:'R',dryRun:dry(0,0)})).rejects.toThrow('G6_N38_PRODUCT_GAP_RESUME_BLIND_SPOT_PICKUP_PROOF');
+  await expect(N.oracleN38(mk(full),{orderId:'o',reference:'R',dryRun:null})).rejects.toThrow('G6_N38_SCREEN_MISSING_RESUME_DRY_RUN_NOT_PROVEN');
+ });
+ it('scripts : accès propriétaire seul, dry run, aucune capture ; workflow et alias M01',()=>{
+  const a=read('scripts/recette/g6-negative-n37-n38-chromium.js');
+  expect(a).toMatch(/FOREIGN_DOWNLOAD_ACCEPTED/);expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);expect(a).toMatch(/dry_run:true/);expect(a).not.toMatch(/screenshot/);
+  expect(validateChromiumScriptSources()).toBeGreaterThan(0);
+  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
+  for(const id of ['N35','N36','N37','N38']){for(const m of ['KM','CM','CG'])expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");expect(wf).toContain("'-full-"+id+"-') && '"+id+"'");expect(N.isNegative(id)).toBe(true)}
+  expect(read('scripts/recette/canonical/real-buyer-cash-adapters.js')).toMatch(/'N19','N35','N36','N37','N38'\]\.includes\(SCENARIO\)/);
  });
 });
