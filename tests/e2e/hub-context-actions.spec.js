@@ -235,6 +235,33 @@ test('Administration : Engagement ne se confond pas avec Fournisseur ni Paiement
   expect(posts).toHaveLength(0);
 });
 
+test('ouvrir un formulaire après un long menu repart en haut sans scroller le Kanban',async({page})=>{
+  const {posts}=await mount(page);
+  const cell=page.locator('[data-hub-global-stage="Fournisseur"]');
+  const menu=page.locator('[data-hub-global-menu]');
+  const background=page.locator('.kmc-hub-board-scroll').first();
+  await cell.click();
+  await expect(menu).toBeVisible();
+  await menu.evaluate(el=>{
+    for(let i=0;i<28;i++){
+      const line=document.createElement('p');
+      line.textContent='Historique '+(i+1);
+      line.style.cssText='min-height:32px;margin:0;padding:3px 8px';
+      el.appendChild(line);
+    }
+    el.scrollTop=el.scrollHeight;
+  });
+  expect(await menu.evaluate(el=>el.scrollTop)).toBeGreaterThan(0);
+  const before=await background.evaluate(el=>({top:el.scrollTop,left:el.scrollLeft}));
+  await menu.getByRole('button',{name:'Attester l’envoi fournisseur'}).click();
+  await expect(menu).toHaveClass(/is-editing/);
+  await expect(menu.locator('.kmc-hub-action-form')).toBeVisible();
+  expect(await menu.evaluate(el=>el.scrollTop)).toBe(0);
+  await expect(menu.locator('.kmc-hub-action-input').first()).toBeFocused();
+  expect(await background.evaluate(el=>({top:el.scrollTop,left:el.scrollLeft}))).toEqual(before);
+  expect(posts).toHaveLength(0);
+});
+
 test('fournisseur : preuve d’envoi saisie puis POST canonique seulement après confirmation',async({page})=>{
   const {posts}=await mount(page);
   await page.locator('[data-hub-global-stage="Fournisseur"]').click({button:'right'});
