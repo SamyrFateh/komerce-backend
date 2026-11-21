@@ -13,6 +13,7 @@
 const fs=require('node:fs'),path=require('node:path');
 const {marketProfile}=require('./canonical/market-profile');
 const {readSellable,classify}=require('./canonical/m03-prereq');
+const {readMultiSkuProducts}=require('./canonical/negative-scenarios');
 const OUT=path.resolve(__dirname,'../../test-results/g6-prereq-probe/report.json');
 function guard(env){
  if(env.GITHUB_EVENT_NAME!=='issues'||env.GITHUB_ACTOR!==env.GITHUB_REPOSITORY_OWNER||
@@ -32,6 +33,10 @@ async function main({env=process.env,db=require('../../db')}={}){
   client=await db.getClient();
   await client.query('BEGIN READ ONLY');
   Object.assign(state,classify(await readSellable(client,market)));
+  // N33 (G6-G4A) : produit vendable à >= 2 SKU distincts ; lecture seule, verdict additif (M03 inchangé).
+  const multi=await readMultiSkuProducts(client,market);
+  state.multi_sku={count:multi.length,candidates:multi.slice(0,10).map(p=>p.product_ref),
+   verdict:multi.length?'N33_READY':'PREREQ_MISSING_MULTI_SKU'};
   await client.query('ROLLBACK');
   save();return state;
  }catch(e){

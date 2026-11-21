@@ -474,10 +474,12 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
    const line=p=>({product_ref:p.product_ref,price:p.price,source_key:p.source_key});
    return {basket:{local:line(basket.local),imports:basket.imports.map(line)}};
   },
-  executeBuyerChromium:async({product,basket}={})=>{
+  // N33 : produit à >= 2 SKU distincts, choisi en lecture seule, jamais créé ici.
+  resolveMultiSkuProduct:async()=>require('./negative-scenarios').resolveMultiSku(db,marketProfile(env).code),
+  executeBuyerChromium:async({product,basket,variants}={})=>{
    if(!runtimePin)throw Error('G6_DYNAMIC_RUNTIME_ATTESTATION_REQUIRED');
    fs.rmSync(path.join(ROOT,REPORT_PATH.BUYER),{force:true});
-   execute(SCRIPTS.BUYER,basket?{...env,G6_M03_BASKET:JSON.stringify(basket)}:product?{...env,G6_BUYER_PRODUCT_REF:product.product_ref,
+   execute(SCRIPTS.BUYER,basket?{...env,G6_M03_BASKET:JSON.stringify(basket)}:variants?{...env,G6_N33_VARIANTS:JSON.stringify({product_ref:variants.product_ref,price:variants.price,skus:variants.skus})}:product?{...env,G6_BUYER_PRODUCT_REF:product.product_ref,
     G6_BUYER_EXPECTED_PRICE:String(product.price)}:env);
    issuedBuyer=report('BUYER').data;
    return issuedBuyer;
