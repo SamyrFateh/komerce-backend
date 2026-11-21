@@ -47,6 +47,22 @@ describe('G6 M03 mixed basket',()=>{
   expect(()=>buyerParams({...e,G6_M03_BASKET:JSON.stringify({...b,local:{...b.local,product_ref:M01_PRODUCT_REF}})})).toThrow('G6_M03_LOCAL_PRODUCT_IS_M01_REFERENCE');
   expect(()=>buyerParams({G6_CANONICAL_SCENARIO:'M03'})).toThrow('G6_M03_BASKET_NOT_BOUND');
  });
+ test('actual Chromium buyer preflight does not falsely reject central Hub MANUAL stock-zero product',()=>{
+  const script=read('scripts/recette/g6-p2-buyer-order-real-chromium.js');
+  // Source and type are read from the SAME pinned M03 basket and verified PG.
+  expect(script).toContain("PARAMS.basket && line.source_key==='central_hub' && !local");
+  expect(script).toContain("sku.source='MANUAL'");
+  expect(script).toContain('sku.supplier_order_identity IS NULL');
+  expect(script).toContain("h.id=p.procurement_supplier_id");
+  expect(script).toContain("h.system_key='central_hub'");
+  expect(script).toContain("h.is_active=TRUE AND h.deleted_at IS NULL");
+  // External supplier imports and M01/M02 still require positive sold SKU stock.
+  expect(script).toContain(": 'AND sku.stock>0'");
+  expect(script).toContain('const importSkuGate=local?');
+  // Never declare front checkout PASS on the strength of this read-only gate.
+  expect(script).toContain("check(rows.length===1,'G6_RECIPE_PRODUCT_OR_PRICE_NOT_UNIQUE')");
+  expect(script).toContain('await humanFill(null,page.locator');
+ });
  test('bootstrap refuses a basket below 3 sources before any buyer gesture',async()=>{
   let buyerRan=false;
   const adapters={attestRuntimeBeforeBuyer:async()=>({environment:'staging',scenario_id:'M03',market:'KM',staging_sha:'a'.repeat(40),db_fingerprint:'f',production_permitted:false,attestation_origin:'INDEPENDENT_CHROMIUM_POSTGRESQL'}),
