@@ -20,6 +20,10 @@
 
 **Limite de preuve** : cette campagne est strictement READ ONLY : elle ne rejoue pas de POST/PUT interdits, ne valide pas les mutations physiques et financières, et ne constitue pas une certification transactionnelle G6. L'isolation et les gardes de mutation restent gérés par les capacités serveur et les tests CI distincts. L'[issue de certification #4668](https://github.com/SamyrFateh/komerce-backend/issues/4668) est la référence de clôture de **ce seul périmètre**.
 
+## G6-G4A — premiers scénarios N P0 sur le socle (Sonnet, 21/11/2026)
+
+**Responsable :** Sonnet. **Statut :** code livré en PR (`g6-g4a-n-scenarios`), aucun run ; Opus lance. **Périmètre :** N07 (double clic Commander), N09 (remise sans cash encaissé, flux M02), N04 (quantité > stock local, M02), N33 (2 variantes d'un produit, sinon `PREREQ_MISSING_MULTI_SKU`). Titres `[staging-op] g6-dynamic-fresh-full-<ID>-{KM|CM|CG}`, workflow `staging-g6-dynamic-fresh-buyer-cash`. M01, M02, M03 inchangés. Nettoyage des commandes créées par `g6-cleanup-recette`. **Prochaine action :** Required vert, fusion, puis Opus lance N07, N33, N04, N09 (sonde `g6-prereq-probe` avant N33).
+
 ## G6 M01/KM — chaîne canonique boutique → retrait CERTIFIÉE sur staging (18/11/2026)
 
 **DIRECTIVE INTER-AGENTS OBLIGATOIRE — OPUS / SONNET / GPT :** [Handoff Golden E2E M01/KM et décision propriétaire — issue #4506](https://github.com/SamyrFateh/komerce-backend/issues/4506) publié. **Le Golden E2E M01/KM constitue le SOCLE TECHNIQUE UNIQUE À ÉTENDRE pour les autres scénarios G6**, et non un parcours à recopier ou reconstruire. Faire évoluer les composants partagés du runner `scripts/recette/g6-canonical-replay.js`, son workflow, les vrais gestes Chromium, les garde-fous et oracles PG ; ajouter les scénarios/variantes sous leurs IDs de la matrice commune, sur des cohortes distinctes. **Interdit de dupliquer matrice, runner canonique ou parcours complet en scripts jetables.** Coordonnez toute modification du tronc commun et apportez vos preuves par scénario ; **M01 nominal PASS simulé staging ≠ GO des 46 scénarios ni GO production.** Ne jamais rejouer la commande `KL1WGP6` déjà `collected`.
