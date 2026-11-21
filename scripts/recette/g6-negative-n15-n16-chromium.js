@@ -146,11 +146,33 @@ async function runN15(browser){
   const pickable=await pick.count()>0&&await pick.isEnabled();
   if(pickable)await humanCheck(null,pick);
   const ship=await act(actor,API+'/boxes/shipment',section.locator('[data-workspace-action="create-shipment-from-boxes"]'),b=>b?.reference===SHIP15&&Array.isArray(b.hub_unit_ids)&&(pickable?b.hub_unit_ids.length===1&&b.hub_unit_ids[0]===box.id:b.hub_unit_ids.length===0));
-  // Carton non sélectionnable : l'écran laisse quand même cliquer « Créer l'expédition » et envoie une sélection vide
-  // (run 44881374826) ; c'est le geste humain réel, on le laisse partir et on juge la réponse du serveur.
+  // L'écran permet explicitement d'OUVRIR UN BROUILLON vide (hub_ready).
+  // Cela n'est PAS un départ physique. N15 doit vérifier l'absence de transition
+  // et de rattachement, plutôt que confondre le HTTP 201 d'un brouillon avec un
+  // shipment remis au transitaire. Un carton incomplet effectivement sélectionné
+  // doit toujours être refusé par les gardes de composition.
   report.attempts.push({kind:'SHIPMENT_WITH_INCOMPLETE_BOX_SCREEN',http:ship.http,ui_blocked:!pickable||!ship.enabled,box_selectable:pickable,empty_selection_sent:!pickable&&ship.http!=null});
-  if(!pickable&&ship.http!=null&&ship.enabled)report.ux_signal=(report.ux_signal?report.ux_signal+';':'')+'SHIPMENT_BUTTON_ENABLED_WITHOUT_SELECTION';
-  if(is2xx(ship.http))report.gaps.push(pickable?'SHIPMENT_CREATED_WITH_INCOMPLETE_BOX':'SHIPMENT_CREATED_WITH_EMPTY_SELECTION');
+  if(!pickable&&ship.http!=null&&ship.enabled)report.ux_signal=(report.ux_signal?report.ux_signal+';':'')+'DRAFT_BUTTON_ENABLED_WITHOUT_SELECTION';
+  if(is2xx(ship.http)){
+    if(pickable){
+      report.gaps.push('SHIPMENT_CREATED_WITH_INCOMPLETE_BOX');
+    }else{
+      // Oracle SQL indépendant de la réponse HTTP et de l'état du DOM :
+      // le brouillon ne peut ni contenir un carton ni simuler une remise physique.
+      const {rows:[draft]}=await db.query(`
+        SELECT s.id,s.stage,s.hub_draft,
+          (SELECT COUNT(*)::int FROM international_shipment_hub_units h WHERE h.shipment_id=s.id) AS attached,
+          (SELECT COUNT(*)::int FROM international_shipment_events e
+            WHERE e.shipment_id=s.id AND e.to_stage='handed_over') AS handovers
+        FROM international_shipments s WHERE s.reference=$1 AND s.market_id=$2
+      `,[SHIP15,MK.id]);
+      const emptyDraft=!!draft&&draft.stage==='hub_ready'&&draft.hub_draft===true&&
+        Number(draft.attached)===0&&Number(draft.handovers)===0;
+      report.attempts.push({kind:'EMPTY_DRAFT_INDEPENDENT_PG',pass:emptyDraft,
+        stage:draft?.stage||null,attached:draft?.attached??null,handovers:draft?.handovers??null});
+      if(!emptyDraft)report.gaps.push('SHIPMENT_EMPTY_DRAFT_HAS_PHYSICAL_EFFECT');
+    }
+  }
   await probe(actor.page,'shipment_incomplete_box',API+'/boxes/shipment',{reference:SHIP15+'-P',hub_unit_ids:[box.id]});
   reach('DEPARTURE_TRIED');
   // 5. Fermeture de la KOM-BOX vide : on avance par l'écran tant que le serveur accepte (au plus 6 états).
