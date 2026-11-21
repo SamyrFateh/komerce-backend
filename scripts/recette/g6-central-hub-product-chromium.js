@@ -343,6 +343,9 @@ async function catalogDefaultSku(actor,ref){
  if(!await visible(panel,20000))return !!missing('SCREEN_MISSING_HUB_DEFAULT_SKU_PREPARATION',{product_ref:ref,screen:await inspectorText(actor)});
  const path=CAT+'/approval/'+encodeURIComponent(ref)+'/prepare-hub-default-sku';
  await arm(actor,'POST',path);
+ // La confirmation affichée par le bouton est un geste UI distinct,
+ // nécessaire pour autoriser explicitement la création de l'unité interne.
+ actor.page.once('dialog',dialog=>dialog.accept());
  await fire(actor,'POST',path,()=>humanClick(null,panel.locator('[data-workspace-action="catalog-default-sku"]')),
   'catalog-hub-default-sku',{product_ref:ref,internal:true,stock:0,supplier_identity_created:false});
  return true;
