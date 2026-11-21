@@ -5,6 +5,16 @@ const path = require('path');
 
 const css = fs.readFileSync(
   path.join(__dirname, '../../public/dashboards/canonical/css/import-runtime.css'), 'utf8');
+const runtime = fs.readFileSync(
+  path.join(__dirname, '../../public/dashboards/canonical/js/import-runtime.js'), 'utf8');
+
+test('Sourcing Live expose le motif d’un passage bloqué et le lien d’import manuel', () => {
+  expect(runtime).toContain('function sourcingBlockReason(run)');
+  expect(runtime).toContain('data-sourcing-blocked-run');
+  expect(runtime).toContain('data-sourcing-block-diagnostic');
+  expect(runtime).toContain('href="/admin/workspaces/sourcing?mode=manual"');
+  expect(runtime).toContain('data-sourcing-manual-import');
+});
 
 describe('import-runtime.css — le menu latéral appartient à la coque standard', () => {
   test('aucune règle :has(.kmc-import-runtime) ne redessine le menu ni le décalage de page', () => {

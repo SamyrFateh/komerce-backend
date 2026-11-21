@@ -77,6 +77,20 @@ test('Suivi : un seul écran, trois onglets locaux et un seul panneau visible',a
  const dimensions=await page.evaluate(()=>({width:innerWidth,document:document.documentElement.scrollWidth}));
  expect(dimensions.document).toBeLessThanOrEqual(dimensions.width+2);
 });
+test('un passage bloqué explique son motif et donne accès à l’import manuel',async({page})=>{
+ const payload=data();
+ payload.selected.status='FAILED';
+ payload.selected.sourcing_status='BLOCKED';
+ payload.selected.failure_reason='pipeline_partial_blocked';
+ await mount(page,payload);
+ const alert=page.locator('[data-sourcing-blocked-run="KIR-000013"]');
+ await expect(alert).toBeVisible();
+ await expect(alert).toContainText('La résolution canonique des produits fournisseur n’a pas abouti.');
+ await expect(alert.locator('[data-sourcing-block-diagnostic]')).toHaveAttribute('href','/admin/import-runtime?run=KIR-000013&view=history');
+ const manual=page.getByRole('link',{name:'Import manuel →'});
+ await expect(manual).toBeVisible();
+ await expect(manual).toHaveAttribute('href','/admin/workspaces/sourcing?mode=manual');
+});
 test('les exceptions restent traçables sans envoyer Sourcing vers un atelier interdit',async({page})=>{
  await mount(page);
  await expect(page.locator('a[href="/admin/workspaces/catalog?search=KSC-000194"]')).toHaveCount(0);
