@@ -612,16 +612,33 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
     const open = row.locator('button', { hasText: /Consulter|Ouvert/ });
     if ((await open.first().textContent()).trim() === 'Consulter') { await open.first().click(); await page.waitForTimeout(1500); }
   }
-  // Un formulaire de tache (details > summary) : ouvrir, remplir par nom de champ, Enregistrer.
+  // Un <details> peut déjà être ouvert par l'UI (remise transitaire, par défaut).
+  // Cliquer aveuglément sur <summary> le REFERMAIT et masquait ses champs.
   async function journeyTask(page, { key, role, summary, fields = {}, tailMatch, tab, route, ui }) {
     const task = page.locator('details.kmc-journey-task').filter({ has: page.locator('summary', { hasText: summary }) });
-    const present = (await task.count()) > 0;
+    const count = await task.count();
+    const present = count === 1;
+    if (count > 1) throw Error('JOURNEY_TASK_AMBIGUOUS:' + key + ':' + count);
     if (present) {
-      await task.first().locator('summary').click();
+      const details = task.first();
+      await details.waitFor({ state: 'visible', timeout: 10000 });
+      // Un résumé toggle le <details> : n'ouvrir que si fermé.
+      if (!(await details.evaluate(el => Boolean(el.open)))) await details.locator('summary').click();
+      await expect(details.locator('form'), 'JOURNEY_FORM_NOT_VISIBLE:' + key).toBeVisible({ timeout: 5000 });
       for (const [name, value] of Object.entries(fields)) {
-        const ctl = task.first().locator(`[name="${name}"]`);
-        if ((await ctl.evaluate((e) => e.tagName)) === 'SELECT') await ctl.selectOption(value); else await ctl.fill(value);
+        const ctl = details.locator(`[name="${name}"]`);
+        if (await ctl.count() !== 1 || !(await ctl.isVisible())) {
+          const available = await details.locator('input[name],select[name],textarea[name]')
+            .evaluateAll(nodes => nodes.map(n => n.name).sort());
+          const capture = await shot(page, 'journey-field-missing-' + key);
+          throw Error('JOURNEY_FIELD_NOT_VISIBLE:' + key + ':' + name +
+            ':available=' + available.join(',') + ':capture=' + capture);
+        }
+        if ((await ctl.evaluate(el => el.tagName)) === 'SELECT') await ctl.selectOption(value);
+        else await ctl.fill(value);
       }
+      const submit = details.locator('button[type="submit"]');
+      await expect(submit, 'JOURNEY_ACTION_FORBIDDEN:' + key).toBeEnabled({ timeout: 5000 });
     }
     return gesture(page, {
       key, role, route, ui, match: (pp) => pp === `${SC}/${SHIP()}/${tailMatch}`,
@@ -635,6 +652,11 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
   test('Expeditions & Douane : Hub remet au transitaire', async ({ browser, baseURL }) => {
     const { ctx, page } = await login(browser, baseURL, 'hub');
     await openJourney(page, 'Transport & fret');
+    // Une expédition ouverte par le Hub doit être un brouillon hub_ready : sinon
+    // les champs forwarder_name/transport_mode peuvent légitimement être absents.
+    const shipment = await q('SELECT stage,hub_draft FROM international_shipments WHERE reference=$1', [SHIP()]);
+    expect(shipment, 'dossier international unique et préparé par Hub Live').toHaveLength(1);
+    expect(shipment[0], 'état physique attendu avant la remise').toMatchObject({stage:'hub_ready',hub_draft:true});
     await journeyTask(page, { key: 'journey:handed_over', role: 'agent_hub', summary: transitionOf('Remis au transitaire'), tab: 'Transport & fret',
       fields: { forwarder_name: 'E2E Transitaire', transport_mode: 'sea', proof_ref: `CLK-HANDED-${RUN8}` }, tailMatch: 'transition', route: `POST ${SC}/:ref/transition`, ui: SCR });
     await ctx.close();
