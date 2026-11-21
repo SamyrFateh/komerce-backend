@@ -197,7 +197,7 @@ async function resolveGroupedLineEntries(db, content) {
         AND pl.product_sku_id = $2
         AND pl.cancelled_at IS NULL
       ORDER BY o.created_at ASC, pl.id ASC
-      FOR UPDATE OF pl FOR SHARE OF po`,
+      FOR UPDATE OF pl`,
     [content.purchase_order_id, content.product_sku_id]
   );
   // HB-06/HB-07 : le reçu est lu APRÈS le verrou des lignes (une réception concurrente de la même variante attend),
@@ -235,7 +235,10 @@ async function resolveGroupedLineEntries(db, content) {
 async function resolveContentEntries(executor, content) {
   const db = requireExecutor(executor);
   const { rows: [header] } = await db.query(
-    'SELECT id, order_id, status FROM purchase_orders WHERE id = $1',
+    // Lock the PO before any purchase_lines rows. Confirmation uses this same order
+    // (PO, then lines); reversing it can deadlock a reduced confirmation against
+    // a concurrent physical receipt.
+    'SELECT id, order_id, status FROM purchase_orders WHERE id = $1 FOR SHARE',
     [content.purchase_order_id]
   );
   if (header && header.order_id === null) {
