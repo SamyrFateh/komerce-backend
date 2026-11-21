@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 13783)
-Total output lines: 614
-
 /** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 const fs=require('node:fs'),path=require('node:path');
@@ -279,7 +276,85 @@ describe('G6-G4C N13 (rupture fournisseur, reliquat) et N14 (réception partiell
   expect(a).toMatch(/PARTIAL_CONFIRMATION_/);expect(a).toMatch(/RELIQUAT_NON_VISIBLE_APRES_CONFIRMATION/);
   expect(a).toMatch(/data-receive-line/);expect(a).toMatch(/QUANTITE_INVALIDE_SANS_MESSAGE/);expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);
   expect(a).toMatch(/EXCESS/);expect(a).toMatch(/NEGATIVE/);expect(a).not.toMatch(/screenshot/);
-  expect(valida…1783 tokens truncated….resolves.toMatchObject({held_by_role:'admin',stage:'customs_released'});
+  expect(validateChromiumScriptSources()).toBeGreaterThan(0);
+ });
+ it('workflow : titres N13/N14 pour KM, CM et CG',()=>{
+  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
+  for(const id of ['N13','N14'])for(const m of ['KM','CM','CG'])
+   expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
+  expect(N.isNegative('N13')&&N.isNegative('N14')).toBe(true);
+ });
+});
+
+describe('G6-G4C N15 (sac ou KOM-BOX incomplet) et N16 (carton non DISPATCHED, composition figée)',()=>{
+ const up=id=>STAGE_IDS.slice(0,STAGE_IDS.indexOf(id)+1);
+ const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
+ it('séquences : chaîne M01 coupée au bon point, M01 inchangé',()=>{
+  expect(graphFor('N15').order).toEqual([...up('HUB_RECEIVING_READBACK'),'N15_BAG_BOX_INCOMPLETE','N15_NO_CLOSURE_ORACLE']);
+  expect(graphFor('N16').order).toEqual([...up('HUB_KOM_BOX'),'N16_BOX_NOT_DISPATCHED_FROZEN','N16_BOX_FROZEN_ORACLE']);
+  expect(graphFor('N15').order).not.toContain('HUB_CUSTOMER_BAG');
+  expect(graphFor('N16').order).not.toContain('HUB_SHIPMENT');
+  expect(graphFor('M01').order).toEqual(STAGE_IDS);
+  expect(validateStageModuleSources()).toBeGreaterThan(0);
+ });
+ const clean=[[{id:'b',state:'RECEIVED'}],[{n:0}],[{n:0}],[{id:'x',state:'RECEIVED'}],[{shipments:0,empty_hub_drafts:0,links:0,departed:0}]];
+ it('oracle N15 : sac non fermé et vide, carton non fermé, aucune expédition ni départ',async()=>{
+  await expect(N.oracleN15(mk(clean),{orderId:'o',boxRef:'B',shipmentRef:'S'})).resolves.toMatchObject({bag_state:'RECEIVED',shipments:0});
+  await expect(N.oracleN15(mk([...clean.slice(0,4),[{shipments:1,empty_hub_drafts:1,links:0,departed:0}]]),{orderId:'o',boxRef:'B',shipmentRef:'S'})).resolves.toMatchObject({shipments:1,empty_hub_drafts:1,shipment_links:0});
+  await expect(N.oracleN15(mk([[{id:'b',state:'PACKED'}]]),{orderId:'o',boxRef:'B',shipmentRef:'S'})).rejects.toThrow('G6_N15_PRODUCT_GAP_BAG_CLOSED_WITH_MISSING_LINE');
+  await expect(N.oracleN15(mk([clean[0],clean[1],[{n:1}]]),{orderId:'o',boxRef:'B',shipmentRef:'S'})).rejects.toThrow('G6_N15_PRODUCT_GAP_INCOMPLETE_BAG_IN_BOX');
+  await expect(N.oracleN15(mk([clean[0],clean[1],clean[2],[{id:'x',state:'PACKED'}]]),{orderId:'o',boxRef:'B',shipmentRef:'S'})).rejects.toThrow('G6_N15_PRODUCT_GAP_EMPTY_BOX_CLOSED');
+  await expect(N.oracleN15(mk([...clean.slice(0,4),[{shipments:1,links:1,departed:0}]]),{orderId:'o',boxRef:'B',shipmentRef:'S'})).rejects.toThrow('G6_N15_PRODUCT_GAP_NON_CONFORMING_DEPARTURE');
+  await expect(N.oracleN15(mk([...clean.slice(0,4),[{shipments:1,empty_hub_drafts:0,links:0,departed:0}]]),{orderId:'o',boxRef:'B',shipmentRef:'S'})).rejects.toThrow('G6_N15_PRODUCT_GAP_NON_CONFORMING_DEPARTURE');
+ });
+ const snap=(o={})=>[[{id:'x',state:'DISPATCHED'}],[{links:1,effective:1,qty:1,placements:2,removed:1,box_custody_events:7,shipment_links:1}],
+  [{stage:'handed_over',forwarder_name:'F',transport_mode:'sea',...o}],[{statuses:'shipped',shipped:1}]];
+ it('oracle N16 : carton remis, composition identique au point de référence',async()=>{
+  const base=await N.snapN16(mk(snap()),{orderId:'o',boxRef:'B',shipmentRef:'S'});
+  await expect(N.oracleN16(mk(snap()),{orderId:'o',boxRef:'B',shipmentRef:'S',baseline:base})).resolves.toMatchObject({box_state:'DISPATCHED',shipment_stage:'handed_over'});
+  await expect(N.oracleN16(mk(snap()),{orderId:'o',boxRef:'B',shipmentRef:'S',baseline:{...base,links:0}})).rejects.toThrow('G6_N16_PRODUCT_GAP_COMPOSITION_CHANGED_AFTER_HANDOVER');
+  await expect(N.oracleN16(mk(snap({stage:'hub_ready',forwarder_name:null})),{orderId:'o',boxRef:'B',shipmentRef:'S',baseline:base})).rejects.toThrow('G6_N16_PRODUCT_GAP_HANDOVER_STATE_DISPATCHED_hub_ready');
+ });
+ it('script : écran puis sondes signalées, refus de remise avant DISPATCHED, aucune capture',()=>{
+  const a=read('scripts/recette/g6-negative-n15-n16-chromium.js');
+  expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);expect(a).toMatch(/HANDOVER_ACCEPTED_BOX_NOT_DISPATCHED/);expect(a).toMatch(/close-customer-bag/);
+  expect(a).toMatch(/FERMETURE_SAC_ABSENTE_SANS_MOTIF_AFFICHE/);expect(a).toMatch(/detach_after_handover/);expect(a).not.toMatch(/screenshot/);
+  expect(validateChromiumScriptSources()).toBeGreaterThan(0);
+ });
+ it('workflow : titres N15/N16 pour KM, CM et CG',()=>{
+  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
+  for(const id of ['N15','N16'])for(const m of ['KM','CM','CG'])
+   expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
+  expect(N.isNegative('N15')&&N.isNegative('N16')).toBe(true);
+ });
+});
+
+describe('G6-G5B N17 (transitaire hors rôle ou marché), N18 (douane retenue puis mainlevée), N19 (retard puis perte du transport local)',()=>{
+ const up=id=>STAGE_IDS.slice(0,STAGE_IDS.indexOf(id)+1);
+ const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
+ it('séquences : chaîne M01 coupée au bon point, M01 inchangé',()=>{
+  expect(graphFor('N17').order).toEqual([...up('HUB_SHIPMENT'),'N17_FORWARDER_ROLE_MARKET_ATTEMPTS','N17_NO_TRANSITION_ORACLE']);
+  expect(graphFor('N18').order).toEqual([...up('FORWARDER'),'N18_CUSTOMS_HOLD_ATTEMPTS','N18_HOLD_RELEASE_ORACLE']);
+  expect(graphFor('N19').order).toEqual([...up('CUSTOMS'),'N19_LOCAL_TRANSPORT_DELAY_LOSS','N19_LOSS_INCIDENT_ORACLE']);
+  expect(graphFor('N17').order).not.toContain('FORWARDER');
+  expect(graphFor('N18').order).not.toContain('CUSTOMS');
+  expect(graphFor('M01').order).toEqual(STAGE_IDS);
+  expect(validateStageModuleSources()).toBeGreaterThan(0);
+ });
+ const snap=(o={})=>({stage:'handed_over',customs_shipment_id:null,tracking_reference:null,forwarder_name:'F',events:3,charges:0,receipts:0,...o});
+ it('oracle N17 : expédition identique, aucun frais, lien douane ni suivi',async()=>{
+  const row=o=>[[snap(o)]],ord=[[{id:'o',status:'shipped',collected_scans:0}]];
+  await expect(N.oracleN17(mk([...row(),...ord]),{orderId:'o',shipmentRef:'S',baseline:snap()})).resolves.toMatchObject({stage:'handed_over',charges:0});
+  await expect(N.oracleN17(mk(row({stage:'forwarder_received'})),{orderId:'o',shipmentRef:'S',baseline:snap()})).rejects.toThrow('G6_N17_PRODUCT_GAP_STAGE_MOVED_forwarder_received');
+  await expect(N.oracleN17(mk(row({events:4})),{orderId:'o',shipmentRef:'S',baseline:snap()})).rejects.toThrow('G6_N17_PRODUCT_GAP_JOURNEY_CHANGED_BY_REFUSED_ACTOR');
+ });
+ const t=s=>new Date('2026-11-21T10:0'+s+':00Z');
+ const j=(o={})=>[[snap({stage:'customs_released',customs_shipment_id:'c',...o})],[{id:'c',status:'declared',customs_paid_kmf:'0'}],
+  [{status:'released',held_at:t(1),released_at:t(3),held_by:'u',released_by:'a',held_by_role:'admin',reason:'motif'}],
+  [{event_type:'customs_linked',to_stage:null,occurred_at:t(0)},{event_type:'customs_amount_confirmed',to_stage:null,occurred_at:t(4)},{event_type:'stage_changed',to_stage:'customs_released',occurred_at:t(5)}],
+  [{id:'o',status:'shipped',collected_scans:0}]];
+ it('oracle N18 : aucun transit entre retenue et mainlevée, étapes autorisées après',async()=>{
+  await expect(N.oracleN18(mk(j()),{orderId:'o',shipmentRef:'S',customsRef:'C'})).resolves.toMatchObject({held_by_role:'admin',stage:'customs_released'});
   const bad=j();bad[3]=[{event_type:'customs_amount_confirmed',to_stage:null,occurred_at:t(2)},{event_type:'stage_changed',to_stage:'customs_released',occurred_at:t(5)}];
   await expect(N.oracleN18(mk(bad),{orderId:'o',shipmentRef:'S',customsRef:'C'})).rejects.toThrow('G6_N18_PRODUCT_GAP_TRANSIT_WHILE_HELD_1');
   const open=j();open[2]=[{status:'held',held_at:t(1),released_at:null,held_by:'u',released_by:null,held_by_role:'admin',reason:'motif'}];
