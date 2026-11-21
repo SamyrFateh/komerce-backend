@@ -188,6 +188,9 @@ async function main(){
   actor=await login(browser,'E2E_MARKET_OPERATOR_'+MARKET+'_','market_operator');
   check(await readPrice()===original,'G6_N06_INITIAL_PRICE_DRIFT');
   await changePriceFromMarketUI(actor,{from:original,to:newPrice,kind:'CHANGE'});
+  // Garder le prix que CETTE recette vient de publier, pour ne pas écraser
+  // une modification concurrente lors de la restauration finale.
+  report.price_written_by_run=newPrice;save();
   await version();
   const stale=page.waitForResponse(r=>r.url()===BASE+'/api/orders'&&r.request().method()==='POST',{timeout:30000});
   await humanClick(null,confirm);
@@ -238,6 +241,8 @@ async function main(){
     const actual=await readPrice();
     if(actual!==original){
      check(!!actor,'G6_N06_RESTORE_ACTOR_MISSING');
+     check(report.price_written_by_run===actual,
+      'G6_N06_RESTORE_CONCURRENT_PRICE_DRIFT_MANUAL_REVIEW');
      await changePriceFromMarketUI(actor,{from:actual,to:original,kind:'RESTORE'});
     }
     report.market_price_after=await readPrice();
