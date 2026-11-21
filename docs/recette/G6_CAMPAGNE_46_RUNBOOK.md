@@ -41,6 +41,12 @@ En fresh, M01 sur CM ou CG est catalogué M04 ou M05.
 
 Le script `scripts/recette/ops/g6-run-scenario.sh` fait l'équivalent : il ouvre l'issue, attend la fin du run, relance une annulation à vide, puis extrait le verdict.
 
+### Verrou Actions — ne pas annuler les runs propriétaires avant le premier job
+
+Les sept workflows propriétaire/staging à un seul job partagent le même groupe de concurrence **au niveau de leur job**, et non plus au niveau du workflow (Hub Chromium corrigé dans #5003 ; les six autres dans cette PR). Tous écoutent `issues.opened`, mais seuls les jobs dont le titre exact et le propriétaire passent la garde doivent acquérir le verrou. Les workflows déclenchés pour une issue non pertinente restent `skipped` **sans remplacer une exécution métier en attente**.
+
+`cancel-in-progress: false` conserve un job d'écriture en cours ; le groupe commun garantit toujours **une seule opération de recette à la fois** (y compris les sondes de contrôle). Une seconde opération légitime en attente peut encore remplacer une attente précédente selon la politique standard GitHub : ouvrir **une seule** issue de recette à la fois, confirmer les jobs du run et ne jamais fusionner `main` pendant la preuve du SHA. Les runs annulés avant le premier job ne sont pas des PASS.
+
 ## 3. Prérequis de données (à vérifier avant tout run)
 
 | Besoin | Commande (titre d'issue) | Remarque |
