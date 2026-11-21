@@ -32,7 +32,7 @@ describe('G6 G5A — scénarios manquants N01/N02/N03/N05/N06 (contrats avant Ch
   expect(n06).toContain("changePriceFromMarketUI(actor,{from:actual,to:original,kind:'RESTORE'})");
   expect(n06).toContain("G6_N06_RESTORE_FAILED_REQUIRES_MANUAL_STAGING_REPAIR");
   expect(n06).toContain("G6_N06_PRODUCT_GAP_OLD_PRICE_CHECKOUT_NOT_REJECTED");
-  expect(n06).not.toMatch(/route\\.fulfill\\s*\\(/);
+  expect(n06).not.toMatch(/route\.fulfill\s*\(/);
  });
  it('registre exact des cinq cas et aucune confusion avec N04 déjà monté',()=>{
   expect(IDS).toEqual(['N01','N02','N03','N05','N06']);
