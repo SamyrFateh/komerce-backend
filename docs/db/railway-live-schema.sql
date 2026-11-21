@@ -1924,6 +1924,50 @@ $$;
 
 
 --
+-- Name: guard_order_item_procure_on_order(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.guard_order_item_procure_on_order() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+ IF TG_OP='UPDATE' THEN
+  IF NEW.procure_on_order IS DISTINCT FROM OLD.procure_on_order THEN
+   RAISE EXCEPTION 'procure_on_order is immutable' USING ERRCODE='23514';
+  END IF;
+  IF OLD.procure_on_order AND (
+   NEW.product_id IS DISTINCT FROM OLD.product_id
+   OR NEW.sku_id IS DISTINCT FROM OLD.sku_id
+   OR NEW.fulfillment_source IS DISTINCT FROM OLD.fulfillment_source
+  ) THEN
+   RAISE EXCEPTION 'on-order product, SKU and fulfillment source are immutable'
+     USING ERRCODE='23514';
+  END IF;
+  RETURN NEW;
+ END IF;
+ IF NEW.procure_on_order THEN
+  IF NOT EXISTS(
+   SELECT 1 FROM public.products p
+    JOIN public.product_skus k ON k.product_id=p.id
+    JOIN public.suppliers hub ON hub.id=p.procurement_supplier_id
+    JOIN public.sourcing_candidates sc
+      ON sc.product_id=p.id AND sc.supplier_id=hub.id
+   WHERE p.id=NEW.product_id AND k.id=NEW.sku_id AND p.inventory_model='SKU'
+     AND k.is_active=TRUE AND k.stock=0 AND k.source='MANUAL'
+     AND k.supplier_order_identity IS NULL AND hub.system_key='central_hub'
+     AND hub.is_active=TRUE AND hub.deleted_at IS NULL
+     AND sc.state='imported_to_catalog'
+     AND sc.normalized_source_contract->>'source_kind'='central_hub_manual'
+  ) THEN
+   RAISE EXCEPTION 'procure_on_order requires verified Central Hub zero-stock SKU'
+     USING ERRCODE='23514';
+  END IF;
+ END IF;
+ RETURN NEW;
+END $$;
+
+
+--
 -- Name: guard_paid_no_show_order(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -3044,6 +3088,20 @@ BEGIN
 
   RETURN NEW;
 END $$;
+
+
+--
+-- Name: notify_dashboard_refresh(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.notify_dashboard_refresh() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  PERFORM pg_notify('komerce_dashboard_refresh', 'changed');
+  RETURN NULL;
+END;
+$$;
 
 
 --
@@ -9098,7 +9156,9 @@ CREATE TABLE public.order_items (
     fulfillment_source text,
     qty_refunded integer DEFAULT 0 NOT NULL,
     replacement_source_item_id uuid,
+    procure_on_order boolean DEFAULT false NOT NULL,
     CONSTRAINT chk_order_items_price CHECK ((((replacement_source_item_id IS NULL) AND (price_kmf > (0)::numeric)) OR ((replacement_source_item_id IS NOT NULL) AND (price_kmf = (0)::numeric)))),
+    CONSTRAINT chk_order_items_procure_on_order_import CHECK (((NOT procure_on_order) OR ((sku_id IS NOT NULL) AND (fulfillment_source = 'IMPORT'::text)))),
     CONSTRAINT chk_order_items_qty CHECK ((quantity > 0)),
     CONSTRAINT chk_order_items_qty_refunded CHECK (((qty_refunded >= 0) AND ((qty_refunded + qty_collected) <= quantity))),
     CONSTRAINT order_items_delivery_mode_check CHECK ((delivery_mode = ANY (ARRAY['sea'::text, 'air'::text]))),
@@ -9217,6 +9277,13 @@ COMMENT ON COLUMN public.order_items.requested_transport_rail IS 'Code canonique
 --
 
 COMMENT ON COLUMN public.order_items.fulfillment_source IS 'Snapshot immuable de provenance au checkout : LOCAL_STOCK ou IMPORT. NULL est réservé aux lignes historiques/synthétiques sans snapshot fiable et ne doit jamais être interprété comme IMPORT.';
+
+
+--
+-- Name: COLUMN order_items.procure_on_order; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.order_items.procure_on_order IS 'Immutable purchase-on-order snapshot: verified manual Central Hub import; no stock debit or restore on payment, cancellation, or backorder.';
 
 
 --
@@ -20713,6 +20780,377 @@ CREATE TRIGGER currency_parities_value_guard BEFORE UPDATE ON public.currency_pa
 
 
 --
+-- Name: cash_collections dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.cash_collections FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: cash_deposits dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.cash_deposits FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: catalog_media dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.catalog_media FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: catalog_media_visual_fr_reviews dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.catalog_media_visual_fr_reviews FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: customs_shipment_holds dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.customs_shipment_holds FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: customs_shipments dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.customs_shipments FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: disputes dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.disputes FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: financial_movements dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.financial_movements FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: hub_box_bags dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.hub_box_bags FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: hub_custody_events dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.hub_custody_events FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: hub_physical_unit_placements dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.hub_physical_unit_placements FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: hub_physical_units dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.hub_physical_units FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: hub_purchase_allocations dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.hub_purchase_allocations FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: incidents dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.incidents FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: international_shipment_hub_units dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.international_shipment_hub_units FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: international_shipments dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.international_shipments FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: invoices dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.invoices FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: manual_purchase_executions dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.manual_purchase_executions FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: market_settlements dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.market_settlements FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: markets dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.markets FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: order_comments dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.order_comments FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: order_incidents dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.order_incidents FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: order_item_cost_imputations dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.order_item_cost_imputations FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: order_item_real_cost_allocations dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.order_item_real_cost_allocations FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: order_items dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.order_items FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: order_status_history dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.order_status_history FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: orders dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.orders FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: parcel_items dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.parcel_items FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: parcels dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.parcels FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: partners dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.partners FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: product_content_profile dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.product_content_profile FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: product_market_exposure dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.product_market_exposure FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: product_market_price_drafts dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.product_market_price_drafts FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: product_skus dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.product_skus FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: product_variants dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.product_variants FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: products dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.products FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: purchase_lines dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.purchase_lines FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: purchase_order_authorizations dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.purchase_order_authorizations FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: purchase_orders dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.purchase_orders FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: purchase_variance_decisions dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.purchase_variance_decisions FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: recipients dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.recipients FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: refund_execution_intents dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.refund_execution_intents FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: refunds dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.refunds FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: relais dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.relais FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: scan_events dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.scan_events FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: shipments dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.shipments FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: signals dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.signals FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: sourcing_candidates dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.sourcing_candidates FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: supplier_catalog_imports dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.supplier_catalog_imports FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: supplier_execution_payments dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.supplier_execution_payments FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: supplier_payment_settlements dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.supplier_payment_settlements FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: suppliers dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.suppliers FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
+-- Name: wallet_transactions dashboard_refresh_after_write; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON public.wallet_transactions FOR EACH STATEMENT EXECUTE FUNCTION public.notify_dashboard_refresh();
+
+
+--
 -- Name: fx_pegs fx_pegs_append_only; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -21438,6 +21876,13 @@ CREATE TRIGGER trg_membership_capability_ceiling_guard BEFORE INSERT OR UPDATE O
 --
 
 CREATE TRIGGER trg_no_delete_parcels BEFORE DELETE ON public.parcels FOR EACH ROW EXECUTE FUNCTION public.prevent_hard_delete_parcels();
+
+
+--
+-- Name: order_items trg_order_item_procure_on_order; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_order_item_procure_on_order BEFORE INSERT OR UPDATE ON public.order_items FOR EACH ROW EXECUTE FUNCTION public.guard_order_item_procure_on_order();
 
 
 --

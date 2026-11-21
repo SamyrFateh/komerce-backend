@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 824
+- Scanned code files: 825
 - Files with full headers: 764
-- Files with lite headers: 60
-- Files with any headers: 824
+- Files with lite headers: 61
+- Files with any headers: 825
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2101
-- Edges: 10464
+- Graph nodes: 2103
+- Edges: 10488
 - DB tables: 244
 - Doctrines: 823
-- Impact areas: 210
-- Unresolved code edges: 994
+- Impact areas: 211
+- Unresolved code edges: 995
 - Tables multi-écrivains directs (>=2): 99
 - Avertissements db-write / db-write-via en chevauchement: 13
 
@@ -32,7 +32,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - bootstrap: 2
 - boutique: 24
 - business-rules: 1
-- catalog: 139
+- catalog: 140
 - checkout: 4
 - customs: 8
 - dashboard: 34
@@ -93,7 +93,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 139
 - route-manifest: 1
 - schema: 1
-- service: 501
+- service: 502
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -768,6 +768,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/catalog-refinery-combined-proof.js -> owner catalog (catalog-refinery-combined-proof)
 - services/catalog-visual-fr-evidence-read.js -> owner catalog (catalog-visual-fr-evidence-read)
 - services/catalog-visual-fr-human-review-write.js -> owner catalog (catalog-visual-fr-human-review-write)
+- services/central-hub-on-order.js -> owner backend-core (central-hub-on-order-eligibility)
 - services/commercial-category-agreement.js -> owner backend-core (frozen-commercial-object-supplier-category-agreement)
 - services/commercial-taxonomy-semantics.js -> owner backend-core (commercial-taxonomy-semantic-intent)
 - services/dashboard-rct1-orders.js -> owner backend-core (rct1-orders-readonly-projection)
