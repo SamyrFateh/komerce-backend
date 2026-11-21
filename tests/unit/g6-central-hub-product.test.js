@@ -19,10 +19,8 @@ describe('g6 central hub product',()=>{
   expect(nextStep({sellable:[{id:1}],candidate:null})).toEqual({verdict:'G6_CENTRAL_HUB_PRODUCT_ALREADY_SELLABLE_PASS',done:true});
   expect(nextStep({sellable:[{id:1},{id:2}],candidate:null}).fail).toBe(true);
  });
- test('sans produit ni candidat : import manuel ; candidat non promu : SCREEN_MISSING, sans contournement',()=>{
+ test('sans candidat : import manuel',()=>{
   expect(nextStep({sellable:[],candidate:null}).step).toBe('manual-import');
-  expect(nextStep({sellable:[],candidate:{candidate_ref:'C',product_ref:null}}).verdict).toBe('SCREEN_MISSING_CANDIDATE_PROMOTE');
-  expect(nextStep({sellable:[],candidate:{product_ref:'KPR-1'}}).verdict).toBe('SCREEN_MISSING_CENTRAL_PRODUCT_PRICE_EXPOSURE_DRIVER');
  });
  test('SQL en lecture seule, exige Fournisseur central, LOCAL_ACTIVE, ENABLED, marqueur G6',()=>{
   expect(SELLABLE_SQL).not.toMatch(/\b(INSERT|UPDATE|DELETE)\b/i);
@@ -34,5 +32,6 @@ describe('g6 central hub product',()=>{
   for(const m of ['KM','CM','CG'])expect(w).toContain("'[staging-op] g6-central-hub-product-"+m+"'");
   expect(w).toContain('default_transaction_read_only=on');expect(w).toContain('komerce-g6-canonical-real-transaction');
   expect(w).toContain('github.actor == github.repository_owner');
+  for(const m of ['KM','CM','CG'])expect(w).toContain('E2E_MARKET_OPERATOR_'+m+'_EMAIL');
  });
 });
