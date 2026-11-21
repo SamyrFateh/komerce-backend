@@ -242,3 +242,46 @@ describe('G6-G4C N11 (PO sans engagement) et N12 (paiement sans deuxième autori
    expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
  });
 });
+
+describe('G6-G4C N13 (rupture fournisseur, reliquat) et N14 (réception partielle, excès, négatif)',()=>{
+ const up=id=>STAGE_IDS.slice(0,STAGE_IDS.indexOf(id)+1);
+ const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
+ it('séquences : chaîne M01 coupée au bon point, M01 inchangé',()=>{
+  expect(graphFor('N13').order).toEqual([...up('HUB_VENDOR_READINESS'),'N13_SUPPLIER_BACKORDER','N13_BACKORDER_ORACLE']);
+  expect(graphFor('N14').order).toEqual([...up('HUB_VENDOR_SIMULATION'),'N14_RECEIVING_QTY_ATTEMPTS','N14_RECEIVING_ORACLE']);
+  expect(graphFor('N13').order).not.toContain('HUB_VENDOR_SIMULATION');
+  expect(graphFor('M01').order).toEqual(STAGE_IDS);
+  expect(validateStageModuleSources()).toBeGreaterThan(0);
+ });
+ const fx={commitments:1,payment_authorizations:0,supplier_payments:0,manual_executions:0,confirmed_lines:1,hub_allocations:0,hub_units:0,payment_status:'paid'};
+ it('oracle N13 : reliquat égal au manque, rien reçu ni payé',async()=>{
+  const po=[{id:'p',status:'cancelled'}],l=[{id:'l',quantity:1,confirmed_quantity:0,received:0}];
+  await expect(N.oracleN13(mk([po,l,[{quantity:1,purchase_order_id:null,cancelled_at:null}],[fx],[{n:0}]]),{orderId:'o',poId:'p',ordered:1,typed:0})).resolves.toMatchObject({remnant_quantity:1,received:0});
+  await expect(N.oracleN13(mk([po,l,[],[fx],[{n:0}]]),{orderId:'o',poId:'p',ordered:1,typed:0})).rejects.toThrow('G6_N13_PRODUCT_GAP_REMNANT_0');
+  await expect(N.oracleN13(mk([po,[{...l[0],received:1}],[{quantity:1,purchase_order_id:null,cancelled_at:null}],[fx],[{n:0}]]),{orderId:'o',poId:'p',ordered:1,typed:0})).rejects.toThrow('G6_N13_PRODUCT_GAP_FICTIVE_RECEIPT');
+  await expect(N.oracleN13(mk([[{id:'p',status:'confirmed'}],l]),{orderId:'o',poId:'p',ordered:1,typed:0})).rejects.toThrow('G6_N13_PRODUCT_GAP_PO_STATE_confirmed');
+  const part=[{...l[0],quantity:3,confirmed_quantity:2}];
+  await expect(N.oracleN13(mk([[{id:'p',status:'confirmed'}],part,[{quantity:1,purchase_order_id:null,cancelled_at:null}],[fx],[{n:2}]]),{orderId:'o',poId:'p',ordered:3,typed:2})).resolves.toMatchObject({remnant_quantity:1,confirmed:2});
+ });
+ it('oracle N14 : une réception exacte, jamais en excès ni négative',async()=>{
+  const ok=[[{quantity:1,received:1}],[{quantity:1}],[fx]];
+  await expect(N.oracleN14(mk(ok),{orderId:'o',poId:'p',ordered:1})).resolves.toMatchObject({received:1,placements:1});
+  await expect(N.oracleN14(mk([[{quantity:1,received:2}]]),{orderId:'o',poId:'p',ordered:1})).rejects.toThrow('G6_N14_PRODUCT_GAP_EXCESS_RECEIVED_2');
+  await expect(N.oracleN14(mk([[{quantity:1,received:-1}]]),{orderId:'o',poId:'p',ordered:1})).rejects.toThrow('G6_N14_PRODUCT_GAP_NEGATIVE_RECEIVED');
+  await expect(N.oracleN14(mk([[{quantity:1,received:0}]]),{orderId:'o',poId:'p',ordered:1})).rejects.toThrow('G6_N14_PRODUCT_GAP_RECEIVED_NOT_EXACT_0');
+  await expect(N.oracleN14(mk([[{quantity:1,received:1}],[{quantity:-1}]]),{orderId:'o',poId:'p',ordered:1})).rejects.toThrow('G6_N14_PRODUCT_GAP_PLACEMENTS_1');
+ });
+ it('script : confirmation en rupture et quantités invalides par l\'écran, sondes signalées, aucune capture',()=>{
+  const a=read('scripts/recette/g6-negative-n13-n14-chromium.js');
+  expect(a).toMatch(/PARTIAL_CONFIRMATION_/);expect(a).toMatch(/RELIQUAT_NON_VISIBLE_APRES_CONFIRMATION/);
+  expect(a).toMatch(/data-receive-line/);expect(a).toMatch(/QUANTITE_INVALIDE_SANS_MESSAGE/);expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);
+  expect(a).toMatch(/EXCESS/);expect(a).toMatch(/NEGATIVE/);expect(a).not.toMatch(/screenshot/);
+  expect(validateChromiumScriptSources()).toBeGreaterThan(0);
+ });
+ it('workflow : titres N13/N14 pour KM, CM et CG',()=>{
+  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
+  for(const id of ['N13','N14'])for(const m of ['KM','CM','CG'])
+   expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
+  expect(N.isNegative('N13')&&N.isNegative('N14')).toBe(true);
+ });
+});

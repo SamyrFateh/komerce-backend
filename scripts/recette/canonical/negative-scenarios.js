@@ -3,13 +3,13 @@
  * @domain orders
  * @layer test
  * @owner backend-core
- * @purpose Scénarios négatifs N07/N09/N04/N33 (G6-G4A), N23/N24 (G6-G4B), N11/N12 (G6-G4C) : résolution multi-SKU en lecture seule, oracles PG en lecture seule, verdicts SCREEN_MISSING/PRODUCT_GAP.
+ * @purpose Scénarios négatifs N07/N09/N04/N33 (G6-G4A), N23/N24 (G6-G4B), N11 à N14 (G6-G4C) : résolution multi-SKU en lecture seule, oracles PG en lecture seule, verdicts SCREEN_MISSING/PRODUCT_GAP.
  * @db-read orders, order_items, product_skus, products, markets, product_market_price_drafts, product_market_exposure, local_stock, local_stock_allocations, cash_collections, cash_confirmation_controls, scans, parcels, parcel_items, purchase_lines, pickup_collect_failures, international_shipments, international_shipment_relay_receipts, incidents, purchase_orders, purchase_order_authorizations, supplier_execution_payments, manual_purchase_executions, hub_purchase_allocations, hub_physical_units
  * @db-write none
  * @impact-areas staging-only
  */
 'use strict';
-const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29','N11','N12']);
+const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29','N11','N12','N13','N14']);
 const isNegative=s=>NEGATIVE.includes(String(s));
 // Produit vendable (prix LOCAL_ACTIVE, exposition ENABLED, actif) servi par l'import (aucun stock local exposé), SKU actifs en stock.
 const MULTI_SKU_SQL=`
@@ -194,6 +194,45 @@ async function oracleN12(db,{orderId,poId,commitmentProof}){
  ok(x.hub_units===0&&x.payment_status==='paid','G6_N12_PRODUCT_GAP_UNEXPECTED_EFFECT');
  return {po_status:po.status,commitments:1,payment_authorizations:0,supplier_payments:0,commitment_proof:c.proof_ref};
 }
+// N13 : confirmation fournisseur en rupture. Quantité confirmée exacte, reliquat ouvert (hors PO) égal au manque,
+// rien de reçu ni de payé. Total (confirmé 0) : PO annulée ; partiel : PO confirmée.
+async function oracleN13(db,{orderId,poId,ordered,typed}){
+ const po=await importPoAny(db,orderId,poId);
+ ok(po.status===(typed===0?'cancelled':'confirmed'),'G6_N13_PRODUCT_GAP_PO_STATE_'+po.status);
+ const {rows:[l]}=await db.query(`SELECT pl.id,pl.quantity,pl.confirmed_quantity,purchase_line_received_quantity(pl.id)::int AS received
+   FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id WHERE oi.order_id=$1 AND pl.purchase_order_id=$2 AND pl.parent_line_id IS NULL`,[orderId,poId]);
+ ok(l&&Number(l.quantity)===ordered,'G6_N13_PRODUCT_GAP_LINE_QUANTITY');
+ ok(Number(l.confirmed_quantity)===typed,'G6_N13_PRODUCT_GAP_CONFIRMED_QTY_'+l.confirmed_quantity);
+ const {rows:r}=await db.query('SELECT quantity,purchase_order_id,cancelled_at FROM purchase_lines WHERE parent_line_id=$1',[l.id]);
+ ok(r.length===1&&Number(r[0].quantity)===ordered-typed&&!r[0].purchase_order_id&&!r[0].cancelled_at,'G6_N13_PRODUCT_GAP_REMNANT_'+r.length);
+ const x=await poEffects(db,poId,orderId);
+ ok(l.received===0&&x.hub_units===0,'G6_N13_PRODUCT_GAP_FICTIVE_RECEIPT');
+ ok(x.supplier_payments===0&&x.payment_authorizations===0,'G6_N13_PRODUCT_GAP_PAYMENT_EFFECT');
+ const {rows:[a]}=await db.query('SELECT COALESCE(SUM(quantity),0)::int AS n FROM hub_purchase_allocations WHERE order_id=$1 AND purchase_order_id=$2',[orderId,poId]);
+ ok(a.n<=typed,'G6_N13_PRODUCT_GAP_ALLOCATION_ABOVE_CONFIRMED');
+ return {po_status:po.status,ordered,confirmed:typed,remnant_quantity:ordered-typed,received:0,hub_units:0,allocated:a.n};
+}
+async function importPoAny(db,orderId,poId){
+ const {rows}=await db.query(`SELECT po.id,po.status::text AS status FROM purchase_orders po WHERE po.id=$1 AND EXISTS
+   (SELECT 1 FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id WHERE pl.purchase_order_id=po.id AND oi.order_id=$2)`,[poId,orderId]);
+ ok(rows.length===1,'G6_NEG_PO_NOT_FOUND');
+ return rows[0];
+}
+// N14 : une seule réception exacte (quantité reçue = commandée), toutes les quantités des placements strictement positives.
+async function oracleN14(db,{orderId,poId,ordered}){
+ const {rows:l}=await db.query(`SELECT pl.quantity,purchase_line_received_quantity(pl.id)::int AS received FROM purchase_lines pl
+   WHERE pl.purchase_order_id=$1 AND pl.cancelled_at IS NULL`,[poId]);
+ ok(l.length===1&&Number(l[0].quantity)===ordered,'G6_N14_PRODUCT_GAP_LINE_QUANTITY');
+ ok(l[0].received>=0,'G6_N14_PRODUCT_GAP_NEGATIVE_RECEIVED');
+ ok(l[0].received<=ordered,'G6_N14_PRODUCT_GAP_EXCESS_RECEIVED_'+l[0].received);
+ ok(l[0].received===ordered,'G6_N14_PRODUCT_GAP_RECEIVED_NOT_EXACT_'+l[0].received);
+ const {rows:p}=await db.query(`SELECT p.quantity FROM hub_physical_unit_placements p JOIN hub_purchase_allocations a ON a.id=p.allocation_id
+   WHERE a.order_id=$1 AND a.purchase_order_id=$2 AND p.operation_type='RECEIVE' AND p.removed_at IS NULL`,[orderId,poId]);
+ ok(p.length===1&&p.every(x=>Number(x.quantity)>0)&&p.reduce((n,x)=>n+Number(x.quantity),0)===ordered,'G6_N14_PRODUCT_GAP_PLACEMENTS_'+p.length);
+ const x=await poEffects(db,poId,orderId);
+ ok(x.supplier_payments===0&&x.payment_authorizations===0,'G6_N14_PRODUCT_GAP_PAYMENT_EFFECT');
+ return {ordered,received:l[0].received,placements:p.length,supplier_payments:0};
+}
 // N04 : aucune commande, aucun stock négatif, aucune réserve fictive.
 async function oracleN04(db,{buyerId,productId,market,availableBefore}){
  const {rows:[n]}=await db.query('SELECT count(*)::int AS n FROM orders WHERE user_id=$1',[buyerId]);
@@ -215,4 +254,4 @@ function classifyNegative(scenario,message){
  const g=new RegExp('G6_'+scenario+'_(SCREEN_MISSING|PRODUCT_GAP)').exec(m);
  return g?g[1]:null;
 }
-module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,importPo,classifyNegative};
+module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,importPo,classifyNegative};
