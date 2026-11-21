@@ -51,6 +51,8 @@ const N40_SCRIPT='scripts/recette/g6-negative-n40-price-gap-chromium.js';
 const N40_REPORT='test-results/g6-negative-n40/report.json';
 const N26A27_SCRIPT='scripts/recette/g6-negative-n26a-n27-screen-probe-chromium.js';
 const N26A27_REPORT='test-results/g6-negative-n26a-n27/report.json';
+const N10_SCRIPT='scripts/recette/g6-negative-n10-webhook-chromium.js';
+const N10_REPORT='test-results/g6-negative-n10/report.json';
 const LOCAL_NEG={
  N30:{script:N30_SCRIPT,report:N30_REPORT,phase:'N30_TRUTH_COMPARE',oracle:'N30_TRUTH_ORACLE'},
  N31:{phase:'N31_FX_SNAPSHOT_ORACLE',oracle:'N31_FX_SNAPSHOT_ORACLE_EVIDENCE'},
@@ -188,6 +190,28 @@ async function runNegativeScenario({scenario,env,db,adapters}){
    N21:'G6_N21_CROSS_RELAY_REFUSED_NO_DISCLOSURE_PG_PASS',N22:'G6_N22_TWO_RELAYS_REFUSED_NO_DISCLOSURE_PG_PASS'}[scenario];
   return out;
  }
+ // N10 (G6-G5A) : commande créée par l'écran (BUYER), puis webhooks PSP simulés non signés/dupliqués par sondes API (Chromium NOT_APPLICABLE), oracle PG avant/après.
+ if(scenario==='N10'){
+  const result=await bootstrapFreshScenario({scenario,toStage:'BUYER',adapters});
+  out.order_id=result.order_id;out.reference=result.order_reference;out.stages.push(...result.stages);
+  const runtime=await adapters.attestRuntimeBeforeBuyer();
+  fs.rmSync(path.join(ROOT,N10_REPORT),{force:true});
+  try{
+   spawnChild(N10_SCRIPT,{...env,G6_DYNAMIC_FRESH_ORDER:'1',G6_CANONICAL_PHASE:'N10_WEBHOOK_UNSIGNED_DUPLICATE',
+    G6_CANONICAL_ORDER_ID:result.order_id,G6_CANONICAL_ORDER_REFERENCE:result.order_reference,G6_CANONICAL_DB_FINGERPRINT:runtime.db_fingerprint},N10_REPORT);
+  }catch(e){
+   let child=null;try{child=readJson(N10_REPORT)}catch(_){}
+   const m=/G6_N10_(?:SCREEN_MISSING|PRODUCT_GAP)[A-Za-z0-9_]*/.exec(String(child?.error||''));
+   throw Error(m?m[0]:e.message);
+  }
+  const g=readJson(N10_REPORT);
+  if(!/_PASS_CHROMIUM_NOT_APPLICABLE$/.test(String(g.verdict))||g.order_id!==result.order_id)throw Error('G6_N10_SCREEN_MISSING_NOT_PROVEN');
+  out.stages.push({stage_id:'N10_WEBHOOK_ATTEMPTS',steps_reached:g.steps_reached,probes:g.probes,limits:g.limits,chromium:g.chromium,mobile_money_fixture:g.mobile_money_fixture});
+  out.stages.push(evidence('N10_NO_SETTLEMENT_ORACLE',scenario,market,{oracle:g.oracle,before:g.before,after:g.after,order_id:result.order_id,limits:g.limits}));
+  out.verdict=g.verdict;
+  return out;
+ }
+
  // N07, N09, N33 : le Golden est joué jusqu'à BUYER (commande réellement créée par l'écran), puis geste/oracle négatif.
  const result=await bootstrapFreshScenario({scenario,toStage:'BUYER',adapters});
  const buyer=readJson(BUYER_REPORT);
@@ -198,6 +222,12 @@ async function runNegativeScenario({scenario,env,db,adapters}){
   const o=await N.oracleN07(db,{orderId:result.order_id,buyerId:buyer.buyer_id});
   out.stages.push(evidence('N07_NO_DOUBLE_EFFECT',scenario,market,{oracle:o,gesture:buyer.n07,order_id:result.order_id}));
   out.verdict='G6_N07_DOUBLE_CLICK_ONE_ORDER_CHROMIUM_PG_PASS';
+ }else if(scenario==='N08'){
+  // N08 : rejeux d'idempotence (sondes API signalées) depuis la session de l'écran, jugés par le script ; oracle PG sur la commande unique.
+  if(!buyer.n08||buyer.n08.gaps?.length||buyer.n08.order_id!==result.order_id)throw Error('G6_N08_SCREEN_MISSING_REPLAYS_NOT_PROVEN');
+  const o=await N.oracleN08(db,{orderId:result.order_id,buyerId:buyer.buyer_id});
+  out.stages.push(evidence('N08_IDEMPOTENCY_ORACLE',scenario,market,{oracle:o,replays:{parallel_same_key:buyer.n08.parallel_same_key,different_content:buyer.n08.different_content,no_key:buyer.n08.no_key,no_accepted_total:buyer.n08.no_accepted_total,via:buyer.n08.via},order_id:result.order_id}));
+  out.verdict='G6_N08_IDEMPOTENCY_SAME_KEY_ONE_ORDER_API_PROBE_PG_PASS';
  }else if(scenario==='N33'){
   const variants=(buyer.n33?.sku_ids||[]).map(id=>({sku_id:id}));
   const o=await N.oracleN33(db,{orderId:result.order_id,variants,market});

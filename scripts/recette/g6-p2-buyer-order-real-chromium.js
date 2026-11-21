@@ -29,9 +29,10 @@ let PRODUCT=null;
 const OUT=path.resolve('test-results/g6-p2-buyer-order');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const {startTraceAfterAuth}=require('./canonical/observability');
+const {replayN08,judgeN08}=require('./canonical/n08-replay');
 const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress,humanDoubleClickOnce}=require('./canonical/actors/human-gestures');
 // Scénarios négatifs G6-G4A (N07 double clic, N04 quantité > stock, N33 deux variantes) : gestes en plus du parcours ; NEG=null = parcours inchangé.
-const NEG=['N07','N04','N33'].includes(process.env.G6_CANONICAL_SCENARIO)?process.env.G6_CANONICAL_SCENARIO:null;
+const NEG=['N07','N04','N33','N08'].includes(process.env.G6_CANONICAL_SCENARIO)?process.env.G6_CANONICAL_SCENARIO:null;
 fs.mkdirSync(OUT,{recursive:true});
 const run=crypto.randomBytes(4).toString('hex');
 const report={run_id:process.env.GITHUB_RUN_ID||null,run8:run.toUpperCase(),
@@ -318,7 +319,9 @@ async function browserCheckout({buyer,phone,code}){
  const browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
  try{
   const ctx=await browser.newContext({viewport:{width:1440,height:900},locale:'fr-FR'});
-  const page=await ctx.newPage();let orderRequests=0;
+  const page=await ctx.newPage();let orderRequests=0,n08cap=null;
+  // N08 : requête de commande émise par l'écran (clé et corps), rejouée ensuite depuis la même session.
+  if(NEG==='N08')page.on('request',r=>{if(r.method()==='POST'&&new URL(r.url()).pathname==='/api/orders'&&new URL(r.url()).origin===ORIGIN)n08cap={key:r.headers()['idempotency-key']||null,body:r.postData()}});
   page.on('response',response=>{
     const req=response.request(),u=new URL(response.url());
     if(req.method()==='POST'&&u.origin===ORIGIN&&u.pathname==='/api/orders/preview')
@@ -442,6 +445,10 @@ async function browserCheckout({buyer,phone,code}){
   check(created.status()===201&&!!body?.order?.id,'G6_CANONICAL_ORDER_POST_NOT_201');
   await page.screenshot({path:path.join(OUT,'05-real-order-confirmation.png')});
   check(report.blocked_requests.length===0,'G6_UNEXPECTED_BROWSER_WRITE');
+  if(NEG==='N08'){
+   const rp=await replayN08(page,ORIGIN,n08cap);
+   report.n08={...rp,order_id:body.order.id,gaps:judgeN08(rp,body.order.id)};record('N08_REPLAYS_DONE',{gaps:report.n08.gaps});
+  }
   return body.order;
  }finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});await browser.close()}
 }
@@ -474,6 +481,7 @@ for(const ev of ['unhandledRejection','uncaughtException'])process.on(ev,e=>{rep
    report.n07={...report.n07,orders_in_pg:orders.length,references:orders.map(x=>x.reference)};
    throw Error('G6_N07_PRODUCT_GAP_DOUBLE_ORDER_'+orders.length);
   }
+  if(NEG==='N08'&&orders.length!==1)throw Error('G6_N08_PRODUCT_GAP_ORDERS_'+orders.length);
   check(orders.length===1,'G6_EXACTLY_ONE_ORDER_NOT_SATISFIED');
   const o=orders[0];
   check(o.id===order.id&&o.reference===order.reference&&o.simulation_scope==='G6-BUYER'&&
@@ -491,6 +499,10 @@ for(const ev of ['unhandledRejection','uncaughtException'])process.on(ev,e=>{rep
   check(src.length===1&&src[0].fulfillment_source===PARAMS.fulfillment,'G6_M02_ORDER_NOT_LOCAL_STOCK');
   report.fulfillment_source=PARAMS.fulfillment;
  }
+  if(NEG==='N08'){
+   // Les gestes N08 sont des sondes API : aucune commande de plus que celle de l'écran, sinon écart produit.
+   if(report.n08.gaps.length)throw Error('G6_N08_PRODUCT_GAP_'+report.n08.gaps.join('_'));
+  }
   if(NEG==='N33'){
    const {rows:items}=await db.query('SELECT sku_id,quantity,variant_combo FROM order_items WHERE order_id=$1 ORDER BY id',[o.id]);
    const want=PARAMS.variants.map(v=>v.sku_id).sort();

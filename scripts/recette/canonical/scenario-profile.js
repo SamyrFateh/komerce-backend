@@ -47,7 +47,7 @@ function buyerParams(env=process.env){
  const scenario=scenarioProfile(env.G6_CANONICAL_SCENARIO||'M01');
  const market=String(env.G6_TARGET_MARKET||'KM').toUpperCase();
  // Scénarios négatifs : N07 = produit Golden M01 ; N33 = multi-SKU ; N04 et N09 = produit LOCAL_STOCK comme M02.
- if(scenario==='N07')return Object.freeze({scenario,market,product_ref:M01_PRODUCT_REF,
+ if(['N07','N08','N10'].includes(scenario))return Object.freeze({scenario,market,product_ref:M01_PRODUCT_REF,
   expected_price:M01_MARKET_PRICE[market],source:'FIXED_CATALOGUE',fulfillment:null});
  if(scenario==='N33')return multiVariantParams(env,market);
  if(scenario==='M01')return Object.freeze({scenario,market,product_ref:M01_PRODUCT_REF,
