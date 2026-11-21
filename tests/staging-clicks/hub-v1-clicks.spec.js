@@ -30,7 +30,7 @@ const REQUIRED_CHROMIUM_TESTS = 11; // 10 gestes canoniques + T8, modifier avec 
 const shared = { bagRefs: {}, box: null, shipment: null, states: {} }; // states : une connexion par role (evite le rate-limit du login)
 let counter = 0;
 
-const ROLE_ENV = { hub: 'E2E_AGENT_HUB_', relais: 'E2E_AGENT_RELAIS_', admin: 'E2E_ADMIN_', transitaire: 'E2E_AGENT_TRANSITAIRE_' };
+const ROLE_ENV = { hub: 'E2E_AGENT_HUB_', relais: 'E2E_AGENT_RELAIS_', admin: 'E2E_ADMIN_', director: 'E2E_HUB_DIRECTOR_', transitaire: 'E2E_AGENT_TRANSITAIRE_' };
 
 async function login(browser, baseURL, role) {
   const email = process.env[ROLE_ENV[role] + 'EMAIL'], password = process.env[ROLE_ENV[role] + 'PASSWORD'];
@@ -303,6 +303,57 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
     await form.locator('[data-hub-unmanifested-reference]').fill(reference);
     await form.locator('[data-hub-unmanifested-location]').fill('HUB-E2E-RECEPTION');
     await form.locator('[data-hub-unmanifested-tracking]').fill(`E2E-TRACK-${RUN8}`);
+    // #4975 — real business write in agent session A, watched on two already-open
+    // independent Director browsers B/C. No browser reload, no SQL mutation.
+    const observers = [];
+    const cross = { event: 'HUB_UNMANIFESTED_ARRIVAL', market: MARKET_CODE,
+      verdict: 'NOT_PROVEN', participants: [], http_429: 0, JS_errors: 0 };
+    for (const role of ['admin', 'director']) {
+      const session = await login(browser, baseURL, role);
+      const p = session.page;
+      const stats = { role, reads: 0, error: 0, signals: 0 };
+      p.on('pageerror', () => { stats.error++; cross.JS_errors++; });
+      p.on('response', response => {
+        const u = new URL(response.url());
+        if (u.origin !== new URL(baseURL).origin) return;
+        if (response.status() === 429) cross.http_429++;
+        if (u.pathname === '/api/hub/director-todo' && response.request().method() === 'GET' && response.status() === 200) stats.reads++;
+      });
+      await session.ctx.addInitScript(() => {
+        const Native = window.EventSource;
+        window.__t8Cross = { opens: 0, connected: 0, signals: 0 };
+        window.EventSource = class extends Native {
+          constructor(url, options) {
+            super(url, options);
+            if (String(url).includes('/api/admin/dashboard/events')) {
+              window.__t8Cross.opens++;
+              this.addEventListener('open', () => window.__t8Cross.connected++);
+              this.addEventListener('refresh', () => window.__t8Cross.signals++);
+            }
+          }
+        };
+      });
+      // Witness sessions are read-only by construction. Only canonical GETs.
+      await p.route('**/*', route => {
+        const r = route.request(), u = new URL(r.url());
+        if (u.origin === new URL(baseURL).origin && ['GET','HEAD','OPTIONS'].includes(r.method())) return route.continue();
+        cross.unexpected_writes = (cross.unexpected_writes || 0) + 1;
+        return route.abort('blockedbyclient');
+      });
+      await p.goto('/admin/hub?branch=direction', { waitUntil: 'domcontentloaded' });
+      await p.locator('[data-hub-director-group]').first().waitFor({timeout:30000});
+      await p.waitForFunction(() => document.querySelectorAll('[data-hub-director-group]').length === 4, null, {timeout:15000});
+      await p.waitForFunction(() => window.__t8Cross?.connected > 0, null, {timeout:15000});
+      const api = await p.request.get('/api/hub/director-todo');
+      expect(api.status(), 'T8 API before observer ' + role).toBe(200);
+      const model = await api.json();
+      expect(model.scope).toBe('ALL_MARKETS');
+      expect(model.tasks.some(t => String(t.missing || '').includes(reference)),
+        'T8 unique unmanifested fixture absent before click').toBe(false);
+      const original = await p.evaluate(() => ({signal:window.__t8Cross.signals, y:window.scrollY}));
+      observers.push({ ...session, role, stats, original, count:model.tasks.length });
+    }
+    const clickStarted = Date.now();
     const recorded = await gesture(page, {
       key: 'hub:T8-arrival-unmanifested', role: 'agent_hub',
       route: 'POST /api/scans/hub/receive',
@@ -334,6 +385,37 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
     const director = await require('../../services/hub-procurement-dossier').getDirectorTodo({});
     expect(director.tasks.some(t => t.id === 'RECONCILE_PARCEL:' + unit.id),
       'T8 task visible directrice').toBe(true);
+    // The two pages were opened BEFORE the real POST /api/scans/hub/receive.
+    // Assert both see the new persisted task via their own DOM and re-fetch.
+    const taskId = 'RECONCILE_PARCEL:' + unit.id;
+    for (const obs of observers) {
+      await obs.page.waitForFunction(before => window.__t8Cross.signals > before, obs.original.signal, {timeout:20000});
+      await expect(obs.page.locator('[data-hub-director-task="RECONCILE_PARCEL"]').filter({hasText:reference}),
+        'T8 live Director task ' + obs.role).toBeVisible({timeout:20000});
+      await expect.poll(() => obs.stats.reads, {timeout:15000}).toBeGreaterThan(0);
+      const afterApi = await obs.page.request.get('/api/hub/director-todo');
+      expect(afterApi.status()).toBe(200);
+      const current = await afterApi.json();
+      expect(current.tasks.filter(t => t.id === taskId),
+        'T8 persisted reconciliation task in canonical API').toHaveLength(1);
+      const ui = await obs.page.locator('[data-hub-director-group]').evaluateAll(groups =>
+        Object.fromEntries(groups.map(g => [g.getAttribute('data-hub-director-group'),
+          Number(g.querySelector('.hlc-director-group-count')?.textContent || 0)])));
+      expect(Object.values(ui).reduce((a, n) => a + n, 0),
+        'T8 four-column Kanban count equals canonical API').toBe(current.tasks.length);
+      expect((await obs.page.evaluate(() => window.scrollY)),
+        'T8 scroll preserved on live refresh').toBe(obs.original.y);
+      cross.participants.push({role:obs.role,auto_refetched:true,
+        task_visible_without_reload:true,kanban_total:current.tasks.length,
+        before_total:obs.count,latency_from_click_ms:Date.now()-clickStarted});
+    }
+    cross.verdict = 'PASS_REAL_HUB_ARRIVAL_TWO_DIRECTOR_BROWSERS';
+    expect(cross.http_429).toBe(0);
+    expect(cross.JS_errors).toBe(0);
+    expect(cross.unexpected_writes || 0).toBe(0);
+    evidence.transverse_t8 = cross;
+    save();
+    for (const obs of observers) await obs.ctx.close();
     await page.getByRole('tab', { name: 'Dossiers' }).click();
     await page.locator('[data-hlc-todo]').waitFor({ timeout: 20000 });
     const all = page.locator('[data-hlc-action="todo-toggle"]');
