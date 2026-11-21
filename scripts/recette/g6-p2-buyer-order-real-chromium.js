@@ -54,6 +54,16 @@ async function resolveCurrentSaleableProduct(){
  for(const [i,line] of LINES.entries()){
   const lineRef=line.product_ref,linePrice=PARAMS.basket||PARAMS.variants?line.price:EXPECTED_PRICE;
   const local=PARAMS.basket?line.fulfillment==='LOCAL_STOCK':!!PARAMS.fulfillment;
+  // M03 only: a central Hub manual-on-demand SKU has no external seller SKU and
+  // starts at stock=0. That is not evidence of fictitious supplier stock.
+  // Preserve M01/M02 and external import stock guards, and independently
+  // verify the Hub procurement ownership in PostgreSQL before Chromium.
+  const centralHubManual=Boolean(PARAMS.basket && line.source_key==='central_hub' && !local);
+  const importSkuGate=local?'':centralHubManual
+    ? `AND (sku.stock>0 OR (sku.source='MANUAL' AND sku.supplier_order_identity IS NULL
+      AND EXISTS (SELECT 1 FROM suppliers h WHERE h.id=p.procurement_supplier_id
+        AND h.system_key='central_hub' AND h.is_active=TRUE AND h.deleted_at IS NULL)))`
+    : 'AND sku.stock>0';
   const {rows}=await db.query(`
   SELECT p.id,p.product_ref,p.name,d.amount
   FROM products p
@@ -63,7 +73,7 @@ async function resolveCurrentSaleableProduct(){
   WHERE p.product_ref=$1 AND p.lifecycle_status='active' AND p.is_active=TRUE
     AND p.is_available=TRUE AND e.commercial_exposure='ENABLED'
     AND EXISTS (SELECT 1 FROM product_skus sku
-      WHERE sku.product_id=p.id AND sku.is_active=TRUE ${local?'':'AND sku.stock>0'})`,[lineRef,MARKET]);
+      WHERE sku.product_id=p.id AND sku.is_active=TRUE ${importSkuGate})`,[lineRef,MARKET]);
   check(rows.length===1,'G6_RECIPE_PRODUCT_OR_PRICE_NOT_UNIQUE');
   check(Number(rows[0].amount)===linePrice,'G6_RECIPE_PRICE_DRIFT');
   if(!local){
