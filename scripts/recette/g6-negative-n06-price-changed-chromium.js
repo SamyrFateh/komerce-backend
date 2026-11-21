@@ -14,7 +14,7 @@ const fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('playwright');
 const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
-const {observe,fullError}=require('./canonical/observability');
+const {observe,fullError,startTraceAfterAuth}=require('./canonical/observability');
 const {humanGoto,humanFill,humanClick}=require('./canonical/actors/human-gestures');
 const {login}=require('./g6-canonical-forwarder-chromium');
 const {fixtureBuyer,authenticate}=require('./g6-negative-g5a-storefront-chromium');
@@ -175,6 +175,9 @@ async function main(){
    report.blocked.push({method:req.method(),path:u.pathname});save();return route.abort('blockedbyclient');
   });
   await authenticate(page,ctx,buyer);
+  // L'authentification OTP est achevée par le helper ; trace post-auth, jamais les secrets.
+  await page.waitForURL(u=>u.pathname==='/boutique/'||u.pathname==='/boutique',{timeout:10000});
+  await startTraceAfterAuth(ctx);
   const confirm=await openProduct(page,product);
   const before=await displayedTotal(page);
   check(Number.isSafeInteger(before)&&before>0,'G6_N06_CHECKOUT_INITIAL_TOTAL_UNREADABLE');
