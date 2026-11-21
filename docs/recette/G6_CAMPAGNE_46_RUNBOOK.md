@@ -95,3 +95,20 @@ L'artefact du run contient `test-results/` :
 **Pour reprendre** : jouer la ligne « Montés, à jouer » scénario par scénario sur KM, puis CM, puis CG, en respectant le § 2. Faire le nettoyage (§ 4) en fin de série. Après les correctifs produit, rejouer N15, N21, N22 et N32.
 
 Le détail des runs et des PR est dans #4550 (synthèses de lots) et dans STATUS.md.
+
+## 7. Porte de préparation des 46 scénarios (audit du 21/11, 15 h 52 Paris)
+
+**Séparer impérativement trois états :** `DISPATCH_WIRED` (titre propriétaire routé vers le bon scénario), `PREREQ_READY` (fixture et SHA staging vérifiés), puis `CHROMIUM_PG_PASS` (gestes et oracles réellement observés). Le premier ne prouve jamais les deux derniers.
+
+- **Matrice : 46 IDs métier**, exactement M01–M06 et N01–N40. La validation automatisée `tests/unit/g6-46-workflow-dispatch-readiness.test.js` contrôle la matrice contre le workflow et le sélecteur réellement transmis au runner, évitant notamment un titre accepté qui lance silencieusement `M01`.
+- **44/46 IDs ont un lancement technique explicite après la correction N39** (PR G6-readiness à fusionner après CI). M04 = M01/CM et M05 = M01/CG ; N26 exige N26a **et** N26b ; N39 exige N39F1, F2 **et** F3 ; N03 et N05 ont chacun une sous-branche supplémentaire à jouer lorsque la fixture correspond.
+- **2/46 ne sont pas techniquement raccordés** : **M06** et **N34** ; les deux dépendent du produit Fournisseur central Hub que l'on doit créer, illustrer, certifier et publier par écran, sans SKU/SOI ni vendeur inventés. Un clic direct sur un alias M01 n'est pas une substitution admissible à ces objectifs.
+- **M03** est *routé* mais son exécution exige le panier mixte à trois sources, dont la source Hub ; conserver `PREREQ_MISSING` sans cette preuve.
+- **Sécurité P0 à corriger et recertifier** : N21/N22 (droit du relais), N32 (confidentialité de commandes client et marché). **Métier P0** : N15 (expédition vide malgré sac/carton incomplet). Ces cas peuvent être joués pour diagnostiquer ; ils ne peuvent être comptés PASS tant que le comportement et le rejeu ne sont pas conformes.
+- **Autres limitations déjà identifiées** : N26a/N26b/N27 et N39F1/F2 (écran ou décision manquants selon runbook) ; N10 doublon signé sans secret PSP ; N30 arbitrage de KPI ; N31/N35/N38 preuve partielle. Il faut noter `SCREEN_MISSING`, `PRODUCT_GAP` ou `NOT_PROVEN`, **jamais** les camoufler par un test API.
+- **G5A** : N01/N02/N03/N05/N06 intégrés par #4959 et N08/N10 par #4918 ; **CI verte ≠ runs staging certifiés**. N06 est isolé : modification du prix actif puis restauration contrôlée par l'écran, contrôle de concurrence ; un échec de restauration est un STOP avec réparation manuelle avant le scénario suivant.
+
+**Séquence de GO** : 1) toutes les PR correctives fusionnées et `Required verdict` vert, 2) vérifier `/health/version`, identité PG et absence de run concurrent, 3) lancer les trois probes `g6-prereq-probe-{KM,CM,CG}` **par le propriétaire** pour inventaire lecture seule, 4) démarrer un seul scénario à la fois (marché KM, puis CM, puis CG) avec preuve exportée et tableau de verdicts dans #4550, 5) réévaluer la porte après chaque correction. Ne jamais déclencher un reset, une suspension de marché ou un changement de prix sans les protections et autorisations prévues.
+
+**Environnement :** l'accès du connecteur Railway dans cette session ne montre pas le service staging canonique derrière `komerce-backend-production.up.railway.app`. L'état déployé exact et les secrets ne sont donc pas attestés par cet audit de dépôt. Il faut une preuve du workflow owner-only avant de conclure `PREREQ_READY`.
+
