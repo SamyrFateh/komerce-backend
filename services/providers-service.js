@@ -251,6 +251,10 @@ async function createService({ providerId, title, description = null, marketId, 
     throw new Error(`createService: provider non actif (statut=${provider.status})`);
   }
 
+  if (String(provider.market_id) !== String(marketId)) {
+    throw new Error('createService: provider rattaché à un autre marché');
+  }
+
   const { rows: marketRows } = await db.query(
     'SELECT id FROM markets WHERE id = $1 AND is_active = true',
     [marketId]
@@ -368,7 +372,7 @@ async function isServiceExposable(serviceId, marketId) {
     throw new Error('isServiceExposable: market_id est requis — jamais une confiance aveugle en l\'appelant');
   }
   const { rows } = await db.query(
-    `SELECT s.status AS service_status, s.commercial_exposure, s.market_id, p.status AS provider_status
+    `SELECT s.status AS service_status, s.commercial_exposure, s.market_id, p.status AS provider_status, p.market_id AS provider_market_id
        FROM services s
        JOIN providers p ON p.id = s.provider_id
       WHERE s.id = $1`,
@@ -379,7 +383,8 @@ async function isServiceExposable(serviceId, marketId) {
   return r.service_status === SERVICE_STATUS.ACTIVE
     && r.commercial_exposure === 'ENABLED'
     && r.provider_status === PROVIDER_STATUS.ACTIVE
-    && String(r.market_id) === String(marketId);
+    && String(r.market_id) === String(marketId)
+    && String(r.provider_market_id) === String(r.market_id);
 }
 
 // ── PhysicalOffer ────────────────────────────────────────────────────────
@@ -414,6 +419,10 @@ async function createPhysicalOffer({ providerId, title, description = null, mark
   if (!provider) throw new Error(`createPhysicalOffer: provider introuvable (${providerId})`);
   if (provider.status !== PROVIDER_STATUS.ACTIVE) {
     throw new Error(`createPhysicalOffer: provider non actif (statut=${provider.status})`);
+  }
+
+  if (String(provider.market_id) !== String(marketId)) {
+    throw new Error('createPhysicalOffer: provider rattaché à un autre marché');
   }
 
   const { rows: marketRows } = await db.query(
@@ -528,7 +537,7 @@ async function isPhysicalOfferExposable(physicalOfferId, marketId) {
     throw new Error('isPhysicalOfferExposable: market_id est requis — jamais une confiance aveugle en l\'appelant');
   }
   const { rows } = await db.query(
-    `SELECT o.status AS offer_status, o.commercial_exposure, o.market_id, p.status AS provider_status
+    `SELECT o.status AS offer_status, o.commercial_exposure, o.market_id, p.status AS provider_status, p.market_id AS provider_market_id
        FROM physical_offers o
        JOIN providers p ON p.id = o.provider_id
       WHERE o.id = $1`,
@@ -539,7 +548,8 @@ async function isPhysicalOfferExposable(physicalOfferId, marketId) {
   return r.offer_status === PHYSICAL_OFFER_STATUS.ACTIVE
     && r.commercial_exposure === 'ENABLED'
     && r.provider_status === PROVIDER_STATUS.ACTIVE
-    && String(r.market_id) === String(marketId);
+    && String(r.market_id) === String(marketId)
+    && String(r.provider_market_id) === String(r.market_id);
 }
 
 // ── Inquiry ──────────────────────────────────────────────────────────────
