@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 824,
+    "scannedCodeFiles": 825,
     "filesWithFullHeaders": 764,
-    "filesWithLiteHeaders": 60,
-    "filesWithAnyHeaders": 824,
+    "filesWithLiteHeaders": 61,
+    "filesWithAnyHeaders": 825,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2101,
-    "edges": 10464,
+    "graphNodes": 2103,
+    "edges": 10488,
     "dbTables": 244,
     "doctrines": 823,
-    "impactAreas": 210,
-    "unresolvedCodeEdges": 994,
+    "impactAreas": 211,
+    "unresolvedCodeEdges": 995,
     "dbWriteViaOverlapWarnings": 13,
     "multiWriterTables": 99
   },
@@ -36,7 +36,7 @@
     "auth": 14,
     "market-delegation": 39,
     "platform-ops": 2,
-    "catalog": 139,
+    "catalog": 140,
     "admin-dashboard": 39,
     "decision-signals": 14,
     "market": 10,
@@ -113,7 +113,7 @@
     "schema": 1,
     "route": 139,
     "entrypoint": 1,
-    "service": 501,
+    "service": 502,
     "external-adapter": 2,
     "infrastructure": 1,
     "machine": 1,
@@ -126,7 +126,7 @@
     "critical": 128,
     "medium": 155,
     "high": 471,
-    "low": 69,
+    "low": 70,
     "unknown": 1
   },
   "nodes": [
@@ -14857,6 +14857,7 @@
       "depends": [
         "services/transport-rails.js",
         "services/transport-pricing.js",
+        "services/central-hub-on-order.js",
         "utils/rules.js",
         "schemas/catalog/product-detail.v1.schema.json"
       ],
@@ -14875,7 +14876,8 @@
         "product_sku_media",
         "product_skus",
         "product_variants",
-        "products"
+        "products",
+        "suppliers"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -15448,7 +15450,8 @@
         "public_product_view"
       ],
       "depends": [
-        "services/supplier-source-resolution.js"
+        "services/supplier-source-resolution.js",
+        "services/central-hub-on-order.js"
       ],
       "usedBy": [
         "routes/products.js"
@@ -16078,6 +16081,40 @@
         "economic-engine"
       ],
       "version": "2026-10-v1"
+    },
+    {
+      "id": "services/central-hub-on-order.js",
+      "file": "services/central-hub-on-order.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "central-hub-on-order-eligibility",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "low",
+      "owner": "backend-core",
+      "purpose": "Fail-closed source for a manual Hub SKU sold for later physical procurement, never local stock.",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [
+        "products",
+        "product_skus",
+        "suppliers",
+        "sourcing_candidates"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [
+        "catalog",
+        "checkout",
+        "payments",
+        "returns",
+        "purchasing"
+      ],
+      "version": null
     },
     {
       "id": "services/client-360.js",
@@ -25590,7 +25627,8 @@
       ],
       "depends": [
         "services/product-sku-service.js",
-        "services/product-sellable-service.js"
+        "services/product-sellable-service.js",
+        "services/central-hub-on-order.js"
       ],
       "usedBy": [
         "services/order-checkout-service.js"
@@ -25601,7 +25639,10 @@
         "products",
         "shared_cart_items",
         "shared_carts",
-        "order_items"
+        "order_items",
+        "product_skus",
+        "suppliers",
+        "sourcing_candidates"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -26153,6 +26194,7 @@
       "depends": [
         "services/order-status-machine.js",
         "services/invoice-service.js",
+        "services/central-hub-on-order.js",
         "db.js"
       ],
       "usedBy": [
@@ -26166,7 +26208,9 @@
         "order_items",
         "product_skus",
         "product_variants",
-        "products"
+        "products",
+        "suppliers",
+        "sourcing_candidates"
       ],
       "dbWrite": [
         "alerts",
@@ -29784,7 +29828,8 @@
         "pricing_result"
       ],
       "depends": [
-        "services/product-sku-service.js"
+        "services/product-sku-service.js",
+        "services/central-hub-on-order.js"
       ],
       "usedBy": [
         "services/product-admin-service.js (réexport)",
@@ -29795,7 +29840,10 @@
         "catalog_media",
         "product_sku_media",
         "product_variants",
-        "products"
+        "products",
+        "product_skus",
+        "suppliers",
+        "sourcing_candidates"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -46210,6 +46258,11 @@
       "id": "impact:audit",
       "type": "impact-area",
       "area": "audit"
+    },
+    {
+      "id": "impact:returns",
+      "type": "impact-area",
+      "area": "returns"
     },
     {
       "id": "impact:catalogue-review",
@@ -68782,6 +68835,12 @@
     },
     {
       "from": "services/catalog-product-detail.js",
+      "to": "services/central-hub-on-order.js",
+      "type": "depends",
+      "label": "services/central-hub-on-order.js"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
       "to": "utils/rules.js",
       "type": "depends",
       "label": "utils/rules.js"
@@ -68869,6 +68928,12 @@
       "to": "db:products",
       "type": "db-read",
       "label": "products"
+    },
+    {
+      "from": "services/catalog-product-detail.js",
+      "to": "db:suppliers",
+      "type": "db-read",
+      "label": "suppliers"
     },
     {
       "from": "services/catalog-product-detail.js",
@@ -69685,6 +69750,12 @@
       "to": "services/supplier-source-resolution.js",
       "type": "depends",
       "label": "services/supplier-source-resolution.js"
+    },
+    {
+      "from": "services/catalog-public-view.js",
+      "to": "services/central-hub-on-order.js",
+      "type": "depends",
+      "label": "services/central-hub-on-order.js"
     },
     {
       "from": "routes/products.js",
@@ -70861,6 +70932,66 @@
       "to": "impact:economic-engine",
       "type": "impact",
       "label": "economic-engine"
+    },
+    {
+      "from": "services/central-hub-on-order.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
+    },
+    {
+      "from": "services/central-hub-on-order.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/central-hub-on-order.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/central-hub-on-order.js",
+      "to": "db:suppliers",
+      "type": "db-read",
+      "label": "suppliers"
+    },
+    {
+      "from": "services/central-hub-on-order.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-read",
+      "label": "sourcing_candidates"
+    },
+    {
+      "from": "services/central-hub-on-order.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/central-hub-on-order.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "services/central-hub-on-order.js",
+      "to": "impact:payments",
+      "type": "impact",
+      "label": "payments"
+    },
+    {
+      "from": "services/central-hub-on-order.js",
+      "to": "impact:returns",
+      "type": "impact",
+      "label": "returns"
+    },
+    {
+      "from": "services/central-hub-on-order.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
     },
     {
       "from": "services/client-360.js",
@@ -87140,6 +87271,12 @@
       "label": "services/product-sellable-service.js"
     },
     {
+      "from": "services/order-checkout-item-resolution.js",
+      "to": "services/central-hub-on-order.js",
+      "type": "depends",
+      "label": "services/central-hub-on-order.js"
+    },
+    {
       "from": "services/order-checkout-service.js",
       "to": "services/order-checkout-item-resolution.js",
       "type": "uses",
@@ -87180,6 +87317,24 @@
       "to": "db:order_items",
       "type": "db-read",
       "label": "order_items"
+    },
+    {
+      "from": "services/order-checkout-item-resolution.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/order-checkout-item-resolution.js",
+      "to": "db:suppliers",
+      "type": "db-read",
+      "label": "suppliers"
+    },
+    {
+      "from": "services/order-checkout-item-resolution.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-read",
+      "label": "sourcing_candidates"
     },
     {
       "from": "services/order-checkout-item-resolution.js",
@@ -88078,6 +88233,12 @@
     },
     {
       "from": "services/order-payment-confirmation.js",
+      "to": "services/central-hub-on-order.js",
+      "type": "depends",
+      "label": "services/central-hub-on-order.js"
+    },
+    {
+      "from": "services/order-payment-confirmation.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
@@ -88135,6 +88296,18 @@
       "to": "db:products",
       "type": "db-read",
       "label": "products"
+    },
+    {
+      "from": "services/order-payment-confirmation.js",
+      "to": "db:suppliers",
+      "type": "db-read",
+      "label": "suppliers"
+    },
+    {
+      "from": "services/order-payment-confirmation.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-read",
+      "label": "sourcing_candidates"
     },
     {
       "from": "services/order-payment-confirmation.js",
@@ -93818,6 +93991,12 @@
       "label": "services/product-sku-service.js"
     },
     {
+      "from": "services/product-sellable-service.js",
+      "to": "services/central-hub-on-order.js",
+      "type": "depends",
+      "label": "services/central-hub-on-order.js"
+    },
+    {
       "from": "services/product-admin-service.js (réexport)",
       "to": "services/product-sellable-service.js",
       "type": "uses",
@@ -93858,6 +94037,24 @@
       "to": "db:products",
       "type": "db-read",
       "label": "products"
+    },
+    {
+      "from": "services/product-sellable-service.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/product-sellable-service.js",
+      "to": "db:suppliers",
+      "type": "db-read",
+      "label": "suppliers"
+    },
+    {
+      "from": "services/product-sellable-service.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-read",
+      "label": "sourcing_candidates"
     },
     {
       "from": "services/product-sellable-service.js",
@@ -124603,6 +124800,7 @@
       "directDependsOn": [
         "services/transport-rails.js",
         "services/transport-pricing.js",
+        "services/central-hub-on-order.js",
         "utils/rules.js",
         "schemas/catalog/product-detail.v1.schema.json"
       ],
@@ -124622,7 +124820,8 @@
         "product_sku_media",
         "product_skus",
         "product_variants",
-        "products"
+        "products",
+        "suppliers"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -124650,6 +124849,7 @@
         "db:product_variants",
         "db:products",
         "db:sourcing_candidates",
+        "db:suppliers",
         "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
         "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md",
         "doctrine:docs/specs/DECISION_MODELE_STOCK_SKU.md",
@@ -124658,6 +124858,7 @@
         "impact:modal",
         "impact:product-detail",
         "routes/catalog-product-detail.js",
+        "services/central-hub-on-order.js",
         "services/transport-pricing.js",
         "services/transport-rails.js",
         "utils/rules.js"
@@ -125176,7 +125377,8 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "services/supplier-source-resolution.js"
+        "services/supplier-source-resolution.js",
+        "services/central-hub-on-order.js"
       ],
       "directUsedBy": [
         "routes/products.js"
@@ -125235,6 +125437,7 @@
         "services/catalog-market-exposure-service.js",
         "services/catalog-product-read-cutover-trial.js",
         "services/catalog-run-progress.js",
+        "services/central-hub-on-order.js",
         "services/discovery-rail-composer.js",
         "services/public-cart-quote-service.js",
         "services/supplier-source-resolution.js"
@@ -125860,6 +126063,50 @@
         "routes/admin-market-control-plane.js",
         "services/market-control-plane.js",
         "services/market-provisioning-service.js"
+      ]
+    },
+    "services/central-hub-on-order.js": {
+      "role": "central-hub-on-order-eligibility",
+      "domain": "catalog",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "backend-core",
+      "purpose": "Fail-closed source for a manual Hub SKU sold for later physical procurement, never local stock.",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [
+        "products",
+        "product_skus",
+        "suppliers",
+        "sourcing_candidates"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [
+        "catalog",
+        "checkout",
+        "payments",
+        "returns",
+        "purchasing"
+      ],
+      "mustCheck": [
+        "backend-core",
+        "db:product_skus",
+        "db:products",
+        "db:sourcing_candidates",
+        "db:suppliers",
+        "impact:catalog",
+        "impact:checkout",
+        "impact:payments",
+        "impact:purchasing",
+        "impact:returns",
+        "services/catalog-product-detail.js",
+        "services/catalog-public-view.js",
+        "services/order-checkout-item-resolution.js",
+        "services/order-payment-confirmation.js",
+        "services/product-sellable-service.js"
       ]
     },
     "services/client-360.js": {
@@ -135588,7 +135835,8 @@
       "purpose": null,
       "directDependsOn": [
         "services/product-sku-service.js",
-        "services/product-sellable-service.js"
+        "services/product-sellable-service.js",
+        "services/central-hub-on-order.js"
       ],
       "directUsedBy": [
         "services/order-checkout-service.js"
@@ -135600,7 +135848,10 @@
         "products",
         "shared_cart_items",
         "shared_carts",
-        "order_items"
+        "order_items",
+        "product_skus",
+        "suppliers",
+        "sourcing_candidates"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -135615,14 +135866,18 @@
       "mustCheck": [
         "db:catalog_product_sale_holds",
         "db:order_items",
+        "db:product_skus",
         "db:product_variants",
         "db:products",
         "db:shared_cart_items",
         "db:shared_carts",
+        "db:sourcing_candidates",
+        "db:suppliers",
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
         "impact:orders",
         "impact:shared-cart",
+        "services/central-hub-on-order.js",
         "services/order-checkout-service.js",
         "services/product-sellable-service.js",
         "services/product-sku-service.js",
@@ -136166,6 +136421,7 @@
       "directDependsOn": [
         "services/order-status-machine.js",
         "services/invoice-service.js",
+        "services/central-hub-on-order.js",
         "db.js"
       ],
       "directUsedBy": [
@@ -136180,7 +136436,9 @@
         "order_items",
         "product_skus",
         "product_variants",
-        "products"
+        "products",
+        "suppliers",
+        "sourcing_candidates"
       ],
       "dbWrite": [
         "alerts",
@@ -136219,6 +136477,8 @@
         "db:product_skus",
         "db:product_variants",
         "db:products",
+        "db:sourcing_candidates",
+        "db:suppliers",
         "doctrine:cash_rollback_vs_stripe_alert",
         "doctrine:confirmPaymentCycle_unique",
         "doctrine:inventory_model_dispatch_no_fallback",
@@ -136232,6 +136492,7 @@
         "impact:stock",
         "impact:wallet",
         "services/cash-operations.js",
+        "services/central-hub-on-order.js",
         "services/confirm-pickup-cash-payment.js",
         "services/invoice-service.js",
         "services/order-status-machine.js",
@@ -139793,7 +140054,8 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "services/product-sku-service.js"
+        "services/product-sku-service.js",
+        "services/central-hub-on-order.js"
       ],
       "directUsedBy": [
         "services/product-admin-service.js (réexport)",
@@ -139805,7 +140067,10 @@
         "catalog_media",
         "product_sku_media",
         "product_variants",
-        "products"
+        "products",
+        "product_skus",
+        "suppliers",
+        "sourcing_candidates"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -139823,14 +140088,18 @@
         "db:catalog_media",
         "db:catalog_product_sale_holds",
         "db:product_sku_media",
+        "db:product_skus",
         "db:product_variants",
         "db:products",
+        "db:sourcing_candidates",
+        "db:suppliers",
         "doctrine:GAP-07",
         "doctrine:docs/specs/DECISION_MODELE_STOCK_SKU.md",
         "impact:catalog",
         "impact:checkout",
         "impact:orders",
         "impact:shared-cart",
+        "services/central-hub-on-order.js",
         "services/market-local-price-resolution-service.js",
         "services/order-checkout-item-resolution.js",
         "services/product-sku-service.js"
@@ -153494,6 +153763,12 @@
       "to": "config/market-delegation-capabilities.js",
       "type": "depends",
       "label": "config/market-delegation-capabilities.js"
+    },
+    {
+      "from": "services/central-hub-on-order.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
     },
     {
       "from": "services/client-360.js",
