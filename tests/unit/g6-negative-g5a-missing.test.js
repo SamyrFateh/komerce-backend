@@ -80,9 +80,14 @@ describe('G6 G5A — scénarios manquants N01/N02/N03/N05/N06 (contrats avant Ch
    routable_relays:0,route_available:false,resolution:'CANONICAL_IS_RELAIS_ROUTABLE'};
   x.route_after={...x.route_before};
   x.ui={attempted_open_product:true,purchase_control_absent_or_disabled:true,buy_unavailable:true,
-   route_checkout_attempted:true,public_routable_relais:0,confirm_enabled:false};
+   route_checkout_attempted:true,route_checkout_refused:true,public_routable_relais:0,confirm_enabled:false};
   expect(validateG5aEvidence('N03',x).oracle_verdict).toBe('PASS');
   expect(()=>validateG5aEvidence('N03',{...x,ui:{...x.ui,route_checkout_attempted:false}})).toThrow('NOT_PROVEN_ROUTE_CHECKOUT_GESTURE');
+  const activeConfirm={...x,ui:{...x.ui,confirm_enabled:true}};
+  expect(()=>validateG5aEvidence('N03',activeConfirm)).toThrow('NOT_PROVEN_ROUTE_CHECKOUT_GESTURE');
+  const refusedByServer={...activeConfirm,
+   http_attempts:[{method:'POST',path:'/api/orders',status:400,code:'relay_required'}]};
+  expect(validateG5aEvidence('N03',refusedByServer).oracle_verdict).toBe('PASS');
   expect(()=>validateG5aEvidence('N03',{...x,route_after:{...x.route_after,routable_relays:1}})).toThrow('NOT_PROVEN_ROUTE_PG_READBACK');
  });
  it('N05 : certificat canonique BLOQUÉ requis, y compris avec SKU actif sans SOI',()=>{
