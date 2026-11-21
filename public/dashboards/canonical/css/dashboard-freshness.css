@@ -1,0 +1,19 @@
+/* Dashboard fraîcheur : conserver le dernier instantané, sans le faire passer pour du live. */
+[data-dashboard-stale="true"]::before {
+  content: "Actualisation indisponible · données affichées potentiellement périmées";
+  display: block;
+  padding: 10px 14px;
+  margin: 8px 0;
+  border: 1px solid #bc7a36;
+  border-radius: 8px;
+  background: #fff9ed;
+  color: #744408;
+  font-size: 12px;
+  font-weight: 600;
+}
+[data-hub-director-stale="true"] .hlc-director-stale {
+  display: block;
+  color: #9b4d13;
+  font-weight: 600;
+  padding: 8px 12px;
+}

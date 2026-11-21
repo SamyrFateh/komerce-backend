@@ -2648,6 +2648,10 @@ const KNOWN_RESPONSES = {
   '/health/metrics': {
     get: { fields: ['metrics'], source: 'route-read' }
   },
+  // #4948 — contenu SSE sans métrique ni PII, prouvé par lecture du handler.
+  '/api/admin/dashboard/events': {
+    get: { fields: [], source: 'route-read' },
+  },
   '/health/detailed': {
     get: { fields: ['status','db'], source: 'route-read' }
   },
@@ -2840,6 +2844,15 @@ const SUCCESS_STATUS_OVERRIDES = Object.freeze({
 // KNOWN_RESPONSES (pas un schéma de corps, juste un code de statut documenté en plus).
 // Format : "METHOD /chemin/{param}" → { [code]: { description } }
 const RESPONSE_OVERRIDES = {
+  'GET /api/admin/dashboard/events': {
+    '200': {
+      description: 'Flux SSE de signaux opaques, invalider puis relire la projection canonique',
+      content: { 'text/event-stream': { schema: { type: 'string', 'x-contract-status': 'route-read' } } },
+    },
+    '204': { description: 'Diffusion temps réel désactivée sur cette instance' },
+    '401': { description: 'Authentification de session requise' },
+    '403': { description: 'Rôle central requis : admin ou agent_hub' },
+  },
   'GET /api/purchasing/po/{po_id}/commitment-pdf': {
     '200': {
       description: 'Bon de commande fournisseur interne figé à la validation de l’engagement',

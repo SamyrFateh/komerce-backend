@@ -265,16 +265,30 @@
     rootNode.className = '';
     const renderer = rendererContract.createRenderer({ document: doc, ui });
     renderer.render(rootNode, PILOTAGE_SCHEMA, { state: 'loading', stateMessage: 'Chargement du Pilotage…' });
-
-    return jsonRequest(fetchFn, endpoint)
-      .then(payload => {
+    const identity = {};
+    rootNode.__dashboardViewIdentity = identity;
+    let hasData = false;
+    async function readFresh() {
+      try {
+        const payload = await jsonRequest(fetchFn, endpoint);
+        if (rootNode.isConnected === false || rootNode.__dashboardViewIdentity !== identity) return {};
         const result = renderer.render(rootNode, PILOTAGE_SCHEMA, { data: resolveSources(payload) });
+        hasData = true;
+        rootNode.removeAttribute?.('data-dashboard-stale');
         return Object.freeze({ payload, result, endpoint });
-      })
-      .catch(error => {
-        renderer.render(rootNode, PILOTAGE_SCHEMA, { state: 'error', stateMessage: error.message });
+      } catch (error) {
+        if (rootNode.isConnected === false || rootNode.__dashboardViewIdentity !== identity) return {};
+        if (!hasData) renderer.render(rootNode, PILOTAGE_SCHEMA, { state: 'error', stateMessage: error.message });
+        else rootNode.setAttribute?.('data-dashboard-stale', 'true');
         throw error;
-      });
+      }
+    }
+    const initial = readFresh();
+    globalThis.KomerceDashboardFreshness?.watch?.({
+      root: rootNode, refresh: readFresh, pollMs: 60000,
+      streamEnabled: options.user?.role === 'admin',
+    });
+    return initial;
   }
 
   return Object.freeze({

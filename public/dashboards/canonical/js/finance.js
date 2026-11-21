@@ -452,6 +452,10 @@
       ? nav.readContext(options.location && typeof options.location.search === 'string' ? options.location.search : (globalThis.location ? globalThis.location.search : ''))
       : {};
     let period = normalizePeriod(options.period != null ? options.period : urlContext.period);
+    const identity = {};
+    rootNode.__dashboardViewIdentity = identity;
+    let hasData = false;
+    let requestSeq = 0;
 
     if (!rootNode) throw new Error('canonical_finance_root_missing');
     if (!rendererContract || typeof rendererContract.createRenderer !== 'function') {
@@ -461,12 +465,15 @@
     const renderer = rendererContract.createRenderer({ document: doc, ui });
     const schema = visibleDrillSchema(FINANCE_SCHEMA, options.user);
 
-    async function load(nextPeriod) {
+    async function load(nextPeriod, { background = false } = {}) {
+      const requestId = ++requestSeq;
       period = normalizePeriod(nextPeriod == null ? period : nextPeriod);
-      renderer.render(rootNode, schema, { state: 'loading', stateMessage: 'Chargement de Finance…' });
+      if (!background) renderer.render(rootNode, schema, { state: 'loading', stateMessage: 'Chargement de Finance…' });
 
       try {
         const payload = await jsonRequest(fetchFn, `${endpoint}?period=${encodeURIComponent(period)}${simulationQuery(options)}`);
+        if (requestId !== requestSeq || rootNode.isConnected === false
+            || rootNode.__dashboardViewIdentity !== identity) return {};
         const result = renderer.render(rootNode, schema, {
           data: resolveSources(payload),
           filters: { period },
@@ -476,14 +483,28 @@
           },
         });
         if (nav && typeof nav.syncContext === 'function' && !options.location) nav.syncContext({ period });
+        hasData = true;
+        rootNode.removeAttribute?.('data-dashboard-stale');
         return Object.freeze({ payload, result, endpoint, period });
       } catch (error) {
-        renderer.render(rootNode, schema, { state: 'error', stateMessage: error.message });
+        if (requestId !== requestSeq || rootNode.__dashboardViewIdentity !== identity) return {};
+        if (background && hasData) rootNode.setAttribute?.('data-dashboard-stale', 'true');
+        else renderer.render(rootNode, schema, { state: 'error', stateMessage: error.message });
         throw error;
       }
     }
 
-    return load(period);
+    const initial = load(period);
+    globalThis.KomerceDashboardFreshness?.watch?.({
+      root: rootNode, refresh: () => load(period, { background:true }), pollMs: 60000,
+      streamEnabled: options.user?.role === 'admin',
+      isBusy: () => {
+        const active = doc?.activeElement;
+        return Boolean(active && rootNode.contains?.(active)
+          && active.matches?.('input,textarea,select,[contenteditable="true"]'));
+      },
+    });
+    return initial;
   }
 
   return Object.freeze({
