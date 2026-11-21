@@ -20,12 +20,14 @@ const {preseedG6BuyerOtp}=require('../../services/g6-staging-buyer-identity-guar
 const {observe,startTraceAfterAuth,fullError}=require('./canonical/observability');
 const {humanGoto,humanClick,humanFill,humanSelect}=require('./canonical/actors/human-gestures');
 const {snapshotBuyerEffects,validateG5aEvidence}=require('./canonical/g5a-checkout-negative-oracles');
+const {branchFor,readRouteAvailability,assertRouteMissing,assertSupplierPublicationBlocked}=require('./canonical/g5a-negative-branches');
 const BASE='https://komerce-backend-production.up.railway.app',env=process.env;
 const SCENARIO=String(env.G6_CANONICAL_SCENARIO||''),MARKET=String(env.G6_TARGET_MARKET||'').toUpperCase();
 const PREFIX={KM:'+269',CM:'+237',CG:'+242'};
+const BRANCH=branchFor(SCENARIO,env.G6_G5A_NEGATIVE_BRANCH);
 const OUT=path.resolve('test-results/g6-negative-g5a-'+SCENARIO+'-'+MARKET);
 const report={schema:'komerce-g6-g5a-negative-storefront/1',scenario_id:SCENARIO,market:MARKET,
- verdict:'NOT_PROVEN',staging_only:true,production_permitted:false,external_psp_calls:0,
+ verdict:'NOT_PROVEN',branch:BRANCH,staging_only:true,production_permitted:false,external_psp_calls:0,
  gesture_source:'CHROMIUM',actor_role:'client',http_attempts:[],steps:[],screens:[],blocked:[]};
 const save=()=>{fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n')};
 const check=(c,msg)=>{if(!c)throw Error(msg)};
@@ -47,6 +49,8 @@ function guard(){
 async function productFixture(){
  // Aucun produit métier n'est modifié. Des préconditions absentes sont PREREQ_MISSING, jamais PASS.
  // Sélection par référence facultative pour fixer un cas reproductible, pas un identifiant accepté comme autorité.
+ if(SCENARIO==='N03'&&BRANCH==='ROUTE_MISSING')
+  report.route_before=assertRouteMissing(await readRouteAvailability(db,MARKET));
  const ref=String(env.G6_G5A_NEGATIVE_PRODUCT_REF||'');
  check(!ref||/^KPR-[0-9]{6}$/.test(ref),'G6_G5A_PRODUCT_REF_INVALID');
  const {rows}=await db.query(`
@@ -66,19 +70,31 @@ async function productFixture(){
        AND NOT EXISTS (SELECT 1 FROM product_market_price_drafts d WHERE d.product_id=p.id AND d.market_id=m.id AND d.status='LOCAL_ACTIVE'))
     OR ($3='N02' AND p.lifecycle_status='active' AND p.is_active=TRUE
        AND e.commercial_exposure='DISABLED' AND EXISTS (SELECT 1 FROM product_market_price_drafts d WHERE d.product_id=p.id AND d.market_id=m.id AND d.status='LOCAL_ACTIVE'))
-    OR ($3='N03' AND m.lifecycle_status='SUSPENDED' AND p.lifecycle_status='active' AND p.is_active=TRUE AND p.is_available=TRUE AND e.commercial_exposure='ENABLED' AND EXISTS (SELECT 1 FROM product_market_price_drafts d WHERE d.product_id=p.id AND d.market_id=m.id AND d.status='LOCAL_ACTIVE') AND EXISTS (SELECT 1 FROM product_skus k WHERE k.product_id=p.id AND k.is_active=TRUE AND k.stock>0))
+    OR ($3='N03' AND m.lifecycle_status=CASE WHEN $4='ROUTE_MISSING' THEN 'ACTIVE' ELSE 'SUSPENDED' END AND p.lifecycle_status='active' AND p.is_active=TRUE AND p.is_available=TRUE AND e.commercial_exposure='ENABLED' AND EXISTS (SELECT 1 FROM product_market_price_drafts d WHERE d.product_id=p.id AND d.market_id=m.id AND d.status='LOCAL_ACTIVE') AND EXISTS (SELECT 1 FROM product_skus k WHERE k.product_id=p.id AND k.is_active=TRUE AND k.stock>0))
     OR ($3='N05' AND p.lifecycle_status='candidate' AND
-       NOT EXISTS (SELECT 1 FROM product_skus k WHERE k.product_id=p.id AND k.is_active=TRUE AND k.stock>0))
+      (($4='NO_ACTIVE_SKU' AND NOT EXISTS (
+        SELECT 1 FROM product_skus k WHERE k.product_id=p.id AND k.source='SUPPLIER' AND k.is_active=TRUE))
+       OR ($4='SOI_INCOMPLETE' AND EXISTS (
+        SELECT 1 FROM product_skus k WHERE k.product_id=p.id AND k.source='SUPPLIER'
+          AND k.is_active=TRUE AND k.stock>0
+          AND (NULLIF(BTRIM(k.supplier_unit_ref),'') IS NULL
+               OR k.supplier_order_identity IS NULL
+               OR jsonb_typeof(k.supplier_order_identity)<>'object'
+               OR k.supplier_order_identity='{}'::jsonb))))
    )
  ORDER BY (p.product_ref='KPR-000165') DESC,p.product_ref LIMIT 1
- `,[MARKET,ref,SCENARIO]);
+ `,[MARKET,ref,SCENARIO,BRANCH]);
  if(!rows.length)throw Error('G6_'+SCENARIO+'_PREREQ_MISSING_NEGATIVE_FIXTURE_'+MARKET);
  const p=rows[0];check(!!p.id&&!!p.name&&!!p.product_ref,'G6_G5A_PRODUCT_IDENTITY_MISSING');
- return {id:p.id,ref:p.product_ref,name:p.name,
-  precondition:SCENARIO==='N01'?{price_status:p.price_status||'MISSING'}
+ const precondition=SCENARIO==='N01'?{price_status:p.price_status||'MISSING'}
    :SCENARIO==='N02'?{exposure_recorded:p.exposure_recorded,commercial_exposure:p.commercial_exposure}
-   :SCENARIO==='N03'?{market_lifecycle:p.market_lifecycle,route_available:null}
-   :{product_candidate:true,sku_complete:false,soi_complete:false}};
+   :SCENARIO==='N03'?(BRANCH==='ROUTE_MISSING'?{
+     market_lifecycle:p.market_lifecycle,route_available:false,
+     route_basis:report.route_before.resolution,active_relays:report.route_before.active_relays,
+     routable_relays:report.route_before.routable_relays
+   }:{market_lifecycle:p.market_lifecycle,route_available:null})
+   :await assertSupplierPublicationBlocked(db,p.id,BRANCH);
+ return {id:p.id,ref:p.product_ref,name:p.name,precondition};
 }
 // Relire les mêmes décisions de marché après le geste : l'absence de commande ne suffit pas
 // si le prix, l'exposition, le statut du produit ou la suspension ont changé entre-temps.
@@ -153,6 +169,58 @@ async function authenticate(page,ctx,{buyer,phone,code}){
  check(ver.status()===200&&vb.user?.id===buyer.id,'G6_G5A_OTP_SESSION_WRONG_BUYER');
  await startTraceAfterAuth(ctx);
 }
+async function probeRouteMissing(page,fixture){
+ // Le produit est vendable et le marché actif ; c'est uniquement l'absence
+ // de relais routable qui doit empêcher de terminer le checkout.
+ await humanGoto(page,BASE+'/boutique/?market='+MARKET,{waitUntil:'domcontentloaded'});
+ await page.waitForFunction(()=>{const el=document.getElementById('k-hero-count');
+   return !!el&&!el.hidden&&/[1-9]/.test(el.textContent||'');},null,{timeout:30000});
+ const projection=await page.request.get(BASE+'/api/relais/public?market='+MARKET);
+ const published=await projection.json().catch(()=>null);
+ check(projection.status()===200&&Array.isArray(published?.relais),
+   'G6_N03_NOT_PROVEN_RELAY_PROJECTION');
+ check(published.relais.length===0,'G6_N03_PREREQ_MISSING_ROUTE_CHANGED_IN_PUBLIC_PROJECTION');
+ await humanFill(null,page.locator('#k-search-input'),fixture.name);
+ const item=page.locator('#k-search-dropdown .k-search-item[data-id="'+fixture.id+'"]');
+ await item.waitFor({state:'visible',timeout:25000});
+ await humanClick(null,item);
+ await page.locator('#k-modal-variants [data-pdc5-root]').waitFor({state:'attached',timeout:20000});
+ const axes=page.locator('#k-modal-variants [data-axis-key]');
+ check(await axes.count()>0,'G6_N03_SCREEN_MISSING_PRODUCT_VARIANTS');
+ for(let i=0;i<await axes.count();i++){
+  const axis=axes.nth(i);
+  if(await axis.locator('button[data-option-state="AVAILABLE"][aria-pressed="true"]').count())continue;
+  const b=axis.locator('button[data-option-state="AVAILABLE"][data-option-value]').first();
+  check(await b.count()===1,'G6_N03_SCREEN_MISSING_PURCHASABLE_SKU');
+  await humanClick(null,b);
+ }
+ const add=page.locator('#k-add-cart-btn');
+ check(await add.isVisible()&&await add.isEnabled(),'G6_N03_SCREEN_MISSING_PRODUCT_ADD');
+ const before=Number(await page.locator('#k-modal-cart-badge').innerText().catch(()=>'0'))||0;
+ await humanClick(null,add);
+ await page.waitForFunction(n=>Number(document.querySelector('#k-modal-cart-badge')?.textContent||0)>n,before,{timeout:12000});
+ await humanClick(null,page.locator('#k-modal-close'));
+ await page.locator('#k-side-cart.has-items').waitFor({state:'visible',timeout:12000});
+ const checkout=page.locator('#k-sc-checkout');
+ let checkoutOpened=false,confirmEnabled=false;
+ if(await checkout.isVisible()&&await checkout.isEnabled()){
+  await humanClick(null,checkout);checkoutOpened=true;
+ }else if(await page.locator('#k-cart-btn').isVisible()){
+  await humanClick(null,page.locator('#k-cart-btn'));
+  checkoutOpened=await page.locator('#k-order-modal.open').isVisible().catch(()=>false);
+ }
+ if(checkoutOpened){
+  await page.locator('#k-order-modal.open').waitFor({state:'visible',timeout:12000});
+  const confirm=page.locator('#btn-confirm-order');
+  confirmEnabled=await confirm.isVisible().catch(()=>false)&&await confirm.isEnabled().catch(()=>false);
+ }
+ const file='storefront-N03-ROUTE-'+MARKET+'.png';
+ await page.screenshot({path:path.join(OUT,file),fullPage:true});report.screens.push(file);
+ check(!confirmEnabled,'G6_N03_PRODUCT_GAP_CHECKOUT_ALLOWED_WITHOUT_ROUTABLE_RELAY');
+ return {attempted_open_product:true,purchase_control_absent_or_disabled:true,
+  buy_unavailable:true,route_checkout_attempted:true,route_checkout_opened:checkoutOpened,
+  public_routable_relais:published.relais.length,confirm_enabled:confirmEnabled};
+}
 async function probe(page,fixture){
  await humanGoto(page,BASE+'/boutique/?market='+MARKET,{waitUntil:'domcontentloaded'});
  // Le marché suspendu peut ne pas afficher de catalogue ; les autres exigent que le chargement soit terminé.
@@ -212,11 +280,17 @@ async function main(){
    report.blocked.push({method:req.method(),path:u.pathname});save();return route.abort('blockedbyclient');
   });
   await authenticate(page,ctx,b);
-  report.ui=await probe(page,f);
+  report.ui=SCENARIO==='N03'&&BRANCH==='ROUTE_MISSING'
+    ?await probeRouteMissing(page,f):await probe(page,f);
   check(report.blocked.length===0,'G6_G5A_UNEXPECTED_MUTATION_BLOCKED');
   report.after=await snapshotBuyerEffects(db,b.buyer.id);
   report.after_stock_available=await stockAvailable(f.id);
   report.product_market_after=await productMarketTruth(f.id);
+  if(SCENARIO==='N03'&&BRANCH==='ROUTE_MISSING'){
+   report.route_after=assertRouteMissing(await readRouteAvailability(db,MARKET));
+   check(JSON.stringify(report.route_after)===JSON.stringify(report.route_before),
+    'G6_N03_PRODUCT_GAP_ROUTE_CHANGED_DURING_PROBE');
+  }
   check(JSON.stringify(report.product_market_after)===JSON.stringify(report.product_market_before),
    'G6_'+SCENARIO+'_PRODUCT_GAP_MARKET_PRODUCT_STATE_CHANGED');
   // Le système d'observabilité ne conserve les traces que pour un échec.
