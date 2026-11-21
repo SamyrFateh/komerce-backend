@@ -218,13 +218,28 @@ describeE2E('CERTIFICATION multi-marché KM/CM/CG/DJ', ({ db }) => {
       const s = order.fx_snapshot;
       expect(s).toMatchObject({ pivot_currency: 'EUR', origin: { currency: 'KMF' }, market: { currency: c.currency, market_id: c.marketId } });
       expect(Number(s.eur.amount_text)).toBe(Number(order.total_eur));
-      if (c.currency !== 'KMF') expect(s.market.legs.length).toBeGreaterThan(0);
+      // Le prix LOCAL_ACTIVE est l'autorité commerciale : convertir ce montant
+      // vers sa PROPRE devise est une identité, sans jambe inventée.
+      // Les jambes sourcées utilisées pour calculer l'encaissement EUR
+      // appartiennent à s.eur.legs, jamais à cette projection identité.
+      expect(s.market.price_authority).toBe('LOCAL_ACTIVE_MARKET_AMOUNT');
+      expect(Number(s.market.amount)).toBe(c.price);
+      expect(s.market.legs).toEqual([]);
+      expect(s.eur.legs.length).toBeGreaterThan(0);
+      if (c.currency === 'XAF') {
+        expect(s.eur.legs).toEqual(expect.arrayContaining([
+          expect.objectContaining({ kind: 'parity', pair: 'EUR/XAF', source: 'currency_parities', side: 'from' }),
+        ]));
+      }
       expect(Number(order.transport_price_kmf)).toBe(0);
       expect(order.transport_pricing_snapshot).toBeNull();
       if (c.currency === 'DJF') {
-        // La chaîne EUR→USD→DJF porte l'observation et le peg ; la fixture est explicitement non réelle.
-        expect(JSON.stringify(s.market.legs)).toMatch(/observation/);
-        expect(JSON.stringify(s.market.legs)).toMatch(/peg/);
+        // La chaîne EUR→USD→DJF porte observation + peg sur l'encaissement EUR,
+        // non sur la projection locale identité ; la fixture est non réelle.
+        expect(s.eur.legs).toEqual(expect.arrayContaining([
+          expect.objectContaining({ kind: 'observation', pair: 'EUR/USD', side: 'from' }),
+          expect.objectContaining({ kind: 'peg', pair: 'USD/DJF', side: 'from' }),
+        ]));
       }
     });
 

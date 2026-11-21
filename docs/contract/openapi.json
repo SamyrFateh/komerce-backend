@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 80,
-    "total_routes": 761,
+    "total_routes": 764,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -5588,6 +5588,37 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/dashboard/events": {
+      "get": {
+        "summary": "GET /api/admin/dashboard/events",
+        "x-route-file": "routes/admin-dashboard-events.js",
+        "responses": {
+          "200": {
+            "description": "Flux SSE de signaux opaques, invalider puis relire la projection canonique",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "x-contract-status": "route-read"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Diffusion temps réel désactivée sur cette instance"
+          },
+          "401": {
+            "description": "Authentification de session requise"
+          },
+          "403": {
+            "description": "Rôle central requis : admin ou agent_hub"
           },
           "429": {
             "description": "Too Many Requests — rate limit exceeded"

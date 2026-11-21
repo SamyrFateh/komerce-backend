@@ -161,12 +161,15 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const agentActionCenterRouter = require('../routes/agent-action-center');
   const adminDashboardMarketRouter = require('../routes/admin-dashboard-market');
   const adminDashboardLegacyRouter = require('../routes/admin-dashboard');
+  const adminDashboardEventsRouter = require('../routes/admin-dashboard-events');
   // ZG-3: adminCollectiveRepairsRouter supprimé — system collective_workspaces démonté (2026-05-30)
   // Les services repair-collective-*.js et la route /api/admin/collective ne sont plus montés.
 
   app.use('/api/admin/risk-provisions',    adminRiskProvisionsRouter);
   // LOT 2C — route Pilotage market-scoped montée avant l'agrégateur global historique.
   // Variables explicites : le route-registry suit les routers montés par identifiant.
+  // Flux SSE opaque : auth et permissions propres, avant les routes de lecture.
+  app.use('/api/admin/dashboard',   adminDashboardEventsRouter);
   app.use('/api/admin/dashboard',   adminDashboardMarketRouter);
   app.use('/api/admin/dashboard',   adminDashboardLegacyRouter);
   app.use('/api/admin/entities',    adminOrder360Router);
