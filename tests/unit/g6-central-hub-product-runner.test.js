@@ -22,8 +22,10 @@ describe('G6 central Hub product: resume by step read from PG', () => {
       .toEqual({ step: 'scan-candidate', candidate_ref: 'KSC-1' });
     expect(step({ candidate_ref: 'KSC-1', product_ref: null, state: 'scanned', decision: 'TEST' }))
       .toEqual({ step: 'promote-candidate', candidate_ref: 'KSC-1' });
-    expect(step(P)).toEqual({ step: 'catalog-editorial', product_ref: 'KPR-1' });
-    const fr = { ...P, description: 'Texte', needs_review: false };
+    expect(step(P)).toEqual({ step: 'catalog-media', product_ref: 'KPR-1' });
+    const withMedia = { ...P, media_count: 1 };
+    expect(step(withMedia)).toEqual({ step: 'catalog-editorial', product_ref: 'KPR-1' });
+    const fr = { ...withMedia, description: 'Texte', needs_review: false };
     expect(step(fr)).toEqual({ step: 'catalog-taxonomy', product_ref: 'KPR-1' });
     expect(step({ ...fr, boutique_category_key: 'Bricolage', boutique_subcategory_key: 'Outillage' }))
       .toEqual({ step: 'catalog-approve', product_ref: 'KPR-1' });
