@@ -225,8 +225,8 @@ async function addLineToCart(page,line,idx){
     q=await badge();
    }
    n04.badge_final=q;
-   n04.visible_message=(await page.locator('[role="alert"],[role="status"],.k-toast').allInnerTexts().then(a=>a.join(' | ').replace(/\s+/g,' ').slice(0,300)).catch(()=>''))||null;
-   n04.refusal_visible=!!n04.visible_message;
+   n04.visible_message=await visibleMessages(page,['#k-modal-name']);
+   n04.refusal_visible=!!n04.refusal_point&&!!n04.visible_message;
    await page.screenshot({path:path.join(OUT,'02b-n04-pdp-over-stock.png')});save();
    await humanClick(null,page.locator('#k-modal-close'));
    return;
@@ -244,32 +244,58 @@ async function localAvailableQty(productId){
   WHERE ls.product_id=$1 AND ls.location='KM_MAIN' AND ls.commercial_exposure='ENABLED'`,[productId,MARKET]);
  return r.available;
 }
+// Messages visibles non vides ; les conteneurs d'alerte vides ne comptent jamais comme refus visible.
+const MSG_RE=/stock|disponible|quantit|indisponible|insuffisant|limite|erreur|impossible|maximum|refus/i;
+async function visibleMessages(page,roots){
+ const out=[];
+ for(const sel of roots){
+  const t=await page.locator(sel).first().innerText({timeout:2000}).catch(()=>'');
+  for(const line of String(t).split(/\n+/).map(x=>x.replace(/\s+/g,' ').trim()))if(line&&MSG_RE.test(line))out.push(line.slice(0,160));
+ }
+ const alerts=await page.locator('[role="alert"],[role="status"],.k-toast,.k-sc-warning,.k-ck-error').allInnerTexts().catch(()=>[]);
+ for(const a of alerts){const x=String(a).replace(/\s+/g,' ').trim();if(x)out.push(x.slice(0,160))}
+ return [...new Set(out)].join(' | ').slice(0,400)||null;
+}
 async function n04QuantityOverStock(page){
  const n04=report.n04,avail=n04.available_before;
+ const msg=()=>visibleMessages(page,['#k-side-cart','#k-order-modal']);
  const qtyOf=()=>page.locator('#k-sc-items .k-sc-item-stepper-qty').first().innerText().then(t=>Number(String(t).trim()));
- const alertText=()=>page.locator('[role="alert"],[role="status"],.k-toast,.k-sc-warning,.k-ck-error').allInnerTexts().then(a=>a.join(' | ').replace(/\s+/g,' ').slice(0,300)).catch(()=>'');
  n04.cart_qty_final=await qtyOf();
- n04.visible_message=await alertText();
- await page.screenshot({path:path.join(OUT,'03b-n04-cart-over-stock.png')});save();
- if(!n04.refusal_point&&n04.cart_qty_final<=avail)n04.refusal_point='CART_ADD_CAPPED';
+ n04.visible_message=await msg();
+ await page.screenshot({path:path.join(OUT,'03b-n04-cart-over-stock.png')});record('N04_CART_OVER_STOCK',{qty:n04.cart_qty_final,available:avail});
+ if(n04.cart_qty_final<=avail)n04.refusal_point='CART_ADD_CAPPED';
  if(!n04.refusal_point){
+  // Le panier accepte plus que le stock : le geste continue sur Commander puis le checkout, un seul geste mutant (confirmation).
   const checkout=page.locator('#k-sc-checkout');
   if(await checkout.isVisible())await humanClick(null,checkout);else await humanClick(null,page.locator('#k-cart-btn'));
+  record('N04_CHECKOUT_CLICKED',{});
   await page.locator('#k-order-modal.open').waitFor({state:'visible',timeout:15000});
   const confirm=page.locator('#btn-confirm-order');
   await confirm.waitFor({state:'visible',timeout:15000});
   const enabled=await page.waitForFunction(()=>{const el=document.getElementById('btn-confirm-order');return !!el&&!el.disabled},null,{timeout:12000}).then(()=>true,()=>false);
   n04.preview_http_statuses=report.preview_http_statuses.slice();
-  n04.visible_message=(await alertText())||(await page.locator('#k-order-modal').innerText().catch(()=>'')).replace(/\s+/g,' ').slice(0,300);
+  n04.visible_message=await msg();
   await page.screenshot({path:path.join(OUT,'04b-n04-checkout-over-stock.png')});
+  record('N04_CHECKOUT_OPEN',{confirm_enabled:enabled,preview:n04.preview_http_statuses});
   if(!enabled||n04.preview_http_statuses.some(x=>x!==200)){n04.refusal_point='CHECKOUT_BLOCKED';n04.confirm_enabled=enabled}
   else{
    const resp=page.waitForResponse(r=>r.url().endsWith('/api/orders')&&r.request().method()==='POST',{timeout:25000});
    await humanClick(null,confirm);
    const r=await resp;n04.order_post_status=r.status();
-   if(r.status()===201)throw Error('G6_N04_PRODUCT_GAP_ORDER_CREATED_ABOVE_STOCK');
+   const body=await r.json().catch(()=>null);
+   n04.order_post_error=String(body?.error||body?.message||'').slice(0,200)||null;
+   n04.visible_message=await msg();
+   await page.screenshot({path:path.join(OUT,'05b-n04-after-confirm.png')});
+   if(r.status()===201){
+    n04.order_reference=body?.order?.reference||null;n04.order_id=body?.order?.id||null;
+    // Stock réservé ou négatif relu en PG (lecture seule), consigné avant l'erreur.
+    const {rows:[st]}=await db.query(`SELECT COALESCE(MIN(ls.qty_physical),0)::int AS min_physical,
+      COALESCE((SELECT SUM(a.quantity) FROM local_stock_allocations a JOIN local_stock x ON x.id=a.local_stock_id WHERE a.order_id=$2 AND x.product_id=$1),0)::int AS reserved_for_order
+      FROM local_stock ls WHERE ls.product_id=$1 AND ls.location='KM_MAIN'`,[PRODUCT,n04.order_id]).catch(()=>({rows:[{}]}));
+    n04.pg_after_order=st;n04.available_after_order=await localAvailableQty(PRODUCT);save();
+    throw Error('G6_N04_PRODUCT_GAP_ORDER_CREATED_ABOVE_STOCK_'+n04.order_reference);
+   }
    n04.refusal_point='CHECKOUT_POST_REFUSED';
-   n04.visible_message=(await alertText())||(await page.locator('#k-order-modal').innerText().catch(()=>'')).replace(/\s+/g,' ').slice(0,300);
   }
  }
  n04.refusal_visible=!!n04.visible_message;save();
@@ -406,6 +432,7 @@ async function browserCheckout({buyer,phone,code}){
   return body.order;
  }finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});await browser.close()}
 }
+for(const ev of ['unhandledRejection','uncaughtException'])process.on(ev,e=>{report.verdict='BLOCKED';report.error='PROCESS_'+ev+' '+fullError(e);save();process.exitCode=2});
 (async()=>{
  try{
   check(process.env.KOMERCE_ENV==='staging'&&process.env.NODE_ENV==='test'&&
