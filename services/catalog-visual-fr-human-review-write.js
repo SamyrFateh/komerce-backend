@@ -5,8 +5,8 @@
  * @layer service
  * @owner catalog
  * @purpose Persist explicit human image review only for exact active source and variant.
- * @db-read catalog_media, sourcing_candidates, catalog_media_visual_fr_reviews
- * @db-write catalog_media_visual_fr_reviews
+ * @db-read catalog_media, sourcing_candidates, suppliers, catalog_media_visual_fr_reviews
+ * @db-write catalog_media, catalog_media_visual_fr_reviews
  * @db-txn none
  * @impact-areas catalog,sourcing
  */
@@ -32,8 +32,14 @@ async function recordVisualFrReview(q, { productId, mediaId, review, reviewerId 
     return { status: 403, code: 'AUTOMATED_REVIEW_STAGING_ONLY' };
   }
   const { rows } = await q.query(
-    `SELECT id, source_media_id, url, option_values FROM catalog_media
-      WHERE id=$1 AND product_id=$2 AND is_active=TRUE`, [mediaId, productId]
+    `SELECT cm.id, cm.source_media_id, cm.url, cm.option_values,
+            EXISTS (SELECT 1 FROM sourcing_candidates sc
+              JOIN suppliers s ON s.id=sc.supplier_id
+             WHERE sc.product_id=cm.product_id AND sc.state='imported_to_catalog'
+               AND sc.normalized_source_contract->>'source_kind'='central_hub_manual'
+               AND s.system_key='central_hub') AS hub_manual
+       FROM catalog_media cm
+      WHERE cm.id=$1 AND cm.product_id=$2 AND cm.is_active=TRUE`, [mediaId, productId]
   );
   const media = rows[0];
   if (!media) return { status: 404, code: 'ACTIVE_SOURCE_MEDIA_NOT_FOUND' };
@@ -50,6 +56,12 @@ async function recordVisualFrReview(q, { productId, mediaId, review, reviewerId 
       return { status: 403, code: 'AUTOMATED_REVIEW_TEST_CANDIDATE_REQUIRED' };
     }
   }
+  const hubManualIdentity = `hub-manual:${mediaId}`;
+  if (media.source_media_id == null &&
+      (media.hub_manual !== true || review?.source_media_id !== hubManualIdentity)) {
+    return { status: 422, code: 'SOURCE_MEDIA_IDENTITY_OR_URL_MISSING' };
+  }
+  const effectiveSourceMediaId = media.source_media_id || hubManualIdentity;
   const proof = {
     source_media_id: review?.source_media_id,
     source_url: review?.source_url,
@@ -64,7 +76,7 @@ async function recordVisualFrReview(q, { productId, mediaId, review, reviewerId 
     reviewed_by: automated ? `automation:github-actions:${review.run_id}:${reviewerId}` : reviewerId,
     reviewed_at: new Date().toISOString(),
   };
-  const verdict = inspectOne({ source_media_id: media.source_media_id, url: media.url,
+  const verdict = inspectOne({ source_media_id: effectiveSourceMediaId, url: media.url,
     option_values: media.option_values }, proof, { runtime: env.KOMERCE_ENV });
   if (verdict.reason === 'SOURCE_IMAGE_OR_VARIANT_CHANGED') {
     return { status: 409, code: 'SOURCE_IMAGE_OR_VARIANT_CHANGED' };
@@ -79,14 +91,34 @@ async function recordVisualFrReview(q, { productId, mediaId, review, reviewerId 
     return { status: 422, code: verdict.reason };
   }
   const written = await q.query(
-    `INSERT INTO catalog_media_visual_fr_reviews
+    `WITH identified AS (
+       UPDATE catalog_media cm SET source_media_id=$3
+        WHERE cm.id=$1 AND cm.product_id=$2 AND cm.is_active=TRUE
+          AND cm.source_media_id IS NULL AND $13::boolean=TRUE
+          AND $3='hub-manual:'||cm.id::text
+          AND EXISTS (SELECT 1 FROM sourcing_candidates sc
+            JOIN suppliers s ON s.id=sc.supplier_id
+           WHERE sc.product_id=cm.product_id AND sc.state='imported_to_catalog'
+             AND sc.normalized_source_contract->>'source_kind'='central_hub_manual'
+             AND s.system_key='central_hub')
+        RETURNING cm.id, cm.source_media_id, cm.url, cm.option_values
+     ), existing AS (
+       SELECT cm.id, cm.source_media_id, cm.url, cm.option_values
+         FROM catalog_media cm
+        WHERE cm.id=$1 AND cm.product_id=$2 AND cm.is_active=TRUE
+          AND cm.source_media_id=$3 AND cm.url=$4
+          AND COALESCE(cm.option_values,'{}'::jsonb)=COALESCE($5::jsonb,'{}'::jsonb)
+     ), eligible AS (
+       SELECT * FROM identified
+       UNION ALL
+       SELECT * FROM existing WHERE NOT EXISTS (SELECT 1 FROM identified)
+     )
+     INSERT INTO catalog_media_visual_fr_reviews
       (media_id,source_media_id,source_url,option_values,text_presence,source_transcription,
        french_translation,french_presentation,reviewed_by,reviewed_at)
       SELECT cm.id,$3,$4,$5::jsonb,$6,$7,$8,$9::jsonb,$10,$11::timestamptz
-        FROM catalog_media cm
-       WHERE cm.id=$1 AND cm.product_id=$2 AND cm.is_active=TRUE
-         AND cm.source_media_id=$3 AND cm.url=$4
-         AND COALESCE(cm.option_values,'{}'::jsonb)=COALESCE($5::jsonb,'{}'::jsonb)
+        FROM eligible cm WHERE cm.url=$4
+          AND COALESCE(cm.option_values,'{}'::jsonb)=COALESCE($5::jsonb,'{}'::jsonb)
       ON CONFLICT (media_id) DO UPDATE
         SET source_media_id=EXCLUDED.source_media_id,source_url=EXCLUDED.source_url,
             option_values=EXCLUDED.option_values,text_presence=EXCLUDED.text_presence,
@@ -98,7 +130,7 @@ async function recordVisualFrReview(q, { productId, mediaId, review, reviewerId 
     [mediaId,productId,proof.source_media_id,proof.source_url,
      JSON.stringify(proof.option_values),proof.text_presence,proof.source_transcription,
      proof.french_translation,JSON.stringify(proof.french_presentation),
-     proof.reviewed_by,proof.reviewed_at,automated]
+     proof.reviewed_by,proof.reviewed_at,automated,media.hub_manual === true]
   );
   if (!written.rows.length) return { status: 409, code: 'SOURCE_MEDIA_CHANGED_DURING_REVIEW' };
   return { status: 200, code: 'VISUAL_FR_REVIEW_RECORDED', ready: verdict.ready,

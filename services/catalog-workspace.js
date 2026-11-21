@@ -581,6 +581,7 @@ function publicProductDossier(facts, product, marketHandoff = null, details = {}
       // UUIDs exposed only through the authenticated Catalogue + Sourcing dossier.
       product_id: row.has_sourcing_candidate === true ? product.id : null,
       sourcing_linked: row.has_sourcing_candidate === true,
+      canonical_hub_media: hubManual,
       automated_staging_review_allowed: process.env.KOMERCE_ENV === 'staging',
       visual_fr: details.visual || null,
       active_canonical: count(row.active_media),
@@ -603,7 +604,11 @@ function publicProductDossier(facts, product, marketHandoff = null, details = {}
           url: item.url,
           alt: item.alt || null,
           role: item.role || 'PRODUCT',
-          source_media_id: item.source_media_id || null,
+          // A manually uploaded Hub image has no supplier media ID. Give that
+          // exact catalog row a stable review identity without inventing a
+          // supplier reference; the review writer persists it on first review.
+          source_media_id: item.source_media_id || (hubManual && item.media_id
+            ? `hub-manual:${item.media_id}` : null),
         })),
       gallery_truncated: (details.media || []).length > 24,
     },

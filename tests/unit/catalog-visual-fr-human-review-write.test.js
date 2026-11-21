@@ -87,3 +87,22 @@ test('image with variants cannot omit option set',async()=>{
  expect(result).toMatchObject({status:409,code:'SOURCE_IMAGE_OR_VARIANT_CHANGED'});
  expect(q.query).toHaveBeenCalledTimes(1);
 });
+
+test('first visual review assigns a stable internal identity to a Hub manual image',async()=>{
+ const hubMedia={...media,source_media_id:null,hub_manual:true};
+ const q={query:jest.fn().mockResolvedValueOnce({rows:[hubMedia]}).mockResolvedValueOnce({rows:[{media_id:media.id}]})};
+ const result=await recordVisualFrReview(q,{productId,mediaId:media.id,
+   review:{source_media_id:'hub-manual:'+media.id,source_url:media.url,option_values:media.option_values,text_presence:'NONE'},reviewerId:'admin'});
+ expect(result).toMatchObject({status:200,ready:true,code:'VISUAL_FR_REVIEW_RECORDED'});
+ expect(q.query.mock.calls[1][0]).toContain("UPDATE catalog_media cm SET source_media_id=$3");
+ expect(q.query.mock.calls[1][0]).toContain("sc.normalized_source_contract->>'source_kind'='central_hub_manual'");
+ expect(q.query.mock.calls[1][1][12]).toBe(true);
+});
+
+test('an unlinked image cannot claim a Hub manual media identity',async()=>{
+ const q={query:jest.fn().mockResolvedValueOnce({rows:[{...media,source_media_id:null,hub_manual:false}]})};
+ const result=await recordVisualFrReview(q,{productId,mediaId:media.id,
+   review:{source_media_id:'hub-manual:'+media.id,source_url:media.url,text_presence:'NONE'},reviewerId:'admin'});
+ expect(result).toMatchObject({status:422,code:'SOURCE_MEDIA_IDENTITY_OR_URL_MISSING'});
+ expect(q.query).toHaveBeenCalledTimes(1);
+});

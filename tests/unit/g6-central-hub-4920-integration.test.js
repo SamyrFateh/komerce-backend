@@ -26,7 +26,12 @@ describe('G6 preparer source Hub centrale — contrat #4920 + media canonique',(
   expect(nextStep({sellable:[],candidate:{...candidate,media_count:0}})).toEqual({
    step:'catalog-media',product_ref:'KPR-1'});
   expect(nextStep({sellable:[],candidate:{...candidate,media_count:1}})).toEqual({
+   step:'catalog-visual-review',product_ref:'KPR-1',product_id:undefined});
+  expect(nextStep({sellable:[],candidate:{...candidate,media_count:1,visual_review_ready:true}})).toEqual({
    step:'catalog-approve',product_ref:'KPR-1'});
+  expect(CANDIDATE_SQL).toContain('catalog_media_visual_fr_reviews');
+  expect(SOURCE).toContain("'catalog-visual-review':'admin'");
+  expect(SOURCE).toContain("'catalog-visual-review':(a,s)=>catalogVisualReview(a,s.product_ref,s.product_id)");
   expect(SOURCE).toContain("catalog-media':'admin'");
   expect(SOURCE).toContain("catalog-media':(a,s)=>catalogMedia(a,s.product_ref)");
  });

@@ -240,6 +240,8 @@ test('Revues visuelles FR : état explicite sans présélection, POST canonique,
   expect(ui).toContain("confirmed.checked");
   expect(ui).toContain("'/visual-fr-review'");
   expect(ui).toContain("source_media_id: item.source_media_id");
+  expect(ui).toContain("source.textContent = media.canonical_hub_media");
+  expect(ui).toContain('preuve est une revue automatisée de recette, sans attestation humaine');
   expect(ui).toContain("option_values: item.option_values || {}");
   expect(ui).toContain('await loadProductDossier(context, doc, slot, row)');
   expect(css).toContain('.kmc-catalog-visual-fr-review');
