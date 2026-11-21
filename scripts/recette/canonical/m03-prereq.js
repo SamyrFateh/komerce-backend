@@ -10,15 +10,32 @@
 const {M01_PRODUCT_REF}=require('./scenario-profile');
 const MIN_IMPORT_SOURCES=3;
 // Produit vendable : prix LOCAL_ACTIVE + exposition ENABLED + SKU actif (règle per_market_minimum de la matrice).
-// Source = première association admissible (priorité, ancienneté, id), comme services/supplier-source-resolution.js.
+// Source = première association admissible (priorité, ancienneté, id) ; à défaut, le propriétaire
+// opérationnel central Hub explicite, comme resolveSupplierSource(... assignedSupplierId).
+// Pour un SKU MANUAL central Hub, stock interne 0 != stock fournisseur indisponible :
+// l'achat réel doit encore être certifié par Chromium (pas par cette lecture seule).
 const SELLABLE_SQL=`
  SELECT p.id,p.product_ref,d.amount,
-  (SELECT CASE WHEN s.system_key='central_hub' THEN 'central_hub' ELSE 'supplier:'||s.id::text END
-     FROM product_suppliers ps JOIN suppliers s ON s.id=ps.supplier_id
-    WHERE ps.product_id=p.id AND ps.is_active=TRUE AND ps.deleted_at IS NULL
-      AND s.is_active=TRUE AND s.deleted_at IS NULL AND (s.owner_scope IS NULL OR s.system_key='central_hub')
-    ORDER BY ps.priority ASC,ps.created_at ASC,ps.id ASC LIMIT 1) AS source_key,
-  EXISTS (SELECT 1 FROM product_skus k WHERE k.product_id=p.id AND k.is_active=TRUE AND k.stock>0) AS import_ready,
+  COALESCE(
+    (SELECT CASE WHEN s.system_key='central_hub' THEN 'central_hub' ELSE 'supplier:'||s.id::text END
+       FROM product_suppliers ps JOIN suppliers s ON s.id=ps.supplier_id
+      WHERE ps.product_id=p.id AND ps.is_active=TRUE AND ps.deleted_at IS NULL
+        AND s.is_active=TRUE AND s.deleted_at IS NULL AND (s.owner_scope IS NULL OR s.system_key='central_hub')
+      ORDER BY ps.priority ASC,ps.created_at ASC,ps.id ASC LIMIT 1),
+    -- As in resolveSupplierSource(... assignedSupplierId): an explicitly manual Hub
+    -- catalogue product has an operational procurement owner, not an external vendor mapping.
+    (SELECT 'central_hub' FROM suppliers s
+      WHERE s.id=p.procurement_supplier_id AND s.system_key='central_hub'
+        AND s.is_active=TRUE AND s.deleted_at IS NULL LIMIT 1)
+  ) AS source_key,
+  EXISTS (SELECT 1 FROM product_skus k WHERE k.product_id=p.id AND k.is_active=TRUE
+    AND (k.stock>0 OR (
+      -- An internal on-demand Hub SKU starts at stock=0: no fictitious supplier stock,
+      -- supplier SKU or provider identity may be generated just to make the probe green.
+      k.source='MANUAL' AND k.supplier_order_identity IS NULL
+      AND EXISTS (SELECT 1 FROM suppliers h WHERE h.id=p.procurement_supplier_id
+        AND h.system_key='central_hub' AND h.is_active=TRUE AND h.deleted_at IS NULL)
+    ))) AS import_ready,
   COALESCE((SELECT SUM(ls.qty_physical-COALESCE((SELECT SUM(a.quantity) FROM local_stock_allocations a
       WHERE a.local_stock_id=ls.id AND a.consumed_at IS NULL AND a.released_at IS NULL),0))
     FROM local_stock ls WHERE ls.product_id=p.id AND ls.market_id=m.id
