@@ -204,16 +204,22 @@ async function addLineToCart(page,line,idx){
   });
   check(addEnabled,'NO_PURCHASABLE_VARIANT');
   if(NEG==='N04'){
-   // La fiche canonique n'a pas de champ de quantité (le « + » hérité est désactivé et masqué) et le stepper du panier est
-   // recouvert par la bulle d'accueil : la quantité monte par clics répétés sur « Ajouter » (geste humain), de 1 à disponible + 1.
+   // Le stepper de la fiche (− N +) n'apparaît qu'une fois le produit au panier ; le stepper du panier est recouvert par la
+   // bulle d'accueil : « Ajouter » puis « + » de la fiche, de 1 à disponible + 1 (runs 44848950808…, in-cart).
    const avail=await localAvailableQty(PRODUCT);
    check(avail>=1&&avail<=40,'G6_N04_PREREQ_LOCAL_AVAILABLE_OUT_OF_RANGE_'+avail);
    const n04=report.n04={available_before:avail,target_qty:avail+1,refusal_point:null,refusal_visible:false,visible_message:null,
     pdp_qty_input_present:await page.locator('#k-qty-plus').isVisible().catch(()=>false)};
    const badge=()=>page.locator('#k-modal-cart-badge').innerText().then(t=>Number(String(t).trim())||0).catch(()=>0);
    let q=0;
+   // Cycle bouton↔stepper (modal-shell.css) : 1er geste « Ajouter », puis le « + » du stepper qui le remplace (.k-qty).
+   const plus=page.locator('#k-qty-plus');
    while(q<avail+1){
-    await humanClick(null,add);
+    if(q>0){
+     const ok=await plus.isVisible().catch(()=>false)&&await plus.isEnabled().catch(()=>false);
+     if(!ok){n04.refusal_point='PDP_QTY_CAPPED';n04.capped_at_qty=q;break}
+    }
+    await humanClick(null,q===0?add:plus);
     const moved=await page.waitForFunction(n=>Number(document.querySelector('#k-modal-cart-badge')?.textContent||0)>n,q,{timeout:3000}).then(()=>true,()=>false);
     if(!moved){n04.refusal_point='PDP_ADD_CAPPED';n04.capped_at_qty=q;break}
     q=await badge();
