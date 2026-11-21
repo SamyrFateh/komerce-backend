@@ -10,7 +10,7 @@
  */
 'use strict';
 const {isDeepStrictEqual}=require('node:util');
-const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29','N11','N12','N13','N14','N15','N16','N17','N18','N19','N28','N32','N35','N36','N37','N38','N30','N31','N39F1','N39F2','N39F3']);
+const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29','N11','N12','N13','N14','N15','N16','N17','N18','N19','N28','N32','N35','N36','N37','N38','N30','N31','N39F1','N39F2','N39F3','N25','N26b']);
 const isNegative=s=>NEGATIVE.includes(String(s));
 // Produit vendable (prix LOCAL_ACTIVE, exposition ENABLED, actif) servi par l'import (aucun stock local exposé), SKU actifs en stock.
 const MULTI_SKU_SQL=`
@@ -543,6 +543,25 @@ async function oracleN39F3(db,{orderId,cancel}){
  ok(x.credits===0&&x.refunds===0&&x.psp_intents===0,'G6_N39F3_PRODUCT_GAP_REFUND_WHEN_SHIPPED');
  return {status:x.status,wallet_credits:0,refunds:0,client_http:cancel?cancel.http:null};
 }
+// N25 (G6-G5B, SAV retour et double reprise) : un seul dossier, une seule reprise physique, produit isolé, aucune compensation ni revente.
+async function oracleN25(db,{orderId,stockBefore}){
+ const o=await orderRows(db,orderId);
+ ok(o.status==='collected','G6_N25_PRODUCT_GAP_ORDER_NOT_COLLECTED_'+o.status);
+ const {rows:d}=await db.query("SELECT id,status::text AS status,return_quantity FROM disputes WHERE order_id=$1 AND type='product_return'",[orderId]);
+ ok(d.length===1&&Number(d[0].return_quantity)===1,'G6_N25_PRODUCT_GAP_DOSSIER_COUNT_'+d.length);
+ const {rows:r}=await db.query('SELECT quantity,relay_id FROM relay_product_return_receipts WHERE request_id=$1',[d[0].id]);
+ ok(r.length===1&&Number(r[0].quantity)===1,'G6_N25_PRODUCT_GAP_PHYSICAL_RECEIPT_COUNT_'+r.length);
+ ok(['open','processing'].includes(d[0].status),'G6_N25_PRODUCT_GAP_DOSSIER_AUTO_RESOLVED_'+d[0].status);
+ const {rows:[c]}=await db.query(`SELECT
+  (SELECT count(*)::int FROM relay_return_compensations x WHERE x.request_id=$1) AS compensations,
+  (SELECT count(*)::int FROM wallet_transactions t WHERE t.reference_id=$2 AND t.type='credit') AS wallet_credits,
+  (SELECT count(*)::int FROM refunds f WHERE f.order_id=$2) AS refunds,
+  (SELECT count(*)::int FROM refund_execution_intents i WHERE i.order_id=$2) AS psp_intents,
+  (SELECT COALESCE(SUM(ls.qty_physical),0)::int FROM local_stock ls JOIN orders o ON o.market_id=ls.market_id JOIN order_items oi ON oi.order_id=o.id AND oi.product_id=ls.product_id WHERE o.id=$2) AS stock_after`,[d[0].id,orderId]);
+ ok(c.compensations===0&&c.wallet_credits===0&&c.refunds===0&&c.psp_intents===0,'G6_N25_PRODUCT_GAP_AUTOMATIC_COMPENSATION_ON_PHYSICAL_INTAKE');
+ ok(c.stock_after===stockBefore,'G6_N25_PRODUCT_GAP_RETURNED_UNIT_BACK_IN_SELLABLE_STOCK_'+stockBefore+'_TO_'+c.stock_after);
+ return {dossiers:1,physical_receipts:1,compensations:0,wallet_credits:0,refunds:0,stock_unchanged:true,dossier_status:d[0].status};
+}
 // Pur : verdict explicite pour un écran manquant ou un défaut produit (jamais un contournement).
 function classifyNegative(scenario,message){
  const m=String(message||'');
@@ -552,4 +571,4 @@ function classifyNegative(scenario,message){
  const g=new RegExp('G6_'+scenario+'_(SCREEN_MISSING|PRODUCT_GAP)').exec(m);
  return g?g[1]:null;
 }
-module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,oracleN15,oracleN16,oracleN28,oracleN32,oracleN30,oracleN31,oracleN35,oracleN36,oracleN37,oracleN38,ecoControls,snapN16,shipmentForOrder,snapJourney,snapLocalTransport,oracleN17,oracleN18,oracleN19,cancelEffects,oracleN39F1,oracleN39F2,oracleN39F3,importPo,classifyNegative};
+module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,oracleN15,oracleN16,oracleN28,oracleN32,oracleN30,oracleN31,oracleN35,oracleN36,oracleN37,oracleN38,ecoControls,snapN16,shipmentForOrder,snapJourney,snapLocalTransport,oracleN17,oracleN18,oracleN19,cancelEffects,oracleN39F1,oracleN39F2,oracleN39F3,oracleN25,importPo,classifyNegative};

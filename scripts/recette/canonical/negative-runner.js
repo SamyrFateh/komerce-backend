@@ -45,6 +45,8 @@ const N30_SCRIPT='scripts/recette/g6-negative-n30-chromium.js';
 const N30_REPORT='test-results/g6-negative-n30/report.json';
 const N39_SCRIPT='scripts/recette/g6-negative-n39-cancel-chromium.js';
 const N39_REPORT='test-results/g6-negative-n39/report.json';
+const N25_SCRIPT='scripts/recette/g6-negative-n25-sav-chromium.js';
+const N25_REPORT='test-results/g6-negative-n25/report.json';
 const LOCAL_NEG={
  N30:{script:N30_SCRIPT,report:N30_REPORT,phase:'N30_TRUTH_COMPARE',oracle:'N30_TRUTH_ORACLE'},
  N31:{phase:'N31_FX_SNAPSHOT_ORACLE',oracle:'N31_FX_SNAPSHOT_ORACLE_EVIDENCE'},
@@ -54,6 +56,8 @@ const LOCAL_NEG={
  N38:{script:N3738_SCRIPT,report:N3738_REPORT,phase:'N38_RESUME_DRY_RUN',oracle:'N38_POSTCOMMIT_ORACLE',to:'CLIENT_PICKUP'},
  N28:{script:N2832_SCRIPT,report:N2832_REPORT,phase:'N28_NETWORK_FAILURE_RETRY',oracle:'N28_SINGLE_EFFECT_ORACLE'},
  N32:{script:N2832_SCRIPT,report:N2832_REPORT,phase:'N32_CROSS_MARKET_ROLES',oracle:'N32_NO_MUTATION_ORACLE'},
+ N25:{script:N25_SCRIPT,report:N25_REPORT,phase:'N25_SAV_DOUBLE_INTAKE',oracle:'N25_SINGLE_INTAKE_ORACLE',to:'LOCAL_CLIENT_PICKUP'},
+ N26b:{script:N25_SCRIPT,report:N25_REPORT,phase:'N26B_SAV_COMPENSATION_DECISION',oracle:'N26B_SAV_COMPENSATION_ORACLE',to:'LOCAL_CLIENT_PICKUP'},
  N39F1:{script:N39_SCRIPT,report:N39_REPORT,phase:'N39F1_CLIENT_CANCEL_ATTEMPT',oracle:'N39F1_CANCEL_EFFECTS_ORACLE',to:'RELAY_CASH'},
  N39F2:{script:N39_SCRIPT,report:N39_REPORT,phase:'N39F2_CLIENT_CANCEL_ATTEMPT',oracle:'N39F2_CANCEL_EFFECTS_ORACLE',to:'HUB_COMMITMENT'},
  N39F3:{script:N39_SCRIPT,report:N39_REPORT,phase:'N39F3_CLIENT_CANCEL_ATTEMPT',oracle:'N39F3_CANCEL_EFFECTS_ORACLE',to:'HUB_SHIPMENT'},
@@ -145,6 +149,7 @@ async function runNegativeScenario({scenario,env,db,adapters}){
    :scenario==='N39F1'?await N.oracleN39F1(db,{orderId:result.order_id,cancel:g.cancel})
    :scenario==='N39F2'?await N.oracleN39F2(db,{orderId:result.order_id,cancel:g.cancel})
    :scenario==='N39F3'?await N.oracleN39F3(db,{orderId:result.order_id,cancel:g.cancel})
+   :scenario==='N25'||scenario==='N26b'?await N.oracleN25(db,{orderId:result.order_id,stockBefore:g.stock_before})
    :scenario==='N17'?await N.oracleN17(db,{orderId:result.order_id,shipmentRef:ship.reference,baseline:g.baseline})
    :scenario==='N18'?await N.oracleN18(db,{orderId:result.order_id,shipmentRef:ship.reference,customsRef:'SIM-STAGING-DOU-N18-'+result.order_reference})
    :scenario==='N19'?await N.oracleN19(db,{orderId:result.order_id})
@@ -165,6 +170,7 @@ async function runNegativeScenario({scenario,env,db,adapters}){
    N17:'G6_N17_FORWARDER_OUT_OF_ROLE_MARKET_REFUSED_NO_TRANSITION_PG_PASS',N18:'G6_N18_CUSTOMS_HOLD_NO_TRANSIT_THEN_RELEASE_PG_PASS',
    N39F1:'G6_N39F1_CANCEL_BEFORE_PURCHASE_WALLET_100_PCT_PG_PASS',N39F2:'G6_N39F2_CANCEL_AFTER_COMMITMENT_NO_SILENT_REFUND_PG_PASS',
    N39F3:'G6_N39F3_CANCEL_WHEN_SHIPPED_CLOSED_NO_REFUND_PG_PASS',
+   N25:'G6_N25_SAV_SINGLE_PHYSICAL_INTAKE_DOUBLE_REFUSED_PG_PASS',N26b:'G6_N26B_SAV_COMPENSATION_DECISION_PG_PASS',
    N19:'G6_N19_LOCAL_TRANSPORT_DELAY_LOSS_INCIDENT_NO_WITHDRAWAL_PG_PASS',
    N30:'G6_N30_ORDER_360_AND_COMMERCE_KPI_MATCH_PG_FIXTURES_EXCLUDED_PG_PASS',N31:'G6_N31_FX_DISPLAY_SNAPSHOT_KEPT_FIXED_PARITY_PG_PASS',
    N35:'G6_N35_ECO_FREIGHT_ONCE_CAUSAL_ALLOCATIONS_DIAGNOSTICS_PG_PASS',N36:'G6_N36_MANUAL_PROVENANCE_EVERY_GESTURE_PG_PASS',
