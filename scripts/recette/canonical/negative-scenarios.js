@@ -3,14 +3,14 @@
  * @domain orders
  * @layer test
  * @owner backend-core
- * @purpose Scénarios négatifs N07/N09/N04/N33 (G6-G4A), N23/N24 (G6-G4B), N11 à N16 (G6-G4C) : résolution multi-SKU en lecture seule, oracles PG en lecture seule, verdicts SCREEN_MISSING/PRODUCT_GAP.
+ * @purpose Scénarios négatifs N07/N09/N04/N33 (G6-G4A), N23/N24 (G6-G4B), N11 à N16 (G6-G4C), N17 à N19 (G6-G5B) : résolution multi-SKU en lecture seule, oracles PG en lecture seule, verdicts SCREEN_MISSING/PRODUCT_GAP.
  * @db-read orders, order_items, product_skus, products, markets, product_market_price_drafts, product_market_exposure, local_stock, local_stock_allocations, cash_collections, cash_confirmation_controls, scans, parcels, parcel_items, purchase_lines, pickup_collect_failures, international_shipments, international_shipment_relay_receipts, incidents, purchase_orders, purchase_order_authorizations, supplier_execution_payments, manual_purchase_executions, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_box_bags, hub_box_effective_placements, international_shipment_hub_units
  * @db-write none
  * @impact-areas staging-only
  */
 'use strict';
 const {isDeepStrictEqual}=require('node:util');
-const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29','N11','N12','N13','N14','N15','N16']);
+const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29','N11','N12','N13','N14','N15','N16','N17','N18','N19']);
 const isNegative=s=>NEGATIVE.includes(String(s));
 // Produit vendable (prix LOCAL_ACTIVE, exposition ENABLED, actif) servi par l'import (aucun stock local exposé), SKU actifs en stock.
 const MULTI_SKU_SQL=`
@@ -290,6 +290,75 @@ async function oracleN04(db,{buyerId,productId,market,availableBefore}){
  ok(s.available===availableBefore,'G6_N04_PRODUCT_GAP_AVAILABLE_CHANGED');
  return {orders:0,allocations:0,available:s.available};
 }
+// N17, N18, N19 (G6-G5B, Transport et douane) : expédition de la commande, instantanés et oracles PG en lecture seule.
+async function shipmentForOrder(db,orderId){
+ const {rows}=await db.query(`SELECT s.id,s.reference,s.stage FROM international_shipments s JOIN parcels p ON p.shipment_id=s.id WHERE p.order_id=$1
+  UNION SELECT s.id,s.reference,s.stage FROM international_shipments s JOIN international_shipment_hub_units h ON h.shipment_id=s.id
+  JOIN hub_box_bags l ON l.box_unit_id=h.physical_unit_id JOIN hub_physical_units u ON u.id=l.bag_unit_id WHERE u.order_id=$1`,[orderId]);
+ return rows.length===1?rows[0]:null;
+}
+async function snapJourney(db,reference){
+ const {rows}=await db.query(`SELECT s.stage::text AS stage,s.customs_shipment_id,s.tracking_reference,s.forwarder_name,
+  (SELECT count(*)::int FROM international_shipment_events e WHERE e.shipment_id=s.id) AS events,
+  (SELECT count(*)::int FROM international_shipment_charges c WHERE c.shipment_id=s.id) AS charges,
+  (SELECT count(*)::int FROM international_shipment_relay_receipts r WHERE r.shipment_id=s.id) AS receipts
+  FROM international_shipments s WHERE s.reference=$1`,[reference]);
+ ok(rows.length===1,'G6_NEG_SHIPMENT_NOT_UNIQUE_'+rows.length);
+ return rows[0];
+}
+// N17 : aucune transition, aucun frais, aucun lien douane ; l'expédition est identique à son point de référence.
+async function oracleN17(db,{orderId,shipmentRef,baseline}){
+ const s=await snapJourney(db,shipmentRef);
+ ok(baseline&&baseline.stage==='handed_over'&&s.stage==='handed_over','G6_N17_PRODUCT_GAP_STAGE_MOVED_'+s.stage);
+ ok(isDeepStrictEqual(s,baseline),'G6_N17_PRODUCT_GAP_JOURNEY_CHANGED_BY_REFUSED_ACTOR');
+ ok(!s.customs_shipment_id&&s.charges===0&&s.receipts===0&&!s.tracking_reference,'G6_N17_PRODUCT_GAP_SIDE_EFFECT');
+ const o=await orderRows(db,orderId);
+ ok(o.status!=='collected'&&o.collected_scans===0,'G6_N17_PRODUCT_GAP_COLLECTED');
+ return {stage:s.stage,events:s.events,charges:s.charges,customs_linked:false,tracking:false};
+}
+// N18 : une retenue levée par un acteur identifié ; aucune déclaration ni étape de transit entre la retenue et sa mainlevée ; étapes ensuite.
+async function oracleN18(db,{orderId,shipmentRef,customsRef}){
+ const s=await snapJourney(db,shipmentRef);
+ const {rows:[c]}=await db.query('SELECT id,status::text AS status,customs_paid_kmf FROM customs_shipments WHERE reference=$1',[customsRef]);
+ ok(c&&s.customs_shipment_id===c.id,'G6_N18_PRODUCT_GAP_CUSTOMS_NOT_LINKED');
+ const {rows:h}=await db.query('SELECT status,held_at,released_at,held_by,released_by,held_by_role,reason FROM customs_shipment_holds WHERE shipment_id=$1',[c.id]);
+ ok(h.length===1,'G6_N18_PRODUCT_GAP_HOLD_COUNT_'+h.length);
+ ok(h[0].status==='released'&&h[0].released_by&&h[0].held_by&&h[0].released_at>h[0].held_at&&String(h[0].reason).trim().length>=3,'G6_N18_PRODUCT_GAP_HOLD_NOT_RELEASED_BY_ACTOR');
+ const {rows:ev}=await db.query('SELECT event_type,to_stage,occurred_at FROM international_shipment_events WHERE shipment_id=(SELECT id FROM international_shipments WHERE reference=$1) ORDER BY occurred_at',[shipmentRef]);
+ const during=ev.filter(e=>e.occurred_at>=h[0].held_at&&e.occurred_at<h[0].released_at&&(e.event_type==='customs_amount_confirmed'||['customs_released','local_delivery','relay_received'].includes(e.to_stage)));
+ ok(during.length===0,'G6_N18_PRODUCT_GAP_TRANSIT_WHILE_HELD_'+during.length);
+ const after=ev.filter(e=>e.occurred_at>=h[0].released_at&&e.event_type==='stage_changed'&&e.to_stage==='customs_released');
+ ok(s.stage==='customs_released'&&after.length===1,'G6_N18_PRODUCT_GAP_NO_TRANSIT_AFTER_RELEASE_'+s.stage);
+ ok(c.customs_paid_kmf!==null&&s.receipts===0,'G6_N18_PRODUCT_GAP_CUSTOMS_AMOUNT_OR_RECEIPT');
+ const o=await orderRows(db,orderId);
+ ok(o.status!=='collected'&&o.collected_scans===0,'G6_N18_PRODUCT_GAP_COLLECTED');
+ return {held_by_role:h[0].held_by_role,events_during_hold:0,stage:s.stage,customs_paid_kmf:Number(c.customs_paid_kmf)};
+}
+// N19 : état du transport local (retard : rien d'attesté, aucune disponibilité ni code), puis perte attestée.
+async function snapLocalTransport(db,{orderId,shipmentId}){
+ const {rows:[x]}=await db.query(`SELECT s.stage::text AS stage,o.status::text AS order_status,(o.pickup_secret_hash IS NOT NULL) AS pickup_code_alive,
+  (SELECT count(*)::int FROM international_shipment_relay_receipts r WHERE r.shipment_id=s.id) AS receipts,
+  (SELECT count(*)::int FROM scans sc WHERE sc.order_id=o.id AND sc.step='collected') AS collected_scans
+  FROM international_shipments s, orders o WHERE s.id=$1 AND o.id=$2`,[shipmentId,orderId]);
+ ok(!!x,'G6_N19_SNAPSHOT_MISSING');
+ return x;
+}
+// N19 : quantité reçue nulle, incident « article manquant » de gravité haute, aucune disponibilité, aucun retrait.
+async function oracleN19(db,{orderId}){
+ const o=await orderRows(db,orderId);
+ const {rows:r}=await db.query(`SELECT rr.expected_qty,rr.received_qty,i.id AS incident,i.incident_type::text AS incident_type,i.severity::text AS severity
+  FROM international_shipment_relay_receipts rr JOIN order_items oi ON oi.id=rr.order_item_id LEFT JOIN incidents i ON i.id=rr.incident_id WHERE oi.order_id=$1`,[orderId]);
+ ok(r.length>=1,'G6_N19_PRODUCT_GAP_NO_RECEIPT_ROW');
+ ok(r.every(x=>Number(x.received_qty)===0&&Number(x.expected_qty)>0),'G6_N19_PRODUCT_GAP_RECEIVED_QTY_NOT_ZERO');
+ ok(r.every(x=>x.incident&&x.incident_type==='missing_item'&&x.severity==='high'),'G6_N19_PRODUCT_GAP_NO_HIGH_MISSING_ITEM_INCIDENT');
+ const {rows:[pi]}=await db.query(`SELECT COALESCE(SUM(pi.qty_collected),0)::int AS collected,COALESCE(SUM(pi.qty_received),0)::int AS received
+  FROM parcel_items pi JOIN parcels p ON p.id=pi.parcel_id WHERE p.order_id=$1`,[orderId]);
+ ok(pi.received===0&&pi.collected===0,'G6_N19_PRODUCT_GAP_PARCEL_QTY_'+pi.received+'_'+pi.collected);
+ ok(!['available','collected'].includes(o.status)&&o.collected_scans===0,'G6_N19_PRODUCT_GAP_AVAILABLE_OR_COLLECTED_AFTER_TOTAL_LOSS_'+o.status);
+ const {rows:[s]}=await db.query('SELECT (pickup_secret_hash IS NOT NULL) AS code_alive FROM orders WHERE id=$1',[orderId]);
+ ok(!s.code_alive,'G6_N19_PRODUCT_GAP_PICKUP_CODE_ALIVE_AFTER_TOTAL_LOSS');
+ return {receipts:r.length,received_qty:0,expected_qty:r.reduce((n,x)=>n+Number(x.expected_qty),0),incidents:r.length,severity:'high',status:o.status};
+}
 // Pur : verdict explicite pour un écran manquant ou un défaut produit (jamais un contournement).
 function classifyNegative(scenario,message){
  const m=String(message||'');
@@ -298,4 +367,4 @@ function classifyNegative(scenario,message){
  const g=new RegExp('G6_'+scenario+'_(SCREEN_MISSING|PRODUCT_GAP)').exec(m);
  return g?g[1]:null;
 }
-module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,oracleN15,oracleN16,snapN16,importPo,classifyNegative};
+module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,oracleN15,oracleN16,snapN16,shipmentForOrder,snapJourney,snapLocalTransport,oracleN17,oracleN18,oracleN19,importPo,classifyNegative};
