@@ -70,6 +70,21 @@ test('Chromium cannot hide NOT_REACHABLE_IN_UI or NOT_RUN under a green suite',(
   expect(refusal).toBeGreaterThan(persist);
 });
 
+test('regression #4985: la remise transitaire déjà ouverte ne doit pas être refermée par Chromium',()=>{
+  const browser=fs.readFileSync(path.join(ROOT,'tests/staging-clicks/hub-v1-clicks.spec.js'),'utf8');
+  const panel=fs.readFileSync(path.join(ROOT,'public/dashboards/canonical/js/international-journey-panel.js'),'utf8');
+  expect(panel).toContain("openByDefault:step==='handed_over'");
+  const start=browser.indexOf('async function journeyTask(page,');
+  const end=browser.indexOf('const transitionOf =',start);
+  const helper=browser.slice(start,end);
+  expect(start).toBeGreaterThan(0);
+  expect(helper).toContain("details.evaluate(el => Boolean(el.open))");
+  expect(helper).toContain("JOURNEY_FIELD_NOT_VISIBLE:");
+  expect(helper).toContain("JOURNEY_ACTION_FORBIDDEN:");
+  expect(helper).not.toContain("await task.first().locator('summary').click();");
+  expect(browser).toContain("expect(shipment[0], 'état physique attendu avant la remise').toMatchObject({stage:'hub_ready',hub_draft:true})");
+});
+
 test('localhost cannot reuse Railway database even with HTTP_RUNNER_ALLOW_LOCAL=1',async()=>{
   const {assertEphemeralTarget}=require('../../scripts/recette/hub-v1-certification-runner');
   const db={query:jest.fn(),getClient:jest.fn()};
