@@ -57,6 +57,16 @@ test('real Chromium spec checks official staging authorization before first logi
   expect(src).toContain('.assertEphemeralTarget(process.env.DATABASE_URL, [])');
 });
 
+test('issue-only Hub Chromium locks G6 at eligible job level, not at every unrelated issue event',()=>{
+  const y=fs.readFileSync(path.join(ROOT,'.github/workflows/hub-v1-clicks-staging.yml'),'utf8');
+  const beforeJobs=y.slice(0,y.indexOf('\njobs:'));
+  expect(beforeJobs).not.toMatch(/\nconcurrency:/);
+  const job=y.slice(y.indexOf('\njobs:'));
+  expect(job).toMatch(/\njobs:\n  clicks:\n(?:.*\n)*?    concurrency:\n      group: komerce-g6-canonical-real-transaction\n      cancel-in-progress: false/);
+  expect(job).toContain("github.event.issue.user.login == github.repository_owner");
+  expect(job).toContain("'[staging-op] hub-v1-clicks-KM'");
+});
+
 test('Chromium cannot hide NOT_REACHABLE_IN_UI or NOT_RUN under a green suite',()=>{
   const src=fs.readFileSync(path.join(ROOT,'tests/staging-clicks/hub-v1-clicks.spec.js'),'utf8');
   expect(src).toContain("row.verdict!=='CLICK_PASS'");
