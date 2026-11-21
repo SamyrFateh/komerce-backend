@@ -307,6 +307,12 @@ describe('G6-G4C N15 (sac ou KOM-BOX incomplet) et N16 (carton non DISPATCHED, c
   await expect(N.oracleN15(mk([clean[0],clean[1],clean[2],[{id:'x',state:'PACKED'}]]),{orderId:'o',boxRef:'B',shipmentRef:'S'})).rejects.toThrow('G6_N15_PRODUCT_GAP_EMPTY_BOX_CLOSED');
   await expect(N.oracleN15(mk([...clean.slice(0,4),[{shipments:1,non_draft_shipments:1,links:1,departed:0}]]),{orderId:'o',boxRef:'B',shipmentRef:'S'})).rejects.toThrow('G6_N15_PRODUCT_GAP_NON_CONFORMING_DEPARTURE');
  });
+ it('script N15 distingue un brouillon vide d’un départ interdit',()=>{
+  const s=read('scripts/recette/g6-negative-n15-n16-chromium.js');
+  expect(s).toMatch(/empty_draft_opened/);
+  expect(s).not.toMatch(/SHIPMENT_CREATED_WITH_EMPTY_SELECTION/);
+  expect(s).toMatch(/SHIPMENT_CREATED_WITH_INCOMPLETE_BOX/);
+ });
  const snap=(o={})=>[[{id:'x',state:'DISPATCHED'}],[{links:1,effective:1,qty:1,placements:2,removed:1,box_custody_events:7,shipment_links:1}],
   [{stage:'handed_over',forwarder_name:'F',transport_mode:'sea',...o}],[{statuses:'shipped',shipped:1}]];
  it('oracle N16 : carton remis, composition identique au point de référence',async()=>{
