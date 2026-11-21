@@ -32,8 +32,17 @@ function checkPrecondition(id,p){
  assert(p&&typeof p==='object',bad);
  if(id==='N01')assert(p.price_status!==null&&p.price_status!=='LOCAL_ACTIVE'&&nonEmpty(p.price_status),bad);
  if(id==='N02')assert(p.exposure_recorded===true&&p.commercial_exposure==='DISABLED',bad);
- if(id==='N03')assert(p.market_lifecycle==='SUSPENDED'||(p.market_lifecycle==='ACTIVE'&&p.route_available===false),bad);
- if(id==='N05')assert(p.product_candidate===true&&(p.sku_complete===false||p.soi_complete===false),bad);
+ if(id==='N03')assert(p.market_lifecycle==='SUSPENDED'||(
+  p.market_lifecycle==='ACTIVE'&&p.route_available===false&&
+  p.route_basis==='CANONICAL_IS_RELAIS_ROUTABLE'&&
+  Number.isSafeInteger(p.active_relays)&&p.active_relays>=0&&p.routable_relays===0),bad);
+ if(id==='N05')assert(p.product_candidate===true&&p.certification_verdict==='BLOCKED'&&(
+  (p.certification_rule==='active_supplier_sku_missing'&&p.sku_complete===false)
+  ||(p.certification_rule==='supplier_order_identity_incomplete'&&
+    p.sku_complete===true&&p.soi_complete===false&&
+    Number.isSafeInteger(p.active_supplier_skus)&&p.active_supplier_skus>0&&
+    Number.isSafeInteger(p.complete_supplier_skus)&&
+    p.complete_supplier_skus<p.active_supplier_skus)),bad);
  if(id==='N06')assert(numeric(p.quote_before)&&numeric(p.quote_after)&&
     p.quote_before>0&&p.quote_after>0&&p.quote_before!==p.quote_after,bad);
 }
@@ -41,6 +50,15 @@ function validateG5aEvidence(id,e){
  assertEvidenceBase(id,e);
  checkPrecondition(id,e.precondition);
  if(NO_PURCHASE.includes(id)){
+  if(id==='N03'&&e.precondition.market_lifecycle==='ACTIVE'){
+   assert(e.ui?.route_checkout_attempted===true&&
+    e.ui?.public_routable_relais===0&&e.ui?.confirm_enabled===false,
+    'G6_N03_NOT_PROVEN_ROUTE_CHECKOUT_GESTURE');
+   assert(e.route_before?.resolution==='CANONICAL_IS_RELAIS_ROUTABLE'&&
+    e.route_before?.routable_relays===0&&e.route_after?.routable_relays===0&&
+    JSON.stringify(e.route_before)===JSON.stringify(e.route_after),
+    'G6_N03_NOT_PROVEN_ROUTE_PG_READBACK');
+  }
   // Un refus 401/403 (mauvais compte) ou une erreur réseau ne prouve jamais la règle produit.
   for(const a of e.http_attempts){
    assert(a.method==='POST'&&a.path==='/api/orders','G6_'+id+'_NOT_PROVEN_REQUEST_SCOPE');
@@ -60,6 +78,8 @@ function validateG5aEvidence(id,e){
   return Object.freeze({scenario_id:id,oracle_verdict:'PASS',no_order:true,
     no_payment:true,no_reservation:true,gesture_source:'CHROMIUM'});
  }
+ assert(e.restore?.success===true&&e.market_price_before===e.market_price_after,
+  'G6_N06_NOT_PROVEN_RESTORE_PRICE');
  // N06 : un premier clic rejette le devis périmé, puis un SECOND clic humain accepte
  // le prix nouveau. Le client ne peut jamais être débité sur la première tentative.
  const a=e.http_attempts;
