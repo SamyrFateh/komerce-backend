@@ -332,3 +332,43 @@ test('Direction Hub Kanban : quatre colonnes stables, y compris sans tâches', a
   expect(host.querySelectorAll('[data-hub-director-group]')).toHaveLength(4);
 });
 
+test('Direction Hub : relecture SSE ne duplique pas les cartes et suit les mutations ailleurs', async()=>{
+  const app=load(), host=el('section');
+  let tasks=[{kind:'AUTHORIZE_PAYMENT',owner:'responsable_hub',market:{code:'KM'},
+    subject:{po_id:'11111111-1111-4111-8111-111111111111'},missing:'Paiement à autoriser',age_hours:1}];
+  const fetch=jest.fn(async()=>({ok:true,json:async()=>({
+    scope:'ALL_MARKETS',tasks,overdue_count:0,
+  })}));
+  await app.renderDirectorQueue(host,{document:doc,fetch,user:{role:'admin'}});
+  const first=host.querySelector('[data-hub-director-todo]');
+  expect(host.querySelectorAll('[data-hub-director-task]')).toHaveLength(1);
+  await app.renderDirectorQueue(host,{document:doc,fetch,user:{role:'admin'}});
+  expect(host.querySelector('[data-hub-director-todo]')).toBe(first);
+  expect(host.querySelectorAll('[data-hub-director-task]')).toHaveLength(1);
+  tasks=[];
+  await app.renderDirectorQueue(host,{document:doc,fetch,user:{role:'admin'}});
+  expect(host.querySelectorAll('[data-hub-director-todo]')).toHaveLength(1);
+  expect(host.querySelectorAll('[data-hub-director-task]')).toHaveLength(0);
+  expect(host.querySelector('[data-hub-director-todo]')).not.toBe(first);
+});
+
+
+test('Direction Hub : un refus 403 efface les cartes de supervision précédemment autorisées', async () => {
+  const app = load(), host = el('section');
+  let denied = false;
+  const fetch = jest.fn(async () => ({
+    ok: !denied, status: denied ? 403 : 200,
+    json: async () => denied ? {error:'Rôle révoqué'} : {
+      scope:'ALL_MARKETS', overdue_count:0,
+      tasks:[{kind:'AUTHORIZE_COMMITMENT',owner:'responsable_hub',
+        market:{code:'KM'}, missing:'Engagement à valider', age_hours:1,
+        subject:{po_id:'11111111-1111-4111-8111-111111111111'}}],
+    },
+  }));
+  await app.renderDirectorQueue(host, { document:doc, fetch, user:{role:'admin'} });
+  expect(host.querySelectorAll('[data-hub-director-task]')).toHaveLength(1);
+  denied = true;
+  await app.renderDirectorQueue(host, { document:doc, fetch, user:{role:'admin'} });
+  expect(host.querySelectorAll('[data-hub-director-task]')).toHaveLength(0);
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain('Accès expiré ou non autorisé');
+});

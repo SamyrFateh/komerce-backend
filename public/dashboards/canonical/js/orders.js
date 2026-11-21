@@ -57,7 +57,12 @@
   async function jsonRequest(fetchFn, url) {
     const response = await fetchFn(url, { method: 'GET', credentials: 'include', headers: { Accept: 'application/json' } });
     const body = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(body.error || `Erreur HTTP ${response.status}`);
+    if (!response.ok) {
+      const error = new Error(body.error || `Erreur HTTP ${response.status}`);
+      error.status = response.status;
+      error.code = body.code || null;
+      throw error;
+    }
     return body;
   }
 
@@ -263,16 +268,43 @@
     const normalEndpoint = endpointForContext(options.adminContext, options.contextContract, options.requestedMarket);
     const endpoint = normalEndpoint;
     rootNode.textContent = 'Chargement de Commandes…';
-    return jsonRequest(fetchFn, endpoint).then(payload => {
-      render(doc, rootNode, payload, { tab: initialQueue(globalThis.location?.search) });
-      return Object.freeze({ payload, endpoint });
-    }).catch(error => {
-      rootNode.textContent = '';
-      const box = el(doc, 'div', 'kmc-ord-error', `Commandes indisponibles : ${error.message}`);
-      box.setAttribute('role', 'alert');
-      rootNode.appendChild(box);
-      throw error;
+    const identity = {};
+    rootNode.__dashboardViewIdentity = identity;
+    const queueState = { tab: initialQueue(globalThis.location?.search) };
+    let hasData = false;
+    async function readFresh() {
+      try {
+        const payload = await jsonRequest(fetchFn, endpoint);
+        if (rootNode.isConnected === false || rootNode.__dashboardViewIdentity !== identity) return {};
+        render(doc, rootNode, payload, queueState);
+        hasData = true;
+        rootNode.removeAttribute?.('data-dashboard-stale');
+        return Object.freeze({ payload, endpoint });
+      } catch (error) {
+        if (rootNode.isConnected === false || rootNode.__dashboardViewIdentity !== identity) return {};
+        if (!hasData || error.status === 401 || error.status === 403) {
+          // Jamais afficher les commandes de l'ancien périmètre après un 401/403.
+          rootNode.textContent = '';
+          const text = error.status === 401 || error.status === 403
+            ? 'Accès expiré ou non autorisé. Rechargez votre session.'
+            : `Commandes indisponibles : ${error.message}`;
+          const box = el(doc, 'div', 'kmc-ord-error', text);
+          box.setAttribute('role', 'alert');
+          rootNode.appendChild(box);
+          rootNode.removeAttribute?.('data-dashboard-stale');
+          hasData = false;
+        } else {
+          rootNode.setAttribute?.('data-dashboard-stale', 'true');
+        }
+        throw error;
+      }
+    }
+    const initial = readFresh();
+    globalThis.KomerceDashboardFreshness?.watch?.({
+      root: rootNode, refresh: readFresh, pollMs: 60000,
+      streamEnabled: options.user?.role === 'admin',
     });
+    return initial;
   }
 
   return Object.freeze({ mount, buildRows, endpointForContext, hubExecutionHref, STATUS_LABELS, TABS,

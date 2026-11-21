@@ -326,4 +326,10 @@ const httpServer = startServerLifecycle({
 // même process (--runInBand) : sans ça, aucun moyen de libérer le port entre
 // deux fichiers → EADDRINUSE :::3000 sur tous les fichiers suivants.
 app.set('httpServer', httpServer);
+// Le subscriber DB tourne par processus : la notification post-commit purge les
+// caches locaux sur chaque instance Railway. Activation progressive après recette.
+if (process.env.KOMERCE_DASHBOARD_LIVE_ENABLED === 'true' && process.env.NODE_ENV !== 'test') {
+  httpServer.ready.then(() => require('./services/dashboard-invalidation-bus').start())
+    .catch(error => log.error({ err:error.message }, '[dashboard-live] startup failed'));
+}
 module.exports = app;
