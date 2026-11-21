@@ -250,6 +250,45 @@ async function catalogTaxonomy(actor,ref){
  await fire(actor,'POST',path,()=>humanSelect(null,sub,BOUTIQUE_PAIR.subcategory),'catalog-taxonomy-classify',{product_ref:ref,...BOUTIQUE_PAIR});
  return true;
 }
+// #4920 : photographie/illustration du bon produit, approuvée pour staging,
+// jamais un screenshot UI ni une image interchangeable. SHA256 épinglé.
+function canonicalMediaFile(){
+ const rel=String(env.G6_CENTRAL_MEDIA_IMAGE_FILE||'').trim(),want=String(env.G6_CENTRAL_MEDIA_IMAGE_SHA256||'').trim().toLowerCase();
+ if(!rel||!/^[a-f0-9]{64}$/.test(want))return null;
+ const root=path.resolve(__dirname,'../..'),file=path.resolve(root,rel);
+ if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile())return null;
+ const ext=path.extname(file).toLowerCase();
+ if(!['.png','.jpg','.jpeg','.webp'].includes(ext))return null;
+ const buf=fs.readFileSync(file),bytes=buf.length;
+ if(bytes<1024||bytes>5*1024*1024)return null;
+ const sha256=crypto.createHash('sha256').update(buf).digest('hex');
+ if(sha256!==want)return null;
+ const signature=buf.subarray(0,12);
+ const png=ext==='.png'&&signature.subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex'));
+ const jpg=['.jpg','.jpeg'].includes(ext)&&signature[0]===0xff&&signature[1]===0xd8&&signature[2]===0xff;
+ const webp=ext==='.webp'&&signature.toString('ascii',0,4)==='RIFF'&&signature.toString('ascii',8,12)==='WEBP';
+ return png||jpg||webp?{file,sha256,bytes,name:path.basename(file)}:null;
+}
+async function catalogMedia(actor,ref){
+ const media=canonicalMediaFile();
+ if(!media)return !!missing('PREREQ_MISSING_CANONICAL_PRODUCT_IMAGE',{
+  product_ref:ref,detail:'Photo réelle ou illustration fidèle du produit G6 approuvée pour staging',
+  required:['G6_CENTRAL_MEDIA_IMAGE_FILE','G6_CENTRAL_MEDIA_IMAGE_SHA256']});
+ const endpoint=CAT+'/products/'+ref+'/media';
+ await arm(actor,'POST',endpoint);
+ if(!await openInspector(actor,ref))return false;
+ const details=actor.page.locator('details[data-catalog-complementary-info] > summary');
+ if(!await visible(details,20000))return !!missing('SCREEN_MISSING_CATALOG_MEDIA_DETAILS',{product_ref:ref,screen:await inspectorText(actor)});
+ await humanClick(null,details);
+ const form=actor.page.locator('[data-catalog-media-upload]'),input=form.locator('[data-catalog-media-upload-file]');
+ if(!await visible(input,20000))return !!missing('SCREEN_MISSING_CANONICAL_MEDIA_UPLOAD',{product_ref:ref,screen:await inspectorText(actor)});
+ await input.setInputFiles(media.file);
+ const submit=form.locator('[data-catalog-media-upload-submit]');
+ await submit.waitFor({state:'visible',timeout:10000});
+ report.media_proof={image_file:media.name,sha256:media.sha256,bytes:media.bytes,provenance:'OWNER-APPROVED G6 STAGING IMAGE'};save();
+ await fire(actor,'POST',endpoint,()=>humanClick(null,submit),'canonical-media-upload',{product_ref:ref,image_sha256:media.sha256});
+ return true;
+}
 // Approbation humaine du Catalogue global : contrôle des prérequis (lecture) puis « Valider le Catalogue ».
 // Le média canonique est une étape humaine distincte obligatoire, vérifiée en PG.
 async function approveCatalog(actor,ref){
@@ -336,6 +375,10 @@ async function main(){
   for(let i=0;i<12&&step.step;i++){
    // Pas de reclic : un même geste ne se rejoue jamais dans un run si la relecture PG n'a pas avancé.
    check(step.step!==last,'G6_CENTRAL_NO_PROGRESS_'+step.step);
+   // Refuser de créer un nouveau candidat si sa pièce source n'est pas déjà approuvée.
+   if(step.step==='manual-import'&&!canonicalMediaFile()){
+    missing('PREREQ_MISSING_CANONICAL_PRODUCT_IMAGE',{before_business_write:true,required:['G6_CENTRAL_MEDIA_IMAGE_FILE','G6_CENTRAL_MEDIA_IMAGE_SHA256']});break;
+   }
    if(!browser){const {chromium}=require('playwright');browser=await chromium.launch({headless:true});OBS=observe(browser,OUT)}
    const role=STEP_ROLE[step.step];
    if(!actors[role])actors[role]=await login(browser,role);
@@ -359,4 +402,4 @@ async function main(){
   if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end();console.log(JSON.stringify(report))}
 }
 if(require.main===module)main();
-module.exports={main,ownerStagingGuard,nextStep,recettePrice,SELLABLE_SQL,G6_PREFIX,G6_SUPPLIER_PRODUCT_ID,RECETTE_PRICE_FLOOR};
+module.exports={main,ownerStagingGuard,nextStep,recettePrice,SELLABLE_SQL,CANDIDATE_SQL,G6_PREFIX,G6_SUPPLIER_PRODUCT_ID,RECETTE_PRICE_FLOOR,canonicalMediaFile};
