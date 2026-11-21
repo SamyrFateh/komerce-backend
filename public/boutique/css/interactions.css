@@ -414,7 +414,9 @@ body.cart-open  #k-section-index { display:none; }
   position: fixed;
   top: calc(env(safe-area-inset-top, 0px) + var(--header-h, 44px) + 8px);
   right: 14px;
-  z-index: 1800;
+  /* Le side-cart desktop est une surface d'action (z-index:200) : la
+     salutation doit rester derrière lui pour ne jamais masquer son stepper. */
+  z-index: 190;
   display: flex;
   align-items: center;
   gap: 7px;
