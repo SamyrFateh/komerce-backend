@@ -3,13 +3,13 @@
  * @domain orders
  * @layer test
  * @owner backend-core
- * @purpose Scénarios négatifs N07/N09/N04/N33 (G6-G4A) : résolution multi-SKU en lecture seule, oracles PG en lecture seule, verdicts SCREEN_MISSING/PRODUCT_GAP.
- * @db-read orders, order_items, product_skus, products, markets, product_market_price_drafts, product_market_exposure, local_stock, local_stock_allocations, cash_collections, cash_confirmation_controls, scans, parcels, parcel_items, purchase_lines
+ * @purpose Scénarios négatifs N07/N09/N04/N33 (G6-G4A), N23/N24 (G6-G4B) : résolution multi-SKU en lecture seule, oracles PG en lecture seule, verdicts SCREEN_MISSING/PRODUCT_GAP.
+ * @db-read orders, order_items, product_skus, products, markets, product_market_price_drafts, product_market_exposure, local_stock, local_stock_allocations, cash_collections, cash_confirmation_controls, scans, parcels, parcel_items, purchase_lines, pickup_collect_failures
  * @db-write none
  * @impact-areas staging-only
  */
 'use strict';
-const NEGATIVE=Object.freeze(['N07','N09','N04','N33']);
+const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24']);
 const isNegative=s=>NEGATIVE.includes(String(s));
 // Produit vendable (prix LOCAL_ACTIVE, exposition ENABLED, actif) servi par l'import (aucun stock local exposé), SKU actifs en stock.
 const MULTI_SKU_SQL=`
@@ -98,6 +98,32 @@ async function oracleN09(db,{orderId,assertNoHubOrTransport}){
  if(assertNoHubOrTransport)await assertNoHubOrTransport(db,orderId,'any');
  return {status:o.status,payment_status:o.payment_status,collected_scans:0,consumed_allocations:0,cash_collections:0};
 }
+// N23 : aucune remise malgré les tentatives ; compteur de sécurité de l'agent (pickup_collect_failures) lisible en PG.
+// MIN_FAILURES = seuil du verrouillage agent (services/pickup-agent-lockout.js : 5 échecs / 15 min).
+async function oracleN23(db,{orderId,agentId,minFailures,assertNoHubOrTransport}){
+ const o=await orderRows(db,orderId);
+ const {rows:[pi]}=await db.query('SELECT COALESCE(SUM(pi.qty_collected),0)::int AS n FROM parcel_items pi JOIN parcels p ON p.id=pi.parcel_id WHERE p.order_id=$1',[orderId]);
+ ok(o.status==='available'&&o.collected_scans===0&&pi.n===0,'G6_N23_PRODUCT_GAP_HANDOFF_DESPITE_BAD_CODES');
+ const {rows:[s]}=await db.query('SELECT (pickup_secret_hash IS NOT NULL) AS code_alive,pickup_secret_attempts AS attempts FROM orders WHERE id=$1',[orderId]);
+ ok(s.code_alive,'G6_N23_PRODUCT_GAP_CODE_CONSUMED');
+ const {rows:[f]}=await db.query(`SELECT count(*)::int AS n FROM pickup_collect_failures WHERE agent_id=$1
+   AND relais_id IS NOT DISTINCT FROM (SELECT relais_id FROM users WHERE id=$1) AND created_at>NOW()-interval '15 minutes'`,[agentId]);
+ ok(f.n>=minFailures,'G6_N23_PRODUCT_GAP_SECURITY_COUNTER_BELOW_'+f.n);
+ if(assertNoHubOrTransport)await assertNoHubOrTransport(db,orderId,'available');
+ return {status:o.status,collected_scans:0,qty_collected:0,security_failures_15min:f.n,order_attempts:s.attempts};
+}
+// N24 : une seule attestation de remise (un scan collected, un historique collected), quantités collectées exactes.
+async function oracleN24(db,{orderId,assertNoHubOrTransport}){
+ const o=await orderRows(db,orderId);
+ const {rows:[x]}=await db.query(`SELECT count(*)::int AS scans,count(*) FILTER (WHERE pickup_method='PICKUP_CODE')::int AS code_scans
+   FROM scans WHERE order_id=$1 AND step='collected'`,[orderId]);
+ ok(x.scans===1&&x.code_scans===1,'G6_N24_PRODUCT_GAP_HANDOFF_ATTESTATIONS_'+x.scans);
+ const {rows:[pi]}=await db.query('SELECT COALESCE(SUM(pi.qty_collected),0)::int AS got,COALESCE(SUM(pi.quantity),0)::int AS want FROM parcel_items pi JOIN parcels p ON p.id=pi.parcel_id WHERE p.order_id=$1',[orderId]);
+ ok(pi.got===pi.want&&pi.want>0,'G6_N24_PRODUCT_GAP_QTY_COLLECTED_'+pi.got+'_OF_'+pi.want);
+ ok(o.status==='collected','G6_N24_PRODUCT_GAP_NOT_COLLECTED');
+ if(assertNoHubOrTransport)await assertNoHubOrTransport(db,orderId,'collected');
+ return {status:o.status,collected_scans:x.scans,qty_collected:pi.got};
+}
 // N04 : aucune commande, aucun stock négatif, aucune réserve fictive.
 async function oracleN04(db,{buyerId,productId,market,availableBefore}){
  const {rows:[n]}=await db.query('SELECT count(*)::int AS n FROM orders WHERE user_id=$1',[buyerId]);
@@ -118,4 +144,4 @@ function classifyNegative(scenario,message){
  const g=new RegExp('G6_'+scenario+'_(SCREEN_MISSING|PRODUCT_GAP)').exec(m);
  return g?g[1]:null;
 }
-module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN04,classifyNegative};
+module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleN04,classifyNegative};

@@ -78,3 +78,45 @@ describe('G6-G4A scénarios négatifs N07, N09, N04, N33',()=>{
    expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
  });
 });
+describe('G6-G4B N23 (tentatives de retrait) et N24 (deux remises simultanées)',()=>{
+ const chain=['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE'];
+ it('séquences : parcours M02 jusqu\'à disponible puis geste et oracle ; M02 inchangé',()=>{
+  expect(graphFor('N23').order).toEqual([...chain,'N23_WITHDRAWAL_ATTEMPTS','N23_SECURITY_ORACLE']);
+  expect(graphFor('N24').order).toEqual([...chain,'N24_PARALLEL_HANDOFF','N24_SINGLE_HANDOFF_ORACLE']);
+  expect(graphFor('M02').order).toEqual([...chain,'LOCAL_CLIENT_PICKUP']);
+  expect(validateStageModuleSources()).toBeGreaterThan(0);
+ });
+ it('paramètres acheteur : produit LOCAL_STOCK lié comme M02',()=>{
+  const e={G6_CANONICAL_SCENARIO:'N23',G6_TARGET_MARKET:'KM',G6_BUYER_PRODUCT_REF:'KPR-000321',G6_BUYER_EXPECTED_PRICE:'1500'};
+  expect(buyerParams(e)).toMatchObject({scenario:'N23',fulfillment:'LOCAL_STOCK',expected_price:1500});
+  expect(buyerParams({...e,G6_CANONICAL_SCENARIO:'N24'}).scenario).toBe('N24');
+  expect(N.isNegative('N23')&&N.isNegative('N24')).toBe(true);
+ });
+ const mk=rows=>{let i=0;return {query:async()=>({rows:[rows[i++]]})}};
+ const order={id:'o',user_id:'u',status:'available',payment_status:'paid',display_total_amount:1,lines:1,qty:1,cash_count:1,control_count:1,allocations:1,consumed_allocations:0,purchase_lines:0,collected_scans:0,parcels:1};
+ it('oracle N23 : aucune remise, code vivant, compteur de sécurité >= seuil',async()=>{
+  const ok=()=>mk([order,{n:0},{code_alive:true,attempts:0},{n:7}]);
+  await expect(N.oracleN23(ok(),{orderId:'o',agentId:'a',minFailures:5})).resolves.toMatchObject({collected_scans:0,security_failures_15min:7});
+  await expect(N.oracleN23(mk([{...order,status:'collected'},{n:0}]),{orderId:'o',agentId:'a',minFailures:5})).rejects.toThrow('G6_N23_PRODUCT_GAP_HANDOFF_DESPITE_BAD_CODES');
+  await expect(N.oracleN23(mk([order,{n:0},{code_alive:false}]),{orderId:'o',agentId:'a',minFailures:5})).rejects.toThrow('G6_N23_PRODUCT_GAP_CODE_CONSUMED');
+  await expect(N.oracleN23(mk([order,{n:0},{code_alive:true},{n:2}]),{orderId:'o',agentId:'a',minFailures:5})).rejects.toThrow('G6_N23_PRODUCT_GAP_SECURITY_COUNTER_BELOW_2');
+ });
+ it('oracle N24 : une seule attestation de remise',async()=>{
+  const done={...order,status:'collected'};
+  await expect(N.oracleN24(mk([done,{scans:1,code_scans:1},{got:1,want:1}]),{orderId:'o'})).resolves.toMatchObject({collected_scans:1});
+  await expect(N.oracleN24(mk([done,{scans:2,code_scans:2}]),{orderId:'o'})).rejects.toThrow('G6_N24_PRODUCT_GAP_HANDOFF_ATTESTATIONS_2');
+  await expect(N.oracleN24(mk([done,{scans:1,code_scans:1},{got:2,want:1}]),{orderId:'o'})).rejects.toThrow('G6_N24_PRODUCT_GAP_QTY_COLLECTED');
+ });
+ it('script : garde de corps normalisé, 4 chiffres, force brute au-delà du seuil, deux onglets, verdict par statuts HTTP',()=>{
+  const s=read('scripts/recette/g6-negative-n23-n24-chromium.js');
+  expect(s).toMatch(/norm\(body\.pickup_code\)===wait\.expect/);
+  expect(s).toMatch(/LAST4_ONLY/);expect(s).toMatch(/BRUTE_FORCE_/);expect(s).toMatch(/RIGHT_CODE_WHILE_LOCKED/);
+  expect(s).toMatch(/ctx\.newPage\(\)/);expect(s).not.toMatch(/screenshot/);
+  expect(s).toMatch(/G6_N24_PRODUCT_GAP_HTTP_/);expect(s).toMatch(/silent_refusals/);expect(s).toMatch(/steps_reached/);
+ });
+ it('workflow : titres N23/N24 pour KM, CM et CG',()=>{
+  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
+  for(const id of ['N23','N24'])for(const m of ['KM','CM','CG'])
+   expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
+ });
+});

@@ -42,6 +42,12 @@ jobs:
        github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N33-KM' ||
        github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N33-CM' ||
        github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N33-CG' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N23-KM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N23-CM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N23-CG' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N24-KM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N24-CM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N24-CG' ||
        github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M03-KM')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -52,7 +58,7 @@ jobs:
       KOMERCE_DISABLE_CRONS: 'true'
       STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
       EXPECTED_RAILWAY_ENVIRONMENT: staging
-      G6_CANONICAL_SCENARIO: ${{ contains(github.event.issue.title, '-full-N07-') && 'N07' || contains(github.event.issue.title, '-full-N09-') && 'N09' || contains(github.event.issue.title, '-full-N04-') && 'N04' || contains(github.event.issue.title, '-full-N33-') && 'N33' || contains(github.event.issue.title, '-full-M03-') && 'M03' || contains(github.event.issue.title, '-full-M02-') && 'M02' || 'M01' }}
+      G6_CANONICAL_SCENARIO: ${{ contains(github.event.issue.title, '-full-N07-') && 'N07' || contains(github.event.issue.title, '-full-N09-') && 'N09' || contains(github.event.issue.title, '-full-N04-') && 'N04' || contains(github.event.issue.title, '-full-N33-') && 'N33' || contains(github.event.issue.title, '-full-N23-') && 'N23' || contains(github.event.issue.title, '-full-N24-') && 'N24' || contains(github.event.issue.title, '-full-M03-') && 'M03' || contains(github.event.issue.title, '-full-M02-') && 'M02' || 'M01' }}
       G6_TARGET_MARKET: ${{ contains(github.event.issue.title, '-full-N') && endsWith(github.event.issue.title, '-CM') && 'CM' || contains(github.event.issue.title, '-full-N') && endsWith(github.event.issue.title, '-CG') && 'CG' || endsWith(github.event.issue.title, '-M01-CM') && 'CM' || endsWith(github.event.issue.title, '-M02-CM') && 'CM' || endsWith(github.event.issue.title, '-M01-CG') && 'CG' || endsWith(github.event.issue.title, '-M02-CG') && 'CG' || 'KM' }}
       G6_DYNAMIC_TO_STAGE: ${{ github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M03-KM' && 'M03_COLLECTED_FINAL' || (github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M02-KM' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M02-CM' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M02-CG') && 'LOCAL_CLIENT_PICKUP' || (github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M01-KM' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M01-CM' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M01-CG') && 'CLIENT_PICKUP' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-kom-box-M01-KM' && 'HUB_KOM_BOX' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-customer-bag-M01-KM' && 'HUB_CUSTOMER_BAG' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-receiving-readback-M01-KM' && 'HUB_RECEIVING_READBACK' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-receiving-M01-KM' && 'HUB_RECEIVING' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-vendor-simulation-M01-KM' && 'HUB_VENDOR_SIMULATION' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-vendor-readiness-M01-KM' && 'HUB_VENDOR_READINESS' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-commitment-M01-KM' && 'HUB_COMMITMENT' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-buyer-cash-hub-po-M01-KM' && 'HUB_PO' || 'RELAY_CASH' }}
       E2E_AGENT_TRANSITAIRE_EMAIL: ${{ secrets.E2E_AGENT_TRANSITAIRE_EMAIL }}
@@ -136,6 +142,7 @@ jobs:
             test-results/g6-m03-collected-final/
             test-results/g6-negative/
             test-results/g6-negative-n09/
+            test-results/g6-negative-n23-n24/
             test-results/hub-v1-clicks/
           retention-days: 21
           if-no-files-found: warn
