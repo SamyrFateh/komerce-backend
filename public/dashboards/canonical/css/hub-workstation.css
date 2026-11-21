@@ -125,6 +125,7 @@
 .kmc-hub-app .kmc-hub-board-menu {
   display:grid; gap:5px; width:min(360px,calc(100vw - 18px));
   max-height:min(78vh,670px); overflow-y:auto; overscroll-behavior:contain;
+  scrollbar-gutter:stable; scroll-padding-block:12px;
 }
 .kmc-hub-app .kmc-hub-board-menu[hidden] {display:none;}
 .kmc-hub-app .kmc-hub-board-menu-title, .kmc-hub-app .kmc-hub-board-menu-summary {order:0;}
