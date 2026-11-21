@@ -112,3 +112,19 @@ Le détail des runs et des PR est dans #4550 (synthèses de lots) et dans STATUS
 
 **Environnement :** l'accès du connecteur Railway dans cette session ne montre pas le service staging canonique derrière `komerce-backend-production.up.railway.app`. L'état déployé exact et les secrets ne sont donc pas attestés par cet audit de dépôt. Il faut une preuve du workflow owner-only avant de conclure `PREREQ_READY`.
 
+
+## 8. Compatibilité fournisseur central Hub après #4920 (21/11)
+
+**#4920 est fusionnée dans main** (catalogue, ImageKit, contrat source V2 `central_hub_manual`) avec CI/Chromium **locaux**. Ce changement lève une barrière de code, pas une preuve de disponibilité de la source 3/3 sur Railway staging.
+
+Le workflow owner-only `[staging-op] g6-central-hub-product-{KM|CM|CG}` prépare **uniquement une fixture source** depuis les écrans, sans valider à lui seul M03/M06/N34 :
+1. **Import manuel** : le fournisseur central est choisi par l'écran ; le JSON contient le nom du produit, poids/dimensions/coût, **jamais `supplier_product_id`, `sellable_units` ni une identité de vendeur inventée**. La reprise PG cherche le candidat exact par nom, fournisseur système et contrat V2 valide.
+2. **Photographie canonique** : le produit est encore inactif ; l'admin ouvre son dossier Catalogue et utilise le nouveau champ `[data-catalog-media-upload-file]`, puis le bouton `Téléverser l'image`. Le serveur transfère vers ImageKit et inscrit le média canonique, sans injection directe d'URL dans SQL/API. À chaque étape, une seule mutation par geste et un nouvel état PG.
+3. **Fixture réelle indispensable** : une photo ou illustration fidèle du **coffret de tournevis G6** doit être ajoutée au dépôt par le propriétaire avec les droits nécessaires. Deux variables GitHub Actions **non secrètes** doivent ensuite être renseignées : `G6_CENTRAL_MEDIA_IMAGE_FILE` (chemin relatif au dépôt, même SHA que le run) et `G6_CENTRAL_MEDIA_IMAGE_SHA256` (somme SHA-256 en 64 hex). Si l'image n'est pas présente/épinglée/valide, `PREREQ_MISSING_CANONICAL_PRODUCT_IMAGE` : **aucun nouveau candidat n'est importé**. N'utiliser ni screenshot d'écran ni image générique trompeuse.
+4. **Suite normale** : données éditoriales FR, classement, approbation Catalogue, prix du marché `LOCAL_ACTIVE`, exposition, relecture PG de la vérité physique/SKU. La source central Hub n'a pas de *SKU vendeur* ; le checkout doit toutefois prouver sa propre voie de sélection du produit, sans créer un SKU fournisseur fictif pour satisfaire artificiellement le harnais.
+5. **Reprobes** : après une exécution réussie du workflow produit et la stabilisation du SHA Railway, rejouer séquentiellement `g6-prereq-probe-KM`, puis CM, puis CG (PG read only) ; exiger `M03_READY` et la preuve d'un `source_key='central_hub'` **effectivement importable**. Les runs précédents KM #44916869049, CM #44917011664, CG #44917097696 montrent seulement 2 sources import et aucun produit central.
+
+**Porte globale inchangée : 44/46 dispatchs déclarés et vérifiés automatiquement**, mais **M06 et N34 sont NOT_BOUND**. La fixture Hub rendra possible l'écriture de leurs tests dédiés (chaîne M06 multi-acteurs avec justificatif d'achat + N34a/N34b sans dette fournisseur fictive) ; elle ne constitue pas ces tests à elle seule. Les verdicts P0 N15/N21/N22/N32, et les limites N10/N26/N27/N30/N31/N35/N38/N39/N40 restent à traiter comme indiqué au §6/7.
+
+**Protocole de lancement** : pas de reset automatique, pas de mutation du prix N06 en parallèle, pas de fusion `main` en cours de run. Deux niveaux de preuves distincts : CI locale / préflight pour la préparation, puis staging Chromium + PostgreSQL avant le `PASS` métier.
+
