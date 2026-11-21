@@ -359,7 +359,7 @@ describe('G6-G5B N17 (transitaire hors rôle ou marché), N18 (douane retenue pu
   await expect(N.oracleN18(mk(open),{orderId:'o',shipmentRef:'S',customsRef:'C'})).rejects.toThrow('G6_N18_PRODUCT_GAP_HOLD_NOT_RELEASED_BY_ACTOR');
  });
  it('oracle N19 : quantité nulle, incident haute gravité, ni disponible ni code de retrait',async()=>{
-  const good=[[{id:'o',status:'in_transit',collected_scans:0}],[{expected_qty:1,received_qty:0,incident:'i',incident_type:'missing_item',severity:'high'}],[{collected:0,received:0}],[{code_alive:false}]];
+  const good=[[{id:'o',status:'in_transit',collected_scans:0}],[{expected_qty:1,received_qty:0,incident:'i',incident_type:'missing_item',severity:'high'}],[{collected:0,received:0}]];
   await expect(N.oracleN19(mk(good),{orderId:'o'})).resolves.toMatchObject({received_qty:0,severity:'high'});
   const avail=[[{id:'o',status:'available',collected_scans:0}],good[1],good[2]];
   await expect(N.oracleN19(mk(avail),{orderId:'o'})).rejects.toThrow('G6_N19_PRODUCT_GAP_AVAILABLE_OR_COLLECTED_AFTER_TOTAL_LOSS_available');
@@ -376,7 +376,7 @@ describe('G6-G5B N17 (transitaire hors rôle ou marché), N18 (douane retenue pu
   const r=read('scripts/recette/canonical/negative-runner.js');
   expect(r).toMatch(/N17:\{script:N1718_SCRIPT[^}]*to:'HUB_SHIPMENT'/);expect(r).toMatch(/N18:\{script:N1718_SCRIPT[^}]*to:'FORWARDER'/);expect(r).toMatch(/N19:\{script:N19_SCRIPT[^}]*to:'CUSTOMS'/);
   expect(r).toMatch(/N20:\{script:N20_SCRIPT[^}]*to:'CUSTOMS'/);
-  expect(read('scripts/recette/canonical/real-buyer-cash-adapters.js')).toMatch(/'N17','N18','N19'(?:,'N\d+')*\]\.includes\(SCENARIO\)/);
+  expect(read('scripts/recette/canonical/real-buyer-cash-adapters.js')).toMatch(/'N17','N18','N19'(?:,'N\d+[A-Z0-9]*')*\]\.includes\(SCENARIO\)/);
  });
  it('workflow : titres N17 à N19 pour KM, CM et CG',()=>{
   const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
@@ -472,7 +472,48 @@ describe('G6-G5C N35 à N38 : modalités de M01 et oracles O-ECO, O-DOC, O-NOTIF
   expect(validateChromiumScriptSources()).toBeGreaterThan(0);
   const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
   for(const id of ['N35','N36','N37','N38']){for(const m of ['KM','CM','CG'])expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");expect(wf).toContain("'-full-"+id+"-') && '"+id+"'");expect(N.isNegative(id)).toBe(true)}
-  expect(read('scripts/recette/canonical/real-buyer-cash-adapters.js')).toMatch(/'N19','N35','N36','N37','N38'\]\.includes\(SCENARIO\)/);
+  expect(read('scripts/recette/canonical/real-buyer-cash-adapters.js')).toMatch(/'N19','N35','N36','N37','N38'(?:,'N39F\d')*\]\.includes\(SCENARIO\)/);
+  });
+});
+
+describe('G6-G5B N39 (annulation client aux paliers F1, F2, F3)',()=>{
+ const up=id=>STAGE_IDS.slice(0,STAGE_IDS.indexOf(id)+1);
+ const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
+ it('séquences : chaîne M01 coupée à RELAY_CASH, HUB_COMMITMENT, HUB_SHIPMENT ; M01 inchangé',()=>{
+  expect(graphFor('N39F1').order).toEqual([...up('RELAY_CASH'),'N39F1_CLIENT_CANCEL_ATTEMPT','N39F1_CANCEL_EFFECTS_ORACLE']);
+  expect(graphFor('N39F2').order).toEqual([...up('HUB_COMMITMENT'),'N39F2_CLIENT_CANCEL_ATTEMPT','N39F2_CANCEL_EFFECTS_ORACLE']);
+  expect(graphFor('N39F3').order).toEqual([...up('HUB_SHIPMENT'),'N39F3_CLIENT_CANCEL_ATTEMPT','N39F3_CANCEL_EFFECTS_ORACLE']);
+  expect(graphFor('M01').order).toEqual(STAGE_IDS);
+  expect(validateStageModuleSources()).toBeGreaterThan(0);
+ });
+ const fx=(o={})=>[[{status:'cancelled',display_total_amount:'9990',market_currency:'XAF',credits:1,credit_amount:9990,credit_currency:'XAF',refunds:1,psp_intents:0,commitments:0,active_lines:0,...o}]];
+ it('oracle F1 : annulée, wallet 100 % en devise du marché une fois, sans PSP',async()=>{
+  const ok200={http:200};
+  await expect(N.oracleN39F1(mk(fx()),{orderId:'o',cancel:ok200})).resolves.toMatchObject({wallet_credits:1,currency:'XAF'});
+  await expect(N.oracleN39F1(mk(fx()),{orderId:'o',cancel:{http:422}})).rejects.toThrow('G6_N39F1_PRODUCT_GAP_CANCEL_REFUSED_HTTP_422');
+  await expect(N.oracleN39F1(mk(fx({credit_amount:7992})),{orderId:'o',cancel:ok200})).rejects.toThrow('G6_N39F1_PRODUCT_GAP_REFUND_NOT_100_PCT_7992_OF_9990');
+  await expect(N.oracleN39F1(mk(fx({credit_currency:'KMF'})),{orderId:'o',cancel:ok200})).rejects.toThrow('G6_N39F1_PRODUCT_GAP_WALLET_CURRENCY_KMF_VS_XAF');
+  await expect(N.oracleN39F1(mk(fx({psp_intents:1})),{orderId:'o',cancel:ok200})).rejects.toThrow('G6_N39F1_PRODUCT_GAP_PSP_INTENT');
+ });
+ it('oracle F2 : ni annulation ni remboursement silencieux, engagement conservé',async()=>{
+  const open=o=>fx({status:'confirmed',credits:0,credit_amount:0,credit_currency:null,refunds:0,commitments:1,active_lines:1,...o});
+  await expect(N.oracleN39F2(mk(open()),{orderId:'o',cancel:{http:422}})).resolves.toMatchObject({status:'confirmed',commitments:1});
+  await expect(N.oracleN39F2(mk(fx({commitments:1,active_lines:0})),{orderId:'o',cancel:{http:200}})).rejects.toThrow('G6_N39F2_PRODUCT_GAP_SILENT_CANCEL_AFTER_COMMITMENT_cancelled');
+  await expect(N.oracleN39F2(mk(open({credits:1,refunds:1})),{orderId:'o',cancel:{http:422}})).rejects.toThrow('G6_N39F2_PRODUCT_GAP_SILENT_REFUND_1_1');
+ });
+ it('oracle F3 : embarquée, annulation fermée, aucun remboursement',async()=>{
+  const shipped=o=>fx({status:'shipped',credits:0,credit_amount:0,refunds:0,...o});
+  await expect(N.oracleN39F3(mk(shipped()),{orderId:'o',cancel:{http:422}})).resolves.toMatchObject({status:'shipped'});
+  await expect(N.oracleN39F3(mk(fx()),{orderId:'o',cancel:{http:200}})).rejects.toThrow('G6_N39F3_PRODUCT_GAP_CANCELLED_WHEN_SHIPPED_cancelled');
+ });
+ it('script et workflow : bouton client, F1 écran manquant, titres des trois paliers',()=>{
+  const a=read('scripts/recette/g6-negative-n39-cancel-chromium.js');
+  expect(a).toMatch(/k-order-cancel-btn/);expect(a).toMatch(/G6_N39F1_SCREEN_MISSING_CANCEL_BUTTON/);expect(a).toMatch(/ANNULATION_SANS_MESSAGE_AFFICHE/);expect(a).not.toMatch(/screenshot/);
+  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
+  for(const id of ['N39F1','N39F2','N39F3'])for(const m of ['KM','CM','CG'])
+   expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
+  expect(['N39F1','N39F2','N39F3'].every(N.isNegative)).toBe(true);
+  expect(validateChromiumScriptSources()).toBeGreaterThan(0);
  });
 });
 
