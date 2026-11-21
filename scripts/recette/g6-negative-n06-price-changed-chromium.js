@@ -240,7 +240,8 @@ async function main(){
      check(!!actor,'G6_N06_RESTORE_ACTOR_MISSING');
      await changePriceFromMarketUI(actor,{from:actual,to:original,kind:'RESTORE'});
     }
-    check(await readPrice()===original,'G6_N06_RESTORE_PRICE_MISMATCH');
+    report.market_price_after=await readPrice();
+    check(report.market_price_after===original,'G6_N06_RESTORE_PRICE_MISMATCH');
     report.restore.success=true;
    }catch(e){
     report.restore.success=false;report.restore.error=fullError(e);
