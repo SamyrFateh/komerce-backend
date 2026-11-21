@@ -39,7 +39,13 @@ const N19_SCRIPT='scripts/recette/g6-negative-n19-chromium.js';
 const N19_REPORT='test-results/g6-negative-n19/report.json';
 const N2832_SCRIPT='scripts/recette/g6-negative-n28-n32-chromium.js';
 const N2832_REPORT='test-results/g6-negative-n28-n32/report.json';
+const N3738_SCRIPT='scripts/recette/g6-negative-n37-n38-chromium.js';
+const N3738_REPORT='test-results/g6-negative-n37-n38/report.json';
 const LOCAL_NEG={
+ N35:{phase:'N35_ECO_ORACLE',oracle:'N35_ECO_ORACLE_EVIDENCE',to:'CLIENT_PICKUP'},
+ N36:{phase:'N36_MANUAL_PROVENANCE_ORACLE',oracle:'N36_MANUAL_ORACLE_EVIDENCE',to:'CLIENT_PICKUP'},
+ N37:{script:N3738_SCRIPT,report:N3738_REPORT,phase:'N37_DOCUMENT_ACCESS',oracle:'N37_DOCUMENTS_ORACLE',to:'CLIENT_PICKUP',po:true},
+ N38:{script:N3738_SCRIPT,report:N3738_REPORT,phase:'N38_RESUME_DRY_RUN',oracle:'N38_POSTCOMMIT_ORACLE',to:'CLIENT_PICKUP'},
  N28:{script:N2832_SCRIPT,report:N2832_REPORT,phase:'N28_NETWORK_FAILURE_RETRY',oracle:'N28_SINGLE_EFFECT_ORACLE'},
  N32:{script:N2832_SCRIPT,report:N2832_REPORT,phase:'N32_CROSS_MARKET_ROLES',oracle:'N32_NO_MUTATION_ORACLE'},
  N17:{script:N1718_SCRIPT,report:N1718_REPORT,phase:'N17_FORWARDER_ROLE_MARKET_ATTEMPTS',oracle:'N17_NO_TRANSITION_ORACLE',to:'HUB_SHIPMENT',ship:true},
@@ -100,8 +106,8 @@ async function runNegativeScenario({scenario,env,db,adapters}){
   // Transport et douane : expédition de la commande, relue en PG (lecture seule) et transmise au script enfant.
   const ship=L.ship?await N.shipmentForOrder(db,result.order_id):null;
   if(L.ship&&!ship)throw Error('G6_'+scenario+'_SCREEN_MISSING_NO_SHIPMENT_FOR_ORDER');
-  fs.rmSync(path.join(ROOT,L.report),{force:true});
-  try{
+  if(L.script)fs.rmSync(path.join(ROOT,L.report),{force:true});
+  if(L.script)try{
    spawnChild(L.script,{...env,G6_DYNAMIC_FRESH_ORDER:'1',G6_CANONICAL_PHASE:phase,
     G6_CANONICAL_ORDER_ID:result.order_id,G6_CANONICAL_ORDER_REFERENCE:result.order_reference,G6_CANONICAL_DB_FINGERPRINT:runtime.db_fingerprint,
     ...(poId?{G6_CANONICAL_PO_ID:poId}:{}),...(ship?{G6_CANONICAL_SHIPMENT_REF:ship.reference,G6_CANONICAL_SHIPMENT_ID:ship.id}:{})},L.report);
@@ -111,11 +117,16 @@ async function runNegativeScenario({scenario,env,db,adapters}){
    const m=/(?:G6_N(?:2[0-4]|29|1[1-9]|28|3[0-8])_(?:SCREEN_MISSING|PRODUCT_GAP)|PREREQ_MISSING_SECOND_RELAY|PREREQ_MISSING_OTHER_ACTIVE_MARKET|PREREQ_MISSING_FOREIGN_MARKET_ORDER)[A-Za-z0-9_]*/.exec(String(child?.error||''));
    throw Error(m?m[0]:e.message);
   }
-  const g=readJson(L.report);
-  if(!/_CHROMIUM_PASS$/.test(String(g.verdict))||g.order_id!==result.order_id)throw Error('G6_'+scenario+'_SCREEN_MISSING_NOT_PROVEN');
+  // N35 et N36 : oracles PG seuls sur la chaîne M01 (aucun geste négatif).
+  const g=L.script?readJson(L.report):{order_id:result.order_id};
+  if(L.script&&(!/_CHROMIUM_PASS$/.test(String(g.verdict))||g.order_id!==result.order_id))throw Error('G6_'+scenario+'_SCREEN_MISSING_NOT_PROVEN');
   out.stages.push({stage_id:phase,steps_reached:g.steps_reached,page_events:g.page_events,attempts:g.attempts||null,tabs:g.tabs||null,intruder:g.intruder||null,control:g.control||null,reverse:g.reverse||null,ux_signal:g.ux_signal||null,
-   legit_handoff_after_lock:g.legit_handoff_after_lock||null,after_http500:g.after_http500||null,after_lost_response:g.after_lost_response||null,screen:g.screen||null,probes:g.probes||null,director:g.director||null});
-  const o=scenario==='N28'?await N.oracleN28(db,{orderId:result.order_id,committedBeforeRetry:g.committed_before_retry,assertNoHubOrTransport})
+   legit_handoff_after_lock:g.legit_handoff_after_lock||null,after_http500:g.after_http500||null,after_lost_response:g.after_lost_response||null,access:g.access||null,dry_run:g.dry_run||null,screen:g.screen||null,probes:g.probes||null,director:g.director||null});
+  const o=scenario==='N35'?await N.oracleN35(db,{orderId:result.order_id})
+   :scenario==='N36'?await N.oracleN36(db,{orderId:result.order_id})
+   :scenario==='N37'?await N.oracleN37(db,{orderId:result.order_id,reference:result.order_reference,poId})
+   :scenario==='N38'?await N.oracleN38(db,{orderId:result.order_id,reference:result.order_reference,dryRun:g.dry_run})
+   :scenario==='N28'?await N.oracleN28(db,{orderId:result.order_id,committedBeforeRetry:g.committed_before_retry,assertNoHubOrTransport})
    :scenario==='N32'?await N.oracleN32(db,{orderId:result.order_id,snapshot:g.snapshot,assertNoHubOrTransport})
    :scenario==='N23'   ?await N.oracleN23(db,{orderId:result.order_id,agentId:g.agent_id,minFailures:5,assertNoHubOrTransport})
    :scenario==='N24'?await N.oracleN24(db,{orderId:result.order_id,assertNoHubOrTransport})
@@ -139,6 +150,8 @@ async function runNegativeScenario({scenario,env,db,adapters}){
    N11:'G6_N11_PO_WITHOUT_COMMITMENT_REFUSED_NO_ENGAGEMENT_PG_PASS',N12:'G6_N12_PAYMENT_SINGLE_VALIDATOR_REFUSED_NO_PAYMENT_PG_PASS',
    N17:'G6_N17_FORWARDER_OUT_OF_ROLE_MARKET_REFUSED_NO_TRANSITION_PG_PASS',N18:'G6_N18_CUSTOMS_HOLD_NO_TRANSIT_THEN_RELEASE_PG_PASS',
    N19:'G6_N19_LOCAL_TRANSPORT_DELAY_LOSS_INCIDENT_NO_WITHDRAWAL_PG_PASS',
+   N35:'G6_N35_ECO_FREIGHT_ONCE_CAUSAL_ALLOCATIONS_DIAGNOSTICS_PG_PASS',N36:'G6_N36_MANUAL_PROVENANCE_EVERY_GESTURE_PG_PASS',
+   N37:'G6_N37_DOCUMENTS_ONCE_ACCESS_OWNER_ONLY_NO_REAL_SEND_PG_PASS',N38:'G6_N38_EVENT_KEPT_DOCUMENTS_ONCE_RESUME_DRY_RUN_NO_BLIND_SPOT_PG_PASS',
    N28:'G6_N28_NETWORK_FAILURE_RETRY_SINGLE_EFFECT_PG_PASS',N32:'G6_N32_CROSS_MARKET_ROLES_REFUSED_NO_MUTATION_PG_PASS',
    N21:'G6_N21_CROSS_RELAY_REFUSED_NO_DISCLOSURE_PG_PASS',N22:'G6_N22_TWO_RELAYS_REFUSED_NO_DISCLOSURE_PG_PASS'}[scenario];
   return out;

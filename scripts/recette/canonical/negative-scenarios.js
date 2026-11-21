@@ -10,7 +10,7 @@
  */
 'use strict';
 const {isDeepStrictEqual}=require('node:util');
-const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29','N11','N12','N13','N14','N15','N16','N17','N18','N19','N28','N32']);
+const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29','N11','N12','N13','N14','N15','N16','N17','N18','N19','N28','N32','N35','N36','N37','N38']);
 const isNegative=s=>NEGATIVE.includes(String(s));
 // Produit vendable (prix LOCAL_ACTIVE, exposition ENABLED, actif) servi par l'import (aucun stock local exposé), SKU actifs en stock.
 const MULTI_SKU_SQL=`
@@ -379,6 +379,85 @@ async function oracleN32(db,{orderId,snapshot,assertNoHubOrTransport}){
  if(assertNoHubOrTransport)await assertNoHubOrTransport(db,orderId,'available');
  return {status:o.status,collected_scans:0,qty_collected:0,codes_before:snapshot.before.codes,codes_after:snapshot.after.codes};
 }
+// ---- G6-G5C : oracles transverses sur la chaîne M01 jusqu'au retrait client (lecture seule). ----
+const ECO_Q=require('node:fs').readFileSync(require('node:path').join(__dirname,'../../../docs/recette/G6_ECO_SQL_CONTROLS.sql'),'utf8');
+// Pur : instructions SELECT du fichier de contrôles O-ECO (commentaires retirés), Q1 à Q3.
+const ecoControls=()=>ECO_Q.split('\n').filter(l=>!/^\s*--/.test(l)).join('\n').split(';').map(s=>s.trim()).filter(s=>/^SELECT/i.test(s));
+// N35 (O-ECO) : fret non doublé et allocations causales sur les objets réels de la commande ; contrôles Q1 à Q3 consignés comme diagnostics, sans assertion zéro.
+async function oracleN35(db,{orderId}){
+ const o=await orderRows(db,orderId);
+ const {rows:al}=await db.query(`SELECT a.order_item_id,a.cost_type,a.shipment_id,a.is_actual,a.amount_kmf,(i.order_id=a.order_id) AS causal
+   FROM order_item_real_cost_allocations a LEFT JOIN order_items i ON i.id=a.order_item_id WHERE a.order_id=$1`,[orderId]);
+ ok(al.length>0,'G6_N35_PRODUCT_GAP_NO_REAL_COST_ALLOCATIONS');
+ ok(al.every(a=>a.causal===true),'G6_N35_PRODUCT_GAP_ALLOCATION_NOT_CAUSAL');
+ ok(al.every(a=>Number(a.amount_kmf)>=0),'G6_N35_PRODUCT_GAP_NEGATIVE_ALLOCATION');
+ const {rows:dup}=await db.query(`SELECT order_item_id,cost_type,COALESCE(shipment_id::text,'-') AS sh,count(*)::int AS n FROM order_item_real_cost_allocations
+   WHERE order_id=$1 AND is_actual AND cost_type IN ('freight','customs','local_distribution','relay','hub') GROUP BY 1,2,3 HAVING count(*)>1`,[orderId]);
+ ok(dup.length===0,'G6_N35_PRODUCT_GAP_COST_COMPONENT_DOUBLED_'+dup.map(d=>d.cost_type).join('_'));
+ const diagnostics=[];
+ for(const [i,q] of ecoControls().entries()){const {rows}=await db.query(q);diagnostics.push({control:(['Q1','Q2a','Q2b','Q3'][i]||'Q'+(i+1)),rows:rows.length,sample:rows.slice(0,5)})}
+ ok(diagnostics.length>=3,'G6_N35_PREREQ_ECO_CONTROLS_MISSING');
+ return {status:o.status,allocations:al.length,cost_types:[...new Set(al.map(a=>a.cost_type))].sort(),freight_doubled:0,diagnostics,
+  floor_total_equals_detail:'NOT_PROVEN_NO_PERSISTED_FLOOR_ON_ORDER_OBJECTS',n3_separated:'NOT_PROVEN_NO_N3_MARKER_ON_ALLOCATIONS'};
+}
+// N36 : modalité MANUAL de M01 (aucun second circuit) : chaque preuve physique de la commande porte la provenance MANUAL avec référence, jamais SCAN ni NULL.
+async function oracleN36(db,{orderId}){
+ const {rows:pl}=await db.query(`SELECT p.evidence_method,length(btrim(COALESCE(p.evidence_ref,'')))>=6 AS ref_ok
+   FROM hub_physical_unit_placements p JOIN hub_purchase_allocations a ON a.id=p.allocation_id WHERE a.order_id=$1`,[orderId]);
+ ok(pl.length>0,'G6_N36_PRODUCT_GAP_NO_PLACEMENTS');
+ ok(pl.every(p=>p.evidence_method==='MANUAL'&&p.ref_ok),'G6_N36_PRODUCT_GAP_PLACEMENT_NOT_MANUAL_'+[...new Set(pl.map(p=>p.evidence_method||'NULL'))].join('_'));
+ const {rows:bb}=await db.query(`SELECT b.evidence_method,length(btrim(COALESCE(b.evidence_ref,'')))>=6 AS ref_ok FROM hub_box_bags b
+   JOIN hub_physical_units u ON u.id=b.bag_unit_id WHERE u.order_id=$1`,[orderId]);
+ ok(bb.length>0,'G6_N36_PRODUCT_GAP_NO_BAG_LINK');
+ ok(bb.every(b=>b.evidence_method==='MANUAL'&&b.ref_ok),'G6_N36_PRODUCT_GAP_BAG_LINK_NOT_MANUAL_'+[...new Set(bb.map(b=>b.evidence_method||'NULL'))].join('_'));
+ const {rows:[c]}=await db.query(`SELECT count(*)::int AS n FROM hub_custody_events e JOIN hub_physical_units u ON u.id=e.physical_unit_id WHERE u.order_id=$1`,[orderId]);
+ ok(c.n>0,'G6_N36_PRODUCT_GAP_NO_CUSTODY_AUDIT');
+ const {rows:[s]}=await db.query("SELECT count(*)::int AS n FROM scans WHERE order_id=$1 AND step='collected'",[orderId]);
+ ok(s.n===1,'G6_N36_PRODUCT_GAP_HANDOFF_ATTESTATIONS_'+s.n);
+ return {placements:pl.length,placements_manual:pl.length,bag_links:bb.length,bag_links_manual:bb.length,custody_events:c.n,collected_scans:s.n};
+}
+// Documents confirmés de la commande : lecture seule, partagée par N37 et N38.
+async function docState(db,orderId){
+ const {rows:[inv]}=await db.query('SELECT count(*)::int AS n,count(pdf_content)::int AS pdf FROM invoices WHERE order_id=$1',[orderId]);
+ const {rows:sc}=await db.query("SELECT s.id FROM scans s WHERE s.order_id=$1 AND s.step='collected'",[orderId]);
+ const {rows:pp}=await db.query(`SELECT subject_id,count(*)::int AS n FROM transaction_documents WHERE document_type='pickup_proof' AND subject_type='pickup_handoff'
+   AND subject_id=ANY($1::uuid[]) GROUP BY subject_id`,[sc.map(r=>r.id)]);
+ const {rows:dup}=await db.query(`SELECT document_type,subject_type,count(*)::int AS n FROM transaction_documents WHERE order_id=$1 GROUP BY document_type,subject_type,subject_id HAVING count(*)>1`,[orderId]);
+ return {invoices:inv.n,invoice_pdf:inv.pdf,handoffs:sc.length,pickup_proofs:pp.length,pickup_proof_duplicates:pp.filter(r=>r.n>1).length,duplicate_documents:dup.length};
+}
+// N37 (O-DOC, O-NOTIF) : un seul document par événement confirmé, aucun doublon, aucun envoi réel ; l'accès (O-SEC-DOC) est jugé par le script.
+async function oracleN37(db,{orderId,reference,poId}){
+ const o=await orderRows(db,orderId);
+ ok(o.status==='collected'&&o.payment_status==='paid','G6_N37_PRODUCT_GAP_ORDER_NOT_COLLECTED_PAID');
+ const d=await docState(db,orderId);
+ ok(d.invoices===1,'G6_N37_PRODUCT_GAP_INVOICE_COUNT_'+d.invoices);
+ ok(d.duplicate_documents===0&&d.pickup_proof_duplicates===0,'G6_N37_PRODUCT_GAP_DUPLICATE_DOCUMENT');
+ ok(d.pickup_proofs===d.handoffs&&d.handoffs===1,'G6_N37_PRODUCT_GAP_PICKUP_PROOF_'+d.pickup_proofs+'_OF_'+d.handoffs);
+ const {rows:po}=poId?await db.query("SELECT count(*)::int AS n FROM transaction_documents WHERE document_type='purchase_order' AND subject_id=$1",[poId]):{rows:[{n:null}]};
+ ok(po[0].n===null||po[0].n<=1,'G6_N37_PRODUCT_GAP_PO_DOCUMENT_DUPLICATED');
+ const {rows:nl}=await db.query('SELECT channel,event,status FROM notification_log WHERE order_ref=$1',[reference]);
+ ok(!nl.some(n=>/^(sent|delivered|success|ok)$/i.test(n.status)),'G6_N37_PRODUCT_GAP_REAL_SEND_ON_STAGING');
+ ok(!nl.some(n=>/in_transit/i.test(n.event)),'G6_N37_PRODUCT_GAP_IN_TRANSIT_NOTIFICATION');
+ const seen=new Map();for(const n of nl){const k=n.channel+'/'+n.event;seen.set(k,(seen.get(k)||0)+1)}
+ ok(![...seen.values()].some(v=>v>1),'G6_N37_PRODUCT_GAP_NOTIFICATION_DUPLICATED');
+ return {...d,po_documents:po[0].n,notifications:nl.map(n=>({channel:n.channel,event:n.event,status:n.status})),real_sends:0};
+}
+// N38 : événement métier conservé ; chaque document manquant doit être détecté par la reprise (dry run) ; aucun doublon, aucun envoi. Aucune injection de panne possible sur le staging.
+async function oracleN38(db,{orderId,reference,dryRun}){
+ const o=await orderRows(db,orderId);
+ ok(o.status==='collected'&&o.payment_status==='paid'&&o.collected_scans===1,'G6_N38_PRODUCT_GAP_EVENT_NOT_KEPT');
+ const d=await docState(db,orderId);
+ ok(d.duplicate_documents===0&&d.pickup_proof_duplicates===0&&d.invoices<=1,'G6_N38_PRODUCT_GAP_DUPLICATE_DOCUMENT');
+ const missing={invoice:d.invoices===1&&d.invoice_pdf===1?0:1,pickup_proof:d.handoffs-d.pickup_proofs};
+ const fam=dryRun&&dryRun.families||null;
+ ok(!!fam&&dryRun.dry_run===true&&dryRun.issued===0,'G6_N38_SCREEN_MISSING_RESUME_DRY_RUN_NOT_PROVEN');
+ if(missing.invoice)ok(fam.invoice&&fam.invoice.missing>=1,'G6_N38_PRODUCT_GAP_RESUME_BLIND_SPOT_INVOICE');
+ if(missing.pickup_proof)ok(fam.pickup_proof&&fam.pickup_proof.missing>=1,'G6_N38_PRODUCT_GAP_RESUME_BLIND_SPOT_PICKUP_PROOF');
+ const {rows:nl}=await db.query('SELECT status FROM notification_log WHERE order_ref=$1',[reference]);
+ ok(!nl.some(n=>/^(sent|delivered|success|ok)$/i.test(n.status)),'G6_N38_PRODUCT_GAP_REAL_SEND_ON_STAGING');
+ return {...d,missing_for_order:missing,resume_detects_missing:missing.invoice+missing.pickup_proof>0,dry_run_global_missing:Object.fromEntries(Object.entries(fam).map(([k,v])=>[k,v.missing])),
+  failure_leg:'NOT_PROVEN_NO_FAULT_INJECTION_ON_STAGING',real_sends:0};
+}
 // Pur : verdict explicite pour un écran manquant ou un défaut produit (jamais un contournement).
 function classifyNegative(scenario,message){
  const m=String(message||'');
@@ -388,4 +467,4 @@ function classifyNegative(scenario,message){
  const g=new RegExp('G6_'+scenario+'_(SCREEN_MISSING|PRODUCT_GAP)').exec(m);
  return g?g[1]:null;
 }
-module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,oracleN15,oracleN16,oracleN28,oracleN32,snapN16,shipmentForOrder,snapJourney,snapLocalTransport,oracleN17,oracleN18,oracleN19,importPo,classifyNegative};
+module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,oracleN15,oracleN16,oracleN28,oracleN32,oracleN35,oracleN36,oracleN37,oracleN38,ecoControls,snapN16,shipmentForOrder,snapJourney,snapLocalTransport,oracleN17,oracleN18,oracleN19,importPo,classifyNegative};
