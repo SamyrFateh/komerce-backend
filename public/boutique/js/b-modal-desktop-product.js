@@ -162,6 +162,9 @@ function renderStock(selection) {
     if (qty == null || Number.isNaN(qty)) {
       dom.modalStock.textContent = '● En stock';
       dom.modalStock.className = 'k-modal-stock k-modal-stock--ok';
+    } else if (unit?.stock_status === 'ON_ORDER') {
+      dom.modalStock.textContent = '● Sur commande';
+      dom.modalStock.className = 'k-modal-stock k-modal-stock--ok';
     } else if (qty === 0) {
       dom.modalStock.textContent = '● Épuisé';
       dom.modalStock.className = 'k-modal-stock k-modal-stock--out';
