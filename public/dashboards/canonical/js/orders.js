@@ -57,7 +57,12 @@
   async function jsonRequest(fetchFn, url) {
     const response = await fetchFn(url, { method: 'GET', credentials: 'include', headers: { Accept: 'application/json' } });
     const body = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(body.error || `Erreur HTTP ${response.status}`);
+    if (!response.ok) {
+      const error = new Error(body.error || `Erreur HTTP ${response.status}`);
+      error.status = response.status;
+      error.code = body.code || null;
+      throw error;
+    }
     return body;
   }
 
@@ -277,11 +282,17 @@
         return Object.freeze({ payload, endpoint });
       } catch (error) {
         if (rootNode.isConnected === false || rootNode.__dashboardViewIdentity !== identity) return {};
-        if (!hasData) {
+        if (!hasData || error.status === 401 || error.status === 403) {
+          // Jamais afficher les commandes de l'ancien périmètre après un 401/403.
           rootNode.textContent = '';
-          const box = el(doc, 'div', 'kmc-ord-error', `Commandes indisponibles : ${error.message}`);
+          const text = error.status === 401 || error.status === 403
+            ? 'Accès expiré ou non autorisé. Rechargez votre session.'
+            : `Commandes indisponibles : ${error.message}`;
+          const box = el(doc, 'div', 'kmc-ord-error', text);
           box.setAttribute('role', 'alert');
           rootNode.appendChild(box);
+          rootNode.removeAttribute?.('data-dashboard-stale');
+          hasData = false;
         } else {
           rootNode.setAttribute?.('data-dashboard-stale', 'true');
         }
