@@ -172,6 +172,17 @@ async function resolveGroupedLineEntries(db, content) {
   if (!content.product_sku_id) {
     fail('HUB_PURCHASE_SKU_MISMATCH', 'product_sku_id obligatoire pour une Purchase Order regroupée');
   }
+  // Même ordre de verrouillage que confirmGroupedPurchaseOrder : en-tête PO
+  // d'abord, lignes ensuite. Le JOIN FOR UPDATE OF pl / FOR SHARE OF po
+  // peut sinon prendre pl avant po et former un deadlock PostgreSQL 40P01
+  // quand une confirmation réduite et une réception arrivent ensemble.
+  const { rows: [lockedPo] } = await db.query(
+    'SELECT id, status FROM purchase_orders WHERE id=$1 FOR SHARE',
+    [content.purchase_order_id]
+  );
+  if (!lockedPo) fail('HUB_PURCHASE_ORDER_UNRESOLVABLE', 'Purchase Order introuvable');
+  if (lockedPo.status === 'cancelled') fail('HUB_PURCHASE_ORDER_CANCELLED', 'Purchase Order annulée');
+  if (lockedPo.status === 'draft') fail('HUB_PURCHASE_ORDER_NOT_SUBMITTED', 'Purchase Order regroupée encore en brouillon');
   const { rows } = await db.query(
     `SELECT pl.id AS purchase_line_id,
             po.id AS purchase_order_id,
