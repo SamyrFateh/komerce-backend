@@ -1084,7 +1084,15 @@
         return state;
       } catch (error) {
         if (background) {
-          rootNode.setAttribute?.('data-dashboard-stale','true');
+          if (error.status === 401 || error.status === 403) {
+            // Refus serveur = droits retirés : effacer immédiatement la vue précédente.
+            rootNode.replaceChildren();
+            const notice = doc.createElement('p');
+            notice.setAttribute('role', 'alert');
+            notice.textContent = 'Accès expiré ou non autorisé. Rechargez votre session.';
+            rootNode.appendChild(notice);
+            rootNode.removeAttribute?.('data-dashboard-stale');
+          } else rootNode.setAttribute?.('data-dashboard-stale','true');
           throw error;
         }
         rootNode.replaceChildren();
