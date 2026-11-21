@@ -6911,7 +6911,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 192,
+            "count": 194,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -7314,6 +7314,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/css/dashboard-freshness.css",
+                "resolvedPath": "public/dashboards/canonical/css/dashboard-freshness.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/css/dashboard-hierarchy-v1.css",
                 "resolvedPath": "public/dashboards/canonical/css/dashboard-hierarchy-v1.css",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7531,6 +7536,11 @@
               {
                 "declared": "dashboards/canonical/js/commerce.js",
                 "resolvedPath": "public/dashboards/canonical/js/commerce.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/dashboard-freshness.js",
+                "resolvedPath": "public/dashboards/canonical/js/dashboard-freshness.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7886,7 +7896,7 @@
             ]
           },
           "migrations": {
-            "count": 2,
+            "count": 3,
             "files": [
               {
                 "declared": "migrations/071_relay_dashboard_tables.sql",
@@ -7897,11 +7907,16 @@
                 "declared": "migrations/151_partner_business_ref.sql",
                 "resolvedPath": "migrations/151_partner_business_ref.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/423_dashboard_refresh_notifications.sql",
+                "resolvedPath": "migrations/423_dashboard_refresh_notifications.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
           "routes": {
-            "count": 28,
+            "count": 29,
             "files": [
               {
                 "declared": "routes/admin-client-360.js",
@@ -7912,6 +7927,11 @@
                 "declared": "routes/admin-client-index.js",
                 "resolvedPath": "routes/admin-client-index.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/admin-dashboard-events.js",
+                "resolvedPath": "routes/admin-dashboard-events.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "routes/admin-dashboard-market.js",
@@ -8046,7 +8066,7 @@
             ]
           },
           "services": {
-            "count": 46,
+            "count": 47,
             "files": [
               {
                 "declared": "config/central-transit-roles.js",
@@ -8107,6 +8127,11 @@
                 "declared": "services/dashboard-finance-canonical.js",
                 "resolvedPath": "services/dashboard-finance-canonical.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/dashboard-invalidation-bus.js",
+                "resolvedPath": "services/dashboard-invalidation-bus.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/dashboard-metrics/_helpers.js",
@@ -9351,7 +9376,7 @@
             ]
           }
         },
-        "totalFiles": 482,
+        "totalFiles": 487,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -9877,7 +9902,7 @@
       "interfaces": {
         "internalApis": [],
         "httpInterfaces": {
-          "count": 88
+          "count": 89
         }
       },
       "businessDependencies": [
