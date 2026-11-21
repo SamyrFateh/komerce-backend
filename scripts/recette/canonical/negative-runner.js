@@ -43,6 +43,8 @@ const N3738_SCRIPT='scripts/recette/g6-negative-n37-n38-chromium.js';
 const N3738_REPORT='test-results/g6-negative-n37-n38/report.json';
 const N30_SCRIPT='scripts/recette/g6-negative-n30-chromium.js';
 const N30_REPORT='test-results/g6-negative-n30/report.json';
+const N39_SCRIPT='scripts/recette/g6-negative-n39-cancel-chromium.js';
+const N39_REPORT='test-results/g6-negative-n39/report.json';
 const LOCAL_NEG={
  N30:{script:N30_SCRIPT,report:N30_REPORT,phase:'N30_TRUTH_COMPARE',oracle:'N30_TRUTH_ORACLE'},
  N31:{phase:'N31_FX_SNAPSHOT_ORACLE',oracle:'N31_FX_SNAPSHOT_ORACLE_EVIDENCE'},
@@ -52,6 +54,9 @@ const LOCAL_NEG={
  N38:{script:N3738_SCRIPT,report:N3738_REPORT,phase:'N38_RESUME_DRY_RUN',oracle:'N38_POSTCOMMIT_ORACLE',to:'CLIENT_PICKUP'},
  N28:{script:N2832_SCRIPT,report:N2832_REPORT,phase:'N28_NETWORK_FAILURE_RETRY',oracle:'N28_SINGLE_EFFECT_ORACLE'},
  N32:{script:N2832_SCRIPT,report:N2832_REPORT,phase:'N32_CROSS_MARKET_ROLES',oracle:'N32_NO_MUTATION_ORACLE'},
+ N39F1:{script:N39_SCRIPT,report:N39_REPORT,phase:'N39F1_CLIENT_CANCEL_ATTEMPT',oracle:'N39F1_CANCEL_EFFECTS_ORACLE',to:'RELAY_CASH'},
+ N39F2:{script:N39_SCRIPT,report:N39_REPORT,phase:'N39F2_CLIENT_CANCEL_ATTEMPT',oracle:'N39F2_CANCEL_EFFECTS_ORACLE',to:'HUB_COMMITMENT'},
+ N39F3:{script:N39_SCRIPT,report:N39_REPORT,phase:'N39F3_CLIENT_CANCEL_ATTEMPT',oracle:'N39F3_CANCEL_EFFECTS_ORACLE',to:'HUB_SHIPMENT'},
  N17:{script:N1718_SCRIPT,report:N1718_REPORT,phase:'N17_FORWARDER_ROLE_MARKET_ATTEMPTS',oracle:'N17_NO_TRANSITION_ORACLE',to:'HUB_SHIPMENT',ship:true},
  N18:{script:N1718_SCRIPT,report:N1718_REPORT,phase:'N18_CUSTOMS_HOLD_ATTEMPTS',oracle:'N18_HOLD_RELEASE_ORACLE',to:'FORWARDER',ship:true},
  N19:{script:N19_SCRIPT,report:N19_REPORT,phase:'N19_LOCAL_TRANSPORT_DELAY_LOSS',oracle:'N19_LOSS_INCIDENT_ORACLE',to:'CUSTOMS'},
@@ -118,7 +123,7 @@ async function runNegativeScenario({scenario,env,db,adapters}){
   }catch(e){
    // Verdict : défaut produit ou écran manquant relevé par le script ; sinon l'erreur d'origine.
    let child=null;try{child=readJson(L.report)}catch(_){}
-   const m=/(?:G6_N(?:2[0-4]|29|1[1-9]|28|3[0-8])_(?:SCREEN_MISSING|PRODUCT_GAP)|PREREQ_MISSING_SECOND_RELAY|PREREQ_MISSING_OTHER_ACTIVE_MARKET|PREREQ_MISSING_FOREIGN_MARKET_ORDER)[A-Za-z0-9_]*/.exec(String(child?.error||''));
+   const m=/(?:G6_N(?:2[0-9]|3[0-9]|4[0-9]|1[1-9])[A-Za-z0-9]{0,3}_(?:SCREEN_MISSING|PRODUCT_GAP)|PREREQ_MISSING_SECOND_RELAY|PREREQ_MISSING_OTHER_ACTIVE_MARKET|PREREQ_MISSING_FOREIGN_MARKET_ORDER)[A-Za-z0-9_]*/.exec(String(child?.error||''));
    throw Error(m?m[0]:e.message);
   }
   // N35 et N36 : oracles PG seuls sur la chaîne M01 (aucun geste négatif).
@@ -137,6 +142,9 @@ async function runNegativeScenario({scenario,env,db,adapters}){
    :scenario==='N23'   ?await N.oracleN23(db,{orderId:result.order_id,agentId:g.agent_id,minFailures:5,assertNoHubOrTransport})
    :scenario==='N24'?await N.oracleN24(db,{orderId:result.order_id,assertNoHubOrTransport})
    :scenario==='N20'?await N.oracleN20(db,{orderId:result.order_id})
+   :scenario==='N39F1'?await N.oracleN39F1(db,{orderId:result.order_id,cancel:g.cancel})
+   :scenario==='N39F2'?await N.oracleN39F2(db,{orderId:result.order_id,cancel:g.cancel})
+   :scenario==='N39F3'?await N.oracleN39F3(db,{orderId:result.order_id,cancel:g.cancel})
    :scenario==='N17'?await N.oracleN17(db,{orderId:result.order_id,shipmentRef:ship.reference,baseline:g.baseline})
    :scenario==='N18'?await N.oracleN18(db,{orderId:result.order_id,shipmentRef:ship.reference,customsRef:'SIM-STAGING-DOU-N18-'+result.order_reference})
    :scenario==='N19'?await N.oracleN19(db,{orderId:result.order_id})
@@ -155,6 +163,8 @@ async function runNegativeScenario({scenario,env,db,adapters}){
    N13:'G6_N13_SUPPLIER_BACKORDER_REMNANT_NO_FICTIVE_RECEIPT_PG_PASS',N14:'G6_N14_RECEIVING_EXACT_QUANTITIES_NO_EXCESS_NO_NEGATIVE_PG_PASS',
    N11:'G6_N11_PO_WITHOUT_COMMITMENT_REFUSED_NO_ENGAGEMENT_PG_PASS',N12:'G6_N12_PAYMENT_SINGLE_VALIDATOR_REFUSED_NO_PAYMENT_PG_PASS',
    N17:'G6_N17_FORWARDER_OUT_OF_ROLE_MARKET_REFUSED_NO_TRANSITION_PG_PASS',N18:'G6_N18_CUSTOMS_HOLD_NO_TRANSIT_THEN_RELEASE_PG_PASS',
+   N39F1:'G6_N39F1_CANCEL_BEFORE_PURCHASE_WALLET_100_PCT_PG_PASS',N39F2:'G6_N39F2_CANCEL_AFTER_COMMITMENT_NO_SILENT_REFUND_PG_PASS',
+   N39F3:'G6_N39F3_CANCEL_WHEN_SHIPPED_CLOSED_NO_REFUND_PG_PASS',
    N19:'G6_N19_LOCAL_TRANSPORT_DELAY_LOSS_INCIDENT_NO_WITHDRAWAL_PG_PASS',
    N30:'G6_N30_ORDER_360_AND_COMMERCE_KPI_MATCH_PG_FIXTURES_EXCLUDED_PG_PASS',N31:'G6_N31_FX_DISPLAY_SNAPSHOT_KEPT_FIXED_PARITY_PG_PASS',
    N35:'G6_N35_ECO_FREIGHT_ONCE_CAUSAL_ALLOCATIONS_DIAGNOSTICS_PG_PASS',N36:'G6_N36_MANUAL_PROVENANCE_EVERY_GESTURE_PG_PASS',

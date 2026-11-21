@@ -111,6 +111,15 @@ jobs:
        github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N31-KM' ||
        github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N31-CM' ||
        github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N31-CG' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N39F1-KM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N39F1-CM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N39F1-CG' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N39F2-KM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N39F2-CM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N39F2-CG' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N39F3-KM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N39F3-CM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N39F3-CG' ||
        github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M03-KM')
     runs-on: ubuntu-24.04
     timeout-minutes: 45

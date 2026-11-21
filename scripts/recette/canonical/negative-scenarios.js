@@ -10,7 +10,7 @@
  */
 'use strict';
 const {isDeepStrictEqual}=require('node:util');
-const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29','N11','N12','N13','N14','N15','N16','N17','N18','N19','N28','N32','N35','N36','N37','N38','N30','N31']);
+const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29','N11','N12','N13','N14','N15','N16','N17','N18','N19','N28','N32','N35','N36','N37','N38','N30','N31','N39F1','N39F2','N39F3']);
 const isNegative=s=>NEGATIVE.includes(String(s));
 // Produit vendable (prix LOCAL_ACTIVE, exposition ENABLED, actif) servi par l'import (aucun stock local exposé), SKU actifs en stock.
 const MULTI_SKU_SQL=`
@@ -502,6 +502,48 @@ async function oracleN31(db,{orderId,market}){
  return {display_currency:x.display_currency,display_total:Number(x.shown),expected_from_parity:Math.round(expected),snapshot_keys:Object.keys(x.display_parity_snapshot||{}),refunds:0,
   refund_leg:'NOT_PROVEN_NO_REFUND_GESTURE_IN_SEQUENCE',floating_purchase_currency:'NOT_REPRESENTABLE_ME_10'};
 }
+// N39 (G6-G5B, annulation client aux paliers F1, F2, F3) : effets relus en PG, lecture seule.
+async function cancelEffects(db,orderId){
+ const {rows:[x]}=await db.query(`SELECT o.status::text AS status,o.display_total_amount,m.currency::text AS market_currency,
+  (SELECT count(*)::int FROM wallet_transactions t WHERE t.reference_id=o.id AND t.type='credit' AND t.reason='order_cancel') AS credits,
+  (SELECT COALESCE(SUM(t.amount_kmf),0)::int FROM wallet_transactions t WHERE t.reference_id=o.id AND t.type='credit' AND t.reason='order_cancel') AS credit_amount,
+  (SELECT string_agg(DISTINCT t.currency::text,',') FROM wallet_transactions t WHERE t.reference_id=o.id AND t.type='credit' AND t.reason='order_cancel') AS credit_currency,
+  (SELECT count(*)::int FROM refunds r WHERE r.order_id=o.id) AS refunds,
+  (SELECT count(*)::int FROM refund_execution_intents i WHERE i.order_id=o.id) AS psp_intents,
+  (SELECT count(*)::int FROM purchase_order_authorizations a JOIN purchase_lines pl ON pl.purchase_order_id=a.purchase_order_id JOIN order_items oi ON oi.id=pl.order_item_id
+    WHERE oi.order_id=o.id AND a.authorization_type='purchase_commitment') AS commitments,
+  (SELECT count(*)::int FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id WHERE oi.order_id=o.id AND pl.cancelled_at IS NULL) AS active_lines
+  FROM orders o LEFT JOIN markets m ON m.id=o.market_id WHERE o.id=$1`,[orderId]);
+ ok(!!x,'G6_NEG_ORDER_NOT_FOUND');
+ return x;
+}
+// F1 (avant achat) : annulation acceptée, remboursement 100 % crédité au wallet en devise du marché, une fois, sans PSP, aucune ligne d'achat active.
+async function oracleN39F1(db,{orderId,cancel}){
+ const x=await cancelEffects(db,orderId);
+ ok(cancel&&cancel.http>=200&&cancel.http<300,'G6_N39F1_PRODUCT_GAP_CANCEL_REFUSED_HTTP_'+(cancel?cancel.http:null));
+ ok(x.status==='cancelled','G6_N39F1_PRODUCT_GAP_NOT_CANCELLED_'+x.status);
+ ok(x.credits===1&&x.refunds===1,'G6_N39F1_PRODUCT_GAP_REFUND_COUNT_'+x.credits+'_'+x.refunds);
+ ok(x.psp_intents===0,'G6_N39F1_PRODUCT_GAP_PSP_INTENT');
+ ok(x.credit_currency===x.market_currency,'G6_N39F1_PRODUCT_GAP_WALLET_CURRENCY_'+x.credit_currency+'_VS_'+x.market_currency);
+ ok(x.credit_amount===Math.round(Number(x.display_total_amount)),'G6_N39F1_PRODUCT_GAP_REFUND_NOT_100_PCT_'+x.credit_amount+'_OF_'+x.display_total_amount);
+ ok(x.active_lines===0,'G6_N39F1_PRODUCT_GAP_ACTIVE_PURCHASE_LINES_'+x.active_lines);
+ return {status:x.status,wallet_credits:x.credits,wallet_amount:x.credit_amount,currency:x.credit_currency,psp_intents:0};
+}
+// F2 (achat engagé) : aucune annulation ni remboursement silencieux, engagement inchangé (la décision relève d'une demande admin).
+async function oracleN39F2(db,{orderId,cancel}){
+ const x=await cancelEffects(db,orderId);
+ ok(x.status!=='cancelled'&&!(cancel&&cancel.http>=200&&cancel.http<300),'G6_N39F2_PRODUCT_GAP_SILENT_CANCEL_AFTER_COMMITMENT_'+x.status);
+ ok(x.credits===0&&x.refunds===0&&x.psp_intents===0,'G6_N39F2_PRODUCT_GAP_SILENT_REFUND_'+x.credits+'_'+x.refunds);
+ ok(x.commitments>=1&&x.active_lines>=1,'G6_N39F2_PRODUCT_GAP_ENGAGEMENT_DROPPED_SILENTLY');
+ return {status:x.status,wallet_credits:0,refunds:0,commitments:x.commitments,client_http:cancel?cancel.http:null};
+}
+// F3 (embarqué) : annulation fermée, aucun remboursement.
+async function oracleN39F3(db,{orderId,cancel}){
+ const x=await cancelEffects(db,orderId);
+ ok(x.status!=='cancelled'&&!(cancel&&cancel.http>=200&&cancel.http<300),'G6_N39F3_PRODUCT_GAP_CANCELLED_WHEN_SHIPPED_'+x.status);
+ ok(x.credits===0&&x.refunds===0&&x.psp_intents===0,'G6_N39F3_PRODUCT_GAP_REFUND_WHEN_SHIPPED');
+ return {status:x.status,wallet_credits:0,refunds:0,client_http:cancel?cancel.http:null};
+}
 // Pur : verdict explicite pour un écran manquant ou un défaut produit (jamais un contournement).
 function classifyNegative(scenario,message){
  const m=String(message||'');
@@ -511,4 +553,4 @@ function classifyNegative(scenario,message){
  const g=new RegExp('G6_'+scenario+'_(SCREEN_MISSING|PRODUCT_GAP)').exec(m);
  return g?g[1]:null;
 }
-module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,oracleN15,oracleN16,oracleN28,oracleN32,oracleN30,oracleN31,oracleN35,oracleN36,oracleN37,oracleN38,ecoControls,snapN16,shipmentForOrder,snapJourney,snapLocalTransport,oracleN17,oracleN18,oracleN19,importPo,classifyNegative};
+module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,oracleN15,oracleN16,oracleN28,oracleN32,oracleN30,oracleN31,oracleN35,oracleN36,oracleN37,oracleN38,ecoControls,snapN16,shipmentForOrder,snapJourney,snapLocalTransport,oracleN17,oracleN18,oracleN19,cancelEffects,oracleN39F1,oracleN39F2,oracleN39F3,importPo,classifyNegative};
