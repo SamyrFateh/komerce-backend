@@ -41,7 +41,7 @@ async function main(){
   check(env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.GITHUB_EVENT_NAME==='issues'&&
    env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER&&env.NODE_ENV==='test'&&env.KOMERCE_ENV==='staging'&&
    env.KOMERCE_TARGET_ENV==='staging'&&env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&env.STAGING_BASE_URL===BASE&&
-   env.G6_CANONICAL_PHASE==='LOCAL_RELAY_AVAILABLE'&&['M02','M03','N23','N24','N21','N22'].includes(env.G6_CANONICAL_SCENARIO)&&
+   env.G6_CANONICAL_PHASE==='LOCAL_RELAY_AVAILABLE'&&['M02','M03','N23','N24','N21','N22','N29'].includes(env.G6_CANONICAL_SCENARIO)&&
    env.G6_DYNAMIC_FRESH_ORDER==='1'&&env.G6_TARGET_MARKET===MK.code&&/^[a-f0-9-]{36}$/i.test(ID||''),
    'G6_LOCAL_RELAY_OWNER_STAGING_GUARD');
   const guard=await confirmTarget({db,env});

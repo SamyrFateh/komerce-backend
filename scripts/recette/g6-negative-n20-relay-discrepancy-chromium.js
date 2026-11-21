@@ -29,6 +29,13 @@ const report={schema:'komerce-g6-negative-n20/1',scenario_id:'N20',market:MK.cod
  external_supplier_calls:0,external_payment_executed:false,plaintext_pickup_code_logged:false,production_permitted:false};
 const save=()=>{fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n')};
 const reach=k=>{report.steps_reached.push(k);save()};
+// Expédition de la commande : lien parcel.shipment_id s'il existe, sinon lien Hub (colis client -> caisse KOM-BOX -> expédition), comme la chaîne M01.
+async function shipmentForOrder(db,orderId){
+ const {rows}=await db.query(`SELECT s.id,s.reference,s.stage FROM international_shipments s JOIN parcels p ON p.shipment_id=s.id WHERE p.order_id=$1
+  UNION SELECT s.id,s.reference,s.stage FROM international_shipments s JOIN international_shipment_hub_units h ON h.shipment_id=s.id
+  JOIN hub_box_bags l ON l.box_unit_id=h.physical_unit_id JOIN hub_physical_units u ON u.id=l.bag_unit_id WHERE u.order_id=$1`,[orderId]);
+ return rows.length===1?rows[0]:null;
+}
 async function main(){
  let browser;
  try{
@@ -43,7 +50,7 @@ async function main(){
   report.db_fingerprint=guard.fingerprint;report.sha=await runtime();
   const {rows:[o]}=await db.query('SELECT reference,status::text AS status,relais_id FROM orders WHERE id=$1',[ID]);
   check(o&&o.reference===REF&&o.status!=='collected','G6_N20_PRECONDITION_ORDER');
-  const {rows:[sh]}=await db.query(`SELECT DISTINCT s.id,s.reference,s.stage FROM international_shipments s JOIN parcels p ON p.shipment_id=s.id WHERE p.order_id=$1`,[ID]);
+  const sh=await shipmentForOrder(db,ID);
   check(sh&&sh.reference,'G6_N20_SCREEN_MISSING_NO_SHIPMENT_FOR_ORDER');
   const {rows:before}=await db.query('SELECT count(*)::int AS n FROM international_shipment_relay_receipts WHERE shipment_id=$1',[sh.id]);
   check(before[0].n===0,'G6_N20_PRECONDITION_ALREADY_RECEIVED');
@@ -96,4 +103,4 @@ async function main(){
  finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end();console.log(JSON.stringify(report))}
 }
 if(require.main===module)main();
-module.exports={main};
+module.exports={main,shipmentForOrder};

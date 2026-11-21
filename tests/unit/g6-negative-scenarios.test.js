@@ -176,3 +176,24 @@ describe('G6-G4B N20 (écart de réception relais) et N29 (session 401, rôle 40
    expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
  });
 });
+
+describe('G6-G4B-FIX runner N23, N29, N20',()=>{
+ it('N23 : aucune tentative acceptée ne lève pas de TypeError ; une acceptée donne le verdict produit',()=>{
+  const {assertNoneAccepted}=require('../../scripts/recette/g6-negative-n23-n24-chromium');
+  expect(()=>assertNoneAccepted([{kind:'WRONG_1',http:401},{kind:'BRUTE_FORCE_1',http:429}])).not.toThrow();
+  expect(()=>assertNoneAccepted([])).not.toThrow();
+  expect(()=>assertNoneAccepted([{kind:'WRONG_1',http:200}])).toThrow('G6_N23_PRODUCT_GAP_ACCEPTED_WRONG_1');
+ });
+ it('N29 : la garde de LOCAL_RELAY_AVAILABLE accepte N29 sans autre assouplissement',()=>{
+  const a=read('scripts/recette/g6-local-relay-available-chromium.js');
+  expect(a).toMatch(/\['M02','M03','N23','N24','N21','N22','N29'\]\.includes\(env\.G6_CANONICAL_SCENARIO\)/);
+  expect(a).toMatch(/env\.G6_CANONICAL_PHASE==='LOCAL_RELAY_AVAILABLE'/);expect(a).toMatch(/G6_LOCAL_RELAY_OWNER_STAGING_GUARD/);
+ });
+ it('N20 : expédition retrouvée via le lien Hub quand parcels.shipment_id est vide',async()=>{
+  const {shipmentForOrder}=require('../../scripts/recette/g6-negative-n20-relay-discrepancy-chromium');
+  const seen=[];const db={query:async q=>{seen.push(q);return {rows:[{id:'s',reference:'SIM-STAGING-EXP-X',stage:'local_delivery'}]}}};
+  await expect(shipmentForOrder(db,'o')).resolves.toMatchObject({reference:'SIM-STAGING-EXP-X'});
+  expect(seen[0]).toMatch(/international_shipment_hub_units/);expect(seen[0]).toMatch(/hub_box_bags/);
+  await expect(shipmentForOrder({query:async()=>({rows:[]})},'o')).resolves.toBeNull();
+ });
+});
