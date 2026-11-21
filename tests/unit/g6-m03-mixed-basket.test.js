@@ -63,6 +63,19 @@ describe('G6 M03 mixed basket',()=>{
   expect(script).toContain("check(rows.length===1,'G6_RECIPE_PRODUCT_OR_PRICE_NOT_UNIQUE')");
   expect(script).toContain('await humanFill(null,page.locator');
  });
+ test('real Chromium accepts zero variant axes only for uniquely verified manual Hub SKU',()=>{
+  const script=read('scripts/recette/g6-p2-buyer-order-real-chromium.js');
+  expect(script).toContain('if(axisCount===0)');
+  expect(script).toContain("line.source_key==='central_hub'");
+  expect(script).toContain("line.fulfillment==='IMPORT'");
+  expect(script).toContain("actualProduct.has_variants===false");
+  expect(script).toContain("skus.length===1,'G6_AXISLESS_HUB_SKU_NOT_UNIQUE'");
+  expect(script).toContain('isCentralHubOnOrderSku(db,line.id,skus[0].id)');
+  expect(script).toContain('G6_AXISLESS_HUB_ON_ORDER_LABEL_MISSING');
+  expect(script).toContain('G6_VARIANT_AXES_NOT_RENDERED');
+  expect(script).toContain("record('PDP_SINGLE_HUB_SKU_PROOF'+sfx");
+  expect(script).toContain('await humanClick(null,add)');
+ });
  test('bootstrap refuses a basket below 3 sources before any buyer gesture',async()=>{
   let buyerRan=false;
   const adapters={attestRuntimeBeforeBuyer:async()=>({environment:'staging',scenario_id:'M03',market:'KM',staging_sha:'a'.repeat(40),db_fingerprint:'f',production_permitted:false,attestation_origin:'INDEPENDENT_CHROMIUM_POSTGRESQL'}),
