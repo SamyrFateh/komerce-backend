@@ -246,11 +246,13 @@ async function oracleN15(db,{orderId,boxRef,shipmentRef}){
  const {rows:box}=await db.query("SELECT id,state::text AS state FROM hub_physical_units WHERE reference=$1",[boxRef]);
  ok(box.length<=1&&box.every(b=>!['PACKED','DISPATCHED'].includes(b.state)),'G6_N15_PRODUCT_GAP_EMPTY_BOX_CLOSED');
  const {rows:[s]}=await db.query(`SELECT
-  (SELECT count(*)::int FROM international_shipments sh WHERE sh.reference=$1) AS shipments,
+  (SELECT count(*)::int FROM international_shipments sh WHERE sh.reference LIKE $1 || '%') AS shipments,
+  (SELECT count(*)::int FROM international_shipments sh WHERE sh.reference LIKE $1 || '%' AND NOT (sh.hub_draft IS TRUE AND sh.stage='hub_ready')) AS non_draft_shipments,
   (SELECT count(*)::int FROM international_shipment_hub_units h JOIN hub_physical_units u ON u.id=h.physical_unit_id WHERE u.reference=$2) AS links,
   (SELECT count(*)::int FROM parcels p WHERE p.order_id=$3 AND (p.shipped_at IS NOT NULL OR p.in_transit_at IS NOT NULL)) AS departed`,[shipmentRef,boxRef,orderId]);
- ok(s.shipments===0&&s.links===0&&s.departed===0,'G6_N15_PRODUCT_GAP_NON_CONFORMING_DEPARTURE');
- return {bag_state:bags[0].state,bag_content:0,box_state:box[0]?box[0].state:null,shipments:0,departed_parcels:0};
+ ok(s.non_draft_shipments===0&&s.links===0&&s.departed===0,'G6_N15_PRODUCT_GAP_NON_CONFORMING_DEPARTURE');
+ return {bag_state:bags[0].state,bag_content:0,box_state:box[0]?box[0].state:null,shipments:s.shipments,
+  empty_drafts:s.shipments-s.non_draft_shipments,shipment_links:s.links,departed_parcels:s.departed};
 }
 // N16 : instantané PG (lecture seule) du carton, de sa composition, de l'expédition et des colis ; comparé avant et après les tentatives.
 async function snapN16(db,{orderId,boxRef,shipmentRef}){
