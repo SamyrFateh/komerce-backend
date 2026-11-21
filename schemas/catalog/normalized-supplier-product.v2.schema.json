@@ -2,9 +2,10 @@
   "$id": "komerce/catalog/normalized-supplier-product/v2",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "supplier_name", "product_name", "currency", "raw_payload"],
+  "required": ["schema_version", "product_name", "currency", "raw_payload"],
   "properties": {
     "schema_version":      { "const": "2" },
+    "source_kind":         { "enum": ["supplier", "central_hub_manual"] },
     "supplier_name":       { "type": "string", "minLength": 1 },
     "supplier_product_id": { "type": ["string", "null"], "maxLength": 128 },
     "product_name":        { "type": "string", "minLength": 2, "maxLength": 300 },
@@ -189,5 +190,18 @@
       "items": { "type": "string", "minLength": 1, "maxLength": 300 }
     },
     "raw_payload": { "type": "object" }
-  }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "source_kind": { "const": "central_hub_manual" } }, "required": ["source_kind"] },
+      "then": {
+        "not": { "anyOf": [
+          { "required": ["supplier_name"] },
+          { "required": ["supplier_product_id"] },
+          { "required": ["sellable_units"] }
+        ] }
+      },
+      "else": { "required": ["supplier_name"] }
+    }
+  ]
 }

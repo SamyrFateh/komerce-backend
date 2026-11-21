@@ -1,0 +1,68 @@
+# Owner-only, no business writes. Uses the same G6 concurrency lock to avoid staging interference.
+name: Dashboard final — two Chromium sessions and read-only PG NOTIFY proof
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-g6-canonical-real-transaction
+  cancel-in-progress: false
+jobs:
+  certify:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[staging-op] dashboard-final-intersession-readonly'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      E2E_READONLY_ORACLE_DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      E2E_ORACLE_EXPECTED_DB_PIN: ${{ vars.STAGING_DB_PIN }}
+      PGOPTIONS: '-c default_transaction_read_only=on'
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_HUB_DIRECTOR_EMAIL: ${{ secrets.E2E_HUB_DIRECTOR_EMAIL }}
+      E2E_HUB_DIRECTOR_PASSWORD: ${{ secrets.E2E_HUB_DIRECTOR_PASSWORD }}
+      E2E_MARKET_OPERATOR_KM_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_KM_EMAIL }}
+      E2E_MARKET_OPERATOR_KM_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_KM_PASSWORD }}
+      E2E_MARKET_OPERATOR_CM_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_CM_EMAIL }}
+      E2E_MARKET_OPERATOR_CM_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_CM_PASSWORD }}
+      E2E_MARKET_OPERATOR_CG_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_CG_EMAIL }}
+      E2E_MARKET_OPERATOR_CG_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_CG_PASSWORD }}
+      E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
+      E2E_AGENT_RELAIS_PASSWORD: ${{ secrets.E2E_AGENT_RELAIS_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Pin checked-out staging version
+        run: echo "E2E_EXPECTED_DEPLOY_SHA=$(git rev-parse origin/main)" >> "$GITHUB_ENV"
+      - name: Fail-closed verify staging code before test
+        run: node scripts/recette/staging-chromium-deployment-preflight.js
+      - run: npm ci --ignore-scripts
+      - name: Install real Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Two sessions and PostgreSQL transactional notify proof (read only)
+        run: node scripts/recette/dashboard-final-intersession-readonly.js
+      - name: Archive evidence even if blocked
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-final-readonly-${{ github.run_id }}
+          path: |
+            test-results/dashboard-final/dashboard-intersession-proof.json
+            test-results/staging-chromium/deployment-preflight.json
+          if-no-files-found: warn
+          retention-days: 21

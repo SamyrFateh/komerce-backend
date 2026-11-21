@@ -44,6 +44,8 @@ const mockUpdateProduct = jest.fn();
 const mockUpdateEditorial = jest.fn();
 const mockClassifyProduct = jest.fn();
 const mockRecoverProductSourceMedia = jest.fn();
+const mockGetCanonicalMediaUploadTarget = jest.fn();
+const mockAppendUploadedCanonicalMedia = jest.fn();
 const mockDeactivateProduct = jest.fn();
 const mockPrepareCandidateFrench = jest.fn();
 const mockApproveCandidate = jest.fn();
@@ -68,6 +70,8 @@ jest.mock('../../services/catalog-workspace', () => {
     updateEditorial: (...args) => mockUpdateEditorial(...args),
     classifyProduct: (...args) => mockClassifyProduct(...args),
     recoverProductSourceMedia: (...args) => mockRecoverProductSourceMedia(...args),
+    getCanonicalMediaUploadTarget: (...args) => mockGetCanonicalMediaUploadTarget(...args),
+    appendUploadedCanonicalMedia: (...args) => mockAppendUploadedCanonicalMedia(...args),
     deactivateProduct: (...args) => mockDeactivateProduct(...args),
     prepareCandidateFrench: (...args) => mockPrepareCandidateFrench(...args),
     approveCandidate: (...args) => mockApproveCandidate(...args),
@@ -114,6 +118,8 @@ beforeEach(() => {
   mockUpdateProduct.mockResolvedValue({ product_ref: 'KPR-000001', price_kmf: 5000 });
   mockClassifyProduct.mockResolvedValue({ product_ref: 'KPR-000001', boutique_category_key: 'mode', boutique_subcategory_key: 'robes', approved: false });
   mockRecoverProductSourceMedia.mockResolvedValue({product_ref:'KPR-000001',media_recovered:2,audit_recorded:true,catalog_approved:false});
+  mockGetCanonicalMediaUploadTarget.mockResolvedValue({id:'11111111-1111-4111-8111-111111111111',name:'Produit'});
+  mockAppendUploadedCanonicalMedia.mockResolvedValue({media_id:'media-1',image_url:'https://ik.imagekit.io/komerce/products/test.jpg'});
   mockDeactivateProduct.mockResolvedValue({ product_ref: 'KPR-000001', deactivated: true });
   mockPrepareCandidateFrench.mockResolvedValue({ product_ref: 'KPR-000001', status: 'ok', needs_review: false });
   mockApproveCandidate.mockResolvedValue({ product_ref: 'KPR-000001', is_active: true });
@@ -294,6 +300,25 @@ test('réintégration médias : autorisation Catalogue ET Sourcing, aucun champ 
   expect(deniedCatalog.status).toBe(403);
   expect(deniedCatalog.body.code).toBe('catalog_global_access_denied');
   expect(mockRecoverProductSourceMedia).toHaveBeenCalledTimes(1);
+});
+
+test('upload média canonique exige les deux grants et refuse une requête sans fichier', async () => {
+  const url='/api/admin/workspaces/catalog/products/KPR-000001/media';
+  const missing=await request(app()).post(url);
+  expect(missing.status).toBe(400);
+  expect(missing.body.code).toBe('catalog_media_upload_missing');
+  expect(mockGetCanonicalMediaUploadTarget).not.toHaveBeenCalled();
+
+  mockSourcingAllowed=false;
+  const deniedSource=await request(app()).post(url);
+  expect(deniedSource.status).toBe(403);
+  expect(deniedSource.body.code).toBe('sourcing_global_access_denied');
+  mockSourcingAllowed=true;
+  mockCatalogAllowed=false;
+  const deniedCatalog=await request(app()).post(url);
+  expect(deniedCatalog.status).toBe(403);
+  expect(deniedCatalog.body.code).toBe('catalog_global_access_denied');
+  expect(mockAppendUploadedCanonicalMedia).not.toHaveBeenCalled();
 });
 
 test('Dossier Produit : lecture centrale et double autorité, aucun écrit', async () => {

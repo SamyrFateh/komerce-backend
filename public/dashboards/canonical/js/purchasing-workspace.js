@@ -1061,7 +1061,14 @@
       closePo: null,
     };
 
-    context.reload = async () => {
+    const workspaceBusy = () => {
+      const active = doc.activeElement;
+      return context.busy.size > 0 ||
+        Boolean(rootNode.querySelector?.('[aria-modal="true"]') ||
+        (active && rootNode.contains?.(active) &&
+         active.matches?.('input,textarea,select,[contenteditable="true"]')));
+    };
+    context.reload = async ({ background = false } = {}) => {
       try {
         const [purchaseOrders, openLines, detailResult] = await Promise.all([
           jsonRequest(fetchFn, ENDPOINT),
@@ -1071,9 +1078,23 @@
             : Promise.resolve({}),
         ]);
         const state = { openLines, purchaseOrders, detail: detailResult.detail || null, detailError: detailResult.error ? describeError(detailResult.error) : null };
+        if (background && workspaceBusy()) return state;
         renderPayload(rootNode, ui, doc, state, context);
+        rootNode.removeAttribute?.('data-dashboard-stale');
         return state;
       } catch (error) {
+        if (background) {
+          if (error.status === 401 || error.status === 403) {
+            // Refus serveur = droits retirés : effacer immédiatement la vue précédente.
+            rootNode.replaceChildren();
+            const notice = doc.createElement('p');
+            notice.setAttribute('role', 'alert');
+            notice.textContent = 'Accès expiré ou non autorisé. Rechargez votre session.';
+            rootNode.appendChild(notice);
+            rootNode.removeAttribute?.('data-dashboard-stale');
+          } else rootNode.setAttribute?.('data-dashboard-stale','true');
+          throw error;
+        }
         rootNode.replaceChildren();
         const panel = doc.createElement('section');
         panel.className = 'kmc-workspace-header';
@@ -1121,6 +1142,11 @@
       }
     };
 
+    globalThis.KomerceDashboardFreshness?.watch?.({
+      root:rootNode, pollMs:60000, streamEnabled:options.user?.role === 'admin',
+      isBusy:workspaceBusy,
+      refresh:() => context.reload({ background:true }),
+    });
     return context.reload();
   }
 

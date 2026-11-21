@@ -181,7 +181,9 @@ test('sourcing UI excludes candidates already handed off or rejected from its ac
   const uiSource = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/sourcing-workspace.js'), 'utf8');
   expect(uiSource).toContain('context.focusCandidateRef');
   expect(uiSource).toContain('row.candidate_ref === context.focusCandidateRef');
-  expect(uiSource).toContain('Boolean(sourcingRemedy(row))');
+  expect(uiSource).toContain('candidateWatchActionEligible(row)');
+  expect(uiSource).toContain("'watchlist-candidate'");
+  expect(uiSource).toContain("'reject-candidate'");
   expect(uiSource).toContain('Exceptions fournisseur à résoudre');
   expect(uiSource).not.toContain("const classify = makeButton(doc, 'Classer'");
 });
@@ -343,4 +345,20 @@ test('candidat ciblé : lecture priorisée et bornée', () => {
   expect(source).toContain('CASE WHEN sc.candidate_ref = $1 THEN 0 ELSE 1 END');
   expect(source).toContain('listCandidates(candidateRef)');
   expect(source).toContain('LIMIT 250');
+});
+
+describe('sourcing-workspace — rafraîchissement intersession sans destruction des saisies', () => {
+  const freshnessFs = require('fs');
+  const freshnessPath = require('path');
+  const source = freshnessFs.readFileSync(
+    freshnessPath.join(__dirname, '../../public/dashboards/canonical/js/sourcing-workspace.js'), 'utf8');
+  test('relit les API canoniques en arrière-plan, et attend la fin de la saisie', () => {
+    expect(source).toContain('KomerceDashboardFreshness?.watch?.({');
+    expect(source).toContain('isBusy:workspaceBusy');
+    expect(source).toContain('if (background && workspaceBusy()) return');
+    expect(source).toContain('context.reload({ background:true })');
+    expect(source).toContain("'data-dashboard-stale'");
+    expect(source).toContain('error.status === 401 || error.status === 403');
+    expect(source).toContain('Accès expiré ou non autorisé. Rechargez votre session.');
+  });
 });

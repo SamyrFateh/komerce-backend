@@ -110,6 +110,13 @@ async function importCatalog(body, userId, dispatchToConnector) {
       supplierName = supplier.name;
       b.supplier_id = supplier.id;
       b.supplier_name = supplier.name;
+      // The source contract variant comes from the resolved system identity,
+      // never from a browser-controlled supplier/source_kind field.
+      if (sourceType === 'manual' && supplier.system_key === 'central_hub') {
+        b.manual_source_kind = 'central_hub_manual';
+      } else {
+        delete b.manual_source_kind;
+      }
     } catch (error) {
       return { status: error.status || 422, body: { error: error.message, code: error.code } };
     }

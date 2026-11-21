@@ -33,6 +33,15 @@ function sourceContractV2(row = {}) {
   return String(row?.normalized_source_contract?.schema_version || '') === '2';
 }
 
+function isCentralHubManualContract(row = {}) {
+  const contract = row.normalized_source_contract || {};
+  return row.source_supplier_system_key === 'central_hub'
+    && contract.source_kind === 'central_hub_manual'
+    && !Object.prototype.hasOwnProperty.call(contract, 'supplier_name')
+    && !Object.prototype.hasOwnProperty.call(contract, 'supplier_product_id')
+    && !Object.prototype.hasOwnProperty.call(contract, 'sellable_units');
+}
+
 function editorialReady(row = {}) {
   const locale = String(row.source_locale || '').trim().toLowerCase().replace('_', '-');
   const sourceAllowed = row.content_source === 'manual'
@@ -48,8 +57,14 @@ function evaluateCatalogProductCertification(row = {}, options = {}) {
   const requireSourceIdentity = options.requireSourceIdentity !== false;
   const requireSourceContractV2 = options.requireSourceContractV2 !== false;
   const requireSupplierSku = options.requireSupplierSku !== false;
+  const hubManual = isCentralHubManualContract(row);
 
-  if (requireSourceIdentity) {
+  if (row.source_supplier_system_key === 'central_hub'
+      && row.normalized_source_contract?.source_kind === 'central_hub_manual' && !hubManual) {
+    reasons.push('central_hub_source_contract_invalid');
+  }
+
+  if (requireSourceIdentity && !hubManual) {
     if (!nonEmpty(row.supplier_name)) reasons.push('supplier_name_missing');
     if (!nonEmpty(row.supplier_product_id)) reasons.push('supplier_product_id_missing');
   }
@@ -70,7 +85,7 @@ function evaluateCatalogProductCertification(row = {}, options = {}) {
   if (row.taxonomy_active !== true) reasons.push('boutique_taxonomy_inactive_or_invalid');
 
   if (Number(row.active_media || 0) < 1) reasons.push('media_missing');
-  if (requireSupplierSku) {
+  if (requireSupplierSku && !hubManual) {
     if (Number(row.active_supplier_skus || 0) < 1) reasons.push('active_supplier_sku_missing');
     if (Number(row.complete_supplier_skus || 0) !== Number(row.active_supplier_skus || 0)) {
       reasons.push('supplier_order_identity_incomplete');
@@ -187,6 +202,7 @@ async function loadCatalogProductCertificationFacts(q, productId) {
             sc.supplier_name,
             sc.supplier_product_id,
             sc.normalized_source_contract,
+            source_supplier.system_key AS source_supplier_system_key,
             UPPER(COALESCE(sc.scan_result->>'sourcing_decision','UNKNOWN')) AS sourcing_decision,
             COALESCE(media.active_media,0)::int AS active_media,
             COALESCE(sku.supplier_skus,0)::int AS supplier_skus,
@@ -200,6 +216,7 @@ async function loadCatalogProductCertificationFacts(q, productId) {
                 candidate.supplier_name,
                 candidate.supplier_product_id,
                 candidate.normalized_source_contract,
+                candidate.supplier_id,
                 candidate.scan_result
            FROM sourcing_candidates candidate
           WHERE candidate.product_id=p.id
@@ -207,6 +224,7 @@ async function loadCatalogProductCertificationFacts(q, productId) {
           ORDER BY candidate.updated_at DESC NULLS LAST, candidate.created_at DESC
           LIMIT 1
        ) sc ON TRUE
+       LEFT JOIN suppliers source_supplier ON source_supplier.id=sc.supplier_id
        LEFT JOIN media ON media.product_id=p.id
        LEFT JOIN sku ON sku.product_id=p.id
        LEFT JOIN exposure ON exposure.product_id=p.id
@@ -227,12 +245,13 @@ async function certifyCatalogProduct(q, productId, options = {}) {
   const row = await loadCatalogProductCertificationFacts(q, productId);
   if (!row) return null;
   const sourced = row.has_sourcing_candidate === true;
+  const hubManual = isCentralHubManualContract(row);
   const certification = evaluateCatalogProductCertification(row, {
     ...options,
-    requireSourceIdentity: options.requireSourceIdentity ?? sourced,
+    requireSourceIdentity: options.requireSourceIdentity ?? (sourced && !hubManual),
     requireSourceContractV2: options.requireSourceContractV2 ?? sourced,
     requireAcceptedSourcingDecision: options.requireAcceptedSourcingDecision ?? sourced,
-    requireSupplierSku: options.requireSupplierSku ?? sourced,
+    requireSupplierSku: options.requireSupplierSku ?? (sourced && !hubManual),
   });
   return { row, certification };
 }
@@ -259,6 +278,7 @@ module.exports = {
   CATALOG_CERTIFICATION_VERSION,
   ACCEPTED_SOURCING_DECISIONS,
   sourceContractV2,
+  isCentralHubManualContract,
   editorialReady,
   evaluateCatalogProductCertification,
   evaluateVisualFrCatalogCertification,

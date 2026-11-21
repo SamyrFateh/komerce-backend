@@ -37,6 +37,8 @@ const DASHBOARD_SPECS = [
   'import-runtime-cockpit',
   'sourcing-live-single-screen',
   'sourcing-candidate-promote',
+  'sourcing-watch-actions',
+  'catalog-central-hub-media',
   'import-runtime-credentials',
   'import-runtime-source-registry',
   'purchasing-workspace',

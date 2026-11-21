@@ -46,8 +46,38 @@ const N14_STAGE_IDS=Object.freeze([...upTo('HUB_VENDOR_SIMULATION'),'N14_RECEIVI
 // N15 : unités reçues, rien ensaché ; sac incomplet puis KOM-BOX sans ce sac. N16 : carton PACKED dans la KOM-BOX, remise refusée avant DISPATCHED, composition figée après.
 const N15_STAGE_IDS=Object.freeze([...upTo('HUB_RECEIVING_READBACK'),'N15_BAG_BOX_INCOMPLETE','N15_NO_CLOSURE_ORACLE']);
 const N16_STAGE_IDS=Object.freeze([...upTo('HUB_KOM_BOX'),'N16_BOX_NOT_DISPATCHED_FROZEN','N16_BOX_FROZEN_ORACLE']);
+// N17 (G6-G5B) : chaîne M01 jusqu'à la remise au transitaire, puis gestes refusés. N18 : jusqu'à l'arrivée (transitaire), puis douane retenue et mainlevée. N19 : jusqu'au transport local, puis retard et perte.
+const N17_STAGE_IDS=Object.freeze([...upTo('HUB_SHIPMENT'),'N17_FORWARDER_ROLE_MARKET_ATTEMPTS','N17_NO_TRANSITION_ORACLE']);
+const N18_STAGE_IDS=Object.freeze([...upTo('FORWARDER'),'N18_CUSTOMS_HOLD_ATTEMPTS','N18_HOLD_RELEASE_ORACLE']);
+const N19_STAGE_IDS=Object.freeze([...upTo('CUSTOMS'),'N19_LOCAL_TRANSPORT_DELAY_LOSS','N19_LOSS_INCIDENT_ORACLE']);
+// N28 / N32 (G6-G5C) : parcours M02 jusqu'à « disponible », puis échec réseau ou 500 avec réessai (N28), lectures et écritures croisées marché et rôle (N32).
+const N28_STAGE_IDS=Object.freeze(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','N28_NETWORK_FAILURE_RETRY','N28_SINGLE_EFFECT_ORACLE']);
+const N32_STAGE_IDS=Object.freeze(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','N32_CROSS_MARKET_ROLES','N32_NO_MUTATION_ORACLE']);
+// N35 à N38 (G6-G5C) : modalités d'exécution de M01 (même chaîne jusqu'au retrait client), puis oracle PG ; M01 n'est pas dupliqué.
+const N35_STAGE_IDS=Object.freeze([...STAGE_IDS,'N35_ECO_ORACLE']);
+const N36_STAGE_IDS=Object.freeze([...STAGE_IDS,'N36_MANUAL_PROVENANCE_ORACLE']);
+const N37_STAGE_IDS=Object.freeze([...STAGE_IDS,'N37_DOCUMENT_ACCESS','N37_DOCUMENTS_ORACLE']);
+const N38_STAGE_IDS=Object.freeze([...STAGE_IDS,'N38_RESUME_DRY_RUN','N38_POSTCOMMIT_ORACLE']);
+// N30 / N31 (G6-G5C) : parcours M02 jusqu'à « disponible » (commande payée), puis relecture Order 360 et KPI (N30) ou snapshot monétaire (N31) comparés à PG.
+const N30_STAGE_IDS=Object.freeze(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','N30_TRUTH_COMPARE','N30_TRUTH_ORACLE']);
+const N31_STAGE_IDS=Object.freeze(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','N31_FX_SNAPSHOT_ORACLE']);
+// N39 (G6-G5B) : annulation client aux trois paliers ; chaîne M01 coupée à RELAY_CASH (F1), HUB_COMMITMENT (F2), HUB_SHIPMENT (F3).
+const N39F1_STAGE_IDS=Object.freeze([...upTo('RELAY_CASH'),'N39F1_CLIENT_CANCEL_ATTEMPT','N39F1_CANCEL_EFFECTS_ORACLE']);
+const N39F2_STAGE_IDS=Object.freeze([...upTo('HUB_COMMITMENT'),'N39F2_CLIENT_CANCEL_ATTEMPT','N39F2_CANCEL_EFFECTS_ORACLE']);
+const N39F3_STAGE_IDS=Object.freeze([...upTo('HUB_SHIPMENT'),'N39F3_CLIENT_CANCEL_ATTEMPT','N39F3_CANCEL_EFFECTS_ORACLE']);
+// N25 / N26b (G6-G5B) : parcours M02 jusqu'à la remise au client, puis SAV (dossier, reprise physique, décision de compensation).
+const N25_STAGE_IDS=Object.freeze([...M02_STAGE_IDS,'N25_SAV_DOUBLE_INTAKE','N25_SINGLE_INTAKE_ORACLE']);
+const N26B_STAGE_IDS=Object.freeze([...M02_STAGE_IDS,'N26B_SAV_COMPENSATION_DECISION','N26B_SAV_COMPENSATION_ORACLE']);
+// N40 (G6-G5B) : chaîne M01 jusqu'au PO notifié, puis confirmation fournisseur à un prix différent du devis.
+const N40_STAGE_IDS=Object.freeze([...upTo('HUB_VENDOR_READINESS'),'N40_SUPPLIER_PRICE_GAP','N40_PRICE_GAP_ORACLE']);
+// N26a / N27 (G6-G5B) : sondes d'écran en lecture seule (aucun écran de remboursement de ligne ni d'avoir partiel connu).
+const N26A_STAGE_IDS=Object.freeze([...upTo('RELAY_CASH'),'N26A_LINE_REFUND_SCREEN_PROBE']);
+const N27_STAGE_IDS=Object.freeze([...upTo('HUB_VENDOR_READINESS'),'N27_REMNANT_CANCEL_SCREEN_PROBE']);
+// N08 (G6-G5A) : commande créée par l'écran (BUYER), rejouée sous la même clé d'idempotence ; oracle PG. N10 : webhooks PSP simulés non signés/dupliqués après BUYER, sans écran.
+const N08_STAGE_IDS=Object.freeze(['BUYER','N08_IDEMPOTENCY_ORACLE']);
+const N10_STAGE_IDS=Object.freeze(['BUYER','N10_WEBHOOK_ATTEMPTS','N10_NO_SETTLEMENT_ORACLE']);
 const SCENARIO_STAGE_IDS=Object.freeze({M01:STAGE_IDS,M02:M02_STAGE_IDS,M03:M03_STAGE_IDS,
- N07:N07_STAGE_IDS,N09:N09_STAGE_IDS,N04:N04_STAGE_IDS,N33:N33_STAGE_IDS,N23:N23_STAGE_IDS,N24:N24_STAGE_IDS,N21:N21_STAGE_IDS,N22:N22_STAGE_IDS,N20:N20_STAGE_IDS,N29:N29_STAGE_IDS,N11:N11_STAGE_IDS,N12:N12_STAGE_IDS,N13:N13_STAGE_IDS,N14:N14_STAGE_IDS,N15:N15_STAGE_IDS,N16:N16_STAGE_IDS});
+ N07:N07_STAGE_IDS,N09:N09_STAGE_IDS,N04:N04_STAGE_IDS,N33:N33_STAGE_IDS,N23:N23_STAGE_IDS,N24:N24_STAGE_IDS,N21:N21_STAGE_IDS,N22:N22_STAGE_IDS,N20:N20_STAGE_IDS,N29:N29_STAGE_IDS,N11:N11_STAGE_IDS,N12:N12_STAGE_IDS,N13:N13_STAGE_IDS,N14:N14_STAGE_IDS,N15:N15_STAGE_IDS,N16:N16_STAGE_IDS,N17:N17_STAGE_IDS,N18:N18_STAGE_IDS,N19:N19_STAGE_IDS,N28:N28_STAGE_IDS,N32:N32_STAGE_IDS,N35:N35_STAGE_IDS,N36:N36_STAGE_IDS,N37:N37_STAGE_IDS,N38:N38_STAGE_IDS,N30:N30_STAGE_IDS,N31:N31_STAGE_IDS,N39F1:N39F1_STAGE_IDS,N39F2:N39F2_STAGE_IDS,N39F3:N39F3_STAGE_IDS,N25:N25_STAGE_IDS,N26b:N26B_STAGE_IDS,N40:N40_STAGE_IDS,N26a:N26A_STAGE_IDS,N27:N27_STAGE_IDS,N08:N08_STAGE_IDS,N10:N10_STAGE_IDS});
 function scenarioProfile(raw){
  if(typeof raw!=='string'||!Object.hasOwn(SCENARIO_STAGE_IDS,raw))throw Error('G6_UNSUPPORTED_SCENARIO');
  return raw;
@@ -129,4 +159,4 @@ function planGolden({fromStage='BUYER',toStage='CLIENT_PICKUP'}={}){
  return {contract:'G6-CANONICAL-JOURNEY-v1',mode:'dry-run',stages:g.order.slice(start,end+1),
   missing_prerequisites:prerequisiteIds(from.id,g),mutations:0,verdict:'NOT_PROVEN'};
 }
-module.exports={M02_STAGE_IDS,M03_STAGE_IDS,N07_STAGE_IDS,N09_STAGE_IDS,N04_STAGE_IDS,N33_STAGE_IDS,N23_STAGE_IDS,N24_STAGE_IDS,N21_STAGE_IDS,N22_STAGE_IDS,N20_STAGE_IDS,N29_STAGE_IDS,N11_STAGE_IDS,N12_STAGE_IDS,N13_STAGE_IDS,N14_STAGE_IDS,N15_STAGE_IDS,N16_STAGE_IDS,SCENARIO_STAGE_IDS,scenarioProfile,loadScenarioStages,graphFor,STAGE_IDS,nextStageId,LEGACY_PHASE_MAP,loadGoldenStages,stageGraph,resolvePhase,prerequisiteIds,requiresResumeProof,validateProofBoundary,planGolden};
+module.exports={M02_STAGE_IDS,M03_STAGE_IDS,N07_STAGE_IDS,N09_STAGE_IDS,N04_STAGE_IDS,N33_STAGE_IDS,N23_STAGE_IDS,N24_STAGE_IDS,N21_STAGE_IDS,N22_STAGE_IDS,N20_STAGE_IDS,N29_STAGE_IDS,N11_STAGE_IDS,N12_STAGE_IDS,N13_STAGE_IDS,N14_STAGE_IDS,N15_STAGE_IDS,N16_STAGE_IDS,N17_STAGE_IDS,N18_STAGE_IDS,N19_STAGE_IDS,N39F1_STAGE_IDS,N39F2_STAGE_IDS,N39F3_STAGE_IDS,N25_STAGE_IDS,N26B_STAGE_IDS,N40_STAGE_IDS,N26A_STAGE_IDS,N27_STAGE_IDS,N28_STAGE_IDS,N32_STAGE_IDS,N35_STAGE_IDS,N36_STAGE_IDS,N37_STAGE_IDS,N38_STAGE_IDS,N30_STAGE_IDS,N31_STAGE_IDS,SCENARIO_STAGE_IDS,scenarioProfile,loadScenarioStages,graphFor,STAGE_IDS,nextStageId,LEGACY_PHASE_MAP,loadGoldenStages,stageGraph,resolvePhase,prerequisiteIds,requiresResumeProof,validateProofBoundary,planGolden,N08_STAGE_IDS,N10_STAGE_IDS};

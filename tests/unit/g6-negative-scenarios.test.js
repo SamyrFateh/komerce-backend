@@ -186,7 +186,7 @@ describe('G6-G4B-FIX runner N23, N29, N20',()=>{
  });
  it('N29 : la garde de LOCAL_RELAY_AVAILABLE accepte N29 sans autre assouplissement',()=>{
   const a=read('scripts/recette/g6-local-relay-available-chromium.js');
-  expect(a).toMatch(/\['M02','M03','N23','N24','N21','N22','N29'\]\.includes\(env\.G6_CANONICAL_SCENARIO\)/);
+  expect(a).toMatch(/\['M02','M03','N23','N24','N21','N22','N29'(?:,'N\d+')*\]\.includes\(env\.G6_CANONICAL_SCENARIO\)/);
   expect(a).toMatch(/env\.G6_CANONICAL_PHASE==='LOCAL_RELAY_AVAILABLE'/);expect(a).toMatch(/G6_LOCAL_RELAY_OWNER_STAGING_GUARD/);
  });
  it('N20 : expédition retrouvée via le lien Hub quand parcels.shipment_id est vide',async()=>{
@@ -324,5 +324,285 @@ describe('G6-G4C N15 (sac ou KOM-BOX incomplet) et N16 (carton non DISPATCHED, c
   for(const id of ['N15','N16'])for(const m of ['KM','CM','CG'])
    expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
   expect(N.isNegative('N15')&&N.isNegative('N16')).toBe(true);
+ });
+});
+
+describe('G6-G5B N17 (transitaire hors rôle ou marché), N18 (douane retenue puis mainlevée), N19 (retard puis perte du transport local)',()=>{
+ const up=id=>STAGE_IDS.slice(0,STAGE_IDS.indexOf(id)+1);
+ const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
+ it('séquences : chaîne M01 coupée au bon point, M01 inchangé',()=>{
+  expect(graphFor('N17').order).toEqual([...up('HUB_SHIPMENT'),'N17_FORWARDER_ROLE_MARKET_ATTEMPTS','N17_NO_TRANSITION_ORACLE']);
+  expect(graphFor('N18').order).toEqual([...up('FORWARDER'),'N18_CUSTOMS_HOLD_ATTEMPTS','N18_HOLD_RELEASE_ORACLE']);
+  expect(graphFor('N19').order).toEqual([...up('CUSTOMS'),'N19_LOCAL_TRANSPORT_DELAY_LOSS','N19_LOSS_INCIDENT_ORACLE']);
+  expect(graphFor('N17').order).not.toContain('FORWARDER');
+  expect(graphFor('N18').order).not.toContain('CUSTOMS');
+  expect(graphFor('M01').order).toEqual(STAGE_IDS);
+  expect(validateStageModuleSources()).toBeGreaterThan(0);
+ });
+ const snap=(o={})=>({stage:'handed_over',customs_shipment_id:null,tracking_reference:null,forwarder_name:'F',events:3,charges:0,receipts:0,...o});
+ it('oracle N17 : expédition identique, aucun frais, lien douane ni suivi',async()=>{
+  const row=o=>[[snap(o)]],ord=[[{id:'o',status:'shipped',collected_scans:0}]];
+  await expect(N.oracleN17(mk([...row(),...ord]),{orderId:'o',shipmentRef:'S',baseline:snap()})).resolves.toMatchObject({stage:'handed_over',charges:0});
+  await expect(N.oracleN17(mk(row({stage:'forwarder_received'})),{orderId:'o',shipmentRef:'S',baseline:snap()})).rejects.toThrow('G6_N17_PRODUCT_GAP_STAGE_MOVED_forwarder_received');
+  await expect(N.oracleN17(mk(row({events:4})),{orderId:'o',shipmentRef:'S',baseline:snap()})).rejects.toThrow('G6_N17_PRODUCT_GAP_JOURNEY_CHANGED_BY_REFUSED_ACTOR');
+ });
+ const t=s=>new Date('2026-11-21T10:0'+s+':00Z');
+ const j=(o={})=>[[snap({stage:'customs_released',customs_shipment_id:'c',...o})],[{id:'c',status:'declared',customs_paid_kmf:'0'}],
+  [{status:'released',held_at:t(1),released_at:t(3),held_by:'u',released_by:'a',held_by_role:'admin',reason:'motif'}],
+  [{event_type:'customs_linked',to_stage:null,occurred_at:t(0)},{event_type:'customs_amount_confirmed',to_stage:null,occurred_at:t(4)},{event_type:'stage_changed',to_stage:'customs_released',occurred_at:t(5)}],
+  [{id:'o',status:'shipped',collected_scans:0}]];
+ it('oracle N18 : aucun transit entre retenue et mainlevée, étapes autorisées après',async()=>{
+  await expect(N.oracleN18(mk(j()),{orderId:'o',shipmentRef:'S',customsRef:'C'})).resolves.toMatchObject({held_by_role:'admin',stage:'customs_released'});
+  const bad=j();bad[3]=[{event_type:'customs_amount_confirmed',to_stage:null,occurred_at:t(2)},{event_type:'stage_changed',to_stage:'customs_released',occurred_at:t(5)}];
+  await expect(N.oracleN18(mk(bad),{orderId:'o',shipmentRef:'S',customsRef:'C'})).rejects.toThrow('G6_N18_PRODUCT_GAP_TRANSIT_WHILE_HELD_1');
+  const open=j();open[2]=[{status:'held',held_at:t(1),released_at:null,held_by:'u',released_by:null,held_by_role:'admin',reason:'motif'}];
+  await expect(N.oracleN18(mk(open),{orderId:'o',shipmentRef:'S',customsRef:'C'})).rejects.toThrow('G6_N18_PRODUCT_GAP_HOLD_NOT_RELEASED_BY_ACTOR');
+ });
+ it('oracle N19 : quantité nulle, incident haute gravité, ni disponible ni code de retrait',async()=>{
+  const good=[[{id:'o',status:'in_transit',collected_scans:0}],[{expected_qty:1,received_qty:0,incident:'i',incident_type:'missing_item',severity:'high'}],[{collected:0,received:0}]];
+  await expect(N.oracleN19(mk(good),{orderId:'o'})).resolves.toMatchObject({received_qty:0,severity:'high'});
+  const avail=[[{id:'o',status:'available',collected_scans:0}],good[1],good[2]];
+  await expect(N.oracleN19(mk(avail),{orderId:'o'})).rejects.toThrow('G6_N19_PRODUCT_GAP_AVAILABLE_OR_COLLECTED_AFTER_TOTAL_LOSS_available');
+  await expect(N.oracleN19(mk([good[0],[{expected_qty:2,received_qty:1,incident:'i',incident_type:'quantity_mismatch',severity:'medium'}]]),{orderId:'o'})).rejects.toThrow('G6_N19_PRODUCT_GAP_RECEIVED_QTY_NOT_ZERO');
+ });
+ it('scripts : sondes signalées, hors marché 403/404, retenue par écran, aucune capture',()=>{
+  const a=read('scripts/recette/g6-negative-n17-n18-chromium.js'),b=read('scripts/recette/g6-negative-n19-chromium.js');
+  expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);expect(a).toMatch(/forwarder_other_market/);expect(a).toMatch(/hold-customs/);expect(a).toMatch(/release-customs/);
+  expect(a).toMatch(/AUCUNE_REQUETE_ENVOYEE/);expect(b).toMatch(/received_qty:0/);expect(b).toMatch(/PERTE_ATTESTEE_SANS_MESSAGE_INCIDENT/);
+  expect(a+b).not.toMatch(/screenshot/);
+  expect(validateChromiumScriptSources()).toBeGreaterThan(0);
+ });
+ it('effective params : N17 à N19 partent de la chaîne M01, M01 et N20 inchangés',()=>{
+  const r=read('scripts/recette/canonical/negative-runner.js');
+  expect(r).toMatch(/N17:\{script:N1718_SCRIPT[^}]*to:'HUB_SHIPMENT'/);expect(r).toMatch(/N18:\{script:N1718_SCRIPT[^}]*to:'FORWARDER'/);expect(r).toMatch(/N19:\{script:N19_SCRIPT[^}]*to:'CUSTOMS'/);
+  expect(r).toMatch(/N20:\{script:N20_SCRIPT[^}]*to:'CUSTOMS'/);
+  expect(read('scripts/recette/canonical/real-buyer-cash-adapters.js')).toMatch(/'N17','N18','N19'(?:,'N\d+[A-Za-z0-9]*')*\]\.includes\(SCENARIO\)/);
+ });
+ it('workflow : titres N17 à N19 pour KM, CM et CG',()=>{
+  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
+  for(const id of ['N17','N18','N19'])for(const m of ['KM','CM','CG'])
+   expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
+  expect(['N17','N18','N19'].every(N.isNegative)).toBe(true);
+ });
+});
+
+describe('G6-G5C N28 (échec réseau puis réessai) et N32 (marché et rôles croisés)',()=>{
+ const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
+ const ord=(o={})=>({id:'o',user_id:'u',status:'collected',payment_status:'paid',display_total_amount:1,lines:1,qty:1,cash_count:1,control_count:1,allocations:1,consumed_allocations:1,purchase_lines:0,collected_scans:1,parcels:1,...o});
+ it('séquences : parcours M02 coupé, M01 et M02 inchangés',()=>{
+  expect(graphFor('N28').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','N28_NETWORK_FAILURE_RETRY','N28_SINGLE_EFFECT_ORACLE']);
+  expect(graphFor('N32').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','N32_CROSS_MARKET_ROLES','N32_NO_MUTATION_ORACLE']);
+  expect(graphFor('M01').order).toEqual(STAGE_IDS);
+  expect(graphFor('M02').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','LOCAL_CLIENT_PICKUP']);
+  expect(validateStageModuleSources()).toBeGreaterThan(0);
+ });
+ it('oracle N28 : une seule remise, quantités exactes ; double effet = PRODUCT_GAP',async()=>{
+  await expect(N.oracleN28(mk([[ord()],[{scans:1}],[{got:1,want:1}]]),{orderId:'o',committedBeforeRetry:true})).resolves.toMatchObject({collected_scans:1,committed_before_retry:true});
+  await expect(N.oracleN28(mk([[ord()],[{scans:2}]]),{orderId:'o'})).rejects.toThrow('G6_N28_PRODUCT_GAP_HANDOFF_ATTESTATIONS_2');
+  await expect(N.oracleN28(mk([[ord()],[{scans:0}]]),{orderId:'o'})).rejects.toThrow('G6_N28_PRODUCT_GAP_HANDOFF_ATTESTATIONS_0');
+ });
+ it('oracle N32 : aucune mutation et aucune remise par un rôle étranger',async()=>{
+  const snap={unchanged:true,before:{codes:3},after:{codes:3}};
+  await expect(N.oracleN32(mk([[ord({status:'available',collected_scans:0})],[{n:0}]]),{orderId:'o',snapshot:snap})).resolves.toMatchObject({status:'available',codes_after:3});
+  await expect(N.oracleN32(mk([[ord({status:'available',collected_scans:0})]]),{orderId:'o',snapshot:{...snap,unchanged:false}})).rejects.toThrow('G6_N32_PRODUCT_GAP_MUTATION');
+  await expect(N.oracleN32(mk([[ord()],[{n:1}]]),{orderId:'o',snapshot:snap})).rejects.toThrow('G6_N32_PRODUCT_GAP_HANDOFF_BY_FOREIGN_ROLE');
+ });
+ it('script : sondes API signalées, réponse perdue après commit, aucune capture ; prérequis classés',()=>{
+  const a=read('scripts/recette/g6-negative-n28-n32-chromium.js');
+  expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);expect(a).toMatch(/connectionreset/);expect(a).toMatch(/FALSE_SUCCESS_SHOWN_ON_HTTP500/);
+  expect(a).toMatch(/PREREQ_MISSING_FOREIGN_MARKET_ORDER/);expect(a).not.toMatch(/screenshot/);expect(validateChromiumScriptSources()).toBeGreaterThan(0);
+  expect(N.classifyNegative('N32','x PREREQ_MISSING_FOREIGN_MARKET_ORDER')).toBe('PREREQ_MISSING_FOREIGN_MARKET_ORDER');
+ });
+ it('workflow : titres N28/N32 pour KM, CM et CG et alias de scénario',()=>{
+  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
+  for(const id of ['N28','N32'])for(const m of ['KM','CM','CG'])expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
+  expect(wf).toContain("'-full-N28-') && 'N28'");expect(wf).toContain("'-full-N32-') && 'N32'");
+  expect(N.isNegative('N28')&&N.isNegative('N32')).toBe(true);
+ });
+});
+
+describe('G6-G5C N35 à N38 : modalités de M01 et oracles O-ECO, O-DOC, O-NOTIF',()=>{
+ const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]||[]})}};
+ const ord=(o={})=>({id:'o',user_id:'u',status:'collected',payment_status:'paid',display_total_amount:1,lines:1,qty:1,cash_count:1,control_count:1,allocations:1,consumed_allocations:1,purchase_lines:0,collected_scans:1,parcels:1,...o});
+ it('séquences : M01 + un oracle, M01 inchangé et non dupliqué',()=>{
+  expect(graphFor('N35').order).toEqual([...STAGE_IDS,'N35_ECO_ORACLE']);
+  expect(graphFor('N36').order).toEqual([...STAGE_IDS,'N36_MANUAL_PROVENANCE_ORACLE']);
+  expect(graphFor('N37').order).toEqual([...STAGE_IDS,'N37_DOCUMENT_ACCESS','N37_DOCUMENTS_ORACLE']);
+  expect(graphFor('N38').order).toEqual([...STAGE_IDS,'N38_RESUME_DRY_RUN','N38_POSTCOMMIT_ORACLE']);
+  expect(graphFor('M01').order).toEqual(STAGE_IDS);
+  expect(validateStageModuleSources()).toBeGreaterThan(0);
+ });
+ it('contrôles O-ECO : instructions SELECT du fichier SQL, jamais d\'écriture',()=>{
+  const q=N.ecoControls();expect(q.length).toBe(4);expect(q.every(x=>/^SELECT/i.test(x)&&!/\b(INSERT|UPDATE|DELETE)\b/i.test(x))).toBe(true);
+ });
+ const al=[{order_item_id:'i',cost_type:'freight',shipment_id:'s',is_actual:true,amount_kmf:'10',causal:true}];
+ it('oracle N35 : fret non doublé et allocations causales',async()=>{
+  const ok=[[ord()],al,[],[],[],[],[]];
+  await expect(N.oracleN35(mk(ok),{orderId:'o'})).resolves.toMatchObject({allocations:1,freight_doubled:0,floor_total_equals_detail:'NOT_PROVEN_NO_PERSISTED_FLOOR_ON_ORDER_OBJECTS'});
+  await expect(N.oracleN35(mk([[ord()],[]]),{orderId:'o'})).rejects.toThrow('G6_N35_PRODUCT_GAP_NO_REAL_COST_ALLOCATIONS');
+  await expect(N.oracleN35(mk([[ord()],[{...al[0],causal:false}]]),{orderId:'o'})).rejects.toThrow('G6_N35_PRODUCT_GAP_ALLOCATION_NOT_CAUSAL');
+  await expect(N.oracleN35(mk([[ord()],al,[{cost_type:'freight',n:2}]]),{orderId:'o'})).rejects.toThrow('G6_N35_PRODUCT_GAP_COST_COMPONENT_DOUBLED_freight');
+ });
+ it('oracle N36 : toute preuve physique en MANUAL avec référence',async()=>{
+  const good=[[{evidence_method:'MANUAL',ref_ok:true}],[{evidence_method:'MANUAL',ref_ok:true}],[{n:3}],[{n:1}]];
+  await expect(N.oracleN36(mk(good),{orderId:'o'})).resolves.toMatchObject({placements_manual:1,bag_links_manual:1,collected_scans:1});
+  await expect(N.oracleN36(mk([[{evidence_method:'SCAN',ref_ok:false}]]),{orderId:'o'})).rejects.toThrow('G6_N36_PRODUCT_GAP_PLACEMENT_NOT_MANUAL_SCAN');
+  await expect(N.oracleN36(mk([good[0],[{evidence_method:null,ref_ok:false}]]),{orderId:'o'})).rejects.toThrow('G6_N36_PRODUCT_GAP_BAG_LINK_NOT_MANUAL_NULL');
+ });
+ const docs=(o={})=>[[{n:1,pdf:1}],[{id:'s1'}],[{subject_id:'s1',n:1}],[],...[]];
+ it('oracle N37 : un document par événement, aucun envoi réel',async()=>{
+  const base=[[ord()],...docs(),[{n:1}],[{channel:'in_app',event:'available',status:'skipped'}]];
+  await expect(N.oracleN37(mk(base),{orderId:'o',reference:'R',poId:'p'})).resolves.toMatchObject({invoices:1,pickup_proofs:1,real_sends:0});
+  const sent=[[ord()],...docs(),[{n:1}],[{channel:'whatsapp',event:'collected',status:'sent'}]];
+  await expect(N.oracleN37(mk(sent),{orderId:'o',reference:'R',poId:'p'})).rejects.toThrow('G6_N37_PRODUCT_GAP_REAL_SEND_ON_STAGING');
+  await expect(N.oracleN37(mk([[ord()],[{n:2,pdf:2}]]),{orderId:'o',reference:'R'})).rejects.toThrow('G6_N37_PRODUCT_GAP_INVOICE_COUNT_2');
+ });
+ it('oracle N38 : événement conservé, reprise sans angle mort, sans doublon',async()=>{
+  const dry=(inv,pp)=>({dry_run:true,issued:0,families:{invoice:{missing:inv},pickup_proof:{missing:pp},refund_receipt:{missing:0}}});
+  const full=[[ord()],...docs(),[]];
+  await expect(N.oracleN38(mk(full),{orderId:'o',reference:'R',dryRun:dry(0,0)})).resolves.toMatchObject({resume_detects_missing:false,failure_leg:'NOT_PROVEN_NO_FAULT_INJECTION_ON_STAGING'});
+  const gone=[[ord()],[{n:1,pdf:1}],[{id:'s1'}],[],[],[]];
+  await expect(N.oracleN38(mk(gone),{orderId:'o',reference:'R',dryRun:dry(0,1)})).resolves.toMatchObject({resume_detects_missing:true});
+  await expect(N.oracleN38(mk(gone),{orderId:'o',reference:'R',dryRun:dry(0,0)})).rejects.toThrow('G6_N38_PRODUCT_GAP_RESUME_BLIND_SPOT_PICKUP_PROOF');
+  await expect(N.oracleN38(mk(full),{orderId:'o',reference:'R',dryRun:null})).rejects.toThrow('G6_N38_SCREEN_MISSING_RESUME_DRY_RUN_NOT_PROVEN');
+ });
+ it('scripts : accès propriétaire seul, dry run, aucune capture ; workflow et alias M01',()=>{
+  const a=read('scripts/recette/g6-negative-n37-n38-chromium.js');
+  expect(a).toMatch(/FOREIGN_DOWNLOAD_ACCEPTED/);expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);expect(a).toMatch(/dry_run:true/);expect(a).not.toMatch(/screenshot/);
+  expect(validateChromiumScriptSources()).toBeGreaterThan(0);
+  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
+  for(const id of ['N35','N36','N37','N38']){for(const m of ['KM','CM','CG'])expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");expect(wf).toContain("'-full-"+id+"-') && '"+id+"'");expect(N.isNegative(id)).toBe(true)}
+  expect(read('scripts/recette/canonical/real-buyer-cash-adapters.js')).toMatch(/'N19','N35','N36','N37','N38'(?:,'N[0-9A-Za-z]+')*\]\.includes\(SCENARIO\)/);
+  });
+});
+
+describe('G6-G5B N39 (annulation client aux paliers F1, F2, F3)',()=>{
+ const up=id=>STAGE_IDS.slice(0,STAGE_IDS.indexOf(id)+1);
+ const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
+ it('séquences : chaîne M01 coupée à RELAY_CASH, HUB_COMMITMENT, HUB_SHIPMENT ; M01 inchangé',()=>{
+  expect(graphFor('N39F1').order).toEqual([...up('RELAY_CASH'),'N39F1_CLIENT_CANCEL_ATTEMPT','N39F1_CANCEL_EFFECTS_ORACLE']);
+  expect(graphFor('N39F2').order).toEqual([...up('HUB_COMMITMENT'),'N39F2_CLIENT_CANCEL_ATTEMPT','N39F2_CANCEL_EFFECTS_ORACLE']);
+  expect(graphFor('N39F3').order).toEqual([...up('HUB_SHIPMENT'),'N39F3_CLIENT_CANCEL_ATTEMPT','N39F3_CANCEL_EFFECTS_ORACLE']);
+  expect(graphFor('M01').order).toEqual(STAGE_IDS);
+  expect(validateStageModuleSources()).toBeGreaterThan(0);
+ });
+ const fx=(o={})=>[[{status:'cancelled',display_total_amount:'9990',market_currency:'XAF',credits:1,credit_amount:9990,credit_currency:'XAF',refunds:1,psp_intents:0,commitments:0,active_lines:0,...o}]];
+ it('oracle F1 : annulée, wallet 100 % en devise du marché une fois, sans PSP',async()=>{
+  const ok200={http:200};
+  await expect(N.oracleN39F1(mk(fx()),{orderId:'o',cancel:ok200})).resolves.toMatchObject({wallet_credits:1,currency:'XAF'});
+  await expect(N.oracleN39F1(mk(fx()),{orderId:'o',cancel:{http:422}})).rejects.toThrow('G6_N39F1_PRODUCT_GAP_CANCEL_REFUSED_HTTP_422');
+  await expect(N.oracleN39F1(mk(fx({credit_amount:7992})),{orderId:'o',cancel:ok200})).rejects.toThrow('G6_N39F1_PRODUCT_GAP_REFUND_NOT_100_PCT_7992_OF_9990');
+  await expect(N.oracleN39F1(mk(fx({credit_currency:'KMF'})),{orderId:'o',cancel:ok200})).rejects.toThrow('G6_N39F1_PRODUCT_GAP_WALLET_CURRENCY_KMF_VS_XAF');
+  await expect(N.oracleN39F1(mk(fx({psp_intents:1})),{orderId:'o',cancel:ok200})).rejects.toThrow('G6_N39F1_PRODUCT_GAP_PSP_INTENT');
+ });
+ it('oracle F2 : ni annulation ni remboursement silencieux, engagement conservé',async()=>{
+  const open=o=>fx({status:'confirmed',credits:0,credit_amount:0,credit_currency:null,refunds:0,commitments:1,active_lines:1,...o});
+  await expect(N.oracleN39F2(mk(open()),{orderId:'o',cancel:{http:422}})).resolves.toMatchObject({status:'confirmed',commitments:1});
+  await expect(N.oracleN39F2(mk(fx({commitments:1,active_lines:0})),{orderId:'o',cancel:{http:200}})).rejects.toThrow('G6_N39F2_PRODUCT_GAP_SILENT_CANCEL_AFTER_COMMITMENT_cancelled');
+  await expect(N.oracleN39F2(mk(open({credits:1,refunds:1})),{orderId:'o',cancel:{http:422}})).rejects.toThrow('G6_N39F2_PRODUCT_GAP_SILENT_REFUND_1_1');
+ });
+ it('oracle F3 : embarquée, annulation fermée, aucun remboursement',async()=>{
+  const shipped=o=>fx({status:'shipped',credits:0,credit_amount:0,refunds:0,...o});
+  await expect(N.oracleN39F3(mk(shipped()),{orderId:'o',cancel:{http:422}})).resolves.toMatchObject({status:'shipped'});
+  await expect(N.oracleN39F3(mk(fx()),{orderId:'o',cancel:{http:200}})).rejects.toThrow('G6_N39F3_PRODUCT_GAP_CANCELLED_WHEN_SHIPPED_cancelled');
+ });
+ it('script et workflow : bouton client, F1 écran manquant, titres des trois paliers',()=>{
+  const a=read('scripts/recette/g6-negative-n39-cancel-chromium.js');
+  expect(a).toMatch(/k-order-cancel-btn/);expect(a).toMatch(/G6_N39F1_SCREEN_MISSING_CANCEL_BUTTON/);expect(a).toMatch(/ANNULATION_SANS_MESSAGE_AFFICHE/);expect(a).not.toMatch(/screenshot/);
+  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
+  for(const id of ['N39F1','N39F2','N39F3'])for(const m of ['KM','CM','CG'])
+   expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
+  expect(['N39F1','N39F2','N39F3'].every(N.isNegative)).toBe(true);
+  expect(validateChromiumScriptSources()).toBeGreaterThan(0);
+ });
+});
+
+describe('G6-G5C N30 (Order 360 et dashboards vs PG) et N31 (snapshot monétaire)',()=>{
+ const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]||[]})}};
+ const ord=(o={})=>({id:'o',user_id:'u',status:'available',payment_status:'paid',display_total_amount:1,lines:1,qty:1,cash_count:1,control_count:1,allocations:1,consumed_allocations:0,purchase_lines:0,collected_scans:0,parcels:1,...o});
+ const t0='2026-11-20T00:00:00Z',t1='2026-11-21T12:00:00Z';
+ const reads={order360:{status:'available',payment_status:'paid',total_kmf:100,items:1,quantity:1,parcels:1},commerce:{ca_value:500,from:t0,to:t1}};
+ const x=(o={})=>({total_kmf:'100',simulation_scope:'RCT1',created_at:'2026-11-21T01:00:00Z',parcels:1,...o});
+ it('séquences : parcours M02 coupé ; M02 inchangé',()=>{
+  expect(graphFor('N30').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','N30_TRUTH_COMPARE','N30_TRUTH_ORACLE']);
+  expect(graphFor('N31').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','N31_FX_SNAPSHOT_ORACLE']);
+  expect(graphFor('M02').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','LOCAL_CLIENT_PICKUP']);
+  expect(validateStageModuleSources()).toBeGreaterThan(0);
+ });
+ it('oracle N30 : 360 = PG, KPI = PG, fixture non comptée',async()=>{
+  await expect(N.oracleN30(mk([[ord()],[x()],[{v:'500'}],[{v:'40'}]]),{orderId:'o',...reads})).resolves.toMatchObject({order_360_matches_pg:true,kpi_ca_pg:500});
+  await expect(N.oracleN30(mk([[ord({status:'collected'})],[x()]]),{orderId:'o',...reads})).rejects.toThrow('G6_N30_PRODUCT_GAP_ORDER_360_DIFFERS_FROM_PG_STATUS');
+  await expect(N.oracleN30(mk([[ord()],[x()],[{v:'900'}],[{v:'0'}],[{n:0}]]),{orderId:'o',...reads})).rejects.toThrow('G6_N30_PRODUCT_GAP_COMMERCE_KPI_500_VS_PG_900');
+  await expect(N.oracleN30(mk([[ord()],[x()],[{v:'900'}],[{v:'0'}],[{n:3}]]),{orderId:'o',...reads})).rejects.toThrow('G6_N30_PREREQ_MISSING_QUIET_WINDOW_3');
+  await expect(N.oracleN30(mk([[ord()],[x({simulation_scope:null})],[{v:'500'}],[{v:'0'}]]),{orderId:'o',...reads})).rejects.toThrow('G6_N30_PRODUCT_GAP_FIXTURE_COUNTED_IN_COMMERCIAL_KPI');
+ });
+ it('oracle N31 : devise du marché, snapshot, parité fixe, aucun remboursement',async()=>{
+  const row={total_kmf:'655',shown:'1000',display_currency:'XAF',display_parity_snapshot:{eur:1}};
+  const par=[{currency:'KMF',r:'491.96775'},{currency:'XAF',r:'655.957'}];
+  await expect(N.oracleN31(mk([[{...row,total_kmf:'750'}],par,[{n:0}]]),{orderId:'o',market:'CM'})).resolves.toMatchObject({display_currency:'XAF',refunds:0});
+  await expect(N.oracleN31(mk([[row]]),{orderId:'o',market:'KM'})).rejects.toThrow('G6_N31_PRODUCT_GAP_DISPLAY_CURRENCY_XAF_FOR_KM');
+  await expect(N.oracleN31(mk([[{...row,display_parity_snapshot:null}]]),{orderId:'o',market:'CM'})).rejects.toThrow('G6_N31_PRODUCT_GAP_DISPLAY_SNAPSHOT_MISSING');
+  await expect(N.oracleN31(mk([[{...row,total_kmf:'100'}],par]),{orderId:'o',market:'CM'})).rejects.toThrow('G6_N31_PRODUCT_GAP_SNAPSHOT_DIFFERS_FROM_FIXED_PARITY');
+ });
+ it('script et workflow : lectures GET seules, aucune capture, titres N30/N31',()=>{
+  const a=read('scripts/recette/g6-negative-n30-chromium.js');
+  expect(a).toMatch(/ca_encaisse/);expect(a).not.toMatch(/\.post\(|screenshot/);expect(validateChromiumScriptSources()).toBeGreaterThan(0);
+  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
+  for(const id of ['N30','N31']){for(const m of ['KM','CM','CG'])expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");expect(wf).toContain("'-full-"+id+"-') && '"+id+"'");expect(N.isNegative(id)).toBe(true)}
+ });
+});
+
+describe('G6-G5B N25 (SAV retour et double reprise) et N26b (compensation après retrait)',()=>{
+ const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
+ it('séquences : parcours M02 jusqu\'à la remise, puis SAV ; M01 inchangé',()=>{
+  expect(graphFor('N25').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','LOCAL_CLIENT_PICKUP','N25_SAV_DOUBLE_INTAKE','N25_SINGLE_INTAKE_ORACLE']);
+  expect(graphFor('N26b').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','LOCAL_CLIENT_PICKUP','N26B_SAV_COMPENSATION_DECISION','N26B_SAV_COMPENSATION_ORACLE']);
+  expect(graphFor('M01').order).toEqual(STAGE_IDS);
+  expect(validateStageModuleSources()).toBeGreaterThan(0);
+ });
+ const good=(o={})=>[[{id:'o',status:'collected',collected_scans:1}],[{id:'d',status:'open',return_quantity:1}],[{quantity:1,relay_id:'r'}],
+  [{compensations:0,wallet_credits:0,refunds:0,psp_intents:0,stock_after:5,...o}]];
+ it('oracle N25 : un dossier, une reprise, aucune compensation, stock inchangé',async()=>{
+  await expect(N.oracleN25(mk(good()),{orderId:'o',stockBefore:5})).resolves.toMatchObject({physical_receipts:1,stock_unchanged:true});
+  await expect(N.oracleN25(mk(good({stock_after:6})),{orderId:'o',stockBefore:5})).rejects.toThrow('G6_N25_PRODUCT_GAP_RETURNED_UNIT_BACK_IN_SELLABLE_STOCK_5_TO_6');
+  await expect(N.oracleN25(mk(good({wallet_credits:1})),{orderId:'o',stockBefore:5})).rejects.toThrow('G6_N25_PRODUCT_GAP_AUTOMATIC_COMPENSATION_ON_PHYSICAL_INTAKE');
+  const two=good();two[1]=[{id:'d',status:'open',return_quantity:1},{id:'e',status:'open',return_quantity:1}];
+  await expect(N.oracleN25(mk(two),{orderId:'o',stockBefore:5})).rejects.toThrow('G6_N25_PRODUCT_GAP_DOSSIER_COUNT_2');
+ });
+ it('script et workflow',()=>{
+  const a=read('scripts/recette/g6-negative-n25-sav-chromium.js');
+  expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);expect(a).toMatch(/G6_N26B_SCREEN_MISSING_ADMIN_COMPENSATION_DECISION/);expect(a).toMatch(/second_dossier_same_unit/);expect(a).not.toMatch(/screenshot/);
+  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
+  for(const id of ['N25','N26b'])for(const m of ['KM','CM','CG'])expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
+  expect(['N25','N26b'].every(N.isNegative)).toBe(true);
+  expect(validateChromiumScriptSources()).toBeGreaterThan(0);
+ });
+});
+
+describe('G6-G5B N40 (écart de prix fournisseur), N26a et N27 (sondes d\'écran)',()=>{
+ const up=id=>STAGE_IDS.slice(0,STAGE_IDS.indexOf(id)+1);
+ const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
+ it('séquences',()=>{
+  expect(graphFor('N40').order).toEqual([...up('HUB_VENDOR_READINESS'),'N40_SUPPLIER_PRICE_GAP','N40_PRICE_GAP_ORACLE']);
+  expect(graphFor('N26a').order).toEqual([...up('RELAY_CASH'),'N26A_LINE_REFUND_SCREEN_PROBE']);
+  expect(graphFor('N27').order).toEqual([...up('HUB_VENDOR_READINESS'),'N27_REMNANT_CANCEL_SCREEN_PROBE']);
+  expect(graphFor('M01').order).toEqual(STAGE_IDS);
+  expect(validateStageModuleSources()).toBeGreaterThan(0);
+ });
+ const row=o=>[[{po_status:'notified',confirmed_quantity:null,confirmed_price:null,unit_price:'10',product_sku_id:'s',...o}],
+  [{commitments:1,payment_authorizations:0,supplier_payments:0,manual_executions:0,confirmed_lines:0,hub_allocations:0,hub_units:0,payment_status:'paid'}]];
+ it('oracle N40 : écart refusé ou en attente, jamais confirmé sans validation séparée ni payé',async()=>{
+  await expect(N.oracleN40(mk(row()),{orderId:'o',poId:'p',confirm:{http:409},quoted:'10'})).resolves.toMatchObject({po_status:'notified',payments:0});
+  await expect(N.oracleN40(mk(row({po_status:'confirmed',confirmed_price:'11.01'})),{orderId:'o',poId:'p',confirm:{http:200},quoted:'10'})).rejects.toThrow('G6_N40_PRODUCT_GAP_PRICE_GAP_ACCEPTED_WITHOUT_SEPARATE_VALIDATION_10_TO_11.01');
+  const pay=row();pay[1]=[{...pay[1][0],supplier_payments:1}];
+  await expect(N.oracleN40(mk(pay),{orderId:'o',poId:'p',confirm:{http:409},quoted:'10'})).rejects.toThrow('G6_N40_PRODUCT_GAP_SILENT_PAYMENT_OR_EXECUTION');
+ });
+ it('scripts et workflow',()=>{
+  const a=read('scripts/recette/g6-negative-n40-price-gap-chromium.js'),b=read('scripts/recette/g6-negative-n26a-n27-screen-probe-chromium.js');
+  expect(a).toMatch(/data-confirmed-price/);expect(b).toMatch(/G6_N26A_SCREEN_MISSING_LINE_REFUND_AND_PARTIAL_CREDIT/);expect(b).toMatch(/G6_N27_SCREEN_MISSING_REMNANT_CANCEL/);expect(a+b).not.toMatch(/screenshot/);
+  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
+  for(const id of ['N40','N26a','N27'])for(const m of ['KM','CM','CG'])expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
+  expect(['N40','N26a','N27'].every(N.isNegative)).toBe(true);
+  expect(validateChromiumScriptSources()).toBeGreaterThan(0);
  });
 });

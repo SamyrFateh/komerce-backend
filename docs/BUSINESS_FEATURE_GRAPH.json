@@ -4905,6 +4905,13 @@
       {
         "feature": "dashboard",
         "category": "services",
+        "declared": "services/dashboard-invalidation-bus.js",
+        "resolvedPath": "services/dashboard-invalidation-bus.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
         "declared": "services/dashboard-clients-queries.js",
         "resolvedPath": "services/dashboard-clients-queries.js",
         "status": "resolved-in-technical-graph"
@@ -5290,6 +5297,13 @@
       {
         "feature": "dashboard",
         "category": "routes",
+        "declared": "routes/admin-dashboard-events.js",
+        "resolvedPath": "routes/admin-dashboard-events.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "routes",
         "declared": "routes/admin-operations-workspace.js",
         "resolvedPath": "routes/admin-operations-workspace.js",
         "status": "resolved-in-technical-graph"
@@ -5412,6 +5426,13 @@
         "declared": "routes/relay-dashboard.js",
         "resolvedPath": "routes/relay-dashboard.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "migrations",
+        "declared": "migrations/423_dashboard_refresh_notifications.sql",
+        "resolvedPath": "migrations/423_dashboard_refresh_notifications.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "dashboard",
@@ -5689,6 +5710,20 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/js/dashboard-freshness.js",
+        "resolvedPath": "public/dashboards/canonical/js/dashboard-freshness.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/dashboard-freshness.css",
+        "resolvedPath": "public/dashboards/canonical/css/dashboard-freshness.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/js/hub-context-actions.js",
         "resolvedPath": "public/dashboards/canonical/js/hub-context-actions.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5698,6 +5733,13 @@
         "category": "dash",
         "declared": "dashboards/canonical/css/hub-workstation.css",
         "resolvedPath": "public/dashboards/canonical/css/hub-workstation.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/hub-agent-workspace-focus.css",
+        "resolvedPath": "public/dashboards/canonical/css/hub-agent-workspace-focus.css",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -23264,6 +23306,14 @@
       },
       {
         "feature": "dashboard",
+        "entry": "GET /api/admin/dashboard/events",
+        "method": "GET",
+        "path": "/api/admin/dashboard/events",
+        "routeFile": "routes/admin-dashboard-events.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
         "entry": "GET /api/admin/demo/orders/:orderId/timeline",
         "method": "GET",
         "path": "/api/admin/demo/orders/{id}/timeline",
@@ -36549,6 +36599,10 @@
                 "targetFile": "middleware/auth.js"
               },
               {
+                "sourceFileId": "routes/admin-dashboard-events.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
                 "sourceFileId": "routes/admin-operations-workspace.js",
                 "targetFile": "middleware/auth.js"
               },
@@ -36988,6 +37042,14 @@
               {
                 "sourceFileId": "middleware/require-dashboard-global-authority.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/dashboard-invalidation-bus.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/dashboard-invalidation-bus.js",
+                "targetFile": "utils/logger.js"
               },
               {
                 "sourceFileId": "services/dashboard-clients-queries.js",
@@ -40004,6 +40066,14 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/admin-dashboard.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/admin-dashboard-events.js"
+              },
+              {
+                "sourceFileId": "server.js",
+                "targetFile": "services/dashboard-invalidation-bus.js"
               }
             ]
           }
@@ -50537,7 +50607,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2369
+        "filesObserved": 2372
       },
       "boutique": {
         "filesObserved": 218,
@@ -54572,8 +54642,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 716,
-        "technicalNodesOwned": 716,
+        "technicalNodesTotal": 718,
+        "technicalNodesOwned": 718,
         "technicalOrphans": 0
       },
       "dash": {

@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-17T10:03:37.604Z",
+  "generatedAt": "2026-11-21T15:14:48.381Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 852,
-    "protected": 793,
+    "total": 854,
+    "protected": 795,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2250,6 +2250,13 @@
     },
     {
       "key": "POST /api/admin/workspaces/catalog/products/{productRef}/deactivate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/catalog/products/{productRef}/media",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -6225,6 +6232,14 @@
       "level": "PROTECTED",
       "roles": [
         "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/dashboard/events",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
       ]
     }
   ]

@@ -151,6 +151,7 @@ module.exports = {
   contract: {
     exposes: [
       'GET /api/admin/dashboard',
+      'GET /api/admin/dashboard/events',
       'GET /api/admin/demo/orders/:orderId/timeline',
       'GET /api/dashboard/clients',
       'GET /api/admin/entities/clients',
@@ -412,6 +413,7 @@ module.exports = {
     ],
     services: [
       'services/dashboard-cache.js',
+      'services/dashboard-invalidation-bus.js',
       'services/dashboard-clients-queries.js',
       'services/dashboard-metrics/_helpers.js',
       'services/dashboard-metrics/market-currency.js',
@@ -469,6 +471,7 @@ module.exports = {
       'routes/admin-client-360.js',
       'routes/admin-client-index.js',
       'routes/admin-dashboard-market.js',
+      'routes/admin-dashboard-events.js',
       'routes/admin-operations-workspace.js',
       'routes/admin-order-360.js',
       'routes/admin-product-360.js',
@@ -491,6 +494,7 @@ module.exports = {
       'routes/relay-dashboard.js',
     ],
     migrations: [
+      'migrations/423_dashboard_refresh_notifications.sql',
       'migrations/071_relay_dashboard_tables.sql',
       'migrations/151_partner_business_ref.sql',
     ],
@@ -533,8 +537,11 @@ module.exports = {
       'dashboards/canonical/css/demo-order-flow.css',
       'dashboards/canonical/js/app.js',
       'dashboards/canonical/js/hub-workstation.js',
+      'dashboards/canonical/js/dashboard-freshness.js',
+      'dashboards/canonical/css/dashboard-freshness.css',
       'dashboards/canonical/js/hub-context-actions.js',
       'dashboards/canonical/css/hub-workstation.css',
+      'dashboards/canonical/css/hub-agent-workspace-focus.css',
       'dashboards/canonical/js/hub-live-cockpit.js',
       'dashboards/canonical/css/hub-live-cockpit.css',
       'dashboards/canonical/js/primitives.js',
