@@ -169,7 +169,7 @@ async function resolveCategory(actor,ref){
  await humanGoto(actor.page,'/admin/workspaces/catalog?search='+encodeURIComponent(ref),{waitUntil:'domcontentloaded'});
  const row=actor.page.locator('tr[data-candidate-ref="'+ref+'"]');
  if(!await visible(row,25000))return !!missing('SCREEN_MISSING_CANDIDATE_DECISION',{candidate_ref:ref,detail:'ligne candidat absente du Catalogue global'});
- await humanClick(null,row.locator('[data-workspace-action="open-catalog-inspector"]'));
+ await humanClick(null,row.locator('[data-workspace-action="inspect-candidate"]'));
  const review=actor.page.locator('[data-workspace-action="candidate-economic-category-review"]');
  if(!await visible(review,20000)){
   const text=await actor.page.locator('[data-workspace-feedback]').first().innerText().catch(()=>'');
