@@ -31,6 +31,7 @@
  */
 
 import { sanitize, fmt, fmtPrice, optimizeImgUrl } from '../b-utils.js';
+import { fmtMarketAmount, fmtLocalProductPrice } from '../b-market-price-format.js';
 
 'use strict';
 
@@ -198,10 +199,13 @@ export function buildProductCardViewModel(product = {}, options = {}) {
     optimizedImageUrl: optimizeImgUrl(imageUrl, options.imageSize || 400),
     imageAlt: sanitize(normalizeString(product.image_alt || product.imageAlt, name)),
     priceKmf,
-    priceLabel: !purchasable ? 'Non disponible dans votre pays' : (priceKmf > 0 ? fmtPrice(priceKmf) : 'Prix à confirmer'),
+    priceLabel: !purchasable ? 'Non disponible dans votre pays' : (priceKmf > 0 ? fmtLocalProductPrice(product) : 'Prix à confirmer'),
     priceEurLabel: purchasable && priceKmf > 0 ? `≈ ${fmt(priceKmf, 'EUR')}` : '',
     oldPriceKmf,
-    oldPriceLabel: purchasable && oldPriceKmf > 0 ? fmtPrice(oldPriceKmf) : '',
+    oldPriceLabel: purchasable && oldPriceKmf > 0
+      ? (product.market_price_source === 'LOCAL_ACTIVE' && product.market_price_amount != null
+        ? fmtMarketAmount(product.market_price_amount, product.market_price_currency)
+        : fmtPrice(oldPriceKmf)) : '',
     promoPct,
     promoLabel: promoPct > 0 ? `-${promoPct}%` : '',
     badges,

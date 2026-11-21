@@ -27,10 +27,10 @@ async function openRelayLive(page,{selector,timeout=30000,execute=false,entry=ex
     throw error;
    // Never accept an interrupted navigation unless the browser itself reaches
    // the exact canonical staging cockpit without any API or DOM bypass.
-   await page.waitForURL(u=>u.origin===BASE&&u.pathname==='/admin/relais-live',{timeout:20000});
+   await page.waitForURL(u=>u.origin===BASE&&u.pathname==='/admin/relais-live',{timeout:20000,waitUntil:'commit'});
   }
  }
- await page.waitForURL(u=>u.origin===BASE&&u.pathname==='/admin/relais-live',{timeout:20000});
+ await page.waitForURL(u=>u.origin===BASE&&u.pathname==='/admin/relais-live',{timeout:20000,waitUntil:'commit'});
  await page.waitForLoadState('domcontentloaded',{timeout:20000});
  // Réception : atelier d'exécution (?view=execute) ; retrait : comptoir des remises (?view=remises).
  // L'atterrissage du rôle est le Flux Relais : on y entre comme un humain, par le lien de l'écran.
@@ -39,7 +39,7 @@ async function openRelayLive(page,{selector,timeout=30000,execute=false,entry=ex
  if(want&&new URL(page.url()).searchParams.get('view')!==want.view){
   const {humanClick}=require('./actors/human-gestures');
   await humanClick(null,page.locator('a',{hasText:want.link}).first());
-  await page.waitForURL(u=>u.origin===BASE&&u.pathname==='/admin/relais-live'&&u.searchParams.get('view')===want.view,{timeout:20000});
+  await page.waitForURL(u=>u.origin===BASE&&u.pathname==='/admin/relais-live'&&u.searchParams.get('view')===want.view,{timeout:20000,waitUntil:'commit'});
   await page.waitForLoadState('domcontentloaded',{timeout:20000});
  }
  const target=page.locator(selector);

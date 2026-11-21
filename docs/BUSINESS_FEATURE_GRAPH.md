@@ -83,7 +83,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 |---|---|---|---|---|---|
 | backend | 36 | 36 | 716 | 716 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
-| boutique | 16 | 16 | 105 | 105 | 0 |
+| boutique | 16 | 16 | 106 | 106 | 0 |
 
 _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipeline — non scanné par arch:gen backend, couverture non mesurable ici (SCOPE, pas un gap)
 
@@ -2328,7 +2328,7 @@ Meta Graph monté : oui.
 ### Coverage par scope
 
 - backend : 2369 fichier(s) `.js`/`.mjs` observés (canal A)
-- boutique : 216 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
+- boutique : 218 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
   - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
@@ -2380,7 +2380,7 @@ Meta Graph monté : oui.
 | catalog | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | catalog | market-autonomy | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | catalog | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| catalog | orders | static-code, data-read | 15 | **DECLARED_AND_OBSERVED** |
+| catalog | orders | static-code, data-read | 16 | **DECLARED_AND_OBSERVED** |
 | catalog | platform-ops | static-code | 78 | **DECLARED_AND_OBSERVED** |
 | catalog | purchasing | static-code, data-read | 14 | **DECLARED_AND_OBSERVED** |
 | catalog | shared-cart | static-code, interface | 13 | **DECLARED_AND_OBSERVED** |
@@ -2594,7 +2594,7 @@ Meta Graph monté : oui.
 | orders | market-autonomy | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | orders | notifications | static-code | 15 | **DECLARED_AND_OBSERVED** |
 | orders | payments | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
-| orders | platform-ops | static-code | 42 | **DECLARED_AND_OBSERVED** |
+| orders | platform-ops | static-code | 43 | **DECLARED_AND_OBSERVED** |
 | orders | purchasing | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | orders | refunds | static-code, data-read | 14 | **DECLARED_AND_OBSERVED** |
 | orders | shared-cart | static-code | 9 | **DECLARED_AND_OBSERVED** |

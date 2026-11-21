@@ -28,7 +28,7 @@
 | `hero-cart-proxy.css` | 22 | components.css |
 | `hero-ultra-mobile.css` | 98 | base.css |
 | `identity.css` | 346 | components.css |
-| `interactions.css` | 443 | components.css |
+| `interactions.css` | 445 | components.css |
 | `komerce.css` | 330 | components.css |
 | `layout.css` | 1249 | base.css |
 | `mobile-cart-convergence.css` | 109 | components.css |
@@ -69,8 +69,8 @@ Cascade réelle des bundles livrés :
 ```
  1. /boutique/css/dist/base.css?v=266
  2. /boutique/css/dist/critical-home.css?v=5
- 3. /boutique/css/dist/components.css?v=679
- 4. /boutique/css/dist/components.css?v=679
+ 3. /boutique/css/dist/components.css?v=680
+ 4. /boutique/css/dist/components.css?v=680
  5. /boutique/css/dist/desktop.css?v=157
 ```
 

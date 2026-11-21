@@ -223,6 +223,7 @@ export function fmtPrice(kmf) {
   return fmt(kmf, 'KMF');
 }
 
+
 /* ── PRODUIT ─────────────────────────────────────────────── */
 
 /**

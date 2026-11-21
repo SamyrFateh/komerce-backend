@@ -1,0 +1,301 @@
+/** @komerce-arch-lite
+ * @role g6-negative-scenarios
+ * @domain orders
+ * @layer test
+ * @owner backend-core
+ * @purpose Scénarios négatifs N07/N09/N04/N33 (G6-G4A), N23/N24 (G6-G4B), N11 à N16 (G6-G4C) : résolution multi-SKU en lecture seule, oracles PG en lecture seule, verdicts SCREEN_MISSING/PRODUCT_GAP.
+ * @db-read orders, order_items, product_skus, products, markets, product_market_price_drafts, product_market_exposure, local_stock, local_stock_allocations, cash_collections, cash_confirmation_controls, scans, parcels, parcel_items, purchase_lines, pickup_collect_failures, international_shipments, international_shipment_relay_receipts, incidents, purchase_orders, purchase_order_authorizations, supplier_execution_payments, manual_purchase_executions, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_box_bags, hub_box_effective_placements, international_shipment_hub_units
+ * @db-write none
+ * @impact-areas staging-only
+ */
+'use strict';
+const {isDeepStrictEqual}=require('node:util');
+const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29','N11','N12','N13','N14','N15','N16']);
+const isNegative=s=>NEGATIVE.includes(String(s));
+// Produit vendable (prix LOCAL_ACTIVE, exposition ENABLED, actif) servi par l'import (aucun stock local exposé), SKU actifs en stock.
+const MULTI_SKU_SQL=`
+ SELECT p.id,p.product_ref,d.amount,
+  (SELECT json_agg(json_build_object('sku_id',k.id,'variant_combo',k.variant_combo) ORDER BY k.id)
+     FROM product_skus k WHERE k.product_id=p.id AND k.is_active=TRUE AND k.stock>0 AND k.variant_combo IS NOT NULL) AS skus
+ FROM products p
+ JOIN markets m ON m.code=$1
+ JOIN product_market_price_drafts d ON d.product_id=p.id AND d.market_id=m.id AND d.status='LOCAL_ACTIVE'
+ JOIN product_market_exposure e ON e.product_id=p.id AND e.market_id=m.id AND e.commercial_exposure='ENABLED'
+ WHERE p.lifecycle_status='active' AND p.is_active=TRUE AND p.is_available=TRUE
+   AND NOT EXISTS (SELECT 1 FROM local_stock ls WHERE ls.product_id=p.id AND ls.market_id=m.id AND ls.commercial_exposure='ENABLED')
+ ORDER BY p.product_ref`;
+const canon=v=>JSON.stringify(v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,v[k]])):v);
+// Pur : deux SKU aux combinaisons distinctes (ou null).
+function pickTwoSkus(skus){
+ if(!Array.isArray(skus))return null;
+ const seen=new Set(),out=[];
+ for(const k of skus){
+  if(!k||!k.sku_id||!k.variant_combo||typeof k.variant_combo!=='object'||!Object.keys(k.variant_combo).length)continue;
+  const c=canon(k.variant_combo);
+  if(seen.has(c))continue;seen.add(c);out.push({sku_id:k.sku_id,variant_combo:k.variant_combo});
+  if(out.length===2)return out;
+ }
+ return null;
+}
+// Lecture seule : premier produit vendable à >= 2 SKU distincts ; sinon verdict PREREQ_MISSING_MULTI_SKU (jamais créé ici).
+async function readMultiSkuProducts(db,market){
+ const {rows}=await db.query(MULTI_SKU_SQL,[market]);
+ return rows.map(r=>({id:r.id,product_ref:r.product_ref,price:Number(r.amount),skus:pickTwoSkus(r.skus)})).filter(p=>p.skus);
+}
+async function resolveMultiSku(db,market){
+ const list=await readMultiSkuProducts(db,market);
+ if(!list.length)throw Error('PREREQ_MISSING_MULTI_SKU_'+market);
+ const p=list[0];
+ return {product_ref:p.product_ref,price:p.price,skus:p.skus};
+}
+const ok=(c,code)=>{if(!c)throw Error(code)};
+async function orderRows(db,orderId){
+ const {rows:[o]}=await db.query(`SELECT o.id,o.user_id,o.status::text AS status,o.payment_status::text AS payment_status,
+  o.display_total_amount,
+  (SELECT count(*)::int FROM order_items i WHERE i.order_id=o.id) AS lines,
+  (SELECT COALESCE(SUM(i.quantity),0)::int FROM order_items i WHERE i.order_id=o.id) AS qty,
+  (SELECT count(*)::int FROM cash_collections c WHERE c.order_id=o.id) AS cash_count,
+  (SELECT count(*)::int FROM cash_confirmation_controls c WHERE c.order_id=o.id) AS control_count,
+  (SELECT count(*)::int FROM local_stock_allocations a WHERE a.order_id=o.id) AS allocations,
+  (SELECT count(*)::int FROM local_stock_allocations a WHERE a.order_id=o.id AND a.consumed_at IS NOT NULL) AS consumed_allocations,
+  (SELECT count(*)::int FROM purchase_lines pl JOIN order_items i ON i.id=pl.order_item_id WHERE i.order_id=o.id) AS purchase_lines,
+  (SELECT count(*)::int FROM scans s WHERE s.order_id=o.id AND s.step='collected') AS collected_scans,
+  (SELECT count(*)::int FROM parcels p WHERE p.order_id=o.id) AS parcels
+  FROM orders o WHERE o.id=$1`,[orderId]);
+ ok(!!o,'G6_NEG_ORDER_NOT_FOUND');
+ return o;
+}
+// N07 : 1 commande au maximum, aucun double paiement, aucune double réservation.
+async function oracleN07(db,{orderId,buyerId}){
+ const {rows:[n]}=await db.query('SELECT count(*)::int AS n FROM orders WHERE user_id=$1',[buyerId]);
+ ok(n.n<=1,'G6_N07_PRODUCT_GAP_DOUBLE_ORDER_'+n.n);
+ const o=await orderRows(db,orderId);
+ ok(o.user_id===buyerId&&o.lines===1&&o.qty===1,'G6_N07_PRODUCT_GAP_ORDER_LINES_'+o.lines+'_'+o.qty);
+ ok(o.cash_count===0&&o.control_count===0&&o.payment_status!=='paid','G6_N07_PRODUCT_GAP_PAYMENT_EFFECT');
+ ok(o.allocations<=1&&o.purchase_lines<=1,'G6_N07_PRODUCT_GAP_DOUBLE_RESERVATION');
+ return {orders_for_buyer:n.n,lines:o.lines,qty:o.qty,cash_collections:o.cash_count,allocations:o.allocations,purchase_lines:o.purchase_lines};
+}
+// N33 : 2 SKU distincts, quantités et total exacts.
+async function oracleN33(db,{orderId,variants,market}){
+ const o=await orderRows(db,orderId);
+ const {rows:items}=await db.query('SELECT sku_id,quantity,variant_combo FROM order_items WHERE order_id=$1',[orderId]);
+ const want=variants.map(v=>v.sku_id).sort();
+ ok(items.length===2&&JSON.stringify(items.map(i=>i.sku_id).sort())===JSON.stringify(want),'G6_N33_PRODUCT_GAP_SKU_SET');
+ ok(items.every(i=>Number(i.quantity)===1)&&o.qty===2,'G6_N33_PRODUCT_GAP_QUANTITIES');
+ // Prix unitaire relu en PG (prix marché actif), jamais déduit du total de la commande.
+ const {rows:pr}=await db.query(`SELECT DISTINCT d.amount FROM order_items i JOIN product_market_price_drafts d ON d.product_id=i.product_id AND d.status='LOCAL_ACTIVE'
+  JOIN markets m ON m.id=d.market_id AND m.code=$2 WHERE i.order_id=$1`,[orderId,market]);
+ ok(pr.length===1,'G6_N33_PRODUCT_GAP_UNIT_PRICE_NOT_UNIQUE');
+ ok(Number(o.display_total_amount)===Number(pr[0].amount)*2,'G6_N33_PRODUCT_GAP_TOTAL');
+ return {sku_ids:want,qty:o.qty,unit_price:Number(pr[0].amount),total:Number(o.display_total_amount)};
+}
+// N09 : jamais collected, cash non encaissé, stock local non consommé, aucun Hub/transport.
+async function oracleN09(db,{orderId,assertNoHubOrTransport}){
+ const o=await orderRows(db,orderId);
+ const {rows:[pi]}=await db.query('SELECT COALESCE(SUM(pi.qty_collected),0)::int AS n FROM parcel_items pi JOIN parcels p ON p.id=pi.parcel_id WHERE p.order_id=$1',[orderId]);
+ ok(o.status!=='collected'&&o.collected_scans===0&&pi.n===0,'G6_N09_PRODUCT_GAP_COLLECTED');
+ ok(o.payment_status!=='paid'&&o.cash_count===0&&o.control_count===0,'G6_N09_PRODUCT_GAP_CASH_EFFECT');
+ ok(o.consumed_allocations===0,'G6_N09_PRODUCT_GAP_STOCK_CONSUMED');
+ if(assertNoHubOrTransport)await assertNoHubOrTransport(db,orderId,'any');
+ return {status:o.status,payment_status:o.payment_status,collected_scans:0,consumed_allocations:0,cash_collections:0};
+}
+// N23 : aucune remise malgré les tentatives ; compteur de sécurité de l'agent (pickup_collect_failures) lisible en PG.
+// MIN_FAILURES = seuil du verrouillage agent (services/pickup-agent-lockout.js : 5 échecs / 15 min).
+async function oracleN23(db,{orderId,agentId,minFailures,assertNoHubOrTransport}){
+ const o=await orderRows(db,orderId);
+ const {rows:[pi]}=await db.query('SELECT COALESCE(SUM(pi.qty_collected),0)::int AS n FROM parcel_items pi JOIN parcels p ON p.id=pi.parcel_id WHERE p.order_id=$1',[orderId]);
+ ok(o.status==='available'&&o.collected_scans===0&&pi.n===0,'G6_N23_PRODUCT_GAP_HANDOFF_DESPITE_BAD_CODES');
+ const {rows:[s]}=await db.query('SELECT (pickup_secret_hash IS NOT NULL) AS code_alive,pickup_secret_attempts AS attempts FROM orders WHERE id=$1',[orderId]);
+ ok(s.code_alive,'G6_N23_PRODUCT_GAP_CODE_CONSUMED');
+ const {rows:[f]}=await db.query(`SELECT count(*)::int AS n FROM pickup_collect_failures WHERE agent_id=$1
+   AND relais_id IS NOT DISTINCT FROM (SELECT relais_id FROM users WHERE id=$1) AND created_at>NOW()-interval '15 minutes'`,[agentId]);
+ ok(f.n>=minFailures,'G6_N23_PRODUCT_GAP_SECURITY_COUNTER_BELOW_'+f.n);
+ if(assertNoHubOrTransport)await assertNoHubOrTransport(db,orderId,'available');
+ return {status:o.status,collected_scans:0,qty_collected:0,security_failures_15min:f.n,order_attempts:s.attempts};
+}
+// N24 : une seule attestation de remise (un scan collected, un historique collected), quantités collectées exactes.
+async function oracleN24(db,{orderId,assertNoHubOrTransport}){
+ const o=await orderRows(db,orderId);
+ const {rows:[x]}=await db.query(`SELECT count(*)::int AS scans,count(*) FILTER (WHERE pickup_method='PICKUP_CODE')::int AS code_scans
+   FROM scans WHERE order_id=$1 AND step='collected'`,[orderId]);
+ ok(x.scans===1&&x.code_scans===1,'G6_N24_PRODUCT_GAP_HANDOFF_ATTESTATIONS_'+x.scans);
+ const {rows:[pi]}=await db.query('SELECT COALESCE(SUM(pi.qty_collected),0)::int AS got,COALESCE(SUM(pi.quantity),0)::int AS want FROM parcel_items pi JOIN parcels p ON p.id=pi.parcel_id WHERE p.order_id=$1',[orderId]);
+ ok(pi.got===pi.want&&pi.want>0,'G6_N24_PRODUCT_GAP_QTY_COLLECTED_'+pi.got+'_OF_'+pi.want);
+ ok(o.status==='collected','G6_N24_PRODUCT_GAP_NOT_COLLECTED');
+ if(assertNoHubOrTransport)await assertNoHubOrTransport(db,orderId,'collected');
+ return {status:o.status,collected_scans:x.scans,qty_collected:pi.got};
+}
+// N21/N22 : l'agent d'un autre relais n'a rien remis ni muté côté métier (commande disponible, code vivant, aucun scan collected).
+// Le compteur de tentatives de la commande peut monter (refus cross-relais journalisé) : il est rapporté, jamais écrit ici.
+async function oracleCrossRelay(db,{orderId,scenario,assertNoHubOrTransport}){
+ const o=await orderRows(db,orderId);
+ const {rows:[pi]}=await db.query('SELECT COALESCE(SUM(pi.qty_collected),0)::int AS n FROM parcel_items pi JOIN parcels p ON p.id=pi.parcel_id WHERE p.order_id=$1',[orderId]);
+ ok(o.status==='available'&&o.collected_scans===0&&pi.n===0,'G6_'+scenario+'_PRODUCT_GAP_FOREIGN_AGENT_HANDOFF');
+ const {rows:[s]}=await db.query('SELECT (pickup_secret_hash IS NOT NULL) AS code_alive,pickup_secret_attempts AS attempts FROM orders WHERE id=$1',[orderId]);
+ ok(s.code_alive,'G6_'+scenario+'_PRODUCT_GAP_CODE_CONSUMED');
+ if(assertNoHubOrTransport)await assertNoHubOrTransport(db,orderId,'available');
+ return {status:o.status,collected_scans:0,qty_collected:0,order_attempts:s.attempts};
+}
+// N20 : quantité réellement constatée, incident créé, aucune remise du manquant.
+async function oracleN20(db,{orderId}){
+ const o=await orderRows(db,orderId);
+ const {rows:r}=await db.query(`SELECT rr.expected_qty,rr.received_qty,rr.incident_id,i.id AS incident FROM international_shipment_relay_receipts rr
+   JOIN order_items oi ON oi.id=rr.order_item_id LEFT JOIN incidents i ON i.id=rr.incident_id WHERE oi.order_id=$1`,[orderId]);
+ ok(r.length>=1,'G6_N20_PRODUCT_GAP_NO_RECEIPT_ROW');
+ ok(r.every(x=>Number(x.received_qty)<Number(x.expected_qty)),'G6_N20_PRODUCT_GAP_RECEIVED_QTY_NOT_SHORT');
+ ok(r.every(x=>x.incident),'G6_N20_PRODUCT_GAP_NO_INCIDENT');
+ const {rows:[pi]}=await db.query(`SELECT COALESCE(SUM(pi.qty_collected),0)::int AS collected,COALESCE(SUM(pi.qty_received),0)::int AS received
+   FROM parcel_items pi JOIN parcels p ON p.id=pi.parcel_id WHERE p.order_id=$1`,[orderId]);
+ const got=r.reduce((n,x)=>n+Number(x.received_qty),0);
+ ok(pi.received===got,'G6_N20_PRODUCT_GAP_PARCEL_RECEIVED_'+pi.received+'_VS_'+got);
+ ok(o.status!=='collected'&&o.collected_scans===0&&pi.collected===0,'G6_N20_PRODUCT_GAP_MISSING_QTY_HANDED_OVER');
+ return {receipts:r.length,received_qty:got,expected_qty:r.reduce((n,x)=>n+Number(x.expected_qty),0),incidents:r.length,qty_collected:0,status:o.status};
+}
+// N11, N12 (G6-G4C) : PO de la commande, autorisations d'engagement et de paiement, effets fournisseur et Hub, en lecture seule.
+async function importPo(db,orderId){
+ const {rows}=await db.query(`SELECT DISTINCT po.id,po.status::text AS status,po.sent_at,po.sent_channel,po.supplier_order_id
+   FROM purchase_orders po JOIN purchase_lines pl ON pl.purchase_order_id=po.id JOIN order_items oi ON oi.id=pl.order_item_id
+   WHERE oi.order_id=$1 AND pl.cancelled_at IS NULL`,[orderId]);
+ ok(rows.length===1,'G6_NEG_PO_NOT_UNIQUE_'+rows.length);
+ return rows[0];
+}
+async function poEffects(db,poId,orderId){
+ const {rows:[x]}=await db.query(`SELECT
+  (SELECT count(*)::int FROM purchase_order_authorizations a WHERE a.purchase_order_id=$1 AND a.authorization_type='purchase_commitment') AS commitments,
+  (SELECT count(*)::int FROM purchase_order_authorizations a WHERE a.purchase_order_id=$1 AND a.authorization_type='supplier_payment') AS payment_authorizations,
+  (SELECT count(*)::int FROM supplier_execution_payments p WHERE p.purchase_order_id=$1) AS supplier_payments,
+  (SELECT count(*)::int FROM manual_purchase_executions e WHERE e.purchase_order_id=$1) AS manual_executions,
+  (SELECT count(*)::int FROM purchase_lines pl WHERE pl.purchase_order_id=$1 AND pl.confirmed_quantity IS NOT NULL) AS confirmed_lines,
+  (SELECT count(*)::int FROM hub_purchase_allocations h WHERE h.order_id=$2) AS hub_allocations,
+  (SELECT count(*)::int FROM hub_physical_units u WHERE u.order_id=$2) AS hub_units,
+  (SELECT (SELECT payment_status::text FROM orders WHERE id=$2)) AS payment_status`,[poId,orderId]);
+ return x;
+}
+// N11 : PO toujours en brouillon, rien d'envoyé ni de confirmé, aucune autorisation, aucun effet Hub.
+async function oracleN11(db,{orderId,poId}){
+ const po=await importPo(db,orderId);
+ ok(po.id===poId,'G6_N11_PRODUCT_GAP_PO_CHANGED');
+ ok(po.status==='draft'&&!po.sent_at&&!po.sent_channel&&!po.supplier_order_id,'G6_N11_PRODUCT_GAP_PO_ADVANCED_'+po.status);
+ const x=await poEffects(db,poId,orderId);
+ ok(x.commitments===0&&x.payment_authorizations===0,'G6_N11_PRODUCT_GAP_ENGAGEMENT_RECORDED');
+ ok(x.manual_executions===0&&x.confirmed_lines===0&&x.supplier_payments===0,'G6_N11_PRODUCT_GAP_SUPPLIER_EFFECT');
+ ok(x.hub_allocations===0&&x.hub_units===0,'G6_N11_PRODUCT_GAP_HUB_EFFECT');
+ return {po_status:po.status,commitments:0,payment_authorizations:0,manual_executions:0,supplier_payments:0,hub_units:0};
+}
+// N12 : engagement unique conservé (même pièce), aucune autorisation de paiement ni paiement fournisseur, rien reçu.
+async function oracleN12(db,{orderId,poId,commitmentProof}){
+ const po=await importPo(db,orderId);
+ ok(po.id===poId&&po.status==='confirmed','G6_N12_PRODUCT_GAP_PO_STATE_'+po.status);
+ const x=await poEffects(db,poId,orderId);
+ ok(x.payment_authorizations===0,'G6_N12_PRODUCT_GAP_PAYMENT_AUTHORIZED_BY_SINGLE_VALIDATOR');
+ ok(x.supplier_payments===0,'G6_N12_PRODUCT_GAP_SUPPLIER_PAYMENT_EXECUTED');
+ ok(x.commitments===1,'G6_N12_PRODUCT_GAP_COMMITMENT_COUNT_'+x.commitments);
+ const {rows:[c]}=await db.query("SELECT proof_ref,decided_by FROM purchase_order_authorizations WHERE purchase_order_id=$1 AND authorization_type='purchase_commitment'",[poId]);
+ ok(c&&c.proof_ref===commitmentProof,'G6_N12_PRODUCT_GAP_COMMITMENT_PROOF_CHANGED');
+ ok(x.hub_units===0&&x.payment_status==='paid','G6_N12_PRODUCT_GAP_UNEXPECTED_EFFECT');
+ return {po_status:po.status,commitments:1,payment_authorizations:0,supplier_payments:0,commitment_proof:c.proof_ref};
+}
+// N13 : confirmation fournisseur en rupture. Quantité confirmée exacte, reliquat ouvert (hors PO) égal au manque,
+// rien de reçu ni de payé. Total (confirmé 0) : PO annulée ; partiel : PO confirmée.
+async function oracleN13(db,{orderId,poId,ordered,typed}){
+ const po=await importPoAny(db,orderId,poId);
+ ok(po.status===(typed===0?'cancelled':'confirmed'),'G6_N13_PRODUCT_GAP_PO_STATE_'+po.status);
+ const {rows:[l]}=await db.query(`SELECT pl.id,pl.quantity,pl.confirmed_quantity,purchase_line_received_quantity(pl.id)::int AS received
+   FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id WHERE oi.order_id=$1 AND pl.purchase_order_id=$2 AND pl.parent_line_id IS NULL`,[orderId,poId]);
+ ok(l&&Number(l.quantity)===ordered,'G6_N13_PRODUCT_GAP_LINE_QUANTITY');
+ ok(Number(l.confirmed_quantity)===typed,'G6_N13_PRODUCT_GAP_CONFIRMED_QTY_'+l.confirmed_quantity);
+ const {rows:r}=await db.query('SELECT quantity,purchase_order_id,cancelled_at FROM purchase_lines WHERE parent_line_id=$1',[l.id]);
+ ok(r.length===1&&Number(r[0].quantity)===ordered-typed&&!r[0].purchase_order_id&&!r[0].cancelled_at,'G6_N13_PRODUCT_GAP_REMNANT_'+r.length);
+ const x=await poEffects(db,poId,orderId);
+ ok(l.received===0&&x.hub_units===0,'G6_N13_PRODUCT_GAP_FICTIVE_RECEIPT');
+ ok(x.supplier_payments===0&&x.payment_authorizations===0,'G6_N13_PRODUCT_GAP_PAYMENT_EFFECT');
+ const {rows:[a]}=await db.query('SELECT COALESCE(SUM(quantity),0)::int AS n FROM hub_purchase_allocations WHERE order_id=$1 AND purchase_order_id=$2',[orderId,poId]);
+ ok(a.n<=typed,'G6_N13_PRODUCT_GAP_ALLOCATION_ABOVE_CONFIRMED');
+ return {po_status:po.status,ordered,confirmed:typed,remnant_quantity:ordered-typed,received:0,hub_units:0,allocated:a.n};
+}
+async function importPoAny(db,orderId,poId){
+ const {rows}=await db.query(`SELECT po.id,po.status::text AS status FROM purchase_orders po WHERE po.id=$1 AND EXISTS
+   (SELECT 1 FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id WHERE pl.purchase_order_id=po.id AND oi.order_id=$2)`,[poId,orderId]);
+ ok(rows.length===1,'G6_NEG_PO_NOT_FOUND');
+ return rows[0];
+}
+// N14 : une seule réception exacte (quantité reçue = commandée), toutes les quantités des placements strictement positives.
+async function oracleN14(db,{orderId,poId,ordered}){
+ const {rows:l}=await db.query(`SELECT pl.quantity,purchase_line_received_quantity(pl.id)::int AS received FROM purchase_lines pl
+   WHERE pl.purchase_order_id=$1 AND pl.cancelled_at IS NULL`,[poId]);
+ ok(l.length===1&&Number(l[0].quantity)===ordered,'G6_N14_PRODUCT_GAP_LINE_QUANTITY');
+ ok(l[0].received>=0,'G6_N14_PRODUCT_GAP_NEGATIVE_RECEIVED');
+ ok(l[0].received<=ordered,'G6_N14_PRODUCT_GAP_EXCESS_RECEIVED_'+l[0].received);
+ ok(l[0].received===ordered,'G6_N14_PRODUCT_GAP_RECEIVED_NOT_EXACT_'+l[0].received);
+ const {rows:p}=await db.query(`SELECT p.quantity FROM hub_physical_unit_placements p JOIN hub_purchase_allocations a ON a.id=p.allocation_id
+   WHERE a.order_id=$1 AND a.purchase_order_id=$2 AND p.operation_type='RECEIVE' AND p.removed_at IS NULL`,[orderId,poId]);
+ ok(p.length===1&&p.every(x=>Number(x.quantity)>0)&&p.reduce((n,x)=>n+Number(x.quantity),0)===ordered,'G6_N14_PRODUCT_GAP_PLACEMENTS_'+p.length);
+ const x=await poEffects(db,poId,orderId);
+ ok(x.supplier_payments===0&&x.payment_authorizations===0,'G6_N14_PRODUCT_GAP_PAYMENT_EFFECT');
+ return {ordered,received:l[0].received,placements:p.length,supplier_payments:0};
+}
+// N15 : ni sac fermé avec une ligne manquante, ni KOM-BOX remplie ou fermée sans ce sac, ni expédition avec ce carton.
+async function oracleN15(db,{orderId,boxRef,shipmentRef}){
+ const {rows:bags}=await db.query("SELECT id,state::text AS state FROM hub_physical_units WHERE order_id=$1 AND unit_type='HANDLING_UNIT'",[orderId]);
+ ok(bags.length===1,'G6_N15_PRODUCT_GAP_BAG_COUNT_'+bags.length);
+ ok(bags[0].state!=='PACKED'&&bags[0].state!=='DISPATCHED','G6_N15_PRODUCT_GAP_BAG_CLOSED_WITH_MISSING_LINE');
+ const {rows:[d]}=await db.query('SELECT count(*)::int AS n FROM hub_physical_unit_placements WHERE physical_unit_id=$1 AND removed_at IS NULL',[bags[0].id]);
+ ok(d.n===0,'G6_N15_PRODUCT_GAP_BAG_CONTENT_APPEARED');
+ const {rows:[l]}=await db.query('SELECT count(*)::int AS n FROM hub_box_bags WHERE bag_unit_id=$1',[bags[0].id]);
+ ok(l.n===0,'G6_N15_PRODUCT_GAP_INCOMPLETE_BAG_IN_BOX');
+ const {rows:box}=await db.query("SELECT id,state::text AS state FROM hub_physical_units WHERE reference=$1",[boxRef]);
+ ok(box.length<=1&&box.every(b=>!['PACKED','DISPATCHED'].includes(b.state)),'G6_N15_PRODUCT_GAP_EMPTY_BOX_CLOSED');
+ const {rows:[s]}=await db.query(`SELECT
+  (SELECT count(*)::int FROM international_shipments sh WHERE sh.reference=$1) AS shipments,
+  (SELECT count(*)::int FROM international_shipment_hub_units h JOIN hub_physical_units u ON u.id=h.physical_unit_id WHERE u.reference=$2) AS links,
+  (SELECT count(*)::int FROM parcels p WHERE p.order_id=$3 AND (p.shipped_at IS NOT NULL OR p.in_transit_at IS NOT NULL)) AS departed`,[shipmentRef,boxRef,orderId]);
+ ok(s.shipments===0&&s.links===0&&s.departed===0,'G6_N15_PRODUCT_GAP_NON_CONFORMING_DEPARTURE');
+ return {bag_state:bags[0].state,bag_content:0,box_state:box[0]?box[0].state:null,shipments:0,departed_parcels:0};
+}
+// N16 : instantané PG (lecture seule) du carton, de sa composition, de l'expédition et des colis ; comparé avant et après les tentatives.
+async function snapN16(db,{orderId,boxRef,shipmentRef}){
+ const {rows:box}=await db.query('SELECT id,state::text AS state FROM hub_physical_units WHERE reference=$1',[boxRef]);
+ ok(box.length===1,'G6_N16_PRODUCT_GAP_BOX_NOT_UNIQUE_'+box.length);
+ const {rows:[c]}=await db.query(`SELECT
+  (SELECT count(*)::int FROM hub_box_bags l WHERE l.box_unit_id=$1) AS links,
+  (SELECT count(*)::int FROM hub_box_effective_placements p WHERE p.box_unit_id=$1) AS effective,
+  (SELECT COALESCE(SUM(p.quantity),0)::int FROM hub_box_effective_placements p WHERE p.box_unit_id=$1) AS qty,
+  (SELECT count(*)::int FROM hub_physical_unit_placements p JOIN hub_purchase_allocations a ON a.id=p.allocation_id WHERE a.order_id=$2) AS placements,
+  (SELECT count(*)::int FROM hub_physical_unit_placements p JOIN hub_purchase_allocations a ON a.id=p.allocation_id WHERE a.order_id=$2 AND p.removed_at IS NOT NULL) AS removed,
+  (SELECT count(*)::int FROM hub_custody_events e WHERE e.physical_unit_id=$1) AS box_custody_events,
+  (SELECT count(*)::int FROM international_shipment_hub_units h WHERE h.physical_unit_id=$1) AS shipment_links`,[box[0].id,orderId]);
+ const {rows:sh}=await db.query('SELECT stage,forwarder_name,transport_mode FROM international_shipments WHERE reference=$1',[shipmentRef]);
+ const {rows:[p]}=await db.query(`SELECT string_agg(DISTINCT p.status::text,',') AS statuses,COALESCE(SUM(pi.qty_shipped),0)::int AS shipped
+  FROM parcels p JOIN parcel_items pi ON pi.parcel_id=p.id WHERE p.order_id=$1`,[orderId]);
+ return {box_state:box[0].state,...c,shipment_stage:sh[0]?sh[0].stage:null,forwarder:sh[0]?sh[0].forwarder_name:null,transport_mode:sh[0]?sh[0].transport_mode:null,
+  parcel_statuses:p.statuses,parcel_shipped:p.shipped};
+}
+// N16 : carton remis (DISPATCHED puis remis au transitaire) et composition inchangée par les tentatives de modification.
+async function oracleN16(db,{orderId,boxRef,shipmentRef,baseline}){
+ const s=await snapN16(db,{orderId,boxRef,shipmentRef});
+ ok(s.box_state==='DISPATCHED'&&s.shipment_stage==='handed_over'&&!!s.forwarder,'G6_N16_PRODUCT_GAP_HANDOVER_STATE_'+s.box_state+'_'+s.shipment_stage);
+ ok(baseline&&isDeepStrictEqual(s,baseline),'G6_N16_PRODUCT_GAP_COMPOSITION_CHANGED_AFTER_HANDOVER');
+ return s;
+}
+// N04 : aucune commande, aucun stock négatif, aucune réserve fictive.
+async function oracleN04(db,{buyerId,productId,market,availableBefore}){
+ const {rows:[n]}=await db.query('SELECT count(*)::int AS n FROM orders WHERE user_id=$1',[buyerId]);
+ ok(n.n===0,'G6_N04_PRODUCT_GAP_ORDER_EXISTS_'+n.n);
+ const {rows:[a]}=await db.query(`SELECT count(*)::int AS n FROM local_stock_allocations a JOIN orders o ON o.id=a.order_id WHERE o.user_id=$1`,[buyerId]);
+ ok(a.n===0,'G6_N04_PRODUCT_GAP_FICTIVE_RESERVATION');
+ const {rows:[s]}=await db.query(`SELECT COALESCE(MIN(ls.qty_physical),0)::int AS min_physical,
+   COALESCE(SUM(ls.qty_physical-COALESCE((SELECT SUM(x.quantity) FROM local_stock_allocations x WHERE x.local_stock_id=ls.id AND x.consumed_at IS NULL AND x.released_at IS NULL),0)),0)::int AS available
+   FROM local_stock ls JOIN markets m ON m.id=ls.market_id AND m.code=$2 WHERE ls.product_id=$1 AND ls.location='KM_MAIN'`,[productId,market]);
+ ok(s.min_physical>=0&&s.available>=0,'G6_N04_PRODUCT_GAP_NEGATIVE_STOCK');
+ ok(s.available===availableBefore,'G6_N04_PRODUCT_GAP_AVAILABLE_CHANGED');
+ return {orders:0,allocations:0,available:s.available};
+}
+// Pur : verdict explicite pour un écran manquant ou un défaut produit (jamais un contournement).
+function classifyNegative(scenario,message){
+ const m=String(message||'');
+ if(/PREREQ_MISSING_MULTI_SKU/.test(m))return 'PREREQ_MISSING_MULTI_SKU';
+ if(/PREREQ_MISSING_SECOND_RELAY/.test(m))return 'PREREQ_MISSING_SECOND_RELAY';
+ const g=new RegExp('G6_'+scenario+'_(SCREEN_MISSING|PRODUCT_GAP)').exec(m);
+ return g?g[1]:null;
+}
+module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,oracleN15,oracleN16,snapN16,importPo,classifyNegative};

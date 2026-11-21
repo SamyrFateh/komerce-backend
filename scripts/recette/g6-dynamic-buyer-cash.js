@@ -13,6 +13,8 @@ const fs=require('node:fs'),path=require('node:path');
 const {SCENARIO_STAGE_IDS,scenarioProfile,nextStageId}=require('./canonical/stage-registry');
 const {bootstrapFreshScenario}=require('./canonical/fresh-buyer-bootstrap');
 const {createRealBuyerCashAdapters}=require('./canonical/real-buyer-cash-adapters');
+const {isNegative,classifyNegative}=require('./canonical/negative-scenarios');
+const {runNegativeScenario}=require('./canonical/negative-runner');
 const db=require('../../db');
 const ROOT=path.resolve(__dirname,'../..');
 const OUT=path.join(ROOT,'test-results/g6-dynamic-buyer-cash/report.json');
@@ -29,6 +31,13 @@ async function main({env=process.env}={}){
    env.GITHUB_REPOSITORY!=='SamyrFateh/komerce-backend'||env.KOMERCE_ENV!=='staging')
    throw Error('G6_DYNAMIC_OWNER_STAGING_GUARD');
   const adapters=createRealBuyerCashAdapters({db,env});
+  // Scénarios négatifs N (G6-G4A) : Golden jusqu'au point d'arrêt, geste négatif, oracle PG lecture seule.
+  if(isNegative(scenario)){
+   const n=await runNegativeScenario({scenario,env,db,adapters});
+   state.order_id=n.order_id||null;state.reference=n.reference||null;state.stages=n.stages;
+   state.verdict=n.verdict;state.next_stage='CLEANUP_g6-cleanup-recette';
+   save();return state;
+  }
   const toStage=env.G6_DYNAMIC_TO_STAGE||'RELAY_CASH';
   if(!SCENARIO_STAGE_IDS[scenario].filter(x=>x!=='BUYER').includes(toStage))
    throw Error('G6_DYNAMIC_UNMIGRATED_TO_STAGE');
@@ -42,6 +51,14 @@ async function main({env=process.env}={}){
   return state;
  }catch(err){
   state.verdict='BLOCKED';state.error=require("./canonical/observability").fullError(err);
+  // M03 : un écran ou un produit manquant est un verdict explicite, jamais un contournement.
+  const msg=String(err&&err.message||'');
+  const gap=/G6_M03_(SCREEN_MISSING|PRODUCT_GAP)/.exec(msg)||(/G6_M03_ORDER_COLLECTED_BEFORE_IMPORT_DELIVERY/.test(msg)?[null,'PRODUCT_GAP']:null);
+  if(state.scenario_id==='M03'&&gap){state.verdict=gap[1];state.detail=msg.slice(0,600)}
+  // N : écran manquant, défaut produit ou prérequis absent = verdict explicite, jamais un contournement.
+  const ng=isNegative(state.scenario_id)?classifyNegative(state.scenario_id,msg):null;
+  if(ng){state.verdict=ng==='PREREQ_MISSING_MULTI_SKU'?ng:ng+'_'+state.scenario_id;state.detail=msg.slice(0,600)}
+  try{const b=JSON.parse(fs.readFileSync(path.join(ROOT,'test-results/g6-p2-buyer-order/report.json'),'utf8'));state.reference=state.reference||b.order?.reference||null}catch(_){}
   save();throw err;
  }finally{await db.pool.end();}
 }

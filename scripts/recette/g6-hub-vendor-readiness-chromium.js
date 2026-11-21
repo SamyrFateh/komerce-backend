@@ -73,7 +73,7 @@ async function main(){
   check(env.GITHUB_EVENT_NAME==='issues'&&env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER&&
    env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.NODE_ENV==='test'&&
    env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&
-   env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET===MK.code&&
+   ['M01','M03'].includes(env.G6_CANONICAL_SCENARIO)&&env.G6_TARGET_MARKET===MK.code&&
    env.G6_CANONICAL_PHASE==='HUB_VENDOR_READINESS'&&
    SHA.test(env.E2E_EXPECTED_DEPLOY_SHA||'')&&UUID.test(env.G6_CANONICAL_PO_ID||'')&&
    UUID.test(env.G6_CANONICAL_ORDER_ID||'')&&(env.G6_CANONICAL_ORDER_REFERENCE==='KL1WGP6'||

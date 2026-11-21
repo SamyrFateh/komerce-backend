@@ -9,7 +9,7 @@
  * @impact-areas orders, purchasing, staging-only
  */
 'use strict';
-const fs=require('node:fs'),path=require('node:path');
+const fs=require('node:fs'),path=require('node:path'),{spawnSync}=require('node:child_process');
 const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
 const {observe,fullError,startTraceAfterAuth}=require('./canonical/observability');
@@ -35,6 +35,22 @@ async function inventory(){
      WHERE o.simulation_scope=$1 AND o.status::text NOT IN ('collected','cancelled')
      ORDER BY m.code,o.reference`,[SCOPE]);
   const ids=orders.map(o=>o.id);
+  // Faits de classe D (lecture seule) : paiement, relais, code, Hub, KOM-BOX, écart de réception.
+  const {rows:factRows}=ids.length?await c.query(
+   `SELECT o.id,o.payment_status::text AS payment_status,o.relais_id,o.pickup_secret_hash IS NOT NULL AS has_secret,
+           o.pickup_secret_blocked_until AS secret_blocked_until,
+           (SELECT COUNT(*)::int FROM hub_physical_units u WHERE u.order_id=o.id
+               OR u.id IN (SELECT hp.physical_unit_id FROM hub_physical_unit_placements hp
+                             JOIN hub_purchase_allocations a ON a.id=hp.allocation_id
+                            WHERE a.order_id=o.id AND hp.removed_at IS NULL)) AS hub_unit_count,
+           EXISTS(SELECT 1 FROM hub_box_bags b WHERE b.bag_unit_id IN (SELECT u.id FROM hub_physical_units u WHERE u.order_id=o.id)
+               OR b.box_unit_id IN (SELECT u.id FROM hub_physical_units u WHERE u.order_id=o.id)
+               OR b.bag_unit_id IN (SELECT hp.physical_unit_id FROM hub_physical_unit_placements hp
+                                      JOIN hub_purchase_allocations a ON a.id=hp.allocation_id WHERE a.order_id=o.id)) AS box_linked,
+           EXISTS(SELECT 1 FROM international_shipment_relay_receipts r JOIN order_items oi ON oi.id=r.order_item_id
+                   WHERE oi.order_id=o.id AND r.incident_id IS NOT NULL AND r.received_qty<r.expected_qty) AS open_discrepancy
+      FROM orders o WHERE o.id=ANY($1::uuid[]) AND o.simulation_scope=$2`,[ids,SCOPE]):{rows:[]};
+  const facts=new Map(factRows.map(r=>[r.id,r]));
   const {rows:lines}=ids.length?await c.query(
    `SELECT oi.order_id,pl.id AS line_id,pl.purchase_order_id AS po_id,po.status::text AS po_status
       FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id
@@ -75,7 +91,7 @@ async function inventory(){
   // Même lecture que utils/rules.js (getRule) : business_rules.value est un JSONB { value: ... }.
   const v=rule&&rule.value&&typeof rule.value==='object'?rule.value.value:undefined;
   if(typeof v==='string'&&v)cutoff=v;
-  const entries=orders.map(o=>({order:o,po_peers,
+  const entries=orders.map(o=>({order:o,po_peers,facts:facts.get(o.id)||null,
    lines:lines.filter(l=>l.order_id===o.id).map(l=>({line_id:l.line_id,po_id:l.po_id,po_status:l.po_status}))}));
   const byPo=new Map();
   for(const p of poRows){
@@ -97,10 +113,10 @@ async function readState(step){
  if(step.action==='cancel_line')return (await q('SELECT cancelled_at IS NOT NULL AS s FROM purchase_lines WHERE id=$1',[step.line_id]))?.s;
  return (await q('SELECT status::text AS s FROM orders WHERE id=$1 AND simulation_scope=$2',[step.order_id,SCOPE]))?.s;
 }
-const EXPECTED={discard_po:'cancelled',cancel_g6_po:'cancelled',cancel_line:true,cancel_order:'cancelled',close_hub_order:'cancelled'};
+const EXPECTED={handover_relay:'collected',discard_po:'cancelled',cancel_g6_po:'cancelled',cancel_line:true,cancel_order:'cancelled',close_hub_order:'cancelled'};
 const summarize=plan=>plan.items.map(i=>({reference:i.reference,market:i.market,class:i.class,order_status:i.order_status,
  verdict:i.verdict,reason:i.reason,po_ids:i.po_ids,commandes_du_po:i.po_peers,
- gestes:i.gestures.map(g=>g.action),residual:i.residual||null}));
+ gestes:i.gestures.map(g=>g.action),d_class:i.d_class||null,proposal:i.proposal||null,missing:i.missing,residual:i.residual||null}));
 
 async function login(browser,steps){
  const email=env.E2E_ADMIN_EMAIL,password=env.E2E_ADMIN_PASSWORD;
@@ -154,7 +170,32 @@ async function login(browser,steps){
  await startTraceAfterAuth(ctx);
  return {ctx,page,blocked,state};
 }
+const CHILD=path.join(__dirname,'g6-cleanup-handover-chromium.js');
+// Noms seuls : jamais de valeur. Le workflow cleanup doit les fournir (E2E_AGENT_RELAIS_* = comptoir Remises).
+const CHILD_REQUIRED_ENV=Object.freeze(['DATABASE_URL','E2E_ADMIN_EMAIL','E2E_ADMIN_PASSWORD','E2E_AGENT_RELAIS_EMAIL',
+ 'E2E_AGENT_RELAIS_PASSWORD','E2E_EXPECTED_DEPLOY_SHA','STAGING_BASE_URL','EXPECTED_RAILWAY_ENVIRONMENT',
+ 'GITHUB_EVENT_NAME','GITHUB_ACTOR','GITHUB_REPOSITORY_OWNER','NODE_ENV','KOMERCE_ENV','KOMERCE_TARGET_ENV']);
+function childEnv(step,base=env){
+ const missing=CHILD_REQUIRED_ENV.filter(k=>!base[k]);
+ if(missing.length)throw Error('G6_CLEANUP_HANDOVER_ENV_MISSING_'+missing.join(','));
+ return {...base,G6_TARGET_MARKET:step.market,G6_CANONICAL_ORDER_ID:step.order_id,G6_CANONICAL_ORDER_REFERENCE:step.reference,
+  G6_CLEANUP_RELAIS_ID:step.relais_id,G6_DYNAMIC_FRESH_ORDER:'1',G6_CANONICAL_SCENARIO:'M02',
+  G6_CANONICAL_PHASE:'LOCAL_CLIENT_PICKUP',G6_CLEANUP_DB_FINGERPRINT:base.G6_CLEANUP_DB_FINGERPRINT||''};
+}
+// Remise comptoir : un process enfant par commande (modules de remise liés au marché par l'environnement).
+// Le code de retrait est lu sur l'écran client dans l'enfant, jamais affiché ni écrit.
+function handover(step){
+ const r=spawnSync(process.execPath,[CHILD],{encoding:'utf8',timeout:20*60*1000,env:childEnv(step)});
+ let out=null;try{out=JSON.parse((r.stdout||'').trim().split('\n').pop());}catch(_){}
+ if(r.status!==0||!out||out.verdict!=='HANDOVER_DONE'){
+  const detail=' | child_error='+fullError(Error(String((out&&(out.error||out.verdict))||(r.stderr||'').slice(-600)||'NO_CHILD_OUTPUT'))).slice(0,800)+
+   ' | child_status='+r.status+' | artifacts=test-results/g6-cleanup-handover';
+  throw Object.assign(Error('G6_CLEANUP_HANDOVER_'+(out&&out.verdict||'FAILED')+detail),{verdict:out&&out.verdict==='BLOCKED_N23_LOCK'?'BLOCKED':undefined});
+ }
+ return {response:{status:200,via:'relay-remises-screen'}};
+}
 async function perform(actor,step){
+ if(step.action==='handover_relay')return handover(step);
  const {page,state}=actor,reason='Nettoyage recette G6 · '+step.reference;
  if(step.action==='discard_po'){
   await humanGoto(page,'/admin/workspaces/purchasing',{waitUntil:'domcontentloaded'});
@@ -219,7 +260,8 @@ async function main(){
   report.planned_steps=plan.steps.length;save();
   if(mode==='plan'){report.verdict='PLAN_READY_NO_WRITE';save();return;}
   browser=await require('playwright').chromium.launch({headless:true});OBS=observe(browser,OUT);
-  const actor=await login(browser,plan.steps);
+  process.env.G6_CLEANUP_DB_FINGERPRINT=report.db_fingerprint;
+  const actor=await login(browser,plan.steps.filter(x=>x.action!=='handover_relay'));
   const gate=new CadenceGate(),failed=new Set();let stopped=false;
   try{
    for(const step of plan.steps){
@@ -227,7 +269,7 @@ async function main(){
     assertGestureAllowed(step,plan);
     for(;;){try{gate.reserve('order');break;}catch(_){await sleep(1000);}}
     actor.state.httpFailures=[];actor.state.pendingHttpErrors=[];
-    const rec={action:step.action,reference:step.reference,class:step.class,po_id:step.po_id||null,line_id:step.line_id||null};
+    const rec={action:step.action,reference:step.reference,class:step.class,market:step.market||null,po_id:step.po_id||null,line_id:step.line_id||null};
     try{
      const r=await perform(actor,step);
      gate.assertResponse(actor.state.limited?429:200);
@@ -257,4 +299,4 @@ async function main(){
  finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify({mode:report.mode,verdict:report.verdict,planned:report.planned_steps,remaining:report.remaining_count}));}
 }
 if(require.main===module)main();
-module.exports={inventory,classify};
+module.exports={inventory,classify,childEnv,CHILD_REQUIRED_ENV};

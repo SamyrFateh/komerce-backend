@@ -71,3 +71,23 @@ Règles : seul `simulation_scope='G6-BUYER'` est touché ; un PO qui contient un
 Lancer `plan`, relire le rapport, puis `apply` sur GO du propriétaire. **Recommandation : l’enchaîner en fin de campagne Golden** pour laisser le staging propre.
 
 **Attention :** les clôtures physiques hors Hub ne sont jamais forcées. Elles restent en `REFUSED` avec preuve et motif pour revue humaine. Aucun SQL d’effacement de lien `hub_box_bags` n’est permis.
+
+## Classe D, sous-classes et gestes (G6-CLEANUP-D)
+
+Le nettoyage du 21/11 laisse 22 commandes D `ENCORE_OUVERTE_APRES_GESTES` : la clôture Hub refuse les commandes déjà au relais (colis sorti du Hub, aucune unité Hub) ou liées à une KOM-BOX. Le plan classe donc chaque D par état réel (PG, lecture seule) :
+
+| Sous-classe | Critère | Geste écran |
+|---|---|---|
+| `D_PAID_AVAILABLE` | `available`, payée, relais et code présents, aucune unité Hub | **Remise comptoir** (`handover_relay`) : l’agent dédié est rattaché au relais de la commande par l’écran Réseau, on attend la fin du verrou N23 (jamais de contournement), le code est lu sur l’écran client (régénération client, comme M02), saisi au comptoir **Remises**. Relecture PG : `collected`. |
+| `D_DISCREPANCY` | idem avec écart de réception N20 (incident, quantité reçue < attendue) | Même remise (quantité constatée). L’incident reste ouvert : `SCREEN_MISSING_INCIDENT_RESOLUTION` (aucun écran de résolution d’incident ; plus petit écran : bouton « Résoudre » sur l’incident ouvert du marché, avec motif). |
+| `D_BOX_FROZEN` | un sac ou une KOM-BOX lié(e) dans `hub_box_bags` | `SCREEN_MISSING_KOM_BOX_FROZEN`. Plus petit écran : Order 360 admin « Solder la recette (KOM-BOX figée) », G6-BUYER cash, motif obligatoire, événement de clôture audité, sans jamais effacer `hub_box_bags`. |
+| `D_OTHER` | disponible mais impayée, sans relais ou sans code | `SCREEN_MISSING_D_AVAILABLE_NOT_HANDOVERABLE`. |
+| `D_HUB_GOODS` | marchandise encore au Hub | Clôture Hub existante. |
+
+Aucun geste « retour » ni « annulation avec remboursement cash » n’existe pour une commande `available` : l’annulation Order 360 est bloquée par la coupure serveur. La remise est donc le seul geste légitime.
+
+Garde-fous : `G6-BUYER` seulement, PO mixte refusé avant toute classification D, une mutation par commande (un processus enfant, aucune seconde tentative), relecture PG `collected`, code de retrait jamais affiché ni écrit. Les remises s’exécutent en mode `apply` ; `plan` expose `d_class`, `proposal` et `missing`.
+
+## Recommandation : chaque scénario négatif se clôt lui-même
+
+Les 22 orphelines viennent de N20, N21, N22, N23 et N29, qui s’arrêtent sur une commande payée « disponible ». Proposition : ajouter à la fin de chaque scénario négatif une étape de clôture (remise au comptoir par le code client, ou annulation par un écran quand il existe), exécutée même en cas d’échec de l’oracle, une fois le verrou N23 levé. À défaut, le scénario laisse sa commande dans une classe que le nettoyage sait clore (A, B, C, ou D payée disponible). Éviter de produire des liens KOM-BOX sur des commandes de scénario négatif : ils sont immuables et non clôturables par écran.

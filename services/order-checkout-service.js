@@ -251,7 +251,7 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
     }
 
     const { rows: [checkoutMarket] } = await client.query(
-      'SELECT lifecycle_status, code, currency FROM markets WHERE id=$1::uuid LIMIT 1',
+      'SELECT lifecycle_status, code, currency, minor_unit FROM markets WHERE id=$1::uuid LIMIT 1',
       [relais.market_id]
     );
     if (!checkoutMarket || checkoutMarket.lifecycle_status !== 'ACTIVE') {
@@ -461,6 +461,24 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
       }
     }
 
+    // Amount in the market's own currency, calculated from LOCAL_ACTIVE
+    // unit decisions BEFORE any lossy rounding through the KMF ledger.
+    // Loyalty and wallet are applied in that same currency; delivery is
+    // included in the local price (maritime = 0).
+    let exactMarketPayable = null;
+    if (marketPricing.local_currency === checkoutMarket.currency &&
+        Number.isFinite(marketPricing.local_total_amount)) {
+      const scale = 10 ** Number(checkoutMarket.minor_unit || 0);
+      const localAfterLoyalty = Math.round(
+        (marketPricing.local_total_amount * (1 - discountPct / 100) + Number.EPSILON) * scale
+      ) / scale;
+      const localWalletDebit = walletPlan?.currency === checkoutMarket.currency
+        ? Number(walletPlan.debit || 0) : 0;
+      exactMarketPayable = Math.round(
+        (Math.max(0, localAfterLoyalty - localWalletDebit) + Number.EPSILON) * scale
+      ) / scale;
+    }
+
     if (previewOnly) {
       // Même prix/SKU, exposition marché, quantité et transport que la commande,
       // mais aucun événement métier : toutes les écritures sont annulées.
@@ -477,6 +495,8 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
           requested_transport_rail: item.requested_transport_rail || null,
           unit_price_kmf: unit,
           line_total_kmf: unit * qty,
+          unit_price_market: item._market_price_snapshot?.local_effective_amount ?? null,
+          market_currency: item._market_price_snapshot?.local_currency ?? null,
         };
       });
       await client.query('ROLLBACK');
@@ -492,6 +512,8 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
           discount_kmf: discountKmf,
           credit_applied_kmf: creditApplied,
           total_kmf,
+          total_market_amount: exactMarketPayable,
+          market_currency: checkoutMarket.currency,
         },
       };
     }
@@ -546,6 +568,8 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
       totalKmf: total_kmf,
       displayMarketCode: display_market_code,
       relaisMarketId: relais?.market_id || null,
+      exactMarketAmount: exactMarketPayable,
+      exactMarketCurrency: checkoutMarket.currency,
     });
 
     // Une seule vérité monétaire de transaction : montant EUR autorisé, montant confirmé en devise du marché du
@@ -555,6 +579,7 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
     try {
       fxSnapshotBuilt = await buildOrderFxSnapshot({
         totalKmf: total_kmf, marketId: relais?.market_id || null, marketCurrency: checkoutMarket.currency, client,
+        exactMarketAmount: exactMarketPayable,
       });
     } catch (e) {
       await client.query('ROLLBACK');

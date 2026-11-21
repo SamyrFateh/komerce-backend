@@ -53,6 +53,18 @@ test('Un seul écran Sourcing Live avec trois onglets métier',()=>{
   expect(html).not.toContain('Mettre à jour maintenant');
   expect(html).not.toContain('Redémarrer');
 });
+test('un passage bloqué explique le motif fourni par le serveur et renvoie à son diagnostic',()=>{
+  const data=sample();
+  data.selected.status='FAILED';
+  data.selected.sourcing_status='BLOCKED';
+  data.selected.failure_reason='pipeline_partial_blocked';
+  const html=rendered(data);
+  expect(html).toContain('data-sourcing-blocked-run="KIR-000013"');
+  expect(html).toContain('Pourquoi ce passage est bloqué');
+  expect(html).toContain('La résolution canonique des produits fournisseur n’a pas abouti.');
+  expect(html).toContain('data-sourcing-block-diagnostic');
+  expect(html).toContain('/admin/import-runtime?run=KIR-000013&view=history');
+});
 test('Un rôle sans droit Catalogue ne reçoit pas de lien de correction, et la source reste consultable',()=>{
   const html=rendered(sample());
   // render() sans session administrateur ne doit pas donner un lien Catalogue.

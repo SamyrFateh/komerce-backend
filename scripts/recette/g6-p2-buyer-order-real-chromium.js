@@ -22,13 +22,16 @@ const MARKET=String(process.env.G6_TARGET_MARKET||'KM').toUpperCase();
 // M01 : produit et prix historiques ; M02 : produit LOCAL_STOCK résolu en lecture seule par l'orchestrateur.
 const PARAMS=require('./canonical/scenario-profile').buyerParams(process.env);
 const REF=PARAMS.product_ref;
+const LINES=require('./canonical/scenario-profile').basketLines(PARAMS).map(l=>({...l,id:null}));
 const COUNTRY_PREFIX={KM:'+269',CM:'+237',CG:'+242'};
 const EXPECTED_PRICE=PARAMS.expected_price;
 let PRODUCT=null;
 const OUT=path.resolve('test-results/g6-p2-buyer-order');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const {startTraceAfterAuth}=require('./canonical/observability');
-const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
+const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress,humanDoubleClickOnce}=require('./canonical/actors/human-gestures');
+// Scénarios négatifs G6-G4A (N07 double clic, N04 quantité > stock, N33 deux variantes) : gestes en plus du parcours ; NEG=null = parcours inchangé.
+const NEG=['N07','N04','N33'].includes(process.env.G6_CANONICAL_SCENARIO)?process.env.G6_CANONICAL_SCENARIO:null;
 fs.mkdirSync(OUT,{recursive:true});
 const run=crypto.randomBytes(4).toString('hex');
 const report={run_id:process.env.GITHUB_RUN_ID||null,run8:run.toUpperCase(),
@@ -46,7 +49,11 @@ async function runtime(){
  report.runtime_sha=v.commit;
 }
 async function resolveCurrentSaleableProduct(){
- const {rows}=await db.query(`
+ // Une ligne par produit du panier ; M01/M02 n'en ont qu'une (requête et contrôles inchangés).
+ for(const [i,line] of LINES.entries()){
+  const lineRef=line.product_ref,linePrice=PARAMS.basket||PARAMS.variants?line.price:EXPECTED_PRICE;
+  const local=PARAMS.basket?line.fulfillment==='LOCAL_STOCK':!!PARAMS.fulfillment;
+  const {rows}=await db.query(`
   SELECT p.id,p.product_ref,p.name,d.amount
   FROM products p
   JOIN markets m ON m.code=$2
@@ -55,12 +62,20 @@ async function resolveCurrentSaleableProduct(){
   WHERE p.product_ref=$1 AND p.lifecycle_status='active' AND p.is_active=TRUE
     AND p.is_available=TRUE AND e.commercial_exposure='ENABLED'
     AND EXISTS (SELECT 1 FROM product_skus sku
-      WHERE sku.product_id=p.id AND sku.is_active=TRUE ${PARAMS.fulfillment?'':'AND sku.stock>0'})`,[REF,MARKET]);
- check(rows.length===1,'G6_RECIPE_PRODUCT_OR_PRICE_NOT_UNIQUE');
- check(Number(rows[0].amount)===EXPECTED_PRICE,'G6_RECIPE_PRICE_DRIFT');
- PRODUCT=rows[0].id;
- report.product_id=PRODUCT;
- record('CURRENT_SALEABLE_PRODUCT',{market:MARKET,ref:REF,price_market_minor:EXPECTED_PRICE,stocked:true});
+      WHERE sku.product_id=p.id AND sku.is_active=TRUE ${local?'':'AND sku.stock>0'})`,[lineRef,MARKET]);
+  check(rows.length===1,'G6_RECIPE_PRODUCT_OR_PRICE_NOT_UNIQUE');
+  check(Number(rows[0].amount)===linePrice,'G6_RECIPE_PRICE_DRIFT');
+  if(!local){
+   // M01 = parcours import : un stock local exposé du même produit détournerait la commande du Hub.
+   const {rows:ls}=await db.query(`SELECT 1 FROM local_stock ls JOIN markets m ON m.id=ls.market_id AND m.code=$2
+     WHERE ls.product_id=$1 AND ls.commercial_exposure='ENABLED'`,[rows[0].id,MARKET]);
+   check(ls.length===0,PARAMS.basket?'G6_M03_IMPORT_PRODUCT_SERVED_FROM_LOCAL_STOCK':'G6_M01_PRODUCT_SERVED_FROM_LOCAL_STOCK');
+  }
+  line.id=rows[0].id;
+  if(i===0){PRODUCT=rows[0].id;report.product_id=PRODUCT}
+ }
+ if(PARAMS.basket)report.basket=LINES.map(l=>({product_ref:l.product_ref,price:l.price,fulfillment:l.fulfillment,source_key:l.source_key||null}));
+ record('CURRENT_SALEABLE_PRODUCT',{market:MARKET,ref:REF,price_market_minor:EXPECTED_PRICE,stocked:true,...(PARAMS.basket?{lines:LINES.length}:{})});
 }
 async function queryOrders(userId){
  const {rows}=await db.query(
@@ -113,6 +128,192 @@ async function setup(){
  }catch(e){if(tx)await c.query('ROLLBACK').catch(()=>{});throw e}
  finally{c.release()}
 }
+async function addLineToCart(page,line,idx){
+  // M01/M02 : une seule ligne (suffixe vide, comportement historique) ; M03 : une itération par ligne du panier.
+  const sfx=idx===0?'':'_LINE'+(idx+1);
+  const {rows:[actualProduct]}=await db.query('SELECT name,product_ref FROM products WHERE id=$1',[line.id]);
+  check(actualProduct?.product_ref===line.product_ref&&!!actualProduct.name,'G6_PRODUCT_PROVENANCE_MISMATCH');
+  await humanFill(null,page.locator('#k-search-input'),actualProduct.name);
+  const item=page.locator('#k-search-dropdown .k-search-item[data-id="'+line.id+'"]');
+  await item.waitFor({state:'visible',timeout:25000});await humanClick(null,item);
+  await page.locator('#k-modal-name').waitFor({state:'visible',timeout:13000});
+  // Wait for the canonical desktop Product Detail renderer, not a legacy carousel
+  // image that may already be loaded before SKU options finish rendering.
+  await page.locator('#k-modal-variants [data-pdc5-root]').waitFor({state:'attached',timeout:20000});
+  const variantEvidence=await page.locator('#k-modal-variants').evaluate(el=>({
+   root:!!el.querySelector('[data-pdc5-root]'),
+   axes:[...el.querySelectorAll('.k-vg')].map(group=>({
+    key:group.dataset.axisKey,
+    options:[...group.querySelectorAll('button[data-option-value]')].map(button=>({
+     value:button.dataset.optionValue,state:button.dataset.optionState,
+     selected:button.getAttribute('aria-pressed')
+    }))
+   }))
+  }));
+  record('PDP_VARIANT_MATRIX'+sfx,variantEvidence);
+  await page.waitForFunction(()=>[...document.querySelectorAll('#k-modal-carousel-track img')].some(x=>x.complete&&x.naturalWidth>0),null,{timeout:25000});
+  const add=page.locator('#k-add-cart-btn');
+  // Select axes in canonical Product Detail order. A global "first unselected"
+  // selector can oscillate between available colors and never choose a size.
+  // Each click below is a genuine Playwright pointer gesture; the next axis
+  // is read only AFTER the current selection's DOM rerender has completed.
+  const axisLocator=page.locator('#k-modal-variants [data-axis-key]');
+  const axisCount=await axisLocator.count();
+  check(axisCount>0,'G6_VARIANT_AXES_NOT_RENDERED');
+  for(let axisIndex=0;axisIndex<axisCount;axisIndex++){
+   const axis=axisLocator.nth(axisIndex);
+   const axisKey=await axis.getAttribute('data-axis-key');
+   // N33 : la variante voulue (variant_combo du SKU) est choisie par un vrai clic, jamais la première option disponible.
+   if(line.variant_combo){
+    const ck=Object.keys(line.variant_combo).find(k=>k.toLowerCase()===String(axisKey).toLowerCase());
+    if(ck!==undefined){
+     const wanted=String(line.variant_combo[ck]).replace(/["\\]/g,'\\$&');
+     const btn=axis.locator('button[data-option-state="AVAILABLE"][data-option-value="'+wanted+'"]');
+     if(await btn.count()!==1)throw Error('G6_N33_SCREEN_MISSING_VARIANT_OPTION_'+axisKey);
+     if(await btn.getAttribute('aria-pressed')!=='true'){
+      await humanClick(null,btn);
+      await page.waitForFunction(({index,selectedValue})=>{
+       const root=document.querySelectorAll('#k-modal-variants [data-axis-key]')[index];
+       return !!root && Array.from(root.querySelectorAll('button[data-option-value]')).some(
+         b=>b.dataset.optionValue===selectedValue && b.getAttribute('aria-pressed')==='true');
+      },{index:axisIndex,selectedValue:String(line.variant_combo[ck])},{timeout:8000});
+     }
+     continue;
+    }
+   }
+   const selected=axis.locator('button[data-option-state="AVAILABLE"][aria-pressed="true"]');
+   if(await selected.count())continue;
+   const choices=axis.locator('button[data-option-state="AVAILABLE"][data-option-value]');
+   if(!await choices.count())throw Error('G6_NO_AVAILABLE_OPTION_IN_AXIS_'+axisKey);
+   const choice=choices.first();
+   const value=await choice.getAttribute('data-option-value');
+   await humanClick(null,choice);
+   await page.waitForFunction(({index,selectedValue})=>{
+    const root=document.querySelectorAll('#k-modal-variants [data-axis-key]')[index];
+    return !!root && Array.from(root.querySelectorAll('button[data-option-value]')).some(
+      b=>b.dataset.optionValue===selectedValue && b.getAttribute('aria-pressed')==='true');
+   },{index:axisIndex,selectedValue:value},{timeout:8000});
+  }
+  const addEnabled=await add.isEnabled();
+  await page.screenshot({path:path.join(OUT,'02-real-authenticated-product'+sfx+'.png')});
+  record('PDP_SELECTION_RESULT'+sfx,{
+   add_enabled:addEnabled,
+   selected_options:await page.locator('#k-modal-variants button[data-option-value][aria-pressed="true"]').evaluateAll(buttons=>buttons.map(button=>({
+    axis:button.closest('.k-vg')?.dataset.axisKey,value:button.dataset.optionValue
+   })))
+  });
+  check(addEnabled,'NO_PURCHASABLE_VARIANT');
+  if(NEG==='N04'){
+   // Le stepper de la fiche (− N +) n'apparaît qu'une fois le produit au panier ; le stepper du panier est recouvert par la
+   // bulle d'accueil : « Ajouter » puis « + » de la fiche, de 1 à disponible + 1 (runs 44848950808…, in-cart).
+   const avail=await localAvailableQty(PRODUCT);
+   check(avail>=1&&avail<=40,'G6_N04_PREREQ_LOCAL_AVAILABLE_OUT_OF_RANGE_'+avail);
+   const n04=report.n04={available_before:avail,target_qty:avail+1,refusal_point:null,refusal_visible:false,visible_message:null,
+    pdp_qty_input_present:await page.locator('#k-qty-plus').isVisible().catch(()=>false)};
+   const badge=()=>page.locator('#k-modal-cart-badge').innerText().then(t=>Number(String(t).trim())||0).catch(()=>0);
+   let q=0;
+   // Cycle bouton↔stepper (modal-shell.css) : 1er geste « Ajouter », puis le « + » du stepper qui le remplace (.k-qty).
+   const plus=page.locator('#k-qty-plus');
+   while(q<avail+1){
+    if(q>0){
+     const ok=await plus.isVisible().catch(()=>false)&&await plus.isEnabled().catch(()=>false);
+     if(!ok){n04.refusal_point='PDP_QTY_CAPPED';n04.capped_at_qty=q;break}
+    }
+    await humanClick(null,q===0?add:plus);
+    const moved=await page.waitForFunction(n=>Number(document.querySelector('#k-modal-cart-badge')?.textContent||0)>n,q,{timeout:3000}).then(()=>true,()=>false);
+    if(!moved){n04.refusal_point='PDP_ADD_CAPPED';n04.capped_at_qty=q;break}
+    q=await badge();
+   }
+   n04.badge_final=q;
+   n04.visible_message=await visibleMessages(page,['#k-modal-name']);
+   n04.refusal_visible=!!n04.refusal_point&&!!n04.visible_message;
+   await page.screenshot({path:path.join(OUT,'02b-n04-pdp-over-stock.png')});save();
+   await humanClick(null,page.locator('#k-modal-close'));
+   return;
+  }
+  const before=Number(await page.locator('#k-modal-cart-badge').innerText().catch(()=>'0'))||0;
+  await humanClick(null,add);
+  await page.waitForFunction(n=>Number(document.querySelector('#k-modal-cart-badge')?.textContent||0)>n,before,{timeout:10000});
+  await humanClick(null,page.locator('#k-modal-close'));
+}
+// N04 : quantité supérieure au stock local saisie dans le panier (vrais clics sur le stepper). Lecture seule en PG.
+async function localAvailableQty(productId){
+ const {rows:[r]}=await db.query(`SELECT COALESCE(SUM(ls.qty_physical-COALESCE((SELECT SUM(a.quantity) FROM local_stock_allocations a
+  WHERE a.local_stock_id=ls.id AND a.consumed_at IS NULL AND a.released_at IS NULL),0)),0)::int AS available
+  FROM local_stock ls JOIN markets m ON m.id=ls.market_id AND m.code=$2
+  WHERE ls.product_id=$1 AND ls.location='KM_MAIN' AND ls.commercial_exposure='ENABLED'`,[productId,MARKET]);
+ return r.available;
+}
+// Messages visibles non vides ; les conteneurs d'alerte vides ne comptent jamais comme refus visible.
+const MSG_RE=/stock|disponible|quantit|indisponible|insuffisant|limite|erreur|impossible|maximum|refus/i;
+async function visibleMessages(page,roots){
+ const out=[];
+ for(const sel of roots){
+  const t=await page.locator(sel).first().innerText({timeout:2000}).catch(()=>'');
+  for(const line of String(t).split(/\n+/).map(x=>x.replace(/\s+/g,' ').trim()))if(line&&MSG_RE.test(line))out.push(line.slice(0,160));
+ }
+ const alerts=await page.locator('[role="alert"],[role="status"],.k-toast,.k-sc-warning,.k-ck-error').allInnerTexts().catch(()=>[]);
+ for(const a of alerts){const x=String(a).replace(/\s+/g,' ').trim();if(x)out.push(x.slice(0,160))}
+ return [...new Set(out)].join(' | ').slice(0,400)||null;
+}
+async function n04QuantityOverStock(page){
+ const n04=report.n04,avail=n04.available_before;
+ const msg=()=>visibleMessages(page,['#k-side-cart','#k-order-modal']);
+ const qtyOf=()=>page.locator('#k-sc-items .k-sc-item-stepper-qty').first().innerText().then(t=>Number(String(t).trim()));
+ n04.cart_qty_final=await qtyOf();
+ n04.visible_message=await msg();
+ await page.screenshot({path:path.join(OUT,'03b-n04-cart-over-stock.png')});record('N04_CART_OVER_STOCK',{qty:n04.cart_qty_final,available:avail});
+ if(n04.cart_qty_final<=avail)n04.refusal_point='CART_ADD_CAPPED';
+ if(!n04.refusal_point){
+  // Le panier accepte plus que le stock : le geste continue sur Commander, le checkout, puis un seul geste mutant (confirmation).
+  // Toute lecture d'écran est protégée : une page fermée par le navigateur ne doit pas masquer les statuts preview ni l'état PG.
+  const safe=(fn,fallback=null)=>Promise.resolve().then(fn).catch(e=>{n04.page_errors=(n04.page_errors||[]).concat(String(e.message||e).split('\n')[0].slice(0,160));return fallback});
+  const lifecycle=n04.page_events=[];
+  page.on('close',()=>lifecycle.push('page_closed'));page.on('crash',()=>lifecycle.push('page_crashed'));page.on('framenavigated',f=>{if(f===page.mainFrame())lifecycle.push('navigated:'+new URL(f.url()).pathname)});
+  const checkout=page.locator('#k-sc-checkout');
+  n04.checkout_button_state=await safe(()=>checkout.evaluate(el=>({disabled:!!el.disabled,aria_disabled:el.getAttribute('aria-disabled')})),null);
+  if(await safe(()=>checkout.isVisible(),false))await humanClick(null,checkout);else await humanClick(null,page.locator('#k-cart-btn'));
+  record('N04_CHECKOUT_CLICKED',{button:n04.checkout_button_state});
+  n04.modal_open=await safe(()=>page.locator('#k-order-modal.open').waitFor({state:'visible',timeout:15000}).then(()=>true),false);
+  const confirm=page.locator('#btn-confirm-order');
+  // Laisse le devis serveur (preview) répondre avant de conclure.
+  n04.confirm_enabled=await safe(()=>page.waitForFunction(()=>{const el=document.getElementById('btn-confirm-order');return !!el&&!el.disabled},null,{timeout:12000}).then(()=>true),false);
+  await safe(()=>page.waitForFunction(()=>true,null,{timeout:1}),null);
+  n04.preview_http_statuses=report.preview_http_statuses.slice();
+  n04.visible_message=await safe(()=>msg(),null);
+  await safe(()=>page.screenshot({path:path.join(OUT,'04b-n04-checkout-over-stock.png'),timeout:8000}));
+  record('N04_CHECKOUT_OPEN',{modal_open:n04.modal_open,confirm_enabled:n04.confirm_enabled,preview:n04.preview_http_statuses,events:lifecycle});
+  const refusedPreview=n04.preview_http_statuses.some(x=>x>=400);
+  if(refusedPreview)n04.refusal_point='CHECKOUT_PREVIEW_REFUSED';
+  else if(n04.modal_open&&!n04.confirm_enabled)n04.refusal_point='CHECKOUT_BLOCKED';
+  else if(n04.modal_open&&n04.confirm_enabled&&!lifecycle.includes('page_closed')&&!lifecycle.includes('page_crashed')){
+   const resp=page.waitForResponse(r=>r.url().endsWith('/api/orders')&&r.request().method()==='POST',{timeout:25000});
+   await humanClick(null,confirm);
+   const r=await resp;n04.order_post_status=r.status();
+   const body=await r.json().catch(()=>null);
+   n04.order_post_error=String(body?.error||body?.message||'').slice(0,200)||null;
+   n04.visible_message=await safe(()=>msg(),null);
+   await safe(()=>page.screenshot({path:path.join(OUT,'05b-n04-after-confirm.png'),timeout:8000}));
+   if(r.status()===201){
+    n04.order_reference=body?.order?.reference||null;n04.order_id=body?.order?.id||null;
+    // Stock réservé ou négatif relu en PG (lecture seule), consigné avant l'erreur.
+    const {rows:[st]}=await db.query(`SELECT COALESCE(MIN(ls.qty_physical),0)::int AS min_physical,
+      COALESCE((SELECT SUM(a.quantity) FROM local_stock_allocations a JOIN local_stock x ON x.id=a.local_stock_id WHERE a.order_id=$2 AND x.product_id=$1),0)::int AS reserved_for_order
+      FROM local_stock ls WHERE ls.product_id=$1 AND ls.location='KM_MAIN'`,[PRODUCT,n04.order_id]).catch(()=>({rows:[{}]}));
+    n04.pg_after_order=st;n04.available_after_order=await localAvailableQty(PRODUCT);save();
+    throw Error('G6_N04_PRODUCT_GAP_ORDER_CREATED_ABOVE_STOCK_'+n04.order_reference);
+   }
+   n04.refusal_point='CHECKOUT_POST_REFUSED';
+  }else{
+   // Ni refus de devis, ni confirmation jouable : aucune conclusion sans preuve (jamais un PASS par défaut).
+   n04.unproven_reason=!n04.modal_open?'MODAL_NOT_OPENED':'PAGE_CLOSED_OR_CRASHED_BEFORE_PREVIEW';
+   save();
+   throw Error('G6_N04_SCREEN_MISSING_CHECKOUT_'+n04.unproven_reason);
+  }
+ }
+ n04.refusal_visible=!!n04.visible_message;save();
+ return null;
+}
 async function browserCheckout({buyer,phone,code}){
  const browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
  try{
@@ -138,7 +339,7 @@ async function browserCheckout({buyer,phone,code}){
     }
     if(method==='POST'&&u.origin===ORIGIN&&
        ['/api/auth/otp/request','/api/auth/otp/verify','/api/orders','/api/orders/preview'].includes(u.pathname)){
-      if(u.pathname==='/api/orders'&&++orderRequests!==1){
+      if(u.pathname==='/api/orders'&&++orderRequests>(NEG==='N07'?2:1)){
         report.blocked_requests.push({...meta,reason:'duplicate_order_post'});
         return route.abort();
       }
@@ -205,66 +406,11 @@ async function browserCheckout({buyer,phone,code}){
     const count=document.getElementById('k-hero-count');
     return !!count && !count.hidden && /[1-9]/.test(count.textContent||'');
   },null,{timeout:30000});
-  const {rows:[actualProduct]}=await db.query('SELECT name,product_ref FROM products WHERE id=$1',[PRODUCT]);
-  check(actualProduct?.product_ref===REF&&!!actualProduct.name,'G6_PRODUCT_PROVENANCE_MISMATCH');
-  await humanFill(null,page.locator('#k-search-input'),actualProduct.name);
-  const item=page.locator('#k-search-dropdown .k-search-item[data-id="'+PRODUCT+'"]');
-  await item.waitFor({state:'visible',timeout:25000});await humanClick(null,item);
-  await page.locator('#k-modal-name').waitFor({state:'visible',timeout:13000});
-  // Wait for the canonical desktop Product Detail renderer, not a legacy carousel
-  // image that may already be loaded before SKU options finish rendering.
-  await page.locator('#k-modal-variants [data-pdc5-root]').waitFor({state:'attached',timeout:20000});
-  const variantEvidence=await page.locator('#k-modal-variants').evaluate(el=>({
-   root:!!el.querySelector('[data-pdc5-root]'),
-   axes:[...el.querySelectorAll('.k-vg')].map(group=>({
-    key:group.dataset.axisKey,
-    options:[...group.querySelectorAll('button[data-option-value]')].map(button=>({
-     value:button.dataset.optionValue,state:button.dataset.optionState,
-     selected:button.getAttribute('aria-pressed')
-    }))
-   }))
-  }));
-  record('PDP_VARIANT_MATRIX',variantEvidence);
-  await page.waitForFunction(()=>[...document.querySelectorAll('#k-modal-carousel-track img')].some(x=>x.complete&&x.naturalWidth>0),null,{timeout:25000});
-  const add=page.locator('#k-add-cart-btn');
-  // Select axes in canonical Product Detail order. A global "first unselected"
-  // selector can oscillate between available colors and never choose a size.
-  // Each click below is a genuine Playwright pointer gesture; the next axis
-  // is read only AFTER the current selection's DOM rerender has completed.
-  const axisLocator=page.locator('#k-modal-variants [data-axis-key]');
-  const axisCount=await axisLocator.count();
-  check(axisCount>0,'G6_VARIANT_AXES_NOT_RENDERED');
-  for(let axisIndex=0;axisIndex<axisCount;axisIndex++){
-   const axis=axisLocator.nth(axisIndex);
-   const axisKey=await axis.getAttribute('data-axis-key');
-   const selected=axis.locator('button[data-option-state="AVAILABLE"][aria-pressed="true"]');
-   if(await selected.count())continue;
-   const choices=axis.locator('button[data-option-state="AVAILABLE"][data-option-value]');
-   if(!await choices.count())throw Error('G6_NO_AVAILABLE_OPTION_IN_AXIS_'+axisKey);
-   const choice=choices.first();
-   const value=await choice.getAttribute('data-option-value');
-   await humanClick(null,choice);
-   await page.waitForFunction(({index,selectedValue})=>{
-    const root=document.querySelectorAll('#k-modal-variants [data-axis-key]')[index];
-    return !!root && Array.from(root.querySelectorAll('button[data-option-value]')).some(
-      b=>b.dataset.optionValue===selectedValue && b.getAttribute('aria-pressed')==='true');
-   },{index:axisIndex,selectedValue:value},{timeout:8000});
-  }
-  const addEnabled=await add.isEnabled();
-  await page.screenshot({path:path.join(OUT,'02-real-authenticated-product.png')});
-  record('PDP_SELECTION_RESULT',{
-   add_enabled:addEnabled,
-   selected_options:await page.locator('#k-modal-variants button[data-option-value][aria-pressed="true"]').evaluateAll(buttons=>buttons.map(button=>({
-    axis:button.closest('.k-vg')?.dataset.axisKey,value:button.dataset.optionValue
-   })))
-  });
-  check(addEnabled,'NO_PURCHASABLE_VARIANT');
-  const before=Number(await page.locator('#k-modal-cart-badge').innerText().catch(()=>'0'))||0;
-  await humanClick(null,add);
-  await page.waitForFunction(n=>Number(document.querySelector('#k-modal-cart-badge')?.textContent||0)>n,before,{timeout:10000});
-  await humanClick(null,page.locator('#k-modal-close'));
+  for(let i=0;i<LINES.length;i++)await addLineToCart(page,LINES[i],i);
+  if(NEG==='N04'&&report.n04?.refusal_point)return null;
   await page.locator('#k-side-cart.has-items').waitFor({state:'visible',timeout:12000});
   await page.screenshot({path:path.join(OUT,'03-real-cart.png')});
+  if(NEG==='N04')return n04QuantityOverStock(page);
   const checkout=page.locator('#k-sc-checkout');
   if(await checkout.isVisible())await humanClick(null,checkout);else await humanClick(null,page.locator('#k-cart-btn'));
   await page.locator('#k-order-modal.open').waitFor({state:'visible',timeout:15000});
@@ -280,8 +426,18 @@ async function browserCheckout({buyer,phone,code}){
   record('REAL_CHECKOUT',{display_total:total,relay:await page.locator('#ck-relais-summary').innerText().catch(()=>null)});
   await page.screenshot({path:path.join(OUT,'04-real-checkout-before-POST.png')});
   const response=page.waitForResponse(r=>r.url().endsWith('/api/orders')&&r.request().method()==='POST',{timeout:25000});
-  await humanClick(null,confirm);
-  const created=await response,body=await created.json().catch(()=>null);
+  let created;
+  if(NEG==='N07'){
+   // Exception explicite et limitée à N07 : un seul geste natif dblclick (deux clics rapprochés) sur Commander.
+   response.catch(()=>null);
+   const orderResps=[];page.on('response',r=>{if(r.url().endsWith('/api/orders')&&r.request().method()==='POST')orderResps.push(r)});
+   await humanDoubleClickOnce(null,confirm,{allowedFor:'N07'});
+   await page.waitForTimeout(6000);
+   report.n07={double_click:true,order_post_statuses:orderResps.map(r=>r.status())};save();
+   created=orderResps.find(r=>r.status()===201)||orderResps[0];
+   check(!!created,'G6_N07_SCREEN_MISSING_NO_ORDER_RESPONSE');
+  }else{await humanClick(null,confirm);created=await response}
+  const body=await created.json().catch(()=>null);
   record('CANONICAL_ORDER_HTTP',{status:created.status(),reference:body?.order?.reference||null,code:body?.code||null,error:body?.error||null});
   check(created.status()===201&&!!body?.order?.id,'G6_CANONICAL_ORDER_POST_NOT_201');
   await page.screenshot({path:path.join(OUT,'05-real-order-confirmation.png')});
@@ -289,6 +445,7 @@ async function browserCheckout({buyer,phone,code}){
   return body.order;
  }finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});await browser.close()}
 }
+for(const ev of ['unhandledRejection','uncaughtException'])process.on(ev,e=>{report.verdict='BLOCKED';report.error='PROCESS_'+ev+' '+fullError(e);save();process.exitCode=2});
 (async()=>{
  try{
   check(process.env.KOMERCE_ENV==='staging'&&process.env.NODE_ENV==='test'&&
@@ -304,19 +461,42 @@ async function browserCheckout({buyer,phone,code}){
   check((await queryOrders(fixture.buyer.id)).length===0,'BUYER_HAS_PREEXISTING_ORDERS');
   const order=await browserCheckout(fixture);
   const orders=await queryOrders(fixture.buyer.id);
+  if(NEG==='N04'){
+   check(orders.length===0,'G6_N04_PRODUCT_GAP_ORDER_EXISTS_'+orders.length);
+   const after=await localAvailableQty(PRODUCT);
+   report.n04.available_after=after;
+   check(after===report.n04.available_before,'G6_N04_PRODUCT_GAP_LOCAL_AVAILABLE_CHANGED');
+   check(report.blocked_requests.length===0,'G6_UNEXPECTED_BROWSER_WRITE');
+   await runtime();
+   report.verdict='G6_N04_QTY_OVER_STOCK_REFUSED_CHROMIUM_PG_PASS';return;
+  }
+  if(NEG==='N07'&&orders.length>1){
+   report.n07={...report.n07,orders_in_pg:orders.length,references:orders.map(x=>x.reference)};
+   throw Error('G6_N07_PRODUCT_GAP_DOUBLE_ORDER_'+orders.length);
+  }
   check(orders.length===1,'G6_EXACTLY_ONE_ORDER_NOT_SATISFIED');
   const o=orders[0];
   check(o.id===order.id&&o.reference===order.reference&&o.simulation_scope==='G6-BUYER'&&
     o.market===MARKET&&Number(o.display_total_amount)===report.checkout_display_total&&
     o.display_currency===(MARKET==='KM'?'KMF':'XAF')&&Number(o.total_kmf)>0&&
     (MARKET!=='KM'||Number(o.total_kmf)===report.checkout_display_total)&&o.payment_mode==='cash_relais'&&
-    o.status==='pending'&&o.payment_status!=='paid'&&o.lines===1&&o.qty===1&&o.products?.includes(REF),
+    o.status==='pending'&&o.payment_status!=='paid'&&o.lines===LINES.length&&o.qty===LINES.length&&LINES.every(l=>o.products?.includes(l.product_ref)),
     'G6_POSTGRES_CANONICAL_ORDER_MISMATCH');
- if(PARAMS.fulfillment){
+ if(PARAMS.basket){
+  const {rows:src}=await db.query('SELECT p.product_ref,i.fulfillment_source::text AS fulfillment_source FROM order_items i JOIN products p ON p.id=i.product_id WHERE i.order_id=$1',[o.id]);
+  check(src.length===LINES.length&&LINES.every(l=>src.some(x=>x.product_ref===l.product_ref&&x.fulfillment_source===l.fulfillment)),'G6_M03_ORDER_NOT_MIXED_AS_EXPECTED');
+  report.fulfillment_source='MIXED';
+ }else if(PARAMS.fulfillment){
   const {rows:src}=await db.query('SELECT DISTINCT fulfillment_source FROM order_items WHERE order_id=$1',[o.id]);
   check(src.length===1&&src[0].fulfillment_source===PARAMS.fulfillment,'G6_M02_ORDER_NOT_LOCAL_STOCK');
   report.fulfillment_source=PARAMS.fulfillment;
  }
+  if(NEG==='N33'){
+   const {rows:items}=await db.query('SELECT sku_id,quantity,variant_combo FROM order_items WHERE order_id=$1 ORDER BY id',[o.id]);
+   const want=PARAMS.variants.map(v=>v.sku_id).sort();
+   check(items.length===2&&JSON.stringify(items.map(i=>i.sku_id).sort())===JSON.stringify(want)&&items.every(i=>Number(i.quantity)===1),'G6_N33_PRODUCT_GAP_SKU_OR_QTY_MISMATCH');
+   report.n33={sku_ids:want,items:items.length,total:Number(o.display_total_amount)};
+  }
   report.order={id:o.id,reference:o.reference,status:o.status,payment_status:o.payment_status,
     scope:o.simulation_scope,total_kmf:Number(o.total_kmf),
     display_total_amount:Number(o.display_total_amount),display_currency:o.display_currency,

@@ -134,3 +134,61 @@ test('G6 PO orphan inventory is independently read-only, not restricted to live 
  expect(src).toContain('report.po_audit=');
  expect(src).not.toMatch(/(?:UPDATE|DELETE FROM)\s+purchase_orders\b/i);
 });
+
+// G6-CLEANUP-D : sous-classes de la classe D et geste de remise comptoir.
+const F=(o={})=>({payment_status:'paid',relais_id:'r-1',has_secret:true,secret_blocked_until:null,hub_unit_count:0,box_linked:false,open_discrepancy:false,...o});
+const ED=(facts,ref='K1',extra={})=>({...E({ref,status:'available',...extra}),facts});
+test('D payée et disponible : remise comptoir, une mutation, pas de clôture Hub',()=>{
+ const r=classify(ED(F()));
+ expect(r.class).toBe('D');expect(r.d_class).toBe('D_PAID_AVAILABLE');
+ expect(r.gestures.map(g=>g.action)).toEqual(['handover_relay']);
+ expect(r.gestures[0]).toMatchObject({relais_id:'r-1',market:'KM'});
+});
+test('D écart N20 : remise de la quantité constatée, résolution d’incident signalée manquante',()=>{
+ const r=classify(ED(F({open_discrepancy:true})));
+ expect(r.d_class).toBe('D_DISCREPANCY');expect(r.gestures.map(g=>g.action)).toEqual(['handover_relay']);
+ expect(r.proposal).toBe('SCREEN_MISSING_INCIDENT_RESOLUTION');
+});
+test('D KOM-BOX figée : SCREEN_MISSING avec proposition, aucun geste',()=>{
+ const r=classify(ED(F({box_linked:true})));
+ expect(r.d_class).toBe('D_BOX_FROZEN');expect(r.verdict).toBe('SCREEN_MISSING');
+ expect(r.missing).toContain('KOM_BOX_FROZEN');expect(r.gestures).toEqual([]);expect(r.reason).toMatch(/Solder la recette/);
+});
+test('D non remettable (impayée, sans code ou sans relais) : SCREEN_MISSING sans geste',()=>{
+ for(const f of [F({payment_status:'pending'}),F({has_secret:false}),F({relais_id:null})]){
+  const r=classify(ED(f));expect(r.verdict).toBe('SCREEN_MISSING');expect(r.gestures).toEqual([]);
+ }
+});
+test('D marchandise Hub reste sur la clôture Hub ; sans faits, comportement historique',()=>{
+ expect(classify(ED(F({hub_unit_count:2}))).gestures.map(g=>g.action)).toEqual(['close_hub_order']);
+ expect(classify(E({status:'available'})).gestures.map(g=>g.action)).toEqual(['close_hub_order']);
+});
+test('remise : refus hors G6-BUYER, PO mixte refusé, ordre après les clôtures Hub, garde du plan',()=>{
+ expect(classify(ED(F(),'K2',{scope:'OTHER'})).gestures).toEqual([]);
+ expect(classify(ED(F(),'K3',{scope:'OTHER'})).reason).toBe('NOT_G6_BUYER');
+ const mixed=classify(ED(F(),'K4',{lines:[L('l1','p1','received')],peers:{p1:[peer('K4'),peer('X',null)]}}));
+ expect(mixed.reason).toBe('MIXED_PO');expect(mixed.gestures).toEqual([]);
+ const plan=buildPlan([ED(F(),'KA'),{...E({ref:'KB',status:'preparation',lines:[L('l1','p1','hub_received')],peers:{p1:[peer('KB')]}})}]);
+ expect(plan.steps.map(s=>s.action)).toEqual(['close_hub_order','handover_relay']);
+ expect(assertGestureAllowed(plan.steps[1],plan)).toBe(true);
+ expect(()=>assertGestureAllowed({...plan.steps[1],reference:'KZ',order_id:'o-KZ'},plan)).toThrow(/NOT_PLANNED/);
+});
+test('chromium-policy : child de remise sans clic brut ni écriture SQL métier',()=>{
+ const child=path.join(__dirname,'../../scripts/recette/g6-cleanup-handover-chromium.js');
+ expect(assertGestureSourceUsesHelper(child)).toBe(true);
+ expect(assertStageSqlWritesIdentityOnly(child)).toBe(true);
+ expect(assertTraceStartsAfterAuth(child)).toBe(true);
+});
+
+test('enfant de remise : l’environnement exige les secrets relais/admin (noms seuls) et le workflow les fournit',()=>{
+ const {childEnv,CHILD_REQUIRED_ENV}=require('../../scripts/recette/g6-cleanup-recette-chromium');
+ expect(CHILD_REQUIRED_ENV).toEqual(expect.arrayContaining(['E2E_AGENT_RELAIS_EMAIL','E2E_AGENT_RELAIS_PASSWORD','DATABASE_URL','E2E_EXPECTED_DEPLOY_SHA']));
+ const base=Object.fromEntries(CHILD_REQUIRED_ENV.map(k=>[k,'x']));
+ const step={market:'CG',order_id:'o',reference:'K1',relais_id:'r'};
+ expect(childEnv(step,base)).toMatchObject({G6_TARGET_MARKET:'CG',G6_CANONICAL_SCENARIO:'M02',G6_CLEANUP_RELAIS_ID:'r'});
+ const {E2E_AGENT_RELAIS_EMAIL,...lacking}=base;
+ expect(()=>childEnv(step,lacking)).toThrow('G6_CLEANUP_HANDOVER_ENV_MISSING_E2E_AGENT_RELAIS_EMAIL');
+ const wf=fs.readFileSync(path.join(__dirname,'../../.github/workflows/staging-g6-cleanup-recette.yml'),'utf8');
+ for(const k of CHILD_REQUIRED_ENV.filter(x=>/^E2E_(ADMIN|AGENT)/.test(x)))expect(wf).toContain(k+':');
+ expect(wf).toContain('test-results/g6-cleanup-handover/');
+});

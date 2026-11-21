@@ -1,0 +1,36 @@
+name: Boutique greeting/cart Chromium
+
+on:
+  pull_request:
+    paths:
+      - 'public/boutique/css/interactions.css'
+      - 'public/boutique/css/boutique-desktop.css'
+      - 'public/boutique/css/dist/components.css'
+      - 'public/boutique/index.html'
+      - 'public/boutique/tests/e2e/greeting-cart-overlap.spec.js'
+      - '.github/workflows/boutique-greeting-cart-chromium.yml'
+      - '.github/workflows/g6-ergonomie-ux1-chromium.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  greeting-cart-chromium:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CI: 'true'
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - name: Install Boutique test dependencies
+        run: npm ci --prefix public/boutique
+      - name: Install Chromium
+        run: npm --prefix public/boutique exec -- playwright install --with-deps chromium
+      - name: Run isolated desktop overlap check (1440 px)
+        run: npm run test:e2e --prefix public/boutique -- tests/e2e/greeting-cart-overlap.spec.js --project='Desktop Chrome'

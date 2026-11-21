@@ -24,6 +24,7 @@
 import { bus }           from './b-bus.js';
 import { state, dom, $, $$, scroll }  from './b-store.js';
 import { fmt, sanitize, genIdempotencyKey, apiGet, apiPost, optimizeImgUrl } from './b-utils.js';
+import { fmtMarketAmount, fmtLocalProductPrice, fmtLocalLinesTotal } from './b-market-price-format.js';
 import { showToast, saveCart } from './b-cart-core.js';
 import { renderPayPalButton, isPayPalEnabled, ensurePayPalSDK } from './b-paypal.js'; // Migration 079
 import { getMobileMoneyAvailabilityForRelay, initiateMobileMoneyPayment, waitForMobileMoneyPayment } from './b-mobile-money.js'; // Migration 169
@@ -276,6 +277,9 @@ export function resolveCheckoutPayable(items, relaisId, quote) {
       total: Number(quote.total_kmf),
       transport: Number(quote.transport_price_kmf) || 0,
       discount: Number(quote.discount_kmf) || 0,
+      ...(quote.total_market_amount != null && Number.isFinite(Number(quote.total_market_amount)) && quote.market_currency
+        ? { marketAmount: Number(quote.total_market_amount), marketCurrency: quote.market_currency }
+        : {}),
     };
   }
   return { ready: false, total: _checkoutSelectionTotal(items), transport: 0, discount: 0 };
@@ -1408,10 +1412,16 @@ function refreshCheckoutComputedUI() {
   const cb = document.getElementById('cb-use-wallet');
   const walletApplied = (cb && cb.checked && state.walletBalance > 0) ? Math.min(state.walletBalance, total) : 0;
   const netAmount = total - walletApplied;
+  // An approved local price must not be converted through a rounded KMF
+  // invoice pivot. With wallet applied, keep the existing KMF fallback until
+  // a separately certified market-wallet amount is available.
+  const payableLabel = walletApplied === 0 && payable.marketAmount != null && payable.marketCurrency
+    ? fmtMarketAmount(payable.marketAmount, payable.marketCurrency)
+    : fmt(netAmount, 'KMF');
 
   // Sous-total indicatif catalogue, séparé du devis engageant du serveur.
   const subtotalEl = document.getElementById('ck-recap-subtotal-value');
-  if (subtotalEl) subtotalEl.textContent = fmt(_checkoutSelectionTotal(_currentCheckoutSelection().items), 'KMF');
+  if (subtotalEl) subtotalEl.textContent = fmtLocalLinesTotal(_checkoutItems());
 
   const finalTotalLabel = document.getElementById('ck-final-total-label');
   const finalTotalAmount = document.getElementById('ck-final-total-amount');
@@ -1421,7 +1431,7 @@ function refreshCheckoutComputedUI() {
       : '\u00c0 r\u00e9gler';
   }
   if (finalTotalAmount) {
-    finalTotalAmount.textContent = (od.selectedRelaisId && !quoteReady) ? '\u2026' : fmt(netAmount, 'KMF');
+    finalTotalAmount.textContent = (od.selectedRelaisId && !quoteReady) ? '\u2026' : payableLabel;
   }
   const deliveryLine = document.getElementById('ck-delivery-line');
   if (deliveryLine) {
@@ -1433,7 +1443,7 @@ function refreshCheckoutComputedUI() {
   // CTA, quel que soit le moyen de paiement ou l'usage du wallet : jamais
   // « Payer » (Stripe) ni « (net wallet) » (cash), toujours le même libellé
   // portant le montant net réellement dû (après déduction wallet).
-  const mainText = '\u2713 Confirmer la commande · ' + ((od.selectedRelaisId && !quoteReady) ? '\u2026' : fmt(netAmount, 'KMF'));
+  const mainText = '\u2713 Confirmer la commande · ' + ((od.selectedRelaisId && !quoteReady) ? '\u2026' : payableLabel);
   const mobileMoneyLabel = od.mobileMoneyAvailability?.label || 'Mobile Money';
   let subText = mode === 'stripe_eur'
     ? (where ? 'Carte via Stripe • ' + where : 'Carte via Stripe')
@@ -1762,12 +1772,12 @@ function _buildRecapItemsBlock(
         ? '<span class="ck-recap-item-qty ck-recap-item-variant">' + sanitize(variantText) + '</span>'
         : '')
       + '<span class="ck-recap-item-qty">'
-      + qty + ' \u00D7 ' + fmt(unitPrice, 'KMF')
+      + qty + ' \u00D7 ' + fmtLocalProductPrice(product)
       + '</span>';
 
     const price = document.createElement('span');
     price.className = 'ck-recap-item-price';
-    price.textContent = fmt(unitPrice * qty, 'KMF');
+    price.textContent = fmtLocalProductPrice(product, qty);
 
     row.append(info, price);
 
@@ -2002,7 +2012,7 @@ export function renderCheckout() {
       + '<small>Livraison incluse · total confirmé avant paiement</small></span>'
       + '<strong id="ck-recap-subtotal-value"></strong>';
     articleSubtotal.querySelector('#ck-recap-subtotal-value').textContent =
-      fmt(_checkoutSelectionTotal(_currentCheckoutSelection().items), 'KMF');
+      fmtLocalLinesTotal(_checkoutItems());
     checkoutPrimary.appendChild(articleSubtotal);
 
     const reassurance = document.createElement('div');
@@ -2300,7 +2310,7 @@ export function renderCheckout() {
     checkoutAside.appendChild(deliveryLine);
     finalTotal.innerHTML =
       '<span id="ck-final-total-label">\u00c0 r\u00e9gler</span>'
-      + '<strong id="ck-final-total-amount">' + fmt(_checkoutTotal(), 'KMF') + '</strong>';
+      + '<strong id="ck-final-total-amount">' + fmtLocalLinesTotal(_checkoutItems()) + '</strong>';
     checkoutAside.appendChild(finalTotal);
 
     // Checkout unifié : le récapitulatif de CheckoutSelection vit dans
@@ -2319,7 +2329,7 @@ export function renderCheckout() {
     confirmBtn.disabled = true;
     // Règle §8 — même gabarit de libellé qu'à l'état stabilisé (refreshCheckoutComputedUI) ;
     // seul le sous-texte change tant que le relais n'est pas chargé.
-    setCheckoutConfirmButton(confirmBtn, 'Confirmer la commande · ' + fmt(_checkoutTotal(), 'KMF'), 'Chargement du relais…');
+    setCheckoutConfirmButton(confirmBtn, 'Confirmer la commande · ' + fmtLocalLinesTotal(_checkoutItems()), 'Chargement du relais…');
     // Le CTA appartient à la colonne de finalisation. Sur desktop il suit le
     // total au lieu d'être artificiellement plaqué au bas du viewport.
     // Desktop : le CTA appartient à la colonne récapitulative, immédiatement

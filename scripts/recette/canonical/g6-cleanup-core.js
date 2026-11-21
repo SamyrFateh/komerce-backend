@@ -14,18 +14,21 @@ const RECEIVED_PO=Object.freeze(['hub_received','received','partially_received']
 const RECEIVED_ORDER=Object.freeze(['preparation','shipped','in_transit','available']);
 const ENGAGED_PO=Object.freeze(['notified','confirmed']);
 const TERMINAL=Object.freeze(['collected','cancelled','refunded']);
-const ACTIONS=Object.freeze(['discard_po','cancel_line','cancel_order','cancel_g6_po','close_hub_order']);
+const ACTIONS=Object.freeze(['discard_po','cancel_line','cancel_order','cancel_g6_po','close_hub_order','handover_relay']);
 const MISSING=Object.freeze({
  D_RECEIVED_GOODS:'Aucun écran de retour, invendu, remise en stock ou clôture de recette pour marchandise reçue au Hub.',
  CUTOFF:'Annulation Order 360 refusée par la règle de coupure serveur (statut au-delà du seuil).',
  PAYMENT_MODE:'Le bouton Order 360 est réservé au paiement cash_relais.',
+ KOM_BOX_FROZEN:'Aucun écran de clôture de recette pour une commande dont le sac est lié immuablement à une KOM-BOX. Plus petit écran proposé : Order 360 admin « Solder la recette (KOM-BOX figée) », G6-BUYER cash seulement, motif obligatoire, écrit un événement de clôture audité sur la commande et les unités sans jamais effacer hub_box_bags.',
+ D_AVAILABLE_NOT_HANDOVERABLE:'Commande disponible au relais mais sans paiement confirmé, relais ou code de retrait : la remise comptoir n’est pas possible.',
+ INCIDENT_RESOLUTION:'Aucun écran de résolution d’incident d’écart de réception : l’incident reste ouvert après la remise de la quantité constatée.',
  PO_ENGAGED:'Aucun écran d’annulation d’un PO groupé notifié ou confirmé (l’annulation de commande le laisse engagé avec alerte).'
 });
 const cutoffBlocks=(status,cutoff='shipped')=>{
  const cur=STATUS_ORDER.indexOf(status),cut=STATUS_ORDER.indexOf(cutoff);
  return cur>=cut;           // statut inconnu = -1 : non bloqué, comme le serveur
 };
-/** Entrée : { order:{id,reference,market,status,payment_mode,simulation_scope},
+/** Entrée : { facts?:{payment_status,relais_id,has_secret,secret_blocked_until,hub_unit_count,box_linked,open_discrepancy}, order:{id,reference,market,status,payment_mode,simulation_scope},
  *   lines:[{line_id,po_id|null,po_status|null}], po_peers:{[po_id]:[{reference,simulation_scope}]} } */
 function classify(entry,{cutoff='shipped'}={}){
  const {order,lines=[],po_peers={}}=entry;
@@ -47,6 +50,20 @@ function classify(entry,{cutoff='shipped'}={}){
  if(mixed.length){res.verdict='REFUSED';res.reason='MIXED_PO';res.mixed_po_ids=mixed;return res;}
  if(res.class==='D'){
   if(order.payment_mode!=='cash_relais'){res.verdict='REFUSED';res.reason='PAYMENT_MODE';return res;}
+  const f=entry.facts;
+  if(f){
+   if(f.box_linked){res.d_class='D_BOX_FROZEN';res.verdict='SCREEN_MISSING';res.missing.push('KOM_BOX_FROZEN');res.reason=MISSING.KOM_BOX_FROZEN;return res;}
+   if(order.status==='available'&&!Number(f.hub_unit_count||0)){
+    res.d_class=f.open_discrepancy?'D_DISCREPANCY':'D_PAID_AVAILABLE';
+    if(f.open_discrepancy)res.proposal='SCREEN_MISSING_INCIDENT_RESOLUTION';
+    if(f.payment_status!=='paid'||!f.relais_id||!f.has_secret){
+     res.d_class='D_OTHER';res.verdict='SCREEN_MISSING';res.missing.push('D_AVAILABLE_NOT_HANDOVERABLE');res.reason=MISSING.D_AVAILABLE_NOT_HANDOVERABLE;return res;}
+    res.gestures.push({action:'handover_relay',order_id:order.id,reference:order.reference,market:order.market,relais_id:f.relais_id,
+     secret_blocked_until:f.secret_blocked_until||null});
+    return res;
+   }
+   res.d_class='D_HUB_GOODS';
+  }
   res.gestures.push({action:'close_hub_order',order_id:order.id,reference:order.reference});
   return res;
  }
@@ -90,7 +107,7 @@ function buildPlan(entries,opts={}){
  const todo=items.filter(i=>i.verdict==='PLANNED').sort((a,b)=>rank[a.class]-rank[b.class]||a.reference.localeCompare(b.reference));
  const seen=new Set(),steps=[];
  const push=(g,i)=>{const k=g.action+':'+(g.po_id||g.line_id||g.order_id);if(seen.has(k))return;seen.add(k);steps.push({...g,reference:i.reference,class:i.class});};
- for(const a of ['discard_po','cancel_line','cancel_g6_po','cancel_order','close_hub_order'])
+ for(const a of ['discard_po','cancel_line','cancel_g6_po','cancel_order','close_hub_order','handover_relay'])
   for(const grp of [['A','B'],['C'],['D']])
    for(const i of todo.filter(x=>grp.includes(x.class)))
     for(const g of i.gestures.filter(x=>x.action===a))push(g,i);

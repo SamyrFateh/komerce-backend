@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-17T10:02:35.945Z",
+  "generatedAt": "2026-11-20T22:40:03.124Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 839,
+  "count": 841,
   "routes": [
     {
       "method": "GET",
@@ -6100,6 +6100,17 @@
       ]
     },
     {
+      "method": "POST",
+      "fullPath": "/api/orders/:id/close-g6-hub-recipe",
+      "mountPrefix": "/api/orders",
+      "localPath": "/:id/close-g6-hub-recipe",
+      "routeFile": "routes/orders/cancel.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js",
+        "routes/orders.js"
+      ]
+    },
+    {
       "method": "PATCH",
       "fullPath": "/api/orders/:id/cost",
       "mountPrefix": "/api/orders",
@@ -7259,6 +7270,16 @@
       "fullPath": "/api/purchasing/po/:po_id/authorize-payment",
       "mountPrefix": "/api/purchasing",
       "localPath": "/po/:po_id/authorize-payment",
+      "routeFile": "routes/purchasing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/purchasing/po/:po_id/cancel-g6-recipe",
+      "mountPrefix": "/api/purchasing",
+      "localPath": "/po/:po_id/cancel-g6-recipe",
       "routeFile": "routes/purchasing.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

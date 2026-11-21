@@ -50,7 +50,7 @@ const log = require('../utils/logger').child({ module: 'order-display-snapshot' 
  * @param {string|null} [params.relaisMarketId] - market_id du relais choisi (repli)
  * @returns {Promise<{amount: number|null, currency: string|null, meta: object|null}>}
  */
-async function resolveDisplaySnapshot({ totalKmf, displayMarketCode = null, relaisMarketId = null }) {
+async function resolveDisplaySnapshot({ totalKmf, displayMarketCode = null, relaisMarketId = null, exactMarketAmount = null, exactMarketCurrency = null }) {
   try {
     let resolved = null;
     let source = null;
@@ -76,13 +76,22 @@ async function resolveDisplaySnapshot({ totalKmf, displayMarketCode = null, rela
       return { amount: null, currency: null, meta: null };
     }
 
-    const projected = await currencyBoundary.projectAmount(totalKmf, 'KMF', resolved.currency);
+    // When the price is a LOCAL_ACTIVE decision, the exact amount in the
+    // market currency is authoritative. KMF is an accounting projection and
+    // cannot be converted back losslessly (e.g. 6654 XAF -> 4991 KMF).
+    const useExactLocal = exactMarketAmount !== null && exactMarketAmount !== undefined &&
+      Number.isFinite(Number(exactMarketAmount)) && Number(exactMarketAmount) >= 0 &&
+      String(exactMarketCurrency || '').toUpperCase() === String(resolved.currency).toUpperCase();
+    const projected = useExactLocal
+      ? Number(exactMarketAmount)
+      : await currencyBoundary.projectAmount(totalKmf, 'KMF', resolved.currency);
 
     return {
       amount: currencyBoundary.roundToMinorUnit(projected, resolved.minor_unit),
       currency: resolved.currency,
       meta: {
         source,
+        price_authority: useExactLocal ? 'LOCAL_ACTIVE_MARKET_AMOUNT' : 'KMF_PROJECTION',
         requested_code: displayMarketCode || null,
         resolved_currency: resolved.currency,
         base_amount: totalKmf,

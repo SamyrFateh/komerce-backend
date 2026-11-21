@@ -16,12 +16,16 @@ const {chromium}=require('playwright');
 const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
 const {readback,runtime}=require('./g6-hub-shipment-chromium');
+const sameSet=(a,b)=>JSON.stringify([...a].sort())===JSON.stringify([...b].sort());
 const {login}=require('./g6-canonical-forwarder-chromium');
 const {openRelayLive}=require('./canonical/relay-live-navigation');
 const env=process.env,BASE='https://komerce-backend-production.up.railway.app';
 const ID=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_ID:'ff8591fc-78bb-49a4-b154-247508368d16',REF=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_REF:'SIM-STAGING-EXP-KL1WGP6';
 const ORDER=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ID:'56adad65-d1fa-4e80-8d69-c25e0fe92a76', PARCEL=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_PARCEL_ID:'95045ede-d5b8-405b-b65f-d9dbdddb4756';
 const ITEM=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ITEM_ID:'8c999eec-7322-4676-8db6-585c4d4545f9', PROOF='[SIMULATED / STAGING ONLY] G6-M01-RECEPTION-RELAIS-'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6');
+// Multi-PO (M03) : un seul colis client, N lignes IMPORT reçues en un seul geste ; défauts = chemin historique (1 ligne).
+const SC=require('./canonical/multi-po').importScope(env,{item:ITEM}),ITEMS=SC.itemIds;
+const MIXED_M03=env.G6_CANONICAL_SCENARIO==='M03';
 const OUT=path.resolve('test-results/g6-canonical-relay-receipt');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
@@ -37,9 +41,9 @@ async function state(){
  const {rows:items}=await db.query('SELECT pi.order_item_id,pi.quantity,pi.qty_shipped,pi.qty_received,pi.qty_collected FROM parcel_items pi WHERE pi.parcel_id=$1',[PARCEL]);
  const {rows:receipts}=await db.query('SELECT shipment_id,order_item_id,relais_id,expected_qty,received_qty,received_by,proof_ref,incident_id FROM international_shipment_relay_receipts WHERE shipment_id=$1',[ID]);
  const {rows:events}=await db.query("SELECT event_type,from_stage,to_stage,proof_ref,actor_id FROM international_shipment_events WHERE shipment_id=$1 AND event_type='stage_changed' ORDER BY occurred_at,id",[ID]);
- check(orders.length===1&&items.length===1&&items[0].order_item_id===ITEM&&base.shipments.length===1&&base.shipments[0].id===ID&&
- base.box.length===1&&base.box[0].state==='DISPATCHED'&&base.links.length===1&&base.effective.length===1&&
- Number(base.effective[0].quantity)===1,'G6_RELAY_SCOPE_DRIFT');
+ check(orders.length===1&&items.length===SC.items&&sameSet(items.map(i=>i.order_item_id),ITEMS)&&base.shipments.length===1&&base.shipments[0].id===ID&&
+ base.box.length===1&&base.box[0].state==='DISPATCHED'&&base.links.length===1&&base.effective.length===SC.items&&
+ base.effective.every(e=>Number(e.quantity)===1),'G6_RELAY_SCOPE_DRIFT');
  return {base,orders,items,receipts,events};
 }
 
@@ -129,20 +133,19 @@ async function main(){
   check(env.GITHUB_EVENT_NAME==='issues'&&env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER&&
    env.NODE_ENV==='test'&&env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&
    env.STAGING_BASE_URL===BASE&&env.G6_CANONICAL_PHASE==='RELAY_RECEIPT'&&(env.G6_CANONICAL_RESUME_RUN_ID==='44260374187'||env.G6_DYNAMIC_FRESH_ORDER==='1')&&
-   env.G6_CANONICAL_ORDER_ID===ORDER&&env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET===MK.code,
+   env.G6_CANONICAL_ORDER_ID===ORDER&&['M01','M03'].includes(env.G6_CANONICAL_SCENARIO)&&env.G6_TARGET_MARKET===MK.code,
    'G6_RELAY_OWNER_STAGING_GUARD');
   const guard=await confirmTarget({db,env});
   check(guard.confirmed&&guard.fingerprint===env.G6_CANONICAL_DB_FINGERPRINT,'G6_RELAY_DB_FINGERPRINT_INVALID');
   report.db_fingerprint=guard.fingerprint;report.sha=await runtime();
   const prior=JSON.parse(fs.readFileSync((env.G6_DYNAMIC_FRESH_ORDER==='1'?'test-results/g6-canonical-customs/report.json':'test-results/g6-canonical-resume/g6-canonical-customs/report.json'),'utf8'));
   const before=await state();report.before=before;save();
-  check(before.base.order.length===1&&before.base.order[0].id===ORDER&&before.base.parcelItems.length===1&&
+  check(before.base.order.length===1&&before.base.order[0].id===ORDER&&before.base.parcelItems.length===SC.items&&
     before.base.parcelEvents.length===1&&before.base.parcelEvents[0].event_type==='shipped'&&
     isDeepStrictEqual(before.base,prior.after.base)&&before.base.shipments[0].stage==='local_delivery'&&
     before.base.parcels[0].id===PARCEL&&before.base.parcels[0].status==='shipped'&&
     before.orders[0].id===ORDER&&before.orders[0].reference===(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6')&&before.orders[0].payment_status==='paid'&&
-    before.receipts.length===0&&Number(before.items[0].qty_received)===0&&Number(before.items[0].qty_collected)===0&&
-    Number(before.items[0].qty_shipped)===1,'G6_RELAY_PRECONDITION_INVALID');
+    before.receipts.length===0&&before.items.every(i=>Number(i.qty_received)===0&&Number(i.qty_collected)===0&&Number(i.qty_shipped)===1),'G6_RELAY_PRECONDITION_INVALID');
   browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   actor=await login(browser,'E2E_AGENT_RELAIS_','agent_relais');
   const me=await actor.page.request.get('/api/auth/me');
@@ -165,15 +168,20 @@ async function main(){
   check(await card.getAttribute('data-relay-receivable')==='true','G6_RELAY_UI_NOT_RECEIVABLE');
   if(!await card.evaluate(el=>el.open))await humanClick(null,card.locator('summary').first());
   const field=card.locator('input[data-relay-received]');
-  check(await field.count()===1&&await field.getAttribute('data-relay-received')===ITEM,'G6_RELAY_UI_ITEM_NOT_UNIQUE');
-  await humanFill(null,field,'1');
+  check(await field.count()===SC.items,'G6_RELAY_UI_ITEM_NOT_UNIQUE');
+  const shownItems=[];
+  for(let i=0;i<SC.items;i++){
+   shownItems.push(await field.nth(i).getAttribute('data-relay-received'));
+   await humanFill(null,field.nth(i),'1');
+  }
+  check(sameSet(shownItems,ITEMS),'G6_RELAY_UI_ITEM_NOT_UNIQUE');
   await humanFill(null,card.locator('input[data-relay-proof]'),PROOF);
-  const expected={proof_ref:PROOF,lines:[{order_item_id:ITEM,received_qty:1}]};
+  const expected={proof_ref:PROOF,lines:shownItems.map(id=>({order_item_id:id,received_qty:1}))};
   let count=0;const url=BASE+RECEIPT_PATH;
   const handler=async route=>{
    const req=route.request();if(req.method()!=='POST')return route.fallback();
    let payload;try{payload=req.postDataJSON()}catch(_){}
-   if(count===0&&isDeepStrictEqual(payload,expected)){count++;return route.continue()}
+   if(count===0&&payload&&isDeepStrictEqual({...payload,lines:[...(payload.lines||[])].sort((x,y)=>String(x.order_item_id).localeCompare(String(y.order_item_id)))},{...expected,lines:[...expected.lines].sort((x,y)=>String(x.order_item_id).localeCompare(String(y.order_item_id)))})){count++;return route.continue()}
    actor.blocked.push({method:req.method(),path:new URL(req.url()).pathname});return route.abort('blockedbyclient');
   };
   await runtime();await actor.page.route(url,handler);
@@ -189,12 +197,13 @@ async function main(){
   }finally{await actor.page.unroute(url,handler)}
   const after=await state();report.after=after;save();
   check(after.base.shipments[0].stage==='relay_received'&&after.base.parcels[0].status==='available'&&
-   after.orders[0].status==='available'&&after.receipts.length===1&&after.receipts[0].shipment_id===ID&&
-   after.receipts[0].order_item_id===ITEM&&after.receipts[0].relais_id===before.orders[0].relais_id&&
-   Number(after.receipts[0].expected_qty)===1&&Number(after.receipts[0].received_qty)===1&&
-   after.receipts[0].proof_ref===PROOF&&!!after.receipts[0].received_by&&!after.receipts[0].incident_id&&
-   Number(after.items[0].qty_received)===1&&Number(after.items[0].qty_shipped)===1&&
-   Number(after.items[0].qty_collected)===0&&after.events.length===before.events.length+1&&
+   // M03 : la partie locale est déjà remise ; la commande ne doit simplement pas être « collected » avant la remise des lignes import.
+   (MIXED_M03?after.orders[0].status!=='collected':after.orders[0].status==='available')&&
+   after.receipts.length===SC.items&&sameSet(after.receipts.map(r=>r.order_item_id),ITEMS)&&
+   after.receipts.every(r=>r.shipment_id===ID&&r.relais_id===before.orders[0].relais_id&&
+   Number(r.expected_qty)===1&&Number(r.received_qty)===1&&
+   r.proof_ref===PROOF&&!!r.received_by&&!r.incident_id)&&
+   after.items.every(i=>Number(i.qty_received)===1&&Number(i.qty_shipped)===1&&Number(i.qty_collected)===0)&&after.events.length===before.events.length+1&&
    after.events.at(-1).from_stage==='local_delivery'&&after.events.at(-1).to_stage==='relay_received'&&
    after.events.at(-1).proof_ref===PROOF,'G6_RELAY_RECEIPT_PG_INVALID');
   await runtime();report.verdict='G6_RELAY_RECEIPT_SIMULATED_CHROMIUM_PG_PASS_AVAILABLE';

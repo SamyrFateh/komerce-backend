@@ -138,6 +138,8 @@ router.post('/', authenticateOrCreateGuest, validate(orderCreateSchema), async (
       status: order.status,
       total_kmf: order.total_kmf,
       total_eur: order.total_eur,
+      display_total_amount: order.display_total_amount,
+      display_currency: order.display_currency,
       transport_price_kmf: order.transport_price_kmf,
       payment_mode: order.payment_mode,
       payment_status: order.payment_status,

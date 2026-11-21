@@ -17,7 +17,7 @@ describe('G6 M02 LOCAL_STOCK',()=>{
   expect(g.byId.get('LOCAL_RELAY_AVAILABLE').roles).toEqual(['agent_relais']);
  });
  it('refuse un scénario inconnu',()=>{
-  for(const bad of ['M03','m02','',undefined,null,'M01;M02'])expect(()=>scenarioProfile(bad)).toThrow('G6_UNSUPPORTED_SCENARIO');
+  for(const bad of ['M04','m02','',undefined,null,'M01;M02'])expect(()=>scenarioProfile(bad)).toThrow('G6_UNSUPPORTED_SCENARIO');
   expect(()=>graphFor('M99')).toThrow('G6_UNSUPPORTED_SCENARIO');
   expect(()=>buyerParams({G6_CANONICAL_SCENARIO:'M07'})).toThrow('G6_UNSUPPORTED_SCENARIO');
  });

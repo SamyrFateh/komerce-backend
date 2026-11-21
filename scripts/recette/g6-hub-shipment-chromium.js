@@ -22,6 +22,10 @@ const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require
 const ORDER=env.G6_CANONICAL_ORDER_ID,PO=env.G6_CANONICAL_PO_ID,REF=env.G6_CANONICAL_ORDER_REFERENCE;
 const BAG=env.G6_CANONICAL_BAG_ID,BAGREF=env.G6_CANONICAL_BAG_REF,PARCEL=env.G6_CANONICAL_PARCEL_ID;
 const ALLOCATION=env.G6_CANONICAL_ALLOCATION_ID;
+// Multi-PO (M03) : un seul sac consolidé / KOM-BOX / colis / expédition, N lignes ; défauts = chemin historique.
+const SC=require('./canonical/multi-po').importScope(env,{po:PO,allocation:ALLOCATION});
+const sameSet=(a,b)=>JSON.stringify([...a].sort())===JSON.stringify([...b].sort());
+const placementIdsOf=s=>s.placement.map(p=>p.placement_id);
 const BOXREF='KOM-BOX-SIM-STAGING-'+REF;
 const BOX=env.G6_CANONICAL_BOX_ID;
 const SHIPMENT='SIM-STAGING-EXP-'+REF;
@@ -46,7 +50,7 @@ async function readback(){
   "SELECT o.id,o.reference,o.simulation_scope,o.payment_status::text payment_status,po.status::text po_status,"
   +"po.sent_note,(SELECT COUNT(*)::int FROM purchase_order_authorizations x WHERE x.purchase_order_id=po.id AND x.authorization_type='supplier_payment') payment_authorizations "
   +"FROM orders o JOIN order_items oi ON oi.order_id=o.id JOIN purchase_lines pl ON pl.order_item_id=oi.id "
-  +"JOIN purchase_orders po ON po.id=pl.purchase_order_id WHERE o.id=$1 AND po.id=$2 AND pl.cancelled_at IS NULL",[ORDER,PO])).rows;
+  +"JOIN purchase_orders po ON po.id=pl.purchase_order_id WHERE o.id=$1 AND po.id=ANY($2::uuid[]) AND pl.cancelled_at IS NULL",[ORDER,SC.pos])).rows;
  const bag=(await db.query("SELECT id,reference,order_id,state::text state,unit_type::text unit_type,bag_plan FROM hub_physical_units WHERE order_id=$1 AND unit_type='HANDLING_UNIT'",[ORDER])).rows;
  const placement=(await db.query(
   "SELECT p.id placement_id,p.allocation_id,p.physical_unit_id,p.quantity,p.operation_type,p.evidence_method,p.evidence_ref,p.created_by "
@@ -77,28 +81,29 @@ async function readback(){
  return {order,bag,placement,parcels,box,links,effective,custody,shipments,shipmentLinks,shipmentEvents,parcelItems,parcelEvents};
 }
 function checkBase(s){
- check(s.order.length===1&&s.order[0].id===ORDER&&s.order[0].reference===REF&&
-  s.order[0].simulation_scope==='G6-BUYER'&&s.order[0].payment_status==='paid'&&
-  s.order[0].po_status==='hub_received'&&s.order[0].sent_note?.startsWith('[SIMULATED / STAGING ONLY]')&&
-  Number(s.order[0].payment_authorizations)===0,'G6_BOX_ORDER_SCOPE_INVALID');
+ check(s.order.length===SC.pos.length&&s.order.every(o=>o.id===ORDER&&o.reference===REF&&
+  o.simulation_scope==='G6-BUYER'&&o.payment_status==='paid'&&
+  o.po_status==='hub_received'&&o.sent_note?.startsWith('[SIMULATED / STAGING ONLY]')&&
+  Number(o.payment_authorizations)===0),'G6_BOX_ORDER_SCOPE_INVALID');
  check(s.bag.length===1&&s.bag[0].id===BAG&&s.bag[0].reference===BAGREF&&s.bag[0].state==='PACKED'&&
-  s.placement.length===1&&s.placement[0].physical_unit_id===BAG&&s.placement[0].allocation_id===ALLOCATION&&
-  Number(s.placement[0].quantity)===1&&s.placement[0].operation_type==='REPACK'&&
-  s.placement[0].evidence_method==='MANUAL'&&
-  s.placement[0].evidence_ref==='[SIMULATED / STAGING ONLY] G6-M01-DEPOT-SAC-'+REF,
+  s.placement.length===SC.items&&sameSet(s.placement.map(p=>p.allocation_id),SC.allocations)&&
+  s.placement.every(p=>p.physical_unit_id===BAG&&Number(p.quantity)===1&&p.operation_type==='REPACK'&&
+  p.evidence_method==='MANUAL'&&
+  p.evidence_ref==='[SIMULATED / STAGING ONLY] G6-M01-DEPOT-SAC-'+REF),
   'G6_BOX_BAG_PHYSICAL_CONTENT_CHANGED');
  check(s.parcels.length===1&&s.parcels[0].id===PARCEL&&/^[A-Z0-9][A-Z0-9-]{5,63}$/.test(String(s.parcels[0].reference||'')),
   'G6_BOX_CLIENT_PARCEL_NOT_UNIQUE');
 }
-function checkLink(s,boxId,placementId){
+function checkLink(s,boxId,placementIds){
  checkBase(s);
  check(s.box.length===1&&s.box[0].id===boxId&&s.box[0].unit_type==='MARKET_PARCEL'&&
   s.links.length===1&&s.links[0].box_unit_id===boxId&&s.links[0].bag_unit_id===BAG&&s.links[0].parcel_id===PARCEL&&
   s.links[0].linked_by&&s.links[0].evidence_method==='MANUAL'&&s.links[0].evidence_ref===PROOF&&
   s.links[0].bag_reference_scan===BAGREF&&s.links[0].box_reference_scan===BOXREF&&
-  s.effective.length===1&&s.effective[0].placement_id===placementId&&s.effective[0].bag_unit_id===BAG&&
-  s.effective[0].allocation_id===ALLOCATION&&Number(s.effective[0].quantity)===1&&
-  s.placement[0].placement_id===placementId,'G6_BOX_LINK_OR_SINGLE_PLACEMENT_INVALID');
+  s.effective.length===SC.items&&sameSet(s.effective.map(e=>e.placement_id),placementIds)&&
+  s.effective.every(e=>e.bag_unit_id===BAG&&Number(e.quantity)===1)&&
+  sameSet(s.effective.map(e=>e.allocation_id),SC.allocations)&&
+  sameSet(placementIdsOf(s),placementIds),'G6_BOX_LINK_OR_SINGLE_PLACEMENT_INVALID');
 }
 async function openDetails(page){
  await humanGoto(page,'/admin/hub-live?view=execute&market='+MK.code+'',{waitUntil:'domcontentloaded'});
@@ -216,7 +221,7 @@ async function gesture(actor,key,endpoint,button,validatePayload){
  }finally{await actor.page.unroute(url,handler);}
 }
 function checkShipment(s,shipmentId,stage){
- checkLink(s,BOX,s.placement[0].placement_id);
+ checkLink(s,BOX,placementIdsOf(s));
  check(s.shipments.length===1&&s.shipments[0].id===shipmentId&&s.shipments[0].reference===SHIPMENT&&
   s.shipments[0].stage===stage&&s.shipments[0].market_id===s.box[0].market_id&&
   s.shipmentLinks.length===1&&s.shipmentLinks[0].shipment_id===shipmentId&&
@@ -246,18 +251,19 @@ async function main(){
    env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.NODE_ENV==='test'&&
    env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&
    env.STAGING_BASE_URL==='https://komerce-backend-production.up.railway.app'&&
-   env.G6_CANONICAL_PHASE==='HUB_SHIPMENT'&&env.G6_CANONICAL_SCENARIO==='M01'&&env.G6_TARGET_MARKET===MK.code&&
+   env.G6_CANONICAL_PHASE==='HUB_SHIPMENT'&&['M01','M03'].includes(env.G6_CANONICAL_SCENARIO)&&env.G6_TARGET_MARKET===MK.code&&
    ((REF==='KL1WGP6'&&ORDER==='56adad65-d1fa-4e80-8d69-c25e0fe92a76'&&PO==='8353f1a3-f2a5-4c5e-b01c-95b4cb2004e3'&&
      BAG==='bcf810c9-33b2-438a-b4c3-857b024e2247'&&BAGREF==='KOM-ITEM-178D0AEA488AA4B5B9'&&
      PARCEL==='95045ede-d5b8-405b-b65f-d9dbdddb4756'&&ALLOCATION==='3b430dcf-8662-44b4-a29f-27e38df19253'&&
      BOX==='6ca614e5-869c-40ab-80d7-3684974092fe')||
     (env.G6_DYNAMIC_FRESH_ORDER==='1'&&/^[A-Z0-9][A-Z0-9-]{5,63}$/.test(REF||'')&&
-     [ORDER,PO,BAG,PARCEL,ALLOCATION,BOX].every(x=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(String(x||'')))&&
+     [ORDER,PO,BAG,PARCEL,ALLOCATION,BOX,...SC.pos,...SC.allocations].every(x=>/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(String(x||'')))&&
+     SC.pos[0]===PO&&SC.allocations[0]===ALLOCATION&&SC.pos.length===SC.items&&SC.allocations.length===SC.items&&SC.units===SC.items&&
      /^KOM-ITEM-[A-Z0-9-]{8,}$/i.test(BAGREF||'')))&&!!env.DATABASE_URL,'G6_SHIPMENT_OWNER_STAGING_GUARD');
   const target=await confirmTarget({db,env});
   check(target.confirmed&&target.fingerprint===env.G6_CANONICAL_DB_FINGERPRINT,'G6_SHIPMENT_DB_MISMATCH');
   report.db_fingerprint=target.fingerprint;report.sha=await runtime();
-  const before=await readback();checkLink(before,BOX,before.placement[0]?.placement_id);
+  const before=await readback();checkLink(before,BOX,placementIdsOf(before));
   report.before=before;save();
   const partialId=env.G6_CANONICAL_PARTIAL_SHIPMENT_ID;
   const partialPath=env.G6_CANONICAL_PARTIAL_SHIPMENT_REPORT;
@@ -273,8 +279,8 @@ async function main(){
    checkShipment(before,partialId,'hub_ready');
    check(before.box[0].state==='DISPATCHED'&&before.shipments[0].hub_draft===true&&
     before.shipments[0].forwarder_name===null&&before.shipments[0].transport_mode===null&&
-    before.parcels[0].status==='preparation'&&before.parcelItems.length===1&&
-    Number(before.parcelItems[0].qty_shipped)===0&&Number(before.parcelItems[0].quantity)===1&&
+    before.parcels[0].status==='preparation'&&before.parcelItems.length===SC.items&&
+    before.parcelItems.every(i=>Number(i.qty_shipped)===0&&Number(i.quantity)===1)&&
     before.parcelEvents.length===0&&before.shipmentEvents.length===1&&before.shipmentEvents[0].event_type==='opened'&&
     prior.events?.length===2&&prior.events[0].key==='open-shipment'&&prior.events[0].http===201&&
     prior.events[1].key==='dispatch-box'&&prior.events[1].http===200,'G6_SHIPMENT_PARTIAL_NOT_READY');
@@ -282,10 +288,10 @@ async function main(){
    report.events=prior.events.map(e=>({...e,source_run_id:'44203777890'}));
    report.after_open=prior.after_open;report.after_dispatch=prior.after_dispatch;save();
   }else check(before.box[0].state==='PACKED'&&before.shipments.length===0&&before.shipmentLinks.length===0&&
-    before.parcels[0].status==='preparation'&&before.parcelItems.length===1&&
-    Number(before.parcelItems[0].quantity)===1&&Number(before.parcelItems[0].qty_shipped)===0&&
+    before.parcels[0].status==='preparation'&&before.parcelItems.length===SC.items&&
+    before.parcelItems.every(i=>Number(i.quantity)===1&&Number(i.qty_shipped)===0)&&
     before.parcelEvents.length===0,'G6_SHIPMENT_ALREADY_STARTED_OR_INVALID');
-  const placementId=before.placement[0].placement_id;
+  const placementIds=placementIdsOf(before);
   browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   const actor=await login(browser,'E2E_AGENT_HUB_',{readOnly:true});
   try{
@@ -303,7 +309,7 @@ async function main(){
    report.shipment_id=shipmentId;save();
    checkShipment(opened,shipmentId,'hub_ready');
    check(opened.box[0].state==='PACKED'&&opened.shipments[0].hub_draft===true&&
-    opened.parcels[0].status==='preparation'&&Number(opened.parcelItems[0].qty_shipped)===0&&
+    opened.parcels[0].status==='preparation'&&opened.parcelItems.every(i=>Number(i.qty_shipped)===0)&&
     opened.shipmentEvents.length===1&&opened.shipmentEvents[0].event_type==='opened'&&
     opened.shipmentEvents[0].proof_ref===null&&opened.shipmentEvents[0].actor_id,'G6_SHIPMENT_OPEN_PG_INVALID');
    section=await openDetails(actor.page);row=boxRow(section,actor.page);
@@ -313,7 +319,7 @@ async function main(){
    const dispatched=await readback();report.after_dispatch=dispatched;save();
    checkShipment(dispatched,shipmentId,'hub_ready');
    check(dispatched.box[0].state==='DISPATCHED'&&dispatched.parcels[0].status==='preparation'&&
-    dispatched.placement[0].placement_id===placementId&&dispatched.custody.some(e=>e.event_type==='STATE_TRANSITION'&&
+    sameSet(placementIdsOf(dispatched),placementIds)&&dispatched.custody.some(e=>e.event_type==='STATE_TRANSITION'&&
       e.from_state==='PACKED'&&e.to_state==='DISPATCHED'&&e.actor_id),'G6_SHIPMENT_DISPATCH_PG_INVALID');
    }
    const task=await openTransport(actor.page);
@@ -324,9 +330,9 @@ async function main(){
     task.locator('button[type="submit"]'),b=>b?.to_stage==='handed_over'&&b.forwarder_name===FORWARDER&&
       b.transport_mode==='sea'&&b.proof_ref===HANDOVER_PROOF&&Object.keys(b).length===4);
    const after=await readback();report.after=after;save();checkShipment(after,shipmentId,'handed_over');
-   check(after.box[0].state==='DISPATCHED'&&after.placement[0].placement_id===placementId&&
+   check(after.box[0].state==='DISPATCHED'&&sameSet(placementIdsOf(after),placementIds)&&
     after.shipments[0].forwarder_name===FORWARDER&&after.shipments[0].transport_mode==='sea'&&
-    after.parcels[0].status==='shipped'&&after.parcelItems.length===1&&Number(after.parcelItems[0].qty_shipped)===1&&
+    after.parcels[0].status==='shipped'&&after.parcelItems.length===SC.items&&after.parcelItems.every(i=>Number(i.qty_shipped)===1)&&
     after.shipmentEvents.length===2&&after.shipmentEvents.some(e=>e.event_type==='stage_changed'&&
     e.from_stage==='hub_ready'&&e.to_stage==='handed_over'&&e.proof_ref===HANDOVER_PROOF&&e.actor_id)&&
     after.parcelEvents.length===1&&after.parcelEvents[0].actor_id&&
@@ -340,4 +346,4 @@ async function main(){
  }finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify(report));}
 }
 if(require.main===module)main();
-module.exports={readback,checkShipment,runtime};
+module.exports={readback,checkShipment,runtime,SC,sameSet,placementIdsOf};

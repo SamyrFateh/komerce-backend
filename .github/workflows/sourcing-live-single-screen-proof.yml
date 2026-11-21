@@ -1,5 +1,12 @@
 name: Sourcing Live single-screen targeted proof
 on:
+  pull_request:
+    paths:
+      - 'public/dashboards/canonical/js/import-runtime.js'
+      - 'tests/e2e/sourcing-live-single-screen.spec.js'
+      - 'tests/unit/import-runtime.test.js'
+      - 'tests/unit/sourcing-live-single-screen.test.js'
+      - '.github/workflows/sourcing-live-single-screen-proof.yml'
   push:
     branches:
       - feat/sourcing-live-single-screen-20261031

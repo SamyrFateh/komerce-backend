@@ -32212,6 +32212,14 @@
       {
         "boutiqueManifest": "checkout",
         "category": "js",
+        "declared": "../js/b-market-price-format.js",
+        "resolvedPath": "public/boutique/js/b-market-price-format.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "checkout",
+        "category": "js",
         "declared": "../js/b-checkout-render.js",
         "resolvedPath": "public/boutique/js/b-checkout-render.js",
         "exists": true,
@@ -32262,6 +32270,14 @@
         "category": "tests",
         "declared": "../tests/unit/b-checkout-render.test.js",
         "resolvedPath": "public/boutique/tests/unit/b-checkout-render.test.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "checkout",
+        "category": "tests",
+        "declared": "../tests/unit/market-price-format.test.js",
+        "resolvedPath": "public/boutique/tests/unit/market-price-format.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -35474,6 +35490,10 @@
               {
                 "sourceFileId": "public/boutique/js/render/render-product-card.js",
                 "targetFile": "public/boutique/js/cart-product-summary.js"
+              },
+              {
+                "sourceFileId": "public/boutique/js/view-models/product-card-view-model.js",
+                "targetFile": "public/boutique/js/b-market-price-format.js"
               },
               {
                 "sourceFileId": "public/boutique/js/b-modal-desktop-product.js",
@@ -45226,6 +45246,10 @@
                 "targetFile": "public/boutique/js/b-utils.js"
               },
               {
+                "sourceFileId": "public/boutique/js/b-market-price-format.js",
+                "targetFile": "public/boutique/js/b-utils.js"
+              },
+              {
                 "sourceFileId": "public/boutique/tests/unit/b-checkout.test.js",
                 "targetFile": "public/boutique/js/b-bus.js"
               },
@@ -50516,7 +50540,7 @@
         "filesObserved": 2369
       },
       "boutique": {
-        "filesObserved": 216,
+        "filesObserved": 218,
         "nonCanonicalManifestFiles": 15
       },
       "dash": {
@@ -54563,8 +54587,8 @@
       "boutique": {
         "manifestsDiscovered": 16,
         "manifestsConnected": 16,
-        "technicalNodesTotal": 105,
-        "technicalNodesOwned": 105,
+        "technicalNodesTotal": 106,
+        "technicalNodesOwned": 106,
         "technicalOrphans": 0
       }
     },

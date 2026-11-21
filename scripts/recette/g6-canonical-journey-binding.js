@@ -11,8 +11,11 @@
 
 // Business truth lives only in the original G6 catalogue, NOT in a new matrix.
 const business = require('../../docs/recette/G6_PRE_STRESS_BUSINESS_SCENARIOS.json');
-// M02 (LOCAL_STOCK) reuses the same real relay cash gesture; no import chain behind it.
-const REPLAYABLE_IMPORT_CASH = new Set(['M01', 'M02', 'M04', 'M05']);
+// The real relay cash gesture is bound to every scenario whose registered stage sequence contains RELAY_CASH
+// (M01/M02/M03 and the negative N scenarios built on them), plus the M01 aliases M04/M05. Single source: stage-registry.
+const { SCENARIO_STAGE_IDS } = require('./canonical/stage-registry');
+const REPLAYABLE_IMPORT_CASH = new Set(['M04', 'M05',
+  ...Object.entries(SCENARIO_STAGE_IDS).filter(([, ids]) => ids.includes('RELAY_CASH')).map(([id]) => id)]);
 // Dynamic fresh-buyer replay: the M01 journey in CM/CG is catalogued as M04/M05 (same chain, market actors).
 const DYNAMIC_ALIAS = Object.freeze({ M01: Object.freeze({ CM: 'M04', CG: 'M05' }) });
 const ORDER_REF = /^[A-Z0-9][A-Z0-9-]{5,63}$/;
@@ -32,7 +35,7 @@ function resolveCanonicalReplay(env = process.env) {
   const id = String(env.G6_CANONICAL_SCENARIO || '').trim().toUpperCase();
   const market = String(env.G6_TARGET_MARKET || '').trim().toUpperCase();
   const scenario = canonicalScenario(id, market);
-  if (!REPLAYABLE_IMPORT_CASH.has(id) || scenario.kind !== 'nominal') {
+  if (!REPLAYABLE_IMPORT_CASH.has(id)) {
     throw new Error('G6_EXISTING_BUYER_CASH_ADAPTER_NOT_BOUND_FOR_SCENARIO_' + id);
   }
   return { id: scenario.id, market, source_version: business.version, scenario_title: scenario.title };

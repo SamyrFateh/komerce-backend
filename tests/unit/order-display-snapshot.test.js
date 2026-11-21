@@ -45,6 +45,21 @@ describe('invariant 3 : le serveur calcule lui-même, jamais un montant client',
   });
 });
 
+describe('M02 CG: amount approved in the market currency is exact', () => {
+  test('6654 XAF remains 6654, never reprojected via rounded 4991 KMF', async () => {
+    mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'cg-id', currency: 'XAF', minor_unit: 0 }] });
+    const result = await resolveDisplaySnapshot({
+      totalKmf: 4991, displayMarketCode: 'CG',
+      exactMarketAmount: 6654, exactMarketCurrency: 'XAF',
+    });
+    expect(result).toMatchObject({
+      amount: 6654, currency: 'XAF',
+      meta: { price_authority: 'LOCAL_ACTIVE_MARKET_AMOUNT', base_amount: 4991 },
+    });
+    expect(mockDbQuery).toHaveBeenCalledTimes(1); // No KMF/XAF parity read or reprojection.
+  });
+});
+
 describe('invariant 4 : ne suppose jamais que relaisMarketId == marché de navigation', () => {
   test('un code client valide fait TOUJOURS foi avant le relais, même si les deux diffèrent', async () => {
     mockDbQuery

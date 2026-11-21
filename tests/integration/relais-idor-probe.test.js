@@ -79,9 +79,15 @@ if (!hasIntegrationEnv) {
     // Chaque preuve doit partir d'un compteur propre ; le test XREL-02 dédié
     // accumule ensuite volontairement ses requêtes dans UN même test.
     const localKeys = ['::ffff:127.0.0.1', '::1', '127.0.0.1'];
+    // Le limiteur global indexe les requêtes anonymes par « ip:<adresse> »
+    // (globalRateLimitKey). Réinitialiser seulement l'adresse brute laissait
+    // la sonde accumuler >500 requêtes puis retourner 429 à la place des
+    // vrais refus d'authentification/IDOR. Ce reset est limité aux TESTS :
+    // il ne désactive aucun limiteur ni aucune protection de production.
+    const keysToReset = [...localKeys, ...localKeys.map((ip) => 'ip:' + ip)];
     for (const limiter of Object.values(limiters)) {
       if (!limiter || typeof limiter.resetKey !== 'function') continue;
-      for (const key of localKeys) {
+      for (const key of keysToReset) {
         await Promise.resolve(limiter.resetKey(key));
       }
     }
