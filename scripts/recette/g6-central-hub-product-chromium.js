@@ -10,17 +10,18 @@
  */
 'use strict';
 const MK=require('./canonical/market-profile').marketProfile(process.env);
-const fs=require('node:fs'),path=require('node:path');
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
 const {observe,fullError,startTraceAfterAuth}=require('./canonical/observability');
 const {humanGoto,humanClick,humanFill,humanSelect,humanPress}=require('./canonical/actors/human-gestures');
 const env=process.env,BASE='https://komerce-backend-production.up.railway.app';
 const OUT=path.resolve('test-results/g6-central-hub-product');
-// Marqueur recette G6 : le produit se retrouve par ce préfixe de nom et par le supplier_product_id.
+// Marqueur G6 : central_hub_manual V2 (#4920) ne porte aucun identifiant/SKU vendeur.
+// Retrouver le candidat par nom métier exact et fournisseur système.
 const G6_PREFIX='[G6-HUB] ';
 // V2 : l'import V1 (KSC-000812 en KM) est resté WATCH sans catégorie ; il est ignoré, jamais ré-édité ni re-scanné.
-const G6_SUPPLIER_PRODUCT_ID='G6-CENTRAL-'+MK.code+'-V2';
+const G6_SUPPLIER_PRODUCT_ID='G6-CENTRAL-'+MK.code+'-V2'; // marqueur historique, jamais envoyé comme SKU vendeur
 // Le classifieur Sourcing lit les termes du nom et de la catégorie fournisseur ; le préfixe G6 reste le marqueur de recette.
 // Termes configurés (migrations 248/249, famille « materiels », cible de marge 35 %) : « screwdriver », « hand tool ».
 const PRODUCT_NAME=G6_PREFIX+'Screwdriver set '+MK.code;
@@ -59,8 +60,12 @@ const CANDIDATE_SQL=`SELECT sc.candidate_ref,sc.state,sc.product_id,sc.supplier_
  (SELECT d.status FROM product_market_price_drafts d JOIN markets m ON m.id=d.market_id WHERE d.product_id=p.id AND m.code=$2) AS price_status,
  (SELECT e.commercial_exposure FROM product_market_exposure e JOIN markets m ON m.id=e.market_id WHERE e.product_id=p.id AND m.code=$2) AS exposure
  FROM sourcing_candidates sc LEFT JOIN products p ON p.id=sc.product_id
- WHERE sc.supplier_product_id=$1 ORDER BY sc.created_at DESC LIMIT 1`;
-const readCandidate=async()=>(await db.query(CANDIDATE_SQL,[G6_SUPPLIER_PRODUCT_ID,MK.code])).rows[0]||null;
+ WHERE sc.product_name=$1
+   AND sc.normalized_source_contract->>'source_kind'='central_hub_manual'
+   AND NOT (sc.normalized_source_contract ?| ARRAY['supplier_name','supplier_product_id','sellable_units'])
+   AND EXISTS (SELECT 1 FROM suppliers s WHERE s.id=sc.supplier_id AND s.system_key='central_hub')
+ ORDER BY sc.created_at DESC,sc.id DESC LIMIT 1`;
+const readCandidate=async()=>(await db.query(CANDIDATE_SQL,[PRODUCT_NAME,MK.code])).rows[0]||null;
 // Pur : prochain geste selon l'état lu en PG. Un écran absent donne SCREEN_MISSING_*, jamais de contournement.
 function nextStep({sellable,candidate}){
  if(sellable&&sellable.length===1)return {verdict:'G6_CENTRAL_HUB_PRODUCT_ALREADY_SELLABLE_PASS',done:true};
@@ -77,6 +82,8 @@ function nextStep({sellable,candidate}){
  }
  const ref=candidate.product_ref;
  if(!(candidate.is_active===true&&candidate.lifecycle_status==='active')){
+  // #4920 : photo canonique via Catalogue AVANT approbation, jamais un faux SKU vendeur.
+  if(Number(candidate.media_count||0)<1)return {step:'catalog-media',product_ref:ref};
   // Préparation éditoriale puis classement boutique par l'inspecteur Catalogue, avant l'approbation humaine.
   if(!String(candidate.description||'').trim()||candidate.needs_review!==false)return {step:'catalog-editorial',product_ref:ref};
   if(!candidate.boutique_category_key||!candidate.boutique_subcategory_key)return {step:'catalog-taxonomy',product_ref:ref};
@@ -152,7 +159,7 @@ async function manualImport(actor){
  const selected=await select.evaluate(s=>s.selectedOptions[0]?.getAttribute('data-system-key'));
  check(selected==='central_hub','G6_CENTRAL_HUB_SUPPLIER_NOT_PRESELECTED');
  await humanFill(null,actor.page.locator('[data-manual-products]'),JSON.stringify([{
-  supplier_product_id:G6_SUPPLIER_PRODUCT_ID,product_name:PRODUCT_NAME,purchase_price:PURCHASE_PRICE,currency:CURRENCY,supplier_category:SUPPLIER_CATEGORY,weight_kg:WEIGHT_KG,dimensions:DIMENSIONS}]));
+  product_name:PRODUCT_NAME,purchase_price:PURCHASE_PRICE,currency:CURRENCY,supplier_category:SUPPLIER_CATEGORY,weight_kg:WEIGHT_KG,dimensions:DIMENSIONS}]));
  await fire(actor,'POST',API+'/imports',()=>humanClick(null,actor.page.locator('[data-workspace-action="submit-manual-import"]')),'manual-import-central-hub');
  return true;
 }
@@ -244,7 +251,7 @@ async function catalogTaxonomy(actor,ref){
  return true;
 }
 // Approbation humaine du Catalogue global : contrôle des prérequis (lecture) puis « Valider le Catalogue ».
-// Média canonique ou contrat source manquants : aucun écran de téléversement ni de contrat -> verdict avec preuve.
+// Le média canonique est une étape humaine distincte obligatoire, vérifiée en PG.
 async function approveCatalog(actor,ref){
  const path=CAT+'/approval/'+ref+'/approve';
  await arm(actor,'POST',path);
@@ -311,10 +318,10 @@ async function marketExpose(actor,ref,productId){
  await fire(actor,'PUT',put,()=>humanClick(null,btn),'market-exposure-enable',{product_ref:ref});
  return true;
 }
-const STEP_ROLE={'manual-import':'admin','scan-candidate':'admin','promote-candidate':'admin','resolve-category':'admin','catalog-approve':'admin','catalog-editorial':'admin','catalog-taxonomy':'admin',
+const STEP_ROLE={'manual-import':'admin','scan-candidate':'admin','promote-candidate':'admin','resolve-category':'admin','catalog-approve':'admin','catalog-editorial':'admin','catalog-taxonomy':'admin','catalog-media':'admin',
  'price-draft':'market_operator','price-activate':'market_operator','market-expose':'market_operator'};
 const DO={'manual-import':(a)=>manualImport(a),'scan-candidate':(a,s)=>scanCandidate(a,s.candidate_ref),
- 'promote-candidate':(a,s)=>promoteCandidate(a,s.candidate_ref),'resolve-category':(a,s)=>resolveCategory(a,s.candidate_ref),'catalog-approve':(a,s)=>approveCatalog(a,s.product_ref),'catalog-editorial':(a,s)=>catalogEditorial(a,s.product_ref),'catalog-taxonomy':(a,s)=>catalogTaxonomy(a,s.product_ref),
+ 'promote-candidate':(a,s)=>promoteCandidate(a,s.candidate_ref),'resolve-category':(a,s)=>resolveCategory(a,s.candidate_ref),'catalog-approve':(a,s)=>approveCatalog(a,s.product_ref),'catalog-editorial':(a,s)=>catalogEditorial(a,s.product_ref),'catalog-taxonomy':(a,s)=>catalogTaxonomy(a,s.product_ref),'catalog-media':(a,s)=>catalogMedia(a,s.product_ref),
  'price-draft':(a,s)=>priceDraft(a,s.product_ref),'price-activate':(a,s)=>priceActivate(a,s.product_ref),
  'market-expose':(a,s)=>marketExpose(a,s.product_ref,s.product_id)};
 const readState=async()=>({sellable:await readSellable(),candidate:await readCandidate()});
@@ -326,7 +333,7 @@ async function main(){
   const guard=await confirmTarget({db,env});check(guard.confirmed,'G6_CENTRAL_DB_GUARD');
   report.db_fingerprint=guard.fingerprint;
   let state=await readState(),step=nextStep(state),last=null;
-  for(let i=0;i<8&&step.step;i++){
+  for(let i=0;i<12&&step.step;i++){
    // Pas de reclic : un même geste ne se rejoue jamais dans un run si la relecture PG n'a pas avancé.
    check(step.step!==last,'G6_CENTRAL_NO_PROGRESS_'+step.step);
    if(!browser){const {chromium}=require('playwright');browser=await chromium.launch({headless:true});OBS=observe(browser,OUT)}
