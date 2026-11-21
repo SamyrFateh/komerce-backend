@@ -6,9 +6,9 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result
- * @depends       services/product-sku-service.js, services/product-sellable-service.js
+ * @depends       services/product-sku-service.js, services/product-sellable-service.js, services/central-hub-on-order.js
  * @used-by       services/order-checkout-service.js
- * @db-read       catalog_product_sale_holds, product_variants, products, shared_cart_items, shared_carts, order_items
+ * @db-read       catalog_product_sale_holds, product_variants, products, shared_cart_items, shared_carts, order_items, product_skus, suppliers, sourcing_candidates
  * @db-write      none
  * @db-txn        participant (reçoit le client transactionnel de l'appelant, ne BEGIN/COMMIT/ROLLBACK jamais lui-même)
  * @doctrine      resolve_before_behavior_change
@@ -58,6 +58,7 @@
 
 const { resolveActiveSku, canonicalizeVariantCombo } = require('./product-sku-service');
 const { computeSellablePricing } = require('./product-sellable-service');
+const { isCentralHubOnOrderSku } = require('./central-hub-on-order');
 
 async function resolveCheckoutItems({
   client,
@@ -152,7 +153,9 @@ async function resolveCheckoutItems({
       if (!Number.isSafeInteger(totalSkuQuantity) || totalSkuQuantity < 1) {
         return { ok: false, status: 400, body: { error: 'Quantité cumulée invalide pour ce SKU' } };
       }
-      if (resolvedSku.stock < totalSkuQuantity) {
+      const procureOnOrder = Number(resolvedSku.stock) === 0
+        && await isCentralHubOnOrderSku(client, product.id, resolvedSku.id);
+      if (!procureOnOrder && resolvedSku.stock < totalSkuQuantity) {
         return {
           ok: false, status: 409,
           body: {
@@ -161,7 +164,11 @@ async function resolveCheckoutItems({
           },
         };
       }
+      if (procureOnOrder && totalSkuQuantity > maxQty) {
+        return {ok:false,status:400,body:{error:'Quantité cumulée sur commande supérieure au maximum autorisé'}};
+      }
       requestedBySku.set(skuKey, totalSkuQuantity);
+      item._procure_on_order = procureOnOrder;
 
       item.variant_combo = comboRaw;
       item._resolved_sku_id = resolvedSku.id;
