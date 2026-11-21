@@ -43,8 +43,12 @@
 .kmc-hub-app .kmc-hub-global-table{
   width:100%;min-width:1320px;table-layout:fixed;
 }
-.kmc-hub-app .kmc-hub-global-table th:first-child {width:270px;}
+/* Toutes les étapes commencent au même niveau que l'identité de commande.
+ * Densité inchangée, seule la lecture horizontale est stabilisée. */
+.kmc-hub-app .kmc-hub-global-table th:first-child {width:282px;}
 .kmc-hub-app .kmc-hub-global-table td{padding:6px 5px;}
+.kmc-hub-app .kmc-hub-global-table tbody td {vertical-align:top;}
+.kmc-hub-app .kmc-hub-global-table tbody td:first-child {padding-top:14px;}
 .kmc-hub-app .kmc-hub-global-table .kmc-hub-board-cell{
   min-height:67px;padding:10px 10px;
 }
