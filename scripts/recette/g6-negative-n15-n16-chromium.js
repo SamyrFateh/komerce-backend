@@ -4,7 +4,7 @@
  * @layer script
  * @owner backend-core
  * @purpose N15 (sac ou KOM-BOX incomplet) et N16 (remise d'un carton non DISPATCHED, composition figée après remise), staging only : gestes Hub par l'écran, sondes API signalées, aucune écriture SQL.
- * @db-read orders, hub_physical_units, hub_physical_unit_placements, hub_box_bags, hub_box_effective_placements, hub_custody_events, international_shipments, international_shipment_hub_units, parcels, parcel_items
+ * @db-read orders, hub_physical_units, hub_physical_unit_placements, hub_box_bags, hub_box_effective_placements, hub_custody_events, international_shipments, international_shipment_hub_units, international_shipment_events, parcels, parcel_items
  * @db-write none
  * @impact-areas staging-only, hub, logistics
  */
