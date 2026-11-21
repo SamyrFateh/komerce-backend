@@ -210,23 +210,43 @@ async function probeRouteMissing(page,fixture){
  await humanClick(null,page.locator('#k-modal-close'));
  await page.locator('#k-side-cart.has-items').waitFor({state:'visible',timeout:12000});
  const checkout=page.locator('#k-sc-checkout');
- let checkoutOpened=false,confirmEnabled=false;
- if(await checkout.isVisible()&&await checkout.isEnabled()){
-  await humanClick(null,checkout);checkoutOpened=true;
- }else if(await page.locator('#k-cart-btn').isVisible()){
-  await humanClick(null,page.locator('#k-cart-btn'));
-  checkoutOpened=await page.locator('#k-order-modal.open').isVisible().catch(()=>false);
- }
+ let checkoutOpened=false,confirmEnabled=false,refusalVisible=false,refusalCode=null;
+ const checkoutClicked=await checkout.isVisible().catch(()=>false)&&await checkout.isEnabled().catch(()=>false);
+ if(checkoutClicked)await humanClick(null,checkout);
+ else if(await page.locator('#k-cart-btn').isVisible())await humanClick(null,page.locator('#k-cart-btn'));
+ checkoutOpened=await page.locator('#k-order-modal.open').waitFor({state:'visible',timeout:6000})
+  .then(()=>true,()=>false);
+ const toast=page.locator('.k-toast.show .k-toast-simple');
+ const visibleRefusal=async()=>/relais|livraison|point de retrait|destination/i.test(
+  await toast.innerText().catch(()=>''));
  if(checkoutOpened){
-  await page.locator('#k-order-modal.open').waitFor({state:'visible',timeout:12000});
   const confirm=page.locator('#btn-confirm-order');
   confirmEnabled=await confirm.isVisible().catch(()=>false)&&await confirm.isEnabled().catch(()=>false);
+  if(confirmEnabled){
+   const response=page.waitForResponse(r=>r.url()===BASE+'/api/orders'&&
+    r.request().method()==='POST',{timeout:6500}).catch(()=>null);
+   await humanClick(null,confirm);
+   const r=await response;
+   if(r){
+    const body=await r.json().catch(()=>null);
+    refusalCode=body?.code||null;
+    report.http_attempts.push({method:'POST',path:'/api/orders',status:r.status(),code:refusalCode});save();
+    check(r.status()===400&&refusalCode==='relay_required',
+     'G6_N03_PRODUCT_GAP_ORDER_POST_NOT_REFUSED_FOR_MISSING_RELAY');
+   }else{
+    refusalVisible=await visibleRefusal();
+   }
+  }
+ }else{
+  refusalVisible=await visibleRefusal();
  }
+ const refused=(!confirmEnabled&&checkoutOpened)||refusalVisible||refusalCode==='relay_required';
  const file='storefront-N03-ROUTE-'+MARKET+'.png';
  await page.screenshot({path:path.join(OUT,file),fullPage:true});report.screens.push(file);
- check(!confirmEnabled,'G6_N03_PRODUCT_GAP_CHECKOUT_ALLOWED_WITHOUT_ROUTABLE_RELAY');
+ check(refused,'G6_N03_PRODUCT_GAP_ROUTE_CHECKOUT_NOT_REFUSED_VISIBLY_OR_HTTP');
  return {attempted_open_product:true,purchase_control_absent_or_disabled:true,
   buy_unavailable:true,route_checkout_attempted:true,route_checkout_opened:checkoutOpened,
+  route_checkout_refused:refused,route_refusal_visible:refusalVisible,
   public_routable_relais:published.relais.length,confirm_enabled:confirmEnabled};
 }
 async function probe(page,fixture){
@@ -274,14 +294,17 @@ async function main(){
   browser=await chromium.launch({headless:true});obs=observe(browser,OUT);
   const ctx=await browser.newContext({viewport:{width:1440,height:900},locale:'fr-FR'});
   const page=await ctx.newPage();
-  page.on('response',r=>{try{const u=new URL(r.url());if(u.origin===BASE&&u.pathname==='/api/orders'&&r.request().method()==='POST'){
-   report.http_attempts.push({method:'POST',path:u.pathname,status:r.status()});save();
-  }}catch(_){/* diagnostic only */}});
+  let orderPosts=0;
   await page.route('**/*',route=>{
    const req=route.request(),u=new URL(req.url());
    if(['GET','HEAD','OPTIONS'].includes(req.method()))return route.continue();
    if(req.method()==='POST'&&u.origin===BASE&&
      ['/api/auth/otp/request','/api/auth/otp/verify'].includes(u.pathname))return route.continue();
+   if(SCENARIO==='N03'&&BRANCH==='ROUTE_MISSING'&&u.origin===BASE&&
+      req.method()==='POST'&&u.pathname==='/api/orders'&&orderPosts++===0)
+    return route.continue();
+   if(u.origin===BASE&&req.method()==='POST'&&u.pathname==='/api/orders/preview')
+    return route.continue();
    if(req.method()==='POST'&&u.origin==='https://maps.googleapis.com'&&
      u.pathname==='/$rpc/google.internal.maps.mapsjs.v1.MapsJsInternalService/GetViewportInfo')return route.continue();
    if(req.method()==='POST'&&u.origin==='https://m.stripe.com'&&u.pathname==='/6')return route.abort();
