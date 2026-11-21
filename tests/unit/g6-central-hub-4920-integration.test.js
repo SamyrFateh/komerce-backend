@@ -38,7 +38,7 @@ describe('G6 preparer source Hub centrale — contrat #4920 + media canonique',(
  test('l upload intervient sur l input Chromium officiel #4920 : 1 POST, jamais un URL injecté',()=>{
   expect(SOURCE).toContain("[data-catalog-media-upload-file]");
   expect(SOURCE).toContain("details[data-catalog-complementary-info] > summary");
-  expect(SOURCE).toContain("await input.setInputFiles(media.file)");
+  expect(SOURCE).toContain("await humanSetInputFiles(null,input,media.file)");
   expect(SOURCE).toContain("const endpoint=CAT+'/products/'+ref+'/media'");
   expect(SOURCE).toContain("await arm(actor,'POST',endpoint)");
   expect(SOURCE).toContain("await fire(actor,'POST',endpoint");

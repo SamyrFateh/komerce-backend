@@ -111,6 +111,8 @@ const humanCheck=(page,target,{mutation=null,...opts}={})=>
  gesture(page,target,{action:'check',args:[opts],mutation});
 const humanPress=(page,target,key,{mutation=null,...opts}={})=>
  gesture(page,target,{action:'press',args:[key,opts],mutation});
+const humanSetInputFiles=(page,target,files,opts={})=>
+ gesture(page,target,{action:'setInputFiles',args:[files,opts]});
 // EXCEPTION EXPLICITE au « pas de reclic » : réservée au scénario négatif N07 (double clic volontaire sur
 // Commander). C'est un seul geste natif dblclick (deux clics rapprochés), jamais une relance après erreur.
 // Aucune retentative : le geste est tenté une fois ; il n'est pas utilisable par les scénarios nominaux.
@@ -127,4 +129,4 @@ async function humanDoubleClickOnce(page,target,{allowedFor,scenario=process.env
   return {attempts:1,mutations,double_click:true};
  }finally{pg.off('request',onRequest);}
 }
-module.exports={humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress,humanDoubleClickOnce,waitReady,GestureBlockedError};
+module.exports={humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress,humanSetInputFiles,humanDoubleClickOnce,waitReady,GestureBlockedError};

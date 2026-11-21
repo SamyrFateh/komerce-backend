@@ -14,7 +14,7 @@ const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypt
 const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
 const {observe,fullError,startTraceAfterAuth}=require('./canonical/observability');
-const {humanGoto,humanClick,humanFill,humanSelect,humanPress}=require('./canonical/actors/human-gestures');
+const {humanGoto,humanClick,humanFill,humanSelect,humanPress,humanSetInputFiles}=require('./canonical/actors/human-gestures');
 const env=process.env,BASE='https://komerce-backend-production.up.railway.app';
 const OUT=path.resolve('test-results/g6-central-hub-product');
 // Marqueur G6 : central_hub_manual V2 (#4920) ne porte aucun identifiant/SKU vendeur.
@@ -290,7 +290,7 @@ async function catalogMedia(actor,ref){
  await humanClick(null,details);
  const form=actor.page.locator('[data-catalog-media-upload]'),input=form.locator('[data-catalog-media-upload-file]');
  if(!await visible(input,20000))return !!missing('SCREEN_MISSING_CANONICAL_MEDIA_UPLOAD',{product_ref:ref,screen:await inspectorText(actor)});
- await input.setInputFiles(media.file);
+ await humanSetInputFiles(null,input,media.file);
  const submit=form.locator('[data-catalog-media-upload-submit]');
  await submit.waitFor({state:'visible',timeout:10000});
  report.media_proof={image_file:media.name,sha256:media.sha256,bytes:media.bytes,provenance:'OWNER-APPROVED G6 STAGING IMAGE'};save();

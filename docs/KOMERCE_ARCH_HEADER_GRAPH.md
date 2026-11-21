@@ -14,7 +14,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
 - Graph nodes: 2101
-- Edges: 10460
+- Edges: 10462
 - DB tables: 244
 - Doctrines: 823
 - Impact areas: 210
@@ -848,6 +848,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/catalog-visual-fr-human-review-write.js -> catalog_media_visual_fr_reviews
 - WRITE services/catalog-product-mutation-service.js -> catalog_media
 - WRITE services/catalog-promotion.js -> catalog_media
+- WRITE services/catalog-visual-fr-human-review-write.js -> catalog_media
 - WRITE services/catalog-workspace.js -> catalog_media
 - WRITE services/catalog-product-quality-service.js -> catalog_product_quality_notes
 - WRITE services/catalog-product-quality-service.js -> catalog_product_sale_holds
@@ -903,8 +904,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/hub-authorization-service.js -> hub_authorization_grants
 - WRITE services/user-mutation-service.js -> hub_authorization_grants
 - WRITE services/hub-bag-box-service.js -> hub_box_bags
-- WRITE services/hub-physical-identity.js -> hub_custody_events
-- WRITE services/hub-physical-identity.js -> hub_physical_unit_placements
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -1035,7 +1034,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - alerts: 24 écrivains directs — services/admin-order-refund.js, services/cash-operations.js, services/confirm-pickup-cash-payment.js, services/g6-recipe-po-cancel-service.js, services/notification-service.js, services/notifications/notification-service.js, services/order-payment-confirmation.js, services/payment-cash-confirm.js, services/payment-mobile-money.js, services/payment-paypal.js, services/payment-stripe.js, services/pickup-authorization-service.js, services/pickup-collection-service.js, services/pickup-exceptional-collection-service.js, services/product-publication-guard.js, services/purchasing-cancel-service.js, services/purchasing-completion-service.js, services/purchasing-engagement-service.js, services/purchasing-trigger-service.js, services/repair-ordered-without-purchase-orders.js, services/scan-operations.js, services/supplier-shortage-service.js, utils/alerts.js, utils/parcelSync.js
 - parcels: 17 écrivains directs — routes/admin-customs-shipments.js, routes/admin/system.js, routes/carriers.js, routes/parcels.js, routes/transitaire-api.js, services/auto-parcel.js, services/local-relay-receipt-service.js, services/parcel-auto-create-service.js, services/parcel-mutation-service.js, services/parcel-operations.js, services/parcel-security.js, services/parcelOptimizationService.js, services/purchasing-completion-service.js, services/scan-engine.js, services/simulator/cleanup.js, services/simulator/state-advancer.js, utils/parcelSync.js
 - parcel_items: 13 écrivains directs — routes/admin/system.js, routes/parcels.js, services/auto-parcel.js, services/local-relay-receipt-service.js, services/parcel-auto-create-service.js, services/parcel-item-mutation-service.js, services/parcel-operations.js, services/parcelOptimizationService.js, services/purchasing-completion-service.js, services/relay-parcel-item-reconciliation.js, services/scan-engine.js, services/simulator/cleanup.js, services/simulator/state-advancer.js
-- products: 12 écrivains directs — routes/admin/system.js, services/catalog-approval.js, services/catalog-candidate-product-service.js, services/catalog-enrichment.js, services/catalog-field-sync-application.js, services/catalog-overrides.js, services/catalog-product-mutation-service.js, services/hub-operations.js, services/product-admin-service.js, services/product-sku-service.js, services/product-stock-service.js, services/refinery-fr-recheck.js
+- products: 13 écrivains directs — routes/admin/system.js, services/catalog-approval.js, services/catalog-candidate-product-service.js, services/catalog-enrichment.js, services/catalog-field-sync-application.js, services/catalog-overrides.js, services/catalog-product-mutation-service.js, services/catalog-workspace.js, services/hub-operations.js, services/product-admin-service.js, services/product-sku-service.js, services/product-stock-service.js, services/refinery-fr-recheck.js
 - scans: 12 écrivains directs — routes/admin/delete-order-cascade.js, routes/transit-dashboard.js, services/local-relay-receipt-service.js, services/pickup-collection-recorder.js, services/pickup-collection-service.js, services/relay-parcel-item-reconciliation.js, services/scan-operations.js, services/scan-write-service.js, services/simulator/cleanup.js, services/simulator/state-advancer.js, services/verify-qr-collection.js, utils/parcelSync.js
 - order_status_history: 10 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/admin/users.js, routes/orders/cancel.js, services/hub-v1-fixture-payment.js, services/order-checkout-persistence.js, services/order-checkout-service.js, services/order-status-machine.js, services/paypal-refund-authority.js, services/stripe-refund-authority.js
 - notification_log: 9 écrivains directs — services/notification-service.js, services/notifications/internals.js, services/notifications/loyalty.js, services/notifications/misc.js, services/notifications/notification-service.js, services/notifications/order.js, services/notifications/otp-auth.js, services/notifications/parcel.js, services/simulator/state-advancer.js
@@ -1063,6 +1062,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - basket_items: 4 écrivains directs — routes/admin/system.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-user-cleanup.js
 - baskets: 4 écrivains directs — routes/admin/system.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-user-cleanup.js
 - cash_confirmation_controls: 4 écrivains directs — services/cash-confirmation-control-service.js, services/cash-operations.js, services/confirm-pickup-cash-payment.js, services/payment-cash-confirm.js
+- catalog_media: 4 écrivains directs — services/catalog-product-mutation-service.js, services/catalog-promotion.js, services/catalog-visual-fr-human-review-write.js, services/catalog-workspace.js
 - product_skus: 4 écrivains directs — services/catalog-promotion.js, services/catalog-stock-sync-application.js, services/product-sku-service.js, services/product-stock-service.js
 - product_variants: 4 écrivains directs — services/catalog-product-mutation-service.js, services/catalog-promotion.js, services/product-stock-service.js, services/product-variant-service.js
 - refunds: 4 écrivains directs — services/item-refund-psp-orchestrator.js, services/paypal-refund-authority.js, services/refund-service.js, services/stripe-refund-authority.js
@@ -1090,7 +1090,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - assignment_memberships: 2 écrivains directs — services/market-delegation-service.js, services/market-delegation-team-service.js
 - business_rules: 2 écrivains directs — routes/admin-rules.js, utils/rules.js
 - business_rules_history: 2 écrivains directs — routes/admin-rules.js, utils/rules.js
-- cart_shares: 2 écrivains directs — routes/shares.js, services/cart-share-service.js
 
 ## DB Write / Write-Via Overlap Warnings
 
