@@ -366,3 +366,59 @@ describe('confirmPaymentCycle — exact SKU grouped before stock decrement', () 
     expect(locks.map(([, params]) => params[0])).toEqual(['sku-A', 'sku-B']);
   });
 });
+
+describe('M03 — payment snapshot of Central Hub manual sale-to-procure', () => {
+  const hubLine = {
+    product_id:'p-hub',sku_id:'sku-hub',inventory_model:'SKU',quantity:2,
+    stock:0,product_name:'Manual Hub',procure_on_order:true,fulfillment_source:'IMPORT',
+  };
+
+  test('confirmed cash payment does not debit a non-existent physical SKU', async () => {
+    const dbClient=makeDbClient([
+      {rows:[hubLine]},
+      {rows:[{eligible:true}]},
+    ]);
+    const result=await confirmPaymentCycle({
+      orderId:'o-hub',source:'cash_confirm',dbClient,
+      actor:{id:'relais',role:'agent_relais'},
+    });
+    expect(result).toMatchObject({success:true,stockBlocked:false,insufficientItems:[]});
+    expect(dbClient.query.mock.calls.some(([sql]) => /UPDATE (product_skus|products).*stock/.test(sql)))
+      .toBe(false);
+    expect(mockGetOrCreateInvoice).toHaveBeenCalledWith('o-hub',{dbClient});
+  });
+
+  test('source no longer eligible: fail closed before stock writes', async () => {
+    const dbClient=makeDbClient([
+      {rows:[hubLine]},
+      {rows:[{eligible:false}]},
+    ]);
+    await expect(confirmPaymentCycle({
+      orderId:'o-hub-stale',source:'cash_confirm',dbClient,
+      actor:{id:'relais',role:'agent_relais'},
+    })).rejects.toThrow('CENTRAL_HUB_ON_ORDER_SOURCE_CHANGED');
+    expect(dbClient.query.mock.calls.some(([sql]) => sql.includes('UPDATE product_skus')))
+      .toBe(false);
+  });
+
+  test('a mixed order still locks and debits normal stock while skipping Hub SKU', async () => {
+    const normal = {
+      product_id:'p-stock',sku_id:'sku-stock',inventory_model:'SKU',quantity:1,
+      stock:6,product_name:'Stocked',procure_on_order:false,fulfillment_source:'IMPORT',
+    };
+    const dbClient=makeDbClient([
+      {rows:[hubLine,normal]},
+      {rows:[{eligible:true}]},
+      {rows:[{id:'sku-stock',stock:6}]},
+      {rows:[{id:'sku-stock'}]},
+    ]);
+    const result=await confirmPaymentCycle({
+      orderId:'o-mixed',source:'cash_confirm',dbClient,
+      actor:{id:'relais',role:'agent_relais'},
+    });
+    expect(result.stockBlocked).toBe(false);
+    const changes=dbClient.query.mock.calls.filter(([sql])=>sql.includes('UPDATE product_skus SET stock'));
+    expect(changes).toHaveLength(1);
+    expect(changes[0][1]).toEqual([1,'sku-stock','p-stock']);
+  });
+});
