@@ -369,7 +369,14 @@
       body.appendChild(list);
       return payload;
     } catch(error) {
-      if (existing && existing.isConnected !== false) {
+      if (error.status === 401 || error.status === 403) {
+        // Autorité révoquée : le dernier Kanban est désormais interdit, pas simplement stale.
+        host.replaceChildren();
+        const notice=make(doc,'p','hlc-director-access-denied',
+          'Accès expiré ou non autorisé. Rechargez votre session.');
+        notice.setAttribute('role','alert');
+        host.appendChild(notice);
+      } else if (existing && existing.isConnected !== false) {
         // Conserver la dernière photo, clairement marquée périmée, jamais la remplacer par zéro.
         existing.setAttribute('data-hub-director-stale','true');
         let notice=existing.querySelector?.('[data-hub-director-refresh-error]');
