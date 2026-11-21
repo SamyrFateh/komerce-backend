@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 822,
-    "filesWithFullHeaders": 762,
+    "scannedCodeFiles": 824,
+    "filesWithFullHeaders": 764,
     "filesWithLiteHeaders": 60,
-    "filesWithAnyHeaders": 822,
+    "filesWithAnyHeaders": 824,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2096,
-    "edges": 10443,
+    "graphNodes": 2101,
+    "edges": 10454,
     "dbTables": 244,
-    "doctrines": 820,
+    "doctrines": 823,
     "impactAreas": 210,
-    "unresolvedCodeEdges": 990,
+    "unresolvedCodeEdges": 994,
     "dbWriteViaOverlapWarnings": 13,
     "multiWriterTables": 99
   },
@@ -55,7 +55,7 @@
     "wallet": 3,
     "providers-services": 7,
     "customs": 8,
-    "dashboard": 32,
+    "dashboard": 34,
     "loyalty": 3,
     "market-control-plane": 5,
     "settlement": 2,
@@ -111,10 +111,11 @@
     "ui-behavior": 1,
     "state-store": 1,
     "schema": 1,
-    "route": 138,
+    "route": 139,
     "entrypoint": 1,
     "service": 501,
     "external-adapter": 2,
+    "infrastructure": 1,
     "machine": 1,
     "utility": 2,
     "service-policy": 1,
@@ -124,7 +125,7 @@
   "byCriticality": {
     "critical": 128,
     "medium": 155,
-    "high": 469,
+    "high": 471,
     "low": 69,
     "unknown": 1
   },
@@ -5962,9 +5963,6 @@
       "depends": [
         "middleware/auth.js",
         "middleware/require-catalog-global-authority.js",
-        "middleware/require-sourcing-global-authority.js",
-        "middleware/upload.js",
-        "services/product-media-storage.js",
         "services/catalog-workspace.js",
         "services/catalog-product-quality-service.js"
       ],
@@ -6310,6 +6308,48 @@
         "admin-dashboard"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "routes/admin-dashboard-events.js",
+      "file": "routes/admin-dashboard-events.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "dashboard-post-commit-event-stream",
+      "domain": "dashboard",
+      "layer": "route",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_admin_session",
+        "postgres_change_hints"
+      ],
+      "outputs": [
+        "authenticated_sse_invalidation_hints"
+      ],
+      "depends": [
+        "middleware/auth",
+        "dashboard-invalidation-bus"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js"
+      ],
+      "dbRead": [
+        "users",
+        "revoked_tokens"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "never_stream_business_data",
+        "refetch_authorized_api"
+      ],
+      "impactAreas": [
+        "admin-dashboard",
+        "hub"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "routes/admin-dashboard-market.js",
@@ -15818,8 +15858,7 @@
         "boutique_subcategories",
         "catalog_field_overrides",
         "catalog_publication_decision_audit",
-        "catalog_media",
-        "suppliers"
+        "catalog_media"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -15953,10 +15992,7 @@
         "exchange_rates",
         "cost_components"
       ],
-      "dbWrite": [
-        "catalog_media",
-        "products"
-      ],
+      "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [
         "transactional_editorial_update",
@@ -17658,6 +17694,46 @@
         "admin-dashboard"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "services/dashboard-invalidation-bus.js",
+      "file": "services/dashboard-invalidation-bus.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "dashboard-post-commit-invalidation-bus",
+      "domain": "dashboard",
+      "layer": "infrastructure",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "postgres_notify"
+      ],
+      "outputs": [
+        "cache_invalidation",
+        "dashboard_change_hints"
+      ],
+      "depends": [
+        "db",
+        "dashboard-cache"
+      ],
+      "usedBy": [
+        "routes/admin-dashboard-events.js",
+        "server.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "after_commit_revalidate_canonical_read_models"
+      ],
+      "impactAreas": [
+        "dashboard",
+        "hub",
+        "admin-dashboard"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "services/dashboard-metrics/_helpers.js",
@@ -41935,6 +42011,16 @@
       "doctrine": "single_cost_component_mutation_authority"
     },
     {
+      "id": "doctrine:never_stream_business_data",
+      "type": "doctrine",
+      "doctrine": "never_stream_business_data"
+    },
+    {
+      "id": "doctrine:refetch_authorized_api",
+      "type": "doctrine",
+      "doctrine": "refetch_authorized_api"
+    },
+    {
       "id": "doctrine:workspace_single_market_action_context",
       "type": "doctrine",
       "doctrine": "workspace_single_market_action_context"
@@ -43073,6 +43159,11 @@
       "id": "doctrine:finance_event_date_is_authoritative",
       "type": "doctrine",
       "doctrine": "finance_event_date_is_authoritative"
+    },
+    {
+      "id": "doctrine:after_commit_revalidate_canonical_read_models",
+      "type": "doctrine",
+      "doctrine": "after_commit_revalidate_canonical_read_models"
     },
     {
       "id": "doctrine:economic_base_stays_kmf",
@@ -54564,24 +54655,6 @@
     },
     {
       "from": "routes/admin-catalog-workspace.js",
-      "to": "middleware/require-sourcing-global-authority.js",
-      "type": "depends",
-      "label": "middleware/require-sourcing-global-authority.js"
-    },
-    {
-      "from": "routes/admin-catalog-workspace.js",
-      "to": "middleware/upload.js",
-      "type": "depends",
-      "label": "middleware/upload.js"
-    },
-    {
-      "from": "routes/admin-catalog-workspace.js",
-      "to": "services/product-media-storage.js",
-      "type": "depends",
-      "label": "services/product-media-storage.js"
-    },
-    {
-      "from": "routes/admin-catalog-workspace.js",
       "to": "services/catalog-workspace.js",
       "type": "depends",
       "label": "services/catalog-workspace.js"
@@ -55223,6 +55296,60 @@
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
+    },
+    {
+      "from": "routes/admin-dashboard-events.js",
+      "to": "middleware/auth",
+      "type": "depends",
+      "label": "middleware/auth"
+    },
+    {
+      "from": "routes/admin-dashboard-events.js",
+      "to": "dashboard-invalidation-bus",
+      "type": "depends",
+      "label": "dashboard-invalidation-bus"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/admin-dashboard-events.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "routes/admin-dashboard-events.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "routes/admin-dashboard-events.js",
+      "to": "db:revoked_tokens",
+      "type": "db-read",
+      "label": "revoked_tokens"
+    },
+    {
+      "from": "routes/admin-dashboard-events.js",
+      "to": "doctrine:never_stream_business_data",
+      "type": "doctrine",
+      "label": "never_stream_business_data"
+    },
+    {
+      "from": "routes/admin-dashboard-events.js",
+      "to": "doctrine:refetch_authorized_api",
+      "type": "doctrine",
+      "label": "refetch_authorized_api"
+    },
+    {
+      "from": "routes/admin-dashboard-events.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "routes/admin-dashboard-events.js",
+      "to": "impact:hub",
+      "type": "impact",
+      "label": "hub"
     },
     {
       "from": "routes/admin-dashboard-market.js",
@@ -70228,12 +70355,6 @@
     },
     {
       "from": "services/catalog-unified-registry.js",
-      "to": "db:suppliers",
-      "type": "db-read",
-      "label": "suppliers"
-    },
-    {
-      "from": "services/catalog-unified-registry.js",
       "to": "doctrine:one_operator_surface_without_cross_domain_write",
       "type": "doctrine",
       "label": "one_operator_surface_without_cross_domain_write"
@@ -70513,18 +70634,6 @@
       "to": "db:cost_components",
       "type": "db-read",
       "label": "cost_components"
-    },
-    {
-      "from": "services/catalog-workspace.js",
-      "to": "db:catalog_media",
-      "type": "db-write",
-      "label": "catalog_media"
-    },
-    {
-      "from": "services/catalog-workspace.js",
-      "to": "db:products",
-      "type": "db-write",
-      "label": "products"
     },
     {
       "from": "services/catalog-workspace.js",
@@ -73483,6 +73592,54 @@
     },
     {
       "from": "services/dashboard-finance-metrics.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "services/dashboard-invalidation-bus.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/dashboard-invalidation-bus.js",
+      "to": "dashboard-cache",
+      "type": "depends",
+      "label": "dashboard-cache"
+    },
+    {
+      "from": "routes/admin-dashboard-events.js",
+      "to": "services/dashboard-invalidation-bus.js",
+      "type": "uses",
+      "label": "routes/admin-dashboard-events.js"
+    },
+    {
+      "from": "server.js",
+      "to": "services/dashboard-invalidation-bus.js",
+      "type": "uses",
+      "label": "server.js"
+    },
+    {
+      "from": "services/dashboard-invalidation-bus.js",
+      "to": "doctrine:after_commit_revalidate_canonical_read_models",
+      "type": "doctrine",
+      "label": "after_commit_revalidate_canonical_read_models"
+    },
+    {
+      "from": "services/dashboard-invalidation-bus.js",
+      "to": "impact:dashboard",
+      "type": "impact",
+      "label": "dashboard"
+    },
+    {
+      "from": "services/dashboard-invalidation-bus.js",
+      "to": "impact:hub",
+      "type": "impact",
+      "label": "hub"
+    },
+    {
+      "from": "services/dashboard-invalidation-bus.js",
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
@@ -109415,6 +109572,7 @@
         "routes/admin-costing.js",
         "routes/admin-customs-categories.js",
         "routes/admin-customs-shipments.js",
+        "routes/admin-dashboard-events.js",
         "routes/admin-dashboard-market.js",
         "routes/admin-dashboard.js",
         "routes/admin-finance-accounting-workspace.js",
@@ -110859,7 +111017,6 @@
         "impact:admin-dashboard",
         "impact:authorization",
         "impact:sourcing",
-        "routes/admin-catalog-workspace.js",
         "routes/admin-sourcing-workspace.js",
         "services/central-authority.js"
       ]
@@ -111004,7 +111161,6 @@
         "doctrine:resolve_before_behavior_change",
         "impact:auth",
         "middleware/upload-hub.js",
-        "routes/admin-catalog-workspace.js",
         "routes/products.js"
       ]
     },
@@ -115461,9 +115617,6 @@
       "directDependsOn": [
         "middleware/auth.js",
         "middleware/require-catalog-global-authority.js",
-        "middleware/require-sourcing-global-authority.js",
-        "middleware/upload.js",
-        "services/product-media-storage.js",
         "services/catalog-workspace.js",
         "services/catalog-product-quality-service.js"
       ],
@@ -115497,11 +115650,8 @@
         "impact:catalog",
         "middleware/auth.js",
         "middleware/require-catalog-global-authority.js",
-        "middleware/require-sourcing-global-authority.js",
-        "middleware/upload.js",
         "services/catalog-product-quality-service.js",
-        "services/catalog-workspace.js",
-        "services/product-media-storage.js"
+        "services/catalog-workspace.js"
       ]
     },
     "routes/admin-client-360.js": {
@@ -115834,6 +115984,46 @@
         "services/customs-analytics.js",
         "services/customs-shipment-fee-service.js",
         "services/customs-shipment-service.js"
+      ]
+    },
+    "routes/admin-dashboard-events.js": {
+      "role": "dashboard-post-commit-event-stream",
+      "domain": "dashboard",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "middleware/auth",
+        "dashboard-invalidation-bus"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "users",
+        "revoked_tokens"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "never_stream_business_data",
+        "refetch_authorized_api"
+      ],
+      "impactAreas": [
+        "admin-dashboard",
+        "hub"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "db:revoked_tokens",
+        "db:users",
+        "doctrine:never_stream_business_data",
+        "doctrine:refetch_authorized_api",
+        "impact:admin-dashboard",
+        "impact:hub",
+        "services/dashboard-invalidation-bus.js"
       ]
     },
     "routes/admin-dashboard-market.js": {
@@ -122603,6 +122793,7 @@
         "middleware/verify-authkey-webhook.js",
         "middleware/versioned-asset-cache.js",
         "routes/shared-cart.js",
+        "services/dashboard-invalidation-bus.js",
         "services/parcel-security.js",
         "services/routing.js",
         "utils/logger.js"
@@ -125331,8 +125522,7 @@
         "boutique_subcategories",
         "catalog_field_overrides",
         "catalog_publication_decision_audit",
-        "catalog_media",
-        "suppliers"
+        "catalog_media"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -125352,7 +125542,6 @@
         "db:catalog_publication_decision_audit",
         "db:products",
         "db:sourcing_candidates",
-        "db:suppliers",
         "doctrine:one_operator_surface_without_cross_domain_write",
         "doctrine:product_ref_is_public_identity",
         "impact:admin-dashboard",
@@ -125466,10 +125655,7 @@
         "exchange_rates",
         "cost_components"
       ],
-      "dbWrite": [
-        "catalog_media",
-        "products"
-      ],
+      "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
         "workspace_acts_dashboard_observes",
@@ -127248,6 +127434,42 @@
         "impact:economic-engine",
         "routes/dashboard-finance.js",
         "services/finance-metrics/index.js"
+      ]
+    },
+    "services/dashboard-invalidation-bus.js": {
+      "role": "dashboard-post-commit-invalidation-bus",
+      "domain": "dashboard",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "dashboard-cache"
+      ],
+      "directUsedBy": [
+        "routes/admin-dashboard-events.js",
+        "server.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "after_commit_revalidate_canonical_read_models"
+      ],
+      "impactAreas": [
+        "dashboard",
+        "hub",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "doctrine:after_commit_revalidate_canonical_read_models",
+        "impact:admin-dashboard",
+        "impact:dashboard",
+        "impact:hub",
+        "routes/admin-dashboard-events.js",
+        "server.js"
       ]
     },
     "services/dashboard-metrics/_helpers.js": {
@@ -139395,7 +139617,6 @@
       "mustCheck": [
         "doctrine:produit_reference_stable",
         "doctrine:resolve_before_behavior_change",
-        "routes/admin-catalog-workspace.js",
         "routes/products.js"
       ]
     },
@@ -149757,7 +149978,7 @@
     },
     {
       "table": "products",
-      "writerCount": 13,
+      "writerCount": 12,
       "writers": [
         "routes/admin/system.js",
         "services/catalog-approval.js",
@@ -149766,7 +149987,6 @@
         "services/catalog-field-sync-application.js",
         "services/catalog-overrides.js",
         "services/catalog-product-mutation-service.js",
-        "services/catalog-workspace.js",
         "services/hub-operations.js",
         "services/product-admin-service.js",
         "services/product-sku-service.js",
@@ -150198,15 +150418,6 @@
       ]
     },
     {
-      "table": "catalog_media",
-      "writerCount": 3,
-      "writers": [
-        "services/catalog-product-mutation-service.js",
-        "services/catalog-promotion.js",
-        "services/catalog-workspace.js"
-      ]
-    },
-    {
       "table": "charges",
       "writerCount": 3,
       "writers": [
@@ -150379,6 +150590,14 @@
       "writers": [
         "routes/cash.js",
         "services/cash-deposit-service.js"
+      ]
+    },
+    {
+      "table": "catalog_media",
+      "writerCount": 2,
+      "writers": [
+        "services/catalog-product-mutation-service.js",
+        "services/catalog-promotion.js"
       ]
     },
     {
@@ -151254,6 +151473,18 @@
       "to": "services/*",
       "type": "depends",
       "label": "services/*"
+    },
+    {
+      "from": "routes/admin-dashboard-events.js",
+      "to": "middleware/auth",
+      "type": "depends",
+      "label": "middleware/auth"
+    },
+    {
+      "from": "routes/admin-dashboard-events.js",
+      "to": "dashboard-invalidation-bus",
+      "type": "depends",
+      "label": "dashboard-invalidation-bus"
     },
     {
       "from": "routes/admin-dashboard-market.js",
@@ -153438,6 +153669,18 @@
       "to": "supplier-payment-review",
       "type": "depends",
       "label": "supplier-payment-review"
+    },
+    {
+      "from": "services/dashboard-invalidation-bus.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/dashboard-invalidation-bus.js",
+      "to": "dashboard-cache",
+      "type": "depends",
+      "label": "dashboard-cache"
     },
     {
       "from": "workspaces.js (services/dashboard-metrics/*)",

@@ -3,7 +3,7 @@
  * @domain orders
  * @layer test
  * @owner backend-core
- * @purpose Orchestration des scénarios négatifs N07/N09/N04/N33/N23/N24/N21/N22/N20/N29 et N11 à N16 (G6-G4C, Achats et Hub) : Golden joué jusqu'au point d'arrêt, geste négatif par l'écran, oracle PG en lecture seule.
+ * @purpose Orchestration des scénarios négatifs N07/N09/N04/N33/N23/N24/N21/N22/N20/N29 N11 à N16 (G6-G4C, Achats et Hub) et N17 à N19 (G6-G5B, Transport et douane) : Golden joué jusqu'au point d'arrêt, geste négatif par l'écran, oracle PG en lecture seule.
  * @db-read voir negative-scenarios.js
  * @db-write none
  * @impact-areas staging-only
@@ -33,7 +33,46 @@ const N1314_SCRIPT='scripts/recette/g6-negative-n13-n14-chromium.js';
 const N1314_REPORT='test-results/g6-negative-n13-n14/report.json';
 const N1516_SCRIPT='scripts/recette/g6-negative-n15-n16-chromium.js';
 const N1516_REPORT='test-results/g6-negative-n15-n16/report.json';
+const N1718_SCRIPT='scripts/recette/g6-negative-n17-n18-chromium.js';
+const N1718_REPORT='test-results/g6-negative-n17-n18/report.json';
+const N19_SCRIPT='scripts/recette/g6-negative-n19-chromium.js';
+const N19_REPORT='test-results/g6-negative-n19/report.json';
+const N2832_SCRIPT='scripts/recette/g6-negative-n28-n32-chromium.js';
+const N2832_REPORT='test-results/g6-negative-n28-n32/report.json';
+const N3738_SCRIPT='scripts/recette/g6-negative-n37-n38-chromium.js';
+const N3738_REPORT='test-results/g6-negative-n37-n38/report.json';
+const N30_SCRIPT='scripts/recette/g6-negative-n30-chromium.js';
+const N30_REPORT='test-results/g6-negative-n30/report.json';
+const N39_SCRIPT='scripts/recette/g6-negative-n39-cancel-chromium.js';
+const N39_REPORT='test-results/g6-negative-n39/report.json';
+const N25_SCRIPT='scripts/recette/g6-negative-n25-sav-chromium.js';
+const N25_REPORT='test-results/g6-negative-n25/report.json';
+const N40_SCRIPT='scripts/recette/g6-negative-n40-price-gap-chromium.js';
+const N40_REPORT='test-results/g6-negative-n40/report.json';
+const N26A27_SCRIPT='scripts/recette/g6-negative-n26a-n27-screen-probe-chromium.js';
+const N26A27_REPORT='test-results/g6-negative-n26a-n27/report.json';
+const N10_SCRIPT='scripts/recette/g6-negative-n10-webhook-chromium.js';
+const N10_REPORT='test-results/g6-negative-n10/report.json';
 const LOCAL_NEG={
+ N30:{script:N30_SCRIPT,report:N30_REPORT,phase:'N30_TRUTH_COMPARE',oracle:'N30_TRUTH_ORACLE'},
+ N31:{phase:'N31_FX_SNAPSHOT_ORACLE',oracle:'N31_FX_SNAPSHOT_ORACLE_EVIDENCE'},
+ N35:{phase:'N35_ECO_ORACLE',oracle:'N35_ECO_ORACLE_EVIDENCE',to:'CLIENT_PICKUP'},
+ N36:{phase:'N36_MANUAL_PROVENANCE_ORACLE',oracle:'N36_MANUAL_ORACLE_EVIDENCE',to:'CLIENT_PICKUP'},
+ N37:{script:N3738_SCRIPT,report:N3738_REPORT,phase:'N37_DOCUMENT_ACCESS',oracle:'N37_DOCUMENTS_ORACLE',to:'CLIENT_PICKUP',po:true},
+ N38:{script:N3738_SCRIPT,report:N3738_REPORT,phase:'N38_RESUME_DRY_RUN',oracle:'N38_POSTCOMMIT_ORACLE',to:'CLIENT_PICKUP'},
+ N28:{script:N2832_SCRIPT,report:N2832_REPORT,phase:'N28_NETWORK_FAILURE_RETRY',oracle:'N28_SINGLE_EFFECT_ORACLE'},
+ N32:{script:N2832_SCRIPT,report:N2832_REPORT,phase:'N32_CROSS_MARKET_ROLES',oracle:'N32_NO_MUTATION_ORACLE'},
+ N26a:{script:N26A27_SCRIPT,report:N26A27_REPORT,phase:'N26A_LINE_REFUND_SCREEN_PROBE',oracle:'N26A_NO_ORACLE',to:'RELAY_CASH'},
+ N27:{script:N26A27_SCRIPT,report:N26A27_REPORT,phase:'N27_REMNANT_CANCEL_SCREEN_PROBE',oracle:'N27_NO_ORACLE',to:'HUB_VENDOR_READINESS'},
+ N40:{script:N40_SCRIPT,report:N40_REPORT,phase:'N40_SUPPLIER_PRICE_GAP',oracle:'N40_PRICE_GAP_ORACLE',to:'HUB_VENDOR_READINESS',po:true},
+ N25:{script:N25_SCRIPT,report:N25_REPORT,phase:'N25_SAV_DOUBLE_INTAKE',oracle:'N25_SINGLE_INTAKE_ORACLE',to:'LOCAL_CLIENT_PICKUP'},
+ N26b:{script:N25_SCRIPT,report:N25_REPORT,phase:'N26B_SAV_COMPENSATION_DECISION',oracle:'N26B_SAV_COMPENSATION_ORACLE',to:'LOCAL_CLIENT_PICKUP'},
+ N39F1:{script:N39_SCRIPT,report:N39_REPORT,phase:'N39F1_CLIENT_CANCEL_ATTEMPT',oracle:'N39F1_CANCEL_EFFECTS_ORACLE',to:'RELAY_CASH'},
+ N39F2:{script:N39_SCRIPT,report:N39_REPORT,phase:'N39F2_CLIENT_CANCEL_ATTEMPT',oracle:'N39F2_CANCEL_EFFECTS_ORACLE',to:'HUB_COMMITMENT'},
+ N39F3:{script:N39_SCRIPT,report:N39_REPORT,phase:'N39F3_CLIENT_CANCEL_ATTEMPT',oracle:'N39F3_CANCEL_EFFECTS_ORACLE',to:'HUB_SHIPMENT'},
+ N17:{script:N1718_SCRIPT,report:N1718_REPORT,phase:'N17_FORWARDER_ROLE_MARKET_ATTEMPTS',oracle:'N17_NO_TRANSITION_ORACLE',to:'HUB_SHIPMENT',ship:true},
+ N18:{script:N1718_SCRIPT,report:N1718_REPORT,phase:'N18_CUSTOMS_HOLD_ATTEMPTS',oracle:'N18_HOLD_RELEASE_ORACLE',to:'FORWARDER',ship:true},
+ N19:{script:N19_SCRIPT,report:N19_REPORT,phase:'N19_LOCAL_TRANSPORT_DELAY_LOSS',oracle:'N19_LOSS_INCIDENT_ORACLE',to:'CUSTOMS'},
  N15:{script:N1516_SCRIPT,report:N1516_REPORT,phase:'N15_BAG_BOX_INCOMPLETE',oracle:'N15_NO_CLOSURE_ORACLE',to:'HUB_RECEIVING_READBACK'},
  N16:{script:N1516_SCRIPT,report:N1516_REPORT,phase:'N16_BOX_NOT_DISPATCHED_FROZEN',oracle:'N16_BOX_FROZEN_ORACLE',to:'HUB_KOM_BOX'},
  N13:{script:N1314_SCRIPT,report:N1314_REPORT,phase:'N13_SUPPLIER_BACKORDER',oracle:'N13_BACKORDER_ORACLE',to:'HUB_VENDOR_READINESS',po:true},
@@ -86,25 +125,44 @@ async function runNegativeScenario({scenario,env,db,adapters}){
   const runtime=await adapters.attestRuntimeBeforeBuyer(),phase=L.phase;
   // Achats et Hub : PO unique de la commande, relu en PG (lecture seule) et transmis au script enfant.
   const poId=L.po?(await N.importPo(db,result.order_id)).id:null;
-  fs.rmSync(path.join(ROOT,L.report),{force:true});
-  try{
+  // Transport et douane : expédition de la commande, relue en PG (lecture seule) et transmise au script enfant.
+  const ship=L.ship?await N.shipmentForOrder(db,result.order_id):null;
+  if(L.ship&&!ship)throw Error('G6_'+scenario+'_SCREEN_MISSING_NO_SHIPMENT_FOR_ORDER');
+  if(L.script)fs.rmSync(path.join(ROOT,L.report),{force:true});
+  if(L.script)try{
    spawnChild(L.script,{...env,G6_DYNAMIC_FRESH_ORDER:'1',G6_CANONICAL_PHASE:phase,
     G6_CANONICAL_ORDER_ID:result.order_id,G6_CANONICAL_ORDER_REFERENCE:result.order_reference,G6_CANONICAL_DB_FINGERPRINT:runtime.db_fingerprint,
-    ...(poId?{G6_CANONICAL_PO_ID:poId}:{})},L.report);
+    ...(poId?{G6_CANONICAL_PO_ID:poId}:{}),...(ship?{G6_CANONICAL_SHIPMENT_REF:ship.reference,G6_CANONICAL_SHIPMENT_ID:ship.id}:{})},L.report);
   }catch(e){
    // Verdict : défaut produit ou écran manquant relevé par le script ; sinon l'erreur d'origine.
    let child=null;try{child=readJson(L.report)}catch(_){}
-   const m=/(?:G6_N(?:2[0-4]|29|1[1-6])_(?:SCREEN_MISSING|PRODUCT_GAP)|PREREQ_MISSING_SECOND_RELAY)[A-Za-z0-9_]*/.exec(String(child?.error||''));
+   const m=/(?:G6_N(?:2[0-9]|3[0-9]|4[0-9]|1[1-9])[A-Za-z0-9]{0,3}_(?:SCREEN_MISSING|PRODUCT_GAP)|PREREQ_MISSING_SECOND_RELAY|PREREQ_MISSING_OTHER_ACTIVE_MARKET|PREREQ_MISSING_FOREIGN_MARKET_ORDER)[A-Za-z0-9_]*/.exec(String(child?.error||''));
    throw Error(m?m[0]:e.message);
   }
-  const g=readJson(L.report);
-  if(!/_CHROMIUM_PASS$/.test(String(g.verdict))||g.order_id!==result.order_id)throw Error('G6_'+scenario+'_SCREEN_MISSING_NOT_PROVEN');
+  // N35 et N36 : oracles PG seuls sur la chaîne M01 (aucun geste négatif).
+  const g=L.script?readJson(L.report):{order_id:result.order_id};
+  if(L.script&&(!/_CHROMIUM_PASS$/.test(String(g.verdict))||g.order_id!==result.order_id))throw Error('G6_'+scenario+'_SCREEN_MISSING_NOT_PROVEN');
   out.stages.push({stage_id:phase,steps_reached:g.steps_reached,page_events:g.page_events,attempts:g.attempts||null,tabs:g.tabs||null,intruder:g.intruder||null,control:g.control||null,reverse:g.reverse||null,ux_signal:g.ux_signal||null,
-   legit_handoff_after_lock:g.legit_handoff_after_lock||null,screen:g.screen||null,probes:g.probes||null,director:g.director||null});
-  const o=scenario==='N23'
-   ?await N.oracleN23(db,{orderId:result.order_id,agentId:g.agent_id,minFailures:5,assertNoHubOrTransport})
+   legit_handoff_after_lock:g.legit_handoff_after_lock||null,after_http500:g.after_http500||null,order360:g.order360||null,commerce:g.commerce||null,after_lost_response:g.after_lost_response||null,access:g.access||null,dry_run:g.dry_run||null,screen:g.screen||null,probes:g.probes||null,director:g.director||null});
+  const o=scenario==='N30'?await N.oracleN30(db,{orderId:result.order_id,order360:g.order360,commerce:g.commerce})
+   :scenario==='N31'?await N.oracleN31(db,{orderId:result.order_id,market})
+   :scenario==='N35'?await N.oracleN35(db,{orderId:result.order_id})
+   :scenario==='N36'?await N.oracleN36(db,{orderId:result.order_id})
+   :scenario==='N37'?await N.oracleN37(db,{orderId:result.order_id,reference:result.order_reference,poId})
+   :scenario==='N38'?await N.oracleN38(db,{orderId:result.order_id,reference:result.order_reference,dryRun:g.dry_run})
+   :scenario==='N28'?await N.oracleN28(db,{orderId:result.order_id,committedBeforeRetry:g.committed_before_retry,assertNoHubOrTransport})
+   :scenario==='N32'?await N.oracleN32(db,{orderId:result.order_id,snapshot:g.snapshot,assertNoHubOrTransport})
+   :scenario==='N23'   ?await N.oracleN23(db,{orderId:result.order_id,agentId:g.agent_id,minFailures:5,assertNoHubOrTransport})
    :scenario==='N24'?await N.oracleN24(db,{orderId:result.order_id,assertNoHubOrTransport})
    :scenario==='N20'?await N.oracleN20(db,{orderId:result.order_id})
+   :scenario==='N39F1'?await N.oracleN39F1(db,{orderId:result.order_id,cancel:g.cancel})
+   :scenario==='N39F2'?await N.oracleN39F2(db,{orderId:result.order_id,cancel:g.cancel})
+   :scenario==='N39F3'?await N.oracleN39F3(db,{orderId:result.order_id,cancel:g.cancel})
+   :scenario==='N25'||scenario==='N26b'?await N.oracleN25(db,{orderId:result.order_id,stockBefore:g.stock_before})
+   :scenario==='N40'?await N.oracleN40(db,{orderId:result.order_id,poId,confirm:g.confirm,quoted:g.quoted})
+   :scenario==='N17'?await N.oracleN17(db,{orderId:result.order_id,shipmentRef:ship.reference,baseline:g.baseline})
+   :scenario==='N18'?await N.oracleN18(db,{orderId:result.order_id,shipmentRef:ship.reference,customsRef:'SIM-STAGING-DOU-N18-'+result.order_reference})
+   :scenario==='N19'?await N.oracleN19(db,{orderId:result.order_id})
    :scenario==='N15'?await N.oracleN15(db,{orderId:result.order_id,boxRef:g.box_ref,shipmentRef:g.shipment_ref})
    :scenario==='N16'?await N.oracleN16(db,{orderId:result.order_id,boxRef:g.box_ref,shipmentRef:g.shipment_ref,baseline:g.baseline})
    :scenario==='N13'?await N.oracleN13(db,{orderId:result.order_id,poId,ordered:g.ordered,typed:g.typed})
@@ -119,9 +177,41 @@ async function runNegativeScenario({scenario,env,db,adapters}){
    N15:'G6_N15_BAG_BOX_INCOMPLETE_NO_CLOSURE_NO_DEPARTURE_PG_PASS',N16:'G6_N16_BOX_NOT_DISPATCHED_COMPOSITION_FROZEN_PG_PASS',
    N13:'G6_N13_SUPPLIER_BACKORDER_REMNANT_NO_FICTIVE_RECEIPT_PG_PASS',N14:'G6_N14_RECEIVING_EXACT_QUANTITIES_NO_EXCESS_NO_NEGATIVE_PG_PASS',
    N11:'G6_N11_PO_WITHOUT_COMMITMENT_REFUSED_NO_ENGAGEMENT_PG_PASS',N12:'G6_N12_PAYMENT_SINGLE_VALIDATOR_REFUSED_NO_PAYMENT_PG_PASS',
+   N17:'G6_N17_FORWARDER_OUT_OF_ROLE_MARKET_REFUSED_NO_TRANSITION_PG_PASS',N18:'G6_N18_CUSTOMS_HOLD_NO_TRANSIT_THEN_RELEASE_PG_PASS',
+   N39F1:'G6_N39F1_CANCEL_BEFORE_PURCHASE_WALLET_100_PCT_PG_PASS',N39F2:'G6_N39F2_CANCEL_AFTER_COMMITMENT_NO_SILENT_REFUND_PG_PASS',
+   N39F3:'G6_N39F3_CANCEL_WHEN_SHIPPED_CLOSED_NO_REFUND_PG_PASS',
+   N25:'G6_N25_SAV_SINGLE_PHYSICAL_INTAKE_DOUBLE_REFUSED_PG_PASS',N26b:'G6_N26B_SAV_COMPENSATION_DECISION_PG_PASS',
+   N40:'G6_N40_SUPPLIER_PRICE_GAP_SEPARATE_VALIDATION_NO_SILENT_PAYMENT_PG_PASS',
+   N19:'G6_N19_LOCAL_TRANSPORT_DELAY_LOSS_INCIDENT_NO_WITHDRAWAL_PG_PASS',
+   N30:'G6_N30_ORDER_360_AND_COMMERCE_KPI_MATCH_PG_FIXTURES_EXCLUDED_PG_PASS',N31:'G6_N31_FX_DISPLAY_SNAPSHOT_KEPT_FIXED_PARITY_PG_PASS',
+   N35:'G6_N35_ECO_FREIGHT_ONCE_CAUSAL_ALLOCATIONS_DIAGNOSTICS_PG_PASS',N36:'G6_N36_MANUAL_PROVENANCE_EVERY_GESTURE_PG_PASS',
+   N37:'G6_N37_DOCUMENTS_ONCE_ACCESS_OWNER_ONLY_NO_REAL_SEND_PG_PASS',N38:'G6_N38_EVENT_KEPT_DOCUMENTS_ONCE_RESUME_DRY_RUN_NO_BLIND_SPOT_PG_PASS',
+   N28:'G6_N28_NETWORK_FAILURE_RETRY_SINGLE_EFFECT_PG_PASS',N32:'G6_N32_CROSS_MARKET_ROLES_REFUSED_NO_MUTATION_PG_PASS',
    N21:'G6_N21_CROSS_RELAY_REFUSED_NO_DISCLOSURE_PG_PASS',N22:'G6_N22_TWO_RELAYS_REFUSED_NO_DISCLOSURE_PG_PASS'}[scenario];
   return out;
  }
+ // N10 (G6-G5A) : commande créée par l'écran (BUYER), puis webhooks PSP simulés non signés/dupliqués par sondes API (Chromium NOT_APPLICABLE), oracle PG avant/après.
+ if(scenario==='N10'){
+  const result=await bootstrapFreshScenario({scenario,toStage:'BUYER',adapters});
+  out.order_id=result.order_id;out.reference=result.order_reference;out.stages.push(...result.stages);
+  const runtime=await adapters.attestRuntimeBeforeBuyer();
+  fs.rmSync(path.join(ROOT,N10_REPORT),{force:true});
+  try{
+   spawnChild(N10_SCRIPT,{...env,G6_DYNAMIC_FRESH_ORDER:'1',G6_CANONICAL_PHASE:'N10_WEBHOOK_UNSIGNED_DUPLICATE',
+    G6_CANONICAL_ORDER_ID:result.order_id,G6_CANONICAL_ORDER_REFERENCE:result.order_reference,G6_CANONICAL_DB_FINGERPRINT:runtime.db_fingerprint},N10_REPORT);
+  }catch(e){
+   let child=null;try{child=readJson(N10_REPORT)}catch(_){}
+   const m=/G6_N10_(?:SCREEN_MISSING|PRODUCT_GAP)[A-Za-z0-9_]*/.exec(String(child?.error||''));
+   throw Error(m?m[0]:e.message);
+  }
+  const g=readJson(N10_REPORT);
+  if(!/_PASS_CHROMIUM_NOT_APPLICABLE$/.test(String(g.verdict))||g.order_id!==result.order_id)throw Error('G6_N10_SCREEN_MISSING_NOT_PROVEN');
+  out.stages.push({stage_id:'N10_WEBHOOK_ATTEMPTS',steps_reached:g.steps_reached,probes:g.probes,limits:g.limits,chromium:g.chromium,mobile_money_fixture:g.mobile_money_fixture});
+  out.stages.push(evidence('N10_NO_SETTLEMENT_ORACLE',scenario,market,{oracle:g.oracle,before:g.before,after:g.after,order_id:result.order_id,limits:g.limits}));
+  out.verdict=g.verdict;
+  return out;
+ }
+
  // N07, N09, N33 : le Golden est joué jusqu'à BUYER (commande réellement créée par l'écran), puis geste/oracle négatif.
  const result=await bootstrapFreshScenario({scenario,toStage:'BUYER',adapters});
  const buyer=readJson(BUYER_REPORT);
@@ -132,6 +222,12 @@ async function runNegativeScenario({scenario,env,db,adapters}){
   const o=await N.oracleN07(db,{orderId:result.order_id,buyerId:buyer.buyer_id});
   out.stages.push(evidence('N07_NO_DOUBLE_EFFECT',scenario,market,{oracle:o,gesture:buyer.n07,order_id:result.order_id}));
   out.verdict='G6_N07_DOUBLE_CLICK_ONE_ORDER_CHROMIUM_PG_PASS';
+ }else if(scenario==='N08'){
+  // N08 : rejeux d'idempotence (sondes API signalées) depuis la session de l'écran, jugés par le script ; oracle PG sur la commande unique.
+  if(!buyer.n08||buyer.n08.gaps?.length||buyer.n08.order_id!==result.order_id)throw Error('G6_N08_SCREEN_MISSING_REPLAYS_NOT_PROVEN');
+  const o=await N.oracleN08(db,{orderId:result.order_id,buyerId:buyer.buyer_id});
+  out.stages.push(evidence('N08_IDEMPOTENCY_ORACLE',scenario,market,{oracle:o,replays:{parallel_same_key:buyer.n08.parallel_same_key,different_content:buyer.n08.different_content,no_key:buyer.n08.no_key,no_accepted_total:buyer.n08.no_accepted_total,via:buyer.n08.via},order_id:result.order_id}));
+  out.verdict='G6_N08_IDEMPOTENCY_SAME_KEY_ONE_ORDER_API_PROBE_PG_PASS';
  }else if(scenario==='N33'){
   const variants=(buyer.n33?.sku_ids||[]).map(id=>({sku_id:id}));
   const o=await N.oracleN33(db,{orderId:result.order_id,variants,market});

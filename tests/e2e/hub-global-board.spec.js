@@ -134,6 +134,44 @@ test.describe('Lisibilité et fermeture du menu contextuel Hub',()=>{
     expect(calls).toEqual(['GET /api/hub/board']);
   });
 
+  test('la molette parcourt un long menu sans faire défiler le Kanban, puis Échap restaure le focus',async({page})=>{
+    await mount(page,'market_operator');
+    const stage=page.locator('[data-hub-global-order="CM-101"] [data-hub-global-stage="Réception"]');
+    const menu=page.locator('[data-hub-global-menu]');
+    const boardScroll=page.locator('.kmc-hub-board-scroll').first();
+    await stage.click();
+    await expect(menu).toBeVisible();
+
+    // Simule un journal long sans aucune mutation métier ou requête supplémentaire.
+    await menu.evaluate(el=>{
+      for(let i=0;i<32;i++){
+        const line=document.createElement('p');
+        line.textContent='Justificatif '+(i+1);
+        line.style.cssText='margin:0;min-height:30px;padding:3px 8px';
+        el.appendChild(line);
+      }
+    });
+    expect(await menu.evaluate(el=>el.scrollHeight>el.clientHeight)).toBe(true);
+    const backgroundBefore=await boardScroll.evaluate(el=>({x:el.scrollLeft,y:el.scrollTop}));
+    const rectBefore=await menu.boundingBox();
+    await page.mouse.move(rectBefore.x+Math.min(30,rectBefore.width/2),rectBefore.y+Math.min(45,rectBefore.height/2));
+    await page.mouse.wheel(0,480);
+    await expect.poll(()=>menu.evaluate(el=>el.scrollTop)).toBeGreaterThan(0);
+    const rectAfter=await menu.boundingBox();
+    expect(Math.abs(rectAfter.x-rectBefore.x)).toBeLessThan(2);
+    expect(Math.abs(rectAfter.y-rectBefore.y)).toBeLessThan(2);
+    await page.mouse.wheel(0,4000);
+    await expect(menu).toBeVisible();
+    expect(await boardScroll.evaluate(el=>({x:el.scrollLeft,y:el.scrollTop}))).toEqual(backgroundBefore);
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+    await expect(stage).toBeFocused();
+    // Une nouvelle cellule rouvre le menu depuis le haut, pas à l'ancienne position.
+    await stage.click();
+    await expect(menu).toBeVisible();
+    expect(await menu.evaluate(el=>el.scrollTop)).toBe(0);
+  });
+
   test('la phase active et la mise en évidence sont textuelles en plus de la couleur',async({page})=>{
     await mount(page,'market_operator');
     const row=page.locator('[data-hub-global-order="CM-101"]');

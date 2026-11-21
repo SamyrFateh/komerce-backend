@@ -63,8 +63,8 @@ const SCRIPTS=Object.freeze({
 const DOWNSTREAM_M01=Object.freeze(['RELAY_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP']);
 const M02_STAGES=Object.freeze(['LOCAL_RELAY_AVAILABLE','LOCAL_CLIENT_PICKUP']);
 // G6-G4B : N23/N24 réutilisent le parcours M02 (achat, cash, mise à disposition) ; le geste négatif est joué ensuite par le runner.
-const LOCAL_FLOW=Object.freeze(['M02','M03','N23','N24','N21','N22','N29']);
-const LOCAL_PG_FLOW=Object.freeze(['M02','N23','N24','N21','N22','N29']);
+const LOCAL_FLOW=Object.freeze(['M02','M03','N23','N24','N21','N22','N29','N28','N32','N30','N31','N25','N26b']);
+const LOCAL_PG_FLOW=Object.freeze(['M02','N23','N24','N21','N22','N29','N28','N32','N30','N31','N25','N26b']);
 const M03_ORACLE_STAGES=Object.freeze(['M03_NOT_COLLECTED','M03_COLLECTED_FINAL']);
 // M03 : branche locale = étapes M02 ; oracles M03 en lecture seule ; branche import (HUB_PO..CLIENT_PICKUP) = boucle par PO (m03-import-stages).
 const M03_IMPORT_STAGES=Object.freeze(DOWNSTREAM_M01.filter(x=>x!=='RELAY_CASH'));
@@ -182,7 +182,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
  guard(env);
  const SCENARIO=env.G6_CANONICAL_SCENARIO;
  // N20, N11 à N16 : chaîne import identique à M01 ; les scripts enfants (Hub, transitaire, douane) tournent sous l'alias M01, jamais modifiés.
- if(['N20','N11','N12','N13','N14','N15','N16'].includes(SCENARIO))env={...env,G6_CANONICAL_SCENARIO:'M01'};
+ if(['N20','N11','N12','N13','N14','N15','N16','N17','N18','N19','N35','N36','N37','N38','N39F1','N39F2','N39F3','N40','N26a','N27'].includes(SCENARIO))env={...env,G6_CANONICAL_SCENARIO:'M01'};
  let issuedBuyer=null;
  let runtimePin=null;
  const stageProofs=new Map();

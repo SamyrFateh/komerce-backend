@@ -47,6 +47,28 @@ const CI_EXCLUDED = new Set([
  * TABLE oubliés, par exemple).
  */
 const STRUCTURAL_PROBES = Object.freeze({
+  // Migration 423 has no new tables/columns: it installs AFTER STATEMENT
+  // NOTIFY triggers. A schema-only dump can include its SQL file in the git
+  // baseline yet omit those triggers. Probe the actual catalog before
+  // baselining, or CI would silently certify a DB without realtime events.
+  '423_dashboard_refresh_notifications.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT
+        to_regprocedure('public.notify_dashboard_refresh()') IS NOT NULL
+        AND (
+          SELECT COUNT(DISTINCT c.relname)::int
+          FROM pg_trigger t
+          JOIN pg_class c ON c.oid = t.tgrelid
+          JOIN pg_namespace n ON n.oid = c.relnamespace
+          WHERE n.nspname = 'public'
+            AND c.relname IN ('orders','products','purchase_orders')
+            AND t.tgname = 'dashboard_refresh_after_write'
+            AND NOT t.tgisinternal
+        ) = 3 AS represented
+    `);
+    return row?.represented === true;
+  },
+
   // Migration de DONNÉES (règles applicatives) : un dump de schéma ne contient pas ses lignes.
   // Sans cette sonde, un rafraîchissement du dump la baseline et la CI perd les règles du writer.
   '302_canonical_margin_writer_rules.sql': async (client) => {

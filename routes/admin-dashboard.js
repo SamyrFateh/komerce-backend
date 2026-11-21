@@ -75,7 +75,8 @@ function parseFilters(req) {
 function makeDataQuality(filters, sourceTables, options = {}) {
   return {
     generated_at: new Date().toISOString(),
-    cache_ttl_seconds: 120,
+    // Garder la métadonnée alignée sur le TTL réellement appliqué par le middleware.
+    cache_ttl_seconds: cache.DEFAULT_TTL_MS / 1000,
     filters,
     warnings: [
       ...(options.warnings || []),

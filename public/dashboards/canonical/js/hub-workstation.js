@@ -54,21 +54,30 @@
   // Une seule paire d'écouteurs par tableau : les rafraîchissements n'empilent pas
   // des handlers document (ouvertures/clics extérieurs) devenus obsolètes.
   const boardDisposers = new WeakMap();
-  function installMenuDismiss(root, doc, menu, close, onMove) {
+  function installMenuDismiss(root, doc, menu, close, onMove, restoreFocus) {
     const previous = boardDisposers.get(root);
     if (previous) previous();
     const outside = event => {
       if (!menu.hidden && !menu.contains(event.target)) close();
     };
     const escape = event => {
-      if (event.key === 'Escape' && !menu.hidden) close();
+      if (event.key === 'Escape' && !menu.hidden) {
+        // Returning focus avoids leaving keyboard users on a hidden button.
+        restoreFocus?.();
+        close();
+      }
     };
     doc.addEventListener('pointerdown', outside, true);
     doc.addEventListener('keydown', escape);
     // Capture les scrolls horizontaux ET verticaux des parents du Kanban.
     // Le menu est positionné à partir de la cellule, jamais des anciennes coordonnées souris.
+    // Scrolling the popup's own content must never reposition or dismiss it.
+    const onContainerScroll = event => {
+      if (event.target === menu || menu.contains(event.target)) return;
+      onMove?.();
+    };
     if(onMove) {
-      doc.addEventListener('scroll', onMove, true);
+      doc.addEventListener('scroll', onContainerScroll, true);
       doc.defaultView?.addEventListener('resize',onMove);
       menu.addEventListener?.('hub:menu-state',onMove);
     }
@@ -76,7 +85,7 @@
       doc.removeEventListener('pointerdown', outside, true);
       doc.removeEventListener('keydown', escape);
       if(onMove) {
-        doc.removeEventListener('scroll', onMove, true);
+        doc.removeEventListener('scroll', onContainerScroll, true);
         doc.defaultView?.removeEventListener('resize',onMove);
         menu.removeEventListener?.('hub:menu-state',onMove);
       }
@@ -118,6 +127,7 @@
     return {
       select(element){target=element;move();},
       move,
+      restoreFocus(){if(target?.isConnected) target.focus?.({preventScroll:true});},
       clear(){target=null;}
     };
   }
@@ -261,6 +271,7 @@
   // ne déclenche aucune action métier : l'API serveur reste la seule vérité.
   async function renderDirectorQueue(host, { document:doc, fetch:fetchFn, user } = {}) {
     if (!['admin', 'agent_hub'].includes(user && user.role) || !doc || typeof fetchFn !== 'function') return null;
+    const existing=host.querySelector?.('[data-hub-director-todo]') || null;
     const panel=make(doc,'details','hlc-director');
     panel.setAttribute('data-hub-director-todo','');
     panel.open=true;
@@ -270,19 +281,35 @@
     const body=make(doc,'div','hlc-director-body','Chargement des tâches et de leur ancienneté…');
     body.setAttribute('role','status');
     panel.appendChild(body);
-    host.appendChild(panel);
+    if (!existing) host.appendChild(panel);
     try {
       const payload=await requestJSON(fetchFn,'/api/hub/director-todo');
       // Une navigation a pu détruire le poste. Ne rien injecter dans l'ancien document.
-      if (panel.isConnected === false) return null;
+      if (host.isConnected === false || (!existing && panel.isConnected === false)) return null;
       if (payload.scope !== 'ALL_MARKETS' || !Array.isArray(payload.tasks)) throw new Error('Réponse direction Hub invalide');
+      // Ne pas repeindre les cartes si la vérité métier n'a pas changé.
+      // La date de génération seule ne doit jamais déclencher un saut de page.
+      const signature=JSON.stringify([payload.tasks, payload.overdue_count]);
+      if (existing && existing._directorSignature === signature) {
+        existing.removeAttribute('data-hub-director-stale');
+        existing.querySelector?.('[data-hub-director-refresh-error]')?.remove?.();
+        return payload;
+      }
+      if (existing) {
+        // Un clic en cours reste prioritaire : le prochain tick relira la vérité.
+        if (doc.activeElement && existing.contains?.(doc.activeElement)) {
+          existing.setAttribute('data-hub-director-update-pending','true');
+          return payload;
+        }
+        panel.open=existing.open;
+        host.replaceChildren(panel);
+      }
+      panel._directorSignature=signature;
+      panel.setAttribute('data-hub-director-state','ready');
       heading.textContent='Direction Hub · Tous marchés · '+payload.tasks.length+
         ' tâche(s) · '+Number(payload.overdue_count||0)+' alerte(s) ≥ 48 h';
       body.replaceChildren();
-      if (!payload.tasks.length) {
-        body.appendChild(make(doc,'p','hlc-director-empty','Aucune tâche Hub en attente sur les marchés actifs.'));
-        return payload;
-      }
+      // Une file vide rend les quatre colonnes : rien à traiter reste explicite.
       // Regroupement visuel d'une projection déjà autorisée côté serveur :
       // engagements et paiements sont DEUX décisions différentes. Aucune mutation ici.
       const groupSpecs = [
@@ -306,7 +333,7 @@
       list.setAttribute('data-hub-director-list','');
       for (const spec of groupSpecs) {
         const tasks=groups.get(spec.key);
-        if (!tasks.length) continue;
+        // Quatre colonnes stables, même si l'une ne contient aucune tâche.
         const group=make(doc,'section','hlc-director-group');
         group.setAttribute('data-hub-director-group',spec.key);
         const groupHeading=make(doc,'div','hlc-director-group-heading');
@@ -315,6 +342,7 @@
         group.appendChild(groupHeading);
         group.appendChild(make(doc,'small','hlc-director-group-hint',spec.hint));
         const rows=make(doc,'div','hlc-director-group-rows');
+        if (!tasks.length) rows.appendChild(make(doc,'p','hlc-director-empty','Aucune action en attente.'));
         for(const task of tasks) {
           const row=make(doc,'div','hlc-director-task'+(task.overdue?' is-overdue':'')+
             (task.viewer_can_act===false?' is-readonly':''));
@@ -351,13 +379,29 @@
       body.appendChild(list);
       return payload;
     } catch(error) {
-      if (panel.isConnected !== false) {
+      if (error.status === 401 || error.status === 403) {
+        // Autorité révoquée : le dernier Kanban est désormais interdit, pas simplement stale.
+        host.replaceChildren();
+        const notice=make(doc,'p','hlc-director-access-denied',
+          'Accès expiré ou non autorisé. Rechargez votre session.');
+        notice.setAttribute('role','alert');
+        host.appendChild(notice);
+      } else if (existing && existing.isConnected !== false) {
+        // Conserver la dernière photo, clairement marquée périmée, jamais la remplacer par zéro.
+        existing.setAttribute('data-hub-director-stale','true');
+        let notice=existing.querySelector?.('[data-hub-director-refresh-error]');
+        if (!notice) {
+          notice=make(doc,'small','hlc-director-stale');
+          notice.setAttribute('data-hub-director-refresh-error','');
+          existing.appendChild(notice);
+        }
+        notice.textContent='Actualisation indisponible — données affichées non garanties à jour.';
+      } else if (panel.isConnected !== false) {
         heading.textContent='Direction Hub · Tous marchés · Indisponible';
         body.textContent='La supervision ne peut pas être chargée : '+safe(error.message||error);
+        panel.setAttribute('data-hub-director-state','error');
       }
       return null;
-    } finally {
-      panel.setAttribute('data-hub-director-state','ready');
     }
   }
 
@@ -418,6 +462,7 @@
       const requestId = String(++menuSerial);
       menu.setAttribute('data-hub-request', requestId);
       menu.replaceChildren();
+      menu.scrollTop = 0;
       menu.classList.remove('is-editing','is-sourcing-inline','is-purchasing-flow');
       menu.removeAttribute('data-hub-menu-stage-state');
       menu.appendChild(make(doc, 'strong', 'kmc-hub-board-menu-title',
@@ -475,10 +520,10 @@
         menu.insertBefore(comment,journal.section);
       }
       anchor.select(event?.currentTarget);
-      menu.querySelector?.('a,button')?.focus?.();
+      menu.querySelector?.('a,button')?.focus?.({preventScroll:true});
     };
     anchor=anchoredMenu(menu,scroll,doc,closeMenu);
-    installMenuDismiss(root, doc, menu, closeMenu, anchor.move);
+    installMenuDismiss(root, doc, menu, closeMenu, anchor.move, anchor.restoreFocus);
 
     let rows = [];
     const renderRows = () => {
@@ -697,9 +742,10 @@
       anchor?.clear();
     };
     anchor=anchoredMenu(menu,scroll,doc,closeMenu);
-    installMenuDismiss(root, doc, menu, closeMenu, anchor.move);
+    installMenuDismiss(root, doc, menu, closeMenu, anchor.move, anchor.restoreFocus);
     const openMenu = (po, field, value, event) => {
       menu.replaceChildren();
+      menu.scrollTop = 0;
       menu.classList.remove('is-editing','is-purchasing-flow');
       menu.appendChild(make(doc, 'strong', 'kmc-hub-board-menu-title',
         'PO ' + smallRef(po.id) + ' · ' + field));
@@ -721,7 +767,7 @@
           'Les actions de cette étape ne sont pas chargées. Actualiser la page.'));
       }
       anchor.select(event?.currentTarget);
-      menu.querySelector?.('a,button')?.focus?.();
+      menu.querySelector?.('a,button')?.focus?.({preventScroll:true});
     };
     // Échap et clic extérieur gérés par installMenuDismiss().
 
@@ -922,6 +968,11 @@
     );
     const selected=reloadCases();
     const directorLoad=branch==='direction' ? selected : Promise.resolve(null);
+    // Direction = vue read-only. SSE inter-instances + relecture de secours
+    // restent strictement séparés des writers Achats/Opérations.
+    const liveSync = branch==='direction' && global.KomerceDashboardFreshness?.watch
+      ? global.KomerceDashboardFreshness.watch({root:host, refresh:reloadCases, pollMs:60000})
+      : null;
     selected.catch?.(()=>{});
     const selectPO=id=>{
       if(branch !== 'administrative')return;
@@ -935,7 +986,7 @@
       const row=[...rows].find(node=>node.getAttribute('data-hub-global-order')===id);
       if(row?.scrollIntoView)row.scrollIntoView({block:'nearest'});
     };
-    return Object.freeze({branch,reloadCases,selectPO,selectOrder,directorLoad});
+    return Object.freeze({branch,reloadCases,selectPO,selectOrder,directorLoad,liveSync});
   }
 
   global.KomerceCanonicalHubWorkstation = Object.freeze({

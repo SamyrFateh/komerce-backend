@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 63155)
-Total output lines: 2914
-
 # Business Feature Graph — Komerce (Lot O3)
 
 > Généré par `scripts/business-graph-gen.js`. Ne pas éditer à la main.
@@ -84,7 +81,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 36 | 36 | 716 | 716 | 0 |
+| backend | 36 | 36 | 718 | 718 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 106 | 106 | 0 |
 
@@ -223,21 +220,2483 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Exposer les agrégats de pilotage et porter un portail interne Canonical unifié accessible depuis /admin, dont la navigation et les workspaces sont adaptés au rôle, aux scopes marché et aux capabilities résolus côté serveur, sans réutiliser les deux générations historiques de dashboards.
 
 - middleware: 1
-- services: 46
-- routes: 28
-- migrations: 2
-- dash: 192
+- services: 47
+- routes: 29
+- migrations: 3
+- dash: 195
 - tests: 213
 - tables owned (lifecycle): 3 — `customs_shipment_holds`, `order_incidents`, `partners`
 - tables written: 21
-- interfaces exposed: 88
+- interfaces exposed: 89
 - internal APIs: 0
 - dependencies (consumes): 27 — shared-cart, incident-management, orders, infrastructure, payments, refunds, logistics, inventory, local-stock, economic-engine, wallet, auth, auth-identity, market-delegation, customs, documents, notifications, purchasing, supplier-connectivity, external-provider-contracts, business-rules, decision-signals, market, market-delegation, sourcing, catalog, market-autonomy
 - consumers: 9 — economic-engine, infrastructure, market-control-plane, market-delegation, market-operator-dashboard, orders, sourcing, admin-dashboard, decision-signals
 
 ### decision-signals _(piloting-capability)_
 
-> Detecter et qualifier des signaux operationnels et economiques a partir des donnees canoni…57155 tokens truncated…auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
+> Detecter et qualifier des signaux operationnels et economiques a partir des donnees canoniques, puis porter leur cycle de vie global ou Market ID sans muter la verite metier source.
+
+- middleware: 1
+- services: 9
+- routes: 2
+- migrations: 2
+- tests: 15
+- tables owned (lifecycle): 1 — `signals`
+- tables written: 1
+- interfaces exposed: 9
+- internal APIs: 0
+- dependencies (consumes): 9 — auth, infrastructure, logistics, purchasing, business-rules, market-delegation, payments, economic-engine, dashboard
+- consumers: 5 — dashboard, incident-management, market-control-plane, orders, admin-dashboard
+
+### documents _(business-transversal)_
+
+> Generer et conserver un PDF officiel privé (facture, remboursement, wallet, retrait, douane) après événement confirmé ; exposer au client authentifié uniquement ses factures et remboursements essentiels.
+
+- services: 9
+- routes: 3
+- migrations: 7
+- utils: 5
+- tests: 18
+- tables owned (lifecycle): 2 — `invoices`, `transaction_documents`
+- tables written: 2
+- interfaces exposed: 9
+- internal APIs: 0
+- dependencies (consumes): 9 — logistics, catalog, auth, infrastructure, orders, customs, wallet, refunds, auth-identity
+- consumers: 11 — auth-identity, customs, dashboard, logistics, orders, payments, platform-ops, purchasing, refunds, wallet, admin-dashboard
+
+### economic-engine _(business-feature)_
+
+> Calculer les frontières économiques, la contribution et la couverture ; le marché borne le possible et le responsable autorisé décide le prix.
+
+- utils: 3
+- middleware: 1
+- services: 56
+- routes: 13
+- migrations: 34
+- dash: 6
+- tests: 106
+- tables owned (lifecycle): 31 — `order_item_real_cost_allocations`, `exchange_rates`, `charges`, `competitor_prices`, `cost_benchmarks`, `cost_component_events`, `cost_component_market_override_events`, `cost_component_market_overrides`, `cost_components`, `economic_risk_cost_events`, `economic_risk_watermark_events`, `economic_snapshots`, `economic_structure_cost_events`, `finance_config`, `international_n1_reconciliations`, `financial_movements`, `financial_movement_documents`, `market_price_observations`, `market_price_observation_events`, `price_history`, `pricing_category_dims`, `pricing_category_taxes`, `pricing_components`, `pricing_matrices_audit`, `pricing_market_decision_policy_events`, `pricing_maturity_disposition_events`, `pricing_strategies`, `pricing_strategy_history`, `risk_provisions`, `market_cost_attributions`, `order_cost_entry_events`
+- tables written: 32
+- interfaces exposed: 110
+- internal APIs: 2
+- dependencies (consumes): 16 — local-stock, refunds, platform-ops, customs, business-rules, auth-identity, market, market-autonomy, market-delegation, infrastructure, logistics, catalog, auth, dashboard, orders, loyalty
+- consumers: 15 — catalog, customs, dashboard, infrastructure, loyalty, market-autonomy, market-control-plane, market-delegation, orders, platform-ops, purchasing, refunds, sourcing, admin-dashboard, decision-signals
+
+### external-provider-contracts _(technical-transversal)_
+
+> Qualifier, prouver et publier ce que Komerce peut réellement croire d un système externe avant qu une feature métier ne s appuie sur son contrat.
+
+- services: 1
+- scripts: 6
+- workflows: 7
+- config: 2
+- tests: 8
+- tables owned (lifecycle): 0
+- tables written: 0
+- interfaces exposed: 0
+- internal APIs: 12
+- dependencies (consumes): 1 — infrastructure
+- consumers: 4 — catalog, dashboard, purchasing, supplier-connectivity
+
+### incident-management _(business-transversal)_
+
+> Détecter, qualifier et résoudre les écarts entre l'état attendu et l'état réel d'une opération, avec impact client traçable.
+
+- services: 5
+- tests: 8
+- tables owned (lifecycle): 1 — `incidents`
+- tables written: 1
+- interfaces exposed: 0
+- internal APIs: 17
+- dependencies (consumes): 4 — orders, infrastructure, logistics, decision-signals
+- consumers: 7 — dashboard, logistics, notifications, orders, payments, platform-ops, purchasing
+
+### infrastructure _(technical-foundation)_
+
+> Infrastructure transversale consommée par toutes les features : middleware non-auth (error-handler, rate-limit, request-id, upload, validate), utilitaires partagés (logger, phone, rates, reference, rules), barrel de validation Joi, et bootstrap applicatif (Express, routes, crons, env, sécurité, migrations startup).
+
+- services: 3
+- middleware: 7
+- utils: 5
+- validators: 1
+- bootstrap: 9
+- migrations: 9
+- scripts: 114
+- docs: 61
+- ci: 26
+- assets: 33
+- db: 16
+- routes: 1
+- config: 12
+- tests: 107
+- tables owned (lifecycle): 3 — `schema_migrations`, `outbox_events`, `physical_outcome_receipts`
+- tables written: 10
+- interfaces exposed: 4
+- internal APIs: 11
+- dependencies (consumes): 17 — market, auth, auth-identity, catalog, customs, dashboard, economic-engine, inventory, logistics, market-delegation, notifications, platform-ops, orders, payments, recommendations, shared-cart, wallet
+- consumers: 34 — auth, auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, documents, economic-engine, external-provider-contracts, incident-management, inventory, local-stock, logistics, loyalty, market, market-autonomy, market-control-plane, market-delegation, market-operator-dashboard, notifications, orders, payments, platform-ops, providers-services, purchasing, recommendations, refunds, settlement, shared-cart, sourcing, unsold-resolution, wallet, decision-signals
+
+### inventory _(business-feature)_
+
+> Réceptionner, affecter et dispatcher les articles au hub.
+
+- services: 1
+- routes: 1
+- dash: 1
+- tests: 3
+- tables owned (lifecycle): 1 — `inventory_items`
+- tables written: 1
+- interfaces exposed: 8
+- internal APIs: 0
+- dependencies (consumes): 5 — orders, catalog, logistics, infrastructure, auth
+- consumers: 3 — dashboard, infrastructure, admin-dashboard
+
+### legacy-control-tower _(deprecated)_
+
+> Ancien control tower — deprecated.
+
+- js: 37
+- tables owned (lifecycle): 0
+- tables written: 0
+- interfaces exposed: 0
+- internal APIs: 0
+- dependencies (consumes): 0
+- consumers: 0
+
+### local-stock _(business-feature)_
+
+> Porter le stock physique vendable local, calculer la disponibilité nette des allocations actives, projeter une disponibilité publique minimale et engager/consommer/libérer ce stock dans le cycle commande.
+
+- services: 3
+- routes: 1
+- tests: 5
+- tables owned (lifecycle): 2 — `local_stock`, `local_stock_allocations`
+- tables written: 2
+- interfaces exposed: 2
+- internal APIs: 6
+- dependencies (consumes): 4 — catalog, market, logistics, infrastructure
+- consumers: 7 — dashboard, economic-engine, logistics, market-delegation, orders, providers-services, recommendations
+
+### logistics _(business-feature)_
+
+> Faire transiter un colis du scan initial au retrait final, avec tracking client et transporteur.
+
+- middleware: 1
+- migrations: 15
+- docs: 7
+- utils: 3
+- services: 49
+- routes: 18
+- boutique: 1
+- dash: 2
+- tests: 93
+- tables owned (lifecycle): 26 — `parcels`, `relais`, `parcel_items`, `hub_physical_unit_placements`, `hub_physical_units`, `hub_purchase_allocations`, `scan_events`, `scans`, `pickup_print_tokens`, `pickup_reveal_codes`, `relay_product_return_receipts`, `carriers`, `hub_custody_events`, `hub_box_bags`, `international_shipment_charges`, `international_shipment_events`, `international_shipment_hub_units`, `international_shipment_relay_receipts`, `international_shipments`, `market_transport_sale_rates`, `parcel_events`, `pickup_collect_failures`, `pickup_code_generations`, `pickup_verify_attempts`, `product_sku_physical_codes`, `shipments`
+- tables written: 28
+- interfaces exposed: 78
+- internal APIs: 32
+- dependencies (consumes): 17 — customs, documents, incident-management, infrastructure, business-rules, orders, local-stock, auth, auth-identity, catalog, notifications, payments, refunds, purchasing, loyalty, market, market-delegation
+- consumers: 22 — auth-identity, catalog, customs, dashboard, documents, economic-engine, incident-management, infrastructure, inventory, local-stock, market-control-plane, market-delegation, market-operator-dashboard, notifications, orders, payments, platform-ops, purchasing, recommendations, refunds, admin-dashboard, decision-signals
+
+### loyalty _(business-feature)_
+
+> Calculer et maintenir le statut de fidelite d'un client (palier + compteur gros panier) et ses recompenses.
+
+- services: 1
+- routes: 2
+- tests: 6
+- tables owned (lifecycle): 2 — `loyalty_tiers`, `loyalty_rewards`
+- tables written: 2
+- interfaces exposed: 12
+- internal APIs: 0
+- dependencies (consumes): 6 — orders, economic-engine, infrastructure, auth, notifications, auth-identity
+- consumers: 5 — auth-identity, economic-engine, logistics, orders, payments
+
+### market _(business-feature)_
+
+> Porter le référentiel des marchés ouverts (pays, devise) et l'historique d'accès des opérateurs à un marché — jamais le settlement ni l'attribution économique, qui restent une primitive séparée et différée.
+
+- scripts: 3
+- migrations: 15
+- services: 11
+- tests: 32
+- tables owned (lifecycle): 5 — `markets`, `operator_market_scopes`, `currency_parities`, `fx_rate_observations`, `fx_public_reference_quotes`
+- tables written: 5
+- interfaces exposed: 0
+- internal APIs: 0
+- dependencies (consumes): 2 — infrastructure, notifications
+- consumers: 18 — catalog, customs, dashboard, economic-engine, infrastructure, local-stock, logistics, market-autonomy, market-control-plane, market-delegation, market-operator-dashboard, orders, payments, providers-services, recommendations, refunds, settlement, wallet
+
+### market-autonomy _(business-feature)_
+
+> Permettre à un responsable pays explicitement scopé manager de décider un prix local, d’en voir l’impact économique, puis de l’activer sans approbation centrale lorsque les gates autorisent la position ; LOCAL_ACTIVE devient alors la seule vérité locale consommable par le buyer path.
+
+- services: 4
+- migrations: 3
+- dash: 25
+- tests: 11
+- tables owned (lifecycle): 2 — `product_market_price_drafts`, `product_market_price_draft_events`
+- tables written: 2
+- interfaces exposed: 0
+- internal APIs: 0
+- dependencies (consumes): 6 — market, economic-engine, catalog, infrastructure, market-delegation, auth-identity
+- consumers: 8 — catalog, dashboard, economic-engine, market-delegation, market-operator-dashboard, orders, recommendations, shared-cart
+
+### market-control-plane _(business-feature)_
+
+> Montrer à l’administration centrale, pour chaque marché, l’état réel de sa mise en exploitation et la liste explicite des écarts, sans rien écrire ni décider d’autorisation.
+
+- scripts: 2
+- services: 4
+- routes: 1
+- tests: 12
+- tables owned (lifecycle): 1 — `market_delivery_attestations`
+- tables written: 1
+- interfaces exposed: 7
+- internal APIs: 9
+- dependencies (consumes): 13 — orders, market, market-delegation, providers-services, payments, logistics, dashboard, catalog, decision-signals, economic-engine, sourcing, auth, infrastructure
+- consumers: 1 — orders
+
+### market-delegation _(business-feature)_
+
+> Déléguer de façon explicite, auditable et révocable l’autorité d’exploitation d’un Market ID à un opérateur principal et à son équipe, tout en préservant les frontières GROUP de Komerce.
+
+- migrations: 23
+- config: 1
+- middleware: 4
+- services: 19
+- routes: 15
+- tests: 52
+- tables owned (lifecycle): 10 — `market_operating_assignments`, `assignment_memberships`, `membership_capabilities`, `assignment_capability_ceiling`, `market_cash_control_policies`, `capability_registry`, `ceiling_templates`, `ceiling_template_capabilities`, `market_delegation_audit`, `market_team_invitations`
+- tables written: 10
+- interfaces exposed: 33
+- internal APIs: 35
+- dependencies (consumes): 14 — local-stock, market, auth, auth-identity, infrastructure, logistics, catalog, providers-services, orders, settlement, economic-engine, market-autonomy, dashboard, payments
+- consumers: 12 — dashboard, dashboard, economic-engine, infrastructure, logistics, market-autonomy, market-control-plane, market-operator-dashboard, payments, settlement, unsold-resolution, decision-signals
+
+### market-operator-dashboard _(unclassified)_
+
+> Permettre à un opérateur pays (market_operator) de se connecter au dashboard Canonical, de décider et exploiter son marché : KPIs, commandes, catalogue pays, pricing local, réseau Hub/Relais, douane, expéditions et Finance pays — sans jamais voir les données d'un autre marché ni recevoir automatiquement les gestes physiques ou autorités globales des rôles spécialisés.
+
+- scripts: 2
+- tests: 3
+- tables owned (lifecycle): 0
+- tables written: 0
+- interfaces exposed: 0
+- internal APIs: 0
+- dependencies (consumes): 9 — market, auth, dashboard, catalog, market-autonomy, orders, logistics, market-delegation, infrastructure
+- consumers: 0
+
+### notifications _(business-transversal)_
+
+> Projeter une information essentielle dans l application avec acquittement propriétaire ; conserver les canaux sortants historiques séparés et best-effort.
+
+- tests: 23
+- migrations: 6
+- utils: 2
+- services: 14
+- routes: 4
+- tables owned (lifecycle): 3 — `client_notifications`, `alerts`, `notification_log`
+- tables written: 3
+- interfaces exposed: 6
+- internal APIs: 9
+- dependencies (consumes): 7 — orders, logistics, auth-identity, incident-management, platform-ops, infrastructure, auth
+- consumers: 13 — auth, auth-identity, catalog, dashboard, infrastructure, logistics, loyalty, market, orders, payments, purchasing, refunds, shared-cart
+
+### orders _(business-feature)_
+
+> Faire exister une commande, de la creation au statut final, avec un cout figure et une reference lisible.
+
+- utils: 1
+- services: 31
+- routes: 11
+- boutique: 3
+- tests: 64
+- tables owned (lifecycle): 11 — `order_items`, `orders`, `disputes`, `order_comments`, `order_item_cost_imputations`, `order_status_history`, `recipients`, `sms_log`, `customs_history`, `relay_return_compensations`, `order_checkout_idempotency`
+- tables written: 13
+- interfaces exposed: 27
+- internal APIs: 30
+- dependencies (consumes): 24 — dashboard, market-control-plane, platform-ops, infrastructure, decision-signals, incident-management, business-rules, wallet, economic-engine, logistics, catalog, market-autonomy, local-stock, market, purchasing, loyalty, payments, auth, auth-identity, customs, documents, notifications, refunds, shared-cart
+- consumers: 24 — auth-identity, catalog, customs, dashboard, documents, economic-engine, incident-management, infrastructure, inventory, logistics, loyalty, market-control-plane, market-delegation, market-operator-dashboard, notifications, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, unsold-resolution, wallet, admin-dashboard
+
+### payments _(business-feature)_
+
+> Encaisser un paiement (carte, PayPal, Mobile Money, especes au retrait) et confirmer son etat de facon idempotente.
+
+- scripts: 1
+- services: 23
+- routes: 7
+- migrations: 10
+- boutique: 4
+- tests: 37
+- tables owned (lifecycle): 12 — `market_payment_providers`, `cash_collections`, `cash_deposit_allocations`, `cash_deposits`, `market_cash_destinations`, `cash_confirmation_controls`, `mobile_money_transactions`, `paypal_events_processed`, `stripe_events_processed`, `cash_custody_losses`, `cash_custody_receipts`, `market_payment_accounts`
+- tables written: 12
+- interfaces exposed: 25
+- internal APIs: 0
+- dependencies (consumes): 15 — auth-identity, incident-management, infrastructure, platform-ops, auth, refunds, documents, notifications, business-rules, orders, market, logistics, loyalty, purchasing, market-delegation
+- consumers: 9 — dashboard, infrastructure, logistics, market-control-plane, market-delegation, orders, refunds, admin-dashboard, decision-signals
+
+### platform _(frontend-transversal)_
+
+> Infrastructure transversale dashboards (auth-guard, service worker, composants colis partages, QR viewer).
+
+- js: 4
+- tables owned (lifecycle): 0
+- tables written: 0
+- interfaces exposed: 0
+- internal APIs: 0
+- dependencies (consumes): 0
+- consumers: 0
+
+### platform-ops _(technical-transversal)_
+
+> Exposer la sante applicative, la configuration et les modules actifs — infrastructure d'exploitation, pas de service metier.
+
+- middleware: 2
+- compositionRoots: 3
+- services: 6
+- routes: 5
+- boutique: 6
+- tests: 23
+- tables owned (lifecycle): 2 — `fabrics`, `garment_models`
+- tables written: 6
+- interfaces exposed: 33
+- internal APIs: 0
+- dependencies (consumes): 12 — documents, incident-management, purchasing, catalog, auth-identity, infrastructure, business-rules, auth, economic-engine, logistics, orders, wallet
+- consumers: 12 — auth-identity, auth-passkey, catalog, economic-engine, infrastructure, notifications, orders, payments, providers-services, recommendations, shared-cart, wallet
+
+### providers-services _(business-feature)_
+
+> Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, leur nom public minimal, leurs médias publics optionnels et le cycle contextualisé de demande/rappel. La cible service_id XOR physical_offer_id porte toujours le propos connu ; le client choisit request ou callback. Pour un Service explicitement compatible WhatsApp, le serveur peut remettre un handoff de conversation après création de l Inquiry, sans publier le numéro dans le détail. Aucun paiement, settlement, calendrier structuré ou order Komerce n’est créé par cette interaction.
+
+- services: 4
+- routes: 1
+- boutique: 2
+- ci: 1
+- scripts: 2
+- migrations: 3
+- tests: 7
+- tables owned (lifecycle): 4 — `providers`, `services`, `physical_offers`, `inquiries`
+- tables written: 4
+- interfaces exposed: 3
+- internal APIs: 0
+- dependencies (consumes): 7 — auth, auth-identity, platform-ops, market, local-stock, recommendations, infrastructure
+- consumers: 3 — market-control-plane, market-delegation, recommendations
+
+### purchasing _(business-feature)_
+
+> Transformer un besoin d'approvisionnement issu d'une commande en engagement fournisseur traçable (bon de commande), puis constater sa réception.
+
+- services: 53
+- routes: 1
+- migrations: 17
+- scripts: 14
+- tests: 92
+- tables owned (lifecycle): 15 — `suppliers`, `purchase_lines`, `purchase_orders`, `product_suppliers`, `purchase_order_authorizations`, `hub_authorization_grants`, `supplier_execution_payments`, `supplier_payment_settlements`, `manual_purchase_executions`, `purchase_variance_decisions`, `supplier_execution_events`, `supplier_execution_fulfillments`, `supplier_execution_order_lines`, `supplier_execution_orders`, `supplier_execution_payment_proofs`
+- tables written: 15
+- interfaces exposed: 21
+- internal APIs: 14
+- dependencies (consumes): 12 — documents, supplier-connectivity, external-provider-contracts, sourcing, catalog, infrastructure, orders, auth, economic-engine, notifications, incident-management, logistics
+- consumers: 8 — catalog, dashboard, logistics, orders, payments, platform-ops, sourcing, decision-signals
+
+### recommendations _(business-feature)_
+
+> Classer et suggérer des produits boutique selon un moteur de ranking dédié. Compose aussi en mémoire un rail Discovery local mixte (DiscoveryCard — Product Komerce, produit physique tiers, service tiers) et porte sa politique éditoriale d’activation serveur, sans jamais posséder ni cloner les données sources.
+
+- scripts: 1
+- services: 3
+- routes: 1
+- tests: 5
+- tables owned (lifecycle): 0
+- tables written: 0
+- interfaces exposed: 1
+- internal APIs: 0
+- dependencies (consumes): 10 — catalog, catalog, market-autonomy, platform-ops, infrastructure, logistics, orders, market, local-stock, providers-services
+- consumers: 3 — infrastructure, providers-services, shared-cart
+
+### refunds _(business-transversal)_
+
+> Rembourser un client de facon tracable et sans double remboursement, quel que soit le flux appelant.
+
+- utils: 3
+- migrations: 3
+- services: 12
+- tests: 25
+- tables owned (lifecycle): 7 — `refunds`, `refund_execution_intents`, `order_item_refund_reservations`, `local_item_refund_reservations`, `local_cash_refund_authorizations`, `local_cash_refund_payouts`, `local_mobile_refund_handoffs`
+- tables written: 7
+- interfaces exposed: 0
+- internal APIs: 1
+- dependencies (consumes): 9 — market, infrastructure, orders, logistics, payments, wallet, documents, notifications, economic-engine
+- consumers: 6 — dashboard, documents, economic-engine, logistics, orders, payments
+
+### settlement _(business-feature)_
+
+> Tracer de bout en bout le règlement dû à un opérateur pays : READY attesté centralement, REQUESTED par le pays, PAID centralement, RECEIVED par le pays.
+
+- migrations: 1
+- services: 1
+- routes: 1
+- tests: 4
+- tables owned (lifecycle): 2 — `market_settlements`, `market_settlement_events`
+- tables written: 2
+- interfaces exposed: 3
+- internal APIs: 5
+- dependencies (consumes): 5 — market, market-delegation, auth, auth-identity, infrastructure
+- consumers: 1 — market-delegation
+
+### shared-cart _(business-feature)_
+
+> Permettre à un créateur de publier une liste immuable par lien public ; chaque acheteur sélectionne une ou plusieurs lignes disponibles, passe par le récapitulatif puis le checkout canonique sans mélanger son panier personnel ; la liste se ferme automatiquement lorsque sa dernière ligne est réclamée.
+
+- services: 9
+- routes: 4
+- migrations: 20
+- tests: 18
+- boutique: 10
+- dash: 1
+- tables owned (lifecycle): 7 — `basket_items`, `baskets`, `cart_shares`, `shared_cart_events`, `shared_cart_items`, `shared_cart_saved_access`, `shared_carts`
+- tables written: 7
+- interfaces exposed: 16
+- internal APIs: 3
+- dependencies (consumes): 9 — recommendations, platform-ops, infrastructure, orders, catalog, market-autonomy, notifications, auth, auth-identity
+- consumers: 4 — catalog, dashboard, infrastructure, orders
+
+### sourcing _(business-feature)_
+
+> Identifier, qualifier et arbitrer des opportunités fournisseur ou produit (scan pricing, décision garder/watchlist/rejeter) avant leur entrée dans le catalogue.
+
+- middleware: 1
+- migrations: 15
+- scripts: 8
+- services: 34
+- routes: 2
+- tests: 57
+- tables owned (lifecycle): 18 — `sourcing_candidates`, `import_runtime_runs`, `sourcing_candidate_events`, `sourcing_sources`, `sourcing_provider_control_events`, `sourcing_source_provides`, `sourcing_captures`, `sourcing_observations`, `sourcing_observation_evidence`, `sourcing_canonical_entities`, `sourcing_canonical_entity_refs`, `sourcing_match_proposals`, `sourcing_resolution_decisions`, `sourcing_resolution_bindings`, `import_runtime_item_events`, `provider_credentials`, `sourcing_source_requests`, `supplier_commercial_category_mappings`
+- tables written: 18
+- interfaces exposed: 30
+- internal APIs: 24
+- dependencies (consumes): 7 — infrastructure, catalog, purchasing, economic-engine, customs, auth, dashboard
+- consumers: 6 — catalog, catalog, dashboard, market-control-plane, purchasing, admin-dashboard
+
+### supplier-connectivity _(integration-adapter)_
+
+> Permettre à Komerce d accueillir un fournisseur par une autorité unique d identité provider, une Supplier Order Identity opaque et une résolution d adapter fail-closed, sans déplacer les décisions métier des features consommatrices.
+
+- services: 4
+- tests: 5
+- tables owned (lifecycle): 0
+- tables written: 0
+- interfaces exposed: 0
+- internal APIs: 10
+- dependencies (consumes): 1 — external-provider-contracts
+- consumers: 3 — catalog, dashboard, purchasing
+
+### unsold-resolution _(business-feature)_
+
+> Garder les colis non retirés sous responsabilité du relais ; la liquidation n'est autorisée qu'après clôture physique, juridique et financière certifiée.
+
+- migrations: 2
+- routes: 1
+- dash: 3
+- tests: 4
+- tables owned (lifecycle): 1 — `unsold_items`
+- tables written: 1
+- interfaces exposed: 7
+- internal APIs: 0
+- dependencies (consumes): 5 — orders, catalog, auth, market-delegation, infrastructure
+- consumers: 0
+
+### wallet _(business-feature)_
+
+> Tenir un solde client et son historique de credit/debit, avec application exactement une fois.
+
+- services: 1
+- routes: 1
+- migrations: 2
+- boutique: 2
+- tests: 6
+- tables owned (lifecycle): 4 — `wallet_transactions`, `wallets`, `wallet_consumptions`, `wallet_credit_lots`
+- tables written: 4
+- interfaces exposed: 9
+- internal APIs: 0
+- dependencies (consumes): 7 — market, orders, platform-ops, infrastructure, auth, documents, auth-identity
+- consumers: 7 — auth-identity, dashboard, documents, infrastructure, orders, platform-ops, refunds
+
+### wallet-loyalty _(deprecated)_
+
+> DÉPRÉCIÉ — scindé au Lot O1.2 (2026-07-12) en features/wallet.feature.js et features/loyalty.feature.js. Ne rend plus aucun service propre.
+
+- tables owned (lifecycle): 0
+- tables written: 0
+- interfaces exposed: 0
+- internal APIs: 0
+- dependencies (consumes): 0
+- consumers: 0
+
+## Table ownership
+
+| Table | Lifecycle owner | Résolution | Writers | Readers |
+|---|---|---|---|---|
+| `alerts` | `notifications` | declared-table-owner | notifications | — |
+| `assignment_capability_ceiling` | `market-delegation` | declared-table-owner | market-delegation | market-control-plane |
+| `assignment_memberships` | `market-delegation` | declared-table-owner | market-delegation | market-control-plane |
+| `basket_items` | `shared-cart` | multi-writer-resolved-by-classification-signal | dashboard, shared-cart | — |
+| `baskets` | `shared-cart` | multi-writer-resolved-by-classification-signal | dashboard, shared-cart | — |
+| `boutique_categories` | `catalog` | single-writer | catalog | — |
+| `boutique_subcategories` | `catalog` | single-writer | catalog | — |
+| `business_rules` | `business-rules` | single-writer | business-rules | dashboard, economic-engine, logistics |
+| `business_rules_history` | `business-rules` | single-writer | business-rules | dashboard |
+| `capability_registry` | `market-delegation` | declared-table-owner | market-delegation | — |
+| `carriers` | `logistics` | single-writer | logistics | market-control-plane |
+| `cart_shares` | `shared-cart` | declared-table-owner | shared-cart | — |
+| `cash_collections` | `payments` | single-writer | payments | — |
+| `cash_confirmation_controls` | `payments` | single-writer | payments | — |
+| `cash_custody_losses` | `payments` | declared-table-owner | payments | — |
+| `cash_custody_receipts` | `payments` | declared-table-owner | payments | — |
+| `cash_deposit_allocations` | `payments` | single-writer | payments | — |
+| `cash_deposits` | `payments` | single-writer | payments | — |
+| `catalog_enrichment_runs` | `catalog` | single-writer | catalog | — |
+| `catalog_exclusions` | _ambiguë_ | no-declared-writer | — | catalog |
+| `catalog_field_overrides` | `catalog` | single-writer | catalog | — |
+| `catalog_field_sync_state` | `catalog` | declared-table-owner | catalog | — |
+| `catalog_global_access_grants` | _ambiguë_ | no-declared-writer | — | market-control-plane |
+| `catalog_glossary` | _ambiguë_ | no-declared-writer | — | catalog |
+| `catalog_media` | `catalog` | declared-table-owner | catalog | dashboard, sourcing |
+| `catalog_media_recovery_audit` | `catalog` | declared-table-owner | catalog | — |
+| `catalog_media_visual_fr_reviews` | `catalog` | declared-table-owner | catalog | — |
+| `catalog_product_quality_notes` | `catalog` | declared-table-owner | catalog | — |
+| `catalog_product_sale_holds` | `catalog` | declared-table-owner | catalog | — |
+| `catalog_publication_decision_audit` | `catalog` | declared-table-owner | catalog | — |
+| `catalog_stock_sync_state` | `catalog` | declared-table-owner | catalog | — |
+| `catalog_taxonomy_audit` | `catalog` | single-writer | catalog | — |
+| `catalog_terminology_reference` | `catalog` | single-writer | catalog | — |
+| `ceiling_template_capabilities` | `market-delegation` | declared-table-owner | market-delegation | — |
+| `ceiling_templates` | `market-delegation` | declared-table-owner | market-delegation | — |
+| `charges` | `economic-engine` | multi-writer-resolved-by-classification-signal | economic-engine, infrastructure | — |
+| `client_notifications` | `notifications` | single-writer | notifications | dashboard |
+| `competitor_prices` | `economic-engine` | single-writer | economic-engine | — |
+| `cost_benchmarks` | `economic-engine` | single-writer | economic-engine | — |
+| `cost_component_events` | `economic-engine` | single-writer | economic-engine | — |
+| `cost_component_market_override_events` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `cost_component_market_overrides` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `cost_components` | `economic-engine` | single-writer | economic-engine | — |
+| `credential_action_tokens` | `auth-identity` | single-writer | auth-identity | — |
+| `currency_parities` | `market` | declared-table-owner | market | market-autonomy |
+| `customs_categories` | `customs` | single-writer | customs | economic-engine |
+| `customs_effective_rates` | _ambiguë_ | no-declared-writer | — | customs, dashboard |
+| `customs_history` | `orders` | single-writer | orders | — |
+| `customs_shipment_fees` | `customs` | declared-table-owner | customs | — |
+| `customs_shipment_holds` | `dashboard` | single-writer | dashboard | — |
+| `customs_shipment_parcel_events` | `customs` | declared-table-owner | customs | — |
+| `customs_shipment_parcels` | `customs` | single-writer | customs | dashboard, documents, economic-engine |
+| `customs_shipments` | `customs` | single-writer | customs | dashboard, documents, economic-engine, logistics |
+| `dashboard_global_access_grants` | _ambiguë_ | no-declared-writer | — | market-control-plane |
+| `decision_signal_global_access_grants` | _ambiguë_ | no-declared-writer | — | market-control-plane |
+| `disputes` | `orders` | single-writer | orders | catalog, market-delegation |
+| `economic_risk_cost_events` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `economic_risk_watermark_events` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `economic_snapshots` | `economic-engine` | declared-table-owner | economic-engine, infrastructure | — |
+| `economic_structure_cost_events` | `economic-engine` | declared-table-owner | economic-engine | market-delegation |
+| `economic_variables` | _ambiguë_ | no-declared-writer | — | economic-engine |
+| `exchange_rates` | `economic-engine` | single-writer | economic-engine | dashboard |
+| `fabrics` | `platform-ops` | single-writer | platform-ops | economic-engine |
+| `finance_config` | `economic-engine` | multi-writer-resolved-by-classification-signal | economic-engine, infrastructure | loyalty |
+| `financial_movement_documents` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `financial_movements` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `fx_public_reference_quotes` | `market` | declared-table-owner | market | — |
+| `fx_rate_observations` | `market` | declared-table-owner | market | — |
+| `garment_models` | `platform-ops` | single-writer | platform-ops | economic-engine |
+| `hub_authorization_grants` | `purchasing` | declared-table-owner | purchasing | logistics |
+| `hub_box_bags` | `logistics` | declared-table-owner | logistics | — |
+| `hub_custody_events` | `logistics` | declared-table-owner | logistics | — |
+| `hub_physical_unit_placements` | `logistics` | declared-table-owner | logistics | dashboard |
+| `hub_physical_units` | `logistics` | declared-table-owner | logistics | dashboard |
+| `hub_purchase_allocations` | `logistics` | declared-table-owner | logistics | dashboard |
+| `import_runtime_item_events` | `sourcing` | declared-table-owner | sourcing | — |
+| `import_runtime_runs` | `sourcing` | declared-table-owner | sourcing | catalog, dashboard |
+| `incidents` | `incident-management` | declared-table-owner | incident-management | dashboard, logistics, notifications, payments, platform-ops |
+| `inquiries` | `providers-services` | single-writer | providers-services | — |
+| `international_n1_reconciliations` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `international_shipment_charges` | `logistics` | declared-table-owner | logistics | — |
+| `international_shipment_events` | `logistics` | declared-table-owner | logistics | — |
+| `international_shipment_hub_units` | `logistics` | declared-table-owner | logistics | — |
+| `international_shipment_relay_receipts` | `logistics` | declared-table-owner | logistics | refunds |
+| `international_shipments` | `logistics` | declared-table-owner | logistics | — |
+| `inventory_items` | `inventory` | single-writer | inventory | — |
+| `invoices` | `documents` | multi-writer-resolved-by-classification-signal | dashboard, documents | auth-identity, logistics, platform-ops |
+| `local_cash_refund_authorizations` | `refunds` | single-writer | refunds | — |
+| `local_cash_refund_payouts` | `refunds` | single-writer | refunds | — |
+| `local_item_refund_reservations` | `refunds` | single-writer | refunds | — |
+| `local_mobile_refund_handoffs` | `refunds` | single-writer | refunds | — |
+| `local_stock` | `local-stock` | single-writer | local-stock | logistics |
+| `local_stock_allocations` | `local-stock` | single-writer | local-stock | logistics |
+| `loyalty_rewards` | `loyalty` | single-writer | loyalty | — |
+| `loyalty_tiers` | `loyalty` | single-writer | loyalty | auth-identity |
+| `manual_purchase_executions` | `purchasing` | declared-table-owner | purchasing | — |
+| `market_cash_control_policies` | `market-delegation` | declared-table-owner | market-delegation | market-control-plane, payments |
+| `market_cash_destinations` | `payments` | single-writer | payments | — |
+| `market_cost_attributions` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `market_delegation_audit` | `market-delegation` | declared-table-owner | market-delegation | — |
+| `market_delivery_attestations` | `market-control-plane` | single-writer | market-control-plane | — |
+| `market_operating_assignments` | `market-delegation` | declared-table-owner | market-delegation | market-control-plane, payments, settlement |
+| `market_payment_accounts` | `payments` | declared-table-owner | payments | — |
+| `market_payment_providers` | `payments` | declared-table-owner | payments | market-control-plane |
+| `market_price_observation_events` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `market_price_observations` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `market_settlement_events` | `settlement` | declared-table-owner | settlement | — |
+| `market_settlements` | `settlement` | declared-table-owner | settlement | market-delegation |
+| `market_team_invitations` | `market-delegation` | declared-table-owner | market-delegation | — |
+| `market_transport_sale_rates` | `logistics` | declared-table-owner | logistics | — |
+| `markets` | `market` | declared-table-owner | market | catalog, dashboard, local-stock, market-autonomy, market-control-plane, market-delegation, providers-services, recommendations, settlement |
+| `membership_capabilities` | `market-delegation` | declared-table-owner | market-delegation | market-control-plane |
+| `mobile_money_transactions` | `payments` | single-writer | payments | — |
+| `notification_log` | `notifications` | declared-table-owner | notifications, platform-ops | — |
+| `operator_market_scopes` | `market` | declared-table-owner | market | market-delegation |
+| `order_checkout_idempotency` | `orders` | declared-table-owner | orders | — |
+| `order_comments` | `orders` | multi-writer-resolved-by-classification-signal | dashboard, orders | — |
+| `order_cost_entry_events` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `order_incidents` | `dashboard` | single-writer | dashboard | — |
+| `order_item_cost_imputations` | `orders` | single-writer | orders | dashboard, economic-engine |
+| `order_item_real_cost_allocations` | `economic-engine` | declared-table-owner | customs, economic-engine | dashboard |
+| `order_item_refund_reservations` | `refunds` | single-writer | refunds | — |
+| `order_items` | `orders` | declared-table-owner | dashboard, logistics, orders | auth-identity, catalog, customs, documents, economic-engine, inventory, payments, platform-ops, purchasing, recommendations, refunds, shared-cart |
+| `order_status_history` | `orders` | multi-writer-resolved-by-classification-signal | dashboard, orders | — |
+| `orders` | `orders` | declared-table-owner | dashboard, economic-engine, orders | auth-identity, catalog, customs, documents, incident-management, inventory, logistics, loyalty, market-control-plane, notifications, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, unsold-resolution, wallet |
+| `otp_codes` | `auth-identity` | single-writer | auth-identity | — |
+| `outbox_events` | `infrastructure` | single-writer | infrastructure | — |
+| `parcel_events` | `logistics` | declared-table-owner | logistics | — |
+| `parcel_items` | `logistics` | declared-table-owner | dashboard, logistics, platform-ops | customs, dashboard, documents, economic-engine, inventory, orders, payments |
+| `parcels` | `logistics` | declared-table-owner | dashboard, logistics, platform-ops | auth-identity, customs, dashboard, documents, economic-engine, incident-management, inventory, notifications, orders, payments, recommendations |
+| `partners` | `dashboard` | single-writer | dashboard | — |
+| `paypal_events_processed` | `payments` | single-writer | payments | — |
+| `physical_offers` | `providers-services` | single-writer | providers-services | market-delegation |
+| `physical_outcome_receipts` | `infrastructure` | single-writer | infrastructure | — |
+| `pickup_code_generations` | `logistics` | declared-table-owner | logistics | — |
+| `pickup_collect_failures` | `logistics` | declared-table-owner | logistics | — |
+| `pickup_print_tokens` | `logistics` | declared-table-owner | infrastructure, logistics | — |
+| `pickup_reveal_codes` | `logistics` | declared-table-owner | infrastructure, logistics | — |
+| `pickup_verify_attempts` | `logistics` | single-writer | logistics | — |
+| `price_history` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `pricing_benchmarks` | _ambiguë_ | no-declared-writer | — | economic-engine |
+| `pricing_category_dims` | `economic-engine` | single-writer | economic-engine | — |
+| `pricing_category_taxes` | `economic-engine` | single-writer | economic-engine | — |
+| `pricing_components` | `economic-engine` | single-writer | economic-engine | — |
+| `pricing_global_access_grants` | _ambiguë_ | no-declared-writer | — | economic-engine, market-control-plane |
+| `pricing_market_decision_policy_events` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `pricing_matrices_audit` | `economic-engine` | single-writer | economic-engine | — |
+| `pricing_maturity_disposition_events` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `pricing_strategies` | `economic-engine` | single-writer | economic-engine | — |
+| `pricing_strategy_history` | `economic-engine` | single-writer | economic-engine | — |
+| `product_attributes` | `catalog` | single-writer | catalog | — |
+| `product_content_profile` | `catalog` | single-writer | catalog | — |
+| `product_content_sections` | `catalog` | single-writer | catalog | — |
+| `product_market_exposure` | `catalog` | declared-table-owner | catalog | dashboard, market-delegation |
+| `product_market_price_draft_events` | `market-autonomy` | declared-table-owner | market-autonomy | — |
+| `product_market_price_drafts` | `market-autonomy` | declared-table-owner | market-autonomy | catalog, dashboard, market-delegation |
+| `product_sku_media` | `catalog` | declared-table-owner | catalog | sourcing |
+| `product_sku_physical_codes` | `logistics` | declared-table-owner | logistics | — |
+| `product_skus` | `catalog` | declared-table-owner | catalog | market-autonomy, purchasing, sourcing |
+| `product_suppliers` | `purchasing` | single-writer | purchasing | logistics |
+| `product_variants` | `catalog` | declared-table-owner | catalog | economic-engine, logistics, market-autonomy, orders, sourcing |
+| `products` | `catalog` | declared-table-owner | catalog, dashboard, logistics | auth-identity, customs, documents, economic-engine, inventory, local-stock, market-autonomy, market-delegation, orders, platform-ops, purchasing, recommendations, shared-cart, sourcing, unsold-resolution |
+| `provider_credentials` | `sourcing` | declared-table-owner | sourcing | — |
+| `providers` | `providers-services` | single-writer | providers-services | market-delegation |
+| `purchase_lines` | `purchasing` | declared-table-owner | purchasing | dashboard |
+| `purchase_order_authorizations` | `purchasing` | declared-table-owner | purchasing | logistics |
+| `purchase_orders` | `purchasing` | declared-table-owner | purchasing | dashboard, logistics |
+| `purchase_variance_decisions` | `purchasing` | declared-table-owner | purchasing | — |
+| `recipients` | `orders` | multi-writer-resolved-by-classification-signal | dashboard, orders | documents, economic-engine, logistics, notifications |
+| `refund_execution_intents` | `refunds` | single-writer | refunds | — |
+| `refunds` | `refunds` | single-writer | refunds | documents, economic-engine, orders |
+| `relais` | `logistics` | declared-table-owner | dashboard, logistics | auth-identity, documents, economic-engine, local-stock, market-control-plane, market-delegation, notifications, orders, platform-ops, purchasing |
+| `relay_product_return_receipts` | `logistics` | declared-table-owner | logistics | — |
+| `relay_return_compensations` | `orders` | declared-table-owner | orders | — |
+| `revoked_tokens` | `auth-identity` | declared-table-owner | auth-identity, infrastructure | auth |
+| `risk_provisions` | `economic-engine` | single-writer | economic-engine | — |
+| `scan_events` | `logistics` | declared-table-owner | dashboard, logistics | incident-management, notifications, payments, platform-ops |
+| `scans` | `logistics` | declared-table-owner | logistics, orders, platform-ops | dashboard |
+| `schema_migrations` | `infrastructure` | single-writer | infrastructure | — |
+| `services` | `providers-services` | single-writer | providers-services | market-delegation |
+| `shared_cart_events` | `shared-cart` | single-writer | shared-cart | — |
+| `shared_cart_items` | `shared-cart` | single-writer | shared-cart | — |
+| `shared_cart_saved_access` | `shared-cart` | single-writer | shared-cart | — |
+| `shared_carts` | `shared-cart` | single-writer | shared-cart | — |
+| `shipments` | `logistics` | single-writer | logistics | — |
+| `signals` | `decision-signals` | declared-table-owner | orders, decision-signals | dashboard |
+| `sms_log` | `orders` | multi-writer-resolved-by-classification-signal | dashboard, orders | — |
+| `sourcing_candidate_events` | `sourcing` | declared-table-owner | sourcing | — |
+| `sourcing_candidates` | `sourcing` | declared-table-owner | catalog, sourcing | dashboard |
+| `sourcing_canonical_entities` | `sourcing` | declared-table-owner | sourcing | — |
+| `sourcing_canonical_entity_refs` | `sourcing` | declared-table-owner | sourcing | — |
+| `sourcing_captures` | `sourcing` | declared-table-owner | sourcing | — |
+| `sourcing_global_access_grants` | _ambiguë_ | no-declared-writer | — | market-control-plane |
+| `sourcing_match_proposals` | `sourcing` | declared-table-owner | sourcing | — |
+| `sourcing_observation_evidence` | `sourcing` | declared-table-owner | sourcing | — |
+| `sourcing_observations` | `sourcing` | declared-table-owner | sourcing | — |
+| `sourcing_provider_control_events` | `sourcing` | declared-table-owner | sourcing | — |
+| `sourcing_resolution_bindings` | `sourcing` | declared-table-owner | sourcing | — |
+| `sourcing_resolution_decisions` | `sourcing` | declared-table-owner | sourcing | — |
+| `sourcing_source_provides` | `sourcing` | declared-table-owner | sourcing | — |
+| `sourcing_source_requests` | `sourcing` | declared-table-owner | sourcing | — |
+| `sourcing_sources` | `sourcing` | declared-table-owner | sourcing | — |
+| `store_credits` | _ambiguë_ | no-declared-writer | — | economic-engine |
+| `stripe_events_processed` | `payments` | single-writer | payments | — |
+| `supplier_catalog_import_rejections` | `catalog` | declared-table-owner | catalog | — |
+| `supplier_catalog_imports` | `catalog` | single-writer | catalog | sourcing |
+| `supplier_catalog_sync_checkpoints` | `catalog` | single-writer | catalog | — |
+| `supplier_commercial_category_mappings` | `sourcing` | declared-table-owner | sourcing | — |
+| `supplier_execution_events` | `purchasing` | declared-table-owner | purchasing | — |
+| `supplier_execution_fulfillments` | `purchasing` | declared-table-owner | purchasing | — |
+| `supplier_execution_order_lines` | `purchasing` | declared-table-owner | purchasing | — |
+| `supplier_execution_orders` | `purchasing` | declared-table-owner | purchasing | — |
+| `supplier_execution_payment_proofs` | `purchasing` | declared-table-owner | purchasing | — |
+| `supplier_execution_payments` | `purchasing` | declared-table-owner | purchasing | — |
+| `supplier_oauth_connections` | `catalog` | single-writer | catalog | — |
+| `supplier_payment_settlements` | `purchasing` | single-writer | purchasing | — |
+| `suppliers` | `purchasing` | single-writer | purchasing | catalog, sourcing |
+| `suppliers_stats` | _ambiguë_ | no-declared-writer | — | dashboard |
+| `transaction_documents` | `documents` | single-writer | documents | dashboard |
+| `unsold_items` | `unsold-resolution` | single-writer | unsold-resolution | — |
+| `user_pickup_authorizations` | `auth-identity` | single-writer | auth-identity | — |
+| `users` | `auth-identity` | declared-table-owner | auth-identity, infrastructure | auth, auth-passkey, business-rules, dashboard, documents, economic-engine, logistics, loyalty, market-delegation, notifications, orders, payments, platform-ops, settlement, shared-cart, wallet |
+| `v_loyalty_summary` | _ambiguë_ | no-declared-writer | — | loyalty |
+| `v_unsold_pipeline` | _ambiguë_ | no-declared-writer | — | unsold-resolution |
+| `wallet_consumptions` | `wallet` | multi-writer-resolved-by-classification-signal | dashboard, wallet | — |
+| `wallet_credit_lots` | `wallet` | multi-writer-resolved-by-classification-signal | dashboard, wallet | — |
+| `wallet_transactions` | `wallet` | multi-writer-resolved-by-classification-signal | dashboard, wallet | documents |
+| `wallets` | `wallet` | multi-writer-resolved-by-classification-signal | dashboard, wallet | documents, refunds |
+| `webauthn_challenges` | `auth-passkey` | single-writer | auth-passkey | — |
+| `webauthn_credentials` | `auth-passkey` | single-writer | auth-passkey | — |
+
+## Interface ownership
+
+### Routes (contract.exposes)
+
+| Route | Feature | Résolution technique |
+|---|---|---|
+| `POST /api/auth/otp/request` | auth-identity | `routes/otp.js` (resolved-owned) |
+| `POST /api/auth/otp/verify` | auth-identity | `routes/otp.js` (resolved-owned) |
+| `POST /api/auth/otp/test-reset` | auth-identity | `routes/otp.js` (resolved-owned) |
+| `POST /api/auth/admin-reset` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `POST /api/auth/auto-register` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `POST /api/auth/guest-checkout` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `GET /api/auth/invoices` | auth-identity | `routes/client-auth.js` (resolved-owned) |
+| `POST /api/auth/login` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `POST /api/auth/logout` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `POST /api/auth/magic-link` | auth-identity | `routes/client-auth.js` (resolved-owned) |
+| `GET /api/auth/magic-link/validate` | auth-identity | `routes/client-auth.js` (resolved-owned) |
+| `GET /api/auth/me` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `PUT /api/auth/me` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `GET /api/auth/orders` | auth-identity | `routes/client-auth.js` (resolved-owned) |
+| `POST /api/auth/register` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `GET /api/client/invoices` | auth-identity | `routes/client-auth.js` (resolved-owned) |
+| `POST /api/client/magic-link` | auth-identity | `routes/client-auth.js` (resolved-owned) |
+| `GET /api/client/magic-link/validate` | auth-identity | `routes/client-auth.js` (resolved-owned) |
+| `GET /api/client/orders` | auth-identity | `routes/client-auth.js` (resolved-owned) |
+| `GET /api/auth/me/pickup-authorization` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `PUT /api/auth/me/pickup-authorization` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `DELETE /api/auth/me/pickup-authorization` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `PUT /api/auth/me/password` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `POST /api/auth/activate-account` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `POST /api/auth/password-reset/request` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `POST /api/auth/password-reset/confirm` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `POST /api/auth/step-up/otp/request` | auth-identity | `routes/auth-step-up-otp.js` (resolved-owned) |
+| `POST /api/auth/step-up/otp/verify` | auth-identity | `routes/auth-step-up-otp.js` (resolved-owned) |
+| `POST /api/auth/passkey/register/options` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
+| `POST /api/auth/passkey/register/verify` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
+| `POST /api/auth/passkey/login/options` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
+| `POST /api/auth/passkey/login/verify` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
+| `GET /api/auth/passkey/credentials` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
+| `DELETE /api/auth/passkey/credentials/{id}` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
+| `POST /api/auth/passkey/step-up/options` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
+| `POST /api/auth/passkey/step-up/verify` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
+| `GET /api/admin/rules` | business-rules | `routes/admin-rules.js` (resolved-owned) |
+| `GET /api/admin/rules/{id}` | business-rules | `routes/admin-rules.js` (resolved-owned) |
+| `PATCH /api/admin/rules/{id}` | business-rules | `routes/admin-rules.js` (resolved-owned) |
+| `POST /api/admin/rules/{id}/reset` | business-rules | `routes/admin-rules.js` (resolved-owned) |
+| `GET /api/admin/rules/audit` | business-rules | `routes/admin-rules.js` (resolved-owned) |
+| `GET /api/products` | catalog | `routes/products.js` (resolved-owned) |
+| `GET /api/products/{id}` | catalog | `routes/products.js` (resolved-owned) |
+| `GET /api/products/{id}/detail` | catalog | `routes/catalog-product-detail.js` (resolved-owned) |
+| `GET /api/admin/catalog/approval-queue` | catalog | `routes/admin/catalog-approval.js` (resolved-owned) |
+| `POST /api/admin/catalog/approval-queue/{id}/approve` | catalog | `routes/admin/catalog-approval.js` (resolved-owned) |
+| `POST /api/admin/catalog/approval-queue/{id}/reject` | catalog | `routes/admin/catalog-approval.js` (resolved-owned) |
+| `POST /api/admin/catalog/approval-queue/{id}/override` | catalog | `routes/admin/catalog-approval.js` (resolved-owned) |
+| `GET /api/admin/boutique-categories` | catalog | `routes/admin-boutique-categories.js` (resolved-owned) |
+| `POST /api/admin/boutique-categories` | catalog | `routes/admin-boutique-categories.js` (resolved-owned) |
+| `DELETE /api/admin/boutique-categories/{id}` | catalog | `routes/admin-boutique-categories.js` (resolved-owned) |
+| `GET /api/admin/boutique-categories/{id}` | catalog | `routes/admin-boutique-categories.js` (resolved-owned) |
+| `PUT /api/admin/boutique-categories/{id}` | catalog | `routes/admin-boutique-categories.js` (resolved-owned) |
+| `GET /api/admin/boutique-categories/{id}/subcategories` | catalog | `routes/admin-boutique-categories.js` (resolved-owned) |
+| `POST /api/admin/boutique-categories/{id}/subcategories` | catalog | `routes/admin-boutique-categories.js` (resolved-owned) |
+| `DELETE /api/admin/boutique-categories/{id}/subcategories/{id}` | catalog | `routes/admin-boutique-categories.js` (resolved-owned) |
+| `PUT /api/admin/boutique-categories/{id}/subcategories/{id}` | catalog | `routes/admin-boutique-categories.js` (resolved-owned) |
+| `GET /api/categories` | catalog | `routes/categories.js` (resolved-owned) |
+| `POST /api/products` | catalog | `routes/products.js` (resolved-owned) |
+| `DELETE /api/products/{id}` | catalog | `routes/products.js` (resolved-owned) |
+| `PUT /api/products/{id}` | catalog | `routes/products.js` (resolved-owned) |
+| `POST /api/products/{id}/image` | catalog | `routes/products.js` (resolved-owned) |
+| `POST /api/products/{id}/images` | catalog | `routes/products.js` (resolved-owned) |
+| `GET /api/products/{id}/variants` | catalog | `routes/products.js` (resolved-owned) |
+| `PUT /api/products/{id}/variants` | catalog | `routes/products.js` (resolved-owned) |
+| `DELETE /api/products/{id}/variants/{id}` | catalog | `routes/products.js` (resolved-owned) |
+| `GET /api/products/{id}/skus` | catalog | `routes/products.js` (resolved-owned) |
+| `GET /api/products/{id}/skus/readiness` | catalog | `routes/products.js` (resolved-owned) |
+| `POST /api/products/{id}/skus` | catalog | `routes/products.js` (resolved-owned) |
+| `DELETE /api/products/{id}/skus/{id}` | catalog | `routes/products.js` (resolved-owned) |
+| `GET /api/products/categories` | catalog | `routes/products.js` (resolved-owned) |
+| `GET /api/products/subcategories` | catalog | `routes/products.js` (resolved-owned) |
+| `GET /api/admin/workspaces/catalog` | catalog | `routes/admin-catalog-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/catalog/approval/{id}/approve` | catalog | `routes/admin-catalog-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/catalog/approval/{id}/override` | catalog | `routes/admin-catalog-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/catalog/approval/{id}/reject` | catalog | `routes/admin-catalog-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/catalog/categories` | catalog | `routes/admin-catalog-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/catalog/categories/{id}/deactivate` | catalog | `routes/admin-catalog-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/catalog/categories/{id}/subcategories` | catalog | `routes/admin-catalog-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/catalog/categories/{id}/subcategories/{id}/deactivate` | catalog | `routes/admin-catalog-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/catalog/categories/{id}/subcategories/{id}/update` | catalog | `routes/admin-catalog-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/catalog/categories/{id}/update` | catalog | `routes/admin-catalog-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/catalog/products` | catalog | `routes/admin-catalog-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/catalog/products/{id}/deactivate` | catalog | `routes/admin-catalog-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/catalog/products/{id}/update` | catalog | `routes/admin-catalog-workspace.js` (resolved-owned) |
+| `POST /api/integrations/aliexpress/oauth/refresh` | catalog | `routes/integrations-aliexpress.js` (resolved-owned) |
+| `GET /api/integrations/aliexpress/oauth/start` | catalog | `routes/integrations-aliexpress.js` (resolved-owned) |
+| `GET /api/integrations/aliexpress/status` | catalog | `routes/integrations-aliexpress.js` (resolved-owned) |
+| `GET /api/admin/customs-shipments` | customs | `routes/admin-customs-shipments.js` (resolved-owned) |
+| `GET /api/admin/customs` | customs | `routes/admin/customs.js` (resolved-owned) |
+| `GET /api/admin/customs-categories` | customs | `routes/admin-customs-categories.js` (resolved-owned) |
+| `POST /api/admin/customs-categories` | customs | `routes/admin-customs-categories.js` (resolved-owned) |
+| `DELETE /api/admin/customs-categories/{id}` | customs | `routes/admin-customs-categories.js` (resolved-owned) |
+| `GET /api/admin/customs-categories/{id}` | customs | `routes/admin-customs-categories.js` (resolved-owned) |
+| `PUT /api/admin/customs-categories/{id}` | customs | `routes/admin-customs-categories.js` (resolved-owned) |
+| `PUT /api/admin/customs-categories/{id}/toggle` | customs | `routes/admin-customs-categories.js` (resolved-owned) |
+| `POST /api/admin/customs-shipments` | customs | `routes/admin-customs-shipments.js` (resolved-owned) |
+| `DELETE /api/admin/customs-shipments/{id}` | customs | `routes/admin-customs-shipments.js` (resolved-owned) |
+| `GET /api/admin/customs-shipments/{id}` | customs | `routes/admin-customs-shipments.js` (resolved-owned) |
+| `PATCH /api/admin/customs-shipments/{id}` | customs | `routes/admin-customs-shipments.js` (resolved-owned) |
+| `POST /api/admin/customs-shipments/{id}/activate` | customs | `routes/admin-customs-shipments.js` (resolved-owned) |
+| `GET /api/admin/customs-shipments/{id}/analytics` | customs | `routes/admin-customs-shipments.js` (resolved-owned) |
+| `POST /api/admin/customs-shipments/{id}/deactivate` | customs | `routes/admin-customs-shipments.js` (resolved-owned) |
+| `POST /api/admin/customs-shipments/{id}/declare` | customs | `routes/admin-customs-shipments.js` (resolved-owned) |
+| `GET /api/admin/customs-shipments/analytics` | customs | `routes/admin-customs-shipments.js` (resolved-owned) |
+| `GET /api/admin/customs-shipments/analytics/trends` | customs | `routes/admin-customs-shipments.js` (resolved-owned) |
+| `GET /api/admin/customs-shipments/rates/effective` | customs | `routes/admin-customs-shipments.js` (resolved-owned) |
+| `GET /api/admin/customs-shipments/status/pending` | customs | `routes/admin-customs-shipments.js` (resolved-owned) |
+| `GET /api/admin/dashboard` | dashboard | `routes/admin/dashboard.js` (resolved-owned) |
+| `GET /api/admin/dashboard/events` | dashboard | `routes/admin-dashboard-events.js` (resolved-owned) |
+| `GET /api/admin/demo/orders/{id}/timeline` | dashboard | `routes/admin/demo-order-flow.js` (resolved-owned) |
+| `GET /api/dashboard/clients` | dashboard | `routes/dashboard-clients.js` (resolved-owned) |
+| `GET /api/admin/entities/clients` | dashboard | `routes/admin-client-index.js` (resolved-owned) |
+| `GET /api/admin/entities/clients/market/{id}` | dashboard | `routes/admin-client-index.js` (resolved-owned) |
+| `GET /api/dashboard/ops` | dashboard | `routes/dashboard-ops.js` (resolved-owned) |
+| `GET /api/dashboard/hub` | dashboard | `routes/dashboard-hub.js` (resolved-owned) |
+| `GET /api/hub-dash/dashboard` | dashboard | `routes/hub-dashboard.js` (resolved-owned) |
+| `GET /api/relay/dashboard` | dashboard | `routes/relay-dashboard.js` (resolved-owned) |
+| `GET /api/admin/radar` | dashboard | `routes/admin-radar.js` (resolved-owned) |
+| `GET /api/admin/partners` | dashboard | `routes/admin/partners.js` (resolved-owned) |
+| `GET /api/admin/users` | dashboard | `routes/admin/users.js` (resolved-owned) |
+| `GET /api/admin/counts` | dashboard | `routes/admin/system.js` (resolved-owned) |
+| `POST /api/admin/reset` | dashboard | `routes/admin/system.js` (resolved-owned) |
+| `POST /api/admin/seed-test` | dashboard | `routes/admin/system.js` (resolved-owned) |
+| `POST /api/admin/purchasing/repair-ordered-without-pos` | dashboard | `routes/admin/system.js` (resolved-owned) |
+| `GET /api/admin/alerts` | dashboard | `routes/admin/dashboard.js` (resolved-owned) |
+| `GET /api/admin/margins` | dashboard | `routes/admin/dashboard.js` (resolved-owned) |
+| `POST /api/admin/partners` | dashboard | `routes/admin/partners.js` (resolved-owned) |
+| `DELETE /api/admin/partners/{id}` | dashboard | `routes/admin/partners.js` (resolved-owned) |
+| `GET /api/admin/partners/{id}` | dashboard | `routes/admin/partners.js` (resolved-owned) |
+| `PUT /api/admin/partners/{id}` | dashboard | `routes/admin/partners.js` (resolved-owned) |
+| `GET /api/admin/partners/stats` | dashboard | `routes/admin/partners.js` (resolved-owned) |
+| `GET /api/admin/radar/alerts` | dashboard | `routes/admin-radar.js` (resolved-owned) |
+| `POST /api/admin/radar/cache/invalidate` | dashboard | `routes/admin-radar.js` (resolved-owned) |
+| `GET /api/admin/radar/money` | dashboard | `routes/admin-radar.js` (resolved-owned) |
+| `GET /api/admin/radar/orders-by-detail/{id}` | dashboard | `routes/admin-radar.js` (resolved-owned) |
+| `GET /api/admin/radar/status-details` | dashboard | `routes/admin-radar.js` (resolved-owned) |
+| `POST /api/admin/users` | dashboard | `routes/admin/users.js` (resolved-owned) |
+| `DELETE /api/admin/users/{id}` | dashboard | `routes/admin/users.js` (resolved-owned) |
+| `PUT /api/admin/users/{id}/password` | dashboard | `routes/admin/users.js` (resolved-owned) |
+| `PUT /api/admin/users/{id}/role` | dashboard | `routes/admin/users.js` (resolved-owned) |
+| `GET /api/dashboard/clients/detail` | dashboard | `routes/dashboard-clients.js` (resolved-owned) |
+| `GET /api/dashboard/clients/list` | dashboard | `routes/dashboard-clients.js` (resolved-owned) |
+| `GET /api/dashboard/forecast` | dashboard | `routes/dashboard-ops.js` (resolved-owned) |
+| `GET /api/dashboard/global` | dashboard | `routes/dashboard-ops.js` (resolved-owned) |
+| `GET /api/dashboard/history` | dashboard | `routes/dashboard-clients.js` (resolved-owned) |
+| `GET /api/dashboard/hub-dubai` | dashboard | `routes/dashboard-hub.js` (resolved-owned) |
+| `GET /api/dashboard/pilotage` | dashboard | `routes/dashboard-ops.js` (resolved-owned) |
+| `GET /api/dashboard/pipeline` | dashboard | `routes/dashboard-ops.js` (resolved-owned) |
+| `GET /api/dashboard/relais` | dashboard | `routes/dashboard-clients.js` (resolved-owned) |
+| `GET /api/dashboard/retards` | dashboard | `routes/dashboard-ops.js` (resolved-owned) |
+| `GET /api/dashboard/stats` | dashboard | `routes/dashboard-ops.js` (resolved-owned) |
+| `GET /api/hub-dash/orders/{id}` | dashboard | `routes/hub-dashboard.js` (resolved-owned) |
+| `POST /api/hub-dash/orders/{id}/auto-prepare` | dashboard | `routes/hub-dashboard.js` (resolved-owned) |
+| `POST /api/hub-dash/orders/{id}/backorder` | dashboard | `routes/hub-dashboard.js` (resolved-owned) |
+| `POST /api/hub-dash/orders/{id}/comment` | dashboard | `routes/hub-dashboard.js` (resolved-owned) |
+| `POST /api/hub-dash/orders/{id}/create-parcel` | dashboard | `routes/hub-dashboard.js` (resolved-owned) |
+| `POST /api/hub-dash/orders/{id}/escalate` | dashboard | `routes/hub-dashboard.js` (resolved-owned) |
+| `POST /api/hub-dash/orders/{id}/incident` | dashboard | `routes/hub-dashboard.js` (resolved-owned) |
+| `POST /api/hub-dash/orders/{id}/start-prep` | dashboard | `routes/hub-dashboard.js` (resolved-owned) |
+| `POST /api/hub-dash/parcels/{id}/add-item` | dashboard | `routes/hub-dashboard.js` (resolved-owned) |
+| `POST /api/hub-dash/parcels/{id}/ready` | dashboard | `routes/hub-dashboard.js` (resolved-owned) |
+| `POST /api/hub-dash/parcels/{id}/remove-item` | dashboard | `routes/hub-dashboard.js` (resolved-owned) |
+| `POST /api/hub-dash/parcels/{id}/ship` | dashboard | `routes/hub-dashboard.js` (resolved-owned) |
+| `GET /api/hub-dash/queue` | dashboard | `routes/hub-dashboard.js` (resolved-owned) |
+| `GET /api/hub-dash/validate/{id}` | dashboard | `routes/hub-dashboard.js` (resolved-owned) |
+| `GET /api/relay/orders` | dashboard | `routes/relay-dashboard.js` (resolved-owned) |
+| `GET /api/relay/orders/{id}` | dashboard | `routes/relay-dashboard.js` (resolved-owned) |
+| `PATCH /api/relay/orders/{id}/client-absent` | dashboard | `routes/relay-dashboard.js` (resolved-owned) |
+| `POST /api/relay/orders/{id}/comment` | dashboard | `routes/relay-dashboard.js` (resolved-owned) |
+| `POST /api/relay/orders/{id}/escalate` | dashboard | `routes/relay-dashboard.js` (resolved-owned) |
+| `POST /api/relay/orders/{id}/incident` | dashboard | `routes/relay-dashboard.js` (resolved-owned) |
+| `GET /api/admin/entities/clients/{id}` | dashboard | `routes/admin-client-360.js` (resolved-owned) |
+| `GET /api/admin/entities/orders/{id}` | dashboard | `routes/admin-order-360.js` (resolved-owned) |
+| `GET /api/admin/dashboard/reference/resolve` | dashboard | `routes/admin-dashboard-market.js` (resolved-owned) |
+| `GET /api/admin/entities/products/{id}` | dashboard | `routes/admin-product-360.js` (resolved-owned) |
+| `GET /api/admin/users/{id}/market-scopes` | dashboard | `routes/admin/users.js` (resolved-owned) |
+| `POST /api/admin/users/{id}/market-scopes` | dashboard | `routes/admin/users.js` (resolved-owned) |
+| `DELETE /api/admin/users/{id}/market-scopes/{id}` | dashboard | `routes/admin/users.js` (resolved-owned) |
+| `GET /api/admin/users/markets` | dashboard | `routes/admin/users.js` (resolved-owned) |
+| `GET /api/admin/workspaces/accounting/market/{id}` | dashboard | `routes/admin-finance-accounting-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/accounting/market/{id}/deposits` | dashboard | `routes/admin-finance-accounting-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/accounting/market/{id}/deposits/{id}/dispute` | dashboard | `routes/admin-finance-accounting-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/accounting/market/{id}/deposits/{id}/verify` | dashboard | `routes/admin-finance-accounting-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/operations/market/{id}` | dashboard | `routes/admin-operations-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/operations/market/{id}/distribution/run` | dashboard | `routes/admin-operations-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/operations/market/{id}/inventory/items/{id}/assign` | dashboard | `routes/admin-operations-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/operations/market/{id}/orders/{id}/confirm-cash` | dashboard | `routes/admin-operations-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/operations/market/{id}/parcels/{id}/collect` | dashboard | `routes/admin-operations-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/operations/market/{id}/parcels/{id}/ship` | dashboard | `routes/admin-operations-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/shipping-customs/market/{id}` | dashboard | `routes/admin-shipping-customs-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/shipping-customs/market/{id}/customs/shipments` | dashboard | `routes/admin-shipping-customs-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/shipping-customs/market/{id}/customs/shipments/{id}/activate` | dashboard | `routes/admin-shipping-customs-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/shipping-customs/market/{id}/customs/shipments/{id}/deactivate` | dashboard | `routes/admin-shipping-customs-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/shipping-customs/market/{id}/customs/shipments/{id}/declare` | dashboard | `routes/admin-shipping-customs-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/shipping-customs/market/{id}/customs/shipments/{id}/update` | dashboard | `routes/admin-shipping-customs-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/shipping-customs/market/{id}/parcels/{id}/confirm-transit` | dashboard | `routes/admin-shipping-customs-workspace.js` (resolved-owned) |
+| `GET /api/admin/documents` | documents | `routes/admin/documents.js` (resolved-owned) |
+| `GET /api/admin/documents/summary` | documents | `routes/admin/documents.js` (resolved-owned) |
+| `GET /api/admin/documents/{id}` | documents | `routes/admin/documents.js` (resolved-owned) |
+| `GET /api/auth/me/documents` | documents | `routes/documents.js` (resolved-owned) |
+| `GET /api/auth/me/documents/{id}/download` | documents | `routes/documents.js` (resolved-owned) |
+| `GET /api/invoices` | documents | `routes/invoices.js` (resolved-owned) |
+| `GET /api/invoices/{id}` | documents | `routes/invoices.js` (resolved-owned) |
+| `GET /api/invoices/{id}/json` | documents | `routes/invoices.js` (resolved-owned) |
+| `GET /api/invoices/{id}/download` | documents | `routes/invoices.js` (resolved-owned) |
+| `POST /api/pricing/recommend` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/simulate` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/flow` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/products/{id}/apply-price` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/strategy` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/strategy/apply` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/competitors` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/competitors/{id}/deactivate` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/cost-components` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/cost-components/{id}/update` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/cost-components/{id}/toggle` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/market/{id}` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/market/{id}/decision` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/market/{id}/decision-policy/history` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/decision-policy` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/update` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/toggle` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/reset` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/market/{id}/corridor` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/price-observations` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/price-observations/{id}/deactivate` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/cost-components` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
+| `POST /api/admin/cost-components` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
+| `GET /api/admin/cost-components/_meta` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
+| `DELETE /api/admin/cost-components/{id}` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
+| `GET /api/admin/cost-components/{id}` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
+| `PUT /api/admin/cost-components/{id}` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
+| `POST /api/admin/cost-components/{id}/toggle` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
+| `GET /api/admin/economic/charges` | economic-engine | `routes/economic.js` (resolved-owned) |
+| `POST /api/admin/economic/charges` | economic-engine | `routes/economic.js` (resolved-owned) |
+| `DELETE /api/admin/economic/charges/{id}` | economic-engine | `routes/economic.js` (resolved-owned) |
+| `PUT /api/admin/economic/charges/{id}` | economic-engine | `routes/economic.js` (resolved-owned) |
+| `PUT /api/admin/economic/charges/{id}/toggle` | economic-engine | `routes/economic.js` (resolved-owned) |
+| `GET /api/admin/economic/coherence` | economic-engine | `routes/economic.js` (resolved-owned) |
+| `GET /api/admin/economic/executive` | economic-engine | `routes/economic.js` (resolved-owned) |
+| `GET /api/admin/economic/history` | economic-engine | `routes/economic.js` (resolved-owned) |
+| `POST /api/admin/economic/redistribute` | economic-engine | `routes/economic.js` (resolved-owned) |
+| `GET /api/admin/economic/variables` | economic-engine | `routes/economic.js` (resolved-owned) |
+| `PUT /api/admin/economic/variables/{id}` | economic-engine | `routes/economic.js` (resolved-owned) |
+| `GET /api/admin/finance-config` | economic-engine | `routes/admin-finance-config.js` (resolved-owned) |
+| `PUT /api/admin/finance-config` | economic-engine | `routes/admin-finance-config.js` (resolved-owned) |
+| `GET /api/admin/finance-config/schema` | economic-engine | `routes/admin-finance-config.js` (resolved-owned) |
+| `GET /api/admin/finance/export` | economic-engine | `routes/finance.js` (resolved-owned) |
+| `GET /api/admin/finance/report` | economic-engine | `routes/finance.js` (resolved-owned) |
+| `GET /api/admin/finance/stripe-proofs` | economic-engine | `routes/finance.js` (resolved-owned) |
+| `GET /api/admin/finance/summary` | economic-engine | `routes/finance.js` (resolved-owned) |
+| `GET /api/admin/pricing-components` | economic-engine | `routes/admin-pricing-components.js` (resolved-owned) |
+| `POST /api/admin/pricing-components` | economic-engine | `routes/admin-pricing-components.js` (resolved-owned) |
+| `DELETE /api/admin/pricing-components/{id}` | economic-engine | `routes/admin-pricing-components.js` (resolved-owned) |
+| `GET /api/admin/pricing-components/{id}` | economic-engine | `routes/admin-pricing-components.js` (resolved-owned) |
+| `PUT /api/admin/pricing-components/{id}` | economic-engine | `routes/admin-pricing-components.js` (resolved-owned) |
+| `PUT /api/admin/pricing-components/{id}/toggle` | economic-engine | `routes/admin-pricing-components.js` (resolved-owned) |
+| `GET /api/admin/pricing-matrices/dims` | economic-engine | `routes/admin-pricing-matrices.js` (resolved-owned) |
+| `PUT /api/admin/pricing-matrices/dims/{id}` | economic-engine | `routes/admin-pricing-matrices.js` (resolved-owned) |
+| `GET /api/admin/pricing-matrices/taxes` | economic-engine | `routes/admin-pricing-matrices.js` (resolved-owned) |
+| `PUT /api/admin/pricing-matrices/taxes/{id}` | economic-engine | `routes/admin-pricing-matrices.js` (resolved-owned) |
+| `GET /api/admin/sourcing/analysis` | economic-engine | `routes/sourcing.js` (resolved-owned) |
+| `GET /api/admin/sourcing/analysis/{id}` | economic-engine | `routes/sourcing.js` (resolved-owned) |
+| `POST /api/admin/sourcing/bulk-rail` | economic-engine | `routes/sourcing.js` (resolved-owned) |
+| `GET /api/admin/sourcing/config` | economic-engine | `routes/sourcing.js` (resolved-owned) |
+| `PUT /api/admin/sourcing/products/{id}` | economic-engine | `routes/sourcing.js` (resolved-owned) |
+| `GET /api/admin/sourcing/products/{id}/variants` | economic-engine | `routes/sourcing.js` (resolved-owned) |
+| `PUT /api/admin/sourcing/products/{id}/variants` | economic-engine | `routes/sourcing.js` (resolved-owned) |
+| `GET /api/admin/sourcing/synthesis` | economic-engine | `routes/sourcing.js` (resolved-owned) |
+| `GET /api/admin/risk-provisions` | economic-engine | `routes/admin-risk-provisions.js` (resolved-owned) |
+| `POST /api/admin/risk-provisions` | economic-engine | `routes/admin-risk-provisions.js` (resolved-owned) |
+| `DELETE /api/admin/risk-provisions/{id}` | economic-engine | `routes/admin-risk-provisions.js` (resolved-owned) |
+| `GET /api/admin/risk-provisions/{id}` | economic-engine | `routes/admin-risk-provisions.js` (resolved-owned) |
+| `PUT /api/admin/risk-provisions/{id}` | economic-engine | `routes/admin-risk-provisions.js` (resolved-owned) |
+| `PUT /api/admin/risk-provisions/{id}/toggle` | economic-engine | `routes/admin-risk-provisions.js` (resolved-owned) |
+| `GET /api/dashboard/annulations-parcels` | economic-engine | `routes/dashboard-finance.js` (resolved-owned) |
+| `GET /api/dashboard/finance` | economic-engine | `routes/dashboard-finance.js` (resolved-owned) |
+| `GET /api/dashboard/payments` | economic-engine | `routes/dashboard-finance.js` (resolved-owned) |
+| `GET /api/dashboard/sales` | economic-engine | `routes/dashboard-finance.js` (resolved-owned) |
+| `PUT /api/pricing/apply-all` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `PUT /api/pricing/apply-price/{id}` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `GET /api/pricing/benchmarks` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `PUT /api/pricing/benchmarks` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `GET /api/pricing/benchmarks-gap` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `DELETE /api/pricing/benchmarks/{id}/{id}` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `POST /api/pricing/calculate` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `POST /api/pricing/couture` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `GET /api/pricing/dashboard` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `POST /api/pricing/flow` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `GET /api/pricing/rates` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `PUT /api/pricing/rates` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `POST /api/pricing/recommend-batch` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `GET /api/pricing/strategy` | economic-engine | `routes/pricing-strategy.js` (resolved-owned) |
+| `POST /api/pricing/strategy/apply` | economic-engine | `routes/pricing-strategy.js` (resolved-owned) |
+| `GET /api/pricing/strategy/competitors` | economic-engine | `routes/pricing-strategy.js` (resolved-owned) |
+| `POST /api/pricing/strategy/competitors` | economic-engine | `routes/pricing-strategy.js` (resolved-owned) |
+| `DELETE /api/pricing/strategy/competitors/{id}` | economic-engine | `routes/pricing-strategy.js` (resolved-owned) |
+| `GET /api/pricing/strategy/history` | economic-engine | `routes/pricing-strategy.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/market/{id}/charges` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/market/{id}/commercial-prices` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/products/{id}/local-price` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/products/{id}/local-price/activate` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/market/{id}/products/{id}/local-price/activation-preview` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/products/{id}/local-price/reset` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/simulate-impact` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/market/{id}/structure-events` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/structure-events` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/simulate-impact` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/structure-events` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/structure-events` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/structure-events/{id}/attributions` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/structure-events/{id}/attributions` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/structure-events/{id}/attributions/reverse` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/structure-events/{id}/attributions/correct` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/health` | infrastructure | `server.js` (resolved-owned) |
+| `GET /api/public/config` | infrastructure | `server.js` (resolved-owned) |
+| `GET /webhook/authkey-whatsapp` | infrastructure | — (not-in-openapi-contract) |
+| `GET /*.html` | infrastructure | — (not-in-openapi-contract) |
+| `GET /api/hub/inventory/buffer` | inventory | `routes/inventory-api.js` (resolved-owned) |
+| `GET /api/hub/inventory/open-parcels` | inventory | `routes/inventory-api.js` (resolved-owned) |
+| `GET /api/hub/inventory/order/{id}/dispatch` | inventory | `routes/inventory-api.js` (resolved-owned) |
+| `GET /api/hub/inventory/proposals` | inventory | `routes/inventory-api.js` (resolved-owned) |
+| `POST /api/hub/inventory/propose-all` | inventory | `routes/inventory-api.js` (resolved-owned) |
+| `POST /api/hub/inventory/receive` | inventory | `routes/inventory-api.js` (resolved-owned) |
+| `POST /api/hub/inventory/scan-assign` | inventory | `routes/inventory-api.js` (resolved-owned) |
+| `GET /api/hub/inventory/stats` | inventory | `routes/inventory-api.js` (resolved-owned) |
+| `GET /api/local-stock/availability` | local-stock | `routes/local-stock.js` (resolved-owned) |
+| `GET /api/local-stock/checkout-preview` | local-stock | `routes/local-stock.js` (resolved-owned) |
+| `POST /api/v2/parcels/{id}/scan` | logistics | `routes/parcel-api-v2/scans.js` (resolved-owned) |
+| `GET /api/tracking/{id}` | logistics | `routes/tracking.js` (resolved-owned) |
+| `GET /api/carriers` | logistics | `routes/carriers.js` (resolved-owned) |
+| `POST /api/carriers` | logistics | `routes/carriers.js` (resolved-owned) |
+| `DELETE /api/carriers/{id}` | logistics | `routes/carriers.js` (resolved-owned) |
+| `PATCH /api/carriers/{id}` | logistics | `routes/carriers.js` (resolved-owned) |
+| `PATCH /api/carriers/customs/{id}` | logistics | `routes/carriers.js` (resolved-owned) |
+| `GET /api/client/tracking` | logistics | `routes/client-tracking.js` (resolved-owned) |
+| `GET /api/hub/auto-distribute` | logistics | `routes/auto-distribute-api.js` (resolved-owned) |
+| `POST /api/hub/auto-distribute` | logistics | `routes/auto-distribute-api.js` (resolved-owned) |
+| `POST /api/hub/auto-distribute/cleanup` | logistics | `routes/auto-distribute-api.js` (resolved-owned) |
+| `POST /api/hub/batch-scan` | logistics | `routes/hub.js` (resolved-owned) |
+| `POST /api/hub/pack` | logistics | `routes/hub.js` (resolved-owned) |
+| `GET /api/hub/pending` | logistics | `routes/hub.js` (resolved-owned) |
+| `POST /api/hub/photo` | logistics | `routes/hub.js` (resolved-owned) |
+| `POST /api/hub/scan` | logistics | `routes/hub.js` (resolved-owned) |
+| `POST /api/hub/seal` | logistics | `routes/hub.js` (resolved-owned) |
+| `GET /api/hub/search` | logistics | `routes/hub.js` (resolved-owned) |
+| `GET /api/hub/stats/week` | logistics | `routes/hub.js` (resolved-owned) |
+| `GET /api/hub/today` | logistics | `routes/hub.js` (resolved-owned) |
+| `POST /api/hub/volume` | logistics | `routes/hub.js` (resolved-owned) |
+| `GET /api/logistics/labels/{id}` | logistics | `routes/logistics.js` (resolved-owned) |
+| `GET /api/logistics/manifest/{id}` | logistics | `routes/logistics.js` (resolved-owned) |
+| `GET /api/logistics/shipments` | logistics | `routes/logistics.js` (resolved-owned) |
+| `POST /api/logistics/shipments` | logistics | `routes/logistics.js` (resolved-owned) |
+| `PATCH /api/logistics/shipments/{id}` | logistics | `routes/logistics.js` (resolved-owned) |
+| `POST /api/parcels/{id}/items` | logistics | `routes/parcels.js` (resolved-owned) |
+| `DELETE /api/parcels/{id}/items/{id}` | logistics | `routes/parcels.js` (resolved-owned) |
+| `PATCH /api/parcels/{id}/status` | logistics | `routes/parcels.js` (resolved-owned) |
+| `POST /api/parcels/{id}/verify-seal` | logistics | `routes/parcels.js` (resolved-owned) |
+| `POST /api/parcels/{id}/weight` | logistics | `routes/parcels.js` (resolved-owned) |
+| `GET /api/parcels/{id}` | logistics | `routes/parcels.js` (resolved-owned) |
+| `GET /api/parcels/{id}/events` | logistics | `routes/parcels.js` (resolved-owned) |
+| `POST /api/parcels/bootstrap/{id}` | logistics | `routes/parcels.js` (resolved-owned) |
+| `POST /api/parcels/optimize` | logistics | `routes/parcels.js` (resolved-owned) |
+| `POST /api/pickup/collect/{id}` | logistics | `routes/pickup-secret.js` (resolved-owned) |
+| `POST /api/pickup/pay-cash/{id}` | logistics | `routes/pickup-secret.js` (resolved-owned) |
+| `GET /api/pickup/receipt/{id}` | logistics | `routes/pickup-secret.js` (resolved-owned) |
+| `POST /api/pickup/regenerate/{id}` | logistics | `routes/pickup-secret.js` (resolved-owned) |
+| `GET /api/pickup/reveal-once/{id}` | logistics | `routes/pickup-secret.js` (resolved-owned) |
+| `GET /api/pickup/status/{id}` | logistics | `routes/pickup-secret.js` (resolved-owned) |
+| `POST /api/pickup/verify/{id}` | logistics | `routes/pickup-secret.js` (resolved-owned) |
+| `GET /api/pickup/exceptional-pickup/{id}` | logistics | `routes/pickup-secret.js` (resolved-owned) |
+| `POST /api/pickup/exceptional-pickup/{id}/collect` | logistics | `routes/pickup-secret.js` (resolved-owned) |
+| `GET /api/relais` | logistics | `routes/relais.js` (resolved-owned) |
+| `GET /api/relais/{id}` | logistics | `routes/relais.js` (resolved-owned) |
+| `GET /api/relais/public` | logistics | `routes/relais.js` (resolved-owned) |
+| `POST /api/scans` | logistics | `routes/scans.js` (resolved-owned) |
+| `GET /api/scans/{id}` | logistics | `routes/scans.js` (resolved-owned) |
+| `POST /api/scans/collect` | logistics | `routes/scans.js` (resolved-owned) |
+| `GET /api/scans/hub/pending` | logistics | `routes/scans.js` (resolved-owned) |
+| `POST /api/scans/hub/receive` | logistics | `routes/scans.js` (resolved-owned) |
+| `POST /api/scans/hub/reconcile` | logistics | `routes/scans.js` (resolved-owned) |
+| `POST /api/scans/verify-qr` | logistics | `routes/scans.js` (resolved-owned) |
+| `POST /api/tracking/{id}/verify-pickup` | logistics | `routes/tracking.js` (resolved-owned) |
+| `GET /api/transit` | logistics | `routes/transit-dashboard.js` (resolved-owned) |
+| `GET /api/transit-dashboard` | logistics | `routes/transit-dashboard.js` (resolved-owned) |
+| `POST /api/transit-dashboard/{id}/transit` | logistics | `routes/transit-dashboard.js` (resolved-owned) |
+| `POST /api/transit/{id}/transit` | logistics | `routes/transit-dashboard.js` (resolved-owned) |
+| `GET /api/transitaire/history` | logistics | `routes/transitaire-api.js` (resolved-owned) |
+| `GET /api/transitaire/parcels` | logistics | `routes/transitaire-api.js` (resolved-owned) |
+| `POST /api/transitaire/ship` | logistics | `routes/transitaire-api.js` (resolved-owned) |
+| `GET /api/transitaire/stats` | logistics | `routes/transitaire-api.js` (resolved-owned) |
+| `GET /api/v2/parcels` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
+| `GET /api/v2/parcels/{id}` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
+| `GET /api/v2/parcels/{id}/label` | logistics | `routes/parcel-label.js` (resolved-owned) |
+| `GET /api/v2/parcels/{id}/timeline` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
+| `GET /api/v2/parcels/alerts` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
+| `GET /api/v2/parcels/critical` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
+| `GET /api/v2/parcels/kpis` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
+| `GET /api/v2/parcels/reconciliation` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
+| `POST /api/hub/move` | logistics | `routes/hub.js` (resolved-owned) |
+| `POST /api/hub/outcome` | logistics | `routes/hub.js` (resolved-owned) |
+| `POST /api/hub/revalidate` | logistics | `routes/hub.js` (resolved-owned) |
+| `POST /api/hub/transition` | logistics | `routes/hub.js` (resolved-owned) |
+| `POST /api/hub/unit` | logistics | `routes/hub.js` (resolved-owned) |
+| `GET /api/parcels` | logistics | `routes/parcels.js` (resolved-owned) |
+| `POST /api/parcels` | logistics | `routes/parcels.js` (resolved-owned) |
+| `GET /api/loyalty/tiers` | loyalty | `routes/loyalty.js` (resolved-owned) |
+| `GET /api/admin/loyalty/pending` | loyalty | `routes/admin-loyalty.js` (resolved-owned) |
+| `GET /api/admin/loyalty/history` | loyalty | `routes/admin-loyalty.js` (resolved-owned) |
+| `POST /api/admin/loyalty/reward/{id}` | loyalty | `routes/admin-loyalty.js` (resolved-owned) |
+| `POST /api/admin/loyalty/skip/{id}` | loyalty | `routes/admin-loyalty.js` (resolved-owned) |
+| `GET /api/admin/loyalty/stats` | loyalty | `routes/admin-loyalty.js` (resolved-owned) |
+| `GET /api/loyalty/me` | loyalty | `routes/loyalty.js` (resolved-owned) |
+| `GET /api/loyalty/users` | loyalty | `routes/loyalty.js` (resolved-owned) |
+| `GET /api/loyalty/stats` | loyalty | `routes/loyalty.js` (resolved-owned) |
+| `PUT /api/loyalty/tiers/{id}` | loyalty | `routes/loyalty.js` (resolved-owned) |
+| `POST /api/loyalty/recalculate/{id}` | loyalty | `routes/loyalty.js` (resolved-owned) |
+| `POST /api/loyalty/recalculate-all` | loyalty | `routes/loyalty.js` (resolved-owned) |
+| `POST /api/admin/markets` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
+| `POST /api/admin/markets/{id}/lifecycle` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
+| `PUT /api/admin/markets/{id}/storefront` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
+| `POST /api/admin/markets/{id}/reprovision` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
+| `GET /api/admin/markets` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
+| `GET /api/admin/markets/central-authority` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
+| `GET /api/admin/markets/{id}/control-plane` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/team` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/team/invitations` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
+| `POST /api/market-delegation/team/invitations/{id}/accept` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
+| `PUT /api/market-delegation/markets/{id}/team/{id}/capabilities` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
+| `DELETE /api/market-delegation/markets/{id}/team/{id}` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
+| `DELETE /api/market-delegation/markets/{id}/team/invitations/{id}` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/cash-control-policy` | market-delegation | `routes/market-delegation-cash-control.js` (resolved-owned) |
+| `PUT /api/market-delegation/markets/{id}/cash-control-policy` | market-delegation | `routes/market-delegation-cash-control.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/network/relais` | market-delegation | `routes/market-delegation-network.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/network/relais` | market-delegation | `routes/market-delegation-network.js` (resolved-owned) |
+| `PUT /api/market-delegation/markets/{id}/network/relais/{id}` | market-delegation | `routes/market-delegation-network.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/network/relais/{id}/suspend` | market-delegation | `routes/market-delegation-network.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/network/relais/{id}/activate` | market-delegation | `routes/market-delegation-network.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/network/providers` | market-delegation | `routes/market-delegation-provider.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/network/providers` | market-delegation | `routes/market-delegation-provider.js` (resolved-owned) |
+| `PUT /api/market-delegation/markets/{id}/network/providers/{id}` | market-delegation | `routes/market-delegation-provider.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/network/providers/{id}/suspend` | market-delegation | `routes/market-delegation-provider.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/network/providers/{id}/activate` | market-delegation | `routes/market-delegation-provider.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/catalog/exposure` | market-delegation | `routes/market-delegation-catalog.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/catalog/review/{id}/validate` | market-delegation | `routes/market-delegation-catalog.js` (resolved-owned) |
+| `PUT /api/market-delegation/markets/{id}/catalog/exposure/{id}` | market-delegation | `routes/market-delegation-catalog.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/local-offer/services` | market-delegation | `routes/market-delegation-local-offer.js` (resolved-owned) |
+| `PUT /api/market-delegation/markets/{id}/local-offer/services/{id}` | market-delegation | `routes/market-delegation-local-offer.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/local-offer/physical-offers` | market-delegation | `routes/market-delegation-local-offer.js` (resolved-owned) |
+| `PUT /api/market-delegation/markets/{id}/local-offer/physical-offers/{id}` | market-delegation | `routes/market-delegation-local-offer.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/client-cases/disputes` | market-delegation | `routes/market-delegation-client-case.js` (resolved-owned) |
+| `PUT /api/market-delegation/markets/{id}/client-cases/disputes/{id}` | market-delegation | `routes/market-delegation-client-case.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/settlements` | market-delegation | `routes/market-delegation-settlement.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/settlements/{id}/request` | market-delegation | `routes/market-delegation-settlement.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/settlements/{id}/receive` | market-delegation | `routes/market-delegation-settlement.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/structure-events` | market-delegation | `routes/market-delegation-structure-event.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/structure-events` | market-delegation | `routes/market-delegation-structure-event.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/performance` | market-delegation | `routes/market-delegation-performance.js` (resolved-owned) |
+| `GET /api/v2/notifications` | notifications | `routes/notification-api.js` (resolved-owned) |
+| `GET /api/v2/notifications/stats` | notifications | `routes/notification-api.js` (resolved-owned) |
+| `GET /api/auth/me/notifications` | notifications | `routes/client-notifications.js` (resolved-owned) |
+| `POST /api/auth/me/notifications/{id}/ack` | notifications | `routes/client-notifications.js` (resolved-owned) |
+| `GET /webhook/meta-whatsapp` | notifications | `routes/meta-whatsapp.js` (resolved-owned) |
+| `POST /webhook/meta-whatsapp` | notifications | `routes/meta-whatsapp.js` (resolved-owned) |
+| `GET /api/orders/{id}` | orders | `routes/orders/detail.js` (resolved-owned) |
+| `POST /api/orders/{id}/cancel` | orders | `routes/orders/cancel.js` (resolved-owned) |
+| `GET /api/admin/orders` | orders | `routes/admin/orders.js` (resolved-owned) |
+| `DELETE /api/admin/orders/{id}` | orders | `routes/admin/orders.js` (resolved-owned) |
+| `POST /api/admin/orders/{id}/refund` | orders | `routes/admin/orders.js` (resolved-owned) |
+| `POST /api/orders/{id}/cancel-backorder` | orders | `routes/orders/parcels.js` (resolved-owned) |
+| `PATCH /api/orders/{id}/cost` | orders | `routes/orders/status.js` (resolved-owned) |
+| `GET /api/orders/{id}/history` | orders | `routes/orders/detail.js` (resolved-owned) |
+| `POST /api/orders/{id}/mark-availability` | orders | `routes/orders/parcels.js` (resolved-owned) |
+| `GET /api/orders/{id}/parcels` | orders | `routes/orders/parcels.js` (resolved-owned) |
+| `POST /api/orders/{id}/partial-ship` | orders | `routes/orders/parcels.js` (resolved-owned) |
+| `POST /api/orders/{id}/qr-token` | orders | `routes/orders/qr.js` (resolved-owned) |
+| `PATCH /api/orders/{id}/status` | orders | `routes/orders/status.js` (resolved-owned) |
+| `POST /api/orders/{id}/local-relay-receipt` | orders | `routes/orders/status.js` (resolved-owned) |
+| `GET /api/orders/{id}/sub-orders` | orders | `routes/orders/parcels.js` (resolved-owned) |
+| `GET /api/orders/credits` | orders | `routes/orders/list.js` (resolved-owned) |
+| `PATCH /api/orders/parcels/{id}/status` | orders | `routes/orders/parcels.js` (resolved-owned) |
+| `GET /api/orders/problems` | orders | `routes/orders/list.js` (resolved-owned) |
+| `GET /api/orders/relais` | orders | `routes/orders/list.js` (resolved-owned) |
+| `GET /api/orders/retrait/{id}` | orders | `routes/orders/qr.js` (resolved-owned) |
+| `PATCH /api/orders/sub-orders/{id}/status` | orders | `routes/orders/parcels.js` (resolved-owned) |
+| `GET /api/v2/orders` | orders | `routes/order-api-v2.js` (resolved-owned) |
+| `GET /api/v2/orders/{id}` | orders | `routes/order-api-v2.js` (resolved-owned) |
+| `POST /api/v2/orders/{id}/confirm-cash` | orders | `routes/order-api-v2.js` (resolved-owned) |
+| `POST /api/v2/orders/{id}/create-parcel` | orders | `routes/order-api-v2.js` (resolved-owned) |
+| `GET /api/v2/orders/pending-cash` | orders | `routes/order-api-v2.js` (resolved-owned) |
+| `GET /api/v2/orders/ready-for-parcel` | orders | `routes/order-api-v2.js` (resolved-owned) |
+| `POST /api/payments/stripe/intent` | payments | `routes/payments.js` (resolved-owned) |
+| `POST /api/payments/paypal/webhook` | payments | `routes/payments-paypal.js` (resolved-owned) |
+| `POST /api/payments/cash/confirm` | payments | `routes/payments.js` (resolved-owned) |
+| `GET /api/payments/mobile-money/availability` | payments | `routes/payments-mobile-money.js` (resolved-owned) |
+| `POST /api/payments/mobile-money/initiate` | payments | `routes/payments-mobile-money.js` (resolved-owned) |
+| `GET /api/payments/mobile-money/transactions/{id}` | payments | `routes/payments-mobile-money.js` (resolved-owned) |
+| `POST /api/payments/mobile-money/transactions/{id}/refresh` | payments | `routes/payments-mobile-money.js` (resolved-owned) |
+| `POST /api/payments/mobile-money/callback/{id}/{id}` | payments | `routes/payments-mobile-money.js` (resolved-owned) |
+| `POST /api/payments/mobile-money/webhook/{id}` | payments | `routes/payments-mobile-money.js` (resolved-owned) |
+| `GET /api/payments/mobile-money/admin/pending` | payments | `routes/payments-mobile-money.js` (resolved-owned) |
+| `POST /api/cash/collect/{id}` | payments | `routes/cash.js` (resolved-owned) |
+| `GET /api/cash/collections` | payments | `routes/cash.js` (resolved-owned) |
+| `POST /api/cash/deposit` | payments | `routes/cash.js` (resolved-owned) |
+| `GET /api/cash/deposits` | payments | `routes/cash.js` (resolved-owned) |
+| `POST /api/cash/deposits/{id}/dispute` | payments | `routes/cash.js` (resolved-owned) |
+| `POST /api/cash/deposits/{id}/verify` | payments | `routes/cash.js` (resolved-owned) |
+| `GET /api/cash/reconciliation` | payments | `routes/cash.js` (resolved-owned) |
+| `GET /api/cash/reconciliation/agents` | payments | `routes/cash.js` (resolved-owned) |
+| `GET /api/cash/uncollected` | payments | `routes/cash.js` (resolved-owned) |
+| `GET /api/payments/config` | payments | `routes/payments.js` (resolved-owned) |
+| `POST /api/payments/paypal/capture/{id}` | payments | `routes/payments-paypal.js` (resolved-owned) |
+| `POST /api/payments/paypal/create-order` | payments | `routes/payments-paypal.js` (resolved-owned) |
+| `POST /api/payments/paypal/refund/{id}` | payments | `routes/payments-paypal.js` (resolved-owned) |
+| `GET /api/payments/rates` | payments | `routes/payments.js` (resolved-owned) |
+| `POST /api/payments/stripe/webhook` | payments | `routes/payments.js` (resolved-owned) |
+| `GET /health` | platform-ops | `routes/health.js` (resolved-owned) |
+| `GET /api/modules` | platform-ops | `routes/modules.js` (resolved-owned) |
+| `POST /api/admin/simulator/cleanup` | platform-ops | `routes/simulator.js` (resolved-owned) |
+| `GET /api/admin/simulator/journal` | platform-ops | `routes/simulator.js` (resolved-owned) |
+| `POST /api/admin/simulator/start` | platform-ops | `routes/simulator.js` (resolved-owned) |
+| `GET /api/admin/simulator/status` | platform-ops | `routes/simulator.js` (resolved-owned) |
+| `POST /api/admin/simulator/stop` | platform-ops | `routes/simulator.js` (resolved-owned) |
+| `GET /api/modules/{id}` | platform-ops | `routes/modules.js` (resolved-owned) |
+| `GET /api/modules/fabrics` | platform-ops | `routes/modules.js` (resolved-owned) |
+| `POST /api/modules/fabrics` | platform-ops | `routes/modules.js` (resolved-owned) |
+| `GET /api/modules/models` | platform-ops | `routes/modules.js` (resolved-owned) |
+| `POST /api/modules/models` | platform-ops | `routes/modules.js` (resolved-owned) |
+| `POST /api/modules/price` | platform-ops | `routes/modules.js` (resolved-owned) |
+| `POST /api/simulator/cleanup` | platform-ops | `routes/simulator.js` (resolved-owned) |
+| `GET /api/simulator/journal` | platform-ops | `routes/simulator.js` (resolved-owned) |
+| `POST /api/simulator/start` | platform-ops | `routes/simulator.js` (resolved-owned) |
+| `GET /api/simulator/status` | platform-ops | `routes/simulator.js` (resolved-owned) |
+| `POST /api/simulator/stop` | platform-ops | `routes/simulator.js` (resolved-owned) |
+| `GET /api/v2/alerts` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `POST /api/v2/alerts/{id}/acknowledge` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `GET /api/v2/global` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `GET /api/v2/incidents` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `GET /api/v2/invoices` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `GET /api/v2/parcels/{id}/orders` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `GET /api/v2/parcels/{id}/scans` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `GET /api/v2/parcels/{id}/detail` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `GET /api/v2/reconciliation` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `GET /api/v2/reconciliation/summary` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `GET /api/v2/scan-events` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `GET /health/detailed` | platform-ops | `routes/health.js` (resolved-owned) |
+| `GET /health/metrics` | platform-ops | `routes/health.js` (resolved-owned) |
+| `GET /health/ready` | platform-ops | `routes/health.js` (resolved-owned) |
+| `GET /health/version` | platform-ops | `routes/health.js` (resolved-owned) |
+| `GET /api/providers-services/services/{id}` | providers-services | `routes/providers-services.js` (resolved-owned) |
+| `GET /api/providers-services/physical-offers/{id}` | providers-services | `routes/providers-services.js` (resolved-owned) |
+| `POST /api/providers-services/inquiries` | providers-services | `routes/providers-services.js` (resolved-owned) |
+| `GET /api/purchasing` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `GET /api/purchasing/suppliers` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/suppliers` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/suppliers/{id}/map` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `DELETE /api/purchasing/suppliers/{id}` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `GET /api/purchasing/order/{id}/completeness` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `GET /api/purchasing/{id}` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/{id}/confirm` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/{id}/receive` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `DELETE /api/purchasing/po/{id}` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `GET /api/purchasing/open-lines` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `GET /api/purchasing/po/{id}` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `GET /api/purchasing/po/{id}/commitment-pdf` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/po/prepare` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/po/{id}/detach` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/po/{id}/discard` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/lines/{id}/cancel` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/po/{id}/submit` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/po/{id}/confirm` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/lines` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/lines/{id}/settle` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `GET /api/boutique/suggestions` | recommendations | `routes/boutique-suggestions.js` (resolved-owned) |
+| `GET /api/admin/market-settlements/markets/{id}/settlements` | settlement | `routes/admin-market-settlement.js` (resolved-owned) |
+| `POST /api/admin/market-settlements/markets/{id}/settlements/ready` | settlement | `routes/admin-market-settlement.js` (resolved-owned) |
+| `POST /api/admin/market-settlements/settlements/{id}/paid` | settlement | `routes/admin-market-settlement.js` (resolved-owned) |
+| `GET /api/shared-carts/public/{id}` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/shared-carts/from-cart-items` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/shared-carts/from-basket` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `GET /api/shared-carts/mine` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `GET /api/shared-carts/library` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/shared-carts/save` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `DELETE /api/shared-carts/saved/{id}` | shared-cart | `routes/shared-cart-saved.js` (resolved-owned) |
+| `POST /api/shares` | shared-cart | `routes/shares.js` (resolved-owned) |
+| `GET /api/shares/{id}` | shared-cart | `routes/shares.js` (resolved-owned) |
+| `GET /api/shared-carts/{id}` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/shared-carts/{id}/close` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/shared-carts/{id}/cancel` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `GET /api/admin/shared-carts` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `GET /api/admin/shared-carts/{id}` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/admin/shared-carts/{id}/expire` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/admin/shared-carts/{id}/note` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `GET /api/admin/sourcing/connectors` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `POST /api/admin/sourcing/catalogs/import` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `GET /api/admin/sourcing/catalogs` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `GET /api/admin/sourcing/candidates` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `GET /api/admin/sourcing/candidates/{id}` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `PUT /api/admin/sourcing/candidates/{id}` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `POST /api/admin/sourcing/candidates/{id}/scan` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `POST /api/admin/sourcing/candidates/scan-batch` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `POST /api/admin/sourcing/candidates/{id}/import-product` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `POST /api/admin/sourcing/candidates/{id}/reject` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `POST /api/admin/sourcing/candidates/{id}/watchlist` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `GET /api/admin/workspaces/sourcing` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/sourcing/import-cockpit` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/imports` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/sources/{id}/catalog-changes/observe` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/sources/{id}/capabilities/{id}` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/products/{id}/update` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/sourcing/candidates/{id}/category-options` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/candidates/{id}/resolve-category` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/candidates/{id}/update` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/candidates/{id}/scan` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/candidates/{id}/promote` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/candidates/{id}/watchlist` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/candidates/{id}/reject` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/suppliers` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/suppliers/{id}/update` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/suppliers/{id}/deactivate` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/suppliers/{id}/activate` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/sources/{id}/activate` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/sources/{id}/deactivate` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `GET /api/unsold` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
+| `GET /api/unsold/{id}` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
+| `PATCH /api/unsold/{id}` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
+| `POST /api/unsold/{id}/resolve` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
+| `GET /api/unsold/{id}/whatsapp` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
+| `POST /api/unsold/scan` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
+| `GET /api/unsold/stats/summary` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
+| `GET /api/wallet` | wallet | `routes/wallet.js` (resolved-owned) |
+| `GET /api/wallet/transactions` | wallet | `routes/wallet.js` (resolved-owned) |
+| `POST /api/wallet/apply` | wallet | `routes/wallet.js` (resolved-owned) |
+| `POST /api/wallet/remove` | wallet | `routes/wallet.js` (resolved-owned) |
+| `GET /api/wallet/admin` | wallet | `routes/wallet.js` (resolved-owned) |
+| `GET /api/wallet/admin/{id}` | wallet | `routes/wallet.js` (resolved-owned) |
+| `POST /api/wallet/admin/credit` | wallet | `routes/wallet.js` (resolved-owned) |
+| `POST /api/wallet/admin/order-credit/{id}` | wallet | `routes/wallet.js` (resolved-owned) |
+| `POST /api/wallet/admin/reverse-lot` | wallet | `routes/wallet.js` (resolved-owned) |
+| `GET /api/admin/action-center` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
+| `POST /api/admin/action-center/generate` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
+| `POST /api/admin/action-center/signals/{id}/acknowledge` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
+| `POST /api/admin/action-center/signals/{id}/snooze` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
+| `POST /api/admin/action-center/signals/{id}/resolve` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
+| `GET /api/admin/action-center/market/{id}` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
+| `POST /api/admin/action-center/market/{id}/signals/{id}/acknowledge` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
+| `POST /api/admin/action-center/market/{id}/signals/{id}/snooze` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
+| `POST /api/admin/action-center/market/{id}/signals/{id}/resolve` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
+
+### API internes (contract.internalApi)
+
+| Fonction | Fichier | Feature | Statut |
+|---|---|---|---|
+| `requireAuth / requireVerifiedIdentity / softAuth` | `middleware/auth.js` | auth | resolved |
+| `requireAuth / requireVerifiedIdentity / softAuth` | `middleware/require-verified-identity.js` | auth | resolved |
+| `requireAuth / requireVerifiedIdentity / softAuth` | `middleware/soft-auth.js` | auth | resolved |
+| `signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict` | `utils/auth-session.js` | auth | resolved |
+| `signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict` | `utils/auth-session-policy.js` | auth | resolved |
+| `signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict` | `utils/auth-token-policy.js` | auth | resolved |
+| `makeIntlPhoneInput` | `public/boutique/js/b-phone.js` | auth-identity | resolved |
+| `createAdminUser` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `markUserPendingActivation` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `setUserRole` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `setUserPasswordHash` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `anonymizeUser` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `deleteUser` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `deleteNonAdminUsers` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `incrementBigBasketCount` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `markBigBasketNotified` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `recalculateUserLoyalty` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `getActiveAuthorizationForUpdate` | `services/pickup-authorization-service.js` | auth-identity | resolved |
+| `hasActiveAuthorization` | `services/pickup-authorization-service.js` | auth-identity | resolved |
+| `getRuleNumber` | `utils/rules.js` | business-rules | resolved |
+| `getRule` | `utils/rules.js` | business-rules | resolved |
+| `getAllRules` | `utils/rules.js` | business-rules | resolved |
+| `setRule` | `utils/rules.js` | business-rules | resolved |
+| `readRunProgress` | `services/catalog-run-progress.js` | catalog | resolved |
+| `createDraftFromSourcingCandidate` | `services/product-admin-service.js` | catalog | resolved |
+| `createDraftProductFromSourcingCandidate` | `services/catalog-candidate-product-service.js` | catalog | resolved |
+| `applyPrice` | `services/catalog-product-mutation-service.js` | catalog | resolved |
+| `updateSourcingFields` | `services/catalog-product-mutation-service.js` | catalog | resolved |
+| `bulkAssignSourcingRail` | `services/catalog-product-mutation-service.js` | catalog | resolved |
+| `replaceVariantsForSourcing` | `services/catalog-product-mutation-service.js` | catalog | resolved |
+| `maybeApplyCatalogProductRouteCanary` | `services/catalog-product-route-canary.js` | catalog | resolved |
+| `readCatalogProductSource` | `services/catalog-product-source-read-service.js` | catalog | resolved |
+| `resolveCatalogProductReadMode` | `services/catalog-product-source-read-service.js` | catalog | resolved |
+| `recommend` | `services/pricing-engine.js` | economic-engine | resolved |
+| `recordProductPriceChange` | `services/economic-price-audit-service.js` | economic-engine | resolved |
+| `buildConversation` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
+| `buildProof` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
+| `assertConversation` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
+| `assertThrough` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
+| `summary` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
+| `publicContract` | `services/external-provider-onboarding-contracts.js` | external-provider-contracts | resolved |
+| `checkReady` | `services/external-provider-onboarding-contracts.js` | external-provider-contracts | resolved |
+| `scanRepository` | `scripts/external-provider-boundary-scan.js` | external-provider-contracts | resolved |
+| `runBatch` | `scripts/external-provider-batch-proof.js` | external-provider-contracts | resolved |
+| `run` | `scripts/provider-certification-reconciliation.js` | external-provider-contracts | resolved |
+| `runStripeReadOnlyProof` | `scripts/stripe-provider-contract-proof.js` | external-provider-contracts | resolved |
+| `runEbayBrowseReadOnlyProof` | `scripts/ebay-sandbox-browse-proof.js` | external-provider-contracts | resolved |
+| `listIncidents` | `services/incident-service.js` | incident-management | resolved |
+| `getIncident` | `services/incident-service.js` | incident-management | resolved |
+| `resolveIncident` | `services/incident-service.js` | incident-management | resolved |
+| `escalateIncident` | `services/incident-service.js` | incident-management | resolved |
+| `getIncidentDashboard` | `services/incident-service.js` | incident-management | resolved |
+| `createScanIncident` | `services/incident-write-service.js` | incident-management | resolved |
+| `createReconciliationIncident` | `services/incident-write-service.js` | incident-management | resolved |
+| `createAlertEngineIncidentIfNew` | `services/incident-write-service.js` | incident-management | resolved |
+| `acknowledgeAlertEngineIncident` | `services/incident-write-service.js` | incident-management | resolved |
+| `createSupplierShortageIncident` | `services/incident-write-service.js` | incident-management | resolved |
+| `resolveOpsIncident` | `services/incident-write-service.js` | incident-management | resolved |
+| `resolvePhysicalProofIncident` | `services/incident-write-service.js` | incident-management | resolved |
+| `resolveUpstreamTruthIncident` | `services/incident-write-service.js` | incident-management | resolved |
+| `detachUserFromIncidents` | `services/incident-write-service.js` | incident-management | resolved |
+| `seedIncident` | `services/incident-write-service.js` | incident-management | resolved |
+| `scanOverdueIncidents` | `services/incident-escalation.js` | incident-management | resolved |
+| `assertParcelTransitionAllowed` | `services/parcel-transition-guard.js` | incident-management | resolved |
+| `—` | `middleware/error-handler.js` | infrastructure | resolved |
+| `—` | `middleware/rate-limit.js` | infrastructure | resolved |
+| `—` | `middleware/request-id.js` | infrastructure | resolved |
+| `—` | `middleware/upload.js` | infrastructure | resolved |
+| `—` | `middleware/validate.js` | infrastructure | resolved |
+| `—` | `utils/logger.js` | infrastructure | resolved |
+| `—` | `utils/phone.js` | infrastructure | resolved |
+| `—` | `utils/rates.js` | infrastructure | resolved |
+| `—` | `utils/reference.js` | infrastructure | resolved |
+| `—` | `validators/index.js` | infrastructure | resolved |
+| `—` | `bootstrap/*` | infrastructure | resolved |
+| `getDecisionAvailabilityEvidence` | `services/local-stock-decision-projection.js` | local-stock | resolved |
+| `resolveCheckoutFulfillmentSources` | `services/local-stock-service.js` | local-stock | resolved |
+| `allocateForOrderItem` | `services/local-stock-service.js` | local-stock | resolved |
+| `consumeAllocationsForOrder` | `services/local-stock-service.js` | local-stock | resolved |
+| `releaseAllocationsForOrder` | `services/local-stock-service.js` | local-stock | resolved |
+| `previewCheckoutFulfillmentSources` | `services/local-stock-checkout-preview.js` | local-stock | resolved |
+| `transitionParcelStatus` | `services/parcel-operations.js` | logistics | resolved |
+| `recordHubPreparationScan` | `services/scan-write-service.js` | logistics | resolved |
+| `recordQrCollectionScan` | `services/scan-write-service.js` | logistics | resolved |
+| `createRelais` | `services/relais-mutation-service.js` | logistics | resolved |
+| `updateRelais` | `services/relais-mutation-service.js` | logistics | resolved |
+| `setRelaisActive` | `services/relais-mutation-service.js` | logistics | resolved |
+| `listRelais` | `services/relais-mutation-service.js` | logistics | resolved |
+| `getOwnedRelais` | `services/relais-mutation-service.js` | logistics | resolved |
+| `detachUserFromScans` | `services/scan-write-service.js` | logistics | resolved |
+| `assignWholeOrderItemToParcel` | `services/parcel-item-mutation-service.js` | logistics | resolved |
+| `assignParcelItem` | `services/parcel-item-mutation-service.js` | logistics | resolved |
+| `addParcelItem` | `services/parcel-item-mutation-service.js` | logistics | resolved |
+| `removeParcelItem` | `services/parcel-item-mutation-service.js` | logistics | resolved |
+| `assignSingleOrderItemToParcel` | `services/parcel-item-mutation-service.js` | logistics | resolved |
+| `addParcelItemTraced` | `services/parcel-item-mutation-service.js` | logistics | resolved |
+| `removeParcelItemTraced` | `services/parcel-item-mutation-service.js` | logistics | resolved |
+| `reassignParcelItem` | `services/parcel-item-mutation-service.js` | logistics | resolved |
+| `listParcelsRepresentingOrder` | `services/parcel-order-membership.js` | logistics | resolved |
+| `listOrdersRepresentedByParcels` | `services/parcel-order-membership.js` | logistics | resolved |
+| `createHubParcel` | `services/parcel-mutation-service.js` | logistics | resolved |
+| `createAutoPreparedParcel` | `services/parcel-mutation-service.js` | logistics | resolved |
+| `setParcelWeight` | `services/parcel-mutation-service.js` | logistics | resolved |
+| `appendParcelShipmentInfo` | `services/parcel-mutation-service.js` | logistics | resolved |
+| `markCustomsCleared` | `services/parcel-mutation-service.js` | logistics | resolved |
+| `markBackorderReminderSent` | `services/parcel-mutation-service.js` | logistics | resolved |
+| `resolvePurchaseSnapshot` | `services/hub-physical-identity.js` | logistics | resolved |
+| `snapshotPurchaseAllocation` | `services/hub-physical-identity.js` | logistics | resolved |
+| `createPhysicalUnit` | `services/hub-physical-identity.js` | logistics | resolved |
+| `receiveSupplierPackage` | `services/hub-physical-identity.js` | logistics | resolved |
+| `transitionPhysicalUnit` | `services/hub-physical-identity.js` | logistics | resolved |
+| `moveAllocationQuantity` | `services/hub-physical-identity.js` | logistics | resolved |
+| `recordPhysicalUnitOutcome` | `services/hub-physical-identity.js` | logistics | resolved |
+| `listMarkets()` | `null` | market-control-plane | documented-signature-no-file |
+| `getControlPlane()` | `null` | market-control-plane | documented-signature-no-file |
+| `computeGaps()` | `null` | market-control-plane | documented-signature-no-file |
+| `readinessFromGaps()` | `null` | market-control-plane | documented-signature-no-file |
+| `provisionMarket()` | `null` | market-control-plane | documented-signature-no-file |
+| `reprovisionMarket()` | `null` | market-control-plane | documented-signature-no-file |
+| `setMarketLifecycle()` | `null` | market-control-plane | documented-signature-no-file |
+| `central()` | `null` | market-control-plane | documented-signature-no-file |
+| `overview()` | `null` | market-control-plane | documented-signature-no-file |
+| `replaceCeiling` | `services/market-delegation-service.js` | market-delegation | resolved |
+| `addMembership` | `services/market-delegation-service.js` | market-delegation | resolved |
+| `grantMembershipCapabilities` | `services/market-delegation-service.js` | market-delegation | resolved |
+| `replaceMembershipCapabilities` | `services/market-delegation-service.js` | market-delegation | resolved |
+| `revokeMembership` | `services/market-delegation-service.js` | market-delegation | resolved |
+| `resolveAuthorization` | `services/market-delegation-service.js` | market-delegation | resolved |
+| `resolveActiveAssignmentByMarketCode` | `services/market-delegation-service.js` | market-delegation | resolved |
+| `projectAssignment` | `services/market-scope-projector.js` | market-delegation | resolved |
+| `projectionDrift` | `services/market-scope-projector.js` | market-delegation | resolved |
+| `ensureOperatorMembership` | `services/market-operator-provisioning.js` | market-delegation | resolved |
+| `grantOperatorScope` | `services/market-operator-provisioning.js` | market-delegation | resolved |
+| `attachMarketDelegatedRoleFor` | `middleware/require-market-delegated-role.js` | market-delegation | resolved |
+| `inviteTeamMember` | `services/market-delegation-team-service.js` | market-delegation | resolved |
+| `acceptInvitation` | `services/market-delegation-team-service.js` | market-delegation | resolved |
+| `readMarketCashPolicy` | `services/market-cash-control-policy-service.js` | market-delegation | resolved |
+| `updateMarketCashPolicy` | `services/market-cash-control-policy-service.js` | market-delegation | resolved |
+| `createRelais` | `services/market-delegation-network-service.js` | market-delegation | resolved |
+| `updateRelais` | `services/market-delegation-network-service.js` | market-delegation | resolved |
+| `setRelaisActive` | `services/market-delegation-network-service.js` | market-delegation | resolved |
+| `createProvider` | `services/market-delegation-provider-service.js` | market-delegation | resolved |
+| `updateProvider` | `services/market-delegation-provider-service.js` | market-delegation | resolved |
+| `setProviderStatus` | `services/market-delegation-provider-service.js` | market-delegation | resolved |
+| `listExposure` | `services/market-delegation-catalog-service.js` | market-delegation | resolved |
+| `setExposure` | `services/market-delegation-catalog-service.js` | market-delegation | resolved |
+| `listServices` | `services/market-delegation-local-offer-service.js` | market-delegation | resolved |
+| `listPhysicalOffers` | `services/market-delegation-local-offer-service.js` | market-delegation | resolved |
+| `setServiceExposure` | `services/market-delegation-local-offer-service.js` | market-delegation | resolved |
+| `setPhysicalOfferExposure` | `services/market-delegation-local-offer-service.js` | market-delegation | resolved |
+| `listDisputes` | `services/market-delegation-client-case-service.js` | market-delegation | resolved |
+| `updateDisputeWorkflow` | `services/market-delegation-client-case-service.js` | market-delegation | resolved |
+| `listSettlements` | `services/market-delegation-settlement-service.js` | market-delegation | resolved |
+| `requestSettlement` | `services/market-delegation-settlement-service.js` | market-delegation | resolved |
+| `confirmSettlementReceived` | `services/market-delegation-settlement-service.js` | market-delegation | resolved |
+| `listStructureEvents` | `services/market-delegation-structure-event-service.js` | market-delegation | resolved |
+| `recordStructureEvent` | `services/market-delegation-structure-event-service.js` | market-delegation | resolved |
+| `setNotificationOutcomeListener` | `services/notifications/internals.js` | notifications | resolved |
+| `createAlert` | `utils/alerts.js` | notifications | resolved |
+| `notifyOrder*` | `services/notifications/order.js` | notifications | resolved |
+| `notifyParcel*` | `services/notifications/parcel.js` | notifications | resolved |
+| `sendOtpMessage / sendMagicLink` | `services/notifications/otp-auth.js` | notifications | resolved |
+| `notifyLoyaltyEarned` | `services/notifications/loyalty.js` | notifications | resolved |
+| `notifyText` | `services/notifications/misc.js` | notifications | resolved |
+| `buildRelayMapUrl / formatRelayPoint / appendRelayLocation` | `services/notifications/relay-location.js` | notifications | resolved |
+| `emitOrderMilestone / emitExceptional / resolveOrderMilestones` | `services/client-notification-service.js` | notifications | resolved |
+| `transitionOrderStatus` | `services/order-status-machine.js` | orders | resolved |
+| `markPaid` | `services/payment-service.js` | orders | resolved |
+| `markRefunded` | `services/payment-service.js` | orders | resolved |
+| `markFailed` | `services/payment-service.js` | orders | resolved |
+| `forcePaymentStatusForSimulation` | `services/payment-service.js` | orders | resolved |
+| `setInventoryCompletion` | `services/order-mutation-service.js` | orders | resolved |
+| `recomputeCustomsCosts` | `services/order-mutation-service.js` | orders | resolved |
+| `backfillRoutingFields` | `services/order-mutation-service.js` | orders | resolved |
+| `setStripePaymentId` | `services/order-mutation-service.js` | orders | resolved |
+| `setPaypalOrderId` | `services/order-mutation-service.js` | orders | resolved |
+| `setPaypalCaptureMetadata` | `services/order-mutation-service.js` | orders | resolved |
+| `setPaypalCaptureId` | `services/order-mutation-service.js` | orders | resolved |
+| `appendOrderNote` | `services/order-mutation-service.js` | orders | resolved |
+| `markCashPaidAt` | `services/order-mutation-service.js` | orders | resolved |
+| `markCashReminderSent` | `services/order-mutation-service.js` | orders | resolved |
+| `setWalletApplied` | `services/order-mutation-service.js` | orders | resolved |
+| `setSupplierSnapshot` | `services/order-mutation-service.js` | orders | resolved |
+| `setComputedStatus` | `services/order-mutation-service.js` | orders | resolved |
+| `writePickupSecret` | `services/order-mutation-service.js` | orders | resolved |
+| `setPickupAttemptState` | `services/order-mutation-service.js` | orders | resolved |
+| `setPickupAttemptsOnly` | `services/order-mutation-service.js` | orders | resolved |
+| `setExceptionalPickupAttemptState` | `services/order-mutation-service.js` | orders | resolved |
+| `setCollectedByName` | `services/order-mutation-service.js` | orders | resolved |
+| `recordPickupRegeneration` | `services/order-mutation-service.js` | orders | resolved |
+| `markPickupSecretRevealed` | `services/order-mutation-service.js` | orders | resolved |
+| `finalizePickupCollection` | `services/order-mutation-service.js` | orders | resolved |
+| `updateOrderItemAvailabilityDetails` | `services/order-item-availability-service.js` | orders | resolved |
+| `setOrderItemAvailabilityStatus` | `services/order-item-availability-service.js` | orders | resolved |
+| `checkoutCart` | `public/boutique/js/b-checkout.js` | orders | resolved |
+| `makeInput` | `public/boutique/js/b-checkout.js` | orders | resolved |
+| `triggerPurchasing` | `services/purchasing-trigger-service.js` | purchasing | resolved |
+| `resolveCanonicalSupplierMoney` | `services/purchasing-canonical-money.js` | purchasing | resolved |
+| `evaluateSupplierFulfillmentReadiness` | `services/suppliers/supplier-fulfillment-readiness.js` | purchasing | resolved |
+| `normalizeCapability` | `services/suppliers/shipping-capability-contract.js` | purchasing | resolved |
+| `adaptShippingRate` | `services/suppliers/allegro-shipping-capability-adapter.js` | purchasing | resolved |
+| `prepareCanonicalUnitPurchase` | `services/suppliers/canonical-unit-purchasing-gate.js` | purchasing | resolved |
+| `compareLegacyCanonicalUnit` | `services/suppliers/canonical-unit-cutover-comparison.js` | purchasing | resolved |
+| `reconcile` | `services/suppliers/allegro-purchase-reconciliation.js` | purchasing | resolved |
+| `repairOrderedWithoutPurchaseOrders` | `services/repair-ordered-without-purchase-orders.js` | purchasing | resolved |
+| `syncPurchaseOrdersOnOrderCancel` | `services/purchasing-cancel-service.js` | purchasing | resolved |
+| `submitPurchaseOrder` | `services/purchasing-engagement-service.js` | purchasing | resolved |
+| `confirmGroupedPurchaseOrder` | `services/purchasing-engagement-service.js` | purchasing | resolved |
+| `settleLine` | `services/purchasing-engagement-service.js` | purchasing | resolved |
+| `createManualLine` | `services/purchasing-engagement-service.js` | purchasing | resolved |
+| `processRefund(orderOrCartId, reason)` | `null` | refunds | documented-signature-no-file |
+| `createReadySettlement()` | `null` | settlement | documented-signature-no-file |
+| `listForAssignment()` | `null` | settlement | documented-signature-no-file |
+| `requestSettlement()` | `null` | settlement | documented-signature-no-file |
+| `markPaid()` | `null` | settlement | documented-signature-no-file |
+| `confirmReceived()` | `null` | settlement | documented-signature-no-file |
+| `deleteUserBasketData` | `services/shared-cart-user-cleanup.js` | shared-cart | resolved |
+| `markShareConvertedToOrder` | `services/cart-share-service.js` | shared-cart | resolved |
+| `closeCompletedSharedCartForOrderItems` | `services/cart-share-service.js` | shared-cart | resolved |
+| `certifyGateA` | `services/sourcing-certification-gate-a.js` | sourcing | resolved |
+| `discoverAcquisitionPlan` | `services/suppliers/aliexpress-discovery.js` | sourcing | resolved |
+| `upsertCandidateFromCatalogImport` | `services/sourcing-candidate-import-service.js` | sourcing | resolved |
+| `archiveMissingCandidatesFromCatalogImport` | `services/sourcing-candidate-import-service.js` | sourcing | resolved |
+| `recordCatalogImportObservationsShadow` | `services/sourcing-observation-shadow-service.js` | sourcing | resolved |
+| `recordUnitStockChange` | `services/sourcing-catalog-change-observation.js` | sourcing | resolved |
+| `proveExactCanonicalUnitForStockDelta` | `services/sourcing-catalog-change-unit-resolution-proof.js` | sourcing | resolved |
+| `proveExactCatalogSkuForStockDelta` | `services/sourcing-catalog-change-sku-identity-proof.js` | sourcing | resolved |
+| `resolveCaptureShadow` | `services/sourcing-shadow-resolution-service.js` | sourcing | resolved |
+| `collectShadowProof` | `services/sourcing-shadow-proof-service.js` | sourcing | resolved |
+| `collectGoldenE2E` | `services/sourcing-golden-e2e-service.js` | sourcing | resolved |
+| `collectIntegrityAudit` | `services/sourcing-integrity-service.js` | sourcing | resolved |
+| `buildHealthDashboard` | `services/sourcing-integrity-service.js` | sourcing | resolved |
+| `buildFinalAuthoritySnapshot` | `services/sourcing-integrity-service.js` | sourcing | resolved |
+| `collectCanonicalProductProjections` | `services/sourcing-canonical-product-projection.js` | sourcing | resolved |
+| `collectCanonicalOfferProjectionById` | `services/sourcing-canonical-offer-projection.js` | sourcing | resolved |
+| `collectCanonicalUnitProjectionById` | `services/sourcing-canonical-unit-projection.js` | sourcing | resolved |
+| `resolveCanonicalUnitForProductSku` | `services/sourcing-canonical-unit-product-sku-resolution.js` | sourcing | resolved |
+| `compareCanonicalOfferUnitWithLegacy` | `services/sourcing-canonical-offer-unit-comparison.js` | sourcing | resolved |
+| `collectCanonicalProductProjectionById` | `services/sourcing-canonical-product-projection.js` | sourcing | resolved |
+| `findCanonicalProductIdsForCatalogProduct` | `services/sourcing-catalog-product-linkage.js` | sourcing | resolved |
+| `applyCanonicalSourceReadSeam` | `services/catalog-product-read-cutover-trial.js` | sourcing | resolved |
+| `collectProductReadComparison` | `services/sourcing-product-read-comparison.js` | sourcing | resolved |
+| `collectCatalogProductReadCutoverTrial` | `services/catalog-product-read-cutover-trial.js` | sourcing | resolved |
+| `isSupportedProvider` | `services/suppliers/provider-authority.js` | supplier-connectivity | resolved |
+| `normalizeProviderCode` | `services/suppliers/provider-authority.js` | supplier-connectivity | resolved |
+| `remotePreflightRequirement` | `services/suppliers/provider-authority.js` | supplier-connectivity | resolved |
+| `reconciliationRequirement` | `services/suppliers/provider-authority.js` | supplier-connectivity | resolved |
+| `normalizeIdentity` | `services/suppliers/supplier-order-identity.js` | supplier-connectivity | resolved |
+| `identitiesMatch` | `services/suppliers/supplier-order-identity.js` | supplier-connectivity | resolved |
+| `resolveSupplierUnit` | `services/suppliers/supplier-order-identity.js` | supplier-connectivity | resolved |
+| `validateAdapter` | `services/suppliers/supplier-fulfillment-adapter-contract.js` | supplier-connectivity | resolved |
+| `validateExecutionAdapter` | `services/suppliers/supplier-fulfillment-adapter-contract.js` | supplier-connectivity | resolved |
+| `validateReconciliationAdapter` | `services/suppliers/supplier-fulfillment-adapter-contract.js` | supplier-connectivity | resolved |
+
+## Cross-feature dependencies
+
+| Feature | consumes | Résolu ? |
+|---|---|---|
+| auth | auth-identity (`auth-identity`) | ✔ |
+| auth | infrastructure (`infrastructure`) | ✔ |
+| auth | notifications (`notifications`) | ✔ |
+| auth-identity | orders (`orders (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| auth-identity | loyalty (`loyalty (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| auth-identity | logistics (`logistics (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| auth-identity | catalog (`catalog (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| auth-identity | platform-ops (`platform-ops (monitoring/exploitation transverse observé dans le code)`) | ✔ |
+| auth-identity | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
+| auth-identity | auth (`auth (middleware/auth.js — garde authenticate/requireAdmin utilisée par routes/client-auth.js, routes/auth.js)`) | ✔ |
+| auth-identity | auth-passkey (`auth-passkey (middleware/require-recent-auth.js — preuve récente exigée par les mutations de sécurité du profil)`) | ✔ |
+| auth-identity | notifications (`notifications (services/notification-service.js — envoi OTP/alertes depuis routes/client-auth.js, routes/otp.js)`) | ✔ |
+| auth-identity | wallet (`wallet (projection boutique account : b-komerce.js lit uniquement le solde canonique via GET /api/wallet)`) | ✔ |
+| auth-identity | documents (`documents (projection boutique account : b-komerce.js liste et télécharge les factures et remboursements privés)`) | ✔ |
+| auth-passkey | auth (`auth (middleware/auth.js — authenticate, utils/auth-cookie.js — setAuthCookie, utils/auth-session.js — signAuthToken, politique de session canonique AUTH-8)`) | ✔ |
+| auth-passkey | auth-identity (`auth-identity (users — identité utilisateur canonique lue sans mutation)`) | ✔ |
+| auth-passkey | infrastructure (`infrastructure (db.js — accès aux tables WebAuthn et users en lecture)`) | ✔ |
+| auth-passkey | platform-ops (`platform-ops (utils/logger.js — journalisation structurée des événements WebAuthn)`) | ✔ |
+| business-rules | auth-identity (`auth-identity (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| business-rules | auth (`auth (garde de route admin)`) | ✔ |
+| business-rules | infrastructure (`infrastructure (journalisation, acces base)`) | ✔ |
+| catalog | external-provider-contracts (`external-provider-contracts (contrat transverse de preuve provider : Conversation + KNOWN/DERIVED/UNKNOWN + P0..P4 consommé par les scripts Allegro catalog)`) | ✔ |
+| catalog | sourcing (`sourcing (API internes findCanonicalProductIdsForCatalogProduct, collectCanonicalProductProjectionById et applyCanonicalSourceReadSeam)`) | ✔ |
+| catalog | notifications (`notifications (alert persistence via utils/alerts.js)`) | ✔ |
+| catalog | auth-identity (`auth-identity (projection boutique b-greeting consomme /api/auth/me pour personnaliser la surface catalogue)`) | ✔ |
+| catalog | platform-ops (`platform-ops (monitoring/exploitation transverse observé dans le code)`) | ✔ |
+| catalog | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
+| catalog | business-rules (`business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: services/suppliers/catalog-import-orchestrator.js -> utils/rules.js ; services/catalog-product-detail.js -> utils/rules.js ; services/catalog-enrichment.js -> utils/rules.js)`) | ✔ |
+| catalog | economic-engine (`economic-engine (prix produit, valorisation commerciale transport et audit price_history propriétaire)`) | ✔ |
+| catalog | customs (`customs (classification fournisseur dynamique consommée depuis customs_categories ; le catalogue ne connaît aucune clé de catégorie douanière en dur)`) | ✔ |
+| catalog | market-autonomy (`market-autonomy (résolution buyer du prix LOCAL_ACTIVE par marché ; le catalogue reste propriétaire du produit global ; la projection commerciale lit ce statut sans l écrire)`) | ✔ |
+| catalog | market (`market (lecture du référentiel des marchés actifs pour projeter l assortiment commercial sans posséder la décision pays)`) | ✔ |
+| catalog | sourcing (`sourcing (persistence lifecycle sourcing_candidates et sourcing_candidate_events via sourcing-candidate-import-service ; catalog n execute plus de SQL direct sur ces tables)`) | ✔ |
+| catalog | supplier-connectivity (`supplier-connectivity (Supplier Order Identity canonique : catalog persiste et valide l’identité commandable via services/suppliers/supplier-order-identity.js ; aucun payload fournisseur n’est réinterprété par heuristique)`) | ✔ |
+| catalog | purchasing (`purchasing (scripts/allegro-sandbox-check.js compose l adapter Allegro fulfillment possédé par Purchasing pour la preuve sandbox ; aucune autorité Purchasing n est recopiée dans Catalogue)`) | ✔ |
+| catalog | logistics (`logistics (rails et eligibilite transport ; le catalog ne decide jamais le rail)`) | ✔ |
+| catalog | shared-cart (`shared-cart (ne pas reutiliser la modal catalogue pour la fiche snapshot)`) | ✔ |
+| catalog | auth (`auth`) | ✔ |
+| catalog | orders (`orders (actions panier depuis les surfaces produit boutique — preuve: b-catalog.js, render-product-card.js, b-modal-desktop-product.js, b-subcat.js, b-favs.js, b-modal-buybox-shared.js (+ tests) -> b-cart-core.js/b-cart.js, propriete orders-client canonicalFeature:orders)`) | ✔ |
+| customs | catalog (`catalog (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| customs | orders (`orders (persistence via order-mutation-service ? LOT11)`) | ✔ |
+| customs | logistics (`logistics (colis a classer)`) | ✔ |
+| customs | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
+| customs | documents (`documents (facture douane generee)`) | ✔ |
+| customs | auth (`auth`) | ✔ |
+| customs | economic-engine (`economic-engine`) | ✔ |
+| customs | market (`market (garde Q2 market-operation-guard : nouvelle expédition refusée hors marché actif)`) | ✔ |
+| dashboard | shared-cart (`shared-cart (suppression des paniers utilisateur via API interne lifecycle-owned)`) | ✔ |
+| dashboard | incident-management (`incident-management (incident persistence via incident-write-service)`) | ✔ |
+| dashboard | orders (`orders (lecture commandes)`) | ✔ |
+| dashboard | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
+| dashboard | payments (`payments (lecture paiements)`) | ✔ |
+| dashboard | refunds (`refunds (Relais Live délègue les remises cash F1 à local-cash-refund-handoff ; le propriétaire refunds contrôle la garde et la preuve)`) | ✔ |
+| dashboard | logistics (`logistics (lecture colis)`) | ✔ |
+| dashboard | inventory (`inventory (lecture stock hub/transit)`) | ✔ |
+| dashboard | local-stock (`local-stock (lecture de disponibilité physique market-scoped via local-stock-service ; jamais products.stock)`) | ✔ |
+| dashboard | economic-engine (`economic-engine (métriques financières)`) | ✔ |
+| dashboard | wallet (`wallet (soldes et crédits)`) | ✔ |
+| dashboard | auth (`auth`) | ✔ |
+| dashboard | auth-identity (`auth-identity (mutations users via services/user-mutation-service.js ? LOT12)`) | ✔ |
+| dashboard | market-delegation (`market-delegation (attribution d’un scope marché opérateur via services/market-operator-provisioning.js : membership de délégation, jamais une écriture directe de operator_market_scopes)`) | ✔ |
+| dashboard | customs (`customs`) | ✔ |
+| dashboard | documents (`documents`) | ✔ |
+| dashboard | notifications (`notifications (réconciliation idempotente des jalons client affichés dans le cockpit de démo)`) | ✔ |
+| dashboard | purchasing (`purchasing (répare les commandes sans purchase order via services/repair-ordered-without-purchase-orders.js ; Order 360 consomme en lecture seule les PO liées ; Finance globale consomme en lecture seule la file canonique de paiements fournisseur à revoir, sans ventilation marché)`) | ✔ |
+| dashboard | supplier-connectivity (`supplier-connectivity (Supplier 360 et Product 360 consomment le projecteur partagé de preuves provider ; identité, manual_procurement et auto_order restent des observations séparées de toute activation runtime)`) | ✔ |
+| dashboard | external-provider-contracts (`external-provider-contracts (Supplier 360 lit le registre complet de certifications ; Product 360 ne projette pour ses fournisseurs que les preuves purchasing.manual_procurement / purchasing.auto_order, sans capability métier inventée ni déduction par nom de provider)`) | ✔ |
+| dashboard | business-rules (`business-rules (utils/rules.js — routes/dashboard-shared.js lit une règle en vigueur)`) | ✔ |
+| dashboard | decision-signals (`decision-signals (services/radar-queries.js — routes/admin-radar.js ; Commerce réutilise son vocabulaire de projection sans persistance market implicite)`) | ✔ |
+| dashboard | market (`market (référentiel Markets et codes pays ; les surfaces D migrées n’utilisent plus requireMarketScope comme autorité)`) | ✔ |
+| dashboard | market-delegation (`market-delegation (capabilities marché exactes ; Shipping & Customs consomme logistics.read / execution.transit.confirm ; Finance consomme finance.read / finance.act ; Operations consomme operations.read et chaque execution.* ; Hub et Relay bornent lecture/supervision ; Entity 360 consomme client.read/catalog.read/operations.read ; Dashboard Market Canonical consomme dashboard.market.read, operations.read et finance.read, avec dashboard global explicite en alternative centrale)`) | ✔ |
+| dashboard | sourcing (`sourcing (lecture des lots KIR et de leurs candidats pour le cockpit décisionnel)`) | ✔ |
+| dashboard | catalog (`catalog (lecture de readiness et des décisions Catalogue)`) | ✔ |
+| dashboard | market-autonomy (`market-autonomy (lecture du statut de prix local LOCAL_ACTIVE pour déterminer une approbation réelle à la vente)`) | ✔ |
+| documents | logistics (`logistics (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| documents | catalog (`catalog (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| documents | auth (`auth (gardes authenticate/requireAdmin sur les routes documents et factures)`) | ✔ |
+| documents | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
+| documents | orders (`orders`) | ✔ |
+| documents | customs (`customs`) | ✔ |
+| documents | wallet (`wallet`) | ✔ |
+| documents | refunds (`refunds`) | ✔ |
+| documents | auth-identity (`auth-identity`) | ✔ |
+| economic-engine | local-stock (`local-stock (provenance LOCAL_STOCK : applicabilité de la chaîne import au CDR ; preuve: services/pricing-engine.js -> services/local-stock-service.js)`) | ✔ |
+| economic-engine | refunds (`refunds (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| economic-engine | platform-ops (`platform-ops (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| economic-engine | customs (`customs (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| economic-engine | business-rules (`business-rules (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| economic-engine | auth-identity (`auth-identity (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| economic-engine | market (`market (autorité serveur des modèles Pricing pays via markets et operator_market_scopes)`) | ✔ |
+| economic-engine | market-autonomy (`market-autonomy (décision de prix local et activation LOCAL_ACTIVE consommées par la projection économique sans transfert d ownership)`) | ✔ |
+| economic-engine | market-delegation (`market-delegation (bridge request-local des memberships projetées vers Pricing marché, sans mutation du rôle global)`) | ✔ |
+| economic-engine | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
+| economic-engine | logistics (`logistics (FF-C1 2026-07-29 — lecture ou orchestration logistique ; preuve: services/transport-pricing.js -> services/transport-rails.js)`) | ✔ |
+| economic-engine | catalog (`catalog (donnees produit source)`) | ✔ |
+| economic-engine | auth (`auth`) | ✔ |
+| economic-engine | dashboard (`dashboard`) | ✔ |
+| economic-engine | orders (`orders`) | ✔ |
+| economic-engine | loyalty (`loyalty (invalidation du cache de configuration finance apres modification admin — services/loyalty-service.js invalidateConfigCache, O7.3 provider loyalty)`) | ✔ |
+| external-provider-contracts | infrastructure (`infrastructure — runtime Node et primitives techniques uniquement ; aucune vérité métier externe n est déléguée à infrastructure`) | ✔ |
+| incident-management | orders (`orders (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| incident-management | infrastructure (`infrastructure (DB/logger/bootstrap techniques)`) | ✔ |
+| incident-management | logistics (`logistics (producteur d’incidents physiques via incident-write-service ; consommateur du guard de transition F2/F3)`) | ✔ |
+| incident-management | decision-signals (`decision-signals (sink durable Action Center pour escalade SLA via signal-service)`) | ✔ |
+| infrastructure | market (`market — utils/rates.js lit l'autorité de conversion FX unique (services/fx-authority.js), plus aucun taux propre`) | ✔ |
+| infrastructure | auth (`auth — bootstrap/api-routes.js monte les routes auth`) | ✔ |
+| infrastructure | auth-identity (`auth-identity — le provisionneur E2E appelle le writer canonique createAdminUser / setUserPasswordHash pour les comptes de recette`) | ✔ |
+| infrastructure | catalog (`catalog — bootstrap/api-routes.js monte les routes catalog`) | ✔ |
+| infrastructure | customs (`customs — bootstrap/api-routes.js monte les routes customs`) | ✔ |
+| infrastructure | dashboard (`dashboard — bootstrap/api-routes.js monte les routes dashboard`) | ✔ |
+| infrastructure | economic-engine (`economic-engine — bootstrap/api-routes.js monte les routes economic-engine`) | ✔ |
+| infrastructure | inventory (`inventory — bootstrap/api-routes.js monte les routes inventory`) | ✔ |
+| infrastructure | logistics (`logistics — bootstrap/api-routes.js monte les routes logistics`) | ✔ |
+| infrastructure | market-delegation (`market-delegation — le provisionneur E2E attribue les scopes opérateur via grantOperatorScope et les memberships via addMembership`) | ✔ |
+| infrastructure | notifications (`notifications — bootstrap/api-routes.js monte les routes notification`) | ✔ |
+| infrastructure | platform-ops (`platform-ops — bootstrap/api-routes.js monte les routes operations`) | ✔ |
+| infrastructure | orders (`orders — bootstrap/api-routes.js monte les routes orders`) | ✔ |
+| infrastructure | payments (`payments — bootstrap/api-routes.js monte les routes payment`) | ✔ |
+| infrastructure | recommendations (`recommendations — bootstrap/api-routes.js monte les routes recommendations`) | ✔ |
+| infrastructure | shared-cart (`shared-cart — bootstrap/api-routes.js monte les routes shared-cart`) | ✔ |
+| infrastructure | wallet (`wallet — bootstrap/api-routes.js monte les routes wallet`) | ✔ |
+| inventory | orders (`orders (persistence via order-mutation-service ? LOT11)`) | ✔ |
+| inventory | catalog (`catalog (produit concerne)`) | ✔ |
+| inventory | logistics (`logistics (mutation parcel_items via parcel-item-mutation-service)`) | ✔ |
+| inventory | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
+| inventory | auth (`auth`) | ✔ |
+| local-stock | catalog (`catalog`) | ✔ |
+| local-stock | market (`market`) | ✔ |
+| local-stock | logistics (`logistics`) | ✔ |
+| local-stock | infrastructure (`infrastructure`) | ✔ |
+| logistics | customs (`customs (lien documentaire international : le service douane possède seul la déclaration des droits et taxes ; le Hub orchestre sa transaction)`) | ✔ |
+| logistics | documents (`documents (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| logistics | incident-management (`incident-management (incident persistence via incident-write-service)`) | ✔ |
+| logistics | infrastructure (`infrastructure (DB + transactional outbox F0 ; les constats physiques sont publiés via outbox-producer dans la transaction du fait)`) | ✔ |
+| logistics | business-rules (`business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: utils/parcels.js -> utils/rules.js ; services/parcel-operations.js -> utils/rules.js)`) | ✔ |
+| logistics | orders (`orders (commande rattachée au colis ; HUB-001 ne lit que order_id/order_item_id/market_id/relais_id autoritatifs et ne les réassigne jamais)`) | ✔ |
+| logistics | local-stock (`local-stock (lecture par SKU et marché des allocations consommées pour la réception directe au relais, sans Hub fictif)`) | ✔ |
+| logistics | auth (`auth`) | ✔ |
+| logistics | auth-identity (`auth-identity (autorisation nominative de retrait exceptionnel — services/pickup-authorization-service.js:getActiveAuthorizationForUpdate/hasActiveAuthorization, jamais de requête directe sur user_pickup_authorizations, Lot 5)`) | ✔ |
+| logistics | catalog (`catalog`) | ✔ |
+| logistics | notifications (`notifications`) | ✔ |
+| logistics | payments (`payments (marque une commande payee — services/payment-service.js ; confirme un paiement cash pickup transactionnel — services/confirm-pickup-cash-payment.js ; O7.2 Cycle B)`) | ✔ |
+| logistics | refunds (`refunds`) | ✔ |
+| logistics | purchasing (`purchasing (lecture seule de purchase_orders : HUB-001 snapshotte l identité d achat exacte déjà persistée ; aucune mutation/heuristique fournisseur)`) | ✔ |
+| logistics | loyalty (`loyalty (recalcul de palier apres collecte cash relais / scan preparation — services/loyalty-service.js recalculateLoyalty/handleOrderConfirmed, O7.3 provider loyalty)`) | ✔ |
+| logistics | market (`market (référentiel Market et orders.market_id autoritatif ; HUB-001 hérite le marché de la commande, jamais de market_id client)`) | ✔ |
+| logistics | market-delegation (`market-delegation (capabilities marché explicites ; D1 lie agent_transitaire à un marché ; D4 borne les lectures Hub market_operator par operations.read et la supervision Hub par hub.supervise ; users.role ne donne aucun droit marché)`) | ✔ |
+| loyalty | orders (`orders (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| loyalty | economic-engine (`economic-engine (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| loyalty | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
+| loyalty | auth (`auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/loyalty.js -> middleware/auth.js)`) | ✔ |
+| loyalty | notifications (`notifications (FF-C1 2026-07-29 — émission de message ; preuve: services/loyalty-service.js -> services/notification-service.js)`) | ✔ |
+| loyalty | auth-identity (`auth-identity (identification du client)`) | ✔ |
+| market | infrastructure (`infrastructure (db.js — pool de connexion Postgres, seule dépendance de middleware/require-market-scope.js)`) | ✔ |
+| market | notifications (`notifications (utils/alerts.js — alerte d'écart EUR/USD créée à l'approbation par services/fx-observation-service.js)`) | ✔ |
+| market-autonomy | market (`market — référentiel markets, currency_parities et scope serveur operator_market_scopes`) | ✔ |
+| market-autonomy | economic-engine (`economic-engine — CDR, politique marché et gate de couverture`) | ✔ |
+| market-autonomy | catalog (`catalog — products/SKU en lecture ; le prix global reste inchangé`) | ✔ |
+| market-autonomy | infrastructure (`infrastructure — db.js pour transaction et audit`) | ✔ |
+| market-autonomy | market-delegation (`market-delegation — memberships, capabilities team.*, provider.manage, cash_control.policy.manage et acceptation d’invitation ; l’UI n’invente aucune autorité`) | ✔ |
+| market-autonomy | auth-identity (`auth-identity — création optionnelle d’un compte client depuis le lien d’invitation avant acceptation explicite`) | ✔ |
+| market-control-plane | orders (`orders (commandes réelles collectées lues pour la base HISTORY de la preuve de livrabilité : simulation_scope IS NULL)`) | ✔ |
+| market-control-plane | market (`market (markets comme référentiel lu)`) | ✔ |
+| market-control-plane | market-delegation (`market-delegation (affectation, équipe, plafond, politique de caisse lus ; normalizeMarketCode)`) | ✔ |
+| market-control-plane | providers-services (`providers-services (fournisseurs de paiement du marché lus)`) | ✔ |
+| market-control-plane | payments (`payments (configuration initiale du provider paiement via le writer canonique market-payment-provider-config-service)`) | ✔ |
+| market-control-plane | logistics (`logistics (relais lus)`) | ✔ |
+| market-control-plane | dashboard (`dashboard (dashboard_global_access_grants et require-dashboard-global-authority : autorisation centrale explicite lue)`) | ✔ |
+| market-control-plane | catalog (`catalog (catalog_global_access_grants et require-catalog-global-authority : autorisation centrale explicite lue)`) | ✔ |
+| market-control-plane | decision-signals (`decision-signals (decision_signal_global_access_grants et son middleware : autorisation centrale explicite lue)`) | ✔ |
+| market-control-plane | economic-engine (`economic-engine (pricing_global_access_grants et require-pricing-global-authority : autorisation centrale explicite lue)`) | ✔ |
+| market-control-plane | sourcing (`sourcing (sourcing_global_access_grants et require-sourcing-global-authority : autorisation centrale explicite lue)`) | ✔ |
+| market-control-plane | auth (`auth (garde des routes centrales)`) | ✔ |
+| market-control-plane | infrastructure (`infrastructure (DB et bootstrap)`) | ✔ |
+| market-delegation | local-stock (`local-stock`) | ✔ |
+| market-delegation | market (`market`) | ✔ |
+| market-delegation | auth (`auth`) | ✔ |
+| market-delegation | auth-identity (`auth-identity`) | ✔ |
+| market-delegation | infrastructure (`infrastructure`) | ✔ |
+| market-delegation | logistics (`logistics`) | ✔ |
+| market-delegation | catalog (`catalog`) | ✔ |
+| market-delegation | providers-services (`providers-services`) | ✔ |
+| market-delegation | orders (`orders`) | ✔ |
+| market-delegation | settlement (`settlement`) | ✔ |
+| market-delegation | economic-engine (`economic-engine`) | ✔ |
+| market-delegation | market-autonomy (`market-autonomy`) | ✔ |
+| market-delegation | dashboard (`dashboard`) | ✔ |
+| market-delegation | payments (`payments`) | ✔ |
+| market-operator-dashboard | market (`market (markets, Currency Boundary ; operator_market_scopes uniquement comme projection de compatibilité des surfaces non encore migrées)`) | ✔ |
+| market-operator-dashboard | auth (`auth (authenticate, requireRole + capabilities market-scoped)`) | ✔ |
+| market-operator-dashboard | dashboard (`dashboard (admin-dashboard-market routes, admin-context, canonical navigation/app.js, operations workspace, admin-finance-accounting-workspace — projection Finance pays et actions explicitement déléguées, jamais autorité globale implicite)`) | ✔ |
+| market-operator-dashboard | catalog (`catalog (vérité globale en lecture si nécessaire + projection/configuration product_market_exposure via son service owner)`) | ✔ |
+| market-operator-dashboard | market-autonomy (`market-autonomy (décision locale DRAFT_PENDING_GATE via market-commercial-price-service ; aucun LOCAL_ACTIVE forcé)`) | ✔ |
+| market-operator-dashboard | orders (`orders (commandes et order_items market-scoped)`) | ✔ |
+| market-operator-dashboard | logistics (`logistics (Hub/Relais, expéditions, douane et primitives de suivi market-scoped)`) | ✔ |
+| market-operator-dashboard | market-delegation (`market-delegation (services/market-delegation-service.js + services/market-scope-projector.js — autorité canonique assignment/membership/capabilities et projectAssignment(), consommées par scripts/provision-market-operator.js pour ne plus jamais écrire operator_market_scopes directement)`) | ✔ |
+| market-operator-dashboard | infrastructure (`infrastructure (db.js — pool utilisé par les scripts de provisioning et de seed staging)`) | ✔ |
+| notifications | orders (`orders (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| notifications | logistics (`logistics (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| notifications | auth-identity (`auth-identity (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| notifications | incident-management (`incident-management (incident persistence via incident-write-service)`) | ✔ |
+| notifications | platform-ops (`platform-ops (monitoring/exploitation transverse observé dans le code)`) | ✔ |
+| notifications | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
+| notifications | auth (`auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/notification-api.js -> middleware/auth.js ; routes/alerts.js -> middleware/auth.js)`) | ✔ |
+| orders | dashboard (`dashboard (RCT1 canonical projection reuses dashboard-orders LIFECYCLE read-only contract; service dashboard-rct1-orders.js -> services/dashboard-orders.js)`) | ✔ |
+| orders | market-control-plane (`market-control-plane (destination relais actif : marché de rattachement et disponibilité du relais validés au checkout ; attestation transporteur non requise)`) | ✔ |
+| orders | platform-ops (`platform-ops (monitoring/exploitation transverse observé dans le code)`) | ✔ |
+| orders | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
+| orders | decision-signals (`decision-signals (sink durable Action Center pour le signal de clôture financière en attente des faits économiques via signal-service)`) | ✔ |
+| orders | incident-management (`incident-management (G6-CLEANUP : création gouvernée d’un incident de quarantaine pour chaque unité physique conservée au Hub, via incident-write-service)`) | ✔ |
+| orders | business-rules (`business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: routes/orders/create.js -> utils/rules.js ; routes/orders/qr.js -> utils/rules.js ; routes/orders/list.js -> utils/rules.js ; +1)`) | ✔ |
+| orders | wallet (`wallet (application credit)`) | ✔ |
+| orders | economic-engine (`economic-engine (cout figure a la commande)`) | ✔ |
+| orders | logistics (`logistics (rattachement colis ; couverture physique de réception : order-physical-coverage-service, gate C2 vers preparation)`) | ✔ |
+| orders | catalog (`catalog (lecture produit)`) | ✔ |
+| orders | market-autonomy (`market-autonomy (prix LOCAL_ACTIVE résolu depuis le market_id serveur du relais avant snapshot de commande)`) | ✔ |
+| orders | local-stock (`local-stock (Vague 2 D2 — allocateForOrderItem à la création de commande, consumeAllocationsForOrder/releaseAllocationsForOrder sur les transitions confirmed/cancelled ; preuve: routes/orders/create.js -> services/local-stock-service.js ; services/order-status-machine.js -> services/local-stock-service.js)`) | ✔ |
+| orders | market (`market (F4 — le checkout vérifie lifecycle_status depuis relais.market_id serveur et refuse toute commande hors ACTIVE ; P3 — resolveDisplaySnapshot() résout le contexte marché du client via utils/currency.js ; preuve: services/order-display-snapshot.js -> utils/currency.js)`) | ✔ |
+| orders | purchasing (`purchasing (engagement fournisseur + sync annulation via syncPurchaseOrdersOnOrderCancel ; aucun SQL direct orders -> purchase_orders)`) | ✔ |
+| orders | loyalty (`loyalty (remise palier au checkout + recalcul apres commande — services/loyalty-service.js getLoyaltyDiscount/recalculateLoyalty, O7.3 provider loyalty)`) | ✔ |
+| orders | payments (`payments (marque un remboursement — services/payment-service.js markRefunded, O7.3 provider payments)`) | ✔ |
+| orders | auth (`auth`) | ✔ |
+| orders | auth-identity (`auth-identity (projection checkout boutique : identité client et téléphone)`) | ✔ |
+| orders | customs (`customs`) | ✔ |
+| orders | documents (`documents`) | ✔ |
+| orders | notifications (`notifications (projection idempotente du retrait disponible)`) | ✔ |
+| orders | refunds (`refunds`) | ✔ |
+| orders | shared-cart (`shared-cart (projection frontend orders-client uniquement : consommation via shared-cart-surface-api.js / shared-cart-library-api.js ; aucun import direct des internes group/* ; côté backend, appelle services/cart-share-service.js markShareConvertedToOrder pour lier une commande à un lien de partage — campagne WRITER-NOT-OWNER 2026-08, plus de SQL direct sur cart_shares)`) | ✔ |
+| payments | auth-identity (`auth-identity (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| payments | incident-management (`incident-management (incident persistence via incident-write-service)`) | ✔ |
+| payments | infrastructure (`infrastructure (DB, logger, Currency Boundary et bootstrap)`) | ✔ |
+| payments | platform-ops (`platform-ops (monitoring et exploitation technique)`) | ✔ |
+| payments | auth (`auth (garde de route et contexte identité)`) | ✔ |
+| payments | refunds (`refunds (orchestration du remboursement)`) | ✔ |
+| payments | documents (`documents (émission facture/reçu)`) | ✔ |
+| payments | notifications (`notifications (émission de message)`) | ✔ |
+| payments | business-rules (`business-rules (lecture du référentiel de règles métier)`) | ✔ |
+| payments | orders (`orders (commande a payer et point d entrée unique payment -> stock)`) | ✔ |
+| payments | market (`market (market_id et devise native du rail)`) | ✔ |
+| payments | logistics (`logistics (generation du code retrait pickup au moment du paiement)`) | ✔ |
+| payments | loyalty (`loyalty (recalcul de palier apres paiement confirme)`) | ✔ |
+| payments | purchasing (`purchasing (verification/reapprovisionnement apres encaissement)`) | ✔ |
+| payments | market-delegation (`market-delegation (politique de contrôle cash du partenaire ; payments reste propriétaire de la vérité d’encaissement)`) | ✔ |
+| platform-ops | documents (`documents (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
+| platform-ops | incident-management (`incident-management (incident persistence via incident-write-service)`) | ✔ |
+| platform-ops | purchasing (`purchasing (client API transversal appelle le référentiel fournisseurs /api/purchasing/suppliers)`) | ✔ |
+| platform-ops | catalog (`catalog (shell/client API transversal monte et appelle les surfaces catalogue sans en posséder l’état)`) | ✔ |
+| platform-ops | auth-identity (`auth-identity (client API transversal et shell identité consomment les endpoints auth)`) | ✔ |
+| platform-ops | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
+| platform-ops | business-rules (`business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: routes/config.js -> utils/rules.js)`) | ✔ |
+| platform-ops | auth (`auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/modules.js -> middleware/auth.js ; routes/health.js -> middleware/auth.js ; routes/ops-api.js -> middleware/auth.js ; +2)`) | ✔ |
+| platform-ops | economic-engine (`economic-engine (calcul de prix ponctuel pour modules sur-mesure — services/pricing-engine.js recommend, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)`) | ✔ |
+| platform-ops | logistics (`logistics (simulateur declenche une transition colis via transitionParcelStatus — services/parcel-operations.js, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)`) | ✔ |
+| platform-ops | orders (`orders (simulateur délègue statuts commande/paiement à order-status-machine + payment-service ; le chaos payment reste non-production et owner-bound)`) | ✔ |
+| platform-ops | wallet (`wallet (simulateur crédite les remboursements via wallet-service.credit ; aucun store_credits legacy direct)`) | ✔ |
+| providers-services | auth (`auth — authenticateOrCreateGuest et session canonique côté serveur`) | ✔ |
+| providers-services | auth-identity (`auth-identity — requireIdentity() côté Boutique avant mutation`) | ✔ |
+| providers-services | platform-ops (`platform-ops — bus et showToast comme primitives UI transverses`) | ✔ |
+| providers-services | market (`market — référentiel markets, résolution code -> id côté serveur`) | ✔ |
+| providers-services | local-stock (`local-stock — déclaration et exposition du stock local Product Komerce du seed Discovery staging via les primitives owner`) | ✔ |
+| providers-services | recommendations (`recommendations — réutilise le tooling Discovery CJ pour construire les candidats staging ; recommendations reste propriétaire de la sélection et de l ordre éditorial`) | ✔ |
+| providers-services | infrastructure (`infrastructure — dépendance technique db.js et résolution KOMERCE_ENV`) | ✔ |
+| purchasing | documents (`documents (rendu PDF interne du bon de commande validé)`) | ✔ |
+| purchasing | supplier-connectivity (`supplier-connectivity (autorité provider, Supplier Order Identity opaque et contrats adapter fail-closed)`) | ✔ |
+| purchasing | external-provider-contracts (`external-provider-contracts (contrat transverse de preuve provider : Conversation + KNOWN/DERIVED/UNKNOWN + P0..P4 consommé par les proofs Purchasing)`) | ✔ |
+| purchasing | sourcing (`sourcing (resolveCanonicalUnitForProductSku — frontière canonique exacte, sans lecture directe des tables Resolution)`) | ✔ |
+| purchasing | catalog (`catalog (contrat V2 sellable_units + Supplier Order Identity fournie par les connecteurs, client Allegro Sandbox borné)`) | ✔ |
+| purchasing | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
+| purchasing | orders (`orders (lecture : order_items, orders — le besoin d'achat et l'intention d'annulation naissent d'une commande client)`) | ✔ |
+| purchasing | auth (`auth (garde admin)`) | ✔ |
+| purchasing | economic-engine (`economic-engine (A8 : rafraîchissement transactionnel de la marge réelle canonique via canonical-margin-writer ; no-op si la règle CANONICAL_MARGIN_WRITER_ENABLED vaut 0)`) | ✔ |
+| purchasing | notifications (`notifications (notification fournisseur WhatsApp, via services/notification-service.js)`) | ✔ |
+| purchasing | incident-management (`incident-management (H1 : incident « rupture fournisseur » à la clôture d'une ligne sans reliquat, via createSupplierShortageIncident du boundary incident-write-service)`) | ✔ |
+| purchasing | logistics (`logistics (declenche scan preparation + notification client apres reception hub complete — services/scan-operations.js triggerScan3, O7.2 Cycle C)`) | ✔ |
+| recommendations | catalog (`catalog (lecture produit)`) | ✔ |
+| recommendations | catalog (`catalog — getExposure() pour aligner les Product cards sur product_market_exposure du marché`) | ✔ |
+| recommendations | market-autonomy (`market-autonomy — resolveActiveProductMarketPricing() pour n’exposer qu’un prix LOCAL_ACTIVE buyer-effective`) | ✔ |
+| recommendations | platform-ops (`platform-ops (monitoring/exploitation transverse observé dans le code)`) | ✔ |
+| recommendations | infrastructure (`infrastructure (DB et composition root)`) | ✔ |
+| recommendations | logistics (`logistics`) | ✔ |
+| recommendations | orders (`orders (frontière frontend orders-client/cart-public-api.js consommée par b-modal-suggestions.js)`) | ✔ |
+| recommendations | market (`market (référentiel markets — résolution code -> id côté serveur)`) | ✔ |
+| recommendations | local-stock (`local-stock — isStockExposable() pour la carte product du rail Discovery`) | ✔ |
+| recommendations | providers-services (`providers-services — isServiceExposable()/getService()/isPhysicalOfferExposable()/getPhysicalOffer() pour les cartes tierces`) | ✔ |
+| refunds | market (`market (prorata SAV dans les devises figées via fx-authority)`) | ✔ |
+| refunds | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
+| refunds | orders (`orders (commande source)`) | ✔ |
+| refunds | logistics (`logistics (attestation physique du manquant au relais ; source incident immuable)`) | ✔ |
+| refunds | payments (`payments (capture PSP, intention durable et réconciliation du remboursement en EUR)`) | ✔ |
+| refunds | wallet (`wallet (credit)`) | ✔ |
+| refunds | documents (`documents (reçu)`) | ✔ |
+| refunds | notifications (`notifications (alerte critique de rapprochement de remboursement PSP incertain)`) | ✔ |
+| refunds | economic-engine (`economic-engine (A8 : rafraîchissement transactionnel de la marge réelle canonique via canonical-margin-writer ; no-op si la règle CANONICAL_MARGIN_WRITER_ENABLED vaut 0)`) | ✔ |
+| settlement | market (`market (markets.currency comme devise native du snapshot)`) | ✔ |
+| settlement | market-delegation (`market-delegation (Market Operating Assignment comme principal payable et boundary consommatrice du lifecycle)`) | ✔ |
+| settlement | auth (`auth (garde des routes centrales)`) | ✔ |
+| settlement | auth-identity (`auth-identity (users comme identité des acteurs attestant/demandant/payant/recevant)`) | ✔ |
+| settlement | infrastructure (`infrastructure (DB et bootstrap)`) | ✔ |
+| shared-cart | recommendations (`recommendations (modal partagé consomme suggestions via interface /api/boutique/suggestions)`) | ✔ |
+| shared-cart | platform-ops (`platform-ops (monitoring/exploitation transverse observé dans le code)`) | ✔ |
+| shared-cart | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
+| shared-cart | orders (`orders (arbitrage de la réclamation via order_items.shared_cart_item_id — feature orders, migration 123)`) | ✔ |
+| shared-cart | catalog (`catalog (lecture seule des produits)`) | ✔ |
+| shared-cart | market-autonomy (`market-autonomy (prix LOCAL_ACTIVE du marché serveur lors de la création de liste ; aucune autorité marché navigateur)`) | ✔ |
+| shared-cart | notifications (`notifications (émission uniquement — WhatsApp création de liste)`) | ✔ |
+| shared-cart | auth (`auth`) | ✔ |
+| shared-cart | auth-identity (`auth-identity (projection boutique : b-share-cart.js consomme identité et téléphone)`) | ✔ |
+| sourcing | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
+| sourcing | catalog (`catalog (connecteurs fournisseur, catalog-import-orchestrator, catalog-enrichment, supplier-catalog-scanner pour le scan pricing, catalog-candidate-product-service pour créer le brouillon products, et catalog-promotion.js pour promouvoir normalized_source_contract V2 vers catalog_media/product_variants/product_skus/product_sku_media dans la transaction de POST .../import-product)`) | ✔ |
+| sourcing | purchasing (`purchasing (référentiel de fournisseurs d’approvisionnement ; Sourcing transmet l’affectation à la candidature sans créer ni modifier de PO)`) | ✔ |
+| sourcing | economic-engine (`economic-engine (pricing-engine.loadGlobalConfig — config de scan)`) | ✔ |
+| sourcing | customs (`customs (customs-dynamic-category-classifier : score des catégories actives pour suggestions Sourcing, lecture uniquement ; aucune clé codée en dur)`) | ✔ |
+| sourcing | auth (`auth`) | ✔ |
+| sourcing | dashboard (`dashboard (registre partenaires partagé via partner-admin-service ; 4E filtre strictement partner_type=sourcing)`) | ✔ |
+| supplier-connectivity | external-provider-contracts (`external-provider-contracts (méthode transverse de qualification et de preuve P0→P4 avant déclaration d une capability provider)`) | ✔ |
+| unsold-resolution | orders (`orders (commande source de l'invendu)`) | ✔ |
+| unsold-resolution | catalog (`catalog (produit concerné)`) | ✔ |
+| unsold-resolution | auth (`auth`) | ✔ |
+| unsold-resolution | market-delegation (`market-delegation`) | ✔ |
+| unsold-resolution | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
+| wallet | market (`market (2026-11-13 #3927 — conversion KMF↔devise du marché via la seule autorité fx-authority/currency_parities ; preuve: services/wallet-service.js -> services/fx-authority.js)`) | ✔ |
+| wallet | orders (`orders (persistence via order-mutation-service ? LOT11)`) | ✔ |
+| wallet | platform-ops (`platform-ops (monitoring/exploitation transverse observé dans le code)`) | ✔ |
+| wallet | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
+| wallet | auth (`auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/wallet.js -> middleware/auth.js)`) | ✔ |
+| wallet | documents (`documents (FF-C1 2026-07-29 — émission ou lecture documentaire ; preuve: services/wallet-service.js -> services/documents/wallet-receipt.js ; routes/wallet.js -> services/documents/wallet-receipt.js)`) | ✔ |
+| wallet | auth-identity (`auth-identity (identification du client)`) | ✔ |
+| admin-dashboard | catalog (`catalog`) | ✔ |
+| admin-dashboard | customs (`customs`) | ✔ |
+| admin-dashboard | dashboard (`dashboard`) | ✔ |
+| admin-dashboard | decision-signals (`decision-signals`) | ✔ |
+| admin-dashboard | documents (`documents`) | ✔ |
+| admin-dashboard | economic-engine (`economic-engine`) | ✔ |
+| admin-dashboard | inventory (`inventory`) | ✔ |
+| admin-dashboard | logistics (`logistics`) | ✔ |
+| admin-dashboard | orders (`orders`) | ✔ |
+| admin-dashboard | payments (`payments`) | ✔ |
+| admin-dashboard | sourcing (`sourcing`) | ✔ |
+| decision-signals | auth (`auth (garde de route et contexte d’identité)`) | ✔ |
+| decision-signals | infrastructure (`infrastructure (acces DB et transaction partagée)`) | ✔ |
+| decision-signals | logistics (`logistics (lecture ou orchestration logistique)`) | ✔ |
+| decision-signals | purchasing (`purchasing (lecture de la population canonique supplier_payment_review ; aucune mutation du paiement fournisseur)`) | ✔ |
+| decision-signals | business-rules (`business-rules (lecture du referentiel de regles metier)`) | ✔ |
+| decision-signals | market-delegation (`market-delegation (resolution serveur du Market ID, capability dashboard.market.read / decision_signal.manage et audit des mutations pays)`) | ✔ |
+| decision-signals | payments (`payments (services/cash-deposit-service.js — couverture cash canonique UNCOVERED_COLLECTIONS_CTE : seul un depot verifie couvre un encaissement ; lecture seule, aucune mutation de depot)`) | ✔ |
+| decision-signals | economic-engine (`economic-engine (services/financial-journal-reporting.js — lecture seule de la réconciliation du journal financier pour le signal financial_journal_gap ; aucune écriture du journal)`) | ✔ |
+| decision-signals | dashboard (`dashboard (services/signal-simulation-scope.js — predicat reel/RCT1 partage : les signaux de commandes de simulation sont exclus de l'Action Center et du compteur radar ; lecture seule)`) | ✔ |
+
+## Drifts
+
+### ERROR (0)
+
+- none
+
+### DETTE / DRIFT ACTIONNABLE (6)
+
+Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
+
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ order_item_real_cost_allocations — table "order_item_real_cost_allocations" : lifecycle owner = economic-engine (db.tables "!"), mais aussi écrite par customs
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ order_items — table "order_items" : lifecycle owner = orders (db.tables "!"), mais aussi écrite par logistics
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ orders — table "orders" : lifecycle owner = orders (db.tables "!"), mais aussi écrite par economic-engine
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ products — table "products" : lifecycle owner = catalog (db.tables "!"), mais aussi écrite par logistics
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ signals — table "signals" : lifecycle owner = decision-signals (db.tables "!"), mais aussi écrite par orders
+- **[WRITER-NOT-OWNER]** _[KNOWN_DEBT]_ sourcing_candidates — table "sourcing_candidates" : lifecycle owner = sourcing (db.tables "!"), mais aussi écrite par catalog
+
+### TOPOLOGIE ATTENDUE — hors dette (47)
+
+- **[DASH-MANIFEST-DUPLICATE-COPY]** admin-dashboard — "public/features/admin-dashboard.feature.js" est une copie déclarée de "public/dashboards/features/admin-dashboard.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
+- **[DASH-MANIFEST-DUPLICATE-COPY]** legacy-control-tower — "public/features/legacy-control-tower.feature.js" est une copie déclarée de "public/dashboards/features/legacy-control-tower.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** dashboard -> loyalty — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "dashboard" vers "loyalty"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** dashboard -> platform — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "dashboard" vers "platform"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> auth-passkey — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "auth-passkey"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> business-rules — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "business-rules"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> decision-signals — dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "decision-signals"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> documents — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "documents"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> incident-management — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "incident-management"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> local-stock — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "local-stock"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> loyalty — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "loyalty"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> market-control-plane — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "market-control-plane"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> providers-services — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "providers-services"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> purchasing — dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "purchasing"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> settlement — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "settlement"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> sourcing — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "sourcing"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> unsold-resolution — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "unsold-resolution"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** inventory -> payments — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "inventory" vers "payments"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** logistics -> dashboard — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "logistics" vers "dashboard"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** logistics -> economic-engine — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "logistics" vers "economic-engine"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** loyalty -> logistics — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "loyalty" vers "logistics"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** market -> customs — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "market" vers "customs"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** market -> dashboard — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "market" vers "dashboard"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** market -> market-delegation — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "market" vers "market-delegation"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** market -> orders — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "market" vers "orders"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** market-autonomy -> market-control-plane — dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez "market-autonomy" vers "market-control-plane"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** market-delegation -> market-operator-dashboard — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "market-delegation" vers "market-operator-dashboard"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** platform-ops -> auth-passkey — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "auth-passkey"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** platform-ops -> notifications — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "notifications"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** platform-ops -> payments — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "payments"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** platform-ops -> providers-services — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "providers-services"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** platform-ops -> recommendations — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "recommendations"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** platform-ops -> shared-cart — dépendance cross-feature observée (canal: static-code, 6 preuve(s)) sans contract.consumes déclaré chez "platform-ops" vers "shared-cart"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** purchasing -> decision-signals — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "purchasing" vers "decision-signals"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** purchasing -> refunds — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "purchasing" vers "refunds"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** refunds -> auth — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "refunds" vers "auth"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** supplier-connectivity -> purchasing — dépendance cross-feature observée (canal: static-code, 5 preuve(s)) sans contract.consumes déclaré chez "supplier-connectivity" vers "purchasing"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** wallet -> notifications — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "wallet" vers "notifications"
+- **[WRITER-NOT-OWNER]** invoices — table "invoices" : lifecycle owner = documents (classification.signals.ownsTables), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** order_comments — table "order_comments" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** order_status_history — table "order_status_history" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** recipients — table "recipients" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** relais — table "relais" : lifecycle owner = logistics (db.tables "!"), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** scan_events — table "scan_events" : lifecycle owner = logistics (db.tables "!"), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** sms_log — table "sms_log" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** wallet_transactions — table "wallet_transactions" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi écrite par dashboard
+- **[WRITER-NOT-OWNER]** wallets — table "wallets" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi écrite par dashboard
+
+### LIMITES DU GÉNÉRATEUR — hors dette (12)
+
+- **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** scope:backend — 30 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | tests/unit/canonical-purchasing-workspace-boundary.test.js: path.join(ROOT, WORKSPACE | tests/unit/canonical-pricing-atelier-views.test.js: path.join(CANONICAL, 'js', 'pricing-atelier-views.js') — limitation du modèle statique O5, jamais inventé
+- **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** scope:boutique — 1 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope boutique (ex. public/boutique/tests/unit/modal-cart-sku-guard.test.js: bundleConfigPath) — limitation du modèle statique O5, jamais inventé
+- **[EXPOSE-ENTRY-UNPARSED]** logistics / GET/POST /api/parcels — entrée contract.exposes non parseable (attendu "METHOD /path")
+- **[EXPOSE-ENTRY-UNPARSED]** orders / GET/POST /api/orders — entrée contract.exposes non parseable (attendu "METHOD /path")
+- **[EXPOSED-ROUTE-UNRESOLVED]** infrastructure / GET /*.html — "GET /*.html" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
+- **[EXPOSED-ROUTE-UNRESOLVED]** infrastructure / GET /webhook/authkey-whatsapp — "GET /webhook/authkey-whatsapp" déclaré par infrastructure mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
+- **[INTERFACE-CONSUMER-FILE-UNRESOLVED]** dash:SourcingScannerView (/api/admin/customs-categories) — module consumer "SourcingScannerView" (scope dash, endpoint /api/admin/customs-categories) non résolu vers un fileId gouverné — INTERFACE-CONSUMER-FILE-UNRESOLVED
+- **[INTERFACE-CONSUMER-FILE-UNRESOLVED]** dash:SourcingScannerView (/api/admin/sourcing/candidates) — module consumer "SourcingScannerView" (scope dash, endpoint /api/admin/sourcing/candidates) non résolu vers un fileId gouverné — INTERFACE-CONSUMER-FILE-UNRESOLVED
+- **[INTERFACE-CONSUMER-FILE-UNRESOLVED]** dash:SourcingScannerView (/api/admin/sourcing/catalogs) — module consumer "SourcingScannerView" (scope dash, endpoint /api/admin/sourcing/catalogs) non résolu vers un fileId gouverné — INTERFACE-CONSUMER-FILE-UNRESOLVED
+- **[INTERFACE-CONSUMER-FILE-UNRESOLVED]** dash:SourcingScannerView (/api/admin/sourcing/catalogs/import) — module consumer "SourcingScannerView" (scope dash, endpoint /api/admin/sourcing/catalogs/import) non résolu vers un fileId gouverné — INTERFACE-CONSUMER-FILE-UNRESOLVED
+- **[INTERFACE-CONSUMER-FILE-UNRESOLVED]** dash:SourcingView (/api/admin/sourcing/analysis) — module consumer "SourcingView" (scope dash, endpoint /api/admin/sourcing/analysis) non résolu vers un fileId gouverné — INTERFACE-CONSUMER-FILE-UNRESOLVED
+- **[INTERFACE-CONSUMER-FILE-UNRESOLVED]** dash:SourcingView (/api/admin/sourcing/synthesis) — module consumer "SourcingView" (scope dash, endpoint /api/admin/sourcing/synthesis) non résolu vers un fileId gouverné — INTERFACE-CONSUMER-FILE-UNRESOLVED
+
+## Orphan technical nodes
+
+Fichiers présents dans le Technical Architecture Graph, non revendiqués par une carte feature ni un transversal déclaré (`governance/transversal-paths.json`).
+
+- none
+
+## Lot O5 — Feature Dependency Conformance & Hidden Coupling Gate
+
+Meta Graph monté : oui.
+
+### Coverage par scope
+
+- backend : 2372 fichier(s) `.js`/`.mjs` observés (canal A)
+- boutique : 218 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
+- dash : 79 fichier(s) observés
+  - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
+  - _dash interface channel: consumer file resolution câblée via docs/DASHBOARDS_360.json (bridge vue -> fileId basé sur les entrées "views/" déjà gouvernées par implementedByEdges) — les modules dashboards référencés par META_GRAPH mais absents des vues gouvernées (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devinés_
+  - _dash total runtime dependency observability: LIMITED BY O5 STATIC MODEL (dynamic import, registry lookup, dependency injection, event-driven dependency hors périmètre statique)_
+
+### Dependency conformance summary (paires canonical-feature → canonical-feature)
+
+| Consumer | Provider | Canaux | Preuves | Statut |
+|---|---|---|---|---|
+| admin-dashboard | catalog | interface | 2 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | customs | interface | 3 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | dashboard | interface | 14 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | decision-signals | interface | 3 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | documents | interface | 1 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | economic-engine | interface | 20 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | inventory | interface | 5 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | logistics | interface | 7 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | orders | interface | 2 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | payments | interface | 6 | **DECLARED_AND_OBSERVED** |
+| auth | auth-identity | static-code, data-read | 9 | **DECLARED_AND_OBSERVED** |
+| auth | infrastructure | static-code | 16 | **DECLARED_AND_OBSERVED** |
+| auth | notifications | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| auth-identity | auth | static-code | 12 | **DECLARED_AND_OBSERVED** |
+| auth-identity | auth-passkey | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| auth-identity | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| auth-identity | documents | interface, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| auth-identity | infrastructure | static-code | 23 | **DECLARED_AND_OBSERVED** |
+| auth-identity | logistics | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
+| auth-identity | loyalty | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| auth-identity | notifications | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| auth-identity | orders | data-read | 2 | **DECLARED_AND_OBSERVED** |
+| auth-identity | platform-ops | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| auth-identity | wallet | interface | 1 | **DECLARED_AND_OBSERVED** |
+| auth-passkey | auth | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| auth-passkey | auth-identity | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| auth-passkey | infrastructure | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| auth-passkey | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| business-rules | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| business-rules | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| business-rules | infrastructure | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| catalog | auth | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| catalog | auth-identity | interface | 1 | **DECLARED_AND_OBSERVED** |
+| catalog | business-rules | static-code | 12 | **DECLARED_AND_OBSERVED** |
+| catalog | customs | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| catalog | economic-engine | static-code | 16 | **DECLARED_AND_OBSERVED** |
+| catalog | external-provider-contracts | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| catalog | infrastructure | static-code | 112 | **DECLARED_AND_OBSERVED** |
+| catalog | logistics | static-code, interface | 12 | **DECLARED_AND_OBSERVED** |
+| catalog | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| catalog | market-autonomy | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| catalog | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| catalog | orders | static-code, data-read | 16 | **DECLARED_AND_OBSERVED** |
+| catalog | platform-ops | static-code | 78 | **DECLARED_AND_OBSERVED** |
+| catalog | purchasing | static-code, data-read | 14 | **DECLARED_AND_OBSERVED** |
+| catalog | shared-cart | static-code, interface | 13 | **DECLARED_AND_OBSERVED** |
+| catalog | sourcing | static-code, data-write, data-read | 39 | **DECLARED_AND_OBSERVED** |
+| catalog | supplier-connectivity | static-code | 9 | **DECLARED_AND_OBSERVED** |
+| customs | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| customs | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| customs | documents | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| customs | economic-engine | static-code, data-write | 13 | **DECLARED_AND_OBSERVED** |
+| customs | infrastructure | static-code | 10 | **DECLARED_AND_OBSERVED** |
+| customs | logistics | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| customs | market | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| customs | orders | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| dashboard | auth | static-code | 22 | **DECLARED_AND_OBSERVED** |
+| dashboard | auth-identity | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
+| dashboard | business-rules | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
+| dashboard | catalog | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
+| dashboard | customs | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| dashboard | decision-signals | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| dashboard | documents | static-code, data-write, data-read | 3 | **DECLARED_AND_OBSERVED** |
+| dashboard | economic-engine | static-code, data-read | 24 | **DECLARED_AND_OBSERVED** |
+| dashboard | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| dashboard | incident-management | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
+| dashboard | infrastructure | static-code | 112 | **DECLARED_AND_OBSERVED** |
+| dashboard | inventory | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| dashboard | local-stock | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| dashboard | logistics | static-code, data-read, data-write | 35 | **DECLARED_AND_OBSERVED** |
+| dashboard | loyalty | static-code | 1 | **OBSERVED_UNDECLARED** |
+| dashboard | market | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
+| dashboard | market-autonomy | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| dashboard | market-delegation | static-code | 31 | **DECLARED_AND_OBSERVED** |
+| dashboard | notifications | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| dashboard | orders | static-code, data-write, data-read | 16 | **DECLARED_AND_OBSERVED** |
+| dashboard | payments | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| dashboard | platform | static-code | 1 | **OBSERVED_UNDECLARED** |
+| dashboard | purchasing | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
+| dashboard | refunds | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| dashboard | shared-cart | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| dashboard | sourcing | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| dashboard | supplier-connectivity | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| dashboard | wallet | data-write | 2 | **DECLARED_AND_OBSERVED** |
+| decision-signals | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| decision-signals | business-rules | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| decision-signals | dashboard | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| decision-signals | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| decision-signals | infrastructure | static-code | 8 | **DECLARED_AND_OBSERVED** |
+| decision-signals | logistics | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| decision-signals | market-delegation | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| decision-signals | payments | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| decision-signals | purchasing | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| documents | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| documents | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| documents | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| documents | customs | data-read | 2 | **DECLARED_AND_OBSERVED** |
+| documents | infrastructure | static-code | 25 | **DECLARED_AND_OBSERVED** |
+| documents | logistics | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| documents | orders | data-read | 3 | **DECLARED_AND_OBSERVED** |
+| documents | refunds | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| documents | wallet | data-read | 2 | **DECLARED_AND_OBSERVED** |
+| economic-engine | auth | static-code | 12 | **DECLARED_AND_OBSERVED** |
+| economic-engine | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| economic-engine | business-rules | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
+| economic-engine | catalog | static-code, data-read | 9 | **DECLARED_AND_OBSERVED** |
+| economic-engine | customs | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| economic-engine | dashboard | static-code | 17 | **DECLARED_AND_OBSERVED** |
+| economic-engine | infrastructure | static-code | 119 | **DECLARED_AND_OBSERVED** |
+| economic-engine | local-stock | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| economic-engine | logistics | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
+| economic-engine | loyalty | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| economic-engine | market | static-code | 9 | **DECLARED_AND_OBSERVED** |
+| economic-engine | market-autonomy | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| economic-engine | market-delegation | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| economic-engine | orders | static-code, data-read, data-write | 6 | **DECLARED_AND_OBSERVED** |
+| economic-engine | platform-ops | data-read | 2 | **DECLARED_AND_OBSERVED** |
+| economic-engine | refunds | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| incident-management | decision-signals | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| incident-management | infrastructure | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| incident-management | logistics | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
+| incident-management | orders | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| infrastructure | auth | static-code | 6 | **DECLARED_AND_OBSERVED** |
+| infrastructure | auth-identity | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| infrastructure | auth-passkey | static-code | 1 | **OBSERVED_UNDECLARED** |
+| infrastructure | business-rules | static-code | 2 | **OBSERVED_UNDECLARED** |
+| infrastructure | catalog | static-code | 6 | **DECLARED_AND_OBSERVED** |
+| infrastructure | customs | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| infrastructure | dashboard | static-code | 19 | **DECLARED_AND_OBSERVED** |
+| infrastructure | decision-signals | static-code | 4 | **OBSERVED_UNDECLARED** |
+| infrastructure | documents | static-code | 2 | **OBSERVED_UNDECLARED** |
+| infrastructure | economic-engine | static-code | 13 | **DECLARED_AND_OBSERVED** |
+| infrastructure | incident-management | static-code | 1 | **OBSERVED_UNDECLARED** |
+| infrastructure | inventory | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| infrastructure | local-stock | static-code | 2 | **OBSERVED_UNDECLARED** |
+| infrastructure | logistics | static-code | 23 | **DECLARED_AND_OBSERVED** |
+| infrastructure | loyalty | static-code | 2 | **OBSERVED_UNDECLARED** |
+| infrastructure | market | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| infrastructure | market-control-plane | static-code | 1 | **OBSERVED_UNDECLARED** |
+| infrastructure | market-delegation | static-code | 19 | **DECLARED_AND_OBSERVED** |
+| infrastructure | notifications | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| infrastructure | orders | static-code | 6 | **DECLARED_AND_OBSERVED** |
+| infrastructure | payments | static-code | 10 | **DECLARED_AND_OBSERVED** |
+| infrastructure | platform-ops | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| infrastructure | providers-services | static-code | 2 | **OBSERVED_UNDECLARED** |
+| infrastructure | purchasing | static-code | 4 | **OBSERVED_UNDECLARED** |
+| infrastructure | recommendations | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| infrastructure | settlement | static-code | 1 | **OBSERVED_UNDECLARED** |
+| infrastructure | shared-cart | static-code | 6 | **DECLARED_AND_OBSERVED** |
+| infrastructure | sourcing | static-code | 2 | **OBSERVED_UNDECLARED** |
+| infrastructure | unsold-resolution | static-code | 1 | **OBSERVED_UNDECLARED** |
+| infrastructure | wallet | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| inventory | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| inventory | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| inventory | infrastructure | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| inventory | logistics | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| inventory | orders | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| inventory | payments | static-code | 1 | **OBSERVED_UNDECLARED** |
+| local-stock | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| local-stock | infrastructure | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| local-stock | logistics | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| local-stock | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| logistics | auth | static-code | 13 | **DECLARED_AND_OBSERVED** |
+| logistics | auth-identity | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
+| logistics | business-rules | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| logistics | catalog | static-code, data-write, data-read | 3 | **DECLARED_AND_OBSERVED** |
+| logistics | customs | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| logistics | dashboard | static-code | 2 | **OBSERVED_UNDECLARED** |
+| logistics | documents | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| logistics | economic-engine | static-code | 1 | **OBSERVED_UNDECLARED** |
+| logistics | incident-management | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| logistics | infrastructure | static-code | 121 | **DECLARED_AND_OBSERVED** |
+| logistics | local-stock | data-read | 2 | **DECLARED_AND_OBSERVED** |
+| logistics | loyalty | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| logistics | market | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| logistics | market-delegation | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| logistics | notifications | static-code | 17 | **DECLARED_AND_OBSERVED** |
+| logistics | orders | static-code, data-write, data-read | 43 | **DECLARED_AND_OBSERVED** |
+| logistics | payments | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| logistics | purchasing | static-code, data-read | 16 | **DECLARED_AND_OBSERVED** |
+| logistics | refunds | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| loyalty | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| loyalty | auth-identity | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
+| loyalty | economic-engine | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| loyalty | infrastructure | static-code | 8 | **DECLARED_AND_OBSERVED** |
+| loyalty | logistics | static-code | 1 | **OBSERVED_UNDECLARED** |
+| loyalty | notifications | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| loyalty | orders | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| market | customs | static-code | 1 | **OBSERVED_UNDECLARED** |
+| market | dashboard | static-code | 1 | **OBSERVED_UNDECLARED** |
+| market | infrastructure | static-code | 23 | **DECLARED_AND_OBSERVED** |
+| market | market-delegation | static-code | 2 | **OBSERVED_UNDECLARED** |
+| market | notifications | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| market | orders | static-code | 1 | **OBSERVED_UNDECLARED** |
+| market-autonomy | catalog | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| market-autonomy | economic-engine | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| market-autonomy | infrastructure | static-code | 6 | **DECLARED_AND_OBSERVED** |
+| market-autonomy | market | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| market-autonomy | market-control-plane | static-code | 2 | **OBSERVED_UNDECLARED** |
+| market-control-plane | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | catalog | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | dashboard | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | decision-signals | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | infrastructure | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | logistics | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | market | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | market-delegation | static-code, data-read | 16 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | orders | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | payments | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | sourcing | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| market-delegation | auth | static-code | 15 | **DECLARED_AND_OBSERVED** |
+| market-delegation | auth-identity | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| market-delegation | catalog | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| market-delegation | dashboard | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| market-delegation | economic-engine | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
+| market-delegation | infrastructure | static-code | 25 | **DECLARED_AND_OBSERVED** |
+| market-delegation | local-stock | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| market-delegation | logistics | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| market-delegation | market | static-code, data-read | 8 | **DECLARED_AND_OBSERVED** |
+| market-delegation | market-autonomy | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| market-delegation | market-operator-dashboard | static-code | 1 | **OBSERVED_UNDECLARED** |
+| market-delegation | orders | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| market-delegation | payments | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| market-delegation | providers-services | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
+| market-delegation | settlement | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| market-operator-dashboard | catalog | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| market-operator-dashboard | infrastructure | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| market-operator-dashboard | market | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| market-operator-dashboard | market-autonomy | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| market-operator-dashboard | market-delegation | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| notifications | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| notifications | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| notifications | incident-management | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| notifications | infrastructure | static-code | 15 | **DECLARED_AND_OBSERVED** |
+| notifications | logistics | data-read | 3 | **DECLARED_AND_OBSERVED** |
+| notifications | orders | data-read | 2 | **DECLARED_AND_OBSERVED** |
+| notifications | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| orders | auth | static-code | 14 | **DECLARED_AND_OBSERVED** |
+| orders | auth-identity | static-code, interface, data-read | 12 | **DECLARED_AND_OBSERVED** |
+| orders | business-rules | static-code | 9 | **DECLARED_AND_OBSERVED** |
+| orders | catalog | static-code, data-read | 12 | **DECLARED_AND_OBSERVED** |
+| orders | customs | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| orders | dashboard | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| orders | decision-signals | static-code, data-write | 2 | **DECLARED_AND_OBSERVED** |
+| orders | documents | static-code, interface | 10 | **DECLARED_AND_OBSERVED** |
+| orders | economic-engine | static-code | 10 | **DECLARED_AND_OBSERVED** |
+| orders | incident-management | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| orders | infrastructure | static-code, interface | 71 | **DECLARED_AND_OBSERVED** |
+| orders | local-stock | static-code, interface | 5 | **DECLARED_AND_OBSERVED** |
+| orders | logistics | static-code, interface, data-read | 40 | **DECLARED_AND_OBSERVED** |
+| orders | loyalty | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| orders | market | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| orders | market-autonomy | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| orders | notifications | static-code | 15 | **DECLARED_AND_OBSERVED** |
+| orders | payments | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
+| orders | platform-ops | static-code | 43 | **DECLARED_AND_OBSERVED** |
+| orders | purchasing | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| orders | refunds | static-code, data-read | 14 | **DECLARED_AND_OBSERVED** |
+| orders | shared-cart | static-code | 9 | **DECLARED_AND_OBSERVED** |
+| orders | wallet | static-code, interface | 12 | **DECLARED_AND_OBSERVED** |
+| payments | auth | static-code | 9 | **DECLARED_AND_OBSERVED** |
+| payments | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| payments | business-rules | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| payments | documents | static-code | 10 | **DECLARED_AND_OBSERVED** |
+| payments | incident-management | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| payments | infrastructure | static-code, interface | 54 | **DECLARED_AND_OBSERVED** |
+| payments | logistics | static-code, data-read | 17 | **DECLARED_AND_OBSERVED** |
+| payments | loyalty | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| payments | market | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| payments | market-delegation | static-code, data-read | 8 | **DECLARED_AND_OBSERVED** |
+| payments | notifications | static-code | 18 | **DECLARED_AND_OBSERVED** |
+| payments | orders | static-code, data-read | 23 | **DECLARED_AND_OBSERVED** |
+| payments | platform-ops | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| payments | purchasing | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| payments | refunds | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| platform-ops | auth | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| platform-ops | auth-identity | static-code, interface, data-read | 7 | **DECLARED_AND_OBSERVED** |
+| platform-ops | auth-passkey | static-code | 1 | **OBSERVED_UNDECLARED** |
+| platform-ops | business-rules | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| platform-ops | catalog | static-code, interface, data-read | 24 | **DECLARED_AND_OBSERVED** |
+| platform-ops | documents | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| platform-ops | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| platform-ops | incident-management | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| platform-ops | infrastructure | static-code, interface | 31 | **DECLARED_AND_OBSERVED** |
+| platform-ops | logistics | static-code, interface, data-read | 14 | **DECLARED_AND_OBSERVED** |
+| platform-ops | notifications | static-code | 3 | **OBSERVED_UNDECLARED** |
+| platform-ops | orders | static-code, interface, data-read | 21 | **DECLARED_AND_OBSERVED** |
+| platform-ops | payments | static-code | 1 | **OBSERVED_UNDECLARED** |
+| platform-ops | providers-services | static-code | 1 | **OBSERVED_UNDECLARED** |
+| platform-ops | purchasing | interface | 1 | **DECLARED_AND_OBSERVED** |
+| platform-ops | recommendations | static-code | 1 | **OBSERVED_UNDECLARED** |
+| platform-ops | shared-cart | static-code | 6 | **OBSERVED_UNDECLARED** |
+| platform-ops | wallet | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| providers-services | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| providers-services | auth-identity | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| providers-services | infrastructure | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| providers-services | local-stock | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| providers-services | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| providers-services | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| providers-services | recommendations | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| purchasing | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| purchasing | catalog | static-code, data-read | 21 | **DECLARED_AND_OBSERVED** |
+| purchasing | decision-signals | static-code | 1 | **OBSERVED_UNDECLARED** |
+| purchasing | documents | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| purchasing | economic-engine | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| purchasing | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| purchasing | incident-management | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| purchasing | infrastructure | static-code | 61 | **DECLARED_AND_OBSERVED** |
+| purchasing | logistics | static-code, data-read | 17 | **DECLARED_AND_OBSERVED** |
+| purchasing | notifications | static-code | 11 | **DECLARED_AND_OBSERVED** |
+| purchasing | orders | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| purchasing | refunds | static-code | 1 | **OBSERVED_UNDECLARED** |
+| purchasing | sourcing | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| purchasing | supplier-connectivity | static-code | 25 | **DECLARED_AND_OBSERVED** |
+| recommendations | catalog | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
+| recommendations | infrastructure | static-code | 6 | **DECLARED_AND_OBSERVED** |
+| recommendations | local-stock | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| recommendations | logistics | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| recommendations | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| recommendations | market-autonomy | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| recommendations | orders | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| recommendations | platform-ops | static-code | 10 | **DECLARED_AND_OBSERVED** |
+| recommendations | providers-services | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| refunds | auth | static-code | 1 | **OBSERVED_UNDECLARED** |
+| refunds | documents | static-code | 14 | **DECLARED_AND_OBSERVED** |
+| refunds | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| refunds | infrastructure | static-code | 15 | **DECLARED_AND_OBSERVED** |
+| refunds | logistics | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| refunds | market | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| refunds | notifications | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| refunds | orders | static-code, data-read | 15 | **DECLARED_AND_OBSERVED** |
+| refunds | payments | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| refunds | wallet | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
+| settlement | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| settlement | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| settlement | infrastructure | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| settlement | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| settlement | market-delegation | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| shared-cart | auth | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| shared-cart | auth-identity | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| shared-cart | catalog | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
+| shared-cart | infrastructure | static-code | 18 | **DECLARED_AND_OBSERVED** |
+| shared-cart | market-autonomy | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| shared-cart | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| shared-cart | orders | static-code, data-read | 13 | **DECLARED_AND_OBSERVED** |
+| shared-cart | platform-ops | static-code | 50 | **DECLARED_AND_OBSERVED** |
+| shared-cart | recommendations | static-code, interface | 3 | **DECLARED_AND_OBSERVED** |
+| sourcing | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| sourcing | catalog | static-code, data-read | 33 | **DECLARED_AND_OBSERVED** |
+| sourcing | customs | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| sourcing | dashboard | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| sourcing | economic-engine | static-code | 6 | **DECLARED_AND_OBSERVED** |
+| sourcing | infrastructure | static-code | 51 | **DECLARED_AND_OBSERVED** |
+| sourcing | purchasing | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| supplier-connectivity | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| supplier-connectivity | purchasing | static-code | 5 | **OBSERVED_UNDECLARED** |
+| unsold-resolution | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | unsold-resolution | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | unsold-resolution | infrastructure | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | unsold-resolution | market-delegation | static-code | 1 | **DECLARED_AND_OBSERVED** |
