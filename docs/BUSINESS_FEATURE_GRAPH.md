@@ -220,14 +220,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Exposer les agrégats de pilotage et porter un portail interne Canonical unifié accessible depuis /admin, dont la navigation et les workspaces sont adaptés au rôle, aux scopes marché et aux capabilities résolus côté serveur, sans réutiliser les deux générations historiques de dashboards.
 
 - middleware: 1
-- services: 46
-- routes: 28
-- migrations: 2
-- dash: 192
+- services: 47
+- routes: 29
+- migrations: 3
+- dash: 194
 - tests: 213
 - tables owned (lifecycle): 3 — `customs_shipment_holds`, `order_incidents`, `partners`
 - tables written: 21
-- interfaces exposed: 88
+- interfaces exposed: 89
 - internal APIs: 0
 - dependencies (consumes): 27 — shared-cart, incident-management, orders, infrastructure, payments, refunds, logistics, inventory, local-stock, economic-engine, wallet, auth, auth-identity, market-delegation, customs, documents, notifications, purchasing, supplier-connectivity, external-provider-contracts, business-rules, decision-signals, market, market-delegation, sourcing, catalog, market-autonomy
 - consumers: 9 — economic-engine, infrastructure, market-control-plane, market-delegation, market-operator-dashboard, orders, sourcing, admin-dashboard, decision-signals
@@ -1082,6 +1082,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `GET /api/admin/customs-shipments/rates/effective` | customs | `routes/admin-customs-shipments.js` (resolved-owned) |
 | `GET /api/admin/customs-shipments/status/pending` | customs | `routes/admin-customs-shipments.js` (resolved-owned) |
 | `GET /api/admin/dashboard` | dashboard | `routes/admin/dashboard.js` (resolved-owned) |
+| `GET /api/admin/dashboard/events` | dashboard | `routes/admin-dashboard-events.js` (resolved-owned) |
 | `GET /api/admin/demo/orders/{id}/timeline` | dashboard | `routes/admin/demo-order-flow.js` (resolved-owned) |
 | `GET /api/dashboard/clients` | dashboard | `routes/dashboard-clients.js` (resolved-owned) |
 | `GET /api/admin/entities/clients` | dashboard | `routes/admin-client-index.js` (resolved-owned) |
@@ -2327,7 +2328,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2369 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2372 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 218 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2394,7 +2395,7 @@ Meta Graph monté : oui.
 | customs | logistics | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | customs | market | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | customs | orders | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
-| dashboard | auth | static-code | 21 | **DECLARED_AND_OBSERVED** |
+| dashboard | auth | static-code | 22 | **DECLARED_AND_OBSERVED** |
 | dashboard | auth-identity | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | dashboard | business-rules | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | dashboard | catalog | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
@@ -2404,7 +2405,7 @@ Meta Graph monté : oui.
 | dashboard | economic-engine | static-code, data-read | 24 | **DECLARED_AND_OBSERVED** |
 | dashboard | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | incident-management | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
-| dashboard | infrastructure | static-code | 110 | **DECLARED_AND_OBSERVED** |
+| dashboard | infrastructure | static-code | 112 | **DECLARED_AND_OBSERVED** |
 | dashboard | inventory | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | local-stock | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | logistics | static-code, data-read, data-write | 35 | **DECLARED_AND_OBSERVED** |
@@ -2466,7 +2467,7 @@ Meta Graph monté : oui.
 | infrastructure | business-rules | static-code | 2 | **OBSERVED_UNDECLARED** |
 | infrastructure | catalog | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | infrastructure | customs | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| infrastructure | dashboard | static-code | 17 | **DECLARED_AND_OBSERVED** |
+| infrastructure | dashboard | static-code | 19 | **DECLARED_AND_OBSERVED** |
 | infrastructure | decision-signals | static-code | 4 | **OBSERVED_UNDECLARED** |
 | infrastructure | documents | static-code | 2 | **OBSERVED_UNDECLARED** |
 | infrastructure | economic-engine | static-code | 13 | **DECLARED_AND_OBSERVED** |
