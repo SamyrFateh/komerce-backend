@@ -4,7 +4,7 @@
  * @layer script
  * @owner backend-core
  * @purpose N15 (sac ou KOM-BOX incomplet) et N16 (remise d'un carton non DISPATCHED, composition figée après remise), staging only : gestes Hub par l'écran, sondes API signalées, aucune écriture SQL.
- * @db-read orders, hub_physical_units, hub_physical_unit_placements, hub_box_bags, hub_box_effective_placements, hub_custody_events, international_shipments, international_shipment_hub_units, international_shipment_events, parcels, parcel_items
+ * @db-read orders, hub_physical_units, hub_physical_unit_placements, hub_box_bags, hub_box_effective_placements, hub_custody_events, international_shipments, international_shipment_hub_units, international_shipment_events, markets, parcels, parcel_items
  * @db-write none
  * @impact-areas staging-only, hub, logistics
  */
@@ -164,8 +164,9 @@ async function runN15(browser){
           (SELECT COUNT(*)::int FROM international_shipment_hub_units h WHERE h.shipment_id=s.id) AS attached,
           (SELECT COUNT(*)::int FROM international_shipment_events e
             WHERE e.shipment_id=s.id AND e.to_stage='handed_over') AS handovers
-        FROM international_shipments s WHERE s.reference=$1 AND s.market_id=$2
-      `,[SHIP15,MK.id]);
+        FROM international_shipments s JOIN markets m ON m.id=s.market_id
+        WHERE s.reference=$1 AND m.code=$2
+      `,[SHIP15,MK.code]);
       const emptyDraft=!!draft&&draft.stage==='hub_ready'&&draft.hub_draft===true&&
         Number(draft.attached)===0&&Number(draft.handovers)===0;
       report.attempts.push({kind:'EMPTY_DRAFT_INDEPENDENT_PG',pass:emptyDraft,
