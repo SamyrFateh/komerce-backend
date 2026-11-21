@@ -241,4 +241,4 @@ async function main(){
     error:report.error||null,product_ref:report.product_ref||null}))}
 }
 if(require.main===module)main();
-module.exports={main,guard};
+module.exports={main,guard,fixtureBuyer,authenticate};
