@@ -20,7 +20,9 @@ const OUT=path.resolve('test-results/g6-central-hub-product');
 // Marqueur recette G6 : le produit se retrouve par ce préfixe de nom et par le supplier_product_id.
 const G6_PREFIX='[G6-HUB] ';
 const G6_SUPPLIER_PRODUCT_ID='G6-CENTRAL-'+MK.code;
-const PRODUCT_NAME=G6_PREFIX+'Produit central '+MK.code;
+// Nom d'objet réel (le classifieur Sourcing lit les termes du nom) ; le préfixe G6 reste le marqueur de recette.
+const PRODUCT_NAME=G6_PREFIX+'Mug céramique '+MK.code;
+const SUPPLIER_CATEGORY='Maison > Cuisine > Mugs',WEIGHT_KG=0.4,DIMENSIONS={l_cm:12,w_cm:9,h_cm:10};
 const PURCHASE_PRICE=10,CURRENCY='EUR';
 // Montant de recette du prix local (devise du marché). Plancher explicite documenté dans le rapport ;
 // le montant effectif = max(plancher, référence de couverture du moteur économique arrondie à 100).
@@ -47,7 +49,8 @@ const SELLABLE_SQL=`
  ORDER BY p.product_ref LIMIT 2`;
 const readSellable=async()=>(await db.query(SELLABLE_SQL,[MK.code,G6_PREFIX])).rows;
 // Lecture seule : candidat G6 (issu de l'import manuel), produit promu, prix et exposition du marché.
-const CANDIDATE_SQL=`SELECT sc.candidate_ref,sc.state,sc.product_id,sc.supplier_name,sc.scan_result->>'sourcing_decision' AS decision,
+const CANDIDATE_SQL=`SELECT sc.candidate_ref,sc.state,sc.product_id,sc.supplier_name,sc.scan_result->>'sourcing_decision' AS decision,sc.komerce_category,sc.data_sources->>'category' AS category_source,
+ sc.scan_result->>'economic_test_health_status' AS scan_health,
  p.id AS pid,p.product_ref,p.lifecycle_status,p.is_active,
  (SELECT d.status FROM product_market_price_drafts d JOIN markets m ON m.id=d.market_id WHERE d.product_id=p.id AND m.code=$2) AS price_status,
  (SELECT e.commercial_exposure FROM product_market_exposure e JOIN markets m ON m.id=e.market_id WHERE e.product_id=p.id AND m.code=$2) AS exposure
@@ -63,7 +66,10 @@ function nextStep({sellable,candidate}){
   const d=String(candidate.decision||'').toUpperCase(),st=String(candidate.state||'').toLowerCase();
   if(d==='TEST'&&['scanned','test_ready'].includes(st))return {step:'promote-candidate',candidate_ref:candidate.candidate_ref};
   if(!d)return {step:'scan-candidate',candidate_ref:candidate.candidate_ref};
-  return {verdict:'G6_CANDIDATE_SCAN_NOT_TEST',done:true,fail:true};
+  // WATCH : catégorie de calcul non résolue -> geste humain du Catalogue (famille de calcul + nouveau scan), une seule fois.
+  if((!candidate.komerce_category||candidate.category_source==='default')&&candidate.category_source!=='manual')
+   return {step:'resolve-category',candidate_ref:candidate.candidate_ref};
+  return {verdict:'SCREEN_MISSING_CANDIDATE_DECISION',done:true,fail:true};
  }
  const ref=candidate.product_ref;
  if(!(candidate.is_active===true&&candidate.lifecycle_status==='active'))return {step:'catalog-approve',product_ref:ref};
@@ -137,7 +143,7 @@ async function manualImport(actor){
  const selected=await select.evaluate(s=>s.selectedOptions[0]?.getAttribute('data-system-key'));
  check(selected==='central_hub','G6_CENTRAL_HUB_SUPPLIER_NOT_PRESELECTED');
  await humanFill(null,actor.page.locator('[data-manual-products]'),JSON.stringify([{
-  supplier_product_id:G6_SUPPLIER_PRODUCT_ID,product_name:PRODUCT_NAME,purchase_price:PURCHASE_PRICE,currency:CURRENCY}]));
+  supplier_product_id:G6_SUPPLIER_PRODUCT_ID,product_name:PRODUCT_NAME,purchase_price:PURCHASE_PRICE,currency:CURRENCY,supplier_category:SUPPLIER_CATEGORY,weight_kg:WEIGHT_KG,dimensions:DIMENSIONS}]));
  await fire(actor,'POST',API+'/imports',()=>humanClick(null,actor.page.locator('[data-workspace-action="submit-manual-import"]')),'manual-import-central-hub');
  return true;
 }
@@ -154,6 +160,25 @@ async function scanCandidate(actor,ref){
  const button=row.locator('[data-workspace-action="scan-candidate"]');
  if(!await visible(button,15000))return !!missing('SCREEN_MISSING_SCAN_CANDIDATE',{candidate_ref:ref,code:'sourcing-workspace.js:362 (issue scan-candidate)'});
  await fire(actor,'POST',API+'/candidates/'+ref+'/scan',()=>humanClick(null,button),'scan-candidate',{candidate_ref:ref});
+ return true;
+}
+// Décision humaine sur un candidat WATCH sans famille de calcul : Catalogue global, « Appliquer la proposition »
+// du moteur (jamais de catégorie devinée). Enregistre la famille et relance le scanner en une seule mutation.
+async function resolveCategory(actor,ref){
+ await arm(actor,'POST',API+'/candidates/'+ref+'/resolve-category');
+ await humanGoto(actor.page,'/admin/workspaces/catalog?search='+encodeURIComponent(ref),{waitUntil:'domcontentloaded'});
+ const row=actor.page.locator('tr[data-candidate-ref="'+ref+'"]');
+ if(!await visible(row,25000))return !!missing('SCREEN_MISSING_CANDIDATE_DECISION',{candidate_ref:ref,detail:'ligne candidat absente du Catalogue global'});
+ await humanClick(null,row.locator('[data-workspace-action="open-catalog-inspector"]'));
+ const review=actor.page.locator('[data-workspace-action="candidate-economic-category-review"]');
+ if(!await visible(review,20000)){
+  const text=await actor.page.locator('[data-workspace-feedback]').first().innerText().catch(()=>'');
+  return !!missing('SCREEN_MISSING_CANDIDATE_DECISION',{candidate_ref:ref,detail:'aucun geste de décision proposé',screen_message:String(text).slice(0,400)});
+ }
+ await humanClick(null,review);
+ const apply=actor.page.locator('[data-workspace-action="candidate-apply-economic-suggestion"]');
+ if(!await visible(apply,20000))return !!missing('SCREEN_MISSING_CANDIDATE_DECISION',{candidate_ref:ref,detail:'aucune suggestion fiable du moteur ; aucune catégorie devinée'});
+ await fire(actor,'POST',API+'/candidates/'+ref+'/resolve-category',()=>humanClick(null,apply),'resolve-category-rescan',{candidate_ref:ref});
  return true;
 }
 async function promoteCandidate(actor,ref){
@@ -231,10 +256,10 @@ async function marketExpose(actor,ref,productId){
  await fire(actor,'PUT',put,()=>humanClick(null,btn),'market-exposure-enable',{product_ref:ref});
  return true;
 }
-const STEP_ROLE={'manual-import':'admin','scan-candidate':'admin','promote-candidate':'admin','catalog-approve':'admin',
+const STEP_ROLE={'manual-import':'admin','scan-candidate':'admin','promote-candidate':'admin','resolve-category':'admin','catalog-approve':'admin',
  'price-draft':'market_operator','price-activate':'market_operator','market-expose':'market_operator'};
 const DO={'manual-import':(a)=>manualImport(a),'scan-candidate':(a,s)=>scanCandidate(a,s.candidate_ref),
- 'promote-candidate':(a,s)=>promoteCandidate(a,s.candidate_ref),'catalog-approve':(a,s)=>approveCatalog(a,s.product_ref),
+ 'promote-candidate':(a,s)=>promoteCandidate(a,s.candidate_ref),'resolve-category':(a,s)=>resolveCategory(a,s.candidate_ref),'catalog-approve':(a,s)=>approveCatalog(a,s.product_ref),
  'price-draft':(a,s)=>priceDraft(a,s.product_ref),'price-activate':(a,s)=>priceActivate(a,s.product_ref),
  'market-expose':(a,s)=>marketExpose(a,s.product_ref,s.product_id)};
 const readState=async()=>({sellable:await readSellable(),candidate:await readCandidate()});
@@ -258,7 +283,7 @@ async function main(){
    last=step.step;state=await readState();step=nextStep(state);
   }
   const c=state.candidate;
-  report.candidate=c&&{candidate_ref:c.candidate_ref,state:c.state,decision:c.decision||null,product_ref:c.product_ref||null,price_status:c.price_status||null,exposure:c.exposure||null};
+  report.candidate=c&&{candidate_ref:c.candidate_ref,state:c.state,decision:c.decision||null,scan_health:c.scan_health||null,komerce_category:c.komerce_category||null,product_ref:c.product_ref||null,price_status:c.price_status||null,exposure:c.exposure||null};
   report.product_ref=c?.product_ref||null;
   if(!process.exitCode){
    if(step.verdict)report.verdict=step.verdict;

@@ -31,9 +31,13 @@ describe('G6 central Hub product: resume by step read from PG', () => {
       .toEqual({ step: 'market-expose', product_ref: 'KPR-1', product_id: 'u' });
   });
 
-  test('a scanned candidate that is not TEST stops, never forced', () => {
-    expect(step({ candidate_ref: 'K', product_ref: null, state: 'scanned', decision: 'REJECT' }))
-      .toMatchObject({ verdict: 'G6_CANDIDATE_SCAN_NOT_TEST', fail: true });
+  test('WATCH without calculation family: one human category gesture, then a screen-missing verdict, never forced', () => {
+    const w = { candidate_ref: 'K', product_ref: null, state: 'scanned', decision: 'WATCH', komerce_category: null, category_source: 'default' };
+    expect(step(w)).toEqual({ step: 'resolve-category', candidate_ref: 'K' });
+    expect(step({ ...w, komerce_category: 'vaisselle', category_source: 'manual' }))
+      .toMatchObject({ verdict: 'SCREEN_MISSING_CANDIDATE_DECISION', fail: true });
+    expect(step({ ...w, komerce_category: 'vaisselle', category_source: 'keyword' }).verdict)
+      .toBe('SCREEN_MISSING_CANDIDATE_DECISION');
   });
 
   test('sellable guards stay ahead of every gesture', () => {
