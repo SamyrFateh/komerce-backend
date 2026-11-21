@@ -76,7 +76,7 @@ test('chromium-policy refuses gestures written outside the helper; all 36 script
  expect(()=>assertGestureSourceUsesHelper('s.js',"await page.locator('#a').click();")).toThrow('G6_GESTURE_OUTSIDE_HELPER_FORBIDDEN');
  expect(()=>assertGestureSourceUsesHelper('s.js',"await x.fill('v');")).toThrow('G6_GESTURE_OUTSIDE_HELPER_FORBIDDEN');
  expect(assertGestureSourceUsesHelper('s.js',"// .click() in comment\nawait humanClick(page,'#a');")).toBe(true);
- expect(validateChromiumScriptSources()).toBe(36);
+ expect(validateChromiumScriptSources()).toBe(38);
 });
 test('chromium-policy: trace may start only after authentication completes',()=>{
  expect(()=>assertTraceStartsAfterAuth('s.js',"const c=await b.newContext();await c.tracing.start({});")).toThrow('G6_TRACE_STARTED_OUTSIDE_HELPER');
