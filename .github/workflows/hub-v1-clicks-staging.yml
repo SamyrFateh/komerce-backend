@@ -28,7 +28,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: komerce-hub-v1-http-actions-staging
+  group: komerce-g6-canonical-real-transaction
   cancel-in-progress: false
 
 jobs:
