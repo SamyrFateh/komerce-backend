@@ -5,7 +5,7 @@
  * @layer         test
  * @owner         backend-core
  * @purpose       Owner-only staging browser POST order; no external provider, OTP via bcrypt fixture.
- * @db-read       users, orders, order_items, e2e_test_accounts
+ * @db-read       users, orders, order_items, e2e_test_accounts, products, product_skus, suppliers, sourcing_candidates, markets, product_market_price_drafts, product_market_exposure, local_stock, local_stock_allocations
  * @db-write      users via user-mutation-service, E2E via staging-e2e-provision, otp via auth fixture, order via HTTP only
  * @impact-areas  checkout, auth, orders
  */
@@ -17,6 +17,7 @@ const {confirmTarget}=require('./target-guard');
 const {createAdminUser}=require('../../services/user-mutation-service');
 const {markE2eTestAccount}=require('./staging-e2e-provision');
 const {preseedG6BuyerOtp}=require('../../services/g6-staging-buyer-identity-guard');
+const {isCentralHubOnOrderSku}=require('../../services/central-hub-on-order');
 const ORIGIN='https://komerce-backend-production.up.railway.app';
 const MARKET=String(process.env.G6_TARGET_MARKET||'KM').toUpperCase();
 // M01 : produit et prix historiques ; M02 : produit LOCAL_STOCK résolu en lecture seule par l'orchestrateur.
@@ -142,7 +143,7 @@ async function setup(){
 async function addLineToCart(page,line,idx){
   // M01/M02 : une seule ligne (suffixe vide, comportement historique) ; M03 : une itération par ligne du panier.
   const sfx=idx===0?'':'_LINE'+(idx+1);
-  const {rows:[actualProduct]}=await db.query('SELECT name,product_ref FROM products WHERE id=$1',[line.id]);
+  const {rows:[actualProduct]}=await db.query('SELECT name,product_ref,inventory_model,has_variants FROM products WHERE id=$1',[line.id]);
   check(actualProduct?.product_ref===line.product_ref&&!!actualProduct.name,'G6_PRODUCT_PROVENANCE_MISMATCH');
   await humanFill(null,page.locator('#k-search-input'),actualProduct.name);
   const item=page.locator('#k-search-dropdown .k-search-item[data-id="'+line.id+'"]');
@@ -170,7 +171,30 @@ async function addLineToCart(page,line,idx){
   // is read only AFTER the current selection's DOM rerender has completed.
   const axisLocator=page.locator('#k-modal-variants [data-axis-key]');
   const axisCount=await axisLocator.count();
-  check(axisCount>0,'G6_VARIANT_AXES_NOT_RENDERED');
+  if(axisCount===0){
+    // A canonical manual Hub item genuinely has no variant axes.
+    // Refuse every other missing matrix, including any unselected size/color.
+    check(Boolean(PARAMS.basket && line.source_key==='central_hub' &&
+      line.fulfillment==='IMPORT' && !line.variant_combo),
+      'G6_VARIANT_AXES_NOT_RENDERED');
+    check(actualProduct.inventory_model==='SKU'&&actualProduct.has_variants===false,
+      'G6_AXISLESS_HUB_PRODUCT_MODEL_MISMATCH');
+    const {rows:skus}=await db.query(
+      'SELECT id,sku,stock FROM product_skus WHERE product_id=$1 AND is_active=TRUE',
+      [line.id]);
+    check(skus.length===1,'G6_AXISLESS_HUB_SKU_NOT_UNIQUE');
+    check(Number(skus[0].stock)===0 &&
+      await isCentralHubOnOrderSku(db,line.id,skus[0].id),
+      'G6_AXISLESS_HUB_SOURCE_NOT_PROVEN');
+    const onOrder=page.locator('#k-modal-stock');
+    check(await onOrder.isVisible()&&/sur commande/i.test(await onOrder.innerText()),
+      'G6_AXISLESS_HUB_ON_ORDER_LABEL_MISSING');
+    record('PDP_SINGLE_HUB_SKU_PROOF'+sfx,{
+      product_ref:line.product_ref,sku_id:skus[0].id,
+      source_key:'central_hub',stock:0,axes:[],
+      ui_label:await onOrder.innerText(),unique_active_sku:true
+    });
+  }
   for(let axisIndex=0;axisIndex<axisCount;axisIndex++){
    const axis=axisLocator.nth(axisIndex);
    const axisKey=await axis.getAttribute('data-axis-key');
