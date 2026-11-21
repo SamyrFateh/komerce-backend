@@ -9,8 +9,8 @@
  * @impact-areas staging-only
  */
 'use strict';
-const {isRelaisRoutable}=require('../../services/routing');
-const {certifyCatalogProduct}=require('../../services/catalog-certification');
+const {isRelaisRoutable}=require('../../../services/routing');
+const {certifyCatalogProduct}=require('../../../services/catalog-certification');
 const fail=(code)=>{throw Error(code)};
 const BRANCHES=Object.freeze({
  N03:Object.freeze(['SUSPENDED','ROUTE_MISSING']),
