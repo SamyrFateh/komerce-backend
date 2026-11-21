@@ -127,6 +127,8 @@ describe('G6-G4B N21 (agent d\'un autre relais) et N22 (relais A/B)',()=>{
   expect(graphFor('N22').order).toEqual([...chain,'N22_TWO_RELAYS_ATTEMPTS','N22_TWO_RELAYS_ORACLE']);
   expect(N.classifyNegative('N21','PREREQ_MISSING_SECOND_RELAY_KM')).toBe('PREREQ_MISSING_SECOND_RELAY');
   expect(N.classifyNegative('N22','G6_N22_PRODUCT_GAP_READ_order_by_ref')).toBe('PRODUCT_GAP');
+  expect(N.classifyNegative('N32','G6_N32_PREREQ_MISSING_RESTRICTED_HUB_DELEGATION_OR_FOREIGN_PO')).toBe('PREREQ_MISSING_RESTRICTED_HUB_DELEGATION_OR_FOREIGN_PO');
+  expect(read('scripts/recette/g6-negative-n28-n32-chromium.js')).toContain("throw Error('G6_N32_PREREQ_MISSING_RESTRICTED_HUB_DELEGATION_OR_FOREIGN_PO')");
   expect(validateStageModuleSources()).toBeGreaterThan(0);
  });
  it('oracle : aucune remise par l\'agent étranger, code vivant',async()=>{
