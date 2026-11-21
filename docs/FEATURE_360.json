@@ -7931,7 +7931,7 @@
               {
                 "declared": "routes/admin-dashboard-events.js",
                 "resolvedPath": "routes/admin-dashboard-events.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "routes/admin-dashboard-market.js",
@@ -8131,7 +8131,7 @@
               {
                 "declared": "services/dashboard-invalidation-bus.js",
                 "resolvedPath": "services/dashboard-invalidation-bus.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/dashboard-metrics/_helpers.js",

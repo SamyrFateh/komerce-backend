@@ -4907,7 +4907,7 @@
         "category": "services",
         "declared": "services/dashboard-invalidation-bus.js",
         "resolvedPath": "services/dashboard-invalidation-bus.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "dashboard",
@@ -5299,7 +5299,7 @@
         "category": "routes",
         "declared": "routes/admin-dashboard-events.js",
         "resolvedPath": "routes/admin-dashboard-events.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "dashboard",
@@ -54635,8 +54635,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 716,
-        "technicalNodesOwned": 716,
+        "technicalNodesTotal": 718,
+        "technicalNodesOwned": 718,
         "technicalOrphans": 0
       },
       "dash": {
