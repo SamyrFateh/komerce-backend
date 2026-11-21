@@ -819,3 +819,14 @@ test('une fiche sourcing validée sans prix global reste approuvable sans active
   expect(result).not.toHaveProperty('market_price');
   expect(mockApprove).toHaveBeenCalledTimes(1);
 });
+
+test('catalog-workspace — le refresh distant conserve les filtres et protège les droits', () => {
+  const src = require('node:fs').readFileSync(
+    require('node:path').join(__dirname, '../../public/dashboards/canonical/js/catalog-workspace.js'), 'utf8');
+  expect(src).toContain('KomerceDashboardFreshness?.watch?.({');
+  expect(src).toContain('isBusy: workspaceBusy');
+  expect(src).toContain('background:true');
+  expect(src).toContain('data-dashboard-stale');
+  expect(src).toContain('error.status === 401 || error.status === 403');
+  expect(src).toContain('Accès expiré ou non autorisé. Rechargez votre session.');
+});
