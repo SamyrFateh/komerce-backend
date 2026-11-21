@@ -76,7 +76,7 @@ async function runNegativeScenario({scenario,env,db,adapters}){
    throw Error('G6_N09_SCREEN_MISSING_REFUSAL_NOT_PROVEN');
   out.stages.push({stage_id:'N09_REMISE_REFUSED',refusal_point:g.refusal_point,refusal_visible:g.refusal_visible,client_code_offered:g.client_code_offered});
   const o=await N.oracleN09(db,{orderId:result.order_id,assertNoHubOrTransport});
-  out.stages.push(evidence('N09_NOT_COLLECTED_ORACLE',scenario,market,{oracle:o,gesture:{refusal_point:g.refusal_point,refusal_visible:g.refusal_visible},order_id:result.order_id}));
+  out.stages.push(evidence('N09_NOT_COLLECTED_ORACLE',scenario,market,{oracle:o,gesture:{refusal_point:g.refusal_point,refusal_visible:g.refusal_visible,typed_kind:g.typed_kind||null,remises_input_absent:!!g.remises_input_absent,remises_counter_visible:g.remises_counter_visible},order_id:result.order_id}));
   out.verdict='G6_N09_REMISE_REFUSED_'+g.refusal_point+'_PG_NOT_COLLECTED_PASS';
  }
  return out;

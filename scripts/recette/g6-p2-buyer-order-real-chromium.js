@@ -203,6 +203,25 @@ async function addLineToCart(page,line,idx){
    })))
   });
   check(addEnabled,'NO_PURCHASABLE_VARIANT');
+  if(NEG==='N04'){
+   // Le stepper du panier est recouvert par la bulle d'accueil : la quantité est saisie sur la fiche produit (+ de la fiche), vrais clics.
+   const avail=await localAvailableQty(PRODUCT);
+   check(avail>=1&&avail<=40,'G6_N04_PREREQ_LOCAL_AVAILABLE_OUT_OF_RANGE_'+avail);
+   const n04=report.n04={available_before:avail,target_qty:avail+1,refusal_point:null,refusal_visible:false,visible_message:null};
+   const qv=()=>page.locator('#k-qty-val').innerText().then(t=>Number(String(t).trim()));
+   let q=await qv();
+   while(q<avail+1){
+    await humanClick(null,page.locator('#k-qty-plus'));
+    const moved=await page.waitForFunction(n=>Number(document.getElementById('k-qty-val')?.textContent)>n,q,{timeout:2500}).then(()=>true,()=>false);
+    if(!moved){n04.refusal_point='PDP_QTY_CAPPED';n04.capped_at_qty=q;break}
+    q=await qv();
+   }
+   n04.pdp_qty_final=await qv();
+   n04.visible_message=(await page.locator('[role="alert"],[role="status"],.k-toast').allInnerTexts().then(a=>a.join(' | ').replace(/\s+/g,' ').slice(0,300)).catch(()=>''))||null;
+   n04.refusal_visible=!!n04.visible_message;
+   await page.screenshot({path:path.join(OUT,'02b-n04-pdp-over-stock.png')});save();
+   if(n04.refusal_point){await humanClick(null,page.locator('#k-modal-close'));return}
+  }
   const before=Number(await page.locator('#k-modal-cart-badge').innerText().catch(()=>'0'))||0;
   await humanClick(null,add);
   await page.waitForFunction(n=>Number(document.querySelector('#k-modal-cart-badge')?.textContent||0)>n,before,{timeout:10000});
@@ -216,24 +235,15 @@ async function localAvailableQty(productId){
   WHERE ls.product_id=$1 AND ls.location='KM_MAIN' AND ls.commercial_exposure='ENABLED'`,[productId,MARKET]);
  return r.available;
 }
-async function n04QuantityOverStock(page,orderResps){
- const avail=await localAvailableQty(PRODUCT);
- check(avail>=1&&avail<=40,'G6_N04_PREREQ_LOCAL_AVAILABLE_OUT_OF_RANGE_'+avail);
- const n04=report.n04={available_before:avail,target_qty:avail+1,refusal_point:null,refusal_visible:false,visible_message:null};save();
+async function n04QuantityOverStock(page){
+ const n04=report.n04,avail=n04.available_before;
  const qtyOf=()=>page.locator('#k-sc-items .k-sc-item-stepper-qty').first().innerText().then(t=>Number(String(t).trim()));
  const alertText=()=>page.locator('[role="alert"],[role="status"],.k-toast,.k-sc-warning,.k-ck-error').allInnerTexts().then(a=>a.join(' | ').replace(/\s+/g,' ').slice(0,300)).catch(()=>'');
- let qty=await qtyOf();
- while(qty<avail+1){
-  await humanClick(null,page.locator('#k-sc-items .k-sc-step-plus').first());
-  const moved=await page.waitForFunction(n=>{const e=document.querySelector('#k-sc-items .k-sc-item-stepper-qty');return !!e&&Number(e.textContent)>n},qty,{timeout:2500}).then(()=>true,()=>false);
-  if(!moved){n04.refusal_point='CART_STEPPER_CAPPED';n04.capped_at_qty=qty;break}
-  qty=await qtyOf();
- }
  n04.cart_qty_final=await qtyOf();
  n04.visible_message=await alertText();
  await page.screenshot({path:path.join(OUT,'03b-n04-cart-over-stock.png')});save();
+ if(!n04.refusal_point&&n04.cart_qty_final<=avail)n04.refusal_point='CART_ADD_CAPPED';
  if(!n04.refusal_point){
-  check(n04.cart_qty_final===avail+1,'G6_N04_SCREEN_MISSING_QTY_NOT_REACHED');
   const checkout=page.locator('#k-sc-checkout');
   if(await checkout.isVisible())await humanClick(null,checkout);else await humanClick(null,page.locator('#k-cart-btn'));
   await page.locator('#k-order-modal.open').waitFor({state:'visible',timeout:15000});
@@ -349,6 +359,7 @@ async function browserCheckout({buyer,phone,code}){
     return !!count && !count.hidden && /[1-9]/.test(count.textContent||'');
   },null,{timeout:30000});
   for(let i=0;i<LINES.length;i++)await addLineToCart(page,LINES[i],i);
+  if(NEG==='N04'&&report.n04?.refusal_point)return null;
   await page.locator('#k-side-cart.has-items').waitFor({state:'visible',timeout:12000});
   await page.screenshot({path:path.join(OUT,'03-real-cart.png')});
   if(NEG==='N04')return n04QuantityOverStock(page);

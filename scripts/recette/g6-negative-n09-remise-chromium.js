@@ -58,7 +58,7 @@ async function main(){
   if(c.no_code_ui){report.refusal_point='CLIENT_NO_CODE_OFFERED';report.refusal_visible=true}
   else if(c.rotation_status){report.refusal_point='CLIENT_ROTATION_REFUSED_'+c.rotation_status;report.refusal_visible=true}
   report.events.push({key:'client-pickup-code-screen',offered:!!c.code,refusal_point:report.refusal_point});save();
-  // Côté relais : écran Remises, avec le code si le produit en a fourni un.
+  // Côté relais : écran Remises.
   const actor=await login(browser,'E2E_AGENT_RELAIS_','agent_relais');
   try{
    const me=await (await actor.page.request.get('/api/auth/me')).json();
@@ -69,10 +69,12 @@ async function main(){
     ({rows:[staff]}=await db.query('SELECT role::text AS role,relais_id FROM users WHERE id=$1',[me.id]));
    }
    check(staff.relais_id===o.relais_id,'G6_N09_RELAY_ACTOR_MISMATCH');
+   // Saisie à l'écran Remises : le code du client s'il existe, sinon la référence de la commande impayée (jamais un code fabriqué ni lu en base).
+   const typed=c.code||REF;report.typed_kind=c.code?'CLIENT_CODE':'ORDER_REFERENCE';
    const url=BASE+'/api/scans/collect';let calls=0,collectStatus=null,collectBody=null;
    await actor.page.route(url,route=>{
     const req=route.request();let body;try{body=req.postDataJSON()}catch(_){}
-    if(req.method()==='POST'&&calls++===0&&c.code&&isDeepStrictEqual(body,{pickup_code:c.code}))return route.continue();
+    if(req.method()==='POST'&&calls++===0&&isDeepStrictEqual(body,{pickup_code:typed}))return route.continue();
     actor.blocked.push({method:req.method(),path:'/api/scans/collect'});return route.abort('blockedbyclient');
    });
    actor.page.on('dialog',d=>d.type()==='confirm'?d.accept():d.dismiss());
@@ -82,8 +84,9 @@ async function main(){
    report.remises_counter_visible=!!box;
    const bodyText=await actor.page.locator('body').innerText().catch(()=>'');
    report.order_listed_on_remises=bodyText.includes(REF);
-   if(c.code&&box){
-    await humanFill(null,box.locator('[data-pickup-code-input]'),c.code);
+   if(box){
+    const input=box.locator('[data-pickup-code-input]');
+    await humanFill(null,input,typed);
     const pending=actor.page.waitForResponse(r=>r.url()===url&&r.request().method()==='POST',{timeout:30000}).catch(()=>null);
     if(await box.locator('[data-pickup-code-confirm]').isEnabled()){
      await humanClick(null,box.locator('[data-pickup-code-confirm]'));
@@ -94,11 +97,13 @@ async function main(){
      const msg=String(collectBody?.error||collectBody?.message||'').slice(0,160);
      report.refusal_message=msg||null;
      report.refusal_visible=!!msg&&(await actor.page.locator('body').innerText().catch(()=>'')).includes(msg);
-    }else{report.refusal_point='RELAY_CONFIRM_DISABLED';report.refusal_visible=true}
-    c.code=null;
-   }else if(c.code&&!box){
-    c.code=null;report.refusal_point='RELAY_REMISES_COUNTER_ABSENT';report.refusal_visible=true;
+    }else{report.refusal_point='RELAY_CONFIRM_DISABLED_FOR_'+report.typed_kind;report.refusal_visible=true}
+   }else{
+    // Aucun comptoir de saisie sur Remises (aucun colis en attente) : documenté, aucune saisie pertinente possible.
+    report.remises_input_absent=true;
+    report.refusal_point=report.refusal_point||'RELAY_REMISES_COUNTER_ABSENT';
    }
+   c.code=null;
    await actor.page.screenshot({path:path.join(OUT,'n09-remises.png')}).catch(()=>{});
    check(calls<=1&&actor.blocked.length===0,'G6_N09_UNEXPECTED_RELAY_WRITE');
    report.events.push({key:'relay-remises-attempt',collect_http:collectStatus,refusal_point:report.refusal_point});save();
