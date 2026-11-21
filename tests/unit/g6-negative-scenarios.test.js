@@ -186,7 +186,7 @@ describe('G6-G4B-FIX runner N23, N29, N20',()=>{
  });
  it('N29 : la garde de LOCAL_RELAY_AVAILABLE accepte N29 sans autre assouplissement',()=>{
   const a=read('scripts/recette/g6-local-relay-available-chromium.js');
-  expect(a).toMatch(/\['M02','M03','N23','N24','N21','N22','N29'\]\.includes\(env\.G6_CANONICAL_SCENARIO\)/);
+  expect(a).toMatch(/\['M02','M03','N23','N24','N21','N22','N29'(?:,'N\d+')*\]\.includes\(env\.G6_CANONICAL_SCENARIO\)/);
   expect(a).toMatch(/env\.G6_CANONICAL_PHASE==='LOCAL_RELAY_AVAILABLE'/);expect(a).toMatch(/G6_LOCAL_RELAY_OWNER_STAGING_GUARD/);
  });
  it('N20 : expédition retrouvée via le lien Hub quand parcels.shipment_id est vide',async()=>{
@@ -383,5 +383,40 @@ describe('G6-G5B N17 (transitaire hors rôle ou marché), N18 (douane retenue pu
   for(const id of ['N17','N18','N19'])for(const m of ['KM','CM','CG'])
    expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
   expect(['N17','N18','N19'].every(N.isNegative)).toBe(true);
+ });
+});
+
+describe('G6-G5C N28 (échec réseau puis réessai) et N32 (marché et rôles croisés)',()=>{
+ const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
+ const ord=(o={})=>({id:'o',user_id:'u',status:'collected',payment_status:'paid',display_total_amount:1,lines:1,qty:1,cash_count:1,control_count:1,allocations:1,consumed_allocations:1,purchase_lines:0,collected_scans:1,parcels:1,...o});
+ it('séquences : parcours M02 coupé, M01 et M02 inchangés',()=>{
+  expect(graphFor('N28').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','N28_NETWORK_FAILURE_RETRY','N28_SINGLE_EFFECT_ORACLE']);
+  expect(graphFor('N32').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','N32_CROSS_MARKET_ROLES','N32_NO_MUTATION_ORACLE']);
+  expect(graphFor('M01').order).toEqual(STAGE_IDS);
+  expect(graphFor('M02').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','LOCAL_CLIENT_PICKUP']);
+  expect(validateStageModuleSources()).toBeGreaterThan(0);
+ });
+ it('oracle N28 : une seule remise, quantités exactes ; double effet = PRODUCT_GAP',async()=>{
+  await expect(N.oracleN28(mk([[ord()],[{scans:1}],[{got:1,want:1}]]),{orderId:'o',committedBeforeRetry:true})).resolves.toMatchObject({collected_scans:1,committed_before_retry:true});
+  await expect(N.oracleN28(mk([[ord()],[{scans:2}]]),{orderId:'o'})).rejects.toThrow('G6_N28_PRODUCT_GAP_HANDOFF_ATTESTATIONS_2');
+  await expect(N.oracleN28(mk([[ord()],[{scans:0}]]),{orderId:'o'})).rejects.toThrow('G6_N28_PRODUCT_GAP_HANDOFF_ATTESTATIONS_0');
+ });
+ it('oracle N32 : aucune mutation et aucune remise par un rôle étranger',async()=>{
+  const snap={unchanged:true,before:{codes:3},after:{codes:3}};
+  await expect(N.oracleN32(mk([[ord({status:'available',collected_scans:0})],[{n:0}]]),{orderId:'o',snapshot:snap})).resolves.toMatchObject({status:'available',codes_after:3});
+  await expect(N.oracleN32(mk([[ord({status:'available',collected_scans:0})]]),{orderId:'o',snapshot:{...snap,unchanged:false}})).rejects.toThrow('G6_N32_PRODUCT_GAP_MUTATION');
+  await expect(N.oracleN32(mk([[ord()],[{n:1}]]),{orderId:'o',snapshot:snap})).rejects.toThrow('G6_N32_PRODUCT_GAP_HANDOFF_BY_FOREIGN_ROLE');
+ });
+ it('script : sondes API signalées, réponse perdue après commit, aucune capture ; prérequis classés',()=>{
+  const a=read('scripts/recette/g6-negative-n28-n32-chromium.js');
+  expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);expect(a).toMatch(/connectionreset/);expect(a).toMatch(/FALSE_SUCCESS_SHOWN_ON_HTTP500/);
+  expect(a).toMatch(/PREREQ_MISSING_FOREIGN_MARKET_ORDER/);expect(a).not.toMatch(/screenshot/);expect(validateChromiumScriptSources()).toBeGreaterThan(0);
+  expect(N.classifyNegative('N32','x PREREQ_MISSING_FOREIGN_MARKET_ORDER')).toBe('PREREQ_MISSING_FOREIGN_MARKET_ORDER');
+ });
+ it('workflow : titres N28/N32 pour KM, CM et CG et alias de scénario',()=>{
+  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
+  for(const id of ['N28','N32'])for(const m of ['KM','CM','CG'])expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
+  expect(wf).toContain("'-full-N28-') && 'N28'");expect(wf).toContain("'-full-N32-') && 'N32'");
+  expect(N.isNegative('N28')&&N.isNegative('N32')).toBe(true);
  });
 });
