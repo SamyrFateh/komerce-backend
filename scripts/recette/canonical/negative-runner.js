@@ -3,7 +3,7 @@
  * @domain orders
  * @layer test
  * @owner backend-core
- * @purpose Orchestration des scénarios négatifs N07/N09/N04/N33/N23/N24/N21/N22/N20/N29 et N11 à N16 (G6-G4C, Achats et Hub) : Golden joué jusqu'au point d'arrêt, geste négatif par l'écran, oracle PG en lecture seule.
+ * @purpose Orchestration des scénarios négatifs N07/N09/N04/N33/N23/N24/N21/N22/N20/N29 N11 à N16 (G6-G4C, Achats et Hub) et N17 à N19 (G6-G5B, Transport et douane) : Golden joué jusqu'au point d'arrêt, geste négatif par l'écran, oracle PG en lecture seule.
  * @db-read voir negative-scenarios.js
  * @db-write none
  * @impact-areas staging-only
@@ -33,7 +33,14 @@ const N1314_SCRIPT='scripts/recette/g6-negative-n13-n14-chromium.js';
 const N1314_REPORT='test-results/g6-negative-n13-n14/report.json';
 const N1516_SCRIPT='scripts/recette/g6-negative-n15-n16-chromium.js';
 const N1516_REPORT='test-results/g6-negative-n15-n16/report.json';
+const N1718_SCRIPT='scripts/recette/g6-negative-n17-n18-chromium.js';
+const N1718_REPORT='test-results/g6-negative-n17-n18/report.json';
+const N19_SCRIPT='scripts/recette/g6-negative-n19-chromium.js';
+const N19_REPORT='test-results/g6-negative-n19/report.json';
 const LOCAL_NEG={
+ N17:{script:N1718_SCRIPT,report:N1718_REPORT,phase:'N17_FORWARDER_ROLE_MARKET_ATTEMPTS',oracle:'N17_NO_TRANSITION_ORACLE',to:'HUB_SHIPMENT',ship:true},
+ N18:{script:N1718_SCRIPT,report:N1718_REPORT,phase:'N18_CUSTOMS_HOLD_ATTEMPTS',oracle:'N18_HOLD_RELEASE_ORACLE',to:'FORWARDER',ship:true},
+ N19:{script:N19_SCRIPT,report:N19_REPORT,phase:'N19_LOCAL_TRANSPORT_DELAY_LOSS',oracle:'N19_LOSS_INCIDENT_ORACLE',to:'CUSTOMS'},
  N15:{script:N1516_SCRIPT,report:N1516_REPORT,phase:'N15_BAG_BOX_INCOMPLETE',oracle:'N15_NO_CLOSURE_ORACLE',to:'HUB_RECEIVING_READBACK'},
  N16:{script:N1516_SCRIPT,report:N1516_REPORT,phase:'N16_BOX_NOT_DISPATCHED_FROZEN',oracle:'N16_BOX_FROZEN_ORACLE',to:'HUB_KOM_BOX'},
  N13:{script:N1314_SCRIPT,report:N1314_REPORT,phase:'N13_SUPPLIER_BACKORDER',oracle:'N13_BACKORDER_ORACLE',to:'HUB_VENDOR_READINESS',po:true},
@@ -86,15 +93,18 @@ async function runNegativeScenario({scenario,env,db,adapters}){
   const runtime=await adapters.attestRuntimeBeforeBuyer(),phase=L.phase;
   // Achats et Hub : PO unique de la commande, relu en PG (lecture seule) et transmis au script enfant.
   const poId=L.po?(await N.importPo(db,result.order_id)).id:null;
+  // Transport et douane : expédition de la commande, relue en PG (lecture seule) et transmise au script enfant.
+  const ship=L.ship?await N.shipmentForOrder(db,result.order_id):null;
+  if(L.ship&&!ship)throw Error('G6_'+scenario+'_SCREEN_MISSING_NO_SHIPMENT_FOR_ORDER');
   fs.rmSync(path.join(ROOT,L.report),{force:true});
   try{
    spawnChild(L.script,{...env,G6_DYNAMIC_FRESH_ORDER:'1',G6_CANONICAL_PHASE:phase,
     G6_CANONICAL_ORDER_ID:result.order_id,G6_CANONICAL_ORDER_REFERENCE:result.order_reference,G6_CANONICAL_DB_FINGERPRINT:runtime.db_fingerprint,
-    ...(poId?{G6_CANONICAL_PO_ID:poId}:{})},L.report);
+    ...(poId?{G6_CANONICAL_PO_ID:poId}:{}),...(ship?{G6_CANONICAL_SHIPMENT_REF:ship.reference,G6_CANONICAL_SHIPMENT_ID:ship.id}:{})},L.report);
   }catch(e){
    // Verdict : défaut produit ou écran manquant relevé par le script ; sinon l'erreur d'origine.
    let child=null;try{child=readJson(L.report)}catch(_){}
-   const m=/(?:G6_N(?:2[0-4]|29|1[1-6])_(?:SCREEN_MISSING|PRODUCT_GAP)|PREREQ_MISSING_SECOND_RELAY)[A-Za-z0-9_]*/.exec(String(child?.error||''));
+   const m=/(?:G6_N(?:2[0-4]|29|1[1-9])_(?:SCREEN_MISSING|PRODUCT_GAP)|PREREQ_MISSING_SECOND_RELAY|PREREQ_MISSING_OTHER_ACTIVE_MARKET)[A-Za-z0-9_]*/.exec(String(child?.error||''));
    throw Error(m?m[0]:e.message);
   }
   const g=readJson(L.report);
@@ -105,6 +115,9 @@ async function runNegativeScenario({scenario,env,db,adapters}){
    ?await N.oracleN23(db,{orderId:result.order_id,agentId:g.agent_id,minFailures:5,assertNoHubOrTransport})
    :scenario==='N24'?await N.oracleN24(db,{orderId:result.order_id,assertNoHubOrTransport})
    :scenario==='N20'?await N.oracleN20(db,{orderId:result.order_id})
+   :scenario==='N17'?await N.oracleN17(db,{orderId:result.order_id,shipmentRef:ship.reference,baseline:g.baseline})
+   :scenario==='N18'?await N.oracleN18(db,{orderId:result.order_id,shipmentRef:ship.reference,customsRef:'SIM-STAGING-DOU-N18-'+result.order_reference})
+   :scenario==='N19'?await N.oracleN19(db,{orderId:result.order_id})
    :scenario==='N15'?await N.oracleN15(db,{orderId:result.order_id,boxRef:g.box_ref,shipmentRef:g.shipment_ref})
    :scenario==='N16'?await N.oracleN16(db,{orderId:result.order_id,boxRef:g.box_ref,shipmentRef:g.shipment_ref,baseline:g.baseline})
    :scenario==='N13'?await N.oracleN13(db,{orderId:result.order_id,poId,ordered:g.ordered,typed:g.typed})
@@ -119,6 +132,8 @@ async function runNegativeScenario({scenario,env,db,adapters}){
    N15:'G6_N15_BAG_BOX_INCOMPLETE_NO_CLOSURE_NO_DEPARTURE_PG_PASS',N16:'G6_N16_BOX_NOT_DISPATCHED_COMPOSITION_FROZEN_PG_PASS',
    N13:'G6_N13_SUPPLIER_BACKORDER_REMNANT_NO_FICTIVE_RECEIPT_PG_PASS',N14:'G6_N14_RECEIVING_EXACT_QUANTITIES_NO_EXCESS_NO_NEGATIVE_PG_PASS',
    N11:'G6_N11_PO_WITHOUT_COMMITMENT_REFUSED_NO_ENGAGEMENT_PG_PASS',N12:'G6_N12_PAYMENT_SINGLE_VALIDATOR_REFUSED_NO_PAYMENT_PG_PASS',
+   N17:'G6_N17_FORWARDER_OUT_OF_ROLE_MARKET_REFUSED_NO_TRANSITION_PG_PASS',N18:'G6_N18_CUSTOMS_HOLD_NO_TRANSIT_THEN_RELEASE_PG_PASS',
+   N19:'G6_N19_LOCAL_TRANSPORT_DELAY_LOSS_INCIDENT_NO_WITHDRAWAL_PG_PASS',
    N21:'G6_N21_CROSS_RELAY_REFUSED_NO_DISCLOSURE_PG_PASS',N22:'G6_N22_TWO_RELAYS_REFUSED_NO_DISCLOSURE_PG_PASS'}[scenario];
   return out;
  }

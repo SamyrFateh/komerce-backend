@@ -326,3 +326,62 @@ describe('G6-G4C N15 (sac ou KOM-BOX incomplet) et N16 (carton non DISPATCHED, c
   expect(N.isNegative('N15')&&N.isNegative('N16')).toBe(true);
  });
 });
+
+describe('G6-G5B N17 (transitaire hors rôle ou marché), N18 (douane retenue puis mainlevée), N19 (retard puis perte du transport local)',()=>{
+ const up=id=>STAGE_IDS.slice(0,STAGE_IDS.indexOf(id)+1);
+ const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
+ it('séquences : chaîne M01 coupée au bon point, M01 inchangé',()=>{
+  expect(graphFor('N17').order).toEqual([...up('HUB_SHIPMENT'),'N17_FORWARDER_ROLE_MARKET_ATTEMPTS','N17_NO_TRANSITION_ORACLE']);
+  expect(graphFor('N18').order).toEqual([...up('FORWARDER'),'N18_CUSTOMS_HOLD_ATTEMPTS','N18_HOLD_RELEASE_ORACLE']);
+  expect(graphFor('N19').order).toEqual([...up('CUSTOMS'),'N19_LOCAL_TRANSPORT_DELAY_LOSS','N19_LOSS_INCIDENT_ORACLE']);
+  expect(graphFor('N17').order).not.toContain('FORWARDER');
+  expect(graphFor('N18').order).not.toContain('CUSTOMS');
+  expect(graphFor('M01').order).toEqual(STAGE_IDS);
+  expect(validateStageModuleSources()).toBeGreaterThan(0);
+ });
+ const snap=(o={})=>({stage:'handed_over',customs_shipment_id:null,tracking_reference:null,forwarder_name:'F',events:3,charges:0,receipts:0,...o});
+ it('oracle N17 : expédition identique, aucun frais, lien douane ni suivi',async()=>{
+  const row=o=>[[snap(o)]],ord=[[{id:'o',status:'shipped',collected_scans:0}]];
+  await expect(N.oracleN17(mk([...row(),...ord]),{orderId:'o',shipmentRef:'S',baseline:snap()})).resolves.toMatchObject({stage:'handed_over',charges:0});
+  await expect(N.oracleN17(mk(row({stage:'forwarder_received'})),{orderId:'o',shipmentRef:'S',baseline:snap()})).rejects.toThrow('G6_N17_PRODUCT_GAP_STAGE_MOVED_forwarder_received');
+  await expect(N.oracleN17(mk(row({events:4})),{orderId:'o',shipmentRef:'S',baseline:snap()})).rejects.toThrow('G6_N17_PRODUCT_GAP_JOURNEY_CHANGED_BY_REFUSED_ACTOR');
+ });
+ const t=s=>new Date('2026-11-21T10:0'+s+':00Z');
+ const j=(o={})=>[[snap({stage:'customs_released',customs_shipment_id:'c',...o})],[{id:'c',status:'declared',customs_paid_kmf:'0'}],
+  [{status:'released',held_at:t(1),released_at:t(3),held_by:'u',released_by:'a',held_by_role:'admin',reason:'motif'}],
+  [{event_type:'customs_linked',to_stage:null,occurred_at:t(0)},{event_type:'customs_amount_confirmed',to_stage:null,occurred_at:t(4)},{event_type:'stage_changed',to_stage:'customs_released',occurred_at:t(5)}],
+  [{id:'o',status:'shipped',collected_scans:0}]];
+ it('oracle N18 : aucun transit entre retenue et mainlevée, étapes autorisées après',async()=>{
+  await expect(N.oracleN18(mk(j()),{orderId:'o',shipmentRef:'S',customsRef:'C'})).resolves.toMatchObject({held_by_role:'admin',stage:'customs_released'});
+  const bad=j();bad[3]=[{event_type:'customs_amount_confirmed',to_stage:null,occurred_at:t(2)},{event_type:'stage_changed',to_stage:'customs_released',occurred_at:t(5)}];
+  await expect(N.oracleN18(mk(bad),{orderId:'o',shipmentRef:'S',customsRef:'C'})).rejects.toThrow('G6_N18_PRODUCT_GAP_TRANSIT_WHILE_HELD_1');
+  const open=j();open[2]=[{status:'held',held_at:t(1),released_at:null,held_by:'u',released_by:null,held_by_role:'admin',reason:'motif'}];
+  await expect(N.oracleN18(mk(open),{orderId:'o',shipmentRef:'S',customsRef:'C'})).rejects.toThrow('G6_N18_PRODUCT_GAP_HOLD_NOT_RELEASED_BY_ACTOR');
+ });
+ it('oracle N19 : quantité nulle, incident haute gravité, ni disponible ni code de retrait',async()=>{
+  const good=[[{id:'o',status:'in_transit',collected_scans:0}],[{expected_qty:1,received_qty:0,incident:'i',incident_type:'missing_item',severity:'high'}],[{collected:0,received:0}],[{code_alive:false}]];
+  await expect(N.oracleN19(mk(good),{orderId:'o'})).resolves.toMatchObject({received_qty:0,severity:'high'});
+  const avail=[[{id:'o',status:'available',collected_scans:0}],good[1],good[2]];
+  await expect(N.oracleN19(mk(avail),{orderId:'o'})).rejects.toThrow('G6_N19_PRODUCT_GAP_AVAILABLE_OR_COLLECTED_AFTER_TOTAL_LOSS_available');
+  await expect(N.oracleN19(mk([good[0],[{expected_qty:2,received_qty:1,incident:'i',incident_type:'quantity_mismatch',severity:'medium'}]]),{orderId:'o'})).rejects.toThrow('G6_N19_PRODUCT_GAP_RECEIVED_QTY_NOT_ZERO');
+ });
+ it('scripts : sondes signalées, hors marché 403/404, retenue par écran, aucune capture',()=>{
+  const a=read('scripts/recette/g6-negative-n17-n18-chromium.js'),b=read('scripts/recette/g6-negative-n19-chromium.js');
+  expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);expect(a).toMatch(/forwarder_other_market/);expect(a).toMatch(/hold-customs/);expect(a).toMatch(/release-customs/);
+  expect(a).toMatch(/AUCUNE_REQUETE_ENVOYEE/);expect(b).toMatch(/received_qty:0/);expect(b).toMatch(/PERTE_ATTESTEE_SANS_MESSAGE_INCIDENT/);
+  expect(a+b).not.toMatch(/screenshot/);
+  expect(validateChromiumScriptSources()).toBeGreaterThan(0);
+ });
+ it('effective params : N17 à N19 partent de la chaîne M01, M01 et N20 inchangés',()=>{
+  const r=read('scripts/recette/canonical/negative-runner.js');
+  expect(r).toMatch(/N17:\{script:N1718_SCRIPT[^}]*to:'HUB_SHIPMENT'/);expect(r).toMatch(/N18:\{script:N1718_SCRIPT[^}]*to:'FORWARDER'/);expect(r).toMatch(/N19:\{script:N19_SCRIPT[^}]*to:'CUSTOMS'/);
+  expect(r).toMatch(/N20:\{script:N20_SCRIPT[^}]*to:'CUSTOMS'/);
+  expect(read('scripts/recette/canonical/real-buyer-cash-adapters.js')).toMatch(/'N17','N18','N19'\]\.includes\(SCENARIO\)/);
+ });
+ it('workflow : titres N17 à N19 pour KM, CM et CG',()=>{
+  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
+  for(const id of ['N17','N18','N19'])for(const m of ['KM','CM','CG'])
+   expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
+  expect(['N17','N18','N19'].every(N.isNegative)).toBe(true);
+ });
+});
