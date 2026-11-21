@@ -439,16 +439,40 @@
       reload: null,
     };
 
-    async function load() {
+    const rootNode = context.root;
+    const identity = {};
+    rootNode.__dashboardViewIdentity = identity;
+    let requestSeq = 0;
+    const workspaceBusy = () => {
+      const focused = context.document.activeElement;
+      return Boolean(rootNode.querySelector?.('[aria-modal="true"]') ||
+        (focused && rootNode.contains?.(focused) &&
+         focused.matches?.('input,textarea,select,button,[contenteditable="true"]')));
+    };
+    async function load({ background = false } = {}) {
+      const currentRequest = ++requestSeq;
       let payload;
       try {
         payload = await jsonRequest(context.fetch, context.loadEndpoint);
       } catch (error) {
+        if (currentRequest !== requestSeq) return {};
         if (renderAgentScopeMissing(context, error)) return { blocked: true };
+        if (background) {
+          if (error.status === 401 || error.status === 403) {
+            rootNode.replaceChildren();
+            const notice = context.document.createElement('p');
+            notice.setAttribute('role', 'alert');
+            notice.textContent = 'Accès expiré ou non autorisé. Rechargez votre session.';
+            rootNode.appendChild(notice);
+            rootNode.removeAttribute?.('data-dashboard-stale');
+          } else rootNode.setAttribute?.('data-dashboard-stale', 'true');
+        }
         throw error;
       }
-      const rootNode = context.root;
+      if (currentRequest !== requestSeq || rootNode.__dashboardViewIdentity !== identity ||
+          (background && (rootNode.isConnected === false || workspaceBusy()))) return payload;
       rootNode.replaceChildren();
+      rootNode.removeAttribute?.('data-dashboard-stale');
       rootNode.classList.add('kmc-action-center');
       rootNode.dataset.actionCenterMode = context.scopeMode;
       rootNode.appendChild(header(context.document, payload, context.severity));
@@ -477,6 +501,11 @@
     }
 
     context.reload = load;
+    globalThis.KomerceDashboardFreshness?.watch?.({
+      root: rootNode, pollMs: 60000, streamEnabled: options.user?.role === 'admin',
+      isBusy: workspaceBusy,
+      refresh: () => load({ background:true }),
+    });
     return load();
   }
 
