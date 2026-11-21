@@ -3614,7 +3614,7 @@
               {
                 "declared": "services/central-hub-on-order.js",
                 "resolvedPath": "services/central-hub-on-order.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/commercial-category-agreement.js",

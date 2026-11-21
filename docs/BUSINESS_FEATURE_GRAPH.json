@@ -2079,7 +2079,7 @@
         "category": "services",
         "declared": "services/central-hub-on-order.js",
         "resolvedPath": "services/central-hub-on-order.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "catalog",
@@ -54668,8 +54668,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 718,
-        "technicalNodesOwned": 718,
+        "technicalNodesTotal": 719,
+        "technicalNodesOwned": 719,
         "technicalOrphans": 0
       },
       "dash": {
