@@ -140,7 +140,7 @@ describe('G6-G4B N21 (agent d\'un autre relais) et N22 (relais A/B)',()=>{
  it('script : rattachement par l\'écran Réseau, lectures sans divulgation, sens inverse, verdict PRODUCT_GAP sans contournement',()=>{
   const s=read('scripts/recette/g6-negative-n21-n22-cross-relay-chromium.js');
   expect(s).toMatch(/attachDedicatedRelayByUI/);expect(s).toMatch(/PREREQ_MISSING_SECOND_RELAY_/);
-  expect(s).toMatch(/agent_at_A_vs_order_at_B/);expect(s).toMatch(/contains_order/);expect(s).toMatch(/steps_reached/);expect(s).not.toMatch(/screenshot/);
+  expect(s).toMatch(/agent_at_A_vs_order_at_B/);expect(s).toMatch(/contains_order/);expect(s).toMatch(/G6_N22_SCREEN_MISSING_REVERSE_ORDER_AT_RELAY_B/);expect(s).toMatch(/steps_reached/);expect(s).not.toMatch(/screenshot/);
   expect(read('scripts/recette/g6-prereq-probe.js')).toMatch(/PREREQ_MISSING_SECOND_RELAY/);
  });
  it('workflow : titres N21/N22 pour KM, CM et CG',()=>{
