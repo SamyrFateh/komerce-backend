@@ -166,7 +166,7 @@ describe('order-checkout-item-resolution — estimation de coût et taux AED (au
 describe('M03 — Central Hub manual unit sold on order, without fictitious stock', () => {
   const { resolveActiveSku } = require('../../services/product-sku-service');
   const product = {
-    id:'p-hub', name:'Manual Hub item', inventory_model:'SKU',
+    id:'p-hub', name:'Manual Hub item', inventory_model:'SKU', procurement_supplier_id:'s-hub',
     stock:0, price_kmf:15000, weight_kg:0.5, has_variants:false,
     is_active:true, is_available:true,
   };
