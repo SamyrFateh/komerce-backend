@@ -104,7 +104,15 @@ async function productMarketTruth(id){
   m.lifecycle_status::text AS market_lifecycle,e.commercial_exposure::text AS exposure,
   EXISTS(SELECT 1 FROM product_market_price_drafts d
    WHERE d.product_id=p.id AND d.market_id=m.id AND d.status='LOCAL_ACTIVE') AS price_active,
-  (SELECT count(*)::int FROM product_skus k WHERE k.product_id=p.id AND k.is_active=TRUE) AS active_skus
+  (SELECT d.amount::text FROM product_market_price_drafts d
+   WHERE d.product_id=p.id AND d.market_id=m.id AND d.status='LOCAL_ACTIVE'
+   ORDER BY d.id DESC LIMIT 1) AS price_active_amount,
+  (SELECT count(*)::int FROM product_skus k WHERE k.product_id=p.id AND k.is_active=TRUE) AS active_skus,
+  (SELECT count(*)::int FROM product_skus k WHERE k.product_id=p.id AND k.source='SUPPLIER' AND k.is_active=TRUE) AS active_supplier_skus,
+  (SELECT count(*)::int FROM product_skus k WHERE k.product_id=p.id AND k.source='SUPPLIER'
+    AND k.is_active=TRUE AND NULLIF(BTRIM(k.supplier_unit_ref),'') IS NOT NULL
+    AND jsonb_typeof(k.supplier_order_identity)='object'
+    AND k.supplier_order_identity<>'{}'::jsonb) AS complete_supplier_skus
  FROM products p CROSS JOIN markets m
  LEFT JOIN product_market_exposure e ON e.product_id=p.id AND e.market_id=m.id
  WHERE p.id=$1 AND m.code=$2
@@ -286,6 +294,11 @@ async function main(){
   report.after=await snapshotBuyerEffects(db,b.buyer.id);
   report.after_stock_available=await stockAvailable(f.id);
   report.product_market_after=await productMarketTruth(f.id);
+  if(SCENARIO==='N05'){
+   report.certification_after=await assertSupplierPublicationBlocked(db,f.id,BRANCH);
+   check(JSON.stringify(report.certification_after)===JSON.stringify(report.precondition),
+    'G6_N05_PRODUCT_GAP_CERTIFICATION_GATE_CHANGED_DURING_PROBE');
+  }
   if(SCENARIO==='N03'&&BRANCH==='ROUTE_MISSING'){
    report.route_after=assertRouteMissing(await readRouteAvailability(db,MARKET));
    check(JSON.stringify(report.route_after)===JSON.stringify(report.route_before),
