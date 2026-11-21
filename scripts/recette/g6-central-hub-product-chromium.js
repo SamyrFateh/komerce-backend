@@ -19,10 +19,12 @@ const env=process.env,BASE='https://komerce-backend-production.up.railway.app';
 const OUT=path.resolve('test-results/g6-central-hub-product');
 // Marqueur recette G6 : le produit se retrouve par ce préfixe de nom et par le supplier_product_id.
 const G6_PREFIX='[G6-HUB] ';
-const G6_SUPPLIER_PRODUCT_ID='G6-CENTRAL-'+MK.code;
-// Nom d'objet réel (le classifieur Sourcing lit les termes du nom) ; le préfixe G6 reste le marqueur de recette.
-const PRODUCT_NAME=G6_PREFIX+'Mug céramique '+MK.code;
-const SUPPLIER_CATEGORY='Maison > Cuisine > Mugs',WEIGHT_KG=0.4,DIMENSIONS={l_cm:12,w_cm:9,h_cm:10};
+// V2 : l'import V1 (KSC-000812 en KM) est resté WATCH sans catégorie ; il est ignoré, jamais ré-édité ni re-scanné.
+const G6_SUPPLIER_PRODUCT_ID='G6-CENTRAL-'+MK.code+'-V2';
+// Le classifieur Sourcing lit les termes du nom et de la catégorie fournisseur ; le préfixe G6 reste le marqueur de recette.
+// Termes configurés (migrations 248/249, famille « materiels », cible de marge 35 %) : « screwdriver », « hand tool ».
+const PRODUCT_NAME=G6_PREFIX+'Screwdriver set '+MK.code;
+const SUPPLIER_CATEGORY='Tools > Hand Tools',WEIGHT_KG=0.4,DIMENSIONS={l_cm:12,w_cm:9,h_cm:10};
 const PURCHASE_PRICE=10,CURRENCY='EUR';
 // Montant de recette du prix local (devise du marché). Plancher explicite documenté dans le rapport ;
 // le montant effectif = max(plancher, référence de couverture du moteur économique arrondie à 100).
