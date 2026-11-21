@@ -10,7 +10,7 @@
  */
 'use strict';
 const {isDeepStrictEqual}=require('node:util');
-const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29','N11','N12','N13','N14','N15','N16','N17','N18','N19','N28','N32','N35','N36','N37','N38']);
+const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29','N11','N12','N13','N14','N15','N16','N17','N18','N19','N28','N32','N35','N36','N37','N38','N30','N31']);
 const isNegative=s=>NEGATIVE.includes(String(s));
 // Produit vendable (prix LOCAL_ACTIVE, exposition ENABLED, actif) servi par l'import (aucun stock local exposé), SKU actifs en stock.
 const MULTI_SKU_SQL=`
@@ -458,6 +458,50 @@ async function oracleN38(db,{orderId,reference,dryRun}){
  return {...d,missing_for_order:missing,resume_detects_missing:missing.invoice+missing.pickup_proof>0,dry_run_global_missing:Object.fromEntries(Object.entries(fam).map(([k,v])=>[k,v.missing])),
   failure_leg:'NOT_PROVEN_NO_FAULT_INJECTION_ON_STAGING',real_sends:0};
 }
+// N30 : Order 360 et KPI Commerce relus par l'admin, comparés à PG ; les commandes de recette ne doivent pas compter dans le KPI commercial.
+async function oracleN30(db,{orderId,order360,commerce}){
+ ok(order360&&commerce,'G6_N30_SCREEN_MISSING_READS_NOT_PROVEN');
+ const o=await orderRows(db,orderId);
+ const {rows:[x]}=await db.query(`SELECT total_kmf::bigint AS total_kmf,simulation_scope,created_at,
+   (SELECT count(*)::int FROM parcels p WHERE p.order_id=o.id AND p.status::text<>'cancelled') AS parcels FROM orders o WHERE o.id=$1`,[orderId]);
+ const bad=[];
+ if(order360.status!==o.status)bad.push('STATUS');
+ if(order360.payment_status!==o.payment_status)bad.push('PAYMENT_STATUS');
+ if(Number(order360.total_kmf)!==Number(x.total_kmf))bad.push('TOTAL_KMF');
+ if(order360.items!==o.lines||order360.quantity!==o.qty)bad.push('ITEMS_QTY');
+ if(order360.parcels!==x.parcels)bad.push('PARCELS');
+ ok(!bad.length,'G6_N30_PRODUCT_GAP_ORDER_360_DIFFERS_FROM_PG_'+bad.join('_'));
+ const win=[commerce.from,commerce.to];
+ const sum=async scoped=>(await db.query(`SELECT COALESCE(SUM(o.total_kmf+COALESCE(o.wallet_applied_kmf,0)),0)::bigint AS v FROM orders o
+   WHERE o.created_at>=$1 AND o.created_at<=$2 AND o.payment_status='paid' AND o.status NOT IN ('cancelled','refunded')
+   AND o.simulation_scope IS ${scoped?'NOT ':''}NULL`,win)).rows[0].v;
+ const real=Number(await sum(false)),simulated=Number(await sum(true));
+ if(Number(commerce.ca_value)!==real){
+  const {rows:[q]}=await db.query('SELECT count(*)::int AS n FROM orders WHERE updated_at>$1',[commerce.to]);
+  ok(q.n===0,'G6_N30_PREREQ_MISSING_QUIET_WINDOW_'+q.n);
+  throw Error('G6_N30_PRODUCT_GAP_COMMERCE_KPI_'+commerce.ca_value+'_VS_PG_'+real);
+ }
+ const inWindow=new Date(x.created_at)>=new Date(commerce.from)&&new Date(x.created_at)<=new Date(commerce.to);
+ const counted=inWindow&&o.payment_status==='paid'&&!['cancelled','refunded'].includes(o.status)&&x.simulation_scope==null;
+ ok(!counted,'G6_N30_PRODUCT_GAP_FIXTURE_COUNTED_IN_COMMERCIAL_KPI');
+ return {order_360_matches_pg:true,kpi_ca_pg:real,kpi_ca_api:Number(commerce.ca_value),scoped_fixtures_excluded_kmf:simulated,order_in_window:inWindow,order_simulation_scope:x.simulation_scope};
+}
+// N31 : snapshot monétaire d'affichage conservé dans la devise du marché, cohérent avec les parités fixes ; remboursement non joué dans cette séquence.
+async function oracleN31(db,{orderId,market}){
+ const {rows:[x]}=await db.query('SELECT total_kmf::numeric AS total_kmf,display_total_amount::numeric AS shown,display_currency,display_parity_snapshot FROM orders WHERE id=$1',[orderId]);
+ const want=market==='KM'?'KMF':'XAF';
+ ok(x.display_currency===want,'G6_N31_PRODUCT_GAP_DISPLAY_CURRENCY_'+x.display_currency+'_FOR_'+market);
+ ok(Number(x.shown)>0&&x.display_parity_snapshot!=null,'G6_N31_PRODUCT_GAP_DISPLAY_SNAPSHOT_MISSING');
+ const {rows:p}=await db.query("SELECT currency,eur_rate::numeric AS r FROM currency_parities WHERE currency IN ('KMF',$1)",[want]);
+ const rate=c=>Number((p.find(r=>r.currency===c)||{}).r);
+ ok(rate('KMF')>0&&rate(want)>0,'G6_N31_PREREQ_MISSING_CURRENCY_PARITIES');
+ const expected=Number(x.total_kmf)/rate('KMF')*rate(want);
+ ok(Math.abs(Number(x.shown)-expected)<=Math.max(5,expected*0.02),'G6_N31_PRODUCT_GAP_SNAPSHOT_DIFFERS_FROM_FIXED_PARITY_'+x.shown+'_VS_'+Math.round(expected));
+ const {rows:[r]}=await db.query('SELECT count(*)::int AS n FROM refunds WHERE order_id=$1',[orderId]);
+ ok(r.n===0,'G6_N31_PRODUCT_GAP_REFUND_WITHOUT_GESTURE');
+ return {display_currency:x.display_currency,display_total:Number(x.shown),expected_from_parity:Math.round(expected),snapshot_keys:Object.keys(x.display_parity_snapshot||{}),refunds:0,
+  refund_leg:'NOT_PROVEN_NO_REFUND_GESTURE_IN_SEQUENCE',floating_purchase_currency:'NOT_REPRESENTABLE_ME_10'};
+}
 // Pur : verdict explicite pour un écran manquant ou un défaut produit (jamais un contournement).
 function classifyNegative(scenario,message){
  const m=String(message||'');
@@ -467,4 +511,4 @@ function classifyNegative(scenario,message){
  const g=new RegExp('G6_'+scenario+'_(SCREEN_MISSING|PRODUCT_GAP)').exec(m);
  return g?g[1]:null;
 }
-module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,oracleN15,oracleN16,oracleN28,oracleN32,oracleN35,oracleN36,oracleN37,oracleN38,ecoControls,snapN16,shipmentForOrder,snapJourney,snapLocalTransport,oracleN17,oracleN18,oracleN19,importPo,classifyNegative};
+module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,oracleN15,oracleN16,oracleN28,oracleN32,oracleN30,oracleN31,oracleN35,oracleN36,oracleN37,oracleN38,ecoControls,snapN16,shipmentForOrder,snapJourney,snapLocalTransport,oracleN17,oracleN18,oracleN19,importPo,classifyNegative};
