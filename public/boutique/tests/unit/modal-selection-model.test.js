@@ -176,6 +176,20 @@ describe('modal-selection-model', () => {
     expect(stateMap(state, 'Taille').S).toBe(OPTION_STATE.OUT_OF_STOCK);
   });
 
+  test('une unité achetable sur commande à stock zéro reste sélectionnable', () => {
+    const original=detail();
+    const onlyOnOrder=detail({
+      sellable_units:original.sellable_units.map(unit=>unit.sku_id===SKU_MAR_M
+        ? {...unit,stock_status:'ON_ORDER',available_quantity:0}
+        : {...unit,stock_status:'OUT_OF_STOCK',available_quantity:0}),
+    });
+    const state=createModalSelection(onlyOnOrder);
+    expect(state.selected_sku_id).toBe(SKU_MAR_M);
+    expect(state.selected_options).toEqual({Couleur:'Marron',Taille:'M'});
+    expect(stateMap(state,'Taille').M).toBe(OPTION_STATE.AVAILABLE);
+    expect(stateMap(state,'Taille').L).toBe(OPTION_STATE.OUT_OF_STOCK);
+  });
+
   test('toutes combinaisons en rupture : aucun choix automatique et aucun faux SKU', () => {
     const product = detail({
       sellable_units: detail().sellable_units.map(unit => ({

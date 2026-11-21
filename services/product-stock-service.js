@@ -80,6 +80,12 @@ async function adjustStock(dbClient, items, direction) {
   const op = direction === 'decrement' ? '-' : '+';
 
   for (const item of items) {
+    if (item.procure_on_order === true) {
+      // A procurement promise is never a physical SKU debit or return.
+      if (item.inventory_model !== 'SKU' || !item.sku_id)
+        throw Error('[adjustStock] CENTRAL_HUB_ON_ORDER_INVALID_SNAPSHOT');
+      continue;
+    }
     if (item.inventory_model === 'SKU') {
       await adjustSkuStock(dbClient, item, op);
       continue;

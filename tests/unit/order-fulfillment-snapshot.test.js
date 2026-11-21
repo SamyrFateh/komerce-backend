@@ -77,7 +77,8 @@ test('IMPORT est figé sur order_items et ne tente aucune allocation locale', as
   expect(client.query).toHaveBeenCalledTimes(1);
   const [sql, params] = client.query.mock.calls[0];
   expect(sql).toMatch(/fulfillment_source/);
-  expect(params.at(-1)).toBe('IMPORT');
+  expect(params.at(-2)).toBe('IMPORT');
+  expect(params.at(-1)).toBe(false); // non-Hub: jamais de vente sur commande implicite
   expect(mockAllocateForOrderItem).not.toHaveBeenCalled();
 });
 
@@ -88,7 +89,8 @@ test('LOCAL_STOCK est figé puis alloué sous le même client transactionnel', a
   await insertOrderItemsWithStock(client, context(baseItem('LOCAL_STOCK')));
 
   const [, params] = client.query.mock.calls[0];
-  expect(params.at(-1)).toBe('LOCAL_STOCK');
+  expect(params.at(-2)).toBe('LOCAL_STOCK');
+  expect(params.at(-1)).toBe(false); // stock local: jamais procure_on_order
   expect(mockAllocateForOrderItem).toHaveBeenCalledWith(client, {
     productId: PRODUCT_ID,
     marketId: MARKET_ID,

@@ -134,3 +134,16 @@ Le workflow owner-only `[staging-op] g6-central-hub-product-{KM|CM|CG}` prépare
 
 **Protocole de lancement** : pas de reset automatique, pas de mutation du prix N06 en parallèle, pas de fusion `main` en cours de run. Deux niveaux de preuves distincts : CI locale / préflight pour la préparation, puis staging Chromium + PostgreSQL avant le `PASS` métier.
 
+
+## 9. M03 — référence manuelle Hub vendue sur commande (migration 424)
+
+Une fiche Fournisseur central Hub approuvée peut posséder **une identité SKU interne MANUAL à stock physique zéro**. Ce n'est pas un fournisseur externe ni une disponibilité fournisseur simulée. La boutique affiche explicitement `Sur commande` uniquement si :
+- le SKU est actif, exact, source `MANUAL`, sans SOI fournisseur et avec stock zéro ;
+- `products.procurement_supplier_id` pointe vers le Fournisseur central Hub actif ;
+- une source `sourcing_candidates` importée possède le contrat `central_hub_manual`, rattachée à ce même fournisseur ;
+- les gardes généraux de qualité, médias, approbation, exposition marché et prix local restent verts.
+
+Le checkout doit snapshotter `order_items.procure_on_order = true` **uniquement sur une ligne IMPORT**. La migration 424 interdit une conversion tardive de ce flag ; la confirmation de paiement revalide l'identité source puis **ne débite pas de stock SKU inexistant**. Annulation et reliquat ne le restaurent pas non plus. Le Purchasing garde son vrai parcours `central_hub` : ligne d'achat ouverte, geste humain, vendeur réel et justificatifs au moment de l'achat physique — jamais de stock, PO ou paiement fournisseur fictifs.
+
+**Porte M03** : ne pas accepter `M03_READY` comme succès de panier ; exiger Chromium de l'écran boutique au retrait et oracles PG (commande snapshot, prix cash, achats Hub, statut colis), y compris absence de mouvement de `product_skus.stock` pour la ligne sur commande. Une création de commande sans preuve d'approvisionnement ultérieur n'est pas un GO M03.
+

@@ -34,6 +34,10 @@ function axisKeys(detail) {
   return (detail.option_axes || []).map((axis) => axis.key);
 }
 
+function isOrderableUnit(unit) {
+  return unit.stock_status === 'AVAILABLE' || unit.stock_status === 'ON_ORDER';
+}
+
 function unitMatches(unit, options) {
   return Object.entries(options).every(([key, value]) => unit.option_values[key] === value);
 }
@@ -52,7 +56,7 @@ function optionStateFor(detail, selectedOptions, axisKey, value) {
   );
 
   if (candidates.length === 0) return OPTION_STATE.INCOMPATIBLE;
-  if (candidates.some((unit) => unit.stock_status === 'AVAILABLE')) return OPTION_STATE.AVAILABLE;
+  if (candidates.some(isOrderableUnit)) return OPTION_STATE.AVAILABLE;
   return OPTION_STATE.OUT_OF_STOCK;
 }
 
@@ -75,7 +79,7 @@ function resolveSelectedSku(detail, selectedOptions) {
     keys.every((key) => unit.option_values[key] === selectedOptions[key])
   );
 
-  return match && match.stock_status === 'AVAILABLE' ? match : null;
+  return match && isOrderableUnit(match) ? match : null;
 }
 
 function mediaMatchesSelection(media, selectedOptions) {
@@ -146,7 +150,7 @@ function unavailableMessage(detail, state, axisKey, value, optionState) {
  */
 export function createModalSelection(detail) {
   if (!detail || detail.inventory_model !== 'SKU') return deriveLegacyState(detail);
-  const availableUnits = detail.sellable_units.filter((unit) => unit.stock_status === 'AVAILABLE');
+  const availableUnits = detail.sellable_units.filter(isOrderableUnit);
   const selectedOptions = {};
   for (const axis of detail.option_axes) {
     const availableValues = axis.values.filter((option) =>

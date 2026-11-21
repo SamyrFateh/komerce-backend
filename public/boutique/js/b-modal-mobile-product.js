@@ -175,7 +175,10 @@ function renderStockPill(unit) {
 
   let variant = 'ok';
   let label = 'En stock';
-  if (qty === 0) {
+  if (unit?.stock_status === 'ON_ORDER') {
+    variant = 'ok';
+    label = 'Sur commande';
+  } else if (qty === 0) {
     variant = 'out';
     label = 'Épuisé';
   } else if (qty <= 5) {

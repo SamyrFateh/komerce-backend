@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        product_id, canonical_catalog_rows, commercially_exposed_transport_rails
  * @outputs       public_product_detail_v1
- * @depends       services/transport-rails.js, services/transport-pricing.js, utils/rules.js, schemas/catalog/product-detail.v1.schema.json
+ * @depends       services/transport-rails.js, services/transport-pricing.js, services/central-hub-on-order.js, utils/rules.js, schemas/catalog/product-detail.v1.schema.json
  * @used-by       routes/catalog-product-detail.js
- * @db-read       business_rules, catalog_product_sale_holds, catalog_media, catalog_media_visual_fr_reviews, sourcing_candidates, product_attributes, product_content_profile, product_content_sections, product_sku_media, product_skus, product_variants, products
+ * @db-read       business_rules, catalog_product_sale_holds, catalog_media, catalog_media_visual_fr_reviews, sourcing_candidates, product_attributes, product_content_profile, product_content_sections, product_sku_media, product_skus, product_variants, products, suppliers
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md, docs/specs/DECISION_MODELE_STOCK_SKU.md, docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md
@@ -25,6 +25,7 @@ const { listCommercialTransportRails } = require('./transport-rails');
 const { getRule } = require('../utils/rules');
 const { quoteTransportPriceForItem, TransportPricingError } = require('./transport-pricing');
 const { applyCanonicalPromotion } = require('./product-admin-service');
+const { centralHubOnOrderSql } = require('./central-hub-on-order');
 
 const { inspectOne } = require('./catalog-media-visual-fr-proof');
 const CONTRACT_VERSION = '1';
@@ -353,7 +354,7 @@ function buildSellableUnits(product, skuRows, media, explicitSkuMediaMap = new M
       sku_id: sku.id,
       sku: sku.sku || null,
       option_values: optionValues,
-      stock_status: quantity > 0 ? 'AVAILABLE' : 'OUT_OF_STOCK',
+      stock_status: sku.procure_on_order === true ? 'ON_ORDER' : quantity > 0 ? 'AVAILABLE' : 'OUT_OF_STOCK',
       available_quantity: quantity,
       price_kmf: effectiveSkuPrice,
       media_ids: [...new Set(mediaIds)],
@@ -481,10 +482,11 @@ async function getProductDetail(dbClient, productId) {
     ),
     product.inventory_model === 'SKU'
       ? dbClient.query(
-        `SELECT id, sku, variant_combo, stock, price_kmf
-           FROM product_skus
-          WHERE product_id = $1 AND is_active = TRUE
-          ORDER BY created_at ASC, id ASC`,
+        `SELECT k.id, k.sku, k.variant_combo, k.stock, k.price_kmf,
+                 ${centralHubOnOrderSql('p', 'k')} AS procure_on_order
+           FROM product_skus k JOIN products p ON p.id=k.product_id
+          WHERE k.product_id = $1 AND k.is_active = TRUE
+          ORDER BY k.created_at ASC, k.id ASC`,
         [productId]
       )
       : Promise.resolve({ rows: [] }),

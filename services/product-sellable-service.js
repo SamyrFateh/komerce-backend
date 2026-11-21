@@ -6,10 +6,10 @@
  * @criticality   high
  * @inputs        product_id, variant_combo, quantity, resolved_sku
  * @outputs       sellable_unit, pricing_result
- * @depends       services/product-sku-service.js
+ * @depends       services/product-sku-service.js, services/central-hub-on-order.js
  * @used-by       services/product-admin-service.js (réexport), services/order-checkout-item-resolution.js,
  *                routes/orders/create.js (via product-admin-service.js), services/shared-cart-creation.js (via product-admin-service.js)
- * @db-read       catalog_product_sale_holds, catalog_media, product_sku_media, product_variants, products
+ * @db-read       catalog_product_sale_holds, catalog_media, product_sku_media, product_variants, products, product_skus, suppliers, sourcing_candidates
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/specs/DECISION_MODELE_STOCK_SKU.md, GAP-07
@@ -54,6 +54,7 @@
  */
 
 const { resolveActiveSku, canonicalizeVariantCombo } = require('./product-sku-service');
+const { isCentralHubOnOrderSku } = require('./central-hub-on-order');
 
 /**
  * Politique promotionnelle canonique (GAP-07 — lot préalable).
@@ -160,7 +161,7 @@ async function _resolveCanonicalImage(dbClient, { product, skuId }) {
 async function resolveSellableUnit(dbClient, { productId, variantCombo = null, quantity = 1 }) {
   const { rows: [product] } = await dbClient.query(
     `SELECT p.id, p.name, p.image_url, p.category, p.price_kmf, p.is_active, p.is_available,
-            p.inventory_model, p.has_variants, p.stock,
+            p.inventory_model, p.has_variants, p.stock, p.procurement_supplier_id,
             p.promo_pct, p.is_promo, p.promo_until,
             EXISTS(SELECT 1 FROM catalog_product_sale_holds h
               WHERE h.product_id=p.id AND h.released_at IS NULL) AS catalog_quality_frozen
@@ -189,7 +190,10 @@ async function resolveSellableUnit(dbClient, { productId, variantCombo = null, q
       e.status = 409; e.code = 'sellable_unit_not_found';
       throw e;
     }
-    if (resolvedSku.stock < qty) {
+    const procureOnOrder = Number(resolvedSku.stock) === 0
+      && Boolean(product.procurement_supplier_id)
+      && await isCentralHubOnOrderSku(dbClient, productId, resolvedSku.id);
+    if (!procureOnOrder && resolvedSku.stock < qty) {
       const e = new Error(`Stock insuffisant pour ${product.name} — disponible : ${resolvedSku.stock}`);
       e.status = 409; e.code = 'sellable_unit_out_of_stock';
       e.available_stock = resolvedSku.stock;
@@ -207,6 +211,8 @@ async function resolveSellableUnit(dbClient, { productId, variantCombo = null, q
       sku: resolvedSku.sku,
       variant_combo: canonicalizeVariantCombo(variantCombo ?? null),
       stock: resolvedSku.stock,
+      stock_status: procureOnOrder ? 'ON_ORDER' : 'AVAILABLE',
+      procure_on_order: procureOnOrder,
       base_unit_price_kmf,
       effective_unit_price_kmf,
       name: product.name,

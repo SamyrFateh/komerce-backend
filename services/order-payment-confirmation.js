@@ -6,9 +6,9 @@
  * @criticality   critical
  * @inputs        orderId, actor, source, dbClient
  * @outputs       confirmed_order, ordered_transition, stock_decrement, stockBlocked
- * @depends       services/order-status-machine.js, services/invoice-service.js, db.js
+ * @depends       services/order-status-machine.js, services/invoice-service.js, services/central-hub-on-order.js, db.js
  * @used-by       services/payment-stripe.js, services/payment-cash-confirm.js, services/shared-cart-engine.js, paypal-flows, wallet-full-order-flows
- * @db-read       order_items, product_skus, product_variants, products
+ * @db-read       order_items, product_skus, product_variants, products, suppliers, sourcing_candidates
  * @db-write      alerts, invoices
  * @db-write-via:product-admin-service products, product_variants, product_skus
  * @db-txn        caller_transaction_required, stock_for_update, confirmPaymentCycle_unique
@@ -66,6 +66,7 @@
 
 const { transitionOrderStatus } = require('./order-status-machine');
 const { adjustStock }           = require('./product-admin-service');
+const { isCentralHubOnOrderSku } = require('./central-hub-on-order');
 const log = require('../utils/logger').child({ module: 'order-payment-confirmation' });
 const db  = require('../db');
 const { createAlert } = require('../utils/alerts');
@@ -164,6 +165,7 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
        oi.quantity,
        oi.variant_combo,
        oi.sku_id,
+       oi.fulfillment_source, oi.procure_on_order,
        p.stock,
        p.has_variants,
        p.inventory_model,
@@ -180,6 +182,16 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
   const skuItems = [];
 
   for (const item of items) {
+    if (item.procure_on_order === true) {
+      // Immutable checkout snapshot: no physical SKU stock exists to debit.
+      // The source must remain a verified manual Central Hub import.
+      if (item.inventory_model !== 'SKU' || !item.sku_id ||
+          item.fulfillment_source !== 'IMPORT' ||
+          !await isCentralHubOnOrderSku(dbClient,item.product_id,item.sku_id)) {
+        throw new Error('[confirmPaymentCycle] CENTRAL_HUB_ON_ORDER_SOURCE_CHANGED');
+      }
+      continue;
+    }
     if (item.inventory_model === 'SKU') {
       if (!item.sku_id) {
         // Bug de résolution en amont (création de commande) — jamais un
@@ -306,7 +318,7 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
 
   // Stock suffisant pour tous les articles → décrémenter
   // (produits + variantes dans la même TX — VAGUE 3, via product-admin-service)
-  await adjustStock(dbClient, items, 'decrement');
+  await adjustStock(dbClient, items.filter(item => item.procure_on_order !== true), 'decrement');
 
   // LOY-01 : hook fidélité branché en post-commit dans chaque chemin de paiement
   // (payment-stripe, payment-paypal ×2, payment-cash-confirm, routes/cash,
