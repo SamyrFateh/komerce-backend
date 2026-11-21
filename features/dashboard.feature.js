@@ -22,6 +22,7 @@ module.exports = {
   // ── Périmètre ──────────────────────────────────────────────────────────
   perimeter: {
     in: [
+      'L7 : journal financier des transferts de garde et dépôts (direction custody, hors ventes), et coûts/avoirs réels au niveau des expéditions, sans allocation article ; réconciliation source/journal',
       'routes agrégées dashboard admin (KPIs, clients, opérations, hub, relais, radar, risques)',
       'queries de métriques et cache dashboard',
       'Legacy 1 : public/dashboards/admin/** — runtime actuel, gelé en maintenance corrective et rollback uniquement',
