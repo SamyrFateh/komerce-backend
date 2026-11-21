@@ -376,7 +376,7 @@ describe('G6-G5B N17 (transitaire hors rôle ou marché), N18 (douane retenue pu
   const r=read('scripts/recette/canonical/negative-runner.js');
   expect(r).toMatch(/N17:\{script:N1718_SCRIPT[^}]*to:'HUB_SHIPMENT'/);expect(r).toMatch(/N18:\{script:N1718_SCRIPT[^}]*to:'FORWARDER'/);expect(r).toMatch(/N19:\{script:N19_SCRIPT[^}]*to:'CUSTOMS'/);
   expect(r).toMatch(/N20:\{script:N20_SCRIPT[^}]*to:'CUSTOMS'/);
-  expect(read('scripts/recette/canonical/real-buyer-cash-adapters.js')).toMatch(/'N17','N18','N19'(?:,'N\d+[A-Z0-9]*')*\]\.includes\(SCENARIO\)/);
+  expect(read('scripts/recette/canonical/real-buyer-cash-adapters.js')).toMatch(/'N17','N18','N19'(?:,'N\d+[A-Za-z0-9]*')*\]\.includes\(SCENARIO\)/);
  });
  it('workflow : titres N17 à N19 pour KM, CM et CG',()=>{
   const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
@@ -549,5 +549,32 @@ describe('G6-G5C N30 (Order 360 et dashboards vs PG) et N31 (snapshot monétaire
   expect(a).toMatch(/ca_encaisse/);expect(a).not.toMatch(/\.post\(|screenshot/);expect(validateChromiumScriptSources()).toBeGreaterThan(0);
   const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
   for(const id of ['N30','N31']){for(const m of ['KM','CM','CG'])expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");expect(wf).toContain("'-full-"+id+"-') && '"+id+"'");expect(N.isNegative(id)).toBe(true)}
+ });
+});
+
+describe('G6-G5B N25 (SAV retour et double reprise) et N26b (compensation après retrait)',()=>{
+ const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
+ it('séquences : parcours M02 jusqu\'à la remise, puis SAV ; M01 inchangé',()=>{
+  expect(graphFor('N25').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','LOCAL_CLIENT_PICKUP','N25_SAV_DOUBLE_INTAKE','N25_SINGLE_INTAKE_ORACLE']);
+  expect(graphFor('N26b').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','LOCAL_CLIENT_PICKUP','N26B_SAV_COMPENSATION_DECISION','N26B_SAV_COMPENSATION_ORACLE']);
+  expect(graphFor('M01').order).toEqual(STAGE_IDS);
+  expect(validateStageModuleSources()).toBeGreaterThan(0);
+ });
+ const good=(o={})=>[[{id:'o',status:'collected',collected_scans:1}],[{id:'d',status:'open',return_quantity:1}],[{quantity:1,relay_id:'r'}],
+  [{compensations:0,wallet_credits:0,refunds:0,psp_intents:0,stock_after:5,...o}]];
+ it('oracle N25 : un dossier, une reprise, aucune compensation, stock inchangé',async()=>{
+  await expect(N.oracleN25(mk(good()),{orderId:'o',stockBefore:5})).resolves.toMatchObject({physical_receipts:1,stock_unchanged:true});
+  await expect(N.oracleN25(mk(good({stock_after:6})),{orderId:'o',stockBefore:5})).rejects.toThrow('G6_N25_PRODUCT_GAP_RETURNED_UNIT_BACK_IN_SELLABLE_STOCK_5_TO_6');
+  await expect(N.oracleN25(mk(good({wallet_credits:1})),{orderId:'o',stockBefore:5})).rejects.toThrow('G6_N25_PRODUCT_GAP_AUTOMATIC_COMPENSATION_ON_PHYSICAL_INTAKE');
+  const two=good();two[1]=[{id:'d',status:'open',return_quantity:1},{id:'e',status:'open',return_quantity:1}];
+  await expect(N.oracleN25(mk(two),{orderId:'o',stockBefore:5})).rejects.toThrow('G6_N25_PRODUCT_GAP_DOSSIER_COUNT_2');
+ });
+ it('script et workflow',()=>{
+  const a=read('scripts/recette/g6-negative-n25-sav-chromium.js');
+  expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);expect(a).toMatch(/G6_N26B_SCREEN_MISSING_ADMIN_COMPENSATION_DECISION/);expect(a).toMatch(/second_dossier_same_unit/);expect(a).not.toMatch(/screenshot/);
+  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
+  for(const id of ['N25','N26b'])for(const m of ['KM','CM','CG'])expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
+  expect(['N25','N26b'].every(N.isNegative)).toBe(true);
+  expect(validateChromiumScriptSources()).toBeGreaterThan(0);
  });
 });
