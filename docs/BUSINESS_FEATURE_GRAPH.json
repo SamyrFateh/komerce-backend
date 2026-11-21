@@ -16777,6 +16777,13 @@
       {
         "feature": "orders",
         "category": "services",
+        "declared": "services/order-read-authorization.js",
+        "resolvedPath": "services/order-read-authorization.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
         "declared": "services/verify-qr-collection.js",
         "resolvedPath": "services/verify-qr-collection.js",
         "status": "resolved-in-technical-graph"
@@ -17192,6 +17199,13 @@
         "category": "tests",
         "declared": "tests/unit/admin-order-refund.test.js",
         "resolvedPath": "tests/unit/admin-order-refund.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/unit/order-read-authorization.test.js",
+        "resolvedPath": "tests/unit/order-read-authorization.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -30402,6 +30416,12 @@
         "from": "orders",
         "to": "market-control-plane",
         "raw": "market-control-plane (destination relais actif : marché de rattachement et disponibilité du relais validés au checkout ; attestation transporteur non requise)",
+        "resolved": true
+      },
+      {
+        "from": "orders",
+        "to": "market-delegation",
+        "raw": "market-delegation (order-read-authorization.js consulte operations.read pour borner les détails de commande au marché délégué ; aucune capability ou identité reçue du client n’est une preuve)",
         "resolved": true
       },
       {
@@ -44564,6 +44584,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/order-read-authorization.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/verify-qr-collection.js",
                 "targetFile": "db.js"
               },
@@ -45170,6 +45194,22 @@
               {
                 "sourceFileId": "tests/unit/public-cart-quote-service.test.js",
                 "targetFile": "services/market-local-price-resolution-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "orders",
+        "to": "market-delegation",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/order-read-authorization.js",
+                "targetFile": "services/market-delegation-service.js"
               }
             ]
           }
@@ -50633,7 +50673,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2374
+        "filesObserved": 2376
       },
       "boutique": {
         "filesObserved": 218,

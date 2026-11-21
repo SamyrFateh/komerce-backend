@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 334,
+    "businessDependencies": 335,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -24141,6 +24141,13 @@
           ]
         },
         {
+          "consumer": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "payments",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -25191,6 +25198,10 @@
       },
       "authority": "backend-core — tout changement de la machine de statut ou du schema order_reference doit etre valide par le proprietaire de order-status-machine.js",
       "invariants": [
+        {
+          "statement": "les détails, historiques et colis d’une commande sont lus uniquement par son client, un agent du relais lié, un agent Hub central ou un market_operator délégué à operations.read ; les autres lectures échouent sans divulgation",
+          "test": "tests/unit/order-read-authorization.test.js"
+        },
         "annulation libre et 100% avant ordered (plancher 24h) ; commande ferme des ordered — demande wallet-only ensuite (DOCTRINE_ANNULATION)",
         "le badge Remboursable/Ferme du suivi EST le contrat : il ne dit jamais autre chose que ce que le code fait",
         {
@@ -25315,7 +25326,7 @@
             ]
           },
           "services": {
-            "count": 31,
+            "count": 32,
             "files": [
               {
                 "declared": "services/admin-order-refund.js",
@@ -25423,6 +25434,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/order-read-authorization.js",
+                "resolvedPath": "services/order-read-authorization.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
                 "declared": "services/order-service.js",
                 "resolvedPath": "services/order-service.js",
                 "status": "resolved-in-technical-graph"
@@ -25475,7 +25491,7 @@
             ]
           },
           "tests": {
-            "count": 64,
+            "count": 65,
             "files": [
               {
                 "declared": "tests/e2e-api/customer-to-customer.golden.e2e.test.js",
@@ -25678,6 +25694,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/order-read-authorization.test.js",
+                "resolvedPath": "tests/unit/order-read-authorization.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/order-service.test.js",
                 "resolvedPath": "tests/unit/order-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -25810,7 +25831,7 @@
             ]
           }
         },
-        "totalFiles": 110,
+        "totalFiles": 112,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 19,
@@ -26541,6 +26562,13 @@
         },
         {
           "provider": "market-autonomy",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "market-delegation",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
