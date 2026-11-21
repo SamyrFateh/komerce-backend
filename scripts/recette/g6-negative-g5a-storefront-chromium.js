@@ -149,8 +149,8 @@ async function authenticate(page,ctx,{buyer,phone,code}){
  await page.locator('#k-id-step-otp').waitFor({state:'visible',timeout:15000});
  const rr=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/otp/verify'&&r.request().method()==='POST',{timeout:20000});
  for(let i=0;i<6;i++)await humanFill(null,page.locator('.k-id-otp-box').nth(i),code[i]);
- const vr=await rr,vb=await vr.json();
- check(vr.status()===200&&vb.user?.id===buyer.id,'G6_G5A_OTP_SESSION_WRONG_BUYER');
+ const ver=await rr,vb=await ver.json();
+ check(ver.status()===200&&vb.user?.id===buyer.id,'G6_G5A_OTP_SESSION_WRONG_BUYER');
  await startTraceAfterAuth(ctx);
 }
 async function probe(page,fixture){
