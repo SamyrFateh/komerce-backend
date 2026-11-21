@@ -3,7 +3,7 @@
  * @domain orders
  * @layer test
  * @owner backend-core
- * @purpose Orchestration des scénarios négatifs N07/N09/N04/N33/N23/N24/N21/N22 : Golden joué jusqu'au point d'arrêt, geste négatif par l'écran, oracle PG en lecture seule.
+ * @purpose Orchestration des scénarios négatifs N07/N09/N04/N33/N23/N24/N21/N22/N20/N29 : Golden joué jusqu'au point d'arrêt, geste négatif par l'écran, oracle PG en lecture seule.
  * @db-read voir negative-scenarios.js
  * @db-write none
  * @impact-areas staging-only
@@ -23,7 +23,13 @@ const N2324_SCRIPT='scripts/recette/g6-negative-n23-n24-chromium.js';
 const N2324_REPORT='test-results/g6-negative-n23-n24/report.json';
 const N2122_SCRIPT='scripts/recette/g6-negative-n21-n22-cross-relay-chromium.js';
 const N2122_REPORT='test-results/g6-negative-n21-n22/report.json';
+const N20_SCRIPT='scripts/recette/g6-negative-n20-relay-discrepancy-chromium.js';
+const N20_REPORT='test-results/g6-negative-n20/report.json';
+const N29_SCRIPT='scripts/recette/g6-negative-n29-authz-chromium.js';
+const N29_REPORT='test-results/g6-negative-n29/report.json';
 const LOCAL_NEG={
+ N20:{script:N20_SCRIPT,report:N20_REPORT,phase:'N20_RELAY_DISCREPANCY',oracle:'N20_DISCREPANCY_ORACLE',to:'CUSTOMS'},
+ N29:{script:N29_SCRIPT,report:N29_REPORT,phase:'N29_SESSION_ROLE_ATTEMPTS',oracle:'N29_NO_MUTATION_ORACLE'},
  N23:{script:N2324_SCRIPT,report:N2324_REPORT,phase:'N23_WITHDRAWAL_ATTEMPTS',oracle:'N23_SECURITY_ORACLE'},
  N24:{script:N2324_SCRIPT,report:N2324_REPORT,phase:'N24_PARALLEL_HANDOFF',oracle:'N24_SINGLE_HANDOFF_ORACLE'},
  N21:{script:N2122_SCRIPT,report:N2122_REPORT,phase:'N21_CROSS_RELAY_ATTEMPTS',oracle:'N21_CROSS_RELAY_ORACLE'},
@@ -63,7 +69,7 @@ async function runNegativeScenario({scenario,env,db,adapters}){
  // N23, N24 (G6-G4B) : parcours M02 jusqu'à « disponible », puis tentatives de retrait ou remises simultanées, oracle PG.
  if(LOCAL_NEG[scenario]){
   const L=LOCAL_NEG[scenario];
-  const result=await bootstrapFreshScenario({scenario,toStage:'LOCAL_RELAY_AVAILABLE',adapters});
+  const result=await bootstrapFreshScenario({scenario,toStage:L.to||'LOCAL_RELAY_AVAILABLE',adapters});
   out.order_id=result.order_id;out.reference=result.order_reference;out.stages.push(...result.stages);
   const runtime=await adapters.attestRuntimeBeforeBuyer(),phase=L.phase;
   fs.rmSync(path.join(ROOT,L.report),{force:true});
@@ -73,7 +79,7 @@ async function runNegativeScenario({scenario,env,db,adapters}){
   }catch(e){
    // Verdict : défaut produit ou écran manquant relevé par le script ; sinon l'erreur d'origine.
    let child=null;try{child=readJson(L.report)}catch(_){}
-   const m=/(?:G6_N2[1-4]_(?:SCREEN_MISSING|PRODUCT_GAP)|PREREQ_MISSING_SECOND_RELAY)[A-Za-z0-9_]*/.exec(String(child?.error||''));
+   const m=/(?:G6_N(?:2[0-4]|29)_(?:SCREEN_MISSING|PRODUCT_GAP)|PREREQ_MISSING_SECOND_RELAY)[A-Za-z0-9_]*/.exec(String(child?.error||''));
    throw Error(m?m[0]:e.message);
   }
   const g=readJson(L.report);
@@ -83,10 +89,12 @@ async function runNegativeScenario({scenario,env,db,adapters}){
   const o=scenario==='N23'
    ?await N.oracleN23(db,{orderId:result.order_id,agentId:g.agent_id,minFailures:5,assertNoHubOrTransport})
    :scenario==='N24'?await N.oracleN24(db,{orderId:result.order_id,assertNoHubOrTransport})
+   :scenario==='N20'?await N.oracleN20(db,{orderId:result.order_id})
    :await N.oracleCrossRelay(db,{orderId:result.order_id,scenario,assertNoHubOrTransport});
   const sid=L.oracle;
   out.stages.push(evidence(sid,scenario,market,{oracle:o,order_id:result.order_id,http:g.tabs||g.intruder||(g.attempts||[]).map(a=>({kind:a.kind,http:a.http,ui_blocked:a.ui_blocked,message_visible:a.message_visible}))}));
   out.verdict={N23:'G6_N23_WITHDRAWAL_REFUSED_SECURITY_COUNTER_PG_PASS',N24:'G6_N24_PARALLEL_HANDOFF_SINGLE_ATTESTATION_PG_PASS',
+   N20:'G6_N20_RELAY_DISCREPANCY_INCIDENT_NO_HANDOFF_PG_PASS',N29:'G6_N29_SESSION_401_ROLE_403_NO_MUTATION_PG_PASS',
    N21:'G6_N21_CROSS_RELAY_REFUSED_NO_DISCLOSURE_PG_PASS',N22:'G6_N22_TWO_RELAYS_REFUSED_NO_DISCLOSURE_PG_PASS'}[scenario];
   return out;
  }

@@ -147,3 +147,32 @@ describe('G6-G4B N21 (agent d\'un autre relais) et N22 (relais A/B)',()=>{
    expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
  });
 });
+describe('G6-G4B N20 (écart de réception relais) et N29 (session 401, rôle 403)',()=>{
+ it('séquences : N20 = chaîne import jusqu\'à la douane, N29 = parcours M02 ; M01 inchangé',()=>{
+  expect(graphFor('N20').order).toEqual([...STAGE_IDS.slice(0,STAGE_IDS.indexOf('CUSTOMS')+1),'N20_RELAY_DISCREPANCY','N20_DISCREPANCY_ORACLE']);
+  expect(graphFor('N20').order).not.toContain('RELAY_RECEIPT');
+  expect(graphFor('N29').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','N29_SESSION_ROLE_ATTEMPTS','N29_NO_MUTATION_ORACLE']);
+  expect(graphFor('M01').order).toEqual(STAGE_IDS);
+  expect(validateStageModuleSources()).toBeGreaterThan(0);
+ });
+ it('oracle N20 : quantité constatée, incident, aucune remise du manquant',async()=>{
+  const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
+  const order={id:'o',status:'preparation',lines:1,qty:1,collected_scans:0,parcels:1};
+  const rec=[{expected_qty:1,received_qty:0,incident_id:'i',incident:'i'}];
+  await expect(N.oracleN20(mk([[order],rec,[{collected:0,received:0}]]),{orderId:'o'})).resolves.toMatchObject({received_qty:0,expected_qty:1});
+  await expect(N.oracleN20(mk([[order],[{...rec[0],incident:null}]]),{orderId:'o'})).rejects.toThrow('G6_N20_PRODUCT_GAP_NO_INCIDENT');
+  await expect(N.oracleN20(mk([[order],[{...rec[0],received_qty:1}]]),{orderId:'o'})).rejects.toThrow('G6_N20_PRODUCT_GAP_RECEIVED_QTY_NOT_SHORT');
+  await expect(N.oracleN20(mk([[order],rec,[{collected:1,received:0}]]),{orderId:'o'})).rejects.toThrow('G6_N20_PRODUCT_GAP_MISSING_QTY_HANDED_OVER');
+ });
+ it('scripts : écart saisi à l\'écran, SCREEN_MISSING_RELAY_DISCREPANCY, session expirée et rôle interdit',()=>{
+  const a=read('scripts/recette/g6-negative-n20-relay-discrepancy-chromium.js'),b=read('scripts/recette/g6-negative-n29-authz-chromium.js');
+  expect(a).toMatch(/G6_N20_SCREEN_MISSING_RELAY_DISCREPANCY/);expect(a).toMatch(/data-relay-received/);expect(a).not.toMatch(/screenshot/);
+  expect(b).toMatch(/clearCookies/);expect(b).toMatch(/SESSION_EXPIREE_SANS_REDIRECTION_NI_MESSAGE/);expect(b).toMatch(/CLIENT_FORBIDDEN_TRIED/);expect(b).not.toMatch(/screenshot/);
+  expect(read('scripts/recette/canonical/real-buyer-cash-adapters.js')).toMatch(/G6_CANONICAL_SCENARIO:'M01'/);
+ });
+ it('workflow : titres N20/N29 pour KM, CM et CG',()=>{
+  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
+  for(const id of ['N20','N29'])for(const m of ['KM','CM','CG'])
+   expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
+ });
+});

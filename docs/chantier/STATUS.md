@@ -26,7 +26,7 @@
 
 ## G6-G4B — famille Relais et retrait, plus N29 (Sonnet, 21/11/2026)
 
-**Responsable :** Sonnet. **Statut :** en cours, aucun run ; Opus lance. **PR :** N23 + N24 (#4824, fusionnée) ; N21 + N22 (`g6-g4b-n21-n22`) ; N20 + N29 à suivre. **Périmètre :** N23 (retrait sans code, 4 chiffres, codes erronés, force brute ; verrou agent 5 échecs / 15 min), N24 (deux remises simultanées, deux onglets), N21 (agent d'un autre relais, `PREREQ_MISSING_SECOND_RELAY` sinon), N22 (relais A/B, deux sens). **Prochaine action :** après fusion, Opus lance `[staging-op] g6-dynamic-fresh-full-N23-{KM|CM|CG}` puis N24. N23 verrouille l'agent relais E2E 15 min : ne pas enchaîner un autre scénario relais pendant ce délai.
+**Responsable :** Sonnet. **Statut :** en cours, aucun run ; Opus lance. **PR :** N23 + N24 (#4824, fusionnée) ; N21 + N22 (#4827) ; N20 + N29 (`g6-g4b-n20-n29`). **Périmètre :** N23 (retrait sans code, 4 chiffres, codes erronés, force brute ; verrou agent 5 échecs / 15 min), N24 (deux remises simultanées, deux onglets), N21 (agent d'un autre relais, `PREREQ_MISSING_SECOND_RELAY` sinon), N22 (relais A/B, deux sens), N20 (écart de réception relais, chaîne import M01 jusqu'à la douane), N29 (session 401, rôle 403). **Prochaine action :** après fusion, Opus lance `[staging-op] g6-dynamic-fresh-full-N23-{KM|CM|CG}` puis N24. N23 verrouille l'agent relais E2E 15 min : ne pas enchaîner un autre scénario relais pendant ce délai.
 
 ## G6 M01/KM — chaîne canonique boutique → retrait CERTIFIÉE sur staging (18/11/2026)
 

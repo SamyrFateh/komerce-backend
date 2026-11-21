@@ -4,12 +4,12 @@
  * @layer test
  * @owner backend-core
  * @purpose Scénarios négatifs N07/N09/N04/N33 (G6-G4A), N23/N24 (G6-G4B) : résolution multi-SKU en lecture seule, oracles PG en lecture seule, verdicts SCREEN_MISSING/PRODUCT_GAP.
- * @db-read orders, order_items, product_skus, products, markets, product_market_price_drafts, product_market_exposure, local_stock, local_stock_allocations, cash_collections, cash_confirmation_controls, scans, parcels, parcel_items, purchase_lines, pickup_collect_failures
+ * @db-read orders, order_items, product_skus, products, markets, product_market_price_drafts, product_market_exposure, local_stock, local_stock_allocations, cash_collections, cash_confirmation_controls, scans, parcels, parcel_items, purchase_lines, pickup_collect_failures, international_shipments, international_shipment_relay_receipts, incidents
  * @db-write none
  * @impact-areas staging-only
  */
 'use strict';
-const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22']);
+const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29']);
 const isNegative=s=>NEGATIVE.includes(String(s));
 // Produit vendable (prix LOCAL_ACTIVE, exposition ENABLED, actif) servi par l'import (aucun stock local exposé), SKU actifs en stock.
 const MULTI_SKU_SQL=`
@@ -135,7 +135,22 @@ async function oracleCrossRelay(db,{orderId,scenario,assertNoHubOrTransport}){
  if(assertNoHubOrTransport)await assertNoHubOrTransport(db,orderId,'available');
  return {status:o.status,collected_scans:0,qty_collected:0,order_attempts:s.attempts};
 }
-// N04, aucun stock négatif, aucune réserve fictive.
+// N20 : quantité réellement constatée, incident créé, aucune remise du manquant.
+async function oracleN20(db,{orderId}){
+ const o=await orderRows(db,orderId);
+ const {rows:r}=await db.query(`SELECT rr.expected_qty,rr.received_qty,rr.incident_id,i.id AS incident FROM international_shipment_relay_receipts rr
+   JOIN order_items oi ON oi.id=rr.order_item_id LEFT JOIN incidents i ON i.id=rr.incident_id WHERE oi.order_id=$1`,[orderId]);
+ ok(r.length>=1,'G6_N20_PRODUCT_GAP_NO_RECEIPT_ROW');
+ ok(r.every(x=>Number(x.received_qty)<Number(x.expected_qty)),'G6_N20_PRODUCT_GAP_RECEIVED_QTY_NOT_SHORT');
+ ok(r.every(x=>x.incident),'G6_N20_PRODUCT_GAP_NO_INCIDENT');
+ const {rows:[pi]}=await db.query(`SELECT COALESCE(SUM(pi.qty_collected),0)::int AS collected,COALESCE(SUM(pi.qty_received),0)::int AS received
+   FROM parcel_items pi JOIN parcels p ON p.id=pi.parcel_id WHERE p.order_id=$1`,[orderId]);
+ const got=r.reduce((n,x)=>n+Number(x.received_qty),0);
+ ok(pi.received===got,'G6_N20_PRODUCT_GAP_PARCEL_RECEIVED_'+pi.received+'_VS_'+got);
+ ok(o.status!=='collected'&&o.collected_scans===0&&pi.collected===0,'G6_N20_PRODUCT_GAP_MISSING_QTY_HANDED_OVER');
+ return {receipts:r.length,received_qty:got,expected_qty:r.reduce((n,x)=>n+Number(x.expected_qty),0),incidents:r.length,qty_collected:0,status:o.status};
+}
+// N04 : aucune commande, aucun stock négatif, aucune réserve fictive.
 async function oracleN04(db,{buyerId,productId,market,availableBefore}){
  const {rows:[n]}=await db.query('SELECT count(*)::int AS n FROM orders WHERE user_id=$1',[buyerId]);
  ok(n.n===0,'G6_N04_PRODUCT_GAP_ORDER_EXISTS_'+n.n);
@@ -156,4 +171,4 @@ function classifyNegative(scenario,message){
  const g=new RegExp('G6_'+scenario+'_(SCREEN_MISSING|PRODUCT_GAP)').exec(m);
  return g?g[1]:null;
 }
-module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN04,classifyNegative};
+module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,classifyNegative};
