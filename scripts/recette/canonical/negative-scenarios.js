@@ -10,7 +10,7 @@
  */
 'use strict';
 const {isDeepStrictEqual}=require('node:util');
-const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29','N11','N12','N13','N14','N15','N16','N17','N18','N19','N28','N32','N35','N36','N37','N38','N30','N31','N39F1','N39F2','N39F3','N25','N26b']);
+const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29','N11','N12','N13','N14','N15','N16','N17','N18','N19','N28','N32','N35','N36','N37','N38','N30','N31','N39F1','N39F2','N39F3','N25','N26b','N40','N26a','N27']);
 const isNegative=s=>NEGATIVE.includes(String(s));
 // Produit vendable (prix LOCAL_ACTIVE, exposition ENABLED, actif) servi par l'import (aucun stock local exposé), SKU actifs en stock.
 const MULTI_SKU_SQL=`
@@ -562,6 +562,19 @@ async function oracleN25(db,{orderId,stockBefore}){
  ok(c.stock_after===stockBefore,'G6_N25_PRODUCT_GAP_RETURNED_UNIT_BACK_IN_SELLABLE_STOCK_'+stockBefore+'_TO_'+c.stock_after);
  return {dossiers:1,physical_receipts:1,compensations:0,wallet_credits:0,refunds:0,stock_unchanged:true,dossier_status:d[0].status};
 }
+// N40 (G6-G5B, prix fournisseur confirmé différent du devis) : écart accepté seulement avec validation séparée ; jamais de paiement, d'autorisation ni de substitution silencieux.
+async function oracleN40(db,{orderId,poId,confirm,quoted}){
+ const {rows:[l]}=await db.query(`SELECT po.status::text AS po_status,pl.confirmed_quantity,pl.confirmed_unit_price::text AS confirmed_price,pl.supplier_unit_price::text AS unit_price,pl.product_sku_id
+  FROM purchase_orders po JOIN purchase_lines pl ON pl.purchase_order_id=po.id WHERE po.id=$1 AND pl.parent_line_id IS NULL`,[poId]);
+ ok(!!l&&!!l.product_sku_id,'G6_N40_PRODUCT_GAP_LINE_OR_SKU_LOST');
+ const x=await poEffects(db,poId,orderId);
+ ok(x.supplier_payments===0&&x.payment_authorizations===0&&x.manual_executions===0,'G6_N40_PRODUCT_GAP_SILENT_PAYMENT_OR_EXECUTION');
+ ok(x.hub_units===0,'G6_N40_PRODUCT_GAP_HUB_EFFECT');
+ const accepted=confirm&&confirm.http>=200&&confirm.http<300;
+ const gap=l.confirmed_price!=null&&Number(l.confirmed_price)!==Number(quoted);
+ ok(!(accepted&&gap&&l.po_status==='confirmed'),'G6_N40_PRODUCT_GAP_PRICE_GAP_ACCEPTED_WITHOUT_SEPARATE_VALIDATION_'+quoted+'_TO_'+l.confirmed_price);
+ return {po_status:l.po_status,quoted:Number(quoted),confirmed_price:l.confirmed_price==null?null:Number(l.confirmed_price),client_http:confirm?confirm.http:null,payments:0};
+}
 // Pur : verdict explicite pour un écran manquant ou un défaut produit (jamais un contournement).
 function classifyNegative(scenario,message){
  const m=String(message||'');
@@ -571,4 +584,4 @@ function classifyNegative(scenario,message){
  const g=new RegExp('G6_'+scenario+'_(SCREEN_MISSING|PRODUCT_GAP)').exec(m);
  return g?g[1]:null;
 }
-module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,oracleN15,oracleN16,oracleN28,oracleN32,oracleN30,oracleN31,oracleN35,oracleN36,oracleN37,oracleN38,ecoControls,snapN16,shipmentForOrder,snapJourney,snapLocalTransport,oracleN17,oracleN18,oracleN19,cancelEffects,oracleN39F1,oracleN39F2,oracleN39F3,oracleN25,importPo,classifyNegative};
+module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,oracleN15,oracleN16,oracleN28,oracleN32,oracleN30,oracleN31,oracleN35,oracleN36,oracleN37,oracleN38,ecoControls,snapN16,shipmentForOrder,snapJourney,snapLocalTransport,oracleN17,oracleN18,oracleN19,cancelEffects,oracleN39F1,oracleN39F2,oracleN39F3,oracleN25,oracleN40,importPo,classifyNegative};
