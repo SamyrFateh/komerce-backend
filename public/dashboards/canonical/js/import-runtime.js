@@ -623,6 +623,37 @@
     })[status] || { label:'Terminé', tone:'positive' };
   }
 
+
+  function sourcingBlockReason(run) {
+    const failedStage = Array.isArray(run?.stages)
+      ? run.stages.find(stage => stage.status === 'FAILED') : null;
+    const raw = String(run?.failure_reason || failedStage?.reason || run?.business?.failure_reason || '').trim();
+    if (!raw) return 'Le serveur n’a pas communiqué de motif détaillé. Ouvrez les détails techniques pour identifier l’étape concernée.';
+    if (/^connector_failed\s*:/i.test(raw)) {
+      const detail = raw.replace(/^connector_failed\s*:/i, '').trim();
+      return detail
+        ? `La connexion au fournisseur a échoué : ${detail}`
+        : 'La connexion au fournisseur a échoué.';
+    }
+    const known = {
+      pipeline_partial_blocked: 'La résolution canonique des produits fournisseur n’a pas abouti.',
+      accounting_unbalanced: 'Les produits reçus ne sont pas tous comptabilisés.',
+      sourcing_certification_incomplete: 'La certification Sourcing du passage est incomplète.',
+      stage_failed: 'Une étape du passage a échoué.',
+      run_failed: 'Le passage a échoué sans autre détail communiqué.',
+    };
+    return known[raw.toLowerCase()] || raw.replaceAll('_', ' ');
+  }
+
+  function sourcingBlockedNotice(run) {
+    if (!run || sourcingStatusView(run).tone !== 'critical') return '';
+    return `<section class="kir-exception-banner" role="alert" data-sourcing-blocked-run="${esc(run.run_ref || '')}">
+      <strong>Pourquoi ce passage est bloqué</strong>
+      <p>${esc(sourcingBlockReason(run))}</p>
+      <a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav data-sourcing-block-diagnostic>Voir les détails du passage →</a>
+    </section>`;
+  }
+
   function businessTone(status) {
     return ({
       RUNNING:'live',
@@ -2137,6 +2168,7 @@
           <div><strong>${facts.ready}</strong><span>Retenus</span></div>
           <div><strong>${handoff?.catalogued ?? 0}</strong><span>Remis au Catalogue</span></div>
         </div>
+        ${sourcingBlockedNotice(run)}
         ${handoff && handoff.remaining > 0 ? `<p class="kir-one-handoff">
           ${handoff.remaining} produit${handoff.remaining > 1 ? 's' : ''} en attente de remise automatique au Catalogue. Aucune correction à effectuer ici.</p>` : ''}
         ${unifiedSourcingIssues(run)}
@@ -2145,6 +2177,7 @@
     return `<section class="kir-page kir-one-screen" data-sourcing-single-screen>
       <header class="kir-one-hero"><div><span class="kir-eyebrow">SOURCING</span>
         <h1>Sourcing Live</h1><p>Acquérir des produits et les remettre au Catalogue global.</p></div>
+        ${viewer && ['admin', 'sourcing'].includes(viewer.role) ? '<a class="kir-global-link" href="/admin/workspaces/sourcing?mode=manual" data-sourcing-manual-import>Import manuel →</a>' : ''}
         ${viewer?.role === 'admin' ? '<a href="/admin/workspaces/catalog">Catalogue global →</a>' : ''}</header>
       ${unifiedSourcingTabs(run, view)}
       <main class="kir-one-body" data-sourcing-active-view="${view}">
