@@ -14,7 +14,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
 - Graph nodes: 2101
-- Edges: 10454
+- Edges: 10460
 - DB tables: 244
 - Doctrines: 823
 - Impact areas: 210
@@ -848,6 +848,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/catalog-visual-fr-human-review-write.js -> catalog_media_visual_fr_reviews
 - WRITE services/catalog-product-mutation-service.js -> catalog_media
 - WRITE services/catalog-promotion.js -> catalog_media
+- WRITE services/catalog-workspace.js -> catalog_media
 - WRITE services/catalog-product-quality-service.js -> catalog_product_quality_notes
 - WRITE services/catalog-product-quality-service.js -> catalog_product_sale_holds
 - WRITE services/catalog-publication-decision-audit.js -> catalog_publication_decision_audit
