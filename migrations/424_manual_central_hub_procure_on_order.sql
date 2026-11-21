@@ -20,6 +20,14 @@ BEGIN
   IF NEW.procure_on_order IS DISTINCT FROM OLD.procure_on_order THEN
    RAISE EXCEPTION 'procure_on_order is immutable' USING ERRCODE='23514';
   END IF;
+  IF OLD.procure_on_order AND (
+   NEW.product_id IS DISTINCT FROM OLD.product_id
+   OR NEW.sku_id IS DISTINCT FROM OLD.sku_id
+   OR NEW.fulfillment_source IS DISTINCT FROM OLD.fulfillment_source
+  ) THEN
+   RAISE EXCEPTION 'on-order product, SKU and fulfillment source are immutable'
+     USING ERRCODE='23514';
+  END IF;
   RETURN NEW;
  END IF;
  IF NEW.procure_on_order THEN
