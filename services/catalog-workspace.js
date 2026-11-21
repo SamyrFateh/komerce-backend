@@ -9,7 +9,7 @@
  * @depends       db, utils/rules.js, services/catalog-product-quality-service.js, services/product-admin-service.js, services/catalog-approval.js, services/catalog-overrides.js, services/boutique-taxonomy-admin.js, services/catalog-commercial-assortment.js, services/pricing-parameters-status.js
  * @used-by       routes/admin-catalog-workspace.js
  * @db-read       catalog_product_sale_holds, catalog_product_quality_notes, disputes, order_items, products, sourcing_candidates, boutique_categories, boutique_subcategories, import_runtime_runs, markets, product_market_exposure, product_market_price_drafts, catalog_media, catalog_media_visual_fr_reviews, product_content_profile, product_skus, product_variants, finance_config, currency_parities, exchange_rates, cost_components
- * @db-write      none
+ * @db-write      catalog_media, products
  * @db-write-via  product-admin-service, catalog-approval, catalog-overrides, boutique-taxonomy-admin, catalog-product-mutation-service
  * @db-txn        transactional_editorial_update, delegated_to_domain_authority
  * @doctrine      workspace_acts_dashboard_observes, global_catalog_not_market_scoped, commercial_catalog_is_union_of_approved_products_from_closed_kirs, reuse_domain_mutation_authorities, product_ref_is_public_identity, no_paid_ai_api_for_fr_preparation
@@ -522,6 +522,8 @@ async function getRegistryReadiness(productRef) {
 // It does not grant publication, decide local prices or mutate source records.
 function publicProductDossier(facts, product, marketHandoff = null, details = {}) {
   const row = facts?.row || {};
+  const hubManual = row.source_supplier_system_key === 'central_hub'
+    && row.normalized_source_contract?.source_kind === 'central_hub_manual';
   const candidate = product.lifecycle_status === 'candidate' && product.is_active !== true;
   const positive = value => {
     if (value == null || String(value).trim() === '') return null;
@@ -544,10 +546,12 @@ function publicProductDossier(facts, product, marketHandoff = null, details = {}
       taxonomy_active: row.taxonomy_active === true,
     },
     supplier: {
-      name: row.supplier_name || null,
-      reference: row.supplier_product_id || null,
+      name: hubManual ? null : (row.supplier_name || null),
+      reference: hubManual ? null : (row.supplier_product_id || null),
+      internal_source_label: hubManual ? 'Fournisseur central Hub' : null,
       source_contract_v2: row.has_sourcing_candidate === false ? null
         : String(row.normalized_source_contract?.schema_version || '') === '2',
+      source_kind: row.normalized_source_contract?.source_kind || null,
       sourcing_decision: row.sourcing_decision || null,
     },
     availability: {
@@ -568,7 +572,7 @@ function publicProductDossier(facts, product, marketHandoff = null, details = {}
     purchasing: {
       active_supplier_skus: count(row.active_supplier_skus),
       complete_supplier_skus: count(row.complete_supplier_skus),
-      supplier_identity_complete: row.has_sourcing_candidate === false ? null
+      supplier_identity_complete: row.has_sourcing_candidate === false || hubManual ? null
         : (Number(row.active_supplier_skus) > 0 &&
           Number(row.active_supplier_skus) === Number(row.complete_supplier_skus)),
     },
@@ -685,6 +689,57 @@ async function getProductDossier(productRef) {
     visual,
     shortDescription: profile.rows[0]?.short_description,
   });
+}
+
+async function getCanonicalMediaUploadTarget(productRef) {
+  const product = await resolveProduct(productRef);
+  const { rows } = await db.query(
+    `SELECT p.id, p.name
+       FROM products p
+      WHERE p.id=$1 AND p.lifecycle_status='candidate' AND p.is_active=FALSE
+        AND EXISTS (SELECT 1 FROM sourcing_candidates sc
+                     WHERE sc.product_id=p.id AND sc.state='imported_to_catalog')
+      LIMIT 1`, [product.id]
+  );
+  if (!rows[0]) throw new CatalogWorkspaceError(
+    'catalog_media_upload_candidate_required', 'Seul un brouillon Catalogue issu du Sourcing peut recevoir ce média', 409
+  );
+  return rows[0];
+}
+
+async function appendUploadedCanonicalMedia(productRef, imageUrl) {
+  let parsed;
+  try { parsed = new URL(String(imageUrl || '')); } catch { parsed = null; }
+  if (!parsed || parsed.protocol !== 'https:' || !parsed.hostname.endsWith('imagekit.io')) {
+    throw new CatalogWorkspaceError('catalog_media_url_invalid', 'URL ImageKit invalide', 422);
+  }
+  const { rows } = await db.query(
+    `WITH target AS (
+       SELECT p.id, p.name
+         FROM products p
+        WHERE p.product_ref=$1 AND p.lifecycle_status='candidate' AND p.is_active=FALSE
+          AND EXISTS (SELECT 1 FROM sourcing_candidates sc
+                       WHERE sc.product_id=p.id AND sc.state='imported_to_catalog')
+        LIMIT 1
+     ), inserted AS (
+       INSERT INTO catalog_media (product_id, source_media_id, url, role, alt, option_values, display_order)
+       SELECT target.id, NULL, $2, 'PRODUCT', target.name, '{}'::jsonb,
+              COALESCE((SELECT MAX(cm.display_order)+1 FROM catalog_media cm WHERE cm.product_id=target.id),0)
+         FROM target
+       RETURNING product_id, id
+     ), updated AS (
+       UPDATE products p SET image_url=$2, updated_at=NOW()
+         FROM inserted i WHERE p.id=i.product_id
+       RETURNING p.id, p.image_url
+     )
+     SELECT updated.id AS product_id, updated.image_url, inserted.id AS media_id
+       FROM updated JOIN inserted ON inserted.product_id=updated.id`,
+    [productRef, parsed.toString()]
+  );
+  if (!rows[0]) throw new CatalogWorkspaceError(
+    'catalog_media_upload_candidate_required', 'Seul un brouillon Catalogue issu du Sourcing peut recevoir ce média', 409
+  );
+  return rows[0];
 }
 
 function sanitizeProductCreate(body = {}) {
@@ -905,6 +960,8 @@ module.exports = {
   buildWorkspace,
   getRegistryReadiness,
   getProductDossier,
+    getCanonicalMediaUploadTarget,
+    appendUploadedCanonicalMedia,
   createProduct,
   updateProduct,
   updateEditorial,

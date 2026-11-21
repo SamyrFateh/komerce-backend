@@ -58,6 +58,16 @@ test('un produit remis conserve ses défauts multiples sans réécrire ses statu
   });
 });
 
+test('la source centrale Hub ne devient prête qu’avec le contrat interne sans vendeur ni SKU', async () => {
+  const q = executor([], []);
+  await listUnified({}, q);
+  const sql = q.query.mock.calls.map(([statement]) => statement).join('\n');
+  expect(sql).toContain("source_supplier.system_key='central_hub'");
+  expect(sql).toContain("normalized_source_contract->>'source_kind'='central_hub_manual'");
+  expect(sql).toContain("?| ARRAY['supplier_name','supplier_product_id','sellable_units']");
+  expect(sql).toContain('LEFT JOIN suppliers source_supplier ON source_supplier.id=sc.supplier_id');
+});
+
 test('un candidat orphelin après handoff est un écart réel, jamais silencieusement oublié', () => {
   expect(publicRow({
     ...originalCandidate,

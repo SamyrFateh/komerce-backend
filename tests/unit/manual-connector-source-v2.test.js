@@ -10,6 +10,7 @@ const {
   fetchProducts,
   normalizeFormItem,
 } = require('../../services/suppliers/connectors/manual-connector');
+const { validateNormalizedProduct } = require('../../services/suppliers/normalized-product');
 
 function richManualItem(overrides = {}) {
   return {
@@ -75,6 +76,34 @@ describe('manual rich source — contrat V2', () => {
     expect(result.products[0].sellable_units.some((unit) =>
       unit.option_values.Couleur === 'Beige'
     )).toBe(false);
+  });
+
+  test('le contrat Hub V2 n’invente aucun vendeur, SKU ou identité de commande', () => {
+    const result = fetchProducts({
+      supplier_name: 'Fournisseur central Hub',
+      source_kind: 'central_hub_manual',
+      items: [{ product_name: 'Lampe de recette', currency: 'EUR', source_locale: 'fr' }],
+    });
+    expect(result.invalid).toEqual([]);
+    const [contract] = result.products;
+    expect(contract).toMatchObject({ schema_version: '2', source_kind: 'central_hub_manual' });
+    expect(contract).not.toHaveProperty('supplier_name');
+    expect(contract).not.toHaveProperty('supplier_product_id');
+    expect(contract).not.toHaveProperty('sellable_units');
+    expect(validateNormalizedProduct(contract).valid).toBe(true);
+  });
+
+  test('le contrat Hub refuse une identité vendeur ou un SKU prématuré', () => {
+    const result = fetchProducts({
+      supplier_name: 'Fournisseur central Hub',
+      source_kind: 'central_hub_manual',
+      items: [{
+        product_name: 'Lampe de recette', currency: 'EUR',
+        supplier_product_id: 'SELLER-1', sellable_units: [],
+      }],
+    });
+    expect(result.products).toHaveLength(0);
+    expect(result.invalid[0].errors.join(' ')).toMatch(/vendeur réel|SKU fournisseur/);
   });
 
   test('préserve brand, specifications et GTIN pour la Resolution universelle', () => {

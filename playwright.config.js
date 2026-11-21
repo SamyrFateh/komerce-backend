@@ -38,6 +38,7 @@ const DASHBOARD_SPECS = [
   'sourcing-live-single-screen',
   'sourcing-candidate-promote',
   'sourcing-watch-actions',
+  'catalog-central-hub-media',
   'import-runtime-credentials',
   'import-runtime-source-registry',
   'purchasing-workspace',

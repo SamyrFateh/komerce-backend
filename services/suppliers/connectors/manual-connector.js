@@ -60,7 +60,7 @@ function cloneJsonValue(value) {
  * Normalise un item de formulaire en NormalizedSupplierProduct.
  * Les erreurs de parsing scalar sont routées en invalid via `_connectorErrors`.
  */
-function normalizeFormItem(item, supplierName) {
+function normalizeFormItem(item, supplierName, sourceKind = 'supplier') {
   const errors = [];
 
   function numField(field, label) {
@@ -100,9 +100,16 @@ function normalizeFormItem(item, supplierName) {
     Object.prototype.hasOwnProperty.call(item, field)
   );
 
+  const centralHubManual = sourceKind === 'central_hub_manual';
+  if (centralHubManual && item.supplier_product_id) {
+    errors.push('source fournisseur réel à saisir uniquement à la confirmation d’achat');
+  }
+  if (centralHubManual && Object.prototype.hasOwnProperty.call(item, 'sellable_units')) {
+    errors.push('SKU fournisseur à saisir uniquement à la confirmation d’achat');
+  }
   const obj = {
-    supplier_name: supplierName,
-    supplier_product_id: item.supplier_product_id || null,
+    ...(centralHubManual ? { source_kind: 'central_hub_manual' } : { supplier_name: supplierName }),
+    ...(!centralHubManual ? { supplier_product_id: item.supplier_product_id || null } : {}),
     product_name: (item.product_name || '').trim(),
     supplier_category: item.supplier_category || null,
     purchase_price: purchasePrice,
@@ -121,6 +128,7 @@ function normalizeFormItem(item, supplierName) {
   // Version explicite gagnante : un payload qui annonce v1 mais contient des
   // champs v2 doit être rejeté par le schéma v1, pas promu silencieusement.
   if (explicitVersion) obj.schema_version = explicitVersion;
+  else if (centralHubManual) obj.schema_version = '2';
   else if (hasRichStructure) obj.schema_version = '2';
 
   // Préserver les extensions V2 sans interprétation. Le schéma V2 et les
@@ -153,7 +161,7 @@ function fetchProducts(input) {
     throw new Error('items requis (tableau non vide)');
   }
 
-  const normalized = input.items.map((item) => normalizeFormItem(item, supplierName));
+  const normalized = input.items.map((item) => normalizeFormItem(item, supplierName, input.source_kind));
   const connectorInvalid = [];
   const toValidate = [];
 
