@@ -29,8 +29,11 @@ const N33_STAGE_IDS=Object.freeze(['BUYER','N33_SKU_ORACLE']);
 // N23 / N24 (G6-G4B) : parcours M02 jusqu'à « disponible au relais », puis tentatives de retrait (N23) ou deux remises simultanées (N24).
 const N23_STAGE_IDS=Object.freeze(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','N23_WITHDRAWAL_ATTEMPTS','N23_SECURITY_ORACLE']);
 const N24_STAGE_IDS=Object.freeze(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','N24_PARALLEL_HANDOFF','N24_SINGLE_HANDOFF_ORACLE']);
+// N21 / N22 (G6-G4B) : même parcours M02 jusqu'à « disponible », puis agent d'un autre relais (N21) ou relais A/B dans les deux sens (N22).
+const N21_STAGE_IDS=Object.freeze(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','N21_CROSS_RELAY_ATTEMPTS','N21_CROSS_RELAY_ORACLE']);
+const N22_STAGE_IDS=Object.freeze(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','N22_TWO_RELAYS_ATTEMPTS','N22_TWO_RELAYS_ORACLE']);
 const SCENARIO_STAGE_IDS=Object.freeze({M01:STAGE_IDS,M02:M02_STAGE_IDS,M03:M03_STAGE_IDS,
- N07:N07_STAGE_IDS,N09:N09_STAGE_IDS,N04:N04_STAGE_IDS,N33:N33_STAGE_IDS,N23:N23_STAGE_IDS,N24:N24_STAGE_IDS});
+ N07:N07_STAGE_IDS,N09:N09_STAGE_IDS,N04:N04_STAGE_IDS,N33:N33_STAGE_IDS,N23:N23_STAGE_IDS,N24:N24_STAGE_IDS,N21:N21_STAGE_IDS,N22:N22_STAGE_IDS});
 function scenarioProfile(raw){
  if(typeof raw!=='string'||!Object.hasOwn(SCENARIO_STAGE_IDS,raw))throw Error('G6_UNSUPPORTED_SCENARIO');
  return raw;
@@ -112,4 +115,4 @@ function planGolden({fromStage='BUYER',toStage='CLIENT_PICKUP'}={}){
  return {contract:'G6-CANONICAL-JOURNEY-v1',mode:'dry-run',stages:g.order.slice(start,end+1),
   missing_prerequisites:prerequisiteIds(from.id,g),mutations:0,verdict:'NOT_PROVEN'};
 }
-module.exports={M02_STAGE_IDS,M03_STAGE_IDS,N07_STAGE_IDS,N09_STAGE_IDS,N04_STAGE_IDS,N33_STAGE_IDS,N23_STAGE_IDS,N24_STAGE_IDS,SCENARIO_STAGE_IDS,scenarioProfile,loadScenarioStages,graphFor,STAGE_IDS,nextStageId,LEGACY_PHASE_MAP,loadGoldenStages,stageGraph,resolvePhase,prerequisiteIds,requiresResumeProof,validateProofBoundary,planGolden};
+module.exports={M02_STAGE_IDS,M03_STAGE_IDS,N07_STAGE_IDS,N09_STAGE_IDS,N04_STAGE_IDS,N33_STAGE_IDS,N23_STAGE_IDS,N24_STAGE_IDS,N21_STAGE_IDS,N22_STAGE_IDS,SCENARIO_STAGE_IDS,scenarioProfile,loadScenarioStages,graphFor,STAGE_IDS,nextStageId,LEGACY_PHASE_MAP,loadGoldenStages,stageGraph,resolvePhase,prerequisiteIds,requiresResumeProof,validateProofBoundary,planGolden};

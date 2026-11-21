@@ -120,3 +120,30 @@ describe('G6-G4B N23 (tentatives de retrait) et N24 (deux remises simultanées)'
    expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
  });
 });
+describe('G6-G4B N21 (agent d\'un autre relais) et N22 (relais A/B)',()=>{
+ const chain=['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE'];
+ it('séquences et classification des prérequis',()=>{
+  expect(graphFor('N21').order).toEqual([...chain,'N21_CROSS_RELAY_ATTEMPTS','N21_CROSS_RELAY_ORACLE']);
+  expect(graphFor('N22').order).toEqual([...chain,'N22_TWO_RELAYS_ATTEMPTS','N22_TWO_RELAYS_ORACLE']);
+  expect(N.classifyNegative('N21','PREREQ_MISSING_SECOND_RELAY_KM')).toBe('PREREQ_MISSING_SECOND_RELAY');
+  expect(N.classifyNegative('N22','G6_N22_PRODUCT_GAP_READ_order_by_ref')).toBe('PRODUCT_GAP');
+  expect(validateStageModuleSources()).toBeGreaterThan(0);
+ });
+ it('oracle : aucune remise par l\'agent étranger, code vivant',async()=>{
+  const order={id:'o',user_id:'u',status:'available',lines:1,qty:1,collected_scans:0,parcels:1};
+  const mk=rows=>{let i=0;return {query:async()=>({rows:[rows[i++]]})}};
+  await expect(N.oracleCrossRelay(mk([order,{n:0},{code_alive:true,attempts:1}]),{orderId:'o',scenario:'N21'})).resolves.toMatchObject({collected_scans:0,order_attempts:1});
+  await expect(N.oracleCrossRelay(mk([{...order,status:'collected'},{n:0}]),{orderId:'o',scenario:'N21'})).rejects.toThrow('G6_N21_PRODUCT_GAP_FOREIGN_AGENT_HANDOFF');
+ });
+ it('script : rattachement par l\'écran Réseau, lectures sans divulgation, sens inverse, verdict PRODUCT_GAP sans contournement',()=>{
+  const s=read('scripts/recette/g6-negative-n21-n22-cross-relay-chromium.js');
+  expect(s).toMatch(/attachDedicatedRelayByUI/);expect(s).toMatch(/PREREQ_MISSING_SECOND_RELAY_/);
+  expect(s).toMatch(/agent_at_A_vs_order_at_B/);expect(s).toMatch(/contains_order/);expect(s).toMatch(/steps_reached/);expect(s).not.toMatch(/screenshot/);
+  expect(read('scripts/recette/g6-prereq-probe.js')).toMatch(/PREREQ_MISSING_SECOND_RELAY/);
+ });
+ it('workflow : titres N21/N22 pour KM, CM et CG',()=>{
+  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
+  for(const id of ['N21','N22'])for(const m of ['KM','CM','CG'])
+   expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
+ });
+});

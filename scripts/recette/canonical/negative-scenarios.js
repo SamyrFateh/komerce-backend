@@ -9,7 +9,7 @@
  * @impact-areas staging-only
  */
 'use strict';
-const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24']);
+const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22']);
 const isNegative=s=>NEGATIVE.includes(String(s));
 // Produit vendable (prix LOCAL_ACTIVE, exposition ENABLED, actif) servi par l'import (aucun stock local exposé), SKU actifs en stock.
 const MULTI_SKU_SQL=`
@@ -124,7 +124,18 @@ async function oracleN24(db,{orderId,assertNoHubOrTransport}){
  if(assertNoHubOrTransport)await assertNoHubOrTransport(db,orderId,'collected');
  return {status:o.status,collected_scans:x.scans,qty_collected:pi.got};
 }
-// N04 : aucune commande, aucun stock négatif, aucune réserve fictive.
+// N21/N22 : l'agent d'un autre relais n'a rien remis ni muté côté métier (commande disponible, code vivant, aucun scan collected).
+// Le compteur de tentatives de la commande peut monter (refus cross-relais journalisé) : il est rapporté, jamais écrit ici.
+async function oracleCrossRelay(db,{orderId,scenario,assertNoHubOrTransport}){
+ const o=await orderRows(db,orderId);
+ const {rows:[pi]}=await db.query('SELECT COALESCE(SUM(pi.qty_collected),0)::int AS n FROM parcel_items pi JOIN parcels p ON p.id=pi.parcel_id WHERE p.order_id=$1',[orderId]);
+ ok(o.status==='available'&&o.collected_scans===0&&pi.n===0,'G6_'+scenario+'_PRODUCT_GAP_FOREIGN_AGENT_HANDOFF');
+ const {rows:[s]}=await db.query('SELECT (pickup_secret_hash IS NOT NULL) AS code_alive,pickup_secret_attempts AS attempts FROM orders WHERE id=$1',[orderId]);
+ ok(s.code_alive,'G6_'+scenario+'_PRODUCT_GAP_CODE_CONSUMED');
+ if(assertNoHubOrTransport)await assertNoHubOrTransport(db,orderId,'available');
+ return {status:o.status,collected_scans:0,qty_collected:0,order_attempts:s.attempts};
+}
+// N04, aucun stock négatif, aucune réserve fictive.
 async function oracleN04(db,{buyerId,productId,market,availableBefore}){
  const {rows:[n]}=await db.query('SELECT count(*)::int AS n FROM orders WHERE user_id=$1',[buyerId]);
  ok(n.n===0,'G6_N04_PRODUCT_GAP_ORDER_EXISTS_'+n.n);
@@ -141,7 +152,8 @@ async function oracleN04(db,{buyerId,productId,market,availableBefore}){
 function classifyNegative(scenario,message){
  const m=String(message||'');
  if(/PREREQ_MISSING_MULTI_SKU/.test(m))return 'PREREQ_MISSING_MULTI_SKU';
+ if(/PREREQ_MISSING_SECOND_RELAY/.test(m))return 'PREREQ_MISSING_SECOND_RELAY';
  const g=new RegExp('G6_'+scenario+'_(SCREEN_MISSING|PRODUCT_GAP)').exec(m);
  return g?g[1]:null;
 }
-module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleN04,classifyNegative};
+module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN04,classifyNegative};
