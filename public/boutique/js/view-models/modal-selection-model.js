@@ -75,6 +75,15 @@ function resolveSelectedSku(detail, selectedOptions) {
   const keys = axisKeys(detail);
   if (!keys.every((key) => Object.prototype.hasOwnProperty.call(selectedOptions, key))) return null;
 
+  // No axes: exactly one eligible SKU, or no selection. Never choose an
+  // arbitrary first SKU from multiple ambiguous units.
+  if (keys.length === 0) {
+    const units = detail.sellable_units.filter((unit) =>
+      isOrderableUnit(unit) && Object.keys(unit.option_values || {}).length === 0
+    );
+    return units.length === 1 ? units[0] : null;
+  }
+
   const match = detail.sellable_units.find((unit) =>
     keys.every((key) => unit.option_values[key] === selectedOptions[key])
   );

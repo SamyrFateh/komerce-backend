@@ -183,7 +183,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - ci: 25
 - utils: 1
 - scripts: 35
-- services: 87
+- services: 88
 - schemas: 5
 - migrations: 26
 - config: 1
@@ -191,7 +191,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - routes: 7
 - boutique: 39
 - dash: 1
-- tests: 210
+- tests: 211
 - tables owned (lifecycle): 26 — `products`, `boutique_categories`, `boutique_subcategories`, `catalog_taxonomy_audit`, `catalog_field_overrides`, `catalog_terminology_reference`, `catalog_enrichment_runs`, `catalog_media`, `catalog_media_recovery_audit`, `product_skus`, `product_sku_media`, `product_variants`, `product_content_profile`, `product_content_sections`, `product_market_exposure`, `product_attributes`, `supplier_catalog_imports`, `supplier_catalog_sync_checkpoints`, `supplier_oauth_connections`, `catalog_field_sync_state`, `catalog_media_visual_fr_reviews`, `catalog_publication_decision_audit`, `catalog_product_sale_holds`, `catalog_product_quality_notes`, `catalog_stock_sync_state`, `supplier_catalog_import_rejections`
 - tables written: 27
 - interfaces exposed: 47
@@ -2328,7 +2328,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2372 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2374 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 218 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2580,7 +2580,7 @@ Meta Graph monté : oui.
 | orders | auth | static-code | 14 | **DECLARED_AND_OBSERVED** |
 | orders | auth-identity | static-code, interface, data-read | 12 | **DECLARED_AND_OBSERVED** |
 | orders | business-rules | static-code | 9 | **DECLARED_AND_OBSERVED** |
-| orders | catalog | static-code, data-read | 12 | **DECLARED_AND_OBSERVED** |
+| orders | catalog | static-code, data-read | 14 | **DECLARED_AND_OBSERVED** |
 | orders | customs | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | orders | dashboard | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | orders | decision-signals | static-code, data-write | 2 | **DECLARED_AND_OBSERVED** |
