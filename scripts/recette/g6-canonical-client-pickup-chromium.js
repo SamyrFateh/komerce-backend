@@ -20,6 +20,7 @@ const {preseedG6BuyerOtp,verifyMarkedG6Buyer}=require('../../services/g6-staging
 const {readback,runtime}=require('./g6-hub-shipment-chromium');
 const {login}=require('./g6-canonical-forwarder-chromium');
 const {openRelayLive}=require('./canonical/relay-live-navigation');
+const {expectedPriorCollectScans}=require('./canonical/pickup-scan-baseline');
 const env=process.env,BASE='https://komerce-backend-production.up.railway.app';
 const ID=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ID:'56adad65-d1fa-4e80-8d69-c25e0fe92a76';
 const PARCEL=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_PARCEL_ID:'95045ede-d5b8-405b-b65f-d9dbdddb4756';
@@ -27,7 +28,9 @@ const SHIPMENT=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_ID:'ff
 const ITEM=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ITEM_ID:'8c999eec-7322-4676-8db6-585c4d4545f9';
 // Multi-PO (M03) : N lignes IMPORT remises par UN code de retrait au comptoir ; la remise locale précédente a déjà laissé 1 scan « collected ».
 const SC=require('./canonical/multi-po').importScope(env,{item:ITEM}),ITEMS=SC.itemIds;
-const M03=env.G6_CANONICAL_SCENARIO==='M03',PRE=M03?1:0;
+const M03=env.G6_CANONICAL_SCENARIO==='M03';
+const LOCAL_MIXED=M03&&env.G6_CANONICAL_PHASE==='LOCAL_CLIENT_PICKUP';
+const PRE=expectedPriorCollectScans(env.G6_CANONICAL_SCENARIO,env.G6_CANONICAL_PHASE);
 const sameSet=(a,b)=>JSON.stringify([...a].sort())===JSON.stringify([...b].sort());
 const OUT=path.resolve('test-results/g6-canonical-client-pickup');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
@@ -177,8 +180,19 @@ async function relay(browser,code,expectedRelay){
      (SELECT COUNT(*)::int FROM scans s WHERE s.order_id=o.id AND s.step='collected' AND s.pickup_method='PICKUP_CODE') AS code_scans
     FROM orders o WHERE o.id=$1`,[ID]);
   // M03 (panier mixte) : la remise de la partie locale ne doit PAS clôturer la commande ; M01/M02 inchangés.
-  const MIXED=process.env.G6_CANONICAL_SCENARIO==='M03'&&process.env.G6_CANONICAL_PHASE==='LOCAL_CLIENT_PICKUP';
+  const MIXED=LOCAL_MIXED;
   if(MIXED&&once?.status==='collected')throw Error('G6_M03_ORDER_COLLECTED_BEFORE_IMPORT_DELIVERY');
+  // LOCAL pickup is the first collected scan. IMPORT pickup is the second.
+  // These counts are independent PG truth; the test must never synthesize them.
+  report.pickup_scan_oracle={
+    phase:env.G6_CANONICAL_PHASE,
+    previous_scans:PRE,
+    expected_total:1+PRE,
+    collected_scans:once?.collect_scans??null,
+    pickup_code_scans:once?.code_scans??null,
+    code_consumed:once?.code_consumed??null,
+    order_status:once?.status??null
+  };save();
   check(once&&(MIXED?true:once.status==='collected'&&once.code_consumed===true)&&once.collect_scans===1+PRE&&once.code_scans===1+PRE&&calls===1&&
     actor.blocked.length===0,'G6_PICKUP_SECOND_HANDOFF_OR_CODE_NOT_CONSUMED');
   report.second_handoff_ui={generic_counter_forms_visible:available,generic_counter_note:'comptoir générique Remises, non lié à la commande',
