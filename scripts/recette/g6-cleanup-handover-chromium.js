@@ -17,7 +17,9 @@ const {verifyMarkedG6Buyer}=require('../../services/g6-staging-buyer-identity-gu
 const {customer,relay}=require('./g6-canonical-client-pickup-chromium');
 const {attachDedicatedRelayByUI}=require('./g6-canonical-relay-receipt-chromium');
 const {observe,fullError}=require('./canonical/observability');
+const fs=require('node:fs'),path=require('node:path');
 const env=process.env;
+const OUT='test-results/g6-cleanup-handover';
 const ID=env.G6_CANONICAL_ORDER_ID,REF=env.G6_CANONICAL_ORDER_REFERENCE,RELAY=env.G6_CLEANUP_RELAIS_ID;
 const LOCK_WAIT_MS=Number(env.G6_CLEANUP_LOCK_WAIT_MS||16*60*1000);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -49,7 +51,7 @@ async function main(){
    if(wait>LOCK_WAIT_MS){out.verdict='BLOCKED_N23_LOCK';out.blocked_until=new Date(until).toISOString();return;}
    await sleep(wait+2000);
   }
-  browser=await chromium.launch({headless:true});OBS=observe(browser,'test-results/g6-cleanup-handover');
+  browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   const email=String(env.E2E_AGENT_RELAIS_EMAIL||'').toLowerCase();
   const {rows:[agent]}=await db.query("SELECT id,relais_id FROM users WHERE lower(email)=$1 AND role::text='agent_relais'",[email]);
   check(agent,'G6_CLEANUP_HANDOVER_AGENT_MISSING');
@@ -60,7 +62,7 @@ async function main(){
   check(a&&a.status==='collected','G6_CLEANUP_HANDOVER_READBACK');
   out.verdict='HANDOVER_DONE';
  }catch(e){out.error=fullError(e);process.exitCode=2;}
- finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify(out));}
+ finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});try{fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report-'+String(REF).replace(/\W/g,'')+'.json'),JSON.stringify(out,null,2)+'\n');}catch(_){}console.log(JSON.stringify(out));}
 }
 if(require.main===module)main();
 module.exports={main};

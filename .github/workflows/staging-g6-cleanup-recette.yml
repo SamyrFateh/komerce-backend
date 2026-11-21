@@ -29,6 +29,8 @@ jobs:
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
+      E2E_AGENT_RELAIS_PASSWORD: ${{ secrets.E2E_AGENT_RELAIS_PASSWORD }}
       G6_CLEANUP_MODE: ${{ endsWith(github.event.issue.title, '-apply') && 'apply' || 'plan' }}
     steps:
       - uses: actions/checkout@v4
@@ -77,6 +79,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: g6-cleanup-recette-${{ github.run_id }}
-          path: test-results/g6-cleanup-recette/
+          path: |
+            test-results/g6-cleanup-recette/
+            test-results/g6-cleanup-handover/
           retention-days: 21
           if-no-files-found: warn

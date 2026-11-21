@@ -179,3 +179,16 @@ test('chromium-policy : child de remise sans clic brut ni écriture SQL métier'
  expect(assertStageSqlWritesIdentityOnly(child)).toBe(true);
  expect(assertTraceStartsAfterAuth(child)).toBe(true);
 });
+
+test('enfant de remise : l’environnement exige les secrets relais/admin (noms seuls) et le workflow les fournit',()=>{
+ const {childEnv,CHILD_REQUIRED_ENV}=require('../../scripts/recette/g6-cleanup-recette-chromium');
+ expect(CHILD_REQUIRED_ENV).toEqual(expect.arrayContaining(['E2E_AGENT_RELAIS_EMAIL','E2E_AGENT_RELAIS_PASSWORD','DATABASE_URL','E2E_EXPECTED_DEPLOY_SHA']));
+ const base=Object.fromEntries(CHILD_REQUIRED_ENV.map(k=>[k,'x']));
+ const step={market:'CG',order_id:'o',reference:'K1',relais_id:'r'};
+ expect(childEnv(step,base)).toMatchObject({G6_TARGET_MARKET:'CG',G6_CANONICAL_SCENARIO:'M02',G6_CLEANUP_RELAIS_ID:'r'});
+ const {E2E_AGENT_RELAIS_EMAIL,...lacking}=base;
+ expect(()=>childEnv(step,lacking)).toThrow('G6_CLEANUP_HANDOVER_ENV_MISSING_E2E_AGENT_RELAIS_EMAIL');
+ const wf=fs.readFileSync(path.join(__dirname,'../../.github/workflows/staging-g6-cleanup-recette.yml'),'utf8');
+ for(const k of CHILD_REQUIRED_ENV.filter(x=>/^E2E_(ADMIN|AGENT)/.test(x)))expect(wf).toContain(k+':');
+ expect(wf).toContain('test-results/g6-cleanup-handover/');
+});

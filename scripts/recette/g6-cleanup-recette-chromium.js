@@ -171,15 +171,27 @@ async function login(browser,steps){
  return {ctx,page,blocked,state};
 }
 const CHILD=path.join(__dirname,'g6-cleanup-handover-chromium.js');
+// Noms seuls : jamais de valeur. Le workflow cleanup doit les fournir (E2E_AGENT_RELAIS_* = comptoir Remises).
+const CHILD_REQUIRED_ENV=Object.freeze(['DATABASE_URL','E2E_ADMIN_EMAIL','E2E_ADMIN_PASSWORD','E2E_AGENT_RELAIS_EMAIL',
+ 'E2E_AGENT_RELAIS_PASSWORD','E2E_EXPECTED_DEPLOY_SHA','STAGING_BASE_URL','EXPECTED_RAILWAY_ENVIRONMENT',
+ 'GITHUB_EVENT_NAME','GITHUB_ACTOR','GITHUB_REPOSITORY_OWNER','NODE_ENV','KOMERCE_ENV','KOMERCE_TARGET_ENV']);
+function childEnv(step,base=env){
+ const missing=CHILD_REQUIRED_ENV.filter(k=>!base[k]);
+ if(missing.length)throw Error('G6_CLEANUP_HANDOVER_ENV_MISSING_'+missing.join(','));
+ return {...base,G6_TARGET_MARKET:step.market,G6_CANONICAL_ORDER_ID:step.order_id,G6_CANONICAL_ORDER_REFERENCE:step.reference,
+  G6_CLEANUP_RELAIS_ID:step.relais_id,G6_DYNAMIC_FRESH_ORDER:'1',G6_CANONICAL_SCENARIO:'M02',
+  G6_CANONICAL_PHASE:'LOCAL_CLIENT_PICKUP',G6_CLEANUP_DB_FINGERPRINT:base.G6_CLEANUP_DB_FINGERPRINT||''};
+}
 // Remise comptoir : un process enfant par commande (modules de remise liés au marché par l'environnement).
 // Le code de retrait est lu sur l'écran client dans l'enfant, jamais affiché ni écrit.
 function handover(step){
- const r=spawnSync(process.execPath,[CHILD],{encoding:'utf8',timeout:20*60*1000,env:{...env,
-  G6_TARGET_MARKET:step.market,G6_CANONICAL_ORDER_ID:step.order_id,G6_CANONICAL_ORDER_REFERENCE:step.reference,
-  G6_CLEANUP_RELAIS_ID:step.relais_id,G6_DYNAMIC_FRESH_ORDER:'1',G6_CANONICAL_SCENARIO:'M02',
-  G6_CANONICAL_PHASE:'LOCAL_CLIENT_PICKUP',G6_CLEANUP_DB_FINGERPRINT:env.G6_CLEANUP_DB_FINGERPRINT||''}});
+ const r=spawnSync(process.execPath,[CHILD],{encoding:'utf8',timeout:20*60*1000,env:childEnv(step)});
  let out=null;try{out=JSON.parse((r.stdout||'').trim().split('\n').pop());}catch(_){}
- if(r.status!==0||!out||out.verdict!=='HANDOVER_DONE')throw Object.assign(Error('G6_CLEANUP_HANDOVER_'+(out&&out.verdict||'FAILED')),{verdict:out&&out.verdict==='BLOCKED_N23_LOCK'?'BLOCKED':undefined});
+ if(r.status!==0||!out||out.verdict!=='HANDOVER_DONE'){
+  const detail=' | child_error='+fullError(Error(String((out&&(out.error||out.verdict))||(r.stderr||'').slice(-600)||'NO_CHILD_OUTPUT'))).slice(0,800)+
+   ' | child_status='+r.status+' | artifacts=test-results/g6-cleanup-handover';
+  throw Object.assign(Error('G6_CLEANUP_HANDOVER_'+(out&&out.verdict||'FAILED')+detail),{verdict:out&&out.verdict==='BLOCKED_N23_LOCK'?'BLOCKED':undefined});
+ }
  return {response:{status:200,via:'relay-remises-screen'}};
 }
 async function perform(actor,step){
@@ -287,4 +299,4 @@ async function main(){
  finally{if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end().catch(()=>{});console.log(JSON.stringify({mode:report.mode,verdict:report.verdict,planned:report.planned_steps,remaining:report.remaining_count}));}
 }
 if(require.main===module)main();
-module.exports={inventory,classify};
+module.exports={inventory,classify,childEnv,CHILD_REQUIRED_ENV};
