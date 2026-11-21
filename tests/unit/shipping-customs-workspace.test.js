@@ -216,5 +216,7 @@ describe('shipping-customs-workspace — rafraîchissement intersession sans des
     expect(source).toContain('if (background && workspaceBusy()) return');
     expect(source).toContain('context.reload({ background:true })');
     expect(source).toContain("'data-dashboard-stale'");
+    expect(source).toContain('error.status === 401 || error.status === 403');
+    expect(source).toContain('Accès expiré ou non autorisé. Rechargez votre session.');
   });
 });
