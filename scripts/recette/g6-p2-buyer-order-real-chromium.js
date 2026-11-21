@@ -204,23 +204,26 @@ async function addLineToCart(page,line,idx){
   });
   check(addEnabled,'NO_PURCHASABLE_VARIANT');
   if(NEG==='N04'){
-   // Le stepper du panier est recouvert par la bulle d'accueil : la quantité est saisie sur la fiche produit (+ de la fiche), vrais clics.
+   // La fiche canonique n'a pas de champ de quantité (le « + » hérité est désactivé et masqué) et le stepper du panier est
+   // recouvert par la bulle d'accueil : la quantité monte par clics répétés sur « Ajouter » (geste humain), de 1 à disponible + 1.
    const avail=await localAvailableQty(PRODUCT);
    check(avail>=1&&avail<=40,'G6_N04_PREREQ_LOCAL_AVAILABLE_OUT_OF_RANGE_'+avail);
-   const n04=report.n04={available_before:avail,target_qty:avail+1,refusal_point:null,refusal_visible:false,visible_message:null};
-   const qv=()=>page.locator('#k-qty-val').innerText().then(t=>Number(String(t).trim()));
-   let q=await qv();
+   const n04=report.n04={available_before:avail,target_qty:avail+1,refusal_point:null,refusal_visible:false,visible_message:null,
+    pdp_qty_input_present:await page.locator('#k-qty-plus').isVisible().catch(()=>false)};
+   const badge=()=>page.locator('#k-modal-cart-badge').innerText().then(t=>Number(String(t).trim())||0).catch(()=>0);
+   let q=0;
    while(q<avail+1){
-    await humanClick(null,page.locator('#k-qty-plus'));
-    const moved=await page.waitForFunction(n=>Number(document.getElementById('k-qty-val')?.textContent)>n,q,{timeout:2500}).then(()=>true,()=>false);
-    if(!moved){n04.refusal_point='PDP_QTY_CAPPED';n04.capped_at_qty=q;break}
-    q=await qv();
+    await humanClick(null,add);
+    const moved=await page.waitForFunction(n=>Number(document.querySelector('#k-modal-cart-badge')?.textContent||0)>n,q,{timeout:3000}).then(()=>true,()=>false);
+    if(!moved){n04.refusal_point='PDP_ADD_CAPPED';n04.capped_at_qty=q;break}
+    q=await badge();
    }
-   n04.pdp_qty_final=await qv();
+   n04.badge_final=q;
    n04.visible_message=(await page.locator('[role="alert"],[role="status"],.k-toast').allInnerTexts().then(a=>a.join(' | ').replace(/\s+/g,' ').slice(0,300)).catch(()=>''))||null;
    n04.refusal_visible=!!n04.visible_message;
    await page.screenshot({path:path.join(OUT,'02b-n04-pdp-over-stock.png')});save();
-   if(n04.refusal_point){await humanClick(null,page.locator('#k-modal-close'));return}
+   await humanClick(null,page.locator('#k-modal-close'));
+   return;
   }
   const before=Number(await page.locator('#k-modal-cart-badge').innerText().catch(()=>'0'))||0;
   await humanClick(null,add);
