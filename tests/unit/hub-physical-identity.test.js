@@ -14,8 +14,19 @@ describe('hub-physical-identity — réception regroupée', () => {
     expect(src).not.toMatch(/p\.operation_type = 'RECEIVE'\s*\n\s*\), 0\) AS received/);
   });
 
-  test('HB-07 : les lignes de la variante sont verrouillées FOR UPDATE avant la lecture du reçu', () => {
-    expect(src).toMatch(/FOR UPDATE OF pl FOR SHARE OF po/);
+  test('HB-07 : verrouiller la PO avant les lignes et lire le reçu après les verrous', () => {
+    const method = src.slice(
+      src.indexOf('async function resolveGroupedLineEntries('),
+      src.indexOf('// Un contenu déclaré', src.indexOf('async function resolveGroupedLineEntries('))
+    );
+    const poLock = method.indexOf('SELECT id, status FROM purchase_orders WHERE id=$1 FOR SHARE');
+    const linesLock = method.indexOf('FOR UPDATE OF pl');
+    const receivedRead = method.indexOf('SELECT purchase_line_received_quantity($1) AS received');
+    expect(poLock).toBeGreaterThanOrEqual(0);
+    expect(linesLock).toBeGreaterThan(poLock);
+    expect(receivedRead).toBeGreaterThan(linesLock);
+    // Aucun JOIN simultané pouvant prendre la ligne avant la PO et créer 40P01.
+    expect(method).not.toMatch(/FOR UPDATE OF pl FOR SHARE OF po/);
   });
 
   test('HB-07 : la garde base hub_allocation_overplaced devient HUB_ALLOCATION_OVERRECEIVED avec un message exploitable', () => {
