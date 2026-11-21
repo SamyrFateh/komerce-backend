@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 2096,
-    "edges": 10437,
+    "edges": 10443,
     "dbTables": 244,
     "doctrines": 820,
     "impactAreas": 210,
@@ -5962,6 +5962,9 @@
       "depends": [
         "middleware/auth.js",
         "middleware/require-catalog-global-authority.js",
+        "middleware/require-sourcing-global-authority.js",
+        "middleware/upload.js",
+        "services/product-media-storage.js",
         "services/catalog-workspace.js",
         "services/catalog-product-quality-service.js"
       ],
@@ -15815,7 +15818,8 @@
         "boutique_subcategories",
         "catalog_field_overrides",
         "catalog_publication_decision_audit",
-        "catalog_media"
+        "catalog_media",
+        "suppliers"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -15949,7 +15953,10 @@
         "exchange_rates",
         "cost_components"
       ],
-      "dbWrite": [],
+      "dbWrite": [
+        "catalog_media",
+        "products"
+      ],
       "dbWriteVia": [],
       "dbTxn": [
         "transactional_editorial_update",
@@ -54557,6 +54564,24 @@
     },
     {
       "from": "routes/admin-catalog-workspace.js",
+      "to": "middleware/require-sourcing-global-authority.js",
+      "type": "depends",
+      "label": "middleware/require-sourcing-global-authority.js"
+    },
+    {
+      "from": "routes/admin-catalog-workspace.js",
+      "to": "middleware/upload.js",
+      "type": "depends",
+      "label": "middleware/upload.js"
+    },
+    {
+      "from": "routes/admin-catalog-workspace.js",
+      "to": "services/product-media-storage.js",
+      "type": "depends",
+      "label": "services/product-media-storage.js"
+    },
+    {
+      "from": "routes/admin-catalog-workspace.js",
       "to": "services/catalog-workspace.js",
       "type": "depends",
       "label": "services/catalog-workspace.js"
@@ -70203,6 +70228,12 @@
     },
     {
       "from": "services/catalog-unified-registry.js",
+      "to": "db:suppliers",
+      "type": "db-read",
+      "label": "suppliers"
+    },
+    {
+      "from": "services/catalog-unified-registry.js",
       "to": "doctrine:one_operator_surface_without_cross_domain_write",
       "type": "doctrine",
       "label": "one_operator_surface_without_cross_domain_write"
@@ -70482,6 +70513,18 @@
       "to": "db:cost_components",
       "type": "db-read",
       "label": "cost_components"
+    },
+    {
+      "from": "services/catalog-workspace.js",
+      "to": "db:catalog_media",
+      "type": "db-write",
+      "label": "catalog_media"
+    },
+    {
+      "from": "services/catalog-workspace.js",
+      "to": "db:products",
+      "type": "db-write",
+      "label": "products"
     },
     {
       "from": "services/catalog-workspace.js",
@@ -110816,6 +110859,7 @@
         "impact:admin-dashboard",
         "impact:authorization",
         "impact:sourcing",
+        "routes/admin-catalog-workspace.js",
         "routes/admin-sourcing-workspace.js",
         "services/central-authority.js"
       ]
@@ -110960,6 +111004,7 @@
         "doctrine:resolve_before_behavior_change",
         "impact:auth",
         "middleware/upload-hub.js",
+        "routes/admin-catalog-workspace.js",
         "routes/products.js"
       ]
     },
@@ -115416,6 +115461,9 @@
       "directDependsOn": [
         "middleware/auth.js",
         "middleware/require-catalog-global-authority.js",
+        "middleware/require-sourcing-global-authority.js",
+        "middleware/upload.js",
+        "services/product-media-storage.js",
         "services/catalog-workspace.js",
         "services/catalog-product-quality-service.js"
       ],
@@ -115449,8 +115497,11 @@
         "impact:catalog",
         "middleware/auth.js",
         "middleware/require-catalog-global-authority.js",
+        "middleware/require-sourcing-global-authority.js",
+        "middleware/upload.js",
         "services/catalog-product-quality-service.js",
-        "services/catalog-workspace.js"
+        "services/catalog-workspace.js",
+        "services/product-media-storage.js"
       ]
     },
     "routes/admin-client-360.js": {
@@ -125280,7 +125331,8 @@
         "boutique_subcategories",
         "catalog_field_overrides",
         "catalog_publication_decision_audit",
-        "catalog_media"
+        "catalog_media",
+        "suppliers"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -125300,6 +125352,7 @@
         "db:catalog_publication_decision_audit",
         "db:products",
         "db:sourcing_candidates",
+        "db:suppliers",
         "doctrine:one_operator_surface_without_cross_domain_write",
         "doctrine:product_ref_is_public_identity",
         "impact:admin-dashboard",
@@ -125413,7 +125466,10 @@
         "exchange_rates",
         "cost_components"
       ],
-      "dbWrite": [],
+      "dbWrite": [
+        "catalog_media",
+        "products"
+      ],
       "dbWriteVia": [],
       "doctrines": [
         "workspace_acts_dashboard_observes",
@@ -139339,6 +139395,7 @@
       "mustCheck": [
         "doctrine:produit_reference_stable",
         "doctrine:resolve_before_behavior_change",
+        "routes/admin-catalog-workspace.js",
         "routes/products.js"
       ]
     },
@@ -149700,7 +149757,7 @@
     },
     {
       "table": "products",
-      "writerCount": 12,
+      "writerCount": 13,
       "writers": [
         "routes/admin/system.js",
         "services/catalog-approval.js",
@@ -149709,6 +149766,7 @@
         "services/catalog-field-sync-application.js",
         "services/catalog-overrides.js",
         "services/catalog-product-mutation-service.js",
+        "services/catalog-workspace.js",
         "services/hub-operations.js",
         "services/product-admin-service.js",
         "services/product-sku-service.js",
@@ -150140,6 +150198,15 @@
       ]
     },
     {
+      "table": "catalog_media",
+      "writerCount": 3,
+      "writers": [
+        "services/catalog-product-mutation-service.js",
+        "services/catalog-promotion.js",
+        "services/catalog-workspace.js"
+      ]
+    },
+    {
       "table": "charges",
       "writerCount": 3,
       "writers": [
@@ -150312,14 +150379,6 @@
       "writers": [
         "routes/cash.js",
         "services/cash-deposit-service.js"
-      ]
-    },
-    {
-      "table": "catalog_media",
-      "writerCount": 2,
-      "writers": [
-        "services/catalog-product-mutation-service.js",
-        "services/catalog-promotion.js"
       ]
     },
     {

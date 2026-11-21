@@ -7,7 +7,7 @@
  * @inputs        read-only catalog filters
  * @outputs       single candidate/product projection, counts and safe next steps
  * @depends       db.js
- * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories, catalog_field_overrides, catalog_publication_decision_audit, catalog_media
+ * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories, catalog_field_overrides, catalog_publication_decision_audit, catalog_media, suppliers
  * @db-write      none
  * @doctrine      one_operator_surface_without_cross_domain_write, product_ref_is_public_identity
  * @impact-areas  catalog, admin-dashboard
@@ -27,7 +27,7 @@ WITH picked_source AS (
         sc.supplier_name, sc.supplier_product_id, sc.supplier_category,
         sc.image_url, sc.product_url, sc.normalized_source_contract,
         sc.purchase_price_kmf, sc.komerce_category,
-        sc.state, sc.scan_result, sc.confidence, sc.updated_at
+        sc.state, sc.scan_result, sc.confidence, sc.updated_at, sc.supplier_id
    FROM sourcing_candidates sc
   WHERE sc.product_id IS NOT NULL
   ORDER BY sc.product_id, (sc.state = 'imported_to_catalog') DESC,
@@ -43,8 +43,11 @@ WITH picked_source AS (
         sc.confidence AS sourcing_confidence,
         (sc.scan_result->'commercial_review'->>'status'='PENDING_CLASSIFICATION') AS source_category_review_required,
         (sc.normalized_source_contract IS NOT NULL
-          AND NULLIF(BTRIM(sc.supplier_name),'') IS NOT NULL
-          AND NULLIF(BTRIM(sc.supplier_product_id),'') IS NOT NULL) AS source_ready,
+          AND ((source_supplier.system_key='central_hub'
+                AND sc.normalized_source_contract->>'source_kind'='central_hub_manual'
+                AND NOT (sc.normalized_source_contract ?| ARRAY['supplier_name','supplier_product_id','sellable_units']))
+            OR (NULLIF(BTRIM(sc.supplier_name),'') IS NOT NULL
+                AND NULLIF(BTRIM(sc.supplier_product_id),'') IS NOT NULL))) AS source_ready,
         (bc.key IS NOT NULL AND bs.key IS NOT NULL) AS taxonomy_ready,
         (((p.description IS NOT NULL AND BTRIM(p.description) <> '')
           OR EXISTS (SELECT 1 FROM catalog_field_overrides ov
@@ -98,6 +101,7 @@ WITH picked_source AS (
         p.updated_at
    FROM products p
    LEFT JOIN picked_source sc ON sc.product_id=p.id
+  LEFT JOIN suppliers source_supplier ON source_supplier.id=sc.supplier_id
    LEFT JOIN boutique_categories bc
      ON bc.key=p.boutique_category_key AND bc.is_active=TRUE
    LEFT JOIN boutique_subcategories bs

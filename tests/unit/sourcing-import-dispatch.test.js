@@ -77,8 +77,21 @@ describe('sourcing-import-dispatch', () => {
     expect(mockManualFetch).toHaveBeenCalledWith({
       supplier_name: 'ACME',
       items: [{ sku: 'SKU-1' }],
+      source_kind: undefined,
     });
     expect(mockCsvFetch).not.toHaveBeenCalled();
+  });
+
+  it('transmet uniquement la variante Hub déjà déterminée côté serveur', async () => {
+    mockManualFetch.mockResolvedValue([]);
+    await dispatchToConnector({
+      supplier_name: 'Fournisseur central Hub', items: [{ product_name: 'Lampe' }],
+      manual_source_kind: 'central_hub_manual',
+    });
+    expect(mockManualFetch).toHaveBeenCalledWith({
+      supplier_name: 'Fournisseur central Hub', items: [{ product_name: 'Lampe' }],
+      source_kind: 'central_hub_manual',
+    });
   });
 
   it('délègue CSV au connecteur CSV avec le mapping fourni', async () => {

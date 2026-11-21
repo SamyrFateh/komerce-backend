@@ -6,10 +6,11 @@
  * @criticality   high
  * @inputs        authenticated_central_admin, catalog_action_payload
  * @outputs       catalog_workspace_projection, catalog_mutation_result
- * @depends       middleware/auth.js, middleware/require-catalog-global-authority.js, services/catalog-workspace.js, services/catalog-product-quality-service.js
+ * @depends       middleware/auth.js, middleware/require-catalog-global-authority.js, middleware/require-sourcing-global-authority.js, middleware/upload.js, services/product-media-storage.js, services/catalog-workspace.js, services/catalog-product-quality-service.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       catalog_global_access_grants
  * @db-write      none
+ * @db-write-via  services/catalog-workspace.js
  * @db-txn        delegated_to_catalog_domain_services
  * @doctrine      catalog_global_authority_explicit, workspace_acts_dashboard_observes, global_catalog_not_market_scoped
  * @impact-areas  admin-dashboard, catalog, authorization
@@ -27,6 +28,8 @@ const quality = require('../services/catalog-product-quality-service');
 const refineryFrench = require('../services/refinery-fr-recheck');
 const taxonomy = require('../services/boutique-taxonomy-admin');
 const log = require('../utils/logger').child({ module: 'admin-catalog-workspace' });
+const upload = require('../middleware/upload');
+const productMediaStorage = require('../services/product-media-storage');
 
 const router = express.Router();
 const guard = [authenticate, requireRole(['admin']), requireCatalogGlobalAuthority];
@@ -137,6 +140,28 @@ router.post('/products/:productRef/recover-source-media',
       res.json({ ok:true, action:'catalog_source_media_recovered',
         result:await workspace.recoverProductSourceMedia(req.params.productRef,req.user) });
     } catch (err) { sendError(err,res,next); }
+  });
+
+// Canonical media upload for an inactive sourcing-linked draft. The URL is
+// produced by ImageKit server-side; the browser never supplies an image URL.
+router.post('/products/:productRef/media', requireSourcingGlobalAuthority,
+  upload.single('image'), upload.validateMagicBytes, async (req, res, next) => {
+    let stored = null;
+    try {
+      if (!req.file) return res.status(400).json({
+        code: 'catalog_media_upload_missing', error: 'Sélectionnez une image à téléverser',
+      });
+      const target = await workspace.getCanonicalMediaUploadTarget(req.params.productRef);
+      stored = await productMediaStorage.uploadProductImage(req.file, target.id);
+      const result = await workspace.appendUploadedCanonicalMedia(req.params.productRef, stored.url);
+      return res.json({ ok: true, action: 'catalog_media_uploaded', result });
+    } catch (err) {
+      if (stored?.fileId) {
+        try { await productMediaStorage.deleteProductImage(stored.fileId); }
+        catch (cleanupError) { log.warn(`Nettoyage ImageKit impossible après refus média Catalogue: ${cleanupError.message}`); }
+      }
+      return sendError(err, res, next);
+    }
   });
 
 router.post('/products/:productRef/classify', async (req, res, next) => {

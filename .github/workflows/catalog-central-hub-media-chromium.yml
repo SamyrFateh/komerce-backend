@@ -1,0 +1,30 @@
+name: Catalogue central Hub media — Chromium
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/catalog-central-hub-media-chromium.yml'
+      - 'public/dashboards/canonical/js/catalog-workspace.js'
+      - 'tests/e2e/catalog-central-hub-media.spec.js'
+      - 'playwright.config.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Catalogue image upload in local Chromium fixture
+        run: npx playwright test --config playwright.config.js tests/e2e/catalog-central-hub-media.spec.js

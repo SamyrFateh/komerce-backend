@@ -2419,15 +2419,19 @@
       ['Taxonomie active', identity.taxonomy_active ? 'Oui' : 'Non vérifiée'],
     ]);
     facts('Fournisseur et achat', [
-      ['Fournisseur', supplier.name],
+      ['Origine interne', supplier.internal_source_label],
+      ['Vendeur réel', supplier.source_kind === 'central_hub_manual'
+        ? 'À renseigner à la confirmation d’achat' : supplier.name],
       ['Identifiant fournisseur', supplier.reference],
       ['Contrat source V2', supplier.source_contract_v2 == null ? 'Non applicable / historique'
         : (supplier.source_contract_v2 ? 'Présent' : 'À normaliser')],
       ['Décision Sourcing', supplier.sourcing_decision],
       ['SKU fournisseur actifs', displayNumber(purchasing.active_supplier_skus)],
       ['SKU avec identité d’achat complète', displayNumber(purchasing.complete_supplier_skus)],
-      ['Identité d’achat', purchasing.supplier_identity_complete == null ? 'Non applicable / historique'
-        : (purchasing.supplier_identity_complete ? 'Complète' : 'À vérifier / compléter')],
+      ['Identité d’achat', supplier.source_kind === 'central_hub_manual'
+        ? 'En attente de la confirmation d’achat'
+        : (purchasing.supplier_identity_complete == null ? 'Non applicable / historique'
+          : (purchasing.supplier_identity_complete ? 'Complète' : 'À vérifier / compléter'))],
     ]);
     facts('Médias, stock et logistique', [
       ['Médias canoniques actifs', displayNumber(media.active_canonical)],
@@ -2530,6 +2534,64 @@
       if (!slot.isConnected) return;
       row._catalogueDossier = dossier; // local read-only projection, never persisted
       renderProductDossierDetails(context, slot, doc, dossier, row);
+      if (dossier?.media?.product_id && Number(dossier.media.active_canonical || 0) < 1
+          && dossier?.availability?.lifecycle_status === 'candidate'
+          && dossier?.availability?.is_active === false
+          && String(context.user?.role || '').toLowerCase() === 'admin') {
+        const form = doc.createElement('form');
+        form.setAttribute('data-catalog-media-upload', '');
+        form.setAttribute('aria-label', 'Téléverser une image canonique');
+        const label = text(doc, 'label', 'kmc-catalog-correction-hint',
+          'Image du produit · stockée dans la galerie canonique');
+        const input = doc.createElement('input');
+        input.type = 'file';
+        input.name = 'image';
+        input.accept = 'image/jpeg,image/png,image/webp,image/gif';
+        input.required = true;
+        input.setAttribute('data-catalog-media-upload-file', '');
+        label.appendChild(input);
+        form.appendChild(label);
+        const submit = makeButton(doc, 'Téléverser l’image', 'catalog-media-upload-submit');
+        submit.type = 'submit';
+        submit.disabled = true;
+        submit.setAttribute('data-catalog-media-upload-submit', '');
+        const status = text(doc, 'p', 'kmc-catalog-inspector-feedback', '');
+        status.setAttribute('role', 'status');
+        status.setAttribute('aria-live', 'polite');
+        status.setAttribute('data-catalog-media-upload-status', '');
+        form.appendChild(submit);
+        form.appendChild(status);
+        input.addEventListener('change', () => { submit.disabled = !input.files?.length; });
+        form.addEventListener('submit', async event => {
+          event.preventDefault();
+          const image = input.files?.[0];
+          if (!image) return;
+          submit.disabled = true;
+          status.textContent = 'Téléversement et ajout à la galerie canonique…';
+          const body = new FormData();
+          body.append('image', image);
+          try {
+            const response = await context.fetch(ENDPOINT + '/products/' +
+              encodeURIComponent(row.product_ref) + '/media', {
+              method: 'POST', credentials: 'include', headers: { Accept: 'application/json' }, body,
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) {
+              const error = new Error(result.error || `Erreur HTTP ${response.status}`);
+              error.code = result.code || null;
+              error.status = response.status;
+              throw error;
+            }
+            status.textContent = 'Image ajoutée à la galerie canonique. Contrôle de certification en cours…';
+            await context.reload();
+            setFeedback(context.root, row.product_ref + ' · image canonique enregistrée.', 'positive');
+          } catch (error) {
+            status.textContent = actionErrorMessage(error);
+            submit.disabled = false;
+          }
+        });
+        slot.appendChild(form);
+      }
     } catch (err) {
       if (!slot.isConnected) return;
       slot.replaceChildren(text(doc, 'p', 'kmc-catalog-correction-hint',

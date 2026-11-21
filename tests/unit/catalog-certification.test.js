@@ -82,6 +82,38 @@ describe('catalog canonical certification', () => {
     });
   });
 
+  test('certifie un brouillon manuel Hub V2 sans vendeur ni SKU, mais refuse le média absent', () => {
+    const hub = readyRow({
+      source_supplier_system_key: 'central_hub',
+      supplier_name: 'Fournisseur central Hub',
+      supplier_product_id: null,
+      normalized_source_contract: { schema_version: '2', source_kind: 'central_hub_manual' },
+      active_media: 1,
+      active_supplier_skus: 0,
+      complete_supplier_skus: 0,
+      unresolved_supplier_skus: 0,
+    });
+    expect(evaluateCatalogProductCertification(hub, { publicationGuard: PASS_GUARD }).certified).toBe(true);
+    const noImage = evaluateCatalogProductCertification({ ...hub, active_media: 0 }, { publicationGuard: PASS_GUARD });
+    expect(noImage.certified).toBe(false);
+    expect(noImage.reasons).toContain('media_missing');
+  });
+
+  test('refuse le contrat Hub si un vendeur ou une identité SKU est injecté', () => {
+    const result = evaluateCatalogProductCertification(readyRow({
+      source_supplier_system_key: 'central_hub',
+      supplier_name: null,
+      supplier_product_id: null,
+      normalized_source_contract: {
+        schema_version: '2', source_kind: 'central_hub_manual', supplier_product_id: 'invented',
+      },
+      active_supplier_skus: 0, complete_supplier_skus: 0,
+    }), { publicationGuard: PASS_GUARD });
+    expect(result.certified).toBe(false);
+    expect(result.reasons).toContain('central_hub_source_contract_invalid');
+    expect(result.reasons).toContain('supplier_product_id_missing');
+  });
+
   test.each([
     ['supplier identity', { supplier_product_id: null }, 'supplier_product_id_missing'],
     ['source contract', { normalized_source_contract: { schema_version: '1' } }, 'source_contract_v2_missing'],

@@ -63,13 +63,21 @@ sellable_units[]
 source_locale
 ```
 
+Pour la saisie interne du Fournisseur central Hub, V2 peut aussi porter
+`source_kind: "central_hub_manual"`. Ce contrat représente un produit repéré
+par le Hub avant l'achat : il ne contient ni vendeur, ni référence vendeur,
+ni SKU fournisseur. Le connecteur n'accepte ce mode que lorsque le serveur a
+résolu le fournisseur système `central_hub`. L'identité réelle du vendeur et
+les SKU ne sont ajoutés qu'à la confirmation d'achat ; ils ne sont jamais
+déduits du nom du Hub ni du contenu libre saisi au Catalogue.
+
 - `media[]` porte URL, rôle (`PRODUCT`, `SCENE`, `DETAIL`, `SIZE_GUIDE`, `OTHER`) et associations d'options connues ;
 - `option_axes[]` décrit les axes et leurs valeurs source ;
 - `sellable_units[]` décrit les unités réellement vendables connues du fournisseur : référence fournisseur, combinaison complète, stock source, prix source éventuel et références média.
 
 **V2 doit déclarer `schema_version: "2"`.** Une structure riche injectée dans V1 est rejetée ; elle n'est pas promue silencieusement par le validateur.
 
-Le connecteur manuel peut choisir V2 lorsqu'une saisie riche est explicitement fournie sans version. Un connecteur API futur doit choisir sa version consciemment dans son mapping.
+Le connecteur manuel peut choisir V2 lorsqu'une saisie riche est explicitement fournie sans version. La voie `central_hub_manual` force également V2 sans identité vendeur. Un connecteur API futur doit choisir sa version consciemment dans son mapping.
 
 ---
 
