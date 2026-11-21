@@ -175,6 +175,8 @@ async function authenticate(page,ctx,{buyer,phone,code}){
  for(let i=0;i<6;i++)await humanFill(null,page.locator('.k-id-otp-box').nth(i),code[i]);
  const ver=await rr,vb=await ver.json();
  check(ver.status()===200&&vb.user?.id===buyer.id,'G6_G5A_OTP_SESSION_WRONG_BUYER');
+ // La trace commence seulement après la vérification OTP et la stabilisation de la navigation.
+ await page.waitForURL(u=>u.pathname==='/boutique/'||u.pathname==='/boutique',{timeout:15000});
  await startTraceAfterAuth(ctx);
 }
 async function probeRouteMissing(page,fixture){
