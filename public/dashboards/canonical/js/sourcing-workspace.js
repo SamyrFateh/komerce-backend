@@ -917,7 +917,13 @@
       reload: null,
       navigate: options.navigate || (href => { if (typeof window !== 'undefined') window.location.assign(href); }),
     };
-    context.reload = async () => {
+    const workspaceBusy = () => {
+      const active = doc.activeElement;
+      return Boolean(rootNode.querySelector?.('[data-sourcing-editor-overlay], [aria-modal="true"]') ||
+        (active && rootNode.contains?.(active) &&
+        active.matches?.('input,textarea,select,[contenteditable="true"]')));
+    };
+    context.reload = async ({ background = false } = {}) => {
       try {
         const search = options.locationSearch
           ?? (typeof globalThis !== 'undefined' && globalThis.location ? globalThis.location.search : '');
@@ -927,9 +933,23 @@
         if (context.focusCandidateRef) params.set('candidate_ref', context.focusCandidateRef);
         const endpoint = ENDPOINT + (params.toString() ? '?' + params.toString() : '');
         const payload = await jsonRequest(fetchFn, endpoint, { timeoutMs: diagnostic ? 60000 : LOAD_TIMEOUT_MS });
+        if (background && workspaceBusy()) return payload;
         renderPayload(rootNode, ui, doc, payload, context);
+        rootNode.removeAttribute?.('data-dashboard-stale');
         return payload;
       } catch (error) {
+        if (background) {
+          if (error.status === 401 || error.status === 403) {
+            // Refus serveur = droits retirés : effacer immédiatement la vue précédente.
+            rootNode.replaceChildren();
+            const notice = doc.createElement('p');
+            notice.setAttribute('role', 'alert');
+            notice.textContent = 'Accès expiré ou non autorisé. Rechargez votre session.';
+            rootNode.appendChild(notice);
+            rootNode.removeAttribute?.('data-dashboard-stale');
+          } else rootNode.setAttribute?.('data-dashboard-stale','true');
+          throw error;
+        }
         rootNode.replaceChildren();
         const panel = doc.createElement('section');
         panel.className = 'kmc-workspace-header';
@@ -940,6 +960,11 @@
         throw error;
       }
     };
+    globalThis.KomerceDashboardFreshness?.watch?.({
+      root:rootNode, pollMs:60000, streamEnabled:options.user?.role === 'admin',
+      isBusy:workspaceBusy,
+      refresh:() => context.reload({ background:true }),
+    });
     return context.reload();
   }
 
