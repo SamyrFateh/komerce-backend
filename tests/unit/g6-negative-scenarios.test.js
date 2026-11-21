@@ -69,7 +69,7 @@ describe('G6-G4A scénarios négatifs N07, N09, N04, N33',()=>{
  });
  it('N04 : clics répétés sur Ajouter (fiche sans champ quantité, stepper recouvert) ; N09 : saisie de la référence à Remises',()=>{
   const b=read('scripts/recette/g6-p2-buyer-order-real-chromium.js'),n=read('scripts/recette/g6-negative-n09-remise-chromium.js');
-  expect(b).toMatch(/PDP_ADD_CAPPED/);expect(b).not.toMatch(/humanClick\(null,page\.locator\('#k-qty-plus'\)\)/);
+  expect(b).toMatch(/PDP_ADD_CAPPED/);expect(b).toMatch(/CHECKOUT_PREVIEW_REFUSED/);expect(b).toMatch(/G6_N04_SCREEN_MISSING_CHECKOUT_/);expect(b).not.toMatch(/humanClick\(null,page\.locator\('#k-qty-plus'\)\)/);
   expect(n).toMatch(/ORDER_REFERENCE/);expect(n).toMatch(/RELAY_REMISES_COUNTER_ABSENT/);expect(n).toMatch(/RELAY_NO_REQUEST_SENT/);
  });
  it('workflow : titres N07/N09/N04/N33 pour KM, CM et CG',()=>{

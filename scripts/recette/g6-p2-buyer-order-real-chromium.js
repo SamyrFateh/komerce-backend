@@ -265,27 +265,35 @@ async function n04QuantityOverStock(page){
  await page.screenshot({path:path.join(OUT,'03b-n04-cart-over-stock.png')});record('N04_CART_OVER_STOCK',{qty:n04.cart_qty_final,available:avail});
  if(n04.cart_qty_final<=avail)n04.refusal_point='CART_ADD_CAPPED';
  if(!n04.refusal_point){
-  // Le panier accepte plus que le stock : le geste continue sur Commander puis le checkout, un seul geste mutant (confirmation).
+  // Le panier accepte plus que le stock : le geste continue sur Commander, le checkout, puis un seul geste mutant (confirmation).
+  // Toute lecture d'écran est protégée : une page fermée par le navigateur ne doit pas masquer les statuts preview ni l'état PG.
+  const safe=(fn,fallback=null)=>Promise.resolve().then(fn).catch(e=>{n04.page_errors=(n04.page_errors||[]).concat(String(e.message||e).split('\n')[0].slice(0,160));return fallback});
+  const lifecycle=n04.page_events=[];
+  page.on('close',()=>lifecycle.push('page_closed'));page.on('crash',()=>lifecycle.push('page_crashed'));page.on('framenavigated',f=>{if(f===page.mainFrame())lifecycle.push('navigated:'+new URL(f.url()).pathname)});
   const checkout=page.locator('#k-sc-checkout');
-  if(await checkout.isVisible())await humanClick(null,checkout);else await humanClick(null,page.locator('#k-cart-btn'));
-  record('N04_CHECKOUT_CLICKED',{});
-  await page.locator('#k-order-modal.open').waitFor({state:'visible',timeout:15000});
+  n04.checkout_button_state=await safe(()=>checkout.evaluate(el=>({disabled:!!el.disabled,aria_disabled:el.getAttribute('aria-disabled')})),null);
+  if(await safe(()=>checkout.isVisible(),false))await humanClick(null,checkout);else await humanClick(null,page.locator('#k-cart-btn'));
+  record('N04_CHECKOUT_CLICKED',{button:n04.checkout_button_state});
+  n04.modal_open=await safe(()=>page.locator('#k-order-modal.open').waitFor({state:'visible',timeout:15000}).then(()=>true),false);
   const confirm=page.locator('#btn-confirm-order');
-  await confirm.waitFor({state:'visible',timeout:15000});
-  const enabled=await page.waitForFunction(()=>{const el=document.getElementById('btn-confirm-order');return !!el&&!el.disabled},null,{timeout:12000}).then(()=>true,()=>false);
+  // Laisse le devis serveur (preview) répondre avant de conclure.
+  n04.confirm_enabled=await safe(()=>page.waitForFunction(()=>{const el=document.getElementById('btn-confirm-order');return !!el&&!el.disabled},null,{timeout:12000}).then(()=>true),false);
+  await safe(()=>page.waitForFunction(()=>true,null,{timeout:1}),null);
   n04.preview_http_statuses=report.preview_http_statuses.slice();
-  n04.visible_message=await msg();
-  await page.screenshot({path:path.join(OUT,'04b-n04-checkout-over-stock.png')});
-  record('N04_CHECKOUT_OPEN',{confirm_enabled:enabled,preview:n04.preview_http_statuses});
-  if(!enabled||n04.preview_http_statuses.some(x=>x!==200)){n04.refusal_point='CHECKOUT_BLOCKED';n04.confirm_enabled=enabled}
-  else{
+  n04.visible_message=await safe(()=>msg(),null);
+  await safe(()=>page.screenshot({path:path.join(OUT,'04b-n04-checkout-over-stock.png'),timeout:8000}));
+  record('N04_CHECKOUT_OPEN',{modal_open:n04.modal_open,confirm_enabled:n04.confirm_enabled,preview:n04.preview_http_statuses,events:lifecycle});
+  const refusedPreview=n04.preview_http_statuses.some(x=>x>=400);
+  if(refusedPreview)n04.refusal_point='CHECKOUT_PREVIEW_REFUSED';
+  else if(n04.modal_open&&!n04.confirm_enabled)n04.refusal_point='CHECKOUT_BLOCKED';
+  else if(n04.modal_open&&n04.confirm_enabled&&!lifecycle.includes('page_closed')&&!lifecycle.includes('page_crashed')){
    const resp=page.waitForResponse(r=>r.url().endsWith('/api/orders')&&r.request().method()==='POST',{timeout:25000});
    await humanClick(null,confirm);
    const r=await resp;n04.order_post_status=r.status();
    const body=await r.json().catch(()=>null);
    n04.order_post_error=String(body?.error||body?.message||'').slice(0,200)||null;
-   n04.visible_message=await msg();
-   await page.screenshot({path:path.join(OUT,'05b-n04-after-confirm.png')});
+   n04.visible_message=await safe(()=>msg(),null);
+   await safe(()=>page.screenshot({path:path.join(OUT,'05b-n04-after-confirm.png'),timeout:8000}));
    if(r.status()===201){
     n04.order_reference=body?.order?.reference||null;n04.order_id=body?.order?.id||null;
     // Stock réservé ou négatif relu en PG (lecture seule), consigné avant l'erreur.
@@ -296,6 +304,11 @@ async function n04QuantityOverStock(page){
     throw Error('G6_N04_PRODUCT_GAP_ORDER_CREATED_ABOVE_STOCK_'+n04.order_reference);
    }
    n04.refusal_point='CHECKOUT_POST_REFUSED';
+  }else{
+   // Ni refus de devis, ni confirmation jouable : aucune conclusion sans preuve (jamais un PASS par défaut).
+   n04.unproven_reason=!n04.modal_open?'MODAL_NOT_OPENED':'PAGE_CLOSED_OR_CRASHED_BEFORE_PREVIEW';
+   save();
+   throw Error('G6_N04_SCREEN_MISSING_CHECKOUT_'+n04.unproven_reason);
   }
  }
  n04.refusal_visible=!!n04.visible_message;save();
