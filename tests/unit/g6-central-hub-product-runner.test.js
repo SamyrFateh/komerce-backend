@@ -10,7 +10,7 @@ jest.mock('../../db', () => ({ query: jest.fn(), pool: { end: jest.fn() } }));
 jest.mock('../../scripts/recette/target-guard', () => ({ confirmTarget: jest.fn() }));
 process.env.G6_TARGET_MARKET = 'KM';
 const fs = require('node:fs');
-const { nextStep, recettePrice } = require('../../scripts/recette/g6-central-hub-product-chromium');
+const { nextStep, recettePrice, G6_SUPPLIER_PRODUCT_ID, G6_PREFIX } = require('../../scripts/recette/g6-central-hub-product-chromium');
 
 const P = { candidate_ref: 'KSC-1', product_ref: 'KPR-1', is_active: false, lifecycle_status: 'candidate' };
 const step = c => nextStep({ sellable: [], candidate: c });
@@ -61,5 +61,13 @@ describe('G6 central Hub product: resume by step read from PG', () => {
     expect(src).toMatch(/G6_CENTRAL_NO_PROGRESS_/);
     expect(src).not.toMatch(/\b(INSERT|UPDATE|DELETE)\s+(INTO|FROM)?\s*\w+\s+(SET|VALUES)/i);
     expect(src).toMatch(/mode=manual/);
+  });
+
+  test('V2 import: new supplier id (V1 candidate ignored), object name and supplier category given', () => {
+    expect(G6_SUPPLIER_PRODUCT_ID).toBe('G6-CENTRAL-KM-V2');
+    expect(G6_PREFIX).toBe('[G6-HUB] ');
+    const src = fs.readFileSync('scripts/recette/g6-central-hub-product-chromium.js', 'utf8');
+    expect(src).toMatch(/Screwdriver set/);
+    expect(src).toMatch(/Tools > Hand Tools/);
   });
 });
