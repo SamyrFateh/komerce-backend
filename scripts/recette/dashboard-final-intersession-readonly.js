@@ -31,6 +31,8 @@ const proof={status:'NOT_PROVEN',target:'staging',read_only_business:true,
   samples_ms:[],browser_errors:0,reason:null};
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 function save(){
+ // The independent PG oracle uses PO ids in memory only; never publish them.
+ for(const detail of Object.values(proof.director))if(detail&&typeof detail==='object')delete detail.poIds;
  fs.mkdirSync(path.dirname(OUT),{recursive:true});
  fs.writeFileSync(OUT,JSON.stringify(proof,null,2)+'\n');
 }
