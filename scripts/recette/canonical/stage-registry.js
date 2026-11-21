@@ -19,7 +19,15 @@ const M02_STAGE_IDS=Object.freeze(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE',
 // branche import (étapes M01, PO mono-fournisseur, consolidation Hub) puis oracle final « collected ».
 const M03_STAGE_IDS=Object.freeze(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','LOCAL_CLIENT_PICKUP','M03_NOT_COLLECTED',
  ...STAGE_IDS.slice(2),'M03_COLLECTED_FINAL']);
-const SCENARIO_STAGE_IDS=Object.freeze({M01:STAGE_IDS,M02:M02_STAGE_IDS,M03:M03_STAGE_IDS});
+// Scénarios négatifs N (G6-G4A) : points d'arrêt sur le Golden. Geste négatif par l'écran, puis oracle PG en lecture seule.
+// N07 double clic Commander (parcours M01) ; N09 remise sans cash encaissé (parcours M02, RELAY_CASH sauté) ;
+// N04 quantité > stock local (M02, aucune commande attendue) ; N33 deux variantes du même produit (un panier).
+const N07_STAGE_IDS=Object.freeze(['BUYER','N07_NO_DOUBLE_EFFECT']);
+const N09_STAGE_IDS=Object.freeze(['BUYER','N09_REMISE_REFUSED','N09_NOT_COLLECTED_ORACLE']);
+const N04_STAGE_IDS=Object.freeze(['N04_QTY_OVER_STOCK','N04_NO_EFFECT_ORACLE']);
+const N33_STAGE_IDS=Object.freeze(['BUYER','N33_SKU_ORACLE']);
+const SCENARIO_STAGE_IDS=Object.freeze({M01:STAGE_IDS,M02:M02_STAGE_IDS,M03:M03_STAGE_IDS,
+ N07:N07_STAGE_IDS,N09:N09_STAGE_IDS,N04:N04_STAGE_IDS,N33:N33_STAGE_IDS});
 function scenarioProfile(raw){
  if(typeof raw!=='string'||!Object.hasOwn(SCENARIO_STAGE_IDS,raw))throw Error('G6_UNSUPPORTED_SCENARIO');
  return raw;
@@ -101,4 +109,4 @@ function planGolden({fromStage='BUYER',toStage='CLIENT_PICKUP'}={}){
  return {contract:'G6-CANONICAL-JOURNEY-v1',mode:'dry-run',stages:g.order.slice(start,end+1),
   missing_prerequisites:prerequisiteIds(from.id,g),mutations:0,verdict:'NOT_PROVEN'};
 }
-module.exports={M02_STAGE_IDS,M03_STAGE_IDS,SCENARIO_STAGE_IDS,scenarioProfile,loadScenarioStages,graphFor,STAGE_IDS,nextStageId,LEGACY_PHASE_MAP,loadGoldenStages,stageGraph,resolvePhase,prerequisiteIds,requiresResumeProof,validateProofBoundary,planGolden};
+module.exports={M02_STAGE_IDS,M03_STAGE_IDS,N07_STAGE_IDS,N09_STAGE_IDS,N04_STAGE_IDS,N33_STAGE_IDS,SCENARIO_STAGE_IDS,scenarioProfile,loadScenarioStages,graphFor,STAGE_IDS,nextStageId,LEGACY_PHASE_MAP,loadGoldenStages,stageGraph,resolvePhase,prerequisiteIds,requiresResumeProof,validateProofBoundary,planGolden};

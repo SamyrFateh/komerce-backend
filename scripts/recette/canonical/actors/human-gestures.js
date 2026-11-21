@@ -111,4 +111,20 @@ const humanCheck=(page,target,{mutation=null,...opts}={})=>
  gesture(page,target,{action:'check',args:[opts],mutation});
 const humanPress=(page,target,key,{mutation=null,...opts}={})=>
  gesture(page,target,{action:'press',args:[key,opts],mutation});
-module.exports={humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress,waitReady,GestureBlockedError};
+// EXCEPTION EXPLICITE au « pas de reclic » : réservée au scénario négatif N07 (double clic volontaire sur
+// Commander). C'est un seul geste natif dblclick (deux clics rapprochés), jamais une relance après erreur.
+// Aucune retentative : le geste est tenté une fois ; il n'est pas utilisable par les scénarios nominaux.
+async function humanDoubleClickOnce(page,target,{allowedFor,scenario=process.env.G6_CANONICAL_SCENARIO,...opts}={}){
+ if(allowedFor!=='N07'||scenario!=='N07')throw Error('G6_DOUBLE_CLICK_EXCEPTION_N07_ONLY');
+ const pg=page||target.page(),mutations=[];
+ const onRequest=req=>{try{const u=new URL(req.url());
+  if(!SAFE.has(req.method())&&u.pathname.startsWith('/api'))mutations.push({method:req.method(),path:u.pathname});}catch(_){}};
+ pg.on('request',onRequest);
+ try{
+  await waitReady(pg,{timeout:opts.readyTimeout});
+  const {loc}=resolve(pg,target);
+  await loc.dblclick(opts.timeout?{timeout:opts.timeout}:{});
+  return {attempts:1,mutations,double_click:true};
+ }finally{pg.off('request',onRequest);}
+}
+module.exports={humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress,humanDoubleClickOnce,waitReady,GestureBlockedError};
