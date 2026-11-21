@@ -23,3 +23,12 @@ describe('G6-G4C-FIX',()=>{
   expect(s).toContain('e.purchase_line_id=pl.id');
  });
 });
+describe('G6 N15 act : verdict indépendant d\'une réponse absente',()=>{
+ it('plus de waitForResponse 30s ; refus d\'écran silencieux = no_request, garde = guard_blocked',()=>{
+  const s=read('scripts/recette/g6-negative-n15-n16-chromium.js');
+  expect(s).not.toContain('waitForResponse');
+  expect(s).toContain('no_request:true');
+  expect(s).toContain('guard_blocked');
+  expect(s).toContain("check(actor.blocked.length===0,'G6_N15_UNEXPECTED_BROWSER_WRITE')");
+ });
+});
