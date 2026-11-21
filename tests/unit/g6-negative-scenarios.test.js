@@ -197,3 +197,48 @@ describe('G6-G4B-FIX runner N23, N29, N20',()=>{
   await expect(shipmentForOrder({query:async()=>({rows:[]})},'o')).resolves.toBeNull();
  });
 });
+
+describe('G6-G4C N11 (PO sans engagement) et N12 (paiement sans deuxième autorisation)',()=>{
+ const up=id=>STAGE_IDS.slice(0,STAGE_IDS.indexOf(id)+1);
+ it('séquences : chaîne M01 coupée au bon point, M01 inchangé',()=>{
+  expect(graphFor('N11').order).toEqual([...up('HUB_PO'),'N11_PO_NO_COMMITMENT_ATTEMPT','N11_NO_ENGAGEMENT_ORACLE']);
+  expect(graphFor('N12').order).toEqual([...up('HUB_VENDOR_SIMULATION'),'N12_PAYMENT_SINGLE_VALIDATOR','N12_NO_PAYMENT_ORACLE']);
+  expect(graphFor('N11').order).not.toContain('HUB_COMMITMENT');
+  expect(graphFor('N12').order).not.toContain('HUB_RECEIVING');
+  expect(graphFor('M01').order).toEqual(STAGE_IDS);
+  expect(validateStageModuleSources()).toBeGreaterThan(0);
+ });
+ const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
+ const po={id:'p',status:'draft',sent_at:null,sent_channel:null,supplier_order_id:null};
+ const fx={commitments:0,payment_authorizations:0,supplier_payments:0,manual_executions:0,confirmed_lines:0,hub_allocations:0,hub_units:0,payment_status:'paid'};
+ it('oracle N11 : brouillon, aucun engagement, aucun effet fournisseur ni Hub',async()=>{
+  await expect(N.oracleN11(mk([[po],[fx]]),{orderId:'o',poId:'p'})).resolves.toMatchObject({po_status:'draft',commitments:0});
+  await expect(N.oracleN11(mk([[{...po,status:'notified'}],[fx]]),{orderId:'o',poId:'p'})).rejects.toThrow('G6_N11_PRODUCT_GAP_PO_ADVANCED_notified');
+  await expect(N.oracleN11(mk([[po],[{...fx,commitments:1}]]),{orderId:'o',poId:'p'})).rejects.toThrow('G6_N11_PRODUCT_GAP_ENGAGEMENT_RECORDED');
+  await expect(N.oracleN11(mk([[po],[{...fx,hub_units:1}]]),{orderId:'o',poId:'p'})).rejects.toThrow('G6_N11_PRODUCT_GAP_HUB_EFFECT');
+  await expect(N.oracleN11(mk([[po,{...po,id:'q'}]]),{orderId:'o',poId:'p'})).rejects.toThrow('G6_NEG_PO_NOT_UNIQUE_2');
+ });
+ it('oracle N12 : engagement unique intact, aucune autorisation de paiement, aucun paiement',async()=>{
+  const c={...po,status:'confirmed'},f={...fx,commitments:1},row=[{proof_ref:'E-1',decided_by:'u'}];
+  await expect(N.oracleN12(mk([[c],[f],row]),{orderId:'o',poId:'p',commitmentProof:'E-1'})).resolves.toMatchObject({commitments:1,payment_authorizations:0});
+  await expect(N.oracleN12(mk([[c],[{...f,payment_authorizations:1}]]),{orderId:'o',poId:'p',commitmentProof:'E-1'})).rejects.toThrow('G6_N12_PRODUCT_GAP_PAYMENT_AUTHORIZED_BY_SINGLE_VALIDATOR');
+  await expect(N.oracleN12(mk([[c],[{...f,supplier_payments:1}]]),{orderId:'o',poId:'p',commitmentProof:'E-1'})).rejects.toThrow('G6_N12_PRODUCT_GAP_SUPPLIER_PAYMENT_EXECUTED');
+  await expect(N.oracleN12(mk([[c],[f],row]),{orderId:'o',poId:'p',commitmentProof:'AUTRE'})).rejects.toThrow('G6_N12_PRODUCT_GAP_COMMITMENT_PROOF_CHANGED');
+ });
+ it('script : écran puis sondes signalées, verdicts PRODUCT_GAP et SCREEN_MISSING, aucune capture',()=>{
+  const a=read('scripts/recette/g6-negative-n11-n12-chromium.js');
+  expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);expect(a).toMatch(/SOUMISSION_ABSENTE_SANS_MOTIF_AFFICHE/);
+  expect(a).toMatch(/G6_'\+SCEN\+'_PRODUCT_GAP_/);expect(a).toMatch(/SCREEN_MISSING/);expect(a).not.toMatch(/screenshot/);
+  expect(a).toMatch(/authorize-payment/);expect(a).toMatch(/DIRECTOR_HOLDS_BOTH_GRANTS/);
+  expect(read('scripts/recette/canonical/negative-runner.js')).toMatch(/G6_CANONICAL_PO_ID:poId|G6_CANONICAL_PO_ID/);
+  expect(validateChromiumScriptSources()).toBeGreaterThan(0);
+ });
+ it('classification des verdicts et workflow : titres N11/N12 pour KM, CM et CG',()=>{
+  expect(N.classifyNegative('N11','G6_N11_PRODUCT_GAP_PO_ADVANCED_notified')).toBe('PRODUCT_GAP');
+  expect(N.classifyNegative('N12','G6_N12_SCREEN_MISSING_PROBE_csrf_origin_required')).toBe('SCREEN_MISSING');
+  expect(N.isNegative('N11')&&N.isNegative('N12')).toBe(true);
+  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
+  for(const id of ['N11','N12'])for(const m of ['KM','CM','CG'])
+   expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
+ });
+});

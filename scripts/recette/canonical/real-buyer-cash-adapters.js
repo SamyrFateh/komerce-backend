@@ -181,8 +181,8 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
  if(!db||typeof db.query!=='function')throw Error('G6_DYNAMIC_DATABASE_REQUIRED');
  guard(env);
  const SCENARIO=env.G6_CANONICAL_SCENARIO;
- // N20 : chaîne import identique à M01 ; les scripts enfants (Hub, transitaire, douane) tournent sous l'alias M01, jamais modifiés.
- if(SCENARIO==='N20')env={...env,G6_CANONICAL_SCENARIO:'M01'};
+ // N20, N11 à N16 : chaîne import identique à M01 ; les scripts enfants (Hub, transitaire, douane) tournent sous l'alias M01, jamais modifiés.
+ if(['N20','N11','N12','N13','N14','N15','N16'].includes(SCENARIO))env={...env,G6_CANONICAL_SCENARIO:'M01'};
  let issuedBuyer=null;
  let runtimePin=null;
  const stageProofs=new Map();

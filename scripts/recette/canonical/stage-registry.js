@@ -35,8 +35,13 @@ const N22_STAGE_IDS=Object.freeze(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE',
 // N20 (G6-G4B) : parcours import M01 jusqu'à la douane, puis réception relais avec écart. N29 : parcours M02 jusqu'à « disponible », puis session expirée et rôle non autorisé.
 const N20_STAGE_IDS=Object.freeze([...STAGE_IDS.slice(0,STAGE_IDS.indexOf('CUSTOMS')+1),'N20_RELAY_DISCREPANCY','N20_DISCREPANCY_ORACLE']);
 const N29_STAGE_IDS=Object.freeze(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','N29_SESSION_ROLE_ATTEMPTS','N29_NO_MUTATION_ORACLE']);
+// N11 / N12 (G6-G4C) : chaîne import M01 coupée au bon point, puis geste négatif Hub et oracle PG.
+// N11 : PO brouillon sans validation d'engagement. N12 : PO confirmé (engagement posé), paiement fournisseur sans la deuxième autorisation.
+const upTo=id=>STAGE_IDS.slice(0,STAGE_IDS.indexOf(id)+1);
+const N11_STAGE_IDS=Object.freeze([...upTo('HUB_PO'),'N11_PO_NO_COMMITMENT_ATTEMPT','N11_NO_ENGAGEMENT_ORACLE']);
+const N12_STAGE_IDS=Object.freeze([...upTo('HUB_VENDOR_SIMULATION'),'N12_PAYMENT_SINGLE_VALIDATOR','N12_NO_PAYMENT_ORACLE']);
 const SCENARIO_STAGE_IDS=Object.freeze({M01:STAGE_IDS,M02:M02_STAGE_IDS,M03:M03_STAGE_IDS,
- N07:N07_STAGE_IDS,N09:N09_STAGE_IDS,N04:N04_STAGE_IDS,N33:N33_STAGE_IDS,N23:N23_STAGE_IDS,N24:N24_STAGE_IDS,N21:N21_STAGE_IDS,N22:N22_STAGE_IDS,N20:N20_STAGE_IDS,N29:N29_STAGE_IDS});
+ N07:N07_STAGE_IDS,N09:N09_STAGE_IDS,N04:N04_STAGE_IDS,N33:N33_STAGE_IDS,N23:N23_STAGE_IDS,N24:N24_STAGE_IDS,N21:N21_STAGE_IDS,N22:N22_STAGE_IDS,N20:N20_STAGE_IDS,N29:N29_STAGE_IDS,N11:N11_STAGE_IDS,N12:N12_STAGE_IDS});
 function scenarioProfile(raw){
  if(typeof raw!=='string'||!Object.hasOwn(SCENARIO_STAGE_IDS,raw))throw Error('G6_UNSUPPORTED_SCENARIO');
  return raw;
@@ -118,4 +123,4 @@ function planGolden({fromStage='BUYER',toStage='CLIENT_PICKUP'}={}){
  return {contract:'G6-CANONICAL-JOURNEY-v1',mode:'dry-run',stages:g.order.slice(start,end+1),
   missing_prerequisites:prerequisiteIds(from.id,g),mutations:0,verdict:'NOT_PROVEN'};
 }
-module.exports={M02_STAGE_IDS,M03_STAGE_IDS,N07_STAGE_IDS,N09_STAGE_IDS,N04_STAGE_IDS,N33_STAGE_IDS,N23_STAGE_IDS,N24_STAGE_IDS,N21_STAGE_IDS,N22_STAGE_IDS,N20_STAGE_IDS,N29_STAGE_IDS,SCENARIO_STAGE_IDS,scenarioProfile,loadScenarioStages,graphFor,STAGE_IDS,nextStageId,LEGACY_PHASE_MAP,loadGoldenStages,stageGraph,resolvePhase,prerequisiteIds,requiresResumeProof,validateProofBoundary,planGolden};
+module.exports={M02_STAGE_IDS,M03_STAGE_IDS,N07_STAGE_IDS,N09_STAGE_IDS,N04_STAGE_IDS,N33_STAGE_IDS,N23_STAGE_IDS,N24_STAGE_IDS,N21_STAGE_IDS,N22_STAGE_IDS,N20_STAGE_IDS,N29_STAGE_IDS,N11_STAGE_IDS,N12_STAGE_IDS,SCENARIO_STAGE_IDS,scenarioProfile,loadScenarioStages,graphFor,STAGE_IDS,nextStageId,LEGACY_PHASE_MAP,loadGoldenStages,stageGraph,resolvePhase,prerequisiteIds,requiresResumeProof,validateProofBoundary,planGolden};

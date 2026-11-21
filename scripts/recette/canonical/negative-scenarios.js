@@ -3,13 +3,13 @@
  * @domain orders
  * @layer test
  * @owner backend-core
- * @purpose Scénarios négatifs N07/N09/N04/N33 (G6-G4A), N23/N24 (G6-G4B) : résolution multi-SKU en lecture seule, oracles PG en lecture seule, verdicts SCREEN_MISSING/PRODUCT_GAP.
- * @db-read orders, order_items, product_skus, products, markets, product_market_price_drafts, product_market_exposure, local_stock, local_stock_allocations, cash_collections, cash_confirmation_controls, scans, parcels, parcel_items, purchase_lines, pickup_collect_failures, international_shipments, international_shipment_relay_receipts, incidents
+ * @purpose Scénarios négatifs N07/N09/N04/N33 (G6-G4A), N23/N24 (G6-G4B), N11/N12 (G6-G4C) : résolution multi-SKU en lecture seule, oracles PG en lecture seule, verdicts SCREEN_MISSING/PRODUCT_GAP.
+ * @db-read orders, order_items, product_skus, products, markets, product_market_price_drafts, product_market_exposure, local_stock, local_stock_allocations, cash_collections, cash_confirmation_controls, scans, parcels, parcel_items, purchase_lines, pickup_collect_failures, international_shipments, international_shipment_relay_receipts, incidents, purchase_orders, purchase_order_authorizations, supplier_execution_payments, manual_purchase_executions, hub_purchase_allocations, hub_physical_units
  * @db-write none
  * @impact-areas staging-only
  */
 'use strict';
-const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29']);
+const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29','N11','N12']);
 const isNegative=s=>NEGATIVE.includes(String(s));
 // Produit vendable (prix LOCAL_ACTIVE, exposition ENABLED, actif) servi par l'import (aucun stock local exposé), SKU actifs en stock.
 const MULTI_SKU_SQL=`
@@ -150,6 +150,50 @@ async function oracleN20(db,{orderId}){
  ok(o.status!=='collected'&&o.collected_scans===0&&pi.collected===0,'G6_N20_PRODUCT_GAP_MISSING_QTY_HANDED_OVER');
  return {receipts:r.length,received_qty:got,expected_qty:r.reduce((n,x)=>n+Number(x.expected_qty),0),incidents:r.length,qty_collected:0,status:o.status};
 }
+// N11, N12 (G6-G4C) : PO de la commande, autorisations d'engagement et de paiement, effets fournisseur et Hub, en lecture seule.
+async function importPo(db,orderId){
+ const {rows}=await db.query(`SELECT DISTINCT po.id,po.status::text AS status,po.sent_at,po.sent_channel,po.supplier_order_id
+   FROM purchase_orders po JOIN purchase_lines pl ON pl.purchase_order_id=po.id JOIN order_items oi ON oi.id=pl.order_item_id
+   WHERE oi.order_id=$1 AND pl.cancelled_at IS NULL`,[orderId]);
+ ok(rows.length===1,'G6_NEG_PO_NOT_UNIQUE_'+rows.length);
+ return rows[0];
+}
+async function poEffects(db,poId,orderId){
+ const {rows:[x]}=await db.query(`SELECT
+  (SELECT count(*)::int FROM purchase_order_authorizations a WHERE a.purchase_order_id=$1 AND a.authorization_type='purchase_commitment') AS commitments,
+  (SELECT count(*)::int FROM purchase_order_authorizations a WHERE a.purchase_order_id=$1 AND a.authorization_type='supplier_payment') AS payment_authorizations,
+  (SELECT count(*)::int FROM supplier_execution_payments p WHERE p.purchase_order_id=$1) AS supplier_payments,
+  (SELECT count(*)::int FROM manual_purchase_executions e WHERE e.purchase_order_id=$1) AS manual_executions,
+  (SELECT count(*)::int FROM purchase_lines pl WHERE pl.purchase_order_id=$1 AND pl.confirmed_quantity IS NOT NULL) AS confirmed_lines,
+  (SELECT count(*)::int FROM hub_purchase_allocations h WHERE h.order_id=$2) AS hub_allocations,
+  (SELECT count(*)::int FROM hub_physical_units u WHERE u.order_id=$2) AS hub_units,
+  (SELECT (SELECT payment_status::text FROM orders WHERE id=$2)) AS payment_status`,[poId,orderId]);
+ return x;
+}
+// N11 : PO toujours en brouillon, rien d'envoyé ni de confirmé, aucune autorisation, aucun effet Hub.
+async function oracleN11(db,{orderId,poId}){
+ const po=await importPo(db,orderId);
+ ok(po.id===poId,'G6_N11_PRODUCT_GAP_PO_CHANGED');
+ ok(po.status==='draft'&&!po.sent_at&&!po.sent_channel&&!po.supplier_order_id,'G6_N11_PRODUCT_GAP_PO_ADVANCED_'+po.status);
+ const x=await poEffects(db,poId,orderId);
+ ok(x.commitments===0&&x.payment_authorizations===0,'G6_N11_PRODUCT_GAP_ENGAGEMENT_RECORDED');
+ ok(x.manual_executions===0&&x.confirmed_lines===0&&x.supplier_payments===0,'G6_N11_PRODUCT_GAP_SUPPLIER_EFFECT');
+ ok(x.hub_allocations===0&&x.hub_units===0,'G6_N11_PRODUCT_GAP_HUB_EFFECT');
+ return {po_status:po.status,commitments:0,payment_authorizations:0,manual_executions:0,supplier_payments:0,hub_units:0};
+}
+// N12 : engagement unique conservé (même pièce), aucune autorisation de paiement ni paiement fournisseur, rien reçu.
+async function oracleN12(db,{orderId,poId,commitmentProof}){
+ const po=await importPo(db,orderId);
+ ok(po.id===poId&&po.status==='confirmed','G6_N12_PRODUCT_GAP_PO_STATE_'+po.status);
+ const x=await poEffects(db,poId,orderId);
+ ok(x.payment_authorizations===0,'G6_N12_PRODUCT_GAP_PAYMENT_AUTHORIZED_BY_SINGLE_VALIDATOR');
+ ok(x.supplier_payments===0,'G6_N12_PRODUCT_GAP_SUPPLIER_PAYMENT_EXECUTED');
+ ok(x.commitments===1,'G6_N12_PRODUCT_GAP_COMMITMENT_COUNT_'+x.commitments);
+ const {rows:[c]}=await db.query("SELECT proof_ref,decided_by FROM purchase_order_authorizations WHERE purchase_order_id=$1 AND authorization_type='purchase_commitment'",[poId]);
+ ok(c&&c.proof_ref===commitmentProof,'G6_N12_PRODUCT_GAP_COMMITMENT_PROOF_CHANGED');
+ ok(x.hub_units===0&&x.payment_status==='paid','G6_N12_PRODUCT_GAP_UNEXPECTED_EFFECT');
+ return {po_status:po.status,commitments:1,payment_authorizations:0,supplier_payments:0,commitment_proof:c.proof_ref};
+}
 // N04 : aucune commande, aucun stock négatif, aucune réserve fictive.
 async function oracleN04(db,{buyerId,productId,market,availableBefore}){
  const {rows:[n]}=await db.query('SELECT count(*)::int AS n FROM orders WHERE user_id=$1',[buyerId]);
@@ -171,4 +215,4 @@ function classifyNegative(scenario,message){
  const g=new RegExp('G6_'+scenario+'_(SCREEN_MISSING|PRODUCT_GAP)').exec(m);
  return g?g[1]:null;
 }
-module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,classifyNegative};
+module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,importPo,classifyNegative};
