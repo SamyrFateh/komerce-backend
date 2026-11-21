@@ -62,6 +62,9 @@ const SCRIPTS=Object.freeze({
 });
 const DOWNSTREAM_M01=Object.freeze(['RELAY_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS','HUB_VENDOR_SIMULATION','HUB_RECEIVING','HUB_RECEIVING_READBACK','HUB_CUSTOMER_BAG','HUB_KOM_BOX','HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP']);
 const M02_STAGES=Object.freeze(['LOCAL_RELAY_AVAILABLE','LOCAL_CLIENT_PICKUP']);
+// G6-G4B : N23/N24 réutilisent le parcours M02 (achat, cash, mise à disposition) ; le geste négatif est joué ensuite par le runner.
+const LOCAL_FLOW=Object.freeze(['M02','M03','N23','N24']);
+const LOCAL_PG_FLOW=Object.freeze(['M02','N23','N24']);
 const M03_ORACLE_STAGES=Object.freeze(['M03_NOT_COLLECTED','M03_COLLECTED_FINAL']);
 // M03 : branche locale = étapes M02 ; oracles M03 en lecture seule ; branche import (HUB_PO..CLIENT_PICKUP) = boucle par PO (m03-import-stages).
 const M03_IMPORT_STAGES=Object.freeze(DOWNSTREAM_M01.filter(x=>x!=='RELAY_CASH'));
@@ -223,7 +226,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
       ((pg.payment_status==='pending')&&(pg.cash_count!==0||pg.control_count!==0))||
       ((pg.payment_status==='paid')&&(pg.cash_count!==1||pg.control_count!==1)))
     throw Error('G6_DYNAMIC_BUYER_PG_READBACK_INVALID');
-   if(SCENARIO==='M02')await oracles.assertNoHubOrTransport(db,context.order_id,'any');
+   if(LOCAL_PG_FLOW.includes(SCENARIO))await oracles.assertNoHubOrTransport(db,context.order_id,'any');
    if(SCENARIO==='M03')await m03.assertMixedPhase(db,context.order_id,'structure');
   }else if(stageId==='RELAY_CASH'){
    const matches=(data.steps||[]).filter(s=>s.name==='CASH_UI_PAID'&&s.market===marketProfile(env).code);
@@ -239,13 +242,13 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
    const pg=await orderPg(db,context);
    if(pg.payment_status!=='paid'||pg.cash_count!==1||pg.control_count!==1)
     throw Error('G6_DYNAMIC_CASH_PG_READBACK_INVALID');
-   if(SCENARIO==='M02')await oracles.assertNoHubOrTransport(db,context.order_id,'any');
+   if(LOCAL_PG_FLOW.includes(SCENARIO))await oracles.assertNoHubOrTransport(db,context.order_id,'any');
    if(SCENARIO==='M03')await m03.assertMixedPhase(db,context.order_id,'structure');
   }else if(M03_ORACLE_STAGES.includes(stageId)){
    if(SCENARIO!=='M03'||data.order_id!==context.order_id||data.oracle_verdict!=='PASS')
     throw Error('G6_M03_ORACLE_PROOF_INVALID_'+stageId);
   }else if(M02_STAGES.includes(stageId)){
-   if(!['M02','M03'].includes(SCENARIO))throw Error('G6_REAL_BUYER_CASH_STAGE_NOT_IMPLEMENTED_'+stageId);
+   if(!LOCAL_FLOW.includes(SCENARIO))throw Error('G6_REAL_BUYER_CASH_STAGE_NOT_IMPLEMENTED_'+stageId);
    const expected={LOCAL_RELAY_AVAILABLE:'G6_LOCAL_RELAY_AVAILABLE_SIMULATED_CHROMIUM_PG_PASS',
     LOCAL_CLIENT_PICKUP:'G6_LOCAL_CLIENT_PICKUP_SIMULATED_CHROMIUM_PG_PASS_COLLECTED'}[stageId];
    if(data.verdict!==expected||data.db_fingerprint!==context.db_fingerprint||
@@ -490,7 +493,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
   },
   attestRuntime:async({context})=>attestedRuntime(context),
   authenticateCheckpoint:async({checkpoint,context})=>{
-   if(!['BUYER',...DOWNSTREAM_M01.slice(0,-1),...(['M02','M03'].includes(SCENARIO)?M02_STAGES:[]),...(SCENARIO==='M03'?M03_ORACLE_STAGES:[])].includes(checkpoint.stage_id)||
+   if(!['BUYER',...DOWNSTREAM_M01.slice(0,-1),...(LOCAL_FLOW.includes(SCENARIO)?M02_STAGES:[]),...(SCENARIO==='M03'?M03_ORACLE_STAGES:[])].includes(checkpoint.stage_id)||
      checkpoint.source_run_id!==String(env.GITHUB_RUN_ID)||
      checkpoint.evidence_path!==REPORT_PATH[checkpoint.stage_id])
     throw Error('G6_DYNAMIC_CROSS_RUN_REQUIRES_AUTHENTICATED_GITHUB_ARTIFACT');
@@ -500,7 +503,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
    return verifyStage(checkpoint.stage_id,context);
   },
   executeStage:async({stageId,context})=>{
-   if(![...DOWNSTREAM_M01,...(['M02','M03'].includes(SCENARIO)?M02_STAGES:[]),...(SCENARIO==='M03'?M03_ORACLE_STAGES:[])].includes(stageId))
+   if(![...DOWNSTREAM_M01,...(LOCAL_FLOW.includes(SCENARIO)?M02_STAGES:[]),...(SCENARIO==='M03'?M03_ORACLE_STAGES:[])].includes(stageId))
     throw Error('G6_DYNAMIC_DOWNSTREAM_STAGE_NOT_MIGRATED_'+stageId);
    if(!stageProofs.has('BUYER'))throw Error('G6_DYNAMIC_BUYER_CHECKPOINT_MISSING');
    await attestedRuntime(context);
@@ -533,7 +536,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
    }
    if(M02_STAGES.includes(stageId)){
     const predecessor=stageId==='LOCAL_RELAY_AVAILABLE'?'RELAY_CASH':'LOCAL_RELAY_AVAILABLE';
-    if(!['M02','M03'].includes(SCENARIO)||!stageProofs.has(predecessor))
+    if(!LOCAL_FLOW.includes(SCENARIO)||!stageProofs.has(predecessor))
      throw Error('G6_M02_PREDECESSOR_MISSING_'+predecessor);
     await verifyStage(predecessor,context);
     fs.rmSync(path.join(ROOT,REPORT_PATH[stageId]),{force:true});
@@ -621,7 +624,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
    return report('HUB_PO').data;
   },
   verifyStageProof:async({stageId,proof,context})=>{
-   if(![...DOWNSTREAM_M01,...(['M02','M03'].includes(SCENARIO)?M02_STAGES:[]),...(SCENARIO==='M03'?M03_ORACLE_STAGES:[])].includes(stageId)||
+   if(![...DOWNSTREAM_M01,...(LOCAL_FLOW.includes(SCENARIO)?M02_STAGES:[]),...(SCENARIO==='M03'?M03_ORACLE_STAGES:[])].includes(stageId)||
       JSON.stringify(proof)!==JSON.stringify(report(stageId).data))
     throw Error('G6_DYNAMIC_STAGE_PROOF_MISMATCH');
    return verifyStage(stageId,context);
