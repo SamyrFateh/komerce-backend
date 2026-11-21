@@ -5738,6 +5738,13 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/css/hub-agent-workspace-focus.css",
+        "resolvedPath": "public/dashboards/canonical/css/hub-agent-workspace-focus.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/js/hub-live-cockpit.js",
         "resolvedPath": "public/dashboards/canonical/js/hub-live-cockpit.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"

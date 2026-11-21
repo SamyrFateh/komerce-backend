@@ -6911,7 +6911,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 194,
+            "count": 195,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -7351,6 +7351,11 @@
               {
                 "declared": "dashboards/canonical/css/hero-first-shell-conformance-v1.css",
                 "resolvedPath": "public/dashboards/canonical/css/hero-first-shell-conformance-v1.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/css/hub-agent-workspace-focus.css",
+                "resolvedPath": "public/dashboards/canonical/css/hub-agent-workspace-focus.css",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -9376,7 +9381,7 @@
             ]
           }
         },
-        "totalFiles": 487,
+        "totalFiles": 488,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
