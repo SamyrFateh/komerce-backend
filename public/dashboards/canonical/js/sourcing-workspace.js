@@ -165,9 +165,11 @@
     setFeedback(context.root, options.runningMessage || 'Action en cours…');
     try {
       const result = await jsonRequest(context.fetch, options.url, { method: 'POST', body: options.body || {} });
-      setFeedback(context.root, options.successMessage || 'Action appliquée.', 'positive');
       if (typeof options.onSuccess === 'function') await options.onSuccess(result);
-      else await context.reload();
+      else {
+        await context.reload();
+        setFeedback(context.root, options.successMessage || 'Action appliquée.', 'positive');
+      }
       return result;
     } catch (error) {
       setFeedback(context.root, error.message, 'critical');
@@ -217,6 +219,14 @@
     return !row.product_ref
       && ['scanned', 'test_ready'].includes(state)
       && decision === 'TEST';
+  }
+
+  function candidateWatchActionEligible(row = {}) {
+    const state = String(row.state || '').toLowerCase();
+    const decision = String(row.scan_result?.sourcing_decision || '').toUpperCase();
+    return !row.product_ref
+      && !['imported_to_catalog', 'rejected', 'archived', 'quarantined'].includes(state)
+      && decision === 'WATCH';
   }
 
   function openCandidateForm(context, title, help, trigger) {
@@ -295,7 +305,8 @@
       'Uniquement les faits fournisseur corrigeables ici. Les classements, traductions et validations sont dans le Catalogue.');
     const rows = (payload.candidates || []).filter(row =>
       context.focusCandidateRef ? row.candidate_ref === context.focusCandidateRef
-        : Boolean(sourcingRemedy(row) || candidatePromotionEligible(row)));
+        : Boolean(sourcingRemedy(row) || candidatePromotionEligible(row) ||
+          candidateWatchActionEligible(row)));
     if (!rows.length) {
       slot.appendChild(text(doc, 'div', 'kmc-workspace-empty',
         'Aucun problème fournisseur directement corrigeable ici. Les autres produits restent suivis dans les passages et le Catalogue.'));
@@ -325,8 +336,9 @@
       tr.appendChild(td(doc, row.supplier_name || '—'));
 
       const issue = sourcingRemedy(row);
-      tr.appendChild(td(doc, issue?.reason ||
-        'Dossier ouvert depuis le Catalogue · faits fournisseur consultables'));
+      tr.appendChild(td(doc, issue?.reason || (candidateWatchActionEligible(row)
+        ? 'Décision fournisseur : à surveiller · arbitrage humain requis'
+        : 'Dossier ouvert depuis le Catalogue · faits fournisseur consultables')));
       const actions = doc.createElement('td');
       actions.className = 'kmc-sourcing-candidate-actions';
       actions.setAttribute('data-label', 'Action');
@@ -382,6 +394,43 @@
           successMessage: row.candidate_ref + ' : contrôle fournisseur exécuté.',
         }));
         actions.appendChild(scan);
+      }
+      if (candidateWatchActionEligible(row)) {
+        if (String(row.state || '').toLowerCase() !== 'watchlist') {
+          const watch = makeButton(doc, 'Mettre en veille', 'watchlist-candidate');
+          watch.setAttribute('data-sourcing-watchlist', '');
+          watch.addEventListener('click', () => runAction(context, watch, {
+            url: ENDPOINT + '/candidates/' + encodeURIComponent(row.candidate_ref) + '/watchlist',
+            body: {},
+            runningMessage: 'Mise en veille en cours…',
+            successMessage: row.candidate_ref + ' placé en surveillance.',
+          }));
+          actions.appendChild(watch);
+        }
+        const reject = makeButton(doc, 'Écarter', 'reject-candidate', true);
+        reject.setAttribute('data-sourcing-reject', '');
+        reject.addEventListener('click', () => {
+          const editor = openCandidateForm(context,
+            'Écarter le candidat · ' + row.candidate_ref,
+            'Indiquez la raison si elle est connue. Cette décision est enregistrée dans le suivi du candidat.',
+            reject);
+          const label = text(doc, 'label', 'kmc-sourcing-editor-field', 'Raison (facultative)');
+          const reason = doc.createElement('textarea');
+          reason.setAttribute('data-sourcing-reject-reason', '');
+          label.appendChild(reason);
+          editor.form.insertBefore(label, editor.form.querySelector('.kmc-sourcing-editor-actions'));
+          editor.submit.textContent = 'Écarter le candidat';
+          editor.submit.setAttribute('data-sourcing-reject-submit', '');
+          editor.form.addEventListener('submit', async event => {
+            event.preventDefault();
+            await sendCandidateForm(context, editor,
+              ENDPOINT + '/candidates/' + encodeURIComponent(row.candidate_ref) + '/reject',
+              { reason: reason.value.trim() },
+              row.candidate_ref + ' écarté du suivi actif.');
+          });
+          reason.focus();
+        });
+        actions.appendChild(reject);
       }
       if (candidatePromotionEligible(row)) {
         const promote = makeButton(doc, 'Transmettre au Catalogue', 'promote-candidate');
@@ -784,7 +833,7 @@
     rootNode.appendChild(metrics);
     ui.MetricStrip.render(metrics, { items: metricItems(payload.summary) });
     const open = (payload.candidates || []).filter(row =>
-      sourcingRemedy(row) || candidatePromotionEligible(row)).length;
+      sourcingRemedy(row) || candidatePromotionEligible(row) || candidateWatchActionEligible(row)).length;
     // Technical fallback only: legacy path is no longer a parallel Sourcing dashboard.
     const pages = context.partnerManagement
       ? [{key:'suppliers',label:'Partenaires fournisseurs',count:(payload.suppliers || []).length,render:renderSuppliers}]

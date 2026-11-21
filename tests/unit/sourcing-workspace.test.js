@@ -181,7 +181,9 @@ test('sourcing UI excludes candidates already handed off or rejected from its ac
   const uiSource = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/sourcing-workspace.js'), 'utf8');
   expect(uiSource).toContain('context.focusCandidateRef');
   expect(uiSource).toContain('row.candidate_ref === context.focusCandidateRef');
-  expect(uiSource).toContain('Boolean(sourcingRemedy(row))');
+  expect(uiSource).toContain('candidateWatchActionEligible(row)');
+  expect(uiSource).toContain("'watchlist-candidate'");
+  expect(uiSource).toContain("'reject-candidate'");
   expect(uiSource).toContain('Exceptions fournisseur à résoudre');
   expect(uiSource).not.toContain("const classify = makeButton(doc, 'Classer'");
 });
