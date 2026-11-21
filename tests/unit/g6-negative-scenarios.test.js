@@ -1,608 +1,1 @@
-/** @test-kind unit @test-runner jest @test-requires none */
-'use strict';
-const fs=require('node:fs'),path=require('node:path');
-const {graphFor,scenarioProfile,STAGE_IDS}=require('../../scripts/recette/canonical/stage-registry');
-const {buyerParams,basketLines}=require('../../scripts/recette/canonical/scenario-profile');
-const N=require('../../scripts/recette/canonical/negative-scenarios');
-const {humanDoubleClickOnce}=require('../../scripts/recette/canonical/actors/human-gestures');
-const {validateStageModuleSources,validateChromiumScriptSources}=require('../../scripts/recette/canonical/chromium-policy');
-const ROOT=path.resolve(__dirname,'../..');
-const read=p=>fs.readFileSync(path.join(ROOT,p),'utf8');
-const U1='11111111-1111-4111-8111-111111111111',U2='22222222-2222-4222-8222-222222222222';
-describe('G6-G4A scÃ©narios nÃ©gatifs N07, N09, N04, N33',()=>{
- it('sÃ©quences enregistrÃ©es dans stage-registry, M01 inchangÃ©',()=>{
-  expect(graphFor('N07').order).toEqual(['BUYER','N07_NO_DOUBLE_EFFECT']);
-  expect(graphFor('N09').order).toEqual(['BUYER','N09_REMISE_REFUSED','N09_NOT_COLLECTED_ORACLE']);
-  expect(graphFor('N04').order).toEqual(['N04_QTY_OVER_STOCK','N04_NO_EFFECT_ORACLE']);
-  expect(graphFor('N33').order).toEqual(['BUYER','N33_SKU_ORACLE']);
-  expect(graphFor('N09').order).not.toContain('RELAY_CASH');
-  expect(graphFor('M01').order).toEqual(STAGE_IDS);
-  expect(()=>scenarioProfile('N99')).toThrow('G6_UNSUPPORTED_SCENARIO');
- });
- it('paramÃ¨tres : N07 = produit Golden, N33 = 2 SKU liÃ©s, M01 intact',()=>{
-  expect(buyerParams({G6_CANONICAL_SCENARIO:'N07',G6_TARGET_MARKET:'CM'})).toMatchObject({scenario:'N07',product_ref:'KPR-000165',expected_price:7987,fulfillment:null});
-  expect(buyerParams({G6_CANONICAL_SCENARIO:'M01',G6_TARGET_MARKET:'CM'}).scenario).toBe('M01');
-  expect(()=>buyerParams({G6_CANONICAL_SCENARIO:'N33'})).toThrow('G6_N33_VARIANTS_NOT_BOUND');
-  const v={product_ref:'KPR-000777',price:1000,skus:[{sku_id:U1,variant_combo:{couleur:'Noir'}},{sku_id:U2,variant_combo:{couleur:'Blanc'}}]};
-  const p=buyerParams({G6_CANONICAL_SCENARIO:'N33',G6_TARGET_MARKET:'KM',G6_N33_VARIANTS:JSON.stringify(v)});
-  expect(p.expected_price).toBe(2000);
-  expect(basketLines(p).map(l=>l.sku_id)).toEqual([U1,U2]);
-  v.skus[1].sku_id=U1;
-  expect(()=>buyerParams({G6_CANONICAL_SCENARIO:'N33',G6_N33_VARIANTS:JSON.stringify(v)})).toThrow('G6_N33_VARIANTS_NOT_BOUND');
-  expect(buyerParams({G6_CANONICAL_SCENARIO:'N04',G6_TARGET_MARKET:'KM',G6_BUYER_PRODUCT_REF:'KPR-000321',G6_BUYER_EXPECTED_PRICE:'5990'}).fulfillment).toBe('LOCAL_STOCK');
- });
- it('pickTwoSkus : deux combinaisons distinctes sinon null',()=>{
-  expect(N.pickTwoSkus([{sku_id:U1,variant_combo:{a:1,b:2}},{sku_id:U2,variant_combo:{b:2,a:1}}])).toBeNull();
-  expect(N.pickTwoSkus([{sku_id:U1,variant_combo:{a:1}},{sku_id:U2,variant_combo:{a:2}}])).toHaveLength(2);
-  expect(N.pickTwoSkus([{sku_id:U1,variant_combo:null},{sku_id:U2,variant_combo:{}}])).toBeNull();
-  expect(N.pickTwoSkus(null)).toBeNull();
- });
- it('sonde multi-SKU : lecture seule, verdict PREREQ_MISSING_MULTI_SKU sans produit',async()=>{
-  expect(N.MULTI_SKU_SQL).not.toMatch(/\b(INSERT|UPDATE|DELETE|TRUNCATE|ALTER|DROP)\b/i);
-  await expect(N.resolveMultiSku({query:async()=>({rows:[]})},'KM')).rejects.toThrow('PREREQ_MISSING_MULTI_SKU_KM');
-  const r=await N.resolveMultiSku({query:async()=>({rows:[{id:'p',product_ref:'KPR-000777',amount:'1000',skus:[{sku_id:U1,variant_combo:{c:'A'}},{sku_id:U2,variant_combo:{c:'B'}}]}]})},'KM');
-  expect(r).toMatchObject({product_ref:'KPR-000777',price:1000});
-  expect(read('scripts/recette/g6-prereq-probe.js')).toMatch(/PREREQ_MISSING_MULTI_SKU/);
- });
- it('verdicts SCREEN_MISSING / PRODUCT_GAP explicites',()=>{
-  expect(N.classifyNegative('N07','x G6_N07_PRODUCT_GAP_DOUBLE_ORDER_2')).toBe('PRODUCT_GAP');
-  expect(N.classifyNegative('N09','G6_N09_SCREEN_MISSING_NO_REFUSAL_OBSERVED')).toBe('SCREEN_MISSING');
-  expect(N.classifyNegative('N33','PREREQ_MISSING_MULTI_SKU_KM')).toBe('PREREQ_MISSING_MULTI_SKU');
-  expect(N.classifyNegative('N04','autre erreur')).toBeNull();
- });
- it("l'exception du double clic est rÃ©servÃ©e Ã  N07",async()=>{
-  await expect(humanDoubleClickOnce(null,{},{allowedFor:'N07',scenario:'M01'})).rejects.toThrow('G6_DOUBLE_CLICK_EXCEPTION_N07_ONLY');
-  await expect(humanDoubleClickOnce(null,{},{scenario:'N07'})).rejects.toThrow('G6_DOUBLE_CLICK_EXCEPTION_N07_ONLY');
-  expect(read('scripts/recette/g6-p2-buyer-order-real-chromium.js')).toMatch(/humanDoubleClickOnce\(null,confirm,\{allowedFor:'N07'\}\)/);
- });
- it('politique Chromium globale inchangÃ©e et valide pour les nouveaux fichiers',()=>{
-  expect(validateStageModuleSources()).toBe(STAGE_IDS.length);
-  expect(validateChromiumScriptSources()).toBeGreaterThan(0);
-  expect(read('scripts/recette/canonical/chromium-policy.js')).toMatch(/RAW_GESTURE=/);
- });
- it('oracle N09 refuse un collected, une consommation de stock ou un cash',async()=>{
-  const row=o=>({query:async sql=>/parcel_items/.test(sql)?{rows:[{n:0}]}:{rows:[{id:'o',user_id:'u',status:'pending',payment_status:'pending',display_total_amount:1,lines:1,qty:1,cash_count:0,control_count:0,allocations:1,consumed_allocations:0,purchase_lines:0,collected_scans:0,parcels:0,...o}]}});
-  await expect(N.oracleN09(row({}),{orderId:'o'})).resolves.toMatchObject({collected_scans:0});
-  await expect(N.oracleN09(row({status:'collected'}),{orderId:'o'})).rejects.toThrow('G6_N09_PRODUCT_GAP_COLLECTED');
-  await expect(N.oracleN09(row({consumed_allocations:1}),{orderId:'o'})).rejects.toThrow('G6_N09_PRODUCT_GAP_STOCK_CONSUMED');
-  await expect(N.oracleN09(row({cash_count:1}),{orderId:'o'})).rejects.toThrow('G6_N09_PRODUCT_GAP_CASH_EFFECT');
- });
- it('N04 : clics rÃ©pÃ©tÃ©s sur Ajouter (fiche sans champ quantitÃ©, stepper recouvert) ; N09 : saisie de la rÃ©fÃ©rence Ã  Remises',()=>{
-  const b=read('scripts/recette/g6-p2-buyer-order-real-chromium.js'),n=read('scripts/recette/g6-negative-n09-remise-chromium.js');
-  expect(b).toMatch(/PDP_ADD_CAPPED/);expect(b).toMatch(/CHECKOUT_PREVIEW_REFUSED/);expect(b).toMatch(/G6_N04_SCREEN_MISSING_CHECKOUT_/);expect(b).not.toMatch(/humanClick\(null,page\.locator\('#k-qty-plus'\)\)/);
-  expect(n).toMatch(/ORDER_REFERENCE/);expect(n).toMatch(/RELAY_REMISES_COUNTER_ABSENT/);expect(n).toMatch(/RELAY_NO_REQUEST_SENT/);
- });
- it('workflow : titres N07/N09/N04/N33 pour KM, CM et CG',()=>{
-  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
-  for(const id of ['N07','N09','N04','N33'])for(const m of ['KM','CM','CG'])
-   expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
- });
-});
-describe('G6-G4B N23 (tentatives de retrait) et N24 (deux remises simultanÃ©es)',()=>{
- const chain=['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE'];
- it('sÃ©quences : parcours M02 jusqu\'Ã  disponible puis geste et oracle ; M02 inchangÃ©',()=>{
-  expect(graphFor('N23').order).toEqual([...chain,'N23_WITHDRAWAL_ATTEMPTS','N23_SECURITY_ORACLE']);
-  expect(graphFor('N24').order).toEqual([...chain,'N24_PARALLEL_HANDOFF','N24_SINGLE_HANDOFF_ORACLE']);
-  expect(graphFor('M02').order).toEqual([...chain,'LOCAL_CLIENT_PICKUP']);
-  expect(validateStageModuleSources()).toBeGreaterThan(0);
- });
- it('paramÃ¨tres acheteur : produit LOCAL_STOCK liÃ© comme M02',()=>{
-  const e={G6_CANONICAL_SCENARIO:'N23',G6_TARGET_MARKET:'KM',G6_BUYER_PRODUCT_REF:'KPR-000321',G6_BUYER_EXPECTED_PRICE:'1500'};
-  expect(buyerParams(e)).toMatchObject({scenario:'N23',fulfillment:'LOCAL_STOCK',expected_price:1500});
-  expect(buyerParams({...e,G6_CANONICAL_SCENARIO:'N24'}).scenario).toBe('N24');
-  expect(N.isNegative('N23')&&N.isNegative('N24')).toBe(true);
- });
- const mk=rows=>{let i=0;return {query:async()=>({rows:[rows[i++]]})}};
- const order={id:'o',user_id:'u',status:'available',payment_status:'paid',display_total_amount:1,lines:1,qty:1,cash_count:1,control_count:1,allocations:1,consumed_allocations:0,purchase_lines:0,collected_scans:0,parcels:1};
- it('oracle N23 : aucune remise, code vivant, compteur de sÃ©curitÃ© >= seuil',async()=>{
-  const ok=()=>mk([order,{n:0},{code_alive:true,attempts:0},{n:7}]);
-  await expect(N.oracleN23(ok(),{orderId:'o',agentId:'a',minFailures:5})).resolves.toMatchObject({collected_scans:0,security_failures_15min:7});
-  await expect(N.oracleN23(mk([{...order,status:'collected'},{n:0}]),{orderId:'o',agentId:'a',minFailures:5})).rejects.toThrow('G6_N23_PRODUCT_GAP_HANDOFF_DESPITE_BAD_CODES');
-  await expect(N.oracleN23(mk([order,{n:0},{code_alive:false}]),{orderId:'o',agentId:'a',minFailures:5})).rejects.toThrow('G6_N23_PRODUCT_GAP_CODE_CONSUMED');
-  await expect(N.oracleN23(mk([order,{n:0},{code_alive:true},{n:2}]),{orderId:'o',agentId:'a',minFailures:5})).rejects.toThrow('G6_N23_PRODUCT_GAP_SECURITY_COUNTER_BELOW_2');
- });
- it('oracle N24 : une seule attestation de remise',async()=>{
-  const done={...order,status:'collected'};
-  await expect(N.oracleN24(mk([done,{scans:1,code_scans:1},{got:1,want:1}]),{orderId:'o'})).resolves.toMatchObject({collected_scans:1});
-  await expect(N.oracleN24(mk([done,{scans:2,code_scans:2}]),{orderId:'o'})).rejects.toThrow('G6_N24_PRODUCT_GAP_HANDOFF_ATTESTATIONS_2');
-  await expect(N.oracleN24(mk([done,{scans:1,code_scans:1},{got:2,want:1}]),{orderId:'o'})).rejects.toThrow('G6_N24_PRODUCT_GAP_QTY_COLLECTED');
- });
- it('script : garde de corps normalisÃ©, 4 chiffres, force brute au-delÃ  du seuil, deux onglets, verdict par statuts HTTP',()=>{
-  const s=read('scripts/recette/g6-negative-n23-n24-chromium.js');
-  expect(s).toMatch(/norm\(body\.pickup_code\)===wait\.expect/);
-  expect(s).toMatch(/LAST4_ONLY/);expect(s).toMatch(/BRUTE_FORCE_/);expect(s).toMatch(/RIGHT_CODE_WHILE_LOCKED/);
-  expect(s).toMatch(/ctx\.newPage\(\)/);expect(s).not.toMatch(/screenshot/);
-  expect(s).toMatch(/G6_N24_PRODUCT_GAP_HTTP_/);expect(s).toMatch(/silent_refusals/);expect(s).toMatch(/steps_reached/);
- });
- it('workflow : titres N23/N24 pour KM, CM et CG',()=>{
-  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
-  for(const id of ['N23','N24'])for(const m of ['KM','CM','CG'])
-   expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
- });
-});
-describe('G6-G4B N21 (agent d\'un autre relais) et N22 (relais A/B)',()=>{
- const chain=['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE'];
- it('sÃ©quences et classification des prÃ©requis',()=>{
-  expect(graphFor('N21').order).toEqual([...chain,'N21_CROSS_RELAY_ATTEMPTS','N21_CROSS_RELAY_ORACLE']);
-  expect(graphFor('N22').order).toEqual([...chain,'N22_TWO_RELAYS_ATTEMPTS','N22_TWO_RELAYS_ORACLE']);
-  expect(N.classifyNegative('N21','PREREQ_MISSING_SECOND_RELAY_KM')).toBe('PREREQ_MISSING_SECOND_RELAY');
-  expect(N.classifyNegative('N22','G6_N22_PRODUCT_GAP_READ_order_by_ref')).toBe('PRODUCT_GAP');
-  expect(validateStageModuleSources()).toBeGreaterThan(0);
- });
- it('oracle : aucune remise par l\'agent Ã©tranger, code vivant',async()=>{
-  const order={id:'o',user_id:'u',status:'available',lines:1,qty:1,collected_scans:0,parcels:1};
-  const mk=rows=>{let i=0;return {query:async()=>({rows:[rows[i++]]})}};
-  await expect(N.oracleCrossRelay(mk([order,{n:0},{code_alive:true,attempts:1}]),{orderId:'o',scenario:'N21'})).resolves.toMatchObject({collected_scans:0,order_attempts:1});
-  await expect(N.oracleCrossRelay(mk([{...order,status:'collected'},{n:0}]),{orderId:'o',scenario:'N21'})).rejects.toThrow('G6_N21_PRODUCT_GAP_FOREIGN_AGENT_HANDOFF');
- });
- it('script : rattachement par l\'Ã©cran RÃ©seau, lectures sans divulgation, sens inverse, verdict PRODUCT_GAP sans contournement',()=>{
-  const s=read('scripts/recette/g6-negative-n21-n22-cross-relay-chromium.js');
-  expect(s).toMatch(/attachDedicatedRelayByUI/);expect(s).toMatch(/PREREQ_MISSING_SECOND_RELAY_/);
-  expect(s).toMatch(/agent_at_A_vs_order_at_B/);expect(s).toMatch(/contains_order/);expect(s).toMatch(/steps_reached/);expect(s).not.toMatch(/screenshot/);
-  expect(read('scripts/recette/g6-prereq-probe.js')).toMatch(/PREREQ_MISSING_SECOND_RELAY/);
- });
- it('workflow : titres N21/N22 pour KM, CM et CG',()=>{
-  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
-  for(const id of ['N21','N22'])for(const m of ['KM','CM','CG'])
-   expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
- });
-});
-describe('G6-G4B N20 (Ã©cart de rÃ©ception relais) et N29 (session 401, rÃ´le 403)',()=>{
- it('sÃ©quences : N20 = chaÃ®ne import jusqu\'Ã  la douane, N29 = parcours M02 ; M01 inchangÃ©',()=>{
-  expect(graphFor('N20').order).toEqual([...STAGE_IDS.slice(0,STAGE_IDS.indexOf('CUSTOMS')+1),'N20_RELAY_DISCREPANCY','N20_DISCREPANCY_ORACLE']);
-  expect(graphFor('N20').order).not.toContain('RELAY_RECEIPT');
-  expect(graphFor('N29').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','N29_SESSION_ROLE_ATTEMPTS','N29_NO_MUTATION_ORACLE']);
-  expect(graphFor('M01').order).toEqual(STAGE_IDS);
-  expect(validateStageModuleSources()).toBeGreaterThan(0);
- });
- it('oracle N20 : quantitÃ© constatÃ©e, incident, aucune remise du manquant',async()=>{
-  const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
-  const order={id:'o',status:'preparation',lines:1,qty:1,collected_scans:0,parcels:1};
-  const rec=[{expected_qty:1,received_qty:0,incident_id:'i',incident:'i'}];
-  await expect(N.oracleN20(mk([[order],rec,[{collected:0,received:0}]]),{orderId:'o'})).resolves.toMatchObject({received_qty:0,expected_qty:1});
-  await expect(N.oracleN20(mk([[order],[{...rec[0],incident:null}]]),{orderId:'o'})).rejects.toThrow('G6_N20_PRODUCT_GAP_NO_INCIDENT');
-  await expect(N.oracleN20(mk([[order],[{...rec[0],received_qty:1}]]),{orderId:'o'})).rejects.toThrow('G6_N20_PRODUCT_GAP_RECEIVED_QTY_NOT_SHORT');
-  await expect(N.oracleN20(mk([[order],rec,[{collected:1,received:0}]]),{orderId:'o'})).rejects.toThrow('G6_N20_PRODUCT_GAP_MISSING_QTY_HANDED_OVER');
- });
- it('scripts : Ã©cart saisi Ã  l\'Ã©cran, SCREEN_MISSING_RELAY_DISCREPANCY, session expirÃ©e et rÃ´le interdit',()=>{
-  const a=read('scripts/recette/g6-negative-n20-relay-discrepancy-chromium.js'),b=read('scripts/recette/g6-negative-n29-authz-chromium.js');
-  expect(a).toMatch(/G6_N20_SCREEN_MISSING_RELAY_DISCREPANCY/);expect(a).toMatch(/data-relay-received/);expect(a).not.toMatch(/screenshot/);
-  expect(b).toMatch(/clearCookies/);expect(b).toMatch(/SESSION_EXPIREE_SANS_REDIRECTION_NI_MESSAGE/);expect(b).toMatch(/CLIENT_FORBIDDEN_TRIED/);expect(b).not.toMatch(/screenshot/);
-  expect(read('scripts/recette/canonical/real-buyer-cash-adapters.js')).toMatch(/G6_CANONICAL_SCENARIO:'M01'/);
- });
- it('workflow : titres N20/N29 pour KM, CM et CG',()=>{
-  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
-  for(const id of ['N20','N29'])for(const m of ['KM','CM','CG'])
-   expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
- });
-});
-
-describe('G6-G4B-FIX runner N23, N29, N20',()=>{
- it('N23 : aucune tentative acceptÃ©e ne lÃ¨ve pas de TypeError ; une acceptÃ©e donne le verdict produit',()=>{
-  const {assertNoneAccepted}=require('../../scripts/recette/g6-negative-n23-n24-chromium');
-  expect(()=>assertNoneAccepted([{kind:'WRONG_1',http:401},{kind:'BRUTE_FORCE_1',http:429}])).not.toThrow();
-  expect(()=>assertNoneAccepted([])).not.toThrow();
-  expect(()=>assertNoneAccepted([{kind:'WRONG_1',http:200}])).toThrow('G6_N23_PRODUCT_GAP_ACCEPTED_WRONG_1');
- });
- it('N29 : la garde de LOCAL_RELAY_AVAILABLE accepte N29 sans autre assouplissement',()=>{
-  const a=read('scripts/recette/g6-local-relay-available-chromium.js');
-  expect(a).toMatch(/\['M02','M03','N23','N24','N21','N22','N29'(?:,'N\d+')*\]\.includes\(env\.G6_CANONICAL_SCENARIO\)/);
-  expect(a).toMatch(/env\.G6_CANONICAL_PHASE==='LOCAL_RELAY_AVAILABLE'/);expect(a).toMatch(/G6_LOCAL_RELAY_OWNER_STAGING_GUARD/);
- });
- it('N20 : expÃ©dition retrouvÃ©e via le lien Hub quand parcels.shipment_id est vide',async()=>{
-  const {shipmentForOrder}=require('../../scripts/recette/g6-negative-n20-relay-discrepancy-chromium');
-  const seen=[];const db={query:async q=>{seen.push(q);return {rows:[{id:'s',reference:'SIM-STAGING-EXP-X',stage:'local_delivery'}]}}};
-  await expect(shipmentForOrder(db,'o')).resolves.toMatchObject({reference:'SIM-STAGING-EXP-X'});
-  expect(seen[0]).toMatch(/international_shipment_hub_units/);expect(seen[0]).toMatch(/hub_box_bags/);
-  await expect(shipmentForOrder({query:async()=>({rows:[]})},'o')).resolves.toBeNull();
- });
-});
-
-describe('G6-G4C N11 (PO sans engagement) et N12 (paiement sans deuxiÃ¨me autorisation)',()=>{
- const up=id=>STAGE_IDS.slice(0,STAGE_IDS.indexOf(id)+1);
- it('sÃ©quences : chaÃ®ne M01 coupÃ©e au bon point, M01 inchangÃ©',()=>{
-  expect(graphFor('N11').order).toEqual([...up('HUB_PO'),'N11_PO_NO_COMMITMENT_ATTEMPT','N11_NO_ENGAGEMENT_ORACLE']);
-  expect(graphFor('N12').order).toEqual([...up('HUB_VENDOR_SIMULATION'),'N12_PAYMENT_SINGLE_VALIDATOR','N12_NO_PAYMENT_ORACLE']);
-  expect(graphFor('N11').order).not.toContain('HUB_COMMITMENT');
-  expect(graphFor('N12').order).not.toContain('HUB_RECEIVING');
-  expect(graphFor('M01').order).toEqual(STAGE_IDS);
-  expect(validateStageModuleSources()).toBeGreaterThan(0);
- });
- const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
- const po={id:'p',status:'draft',sent_at:null,sent_channel:null,supplier_order_id:null};
- const fx={commitments:0,payment_authorizations:0,supplier_payments:0,manual_executions:0,confirmed_lines:0,hub_allocations:0,hub_units:0,payment_status:'paid'};
- it('oracle N11 : brouillon, aucun engagement, aucun effet fournisseur ni Hub',async()=>{
-  await expect(N.oracleN11(mk([[po],[fx]]),{orderId:'o',poId:'p'})).resolves.toMatchObject({po_status:'draft',commitments:0});
-  await expect(N.oracleN11(mk([[{...po,status:'notified'}],[fx]]),{orderId:'o',poId:'p'})).rejects.toThrow('G6_N11_PRODUCT_GAP_PO_ADVANCED_notified');
-  await expect(N.oracleN11(mk([[po],[{...fx,commitments:1}]]),{orderId:'o',poId:'p'})).rejects.toThrow('G6_N11_PRODUCT_GAP_ENGAGEMENT_RECORDED');
-  await expect(N.oracleN11(mk([[po],[{...fx,hub_units:1}]]),{orderId:'o',poId:'p'})).rejects.toThrow('G6_N11_PRODUCT_GAP_HUB_EFFECT');
-  await expect(N.oracleN11(mk([[po,{...po,id:'q'}]]),{orderId:'o',poId:'p'})).rejects.toThrow('G6_NEG_PO_NOT_UNIQUE_2');
- });
- it('oracle N12 : engagement unique intact, aucune autorisation de paiement, aucun paiement',async()=>{
-  const c={...po,status:'confirmed'},f={...fx,commitments:1},row=[{proof_ref:'E-1',decided_by:'u'}];
-  await expect(N.oracleN12(mk([[c],[f],row]),{orderId:'o',poId:'p',commitmentProof:'E-1'})).resolves.toMatchObject({commitments:1,payment_authorizations:0});
-  await expect(N.oracleN12(mk([[c],[{...f,payment_authorizations:1}]]),{orderId:'o',poId:'p',commitmentProof:'E-1'})).rejects.toThrow('G6_N12_PRODUCT_GAP_PAYMENT_AUTHORIZED_BY_SINGLE_VALIDATOR');
-  await expect(N.oracleN12(mk([[c],[{...f,supplier_payments:1}]]),{orderId:'o',poId:'p',commitmentProof:'E-1'})).rejects.toThrow('G6_N12_PRODUCT_GAP_SUPPLIER_PAYMENT_EXECUTED');
-  await expect(N.oracleN12(mk([[c],[f],row]),{orderId:'o',poId:'p',commitmentProof:'AUTRE'})).rejects.toThrow('G6_N12_PRODUCT_GAP_COMMITMENT_PROOF_CHANGED');
- });
- it('script : Ã©cran puis sondes signalÃ©es, verdicts PRODUCT_GAP et SCREEN_MISSING, aucune capture',()=>{
-  const a=read('scripts/recette/g6-negative-n11-n12-chromium.js');
-  expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);expect(a).toMatch(/SOUMISSION_ABSENTE_SANS_MOTIF_AFFICHE/);
-  expect(a).toMatch(/G6_'\+SCEN\+'_PRODUCT_GAP_/);expect(a).toMatch(/SCREEN_MISSING/);expect(a).not.toMatch(/screenshot/);
-  expect(a).toMatch(/authorize-payment/);expect(a).toMatch(/DIRECTOR_HOLDS_BOTH_GRANTS/);
-  expect(read('scripts/recette/canonical/negative-runner.js')).toMatch(/G6_CANONICAL_PO_ID:poId|G6_CANONICAL_PO_ID/);
-  expect(validateChromiumScriptSources()).toBeGreaterThan(0);
- });
- it('classification des verdicts et workflow : titres N11/N12 pour KM, CM et CG',()=>{
-  expect(N.classifyNegative('N11','G6_N11_PRODUCT_GAP_PO_ADVANCED_notified')).toBe('PRODUCT_GAP');
-  expect(N.classifyNegative('N12','G6_N12_SCREEN_MISSING_PROBE_csrf_origin_required')).toBe('SCREEN_MISSING');
-  expect(N.isNegative('N11')&&N.isNegative('N12')).toBe(true);
-  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
-  for(const id of ['N11','N12'])for(const m of ['KM','CM','CG'])
-   expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
- });
-});
-
-describe('G6-G4C N13 (rupture fournisseur, reliquat) et N14 (rÃ©ception partielle, excÃ¨s, nÃ©gatif)',()=>{
- const up=id=>STAGE_IDS.slice(0,STAGE_IDS.indexOf(id)+1);
- const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
- it('sÃ©quences : chaÃ®ne M01 coupÃ©e au bon point, M01 inchangÃ©',()=>{
-  expect(graphFor('N13').order).toEqual([...up('HUB_VENDOR_READINESS'),'N13_SUPPLIER_BACKORDER','N13_BACKORDER_ORACLE']);
-  expect(graphFor('N14').order).toEqual([...up('HUB_VENDOR_SIMULATION'),'N14_RECEIVING_QTY_ATTEMPTS','N14_RECEIVING_ORACLE']);
-  expect(graphFor('N13').order).not.toContain('HUB_VENDOR_SIMULATION');
-  expect(graphFor('M01').order).toEqual(STAGE_IDS);
-  expect(validateStageModuleSources()).toBeGreaterThan(0);
- });
- const fx={commitments:1,payment_authorizations:0,supplier_payments:0,manual_executions:0,confirmed_lines:1,hub_allocations:0,hub_units:0,payment_status:'paid'};
- it('oracle N13 : reliquat Ã©gal au manque, rien reÃ§u ni payÃ©',async()=>{
-  const po=[{id:'p',status:'cancelled'}],l=[{id:'l',quantity:1,confirmed_quantity:0,received:0}];
-  await expect(N.oracleN13(mk([po,l,[{quantity:1,purchase_order_id:null,cancelled_at:null}],[fx],[{n:0}]]),{orderId:'o',poId:'p',ordered:1,typed:0})).resolves.toMatchObject({remnant_quantity:1,received:0});
-  await expect(N.oracleN13(mk([po,l,[],[fx],[{n:0}]]),{orderId:'o',poId:'p',ordered:1,typed:0})).rejects.toThrow('G6_N13_PRODUCT_GAP_REMNANT_0');
-  await expect(N.oracleN13(mk([po,[{...l[0],received:1}],[{quantity:1,purchase_order_id:null,cancelled_at:null}],[fx],[{n:0}]]),{orderId:'o',poId:'p',ordered:1,typed:0})).rejects.toThrow('G6_N13_PRODUCT_GAP_FICTIVE_RECEIPT');
-  await expect(N.oracleN13(mk([[{id:'p',status:'confirmed'}],l]),{orderId:'o',poId:'p',ordered:1,typed:0})).rejects.toThrow('G6_N13_PRODUCT_GAP_PO_STATE_confirmed');
-  const part=[{...l[0],quantity:3,confirmed_quantity:2}];
-  await expect(N.oracleN13(mk([[{id:'p',status:'confirmed'}],part,[{quantity:1,purchase_order_id:null,cancelled_at:null}],[fx],[{n:2}]]),{orderId:'o',poId:'p',ordered:3,typed:2})).resolves.toMatchObject({remnant_quantity:1,confirmed:2});
- });
- it('oracle N14 : une rÃ©ception exacte, jamais en excÃ¨s ni nÃ©gative',async()=>{
-  const ok=[[{quantity:1,received:1}],[{quantity:1}],[fx]];
-  await expect(N.oracleN14(mk(ok),{orderId:'o',poId:'p',ordered:1})).resolves.toMatchObject({received:1,placements:1});
-  await expect(N.oracleN14(mk([[{quantity:1,received:2}]]),{orderId:'o',poId:'p',ordered:1})).rejects.toThrow('G6_N14_PRODUCT_GAP_EXCESS_RECEIVED_2');
-  await expect(N.oracleN14(mk([[{quantity:1,received:-1}]]),{orderId:'o',poId:'p',ordered:1})).rejects.toThrow('G6_N14_PRODUCT_GAP_NEGATIVE_RECEIVED');
-  await expect(N.oracleN14(mk([[{quantity:1,received:0}]]),{orderId:'o',poId:'p',ordered:1})).rejects.toThrow('G6_N14_PRODUCT_GAP_RECEIVED_NOT_EXACT_0');
-  await expect(N.oracleN14(mk([[{quantity:1,received:1}],[{quantity:-1}]]),{orderId:'o',poId:'p',ordered:1})).rejects.toThrow('G6_N14_PRODUCT_GAP_PLACEMENTS_1');
- });
- it('script : confirmation en rupture et quantitÃ©s invalides par l\'Ã©cran, sondes signalÃ©es, aucune capture',()=>{
-  const a=read('scripts/recette/g6-negative-n13-n14-chromium.js');
-  expect(a).toMatch(/PARTIAL_CONFIRMATION_/);expect(a).toMatch(/RELIQUAT_NON_VISIBLE_APRES_CONFIRMATION/);
-  expect(a).toMatch(/data-receive-line/);expect(a).toMatch(/QUANTITE_INVALIDE_SANS_MESSAGE/);expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);
-  expect(a).toMatch(/EXCESS/);expect(a).toMatch(/NEGATIVE/);expect(a).not.toMatch(/screenshot/);
-  expect(validateChromiumScriptSources()).toBeGreaterThan(0);
- });
- it('workflow : titres N13/N14 pour KM, CM et CG',()=>{
-  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
-  for(const id of ['N13','N14'])for(const m of ['KM','CM','CG'])
-   expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
-  expect(N.isNegative('N13')&&N.isNegative('N14')).toBe(true);
- });
-});
-
-describe('G6-G4C N15 (sac ou KOM-BOX incomplet) et N16 (carton non DISPATCHED, composition figÃ©e)',()=>{
- const up=id=>STAGE_IDS.slice(0,STAGE_IDS.indexOf(id)+1);
- const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
- it('sÃ©quences : chaÃ®ne M01 coupÃ©e au bon point, M01 inchangÃ©',()=>{
-  expect(graphFor('N15').order).toEqual([...up('HUB_RECEIVING_READBACK'),'N15_BAG_BOX_INCOMPLETE','N15_NO_CLOSURE_ORACLE']);
-  expect(graphFor('N16').order).toEqual([...up('HUB_KOM_BOX'),'N16_BOX_NOT_DISPATCHED_FROZEN','N16_BOX_FROZEN_ORACLE']);
-  expect(graphFor('N15').order).not.toContain('HUB_CUSTOMER_BAG');
-  expect(graphFor('N16').order).not.toContain('HUB_SHIPMENT');
-  expect(graphFor('M01').order).toEqual(STAGE_IDS);
-  expect(validateStageModuleSources()).toBeGreaterThan(0);
- });
- const clean=[[{id:'b',state:'RECEIVED'}],[{n:0}],[{n:0}],[{id:'x',state:'RECEIVED'}],[{shipments:0,links:0,departed:0}]];
- it('oracle N15 : sac non fermÃ© et vide, carton non fermÃ©, aucune expÃ©dition ni dÃ©part',async()=>{
-  await expect(N.oracleN15(mk(clean),{orderId:'o',boxRef:'B',shipmentRef:'S'})).resolves.toMatchObject({bag_state:'RECEIVED',shipments:0});
-  await expect(N.oracleN15(mk([[{id:'b',state:'PACKED'}]]),{orderId:'o',boxRef:'B',shipmentRef:'S'})).rejects.toThrow('G6_N15_PRODUCT_GAP_BAG_CLOSED_WITH_MISSING_LINE');
-  await expect(N.oracleN15(mk([clean[0],clean[1],[{n:1}]]),{orderId:'o',boxRef:'B',shipmentRef:'S'})).rejects.toThrow('G6_N15_PRODUCT_GAP_INCOMPLETE_BAG_IN_BOX');
-  await expect(N.oracleN15(mk([clean[0],clean[1],clean[2],[{id:'x',state:'PACKED'}]]),{orderId:'o',boxRef:'B',shipmentRef:'S'})).rejects.toThrow('G6_N15_PRODUCT_GAP_EMPTY_BOX_CLOSED');
-  await expect(N.oracleN15(mk([...clean.slice(0,4),[{shipments:1,links:1,departed:0}]]),{orderId:'o',boxRef:'B',shipmentRef:'S'})).rejects.toThrow('G6_N15_PRODUCT_GAP_NON_CONFORMING_DEPARTURE');
- });
- const snap=(o={})=>[[{id:'x',state:'DISPATCHED'}],[{links:1,effective:1,qty:1,placements:2,removed:1,box_custody_events:7,shipment_links:1}],
-  [{stage:'handed_over',forwarder_name:'F',transport_mode:'sea',...o}],[{statuses:'shipped',shipped:1}]];
- it('oracle N16 : carton remis, composition identique au point de rÃ©fÃ©rence',async()=>{
-  const base=await N.snapN16(mk(snap()),{orderId:'o',boxRef:'B',shipmentRef:'S'});
-  await expect(N.oracleN16(mk(snap()),{orderId:'o',boxRef:'B',shipmentRef:'S',baseline:base})).resolves.toMatchObject({box_state:'DISPATCHED',shipment_stage:'handed_over'});
-  await expect(N.oracleN16(mk(snap()),{orderId:'o',boxRef:'B',shipmentRef:'S',baseline:{...base,links:0}})).rejects.toThrow('G6_N16_PRODUCT_GAP_COMPOSITION_CHANGED_AFTER_HANDOVER');
-  await expect(N.oracleN16(mk(snap({stage:'hub_ready',forwarder_name:null})),{orderId:'o',boxRef:'B',shipmentRef:'S',baseline:base})).rejects.toThrow('G6_N16_PRODUCT_GAP_HANDOVER_STATE_DISPATCHED_hub_ready');
- });
- it('script : Ã©cran puis sondes signalÃ©es, refus de remise avant DISPATCHED, aucune capture',()=>{
-  const a=read('scripts/recette/g6-negative-n15-n16-chromium.js');
-  expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);expect(a).toMatch(/HANDOVER_ACCEPTED_BOX_NOT_DISPATCHED/);expect(a).toMatch(/close-customer-bag/);
-  expect(a).toMatch(/FERMETURE_SAC_ABSENTE_SANS_MOTIF_AFFICHE/);expect(a).toMatch(/detach_after_handover/);expect(a).not.toMatch(/screenshot/);
-  expect(validateChromiumScriptSources()).toBeGreaterThan(0);
- });
- it('workflow : titres N15/N16 pour KM, CM et CG',()=>{
-  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
-  for(const id of ['N15','N16'])for(const m of ['KM','CM','CG'])
-   expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
-  expect(N.isNegative('N15')&&N.isNegative('N16')).toBe(true);
- });
-});
-
-describe('G6-G5B N17 (transitaire hors rÃ´le ou marchÃ©), N18 (douane retenue puis mainlevÃ©e), N19 (retard puis perte du transport local)',()=>{
- const up=id=>STAGE_IDS.slice(0,STAGE_IDS.indexOf(id)+1);
- const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
- it('sÃ©quences : chaÃ®ne M01 coupÃ©e au bon point, M01 inchangÃ©',()=>{
-  expect(graphFor('N17').order).toEqual([...up('HUB_SHIPMENT'),'N17_FORWARDER_ROLE_MARKET_ATTEMPTS','N17_NO_TRANSITION_ORACLE']);
-  expect(graphFor('N18').order).toEqual([...up('FORWARDER'),'N18_CUSTOMS_HOLD_ATTEMPTS','N18_HOLD_RELEASE_ORACLE']);
-  expect(graphFor('N19').order).toEqual([...up('CUSTOMS'),'N19_LOCAL_TRANSPORT_DELAY_LOSS','N19_LOSS_INCIDENT_ORACLE']);
-  expect(graphFor('N17').order).not.toContain('FORWARDER');
-  expect(graphFor('N18').order).not.toContain('CUSTOMS');
-  expect(graphFor('M01').order).toEqual(STAGE_IDS);
-  expect(validateStageModuleSources()).toBeGreaterThan(0);
- });
- const snap=(o={})=>({stage:'handed_over',customs_shipment_id:null,tracking_reference:null,forwarder_name:'F',events:3,charges:0,receipts:0,...o});
- it('oracle N17 : expÃ©dition identique, aucun frais, lien douane ni suivi',async()=>{
-  const row=o=>[[snap(o)]],ord=[[{id:'o',status:'shipped',collected_scans:0}]];
-  await expect(N.oracleN17(mk([...row(),...ord]),{orderId:'o',shipmentRef:'S',baseline:snap()})).resolves.toMatchObject({stage:'handed_over',charges:0});
-  await expect(N.oracleN17(mk(row({stage:'forwarder_received'})),{orderId:'o',shipmentRef:'S',baseline:snap()})).rejects.toThrow('G6_N17_PRODUCT_GAP_STAGE_MOVED_forwarder_received');
-  await expect(N.oracleN17(mk(row({events:4})),{orderId:'o',shipmentRef:'S',baseline:snap()})).rejects.toThrow('G6_N17_PRODUCT_GAP_JOURNEY_CHANGED_BY_REFUSED_ACTOR');
- });
- const t=s=>new Date('2026-11-21T10:0'+s+':00Z');
- const j=(o={})=>[[snap({stage:'customs_released',customs_shipment_id:'c',...o})],[{id:'c',status:'declared',customs_paid_kmf:'0'}],
-  [{status:'released',held_at:t(1),released_at:t(3),held_by:'u',released_by:'a',held_by_role:'admin',reason:'motif'}],
-  [{event_type:'customs_linked',to_stage:null,occurred_at:t(0)},{event_type:'customs_amount_confirmed',to_stage:null,occurred_at:t(4)},{event_type:'stage_changed',to_stage:'customs_released',occurred_at:t(5)}],
-  [{id:'o',status:'shipped',collected_scans:0}]];
- it('oracle N18 : aucun transit entre retenue et mainlevÃ©e, Ã©tapes autorisÃ©es aprÃ¨s',async()=>{
-  await expect(N.oracleN18(mk(j()),{orderId:'o',shipmentRef:'S',customsRef:'C'})).resolves.toMatchObject({held_by_role:'admin',stage:'customs_released'});
-  const bad=j();bad[3]=[{event_type:'customs_amount_confirmed',to_stage:null,occurred_at:t(2)},{event_type:'stage_changed',to_stage:'customs_released',occurred_at:t(5)}];
-  await expect(N.oracleN18(mk(bad),{orderId:'o',shipmentRef:'S',customsRef:'C'})).rejects.toThrow('G6_N18_PRODUCT_GAP_TRANSIT_WHILE_HELD_1');
-  const open=j();open[2]=[{status:'held',held_at:t(1),released_at:null,held_by:'u',released_by:null,held_by_role:'admin',reason:'motif'}];
-  await expect(N.oracleN18(mk(open),{orderId:'o',shipmentRef:'S',customsRef:'C'})).rejects.toThrow('G6_N18_PRODUCT_GAP_HOLD_NOT_RELEASED_BY_ACTOR');
- });
- it('oracle N19 : quantitÃ© nulle, incident haute gravitÃ©, ni disponible ni code de retrait',async()=>{
-  const good=[[{id:'o',status:'in_transit',collected_scans:0}],[{expected_qty:1,received_qty:0,incident:'i',incident_type:'missing_item',severity:'high'}],[{collected:0,received:0}]];
-  await expect(N.oracleN19(mk(good),{orderId:'o'})).resolves.toMatchObject({received_qty:0,severity:'high'});
-  const avail=[[{id:'o',status:'available',collected_scans:0}],good[1],good[2]];
-  await expect(N.oracleN19(mk(avail),{orderId:'o'})).rejects.toThrow('G6_N19_PRODUCT_GAP_AVAILABLE_OR_COLLECTED_AFTER_TOTAL_LOSS_available');
-  await expect(N.oracleN19(mk([good[0],[{expected_qty:2,received_qty:1,incident:'i',incident_type:'quantity_mismatch',severity:'medium'}]]),{orderId:'o'})).rejects.toThrow('G6_N19_PRODUCT_GAP_RECEIVED_QTY_NOT_ZERO');
- });
- it('scripts : sondes signalÃ©es, hors marchÃ© 403/404, retenue par Ã©cran, aucune capture',()=>{
-  const a=read('scripts/recette/g6-negative-n17-n18-chromium.js'),b=read('scripts/recette/g6-negative-n19-chromium.js');
-  expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);expect(a).toMatch(/forwarder_other_market/);expect(a).toMatch(/hold-customs/);expect(a).toMatch(/release-customs/);
-  expect(a).toMatch(/AUCUNE_REQUETE_ENVOYEE/);expect(b).toMatch(/received_qty:0/);expect(b).toMatch(/PERTE_ATTESTEE_SANS_MESSAGE_INCIDENT/);
-  expect(a+b).not.toMatch(/screenshot/);
-  expect(validateChromiumScriptSources()).toBeGreaterThan(0);
- });
- it('effective params : N17 Ã  N19 partent de la chaÃ®ne M01, M01 et N20 inchangÃ©s',()=>{
-  const r=read('scripts/recette/canonical/negative-runner.js');
-  expect(r).toMatch(/N17:\{script:N1718_SCRIPT[^}]*to:'HUB_SHIPMENT'/);expect(r).toMatch(/N18:\{script:N1718_SCRIPT[^}]*to:'FORWARDER'/);expect(r).toMatch(/N19:\{script:N19_SCRIPT[^}]*to:'CUSTOMS'/);
-  expect(r).toMatch(/N20:\{script:N20_SCRIPT[^}]*to:'CUSTOMS'/);
-  expect(read('scripts/recette/canonical/real-buyer-cash-adapters.js')).toMatch(/'N17','N18','N19'(?:,'N\d+[A-Za-z0-9]*')*\]\.includes\(SCENARIO\)/);
- });
- it('workflow : titres N17 Ã  N19 pour KM, CM et CG',()=>{
-  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
-  for(const id of ['N17','N18','N19'])for(const m of ['KM','CM','CG'])
-   expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
-  expect(['N17','N18','N19'].every(N.isNegative)).toBe(true);
- });
-});
-
-describe('G6-G5C N28 (Ã©chec rÃ©seau puis rÃ©essai) et N32 (marchÃ© et rÃ´les croisÃ©s)',()=>{
- const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
- const ord=(o={})=>({id:'o',user_id:'u',status:'collected',payment_status:'paid',display_total_amount:1,lines:1,qty:1,cash_count:1,control_count:1,allocations:1,consumed_allocations:1,purchase_lines:0,collected_scans:1,parcels:1,...o});
- it('sÃ©quences : parcours M02 coupÃ©, M01 et M02 inchangÃ©s',()=>{
-  expect(graphFor('N28').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','N28_NETWORK_FAILURE_RETRY','N28_SINGLE_EFFECT_ORACLE']);
-  expect(graphFor('N32').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','N32_CROSS_MARKET_ROLES','N32_NO_MUTATION_ORACLE']);
-  expect(graphFor('M01').order).toEqual(STAGE_IDS);
-  expect(graphFor('M02').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','LOCAL_CLIENT_PICKUP']);
-  expect(validateStageModuleSources()).toBeGreaterThan(0);
- });
- it('oracle N28 : une seule remise, quantitÃ©s exactes ; double effet = PRODUCT_GAP',async()=>{
-  await expect(N.oracleN28(mk([[ord()],[{scans:1}],[{got:1,want:1}]]),{orderId:'o',committedBeforeRetry:true})).resolves.toMatchObject({collected_scans:1,committed_before_retry:true});
-  await expect(N.oracleN28(mk([[ord()],[{scans:2}]]),{orderId:'o'})).rejects.toThrow('G6_N28_PRODUCT_GAP_HANDOFF_ATTESTATIONS_2');
-  await expect(N.oracleN28(mk([[ord()],[{scans:0}]]),{orderId:'o'})).rejects.toThrow('G6_N28_PRODUCT_GAP_HANDOFF_ATTESTATIONS_0');
- });
- it('oracle N32 : aucune mutation et aucune remise par un rÃ´le Ã©tranger',async()=>{
-  const snap={unchanged:true,before:{codes:3},after:{codes:3}};
-  await expect(N.oracleN32(mk([[ord({status:'available',collected_scans:0})],[{n:0}]]),{orderId:'o',snapshot:snap})).resolves.toMatchObject({status:'available',codes_after:3});
-  await expect(N.oracleN32(mk([[ord({status:'available',collected_scans:0})]]),{orderId:'o',snapshot:{...snap,unchanged:false}})).rejects.toThrow('G6_N32_PRODUCT_GAP_MUTATION');
-  await expect(N.oracleN32(mk([[ord()],[{n:1}]]),{orderId:'o',snapshot:snap})).rejects.toThrow('G6_N32_PRODUCT_GAP_HANDOFF_BY_FOREIGN_ROLE');
- });
- it('script : sondes API signalÃ©es, rÃ©ponse perdue aprÃ¨s commit, aucune capture ; prÃ©requis classÃ©s',()=>{
-  const a=read('scripts/recette/g6-negative-n28-n32-chromium.js');
-  expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);expect(a).toMatch(/connectionreset/);expect(a).toMatch(/FALSE_SUCCESS_SHOWN_ON_HTTP500/);
-  expect(a).toMatch(/PREREQ_MISSING_FOREIGN_MARKET_ORDER/);expect(a).not.toMatch(/screenshot/);expect(validateChromiumScriptSources()).toBeGreaterThan(0);
-  expect(N.classifyNegative('N32','x PREREQ_MISSING_FOREIGN_MARKET_ORDER')).toBe('PREREQ_MISSING_FOREIGN_MARKET_ORDER');
- });
- it('workflow : titres N28/N32 pour KM, CM et CG et alias de scÃ©nario',()=>{
-  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
-  for(const id of ['N28','N32'])for(const m of ['KM','CM','CG'])expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
-  expect(wf).toContain("'-full-N28-') && 'N28'");expect(wf).toContain("'-full-N32-') && 'N32'");
-  expect(N.isNegative('N28')&&N.isNegative('N32')).toBe(true);
- });
-});
-
-describe('G6-G5C N35 Ã  N38 : modalitÃ©s de M01 et oracles O-ECO, O-DOC, O-NOTIF',()=>{
- const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]||[]})}};
- const ord=(o={})=>({id:'o',user_id:'u',status:'collected',payment_status:'paid',display_total_amount:1,lines:1,qty:1,cash_count:1,control_count:1,allocations:1,consumed_allocations:1,purchase_lines:0,collected_scans:1,parcels:1,...o});
- it('sÃ©quences : M01 + un oracle, M01 inchangÃ© et non dupliquÃ©',()=>{
-  expect(graphFor('N35').order).toEqual([...STAGE_IDS,'N35_ECO_ORACLE']);
-  expect(graphFor('N36').order).toEqual([...STAGE_IDS,'N36_MANUAL_PROVENANCE_ORACLE']);
-  expect(graphFor('N37').order).toEqual([...STAGE_IDS,'N37_DOCUMENT_ACCESS','N37_DOCUMENTS_ORACLE']);
-  expect(graphFor('N38').order).toEqual([...STAGE_IDS,'N38_RESUME_DRY_RUN','N38_POSTCOMMIT_ORACLE']);
-  expect(graphFor('M01').order).toEqual(STAGE_IDS);
-  expect(validateStageModuleSources()).toBeGreaterThan(0);
- });
- it('contrÃ´les O-ECO : instructions SELECT du fichier SQL, jamais d\'Ã©criture',()=>{
-  const q=N.ecoControls();expect(q.length).toBe(4);expect(q.every(x=>/^SELECT/i.test(x)&&!/\b(INSERT|UPDATE|DELETE)\b/i.test(x))).toBe(true);
- });
- const al=[{order_item_id:'i',cost_type:'freight',shipment_id:'s',is_actual:true,amount_kmf:'10',causal:true}];
- it('oracle N35 : fret non doublÃ© et allocations causales',async()=>{
-  const ok=[[ord()],al,[],[],[],[],[]];
-  await expect(N.oracleN35(mk(ok),{orderId:'o'})).resolves.toMatchObject({allocations:1,freight_doubled:0,floor_total_equals_detail:'NOT_PROVEN_NO_PERSISTED_FLOOR_ON_ORDER_OBJECTS'});
-  await expect(N.oracleN35(mk([[ord()],[]]),{orderId:'o'})).rejects.toThrow('G6_N35_PRODUCT_GAP_NO_REAL_COST_ALLOCATIONS');
-  await expect(N.oracleN35(mk([[ord()],[{...al[0],causal:false}]]),{orderId:'o'})).rejects.toThrow('G6_N35_PRODUCT_GAP_ALLOCATION_NOT_CAUSAL');
-  await expect(N.oracleN35(mk([[ord()],al,[{cost_type:'freight',n:2}]]),{orderId:'o'})).rejects.toThrow('G6_N35_PRODUCT_GAP_COST_COMPONENT_DOUBLED_freight');
- });
- it('oracle N36 : toute preuve physique en MANUAL avec rÃ©fÃ©rence',async()=>{
-  const good=[[{evidence_method:'MANUAL',ref_ok:true}],[{evidence_method:'MANUAL',ref_ok:true}],[{n:3}],[{n:1}]];
-  await expect(N.oracleN36(mk(good),{orderId:'o'})).resolves.toMatchObject({placements_manual:1,bag_links_manual:1,collected_scans:1});
-  await expect(N.oracleN36(mk([[{evidence_method:'SCAN',ref_ok:false}]]),{orderId:'o'})).rejects.toThrow('G6_N36_PRODUCT_GAP_PLACEMENT_NOT_MANUAL_SCAN');
-  await expect(N.oracleN36(mk([good[0],[{evidence_method:null,ref_ok:false}]]),{orderId:'o'})).rejects.toThrow('G6_N36_PRODUCT_GAP_BAG_LINK_NOT_MANUAL_NULL');
- });
- const docs=(o={})=>[[{n:1,pdf:1}],[{id:'s1'}],[{subject_id:'s1',n:1}],[],...[]];
- it('oracle N37 : un document par Ã©vÃ©nement, aucun envoi rÃ©el',async()=>{
-  const base=[[ord()],...docs(),[{n:1}],[{channel:'in_app',event:'available',status:'skipped'}]];
-  await expect(N.oracleN37(mk(base),{orderId:'o',reference:'R',poId:'p'})).resolves.toMatchObject({invoices:1,pickup_proofs:1,real_sends:0});
-  const sent=[[ord()],...docs(),[{n:1}],[{channel:'whatsapp',event:'collected',status:'sent'}]];
-  await expect(N.oracleN37(mk(sent),{orderId:'o',reference:'R',poId:'p'})).rejects.toThrow('G6_N37_PRODUCT_GAP_REAL_SEND_ON_STAGING');
-  await expect(N.oracleN37(mk([[ord()],[{n:2,pdf:2}]]),{orderId:'o',reference:'R'})).rejects.toThrow('G6_N37_PRODUCT_GAP_INVOICE_COUNT_2');
- });
- it('oracle N38 : Ã©vÃ©nement conservÃ©, reprise sans angle mort, sans doublon',async()=>{
-  const dry=(inv,pp)=>({dry_run:true,issued:0,families:{invoice:{missing:inv},pickup_proof:{missing:pp},refund_receipt:{missing:0}}});
-  const full=[[ord()],...docs(),[]];
-  await expect(N.oracleN38(mk(full),{orderId:'o',reference:'R',dryRun:dry(0,0)})).resolves.toMatchObject({resume_detects_missing:false,failure_leg:'NOT_PROVEN_NO_FAULT_INJECTION_ON_STAGING'});
-  const gone=[[ord()],[{n:1,pdf:1}],[{id:'s1'}],[],[],[]];
-  await expect(N.oracleN38(mk(gone),{orderId:'o',reference:'R',dryRun:dry(0,1)})).resolves.toMatchObject({resume_detects_missing:true});
-  await expect(N.oracleN38(mk(gone),{orderId:'o',reference:'R',dryRun:dry(0,0)})).rejects.toThrow('G6_N38_PRODUCT_GAP_RESUME_BLIND_SPOT_PICKUP_PROOF');
-  await expect(N.oracleN38(mk(full),{orderId:'o',reference:'R',dryRun:null})).rejects.toThrow('G6_N38_SCREEN_MISSING_RESUME_DRY_RUN_NOT_PROVEN');
- });
- it('scripts : accÃ¨s propriÃ©taire seul, dry run, aucune capture ; workflow et alias M01',()=>{
-  const a=read('scripts/recette/g6-negative-n37-n38-chromium.js');
-  expect(a).toMatch(/FOREIGN_DOWNLOAD_ACCEPTED/);expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);expect(a).toMatch(/dry_run:true/);expect(a).not.toMatch(/screenshot/);
-  expect(validateChromiumScriptSources()).toBeGreaterThan(0);
-  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
-  for(const id of ['N35','N36','N37','N38']){for(const m of ['KM','CM','CG'])expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");expect(wf).toContain("'-full-"+id+"-') && '"+id+"'");expect(N.isNegative(id)).toBe(true)}
-  expect(read('scripts/recette/canonical/real-buyer-cash-adapters.js')).toMatch(/'N19','N35','N36','N37','N38'(?:,'N[0-9A-Za-z]+')*\]\.includes\(SCENARIO\)/);
-  });
-});
-
-describe('G6-G5B N39 (annulation client aux paliers F1, F2, F3)',()=>{
- const up=id=>STAGE_IDS.slice(0,STAGE_IDS.indexOf(id)+1);
- const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
- it('sÃ©quences : chaÃ®ne M01 coupÃ©e Ã  RELAY_CASH, HUB_COMMITMENT, HUB_SHIPMENT ; M01 inchangÃ©',()=>{
-  expect(graphFor('N39F1').order).toEqual([...up('RELAY_CASH'),'N39F1_CLIENT_CANCEL_ATTEMPT','N39F1_CANCEL_EFFECTS_ORACLE']);
-  expect(graphFor('N39F2').order).toEqual([...up('HUB_COMMITMENT'),'N39F2_CLIENT_CANCEL_ATTEMPT','N39F2_CANCEL_EFFECTS_ORACLE']);
-  expect(graphFor('N39F3').order).toEqual([...up('HUB_SHIPMENT'),'N39F3_CLIENT_CANCEL_ATTEMPT','N39F3_CANCEL_EFFECTS_ORACLE']);
-  expect(graphFor('M01').order).toEqual(STAGE_IDS);
-  expect(validateStageModuleSources()).toBeGreaterThan(0);
- });
- const fx=(o={})=>[[{status:'cancelled',display_total_amount:'9990',market_currency:'XAF',credits:1,credit_amount:9990,credit_currency:'XAF',refunds:1,psp_intents:0,commitments:0,active_lines:0,...o}]];
- it('oracle F1 : annulÃ©e, wallet 100 % en devise du marchÃ© une fois, sans PSP',async()=>{
-  const ok200={http:200};
-  await expect(N.oracleN39F1(mk(fx()),{orderId:'o',cancel:ok200})).resolves.toMatchObject({wallet_credits:1,currency:'XAF'});
-  await expect(N.oracleN39F1(mk(fx()),{orderId:'o',cancel:{http:422}})).rejects.toThrow('G6_N39F1_PRODUCT_GAP_CANCEL_REFUSED_HTTP_422');
-  await expect(N.oracleN39F1(mk(fx({credit_amount:7992})),{orderId:'o',cancel:ok200})).rejects.toThrow('G6_N39F1_PRODUCT_GAP_REFUND_NOT_100_PCT_7992_OF_9990');
-  await expect(N.oracleN39F1(mk(fx({credit_currency:'KMF'})),{orderId:'o',cancel:ok200})).rejects.toThrow('G6_N39F1_PRODUCT_GAP_WALLET_CURRENCY_KMF_VS_XAF');
-  await expect(N.oracleN39F1(mk(fx({psp_intents:1})),{orderId:'o',cancel:ok200})).rejects.toThrow('G6_N39F1_PRODUCT_GAP_PSP_INTENT');
- });
- it('oracle F2 : ni annulation ni remboursement silencieux, engagement conservÃ©',async()=>{
-  const open=o=>fx({status:'confirmed',credits:0,credit_amount:0,credit_currency:null,refunds:0,commitments:1,active_lines:1,...o});
-  await expect(N.oracleN39F2(mk(open()),{orderId:'o',cancel:{http:422}})).resolves.toMatchObject({status:'confirmed',commitments:1});
-  await expect(N.oracleN39F2(mk(fx({commitments:1,active_lines:0})),{orderId:'o',cancel:{http:200}})).rejects.toThrow('G6_N39F2_PRODUCT_GAP_SILENT_CANCEL_AFTER_COMMITMENT_cancelled');
-  await expect(N.oracleN39F2(mk(open({credits:1,refunds:1})),{orderId:'o',cancel:{http:422}})).rejects.toThrow('G6_N39F2_PRODUCT_GAP_SILENT_REFUND_1_1');
- });
- it('oracle F3 : embarquÃ©e, annulation fermÃ©e, aucun remboursement',async()=>{
-  const shipped=o=>fx({status:'shipped',credits:0,credit_amount:0,refunds:0,...o});
-  await expect(N.oracleN39F3(mk(shipped()),{orderId:'o',cancel:{http:422}})).resolves.toMatchObject({status:'shipped'});
-  await expect(N.oracleN39F3(mk(fx()),{orderId:'o',cancel:{http:200}})).rejects.toThrow('G6_N39F3_PRODUCT_GAP_CANCELLED_WHEN_SHIPPED_cancelled');
- });
- it('script et workflow : bouton client, F1 Ã©cran manquant, titres des trois paliers',()=>{
-  const a=read('scripts/recette/g6-negative-n39-cancel-chromium.js');
-  expect(a).toMatch(/k-order-cancel-btn/);expect(a).toMatch(/G6_N39F1_SCREEN_MISSING_CANCEL_BUTTON/);expect(a).toMatch(/ANNULATION_SANS_MESSAGE_AFFICHE/);expect(a).not.toMatch(/screenshot/);
-  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
-  for(const id of ['N39F1','N39F2','N39F3'])for(const m of ['KM','CM','CG'])
-   expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
-  expect(['N39F1','N39F2','N39F3'].every(N.isNegative)).toBe(true);
-  expect(validateChromiumScriptSources()).toBeGreaterThan(0);
- });
-});
-
-describe('G6-G5C N30 (Order 360 et dashboards vs PG) et N31 (snapshot monÃ©taire)',()=>{
- const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]||[]})}};
- const ord=(o={})=>({id:'o',user_id:'u',status:'available',payment_status:'paid',display_total_amount:1,lines:1,qty:1,cash_count:1,control_count:1,allocations:1,consumed_allocations:0,purchase_lines:0,collected_scans:0,parcels:1,...o});
- const t0='2026-11-20T00:00:00Z',t1='2026-11-21T12:00:00Z';
- const reads={order360:{status:'available',payment_status:'paid',total_kmf:100,items:1,quantity:1,parcels:1},commerce:{ca_value:500,from:t0,to:t1}};
- const x=(o={})=>({total_kmf:'100',simulation_scope:'RCT1',created_at:'2026-11-21T01:00:00Z',parcels:1,...o});
- it('sÃ©quences : parcours M02 coupÃ© ; M02 inchangÃ©',()=>{
-  expect(graphFor('N30').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','N30_TRUTH_COMPARE','N30_TRUTH_ORACLE']);
-  expect(graphFor('N31').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','N31_FX_SNAPSHOT_ORACLE']);
-  expect(graphFor('M02').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','LOCAL_CLIENT_PICKUP']);
-  expect(validateStageModuleSources()).toBeGreaterThan(0);
- });
- it('oracle N30 : 360 = PG, KPI = PG, fixture non comptÃ©e',async()=>{
-  await expect(N.oracleN30(mk([[ord()],[x()],[{v:'500'}],[{v:'40'}]]),{orderId:'o',...reads})).resolves.toMatchObject({order_360_matches_pg:true,kpi_ca_pg:500});
-  await expect(N.oracleN30(mk([[ord({status:'collected'})],[x()]]),{orderId:'o',...reads})).rejects.toThrow('G6_N30_PRODUCT_GAP_ORDER_360_DIFFERS_FROM_PG_STATUS');
-  await expect(N.oracleN30(mk([[ord()],[x()],[{v:'900'}],[{v:'0'}],[{n:0}]]),{orderId:'o',...reads})).rejects.toThrow('G6_N30_PRODUCT_GAP_COMMERCE_KPI_500_VS_PG_900');
-  await expect(N.oracleN30(mk([[ord()],[x()],[{v:'900'}],[{v:'0'}],[{n:3}]]),{orderId:'o',...reads})).rejects.toThrow('G6_N30_PREREQ_MISSING_QUIET_WINDOW_3');
-  await expect(N.oracleN30(mk([[ord()],[x({simulation_scope:null})],[{v:'500'}],[{v:'0'}]]),{orderId:'o',...reads})).rejects.toThrow('G6_N30_PRODUCT_GAP_FIXTURE_COUNTED_IN_COMMERCIAL_KPI');
- });
- it('oracle N31 : devise du marchÃ©, snapshot, paritÃ© fixe, aucun remboursement',async()=>{
-  const row={total_kmf:'655',shown:'1000',display_currency:'XAF',display_parity_snapshot:{eur:1}};
-  const par=[{currency:'KMF',r:'491.96775'},{currency:'XAF',r:'655.957'}];
-  await expect(N.oracleN31(mk([[{...row,total_kmf:'750'}],par,[{n:0}]]),{orderId:'o',market:'CM'})).resolves.toMatchObject({display_currency:'XAF',refunds:0});
-  await expect(N.oracleN31(mk([[row]]),{orderId:'o',market:'KM'})).rejects.toThrow('G6_N31_PRODUCT_GAP_DISPLAY_CURRENCY_XAF_FOR_KM');
-  await expect(N.oracleN31(mk([[{...row,display_parity_snapshot:null}]]),{orderId:'o',market:'CM'})).rejects.toThrow('G6_N31_PRODUCT_GAP_DISPLAY_SNAPSHOT_MISSING');
-  await expect(N.oracleN31(mk([[{...row,total_kmf:'100'}],par]),{orderId:'o',market:'CM'})).rejects.toThrow('G6_N31_PRODUCT_GAP_SNAPSHOT_DIFFERS_FROM_FIXED_PARITY');
- });
- it('script et workflow : lectures GET seules, aucune capture, titres N30/N31',()=>{
-  const a=read('scripts/recette/g6-negative-n30-chromium.js');
-  expect(a).toMatch(/ca_encaisse/);expect(a).not.toMatch(/\.post\(|screenshot/);expect(validateChromiumScriptSources()).toBeGreaterThan(0);
-  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
-  for(const id of ['N30','N31']){for(const m of ['KM','CM','CG'])expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");expect(wf).toContain("'-full-"+id+"-') && '"+id+"'");expect(N.isNegative(id)).toBe(true)}
- });
-});
-
-describe('G6-G5B N25 (SAV retour et double reprise) et N26b (compensation aprÃ¨s retrait)',()=>{
- const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
- it('sÃ©quences : parcours M02 jusqu\'Ã  la remise, puis SAV ; M01 inchangÃ©',()=>{
-  expect(graphFor('N25').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','LOCAL_CLIENT_PICKUP','N25_SAV_DOUBLE_INTAKE','N25_SINGLE_INTAKE_ORACLE']);
-  expect(graphFor('N26b').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','LOCAL_CLIENT_PICKUP','N26B_SAV_COMPENSATION_DECISION','N26B_SAV_COMPENSATION_ORACLE']);
-  expect(graphFor('M01').order).toEqual(STAGE_IDS);
-  expect(validateStageModuleSources()).toBeGreaterThan(0);
- });
- const good=(o={})=>[[{id:'o',status:'collected',collected_scans:1}],[{id:'d',status:'open',return_quantity:1}],[{quantity:1,relay_id:'r'}],
-  [{compensations:0,wallet_credits:0,refunds:0,psp_intents:0,stock_after:5,...o}]];
- it('oracle N25 : un dossier, une reprise, aucune compensation, stock inchangÃ©',async()=>{
-  await expect(N.oracleN25(mk(good()),{orderId:'o',stockBefore:5})).resolves.toMatchObject({physical_receipts:1,stock_unchanged:true});
-  await expect(N.oracleN25(mk(good({stock_after:6})),{orderId:'o',stockBefore:5})).rejects.toThrow('G6_N25_PRODUCT_GAP_RETURNED_UNIT_BACK_IN_SELLABLE_STOCK_5_TO_6');
-  await expect(N.oracleN25(mk(good({wallet_credits:1})),{orderId:'o',stockBefore:5})).rejects.toThrow('G6_N25_PRODUCT_GAP_AUTOMATIC_COMPENSATION_ON_PHYSICAL_INTAKE');
-  const two=good();two[1]=[{id:'d',status:'open',return_quantity:1},{id:'e',status:'open',return_quantity:1}];
-  await expect(N.oracleN25(mk(two),{orderId:'o',stockBefore:5})).rejects.toThrow('G6_N25_PRODUCT_GAP_DOSSIER_COUNT_2');
- });
- it('script et workflow',()=>{
-  const a=read('scripts/recette/g6-negative-n25-sav-chromium.js');
-  expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);expect(a).toMatch(/G6_N26B_SCREEN_MISSING_ADMIN_COMPENSATION_DECISION/);expect(a).toMatch(/second_dossier_same_unit/);expect(a).not.toMatch(/screenshot/);
-  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
-  for(const id of ['N25','N26b'])for(const m of ['KM','CM','CG'])expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
-  expect(['N25','N26b'].every(N.isNegative)).toBe(true);
-  expect(validateChromiumScriptSources()).toBeGreaterThan(0);
- });
-});
-
-describe('G6-G5B N40 (Ã©cart de prix fournisseur), N26a et N27 (sondes d\'Ã©cran)',()=>{
- const up=id=>STAGE_IDS.slice(0,STAGE_IDS.indexOf(id)+1);
- const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
- it('sÃ©quences',()=>{
-  expect(graphFor('N40').order).toEqual([...up('HUB_VENDOR_READINESS'),'N40_SUPPLIER_PRICE_GAP','N40_PRICE_GAP_ORACLE']);
-  expect(graphFor('N26a').order).toEqual([...up('RELAY_CASH'),'N26A_LINE_REFUND_SCREEN_PROBE']);
-  expect(graphFor('N27').order).toEqual([...up('HUB_VENDOR_READINESS'),'N27_REMNANT_CANCEL_SCREEN_PROBE']);
-  expect(graphFor('M01').order).toEqual(STAGE_IDS);
-  expect(validateStageModuleSources()).toBeGreaterThan(0);
- });
- const row=o=>[[{po_status:'notified',confirmed_quantity:null,confirmed_price:null,unit_price:'10',product_sku_id:'s',...o}],
-  [{commitments:1,payment_authorizations:0,supplier_payments:0,manual_executions:0,confirmed_lines:0,hub_allocations:0,hub_units:0,payment_status:'paid'}]];
- it('oracle N40 : Ã©cart refusÃ© ou en attente, jamais confirmÃ© sans validation sÃ©parÃ©e ni payÃ©',async()=>{
-  await expect(N.oracleN40(mk(row()),{orderId:'o',poId:'p',confirm:{http:409},quoted:'10'})).resolves.toMatchObject({po_status:'notified',payments:0});
-  await expect(N.oracleN40(mk(row({po_status:'confirmed',confirmed_price:'11.01'})),{orderId:'o',poId:'p',confirm:{http:200},quoted:'10'})).rejects.toThrow('G6_N40_PRODUCT_GAP_PRICE_GAP_ACCEPTED_WITHOUT_SEPARATE_VALIDATION_10_TO_11.01');
-  const pay=row();pay[1]=[{...pay[1][0],supplier_payments:1}];
-  await expect(N.oracleN40(mk(pay),{orderId:'o',poId:'p',confirm:{http:409},quoted:'10'})).rejects.toThrow('G6_N40_PRODUCT_GAP_SILENT_PAYMENT_OR_EXECUTION');
- });
- it('scripts et workflow',()=>{
-  const a=read('scripts/recette/g6-negative-n40-price-gap-chromium.js'),b=read('scripts/recette/g6-negative-n26a-n27-screen-probe-chromium.js');
-  expect(a).toMatch(/data-confirmed-price/);expect(b).toMatch(/G6_N26A_SCREEN_MISSING_LINE_REFUND_AND_PARTIAL_CREDIT/);expect(b).toMatch(/G6_N27_SCREEN_MISSING_REMNANT_CANCEL/);expect(a+b).not.toMatch(/screenshot/);
-  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
-  for(const id of ['N40','N26a','N27'])for(const m of ['KM','CM','CG'])expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
-  expect(['N40','N26a','N27'].every(N.isNegative)).toBe(true);
-  expect(validateChromiumScriptSources()).toBeGreaterThan(0);
- });
-});
+YªçŠx-®éÜj×¢ëiºÚ+Š§j[h‘éÜ¢éí×Íûí:-jZ.¶›­–)Ş³Rò¢¢FW7BÖ¶–æBVæ—BFW7B×'VææW"¦W7BFW7B×&WV—&W2æöæR¢ğ¢wW6R7G&–7Bs°¦6öç7Bg3×&WV—&R‚væöFS¦g2r’ÇFƒ×&WV—&R‚væöFS§F‚r“°¦6öç7B¶w&„f÷"Ç66Væ&–õ&öf–ÆRÅ5DtUô”E7Ó×&WV—&R‚rââòââ÷67&—G2÷&V6WGFRö6æöæ–6Â÷7FvR×&Vv—7G'’r“°¦6öç7B¶'W–W%&×2Æ&6¶WDÆ–æW7Ó×&WV—&R‚rââòââ÷67&—G2÷&V6WGFRö6æöæ–6Â÷66Væ&–ò×&öf–ÆRr“°¦6öç7Bã×&WV—&R‚rââòââ÷67&—G2÷&V6WGFRö6æöæ–6ÂöæVvF—fR×66Væ&–÷2r“°¦6öç7B¶‡VÖäF÷V&ÆT6Æ–6´öæ6WÓ×&WV—&R‚rââòââ÷67&—G2÷&V6WGFRö6æöæ–6Âö7F÷'2ö‡VÖâÖvW7GW&W2r“°¦6öç7B·fÆ–FFU7FvTÖöGVÆU6÷W&6W2ÇfÆ–FFT6‡&öÖ—VÕ67&—E6÷W&6W7Ó×&WV—&R‚rââòââ÷67&—G2÷&V6WGFRö6æöæ–6Âö6‡&öÖ—VÒ×öÆ–7’r“°¦6öç7B$ôõC×F‚ç&W6öÇfR…õöF—&æÖRÂrââòââr“°¦6öç7B&VC×Óæg2ç&VDf–ÆU7–æ2‡F‚æ¦ö–â…$ôõBÇ’ÂwWFc‚r“°¦6öç7BSÒsÓÓCÓƒÓrÅS#Òs#######"Ó###"ÓC##"Óƒ##"Ó###########"s°¦FW67&–&R‚tsbÔsD6<:–æ&–÷2ì:–vF–g2ãrÂã’ÂãBÂã32rÂ‚“Óç°¢—B‚w<:—VVæ6W2Vç&Vv—7G,:–W2Fç27FvR×&Vv—7G'’ÂÓ–æ6†æ|:’rÂ‚“Óç°¢W‡V7B†w&„f÷"‚tãrr’æ÷&FW"’çFôWVÂ…²t%U”U"rÂtãuôäõôDõT$ÄUôTddT5BuÒ“°¢W‡V7B†w&„f÷"‚tã’r’æ÷&FW"’çFôWVÂ…²t%U”U"rÂtã•õ$TÔ•4Uõ$TeU4TBrÂtã•ôäõEô4ôÄÄT5DTEôõ$4ÄRuÒ“°¢W‡V7B†w&„f÷"‚tãBr’æ÷&FW"’çFôWVÂ…²tãEõE•ôõdU%õ5Dô4²rÂtãEôäõôTddT5Eôõ$4ÄRuÒ“°¢W‡V7B†w&„f÷"‚tã32r’æ÷&FW"’çFôWVÂ…²t%U”U"rÂtã35õ4µUôõ$4ÄRuÒ“°¢W‡V7B†w&„f÷"‚tã’r’æ÷&FW"’ææ÷BçFô6öçF–â‚u$TÄ•ô44‚r“°¢W‡V7B†w&„f÷"‚tÓr’æ÷&FW"’çFôWVÂ…5DtUô”E2“°¢W‡V7B‚‚“Óç66Væ&–õ&öf–ÆR‚tã“’r’’çFõF‡&÷r‚tseõTå5Uõ%DTEõ44Tä$”òr“°¢Ò“°¢—B‚w&Ü:‡G&W2¢ãrÒ&öGV—BvöÆFVâÂã32Ò"4µRÆœ:—2ÂÓ–çF7BrÂ‚“Óç°¢W‡V7B†'W–W%&×2‡´seô4äôä”4Åõ44Tä$”ó¢tãrrÄseõD$tUEôÔ$´UC¢t4ÒwÒ’’çFôÖF6„ö&¦V7B‡·66Væ&–ó¢tãrrÇ&öGV7E÷&Vc¢tµ"ÓcRrÆW‡V7FVE÷&–6S£s“ƒrÆgVÆf–ÆÆÖVçC¦çVÆÇÒ“°¢W‡V7B†'W–W%&×2‡´seô4äôä”4Åõ44Tä$”ó¢tÓrÄseõD$tUEôÔ$´UC¢t4ÒwÒ’ç66Væ&–ò’çFô&R‚tÓr“°¢W‡V7B‚‚“Óæ'W–W%&×2‡´seô4äôä”4Åõ44Tä$”ó¢tã32wÒ’’çFõF‡&÷r‚tseôã35õd$”åE5ôäõEô$õTäBr“°¢6öç7Bc×·&öGV7E÷&Vc¢tµ"ÓssrrÇ&–6S£Ç6·W3¥··6·Uö–C¥SÇf&–çEö6öÖ&ó§¶6÷VÆWW#¢tæö—"w×ÒÇ·6·Uö–C¥S"Çf&–çEö6öÖ&ó§¶6÷VÆWW#¢t&Ææ2w×Õ×Ó°¢6öç7BÖ'W–W%&×2‡´seô4äôä”4Åõ44Tä$”ó¢tã32rÄseõD$tUEôÔ$´UC¢t´ÒrÄseôã35õd$”åE3¤¥4ôâç7G&–æv–g’‡b—Ò“°¢W‡V7B‡æW‡V7FVE÷&–6R’çFô&Rƒ#“°¢W‡V7B†&6¶WDÆ–æW2‡’æÖ†ÃÓæÂç6·Uö–B’’çFôWVÂ…µSÅS%Ò“°¢bç6·W5³Òç6·Uö–CÕS°¢W‡V7B‚‚“Óæ'W–W%&×2‡´seô4äôä”4Åõ44Tä$”ó¢tã32rÄseôã35õd$”åE3¤¥4ôâç7G&–æv–g’‡b—Ò’’çFõF‡&÷r‚tseôã35õd$”åE5ôäõEô$õTäBr“°¢W‡V7B†'W–W%&×2‡´seô4äôä”4Åõ44Tä$”ó¢tãBrÄseõD$tUEôÔ$´UC¢t´ÒrÄseô%U”U%õ$ôET5Eõ$Tc¢tµ"Ó3#rÄseô%U”U%ôU…T5DTEõ$”4S¢sS““wÒ’ægVÆf–ÆÆÖVçB’çFô&R‚tÄô4Åõ5Dô4²r“°¢Ò“°¢—B‚w–6µGvõ6·W2¢FWW‚6öÖ&–æ—6öç2F—7F–æ7FW26–æöâçVÆÂrÂ‚“Óç°¢W‡V7B„âç–6µGvõ6·W2…··6·Uö–C¥SÇf&–çEö6öÖ&ó§¶£Æ#£'×ÒÇ·6·Uö–C¥S"Çf&–çEö6öÖ&ó§¶#£"Æ£×ÕÒ’’çFô&TçVÆÂ‚“°¢W‡V7B„âç–6µGvõ6·W2…··6·Uö–C¥SÇf&–çEö6öÖ&ó§¶£×ÒÇ·6·Uö–C¥S"Çf&–çEö6öÖ&ó§¶£'×ÕÒ’’çFô†fTÆVæwF‚ƒ"“°¢W‡V7B„âç–6µGvõ6·W2…··6·Uö–C¥SÇf&–çEö6öÖ&ó¦çVÆÇÒÇ·6·Uö–C¥S"Çf&–çEö6öÖ&ó§·×ÕÒ’’çFô&TçVÆÂ‚“°¢W‡V7B„âç–6µGvõ6·W2†çVÆÂ’’çFô&TçVÆÂ‚“°¢Ò“°¢—B‚w6öæFR×VÇF’Õ4µR¢ÆV7GW&R6WVÆRÂfW&F–7B$U$UôÔ•54”äuôÕTÅD•õ4µR6ç2&öGV—BrÆ7–æ2‚“Óç°¢W‡V7B„âäÕTÅD•õ4µUõ5Â’ææ÷BçFôÖF6‚‚õÆ"„”å4U%GÅUDDWÄDTÄUDWÅE%Tä4DWÄÅDU'ÄE$õ•Æ"ö’“°¢v—BW‡V7B„âç&W6öÇfT×VÇF•6·R‡·VW'“¦7–æ2‚“Óâ‡·&÷w3¥µ×Ò—ÒÂt´Òr’’ç&V¦V7G2çFõF‡&÷r‚u$U$UôÔ•54”äuôÕTÅD•õ4µUô´Òr“°¢6öç7B#Öv—Bâç&W6öÇfT×VÇF•6·R‡·VW'“¦7–æ2‚“Óâ‡·&÷w3¥·¶–C¢wrÇ&öGV7E÷&Vc¢tµ"ÓssrrÆÖ÷VçC¢srÇ6·W3¥··6·Uö–C¥SÇf&–çEö6öÖ&ó§¶3¢tw×ÒÇ·6·Uö–C¥S"Çf&–çEö6öÖ&ó§¶3¢t"w×Õ×Õ×Ò—ÒÂt´Òr“°¢W‡V7B‡"’çFôÖF6„ö&¦V7B‡·&öGV7E÷&Vc¢tµ"ÓssrrÇ&–6S£Ò“°¢W‡V7B‡&VB‚w67&—G2÷&V6WGFRösb×&W&W×&ö&Ræ§2r’’çFôÖF6‚‚õ$U$UôÔ•54”äuôÕTÅD•õ4µRò“°¢Ò“°¢—B‚wfW&F–7G245$TTåôÔ•54”ärò$ôET5EôtW‡Æ–6—FW2rÂ‚“Óç°¢W‡V7B„âæ6Æ76–g”æVvF—fR‚tãrrÂw‚seôãuõ$ôET5EôtôDõT$ÄUôõ$DU%ó"r’’çFô&R‚u$ôET5Eôtr“°¢W‡V7B„âæ6Æ76–g”æVvF—fR‚tã’rÂtseôã•õ45$TTåôÔ•54”äuôäõõ$TeU4Åôô%4U%dTBr’’çFô&R‚u45$TTåôÔ•54”ärr“°¢W‡V7B„âæ6Æ76–g”æVvF—fR‚tã32rÂu$U$UôÔ•54”äuôÕTÅD•õ4µUô´Òr’’çFô&R‚u$U$UôÔ•54”äuôÕTÅD•õ4µRr“°¢W‡V7B„âæ6Æ76–g”æVvF—fR‚tãBrÂvWG&RW'&WW"r’’çFô&TçVÆÂ‚“°¢Ò“°¢—B‚&ÂvW†6WF–öâGRF÷V&ÆR6Æ–2W7B,:—6W'l:–R:ãr"Æ7–æ2‚“Óç°¢v—BW‡V7B†‡VÖäF÷V&ÆT6Æ–6´öæ6R†çVÆÂÇ·ÒÇ¶ÆÆ÷vVDf÷#¢tãrrÇ66Væ&–ó¢tÓwÒ’’ç&V¦V7G2çFõF‡&÷r‚tseôDõT$ÄUô4Ä”4µôU„4UD”ôåôãuôôäÅ’r“°¢v—BW‡V7B†‡VÖäF÷V&ÆT6Æ–6´öæ6R†çVÆÂÇ·ÒÇ·66Væ&–ó¢tãrwÒ’’ç&V¦V7G2çFõF‡&÷r‚tseôDõT$ÄUô4Ä”4µôU„4UD”ôåôãuôôäÅ’r“°¢W‡V7B‡&VB‚w67&—G2÷&V6WGFRösb×"Ö'W–W"Ö÷&FW"×&VÂÖ6‡&öÖ—VÒæ§2r’’çFôÖF6‚‚ö‡VÖäF÷V&ÆT6Æ–6´öæ6UÂ†çVÆÂÆ6öæf—&ÒÅÇ¶ÆÆ÷vVDf÷#¢tãruÇÕÂ’ò“°¢Ò“°¢—B‚wöÆ—F—VR6‡&öÖ—VÒvÆö&ÆR–æ6†æ|:–RWBfÆ–FR÷W"ÆW2æ÷WfVW‚f–6†–W'2rÂ‚“Óç°¢W‡V7B‡fÆ–FFU7FvTÖöGVÆU6÷W&6W2‚’’çFô&R…5DtUô”E2æÆVæwF‚“°¢W‡V7B‡fÆ–FFT6‡&öÖ—VÕ67&—E6÷W&6W2‚’’çFô&Tw&VFW%F†âƒ“°¢W‡V7B‡&VB‚w67&—G2÷&V6WGFRö6æöæ–6Âö6‡&öÖ—VÒ×öÆ–7’æ§2r’’çFôÖF6‚‚õ$uôtU5EU$SÒò“°¢Ò“°¢—B‚v÷&6ÆRã’&VgW6RVâ6öÆÆV7FVBÂVæR6öç6öÖÖF–öâFR7Fö6²÷RVâ66‚rÆ7–æ2‚“Óç°¢6öç7B&÷sÖóÓâ‡·VW'“¦7–æ27ÃÓâ÷&6VÅö—FV×2òçFW7B‡7Â“÷·&÷w3¥·¶ã£Õ×Ó§·&÷w3¥·¶–C¢vòrÇW6W%ö–C¢wRrÇ7FGW3¢wVæF–ærrÇ–ÖVçE÷7FGW3¢wVæF–ærrÆF—7Æ•÷F÷FÅöÖ÷VçC£ÆÆ–æW3£ÇG“£Æ66…ö6÷VçC£Æ6öçG&öÅö6÷VçC£ÆÆÆö6F–öç3£Æ6öç7VÖVEöÆÆö6F–öç3£ÇW&6†6UöÆ–æW3£Æ6öÆÆV7FVE÷66ç3£Ç&6VÇ3£Âââæ÷Õ××Ò“°¢v—BW‡V7B„âæ÷&6ÆTã’‡&÷r‡·Ò’Ç¶÷&FW$–C¢vòwÒ’’ç&W6öÇfW2çFôÖF6„ö&¦V7B‡¶6öÆÆV7FVE÷66ç3£Ò“°¢v—BW‡V7B„âæ÷&6ÆTã’‡&÷r‡·7FGW3¢v6öÆÆV7FVBwÒ’Ç¶÷&FW$–C¢vòwÒ’’ç&V¦V7G2çFõF‡&÷r‚tseôã•õ$ôET5Eôtô4ôÄÄT5DTBr“°¢v—BW‡V7B„âæ÷&6ÆTã’‡&÷r‡¶6öç7VÖVEöÆÆö6F–öç3£Ò’Ç¶÷&FW$–C¢vòwÒ’’ç&V¦V7G2çFõF‡&÷r‚tseôã•õ$ôET5Eôtõ5Dô4µô4ôå5TÔTBr“°¢v—BW‡V7B„âæ÷&6ÆTã’‡&÷r‡¶66…ö6÷VçC£Ò’Ç¶÷&FW$–C¢vòwÒ’’ç&V¦V7G2çFõF‡&÷r‚tseôã•õ$ôET5Eôtô44…ôTddT5Br“°¢Ò“°¢—B‚tãB¢6Æ–72,:—:—L:—27W"¦÷WFW"†f–6†R6ç26†×VçF—L:’Â7FWW"&V6÷WfW'B’²ã’¢6—6–RFRÆ,:–l:—&Væ6R:&VÖ—6W2rÂ‚“Óç°¢6öç7B#×&VB‚w67&—G2÷&V6WGFRösb×"Ö'W–W"Ö÷&FW"×&VÂÖ6‡&öÖ—VÒæ§2r’Æã×&VB‚w67&—G2÷&V6WGFRösbÖæVvF—fRÖã’×&VÖ—6RÖ6‡&öÖ—VÒæ§2r“°¢W‡V7B†"’çFôÖF6‚‚õEôDEô4TBò“¶W‡V7B†"’çFôÖF6‚‚ô4„T4´õUEõ$Ud”Uuõ$TeU4TBò“¶W‡V7B†"’çFôÖF6‚‚ôseôãEõ45$TTåôÔ•54”äuô4„T4´õUEòò“¶W‡V7B†"’ææ÷BçFôÖF6‚‚ö‡VÖä6Æ–6µÂ†çVÆÂÇvUÂæÆö6F÷%Â‚r6²×G’×ÇW2uÂ•Â’ò“°¢W‡V7B†â’çFôÖF6‚‚ôõ$DU%õ$TdU$Tä4Rò“¶W‡V7B†â’çFôÖF6‚‚õ$TÄ•õ$TÔ•4U5ô4õTåDU%ô%4TåBò“¶W‡V7B†â’çFôÖF6‚‚õ$TÄ•ôäõõ$UTU5Eõ4TåBò“°¢Ò“°¢—B‚wv÷&¶fÆ÷r¢F—G&W2ãrôã’ôãBôã32÷W"´ÒÂ4ÒWB4rrÂ‚“Óç°¢6öç7Bvc×&VB‚ræv—F‡V"÷v÷&¶fÆ÷w2÷7Fv–ærÖsbÖG–æÖ–2Ög&W6‚Ö'W–W"Ö66‚ç–ÖÂr“°¢f÷"†6öç7B–Böb²tãrrÂtã’rÂtãBrÂtã32uÒ–f÷"†6öç7BÒöb²t´ÒrÂt4ÒrÂt4ruÒ¢W‡V7B‡vb’çFô6öçF–â‚"u·7Fv–ærÖ÷ÒsbÖG–æÖ–2Ög&W6‚ÖgVÆÂÒ"¶–B²rÒr¶Ò²"r"“°¢Ò“°§Ò“°¦FW67&–&R‚tsbÔsD"ã#2‡FVçFF—fW2FR&WG&—B’WBã#B†FWW‚&VÖ—6W26–×VÇFì:–W2’rÂ‚“Óç°¢6öç7B6†–ãÕ²t%U”U"rÂu$TÄ•ô44‚rÂtÄô4Åõ$TÄ•ôd”Ä$ÄRuÓ°¢—B‚w<:—VVæ6W2¢&6÷W'2Ó"§W7UÂ|:F—7öæ–&ÆRV—2vW7FRWB÷&6ÆR²Ó"–æ6†æ|:’rÂ‚“Óç°¢W‡V7B†w&„f÷"‚tã#2r’æ÷&FW"’çFôWVÂ…²ââæ6†–âÂtã#5õt•D„E$tÅôEDTÕE2rÂtã#5õ4T5U$•E•ôõ$4ÄRuÒ“°¢W‡V7B†w&„f÷"‚tã#Br’æ÷&FW"’çFôWVÂ…²ââæ6†–âÂtã#Eõ$ÄÄTÅô„äDôdbrÂtã#Eõ4”ätÄUô„äDôdeôõ$4ÄRuÒ“°¢W‡V7B†w&„f÷"‚tÓ"r’æ÷&FW"’çFôWVÂ…²ââæ6†–âÂtÄô4Åô4Ä”TåEõ”4µUuÒ“°¢W‡V7B‡fÆ–FFU7FvTÖöGVÆU6÷W&6W2‚’’çFô&Tw&VFW%F†âƒ“°¢Ò“°¢—B‚w&Ü:‡G&W26†WFWW"¢&öGV—BÄô4Åõ5Dô4²Æœ:’6öÖÖRÓ"rÂ‚“Óç°¢6öç7BS×´seô4äôä”4Åõ44Tä$”ó¢tã#2rÄseõD$tUEôÔ$´UC¢t´ÒrÄseô%U”U%õ$ôET5Eõ$Tc¢tµ"Ó3#rÄseô%U”U%ôU…T5DTEõ$”4S¢sSwÓ°¢W‡V7B†'W–W%&×2†R’’çFôÖF6„ö&¦V7B‡·66Væ&–ó¢tã#2rÆgVÆf–ÆÆÖVçC¢tÄô4Åõ5Dô4²rÆW‡V7FVE÷&–6S£SÒ“°¢W‡V7B†'W–W%&×2‡²ââæRÄseô4äôä”4Åõ44Tä$”ó¢tã#BwÒ’ç66Væ&–ò’çFô&R‚tã#Br“°¢W‡V7B„âæ—4æVvF—fR‚tã#2r’bdâæ—4æVvF—fR‚tã#Br’’çFô&R‡G'VR“°¢Ò“°¢6öç7BÖ³×&÷w3Óç¶ÆWB“Ó·&WGW&â·VW'“¦7–æ2‚“Óâ‡·&÷w3¥·&÷w5¶’²µÕ×Ò—×Ó°¢6öç7B÷&FW#×¶–C¢vòrÇW6W%ö–C¢wRrÇ7FGW3¢vf–Æ&ÆRrÇ–ÖVçE÷7FGW3¢w–BrÆF—7Æ•÷F÷FÅöÖ÷VçC£ÆÆ–æW3£ÇG“£Æ66…ö6÷VçC£Æ6öçG&öÅö6÷VçC£ÆÆÆö6F–öç3£Æ6öç7VÖVEöÆÆö6F–öç3£ÇW&6†6UöÆ–æW3£Æ6öÆÆV7FVE÷66ç3£Ç&6VÇ3£Ó°¢—B‚v÷&6ÆRã#2¢V7VæR&VÖ—6RÂ6öFRf—fçBÂ6ö×FWW"FR<:–7W&—L:’ãÒ6WV–ÂrÆ7–æ2‚“Óç°¢6öç7Bö³Ò‚“ÓæÖ²…¶÷&FW"Ç¶ã£ÒÇ¶6öFUöÆ—fS§G'VRÆGFV×G3£ÒÇ¶ã£wÕÒ“°¢v—BW‡V7B„âæ÷&6ÆTã#2†ö²‚’Ç¶÷&FW$–C¢vòrÆvVçD–C¢vrÆÖ–äf–ÇW&W3£WÒ’’ç&W6öÇfW2çFôÖF6„ö&¦V7B‡¶6öÆÆV7FVE÷66ç3£Ç6V7W&—G•öf–ÇW&W5óVÖ–ã£wÒ“°¢v—BW‡V7B„âæ÷&6ÆTã#2†Ö²…·²ââæ÷&FW"Ç7FGW3¢v6öÆÆV7FVBwÒÇ¶ã£ÕÒ’Ç¶÷&FW$–C¢vòrÆvVçD–C¢vrÆÖ–äf–ÇW&W3£WÒ’’ç&V¦V7G2çFõF‡&÷r‚tseôã#5õ$ôET5Eôtô„äDôdeôDU5•DUô$Eô4ôDU2r“°¢v—BW‡V7B„âæ÷&6ÆTã#2†Ö²…¶÷&FW"Ç¶ã£ÒÇ¶6öFUöÆ—fS¦fÇ6WÕÒ’Ç¶÷&FW$–C¢vòrÆvVçD–C¢vrÆÖ–äf–ÇW&W3£WÒ’’ç&V¦V7G2çFõF‡&÷r‚tseôã#5õ$ôET5Eôtô4ôDUô4ôå5TÔTBr“°¢v—BW‡V7B„âæ÷&6ÆTã#2†Ö²…¶÷&FW"Ç¶ã£ÒÇ¶6öFUöÆ—fS§G'VWÒÇ¶ã£'ÕÒ’Ç¶÷&FW$–C¢vòrÆvVçD–C¢vrÆÖ–äf–ÇW&W3£WÒ’’ç&V¦V7G2çFõF‡&÷r‚tseôã#5õ$ôET5Eôtõ4T5U$•E•ô4õTåDU%ô$TÄõuó"r“°¢Ò“°¢—B‚v÷&6ÆRã#B¢VæR6WVÆRGFW7FF–öâFR&VÖ—6RrÆ7–æ2‚“Óç°¢6öç7BFöæS×²ââæ÷&FW"Ç7FGW3¢v6öÆÆV7FVBwÓ°¢v—BW‡V7B„âæ÷&6ÆTã#B†Ö²…¶FöæRÇ·66ç3£Æ6öFU÷66ç3£ÒÇ¶v÷C£ÇvçC£ÕÒ’Ç¶÷&FW$–C¢vòwÒ’’ç&W6öÇfW2çFôÖF6„ö&¦V7B‡¶6öÆÆV7FVE÷66ç3£Ò“°¢v—BW‡V7B„âæ÷&6ÆTã#B†Ö²…¶FöæRÇ·66ç3£"Æ6öFU÷66ç3£'ÕÒ’Ç¶÷&FW$–C¢vòwÒ’’ç&V¦V7G2çFõF‡&÷r‚tseôã#Eõ$ôET5Eôtô„äDôdeôEDU5DD”ôå5ó"r“°¢v—BW‡V7B„âæ÷&6ÆTã#B†Ö²…¶FöæRÇ·66ç3£Æ6öFU÷66ç3£ÒÇ¶v÷C£"ÇvçC£ÕÒ’Ç¶÷&FW$–C¢vòwÒ’’ç&V¦V7G2çFõF‡&÷r‚tseôã#Eõ$ôET5EôtõE•ô4ôÄÄT5DTBr“°¢Ò“°¢—B‚w67&—B¢v&FRFR6÷'2æ÷&ÖÆ—<:’ÂB6†–fg&W2Âf÷&6R''WFRRÖFVÌ:GR6WV–ÂÂFWW‚öævÆWG2ÂfW&F–7B"7FGWG2…EErÂ‚“Óç°¢6öç7B3×&VB‚w67&—G2÷&V6WGFRösbÖæVvF—fRÖã#2Öã#BÖ6‡&öÖ—VÒæ§2r“°¢W‡V7B‡2’çFôÖF6‚‚öæ÷&ÕÂ†&öG•Âç–6·Wö6öFUÂ“ÓÓ×v—EÂæW‡V7Bò“°¢W‡V7B‡2’çFôÖF6‚‚ôÄ5CEôôäÅ’ò“¶W‡V7B‡2’çFôÖF6‚‚ô%%UDUôdõ$4Uòò“¶W‡V7B‡2’çFôÖF6‚‚õ$”t…Eô4ôDUõt„”ÄUôÄô4´TBò“°¢W‡V7B‡2’çFôÖF6‚‚ö7G…ÂææWuvUÂ…Â’ò“¶W‡V7B‡2’ææ÷BçFôÖF6‚‚÷67&VVç6†÷Bò“°¢W‡V7B‡2’çFôÖF6‚‚ôseôã#Eõ$ôET5Eôtô…EEòò“¶W‡V7B‡2’çFôÖF6‚‚÷6–ÆVçE÷&VgW6Ç2ò“¶W‡V7B‡2’çFôÖF6‚‚÷7FW5÷&V6†VBò“°¢Ò“°¢—B‚wv÷&¶fÆ÷r¢F—G&W2ã#2ôã#B÷W"´ÒÂ4ÒWB4rrÂ‚“Óç°¢6öç7Bvc×&VB‚ræv—F‡V"÷v÷&¶fÆ÷w2÷7Fv–ærÖsbÖG–æÖ–2Ög&W6‚Ö'W–W"Ö66‚ç–ÖÂr“°¢f÷"†6öç7B–Böb²tã#2rÂtã#BuÒ–f÷"†6öç7BÒöb²t´ÒrÂt4ÒrÂt4ruÒ¢W‡V7B‡vb’çFô6öçF–â‚"u·7Fv–ærÖ÷ÒsbÖG–æÖ–2Ög&W6‚ÖgVÆÂÒ"¶–B²rÒr¶Ò²"r"“°¢Ò“°§Ò“°¦FW67&–&R‚tsbÔsD"ã#†vVçBEÂwVâWG&R&VÆ—2’WBã#"‡&VÆ—2ô"’rÂ‚“Óç°¢6öç7B6†–ãÕ²t%U”U"rÂu$TÄ•ô44‚rÂtÄô4Åõ$TÄ•ôd”Ä$ÄRuÓ°¢—B‚w<:—VVæ6W2WB6Æ76–f–6F–öâFW2,:—&WV—2rÂ‚“Óç°¢W‡V7B†w&„f÷"‚tã#r’æ÷&FW"’çFôWVÂ…²ââæ6†–âÂtã#ô5$õ55õ$TÄ•ôEDTÕE2rÂtã#ô5$õ55õ$TÄ•ôõ$4ÄRuÒ“°¢W‡V7B†w&„f÷"‚tã#"r’æ÷&FW"’çFôWVÂ…²ââæ6†–âÂtã#%õEtõõ$TÄ•5ôEDTÕE2rÂtã#%õEtõõ$TÄ•5ôõ$4ÄRuÒ“°¢W‡V7B„âæ6Æ76–g”æVvF—fR‚tã#rÂu$U$UôÔ•54”äuõ4T4ôäEõ$TÄ•ô´Òr’’çFô&R‚u$U$UôÔ•54”äuõ4T4ôäEõ$TÄ’r“°¢W‡V7B„âæ6Æ76–g”æVvF—fR‚tã#"rÂtseôã#%õ$ôET5Eôtõ$TEö÷&FW%ö'•÷&Vbr’’çFô&R‚u$ôET5Eôtr“°¢W‡V7B‡fÆ–FFU7FvTÖöGVÆU6÷W&6W2‚’’çFô&Tw&VFW%F†âƒ“°¢Ò“°¢—B‚v÷&6ÆR¢V7VæR&VÖ—6R"ÅÂvvVçB:—G&ævW"Â6öFRf—fçBrÆ7–æ2‚“Óç°¢6öç7B÷&FW#×¶–C¢vòrÇW6W%ö–C¢wRrÇ7FGW3¢vf–Æ&ÆRrÆÆ–æW3£ÇG“£Æ6öÆÆV7FVE÷66ç3£Ç&6VÇ3£Ó°¢6öç7BÖ³×&÷w3Óç¶ÆWB“Ó·&WGW&â·VW'“¦7–æ2‚“Óâ‡·&÷w3¥·&÷w5¶’²µÕ×Ò—×Ó°¢v—BW‡V7B„âæ÷&6ÆT7&÷75&VÆ’†Ö²…¶÷&FW"Ç¶ã£ÒÇ¶6öFUöÆ—fS§G'VRÆGFV×G3£ÕÒ’Ç¶÷&FW$–C¢vòrÇ66Væ&–ó¢tã#wÒ’’ç&W6öÇfW2çFôÖF6„ö&¦V7B‡¶6öÆÆV7FVE÷66ç3£Æ÷&FW%öGFV×G3£Ò“°¢v—BW‡V7B„âæ÷&6ÆT7&÷75&VÆ’†Ö²…·²ââæ÷&FW"Ç7FGW3¢v6öÆÆV7FVBwÒÇ¶ã£ÕÒ’Ç¶÷&FW$–C¢vòrÇ66Væ&–ó¢tã#wÒ’’ç&V¦V7G2çFõF‡&÷r‚tseôã#õ$ôET5Eôtôdõ$T”tåôtTåEô„äDôdbr“°¢Ò“°¢—B‚w67&—B¢&GF6†VÖVçB"ÅÂ|:–7&â,:—6VRÂÆV7GW&W26ç2F—gVÆvF–öâÂ6Vç2–çfW'6RÂfW&F–7B$ôET5Eôt6ç26öçF÷W&æVÖVçBrÂ‚“Óç°¢6öç7B3×&VB‚w67&—G2÷&V6WGFRösbÖæVvF—fRÖã#Öã#"Ö7&÷72×&VÆ’Ö6‡&öÖ—VÒæ§2r“°¢W‡V7B‡2’çFôÖF6‚‚öGF6„FVF–6FVE&VÆ”'•T’ò“¶W‡V7B‡2’çFôÖF6‚‚õ$U$UôÔ•54”äuõ4T4ôäEõ$TÄ•òò“°¢W‡V7B‡2’çFôÖF6‚‚övVçEöEô÷g5ö÷&FW%öEô"ò“¶W‡V7B‡2’çFôÖF6‚‚ö6öçF–ç5ö÷&FW"ò“¶W‡V7B‡2’çFôÖF6‚‚÷7FW5÷&V6†VBò“¶W‡V7B‡2’ææ÷BçFôÖF6‚‚÷67&VVç6†÷Bò“°¢W‡V7B‡&VB‚w67&—G2÷&V6WGFRösb×&W&W×&ö&Ræ§2r’’çFôÖF6‚‚õ$U$UôÔ•54”äuõ4T4ôäEõ$TÄ’ò“°¢Ò“°¢—B‚wv÷&¶fÆ÷r¢F—G&W2ã#ôã#"÷W"´ÒÂ4ÒWB4rrÂ‚“Óç°¢6öç7Bvc×&VB‚ræv—F‡V"÷v÷&¶fÆ÷w2÷7Fv–ærÖsbÖG–æÖ–2Ög&W6‚Ö'W–W"Ö66‚ç–ÖÂr“°¢f÷"†6öç7B–Böb²tã#rÂtã#"uÒ–f÷"†6öç7BÒöb²t´ÒrÂt4ÒrÂt4ruÒ¢W‡V7B‡vb’çFô6öçF–â‚"u·7Fv–ærÖ÷ÒsbÖG–æÖ–2Ög&W6‚ÖgVÆÂÒ"¶–B²rÒr¶Ò²"r"“°¢Ò“°§Ò“°¦FW67&–&R‚tsbÔsD"ã#Œ:–6'BFR,:–6WF–öâ&VÆ—2’WBã#’‡6W76–öâCÂ,;FÆRC2’rÂ‚“Óç°¢—B‚w<:—VVæ6W2¢ã#Ò6†:ææR–×÷'B§W7UÂ|:ÆF÷VæRÂã#’Ò&6÷W'2Ó"²Ó–æ6†æ|:’rÂ‚“Óç°¢W‡V7B†w&„f÷"‚tã#r’æ÷&FW"’çFôWVÂ…²ââå5DtUô”E2ç6Æ–6RƒÅ5DtUô”E2æ–æFW„öb‚t5U5DôÕ2r’³’Âtã#õ$TÄ•ôD•45$Uä5’rÂtã#ôD•45$Uä5•ôõ$4ÄRuÒ“°¢W‡V7B†w&„f÷"‚tã#r’æ÷&FW"’ææ÷BçFô6öçF–â‚u$TÄ•õ$T4T•Br“°¢W‡V7B†w&„f÷"‚tã#’r’æ÷&FW"’çFôWVÂ…²t%U”U"rÂu$TÄ•ô44‚rÂtÄô4Åõ$TÄ•ôd”Ä$ÄRrÂtã#•õ4U54”ôåõ$ôÄUôEDTÕE2rÂtã#•ôäõôÕUDD”ôåôõ$4ÄRuÒ“°¢W‡V7B†w&„f÷"‚tÓr’æ÷&FW"’çFôWVÂ…5DtUô”E2“°¢W‡V7B‡fÆ–FFU7FvTÖöGVÆU6÷W&6W2‚’’çFô&Tw&VFW%F†âƒ“°¢Ò“°¢—B‚v÷&6ÆRã#¢VçF—L:’6öç7FL:–RÂ–æ6–FVçBÂV7VæR&VÖ—6RGRÖçVçBrÆ7–æ2‚“Óç°¢6öç7BÖ³×&÷w3Óç¶ÆWB“Ó·&WGW&â·VW'“¦7–æ2‚“Óâ‡·&÷w3§&÷w5¶’²µ×Ò—×Ó°¢6öç7B÷&FW#×¶–C¢vòrÇ7FGW3¢w&W&F–öârÆÆ–æW3£ÇG“£Æ6öÆÆV7FVE÷66ç3£Ç&6VÇ3£Ó°¢6öç7B&V3Õ·¶W‡V7FVE÷G“£Ç&V6V—fVE÷G“£Æ–æ6–FVçEö–C¢v’rÆ–æ6–FVçC¢v’wÕÓ°¢v—BW‡V7B„âæ÷&6ÆTã#†Ö²…µ¶÷&FW%ÒÇ&V2Å·¶6öÆÆV7FVC£Ç&V6V—fVC£ÕÕÒ’Ç¶÷&FW$–C¢vòwÒ’’ç&W6öÇfW2çFôÖF6„ö&¦V7B‡·&V6V—fVE÷G“£ÆW‡V7FVE÷G“£Ò“°¢v—BW‡V7B„âæ÷&6ÆTã#†Ö²…µ¶÷&FW%ÒÅ·²ââç&V5³ÒÆ–æ6–FVçC¦çVÆÇÕÕÒ’Ç¶÷&FW$–C¢vòwÒ’’ç&V¦V7G2çFõF‡&÷r‚tseôã#õ$ôET5Eôtôäõô”ä4”DTåBr“°¢v—BW‡V7B„âæ÷&6ÆTã#†Ö²…µ¶÷&FW%ÒÅ·²ââç&V5³ÒÇ&V6V—fVE÷G“£ÕÕÒ’Ç¶÷&FW$–C¢vòwÒ’’ç&V¦V7G2çFõF‡&÷r‚tseôã#õ$ôET5Eôtõ$T4T•dTEõE•ôäõEõ4„õ%Br“°¢v—BW‡V7B„âæ÷&6ÆTã#†Ö²…µ¶÷&FW%ÒÇ&V2Å·¶6öÆÆV7FVC£Ç&V6V—fVC£ÕÕÒ’Ç¶÷&FW$–C¢vòwÒ’’ç&V¦V7G2çFõF‡&÷r‚tseôã#õ$ôET5EôtôÔ•54”äuõE•ô„äDTEôõdU"r“°¢Ò“°¢—B‚w67&—G2¢:–6'B6—6’:ÅÂ|:–7&âÂ45$TTåôÔ•54”äuõ$TÄ•ôD•45$Uä5’Â6W76–öâW‡—,:–RWB,;FÆR–çFW&F—BrÂ‚“Óç°¢6öç7B×&VB‚w67&—G2÷&V6WGFRösbÖæVvF—fRÖã#×&VÆ’ÖF—67&Wæ7’Ö6‡&öÖ—VÒæ§2r’Æ#×&VB‚w67&—G2÷&V6WGFRösbÖæVvF—fRÖã#’ÖWF‡¢Ö6‡&öÖ—VÒæ§2r“°¢W‡V7B†’çFôÖF6‚‚ôseôã#õ45$TTåôÔ•54”äuõ$TÄ•ôD•45$Uä5’ò“¶W‡V7B†’çFôÖF6‚‚öFF×&VÆ’×&V6V—fVBò“¶W‡V7B†’ææ÷BçFôÖF6‚‚÷67&VVç6†÷Bò“°¢W‡V7B†"’çFôÖF6‚‚ö6ÆV$6öö¶–W2ò“¶W‡V7B†"’çFôÖF6‚‚õ4U54”ôåôU…•$TUõ4å5õ$TD•$T5D”ôåôä•ôÔU54tRò“¶W‡V7B†"’çFôÖF6‚‚ô4Ä”TåEôdõ$$”DDTåõE$”TBò“¶W‡V7B†"’ææ÷BçFôÖF6‚‚÷67&VVç6†÷Bò“°¢W‡V7B‡&VB‚w67&—G2÷&V6WGFRö6æöæ–6Â÷&VÂÖ'W–W"Ö66‚ÖFFW'2æ§2r’’çFôÖF6‚‚ôseô4äôä”4Åõ44Tä$”ó¢tÓrò“°¢Ò“°¢—B‚wv÷&¶fÆ÷r¢F—G&W2ã#ôã#’÷W"´ÒÂ4ÒWB4rrÂ‚“Óç°¢6öç7Bvc×&VB‚ræv—F‡V"÷v÷&¶fÆ÷w2÷7Fv–ærÖsbÖG–æÖ–2Ög&W6‚Ö'W–W"Ö66‚ç–ÖÂr“°¢f÷"†6öç7B–Böb²tã#rÂtã#’uÒ–f÷"†6öç7BÒöb²t´ÒrÂt4ÒrÂt4ruÒ¢W‡V7B‡vb’çFô6öçF–â‚"u·7Fv–ærÖ÷ÒsbÖG–æÖ–2Ög&W6‚ÖgVÆÂÒ"¶–B²rÒr¶Ò²"r"“°¢Ò“°§Ò“° ¦FW67&–&R‚tsbÔsD"Ôd•‚'VææW"ã#2Âã#’Âã#rÂ‚“Óç°¢—B‚tã#2¢V7VæRFVçFF—fR66WL:–RæRÌ:‡fR2FRG—TW'&÷"²VæR66WL:–RFöææRÆRfW&F–7B&öGV—BrÂ‚“Óç°¢6öç7B¶76W'DæöæT66WFVGÓ×&WV—&R‚rââòââ÷67&—G2÷&V6WGFRösbÖæVvF—fRÖã#2Öã#BÖ6‡&öÖ—VÒr“°¢W‡V7B‚‚“Óæ76W'DæöæT66WFVB…·¶¶–æC¢uu$ôäuórÆ‡GG£CÒÇ¶¶–æC¢t%%UDUôdõ$4UórÆ‡GG£C#—ÕÒ’’ææ÷BçFõF‡&÷r‚“°¢W‡V7B‚‚“Óæ76W'DæöæT66WFVB…µÒ’’ææ÷BçFõF‡&÷r‚“°¢W‡V7B‚‚“Óæ76W'DæöæT66WFVB…·¶¶–æC¢uu$ôäuórÆ‡GG£#ÕÒ’’çFõF‡&÷r‚tseôã#5õ$ôET5Eôtô44UDTEõu$ôäuór“°¢Ò“°¢—B‚tã#’¢Æv&FRFRÄô4Åõ$TÄ•ôd”Ä$ÄR66WFRã#’6ç2WG&R76÷WÆ—76VÖVçBrÂ‚“Óç°¢6öç7B×&VB‚w67&—G2÷&V6WGFRösbÖÆö6Â×&VÆ’Öf–Æ&ÆRÖ6‡&öÖ—VÒæ§2r“°¢W‡V7B†’çFôÖF6‚‚õÅ²tÓ"rÂtÓ2rÂtã#2rÂtã#BrÂtã#rÂtã#"rÂtã#’rƒó¢ÂtåÆB²r’¥ÅÕÂæ–æ6ÇVFW5Â†VçeÂäseô4äôä”4Åõ44Tä$”õÂ’ò“°¢W‡V7B†’çFôÖF6‚‚öVçeÂäseô4äôä”4Åõ„4SÓÓÒtÄô4Åõ$TÄ•ôd”Ä$ÄRrò“¶W‡V7B†’çFôÖF6‚‚ôseôÄô4Åõ$TÄ•ôõtäU%õ5Dt”äuôuT$Bò“°¢Ò“°¢—B‚tã#¢W‡:–F—F–öâ&WG&÷Wl:–Rf–ÆRÆ–Vâ‡V"VæB&6VÇ2ç6†—ÖVçEö–BW7Bf–FRrÆ7–æ2‚“Óç°¢6öç7B·6†—ÖVçDf÷$÷&FW'Ó×&WV—&R‚rââòââ÷67&—G2÷&V6WGFRösbÖæVvF—fRÖã#×&VÆ’ÖF—67&Wæ7’Ö6‡&öÖ—VÒr“°¢6öç7B6VVãÕµÓ¶6öç7BF#×·VW'“¦7–æ2Óç·6VVâçW6‚‡“·&WGW&â·&÷w3¥·¶–C¢w2rÇ&VfW&Væ6S¢u4”ÒÕ5Dt”ärÔU…Õ‚rÇ7FvS¢vÆö6ÅöFVÆ—fW'’wÕ×××Ó°¢v—BW‡V7B‡6†—ÖVçDf÷$÷&FW"†F"Âvòr’’ç&W6öÇfW2çFôÖF6„ö&¦V7B‡·&VfW&Væ6S¢u4”ÒÕ5Dt”ärÔU…Õ‚wÒ“°¢W‡V7B‡6VVå³Ò’çFôÖF6‚‚ö–çFW&æF–öæÅ÷6†—ÖVçEö‡V%÷Væ—G2ò“¶W‡V7B‡6VVå³Ò’çFôÖF6‚‚ö‡V%ö&÷…ö&w2ò“°¢v—BW‡V7B‡6†—ÖVçDf÷$÷&FW"‡·VW'“¦7–æ2‚“Óâ‡·&÷w3¥µ×Ò—ÒÂvòr’’ç&W6öÇfW2çFô&TçVÆÂ‚“°¢Ò“°§Ò“° ¦FW67&–&R‚tsbÔsD2ã…ò6ç2VævvVÖVçB’WBã"‡–VÖVçB6ç2FWW†œ:†ÖRWF÷&—6F–öâ’rÂ‚“Óç°¢6öç7BWÖ–CÓå5DtUô”E2ç6Æ–6RƒÅ5DtUô”E2æ–æFW„öb†–B’³“°¢—B‚w<:—VVæ6W2¢6†:ææRÓ6÷W:–RR&öâö–çBÂÓ–æ6†æ|:’rÂ‚“Óç°¢W‡V7B†w&„f÷"‚tãr’æ÷&FW"’çFôWVÂ…²ââçW‚t…T%õòr’Âtãõõôäõô4ôÔÔ•DÔTåEôEDTÕBrÂtãôäõôTättTÔTåEôõ$4ÄRuÒ“°¢W‡V7B†w&„f÷"‚tã"r’æ÷&FW"’çFôWVÂ…²ââçW‚t…T%õdTäDõ%õ4”ÕTÄD”ôâr’Âtã%õ”ÔTåEõ4”ätÄUõdÄ”DDõ"rÂtã%ôäõõ”ÔTåEôõ$4ÄRuÒ“°¢W‡V7B†w&„f÷"‚tãr’æ÷&FW"’ææ÷BçFô6öçF–â‚t…T%ô4ôÔÔ•DÔTåBr“°¢W‡V7B†w&„f÷"‚tã"r’æ÷&FW"’ææ÷BçFô6öçF–â‚t…T%õ$T4T•d”ärr“°¢W‡V7B†w&„f÷"‚tÓr’æ÷&FW"’çFôWVÂ…5DtUô”E2“°¢W‡V7B‡fÆ–FFU7FvTÖöGVÆU6÷W&6W2‚’’çFô&Tw&VFW%F†âƒ“°¢Ò“°¢6öç7BÖ³×&÷w3Óç¶ÆWB“Ó·&WGW&â·VW'“¦7–æ2‚“Óâ‡·&÷w3§&÷w5¶’²µ×Ò—×Ó°¢6öç7Bó×¶–C¢wrÇ7FGW3¢vG&gBrÇ6VçEöC¦çVÆÂÇ6VçEö6†ææVÃ¦çVÆÂÇ7WÆ–W%ö÷&FW%ö–C¦çVÆÇÓ°¢6öç7Bgƒ×¶6öÖÖ—FÖVçG3£Ç–ÖVçEöWF†÷&—¦F–öç3£Ç7WÆ–W%÷–ÖVçG3£ÆÖçVÅöW†V7WF–öç3£Æ6öæf—&ÖVEöÆ–æW3£Æ‡V%öÆÆö6F–öç3£Æ‡V%÷Væ—G3£Ç–ÖVçE÷7FGW3¢w–BwÓ°¢—B‚v÷&6ÆRã¢'&÷V–ÆÆöâÂV7VâVævvVÖVçBÂV7VâVffWBf÷W&æ—76WW"æ’‡V"rÆ7–æ2‚“Óç°¢v—BW‡V7B„âæ÷&6ÆTã†Ö²…µ·õÒÅ¶g…ÕÒ’Ç¶÷&FW$–C¢vòrÇô–C¢wwÒ’’ç&W6öÇfW2çFôÖF6„ö&¦V7B‡·õ÷7FGW3¢vG&gBrÆ6öÖÖ—FÖVçG3£Ò“°¢v—BW‡V7B„âæ÷&6ÆTã†Ö²…µ·²ââçòÇ7FGW3¢væ÷F–f–VBwÕÒÅ¶g…ÕÒ’Ç¶÷&FW$–C¢vòrÇô–C¢wwÒ’’ç&V¦V7G2çFõF‡&÷r‚tseôãõ$ôET5EôtõõôEdä4TEöæ÷F–f–VBr“°¢v—BW‡V7B„âæ÷&6ÆTã†Ö²…µ·õÒÅ·²ââæg‚Æ6öÖÖ—FÖVçG3£ÕÕÒ’Ç¶÷&FW$–C¢vòrÇô–C¢wwÒ’’ç&V¦V7G2çFõF‡&÷r‚tseôãõ$ôET5EôtôTättTÔTåEõ$T4õ$DTBr“°¢v—BW‡V7B„âæ÷&6ÆTã†Ö²…µ·õÒÅ·²ââæg‚Æ‡V%÷Væ—G3£ÕÕÒ’Ç¶÷&FW$–C¢vòrÇô–C¢wwÒ’’ç&V¦V7G2çFõF‡&÷r‚tseôãõ$ôET5Eôtô…T%ôTddT5Br“°¢v—BW‡V7B„âæ÷&6ÆTã†Ö²…µ·òÇ²ââçòÆ–C¢wwÕÕÒ’Ç¶÷&FW$–C¢vòrÇô–C¢wwÒ’’ç&V¦V7G2çFõF‡&÷r‚tseôäTuõõôäõEõTä•TUó"r“°¢Ò“°¢—B‚v÷&6ÆRã"¢VævvVÖVçBVæ—VR–çF7BÂV7VæRWF÷&—6F–öâFR–VÖVçBÂV7Vâ–VÖVçBrÆ7–æ2‚“Óç°¢6öç7B3×²ââçòÇ7FGW3¢v6öæf—&ÖVBwÒÆc×²ââæg‚Æ6öÖÖ—FÖVçG3£ÒÇ&÷sÕ··&ööe÷&Vc¢tRÓrÆFV6–FVEö'“¢wRwÕÓ°¢v—BW‡V7B„âæ÷&6ÆTã"†Ö²…µ¶5ÒÅ¶eÒÇ&÷uÒ’Ç¶÷&FW$–C¢vòrÇô–C¢wrÆ6öÖÖ—FÖVçE&ööc¢tRÓwÒ’’ç&W6öÇfW2çFôÖF6„ö&¦V7B‡¶6öÖÖ—FÖVçG3£Ç–ÖVçEöWF†÷&—¦F–öç3£Ò“°¢v—BW‡V7B„âæ÷&6ÆTã"†Ö²…µ¶5ÒÅ·²ââæbÇ–ÖVçEöWF†÷&—¦F–öç3£ÕÕÒ’Ç¶÷&FW$–C¢vòrÇô–C¢wrÆ6öÖÖ—FÖVçE&ööc¢tRÓwÒ’’ç&V¦V7G2çFõF‡&÷r‚tseôã%õ$ôET5Eôtõ”ÔTåEôUD„õ$•¤TEô%•õ4”ätÄUõdÄ”DDõ"r“°¢v—BW‡V7B„âæ÷&6ÆTã"†Ö²…µ¶5ÒÅ·²ââæbÇ7WÆ–W%÷–ÖVçG3£ÕÕÒ’Ç¶÷&FW$–C¢vòrÇô–C¢wrÆ6öÖÖ—FÖVçE&ööc¢tRÓwÒ’’ç&V¦V7G2çFõF‡&÷r‚tseôã%õ$ôET5Eôtõ5UÄ”U%õ”ÔTåEôU„T5UDTBr“°¢v—BW‡V7B„âæ÷&6ÆTã"†Ö²…µ¶5ÒÅ¶eÒÇ&÷uÒ’Ç¶÷&FW$–C¢vòrÇô–C¢wrÆ6öÖÖ—FÖVçE&ööc¢tUE$RwÒ’’ç&V¦V7G2çFõF‡&÷r‚tseôã%õ$ôET5Eôtô4ôÔÔ•DÔTåEõ$ôôeô4„ätTBr“°¢Ò“°¢—B‚w67&—B¢:–7&âV—26öæFW26–væÌ:–W2ÂfW&F–7G2$ôET5EôtWB45$TTåôÔ•54”ärÂV7VæR6GW&RrÂ‚“Óç°¢6öç7B×&VB‚w67&—G2÷&V6WGFRösbÖæVvF—fRÖãÖã"Ö6‡&öÖ—VÒæ§2r“°¢W‡V7B†’çFôÖF6‚‚ô•õ$ô$Uôäõõ45$TTåôtU5EU$Rò“¶W‡V7B†’çFôÖF6‚‚õ4õTÔ•54”ôåô%4TåDUõ4å5ôÔõD”eôdd”4„Rò“°¢W‡V7B†’çFôÖF6‚‚ôseòuÂµ44TåÂ²uõ$ôET5Eôtòò“¶W‡V7B†’çFôÖF6‚‚õ45$TTåôÔ•54”ärò“¶W‡V7B†’ææ÷BçFôÖF6‚‚÷67&VVç6†÷Bò“°¢W‡V7B†’çFôÖF6‚‚öWF†÷&—¦R×–ÖVçBò“¶W‡V7B†’çFôÖF6‚‚ôD•$T5Dõ%ô„ôÄE5ô$õD…ôu$åE2ò“°¢W‡V7B‡&VB‚w67&—G2÷&V6WGFRö6æöæ–6ÂöæVvF—fR×'VææW"æ§2r’’çFôÖF6‚‚ôseô4äôä”4Åõõô”C§ô–GÄseô4äôä”4Åõõô”Bò“°¢W‡V7B‡fÆ–FFT6‡&öÖ—VÕ67&—E6÷W&6W2‚’’çFô&Tw&VFW%F†âƒ“°¢Ò“°¢—B‚v6Æ76–f–6F–öâFW2fW&F–7G2WBv÷&¶fÆ÷r¢F—G&W2ãôã"÷W"´ÒÂ4ÒWB4rrÂ‚“Óç°¢W‡V7B„âæ6Æ76–g”æVvF—fR‚tãrÂtseôãõ$ôET5EôtõõôEdä4TEöæ÷F–f–VBr’’çFô&R‚u$ôET5Eôtr“°¢W‡V7B„âæ6Æ76–g”æVvF—fR‚tã"rÂtseôã%õ45$TTåôÔ•54”äuõ$ô$Uö77&eö÷&–v–å÷&WV—&VBr’’çFô&R‚u45$TTåôÔ•54”ärr“°¢W‡V7B„âæ—4æVvF—fR‚tãr’bdâæ—4æVvF—fR‚tã"r’’çFô&R‡G'VR“°¢6öç7Bvc×&VB‚ræv—F‡V"÷v÷&¶fÆ÷w2÷7Fv–ærÖsbÖG–æÖ–2Ög&W6‚Ö'W–W"Ö66‚ç–ÖÂr“°¢f÷"†6öç7B–Böb²tãrÂtã"uÒ–f÷"†6öç7BÒöb²t´ÒrÂt4ÒrÂt4ruÒ¢W‡V7B‡vb’çFô6öçF–â‚"u·7Fv–ærÖ÷ÒsbÖG–æÖ–2Ög&W6‚ÖgVÆÂÒ"¶–B²rÒr¶Ò²"r"“°¢Ò“°§Ò“° ¦FW67&–&R‚tsbÔsD2ã2‡'WGW&Rf÷W&æ—76WW"Â&VÆ—VB’WBãB‡,:–6WF–öâ'F–VÆÆRÂW†<:‡2Âì:–vF–b’rÂ‚“Óç°¢6öç7BWÖ–CÓå5DtUô”E2ç6Æ–6RƒÅ5DtUô”E2æ–æFW„öb†–B’³“°¢6öç7BÖ³×&÷w3Óç¶ÆWB“Ó·&WGW&â·VW'“¦7–æ2‚“Óâ‡·&÷w3§&÷w5¶’²µ×Ò—×Ó°¢—B‚w<:—VVæ6W2¢6†:ææRÓ6÷W:–RR&öâö–çBÂÓ–æ6†æ|:’rÂ‚“Óç°¢W‡V7B†w&„f÷"‚tã2r’æ÷&FW"’çFôWVÂ…²ââçW‚t…T%õdTäDõ%õ$TD”äU52r’Âtã5õ5UÄ”U%ô$4´õ$DU"rÂtã5ô$4´õ$DU%ôõ$4ÄRuÒ“°¢W‡V7B†w&„f÷"‚tãBr’æ÷&FW"’çFôWVÂ…²ââçW‚t…T%õdTäDõ%õ4”ÕTÄD”ôâr’ÂtãEõ$T4T•d”äuõE•ôEDTÕE2rÂtãEõ$T4T•d”äuôõ$4ÄRuÒ“°¢W‡V7B†w&„f÷"‚tã2r’æ÷&FW"’ææ÷BçFô6öçF–â‚t…T%õdTäDõ%õ4”ÕTÄD”ôâr“°¢W‡V7B†w&„f÷"‚tÓr’æ÷&FW"’çFôWVÂ…5DtUô”E2“°¢W‡V7B‡fÆ–FFU7FvTÖöGVÆU6÷W&6W2‚’’çFô&Tw&VFW%F†âƒ“°¢Ò“°¢6öç7Bgƒ×¶6öÖÖ—FÖVçG3£Ç–ÖVçEöWF†÷&—¦F–öç3£Ç7WÆ–W%÷–ÖVçG3£ÆÖçVÅöW†V7WF–öç3£Æ6öæf—&ÖVEöÆ–æW3£Æ‡V%öÆÆö6F–öç3£Æ‡V%÷Væ—G3£Ç–ÖVçE÷7FGW3¢w–BwÓ°¢—B‚v÷&6ÆRã2¢&VÆ—VB:–vÂRÖçVRÂ&–Vâ&\:wRæ’œ:’rÆ7–æ2‚“Óç°¢6öç7BóÕ·¶–C¢wrÇ7FGW3¢v6æ6VÆÆVBwÕÒÆÃÕ·¶–C¢vÂrÇVçF—G“£Æ6öæf—&ÖVE÷VçF—G“£Ç&V6V—fVC£ÕÓ°¢v—BW‡V7B„âæ÷&6ÆTã2†Ö²…·òÆÂÅ··VçF—G“£ÇW&6†6Uö÷&FW%ö–C¦çVÆÂÆ6æ6VÆÆVEöC¦çVÆÇÕÒÅ¶g…ÒÅ·¶ã£ÕÕÒ’Ç¶÷&FW$–C¢vòrÇô–C¢wrÆ÷&FW&VC£ÇG—VC£Ò’’ç&W6öÇfW2çFôÖF6„ö&¦V7B‡·&VÖæçE÷VçF—G“£Ç&V6V—fVC£Ò“°¢v—BW‡V7B„âæ÷&6ÆTã2†Ö²…·òÆÂÅµÒÅ¶g…ÒÅ·¶ã£ÕÕÒ’Ç¶÷&FW$–C¢vòrÇô–C¢wrÆ÷&FW&VC£ÇG—VC£Ò’’ç&V¦V7G2çFõF‡&÷r‚tseôã5õ$ôET5Eôtõ$TÔäåEór“°¢v—BW‡V7B„âæ÷&6ÆTã2†Ö²…·òÅ·²ââæÅ³ÒÇ&V6V—fVC£ÕÒÅ··VçF—G“£ÇW&6†6Uö÷&FW%ö–C¦çVÆÂÆ6æ6VÆÆVEöC¦çVÆÇÕÒÅ¶g…ÒÅ·¶ã£ÕÕÒ’Ç¶÷&FW$–C¢vòrÇô–C¢wrÆ÷&FW&VC£ÇG—VC£Ò’’ç&V¦V7G2çFõF‡&÷r‚tseôã5õ$ôET5Eôtôd”5D•dUõ$T4T•Br“°¢v—BW‡V7B„âæ÷&6ÆTã2†Ö²…µ·¶–C¢wrÇ7FGW3¢v6öæf—&ÖVBwÕÒÆÅÒ’Ç¶÷&FW$–C¢vòrÇô–C¢wrÆ÷&FW&VC£ÇG—VC£Ò’’ç&V¦V7G2çFõF‡&÷r‚tseôã5õ$ôET5Eôtõõõ5DDUö6öæf—&ÖVBr“°¢6öç7B'CÕ·²ââæÅ³ÒÇVçF—G“£2Æ6öæf—&ÖVE÷VçF—G“£'ÕÓ°¢v—BW‡V7B„âæ÷&6ÆTã2†Ö²…µ·¶–C¢wrÇ7FGW3¢v6öæf—&ÖVBwÕÒÇ'BÅ··VçF—G“£ÇW&6†6Uö÷&FW%ö–C¦çVÆÂÆ6æ6VÆÆVEöC¦çVÆÇÕÒÅ¶g…ÒÅ·¶ã£'ÕÕÒ’Ç¶÷&FW$–C¢vòrÇô–C¢wrÆ÷&FW&VC£2ÇG—VC£'İ÷ï»h‘éì¶»§q«^u}EQe}9=Q}iI<œ¤ì(ô¤ì(¥Ğ ÍÉ¥ÁÑÌ€èÍ½¹‘•ÌÍ¥¹…³¥•Ì°¡½ÉÌµ…É£¤€ĞÀÌ¼ĞÀĞ°É•Ñ•¹Õ”Á…Èƒ¥É…¸°…ÕÕ¹”…ÁÑÕÉ”œ° ¤ôùì(€½¹ÍĞ„õÉ•… ÍÉ¥ÁÑÌ½É••ÑÑ”½œØµ¹•…Ñ¥Ù”µ¸ÄÜµ¸Äàµ¡É½µ¥Õ´¹©Ìœ¤±ˆõÉ•… ÍÉ¥ÁÑÌ½É••ÑÑ”½œØµ¹•…Ñ¥Ù”µ¸Ääµ¡É½µ¥Õ´¹©Ìœ¤ì(€•áÁ•Ğ¡„¤¹Ñ½5…Ñ  ½A%}AI=	}9=}MI9}MQUI¼¤í•áÁ•Ğ¡„¤¹Ñ½5…Ñ  ½™½Éİ…É‘•É}½Ñ¡•É}µ…É­•Ğ¼¤í•áÁ•Ğ¡„¤¹Ñ½5…Ñ  ½¡½±µÕÍÑ½µÌ¼¤í•áÁ•Ğ¡„¤¹Ñ½5…Ñ  ½É•±•…Í”µÕÍÑ½µÌ¼¤ì(€•áÁ•Ğ¡„¤¹Ñ½5…Ñ  ½UU9}IEUQ}9Y=e¼¤í•áÁ•Ğ¡ˆ¤¹Ñ½5…Ñ  ½É••¥Ù•‘}ÅÑäèÀ¼¤í•áÁ•Ğ¡ˆ¤¹Ñ½5…Ñ  ½AIQ}QQMQ}M9M}5MM}%9%9P¼¤ì(€•áÁ•Ğ¡„­ˆ¤¹¹½Ğ¹Ñ½5…Ñ  ½ÍÉ••¹Í¡½Ğ¼¤ì(€•áÁ•Ğ¡Ù…±¥‘…Ñ•¡É½µ¥ÕµMÉ¥ÁÑM½ÕÉ•Ì ¤¤¹Ñ½	•É•…Ñ•ÉQ¡…¸ À¤ì(ô¤ì(¥Ğ •™™•Ñ¥Ù”Á…É…µÌ€è8ÄÜƒ€8ÄäÁ…ÉÑ•¹Ğ‘”±„¡‡¹¹”4ÀÄ°4ÀÄ•Ğ8ÈÀ¥¹¡…¹Ÿ¥Ìœ° ¤ôùì(€½¹ÍĞÈõÉ•… ÍÉ¥ÁÑÌ½É••ÑÑ”½…¹½¹¥…°½¹•…Ñ¥Ù”µÉÕ¹¹•È¹©Ìœ¤ì(€•áÁ•Ğ¡È¤¹Ñ½5…Ñ  ½8ÄÜéqíÍÉ¥ÁĞé8ÄÜÄá}MI%AQmyõt©Ñ¼è!U	}M!%A59Pœ¼¤í•áÁ•Ğ¡È¤¹Ñ½5…Ñ  ½8ÄàéqíÍÉ¥ÁĞé8ÄÜÄá}MI%AQmyõt©Ñ¼è=I]IHœ¼¤í•áÁ•Ğ¡È¤¹Ñ½5…Ñ  ½8ÄäéqíÍÉ¥ÁĞé8Äå}MI%AQmyõt©Ñ¼èUMQ=5Lœ¼¤ì(€•áÁ•Ğ¡È¤¹Ñ½5…Ñ  ½8ÈÀéqíÍÉ¥ÁĞé8ÈÁ}MI%AQmyõt©Ñ¼èUMQ=5Lœ¼¤ì(€•áÁ•Ğ¡É•… ÍÉ¥ÁÑÌ½É••ÑÑ”½…¹½¹¥…°½É•…°µ‰Õå•Èµ…Í µ…‘…ÁÑ•ÉÌ¹©Ìœ¤¤¹Ñ½5…Ñ  ¼8ÄÜœ°8Äàœ°8Ääœ üè°9q­mµi„µèÀ´åt¨œ¤©qup¹¥¹±Õ‘•Íp¡M9I%=p¤¼¤ì(ô¤ì(¥Ğ İ½É­™±½Ü€èÑ¥ÑÉ•Ì8ÄÜƒ€8ÄäÁ½ÕÈ-4°4•Ğœ° ¤ôùì(€½¹ÍĞİ˜õÉ•… œ¹¥Ñ¡Õˆ½İ½É­™±½İÌ½ÍÑ…¥¹œµœØµ‘å¹…µ¥Œµ™É•Í µ‰Õå•Èµ…Í ¹åµ°œ¤ì(€™½È¡½¹ÍĞ¥½˜l8ÄÜœ°8Äàœ°8Äät¥™½È¡½¹ÍĞ´½˜l-4œ°4œ°t¤(€€•áÁ•Ğ¡İ˜¤¹Ñ½½¹Ñ…¥¸ ˆmÍÑ…¥¹œµ½ÁtœØµ‘å¹…µ¥Œµ™É•Í µ™Õ±°´ˆ­¥¬œ´œ­´¬ˆœˆ¤ì(€•áÁ•Ğ¡l8ÄÜœ°8Äàœ°8Äät¹•Ù•Éä¡8¹¥Í9•…Ñ¥Ù”¤¤¹Ñ½	”¡ÑÉÕ”¤ì(ô¤ì)ô¤ì()‘•ÍÉ¥‰” ØµÕ8Èà€£¥¡•ŒË¥Í•…ÔÁÕ¥ÌË¥•ÍÍ…¤¤•Ğ8ÌÈ€¡µ…É£¤•ĞËÑ±•ÌÉ½¥Ï¥Ì¤œ° ¤ôùì(½¹ÍĞµ¬õÉ½İÌôùí±•Ğ¤ôÀíÉ•ÑÕÉ¸íÅÕ•Éäé…Íå¹Œ ¤ôø¡íÉ½İÌéÉ½İÍm¤¬­uô¥õôì(½¹ÍĞ½Éô¡¼õíô¤ôø¡í¥è¼œ±ÕÍ•É}¥èÔœ±ÍÑ…ÑÕÌè½±±•Ñ•œ±Á…åµ•¹Ñ}ÍÑ…ÑÕÌèÁ…¥œ±‘¥ÍÁ±…å}Ñ½Ñ…±}…µ½Õ¹ĞèÄ±±¥¹•ÌèÄ±ÅÑäèÄ±…Í¡}½Õ¹ĞèÄ±½¹ÑÉ½±}½Õ¹ĞèÄ±…±±½…Ñ¥½¹ÌèÄ±½¹ÍÕµ•‘}…±±½…Ñ¥½¹ÌèÄ±ÁÕÉ¡…Í•}±¥¹•ÌèÀ±½±±•Ñ•‘}Í…¹ÌèÄ±Á…É•±ÌèÄ°¸¸¹½ô¤ì(¥Ğ Ï¥ÅÕ•¹•Ì€èÁ…É½ÕÉÌ4ÀÈ½ÕÃ¤°4ÀÄ•Ğ4ÀÈ¥¹¡…¹Ÿ¥Ìœ° ¤ôùì(€•áÁ•Ğ¡É…Á¡½È 8Èàœ¤¹½É‘•È¤¹Ñ½ÅÕ…°¡l	UeHœ°I1e}M œ°1=1}I1e}Y%1	1œ°8Èá}9Q]=I-}%1UI}IQIdœ°8Èá}M%91}Q}=I1t¤ì(€•áÁ•Ğ¡É…Á¡½È 8ÌÈœ¤¹½É‘•È¤¹Ñ½ÅÕ…°¡l	UeHœ°I1e}M œ°1=1}I1e}Y%1	1œ°8ÌÉ}I=MM}5I-Q}I=1Lœ°8ÌÉ}9=}5UQQ%=9}=I1t¤ì(€•áÁ•Ğ¡É…Á¡½È 4ÀÄœ¤¹½É‘•È¤¹Ñ½ÅÕ…°¡MQ}%L¤ì(€•áÁ•Ğ¡É…Á¡½È 4ÀÈœ¤¹½É‘•È¤¹Ñ½ÅÕ…°¡l	UeHœ°I1e}M œ°1=1}I1e}Y%1	1œ°1=1}1%9Q}A%-U@t¤ì(€•áÁ•Ğ¡Ù…±¥‘…Ñ•MÑ…•5½‘Õ±•M½ÕÉ•Ì ¤¤¹Ñ½	•É•…Ñ•ÉQ¡…¸ À¤ì(ô¤ì(¥Ğ ½É…±”8Èà€èÕ¹”Í•Õ±”É•µ¥Í”°ÅÕ…¹Ñ¥Ó¥Ì•á…Ñ•Ì€ì‘½Õ‰±”•™™•Ğ€ôAI=UQ}@œ±…Íå¹Œ ¤ôùì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8Èà¡µ¬¡mm½É ¥t±míÍ…¹ÌèÅõt±mí½ĞèÄ±İ…¹ĞèÅõut¤±í½É‘•É%è¼œ±½µµ¥ÑÑ•‘	•™½É•I•ÑÉäéÑÉÕ•ô¤¤¹É•Í½±Ù•Ì¹Ñ½5…Ñ¡=‰©•Ğ¡í½±±•Ñ•‘}Í…¹ÌèÄ±½µµ¥ÑÑ•‘}‰•™½É•}É•ÑÉäéÑÉÕ•ô¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8Èà¡µ¬¡mm½É ¥t±míÍ…¹ÌèÉõut¤±í½É‘•É%è¼ô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8Èá}AI=UQ}A}!9=}QQMQQ%=9M|Èœ¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8Èà¡µ¬¡mm½É ¥t±míÍ…¹ÌèÁõut¤±í½É‘•É%è¼ô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8Èá}AI=UQ}A}!9=}QQMQQ%=9M|Àœ¤ì(ô¤ì(¥Ğ ½É…±”8ÌÈ€è…ÕÕ¹”µÕÑ…Ñ¥½¸•Ğ…ÕÕ¹”É•µ¥Í”Á…ÈÕ¸ËÑ±”ƒ¥ÑÉ…¹•Èœ±…Íå¹Œ ¤ôùì(€½¹ÍĞÍ¹…ÀõíÕ¹¡…¹•éÑÉÕ”±‰•™½É”éí½‘•ÌèÍô±…™Ñ•Èéí½‘•ÌèÍõôì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌÈ¡µ¬¡mm½É¡íÍÑ…ÑÕÌè…Ù…¥±…‰±”œ±½±±•Ñ•‘}Í…¹ÌèÁô¥t±mí¸èÁõut¤±í½É‘•É%è¼œ±Í¹…ÁÍ¡½ĞéÍ¹…Áô¤¤¹É•Í½±Ù•Ì¹Ñ½5…Ñ¡=‰©•Ğ¡íÍÑ…ÑÕÌè…Ù…¥±…‰±”œ±½‘•Í}…™Ñ•ÈèÍô¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌÈ¡µ¬¡mm½É¡íÍÑ…ÑÕÌè…Ù…¥±…‰±”œ±½±±•Ñ•‘}Í…¹ÌèÁô¥ut¤±í½É‘•É%è¼œ±Í¹…ÁÍ¡½Ğéì¸¸¹Í¹…À±Õ¹¡…¹•é™…±Í•õô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÌÉ}AI=UQ}A}5UQQ%=8œ¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌÈ¡µ¬¡mm½É ¥t±mí¸èÅõut¤±í½É‘•É%è¼œ±Í¹…ÁÍ¡½ĞéÍ¹…Áô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÌÉ}AI=UQ}A}!9=}	e}=I%9}I=1œ¤ì(ô¤ì(¥Ğ ÍÉ¥ÁĞ€èÍ½¹‘•ÌA$Í¥¹…³¥•Ì°Ë¥Á½¹Í”Á•É‘Õ”…ÁË¡Ì½µµ¥Ğ°…ÕÕ¹”…ÁÑÕÉ”€ìÁË¥É•ÅÕ¥Ì±…ÍÏ¥Ìœ° ¤ôùì(€½¹ÍĞ„õÉ•… ÍÉ¥ÁÑÌ½É••ÑÑ”½œØµ¹•…Ñ¥Ù”µ¸Èàµ¸ÌÈµ¡É½µ¥Õ´¹©Ìœ¤ì(€•áÁ•Ğ¡„¤¹Ñ½5…Ñ  ½A%}AI=	}9=}MI9}MQUI¼¤í•áÁ•Ğ¡„¤¹Ñ½5…Ñ  ½½¹¹•Ñ¥½¹É•Í•Ğ¼¤í•áÁ•Ğ¡„¤¹Ñ½5…Ñ  ½1M}MUMM}M!=]9}=9}!QQ@ÔÀÀ¼¤ì(€•áÁ•Ğ¡„¤¹Ñ½5…Ñ  ½AIIE}5%MM%9}=I%9}5I-Q}=IH¼¤í•áÁ•Ğ¡„¤¹¹½Ğ¹Ñ½5…Ñ  ½ÍÉ••¹Í¡½Ğ¼¤í•áÁ•Ğ¡Ù…±¥‘…Ñ•¡É½µ¥ÕµMÉ¥ÁÑM½ÕÉ•Ì ¤¤¹Ñ½	•É•…Ñ•ÉQ¡…¸ À¤ì(€•áÁ•Ğ¡8¹±…ÍÍ¥™å9•…Ñ¥Ù” 8ÌÈœ°àAIIE}5%MM%9}=I%9}5I-Q}=IHœ¤¤¹Ñ½	” AIIE}5%MM%9}=I%9}5I-Q}=IHœ¤ì(ô¤ì(¥Ğ 8ÈÈ€è…‰Í•¹”‘”½µµ…¹‘”…ÔÉ•±…¥ÌÉ•ÍÑ”9=Q}AI=Y8œ° ¤ôùì(€½¹ÍĞÌõÉ•… ÍÉ¥ÁÑÌ½É••ÑÑ”½œØµ¹•…Ñ¥Ù”µ¸ÈÄµ¸ÈÈµÉ½ÍÌµÉ•±…äµ¡É½µ¥Õ´¹©Ìœ¤ì(€•áÁ•Ğ¡Ì¤¹Ñ½½¹Ñ…¥¸ ‰É•Á½ÉĞ¹…ÁÌ¹ÁÕÍ  8ÈÉ}IYIM}9=Q}A1eœ¤ˆ¤ì(ô¤ì(¥Ğ İ½É­™±½Ü€èÑ¥ÑÉ•Ì8Èà½8ÌÈÁ½ÕÈ-4°4•Ğ•Ğ…±¥…Ì‘”Í¥¹…É¥¼œ° ¤ôùì(€½¹ÍĞİ˜õÉ•… œ¹¥Ñ¡Õˆ½İ½É­™±½İÌ½ÍÑ…¥¹œµœØµ‘å¹…µ¥Œµ™É•Í µ‰Õå•Èµ…Í ¹åµ°œ¤ì(€™½È¡½¹ÍĞ¥½˜l8Èàœ°8ÌÈt¥™½È¡½¹ÍĞ´½˜l-4œ°4œ°t¥•áÁ•Ğ¡İ˜¤¹Ñ½½¹Ñ…¥¸ ˆmÍÑ…¥¹œµ½ÁtœØµ‘å¹…µ¥Œµ™É•Í µ™Õ±°´ˆ­¥¬œ´œ­´¬ˆœˆ¤ì(€•áÁ•Ğ¡İ˜¤¹Ñ½½¹Ñ…¥¸ ˆœµ™Õ±°µ8Èà´œ¤€˜˜€8Èàœˆ¤í•áÁ•Ğ¡İ˜¤¹Ñ½½¹Ñ…¥¸ ˆœµ™Õ±°µ8ÌÈ´œ¤€˜˜€8ÌÈœˆ¤ì(€•áÁ•Ğ¡8¹¥Í9•…Ñ¥Ù” 8Èàœ¤˜™8¹¥Í9•…Ñ¥Ù” 8ÌÈœ¤¤¹Ñ½	”¡ÑÉÕ”¤ì(ô¤ì)ô¤ì()‘•ÍÉ¥‰” ØµÕ8ÌÔƒ€8Ìà€èµ½‘…±¥Ó¥Ì‘”4ÀÄ•Ğ½É…±•Ì<µ<°<µ=°<µ9=Q%œ° ¤ôùì(½¹ÍĞµ¬õÉ½İÌôùí±•Ğ¤ôÀíÉ•ÑÕÉ¸íÅÕ•Éäé…Íå¹Œ ¤ôø¡íÉ½İÌéÉ½İÍm¤¬­uññmuô¥õôì(½¹ÍĞ½Éô¡¼õíô¤ôø¡í¥è¼œ±ÕÍ•É}¥èÔœ±ÍÑ…ÑÕÌè½±±•Ñ•œ±Á…åµ•¹Ñ}ÍÑ…ÑÕÌèÁ…¥œ±‘¥ÍÁ±…å}Ñ½Ñ…±}…µ½Õ¹ĞèÄ±±¥¹•ÌèÄ±ÅÑäèÄ±…Í¡}½Õ¹ĞèÄ±½¹ÑÉ½±}½Õ¹ĞèÄ±…±±½…Ñ¥½¹ÌèÄ±½¹ÍÕµ•‘}…±±½…Ñ¥½¹ÌèÄ±ÁÕÉ¡…Í•}±¥¹•ÌèÀ±½±±•Ñ•‘}Í…¹ÌèÄ±Á…É•±ÌèÄ°¸¸¹½ô¤ì(¥Ğ Ï¥ÅÕ•¹•Ì€è4ÀÄ€¬Õ¸½É…±”°4ÀÄ¥¹¡…¹Ÿ¤•Ğ¹½¸‘ÕÁ±¥Å×¤œ° ¤ôùì(€•áÁ•Ğ¡É…Á¡½È 8ÌÔœ¤¹½É‘•È¤¹Ñ½ÅÕ…°¡l¸¸¹MQ}%L°8ÌÕ}=}=I1t¤ì(€•áÁ•Ğ¡É…Á¡½È 8ÌØœ¤¹½É‘•È¤¹Ñ½ÅÕ…°¡l¸¸¹MQ}%L°8ÌÙ}59U1}AI=Y99}=I1t¤ì(€•áÁ•Ğ¡É…Á¡½È 8ÌÜœ¤¹½É‘•È¤¹Ñ½ÅÕ…°¡l¸¸¹MQ}%L°8Ìİ}=U59Q}MLœ°8Ìİ}=U59QM}=I1t¤ì(€•áÁ•Ğ¡É…Á¡½È 8Ìàœ¤¹½É‘•È¤¹Ñ½ÅÕ…°¡l¸¸¹MQ}%L°8Ìá}IMU5}Ie}IU8œ°8Ìá}A=MQ=55%Q}=I1t¤ì(€•áÁ•Ğ¡É…Á¡½È 4ÀÄœ¤¹½É‘•È¤¹Ñ½ÅÕ…°¡MQ}%L¤ì(€•áÁ•Ğ¡Ù…±¥‘…Ñ•MÑ…•5½‘Õ±•M½ÕÉ•Ì ¤¤¹Ñ½	•É•…Ñ•ÉQ¡…¸ À¤ì(ô¤ì(¥Ğ ½¹ÑËÑ±•Ì<µ<€è¥¹ÍÑÉÕÑ¥½¹ÌM1P‘Ô™¥¡¥•ÈME0°©…µ…¥Ì‘pŸ¥É¥ÑÕÉ”œ° ¤ôùì(€½¹ÍĞÄõ8¹•½½¹ÑÉ½±Ì ¤í•áÁ•Ğ¡Ä¹±•¹Ñ ¤¹Ñ½	” Ğ¤í•áÁ•Ğ¡Ä¹•Ù•Éä¡àôø½yM1P½¤¹Ñ•ÍĞ¡à¤˜˜„½qˆ¡%9MIQñUAQñ1Q¥qˆ½¤¹Ñ•ÍĞ¡à¤¤¤¹Ñ½	”¡ÑÉÕ”¤ì(ô¤ì(½¹ÍĞ…°õmí½É‘•É}¥Ñ•µ}¥è¤œ±½ÍÑ}ÑåÁ”è™É•¥¡Ğœ±Í¡¥Áµ•¹Ñ}¥èÌœ±¥Í}…ÑÕ…°éÑÉÕ”±…µ½Õ¹Ñ}­µ˜èœÄÀœ±…ÕÍ…°éÑÉÕ•õtì(¥Ğ ½É…±”8ÌÔ€è™É•Ğ¹½¸‘½Õ‰³¤•Ğ…±±½…Ñ¥½¹Ì…ÕÍ…±•Ìœ±…Íå¹Œ ¤ôùì(€½¹ÍĞ½¬õmm½É ¥t±…°±mt±mt±mt±mt±mutì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌÔ¡µ¬¡½¬¤±í½É‘•É%è¼ô¤¤¹É•Í½±Ù•Ì¹Ñ½5…Ñ¡=‰©•Ğ¡í…±±½…Ñ¥½¹ÌèÄ±™É•¥¡Ñ}‘½Õ‰±•èÀ±™±½½É}Ñ½Ñ…±}•ÅÕ…±Í}‘•Ñ…¥°è9=Q}AI=Y9}9=}AIM%MQ}1==I}=9}=II}=	)QLô¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌÔ¡µ¬¡mm½É ¥t±mut¤±í½É‘•É%è¼ô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÌÕ}AI=UQ}A}9=}I1}=MQ}11=Q%=9Lœ¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌÔ¡µ¬¡mm½É ¥t±mì¸¸¹…±lÁt±…ÕÍ…°é™…±Í•õut¤±í½É‘•É%è¼ô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÌÕ}AI=UQ}A}11=Q%=9}9=Q}UM0œ¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌÔ¡µ¬¡mm½É ¥t±…°±mí½ÍÑ}ÑåÁ”è™É•¥¡Ğœ±¸èÉõut¤±í½É‘•É%è¼ô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÌÕ}AI=UQ}A}=MQ}=5A=99Q}=U	1}™É•¥¡Ğœ¤ì(ô¤ì(¥Ğ ½É…±”8ÌØ€èÑ½ÕÑ”ÁÉ•ÕÙ”Á¡åÍ¥ÅÕ”•¸59U0…Ù•ŒË¥›¥É•¹”œ±…Íå¹Œ ¤ôùì(€½¹ÍĞ½½õmmí•Ù¥‘•¹•}µ•Ñ¡½è59U0œ±É•™}½¬éÑÉÕ•õt±mí•Ù¥‘•¹•}µ•Ñ¡½è59U0œ±É•™}½¬éÑÉÕ•õt±mí¸èÍõt±mí¸èÅõutì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌØ¡µ¬¡½½¤±í½É‘•É%è¼ô¤¤¹É•Í½±Ù•Ì¹Ñ½5…Ñ¡=‰©•Ğ¡íÁ±…•µ•¹ÑÍ}µ…¹Õ…°èÄ±‰…}±¥¹­Í}µ…¹Õ…°èÄ±½±±•Ñ•‘}Í…¹ÌèÅô¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌØ¡µ¬¡mmí•Ù¥‘•¹•}µ•Ñ¡½èM8œ±É•™}½¬é™…±Í•õut¤±í½É‘•É%è¼ô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÌÙ}AI=UQ}A}A159Q}9=Q}59U1}M8œ¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌØ¡µ¬¡m½½‘lÁt±mí•Ù¥‘•¹•}µ•Ñ¡½é¹Õ±°±É•™}½¬é™…±Í•õut¤±í½É‘•É%è¼ô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÌÙ}AI=UQ}A}	}1%9-}9=Q}59U1}9U10œ¤ì(ô¤ì(½¹ÍĞ‘½Ìô¡¼õíô¤ôùmmí¸èÄ±Á‘˜èÅõt±mí¥èÌÄõt±míÍÕ‰©•Ñ}¥èÌÄœ±¸èÅõt±mt°¸¸¹mutì(¥Ğ ½É…±”8ÌÜ€èÕ¸‘½Õµ•¹ĞÁ…Èƒ¥Û¥¹•µ•¹Ğ°…ÕÕ¸•¹Ù½¤Ë¥•°œ±…Íå¹Œ ¤ôùì(€½¹ÍĞ‰…Í”õmm½É ¥t°¸¸¹‘½Ì ¤±mí¸èÅõt±mí¡…¹¹•°è¥¹}…ÁÀœ±•Ù•¹Ğè…Ù…¥±…‰±”œ±ÍÑ…ÑÕÌèÍ­¥ÁÁ•õutì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌÜ¡µ¬¡‰…Í”¤±í½É‘•É%è¼œ±É•™•É•¹”èHœ±Á½%èÀô¤¤¹É•Í½±Ù•Ì¹Ñ½5…Ñ¡=‰©•Ğ¡í¥¹Ù½¥•ÌèÄ±Á¥­ÕÁ}ÁÉ½½™ÌèÄ±É•…±}Í•¹‘ÌèÁô¤ì(€½¹ÍĞÍ•¹Ğõmm½É ¥t°¸¸¹‘½Ì ¤±mí¸èÅõt±mí¡…¹¹•°èİ¡…ÑÍ…ÁÀœ±•Ù•¹Ğè½±±•Ñ•œ±ÍÑ…ÑÕÌèÍ•¹Ğõutì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌÜ¡µ¬¡Í•¹Ğ¤±í½É‘•É%è¼œ±É•™•É•¹”èHœ±Á½%èÀô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8Ìİ}AI=UQ}A}I1}M9}=9}MQ%9œ¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌÜ¡µ¬¡mm½É ¥t±mí¸èÈ±Á‘˜èÉõut¤±í½É‘•É%è¼œ±É•™•É•¹”èHô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8Ìİ}AI=UQ}A}%9Y=%}=U9Q|Èœ¤ì(ô¤ì(¥Ğ ½É…±”8Ìà€èƒ¥Û¥¹•µ•¹Ğ½¹Í•ÉÛ¤°É•ÁÉ¥Í”Í…¹Ì…¹±”µ½ÉĞ°Í…¹Ì‘½Õ‰±½¸œ±…Íå¹Œ ¤ôùì(€½¹ÍĞ‘Éäô¡¥¹Ø±ÁÀ¤ôø¡í‘Éå}ÉÕ¸éÑÉÕ”±¥ÍÍÕ•èÀ±™…µ¥±¥•Ìéí¥¹Ù½¥”éíµ¥ÍÍ¥¹œé¥¹Ùô±Á¥­ÕÁ}ÁÉ½½˜éíµ¥ÍÍ¥¹œéÁÁô±É•™Õ¹‘}É••¥ÁĞéíµ¥ÍÍ¥¹œèÁõõô¤ì(€½¹ÍĞ™Õ±°õmm½É ¥t°¸¸¹‘½Ì ¤±mutì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8Ìà¡µ¬¡™Õ±°¤±í½É‘•É%è¼œ±É•™•É•¹”èHœ±‘ÉåIÕ¸é‘Éä À°À¥ô¤¤¹É•Í½±Ù•Ì¹Ñ½5…Ñ¡=‰©•Ğ¡íÉ•ÍÕµ•}‘•Ñ•ÑÍ}µ¥ÍÍ¥¹œé™…±Í”±™…¥±ÕÉ•}±•œè9=Q}AI=Y9}9=}U1Q}%9)Q%=9}=9}MQ%9ô¤ì(€½¹ÍĞ½¹”õmm½É ¥t±mí¸èÄ±Á‘˜èÅõt±mí¥èÌÄõt±mt±mt±mutì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8Ìà¡µ¬¡½¹”¤±í½É‘•É%è¼œ±É•™•É•¹”èHœ±‘ÉåIÕ¸é‘Éä À°Ä¥ô¤¤¹É•Í½±Ù•Ì¹Ñ½5…Ñ¡=‰©•Ğ¡íÉ•ÍÕµ•}‘•Ñ•ÑÍ}µ¥ÍÍ¥¹œéÑÉÕ•ô¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8Ìà¡µ¬¡½¹”¤±í½É‘•É%è¼œ±É•™•É•¹”èHœ±‘ÉåIÕ¸é‘Éä À°À¥ô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8Ìá}AI=UQ}A}IMU5}	1%9}MA=Q}A%-UA}AI==œ¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8Ìà¡µ¬¡™Õ±°¤±í½É‘•É%è¼œ±É•™•É•¹”èHœ±‘ÉåIÕ¸é¹Õ±±ô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8Ìá}MI9}5%MM%9}IMU5}Ie}IU9}9=Q}AI=Y8œ¤ì(ô¤ì(¥Ğ ÍÉ¥ÁÑÌ€è…¡ÌÁÉ½ÁÉ§¥Ñ…¥É”Í•Õ°°‘ÉäÉÕ¸°…ÕÕ¹”…ÁÑÕÉ”€ìİ½É­™±½Ü•Ğ…±¥…Ì4ÀÄœ° ¤ôùì(€½¹ÍĞ„õÉ•… ÍÉ¥ÁÑÌ½É••ÑÑ”½œØµ¹•…Ñ¥Ù”µ¸ÌÜµ¸Ìàµ¡É½µ¥Õ´¹©Ìœ¤ì(€•áÁ•Ğ¡„¤¹Ñ½5…Ñ  ½=I%9}=]91=}AQ¼¤í•áÁ•Ğ¡„¤¹Ñ½5…Ñ  ½A%}AI=	}9=}MI9}MQUI¼¤í•áÁ•Ğ¡„¤¹Ñ½5…Ñ  ½‘Éå}ÉÕ¸éÑÉÕ”¼¤í•áÁ•Ğ¡„¤¹¹½Ğ¹Ñ½5…Ñ  ½ÍÉ••¹Í¡½Ğ¼¤ì(€•áÁ•Ğ¡Ù…±¥‘…Ñ•¡É½µ¥ÕµMÉ¥ÁÑM½ÕÉ•Ì ¤¤¹Ñ½	•É•…Ñ•ÉQ¡…¸ À¤ì(€½¹ÍĞİ˜õÉ•… œ¹¥Ñ¡Õˆ½İ½É­™±½İÌ½ÍÑ…¥¹œµœØµ‘å¹…µ¥Œµ™É•Í µ‰Õå•Èµ…Í ¹åµ°œ¤ì(€™½È¡½¹ÍĞ¥½˜l8ÌÔœ°8ÌØœ°8ÌÜœ°8Ìàt¥í™½È¡½¹ÍĞ´½˜l-4œ°4œ°t¥•áÁ•Ğ¡İ˜¤¹Ñ½½¹Ñ…¥¸ ˆmÍÑ…¥¹œµ½ÁtœØµ‘å¹…µ¥Œµ™É•Í µ™Õ±°´ˆ­¥¬œ´œ­´¬ˆœˆ¤í•áÁ•Ğ¡İ˜¤¹Ñ½½¹Ñ…¥¸ ˆœµ™Õ±°´ˆ­¥¬ˆ´œ¤€˜˜€œˆ­¥¬ˆœˆ¤í•áÁ•Ğ¡8¹¥Í9•…Ñ¥Ù”¡¥¤¤¹Ñ½	”¡ÑÉÕ”¥ô(€•áÁ•Ğ¡É•… ÍÉ¥ÁÑÌ½É••ÑÑ”½…¹½¹¥…°½É•…°µ‰Õå•Èµ…Í µ…‘…ÁÑ•ÉÌ¹©Ìœ¤¤¹Ñ½5…Ñ  ¼8Ääœ°8ÌÔœ°8ÌØœ°8ÌÜœ°8Ìàœ üè°9lÀ´åµi„µét¬œ¤©qup¹¥¹±Õ‘•Íp¡M9I%=p¤¼¤ì(€ô¤ì)ô¤ì()‘•ÍÉ¥‰” ØµÕ8Ìä€¡…¹¹Õ±…Ñ¥½¸±¥•¹Ğ…ÕàÁ…±¥•ÉÌÄ°È°Ì¤œ° ¤ôùì(½¹ÍĞÕÀõ¥ôùMQ}%L¹Í±¥” À±MQ}%L¹¥¹‘•á=˜¡¥¤¬Ä¤ì(½¹ÍĞµ¬õÉ½İÌôùí±•Ğ¤ôÀíÉ•ÑÕÉ¸íÅÕ•Éäé…Íå¹Œ ¤ôø¡íÉ½İÌéÉ½İÍm¤¬­uô¥õôì(¥Ğ Ï¥ÅÕ•¹•Ì€è¡‡¹¹”4ÀÄ½ÕÃ¥”ƒ€I1e}M °!U	}=55%Q59P°!U	}M!%A59P€ì4ÀÄ¥¹¡…¹Ÿ¤œ° ¤ôùì(€•áÁ•Ğ¡É…Á¡½È 8ÌåÄœ¤¹½É‘•È¤¹Ñ½ÅÕ…°¡l¸¸¹ÕÀ I1e}M œ¤°8ÌåÅ}1%9Q}91}QQ5APœ°8ÌåÅ}91}QM}=I1t¤ì(€•áÁ•Ğ¡É…Á¡½È 8ÌåÈœ¤¹½É‘•È¤¹Ñ½ÅÕ…°¡l¸¸¹ÕÀ !U	}=55%Q59Pœ¤°8ÌåÉ}1%9Q}91}QQ5APœ°8ÌåÉ}91}QM}=I1t¤ì(€•áÁ•Ğ¡É…Á¡½È 8ÌåÌœ¤¹½É‘•È¤¹Ñ½ÅÕ…°¡l¸¸¹ÕÀ !U	}M!%A59Pœ¤°8ÌåÍ}1%9Q}91}QQ5APœ°8ÌåÍ}91}QM}=I1t¤ì(€•áÁ•Ğ¡É…Á¡½È 4ÀÄœ¤¹½É‘•È¤¹Ñ½ÅÕ…°¡MQ}%L¤ì(€•áÁ•Ğ¡Ù…±¥‘…Ñ•MÑ…•5½‘Õ±•M½ÕÉ•Ì ¤¤¹Ñ½	•É•…Ñ•ÉQ¡…¸ À¤ì(ô¤ì(½¹ÍĞ™àô¡¼õíô¤ôùmmíÍÑ…ÑÕÌè…¹•±±•œ±‘¥ÍÁ±…å}Ñ½Ñ…±}…µ½Õ¹ĞèœäääÀœ±µ…É­•Ñ}ÕÉÉ•¹äèaœ±É•‘¥ÑÌèÄ±É•‘¥Ñ}…µ½Õ¹ĞèäääÀ±É•‘¥Ñ}ÕÉÉ•¹äèaœ±É•™Õ¹‘ÌèÄ±ÁÍÁ}¥¹Ñ•¹ÑÌèÀ±½µµ¥Ñµ•¹ÑÌèÀ±…Ñ¥Ù•}±¥¹•ÌèÀ°¸¸¹½õutì(¥Ğ ½É…±”Ä€è…¹¹Õ³¥”°İ…±±•Ğ€ÄÀÀ€”•¸‘•Ù¥Í”‘Ôµ…É£¤Õ¹”™½¥Ì°Í…¹ÌAM@œ±…Íå¹Œ ¤ôùì(€½¹ÍĞ½¬ÈÀÀõí¡ÑÑÀèÈÀÁôì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌåÄ¡µ¬¡™à ¤¤±í½É‘•É%è¼œ±…¹•°é½¬ÈÀÁô¤¤¹É•Í½±Ù•Ì¹Ñ½5…Ñ¡=‰©•Ğ¡íİ…±±•Ñ}É•‘¥ÑÌèÄ±ÕÉÉ•¹äèaô¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌåÄ¡µ¬¡™à ¤¤±í½É‘•É%è¼œ±…¹•°éí¡ÑÑÀèĞÈÉõô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÌåÅ}AI=UQ}A}91}IUM}!QQA|ĞÈÈœ¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌåÄ¡µ¬¡™à¡íÉ•‘¥Ñ}…µ½Õ¹ĞèÜääÉô¤¤±í½É‘•É%è¼œ±…¹•°é½¬ÈÀÁô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÌåÅ}AI=UQ}A}IU9}9=Q|ÄÀÁ}AQ|ÜääÉ}=|äääÀœ¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌåÄ¡µ¬¡™à¡íÉ•‘¥Ñ}ÕÉÉ•¹äè-5ô¤¤±í½É‘•É%è¼œ±…¹•°é½¬ÈÀÁô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÌåÅ}AI=UQ}A}]11Q}UII9e}-5}YM}aœ¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌåÄ¡µ¬¡™à¡íÁÍÁ}¥¹Ñ•¹ÑÌèÅô¤¤±í½É‘•É%è¼œ±…¹•°é½¬ÈÀÁô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÌåÅ}AI=UQ}A}AMA}%9Q9Pœ¤ì(ô¤ì(¥Ğ ½É…±”È€è¹¤…¹¹Õ±…Ñ¥½¸¹¤É•µ‰½ÕÉÍ•µ•¹ĞÍ¥±•¹¥•Õà°•¹…•µ•¹Ğ½¹Í•ÉÛ¤œ±…Íå¹Œ ¤ôùì(€½¹ÍĞ½Á•¸õ¼ôù™à¡íÍÑ…ÑÕÌè½¹™¥Éµ•œ±É•‘¥ÑÌèÀ±É•‘¥Ñ}…µ½Õ¹ĞèÀ±É•‘¥Ñ}ÕÉÉ•¹äé¹Õ±°±É•™Õ¹‘ÌèÀ±½µµ¥Ñµ•¹ÑÌèÄ±…Ñ¥Ù•}±¥¹•ÌèÄ°¸¸¹½ô¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌåÈ¡µ¬¡½Á•¸ ¤¤±í½É‘•É%è¼œ±…¹•°éí¡ÑÑÀèĞÈÉõô¤¤¹É•Í½±Ù•Ì¹Ñ½5…Ñ¡=‰©•Ğ¡íÍÑ…ÑÕÌè½¹™¥Éµ•œ±½µµ¥Ñµ•¹ÑÌèÅô¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌåÈ¡µ¬¡™à¡í½µµ¥Ñµ•¹ÑÌèÄ±…Ñ¥Ù•}±¥¹•ÌèÁô¤¤±í½É‘•É%è¼œ±…¹•°éí¡ÑÑÀèÈÀÁõô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÌåÉ}AI=UQ}A}M%19Q}91}QI}=55%Q59Q}…¹•±±•œ¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌåÈ¡µ¬¡½Á•¸¡íÉ•‘¥ÑÌèÄ±É•™Õ¹‘ÌèÅô¤¤±í½É‘•É%è¼œ±…¹•°éí¡ÑÑÀèĞÈÉõô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÌåÉ}AI=UQ}A}M%19Q}IU9|Å|Äœ¤ì(ô¤ì(¥Ğ ½É…±”Ì€è•µ‰…ÉÅ×¥”°…¹¹Õ±…Ñ¥½¸™•É·¥”°…ÕÕ¸É•µ‰½ÕÉÍ•µ•¹Ğœ±…Íå¹Œ ¤ôùì(€½¹ÍĞÍ¡¥ÁÁ•õ¼ôù™à¡íÍÑ…ÑÕÌèÍ¡¥ÁÁ•œ±É•‘¥ÑÌèÀ±É•‘¥Ñ}…µ½Õ¹ĞèÀ±É•™Õ¹‘ÌèÀ°¸¸¹½ô¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌåÌ¡µ¬¡Í¡¥ÁÁ• ¤¤±í½É‘•É%è¼œ±…¹•°éí¡ÑÑÀèĞÈÉõô¤¤¹É•Í½±Ù•Ì¹Ñ½5…Ñ¡=‰©•Ğ¡íÍÑ…ÑÕÌèÍ¡¥ÁÁ•ô¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌåÌ¡µ¬¡™à ¤¤±í½É‘•É%è¼œ±…¹•°éí¡ÑÑÀèÈÀÁõô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÌåÍ}AI=UQ}A}911}]!9}M!%AA}…¹•±±•œ¤ì(ô¤ì(¥Ğ ÍÉ¥ÁĞ•Ğİ½É­™±½Ü€è‰½ÕÑ½¸±¥•¹Ğ°Äƒ¥É…¸µ…¹ÅÕ…¹Ğ°Ñ¥ÑÉ•Ì‘•ÌÑÉ½¥ÌÁ…±¥•ÉÌœ° ¤ôùì(€½¹ÍĞ„õÉ•… ÍÉ¥ÁÑÌ½É••ÑÑ”½œØµ¹•…Ñ¥Ù”µ¸Ìäµ…¹•°µ¡É½µ¥Õ´¹©Ìœ¤ì(€•áÁ•Ğ¡„¤¹Ñ½5…Ñ  ½¬µ½É‘•Èµ…¹•°µ‰Ñ¸¼¤í•áÁ•Ğ¡„¤¹Ñ½5…Ñ  ½Ù}8ÌåÅ}MI9}5%MM%9}91}	UQQ=8¼¤í•áÁ•Ğ¡„¤¹Ñ½5…Ñ  ½99U1Q%=9}M9M}5MM}%!¼¤í•áÁ•Ğ¡„¤¹¹½Ğ¹Ñ½5…Ñ  ½ÍÉ••¹Í¡½Ğ¼¤ì(€½¹ÍĞİ˜õÉ•… œ¹¥Ñ¡Õˆ½İ½É­™±½İÌ½ÍÑ…¥¹œµœØµ‘å¹…µ¥Œµ™É•Í µ‰Õå•Èµ…Í ¹åµ°œ¤ì(€™½È¡½¹ÍĞ¥½˜l8ÌåÄœ°8ÌåÈœ°8ÌåÌt¥™½È¡½¹ÍĞ´½˜l-4œ°4œ°t¤(€€•áÁ•Ğ¡İ˜¤¹Ñ½½¹Ñ…¥¸ ˆmÍÑ…¥¹œµ½ÁtœØµ‘å¹…µ¥Œµ™É•Í µ™Õ±°´ˆ­¥¬œ´œ­´¬ˆœˆ¤ì(€•áÁ•Ğ¡l8ÌåÄœ°8ÌåÈœ°8ÌåÌt¹•Ù•Éä¡8¹¥Í9•…Ñ¥Ù”¤¤¹Ñ½	”¡ÑÉÕ”¤ì(€•áÁ•Ğ¡Ù…±¥‘…Ñ•¡É½µ¥ÕµMÉ¥ÁÑM½ÕÉ•Ì ¤¤¹Ñ½	•É•…Ñ•ÉQ¡…¸ À¤ì(ô¤ì)ô¤ì()‘•ÍÉ¥‰” ØµÕ8ÌÀ€¡=É‘•È€ÌØÀ•Ğ‘…Í¡‰½…É‘ÌÙÌA¤•Ğ8ÌÄ€¡Í¹…ÁÍ¡½Ğµ½»¥Ñ…¥É”¤œ° ¤ôùì(½¹ÍĞµ¬õÉ½İÌôùí±•Ğ¤ôÀíÉ•ÑÕÉ¸íÅÕ•Éäé…Íå¹Œ ¤ôø¡íÉ½İÌéÉ½İÍm¤¬­uññmuô¥õôì(½¹ÍĞ½Éô¡¼õíô¤ôø¡í¥è¼œ±ÕÍ•É}¥èÔœ±ÍÑ…ÑÕÌè…Ù…¥±…‰±”œ±Á…åµ•¹Ñ}ÍÑ…ÑÕÌèÁ…¥œ±‘¥ÍÁ±…å}Ñ½Ñ…±}…µ½Õ¹ĞèÄ±±¥¹•ÌèÄ±ÅÑäèÄ±…Í¡}½Õ¹ĞèÄ±½¹ÑÉ½±}½Õ¹ĞèÄ±…±±½…Ñ¥½¹ÌèÄ±½¹ÍÕµ•‘}…±±½…Ñ¥½¹ÌèÀ±ÁÕÉ¡…Í•}±¥¹•ÌèÀ±½±±•Ñ•‘}Í…¹ÌèÀ±Á…É•±ÌèÄ°¸¸¹½ô¤ì(½¹ÍĞĞÀôœÈÀÈØ´ÄÄ´ÈÁPÀÀèÀÀèÀÁhœ±ĞÄôœÈÀÈØ´ÄÄ´ÈÅPÄÈèÀÀèÀÁhœì(½¹ÍĞÉ•…‘Ìõí½É‘•ÈÌØÀéíÍÑ…ÑÕÌè…Ù…¥±…‰±”œ±Á…åµ•¹Ñ}ÍÑ…ÑÕÌèÁ…¥œ±Ñ½Ñ…±}­µ˜èÄÀÀ±¥Ñ•µÌèÄ±ÅÕ…¹Ñ¥ÑäèÄ±Á…É•±ÌèÅô±½µµ•É”éí…}Ù…±Õ”èÔÀÀ±™É½´éĞÀ±Ñ¼éĞÅõôì(½¹ÍĞàô¡¼õíô¤ôø¡íÑ½Ñ…±}­µ˜èœÄÀÀœ±Í¥µÕ±…Ñ¥½¹}Í½Á”èIPÄœ±É•…Ñ•‘}…ĞèœÈÀÈØ´ÄÄ´ÈÅPÀÄèÀÀèÀÁhœ±Á…É•±ÌèÄ°¸¸¹½ô¤ì(¥Ğ Ï¥ÅÕ•¹•Ì€èÁ…É½ÕÉÌ4ÀÈ½ÕÃ¤€ì4ÀÈ¥¹¡…¹Ÿ¤œ° ¤ôùì(€•áÁ•Ğ¡É…Á¡½È 8ÌÀœ¤¹½É‘•È¤¹Ñ½ÅÕ…°¡l	UeHœ°I1e}M œ°1=1}I1e}Y%1	1œ°8ÌÁ}QIUQ!}=5AIœ°8ÌÁ}QIUQ!}=I1t¤ì(€•áÁ•Ğ¡É…Á¡½È 8ÌÄœ¤¹½É‘•È¤¹Ñ½ÅÕ…°¡l	UeHœ°I1e}M œ°1=1}I1e}Y%1	1œ°8ÌÅ}a}M9AM!=Q}=I1t¤ì(€•áÁ•Ğ¡É…Á¡½È 4ÀÈœ¤¹½É‘•È¤¹Ñ½ÅÕ…°¡l	UeHœ°I1e}M œ°1=1}I1e}Y%1	1œ°1=1}1%9Q}A%-U@t¤ì(€•áÁ•Ğ¡Ù…±¥‘…Ñ•MÑ…•5½‘Õ±•M½ÕÉ•Ì ¤¤¹Ñ½	•É•…Ñ•ÉQ¡…¸ À¤ì(ô¤ì(¥Ğ ½É…±”8ÌÀ€è€ÌØÀ€ôA°-A$€ôA°™¥áÑÕÉ”¹½¸½µÁÓ¥”œ±…Íå¹Œ ¤ôùì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌÀ¡µ¬¡mm½É ¥t±mà ¥t±míØèœÔÀÀõt±míØèœĞÀõut¤±í½É‘•É%è¼œ°¸¸¹É•…‘Íô¤¤¹É•Í½±Ù•Ì¹Ñ½5…Ñ¡=‰©•Ğ¡í½É‘•É|ÌØÁ}µ…Ñ¡•Í}ÁœéÑÉÕ”±­Á¥}…}ÁœèÔÀÁô¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌÀ¡µ¬¡mm½É¡íÍÑ…ÑÕÌè½±±•Ñ•ô¥t±mà ¥ut¤±í½É‘•É%è¼œ°¸¸¹É•…‘Íô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÌÁ}AI=UQ}A}=II|ÌØÁ}%IM}I=5}A}MQQULœ¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌÀ¡µ¬¡mm½É ¥t±mà ¥t±míØèœäÀÀõt±míØèœÀõt±mí¸èÁõut¤±í½É‘•É%è¼œ°¸¸¹É•…‘Íô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÌÁ}AI=UQ}A}=55I}-A%|ÔÀÁ}YM}A|äÀÀœ¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌÀ¡µ¬¡mm½É ¥t±mà ¥t±míØèœäÀÀõt±míØèœÀõt±mí¸èÍõut¤±í½É‘•É%è¼œ°¸¸¹É•…‘Íô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÌÁ}AIIE}5%MM%9}EU%Q}]%9=]|Ìœ¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌÀ¡µ¬¡mm½É ¥t±mà¡íÍ¥µÕ±…Ñ¥½¹}Í½Á”é¹Õ±±ô¥t±míØèœÔÀÀõt±míØèœÀõut¤±í½É‘•É%è¼œ°¸¸¹É•…‘Íô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÌÁ}AI=UQ}A}%aQUI}=U9Q}%9}=55I%1}-A$œ¤ì(ô¤ì(¥Ğ ½É…±”8ÌÄ€è‘•Ù¥Í”‘Ôµ…É£¤°Í¹…ÁÍ¡½Ğ°Á…É¥Ó¤™¥á”°…ÕÕ¸É•µ‰½ÕÉÍ•µ•¹Ğœ±…Íå¹Œ ¤ôùì(€½¹ÍĞÉ½ÜõíÑ½Ñ…±}­µ˜èœØÔÔœ±Í¡½İ¸èœÄÀÀÀœ±‘¥ÍÁ±…å}ÕÉÉ•¹äèaœ±‘¥ÍÁ±…å}Á…É¥Ñå}Í¹…ÁÍ¡½Ğéí•ÕÈèÅõôì(€½¹ÍĞÁ…ÈõmíÕÉÉ•¹äè-5œ±ÈèœĞäÄ¸äØÜÜÔô±íÕÉÉ•¹äèaœ±ÈèœØÔÔ¸äÔÜõtì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌÄ¡µ¬¡mmì¸¸¹É½Ü±Ñ½Ñ…±}­µ˜èœÜÔÀõt±Á…È±mí¸èÁõut¤±í½É‘•É%è¼œ±µ…É­•Ğè4ô¤¤¹É•Í½±Ù•Ì¹Ñ½5…Ñ¡=‰©•Ğ¡í‘¥ÍÁ±…å}ÕÉÉ•¹äèaœ±É•™Õ¹‘ÌèÁô¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌÄ¡µ¬¡mmÉ½İut¤±í½É‘•É%è¼œ±µ…É­•Ğè-4ô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÌÅ}AI=UQ}A}%MA1e}UII9e}a}=I}-4œ¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌÄ¡µ¬¡mmì¸¸¹É½Ü±‘¥ÍÁ±…å}Á…É¥Ñå}Í¹…ÁÍ¡½Ğé¹Õ±±õut¤±í½É‘•É%è¼œ±µ…É­•Ğè4ô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÌÅ}AI=UQ}A}%MA1e}M9AM!=Q}5%MM%9œ¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÌÄ¡µ¬¡mmì¸¸¹É½Ü±Ñ½Ñ…±}­µ˜èœÄÀÀõt±Á…Ét¤±í½É‘•É%è¼œ±µ…É­•Ğè4ô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÌÅ}AI=UQ}A}M9AM!=Q}%IM}I=5}%a}AI%Qdœ¤ì(ô¤ì(¥Ğ ÍÉ¥ÁĞ•Ğİ½É­™±½Ü€è±•ÑÕÉ•ÌPÍ•Õ±•Ì°…ÕÕ¹”…ÁÑÕÉ”°Ñ¥ÑÉ•Ì8ÌÀ½8ÌÄœ° ¤ôùì(€½¹ÍĞ„õÉ•… ÍÉ¥ÁÑÌ½É••ÑÑ”½œØµ¹•…Ñ¥Ù”µ¸ÌÀµ¡É½µ¥Õ´¹©Ìœ¤ì(€•áÁ•Ğ¡„¤¹Ñ½5…Ñ  ½…}•¹…¥ÍÍ”¼¤í•áÁ•Ğ¡„¤¹¹½Ğ¹Ñ½5…Ñ  ½p¹Á½ÍÑp¡ñÍÉ••¹Í¡½Ğ¼¤í•áÁ•Ğ¡Ù…±¥‘…Ñ•¡É½µ¥ÕµMÉ¥ÁÑM½ÕÉ•Ì ¤¤¹Ñ½	•É•…Ñ•ÉQ¡…¸ À¤ì(€½¹ÍĞİ˜õÉ•… œ¹¥Ñ¡Õˆ½İ½É­™±½İÌ½ÍÑ…¥¹œµœØµ‘å¹…µ¥Œµ™É•Í µ‰Õå•Èµ…Í ¹åµ°œ¤ì(€™½È¡½¹ÍĞ¥½˜l8ÌÀœ°8ÌÄt¥í™½È¡½¹ÍĞ´½˜l-4œ°4œ°t¥•áÁ•Ğ¡İ˜¤¹Ñ½½¹Ñ…¥¸ ˆmÍÑ…¥¹œµ½ÁtœØµ‘å¹…µ¥Œµ™É•Í µ™Õ±°´ˆ­¥¬œ´œ­´¬ˆœˆ¤í•áÁ•Ğ¡İ˜¤¹Ñ½½¹Ñ…¥¸ ˆœµ™Õ±°´ˆ­¥¬ˆ´œ¤€˜˜€œˆ­¥¬ˆœˆ¤í•áÁ•Ğ¡8¹¥Í9•…Ñ¥Ù”¡¥¤¤¹Ñ½	”¡ÑÉÕ”¥ô(ô¤ì)ô¤ì()‘•ÍÉ¥‰” ØµÕ8ÈÔ€¡MXÉ•Ñ½ÕÈ•Ğ‘½Õ‰±”É•ÁÉ¥Í”¤•Ğ8ÈÙˆ€¡½µÁ•¹Í…Ñ¥½¸…ÁË¡ÌÉ•ÑÉ…¥Ğ¤œ° ¤ôùì(½¹ÍĞµ¬õÉ½İÌôùí±•Ğ¤ôÀíÉ•ÑÕÉ¸íÅÕ•Éäé…Íå¹Œ ¤ôø¡íÉ½İÌéÉ½İÍm¤¬­uô¥õôì(¥Ğ Ï¥ÅÕ•¹•Ì€èÁ…É½ÕÉÌ4ÀÈ©ÕÍÅÕpŸ€±„É•µ¥Í”°ÁÕ¥ÌMX€ì4ÀÄ¥¹¡…¹Ÿ¤œ° ¤ôùì(€•áÁ•Ğ¡É…Á¡½È 8ÈÔœ¤¹½É‘•È¤¹Ñ½ÅÕ…°¡l	UeHœ°I1e}M œ°1=1}I1e}Y%1	1œ°1=1}1%9Q}A%-U@œ°8ÈÕ}MY}=U	1}%9Q-œ°8ÈÕ}M%91}%9Q-}=I1t¤ì(€•áÁ•Ğ¡É…Á¡½È 8ÈÙˆœ¤¹½É‘•È¤¹Ñ½ÅÕ…°¡l	UeHœ°I1e}M œ°1=1}I1e}Y%1	1œ°1=1}1%9Q}A%-U@œ°8ÈÙ	}MY}=5A9MQ%=9}%M%=8œ°8ÈÙ	}MY}=5A9MQ%=9}=I1t¤ì(€•áÁ•Ğ¡É…Á¡½È 4ÀÄœ¤¹½É‘•È¤¹Ñ½ÅÕ…°¡MQ}%L¤ì(€•áÁ•Ğ¡Ù…±¥‘…Ñ•MÑ…•5½‘Õ±•M½ÕÉ•Ì ¤¤¹Ñ½	•É•…Ñ•ÉQ¡…¸ À¤ì(ô¤ì(½¹ÍĞ½½ô¡¼õíô¤ôùmmí¥è¼œ±ÍÑ…ÑÕÌè½±±•Ñ•œ±½±±•Ñ•‘}Í…¹ÌèÅõt±mí¥èœ±ÍÑ…ÑÕÌè½Á•¸œ±É•ÑÕÉ¹}ÅÕ…¹Ñ¥ÑäèÅõt±míÅÕ…¹Ñ¥ÑäèÄ±É•±…å}¥èÈõt°(€mí½µÁ•¹Í…Ñ¥½¹ÌèÀ±İ…±±•Ñ}É•‘¥ÑÌèÀ±É•™Õ¹‘ÌèÀ±ÁÍÁ}¥¹Ñ•¹ÑÌèÀ±ÍÑ½­}…™Ñ•ÈèÔ°¸¸¹½õutì(¥Ğ ½É…±”8ÈÔ€èÕ¸‘½ÍÍ¥•È°Õ¹”É•ÁÉ¥Í”°…ÕÕ¹”½µÁ•¹Í…Ñ¥½¸°ÍÑ½¬¥¹¡…¹Ÿ¤œ±…Íå¹Œ ¤ôùì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÈÔ¡µ¬¡½½ ¤¤±í½É‘•É%è¼œ±ÍÑ½­	•™½É”èÕô¤¤¹É•Í½±Ù•Ì¹Ñ½5…Ñ¡=‰©•Ğ¡íÁ¡åÍ¥…±}É••¥ÁÑÌèÄ±ÍÑ½­}Õ¹¡…¹•éÑÉÕ•ô¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÈÔ¡µ¬¡½½¡íÍÑ½­}…™Ñ•ÈèÙô¤¤±í½É‘•É%è¼œ±ÍÑ½­	•™½É”èÕô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÈÕ}AI=UQ}A}IQUI9}U9%Q}	-}%9}M11	1}MQ=-|Õ}Q=|Øœ¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÈÔ¡µ¬¡½½¡íİ…±±•Ñ}É•‘¥ÑÌèÅô¤¤±í½É‘•É%è¼œ±ÍÑ½­	•™½É”èÕô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÈÕ}AI=UQ}A}UQ=5Q%}=5A9MQ%=9}=9}A!eM%1}%9Q-œ¤ì(€½¹ÍĞÑİ¼õ½½ ¤íÑİ½lÅtõmí¥èœ±ÍÑ…ÑÕÌè½Á•¸œ±É•ÑÕÉ¹}ÅÕ…¹Ñ¥ÑäèÅô±í¥è”œ±ÍÑ…ÑÕÌè½Á•¸œ±É•ÑÕÉ¹}ÅÕ…¹Ñ¥ÑäèÅõtì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ÈÔ¡µ¬¡Ñİ¼¤±í½É‘•É%è¼œ±ÍÑ½­	•™½É”èÕô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ÈÕ}AI=UQ}A}=MM%I}=U9Q|Èœ¤ì(ô¤ì(¥Ğ ÍÉ¥ÁĞ•Ğİ½É­™±½Üœ° ¤ôùì(€½¹ÍĞ„õÉ•… ÍÉ¥ÁÑÌ½É••ÑÑ”½œØµ¹•…Ñ¥Ù”µ¸ÈÔµÍ…Øµ¡É½µ¥Õ´¹©Ìœ¤ì(€•áÁ•Ğ¡„¤¹Ñ½5…Ñ  ½A%}AI=	}9=}MI9}MQUI¼¤í•áÁ•Ğ¡„¤¹Ñ½5…Ñ  ½Ù}8ÈÙ	}MI9}5%MM%9}5%9}=5A9MQ%=9}%M%=8¼¤í•áÁ•Ğ¡„¤¹Ñ½5…Ñ  ½Í•½¹‘}‘½ÍÍ¥•É}Í…µ•}Õ¹¥Ğ¼¤í•áÁ•Ğ¡„¤¹¹½Ğ¹Ñ½5…Ñ  ½ÍÉ••¹Í¡½Ğ¼¤ì(€½¹ÍĞİ˜õÉ•… œ¹¥Ñ¡Õˆ½İ½É­™±½İÌ½ÍÑ…¥¹œµœØµ‘å¹…µ¥Œµ™É•Í µ‰Õå•Èµ…Í ¹åµ°œ¤ì(€™½È¡½¹ÍĞ¥½˜l8ÈÔœ°8ÈÙˆt¥™½È¡½¹ÍĞ´½˜l-4œ°4œ°t¥•áÁ•Ğ¡İ˜¤¹Ñ½½¹Ñ…¥¸ ˆmÍÑ…¥¹œµ½ÁtœØµ‘å¹…µ¥Œµ™É•Í µ™Õ±°´ˆ­¥¬œ´œ­´¬ˆœˆ¤ì(€•áÁ•Ğ¡l8ÈÔœ°8ÈÙˆt¹•Ù•Éä¡8¹¥Í9•…Ñ¥Ù”¤¤¹Ñ½	”¡ÑÉÕ”¤ì(€•áÁ•Ğ¡Ù…±¥‘…Ñ•¡É½µ¥ÕµMÉ¥ÁÑM½ÕÉ•Ì ¤¤¹Ñ½	•É•…Ñ•ÉQ¡…¸ À¤ì(ô¤ì)ô¤ì()‘•ÍÉ¥‰” ØµÕ8ĞÀ€£¥…ÉĞ‘”ÁÉ¥à™½ÕÉ¹¥ÍÍ•ÕÈ¤°8ÈÙ„•Ğ8ÈÜ€¡Í½¹‘•Ì‘pŸ¥É…¸¤œ° ¤ôùì(½¹ÍĞÕÀõ¥ôùMQ}%L¹Í±¥” À±MQ}%L¹¥¹‘•á=˜¡¥¤¬Ä¤ì(½¹ÍĞµ¬õÉ½İÌôùí±•Ğ¤ôÀíÉ•ÑÕÉ¸íÅÕ•Éäé…Íå¹Œ ¤ôø¡íÉ½İÌéÉ½İÍm¤¬­uô¥õôì(¥Ğ Ï¥ÅÕ•¹•Ìœ° ¤ôùì(€•áÁ•Ğ¡É…Á¡½È 8ĞÀœ¤¹½É‘•È¤¹Ñ½ÅÕ…°¡l¸¸¹ÕÀ !U	}Y9=I}I%9MLœ¤°8ĞÁ}MUAA1%I}AI%}@œ°8ĞÁ}AI%}A}=I1t¤ì(€•áÁ•Ğ¡É…Á¡½È 8ÈÙ„œ¤¹½É‘•È¤¹Ñ½ÅÕ…°¡l¸¸¹ÕÀ I1e}M œ¤°8ÈÙ}1%9}IU9}MI9}AI=	t¤ì(€•áÁ•Ğ¡É…Á¡½È 8ÈÜœ¤¹½É‘•È¤¹Ñ½ÅÕ…°¡l¸¸¹ÕÀ !U	}Y9=I}I%9MLœ¤°8Èİ}I599Q}91}MI9}AI=	t¤ì(€•áÁ•Ğ¡É…Á¡½È 4ÀÄœ¤¹½É‘•È¤¹Ñ½ÅÕ…°¡MQ}%L¤ì(€•áÁ•Ğ¡Ù…±¥‘…Ñ•MÑ…•5½‘Õ±•M½ÕÉ•Ì ¤¤¹Ñ½	•É•…Ñ•ÉQ¡…¸ À¤ì(ô¤ì(½¹ÍĞÉ½Üõ¼ôùmmíÁ½}ÍÑ…ÑÕÌè¹½Ñ¥™¥•œ±½¹™¥Éµ•‘}ÅÕ…¹Ñ¥Ñäé¹Õ±°±½¹™¥Éµ•‘}ÁÉ¥”é¹Õ±°±Õ¹¥Ñ}ÁÉ¥”èœÄÀœ±ÁÉ½‘ÕÑ}Í­Õ}¥èÌœ°¸¸¹½õt°(€mí½µµ¥Ñµ•¹ÑÌèÄ±Á…åµ•¹Ñ}…ÕÑ¡½É¥é…Ñ¥½¹ÌèÀ±ÍÕÁÁ±¥•É}Á…åµ•¹ÑÌèÀ±µ…¹Õ…±}•á•ÕÑ¥½¹ÌèÀ±½¹™¥Éµ•‘}±¥¹•ÌèÀ±¡Õ‰}…±±½…Ñ¥½¹ÌèÀ±¡Õ‰}Õ¹¥ÑÌèÀ±Á…åµ•¹Ñ}ÍÑ…ÑÕÌèÁ…¥õutì(¥Ğ ½É…±”8ĞÀ€èƒ¥…ÉĞÉ•™ÕÏ¤½Ô•¸…ÑÑ•¹Ñ”°©…µ…¥Ì½¹™¥É·¤Í…¹ÌÙ…±¥‘…Ñ¥½¸Ï¥Á…Ë¥”¹¤Á…ç¤œ±…Íå¹Œ ¤ôùì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ĞÀ¡µ¬¡É½Ü ¤¤±í½É‘•É%è¼œ±Á½%èÀœ±½¹™¥É´éí¡ÑÑÀèĞÀåô±ÅÕ½Ñ•èœÄÀô¤¤¹É•Í½±Ù•Ì¹Ñ½5…Ñ¡=‰©•Ğ¡íÁ½}ÍÑ…ÑÕÌè¹½Ñ¥™¥•œ±Á…åµ•¹ÑÌèÁô¤ì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ĞÀ¡µ¬¡É½Ü¡íÁ½}ÍÑ…ÑÕÌè½¹™¥Éµ•œ±½¹™¥Éµ•‘}ÁÉ¥”èœÄÄ¸ÀÄô¤¤±í½É‘•É%è¼œ±Á½%èÀœ±½¹™¥É´éí¡ÑÑÀèÈÀÁô±ÅÕ½Ñ•èœÄÀô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ĞÁ}AI=UQ}A}AI%}A}AQ}]%Q!=UQ}MAIQ}Y1%Q%=9|ÄÁ}Q=|ÄÄ¸ÀÄœ¤ì(€½¹ÍĞÁ…äõÉ½Ü ¤íÁ…ålÅtõmì¸¸¹Á…ålÅulÁt±ÍÕÁÁ±¥•É}Á…åµ•¹ÑÌèÅõtì(€…İ…¥Ğ•áÁ•Ğ¡8¹½É…±•8ĞÀ¡µ¬¡Á…ä¤±í½É‘•É%è¼œ±Á½%èÀœ±½¹™¥É´éí¡ÑÑÀèĞÀåô±ÅÕ½Ñ•èœÄÀô¤¤¹É•©•ÑÌ¹Ñ½Q¡É½Ü Ù}8ĞÁ}AI=UQ}A}M%19Q}Ae59Q}=I}aUQ%=8œ¤ì(ô¤ì(¥Ğ ÍÉ¥ÁÑÌ•Ğİ½É­™±½Üœ° ¤ôùì(€½¹ÍĞ„õÉ•… ÍÉ¥ÁÑÌ½É••ÑÑ”½œØµ¹•…Ñ¥Ù”µ¸ĞÀµÁÉ¥”µ…Àµ¡É½µ¥Õ´¹©Ìœ¤±ˆõÉ•… ÍÉ¥ÁÑÌ½É••ÑÑ”½œØµ¹•…Ñ¥Ù”µ¸ÈÙ„µ¸ÈÜµÍÉ••¸µÁÉ½‰”µ¡É½µ¥Õ´¹©Ìœ¤ì(€•áÁ•Ğ¡„¤¹Ñ½5…Ñ  ½‘…Ñ„µ½¹™¥Éµ•µÁÉ¥”¼¤í•áÁ•Ğ¡ˆ¤¹Ñ½5…Ñ  ½Ù}8ÈÙ}MI9}5%MM%9}1%9}IU9}9}AIQ%1}I%P¼¤í•áÁ•Ğ¡ˆ¤¹Ñ½5…Ñ  ½Ù}8Èİ}MI9}5%MM%9}I599Q}90¼¤í•áÁ•Ğ¡„­ˆ¤¹¹½Ğ¹Ñ½5…Ñ  ½ÍÉ••¹Í¡½Ğ¼¤ì(€½¹ÍĞİ˜õÉ•… œ¹¥Ñ¡Õˆ½İ½É­™±½İÌ½ÍÑ…¥¹œµœØµ‘å¹…µ¥Œµ™É•Í µ‰Õå•Èµ…Í ¹åµ°œ¤ì(€™½È¡½¹ÍĞ¥½˜l8ĞÀœ°8ÈÙ„œ°8ÈÜt¥™½È¡½¹ÍĞ´½˜l-4œ°4œ°t¥•áÁ•Ğ¡İ˜¤¹Ñ½½¹Ñ…¥¸ ˆmÍÑ…¥¹œµ½ÁtœØµ‘å¹…µ¥Œµ™É•Í µ™Õ±°´ˆ­¥¬œ´œ­´¬ˆœˆ¤ì(€•áÁ•Ğ¡l8ĞÀœ°8ÈÙ„œ°8ÈÜt¹•Ù•Éä¡8¹¥Í9•…Ñ¥Ù”¤¤¹Ñ½	”¡ÑÉÕ”¤ì(€•áÁ•Ğ¡Ù…±¥‘…Ñ•¡É½µ¥ÕµMÉ¥ÁÑM½ÕÉ•Ì ¤¤¹Ñ½	•É•…Ñ•ÉQ¡…¸ À¤ì(ô¤ì)ô¤ì
