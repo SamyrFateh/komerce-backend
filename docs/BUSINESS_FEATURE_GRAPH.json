@@ -2077,6 +2077,13 @@
       {
         "feature": "catalog",
         "category": "services",
+        "declared": "services/central-hub-on-order.js",
+        "resolvedPath": "services/central-hub-on-order.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
         "declared": "services/product-sellable-service.js",
         "resolvedPath": "services/product-sellable-service.js",
         "status": "resolved-in-technical-graph"
@@ -3171,6 +3178,13 @@
         "category": "dash",
         "declared": "dashboards/admin/js/views/SuppliersView.js",
         "resolvedPath": "public/dashboards/admin/js/views/SuppliersView.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/g6-central-hub-on-order.test.js",
+        "resolvedPath": "tests/unit/g6-central-hub-on-order.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -44286,12 +44300,20 @@
                 "targetFile": "services/product-sellable-service.js"
               },
               {
+                "sourceFileId": "services/order-checkout-item-resolution.js",
+                "targetFile": "services/central-hub-on-order.js"
+              },
+              {
                 "sourceFileId": "services/relay-return-request-service.js",
                 "targetFile": "services/catalog-product-quality-service.js"
               },
               {
                 "sourceFileId": "services/order-payment-confirmation.js",
                 "targetFile": "services/product-admin-service.js"
+              },
+              {
+                "sourceFileId": "services/order-payment-confirmation.js",
+                "targetFile": "services/central-hub-on-order.js"
               },
               {
                 "sourceFileId": "tests/unit/order-checkout-item-resolution.test.js",
@@ -50611,7 +50633,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2372
+        "filesObserved": 2374
       },
       "boutique": {
         "filesObserved": 218,
