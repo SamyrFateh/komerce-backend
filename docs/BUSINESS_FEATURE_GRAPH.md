@@ -471,7 +471,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 33
 - internal APIs: 35
 - dependencies (consumes): 14 — local-stock, market, auth, auth-identity, infrastructure, logistics, catalog, providers-services, orders, settlement, economic-engine, market-autonomy, dashboard, payments
-- consumers: 12 — dashboard, dashboard, economic-engine, infrastructure, logistics, market-autonomy, market-control-plane, market-operator-dashboard, payments, settlement, unsold-resolution, decision-signals
+- consumers: 13 — dashboard, dashboard, economic-engine, infrastructure, logistics, market-autonomy, market-control-plane, market-operator-dashboard, orders, payments, settlement, unsold-resolution, decision-signals
 
 ### market-operator-dashboard _(unclassified)_
 
@@ -507,15 +507,15 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Faire exister une commande, de la creation au statut final, avec un cout figure et une reference lisible.
 
 - utils: 1
-- services: 31
+- services: 32
 - routes: 11
 - boutique: 3
-- tests: 64
+- tests: 65
 - tables owned (lifecycle): 11 — `order_items`, `orders`, `disputes`, `order_comments`, `order_item_cost_imputations`, `order_status_history`, `recipients`, `sms_log`, `customs_history`, `relay_return_compensations`, `order_checkout_idempotency`
 - tables written: 13
 - interfaces exposed: 27
 - internal APIs: 30
-- dependencies (consumes): 24 — dashboard, market-control-plane, platform-ops, infrastructure, decision-signals, incident-management, business-rules, wallet, economic-engine, logistics, catalog, market-autonomy, local-stock, market, purchasing, loyalty, payments, auth, auth-identity, customs, documents, notifications, refunds, shared-cart
+- dependencies (consumes): 25 — dashboard, market-control-plane, market-delegation, platform-ops, infrastructure, decision-signals, incident-management, business-rules, wallet, economic-engine, logistics, catalog, market-autonomy, local-stock, market, purchasing, loyalty, payments, auth, auth-identity, customs, documents, notifications, refunds, shared-cart
 - consumers: 24 — auth-identity, catalog, customs, dashboard, documents, economic-engine, incident-management, infrastructure, inventory, logistics, loyalty, market-control-plane, market-delegation, market-operator-dashboard, notifications, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, unsold-resolution, wallet, admin-dashboard
 
 ### payments _(business-feature)_
@@ -2092,6 +2092,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | notifications | auth (`auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/notification-api.js -> middleware/auth.js ; routes/alerts.js -> middleware/auth.js)`) | ✔ |
 | orders | dashboard (`dashboard (RCT1 canonical projection reuses dashboard-orders LIFECYCLE read-only contract; service dashboard-rct1-orders.js -> services/dashboard-orders.js)`) | ✔ |
 | orders | market-control-plane (`market-control-plane (destination relais actif : marché de rattachement et disponibilité du relais validés au checkout ; attestation transporteur non requise)`) | ✔ |
+| orders | market-delegation (`market-delegation (order-read-authorization.js consulte operations.read pour borner les détails de commande au marché délégué ; aucune capability ou identité reçue du client n’est une preuve)`) | ✔ |
 | orders | platform-ops (`platform-ops (monitoring/exploitation transverse observé dans le code)`) | ✔ |
 | orders | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
 | orders | decision-signals (`decision-signals (sink durable Action Center pour le signal de clôture financière en attente des faits économiques via signal-service)`) | ✔ |
@@ -2328,7 +2329,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2374 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2376 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 218 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2587,12 +2588,13 @@ Meta Graph monté : oui.
 | orders | documents | static-code, interface | 10 | **DECLARED_AND_OBSERVED** |
 | orders | economic-engine | static-code | 10 | **DECLARED_AND_OBSERVED** |
 | orders | incident-management | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| orders | infrastructure | static-code, interface | 71 | **DECLARED_AND_OBSERVED** |
+| orders | infrastructure | static-code, interface | 72 | **DECLARED_AND_OBSERVED** |
 | orders | local-stock | static-code, interface | 5 | **DECLARED_AND_OBSERVED** |
 | orders | logistics | static-code, interface, data-read | 40 | **DECLARED_AND_OBSERVED** |
 | orders | loyalty | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | orders | market | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | orders | market-autonomy | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| orders | market-delegation | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | orders | notifications | static-code | 15 | **DECLARED_AND_OBSERVED** |
 | orders | payments | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
 | orders | platform-ops | static-code | 43 | **DECLARED_AND_OBSERVED** |
