@@ -34,7 +34,8 @@ async function line(){
    o.payment_status::text AS payment_status,o.simulation_scope,
    (SELECT count(*)::int FROM purchase_order_authorizations a WHERE a.purchase_order_id=po.id AND a.authorization_type='purchase_commitment') AS commitments,
    (SELECT count(*)::int FROM purchase_order_authorizations a WHERE a.purchase_order_id=po.id AND a.authorization_type='supplier_payment') AS payments,
-   (SELECT count(*)::int FROM manual_purchase_executions e WHERE e.purchase_order_id=po.id) AS manual_executions,
+   (SELECT count(*)::int FROM manual_purchase_executions e WHERE e.purchase_order_id=po.id AND e.purchase_line_id=pl.id) AS manual_executions,
+   (SELECT COALESCE(sum(COALESCE(x.confirmed_quantity,x.quantity)),0)::int FROM purchase_lines x WHERE x.purchase_order_id=po.id AND x.cancelled_at IS NULL AND x.product_sku_id=pl.product_sku_id) AS po_sku_quantity,
    (SELECT count(*)::int FROM hub_physical_units u WHERE u.order_id=o.id) AS hub_units
    FROM purchase_orders po JOIN purchase_lines pl ON pl.purchase_order_id=po.id AND pl.cancelled_at IS NULL
    JOIN order_items oi ON oi.id=pl.order_item_id JOIN orders o ON o.id=oi.order_id
@@ -59,11 +60,13 @@ async function probe(page,kind,url,data){
  const res=await page.request.post(BASE+url,{headers:{origin:BASE},data}).catch(()=>null);
  const j=res?await res.json().catch(()=>({})):{};
  const code=j.code||j.error?.code||null;
- const row={kind,via:'API_PROBE_NO_SCREEN_GESTURE',http:res?res.status():null,code:code&&String(code).slice(0,80)};
+ const quarantined=!!(res&&res.status()===202&&j.quarantined===true);
+ const row={kind,via:'API_PROBE_NO_SCREEN_GESTURE',http:res?res.status():null,code:code&&String(code).slice(0,80),outcome:quarantined?'QUARANTINED_NOT_RECEIVED':null};
  report.probes.push(row);save();
  check(!/^csrf_/.test(row.code||''),'G6_'+SCEN+'_SCREEN_MISSING_PROBE_'+row.code);
  check(row.http!==null,'G6_'+SCEN+'_SCREEN_MISSING_NO_RESPONSE_'+kind);
- if(row.http>=200&&row.http<300)report.gaps.push('ACCEPTED_'+kind.toUpperCase());
+ // 202 + quarantined:true = refus de réception (mise en quarantaine, aucune quantité reçue) ; la preuve 'received===0' reste vérifiée ensuite.
+ if(row.http>=200&&row.http<300&&!quarantined)report.gaps.push('ACCEPTED_'+kind.toUpperCase());
  return row;
 }
 async function runN13(browser){
@@ -106,7 +109,9 @@ async function runN14(browser){
  const b=await line();
  check(b.po_status==='confirmed'&&Number(b.confirmed_quantity)===Number(b.quantity)&&b.received===0&&b.payments===0&&b.manual_executions===1&&
   b.payment_status==='paid'&&b.simulation_scope==='G6-BUYER'&&!!b.product_sku_id,'G6_N14_PRECONDITION_PO_NOT_CONFIRMED_UNRECEIVED');
- const ordered=Number(b.quantity);report.ordered=ordered;save();
+ const ordered=Number(b.quantity);report.ordered=ordered;
+ // Excès = au-delà de TOUT ce que la PO peut recevoir pour ce SKU (une PO regroupée peut porter le reliquat d'un autre scénario).
+ const excess=Math.max(ordered,Number(b.po_sku_quantity)||0)+1;report.excess_typed=excess;save();
  const PROOF='[SIMULATED / STAGING ONLY] G6-N14-RECEPTION-'+REF;
  const actor=await login(browser,'E2E_AGENT_HUB_',{readOnly:true});
  try{
@@ -128,7 +133,7 @@ async function runN14(browser){
   const input=card.locator('[data-receive-line="0"]'),button=card.locator('[data-workspace-action="receive-supplier"]');
   const hint=card.locator('.kmc-workspace-receive-hint');
   check(await input.count()===1,'G6_N14_SCREEN_MISSING_RECEIVED_QUANTITY_FIELD');
-  const tries=[{kind:'EXCESS',typed:String(ordered+1)},{kind:'NEGATIVE',typed:'-1'},{kind:'ZERO',typed:'0'}];
+  const tries=[{kind:'EXCESS',typed:String(excess)},{kind:'NEGATIVE',typed:'-1'},{kind:'ZERO',typed:'0'}];
   for(const t of tries){
    await humanFill(null,input,t.typed);
    const row={kind:t.kind,typed:t.typed,ui_blocked:await button.isDisabled(),message:null,message_visible:false,http:null};
@@ -140,7 +145,9 @@ async function runN14(browser){
     const pending=actor.page.waitForResponse(r=>new URL(r.url()).pathname==='/api/scans/hub/receive'&&r.request().method()==='POST',{timeout:30000});
     await humanClick(null,button);
     const res=await pending;row.http=res.status();permit=null;
-    if(res.status()<400)report.gaps.push('SCREEN_'+t.kind+'_ACCEPTED');
+    const rj=await res.json().catch(()=>({}));
+    row.outcome=res.status()===202&&rj.quarantined===true?'QUARANTINED_NOT_RECEIVED':null;
+    if(res.status()<400&&!row.outcome)report.gaps.push('SCREEN_'+t.kind+'_ACCEPTED');
    }else if(!row.message_visible)report.ux_signal='QUANTITE_INVALIDE_SANS_MESSAGE';
    report.attempts.push(row);save();
   }
