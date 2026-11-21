@@ -140,7 +140,7 @@ async function runN15(browser){
   report.screen.push({kind:'BOX_ROW',bag_scan_field_present:await row.locator('[data-hub-bag-scan]').count()>0});
   await probe(actor.page,'bag_into_box',API+'/boxes/'+box.id+'/bags',{bag_unit_id:bag.id,bag_reference_scan:bag.reference,box_reference_scan:BOX15,
    evidence_method:'MANUAL',evidence_ref:'[SIMULATED / STAGING ONLY] G6-N15-ATTACH-'+REF});
-  // 4. Départ non conforme : expédition créée avec ce carton incomplet.
+  // 4. Tentative d'expédition : un brouillon vide est autorisé, mais aucun départ ne l'est avec cette KOM-BOX incomplète.
   await humanFill(null,section.getByRole('textbox',{name:'Référence de la nouvelle expédition'}),SHIP15);
   const pick=row.getByRole('checkbox',{name:'Inclure '+BOX15});
   const pickable=await pick.count()>0&&await pick.isEnabled();
@@ -148,9 +148,9 @@ async function runN15(browser){
   const ship=await act(actor,API+'/boxes/shipment',section.locator('[data-workspace-action="create-shipment-from-boxes"]'),b=>b?.reference===SHIP15&&Array.isArray(b.hub_unit_ids)&&(pickable?b.hub_unit_ids.length===1&&b.hub_unit_ids[0]===box.id:b.hub_unit_ids.length===0));
   // Carton non sélectionnable : l'écran laisse quand même cliquer « Créer l'expédition » et envoie une sélection vide
   // (run 44881374826) ; c'est le geste humain réel, on le laisse partir et on juge la réponse du serveur.
-  report.attempts.push({kind:'SHIPMENT_WITH_INCOMPLETE_BOX_SCREEN',http:ship.http,ui_blocked:!pickable||!ship.enabled,box_selectable:pickable,empty_selection_sent:!pickable&&ship.http!=null});
+  report.attempts.push({kind:'SHIPMENT_WITH_INCOMPLETE_BOX_SCREEN',http:ship.http,ui_blocked:!pickable||!ship.enabled,box_selectable:pickable,empty_selection_sent:!pickable&&ship.http!=null,empty_draft_opened:!pickable&&is2xx(ship.http)});
   if(!pickable&&ship.http!=null&&ship.enabled)report.ux_signal=(report.ux_signal?report.ux_signal+';':'')+'SHIPMENT_BUTTON_ENABLED_WITHOUT_SELECTION';
-  if(is2xx(ship.http))report.gaps.push(pickable?'SHIPMENT_CREATED_WITH_INCOMPLETE_BOX':'SHIPMENT_CREATED_WITH_EMPTY_SELECTION');
+  if(pickable&&is2xx(ship.http))report.gaps.push('SHIPMENT_CREATED_WITH_INCOMPLETE_BOX');
   await probe(actor.page,'shipment_incomplete_box',API+'/boxes/shipment',{reference:SHIP15+'-P',hub_unit_ids:[box.id]});
   reach('DEPARTURE_TRIED');
   // 5. Fermeture de la KOM-BOX vide : on avance par l'écran tant que le serveur accepte (au plus 6 états).
