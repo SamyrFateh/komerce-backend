@@ -54,21 +54,30 @@
   // Une seule paire d'écouteurs par tableau : les rafraîchissements n'empilent pas
   // des handlers document (ouvertures/clics extérieurs) devenus obsolètes.
   const boardDisposers = new WeakMap();
-  function installMenuDismiss(root, doc, menu, close, onMove) {
+  function installMenuDismiss(root, doc, menu, close, onMove, restoreFocus) {
     const previous = boardDisposers.get(root);
     if (previous) previous();
     const outside = event => {
       if (!menu.hidden && !menu.contains(event.target)) close();
     };
     const escape = event => {
-      if (event.key === 'Escape' && !menu.hidden) close();
+      if (event.key === 'Escape' && !menu.hidden) {
+        // Returning focus avoids leaving keyboard users on a hidden button.
+        restoreFocus?.();
+        close();
+      }
     };
     doc.addEventListener('pointerdown', outside, true);
     doc.addEventListener('keydown', escape);
     // Capture les scrolls horizontaux ET verticaux des parents du Kanban.
     // Le menu est positionné à partir de la cellule, jamais des anciennes coordonnées souris.
+    // Scrolling the popup's own content must never reposition or dismiss it.
+    const onContainerScroll = event => {
+      if (event.target === menu || menu.contains(event.target)) return;
+      onMove?.();
+    };
     if(onMove) {
-      doc.addEventListener('scroll', onMove, true);
+      doc.addEventListener('scroll', onContainerScroll, true);
       doc.defaultView?.addEventListener('resize',onMove);
       menu.addEventListener?.('hub:menu-state',onMove);
     }
@@ -76,7 +85,7 @@
       doc.removeEventListener('pointerdown', outside, true);
       doc.removeEventListener('keydown', escape);
       if(onMove) {
-        doc.removeEventListener('scroll', onMove, true);
+        doc.removeEventListener('scroll', onContainerScroll, true);
         doc.defaultView?.removeEventListener('resize',onMove);
         menu.removeEventListener?.('hub:menu-state',onMove);
       }
@@ -118,6 +127,7 @@
     return {
       select(element){target=element;move();},
       move,
+      restoreFocus(){if(target?.isConnected) target.focus?.({preventScroll:true});},
       clear(){target=null;}
     };
   }
@@ -452,6 +462,7 @@
       const requestId = String(++menuSerial);
       menu.setAttribute('data-hub-request', requestId);
       menu.replaceChildren();
+      menu.scrollTop = 0;
       menu.classList.remove('is-editing','is-sourcing-inline','is-purchasing-flow');
       menu.removeAttribute('data-hub-menu-stage-state');
       menu.appendChild(make(doc, 'strong', 'kmc-hub-board-menu-title',
@@ -509,10 +520,10 @@
         menu.insertBefore(comment,journal.section);
       }
       anchor.select(event?.currentTarget);
-      menu.querySelector?.('a,button')?.focus?.();
+      menu.querySelector?.('a,button')?.focus?.({preventScroll:true});
     };
     anchor=anchoredMenu(menu,scroll,doc,closeMenu);
-    installMenuDismiss(root, doc, menu, closeMenu, anchor.move);
+    installMenuDismiss(root, doc, menu, closeMenu, anchor.move, anchor.restoreFocus);
 
     let rows = [];
     const renderRows = () => {
@@ -731,9 +742,10 @@
       anchor?.clear();
     };
     anchor=anchoredMenu(menu,scroll,doc,closeMenu);
-    installMenuDismiss(root, doc, menu, closeMenu, anchor.move);
+    installMenuDismiss(root, doc, menu, closeMenu, anchor.move, anchor.restoreFocus);
     const openMenu = (po, field, value, event) => {
       menu.replaceChildren();
+      menu.scrollTop = 0;
       menu.classList.remove('is-editing','is-purchasing-flow');
       menu.appendChild(make(doc, 'strong', 'kmc-hub-board-menu-title',
         'PO ' + smallRef(po.id) + ' · ' + field));
@@ -755,7 +767,7 @@
           'Les actions de cette étape ne sont pas chargées. Actualiser la page.'));
       }
       anchor.select(event?.currentTarget);
-      menu.querySelector?.('a,button')?.focus?.();
+      menu.querySelector?.('a,button')?.focus?.({preventScroll:true});
     };
     // Échap et clic extérieur gérés par installMenuDismiss().
 

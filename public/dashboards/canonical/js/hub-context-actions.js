@@ -32,6 +32,7 @@
   // Le panneau est la confirmation de l'action : pas d'écriture sans validation.
   function form(menu, doc, title, fields, submit, refresh) {
     menu.replaceChildren();
+    menu.scrollTop = 0;
     menu.classList.add('is-editing');
     menu.appendChild(node(doc,'strong','kmc-hub-board-menu-title',title));
     const panel = node(doc,'form','kmc-hub-action-form');
@@ -91,7 +92,7 @@
     });
     menu.appendChild(panel);
     menu.dispatchEvent(new doc.defaultView.Event('hub:menu-state'));
-    entries[fields[0]?.name]?.focus?.();
+    entries[fields[0]?.name]?.focus?.({preventScroll:true});
   }
 
   function action(menu,doc,title,description,handler) {
@@ -154,6 +155,7 @@
       'Rattacher les lignes à une PO modifiable ou créer un nouveau brouillon, sans engager ni payer.',()=>{
       if(!isCurrent())return;
       menu.replaceChildren();
+      menu.scrollTop = 0;
       menu.classList.add('is-editing','is-purchasing-flow');
       menu.appendChild(node(doc,'strong','kmc-hub-board-menu-title',
         'Organiser l’achat · '+order.reference));
@@ -318,6 +320,7 @@
               const launch = () => {
                 if(!isCurrent())return;
                 menu.classList.add('is-sourcing-inline','is-editing');
+                menu.scrollTop = 0;
                 const viewport=doc.defaultView;
                 const compact=Number(viewport?.innerWidth||1440)<=700;
                 menu.style.left=compact?'8px':Math.max(8,Math.round(((viewport?.innerWidth||1440)-780)/2))+'px';
