@@ -122,6 +122,26 @@ describe('axisless single-SKU acquisition', () => {
     expect(state.option_states).toEqual({});
   });
 
+  test('axisless unique SKU with absent option map is still unambiguous', () => {
+    const product=detail({
+      option_axes: [],
+      sellable_units:[{...detail().sellable_units[0],
+        option_values:null,stock_status:'ON_ORDER',available_quantity:0}]
+    });
+    const state=createModalSelection(product);
+    expect(state.selected_sku_id).toBe('11111111-1111-4111-8111-111111111111');
+    expect(state.option_states).toEqual({});
+  });
+
+  test('axisless product with no orderable SKU cannot select a phantom unit', () => {
+    const product=detail({
+      option_axes: [],
+      sellable_units:[{...detail().sellable_units[0],
+        option_values:{},stock_status:'OUT_OF_STOCK',available_quantity:0}]
+    });
+    expect(createModalSelection(product).selected_sku_id).toBeNull();
+  });
+
   test('no axes with multiple orderable SKU identities must not auto-pick one', () => {
     const units = detail().sellable_units;
     const ambiguous = detail({
