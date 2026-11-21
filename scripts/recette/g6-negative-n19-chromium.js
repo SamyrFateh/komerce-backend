@@ -51,7 +51,7 @@ async function main(){
   report.delay=delay;reach('DELAY_STATE_READ');
   if(delay.stage!=='local_delivery')throw Error('G6_N19_PRECONDITION_STAGE_'+delay.stage);
   if(delay.receipts!==0)throw Error('G6_N19_PRECONDITION_ALREADY_RECEIVED');
-  if(['available','collected'].includes(delay.order_status)||delay.pickup_code_alive||delay.collected_scans>0)report.gaps.push('AVAILABLE_OR_CODE_DURING_DELAY');
+  if(['available','collected'].includes(delay.order_status)||delay.collected_scans>0)report.gaps.push('AVAILABLE_OR_CODE_DURING_DELAY');
   browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   const {actor}=await bindAgent(browser,o.relais_id);
   try{

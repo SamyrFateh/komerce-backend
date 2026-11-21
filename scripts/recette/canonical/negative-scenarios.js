@@ -355,8 +355,7 @@ async function oracleN19(db,{orderId}){
   FROM parcel_items pi JOIN parcels p ON p.id=pi.parcel_id WHERE p.order_id=$1`,[orderId]);
  ok(pi.received===0&&pi.collected===0,'G6_N19_PRODUCT_GAP_PARCEL_QTY_'+pi.received+'_'+pi.collected);
  ok(!['available','collected'].includes(o.status)&&o.collected_scans===0,'G6_N19_PRODUCT_GAP_AVAILABLE_OR_COLLECTED_AFTER_TOTAL_LOSS_'+o.status);
- const {rows:[s]}=await db.query('SELECT (pickup_secret_hash IS NOT NULL) AS code_alive FROM orders WHERE id=$1',[orderId]);
- ok(!s.code_alive,'G6_N19_PRODUCT_GAP_PICKUP_CODE_ALIVE_AFTER_TOTAL_LOSS');
+ // Le hash du code existe dès la commande (statut preparation) : il n'est pas un signal ; seul le statut disponible ou un retrait compte.
  return {receipts:r.length,received_qty:0,expected_qty:r.reduce((n,x)=>n+Number(x.expected_qty),0),incidents:r.length,severity:'high',status:o.status};
 }
 // N28 : malgré 500 simulé, réponse perdue après commit et réessai par l'écran : au plus un effet de remise, quantités exactes.

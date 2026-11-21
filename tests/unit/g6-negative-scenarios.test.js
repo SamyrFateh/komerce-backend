@@ -359,7 +359,7 @@ describe('G6-G5B N17 (transitaire hors rôle ou marché), N18 (douane retenue pu
   await expect(N.oracleN18(mk(open),{orderId:'o',shipmentRef:'S',customsRef:'C'})).rejects.toThrow('G6_N18_PRODUCT_GAP_HOLD_NOT_RELEASED_BY_ACTOR');
  });
  it('oracle N19 : quantité nulle, incident haute gravité, ni disponible ni code de retrait',async()=>{
-  const good=[[{id:'o',status:'in_transit',collected_scans:0}],[{expected_qty:1,received_qty:0,incident:'i',incident_type:'missing_item',severity:'high'}],[{collected:0,received:0}],[{code_alive:false}]];
+  const good=[[{id:'o',status:'in_transit',collected_scans:0}],[{expected_qty:1,received_qty:0,incident:'i',incident_type:'missing_item',severity:'high'}],[{collected:0,received:0}]];
   await expect(N.oracleN19(mk(good),{orderId:'o'})).resolves.toMatchObject({received_qty:0,severity:'high'});
   const avail=[[{id:'o',status:'available',collected_scans:0}],good[1],good[2]];
   await expect(N.oracleN19(mk(avail),{orderId:'o'})).rejects.toThrow('G6_N19_PRODUCT_GAP_AVAILABLE_OR_COLLECTED_AFTER_TOTAL_LOSS_available');

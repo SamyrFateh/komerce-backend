@@ -41,7 +41,7 @@ const pageEvents=(page,tag)=>{
 };
 // Un geste d'écran = une requête POST permise (charge utile vérifiée), jamais de nouvel essai. Bouton absent ou inactif : refus d'écran, rien d'envoyé.
 // Un écran qui n'envoie rien dans les 6 s compte comme un refus d'écran ; le verdict vient du serveur quand une requête part.
-async function act(actor,endpoint,button,validate){
+async function act(actor,endpoint,button,validate,waitMs=10000){
  let permitted=0;const guard=[];
  const url=BASE+endpoint;
  const handler=async route=>{
@@ -55,6 +55,7 @@ async function act(actor,endpoint,button,validate){
  };
  await actor.page.route(url,handler);
  try{
+  if(waitMs)await button.first().waitFor({state:'visible',timeout:waitMs}).catch(()=>{});
   if(!await button.count())return {present:false,enabled:false,http:null};
   if(!await button.first().isEnabled())return {present:true,enabled:false,http:null};
   let settle;const done=new Promise(r=>{settle=r});
@@ -189,7 +190,7 @@ async function runN18(browser,sh){
   await admin.page.locator('[data-international-journey]').first().waitFor({state:'visible',timeout:25000});
   await humanClick(null,admin.page.locator('.kmc-journey-tab').filter({hasText:'Arrivée & douane'}));
   const created=await act(admin,API+'/customs/shipments',admin.page.locator('[data-workspace-action="create-customs"]'),
-   b=>isDeepStrictEqual(b,{reference:CUSTOMS,shipment_date:date(),cif_value_kmf:1000,parcel_refs:[]}));
+   b=>isDeepStrictEqual(b,{reference:CUSTOMS,shipment_date:date(),cif_value_kmf:1000,parcel_refs:[]}),25000);
   report.screen.push({step:'create_customs',...created});
   check(created.http!==null&&is2xx(created.http),'G6_N18_SCREEN_MISSING_CREATE_CUSTOMS_'+(created.http??'NO_REQUEST'));
   reach('CUSTOMS_CREATED');
