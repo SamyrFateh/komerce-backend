@@ -81,7 +81,7 @@ async function productFixture(){
                OR k.supplier_order_identity IS NULL
                OR jsonb_typeof(k.supplier_order_identity)<>'object'
                OR k.supplier_order_identity='{}'::jsonb))))
-   )
+   ))
  ORDER BY (p.product_ref='KPR-000165') DESC,p.product_ref LIMIT 1
  `,[MARKET,ref,SCENARIO,BRANCH]);
  if(!rows.length)throw Error('G6_'+SCENARIO+'_PREREQ_MISSING_NEGATIVE_FIXTURE_'+MARKET);
