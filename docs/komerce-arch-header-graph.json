@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 822,
-    "filesWithFullHeaders": 762,
+    "scannedCodeFiles": 824,
+    "filesWithFullHeaders": 764,
     "filesWithLiteHeaders": 60,
-    "filesWithAnyHeaders": 822,
+    "filesWithAnyHeaders": 824,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2096,
-    "edges": 10437,
+    "graphNodes": 2101,
+    "edges": 10454,
     "dbTables": 244,
-    "doctrines": 820,
+    "doctrines": 823,
     "impactAreas": 210,
-    "unresolvedCodeEdges": 990,
+    "unresolvedCodeEdges": 994,
     "dbWriteViaOverlapWarnings": 13,
     "multiWriterTables": 99
   },
@@ -55,7 +55,7 @@
     "wallet": 3,
     "providers-services": 7,
     "customs": 8,
-    "dashboard": 32,
+    "dashboard": 34,
     "loyalty": 3,
     "market-control-plane": 5,
     "settlement": 2,
@@ -111,10 +111,11 @@
     "ui-behavior": 1,
     "state-store": 1,
     "schema": 1,
-    "route": 138,
+    "route": 139,
     "entrypoint": 1,
     "service": 501,
     "external-adapter": 2,
+    "infrastructure": 1,
     "machine": 1,
     "utility": 2,
     "service-policy": 1,
@@ -124,7 +125,7 @@
   "byCriticality": {
     "critical": 128,
     "medium": 155,
-    "high": 469,
+    "high": 471,
     "low": 69,
     "unknown": 1
   },
@@ -6307,6 +6308,48 @@
         "admin-dashboard"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "routes/admin-dashboard-events.js",
+      "file": "routes/admin-dashboard-events.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "dashboard-post-commit-event-stream",
+      "domain": "dashboard",
+      "layer": "route",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_admin_session",
+        "postgres_change_hints"
+      ],
+      "outputs": [
+        "authenticated_sse_invalidation_hints"
+      ],
+      "depends": [
+        "middleware/auth",
+        "dashboard-invalidation-bus"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js"
+      ],
+      "dbRead": [
+        "users",
+        "revoked_tokens"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "never_stream_business_data",
+        "refetch_authorized_api"
+      ],
+      "impactAreas": [
+        "admin-dashboard",
+        "hub"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "routes/admin-dashboard-market.js",
@@ -17651,6 +17694,46 @@
         "admin-dashboard"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "services/dashboard-invalidation-bus.js",
+      "file": "services/dashboard-invalidation-bus.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "dashboard-post-commit-invalidation-bus",
+      "domain": "dashboard",
+      "layer": "infrastructure",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "postgres_notify"
+      ],
+      "outputs": [
+        "cache_invalidation",
+        "dashboard_change_hints"
+      ],
+      "depends": [
+        "db",
+        "dashboard-cache"
+      ],
+      "usedBy": [
+        "routes/admin-dashboard-events.js",
+        "server.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "after_commit_revalidate_canonical_read_models"
+      ],
+      "impactAreas": [
+        "dashboard",
+        "hub",
+        "admin-dashboard"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "services/dashboard-metrics/_helpers.js",
@@ -41928,6 +42011,16 @@
       "doctrine": "single_cost_component_mutation_authority"
     },
     {
+      "id": "doctrine:never_stream_business_data",
+      "type": "doctrine",
+      "doctrine": "never_stream_business_data"
+    },
+    {
+      "id": "doctrine:refetch_authorized_api",
+      "type": "doctrine",
+      "doctrine": "refetch_authorized_api"
+    },
+    {
       "id": "doctrine:workspace_single_market_action_context",
       "type": "doctrine",
       "doctrine": "workspace_single_market_action_context"
@@ -43066,6 +43159,11 @@
       "id": "doctrine:finance_event_date_is_authoritative",
       "type": "doctrine",
       "doctrine": "finance_event_date_is_authoritative"
+    },
+    {
+      "id": "doctrine:after_commit_revalidate_canonical_read_models",
+      "type": "doctrine",
+      "doctrine": "after_commit_revalidate_canonical_read_models"
     },
     {
       "id": "doctrine:economic_base_stays_kmf",
@@ -55198,6 +55296,60 @@
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
+    },
+    {
+      "from": "routes/admin-dashboard-events.js",
+      "to": "middleware/auth",
+      "type": "depends",
+      "label": "middleware/auth"
+    },
+    {
+      "from": "routes/admin-dashboard-events.js",
+      "to": "dashboard-invalidation-bus",
+      "type": "depends",
+      "label": "dashboard-invalidation-bus"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/admin-dashboard-events.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "routes/admin-dashboard-events.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "routes/admin-dashboard-events.js",
+      "to": "db:revoked_tokens",
+      "type": "db-read",
+      "label": "revoked_tokens"
+    },
+    {
+      "from": "routes/admin-dashboard-events.js",
+      "to": "doctrine:never_stream_business_data",
+      "type": "doctrine",
+      "label": "never_stream_business_data"
+    },
+    {
+      "from": "routes/admin-dashboard-events.js",
+      "to": "doctrine:refetch_authorized_api",
+      "type": "doctrine",
+      "label": "refetch_authorized_api"
+    },
+    {
+      "from": "routes/admin-dashboard-events.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "routes/admin-dashboard-events.js",
+      "to": "impact:hub",
+      "type": "impact",
+      "label": "hub"
     },
     {
       "from": "routes/admin-dashboard-market.js",
@@ -73440,6 +73592,54 @@
     },
     {
       "from": "services/dashboard-finance-metrics.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "services/dashboard-invalidation-bus.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/dashboard-invalidation-bus.js",
+      "to": "dashboard-cache",
+      "type": "depends",
+      "label": "dashboard-cache"
+    },
+    {
+      "from": "routes/admin-dashboard-events.js",
+      "to": "services/dashboard-invalidation-bus.js",
+      "type": "uses",
+      "label": "routes/admin-dashboard-events.js"
+    },
+    {
+      "from": "server.js",
+      "to": "services/dashboard-invalidation-bus.js",
+      "type": "uses",
+      "label": "server.js"
+    },
+    {
+      "from": "services/dashboard-invalidation-bus.js",
+      "to": "doctrine:after_commit_revalidate_canonical_read_models",
+      "type": "doctrine",
+      "label": "after_commit_revalidate_canonical_read_models"
+    },
+    {
+      "from": "services/dashboard-invalidation-bus.js",
+      "to": "impact:dashboard",
+      "type": "impact",
+      "label": "dashboard"
+    },
+    {
+      "from": "services/dashboard-invalidation-bus.js",
+      "to": "impact:hub",
+      "type": "impact",
+      "label": "hub"
+    },
+    {
+      "from": "services/dashboard-invalidation-bus.js",
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
@@ -109372,6 +109572,7 @@
         "routes/admin-costing.js",
         "routes/admin-customs-categories.js",
         "routes/admin-customs-shipments.js",
+        "routes/admin-dashboard-events.js",
         "routes/admin-dashboard-market.js",
         "routes/admin-dashboard.js",
         "routes/admin-finance-accounting-workspace.js",
@@ -115783,6 +115984,46 @@
         "services/customs-analytics.js",
         "services/customs-shipment-fee-service.js",
         "services/customs-shipment-service.js"
+      ]
+    },
+    "routes/admin-dashboard-events.js": {
+      "role": "dashboard-post-commit-event-stream",
+      "domain": "dashboard",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "middleware/auth",
+        "dashboard-invalidation-bus"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "users",
+        "revoked_tokens"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "never_stream_business_data",
+        "refetch_authorized_api"
+      ],
+      "impactAreas": [
+        "admin-dashboard",
+        "hub"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "db:revoked_tokens",
+        "db:users",
+        "doctrine:never_stream_business_data",
+        "doctrine:refetch_authorized_api",
+        "impact:admin-dashboard",
+        "impact:hub",
+        "services/dashboard-invalidation-bus.js"
       ]
     },
     "routes/admin-dashboard-market.js": {
@@ -122552,6 +122793,7 @@
         "middleware/verify-authkey-webhook.js",
         "middleware/versioned-asset-cache.js",
         "routes/shared-cart.js",
+        "services/dashboard-invalidation-bus.js",
         "services/parcel-security.js",
         "services/routing.js",
         "utils/logger.js"
@@ -127192,6 +127434,42 @@
         "impact:economic-engine",
         "routes/dashboard-finance.js",
         "services/finance-metrics/index.js"
+      ]
+    },
+    "services/dashboard-invalidation-bus.js": {
+      "role": "dashboard-post-commit-invalidation-bus",
+      "domain": "dashboard",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "dashboard-cache"
+      ],
+      "directUsedBy": [
+        "routes/admin-dashboard-events.js",
+        "server.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "after_commit_revalidate_canonical_read_models"
+      ],
+      "impactAreas": [
+        "dashboard",
+        "hub",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "doctrine:after_commit_revalidate_canonical_read_models",
+        "impact:admin-dashboard",
+        "impact:dashboard",
+        "impact:hub",
+        "routes/admin-dashboard-events.js",
+        "server.js"
       ]
     },
     "services/dashboard-metrics/_helpers.js": {
@@ -151197,6 +151475,18 @@
       "label": "services/*"
     },
     {
+      "from": "routes/admin-dashboard-events.js",
+      "to": "middleware/auth",
+      "type": "depends",
+      "label": "middleware/auth"
+    },
+    {
+      "from": "routes/admin-dashboard-events.js",
+      "to": "dashboard-invalidation-bus",
+      "type": "depends",
+      "label": "dashboard-invalidation-bus"
+    },
+    {
       "from": "routes/admin-dashboard-market.js",
       "to": "db",
       "type": "depends",
@@ -153379,6 +153669,18 @@
       "to": "supplier-payment-review",
       "type": "depends",
       "label": "supplier-payment-review"
+    },
+    {
+      "from": "services/dashboard-invalidation-bus.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/dashboard-invalidation-bus.js",
+      "to": "dashboard-cache",
+      "type": "depends",
+      "label": "dashboard-cache"
     },
     {
       "from": "workspaces.js (services/dashboard-metrics/*)",

@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 822
-- Files with full headers: 762
+- Scanned code files: 824
+- Files with full headers: 764
 - Files with lite headers: 60
-- Files with any headers: 822
+- Files with any headers: 824
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2096
-- Edges: 10437
+- Graph nodes: 2101
+- Edges: 10454
 - DB tables: 244
-- Doctrines: 820
+- Doctrines: 823
 - Impact areas: 210
-- Unresolved code edges: 990
+- Unresolved code edges: 994
 - Tables multi-écrivains directs (>=2): 99
 - Avertissements db-write / db-write-via en chevauchement: 13
 
@@ -35,7 +35,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - catalog: 139
 - checkout: 4
 - customs: 8
-- dashboard: 32
+- dashboard: 34
 - decision-signals: 14
 - documents: 16
 - economic-engine: 69
@@ -85,11 +85,12 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - domain-logic: 1
 - entrypoint: 1
 - external-adapter: 2
+- infrastructure: 1
 - machine: 1
 - manual-test: 1
 - middleware: 27
 - presenter: 1
-- route: 138
+- route: 139
 - route-manifest: 1
 - schema: 1
 - service: 501
@@ -312,6 +313,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/admin-costing.js — economic-engine-admin-costing (economic-engine, high, full)
 - routes/admin-customs-categories.js — dashboard-admin-customs-categories (customs, high, full)
 - routes/admin-customs-shipments.js — dashboard-admin-customs-shipments (customs, high, full)
+- routes/admin-dashboard-events.js — dashboard-post-commit-event-stream (dashboard, high, full)
 - routes/admin-dashboard-market.js — dashboard-market-scoped-route (admin-dashboard, high, full)
 - routes/admin-dashboard.js — dashboard-admin-dashboard (dashboard, high, full)
 - routes/admin-finance-accounting-workspace.js — canonical-finance-accounting-workspace-route (admin-dashboard, high, full)
@@ -453,6 +455,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/dashboard-commerce.js — canonical-commerce-dashboard-service (admin-dashboard, high, full)
 - services/dashboard-finance-canonical.js — canonical-finance-dashboard-service (admin-dashboard, high, full)
 - services/dashboard-finance-metrics.js — economic-engine-dashboard-finance-metrics (economic-engine, high, full)
+- services/dashboard-invalidation-bus.js — dashboard-post-commit-invalidation-bus (dashboard, high, full)
 - services/dashboard-metrics/_helpers.js — dashboard-metrics-helpers (dashboard, high, full)
 - services/dashboard-metrics/control-tower.js — dashboard-metrics-control-tower (dashboard, high, full)
 - services/dashboard-metrics/costing.js — dashboard-metrics-costing (dashboard, high, full)

@@ -4,7 +4,7 @@
 
 
 -- Dumped from database version 18.6 (Debian 18.6-1.pgdg13+2)
--- Dumped by pg_dump version 18.7 (Debian 18.7-1.pgdg13+2)
+-- Dumped by pg_dump version 18.7 (Debian 18.7-1.pgdg13+5)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -2002,8 +2002,7 @@ CREATE FUNCTION public.guard_relay_product_return_receipt() RETURNS trigger
 DECLARE
   request_row record;
 BEGIN
-  SELECT d.id,d.type,d.status,d.return_quantity,oi.qty_collected,
-         o.relais_id,o.simulation_scope
+  SELECT d.id,d.type,d.status,d.return_quantity,oi.qty_collected,o.relais_id
     INTO request_row
     FROM public.disputes d
     JOIN public.orders o ON o.id=d.order_id
@@ -2015,7 +2014,6 @@ BEGIN
      OR request_row.type IS DISTINCT FROM 'product_return'
      OR request_row.status NOT IN ('open','processing')
      OR request_row.relais_id IS DISTINCT FROM NEW.relay_id
-     OR request_row.simulation_scope IS NOT NULL
      OR request_row.return_quantity IS DISTINCT FROM NEW.quantity
      OR request_row.qty_collected < NEW.quantity
   THEN
