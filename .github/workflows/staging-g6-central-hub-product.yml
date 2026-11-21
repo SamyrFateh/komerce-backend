@@ -31,6 +31,12 @@ jobs:
       G6_TARGET_MARKET: ${{ endsWith(github.event.issue.title, '-CM') && 'CM' || endsWith(github.event.issue.title, '-CG') && 'CG' || 'KM' }}
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_MARKET_OPERATOR_KM_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_KM_EMAIL }}
+      E2E_MARKET_OPERATOR_KM_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_KM_PASSWORD }}
+      E2E_MARKET_OPERATOR_CM_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_CM_EMAIL }}
+      E2E_MARKET_OPERATOR_CM_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_CM_PASSWORD }}
+      E2E_MARKET_OPERATOR_CG_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_CG_EMAIL }}
+      E2E_MARKET_OPERATOR_CG_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_CG_PASSWORD }}
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
     steps:
       - uses: actions/checkout@v4
@@ -71,7 +77,7 @@ jobs:
           node -e '(async()=>{const v=await(await fetch(process.env.STAGING_BASE_URL+"/health/version")).json();if(v.commit!==process.env.E2E_EXPECTED_DEPLOY_SHA)throw Error("G6_DYNAMIC_STAGING_SHA_DRIFT")})().catch(e=>{console.error(e.message);process.exit(1)})'
       - name: Install Chromium headless for actual UI gestures
         run: npx playwright install chromium --only-shell
-      - name: Create the central Hub manual product through the screens (one mutation per gesture)
+      - name: Take the central Hub manual product to sellable through the screens (one mutation per gesture)
         run: node scripts/recette/g6-central-hub-product-chromium.js
       - name: Preserve report
         if: always()
