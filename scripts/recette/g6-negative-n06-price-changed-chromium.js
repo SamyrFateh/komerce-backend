@@ -159,16 +159,8 @@ async function main(){
   const ctx=await browser.newContext({viewport:{width:1440,height:900},locale:'fr-FR'});
   const page=await ctx.newPage();
   let attempts=0;
-  page.on('response',async r=>{
-   try{
-    const u=new URL(r.url());
-    if(u.origin===BASE&&u.pathname==='/api/orders'&&r.request().method()==='POST'){
-     const body=await r.json().catch(()=>null);
-     report.http_attempts.push({method:'POST',path:u.pathname,status:r.status(),code:body?.code||null,
-      order_id:body?.order?.id||null});save();
-    }
-   }catch(_){/* no payment or personal data logged */}
-  });
+  // Les requêtes sont journalisées dans leur ordre de geste (après waitForResponse),
+  // jamais par listener asynchrone pouvant inverser ou dupliquer les réponses.
   await page.route('**/*',route=>{
    const req=route.request(),u=new URL(req.url());
    if(['GET','HEAD','OPTIONS'].includes(req.method()))return route.continue();
@@ -197,6 +189,8 @@ async function main(){
   const stale=page.waitForResponse(r=>r.url()===BASE+'/api/orders'&&r.request().method()==='POST',{timeout:30000});
   await humanClick(null,confirm);
   const first=await stale,firstBody=await first.json().catch(()=>null);
+  report.http_attempts.push({method:'POST',path:'/api/orders',status:first.status(),
+   code:firstBody?.code||null,order_id:firstBody?.order?.id||null});save();
   check(first.status()===409&&firstBody?.code==='price_changed',
    'G6_N06_PRODUCT_GAP_OLD_PRICE_CHECKOUT_NOT_REJECTED');
   const noEffects=await snapshotBuyerEffects(db,buyer.buyer.id);
@@ -217,6 +211,8 @@ async function main(){
   const next=page.waitForResponse(r=>r.url()===BASE+'/api/orders'&&r.request().method()==='POST',{timeout:30000});
   await humanClick(null,confirm);
   const second=await next,secondBody=await second.json().catch(()=>null);
+  report.http_attempts.push({method:'POST',path:'/api/orders',status:second.status(),
+   code:secondBody?.code||null,order_id:secondBody?.order?.id||null});save();
   check(second.status()===201&&!!secondBody?.order?.id,'G6_N06_PRODUCT_GAP_SECOND_CONFIRMATION_NOT_ACCEPTED');
   const {rows:[order]}=await db.query(
    'SELECT id,display_total_amount FROM orders WHERE id=$1 AND user_id=$2',
