@@ -55,3 +55,14 @@ test('D3 — « Résolu » exige une note de preuve et les types auto-fermés l�
   expect(source).toContain('{ note }');
   expect(source).toContain('Se ferme automatiquement quand la cause disparaît.');
 });
+
+test('action-center — le refresh distant conserve les filtres et protège les droits', () => {
+  const src = require('node:fs').readFileSync(
+    require('node:path').join(__dirname, '../../public/dashboards/canonical/js/action-center.js'), 'utf8');
+  expect(src).toContain('KomerceDashboardFreshness?.watch?.({');
+  expect(src).toContain('isBusy: workspaceBusy');
+  expect(src).toContain('background:true');
+  expect(src).toContain('data-dashboard-stale');
+  expect(src).toContain('error.status === 401 || error.status === 403');
+  expect(src).toContain('Accès expiré ou non autorisé. Rechargez votre session.');
+});
