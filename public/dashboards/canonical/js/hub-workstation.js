@@ -71,12 +71,12 @@
     doc.addEventListener('keydown', escape);
     // Capture les scrolls horizontaux ET verticaux des parents du Kanban.
     // Le menu est positionné à partir de la cellule, jamais des anciennes coordonnées souris.
+    // Scrolling the popup's own content must never reposition or dismiss it.
+    const onContainerScroll = event => {
+      if (event.target === menu || menu.contains(event.target)) return;
+      onMove?.();
+    };
     if(onMove) {
-      // Scrolling the popup's own content must never reposition or dismiss it.
-      const onContainerScroll = event => {
-        if (event.target === menu || menu.contains(event.target)) return;
-        onMove();
-      };
       doc.addEventListener('scroll', onContainerScroll, true);
       doc.defaultView?.addEventListener('resize',onMove);
       menu.addEventListener?.('hub:menu-state',onMove);
