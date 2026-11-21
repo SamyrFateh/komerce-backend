@@ -414,3 +414,17 @@ test('UI : runAction définie et utilisée par toutes les actions ; Garde des es
   expect(custody).not.toContain('DataTable.render(slot');
   expect((custody.match(/DataTable\.render\(part\(\)/g) || []).length).toBeGreaterThanOrEqual(4);
 });
+
+describe('finance-accounting-workspace — rafraîchissement intersession sans destruction des saisies', () => {
+  const freshnessFs = require('fs');
+  const freshnessPath = require('path');
+  const source = freshnessFs.readFileSync(
+    freshnessPath.join(__dirname, '../../public/dashboards/canonical/js/finance-accounting-workspace.js'), 'utf8');
+  test('relit les API canoniques en arrière-plan, et attend la fin de la saisie', () => {
+    expect(source).toContain('KomerceDashboardFreshness?.watch?.({');
+    expect(source).toContain('isBusy:workspaceBusy');
+    expect(source).toContain('if (background && workspaceBusy()) return');
+    expect(source).toContain('context.reload({ background:true })');
+    expect(source).toContain("'data-dashboard-stale'");
+  });
+});

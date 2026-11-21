@@ -663,12 +663,27 @@
       },
       reload: null,
     };
-    context.reload = async () => {
+    const workspaceBusy = () => {
+      const active = doc.activeElement;
+      return Boolean(active && rootNode.contains?.(active) &&
+        active.matches?.('input,textarea,select,[contenteditable="true"]'));
+    };
+    context.reload = async ({ background = false } = {}) => {
       const payload = await jsonRequest(fetchFn, endpointFor(context.marketCode, '', context.filters));
+      if (background && workspaceBusy()) return payload;
       context.filters = payload.filters || context.filters;
       renderPayload(rootNode, ui, doc, payload, context);
+      rootNode.removeAttribute?.('data-dashboard-stale');
       return payload;
     };
+    globalThis.KomerceDashboardFreshness?.watch?.({
+      root:rootNode, pollMs:60000, streamEnabled:options.user?.role === 'admin',
+      isBusy:workspaceBusy,
+      refresh:async () => {
+        try { return await context.reload({ background:true }); }
+        catch (error) { rootNode.setAttribute?.('data-dashboard-stale','true'); throw error; }
+      },
+    });
     return context.reload();
   }
 
