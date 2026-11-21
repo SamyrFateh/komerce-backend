@@ -54,8 +54,10 @@ const readSellable=async()=>(await db.query(SELLABLE_SQL,[MK.code,G6_PREFIX])).r
 // Lecture seule : candidat G6 (issu de l'import manuel), produit promu, prix et exposition du marché.
 const CANDIDATE_SQL=`SELECT sc.candidate_ref,sc.state,sc.product_id,sc.supplier_name,sc.scan_result->>'sourcing_decision' AS decision,sc.komerce_category,sc.data_sources->>'category' AS category_source,
  sc.scan_result->>'economic_test_health_status' AS scan_health,
- p.id AS pid,p.product_ref,p.lifecycle_status,p.is_active,p.description,p.needs_review,p.boutique_category_key,p.boutique_subcategory_key,
+ p.id AS pid,p.product_ref,p.lifecycle_status,p.is_active,p.has_variants,p.inventory_model,p.description,p.needs_review,p.boutique_category_key,p.boutique_subcategory_key,
  (SELECT COUNT(*)::int FROM catalog_media cm WHERE cm.product_id=p.id AND cm.is_active=TRUE) AS media_count,
+ EXISTS (SELECT 1 FROM product_skus ps WHERE ps.product_id=p.id AND ps.variant_combo IS NULL) AS default_sku_exists,
+ EXISTS (SELECT 1 FROM product_skus ps WHERE ps.product_id=p.id AND ps.variant_combo IS NULL AND ps.is_active=TRUE) AS default_sku_active,
  COALESCE((SELECT bool_and(cm.source_media_id IS NOT NULL
    AND vr.media_id IS NOT NULL AND vr.source_media_id=cm.source_media_id
    AND vr.source_url=cm.url AND vr.text_presence IN ('NONE','PRESENT')
@@ -92,6 +94,10 @@ function nextStep({sellable,candidate}){
   // #4920 : photo canonique via Catalogue AVANT approbation, jamais un faux SKU vendeur.
   if(Number(candidate.media_count||0)<1)return {step:'catalog-media',product_ref:ref};
   if(candidate.visual_review_ready!==true)return {step:'catalog-visual-review',product_ref:ref,product_id:candidate.pid};
+   if(candidate.has_variants===false&&candidate.inventory_model!=='SKU'&&candidate.default_sku_exists!==true)
+    return {step:'catalog-default-sku',product_ref:ref,product_id:candidate.pid};
+   if(candidate.has_variants===false&&candidate.inventory_model!=='SKU'&&candidate.default_sku_active!==true)
+    return {verdict:'G6_CENTRAL_DEFAULT_SKU_INACTIVE_REQUIRES_REVIEW',done:true,fail:true};
   // Préparation éditoriale puis classement boutique par l'inspecteur Catalogue, avant l'approbation humaine.
   if(!String(candidate.description||'').trim()||candidate.needs_review!==false)return {step:'catalog-editorial',product_ref:ref};
   if(!candidate.boutique_category_key||!candidate.boutique_subcategory_key)return {step:'catalog-taxonomy',product_ref:ref};
@@ -326,6 +332,24 @@ async function catalogVisualReview(actor,ref,productId){
   'catalog-visual-media-review',{product_ref:ref,media_id:mediaId,text_presence:'NONE',human_attestation:false});
  return true;
 }
+async function catalogDefaultSku(actor,ref){
+ if(!await openInspector(actor,ref))return false;
+ const dossier=actor.page.locator('[data-catalog-complementary-info] > summary');
+ if(await visible(dossier,20000)){
+  const container=actor.page.locator('[data-catalog-complementary-info]');
+  if((await container.getAttribute('open'))===null)await humanClick(null,dossier);
+ }
+ const panel=actor.page.locator('[data-hub-default-sku-preparation]');
+ if(!await visible(panel,20000))return !!missing('SCREEN_MISSING_HUB_DEFAULT_SKU_PREPARATION',{product_ref:ref,screen:await inspectorText(actor)});
+ const path=CAT+'/approval/'+encodeURIComponent(ref)+'/prepare-hub-default-sku';
+ await arm(actor,'POST',path);
+ // La confirmation affichée par le bouton est un geste UI distinct,
+ // nécessaire pour autoriser explicitement la création de l'unité interne.
+ actor.page.once('dialog',dialog=>dialog.accept());
+ await fire(actor,'POST',path,()=>humanClick(null,panel.locator('[data-workspace-action="catalog-default-sku"]')),
+  'catalog-hub-default-sku',{product_ref:ref,internal:true,stock:0,supplier_identity_created:false});
+ return true;
+}
 // Approbation humaine du Catalogue global : contrôle des prérequis (lecture) puis « Valider le Catalogue ».
 // Le média canonique est une étape humaine distincte obligatoire, vérifiée en PG.
 async function approveCatalog(actor,ref){
@@ -394,10 +418,10 @@ async function marketExpose(actor,ref,productId){
  await fire(actor,'PUT',put,()=>humanClick(null,btn),'market-exposure-enable',{product_ref:ref});
  return true;
 }
-const STEP_ROLE={'manual-import':'admin','scan-candidate':'admin','promote-candidate':'admin','resolve-category':'admin','catalog-approve':'admin','catalog-editorial':'admin','catalog-taxonomy':'admin','catalog-media':'admin','catalog-visual-review':'admin',
+const STEP_ROLE={'manual-import':'admin','scan-candidate':'admin','promote-candidate':'admin','resolve-category':'admin','catalog-approve':'admin','catalog-editorial':'admin','catalog-taxonomy':'admin','catalog-media':'admin','catalog-visual-review':'admin','catalog-default-sku':'admin',
  'price-draft':'market_operator','price-activate':'market_operator','market-expose':'market_operator'};
 const DO={'manual-import':(a)=>manualImport(a),'scan-candidate':(a,s)=>scanCandidate(a,s.candidate_ref),
- 'promote-candidate':(a,s)=>promoteCandidate(a,s.candidate_ref),'resolve-category':(a,s)=>resolveCategory(a,s.candidate_ref),'catalog-approve':(a,s)=>approveCatalog(a,s.product_ref),'catalog-editorial':(a,s)=>catalogEditorial(a,s.product_ref),'catalog-taxonomy':(a,s)=>catalogTaxonomy(a,s.product_ref),'catalog-media':(a,s)=>catalogMedia(a,s.product_ref),'catalog-visual-review':(a,s)=>catalogVisualReview(a,s.product_ref,s.product_id),
+ 'promote-candidate':(a,s)=>promoteCandidate(a,s.candidate_ref),'resolve-category':(a,s)=>resolveCategory(a,s.candidate_ref),'catalog-approve':(a,s)=>approveCatalog(a,s.product_ref),'catalog-editorial':(a,s)=>catalogEditorial(a,s.product_ref),'catalog-taxonomy':(a,s)=>catalogTaxonomy(a,s.product_ref),'catalog-media':(a,s)=>catalogMedia(a,s.product_ref),'catalog-visual-review':(a,s)=>catalogVisualReview(a,s.product_ref,s.product_id),'catalog-default-sku':(a,s)=>catalogDefaultSku(a,s.product_ref),
  'price-draft':(a,s)=>priceDraft(a,s.product_ref),'price-activate':(a,s)=>priceActivate(a,s.product_ref),
  'market-expose':(a,s)=>marketExpose(a,s.product_ref,s.product_id)};
 const readState=async()=>({sellable:await readSellable(),candidate:await readCandidate()});

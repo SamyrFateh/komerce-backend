@@ -2542,6 +2542,47 @@
       if (!slot.isConnected) return;
       row._catalogueDossier = dossier; // local read-only projection, never persisted
       renderProductDossierDetails(context, slot, doc, dossier, row);
+      const canPrepareHubUnit = dossier?.supplier?.source_kind === 'central_hub_manual'
+        && dossier?.availability?.has_variants !== true
+        && dossier?.availability?.inventory_model !== 'SKU'
+        && dossier?.availability?.lifecycle_status === 'candidate'
+        && dossier?.availability?.is_active === false
+        && dossier?.availability?.default_sku?.state === 'missing'
+        && String(context.user?.role || '').toLowerCase() === 'admin';
+      if (canPrepareHubUnit) {
+        const unit = doc.createElement('section');
+        unit.setAttribute('data-hub-default-sku-preparation', '');
+        unit.appendChild(text(doc, 'p', 'kmc-catalog-correction-hint',
+          'Ce produit Hub sans variantes nécessite une unité catalogue interne. Cette action crée le SKU Komerce par défaut avec un stock initial de 0 ; elle ne crée aucune référence fournisseur, ne valide pas le Catalogue et n’active aucune vente.'));
+        const create = makeButton(doc, 'Préparer l’unité catalogue par défaut', 'catalog-default-sku');
+        const status = text(doc, 'p', 'kmc-catalog-inspector-feedback', '');
+        status.setAttribute('role', 'status');
+        create.addEventListener('click', async () => {
+          if (!context.confirm('Créer l’unité catalogue Komerce par défaut pour ' + row.product_ref + ' avec un stock initial de 0 ?')) return;
+          create.disabled = true;
+          status.textContent = 'Préparation de l’unité catalogue interne…';
+          try {
+            const result = await jsonRequest(context.fetch,
+              ENDPOINT + '/approval/' + encodeURIComponent(row.product_ref) + '/prepare-hub-default-sku',
+              { method: 'POST' });
+            if (!result?.ok) throw new Error('Unité catalogue non confirmée par le serveur.');
+            status.textContent = result.result?.already_ready
+              ? 'L’unité catalogue par défaut est déjà prête.'
+              : 'Unité catalogue par défaut créée · stock initial 0 · aucune référence fournisseur.';
+            await context.reload();
+          } catch (error) {
+            status.textContent = actionErrorMessage(error);
+            create.disabled = false;
+          }
+        });
+        unit.appendChild(create);
+        unit.appendChild(status);
+        slot.appendChild(unit);
+      } else if (dossier?.supplier?.source_kind === 'central_hub_manual'
+          && dossier?.availability?.default_sku?.state === 'inactive') {
+        slot.appendChild(text(doc, 'p', 'kmc-catalog-inspector-feedback',
+          'L’unité catalogue par défaut existe mais est désactivée ; sa réactivation nécessite une revue de stock.'));
+      }
       if (dossier?.media?.product_id && Number(dossier.media.active_canonical || 0) < 1
           && dossier?.availability?.lifecycle_status === 'candidate'
           && dossier?.availability?.is_active === false

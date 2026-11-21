@@ -32,6 +32,8 @@ describe('G6 preparer source Hub centrale — contrat #4920 + media canonique',(
   expect(CANDIDATE_SQL).toContain('catalog_media_visual_fr_reviews');
   expect(SOURCE).toContain("'catalog-visual-review':'admin'");
   expect(SOURCE).toContain("'catalog-visual-review':(a,s)=>catalogVisualReview(a,s.product_ref,s.product_id)");
+  expect(SOURCE).toContain("'catalog-default-sku':'admin'");
+  expect(SOURCE).toContain("'catalog-default-sku':(a,s)=>catalogDefaultSku(a,s.product_ref)");
   expect(SOURCE).toContain("catalog-media':'admin'");
   expect(SOURCE).toContain("catalog-media':(a,s)=>catalogMedia(a,s.product_ref)");
  });

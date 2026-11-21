@@ -247,6 +247,14 @@ test('Revues visuelles FR : état explicite sans présélection, POST canonique,
   expect(css).toContain('.kmc-catalog-visual-fr-review');
 });
 
+test('SKU catalogue interne Hub : action explicite limitée au candidat sans variantes', () => {
+  expect(ui).toContain('data-hub-default-sku-preparation');
+  expect(ui).toContain('central_hub_manual');
+  expect(ui).toContain('stock initial de 0');
+  expect(ui).toContain('/prepare-hub-default-sku');
+  expect(ui).toContain('aucune référence fournisseur');
+});
+
 test('Fiche commerciale complète : galerie, variantes et correction FR disponibles depuis Catalogue', () => {
   expect(ui).toContain("data-catalog-canonical-gallery");
   expect(ui).toContain("1 · Inspecter les images fournisseur");

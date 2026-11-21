@@ -562,6 +562,7 @@ function publicProductDossier(facts, product, marketHandoff = null, details = {}
       stock: row.stock == null || String(row.stock).trim() === ''
         ? null : (Number.isFinite(Number(row.stock)) ? Number(row.stock) : null),
       has_variants: row.has_variants === true,
+      default_sku: details.defaultSku || { state: 'unknown', stock: null },
       weight_kg: positive(row.weight_kg),
       dimensions_cm: row.dimensions_cm || null,
       fragility: row.fragility || null,
@@ -665,7 +666,7 @@ async function getProductDossier(productRef) {
     'catalog_facts_unavailable', 'Fiche canonique indisponible', 503
   );
   const skuStockAuthority = facts.row.inventory_model === 'SKU';
-  const [mediaResult, variantResult, visual, profile] = await Promise.all([
+  const [mediaResult, variantResult, visual, profile, defaultSkuResult] = await Promise.all([
     db.query(`SELECT cm.id AS media_id, cm.url, cm.alt, cm.role, cm.source_media_id,
               cm.option_values, cm.display_order,
               vr.source_media_id AS review_source_media_id,
@@ -687,12 +688,18 @@ async function getProductDossier(productRef) {
     facts.row.has_sourcing_candidate === true
       ? inspectCatalogVisualFrEvidence(db, product.id) : Promise.resolve(null),
     db.query('SELECT short_description FROM product_content_profile WHERE product_id=$1', [product.id]),
+    db.query(`SELECT id, is_active, stock FROM product_skus
+               WHERE product_id=$1 AND variant_combo IS NULL LIMIT 1`, [product.id]),
   ]);
   return publicProductDossier(facts, product, handoff, {
     media: mediaResult.rows,
     variants: variantResult.rows,
     visual,
     shortDescription: profile.rows[0]?.short_description,
+    defaultSku: defaultSkuResult.rows[0]
+      ? { state: defaultSkuResult.rows[0].is_active ? 'active' : 'inactive',
+          stock: Number(defaultSkuResult.rows[0].stock) }
+      : { state: 'missing', stock: null },
   });
 }
 
@@ -934,6 +941,11 @@ async function approveCandidate(productRef, actor) {
   return publicProduct(result.body);
 }
 
+async function prepareCentralHubDefaultSku(productRef) {
+  const product = await resolveProduct(productRef, { candidateOnly: true });
+  return productAdmin.ensureCentralHubManualDefaultSku(db, product.id);
+}
+
 async function rejectCandidate(productRef, reason, actor) {
   const product = await resolveProduct(productRef, { candidateOnly: true });
   const result = await catalogApproval.rejectProduct(db, product.id, { reason }, actor);
@@ -975,6 +987,7 @@ module.exports = {
   deactivateProduct,
   prepareCandidateFrench,
   approveCandidate,
+  prepareCentralHubDefaultSku,
   rejectCandidate,
   overrideCandidate,
   createCategory: (body, actor) => taxonomy.createCategory(body, undefined, { ...actor, source_surface: 'canonical_catalog_workspace' }),
