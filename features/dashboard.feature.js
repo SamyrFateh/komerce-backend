@@ -535,6 +535,7 @@ module.exports = {
       'dashboards/canonical/js/hub-workstation.js',
       'dashboards/canonical/js/hub-context-actions.js',
       'dashboards/canonical/css/hub-workstation.css',
+      'dashboards/canonical/css/hub-agent-workspace-focus.css',
       'dashboards/canonical/js/hub-live-cockpit.js',
       'dashboards/canonical/css/hub-live-cockpit.css',
       'dashboards/canonical/js/primitives.js',
