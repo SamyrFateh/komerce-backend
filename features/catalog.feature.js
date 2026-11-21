@@ -191,6 +191,7 @@ module.exports = {
       'services/suppliers/catalog-import-orchestrator.js',
       'services/product-variant-service.js',
       'services/product-sku-service.js',
+      'services/central-hub-on-order.js',
       'services/product-sellable-service.js',
       'services/product-stock-service.js',
       'services/product-price-audit.js',
@@ -364,6 +365,7 @@ module.exports = {
       'dashboards/admin/js/views/SuppliersView.js',
     ],
     tests: [
+      'tests/unit/g6-central-hub-on-order.test.js',
       'tests/unit/catalog-certification-gate-b.test.js',
       'tests/unit/pipeline-certification-scenario-core.test.js',
       'tests/unit/e2e-catalog-500-plan.test.js',
