@@ -510,6 +510,16 @@ router.post(
   async (req, res, next) => {
     try {
       const body = req.body || {};
+      if (
+        !Array.isArray(body.hub_unit_ids) ||
+        body.hub_unit_ids.length === 0 ||
+        body.hub_unit_ids.some(id => typeof id !== 'string' || !id.trim())
+      ) {
+        return res.status(400).json({
+          error: 'Sélectionnez au moins une KOM-BOX valide pour créer une expédition.',
+          code: 'JOURNEY_HUB_UNITS_REQUIRED',
+        });
+      }
       const result = await shipmentJourney.open(req.workspaceMarket, actionActor(req), {
         reference: body.reference,
         hub_unit_ids: body.hub_unit_ids,
