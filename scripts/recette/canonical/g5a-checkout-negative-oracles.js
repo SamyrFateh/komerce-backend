@@ -51,8 +51,10 @@ function validateG5aEvidence(id,e){
  checkPrecondition(id,e.precondition);
  if(NO_PURCHASE.includes(id)){
   if(id==='N03'&&e.precondition.market_lifecycle==='ACTIVE'){
-   assert(e.ui?.route_checkout_attempted===true&&
-    e.ui?.public_routable_relais===0&&e.ui?.confirm_enabled===false,
+   assert(e.ui?.route_checkout_attempted===true&&e.ui?.route_checkout_refused===true&&
+    e.ui?.public_routable_relais===0&&
+    (e.ui?.confirm_enabled===false||e.ui?.route_refusal_visible===true||
+     e.http_attempts.some(x=>x.status===400&&x.code==='relay_required')),
     'G6_N03_NOT_PROVEN_ROUTE_CHECKOUT_GESTURE');
    assert(e.route_before?.resolution==='CANONICAL_IS_RELAIS_ROUTABLE'&&
     e.route_before?.routable_relays===0&&e.route_after?.routable_relays===0&&
