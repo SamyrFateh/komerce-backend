@@ -370,5 +370,5 @@ test('Direction Hub : un refus 403 efface les cartes de supervision précédemme
   denied = true;
   await app.renderDirectorQueue(host, { document:doc, fetch, user:{role:'admin'} });
   expect(host.querySelectorAll('[data-hub-director-task]')).toHaveLength(0);
-  expect(host.textContent).toContain('Accès expiré ou non autorisé');
+  expect(host.querySelector('[role="alert"]')?.textContent).toContain('Accès expiré ou non autorisé');
 });
