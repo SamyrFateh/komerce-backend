@@ -3,7 +3,7 @@
  * @domain orders
  * @layer test
  * @owner backend-core
- * @purpose Orchestration des scénarios négatifs N07/N09/N04/N33/N23/N24/N21/N22/N20/N29 et N11 à N14 (G6-G4C, Achats et Hub) : Golden joué jusqu'au point d'arrêt, geste négatif par l'écran, oracle PG en lecture seule.
+ * @purpose Orchestration des scénarios négatifs N07/N09/N04/N33/N23/N24/N21/N22/N20/N29 et N11 à N16 (G6-G4C, Achats et Hub) : Golden joué jusqu'au point d'arrêt, geste négatif par l'écran, oracle PG en lecture seule.
  * @db-read voir negative-scenarios.js
  * @db-write none
  * @impact-areas staging-only
@@ -31,7 +31,11 @@ const N1112_SCRIPT='scripts/recette/g6-negative-n11-n12-chromium.js';
 const N1112_REPORT='test-results/g6-negative-n11-n12/report.json';
 const N1314_SCRIPT='scripts/recette/g6-negative-n13-n14-chromium.js';
 const N1314_REPORT='test-results/g6-negative-n13-n14/report.json';
+const N1516_SCRIPT='scripts/recette/g6-negative-n15-n16-chromium.js';
+const N1516_REPORT='test-results/g6-negative-n15-n16/report.json';
 const LOCAL_NEG={
+ N15:{script:N1516_SCRIPT,report:N1516_REPORT,phase:'N15_BAG_BOX_INCOMPLETE',oracle:'N15_NO_CLOSURE_ORACLE',to:'HUB_RECEIVING_READBACK'},
+ N16:{script:N1516_SCRIPT,report:N1516_REPORT,phase:'N16_BOX_NOT_DISPATCHED_FROZEN',oracle:'N16_BOX_FROZEN_ORACLE',to:'HUB_KOM_BOX'},
  N13:{script:N1314_SCRIPT,report:N1314_REPORT,phase:'N13_SUPPLIER_BACKORDER',oracle:'N13_BACKORDER_ORACLE',to:'HUB_VENDOR_READINESS',po:true},
  N14:{script:N1314_SCRIPT,report:N1314_REPORT,phase:'N14_RECEIVING_QTY_ATTEMPTS',oracle:'N14_RECEIVING_ORACLE',to:'HUB_VENDOR_SIMULATION',po:true},
  N11:{script:N1112_SCRIPT,report:N1112_REPORT,phase:'N11_PO_NO_COMMITMENT_ATTEMPT',oracle:'N11_NO_ENGAGEMENT_ORACLE',to:'HUB_PO',po:true},
@@ -101,6 +105,8 @@ async function runNegativeScenario({scenario,env,db,adapters}){
    ?await N.oracleN23(db,{orderId:result.order_id,agentId:g.agent_id,minFailures:5,assertNoHubOrTransport})
    :scenario==='N24'?await N.oracleN24(db,{orderId:result.order_id,assertNoHubOrTransport})
    :scenario==='N20'?await N.oracleN20(db,{orderId:result.order_id})
+   :scenario==='N15'?await N.oracleN15(db,{orderId:result.order_id,boxRef:g.box_ref,shipmentRef:g.shipment_ref})
+   :scenario==='N16'?await N.oracleN16(db,{orderId:result.order_id,boxRef:g.box_ref,shipmentRef:g.shipment_ref,baseline:g.baseline})
    :scenario==='N13'?await N.oracleN13(db,{orderId:result.order_id,poId,ordered:g.ordered,typed:g.typed})
    :scenario==='N14'?await N.oracleN14(db,{orderId:result.order_id,poId,ordered:g.ordered})
    :scenario==='N11'?await N.oracleN11(db,{orderId:result.order_id,poId})
@@ -110,6 +116,7 @@ async function runNegativeScenario({scenario,env,db,adapters}){
   out.stages.push(evidence(sid,scenario,market,{oracle:o,order_id:result.order_id,http:g.tabs||g.intruder||(g.attempts||[]).map(a=>({kind:a.kind,http:a.http,ui_blocked:a.ui_blocked,message_visible:a.message_visible}))}));
   out.verdict={N23:'G6_N23_WITHDRAWAL_REFUSED_SECURITY_COUNTER_PG_PASS',N24:'G6_N24_PARALLEL_HANDOFF_SINGLE_ATTESTATION_PG_PASS',
    N20:'G6_N20_RELAY_DISCREPANCY_INCIDENT_NO_HANDOFF_PG_PASS',N29:'G6_N29_SESSION_401_ROLE_403_NO_MUTATION_PG_PASS',
+   N15:'G6_N15_BAG_BOX_INCOMPLETE_NO_CLOSURE_NO_DEPARTURE_PG_PASS',N16:'G6_N16_BOX_NOT_DISPATCHED_COMPOSITION_FROZEN_PG_PASS',
    N13:'G6_N13_SUPPLIER_BACKORDER_REMNANT_NO_FICTIVE_RECEIPT_PG_PASS',N14:'G6_N14_RECEIVING_EXACT_QUANTITIES_NO_EXCESS_NO_NEGATIVE_PG_PASS',
    N11:'G6_N11_PO_WITHOUT_COMMITMENT_REFUSED_NO_ENGAGEMENT_PG_PASS',N12:'G6_N12_PAYMENT_SINGLE_VALIDATOR_REFUSED_NO_PAYMENT_PG_PASS',
    N21:'G6_N21_CROSS_RELAY_REFUSED_NO_DISCLOSURE_PG_PASS',N22:'G6_N22_TWO_RELAYS_REFUSED_NO_DISCLOSURE_PG_PASS'}[scenario];

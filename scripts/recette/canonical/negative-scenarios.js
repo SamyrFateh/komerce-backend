@@ -3,13 +3,14 @@
  * @domain orders
  * @layer test
  * @owner backend-core
- * @purpose Scénarios négatifs N07/N09/N04/N33 (G6-G4A), N23/N24 (G6-G4B), N11 à N14 (G6-G4C) : résolution multi-SKU en lecture seule, oracles PG en lecture seule, verdicts SCREEN_MISSING/PRODUCT_GAP.
- * @db-read orders, order_items, product_skus, products, markets, product_market_price_drafts, product_market_exposure, local_stock, local_stock_allocations, cash_collections, cash_confirmation_controls, scans, parcels, parcel_items, purchase_lines, pickup_collect_failures, international_shipments, international_shipment_relay_receipts, incidents, purchase_orders, purchase_order_authorizations, supplier_execution_payments, manual_purchase_executions, hub_purchase_allocations, hub_physical_units
+ * @purpose Scénarios négatifs N07/N09/N04/N33 (G6-G4A), N23/N24 (G6-G4B), N11 à N16 (G6-G4C) : résolution multi-SKU en lecture seule, oracles PG en lecture seule, verdicts SCREEN_MISSING/PRODUCT_GAP.
+ * @db-read orders, order_items, product_skus, products, markets, product_market_price_drafts, product_market_exposure, local_stock, local_stock_allocations, cash_collections, cash_confirmation_controls, scans, parcels, parcel_items, purchase_lines, pickup_collect_failures, international_shipments, international_shipment_relay_receipts, incidents, purchase_orders, purchase_order_authorizations, supplier_execution_payments, manual_purchase_executions, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_box_bags, hub_box_effective_placements, international_shipment_hub_units
  * @db-write none
  * @impact-areas staging-only
  */
 'use strict';
-const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29','N11','N12','N13','N14']);
+const {isDeepStrictEqual}=require('node:util');
+const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29','N11','N12','N13','N14','N15','N16']);
 const isNegative=s=>NEGATIVE.includes(String(s));
 // Produit vendable (prix LOCAL_ACTIVE, exposition ENABLED, actif) servi par l'import (aucun stock local exposé), SKU actifs en stock.
 const MULTI_SKU_SQL=`
@@ -233,6 +234,49 @@ async function oracleN14(db,{orderId,poId,ordered}){
  ok(x.supplier_payments===0&&x.payment_authorizations===0,'G6_N14_PRODUCT_GAP_PAYMENT_EFFECT');
  return {ordered,received:l[0].received,placements:p.length,supplier_payments:0};
 }
+// N15 : ni sac fermé avec une ligne manquante, ni KOM-BOX remplie ou fermée sans ce sac, ni expédition avec ce carton.
+async function oracleN15(db,{orderId,boxRef,shipmentRef}){
+ const {rows:bags}=await db.query("SELECT id,state::text AS state FROM hub_physical_units WHERE order_id=$1 AND unit_type='HANDLING_UNIT'",[orderId]);
+ ok(bags.length===1,'G6_N15_PRODUCT_GAP_BAG_COUNT_'+bags.length);
+ ok(bags[0].state!=='PACKED'&&bags[0].state!=='DISPATCHED','G6_N15_PRODUCT_GAP_BAG_CLOSED_WITH_MISSING_LINE');
+ const {rows:[d]}=await db.query('SELECT count(*)::int AS n FROM hub_physical_unit_placements WHERE physical_unit_id=$1 AND removed_at IS NULL',[bags[0].id]);
+ ok(d.n===0,'G6_N15_PRODUCT_GAP_BAG_CONTENT_APPEARED');
+ const {rows:[l]}=await db.query('SELECT count(*)::int AS n FROM hub_box_bags WHERE bag_unit_id=$1',[bags[0].id]);
+ ok(l.n===0,'G6_N15_PRODUCT_GAP_INCOMPLETE_BAG_IN_BOX');
+ const {rows:box}=await db.query("SELECT id,state::text AS state FROM hub_physical_units WHERE reference=$1",[boxRef]);
+ ok(box.length<=1&&box.every(b=>!['PACKED','DISPATCHED'].includes(b.state)),'G6_N15_PRODUCT_GAP_EMPTY_BOX_CLOSED');
+ const {rows:[s]}=await db.query(`SELECT
+  (SELECT count(*)::int FROM international_shipments sh WHERE sh.reference=$1) AS shipments,
+  (SELECT count(*)::int FROM international_shipment_hub_units h JOIN hub_physical_units u ON u.id=h.physical_unit_id WHERE u.reference=$2) AS links,
+  (SELECT count(*)::int FROM parcels p WHERE p.order_id=$3 AND (p.shipped_at IS NOT NULL OR p.in_transit_at IS NOT NULL)) AS departed`,[shipmentRef,boxRef,orderId]);
+ ok(s.shipments===0&&s.links===0&&s.departed===0,'G6_N15_PRODUCT_GAP_NON_CONFORMING_DEPARTURE');
+ return {bag_state:bags[0].state,bag_content:0,box_state:box[0]?box[0].state:null,shipments:0,departed_parcels:0};
+}
+// N16 : instantané PG (lecture seule) du carton, de sa composition, de l'expédition et des colis ; comparé avant et après les tentatives.
+async function snapN16(db,{orderId,boxRef,shipmentRef}){
+ const {rows:box}=await db.query('SELECT id,state::text AS state FROM hub_physical_units WHERE reference=$1',[boxRef]);
+ ok(box.length===1,'G6_N16_PRODUCT_GAP_BOX_NOT_UNIQUE_'+box.length);
+ const {rows:[c]}=await db.query(`SELECT
+  (SELECT count(*)::int FROM hub_box_bags l WHERE l.box_unit_id=$1) AS links,
+  (SELECT count(*)::int FROM hub_box_effective_placements p WHERE p.box_unit_id=$1) AS effective,
+  (SELECT COALESCE(SUM(p.quantity),0)::int FROM hub_box_effective_placements p WHERE p.box_unit_id=$1) AS qty,
+  (SELECT count(*)::int FROM hub_physical_unit_placements p JOIN hub_purchase_allocations a ON a.id=p.allocation_id WHERE a.order_id=$2) AS placements,
+  (SELECT count(*)::int FROM hub_physical_unit_placements p JOIN hub_purchase_allocations a ON a.id=p.allocation_id WHERE a.order_id=$2 AND p.removed_at IS NOT NULL) AS removed,
+  (SELECT count(*)::int FROM hub_custody_events e WHERE e.physical_unit_id=$1) AS box_custody_events,
+  (SELECT count(*)::int FROM international_shipment_hub_units h WHERE h.physical_unit_id=$1) AS shipment_links`,[box[0].id,orderId]);
+ const {rows:sh}=await db.query('SELECT stage,forwarder_name,transport_mode FROM international_shipments WHERE reference=$1',[shipmentRef]);
+ const {rows:[p]}=await db.query(`SELECT string_agg(DISTINCT p.status::text,',') AS statuses,COALESCE(SUM(pi.qty_shipped),0)::int AS shipped
+  FROM parcels p JOIN parcel_items pi ON pi.parcel_id=p.id WHERE p.order_id=$1`,[orderId]);
+ return {box_state:box[0].state,...c,shipment_stage:sh[0]?sh[0].stage:null,forwarder:sh[0]?sh[0].forwarder_name:null,transport_mode:sh[0]?sh[0].transport_mode:null,
+  parcel_statuses:p.statuses,parcel_shipped:p.shipped};
+}
+// N16 : carton remis (DISPATCHED puis remis au transitaire) et composition inchangée par les tentatives de modification.
+async function oracleN16(db,{orderId,boxRef,shipmentRef,baseline}){
+ const s=await snapN16(db,{orderId,boxRef,shipmentRef});
+ ok(s.box_state==='DISPATCHED'&&s.shipment_stage==='handed_over'&&!!s.forwarder,'G6_N16_PRODUCT_GAP_HANDOVER_STATE_'+s.box_state+'_'+s.shipment_stage);
+ ok(baseline&&isDeepStrictEqual(s,baseline),'G6_N16_PRODUCT_GAP_COMPOSITION_CHANGED_AFTER_HANDOVER');
+ return s;
+}
 // N04 : aucune commande, aucun stock négatif, aucune réserve fictive.
 async function oracleN04(db,{buyerId,productId,market,availableBefore}){
  const {rows:[n]}=await db.query('SELECT count(*)::int AS n FROM orders WHERE user_id=$1',[buyerId]);
@@ -254,4 +298,4 @@ function classifyNegative(scenario,message){
  const g=new RegExp('G6_'+scenario+'_(SCREEN_MISSING|PRODUCT_GAP)').exec(m);
  return g?g[1]:null;
 }
-module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,importPo,classifyNegative};
+module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,oracleN15,oracleN16,snapN16,importPo,classifyNegative};

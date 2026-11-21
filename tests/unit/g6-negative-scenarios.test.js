@@ -285,3 +285,44 @@ describe('G6-G4C N13 (rupture fournisseur, reliquat) et N14 (réception partiell
   expect(N.isNegative('N13')&&N.isNegative('N14')).toBe(true);
  });
 });
+
+describe('G6-G4C N15 (sac ou KOM-BOX incomplet) et N16 (carton non DISPATCHED, composition figée)',()=>{
+ const up=id=>STAGE_IDS.slice(0,STAGE_IDS.indexOf(id)+1);
+ const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
+ it('séquences : chaîne M01 coupée au bon point, M01 inchangé',()=>{
+  expect(graphFor('N15').order).toEqual([...up('HUB_RECEIVING_READBACK'),'N15_BAG_BOX_INCOMPLETE','N15_NO_CLOSURE_ORACLE']);
+  expect(graphFor('N16').order).toEqual([...up('HUB_KOM_BOX'),'N16_BOX_NOT_DISPATCHED_FROZEN','N16_BOX_FROZEN_ORACLE']);
+  expect(graphFor('N15').order).not.toContain('HUB_CUSTOMER_BAG');
+  expect(graphFor('N16').order).not.toContain('HUB_SHIPMENT');
+  expect(graphFor('M01').order).toEqual(STAGE_IDS);
+  expect(validateStageModuleSources()).toBeGreaterThan(0);
+ });
+ const clean=[[{id:'b',state:'RECEIVED'}],[{n:0}],[{n:0}],[{id:'x',state:'RECEIVED'}],[{shipments:0,links:0,departed:0}]];
+ it('oracle N15 : sac non fermé et vide, carton non fermé, aucune expédition ni départ',async()=>{
+  await expect(N.oracleN15(mk(clean),{orderId:'o',boxRef:'B',shipmentRef:'S'})).resolves.toMatchObject({bag_state:'RECEIVED',shipments:0});
+  await expect(N.oracleN15(mk([[{id:'b',state:'PACKED'}]]),{orderId:'o',boxRef:'B',shipmentRef:'S'})).rejects.toThrow('G6_N15_PRODUCT_GAP_BAG_CLOSED_WITH_MISSING_LINE');
+  await expect(N.oracleN15(mk([clean[0],clean[1],[{n:1}]]),{orderId:'o',boxRef:'B',shipmentRef:'S'})).rejects.toThrow('G6_N15_PRODUCT_GAP_INCOMPLETE_BAG_IN_BOX');
+  await expect(N.oracleN15(mk([clean[0],clean[1],clean[2],[{id:'x',state:'PACKED'}]]),{orderId:'o',boxRef:'B',shipmentRef:'S'})).rejects.toThrow('G6_N15_PRODUCT_GAP_EMPTY_BOX_CLOSED');
+  await expect(N.oracleN15(mk([...clean.slice(0,4),[{shipments:1,links:1,departed:0}]]),{orderId:'o',boxRef:'B',shipmentRef:'S'})).rejects.toThrow('G6_N15_PRODUCT_GAP_NON_CONFORMING_DEPARTURE');
+ });
+ const snap=(o={})=>[[{id:'x',state:'DISPATCHED'}],[{links:1,effective:1,qty:1,placements:2,removed:1,box_custody_events:7,shipment_links:1}],
+  [{stage:'handed_over',forwarder_name:'F',transport_mode:'sea',...o}],[{statuses:'shipped',shipped:1}]];
+ it('oracle N16 : carton remis, composition identique au point de référence',async()=>{
+  const base=await N.snapN16(mk(snap()),{orderId:'o',boxRef:'B',shipmentRef:'S'});
+  await expect(N.oracleN16(mk(snap()),{orderId:'o',boxRef:'B',shipmentRef:'S',baseline:base})).resolves.toMatchObject({box_state:'DISPATCHED',shipment_stage:'handed_over'});
+  await expect(N.oracleN16(mk(snap()),{orderId:'o',boxRef:'B',shipmentRef:'S',baseline:{...base,links:0}})).rejects.toThrow('G6_N16_PRODUCT_GAP_COMPOSITION_CHANGED_AFTER_HANDOVER');
+  await expect(N.oracleN16(mk(snap({stage:'hub_ready',forwarder_name:null})),{orderId:'o',boxRef:'B',shipmentRef:'S',baseline:base})).rejects.toThrow('G6_N16_PRODUCT_GAP_HANDOVER_STATE_DISPATCHED_hub_ready');
+ });
+ it('script : écran puis sondes signalées, refus de remise avant DISPATCHED, aucune capture',()=>{
+  const a=read('scripts/recette/g6-negative-n15-n16-chromium.js');
+  expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);expect(a).toMatch(/HANDOVER_ACCEPTED_BOX_NOT_DISPATCHED/);expect(a).toMatch(/close-customer-bag/);
+  expect(a).toMatch(/FERMETURE_SAC_ABSENTE_SANS_MOTIF_AFFICHE/);expect(a).toMatch(/detach_after_handover/);expect(a).not.toMatch(/screenshot/);
+  expect(validateChromiumScriptSources()).toBeGreaterThan(0);
+ });
+ it('workflow : titres N15/N16 pour KM, CM et CG',()=>{
+  const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
+  for(const id of ['N15','N16'])for(const m of ['KM','CM','CG'])
+   expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
+  expect(N.isNegative('N15')&&N.isNegative('N16')).toBe(true);
+ });
+});
