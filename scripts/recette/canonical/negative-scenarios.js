@@ -4,7 +4,7 @@
  * @layer test
  * @owner backend-core
  * @purpose Scénarios négatifs N07/N09/N04/N33 (G6-G4A), N23/N24 (G6-G4B), N11 à N16 (G6-G4C), N17 à N19 (G6-G5B) : résolution multi-SKU en lecture seule, oracles PG en lecture seule, verdicts SCREEN_MISSING/PRODUCT_GAP.
- * @db-read orders, order_items, product_skus, products, markets, product_market_price_drafts, product_market_exposure, local_stock, local_stock_allocations, cash_collections, cash_confirmation_controls, scans, parcels, parcel_items, purchase_lines, pickup_collect_failures, international_shipments, international_shipment_relay_receipts, incidents, purchase_orders, purchase_order_authorizations, supplier_execution_payments, manual_purchase_executions, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_box_bags, hub_box_effective_placements, international_shipment_hub_units
+ * @db-read orders, order_items, product_skus, products, markets, product_market_price_drafts, product_market_exposure, local_stock, local_stock_allocations, cash_collections, cash_confirmation_controls, scans, parcels, parcel_items, purchase_lines, pickup_collect_failures, international_shipments, international_shipment_relay_receipts, incidents, purchase_orders, purchase_order_authorizations, supplier_execution_payments, manual_purchase_executions, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_box_bags, hub_box_effective_placements, international_shipment_hub_units, international_shipment_events
  * @db-write none
  * @impact-areas staging-only
  */
@@ -245,12 +245,26 @@ async function oracleN15(db,{orderId,boxRef,shipmentRef}){
  ok(l.n===0,'G6_N15_PRODUCT_GAP_INCOMPLETE_BAG_IN_BOX');
  const {rows:box}=await db.query("SELECT id,state::text AS state FROM hub_physical_units WHERE reference=$1",[boxRef]);
  ok(box.length<=1&&box.every(b=>!['PACKED','DISPATCHED'].includes(b.state)),'G6_N15_PRODUCT_GAP_EMPTY_BOX_CLOSED');
+ // Un dossier Hub vide est un brouillon administratif autorisé. N15 refuse
+ // un départ ou un carton rattaché, pas l'ouverture d'un dossier hub_ready.
+ const {rows:sh}=await db.query(`SELECT s.id,s.stage,s.hub_draft,
+   (SELECT COUNT(*)::int FROM international_shipment_hub_units h WHERE h.shipment_id=s.id) AS links,
+   (SELECT COUNT(*)::int FROM international_shipment_events e
+      WHERE e.shipment_id=s.id AND e.to_stage='handed_over') AS handovers
+   FROM international_shipments s WHERE s.reference=$1`,[shipmentRef]);
+ ok(sh.length<=1,'G6_N15_PRODUCT_GAP_SHIPMENT_NOT_UNIQUE');
+ const draft=sh[0]||null;
+ ok(!draft||(draft.stage==='hub_ready'&&draft.hub_draft===true&&
+   Number(draft.links)===0&&Number(draft.handovers)===0),
+   'G6_N15_PRODUCT_GAP_NON_CONFORMING_DEPARTURE');
  const {rows:[s]}=await db.query(`SELECT
-  (SELECT count(*)::int FROM international_shipments sh WHERE sh.reference=$1) AS shipments,
-  (SELECT count(*)::int FROM international_shipment_hub_units h JOIN hub_physical_units u ON u.id=h.physical_unit_id WHERE u.reference=$2) AS links,
-  (SELECT count(*)::int FROM parcels p WHERE p.order_id=$3 AND (p.shipped_at IS NOT NULL OR p.in_transit_at IS NOT NULL)) AS departed`,[shipmentRef,boxRef,orderId]);
- ok(s.shipments===0&&s.links===0&&s.departed===0,'G6_N15_PRODUCT_GAP_NON_CONFORMING_DEPARTURE');
- return {bag_state:bags[0].state,bag_content:0,box_state:box[0]?box[0].state:null,shipments:0,departed_parcels:0};
+   (SELECT COUNT(*)::int FROM international_shipment_hub_units h JOIN hub_physical_units u
+      ON u.id=h.physical_unit_id WHERE u.reference=$1) AS links,
+   (SELECT COUNT(*)::int FROM parcels p WHERE p.order_id=$2
+      AND (p.shipped_at IS NOT NULL OR p.in_transit_at IS NOT NULL)) AS departed`,[boxRef,orderId]);
+ ok(Number(s.links)===0&&Number(s.departed)===0,'G6_N15_PRODUCT_GAP_NON_CONFORMING_DEPARTURE');
+ return {bag_state:bags[0].state,bag_content:0,box_state:box[0]?box[0].state:null,
+   shipments:sh.length,draft_only:!!draft,departed_parcels:0};
 }
 // N16 : instantané PG (lecture seule) du carton, de sa composition, de l'expédition et des colis ; comparé avant et après les tentatives.
 async function snapN16(db,{orderId,boxRef,shipmentRef}){
