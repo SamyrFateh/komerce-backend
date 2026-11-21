@@ -408,3 +408,16 @@ test('répartir UNE commande : même capability exacte que « Répartir ce march
   expect(denied.status).toBe(403);
   expect(mockDistributeSingleOrder).not.toHaveBeenCalled();
 });
+
+test.each([
+  ['absente', {}],
+  ['vide', { hub_unit_ids: [] }],
+  ['sans identifiant exploitable', { hub_unit_ids: ['   '] }],
+])('la création d’expédition refuse une sélection de KOM-BOX %s', async (_label, body) => {
+  const res = await request(app())
+    .post('/api/admin/workspaces/operations/market/CM/boxes/shipment')
+    .send({ reference: 'SIM-EMPTY-SELECTION', ...body });
+
+  expect(res.status).toBe(400);
+  expect(res.body.code).toBe('JOURNEY_HUB_UNITS_REQUIRED');
+});
