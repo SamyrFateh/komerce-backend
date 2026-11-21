@@ -526,14 +526,16 @@ async function transitionOrderStatus({
       // backorder jusqu'ici — ce chemin de restauration générale était le deuxième
       // moteur non corrigé).
       const { rows: items } = await q.query(
-        `SELECT oi.product_id, oi.quantity, oi.variant_combo, oi.sku_id, p.has_variants, p.inventory_model
+        `SELECT oi.product_id, oi.quantity, oi.variant_combo, oi.sku_id, oi.procure_on_order, p.has_variants, p.inventory_model
            FROM order_items oi
            JOIN products p ON p.id = oi.product_id
           WHERE oi.order_id = $1`,
         [orderId]
       );
-      await adjustStock(q, items, 'increment');
-      cancelEffects.stockItemsRestored = items.length;
+      // Never restore a stock unit that an on-order sale never consumed.
+      const stockItems = items.filter(item => item.procure_on_order !== true);
+      await adjustStock(q, stockItems, 'increment');
+      cancelEffects.stockItemsRestored = stockItems.length;
       if (items.length > 0) {
         log.info({ order_id: orderId, items_count: items.length, previous_status: previousStatus }, 'Stock restored after order cancellation');
       }
