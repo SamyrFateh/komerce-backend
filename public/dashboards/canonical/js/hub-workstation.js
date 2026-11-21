@@ -279,10 +279,7 @@
       heading.textContent='Direction Hub · Tous marchés · '+payload.tasks.length+
         ' tâche(s) · '+Number(payload.overdue_count||0)+' alerte(s) ≥ 48 h';
       body.replaceChildren();
-      if (!payload.tasks.length) {
-        body.appendChild(make(doc,'p','hlc-director-empty','Aucune tâche Hub en attente sur les marchés actifs.'));
-        return payload;
-      }
+      // Une file vide rend les quatre colonnes : rien à traiter reste explicite.
       // Regroupement visuel d'une projection déjà autorisée côté serveur :
       // engagements et paiements sont DEUX décisions différentes. Aucune mutation ici.
       const groupSpecs = [
