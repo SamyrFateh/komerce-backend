@@ -55,7 +55,8 @@ async function state(){
   receipts.every(r=>r.shipment_id===SHIPMENT&&Number(r.received_qty)===1&&r.incident_id===null),'G6_PICKUP_SCOPE_DRIFT');
  return {base,orders,lines,receipts,scans};
 }
-async function customer(browser,owner){
+// opts.allowNoCode (scénario négatif N09 uniquement) : l'absence de code ou le refus de rotation est retourné au lieu de lever.
+async function customer(browser,owner,opts={}){
  // G6 test account was created in original M01 Chromium buyer run. Seed only an OTP
  // through the exact guarded staging fixture writer; NO new order or buyer account.
  const otp=String(crypto.randomInt(100000,1000000));
@@ -106,7 +107,10 @@ async function customer(browser,owner){
   const card=page.locator('.k-myorder-card[data-ref="'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6')+'"]');
   await card.waitFor({state:'visible',timeout:30000});await humanClick(null,card);
   const action=page.locator('.k-order-pickup-code');
-  await action.waitFor({state:'visible',timeout:15000});
+  if(opts.allowNoCode){
+   const shown=await action.waitFor({state:'visible',timeout:15000}).then(()=>true,()=>false);
+   if(!shown)return {ctx,page,code:null,no_code_ui:true};
+  }else await action.waitFor({state:'visible',timeout:15000});
   check(await action.getByText('Code de retrait',{exact:true}).isVisible(),'G6_PICKUP_CODE_CLIENT_UI_MISSING');
   // Code from PAYMENT long predates the 30-minute reveal window. Use the actual
   // client-only rotation UI once; never obtain/hash/guess code from PG.
@@ -117,6 +121,7 @@ async function customer(browser,owner){
   report.rotation_gate={http:response.status(),rotation_requests:rotateCount,
     blocked_paths:blocked.map(x=>x.path).filter(x=>!x.startsWith('/api/auth/otp/'))};
   save();
+  if(opts.allowNoCode&&response.status()!==200)return {ctx,page,code:null,rotation_status:response.status()};
   check(response.status()===200&&rotateCount===1&&
     !blocked.some(x=>x.path===revealPath),
     'G6_PICKUP_CLIENT_ROTATION_FAILED');
