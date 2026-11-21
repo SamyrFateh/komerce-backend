@@ -65,9 +65,10 @@ async function state(){
           pl.id AS line_id,pl.quantity,pl.confirmed_quantity,
           (SELECT count(*)::int FROM purchase_order_authorizations a WHERE a.purchase_order_id=po.id AND a.authorization_type='purchase_commitment') AS commitments,
           (SELECT count(*)::int FROM purchase_order_authorizations a WHERE a.purchase_order_id=po.id AND a.authorization_type='supplier_payment') AS payment_authorizations,
-          (SELECT count(*)::int FROM manual_purchase_executions e WHERE e.purchase_order_id=po.id) AS manual_executions,
-          (SELECT max(e.seller_label) FROM manual_purchase_executions e WHERE e.purchase_order_id=po.id) AS seller_label,
-          (SELECT max(e.proof_ref) FROM manual_purchase_executions e WHERE e.purchase_order_id=po.id) AS proof_ref
+          (SELECT count(*)::int FROM manual_purchase_executions e WHERE e.purchase_order_id=po.id AND e.purchase_line_id=pl.id) AS manual_executions,
+          (SELECT max(e.seller_label) FROM manual_purchase_executions e WHERE e.purchase_order_id=po.id AND e.purchase_line_id=pl.id) AS seller_label,
+          (SELECT max(e.proof_ref) FROM manual_purchase_executions e WHERE e.purchase_order_id=po.id AND e.purchase_line_id=pl.id) AS proof_ref,
+          (SELECT count(*)::int FROM purchase_lines x WHERE x.purchase_order_id=po.id AND x.cancelled_at IS NULL AND x.id<>pl.id) AS foreign_lines
      FROM purchase_orders po JOIN purchase_lines pl ON pl.purchase_order_id=po.id AND pl.cancelled_at IS NULL
      JOIN order_items oi ON oi.id=pl.order_item_id JOIN orders o ON o.id=oi.order_id
     WHERE po.id=$1 AND o.id=$2 AND o.reference=$3
@@ -122,6 +123,8 @@ async function main(){
   check(t.confirmed&&t.fingerprint===env.G6_CANONICAL_DB_FINGERPRINT,'G6_SIM_DB_TARGET_MISMATCH');
   report.sha=await checkedRuntimeSha();report.db_fingerprint=t.fingerprint;
   const before=await state();verifyBase(before);
+  // Une PO regroupée peut embarquer le reliquat ouvert d'un autre scénario (N13) : les preuves restent celles de LA ligne de cette commande.
+  report.po_foreign_lines=Number(before.foreign_lines);
   check(before.po_status==='notified'&&!before.sent_at&&!before.sent_channel&&!before.sent_note&&
     !before.supplier_order_id&&before.confirmed_quantity===null&&Number(before.manual_executions)===0,
     'G6_SIM_EXPECT_PRIOR_READONLY_CHECKPOINT');

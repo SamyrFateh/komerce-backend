@@ -176,6 +176,7 @@ jobs:
             test-results/g6-negative-n21-n22/
             test-results/g6-negative-n20/
             test-results/g6-negative-n29/
+            test-results/g6-negative-*/
             test-results/hub-v1-clicks/
           retention-days: 21
           if-no-files-found: warn
