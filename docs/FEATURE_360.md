@@ -337,6 +337,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - _in_ :
   - connecteurs fournisseurs (CSV, API, manuel, Noon, CJdropshipping, AliExpress, Allegro Sandbox, eBay Sandbox Browse enregistré dans le dispatch générique P3)
   - identité d’approvisionnement par produit : le canal MANUAL choisit un fournisseur réel enregistré ou, à défaut, le Fournisseur central Hub protégé ; cette identité reste distincte du vendeur externe, du provider et de Supplier Order Identity (migration 403)
+  - les produits saisis par le Fournisseur central Hub portent un contrat source V2 explicite sans vendeur ni SKU ; l’identité réelle du vendeur et les SKU arrivent seulement à la confirmation d’achat
   - contrat source fournisseur versionne V1/V2 : brut integral + preservation explicite media, axes et unites vendables quand la source les connait
   - publication produit et déclenchement de l audit prix via economic-engine
   - categories boutique admin

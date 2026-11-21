@@ -35226,6 +35226,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "routes/admin-catalog-workspace.js",
+                "targetFile": "middleware/upload.js"
+              },
+              {
                 "sourceFileId": "routes/integrations-aliexpress.js",
                 "targetFile": "db.js"
               },
