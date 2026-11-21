@@ -318,3 +318,17 @@ test('Direction Hub ne rend aucun workspace administratif ou physique concurrent
   expect(root.querySelectorAll('[data-hub-director-todo]')).toHaveLength(1);
   expect(fetch).toHaveBeenCalledTimes(1);
 });
+
+test('Direction Hub Kanban : quatre colonnes stables, y compris sans tâches', async () => {
+  const app=load(), host=el('section');
+  const fetch=jest.fn(async () => ({ ok:true, json:async () => ({
+    scope:'ALL_MARKETS', overdue_count:0, tasks:[],
+  }) }));
+  await app.renderDirectorQueue(host,{document:doc,fetch,user:{role:'admin'}});
+  for (const lane of ['commitment','payment','arbitrage','execution']) {
+    expect(host.querySelectorAll('[data-hub-director-group="'+lane+'"]')).toHaveLength(1);
+  }
+  expect(host.querySelectorAll('[data-hub-director-task]')).toHaveLength(0);
+  expect(host.querySelectorAll('[data-hub-director-group]')).toHaveLength(4);
+});
+
