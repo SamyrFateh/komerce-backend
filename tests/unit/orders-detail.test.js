@@ -41,6 +41,9 @@ function buildApp() {
 
 const BASE_ORDER = {
   id: 'order-uuid-1',
+  user_id: 'u1',
+  relais_id: 'relay-1',
+  market_id: 'market-1',
   reference: 'K12345',
   status: 'shipped',
   total_kmf: 10000,
@@ -122,6 +125,15 @@ describe('GET /api/orders/:ref', () => {
     expect(res.body.reference).toBe('K12345');
   });
 
+  it('retourne 404 sans détail si un client authentifié cherche la commande d’un autre client', async () => {
+    mockState.user = { id: 'intruder', role: 'client' };
+    mockDbQuery.mockResolvedValueOnce({ rows: [{ ...BASE_ORDER, user_id: 'owner' }] });
+    const res = await request(buildApp()).get('/api/orders/K12345');
+    expect(res.status).toBe(404);
+    expect(res.body).not.toHaveProperty('reference');
+    expect(mockDbQuery).toHaveBeenCalledTimes(1);
+  });
+
   it("agent_hub : voit cash_ref_code (isAdmin) mais PAS pickup_code (reserve a admin/agent_relais)", async () => {
     mockState.user = { id: 'hub1', role: 'agent_hub' };
     mockDbQuery
@@ -136,7 +148,7 @@ describe('GET /api/orders/:ref', () => {
   });
 
   it('agent_relais : voit cash_ref_code et pickup_code mais pas les champs fournisseur (admin seulement)', async () => {
-    mockState.user = { id: 'rel1', role: 'agent_relais' };
+    mockState.user = { id: 'rel1', role: 'agent_relais', relais_id: 'relay-1' };
     mockDbQuery
       .mockResolvedValueOnce({ rows: [BASE_ORDER] })
       .mockResolvedValueOnce({ rows: [] })
@@ -193,13 +205,13 @@ describe('GET /api/orders/:id/history', () => {
     mockState.user = { id: 'u1', role: 'client' };
     mockDbQuery.mockResolvedValueOnce({ rows: [] }); // pas de commande pour cet user
     const res = await request(buildApp()).get('/api/orders/order-1/history');
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 
   it('200 et historique si l\'utilisateur possede la commande', async () => {
     mockState.user = { id: 'u1', role: 'client' };
     mockDbQuery
-      .mockResolvedValueOnce({ rows: [{ id: 'order-1' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'order-1', user_id: 'u1', relais_id: 'relay-1', market_id: 'market-1' }] })
       .mockResolvedValueOnce({ rows: [{ status: 'shipped', note: null, created_at: 't1', changed_by_name: null }] });
 
     const res = await request(buildApp()).get('/api/orders/order-1/history');
@@ -207,13 +219,26 @@ describe('GET /api/orders/:id/history', () => {
     expect(res.body).toHaveLength(1);
   });
 
+  it('masque l’existence de la commande à un agent d’un autre relais', async () => {
+    mockState.user = { id: 'rel2', role: 'agent_relais', relais_id: 'relay-2' };
+    mockDbQuery.mockResolvedValueOnce({ rows: [{
+      id: 'order-1', user_id: 'u1', relais_id: 'relay-1', market_id: 'market-1',
+    }] });
+
+    const res = await request(buildApp()).get('/api/orders/order-1/history');
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('Commande introuvable');
+    expect(mockDbQuery).toHaveBeenCalledTimes(1);
+  });
+
   it('admin/agent_hub/agent_relais sautent la verification de propriete', async () => {
     mockState.user = { id: 'adm1', role: 'admin' };
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ status: 'shipped', note: null, created_at: 't1', changed_by_name: 'Hub' }] });
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'order-1', user_id: 'u1', relais_id: 'relay-1', market_id: 'market-1' }] })
+      .mockResolvedValueOnce({ rows: [{ status: 'shipped', note: null, created_at: 't1', changed_by_name: 'Hub' }] });
 
     const res = await request(buildApp()).get('/api/orders/order-1/history');
     expect(res.status).toBe(200);
-    // une seule requete (l'historique), pas de check de propriete prealable
-    expect(mockDbQuery).toHaveBeenCalledTimes(1);
+    expect(mockDbQuery).toHaveBeenCalledTimes(2);
   });
 });

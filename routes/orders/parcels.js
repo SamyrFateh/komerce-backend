@@ -6,9 +6,9 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*
+ * @depends       db.js, middleware/auth.js, services/order-read-authorization.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       order_items, orders, parcel_items, parcels, products
+ * @db-read       assignment_capability_ceiling, assignment_memberships, capability_registry, market_operating_assignments, markets, membership_capabilities, order_items, orders, parcel_items, parcels, products, relais, users
  * @db-write      none
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -42,6 +42,7 @@ const { authenticate, requireRole } = require('../../middleware/auth');
 const { validate }                  = require('../../middleware/validate');
 const { orders }                    = require('../../validators');
 const { markAvailability, partialShip, updateParcelStatus, cancelBackorder } = require('../../services/parcel-operations');
+const { canReadOrder } = require('../../services/order-read-authorization');
 
 // ─── POST /api/orders/:id/mark-availability ──────────────────────────────────
 
@@ -74,14 +75,13 @@ router.get('/:id/parcels', authenticate, async (req, res, next) => {
     const { id } = req.params;
 
     const { rows: [order] } = await db.query(
-      'SELECT id, reference, user_id, status FROM orders WHERE id = $1',
+      'SELECT id, reference, user_id, relais_id, market_id, status FROM orders WHERE id = $1',
       [id]
     );
     if (!order) return res.status(404).json({ error: 'Commande introuvable' });
 
-    const isPrivileged = ['admin', 'agent_hub', 'agent_relais'].includes(req.user.role);
-    if (!isPrivileged && order.user_id !== req.user.id) {
-      return res.status(403).json({ error: 'Accès refusé' });
+    if (!(await canReadOrder(req.user, order))) {
+      return res.status(404).json({ error: 'Commande introuvable' });
     }
 
     const { rows: parcelRows } = await db.query(

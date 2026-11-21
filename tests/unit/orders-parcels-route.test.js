@@ -48,6 +48,12 @@ jest.mock('../../middleware/validate', () => ({
 const mockQuery = jest.fn();
 jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
 
+jest.mock('../../services/order-read-authorization', () => ({
+  canReadOrder: async (user, order) => user.role === 'admin' || user.role === 'agent_hub' ||
+    (user.role === 'client' && String(user.id) === String(order.user_id)) ||
+    (user.role === 'agent_relais' && String(user.relais_id) === String(order.relais_id)),
+}));
+
 const mockMarkAvailability = jest.fn();
 const mockPartialShip = jest.fn();
 const mockUpdateParcelStatus = jest.fn();
@@ -141,11 +147,11 @@ describe('parcels — GET /:id/parcels', () => {
     expect(res.status).toBe(404);
   });
 
-  it('403 si non privilégié et pas propriétaire', async () => {
+  it('404 sans divulgation si non privilégié et pas propriétaire', async () => {
     mockState.user = { id: 'other-user', role: 'client' };
     mockQuery.mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'CMD-1', user_id: 'owner-1', status: 'shipped' }] });
     const res = await request(app).get('/api/orders/o1/parcels');
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 
   it('autorise le propriétaire (client)', async () => {
@@ -158,12 +164,21 @@ describe('parcels — GET /:id/parcels', () => {
   });
 
   it.each(['admin', 'agent_hub', 'agent_relais'])('autorise le rôle privilégié %s même si pas propriétaire', async (role) => {
-    mockState.user = { id: 'someone-else', role };
+    mockState.user = { id: 'someone-else', role, relais_id: 'relay-1' };
     mockQuery
-      .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'CMD-1', user_id: 'owner-1', status: 'shipped' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'CMD-1', user_id: 'owner-1', relais_id: 'relay-1', status: 'shipped' }] })
       .mockResolvedValueOnce({ rows: [] });
     const res = await request(app).get('/api/orders/o1/parcels');
     expect(res.status).toBe(200);
+  });
+
+  it('refuse le détail colis à un agent relais d’un autre relais', async () => {
+    mockState.user = { id: 'agent-1', role: 'agent_relais', relais_id: 'relay-1' };
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'CMD-1', user_id: 'owner-1', relais_id: 'relay-2', status: 'available' }] });
+    const res = await request(app).get('/api/orders/o1/parcels');
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('Commande introuvable');
+    expect(mockQuery).toHaveBeenCalledTimes(1);
   });
 
   it('enrichit chaque colis avec ses items et calcule total_kmf', async () => {
