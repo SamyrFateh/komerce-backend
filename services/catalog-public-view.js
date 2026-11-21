@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        product_db_row
  * @outputs       public_product_view
- * @depends       services/supplier-source-resolution.js
+ * @depends       services/supplier-source-resolution.js, services/central-hub-on-order.js
  * @used-by       routes/products.js
  * @db-read       catalog_product_sale_holds, catalog_media, catalog_media_visual_fr_reviews, sourcing_candidates, markets, product_market_exposure, product_market_price_drafts, product_skus, product_suppliers, product_variants, suppliers
  * @db-write      (none)
@@ -19,6 +19,7 @@
 'use strict';
 
 const { skuSourceResolvedSql } = require('./supplier-source-resolution');
+const { centralHubOnOrderSql } = require('./central-hub-on-order');
 
 const PUBLIC_CATALOG_EXCLUDED_REF_PREFIXES = Object.freeze([
   'SHOWCASE-V2-',
@@ -148,13 +149,13 @@ function supplierOrderIdentitySql(skuAlias) {
   AND ${skuSourceResolvedSql(s)})`;
 }
 
-function sellableSkuSql(skuAlias) {
+function sellableSkuSql(skuAlias, productAlias) {
   const s = assertSqlAlias(skuAlias);
   return `(
     ${s}.is_active = TRUE
-    AND ${s}.stock > 0
+    AND ((${s}.stock > 0 AND ${supplierOrderIdentitySql(s)})
+      OR ${centralHubOnOrderSql(productAlias, s)})
     AND (${s}.price_kmf IS NULL OR ${s}.price_kmf > 0)
-    AND ${supplierOrderIdentitySql(s)}
   )`;
 }
 
@@ -179,7 +180,7 @@ function sellableCatalogUnitSql(alias = 'p') {
         SELECT 1
           FROM product_skus sellable_sku
          WHERE sellable_sku.product_id = ${a}.id
-           AND ${sellableSkuSql('sellable_sku')}
+           AND ${sellableSkuSql('sellable_sku', a)}
       )
       AND NOT EXISTS (
         SELECT 1
