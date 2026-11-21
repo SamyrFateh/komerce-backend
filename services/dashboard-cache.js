@@ -152,6 +152,9 @@ function cacheMiddleware(endpointName) {
       cost_status: req.query.cost_status,
       channel: req.query.channel,
       origin: req.query.origin,
+      // IMPORTANT: le filtre réel/recette modifie les agrégats SQL.
+      // Son absence mélangeait les payloads réel et simulation pendant le TTL.
+      simulation_scope: req.query.simulation_scope,
     };
     const key = buildCacheKey(endpointName, filters);
     res.locals._cacheKey = key;
