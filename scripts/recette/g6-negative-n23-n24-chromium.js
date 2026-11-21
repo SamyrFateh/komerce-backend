@@ -106,6 +106,11 @@ async function attempt(page,wait,kind,typed,{expectRequest}){
  }
  report.attempts.push(row);save();return row;
 }
+// Le message d'erreur ne doit être construit que si une tentative a été acceptée (sinon TypeError sur find() undefined).
+function assertNoneAccepted(sent){
+ const accepted=sent.find(a=>a.http===200);
+ if(accepted)throw Error('G6_N23_PRODUCT_GAP_ACCEPTED_'+accepted.kind);
+}
 async function runN23(browser,c,relaisId){
  const {actor,agentId}=await bindAgent(browser,relaisId);
  report.agent_id=agentId;
@@ -123,7 +128,7 @@ async function runN23(browser,c,relaisId){
   const right=await attempt(actor.page,wait,'RIGHT_CODE_WHILE_LOCKED',real,{expectRequest:true});reach('RIGHT_CODE_TRIED');
   c.code=null;
   const sent=report.attempts.filter(a=>a.request_sent);
-  check(!sent.some(a=>a.http===200),'G6_N23_PRODUCT_GAP_ACCEPTED_'+sent.find(a=>a.http===200).kind);
+  assertNoneAccepted(sent);
   check(right.http===429||right.ui_blocked,'G6_N23_PRODUCT_GAP_RIGHT_CODE_NOT_LOCKED_'+right.http);
   report.lock_http_429=sent.filter(a=>a.http===429).length;
   report.silent_refusals=report.attempts.filter(a=>(a.request_sent||a.ui_blocked)&&!a.message_visible).map(a=>a.kind);
@@ -185,4 +190,4 @@ async function main(){
  finally{if(clientContext)await clientContext.close().catch(()=>{});if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end();console.log(JSON.stringify(report))}
 }
 if(require.main===module)main();
-module.exports={main,guardCollect,counter,openCounter,pageEvents,norm,check,URL_COLLECT,bindAgent};
+module.exports={main,assertNoneAccepted,guardCollect,counter,openCounter,pageEvents,norm,check,URL_COLLECT,bindAgent};
