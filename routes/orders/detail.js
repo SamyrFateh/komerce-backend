@@ -6,9 +6,9 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/parcel-order-membership.js, services/*
+ * @depends       db.js, middleware/auth.js, services/order-read-authorization.js, services/parcel-order-membership.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       order_items, order_status_history, orders, parcel_items, parcels, products, relais, users
+ * @db-read       assignment_capability_ceiling, assignment_memberships, capability_registry, market_operating_assignments, markets, membership_capabilities, order_items, order_status_history, orders, parcel_items, parcels, products, relais, users
  * @db-write      none
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -31,6 +31,7 @@ const db      = require('../../db');
 const { authenticate } = require('../../middleware/auth');
 const { softAuthenticate } = require('../../middleware/soft-auth'); // F3 LOT-387
 const { memberParcelPredicate } = require('../../services/parcel-order-membership');
+const { canReadOrder } = require('../../services/order-read-authorization');
 
 // ─── GET /api/orders/:ref — détail + suivi (public par référence) ─────────────
 
@@ -54,6 +55,12 @@ router.get('/:ref', softAuthenticate, async (req, res, next) => {
         );
 
     if (!order) return res.status(404).json({ error: 'Commande introuvable' });
+
+    // A valid session is not a global read grant: the reference/id must still
+    // belong to this customer, relay, or delegated market before loading details.
+    if (req.user && !(await canReadOrder(req.user, order))) {
+      return res.status(404).json({ error: 'Commande introuvable' });
+    }
 
     // Articles de la commande
     const { rows: items } = await db.query(
@@ -147,15 +154,11 @@ router.get('/:ref', softAuthenticate, async (req, res, next) => {
 
 router.get('/:id/history', authenticate, async (req, res, next) => {
   try {
-    // Vérifier que la commande appartient à l'utilisateur (sauf admin/agents)
-    const isPrivileged = ['admin', 'agent_hub', 'agent_relais'].includes(req.user.role);
-
-    if (!isPrivileged) {
-      const { rows: [order] } = await db.query(
-        'SELECT id FROM orders WHERE id = $1 AND user_id = $2',
-        [req.params.id, req.user.id]
-      );
-      if (!order) return res.status(403).json({ error: 'Accès refusé' });
+    const { rows: [order] } = await db.query(
+      'SELECT id, user_id, relais_id, market_id FROM orders WHERE id = $1', [req.params.id]
+    );
+    if (!order || !(await canReadOrder(req.user, order))) {
+      return res.status(404).json({ error: 'Commande introuvable' });
     }
 
     const { rows } = await db.query(
