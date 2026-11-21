@@ -42,7 +42,7 @@ async function bootstrapFreshScenario({scenario='M01',toStage='CLIENT_PICKUP',ad
   if(typeof adapters.resolveMultiSkuProduct!=='function')throw Error('G6_FRESH_BOOTSTRAP_MULTI_SKU_RESOLVER_REQUIRED');
   variants=await adapters.resolveMultiSkuProduct({runtime});
   if(!variants||!REF.test(String(variants.product_ref||''))||variants.skus?.length!==2)throw Error('G6_FRESH_BOOTSTRAP_MULTI_SKU_INVALID');
- }else if(scenario!=='M01'&&scenario!=='N07'&&scenario!=='N20'){
+ }else if(!['M01','N07','N20','N11','N12','N13','N14','N15','N16'].includes(scenario)){
   if(typeof adapters.resolveLocalStockProduct!=='function')throw Error('G6_FRESH_BOOTSTRAP_PRODUCT_RESOLVER_REQUIRED');
   product=await adapters.resolveLocalStockProduct({runtime});
   if(!product||!REF.test(String(product.product_ref||''))||!Number.isInteger(product.price)||product.price<=0)
