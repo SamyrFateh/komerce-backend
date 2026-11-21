@@ -352,3 +352,23 @@ test('Direction Hub : relecture SSE ne duplique pas les cartes et suit les mutat
   expect(host.querySelector('[data-hub-director-todo]')).not.toBe(first);
 });
 
+
+test('Direction Hub : un refus 403 efface les cartes de supervision précédemment autorisées', async () => {
+  const app = load(), host = el('section');
+  let denied = false;
+  const fetch = jest.fn(async () => ({
+    ok: !denied, status: denied ? 403 : 200,
+    json: async () => denied ? {error:'Rôle révoqué'} : {
+      scope:'ALL_MARKETS', overdue_count:0,
+      tasks:[{kind:'AUTHORIZE_COMMITMENT',owner:'responsable_hub',
+        market:{code:'KM'}, missing:'Engagement à valider', age_hours:1,
+        subject:{po_id:'11111111-1111-4111-8111-111111111111'}}],
+    },
+  }));
+  await app.renderDirectorQueue(host, { document:doc, fetch, user:{role:'admin'} });
+  expect(host.querySelectorAll('[data-hub-director-task]')).toHaveLength(1);
+  denied = true;
+  await app.renderDirectorQueue(host, { document:doc, fetch, user:{role:'admin'} });
+  expect(host.querySelectorAll('[data-hub-director-task]')).toHaveLength(0);
+  expect(host.textContent).toContain('Accès expiré ou non autorisé');
+});
