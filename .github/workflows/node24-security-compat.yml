@@ -1,0 +1,33 @@
+name: Node 24 security compatibility (candidate)
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.nvmrc'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/node24-security-compat.yml'
+permissions:
+  contents: read
+jobs:
+  node24-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node 24 patched security release
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.22.1'
+          cache: npm
+      - name: Report runtime and crypto
+        run: |
+          node --version
+          npm --version
+          node -p "JSON.stringify({node:process.version, openssl:process.versions.openssl, uv:process.versions.uv})"
+      - name: Clean install
+        run: npm ci --ignore-scripts
+      - name: Dependencies audit (blocking gate)
+        run: npm run audit:gate
+      - name: Existing P0 runtime checks
+        run: npm run test:p0
