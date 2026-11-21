@@ -3445,7 +3445,17 @@
       autoFrenchFailed: new Set(),
       autoFrenchRunning: false,
     };
+    const identity = {};
+    rootNode.__dashboardViewIdentity = identity;
+    let requestSeq = 0;
+    const workspaceBusy = () => {
+      const focused = doc.activeElement;
+      return Boolean(rootNode.querySelector?.('[data-catalog-compare-dialog], [aria-modal="true"]') ||
+        (focused && rootNode.contains?.(focused) &&
+          focused.matches?.('input,textarea,select,[contenteditable="true"]')));
+    };
     context.reload = async (reloadOptions = {}) => {
+      const currentRequest = ++requestSeq;
       try {
         const params = new URLSearchParams({
           ...(context.workspaceView === 'refinery'
@@ -3467,13 +3477,28 @@
           params.set('catalog_offset', String(filters.offset || 0));
         }
         const payload = await jsonRequest(fetchFn, `${ENDPOINT}?${params.toString()}`);
+        if (currentRequest !== requestSeq || rootNode.__dashboardViewIdentity !== identity ||
+            (reloadOptions.background && (rootNode.isConnected === false || workspaceBusy()))) return payload;
         renderPayload(rootNode, ui, doc, payload, context);
+        rootNode.removeAttribute?.('data-dashboard-stale');
         if (context.afterRender) context.afterRender(payload);
         activeContext = context;
         activePayload = payload;
         // No browser-triggered preparation: workers and explicit Catalogue actions own mutations.
         return payload;
       } catch (error) {
+        if (currentRequest !== requestSeq || rootNode.__dashboardViewIdentity !== identity) return {};
+        if (reloadOptions.background) {
+          if (error.status === 401 || error.status === 403) {
+            rootNode.replaceChildren();
+            const notice = doc.createElement('p');
+            notice.setAttribute('role','alert');
+            notice.textContent = 'Accès expiré ou non autorisé. Rechargez votre session.';
+            rootNode.appendChild(notice);
+            rootNode.removeAttribute?.('data-dashboard-stale');
+          } else rootNode.setAttribute?.('data-dashboard-stale','true');
+          throw error;
+        }
         rootNode.replaceChildren();
         const panel = doc.createElement('section');
         panel.className = 'kmc-workspace-header';
@@ -3484,6 +3509,11 @@
         throw error;
       }
     };
+    globalThis.KomerceDashboardFreshness?.watch?.({
+      root: rootNode, pollMs: 60000, streamEnabled: options.user?.role === 'admin',
+      isBusy: workspaceBusy,
+      refresh: () => context.reload({ background:true }),
+    });
     return context.reload();
   }
 
