@@ -50,7 +50,7 @@ async function openDetails(page,selector){
 const boxRow=(section,page,ref)=>section.locator('tr').filter({has:page.getByText(ref,{exact:true})});
 // Un geste d'écran = une requête POST permise (charge utile vérifiée), jamais de nouvel essai. Bouton absent ou inactif : refus d'écran, rien d'envoyé.
 async function act(actor,endpoint,button,validate){
- let permitted=0;
+ let permitted=0;const guard=[];
  const url=BASE+endpoint;
  const handler=async route=>{
   const req=route.request();
@@ -58,16 +58,26 @@ async function act(actor,endpoint,button,validate){
   let b;try{b=req.postDataJSON()}catch(_){b=null}
   if(permitted===0&&validate(b,req)){permitted++;return route.continue()}
   actor.blocked.push({method:req.method(),path:new URL(req.url()).pathname});
+  guard.push({path:new URL(req.url()).pathname,body_keys:b&&typeof b==='object'?Object.keys(b).slice(0,12):null});
   return route.abort('blockedbyclient');
  };
  await actor.page.route(url,handler);
  try{
   if(!await button.count())return {present:false,enabled:false,http:null};
   if(!await button.first().isEnabled())return {present:true,enabled:false,http:null};
-  const pending=actor.page.waitForResponse(r=>r.url()===url&&r.request().method()==='POST',{timeout:30000});
-  await humanClick(null,button.first(),{timeout:15000});
-  const res=await pending;const j=await res.json().catch(()=>({}));
-  return {present:true,enabled:true,http:res.status(),code:j.code||j.error?.code||null};
+  // Le verdict ne dépend jamais d'une réponse qui n'arrive pas : réponse, requête avortée par notre garde, ou silence (écran qui refuse en amont).
+  let settle;const done=new Promise(r=>{settle=r});
+  const onResp=r=>{if(r.url()===url&&r.request().method()==='POST')settle({res:r})};
+  const onFail=q=>{if(q.url()===url&&q.method()==='POST')settle({failed:true})};
+  actor.page.on('response',onResp);actor.page.on('requestfailed',onFail);
+  try{
+   await humanClick(null,button.first(),{timeout:15000});
+   const quiet=new Promise(r=>setTimeout(()=>r({quiet:true}),6000));
+   const out=await Promise.race([done,quiet]);
+   if(out.res){const j=await out.res.json().catch(()=>({}));return {present:true,enabled:true,http:out.res.status(),code:j.code||j.error?.code||null};}
+   if(out.failed||guard.length)return {present:true,enabled:true,http:null,code:null,guard_blocked:guard.slice(0,3)};
+   return {present:true,enabled:true,http:null,code:null,no_request:true};
+  }finally{actor.page.off('response',onResp);actor.page.off('requestfailed',onFail)}
  }finally{await actor.page.unroute(url,handler)}
 }
 async function probe(page,kind,endpoint,data){
@@ -113,7 +123,7 @@ async function runN15(browser){
   const r=await act(actor,API+'/bags/'+bag.id+'/close',close,b=>b&&Object.keys(b).length===0);
   report.attempts.push({kind:'BAG_CLOSE_SCREEN',http:r.http,ui_blocked:!r.present||!r.enabled,message:text,message_visible:/\b0 \/ \d+/.test(text)});
   if(is2xx(r.http))report.gaps.push('BAG_CLOSED_INCOMPLETE_BY_SCREEN');
-  if(!r.present&&!/\b0 \/ \d+/.test(text))report.ux_signal='FERMETURE_SAC_ABSENTE_SANS_MOTIF_AFFICHE';
+  if((!r.present||r.no_request)&&!/\b0 \/ \d+/.test(text))report.ux_signal='FERMETURE_SAC_ABSENTE_SANS_MOTIF_AFFICHE';
   reach('BAG_CLOSE_TRIED');
   await probe(actor.page,'bag_close',API+'/bags/'+bag.id+'/close',{});
   // 3. KOM-BOX vide créée par l'écran ; le sac incomplet ne peut ni y entrer ni la remplir.
