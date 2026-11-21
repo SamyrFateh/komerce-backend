@@ -21,6 +21,7 @@ describe('G6 N34 independent PG readback — not a Chromium scenario pass',()=>{
   });
   expect(q.query).toHaveBeenCalledTimes(1);
   expect(q.query.mock.calls[0][0]).toContain("WHERE system_key='central_hub'");
+  expect(q.query.mock.calls[0][0].trim().startsWith('SELECT')).toBe(true);
   for(const bad of [[],[hub,hub],[{...hub,is_active:false}],[{...hub,deleted_at:'now'}],
    [{...hub,auto_order:true}],[{...hub,owner_scope:'market'}]]){
    await expect(centralHubIdentity(db(bad))).rejects.toThrow(/G6_N34_CENTRAL_HUB_/);
