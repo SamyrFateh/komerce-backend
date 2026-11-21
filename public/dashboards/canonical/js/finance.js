@@ -436,7 +436,12 @@
       headers: { Accept: 'application/json' },
     });
     const body = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(body.error || `Erreur HTTP ${response.status}`);
+    if (!response.ok) {
+      const error = new Error(body.error || `Erreur HTTP ${response.status}`);
+      error.status = response.status;
+      error.code = body.code || null;
+      throw error;
+    }
     return body;
   }
 
@@ -488,7 +493,11 @@
         return Object.freeze({ payload, result, endpoint, period });
       } catch (error) {
         if (requestId !== requestSeq || rootNode.__dashboardViewIdentity !== identity) return {};
-        if (background && hasData) rootNode.setAttribute?.('data-dashboard-stale', 'true');
+        if (error.status === 401 || error.status === 403) {
+          renderer.render(rootNode, schema, { state: 'error', stateMessage: 'Accès expiré ou non autorisé. Rechargez votre session.' });
+          rootNode.removeAttribute?.('data-dashboard-stale');
+          hasData = false;
+        } else if (background && hasData) rootNode.setAttribute?.('data-dashboard-stale', 'true');
         else renderer.render(rootNode, schema, { state: 'error', stateMessage: error.message });
         throw error;
       }
