@@ -136,7 +136,7 @@ async function runNegativeScenario({scenario,env,db,adapters}){
   }catch(e){
    // Verdict : défaut produit ou écran manquant relevé par le script ; sinon l'erreur d'origine.
    let child=null;try{child=readJson(L.report)}catch(_){}
-   const m=/(?:G6_N(?:2[0-9]|3[0-9]|4[0-9]|1[1-9])[A-Za-z0-9]{0,3}_(?:SCREEN_MISSING|PRODUCT_GAP)|PREREQ_MISSING_SECOND_RELAY|PREREQ_MISSING_OTHER_ACTIVE_MARKET|PREREQ_MISSING_FOREIGN_MARKET_ORDER)[A-Za-z0-9_]*/.exec(String(child?.error||''));
+   const m=/(?:G6_N(?:2[0-9]|3[0-9]|4[0-9]|1[1-9])[A-Za-z0-9]{0,3}_(?:SCREEN_MISSING|PRODUCT_GAP)|PREREQ_MISSING_SECOND_RELAY|PREREQ_MISSING_OTHER_ACTIVE_MARKET|PREREQ_MISSING_FOREIGN_MARKET_ORDER|G6_N22_PREREQ_MISSING_ORDER_AT_RELAY_B|G6_N32_PREREQ_MISSING_RESTRICTED_HUB_DELEGATION_OR_FOREIGN_PO)[A-Za-z0-9_]*/.exec(String(child?.error||''));
    throw Error(m?m[0]:e.message);
   }
   // N35 et N36 : oracles PG seuls sur la chaîne M01 (aucun geste négatif).
