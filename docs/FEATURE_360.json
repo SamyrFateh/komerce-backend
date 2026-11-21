@@ -3404,7 +3404,7 @@
             ]
           },
           "services": {
-            "count": 87,
+            "count": 88,
             "files": [
               {
                 "declared": "services/boutique-taxonomy-admin.js",
@@ -3610,6 +3610,11 @@
                 "declared": "services/catalog-workspace.js",
                 "resolvedPath": "services/catalog-workspace.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/central-hub-on-order.js",
+                "resolvedPath": "services/central-hub-on-order.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/commercial-category-agreement.js",
@@ -3844,7 +3849,7 @@
             ]
           },
           "tests": {
-            "count": 210,
+            "count": 211,
             "files": [
               {
                 "declared": "tests/e2e-api/products.kmf-numeric.e2e.test.js",
@@ -4557,6 +4562,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/g6-central-hub-on-order.test.js",
+                "resolvedPath": "tests/unit/g6-central-hub-on-order.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/gate-a-final-real-seams.test.js",
                 "resolvedPath": "tests/unit/gate-a-final-real-seams.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4909,7 +4919,7 @@
             ]
           }
         },
-        "totalFiles": 457,
+        "totalFiles": 459,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 33,
