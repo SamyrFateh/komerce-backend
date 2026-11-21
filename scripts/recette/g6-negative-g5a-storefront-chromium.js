@@ -62,13 +62,13 @@ async function productFixture(){
  WHERE m.code=$1 AND ($2='' OR p.product_ref=$2)
    AND (
     ($3='N01' AND p.lifecycle_status='active' AND p.is_active=TRUE
-       AND e.commercial_exposure='ENABLED' AND EXISTS (SELECT 1 FROM product_skus k WHERE k.product_id=p.id AND k.is_active=TRUE)
+       AND e.commercial_exposure='ENABLED' AND EXISTS (SELECT 1 FROM product_skus k WHERE k.product_id=p.id AND k.is_active=TRUE AND k.stock>0)
        AND NOT EXISTS (SELECT 1 FROM product_market_price_drafts d WHERE d.product_id=p.id AND d.market_id=m.id AND d.status='LOCAL_ACTIVE'))
     OR ($3='N02' AND p.lifecycle_status='active' AND p.is_active=TRUE
        AND e.commercial_exposure='DISABLED' AND EXISTS (SELECT 1 FROM product_market_price_drafts d WHERE d.product_id=p.id AND d.market_id=m.id AND d.status='LOCAL_ACTIVE'))
-    OR ($3='N03' AND m.lifecycle_status='SUSPENDED' AND p.lifecycle_status='active' AND p.is_active=TRUE)
+    OR ($3='N03' AND m.lifecycle_status='SUSPENDED' AND p.lifecycle_status='active' AND p.is_active=TRUE AND p.is_available=TRUE AND e.commercial_exposure='ENABLED' AND EXISTS (SELECT 1 FROM product_market_price_drafts d WHERE d.product_id=p.id AND d.market_id=m.id AND d.status='LOCAL_ACTIVE') AND EXISTS (SELECT 1 FROM product_skus k WHERE k.product_id=p.id AND k.is_active=TRUE AND k.stock>0))
     OR ($3='N05' AND p.lifecycle_status='candidate' AND
-       NOT EXISTS (SELECT 1 FROM product_skus k WHERE k.product_id=p.id AND k.is_active=TRUE))
+       NOT EXISTS (SELECT 1 FROM product_skus k WHERE k.product_id=p.id AND k.is_active=TRUE AND k.stock>0))
    )
  ORDER BY (p.product_ref='KPR-000165') DESC,p.product_ref LIMIT 1
  `,[MARKET,ref,SCENARIO]);
@@ -79,6 +79,22 @@ async function productFixture(){
    :SCENARIO==='N02'?{exposure_recorded:p.exposure_recorded,commercial_exposure:p.commercial_exposure}
    :SCENARIO==='N03'?{market_lifecycle:p.market_lifecycle,route_available:null}
    :{product_candidate:true,sku_complete:false,soi_complete:false}};
+}
+// Relire les mêmes décisions de marché après le geste : l'absence de commande ne suffit pas
+// si le prix, l'exposition, le statut du produit ou la suspension ont changé entre-temps.
+async function productMarketTruth(id){
+ const {rows:[p]}=await db.query(`
+ SELECT p.lifecycle_status::text AS lifecycle_status,p.is_active,p.is_available,
+  m.lifecycle_status::text AS market_lifecycle,e.commercial_exposure::text AS exposure,
+  EXISTS(SELECT 1 FROM product_market_price_drafts d
+   WHERE d.product_id=p.id AND d.market_id=m.id AND d.status='LOCAL_ACTIVE') AS price_active,
+  (SELECT count(*)::int FROM product_skus k WHERE k.product_id=p.id AND k.is_active=TRUE) AS active_skus
+ FROM products p CROSS JOIN markets m
+ LEFT JOIN product_market_exposure e ON e.product_id=p.id AND e.market_id=m.id
+ WHERE p.id=$1 AND m.code=$2
+ `,[id,MARKET]);
+ check(!!p,'G6_G5A_PRODUCT_STATE_NOT_READABLE');
+ return p;
 }
 async function stockAvailable(id){
  const {rows:[r]}=await db.query('SELECT COALESCE(SUM(stock),0)::int AS available FROM product_skus WHERE product_id=$1',[id]);
@@ -176,6 +192,7 @@ async function main(){
   report.db_fingerprint=target.fingerprint;await version();
   const f=await productFixture();report.product_ref=f.ref;report.product_id=f.id;report.precondition=f.precondition;
   report.before_stock_available=await stockAvailable(f.id);
+  report.product_market_before=await productMarketTruth(f.id);
   const b=await fixtureBuyer();report.buyer_id=b.buyer.id;
   report.before=await snapshotBuyerEffects(db,b.buyer.id);
   browser=await chromium.launch({headless:true});obs=observe(browser,OUT);
@@ -199,6 +216,9 @@ async function main(){
   check(report.blocked.length===0,'G6_G5A_UNEXPECTED_MUTATION_BLOCKED');
   report.after=await snapshotBuyerEffects(db,b.buyer.id);
   report.after_stock_available=await stockAvailable(f.id);
+  report.product_market_after=await productMarketTruth(f.id);
+  check(JSON.stringify(report.product_market_after)===JSON.stringify(report.product_market_before),
+   'G6_'+SCENARIO+'_PRODUCT_GAP_MARKET_PRODUCT_STATE_CHANGED');
   // Le système d'observabilité ne conserve les traces que pour un échec.
   // Ici nous les conservons délibérément pour la preuve de certification : pas de trace fictive.
   await obs.finish(true);obs=null;
