@@ -37,7 +37,11 @@ const N1718_SCRIPT='scripts/recette/g6-negative-n17-n18-chromium.js';
 const N1718_REPORT='test-results/g6-negative-n17-n18/report.json';
 const N19_SCRIPT='scripts/recette/g6-negative-n19-chromium.js';
 const N19_REPORT='test-results/g6-negative-n19/report.json';
+const N2832_SCRIPT='scripts/recette/g6-negative-n28-n32-chromium.js';
+const N2832_REPORT='test-results/g6-negative-n28-n32/report.json';
 const LOCAL_NEG={
+ N28:{script:N2832_SCRIPT,report:N2832_REPORT,phase:'N28_NETWORK_FAILURE_RETRY',oracle:'N28_SINGLE_EFFECT_ORACLE'},
+ N32:{script:N2832_SCRIPT,report:N2832_REPORT,phase:'N32_CROSS_MARKET_ROLES',oracle:'N32_NO_MUTATION_ORACLE'},
  N17:{script:N1718_SCRIPT,report:N1718_REPORT,phase:'N17_FORWARDER_ROLE_MARKET_ATTEMPTS',oracle:'N17_NO_TRANSITION_ORACLE',to:'HUB_SHIPMENT',ship:true},
  N18:{script:N1718_SCRIPT,report:N1718_REPORT,phase:'N18_CUSTOMS_HOLD_ATTEMPTS',oracle:'N18_HOLD_RELEASE_ORACLE',to:'FORWARDER',ship:true},
  N19:{script:N19_SCRIPT,report:N19_REPORT,phase:'N19_LOCAL_TRANSPORT_DELAY_LOSS',oracle:'N19_LOSS_INCIDENT_ORACLE',to:'CUSTOMS'},
@@ -104,15 +108,16 @@ async function runNegativeScenario({scenario,env,db,adapters}){
   }catch(e){
    // Verdict : défaut produit ou écran manquant relevé par le script ; sinon l'erreur d'origine.
    let child=null;try{child=readJson(L.report)}catch(_){}
-   const m=/(?:G6_N(?:2[0-4]|29|1[1-9])_(?:SCREEN_MISSING|PRODUCT_GAP)|PREREQ_MISSING_SECOND_RELAY|PREREQ_MISSING_OTHER_ACTIVE_MARKET)[A-Za-z0-9_]*/.exec(String(child?.error||''));
+   const m=/(?:G6_N(?:2[0-4]|29|1[1-9]|28|3[0-8])_(?:SCREEN_MISSING|PRODUCT_GAP)|PREREQ_MISSING_SECOND_RELAY|PREREQ_MISSING_OTHER_ACTIVE_MARKET|PREREQ_MISSING_FOREIGN_MARKET_ORDER)[A-Za-z0-9_]*/.exec(String(child?.error||''));
    throw Error(m?m[0]:e.message);
   }
   const g=readJson(L.report);
   if(!/_CHROMIUM_PASS$/.test(String(g.verdict))||g.order_id!==result.order_id)throw Error('G6_'+scenario+'_SCREEN_MISSING_NOT_PROVEN');
   out.stages.push({stage_id:phase,steps_reached:g.steps_reached,page_events:g.page_events,attempts:g.attempts||null,tabs:g.tabs||null,intruder:g.intruder||null,control:g.control||null,reverse:g.reverse||null,ux_signal:g.ux_signal||null,
-   legit_handoff_after_lock:g.legit_handoff_after_lock||null,screen:g.screen||null,probes:g.probes||null,director:g.director||null});
-  const o=scenario==='N23'
-   ?await N.oracleN23(db,{orderId:result.order_id,agentId:g.agent_id,minFailures:5,assertNoHubOrTransport})
+   legit_handoff_after_lock:g.legit_handoff_after_lock||null,after_http500:g.after_http500||null,after_lost_response:g.after_lost_response||null,screen:g.screen||null,probes:g.probes||null,director:g.director||null});
+  const o=scenario==='N28'?await N.oracleN28(db,{orderId:result.order_id,committedBeforeRetry:g.committed_before_retry,assertNoHubOrTransport})
+   :scenario==='N32'?await N.oracleN32(db,{orderId:result.order_id,snapshot:g.snapshot,assertNoHubOrTransport})
+   :scenario==='N23'   ?await N.oracleN23(db,{orderId:result.order_id,agentId:g.agent_id,minFailures:5,assertNoHubOrTransport})
    :scenario==='N24'?await N.oracleN24(db,{orderId:result.order_id,assertNoHubOrTransport})
    :scenario==='N20'?await N.oracleN20(db,{orderId:result.order_id})
    :scenario==='N17'?await N.oracleN17(db,{orderId:result.order_id,shipmentRef:ship.reference,baseline:g.baseline})
@@ -134,6 +139,7 @@ async function runNegativeScenario({scenario,env,db,adapters}){
    N11:'G6_N11_PO_WITHOUT_COMMITMENT_REFUSED_NO_ENGAGEMENT_PG_PASS',N12:'G6_N12_PAYMENT_SINGLE_VALIDATOR_REFUSED_NO_PAYMENT_PG_PASS',
    N17:'G6_N17_FORWARDER_OUT_OF_ROLE_MARKET_REFUSED_NO_TRANSITION_PG_PASS',N18:'G6_N18_CUSTOMS_HOLD_NO_TRANSIT_THEN_RELEASE_PG_PASS',
    N19:'G6_N19_LOCAL_TRANSPORT_DELAY_LOSS_INCIDENT_NO_WITHDRAWAL_PG_PASS',
+   N28:'G6_N28_NETWORK_FAILURE_RETRY_SINGLE_EFFECT_PG_PASS',N32:'G6_N32_CROSS_MARKET_ROLES_REFUSED_NO_MUTATION_PG_PASS',
    N21:'G6_N21_CROSS_RELAY_REFUSED_NO_DISCLOSURE_PG_PASS',N22:'G6_N22_TWO_RELAYS_REFUSED_NO_DISCLOSURE_PG_PASS'}[scenario];
   return out;
  }

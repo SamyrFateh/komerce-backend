@@ -10,7 +10,7 @@
  */
 'use strict';
 const {isDeepStrictEqual}=require('node:util');
-const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29','N11','N12','N13','N14','N15','N16','N17','N18','N19']);
+const NEGATIVE=Object.freeze(['N07','N09','N04','N33','N23','N24','N21','N22','N20','N29','N11','N12','N13','N14','N15','N16','N17','N18','N19','N28','N32']);
 const isNegative=s=>NEGATIVE.includes(String(s));
 // Produit vendable (prix LOCAL_ACTIVE, exposition ENABLED, actif) servi par l'import (aucun stock local exposé), SKU actifs en stock.
 const MULTI_SKU_SQL=`
@@ -359,12 +359,33 @@ async function oracleN19(db,{orderId}){
  ok(!s.code_alive,'G6_N19_PRODUCT_GAP_PICKUP_CODE_ALIVE_AFTER_TOTAL_LOSS');
  return {receipts:r.length,received_qty:0,expected_qty:r.reduce((n,x)=>n+Number(x.expected_qty),0),incidents:r.length,severity:'high',status:o.status};
 }
+// N28 : malgré 500 simulé, réponse perdue après commit et réessai par l'écran : au plus un effet de remise, quantités exactes.
+async function oracleN28(db,{orderId,committedBeforeRetry,assertNoHubOrTransport}){
+ const o=await orderRows(db,orderId);
+ const {rows:[x]}=await db.query("SELECT count(*)::int AS scans FROM scans WHERE order_id=$1 AND step='collected'",[orderId]);
+ ok(x.scans===1,'G6_N28_PRODUCT_GAP_HANDOFF_ATTESTATIONS_'+x.scans+(committedBeforeRetry?'_AFTER_COMMITTED_RETRY':'_AFTER_UNCOMMITTED_RETRY'));
+ const {rows:[pi]}=await db.query('SELECT COALESCE(SUM(pi.qty_collected),0)::int AS got,COALESCE(SUM(pi.quantity),0)::int AS want FROM parcel_items pi JOIN parcels p ON p.id=pi.parcel_id WHERE p.order_id=$1',[orderId]);
+ ok(pi.got===pi.want&&pi.want>0,'G6_N28_PRODUCT_GAP_QTY_COLLECTED_'+pi.got+'_OF_'+pi.want);
+ ok(o.status==='collected','G6_N28_PRODUCT_GAP_NOT_COLLECTED');
+ if(assertNoHubOrTransport)await assertNoHubOrTransport(db,orderId,'collected');
+ return {status:o.status,collected_scans:x.scans,qty_collected:pi.got,committed_before_retry:!!committedBeforeRetry};
+}
+// N32 : sondes croisées sans effet ; commande propre disponible, code vivant, aucune remise ; instantané avant/après rapporté par le script.
+async function oracleN32(db,{orderId,snapshot,assertNoHubOrTransport}){
+ const o=await orderRows(db,orderId);
+ ok(snapshot&&snapshot.unchanged===true,'G6_N32_PRODUCT_GAP_MUTATION_DURING_REFUSED_PROBES');
+ const {rows:[pi]}=await db.query('SELECT COALESCE(SUM(pi.qty_collected),0)::int AS n FROM parcel_items pi JOIN parcels p ON p.id=pi.parcel_id WHERE p.order_id=$1',[orderId]);
+ ok(o.status==='available'&&o.collected_scans===0&&pi.n===0,'G6_N32_PRODUCT_GAP_HANDOFF_BY_FOREIGN_ROLE');
+ if(assertNoHubOrTransport)await assertNoHubOrTransport(db,orderId,'available');
+ return {status:o.status,collected_scans:0,qty_collected:0,codes_before:snapshot.before.codes,codes_after:snapshot.after.codes};
+}
 // Pur : verdict explicite pour un écran manquant ou un défaut produit (jamais un contournement).
 function classifyNegative(scenario,message){
  const m=String(message||'');
  if(/PREREQ_MISSING_MULTI_SKU/.test(m))return 'PREREQ_MISSING_MULTI_SKU';
  if(/PREREQ_MISSING_SECOND_RELAY/.test(m))return 'PREREQ_MISSING_SECOND_RELAY';
+ if(/PREREQ_MISSING_FOREIGN_MARKET_ORDER/.test(m))return 'PREREQ_MISSING_FOREIGN_MARKET_ORDER';
  const g=new RegExp('G6_'+scenario+'_(SCREEN_MISSING|PRODUCT_GAP)').exec(m);
  return g?g[1]:null;
 }
-module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,oracleN15,oracleN16,snapN16,shipmentForOrder,snapJourney,snapLocalTransport,oracleN17,oracleN18,oracleN19,importPo,classifyNegative};
+module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,oracleN15,oracleN16,oracleN28,oracleN32,snapN16,shipmentForOrder,snapJourney,snapLocalTransport,oracleN17,oracleN18,oracleN19,importPo,classifyNegative};
