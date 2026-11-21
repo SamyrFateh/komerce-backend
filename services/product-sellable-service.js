@@ -161,7 +161,7 @@ async function _resolveCanonicalImage(dbClient, { product, skuId }) {
 async function resolveSellableUnit(dbClient, { productId, variantCombo = null, quantity = 1 }) {
   const { rows: [product] } = await dbClient.query(
     `SELECT p.id, p.name, p.image_url, p.category, p.price_kmf, p.is_active, p.is_available,
-            p.inventory_model, p.has_variants, p.stock,
+            p.inventory_model, p.has_variants, p.stock, p.procurement_supplier_id,
             p.promo_pct, p.is_promo, p.promo_until,
             EXISTS(SELECT 1 FROM catalog_product_sale_holds h
               WHERE h.product_id=p.id AND h.released_at IS NULL) AS catalog_quality_frozen
@@ -191,6 +191,7 @@ async function resolveSellableUnit(dbClient, { productId, variantCombo = null, q
       throw e;
     }
     const procureOnOrder = Number(resolvedSku.stock) === 0
+      && Boolean(product.procurement_supplier_id)
       && await isCentralHubOnOrderSku(dbClient, productId, resolvedSku.id);
     if (!procureOnOrder && resolvedSku.stock < qty) {
       const e = new Error(`Stock insuffisant pour ${product.name} — disponible : ${resolvedSku.stock}`);
