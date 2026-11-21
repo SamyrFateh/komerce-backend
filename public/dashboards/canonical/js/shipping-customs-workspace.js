@@ -747,7 +747,17 @@
       isBusy:workspaceBusy,
       refresh:async () => {
         try { return await context.reload({ background:true }); }
-        catch (error) { rootNode.setAttribute?.('data-dashboard-stale','true'); throw error; }
+        catch (error) {
+          if (error.status === 401 || error.status === 403) {
+            rootNode.replaceChildren();
+            const notice = doc.createElement('p');
+            notice.setAttribute('role', 'alert');
+            notice.textContent = 'Accès expiré ou non autorisé. Rechargez votre session.';
+            rootNode.appendChild(notice);
+            rootNode.removeAttribute?.('data-dashboard-stale');
+          } else rootNode.setAttribute?.('data-dashboard-stale','true');
+          throw error;
+        }
       },
     });
     return context.reload();
