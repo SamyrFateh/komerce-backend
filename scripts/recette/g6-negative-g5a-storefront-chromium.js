@@ -70,7 +70,7 @@ async function productFixture(){
        AND NOT EXISTS (SELECT 1 FROM product_market_price_drafts d WHERE d.product_id=p.id AND d.market_id=m.id AND d.status='LOCAL_ACTIVE'))
     OR ($3='N02' AND p.lifecycle_status='active' AND p.is_active=TRUE
        AND e.commercial_exposure='DISABLED' AND EXISTS (SELECT 1 FROM product_market_price_drafts d WHERE d.product_id=p.id AND d.market_id=m.id AND d.status='LOCAL_ACTIVE'))
-    OR ($3='N03' AND m.lifecycle_status=CASE WHEN $4='ROUTE_MISSING' THEN 'ACTIVE' ELSE 'SUSPENDED' END AND p.lifecycle_status='active' AND p.is_active=TRUE AND p.is_available=TRUE AND e.commercial_exposure='ENABLED' AND EXISTS (SELECT 1 FROM product_market_price_drafts d WHERE d.product_id=p.id AND d.market_id=m.id AND d.status='LOCAL_ACTIVE') AND EXISTS (SELECT 1 FROM product_skus k WHERE k.product_id=p.id AND k.is_active=TRUE AND k.stock>0))
+    OR ($3='N03' AND m.lifecycle_status::text=CASE WHEN $4='ROUTE_MISSING' THEN 'ACTIVE' ELSE 'SUSPENDED' END AND p.lifecycle_status='active' AND p.is_active=TRUE AND p.is_available=TRUE AND e.commercial_exposure='ENABLED' AND EXISTS (SELECT 1 FROM product_market_price_drafts d WHERE d.product_id=p.id AND d.market_id=m.id AND d.status='LOCAL_ACTIVE') AND EXISTS (SELECT 1 FROM product_skus k WHERE k.product_id=p.id AND k.is_active=TRUE AND k.stock>0))
     OR ($3='N05' AND p.lifecycle_status='candidate' AND
       (($4='NO_ACTIVE_SKU' AND NOT EXISTS (
         SELECT 1 FROM product_skus k WHERE k.product_id=p.id AND k.source='SUPPLIER' AND k.is_active=TRUE))
