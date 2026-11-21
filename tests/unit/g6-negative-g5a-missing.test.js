@@ -8,7 +8,8 @@ const pre={
  N01:{price_status:'DRAFT'},
  N02:{exposure_recorded:true,commercial_exposure:'DISABLED'},
  N03:{market_lifecycle:'SUSPENDED',route_available:true},
- N05:{product_candidate:true,sku_complete:false,soi_complete:false},
+ N05:{product_candidate:true,sku_complete:false,soi_complete:false,
+   certification_rule:'active_supplier_sku_missing',certification_verdict:'BLOCKED'},
  N06:{quote_before:5990,quote_after:6490}
 };
 const fresh=id=>({
@@ -26,6 +27,9 @@ describe('G6 G5A — scénarios manquants N01/N02/N03/N05/N06 (contrats avant Ch
   const workflow=fs.readFileSync(path.join(root,'.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml'),'utf8');
   for(const id of IDS)for(const market of ['KM','CM','CG'])
    expect(workflow).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+market+"'");
+  for(const id of ['N03-ROUTE','N05-SOI'])for(const market of ['KM','CM','CG'])
+   expect(workflow).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+market+"'");
+  expect(workflow).toContain("G6_G5A_NEGATIVE_BRANCH:");
   expect(workflow).toContain("node scripts/recette/g6-negative-g5a-storefront-chromium.js");
   expect(workflow).toContain("node scripts/recette/g6-negative-n06-price-changed-chromium.js");
   const n06=fs.readFileSync(path.join(root,'scripts/recette/g6-negative-n06-price-changed-chromium.js'),'utf8');
@@ -66,15 +70,34 @@ describe('G6 G5A — scénarios manquants N01/N02/N03/N05/N06 (contrats avant Ch
    expect(()=>validateG5aEvidence(id,d)).toThrow('NOT_PROVEN_UI_BLOCK');
   });
  }
- it('N03 valide aussi la branche marché actif avec route absente, pas un marché actif livrable',()=>{
-  expect(()=>checkPrecondition('N03',{market_lifecycle:'ACTIVE',route_available:false})).not.toThrow();
-  expect(()=>checkPrecondition('N03',{market_lifecycle:'ACTIVE',route_available:true})).toThrow();
+ it('N03 route absente : uniquement si le référentiel de routage canonique n’a aucun relais routable',()=>{
+  const condition={market_lifecycle:'ACTIVE',route_available:false,
+   route_basis:'CANONICAL_IS_RELAIS_ROUTABLE',active_relays:2,routable_relays:0};
+  expect(()=>checkPrecondition('N03',condition)).not.toThrow();
+  expect(()=>checkPrecondition('N03',{...condition,routable_relays:1})).toThrow();
+  expect(()=>checkPrecondition('N03',{...condition,route_basis:'GUESS'})).toThrow();
+  const x=fresh('N03');x.precondition=condition;x.route_before={market_lifecycle:'ACTIVE',active_relays:2,
+   routable_relays:0,route_available:false,resolution:'CANONICAL_IS_RELAIS_ROUTABLE'};
+  x.route_after={...x.route_before};
+  x.ui={attempted_open_product:true,purchase_control_absent_or_disabled:true,buy_unavailable:true,
+   route_checkout_attempted:true,public_routable_relais:0,confirm_enabled:false};
+  expect(validateG5aEvidence('N03',x).oracle_verdict).toBe('PASS');
+  expect(()=>validateG5aEvidence('N03',{...x,ui:{...x.ui,route_checkout_attempted:false}})).toThrow('NOT_PROVEN_ROUTE_CHECKOUT_GESTURE');
+  expect(()=>validateG5aEvidence('N03',{...x,route_after:{...x.route_after,routable_relays:1}})).toThrow('NOT_PROVEN_ROUTE_PG_READBACK');
  });
- it('N05 : le SOI manquant suffit même si le SKU est techniquement complet',()=>{
-  expect(()=>checkPrecondition('N05',{product_candidate:true,sku_complete:true,soi_complete:false})).not.toThrow();
+ it('N05 : certificat canonique BLOQUÉ requis, y compris avec SKU actif sans SOI',()=>{
+  const soi={product_candidate:true,sku_complete:true,soi_complete:false,
+   certification_verdict:'BLOCKED',certification_rule:'supplier_order_identity_incomplete',
+   active_supplier_skus:2,complete_supplier_skus:1};
+  expect(()=>checkPrecondition('N05',soi)).not.toThrow();
+  expect(()=>checkPrecondition('N05',{...soi,complete_supplier_skus:2})).toThrow();
+  expect(()=>checkPrecondition('N05',{...soi,certification_verdict:'PASS'})).toThrow();
+  const sku=fresh('N05');
+  expect(validateG5aEvidence('N05',{...sku,precondition:soi}).oracle_verdict).toBe('PASS');
  });
  it('N06 : ancien total refusé 409, nouveau total affiché et accepté par deuxième clic, une seule commande',()=>{
   const x=fresh('N06');
+  x.restore={success:true};x.market_price_before=5990;x.market_price_after=5990;
   x.http_attempts=[
    {method:'POST',path:'/api/orders',status:409,code:'price_changed'},
    {method:'POST',path:'/api/orders',status:201,order_id:'order-1'}
@@ -93,6 +116,8 @@ describe('G6 G5A — scénarios manquants N01/N02/N03/N05/N06 (contrats avant Ch
   expect(()=>validateG5aEvidence('N06',acceptedOld)).toThrow('PRODUCT_GAP_STALE_PRICE_NOT_REJECTED');
   const wrongStatus={...x,http_attempts:[x.http_attempts[0]]};
   expect(()=>validateG5aEvidence('N06',wrongStatus)).toThrow('NOT_PROVEN_TWO_EXPLICIT_POSTS');
+  expect(()=>validateG5aEvidence('N06',{...x,restore:{success:false}})).toThrow('NOT_PROVEN_RESTORE_PRICE');
+  expect(()=>validateG5aEvidence('N06',{...x,market_price_after:6490})).toThrow('NOT_PROVEN_RESTORE_PRICE');
  });
  it('les oracles relisent seulement les compteurs PG, tous bornés au buyer du run',async()=>{
   const query=jest.fn(async (sql,args)=>{
