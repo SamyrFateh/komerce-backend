@@ -91,7 +91,8 @@ async function main(){
      for(const r of rev)if(r.contains_order)report.gaps.push('N22_REVERSE_READ_'+r.label);
     }else {
      report.reverse={direction:'agent_at_A_vs_order_at_B',not_played:'NO_ORDER_AT_RELAY_B'};
-     if(SCEN==='N22')throw Error('G6_N22_SCREEN_MISSING_REVERSE_ORDER_AT_RELAY_B');
+     save();
+     if(SCEN==='N22')throw Error('G6_N22_PREREQ_MISSING_ORDER_AT_RELAY_B');
     }
     await s.actor.ctx.close();
    }catch(e){await s.actor.ctx.close().catch(()=>{});throw e}
