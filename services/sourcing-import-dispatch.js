@@ -336,6 +336,7 @@ async function dispatchToConnector(body = {}, { credentials = null } = {}) {
     return manualConnector.fetchProducts({
       supplier_name: body.supplier_name,
       items: body.items,
+      source_kind: body.manual_source_kind,
     });
   }
   if (sourceType === 'api') {

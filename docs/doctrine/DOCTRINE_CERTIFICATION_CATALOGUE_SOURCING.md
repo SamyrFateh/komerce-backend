@@ -47,7 +47,13 @@ Un double comptage produit **OVERFLOW** et invalide également le batch.
 
 Le contrat canonique est versionné par `services/catalog-certification.js`.
 
-Un candidat catalogue certifié satisfait simultanément les invariants suivants :
+Un candidat catalogue certifié satisfait simultanément les invariants suivants.
+Exception explicite : un contrat V2 `source_kind=central_hub_manual`, provenant
+du fournisseur système `central_hub`, porte l'identité d'approvisionnement
+interne sans prétendre identifier le vendeur réel ; pour ce cas seulement,
+l'identité vendeur et le SKU fournisseur sont différés jusqu'à la confirmation
+d'achat. Le média canonique actif, les autres contrôles ci-dessous et le statut
+inactif restent obligatoires :
 
 - identité fournisseur présente ;
 - contrat source normalisé V2 présent ;
@@ -65,7 +71,7 @@ Un candidat catalogue certifié satisfait simultanément les invariants suivants
 - aucune exposition marché n'est active avant publication globale ;
 - `product-publication-guard` retourne PASS.
 
-Chaque échec produit une raison structurée. Aucun fallback de type `Other`, aucune catégorie racine seule et aucune exception fournisseur ne peuvent transformer un produit incomplet en produit certifié.
+Chaque échec produit une raison structurée. Aucun fallback de type `Other` ni catégorie racine seule ne peut transformer un produit incomplet en produit certifié. L'exception central_hub_manual est un contrat source distinct et strict, jamais une identité fournisseur implicite.
 
 ### 3.1 Remise Sourcing → Catalogue ≠ publication
 
@@ -204,7 +210,7 @@ Le gate 712 consomme donc le contrat Catalogue partagé et ajoute uniquement les
 
 ## 10. Invariants canoniques
 
-> **INV-CAT-CERT-01 — Aucun produit n'est certifié sans identité source, contrat canonique, taxonomie boutique catégorie+sous-catégorie active, contenu prêt, média, unité commandable et Supplier Order Identity complète.**
+> **INV-CAT-CERT-01 — Aucun produit n'est certifié sans identité source, contrat canonique, taxonomie boutique catégorie+sous-catégorie active, contenu prêt et média. Une unité commandable avec Supplier Order Identity complète est obligatoire pour les sources vendeur ; le contrat V2 central_hub_manual reporte explicitement le vendeur et le SKU à la confirmation d'achat.**
 
 > **INV-SRC-CERT-01 — Toute entrée Sourcing aboutit à une issue explicite et traçable ; aucune source ne possède son propre chemin de certification.**
 

@@ -102,13 +102,15 @@ describe('importCatalog', () => {
       owner_scope: 'hub', system_key: 'central_hub', auto_order: false,
       is_active: true, deleted_at: null,
     });
+    const dispatch = jest.fn().mockResolvedValue({ products: [], invalid: [] });
     const result = await importCatalog({ source_type: 'manual', supplier_id: '11111111-1111-4111-8111-111111111111', items: [] }, 1,
-      jest.fn().mockResolvedValue({ products: [], invalid: [] }));
+      dispatch);
     expect(centralHubSupplier.resolveCatalogSupplier).toHaveBeenCalledWith(db, {
       supplierId: '11111111-1111-4111-8111-111111111111', supplierName: '',
     });
     expect(result.status).toBe(400);
     expect(result.body.error).toMatch(/Aucun produit valide/);
+    expect(dispatch.mock.calls[0][0]).toMatchObject({ manual_source_kind: 'central_hub_manual' });
   });
 
   test('un CSV sans vendeur connu est rattaché au Fournisseur central Hub', async () => {
