@@ -231,6 +231,46 @@ describe("cacheMiddleware", () => {
     expect(sent.data_quality.cache_age_seconds).toBeGreaterThanOrEqual(0);
   });
 
+  test("les lectures réel et recette ont des caches isolés dans les deux ordres", async () => {
+    const middleware = cache.cacheMiddleware('unified');
+    for (const firstIsSimulation of [true, false]) {
+      cache.clear();
+      const cases = firstIsSimulation
+        ? [{ simulation_scope: 'G6-BUYER' }, {}]
+        : [{}, { simulation_scope: 'G6-BUYER' }];
+      for (const query of cases) {
+        const isSimulation = Boolean(query.simulation_scope);
+        const req = makeReq({ query });
+        const response = makeRes();
+        const next = jest.fn(() => response.json({ scope: isSimulation ? 'simulation' : 'real' }));
+        await middleware(req, response, next);
+        expect(next).toHaveBeenCalledTimes(1);
+        expect(response._sentData.scope).toBe(isSimulation ? 'simulation' : 'real');
+      }
+      expect(cache.stats().size).toBe(2);
+      for (const query of cases) {
+        const response = makeRes();
+        const next = jest.fn();
+        await middleware(makeReq({ query }), response, next);
+        expect(next).not.toHaveBeenCalled();
+        expect(response._sentData.scope).toBe(query.simulation_scope ? 'simulation' : 'real');
+        expect(response._sentData.data_quality.is_cached).toBe(true);
+      }
+    }
+  });
+
+  test("un cache hit annonce le vrai TTL du middleware", async () => {
+    const middleware = cache.cacheMiddleware('unified');
+    const req = makeReq();
+    const first = makeRes();
+    await middleware(req, first, () => first.json({ data_quality: { generated_at: '2026-11-21T00:00:00Z' } }));
+    expect(first._sentData.data_quality.cache_ttl_seconds).toBe(cache.DEFAULT_TTL_MS / 1000);
+    const second = makeRes();
+    await middleware(req, second, jest.fn());
+    expect(second._sentData.data_quality.cache_ttl_seconds).toBe(cache.DEFAULT_TTL_MS / 1000);
+    expect(second._sentData.data_quality.generated_at).toBe('2026-11-21T00:00:00Z');
+  });
+
   test("réponse avec statusCode >= 400 non stockée", async () => {
     const mw = cache.cacheMiddleware('error-ep');
     const req = makeReq();
