@@ -526,7 +526,7 @@ async function cancelBackorder(orderId, body, user) {
     // Régression directe sinon : restauration backorder d'un produit SKU
     // retomberait sur products.stock au lieu de product_skus.
     const { rows: boItems } = await client.query(
-      `SELECT pi.*, oi.price_kmf, oi.variant_combo, oi.sku_id, p.name AS product_name, p.has_variants, p.inventory_model
+      `SELECT pi.*, oi.price_kmf, oi.variant_combo, oi.sku_id, oi.procure_on_order, p.name AS product_name, p.has_variants, p.inventory_model
        FROM parcel_items pi
        JOIN products p ON p.id = pi.product_id
        JOIN order_items oi ON oi.id = pi.order_item_id
@@ -544,7 +544,7 @@ async function cancelBackorder(orderId, body, user) {
     });
 
     // Restaurer le stock (I-06, via product-admin-service)
-    await adjustStock(client, boItems, 'increment');
+    await adjustStock(client, boItems.filter(item => item.procure_on_order !== true), 'increment');
 
     // Stripe : réserve durablement dans CETTE transaction, en même temps que
     // l'annulation du colis et la restauration stock. Aucun POST PSP sous verrou.
