@@ -20,6 +20,20 @@ const fresh=id=>({
  ui:{attempted_open_product:true,purchase_control_absent_or_disabled:true,buy_unavailable:true}
 });
 describe('G6 G5A — scénarios manquants N01/N02/N03/N05/N06 (contrats avant Chromium)',()=>{
+ it('workflow propriétaire : N01 N02 N03 N05 N06 sur KM CM CG ; aucun run automatiquement revendiqué',()=>{
+  const fs=require('node:fs'),path=require('node:path');
+  const root=path.resolve(__dirname,'../..');
+  const workflow=fs.readFileSync(path.join(root,'.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml'),'utf8');
+  for(const id of IDS)for(const market of ['KM','CM','CG'])
+   expect(workflow).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+market+"'");
+  expect(workflow).toContain("node scripts/recette/g6-negative-g5a-storefront-chromium.js");
+  expect(workflow).toContain("node scripts/recette/g6-negative-n06-price-changed-chromium.js");
+  const n06=fs.readFileSync(path.join(root,'scripts/recette/g6-negative-n06-price-changed-chromium.js'),'utf8');
+  expect(n06).toContain("changePriceFromMarketUI(actor,{from:actual,to:original,kind:'RESTORE'})");
+  expect(n06).toContain("G6_N06_RESTORE_FAILED_REQUIRES_MANUAL_STAGING_REPAIR");
+  expect(n06).toContain("G6_N06_PRODUCT_GAP_OLD_PRICE_CHECKOUT_NOT_REJECTED");
+  expect(n06).not.toMatch(/route\\.fulfill\\s*\\(/);
+ });
  it('registre exact des cinq cas et aucune confusion avec N04 déjà monté',()=>{
   expect(IDS).toEqual(['N01','N02','N03','N05','N06']);
   expect(IDS).not.toContain('N04');
