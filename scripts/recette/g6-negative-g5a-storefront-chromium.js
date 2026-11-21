@@ -199,7 +199,13 @@ async function main(){
   check(report.blocked.length===0,'G6_G5A_UNEXPECTED_MUTATION_BLOCKED');
   report.after=await snapshotBuyerEffects(db,b.buyer.id);
   report.after_stock_available=await stockAvailable(f.id);
-  report.trace_path='test-results/g6-negative-g5a-'+SCENARIO+'-'+MARKET+'/trace.zip';
+  // Le système d'observabilité ne conserve les traces que pour un échec.
+  // Ici nous les conservons délibérément pour la preuve de certification : pas de trace fictive.
+  await obs.finish(true);obs=null;
+  const trace=fs.readdirSync(OUT).find(name=>/^trace-ctx[0-9]+\.zip$/.test(name));
+  check(!!trace&&fs.statSync(path.join(OUT,trace)).size>0,
+   'G6_'+SCENARIO+'_NOT_PROVEN_TRACE_MISSING');
+  report.trace_path='test-results/g6-negative-g5a-'+SCENARIO+'-'+MARKET+'/'+trace;
   report.screenshot_path='test-results/g6-negative-g5a-'+SCENARIO+'-'+MARKET+'/'+report.screens[0];
   const proof=validateG5aEvidence(SCENARIO,report);
   await version();report.oracle=proof;
