@@ -72,11 +72,15 @@ test('humanGoto: aborted navigation accepted only if target URL reached, otherwi
  const p2={goto:async()=>{throw Error('net::ERR_NAME_NOT_RESOLVED');},waitForLoadState:async()=>{},url:()=>url};
  await expect(humanGoto(p2,'/x')).rejects.toThrow('ERR_NAME_NOT_RESOLVED');
 });
-test('chromium-policy refuses gestures written outside the helper; all 39 scripts comply',()=>{
+test('chromium-policy validates every discovered Chromium script (no fixed count)',()=>{
  expect(()=>assertGestureSourceUsesHelper('s.js',"await page.locator('#a').click();")).toThrow('G6_GESTURE_OUTSIDE_HELPER_FORBIDDEN');
  expect(()=>assertGestureSourceUsesHelper('s.js',"await x.fill('v');")).toThrow('G6_GESTURE_OUTSIDE_HELPER_FORBIDDEN');
  expect(assertGestureSourceUsesHelper('s.js',"// .click() in comment\nawait humanClick(page,'#a');")).toBe(true);
- expect(validateChromiumScriptSources()).toBe(39);
+ const fs=require('node:fs'),path=require('node:path');
+ const scripts=fs.readdirSync(path.join(__dirname,'../../scripts/recette'))
+  .filter(file=>/^g6-.*chromium\\.js$/.test(file));
+ expect(scripts.length).toBeGreaterThanOrEqual(39);
+ expect(validateChromiumScriptSources()).toBe(scripts.length);
 });
 test('chromium-policy: trace may start only after authentication completes',()=>{
  expect(()=>assertTraceStartsAfterAuth('s.js',"const c=await b.newContext();await c.tracing.start({});")).toThrow('G6_TRACE_STARTED_OUTSIDE_HELPER');
