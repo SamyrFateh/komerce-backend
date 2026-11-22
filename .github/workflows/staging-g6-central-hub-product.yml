@@ -30,10 +30,9 @@ jobs:
       STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
       EXPECTED_RAILWAY_ENVIRONMENT: staging
       PGOPTIONS: '-c default_transaction_read_only=on'
-      # Approved product image in the checkout (repo-relative path + immutable checksum).
-      # Missing fields => PREREQ_MISSING, never automatic placeholder publication.
-      G6_CENTRAL_MEDIA_IMAGE_FILE: ${{ vars.G6_CENTRAL_MEDIA_IMAGE_FILE }}
-      G6_CENTRAL_MEDIA_IMAGE_SHA256: ${{ vars.G6_CENTRAL_MEDIA_IMAGE_SHA256 }}
+      # Owner-approved, faithful staging fixture asset; immutable checksum.
+      G6_CENTRAL_MEDIA_IMAGE_FILE: docs/recette/assets/g6-screwdriver-set-20261122.jpg
+      G6_CENTRAL_MEDIA_IMAGE_SHA256: 70f4644b759553cdf20f9ebc33eb84013b4890dda7b62e774508561541a90c1f
       G6_TARGET_MARKET: ${{ endsWith(github.event.issue.title, '-CM') && 'CM' || endsWith(github.event.issue.title, '-CG') && 'CG' || 'KM' }}
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
