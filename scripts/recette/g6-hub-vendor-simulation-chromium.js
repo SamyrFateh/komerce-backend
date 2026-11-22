@@ -63,7 +63,7 @@ async function state(){
    SELECT po.id AS po_id,po.status::text AS po_status,po.sent_at,po.sent_channel,
           po.sent_by,po.sent_note,po.supplier_order_id,po.trigger_mode,
           o.id AS order_id,o.reference,o.simulation_scope,o.payment_status::text AS payment_status,
-          pl.id AS line_id,pl.quantity,pl.confirmed_quantity,pl.confirmed_unit_price,pl.supplier_unit_price,pl.supplier_currency,
+          pl.id AS line_id,pl.quantity,pl.confirmed_quantity,pl.confirmed_unit_price,pl.confirmed_currency,pl.supplier_unit_price,pl.supplier_currency,
           (SELECT count(*)::int FROM purchase_order_authorizations a WHERE a.purchase_order_id=po.id AND a.authorization_type='purchase_commitment') AS commitments,
           (SELECT count(*)::int FROM purchase_order_authorizations a WHERE a.purchase_order_id=po.id AND a.authorization_type='supplier_payment') AS payment_authorizations,
           (SELECT count(*)::int FROM manual_purchase_executions e WHERE e.purchase_order_id=po.id AND e.purchase_line_id=pl.id) AS manual_executions,
@@ -206,8 +206,8 @@ async function main(){
     after.proof_ref==='SIM-STAGING-ACHAT-'+simulationPoId&&
     (!report.simulated_confirmed_money||
       (Number(after.confirmed_unit_price)===report.simulated_confirmed_money.unit_price&&
-       after.supplier_currency===report.simulated_confirmed_money.currency&&
-       after.supplier_unit_price===null)),
+       after.confirmed_currency===report.simulated_confirmed_money.currency&&
+       after.supplier_currency===null&&after.supplier_unit_price===null)),
     'G6_SIM_CONFIRM_PG_ORACLE_FAILED');
   await checkedRuntimeSha(report.sha);
   report.after={po_status:after.po_status,sent_channel:after.sent_channel,

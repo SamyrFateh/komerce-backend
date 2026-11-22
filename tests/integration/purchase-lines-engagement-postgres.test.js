@@ -36,7 +36,7 @@ const engagement = require('../../services/purchasing-engagement-service');
 const hasDb = Boolean(process.env.DATABASE_URL);
 const describeDb = hasDb ? describe : describe.skip;
 const id = () => crypto.randomUUID();
-const MIGRATIONS = ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql', '357_purchase_orders_market_scope.sql', '380_hub_directrice_authorizations.sql', '404_manual_purchase_executions.sql', '414_purchase_line_received_quantity.sql'];
+const MIGRATIONS = ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql', '357_purchase_orders_market_scope.sql', '369_single_purchase_model.sql', '380_hub_directrice_authorizations.sql', '404_manual_purchase_executions.sql', '414_purchase_line_received_quantity.sql', '425_purchase_line_confirmed_currency.sql'];
 const identityOf = (provider, payload = { supplier_sku: 'U1' }) => JSON.stringify({ provider, version: 1, payload });
 const NOON = identityOf('noon');
 const ALLEGRO = (offer) => identityOf('allegro', { environment: 'sandbox', offer_id: offer });
@@ -176,9 +176,9 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
   afterEach(() => { delete process.env.ADMIN_PHONE; });
 
   // ─── fixtures ─────────────────────────────────────────────────────────────────────────────────
-  async function seedSupplier({ platform = 'manual', name = 'Fournisseur', phone = null } = {}) {
+  async function seedSupplier({ platform = 'manual', name = 'Fournisseur', phone = null, systemKey = null } = {}) {
     const supplier = id();
-    await q('INSERT INTO suppliers(id, name, platform, contact_phone) VALUES ($1,$2,$3,$4)', [supplier, name, platform, phone]);
+    await q('INSERT INTO suppliers(id, name, platform, contact_phone, system_key) VALUES ($1,$2,$3,$4,$5)', [supplier, name, platform, phone, systemKey]);
     return supplier;
   }
 
@@ -207,7 +207,7 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
     const { rows: [line] } = await q(`
       INSERT INTO purchase_lines(order_item_id, supplier_id, product_sku_id, supplier_sku, supplier_unit_ref,
                                  supplier_order_identity, quantity, supplier_unit_price, supplier_currency, procurement_hub_ref)
-      VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,'USD','DXB') RETURNING id
+      VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,CASE WHEN $8::numeric IS NULL THEN NULL ELSE 'USD' END,'DXB') RETURNING id
     `, [lineItem, supplier, sku, `SKU-${unitRef}`, unitRef, identity, quantity, price]);
     return { line: line.id, item: lineItem };
   }
@@ -333,6 +333,56 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
 
   // ─── confirm ──────────────────────────────────────────────────────────────────────────────────
   describe('confirm', () => {
+    it('M03 : confirmation manuelle sans devis crée une devise confirmée append-only sans modifier la devise de devis', async () => {
+      const supplier = await seedSupplier({ systemKey: 'central_hub' });
+      const a = await seedLine({ supplier, quantity: 1, market: 'KM', price: null });
+      const po = await submittedPo(supplier, [a.line]);
+      const before = await row('SELECT supplier_unit_price, supplier_currency, confirmed_currency FROM purchase_lines WHERE id=$1', [a.line]);
+      expect(before).toEqual({ supplier_unit_price: null, supplier_currency: null, confirmed_currency: null });
+
+      const out = await engagement.confirmGroupedPurchaseOrder(po.id, {
+        purchase_proof_ref: 'SIM-STAGING-MANUAL-PROOF', seller_label: 'SIMULATED-STAGING-SELLER',
+        lines: [{ purchase_line_id: a.line, confirmed_quantity: 1, confirmed_unit_price: 10, confirmed_currency: 'EUR' }],
+      });
+      expect(out.purchase_order.status).toBe('confirmed');
+      const after = await row(`SELECT supplier_unit_price, supplier_currency, confirmed_unit_price::numeric AS confirmed_unit_price,
+          confirmed_currency, confirmed_quantity FROM purchase_lines WHERE id=$1`, [a.line]);
+      expect(after).toMatchObject({
+        supplier_unit_price: null, supplier_currency: null, confirmed_unit_price: '10.0000',
+        confirmed_currency: 'EUR', confirmed_quantity: 1,
+      });
+      expect(out.markets[0].confirmed_amounts).toEqual([{ currency: 'EUR', amount: 10 }]);
+      const executed = await row('SELECT seller_label, amount::numeric AS amount, currency, proof_ref FROM manual_purchase_executions WHERE purchase_line_id=$1', [a.line]);
+      expect(executed).toMatchObject({ seller_label: 'SIMULATED-STAGING-SELLER', currency: 'EUR', proof_ref: 'SIM-STAGING-MANUAL-PROOF' });
+      expect(Number(executed.amount)).toBe(10);
+
+      await expect(q('UPDATE purchase_lines SET confirmed_currency=$2 WHERE id=$1', [a.line, 'USD']))
+        .rejects.toThrow(/confirmed_currency frozen/);
+      await expect(q('UPDATE purchase_lines SET confirmed_currency=NULL WHERE id=$1', [a.line]))
+        .rejects.toThrow(/confirmed_currency frozen/);
+      await expect(q('UPDATE purchase_lines SET supplier_currency=$2 WHERE id=$1', [a.line, 'EUR']))
+        .rejects.toThrow(/purchase_line_frozen/);
+      await expect(q('UPDATE purchase_lines SET supplier_unit_price=10 WHERE id=$1', [a.line]))
+        .rejects.toThrow(/purchase_line_frozen/);
+    });
+
+    it('M03 : devise de confirmation non injectable avant notification ou après confirmation', async () => {
+      const supplier = await seedSupplier({ systemKey: 'central_hub' });
+      const a = await seedLine({ supplier, quantity: 1, market: 'KM', price: null });
+      const draft = await preparedPo(supplier, [a.line]);
+      await expect(q(`UPDATE purchase_lines SET confirmed_quantity=1, confirmed_unit_price=10,
+        confirmed_currency='EUR', confirmed_at=now() WHERE id=$1`, [a.line]))
+        .rejects.toThrow(/confirmed_currency frozen/);
+      const r = await row('SELECT confirmed_currency, confirmed_unit_price FROM purchase_lines WHERE id=$1', [a.line]);
+      expect(r).toEqual({ confirmed_currency: null, confirmed_unit_price: null });
+      await q('UPDATE purchase_orders SET status=$2 WHERE id=$1', [draft.id, 'notified']);
+      await expect(engagement.confirmGroupedPurchaseOrder(draft.id, {
+        purchase_proof_ref: 'SIM-STAGING-MANUAL-PROOF', seller_label: 'SIMULATED-STAGING-SELLER',
+        lines: [{ purchase_line_id: a.line, confirmed_quantity: 1, confirmed_unit_price: 10 }],
+      })).rejects.toMatchObject({ status: 400, code: 'CONFIRMED_CURRENCY_REQUIRED' });
+      expect((await row('SELECT confirmed_currency FROM purchase_lines WHERE id=$1', [a.line])).confirmed_currency).toBeNull();
+    });
+
     it('confirmation partielle : la ligne d\'origine baisse d\'abord, le reliquat naît ouvert avec parent_line_id et le même marché', async () => {
       const supplier = await seedSupplier();
       const a = await seedLine({ supplier, quantity: 5, market: 'KM' });
@@ -342,7 +392,7 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       const out = await engagement.confirmGroupedPurchaseOrder(po.id, { purchase_proof_ref: 'TEST-RECEIPT', seller_label: 'Vendeur test',
         supplier_order_id: 'SUP-1', tracking_number: 'TRK',
         lines: [
-          { purchase_line_id: a.line, confirmed_quantity: 3, confirmed_unit_price: 12.5 },
+          { purchase_line_id: a.line, confirmed_quantity: 3, confirmed_unit_price: 12.5, confirmed_currency: 'USD' },
           { purchase_line_id: b.line, confirmed_quantity: 2 },
         ],
       });
@@ -366,6 +416,12 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
         confirmed_amounts: [{ currency: 'USD', amount: 57.5 }],
       });
       expect(out.purchase_order.market_id).toBe(await seedMarket('KM'));
+      // Even an explicit matching currency must never populate the independent
+      // confirmed_currency on a PO already carrying the frozen supplier quote.
+      const quote = await row('SELECT supplier_unit_price, supplier_currency, confirmed_currency FROM purchase_lines WHERE id=$1', [a.line]);
+      expect(quote.supplier_currency).toBe('USD');
+      expect(quote.confirmed_currency).toBeNull();
+      expect(Number(quote.supplier_unit_price)).toBe(10);
     });
 
     it('un reliquat ouvert est regroupable dans une nouvelle PO (même fournisseur ou autre)', async () => {

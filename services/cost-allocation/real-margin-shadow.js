@@ -126,8 +126,8 @@ async function _loadPurchase(orderId, q = db) {
     `SELECT COUNT(*)::int AS lines,
             COALESCE(SUM(pl.confirmed_quantity), 0)::int AS quantity,
             SUM(pl.confirmed_quantity * pl.confirmed_unit_price) AS amount,
-            COUNT(DISTINCT pl.supplier_currency)::int AS currencies,
-            MIN(pl.supplier_currency) AS currency
+            COUNT(DISTINCT COALESCE(pl.confirmed_currency, pl.supplier_currency))::int AS currencies,
+            MIN(COALESCE(pl.confirmed_currency, pl.supplier_currency)) AS currency
        FROM purchase_lines pl JOIN order_items oi ON oi.id = pl.order_item_id
       WHERE oi.order_id = $1 AND pl.cancelled_at IS NULL
         AND pl.confirmed_at IS NOT NULL AND pl.confirmed_unit_price IS NOT NULL
@@ -151,7 +151,8 @@ async function _loadPurchase(orderId, q = db) {
 async function _loadSettlementFacts(orderId, q = db) {
   const { rows: lines } = await q.query(
     `SELECT /* settle:lines */ pl.id, pl.purchase_order_id, pl.confirmed_at, pl.confirmed_quantity,
-            pl.confirmed_unit_price::text AS confirmed_unit_price, pl.supplier_currency,
+            pl.confirmed_unit_price::text AS confirmed_unit_price,
+            COALESCE(pl.confirmed_currency, pl.supplier_currency) AS supplier_currency,
             (oi.order_id = $1) AS in_order
        FROM purchase_lines pl
        JOIN order_items oi ON oi.id = pl.order_item_id

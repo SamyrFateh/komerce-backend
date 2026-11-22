@@ -30,7 +30,7 @@ const { syncPurchaseOrdersOnOrderCancel } = require('../../services/purchasing-c
 const hasDb = Boolean(process.env.DATABASE_URL);
 const describeDb = hasDb ? describe : describe.skip;
 const id = () => crypto.randomUUID();
-const MIGRATIONS = ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '266_purchase_orders_grouped_form.sql', '369_single_purchase_model.sql']
+const MIGRATIONS = ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '266_purchase_orders_grouped_form.sql', '369_single_purchase_model.sql', '425_purchase_line_confirmed_currency.sql']
 const fs2 = fs; // (lecture des fichiers de migration);
 const IDENTITY = JSON.stringify({ provider: 'manual', version: 1, payload: { supplier_sku: 'U1' } });
 

@@ -244,4 +244,21 @@ describe('real-margin-shadow', () => {
       expect(estSql).toMatch(/SUM\(quantity \* \(cost_breakdown->'landed_relay'->>'product_purchase'\)/);
     });
   });
+  it('M03 — shadow exploite la devise confirmée (EUR) et non la devise devis absente', async () => {
+    setup({
+      purchase: { lines: 1, quantity: 1, amount: '10', currencies: 1, currency: 'EUR' },
+      settle: { lines: [], payments: [], settlements: [] },
+    });
+    const result = await computeOrderRealMarginShadow('o1');
+    expect(result).not.toBeNull();
+    const sqls = mockQuery.mock.calls.map(([sql]) => String(sql));
+    const purchaseSql = sqls.find((sql) => sql.includes('SUM(pl.confirmed_quantity * pl.confirmed_unit_price)'));
+    const settlementSql = sqls.find((sql) => sql.includes('/* settle:lines */'));
+    expect(purchaseSql).toContain('COUNT(DISTINCT COALESCE(pl.confirmed_currency, pl.supplier_currency))');
+    expect(purchaseSql).toContain('MIN(COALESCE(pl.confirmed_currency, pl.supplier_currency)) AS currency');
+    expect(settlementSql).toContain('COALESCE(pl.confirmed_currency, pl.supplier_currency) AS supplier_currency');
+    // No verified supplier payment => no accidental purchase cost from staging budget.
+    expect(result.costs.by_type.product_purchase?.state).not.toBe('real');
+  });
+
 });

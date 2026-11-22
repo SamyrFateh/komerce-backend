@@ -410,7 +410,7 @@
 
     const table = doc.createElement('table');
     table.className = 'kmc-workspace-table kmc-purchasing-confirm-table';
-    table.innerHTML = '<thead><tr><th>Commande</th><th>Marché</th><th>Réf. fournisseur</th><th>Demandée</th><th>Confirmée</th><th>Prix confirmé</th></tr></thead>';
+    table.innerHTML = '<thead><tr><th>Commande</th><th>Marché</th><th>Réf. fournisseur</th><th>Demandée</th><th>Confirmée</th><th>Prix confirmé / devise</th></tr></thead>';
     const tbody = doc.createElement('tbody');
     const inputs = [];
     lines.filter((l) => !l.cancelled).forEach((line) => {
@@ -440,9 +440,23 @@
       price.setAttribute('aria-label', `Prix confirmé ${line.order_reference || line.line_id}`);
       price.setAttribute('data-confirmed-price', '');
       priceCell.appendChild(price);
+      // Sans devis initial, un prix d'achat confirmé ne peut pas hériter
+      // silencieusement de la devise du catalogue ni du budget du Hub.
+      const needsCurrency = line.expected_unit_price == null || !line.supplier_currency;
+      let currency = null;
+      if (needsCurrency) {
+        currency = doc.createElement('input');
+        currency.type = 'text';
+        currency.maxLength = 3;
+        currency.autocomplete = 'off';
+        currency.placeholder = 'EUR';
+        currency.setAttribute('aria-label', `Devise confirmée ${line.order_reference || line.line_id}`);
+        currency.setAttribute('data-confirmed-currency', '');
+        priceCell.appendChild(currency);
+      }
       tr.appendChild(priceCell);
       tbody.appendChild(tr);
-      inputs.push({ line, qty, price });
+      inputs.push({ line, qty, price, currency });
     });
     table.appendChild(tbody);
     form.appendChild(wrapTable(doc, table));
@@ -492,14 +506,30 @@
       event.preventDefault();
       if (context.busy.has('confirm')) return;
       const payloadLines = [];
-      for (const { line, qty, price } of inputs) {
+      for (const { line, qty, price, currency } of inputs) {
         const confirmed = Number(qty.value);
         if (!Number.isInteger(confirmed) || confirmed < 0 || confirmed > Number(line.quantity)) {
           setFeedback(context.root, `Quantité confirmée invalide pour ${line.order_reference || line.line_id} (0 à ${line.quantity}).`, 'critical');
           return;
         }
         const entry = { purchase_line_id: line.line_id, confirmed_quantity: confirmed };
-        if (price.value.trim() !== '') entry.confirmed_unit_price = Number(price.value);
+        if (confirmed > 0 && currency) {
+          const entered = Number(price.value);
+          const code = currency.value.trim().toUpperCase();
+          if (price.value.trim() === '' || !Number.isFinite(entered) || entered <= 0 || !/^[A-Z]{3}$/.test(code)) {
+            setFeedback(context.root, `Prix confirmé positif et devise ISO obligatoires pour ${line.order_reference || line.line_id}.`, 'critical');
+            return;
+          }
+          entry.confirmed_unit_price = entered;
+          entry.confirmed_currency = code;
+        } else if (price.value.trim() !== '') {
+          const entered = Number(price.value);
+          if (!Number.isFinite(entered) || entered <= 0) {
+            setFeedback(context.root, 'Le prix confirmé doit être strictement positif.', 'critical');
+            return;
+          }
+          entry.confirmed_unit_price = entered;
+        }
         payloadLines.push(entry);
       }
       if (manual && payloadLines.some((l) => l.confirmed_quantity > 0) && proof.value.trim().length < 4) {

@@ -408,6 +408,41 @@ test.describe('Achats fournisseurs — espace canonique', () => {
     expect(mutatingCalls(api, '/po/cccccccc-cccc-4ccc-8ccc-000000000001/detach')).toHaveLength(1);
   });
 
+  test('achat manuel sans devis : prix et devise explicites obligatoires, sans valeur inventée', async ({ page }) => {
+    const api = createFakeApi();
+    const line = api.state.lines[0];
+    line.expected_unit_price = null;
+    line.supplier_currency = null;
+    await mountWorkspace(page, api);
+    await page.locator('tr[data-purchasing-line] input[type=checkbox]').first().check();
+    await page.locator('[data-workspace-action="prepare-po"]').click();
+    await page.locator('[data-workspace-action="submit-po"]').click();
+    const currency = page.locator('[data-confirmed-currency]');
+    const price = page.locator('[data-confirmed-price]');
+    await expect(currency).toBeVisible();
+    await expect(currency).toHaveValue('');
+    await expect(price).toHaveValue('');
+    await page.locator('[data-purchase-proof-ref]').fill('G6-SIMULATED-RECEIPT');
+    await page.locator('[data-purchase-seller-label]').fill('SIMULATED-STAGING-SELLER');
+    const route = '/po/cccccccc-cccc-4ccc-8ccc-000000000001/confirm';
+    await page.locator('[data-workspace-action="confirm-po"]').click();
+    await expect(page.locator('[data-workspace-feedback]')).toContainText('Prix confirmé positif et devise ISO');
+    expect(mutatingCalls(api, route)).toHaveLength(0);
+    await price.fill('10.00');
+    await currency.fill('ZZ');
+    await page.locator('[data-workspace-action="confirm-po"]').click();
+    await expect(page.locator('[data-workspace-feedback]')).toContainText('Prix confirmé positif et devise ISO');
+    expect(mutatingCalls(api, route)).toHaveLength(0);
+    await currency.fill('eur');
+    await page.locator('[data-workspace-action="confirm-po"]').click();
+    const calls = mutatingCalls(api, route);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].body.lines).toEqual([{
+      purchase_line_id: line.line_id, confirmed_quantity: line.quantity,
+      confirmed_unit_price: 10, confirmed_currency: 'EUR',
+    }]);
+  });
+
   test('soumission puis confirmation partielle : le reliquat réapparaît dans les lignes à acheter', async ({ page }) => {
     const api = createFakeApi();
     await mountWorkspace(page, api);
