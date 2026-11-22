@@ -341,7 +341,7 @@ describe('confirmGroupedPurchaseOrder — garde-fous', () => {
     expect(up.params).toEqual([L1, 1, 10, 'EUR']);
     const vendor = calls.find(c => /INSERT INTO manual_purchase_executions/.test(c.sql));
     expect(vendor.params).toEqual([PO,L1,null,'SIM-STAGING-VENDOR','other',1,10,'EUR','SIM-STAGING-PROOF',null,uuid(8)]);
-    expect(calls.some(c => /UPDATE purchase_lines.+supplier_unit_price/s.test(c.sql))).toBe(false);
+    expect(calls.some(c => /SET\s+supplier_unit_price\s*=/.test(c.sql))).toBe(false);
   });
 
   it('HB-05 : confirmation inférieure à la quantité déjà reçue → 409 CONFIRMED_QUANTITY_BELOW_RECEIVED, sans écriture', async () => {
