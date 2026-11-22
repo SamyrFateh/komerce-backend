@@ -41,7 +41,10 @@ test('coverage includes preparation, commitment, submission, sent, confirmation,
     "readOnly:true",
   ])expect(spec).toContain(key);
   const tests=(spec.match(/\ntest\('/g)||[]).length;
-  expect(tests).toBe(9); // 7 parcours initiaux + 2 contrôles explicites de simulation fournisseur G6
+  expect(tests).toBe(11); // 9 parcours initiaux + 2 contrôles d'isolement PO par commande
+  expect(spec).toContain('01b - besoin multi-commandes');
+  expect(spec).toContain('01c - les permissions lecture seule');
+  expect(spec).toContain('prepare-po-order-ORDER-ISOLATED');
   expect(spec).toContain('08 - G6 fournisseur fictif');
   expect(spec).toContain('09 - G6 confirmation fictive');
 });

@@ -124,8 +124,11 @@ async function main(){
   check(t.confirmed&&t.fingerprint===env.G6_CANONICAL_DB_FINGERPRINT,'G6_SIM_DB_TARGET_MISMATCH');
   report.sha=await checkedRuntimeSha();report.db_fingerprint=t.fingerprint;
   const before=await state();verifyBase(before);
-  // Une PO regroupée peut embarquer le reliquat ouvert d'un autre scénario (N13) : les preuves restent celles de LA ligne de cette commande.
+  // Pour M03, une confirmation simulée ne doit JAMAIS englober une ligne
+  // d'une autre commande, même quand le cockpit les groupe par fournisseur/SKU.
   report.po_foreign_lines=Number(before.foreign_lines);
+  check(env.G6_CANONICAL_SCENARIO!=='M03'||report.po_foreign_lines===0,
+    'G6_M03_PO_CROSS_ORDER_SCOPE_DRIFT');
   check(before.po_status==='notified'&&!before.sent_at&&!before.sent_channel&&!before.sent_note&&
     !before.supplier_order_id&&before.confirmed_quantity===null&&Number(before.manual_executions)===0,
     'G6_SIM_EXPECT_PRIOR_READONLY_CHECKPOINT');
@@ -164,9 +167,14 @@ async function main(){
    // permet un prix de confirmation FICTIF. L'opérateur le saisit par la vraie
    // UI de confirmation ; le budget d'engagement n'est pas un devis réel.
    const price=cf.locator('[data-hlc-confirmed-price]');
+   const priceFields=await price.count();
+   report.price_scope={fields:priceFields,scenario:env.G6_CANONICAL_SCENARIO,
+     foreign_lines:report.po_foreign_lines,
+     quoted_unit_present:before.supplier_unit_price!==null,
+     quoted_currency_present:before.supplier_currency!==null};save();
    let simulatedMoney=null;
-   if(await price.count()) {
-     check(env.G6_CANONICAL_SCENARIO==='M03'&&await price.count()===1&&
+   if(priceFields) {
+     check(env.G6_CANONICAL_SCENARIO==='M03'&&priceFields===1&&
        before.supplier_unit_price===null&&before.supplier_currency===null,
        'G6_SIM_MANUAL_PRICE_UNEXPECTED_SCOPE');
      const indicative=await loadIndicativeBudget(db,PO,ORDER);

@@ -822,6 +822,25 @@
             primary: true, why: 'regroupe les besoins cochés', disabled: lock || (crossBatch ? 'un seul fournisseur et marché par PO' : null),
             run: (b) => prepareBatch(b, g.batch, lineIds, null),
           });
+          // Une même référence fournisseur/SKU peut regrouper plusieurs commandes.
+          // Le Hub doit aussi pouvoir constituer une PO pour UNE commande sans
+          // rattacher silencieusement les lignes des autres commandes.
+          const byOrder = new Map();
+          for (const line of g.group.lines) {
+            if (!line.order_id || !line.order_ref || !line.line_id) continue;
+            if (!byOrder.has(line.order_id)) byOrder.set(line.order_id, { ref: line.order_ref, ids: [] });
+            byOrder.get(line.order_id).ids.push(line.line_id);
+          }
+          if (byOrder.size > 1) {
+            for (const [orderId, orderLines] of byOrder) {
+              A('prepare-po-order-' + orderId,
+                `Constituer une PO · commande ${orderLines.ref} (${orderLines.ids.length} ligne(s))`, {
+                  why: 'uniquement les lignes de cette commande ; autres commandes inchangées',
+                  disabled: lock,
+                  run: (b) => prepareBatch(b, g.batch, orderLines.ids, null),
+                });
+            }
+          }
           if (g.batch.compatible_draft_po_ids.length) {
             g.batch.compatible_draft_po_ids.forEach((id) => A(`attach-po-${id}`, `Ajouter au brouillon ${poRef(poById.get(id) || { id })}`, { why: 'même fournisseur · Hub · marché', disabled: lock || (crossBatch ? 'un seul fournisseur et marché par PO' : null), run: (b) => prepareBatch(b, g.batch, lineIds, id) }));
           } else A('attach-po', 'Ajouter à un PO brouillon existant', { disabled: 'aucun brouillon compatible' });
