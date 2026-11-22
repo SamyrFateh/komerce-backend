@@ -22,6 +22,8 @@ function deriveIndicativeBudget(rows) {
   }
   const row = rows[0];
   if (row.source_kind !== SOURCE_KIND || row.system_key !== 'central_hub'
+      || !row.sourcing_supplier_id || !row.po_supplier_id
+      || !row.sourcing_product_id || !row.order_product_id
       || String(row.sourcing_supplier_id) !== String(row.po_supplier_id)
       || String(row.sourcing_product_id) !== String(row.order_product_id)
       || row.simulation_scope !== 'G6-BUYER'
