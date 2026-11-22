@@ -669,7 +669,8 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
            pl.id AS line_id, pl.order_item_id, oi.order_id, o.reference AS order_ref, NULLIF(to_jsonb(o)->>'simulation_scope','') AS simulation_scope, p.name AS product_name,
            pl.product_sku_id, pl.quantity AS ordered, vp.effective_quantity AS effective, vp.received_quantity AS received,
            po.trigger_mode, po.confirmed_at, po.market_id AS po_market_id,
-           pl.supplier_unit_price, pl.supplier_currency, o.created_at AS order_created_at
+           pl.supplier_unit_price, pl.supplier_currency,
+           pl.confirmed_unit_price, pl.confirmed_currency, o.created_at AS order_created_at
       FROM purchase_orders po
       JOIN suppliers s ON s.id = po.supplier_id
       JOIN purchase_lines pl ON pl.purchase_order_id = po.id AND pl.cancelled_at IS NULL
@@ -716,6 +717,10 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
       simulation_scope: r.simulation_scope || null,
       unit_price: r.supplier_unit_price == null ? null : Number(r.supplier_unit_price),
       currency: r.supplier_currency || null,
+      // Le devis fournisseur initial ne bouge jamais ; afficher la vérité
+      // de la confirmation séparément, y compris sur les PO Hub sans devis.
+      confirmed_unit_price: r.confirmed_unit_price == null ? null : Number(r.confirmed_unit_price),
+      confirmed_currency: r.confirmed_currency || r.supplier_currency || null,
     });
   }
   const purchaseOrders = [...pos.values()].map((po) => {
