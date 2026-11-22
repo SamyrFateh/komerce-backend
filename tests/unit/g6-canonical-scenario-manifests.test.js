@@ -17,11 +17,27 @@ test('all scenario manifests match strict schema and cannot claim unwitnessed PA
  const valid=ajv.compile(manifestSchema);
  for(const s of business.scenarios){
   const m=loadManifest(s.id);expect(valid(m)).toBe(true);
-  expect(['NOT_BOUND','GOLDEN_EVIDENCE_ONLY']).toContain(m.binding_status);
-  expect(m.configuration.market).toBeNull();
-  expect(m.configuration.steps).toEqual([]);
-  expect(()=>requireExecutableManifest(s.id,{market:s.markets[0],cohort:'GPT-G6'}))
-   .toThrow('G6_MANIFEST_NOT_BOUND_'+s.id);
+  if(s.id==='N34'){
+   expect(m.binding_status).toBe('READY_FOR_REVIEW');
+   expect(m.configuration.market).toBeNull();
+   expect(m.configuration.cohort).toBeNull();
+   expect(m.configuration.basket).toEqual({source:null,lines:[]});
+   expect(m.configuration.payment).toEqual({method:null,simulated_only:true});
+   expect(m.configuration.steps).toEqual(['N34_CENTRAL_IMMUTABILITY','N34_EXPLICIT_SOURCE']);
+   expect(m.configuration.branches).toEqual(['N34A','N34B']);
+   for(const market of ['KM','CM','CG'])
+    expect(requireExecutableManifest('N34',{market,cohort:'GPT-G6'})).toBe(m);
+   expect(()=>requireExecutableManifest('N34',{market:'YT',cohort:'GPT-G6'}))
+    .toThrow('G6_MANIFEST_NOT_BOUND_N34');
+   expect(()=>requireExecutableManifest('N34',{market:'KM',cohort:'UNKNOWN'}))
+    .toThrow('G6_MANIFEST_NOT_BOUND_N34');
+  }else{
+   expect(['NOT_BOUND','GOLDEN_EVIDENCE_ONLY']).toContain(m.binding_status);
+   expect(m.configuration.market).toBeNull();
+   expect(m.configuration.steps).toEqual([]);
+   expect(()=>requireExecutableManifest(s.id,{market:s.markets[0],cohort:'GPT-G6'}))
+    .toThrow('G6_MANIFEST_NOT_BOUND_'+s.id);
+  }
  }
 });
 test('only archived completed M01 is marked Golden, with replay forbidden',()=>{
