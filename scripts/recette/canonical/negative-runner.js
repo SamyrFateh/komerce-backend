@@ -139,7 +139,7 @@ async function runNegativeScenario({scenario,env,db,adapters}){
     if(!fs.existsSync(path.join(src,'report.json')))throw Error('G6_N22_PREREQ_MISSING_ORDER_A_STAGE_'+p);
     fs.cpSync(src,path.join(ROOT,'test-results/g6-n22-a',p),{recursive:true});
    }
-   const secondEnv={...env,G6_N22_TARGET_RELAY_ID:choices[0].id};
+   const secondEnv={...env,G6_N22_EXCLUDE_RELAY_ID:first.relais_id};
    const bAdapters=createRealBuyerCashAdapters({db,env:secondEnv});
    const second=await bootstrapFreshScenario({scenario,toStage:'LOCAL_RELAY_AVAILABLE',adapters:bAdapters});
    const {rows:[b]}=await db.query(`SELECT o.id,o.reference,o.relais_id,o.user_id,
@@ -147,7 +147,7 @@ async function runNegativeScenario({scenario,env,db,adapters}){
       o.simulation_scope,m.code AS market
       FROM orders o JOIN markets m ON m.id=o.market_id WHERE o.id=$1`,[second.order_id]);
    if(!b||b.id===result.order_id||b.user_id===first.user_id||
-      b.relais_id!==choices[0].id||b.market!==market||b.status!=='available'||
+      (!b.relais_id||b.relais_id===first.relais_id)||b.market!==market||b.status!=='available'||
       b.payment_status!=='paid'||b.simulation_scope!=='G6-BUYER')
     throw Error('G6_N22_PRODUCT_GAP_FRESH_SECOND_ORDER_NOT_AT_RELAY_B');
    n22Second={id:b.id,reference:b.reference,relay_id:b.relais_id};
@@ -167,7 +167,7 @@ async function runNegativeScenario({scenario,env,db,adapters}){
    spawnChild(L.script,{...env,G6_DYNAMIC_FRESH_ORDER:'1',G6_CANONICAL_PHASE:phase,
     G6_CANONICAL_ORDER_ID:result.order_id,G6_CANONICAL_ORDER_REFERENCE:result.order_reference,G6_CANONICAL_DB_FINGERPRINT:runtime.db_fingerprint,
     ...(poId?{G6_CANONICAL_PO_ID:poId}:{}),...(ship?{G6_CANONICAL_SHIPMENT_REF:ship.reference,G6_CANONICAL_SHIPMENT_ID:ship.id}:{}),
-    ...(n22Second?{G6_N22_REVERSE_ORDER_ID:n22Second.id,G6_N22_REVERSE_ORDER_REFERENCE:n22Second.reference}:{}),
+    ...(n22Second?{G6_N22_REVERSE_ORDER_ID:n22Second.id,G6_N22_REVERSE_ORDER_REFERENCE:n22Second.reference,G6_N22_REVERSE_RELAY_ID:n22Second.relay_id}:{}),
     },L.report);
   }catch(e){
    // Verdict : défaut produit ou écran manquant relevé par le script ; sinon l'erreur d'origine.
