@@ -95,8 +95,12 @@ async function main(){
     (o.pickup_secret_hash IS NOT NULL) AS has_secret,u.phone,u.email,u.role::text AS role FROM orders o JOIN users u ON u.id=o.user_id WHERE o.id=$1`,[ID]);
   check(o&&o.reference===REF&&o.status==='available'&&o.payment_status==='paid'&&o.has_secret,'G6_'+SCEN+'_PRECONDITION_NOT_PAID_AVAILABLE');
   // Second relais actif du même marché, lu en lecture seule ; sinon prérequis manquant.
+  const relayB=SCEN==='N22'?env.G6_N22_REVERSE_RELAY_ID:null;
+  if(SCEN==='N22')check(/^[a-f0-9-]{36}$/i.test(relayB||''),
+    'G6_N22_PREREQ_MISSING_FRESH_RELAY_B');
   const {rows:[b]}=await db.query(`SELECT r.id,r.name FROM relais r JOIN markets m ON m.id=r.market_id AND m.code=$2
-    WHERE r.is_active=TRUE AND r.id<>$1 ORDER BY r.created_at LIMIT 1`,[o.relais_id,MK.code]);
+    WHERE r.is_active=TRUE AND r.id<>$1 AND ($3::uuid IS NULL OR r.id=$3::uuid)
+    ORDER BY r.created_at LIMIT 1`,[o.relais_id,MK.code,relayB]);
   if(!b)throw Error('PREREQ_MISSING_SECOND_RELAY_'+MK.code);
   report.relay_b_found=true;
   const buyer={id:o.user_id,email:o.email,phone:o.phone,role:o.role};
