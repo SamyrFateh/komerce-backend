@@ -25,6 +25,12 @@ describe('N34b continuation — no second import, explicit operator family, PG s
   expect(source).toContain("b?.category_key===FAMILY");
   expect(source).toContain("after.komerce_category===FAMILY");
   expect(source).toContain('BOUTIQUE_OUTILLAGE_NOT_OFFERED');
+  // Catalogue already calls loadBoutiqueProposal() on inspector open, then hides Recharger.
+  const boutique=source.slice(source.indexOf('async function boutiqueCategory('),source.indexOf('async function promote('));
+  expect(boutique).toContain('const select=panel.locator');
+  expect(boutique).toContain("if(!await visible(select,12000))");
+  expect(boutique.indexOf("if(!await visible(select,12000))")).toBeLessThan(boutique.indexOf("await humanClick(null,refresh)"));
+  expect(boutique).not.toContain('await humanClick(null,open)');
   expect(source).toContain('if(!cand.product_id){');
   expect(source.indexOf('await boutiqueCategory(actor)')).toBeLessThan(source.indexOf('await promote(actor)'));
   expect(source).toContain("b?.category==='Bricolage'&&b?.subcategory==='Outillage'");
