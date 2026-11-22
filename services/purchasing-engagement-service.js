@@ -647,7 +647,7 @@ async function confirmGroupedPurchaseOrder(poId, body = {}, { actor = null, cont
                confirmed_at = NOW(), updated_at = NOW()
          WHERE id = $1
       `, [line.id, c.confirmedQuantity, c.price,
-        c.confirmedQuantity > 0 && po.trigger_mode !== 'auto' ? c.currency : null]);
+        c.confirmedQuantity > 0 && !line.supplier_currency && po.trigger_mode !== 'auto' ? c.currency : null]);
     }
     const remnantIds = [];
     for (const line of lines) {
