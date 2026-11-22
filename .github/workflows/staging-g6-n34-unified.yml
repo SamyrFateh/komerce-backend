@@ -1,0 +1,77 @@
+# N34 unified buyer-less security/source scenario: two actual Chromium/PG stages.
+# Original KM candidate is revalidated, never reimported or presented as a CM/CG fixture.
+name: G6 N34 — unified real source/Hub immutability evidence (staging)
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  n34-unified:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      (github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N34-KM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N34-CM' ||
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N34-CG')
+    concurrency:
+      group: komerce-g6-canonical-real-transaction
+      cancel-in-progress: false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 27
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      G6_CANONICAL_SCENARIO: N34
+      G6_N34A_REFUSAL_ONLY: '1'
+      G6_N34_FINAL_READONLY: '1'
+      PGOPTIONS: '-c default_transaction_read_only=on'
+      G6_TARGET_MARKET: ${{ endsWith(github.event.issue.title, '-CM') && 'CM' || endsWith(github.event.issue.title, '-CG') && 'CG' || 'KM' }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Require exact Railway staging SHA equals GitHub main
+        shell: bash
+        run: |
+          set -euo pipefail
+          head="$(git rev-parse HEAD)"
+          live="$(curl -fsS "$STAGING_BASE_URL/health/version" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(String(JSON.parse(s).commit||"")))')"
+          test "$head" = "$live" || { echo "N34_SHA_DRIFT head=$head live=$live"; exit 1; }
+          echo "E2E_EXPECTED_DEPLOY_SHA=$head" >> "$GITHUB_ENV"
+      - name: Staging PG target-guard (READ ONLY)
+        run: node scripts/recette/target-guard.js
+      - name: Install real Chromium
+        run: npx playwright install chromium --only-shell
+      - name: N34a — real HTTP 409 normal/force DELETE + before/after PostgreSQL hashes
+        run: node scripts/recette/g6-n34a-api-delete-negative-chromium.js
+      - name: N34b — actual Sourcing supplier selector + candidate/product PG proof (NO import)
+        run: node scripts/recette/g6-n34b-final-provenance-readonly.js
+      - name: N34 — canonical two-stage registry verdict (same SHA, PG, hub identity)
+        run: node scripts/recette/g6-n34-final-verdict.js
+      - name: Preserve proofs, screenshots and strict partial verdicts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g6-n34-unified-${{ github.run_id }}
+          path: |
+            test-results/g6-n34a-delete-refusal/
+            test-results/g6-n34b-final-readonly/
+            test-results/g6-n34-combined/
+          retention-days: 21
+          if-no-files-found: warn
