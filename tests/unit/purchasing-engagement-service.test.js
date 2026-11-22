@@ -337,7 +337,8 @@ describe('confirmGroupedPurchaseOrder — garde-fous', () => {
       lines: [{ purchase_line_id: L1, confirmed_quantity: 1, confirmed_unit_price: 10, confirmed_currency: 'eur' }],
     }, { actor: { id: uuid(8) } });
     const up = calls.find(c => /UPDATE purchase_lines/.test(c.sql));
-    expect(up.sql).toContain('supplier_currency = COALESCE(supplier_currency, $4)');
+    expect(up.sql).toContain('confirmed_currency = COALESCE(confirmed_currency, $4)');
+    expect(up.sql).not.toMatch(/SET[\s\S]*supplier_currency\s*=/);
     expect(up.params).toEqual([L1, 1, 10, 'EUR']);
     const vendor = calls.find(c => /INSERT INTO manual_purchase_executions/.test(c.sql));
     expect(vendor.params).toEqual([PO,L1,null,'SIM-STAGING-VENDOR','other',1,10,'EUR','SIM-STAGING-PROOF',null,uuid(8)]);
