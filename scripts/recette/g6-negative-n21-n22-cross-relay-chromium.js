@@ -98,12 +98,14 @@ async function main(){
    const buyerB={id:ob.user_id,email:ob.email,phone:ob.phone,role:ob.role};
    check(await verifyMarkedG6Buyer(db,buyerB,env),'G6_N22_PREREQ_UNMARKED_BUYER_B');
    second=await customer(browser,buyerB);
-   const s=await agentSession(browser,'control-a');agentId=s.agentId;
+   const pre=await agentSession(browser,'pre-control-a');agentId=pre.agentId;
+   await pre.actor.ctx.close();
+   // Attacher d'abord par l'écran Réseau, puis ouvrir une NOUVELLE session :
+   // ne jamais compter sur les permissions d'un ancien JWT après réaffectation.
+   if(await relayOf(agentId)!==o.relais_id)await attachDedicatedRelayByUI(browser,agentId,o.relais_id);
+   check(await relayOf(agentId)===o.relais_id,'G6_N22_PRECONDITION_AGENT_NOT_AT_ORDER_RELAY');
+   const s=await agentSession(browser,'control-a');
    try{
-    // Le stage de disponibilité B a pu rattacher l'agent de recette à B ;
-    // le rattacher à A par l'écran Réseau avant d'ouvrir sa session d'essai.
-    if(await relayOf(agentId)!==o.relais_id)await attachDedicatedRelayByUI(browser,agentId,o.relais_id);
-    check(await relayOf(agentId)===o.relais_id,'G6_N22_PRECONDITION_AGENT_NOT_AT_ORDER_RELAY');
     const own=await probeReads(s.actor.page,ID,REF);
     report.control={profile:'agent_at_order_relay_A',reads:own};
     check(own.filter(r=>['order_by_id','order_by_ref'].includes(r.label))
