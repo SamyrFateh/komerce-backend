@@ -13,6 +13,30 @@ function isRelayPage(url){
  catch(_){return false}
 }
 const ENTRIES={execute:{view:'execute',link:'Atelier réception'},remises:{view:'remises',link:/^\s*Remises\s*$/}};
+const isInterrupted=error=>/is interrupted by another navigation|ERR_ABORTED|frame was detached/i.test(String(error?.message||error));
+// A post-login redirect can abort both goto() AND the first waitForURL().
+// Never retry a mutation or navigate a second time: observe the browser's
+// *actual* origin/path/view, with at most three bounded read-only waits.
+async function waitForRelayURL(page,view=null){
+ const matches=url=>{
+  try {const u=new URL(String(url));return u.origin===BASE&&u.pathname==='/admin/relais-live'&&
+    (!view||u.searchParams.get('view')===view);}
+  catch(_){return false;}
+ };
+ for(let attempt=0;attempt<3;attempt++){
+  if(matches(page.url()))return;
+  try{
+   await page.waitForURL(u=>matches(u),{timeout:20000,waitUntil:'commit'});
+  }catch(error){
+   if(!isInterrupted(error))throw error;
+   if(matches(page.url()))return;
+   if(attempt===2)throw Error('G6_RELAY_NAVIGATION_RACE_UNRESOLVED',{cause:error});
+   continue;
+  }
+  if(matches(page.url()))return;
+ }
+ throw Error('G6_RELAY_NAVIGATION_DESTINATION_DRIFT');
+}
 async function openRelayLive(page,{selector,timeout=30000,execute=false,entry=execute?'execute':null}={}){
  if(!page||typeof page.goto!=='function'||typeof selector!=='string'||!selector)
   throw Error('G6_RELAY_NAVIGATION_ARGUMENTS_INVALID');
@@ -22,15 +46,11 @@ async function openRelayLive(page,{selector,timeout=30000,execute=false,entry=ex
    // another query-string navigation caused Playwright to be interrupted.
    await page.goto('/admin/relais-live',{waitUntil:'commit',timeout:20000});
   }catch(error){
-   // ERR_ABORTED : même course que la redirection post-login (#4562) ; on vérifie ensuite l'URL atteinte.
-   if(!/is interrupted by another navigation|ERR_ABORTED|frame was detached/i.test(String(error?.message||error)))
-    throw error;
-   // Never accept an interrupted navigation unless the browser itself reaches
-   // the exact canonical staging cockpit without any API or DOM bypass.
-   await page.waitForURL(u=>u.origin===BASE&&u.pathname==='/admin/relais-live',{timeout:20000,waitUntil:'commit'});
+   // Only a navigation race is recoverable; the destination is still verified.
+   if(!isInterrupted(error))throw error;
   }
  }
- await page.waitForURL(u=>u.origin===BASE&&u.pathname==='/admin/relais-live',{timeout:20000,waitUntil:'commit'});
+ await waitForRelayURL(page);
  await page.waitForLoadState('domcontentloaded',{timeout:20000});
  // Réception : atelier d'exécution (?view=execute) ; retrait : comptoir des remises (?view=remises).
  // L'atterrissage du rôle est le Flux Relais : on y entre comme un humain, par le lien de l'écran.
@@ -39,7 +59,7 @@ async function openRelayLive(page,{selector,timeout=30000,execute=false,entry=ex
  if(want&&new URL(page.url()).searchParams.get('view')!==want.view){
   const {humanClick}=require('./actors/human-gestures');
   await humanClick(null,page.locator('a',{hasText:want.link}).first());
-  await page.waitForURL(u=>u.origin===BASE&&u.pathname==='/admin/relais-live'&&u.searchParams.get('view')===want.view,{timeout:20000,waitUntil:'commit'});
+  await waitForRelayURL(page,want.view);
   await page.waitForLoadState('domcontentloaded',{timeout:20000});
  }
  const target=page.locator(selector);
