@@ -55,7 +55,7 @@
     'contribution': { svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>', tone: 'green' },
     'couverture': { svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20" fill="currentColor" opacity=".2"/></svg>', tone: 'teal' },
     'reste': { svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>', tone: 'red' },
-    'moyenne': { svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>', tone: 'blue' },
+    'resultat': { svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16M12 4v16"/><path d="M5 5l14 14"/></svg>', tone: 'blue' },
   };
 
   function metric(doc, label, value, helper, tone, iconKey) {
@@ -149,6 +149,8 @@
     const observed = flow?.observed_mix || {};
     const target = flow?.economic_break_even || {};
     const ready = Boolean(flow && flow.status === 'READY');
+    // Read-only projection: never recompute an accounting result in the browser.
+    const periodResult = ready ? flow?.economic_state?.period_result_kmf : null;
     const panel = el(doc, 'section', 'kmc-flow-equilibrium-panel');
     panel.dataset[PANEL_ATTR] = '';
 
@@ -161,6 +163,7 @@
     panel.appendChild(head);
 
     // Contrat mock : les cinq indicateurs restent toujours à la même place.
+    // La contribution moyenne reste accessible dans le détail du flux.
     // Quand la vérité serveur n'est pas décisionnelle, la valeur reste « — » ;
     // le navigateur ne fabrique jamais un ratio, un gap ou une moyenne.
     const state = el(doc, 'div', 'kmc-flow-equilibrium-state');
@@ -175,7 +178,14 @@
       ready && target.status === 'TARGET_REACHED' ? 'positive' : (ready ? 'warning' : null),
       'reste'
     ));
-    state.appendChild(metric(doc, 'Contribution moyenne / article', formatKmf(observed.contribution_per_article_kmf), 'Par article (mix réel)', null, 'moyenne'));
+    state.appendChild(metric(
+      doc,
+      'Résultat après charges fixes',
+      formatKmf(periodResult),
+      periodResult == null ? 'Non décisionnel : rapprochement économique requis' : 'Contribution − charges fixes · résultat analytique, non résultat net',
+      periodResult == null ? null : (Number(periodResult) > 0 ? 'positive' : (Number(periodResult) < 0 ? 'warning' : null)),
+      'resultat'
+    ));
     panel.appendChild(state);
 
     if (!ready) {
