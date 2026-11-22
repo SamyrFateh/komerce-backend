@@ -9833,6 +9833,13 @@
       {
         "feature": "economic-engine",
         "category": "tests",
+        "declared": "tests/unit/economic-result-readonly-pin.test.js",
+        "resolvedPath": "tests/unit/economic-result-readonly-pin.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
         "declared": "tests/unit/pricing-market-corridor.test.js",
         "resolvedPath": "tests/unit/pricing-market-corridor.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -50687,7 +50694,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2378
+        "filesObserved": 2379
       },
       "boutique": {
         "filesObserved": 218,
