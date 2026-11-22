@@ -6214,6 +6214,13 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/js/pricing-equilibrium-panel.js",
+        "resolvedPath": "public/dashboards/canonical/js/pricing-equilibrium-panel.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/js/pricing-decision-chain.js",
         "resolvedPath": "public/dashboards/canonical/js/pricing-decision-chain.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -50673,7 +50680,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2376
+        "filesObserved": 2377
       },
       "boutique": {
         "filesObserved": 218,

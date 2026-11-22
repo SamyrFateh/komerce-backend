@@ -6923,7 +6923,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 195,
+            "count": 196,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -7708,6 +7708,11 @@
               {
                 "declared": "dashboards/canonical/js/pricing-economic-cockpit.js",
                 "resolvedPath": "public/dashboards/canonical/js/pricing-economic-cockpit.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/pricing-equilibrium-panel.js",
+                "resolvedPath": "public/dashboards/canonical/js/pricing-equilibrium-panel.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -9393,7 +9398,7 @@
             ]
           }
         },
-        "totalFiles": 488,
+        "totalFiles": 489,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
