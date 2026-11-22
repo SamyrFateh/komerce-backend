@@ -46,8 +46,6 @@
      "to_control": 0,
      "controlled": 0,
      "in_bags": 0,
-     "in_bags_open": 0,
-     "in_bags_closed": 0,
      "in_boxes": 0,
      "shipped": 0,
      "requested": 2,
@@ -79,9 +77,6 @@
    "readiness": {
     "complete": false,
     "partial": false,
-    "ready_to_pack": false,
-    "unbagged_received": 0,
-    "bag_open": false,
     "pending_items": [
      {
       "order_item_id": "c89bee43-2aef-4c41-b44b-f54526afbe48",
@@ -92,7 +87,9 @@
     "blockers": [
      "Besoin non couvert par une ligne d’achat",
      "Articles non reçus : Produit C (2)"
-    ]
+    ],
+    "unboxed_received": 0,
+    "ready_to_combox": false
    },
    "totals": {
     "requested": 2,
@@ -136,8 +133,6 @@
      "to_control": 0,
      "controlled": 0,
      "in_bags": 0,
-     "in_bags_open": 0,
-     "in_bags_closed": 0,
      "in_boxes": 0,
      "shipped": 0,
      "requested": 1,
@@ -180,9 +175,6 @@
    "readiness": {
     "complete": false,
     "partial": false,
-    "ready_to_pack": false,
-    "unbagged_received": 0,
-    "bag_open": false,
     "pending_items": [
      {
       "order_item_id": "d55d9fb3-e077-4ecb-aa79-cab3cd78bf97",
@@ -192,7 +184,9 @@
     ],
     "blockers": [
      "Articles non reçus : Produit A (1)"
-    ]
+    ],
+    "unboxed_received": 0,
+    "ready_to_combox": false
    },
    "totals": {
     "requested": 1,
@@ -236,8 +230,6 @@
      "to_control": 0,
      "controlled": 0,
      "in_bags": 0,
-     "in_bags_open": 0,
-     "in_bags_closed": 0,
      "in_boxes": 0,
      "shipped": 0,
      "requested": 1,
@@ -285,8 +277,6 @@
      "to_control": 0,
      "controlled": 0,
      "in_bags": 0,
-     "in_bags_open": 0,
-     "in_bags_closed": 0,
      "in_boxes": 0,
      "shipped": 0,
      "requested": 2,
@@ -333,9 +323,6 @@
    "readiness": {
     "complete": false,
     "partial": false,
-    "ready_to_pack": false,
-    "unbagged_received": 0,
-    "bag_open": false,
     "pending_items": [
      {
       "order_item_id": "14fde032-f91b-4bdf-a290-b65efc957a95",
@@ -350,7 +337,9 @@
     ],
     "blockers": [
      "Articles non reçus : Produit B (1), Produit A (2)"
-    ]
+    ],
+    "unboxed_received": 0,
+    "ready_to_combox": false
    },
    "totals": {
     "requested": 3,
@@ -437,43 +426,36 @@
     "label": "Reçu au Hub"
    },
    {
-    "state": "bag_open",
+    "state": "received",
     "label": "En sac (ouvert)"
    },
    {
-    "state": "bag_closed",
+    "state": "received",
     "label": "Sac fermé"
    },
    {
     "state": "boxed",
-    "label": "En KOM-BOX"
+    "label": "En COMBOX"
    }
   ],
   "physical": [
    {
     "key": "received",
-    "title": "Reçu au Hub · non ensaché",
+    "title": "Reçu au Hub · à répartir en COMBOX",
     "tone": "ok",
     "items": [],
     "empty_text": "Rien de reçu pour l’instant."
    },
    {
-    "key": "bags",
-    "title": "Sacs clients",
-    "tone": "bag",
-    "items": [],
-    "empty_text": "Aucun sac ouvert."
-   },
-   {
     "key": "boxes",
-    "title": "KOM-BOX",
+    "title": "COMBOX",
     "tone": "box",
     "items": [
      {
       "key": "box:e0b9c92e-5970-45ad-bb6b-f9c8e84d1094",
       "ref": "HP0-mw2ezjbz-eb48a6-BOX2",
       "meta": "PICKED",
-      "text": "KOM-BOX · à rattacher à une expédition",
+      "text": "COMBOX · à rattacher à une expédition",
       "order_ids": [],
       "box_unit_id": "e0b9c92e-5970-45ad-bb6b-f9c8e84d1094"
      },
@@ -481,7 +463,7 @@
       "key": "box:f942df34-1570-4cb6-a092-19f1730223a9",
       "ref": "HP0-mw2ezjbz-eb48a6-BOX1",
       "meta": "PICKED",
-      "text": "KOM-BOX · à rattacher à une expédition",
+      "text": "COMBOX · à rattacher à une expédition",
       "order_ids": [],
       "box_unit_id": "f942df34-1570-4cb6-a092-19f1730223a9"
      },
@@ -489,7 +471,7 @@
       "key": "box:96cb86ed-8879-47e4-9ab5-903d290fe517",
       "ref": "HP0-mw2eyxc5-1c5083-BOX2",
       "meta": "PICKED",
-      "text": "KOM-BOX · à rattacher à une expédition",
+      "text": "COMBOX · à rattacher à une expédition",
       "order_ids": [],
       "box_unit_id": "96cb86ed-8879-47e4-9ab5-903d290fe517"
      },
@@ -497,12 +479,12 @@
       "key": "box:835a52a5-bfb6-405b-a3f5-81620e7028ac",
       "ref": "HP0-mw2eyxc5-1c5083-BOX1",
       "meta": "PICKED",
-      "text": "KOM-BOX · à rattacher à une expédition",
+      "text": "COMBOX · à rattacher à une expédition",
       "order_ids": [],
       "box_unit_id": "835a52a5-bfb6-405b-a3f5-81620e7028ac"
      }
     ],
-    "empty_text": "Aucune KOM-BOX en cours."
+    "empty_text": "Aucune COMBOX en cours."
    },
    {
     "key": "shipped",
@@ -715,8 +697,6 @@
    "contents": []
   }
  ],
- "bags_ready": [],
- "bags_open": [],
  "fillable": [],
  "open_shipments": [],
  "to_handle": [

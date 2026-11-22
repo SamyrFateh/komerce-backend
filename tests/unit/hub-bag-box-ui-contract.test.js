@@ -10,35 +10,37 @@ const workspace=fs.readFileSync(path.join(__dirname,'../../public/dashboards/can
 const routes=fs.readFileSync(path.join(__dirname,'../../routes/admin-operations-workspace.js'),'utf8');
 const service=require('../../services/hub-bag-box-service');
 
-describe('Hub V1 — sac client physique / KOM-BOX / relais',()=>{
-  test('Hub Live crée et remplit un sac par commande avant scan de la KOM-BOX',()=>{
-    expect(workspace).toContain("data-hub-bag-preparation");
-    expect(workspace).toContain("create-customer-bag");
-    expect(workspace).toContain("scan-bag-deposit");
-    expect(workspace).toContain("close-customer-bag");
-    expect(workspace).toContain("body: {order_id:order.order_id,bag_plan:bagPlan}");
-    expect(workspace).toContain("evidence_method:'SCAN'");
+describe('Hub V1 — COMBOX directe / relais',()=>{
+  test('Hub Live compose et ferme une COMBOX directement depuis les quantités réceptionnées',()=>{
+    expect(workspace).not.toContain("data-hub-bag-preparation");
+    expect(workspace).not.toContain("create-customer-bag");
+    expect(workspace).not.toContain("data-hub-bag-scan");
+    expect(workspace).not.toContain("put-bag-in-box");
+    expect(workspace).toContain("Initialiser une COMBOX");
     expect(workspace).toContain("data-hub-box-scan");
-    expect(workspace).toContain("data-hub-bag-scan");
-    expect(workspace).toContain("put-bag-in-box");
-    expect(workspace).not.toContain("'fill-box'");
-    expect(workspace).not.toContain("'Ajouter au carton'");
-  });
-  test('mode dégradé Hub : vrai MANUAL avec preuve, pas un SCAN fictif',()=>{
-    expect(workspace).toContain("data-hub-bag-evidence-method");
-    expect(workspace).toContain("data-hub-bag-manual-proof");
+    expect(workspace).toContain("'fill-box'");
+    expect(workspace).toContain("'close-box'");
+    expect(workspace).toContain("from_unit_id:line.from_unit_id,allocation_id:line.allocation_id,quantity");
+    expect(workspace).toContain("box_reference_scan:boxScan.value.trim()");
+    expect(workspace).toContain("evidence_method:'SCAN',evidence_code:code.value.trim()");
     expect(workspace).toContain("evidence_method:'MANUAL',evidence_ref:proofRef");
-    expect(workspace).toContain("proofRef.length<6");
-    expect(workspace).toContain("evidence_method:'SCAN',evidence_code:barcode.value.trim()");
-    expect(workspace).toContain("quantity>Math.min(left,Number(line.quantity))");
-    expect(workspace).toContain("barcode.hidden=manual");
-    expect(workspace).toContain("proof.hidden=!manual");
+  });
+  test('la route de remplissage exige le scan COMBOX et la preuve de chaque article',()=>{
+    const i=routes.indexOf("'/market/:marketCode/boxes/:unitId/fill'");
+    expect(i).toBeGreaterThan(0);
+    const block=routes.slice(i,i+1800);
+    expect(block).toContain('box_reference_scan');
+    expect(block).toContain('HUB_BOX_SCAN_MISMATCH');
+    expect(block).toContain('HUB_BOX_ITEM_EVIDENCE_REQUIRED');
+    expect(block).toContain('evidence_method: body.evidence_method');
+    expect(routes).toContain("'/market/:marketCode/boxes/:unitId/close'");
+    expect(routes).toContain("operator_action: 'close_combox'");
   });
 
-  test('le relais scanne le même sac sans présumer réception',()=>{
-    expect(workspace).toContain("data-relay-bag-scanner");
-    expect(workspace).toContain("relay-lookup-bag");
-    expect(workspace).toContain("/bags/'+encodeURIComponent(code)");
+  test('le relais lit les articles de la COMBOX sans interface de sac',()=>{
+    expect(workspace).not.toContain("data-relay-bag-scanner");
+    expect(workspace).not.toContain("relay-lookup-bag");
+    expect(workspace).toContain("data-relay-item");
     expect(workspace).toContain("Attester la réception");
     expect(routes).toContain("'/market/:marketCode/relay-shipments/:reference/bags/:bagRef'");
     expect(routes).toContain("requireRelayPhysicalMarket");
@@ -53,7 +55,7 @@ describe('Hub V1 — sac client physique / KOM-BOX / relais',()=>{
     expect(block).toContain('market_id=$2');
     expect(block).toContain('createOperatorUnitCommand');
   });
-  test('scan du sac au relais résout commande, colis et contenu authentique',async()=>{
+  test('lecture historique d’un sac résout encore commande, colis et contenu authentique',async()=>{
     const fake={
       query:jest.fn()
         .mockResolvedValueOnce({rows:[{

@@ -12,7 +12,7 @@ const base = {
   bagReferenceScan: 'SAC-1', boxReferenceScan: 'BOX-1',
 };
 
-describe('Hub sac -> KOM-BOX : provenance explicite (#3900 P0-2)', () => {
+describe('Composition directe en COMBOX : provenance explicite (#3900 P0-2)', () => {
   test.each([
     [{}, 'HUB_BAG_EVIDENCE_METHOD_REQUIRED'],
     [{ evidenceMethod: 'KEYBOARD' }, 'HUB_BAG_EVIDENCE_METHOD_REQUIRED'],
@@ -23,16 +23,18 @@ describe('Hub sac -> KOM-BOX : provenance explicite (#3900 P0-2)', () => {
     await expect(bagBox.attachBagToBox({ ...base, ...extra })).rejects.toMatchObject({ code });
   });
 
-  test('route et interface transmettent la provenance, jamais un SCAN présumé', () => {
+  test('route et interface transmettent la preuve article et le scan de la COMBOX', () => {
     const route = fs.readFileSync(path.join(__dirname, '../../routes/admin-operations-workspace.js'), 'utf8');
     const ui = fs.readFileSync(path.join(__dirname,
       '../../public/dashboards/canonical/js/operations-workspace.js'), 'utf8');
-    expect(route).toContain('evidenceMethod: body.evidence_method, evidenceRef: body.evidence_ref');
-    expect(route).not.toContain('HUB_BAG_MANUAL_APPROVAL_REQUIRED');
-    expect(route).toContain('evidence_method:body.evidence_method');
-    expect(ui).toContain("data-hub-box-evidence-method");
-    expect(ui).toContain("data-hub-box-manual-proof");
-    expect(ui).toContain("{evidence_method:'MANUAL',evidence_ref:boxProofRef}:{evidence_method:'SCAN'}");
+    expect(route).toContain('evidence_method: body.evidence_method, evidence_code: body.evidence_code, evidence_ref: body.evidence_ref');
+    expect(route).toContain('box_reference_scan');
+    expect(ui).toContain("boxScan.setAttribute('data-hub-box-scan','')");
+    expect(ui).toContain("method.value==='MANUAL'");
+    expect(ui).toContain("body:{box_reference_scan:boxScan.value.trim()}");
+    expect(ui).toContain("evidence_method:'SCAN',evidence_code:code.value.trim()");
+    expect(ui).toContain("evidence_method:'MANUAL',evidence_ref:proofRef");
+    expect(ui).not.toContain('data-hub-bag-preparation');
   });
 });
 
@@ -73,7 +75,7 @@ describe('Réception fournisseur Hub : saisie manuelle (#3900 P0-2)', () => {
   });
 });
 
-describe('Audit Fable #3998 — colis client déduit du sac sans ressaisie', () => {
+describe('Compatibilité historique sac -> colis', () => {
   const db = jest.requireMock('../../db');
   afterEach(() => jest.restoreAllMocks());
 
@@ -123,12 +125,12 @@ describe('Audit Fable #3998 — colis client déduit du sac sans ressaisie', () 
     expect(writes).toHaveLength(0);
   });
 
-  test('Hub Live ne ressaisit plus parcel_id mais conserve scan et provenance', () => {
+  test('Hub Live compose directement une COMBOX sans interface de sac', () => {
     const source = fs.readFileSync(path.join(__dirname,
       '../../public/dashboards/canonical/js/operations-workspace.js'), 'utf8');
-    expect(source).not.toContain('bag_unit_id:bag.unit_id,parcel_id:parcel.value');
-    expect(source).toContain('bag_unit_id:bag.unit_id,...(!parcel.hidden?{parcel_id:parcel.value}:{})');
-    expect(source).toContain('parcel.hidden=!ambiguous');
-    expect(source).toContain('bag_reference_scan:bagScan.value.trim(),box_reference_scan:boxScan.value.trim()');
+    expect(source).toContain("boxScan.setAttribute('data-hub-box-scan','')");
+    expect(source).toContain("'Fermer la COMBOX'");
+    expect(source).not.toContain('data-hub-bag-preparation');
+    expect(source).not.toContain('bag_reference_scan');
   });
 });

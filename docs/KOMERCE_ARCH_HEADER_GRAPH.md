@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 825
+- Scanned code files: 826
 - Files with full headers: 764
-- Files with lite headers: 61
-- Files with any headers: 825
+- Files with lite headers: 62
+- Files with any headers: 826
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2103
-- Edges: 10488
+- Graph nodes: 2104
+- Edges: 10517
 - DB tables: 244
 - Doctrines: 823
 - Impact areas: 211
-- Unresolved code edges: 995
+- Unresolved code edges: 996
 - Tables multi-Ã©crivains directs (>=2): 99
 - Avertissements db-write / db-write-via en chevauchement: 13
 
@@ -54,7 +54,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - markets: 1
 - notification: 22
 - operations: 11
-- orders: 41
+- orders: 42
 - payment: 30
 - payments: 1
 - platform-ops: 2
@@ -93,7 +93,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 139
 - route-manifest: 1
 - schema: 1
-- service: 502
+- service: 503
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -251,167 +251,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - middleware/auth-guest.js â€” auth-auth-guest (auth, high, full)
 - middleware/auth.js â€” auth-auth (auth, high, full)
 - middleware/csrf-origin.js â€” auth-csrf-origin-guard (auth, high, full)
-- middleware/deny-transitaire-hub.js â€” deny-transitaire-hub-scope (market-delegation, high, full)
-- middleware/internal-static-guard.js â€” internal-static-path-guard (platform-ops, high, full)
-- middleware/recette-isolation-guard.js â€” isolated-recette-write-firewall (infrastructure, high, full)
-- middleware/require-catalog-global-authority.js â€” catalog-global-authorization-guard (catalog, high, full)
-- middleware/require-dashboard-global-authority.js â€” dashboard-global-authorization-guard (admin-dashboard, high, full)
-- middleware/require-decision-signal-global-authority.js â€” decision-signal-global-authorization-guard (decision-signals, high, full)
-- middleware/require-market-delegated-capability.js â€” market-delegated-capability-bridge (market-delegation, high, full)
-- middleware/require-market-delegated-role.js â€” market-delegation-runtime-role-bridge (market-delegation, high, full)
-- middleware/require-market-execution-capability.js â€” market-execution-capability-bridge (market-delegation, high, full)
-- middleware/require-market-scope.js â€” market-scope-authorization-guard (market, high, full)
-- middleware/require-non-production.js â€” runtime-environment-guard (infrastructure, high, full)
-- middleware/require-pricing-global-authority.js â€” pricing-global-authorization-guard (economic-engine, high, full)
-- middleware/require-recent-auth.js â€” auth-recent-proof-guard (auth, high, full)
-- middleware/require-sourcing-global-authority.js â€” sourcing-global-authorization-guard (sourcing, high, full)
-- middleware/soft-auth.js â€” auth-soft-auth (auth, high, full)
-- middleware/upload-hub.js â€” middleware-upload-hub (logistics, high, full)
-- middleware/verify-authkey-webhook.js â€” auth-verify-authkey-webhook (auth, high, full)
-- public/boutique/js/b-cart-stepper-guard.js â€” boutique-cart-stepper-event-guard (boutique, high, full)
-- public/boutique/js/b-catalog-desktop-enhancers.js â€” desktop-catalog-enhancer (catalog, high, full)
-- public/boutique/js/b-catalog.js â€” boutique-catalog-renderer (catalog, high, full)
-- public/boutique/js/b-checkout-render.js â€” checkout-dom-renderer (checkout, high, full)
-- public/boutique/js/b-identity.js â€” boutique-client-identity (auth, high, full)
-- public/boutique/js/b-modal-buybox-shared.js â€” product-modal-buybox-shared-logic (catalog, high, full)
-- public/boutique/js/b-modal-core.js â€” product-modal-orchestrator (shared-cart-modal, high, full)
-- public/boutique/js/b-modal-desktop-product.js â€” desktop-product-modal-renderer (catalog, high, full)
-- public/boutique/js/b-modal-mobile-product.js â€” mobile-product-modal-renderer (catalog, high, full)
-- public/boutique/js/b-modal-product-detail-bootstrap.js â€” product-detail-modal-orchestrator (catalog, high, full)
-- public/boutique/js/b-modal-product-fields.js â€” modal-product-scalar-fields-owner (catalog, high, full)
-- public/boutique/js/b-modal-product.js â€” product-modal-content-renderer (shared-cart-modal, high, full)
-- public/boutique/js/b-modal-suggestions.js â€” product-modal-suggestions (recommendations, high, full)
-- public/boutique/js/b-nav.js â€” boutique-nav (boutique, high, full)
-- public/boutique/js/b-notifications.js â€” client-notification-banner (notification, high, full)
-- public/boutique/js/b-pager.js â€” mobile-category-pager (catalog, high, full)
-- public/boutique/js/b-passkey-enrollment.js â€” boutique-passkey-enrollment (auth-passkey, high, full)
-- public/boutique/js/b-passkey-login.js â€” boutique-passkey-login (auth-passkey, high, full)
-- public/boutique/js/b-passkey-security.js â€” boutique-passkey-security (auth-passkey, high, full)
-- public/boutique/js/b-passkey-step-up.js â€” boutique-passkey-step-up (auth-passkey, high, full)
-- public/boutique/js/b-phone.js â€” phone-normalization-ui (auth, high, full)
-- public/boutique/js/b-scroll-owner.js â€” boutique-scroll-owner (boutique, high, full)
-- public/boutique/js/b-subcat.js â€” boutique-subcategory-navigation (catalog, high, full)
-- public/boutique/js/b-tracking.js â€” order-tracking-view (tracking, high, full)
-- public/boutique/js/b-utils.js â€” boutique-ui-utilities (boutique, high, full)
-- public/boutique/js/cart-public-api.js â€” orders-cart-public-api (boutique, high, full)
-- public/boutique/js/controllers/home-controller.js â€” boutique-home-navigation-controller (catalog, high, full)
-- public/boutique/js/group/group-api.js â€” shared-cart-front-api (shared-cart, high, full)
-- public/boutique/js/group/group-library-remove.js â€” shared-cart-library-removal-ui (shared-cart, high, full)
-- public/boutique/js/group/group-list-labels.js â€” shared-list-display-labels (shared-cart, high, full)
-- public/boutique/js/group/shared-cart-library-api.js â€” shared-cart-library-public-api (shared-cart, high, full)
-- public/boutique/js/komerce-api.js â€” boutique-api-client (boutique, high, full)
-- public/boutique/js/product-store.js â€” boutique-product-store (catalog, high, full)
-- public/boutique/js/shop-schema.js â€” boutique-taxonomy-schema (catalog, high, full)
-- public/boutique/js/view-models/modal-cart-product-model.js â€” modal-cart-product-snapshot-model (catalog, high, full)
-- public/boutique/js/view-models/modal-selection-model.js â€” product-modal-selection-model (catalog, high, full)
-- routes/admin-action-center.js â€” canonical-action-center-route (decision-signals, high, full)
-- routes/admin-boutique-categories.js â€” boutique-taxonomy-admin-api (catalog, high, full)
-- routes/admin-catalog-workspace.js â€” canonical-catalog-workspace-route (catalog, high, full)
-- routes/admin-client-360.js â€” canonical-client-360-route (admin-dashboard, high, full)
-- routes/admin-client-index.js â€” canonical-client-index-route (admin-dashboard, high, full)
-- routes/admin-cost-components.js â€” economic-engine-admin-cost-components (economic-engine, high, full)
-- routes/admin-costing.js â€” economic-engine-admin-costing (economic-engine, high, full)
-- routes/admin-customs-categories.js â€” dashboard-admin-customs-categories (customs, high, full)
-- routes/admin-customs-shipments.js â€” dashboard-admin-customs-shipments (customs, high, full)
-- routes/admin-dashboard-events.js â€” dashboard-post-commit-event-stream (dashboard, high, full)
-- routes/admin-dashboard-market.js â€” dashboard-market-scoped-route (admin-dashboard, high, full)
-- routes/admin-dashboard.js â€” dashboard-admin-dashboard (dashboard, high, full)
-- routes/admin-finance-accounting-workspace.js â€” canonical-finance-accounting-workspace-route (admin-dashboard, high, full)
-- routes/admin-finance-config.js â€” economic-engine-admin-finance-config (economic-engine, high, full)
-- routes/admin-loyalty.js â€” loyalty-admin-rewards (loyalty, high, full)
-- routes/admin-market-payment-accounts.js â€” admin-market-payment-accounts-api (payment, high, full)
-- routes/admin-market-settlement.js â€” admin-market-settlement-api (settlement, high, full)
-- routes/admin-operations-workspace.js â€” canonical-operations-workspace-route (admin-dashboard, high, full)
-- routes/admin-order-360.js â€” canonical-order-360-route (admin-dashboard, high, full)
-- routes/admin-pricing-components.js â€” economic-engine-admin-pricing-components (economic-engine, high, full)
-- routes/admin-pricing-matrices.js â€” economic-engine-admin-pricing-matrices (economic-engine, high, full)
-- routes/admin-pricing-workspace.js â€” canonical-pricing-workspace-route (economic-engine, high, full)
-- routes/admin-product-360.js â€” canonical-product-360-route (admin-dashboard, high, full)
-- routes/admin-providers-capabilities.js â€” canonical-providers-capabilities-route (admin-dashboard, high, full)
-- routes/admin-radar.js â€” dashboard-admin-radar (dashboard, high, full)
-- routes/admin-risk-provisions.js â€” dashboard-admin-risk-provisions (economic-engine, high, full)
-- routes/admin-rules.js â€” business-rules-admin-rules (business-rules, high, full)
-- routes/admin-shipping-customs-workspace.js â€” canonical-shipping-customs-workspace-route (admin-dashboard, high, full)
-- routes/admin-sourcing-workspace.js â€” canonical-sourcing-workspace-api (sourcing, high, full)
-- routes/admin-supplier-360.js â€” canonical-supplier-360-route (admin-dashboard, high, full)
-- routes/admin.js â€” dashboard-admin (dashboard, high, full)
-- routes/admin/catalog-approval.js â€” catalog-approval-routes (catalog, high, full)
-- routes/admin/customs.js â€” dashboard-customs (customs, high, full)
-- routes/admin/dashboard.js â€” dashboard-dashboard (dashboard, high, full)
-- routes/admin/index.js â€” dashboard-index (dashboard, high, full)
-- routes/admin/partners.js â€” dashboard-partners (dashboard, high, full)
-- routes/admin/system.js â€” dashboard-system (dashboard, high, full)
-- routes/admin/users.js â€” dashboard-users (dashboard, high, full)
-- routes/agent-action-center.js â€” agent-action-center-routes (decision-signals, high, full)
-- routes/auth-passkey.js â€” auth-passkey-endpoints (auth-passkey, high, full)
-- routes/auth-step-up-otp.js â€” auth-step-up-otp-endpoints (auth-identity, high, full)
-- routes/auth.js â€” auth-auth (auth-identity, high, full)
-- routes/boutique-suggestions.js â€” boutique-suggestions-http-facade (recommendations, high, full)
-- routes/catalog-product-detail.js â€” catalog-product-detail-http (catalog, high, full)
-- routes/client-auth.js â€” auth-client-auth (auth-identity, high, full)
-- routes/client-notifications.js â€” authenticated-client-notifications (notification, high, full)
-- routes/client-tracking.js â€” logistics-client-tracking (logistics, high, full)
-- routes/dashboard-clients.js â€” dashboard-dashboard-clients (dashboard, high, full)
-- routes/dashboard-finance.js â€” economic-engine-dashboard-finance (economic-engine, high, full)
-- routes/dashboard-hub.js â€” dashboard-dashboard-hub (dashboard, high, full)
-- routes/dashboard-ops.js â€” dashboard-dashboard-ops (dashboard, high, full)
-- routes/dashboard-shared.js â€” dashboard-dashboard-shared (dashboard, high, full)
-- routes/dashboard.js â€” dashboard-dashboard (dashboard, high, full)
-- routes/documents.js â€” authenticated-client-documents (documents, high, full)
-- routes/economic.js â€” economic-router (economic-engine, high, full)
-- routes/finance.js â€” economic-engine-finance (economic-engine, high, full)
-- routes/hub-dashboard.js â€” dashboard-hub-dashboard (dashboard, high, full)
-- routes/integrations-aliexpress.js â€” aliexpress-oauth-integration-route (catalog, high, full)
-- routes/market-delegation-catalog.js â€” market-delegation-catalog-api (market-delegation, high, full)
-- routes/market-delegation-client-case.js â€” market-delegation-client-case-api (market-delegation, high, full)
-- routes/market-delegation-client.js â€” market-delegation-client-api (market-delegation, high, full)
-- routes/market-delegation-cost-statement.js â€” market-delegation-cost-statement-api (market-delegation, high, full)
-- routes/market-delegation-customs.js â€” market-delegation-customs-api (market-delegation, high, full)
-- routes/market-delegation-local-offer.js â€” market-delegation-local-offer-api (market-delegation, high, full)
-- routes/market-delegation-network.js â€” market-delegation-network-api (market-delegation, high, full)
-- routes/market-delegation-payment-accounts.js â€” market-delegation-payment-accounts-api (market-delegation, high, full)
-- routes/market-delegation-performance.js â€” market-delegation-performance-api (market-delegation, high, full)
-- routes/market-delegation-provider.js â€” market-delegation-provider-api (market-delegation, high, full)
-- routes/market-delegation-settlement.js â€” market-delegation-settlement-api (market-delegation, high, full)
-- routes/market-delegation-team.js â€” market-delegation-team-api (market-delegation, high, full)
-- routes/market-local-stock.js â€” market-local-stock-api (market-delegation, high, full)
-- routes/otp.js â€” client-otp-session (auth-identity, high, full)
-- routes/parcel-api-v2.js â€” logistics-parcel-api-v2 (logistics, high, full)
-- routes/parcel-api-v2/helpers.js â€” logistics-helpers (logistics, high, full)
-- routes/parcel-api-v2/index.js â€” logistics-index (logistics, high, full)
-- routes/parcel-api-v2/read.js â€” logistics-read (logistics, high, full)
-- routes/parcel-api-v2/scans.js â€” logistics-scans (logistics, high, full)
-- routes/parcel-label.js â€” logistics-parcel-label (logistics, high, full)
-- routes/parcels.js â€” logistics-parcels (logistics, high, full)
-- routes/pricing-strategy.js â€” economic-engine-pricing-strategy (economic-engine, high, full)
-- routes/pricing.js â€” economic-engine-pricing (economic-engine, high, full)
-- routes/products.js â€” products-http-facade (catalog, high, full)
-- routes/relay-dashboard.js â€” dashboard-relay-dashboard (dashboard, high, full)
-- routes/shared-cart-saved.js â€” shared-cart-saved-access-http (shared-cart, high, full)
-- routes/tracking.js â€” logistics-tracking (logistics, high, full)
-- routes/transit-dashboard.js â€” logistics-transit-dashboard (logistics, high, full)
-- routes/wallet.js â€” wallet-http-facade (wallet, high, full)
-- services/action-center-agent-scope.js â€” action-center-agent-scope-service (decision-signals, high, full)
-- services/action-center-workspace.js â€” canonical-action-center-workspace-service (decision-signals, high, full)
-- services/apply-pricing-updates.js â€” economic-engine-apply-pricing-updates (economic-engine, high, full)
-- services/authkey-client.js â€” authkey-whatsapp-adapter (notification, high, full)
-- services/auto-parcel.js â€” logistics-auto-parcel (logistics, high, full)
-- services/boutique-taxonomy-admin.js â€” boutique-taxonomy-admin-service (catalog, high, full)
-- services/canonical-reference-resolver.js â€” canonical-reference-resolver (admin-dashboard, high, full)
-- services/capability-registry.js â€” market-delegation-capability-registry (market-delegation, high, full)
-- services/cash-deposit-service.js â€” payment-cash-deposit-service (payment, high, full)
-- services/cash-order-provenance-readonly.js â€” payment-cash-order-provenance-reader (payment, high, full)
-- services/catalog-approval.js â€” catalog-approval-queue (catalog, high, full)
-- services/catalog-candidate-product-service.js â€” catalog-candidate-product-owner (catalog, high, full)
-- services/catalog-certification-gate-b.js â€” catalog-certification-gate-b (catalog, high, full)
-- services/catalog-certification.js â€” catalog-certification (catalog, high, full)
-- services/catalog-change-intake.js â€” catalog-change-intake-contract (catalog, high, full)
-- services/catalog-commercial-assortment.js â€” catalog-commercial-assortment-projection (catalog, high, full)
-- services/catalog-eligibility.js â€” catalog-eligibility (catalog, high, full)
-- services/catalog-enrichment.js â€” catalog-enrichment (catalog, high, full)
-- services/catalog-fr-quality.js â€” catalog-french-quality-contract (catalog, high, full)
-- services/catalog-market-exposure-service.js â€” catalog-market-exposure-service (catalog, high, full)
-- services/catalog-media-recovery.js â€” explicitly-authorized-canonical-media-recovery (catalog, high, full)
+- middleware/deny-transitaire-hub.js â€” deny-transitaire-hub-scope (market-delegation, higm«ëŒ+Š×ž®º+º$zzb¥æ‚ÂgVÆÂ¢ÒÖ–FFÆWv&Rö–çFW&æÂ×7FF–2ÖwV&Bæ§2(	B–çFW&æÂ×7FF–2×F‚ÖwV&B‡ÆFf÷&ÒÖ÷2Â†–v‚ÂgVÆÂ¢ÒÖ–FFÆWv&R÷&V6WGFRÖ—6öÆF–öâÖwV&Bæ§2(	B—6öÆFVB×&V6WGFR×w&—FRÖf—&WvÆÂ†–æg&7G'V7GW&RÂ†–v‚ÂgVÆÂ¢ÒÖ–FFÆWv&R÷&WV—&RÖ6FÆörÖvÆö&ÂÖWF†÷&—G’æ§2(	B6FÆörÖvÆö&ÂÖWF†÷&—¦F–öâÖwV&B†6FÆörÂ†–v‚ÂgVÆÂ¢ÒÖ–FFÆWv&R÷&WV—&RÖF6†&ö&BÖvÆö&ÂÖWF†÷&—G’æ§2(	BF6†&ö&BÖvÆö&ÂÖWF†÷&—¦F–öâÖwV&B†FÖ–âÖF6†&ö&BÂ†–v‚ÂgVÆÂ¢ÒÖ–FFÆWv&R÷&WV—&RÖFV6—6–öâ×6–væÂÖvÆö&ÂÖWF†÷&—G’æ§2(	BFV6—6–öâ×6–væÂÖvÆö&ÂÖWF†÷&—¦F–öâÖwV&B†FV6—6–öâ×6–væÇ2Â†–v‚ÂgVÆÂ¢ÒÖ–FFÆWv&R÷&WV—&RÖÖ&¶WBÖFVÆVvFVBÖ6&–Æ—G’æ§2(	BÖ&¶WBÖFVÆVvFVBÖ6&–Æ—G’Ö'&–FvR†Ö&¶WBÖFVÆVvF–öâÂ†–v‚ÂgVÆÂ¢ÒÖ–FFÆWv&R÷&WV—&RÖÖ&¶WBÖFVÆVvFVB×&öÆRæ§2(	BÖ&¶WBÖFVÆVvF–öâ×'VçF–ÖR×&öÆRÖ'&–FvR†Ö&¶WBÖFVÆVvF–öâÂ†–v‚ÂgVÆÂ¢ÒÖ–FFÆWv&R÷&WV—&RÖÖ&¶WBÖW†V7WF–öâÖ6&–Æ—G’æ§2(	BÖ&¶WBÖW†V7WF–öâÖ6&–Æ—G’Ö'&–FvR†Ö&¶WBÖFVÆVvF–öâÂ†–v‚ÂgVÆÂ¢ÒÖ–FFÆWv&R÷&WV—&RÖÖ&¶WB×66÷Ræ§2(	BÖ&¶WB×66÷RÖWF†÷&—¦F–öâÖwV&B†Ö&¶WBÂ†–v‚ÂgVÆÂ¢ÒÖ–FFÆWv&R÷&WV—&RÖæöâ×&öGV7F–öâæ§2(	B'VçF–ÖRÖVçf—&öæÖVçBÖwV&B†–æg&7G'V7GW&RÂ†–v‚ÂgVÆÂ¢ÒÖ–FFÆWv&R÷&WV—&R×&–6–ærÖvÆö&ÂÖWF†÷&—G’æ§2(	B&–6–ærÖvÆö&ÂÖWF†÷&—¦F–öâÖwV&B†V6öæöÖ–2ÖVæv–æRÂ†–v‚ÂgVÆÂ¢ÒÖ–FFÆWv&R÷&WV—&R×&V6VçBÖWF‚æ§2(	BWF‚×&V6VçB×&ööbÖwV&B†WF‚Â†–v‚ÂgVÆÂ¢ÒÖ–FFÆWv&R÷&WV—&R×6÷W&6–ærÖvÆö&ÂÖWF†÷&—G’æ§2(	B6÷W&6–ærÖvÆö&ÂÖWF†÷&—¦F–öâÖwV&B‡6÷W&6–ærÂ†–v‚ÂgVÆÂ¢ÒÖ–FFÆWv&R÷6ögBÖWF‚æ§2(	BWF‚×6ögBÖWF‚†WF‚Â†–v‚ÂgVÆÂ¢ÒÖ–FFÆWv&R÷WÆöBÖ‡V"æ§2(	BÖ–FFÆWv&R×WÆöBÖ‡V"†Æöv—7F–72Â†–v‚ÂgVÆÂ¢ÒÖ–FFÆWv&R÷fW&–g’ÖWF†¶W’×vV&†öö²æ§2(	BWF‚×fW&–g’ÖWF†¶W’×vV&†öö²†WF‚Â†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"Ö6'B×7FWW"ÖwV&Bæ§2(	B&÷WF—VRÖ6'B×7FWW"ÖWfVçBÖwV&B†&÷WF—VRÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"Ö6FÆörÖFW6·F÷ÖVæ†æ6W'2æ§2(	BFW6·F÷Ö6FÆörÖVæ†æ6W"†6FÆörÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"Ö6FÆöræ§2(	B&÷WF—VRÖ6FÆör×&VæFW&W"†6FÆörÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"Ö6†V6¶÷WB×&VæFW"æ§2(	B6†V6¶÷WBÖFöÒ×&VæFW&W"†6†V6¶÷WBÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"Ö–FVçF—G’æ§2(	B&÷WF—VRÖ6Æ–VçBÖ–FVçF—G’†WF‚Â†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"ÖÖöFÂÖ'W–&÷‚×6†&VBæ§2(	B&öGV7BÖÖöFÂÖ'W–&÷‚×6†&VBÖÆöv–2†6FÆörÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"ÖÖöFÂÖ6÷&Ræ§2(	B&öGV7BÖÖöFÂÖ÷&6†W7G&F÷"‡6†&VBÖ6'BÖÖöFÂÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"ÖÖöFÂÖFW6·F÷×&öGV7Bæ§2(	BFW6·F÷×&öGV7BÖÖöFÂ×&VæFW&W"†6FÆörÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"ÖÖöFÂÖÖö&–ÆR×&öGV7Bæ§2(	BÖö&–ÆR×&öGV7BÖÖöFÂ×&VæFW&W"†6FÆörÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"ÖÖöFÂ×&öGV7BÖFWF–ÂÖ&ö÷G7G&æ§2(	B&öGV7BÖFWF–ÂÖÖöFÂÖ÷&6†W7G&F÷"†6FÆörÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"ÖÖöFÂ×&öGV7BÖf–VÆG2æ§2(	BÖöFÂ×&öGV7B×66Æ"Öf–VÆG2Ö÷væW"†6FÆörÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"ÖÖöFÂ×&öGV7Bæ§2(	B&öGV7BÖÖöFÂÖ6öçFVçB×&VæFW&W"‡6†&VBÖ6'BÖÖöFÂÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"ÖÖöFÂ×7VvvW7F–öç2æ§2(	B&öGV7BÖÖöFÂ×7VvvW7F–öç2‡&V6öÖÖVæFF–öç2Â†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"Öæbæ§2(	B&÷WF—VRÖæb†&÷WF—VRÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"Öæ÷F–f–6F–öç2æ§2(	B6Æ–VçBÖæ÷F–f–6F–öâÖ&ææW"†æ÷F–f–6F–öâÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"×vW"æ§2(	BÖö&–ÆRÖ6FVv÷'’×vW"†6FÆörÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"×76¶W’ÖVç&öÆÆÖVçBæ§2(	B&÷WF—VR×76¶W’ÖVç&öÆÆÖVçB†WF‚×76¶W’Â†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"×76¶W’ÖÆöv–âæ§2(	B&÷WF—VR×76¶W’ÖÆöv–â†WF‚×76¶W’Â†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"×76¶W’×6V7W&—G’æ§2(	B&÷WF—VR×76¶W’×6V7W&—G’†WF‚×76¶W’Â†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"×76¶W’×7FW×Wæ§2(	B&÷WF—VR×76¶W’×7FW×W†WF‚×76¶W’Â†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"×†öæRæ§2(	B†öæRÖæ÷&ÖÆ—¦F–öâ×V’†WF‚Â†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"×67&öÆÂÖ÷væW"æ§2(	B&÷WF—VR×67&öÆÂÖ÷væW"†&÷WF—VRÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"×7V&6Bæ§2(	B&÷WF—VR×7V&6FVv÷'’Öæf–vF–öâ†6FÆörÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"×G&6¶–æræ§2(	B÷&FW"×G&6¶–ær×f–Wr‡G&6¶–ærÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"×WF–Ç2æ§2(	B&÷WF—VR×V’×WF–Æ—F–W2†&÷WF—VRÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö6'B×V&Æ–2Ö’æ§2(	B÷&FW'2Ö6'B×V&Æ–2Ö’†&÷WF—VRÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö6öçG&öÆÆW'2ö†öÖRÖ6öçG&öÆÆW"æ§2(	B&÷WF—VRÖ†öÖRÖæf–vF–öâÖ6öçG&öÆÆW"†6FÆörÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2öw&÷Wöw&÷WÖ’æ§2(	B6†&VBÖ6'BÖg&öçBÖ’‡6†&VBÖ6'BÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2öw&÷Wöw&÷WÖÆ–'&'’×&VÖ÷fRæ§2(	B6†&VBÖ6'BÖÆ–'&'’×&VÖ÷fÂ×V’‡6†&VBÖ6'BÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2öw&÷Wöw&÷WÖÆ—7BÖÆ&VÇ2æ§2(	B6†&VBÖÆ—7BÖF—7Æ’ÖÆ&VÇ2‡6†&VBÖ6'BÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2öw&÷W÷6†&VBÖ6'BÖÆ–'&'’Ö’æ§2(	B6†&VBÖ6'BÖÆ–'&'’×V&Æ–2Ö’‡6†&VBÖ6'BÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö¶öÖW&6RÖ’æ§2(	B&÷WF—VRÖ’Ö6Æ–VçB†&÷WF—VRÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2÷&öGV7B×7F÷&Ræ§2(	B&÷WF—VR×&öGV7B×7F÷&R†6FÆörÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2÷6†÷×66†VÖæ§2(	B&÷WF—VR×F†öæö×’×66†VÖ†6FÆörÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2÷f–WrÖÖöFVÇ2öÖöFÂÖ6'B×&öGV7BÖÖöFVÂæ§2(	BÖöFÂÖ6'B×&öGV7B×6æ6†÷BÖÖöFVÂ†6FÆörÂ†–v‚ÂgVÆÂ¢ÒV&Æ–2ö&÷WF—VRö§2÷f–WrÖÖöFVÇ2öÖöFÂ×6VÆV7F–öâÖÖöFVÂæ§2(	B&öGV7BÖÖöFÂ×6VÆV7F–öâÖÖöFVÂ†6FÆörÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âÖ7F–öâÖ6VçFW"æ§2(	B6æöæ–6ÂÖ7F–öâÖ6VçFW"×&÷WFR†FV6—6–öâ×6–væÇ2Â†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âÖ&÷WF—VRÖ6FVv÷&–W2æ§2(	B&÷WF—VR×F†öæö×’ÖFÖ–âÖ’†6FÆörÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âÖ6FÆör×v÷&·76Ræ§2(	B6æöæ–6ÂÖ6FÆör×v÷&·76R×&÷WFR†6FÆörÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âÖ6Æ–VçBÓ3cæ§2(	B6æöæ–6ÂÖ6Æ–VçBÓ3c×&÷WFR†FÖ–âÖF6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âÖ6Æ–VçBÖ–æFW‚æ§2(	B6æöæ–6ÂÖ6Æ–VçBÖ–æFW‚×&÷WFR†FÖ–âÖF6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âÖ6÷7BÖ6ö×öæVçG2æ§2(	BV6öæöÖ–2ÖVæv–æRÖFÖ–âÖ6÷7BÖ6ö×öæVçG2†V6öæöÖ–2ÖVæv–æRÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âÖ6÷7F–æræ§2(	BV6öæöÖ–2ÖVæv–æRÖFÖ–âÖ6÷7F–ær†V6öæöÖ–2ÖVæv–æRÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âÖ7W7Fö×2Ö6FVv÷&–W2æ§2(	BF6†&ö&BÖFÖ–âÖ7W7Fö×2Ö6FVv÷&–W2†7W7Fö×2Â†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âÖ7W7Fö×2×6†—ÖVçG2æ§2(	BF6†&ö&BÖFÖ–âÖ7W7Fö×2×6†—ÖVçG2†7W7Fö×2Â†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âÖF6†&ö&BÖWfVçG2æ§2(	BF6†&ö&B×÷7BÖ6öÖÖ—BÖWfVçB×7G&VÒ†F6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âÖF6†&ö&BÖÖ&¶WBæ§2(	BF6†&ö&BÖÖ&¶WB×66÷VB×&÷WFR†FÖ–âÖF6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âÖF6†&ö&Bæ§2(	BF6†&ö&BÖFÖ–âÖF6†&ö&B†F6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âÖf–ææ6RÖ66÷VçF–ær×v÷&·76Ræ§2(	B6æöæ–6ÂÖf–ææ6RÖ66÷VçF–ær×v÷&·76R×&÷WFR†FÖ–âÖF6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âÖf–ææ6RÖ6öæf–ræ§2(	BV6öæöÖ–2ÖVæv–æRÖFÖ–âÖf–ææ6RÖ6öæf–r†V6öæöÖ–2ÖVæv–æRÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âÖÆ÷–ÇG’æ§2(	BÆ÷–ÇG’ÖFÖ–â×&Wv&G2†Æ÷–ÇG’Â†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âÖÖ&¶WB×–ÖVçBÖ66÷VçG2æ§2(	BFÖ–âÖÖ&¶WB×–ÖVçBÖ66÷VçG2Ö’‡–ÖVçBÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âÖÖ&¶WB×6WGFÆVÖVçBæ§2(	BFÖ–âÖÖ&¶WB×6WGFÆVÖVçBÖ’‡6WGFÆVÖVçBÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âÖ÷W&F–öç2×v÷&·76Ræ§2(	B6æöæ–6ÂÖ÷W&F–öç2×v÷&·76R×&÷WFR†FÖ–âÖF6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âÖ÷&FW"Ó3cæ§2(	B6æöæ–6ÂÖ÷&FW"Ó3c×&÷WFR†FÖ–âÖF6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–â×&–6–ærÖ6ö×öæVçG2æ§2(	BV6öæöÖ–2ÖVæv–æRÖFÖ–â×&–6–ærÖ6ö×öæVçG2†V6öæöÖ–2ÖVæv–æRÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–â×&–6–ærÖÖG&–6W2æ§2(	BV6öæöÖ–2ÖVæv–æRÖFÖ–â×&–6–ærÖÖG&–6W2†V6öæöÖ–2ÖVæv–æRÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–â×&–6–ær×v÷&·76Ræ§2(	B6æöæ–6Â×&–6–ær×v÷&·76R×&÷WFR†V6öæöÖ–2ÖVæv–æRÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–â×&öGV7BÓ3cæ§2(	B6æöæ–6Â×&öGV7BÓ3c×&÷WFR†FÖ–âÖF6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–â×&÷f–FW'2Ö6&–Æ—F–W2æ§2(	B6æöæ–6Â×&÷f–FW'2Ö6&–Æ—F–W2×&÷WFR†FÖ–âÖF6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–â×&F"æ§2(	BF6†&ö&BÖFÖ–â×&F"†F6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–â×&—6²×&÷f—6–öç2æ§2(	BF6†&ö&BÖFÖ–â×&—6²×&÷f—6–öç2†V6öæöÖ–2ÖVæv–æRÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–â×'VÆW2æ§2(	B'W6–æW72×'VÆW2ÖFÖ–â×'VÆW2†'W6–æW72×'VÆW2Â†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–â×6†—–ærÖ7W7Fö×2×v÷&·76Ræ§2(	B6æöæ–6Â×6†—–ærÖ7W7Fö×2×v÷&·76R×&÷WFR†FÖ–âÖF6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–â×6÷W&6–ær×v÷&·76Ræ§2(	B6æöæ–6Â×6÷W&6–ær×v÷&·76RÖ’‡6÷W&6–ærÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–â×7WÆ–W"Ó3cæ§2(	B6æöæ–6Â×7WÆ–W"Ó3c×&÷WFR†FÖ–âÖF6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âæ§2(	BF6†&ö&BÖFÖ–â†F6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âö6FÆörÖ&÷fÂæ§2(	B6FÆörÖ&÷fÂ×&÷WFW2†6FÆörÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âö7W7Fö×2æ§2(	BF6†&ö&BÖ7W7Fö×2†7W7Fö×2Â†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âöF6†&ö&Bæ§2(	BF6†&ö&BÖF6†&ö&B†F6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–âö–æFW‚æ§2(	BF6†&ö&BÖ–æFW‚†F6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–â÷'FæW'2æ§2(	BF6†&ö&B×'FæW'2†F6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–â÷7—7FVÒæ§2(	BF6†&ö&B×7—7FVÒ†F6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFÖ–â÷W6W'2æ§2(	BF6†&ö&B×W6W'2†F6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2övVçBÖ7F–öâÖ6VçFW"æ§2(	BvVçBÖ7F–öâÖ6VçFW"×&÷WFW2†FV6—6–öâ×6–væÇ2Â†–v‚ÂgVÆÂ¢Ò&÷WFW2öWF‚×76¶W’æ§2(	BWF‚×76¶W’ÖVæGö–çG2†WF‚×76¶W’Â†–v‚ÂgVÆÂ¢Ò&÷WFW2öWF‚×7FW×WÖ÷Gæ§2(	BWF‚×7FW×WÖ÷GÖVæGö–çG2†WF‚Ö–FVçF—G’Â†–v‚ÂgVÆÂ¢Ò&÷WFW2öWF‚æ§2(	BWF‚ÖWF‚†WF‚Ö–FVçF—G’Â†–v‚ÂgVÆÂ¢Ò&÷WFW2ö&÷WF—VR×7VvvW7F–öç2æ§2(	B&÷WF—VR×7VvvW7F–öç2Ö‡GGÖf6FR‡&V6öÖÖVæFF–öç2Â†–v‚ÂgVÆÂ¢Ò&÷WFW2ö6FÆör×&öGV7BÖFWF–Âæ§2(	B6FÆör×&öGV7BÖFWF–ÂÖ‡GG†6FÆörÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2ö6Æ–VçBÖWF‚æ§2(	BWF‚Ö6Æ–VçBÖWF‚†WF‚Ö–FVçF—G’Â†–v‚ÂgVÆÂ¢Ò&÷WFW2ö6Æ–VçBÖæ÷F–f–6F–öç2æ§2(	BWF†VçF–6FVBÖ6Æ–VçBÖæ÷F–f–6F–öç2†æ÷F–f–6F–öâÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2ö6Æ–VçB×G&6¶–æræ§2(	BÆöv—7F–72Ö6Æ–VçB×G&6¶–ær†Æöv—7F–72Â†–v‚ÂgVÆÂ¢Ò&÷WFW2öF6†&ö&BÖ6Æ–VçG2æ§2(	BF6†&ö&BÖF6†&ö&BÖ6Æ–VçG2†F6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öF6†&ö&BÖf–ææ6Ræ§2(	BV6öæöÖ–2ÖVæv–æRÖF6†&ö&BÖf–ææ6R†V6öæöÖ–2ÖVæv–æRÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öF6†&ö&BÖ‡V"æ§2(	BF6†&ö&BÖF6†&ö&BÖ‡V"†F6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öF6†&ö&BÖ÷2æ§2(	BF6†&ö&BÖF6†&ö&BÖ÷2†F6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öF6†&ö&B×6†&VBæ§2(	BF6†&ö&BÖF6†&ö&B×6†&VB†F6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öF6†&ö&Bæ§2(	BF6†&ö&BÖF6†&ö&B†F6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öFö7VÖVçG2æ§2(	BWF†VçF–6FVBÖ6Æ–VçBÖFö7VÖVçG2†Fö7VÖVçG2Â†–v‚ÂgVÆÂ¢Ò&÷WFW2öV6öæöÖ–2æ§2(	BV6öæöÖ–2×&÷WFW"†V6öæöÖ–2ÖVæv–æRÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öf–ææ6Ræ§2(	BV6öæöÖ–2ÖVæv–æRÖf–ææ6R†V6öæöÖ–2ÖVæv–æRÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2ö‡V"ÖF6†&ö&Bæ§2(	BF6†&ö&BÖ‡V"ÖF6†&ö&B†F6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2ö–çFVw&F–öç2ÖÆ–W‡&W72æ§2(	BÆ–W‡&W72ÖöWF‚Ö–çFVw&F–öâ×&÷WFR†6FÆörÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öÖ&¶WBÖFVÆVvF–öâÖ6FÆöræ§2(	BÖ&¶WBÖFVÆVvF–öâÖ6FÆörÖ’†Ö&¶WBÖFVÆVvF–öâÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öÖ&¶WBÖFVÆVvF–öâÖ6Æ–VçBÖ66Ræ§2(	BÖ&¶WBÖFVÆVvF–öâÖ6Æ–VçBÖ66RÖ’†Ö&¶WBÖFVÆVvF–öâÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öÖ&¶WBÖFVÆVvF–öâÖ6Æ–VçBæ§2(	BÖ&¶WBÖFVÆVvF–öâÖ6Æ–VçBÖ’†Ö&¶WBÖFVÆVvF–öâÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öÖ&¶WBÖFVÆVvF–öâÖ6÷7B×7FFVÖVçBæ§2(	BÖ&¶WBÖFVÆVvF–öâÖ6÷7B×7FFVÖVçBÖ’†Ö&¶WBÖFVÆVvF–öâÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öÖ&¶WBÖFVÆVvF–öâÖ7W7Fö×2æ§2(	BÖ&¶WBÖFVÆVvF–öâÖ7W7Fö×2Ö’†Ö&¶WBÖFVÆVvF–öâÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öÖ&¶WBÖFVÆVvF–öâÖÆö6ÂÖöffW"æ§2(	BÖ&¶WBÖFVÆVvF–öâÖÆö6ÂÖöffW"Ö’†Ö&¶WBÖFVÆVvF–öâÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öÖ&¶WBÖFVÆVvF–öâÖæWGv÷&²æ§2(	BÖ&¶WBÖFVÆVvF–öâÖæWGv÷&²Ö’†Ö&¶WBÖFVÆVvF–öâÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öÖ&¶WBÖFVÆVvF–öâ×–ÖVçBÖ66÷VçG2æ§2(	BÖ&¶WBÖFVÆVvF–öâ×–ÖVçBÖ66÷VçG2Ö’†Ö&¶WBÖFVÆVvF–öâÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öÖ&¶WBÖFVÆVvF–öâ×W&f÷&Öæ6Ræ§2(	BÖ&¶WBÖFVÆVvF–öâ×W&f÷&Öæ6RÖ’†Ö&¶WBÖFVÆVvF–öâÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öÖ&¶WBÖFVÆVvF–öâ×&÷f–FW"æ§2(	BÖ&¶WBÖFVÆVvF–öâ×&÷f–FW"Ö’†Ö&¶WBÖFVÆVvF–öâÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öÖ&¶WBÖFVÆVvF–öâ×6WGFÆVÖVçBæ§2(	BÖ&¶WBÖFVÆVvF–öâ×6WGFÆVÖVçBÖ’†Ö&¶WBÖFVÆVvF–öâÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öÖ&¶WBÖFVÆVvF–öâ×FVÒæ§2(	BÖ&¶WBÖFVÆVvF–öâ×FVÒÖ’†Ö&¶WBÖFVÆVvF–öâÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2öÖ&¶WBÖÆö6Â×7Fö6²æ§2(	BÖ&¶WBÖÆö6Â×7Fö6²Ö’†Ö&¶WBÖFVÆVvF–öâÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2ö÷Gæ§2(	B6Æ–VçBÖ÷G×6W76–öâ†WF‚Ö–FVçF—G’Â†–v‚ÂgVÆÂ¢Ò&÷WFW2÷&6VÂÖ’×c"æ§2(	BÆöv—7F–72×&6VÂÖ’×c"†Æöv—7F–72Â†–v‚ÂgVÆÂ¢Ò&÷WFW2÷&6VÂÖ’×c"ö†VÇW'2æ§2(	BÆöv—7F–72Ö†VÇW'2†Æöv—7F–72Â†–v‚ÂgVÆÂ¢Ò&÷WFW2÷&6VÂÖ’×c"ö–æFW‚æ§2(	BÆöv—7F–72Ö–æFW‚†Æöv—7F–72Â†–v‚ÂgVÆÂ¢Ò&÷WFW2÷&6VÂÖ’×c"÷&VBæ§2(	BÆöv—7F–72×&VB†Æöv—7F–72Â†–v‚ÂgVÆÂ¢Ò&÷WFW2÷&6VÂÖ’×c"÷66ç2æ§2(	BÆöv—7F–72×66ç2†Æöv—7F–72Â†–v‚ÂgVÆÂ¢Ò&÷WFW2÷&6VÂÖÆ&VÂæ§2(	BÆöv—7F–72×&6VÂÖÆ&VÂ†Æöv—7F–72Â†–v‚ÂgVÆÂ¢Ò&÷WFW2÷&6VÇ2æ§2(	BÆöv—7F–72×&6VÇ2†Æöv—7F–72Â†–v‚ÂgVÆÂ¢Ò&÷WFW2÷&–6–ær×7G&FVw’æ§2(	BV6öæöÖ–2ÖVæv–æR×&–6–ær×7G&FVw’†V6öæöÖ–2ÖVæv–æRÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2÷&–6–æræ§2(	BV6öæöÖ–2ÖVæv–æR×&–6–ær†V6öæöÖ–2ÖVæv–æRÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2÷&öGV7G2æ§2(	B&öGV7G2Ö‡GGÖf6FR†6FÆörÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2÷&VÆ’ÖF6†&ö&Bæ§2(	BF6†&ö&B×&VÆ’ÖF6†&ö&B†F6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2÷6†&VBÖ6'B×6fVBæ§2(	B6†&VBÖ6'B×6fVBÖ66W72Ö‡GG‡6†&VBÖ6'BÂ†–v‚ÂgVÆÂ¢Ò&÷WFW2÷G&6¶–æræ§2(	BÆöv—7F–72×G&6¶–ær†Æöv—7F–72Â†–v‚ÂgVÆÂ¢Ò&÷WFW2÷G&ç6—BÖF6†&ö&Bæ§2(	BÆöv—7F–72×G&ç6—BÖF6†&ö&B†Æöv—7F–72Â†–v‚ÂgVÆÂ¢Ò&÷WFW2÷vÆÆWBæ§2(	BvÆÆWBÖ‡GGÖf6FR‡vÆÆWBÂ†–v‚ÂgVÆÂ¢Ò6W'f–6W2ö7F–öâÖ6VçFW"ÖvVçB×66÷Ræ§2(	B7F–öâÖ6VçFW"ÖvVçB×66÷R×6W'f–6R†FV6—6–öâ×6–væÇ2Â†–v‚ÂgVÆÂ¢Ò6W'f–6W2ö7F–öâÖ6VçFW"×v÷&·76Ræ§2(	B6æöæ–6ÂÖ7F–öâÖ6VçFW"×v÷&·76R×6W'f–6R†FV6—6–öâ×6–væÇ2Â†–v‚ÂgVÆÂ¢Ò6W'f–6W2öÇ’×&–6–ær×WFFW2æ§2(	BV6öæöÖ–2ÖVæv–æRÖÇ’×&–6–ær×WFFW2†V6öæöÖ–2ÖVæv–æRÂ†–v‚ÂgVÆÂ¢Ò6W'f–6W2öWF†¶W’Ö6Æ–VçBæ§2(	BWF†¶W’×v†G6ÖFFW"†æ÷F–f–6F–öâÂ†–v‚ÂgVÆÂ¢Ò6W'f–6W2öWFò×&6VÂæ§2(	BÆöv—7F–72ÖWFò×&6VÂ†Æöv—7F–72Â†–v‚ÂgVÆÂ¢Ò6W'f–6W2ö&÷WF—VR×F†öæö×’ÖFÖ–âæ§2(	B&÷WF—VR×F†öæö×’ÖFÖ–â×6W'f–6R†6FÆörÂ†–v‚ÂgVÆÂ¢Ò6W'f–6W2ö6æöæ–6Â×&VfW&Væ6R×&W6öÇfW"æ§2(	B6æöæ–6Â×&VfW&Væ6R×&W6öÇfW"†FÖ–âÖF6†&ö&BÂ†–v‚ÂgVÆÂ¢Ò6W'f–6W2ö6&–Æ—G’×&Vv—7G'’æ§2(	BÖ&¶WBÖFVÆVvF–öâÖ6&–Æ—G’×&Vv—7G'’†Ö&¶WBÖFVÆVvF–öâÂ†–v‚ÂgVÆÂ¢Ò6W'f–6W2ö66‚ÖFW÷6—B×6W'f–6Ræ§2(	B–ÖVçBÖ66‚ÖFW÷6—B×6W'f–6R‡–ÖVçBÂ†–v‚ÂgVÆÂ¢Ò6W'f–6W2ö66‚Ö÷&FW"×&÷fVææ6R×&VFöæÇ’æ§2(	B–ÖVçBÖ66‚Ö÷&FW"×&÷fVææ6R×&VFW"‡–ÖVçBÂ†–v‚ÂgVÆÂ¢Ò6W'f–6W2ö6FÆörÖ&÷fÂæ§2(	B6FÆörÖ&÷fÂ×VWVR†6FÆörÂ†–v‚ÂgVÆÂ¢Ò6W'f–6W2ö6FÆörÖ6æF–FFR×&öGV7B×6W'f–6Ræ§2(	B6FÆörÖ6æF–FFR×&öGV7BÖ÷væW"†6FÆörÂ†–v‚ÂgVÆÂ¢Ò6W'f–6W2ö6FÆörÖ6W'F–f–6F–öâÖvFRÖ"æ§2(	B6FÆörÖ6W'F–f–6F–öâÖvFRÖ"†6FÆörÂ†–v‚ÂgVÆÂ¢Ò6W'f–6W2ö6FÆörÖ6W'F–f–6F–öâæ§2(	B6FÆörÖ6W'F–f–6F–öâ†6FÆörÂ†–v‚ÂgVÆÂ¢Ò6W'f–6W2ö6FÆörÖ6†ævRÖ–çF¶Ræ§2(	B6FÆörÖ6†ævRÖ–çF¶RÖ6öçG&7B†6FÆörÂ†–v‚ÂgVÆÂ¢Ò6W'f–6W2ö6FÆörÖ6öÖÖW&6–ÂÖ76÷'FÖVçBæ§2(	B6FÆörÖ6öÖÖW&6–ÂÖ76÷'FÖVçB×&ö¦V7F–öâ†6FÆörÂ†–v‚ÂgVÆÂ¢Ò6W'f–6W2ö6FÆörÖVÆ–v–&–Æ—G’æ§2(	B6FÆörÖVÆ–v–&–Æ—G’†6FÆörÂ†–v‚ÂgVÆÂ¢Ò6W'f–6W2ö6FÆörÖVç&–6†ÖVçBæ§2(	B6FÆörÖVç&–6†ÖVçB†6FÆörÂ†–v‚ÂgVÆÂ¢Ò6W'f–6W2ö6FÆörÖg"×VÆ—G’æ§2(	B6FÆörÖg&Væ6‚×VÆ—G’Ö6öçG&7B†6FÆörÂ†–v‚ÂgVÆÂ¢Ò6W'f–6W2ö6FÆörÖÖ&¶WBÖW‡÷7W&R×6W'f–6Ræ§2(	B6FÆörÖÖ&¶WBÖW‡÷7W&R×6W'f–6R†6FÆörÂ†–v‚ÂgVÆÂ¢Ò6W'f–6W2ö6FÆörÖÖVF–×&V6÷fW'’æ§2(	BW‡Æ–6—FÇ’ÖWF†÷&—¦VBÖ6æöæ–6ÂÖÖVF–×&V6÷fW'’†6FÆörÂ†–v†Ú±î¸Â¸­yêë¢°k¢G§¦*^, full)
 - services/catalog-overrides.js â€” catalog-field-overrides (catalog, high, full)
 - services/catalog-product-detail.js â€” catalog-product-detail-contract (catalog, high, full)
 - services/catalog-product-mutation-service.js â€” catalog-product-mutation-service (catalog, high, full)
@@ -557,6 +397,144 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/pickup-code-helpers.js â€” pickup-code-helpers (logistics, high, full)
 - services/pickup-collection-service.js â€” pickup-collection-service (logistics, high, full)
 - services/pickup-exceptional-collection-service.js â€” pickup-exceptional-collection-service (logistics, high, full)
+- services/pickup-secret-customer-rotation-service.js â€” pickup-secret-customer-rotam«ëŒ+Š×ž®º+º$zzb¥æÚ±î¸Â¸­yêë¢°k¢G§¦*^ervices/catalog-promotion/axes.js â€” catalog-promotion-axes-mapping (catalog, high, full)
+- services/catalog-promotion/content.js â€” catalog-promotion-content-mapping (catalog, high, full)
+- services/catalog-promotion/editorial-identity.js â€” catalog-draft-editorial-identity (catalog, high, full)
+- services/catalog-promotion/sku-media.js â€” catalog-promotion-sku-media-linking (catalog, high, full)
+- services/catalog-promotion/sku.js â€” catalog-promotion-sku-reconciliation (catalog, high, full)
+- services/catalog-public-view.js â€” catalog-public-view (catalog, high, full)
+- services/catalog-publication-decision-audit.js â€” catalog-publication-decision-audit (catalog, high, full)
+- services/catalog-registry.js â€” catalog-global-registry-read (catalog, high, full)
+- services/catalog-taxonomy-audit.js â€” catalog-taxonomy-audit-boundary (catalog, high, full)
+- services/catalog-unified-registry.js â€” unified-catalog-operator-read (catalog, high, full)
+- services/catalog-workspace.js â€” canonical-catalog-workspace-service (catalog, high, full)
+- services/central-authority.js â€” central-authority-single-lookup (market-control-plane, high, full)
+- services/client-360.js â€” canonical-client-360-service (admin-dashboard, high, full)
+- services/client-index.js â€” canonical-client-index-service (admin-dashboard, high, full)
+- services/client-notification-service.js â€” client-notification-service (notification, high, full)
+- services/cost-allocation/allocate.js â€” economic-engine-cost-allocation-allocate (economic-engine, high, full)
+- services/cost-allocation/canonical-margin-writer.js â€” economic-engine-canonical-margin-writer (economic-engine, high, full)
+- services/cost-allocation/cost-expectation.js â€” economic-engine-cost-expectation (economic-engine, high, full)
+- services/cost-allocation/cost-types.js â€” economic-engine-cost-type-classification (economic-engine, high, full)
+- services/cost-allocation/index.js â€” economic-engine-cost-allocation (economic-engine, high, full)
+- services/cost-allocation/manual-cost-entry-service.js â€” manual-cost-entry (economic-engine, high, full)
+- services/cost-component-admin-service.js â€” economic-engine-cost-component-admin-service (economic-engine, high, full)
+- services/cost-component-market-service.js â€” economic-engine-market-cost-component-service (economic-engine, high, full)
+- services/credential-action-store.js â€” credential-action-token-persistence (auth-identity, high, full)
+- services/credential-invitation-email.js â€” credential-invitation-delivery (auth-identity, high, full)
+- services/credential-link-token.js â€” credential-link-crypto (auth-identity, high, full)
+- services/customer-handoff-reconciliation.js â€” customer-handoff-reconciliation (logistics, high, full)
+- services/customs-classification.js â€” customs-classification (customs, high, full)
+- services/customs-dynamic-category-classifier.js â€” customs-dynamic-category-classifier (customs, high, full)
+- services/customs-shipment-fee-service.js â€” customs-shipment-fee-service (customs, high, full)
+- services/dashboard-admin-context.js â€” canonical-admin-context-resolver (admin-dashboard, high, full)
+- services/dashboard-cache.js â€” dashboard-dashboard-cache (dashboard, high, full)
+- services/dashboard-clients-queries.js â€” dashboard-dashboard-clients-queries (dashboard, high, full)
+- services/dashboard-commerce.js â€” canonical-commerce-dashboard-service (admin-dashboard, high, full)
+- services/dashboard-finance-canonical.js â€” canonical-finance-dashboard-service (admin-dashboard, high, full)
+- services/dashboard-finance-metrics.js â€” economic-engine-dashboard-finance-metrics (economic-engine, high, full)
+- services/dashboard-invalidation-bus.js â€” dashboard-post-commit-invalidation-bus (dashboard, high, full)
+- services/dashboard-metrics/_helpers.js â€” dashboard-metrics-helpers (dashboard, high, full)
+- services/dashboard-metrics/control-tower.js â€” dashboard-metrics-control-tower (dashboard, high, full)
+- services/dashboard-metrics/costing.js â€” dashboard-metrics-costing (dashboard, high, full)
+- services/dashboard-metrics/index.js â€” dashboard-dashboard-metrics (dashboard, high, full)
+- services/dashboard-metrics/logistics.js â€” dashboard-metrics-logistics (dashboard, high, full)
+- services/dashboard-metrics/market-currency.js â€” dashboard-market-currency-projection (dashboard, high, full)
+- services/dashboard-operations.js â€” canonical-operations-dashboard-service (admin-dashboard, high, full)
+- services/dashboard-ops-queries.js â€” dashboard-dashboard-ops-queries (dashboard, high, full)
+- services/dashboard-orders.js â€” dashboard-orders-service (admin-dashboard, high, full)
+- services/dashboard-pilotage-market.js â€” dashboard-pilotage-market-aggregate (admin-dashboard, high, full)
+- services/documents/customs-invoice.js â€” customs-invoice (documents, high, full)
+- services/documents/pdf-renderer.js â€” private-document-pdf-renderer (documents, high, full)
+- services/economic-config.js â€” economic-config-canonical-bridge (economic-engine, high, full)
+- services/economic-engine-queries.js â€” economic-engine-calculation-service (economic-engine, high, full)
+- services/economic-price-audit-service.js â€” economic-engine-product-price-audit (economic-engine, high, full)
+- services/external-provider-onboarding-contracts.js â€” external-provider-onboarding-contracts (external-provider-contracts, high, full)
+- services/finance-accounting-workspace.js â€” canonical-finance-accounting-workspace-service (admin-dashboard, high, full)
+- services/finance-metrics/annulations.js â€” economic-engine-annulations-parcels (economic-engine, high, full)
+- services/finance-metrics/customs-unknown.js â€” economic-engine-customs-unknown-predicate (economic-engine, high, full)
+- services/finance-metrics/finance-summary.js â€” economic-engine-finance-summary (economic-engine, high, full)
+- services/finance-metrics/index.js â€” economic-engine-dashboard-finance-metrics (economic-engine, high, full)
+- services/finance-metrics/payments.js â€” economic-engine-payments-detail (economic-engine, high, full)
+- services/finance-metrics/sales-analysis.js â€” economic-engine-sales-analysis (economic-engine, high, full)
+- services/fx-engine-rates.js â€” fx-engine-rates (market, high, full)
+- services/hub-administration-board.js â€” hub-administration-board-reader (purchasing, high, full)
+- services/hub-box-shipment-service.js â€” hub-box-shipment (logistics, high, full)
+- services/hub-dashboard-queries.js â€” dashboard-hub-dashboard-queries (dashboard, high, full)
+- services/hub-inbound-reconciliation.js â€” hub-inbound-reconciliation (logistics, high, full)
+- services/hub-physical-codes.js â€” hub-physical-codes (logistics, high, full)
+- services/hub-procurement-dossier.js â€” hub-procurement-dossier (logistics, high, full)
+- services/hub-receive-idempotency.js â€” hub-receive-idempotency (logistics, high, full)
+- services/hub-reference.js â€” hub-reference (logistics, high, full)
+- services/import-lot-registry.js â€” import-lot-registry-projection (admin-dashboard, high, full)
+- services/import-runtime-runs.js â€” import-runtime-run-projection (sourcing, high, full)
+- services/incident-escalation.js â€” incident-sla-escalation (incident-management, high, full)
+- services/incident-governance.js â€” incident-management-governance-mapping (incident-management, high, full)
+- services/incident-write-service.js â€” incident-management-write-boundary (incident-management, high, full)
+- services/international-n1-reconciliation.js â€” international-shipment-costs-owner (economic-engine, high, full)
+- services/international-shipment-journey.js â€” international-shipment-journey-owner (logistics, high, full)
+- services/local-mobile-refund-handoff.js â€” verified-manual-mobile-refund-handoff (refunds, high, full)
+- services/local-stock-checkout-preview.js â€” local-stock-checkout-preview (local-stock, high, full)
+- services/local-stock-decision-projection.js â€” local-stock-decision-projection (local-stock, high, full)
+- services/local-stock-service.js â€” local-stock-local-stock-service (local-stock, high, full)
+- services/logistics-control-chain-projection.js â€” logistics-control-chain-projection (admin-dashboard, high, full)
+- services/manual-scan-confirmation.js â€” manual-scan-confirmation (dashboard, high, full)
+- services/market-business-day.js â€” market-business-day-authority (admin-dashboard, high, full)
+- services/market-commercial-price-service.js â€” market-commercial-price-decision-owner (market-autonomy, high, full)
+- services/market-cost-attribution-service.js â€” economic-engine-market-cost-attribution (economic-engine, high, full)
+- services/market-delegation-catalog-service.js â€” market-delegation-catalog-service (market-delegation, high, full)
+- services/market-delegation-client-case-service.js â€” market-delegation-client-case-service (market-delegation, high, full)
+- services/market-delegation-cost-statement-service.js â€” market-delegation-cost-statement-service (market-delegation, high, full)
+- services/market-delegation-customs-service.js â€” market-delegation-customs-service (market-delegation, high, full)
+- services/market-delegation-local-offer-service.js â€” market-delegation-local-offer-service (market-delegation, high, full)
+- services/market-delegation-local-stock-service.js â€” market-delegation-local-stock-service (market-delegation, high, full)
+- services/market-delegation-network-service.js â€” market-delegation-network-service (market-delegation, high, full)
+- services/market-delegation-performance-service.js â€” market-delegation-performance-service (market-delegation, high, full)
+- services/market-delegation-provider-service.js â€” market-delegation-provider-service (market-delegation, high, full)
+- services/market-delegation-service.js â€” market-delegation-write-service (market-delegation, high, full)
+- services/market-delegation-settlement-service.js â€” market-delegation-settlement-orchestration (market-delegation, high, full)
+- services/market-delegation-team-service.js â€” market-delegation-team-service (market-delegation, high, full)
+- services/market-lifecycle-service.js â€” market-lifecycle-writer (market, high, full)
+- services/market-operation-guard.js â€” market-operation-guard (markets, high, full)
+- services/market-operator-provisioning.js â€” market-operator-provisioning (market-delegation, high, full)
+- services/market-payment-account-service.js â€” market-payment-account-owner (payment, high, full)
+- services/market-payment-provider-config-service.js â€” market-payment-provider-config-writer (payment, high, full)
+- services/market-provisioning-service.js â€” market-provisioning-orchestrator (market-control-plane, high, full)
+- services/market-ready-to-sell-projection.js â€” market-ready-to-sell-projection (market-delegation, high, full)
+- services/market-scope-admin-service.js â€” market-operator-scope-admin-boundary (market, high, full)
+- services/market-scope-projector.js â€” market-delegation-scope-projector (market-delegation, high, full)
+- services/market-settlement-service.js â€” market-settlement-lifecycle-owner (settlement, high, full)
+- services/mobile-money-reconciliation.js â€” mobile-money-reconciliation (payment, high, full)
+- services/mobile-money/registry.js â€” mobile-money-provider-registry (payment, high, full)
+- services/notification-service.js â€” customer-notification-orchestrator (notification, high, full)
+- services/notifications/internals.js â€” notification-internals (notification, high, full)
+- services/notifications/notification-service.js â€” customer-notification-orchestrator (notification, high, full)
+- services/notifications/order.js â€” notification-order (notification, high, full)
+- services/notifications/otp-auth.js â€” notification-otp-auth (notification, high, full)
+- services/notifications/parcel.js â€” notification-parcel (notification, high, full)
+- services/operations-relay-projection.js â€” dashboard-operations-relay-projection (admin-dashboard, high, full)
+- services/operations-workspace.js â€” canonical-operations-workspace-service (admin-dashboard, high, full)
+- services/order-360.js â€” canonical-order-360-service (admin-dashboard, high, full)
+- services/order-financial-closure-reconciliation.js â€” order-financial-closure-reconciliation (orders, high, full)
+- services/order-item-availability-service.js â€” orders-order-item-availability (orders, high, full)
+- services/order-service.js â€” order-domain-helpers (orders, high, full)
+- services/otp-test-mode.js â€” auth-otp-test-mode (auth-identity, high, full)
+- services/parcel-auto-create-service.js â€” logistics-parcel-auto-create-service (logistics, high, full)
+- services/parcel-guards.js â€” logistics-parcel-guards (logistics, high, full)
+- services/parcel-mutation-service.js â€” logistics-parcel-mutation-boundary (logistics, high, full)
+- services/parcel-operations.js â€” logistics-parcel-operations (logistics, high, full)
+- services/parcel-order-membership.js â€” logistics-parcel-order-membership (logistics, high, full)
+- services/parcel-security.js â€” logistics-parcel-security (logistics, high, full)
+- services/parcel-service.js â€” logistics-parcel-service (logistics, high, full)
+- services/parcel-shipment-handover.js â€” international-handover-customer-parcel-status (logistics, high, full)
+- services/parcel-transition-guard.js â€” incident-management-transition-guard (incident-management, high, full)
+- services/parcelOptimizationService.js â€” logistics-parcel-optimization-service (logistics, high, full)
+- services/partner-admin-service.js â€” partner-admin-service (dashboard, high, full)
+- services/pickup-agent-lockout.js â€” pickup-agent-lockout (logistics, high, full)
+- services/pickup-authorization-service.js â€” pickup-authorization-service (auth-identity, high, full)
+- services/pickup-code-helpers.js â€” pickup-code-helpers (logistics, high, full)
+- services/pickup-collection-service.js â€” pickup-collection-service (logistics, high, full)
+- services/pickup-exceptional-collection-service.js â€” pickup-exceptional-collection-service (logistics, high, full)
 - services/pickup-secret-customer-rotation-service.js â€” pickup-secret-customer-rotation (logistics, high, full)
 - services/pickup-secret-service.js â€” pickup-secret-service (logistics, high, full)
 - services/pipeline-certification-gate-c.js â€” e2e-certification-gate-c (catalog, high, full)
@@ -564,41 +542,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/pricing-apply.js â€” economic-engine-pricing-apply (economic-engine, high, full)
 - services/pricing-cdr.js â€” economic-engine-pricing-cdr (economic-engine, high, full)
 - services/pricing-cost-explainability.js â€” economic-engine-pricing-cost-explainability (economic-engine, high, full)
-- services/pricing-dashboard.js â€” economic-engine-pricing-dashboard (economic-engine, high, full)
-- services/pricing-engine.js â€” economic-engine-pricing-engine (economic-engine, high, full)
-- services/pricing-floor-forecast-preview.js â€” economic-engine-forecast-preview-contract (economic-engine, high, full)
-- services/pricing-floor-forecast-shadow.js â€” economic-engine-pricing-floor-forecast-shadow (economic-engine, high, full)
-- services/pricing-guards.js â€” economic-engine-pricing-guards (economic-engine, high, full)
-- services/pricing-market-corridor.js â€” pricing-market-corridor-owner (economic-engine, high, full)
-- services/pricing-market-coverage.js â€” economic-engine-pricing-market-coverage (economic-engine, high, full)
-- services/pricing-market-decision-policy.js â€” economic-engine-pricing-market-decision-policy (economic-engine, high, full)
-- services/pricing-market-decision-projection.js â€” economic-engine-pricing-market-decision-projection (economic-engine, high, full)
-- services/pricing-maturity.js â€” economic-engine-pricing-maturity (economic-engine, high, full)
-- services/pricing-output.js â€” economic-engine-pricing-output (economic-engine, high, full)
-- services/pricing-period-structure.js â€” economic-engine-pricing-period-structure (economic-engine, high, full)
-- services/pricing-rates.js â€” economic-engine-pricing-rates (economic-engine, high, full)
-- services/pricing-recommend.js â€” economic-engine-pricing-recommend (economic-engine, high, full)
-- services/pricing-risk-period.js â€” economic-engine-pricing-risk-period (economic-engine, high, full)
-- services/pricing-strategy-service.js â€” economic-engine-pricing-strategy-service (economic-engine, high, full)
-- services/pricing-workspace.js â€” canonical-pricing-workspace-service (economic-engine, high, full)
-- services/procurement-execution-context.js â€” procurement-execution-context (purchasing, high, full)
-- services/product-360.js â€” canonical-product-360-service (admin-dashboard, high, full)
-- services/product-admin-service.js â€” catalog-product-admin-service (catalog, high, full)
-- services/product-media-storage.js â€” product-media-storage (catalog, high, full)
-- services/product-price-audit.js â€” catalog-product-price-audit-boundary (catalog, high, full)
-- services/product-publication-guard.js â€” catalog-product-publication-guard (catalog, high, full)
-- services/product-sellable-service.js â€” catalog-product-sellable-service (catalog, high, full)
-- services/product-sku-service.js â€” catalog-product-sku-service (catalog, high, full)
-- services/product-variant-service.js â€” catalog-product-variant-service (catalog, high, full)
-- services/prompts/catalog-enrichment.prompt.js â€” catalog-enrichment-prompt (catalog, high, full)
-- services/provider-certification-overview.js â€” provider-certification-overview (admin-dashboard, high, full)
-- services/provider-status-mutation-service.js â€” providers-services-status-mutation-service (providers-services, high, full)
-- services/providers-service.js â€” providers-services-providers-service (providers-services, high, full)
-- services/public-cart-quote-service.js â€” public-cart-quotation (boutique, high, full)
-- services/public-market-storefront.js â€” public-market-storefront-read-model (market, high, full)
-- services/purchase-line-snapshot.js â€” purchase-line-snapshot (purchasing, high, full)
-- services/purchasing-admin-service.js â€” dashboard-purchasing-admin-service (purchasing, high, full)
-- services/purchasing-canonical-money.js â€” purchasing-canonical-supplier-money (purchasing, high, full)
+- services/pricing-dashboard.js â€” economic-engine-pricing-dashboard (economic-engine, high, fual-money.js â€” purchasing-canonical-supplier-money (purchasing, high, full)
 - services/purchasing-grouped-service.js â€” purchasing-grouped-service (purchasing, high, full)
 - services/purchasing-order-detail.js â€” purchasing-order-detail-reader (purchasing, high, full)
 - services/radar-alerts/cash-reconciliation-signals.js â€” radar-cash-reconciliation-signals (decision-signals, high, full)
@@ -717,203 +661,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - utils/parcelSync.js â€” logistics-parcel-sync (logistics, high, full)
 - utils/pricing-cache.js â€” economic-engine-pricing-cache (economic-engine, high, full)
 - utils/relay-commission.js â€” relay-commission-resolver (economic-engine, high, full)
-- validators/index.js â€” request-validation-schemas (infrastructure, high, full)
-
-## Lite Aggregated Files
-
-- public/boutique/js/anti-fouc.js -> owner public/boutique/js/b-home-premium-v1.js (boutique-anti-fouc)
-- public/boutique/js/b-boutique-wow-style.js -> owner public/boutique/js/boutique.js (boutique-product-image-fallback-polish)
-- public/boutique/js/b-cart-product-open-style.js -> owner public/boutique/js/b-modal-core.js (catalog-b-cart-product-open-style)
-- public/boutique/js/b-desktop-global-cart-access.js -> owner public/boutique/js/b-catalog.js (boutique-b-desktop-global-cart-access)
-- public/boutique/js/b-desktop-sidebar.js -> owner public/boutique/js/b-catalog.js (boutique-b-desktop-sidebar)
-- public/boutique/js/b-desktop-upgrade.js -> owner public/boutique/js/b-catalog.js (boutique-b-desktop-upgrade)
-- public/boutique/js/b-greeting.js -> owner public/boutique/js/b-catalog.js (boutique-b-greeting)
-- public/boutique/js/b-home-premium-v1.js -> owner public/boutique/js/b-catalog.js (boutique-b-home-premium-v1)
-- public/boutique/js/b-market-price-format.js -> owner public/boutique/js/b-utils.js (market-local-price-format)
-- public/boutique/js/b-modal-cart.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-cart)
-- public/boutique/js/b-modal-discovery-detail.js -> owner public/boutique/js/discovery-rail.js (catalog-modal-discovery-detail)
-- public/boutique/js/b-modal-nav.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-nav)
-- public/boutique/js/b-modal-social-proof.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-social-proof)
-- public/boutique/js/b-modal.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal)
-- public/boutique/js/b-paypal.js -> owner public/boutique/js/b-checkout.js (payment-b-paypal)
-- public/boutique/js/b-pdp-curation-suggestions.js -> owner public/boutique/js/b-modal-suggestions.js (recommendations-b-pdp-curation-suggestions)
-- public/boutique/js/b-product-open-contract.js -> owner public/boutique/js/b-modal-core.js (catalog-b-product-open-contract)
-- public/boutique/js/b-share-phone-guard.js -> owner public/boutique/js/b-share-cart.js (boutique-b-share-phone-guard)
-- public/boutique/js/card-config.js -> owner public/boutique/js/b-catalog.js (boutique-card-config)
-- public/boutique/js/cart-product-summary.js -> owner public/boutique/js/b-cart.js (cart-product-summary)
-- public/boutique/js/checkout-desktop-style.js -> owner public/boutique/js/b-checkout.js (checkout-desktop-style-loader)
-- public/boutique/js/discovery-actions.js -> owner public/boutique/js/discovery-actions.js (catalog-discovery-actions)
-- public/boutique/js/discovery-api.js -> owner public/boutique/js/discovery-api.js (boutique-discovery-api)
-- public/boutique/js/discovery-desktop-style.js -> owner public/boutique/js/discovery-rail.js (discovery-desktop-style-loader)
-- public/boutique/js/discovery-inquiry.js -> owner public/boutique/js/discovery-inquiry.js (providers-services-discovery-inquiry)
-- public/boutique/js/discovery-rail.js -> owner public/boutique/js/discovery-rail.js (catalog-discovery-rail)
-- public/boutique/js/group/group-state.js -> owner public/boutique/js/b-share-cart.js (shared-cart-group-state)
-- public/boutique/js/hero-bootstrap.js -> owner public/boutique/js/b-home-premium-v1.js (boutique-hero-bootstrap)
-- public/boutique/js/local-stock-badge-mount.js -> owner public/boutique/js/local-stock-badge-mount.js (boutique-local-stock-badge-mount)
-- public/boutique/js/local-stock-badge.js -> owner public/boutique/js/local-stock-badge.js (boutique-local-stock-badge)
-- public/boutique/js/main.js -> owner public/boutique/js/boutique.js (boutique-main)
-- public/boutique/js/market-context.js -> owner public/boutique/js/market-context.js (boutique-market-context)
-- public/boutique/js/market-hydration.js -> owner public/boutique/js/market-context.js (boutique-market-hydration)
-- public/boutique/js/preload-css-swap.js -> owner public/boutique/index.html (preload-css-swap)
-- public/boutique/js/product-image-loading-ux.js -> owner public/boutique/js/render/render-product-card.js (boutique-product-image-loading-ux)
-- public/boutique/js/providers-services-api.js -> owner public/boutique/js/providers-services-api.js (providers-services-api)
-- public/boutique/js/render/category-shelf-visuals.js -> owner public/boutique/js/render/render-categories.js (category-shelf-visual-registry)
-- public/boutique/js/render/render-categories.js -> owner public/boutique/js/b-catalog.js (boutique-render-categories)
-- public/boutique/js/render/render-discovery-rail.js -> owner public/boutique/js/discovery-rail.js (catalog-render-discovery-rail)
-- public/boutique/js/render/render-product-card.js -> owner public/boutique/js/b-catalog.js (catalog-render-product-card)
-- public/boutique/js/taxonomy-no-hardcode.test.js -> owner public/boutique/js/b-catalog.js (catalog-taxonomy-no-hardcode-test)
-- public/boutique/js/view-models/product-card-model.js -> owner public/boutique/js/b-catalog.js (catalog-product-card-model)
-- public/boutique/js/view-models/product-card-view-model.js -> owner public/boutique/js/b-catalog.js (catalog-product-card-view-model)
-- services/catalog-media-visual-fr-proof.js -> owner catalog (catalog-media-visual-fr-proof)
-- services/catalog-refinery-combined-proof.js -> owner catalog (catalog-refinery-combined-proof)
-- services/catalog-visual-fr-evidence-read.js -> owner catalog (catalog-visual-fr-evidence-read)
-- services/catalog-visual-fr-human-review-write.js -> owner catalog (catalog-visual-fr-human-review-write)
-- services/central-hub-on-order.js -> owner backend-core (central-hub-on-order-eligibility)
-- services/commercial-category-agreement.js -> owner backend-core (frozen-commercial-object-supplier-category-agreement)
-- services/commercial-taxonomy-semantics.js -> owner backend-core (commercial-taxonomy-semantic-intent)
-- services/dashboard-rct1-orders.js -> owner backend-core (rct1-orders-readonly-projection)
-- services/g6-hub-recipe-closure.js -> owner backend-core (g6-hub-recipe-closure)
-- services/g6-recipe-po-cancel-service.js -> owner backend-core (g6-recipe-po-cancel-service)
-- services/g6-staging-buyer-identity-guard.js -> owner backend-core (g6-staging-buyer-identity-guard)
-- services/hub-v1-fixture-checkout-guard.js -> owner backend-core (hub-v1-fixture-checkout-guard)
-- services/hub-v1-fixture-payment.js -> owner backend-core (hub-v1-fixture-payment)
-- services/market-delegation-read-authority.js -> owner backend-core (market-scoped-read-capability-fallback)
-- services/providers-inquiry-service.js -> owner services/providers-service.js (providers-services-contextual-inquiry)
-- services/providers-interaction-policy.js -> owner services/providers-service.js (providers-services-interaction-policy)
-- services/rct1-checkout-reference-guard.js -> owner backend-core (rct1-checkout-reference-guard)
-- services/simulation-visibility.js -> owner backend-core (live-simulation-visibility)
-
-## DB Write Edges
-
-- WRITE services/admin-order-refund.js -> alerts
-- WRITE services/cash-operations.js -> alerts
-- WRITE services/confirm-pickup-cash-payment.js -> alerts
-- WRITE services/g6-recipe-po-cancel-service.js -> alerts
-- WRITE services/notification-service.js -> alerts
-- WRITE services/notifications/notification-service.js -> alerts
-- WRITE services/order-payment-confirmation.js -> alerts
-- WRITE services/payment-cash-confirm.js -> alerts
-- WRITE services/payment-mobile-money.js -> alerts
-- WRITE services/payment-paypal.js -> alerts
-- WRITE services/payment-stripe.js -> alerts
-- WRITE services/pickup-authorization-service.js -> alerts
-- WRITE services/pickup-collection-service.js -> alerts
-- WRITE services/pickup-exceptional-collection-service.js -> alerts
-- WRITE services/product-publication-guard.js -> alerts
-- WRITE services/purchasing-cancel-service.js -> alerts
-- WRITE services/purchasing-completion-service.js -> alerts
-- WRITE services/purchasing-engagement-service.js -> alerts
-- WRITE services/purchasing-trigger-service.js -> alerts
-- WRITE services/repair-ordered-without-purchase-orders.js -> alerts
-- WRITE services/scan-operations.js -> alerts
-- WRITE services/supplier-shortage-service.js -> alerts
-- WRITE utils/alerts.js -> alerts
-- WRITE utils/parcelSync.js -> alerts
-- WRITE services/market-delegation-service.js -> assignment_capability_ceiling
-- WRITE services/market-delegation-service.js -> assignment_memberships
-- WRITE services/market-delegation-team-service.js -> assignment_memberships
-- WRITE routes/admin/system.js -> basket_items
-- WRITE services/shared-cart-creation.js -> basket_items
-- WRITE services/shared-cart-engine.js -> basket_items
-- WRITE services/shared-cart-user-cleanup.js -> basket_items
-- WRITE routes/admin/system.js -> baskets
-- WRITE services/shared-cart-creation.js -> baskets
-- WRITE services/shared-cart-engine.js -> baskets
-- WRITE services/shared-cart-user-cleanup.js -> baskets
-- WRITE services/boutique-taxonomy-admin.js -> boutique_categories
-- WRITE services/boutique-taxonomy-admin.js -> boutique_subcategories
-- WRITE routes/admin-rules.js -> business_rules_history
-- WRITE utils/rules.js -> business_rules_history
-- WRITE routes/admin-rules.js -> business_rules
-- WRITE utils/rules.js -> business_rules
-- WRITE routes/carriers.js -> carriers
-- WRITE routes/shares.js -> cart_shares
-- WRITE services/cart-share-service.js -> cart_shares
-- WRITE services/cash-operations.js -> cash_collections
-- WRITE services/confirm-pickup-cash-payment.js -> cash_collections
-- WRITE services/payment-cash-confirm.js -> cash_collections
-- WRITE services/cash-confirmation-control-service.js -> cash_confirmation_controls
-- WRITE services/cash-operations.js -> cash_confirmation_controls
-- WRITE services/confirm-pickup-cash-payment.js -> cash_confirmation_controls
-- WRITE services/payment-cash-confirm.js -> cash_confirmation_controls
-- WRITE services/cash-custody-service.js -> cash_custody_losses
-- WRITE services/cash-custody-service.js -> cash_custody_receipts
-- WRITE routes/cash.js -> cash_deposits
-- WRITE services/cash-deposit-service.js -> cash_deposits
-- WRITE services/catalog-enrichment.js -> catalog_enrichment_runs
-- WRITE services/catalog-overrides.js -> catalog_field_overrides
-- WRITE services/product-admin-service.js -> catalog_field_overrides
-- WRITE services/refinery-fr-recheck.js -> catalog_field_overrides
-- WRITE services/catalog-field-sync-application.js -> catalog_field_sync_state
-- WRITE services/catalog-media-recovery.js -> catalog_media_recovery_audit
-- WRITE services/catalog-visual-fr-human-review-write.js -> catalog_media_visual_fr_reviews
-- WRITE services/catalog-product-mutation-service.js -> catalog_media
-- WRITE services/catalog-promotion.js -> catalog_media
-- WRITE services/catalog-visual-fr-human-review-write.js -> catalog_media
-- WRITE services/catalog-workspace.js -> catalog_media
-- WRITE services/catalog-product-quality-service.js -> catalog_product_quality_notes
-- WRITE services/catalog-product-quality-service.js -> catalog_product_sale_holds
-- WRITE services/catalog-publication-decision-audit.js -> catalog_publication_decision_audit
-- WRITE services/catalog-stock-sync-application.js -> catalog_stock_sync_state
-- WRITE services/catalog-taxonomy-audit.js -> catalog_taxonomy_audit
-- WRITE bootstrap/startup-migrations.js -> charges
-- WRITE services/economic-engine-queries.js -> charges
-- WRITE services/market-structure-charge-reference.js -> charges
-- WRITE routes/client-notifications.js -> client_notifications
-- WRITE services/client-notification-service.js -> client_notifications
-- WRITE services/pricing-strategy-service.js -> competitor_prices
-- WRITE routes/pricing.js -> cost_benchmarks
-- WRITE services/cost-component-admin-service.js -> cost_component_events
-- WRITE services/cost-component-market-service.js -> cost_component_market_override_events
-- WRITE services/cost-component-market-service.js -> cost_component_market_overrides
-- WRITE services/cost-component-admin-service.js -> cost_components
-- WRITE services/credential-action-store.js -> credential_action_tokens
-- WRITE routes/admin-customs-categories.js -> customs_categories
-- WRITE routes/orders/status.js -> customs_history
-- WRITE services/customs-shipment-fee-service.js -> customs_shipment_fees
-- WRITE services/shipping-customs-workspace.js -> customs_shipment_holds
-- WRITE routes/admin-customs-shipments.js -> customs_shipment_parcel_events
-- WRITE services/customs-shipment-service.js -> customs_shipment_parcel_events
-- WRITE routes/admin-customs-shipments.js -> customs_shipment_parcels
-- WRITE services/customs-shipment-service.js -> customs_shipment_parcels
-- WRITE routes/admin-customs-shipments.js -> customs_shipments
-- WRITE services/customs-shipment-service.js -> customs_shipments
-- WRITE routes/admin/delete-order-cascade.js -> disputes
-- WRITE services/dispute-mutation-service.js -> disputes
-- WRITE services/pricing-risk-period.js -> economic_risk_cost_events
-- WRITE services/pricing-risk-period.js -> economic_risk_watermark_events
-- WRITE bootstrap/crons.js -> economic_snapshots
-- WRITE services/economic-engine-queries.js -> economic_snapshots
-- WRITE services/pricing-period-structure.js -> economic_structure_cost_events
-- WRITE routes/modules.js -> fabrics
-- WRITE bootstrap/startup-migrations.js -> finance_config
-- WRITE routes/admin-costing.js -> finance_config
-- WRITE routes/admin-finance-config.js -> finance_config
-- WRITE services/economic-config.js -> finance_config
-- WRITE services/economic-engine-queries.js -> finance_config
-- WRITE bootstrap/crons.js -> financial_movement_documents
-- WRITE services/financial-journal-projectors.js -> financial_movement_documents
-- WRITE services/financial-journal.js -> financial_movement_documents
-- WRITE bootstrap/crons.js -> financial_movements
-- WRITE services/financial-journal-projectors.js -> financial_movements
-- WRITE services/financial-journal.js -> financial_movements
-- WRITE bootstrap/crons.js -> fx_public_reference_quotes
-- WRITE services/fx-public-reference-feed.js -> fx_public_reference_quotes
-- WRITE routes/admin-finance-config.js -> fx_rate_observations
-- WRITE services/fx-observation-service.js -> fx_rate_observations
-- WRITE routes/modules.js -> garment_models
-- WRITE services/hub-authorization-service.js -> hub_authorization_grants
-- WRITE services/user-mutation-service.js -> hub_authorization_grants
-- WRITE services/hub-bag-box-service.js -> hub_box_bags
-
-## DB Write-Via Edges (dÃ©lÃ©gation dÃ©clarÃ©e)
-
-- WRITE services/catalog-approval.js -> alerts (via alerts-persistence-boundary)
-- WRITE services/g6-recipe-po-cancel-service.js -> alerts (via alerts-persistence-boundary)
-- WRITE services/pickup-exceptional-collection-service.js -> alerts (via pickup-collection-service)
-- WRITE services/pickup-secret-service.js -> alerts (via pickup-collection-service)
-- WRITE services/pickup-secret-service.js -> alerts (via pickup-exceptional-collection-service)
-- WRITE routes/admin-market-control-plane.js -> assignment_capability_ceiling (via market-provisioning-service)
+- validators/index.js â€” request-validatiom«ëŒ+Š×ž®º+º$zzb¥æâ×66†VÖ2†–æg&7G'V7GW&RÂ†–v‚ÂgVÆÂ ¢22Æ—FRvw&VvFVBf–ÆW0 ¢ÒV&Æ–2ö&÷WF—VRö§2öçF’Öf÷V2æ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"Ö†öÖR×&VÖ—VÒ×cæ§2†&÷WF—VRÖçF’Öf÷V2¢ÒV&Æ–2ö&÷WF—VRö§2ö"Ö&÷WF—VR×v÷r×7G–ÆRæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö&÷WF—VRæ§2†&÷WF—VR×&öGV7BÖ–ÖvRÖfÆÆ&6²×öÆ—6‚¢ÒV&Æ–2ö&÷WF—VRö§2ö"Ö6'B×&öGV7BÖ÷Vâ×7G–ÆRæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"ÖÖöFÂÖ6÷&Ræ§2†6FÆörÖ"Ö6'B×&öGV7BÖ÷Vâ×7G–ÆR¢ÒV&Æ–2ö&÷WF—VRö§2ö"ÖFW6·F÷ÖvÆö&ÂÖ6'BÖ66W72æ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"Ö6FÆöræ§2†&÷WF—VRÖ"ÖFW6·F÷ÖvÆö&ÂÖ6'BÖ66W72¢ÒV&Æ–2ö&÷WF—VRö§2ö"ÖFW6·F÷×6–FV&"æ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"Ö6FÆöræ§2†&÷WF—VRÖ"ÖFW6·F÷×6–FV&"¢ÒV&Æ–2ö&÷WF—VRö§2ö"ÖFW6·F÷×Ww&FRæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"Ö6FÆöræ§2†&÷WF—VRÖ"ÖFW6·F÷×Ww&FR¢ÒV&Æ–2ö&÷WF—VRö§2ö"Öw&VWF–æræ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"Ö6FÆöræ§2†&÷WF—VRÖ"Öw&VWF–ær¢ÒV&Æ–2ö&÷WF—VRö§2ö"Ö†öÖR×&VÖ—VÒ×cæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"Ö6FÆöræ§2†&÷WF—VRÖ"Ö†öÖR×&VÖ—VÒ×c¢ÒV&Æ–2ö&÷WF—VRö§2ö"ÖÖ&¶WB×&–6RÖf÷&ÖBæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"×WF–Ç2æ§2†Ö&¶WBÖÆö6Â×&–6RÖf÷&ÖB¢ÒV&Æ–2ö&÷WF—VRö§2ö"ÖÖöFÂÖ6'Bæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"ÖÖöFÂÖ6÷&Ræ§2†&÷WF—VRÖ"ÖÖöFÂÖ6'B¢ÒV&Æ–2ö&÷WF—VRö§2ö"ÖÖöFÂÖF—66÷fW'’ÖFWF–Âæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2öF—66÷fW'’×&–Âæ§2†6FÆörÖÖöFÂÖF—66÷fW'’ÖFWF–Â¢ÒV&Æ–2ö&÷WF—VRö§2ö"ÖÖöFÂÖæbæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"ÖÖöFÂÖ6÷&Ræ§2†&÷WF—VRÖ"ÖÖöFÂÖæb¢ÒV&Æ–2ö&÷WF—VRö§2ö"ÖÖöFÂ×6ö6–Â×&ööbæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"ÖÖöFÂÖ6÷&Ræ§2†&÷WF—VRÖ"ÖÖöFÂ×6ö6–Â×&ööb¢ÒV&Æ–2ö&÷WF—VRö§2ö"ÖÖöFÂæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"ÖÖöFÂÖ6÷&Ræ§2†&÷WF—VRÖ"ÖÖöFÂ¢ÒV&Æ–2ö&÷WF—VRö§2ö"×—Âæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"Ö6†V6¶÷WBæ§2‡–ÖVçBÖ"×—Â¢ÒV&Æ–2ö&÷WF—VRö§2ö"×GÖ7W&F–öâ×7VvvW7F–öç2æ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"ÖÖöFÂ×7VvvW7F–öç2æ§2‡&V6öÖÖVæFF–öç2Ö"×GÖ7W&F–öâ×7VvvW7F–öç2¢ÒV&Æ–2ö&÷WF—VRö§2ö"×&öGV7BÖ÷VâÖ6öçG&7Bæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"ÖÖöFÂÖ6÷&Ræ§2†6FÆörÖ"×&öGV7BÖ÷VâÖ6öçG&7B¢ÒV&Æ–2ö&÷WF—VRö§2ö"×6†&R×†öæRÖwV&Bæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"×6†&RÖ6'Bæ§2†&÷WF—VRÖ"×6†&R×†öæRÖwV&B¢ÒV&Æ–2ö&÷WF—VRö§2ö6&BÖ6öæf–ræ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"Ö6FÆöræ§2†&÷WF—VRÖ6&BÖ6öæf–r¢ÒV&Æ–2ö&÷WF—VRö§2ö6'B×&öGV7B×7VÖÖ'’æ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"Ö6'Bæ§2†6'B×&öGV7B×7VÖÖ'’¢ÒV&Æ–2ö&÷WF—VRö§2ö6†V6¶÷WBÖFW6·F÷×7G–ÆRæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"Ö6†V6¶÷WBæ§2†6†V6¶÷WBÖFW6·F÷×7G–ÆRÖÆöFW"¢ÒV&Æ–2ö&÷WF—VRö§2öF—66÷fW'’Ö7F–öç2æ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2öF—66÷fW'’Ö7F–öç2æ§2†6FÆörÖF—66÷fW'’Ö7F–öç2¢ÒV&Æ–2ö&÷WF—VRö§2öF—66÷fW'’Ö’æ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2öF—66÷fW'’Ö’æ§2†&÷WF—VRÖF—66÷fW'’Ö’¢ÒV&Æ–2ö&÷WF—VRö§2öF—66÷fW'’ÖFW6·F÷×7G–ÆRæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2öF—66÷fW'’×&–Âæ§2†F—66÷fW'’ÖFW6·F÷×7G–ÆRÖÆöFW"¢ÒV&Æ–2ö&÷WF—VRö§2öF—66÷fW'’Ö–çV—'’æ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2öF—66÷fW'’Ö–çV—'’æ§2‡&÷f–FW'2×6W'f–6W2ÖF—66÷fW'’Ö–çV—'’¢ÒV&Æ–2ö&÷WF—VRö§2öF—66÷fW'’×&–Âæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2öF—66÷fW'’×&–Âæ§2†6FÆörÖF—66÷fW'’×&–Â¢ÒV&Æ–2ö&÷WF—VRö§2öw&÷Wöw&÷W×7FFRæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"×6†&RÖ6'Bæ§2‡6†&VBÖ6'BÖw&÷W×7FFR¢ÒV&Æ–2ö&÷WF—VRö§2ö†W&òÖ&ö÷G7G&æ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"Ö†öÖR×&VÖ—VÒ×cæ§2†&÷WF—VRÖ†W&òÖ&ö÷G7G&¢ÒV&Æ–2ö&÷WF—VRö§2öÆö6Â×7Fö6²Ö&FvRÖÖ÷VçBæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2öÆö6Â×7Fö6²Ö&FvRÖÖ÷VçBæ§2†&÷WF—VRÖÆö6Â×7Fö6²Ö&FvRÖÖ÷VçB¢ÒV&Æ–2ö&÷WF—VRö§2öÆö6Â×7Fö6²Ö&FvRæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2öÆö6Â×7Fö6²Ö&FvRæ§2†&÷WF—VRÖÆö6Â×7Fö6²Ö&FvR¢ÒV&Æ–2ö&÷WF—VRö§2öÖ–âæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö&÷WF—VRæ§2†&÷WF—VRÖÖ–â¢ÒV&Æ–2ö&÷WF—VRö§2öÖ&¶WBÖ6öçFW‡Bæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2öÖ&¶WBÖ6öçFW‡Bæ§2†&÷WF—VRÖÖ&¶WBÖ6öçFW‡B¢ÒV&Æ–2ö&÷WF—VRö§2öÖ&¶WBÖ‡–G&F–öâæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2öÖ&¶WBÖ6öçFW‡Bæ§2†&÷WF—VRÖÖ&¶WBÖ‡–G&F–öâ¢ÒV&Æ–2ö&÷WF—VRö§2÷&VÆöBÖ772×7væ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö–æFW‚æ‡FÖÂ‡&VÆöBÖ772×7v¢ÒV&Æ–2ö&÷WF—VRö§2÷&öGV7BÖ–ÖvRÖÆöF–ær×W‚æ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2÷&VæFW"÷&VæFW"×&öGV7BÖ6&Bæ§2†&÷WF—VR×&öGV7BÖ–ÖvRÖÆöF–ær×W‚¢ÒV&Æ–2ö&÷WF—VRö§2÷&÷f–FW'2×6W'f–6W2Ö’æ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2÷&÷f–FW'2×6W'f–6W2Ö’æ§2‡&÷f–FW'2×6W'f–6W2Ö’¢ÒV&Æ–2ö&÷WF—VRö§2÷&VæFW"ö6FVv÷'’×6†VÆb×f—7VÇ2æ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2÷&VæFW"÷&VæFW"Ö6FVv÷&–W2æ§2†6FVv÷'’×6†VÆb×f—7VÂ×&Vv—7G'’¢ÒV&Æ–2ö&÷WF—VRö§2÷&VæFW"÷&VæFW"Ö6FVv÷&–W2æ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"Ö6FÆöræ§2†&÷WF—VR×&VæFW"Ö6FVv÷&–W2¢ÒV&Æ–2ö&÷WF—VRö§2÷&VæFW"÷&VæFW"ÖF—66÷fW'’×&–Âæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2öF—66÷fW'’×&–Âæ§2†6FÆör×&VæFW"ÖF—66÷fW'’×&–Â¢ÒV&Æ–2ö&÷WF—VRö§2÷&VæFW"÷&VæFW"×&öGV7BÖ6&Bæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"Ö6FÆöræ§2†6FÆör×&VæFW"×&öGV7BÖ6&B¢ÒV&Æ–2ö&÷WF—VRö§2÷F†öæö×’ÖæòÖ†&F6öFRçFW7Bæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"Ö6FÆöræ§2†6FÆör×F†öæö×’ÖæòÖ†&F6öFR×FW7B¢ÒV&Æ–2ö&÷WF—VRö§2÷f–WrÖÖöFVÇ2÷&öGV7BÖ6&BÖÖöFVÂæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"Ö6FÆöræ§2†6FÆör×&öGV7BÖ6&BÖÖöFVÂ¢ÒV&Æ–2ö&÷WF—VRö§2÷f–WrÖÖöFVÇ2÷&öGV7BÖ6&B×f–WrÖÖöFVÂæ§2Óâ÷væW"V&Æ–2ö&÷WF—VRö§2ö"Ö6FÆöræ§2†6FÆör×&öGV7BÖ6&B×f–WrÖÖöFVÂ¢Ò6W'f–6W2ö6FÆörÖÖVF–×f—7VÂÖg"×&ööbæ§2Óâ÷væW"6FÆör†6FÆörÖÖVF–×f—7VÂÖg"×&ööb¢Ò6W'f–6W2ö6FÆör×&Vf–æW'’Ö6öÖ&–æVB×&ööbæ§2Óâ÷væW"6FÆör†6FÆör×&Vf–æW'’Ö6öÖ&–æVB×&ööb¢Ò6W'f–6W2ö6FÆör×f—7VÂÖg"ÖWf–FVæ6R×&VBæ§2Óâ÷væW"6FÆör†6FÆör×f—7VÂÖg"ÖWf–FVæ6R×&VB¢Ò6W'f–6W2ö6FÆör×f—7VÂÖg"Ö‡VÖâ×&Wf–Wr×w&—FRæ§2Óâ÷væW"6FÆör†6FÆör×f—7VÂÖg"Ö‡VÖâ×&Wf–Wr×w&—FR¢Ò6W'f–6W2ö6VçG&ÂÖ‡V"ÖöâÖ÷&FW"æ§2Óâ÷væW"&6¶VæBÖ6÷&R†6VçG&ÂÖ‡V"ÖöâÖ÷&FW"ÖVÆ–v–&–Æ—G’¢Ò6W'f–6W2ö6öÖÖW&6–ÂÖ6FVv÷'’Öw&VVÖVçBæ§2Óâ÷væW"&6¶VæBÖ6÷&R†g&÷¦VâÖ6öÖÖW&6–ÂÖö&¦V7B×7WÆ–W"Ö6FVv÷'’Öw&VVÖVçB¢Ò6W'f–6W2ö6öÖÖW&6–Â×F†öæö×’×6VÖçF–72æ§2Óâ÷væW"&6¶VæBÖ6÷&R†6öÖÖW&6–Â×F†öæö×’×6VÖçF–2Ö–çFVçB¢Ò6W'f–6W2öF6†&ö&B×&7CÖ÷&FW'2æ§2Óâ÷væW"&6¶VæBÖ6÷&R‡&7CÖ÷&FW'2×&VFöæÇ’×&ö¦V7F–öâ¢Ò6W'f–6W2ösbÖ‡V"×&V6—RÖ6Æ÷7W&Ræ§2Óâ÷væW"&6¶VæBÖ6÷&R†sbÖ‡V"×&V6—RÖ6Æ÷7W&R¢Ò6W'f–6W2ösb×&V6—R×òÖ6æ6VÂ×6W'f–6Ræ§2Óâ÷væW"&6¶VæBÖ6÷&R†sb×&V6—R×òÖ6æ6VÂ×6W'f–6R¢Ò6W'f–6W2ösb×7Fv–ærÖ'W–W"Ö–FVçF—G’ÖwV&Bæ§2Óâ÷væW"&6¶VæBÖ6÷&R†sb×7Fv–ærÖ'W–W"Ö–FVçF—G’ÖwV&B¢Ò6W'f–6W2ö‡V"×cÖf—‡GW&RÖ6†V6¶÷WBÖwV&Bæ§2Óâ÷væW"&6¶VæBÖ6÷&R†‡V"×cÖf—‡GW&RÖ6†V6¶÷WBÖwV&B¢Ò6W'f–6W2ö‡V"×cÖf—‡GW&R×–ÖVçBæ§2Óâ÷væW"&6¶VæBÖ6÷&R†‡V"×cÖf—‡GW&R×–ÖVçB¢Ò6W'f–6W2öÖ&¶WBÖFVÆVvF–öâ×&VBÖWF†÷&—G’æ§2Óâ÷væW"&6¶VæBÖ6÷&R†Ö&¶WB×66÷VB×&VBÖ6&–Æ—G’ÖfÆÆ&6²¢Ò6W'f–6W2ö÷&FW"×&VBÖWF†÷&—¦F–öâæ§2Óâ÷væW"&6¶VæBÖ6÷&R†÷&FW"×&VBÖWF†÷&—¦F–öâ¢Ò6W'f–6W2÷&÷f–FW'2Ö–çV—'’×6W'f–6Ræ§2Óâ÷væW"6W'f–6W2÷&÷f–FW'2×6W'f–6Ræ§2‡&÷f–FW'2×6W'f–6W2Ö6öçFW‡GVÂÖ–çV—'’¢Ò6W'f–6W2÷&÷f–FW'2Ö–çFW&7F–öâ×öÆ–7’æ§2Óâ÷væW"6W'f–6W2÷&÷f–FW'2×6W'f–6Ræ§2‡&÷f–FW'2×6W'f–6W2Ö–çFW&7F–öâ×öÆ–7’¢Ò6W'f–6W2÷&7CÖ6†V6¶÷WB×&VfW&Væ6RÖwV&Bæ§2Óâ÷væW"&6¶VæBÖ6÷&R‡&7CÖ6†V6¶÷WB×&VfW&Væ6RÖwV&B¢Ò6W'f–6W2÷6–×VÆF–öâ×f—6–&–Æ—G’æ§2Óâ÷væW"&6¶VæBÖ6÷&R†Æ—fR×6–×VÆF–öâ×f—6–&–Æ—G’ ¢22D"w&—FRVFvW0 ¢Òu$•DR6W'f–6W2öFÖ–âÖ÷&FW"×&VgVæBæ§2ÓâÆW'G0¢Òu$•DR6W'f–6W2ö66‚Ö÷W&F–öç2æ§2ÓâÆW'G0¢Òu$•DR6W'f–6W2ö6öæf—&Ò×–6·WÖ66‚×–ÖVçBæ§2ÓâÆW'G0¢Òu$•DR6W'f–6W2ösb×&V6—R×òÖ6æ6VÂ×6W'f–6Ræ§2ÓâÆW'G0¢Òu$•DR6W'f–6W2öæ÷F–f–6F–öâ×6W'f–6Ræ§2ÓâÆW'G0¢Òu$•DR6W'f–6W2öæ÷F–f–6F–öç2öæ÷F–f–6F–öâ×6W'f–6Ræ§2ÓâÆW'G0¢Òu$•DR6W'f–6W2ö÷&FW"×–ÖVçBÖ6öæf—&ÖF–öâæ§2ÓâÆW'G0¢Òu$•DR6W'f–6W2÷–ÖVçBÖ66‚Ö6öæf—&Òæ§2ÓâÆW'G0¢Òu$•DR6W'f–6W2÷–ÖVçBÖÖö&–ÆRÖÖöæW’æ§2ÓâÆW'G0¢Òu$•DR6W'f–6W2÷–ÖVçB×—Âæ§2ÓâÆW'G0¢Òu$•DR6W'f–6W2÷–ÖVçB×7G&—Ræ§2ÓâÆW'G0¢Òu$•DR6W'f–6W2÷–6·WÖWF†÷&—¦F–öâ×6W'f–6Ræ§2ÓâÆW'G0¢Òu$•DR6W'f–6W2÷–6·WÖ6öÆÆV7F–öâ×6W'f–6Ræ§2ÓâÆW'G0¢Òu$•DR6W'f–6W2÷–6·WÖW†6WF–öæÂÖ6öÆÆV7F–öâ×6W'f–6Ræ§2ÓâÆW'G0¢Òu$•DR6W'f–6W2÷&öGV7B×V&Æ–6F–öâÖwV&Bæ§2ÓâÆW'G0¢Òu$•DR6W'f–6W2÷W&6†6–ærÖ6æ6VÂ×6W'f–6Ræ§2ÓâÆW'G0¢Òu$•DR6W'f–6W2÷W&6†6–ærÖ6ö×ÆWF–öâ×6W'f–6Ræ§2ÓâÆW'G0¢Òu$•DR6W'f–6W2÷W&6†6–ærÖVævvVÖVçB×6W'f–6Ræ§2ÓâÆW'G0¢Òu$•DR6W'f–6W2÷W&6†6–ær×G&–vvW"×6W'f–6Ræ§2ÓâÆW'G0¢Òu$•DR6W'f–6W2÷&W—"Ö÷&FW&VB×v—F†÷WB×W&6†6RÖ÷&FW'2æ§2ÓâÆW'G0¢Òu$•DR6W'f–6W2÷66âÖ÷W&F–öç2æ§2ÓâÆW'G0¢Òu$•DR6W'f–6W2÷7WÆ–W"×6†÷'FvR×6W'f–6Ræ§2ÓâÆW'G0¢Òu$•DRWF–Ç2öÆW'G2æ§2ÓâÆW'G0¢Òu$•DRWF–Ç2÷&6VÅ7–æ2æ§2ÓâÆW'G0¢Òu$•DR6W'f–6W2öÖ&¶WBÖFVÆVvF–öâ×6W'f–6Ræ§2Óâ76–væÖVçEö6&–Æ—G•ö6V–Æ–æp¢Òu$•DR6W'f–6W2öÖ&¶WBÖFVÆVvF–öâ×6W'f–6Ræ§2Óâ76–væÖVçEöÖVÖ&W'6†—0¢Òu$•DR6W'f–6W2öÖ&¶WBÖFVÆVvF–öâ×FVÒ×6W'f–6Ræ§2Óâ76–væÖVçEöÖVÖ&W'6†—0¢Òu$•DR&÷WFW2öFÖ–â÷7—7FVÒæ§2Óâ&6¶WEö—FV×0¢Òu$•DR6W'f–6W2÷6†&VBÖ6'BÖ7&VF–öâæ§2Óâ&6¶WEö—FV×0¢Òu$•DR6W'f–6W2÷6†&VBÖ6'BÖVæv–æRæ§2Óâ&6¶WEö—FV×0¢Òu$•DR6W'f–6W2÷6†&VBÖ6'B×W6W"Ö6ÆVçWæ§2Óâ&6¶WEö—FV×0¢Òu$•DR&÷WFW2öFÖ–â÷7—7FVÒæ§2Óâ&6¶WG0¢Òu$•DR6W'f–6W2÷6†&VBÖ6'BÖ7&VF–öâæ§2Óâ&6¶WG0¢Òu$•DR6W'f–6W2÷6†&VBÖ6'BÖVæv–æRæ§2Óâ&6¶WG0¢Òu$•DR6W'f–6W2÷6†&VBÖ6'B×W6W"Ö6ÆVçWæ§2Óâ&6¶WG0¢Òu$•DR6W'f–6W2ö&÷WF—VR×F†öæö×’ÖFÖ–âæ§2Óâ&÷WF—VUö6FVv÷&–W0¢Òu$•DR6W'f–6W2ö&÷WF—VR×F†öæö×’ÖFÖ–âæ§2Óâ&÷WF—VU÷7V&6FVv÷&–W0¢Òu$•DR&÷WFW2öFÖ–â×'VÆW2æ§2Óâ'W6–æW75÷'VÆW5ö†—7F÷'¢Òu$•DRWF–Ç2÷'VÆW2æ§2Óâ'W6–æW75÷'VÆW5ö†—7F÷'¢Òu$•DR&÷WFW2öFÖ–â×'VÆW2æ§2Óâ'W6–æW75÷'VÆW0¢Òu$•DRWF–Ç2÷'VÆW2æ§2Óâ'W6–æW75÷'VÆW0¢Òu$•DR&÷WFW2ö6'&–W'2æ§2Óâ6'&–W'0¢Òu$•DR&÷WFW2÷6†&W2æ§2Óâ6'E÷6†&W0¢Òu$•DR6W'f–6W2ö6'B×6†&R×6W'f–6Ræ§2Óâ6'E÷6†&W0¢Òu$•DR6W'f–6W2ö66‚Ö÷W&F–öç2æ§2Óâ66…ö6öÆÆV7F–öç0¢Òu$•DR6W'f–6W2ö6öæf—&Ò×–6·WÖ66‚×–ÖVçBæ§2Óâ66…ö6öÆÆV7F–öç0¢Òu$•DR6W'f–6W2÷–ÖVçBÖ66‚Ö6öæf—&Òæ§2Óâ66…ö6öÆÆV7F–öç0¢Òu$•DR6W'f–6W2ö66‚Ö6öæf—&ÖF–öâÖ6öçG&öÂ×6W'f–6Ræ§2Óâ66…ö6öæf—&ÖF–öåö6öçG&öÇ0¢Òu$•DR6W'f–6W2ö66‚Ö÷W&F–öç2æ§2Óâ66…ö6öæf—&ÖF–öåö6öçG&öÇ0¢Òu$•DR6W'f–6W2ö6öæf—&Ò×–6·WÖ66‚×–ÖVçBæ§2Óâ66…ö6öæf—&ÖF–öåö6öçG&öÇ0¢Òu$•DR6W'f–6W2÷–ÖVçBÖ66‚Ö6öæf—&Òæ§2Óâ66…ö6öæf—&ÖF–öåö6öçG&öÇ0¢Òu$•DR6W'f–6W2ö66‚Ö7W7FöG’×6W'f–6Ræ§2Óâ66…ö7W7FöG•öÆ÷76W0¢Òu$•DR6W'f–6W2ö66‚Ö7W7FöG’×6W'f–6Ræ§2Óâ66…ö7W7FöG•÷&V6V—G0¢Òu$•DR&÷WFW2ö66‚æ§2Óâ66…öFW÷6—G0¢Òu$•DR6W'f–6W2ö66‚ÖFW÷6—B×6W'f–6Ræ§2Óâ66…öFW÷6—G0¢Òu$•DR6W'f–6W2ö6FÆörÖVç&–6†ÖVçBæ§2Óâ6FÆöuöVç&–6†ÖVçE÷'Vç0¢Òu$•DR6W'f–6W2ö6FÆörÖ÷fW'&–FW2æ§2Óâ6FÆöuöf–VÆEö÷fW'&–FW0¢Òu$•DR6W'f–6W2÷&öGV7BÖFÖ–â×6W'f–6Ræ§2Óâ6FÆöuöf–VÆEö÷fW'&–FW0¢Òu$•DR6W'f–6W2÷&Vf–æW'’Ög"×&V6†V6²æ§2Óâ6FÆöuöf–VÆEö÷fW'&–FW0¢Òu$•DR6W'f–6W2ö6FÆörÖf–VÆB×7–æ2ÖÆ–6F–öâæ§2Óâ6FÆöuöf–VÆE÷7–æ5÷7FFP¢Òu$•DR6W'f–6W2ö6FÆörÖÖVF–×&V6÷fW'’æ§2Óâ6FÆöuöÖVF–÷&V6÷fW'•öVF—@¢Òu$•DR6W'f–6W2ö6FÆör×f—7VÂÖg"Ö‡VÖâ×&Wf–Wr×w&—FRæ§2Óâ6FÆöuöÖVF–÷f—7VÅög%÷&Wf–Ww0¢Òu$•DR6W'f–6W2ö6FÆör×&öGV7BÖ×WFF–öâ×6W'f–6Ræ§2Óâ6FÆöuöÖVF–¢Òu$•DR6W'f–6W2ö6FÆör×&öÖ÷F–öâæ§2Óâ6FÆöuöÖVF–¢Òu$•DR6W'f–6W2ö6FÆör×f—7VÂÖg"Ö‡VÖâ×&Wf–Wr×w&—FRæ§2Óâ6FÆöuöÖVF–¢Òu$•DR6W'f–6W2ö6FÆör×v÷&·76Ræ§2Óâ6FÆöuöÖVF–¢Òu$•DR6W'f–6W2ö6FÆör×&öGV7B×VÆ—G’×6W'f–6Ræ§2Óâ6FÆöu÷&öGV7E÷VÆ—G•öæ÷FW0¢Òu$•DR6W'f–6W2ö6FÆör×&öGV7B×VÆ—G’×6W'f–6Ræ§2Óâ6FÆöu÷&öGV7E÷6ÆUö†öÆG0¢Òu$•DR6W'f–6W2ö6FÆör×V&Æ–6F–öâÖFV6—6–öâÖVF—Bæ§2Óâ6FÆöu÷V&Æ–6F–öåöFV6—6–öåöVF—@¢Òu$•DR6W'f–6W2ö6FÆör×7Fö6²×7–æ2ÖÆ–6F–öâæ§2Óâ6FÆöu÷7Fö6µ÷7–æ5÷7FFP¢Òu$•DR6W'f–6W2ö6FÆör×F†öæö×’ÖVF—Bæ§2Óâ6FÆöu÷F†öæö×•öVF—@¢Òu$•DR&ö÷G7G&÷7F'GWÖÖ–w&F–öç2æ§2Óâ6†&vW0¢Òu$•DR6W'f–6W2öV6öæöÖ–2ÖVæv–æR×VW&–W2æ§2Óâ6†&vW0¢Òu$•DR6W'f–6W2öÖ&¶WB×7G'V7GW&RÖ6†&vR×&VfW&Væ6Ræ§2Óâ6†&vW0¢Òu$•DR&÷WFW2ö6Æ–VçBÖæ÷F–f–6F–öç2æ§2Óâ6Æ–VçEöæ÷F–f–6F–öç0¢Òu$•DR6W'f–6W2ö6Æ–VçBÖæ÷F–f–6F–öâ×6W'f–6Ræ§2Óâ6Æ–VçEöæ÷F–f–6F–öç0¢Òu$•DR6W'f–6W2÷&–6–ær×7G&FVw’×6W'f–6Ræ§2Óâ6ö×WF—F÷%÷&–6W0¢Òu$•DR&÷WFW2÷&–6–æræ§2Óâ6÷7Eö&Væ6†Ö&·0¢Òu$•DR6W'f–6W2ö6÷7BÖ6ö×öæVçBÖFÖ–â×6W'f–6Ræ§2Óâ6÷7Eö6ö×öæVçEöWfVçG0¢Òu$•DR6W'f–6W2ö6÷7BÖ6ö×öæVçBÖÖ&¶WB×6W'f–6Ræ§2Óâ6÷7Eö6ö×öæVçEöÖ&¶WEö÷fW'&–FUöWfVçG0¢Òu$•DR6W'f–6W2ö6÷7BÖ6ö×öæVçBÖÖ&¶WB×6W'f–6Ræ§2Óâ6÷7Eö6ö×öæVçEöÖ&¶WEö÷fW'&–FW0¢Òu$•DR6W'f–6W2ö6÷7BÖ6ö×öæVçBÖFÖ–â×6W'f–6Ræ§2Óâ6÷7Eö6ö×öæVçG0¢Òu$•DR6W'f–6W2ö7&VFVçF–ÂÖ7F–öâ×7F÷&Ræ§2Óâ7&VFVçF–Åö7F–öå÷Fö¶Vç0¢Òu$•DR&÷WFW2öFÖ–âÖ7W7Fö×2Ö6FVv÷&–W2æ§2Óâ7W7Fö×5ö6FVv÷&–W0¢Òu$•DR&÷WFW2ö÷&FW'2÷7FGW2æ§2Óâ7W7Fö×5ö†—7F÷'¢Òu$•DR6W'f–6W2ö7W7Fö×2×6†—ÖVçBÖfVR×6W'f–6Ræ§2Óâ7W7Fö×5÷6†—ÖVçEöfVW0¢Òu$•DR6W'f–6W2÷6†—–ærÖ7W7Fö×2×v÷&·76Ræ§2Óâ7W7Fö×5÷6†—ÖVçEö†öÆG0¢Òu$•DR&÷WFW2öFÖ–âÖ7W7Fö×2×6†—ÖVçG2æ§2Óâ7W7Fö×5÷6†—ÖVçE÷&6VÅöWfVçG0¢Òu$•DR6W'f–6W2ö7W7Fö×2×6†—ÖVçB×6W'f–6Ræ§2Óâ7W7Fö×5÷6†—ÖVçE÷&6VÅöWfVçG0¢Òu$•DR&÷WFW2öFÖ–âÖ7W7Fö×2×6†—ÖVçG2æ§2Óâ7W7Fö×5÷6†—ÖVçE÷&6VÇ0¢Òu$•DR6W'f–6W2ö7W7Fö×2×6†—ÖVçB×6W'f–6Ræ§2Óâ7W7Fö×5÷6†—ÖVçE÷&6VÇ0¢Òu$•DR&÷WFW2öFÖ–âÖ7W7Fö×2×6†—ÖVçG2æ§2Óâ7W7Fö×5÷6†—ÖVçG0¢Òu$•DR6W'f–6W2ö7W7Fö×2×6†—ÖVçB×6W'f–6Ræ§2Óâ7W7Fö×5÷6†—ÖVçG0¢Òu$•DR&÷WFW2öFÖ–âöFVÆWFRÖ÷&FW"Ö666FRæ§2ÓâF—7WFW0¢Òu$•DR6W'f–6W2öF—7WFRÖ×WFF–öâ×6W'f–6Ræ§2ÓâF—7WFW0¢Òu$•DR6W'f–6W2÷&–6–ær×&—6²×W&–öBæ§2ÓâV6öæöÖ–5÷&—6µö6÷7EöWfVçG0¢Òu$•DR6W'f–6W2÷&–6–ær×&—6²×W&–öBæ§2ÓâV6öæöÖ–5÷&—6µ÷vFW&Ö&µöWfVçG0¢Òu$•DR&ö÷G7G&ö7&öç2æ§2ÓâV6öæöÖ–5÷6æ6†÷G0¢Òu$•DR6W'f–6W2öV6öæöÖ–2ÖVæv–æR×VW&–W2æ§2ÓâV6öæöÖ–5÷6æ6†÷G0¢Òu$•DR6W'f–6W2÷&–6–ær×W&–öB×7G'V7GW&Ræ§2ÓâV6öæöÖ–5÷7G'V7GW&Uö6÷7EöWfVçG0¢Òu$•DR&÷WFW2öÖöGVÆW2æ§2Óâf'&–70¢Òu$•DR&ö÷G7G&÷7F'GWÖÖ–w&F–öç2æ§2Óâf–ææ6Uö6öæf–p¢Òu$•DR&÷WFW2öFÖ–âÖ6÷7F–æræ§2Óâf–ææ6Uö6öæf–p¢Òu$•DR&÷WFW2öFÖ–âÖf–ææ6RÖ6öæf–ræ§2Óâf–ææ6Uö6öæf–p¢Òu$•DR6W'f–6W2öV6öæöÖ–2Ö6öæf–ræ§2Óâf–ææ6Uö6öæf–p¢Òu$•DR6W'f–6W2öV6öæöÖ–2ÖVæv–æR×VW&–W2æ§2Óâf–ææ6Uö6öæf–p¢Òu$•DR&ö÷G7G&ö7&öç2æ§2Óâf–ææ6–ÅöÖ÷fVÖVçEöFö7VÖVçG0¢Òu$•DR6W'f–6W2öf–ææ6–ÂÖ¦÷W&æÂ×&ö¦V7F÷'2æ§2Óâf–ææ6–ÅöÖ÷fVÖVçEöFö7VÖVçG0¢Òu$•DR6W'f–6W2öf–ææ6–ÂÖ¦÷W&æÂæ§2Óâf–ææ6–ÅöÖ÷fVÖVçEöFö7VÖVçG0¢Òu$•DR&ö÷G7G&ö7&öç2æ§2Óâf–ææ6–ÅöÖ÷fVÖVçG0¢Òu$•DR6W'f–6W2öf–ææ6–ÂÖ¦÷W&æÂ×&ö¦V7F÷'2æ§2Óâf–ææ6–ÅöÖ÷fVÖVçG0¢Òu$•DR6W'f–6W2öf–ææ6–ÂÖ¦÷W&æÂæ§2Óâf–ææ6–ÅöÖ÷fVÖVçG0¢Òu$•DR&ö÷G7G&ö7&öç2æ§2Óâg…÷V&Æ–5÷&VfW&Væ6U÷V÷FW0¢Òu$•DR6W'f–6W2ög‚×V&Æ–2×&VfW&Væ6RÖfVVBæ§2Óâg…÷V&Æ–5÷&VfW&Væ6U÷V÷FW0¢Òu$•DR&÷WFW2öFÖ–âÖf–ææ6RÖ6öæf–ræ§2Óâg…÷&FUöö'6W'fF–öç0¢Òu$•DR6W'f–6W2ög‚Öö'6W'fF–öâ×6W'f–6Ræ§2Óâg…÷&FUöö'6W'fF–öç0¢Òu$•DR&÷WFW2öÖöGVÆW2æ§2Óâv&ÖVçEöÖöFVÇ0¢Òu$•DR6W'f–6W2ö‡V"ÖWF†÷&—¦F–öâ×6W'f–6Ræ§2Óâ‡V%öWF†÷&—¦F–öåöw&çG0¢Òu$•DR6W'f–6W2÷W6W"Ö×WFF–öâ×6W'f–6Ræ§2Óâ‡V%öWF†÷&—¦F–öåöw&çG0¢Òu$•DR6W'f–6W2ö‡V"Ö&rÖ&÷‚×6W'f–6Ræ§2Óâ‡V%ö&÷…ö&w0 ¢22D"w&—FRÕf–VFvW2†L:–Ì:–vF–öâL:–6Æ,:–R ¢Òu$•DR6W'f–6W2ö6FÆörÖ&÷fÂæ§2ÓâÆW'G2‡f–ÆW'G2×W'6—7FVæ6RÖ&÷VæF'’¢Òu$•DR6W'f–6W2ösb×&V6—R×òÖ6æ6VÂ×6W'f–6Ræ§2ÓâÆW'G2‡f–ÆW'G2×W'6—7FVæ6RÖ&÷VæF'’¢Òu$•DR6W'f–6W2÷–6·WÖW†6WF–öæÂÖ6öÆÆV7F–öâ×6W'f–6Ræ§2ÓâÆW'G2‡f––6·WÖ6öÆÆV7F–öâ×6W'f–6R¢Òu$•DR6W'f–6W2÷–6·W×6V7&WB×6W'f–6Ræ§2ÓâÆW'G2‡f––6·WÖ6öÆÆV7F–öâ×6W'f–6R¢Òu$•DR6W'f–6W2÷–6·W×6V7&WB×6W'f–6Ræ§2ÓâÆW'G2‡f––6·WÖW†6WF–öæÂÖ6öÆÆV7F–öâ×6W'f–6R¢Òu$•DVÚ±î¸Â¸­yêë¢°k¢G§¦*^ routes/admin-market-control-plane.js -> assignment_capability_ceiling (via market-provisioning-service)
 - WRITE services/market-provisioning-service.js -> assignment_capability_ceiling (via market-delegation-service)
 - WRITE routes/admin-market-control-plane.js -> assignment_memberships (via market-provisioning-service)
 - WRITE routes/admin/users.js -> assignment_memberships (via market-operator-provisioning)
@@ -1034,215 +782,4 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - orders: 36 Ã©crivains directs â€” routes/admin-customs-shipments.js, routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/orders/cancel.js, routes/orders/qr.js, routes/orders/status.js, routes/parcels.js, routes/tracking.js, services/admin-order-refund.js, services/cash-reminder-service.js, services/cost-allocation/canonical-margin-writer.js, services/customs-shipment-service.js, services/hub-v1-fixture-payment.js, services/inventory-service.js, services/order-checkout-persistence.js, services/order-checkout-service.js, services/order-cost-snapshot.js, services/order-mutation-service.js, services/order-status-machine.js, services/parcel-auto-create-service.js, services/parcelOptimizationService.js, services/payment-cash-confirm.js, services/payment-paypal.js, services/payment-service.js, services/payment-stripe.js, services/paypal-refund-authority.js, services/pickup-secret-access-service.js, services/pickup-secret-service.js, services/purchasing-admin-service.js, services/qr-collection-core.js, services/routing.js, services/sav-replacement-order.js, services/scan-operations.js, services/simulation-scope-service.js, services/stripe-refund-authority.js, services/verify-qr-collection.js
 - alerts: 24 Ã©crivains directs â€” services/admin-order-refund.js, services/cash-operations.js, services/confirm-pickup-cash-payment.js, services/g6-recipe-po-cancel-service.js, services/notification-service.js, services/notifications/notification-service.js, services/order-payment-confirmation.js, services/payment-cash-confirm.js, services/payment-mobile-money.js, services/payment-paypal.js, services/payment-stripe.js, services/pickup-authorization-service.js, services/pickup-collection-service.js, services/pickup-exceptional-collection-service.js, services/product-publication-guard.js, services/purchasing-cancel-service.js, services/purchasing-completion-service.js, services/purchasing-engagement-service.js, services/purchasing-trigger-service.js, services/repair-ordered-without-purchase-orders.js, services/scan-operations.js, services/supplier-shortage-service.js, utils/alerts.js, utils/parcelSync.js
 - parcels: 17 Ã©crivains directs â€” routes/admin-customs-shipments.js, routes/admin/system.js, routes/carriers.js, routes/parcels.js, routes/transitaire-api.js, services/auto-parcel.js, services/local-relay-receipt-service.js, services/parcel-auto-create-service.js, services/parcel-mutation-service.js, services/parcel-operations.js, services/parcel-security.js, services/parcelOptimizationService.js, services/purchasing-completion-service.js, services/scan-engine.js, services/simulator/cleanup.js, services/simulator/state-advancer.js, utils/parcelSync.js
-- parcel_items: 13 Ã©crivains directs â€” routes/admin/system.js, routes/parcels.js, services/auto-parcel.js, services/local-relay-receipt-service.js, services/parcel-auto-create-service.js, services/parcel-item-mutation-service.js, services/parcel-operations.js, services/parcelOptimizationService.js, services/purchasing-completion-service.js, services/relay-parcel-item-reconciliation.js, services/scan-engine.js, services/simulator/cleanup.js, services/simulator/state-advancer.js
-- products: 13 Ã©crivains directs â€” routes/admin/system.js, services/catalog-approval.js, services/catalog-candidate-product-service.js, services/catalog-enrichment.js, services/catalog-field-sync-application.js, services/catalog-overrides.js, services/catalog-product-mutation-service.js, services/catalog-workspace.js, services/hub-operations.js, services/product-admin-service.js, services/product-sku-service.js, services/product-stock-service.js, services/refinery-fr-recheck.js
-- scans: 12 Ã©crivains directs â€” routes/admin/delete-order-cascade.js, routes/transit-dashboard.js, services/local-relay-receipt-service.js, services/pickup-collection-recorder.js, services/pickup-collection-service.js, services/relay-parcel-item-reconciliation.js, services/scan-operations.js, services/scan-write-service.js, services/simulator/cleanup.js, services/simulator/state-advancer.js, services/verify-qr-collection.js, utils/parcelSync.js
-- order_status_history: 10 Ã©crivains directs â€” routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/admin/users.js, routes/orders/cancel.js, services/hub-v1-fixture-payment.js, services/order-checkout-persistence.js, services/order-checkout-service.js, services/order-status-machine.js, services/paypal-refund-authority.js, services/stripe-refund-authority.js
-- notification_log: 9 Ã©crivains directs â€” services/notification-service.js, services/notifications/internals.js, services/notifications/loyalty.js, services/notifications/misc.js, services/notifications/notification-service.js, services/notifications/order.js, services/notifications/otp-auth.js, services/notifications/parcel.js, services/simulator/state-advancer.js
-- order_items: 9 Ã©crivains directs â€” routes/admin/delete-order-cascade.js, routes/admin/system.js, services/order-checkout-persistence.js, services/order-checkout-service.js, services/order-item-availability-service.js, services/order-item-refund-settlement.js, services/order-status-machine.js, services/sav-replacement-order.js, services/scan-engine.js
-- supplier_execution_events: 9 Ã©crivains directs â€” services/supplier-execution-persistence.js, services/supplier-payment-orchestrator.js, services/supplier-payment-proof-persistence.js, services/supplier-payment-state.js, services/suppliers/cj-billing-history-reconciliation.js, services/suppliers/cj-payment-recovery.js, services/suppliers/cj-supplier-payment-runtime.js, services/suppliers/supplier-fulfillment-persistence.js, services/suppliers/supplier-fulfillment-runtime.js
-- incidents: 7 Ã©crivains directs â€” services/incident-escalation.js, services/incident-service.js, services/incident-write-service.js, services/purchasing-completion-service.js, services/purchasing-engagement-service.js, services/relay-shipment-receipt.js, services/supplier-shortage-service.js
-- pickup_print_tokens: 7 Ã©crivains directs â€” bootstrap/crons.js, routes/pickup-secret.js, services/pickup-collection-recorder.js, services/pickup-collection-service.js, services/pickup-secret-access-service.js, services/pickup-secret-customer-rotation-service.js, services/pickup-secret-rotation-service.js
-- pickup_reveal_codes: 7 Ã©crivains directs â€” bootstrap/crons.js, routes/pickup-secret.js, services/pickup-collection-recorder.js, services/pickup-collection-service.js, services/pickup-secret-access-service.js, services/pickup-secret-customer-rotation-service.js, services/pickup-secret-rotation-service.js
-- purchase_lines: 7 Ã©crivains directs â€” services/g6-recipe-po-cancel-service.js, services/purchase-line-snapshot.js, services/purchasing-admin-service.js, services/purchasing-cancel-service.js, services/purchasing-engagement-service.js, services/purchasing-grouped-service.js, services/purchasing-trigger-service.js
-- refund_execution_intents: 7 Ã©crivains directs â€” services/item-refund-psp-orchestrator.js, services/item-refund-reservation-service.js, services/paypal-refund-authority.js, services/refund-intent-ledger.js, services/refund-intent-reconciliation.js, services/sav-ledger-refund.js, services/stripe-refund-authority.js
-- parcel_events: 6 Ã©crivains directs â€” services/local-relay-receipt-service.js, services/parcel-item-mutation-service.js, services/parcel-security.js, services/parcel-shipment-handover.js, services/relay-parcel-item-reconciliation.js, utils/parcelSync.js
-- purchase_orders: 6 Ã©crivains directs â€” services/g6-recipe-po-cancel-service.js, services/purchasing-admin-service.js, services/purchasing-cancel-service.js, services/purchasing-completion-service.js, services/purchasing-engagement-service.js, services/purchasing-grouped-service.js
-- scan_events: 6 Ã©crivains directs â€” routes/admin/system.js, routes/admin/users.js, routes/transitaire-api.js, services/hub-operations.js, services/parcel-auto-create-service.js, services/scan-engine.js
-- shared_cart_events: 6 Ã©crivains directs â€” services/cart-share-service.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-internals.js, services/shared-cart-lifecycle.js, services/shared-cart-queries.js
-- signals: 6 Ã©crivains directs â€” bootstrap/crons.js, routes/agent-action-center.js, services/action-center-agent-scope.js, services/order-financial-closure-signal.js, services/signal-admin-service.js, services/signal-service.js
-- supplier_execution_payments: 6 Ã©crivains directs â€” services/supplier-payment-orchestrator.js, services/supplier-payment-proof-persistence.js, services/supplier-payment-state.js, services/suppliers/cj-billing-history-reconciliation.js, services/suppliers/cj-payment-recovery.js, services/suppliers/cj-supplier-payment-runtime.js
-- transaction_documents: 6 Ã©crivains directs â€” routes/documents.js, services/documents/customs-invoice.js, services/documents/document-service.js, services/documents/pickup-proof.js, services/documents/refund-receipt.js, services/documents/wallet-receipt.js
-- finance_config: 5 Ã©crivains directs â€” bootstrap/startup-migrations.js, routes/admin-costing.js, routes/admin-finance-config.js, services/economic-config.js, services/economic-engine-queries.js
-- invoices: 5 Ã©crivains directs â€” routes/admin/system.js, routes/documents.js, routes/invoices.js, services/invoice-service.js, services/order-payment-confirmation.js
-- market_delegation_audit: 5 Ã©crivains directs â€” middleware/require-market-delegated-capability.js, middleware/require-market-execution-capability.js, services/cash-deposit-service.js, services/market-delegation-service.js, services/market-transport-sale-rate-command.js
-- order_item_real_cost_allocations: 5 Ã©crivains directs â€” services/cost-allocation/allocate.js, services/cost-allocation/index.js, services/cost-allocation/manual-cost-entry-service.js, services/customs-shipment-service.js, services/transport-cost-allocation.js
-- shared_carts: 5 Ã©crivains directs â€” services/cart-share-service.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-lifecycle.js, services/shared-cart-queries.js
-- sourcing_sources: 5 Ã©crivains directs â€” services/provider-credential-service.js, services/sourcing-observation-shadow-service.js, services/sourcing-provider-control-policy.js, services/sourcing-source-autopilot.js, services/sourcing-source-registry.js
-- users: 5 Ã©crivains directs â€” bootstrap/startup-migrations.js, routes/auth.js, routes/client-auth.js, routes/otp.js, services/user-mutation-service.js
-- basket_items: 4 Ã©crivains directs â€” routes/admin/system.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-user-cleanup.js
-- baskets: 4 Ã©crivains directs â€” routes/admin/system.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-user-cleanup.js
-- cash_confirmation_controls: 4 Ã©crivains directs â€” services/cash-confirmation-control-service.js, services/cash-operations.js, services/confirm-pickup-cash-payment.js, services/payment-cash-confirm.js
-- catalog_media: 4 Ã©crivains directs â€” services/catalog-product-mutation-service.js, services/catalog-promotion.js, services/catalog-visual-fr-human-review-write.js, services/catalog-workspace.js
-- product_skus: 4 Ã©crivains directs â€” services/catalog-promotion.js, services/catalog-stock-sync-application.js, services/product-sku-service.js, services/product-stock-service.js
-- product_variants: 4 Ã©crivains directs â€” services/catalog-product-mutation-service.js, services/catalog-promotion.js, services/product-stock-service.js, services/product-variant-service.js
-- refunds: 4 Ã©crivains directs â€” services/item-refund-psp-orchestrator.js, services/paypal-refund-authority.js, services/refund-service.js, services/stripe-refund-authority.js
-- sourcing_candidates: 4 Ã©crivains directs â€” routes/sourcing-scanner.js, services/sourcing-candidate-actions.js, services/sourcing-candidate-import-service.js, services/suppliers/catalog-import-json.js
-- supplier_oauth_connections: 4 Ã©crivains directs â€” routes/integrations-aliexpress.js, services/suppliers/aliexpress-oauth.js, services/suppliers/allegro-sandbox-client.js, services/suppliers/connectors/aliexpress-connected-connector.js
-- wallet_transactions: 4 Ã©crivains directs â€” routes/admin/system.js, routes/admin/users.js, routes/wallet.js, services/wallet-service.js
-- wallets: 4 Ã©crivains directs â€” routes/admin/system.js, routes/admin/users.js, routes/wallet.js, services/wallet-service.js
-- cash_collections: 3 Ã©crivains directs â€” services/cash-operations.js, services/confirm-pickup-cash-payment.js, services/payment-cash-confirm.js
-- catalog_field_overrides: 3 Ã©crivains directs â€” services/catalog-overrides.js, services/product-admin-service.js, services/refinery-fr-recheck.js
-- charges: 3 Ã©crivains directs â€” bootstrap/startup-migrations.js, services/economic-engine-queries.js, services/market-structure-charge-reference.js
-- financial_movement_documents: 3 Ã©crivains directs â€” bootstrap/crons.js, services/financial-journal-projectors.js, services/financial-journal.js
-- financial_movements: 3 Ã©crivains directs â€” bootstrap/crons.js, services/financial-journal-projectors.js, services/financial-journal.js
-- international_shipment_events: 3 Ã©crivains directs â€” services/hub-box-shipment-service.js, services/international-shipment-journey.js, services/relay-shipment-receipt.js
-- order_comments: 3 Ã©crivains directs â€” routes/hub-dashboard.js, routes/relay-dashboard.js, services/operations-workspace.js
-- otp_codes: 3 Ã©crivains directs â€” routes/auth-step-up-otp.js, routes/otp.js, services/g6-staging-buyer-identity-guard.js
-- price_history: 3 Ã©crivains directs â€” services/economic-price-audit-service.js, services/pricing-apply.js, services/pricing-strategy-service.js
-- relais: 3 Ã©crivains directs â€” routes/admin/system.js, services/relais-mutation-service.js, services/routing.js
-- sms_log: 3 Ã©crivains directs â€” routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/admin/users.js
-- sourcing_captures: 3 Ã©crivains directs â€” services/sourcing-catalog-change-observation.js, services/sourcing-observation-shadow-service.js, services/sourcing-source-autopilot.js
-- sourcing_provider_control_events: 3 Ã©crivains directs â€” services/provider-credential-service.js, services/sourcing-provider-control-policy.js, services/sourcing-source-registry.js
-- supplier_execution_payment_proofs: 3 Ã©crivains directs â€” services/supplier-payment-proof-persistence.js, services/suppliers/cj-billing-history-reconciliation.js, services/suppliers/cj-supplier-payment-runtime.js
-- suppliers: 3 Ã©crivains directs â€” routes/purchasing.js, services/purchasing-admin-service.js, services/suppliers/central-hub-supplier.js
-- wallet_consumptions: 3 Ã©crivains directs â€” routes/admin/system.js, routes/wallet.js, services/wallet-service.js
-- wallet_credit_lots: 3 Ã©crivains directs â€” routes/admin/system.js, routes/wallet.js, services/wallet-service.js
-- assignment_memberships: 2 Ã©crivains directs â€” services/market-delegation-service.js, services/market-delegation-team-service.js
-- business_rules: 2 Ã©crivains directs â€” routes/admin-rules.js, utils/rules.js
-- business_rules_history: 2 Ã©crivains directs â€” routes/admin-rules.js, utils/rules.js
-
-## DB Write / Write-Via Overlap Warnings
-
-- routes/sourcing-scanner.js: table(s) dÃ©clarÃ©e(s) Ã  la fois en @db-write direct et @db-write-via -> sourcing_candidates
-- services/customs-shipment-service.js: table(s) dÃ©clarÃ©e(s) Ã  la fois en @db-write direct et @db-write-via -> order_item_real_cost_allocations
-- services/g6-recipe-po-cancel-service.js: table(s) dÃ©clarÃ©e(s) Ã  la fois en @db-write direct et @db-write-via -> alerts
-- services/local-relay-receipt-service.js: table(s) dÃ©clarÃ©e(s) Ã  la fois en @db-write direct et @db-write-via -> parcels, parcel_items, parcel_events
-- services/market-delegation-team-service.js: table(s) dÃ©clarÃ©e(s) Ã  la fois en @db-write direct et @db-write-via -> assignment_memberships
-- services/order-financial-closure-signal.js: table(s) dÃ©clarÃ©e(s) Ã  la fois en @db-write direct et @db-write-via -> signals
-- services/pickup-collection-service.js: table(s) dÃ©clarÃ©e(s) Ã  la fois en @db-write direct et @db-write-via -> pickup_print_tokens, pickup_reveal_codes, scans
-- services/pickup-exceptional-collection-service.js: table(s) dÃ©clarÃ©e(s) Ã  la fois en @db-write direct et @db-write-via -> alerts
-- services/pickup-secret-access-service.js: table(s) dÃ©clarÃ©e(s) Ã  la fois en @db-write direct et @db-write-via -> orders
-- services/pickup-secret-service.js: table(s) dÃ©clarÃ©e(s) Ã  la fois en @db-write direct et @db-write-via -> orders
-- services/product-admin-service.js: table(s) dÃ©clarÃ©e(s) Ã  la fois en @db-write direct et @db-write-via -> products
-- services/simulator/state-advancer.js: table(s) dÃ©clarÃ©e(s) Ã  la fois en @db-write direct et @db-write-via -> parcels
-- services/sourcing-source-autopilot.js: table(s) dÃ©clarÃ©e(s) Ã  la fois en @db-write direct et @db-write-via -> sourcing_sources, sourcing_captures
-
-## Unresolved Code Edges
-
-- uses: (see files.tests in features/purchasing.feature.js â€” not yet -> services/suppliers/purchasing-validators.js ((see files.tests in features/purchasing.feature.js â€” not yet)
-- uses: accounting workspace -> services/financial-journal-reporting.js (accounting workspace)
-- uses: admin-dashboard -> routes/admin-boutique-categories.js (admin-dashboard)
-- uses: admin-dashboards -> routes/economic.js (admin-dashboards)
-- uses: admin-dashboards -> services/economic-engine-queries.js (admin-dashboards)
-- uses: admin-flows -> services/order-status-machine.js (admin-flows)
-- uses: AliExpress and CJ discovery/stress pipelines -> services/suppliers/discovery-semantic-relevance.js (AliExpress and CJ discovery/stress pipelines)
-- uses: all-boutique-js-modules -> public/boutique/js/b-store.js (all-boutique-js-modules)
-- uses: all-boutique-js-modules -> public/boutique/js/b-utils.js (all-boutique-js-modules)
-- uses: Allocation & Custody) -> services/outbox-producer.js (Allocation & Custody))
-- uses: Allocation & Custody) -> services/outbox-worker.js (Allocation & Custody))
-- uses: auth routes -> utils/auth-session.js (auth routes)
-- uses: b-modal-approche-c-hybrid.js -> public/boutique/js/b-share-cart.js (b-modal-approche-c-hybrid.js)
-- uses: b-modal-core.js (openModal) -> public/boutique/js/b-modal-product-fields.js (b-modal-core.js (openModal))
-- depends: bootstrap/api-routes.js -> routes/economic-engine.js (routes/economic-engine.js)
-- depends: bootstrap/server-lifecycle.js -> node:http (node:http)
-- depends: bootstrap/startup-migrations.js -> scripts/fix-schema.js (scripts/fix-schema.js)
-- depends: bootstrap/startup-migrations.js -> scripts/migration-037-fix-products.js (scripts/migration-037-fix-products.js)
-- depends: bootstrap/startup-migrations.js -> scripts/migration-038-replace-products.js (scripts/migration-038-replace-products.js)
-- depends: bootstrap/startup-migrations.js -> scripts/migration-039-french-descriptions.js (scripts/migration-039-french-descriptions.js)
-- depends: bootstrap/startup-migrations.js -> scripts/run-migrations.js (scripts/run-migrations.js)
-- uses: bounded operator flow / future admin action -> services/suppliers/cj-supplier-payment-runtime.js (bounded operator flow / future admin action)
-- uses: boutique checkout -> routes/payments-mobile-money.js (boutique checkout)
-- uses: boutique-discovery-rail -> routes/boutique-suggestions.js (boutique-discovery-rail)
-- uses: cancellation-flows -> services/order-status-machine.js (cancellation-flows)
-- uses: candidate for services/suppliers/execution-adapter-registry.js after runtime cutover gate -> services/suppliers/cj-fulfillment-adapter.js (candidate for services/suppliers/execution-adapter-registry.js after runtime cutover gate)
-- uses: canonical sourcing workspace -> routes/admin-sourcing-workspace.js (canonical sourcing workspace)
-- uses: cart-surfaces -> public/boutique/js/b-mini-cart.js (cart-surfaces)
-- uses: catalog diagnostics -> services/catalog-provider-capability-contract.js (catalog diagnostics)
-- uses: central admin workspace -> routes/admin-market-control-plane.js (central admin workspace)
-- uses: central admin workspace -> routes/admin-market-payment-accounts.js (central admin workspace)
-- uses: central finance workspace -> routes/admin-market-settlement.js (central finance workspace)
-- uses: checkout-flows -> services/order-service.js (checkout-flows)
-- uses: checkout -> routes/otp.js (checkout)
-- uses: CI -> services/capability-registry.js (CI)
-- depends: core/test-whatsapp-notifications.js -> services/authkey-client (services/authkey-client)
-- depends: core/test-whatsapp-notifications.js -> services/notification-service (services/notification-service)
-- uses: customs -> services/order-mutation-service.js (customs)
-- uses: dashboard -> services/market-scope-admin-service.js (dashboard)
-- uses: dashboard -> services/shared-cart-user-cleanup.js (dashboard)
-- uses: dashboard -> services/user-mutation-service.js (dashboard)
-- uses: dashboards -> routes/wallet.js (dashboards)
-- uses: desktop-enhancers -> public/boutique/js/b-scroll-owner.js (desktop-enhancers)
-- uses: evaluateCanonicalProcurementReadiness) -> services/suppliers/canonical-unit-purchasing-gate.js (evaluateCanonicalProcurementReadiness))
-- uses: feature_modules -> public/boutique/js/komerce-api.js (feature_modules)
-- uses: finance journal reconciliation -> services/financial-journal-projectors.js (finance journal reconciliation)
-- uses: finance projections -> services/financial-journal-projectors.js (finance projections)
-- uses: finance projections -> services/financial-journal-reporting.js (finance projections)
-- uses: futur HUB-001 (Physical Identity -> services/outbox-producer.js (futur HUB-001 (Physical Identity)
-- uses: futur HUB-001 (Physical Identity -> services/outbox-worker.js (futur HUB-001 (Physical Identity)
-- uses: future b-modal-core.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-core.js)
-- uses: future b-modal-desktop-enhancers.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-desktop-enhancers.js)
-- uses: future b-modal-product.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-product.js)
-- uses: future CJ fulfillment adapter / P1 proof -> services/suppliers/cj-purchasing-contract.js (future CJ fulfillment adapter / P1 proof)
-- uses: future CJ payment reconciliation runtime -> services/suppliers/cj-billing-history-reconciliation.js (future CJ payment reconciliation runtime)
-- uses: future CJ provider payment orchestrator -> services/suppliers/cj-payment-recovery.js (future CJ provider payment orchestrator)
-- uses: future Control Tower / Order 360 / financial closure -> services/customer-handoff-reconciliation.js (future Control Tower / Order 360 / financial closure)
-- uses: future CSV/XLSX adapters (M2) -> services/suppliers/managed-file-contract.js (future CSV/XLSX adapters (M2))
-- uses: future guarded refund executor (NOT ACTIVATED) -> services/refund-intent-reconciliation.js (future guarded refund executor (NOT ACTIVATED))
-- uses: future Hub/Control Tower reconciliation surfaces -> services/hub-inbound-reconciliation.js (future Hub/Control Tower reconciliation surfaces)
-- uses: future Order 360 / Control Tower / Golden closure -> services/order-financial-closure-reconciliation.js (future Order 360 / Control Tower / Golden closure)
-- uses: future pricing coverage gate -> services/pricing-maturity.js (future pricing coverage gate)
-- uses: future pricing strategy gate -> services/pricing-market-coverage.js (future pricing strategy gate)
-- uses: future provider payment adapters -> services/supplier-payment-orchestrator.js (future provider payment adapters)
-- uses: future provider payment orchestration -> services/supplier-payment-state.js (future provider payment orchestration)
-- uses: future refund settlement (NOT ACTIVATED) -> services/refund-evidence-verifier.js (future refund settlement (NOT ACTIVATED))
-- uses: future shipment cost ingestion -> services/transport-cost-allocation.js (future shipment cost ingestion)
-- uses: future supplier payment reconciliation runtime -> services/supplier-payment-proof-persistence.js (future supplier payment reconciliation runtime)
-- uses: future transport routing and packing orchestration -> services/transport-rails.js (future transport routing and packing orchestration)
-- uses: future XLSX/CSV template writers (M2b) -> services/suppliers/internal-managed-template-model.js (future XLSX/CSV template writers (M2b))
-- uses: GAP-4A â€” jamais evaluateSupplierFulfillmentReadiness) ; services/suppliers/aliexpress-fulfillment-adapter.js les reÃ§oit en paramÃ¨tres injectÃ©s par cet appelant -> services/suppliers/supplier-fulfillment-readiness.js (GAP-4A â€” jamais evaluateSupplierFulfillmentReadiness) ; services/suppliers/aliexpress-fulfillment-adapter.js les reÃ§oit en paramÃ¨tres injectÃ©s par cet appelant)
-- uses: GAP-4A) -> services/suppliers/provider-authority.js (GAP-4A))
-- uses: GAP-4A/4B -> services/suppliers/execution-adapter-registry.js (GAP-4A/4B)
-- uses: GAP-5) -> services/suppliers/execution-adapter-registry.js (GAP-5))
-- uses: GAP-5) -> services/suppliers/provider-authority.js (GAP-5))
-- uses: GAP-5) -> services/suppliers/purchase-order-confirmation-boundary.js (GAP-5))
-- uses: home-personalization -> routes/boutique-suggestions.js (home-personalization)
-- uses: HUB-001 internal logistics boundary -> services/hub-physical-identity.js (HUB-001 internal logistics boundary)
-- uses: inventory -> services/order-mutation-service.js (inventory)
-- uses: lecture verrouillÃ©e) -> services/pickup-authorization-service.js (lecture verrouillÃ©e))
-- uses: logistics -> services/order-mutation-service.js (logistics)
-- uses: magic-link validation -> utils/auth-session.js (magic-link validation)
-- uses: manual-ops -> core/test-whatsapp-notifications.js (manual-ops)
-- uses: market autonomy UI -> routes/market-delegation-cash-control.js (market autonomy UI)
-- uses: market operator dashboard (canonical Clients screen) -> routes/market-delegation-client.js (market operator dashboard (canonical Clients screen))
-- uses: market operator dashboard -> routes/market-delegation-catalog.js (market operator dashboard)
-- uses: market operator dashboard -> routes/market-delegation-client-case.js (market operator dashboard)
-- uses: market operator dashboard -> routes/market-delegation-cost-statement.js (market operator dashboard)
-- uses: market operator dashboard -> routes/market-delegation-customs.js (market operator dashboard)
-- uses: market operator dashboard -> routes/market-delegation-local-offer.js (market operator dashboard)
-- uses: market operator dashboard -> routes/market-delegation-network.js (market operator dashboard)
-- uses: market operator dashboard -> routes/market-delegation-payment-accounts.js (market operator dashboard)
-- uses: market operator dashboard -> routes/market-delegation-performance.js (market operator dashboard)
-- uses: market operator dashboard -> routes/market-delegation-provider.js (market operator dashboard)
-- uses: market operator dashboard -> routes/market-delegation-settlement.js (market operator dashboard)
-- uses: market operator dashboard -> routes/market-delegation-structure-event.js (market operator dashboard)
-- uses: market operator dashboard -> routes/market-delegation-team.js (market operator dashboard)
-- uses: market-delegation mutations -> services/market-scope-projector.js (market-delegation mutations)
-- uses: market-delegation routes -> services/market-delegation-service.js (market-delegation routes)
-- uses: market-delegation-service -> services/capability-registry.js (market-delegation-service)
-- uses: market-delegation -> services/market-scope-admin-service.js (market-delegation)
-- uses: market-scope-projector -> services/market-delegation-service.js (market-scope-projector)
-- depends: middleware/auth-guest.js -> db (db)
-- depends: middleware/auth.js -> db (db)
-- depends: middleware/require-catalog-global-authority.js -> db.js (db.js)
-- depends: middleware/require-dashboard-global-authority.js -> db.js (db.js)
-- depends: middleware/require-decision-signal-global-authority.js -> db.js (db.js)
-- depends: middleware/require-market-delegated-capability.js -> db.js (db.js)
-- depends: middleware/require-market-delegated-role.js -> db.js (db.js)
-- depends: middleware/require-market-execution-capability.js -> db.js (db.js)
-- depends: middleware/require-market-scope.js -> db.js (db.js)
-- depends: middleware/require-market-scope.js -> markets (M0) (markets (M0))
-- depends: middleware/require-market-scope.js -> operator_market_scopes (M1) (operator_market_scopes (M1))
-- depends: middleware/require-pricing-global-authority.js -> db.js (db.js)
-- depends: middleware/require-recent-auth.js -> middleware/auth.js session proof context (middleware/auth.js session proof context)
-- depends: middleware/require-sourcing-global-authority.js -> db.js (db.js)
-- depends: middleware/require-verified-identity.js -> db (db)
-- depends: middleware/soft-auth.js -> db (db)
-- depends: middleware/upload-hub.js -> middleware/upload.js (validateMagicBytes) (middleware/upload.js (validateMagicBytes))
-- depends: middleware/upload.js -> fs (fs)
-
-## Files Still Without Headers Or Aggregation
-
-- none
-
-## Files With Misplaced Headers (Shebang/Code Before Block)
-
-- none
-
-## Intervention Rule
-
-Before modifying a structural file, open `docs/komerce-arch-header-graph.json`, read `interventionIndex["<file>"]`, then check every `mustCheck` target before editing.
-
-For a lite file, follow its `owner` edge first. If no owner exists, stop and classify the file before editing.
-
-When a file starts reading/writing DB tables, update `@db-read`, `@db-write`, and `@db-txn` before regenerating this graph.
+- parcel_items: 13 Ã©crivains directs â€” routes/admin/system.js, routes/parcels.js, services/auto-parcel.js, services/local-relay-receipt-service.js, services/parcel-auto-create-service.js, services/parcel-item-mutation-service.js, services/parcel-operations.js, services/parcelOptimizationService.js, services/purchasing-completion-service.js, services/relay-parcel-item-reconciliation.js, services/scan-engine.js, services/simulator/cleanupm«ëŒ+Š×ž®º+º$zzb¥âæ§2Â6W'f–6W2÷6–×VÆF÷"÷7FFRÖGfæ6W"æ§0¢Ò&öGV7G3¢2:–7&—f–ç2F—&V7G2(	B&÷WFW2öFÖ–â÷7—7FVÒæ§2Â6W'f–6W2ö6FÆörÖ&÷fÂæ§2Â6W'f–6W2ö6FÆörÖ6æF–FFR×&öGV7B×6W'f–6Ræ§2Â6W'f–6W2ö6FÆörÖVç&–6†ÖVçBæ§2Â6W'f–6W2ö6FÆörÖf–VÆB×7–æ2ÖÆ–6F–öâæ§2Â6W'f–6W2ö6FÆörÖ÷fW'&–FW2æ§2Â6W'f–6W2ö6FÆör×&öGV7BÖ×WFF–öâ×6W'f–6Ræ§2Â6W'f–6W2ö6FÆör×v÷&·76Ræ§2Â6W'f–6W2ö‡V"Ö÷W&F–öç2æ§2Â6W'f–6W2÷&öGV7BÖFÖ–â×6W'f–6Ræ§2Â6W'f–6W2÷&öGV7B×6·R×6W'f–6Ræ§2Â6W'f–6W2÷&öGV7B×7Fö6²×6W'f–6Ræ§2Â6W'f–6W2÷&Vf–æW'’Ög"×&V6†V6²æ§0¢Ò66ç3¢":–7&—f–ç2F—&V7G2(	B&÷WFW2öFÖ–âöFVÆWFRÖ÷&FW"Ö666FRæ§2Â&÷WFW2÷G&ç6—BÖF6†&ö&Bæ§2Â6W'f–6W2öÆö6Â×&VÆ’×&V6V—B×6W'f–6Ræ§2Â6W'f–6W2÷–6·WÖ6öÆÆV7F–öâ×&V6÷&FW"æ§2Â6W'f–6W2÷–6·WÖ6öÆÆV7F–öâ×6W'f–6Ræ§2Â6W'f–6W2÷&VÆ’×&6VÂÖ—FVÒ×&V6öæ6–Æ–F–öâæ§2Â6W'f–6W2÷66âÖ÷W&F–öç2æ§2Â6W'f–6W2÷66â×w&—FR×6W'f–6Ræ§2Â6W'f–6W2÷6–×VÆF÷"ö6ÆVçWæ§2Â6W'f–6W2÷6–×VÆF÷"÷7FFRÖGfæ6W"æ§2Â6W'f–6W2÷fW&–g’×"Ö6öÆÆV7F–öâæ§2ÂWF–Ç2÷&6VÅ7–æ2æ§0¢Ò÷&FW%÷7FGW5ö†—7F÷'“¢:–7&—f–ç2F—&V7G2(	B&÷WFW2öFÖ–âöFVÆWFRÖ÷&FW"Ö666FRæ§2Â&÷WFW2öFÖ–â÷7—7FVÒæ§2Â&÷WFW2öFÖ–â÷W6W'2æ§2Â&÷WFW2ö÷&FW'2ö6æ6VÂæ§2Â6W'f–6W2ö‡V"×cÖf—‡GW&R×–ÖVçBæ§2Â6W'f–6W2ö÷&FW"Ö6†V6¶÷WB×W'6—7FVæ6Ræ§2Â6W'f–6W2ö÷&FW"Ö6†V6¶÷WB×6W'f–6Ræ§2Â6W'f–6W2ö÷&FW"×7FGW2ÖÖ6†–æRæ§2Â6W'f–6W2÷—Â×&VgVæBÖWF†÷&—G’æ§2Â6W'f–6W2÷7G&—R×&VgVæBÖWF†÷&—G’æ§0¢Òæ÷F–f–6F–öåöÆös¢’:–7&—f–ç2F—&V7G2(	B6W'f–6W2öæ÷F–f–6F–öâ×6W'f–6Ræ§2Â6W'f–6W2öæ÷F–f–6F–öç2ö–çFW&æÇ2æ§2Â6W'f–6W2öæ÷F–f–6F–öç2öÆ÷–ÇG’æ§2Â6W'f–6W2öæ÷F–f–6F–öç2öÖ—62æ§2Â6W'f–6W2öæ÷F–f–6F–öç2öæ÷F–f–6F–öâ×6W'f–6Ræ§2Â6W'f–6W2öæ÷F–f–6F–öç2ö÷&FW"æ§2Â6W'f–6W2öæ÷F–f–6F–öç2ö÷GÖWF‚æ§2Â6W'f–6W2öæ÷F–f–6F–öç2÷&6VÂæ§2Â6W'f–6W2÷6–×VÆF÷"÷7FFRÖGfæ6W"æ§0¢Ò÷&FW%ö—FV×3¢’:–7&—f–ç2F—&V7G2(	B&÷WFW2öFÖ–âöFVÆWFRÖ÷&FW"Ö666FRæ§2Â&÷WFW2öFÖ–â÷7—7FVÒæ§2Â6W'f–6W2ö÷&FW"Ö6†V6¶÷WB×W'6—7FVæ6Ræ§2Â6W'f–6W2ö÷&FW"Ö6†V6¶÷WB×6W'f–6Ræ§2Â6W'f–6W2ö÷&FW"Ö—FVÒÖf–Æ&–Æ—G’×6W'f–6Ræ§2Â6W'f–6W2ö÷&FW"Ö—FVÒ×&VgVæB×6WGFÆVÖVçBæ§2Â6W'f–6W2ö÷&FW"×7FGW2ÖÖ6†–æRæ§2Â6W'f–6W2÷6b×&WÆ6VÖVçBÖ÷&FW"æ§2Â6W'f–6W2÷66âÖVæv–æRæ§0¢Ò7WÆ–W%öW†V7WF–öåöWfVçG3¢’:–7&—f–ç2F—&V7G2(	B6W'f–6W2÷7WÆ–W"ÖW†V7WF–öâ×W'6—7FVæ6Ræ§2Â6W'f–6W2÷7WÆ–W"×–ÖVçBÖ÷&6†W7G&F÷"æ§2Â6W'f–6W2÷7WÆ–W"×–ÖVçB×&ööb×W'6—7FVæ6Ræ§2Â6W'f–6W2÷7WÆ–W"×–ÖVçB×7FFRæ§2Â6W'f–6W2÷7WÆ–W'2ö6¢Ö&–ÆÆ–ærÖ†—7F÷'’×&V6öæ6–Æ–F–öâæ§2Â6W'f–6W2÷7WÆ–W'2ö6¢×–ÖVçB×&V6÷fW'’æ§2Â6W'f–6W2÷7WÆ–W'2ö6¢×7WÆ–W"×–ÖVçB×'VçF–ÖRæ§2Â6W'f–6W2÷7WÆ–W'2÷7WÆ–W"ÖgVÆf–ÆÆÖVçB×W'6—7FVæ6Ræ§2Â6W'f–6W2÷7WÆ–W'2÷7WÆ–W"ÖgVÆf–ÆÆÖVçB×'VçF–ÖRæ§0¢Ò–æ6–FVçG3¢r:–7&—f–ç2F—&V7G2(	B6W'f–6W2ö–æ6–FVçBÖW66ÆF–öâæ§2Â6W'f–6W2ö–æ6–FVçB×6W'f–6Ræ§2Â6W'f–6W2ö–æ6–FVçB×w&—FR×6W'f–6Ræ§2Â6W'f–6W2÷W&6†6–ærÖ6ö×ÆWF–öâ×6W'f–6Ræ§2Â6W'f–6W2÷W&6†6–ærÖVævvVÖVçB×6W'f–6Ræ§2Â6W'f–6W2÷&VÆ’×6†—ÖVçB×&V6V—Bæ§2Â6W'f–6W2÷7WÆ–W"×6†÷'FvR×6W'f–6Ræ§0¢Ò–6·W÷&–çE÷Fö¶Vç3¢r:–7&—f–ç2F—&V7G2(	B&ö÷G7G&ö7&öç2æ§2Â&÷WFW2÷–6·W×6V7&WBæ§2Â6W'f–6W2÷–6·WÖ6öÆÆV7F–öâ×&V6÷&FW"æ§2Â6W'f–6W2÷–6·WÖ6öÆÆV7F–öâ×6W'f–6Ræ§2Â6W'f–6W2÷–6·W×6V7&WBÖ66W72×6W'f–6Ræ§2Â6W'f–6W2÷–6·W×6V7&WBÖ7W7FöÖW"×&÷FF–öâ×6W'f–6Ræ§2Â6W'f–6W2÷–6·W×6V7&WB×&÷FF–öâ×6W'f–6Ræ§0¢Ò–6·W÷&WfVÅö6öFW3¢r:–7&—f–ç2F—&V7G2(	B&ö÷G7G&ö7&öç2æ§2Â&÷WFW2÷–6·W×6V7&WBæ§2Â6W'f–6W2÷–6·WÖ6öÆÆV7F–öâ×&V6÷&FW"æ§2Â6W'f–6W2÷–6·WÖ6öÆÆV7F–öâ×6W'f–6Ræ§2Â6W'f–6W2÷–6·W×6V7&WBÖ66W72×6W'f–6Ræ§2Â6W'f–6W2÷–6·W×6V7&WBÖ7W7FöÖW"×&÷FF–öâ×6W'f–6Ræ§2Â6W'f–6W2÷–6·W×6V7&WB×&÷FF–öâ×6W'f–6Ræ§0¢ÒW&6†6UöÆ–æW3¢r:–7&—f–ç2F—&V7G2(	B6W'f–6W2ösb×&V6—R×òÖ6æ6VÂ×6W'f–6Ræ§2Â6W'f–6W2÷W&6†6RÖÆ–æR×6æ6†÷Bæ§2Â6W'f–6W2÷W&6†6–ærÖFÖ–â×6W'f–6Ræ§2Â6W'f–6W2÷W&6†6–ærÖ6æ6VÂ×6W'f–6Ræ§2Â6W'f–6W2÷W&6†6–ærÖVævvVÖVçB×6W'f–6Ræ§2Â6W'f–6W2÷W&6†6–ærÖw&÷WVB×6W'f–6Ræ§2Â6W'f–6W2÷W&6†6–ær×G&–vvW"×6W'f–6Ræ§0¢Ò&VgVæEöW†V7WF–öåö–çFVçG3¢r:–7&—f–ç2F—&V7G2(	B6W'f–6W2ö—FVÒ×&VgVæB×7Ö÷&6†W7G&F÷"æ§2Â6W'f–6W2ö—FVÒ×&VgVæB×&W6W'fF–öâ×6W'f–6Ræ§2Â6W'f–6W2÷—Â×&VgVæBÖWF†÷&—G’æ§2Â6W'f–6W2÷&VgVæBÖ–çFVçBÖÆVFvW"æ§2Â6W'f–6W2÷&VgVæBÖ–çFVçB×&V6öæ6–Æ–F–öâæ§2Â6W'f–6W2÷6bÖÆVFvW"×&VgVæBæ§2Â6W'f–6W2÷7G&—R×&VgVæBÖWF†÷&—G’æ§0¢Ò&6VÅöWfVçG3¢b:–7&—f–ç2F—&V7G2(	B6W'f–6W2öÆö6Â×&VÆ’×&V6V—B×6W'f–6Ræ§2Â6W'f–6W2÷&6VÂÖ—FVÒÖ×WFF–öâ×6W'f–6Ræ§2Â6W'f–6W2÷&6VÂ×6V7W&—G’æ§2Â6W'f–6W2÷&6VÂ×6†—ÖVçBÖ†æF÷fW"æ§2Â6W'f–6W2÷&VÆ’×&6VÂÖ—FVÒ×&V6öæ6–Æ–F–öâæ§2ÂWF–Ç2÷&6VÅ7–æ2æ§0¢ÒW&6†6Uö÷&FW'3¢b:–7&—f–ç2F—&V7G2(	B6W'f–6W2ösb×&V6—R×òÖ6æ6VÂ×6W'f–6Ræ§2Â6W'f–6W2÷W&6†6–ærÖFÖ–â×6W'f–6Ræ§2Â6W'f–6W2÷W&6†6–ærÖ6æ6VÂ×6W'f–6Ræ§2Â6W'f–6W2÷W&6†6–ærÖ6ö×ÆWF–öâ×6W'f–6Ræ§2Â6W'f–6W2÷W&6†6–ærÖVævvVÖVçB×6W'f–6Ræ§2Â6W'f–6W2÷W&6†6–ærÖw&÷WVB×6W'f–6Ræ§0¢Ò66åöWfVçG3¢b:–7&—f–ç2F—&V7G2(	B&÷WFW2öFÖ–â÷7—7FVÒæ§2Â&÷WFW2öFÖ–â÷W6W'2æ§2Â&÷WFW2÷G&ç6—F—&RÖ’æ§2Â6W'f–6W2ö‡V"Ö÷W&F–öç2æ§2Â6W'f–6W2÷&6VÂÖWFòÖ7&VFR×6W'f–6Ræ§2Â6W'f–6W2÷66âÖVæv–æRæ§0¢Ò6†&VEö6'EöWfVçG3¢b:–7&—f–ç2F—&V7G2(	B6W'f–6W2ö6'B×6†&R×6W'f–6Ræ§2Â6W'f–6W2÷6†&VBÖ6'BÖ7&VF–öâæ§2Â6W'f–6W2÷6†&VBÖ6'BÖVæv–æRæ§2Â6W'f–6W2÷6†&VBÖ6'BÖ–çFW&æÇ2æ§2Â6W'f–6W2÷6†&VBÖ6'BÖÆ–fV7–6ÆRæ§2Â6W'f–6W2÷6†&VBÖ6'B×VW&–W2æ§0¢Ò6–væÇ3¢b:–7&—f–ç2F—&V7G2(	B&ö÷G7G&ö7&öç2æ§2Â&÷WFW2övVçBÖ7F–öâÖ6VçFW"æ§2Â6W'f–6W2ö7F–öâÖ6VçFW"ÖvVçB×66÷Ræ§2Â6W'f–6W2ö÷&FW"Öf–ææ6–ÂÖ6Æ÷7W&R×6–væÂæ§2Â6W'f–6W2÷6–væÂÖFÖ–â×6W'f–6Ræ§2Â6W'f–6W2÷6–væÂ×6W'f–6Ræ§0¢Ò7WÆ–W%öW†V7WF–öå÷–ÖVçG3¢b:–7&—f–ç2F—&V7G2(	B6W'f–6W2÷7WÆ–W"×–ÖVçBÖ÷&6†W7G&F÷"æ§2Â6W'f–6W2÷7WÆ–W"×–ÖVçB×&ööb×W'6—7FVæ6Ræ§2Â6W'f–6W2÷7WÆ–W"×–ÖVçB×7FFRæ§2Â6W'f–6W2÷7WÆ–W'2ö6¢Ö&–ÆÆ–ærÖ†—7F÷'’×&V6öæ6–Æ–F–öâæ§2Â6W'f–6W2÷7WÆ–W'2ö6¢×–ÖVçB×&V6÷fW'’æ§2Â6W'f–6W2÷7WÆ–W'2ö6¢×7WÆ–W"×–ÖVçB×'VçF–ÖRæ§0¢ÒG&ç67F–öåöFö7VÖVçG3¢b:–7&—f–ç2F—&V7G2(	B&÷WFW2öFö7VÖVçG2æ§2Â6W'f–6W2öFö7VÖVçG2ö7W7Fö×2Ö–çfö–6Ræ§2Â6W'f–6W2öFö7VÖVçG2öFö7VÖVçB×6W'f–6Ræ§2Â6W'f–6W2öFö7VÖVçG2÷–6·W×&ööbæ§2Â6W'f–6W2öFö7VÖVçG2÷&VgVæB×&V6V—Bæ§2Â6W'f–6W2öFö7VÖVçG2÷vÆÆWB×&V6V—Bæ§0¢Òf–ææ6Uö6öæf–s¢R:–7&—f–ç2F—&V7G2(	B&ö÷G7G&÷7F'GWÖÖ–w&F–öç2æ§2Â&÷WFW2öFÖ–âÖ6÷7F–æræ§2Â&÷WFW2öFÖ–âÖf–ææ6RÖ6öæf–ræ§2Â6W'f–6W2öV6öæöÖ–2Ö6öæf–ræ§2Â6W'f–6W2öV6öæöÖ–2ÖVæv–æR×VW&–W2æ§0¢Ò–çfö–6W3¢R:–7&—f–ç2F—&V7G2(	B&÷WFW2öFÖ–â÷7—7FVÒæ§2Â&÷WFW2öFö7VÖVçG2æ§2Â&÷WFW2ö–çfö–6W2æ§2Â6W'f–6W2ö–çfö–6R×6W'f–6Ræ§2Â6W'f–6W2ö÷&FW"×–ÖVçBÖ6öæf—&ÖF–öâæ§0¢ÒÖ&¶WEöFVÆVvF–öåöVF—C¢R:–7&—f–ç2F—&V7G2(	BÖ–FFÆWv&R÷&WV—&RÖÖ&¶WBÖFVÆVvFVBÖ6&–Æ—G’æ§2ÂÖ–FFÆWv&R÷&WV—&RÖÖ&¶WBÖW†V7WF–öâÖ6&–Æ—G’æ§2Â6W'f–6W2ö66‚ÖFW÷6—B×6W'f–6Ræ§2Â6W'f–6W2öÖ&¶WBÖFVÆVvF–öâ×6W'f–6Ræ§2Â6W'f–6W2öÖ&¶WB×G&ç7÷'B×6ÆR×&FRÖ6öÖÖæBæ§0¢Ò÷&FW%ö—FVÕ÷&VÅö6÷7EöÆÆö6F–öç3¢R:–7&—f–ç2F—&V7G2(	B6W'f–6W2ö6÷7BÖÆÆö6F–öâöÆÆö6FRæ§2Â6W'f–6W2ö6÷7BÖÆÆö6F–öâö–æFW‚æ§2Â6W'f–6W2ö6÷7BÖÆÆö6F–öâöÖçVÂÖ6÷7BÖVçG'’×6W'f–6Ræ§2Â6W'f–6W2ö7W7Fö×2×6†—ÖVçB×6W'f–6Ræ§2Â6W'f–6W2÷G&ç7÷'BÖ6÷7BÖÆÆö6F–öâæ§0¢Ò6†&VEö6'G3¢R:–7&—f–ç2F—&V7G2(	B6W'f–6W2ö6'B×6†&R×6W'f–6Ræ§2Â6W'f–6W2÷6†&VBÖ6'BÖ7&VF–öâæ§2Â6W'f–6W2÷6†&VBÖ6'BÖVæv–æRæ§2Â6W'f–6W2÷6†&VBÖ6'BÖÆ–fV7–6ÆRæ§2Â6W'f–6W2÷6†&VBÖ6'B×VW&–W2æ§0¢Ò6÷W&6–æu÷6÷W&6W3¢R:–7&—f–ç2F—&V7G2(	B6W'f–6W2÷&÷f–FW"Ö7&VFVçF–Â×6W'f–6Ræ§2Â6W'f–6W2÷6÷W&6–ærÖö'6W'fF–öâ×6†F÷r×6W'f–6Ræ§2Â6W'f–6W2÷6÷W&6–ær×&÷f–FW"Ö6öçG&öÂ×öÆ–7’æ§2Â6W'f–6W2÷6÷W&6–ær×6÷W&6RÖWF÷–Æ÷Bæ§2Â6W'f–6W2÷6÷W&6–ær×6÷W&6R×&Vv—7G'’æ§0¢ÒW6W'3¢R:–7&—f–ç2F—&V7G2(	B&ö÷G7G&÷7F'GWÖÖ–w&F–öç2æ§2Â&÷WFW2öWF‚æ§2Â&÷WFW2ö6Æ–VçBÖWF‚æ§2Â&÷WFW2ö÷Gæ§2Â6W'f–6W2÷W6W"Ö×WFF–öâ×6W'f–6Ræ§0¢Ò&6¶WEö—FV×3¢B:–7&—f–ç2F—&V7G2(	B&÷WFW2öFÖ–â÷7—7FVÒæ§2Â6W'f–6W2÷6†&VBÖ6'BÖ7&VF–öâæ§2Â6W'f–6W2÷6†&VBÖ6'BÖVæv–æRæ§2Â6W'f–6W2÷6†&VBÖ6'B×W6W"Ö6ÆVçWæ§0¢Ò&6¶WG3¢B:–7&—f–ç2F—&V7G2(	B&÷WFW2öFÖ–â÷7—7FVÒæ§2Â6W'f–6W2÷6†&VBÖ6'BÖ7&VF–öâæ§2Â6W'f–6W2÷6†&VBÖ6'BÖVæv–æRæ§2Â6W'f–6W2÷6†&VBÖ6'B×W6W"Ö6ÆVçWæ§0¢Ò66…ö6öæf—&ÖF–öåö6öçG&öÇ3¢B:–7&—f–ç2F—&V7G2(	B6W'f–6W2ö66‚Ö6öæf—&ÖF–öâÖ6öçG&öÂ×6W'f–6Ræ§2Â6W'f–6W2ö66‚Ö÷W&F–öç2æ§2Â6W'f–6W2ö6öæf—&Ò×–6·WÖ66‚×–ÖVçBæ§2Â6W'f–6W2÷–ÖVçBÖ66‚Ö6öæf—&Òæ§0¢Ò6FÆöuöÖVF–¢B:–7&—f–ç2F—&V7G2(	B6W'f–6W2ö6FÆör×&öGV7BÖ×WFF–öâ×6W'f–6Ræ§2Â6W'f–6W2ö6FÆör×&öÖ÷F–öâæ§2Â6W'f–6W2ö6FÆör×f—7VÂÖg"Ö‡VÖâ×&Wf–Wr×w&—FRæ§2Â6W'f–6W2ö6FÆör×v÷&·76Ræ§0¢Ò&öGV7E÷6·W3¢B:–7&—f–ç2F—&V7G2(	B6W'f–6W2ö6FÆör×&öÖ÷F–öâæ§2Â6W'f–6W2ö6FÆör×7Fö6²×7–æ2ÖÆ–6F–öâæ§2Â6W'f–6W2÷&öGV7B×6·R×6W'f–6Ræ§2Â6W'f–6W2÷&öGV7B×7Fö6²×6W'f–6Ræ§0¢Ò&öGV7E÷f&–çG3¢B:–7&—f–ç2F—&V7G2(	B6W'f–6W2ö6FÆör×&öGV7BÖ×WFF–öâ×6W'f–6Ræ§2Â6W'f–6W2ö6FÆör×&öÖ÷F–öâæ§2Â6W'f–6W2÷&öGV7B×7Fö6²×6W'f–6Ræ§2Â6W'f–6W2÷&öGV7B×f&–çB×6W'f–6Ræ§0¢Ò&VgVæG3¢B:–7&—f–ç2F—&V7G2(	B6W'f–6W2ö—FVÒ×&VgVæB×7Ö÷&6†W7G&F÷"æ§2Â6W'f–6W2÷—Â×&VgVæBÖWF†÷&—G’æ§2Â6W'f–6W2÷&VgVæB×6W'f–6Ræ§2Â6W'f–6W2÷7G&—R×&VgVæBÖWF†÷&—G’æ§0¢Ò6÷W&6–æuö6æF–FFW3¢B:–7&—f–ç2F—&V7G2(	B&÷WFW2÷6÷W&6–ær×66ææW"æ§2Â6W'f–6W2÷6÷W&6–ærÖ6æF–FFRÖ7F–öç2æ§2Â6W'f–6W2÷6÷W&6–ærÖ6æF–FFRÖ–×÷'B×6W'f–6Ræ§2Â6W'f–6W2÷7WÆ–W'2ö6FÆörÖ–×÷'BÖ§6öâæ§0¢Ò7WÆ–W%ööWF…ö6öææV7F–öç3¢B:–7&—f–ç2F—&V7G2(	B&÷WFW2ö–çFVw&F–öç2ÖÆ–W‡&W72æ§2Â6W'f–6W2÷7WÆ–W'2öÆ–W‡&W72ÖöWF‚æ§2Â6W'f–6W2÷7WÆ–W'2öÆÆVw&ò×6æF&÷‚Ö6Æ–VçBæ§2Â6W'f–6W2÷7WÆ–W'2ö6öææV7F÷'2öÆ–W‡&W72Ö6öææV7FVBÖ6öææV7F÷"æ§0¢ÒvÆÆWE÷G&ç67F–öç3¢B:–7&—f–ç2F—&V7G2(	B&÷WFW2öFÖ–â÷7—7FVÒæ§2Â&÷WFW2öFÖ–â÷W6W'2æ§2Â&÷WFW2÷vÆÆWBæ§2Â6W'f–6W2÷vÆÆWB×6W'f–6Ræ§0¢ÒvÆÆWG3¢B:–7&—f–ç2F—&V7G2(	B&÷WFW2öFÖ–â÷7—7FVÒæ§2Â&÷WFW2öFÖ–â÷W6W'2æ§2Â&÷WFW2÷vÆÆWBæ§2Â6W'f–6W2÷vÆÆWB×6W'f–6Ræ§0¢Ò66…ö6öÆÆV7F–öç3¢2:–7&—f–ç2F—&V7G2(	B6W'f–6W2ö66‚Ö÷W&F–öç2æ§2Â6W'f–6W2ö6öæf—&Ò×–6·WÖ66‚×–ÖVçBæ§2Â6W'f–6W2÷–ÖVçBÖ66‚Ö6öæf—&Òæ§0¢Ò6FÆöuöf–VÆEö÷fW'&–FW3¢2:–7&—f–ç2F—&V7G2(	B6W'f–6W2ö6FÆörÖ÷fW'&–FW2æ§2Â6W'f–6W2÷&öGV7BÖFÖ–â×6W'f–6Ræ§2Â6W'f–6W2÷&Vf–æW'’Ög"×&V6†V6²æ§0¢Ò6†&vW3¢2:–7&—f–ç2F—&V7G2(	B&ö÷G7G&÷7F'GWÖÖ–w&F–öç2æ§2Â6W'f–6W2öV6öæöÖ–2ÖVæv–æR×VW&–W2æ§2Â6W'f–6W2öÖ&¶WB×7G'V7GW&RÖ6†&vR×&VfW&Væ6Ræ§0¢Òf–ææ6–ÅöÖ÷fVÖVçEöFö7VÖVçG3¢2:–7&—f–ç2F—&V7G2(	B&ö÷G7G&ö7&öç2æ§2Â6W'f–6W2öf–ææ6–ÂÖ¦÷W&æÂ×&ö¦V7F÷'2æ§2Â6W'f–6W2öf–ææ6–ÂÖ¦÷W&æÂæ§0¢Òf–ææ6–ÅöÖ÷fVÖVçG3¢2:–7&—f–ç2F—&V7G2(	B&ö÷G7G&ö7&öç2æ§2Â6W'f–6W2öf–ææ6–ÂÖ¦÷W&æÂ×&ö¦V7F÷'2æ§2Â6W'f–6W2öf–ææ6–ÂÖ¦÷W&æÂæ§0¢Ò–çFW&æF–öæÅ÷6†—ÖVçEöWfVçG3¢2:–7&—f–ç2F—&V7G2(	B6W'f–6W2ö‡V"Ö&÷‚×6†—ÖVçB×6W'f–6Ræ§2Â6W'f–6W2ö–çFW&æF–öæÂ×6†—ÖVçBÖ¦÷W&æW’æ§2Â6W'f–6W2÷&VÆ’×6†—ÖVçB×&V6V—Bæ§0¢Ò÷&FW%ö6öÖÖVçG3¢2:–7&—f–ç2F—&V7G2(	B&÷WFW2ö‡V"ÖF6†&ö&Bæ§2Â&÷WFW2÷&VÆ’ÖF6†&ö&Bæ§2Â6W'f–6W2ö÷W&F–öç2×v÷&·76Ræ§0¢Ò÷Gö6öFW3¢2:–7&—f–ç2F—&V7G2(	B&÷WFW2öWF‚×7FW×WÖ÷Gæ§2Â&÷WFW2ö÷Gæ§2Â6W'f–6W2ösb×7Fv–ærÖ'W–W"Ö–FVçF—G’ÖwV&Bæ§0¢Ò&–6Uö†—7F÷'“¢2:–7&—f–ç2F—&V7G2(	B6W'f–6W2öV6öæöÖ–2×&–6RÖVF—B×6W'f–6Ræ§2Â6W'f–6W2÷&–6–ærÖÇ’æ§2Â6W'f–6W2÷&–6–ær×7G&FVw’×6W'f–6Ræ§0¢Ò&VÆ—3¢2:–7&—f–ç2F—&V7G2(	B&÷WFW2öFÖ–â÷7—7FVÒæ§2Â6W'f–6W2÷&VÆ—2Ö×WFF–öâ×6W'f–6Ræ§2Â6W'f–6W2÷&÷WF–æræ§0¢Ò6×5öÆös¢2:–7&—f–ç2F—&V7G2(	B&÷WFW2öFÖ–âöFVÆWFRÖ÷&FW"Ö666FRæ§2Â&÷WFW2öFÖ–â÷7—7FVÒæ§2Â&÷WFW2öFÖ–â÷W6W'2æ§0¢Ò6÷W&6–æuö6GW&W3¢2:–7&—f–ç2F—&V7G2(	B6W'f–6W2÷6÷W&6–ærÖ6FÆörÖ6†ævRÖö'6W'fF–öâæ§2Â6W'f–6W2÷6÷W&6–ærÖö'6W'fF–öâ×6†F÷r×6W'f–6Ræ§2Â6W'f–6W2÷6÷W&6–ær×6÷W&6RÖWF÷–Æ÷Bæ§0¢Ò6÷W&6–æu÷&÷f–FW%ö6öçG&öÅöWfVçG3¢2:–7&—f–ç2F—&V7G2(	B6W'f–6W2÷&÷f–FW"Ö7&VFVçF–Â×6W'f–6Ræ§2Â6W'f–6W2÷6÷W&6–ær×&÷f–FW"Ö6öçG&öÂ×öÆ–7’æ§2Â6W'f–6W2÷6÷W&6–ær×6÷W&6R×&Vv—7G'’æ§0¢Ò7WÆ–W%öW†V7WF–öå÷–ÖVçE÷&öög3¢2:–7&—f–ç2F—&V7G2(	B6W'f–6W2÷7WÆ–W"×–ÖVçB×&ööb×W'6—7FVæ6Ræ§2Â6W'f–6W2÷7WÆ–W'2ö6¢Ö&–ÆÆ–ærÖ†—7F÷'’×&V6öæ6–Æ–F–öâæ§2Â6W'f–6W2÷7WÆ–W'2ö6¢×7WÆ–W"×–ÖVçB×'VçF–ÖRæ§0¢Ò7WÆ–W'3¢2:–7&—f–ç2F—&V7G2(	B&÷WFW2÷W&6†6–æræ§2Â6W'f–6W2÷W&6†6–ærÖFÖ–â×6W'f–6Ræ§2Â6W'f–6W2÷7WÆ–W'2ö6VçG&ÂÖ‡V"×7WÆ–W"æ§0¢ÒvÆÆWEö6öç7V×F–öç3¢2:–7&—f–ç2F—&V7G2(	B&÷WFW2öFÖ–â÷7—7FVÒæ§2Â&÷WFW2÷vÆÆWBæ§2Â6W'f–6W2÷vÆÆWB×6W'f–6Ræ§0¢ÒvÆÆWEö7&VF—EöÆ÷G3¢2:–7&—f–ç2F—&V7G2(	B&÷WFW2öFÖ–â÷7—7FVÒæ§2Â&÷WFW2÷vÆÆWBæ§2Â6W'f–6W2÷vÆÆWB×6W'f–6Ræ§0¢Ò76–væÖVçEöÖVÖ&W'6†—3¢":–7&—f–ç2F—&V7G2(	B6W'f–6W2öÖ&¶WBÖFVÆVvF–öâ×6W'f–6Ræ§2Â6W'f–6W2öÖ&¶WBÖFVÆVvF–öâ×FVÒ×6W'f–6Ræ§0¢Ò'W6–æW75÷'VÆW3¢":–7&—f–ç2F—&V7G2(	B&÷WFW2öFÖ–â×'VÆW2æ§2ÂWF–Ç2÷'VÆW2æ§0¢Ò'W6–æW75÷'VÆW5ö†—7F÷'“¢":–7&—f–ç2F—&V7G2(	B&÷WFW2öFÖ–â×'VÆW2æ§2ÂWF–Ç2÷'VÆW2æ§0 ¢22D"w&—FRòw&—FRÕf–÷fW&Æv&æ–æw0 ¢Ò&÷WFW2÷6÷W&6–ær×66ææW"æ§3¢F&ÆR‡2’L:–6Æ,:–R‡2’:Æfö—2VâF"×w&—FRF—&V7BWBF"×w&—FR×f–Óâ6÷W&6–æuö6æF–FFW0¢Ò6W'f–6W2ö7W7Fö×2×6†—ÖVçB×6W'f–6Ræ§3¢F&ÆR‡2’L:–6Æ,:–R‡2’:Æfö—2VâF"×w&—FRF—&V7BWBF"×w&—FR×f–Óâ÷&FW%ö—FVÕ÷&VÅö6÷7EöÆÆö6F–öç0¢Ò6W'f–6W2ösb×&V6—R×òÖ6æ6VÂ×6W'f–6Ræ§3¢F&ÆR‡2’L:–6Æ,:–R‡2’:Æfö—2VâF"×w&—FRF—&V7BWBF"×w&—FR×f–ÓâÆW'G0¢Ò6W'f–6W2öÆö6Â×&VÆ’×&V6V—B×6W'f–6Ræ§3¢F&ÆR‡2’L:–6Æ,:–R‡2’:Æfö—2VâF"×w&—FRF—&V7BWBF"×w&—FR×f–Óâ&6VÇ2Â&6VÅö—FV×2Â&6VÅöWfVçG0¢Ò6W'f–6W2öÖ&¶WBÖFVÆVvF–öâ×FVÒ×6W'f–6Ræ§3¢F&ÆR‡2’L:–6Æ,:–R‡2’:Æfö—2VâF"×w&—FRF—&V7BWBF"×w&—FR×f–Óâ76–væÖVçEöÖVÖ&W'6†—0¢Ò6W'f–6W2ö÷&FW"Öf–ææ6–ÂÖ6Æ÷7W&R×6–væÂæ§3¢F&ÆR‡2’L:–6Æ,:–R‡2’:Æfö—2VâF"×w&—FRF—&V7BWBF"×w&—FR×f–Óâ6–væÇ0¢Ò6W'f–6W2÷–6·WÖ6öÆÆV7F–öâ×6W'f–6Ræ§3¢F&ÆR‡2’L:–6Æ,:–R‡2’:Æfö—2VâF"×w&—FRF—&V7BWBF"×w&—FR×f–Óâ–6·W÷&–çE÷Fö¶Vç2Â–6·W÷&WfVÅö6öFW2Â66ç0¢Ò6W'f–6W2÷–6·WÖW†6WF–öæÂÖ6öÆÆV7F–öâ×6W'f–6Ræ§3¢F&ÆR‡2’L:–6Æ,:–R‡2’:Æfö—2VâF"×w&—FRF—&V7BWBF"×w&—FR×f–ÓâÆW'G0¢Ò6W'f–6W2÷–6·W×6V7&WBÖ66W72×6W'f–6Ræ§3¢F&ÆR‡2’L:–6Æ,:–R‡2’:Æfö—2VâF"×w&—FRF—&V7BWBF"×w&—FR×f–Óâ÷&FW'0¢Ò6W'f–6W2÷–6·W×6V7&WB×6W'f–6Ræ§3¢F&ÆR‡2’L:–6Æ,:–R‡2’:Æfö—2VâF"×w&—FRF—&V7BWBF"×w&—FR×f–Óâ÷&FW'0¢Ò6W'f–6W2÷&öGV7BÖFÖ–â×6W'f–6Ræ§3¢F&ÆR‡2’L:–6Æ,:–R‡2’:Æfö—2VâF"×w&—FRF—&V7BWBF"×w&—FR×f–Óâ&öGV7G0¢Ò6W'f–6W2÷6–×VÆF÷"÷7FFRÖGfæ6W"æ§3¢F&ÆR‡2’L:–6Æ,:–R‡2’:Æfö—2VâF"×w&—FRF—&V7BWBF"×w&—FR×f–Óâ&6VÇ0¢Ò6W'f–6W2÷6÷W&6–ær×6÷W&6RÖWF÷–Æ÷Bæ§3¢F&ÆR‡2’L:–6Æ,:–R‡2’:Æfö—2VâF"×w&—FRF—&V7BWBF"×w&—FR×f–Óâ6÷W&6–æu÷6÷W&6W2Â6÷W&6–æuö6GW&W0 ¢22Vç&W6öÇfVB6öFRVFvW0 ¢ÒW6W3¢‡6VRf–ÆW2çFW7G2–âfVGW&W2÷W&6†6–æræfVGW&Ræ§2(	Bæ÷B–WBÓâ6W'f–6W2÷7WÆ–W'2÷W&6†6–ær×fÆ–FF÷'2æ§2‚‡6VRf–ÆW2çFW7G2–âfVGW&W2÷W&6†6–æræfVGW&Ræ§2(	Bæ÷B–WB¢ÒW6W3¢66÷VçF–ærv÷&·76RÓâ6W'f–6W2öf–ææ6–ÂÖ¦÷W&æÂ×&W÷'F–æræ§2†66÷VçF–ærv÷&·76R¢ÒW6W3¢FÖ–âÖF6†&ö&BÓâ&÷WFW2öFÖ–âÖ&÷WF—VRÖ6FVv÷&–W2æ§2†FÖ–âÖF6†&ö&B¢ÒW6W3¢FÖ–âÖF6†&ö&G2Óâ&÷WFW2öV6öæöÖ–2æ§2†FÖ–âÖF6†&ö&G2¢ÒW6W3¢FÖ–âÖF6†&ö&G2Óâ6W'f–6W2öV6öæöÖ–2ÖVæv–æR×VW&–W2æ§2†FÖ–âÖF6†&ö&G2¢ÒW6W3¢FÖ–âÖfÆ÷w2Óâ6W'f–6W2ö÷&FW"×7FGW2ÖÖ6†–æRæ§2†FÖ–âÖfÆ÷w2¢ÒW6W3¢Æ”W‡&W72æB4¢F—66÷fW'’÷7G&W72—VÆ–æW2Óâ6W'f–6W2÷7WÆ–W'2öF—66÷fW'’×6VÖçF–2×&VÆWfæ6Ræ§2„Æ”W‡&W72æB4¢F—66÷fW'’÷7G&W72—VÆ–æW2¢ÒW6W3¢ÆÂÖ&÷WF—VRÖ§2ÖÖöGVÆW2ÓâV&Æ–2ö&÷WF—VRö§2ö"×7F÷&Ræ§2†ÆÂÖ&÷WF—VRÖ§2ÖÖöGVÆW2¢ÒW6W3¢ÆÂÖ&÷WF—VRÖ§2ÖÖöGVÆW2ÓâV&Æ–2ö&÷WF—VRö§2ö"×WF–Ç2æ§

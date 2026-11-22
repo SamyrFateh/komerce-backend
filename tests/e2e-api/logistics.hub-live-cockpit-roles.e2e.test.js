@@ -236,7 +236,7 @@ describeE2E('E2E-HUB-COCKPIT — rôles et parcours HTTP', ({ db }) => {
     expect(explicit.status).toBe(201);
     // Le reliquat reste suivi : B toujours non reçu, la commande n'est pas « prête ».
     const o = (await supply(agent)).body.orders.find((x) => x.id === o101.orderId);
-    expect(o.readiness).toMatchObject({ complete: false, ready_to_pack: false });
+    expect(o.readiness).toMatchObject({ complete: false, ready_to_combox: false });
     const localBag = await request(app).post(`${WS()}/bags`).set(auth(agent)).send({ order_id: local.orderId, bag_plan: [{ order_item_id: local.items[0].itemId, quantity: 1 }], partial_preparation: true });
     expect(localBag.status).toBe(409);
     expect(localBag.body.code).toBe('HUB_BAG_ORDER_NOT_IMPORT');

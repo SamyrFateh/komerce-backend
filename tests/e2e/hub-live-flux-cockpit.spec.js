@@ -131,7 +131,7 @@ test.describe('Hub live · cockpit maquette C — desktop 1440', () => {
     await page.screenshot({ path: 'test-results/hub-live-sourcing-requis.png' });
   });
 
-  test('réception partielle 2/3 : étape « Reçue 2/3 » distincte, FIFO KOM-101 d’abord, reliquat KOM-102, KOM-101 non prête', async ({ page }) => {
+  test('réception partielle 2/3 : étape « Reçue 2/3 » distincte, FIFO KOM-101 d’abord, reliquat KOM-102, quantité reçue répartissable', async ({ page }) => {
     const d = snapshot('partial');
     await mount(page, { source: d });
     const step = page.locator('[data-hlc-po] [data-step="received"]').first();

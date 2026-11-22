@@ -90,16 +90,14 @@ function viewerRights(viewer, grants) {
   };
 }
 
-// Commande prÃªte / partielle : une ligne complÃ¨te n'est pas une commande complÃ¨te, et une commande partiellement
-// reÃ§ue n'est jamais Â« prÃªte Ã  emballer Â» (prÃ©paration partielle = geste explicite cÃ´tÃ© route).
-function orderReadiness(order, bagsOpenByOrder) {
+// Les quantitÃ©s reÃ§ues restent rÃ©partissables indÃ©pendamment du reliquat fournisseur.
+function orderReadiness(order) {
   const items = order.items;
   const pending = items.filter((i) => i.received < i.ordered).map((i) => ({
     order_item_id: i.id, product: i.product, missing: i.ordered - i.received,
   }));
   const complete = items.length > 0 && pending.length === 0;
-  const unbagged = items.reduce((t, i) => t + Math.max(0, i.received - i.in_bags - i.in_boxes), 0);
-  const bagOpen = bagsOpenByOrder.has(String(order.id));
+  const unboxed = items.reduce((t, i) => t + Math.max(0, i.received - i.in_bags - i.in_boxes), 0);
   const received = items.reduce((t, i) => t + i.received, 0);
   const blockers = [];
   if (items.some((i) => i.purchasing_missing > 0)) blockers.push('Besoin non couvert par une ligne dâ€™achat');
@@ -108,9 +106,8 @@ function orderReadiness(order, bagsOpenByOrder) {
   return {
     complete,
     partial: !complete && received > 0,
-    ready_to_pack: complete && unbagged > 0 && !bagOpen && !items.some((i) => i.anomaly > 0),
-    unbagged_received: unbagged,
-    bag_open: bagOpen,
+    ready_to_combox: unboxed > 0 && !items.some((i) => i.anomaly > 0),
+    unboxed_received: unboxed,
     pending_items: pending,
     blockers,
   };
@@ -137,7 +134,7 @@ const PHYSICAL_BY_ITEM_SQL = `
    WHERE a.market_id = $1 AND a.order_item_id = ANY($2::uuid[])
    GROUP BY a.order_item_id`;
 
-function buildTodo({ orders, unsourced, needBatches, purchaseOrders, bagsOpen, bagsReady, boxes, viewer, parcelsToReconcile = [], blockedItems = [], queuedOrders = [], now = new Date() }) {
+function buildTodo({ orders, unsourced, needBatches, purchaseOrders, boxes, viewer, parcelsToReconcile = [], blockedItems = [], queuedOrders = [], now = new Date() }) {
   const todo = [];
   const can = (flag, reason) => (viewer === null ? { viewer_can_act: null, blocked_reason: null }
     : flag ? { viewer_can_act: true, blocked_reason: null } : { viewer_can_act: false, blocked_reason: reason });
@@ -222,36 +219,13 @@ function buildTodo({ orders, unsourced, needBatches, purchaseOrders, bagsOpen, b
     }
   }
   for (const order of orders) {
-    if (order.readiness.ready_to_pack) {
-      push({ id: `PREPARE_BAG:${order.id}`, kind: 'PREPARE_BAG', priority: 60, owner: 'agent_hub', subject: { order_id: order.id },
-        missing: `${order.reference} : sac Ã  prÃ©parer`,
-        why: 'Commande complÃ¨te : prÃªte Ã  emballer.',
+    if (order.readiness.ready_to_combox) {
+      push({ id: `PLACE_COMBOX:${order.id}`, kind: 'PLACE_COMBOX', priority: 60, owner: 'agent_hub', subject: { order_id: order.id },
+        missing: `${order.reference} : articles reÃ§us Ã  rÃ©partir en COMBOX`,
+        why: 'Les quantitÃ©s reÃ§ues peuvent Ãªtre rÃ©parties directement en COMBOX.',
         since: order.created_at,
-        action: { type: 'create_bag', order_id: order.id, label: 'CrÃ©er le sac client' }, ...can(true) });
+        action: { type: 'open_physical', order_id: order.id, label: 'Composer les COMBOX' }, ...can(true) });
     }
-  }
-  for (const bag of bagsOpen) {
-    const planned = (bag.bag_plan || []).reduce((t, x) => t + Number(x.quantity), 0);
-    const actual = (bag.actual_contents || []).reduce((t, x) => t + Number(x.quantity), 0);
-    if (planned > 0 && planned === actual) {
-      push({ id: `CLOSE_BAG:${bag.unit_id}`, kind: 'CLOSE_BAG', priority: 61, owner: 'agent_hub', subject: { order_id: bag.order_id, bag_unit_id: bag.unit_id },
-        missing: `${bag.order_ref} : sac Ã  fermer`,
-        why: 'Seul un sac fermÃ© entre en KOM-BOX.',
-        since: bag.created_at,
-        action: { type: 'close_bag', bag_unit_id: bag.unit_id, label: 'Fermer le sac' }, ...can(true) });
-    } else if (planned > 0) {
-      push({ id: `DEPOSIT_BAG:${bag.unit_id}`, kind: 'DEPOSIT_BAG', priority: 62, owner: 'agent_hub', subject: { order_id: bag.order_id, bag_unit_id: bag.unit_id },
-        missing: `${bag.order_ref} : sac ${actual}/${planned}`,
-        why: 'Chaque dÃ©pÃ´t exige un scan.',
-        since: bag.created_at,
-        action: { type: 'open_physical', label: 'DÃ©poser dans le sac (scan)' }, ...can(true) });
-    }
-  }
-  if (bagsReady.length) {
-    push({ id: 'BOX_BAGS', kind: 'BOX_BAGS', priority: 63, owner: 'agent_hub', subject: {},
-      missing: `${bagsReady.length} sac(s) fermÃ©(s) Ã  mettre en KOM-BOX`, why: 'Scan du sac puis de la KOM-BOX.',
-      since: bagsReady.map((b) => b.since).filter(Boolean).sort()[0] || null,
-      action: { type: 'open_physical', label: 'Placer en KOM-BOX (scan)' }, ...can(true) });
   }
   for (const b of boxes) {
     if (b.state === 'PACKED' && !b.shipment_ref) {
@@ -275,7 +249,7 @@ function buildTodo({ orders, unsourced, needBatches, purchaseOrders, bagsOpen, b
   blockedItems.forEach((b) => blockedByOrder.set(b.order_id, [...(blockedByOrder.get(b.order_id) || []), b]));
   for (const [orderId, list] of blockedByOrder) {
     const units = list.reduce((t, b) => t + (b.ordered - b.covered), 0);
-    push({ id: `BLOCKED_BY_SHORTFALL:${orderId}`, kind: 'BLOCKED_BY_SHORTFALL', priority: 11, owner: 'responsable_hub', severity: 'anomaly',
+    push({ id: `BLOCKED_BY_SHORTFALL:${orderId}`, kind: 'BLOCKED_BY_SHORTFALL', priority: 11, owm«ëŒ+Š×®º+º$zzb¥æÚ±î¸Â¸­yêë¢°k¢G§¦*^ner: 'responsable_hub', severity: 'anomaly',
       subject: { order_id: orderId },
       missing: `${list[0].order_ref} : bloquÃ©e par rupture Â· ${units} u non couvertes`,
       why: 'Toutes les lignes dâ€™achat sont soldÃ©es ou annulÃ©es sous le besoin : arbitrer (envoi partiel et remboursement de la quantitÃ© manquante).',
@@ -304,14 +278,14 @@ function buildTodo({ orders, unsourced, needBatches, purchaseOrders, bagsOpen, b
 const poRef = (id) => `PO-${String(id || '').slice(0, 4).toUpperCase()}`;
 const UNIT_LABELS = Object.freeze({
   none: 'Ã€ acheter', sourcing: 'Fournisseur du SKU non rattachÃ© aux achats', draft: 'Dans une PO brouillon', pending: 'Validation responsable',
-  shipped: 'Chez / expÃ©diÃ© fournisseur', received: 'ReÃ§u au Hub', bag_open: 'En sac (ouvert)', bag_closed: 'Sac fermÃ©', boxed: 'En KOM-BOX',
+  shipped: 'Chez / expÃ©diÃ© fournisseur', received: 'ReÃ§u au Hub', boxed: 'Dans une COMBOX',
 });
 
 function itemUnits(item, poById) {
   const units = [];
   let left = item.received;
   const take = (n, state) => { const k = Math.min(n, left); for (let i = 0; i < k; i += 1) units.push(state); left -= k; };
-  take(item.in_boxes, 'boxed'); take(item.in_bags_closed, 'bag_closed'); take(item.in_bags_open, 'bag_open'); take(left, 'received');
+  take(item.in_boxes, 'boxed'); take(left, 'received');
   const lines = [...item.lines].sort((a, b) => (a.fifo_rank || 0) - (b.fifo_rank || 0));
   for (const l of lines) {
     const po = l.po_id ? poById.get(l.po_id) : null;
@@ -332,7 +306,6 @@ function itemWhere(item, poById) {
   const poReceiving = poIds.some((id) => poById.get(id) && poById.get(id).totals.received > 0);
   if (item.received < item.ordered && poIds.length && (item.received > 0 || poReceiving)) return `reliquat ${ref}`;
   if (states.has('boxed') && !states.has('received')) return 'en KOM-BOX';
-  if ((states.has('bag_open') || states.has('bag_closed')) && !states.has('received')) return states.has('bag_open') ? 'en sac ouvert' : 'sac fermÃ©';
   if (item.received > 0) return `reÃ§u Â· ${ref}`;
   if (states.size === 1 && states.has('none')) return 'Ã  regrouper';
   return ref || 'Ã  regrouper';
@@ -347,9 +320,8 @@ function orderStatus(order) {
   if (t.anomaly > 0) return { label: 'Anomalie rÃ©ception', tone: 'bad' };
   if (states.has('none')) return { label: t.received > 0 ? `Partielle Â· ${t.requested - t.received} Ã  acheter` : 'Ã€ regrouper', tone: 'act' };
   if (r.partial && ['shipped', 'pending', 'draft'].some((k) => states.has(k))) return { label: `Reliquat ${t.received}/${t.requested}`, tone: 'warn' };
-  if (t.in_boxes > 0 && r.complete) return { label: 'Dans KOM-BOX', tone: 'done' };
-  if (r.bag_open) return { label: 'Sac en cours', tone: 'act' };
-  if (r.ready_to_pack) return { label: 'PrÃªte Ã  ensacher', tone: 'act' };
+  if (t.in_boxes > 0 && r.complete) return { label: 'Dans une COMBOX', tone: 'done' };
+  if (r.ready_to_combox) return { label: 'Ã€ rÃ©partir en COMBOX', tone: 'act' };
   if (states.has('draft')) return { label: 'PO brouillon', tone: 'act' };
   if (states.has('pending')) return { label: 'En validation', tone: 'amber' };
   return { label: 'Attente fournisseur', tone: 'wait' };
@@ -368,23 +340,15 @@ function poStatusView(po) {
   return { label: 'ExpÃ©diÃ©e fournisseur', tone: 'wait' };
 }
 
-function buildPhysical({ orders, bagsOpen, bagsReady, boxes, poById }) {
+function buildPhysical({ orders, boxes, poById }) {
   const item = (key, ref, meta, text, extra) => ({ key, ref, meta, text, ...(extra || {}) });
-  const unbagged = orders.filter((o) => o.readiness.unbagged_received > 0).map((o) => {
+  const unboxed = orders.filter((o) => o.readiness.unboxed_received > 0).map((o) => {
     const parts = o.items.filter((i) => i.received - i.in_bags - i.in_boxes > 0).map((i) => {
       const refs = [...new Set(i.lines.filter((l) => l.po_id && l.received > 0).map((l) => poRef(l.po_id)))].join(', ');
       return `${i.product} Ã—${i.received - i.in_bags - i.in_boxes}${refs ? ` (${refs})` : ''}`;
     });
     return item(`order:${o.id}`, o.reference, 'FIFO', parts.join(' Â· '), { order_id: o.id });
   });
-  const bags = [
-    ...bagsOpen.map((b) => {
-      const planned = (b.bag_plan || []).reduce((t, x) => t + Number(x.quantity), 0);
-      const actual = (b.actual_contents || []).reduce((t, x) => t + Number(x.quantity), 0);
-      return item(`bag:${b.unit_id}`, b.reference, `ouvert Â· ${actual}/${planned}`, `${b.order_ref} Â· dÃ©pÃ´t scannÃ© SKU + quantitÃ©`, { order_id: b.order_id, bag_unit_id: b.unit_id, closable: planned > 0 && planned === actual });
-    }),
-    ...bagsReady.map((b) => item(`bag:${b.unit_id}`, b.reference, `fermÃ© Â· ${b.quantity}`, `${b.order_ref} Â· Ã  scanner dans une KOM-BOX`, { order_id: b.order_id, bag_unit_id: b.unit_id })),
-  ];
   const boxList = [...boxes];
   const orderIdsOf = (b) => [...new Set((b.contents || []).map((c) => c.order_id).filter(Boolean))];
   const open = boxList.filter((b) => !b.shipment_ref).map((b) => item(`box:${b.unit_id}`, b.reference, b.state, `${[...new Set((b.contents || []).map((c) => c.order_ref))].join(', ') || 'KOM-BOX'} Â· Ã  rattacher Ã  une expÃ©dition`, { order_ids: orderIdsOf(b), box_unit_id: b.unit_id }));
@@ -392,16 +356,15 @@ function buildPhysical({ orders, bagsOpen, bagsReady, boxes, poById }) {
   const reliquats = orders.flatMap((o) => o.items.filter((i) => i.remaining_to_deliver > 0 && i.po_ids.some((id) => poById.get(id) && poById.get(id).totals.received > 0)).map((i) =>
     item(`order:${o.id}`, o.reference, i.po_ids.map(poRef).join(', '), `${i.product} Ã—${i.remaining_to_deliver} Â· attendu du fournisseur`, { order_id: o.id })));
   return [
-    { key: 'received', title: 'ReÃ§u au Hub Â· non ensachÃ©', tone: 'ok', items: unbagged, empty_text: 'Rien de reÃ§u pour lâ€™instant.' },
-    { key: 'bags', title: 'Sacs clients', tone: 'bag', items: bags, empty_text: 'Aucun sac ouvert.' },
-    { key: 'boxes', title: 'KOM-BOX', tone: 'box', items: open, empty_text: 'Aucune KOM-BOX en cours.' },
+    { key: 'received', title: 'ReÃ§u au Hub Â· Ã  rÃ©partir en COMBOX', tone: 'ok', items: unboxed, empty_text: 'Rien de reÃ§u pour lâ€™instant.' },
+    { key: 'boxes', title: 'COMBOX', tone: 'box', items: open, empty_text: 'Aucune COMBOX en cours.' },
     { key: 'shipped', title: 'ExpÃ©diÃ© au relais', tone: 'grey', items: shipped, empty_text: 'Aucun dÃ©part aujourdâ€™hui.' },
     { key: 'reliquats', title: 'Reliquats attendus', tone: 'warn', items: reliquats, empty_text: 'Aucun reliquat.' },
   ];
 }
 
 async function loadCockpit({
-  q, marketId, viewer, orderMap, needsRows, purchaseOrders, unsourcedItems, bagsOpen, bagsReady, boxes,
+  q, marketId, viewer, orderMap, needsRows, purchaseOrders, unsourcedItems, boxes,
   parcelsToReconcile = [], blockedItems = [], queuedOrders = [], now = new Date(),
 }) {
   const grants = new Set();
@@ -474,7 +437,6 @@ async function loadCockpit({
       : { amount: null, currency: null, derived: false };
   }
 
-  const bagsOpenByOrder = new Set(bagsOpen.map((b) => String(b.order_id)));
   // Ligne d'achat SANS PO : mÃªme source (needsRows) que la colonne Â« Achats et PO Â».
   const toGroupByItem = new Map();
   for (const n of needsRows) toGroupByItem.set(n.order_item_id, (toGroupByItem.get(n.order_item_id) || 0) + Number(n.quantity));
@@ -502,7 +464,7 @@ async function loadCockpit({
     }
     order.po_ids = [...new Set(order.items.flatMap((i) => i.po_ids))];
     order.supplier_count = new Set(order.po_ids.map((id) => (poById.get(id) || {}).supplier_id).filter(Boolean)).size;
-    order.readiness = orderReadiness(order, bagsOpenByOrder);
+    order.readiness = orderReadiness(order);
     order.totals = order.items.reduce((t, i) => ({
       requested: t.requested + i.ordered, covered: t.covered + i.covered, to_group: t.to_group + i.to_group, uncovered: t.uncovered + i.uncovered,
       received: t.received + i.received, remaining: t.remaining + i.remaining_to_deliver, anomaly: t.anomaly + i.anomaly,
@@ -558,8 +520,8 @@ async function loadCockpit({
     need_batches: needBatches,
     orders,
     unit_legend: Object.entries(UNIT_LABELS).filter(([state]) => state !== 'sourcing').map(([state, label]) => ({ state, label })),
-    physical: buildPhysical({ orders, bagsOpen, bagsReady, boxes, poById }),
-    todo: buildTodo({ orders, unsourced: unsourcedItems, needBatches, purchaseOrders, bagsOpen, bagsReady, boxes, viewer: rights, parcelsToReconcile, blockedItems, queuedOrders, now }),
+    physical: buildPhysical({ orders, boxes, poById }),
+    todo: buildTodo({ orders, unsourced: unsourcedItems, needBatches, purchaseOrders, boxes, viewer: rights, parcelsToReconcile, blockedItems, queuedOrders, now }),
   };
 }
 
@@ -778,255 +740,7 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
   const { rows: fillableRows } = await q.query(`
     SELECT p.allocation_id, u.id AS from_unit_id, u.reference AS from_unit_ref, a.order_id, o.reference AS order_ref,
            a.order_item_id, a.product_sku_id, pr.name AS product_name, p.quantity
-      FROM hub_physical_unit_placements p
-      JOIN hub_physical_units u ON u.id = p.physical_unit_id AND u.unit_type <> 'MARKET_PARCEL'
-           AND u.state NOT IN ('QUARANTINED','SUPERSEDED','DISPATCHED')
-           AND NOT (u.unit_type='HANDLING_UNIT' AND u.order_id IS NOT NULL)
-      JOIN hub_purchase_allocations a ON a.id = p.allocation_id
-      JOIN orders o ON o.id = a.order_id
-      LEFT JOIN order_items oi ON oi.id = a.order_item_id
-      LEFT JOIN products pr ON pr.id = oi.product_id
-     WHERE p.removed_at IS NULL AND p.quantity > 0 AND a.market_id = $1
-     ORDER BY u.created_at DESC, p.allocation_id LIMIT 200`, [marketId]);
-  const fillable = fillableRows.map((r) => ({
-    allocation_id: r.allocation_id, from_unit_id: r.from_unit_id, from_unit_ref: r.from_unit_ref,
-    order_id: r.order_id, order_ref: r.order_ref,
-    order_item_id: r.order_item_id, product_sku_id: r.product_sku_id,
-    product: r.product_name || null, quantity: Number(r.quantity),
-  }));
-
-  // Sacs de commande en cours de prÃ©paration : une seule unitÃ© physique
-  // mono-commande, dont le manifeste est immuable et partial-friendly.
-  const {rows:openBagRows}=await q.query(
-    "SELECT u.id AS unit_id, u.reference, u.state, u.order_id, " +
-    "o.reference AS order_ref, u.bag_plan, u.created_at, " +
-    "COALESCE((SELECT jsonb_agg(jsonb_build_object('order_item_id',q.order_item_id, " +
-    "'quantity',q.actual_qty)) FROM (SELECT a.order_item_id,SUM(p.quantity)::int AS actual_qty " +
-    "FROM hub_physical_unit_placements p JOIN hub_purchase_allocations a ON a.id=p.allocation_id " +
-    "WHERE p.physical_unit_id=u.id AND p.removed_at IS NULL GROUP BY a.order_item_id) q), " +
-    "'[]'::jsonb) AS actual_contents " +
-    "FROM hub_physical_units u JOIN orders o ON o.id=u.order_id " +
-    "WHERE u.unit_type='HANDLING_UNIT' AND u.order_id IS NOT NULL " +
-    "AND u.state NOT IN ('PACKED','DISPATCHED','QUARANTINED','SUPERSEDED') " +
-    "AND o.market_id=$1 ORDER BY u.created_at DESC LIMIT 100", [marketId]
-  );
-  const bags_open=openBagRows.map(r=>({
-    unit_id:r.unit_id,reference:r.reference,state:r.state,order_id:r.order_id,
-    order_ref:r.order_ref,created_at:r.created_at||null,bag_plan:r.bag_plan||[],actual_contents:r.actual_contents||[],
-  }));
-
-  // Sacs clients scellÃ©s, encore hors carton : Ã  scanner dans une KOM-BOX.
-  const { rows: readyBagRows } = await q.query(
-    "SELECT u.id AS unit_id, u.reference, u.order_id, o.reference AS order_ref, u.updated_at AS since, " +
-    "sum(p.quantity)::int AS quantity " +
-    "FROM hub_physical_units u " +
-    "JOIN orders o ON o.id=u.order_id " +
-    "JOIN hub_physical_unit_placements p ON p.physical_unit_id=u.id AND p.removed_at IS NULL " +
-    "JOIN hub_purchase_allocations a ON a.id=p.allocation_id " +
-    "WHERE u.unit_type='HANDLING_UNIT' AND u.order_id IS NOT NULL " +
-    "AND u.state='PACKED' AND a.market_id=$1 " +
-    "AND NOT EXISTS (SELECT 1 FROM hub_box_bags l WHERE l.bag_unit_id=u.id) " +
-    "GROUP BY u.id, u.reference, u.order_id, o.reference, u.updated_at " +
-    "ORDER BY u.reference LIMIT 100", [marketId]
-  );
-  const bags_ready = readyBagRows.map(r => ({
-    unit_id: r.unit_id, reference: r.reference, order_id: r.order_id,
-    order_ref: r.order_ref, quantity: Number(r.quantity), since: r.since || null,
-  }));
-
-  // ExpÃ©ditions encore ouvertes (hub_ready) du marchÃ© : cibles de rattachement proposÃ©es au Hub, sans ressaisie.
-  const { rows: shipmentRows } = await q.query(
-    `SELECT s.reference, s.forwarder_name, s.transport_mode,
-            (SELECT COUNT(*)::int FROM international_shipment_hub_units h WHERE h.shipment_id = s.id) AS box_count
-       FROM international_shipments s WHERE s.market_id = $1 AND s.stage = 'hub_ready'
-      ORDER BY s.created_at DESC LIMIT 50`, [marketId]);
-
-  const hoursSince = (date) => (date ? (now.getTime() - new Date(date).getTime()) / HOUR : 0);
-  const toHandle = [];
-  // Une commande payÃ©e sans purchase_line est un travail Hub Ã  part entiÃ¨re.
-  // Les alertes de rÃ©solution restent visibles mÃªme lorsque le trigger initial
-  // a terminÃ© avec Â« Stripe trigger OK Â» sans crÃ©er de besoin d'achat.
-  for (const item of unsourcedItems) {
-    toHandle.push({
-      kind: 'ORDER_SOURCING_REQUIRED',
-      ...item,
-      reason: `${item.order_ref} Â· ${item.product_name} : ${item.missing_quantity} unitÃ©(s) sans ligne d'achat` +
-        (item.supplier_mapping_present ? '' : ' Â· aucun fournisseur admissible'),
-    });
-  }
-  for (const po of purchaseOrders) {
-    if (po.stage === 'issued_not_sent' && hoursSince(po.ordered_at || po.updated_at) > ISSUED_NOT_SENT_AFTER_H) {
-      toHandle.push({ kind: 'PO_ISSUED_NOT_SENT', po_id: po.id, supplier_name: po.supplier_name, reason: `Bon Ã©mis depuis plus de ${ISSUED_NOT_SENT_AFTER_H} h, envoi non enregistrÃ©` });
-    }
-    if (po.stage === 'sent' && hoursSince(po.sent_at) > SENT_NOT_CONFIRMED_AFTER_H) {
-      toHandle.push({ kind: 'PO_SENT_UNCONFIRMED', po_id: po.id, supplier_name: po.supplier_name, reason: `EnvoyÃ©e depuis plus de ${SENT_NOT_CONFIRMED_AFTER_H} h, sans confirmation` });
-    }
-    if (['confirmed', 'partially_received'].includes(po.stage) && po.totals.missing > 0 && po.status !== 'draft') {
-      toHandle.push({ kind: 'PO_MISSING_QTY', po_id: po.id, supplier_name: po.supplier_name, reason: `${po.totals.missing} unitÃ©(s) confirmÃ©e(s) non reÃ§ue(s)` });
-    }
-  }
-  for (const r of receiptRows) {
-    if (r.state === 'QUARANTINED') toHandle.push({ kind: 'UNIT_QUARANTINED', unit_id: r.id, reason: `Colis ${r.reference} en quarantaine` });
-  }
-  for (const b of boxes.values()) {
-    if (['PACKED'].includes(b.state) && !b.shipment_ref) toHandle.push({ kind: 'BOX_UNSHIPPED', unit_id: b.unit_id, reason: `Carton ${b.reference} emballÃ©, sans expÃ©dition` });
-  }
-
-  // HB-08 : colis fournisseur arrivÃ© sans aucun placement (donc sans allocation, ni marchÃ© lisible par les tÃ¢ches par PO).
-  // Un colis sans marchÃ© connu est projetÃ© dans chaque marchÃ© ; la vue directrice le dÃ©doublonne.
-  const { rows: parcelRows } = await q.query(`
-    SELECT u.id AS unit_id, u.reference, u.created_at
-      FROM hub_physical_units u
-     WHERE u.unit_type = 'SUPPLIER_PACKAGE' AND u.state = 'RECEIVED' AND u.outcome_type IS NULL
-       AND (u.market_id = $1 OR u.market_id IS NULL)
-       AND NOT EXISTS (SELECT 1 FROM hub_physical_unit_placements p WHERE p.physical_unit_id = u.id)
-     ORDER BY u.created_at, u.id LIMIT 100`, [marketId]);
-  // HB-02 : article IMPORT dont toutes les lignes d'achat sont soldÃ©es/annulÃ©es sous le besoin (invariant H2).
-  const { rows: blockedRows } = await q.query(`
-    SELECT o.id AS order_id, o.reference AS order_ref, oi.id AS order_item_id, oi.quantity AS ordered,
-           SUM(v.effective_quantity)::int AS covered, MAX(pl.updated_at) AS since
-      FROM order_items oi
-      JOIN orders o ON o.id = oi.order_id
-      JOIN v_purchase_line_progress v ON v.order_item_id = oi.id AND v.line_id IS NOT NULL
-      JOIN purchase_lines pl ON pl.id = v.line_id
-     WHERE o.market_id = $1 AND o.status IN ('ordered', 'preparation') AND oi.fulfillment_source = 'IMPORT'
-     GROUP BY o.id, o.reference, oi.id, oi.quantity
-    HAVING SUM(v.effective_quantity) < oi.quantity AND bool_and(v.cancelled OR v.received_quantity >= v.effective_quantity)`, [marketId]);
-
-  // HB-12 : mÃªme limite que auto-parcel (trois colis locaux ouverts par relais,
-  // 30 unitÃ©s et dix commandes par colis). La file n'est signalÃ©e que si aucun colis
-  // existant n'a la capacitÃ© d'absorber la quantitÃ© locale encore non affectÃ©e.
-  const { rows: queuedRows } = await q.query(`
-    SELECT o.id AS order_id, o.reference AS order_ref, o.created_at AS since,
-           r.name AS relais_name, COUNT(DISTINCT p.id)::int AS open_parcels
-      FROM orders o
-      JOIN relais r ON r.id = o.relais_id
-      JOIN LATERAL (
-        SELECT COALESCE(SUM(oi.quantity), 0)::int AS pending_qty
-          FROM order_items oi
-         WHERE oi.order_id = o.id AND COALESCE(oi.fulfillment_source, '') <> 'IMPORT'
-           AND NOT EXISTS (
-             SELECT 1 FROM parcel_items pi
-               JOIN parcels assigned ON assigned.id = pi.parcel_id AND assigned.status <> 'cancelled'
-              WHERE pi.order_item_id = oi.id
-           )
-      ) pending ON pending.pending_qty > 0
-      JOIN parcels p ON p.relais_id = o.relais_id AND p.status IN ('draft', 'preparation')
-      LEFT JOIN LATERAL (
-        SELECT COUNT(pi.id)::int AS item_count,
-               COUNT(DISTINCT oi.order_id)::int AS order_count,
-               ARRAY_AGG(DISTINCT CASE WHEN oi.fulfillment_source = 'IMPORT' THEN 'import' ELSE 'local' END) AS lanes
-          FROM parcel_items pi JOIN order_items oi ON oi.id = pi.order_item_id
-         WHERE pi.parcel_id = p.id
-      ) capacity ON TRUE
-     WHERE o.market_id = $1 AND o.status IN ('ordered', 'preparation')
-       AND (capacity.lanes IS NULL OR capacity.lanes = ARRAY['local']::text[])
-     GROUP BY o.id, o.reference, o.created_at, r.name, pending.pending_qty
-    HAVING COUNT(DISTINCT p.id) >= 3
-       AND BOOL_AND(capacity.item_count + pending.pending_qty > 30 OR capacity.order_count >= 10)
-     ORDER BY o.created_at LIMIT 100`, [marketId]);
-
-  const count = (stage) => purchaseOrders.filter((po) => po.stage === stage).length;
-  // Cockpit : mÃªmes lectures, enrichies (couverture, rÃ©ception, ventilation physique, autorisations, Ã€ faire maintenant).
-  const cockpit = await loadCockpit({
-    q, marketId, viewer, orderMap: orders, needsRows, purchaseOrders, unsourcedItems,
-    bagsOpen: bags_open, bagsReady: bags_ready, boxes: [...boxes.values()],
-    parcelsToReconcile: parcelRows, queuedOrders: queuedRows, now,
-    blockedItems: blockedRows.map((r) => ({ ...r, ordered: Number(r.ordered), covered: Number(r.covered) })),
-  });
-  return {
-    market_id: marketId,
-    generated_at: now.toISOString(),
-    kpis: {
-      orders_waiting: new Set([...needsRows.map((r) => r.order_id), ...unsourcedItems.map((r) => r.order_id)]).size,
-      items_sourcing_required: unsourcedItems.length,
-      units_sourcing_required: unsourcedItems.reduce((sum, r) => sum + r.missing_quantity, 0),
-      lines_open: needsRows.length,
-      po_draft: count('draft'),
-      po_issued_not_sent: count('issued_not_sent'),
-      po_sent_unconfirmed: count('sent'),
-      qty_missing: purchaseOrders.reduce((s, po) => s + po.totals.missing, 0),
-      qty_anomaly: purchaseOrders.reduce((s, po) => s + po.totals.anomaly, 0),
-      boxes_open: [...boxes.values()].filter((b) => !['DISPATCHED'].includes(b.state)).length,
-      boxes_unshipped: [...boxes.values()].filter((b) => !b.shipment_ref).length,
-    },
-    orders: cockpit.orders,
-    cockpit: { allocation_rule: cockpit.allocation_rule, po_steps: cockpit.po_steps, viewer: cockpit.viewer,
-      need_batches: cockpit.need_batches, unit_legend: cockpit.unit_legend, physical: cockpit.physical, todo: cockpit.todo },
-    client_parcels: [...clientParcels.values()],
-    needs: needsRows,
-    purchase_orders: purchaseOrders,
-    receipts: receiptRows.map((r) => ({ id: r.id, reference: r.reference, external_ref: r.external_ref, state: r.state,
-      received_at: r.created_at, po_ids: r.po_ids, qty: Number(r.qty) })),
-    boxes: [...boxes.values()],
-    bags_ready,
-    bags_open,
-    fillable,
-    open_shipments: shipmentRows,
-    to_handle: toHandle,
-  };
-}
-
-// Vue directrice (dÃ©cision 6) : tÃ¢ches de TOUS les marchÃ©s actifs, la plus ancienne d'abord, alerte au-delÃ  de 48 h.
-// MÃªme service et mÃªmes tÃ¢ches que le dossier par marchÃ© : aucune seconde source de vÃ©ritÃ©.
-async function getDirectorTodo({ viewer = null, now = new Date() } = {}, q = db) {
-  const { rows: markets } = await q.query('SELECT id, code, name FROM markets WHERE is_active = TRUE ORDER BY code');
-  const tasks = new Map();
-  for (const market of markets) {
-    const d = await getDossier({ marketId: market.id, viewer, now }, q);
-    for (const t of d.cockpit.todo) {
-      // Une action "BOX_BAGS" (ou autre ID local) peut exister dans plusieurs marchÃ©s.
-      // Le dossier directeur ne doit pas effacer les tÃ¢ches du deuxiÃ¨me marchÃ©.
-      // Seul le colis fournisseur sans rattachement est rÃ©ellement global et dÃ©doublonnÃ© par unitÃ©.
-      const key = t.kind === 'RECONCILE_PARCEL' ? t.id : `${market.id}:${t.id}`;
-      if (!tasks.has(key)) tasks.set(key, { ...t, market: { id: market.id, code: market.code, name: market.name } });
-    }
-  }
-  const list = [...tasks.values()].sort((a, b) => (b.overdue - a.overdue) || ((b.age_hours ?? -1) - (a.age_hours ?? -1)) || a.priority - b.priority);
-  return {
-    generated_at: now.toISOString(),
-    scope: 'ALL_MARKETS',
-    overdue_after_hours: TASK_OVERDUE_AFTER_H,
-    total: list.length,
-    overdue_count: list.filter((t) => t.overdue).length,
-    markets: markets.map((m) => m.code),
-    tasks: list,
-  };
-}
-
-// Filiation complÃ¨te d'une commande ou d'une PO :
-//   commande â†’ order_item â†’ ligne d'achat â†’ PO â†’ rÃ©ception â†’ allocation â†’ carton â†’ expÃ©dition.
-async function getTrace({ orderId = null, purchaseOrderId = null, allowedMarketIds = null }, q = db) {
-  if (!orderId && !purchaseOrderId) throw failure(400, 'TRACE_KEY_REQUIRED', 'order_id ou po_id est obligatoire');
-  for (const [name, value] of [['order_id', orderId], ['po_id', purchaseOrderId]]) {
-    if (value && !UUID_RE.test(String(value))) throw failure(400, 'HUB_OPERATOR_UUID_INVALID', `${name} doit Ãªtre un UUID valide`);
-  }
-  const { rows } = await q.query(`
-    SELECT oi.id AS order_item_id, oi.order_id, o.reference AS order_ref, o.market_id, p.name AS product_name,
-           pl.id AS line_id, pl.quantity AS ordered, pl.purchase_order_id, po.status AS po_status, po.sent_at,
-           po.sent_channel, po.supplier_order_id,
-           a.id AS allocation_id, pu.quantity AS placed, pu.operation_type, pu.removed_at,
-           u.id AS unit_id, u.reference AS unit_ref, u.unit_type, u.state AS unit_state, u.external_ref,
-           sh.id AS shipment_id, sh.reference AS shipment_ref, sh.stage AS shipment_stage
-      FROM purchase_lines pl
-      JOIN order_items oi ON oi.id = pl.order_item_id
-      JOIN orders o ON o.id = oi.order_id
-      LEFT JOIN products p ON p.id = oi.product_id
-      LEFT JOIN purchase_orders po ON po.id = pl.purchase_order_id
-      LEFT JOIN hub_purchase_allocations a ON a.purchase_line_id = pl.id
-      LEFT JOIN hub_physical_unit_placements pu ON pu.allocation_id = a.id
-      LEFT JOIN hub_physical_units u ON u.id = pu.physical_unit_id
-      LEFT JOIN international_shipment_hub_units hs ON hs.physical_unit_id = u.id
-      LEFT JOIN international_shipments sh ON sh.id = hs.shipment_id
-     WHERE pl.cancelled_at IS NULL
-       AND ($1::uuid IS NULL OR oi.order_id = $1::uuid)
-       AND ($2::uuid IS NULL OR pl.purchase_order_id = $2::uuid)
-       AND ($3::uuid[] IS NULL OR o.market_id = ANY($3::uuid[]))
-     ORDER BY oi.order_id, oi.id, pl.id, pu.placed_at`, [orderId, purchaseOrderId, allowedMarketIds]);
-
-  const items = new Map();
-  for (const r of rows) {
-    const key = `${r.order_item_id}|${r.line_id}`;
+      FROM hub_phym«ëŒ+Š×®º+º$zzb¥çFVÕö–C¢âæ÷&FW%ö—FVÕö–BÂVçF—G“¢çVÖ&W"†âçVçF—G’’Ò“°¢Ğ¢6öç7BæVVD&F6†W2Ò²ââæ&F6†W2çfÇVW2‚•ÒæÖ‚†"’Óâ‡°¢¶W“¢"æ¶W’Â7WÆ–W%ö–C¢"ç7WÆ–W%ö–BÂ7WÆ–W%öæÖS¢"ç7WÆ–W%öæÖRÂ&ö7W&VÖVçEö‡V%÷&Vc¢"ç&ö7W&VÖVçEö‡V%÷&VbÀ¢Ö&¶WEö–C¢"æÖ&¶WEö–BÂVçF—G“¢"çVçF—G’Â÷&FW%ö6÷VçC¢"æ÷&FW%ö–G2ç6—¦RÂöÆFW7EöC¢"æöÆFW7EöBÀ¢w&÷W3¢²ââæ"æw&÷W2çfÇVW2‚•ÒÀ¢òòVæRÆ–væRæR6R&GF6†RR|:Vâ'&÷V–ÆÆöâFöçBÂvVævvVÖVçBâvW7B2Væ6÷&RfÆ–L:’†Ü:¦ÖRf÷W&æ—76WW"Â‡V"WBÖ&6Œ:’’à¢6ö×F–&ÆUöG&gE÷õö–G3¢W&6†6T÷&FW'2æf–ÇFW"‚‡ò’Óâòç7FGW2ÓÓÒvG&gBrbbòæWF†÷&—¦F–öç2æ6öÖÖ—FÖVç@¢bbòç7WÆ–W%ö–BÓÓÒ"ç7WÆ–W%ö–Bbb‡òç&ö7W&VÖVçEö‡V%÷&VbÇÂçVÆÂ’ÓÓÒ"ç&ö7W&VÖVçEö‡V%÷&V`¢bb7G&–ær‡òæÖ&¶WEö–B’ÓÓÒ7G&–ær†"æÖ&¶WEö–B’’æÖ‚‡ò’Óâòæ–B’À¢Ò’“° ¢6öç7B÷&FW'2Ò²ââæ÷&FW$ÖçfÇVW2‚•Ó°¢&WGW&â°¢ÆÆö6F–öå÷'VÆS¢ÄÄô4D”ôåõ%TÄRÀ¢õ÷7FW3¢õõ5DU2À¢f–WvW#¢&–v‡G2À¢æVVEö&F6†W3¢æVVD&F6†W2À¢÷&FW'2À¢Væ—EöÆVvVæC¢ö&¦V7BæVçG&–W2…Tä•EôÄ$TÅ2’æf–ÇFW"‚…·7FFUÒ’Óâ7FFRÓÒw6÷W&6–ærr’æÖ‚…·7FFRÂÆ&VÅÒ’Óâ‡²7FFRÂÆ&VÂÒ’’À¢‡—6–6Ã¢'V–ÆE‡—6–6Â‡²÷&FW'2Â&÷†W2Âô'”–BÒ’À¢FöFó¢'V–ÆEFöFò‡²÷&FW'2ÂVç6÷W&6VC¢Vç6÷W&6VD—FV×2ÂæVVD&F6†W2ÂW&6†6T÷&FW'2Â&÷†W2Âf–WvW#¢&–v‡G2Â&6VÇ5Fõ&V6öæ6–ÆRÂ&Æö6¶VD—FV×2ÂVWVVD÷&FW'2Âæ÷rÒ’À¢Ó°§Ğ ¦7–æ2gVæ7F–öâvWDF÷76–W"‡²Ö&¶WD–BÂ7WÆ–W$–BÒçVÆÂÂf–WvW"ÒçVÆÂÂæ÷rÒæWrFFR‚’ÒÂÒF"’°¢òòVçG,:–Rv÷&²¢Æ6öÖÖæFR”Õõ%B&W7FRf—6–&ÆRÜ:¦ÖRfçBÂv÷WfW'GW&RFP¢òò6&VÖœ:‡&RÆ–væRBv6†BâÄô4Åõ5Dô4²WBÆW26÷W&6W2–æ6öæçVW2æR6öç@¢òò¦Ö—2&ö¦WL:–W2Fç2Æf–ÆR‡V"âV7Vâ:—FBÜ:—F–W"6Æ7VÌ:’–6’à¢6öç7B²&÷w3¢÷&FW%&÷w2ÒÒv—BçVW'’† ¢4TÄT5Bòæ–B2÷&FW%ö–BÂòç&VfW&Væ6R2÷&FW%÷&VbÂòç7FGW22÷&FW%÷7FGW2À¢ö’æ–B2÷&FW%ö—FVÕö–BÂö’ç&öGV7Eö–BÂö’ç6·Uö–BÂö’çVçF—G’2÷&FW&VBÀ¢ææÖR2&öGV7EöæÖRÂö’ægVÆf–ÆÆÖVçE÷6÷W&6RÂòæ7&VFVEöB2÷&FW%ö7&VFVEöBÀ¢…4TÄT5B&ÂææÖRe$ôÒ&VÆ—2&Ât„U$R&Âæ–BÒòç&VÆ—5ö–B’2&VÆ•öæÖRÂòç&VÆ—5ö–B2&VÆ•ö–BÀ¢4ôÄU44R‚€¢4TÄT5B5TÒ‡bç&V6V—fVE÷VçF—G’“£¦–ç@¢e$ôÒe÷W&6†6UöÆ–æU÷&öw&W72`¢t„U$Rbæ÷&FW%ö—FVÕö–BÒö’æ–BäBäõBbæ6æ6VÆÆV@¢’Â’2W&6†6U÷&V6V—fVBÀ¢4ôÄU44R‚€¢4TÄT5B5TÒ‡bæVffV7F—fU÷VçF—G’“£¦–ç@¢e$ôÒe÷W&6†6UöÆ–æU÷&öw&W72`¢t„U$Rbæ÷&FW%ö—FVÕö–BÒö’æ–BäBäõBbæ6æ6VÆÆV@¢’Â’2W&6†6Uö6÷fW&VBÀ¢G¶†4VÆ–v–&ÆU6÷W&6U7Â‡°¢&öGV7E7Ã¢vö’ç&öGV7Eö–BrÀ¢&÷f–FW%7Ã¢"…4TÄT5B²ç7WÆ–W%ö÷&FW%ö–FVçF—G’Óãâw&÷f–FW"re$ôÒ&öGV7E÷6·W2²t„U$R²æ–BÒö’ç6·Uö–B’"À¢Ò—Ò27WÆ–W%öÖ–æu÷&W6Vç@¢e$ôÒ÷&FW'2ğ¢¤ô”â÷&FW%ö—FV×2ö’ôâö’æ÷&FW%ö–BÒòæ–BäBö’ægVÆf–ÆÆÖVçE÷6÷W&6RÒt”Õõ%Bp¢ÄTeB¤ô”â&öGV7G2ôâæ–BÒö’ç&öGV7Eö–@¢t„U$RòæÖ&¶WEö–BÒCäBòç7FGW2äõB”â‚wVæF–ærrÂv6æ6VÆÆVBrÂw&VgVæFVBrÂv6öÆÆV7FVBr¢äB‚C#£§WV–B•2åTÄÂõ"U„•5E2€¢4TÄT5Be$ôÒW&6†6UöÆ–æW2À¢t„U$RÂæ÷&FW%ö—FVÕö–BÒö’æ–BäBÂç7WÆ–W%ö–BÒC"äBÂæ6æ6VÆÆVEöB•2åTÄÀ¢’¢õ$DU"%’òæ7&VFVEöBDU42Âòæ–BÂö’æ–FÂ¶Ö&¶WD–BÂ7WÆ–W$–EÒ“°¢6öç7B÷&FW'2ÒæWrÖ‚“°¢6öç7BVç6÷W&6VD—FV×2ÒµÓ°¢f÷"†6öç7B"öb÷&FW%&÷w2’°¢–b‚÷&FW'2æ†2‡"æ÷&FW%ö–B’’÷&FW'2ç6WB‡"æ÷&FW%ö–BÂ°¢–C¢"æ÷&FW%ö–BÂ&VfW&Væ6S¢"æ÷&FW%÷&VbÂ7FGW3¢"æ÷&FW%÷7FGW2Â7&VFVEöC¢"æ÷&FW%ö7&VFVEöBÇÂçVÆÂÂ&VÆ•öæÖS¢"ç&VÆ•öæÖRÇÂçVÆÂÂ&VÆ•ö–C¢"ç&VÆ•ö–BÇÂçVÆÂÂ—FV×3¢µÒÀ¢Ò“°¢òòÆRÖçVRFR6÷W&6–ærW7BVâf—B6Æ7VÌ:’FWV—2Æ6÷WfW'GW&R6†@¢òòVffV7F—fRÂ2Vâ7FGWBFR6öÖÖæFRæ’VæR,:–6WF–öâ‡—6—VR–çfVçL:–Rà¢6öç7BVæ6÷fW&VBÒÖF‚æÖ‚ƒÂçVÖ&W"‡"æ÷&FW&VB’ÒçVÖ&W"‡"çW&6†6Uö6÷fW&VBÇÂ’“°¢6öç7B7WÆ–W$ÖVBÒ"ç7WÆ–W%öÖ–æu÷&W6VçBÓÓÒG'VS°¢÷&FW'2ævWB‡"æ÷&FW%ö–B’æ—FV×2çW6‚‡°¢–C¢"æ÷&FW%ö—FVÕö–BÂ&öGV7Eö–C¢"ç&öGV7Eö–BÂ6·Uö–C¢"ç6·Uö–BÀ¢&öGV7C¢"ç&öGV7EöæÖRÂ÷&FW&VC¢çVÖ&W"‡"æ÷&FW&VB’À¢gVÆf–ÆÆÖVçE÷6÷W&6S¢"ægVÆf–ÆÆÖVçE÷6÷W&6RÀ¢W&6†6–æuö6÷fW&VC¢çVÖ&W"‡"çW&6†6Uö6÷fW&VBÇÂ’À¢W&6†6–æuöÖ—76–æs¢Væ6÷fW&VBÀ¢&V6V—fVC¢çVÖ&W"‡"çW&6†6U÷&V6V—fVBÇÂ’À¢7WÆ–W%öÖ–æu÷&W6VçC¢7WÆ–W$ÖVBÀ¢6÷W&6–æu÷&WV—&VC¢Væ6÷fW&VBâÀ¢Ò“°¢–b‡Væ6÷fW&VBâ’°¢Vç6÷W&6VD—FV×2çW6‚‡°¢÷&FW%ö–C¢"æ÷&FW%ö–BÂ÷&FW%÷&Vc¢"æ÷&FW%÷&VbÂ÷&FW%ö—FVÕö–C¢"æ÷&FW%ö—FVÕö–BÀ¢&öGV7EöæÖS¢"ç&öGV7EöæÖRÂÖ—76–æu÷VçF—G“¢Væ6÷fW&VBÂ÷&FW%ö7&VFVEöC¢"æ÷&FW%ö7&VFVEöBÇÂçVÆÂÀ¢7WÆ–W%öÖ–æu÷&W6VçC¢7WÆ–W$ÖVBÀ¢Ò“°¢Ğ¢Ğ ¢òòÆR6öÆ—26Æ–VçB‡&6VÇ2’âvW7B2Vâ6'FöâFRG&ç7÷'B´ôÒÔ$õ€¢òò†‡V%÷‡—6–6Å÷Væ—G2ôÔ$´UEõ$4TÂ’âÆW2FWW‚&WWfW2&W7FVçB<:—,:–W2à¢6öç7B÷&FW$–G2Ò²ââæ÷&FW'2æ¶W—2‚•Ó°¢6öç7B6Æ–VçE&6VÇ2ÒæWrÖ‚“°¢–b†÷&FW$–G2æÆVæwF‚’°¢6öç7B²&÷w3¢6Æ–VçE&6VÅ&÷w2ÒÒv—BçVW'’† ¢4TÄT5Bæ–B2&6VÅö–BÂæ÷&FW%ö–BÂç&VfW&Væ6RÂç7FGW2À¢’æ÷&FW%ö—FVÕö–BÂ’çVçF—G’Â’çG•öÆÆö6FVBÂ’çG•÷6¶VBÂ’çG•÷6†—V@¢e$ôÒ&6VÇ2¢¤ô”â&6VÅö—FV×2’ôâ’ç&6VÅö–BÒæ–@¢¤ô”â÷&FW%ö—FV×2ö’ôâö’æ–BÒ’æ÷&FW%ö—FVÕö–BäBö’ægVÆf–ÆÆÖVçE÷6÷W&6RÒt”Õõ%Bp¢t„U$Ræ÷&FW%ö–BÒå’‚C£§WV–EµÒ’äBç7FGW2Ãâv6æ6VÆÆVBp¢õ$DU"%’æ7&VFVEöBDU42Âæ–BÂ’æ÷&FW%ö—FVÕö–FÂ¶÷&FW$–G5Ò“°¢f÷"†6öç7B"öb6Æ–VçE&6VÅ&÷w2’°¢–b‚6Æ–VçE&6VÇ2æ†2‡"ç&6VÅö–B’’6Æ–VçE&6VÇ2ç6WB‡"ç&6VÅö–BÂ°¢–C¢"ç&6VÅö–BÂ÷&FW%ö–C¢"æ÷&FW%ö–BÂ&VfW&Væ6S¢"ç&VfW&Væ6RÀ¢7FGW3¢"ç7FGW2Â6öçFVçG3¢µÒÀ¢Ò“°¢6Æ–VçE&6VÇ2ævWB‡"ç&6VÅö–B’æ6öçFVçG2çW6‚‡°¢÷&FW%ö—FVÕö–C¢"æ÷&FW%ö—FVÕö–BÂVçF—G“¢çVÖ&W"‡"çVçF—G’’À¢òò&WWfR‡—6—VRL:—&—l:–RFW2,:–6WF–öç2‡V"WBFW2Æ6VÖVçG2´ôÒÔ$õ‚†Ö–w&F–öâ3c2’Â¦Ö—2,:—&V×Æ–Rà¢ÆÆö6FVC¢çVÖ&W"‡"çG•öÆÆö6FVB’Â6¶VC¢çVÖ&W"‡"çG•÷6¶VB’Â6†—VC¢çVÖ&W"‡"çG•÷6†—VB’À¢Ò“°¢Ğ¢Ğ ¢6öç7B²&÷w3¢æVVG5&÷w2ÒÒv—BçVW'’† ¢4TÄT5BÂæ–B2Æ–æUö–BÂÂç7WÆ–W%ö–BÂ2ææÖR27WÆ–W%öæÖRÂÂç&öGV7E÷6·Uö–BÂÂç7WÆ–W%÷6·RÀ¢ææÖR2&öGV7EöæÖRÂÂçVçF—G’Âö’æ÷&FW%ö–BÂòç&VfW&Væ6R2÷&FW%÷&VbÂÂæ÷&FW%ö—FVÕö–BÂÂæ7&VFVEöBÀ¢Âç&ö7W&VÖVçEö‡V%÷&VbÂòæ7&VFVEöB2÷&FW%ö7&VFVEö@¢e$ôÒW&6†6UöÆ–æW2À¢¤ô”â÷&FW%ö—FV×2ö’ôâö’æ–BÒÂæ÷&FW%ö—FVÕö–@¢¤ô”â÷&FW'2òôâòæ–BÒö’æ÷&FW%ö–@¢¤ô”â7WÆ–W'22ôâ2æ–BÒÂç7WÆ–W%ö–@¢ÄTeB¤ô”â&öGV7G2ôâæ–BÒö’ç&öGV7Eö–@¢t„U$RòæÖ&¶WEö–BÒCäBÂçW&6†6Uö÷&FW%ö–B•2åTÄÂäBÂæ6æ6VÆÆVEöB•2åTÄÀ¢äB‚C#£§WV–B•2åTÄÂõ"Âç7WÆ–W%ö–BÒC#£§WV–B¢õ$DU"%’2ææÖRÂÂæ7&VFVEöBÂÂæ–FÂ¶Ö&¶WD–BÂ7WÆ–W$–EÒ“° ¢6öç7B²&÷w3¢õ&÷w2ÒÒv—BçVW'’† ¢4TÄT5Bòæ–B2õö–BÂòç7FGW2Âòç6VçEöBÂòç6VçEö6†ææVÂÂòç6VçEöæ÷FRÂòç7WÆ–W%ö÷&FW%ö–BÂòç7WÆ–W%ö–BÀ¢2ææÖR27WÆ–W%öæÖRÂòç&ö7W&VÖVçEö‡V%÷&VbÂòæ7&VFVEöBÂòçWFFVEöBÂòæ÷&FW&VEöBÀ¢Âæ–B2Æ–æUö–BÂÂæ÷&FW%ö—FVÕö–BÂö’æ÷&FW%ö–BÂòç&VfW&Væ6R2÷&FW%÷&VbÂåTÄÄ”b‡Fõö§6öæ"†ò’Óãâw6–×VÆF–öå÷66÷RrÂrr’26–×VÆF–öå÷66÷RÂææÖR2&öGV7EöæÖRÀ¢Âç&öGV7E÷6·Uö–BÂÂçVçF—G’2÷&FW&VBÂgæVffV7F—fU÷VçF—G’2VffV7F—fRÂgç&V6V—fVE÷VçF—G’2&V6V—fVBÀ¢òçG&–vvW%öÖöFRÂòæ6öæf—&ÖVEöBÂòæÖ&¶WEö–B2õöÖ&¶WEö–BÀ¢Âç7WÆ–W%÷Væ—E÷&–6RÂÂç7WÆ–W%ö7W'&Væ7’À¢Âæ6öæf—&ÖVE÷Væ—E÷&–6RÂÂæ6öæf—&ÖVEö7W'&Væ7’Âòæ7&VFVEöB2÷&FW%ö7&VFVEö@¢e$ôÒW&6†6Uö÷&FW'2ğ¢¤ô”â7WÆ–W'22ôâ2æ–BÒòç7WÆ–W%ö–@¢¤ô”âW&6†6UöÆ–æW2ÂôâÂçW&6†6Uö÷&FW%ö–BÒòæ–BäBÂæ6æ6VÆÆVEöB•2åTÄÀ¢¤ô”âe÷W&6†6UöÆ–æU÷&öw&W72gôâgæÆ–æUö–BÒÂæ–@¢¤ô”â÷&FW%ö—FV×2ö’ôâö’æ–BÒÂæ÷&FW%ö—FVÕö–@¢¤ô”â÷&FW'2òôâòæ–BÒö’æ÷&FW%ö–@¢ÄTeB¤ô”â&öGV7G2ôâæ–BÒö’ç&öGV7Eö–@¢t„U$RòæÖ&¶WEö–BÒCäB‚C#£§WV–B•2åTÄÂõ"òç7WÆ–W%ö–BÒC#£§WV–B¢õ$DU"%’òæ7&VFVEöBDU42Âòæ–BÂòæ7&VFVEöBÂÂæ–FÂ¶Ö&¶WD–BÂ7WÆ–W$–EÒ“° ¢6öç7BÆ–æT–G2Òõ&÷w2æÖ‚‡"’Óâ"æÆ–æUö–B“°¢6öç7BæöÖÇ”'”Æ–æRÒæWrÖ‚“°¢–b†Æ–æT–G2æÆVæwF‚’°¢6öç7B²&÷w2ÒÒv—BçVW'’† ¢4TÄT5BçW&6†6UöÆ–æUö–B2Æ–æUö–BÂ5TÒ‡çVçF—G’“£¦–çB2G¢e$ôÒ‡V%÷W&6†6UöÆÆö6F–öç2¢¤ô”â‡V%÷‡—6–6Å÷Væ—E÷Æ6VÖVçG2ôâæÆÆö6F–öåö–BÒæ–BäBç&VÖ÷fVEöB•2åTÄÀ¢¤ô”â‡V%÷‡—6–6Å÷Væ—G2RôâRæ–BÒç‡—6–6Å÷Væ—Eö–@¢t„U$RçW&6†6UöÆ–æUö–BÒå’‚C£§WV–EµÒ’äB‡Rç7FFRÒuT$åD”äTBrõ"Ræ÷WF6öÖU÷G—R•2äõBåTÄÂ¢u$õU%’çW&6†6UöÆ–æUö–FÂ¶Æ–æT–G5Ò“°¢&÷w2æf÷$V6‚‚‡"’ÓâæöÖÇ”'”Æ–æRç6WB‡"æÆ–æUö–BÂçVÖ&W"‡"çG’’’“°¢Ğ ¢6öç7B÷2ÒæWrÖ‚“°¢f÷"†6öç7B"öbõ&÷w2’°¢–b‚÷2æ†2‡"çõö–B’’°¢÷2ç6WB‡"çõö–BÂ°¢–C¢"çõö–BÂ7FGW3¢"ç7FGW2Â7WÆ–W%ö–C¢"ç7WÆ–W%ö–BÂ7WÆ–W%öæÖS¢"ç7WÆ–W%öæÖRÀ¢&ö7W&VÖVçEö‡V%÷&Vc¢"ç&ö7W&VÖVçEö‡V%÷&VbÂ6VçEöC¢"ç6VçEöBÂ6VçEö6†ææVÃ¢"ç6VçEö6†ææVÂÂ6VçEöæ÷FS¢"ç6VçEöæ÷FRÀ¢6–×VÆF–öå÷66÷S¢"ç6–×VÆF–öå÷66÷RÇÂçVÆÂÀ¢7WÆ–W%ö÷&FW%ö–C¢"ç7WÆ–W%ö÷&FW%ö–BÂ7&VFVEöC¢"æ7&VFVEöBÂWFFVEöC¢"çWFFVEöBÂ÷&FW&VEöC¢"æ÷&FW&VEöBÀ¢G&–vvW%öÖöFS¢"çG&–vvW%öÖöFRÇÂçVÆÂÂ6öæf—&ÖVEöC¢"æ6öæf—&ÖVEöBÇÂçVÆÂÂÖ&¶WEö–C¢"çõöÖ&¶WEö–BÇÂÖ&¶WD–BÀ¢Æ–æW3¢µÒÀ¢Ò“°¢Ğ¢6öç7BVffV7F—fRÒçVÖ&W"‡"æVffV7F—fRÇÂ“°¢6öç7B&V6V—fVBÒçVÖ&W"‡"ç&V6V—fVBÇÂ“°¢÷2ævWB‡"çõö–B’æÆ–æW2çW6‚‡°¢Æ–æUö–C¢"æÆ–æUö–BÂ÷&FW%ö–C¢"æ÷&FW%ö–BÂ÷&FW%÷&Vc¢"æ÷&FW%÷&VbÂ÷&FW%ö—FVÕö–C¢"æ÷&FW%ö—FVÕö–BÀ¢&öGV7C¢"ç&öGV7EöæÖRÂ&öGV7E÷6·Uö–C¢"ç&öGV7E÷6·Uö–BÀ¢÷&FW&VC¢çVÖ&W"‡"æ÷&FW&VB’Â6öæf—&ÖVC¢VffV7F—fRÂ&V6V—fVBÂÖ—76–æs¢ÖF‚æÖ‚†VffV7F—fRÒ&V6V—fVBÂ’À¢æöÖÇ“¢æöÖÇ”'”Æ–æRævWB‡"æÆ–æUö–B’ÇÂÀ¢÷&FW%ö7&VFVEöC¢"æ÷&FW%ö7&VFVEöBÇÂçVÆÂÀ¢6–×VÆF–öå÷66÷S¢"ç6–×VÆF–öå÷66÷RÇÂçVÆÂÀ¢Væ—E÷&–6S¢"ç7WÆ–W%÷Væ—E÷&–6RÓÒçVÆÂòçVÆÂ¢çVÖ&W"‡"ç7WÆ–W%÷Væ—E÷&–6R’À¢7W'&Væ7“¢"ç7WÆ–W%ö7W'&Væ7’ÇÂçVÆÂÀ¢òòÆRFWf—2f÷W&æ—76WW"–æ—F–ÂæR&÷VvR¦Ö—2²ff–6†W"Æl:—&—L:¢òòFRÆ6öæf—&ÖF–öâ<:—,:–ÖVçBÂ’6ö×&—27W"ÆW2ò‡V"6ç2FWf—2à¢6öæf—&ÖVE÷Væ—E÷&–6S¢"æ6öæf—&ÖVE÷Væ—E÷&–6RÓÒçVÆÂòçVÆÂ¢çVÖ&W"‡"æ6öæf—&ÖVE÷Væ—E÷&–6R’À¢6öæf—&ÖVEö7W'&Væ7“¢"æ6öæf—&ÖVEö7W'&Væ7’ÇÂ"ç7WÆ–W%ö7W'&Væ7’ÇÂçVÆÂÀ¢Ò“°¢Ğ¢6öç7BW&6†6T÷&FW'2Ò²ââç÷2çfÇVW2‚•ÒæÖ‚‡ò’Óâ°¢òò6–×VÌ:’6WVÆVÖVçB6’DõUDU2ÆW2Æ–væW2'FvVçBÆÜ:¦ÖR÷'L:–R‡,:†vÆR6W'fWW"se7WÆ–W%6–×VÆF–öâ’à¢òç6–×VÆF–öå÷66÷RÒæWr6WB‡òæÆ–æW2æÖ‚†Â’ÓâÂç6–×VÆF–öå÷66÷R’’ç6—¦RÓÓÒòòæÆ–æW5³Òç6–×VÆF–öå÷66÷R¢çVÆÃ°¢òç6–×VÆF–öå÷&VfW&Væ6RÒòç6–×VÆF–öå÷66÷RÓÓÒtsbÔ%U”U"ròòæ–B¢çVÆÃ°¢6öç7BF÷FÇ2ÒòæÆ–æW2ç&VGV6R‚‡BÂÂ’Óâ‡°¢VffV7F—fS¢BæVffV7F—fR²Âæ6öæf—&ÖVBÂ&V6V—fVC¢Bç&V6V—fVB²Âç&V6V—fVBÀ¢Ö—76–æs¢BæÖ—76–ær²ÂæÖ—76–ærÂæöÖÇ“¢BææöÖÇ’²ÂææöÖÇ’À¢Ò’Â²VffV7F—fS¢Â&V6V—fVC¢ÂÖ—76–æs¢ÂæöÖÇ“¢Ò“°¢&WGW&â²ââçòÂ7FvS¢õ7FvR‡òÂF÷FÇ2’ÂF÷FÇ2Ó°¢Ò“° ¢6öç7B²&÷w3¢&V6V—E&÷w2ÒÒv—BçVW'’† ¢4TÄT5BRæ–BÂRç&VfW&Væ6RÂRæW‡FW&æÅ÷&VbÂRç7FFRÂRæ7&VFVEöBÀ¢%$•ôtr„D•5D”ä5BçW&6†6Uö÷&FW%ö–B’2õö–G2Â5TÒ‡çVçF—G’“£¦–çB2G¢e$ôÒ‡V%÷‡—6–6Å÷Væ—G2P¢¤ô”â‡V%÷‡—6–6Å÷Væ—E÷Æ6VÖVçG2ôâç‡—6–6Å÷Væ—Eö–BÒRæ–BäBæ÷W&F–öå÷G—RÒu$T4T•dRp¢¤ô”â‡V%÷W&6†6UöÆÆö6F–öç2ôâæ–BÒæÆÆö6F–öåö–@¢t„U$RæÖ&¶WEö–BÒCäBRçVæ—E÷G—RÒu5UÄ”U%õ4´tRp¢u$õU%’Ræ–Bõ$DU"%’Ræ7&VFVEöBDU42Ä”Ô•BÂ¶Ö&¶WD–EÒ“° ¢6öç7B²&÷w3¢&÷…&÷w2ÒÒv—BçVW'’† ¢4TÄT5BRæ–B2Væ—Eö–BÂRç&VfW&Væ6RÂRç7FFRÂRæÖ&¶WEö–BÂRæ7&VFVEöBÂ6‚ç&VfW&Væ6R26†—ÖVçE÷&VbÂ6‚ç7FvR26†—ÖVçE÷7FvRÀ¢æ÷&FW%ö–BÂòç&VfW&Væ6R2÷&FW%÷&VbÂçW&6†6UöÆ–æUö–BÂçVçF—G’Âæ&u÷Væ—Eö–@¢e$ôÒ‡V%÷‡—6–6Å÷Væ—G2P¢¤ô”â‡V%ö&÷…öVffV7F—fU÷Æ6VÖVçG2ôâæ&÷…÷Væ—Eö–BÒRæ–@¢¤ô”â‡V%÷W&6†6UöÆÆö6F–öç2ôâæ–BÒæÆÆö6F–öåö–@¢¤ô”â÷&FW'2òôâòæ–BÒæ÷&FW%ö–@¢ÄTeB¤ô”â–çFW&æF–öæÅ÷6†—ÖVçEö‡V%÷Væ—G2‡2ôâ‡2ç‡—6–6Å÷Væ—Eö–BÒRæ–@¢ÄTeB¤ô”â–çFW&æF–öæÅ÷6†—ÖVçG26‚ôâ6‚æ–BÒ‡2ç6†—ÖVçEö–@¢t„U$RRçVæ—E÷G—RÒtÔ$´UEõ$4TÂräBæÖ&¶WEö–BÒC¢õ$DU"%’Ræ7&VFVEöBDU42ÂRæ–FÂ¶Ö&¶WD–EÒ“°¢6öç7B&÷†W2ÒæWrÖ‚“°¢f÷"†6öç7B"öb&÷…&÷w2’°¢–b‚&÷†W2æ†2‡"çVæ—Eö–B’’°¢&÷†W2ç6WB‡"çVæ—Eö–BÂ²Væ—Eö–C¢"çVæ—Eö–BÂ&VfW&Væ6S¢"ç&VfW&Væ6RÂ7FFS¢"ç7FFRÂ7&VFVEöC¢"æ7&VFVEöBÇÂçVÆÂÂ6†—ÖVçE÷&Vc¢"ç6†—ÖVçE÷&VbÇÂçVÆÂÀ¢6†—ÖVçE÷7FvS¢"ç6†—ÖVçE÷7FvRÇÂçVÆÂÂ6öçFVçG3¢µÒÒ“°¢Ğ¢&÷†W2ævWB‡"çVæ—Eö–B’æ6öçFVçG2çW6‚‡²÷&FW%ö–C¢"æ÷&FW%ö–BÂ÷&FW%÷&Vc¢"æ÷&FW%÷&VbÂÆ–æUö–C¢"çW&6†6UöÆ–æUö–BÂG“¢çVÖ&W"‡"çVçF—G’’Â&u÷Væ—Eö–C¢"æ&u÷Væ—Eö–BÇÂçVÆÂÒ“°¢Ğ ¢òò´ôÒÔ$õ‚f–FW2†7,:œ:–W2FWV—2ÆR‡V"Â2Væ6÷&R6ö×÷<:–W2’¢f—6–&ÆW2÷W"÷Wfö—":§G&R&V×Æ–W2à¢6öç7B²&÷w3¢V×G”&÷…&÷w2ÒÒv—BçVW'’† ¢4TÄT5BRæ–B2Væ—Eö–BÂRç&VfW&Væ6RÂRç7FFRÂRæ7&VFVEöBe$ôÒ‡V%÷‡—6–6Å÷Væ—G2P¢t„U$RRçVæ—E÷G—RÒtÔ$´UEõ$4TÂräBRç7FFRäõB”â‚tD•5D4„TBrÂu5UU%4TDTBrÂuT$åD”äTBr¢äB‡RæÖ&¶WEö–BÒCõ"RæÖ&¶WEö–B•2åTÄÂ¢äBäõBU„•5E2…4TÄT5Be$ôÒ‡V%ö&÷…öVffV7F—fU÷Æ6VÖVçG2t„U$Ræ&÷…÷Væ—Eö–BÒRæ–B¢õ$DU"%’Ræ7&VFVEöBDU42Ä”Ô•B#Â¶Ö&¶WD–EÒ“°¢f÷"†6öç7B"öbV×G”&÷…&÷w2’°¢–b‚&÷†W2æ†2‡"çVæ—Eö–B’’&÷†W2ç6WB‡"çVæ—Eö–BÂ²Væ—Eö–C¢"çVæ—Eö–BÂ&VfW&Væ6S¢"ç&VfW&Væ6RÂ7FFS¢"ç7FFRÂ7&VFVEöC¢"æ7&VFVEöBÇÂçVÆÂÂ6†—ÖVçE÷&Vc¢çVÆÂÂ6†—ÖVçE÷7FvS¢çVÆÂÂ6öçFVçG3¢µÒÒ“°¢Ğ ¢òòVçF—L:—2&\:wVW22Væ6÷&RÖ—6W2Vâ6'Föâ¢6÷W&6W2&÷÷<:–W2÷W"6ö×÷6W"VæR´ôÒÔ$õ‚…$U4²’Â6ç2&W76—6–Rà¢6öç7B²&÷w3¢f–ÆÆ&ÆU&÷w2ÒÒv—BçVW'’† ¢4TÄT5BæÆÆö6F–öåö–BÂRæ–B2g&öÕ÷Væ—Eö–BÂRç&VfW&Væ6R2g&öÕ÷Væ—E÷&VbÂæ÷&FW%ö–BÂòç&VfW&Væ6R2÷&FW%÷&VbÀ¢æ÷&FW%ö—FVÕö–BÂç&öGV7E÷6·Uö–BÂ"ææÖR2&öGV7EöæÖRÂçVçF—G¢e$ôÒ‡V%÷‡—6–6Å÷Væ—E÷Æ6VÖVçG2 ¢¤ô”â‡V%÷‡—6–6Å÷Væ—G2RôâRæ–BÒç‡—6–6Å÷Væ—Eö–BäBRçVæ—E÷G—RÃâtÔ$´UEõ$4TÂp¢äBRç7FFRäõB”â‚uT$åD”äTBrÂu5UU%4TDTBrÂtD•5D4„TBr¢äBäõB‡RçVæ—E÷G—SÒt„äDÄ”äuõTä•BräBRæ÷&FW%ö–B•2äõBåTÄÂ¢¤ô”â‡V%÷W&6†6UöÆÆö6F–öç2ôâæ–BÒæÆÆö6F–öåö–@¢¤ô”â÷&FW'2òôâòæ–BÒæ÷&FW%ö–@¢ÄTeB¤ô”â÷&FW%ö—FV×2ö’ôâö’æ–BÒæ÷&FW%ö—FVÕö–@¢ÄTeB¤ô”â&öGV7G2"ôâ"æ–BÒö’ç&öGV7Eö–@¢t„U$Rç&VÖ÷fVEöB•2åTÄÂäBçVçF—G’âäBæÖ&¶WEö–BÒC¢õ$DU"%’Ræ7&VFVEöBDU42ÂæÆÆö6F–öåö–BÄ”Ô•B#Â¶Ö&¶WD–EÒ“°¢6öç7Bf–ÆÆ&ÆRÒf–ÆÆ&ÆU&÷w2æÖ‚‡"’Óâ‡°¢ÆÆö6F–öåö–C¢"æÆÆö6F–öåö–BÂg&öÕ÷Væ–Ú±î¸Â¸­yêë¢°k¢G§¦*^  const key = `${r.order_item_id}|${r.line_id}`;
     if (!items.has(key)) {
       items.set(key, {
         order_id: r.order_id, order_ref: r.order_ref, market_id: r.market_id, order_item_id: r.order_item_id,

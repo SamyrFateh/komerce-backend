@@ -104,8 +104,8 @@
     const activePos = pos.filter(po => !isHistoricalPo(po));
     const historyPos = pos.filter(isHistoricalPo);
     const batches = cockpit.need_batches || [];
-    const todo = cockpit.todo || [];
-    const physical = cockpit.physical || [];
+    const todo = (cockpit.todo || []).filter(item => !['PREPARE_BAG','CLOSE_BAG','DEPOSIT_BAG','BOX_BAGS'].includes(item.kind));
+    const physical = (cockpit.physical || []).filter(section => section.key !== 'bags');
     const legend = cockpit.unit_legend || [];
     const readOnly = ctx.isReadOnly;
     const marketCode = (d.market && d.market.code) || ctx.marketCode;
@@ -172,7 +172,7 @@
       const i = value.indexOf(':');
       if (i < 1) return null;
       const type = value.slice(0, i), id = value.slice(i + 1);
-      return ['po','order','need','bag','box'].includes(type) && id.length > 0 && id.length < 160 ? {type,id} : null;
+      return ['po','order','need','box'].includes(type) && id.length > 0 && id.length < 160 ? {type,id} : null;
     }
     function putUrlSelection(type, id) {
       if (!isHubRoute() || !win.history?.pushState) return;
@@ -218,21 +218,6 @@
       });
     }
 
-    function bagPlanFor(order) {
-      return order.items.map((i) => ({ order_item_id: i.id, quantity: Math.max(0, i.received - i.in_bags - i.in_boxes) })).filter((x) => x.quantity > 0);
-    }
-    function createBag(btn, order, partial) {
-      const plan = bagPlanFor(order);
-      const missing = (order.readiness.pending_items || []).map((p) => `${p.product || 'article'} (${p.missing})`).join(', ');
-      return execute(btn, {
-        url: ctx.endpoint('bags'), body: { order_id: order.id, bag_plan: plan, ...(partial ? { partial_preparation: true } : {}) },
-        confirmMessage: partial
-          ? `PRÃ‰PARATION PARTIELLE de ${order.reference} : ${plan.reduce((t, x) => t + x.quantity, 0)} unitÃ©(s) reÃ§ue(s) seulement. Manque encore : ${missing}. Le reliquat reste suivi et ne part pas dans ce sac. Confirmer ?`
-          : `CrÃ©er le sac client de ${order.reference} (commande complÃ¨te) ?`,
-        runningMessage: 'Ouverture du sac clientâ€¦', successMessage: partial ? `Sac partiel ouvert pour ${order.reference} ; reliquat conservÃ©.` : `Sac ouvert pour ${order.reference}.`,
-      });
-    }
-
     function submitPo(btn, poId) {
       return execute(btn, {
         url: purchasing(`po/${encodeURIComponent(poId)}/submit`), body: {},
@@ -240,13 +225,6 @@
         runningMessage: 'Soumission en coursâ€¦', successMessage: 'PO soumise : enregistrer maintenant son envoi rÃ©el.',
       });
     }
-    function closeBag(btn, bagId) {
-      return execute(btn, {
-        url: ctx.endpoint(`bags/${encodeURIComponent(bagId)}/close`), body: {},
-        runningMessage: 'ContrÃ´le du contenu avant fermetureâ€¦', successMessage: 'Sac fermÃ©, prÃªt pour une KOM-BOX.',
-      });
-    }
-
     // â”€â”€ SÃ©lection par dÃ©faut et lien Â« Ã€ faire maintenant Â» â†’ objet â”€â”€
     function todoSel(item) {
       const s = item.subject || {};
@@ -256,7 +234,6 @@
         const o = orderById.get(s.order_id);
         return o && o.totals.uncovered > 0 && item.kind === 'SOURCING_REQUIRED' ? { type: 'order', id: o.id } : { type: 'order', id: s.order_id };
       }
-      if (s.bag_unit_id) return { type: 'bag', id: s.bag_unit_id };
       if (s.box_unit_id) return { type: 'box', id: s.box_unit_id };
       return null;
     }
@@ -271,7 +248,6 @@
         state.sel.type === 'order' ? orderById.has(state.sel.id) :
         state.sel.type === 'need' ? (batches.some(b => b.groups.some(g => g.key === state.sel.id)) ||
           orders.some(o => o.items.some(i => `src:${o.id}:${i.id}` === state.sel.id))) :
-        state.sel.type === 'bag' ? [...(d.bags_open || []),...(d.bags_ready || [])].some(b => b.unit_id === state.sel.id) :
         state.sel.type === 'box' ? (d.boxes || []).some(b => b.unit_id === state.sel.id) : false;
       // La tÃ¢che serveur est une rÃ©fÃ©rence mÃ©tier valide mÃªme si la liste
       // compacte n'inclut pas le dossier : conserver sa sÃ©lection au clic.
@@ -286,36 +262,27 @@
     rootEl.setAttribute('data-hlc-selection', selKey);
 
     // â”€â”€ Liens de navigation (rÃ©fÃ©rences du dossier serveur, aucune quantitÃ© calculÃ©e) â”€â”€
-    const allBags = [
-      ...(d.bags_open || []).map((b) => ({ id: b.unit_id, ref: b.reference, order_id: b.order_id, order_ref: b.order_ref, state: 'ouvert' })),
-      ...(d.bags_ready || []).map((b) => ({ id: b.unit_id, ref: b.reference, order_id: b.order_id, order_ref: b.order_ref, state: 'fermÃ©' })),
-    ];
     const boxOrders = (b) => [...new Set((b.contents || []).map((c) => c.order_id).filter(Boolean))];
     const needGroups = batches.flatMap((b) => b.groups.map((g) => ({ batch: b, group: g })));
     const sourcingNeeds = orders.flatMap((o) => o.items.filter((i) => i.uncovered > 0).map((i) => ({ order: o, item: i, key: `src:${o.id}:${i.id}` })));
     function related() {
-      const r = { orders: new Set(), pos: new Set(), needs: new Set(), bags: new Set(), boxes: new Set() };
+      const r = { orders: new Set(), pos: new Set(), needs: new Set(), boxes: new Set() };
       if (!sel) return r;
       if (sel.type === 'order') {
         const o = orderById.get(sel.id);
         if (o) { r.orders.add(o.id); o.po_ids.forEach((id) => r.pos.add(id)); }
-        allBags.filter((b) => b.order_id === sel.id).forEach((b) => r.bags.add(b.id));
         (d.boxes || []).filter((b) => boxOrders(b).includes(sel.id)).forEach((b) => r.boxes.add(b.unit_id));
         needGroups.filter(({ group }) => group.lines.some((l) => l.order_id === sel.id)).forEach(({ group }) => r.needs.add(group.key));
         sourcingNeeds.filter((n) => n.order.id === sel.id).forEach((n) => r.needs.add(n.key));
       } else if (sel.type === 'po') {
         const po = poById.get(sel.id);
-        if (po) { r.pos.add(po.id); po.order_ids.forEach((id) => r.orders.add(id)); }
+  m«ëŒ+Š×®º+º$zzb¥æÚ±î¸Â¸­yêë¢°k¢G§¦*^      if (po) { r.pos.add(po.id); po.order_ids.forEach((id) => r.orders.add(id)); }
       } else if (sel.type === 'need') {
         const g = needGroups.find((x) => x.group.key === sel.id);
         if (g) g.group.lines.forEach((l) => r.orders.add(l.order_id));
         const s = sourcingNeeds.find((x) => x.key === sel.id);
         if (s) r.orders.add(s.order.id);
         r.needs.add(sel.id);
-      } else if (sel.type === 'bag') {
-        const b = allBags.find((x) => x.id === sel.id);
-        if (b) r.orders.add(b.order_id);
-        r.bags.add(sel.id);
       } else if (sel.type === 'box') {
         const b = (d.boxes || []).find((x) => x.unit_id === sel.id);
         if (b) boxOrders(b).forEach((id) => r.orders.add(id));
@@ -559,553 +526,6 @@
     physical.forEach((section) => {
       const block = el(doc, 'div', 'hlc-phys');
       block.setAttribute('data-hlc-phys', section.key);
-      const title = el(doc, 'span', 'hlc-phys-title');
-      title.appendChild(el(doc, 'span', `hlc-dot is-${section.tone}`));
-      title.appendChild(doc.createTextNode(section.title));
-      title.appendChild(el(doc, 'span', 'hlc-spacer'));
-      title.appendChild(el(doc, 'span', 'hlc-ref', String(section.items.length)));
-      block.appendChild(title);
-      section.items.forEach((it) => {
-        const [type, id] = [it.key.slice(0, it.key.indexOf(':')), it.key.slice(it.key.indexOf(':') + 1)];
-        const hit = (type === 'order' && rel.orders.has(id) && sel && sel.type !== 'order') || (type === 'bag' && rel.bags.has(id)) || (type === 'box' && rel.boxes.has(id));
-        const c = card('hlc-phys-card', { 'data-hlc-phys-item': it.key }, selKey === it.key, hit, () => select(type, id));
-        const r = el(doc, 'div', 'hlc-row');
-        r.appendChild(el(doc, 'span', 'hlc-ref', it.ref));
-        r.appendChild(el(doc, 'span', 'hlc-spacer'));
-        r.appendChild(el(doc, 'small', 'hlc-meta', humanPhysicalState(it.meta)));
-        c.appendChild(r);
-        c.appendChild(el(doc, 'span', 'hlc-phys-text', humanPhysicalState(it.text)));
-        block.appendChild(c);
-      });
-      if (!section.items.length) block.appendChild(el(doc, 'span', 'hlc-empty', section.empty_text));
-      right.appendChild(block);
-    });
-    // Un accÃ¨s direct par geste physique, toujours vers le writer existant.
-    const shortcuts = el(doc, 'nav', 'hlc-physical-shortcuts');
-    shortcuts.setAttribute('aria-label', 'AccÃ¨s direct aux ateliers physiques');
-    for (const [key, label] of [
-      ['reception', 'RÃ©ception fournisseur'],
-      ['bags', 'PrÃ©parer les sacs'],
-      ['boxes', 'KOM-BOX'],
-      ['shipments', 'ExpÃ©ditions'],
-    ]) {
-      const shortcut = button(doc, label, 'physical-' + key, 'is-link');
-      shortcut.setAttribute('data-hlc-physical-shortcut', key);
-      shortcut.addEventListener('click', () => key === 'reception' ? ctx.openReception() : ctx.openPhysical(key));
-      shortcuts.appendChild(shortcut);
-    }
-    right.appendChild(shortcuts);
-    const details = button(doc, 'Voir tous les ateliers physiques', 'open-physical-details', 'is-link');
-    details.addEventListener('click', () => ctx.openPhysical());
-    right.appendChild(details);
-
-    function field(form, label, input) {
-      const wrap = el(doc, 'label', 'hlc-field');
-      wrap.appendChild(el(doc, 'span', '', label));
-      wrap.appendChild(input);
-      form.appendChild(wrap);
-      return input;
-    }
-    function textInput(placeholder, name) {
-      const i = doc.createElement('input');
-      i.type = 'text'; i.maxLength = 240; i.placeholder = placeholder || ''; i.name = name;
-      return i;
-    }
-    function poForm(po, kind) {
-      const form = el(doc, 'form', 'hlc-form');
-      const simulated = po.simulation_scope === 'G6-BUYER';
-      const simulationRef = 'SIM-STAGING-' + po.simulation_reference;
-      if (simulated && (kind === 'sent' || kind === 'confirm')) {
-        form.appendChild(el(doc, 'p', 'hlc-zone-hint', 'SIMULATION STAGING UNIQUEMENT â€” aucune commande, confirmation ou transmission vers un fournisseur extÃ©rieur. Les justificatifs et le vendeur sont fictifs.'));
-      }
-      form.setAttribute('data-hlc-form', kind);
-      form.addEventListener('click', (event) => event.stopPropagation());
-      const close = button(doc, 'Fermer', 'close-form', 'is-link');
-      close.addEventListener('click', () => { state.form = null; paint(); });
-      if (kind === 'receive') {
-        const card = ctx.renderReception(po.id);
-        form.appendChild(card || el(doc, 'p', 'hlc-empty', 'Rien Ã  rÃ©ceptionner pour cette PO (dÃ©jÃ  reÃ§ue ou non rÃ©ceptionnable).'));
-        form.appendChild(close);
-        return form;
-      }
-      const proof = (kind === 'commitment' || kind === 'payment')
-        ? field(form, kind === 'commitment' ? 'PiÃ¨ce justificative de lâ€™engagement' : 'Justificatif du paiement', textInput('RÃ©fÃ©rence de la piÃ¨ce (obligatoire)', 'proof_ref'))
-        : null;
-      let amount; let currency;
-      const needsAmount = kind === 'payment' || (kind === 'commitment' && !po.amount.derived);
-      if (kind === 'commitment' && po.amount.derived) {
-        form.appendChild(el(doc, 'p', 'hlc-zone-hint', `Montant dÃ©rivÃ© des lignes : ${num(po.amount.amount)} ${po.amount.currency}.`));
-      }
-      if (needsAmount) {
-        amount = field(form, 'Montant', Object.assign(doc.createElement('input'), { type: 'number', min: '0', step: '0.01', name: 'amount' }));
-        currency = field(form, 'Devise', Object.assign(textInput('USD', 'currency'), { maxLength: 3 }));
-        if (kind === 'payment' && po.amount.derived) { amount.placeholder = String(po.amount.amount); currency.value = po.amount.currency; }
-      }
-      let channel; let supplierOrder; let confirmProof; let confirmSeller; let confirmQty = [];
-      const confirmMoney = new Map();
-      const confirmExecutions = [];
-      if (kind === 'sent') {
-        channel = field(form, simulated ? 'Canal interne de simulation (aucun envoi)' : 'Canal dâ€™envoi rÃ©el', doc.createElement('select'));
-        (simulated ? [['other', 'Simulation interne â€” sans contact']] : CHANNELS).forEach(([v, l]) => channel.appendChild(Object.assign(doc.createElement('option'), { value: v, textContent: l })));
-        supplierOrder = field(form, simulated ? 'RÃ©fÃ©rence fictive de recette' : 'RÃ©fÃ©rence de commande fournisseur (facultative)', textInput('', 'supplier_order_id'));
-        if (simulated) { supplierOrder.value = simulationRef; supplierOrder.readOnly = true; }
-      }
-      if (kind === 'confirm') {
-        form.appendChild(el(doc, 'p', 'hlc-zone-hint', 'QuantitÃ©s confirmÃ©es par le fournisseur (dÃ©claratif, pas une rÃ©ception). Le reliquat Ã©ventuel redevient un besoin ouvert.'));
-        po.lines.forEach((l) => {
-          const q = field(form, `${l.order_ref} Â· ${l.product || 'Article'} (commandÃ© ${l.ordered})`, Object.assign(doc.createElement('input'), { type: 'number', min: '0', max: String(l.ordered), step: '1', value: String(l.ordered) }));
-          confirmQty.push([l, q]);
-          // Le produit manuel central Hub peut ne pas avoir de devis fournisseur initial.
-          // Prix constatÃ© et devise saisis Ã  la CONFIRMATION, jamais dÃ©duits du prix retail
-          // ni prÃ©remplis Ã  partir du budget indicatif du sourcing.
-          if (!(Number(l.unit_price) > 0) || !l.currency) {
-            const p = field(form, simulated ? 'Prix unitaire FICTIF confirmÃ© â€” staging' : 'Prix unitaire constatÃ© sur justificatif', Object.assign(doc.createElement('input'), {
-              type: 'number', min: '0', step: '0.01', name: 'confirmed_unit_price',
-            }));
-            const c = field(form, 'Devise de confirmation (ISO 3 lettres)', Object.assign(textInput('EUR', 'confirmed_currency'), { maxLength: 3 }));
-            p.setAttribute('data-hlc-confirmed-price', '');
-            c.setAttribute('data-hlc-confirmed-currency', '');
-            confirmMoney.set(l.line_id, { p, c });
-          }
-        });
-        supplierOrder = field(form, 'RÃ©fÃ©rence de commande fournisseur', textInput('', 'supplier_order_id'));
-        confirmProof = field(form, 'Justificatif dâ€™achat (obligatoire)', textInput('Facture, capture, reÃ§uâ€¦', 'purchase_proof_ref'));
-        confirmSeller = field(form, simulated ? 'Fournisseur fictif â€” recette uniquement' : 'Vendeur rÃ©el (obligatoire pour un achat manuel, pas le Hub central)', textInput('Magasin ou vendeur', 'seller_label'));
-        if (simulated) {
-          const ref = po.simulation_reference;
-          supplierOrder.value = simulationRef; supplierOrder.readOnly = true;
-          confirmProof.value = 'SIM-STAGING-ACHAT-' + ref; confirmProof.readOnly = true;
-          confirmSeller.value = 'SIMULATED-STAGING-FOURNISSEUR-' + ref; confirmSeller.readOnly = true;
-        }
-        const allocationPanel = el(doc, 'section', 'hlc-manual-purchase-allocations');
-        allocationPanel.appendChild(el(doc, 'p', 'hlc-zone-hint', 'Si plusieurs vendeurs ont participÃ©, dÃ©taillez une allocation par vendeur. Les quantitÃ©s doivent couvrir exactement les lignes confirmÃ©es.'));
-        const allocationRows = el(doc, 'div', 'hlc-manual-purchase-allocation-rows');
-        const addAllocation = button(doc, 'Ajouter une allocation vendeur', 'add-manual-purchase-allocation', 'is-link');
-        addAllocation.setAttribute('data-hlc-add-execution', '');
-        addAllocation.addEventListener('click', () => {
-          const row = el(doc, 'fieldset', 'hlc-manual-purchase-allocation');
-          const legend = el(doc, 'legend', '', `Allocation vendeur ${confirmExecutions.length + 1}`);
-          row.appendChild(legend);
-          const lineSelect = doc.createElement('select');
-          lineSelect.setAttribute('aria-label', 'Ligne dâ€™achat de cette allocation');
-          lineSelect.setAttribute('data-hlc-execution-line', '');
-          po.lines.forEach((line) => lineSelect.appendChild(Object.assign(doc.createElement('option'), {
-            value: line.line_id, textContent: `${line.order_ref || poRef(po)} Â· ${line.product || 'Article'}`,
-          })));
-          field(row, 'Ligne', lineSelect);
-          const sellerInput = textInput(simulated ? 'Vendeur fictif de recette' : 'Magasin ou vendeur (pas le Hub central)', 'execution_seller_label');
-          sellerInput.setAttribute('aria-label', 'Vendeur de cette allocation');
-          sellerInput.setAttribute('data-hlc-execution-seller', '');
-          field(row, 'Vendeur', sellerInput);
-          const quantityInput = Object.assign(doc.createElement('input'), { type: 'number', min: '1', step: '1', value: '1', name: 'execution_quantity' });
-          quantityInput.setAttribute('aria-label', 'QuantitÃ© de cette allocation');
-          quantityInput.setAttribute('data-hlc-execution-quantity', '');
-          field(row, 'QuantitÃ© achetÃ©e', quantityInput);
-          const amountInput = Object.assign(doc.createElement('input'), { type: 'number', min: '0', step: '0.01', name: 'execution_amount' });
-          amountInput.setAttribute('aria-label', 'Montant total justifiÃ© de cette allocation');
-          amountInput.setAttribute('data-hlc-execution-amount', '');
-          field(row, 'Montant total', amountInput);
-          const currencyInput = Object.assign(textInput('EUR', 'execution_currency'), { maxLength: 3 });
-          currencyInput.setAttribute('aria-label', 'Devise de cette allocation');
-          currencyInput.setAttribute('data-hlc-execution-currency', '');
-          field(row, 'Devise', currencyInput);
-          const proofInput = textInput('RÃ©fÃ©rence du reÃ§u ou justificatif', 'execution_proof_ref');
-          proofInput.setAttribute('aria-label', 'Justificatif de cette allocation');
-          proofInput.setAttribute('data-hlc-execution-proof', '');
-          field(row, 'Justificatif', proofInput);
-          const remove = button(doc, 'Supprimer cette allocation', 'remove-manual-purchase-allocation', 'is-link');
-          remove.setAttribute('data-hlc-remove-execution', '');
-          remove.addEventListener('click', () => {
-            const index = confirmExecutions.indexOf(record);
-            if (index >= 0) confirmExecutions.splice(index, 1);
-            row.remove();
-            [...allocationRows.querySelectorAll('legend')].forEach((item, i) => { item.textContent = `Allocation vendeur ${i + 1}`; });
-          });
-          row.appendChild(remove);
-          allocationRows.appendChild(row);
-          const record = { lineSelect, sellerInput, quantityInput, amountInput, currencyInput, proofInput };
-          confirmExecutions.push(record);
-        });
-        allocationPanel.appendChild(allocationRows);
-        allocationPanel.appendChild(addAllocation);
-        form.appendChild(allocationPanel);
-      }
-      const submit = button(doc, { commitment: 'Valider lâ€™engagement', payment: 'Autoriser le paiement', sent: 'Enregistrer lâ€™envoi', confirm: 'Enregistrer la confirmation' }[kind], `submit-${kind}`, 'is-primary');
-      submit.type = 'submit';
-      const note = el(doc, 'small', 'hlc-reason', '');
-      form.appendChild(submit); form.appendChild(close); form.appendChild(note);
-      form.addEventListener('submit', (event) => {
-        event.preventDefault();
-        if (submit.disabled) return;
-        const id = encodeURIComponent(po.id);
-        if (kind === 'commitment' || kind === 'payment') {
-          const body = { proof_ref: proof.value.trim() };
-          if (!body.proof_ref) { note.textContent = 'La piÃ¨ce justificative est obligatoire.'; return; }
-          if (needsAmount) {
-            const a = Number(amount.value || (kind === 'payment' && po.amount.derived ? po.amount.amount : 0));
-            const c = currency.value.trim().toUpperCase();
-            if (!(a > 0) || !/^[A-Z]{3}$/.test(c)) { note.textContent = 'Montant positif et devise (3 lettres) obligatoires.'; return; }
-            body.amount = a; body.currency = c;
-          }
-          execute(submit, {
-            url: purchasing(`po/${id}/${kind === 'commitment' ? 'authorize-commitment' : 'authorize-payment'}`), body,
-            runningMessage: 'DÃ©cision en cours dâ€™enregistrementâ€¦',
-            successMessage: kind === 'commitment' ? 'Engagement validÃ© et tracÃ©.' : 'Paiement fournisseur autorisÃ© et tracÃ©.',
-            onSuccess: () => { state.form = null; },
-          });
-        } else if (kind === 'sent') {
-          execute(submit, {
-            url: purchasing(`po/${id}/sent`), body: { channel: channel.value, ...(supplierOrder.value.trim() ? { supplier_order_id: supplierOrder.value.trim() } : {}), ...(simulated ? { simulated: true } : {}) },
-            runningMessage: simulated ? 'Enregistrement de la simulation interneâ€¦' : 'Enregistrement de lâ€™envoiâ€¦', successMessage: simulated ? 'Ã‰tape fournisseur simulÃ©e enregistrÃ©e â€” aucun contact extÃ©rieur.' : 'Envoi enregistrÃ© (canal, auteur, heure).', onSuccess: () => { state.form = null; },
-          });
-        } else if (kind === 'confirm') {
-          const lines = confirmQty.map(([l, q]) => {
-            const row = { purchase_line_id: l.line_id, confirmed_quantity: Number(q.value) };
-            const money = confirmMoney.get(l.line_id);
-            if (money && row.confirmed_quantity > 0) {
-              row.confirmed_unit_price = Number(money.p.value);
-              row.confirmed_currency = money.c.value.trim().toUpperCase();
-            }
-            return row;
-          });
-          if (lines.some((x) => !Number.isInteger(x.confirmed_quantity) || x.confirmed_quantity < 0)) { note.textContent = 'QuantitÃ©s confirmÃ©es : entiers positifs ou nuls.'; return; }
-          if (lines.some((x) => x.confirmed_unit_price !== undefined &&
-              (!(x.confirmed_unit_price > 0) || !/^[A-Z]{3}$/.test(x.confirmed_currency)))) {
-            note.textContent = 'Prix confirmÃ© positif et devise obligatoire pour les lignes sans devis fournisseur.'; return;
-          }
-          if (lines.some((x) => x.confirmed_quantity > 0) && confirmProof.value.trim().length < 4) { note.textContent = 'Justificatif dâ€™achat obligatoire (4 caractÃ¨res minimum).'; return; }
-          let executions;
-          if (confirmExecutions.length) {
-            executions = [];
-            const allocated = new Map();
-            for (const entry of confirmExecutions) {
-              const purchaseLineId = entry.lineSelect.value;
-              const sellerLabel = entry.sellerInput.value.trim();
-              const quantity = Number(entry.quantityInput.value);
-              const amountValue = Number(entry.amountInput.value);
-              const currencyValue = entry.currencyInput.value.trim().toUpperCase();
-              const proofValue = entry.proofInput.value.trim();
-              if (!lines.some((line) => line.purchase_line_id === purchaseLineId && line.confirmed_quantity > 0)) {
-                note.textContent = 'Chaque allocation doit pointer vers une ligne confirmÃ©e.'; return;
-              }
-              if (!sellerLabel || sellerLabel.toLowerCase() === 'fournisseur central hub' ||
-                  !Number.isInteger(quantity) || quantity < 1 || !(amountValue > 0) ||
-                  !/^[A-Z]{3}$/.test(currencyValue) || proofValue.length < 4) {
-                note.textContent = 'Chaque allocation exige un vendeur, une quantitÃ©, un montant, une devise et son justificatif.'; return;
-              }
-              allocated.set(purchaseLineId, (allocated.get(purchaseLineId) || 0) + quantity);
-              executions.push({ purchase_line_id: purchaseLineId, seller_label: sellerLabel, channel: 'in_person', quantity, amount: amountValue, currency: currencyValue, proof_ref: proofValue });
-            }
-            for (const line of lines) {
-              if ((allocated.get(line.purchase_line_id) || 0) !== line.confirmed_quantity) {
-                note.textContent = 'Les allocations vendeurs doivent couvrir exactement la quantitÃ© confirmÃ©e de chaque ligne.'; return;
-              }
-            }
-          } else if (lines.some((x) => x.confirmed_quantity > 0) && confirmSeller.value.trim().length < 2) {
-            note.textContent = 'Indiquez le vendeur avant de confirmer lâ€™achat manuel.'; return;
-          }
-          execute(submit, {
-            url: purchasing(`po/${id}/confirm`),
-            body: { lines, ...(supplierOrder.value.trim() ? { supplier_order_id: supplierOrder.value.trim() } : {}), ...(confirmProof.value.trim() ? { purchase_proof_ref: confirmProof.value.trim() } : {}), ...(executions ? { executions } : (confirmSeller.value.trim() ? { seller_label: confirmSeller.value.trim() } : {})), ...(simulated ? { simulated: true } : {}) },
-            confirmMessage: simulated ? 'Confirmer les quantitÃ©s et lâ€™achat FICTIFS sur staging, sans fournisseur ni paiement rÃ©el ?' : 'Enregistrer la confirmation fournisseur ? Toute quantitÃ© non confirmÃ©e redevient un besoin ouvert.',
-            runningMessage: 'Enregistrement de la confirmationâ€¦', successMessage: simulated ? 'Confirmation et achat fictifs tracÃ©s â€” aucun fournisseur contactÃ©.' : 'Confirmation fournisseur enregistrÃ©e.', onSuccess: () => { state.form = null; },
-          });
-        }
-      });
-      return form;
-    }
-
-    // â”€â”€ Panneau bas : fil de l'objet sÃ©lectionnÃ© + actions autorisÃ©es â”€â”€
-    const node = (kind, ref, st, tone, title) => ({ kind, ref, state: st, tone: tone || '', title: title || '' });
-    const TONE_NODE = { bad: 'bad', warn: 'warn', ok: 'ok', done: 'ok', act: 'on', amber: 'warn', wait: '' };
-    function bagBoxNodes(orderIds) {
-      const out = [];
-      allBags.filter((b) => orderIds.includes(b.order_id)).forEach((b) => out.push(node('Sac', b.ref, b.state, 'ok')));
-      (d.boxes || []).filter((b) => boxOrders(b).some((id) => orderIds.includes(id))).forEach((b) => out.push(node('KOM-BOX', b.reference, b.shipment_ref ? `expÃ©dition ${b.shipment_ref}` : 'Ã  rattacher', 'ok')));
-      return out;
-    }
-    function lineageFor() {
-      let title = ''; let sub = ''; let nodes = []; let blocker = '';
-      if (!sel) return { title: 'SÃ©lectionnez un Ã©lÃ©ment', sub: 'Choisissez un dossier, un besoin ou une PO dans les colonnes du Hub.', nodes, blocker };
-      if (sel.type === 'order') {
-        const o = orderById.get(sel.id);
-        if (o) {
-          title = o.reference; sub = `${marketCode} Â· ${o.relay_name || 'relais â€”'}`;
-          nodes.push(node('Commande', o.reference, o.status.label, TONE_NODE[o.status.tone] || 'on'));
-          o.items.forEach((i) => nodes.push(node('Ligne', `${i.product} Ã—${num(i.requested)}`, i.where, i.uncovered > 0 ? 'bad' : /reliquat/.test(i.where) ? 'warn' : i.complete ? 'ok' : '')));
-          o.po_ids.forEach((id) => { const p = poById.get(id); if (p) nodes.push(node('PO', poRef(p), p.status_view.label, TONE_NODE[p.status_view.tone] || '')); });
-          if (o.totals.received > 0) nodes.push(node('RÃ©ception', `${num(o.totals.received)}/${num(o.totals.requested)}`, cockpit.allocation_rule ? 'FIFO commande la plus ancienne' : '', o.totals.received >= o.totals.requested ? 'ok' : 'warn'));
-          nodes = nodes.concat(bagBoxNodes([o.id]));
-          nodes.push(node('Relais', o.relay_name || 'â€”', 'Ã  venir', '', o.relay_id ? `Relais Â· identifiant technique : ${o.relay_id}` : ''));
-          blocker = (o.totals.uncovered > 0 ? 'Sourcing requis â€” aucun fournisseur admissible. ' : '') + (o.readiness.blockers || []).join(' Â· ');
-        }
-      } else if (sel.type === 'po') {
-        const p = poById.get(sel.id);
-        if (p) {
-          title = poRef(p); sub = `${p.supplier_name} Â· ${marketCode}`;
-          p.order_ids.forEach((id) => { const o = orderById.get(id); const ls = p.lines.filter((l) => l.order_id === id); if (o) nodes.push(node('Commande', o.reference, ls.map((l) => `${l.product} Ã—${num(l.ordered)}`).join(', '), 'on')); });
-          nodes.push(node('PO', poRef(p), p.status_view.label, TONE_NODE[p.status_view.tone] || 'on'));
-          const recvd = p.lines.filter((l) => l.received > 0);
-          if (recvd.length) nodes.push(node('RÃ©ception', `${num(p.totals.received)}/${num(p.totals.effective)}`, `FIFO â†’ ${recvd.map((l) => `${l.order_ref} Ã—${num(l.received)}`).join(', ')}`, p.totals.missing > 0 ? 'warn' : 'ok'));
-          nodes = nodes.concat(bagBoxNodes(p.order_ids));
-          const waiting = p.lines.filter((l) => l.missing > 0 && p.status !== 'draft');
-          if (p.status === 'draft' && !p.authorizations.commitment) blocker = 'lâ€™engagement dâ€™achat doit Ãªtre validÃ© par la responsable Hub avant soumission.';
-          else if (p.status === 'draft') blocker = 'engagement validÃ© : la PO doit encore Ãªtre soumise puis son envoi rÃ©el enregistrÃ©.';
-          else if (waiting.length && p.totals.received > 0) blocker = `${num(p.totals.missing)} u manquante(s) : ${waiting.map((l) => `${l.order_ref} reste en reliquat (${num(l.missing)})`).join(', ')} tant que le fournisseur nâ€™a pas livrÃ©.`;
-          else if (p.status !== 'draft' && p.authorizations.commitment && !p.authorizations.payment) blocker = 'le paiement fournisseur reste une dÃ©cision distincte de lâ€™engagement (responsable Hub).';
-        }
-      } else if (sel.type === 'need') {
-        const g = needGroups.find((x) => x.group.key === sel.id);
-        const s = sourcingNeeds.find((x) => x.key === sel.id);
-        if (g) {
-          title = `Besoin ${g.group.product || 'article'}`; sub = `${g.batch.supplier_name} Â· ${marketCode} Â· ${num(g.group.quantity)} u`;
-          g.group.lines.forEach((l) => nodes.push(node('Commande', l.order_ref, `Ã—${num(l.quantity)}`, 'on')));
-          nodes.push(node('Regroupement', `${num(g.group.quantity)} u`, 'mÃªme SKU Â· mÃªme marchÃ©', 'on'), node('PO', 'Ã  constituer', 'brouillon', ''));
-        } else if (s) {
-          title = `Besoin ${s.item.product || 'article'}`; sub = `${s.order.reference} Â· ${marketCode} Â· ${num(s.item.uncovered)} u`;
-          nodes = [node('Commande', s.order.reference, s.order.status.label, 'on'), node('Besoin', `${s.item.product} Ã—${num(s.item.uncovered)}`, 'sans ligne dâ€™achat', 'warn'), node('Fournisseur', 'â€”', 'aucun admissible', 'warn'), node('PO', 'â€”', 'impossible', '')];
-          blocker = 'Sourcing requis â€” aucun fournisseur admissible : aucune PO possible.';
-        }
-      } else if (sel.type === 'bag') {
-        const b = allBags.find((x) => x.id === sel.id);
-        if (b) {
-          title = b.ref; sub = `sac client ${b.state} Â· ${b.order_ref}`;
-          nodes = [node('Commande', b.order_ref, '', 'on'), node('Sac', b.ref, b.state, 'ok'), node('KOM-BOX', 'â€”', 'Ã  rattacher', ''), node('ExpÃ©dition', 'â€”', 'Ã  rattacher', '')];
-        }
-      } else if (sel.type === 'box') {
-        const b = (d.boxes || []).find((x) => x.unit_id === sel.id);
-        if (b) {
-          title = b.reference; sub = `KOM-BOX Â· ${b.state}`;
-          nodes = [node('Sac', [...new Set((b.contents || []).map((c) => c.order_ref))].join(', ') || 'â€”', 'dans la KOM-BOX', 'ok'), node('KOM-BOX', b.reference, humanPhysicalState(b.state), 'on'), node('ExpÃ©dition', b.shipment_ref || 'â€”', b.shipment_ref ? (b.shipment_stage || 'ouverte') : 'Ã  rattacher', b.shipment_ref ? 'ok' : ''), node('Relais', 'â€”', 'attestation Ã  la rÃ©ception', '')];
-        }
-      }
-      return { title: title || selKey, sub, nodes, blocker };
-    }
-
-    // Actions : exÃ©cutent la route rÃ©elle ; impossibles â†’ dÃ©sactivÃ©es AVEC la raison (jamais masquÃ©es sans explication).
-    function actionsFor() {
-      const acts = [];
-      const A = (key, label, o) => acts.push({ key, label, ...(o || {}) });
-      const lock = readOnly ? 'lecture seule' : null;
-      const grant = (flag, reason) => (viewer && flag ? null : reason);
-      if (!sel) return acts;
-      if (sel.type === 'need') {
-        const g = needGroups.find((x) => x.group.key === sel.id);
-        const s = sourcingNeeds.find((x) => x.key === sel.id);
-        if (s) {
-          A('resolve-sourcing', 'RÃ©soudre le sourcing / crÃ©er un achat manuel', { primary: true, why: 'choisir fournisseur et ligne dâ€™achat', disabled: lock, run: () => ctx.openSourcing(s.order.id) });
-          A('prepare-po', 'Constituer un PO', { disabled: 'impossible sans fournisseur' });
-        } else if (g) {
-          const mine = g.batch.groups.filter((x) => state.picked.has(x.key));
-          const crossBatch = [...state.picked].some((k) => !g.batch.groups.some((x) => x.key === k));
-          const use = mine.length ? mine : [g.group];
-          const lineIds = use.flatMap((x) => x.lines.map((l) => l.line_id));
-          const qty = use.reduce((t, x) => t + x.quantity, 0);
-          A('prepare-po', `Constituer une PO Â· ${num(qty)} u (${use.map((x) => x.product || 'article').join(' + ')})`, {
-            primary: true, why: 'regroupe les besoins cochÃ©s', disabled: lock || (crossBatch ? 'un seul fournisseur et marchÃ© par PO' : null),
-            run: (b) => prepareBatch(b, g.batch, lineIds, null),
-          });
-          // Une mÃªme rÃ©fÃ©rence fournisseur/SKU peut regrouper plusieurs commandes.
-          // Le Hub doit aussi pouvoir constituer une PO pour UNE commande sans
-          // rattacher silencieusement les lignes des autres commandes.
-          const byOrder = new Map();
-          for (const line of g.group.lines) {
-            if (!line.order_id || !line.order_ref || !line.line_id) continue;
-            if (!byOrder.has(line.order_id)) byOrder.set(line.order_id, { ref: line.order_ref, ids: [] });
-            byOrder.get(line.order_id).ids.push(line.line_id);
-          }
-          if (byOrder.size > 1) {
-            for (const [orderId, orderLines] of byOrder) {
-              A('prepare-po-order-' + orderId,
-                `Constituer une PO Â· commande ${orderLines.ref} (${orderLines.ids.length} ligne(s))`, {
-                  why: 'uniquement les lignes de cette commande ; autres commandes inchangÃ©es',
-                  disabled: lock,
-                  run: (b) => prepareBatch(b, g.batch, orderLines.ids, null),
-                });
-            }
-          }
-          if (g.batch.compatible_draft_po_ids.length) {
-            g.batch.compatible_draft_po_ids.forEach((id) => A(`attach-po-${id}`, `Ajouter au brouillon ${poRef(poById.get(id) || { id })}`, { why: 'mÃªme fournisseur Â· Hub Â· marchÃ©', disabled: lock || (crossBatch ? 'un seul fournisseur et marchÃ© par PO' : null), run: (b) => prepareBatch(b, g.batch, lineIds, id) }));
-          } else A('attach-po', 'Ajouter Ã  un PO brouillon existant', { disabled: 'aucun brouillon compatible' });
-        }
-      } else if (sel.type === 'po') {
-        const po = poById.get(sel.id);
-        if (po) {
-          const draft = po.step.key === 'draft';
-          const eff = po.totals.effective || 0;
-          if (draft) {
-            A('authorize-commitment', 'Valider lâ€™engagement dâ€™achat', { primary: true, why: 'droit purchase_commitment', disabled: lock || grant(viewer && viewer.can_authorize_commitment, 'rÃ©servÃ© Ã  la responsable Hub'), run: () => openForm('commitment', po.id) });
-            A('detach-line', 'Retirer une ligne', { why: 'la ligne redevient un besoin ouvert', disabled: lock, run: () => openForm('detach', po.id) });
-          }
-          if (!readOnly && po.authorizations.commitment?.pdf_available) {
-            A('download-commitment-pdf', 'TÃ©lÃ©charger le bon de commande PDF', {
-              href: `/api/purchasing/po/${encodeURIComponent(po.id)}/commitment-pdf`,
-              why: 'usage interne Hub',
-            });
-          }
-          if (po.step.key === 'validation') A('submit-po', 'Soumettre la PO', { primary: true, why: 'rien nâ€™est encore envoyÃ©', disabled: lock, run: (b) => submitPo(b, po.id) });
-          if (po.step.key === 'engaged') A('record-sent', 'Enregistrer lâ€™envoi fournisseur', { primary: true, why: 'canal rÃ©el, auteur, heure', disabled: lock, run: () => openForm('sent', po.id) });
-          if (po.status === 'notified' && po.sent_at) A('confirm-po', 'Confirmation fournisseur', { why: 'quantitÃ©s confirmÃ©es (dÃ©claratif)', disabled: lock, run: () => openForm('confirm', po.id) });
-          if (!draft) A('receive', 'RÃ©ceptionner une livraison', { primary: po.totals.missing > 0, why: 'scan et quantitÃ© reÃ§ue', disabled: lock || (po.totals.missing > 0 ? null : 'PO soldÃ©e'), run: () => openForm('receive', po.id) });
-          else A('receive', 'RÃ©ceptionner une livraison', { disabled: 'PO encore en brouillon' });
-          if (!draft && !po.authorizations.payment) A('authorize-payment', 'Autoriser le paiement fournisseur', { why: 'dÃ©cision distincte de lâ€™engagement', disabled: lock || (!po.authorizations.commitment ? 'aprÃ¨s engagement et envoi' : grant(viewer && viewer.can_authorize_payment, 'rÃ©servÃ© Ã  la responsable Hub')), run: () => openForm('payment', po.id) });
-          else if (draft) A('authorize-payment', 'Autoriser le paiement fournisseur', { disabled: 'aprÃ¨s engagement et envoi' });
-          void eff;
-        }
-      } else if (sel.type === 'order') {
-        const o = orderById.get(sel.id);
-        if (o) {
-          if (o.totals.uncovered > 0) A('resolve-sourcing', 'RÃ©soudre le sourcing / crÃ©er un achat manuel', { primary: true, why: 'choisir fournisseur et ligne dâ€™achat', disabled: lock, run: () => ctx.openSourcing(o.id) });
-          const r = o.readiness;
-          if (r.ready_to_pack) A('create-bag', `PrÃ©parer le sac ${o.reference}`, { primary: true, why: 'commande complÃ¨te, prÃªte Ã  ensacher', disabled: lock, run: (b) => createBag(b, o, false) });
-          else if (r.bag_open) A('create-bag', `PrÃ©parer le sac ${o.reference}`, { disabled: 'un sac est dÃ©jÃ  ouvert' });
-          else if (r.partial && r.unbagged_received > 0) A('create-partial-bag', 'PrÃ©parer un sac partiel', { primary: !o.totals.uncovered, why: 'explicite : le reliquat reste suivi', disabled: lock, run: (b) => createBag(b, o, true) });
-          else A('create-bag', `PrÃ©parer le sac ${o.reference}`, { disabled: r.partial ? 'aucune unitÃ© reÃ§ue Ã  ensacher' : 'rien reÃ§u pour lâ€™instant' });
-          if (o.po_ids.length) A('goto-po', 'Suivre dans ses PO', { why: 'voir les PO de la commande', run: () => select('po', o.po_ids[0]) });
-        }
-      } else if (sel.type === 'bag') {
-        const b = physical.flatMap((s2) => s2.items).find((it) => it.key === selKey);
-        if (b && b.closable) A('close-bag', 'Fermer le sac', { primary: true, why: 'contenu scannÃ© = contenu prÃ©vu', disabled: lock, run: (btn) => closeBag(btn, b.bag_unit_id) });
-        else if (b && b.bag_unit_id && /ouvert/.test(b.meta)) A('open-physical', 'DÃ©poser (scan)', { primary: true, why: 'scan des articles dans le sac', disabled: lock, run: () => ctx.openPhysical() });
-        else A('close-bag', 'Fermer le sac', { disabled: 'sac dÃ©jÃ  fermÃ©' });
-      } else if (sel.type === 'box') {
-        const b = (d.boxes || []).find((x) => x.unit_id === sel.id);
-        if (b && !b.shipment_ref) A('attach-box', 'Rattacher Ã  une expÃ©dition', { primary: true, why: 'expÃ©ditions ouvertes du marchÃ©', disabled: lock || ((d.open_shipments || []).length ? null : 'aucune expÃ©dition ouverte'), run: () => { state.form = { kind: 'box', box: b.unit_id }; paint(); } });
-        else if (b) A('attach-box', 'Rattacher Ã  une expÃ©dition', { disabled: `dÃ©jÃ  rattachÃ©e Ã  ${b.shipment_ref}` });
-      }
-      return acts;
-    }
-    function boxForm(box) {
-      const form = el(doc, 'form', 'hlc-form');
-      form.setAttribute('data-hlc-form', 'box');
-      const selShip = doc.createElement('select');
-      selShip.setAttribute('aria-label', 'ExpÃ©dition ouverte');
-      (d.open_shipments || []).forEach((s2) => selShip.appendChild(Object.assign(doc.createElement('option'), { value: s2.reference, textContent: `${s2.reference} Â· ${s2.forwarder_name || 'transitaire'} Â· ${s2.box_count} carton(s)` })));
-      form.appendChild(selShip);
-      const go = button(doc, 'Rattacher', 'submit-box', 'is-primary');
-      go.type = 'submit';
-      form.appendChild(go);
-      form.addEventListener('submit', (event) => {
-        event.preventDefault();
-        execute(go, { url: ctx.endpoint(`boxes/${encodeURIComponent(box.unit_id)}/shipment`), body: { shipment_reference: selShip.value },
-          runningMessage: 'Rattachement Ã  lâ€™expÃ©ditionâ€¦', successMessage: `KOM-BOX ${box.reference} rattachÃ©e Ã  ${selShip.value}.`, onSuccess: () => { state.form = null; } });
-      });
-      return form;
-    }
-    function detachForm(po) {
-      const form = el(doc, 'form', 'hlc-form');
-      form.setAttribute('data-hlc-form', 'detach');
-      const pick = doc.createElement('select');
-      pick.setAttribute('aria-label', 'Ligne Ã  retirer');
-      po.lines.forEach((l) => pick.appendChild(Object.assign(doc.createElement('option'), { value: l.line_id, textContent: `${l.order_ref} Â· ${l.product || 'Article'} Ã—${l.ordered}` })));
-      form.appendChild(pick);
-      const go = button(doc, 'Retirer la ligne', 'submit-detach', 'is-primary');
-      go.type = 'submit';
-      form.appendChild(go);
-      form.appendChild(el(doc, 'small', 'hlc-reason', 'La ligne redevient un besoin ouvert. Impossible aprÃ¨s validation de lâ€™engagement.'));
-      form.addEventListener('submit', (event) => {
-        event.preventDefault();
-        execute(go, { url: purchasing(`po/${encodeURIComponent(po.id)}/detach`), body: { line_ids: [pick.value] },
-          confirmMessage: `Retirer cette ligne de la ${poRef(po)} ? Elle redevient un besoin ouvert.`, runningMessage: 'Retrait en coursâ€¦', successMessage: 'Ligne retirÃ©e de la PO.', onSuccess: () => { state.form = null; } });
-      });
-      return form;
-    }
-
-    const panel = el(doc, 'section', 'hlc-panel');
-    panel.setAttribute('data-hlc-panel', '');
-    panel.setAttribute('aria-label', 'Objet sÃ©lectionnÃ©');
-    const fil = lineageFor();
-    const leftP = el(doc, 'div', 'hlc-panel-left');
-    const filHead = el(doc, 'div', 'hlc-row');
-    filHead.appendChild(el(doc, 'span', 'hlc-label', 'Fil de'));
-    const ft = el(doc, 'strong', 'hlc-ref', fil.title);
-    ft.setAttribute('data-hlc-fil-title', '');
-    filHead.appendChild(ft);
-    filHead.appendChild(el(doc, 'span', 'hlc-meta', fil.sub));
-    leftP.appendChild(filHead);
-    const chain = el(doc, 'div', 'hlc-chain');
-    chain.setAttribute('data-hlc-chain', '');
-    fil.nodes.forEach((n, i) => {
-      const nd = el(doc, 'div', `hlc-node${n.tone ? ' is-' + n.tone : ''}`);
-      if (n.title) nd.title = n.title;
-      nd.setAttribute('data-hlc-node', n.kind);
-      nd.appendChild(el(doc, 'span', 'hlc-node-kind', n.kind));
-      nd.appendChild(el(doc, 'span', 'hlc-ref', n.ref));
-      nd.appendChild(el(doc, 'span', 'hlc-node-state', n.state));
-      chain.appendChild(nd);
-      if (i < fil.nodes.length - 1) chain.appendChild(el(doc, 'span', 'hlc-arrow', 'â†’'));
-    });
-    leftP.appendChild(chain);
-    if (fil.blocker) {
-      const bl = el(doc, 'div', 'hlc-blocker');
-      bl.setAttribute('data-hlc-blocker', '');
-      bl.appendChild(el(doc, 'strong', '', 'Ce qui bloque : '));
-      bl.appendChild(doc.createTextNode(fil.blocker));
-      leftP.appendChild(bl);
-    }
-    panel.appendChild(leftP);
-
-    const rightP = el(doc, 'div', 'hlc-panel-right');
-    rightP.appendChild(el(doc, 'span', 'hlc-label', `Actions autorisÃ©es Â· ${roleLabel}`));
-    const list = el(doc, 'div', 'hlc-actions');
-    // Le marqueur data-hlc-actions est portÃ© par l'unique ancÃªtre commun
-    // aux deux emplacements d'actions aprÃ¨s dÃ©placement du CTA principal.
-    let primaryUsed = false;
-    actionsFor().forEach((a) => {
-      if (a.primary && !a.disabled) { if (primaryUsed) a.primary = false; else primaryUsed = true; } else if (a.disabled) a.primary = false;
-      const row = el(doc, 'div', 'hlc-action-row');
-      const b = a.href ? el(doc, 'a', 'hlc-btn', a.label)
-        : button(doc, a.label, a.key, a.primary ? 'is-primary' : '');
-      if (a.href) b.setAttribute('href', a.href);
-      if (a.disabled) { b.disabled = true; b.setAttribute('aria-disabled', 'true'); b.title = a.disabled; }
-      else if (a.run) b.addEventListener('click', () => { a.run(b); });
-      row.appendChild(b);
-      row.appendChild(el(doc, 'span', 'hlc-reason', a.disabled || a.why || ''));
-      list.appendChild(row);
-    });
-    if (!list.children.length) list.appendChild(el(doc, 'span', 'hlc-empty', 'Aucune action sur cet objet.'));
-    rightP.appendChild(list);
-    if (state.form && !readOnly) {
-      if (state.form.kind === 'box' && sel && sel.type === 'box' && state.form.box === sel.id) {
-        const box = (d.boxes || []).find((x) => x.unit_id === sel.id);
-        if (box) rightP.appendChild(boxForm(box));
-      } else if (state.form.po && sel && sel.type === 'po' && state.form.po === sel.id) {
-        const po = poById.get(sel.id);
-        if (po) rightP.appendChild(state.form.kind === 'detach' ? detachForm(po) : poForm(po, state.form.kind));
-      }
-    }
-    // Le seul bouton principal est dÃ©placÃ© (non dupliquÃ©) au-dessus de la file
-    // physique : mÃªme handler, mÃªme protection contre le double POST.
-    const nextAction = el(doc, 'section', 'hlc-next-action');
-    nextAction.setAttribute('data-hlc-next-action', '');
-    nextAction.appendChild(el(doc, 'strong', 'hlc-next-action-title', 'Ã€ faire sur ce dossier'));
-    const primaryRow = Array.from(list.children).find(row => row.querySelector && row.querySelector('.hlc-btn.is-primary:not(:disabled)'));
-    if (primaryRow) nextAction.appendChild(primaryRow);
-    else nextAction.appendChild(el(doc, 'span', 'hlc-meta',
-      sel ? 'Aucun geste immÃ©diat : consultez les actions et prÃ©requis dans le fil ci-dessous.'
-          : 'SÃ©lectionnez une commande, un besoin ou une unitÃ© physique.'));
-    right.insertBefore(nextAction, right.children[1]);
-    panel.appendChild(rightP);
-    rootEl.appendChild(panel);
-    const saved = state.form && state.form.values;
-    const liveForm = rightP.querySelector('form[data-hlc-form]');
-    if (saved && liveForm && saved.kind === liveForm.getAttribute('data-hlc-form')) {
-      const fields = [...liveForm.querySelectorAll('input,select,textarea')];
-      if (fields.length === saved.items.length) {
-        fields.forEach((f, i) => {
-          const it = saved.items[i];
-          if (!it) return;
-          if (f.type === 'checkbox' || f.type === 'radio') f.checked = it.c; else f.value = it.v;
-        });
-        const target = fields[saved.focus];
-        if (target && typeof target.focus === 'function') {
-          target.focus();
-          if (saved.sel && target.setSelectionRange) { try { target.setSelectionRange(saved.sel[0], saved.sel[1]); } catch (e) { /* type sans sÃ©lection */ } }
-        }
-      }
-    }
-    return rootEl;
-  }
-
-  return Object.freeze({ render, STEP_LABELS });
-});
+      const title = el(doc, 'span',m«ëŒ+Š×®º+º$zzb¥âÒçVÖ&W"†ÖöæW’ççfÇVR“°¢&÷ræ6öæf—&ÖVEö7W'&Væ7’ÒÖöæW’æ2çfÇVRçG&–Ò‚’çFõWW$66R‚“°¢Ğ¢&WGW&â&÷s°¢Ò“°¢–b†Æ–æW2ç6öÖR‚‡‚’ÓâçVÖ&W"æ—4–çFVvW"‡‚æ6öæf—&ÖVE÷VçF—G’’ÇÂ‚æ6öæf—&ÖVE÷VçF—G’Â’’²æ÷FRçFW‡D6öçFVçBÒuVçF—L:—26öæf—&Ü:–W2¢VçF–W'2÷6—F–g2÷RçVÇ2âs²&WGW&ã²Ğ¢–b†Æ–æW2ç6öÖR‚‡‚’Óâ‚æ6öæf—&ÖVE÷Væ—E÷&–6RÓÒVæFVf–æVBb`¢‚‡‚æ6öæf—&ÖVE÷Væ—E÷&–6Râ’ÇÂõå´Õ¥×³7ÒBòçFW7B‡‚æ6öæf—&ÖVEö7W'&Væ7’’’’’°¢æ÷FRçFW‡D6öçFVçBÒu&—‚6öæf—&Ü:’÷6—F–bWBFWf—6Rö&Æ–vFö—&R÷W"ÆW2Æ–væW26ç2FWf—2f÷W&æ—76WW"âs²&WGW&ã°¢Ğ¢–b†Æ–æW2ç6öÖR‚‡‚’Óâ‚æ6öæf—&ÖVE÷VçF—G’â’bb6öæf—&Õ&ööbçfÇVRçG&–Ò‚’æÆVæwF‚ÂB’²æ÷FRçFW‡D6öçFVçBÒt§W7F–f–6F–bN(	–6†Bö&Æ–vFö—&RƒB6&7L:‡&W2Ö–æ–×VÒ’âs²&WGW&ã²Ğ¢ÆWBW†V7WF–öç3°¢–b†6öæf—&ÔW†V7WF–öç2æÆVæwF‚’°¢W†V7WF–öç2ÒµÓ°¢6öç7BÆÆö6FVBÒæWrÖ‚“°¢f÷"†6öç7BVçG'’öb6öæf—&ÔW†V7WF–öç2’°¢6öç7BW&6†6TÆ–æT–BÒVçG'’æÆ–æU6VÆV7BçfÇVS°¢6öç7B6VÆÆW$Æ&VÂÒVçG'’ç6VÆÆW$–çWBçfÇVRçG&–Ò‚“°¢6öç7BVçF—G’ÒçVÖ&W"†VçG'’çVçF—G”–çWBçfÇVR“°¢6öç7BÖ÷VçEfÇVRÒçVÖ&W"†VçG'’æÖ÷VçD–çWBçfÇVR“°¢6öç7B7W'&Væ7•fÇVRÒVçG'’æ7W'&Væ7”–çWBçfÇVRçG&–Ò‚’çFõWW$66R‚“°¢6öç7B&ööefÇVRÒVçG'’ç&ööd–çWBçfÇVRçG&–Ò‚“°¢–b‚Æ–æW2ç6öÖR‚†Æ–æR’ÓâÆ–æRçW&6†6UöÆ–æUö–BÓÓÒW&6†6TÆ–æT–BbbÆ–æRæ6öæf—&ÖVE÷VçF—G’â’’°¢æ÷FRçFW‡D6öçFVçBÒt6†VRÆÆö6F–öâFö—Bö–çFW"fW'2VæRÆ–væR6öæf—&Ü:–Râs²&WGW&ã°¢Ğ¢–b‚6VÆÆW$Æ&VÂÇÂ6VÆÆW$Æ&VÂçFôÆ÷vW$66R‚’ÓÓÒvf÷W&æ—76WW"6VçG&Â‡V"rÇÀ¢çVÖ&W"æ—4–çFVvW"‡VçF—G’’ÇÂVçF—G’ÂÇÂ†Ö÷VçEfÇVRâ’ÇÀ¢õå´Õ¥×³7ÒBòçFW7B†7W'&Væ7•fÇVR’ÇÂ&ööefÇVRæÆVæwF‚ÂB’°¢æ÷FRçFW‡D6öçFVçBÒt6†VRÆÆö6F–öâW†–vRVâfVæFWW"ÂVæRVçF—L:’ÂVâÖöçFçBÂVæRFWf—6RWB6öâ§W7F–f–6F–bâs²&WGW&ã°¢Ğ¢ÆÆö6FVBç6WB‡W&6†6TÆ–æT–BÂ†ÆÆö6FVBævWB‡W&6†6TÆ–æT–B’ÇÂ’²VçF—G’“°¢W†V7WF–öç2çW6‚‡²W&6†6UöÆ–æUö–C¢W&6†6TÆ–æT–BÂ6VÆÆW%öÆ&VÃ¢6VÆÆW$Æ&VÂÂ6†ææVÃ¢v–å÷W'6öârÂVçF—G’ÂÖ÷VçC¢Ö÷VçEfÇVRÂ7W'&Væ7“¢7W'&Væ7•fÇVRÂ&ööe÷&Vc¢&ööefÇVRÒ“°¢Ğ¢f÷"†6öç7BÆ–æRöbÆ–æW2’°¢–b‚†ÆÆö6FVBævWB†Æ–æRçW&6†6UöÆ–æUö–B’ÇÂ’ÓÒÆ–æRæ6öæf—&ÖVE÷VçF—G’’°¢æ÷FRçFW‡D6öçFVçBÒtÆW2ÆÆö6F–öç2fVæFWW'2Fö—fVçB6÷Wg&—"W†7FVÖVçBÆVçF—L:’6öæf—&Ü:–RFR6†VRÆ–væRâs²&WGW&ã°¢Ğ¢Ğ¢ÒVÇ6R–b†Æ–æW2ç6öÖR‚‡‚’Óâ‚æ6öæf—&ÖVE÷VçF—G’â’bb6öæf—&Õ6VÆÆW"çfÇVRçG&–Ò‚’æÆVæwF‚Â"’°¢æ÷FRçFW‡D6öçFVçBÒt–æF—VW¢ÆRfVæFWW"fçBFR6öæf—&ÖW"Î(	–6†BÖçVVÂâs²&WGW&ã°¢Ğ¢W†V7WFR‡7V&Ö—BÂ°¢W&Ã¢W&6†6–ær†òòG¶–GÒö6öæf—&Ö’À¢&öG“¢²Æ–æW2Ââââ‡7WÆ–W$÷&FW"çfÇVRçG&–Ò‚’ò²7WÆ–W%ö÷&FW%ö–C¢7WÆ–W$÷&FW"çfÇVRçG&–Ò‚’Ò¢·Ò’Ââââ†6öæf—&Õ&ööbçfÇVRçG&–Ò‚’ò²W&6†6U÷&ööe÷&Vc¢6öæf—&Õ&ööbçfÇVRçG&–Ò‚’Ò¢·Ò’Ââââ†W†V7WF–öç2ò²W†V7WF–öç2Ò¢†6öæf—&Õ6VÆÆW"çfÇVRçG&–Ò‚’ò²6VÆÆW%öÆ&VÃ¢6öæf—&Õ6VÆÆW"çfÇVRçG&–Ò‚’Ò¢·Ò’’Ââââ‡6–×VÆFVBò²6–×VÆFVC¢G'VRÒ¢·Ò’ÒÀ¢6öæf—&ÔÖW76vS¢6–×VÆFVBòt6öæf—&ÖW"ÆW2VçF—L:—2WBÎ(	–6†Bd”5D”e27W"7Fv–ærÂ6ç2f÷W&æ—76WW"æ’–VÖVçB,:–VÂòr¢tVç&Vv—7G&W"Æ6öæf—&ÖF–öâf÷W&æ—76WW"òF÷WFRVçF—L:’æöâ6öæf—&Ü:–R&VFWf–VçBVâ&W6ö–â÷WfW'BârÀ¢'Vææ–ætÖW76vS¢tVç&Vv—7G&VÖVçBFRÆ6öæf—&ÖF–öî(
+brÂ7V66W74ÖW76vS¢6–×VÆFVBòt6öæf—&ÖF–öâWB6†Bf–7F–g2G&<:—2(	BV7Vâf÷W&æ—76WW"6öçF7L:’âr¢t6öæf—&ÖF–öâf÷W&æ—76WW"Vç&Vv—7G,:–RârÂöå7V66W73¢‚’Óâ²7FFRæf÷&ÒÒçVÆÃ²ÒÀ¢Ò“°¢Ğ¢Ò“°¢&WGW&âf÷&Ó°¢Ğ ¢òò)H)HææVR&2¢f–ÂFRÂvö&¦WB<:–ÆV7F–öæì:’²7F–öç2WF÷&—<:–W2)H)H ¢6öç7BæöFRÒ†¶–æBÂ&VbÂ7BÂFöæRÂF—FÆR’Óâ‡²¶–æBÂ&VbÂ7FFS¢7BÂFöæS¢FöæRÇÂrrÂF—FÆS¢F—FÆRÇÂrrÒ“°¢6öç7BDôäUôäôDRÒ²&C¢v&ÇVRçG&–Ò‚’æÆVæwF‚ÂB’²æ÷FRçFW‡D6öçFVçBÒt§W7F–f–6F–bN(	–6†Bö&Æ–vFö—&RƒB6&7L:‡&W2Ö–æ–×VÒ’âs²&WGW&ã²Ğ¢ÆWBW†V7WF–öç3°¢–b†6öæf—&ÔW†V7WF–öç2æÆVæwF‚’°¢W†V7WF–öç2ÒµÓ°¢6öç7BÆÆö6FVBÒæWrÖ‚“°¢f÷"†6öç7BVçG'’öb6öæf—&ÔW†V7WF–öç2’°¢6öç7BW&6†6TÆ–æT–BÒVçG'’æÆ–æU6VÆV7BçfÇVS°¢6öç7B6VÆÆW$Æ&VÂÒVçG'’ç6VÆÆW$–çWBçfÇVRçG&–Ò‚“°¢6öç7BVçF—G’ÒçVÖ&W"†VçG'’çVçF—G”–çWBçfÇVR“°¢6öç7BÖ÷VçEfÇVRÒçVÖ&W"†VçG'’æÖ÷VçD–çWBçfÇVR“°¢6öç7B7W'&Væ7•fÇVRÒVçG'’æ7W'&Væ7”–çWBçfÇVRçG&–Ò‚’çFõWW$66R‚“°¢6öç7B&ööefÇVRÒVçG'’ç&ööd–çWBçfÇVRçG&–Ò‚“°¢–b‚Æ–æW2ç6öÖR‚†Æ–æR’ÓâÆ–æRçW&6†6UöÆ–æUö–BÓÓÒW&6†6TÆ–æT–BbbÆ–æRæ6öæf—&ÖVE÷VçF—G’â’’°¢æ÷FRçFW‡D6öçFVçBÒt6†VRÆÆö6F–öâFö—Bö–çFW"fW'2VæRÆ–væR6öæf—&Ü:–Râs²&WGW&ã°¢Ğ¢–b‚6VÆÆW$Æ&VÂÇÂ6VÆÆW$Æ&VÂçFôÆ÷vW$66R‚’ÓÓÒvf÷W&æ—76WW"6VçG&Â‡V"rÇÀ¢çVÖ&W"æ—4–çFVvW"‡VçF—G’’ÇÂVçF—G’ÂÇÂ†Ö÷VçEfÇVRâ’ÇÀ¢õå´Õ¥×³7ÒBòçFW7B†7W'&Væ7•fÇVR’ÇÂ&ööefÇVRæÆVæwF‚ÂB’°¢æ÷FRçFW‡D6öçFVçBÒt6†VRÆÆö6F–öâW†–vRVâfVæFWW"ÂVæRVçF—L:’ÂVâÖöçFçBÂVæRFWf—6RWB6öâ§W7F–f–6F–bâs²&WGW&ã°¢Ğ¢ÆÆö6FVBç6WB‡W&6†6TÆ–æT–BÂ†ÆÆö6FVBævWB‡W&6†6TÆ–æT–B’ÇÂ’²VçF—G’“°¢W†V7WF–öç2çW6‚‡²W&6†6UöÆ–æUö–C¢W&6†6TÆ–æT–BÂ6VÆÆW%öÆ&VÃ¢6VÆÆW$Æ&VÂÂ6†ææVÃ¢v–å÷W'6öârÂVçF—G’ÂÖ÷VçC¢Ö÷VçEfÇVRÂ7W'&Væ7“¢7W'&Væ7•fÇVRÂ&ööe÷&Vc¢&ööefÇVRÒ“°¢Ğ¢f÷"†6öç7BÆ–æRöbÆ–æW2’°¢–b‚†ÆÆö6FVBævWB†Æ–æRçW&6†6UöÆ–æUö–B’ÇÂ’ÓÒÆ–æRæ6öæf—&ÖVE÷VçF—G’’°¢æ÷FRçFW‡D6öçFVçBÒtÆW2ÆÆö6F–öç2fVæFWW'2Fö—fVçB6÷Wg&—"W†7FVÖVçBÆVçF—L:’6öæf—&Ü:–RFR6†VRÆ–væRâs²&WGW&ã°¢Ğ¢Ğ¢ÒVÇ6R–b†Æ–æW2ç6öÖR‚‡‚’Óâ‚æ6öæf—&ÖVE÷VçF—G’â’bb6öæf—&Õ6VÆÆW"çfÇVRçG&–Ò‚’æÆVæwF‚Â"’°¢æ÷FRçFW‡D6öçFVçBÒt–æF—VW¢ÆRfVæFWW"fçBFR6öæf—&ÖW"Î(	–6†BÖçVVÂâs²&WGW&ã°¢Ğ¢W†V7WFR‡7V&Ö—BÂ°¢W&Ã¢W&6†6–ær†òòG¶–GÒö6öæf—&Ö’À¢&öG“¢²Æ–æW2Ââââ‡7WÆ–W$÷&FW"çfÇVRçG&–Ò‚’ò²7WÆ–W%ö÷&FW%ö–C¢7WÆ–W$÷&FW"çfÇVRçG&–Ò‚’Ò¢·Ò’Ââââ†6öæf—&Õ&ööbçfÇVRçG&–Ò‚’ò²W&6†6U÷&ööe÷&Vc¢6öæf—&Õ&ööbçfÇVRçG&–Ò‚’Ò¢·Ò’Ââââ†W†V7WF–öç2ò²W†V7WF–öç2Ò¢†6öæf—&Õ6VÆÆW"çfÇVRçG&–Ò‚’ò²6VÆÆW%öÆ&VÃ¢6öæf—&Õ6VÆÆW"çfÇVRçG&–Ò‚’Ò¢·Ò’’Ââââ‡6–×VÆFVBò²6–×VÆFVC¢G'VRÒ¢·Ò’ÒÀ¢6öæf—&ÔÖW76vS¢6–×VÆFVBòt6öæf—&ÖW"ÆW2VçF—L:—2WBÎ(	–6†Bd”5D”e27W"7Fv–ærÂ6ç2f÷W&æ—76WW"æ’–VÖVçB,:–VÂòr¢tVç&Vv—7G&W"Æ6öæf—&ÖF–öâf÷W&æ—76WW"òF÷WFRVçF—L:’æöâ6öæf—&Ü:–R&VFWf–VçBVâ&W6ö–â÷WfW'BârÀ¢'Vææ–ætÖW76vS¢tVç&Vv—7G&VÖVçBFRÆ6öæf—&ÖF–öî(
+brÂ7V66W74ÖW76vS¢6–×VÆFVBòt6öæf—&ÖF–öâWB6†Bf–7F–g2G&<:—2(	BV7Vâf÷W&æ—76WW"6öçF7L:’âr¢t6öæf—&ÖF–öâf÷W&æ—76WW"Vç&Vv—7G,:–RârÂöå7V66W73¢‚’Óâ²7FFRæf÷&ÒÒçVÆÃ²ÒÀ¢Ò“°¢Ğ¢Ò“°¢&WGW&âf÷&Ó°¢Ğ ¢òò)H)HææVR&2¢f–ÂFRÂvö&¦WB<:–ÆV7F–öæì:’²7F–öç2WF÷&—<:–W2)H)H ¢6öç7BæöFRÒ†¶–æBÂ&VbÂ7BÂFöæRÂF—FÆR’Óâ‡²¶–æBÂ&VbÂ7FFS¢7BÂFöæS¢FöæRÇÂrrÂF—FÆS¢F—FÆRÇÂrrÒ“°¢6öç7BDôäUôäôDRÒ²&C¢v&BrÂv&ã¢wv&ârÂö³¢vö²rÂFöæS¢vö²rÂ7C¢vöârÂÖ&W#¢wv&ârÂv—C¢rrÓ°¢gVæ7F–öâ&÷„æöFW2†÷&FW$–G2’°¢6öç7B÷WBÒµÓ°¢†Bæ&÷†W2ÇÂµÒ’æf–ÇFW"‚†"’Óâ&÷„÷&FW'2†"’ç6öÖR‚†–B’Óâ÷&FW$–G2æ–æ6ÇVFW2†–B’’’æf÷$V6‚‚†"’Óâ÷WBçW6‚†æöFR‚t4ôÔ$õ‚rÂ"ç&VfW&Væ6RÂ"ç6†—ÖVçE÷&VbòW‡:–F—F–öâG¶"ç6†—ÖVçE÷&VgÖ¢|:&GF6†W"rÂvö²r’’“°¢&WGW&â÷WC°¢Ğ¢gVæ7F–öâÆ–æVvTf÷"‚’°¢ÆWBF—FÆRÒrs²ÆWB7V"Òrs²ÆWBæöFW2ÒµÓ²ÆWB&Æö6¶W"Òrs°¢–b‚6VÂ’&WGW&â²F—FÆS¢u<:–ÆV7F–öææW¢Vâ:–Ì:–ÖVçBrÂ7V#¢t6†ö—6—76W¢VâF÷76–W"ÂVâ&W6ö–â÷RVæRòFç2ÆW26öÆöææW2GR‡V"ârÂæöFW2Â&Æö6¶W"Ó°¢–b‡6VÂçG—RÓÓÒv÷&FW"r’°¢6öç7BòÒ÷&FW$'”–BævWB‡6VÂæ–B“°¢–b†ò’°¢F—FÆRÒòç&VfW&Væ6S²7V"ÒG¶Ö&¶WD6öFWÒ+rG¶òç&VÆ•öæÖRÇÂw&VÆ—2(	BwÖ°¢æöFW2çW6‚†æöFR‚t6öÖÖæFRrÂòç&VfW&Væ6RÂòç7FGW2æÆ&VÂÂDôäUôäôDU¶òç7FGW2çFöæUÒÇÂvöâr’“°¢òæ—FV×2æf÷$V6‚‚†’’ÓâæöFW2çW6‚†æöFR‚tÆ–væRrÂG¶’ç&öGV7GÒ9rG¶çVÒ†’ç&WVW7FVB—ÖÂ’çv†W&RÂ’çVæ6÷fW&VBâòv&Br¢÷&VÆ—VBòçFW7B†’çv†W&R’òwv&âr¢’æ6ö×ÆWFRòvö²r¢rr’’“°¢òçõö–G2æf÷$V6‚‚†–B’Óâ²6öç7BÒô'”–BævWB†–B“²–b‡’æöFW2çW6‚†æöFR‚uòrÂõ&Vb‡’Âç7FGW5÷f–WræÆ&VÂÂDôäUôäôDU·ç7FGW5÷f–WrçFöæUÒÇÂrr’“²Ò“°¢–b†òçF÷FÇ2ç&V6V—fVBâ’æöFW2çW6‚†æöFR‚u,:–6WF–öârÂG¶çVÒ†òçF÷FÇ2ç&V6V—fVB—ÒòG¶çVÒ†òçF÷FÇ2ç&WVW7FVB—ÖÂ6ö6·—BæÆÆö6F–öå÷'VÆRòtd”dò6öÖÖæFRÆÇW2æ6–VææRr¢rrÂòçF÷FÇ2ç&V6V—fVBãÒòçF÷FÇ2ç&WVW7FVBòvö²r¢wv&âr’“°¢æöFW2ÒæöFW2æ6öæ6B†&÷„æöFW2…¶òæ–EÒ’“°¢æöFW2çW6‚†æöFR‚u&VÆ—2rÂòç&VÆ•öæÖRÇÂ~(	BrÂ|:fVæ—"rÂrrÂòç&VÆ•ö–Bò&VÆ—2+r–FVçF–f–çBFV6†æ—VR¢G¶òç&VÆ•ö–GÖ¢rr’“°¢&Æö6¶W"Ò†òçF÷FÇ2çVæ6÷fW&VBâòu6÷W&6–ær&WV—2(	BV7Vâf÷W&æ—76WW"FÖ—76–&ÆRâr¢rr’²†òç&VF–æW72æ&Æö6¶W'2ÇÂµÒ’æ¦ö–â‚r+rr“°¢Ğ¢ÒVÇ6R–b‡6VÂçG—RÓÓÒwòr’°¢6öç7BÒô'”–BævWB‡6VÂæ–B“°¢–b‡’°¢F—FÆRÒõ&Vb‡“²7V"ÒG·ç7WÆ–W%öæÖWÒ+rG¶Ö&¶WD6öFWÖ°¢æ÷&FW%ö–G2æf÷$V6‚‚†–B’Óâ²6öç7BòÒ÷&FW$'”–BævWB†–B“²6öç7BÇ2ÒæÆ–æW2æf–ÇFW"‚†Â’ÓâÂæ÷&FW%ö–BÓÓÒ–B“²–b†ò’æöFW2çW6‚†æöFR‚t6öÖÖæFRrÂòç&VfW&Væ6RÂÇ2æÖ‚†Â’ÓâG¶Âç&öGV7GÒ9rG¶çVÒ†Âæ÷&FW&VB—Ö’æ¦ö–â‚rÂr’Âvöâr’“²Ò“°¢æöFW2çW6‚†æöFR‚uòrÂõ&Vb‡’Âç7FGW5÷f–WræÆ&VÂÂDôäUôäôDU·ç7FGW5÷f–WrçFöæUÒÇÂvöâr’“°¢6öç7B&V7fBÒæÆ–æW2æf–ÇFW"‚†Â’ÓâÂç&V6V—fVBâ“°¢–b‡&V7fBæÆVæwF‚’æöFW2çW6‚†æöFR‚u,:–6WF–öârÂG¶çVÒ‡çF÷FÇ2ç&V6V—fVB—ÒòG¶çVÒ‡çF÷FÇ2æVffV7F—fR—ÖÂd”dò(i"G·&V7fBæÖ‚†Â’ÓâG¶Âæ÷&FW%÷&VgÒ9rG¶çVÒ†Âç&V6V—fVB—Ö’æ¦ö–â‚rÂr—ÖÂçF÷FÇ2æÖ—76–ærâòwv&âr¢vö²r’“°¢æöFW2ÒæöFW2æ6öæ6B†&÷„æöFW2‡æ÷&FW%ö–G2’“°¢6öç7Bv—F–ærÒæÆ–æW2æf–ÇFW"‚†Â’ÓâÂæÖ—76–ærâbbç7FGW2ÓÒvG&gBr“°¢–b‡ç7FGW2ÓÓÒvG&gBrbbæWF†÷&—¦F–öç2æ6öÖÖ—FÖVçB’&Æö6¶W"ÒvÎ(	–VævvVÖVçBN(	–6†BFö—B:§G&RfÆ–L:’"Æ&W7öç6&ÆR‡V"fçB6÷VÖ—76–öââs°¢VÇ6R–b‡ç7FGW2ÓÓÒvG&gBr’&Æö6¶W"ÒvVævvVÖVçBfÆ–L:’¢ÆòFö—BVæ6÷&R:§G&R6÷VÖ—6RV—26öâVçfö’,:–VÂVç&Vv—7G,:’âs°¢VÇ6R–b‡v—F–æræÆVæwF‚bbçF÷FÇ2ç&V6V—fVBâ’&Æö6¶W"ÒG¶çVÒ‡çF÷FÇ2æÖ—76–ær—ÒRÖçVçFR‡2’¢G·v—F–æræÖ‚†Â’ÓâG¶Âæ÷&FW%÷&VgÒ&W7FRVâ&VÆ—VB‚G¶çVÒ†ÂæÖ—76–ær—Ò–’æ¦ö–â‚rÂr—ÒFçBVRÆRf÷W&æ—76WW"î(	–2Æ—g,:’æ°¢VÇ6R–b‡ç7FGW2ÓÒvG&gBrbbæWF†÷&—¦F–öç2æ6öÖÖ—FÖVçBbbæWF†÷&—¦F–öç2ç–ÖVçB’&Æö6¶W"ÒvÆR–VÖVçBf÷W&æ—76WW"&W7FRVæRL:–6—6–öâF—7F–æ7FRFRÎ(	–VævvVÖVçB‡&W7öç6&ÆR‡V"’âs°¢Ğ¢ÒVÇ6R–b‡6VÂçG—RÓÓÒvæVVBr’°¢6öç7BrÒæVVDw&÷W2æf–æB‚‡‚’Óâ‚æw&÷Wæ¶W’ÓÓÒ6VÂæ–B“°¢6öç7B2Ò6÷W&6–ætæVVG2æf–æB‚‡‚’Óâ‚æ¶W’ÓÓÒ6VÂæ–B“°¢–b†r’°¢F—FÆRÒ&W6ö–âG¶ræw&÷Wç&öGV7BÇÂv'F–6ÆRwÖ²7V"ÒG¶ræ&F6‚ç7WÆ–W%öæÖWÒ+rG¶Ö&¶WD6öFWÒ+rG¶çVÒ†ræw&÷WçVçF—G’—ÒV°¢ræw&÷WæÆ–æW2æf÷$V6‚‚†Â’ÓâæöFW2çW6‚†æöFR‚t6öÖÖæFRrÂÂæ÷&FW%÷&VbÂ9rG¶çVÒ†ÂçVçF—G’—ÖÂvöâr’’“°¢æöFW2çW6‚†æöFR‚u&Vw&÷WVÖVçBrÂG¶çVÒ†ræw&÷WçVçF—G’—ÒVÂvÜ:¦ÖR4µR+rÜ:¦ÖRÖ&6Œ:’rÂvöâr’ÂæöFR‚uòrÂ|:6öç7F—GVW"rÂv'&÷V–ÆÆöârÂrr’“°¢ÒVÇ6R–b‡2’°¢F—FÆRÒ&W6ö–âG·2æ—FVÒç&öGV7BÇÂv'F–6ÆRwÖ²7V"ÒG·2æ÷&FW"ç&VfW&Væ6WÒ+rG¶Ö&¶WD6öFWÒ+rG¶çVÒ‡2æ—FVÒçVæ6÷fW&VB—ÒV°¢æöFW2Ò¶æöFR‚t6öÖÖæFRrÂ2æ÷&FW"ç&VfW&Væ6RÂ2æ÷&FW"ç7FGW2æÆ&VÂÂvöâr’ÂæöFR‚t&W6ö–ârÂG·2æ—FVÒç&öGV7GÒ9rG¶çVÒ‡2æ—FVÒçVæ6÷fW&VB—ÖÂw6ç2Æ–væRN(	–6†BrÂwv&âr’ÂæöFR‚tf÷W&æ—76WW"rÂ~(	BrÂvV7VâFÖ—76–&ÆRrÂwv&âr’ÂæöFR‚uòrÂ~(	BrÂv–×÷76–&ÆRrÂrr•Ó°¢&Æö6¶W"Òu6÷W&6–ær&WV—2(	BV7Vâf÷W&æ—76WW"FÖ—76–&ÆR¢V7VæRò÷76–&ÆRâs°¢Ğ¢ÒVÇ6R–b‡6VÂçG—RÓÓÒv&÷‚r’°¢6öç7B"Ò†Bæ&÷†W2ÇÂµÒ’æf–æB‚‡‚’Óâ‚çVæ—Eö–BÓÓÒ6VÂæ–B“°¢–b†"’°¢F—FÆRÒ"ç&VfW&Væ6S²7V"Ò4ôÔ$õ‚+rG¶"ç7FFWÖ°¢æöFW2Ò¶æöFR‚t6öÖÖæFW2rÂ²ââææWr6WB‚†"æ6öçFVçG2ÇÂµÒ’æÖ‚†2’Óâ2æ÷&FW%÷&Vb’•Òæ¦ö–â‚rÂr’ÇÂ~(	BrÂv'F–6ÆW2G&<:—2Fç2Æ4ôÔ$õ‚rÂvö²r’ÂæöFR‚t4ôÔ$õ‚rÂ"ç&VfW&Væ6RÂ‡VÖå‡—6–6Å7FFR†"ç7FFR’Âvöâr’ÂæöFR‚tW‡:–F—F–öârÂ"ç6†—ÖVçE÷&VbÇÂ~(	BrÂ"ç6†—ÖVçE÷&Vbò†"ç6†—ÖVçE÷7FvRÇÂv÷WfW'FRr’¢|:&GF6†W"rÂ"ç6†—ÖVçE÷&Vbòvö²r¢rr’ÂæöFR‚u&VÆ—2rÂ~(	BrÂvGFW7FF–öâ:Æ,:–6WF–öârÂrr•Ó°¢Ğ¢Ğ¢&WGW&â²F—FÆS¢F—FÆRÇÂ6VÄ¶W’Â7V"ÂæöFW2Â&Æö6¶W"Ó°¢Ğ ¢òò7F–öç2¢WŒ:–7WFVçBÆ&÷WFR,:–VÆÆR²–×÷76–&ÆW2(i"L:—67F—l:–W2dT2Æ&—6öâ†¦Ö—2Ö7\:–W26ç2W‡Æ–6F–öâ’à¢gVæ7F–öâ7F–öç4f÷"‚’°¢6öç7B7G2ÒµÓ°¢6öç7BÒ†¶W’ÂÆ&VÂÂò’Óâ7G2çW6‚‡²¶W’ÂÆ&VÂÂâââ†òÇÂ·Ò’Ò“°¢6öç7BÆö6²Ò&VDöæÇ’òvÆV7GW&R6WVÆRr¢çVÆÃ°¢6öç7Bw&çBÒ†fÆrÂ&V6öâ’Óâ‡f–WvW"bbfÆròçVÆÂ¢&V6öâ“°¢–b‚6VÂ’&WGW&â7G3°¢–b‡6VÂçG—RÓÓÒvæVVBr’°¢6öç7BrÒæVVDw&÷W2æf–æB‚‡‚’Óâ‚æw&÷Wæ¶W’ÓÓÒ6VÂæ–B“°¢6öç7B2Ò6÷W&6–ætæVVG2æf–æB‚‡‚’Óâ‚æ¶W’ÓÓÒ6VÂæ–B“°¢–b‡2’°¢‚w&W6öÇfR×6÷W&6–ærrÂu,:—6÷VG&RÆR6÷W&6–ærò7,:–W"Vâ6†BÖçVVÂrÂ²&–Ö'“¢G'VRÂv‡“¢v6†ö—6—"f÷W&æ—76WW"WBÆ–væRN(	–6†BrÂF—6&ÆVC¢Æö6²Â'Vã¢‚’Óâ7G‚æ÷Vå6÷W&6–ær‡2æ÷&FW"æ–B’Ò“°¢‚w&W&R×òrÂt6öç7F—GVW"VâòrÂ²F—6&ÆVC¢v–×÷76–&ÆR6ç2f÷W&æ—76WW"rÒ“°¢ÒVÇ6R–b†r’°¢6öç7BÖ–æRÒræ&F6‚æw&÷W2æf–ÇFW"‚‡‚’Óâ7FFRç–6¶VBæ†2‡‚æ¶W’’“°¢6öç7B7&÷74&F6‚Ò²ââç7FFRç–6¶VEÒç6öÖR‚†²’Óâræ&F6‚æw&÷W2ç6öÖR‚‡‚’Óâ‚æ¶W’ÓÓÒ²’“°¢6öç7BW6RÒÖ–æRæÆVæwF‚òÖ–æR¢¶ræw&÷WÓ°¢6öç7BÆ–æT–G2ÒW6RæfÆDÖ‚‡‚’Óâ‚æÆ–æW2æÖ‚†Â’ÓâÂæÆ–æUö–B’“°¢6öç7BG’ÒW6Rç&VGV6R‚‡BÂ‚’ÓâB²‚çVçF—G’Â“°¢‚w&W&R×òrÂ6öç7F—GVW"VæRò+rG¶çVÒ‡G’—ÒR‚G·W6RæÖ‚‡‚’Óâ‚ç&öGV7BÇÂv'F–6ÆRr’æ¦ö–â‚r²r—Ò–Â°¢&–Ö'“¢G'VRÂv‡“¢w&Vw&÷WRÆW2&W6ö–ç26ö6Œ:—2rÂF—6&ÆVC¢Æö6²ÇÂ†7&÷74&F6‚òwVâ6WVÂf÷W&æ—76WW"WBÖ&6Œ:’"òr¢çVÆÂ’À¢'Vã¢†"’Óâ&W&T&F6‚†"Âræ&F6‚ÂÆ–æT–G2ÂçVÆÂ’À¢Ò“°¢òòVæRÜ:¦ÖR,:–l:—&Væ6Rf÷W&æ—76WW"õ4µRWWB&Vw&÷WW"ÇW6–WW'26öÖÖæFW2à¢òòÆR‡V"Fö—BW76’÷Wfö—"6öç7F—GVW"VæRò÷W"TäR6öÖÖæFR6ç0¢òò&GF6†W"6–ÆVæ6–WW6VÖVçBÆW2Æ–væW2FW2WG&W26öÖÖæFW2à¢6öç7B'”÷&FW"ÒæWrÖ‚“°¢f÷"†6öç7BÆ–æRöbræw&÷WæÆ–æW2’°¢–b‚Æ–æRæ÷&FW%ö–BÇÂÆ–æRæ÷&FW%÷&VbÇÂÆ–æRæÆ–æUö–B’6öçF–çVS°¢–b‚'”÷&FW"æ†2†Æ–æRæ÷&FW%ö–B’’'”÷&FW"ç6WB†Æ–æRæ÷&FW%ö–BÂ²&Vc¢Æ–æRæ÷&FW%÷&VbÂ–G3¢µÒÒ“°¢'”÷&FW"ævWB†Æ–æRæ÷&FW%ö–B’æ–G2çW6‚†Æ–æRæÆ–æUö–B“°¢Ğ¢–b†'”÷&FW"ç6—¦Râ’°¢f÷"†6öç7B¶÷&FW$–BÂ÷&FW$Æ–æW5Òöb'”÷&FW"’°¢‚w&W&R×òÖ÷&FW"Òr²÷&FW$–BÀ¢6öç7F—GVW"VæRò+r6öÖÖæFRG¶÷&FW$Æ–æW2ç&VgÒ‚G¶÷&FW$Æ–æW2æ–G2æÆVæwF‡ÒÆ–væR‡2’–Â°¢v‡“¢wVæ—VVÖVçBÆW2Æ–væW2FR6WGFR6öÖÖæFR²WG&W26öÖÖæFW2–æ6†æ|:–W2rÀ¢F—6&ÆVC¢Æö6²À¢'Vã¢†"’Óâ&W&T&F6‚†"Âræ&F6‚Â÷&FW$Æ–æW2æ–G2ÂçVÆÂ’À¢Ò“°¢Ğ¢Ğ¢–b†ræ&F6‚æ6ö×F–&ÆUöG&gE÷õö–G2æÆVæwF‚’°¢ræ&F6‚æ6ö×F–&ÆUöG&gE÷õö–G2æf÷$V6‚‚†–B’Óâ†GF6‚×òÒG¶–GÖÂ¦÷WFW"R'&÷V–ÆÆöâG·õ&Vb‡ô'”–BævWB†–B’ÇÂ²–BÒ—ÖÂ²v‡“¢vÜ:¦ÖRf÷W&æ—76WW"+r‡V"+rÖ&6Œ:’rÂF—6&ÆVC¢Æö6²ÇÂ†7&÷74&F6‚òwVâ6WVÂf÷W&æ—76WW"WBÖ&6Œ:’"òr¢çVÆÂ’Â'Vã¢†"’Óâ&W&T&F6‚†"Âræ&F6‚ÂÆ–æT–G2Â–B’Ò’“°¢ÒVÇ6R‚vGF6‚×òrÂt¦÷WFW":Vâò'&÷V–ÆÆöâW†—7FçBrÂ²F—6&ÆVC¢vV7Vâ'&÷V–ÆÆöâ6ö×F–&ÆRrÒ“°¢Ğ¢ÒVÇ6R–b‡6VÂçG—RÓÓÒwòr’°¢6öç7BòÒô'”–BævWB‡6VÂæ–B“°¢–b‡ò’°¢6öç7BG&gBÒòç7FWæ¶W’ÓÓÒvG&gBs°¢6öç7BVfbÒòçF÷FÇ2æVffV7F—fRÇÂ°¢–b†G&gB’°¢‚vWF†÷&—¦RÖ6öÖÖ—FÖVçBrÂufÆ–FW"Î(	–VævvVÖVçBN(	–6†BrÂ²&–Ö'“¢G'VRÂv‡“¢vG&ö—BW&6†6Uö6öÖÖ—FÖVçBrÂF—6&ÆVC¢Æö6²ÇÂw&çB‡f–WvW"bbf–WvW"æ6åöWF†÷&—¦Uö6öÖÖ—FÖVçBÂw,:—6W'l:’:Æ&W7öç6&ÆR‡V"r’Â'Vã¢‚’Óâ÷Väf÷&Ò‚v6öÖÖ—FÖVçBrÂòæ–B’Ò“°¢‚vFWF6‚ÖÆ–æRrÂu&WF—&W"VæRÆ–væRrÂ²v‡“¢vÆÆ–væR&VFWf–VçBVâ&W6ö–â÷WfW'BrÂF—6&ÆVC¢Æö6²Â'Vã¢‚’Óâ÷Väf÷&Ò‚vFWF6‚rÂòæ–B’Ò“°¢Ğ¢–b‚&VDöæÇ’bbòæWF†÷&—¦F–öç2æ6öÖÖ—FÖVçCòçFeöf–Æ&ÆR’°¢‚vF÷væÆöBÖ6öÖÖ—FÖVçB×FbrÂuL:–Ì:–6†&vW"ÆR&öâFR6öÖÖæFRDbrÂ°¢‡&Vc¢ö’÷W&6†6–ær÷òòG¶Væ6öFUU$”6ö×öæVçB‡òæ–B—Òö6öÖÖ—FÖVçB×FfÀ¢v‡“¢wW6vR–çFW&æR‡V"rÀ¢Ò“°¢Ğ¢–b‡òç7FWæ¶W’ÓÓÒwfÆ–FF–öâr’‚w7V&Ö—B×òrÂu6÷VÖWGG&RÆòrÂ²&–Ö'“¢G'VRÂv‡“¢w&–Vâî(	–W7BVæ6÷&RVçf÷œ:’rÂF—6&ÆVC¢Æö6²Â'Vã¢†"’Óâ7V&Ö—Eò†"Âòæ–B’Ò“°¢–b‡òç7FWæ¶W’ÓÓÒvVævvVBr’‚w&V6÷&B×6VçBrÂtVç&Vv—7G&W"Î(	–Vçfö’f÷W&æ—76WW"rÂ²&–Ö'“¢G'VRÂv‡“¢v6æÂ,:–VÂÂWFWW"Â†WW&RrÂF—6&ÆVC¢Æö6²Â'Vã¢‚’Óâ÷Väf÷&Ò‚w6VçBrÂòæ–B’Ò“°¢–b‡òç7FGW2ÓÓÒvæ÷F–f–VBrbbòç6VçEöB’‚v6öæf—&Ò×òrÂt6öæf—&ÖF–öâf÷W&æ—76WW"rÂ²v‡“¢wVçF—L:—26öæf—&Ü:–W2†L:–6Æ&F–b’rÂF—6&ÆVC¢Æö6²Â'Vã¢‚’Óâ÷Väf÷&Ò‚v6öæf—&ÒrÂòæ–B’Ò“°¢–b‚G&gB’‚w&V6V—fRrÂu,:–6WF–öææW"VæRÆ—g&—6öârÂ²&–Ö'“¢òçF÷FÇ2æÖ—76–ærâÂv‡“¢w66âWBVçF—L:’&\:wVRrÂF—6&ÆVC¢Æö6²ÇÂ‡òçF÷FÇ2æÖ—76–ærâòçVÆÂ¢uò6öÆL:–Rr’Â'Vã¢‚’Óâ÷Väf÷&Ò‚w&V6V—fRrÂòæ–B’Ò“°¢VÇ6R‚w&V6V—fRrÂu,:–6WF–öææW"VæRÆ—g&—6öârÂ²F—6&ÆVC¢uòVæ6÷&RVâ'&÷V–ÆÆöârÒ“°¢–b‚G&gBbbòæWF†÷&—¦F–öç2ç–ÖVçB’‚vWF†÷&—¦R×–ÖVçBrÂtWF÷&—6W"ÆR–VÖVçBf÷W&æ—76WW"rÂ²v‡“¢vL:–6—6–öâF—7F–æ7FRFRÎ(	–VævvVÖVçBrÂF—6&ÆVC¢Æö6²ÇÂ‚òæWF†÷&—¦F–öç2æ6öÖÖ—FÖVçBòv,:‡2VævvVÖVçBWBVçfö’r¢w&çB‡f–WvW"bbf–WvW"æ6åöWF†÷&—¦U÷–ÖVçBÂw,:—6W'l:’:Æ&W7öç6&ÆR‡V"r’’Â'Vã¢‚’Óâ÷Väf÷&Ò‚w–ÖVçBrÂòæ–B’Ò“°¢VÇ6R–b†G&gB’‚vWF†÷&—¦R×–ÖVçBrÂtWF÷&—6W"ÆR–VÖVçBf÷W&æ—76WW"rÂ²F—6&ÆVC¢v,:‡2VævvVÖVçBWBVçfö’rÒ“°¢fö–BVfc°¢Ğ¢ÒVÇ6R–b‡6VÂçG—RÓÓÒv÷&FW"r’°¢6öç7BòÒ÷&FW$'”–BævWB‡6VÂæ–B“°¢–b†ò’°¢–b†òçF÷FÇ2çVæ6÷fW&VBâ’‚w&W6öÇfR×6÷W&6–ærrÂu,:—6÷VG&RÆR6÷W&6–ærò7,:–W"Vâ6†BÖçVVÂrÂ²&–Ö'“¢G'VRÂv‡“¢v6†ö—6—"f÷W&æ—76WW"WBÆ–væRN(	–6†BrÂF—6&ÆVC¢Æö6²Â'Vã¢‚’Óâ7G‚æ÷Vå6÷W&6–ær†òæ–B’Ò“°¢6öç7B"Òòç&VF–æW73°¢–b‡"çVæ&÷†VE÷&V6V—fVBâ’‚w&W&RÖ6öÖ&÷‚rÂu,:—'F—"ÆW2'F–6ÆW2Vâ4ôÔ$õ‚rÂ²&–Ö'“¢G'VRÂv‡“¢v6†ö—6—"VæR4ôÔ$õ‚WB66

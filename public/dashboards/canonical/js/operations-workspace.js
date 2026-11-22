@@ -335,678 +335,10 @@
       result = await jsonRequest(context.fetch, options.url, {
         method: 'POST',
         body: options.body,
-        idempotencyKey: options.idempotencyKey,
-      });
-    } catch (error) {
-      setFeedback(context.root, error.message, 'critical');
-      button.disabled = false;
-      button.textContent = previous;
-      throw error;
-    }
-    if (typeof options.onSuccess === 'function') options.onSuccess(result);
-    const message = typeof options.successMessage === 'function'
-      ? options.successMessage(result)
-      : (options.successMessage || 'Action appliquÃ©e.');
-    const tone = typeof options.successTone === 'function' ? options.successTone(result) : 'positive';
-    try {
-      await context.reload();
-      // La relecture reconstruit l'en-tÃªte : le message est posÃ© aprÃ¨s, pour rester lisible.
-      setFeedback(context.root, message, tone);
-    } catch (error) {
-      setFeedback(context.root, `${message} La relecture a Ã©chouÃ© : ${error.message}`, 'critical');
-    }
-    return result;
-  }
-
-  const RECEIVABLE_ENDPOINT = '/api/scans/hub/receivable';
-  const RECEIVE_ENDPOINT = '/api/scans/hub/receive';
-  const PHYSICAL_CODE_CONFIRM_ENDPOINT = '/api/hub/physical-codes/confirm';
-  const RECEPTION_STATE_LABELS = Object.freeze({ NOT_RECEIVED: 'Non reÃ§u', PARTIAL: 'Partiel', COMPLETE: 'Complet' });
-
-  const WORKSPACE_VIEWS = Object.freeze([
-    { id: 'hub', label: 'Hub' },
-    { id: 'relay', label: 'Relais' },
-    { id: 'inventory', label: 'Stock Ã  affecter' },
-  ]);
-
-  // Hub live Â· ExÃ©cution : actions Hub uniquement (jamais Relais) + rÃ©ception fournisseur.
-  const EXECUTION_VIEWS = Object.freeze([
-    { id: 'supply', label: 'Dossiers' },
-    { id: 'reception', label: 'RÃ©ceptions' },
-    { id: 'hub', label: 'Actions Hub' },
-    { id: 'inventory', label: 'Stock Ã  affecter' },
-  ]);
-
-  // Relais live Â· ExÃ©cution : actions Relais uniquement (encaisser, rÃ©ceptionner, remettre) â€” jamais Hub.
-  const RELAY_LIVE_TABS = Object.freeze([{ id: 'relay', label: 'OpÃ©rations' }, { id: 'cash', label: 'Cash & dÃ©pÃ´ts' }, { id: 'returns', label: 'Retours & SAV' }]);
-
-  function newReceptionReference() {
-    const crypto = globalThis.crypto;
-    const id = crypto && typeof crypto.randomUUID === 'function'
-      ? crypto.randomUUID()
-      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-    return `SUPPLIER_PACKAGE-${id}`;
-  }
-
-  // RÃ©fÃ©rence stable par saisie : un renvoi (rÃ©seau, double clic) rejoue la mÃªme rÃ©ception, jamais une seconde.
-  function receptionReferenceFor(context, purchaseOrderId) {
-    if (!context.receiveRefs) context.receiveRefs = new Map();
-    if (!context.receiveRefs.has(purchaseOrderId)) context.receiveRefs.set(purchaseOrderId, newReceptionReference());
-    return context.receiveRefs.get(purchaseOrderId);
-  }
-
-  function receptionMessage(result) {
-    if (result && result.idempotent_replay) {
-      return `RÃ©ception dÃ©jÃ  traitÃ©e${result.unit && result.unit.reference ? ` (${result.unit.reference})` : ''} : aucune nouvelle mutation.`;
-    }
-    if (result && result.quarantined) {
-      return `Colis mis en quarantaine (${result.reason_code || 'Ã©cart constatÃ©'}) : un incident de rÃ©conciliation est ouvert, le stock nâ€™est pas augmentÃ©.`;
-    }
-    return 'RÃ©ception enregistrÃ©e.';
-  }
-
-  function createReceptionCard(doc, context, po) {
-    const card = doc.createElement('article');
-    card.className = 'kmc-workspace-receive-card';
-    card.setAttribute('data-receive-po', po.purchase_order_id);
-
-    const head = doc.createElement('header');
-    head.className = 'kmc-workspace-receive-head';
-    head.appendChild(text(doc, 'strong', '', (po.supplier && po.supplier.name) || 'Fournisseur non renseignÃ©'));
-    head.appendChild(text(doc, 'span', 'kmc-workspace-muted',
-      `PO ${String(po.purchase_order_id).slice(0, 8)} Â· ${po.supplier_order_ref || 'sans rÃ©fÃ©rence fournisseur'} Â· statut fournisseur : ${po.po_status} (information, pas une rÃ©ception)`));
-    card.appendChild(head);
-    // Douchette USB (mode clavier) : un scan reconnaÃ®t une rÃ©fÃ©rence, jamais un client.
-    const scannerPanel = doc.createElement('div');
-    scannerPanel.className = 'kmc-workspace-receive-scanner';
-    const scannerLabel = text(doc, 'label', 'kmc-workspace-receive-scan-label', 'Identifier la rÃ©fÃ©rence reÃ§ue');
-    const scannerInput = doc.createElement('input');
-    scannerInput.type = 'text';
-    scannerInput.autocomplete = 'off';
-    scannerInput.className = 'kmc-workspace-receive-scan-input';
-    scannerInput.placeholder = 'EAN, GTIN ou code fournisseur â€” EntrÃ©e';
-    scannerInput.setAttribute('aria-label', 'Scanner le code physique de la rÃ©fÃ©rence fournisseur');
-    scannerLabel.appendChild(scannerInput);
-    scannerPanel.appendChild(scannerLabel);
-    const scannerResult = text(doc, 'span', 'kmc-workspace-receive-scan-result', 'Scanner la rÃ©fÃ©rence avant de dÃ©clarer sa quantitÃ© reÃ§ue.');
-    scannerResult.setAttribute('role', 'status');
-    scannerPanel.appendChild(scannerResult);
-    // Mode dÃ©gradÃ© : sans code lisible, l'agent justifie une constatation manuelle ; la provenance
-    // enregistrÃ©e est MANUAL (jamais SCAN), avec la mÃªme vÃ©rification de quantitÃ© et de variante.
-    const manualProof = doc.createElement('input');
-    manualProof.type = 'text';
-    manualProof.maxLength = 500;
-    manualProof.className = 'kmc-workspace-receive-manual-proof';
-    manualProof.placeholder = 'Ex. scanner indisponible, contrÃ´le visuel';
-    manualProof.setAttribute('aria-label', 'Justification de la rÃ©ception en saisie manuelle');
-    manualProof.setAttribute('data-receive-manual-proof', '');
-    manualProof.hidden = true;
-    // Interrupteur explicite : un scanner Ã©mule un clavier, la frappe seule ne prouve pas la provenance.
-    const manualToggleLabel = text(doc, 'label', 'kmc-workspace-receive-manual-toggle', 'Saisie manuelle (sans scanner) ');
-    const manualToggle = doc.createElement('input');
-    manualToggle.type = 'checkbox';
-    manualToggle.setAttribute('data-receive-manual-toggle', '');
-    manualToggle.setAttribute('aria-label', 'Saisie manuelle : provenance MANUAL avec justification obligatoire');
-    manualToggleLabel.appendChild(manualToggle);
-    scannerPanel.appendChild(manualToggleLabel);
-    const manualProofLabel = text(doc, 'label', 'kmc-workspace-receive-field-label',
-      'Justification manuelle Â· obligatoire (6 caractÃ¨res minimum)');
-    manualProofLabel.hidden = true;
-    manualProofLabel.appendChild(manualProof);
-    scannerPanel.appendChild(manualProofLabel);
-    card.appendChild(scannerPanel);
-
-    const wrap = doc.createElement('div');
-    wrap.className = 'kmc-workspace-table-wrap';
-    const table = doc.createElement('table');
-    table.className = 'kmc-workspace-table';
-    const thead = doc.createElement('thead');
-    const headRow = doc.createElement('tr');
-    ['Article', 'Attendu', 'ReÃ§u', 'Restant', 'Ã‰tat', 'ReÃ§u maintenant'].forEach(label => headRow.appendChild(text(doc, 'th', '', label)));
-    thead.appendChild(headRow);
-    table.appendChild(thead);
-    const tbody = doc.createElement('tbody');
-    const inputs = [];
-    const scannedCodeBySku = new Map();
-    po.lines.forEach((line, index) => {
-      const row = doc.createElement('tr');
-      row.appendChild(text(doc, 'td', '', line.product_name));
-      row.appendChild(text(doc, 'td', '', formatNumber(line.expected_quantity)));
-      row.appendChild(text(doc, 'td', '', formatNumber(line.received_quantity)));
-      row.appendChild(text(doc, 'td', '', formatNumber(line.remaining_quantity)));
-      row.appendChild(text(doc, 'td', '', RECEPTION_STATE_LABELS[line.reception_state] || line.reception_state));
-      const cell = doc.createElement('td');
-      const input = doc.createElement('input');
-      input.type = 'number';
-      input.min = '0';
-      input.max = String(line.remaining_quantity);
-      input.step = '1';
-      input.inputMode = 'numeric';
-      input.className = 'kmc-workspace-receive-qty';
-      input.setAttribute('data-receive-line', String(index));
-      input.setAttribute('aria-label', `QuantitÃ© reÃ§ue maintenant pour ${line.product_name}`);
-      cell.appendChild(input);
-      row.appendChild(cell);
-      tbody.appendChild(row);
-      inputs.push({ input, line });
-    });
-    table.appendChild(tbody);
-    wrap.appendChild(table);
-    card.appendChild(wrap);
-
-    const footer = doc.createElement('div');
-    footer.className = 'kmc-workspace-receive-footer';
-    const tracking = doc.createElement('input');
-    tracking.type = 'text';
-    tracking.className = 'kmc-workspace-receive-tracking';
-    tracking.maxLength = 120;
-    tracking.placeholder = 'Suivi / rÃ©fÃ©rence du colis (facultatif)';
-    tracking.setAttribute('aria-label', 'Suivi ou rÃ©fÃ©rence du colis reÃ§u');
-    const trackingLabel = text(doc, 'label', 'kmc-workspace-receive-field-label',
-      'Suivi ou rÃ©fÃ©rence du colis Â· facultatif');
-    trackingLabel.appendChild(tracking);
-    footer.appendChild(trackingLabel);
-    const hint = text(doc, 'span', 'kmc-workspace-muted kmc-workspace-receive-hint', 'Saisissez la quantitÃ© rÃ©ellement reÃ§ue. Aucune quantitÃ© nâ€™est prÃ©remplie.');
-    footer.appendChild(hint);
-    const button = makeActionButton(doc, 'Enregistrer la rÃ©ception', 'receive-supplier');
-    button.disabled = true;
-    footer.appendChild(button);
-    card.appendChild(footer);
-
-    function collect() {
-      const contents = [];
-      let invalid = false;
-      inputs.forEach(({ input, line }) => {
-        const raw = String(input.value || '').trim();
-        if (raw === '') return;
-        const quantity = Number(raw);
-        if (!Number.isInteger(quantity) || quantity < 0 || quantity > line.remaining_quantity) { invalid = true; return; }
-        if (quantity > 0) {
-          contents.push({
-            purchase_order_id: po.purchase_order_id,
-            ...(line.product_sku_id ? { product_sku_id: line.product_sku_id } : {}),
-            ...(manualToggle.checked
-              ? (line.product_sku_id && String(manualProof.value || '').trim().length >= 6
-                ? { evidence_method: 'MANUAL', evidence_ref: String(manualProof.value).trim() } : {})
-              : (scannedCodeBySku.has(String(line.product_sku_id))
-                ? { evidence_code: scannedCodeBySku.get(String(line.product_sku_id)) } : {})),
-            quantity,
-          });
-        }
-      });
-      return { contents, invalid };
-    }
-
-    function sync() {
-      const { contents, invalid } = collect();
-      const unverified = contents.some(item => !item.evidence_code && item.evidence_method !== 'MANUAL');
-      button.disabled = invalid || contents.length === 0 || unverified;
-      hint.textContent = invalid
-        ? 'QuantitÃ© invalide : entier entre 0 et le restant attendu.'
-        : unverified ? (manualToggle.checked
-          ? 'Saisie manuelle : justification de 6 caractÃ¨res minimum obligatoire.'
-          : 'Scanner toutes les rÃ©fÃ©rences reÃ§ues, ou activer Â« Saisie manuelle Â» et la justifier.')
-        : 'QuantitÃ© rÃ©ellement comptÃ©e et rÃ©fÃ©rences scannÃ©es : prÃªt Ã  enregistrer.';
-    }
-    inputs.forEach(({ input }) => input.addEventListener('input', sync));
-    manualProof.addEventListener('input', sync);
-    manualToggle.addEventListener('change', () => {
-      manualProof.hidden = !manualToggle.checked;
-      manualProofLabel.hidden = !manualToggle.checked;
-      scannerResult.textContent = manualToggle.checked
-        ? 'Saisie manuelle active : provenance MANUAL, justification obligatoire.'
-        : 'Scanner la rÃ©fÃ©rence avant de dÃ©clarer sa quantitÃ© reÃ§ue.';
-      sync();
-    });
-    let scanning = false;
-    const PHYSICAL_CODE_TYPES = Object.freeze([
-      ['EAN_GTIN', 'EAN / GTIN imprimÃ© (universel)'],
-      ['SUPPLIER_BARCODE', 'Code-barres du fournisseur'],
-      ['KOM_LOT_LABEL', 'Ã‰tiquette de lot Komerce'],
-    ]);
-    const confirmBox = doc.createElement('form');
-    confirmBox.className = 'kmc-workspace-receive-confirm';
-    confirmBox.setAttribute('data-physical-confirm', '');
-    confirmBox.hidden = true;
-    scannerPanel.appendChild(confirmBox);
-
-    function closeConfirm() {
-      confirmBox.hidden = true;
-      confirmBox.replaceChildren();
-    }
-
-    // Code inconnu : l'agent, colis en main, rattache l'EAN Ã  la variante attendue sur CETTE PO.
-    // Le code identifie la rÃ©fÃ©rence, jamais la commande ni un exemplaire.
-    function openConfirm(code) {
-      confirmBox.replaceChildren();
-      confirmBox.hidden = false;
-      confirmBox.appendChild(text(doc, 'span', 'kmc-workspace-muted',
-        `Code ${code} inconnu pour ce fournisseur. Colis en main, choisissez la variante attendue sur cette PO.`));
-      const variant = doc.createElement('select');
-      variant.setAttribute('aria-label', 'Variante attendue sur la PO');
-      variant.setAttribute('data-confirm-variant', '');
-      variant.appendChild(Object.assign(doc.createElement('option'), { value: '', textContent: 'Variante attendueâ€¦' }));
-      po.lines.filter(line => line.product_sku_id).forEach(line => {
-        variant.appendChild(Object.assign(doc.createElement('option'), {
-          value: String(line.product_sku_id),
-          textContent: `${line.product_name} (attendu ${formatNumber(line.expected_quantity)})`,
-        }));
-      });
-      const type = doc.createElement('select');
-      type.setAttribute('aria-label', 'Type de code');
-      type.setAttribute('data-confirm-type', '');
-      PHYSICAL_CODE_TYPES.forEach(([value, label]) => type.appendChild(Object.assign(doc.createElement('option'), { value, textContent: label })));
-      const proof = doc.createElement('input');
-      proof.type = 'text';
-      proof.maxLength = 500;
-      proof.placeholder = 'Preuve : rÃ©fÃ©rence de la photo ou de la note';
-      proof.setAttribute('aria-label', 'RÃ©fÃ©rence de la photo ou de la note');
-      proof.setAttribute('data-confirm-proof', '');
-      const submit = makeActionButton(doc, 'Valider la confirmation', 'confirm-physical-code');
-      submit.type = 'submit';
-      submit.disabled = true;
-      const cancel = makeActionButton(doc, 'Annuler', 'cancel-physical-code');
-      cancel.addEventListener('click', closeConfirm);
-      const syncConfirm = () => { submit.disabled = !variant.value || !String(proof.value || '').trim(); };
-      variant.addEventListener('change', syncConfirm);
-      proof.addEventListener('input', syncConfirm);
-      [variant, type, proof].forEach(node => confirmBox.appendChild(node));
-      const actions = doc.createElement('div');
-      actions.className = 'kmc-workspace-receive-confirm-actions';
-      actions.appendChild(submit);
-      actions.appendChild(cancel);
-      confirmBox.appendChild(actions);
-      confirmBox.onsubmit = async event => {
-        event.preventDefault();
-        if (submit.disabled) return;
-        submit.disabled = true;
-        scannerResult.textContent = 'Confirmation en coursâ€¦';
-        scannerResult.dataset.scanTone = 'pending';
-        try {
-          await jsonRequest(context.fetch, PHYSICAL_CODE_CONFIRM_ENDPOINT, {
-            method: 'POST',
-            body: {
-              purchase_order_id: po.purchase_order_id,
-              product_sku_id: variant.value,
-              code,
-              code_type: type.value,
-              proof_ref: String(proof.value).trim(),
-            },
-          });
-          closeConfirm();
-          await identify(code);
-        } catch (error) {
-          scannerResult.textContent = `Confirmation refusÃ©e : ${error.message}`;
-          scannerResult.dataset.scanTone = 'error';
-          submit.disabled = false;
-        }
-      };
-      variant.focus();
-    }
-
-    async function identify(code) {
-      scanning = true;
-      scannerInput.disabled = true;
-      scannerResult.textContent = 'Identification en coursâ€¦';
-      scannerResult.dataset.scanTone = 'pending';
-      try {
-        const query = new URLSearchParams({ purchase_order_id: String(po.purchase_order_id), code });
-        const matched = await jsonRequest(context.fetch, `${endpointFor(context.marketCode, 'supply/physical-code')}?${query}`);
-        const candidate = inputs.find(({ line }) => String(line.product_sku_id || '') === String(matched.product_sku_id) && Number(line.remaining_quantity) > 0);
-        if (!candidate) {
-          scannerResult.textContent = 'RÃ©fÃ©rence reconnue, mais aucune quantitÃ© attendue dans cette PO : traiter lâ€™Ã©cart.';
-          scannerResult.dataset.scanTone = 'warning';
-          return;
-        }
-        scannerResult.textContent = matched.confirmed
-          ? `RÃ©fÃ©rence confirmÃ©e : ${candidate.line.product_name}. Comptez puis saisissez la quantitÃ© rÃ©ellement reÃ§ue.`
-          : `RÃ©fÃ©rence fournisseur dÃ©clarÃ©e : ${candidate.line.product_name}. VÃ©rification physique du code Ã  confirmer.`;
-        scannerResult.dataset.scanTone = matched.confirmed ? 'success' : 'warning';
-        if (matched.confirmed && !manualToggle.checked) {
-          scannedCodeBySku.set(String(candidate.line.product_sku_id), String(matched.code));
-        }
-        sync();
-        candidate.input.focus();
-      } catch (error) {
-        scannerResult.textContent = `Code non reconnu ou incompatible avec cette PO (${error.code || 'contrÃ´le requis'}).`;
-        scannerResult.dataset.scanTone = 'error';
-        if (error.code === 'HUB_PHYSICAL_CODE_UNKNOWN') {
-          const propose = makeActionButton(doc, 'Confirmer cette rÃ©fÃ©rence', 'open-physical-confirm');
-          propose.addEventListener('click', () => { propose.remove(); openConfirm(code); });
-          scannerResult.appendChild(doc.createTextNode(' '));
-          scannerResult.appendChild(propose);
-        }
-        scannerInput.focus();
-      } finally {
-        scanning = false;
-        scannerInput.disabled = false;
-      }
-    }
-
-    scannerInput.addEventListener('keydown', async event => {
-      if (event.key !== 'Enter') return;
-      event.preventDefault();
-      const code = String(scannerInput.value || '').trim();
-      if (!code || scanning) return;
-      closeConfirm();
-      await identify(code);
-    });
-
-    button.addEventListener('click', () => {
-      const { contents, invalid } = collect();
-      if (invalid || !contents.length || contents.some(item => !item.evidence_code && item.evidence_method !== 'MANUAL')) return;
-      const total = contents.reduce((sum, item) => sum + item.quantity, 0);
-      const trackingRef = String(tracking.value || '').trim();
-      runAction(context, button, {
-        url: RECEIVE_ENDPOINT,
-        body: { reference: receptionReferenceFor(context, po.purchase_order_id), ...(trackingRef ? { tracking_ref: trackingRef } : {}), contents },
-        confirmMessage: `Confirmer la rÃ©ception physique de ${total} article(s) du PO ${String(po.purchase_order_id).slice(0, 8)} ?`,
-        runningMessage: 'RÃ©ception en coursâ€¦',
-        successMessage: receptionMessage,
-        successTone: result => (result && result.quarantined ? 'critical' : 'positive'),
-        onSuccess: () => { context.receiveRefs.delete(po.purchase_order_id); },
-      }).catch(error => {
-        if (error && error.code === 'HUB_RECEPTION_REFERENCE_CONFLICT') {
-          context.receiveRefs.delete(po.purchase_order_id);
-          setFeedback(context.root, 'Cette saisie existe dÃ©jÃ  avec un contenu diffÃ©rent. VÃ©rifiez les quantitÃ©s restantes, puis recommencez.', 'critical');
-        }
-      });
-    });
-    return card;
-  }
-
-  // T8/HB-08 : le colis arrive physiquement sans manifeste. Aucun contenu, aucune PO
-  // ni quantitÃ© ne sont supposÃ©s. Le writer est le mÃªme /api/scans/hub/receive.
-  function createUnmanifestedArrivalCard(doc, context) {
-    const card = doc.createElement('article');
-    card.className = 'kmc-workspace-receive-card';
-    card.setAttribute('data-hub-unmanifested-arrival', '');
-    card.appendChild(text(doc, 'h3', '', 'ArrivÃ©e fournisseur sans manifeste'));
-    card.appendChild(text(doc, 'p', 'kmc-workspace-muted',
-      'Constater uniquement le colis physiquement prÃ©sent. Aucun article nâ€™est attribuÃ© Ã  une commande avant dÃ©ballage et rapprochement.'));
-    const form = doc.createElement('form');
-    form.setAttribute('data-hub-unmanifested-form', '');
-    card.appendChild(form);
-    const physical = doc.createElement('input');
-    physical.type = 'text';
-    physical.maxLength = 200;
-    physical.value = context.unmanifestedArrivalReference || newReceptionReference();
-    context.unmanifestedArrivalReference = physical.value;
-    physical.setAttribute('aria-label', 'RÃ©fÃ©rence physique unique du colis sans manifeste');
-    physical.setAttribute('data-hub-unmanifested-reference', '');
-    physical.addEventListener('input', () => {
-      context.unmanifestedArrivalReference = String(physical.value || '').trim();
-      sync();
-    });
-    const location = doc.createElement('input');
-    location.type = 'text';
-    location.maxLength = 120;
-    location.placeholder = 'Zone de rÃ©ception rÃ©elle (obligatoire)';
-    location.setAttribute('aria-label', 'Zone physique oÃ¹ le colis est reÃ§u');
-    location.setAttribute('data-hub-unmanifested-location', '');
-    const tracking = doc.createElement('input');
-    tracking.type = 'text';
-    tracking.maxLength = 120;
-    tracking.placeholder = 'Tracking fournisseur (facultatif)';
-    tracking.setAttribute('aria-label', 'Tracking rÃ©el du colis sans manifeste');
-    tracking.setAttribute('data-hub-unmanifested-tracking', '');
-    [physical, location, tracking].forEach(node => form.appendChild(node));
-    const button = makeActionButton(doc, 'Attester lâ€™arrivÃ©e sans manifeste', 'hub-unmanifested-arrival');
-    button.type = 'submit';
-    button.disabled = true;
-    const hint = text(doc, 'p', 'kmc-workspace-muted',
-      'Sans manifeste : aucun SKU, quantitÃ© ou PO crÃ©Ã©. La tÃ¢che Â« Colis Ã  rapprocher Â» reste Ã  traiter.');
-    form.appendChild(hint);
-    form.appendChild(button);
-    function sync() {
-      button.disabled = String(physical.value || '').trim().length < 6 ||
-        String(location.value || '').trim().length < 4;
-    }
-    location.addEventListener('input', sync);
-    form.addEventListener('submit', event => {
-      event.preventDefault();
-      sync();
-      if (button.disabled) return;
-      const reference = String(physical.value).trim();
-      const locationRef = String(location.value).trim();
-      const trackingRef = String(tracking.value).trim();
-      runAction(context, button, {
-        url: RECEIVE_ENDPOINT,
-        body: {
-          reference, location_ref: locationRef, ...(trackingRef ? { tracking_ref: trackingRef } : {}),
-          contents: [],
-        },
-        confirmMessage: 'Le colis ' + reference + ' est-il physiquement prÃ©sent Ã  ' + locationRef +
-          ' ? Il sera enregistrÃ© sans articles ni PO jusquâ€™au rapprochement.',
-        runningMessage: 'Constat dâ€™arrivÃ©e physique en coursâ€¦',
-        successMessage: result => 'ArrivÃ©e enregistrÃ©e : ' + (result?.unit?.reference || reference) +
-          '. Colis Ã  rapprocher, aucune quantitÃ© attribuÃ©e.',
-        onSuccess: () => { context.unmanifestedArrivalReference = null; },
-      }).catch(error => {
-        setFeedback(context.root, 'ArrivÃ©e non confirmÃ©e : ' + error.message +
-          '. VÃ©rifiez le dossier par rÃ©fÃ©rence avant de recommencer (rÃ©ponse rÃ©seau possiblement perdue).', 'critical');
-      });
-    });
-    return card;
-  }
-
-  function renderReceptionSection(rootNode, ui, doc, context) {
-    const slot = createSection(
-      rootNode,
-      ui,
-      'Hub Â· RÃ©ception fournisseur',
-      'Enregistrez uniquement les quantitÃ©s physiquement arrivÃ©es au Hub. La mention Â« expÃ©diÃ© par le fournisseur Â» ne prouve pas une rÃ©ception ; les rÃ©ceptions partielles sont acceptÃ©es.'
-    );
-    // Accessible mÃªme sans PO en attente : câ€™est prÃ©cisÃ©ment le cas dâ€™un colis Ã  rapprocher.
-    slot.appendChild(createUnmanifestedArrivalCard(doc, context));
-    if (context.receivableError) {
-      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', `RÃ©ception indisponible : ${context.receivableError}`));
-      return;
-    }
-    const orders = (context.receivable && context.receivable.purchase_orders) || [];
-    if (!orders.length) {
-      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun bon fournisseur en attente de rÃ©ception.'));
-      return;
-    }
-    orders.forEach(po => slot.appendChild(createReceptionCard(doc, context, po)));
-  }
-
-  // Hub live Â· Approvisionnement : projection serveur du dossier par marchÃ© (aucun calcul mÃ©tier cÃ´tÃ© navigateur).
-  // Les PO s'enregistrent dans Achats fournisseurs ; ici on suit la chaÃ®ne physique et on rattache les cartons.
-  function simpleTable(doc, columns, rows, empty) {
-    if (!rows.length) return text(doc, 'div', 'kmc-workspace-empty', empty);
-    const wrap = doc.createElement('div');
-    wrap.className = 'kmc-workspace-table-wrap';
-    const table = doc.createElement('table');
-    table.className = 'kmc-workspace-table';
-    const headRow = doc.createElement('tr');
-    columns.forEach(label => headRow.appendChild(text(doc, 'th', '', label)));
-    const thead = doc.createElement('thead');
-    thead.appendChild(headRow);
-    table.appendChild(thead);
-    const tbody = doc.createElement('tbody');
-    rows.forEach(cells => {
-      const row = doc.createElement('tr');
-      cells.forEach(cell => appendCell(doc, row, cell));
-      tbody.appendChild(row);
-    });
-    table.appendChild(tbody);
-    wrap.appendChild(table);
-    return wrap;
-  }
-
-  // Dossier vivant : la projection serveur reste la seule source de vÃ©ritÃ©.
-  // Les accordÃ©ons ne changent aucun Ã©tat; chaque action existante garde son service propriÃ©taire.
-  // RÃ©utilisÃ© par le cockpit global : mÃªme formulaire, mÃªmes endpoints,
-  // mÃªmes garde-fous et mÃªmes protections contre les POST rejouÃ©s.
-  function renderManualSourcing(ordersSlot, doc, context, group) {
-      const unresolved = (group.items || []).filter(item =>
-        item.sourcing_required === true && Number(item.purchasing_missing) > 0 &&
-        item.id && item.product_id
-      );
-      if (!unresolved.length) return;
-      const host = ordersSlot.querySelector('[data-hub-sourcing-recovery]');
-      if (!host) return;
-      host.hidden = false;
-      host.replaceChildren();
-
-      const heading = doc.createElement('div');
-      heading.className = 'kmc-hub-sourcing-heading';
-      const headingCopy = doc.createElement('div');
-      headingCopy.className = 'kmc-hub-sourcing-heading-copy';
-      headingCopy.appendChild(text(doc, 'h3', '', 'RÃ©soudre le sourcing Â· ' + group.reference));
-      headingCopy.appendChild(text(doc, 'p', '',
-        'Ouvrir une ligne dâ€™achat pour les articles non couverts. Aucun envoi de PO ni paiement fournisseur.'));
-      heading.appendChild(headingCopy);
-      const close = doc.createElement('button');
-      close.type = 'button';
-      close.className = 'kmc-hub-sourcing-close';
-      close.textContent = 'Fermer';
-      close.setAttribute('data-sourcing-close', '');
-      close.addEventListener('click', () => {
-        if (writing) return; // une mutation en cours ne doit pas Ãªtre dissimulÃ©e
-        host.hidden = true;
-        host.replaceChildren();
-        context.close?.();
-      });
-      heading.appendChild(close);
-      host.appendChild(heading);
-
-      const form = doc.createElement('form');
-      form.setAttribute('data-hub-sourcing-form', group.reference);
-      form.className = 'kmc-hub-sourcing-form';
-      host.appendChild(form);
-
-      const layout = doc.createElement('div');
-      layout.className = 'kmc-hub-sourcing-layout';
-      form.appendChild(layout);
-      const articlePanel = doc.createElement('section');
-      articlePanel.className = 'kmc-hub-sourcing-group';
-      articlePanel.appendChild(text(doc, 'h4', '', 'Article concernÃ©'));
-      layout.appendChild(articlePanel);
-      const supplierPanel = doc.createElement('section');
-      supplierPanel.className = 'kmc-hub-sourcing-group';
-      supplierPanel.appendChild(text(doc, 'h4', '', 'Fournisseur et conditions'));
-      layout.appendChild(supplierPanel);
-
-      const field = (label, element, parent) => {
-        const wrapper = doc.createElement('label');
-        wrapper.className = 'kmc-hub-sourcing-field';
-        wrapper.appendChild(text(doc, 'span', '', label));
-        wrapper.appendChild(element);
-        parent.appendChild(wrapper);
-        return element;
-      };
-      const itemSelect = field('Article Ã  sourcer', doc.createElement('select'), articlePanel);
-      itemSelect.setAttribute('data-sourcing-item', '');
-      unresolved.forEach(item => {
-        const option = doc.createElement('option');
-        option.value = item.id;
-        option.textContent = item.product;
-        itemSelect.appendChild(option);
-      });
-      const itemSummary = text(doc, 'p', 'kmc-hub-sourcing-quantity', '');
-      itemSummary.setAttribute('data-sourcing-quantity', '');
-      articlePanel.appendChild(itemSummary);
-      articlePanel.appendChild(text(doc, 'p', 'kmc-hub-sourcing-help',
-        'La quantitÃ© Ã  acheter est calculÃ©e depuis les lignes dÃ©jÃ  engagÃ©es, sans doublon.'));
-
-      const supplierSelect = field('Fournisseur', doc.createElement('select'), supplierPanel);
-      supplierSelect.setAttribute('data-sourcing-supplier', '');
-      const supplierName = field('Nom du nouveau fournisseur local', doc.createElement('input'), supplierPanel);
-      supplierName.placeholder = 'Nom rÃ©el du fournisseur';
-      supplierName.setAttribute('data-sourcing-name', '');
-      const supplierDetails = doc.createElement('div');
-      supplierDetails.className = 'kmc-hub-sourcing-details';
-      supplierPanel.appendChild(supplierDetails);
-      const supplierRef = field('RÃ©fÃ©rence fournisseur', doc.createElement('input'), supplierDetails);
-      supplierRef.placeholder = 'RÃ©fÃ©rence rÃ©elle';
-      supplierRef.setAttribute('data-sourcing-ref', '');
-      const supplierPrice = field('Prix unitaire (AED)', doc.createElement('input'), supplierDetails);
-      supplierPrice.type = 'number';
-      supplierPrice.step = '0.01';
-      supplierPrice.min = '0.01';
-      supplierPrice.placeholder = '0,00';
-      supplierPrice.setAttribute('data-sourcing-price', '');
-      const actualPrice = field('Prix unitaire rÃ©el', doc.createElement('input'), supplierPanel);
-      actualPrice.type = 'number';
-      actualPrice.step = '0.0001';
-      actualPrice.min = '0.0001';
-      const actualCurrency = field('Devise du prix rÃ©el (code Ã  3 lettres)', doc.createElement('input'), supplierPanel);
-      actualCurrency.maxLength = 3;
-      actualCurrency.placeholder = 'AED';
-      const mappingNote = text(doc, 'p', 'kmc-hub-sourcing-help', 
-        'Association existante : rÃ©fÃ©rence et prix enregistrÃ©s rÃ©utilisÃ©s.');
-      mappingNote.hidden = true;
-      mappingNote.setAttribute('data-sourcing-mapping-note', '');
-      supplierPanel.appendChild(mappingNote);
-
-      const footer = doc.createElement('div');
-      footer.className = 'kmc-hub-sourcing-footer';
-      form.appendChild(footer);
-      const footerCopy = doc.createElement('div');
-      footerCopy.className = 'kmc-hub-sourcing-footer-copy';
-      footerCopy.appendChild(text(doc, 'p', 'kmc-hub-sourcing-help',
-        'Ã‰tape suivante : prÃ©parer la PO, puis faire valider sÃ©parÃ©ment lâ€™engagement et le paiement.'));
-      const status = text(doc, 'p', 'kmc-hub-sourcing-status', '');
-      status.setAttribute('role', 'status');
-      status.setAttribute('aria-live', 'polite');
-      status.setAttribute('data-sourcing-status', '');
-      footerCopy.appendChild(status);
-      footer.appendChild(footerCopy);
-      const submit = makeActionButton(doc, 'CrÃ©er la ligne dâ€™achat', 'create-manual-purchase-line');
-      submit.type = 'submit';
-      footer.appendChild(submit);
-      let suppliers = [];
-      let requestSerial = 0;
-      let writing = false;
-      function chosenItem() {
-        return unresolved.find(item => item.id === itemSelect.value);
-      }
-      function updateForm() {
-        const supplier = suppliers.find(row => row.id === supplierSelect.value);
-        const mapped = !!supplier?.matching_product_supplier_id;
-        supplierName.disabled = !!supplier;
-        supplierName.parentNode.hidden = !!supplier;
-        supplierRef.disabled = mapped;
-        supplierPrice.disabled = mapped;
-        supplierDetails.hidden = mapped;
-        const quoteNeeded = mapped && supplier.matching_price_aed === null;
-        for (const input of [actualPrice, actualCurrency]) {
-          input.parentNode.hidden = !quoteNeeded;
-          input.disabled = !quoteNeeded;
-          input.required = quoteNeeded;
-          input.value = '';
-        }
-        mappingNote.hidden = !mapped || quoteNeeded;
-      }
-      function updateItemSummary() {
-        const quantity = Number(chosenItem()?.purchasing_missing || 0);
-        itemSummary.textContent = formatNumber(quantity) + (quantity > 1 ? ' unitÃ©s restantes Ã  acheter' : ' unitÃ© restante Ã  acheter');
-      }
-      async function loadSuppliers() {
-        const serial = ++requestSerial;
-        const item = chosenItem();
-        supplierSelect.disabled = true;
-        submit.disabled = true;
-        status.textContent = 'Recherche des fournisseurs du produitâ€¦';
-        try {
-          const result = await jsonRequest(context.fetch,
-            '/api/purchasing/suppliers?active=true&product_id=' + encodeURIComponent(item.product_id));
-          if (serial !== requestSerial || writing) return;
-          suppliers = Array.isArray(result) ? result.filter(row =>
-            row.matching_product_supplier_id || row.owner_scope === 'hub' ||
-            (context.user && context.user.role === 'admin')) : [];
-          supplierSelect.replaceChildren();
-          const first = doc.createElement('option');
-          first.value = '';
-          first.textContent = 'CrÃ©er un fournisseur local';
-          supplierSelect.appendChild(first);
-          suppliers.forEach(supplier => {
-            const option = doc.createElement('option');
-            option.value = supplier.id;
-            option.textContent = supplier.name +
-              (supplier.matching_product_supplier_id ? ' Â· dÃ©jÃ  associÃ©' : ' Â· Ã  associer');
+        idemm«ëŒ+Š×®º+º$zzb¥ç÷FVæ7”¶W“¢÷F–öç2æ–FV×÷FVæ7”¶W’À¢Ò“°¢Ò6F6‚†W'&÷"’°¢6WDfVVF&6²†6öçFW‡Bç&ö÷BÂW'&÷"æÖW76vRÂv7&—F–6Âr“°¢'WGFöâæF—6&ÆVBÒfÇ6S°¢'WGFöâçFW‡D6öçFVçBÒ&Wf–÷W3°¢F‡&÷rW'&÷#°¢Ğ¢–b‡G—Vöb÷F–öç2æöå7V66W72ÓÓÒvgVæ7F–öâr’÷F–öç2æöå7V66W72‡&W7VÇB“°¢6öç7BÖW76vRÒG—Vöb÷F–öç2ç7V66W74ÖW76vRÓÓÒvgVæ7F–öâp¢ò÷F–öç2ç7V66W74ÖW76vR‡&W7VÇB¢¢†÷F–öç2ç7V66W74ÖW76vRÇÂt7F–öâÆ—\:–Râr“°¢6öç7BFöæRÒG—Vöb÷F–öç2ç7V66W75FöæRÓÓÒvgVæ7F–öârò÷F–öç2ç7V66W75FöæR‡&W7VÇB’¢w÷6—F—fRs°¢G'’°¢v—B6öçFW‡Bç&VÆöB‚“°¢òòÆ&VÆV7GW&R&V6öç7G'V—BÂvVâ×L:§FR¢ÆRÖW76vRW7B÷<:’,:‡2Â÷W"&W7FW"Æ—6–&ÆRà¢6WDfVVF&6²†6öçFW‡Bç&ö÷BÂÖW76vRÂFöæR“°¢Ò6F6‚†W'&÷"’°¢6WDfVVF&6²†6öçFW‡Bç&ö÷BÂG¶ÖW76vWÒÆ&VÆV7GW&R:–6†÷\:’¢G¶W'&÷"æÖW76vWÖÂv7&—F–6Âr“°¢Ğ¢&WGW&â&W7VÇC°¢Ğ ¢6öç7B$T4T•d$ÄUôTäEô”åBÒrö’÷66ç2ö‡V"÷&V6V—f&ÆRs°¢6öç7B$T4T•dUôTäEô”åBÒrö’÷66ç2ö‡V"÷&V6V—fRs°¢6öç7B…•4”4Åô4ôDUô4ôäd•$ÕôTäEô”åBÒrö’ö‡V"÷‡—6–6ÂÖ6öFW2ö6öæf—&Òs°¢6öç7B$T4UD”ôåõ5DDUôÄ$TÅ2Òö&¦V7Bæg&VW¦R‡²äõEõ$T4T•dTC¢tæöâ&\:wRrÂ%D”Ã¢u'F–VÂrÂ4ôÕÄUDS¢t6ö×ÆWBrÒ“° ¢6öç7Btõ$µ54Uõd”Uu2Òö&¦V7Bæg&VW¦R…°¢²–C¢v‡V"rÂÆ&VÃ¢t‡V"rÒÀ¢²–C¢w&VÆ’rÂÆ&VÃ¢u&VÆ—2rÒÀ¢²–C¢v–çfVçF÷'’rÂÆ&VÃ¢u7Fö6²:ffV7FW"rÒÀ¢Ò“° ¢òò‡V"Æ—fR+rWŒ:–7WF–öâ¢7F–öç2‡V"Væ—VVÖVçB†¦Ö—2&VÆ—2’²,:–6WF–öâf÷W&æ—76WW"à¢6öç7BU„T5UD”ôåõd”Uu2Òö&¦V7Bæg&VW¦R…°¢²–C¢w7WÇ’rÂÆ&VÃ¢tF÷76–W'2rÒÀ¢²–C¢w&V6WF–öârÂÆ&VÃ¢u,:–6WF–öç2rÒÀ¢²–C¢v‡V"rÂÆ&VÃ¢t7F–öç2‡V"rÒÀ¢²–C¢v–çfVçF÷'’rÂÆ&VÃ¢u7Fö6²:ffV7FW"rÒÀ¢Ò“° ¢òò&VÆ—2Æ—fR+rWŒ:–7WF–öâ¢7F–öç2&VÆ—2Væ—VVÖVçB†Væ6—76W"Â,:–6WF–öææW"Â&VÖWGG&R’(	B¦Ö—2‡V"à¢6öç7B$TÄ•ôÄ•dUõD%2Òö&¦V7Bæg&VW¦R…·²–C¢w&VÆ’rÂÆ&VÃ¢t÷:—&F–öç2rÒÂ²–C¢v66‚rÂÆ&VÃ¢t66‚bL:—;GG2rÒÂ²–C¢w&WGW&ç2rÂÆ&VÃ¢u&WF÷W'2b4brÕÒ“° ¢gVæ7F–öâæWu&V6WF–öå&VfW&Væ6R‚’°¢6öç7B7'—FòÒvÆö&ÅF†—2æ7'—Fó°¢6öç7B–BÒ7'—FòbbG—Vöb7'—Fòç&æFöÕUT”BÓÓÒvgVæ7F–öâp¢ò7'—Fòç&æFöÕUT”B‚¢¢G´FFRææ÷r‚’çFõ7G&–ærƒ3b—ÒÒG´ÖF‚ç&æFöÒ‚’çFõ7G&–ærƒ3b’ç6Æ–6Rƒ"Â—Ö°¢&WGW&â5UÄ”U%õ4´tRÒG¶–GÖ°¢Ğ ¢òò,:–l:—&Væ6R7F&ÆR"6—6–R¢Vâ&Vçfö’‡,:—6VRÂF÷V&ÆR6Æ–2’&V¦÷VRÆÜ:¦ÖR,:–6WF–öâÂ¦Ö—2VæR6V6öæFRà¢gVæ7F–öâ&V6WF–öå&VfW&Væ6Tf÷"†6öçFW‡BÂW&6†6T÷&FW$–B’°¢–b‚6öçFW‡Bç&V6V—fU&Vg2’6öçFW‡Bç&V6V—fU&Vg2ÒæWrÖ‚“°¢–b‚6öçFW‡Bç&V6V—fU&Vg2æ†2‡W&6†6T÷&FW$–B’’6öçFW‡Bç&V6V—fU&Vg2ç6WB‡W&6†6T÷&FW$–BÂæWu&V6WF–öå&VfW&Væ6R‚’“°¢&WGW&â6öçFW‡Bç&V6V—fU&Vg2ævWB‡W&6†6T÷&FW$–B“°¢Ğ ¢gVæ7F–öâ&V6WF–öäÖW76vR‡&W7VÇB’°¢–b‡&W7VÇBbb&W7VÇBæ–FV×÷FVçE÷&WÆ’’°¢&WGW&â,:–6WF–öâL:–¬:G&—L:–RG·&W7VÇBçVæ—Bbb&W7VÇBçVæ—Bç&VfW&Væ6Rò‚G·&W7VÇBçVæ—Bç&VfW&Væ6WÒ–¢rwÒ¢V7VæRæ÷WfVÆÆR×WFF–öâæ°¢Ğ¢–b‡&W7VÇBbb&W7VÇBçV&çF–æVB’°¢&WGW&â6öÆ—2Ö—2VâV&çF–æR‚G·&W7VÇBç&V6öåö6öFRÇÂ|:–6'B6öç7FL:’wÒ’¢Vâ–æ6–FVçBFR,:–6öæ6–Æ–F–öâW7B÷WfW'BÂÆR7Fö6²î(	–W7B2VvÖVçL:’æ°¢Ğ¢&WGW&âu,:–6WF–öâVç&Vv—7G,:–Râs°¢Ğ ¢gVæ7F–öâ7&VFU&V6WF–öä6&B†Fö2Â6öçFW‡BÂò’°¢6öç7B6&BÒFö2æ7&VFTVÆVÖVçB‚v'F–6ÆRr“°¢6&Bæ6Æ74æÖRÒv¶Ö2×v÷&·76R×&V6V—fRÖ6&Bs°¢6&Bç6WDGG&–'WFR‚vFF×&V6V—fR×òrÂòçW&6†6Uö÷&FW%ö–B“° ¢6öç7B†VBÒFö2æ7&VFTVÆVÖVçB‚v†VFW"r“°¢†VBæ6Æ74æÖRÒv¶Ö2×v÷&·76R×&V6V—fRÖ†VBs°¢†VBæVæD6†–ÆB‡FW‡B†Fö2Âw7G&öærrÂrrÂ‡òç7WÆ–W"bbòç7WÆ–W"ææÖR’ÇÂtf÷W&æ—76WW"æöâ&Vç6V–vì:’r’“°¢†VBæVæD6†–ÆB‡FW‡B†Fö2Âw7ârÂv¶Ö2×v÷&·76RÖ×WFVBrÀ¢òGµ7G&–ær‡òçW&6†6Uö÷&FW%ö–B’ç6Æ–6RƒÂ‚—Ò+rG·òç7WÆ–W%ö÷&FW%÷&VbÇÂw6ç2,:–l:—&Væ6Rf÷W&æ—76WW"wÒ+r7FGWBf÷W&æ—76WW"¢G·òçõ÷7FGW7Ò†–æf÷&ÖF–öâÂ2VæR,:–6WF–öâ–’“°¢6&BæVæD6†–ÆB††VB“°¢òòF÷V6†WGFRU4"†ÖöFR6Æf–W"’¢Vâ66â&V6öææ:çBVæR,:–l:—&Væ6RÂ¦Ö—2Vâ6Æ–VçBà¢6öç7B66ææW%æVÂÒFö2æ7&VFTVÆVÖVçB‚vF—br“°¢66ææW%æVÂæ6Æ74æÖRÒv¶Ö2×v÷&·76R×&V6V—fR×66ææW"s°¢6öç7B66ææW$Æ&VÂÒFW‡B†Fö2ÂvÆ&VÂrÂv¶Ö2×v÷&·76R×&V6V—fR×66âÖÆ&VÂrÂt–FVçF–f–W"Æ,:–l:—&Væ6R&\:wVRr“°¢6öç7B66ææW$–çWBÒFö2æ7&VFTVÆVÖVçB‚v–çWBr“°¢66ææW$–çWBçG—RÒwFW‡Bs°¢66ææW$–çWBæWFö6ö×ÆWFRÒvöfbs°¢66ææW$–çWBæ6Æ74æÖRÒv¶Ö2×v÷&·76R×&V6V—fR×66âÖ–çWBs°¢66ææW$–çWBçÆ6V†öÆFW"ÒtTâÂuD”â÷R6öFRf÷W&æ—76WW"(	BVçG,:–Rs°¢66ææW$–çWBç6WDGG&–'WFR‚v&–ÖÆ&VÂrÂu66ææW"ÆR6öFR‡—6—VRFRÆ,:–l:—&Væ6Rf÷W&æ—76WW"r“°¢66ææW$Æ&VÂæVæD6†–ÆB‡66ææW$–çWB“°¢66ææW%æVÂæVæD6†–ÆB‡66ææW$Æ&VÂ“°¢6öç7B66ææW%&W7VÇBÒFW‡B†Fö2Âw7ârÂv¶Ö2×v÷&·76R×&V6V—fR×66â×&W7VÇBrÂu66ææW"Æ,:–l:—&Væ6RfçBFRL:–6Æ&W"6VçF—L:’&\:wVRâr“°¢66ææW%&W7VÇBç6WDGG&–'WFR‚w&öÆRrÂw7FGW2r“°¢66ææW%æVÂæVæD6†–ÆB‡66ææW%&W7VÇB“°¢òòÖöFRL:–w&L:’¢6ç26öFRÆ—6–&ÆRÂÂvvVçB§W7F–f–RVæR6öç7FFF–öâÖçVVÆÆR²Æ&÷fVææ6P¢òòVç&Vv—7G,:–RW7BÔåTÂ†¦Ö—244â’ÂfV2ÆÜ:¦ÖRl:—&–f–6F–öâFRVçF—L:’WBFRf&–çFRà¢6öç7BÖçVÅ&ööbÒFö2æ7&VFTVÆVÖVçB‚v–çWBr“°¢ÖçVÅ&ööbçG—RÒwFW‡Bs°¢ÖçVÅ&ööbæÖ„ÆVæwF‚ÒS°¢ÖçVÅ&ööbæ6Æ74æÖRÒv¶Ö2×v÷&·76R×&V6V—fRÖÖçVÂ×&ööbs°¢ÖçVÅ&ööbçÆ6V†öÆFW"ÒtW‚â66ææW"–æF—7öæ–&ÆRÂ6öçG,;FÆRf—7VVÂs°¢ÖçVÅ&ööbç6WDGG&–'WFR‚v&–ÖÆ&VÂrÂt§W7F–f–6F–öâFRÆ,:–6WF–öâVâ6—6–RÖçVVÆÆRr“°¢ÖçVÅ&ööbç6WDGG&–'WFR‚vFF×&V6V—fRÖÖçVÂ×&ööbrÂrr“°¢ÖçVÅ&ööbæ†–FFVâÒG'VS°¢òò–çFW''WFWW"W‡Æ–6—FR¢Vâ66ææW":–×VÆRVâ6Æf–W"ÂÆg&R6WVÆRæR&÷WfR2Æ&÷fVææ6Rà¢6öç7BÖçVÅFövvÆTÆ&VÂÒFW‡B†Fö2ÂvÆ&VÂrÂv¶Ö2×v÷&·76R×&V6V—fRÖÖçVÂ×FövvÆRrÂu6—6–RÖçVVÆÆR‡6ç266ææW"’r“°¢6öç7BÖçVÅFövvÆRÒFö2æ7&VFTVÆVÖVçB‚v–çWBr“°¢ÖçVÅFövvÆRçG—RÒv6†V6¶&÷‚s°¢ÖçVÅFövvÆRç6WDGG&–'WFR‚vFF×&V6V—fRÖÖçVÂ×FövvÆRrÂrr“°¢ÖçVÅFövvÆRç6WDGG&–'WFR‚v&–ÖÆ&VÂrÂu6—6–RÖçVVÆÆR¢&÷fVææ6RÔåTÂfV2§W7F–f–6F–öâö&Æ–vFö—&Rr“°¢ÖçVÅFövvÆTÆ&VÂæVæD6†–ÆB†ÖçVÅFövvÆR“°¢66ææW%æVÂæVæD6†–ÆB†ÖçVÅFövvÆTÆ&VÂ“°¢6öç7BÖçVÅ&öödÆ&VÂÒFW‡B†Fö2ÂvÆ&VÂrÂv¶Ö2×v÷&·76R×&V6V—fRÖf–VÆBÖÆ&VÂrÀ¢t§W7F–f–6F–öâÖçVVÆÆR+rö&Æ–vFö—&Rƒb6&7L:‡&W2Ö–æ–×VÒ’r“°¢ÖçVÅ&öödÆ&VÂæ†–FFVâÒG'VS°¢ÖçVÅ&öödÆ&VÂæVæD6†–ÆB†ÖçVÅ&ööb“°¢66ææW%æVÂæVæD6†–ÆB†ÖçVÅ&öödÆ&VÂ“°¢6&BæVæD6†–ÆB‡66ææW%æVÂ“° ¢6öç7Bw&ÒFö2æ7&VFTVÆVÖVçB‚vF—br“°¢w&æ6Æ74æÖRÒv¶Ö2×v÷&·76R×F&ÆR×w&s°¢6öç7BF&ÆRÒFö2æ7&VFTVÆVÖVçB‚wF&ÆRr“°¢F&ÆRæ6Æ74æÖRÒv¶Ö2×v÷&·76R×F&ÆRs°¢6öç7BF†VBÒFö2æ7&VFTVÆVÖVçB‚wF†VBr“°¢6öç7B†VE&÷rÒFö2æ7&VFTVÆVÖVçB‚wG"r“°¢²t'F–6ÆRrÂtGFVæGRrÂu&\:wRrÂu&W7FçBrÂ|8—FBrÂu&\:wRÖ–çFVæçBuÒæf÷$V6‚†Æ&VÂÓâ†VE&÷ræVæD6†–ÆB‡FW‡B†Fö2ÂwF‚rÂrrÂÆ&VÂ’’“°¢F†VBæVæD6†–ÆB††VE&÷r“°¢F&ÆRæVæD6†–ÆB‡F†VB“°¢6öç7BF&öG’ÒFö2æ7&VFTVÆVÖVçB‚wF&öG’r“°¢6öç7B–çWG2ÒµÓ°¢6öç7B66ææVD6öFT'•6·RÒæWrÖ‚“°¢òæÆ–æW2æf÷$V6‚‚†Æ–æRÂ–æFW‚’Óâ°¢6öç7B&÷rÒFö2æ7&VFTVÆVÖVçB‚wG"r“°¢&÷ræVæD6†–ÆB‡FW‡B†Fö2ÂwFBrÂrrÂÆ–æRç&öGV7EöæÖR’“°¢&÷ræVæD6†–ÆB‡FW‡B†Fö2ÂwFBrÂrrÂf÷&ÖDçVÖ&W"†Æ–æRæW‡V7FVE÷VçF—G’’’“°¢&÷ræVæD6†–ÆB‡FW‡B†Fö2ÂwFBrÂrrÂf÷&ÖDçVÖ&W"†Æ–æRç&V6V—fVE÷VçF—G’’’“°¢&÷ræVæD6†–ÆB‡FW‡B†Fö2ÂwFBrÂrrÂf÷&ÖDçVÖ&W"†Æ–æRç&VÖ–æ–æu÷VçF—G’’’“°¢&÷ræVæD6†–ÆB‡FW‡B†Fö2ÂwFBrÂrrÂ$T4UD”ôåõ5DDUôÄ$TÅ5¶Æ–æRç&V6WF–öå÷7FFUÒÇÂÆ–æRç&V6WF–öå÷7FFR’“°¢6öç7B6VÆÂÒFö2æ7&VFTVÆVÖVçB‚wFBr“°¢6öç7B–çWBÒFö2æ7&VFTVÆVÖVçB‚v–çWBr“°¢–çWBçG—RÒvçVÖ&W"s°¢–çWBæÖ–âÒss°¢–çWBæÖ‚Ò7G&–ær†Æ–æRç&VÖ–æ–æu÷VçF—G’“°¢–çWBç7FWÒss°¢–çWBæ–çWDÖöFRÒvçVÖW&–2s°¢–çWBæ6Æ74æÖRÒv¶Ö2×v÷&·76R×&V6V—fR×G’s°¢–çWBç6WDGG&–'WFR‚vFF×&V6V—fRÖÆ–æRrÂ7G&–ær†–æFW‚’“°¢–çWBç6WDGG&–'WFR‚v&–ÖÆ&VÂrÂVçF—L:’&\:wVRÖ–çFVæçB÷W"G¶Æ–æRç&öGV7EöæÖWÖ“°¢6VÆÂæVæD6†–ÆB†–çWB“°¢&÷ræVæD6†–ÆB†6VÆÂ“°¢F&öG’æVæD6†–ÆB‡&÷r“°¢–çWG2çW6‚‡²–çWBÂÆ–æRÒ“°¢Ò“°¢F&ÆRæVæD6†–ÆB‡F&öG’“°¢w&æVæD6†–ÆB‡F&ÆR“°¢6&BæVæD6†–ÆB‡w&“° ¢6öç7Bfö÷FW"ÒFö2æ7&VFTVÆVÖVçB‚vF—br“°¢fö÷FW"æ6Æ74æÖRÒv¶Ö2×v÷&·76R×&V6V—fRÖfö÷FW"s°¢6öç7BG&6¶–ærÒFö2æ7&VFTVÆVÖVçB‚v–çWBr“°¢G&6¶–ærçG—RÒwFW‡Bs°¢G&6¶–æræ6Æ74æÖRÒv¶Ö2×v÷&·76R×&V6V—fR×G&6¶–ærs°¢G&6¶–æræÖ„ÆVæwF‚Ò#°¢G&6¶–ærçÆ6V†öÆFW"Òu7V—f’ò,:–l:—&Væ6RGR6öÆ—2†f7VÇFF–b’s°¢G&6¶–ærç6WDGG&–'WFR‚v&–ÖÆ&VÂrÂu7V—f’÷R,:–l:—&Væ6RGR6öÆ—2&\:wRr“°¢6öç7BG&6¶–ætÆ&VÂÒFW‡B†Fö2ÂvÆ&VÂrÂv¶Ö2×v÷&·76R×&V6V—fRÖf–VÆBÖÆ&VÂrÀ¢u7V—f’÷R,:–l:—&Væ6RGR6öÆ—2+rf7VÇFF–br“°¢G&6¶–ætÆ&VÂæVæD6†–ÆB‡G&6¶–ær“°¢fö÷FW"æVæD6†–ÆB‡G&6¶–ætÆ&VÂ“°¢6öç7B†–çBÒFW‡B†Fö2Âw7ârÂv¶Ö2×v÷&·76RÖ×WFVB¶Ö2×v÷&·76R×&V6V—fRÖ†–çBrÂu6—6—76W¢ÆVçF—L:’,:–VÆÆVÖVçB&\:wVRâV7VæRVçF—L:’î(	–W7B,:—&V×Æ–Râr“°¢fö÷FW"æVæD6†–ÆB††–çB“°¢6öç7B'WGFöâÒÖ¶T7F–öä'WGFöâ†Fö2ÂtVç&Vv—7G&W"Æ,:–6WF–öârÂw&V6V—fR×7WÆ–W"r“°¢'WGFöâæF—6&ÆVBÒG'VS°¢fö÷FW"æVæD6†–ÆB†'WGFöâ“°¢6&BæVæD6†–ÆB†fö÷FW"“° ¢gVæ7F–öâ6öÆÆV7B‚’°¢6öç7B6öçFVçG2ÒµÓ°¢ÆWB–çfÆ–BÒfÇ6S°¢–çWG2æf÷$V6‚‚‡²–çWBÂÆ–æRÒ’Óâ°¢6öç7B&rÒ7G&–ær†–çWBçfÇVRÇÂrr’çG&–Ò‚“°¢–b‡&rÓÓÒrr’&WGW&ã°¢6öç7BVçF—G’ÒçVÖ&W"‡&r“°¢–b‚çVÖ&W"æ—4–çFVvW"‡VçF—G’’ÇÂVçF—G’ÂÇÂVçF—G’âÆ–æRç&VÖ–æ–æu÷VçF—G’’²–çfÆ–BÒG'VS²&WGW&ã²Ğ¢–b‡VçF—G’â’°¢6öçFVçG2çW6‚‡°¢W&6†6Uö÷&FW%ö–C¢òçW&6†6Uö÷&FW%ö–BÀ¢âââ†Æ–æRç&öGV7E÷6·Uö–Bò²&öGV7E÷6·Uö–C¢Æ–æRç&öGV7E÷6·Uö–BÒ¢·Ò’À¢âââ†ÖçVÅFövvÆRæ6†V6¶V@¢ò†Æ–æRç&öGV7E÷6·Uö–Bbb7G&–ær†ÖçVÅ&ööbçfÇVRÇÂrr’çG&–Ò‚’æÆVæwF‚ãÒ`¢ò²Wf–FVæ6UöÖWF†öC¢tÔåTÂrÂWf–FVæ6U÷&Vc¢7G&–ær†ÖçVÅ&ööbçfÇVR’çG&–Ò‚’Ò¢·Ò¢¢‡66ææVD6öFT'•6·Ræ†2…7G&–ær†Æ–æRç&öGV7E÷6·Uö–B’¢ò²Wf–FVæ6Uö6öFS¢66ææVD6öFT'•6·RævWB…7G&–ær†Æ–æRç&öGV7E÷6·Uö–B’’Ò¢·Ò’’À¢VçF—G’À¢Ò“°¢Ğ¢Ò“°¢&WGW&â²6öçFVçG2Â–çfÆ–BÓ°¢Ğ ¢gVæ7F–öâ7–æ2‚’°¢6öç7B²6öçFVçG2Â–çfÆ–BÒÒ6öÆÆV7B‚“°¢6öç7BVçfW&–f–VBÒ6öçFVçG2ç6öÖR†—FVÒÓâ—FVÒæWf–FVæ6Uö6öFRbb—FVÒæWf–FVæ6UöÖWF†öBÓÒtÔåTÂr“°¢'WGFöâæF—6&ÆVBÒ–çfÆ–BÇÂ6öçFVçG2æÆVæwF‚ÓÓÒÇÂVçfW&–f–VC°¢†–çBçFW‡D6öçFVçBÒ–çfÆ–@¢òuVçF—L:’–çfÆ–FR¢VçF–W"VçG&RWBÆR&W7FçBGFVæGRâp¢¢VçfW&–f–VBò†ÖçVÅFövvÆRæ6†V6¶V@¢òu6—6–RÖçVVÆÆR¢§W7F–f–6F–öâFRb6&7L:‡&W2Ö–æ–×VÒö&Æ–vFö—&Râp¢¢u66ææW"F÷WFW2ÆW2,:–l:—&Væ6W2&\:wVW2Â÷R7F—fW"*²6—6–RÖçVVÆÆR+²WBÆ§W7F–f–W"âr¢¢uVçF—L:’,:–VÆÆVÖVçB6ö×L:–RWB,:–l:—&Væ6W266æì:–W2¢,:§B:Vç&Vv—7G&W"âs°¢Ğ¢–çWG2æf÷$V6‚‚‡²–çWBÒ’Óâ–çWBæFDWfVçDÆ—7FVæW"‚v–çWBrÂ7–æ2’“°¢ÖçVÅ&ööbæFDWfVçDÆ—7FVæW"‚v–çWBrÂ7–æ2“°¢ÖçVÅFövvÆRæFDWfVçDÆ—7FVæW"‚v6†ævRrÂ‚’Óâ°¢ÖçVÅ&ööbæ†–FFVâÒÖçVÅFövvÆRæ6†V6¶VC°¢ÖçVÅ&öödÆ&VÂæ†–FFVâÒÖçVÅFövvÆRæ6†V6¶VC°¢66ææW%&W7VÇBçFW‡D6öçFVçBÒÖçVÅFövvÆRæ6†V6¶V@¢òu6—6–RÖçVVÆÆR7F—fR¢&÷fVææ6RÔåTÂÂ§W7F–f–6F–öâö&Æ–vFö—&Râp¢¢u66ææW"Æ,:–l:—&Væ6RfçBFRL:–6Æ&W"6VçF—L:’&\:wVRâs°¢7–æ2‚“°¢Ò“°¢ÆWB66ææ–ærÒfÇ6S°¢6öç7B…•4”4Åô4ôDUõE•U2Òö&¦V7Bæg&VW¦R…°¢²tTåôuD”ârÂtTâòuD”â–×&–Ü:’‡Væ—fW'6VÂ’uÒÀ¢²u5UÄ”U%ô$$4ôDRrÂt6öFRÖ&'&W2GRf÷W&æ—76WW"uÒÀ¢²t´ôÕôÄõEôÄ$TÂrÂ|8—F—VWGFRFRÆ÷B¶öÖW&6RuÒÀ¢Ò“°¢6öç7B6öæf—&Ô&÷‚ÒFö2æ7&VFTVÆVÖVçB‚vf÷&Òr“°¢6öæf—&Ô&÷‚æ6Æ74æÖRÒv¶Ö2×v÷&·76R×&V6V—fRÖ6öæf—&Òs°¢6öæf—&Ô&÷‚ç6WDGG&–'WFR‚vFF×‡—6–6ÂÖ6öæf—&ÒrÂrr“°¢6öæf—&Ô&÷‚æ†–FFVâÒG'VS°¢66ææW%æVÂæVæD6†–ÆB†6öæf—&Ô&÷‚“° ¢gVæ7F–öâ6Æ÷6T6öæf—&Ò‚’°¢6öæf—&Ô&÷‚æ†–FFVâÒG'VS°¢6öæf—&Ô&÷‚ç&WÆ6T6†–ÆG&Vâ‚“°¢Ğ ¢òò6öFR–æ6öæçR¢ÂvvVçBÂ6öÆ—2VâÖ–âÂ&GF6†RÂtTâ:Æf&–çFRGFVæGVR7W"4UEDRòà¢òòÆR6öFR–FVçF–f–RÆ,:–l:—&Væ6RÂ¦Ö—2Æ6öÖÖæFRæ’VâW†V×Æ—&Rà¢gVæ7F–öâ÷Vä6öæf—&Ò†6öFR’°¢6öæf—&Ô&÷‚ç&WÆ6T6†–ÆG&Vâ‚“°¢6öæf—&Ô&÷‚æ†–FFVâÒfÇ6S°¢6öæf—&Ô&÷‚æVæD6†–ÆB‡FW‡B†Fö2Âw7ârÂv¶Ö2×v÷&·76RÖ×WFVBrÀ¢6öFRG¶6öFWÒ–æ6öæçR÷W"6Rf÷W&æ—76WW"â6öÆ—2VâÖ–âÂ6†ö—6—76W¢Æf&–çFRGFVæGVR7W"6WGFRòæ’“°¢6öç7Bf&–çBÒFö2æ7&VFTVÆVÖVçB‚w6VÆV7Br“°¢f&–çBç6WDGG&–'WFR‚v&–ÖÆ&VÂrÂuf&–çFRGFVæGVR7W"Æòr“°¢f&–çBç6WDGG&–'WFR‚vFFÖ6öæf—&Ò×f&–çBrÂrr“°¢f&–çBæVæD6†–ÆB„ö&¦V7Bæ76–vâ†Fö2æ7&VFTVÆVÖVçB‚v÷F–öâr’Â²fÇVS¢rrÂFW‡D6öçFVçC¢uf&–çFRGFVæGV^(
+brÒ’“°¢òæÆ–æW2æf–ÇFW"†Æ–æRÓâÆ–æRç&öGV7E÷6·Uö–B’æf÷$V6‚†Æ–æRÓâ°¢f&–çBæVæD6†–ÆB„ö&¦V7Bæ76–vâ†Fö2æ7&VFTVÆVÖVçB‚v÷F–öâr’Â°¢fÇVS¢7G&–ær†Æ–æRç&öGV7E÷6·Uö–B’À¢FW‡D6öçFVçC¢G¶Æ–æRç&öGV7EöæÖWÒ†GFVæGRG¶f÷&ÖDçVÖ&W"†Æ–æRæW‡V7FVE÷VçF—G’—Ò–À¢Ò’“°¢Ò“°¢6öç7BG—RÒFö2æ7&VFTVÆVÖVçB‚w6VÆV7Br“°¢G—Rç6WDGG&–'WFR‚v&–ÖÆ&VÂrÂuG—RFR6öFRr“°¢G—Rç6WDGG&–'WFR‚vFFÖ6öæf—&Ò×G—RrÂrr“°¢…•4”4Åô4ôDUõE•U2æf÷$V6‚‚…·fÇVRÂÆ&VÅÒ’ÓâG—RæVæD6†–ÆB„ö&¦V7Bæ76–vâ†Fö2æ7&VFTVÆVÖVçB‚v÷F–öâr’Â²fÇVRÂFW‡D6öçFVçC¢Æ&VÂÒ’’“°¢6öç7B&ööbÒFö2æ7&VFTVÆVÖVçB‚v–çWBr“°¢&ööbçG—RÒwFW‡Bs°¢&ööbæÖ„ÆVæwF‚ÒS°¢&ööbçÆ6V†öÆFW"Òu&WWfR¢,:–l:—&Væ6RFRÆ†÷Fò÷RFRÆæ÷FRs°¢&ööbç6WDGG&–'WFR‚v&–ÖÆ&VÂrÂu,:–l:—&Væ6RFRÆ†÷Fò÷RFRÆæ÷FRr“°¢&ööbç6WDGG&–'WFR‚vFFÖ6öæf—&Ò×&ööbrÂrr“°¢6öç7B7V&Ö—BÒÖ¶T7F–öä'WGFöâ†Fö2ÂufÆ–FW"Æ6öæf—&ÖF–öârÂv6öæf—&Ò×‡—6–6ÂÖ6öFRr“°¢7V&Ö—BçG—RÒw7V&Ö—Bs°¢7V&Ö—BæF—6&ÆVBÒG'VS°¢6öç7B6æ6VÂÒÖ¶T7F–öä'WGFöâ†Fö2ÂtæçVÆW"rÂv6æ6VÂ×‡—6–6ÂÖ6öFRr“°¢6æ6VÂæFDWfVçDÆ—7FVæW"‚v6Æ–6²rÂ6Æ÷6T6öæf—&Ò“°¢6öç7B7–æ46öæf—&ÒÒ‚’Óâ²7V&Ö—BæF—6&ÆVBÒf&–çBçfÇVRÇÂ7G&–ær‡&ööbçfÇVRÇÂrr’çG&–Ò‚“²Ó°¢f&–çBæFDWfVçDÆ—7FVæW"‚v6†ævRrÂ7–æ46öæf—&Ò“°¢&ööbæFDWfVçDÆ—7FVæW"‚v–çWBrÂ7–æ46öæf—&Ò“°¢·f&–çBÂG—RÂ&ööeÒæf÷$V6‚†æöFRÓâ6öæf—&Ô&÷‚æVæD6†–ÆB†æöFR’“°¢6öç7B7F–öç2ÒFö2æ7&VFTVÆVÖVçB‚vF—br“°¢7F–öç2æ6Æ74æÖRÒv¶Ö2×v÷&·76R×&V6V—fRÖ6öæf—&ÒÖ7F–öç2s°¢7F–öç2æVæD6†–ÆB‡7V&Ö—B“°¢7F–öç2æVæD6†–ÆB†6æ6VÂ“°¢6öæf—&Ô&÷‚æVæD6†–ÆB†7F–öç2“°¢6öæf—&Ô&÷‚æöç7V&Ö—BÒ7–æ2WfVçBÓâ°¢WfVçBç&WfVçDFVfVÇB‚“°¢–b‡7V&Ö—BæF—6&ÆVB’&WGW&ã°¢7V&Ö—BæF—6&ÆVBÒG'VS°¢66ææW%&W7VÇBçFW‡D6öçFVçBÒt6öæf—&ÖF–öâVâ6÷W'>(
+bs°¢66ææW%&W7VÇBæFF6WBç66åFöæRÒwVæF–ærs°¢G'’°¢v—B§6öå&WVW7B†6öçFW‡BæfWF6‚Â…•4”4Åô4ôDUô4ôäd•$ÕôTäEô”åBÂ°¢Ú±î¸Â¸­yêë¢°k¢G§¦*^m«ëŒ+Š×®º+º$zzb¥âÖWF†öC¢uõ5BrÀ¢&öG“¢°¢W&6†6Uö÷&FW%ö–C¢òçW&6†6Uö÷&FW%ö–BÀ¢&öGV7E÷6·Uö–C¢f&–çBçfÇVRÀ¢6öFRÀ¢6öFU÷G—S¢G—RçfÇVRÀ¢&ööe÷&Vc¢7G&–ær‡&ööbçfÇVR’çG&–Ò‚’À¢ÒÀ¢Ò“°¢6Æ÷6T6öæf—&Ò‚“°¢v—B–FVçF–g’†6öFR“°¢Ò6F6‚†W'&÷"’°¢66ææW%&W7VÇBçFW‡D6öçFVçBÒ6öæf—&ÖF–öâ&VgW<:–R¢G¶W'&÷"æÖW76vWÖ°¢66ææW%&W7VÇBæFF6WBç66åFöæRÒvW'&÷"s°¢7V&Ö—BæF—6&ÆVBÒfÇ6S°¢Ğ¢Ó°¢f&–çBæfö7W2‚“°¢Ğ ¢7–æ2gVæ7F–öâ–FVçF–g’†6öFR’°¢66ææ–ærÒG'VS°¢66ææW$–çWBæF—6&ÆVBÒG'VS°¢66ææW%&W7VÇBçFW‡D6öçFVçBÒt–FVçF–f–6–6RçG—RÒvçVÖ&W"s°¢7WÆ–W%&–6Rç7FWÒsãs°¢7WÆ–W%&–6RæÖ–âÒsãs°¢7WÆ–W%&–6RçÆ6V†öÆFW"ÒsÃs°¢7WÆ–W%&–6Rç6WDGG&–'WFR‚vFF×6÷W&6–ær×&–6RrÂrr“°¢6öç7B7GVÅ&–6RÒf–VÆB‚u&—‚Væ—F—&R,:–VÂrÂFö2æ7&VFTVÆVÖVçB‚v–çWBr’Â7WÆ–W%æVÂ“°¢7GVÅ&–6RçG—RÒvçVÖ&W"s°¢7GVÅ&–6Rç7FWÒsãs°¢7GVÅ&–6RæÖ–âÒsãs°¢6öç7B7GVÄ7W'&Væ7’Òf–VÆB‚tFWf—6RGR&—‚,:–VÂ†6öFR:2ÆWGG&W2’rÂFö2æ7&VFTVÆVÖVçB‚v–çWBr’Â7WÆ–W%æVÂ“°¢7GVÄ7W'&Væ7’æÖ„ÆVæwF‚Ò3°¢7GVÄ7W'&Væ7’çÆ6V†öÆFW"ÒtTBs°¢6öç7BÖ–ætæ÷FRÒFW‡B†Fö2ÂwrÂv¶Ö2Ö‡V"×6÷W&6–ærÖ†VÇrÂ ¢t76ö6–F–öâW†—7FçFR¢,:–l:—&Væ6RWB&—‚Vç&Vv—7G,:—2,:—WF–Æ—<:—2âr“°¢Ö–ætæ÷FRæ†–FFVâÒG'VS°¢Ö–ætæ÷FRç6WDGG&–'WFR‚vFF×6÷W&6–ærÖÖ–ærÖæ÷FRrÂrr“°¢7WÆ–W%æVÂæVæD6†–ÆB†Ö–ætæ÷FR“° ¢6öç7Bfö÷FW"ÒFö2æ7&VFTVÆVÖVçB‚vF—br“°¢fö÷FW"æ6Æ74æÖRÒv¶Ö2Ö‡V"×6÷W&6–ærÖfö÷FW"s°¢f÷&ÒæVæD6†–ÆB†fö÷FW"“°¢6öç7Bfö÷FW$6÷’ÒFö2æ7&VFTVÆVÖVçB‚vF—br“°¢fö÷FW$6÷’æ6Æ74æÖRÒv¶Ö2Ö‡V"×6÷W&6–ærÖfö÷FW"Ö6÷’s°¢fö÷FW$6÷’æVæD6†–ÆB‡FW‡B†Fö2ÂwrÂv¶Ö2Ö‡V"×6÷W&6–ærÖ†VÇrÀ¢|8—FR7V—fçFR¢,:—&W"ÆòÂV—2f—&RfÆ–FW"<:—,:–ÖVçBÎ(	–VævvVÖVçBWBÆR–VÖVçBâr’“°¢6öç7B7FGW2ÒFW‡B†Fö2ÂwrÂv¶Ö2Ö‡V"×6÷W&6–ær×7FGW2rÂrr“°¢7FGW2ç6WDGG&–'WFR‚w&öÆRrÂw7FGW2r“°¢7FGW2ç6WDGG&–'WFR‚v&–ÖÆ—fRrÂwöÆ—FRr“°¢7FGW2ç6WDGG&–'WFR‚vFF×6÷W&6–ær×7FGW2rÂrr“°¢fö÷FW$6÷’æVæD6†–ÆB‡7FGW2“°¢fö÷FW"æVæD6†–ÆB†fö÷FW$6÷’“°¢6öç7B7V&Ö—BÒÖ¶T7F–öä'WGFöâ†Fö2Ât7,:–W"ÆÆ–væRN(	–6†BrÂv7&VFRÖÖçVÂ×W&6†6RÖÆ–æRr“°¢7V&Ö—BçG—RÒw7V&Ö—Bs°¢fö÷FW"æVæD6†–ÆB‡7V&Ö—B“°¢ÆWB7WÆ–W'2ÒµÓ°¢ÆWB&WVW7E6W&–ÂÒ°¢ÆWBw&—F–ærÒfÇ6S°¢gVæ7F–öâ6†÷6Vä—FVÒ‚’°¢&WGW&âVç&W6öÇfVBæf–æB†—FVÒÓâ—FVÒæ–BÓÓÒ—FVÕ6VÆV7BçfÇVR“°¢Ğ¢gVæ7F–öâWFFTf÷&Ò‚’°¢6öç7B7WÆ–W"Ò7WÆ–W'2æf–æB‡&÷rÓâ&÷ræ–BÓÓÒ7WÆ–W%6VÆV7BçfÇVR“°¢6öç7BÖVBÒ7WÆ–W#òæÖF6†–æu÷&öGV7E÷7WÆ–W%ö–C°¢7WÆ–W$æÖRæF—6&ÆVBÒ7WÆ–W#°¢7WÆ–W$æÖRç&VçDæöFRæ†–FFVâÒ7WÆ–W#°¢7WÆ–W%&VbæF—6&ÆVBÒÖVC°¢7WÆ–W%&–6RæF—6&ÆVBÒÖVC°¢7WÆ–W$FWF–Ç2æ†–FFVâÒÖVC°¢6öç7BV÷FTæVVFVBÒÖVBbb7WÆ–W"æÖF6†–æu÷&–6UöVBÓÓÒçVÆÃ°¢f÷"†6öç7B–çWBöb¶7GVÅ&–6RÂ7GVÄ7W'&Væ7•Ò’°¢–çWBç&VçDæöFRæ†–FFVâÒV÷FTæVVFVC°¢–çWBæF—6&ÆVBÒV÷FTæVVFVC°¢–çWBç&WV—&VBÒV÷FTæVVFVC°¢–çWBçfÇVRÒrs°¢Ğ¢Ö–ætæ÷FRæ†–FFVâÒÖVBÇÂV÷FTæVVFVC°¢Ğ¢gVæ7F–öâWFFT—FVÕ7VÖÖ'’‚’°¢6öç7BVçF—G’ÒçVÖ&W"†6†÷6Vä—FVÒ‚“òçW&6†6–æuöÖ—76–ærÇÂ“°¢—FVÕ7VÖÖ'’çFW‡D6öçFVçBÒf÷&ÖDçVÖ&W"‡VçF—G’’²‡VçF—G’âòrVæ—L:—2&W7FçFW2:6†WFW"r¢rVæ—L:’&W7FçFR:6†WFW"r“°¢Ğ¢7–æ2gVæ7F–öâÆöE7WÆ–W'2‚’°¢6öç7B6W&–ÂÒ²·&WVW7E6W&–Ã°¢6öç7B—FVÒÒ6†÷6Vä—FVÒ‚“°¢7WÆ–W%6VÆV7BæF—6&ÆVBÒG'VS°¢7V&Ö—BæF—6&ÆVBÒG'VS°¢7FGW2çFW‡D6öçFVçBÒu&V6†W&6†RFW2f÷W&æ—76WW'2GR&öGV—N(
+bs°¢G'’°¢6öç7B&W7VÇBÒv—B§6öå&WVW7B†6öçFW‡BæfWF6‚À¢rö’÷W&6†6–ær÷7WÆ–W'3ö7F—fS×G'VRg&öGV7Eö–CÒr²Væ6öFUU$”6ö×öæVçB†—FVÒç&öGV7Eö–B’“°¢–b‡6W&–ÂÓÒ&WVW7E6W&–ÂÇÂw&—F–ær’&WGW&ã°¢7WÆ–W'2Ò'&’æ—4'&’‡&W7VÇB’ò&W7VÇBæf–ÇFW"‡&÷rÓà¢&÷ræÖF6†–æu÷&öGV7E÷7WÆ–W%ö–BÇÂ&÷ræ÷væW%÷66÷RÓÓÒv‡V"rÇÀ¢†6öçFW‡BçW6W"bb6öçFW‡BçW6W"ç&öÆRÓÓÒvFÖ–âr’’¢µÓ°¢7WÆ–W%6VÆV7Bç&WÆ6T6†–ÆG&Vâ‚“°¢6öç7Bf—'7BÒFö2æ7&VFTVÆVÖVçB‚v÷F–öâr“°¢f—'7BçfÇVRÒrs°¢f—'7BçFW‡D6öçFVçBÒt7,:–W"Vâf÷W&æ—76WW"Æö6Âs°¢7WÆ–W%6VÆV7BæVæD6†–ÆB†f—'7B“°¢7WÆ–W'2æf÷$V6‚‡7WÆ–W"Óâ°¢6öç7B÷F–öâÒFö2æ7&VFTVÆVÖVçB‚v÷F–öâr“°¢÷F–öâçfÇVRÒ7WÆ–W"æ–C°¢÷F–öâçFW‡D6öçFVçBÒ7WÆ–W"ææÖR°¢‡7WÆ–W"æÖF6†–æu÷&öGV7E÷6Ú±î¸Â¸­yêë¢°k¢G§¦*^upplier_id ? ' Â· dÃ©jÃ  associÃ©' : ' Â· Ã  associer');
             supplierSelect.appendChild(option);
           });
           supplierSelect.disabled = false;
@@ -1198,14 +530,12 @@
           if (!details) return;
           details.open = true;
           const targets = {
-            bags: '[data-hub-bag-preparation]',
             boxes: '[data-supply-box-create]',
             shipments: '[data-supply-shipment-bar]',
           };
           const selector = targets[target];
           const anchor = (selector && details.querySelector(selector)) || details;
-          // Navigation opÃ©rateur dÃ©terministe : ne pas lancer une animation
-          // avant le prochain clic Chromium (Sacs -> KOM-BOX -> ExpÃ©ditions).
+          // Navigation opÃ©rateur dÃ©terministe entre rÃ©ception, COMBOX et expÃ©ditions.
           anchor.scrollIntoView?.({ block: 'start', behavior: 'auto' });
         },
       });
@@ -1213,7 +543,7 @@
         cockpitHost.replaceChildren(text(doc, 'div', 'kmc-workspace-empty', 'Cockpit Hub illisible : rechargez la page (' + String((error && error.message) || error).slice(0, 120) + ').'));
       }
     }
-    // Tout ce qui suit (Ã©carts, rÃ©ceptions brutes, sacs, KOM-BOX, expÃ©ditions) est le panneau secondaire exhaustif.
+    // Tout ce qui suit (Ã©carts, rÃ©ceptions brutes, COMBOX, expÃ©ditions) est le panneau secondaire exhaustif.
     const secondaryStart = rootNode.children.length;
     // La filiation dÃ©taillÃ©e est chargÃ©e Ã  la demande, hors du tableau.
     const points = d.to_handle || [];
@@ -1240,7 +570,7 @@
       'Aucun colis reÃ§u.'));
     rootNode.appendChild(receipts);
 
-    const boxes = createSection(rootNode, ui, 'Cartons KOM-BOX', 'Ouvrez un dossier, mÃªme vide, puis composez-le progressivement. La remise au transitaire est un acte distinct avec preuve et cartons DISPATCHED.');
+    const boxes = createSection(rootNode, ui, 'COMBOX', 'Initialisez une COMBOX, scannez chaque article ajoutÃ©, puis fermez-la avant la remise au transitaire.');
     boxes.setAttribute('data-supply-boxes', '');
     const open = Array.isArray(d.open_shipments) ? d.open_shipments : [];
     const free = box => !box.shipment_ref && ['PACKED','DISPATCHED'].includes(box.state);
@@ -1253,7 +583,7 @@
     select.setAttribute('aria-label', 'ExpÃ©dition ouverte');
     select.appendChild(Object.assign(doc.createElement('option'), { value: '', textContent: open.length ? 'Choisir une expÃ©dition ouverteâ€¦' : 'Aucune expÃ©dition ouverte' }));
     open.forEach(sh => select.appendChild(Object.assign(doc.createElement('option'), {
-      value: sh.reference, textContent: `${sh.reference} Â· ${sh.forwarder_name || 'Transitaire Ã  dÃ©finir'} Â· ${sh.box_count} carton(s)`,
+      value: sh.reference, textContent: `${sh.reference} Â· ${sh.forwarder_name || 'Transitaire Ã  dÃ©finir'} Â· ${sh.box_count} COMBOX`,
     })));
     bar.appendChild(select);
     const field = (placeholder, label) => {
@@ -1281,10 +611,10 @@
         reference: refInput.value.trim(), hub_unit_ids: [...checked],
       },
       runningMessage: 'Ouverture du dossierâ€¦',
-      successMessage: result => `Dossier ${result && result.result ? result.result.reference : ''} ouvert en prÃ©paration Â· ${checked.size} carton(s).`,
+      successMessage: result => `Dossier ${result && result.result ? result.result.reference : ''} ouvert en prÃ©paration Â· ${checked.size} COMBOX.`,
     }).catch(() => {}));
 
-    // Composition des KOM-BOX via les routes Workspace (qui dÃ©lÃ¨guent aux commandes Hub canoniques) : une seule autoritÃ©.
+    // Composition directe des COMBOX via les routes Workspace et les commandes Hub canoniques.
     const BOX_NEXT_STATE = Object.freeze({
       RECEIVED: 'IDENTIFIED', IDENTIFIED: 'QUALITY_CHECKED', QUALITY_CHECKED: 'LOCATED',
       LOCATED: 'ALLOCATED', ALLOCATED: 'PICKED', PICKED: 'PACKED', PACKED: 'DISPATCHED',
@@ -1294,10 +624,55 @@
     const createBar = doc.createElement('div');
     createBar.className = 'kmc-workspace-receive-footer';
     createBar.setAttribute('data-supply-box-create', '');
-    const newRef = field('RÃ©fÃ©rence du carton (facultative)', 'RÃ©fÃ©rence de la nouvelle KOM-BOX');
-    const newBox = makeActionButton(doc, 'CrÃ©er une KOM-BOX', 'create-box');
+    const newRef = field('RÃ©fÃ©rence COMBOX (facultative)', 'RÃ©fÃ©rence de la nouvelle m«ëŒ+Š×®º+º$zzb¥æÚ±î¸Â¸­yêë¢°k¢G§¦*^ doc.createElement('select');
+    select.setAttribute('aria-label', 'ExpÃ©dition ouverte');
+    select.appendChild(Object.assign(doc.createElement('option'), { value: '', textContent: open.length ? 'Choisir une expÃ©dition ouverteâ€¦' : 'Aucune expÃ©dition ouverte' }));
+    open.forEach(sh => select.appendChild(Object.assign(doc.createElement('option'), {
+      value: sh.reference, textContent: `${sh.reference} Â· ${sh.forwarder_name || 'Transitaire Ã  dÃ©finir'} Â· ${sh.box_count} COMBOX`,
+    })));
+    bar.appendChild(select);
+    const field = (placeholder, label) => {
+      const input = doc.createElement('input');
+      input.type = 'text'; input.maxLength = 120; input.placeholder = placeholder; input.className = 'kmc-workspace-receive-tracking';
+      input.setAttribute('aria-label', label);
+      return input;
+    };
+    const refInput = field('RÃ©fÃ©rence du nouveau dossier', 'RÃ©fÃ©rence de la nouvelle expÃ©dition');
+    const createButton = makeActionButton(doc, 'Ouvrir le dossier', 'create-shipment-from-boxes');
+    createButton.disabled = true;
+    [refInput, createButton].forEach(node => bar.appendChild(node));
+    boxes.appendChild(bar);
+
+    const attachButtons = [];
+    const syncBar = () => {
+      createButton.disabled = !refInput.value.trim();
+      attachButtons.forEach(({ button, box }) => { button.disabled = !select.value || !free(box); });
+    };
+    refInput.addEventListener('input', syncBar);
+    select.addEventListener('change', syncBar);
+    createButton.addEventListener('click', () => runAction(context, createButton, {
+      url: endpointFor(context.marketCode, 'boxes/shipment'),
+      body: {
+        reference: refInput.value.trim(), hub_unit_ids: [...checked],
+      },
+      runningMessage: 'Ouverture du dossierâ€¦',
+      successMessage: result => `Dossier ${result && result.result ? result.result.reference : ''} ouvert en prÃ©paration Â· ${checked.size} COMBOX.`,
+    }).catch(() => {}));
+
+    // Composition directe des COMBOX via les routes Workspace et les commandes Hub canoniques.
+    const BOX_NEXT_STATE = Object.freeze({
+      RECEIVED: 'IDENTIFIED', IDENTIFIED: 'QUALITY_CHECKED', QUALITY_CHECKED: 'LOCATED',
+      LOCATED: 'ALLOCATED', ALLOCATED: 'PICKED', PICKED: 'PACKED', PACKED: 'DISPATCHED',
+    });
+    const BOX_MUTABLE = new Set(['RECEIVED', 'IDENTIFIED', 'QUALITY_CHECKED', 'LOCATED', 'ALLOCATED', 'PICKED']);
+    const fillable = Array.isArray(d.fillable) ? d.fillable : [];
+    const createBar = doc.createElement('div');
+    createBar.className = 'kmc-workspace-receive-footer';
+    createBar.setAttribute('data-supply-box-create', '');
+    const newRef = field('RÃ©fÃ©rence COMBOX (facultative)', 'RÃ©fÃ©rence de la nouvelle COMBOX');
+    const newBox = makeActionButton(doc, 'Initialiser une COMBOX', 'create-box');
     // A2 : la clÃ© d'opÃ©ration survit Ã  un Ã©chec (coupure rÃ©seau) pour qu'un nouvel essai du mÃªme geste
-    // renvoie la mÃªme KOM-BOX ; elle change si la rÃ©fÃ©rence saisie change, et aprÃ¨s un succÃ¨s.
+    // renvoie la mÃªme COMBOX ; elle change si la rÃ©fÃ©rence saisie change, et aprÃ¨s un succÃ¨s.
     let boxKey = null; let boxKeyRef = null;
     const makeKey = () => (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.randomUUID
       ? globalThis.crypto.randomUUID()
@@ -1310,240 +685,87 @@
       idempotencyKey: boxKey,
       onSuccess: () => { boxKey = null; boxKeyRef = null; },
       body: wanted ? { reference: wanted } : {},
-      runningMessage: 'CrÃ©ation de la KOM-BOXâ€¦',
-      successMessage: result => `KOM-BOX ${result && result.physical_unit ? result.physical_unit.reference : ''} ${result && result.replayed ? 'dÃ©jÃ  crÃ©Ã©e (rejeu reconnu)' : 'crÃ©Ã©e'}.`,
+      runningMessage: 'Initialisation de la COMBOXâ€¦',
+      successMessage: result => `COMBOX ${result && result.physical_unit ? result.physical_unit.reference : ''} ${result && result.replayed ? 'dÃ©jÃ  initialisÃ©e (rejeu reconnu)' : 'initialisÃ©e'}.`,
       }).catch(() => {});
     });
     [newRef, newBox].forEach(node => createBar.appendChild(node));
     boxes.appendChild(createBar);
 
-    // PrÃ©paration : un sac appartient Ã  UNE commande et son contenu est figÃ©
-    // Ã  l'ouverture. Un seul scan physique par rÃ©fÃ©rence dÃ©posÃ©e.
-    const availableByOrder = new Map();
-    fillable.forEach(line => {
-      const key = String(line.order_id);
-      if (!availableByOrder.has(key)) availableByOrder.set(key, {
-        order_id: line.order_id, order_ref: line.order_ref, lines: [],
-      });
-      availableByOrder.get(key).lines.push(line);
-    });
-    const openBags = Array.isArray(d.bags_open) ? d.bags_open : [];
-    const readyBags = Array.isArray(d.bags_ready) ? d.bags_ready : [];
-    const activeOrders = new Set(openBags.map(bag => String(bag.order_id)));
-    const prep = doc.createElement('section');
-    prep.className = 'kmc-hub-bag-prep';
-    prep.setAttribute('data-hub-bag-preparation', '');
-    prep.appendChild(text(doc, 'h4', '', 'PrÃ©parer les sacs clients'));
-    prep.appendChild(text(doc, 'p', 'kmc-workspace-muted',
-      'Une commande par sac. Scanner la rÃ©fÃ©rence au dÃ©pÃ´t, confirmer la quantitÃ©, puis fermer. Aucun second scan Ã  la fermeture.'));
-    const orderChoices = [...availableByOrder.values()].filter(order => !activeOrders.has(String(order.order_id)));
-    if (orderChoices.length) {
-      const createRow = doc.createElement('div');
-      createRow.className = 'kmc-hub-bag-controls';
-      const orderSelect = doc.createElement('select');
-      orderSelect.setAttribute('aria-label', 'Commande dont prÃ©parer le sac');
-      orderChoices.forEach((order,i) => orderSelect.appendChild(Object.assign(doc.createElement('option'), {
-        value: String(i), textContent: order.order_ref + ' Â· ' +
-          order.lines.reduce((sum,line) => sum + Number(line.quantity), 0) + ' unitÃ©(s) disponible(s)',
-      })));
-      const createBag = makeActionButton(doc, 'CrÃ©er le sac client', 'create-customer-bag');
-      createBag.addEventListener('click', () => {
-        const order = orderChoices[Number(orderSelect.value)];
-        if (!order) return;
-        const plans = new Map();
-        order.lines.forEach(line => {
-          const key = String(line.order_item_id);
-          plans.set(key,(plans.get(key) || 0) + Number(line.quantity));
-        });
-        const bagPlan = [...plans].map(([order_item_id, quantity]) => ({order_item_id,quantity}));
-        runAction(context, createBag, {
-          url: endpointFor(context.marketCode, 'bags'),
-          body: {order_id:order.order_id,bag_plan:bagPlan},
-          runningMessage: 'Ouverture du sac clientâ€¦',
-          successMessage: result => 'Sac ' + (result.physical_unit?.reference || '') + ' crÃ©Ã© pour ' + order.order_ref,
-        }).catch(() => {});
-      });
-      createRow.appendChild(orderSelect); createRow.appendChild(createBag); prep.appendChild(createRow);
-    } else if (!openBags.length) {
-      prep.appendChild(text(doc, 'p', 'kmc-workspace-muted','Aucune quantitÃ© rÃ©ceptionnÃ©e Ã  prÃ©parer.'));
-    }
-    openBags.forEach(bag => {
-      const holder = doc.createElement('div');
-      holder.className = 'kmc-hub-bag-open';
-      holder.appendChild(text(doc, 'strong', '', bag.reference + ' Â· ' + bag.order_ref));
-      const actual = new Map((bag.actual_contents || []).map(item => [String(item.order_item_id), Number(item.quantity)]));
-      const planned = new Map((bag.bag_plan || []).map(item => [String(item.order_item_id), Number(item.quantity)]));
-      const totalPlanned = [...planned.values()].reduce((a,b) => a+b,0);
-      const totalActual = [...actual.values()].reduce((a,b) => a+b,0);
-      holder.appendChild(text(doc, 'span', 'kmc-workspace-muted',
-        totalActual + ' / ' + totalPlanned + ' unitÃ©(s) physiquement dÃ©posÃ©e(s)'));
-      const options = fillable.filter(line => String(line.order_id)===String(bag.order_id)
-        && (planned.get(String(line.order_item_id)) || 0) > (actual.get(String(line.order_item_id)) || 0));
-      if (options.length) {
-        const row = doc.createElement('div'); row.className='kmc-hub-bag-controls';
-        const source=doc.createElement('select');
-        source.setAttribute('aria-label','RÃ©fÃ©rence disponible pour ' + bag.reference);
-        options.forEach((line,i)=>source.appendChild(Object.assign(doc.createElement('option'),{
-          value:String(i),
-          textContent:(line.product||'Article')+' Â· '+line.quantity+' disponible(s) ('+line.from_unit_ref+')',
-        })));
-        const method=doc.createElement('select');
-        method.setAttribute('aria-label','Mode de preuve du dÃ©pÃ´t dans '+bag.reference);
-        method.setAttribute('data-hub-bag-evidence-method','');
-        [['SCAN','Code physique vÃ©rifiÃ©'],['MANUAL','Mode dÃ©gradÃ© Â· constat manuel']]
-          .forEach(([value,label])=>method.appendChild(Object.assign(doc.createElement('option'),
-            {value,textContent:label})));
-        const barcode=field('Scanner ou saisir EAN / rÃ©fÃ©rence physique',
-          'Code physique observÃ© lors du dÃ©pÃ´t dans '+bag.reference);
-        barcode.setAttribute('data-hub-bag-code','');
-        const proof=field('Preuve du constat manuel (rÃ©fÃ©rence, au moins 6 caractÃ¨res)',
-          'RÃ©fÃ©rence de preuve du dÃ©pÃ´t manuel dans '+bag.reference);
-        proof.setAttribute('data-hub-bag-manual-proof','');
-        proof.hidden=true;
-        const qty=doc.createElement('input');qty.type='number';qty.min='1';qty.step='1';qty.value='1';
-        qty.setAttribute('aria-label','QuantitÃ© dÃ©posÃ©e dans '+bag.reference);
-        const put=makeActionButton(doc,'DÃ©poser dans le sac','scan-bag-deposit');
-        const syncMethod=()=>{
-          const manual=method.value==='MANUAL';
-          barcode.hidden=manual;
-          proof.hidden=!manual;
-          if(manual)barcode.value='';
-          else proof.value='';
-        };
-        method.addEventListener('change',syncMethod);
-        const deposit=()=>{
-          const line=options[Number(source.value)];
-          if (!line) return;
-          const manual=method.value==='MANUAL';
-          const proofRef=String(proof.value||'').trim();
-          if(manual ? proofRef.length<6 : !barcode.value.trim()) {
-            setFeedback(context.root,manual
-              ? 'Mode manuel : rÃ©fÃ©rence de preuve obligatoire (6 caractÃ¨res minimum).'
-              : 'Code physique Ã  vÃ©rifier avant le dÃ©pÃ´t.', 'critical');
-            return;
-          }
-          const left=(planned.get(String(line.order_item_id))||0)-(actual.get(String(line.order_item_id))||0);
-          const quantity=Number(qty.value);
-          if (!Number.isInteger(quantity)||quantity<1||quantity>Math.min(left,Number(line.quantity))) return;
-          runAction(context,put,{
-            url:endpointFor(context.marketCode, 'bags/'+encodeURIComponent(bag.unit_id)+'/deposit'),
-            body:{from_unit_id:line.from_unit_id,allocation_id:line.allocation_id,
-              quantity,
-              ...(manual ? {evidence_method:'MANUAL',evidence_ref:proofRef}
-                : {evidence_method:'SCAN',evidence_code:barcode.value.trim()})},
-            runningMessage:manual?'ContrÃ´le du constat et dÃ©pÃ´tâ€¦':'ContrÃ´le du code et dÃ©pÃ´tâ€¦',
-            successMessage:'DÃ©pÃ´t confirmÃ© dans '+bag.reference+(manual?' Â· preuve manuelle':''),
-          }).catch(()=>{});
-        };
-        barcode.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();deposit();}});
-        proof.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();deposit();}});
-        put.addEventListener('click',deposit);
-        [source,method,barcode,proof,qty,put].forEach(node=>row.appendChild(node));
-        holder.appendChild(row);
-      }
-      if (totalPlanned>0 && totalActual===totalPlanned && [...planned].every(([id,q])=>actual.get(id)===q)) {
-        const close=makeActionButton(doc,'Fermer le sac','close-customer-bag');
-        close.addEventListener('click',()=>runAction(context,close,{
-          url:endpointFor(context.marketCode,'bags/'+encodeURIComponent(bag.unit_id)+'/close'),
-          body:{},runningMessage:'ContrÃ´le du contenu avant fermetureâ€¦',
-          successMessage:bag.reference+' fermÃ© et prÃªt pour KOM-BOX.',
-        }).catch(()=>{}));
-        holder.appendChild(close);
-      }
-      prep.appendChild(holder);
-    });
-    boxes.appendChild(prep);
-
     const composeCell = box => {
       const cell = doc.createElement('div');
       cell.className = 'kmc-workspace-box-compose';
       if (BOX_MUTABLE.has(box.state)) {
-        // V1 : on scanne le sac FERMÃ‰, pas les allocations en vrac.
-        // Le REPACK direct reste une API historique, mais n'est plus une action Hub Live.
-        if (readyBags.length) {
-          const boxScan=field('Scanner cette KOM-BOX une fois','Scanner rÃ©fÃ©rence de la KOM-BOX '+box.reference);
-          boxScan.setAttribute('data-hub-box-scan','');
-          context.hubVerifiedBoxes=context.hubVerifiedBoxes||{};
-          boxScan.value=context.hubVerifiedBoxes[String(box.unit_id)]||'';
-          const bagScan=field('Scanner le sac client','Scanner rÃ©fÃ©rence du sac client');
-          bagScan.setAttribute('data-hub-bag-scan','');
-          // Le serveur dÃ©duit le colis import unique de la commande du sac.
-          // SÃ©lection explicite uniquement pour l'exception : plusieurs colis possibles.
-          const parcel=doc.createElement('select');
-          parcel.setAttribute('aria-label','Colis client si plusieurs colis pour ce sac');
-          parcel.hidden=true;
-          const add=makeActionButton(doc,'Placer le sac','put-bag-in-box');
-          const boxMethod=doc.createElement('select');
-          boxMethod.setAttribute('aria-label','Mode de preuve du rattachement dans '+box.reference);
-          boxMethod.setAttribute('data-hub-box-evidence-method','');
-          [['SCAN','RÃ©fÃ©rences scannÃ©es'],['MANUAL','Mode dÃ©gradÃ© Â· saisie manuelle']]
-            .forEach(([value,label])=>boxMethod.appendChild(Object.assign(doc.createElement('option'),
-              {value,textContent:label})));
-          const boxProof=field('Justification de la saisie manuelle (au moins 6 caractÃ¨res)',
-            'Justification de la saisie manuelle dans '+box.reference);
-          boxProof.setAttribute('data-hub-box-manual-proof','');
-          boxProof.hidden=true;
-          boxMethod.addEventListener('change',()=>{
-            boxProof.hidden=boxMethod.value!=='MANUAL';
-            if(boxProof.hidden)boxProof.value='';
-          });
-          const identify=()=>{
-            const bag=readyBags.find(b=>b.reference===bagScan.value.trim());
-            const matching=bag?(d.client_parcels||[]).filter(p=>String(p.order_id)===String(bag.order_id)):[];
-            const selected=parcel.value;
-            const ambiguous=matching.length>1;
-            parcel.replaceChildren();
-            if(ambiguous){
-              parcel.appendChild(Object.assign(doc.createElement('option'),{value:'',textContent:'Choisir le colis client (cas exceptionnel)â€¦'}));
-              matching.forEach(p=>parcel.appendChild(Object.assign(doc.createElement('option'),{
-                value:p.id,textContent:p.reference+' Â· '+bag.order_ref,
-              })));
-              if(matching.some(p=>p.id===selected))parcel.value=selected;
-            }
-            parcel.hidden=!ambiguous;
-            add.disabled=!(bag&&boxScan.value.trim()===box.reference&&(!ambiguous||parcel.value));
-            return bag;
-          };
-          boxScan.addEventListener('input',()=>{
-            if(boxScan.value.trim()===box.reference){
-              context.hubVerifiedBoxes[String(box.unit_id)]=box.reference;
-            }else{
-              delete context.hubVerifiedBoxes[String(box.unit_id)];
-            }
-            identify();
-          });
-          boxScan.addEventListener('keydown',event=>{
-            if(event.key==='Enter'){event.preventDefault();bagScan.focus();}
-          });
-          bagScan.addEventListener('input',identify);
-          bagScan.addEventListener('keydown',event=>{
-            if(event.key==='Enter'){event.preventDefault();identify();(parcel.hidden?boxMethod:parcel).focus();}
-          });
-          parcel.addEventListener('change',identify);
-          add.addEventListener('click',()=>{
-            const bag=readyBags.find(b=>b.reference===bagScan.value.trim());
-            if(!bag||boxScan.value.trim()!==box.reference||(!parcel.hidden&&!parcel.value))return;
-            const manualBox=boxMethod.value==='MANUAL';
-            const boxProofRef=String(boxProof.value||'').trim();
-            if(manualBox&&boxProofRef.length<6){
-              setFeedback(context.root,'Mode manuel : justification obligatoire (6 caractÃ¨res minimum).','critical');
-              return;
-            }
-            runAction(context,add,{
-              url:endpointFor(context.marketCode,'boxes/'+encodeURIComponent(box.unit_id)+'/bags'),
-              body:{
-                bag_unit_id:bag.unit_id,...(!parcel.hidden?{parcel_id:parcel.value}:{}),
-                bag_reference_scan:bagScan.value.trim(),box_reference_scan:boxScan.value.trim(),
-                ...(manualBox?{evidence_method:'MANUAL',evidence_ref:boxProofRef}:{evidence_method:'SCAN'}),
-              },
-              runningMessage:'ContrÃ´le du sac et de la KOM-BOXâ€¦',
-              successMessage:bag.reference+' placÃ© dans '+box.reference+' sans dÃ©placement des articles.',
+        const boxScan=field('Scanner la COMBOX','Scanner la rÃ©fÃ©rence de la COMBOX '+box.reference);
+        boxScan.setAttribute('data-hub-box-scan','');
+        context.hubVerifiedBoxes=context.hubVerifiedBoxes||{};
+        boxScan.value=context.hubVerifiedBoxes[String(box.unit_id)]||'';
+        boxScan.addEventListener('input',()=>{
+          if(boxScan.value.trim()===box.reference)context.hubVerifiedBoxes[String(box.unit_id)]=box.reference;
+          else delete context.hubVerifiedBoxes[String(box.unit_id)];
+        });
+        const options=fillable.filter(line=>Number(line.quantity)>0);
+        const item=doc.createElement('select');
+        item.setAttribute('aria-label','Article rÃ©ceptionnÃ© Ã  placer dans '+box.reference);
+        options.forEach((line,i)=>item.appendChild(Object.assign(doc.createElement('option'),{
+          value:String(i),textContent:(line.product||'Article')+' Â· '+line.order_ref+' Â· '+
+            line.quantity+' disponible(s) Â· '+line.from_unit_ref,
+        })));
+        const method=doc.createElement('select');
+        method.setAttribute('aria-label','Mode de preuve du scan article dans '+box.reference);
+        [['SCAN','Scanner le code article'],['MANUAL','Mode dÃ©gradÃ© Â· constat manuel']]
+          .forEach(([value,label])=>method.appendChild(Object.assign(doc.createElement('option'),{value,textContent:label})));
+        const code=field('Scanner le code article','Code physique de lâ€™article Ã  placer dans '+box.reference);
+        const proof=field('RÃ©fÃ©rence de preuve manuelle (6 caractÃ¨res minimum)','Preuve du constat manuel pour '+box.reference);
+        proof.hidden=true;
+        const qty=doc.createElement('input');qty.type='number';qty.min='1';qty.step='1';qty.value='1';
+        qty.setAttribute('aria-label','QuantitÃ© de cet article Ã  placer dans '+box.reference);
+        const add=makeActionButton(doc,'Placer lâ€™article dans la COMBOX','fill-box');
+        const syncMethod=()=>{
+          const manual=method.value==='MANUAL'; code.hidden=manual; proof.hidden=!manual;
+          if(manual)code.value=''; else proof.value='';
+        };
+        method.addEventListener('change',syncMethod);
+        const fill=()=>{
+          if(boxScan.value.trim()!==box.reference){
+            setFeedback(context.root,'Scannez dâ€™abord la rÃ©fÃ©rence de cette COMBOX.','critical'); return;
+          }
+          const line=options[Number(item.value)]; if(!line)return;
+          const manual=method.value==='MANUAL';
+          const proofRef=String(proof.value||'').trim();
+          if(manual?proofRef.length<6:!code.value.trim()){
+            setFeedback(context.root,manual?'RÃ©fÃ©rence de preuve obligatoire (6 caractÃ¨res minimum).':'Code article obligatoire.','critical'); return;
+          }
+          const quantity=Number(qty.value);
+          if(!Number.isInteger(quantity)||quantity<1||quantity>Number(line.quantity))return;
+          if(!manual&&quantity!==1){setFeedback(context.root,'Un scan confirmÃ© correspond Ã  un article. Scannez chaque unitÃ© sÃ©parÃ©ment.','critical');return;}
+          runAction(context,add,{
+            url:endpointFor(context.marketCode,'boxes/'+encodeURIComponent(box.unit_id)+'/fill'),
+            body:{from_unit_id:line.from_unit_id,allocation_id:line.allocation_id,quantity,
+              box_reference_scan:boxScan.value.trim(),
+              ...(manual?{evidence_method:'MANUAL',evidence_ref:proofRef}
+                :{evidence_method:'SCAN',evidence_code:code.value.trim()})},
+            runningMessage:'VÃ©rification de lâ€™article et placement dans la COMBOXâ€¦',
+            successMessage:quantity+' article(s) placÃ©(s) dans '+box.reference+'.',
+          }).catch(()=>{});
+        };
+        add.disabled=!options.length;
+        [boxScan,item,method,code,proof,qty,add].forEach(node=>cell.appendChild(node));
+        code.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();fill();}});
+        proof.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();fill();}});
+        add.addEventListener('click',fill);
+        if((box.contents||[]).length){
+          const close=makeActionButton(doc,'Fermer la COMBOX','close-box');
+          close.addEventListener('click',()=>{
+            if(boxScan.value.trim()!==box.reference){setFeedback(context.root,'Scannez la COMBOX avant fermeture.','critical');return;}
+            runAction(context,close,{
+              url:endpointFor(context.marketCode,'boxes/'+encodeURIComponent(box.unit_id)+'/close'),
+              body:{box_reference_scan:boxScan.value.trim()},
+              runningMessage:'ContrÃ´le du contenu et fermetureâ€¦',
+              successMessage:box.reference+' fermÃ©e et prÃªte pour la suite.',
             }).catch(()=>{});
           });
-          [boxScan,bagScan,parcel,boxMethod,boxProof,add].forEach(node=>cell.appendChild(node));
-          identify();
-        }else{
-          cell.appendChild(text(doc,'span','kmc-workspace-muted','PrÃ©parer puis fermer un sac client avant mise en KOM-BOX.'));
+          cell.appendChild(close);
         }
       }
       const next = BOX_NEXT_STATE[box.state];
@@ -1562,7 +784,7 @@
       return cell.children.length ? cell : 'â€”';
     };
 
-    boxes.appendChild(simpleTable(doc, ['', 'Carton', 'Ã‰tat', 'Contenu', 'ExpÃ©dition', 'Composer', 'Action'],
+    boxes.appendChild(simpleTable(doc, ['', 'COMBOX', 'Ã‰tat', 'Contenu', 'ExpÃ©dition', 'Composer', 'Action'],
       (d.boxes || []).map(box => {
         const contents = box.contents.map(c => `${c.order_ref} Ã—${formatNumber(c.qty)}`).join(', ');
         let pick = '';
@@ -1579,7 +801,7 @@
             url: endpointFor(context.marketCode, `boxes/${encodeURIComponent(box.unit_id)}/shipment`),
             body: { shipment_reference: select.value },
             runningMessage: 'Rattachement en coursâ€¦',
-            successMessage: result => (result && result.already_attached ? 'Carton dÃ©jÃ  rattachÃ© Ã  cette expÃ©dition.' : 'Carton rattachÃ© Ã  lâ€™expÃ©dition.'),
+            successMessage: result => (result && result.already_attached ? 'COMBOX dÃ©jÃ  rattachÃ©e Ã  cette expÃ©dition.' : 'COMBOX rattachÃ©e Ã  lâ€™expÃ©dition.'),
           }).catch(() => {}));
         }
         if (box.shipment_ref && box.shipment_stage === 'hub_ready') {
@@ -1588,12 +810,12 @@
             url: endpointFor(context.marketCode, `boxes/${encodeURIComponent(box.unit_id)}/detach`),
             body: {},
             confirmMessage: `Retirer ${box.reference} de lâ€™expÃ©dition ${box.shipment_ref} ?`,
-            runningMessage: 'DÃ©tachement du cartonâ€¦',
-            successMessage: 'Carton retirÃ© du dossier encore en prÃ©paration.',
+            runningMessage: 'DÃ©tachement de la COMBOXâ€¦',
+            successMessage: 'COMBOX retirÃ©e du dossier encore en prÃ©paration.',
           }).catch(() => {}));
         }
         return [pick, box.reference, box.state, contents || 'â€”', box.shipment_ref || 'â€”', composeCell(box), action];
-      }), 'Aucun carton.'));
+      }), 'Aucune COMBOX.'));
 
     const secondary = doc.createElement('details');
     secondary.className = 'kmc-hub-physical-secondary';
@@ -1601,7 +823,7 @@
     // Atelier opÃ©rationnel visible par dÃ©faut : le repli est rÃ©servÃ© aux dÃ©tails
     // et ne doit jamais dissimuler les gestes attendus au Golden M01.
     secondary.open = true;
-    secondary.appendChild(text(doc, 'summary', '', 'Ateliers physiques Â· Sacs, KOM-BOX et expÃ©ditions'));
+    secondary.appendChild(text(doc, 'summary', '', 'Ateliers physiques Â· COMBOX et expÃ©ditions'));
     [...rootNode.children].slice(secondaryStart).forEach(node => secondary.appendChild(node));
     rootNode.appendChild(secondary);
   }
@@ -1651,351 +873,11 @@
     const activeLink=rootNode.querySelector('[data-relay-execution-jump="'+key+'"]');
     const title=rootNode.querySelector('[data-relay-next-title]');
     const detail=rootNode.querySelector('[data-relay-next-detail]');
-    if(activeLink&&title&&detail) {
-      const label=activeLink.querySelector('strong')?.textContent||'File sÃ©lectionnÃ©e';
-      const pending=activeLink.getAttribute('data-relay-item-count');
-      title.textContent='Ã€ faire maintenant Â· '+label;
-      detail.textContent=pending==null?'Consulter les arrivages de ce marchÃ©.':
-        Number(pending)>0?pending+' dossier(s) dans cette file Ã  examiner.':
-          'Aucun dossier en attente dans cette file.';
-    }
-  }
-
-  // V1 SAV â€” une demande rattachÃ©e au VRAI article remis, sans rÃ©ception
-  // physique implicite ni opÃ©ration financiÃ¨re. Les dÃ©cisions restent dans
-  // les litiges / autoritÃ©s Komerce ; ce formulaire sert uniquement Ã  signaler.
-  function renderRelayReturnRequests(rootNode, ui, doc, context) {
-    const slot = createSection(rootNode, ui, 'Retours & SAV',
-      'Ouvrir un dossier, signaler une anomalie ou attester sÃ©parÃ©ment la reprise physique. Aucun paiement automatique.');
-    slot.setAttribute('data-relay-return-requests', '');
-
-    const notice = text(doc, 'p', 'kmc-workspace-note',
-      'La reprise est une preuve de dÃ©pÃ´t, pas une dÃ©cision de remboursement. Les articles repris restent isolÃ©s de la vente.');
-    slot.appendChild(notice);
-
-    const searchForm = doc.createElement('form');
-    searchForm.setAttribute('data-relay-return-lookup', '');
-    searchForm.className = 'kmc-workspace-section-actions';
-    const reference = doc.createElement('input');
-    reference.type = 'text';
-    reference.required = true;
-    reference.maxLength = 80;
-    reference.placeholder = 'RÃ©fÃ©rence commande';
-    reference.setAttribute('aria-label', 'RÃ©fÃ©rence de commande');
-    reference.setAttribute('data-relay-return-reference', '');
-    searchForm.appendChild(reference);
-    const lookup = text(doc, 'button', 'kmc-workspace-action', 'Rechercher');
-    lookup.type = 'submit';
-    searchForm.appendChild(lookup);
-    slot.appendChild(searchForm);
-
-    const selection = doc.createElement('form');
-    selection.setAttribute('data-relay-return-create', '');
-    selection.className = 'kmc-workspace-inventory-list';
-    selection.hidden = true;
-    const product = doc.createElement('select');
-    product.required = true;
-    product.setAttribute('aria-label', 'Article rÃ©ellement remis au client');
-    product.setAttribute('data-relay-return-product', '');
-    const qty = doc.createElement('input');
-    qty.type = 'number';
-    qty.min = '1';
-    qty.value = '1';
-    qty.required = true;
-    qty.setAttribute('aria-label', 'QuantitÃ© concernÃ©e');
-    const reason = doc.createElement('select');
-    reason.required = true;
-    reason.setAttribute('aria-label', 'Motif de retour');
-    for (const [value, label] of [
-      ['defective', 'Produit dÃ©fectueux'],
-      ['damaged', 'Produit cassÃ©'],
-      ['wrong_item', 'Mauvais article'],
-      ['not_as_described', 'Non conforme'],
-      ['other', 'Autre motif'],
-    ]) {
-      const option = text(doc, 'option', '', label);
-      option.value = value;
-      reason.appendChild(option);
-    }
-    const note = doc.createElement('textarea');
-    note.maxLength = 500;
-    note.rows = 2;
-    note.placeholder = 'Commentaire complÃ©mentaire (obligatoire pour Autre)';
-    note.setAttribute('aria-label', 'Commentaire SAV');
-    const create = text(doc, 'button', 'kmc-workspace-action', 'Ouvrir le dossier SAV');
-    create.type = 'submit';
-    create.setAttribute('data-relay-return-submit', '');
-    for (const [caption, control] of [
-      ['Article', product], ['QuantitÃ©', qty], ['Motif', reason], ['Commentaire', note],
-    ]) {
-      const label = text(doc, 'label', 'kmc-workspace-note', caption);
-      label.appendChild(control);
-      selection.appendChild(label);
-    }
-    selection.appendChild(create);
-    const remark = text(doc, 'button', 'kmc-workspace-action is-secondary',
-      'Signaler une remarque sans retour');
-    remark.type = 'button';
-    remark.setAttribute('data-relay-quality-remark', '');
-    selection.appendChild(remark);
-    slot.appendChild(selection);
-    const result = text(doc, 'p', 'kmc-workspace-note', '');
-    result.setAttribute('role', 'status');
-    result.setAttribute('data-relay-return-feedback', '');
-    slot.appendChild(result);
-
-    const list = doc.createElement('div');
-    list.setAttribute('data-relay-return-list', '');
-    slot.appendChild(list);
-
-    // Physical attestation is a separate gesture from opening the SAV dossier.
-    // A letter groups many parcels; the immutable receipt id identifies the unit.
-    const intake = doc.createElement('form');
-    intake.className = 'kmc-workspace-inventory-list';
-    intake.setAttribute('data-relay-return-intake', '');
-    intake.hidden = true;
-    const intakeTitle = text(doc, 'h3', '', 'Attester une reprise physique');
-    intake.appendChild(intakeTitle);
-    const intakeRequest = doc.createElement('select');
-    intakeRequest.required = true;
-    intakeRequest.setAttribute('aria-label', 'Dossier SAV Ã  reprendre');
-    intakeRequest.setAttribute('data-relay-intake-request', '');
-    const intakeCondition = doc.createElement('select');
-    intakeCondition.required = true;
-    intakeCondition.setAttribute('aria-label', 'Ã‰tat physique constatÃ©');
-    for (const [value, label] of [
-      ['unknown', 'Ã‰tat Ã  examiner'],
-      ['sealed', 'Emballage fermÃ©'],
-      ['opened', 'Emballage ouvert'],
-      ['damaged', 'Produit ou emballage endommagÃ©'],
-    ]) {
-      const option = text(doc, 'option', '', label);
-      option.value = value;
-      intakeCondition.appendChild(option);
-    }
-    const intakeZone = doc.createElement('input');
-    intakeZone.type = 'text';
-    intakeZone.maxLength = 1;
-    intakeZone.placeholder = 'A (facultatif)';
-    intakeZone.setAttribute('aria-label', 'Lettre de zone facultative');
-    const intakeNote = doc.createElement('textarea');
-    intakeNote.required = true;
-    intakeNote.minLength = 10;
-    intakeNote.maxLength = 1000;
-    intakeNote.rows = 2;
-    intakeNote.placeholder = 'Constat physique au dÃ©pÃ´t (10 caractÃ¨res minimum)';
-    intakeNote.setAttribute('aria-label', 'Constat physique de reprise');
-    for (const [caption, control] of [
-      ['Dossier', intakeRequest], ['Ã‰tat constatÃ©', intakeCondition],
-      ['Zone (facultative)', intakeZone], ['Constat', intakeNote],
-    ]) {
-      const label = text(doc, 'label', 'kmc-workspace-note', caption);
-      label.appendChild(control);
-      intake.appendChild(label);
-    }
-    const intakeSubmit = text(doc, 'button', 'kmc-workspace-action', 'Confirmer la rÃ©ception');
-    intakeSubmit.type = 'submit';
-    intakeSubmit.setAttribute('data-relay-intake-submit', '');
-    intake.appendChild(intakeSubmit);
-    slot.appendChild(intake);
-    let order = null;
-    let items = [];
-
-    const updateQuantity = () => {
-      const chosen = items.find(item => item.id === product.value);
-      qty.max = String(chosen?.remaining_returnable || 1);
-      qty.value = '1';
-    };
-    product.addEventListener('change', updateQuantity);
-
-    async function loadRequests() {
-      try {
-        const data = await jsonRequest(context.fetch, '/api/relay/returns');
-        list.replaceChildren();
-        const rows = Array.isArray(data.requests) ? data.requests : [];
-        if (!rows.length) {
-          list.appendChild(text(doc, 'p', 'kmc-workspace-empty', 'Aucun dossier SAV ouvert.'));
-          return;
-        }
-        const wrap = doc.createElement('div');
-        list.appendChild(wrap);
-        ui.DataTable.render(wrap, {
-          columns: [
-            { key:'order_reference', label:'Commande' },
-            { key:'product_name', label:'Article' },
-            { key:'return_quantity', label:'QuantitÃ©' },
-            { key:'return_reason', label:'Motif', format: (_raw, row) =>
-              ({defective:'DÃ©fectueux',damaged:'CassÃ©',wrong_item:'Mauvais article',not_as_described:'Non conforme',other:'Autre'})[row.return_reason] || 'Autre' },
-            { key:'status', label:'Dossier', format: (_raw, row) =>
-              ({open:'Ã€ examiner',processing:'En traitement',resolved:'RÃ©solu',closed:'ClÃ´turÃ©'})[row.status] || row.status },
-            { key:'received_at', label:'Reprise physique', format: (_raw, row) =>
-              row.receipt_id ? ('ReÃ§u Â· ' + row.received_quantity + ' unitÃ©(s)' +
-                (row.storage_zone ? ' Â· zone ' + row.storage_zone : '')) : 'Non repris' },
-          ],
-          rows,
-          emptyText: 'Aucun dossier SAV.',
-        });
-        // Only open/processing requests without physical evidence may be received.
-        const pendingIntakes = rows.filter(row => !row.receipt_id &&
-          (row.status === 'open' || row.status === 'processing'));
-        intakeRequest.replaceChildren();
-        for (const pending of pendingIntakes) {
-          const option = text(doc, 'option', '',
-            pending.order_reference + ' Â· ' + pending.product_name +
-            ' Â· ' + pending.return_quantity + ' unitÃ©(s)');
-          option.value = pending.id;
-          intakeRequest.appendChild(option);
-        }
-        intake.hidden = pendingIntakes.length === 0;
-      } catch (error) { result.textContent = 'Liste SAV indisponible : ' + error.message; }
-    }
-
-    intake.addEventListener('submit', async event => {
-      event.preventDefault();
-      if (!intakeRequest.value) return;
-      const evidence = intakeNote.value.trim();
-      if (evidence.length < 10) {
-        result.textContent = 'DÃ©crivez le constat physique de la reprise.';
-        return;
-      }
-      intakeSubmit.disabled = true;
-      result.textContent = 'Enregistrement de la reprise physiqueâ€¦';
-      try {
-        await jsonRequest(context.fetch, '/api/relay/returns/intake', {
-          method: 'POST', body: {
-            request_id: intakeRequest.value,
-            condition_code: intakeCondition.value,
-            storage_zone: intakeZone.value.trim().toUpperCase() || null,
-            observation: evidence,
-          },
-        });
-        intakeNote.value = '';
-        intakeZone.value = '';
-        result.textContent = 'Reprise attestÃ©e. Produit isolÃ© : aucun crÃ©dit wallet, remboursement ni stock vendable.';
-        // AprÃ¨s un POST rÃ©ussi, ne jamais laisser confirmer une seconde fois si la relecture Ã©choue.
-        intake.hidden = true;
-        await loadRequests();
-      } catch (error) {
-        result.textContent = error.message;
-      } finally {
-        intakeSubmit.disabled = false;
-      }
-    });
-
-    searchForm.addEventListener('submit', async event => {
-      event.preventDefault();
-      selection.hidden = true;
-      order = null;
-      items = [];
-      lookup.disabled = true;
-      result.textContent = 'Recherche de la commandeâ€¦';
-      try {
-        const data = await jsonRequest(context.fetch,
-          '/api/relay/returns/eligible?reference=' + encodeURIComponent(reference.value.trim()));
-        order = data.order;
-        items = (data.items || []).filter(item => item.remaining_returnable > 0);
-        product.replaceChildren();
-        for (const item of items) {
-          const option = text(doc, 'option', '',
-            item.product_name + ' Â· ' + item.remaining_returnable + ' unitÃ©(s) remises disponibles');
-          option.value = item.id;
-          product.appendChild(option);
-        }
-        if (!items.length) {
-          result.textContent = 'Aucun article remis Ã©ligible ou une demande est dÃ©jÃ  en cours.';
-        } else {
-          updateQuantity();
-          selection.hidden = false;
-          result.textContent = 'SÃ©lectionnez lâ€™article et le motif ; aucun crÃ©dit nâ€™est crÃ©Ã©.';
-        }
-      } catch (error) { result.textContent = error.message; }
-      finally { lookup.disabled = false; }
-    });
-
-    remark.addEventListener('click', async () => {
-      const chosen = items.find(item => item.id === product.value);
-      if (!order || !chosen) return;
-      if (note.value.trim().length < 5) {
-        result.textContent = 'DÃ©crivez votre remarque en quelques mots.';
-        return;
-      }
-      remark.disabled = true;
-      result.textContent = 'Envoi de la remarque au Catalogueâ€¦';
-      try {
-        await jsonRequest(context.fetch, '/api/relay/returns/remarks', {
-          method: 'POST', body: {
-            order_reference: order.reference, order_item_id: chosen.id,
-            note: note.value.trim(),
-          },
-        });
-        note.value = '';
-        result.textContent = 'Remarque enregistrÃ©e sur la rÃ©fÃ©rence Catalogue. Aucun retour, gel ou paiement dÃ©clenchÃ©.';
-      } catch (error) {
-        result.textContent = error.message;
-      } finally { remark.disabled = false; }
-    });
-
-    selection.addEventListener('submit', async event => {
-      event.preventDefault();
-      const chosen = items.find(item => item.id === product.value);
-      if (!order || !chosen) return;
-      const count = Number(qty.value);
-      if (!Number.isSafeInteger(count) || count < 1 || count > chosen.remaining_returnable) {
-        result.textContent = 'QuantitÃ© supÃ©rieure aux articles remis disponibles.';
-        return;
-      }
-      if (reason.value === 'other' && note.value.trim().length < 3) {
-        result.textContent = 'PrÃ©cisez le motif du retour.';
-        return;
-      }
-      create.disabled = true;
-      result.textContent = 'Enregistrement de la demandeâ€¦';
-      try {
-        await jsonRequest(context.fetch, '/api/relay/returns', {
-          method: 'POST', body: {
-            order_reference: order.reference, order_item_id: chosen.id,
-            quantity: count, reason: reason.value, note: note.value.trim(),
-          },
-        });
-        selection.hidden = true;
-        order = null;
-        items = [];
-        result.textContent = 'Dossier SAV enregistrÃ©. Ã€ examiner par Komerce ; aucun retour physique ou wallet confirmÃ©.';
-        await loadRequests();
-      } catch (error) { result.textContent = error.message; }
-      finally { create.disabled = false; }
-    });
-
-    loadRequests().catch(() => {});
-  }
-
-  function renderPayload(rootNode, ui, doc, payload, context) {
-    rootNode.className = 'kmc-operations-workspace';
-    rootNode.setAttribute('data-workspace-kind', 'hub-relay');
-    rootNode.setAttribute('data-workspace-mode', context.mode);
-    rootNode.setAttribute('data-relay-counter',context.focusOnly?'true':'false');
-    rootNode.replaceChildren();
-    const header=createHeader(doc,payload,context.mode);
-    if(context.mode==='relay-execution') {
-      // Le rail mÃ©tier fournit dÃ©jÃ  l'accÃ¨s Flux Relais : pas de deuxiÃ¨me lien identique.
-      header.querySelector('.kmc-workspace-nav')?.remove();
-    }
-    if(context.focusOnly) {
-      header.querySelector('.kmc-workspace-kicker').textContent='RELAIS Â· COMPTOIR';
-      header.querySelector('.kmc-workspace-title').textContent='Remises client';
-      header.querySelector('.kmc-workspace-subtitle').textContent=
-        context.marketCode+' Â· Identifier le bon colis, vÃ©rifier les conditions de retrait, attester la remise.';
-    }
-    rootNode.appendChild(header);
-    if(context.mode==='relay-execution') {
-      const nav=doc.createElement('nav');
-      nav.className='kmc-relay-main-nav';
-      nav.setAttribute('aria-label','Espaces de travail du relais');
-      const activeRelayTab=context.focusOnly?'Remises':context.view==='returns'?'Incidents & SAV':'Flux Relais';
-      const links=[
-        ['Flux Relais','/admin/relais-live'+(context.marketCode?'?market='+encodeURIComponent(context.marketCode):''),activeRelayTab==='Flux Relais'],
-        ['Remises','/admin/relais-live?view=remises&market='+encodeURIComponent(context.marketCode),activeRelayTab==='Remises'],
-        ['Incidents & SAV','/admin/relais-live?view=incidents&market='+encodeURIComponent(context.marketCode),activeRelayTab==='Incidents & SAV'],
+    if(activeLink&&title&&detam«ëŒ+Š×®º+º$zzb¥æ–Â’°¢6öç7BÆ&VÃÖ7F—fTÆ–æ²çVW'•6VÆV7F÷"‚w7G&öærr“òçFW‡D6öçFVçGÇÂtf–ÆR<:–ÆV7F–öæì:–Rs°¢6öç7BVæF–æsÖ7F—fTÆ–æ²ævWDGG&–'WFR‚vFF×&VÆ’Ö—FVÒÖ6÷VçBr“°¢F—FÆRçFW‡D6öçFVçCÒ|8f—&RÖ–çFVæçB+rr¶Æ&VÃ°¢FWF–ÂçFW‡D6öçFVçC×VæF–æsÓÖçVÆÃòt6öç7VÇFW"ÆW2'&—fvW2FR6RÖ&6Œ:’âs ¢çVÖ&W"‡VæF–ær“ã÷VæF–ær²rF÷76–W"‡2’Fç26WGFRf–ÆR:W†Ö–æW"âs ¢tV7VâF÷76–W"VâGFVçFRFç26WGFRf–ÆRâs°¢Ğ¢Ğ ¢òòc4b(	BVæRFVÖæFR&GF6Œ:–RRe$’'F–6ÆR&VÖ—2Â6ç2,:–6WF–öà¢òò‡—6—VR–×Æ–6—FRæ’÷:—&F–öâf–ææ6œ:‡&RâÆW2L:–6—6–öç2&W7FVçBFç0¢òòÆW2Æ—F–vW2òWF÷&—L:—2¶öÖW&6R²6Rf÷&×VÆ—&R6W'BVæ—VVÖVçB:6–væÆW"à¢gVæ7F–öâ&VæFW%&VÆ•&WGW&å&WVW7G2‡&ö÷DæöFRÂV’ÂFö2Â6öçFW‡B’°¢6öç7B6Æ÷BÒ7&VFU6V7F–öâ‡&ö÷DæöFRÂV’Âu&WF÷W'2b4brÀ¢t÷Wg&—"VâF÷76–W"Â6–væÆW"VæRæöÖÆ–R÷RGFW7FW"<:—,:–ÖVçBÆ&W&—6R‡—6—VRâV7Vâ–VÖVçBWFöÖF—VRâr“°¢6Æ÷Bç6WDGG&–'WFR‚vFF×&VÆ’×&WGW&â×&WVW7G2rÂrr“° ¢6öç7Bæ÷F–6RÒFW‡B†Fö2ÂwrÂv¶Ö2×v÷&·76RÖæ÷FRrÀ¢tÆ&W&—6RW7BVæR&WWfRFRL:—;GBÂ2VæRL:–6—6–öâFR&VÖ&÷W'6VÖVçBâÆW2'F–6ÆW2&W&—2&W7FVçB—6öÌ:—2FRÆfVçFRâr“°¢6Æ÷BæVæD6†–ÆB†æ÷F–6R“° ¢6öç7B6V&6„f÷&ÒÒFö2æ7&VFTVÆVÖVçB‚vf÷&Òr“°¢6V&6„f÷&Òç6WDGG&–'WFR‚vFF×&VÆ’×&WGW&âÖÆöö·WrÂrr“°¢6V&6„f÷&Òæ6Æ74æÖRÒv¶Ö2×v÷&·76R×6V7F–öâÖ7F–öç2s°¢6öç7B&VfW&Væ6RÒFö2æ7&VFTVÆVÖVçB‚v–çWBr“°¢&VfW&Væ6RçG—RÒwFW‡Bs°¢&VfW&Væ6Rç&WV—&VBÒG'VS°¢&VfW&Væ6RæÖ„ÆVæwF‚Òƒ°¢&VfW&Væ6RçÆ6V†öÆFW"Òu,:–l:—&Væ6R6öÖÖæFRs°¢&VfW&Væ6Rç6WDGG&–'WFR‚v&–ÖÆ&VÂrÂu,:–l:—&Væ6RFR6öÖÖæFRr“°¢&VfW&Væ6Rç6WDGG&–'WFR‚vFF×&VÆ’×&WGW&â×&VfW&Væ6RrÂrr“°¢6V&6„f÷&ÒæVæD6†–ÆB‡&VfW&Væ6R“°¢6öç7BÆöö·WÒFW‡B†Fö2Âv'WGFöârÂv¶Ö2×v÷&·76RÖ7F–öârÂu&V6†W&6†W"r“°¢Æöö·WçG—RÒw7V&Ö—Bs°¢6V&6„f÷&ÒæVæD6†–ÆB†Æöö·W“°¢6Æ÷BæVæD6†–ÆB‡6V&6„f÷&Ò“° ¢6öç7B6VÆV7F–öâÒFö2æ7&VFTVÆVÖVçB‚vf÷&Òr“°¢6VÆV7F–öâç6WDGG&–'WFR‚vFF×&VÆ’×&WGW&âÖ7&VFRrÂrr“°¢6VÆV7F–öâæ6Æ74æÖRÒv¶Ö2×v÷&·76RÖ–çfVçF÷'’ÖÆ—7Bs°¢6VÆV7F–öâæ†–FFVâÒG'VS°¢6öç7B&öGV7BÒFö2æ7&VFTVÆVÖVçB‚w6VÆV7Br“°¢&öGV7Bç&WV—&VBÒG'VS°¢&öGV7Bç6WDGG&–'WFR‚v&–ÖÆ&VÂrÂt'F–6ÆR,:–VÆÆVÖVçB&VÖ—2R6Æ–VçBr“°¢&öGV7Bç6WDGG&–'WFR‚vFF×&VÆ’×&WGW&â×&öGV7BrÂrr“°¢6öç7BG’ÒFö2æ7&VFTVÆVÖVçB‚v–çWBr“°¢G’çG—RÒvçVÖ&W"s°¢G’æÖ–âÒss°¢G’çfÇVRÒss°¢G’ç&WV—&VBÒG'VS°¢G’ç6WDGG&–'WFR‚v&–ÖÆ&VÂrÂuVçF—L:’6öæ6W&ì:–Rr“°¢6öç7B&V6öâÒFö2æ7&VFTVÆVÖVçB‚w6VÆV7Br“°¢&V6öâç&WV—&VBÒG'VS°¢&V6öâç6WDGG&–'WFR‚v&–ÖÆ&VÂrÂtÖ÷F–bFR&WF÷W"r“°¢f÷"†6öç7B·fÇVRÂÆ&VÅÒöb°¢²vFVfV7F—fRrÂu&öGV—BL:–fV7GVWW‚uÒÀ¢²vFÖvVBrÂu&öGV—B67<:’uÒÀ¢²ww&öæuö—FVÒrÂtÖWf—2'F–6ÆRuÒÀ¢²væ÷Eö5öFW67&–&VBrÂtæöâ6öæf÷&ÖRuÒÀ¢²v÷F†W"rÂtWG&RÖ÷F–buÒÀ¢Ò’°¢6öç7B÷F–öâÒFW‡B†Fö2Âv÷F–öârÂrrÂÆ&VÂ“°¢÷F–öâçfÇVRÒfÇVS°¢&V6öâæVæD6†–ÆB†÷F–öâ“°¢Ğ¢6öç7Bæ÷FRÒFö2æ7&VFTVÆVÖVçB‚wFW‡F&Vr“°¢æ÷FRæÖ„ÆVæwF‚ÒS°¢æ÷FRç&÷w2Ò#°¢æ÷FRçÆ6V†öÆFW"Òt6öÖÖVçF—&R6ö×Ì:–ÖVçF—&R†ö&Æ–vFö—&R÷W"WG&R’s°¢æ÷FRç6WDGG&–'WFR‚v&–ÖÆ&VÂrÂt6öÖÖVçF—&R4br“°¢6öç7B7&VFRÒFW‡B†Fö2Âv'WGFöârÂv¶Ö2×v÷&·76RÖ7F–öârÂt÷Wg&—"ÆRF÷76–W"4br“°¢7&VFRçG—RÒw7V&Ö—Bs°¢7&VFRç6WDGG&–'WFR‚vFF×&VÆ’×&WGW&â×7V&Ö—BrÂrr“°¢f÷"†6öç7B¶6F–öâÂ6öçG&öÅÒöb°¢²t'F–6ÆRrÂ&öGV7EÒÂ²uVçF—L:’rÂG•ÒÂ²tÖ÷F–brÂ&V6öåÒÂ²t6öÖÖVçF—&RrÂæ÷FUÒÀ¢Ò’°¢6öç7BÆ&VÂÒFW‡B†Fö2ÂvÆ&VÂrÂv¶Ö2×v÷&·76RÖæ÷FRrÂ6F–öâ“°¢Æ&VÂæVæD6†–ÆB†6öçG&öÂ“°¢6VÆV7F–öâæVæD6†–ÆB†Æ&VÂ“°¢Ğ¢6VÆV7F–öâæVæD6†–ÆB†7&VFR“°¢6öç7B&VÖ&²ÒFW‡B†Fö2Âv'WGFöârÂv¶Ö2×v÷&·76RÖ7F–öâ—2×6V6öæF'’rÀ¢u6–væÆW"VæR&VÖ'VR6ç2&WF÷W"r“°¢&VÖ&²çG—RÒv'WGFöâs°¢&VÖ&²ç6WDGG&–'WFR‚vFF×&VÆ’×VÆ—G’×&VÖ&²rÂrr“°¢6VÆV7F–öâæVæD6†–ÆB‡&VÖ&²“°¢6Æ÷BæVæD6†–ÆB‡6VÆV7F–öâ“°¢6öç7B&W7VÇBÒFW‡B†Fö2ÂwrÂv¶Ö2×v÷&·76RÖæ÷FRrÂrr“°¢&W7VÇBç6WDGG&–'WFR‚w&öÆRrÂw7FGW2r“°¢&W7VÇBç6WDGG&–'WFR‚vFF×&VÆ’×&WGW&âÖfVVF&6²rÂrr“°¢6Æ÷BæVæD6†–ÆB‡&W7VÇB“° ¢6öç7BÆ—7BÒFö2æ7&VFTVÆVÖVçB‚vF—br“°¢Æ—7Bç6WDGG&–'WFR‚vFF×&VÆ’×&WGW&âÖÆ—7BrÂrr“°¢6Æ÷BæVæD6†–ÆB†Æ—7B“° ¢òò‡—6–6ÂGFW7FF–öâ—26W&FRvW7GW&Rg&öÒ÷Væ–ærF†R4bF÷76–W"à¢òòÆWGFW"w&÷W2Öç’&6VÇ3²F†R–Ö×WF&ÆR&V6V—B–B–FVçF–f–W2F†RVæ—Bà¢6öç7B–çF¶RÒFö2æ7&VFTVÆVÖVçB‚vf÷&Òr“°¢–çF¶Ræ6Æ74æÖRÒv¶Ö2×v÷&·76RÖ–çfVçF÷'’ÖÆ—7Bs°¢–çF¶Rç6WDGG&–'WFR‚vFF×&VÆ’×&WGW&âÖ–çF¶RrÂrr“°¢–çF¶Ræ†–FFVâÒG'VS°¢6öç7B–çF¶UF—FÆRÒFW‡B†Fö2Âvƒ2rÂrrÂtGFW7FW"VæR&W&—6R‡—6—VRr“°¢–çF¶RæVæD6†–ÆB†–çF¶UF—FÆR“°¢6öç7B–çF¶U&WVW7BÒFö2æ7&VFTVÆVÖVçB‚w6VÆV7Br“°¢–çF¶U&WVW7Bç&WV—&VBÒG'VS°¢–çF¶U&WVW7Bç6WDGG&–'WFR‚v&–ÖÆ&VÂrÂtF÷76–W"4b:&W&VæG&Rr“°¢–çF¶U&WVW7Bç6WDGG&–'WFR‚vFF×&VÆ’Ö–çF¶R×&WVW7BrÂrr“°¢6öç7B–çF¶T6öæF—F–öâÒFö2æ7&VFTVÆVÖVçB‚w6VÆV7Br“°¢–çF¶T6öæF—F–öâç&WV—&VBÒG'VS°¢–çF¶T6öæF—F–öâç6WDGG&–'WFR‚v&–ÖÆ&VÂrÂ|8—FB‡—6—VR6öç7FL:’r“°¢f÷"†6öç7B·fÇVRÂÆ&VÅÒöb°¢²wVæ¶æ÷vârÂ|8—FB:W†Ö–æW"uÒÀ¢²w6VÆVBrÂtVÖ&ÆÆvRfW&Ü:’uÒÀ¢²v÷VæVBrÂtVÖ&ÆÆvR÷WfW'BuÒÀ¢²vFÖvVBrÂu&öGV—B÷RVÖ&ÆÆvRVæFöÖÖ|:’uÒÀ¢Ò’°¢6öç7B÷F–öâÒFW‡B†Fö2Âv÷F–öârÂrrÂÆ&VÂ“°¢÷F–öâçfÇVRÒfÇVS°¢–çF¶T6öæF—F–öâæVæD6†–ÆB†÷F–öâ“°¢Ğ¢6öç7B–çF¶U¦öæRÒFö2æ7&VFTVÆVÖVçB‚v–çWBr“°¢–çF¶U¦öæRçG—RÒwFW‡Bs°¢–çF¶U¦öæRæÖ„ÆVæwF‚Ò°¢–çF¶U¦öæRçÆ6V†öÆFW"Òt†f7VÇFF–b’s°¢–çF¶U¦öæRç6WDGG&–'WFR‚v&–ÖÆ&VÂrÂtÆWGG&RFR¦öæRf7VÇFF—fRr“°¢6öç7B–çF¶Tæ÷FRÒFö2æ7&VFTVÆVÖVçB‚wFW‡F&Vr“°¢–çF¶Tæ÷FRç&WV—&VBÒG'VS°¢–çF¶Tæ÷FRæÖ–äÆVæwF‚Ò°¢–çF¶Tæ÷FRæÖ„ÆVæwF‚Ò°¢–çF¶Tæ÷FRç&÷w2Ò#°¢–çF¶Tæ÷FRçÆ6V†öÆFW"Òt6öç7FB‡—6—VRRL:—;GBƒ6&7L:‡&W2Ö–æ–×VÒ’s°¢–çF¶Tæ÷FRç6WDGG&–'WFR‚v&–ÖÆ&VÂrÂt6öç7FB‡—6—VRFR&W&—6Rr“°¢f÷"†6öç7B¶6F–öâÂ6öçG&öÅÒöb°¢²tF÷76–W"rÂ–çF¶U&WVW7EÒÂ²|8—FB6öç7FL:’rÂ–çF¶T6öæF—F–öåÒÀ¢²u¦öæR†f7VÇFF—fR’rÂ–çF¶U¦öæUÒÂ²t6öç7FBrÂ–çF¶Tæ÷FUÒÀ¢Ò’°¢6öç7BÆ&VÂÒFW‡B†Fö2ÂvÆ&VÂrÂv¶Ö2×v÷&·76RÖæ÷FRrÂ6F–öâ“°¢Æ&VÂæVæD6†–ÆB†6öçG&öÂ“°¢–çF¶RæVæD6†–ÆB†Æ&VÂ“°¢Ğ¢6öç7B–çF¶U7V&Ö—BÒFW‡B†Fö2Âv'WGFöârÂv¶Ö2×v÷&·76RÖ7F–öârÂt6öæf—&ÖW"Æ,:–6WF–öâr“°¢–çF¶U7V&Ö—BçG—RÒw7V&Ö—Bs°¢–çF¶U7V&Ö—Bç6WDGG&–'WFR‚vFF×&VÆ’Ö–çF¶R×7V&Ö—BrÂrr“°¢–çF¶RæVæD6†–ÆB†–çF¶U7V&Ö—B“°¢6Æ÷BæVæD6†–ÆB†–çF¶R“°¢ÆWB÷&FW"ÒçVÆÃ°¢ÆWB—FV×2ÒµÓ° ¢6öç7BWFFUVçF—G’Ò‚’Óâ°¢6öç7B6†÷6VâÒ—FV×2æf–æB†—FVÒÓâ—FVÒæ–BÓÓÒ&öGV7BçfÇVR“°¢G’æÖ‚Ò7G&–ær†6†÷6Vãòç&VÖ–æ–æu÷&WGW&æ&ÆRÇÂ“°¢G’çfÇVRÒss°¢Ó°¢&öGV7BæFDWfVçDÆ—7FVæW"‚v6†ævRrÂWFFUVçF—G’“° ¢7–æ2gVæ7F–öâÆöE&WVW7G2‚’°¢G'’°¢6öç7BFFÒv—B§6öå&WVW7B†6öçFW‡BæfWF6‚Ârö’÷&VÆ’÷&WGW&ç2r“°¢Æ—7Bç&WÆ6T6†–ÆG&Vâ‚“°¢6öç7B&÷w2Ò'&’æ—4'&’†FFç&WVW7G2’òFFç&WVW7G2¢µÓ°¢–b‚&÷w2æÆVæwF‚’°¢Æ—7BæVæD6†–ÆB‡FW‡B†Fö2ÂwrÂv¶Ö2×v÷&·76RÖV×G’rÂtV7VâF÷76–W"4b÷WfW'Bâr’“°¢&WGW&ã°¢Ğ¢6öç7Bw&ÒFö2æ7&VFTVÆVÖVçB‚vF—br“°¢Æ—7BæVæD6†–ÆB‡w&“°¢V’äFFF&ÆRç&VæFW"‡w&Â°¢6öÇVÖç3¢°¢²¶W“¢v÷&FW%÷&VfW&Væ6RrÂÆ&VÃ¢t6öÖÖæFRrÒÀ¢²¶W“¢w&öGV7EöæÖRrÂÆ&VÃ¢t'F–6ÆRrÒÀ¢²¶W“¢w&WGW&å÷VçF—G’rÂÆ&VÃ¢uVçF—L:’rÒÀ¢²¶W“¢w&WGW&å÷&V6öârÂÆ&VÃ¢tÖ÷F–brÂf÷&ÖC¢…÷&rÂ&÷r’Óà¢‡¶FVfV7F—fS¢tL:–fV7GVWW‚rÆFÖvVC¢t67<:’rÇw&öæuö—FVÓ¢tÖWf—2'F–6ÆRrÆæ÷Eö5öFW67&–&VC¢tæöâ6öæf÷&ÖRrÆ÷F†W#¢tWG&RwÒ•·&÷rç&WGW&å÷&V6öåÒÇÂtWG&RrÒÀ¢²¶W“¢w7FGW2rÂÆ&VÃ¢tF÷76–W"rÂf÷&ÖC¢…÷&rÂ&÷r’Óà¢‡¶÷Vã¢|8W†Ö–æW"rÇ&ö6W76–æs¢tVâG&—FVÖVçBrÇ&W6öÇfVC¢u,:—6öÇRrÆ6Æ÷6VC¢t6Ì;GGW,:’wÒ•·&÷rç7FGW5ÒÇÂ&÷rç7FGW2ÒÀ¢²¶W“¢w&V6V—fVEöBrÂÆ&VÃ¢u&W&—6R‡—6—VRrÂf÷&ÖC¢…÷&rÂ&÷r’Óà¢&÷rç&V6V—Eö–Bò‚u&\:wR+rr²&÷rç&V6V—fVE÷VçF—G’²rVæ—L:’‡2’r°¢‡&÷rç7F÷&vU÷¦öæRòr+r¦öæRr²&÷rç7F÷&vU÷¦öæR¢rr’’¢tæöâ&W&—2rÒÀ¢ÒÀ¢&÷w2À¢V×G•FW‡C¢tV7VâF÷76–W"4bârÀ¢Ò“°¢òòöæÇ’÷Vâ÷&ö6W76–ær&WVW7G2v—F†÷WB‡—6–6ÂWf–FVæ6RÖ’&R&V6V—fVBà¢6öç7BVæF–æt–çF¶W2Ò&÷w2æf–ÇFW"‡&÷rÓâ&÷rç&V6V—Eö–Bb`¢‡&÷rç7FGW2ÓÓÒv÷VârÇÂ&÷rç7FGW2ÓÓÒw&ö6W76–ærr’“°¢–çF¶U&WVW7Bç&WÆ6T6†–ÆG&Vâ‚“°¢f÷"†6öç7BVæF–æröbVæF–æt–çF¶W2’°¢6öç7B÷F–öâÒFW‡B†Fö2Âv÷F–öârÂrrÀ¢VæF–æræ÷&FW%÷&VfW&Væ6R²r+rr²VæF–ærç&öGV7EöæÖR°¢r+rr²VæF–ærç&WGW&å÷VçF—G’²rVæ—L:’‡2’r“°¢÷F–öâçfÇVRÒVæF–æræ–C°¢–çF¶U&WVW7BæVæD6†–ÆB†÷F–öâ“°¢Ğ¢–çF¶Ræ†–FFVâÒVæF–æt–çF¶W2æÆVæwF‚ÓÓÒ°¢Ò6F6‚†W'&÷"’²&W7VÇBçFW‡D6öçFVçBÒtÆ—7FR4b–æF—7öæ–&ÆR¢r²W'&÷"æÖW76vS²Ğ¢Ğ ¢–çF¶RæFDWfVçDÆ—7FVæW"‚w7V&Ö—BrÂ7–æ2WfVçBÓâ°¢WfVçBç&WfVçDFVfVÇB‚“°¢–b‚–çF¶U&WVW7BçfÇVR’&WGW&ã°¢6öç7BWf–FVæ6RÒ–çF¶Tæ÷FRçfÇVRçG&–Ò‚“°¢–b†Wf–FVæ6RæÆVæwF‚Â’°¢&W7VÇBçFW‡D6öçFVçBÒtL:–7&—fW¢ÆR6öç7FB‡—6—VRFRÆ&W&—6Râs°¢&WGW&ã°¢Ğ¢–çF¶U7V&Ö—BæF—6&ÆVBÒG'VS°¢&W7VÇBçFW‡D6öçFVçBÒtVç&Vv—7G&VÖVçBFRÆ&W&—6R‡—6—V^(
+bs°¢G'’°¢v—B§6öå&WVW7B†6öçFW‡BæfWF6‚Ârö’÷&VÆ’÷&WGW&ç2ö–çF¶RrÂ°¢ÖWF†öC¢uõ5BrÂ&öG“¢°¢&WVW7Eö–C¢–çF¶U&WVW7BçfÇVRÀ¢6öæF—F–öåö6öFS¢–çF¶T6öæF—F–öâçfÇVRÀ¢7F÷&vU÷¦öæS¢–çF¶U¦öæRçfÇVRçG&–Ò‚’çFõWW$66R‚’ÇÂçVÆÂÀ¢ö'6W'fF–öã¢Wf–FVæ6RÀ¢ÒÀ¢Ò“°¢–çF¶Tæ÷FRçfÇVRÒrs°¢–çF¶U¦öæRçfÇVRÒrs°¢&W7VÇBçFW‡D6öçFVçBÒu&W&—6RGFW7L:–Râ&öGV—B—6öÌ:’¢V7Vâ7,:–F—BvÆÆWBÂ&VÖ&÷W'6VÖVçBæ’7Fö6²fVæF&ÆRâs°¢òò,:‡2Vâõ5B,:—W76’ÂæR¦Ö—2Æ—76W"6öæf—&ÖW"VæR6V6öæFRfö—26’Æ&VÆV7GW&R:–6†÷VRà¢–çF¶Ræ†–FFVâÒG'VS°¢v—BÆöE&WVW7G2‚“°¢Ò6F6‚†W'&÷"’°¢&W7VÇBçFW‡D6öçFVçBÒW'&÷"æÖW76vS°¢Òf–æÆÇ’°¢–çF¶U7V&Ö—BæF—6&ÆVBÒfÇ6S°¢Ğ¢Ò“° ¢6V&6„f÷&ÒæFDWfVçDÆ—7FVæW"‚w7V&Ö—BrÂ7–æ2WfVçBÓâ°¢WfVçBç&WfVçDFVfVÇB‚“°¢6VÆV7F–öâæ†–FFVâÒG'VS°¢÷&FW"ÒçVÆÃ°¢—FV×2ÒµÓ°¢Æöö·WæF—6&ÆVBÒG'VS°¢&W7VÇBçFW‡D6öçFVçBÒu&V6†W&6†RFRÆ6öÖÖæF^(
+bs°¢G'’°¢6öç7BFFÒv—B§6öå&WVW7B†6öçFW‡BæfWF6‚À¢rö’÷&VÆ’÷&WGW&ç2öVÆ–v–&ÆS÷&VfW&Væ6SÒr²Væ6öFUU$”6ö×öæVçB‡&VfW&Væ6RçfÇVRçG&–Ò‚’’“°¢÷&FW"ÒFFæ÷&FW#°¢—FV×2Ò†FFæ—FV×2ÇÂµÒ’æf–ÇFW"†—FVÒÓâ—FVÒç&VÖ–æ–æu÷&WGW&æ&ÆRâ“°¢&öGV7Bç&WÆ6T6†–ÆG&Vâ‚“°¢f÷"†6öç7B—FVÒöb—FV×2’°¢6öç7B÷F–öâÒFW‡B†Fö2Âv÷F–öârÂrrÀ¢—FVÒç&öGV7EöæÖR²r+rr²—FVÒç&VÖ–æ–æu÷&WGW&æ&ÆR²rVæ—L:’‡2’&VÖ—6W2F—7öæ–&ÆW2r“°¢÷F–öâçfÇVRÒ—FVÒæ–C°¢&öGV7BæVæD6†–ÆB†÷F–öâ“°¢Ğ¢–b‚—FV×2æÆVæwF‚’°¢&W7VÇBçFW‡D6öçFVçBÒtV7Vâ'F–6ÆR&VÖ—2:–Æ–v–&ÆR÷RVæRFVÖæFRW7BL:–¬:Vâ6÷W'2âs°¢ÒVÇ6R°¢WFFUVçF—G’‚“°¢6VÆV7F–öâæ†–FFVâÒfÇ6S°¢&W7VÇBçFW‡D6öçFVçBÒu<:–ÆV7F–öææW¢Î(	–'F–6ÆRWBÆRÖ÷F–b²V7Vâ7,:–F—Bî(	–W7B7,:œ:’âs°¢Ğ¢Ò6F6‚†W'&÷"’²&W7VÇBçFW‡D6öçFVçBÒW'&÷"æÖW76vS²Ğ¢f–æÆÇ’²Æöö·WæF—6&ÆVBÒfÇ6S²Ğ¢Ò“° ¢&VÖ&²æFDWfVçDÆ—7FVæW"‚v6Æ–6²rÂ7–æ2‚’Óâ°¢6öç7B6†÷6VâÒ—FV×2æf–æB†—FVÒÓâ—FVÒæ–BÓÓÒ&öGV7BçfÇVR“°¢–b‚÷&FW"ÇÂ6†÷6Vâ’&WGW&ã°¢–b†æ÷FRçfÇVRçG&–Ò‚’æÆVæwF‚ÂR’°¢&W7VÇBçFW‡D6öçFVçBÒtL:–7&—fW¢f÷G&R&VÖ'VRVâVVÇVW2Ö÷G2âs°¢&WGW&ã°¢Ğ¢&VÖ&²æF—6&ÆVBÒG'VS°¢&W7VÇBçFW‡D6öçFVçBÒtVçfö’FRÆ&VÖ'VRR6FÆöwV^(
+bs°¢G'’°¢v—B§6öå&WVW7B†6öçFW‡BæfWF6‚Ârö’÷&VÆ’÷&WGW&ç2÷&VÖ&·2rÂ°¢ÖWF†öC¢uõ5BrÂ&öG“¢°¢÷&FW%÷&VfW&Væ6S¢÷&FW"ç&VfW&Væ6RÂ÷&FW%ö—FVÕö–C¢6†÷6Vâæ–BÀ¢æ÷FS¢æ÷FRçfÇVRçG&–Ò‚’À¢ÒÀ¢Ò“°¢æ÷FRçfÇVRÒrs°¢&W7VÇBçFW‡D6öçFVçBÒu&VÖ'VRVç&Vv—7G,:–R7W"Æ,:–l:—&Væ6R6FÆöwVRâV7Vâ&WF÷W"ÂvVÂ÷R–VÖVçBL:–6ÆVæ6Œ:’âs°¢Ò6F6‚†W'&÷"’°¢&W7VÇBçFW‡D6öçFVçBÒW'&÷"æÖW76vS°¢Òf–æÆÇ’²&VÖ&²æF—6&ÆVBÒfÇ6S²Ğ¢Ò“° ¢6VÆV7F–öâæFDWfVçDÆ—7FVæW"‚w7V&Ö—BrÂ7–æ2WfVçBÓâ°¢WfVçBç&WfVçDFVfVÇB‚“°¢6öç7B6†÷6VâÒ—FV×2æf–æB†—FVÒÓâ—FVÒæ–BÓÓÒ&öGV7BçfÇVR“°¢–b‚÷&FW"ÇÂ6†÷6Vâ’&WGW&ã°¢6öç7B6÷VçBÒçVÖ&W"‡G’çfÇVR“°¢–b‚çVÖ&W"æ—56fT–çFVvW"†6÷VçB’ÇÂ6÷VçBÂÇÂ6÷VçBâ6†÷6Vâç&VÖ–æ–æu÷&WGW&æ&ÆR’°¢&W7VÇBçFW‡D6öçFVçBÒuVçF—L:’7W:—&–WW&RW‚'F–6ÆW2&VÖ—2F—7öæ–&ÆW2âs°¢&WGW&ã°¢Ğ¢–b‡&V6öâçfÇVRÓÓÒv÷F†W"rbbæ÷FRçfÇVRçG&–Ò‚’æÆVæwF‚Â2’°¢&W7VÇBçFW‡D6öçFVçBÒu,:–6—6W¢ÆRÖ÷F–bGR&WF÷W"âs°¢&WGW&ã°¢Ğ¢7&VFRæF—6&ÆVBÒG'VS°¢&W7VÇBçFW‡D6öçFVçBÒtVç&Vv—7G&VÖVçBFRÆFVÖæF^(
+bs°¢G'’°¢v—B§6öå&WVW7B†6öçFW‡BæfWF6‚Ârö’÷&VÆ’÷&WGW&ç2rÂ°¢ÖWF†öC¢uõ5BrÂ&öG“¢°¢÷&FW%÷&VfW&Væ6S¢÷&FW"ç&VfW&Væ6RÂ÷&FW%ö—FVÕö–C¢6†÷6Vâæ–BÀ¢VçF—G“¢6÷VçBÂ&V6öã¢&V6öâçfÇVRÂæ÷FS¢æ÷FRçfÇVRçG&–Ò‚’À¢ÒÀ¢Ò“°¢6VÆV7F–öâæ†–FFVâÒG'VS°¢÷&FW"ÒçVÆÃ°¢—FV×2ÒµÓ°¢&W7VÇBçFW‡D6öçFVçBÒtF÷76–W"4bVç&Vv—7G,:’â8W†Ö–æW""¶öÖW&6R²V7Vâ&WF÷W"‡—6—VR÷RvÆÆWB6öæf—&Ü:’âs°¢v—BÆöE&WVW7G2‚“°¢Ò6F6‚†W'&÷"’²&W7VÇBçFW‡D6öçFVçBÒW'&÷"æÖW76vS²Ğ¢f–æÆÇ’²7&VFRæF—6&ÆVBÒfÇ6S²Ğ¢Ò“° ¢ÆöE&WVW7G2‚’æ6F6‚‚‚’Óâ·Ò“°¢Ğ ¢gVæ7F–öâ&VæFW%–ÆöB‡&ö÷DæöFRÂV’ÂFö2Â–ÆöBÂ6öçFW‡B’°¢&ö÷DæöFRæ6Æ74æÖRÒv¶Ö2Ö÷W&F–öç2×v÷&·76Rs°¢&ö÷DæöFRç6WDGG&–'WFR‚vFF×v÷&·76RÖ¶–æBrÂv‡V"×&VÆ’r“°¢&ö÷DæöFRç6WDGG&–'WFR‚vFF×v÷&·76RÖÖöFRrÂ6öçFW‡BæÖöFR“°¢&ö÷DæöFRç6WDGG&–'WFR‚vFF×&VÆ’Ö6÷VçFW"rÆ6öçFW‡Bæfö7W4öæÇ“òwG'VRs¢vfÇ6Rr“°¢&ö÷DæöFRç&WÆ6T6†–ÆG&Vâ‚“°¢6öç7B†VFW#Ö7&VFT†VFW"†Fö2Ç–ÆöBÆ6öçFW‡BæÖöFR“°¢–b†6öçFW‡BæÖöFSÓÓÒw&VÆ’ÖW†V7WF–öâr’°¢òòÆR&–ÂÜ:—F–W"f÷W&æ—BL:–¬:Âv6<:‡2fÇW‚&VÆ—2¢2FRFWW†œ:†ÖRÆ–Vâ–FVçF—VRà¢†VFW"çVW'•6VÆV7F÷"‚ræ¶Ö2×v÷&·76RÖæbr“òç&VÖ÷fR‚“°¢Ğ¢–b†6öçFW‡Bæfö7W4öæÇ’’°¢†VFW"çVW'•6VÆV7F÷"‚ræ¶Ö2×v÷&·76RÖ¶–6¶W"r’çFW‡D6öçFVçCÒu$TÄ•2+r4ôÕDô•"s°¢†VFW"çVW'•6VÆV7F÷"‚ræ¶Ö2×v÷&·76R×F—FÆRr’çFW‡D6öçFVçCÒu&VÖ—6W26Æ–VçBs°¢†VFW"çVW'•6VÆV7F÷"‚ræ¶Ö2×v÷&·76R×7V'F—FÆRr’çFW‡D6öçFVçCĞ¢6öçFW‡BæÖ&¶WD6öFR²r+r–FVçF–f–W"ÆR&öâ6öÆ—2Âl:—&–f–W"ÆW26öæF—F–öç2FR&WG&—BÂGFW7FW"Æ&VÖ—6Râs°¢Ö6÷VçFW"rÆ6öçFW‡Bæfö7W4öæÇ“òwG'VRs¢vfÇ6Rr“°¢&ö÷DæöFRç&WÆ6T6†–ÆG&Vâ‚“°¢6öç7B†VFW#Ö7&VFT†VFW"†Fö2Ç–ÆöBÆ6öçFW‡BæÖöFR“°¢–b†6öçFW‡BæÖöFSÓÓÒw&VÆ’ÖW†V7WF–öâr’°¢òòÆR&–ÂÜ:—F–W"f÷W&æ—BL:–¬:Âv6<:‡2fÇW‚&VÆ—2¢2FRFWW†œ:†ÖRÆ–Vâ–FVçF—VRà¢†VFW"çVW'•6VÆV7F÷"‚ræ¶Ö2×v÷&·76RÖæbr“òç&VÖ÷fR‚“°¢Ğ¢–b†6öçFW‡Bæfö7W4öæÇ’’°¢†VFW"çVW'•6VÆV7F÷"‚ræ¶Ö2×v÷&·76RÖ¶–6¶W"r’çFW‡D6öçFVçCÒu$TÄ•2+r4ôÕDô•"s°¢†VFW"çVW'•6VÆV7F÷"‚ræ¶Ö2×v÷&·76R×F—FÆRr’çFW‡D6öçFVçCÒu&VÖ—6W26Æ–VçBs°¢†VFW"çVW'•6VÆV7F÷"‚ræ¶Ö2×v÷&·76R×7V'F—FÆRr’çFW‡D6öçFVçCĞ¢6öçFW‡BæÖ&¶WD6öFR²r+r–FVçF–f–W"ÆR&öâ6öÆ—2Âl:—&–f–W"ÆW26öæF—F–öç2FR&WG&—BÂGFW7FW"Æ&VÖ—6Râs°¢Ğ¢&ö÷DæöFRæVæD6†–ÆB††VFW"“°¢–b†6öçFW‡BæÖöFSÓÓÒw&VÆ’ÖW†V7WF–öâr’°¢6öç7BæcÖFö2æ7&VFTVÆVÖVçB‚væbr“°¢æbæ6Æ74æÖSÒv¶Ö2×&VÆ’ÖÖ–âÖæbs°¢æbç6WDGG&–'WFR‚v&–ÖÆ&VÂrÂtW76W2FRG&f–ÂGR&VÆ—2r“°¢6öç7B7F—fU&VÆ•F#Ö6öçFW‡Bæfö7W4öæÇ“òu&VÖ—6W2s¦6öçFW‡Bçf–WsÓÓÒw&WGW&ç2sòt–æ6–FVçG2b4bs¢tfÇW‚&VÆ—2s°¢6öç7BÆ–æ·3Õ°¢²tfÇW‚&VÆ—2rÂröFÖ–â÷&VÆ—2ÖÆ—fRr²†6öçFW‡BæÖ&¶WD6öFSòsöÖ&¶WCÒr¶Væ6öFUU$”6ö×öæVçB†6öçFW‡BæÖ&¶WD6öFR“¢rr’Æ7F—fU&VÆ•F#ÓÓÒtfÇW‚&VÆ—2uÒÀ¢²u&VÖ—6W2rÂröFÖ–â÷&VÆ—2ÖÆ—fS÷f–Ws×&VÖ—6W2fÖ&¶WCÒr¶Væ6öFUU$”6ö×öæVçB†6öçFW‡BæÖ&¶WD6öFR’Æ7F—fU&VÆ•F#ÓÓÒu&VÖ—6W2uÒÀ¢²t–æ6–FVçG2b4brÂröFÖ–â÷&VÆ—2ÖÆ—fS÷f–WsÖ–æ6–FVçG2fÖ&¶WCÒr¶Væ6Ú±î¸Â¸­yêë¢°k¢G§¦*^odeURIComponent(context.marketCode),activeRelayTab==='Incidents & SAV'],
         ['Historique','/admin/relais-live?view=orders&list=collected&market='+encodeURIComponent(context.marketCode),false],
       ];
       for(const [title,href,active] of links) {
@@ -2046,66 +928,8 @@
       guide.className='kmc-relay-next';
       guide.setAttribute('data-relay-next', '');
       guide.setAttribute('aria-label','Prochain geste au relais');
-      const nextTitle=text(doc,'strong','kmc-relay-next-title','Ã€ faire maintenant');
-      nextTitle.setAttribute('data-relay-next-title','');
-      guide.appendChild(nextTitle);
-      const nextDetail=text(doc,'span','kmc-relay-next-detail','Choisissez une file ci-dessous.');
-      nextDetail.setAttribute('data-relay-next-detail','');
-      guide.appendChild(nextDetail);
-      rootNode.appendChild(guide);
-      const dock=doc.createElement('nav');
-      dock.className='kmc-relay-execution-jumpbar';
-      dock.setAttribute('aria-label','Choisir une opÃ©ration du relais');
-      for(const choice of choices) {
-        const link=doc.createElement('a');
-        link.className='kmc-relay-execution-jump';
-        link.href='#relay-execution-'+choice.key;
-        link.setAttribute('data-relay-execution-jump',choice.key);
-        if(choice.count!==null)link.setAttribute('data-relay-item-count',String(choice.count));
-        link.appendChild(text(doc,'strong','',choice.label));
-        if(choice.count!==null)link.appendChild(text(doc,'b','',String(choice.count)));
-        link.addEventListener('click',()=>{
-          context.activeRelayQueue=choice.key;
-          showRelayOperation(rootNode,choice.key);
-        });
-        dock.appendChild(link);
-      }
-      rootNode.appendChild(dock);
-    }
-
-    if ((view === 'hub' || view === 'inventory') && isHubReadOnly(context)) renderExecuteLink(rootNode, doc, context);
-
-    if (view === 'hub') {
-    const distribution = createSection(
-      rootNode,
-      ui,
-      'Hub Â· RÃ©partition',
-      'RÃ©partit uniquement les commandes non assignÃ©es de ce marchÃ© dans les colis autorisÃ©s.'
-    );
-    const distributionBar = doc.createElement('div');
-    distributionBar.className = 'kmc-workspace-section-actions';
-    const distributeButton = makeActionButton(doc, 'RÃ©partir ce marchÃ©', 'run-distribution');
-    // L9a : Â« RÃ©partir ce marchÃ© Â» n'est proposÃ© que si le serveur fournit des commandes Ã  rÃ©partir.
-    if (!isHubReadOnly(context) && Array.isArray(payload.distribution && payload.distribution.unassigned) && payload.distribution.unassigned.length > 0) {
-      distributionBar.appendChild(distributeButton);
-      distribution.appendChild(distributionBar);
-      distributeButton.addEventListener('click', () => runAction(context, distributeButton, {
-        url: endpointFor(context.marketCode, 'distribution/run'),
-        confirmMessage: `Lancer la rÃ©partition automatique pour ${context.marketCode} ?`,
-        runningMessage: 'RÃ©partition en coursâ€¦',
-        successMessage: 'RÃ©partition terminÃ©e.',
-      }).catch(() => {}));
-    }
-    const distributionTable = doc.createElement('div');
-    distribution.appendChild(distributionTable);
-    ui.DataTable.render(distributionTable, {
-      columns: [
-        { key: 'reference', label: 'Commande' },
-        { key: 'client_name', label: 'Client' },
-        { key: 'relais_name', label: 'Relais' },
-        { key: 'item_count', label: 'Articles', align: 'right' },
-        { key: 'total_kmf', label: 'Montant', align: 'right', format: formatKmf },
-        { key: 'action', label: 'Action', align: 'right' },
+      const nextTitle=text(doc,m«ëŒ+Š×®º+º$zzb¥æöFUU$”6ö×öæVçB†6öçFW‡BæÖ&¶WD6öFR’Æ7F—fU&VÆ•F#ÓÓÒt–æ6–FVçG2b4buÒÀ¢²t†—7F÷&—VRrÂröFÖ–â÷&VÆ—2ÖÆ—fS÷f–WsÖ÷&FW'2fÆ—7CÖ6öÆÆV7FVBfÖ&¶WCÒr¶Væ6öFUU$”6ö×öæVçB†6öçFW‡BæÖ&¶WD6öFR’ÆfÇ6UÒÀ¢Ó°¢f÷"†6öç7B·F—FÆRÆ‡&VbÆ7F—fUÒöbÆ–æ·2’°¢6öç7BÆ–æ³×FW‡B†Fö2ÂvrÂv¶Ö2×&VÆ’ÖÖ–â×F"rÇF—FÆR“°¢Æ–æ²æ‡&VcÖ‡&Vc°¢–b†7F—fR–Æ–æ²ç6WDGG&–'WFR‚v&–Ö7W'&VçBrÂwvRr“°¢æbæVæD6†–ÆB†Æ–æ²“°¢Ğ¢&ö÷DæöFRæVæD6†–ÆB†æb“°¢Ğ ¢òòVâ‡V"Æ—fRÆRF÷76–W"÷'FRL:–¬:ÆW2VG&R–æF–6FWW'2FR6&ö¦V7F–öà¢òò6W'fWW"âæR2,:—:—FW"ÆW2Ü:—G&—VW2&VÆ—2æ’&W÷W76W"Æf–ÆR6÷W2ÆRÆ’à¢–b†6öçFW‡BæÖöFRÓÒvW†V7WF–öârbb6öçFW‡BæÖöFRÓÒw&VÆ’ÖW†V7WF–öâr’°¢6öç7BÖWG&–72ÒFö2æ7&VFTVÆVÖVçB‚w6V7F–öâr“°¢ÖWG&–72æ6Æ74æÖRÒv¶Ö2×v÷&·76RÖÖWG&–72s°¢&ö÷DæöFRæVæD6†–ÆB†ÖWG&–72“°¢V’äÖWG&–57G&—ç&VæFW"†ÖWG&–72Â²—FV×3¢6öçFW‡BæÖöFSÓÓÒw&VÆ’ÖW†V7WF–öâròÖWG&–4—FV×2‡–ÆöBç7VÖÖ'’’æf–ÇFW"‡ƒÓå²v66‚rÂw&V6V—fRrÂv6öÆÆV7BuÒæ–æ6ÇVFW2‡‚æ¶W’’’¢ÖWG&–4—FV×2‡–ÆöBç7VÖÖ'’’Ò“°¢Ğ ¢òòU‚Ór¢VæRgVRÒVæRVW7F–öââVâ6WVÂw&÷WRFR6V7F–öç2:Æfö—2à¢òòÖöFR*²W†V7WF–öâ+²„‡V"Æ—fR’¢Væ—VVÖVçBÆW27F–öç2‡V"²ÆW27F–öç2&VÆ—2&W7FVçB†÷'2FR6WGFR7W&f6Rà¢6öç7Bf–Ww2Ò6öçFW‡BæÖöFRÓÓÒw&VÆ’ÖW†V7WF–öârò$TÄ•ôÄ•dUõD%0¢¢6öçFW‡BæÖöFRÓÓÒvW†V7WF–öâròU„T5UD”ôåõd”Uu2¢tõ$µ54Uõd”Uu3°¢6öç7Bf–WrÒf–Ww2ç6öÖR†—FVÒÓâ—FVÒæ–BÓÓÒ6öçFW‡Bçf–Wr’ò6öçFW‡Bçf–Wr¢f–Ww5³Òæ–C°¢–b‚6öçFW‡Bæfö7W4öæÇ’—&ö÷DæöFRæVæD6†–ÆB†7&VFUf–WuF'2†Fö2Âf–WrÂæW‡Ef–WrÓâ°¢6öçFW‡Bçf–WrÒæW‡Ef–Ws°¢&VæFW%–ÆöB‡&ö÷DæöFRÂV’ÂFö2Â–ÆöBÂ6öçFW‡B“°¢ÒÂf–Ww2’“° ¢–b†6öçFW‡BæÖöFSÓÓÒw&VÆ’ÖW†V7WF–öârbbf–WsÓÓÒw&VÆ’rbb6öçFW‡Bæfö7W4öæÇ’’°¢6öç7B&VÆ“×–ÆöBçVWVW3òç&VÆ—ÇÇ·Ó°¢6öç7BÆÅ6†—ÖVçG3Ö6öçFW‡Bç&VÆ•6†—ÖVçG3òç6†—ÖVçG3°¢6öç7BVæF–æsÔ'&’æ—4'&’†ÆÅ6†—ÖVçG2“öÆÅ6†—ÖVçG2æf–ÇFW"†—56†—ÖVçE&V6V—f&ÆR’æÆVæwFƒ¦çVÆÃ°¢6öç7B6†ö–6W3Õ°¢¶¶W“¢w6†—ÖVçG2rÆÆ&VÃ¢t'&—fvW2rÆ6÷VçC§VæF–æwÒÀ¢¶¶W“¢v66‚rÆÆ&VÃ¢tVæ6—76W"rÆ6÷VçC¢‡&VÆ’æ66…÷VæF–æwÇÅµÒ’æÆVæwF‡ÒÀ¢¶¶W“¢w&V6V—fRrÆÆ&VÃ¢u,:–6WF–öâÆö6ÆRrÆ6÷VçC¢‡&VÆ’æÆö6Å÷&V6V—E÷VæF–æwÇÅµÒ’æÆVæwF‚²‡&VÆ’çFõ÷&V6V—fWÇÅµÒ’æf–ÇFW"‡ƒÓç‚æÆö6Å÷&V6V—f&ÆSÓÓ×G'VR’æÆVæwF‡ÒÀ¢¶¶W“¢v6öÆÆV7BrÆÆ&VÃ¢u&VÖ—6R6Æ–VçBrÆ6÷VçC¢‡&VÆ’çFõö6öÆÆV7GÇÅµÒ’æÆVæwF‡ÒÀ¢Ó°¢–b‚$TÄ•ôõU$D”ôåô´U•2æ–æ6ÇVFW2†6öçFW‡Bæ7F—fU&VÆ•VWVR’’°¢6öçFW‡Bæ7F—fU&VÆ•VWVSÕ$TÄ•ôõU$D”ôåô´U•2æ–æ6ÇVFW2†6öçFW‡Bæ–æ—F–Äfö7W2“ö6öçFW‡Bæ–æ—F–Äfö7W3 ¢‡VæF–æsãòw6†—ÖVçG2s§&VÆ’çFõö6öÆÆV7CòæÆVæwFƒòv6öÆÆV7Bs ¢&VÆ’æ66…÷VæF–æsòæÆVæwFƒòv66‚s ¢&VÆ’æÆö6Å÷&V6V—E÷VæF–æsòæÆVæwF‚ÇÂ&VÆ’çFõ÷&V6V—fSòç6öÖR‡ƒÓç‚æÆö6Å÷&V6V—f&ÆSÓÓ×G'VR“òw&V6V—fRs¢w6†—ÖVçG2r“°¢Ğ¢6öç7BwV–FSÖFö2æ7&VFTVÆVÖVçB‚w6V7F–öâr“°¢wV–FRæ6Æ74æÖSÒv¶Ö2×&VÆ’ÖæW‡Bs°¢wV–FRç6WDGG&–'WFR‚vFF×&VÆ’ÖæW‡BrÂrr“°¢wV–FRç6WDGG&–'WFR‚v&–ÖÆ&VÂrÂu&ö6†–âvW7FRR&VÆ—2r“°¢6öç7BæW‡EF—FÆS×FW‡B†Fö2Âw7G&öærrÂv¶Ö2×&VÆ’ÖæW‡B×F—FÆRrÂ|8f—&RÖ–çFVæçBr“°¢æW‡EF—FÆRç6WDGG&–'WFR‚vFF×&VÆ’ÖæW‡B×F—FÆRrÂrr“°¢wV–FRæVæD6†–ÆB†æW‡EF—FÆR“°¢6öç7BæW‡DFWF–Ã×FW‡B†Fö2Âw7ârÂv¶Ö2×&VÆ’ÖæW‡BÖFWF–ÂrÂt6†ö—6—76W¢VæRf–ÆR6’ÖFW76÷W2âr“°¢æW‡DFWF–Âç6WDGG&–'WFR‚vFF×&VÆ’ÖæW‡BÖFWF–ÂrÂrr“°¢wV–FRæVæD6†–ÆB†æW‡DFWF–Â“°¢&ö÷DæöFRæVæD6†–ÆB†wV–FR“°¢6öç7BFö6³ÖFö2æ7&VFTVÆVÖVçB‚væbr“°¢Fö6²æ6Æ74æÖSÒv¶Ö2×&VÆ’ÖW†V7WF–öâÖ§V×&"s°¢Fö6²ç6WDGG&–'WFR‚v&–ÖÆ&VÂrÂt6†ö—6—"VæR÷:—&F–öâGR&VÆ—2r“°¢f÷"†6öç7B6†ö–6Röb6†ö–6W2’°¢6öç7BÆ–æ³ÖFö2æ7&VFTVÆVÖVçB‚vr“°¢Æ–æ²æ6Æ74æÖSÒv¶Ö2×&VÆ’ÖW†V7WF–öâÖ§V×s°¢Æ–æ²æ‡&VcÒr7&VÆ’ÖW†V7WF–öâÒr¶6†ö–6Ræ¶W“°¢Æ–æ²ç6WDGG&–'WFR‚vFF×&VÆ’ÖW†V7WF–öâÖ§V×rÆ6†ö–6Ræ¶W’“°¢–b†6†ö–6Ræ6÷VçBÓÖçVÆÂ–Æ–æ²ç6WDGG&–'WFR‚vFF×&VÆ’Ö—FVÒÖ6÷VçBrÅ7G&–ær†6†ö–6Ræ6÷VçB’“°¢Æ–æ²æVæD6†–ÆB‡FW‡B†Fö2Âw7G&öærrÂrrÆ6†ö–6RæÆ&VÂ’“°¢–b†6†ö–6Ræ6÷VçBÓÖçVÆÂ–Æ–æ²æVæD6†–ÆB‡FW‡B†Fö2Âv"rÂrrÅ7G&–ær†6†ö–6Ræ6÷VçB’’“°¢Æ–æ²æFDWfVçDÆ—7FVæW"‚v6Æ–6²rÂ‚“Óç°¢6öçFW‡Bæ7F—fU&VÆ•VWVSÖ6†ö–6Ræ¶W“°¢6†÷u&VÆ”÷W&F–öâ‡&ö÷DæöFRÆ6†ö–6Ræ¶W’“°¢Ò“°¢Fö6²æVæD6†–ÆB†Æ–æ²“°¢Ğ¢&ö÷DæöFRæVæD6†–ÆB†Fö6²“°¢Ğ ¢–b‚‡f–WrÓÓÒv‡V"rÇÂf–WrÓÓÒv–çfVçF÷'’r’bb—4‡V%&VDöæÇ’†6öçFW‡B’’&VæFW$W†V7WFTÆ–æ²‡&ö÷DæöFRÂFö2Â6öçFW‡B“° ¢–b‡f–WrÓÓÒv‡V"r’°¢6öç7BF—7G&–'WF–öâÒ7&VFU6V7F–öâ€¢&ö÷DæöFRÀ¢V’À¢t‡V"+r,:—'F—F–öârÀ¢u,:—'F—BVæ—VVÖVçBÆW26öÖÖæFW2æöâ76–vì:–W2FR6RÖ&6Œ:’Fç2ÆW26öÆ—2WF÷&—<:—2âp¢“°¢6öç7BF—7G&–'WF–öä&"ÒFö2æ7&VFTVÆVÖVçB‚vF—br“°¢F—7G&–'WF–öä&"æ6Æ74æÖRÒv¶Ö2×v÷&·76R×6V7F–öâÖ7F–öç2s°¢6öç7BF—7G&–'WFT'WGFöâÒÖ¶T7F–öä'WGFöâ†Fö2Âu,:—'F—"6RÖ&6Œ:’rÂw'VâÖF—7G&–'WF–öâr“°¢òòÃ–¢*²,:—'F—"6RÖ&6Œ:’+²âvW7B&÷÷<:’VR6’ÆR6W'fWW"f÷W&æ—BFW26öÖÖæFW2:,:—'F—"à¢–b‚—4‡V%&VDöæÇ’†6öçFW‡B’bb'&’æ—4'&’‡–ÆöBæF—7G&–'WF–öâbb–ÆöBæF—7G&–'WF–öâçVæ76–væVB’bb–ÆöBæF—7G&–'WF–öâçVæ76–væVBæÆVæwF‚â’°¢F—7G&–'WF–öä&"æVæD6†–ÆB†F—7G&–'WFT'WGFöâ“°¢F—7G&–'WF–öâæVæD6†–ÆB†F—7G&–'WF–öä&"“°¢F—7G&–'WFT'WGFöâæFDWfVçDÆ—7FVæW"‚v6Æ–6²rÂ‚’Óâ'Vä7F–öâ†6öçFW‡BÂF—7G&–'WFT'WGFöâÂ°¢W&Ã¢VæGö–çDf÷"†6öçFW‡BæÖ&¶WD6öFRÂvF—7G&–'WF–öâ÷'Vâr’À¢6öæf—&ÔÖW76vS¢Ææ6W"Æ,:—'F—F–öâWFöÖF—VR÷W"G¶6öçFW‡BæÖ&¶WD6öFWÒöÀ¢'Vææ–ætÖW76vS¢u,:—'F—F–öâVâ6÷W'>(
+brÀ¢7V66W74ÖW76vS¢u,:—'F—F–öâFW&Ö–ì:–RârÀ¢Ò’æ6F6‚‚‚’Óâ·Ò’“°¢Ğ¢6öç7BF—7G&–'WF–öåF&ÆRÒFö2æ7&VFTVÆVÖVçB‚vF—br“°¢F—7G&–'WF–öâæVæD6†–ÆB†F—7G&–'WF–öåF&ÆR“°¢V’äFFF&ÆRç&VæFW"†F—7G&–'WF–öåF&ÆRÂ°¢6öÇVÖç3¢°¢²¶W“¢w&VfW&Væ6RrÂÆ&VÃ¢t6öÖÖæFRrÒÀ¢²¶W“¢v6Æ–VçEöæÖRrÂÆ&VÃ¢t6Æ–VçBrÒÀ¢²¶W“¢w&VÆ—5öæÖRrÂÆ&VÃ¢u&VÆ—2rÒÀ¢²¶W“¢v—FVÕö6÷VçBrÂÆ&VÃ¢t'F–6ÆW2rÂÆ–vã¢w&–v‡BrÒÀ¢²¶W“¢wF÷FÅö¶ÖbrÂÆ&VÃ¢tÖöçFçBrÂÆ–vã¢w&–v‡BrÂf÷&ÖC¢f÷&ÖD¶ÖbÒÀ¢²¶W“¢Ú±î¸Â¸­yêë¢°k¢G§¦*^'action', label: 'Action', align: 'right' },
       ],
       rows: payload.distribution.unassigned,
       emptyText: 'Aucune commande Ã  rÃ©partir.',
@@ -2279,640 +1103,3 @@
           return;
         }
         runAction(context, button, {
-          url: '/api/orders/' + encodeURIComponent(row.id) + '/local-relay-receipt',
-          body: { physical_received: true, note: note.value.trim() },
-          confirmMessage: 'Attester la rÃ©ception physique de ' + row.reference + ' dans ce relais ?',
-          runningMessage: row.reference + ' Â· rÃ©ception en coursâ€¦',
-          successMessage: row.reference + ' Â· rÃ©ception physique attestÃ©e. Colis disponible au relais.',
-        }).catch(() => {});
-      });
-      card.append(heading, meta, label, note, button);
-      slot.appendChild(card);
-    });
-  }
-
-  // Mode dÃ©gradÃ© : la confirmation depuis l'interface remplace le scan matÃ©riel ; le motif est obligatoire et tracÃ©.
-  const MANUAL_REASONS = Object.freeze([
-    ['manual_entry', 'Saisie manuelle volontaire'],
-    ['scanner_unavailable', 'Scanner indisponible'], ['label_unreadable', 'Ã‰tiquette illisible'],
-    ['offline', 'Hors ligne'], ['other', 'Autre (prÃ©cisez)'],
-  ]);
-
-  function manualReasonControls(doc) {
-    const wrap = doc.createElement('div');
-    wrap.className = 'kmc-workspace-manual-reason';
-    wrap.setAttribute('data-manual-confirmation', '');
-    const select = doc.createElement('select');
-    select.setAttribute('aria-label', 'Motif de la confirmation sans scan');
-    select.setAttribute('data-manual-reason', '');
-    MANUAL_REASONS.forEach(([value, label]) => select.appendChild(Object.assign(doc.createElement('option'), { value, textContent: label })));
-    const note = doc.createElement('input');
-    note.type = 'text'; note.maxLength = 500; note.placeholder = 'PrÃ©cision (obligatoire si Â« Autre Â»)';
-    note.setAttribute('aria-label', 'PrÃ©cision du motif'); note.setAttribute('data-manual-note', '');
-    wrap.appendChild(text(doc, 'span', 'kmc-workspace-muted', 'Confirmation sans scan Â· motif : '));
-    wrap.appendChild(select); wrap.appendChild(note);
-    return { wrap, body: () => ({ reason: select.value, ...(note.value.trim() ? { note: note.value.trim() } : {}) }) };
-  }
-
-  function renderParcelActionSection(rootNode, ui, doc, context, config) {
-    const slot = createSection(rootNode, ui, config.title, config.description);
-    if (config.jumpId && slot.parentElement) slot.parentElement.id=config.jumpId;
-    const manual = manualReasonControls(doc);
-    if ((config.rows||[]).length) slot.appendChild(manual.wrap);
-    renderActionRows(slot, doc, context, Object.assign({}, config, { manualBody: manual.body }), 'parcel');
-  }
-
-  /**
-   * Retrait sans scanner : le code fourni par le destinataire est saisi au
-   * clavier dans le mÃªme guichet que la file d'attente. Le writer de retrait
-   * canonique vÃ©rifie le secret complet, les droits inter-relais et le statut
-   * dans une seule transaction ; aucun scan logistique customer_collected.
-   * Ne pas prÃ©tendre que le bouton d'une ligne choisit un colis : un code
-   * retire le prochain lot AVAILABLE de la commande correspondante.
-   */
-  function renderPickupCodeSection(rootNode, ui, doc, context, config) {
-    const slot = createSection(rootNode, ui, config.title, config.description);
-    if (config.jumpId && slot.parentElement) slot.parentElement.id = config.jumpId;
-    renderActionTable(slot, {
-      rows: config.rows,
-      emptyText: config.empty,
-      columns: actionColumns({ referenceKind: 'parcel' }).slice(0, -1),
-    });
-    if (!(config.rows || []).length) return;
-
-    const zone = doc.createElement('div');
-    zone.className = 'kmc-workspace-manual-pickup';
-    zone.setAttribute('data-manual-pickup-code', '');
-    const label = doc.createElement('label');
-    label.textContent = 'Code de retrait communiquÃ© par le client';
-    const input = doc.createElement('input');
-    input.type = 'password'; // Secret client masquÃ© Ã  l'Ã©cran, mÃªme en saisie clavier.
-    input.autocomplete = 'off';
-    input.spellcheck = false;
-    input.maxLength = 16;
-    input.placeholder = 'Code complet (8 caractÃ¨res)';
-    input.setAttribute('aria-label', 'Code de retrait client complet');
-    input.setAttribute('data-pickup-code-input', '');
-    label.appendChild(input);
-    const button = makeActionButton(doc, 'VÃ©rifier et remettre', 'confirm-pickup-code');
-    button.type = 'button';
-    button.setAttribute('data-pickup-code-confirm', '');
-    const note = text(doc, 'p', 'kmc-workspace-muted',
-      'Sans code : ne confirmez pas la remise. Utilisez uniquement la procÃ©dure nominative exceptionnelle autorisÃ©e. La saisie manuelle ne remplace pas la vÃ©rification du destinataire.');
-    zone.appendChild(label);
-    zone.appendChild(button);
-    zone.appendChild(note);
-    slot.appendChild(zone);
-
-    const submit = async () => {
-      // Le guichet sans sÃ©lection de commande exige impÃ©rativement le code
-      // complet ; ni les 4 derniers caractÃ¨res ni une rÃ©fÃ©rence colis
-      // visible dans la file ne prouvent l'autorisation de retrait.
-      const code = String(input.value || '').toUpperCase().replace(/[\s-]/g, '');
-      if (!/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/.test(code)) {
-        setFeedback(context.root, 'Code complet de 8 caractÃ¨res requis pour la remise.', 'critical');
-        return;
-      }
-      await runAction(context, button, {
-        url: '/api/scans/collect',
-        body: { pickup_code: code },
-        confirmMessage: 'Le client est prÃ©sent, le code de retrait est complet et vous allez remettre le prochain lot disponible de sa commande. Confirmer ?',
-        runningMessage: 'VÃ©rification du code et enregistrement du retraitâ€¦',
-        onSuccess: () => { input.value = ''; },
-        successMessage: result => 'Remise vÃ©rifiÃ©e par code Â· ' +
-          String(result.parcel_reference || result.reference || result.order_ref || 'lot confirmÃ©') +
-          (result.partial ? ' Â· autres lots Ã  retirer' : ' Â· commande terminÃ©e'),
-      });
-    };
-    button.addEventListener('click', () => { submit().catch(() => {}); });
-    input.addEventListener('keydown', event => {
-      if (event.key === 'Enter') { event.preventDefault(); button.click(); }
-    });
-  }
-
-  function renderActionRows(slot, doc, context, config, kind) {
-    renderActionTable(slot, {
-      rows: config.rows,
-      emptyText: config.empty,
-      columns: actionColumns({ referenceKind: kind }),
-    });
-    slot.querySelectorAll('tbody tr').forEach((rowNode, index) => {
-      const row = config.rows[index];
-      const actionCell = rowNode.lastChild;
-      actionCell.replaceChildren();
-      if (config.hub && isHubReadOnly(context)) return;
-      const button = makeActionButton(doc, config.actionLabel, config.action);
-      actionCell.appendChild(button);
-      button.addEventListener('click', () => runAction(context, button, {
-        url: endpointFor(context.marketCode, config.suffix(row)),
-        ...(config.manualBody ? { body: config.manualBody() } : {}),
-        confirmMessage: config.confirm(row),
-        runningMessage: `${row.reference} Â· action en coursâ€¦`,
-        successMessage: `${row.reference} Â· action appliquÃ©e.`,
-      }).catch(() => {}));
-    });
-  }
-
-  // Relais live â€” contenu rÃ©ellement expÃ©diÃ©, dÃ©roulable ExpÃ©dition â†’ KOM-BOX â†’ commandes â†’ articles.
-  // Le reÃ§u n'est jamais prÃ©rempli : il n'existe que par attestation du relais, article par article.
-  function renderRelayShipmentsSection(rootNode, ui, doc, context) {
-    const slot = createSection(rootNode, ui, 'Arrivages importÃ©s',
-      'Choisissez une expÃ©dition Ã  rÃ©ceptionner. Les expÃ©ditions sans intervention sont dans les archives ci-dessous.');
-    if(slot.parentElement)slot.parentElement.id='relay-execution-shipments';
-    slot.setAttribute('data-relay-shipments', '');
-    const data = context.relayShipments;
-    if (!data) {
-      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', context.relayShipmentsError || 'ExpÃ©ditions indisponibles.'));
-      return;
-    }
-    if (!data.shipments.length) {
-      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune expÃ©dition en route vers ce relais.'));
-      return;
-    }
-    const pending=data.shipments.filter(isShipmentReceivable);
-    const other=data.shipments.filter(shipment=>!isShipmentReceivable(shipment));
-    slot.setAttribute('data-relay-arrivals-pending',String(pending.length));
-    if(!pending.length) {
-      const done=doc.createElement('div');
-      done.className='kmc-relay-work-done kmc-relay-arrival-empty';
-      done.appendChild(text(doc,'strong','', 'Aucun arrivage Ã  rÃ©ceptionner'));
-      done.appendChild(text(doc,'span','',other.length+' expÃ©dition(s) sans rÃ©ception Ã  effectuer, consultables dans lâ€™historique.'));
-      const collectCount=Number(context.relayCollectCount||0);
-      if(collectCount>0) {
-        const next=text(doc,'a','kmc-relay-arrival-next',collectCount+' remise(s) client en attente Â· Ouvrir');
-        next.href='#relay-execution-collect';
-        next.setAttribute('data-relay-next-operation','collect');
-        next.addEventListener('click',()=>{
-          context.activeRelayQueue='collect';
-          showRelayOperation(rootNode,'collect');
-        });
-        done.appendChild(next);
-      }
-      slot.appendChild(done);
-    } else {
-      slot.appendChild(text(doc,'p','kmc-relay-work-count',
-        pending.length+' expÃ©dition(s) nÃ©cessitant une rÃ©ception. Ouvrez uniquement lâ€™arrivage Ã  contrÃ´ler.'));
-    }
-    const archive=doc.createElement('details');
-    archive.className='kmc-relay-shipment-archive';
-    archive.setAttribute('data-relay-shipment-archive','');
-    archive.appendChild(text(doc,'summary','', 'Historique Â· '+other.length+' expÃ©dition(s)'));
-    [...pending,...other].forEach(shipment => {
-      const actionable=isShipmentReceivable(shipment);
-      const card=doc.createElement('details');
-      card.className='kmc-relay-shipment';
-      card.open=actionable && pending[0]===shipment;
-      card.setAttribute('data-relay-shipment',shipment.reference);
-      card.setAttribute('data-relay-receivable',String(actionable));
-      const summary=doc.createElement('summary');
-      summary.className='kmc-relay-shipment-title';
-      summary.appendChild(text(doc,'strong','kmc-relay-shipment-reference',shipment.reference));
-      summary.appendChild(text(doc,'span','kmc-relay-shipment-subtitle',
-        (shipment.boxes||[]).length+' carton(s) Â· '+
-        (shipment.boxes||[]).reduce((count,box)=>count+(box.orders||[]).length,0)+' commande(s)'));
-      summary.appendChild(text(doc,'span','kmc-relay-shipment-status',
-        actionable?'Ã€ rÃ©ceptionner':shipment.stage==='relay_received'?'RÃ©ception attestÃ©e':'Aucune rÃ©ception en attente'));
-      card.appendChild(summary);
-      // Un premier clic historique ne dÃ©plie PAS les tableaux dâ€™articles.
-      // La traÃ§abilitÃ© complÃ¨te reste accessible par un second niveau, sur demande.
-      let detailHost=card;
-      if(!actionable) {
-        const detailed=doc.createElement('details');
-        detailed.className='kmc-relay-archive-detail';
-        detailed.setAttribute('data-relay-archive-detail','');
-        detailed.appendChild(text(doc,'summary','','Voir colis, articles et retrouver un sac'));
-        card.appendChild(detailed);
-        detailHost=detailed;
-      }
-      // MÃªme sac physique que celui fermÃ© au Hub : son scan ouvre la commande
-      // et le colis canonique, sans attester automatiquement la rÃ©ception.
-      const scanBar=doc.createElement('div');
-      scanBar.className='kmc-hub-bag-controls';
-      scanBar.setAttribute('data-relay-bag-scanner','');
-      const bagCode=doc.createElement('input');
-      bagCode.type='text';bagCode.autocomplete='off';
-      bagCode.placeholder='Scanner un sac de cette expÃ©dition';
-      bagCode.setAttribute('aria-label','Scanner le sac client reÃ§u au relais');
-      const scan=makeActionButton(doc,'Identifier le sac','relay-lookup-bag');
-      const result=text(doc,'span','kmc-workspace-muted','Scanner un sac pour retrouver la commande et le colis client.');
-      result.setAttribute('role','status');
-      const identify=async()=>{
-        const code=bagCode.value.trim();if(!code)return;
-        scan.disabled=true;result.textContent='Recherche du sac dans cette expÃ©ditionâ€¦';
-        try{
-          const info=await jsonRequest(context.fetch,endpointFor(context.marketCode,
-            'relay-shipments/'+encodeURIComponent(shipment.reference)+'/bags/'+encodeURIComponent(code)));
-          result.textContent=info.bag_reference+' â†’ commande '+info.order_reference+
-            ' Â· colis '+info.parcel_reference+' Â· '+
-            (info.contents||[]).map(item=>(item.product_name||'Article')+' Ã—'+item.quantity).join(', ');
-        }catch(err){
-          result.textContent='Sac non reconnu dans cette expÃ©dition ou non autorisÃ© pour ce relais.';
-        }finally{scan.disabled=false;}
-      };
-      bagCode.addEventListener('keydown',event=>{
-        if(event.key==='Enter'){event.preventDefault();identify();}
-      });
-      scan.addEventListener('click',identify);
-      [bagCode,scan,result].forEach(node=>scanBar.appendChild(node));
-      detailHost.appendChild(scanBar);
-      const inputs = [];
-      shipment.boxes.forEach(box => {
-        const boxNode = doc.createElement('div');
-        boxNode.className = 'kmc-relay-box';
-        boxNode.setAttribute('data-relay-box', box.reference);
-        boxNode.appendChild(text(doc, 'h4', 'kmc-relay-box-title', 'KOM-BOX ' + box.reference));
-        (box.bags || []).forEach(bag => boxNode.appendChild(text(doc, 'div', 'kmc-workspace-muted',
-          'Sac '+bag.reference+' Â· commande '+bag.order_reference+' Â· colis '+bag.parcel_reference)));
-        box.orders.forEach(order => {
-          boxNode.appendChild(text(doc, 'div', 'kmc-workspace-muted', 'Commande ' + order.reference));
-          const table = doc.createElement('table');
-          table.className = 'kmc-workspace-table';
-          table.innerHTML = actionable
-            ? '<thead><tr><th>Article</th><th>ExpÃ©diÃ©</th><th>Manquant</th><th>ReÃ§u</th></tr></thead>'
-            : '<thead><tr><th>Article</th><th>ExpÃ©diÃ©</th><th>ReÃ§u</th><th>Remis</th></tr></thead>';
-          const tbody = doc.createElement('tbody');
-          order.items.forEach(item => {
-            const tr = doc.createElement('tr');
-            tr.setAttribute('data-relay-item', item.order_item_id);
-            const productLabel=item.product+(!actionable && Number(item.missing)>0
-              ? ' Â· reste '+formatNumber(item.missing)+' Ã  livrer' : '');
-            const columns=actionable
-              ? [productLabel,formatNumber(item.shipped),formatNumber(item.missing)]
-              : [productLabel,formatNumber(item.shipped)];
-            columns.forEach(value=>tr.appendChild(text(doc,'td','',value)));
-            const receivedCell = doc.createElement('td');
-            if (item.received !== null) {
-              receivedCell.textContent = formatNumber(item.received) + (item.incident_id ? ' Â· incident ouvert' : '');
-            } else if (shipment.receivable) {
-              const input = doc.createElement('input');
-              input.type = 'number';
-              input.min = '0';
-              input.max = String(item.expected);
-              input.step = '1';
-              input.placeholder = '0 Ã  ' + item.expected;
-              input.setAttribute('aria-label', 'ReÃ§u ' + item.product);
-              input.setAttribute('data-relay-received', item.order_item_id);
-              receivedCell.appendChild(input);
-              inputs.push({ item, input });
-            } else {
-              receivedCell.textContent = 'Non attestÃ©';
-            }
-            tr.appendChild(receivedCell);
-            if(!actionable)tr.appendChild(text(doc,'td','',formatNumber(item.handed)));
-            tbody.appendChild(tr);
-          });
-          table.appendChild(tbody);
-          const wrap = doc.createElement('div');
-          wrap.className = 'kmc-workspace-table-wrap';
-          wrap.appendChild(table);
-          boxNode.appendChild(wrap);
-        });
-        detailHost.appendChild(boxNode);
-      });
-      if (inputs.length) {
-        const form = doc.createElement('form');
-        form.className = 'kmc-relay-receipt-form';
-        form.noValidate = true;
-        const proof = doc.createElement('input');
-        proof.type = 'text';
-        proof.placeholder = 'RÃ©fÃ©rence de preuve (bordereau, photo)';
-        proof.setAttribute('aria-label', 'Preuve de rÃ©ception');
-        proof.setAttribute('data-relay-proof', '');
-        form.appendChild(proof);
-        const submit = makeActionButton(doc, 'Attester la rÃ©ception', 'relay-shipment-receive');
-        submit.type = 'submit';
-        form.appendChild(submit);
-        form.addEventListener('submit', event => {
-          event.preventDefault();
-          const lines = [];
-          for (const { item, input } of inputs) {
-            if (input.value.trim() === '') continue;
-            const qty = Number(input.value);
-            if (!Number.isInteger(qty) || qty < 0) {
-              setFeedback(context.root, 'QuantitÃ© reÃ§ue invalide pour ' + item.product + '.', 'critical');
-              return;
-            }
-            if (qty > Number(item.expected)) {
-              setFeedback(context.root, 'ReÃ§u supÃ©rieur Ã  lâ€™expÃ©diÃ© pour ' + item.product + ' (' + formatNumber(item.expected) + ' max).', 'critical');
-              return;
-            }
-            lines.push({ order_item_id: item.order_item_id, received_qty: qty });
-          }
-          if (!lines.length || !proof.value.trim()) {
-            setFeedback(context.root, 'Saisissez les quantitÃ©s rÃ©ellement reÃ§ues et la preuve.', 'critical');
-            return;
-          }
-          runAction(context, submit, {
-            url: endpointFor(context.marketCode, 'relay-shipments/' + encodeURIComponent(shipment.reference) + '/receive'),
-            body: { proof_ref: proof.value.trim(), lines },
-            runningMessage: 'Attestation en coursâ€¦',
-            successMessage: result => (result.result && result.result.receipts || []).some(r => r.incident_id)
-              ? 'RÃ©ception attestÃ©e Â· Ã©cart enregistrÃ© en incident.' : 'RÃ©ception attestÃ©e.',
-          }).catch(() => {});
-        });
-        detailHost.appendChild(form);
-      }
-      (actionable?slot:archive).appendChild(card);
-    });
-    if(other.length)slot.appendChild(archive);
-  }
-
-  function renderInventorySection(rootNode, ui, doc, payload, context) {
-    const slot = createSection(
-      rootNode,
-      ui,
-      'Inventaire Hub Â· Affecter',
-      'La proposition est un guide. Lâ€™agent peut affecter un article Ã  un colis ouvert du mÃªme marchÃ© ; le serveur revalide les deux ressources.'
-    );
-    const items = payload.inventory.items || [];
-    const parcels = payload.inventory.open_parcels || [];
-    if (!items.length) {
-      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun article inventaire Ã  affecter.'));
-      return;
-    }
-
-    const wrap = doc.createElement('div');
-    wrap.className = 'kmc-workspace-inventory-list';
-    items.forEach(item => {
-      const row = doc.createElement('article');
-      row.className = 'kmc-workspace-inventory-row';
-
-      const copy = doc.createElement('div');
-      copy.className = 'kmc-workspace-inventory-copy';
-      copy.appendChild(orderLink(doc, item.order_ref));
-      copy.appendChild(text(doc, 'strong', '', item.product_name || 'Article'));
-      copy.appendChild(text(
-        doc,
-        'span',
-        'kmc-workspace-muted',
-        `${item.status} Â· ${item.destination_island || 'â€”'} Â· reÃ§u ${formatDate(item.received_at)}`
-      ));
-      if (item.proposed_parcel_ref) {
-        copy.appendChild(text(doc, 'span', 'kmc-workspace-proposal', `Proposition : ${item.proposed_parcel_ref}`));
-      }
-      row.appendChild(copy);
-
-      const controls = doc.createElement('div');
-      controls.className = 'kmc-workspace-inventory-controls';
-      const select = doc.createElement('select');
-      select.className = 'kmc-workspace-select';
-      select.setAttribute('aria-label', `Colis cible pour ${item.product_name || item.order_ref}`);
-      parcels.forEach(parcel => {
-        const option = doc.createElement('option');
-        option.value = parcel.reference;
-        option.textContent = `${parcel.reference} Â· ${parcel.destination_island || 'â€”'} Â· ${parcel.item_count || 0} art.`;
-        if (item.proposed_parcel_ref === parcel.reference) option.selected = true;
-        select.appendChild(option);
-      });
-      controls.appendChild(select);
-
-      if (isHubReadOnly(context)) { select.disabled = true; row.appendChild(controls); wrap.appendChild(row); return; }
-      const button = makeActionButton(doc, 'Affecter', 'assign-inventory');
-      button.disabled = parcels.length === 0;
-      controls.appendChild(button);
-      button.addEventListener('click', () => runAction(context, button, {
-        url: endpointFor(context.marketCode, `inventory/items/${encodeURIComponent(item.item_id)}/assign`),
-        body: { parcel_ref: select.value },
-        confirmMessage: `Affecter cet article Ã  ${select.value} ?`,
-        runningMessage: 'Affectation inventaire en coursâ€¦',
-        successMessage: `Article affectÃ© Ã  ${select.value}.`,
-      }).catch(() => {}));
-
-      row.appendChild(controls);
-      wrap.appendChild(row);
-    });
-    slot.appendChild(wrap);
-  }
-
-  async function mount(options) {
-    const rootNode = options.root;
-    const ui = options.ui;
-    const doc = options.document;
-    const fetchFn = options.fetch;
-    const marketCode = String(options.requestedMarket || '').trim().toUpperCase();
-
-    if (!rootNode) throw new Error('canonical_operations_workspace_root_missing');
-    if (!ui || !ui.UIState || !ui.Section || !ui.MetricStrip || !ui.DataTable) {
-      throw new Error('canonical_operations_workspace_primitives_missing');
-    }
-    if (!MARKET_CODE.test(marketCode)) throw new Error('canonical_operations_workspace_market_required');
-    // UX3 : rÃ©entrer dans le mÃªme marchÃ© ne doit pas effacer la sÃ©lection ni tout recharger.
-    const previous = activeHubMounts.get(rootNode);
-    if (options.mode === 'execution' && previous &&
-        previous.marketCode === marketCode && previous.role === options.user?.role &&
-        rootNode.querySelector?.('[data-hub-cockpit]')) return previous.handle;
-
-    if(options.mode==='relay-execution' && options.focusOnly && options.user?.role==='finance') {
-      rootNode.replaceChildren();
-      const notice=doc.createElement('p');
-      notice.className='kmc-workspace-empty';
-      notice.textContent='Le comptoir des remises est rÃ©servÃ© aux agents autorisÃ©s du Relais.';
-      rootNode.appendChild(notice);
-      return Object.freeze({marketCode,denied:true});
-    }
-
-    // Finance : accÃ¨s au seul module Cash & dÃ©pÃ´ts (pas de file opÃ©rationnelle), hÃ©bergÃ© dans Relais live.
-    if (options.mode === 'relay-execution' && options.user && options.user.role === 'finance') {
-      rootNode.className = 'kmc-operations-workspace';
-      rootNode.replaceChildren();
-      rootNode.appendChild(createHeader(doc, { scope: { code: marketCode, name: '' } }, 'relay-execution'));
-      const host = doc.createElement('div');
-      host.setAttribute('data-relay-cash-host', '');
-      rootNode.appendChild(host);
-      const cashModule = globalThis.KomerceCanonicalFinanceAccountingWorkspace;
-      if (!cashModule) { host.appendChild(text(doc, 'p', 'kmc-workspace-note', 'Module Cash & dÃ©pÃ´ts indisponible.')); return Object.freeze({ marketCode }); }
-      await cashModule.mount({
-        root: host, document: doc, ui, fetch: fetchFn, user: options.user,
-        adminContext: options.adminContext || null, requestedMarket: marketCode,
-        contextContract: { resolveMarketView: () => ({ marketCode }) },
-      }).catch(error => host.appendChild(text(doc, 'p', 'kmc-workspace-note', error.message)));
-      return Object.freeze({ marketCode });
-    }
-
-    // UX1 : l'Ã©tat fournisseur peut Ã©voluer aprÃ¨s encaissement sans requÃªte opÃ©rateur.
-    // La relecture est GET uniquement et ne touche jamais aux formulaires ouverts.
-    const supplySignature = dossier => JSON.stringify({
-      orders: (dossier?.orders || []).map(o => [o.id, o.status, o.totals, o.items, o.readiness, o.po_ids]),
-      purchase_orders: dossier?.purchase_orders || [],
-      need_batches: dossier?.cockpit?.need_batches || [],
-      todo: dossier?.cockpit?.todo || [],
-    });
-    function hubInputBusy() {
-      const active = doc.activeElement;
-      return (context.cockpitState?.pending || 0) > 0 ||
-        Boolean(rootNode.querySelector('form:not([hidden]), [contenteditable="true"]')) ||
-        Boolean(active && rootNode.contains(active) && active.matches?.('input,textarea,select,[contenteditable="true"]'));
-    }
-    function hubRefreshNotice() {
-      if (rootNode.querySelector('[data-hub-live-refresh]')) return;
-      const notice = doc.createElement('div');
-      notice.setAttribute('data-hub-live-refresh', '');
-      notice.setAttribute('role', 'status');
-      notice.className = 'kmc-workspace-note';
-      const label = doc.createElement('span');
-      label.textContent = 'Nouvelles donnÃ©es disponibles â€” ';
-      const button = doc.createElement('button');
-      button.type = 'button';
-      button.textContent = 'Actualiser';
-      button.addEventListener('click', () => {
-        if (hubInputBusy()) {
-          label.textContent = 'Terminez ou fermez le formulaire avant dâ€™actualiser â€” ';
-          return;
-        }
-        context.reload().catch(() => { label.textContent = 'Actualisation indisponible â€” rÃ©essayer. '; });
-      });
-      notice.append(label, button);
-      rootNode.insertBefore(notice, rootNode.children[1] || null);
-    }
-    function watchHubSupply() {
-      if (context.mode !== 'execution') return;
-      const win = doc.defaultView || globalThis;
-      if (typeof win.setTimeout !== 'function') return;
-      let inFlight = false;
-      let timer = null;
-      let failures = 0;
-      const watch = { signature: supplySignature(context.dossier), stop: null, check: null };
-      const schedule = delay => {
-        if (timer !== null) win.clearTimeout(timer);
-        timer = win.setTimeout(() => {
-          timer = null;
-          watch.check().catch(() => {});
-        }, delay);
-        timer?.unref?.();
-      };
-      watch.stop = () => {
-        if (timer !== null) win.clearTimeout(timer);
-        timer = null;
-      };
-      watch.check = async () => {
-        if (!rootNode.isConnected) { watch.stop(); return; }
-        if (inFlight) return;
-        // Onglet masquÃ© : aucun appel rÃ©seau et reprise douce au prochain crÃ©neau.
-        if (doc.visibilityState === 'hidden') { schedule(HUB_POLL_INTERVAL_MS); return; }
-        inFlight = true;
-        let nextDelay = HUB_POLL_INTERVAL_MS;
-        try {
-          const fresh = await jsonRequest(fetchFn, endpointFor(marketCode, 'supply'));
-          failures = 0;
-          if (supplySignature(fresh) !== watch.signature) {
-            if (hubInputBusy()) {
-              hubRefreshNotice();
-            } else {
-              // La projection GET est dÃ©jÃ  rÃ©cupÃ©rÃ©e : Ã©viter une seconde lecture
-              // /supply lors du reload (et ne rien redessiner si elle est inchangÃ©e).
-              await reload({ freshDossier: fresh });
-            }
-          }
-        } catch (error) {
-          // Lecture opportuniste : laisser intact le dossier en cours en cas d'Ã©chec.
-          // 429 / 5xx : backoff exponentiel, en respectant Retry-After si plus long.
-          if (error.status === 429 || error.status >= 500) {
-            failures += 1;
-            nextDelay = hubPollDelayMs(failures, error.retryAfter);
-          }
-        } finally {
-          inFlight = false;
-          if (rootNode.isConnected) schedule(nextDelay);
-          else watch.stop();
-        }
-      };
-      context.hubRefresh = watch;
-      schedule(HUB_POLL_INTERVAL_MS);
-    }
-
-    let currentPayload = null;
-    const context = {
-      root: rootNode,
-      fetch: fetchFn,
-      marketCode,
-      mode: ['execution', 'relay-execution'].includes(options.mode) ? options.mode : 'pilot',
-      user: options.user || null,
-      initialFocus: options.forcedRelayFocus || (options.mode==='relay-execution' ? String(new URLSearchParams(String(globalThis.location?.search||'')).get('focus')||'') : ''),
-      focusOnly:Boolean(options.focusOnly),
-      activeRelayQueue:null,
-      view: options.focusOnly?'relay':options.mode === 'execution' ? 'supply' : options.mode === 'relay-execution' && new URLSearchParams(String(globalThis.location?.search || '')).get('focus') === 'returns' ? 'returns' : undefined,
-      confirm: typeof options.confirm === 'function'
-        ? options.confirm
-        : (typeof globalThis.confirm === 'function' ? globalThis.confirm.bind(globalThis) : () => true),
-      reload: null,
-    };
-
-    async function reload({ freshDossier } = {}) {
-      const payload = await jsonRequest(fetchFn, endpointFor(marketCode));
-      if (context.mode === 'execution') {
-        try {
-          context.receivable = await jsonRequest(fetchFn, RECEIVABLE_ENDPOINT);
-          context.receivableError = null;
-        } catch (error) {
-          context.receivable = null;
-          context.receivableError = error.message;
-        }
-        if (freshDossier !== undefined) {
-          context.dossier = freshDossier;
-          context.dossierError = null;
-        } else {
-          try {
-            context.dossier = await jsonRequest(fetchFn, endpointFor(marketCode, 'supply'));
-            context.dossierError = null;
-          } catch (error) {
-            context.dossier = null;
-            context.dossierError = error.message;
-          }
-        }
-      }
-      if (context.mode === 'relay-execution') {
-        try {
-          context.relayShipments = await jsonRequest(fetchFn, endpointFor(marketCode, 'relay-shipments'));
-          context.relayShipmentsError = null;
-        } catch (error) {
-          context.relayShipments = null;
-          context.relayShipmentsError = error.message;
-        }
-      }
-      currentPayload = payload;
-      if (context.hubRefresh) context.hubRefresh.signature = supplySignature(context.dossier);
-      renderPayload(rootNode, ui, doc, payload, context);
-      return payload;
-    }
-    context.reload = reload;
-    context.renderCurrent = () => renderPayload(rootNode, ui, doc, currentPayload, context);
-
-    ui.UIState.render(rootNode, 'loading', `Chargement du Workspace OpÃ©rations Â· ${marketCode}â€¦`);
-    try {
-      await reload();
-      watchHubSupply();
-      // Orientation de l'agent vers la file demandÃ©e depuis le cockpit.
-      // Seules les files existantes sont navigables ; aucune action mÃ©tier n'est exÃ©cutÃ©e ici.
-      if (context.mode==='relay-execution' && !context.focusOnly && ['shipments','cash','receive','collect'].includes(context.initialFocus)) {
-        const anchor=rootNode.querySelector?.('#relay-execution-'+context.initialFocus);
-        anchor?.scrollIntoView?.({block:'start',behavior:'auto'});
-      }
-      const handle = Object.freeze({
-        marketCode,
-        endpoint: endpointFor(marketCode),
-        payload: currentPayload,
-        reload,
-      });
-      if (context.mode === 'execution')
-        activeHubMounts.set(rootNode, { marketCode, role: options.user?.role, handle });
-      return handle;
-    } catch (error) {
-      ui.UIState.render(rootNode, 'error', error.message);
-      throw error;
-    }
-  }
-
-  return Object.freeze({
-    ENDPOINT_PREFIX,
-    endpointFor,
-    formatNumber,
-    formatKmf,
-    formatDate,
-    metricItems,
-    jsonRequest,
-    hubPollDelayMs,
-    renderPayload,
-    openManualSourcing,
-    mount,
-  });
-});
