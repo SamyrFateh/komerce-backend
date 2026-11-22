@@ -21,8 +21,8 @@ describe('G6 M03 sourcing budget is indicative, read-only and identity-bound', (
     });
   });
   test.each([
-    [],
-    [candidate(), candidate({ candidate_ref:'SC-G6-002' })],
+    [[]],
+    [[candidate(), candidate({ candidate_ref:'SC-G6-002' })]],
   ])('fails closed if sourcing is absent or ambiguous', rows => {
     expect(() => deriveIndicativeBudget(rows)).toThrow('G6_COMMITMENT_INDICATIVE_SOURCE_MISSING_OR_AMBIGUOUS');
   });
