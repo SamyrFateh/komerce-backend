@@ -441,6 +441,29 @@ describe('G6-G5C N28 (échec réseau puis réessai) et N32 (marché et rôles cr
   expect(a).toMatch(/PREREQ_MISSING_FOREIGN_MARKET_ORDER/);expect(a).not.toMatch(/screenshot/);expect(validateChromiumScriptSources()).toBeGreaterThan(0);
   expect(N.classifyNegative('N32','x PREREQ_MISSING_FOREIGN_MARKET_ORDER')).toBe('PREREQ_MISSING_FOREIGN_MARKET_ORDER');
  });
+ it('N32 : Hub reel restreint et vraie PO etrangere, HTTP 403 metier, refus sans faux PASS',()=>{
+  const src=read('scripts/recette/g6-negative-n28-n32-chromium.js');
+  expect(src).toContain("async function provisionRestrictedHub(marketId,foreignMarketId)");
+  expect(src).toContain("role:'agent_hub'");
+  expect(src).toContain("await markE2eTestAccount(c");
+  expect(src).toContain("await delegation.addMembership(c");
+  expect(src).toContain("capabilities:['operations.read'],actorIsCentral:true");
+  expect(src).toContain("grants.length===1");
+  expect(src).toContain("G6_N32_RESTRICTED_HUB_");
+  expect(src).toContain("me.id===hubId&&me.role==='agent_hub'");
+  expect(src).toContain("JOIN purchase_lines pl");
+  expect(src).toContain("JOIN purchase_orders po");
+  expect(src).toContain("po.status NOT IN ('draft','cancelled')");
+  expect(src).toContain("G6_N32_PREREQ_MISSING_FOREIGN_MARKET_ORDER_WITH_PO");
+  expect(src).toContain("purchase_order_id:f.po_id,product_sku_id:f.sku_id");
+  expect(src).toContain("expected_error_code:'HUB_PHYSICAL_MARKET_SCOPE_MISMATCH'");
+  expect(src).toContain("hubProbe.http===403");
+  expect(src).toContain("WRONG_AUTHORITY_REASON_");
+  expect(src).toContain("WRONG_REFUSAL_HTTP_");
+  expect(src).toContain("report.snapshot={before,after,unchanged:");
+  expect(src).not.toContain("hub=await login(browser,'E2E_AGENT_HUB_'");
+  expect(src).not.toContain("const {rows:[po]}=await db.query('SELECT DISTINCT purchase_order_id FROM v_purchase_line_market");
+ });
  it('workflow : titres N28/N32 pour KM, CM et CG et alias de scénario',()=>{
   const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
   for(const id of ['N28','N32'])for(const m of ['KM','CM','CG'])expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
