@@ -43,8 +43,8 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Pin exact running staging SHA, refuse deployed code drift
-        run: node scripts/recette/resolve-staging-deploy-pin.js
+      - name: Pin runtime SHA with exact non-runtime certification delta, fail on every deployable change
+        run: node scripts/recette/economic-result-readonly-pin.js
       - name: Confirm protected staging PostgreSQL fingerprint (read only)
         run: node scripts/recette/target-guard.js
       - name: Install Chromium
