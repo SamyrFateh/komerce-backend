@@ -243,6 +243,16 @@
     mixGrid.appendChild(step(doc, 'mix-parcels', 'Colis', formatNumber(mix.parcels), `Vue agrégée · ${formatKmf(mix.contribution_per_parcel_kmf)}`, 'derived'));
     block.appendChild(mixGrid);
 
+    // Le résultat est une vérité serveur : pas de zéro ou de statut positif inventé
+    // quand la cohorte n'est pas décisionnelle ou le montant est absent.
+    const rawResult = flow.status === 'READY' ? state.period_result_kmf : null;
+    const hasResult = rawResult != null
+      && !(typeof rawResult === 'string' && rawResult.trim() === '')
+      && Number.isFinite(Number(rawResult));
+    const resultTone = !hasResult ? 'derived'
+      : Number(rawResult) > 0 ? 'positive'
+        : Number(rawResult) < 0 ? 'warning' : 'derived';
+
     const result = el(doc, 'div', 'kmc-decision-chain-result');
     result.appendChild(step(doc, 'period-contribution', 'Contribution totale', formatKmf(state.period_contribution_kmf), 'Pool unique réconcilié', 'positive'));
     result.appendChild(arrow(doc));
@@ -250,7 +260,7 @@
     result.appendChild(arrow(doc));
     result.appendChild(step(doc, 'period-coverage', 'Couverture', formatRatio(workspace, state.coverage_ratio), 'Contribution ÷ structure · calcul serveur', 'derived'));
     result.appendChild(arrow(doc));
-    result.appendChild(step(doc, 'period-result', 'Résultat de période', formatKmf(state.period_result_kmf), 'Contribution − structure · calcul serveur', Number(state.period_result_kmf) >= 0 ? 'positive' : 'warning'));
+    result.appendChild(step(doc, 'period-result', 'Résultat de période', hasResult ? formatKmf(rawResult) : '—', 'Contribution − structure · calcul serveur', resultTone));
     block.appendChild(result);
     return block;
   }
