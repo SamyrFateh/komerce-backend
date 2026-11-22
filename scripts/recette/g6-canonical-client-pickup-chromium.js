@@ -60,6 +60,20 @@ async function state(){
 }
 // opts.allowNoCode (scénario négatif N09 uniquement) : l'absence de code ou le refus de rotation est retourné au lieu de lever.
 async function customer(browser,owner,opts={}){
+ // N22: session B must use order B for tracking and code regeneration.
+ const hasOrderOverride=opts.orderId!==undefined||opts.orderReference!==undefined;
+ const targetOrderId=hasOrderOverride?opts.orderId:ID;
+ const targetReference=hasOrderOverride?opts.orderReference:(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6');
+ if(hasOrderOverride){
+  check(env.G6_CANONICAL_SCENARIO==='N22'&&env.G6_DYNAMIC_FRESH_ORDER==='1'&&
+   /^[a-f0-9-]{36}$/i.test(targetOrderId||'')&&/^[A-Z0-9-]{6,64}$/.test(targetReference||''),
+   'G6_N22_PICKUP_SECOND_ORDER_OVERRIDE_FORBIDDEN');
+  const {rows:[owned]}=await db.query(`SELECT id FROM orders WHERE id=$1::uuid AND reference=$2 AND user_id=$3::uuid
+   AND status::text='available' AND payment_status::text='paid' AND pickup_secret_hash IS NOT NULL`,
+   [targetOrderId,targetReference,owner.id]);
+  check(!!owned,'G6_N22_PICKUP_SECOND_ORDER_OWNER_SCOPE_INVALID');
+ }
+
  // G6 test account was created in original M01 Chromium buyer run. Seed only an OTP
  // through the exact guarded staging fixture writer; NO new order or buyer account.
  const otp=String(crypto.randomInt(100000,1000000));
@@ -71,7 +85,7 @@ async function customer(browser,owner,opts={}){
  const ctx=await browser.newContext({baseURL:BASE,viewport:{width:1440,height:900},locale:'fr-FR'});
  const page=await ctx.newPage(),blocked=[];
  let requestCount=0,verifyCount=0,rotateCount=0,plaintext=null;
- const revealPath='/api/pickup/customer-regenerate/'+ID;
+ const revealPath='/api/pickup/customer-regenerate/'+targetOrderId;
  await page.route('**/*',async route=>{
   const req=route.request(),url=new URL(req.url()),m=req.method();
   if(['GET','HEAD','OPTIONS'].includes(m))return route.continue();
@@ -105,9 +119,9 @@ async function customer(browser,owner,opts={}){
   check((await ctx.cookies()).some(x=>x.name.endsWith('kmrc_jwt')&&x.httpOnly),'G6_PICKUP_SESSION_NOT_HTTPONLY');
   await startTraceAfterAuth(ctx);
   await runtime();
-  report.events.push({key:'client-otp',http:200,role:'client'});save();
+  report.events.push({key:'client-otp',http:200,role:'client',order_reference:targetReference});save();
   await humanGoto(page,'/boutique/?market='+MK.code+'&tab=track',{waitUntil:'domcontentloaded'});
-  const card=page.locator('.k-myorder-card[data-ref="'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6')+'"]');
+  const card=page.locator('.k-myorder-card[data-ref="'+targetReference+'"]');
   await card.waitFor({state:'visible',timeout:30000});await humanClick(null,card);
   const action=page.locator('.k-order-pickup-code');
   if(opts.allowNoCode){
@@ -133,7 +147,7 @@ async function customer(browser,owner,opts={}){
   const shown=await action.locator('.k-pickup-code-output').textContent();
   check(shown.includes(plaintext)&&shown.startsWith('Votre code : '),'G6_PICKUP_CLIENT_SECRET_NOT_DISPLAYED');
   check(await action.locator('.k-order-pickup-code-reveal').isHidden(),'G6_PICKUP_REVEAL_NOT_HIDDEN');
-  report.events.push({key:'client-code-rotation',http:response.status(),role:'client',ui:true,code_masked:'********'});
+  report.events.push({key:'client-code-rotation',http:response.status(),role:'client',ui:true,order_reference:targetReference,code_masked:'********'});
   save();await runtime();
   return {ctx,page,code:normalized};
  }catch(e){await ctx.close();throw e}
