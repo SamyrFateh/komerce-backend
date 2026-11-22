@@ -17,7 +17,11 @@ const STAGE_IDS=Object.freeze([
 const M02_STAGE_IDS=Object.freeze(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','LOCAL_CLIENT_PICKUP']);
 // M03 (panier mixte) : mêmes BUYER et RELAY_CASH ; branche locale (étapes M02) puis oracle clé « pas collected » ;
 // branche import (étapes M01, PO mono-fournisseur, consolidation Hub) puis oracle final « collected ».
-// N34 is a dedicated source-security certification: real authenticated DELETE negatives,\n// isolated DB immutability gates, then independently revalidated supplier origin in Chromium/PG.\n// It has no buyer/order and must never be aliased to M01.\nconst N34_STAGE_IDS=Object.freeze(['N34_CENTRAL_IMMUTABILITY','N34_EXPLICIT_SOURCE']);\nconst M03_STAGE_IDS=Object.freeze(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','LOCAL_CLIENT_PICKUP','M03_NOT_COLLECTED',
+// N34 is a dedicated source-security certification: real authenticated DELETE negatives,
+// isolated DB immutability gates, then independently revalidated supplier origin in Chromium/PG.
+// It has no buyer/order and must never be aliased to M01.
+const N34_STAGE_IDS=Object.freeze(['N34_CENTRAL_IMMUTABILITY','N34_EXPLICIT_SOURCE']);
+const M03_STAGE_IDS=Object.freeze(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','LOCAL_CLIENT_PICKUP','M03_NOT_COLLECTED',
  ...STAGE_IDS.slice(2),'M03_COLLECTED_FINAL']);
 // Scénarios négatifs N (G6-G4A) : points d'arrêt sur le Golden. Geste négatif par l'écran, puis oracle PG en lecture seule.
 // N07 double clic Commander (parcours M01) ; N09 remise sans cash encaissé (parcours M02, RELAY_CASH sauté) ;
