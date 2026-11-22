@@ -48,7 +48,7 @@ BEGIN
        OR OLD.supplier_currency IS NOT NULL
        OR OLD.supplier_unit_price IS NOT NULL
        OR v_po_status IS DISTINCT FROM 'notified'
-       OR v_trigger_mode IS DISTINCT FROM 'manual'
+       OR v_trigger_mode NOT IN ('manual', 'whatsapp')
        OR NEW.confirmed_currency IS NULL
        OR NEW.confirmed_currency !~ '^[A-Z]{3}$'
        OR NEW.confirmed_at IS NULL
