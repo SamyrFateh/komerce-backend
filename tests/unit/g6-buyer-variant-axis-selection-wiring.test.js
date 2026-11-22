@@ -19,7 +19,8 @@ describe('G6 staging real buyer axis selection',()=>{
  });
  test('allows only a uniquely proven, axisless Central Hub on-order import',()=>{
    expect(src).toContain('if(axisCount===0){');
-   expect(src).toContain("PARAMS.basket && line.source_key==='central_hub' &&");
+   expect(src).toContain('Boolean((PARAMS.centralHubManual || PARAMS.basket) &&');
+   expect(src).toContain("line.source_key==='central_hub' &&");
    expect(src).toContain("line.fulfillment==='IMPORT' && !line.variant_combo");
    expect(src).toContain("check(actualProduct.inventory_model==='SKU'&&actualProduct.has_variants===false,");
    expect(src).toContain("check(skus.length===1,'G6_AXISLESS_HUB_SKU_NOT_UNIQUE')");
