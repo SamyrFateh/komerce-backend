@@ -58,6 +58,18 @@ Le serveur utilise `req.workspaceMarket` et `products.cost_kmf`, `weight_kg`, `v
 
 **Aucun résultat ne modifie le prix actif, les paramètres, les devis ou la base.** Aucun tarif douanier ni prix de transport n'est automatiquement deviné.
 
+## Doctrine opérationnelle cible — prix décidé, indicateurs vivants
+
+Cette prévisualisation prévente ne matérialise pas encore le suivi économique dynamique décrit ci-dessous. La doctrine cible est la suivante :
+
+- le responsable autorisé fixe le prix par marché à partir de l'offre, des comparables locaux, du coût d'achat et des scénarios de coûts disponibles ; l'absence d'historique de volumes ne bloque pas la décision et ne permet pas de présenter un plancher provisoire comme une vérité ;
+- lorsque les commandes, réceptions, regroupements en COMBOX et expéditions se constituent, les coûts prévisionnels qui dépendent de ces volumes sont recalculés avec les dénominateurs réellement observés à cet instant ; chaque coût conserve son unité d'engagement et sa clé causale, sans moyenne implicite ;
+- à la réception des factures et à la réconciliation physique, le coût réalisé remplace la prévision dans la piste du réel, en gardant le prévu, l'écart, les sources et les volumes qui les expliquent ;
+- les indicateurs de contribution, de maturité et de charges de structure restant à couvrir évoluent dans les vues concernées avec les faits de la période. Une contribution positive réconciliée réduit le reste à couvrir ; une contribution non réconciliée, nulle ou négative ne le fait pas ;
+- les mises à jour ne changent pas automatiquement le prix décidé et ne réécrivent pas les snapshots historiques. Elles déclenchent une nouvelle lecture et peuvent éclairer une nouvelle décision humaine versionnée.
+
+Le plancher est ainsi un indicateur économique évolutif, dont le statut exprime la qualité et la complétude des données. Il ne remplace ni l'observation du marché ni la décision commerciale humaine. La simulation seule présentée dans ce document n'est ni la preuve que ces indicateurs dynamiques sont déjà livrés, ni une certification de prix.
+
 ## Contrôles / limites
 
 - Les ratios 200 / 4 / 2,5 ne sont **jamais** utilisés.
