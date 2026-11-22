@@ -1,6 +1,6 @@
 /** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
-const {decide,ALLOWED,MIN_RUNTIME_SHA}=require('../../scripts/recette/economic-result-readonly-pin');
+const {decide,ALLOWED,MIN_RUNTIME_SHA,onlyAllowedFeatureTestAdditions}=require('../../scripts/recette/economic-result-readonly-pin');
 const STAGE='a'.repeat(40),HEAD='b'.repeat(40);
 const valid=(overrides={})=>({staging:STAGE,head:HEAD,isAncestor:true,
   hasRequiredFix:true,manifestOnlyTests:true,
@@ -25,4 +25,16 @@ test('refuse deployable runtime, older staging, unknown feature edits or nonance
 test('when staging and head are identical, require the merged economic fix',()=>{
   expect(decide(valid({head:STAGE,changed:[]})).reason).toBe('EXACT_DEPLOYMENT');
   expect(decide(valid({head:STAGE,hasRequiredFix:false})).allowed).toBe(false);
+});
+
+
+test('manifest pin compares only newly added test registrations relative to each deployed SHA',()=>{
+  const before="module.exports={\n  tests:[\n      'tests/unit/base.test.js',\n  ]\n};";
+  const withRunner=before.replace("      'tests/unit/base.test.js',", "      'tests/unit/base.test.js',\n      'tests/unit/economic-result-real-readonly.test.js',");
+  const withPin=withRunner.replace("      'tests/unit/economic-result-real-readonly.test.js',","      'tests/unit/economic-result-real-readonly.test.js',\n      'tests/unit/economic-result-readonly-pin.test.js',");
+  expect(onlyAllowedFeatureTestAdditions(before,withPin)).toBe(true);
+  expect(onlyAllowedFeatureTestAdditions(withRunner,withPin)).toBe(true);
+  expect(onlyAllowedFeatureTestAdditions(withPin,withPin)).toBe(true);
+  expect(onlyAllowedFeatureTestAdditions(withRunner,withPin+'\n// unexpected')).toBe(false);
+  expect(onlyAllowedFeatureTestAdditions(withRunner,withPin.replace('base.test.js','different.test.js'))).toBe(false);
 });
