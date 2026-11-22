@@ -199,21 +199,34 @@ async function runN32(o,buyer,browser){
    report.probes.push({role:r.role,gesture:'POST hub/physical-codes/confirm',via:'API_PROBE_NO_SCREEN_GESTURE',http:w?w.status():null,error_code:wj.code||null});
   }
   reach('ROLE_PROBES_DONE');
-  // Hub central porteur d'une délégation restreinte : PO d'un marché hors délégation attendu 403 (L-SEC). Sans délégation restreinte, la branche n'est pas prouvable.
-  hub=await login(browser,'E2E_AGENT_HUB_','agent_hub');
+  // The isolated Hub actor owns operations.read on exactly this market.
+  const {rows:[ownMarket]}=await db.query('SELECT market_id FROM orders WHERE id=$1',[ID]);
+  check(!!ownMarket?.market_id,'G6_N32_PREREQ_CURRENT_ORDER_MARKET_MISSING');
+  const hubId=await provisionRestrictedHub(ownMarket.market_id,f.market_id);
+  hub=await login(browser,'G6_N32_RESTRICTED_HUB_','agent_hub');
   const me=await (await hub.page.request.get('/api/auth/me')).json();
-  const grants=await listAuthorizedMarketsForCapability(db,{userId:me.id,requiredCapability:'operations.read'});
-  const {rows:[po]}=await db.query('SELECT DISTINCT purchase_order_id FROM v_purchase_line_market WHERE market_id=$1 AND NOT cancelled LIMIT 1',[f.market_id]);
-  if(grants.length&&!grants.some(g=>g.market_id===f.market_id)&&po){
-   const w=await hub.page.request.post(URL_CONFIRM,{headers:{origin:BASE},data:{...confirmBody,purchase_order_id:po.purchase_order_id}}).catch(()=>null);
-   const wj=w?await w.json().catch(()=>({})):{};
-   report.probes.push({role:'agent_hub_delegated',gesture:'POST hub/physical-codes/confirm foreign PO',via:'API_PROBE_NO_SCREEN_GESTURE',http:w?w.status():null,error_code:wj.code||null});
-  }else{
-   report.hub_market_leg='PREREQ_MISSING_RESTRICTED_HUB_DELEGATION_OR_FOREIGN_PO';
-   save();
-   // A cross-market N32 PASS cannot omit the restricted Hub + foreign PO leg.
-   throw Error('G6_N32_PREREQ_MISSING_RESTRICTED_HUB_DELEGATION_OR_FOREIGN_PO');
-  }
+  check(me.id===hubId&&me.role==='agent_hub',
+   'G6_N32_PRODUCT_GAP_HUB_SESSION_NOT_RESTRICTED_ACTOR');
+  // Chromium navigation of the permitted Hub workspace, then an authenticated
+  // API probe of the hidden foreign PO; no forged UI success nor SQL state write.
+  const doc=await humanGoto(hub.page,
+   BASE+'/admin/workspaces/operations?market='+MK.code,{waitUntil:'domcontentloaded'});
+  check(doc?.status()===200,'G6_N32_SCREEN_MISSING_HUB_WORKSPACE');
+  report.hub_actor.workspace_http=doc.status();
+  report.hub_actor.browser_session=true;
+  const w=await hub.page.request.post(URL_CONFIRM,{
+   headers:{origin:BASE},
+   data:{purchase_order_id:f.po_id,product_sku_id:f.sku_id,
+    code:'N32PROBE',code_type:'EAN_GTIN',proof_ref:'N32'}
+  }).catch(()=>null);
+  const wj=w?await w.json().catch(()=>({})):{};
+  report.probes.push({role:'agent_hub_delegated',
+   gesture:'POST hub/physical-codes/confirm foreign PO',
+   via:'AUTHENTICATED_CHROMIUM_API_PROBE_NO_SCREEN_GESTURE',
+   expected_http:[403],http:w?w.status():null,error_code:wj.code||null,
+   expected_error_code:'HUB_PHYSICAL_MARKET_SCOPE_MISMATCH'});
+  report.hub_market_leg=w?.status()===403&&wj.code==='HUB_PHYSICAL_MARKET_SCOPE_MISMATCH'
+   ?'DENIED_PROVEN':'PRODUCT_GAP';
   reach('HUB_MARKET_LEG');
   const after=await snap();
   report.snapshot={before,after,unchanged:JSON.stringify(before)===JSON.stringify(after)};
