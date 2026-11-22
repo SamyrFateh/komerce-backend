@@ -8,7 +8,7 @@
  * @outputs       immutable_purchase_allocation, physical_unit, custody_events, governed_incident, transactional_outbox_event
  * @depends       services/outbox-producer.js, services/incident-write-service.js
  * @used-by       HUB-001 internal logistics boundary
- * @db-read       purchase_orders, orders, order_items, incidents, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_custody_events, purchase_lines
+ * @db-read       purchase_orders, orders, order_items, incidents, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_custody_events, purchase_lines, suppliers, manual_purchase_executions
  * @db-write      hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_custody_events
  * @db-write-via:incident-write-service incidents
  * @db-write-via:outbox-producer outbox_events
@@ -165,6 +165,96 @@ async function resolvePurchaseSnapshot(executor, purchaseOrderId) {
   return snapshotFromRow(row);
 }
 
+
+/**
+ * A confirmed Central Hub MANUAL purchase has no external supplier SKU/SOI.
+ * Its *internal* physical provenance is the immutable Purchasing execution
+ * evidence, not a fictitious external provider identity.
+ *
+ * Both original supplier fields must be exactly NULL; a partial/invalid
+ * external identity is never silently repaired here.
+ * All reads run inside the caller's existing receipt transaction.
+ */
+async function snapshotFromConfirmedCentralHubExecution(executor, row) {
+  const db = requireExecutor(executor);
+  if (!row || !row.purchase_line_id
+      || row.supplier_unit_ref !== null || row.supplier_order_identity !== null) {
+    return snapshotFromRow(row);
+  }
+
+  const { rows: [proof] } = await db.query(
+    `SELECT s.system_key, po.trigger_mode, po.status AS po_status,
+            pl.confirmed_quantity, pl.confirmed_unit_price, pl.confirmed_currency,
+            pl.confirmed_at, pl.supplier_unit_ref, pl.supplier_order_identity
+       FROM purchase_lines pl
+       JOIN purchase_orders po ON po.id = pl.purchase_order_id
+       JOIN suppliers s ON s.id = pl.supplier_id
+      WHERE pl.id = $1 AND po.id = $2 AND pl.cancelled_at IS NULL`,
+    [row.purchase_line_id, row.purchase_order_id]
+  );
+  const confirmedQty = Number(proof?.confirmed_quantity);
+  const confirmedPrice = Number(proof?.confirmed_unit_price);
+  if (!proof || proof.system_key !== 'central_hub'
+      || !['manual', 'whatsapp'].includes(proof.trigger_mode)
+      || !['confirmed', 'hub_received'].includes(proof.po_status)
+      || proof.supplier_unit_ref !== null || proof.supplier_order_identity !== null
+      || !proof.confirmed_at || !Number.isInteger(confirmedQty) || confirmedQty < 1
+      || confirmedQty !== Number(row.quantity)
+      || !Number.isFinite(confirmedPrice) || confirmedPrice <= 0
+      || !/^[A-Z]{3}$/.test(String(proof.confirmed_currency || ''))) {
+    fail('HUB_SUPPLIER_IDENTITY_UNRESOLVABLE',
+      'Achat Hub manuel sans identité fournisseur : confirmation et prix prouvés obligatoires');
+  }
+
+  const { rows: executions } = await db.query(
+    `SELECT id, quantity, amount, currency, seller_supplier_id, seller_label, proof_ref
+       FROM manual_purchase_executions
+      WHERE purchase_order_id = $1 AND purchase_line_id = $2
+      ORDER BY id`,
+    [row.purchase_order_id, row.purchase_line_id]
+  );
+  // All seller portions must be durably evidenced and exactly reconcile.
+  // Money uses the persisted 4-decimal precision, not floating rounding tolerances.
+  const expectedAmount4 = Math.round(confirmedPrice * 10000) * confirmedQty;
+  let totalQty = 0;
+  let totalAmount4 = 0;
+  for (const entry of executions || []) {
+    const qty = Number(entry.quantity);
+    const amount4 = Math.round(Number(entry.amount) * 10000);
+    if (!entry.id || !Number.isInteger(qty) || qty < 1
+        || !Number.isSafeInteger(amount4) || amount4 < 0
+        || entry.currency !== proof.confirmed_currency
+        || !String(entry.proof_ref || '').trim()
+        || (!entry.seller_supplier_id && !String(entry.seller_label || '').trim())) {
+      fail('HUB_SUPPLIER_IDENTITY_UNRESOLVABLE',
+        'Preuve vendeur/quantité/montant/devise manuelle incomplète');
+    }
+    totalQty += qty;
+    totalAmount4 += amount4;
+  }
+  if (!executions?.length || !Number.isSafeInteger(expectedAmount4)
+      || totalQty !== confirmedQty || totalAmount4 !== expectedAmount4) {
+    fail('HUB_SUPPLIER_IDENTITY_UNRESOLVABLE',
+      'Exécutions manuelles non réconciliées avec la confirmation de la ligne');
+  }
+
+  // This reference explicitly identifies *internal Purchasing evidence*.
+  // It must never be presented as an actual supplier SKU or external order.
+  return snapshotFromRow({
+    ...row,
+    supplier_unit_ref: 'INTERNAL-MANUAL-PURCHASE:' + row.purchase_line_id,
+    supplier_order_identity: {
+      provider: 'komerce_manual_purchase_evidence',
+      version: 1,
+      payload: {
+        purchase_order_id: row.purchase_order_id,
+        purchase_line_id: row.purchase_line_id,
+        execution_ids: executions.map((entry) => String(entry.id)),
+      },
+    },
+  });
+}
+
 // PO regroupée : la quantité reçue est répartie sur les lignes de la PO portant le product_sku_id déclaré,
 // non annulées et non soldées, par ordre de commande (orders.created_at) puis id de ligne. Chaque ligne servie
 // reçoit son propre instantané d'allocation (ligne + order_items + orders).
@@ -230,7 +320,7 @@ async function resolveGroupedLineEntries(db, content) {
     const share = Math.min(left, remaining);
     entries.push({
       content: { ...content, quantity: share },
-      snapshot: snapshotFromRow(row),
+      snapshot: await snapshotFromConfirmedCentralHubExecution(db, row),
     });
     left -= share;
   }
@@ -1299,6 +1389,7 @@ module.exports = {
   PHYSICAL_OPERATIONS,
   HUB_QUARANTINE_SUBTYPE_BY_REASON,
   resolvePurchaseSnapshot,
+  snapshotFromConfirmedCentralHubExecution,
   snapshotPurchaseAllocation,
   createPhysicalUnit,
   receiveSupplierPackage,
