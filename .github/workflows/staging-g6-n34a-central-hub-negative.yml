@@ -1,0 +1,65 @@
+name: G6 N34a — central Hub API refusal with PG proof (staging)
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  n34a-delete-refusal:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[staging-op] g6-n34a-central-hub-negative-KM'
+    concurrency:
+      group: komerce-g6-canonical-real-transaction
+      cancel-in-progress: false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      G6_CANONICAL_SCENARIO: N34
+      G6_TARGET_MARKET: KM
+      G6_N34A_REFUSAL_ONLY: '1'
+      PGOPTIONS: '-c default_transaction_read_only=on'
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Require exactly deployed staging SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          head="$(git rev-parse HEAD)"
+          live="$(curl -fsS "$STAGING_BASE_URL/health/version" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(String(JSON.parse(s).commit||"")))')"
+          test "$head" = "$live" || { echo "N34A_SHA_DRIFT head=$head live=$live"; exit 1; }
+          echo "E2E_EXPECTED_DEPLOY_SHA=$head" >> "$GITHUB_ENV"
+      - name: Staging target-guard PG identity
+        run: node scripts/recette/target-guard.js
+      - name: Install real Chromium
+        run: npx playwright install chromium --only-shell
+      - name: Supplier 360 read-only + two API 409 negative attempts + PG unchanged
+        run: node scripts/recette/g6-n34a-api-delete-negative-chromium.js
+      - name: Save only redacted HTTP and PG hashes, no session trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g6-n34a-central-hub-negative-${{ github.run_id }}
+          path: test-results/g6-n34a-delete-refusal/
+          retention-days: 21
+          if-no-files-found: warn
