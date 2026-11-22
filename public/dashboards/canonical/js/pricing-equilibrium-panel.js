@@ -35,13 +35,14 @@
   }
 
   function formatNumber(value, digits = 0) {
+    if (value == null || (typeof value === 'string' && value.trim() === '')) return '—';
     const number = Number(value);
     if (!Number.isFinite(number)) return '—';
     return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: digits }).format(number);
   }
 
   function formatKmf(value) {
-    return value == null || !Number.isFinite(Number(value)) ? '—' : `${formatNumber(value)} KMF`;
+    return value == null || (typeof value === 'string' && value.trim() === '') || !Number.isFinite(Number(value)) ? '—' : `${formatNumber(value)} KMF`;
   }
 
   function formatRatioPercent(workspace, value) {
