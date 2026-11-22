@@ -4,8 +4,11 @@
  * @layer script
  * @owner backend-core
  * @purpose N28 (staging only) : remise au comptoir Remises avec réponse 500 puis réponse perdue après commit, puis réessai par l'écran ; N32 : lectures et écritures croisées marché et rôle (table R). Aucune écriture SQL.
- * @db-read orders, users, scans, parcel_items, parcels, product_sku_physical_codes, v_purchase_line_market, markets
+ * @db-read orders, order_items, users, scans, parcel_items, parcels, product_sku_physical_codes, v_purchase_line_market, markets, purchase_lines, purchase_orders, market_operating_assignments, assignment_memberships, membership_capabilities
  * @db-write users, e2e_test_accounts, assignment_memberships, membership_capabilities (N32: canonical E2E identity writers only)
+ * @db-write-via:user-mutation-service users
+ * @db-write-via:staging-e2e-identities-provisioner e2e_test_accounts
+ * @db-write-via:market-delegation-service assignment_memberships, membership_capabilities
  * @impact-areas staging-only, security
  */
 'use strict';
