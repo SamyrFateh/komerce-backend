@@ -184,7 +184,7 @@ async function main(){
     after.shipmentEvents.length===1&&after.shipmentEvents[0].event_type==='opened'&&
     after.parcel_status==='preparation'&&Number(after.parcel_qty_shipped)===0,
     'G6_M06_HANDOVER_OPEN_PG_INVALID');
-   const shipmentId=after.shipments[0].id;report.shipment_id=shipmentId;save();
+   const shipmentId=after.shipments[0].id;report.shipment_id=shipmentId;report.parcel_id=after.parcel_id;report.box_id=after.box_id;save();
    section=await openHub(actor.page);row=boxRow(section,actor.page);
    await row.waitFor({state:'visible',timeout:25000});
    await exactGesture(actor,'dispatch-box',API+'/boxes/'+plan.box_id+'/advance',

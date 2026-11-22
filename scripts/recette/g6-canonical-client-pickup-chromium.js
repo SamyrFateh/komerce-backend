@@ -55,7 +55,7 @@ async function state(){
  check(base.shipments.length===1&&base.shipments[0].id===SHIPMENT&&base.parcels.length===1&&base.parcels[0].id===PARCEL&&
   orders.length===1&&orders[0].reference===(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6')&&lines.length===SC.items&&sameSet(lines.map(l=>l.order_item_id),ITEMS)&&receipts.length===SC.items&&
   sameSet(receipts.map(r=>r.order_item_id),ITEMS)&&
-  receipts.every(r=>r.shipment_id===SHIPMENT&&Number(r.received_qty)===1&&r.incident_id===null),'G6_PICKUP_SCOPE_DRIFT');
+  receipts.every(r=>r.shipment_id===SHIPMENT&&Number(r.received_qty)===SC.units&&r.incident_id===null),'G6_PICKUP_SCOPE_DRIFT');
  return {base,orders,lines,receipts,scans};
 }
 // opts.allowNoCode (scénario négatif N09 uniquement) : l'absence de code ou le refus de rotation est retourné au lieu de lever.
@@ -223,7 +223,7 @@ async function main(){
    env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&
    env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&env.STAGING_BASE_URL===BASE&&
    env.G6_CANONICAL_PHASE==='CLIENT_PICKUP'&&(env.G6_CANONICAL_RESUME_RUN_ID==='44272362064'||env.G6_DYNAMIC_FRESH_ORDER==='1')&&
-   ['M01','M03'].includes(env.G6_CANONICAL_SCENARIO)&&env.G6_TARGET_MARKET===MK.code&&env.G6_CANONICAL_ORDER_ID===ID,
+   ['M01','M03','M06'].includes(env.G6_CANONICAL_SCENARIO)&&env.G6_TARGET_MARKET===MK.code&&env.G6_CANONICAL_ORDER_ID===ID,
    'G6_PICKUP_OWNER_STAGING_GUARD');
   const guard=await confirmTarget({db,env});
   check(guard.confirmed&&guard.fingerprint===env.G6_CANONICAL_DB_FINGERPRINT,'G6_PICKUP_DB_FINGERPRINT_DRIFT');
@@ -235,7 +235,7 @@ async function main(){
     before.base.parcels[0].status==='available'&&(M03?owner.status!=='collected':owner.status==='available')&&owner.payment_status==='paid'&&
     (!owner.pickup_code_recipient_user_id||owner.user_id===owner.pickup_code_recipient_user_id),'G6_PICKUP_PRECONDITION_OWNER_INVALID');
   check(owner.role==='client'&&!!owner.phone&&(M03||!!owner.pickup_secret_hash)&&before.scans.length===PRE&&
-    before.lines.every(l=>Number(l.qty_received)===1&&Number(l.qty_collected)===0),
+    before.lines.every(l=>Number(l.qty_received)===SC.units&&Number(l.qty_collected)===0),
     'G6_PICKUP_PRECONDITION_PHYSICAL_INVALID');
   const buyer={id:owner.user_id,email:owner.email,phone:owner.phone,role:owner.role};
   check(await verifyMarkedG6Buyer(db,buyer,env),'G6_PICKUP_EXISTING_MARKED_BUYER_REQUIRED');
@@ -250,7 +250,7 @@ async function main(){
   save();
   check(after.orders[0].status==='collected'&&after.base.parcels[0].status==='collected'&&
     after.base.shipments[0].stage==='relay_received'&&
-    after.lines.every(l=>Number(l.qty_collected)===1)&&after.scans.length===1+PRE&&
+    after.lines.every(l=>Number(l.qty_collected)===SC.units)&&after.scans.length===1+PRE&&
     after.scans.at(-1).scanned_by===agent&&after.scans.at(-1).pickup_relais_id===owner.relais_id&&
     after.scans.at(-1).pickup_method==='PICKUP_CODE'&&after.receipts.length===SC.items&&
     isDeepStrictEqual(after.receipts,before.receipts),
