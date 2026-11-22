@@ -129,7 +129,7 @@ describe('G6-G4B N21 (agent d\'un autre relais) et N22 (relais A/B)',()=>{
   expect(N.classifyNegative('N22','G6_N22_PREREQ_MISSING_ORDER_AT_RELAY_B')).toBe('PREREQ_MISSING_ORDER_AT_RELAY_B');
   expect(N.classifyNegative('N22','G6_N22_PRODUCT_GAP_READ_order_by_ref')).toBe('PRODUCT_GAP');
   expect(N.classifyNegative('N32','G6_N32_PREREQ_MISSING_RESTRICTED_HUB_DELEGATION_OR_FOREIGN_PO')).toBe('PREREQ_MISSING_RESTRICTED_HUB_DELEGATION_OR_FOREIGN_PO');
-  expect(read('scripts/recette/g6-negative-n28-n32-chromium.js')).toContain("throw Error('G6_N32_PREREQ_MISSING_RESTRICTED_HUB_DELEGATION_OR_FOREIGN_PO')");
+  expect(read('scripts/recette/g6-negative-n28-n32-chromium.js')).toContain("throw Error('G6_N32_PREREQ_MISSING_FOREIGN_MARKET_ORDER_WITH_PO')");
   const orchestrator=read('scripts/recette/canonical/negative-runner.js');
   expect(orchestrator).toContain('G6_N22_PREREQ_MISSING_ORDER_AT_RELAY_B');
   expect(orchestrator).toContain('G6_N32_PREREQ_MISSING_RESTRICTED_HUB_DELEGATION_OR_FOREIGN_PO');
