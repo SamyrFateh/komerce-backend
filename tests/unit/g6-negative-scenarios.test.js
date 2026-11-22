@@ -167,6 +167,10 @@ describe('G6-G4B N21 (agent d\'un autre relais) et N22 (relais A/B)',()=>{
    expect(cross).toContain('G6_N22_PRODUCT_GAP_OWNER_A_CANNOT_READ');
    expect(cross).toContain('G6_N22_PRODUCT_GAP_OWNER_B_CANNOT_READ');
    expect(cross).toContain('N22_REVERSE_WRITE_ACCEPTED');
+   expect(cross).toContain('N22_REVERSE_READ_NOT_404_');
+   expect(cross).toContain('N22_FORWARD_READ_NOT_404_');
+   expect(cross).toContain('N22_REVERSE_WRITE_NOT_403_');
+   expect(cross).toContain('N22_FORWARD_WRITE_NOT_403_');
    expect(cross).not.toContain('ORDER BY created_at DESC LIMIT 1');
    expect(N.classifyNegative('N22','G6_N22_PREREQ_MISSING_BROWSER_SELECTABLE_SECOND_RELAY'))
     .toBe('PREREQ_MISSING_BROWSER_SELECTABLE_SECOND_RELAY');
