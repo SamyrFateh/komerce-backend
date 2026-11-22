@@ -27,7 +27,7 @@ test.use({ screenshot: 'off', trace: 'off', video: 'off' });
 
 async function cockpit(page, { step = 'draft', status = 'draft',
   commitment = false, payment = false, director = false, need = false, readOnly = false, simulation = false,
-  sentAt = null } = {}) {
+  sentAt = null, unpriced = false } = {}) {
   // Network-deny is deliberate. These are actual Chromium UI clicks, NOT backend
   // transaction clicks; no synthetic response can be mistaken for HTTP/PG proof.
   const attempted = [];
@@ -39,10 +39,11 @@ async function cockpit(page, { step = 'draft', status = 'draft',
   await page.setContent('<!doctype html><html lang="fr"><body><main id="workplace"></main></body></html>');
   await page.addScriptTag({ content: SCRIPT });
   await page.evaluate(({ poId, lineId, step, status, commitment, payment,
-    director, need, readOnly, sentAt, simulation }) => {
+    director, need, readOnly, sentAt, simulation, unpriced }) => {
     const line = { line_id: lineId, order_id: 'ORDER-ISOLATED', order_ref: 'G2-ISOLATED',
       product: 'Produit de recette hors ligne', ordered: 2, confirmed: 2,
-      received: 0, missing: 2, fifo_rank: 1, fifo_next: true };
+      received: 0, missing: 2, fifo_rank: 1, fifo_next: true,
+      unit_price: unpriced ? null : 10, currency: unpriced ? null : 'EUR' };
     const po = {
       id: poId, ref: 'PO-G2-ISOLATED', supplier_name: 'Fournisseur fictif CI',
       status, status_view: { label: status, tone: 'wait' },
@@ -86,7 +87,7 @@ async function cockpit(page, { step = 'draft', status = 'draft',
       document.getElementById('workplace'), ctx);
     window.__g2.render();
   }, { poId: PO_ID, lineId: LINE_ID, step, status, commitment, payment, director,
-    need, readOnly, sentAt, simulation });
+    need, readOnly, sentAt, simulation, unpriced });
   return attempted;
 }
 
@@ -232,15 +233,23 @@ test('08 - G6 fournisseur fictif: envoi interne seulement, preuve marquée sans 
 });
 
 test('09 - G6 confirmation fictive : justificatif et vendeur explicitement simulés', async ({page}) => {
-  const attempted=await cockpit(page,{step:'sent',status:'notified',sentAt:'2026-11-17T00:00:00Z',commitment:true,simulation:true});
+  const attempted=await cockpit(page,{step:'sent',status:'notified',sentAt:'2026-11-17T00:00:00Z',commitment:true,simulation:true,unpriced:true});
   await page.locator('[data-hlc-po]').click();
   await page.locator('[data-hlc-action="confirm-po"]').click();
   const form=page.locator('form[data-hlc-form="confirm"]');
   await expect(form.locator('[name="supplier_order_id"]')).toHaveValue('SIM-STAGING-' + PO_ID);
   await expect(form.locator('[name="purchase_proof_ref"]')).toHaveValue('SIM-STAGING-ACHAT-' + PO_ID);
   await expect(form.locator('[name="seller_label"]')).toHaveValue('SIMULATED-STAGING-FOURNISSEUR-' + PO_ID);
+  await expect(form.locator('[data-hlc-confirmed-price]')).toHaveValue('');
+  await expect(form.locator('[data-hlc-confirmed-currency]')).toHaveValue('');
+  await form.locator('[data-hlc-action="submit-confirm"]').click();
+  await expect(form).toContainText('Prix confirmé positif et devise obligatoire');
+  expect(await page.evaluate(() => window.__g2.calls)).toEqual([]);
+  await form.locator('[data-hlc-confirmed-price]').fill('10.00');
+  await form.locator('[data-hlc-confirmed-currency]').fill('EUR');
   await form.locator('[data-hlc-action="submit-confirm"]').click();
   await capture(page,'09-confirm-simulation','/api/purchasing/po/'+PO_ID+'/confirm',
-    {simulated:true,purchase_proof_ref:'SIM-STAGING-ACHAT-' + PO_ID,seller_label:'SIMULATED-STAGING-FOURNISSEUR-' + PO_ID});
+    {simulated:true,purchase_proof_ref:'SIM-STAGING-ACHAT-' + PO_ID,seller_label:'SIMULATED-STAGING-FOURNISSEUR-' + PO_ID,
+      lines:[{ purchase_line_id:LINE_ID,confirmed_quantity:2,confirmed_unit_price:10,confirmed_currency:'EUR' }]});
   expect(attempted).toEqual([]);
 });

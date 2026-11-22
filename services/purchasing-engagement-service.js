@@ -382,7 +382,12 @@ function parseConfirmationLines(body) {
       price = Number(entry.confirmed_unit_price);
       if (!Number.isFinite(price) || price <= 0) throw fail(400, 'INVALID_INPUT', 'lines[].confirmed_unit_price doit être > 0');
     }
-    return { id, confirmedQuantity, price };
+    let currency = null;
+    if (entry.confirmed_currency !== undefined && entry.confirmed_currency !== null) {
+      currency = String(entry.confirmed_currency).trim().toUpperCase();
+      if (!/^[A-Z]{3}$/.test(currency)) throw fail(400, 'CONFIRMED_CURRENCY_INVALID', 'lines[].confirmed_currency doit être une devise ISO à 3 lettres');
+    }
+    return { id, confirmedQuantity, price, currency };
   });
   if (new Set(parsed.map((p) => p.id)).size !== parsed.length) throw fail(400, 'INVALID_INPUT', 'lines contient des doublons');
   return parsed;
@@ -604,6 +609,21 @@ async function confirmGroupedPurchaseOrder(poId, body = {}, { actor = null, cont
       if (c.confirmedQuantity > 0 && c.price === null && !(Number(line.supplier_unit_price) > 0)) {
         throw fail(400, 'CONFIRMED_PRICE_REQUIRED', 'Prix unitaire confirmé obligatoire pour une ligne sans prix fournisseur connu', { purchase_line_id: line.id });
       }
+      if (c.confirmedQuantity > 0) {
+        const known = String(line.supplier_currency || '').trim().toUpperCase();
+        if (c.currency && known && c.currency !== known) {
+          throw fail(400, 'CONFIRMED_CURRENCY_MISMATCH', 'La devise confirmée diffère de celle de la ligne achat', { purchase_line_id: line.id });
+        }
+        if (!known && !c.currency) {
+          throw fail(400, 'CONFIRMED_CURRENCY_REQUIRED', 'Devise explicitement confirmée obligatoire pour une ligne d\'achat sans devise connue', { purchase_line_id: line.id });
+        }
+        if (!known && po.trigger_mode === 'auto') {
+          throw fail(409, 'CONFIRMED_CURRENCY_AUTO_SOURCE_REQUIRED', 'Une ligne fournisseur API ne peut pas créer sa devise lors de la confirmation');
+        }
+        // Ligne manuelle sans devis initial : devise connue seulement après achat.
+        // Ne jamais la confondre avec supplier_unit_price de devis.
+        if (!known) line.supplier_currency = c.currency;
+      }
     }
 
     const allZero = confirmations.every((c) => c.confirmedQuantity === 0);
@@ -621,9 +641,11 @@ async function confirmGroupedPurchaseOrder(poId, body = {}, { actor = null, cont
       await client.query(`
         UPDATE purchase_lines
            SET confirmed_quantity = $2, confirmed_unit_price = COALESCE($3, supplier_unit_price),
+               supplier_currency = COALESCE(supplier_currency, $4),
                confirmed_at = NOW(), updated_at = NOW()
          WHERE id = $1
-      `, [line.id, c.confirmedQuantity, c.price]);
+      `, [line.id, c.confirmedQuantity, c.price,
+        c.confirmedQuantity > 0 && po.trigger_mode !== 'auto' ? c.currency : null]);
     }
     const remnantIds = [];
     for (const line of lines) {

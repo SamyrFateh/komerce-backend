@@ -125,3 +125,26 @@ test('la file de la direction Hub garde une hauteur réservée et des groupes li
   expect(src).toContain("group.setAttribute('data-hub-director-group',spec.key)");
   expect(src).toContain("task.viewer_can_act===false");
 });
+
+describe('M03 — Hub Live exige un prix confirmé et une devise saisis par un humain', () => {
+  const js = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/hub-live-cockpit.js'), 'utf8');
+
+  test('ligne sans devis : champs explicites, jamais préremplis par budget ni prix retail', () => {
+    expect(js).toContain('if (!(Number(l.unit_price) > 0) || !l.currency)');
+    expect(js).toContain("name: 'confirmed_unit_price'");
+    expect(js).toContain("textInput('EUR', 'confirmed_currency')");
+    expect(js).toContain("p.setAttribute('data-hlc-confirmed-price', '')");
+    expect(js).toContain("c.setAttribute('data-hlc-confirmed-currency', '')");
+    expect(js).toContain('const confirmMoney = new Map()');
+    expect(js).not.toMatch(/confirmed_unit_price\s*=\s*(?:l\.unit_price|po\.amount)/);
+  });
+
+  test('la soumission refuse quantité positive sans vrai prix et devise ISO', () => {
+    expect(js).toContain('if (money && row.confirmed_quantity > 0)');
+    expect(js).toContain('row.confirmed_unit_price = Number(money.p.value)');
+    expect(js).toContain('row.confirmed_currency = money.c.value.trim().toUpperCase()');
+    expect(js).toContain('Prix confirmé positif et devise obligatoire pour les lignes sans devis fournisseur.');
+    expect(js).toContain("purchase_proof_ref: confirmProof.value.trim()");
+    expect(js).toContain("seller_label: confirmSeller.value.trim()");
+  });
+});

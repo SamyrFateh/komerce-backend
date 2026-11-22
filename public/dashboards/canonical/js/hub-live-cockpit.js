@@ -642,6 +642,7 @@
         if (kind === 'payment' && po.amount.derived) { amount.placeholder = String(po.amount.amount); currency.value = po.amount.currency; }
       }
       let channel; let supplierOrder; let confirmProof; let confirmSeller; let confirmQty = [];
+      const confirmMoney = new Map();
       if (kind === 'sent') {
         channel = field(form, simulated ? 'Canal interne de simulation (aucun envoi)' : 'Canal d’envoi réel', doc.createElement('select'));
         (simulated ? [['other', 'Simulation interne — sans contact']] : CHANNELS).forEach(([v, l]) => channel.appendChild(Object.assign(doc.createElement('option'), { value: v, textContent: l })));
@@ -653,6 +654,18 @@
         po.lines.forEach((l) => {
           const q = field(form, `${l.order_ref} · ${l.product || 'Article'} (commandé ${l.ordered})`, Object.assign(doc.createElement('input'), { type: 'number', min: '0', max: String(l.ordered), step: '1', value: String(l.ordered) }));
           confirmQty.push([l, q]);
+          // Le produit manuel central Hub peut ne pas avoir de devis fournisseur initial.
+          // Prix constaté et devise saisis à la CONFIRMATION, jamais déduits du prix retail
+          // ni préremplis à partir du budget indicatif du sourcing.
+          if (!(Number(l.unit_price) > 0) || !l.currency) {
+            const p = field(form, simulated ? 'Prix unitaire FICTIF confirmé — staging' : 'Prix unitaire constaté sur justificatif', Object.assign(doc.createElement('input'), {
+              type: 'number', min: '0', step: '0.01', name: 'confirmed_unit_price',
+            }));
+            const c = field(form, 'Devise de confirmation (ISO 3 lettres)', Object.assign(textInput('EUR', 'confirmed_currency'), { maxLength: 3 }));
+            p.setAttribute('data-hlc-confirmed-price', '');
+            c.setAttribute('data-hlc-confirmed-currency', '');
+            confirmMoney.set(l.line_id, { p, c });
+          }
         });
         supplierOrder = field(form, 'Référence de commande fournisseur', textInput('', 'supplier_order_id'));
         confirmProof = field(form, 'Justificatif d’achat (obligatoire)', textInput('Facture, capture, reçu…', 'purchase_proof_ref'));
@@ -693,8 +706,20 @@
             runningMessage: simulated ? 'Enregistrement de la simulation interne…' : 'Enregistrement de l’envoi…', successMessage: simulated ? 'Étape fournisseur simulée enregistrée — aucun contact extérieur.' : 'Envoi enregistré (canal, auteur, heure).', onSuccess: () => { state.form = null; },
           });
         } else if (kind === 'confirm') {
-          const lines = confirmQty.map(([l, q]) => ({ purchase_line_id: l.line_id, confirmed_quantity: Number(q.value) }));
+          const lines = confirmQty.map(([l, q]) => {
+            const row = { purchase_line_id: l.line_id, confirmed_quantity: Number(q.value) };
+            const money = confirmMoney.get(l.line_id);
+            if (money && row.confirmed_quantity > 0) {
+              row.confirmed_unit_price = Number(money.p.value);
+              row.confirmed_currency = money.c.value.trim().toUpperCase();
+            }
+            return row;
+          });
           if (lines.some((x) => !Number.isInteger(x.confirmed_quantity) || x.confirmed_quantity < 0)) { note.textContent = 'Quantités confirmées : entiers positifs ou nuls.'; return; }
+          if (lines.some((x) => x.confirmed_unit_price !== undefined &&
+              (!(x.confirmed_unit_price > 0) || !/^[A-Z]{3}$/.test(x.confirmed_currency)))) {
+            note.textContent = 'Prix confirmé positif et devise obligatoire pour les lignes sans devis fournisseur.'; return;
+          }
           if (lines.some((x) => x.confirmed_quantity > 0) && confirmProof.value.trim().length < 4) { note.textContent = 'Justificatif d’achat obligatoire (4 caractères minimum).'; return; }
           execute(submit, {
             url: purchasing(`po/${id}/confirm`),
