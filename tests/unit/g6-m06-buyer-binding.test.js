@@ -9,6 +9,9 @@ describe('G6 M06 fresh buyer binding',()=>{
   expect(()=>buyerParams({G6_CANONICAL_SCENARIO:'M06',G6_TARGET_MARKET:'KM',
    G6_BUYER_PRODUCT_REF:'KPR-000321',G6_BUYER_EXPECTED_PRICE:'1500'}))
    .toThrow('G6_M06_CENTRAL_HUB_PRODUCT_NOT_BOUND');
+  expect(()=>buyerParams({G6_CANONICAL_SCENARIO:'M06',G6_TARGET_MARKET:'KM',
+   G6_BUYER_PRODUCT_REF:'KPR-000255',G6_BUYER_EXPECTED_PRICE:String(Number.MAX_SAFE_INTEGER)}))
+   .toThrow('G6_M06_CENTRAL_HUB_PRODUCT_NOT_BOUND');
  });
 
  test('binds one on-demand Hub line at quantity three without synthetic supplier values',()=>{

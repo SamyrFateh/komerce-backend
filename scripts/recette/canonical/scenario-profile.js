@@ -48,7 +48,7 @@ function multiVariantParams(env,market){
 // M06 : produit Hub manuel vendu sur commande, sans stock physique.
 function m06HubParams(env,market){
  const ref=String(env.G6_BUYER_PRODUCT_REF||''),unitPrice=Number(env.G6_BUYER_EXPECTED_PRICE);
- if(ref!=='KPR-000255'||!Number.isInteger(unitPrice)||unitPrice<=0)
+ if(ref!=='KPR-000255'||!Number.isSafeInteger(unitPrice)||unitPrice<=0||!Number.isSafeInteger(unitPrice*3))
   throw Error('G6_M06_CENTRAL_HUB_PRODUCT_NOT_BOUND');
  return Object.freeze({scenario:'M06',market,product_ref:ref,expected_price:unitPrice*3,
   unit_price:unitPrice,quantity:3,source:'RESOLVED_CENTRAL_HUB_ON_ORDER',
