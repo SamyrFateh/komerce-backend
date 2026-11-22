@@ -18,6 +18,7 @@ const HEALTH_TIMEOUT_MS=8000;
  * malformed JSON fails immediately: no retry can turn it into an attestation.
  *
  * No POST is retried. Never use this helper for an E2E business command.
+ * A successful retry still attests the exact SHA of the immutable staging run.
  */
 async function attestHealthVersion({fetchImpl,url,expectedSha,sleep=(ms)=>new Promise(resolve=>setTimeout(resolve,ms))}){
  if(typeof fetchImpl!=='function'||typeof url!=='string'||
