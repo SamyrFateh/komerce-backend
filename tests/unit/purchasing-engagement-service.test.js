@@ -293,8 +293,8 @@ describe('confirmGroupedPurchaseOrder — garde-fous', () => {
 
   it('M03 manuel sans devis : prix, devise et justificatif explicitement obligatoires; aucune écriture si absents', async () => {
     const setup = () => scripted([
-      [/FROM purchase_orders WHERE id = \\$1 FOR UPDATE/, { rows: [poRow({ status: 'notified', trigger_mode: 'manual' })] }],
-      [/FROM purchase_lines\\s+WHERE purchase_order_id/, { rows: [{
+      [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'notified', trigger_mode: 'manual' })] }],
+      [/FROM purchase_lines\s+WHERE purchase_order_id/, { rows: [{
         id: L1, quantity: 1, supplier_unit_price: null, supplier_currency: null,
         supplier_order_identity: null, supplier_unit_ref: 'MANUAL-CENTRAL', supplier_id: uuid(3),
       }] }],
@@ -324,8 +324,8 @@ describe('confirmGroupedPurchaseOrder — garde-fous', () => {
 
   it('M03 manuel : prix fictif saisi + EUR et vendeur simulé, devise persistée atomiquement sans inventer le prix devis', async () => {
     const { calls } = scripted([
-      [/FROM purchase_orders WHERE id = \\$1 FOR UPDATE/, { rows: [poRow({ status: 'notified', trigger_mode: 'manual' })] }],
-      [/FROM purchase_lines\\s+WHERE purchase_order_id/, { rows: [{
+      [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'notified', trigger_mode: 'manual' })] }],
+      [/FROM purchase_lines\s+WHERE purchase_order_id/, { rows: [{
         id: L1, quantity: 1, supplier_unit_price: null, supplier_currency: null,
         supplier_order_identity: null, supplier_unit_ref: 'MANUAL-CENTRAL', supplier_id: uuid(3),
       }] }],
