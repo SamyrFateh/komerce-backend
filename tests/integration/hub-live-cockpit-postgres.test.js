@@ -119,7 +119,7 @@ if (!process.env.DATABASE_URL) {
     expect(i103.units.map((u) => u.state)).toEqual(['sourcing', 'sourcing']);
     expect(i103.where).toBe('sans fournisseur');
     expect(orderOf(d, s.k103).status).toMatchObject({ label: 'Anomalie fournisseur', tone: 'bad' });
-    expect(d.cockpit.physical.map((p) => p.key)).toEqual(['received', 'bags', 'boxes', 'shipped', 'reliquats']);
+    expect(d.cockpit.physical.map((p) => p.key)).toEqual(['received', 'boxes', 'shipped', 'reliquats']);
     const batchA = d.cockpit.need_batches.find((b) => b.supplier_id === supplierA);
     expect(batchA.market_id).toBe(km);
     expect(batchA.procurement_hub_ref).toBe('DXB');

@@ -115,7 +115,7 @@ test.describe('Hub live · Approvisionnement — desktop 1440', () => {
     expect(posts).toHaveLength(0);
   });
 
-  test('rattachement d’un carton à l’expédition choisie : sans ressaisie, une mutation, seulement si non rattaché', async ({ page }) => {
+  test('rattachement d’une COMBOX à l’expédition choisie : sans ressaisie, une mutation, seulement si non rattachée', async ({ page }) => {
     const posts = [];
     await mount(page, posts);
     const boxes = page.locator('[data-supply-boxes]');
@@ -129,7 +129,7 @@ test.describe('Hub live · Approvisionnement — desktop 1440', () => {
     expect(posts[0]).toEqual({ path: `${API}/boxes/${BOX}/shipment`, body: { shipment_reference: 'SHIP-2' } });
   });
 
-  test('création d’une expédition depuis les cartons cochés : un seul appel, ids des cartons', async ({ page }) => {
+  test('création d’une expédition depuis les COMBOX cochées : un seul appel, ids des COMBOX', async ({ page }) => {
     const posts = [];
     await mount(page, posts);
     const boxes = page.locator('[data-supply-boxes]');
@@ -157,7 +157,7 @@ test.describe('Hub live · Approvisionnement — desktop 1440', () => {
     await expect.poll(() => posts.length).toBe(1);
     expect(posts[0]).toEqual({path:`${API}/boxes/shipment`,body:{reference:'SHIP-EMPTY',hub_unit_ids:[]}});
   });
-  test('un carton rattaché reste détachable avant la remise', async ({ page }) => {
+  test('une COMBOX rattachée reste détachable avant la remise', async ({ page }) => {
     const posts = [];
     await mount(page, posts);
     const button = page.locator('[data-supply-boxes] [data-workspace-action="detach-box-shipment"]');
@@ -180,17 +180,15 @@ test.describe('Hub live · Approvisionnement — mobile 390', () => {
 });
 
 test.describe('Hub UX guidée — contrat Golden conservé', () => {
-  test('atelier physique visible par défaut ; quatre accès directs ; aucune écriture', async ({ page }) => {
+  test('atelier physique visible par défaut ; trois accès directs sans sac numérique ; aucune écriture', async ({ page }) => {
     const posts = [];
     await mount(page, posts, false);
     const details = page.locator('[data-hub-physical-details]');
     await expect(details).toHaveJSProperty('open', true);
-    await expect(page.locator('[data-hub-bag-preparation]')).toBeVisible();
     await expect(page.locator('[data-supply-boxes]')).toBeVisible();
     const shortcuts = page.locator('[data-hlc-physical-shortcut]');
-    await expect(shortcuts).toHaveCount(4);
-    await page.locator('[data-hlc-physical-shortcut="bags"]').click();
-    await expect(page.locator('[data-hub-bag-preparation]')).toBeInViewport();
+    await expect(shortcuts).toHaveCount(3);
+    await expect(page.locator('[data-hlc-physical-shortcut="bags"]')).toHaveCount(0);
     await page.locator('[data-hlc-physical-shortcut="boxes"]').click();
     await expect(page.locator('[data-supply-box-create]')).toBeInViewport();
     await page.locator('[data-hlc-physical-shortcut="shipments"]').click();

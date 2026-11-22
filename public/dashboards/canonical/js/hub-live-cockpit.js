@@ -932,7 +932,7 @@
       form.setAttribute('data-hlc-form', 'box');
       const selShip = doc.createElement('select');
       selShip.setAttribute('aria-label', 'Expédition ouverte');
-      (d.open_shipments || []).forEach((s2) => selShip.appendChild(Object.assign(doc.createElement('option'), { value: s2.reference, textContent: `${s2.reference} · ${s2.forwarder_name || 'transitaire'} · ${s2.box_count} carton(s)` })));
+      (d.open_shipments || []).forEach((s2) => selShip.appendChild(Object.assign(doc.createElement('option'), { value: s2.reference, textContent: `${s2.reference} · ${s2.forwarder_name || 'transitaire'} · ${s2.box_count} COMBOX` })));
       form.appendChild(selShip);
       const go = button(doc, 'Rattacher', 'submit-box', 'is-primary');
       go.type = 'submit';

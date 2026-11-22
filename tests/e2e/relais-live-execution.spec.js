@@ -240,7 +240,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(page.locator('[data-relay-shipment="SHIP-KM-DONE"]')).toBeVisible();
       const historical=page.locator('[data-relay-shipment="SHIP-KM-DONE"]');
       await expect(historical).not.toHaveAttribute('open','');
-      await expect(historical).toContainText('1 carton(s) · 1 commande(s)');
+      await expect(historical).toContainText('1 COMBOX · 1 commande(s)');
       await expect(historical).toContainText('Réception attestée');
       const details=historical.locator('[data-relay-archive-detail]');
       await expect(details).toBeHidden();
