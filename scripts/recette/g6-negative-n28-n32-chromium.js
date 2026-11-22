@@ -5,12 +5,16 @@
  * @owner backend-core
  * @purpose N28 (staging only) : remise au comptoir Remises avec réponse 500 puis réponse perdue après commit, puis réessai par l'écran ; N32 : lectures et écritures croisées marché et rôle (table R). Aucune écriture SQL.
  * @db-read orders, users, scans, parcel_items, parcels, product_sku_physical_codes, v_purchase_line_market, markets
- * @db-write none
+ * @db-write users, e2e_test_accounts, assignment_memberships, membership_capabilities (N32: canonical E2E identity writers only)
  * @impact-areas staging-only, security
  */
 'use strict';
 const MK=require('./canonical/market-profile').marketProfile(process.env);
-const fs=require('node:fs'),path=require('node:path');
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+const bcrypt=require('bcryptjs');
+const {createAdminUser}=require('../../services/user-mutation-service');
+const {markE2eTestAccount}=require('./staging-e2e-provision');
+const delegation=require('../../services/market-delegation-service');
 const {chromium}=require('playwright');
 const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
@@ -20,7 +24,7 @@ const {runtime}=require('./g6-hub-shipment-chromium');
 const {login}=require('./g6-canonical-forwarder-chromium');
 const {customer}=require('./g6-canonical-client-pickup-chromium');
 const {observe,fullError}=require('./canonical/observability');
-const {humanClick,humanFill}=require('./canonical/actors/human-gestures');
+const {humanClick,humanFill,humanGoto}=require('./canonical/actors/human-gestures');
 const {counter,openCounter,check,URL_COLLECT,bindAgent,norm}=require('./g6-negative-n23-n24-chromium');
 const env=process.env,BASE='https://komerce-backend-production.up.railway.app';
 const ID=env.G6_CANONICAL_ORDER_ID,REF=env.G6_CANONICAL_ORDER_REFERENCE,SCEN=env.G6_CANONICAL_SCENARIO;
@@ -101,6 +105,50 @@ async function runN28(o,buyer,browser){
    report.ux_signal=(!a1.message_visible&&!a2.message_visible)?'ECHEC_RESEAU_SANS_MESSAGE_A_L_ECRAN':null;
   }finally{await actor.ctx.close()}
  }finally{c.code=null;await c.ctx.close().catch(()=>{})}
+}
+// N32: never reuse the global Hub actor to "prove" a restricted market.
+// Own an isolated E2E agent with exactly one operations.read membership.
+async function provisionRestrictedHub(marketId,foreignMarketId){
+ check(SCEN==='N32'&&env.GITHUB_EVENT_NAME==='issues'&&
+  env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER&&
+  env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&
+  env.NODE_ENV==='test'&&env.KOMERCE_ENV==='staging'&&
+  env.KOMERCE_TARGET_ENV==='staging','G6_N32_STAGING_IDENTITY_GUARD');
+ const {rows:admins}=await db.query("SELECT id FROM users WHERE lower(email)=lower($1) AND role::text='admin'",[env.E2E_ADMIN_EMAIL]);
+ check(admins.length===1,'G6_N32_PREREQ_MISSING_CANONICAL_ADMIN');
+ const salt=crypto.randomBytes(6).toString('hex');
+ const email='g6-n32-hub-'+salt+'@komerce.test';
+ const password=crypto.randomBytes(24).toString('base64url')+'Aa1!';
+ const c=await db.getClient();let tx=false,agent;
+ try{
+  await c.query('BEGIN');tx=true;
+  const created=await createAdminUser(c,{
+   fullName:'G6 N32 Hub '+salt,email,role:'agent_hub',
+   currencyPref:MK.code==='KM'?'KMF':'XAF',passwordHash:await bcrypt.hash(password,10)
+  });
+  agent=created.rows[0];
+  check(!!agent?.id,'G6_N32_PREREQ_HUB_ACTOR_NOT_CREATED');
+  await markE2eTestAccount(c,{userId:agent.id,actorId:admins[0].id});
+  const assignment=await delegation.resolveActiveAssignmentByMarketCode(c,MK.code);
+  check(assignment.market_id===marketId,'G6_N32_PREREQ_CURRENT_MARKET_DRIFT');
+  await delegation.addMembership(c,{
+   assignmentId:assignment.assignment_id,userId:agent.id,
+   actorUserId:admins[0].id,capabilities:['operations.read'],actorIsCentral:true
+  });
+  await c.query('COMMIT');tx=false;
+ }catch(e){if(tx)await c.query('ROLLBACK').catch(()=>{});throw e}finally{c.release()}
+ const grants=await listAuthorizedMarketsForCapability(db,{
+  userId:agent.id,requiredCapability:'operations.read'
+ });
+ check(grants.length===1&&grants[0].market_id===marketId&&
+  !grants.some(g=>g.market_id===foreignMarketId),
+  'G6_N32_PREREQ_RESTRICTED_HUB_DELEGATION_INVALID');
+ env.G6_N32_RESTRICTED_HUB_EMAIL=email;
+ env.G6_N32_RESTRICTED_HUB_PASSWORD=password;
+ report.hub_actor={role:'agent_hub',e2e_marked:true,distinct_profile:true,
+  authorized_market:MK.code,grant_count:grants.length,foreign_market_denied:true};
+ save();
+ return agent.id;
 }
 async function runN32(o,buyer,browser){
  const {rows:[f]}=await db.query(`SELECT f.id,f.reference,f.market_id FROM orders f WHERE f.market_id IS NOT NULL
