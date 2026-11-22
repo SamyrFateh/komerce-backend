@@ -131,3 +131,50 @@ test('ne fabrique pas de cadence ou de durée lorsque le flux ne converge pas', 
   expect(velocity.contribution_per_day_kmf).toBeLessThan(0);
   expect(velocity.projected_days_to_break_even).toBeNull();
 });
+
+
+test('données économiques absentes ou vides : jamais converties en zéro ni en résultat certifié', () => {
+  const projected = decorateMarketDecision({
+    canonical_period: { width_days: 30 },
+    coverage: {
+      numerator_contribution_kmf: null,
+      structural_charges_kmf: '',
+      coverage_ratio: null,
+    },
+    flow_break_even: {
+      status: 'READY',
+      observed_mix: {
+        reconciled_contribution_kmf: null,
+        contribution_per_article_kmf: null,
+      },
+      economic_break_even: {
+        target_contribution_kmf: null,
+        gap_kmf: null,
+      },
+    },
+  });
+  const state = projected.flow_break_even.economic_state;
+  expect(state.period_contribution_kmf).toBeNull();
+  expect(state.period_structural_charges_kmf).toBeNull();
+  expect(state.period_result_kmf).toBeNull();
+  expect(state.coverage_ratio).toBeNull();
+  expect(state.break_even_gap_kmf).toBeNull();
+  expect(projected.flow_break_even.flow_velocity.contribution_per_day_kmf).toBeNull();
+  expect(projected.flow_break_even.flow_velocity.projected_days_to_break_even).toBeNull();
+});
+
+test('zéro explicite est conservé, et résultat négatif calculé uniquement si charges connues', () => {
+  const projected = decorateMarketDecision({
+    coverage: {
+      numerator_contribution_kmf: 0,
+      structural_charges_kmf: 1200,
+    },
+    flow_break_even: { status: 'READY', observed_mix: {}, economic_break_even: {} },
+  });
+  expect(projected.flow_break_even.economic_state).toMatchObject({
+    period_contribution_kmf: 0,
+    period_structural_charges_kmf: 1200,
+    period_result_kmf: -1200,
+  });
+  expect(projected.coverage.structural_charges_kmf).toBe(1200);
+});
