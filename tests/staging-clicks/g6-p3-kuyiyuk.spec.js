@@ -255,8 +255,15 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
       const activeNeed=MULTI?needs.first():needs.last();
       await activeNeed.waitFor({timeout:25000});
       await humanClick(null,activeNeed);
-      const prepare=page.locator('[data-hlc-action="prepare-po"]');
+      // M03 : si le groupe fournisseur/SKU agrège un reliquat d'une autre
+      // commande, choisir explicitement le bouton limité à NOTRE commande.
+      // Le clic global pourrait autrement lier une ligne étrangère à la PO.
+      const orderScoped=page.locator('[data-hlc-action="prepare-po-order-'+orderId+'"]');
+      const prepare=MULTI&&await orderScoped.count()===1
+        ? orderScoped : page.locator('[data-hlc-action="prepare-po"]');
       await prepare.waitFor({timeout:15000});
+      evidence.po_preparation_scope=MULTI&&prepare===orderScoped?'ORDER_ONLY':'SINGLE_GROUP';
+      save();
       const poResponse=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/purchasing/po/prepare'&&r.request().method()==='POST',{timeout:30000});
       await humanClick(null,prepare,{mutation:{path:'/api/purchasing/po/prepare',statuses:ANY_STATUS}});
       const pr=await poResponse;
@@ -293,6 +300,19 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
       expect(hub.po_status).toBe('draft');
       expect(hub.market_code).toBe(MK.code);
       expect(hub.simulation_scope).toBe('G6-BUYER');
+      // PG indépendant du cockpit : le PO préparé doit contenir uniquement
+      // l'article de cette commande. Ne pas autoriser la confirmation fictive
+      // d'une ligne provenant d'un autre parcours (N13 ou client réel).
+      const preparedPoId=evidence.gestures.find(g=>g.key==='prepare-draft-po'&&g.verdict==='PASS').purchase_order_id;
+      const members=await q(`SELECT pl.id AS line_id,oi.order_id
+          FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id
+         WHERE pl.purchase_order_id=$1 AND pl.cancelled_at IS NULL
+         ORDER BY pl.id`,[preparedPoId]);
+      evidence.po_membership={own_lines:members.filter(m=>m.order_id===orderId).length,
+        foreign_lines:members.filter(m=>m.order_id!==orderId).length};
+      save();
+      expect(members,'G6_HUB_PO_EXACTLY_ONE_PURCHASE_LINE').toHaveLength(1);
+      expect(members[0].order_id,'G6_HUB_PO_CROSS_ORDER_LINE_BLOCKED').toBe(orderId);
       evidence.hub_po_oracle={quantity:Number(hub.line_qty),supplier_consistent:true,po_status:hub.po_status,market:hub.market_code,simulation_scope:hub.simulation_scope,manual_sourcing_path_played:!evidence.auto_line_after_cash};
       evidence.db_readback='same order, one cash collection and confirmed control, one purchase line, one draft PO';
       save();
