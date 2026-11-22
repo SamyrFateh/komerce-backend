@@ -2,6 +2,7 @@
 /**
  * @test-kind unit
  * @test-runner jest
+ * @test-requires none
  * @brief M03: manual Central Hub physical receipt identity must come only from immutable Purchasing proof.
  */
 const { snapshotFromConfirmedCentralHubExecution } = require('../../services/hub-physical-identity');
