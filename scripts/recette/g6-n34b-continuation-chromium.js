@@ -123,16 +123,28 @@ async function boutiqueCategory(actor){
   check(await visible(select,12000),'BOUTIQUE_CATEGORY_CHOICES_MISSING');
  }
  const options=await select.locator('option').evaluateAll(xs=>xs.map(x=>({value:x.value,label:x.textContent.trim()})));
- const applicable=options.filter(x=>/^(?:Proposé · )?Bricolage\s*›\s*Outillage$/i.test(x.label));
+ // UI subcategory_label is "Outils & Fixation"; canonical key stays "Outillage".
+ // Verify the exact canonical payload before allowing the write.
+ const applicable=options.filter(x=>/^(?:Proposé · )?Bricolage\s*›\s*Outils & Fixation$/i.test(x.label));
  check(applicable.length===1,'BOUTIQUE_OUTILLAGE_NOT_OFFERED');
  const choose=applicable[0],categoryOnly=await panel.locator('[data-category-only-review]').count()>0;
  report.boutique_choice={category:'Bricolage',subcategory:'Outillage',label:choose.label,source:'existing active Catalogue pair',human_choice:true};save();
  await actor.page.screenshot({path:path.join(OUT,'boutique-before-choice.png')});
  const answer=await allowPost(actor,'/api/admin/workspaces/sourcing/candidates/'+REF+'/confirm-boutique-category',
   b=>b?.category==='Bricolage'&&b?.subcategory==='Outillage',
-  async()=>{await humanSelect(null,select,choose.value);
-   if(categoryOnly){const save=panel.locator('[data-workspace-action="confirm-candidate-boutique"]');
-    check(await visible(save,5000),'BOUTIQUE_CONFIRM_NOT_PRESENT');await humanClick(null,save)}
+  async()=>{
+   if(choose.label.startsWith('Proposé · ')){
+    // Suggested option is already selected; selecting the same value may not submit.
+    // A deliberate operator click confirms the review_required proposal.
+    check(await select.inputValue()===choose.value,'BOUTIQUE_PROPOSAL_NOT_SELECTED');
+    const apply=panel.locator('[data-workspace-action="candidate-apply-boutique-suggestion"]');
+    check(await visible(apply,5000),'BOUTIQUE_APPLY_PROPOSAL_MISSING');
+    await humanClick(null,apply);
+   }else{
+    await humanSelect(null,select,choose.value);
+    if(categoryOnly){const save=panel.locator('[data-workspace-action="confirm-candidate-boutique"]');
+     check(await visible(save,5000),'BOUTIQUE_CONFIRM_NOT_PRESENT');await humanClick(null,save)}
+   }
   },'boutique-classification');
  check(answer?.ok===true,'BOUTIQUE_ACTION_NO_SUCCESS');
  report.steps.push({stage:'boutique-category',ui:true,draft_created:!!answer?.result?.draft_created});save();
