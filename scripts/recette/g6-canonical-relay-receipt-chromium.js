@@ -44,7 +44,7 @@ async function state(){
  const {rows:events}=await db.query("SELECT event_type,from_stage,to_stage,proof_ref,actor_id FROM international_shipment_events WHERE shipment_id=$1 AND event_type='stage_changed' ORDER BY occurred_at,id",[ID]);
  check(orders.length===1&&items.length===SC.items&&sameSet(items.map(i=>i.order_item_id),ITEMS)&&base.shipments.length===1&&base.shipments[0].id===ID&&
  base.box.length===1&&base.box[0].state==='DISPATCHED'&&base.links.length===1&&base.effective.length===SC.items&&
- base.effective.every(e=>Number(e.quantity)===1),'G6_RELAY_SCOPE_DRIFT');
+ base.effective.reduce((n,e)=>n+Number(e.quantity),0)===SC.units,'G6_RELAY_SCOPE_DRIFT');
  return {base,orders,items,receipts,events};
 }
 
@@ -134,7 +134,7 @@ async function main(){
   check(env.GITHUB_EVENT_NAME==='issues'&&env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER&&
    env.NODE_ENV==='test'&&env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&
    env.STAGING_BASE_URL===BASE&&env.G6_CANONICAL_PHASE==='RELAY_RECEIPT'&&(env.G6_CANONICAL_RESUME_RUN_ID==='44260374187'||env.G6_DYNAMIC_FRESH_ORDER==='1')&&
-   env.G6_CANONICAL_ORDER_ID===ORDER&&['M01','M03'].includes(env.G6_CANONICAL_SCENARIO)&&env.G6_TARGET_MARKET===MK.code,
+   env.G6_CANONICAL_ORDER_ID===ORDER&&['M01','M03','M06'].includes(env.G6_CANONICAL_SCENARIO)&&env.G6_TARGET_MARKET===MK.code,
    'G6_RELAY_OWNER_STAGING_GUARD');
   const guard=await confirmTarget({db,env});
   check(guard.confirmed&&guard.fingerprint===env.G6_CANONICAL_DB_FINGERPRINT,'G6_RELAY_DB_FINGERPRINT_INVALID');
@@ -148,7 +148,7 @@ async function main(){
     isDeepStrictEqual(before.base,prior.after.base)&&before.base.shipments[0].stage==='local_delivery'&&
     before.base.parcels[0].id===PARCEL&&before.base.parcels[0].status==='shipped'&&
     before.orders[0].id===ORDER&&before.orders[0].reference===(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6')&&before.orders[0].payment_status==='paid'&&
-    before.receipts.length===0&&before.items.every(i=>Number(i.qty_received)===0&&Number(i.qty_collected)===0&&Number(i.qty_shipped)===1),'G6_RELAY_PRECONDITION_INVALID');
+    before.receipts.length===0&&before.items.every(i=>Number(i.qty_received)===0&&Number(i.qty_collected)===0&&Number(i.qty_shipped)===SC.units),'G6_RELAY_PRECONDITION_INVALID');
   browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   actor=await login(browser,'E2E_AGENT_RELAIS_','agent_relais');
   const me=await actor.page.request.get('/api/auth/me');
@@ -179,7 +179,7 @@ async function main(){
   }
   check(sameSet(shownItems,ITEMS),'G6_RELAY_UI_ITEM_NOT_UNIQUE');
   await humanFill(null,card.locator('input[data-relay-proof]'),PROOF);
-  const expected={proof_ref:PROOF,lines:shownItems.map(id=>({order_item_id:id,received_qty:1}))};
+  const expected={proof_ref:PROOF,lines:shownItems.map(id=>({order_item_id:id,received_qty:SC.units}))};
   let count=0;const url=BASE+RECEIPT_PATH;
   const handler=async route=>{
    const req=route.request();if(req.method()!=='POST')return route.fallback();
@@ -204,9 +204,9 @@ async function main(){
    (MIXED_M03?after.orders[0].status!=='collected':after.orders[0].status==='available')&&
    after.receipts.length===SC.items&&sameSet(after.receipts.map(r=>r.order_item_id),ITEMS)&&
    after.receipts.every(r=>r.shipment_id===ID&&r.relais_id===before.orders[0].relais_id&&
-   Number(r.expected_qty)===1&&Number(r.received_qty)===1&&
+   Number(r.expected_qty)===SC.units&&Number(r.received_qty)===SC.units&&
    r.proof_ref===PROOF&&!!r.received_by&&!r.incident_id)&&
-   after.items.every(i=>Number(i.qty_received)===1&&Number(i.qty_shipped)===1&&Number(i.qty_collected)===0)&&after.events.length===before.events.length+1&&
+   after.items.every(i=>Number(i.qty_received)===SC.units&&Number(i.qty_shipped)===SC.units&&Number(i.qty_collected)===0)&&after.events.length===before.events.length+1&&
    after.events.at(-1).from_stage==='local_delivery'&&after.events.at(-1).to_stage==='relay_received'&&
    after.events.at(-1).proof_ref===PROOF,'G6_RELAY_RECEIPT_PG_INVALID');
   await runtime();report.verdict='G6_RELAY_RECEIPT_SIMULATED_CHROMIUM_PG_PASS_AVAILABLE';
