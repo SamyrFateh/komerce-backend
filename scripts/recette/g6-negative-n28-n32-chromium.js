@@ -151,15 +151,31 @@ async function provisionRestrictedHub(marketId,foreignMarketId){
  return agent.id;
 }
 async function runN32(o,buyer,browser){
- const {rows:[f]}=await db.query(`SELECT f.id,f.reference,f.market_id FROM orders f WHERE f.market_id IS NOT NULL
-   AND f.market_id<>(SELECT market_id FROM orders WHERE id=$1) AND f.reference IS NOT NULL ORDER BY f.created_at DESC LIMIT 1`,[ID]);
- if(!f)throw Error('PREREQ_MISSING_FOREIGN_MARKET_ORDER');
+ // Choose a real foreign order with a non-draft foreign PO and SKU.
+ // A random historic order and a made-up PO UUID cannot certify this boundary.
+ const {rows:[f]}=await db.query(`SELECT DISTINCT o.id,o.reference,o.market_id,
+   po.id AS po_id,pl.product_sku_id AS sku_id,m.code AS market_code
+   FROM orders o JOIN markets m ON m.id=o.market_id
+   JOIN order_items oi ON oi.order_id=o.id
+   JOIN purchase_lines pl ON pl.order_item_id=oi.id AND pl.cancelled_at IS NULL
+   JOIN purchase_orders po ON po.id=pl.purchase_order_id
+     AND po.status NOT IN ('draft','cancelled')
+   WHERE o.market_id<>(SELECT market_id FROM orders WHERE id=$1)
+     AND o.user_id<>(SELECT user_id FROM orders WHERE id=$1)
+     AND o.reference IS NOT NULL AND pl.product_sku_id IS NOT NULL
+     AND EXISTS (SELECT 1 FROM v_purchase_line_market v
+       WHERE v.purchase_order_id=po.id AND v.market_id=o.market_id AND NOT v.cancelled)
+   ORDER BY o.id,o.reference,o.market_id,po.id,pl.product_sku_id LIMIT 1`,[ID]);
+ if(!f)throw Error('G6_N32_PREREQ_MISSING_FOREIGN_MARKET_ORDER_WITH_PO');
  report.foreign_market_order=true;
+ report.foreign_scope={market:f.market_code,po_provenance:'REAL_PURCHASE_ORDER',po_market_verified:true};
  const snap=async()=>{
   const {rows:[x]}=await db.query(`SELECT (SELECT count(*)::int FROM product_sku_physical_codes) AS codes,
    (SELECT md5(status::text||payment_status::text||COALESCE(display_total_amount::text,'')) FROM orders WHERE id=$1) AS own,
    (SELECT md5(status::text||payment_status::text||COALESCE(display_total_amount::text,'')) FROM orders WHERE id=$2) AS foreign_order,
-   (SELECT count(*)::int FROM scans WHERE order_id IN ($1,$2)) AS scans`,[ID,f.id]);
+   (SELECT count(*)::int FROM scans WHERE order_id IN ($1,$2)) AS scans,
+   (SELECT count(*)::int FROM purchase_lines WHERE purchase_order_id=$3 AND cancelled_at IS NULL) AS po_lines,
+   (SELECT status::text FROM purchase_orders WHERE id=$3) AS po_status`,[ID,f.id,f.po_id]);
   return x;
  };
  const before=await snap();
