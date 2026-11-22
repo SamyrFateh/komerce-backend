@@ -98,7 +98,7 @@ async function main(){
   save();check(ownerGuard(),'STAGING_OWNER_GUARD');marketProfile(env);
   const guard=await confirmTarget({db,env});check(guard.confirmed&&!!guard.fingerprint,'DB_GUARD_FAILED');
   report.db_fingerprint=guard.fingerprint;
-  const v=await fetch(BASE+'/health/version');check(v.ok(),'HEALTH_FAILED');
+  const v=await fetch(BASE+'/health/version');check(v.ok===true,'HEALTH_FAILED');
   const version=await v.json();
   check(/^[a-f0-9]{40}$/.test(String(env.E2E_EXPECTED_DEPLOY_SHA||''))&&
    version.commit===env.E2E_EXPECTED_DEPLOY_SHA,'SHA_DRIFT');

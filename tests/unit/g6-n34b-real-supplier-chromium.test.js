@@ -23,6 +23,11 @@ describe('N34b supplier provenance — real Chromium + independent PG, never bla
   expect(runner).toContain("N34B_REAL_SOURCE_DRAFT_CHROMIUM_PG_PASS_NOT_FULL");
   expect(runner).toContain("CANDIDATE_CLASSIFICATION_OR_PROMOTION_REPAIR");
  });
+ test('Node fetch uses boolean Response.ok property, never callable .ok()',()=>{
+  expect(runner).toContain("check(v.ok===true,'HEALTH_FAILED')");
+  expect(runner).not.toMatch(/\bv\.ok\s*\(/);
+  expect(runner).toContain("version.commit===env.E2E_EXPECTED_DEPLOY_SHA");
+ });
  test('fail-closed owner staging workflow, canonical lock, SHA, no direct business SQL write',()=>{
   expect(workflow).toContain("github.actor == github.repository_owner");
   expect(workflow).toContain("github.event.issue.user.login == github.repository_owner");
