@@ -19,6 +19,7 @@ const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const {startTraceAfterAuth}=require('./canonical/observability');
 const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const env=process.env;
+const {loadIndicativeBudget}=require('./canonical/g6-manual-hub-staging-budget');
 const UUID=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const SHA=/^[0-9a-f]{40}$/i;
 const report={schema:'komerce-g6-hub-commitment/1',scenario_id:'M01',market:MK.code,
@@ -172,9 +173,31 @@ async function main(){
    await humanClick(null,button);
    const form=director.page.locator('form[data-hlc-form="commitment"]');
    await form.waitFor({state:'visible',timeout:14000});
-   check(await form.locator('input[name="amount"]').count()===0,
-    'G6_COMMITMENT_SUPPLIER_PRICE_MISSING_NO_FICTITIOUS_AMOUNT');
-   const proof='E2E-STAGING-ENGAGEMENT-'+env.G6_CANONICAL_ORDER_REFERENCE;
+   // Un produit MANUAL du Hub n'a pas de prix fournisseur confirmé : le
+   // montant demandé par l'écran est un BUDGET indicatif de recette. Sa source
+   // doit exister sur le candidat Sourcing EXACT, liée à cette PO et commande.
+   // La Directrice le saisit sur le vrai formulaire Chromium ; on ne remplit
+   // jamais purchase_lines.supplier_unit_price, ni la confirmation, ni le paiement.
+   const amountField=form.locator('input[name="amount"]');
+   let indicativeBudget=null;
+   if(await amountField.count()){
+    check(await amountField.count()===1&&env.G6_CANONICAL_SCENARIO==='M03',
+     'G6_COMMITMENT_UNEXPECTED_UNPRICED_PURCHASE_ORDER');
+    indicativeBudget=await loadIndicativeBudget(db,env.G6_CANONICAL_PO_ID,env.G6_CANONICAL_ORDER_ID);
+    const currencyField=form.locator('input[name="currency"]');
+    check(await amountField.isEditable()&&await currencyField.isEditable(),
+     'G6_COMMITMENT_INDICATIVE_BUDGET_FIELDS_UNAVAILABLE');
+    await humanFill(null,amountField,String(indicativeBudget.amount));
+    await humanFill(null,currencyField,indicativeBudget.currency);
+    check(Number(await amountField.inputValue())===indicativeBudget.amount&&
+      (await currencyField.inputValue()).trim().toUpperCase()===indicativeBudget.currency,
+     'G6_COMMITMENT_INDICATIVE_BUDGET_INPUT_NOT_STABLE');
+    report.indicative_budget=indicativeBudget;save();
+   }
+   const proof=indicativeBudget
+    ? 'SIMULATED-STAGING-BUDGET-'+indicativeBudget.candidate_ref+'-'+env.G6_CANONICAL_ORDER_REFERENCE
+    : 'E2E-STAGING-ENGAGEMENT-'+env.G6_CANONICAL_ORDER_REFERENCE;
+   check(proof.length<=240,'G6_COMMITMENT_INDICATIVE_BUDGET_PROOF_TOO_LONG');
    const proofField=form.locator('input[name="proof_ref"]');
    check(await proofField.isVisible()&&await proofField.isEnabled()&&
      await proofField.isEditable(),'G6_COMMITMENT_PROOF_FIELD_NOT_EDITABLE');
@@ -218,9 +241,20 @@ async function main(){
    const me=await director.page.request.get('/api/auth/me'),identity=await me.json();
    check(after.decisions.length===1&&entry&&entry.decided_by===identity.id&&
     entry.proof_ref===proof&&Number(entry.amount)>0&&/^[A-Z]{3}$/.test(entry.currency)&&
+    (!indicativeBudget||(Math.abs(Number(entry.amount)-indicativeBudget.amount)<0.001&&
+      entry.currency===indicativeBudget.currency))&&
     Number(entry.pdf_bytes)>500&&after.order.po_status==='draft',
     'G6_COMMITMENT_PG_AUTHORIZATION_OR_PDF_MISMATCH');
-   report.commitment={http:actual.status(),authorization_count:1,pdf_generated:true,proof_ref:proof};
+   // L'autorisation peut figer un budget, mais elle ne doit jamais transformer
+   // le prix indicatif Sourcing en prix fournisseur confirmé sur la ligne.
+   if(indicativeBudget){
+    const sourceAfter=await loadIndicativeBudget(db,env.G6_CANONICAL_PO_ID,env.G6_CANONICAL_ORDER_ID);
+    check(sourceAfter.candidate_ref===indicativeBudget.candidate_ref&&
+      sourceAfter.amount===indicativeBudget.amount&&sourceAfter.currency===indicativeBudget.currency,
+     'G6_COMMITMENT_INDICATIVE_SOURCE_CHANGED_OR_SUPPLIER_PRICE_INJECTED');
+   }
+   report.commitment={http:actual.status(),authorization_count:1,pdf_generated:true,proof_ref:proof,
+    money_basis:indicativeBudget?'INDICATIVE_STAGING_SOURCING_BUDGET':'PRICED_PO'};
    check(director.blocked.length===0,'G6_COMMITMENT_UNEXPECTED_DIRECTOR_BROWSER_WRITE');
   }finally{await director.ctx.close();}
   report.stage='SUBMIT';save();
