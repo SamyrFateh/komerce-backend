@@ -69,6 +69,13 @@
   border-radius: 8px;
   font: inherit;
 }
+.kmc-purchase-allocations { display: grid; gap: .75rem; min-width: 0; margin: 1rem 0; }
+.kmc-purchase-allocation { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; min-width: 0; margin: 0; padding: .9rem; border: 1px solid #d5e1f0; border-radius: .65rem; background: #fbfdff; }
+.kmc-purchase-allocation legend { padding: 0 .35rem; color: #17365d; font-weight: 700; }
+.kmc-purchase-allocation-field { display: grid; gap: .3rem; min-width: 0; color: #42566f; font-size: .85rem; }
+.kmc-purchase-allocation-field input, .kmc-purchase-allocation-field select { box-sizing: border-box; width: 100%; min-width: 0; min-height: 2.5rem; padding: .55rem .65rem; border: 1px solid #cbd5e1; border-radius: .45rem; background: #fff; color: #10233f; font: inherit; }
+.kmc-purchase-allocation [data-purchase-remove-allocation] { justify-self: start; }
+@media (max-width: 760px) { .kmc-purchase-allocation { grid-template-columns: minmax(0, 1fr); } }
 
 .kmc-purchasing-confirm input[type='number'] {
   width: 96px;

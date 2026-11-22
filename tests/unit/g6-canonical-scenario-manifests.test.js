@@ -33,6 +33,22 @@ test('only archived completed M01 is marked Golden, with replay forbidden',()=>{
  });
  expect(()=>loadManifest('../../package')).toThrow('G6_MANIFEST_ID_INVALID');
 });
+test('M06 has a fully specified staging-only fixture plan but remains unroutable',()=>{
+ const m=loadManifest('M06');
+ expect(m.binding_status).toBe('NOT_BOUND');
+ expect(m.fixture_plan).toMatchObject({
+  status:'PREPARED_BLOCKED',provenance:'SIMULATED / STAGING ONLY',market:'KM',
+  product:{fixture_ref:'G6-M06-KM',source_kind:'central_hub_manual',supplier_system_key:'central_hub',physical_stock:0,sellable_status:'ON_ORDER'},
+  buyer_order:{quantity:3,payment_method:'cash_relais',payment_simulated_only:true,procure_on_order:true},
+  commitment:{amount:30,currency:'EUR',indicative_budget_is_not_confirmed_cost:true},
+  manual_purchase_capture:{seller_identity_source:'actual_seller_entered_by_operator',confirmed_price_source:'price_confirmed_at_purchase',proof_required:true,synthetic_seller_or_price_values:false,allocation_must_cover_order_quantity:true},
+  supplier_payment_authorization:{amount_source:'confirmed_manual_purchase_totals',currency:'EUR',separate_from_commitment:true,external_debit:false},
+  external_effects:false,
+ });
+ expect(m.fixture_plan.manual_purchase_capture.allocations).toBe('captured_in_canonical_ui_at_purchase_time');
+ expect(()=>requireExecutableManifest('M06',{market:'KM',cohort:'GPT-G6'}))
+  .toThrow('G6_MANIFEST_NOT_BOUND_M06');
+});
 test('proof must include role-screen actions, before/after screenshots, observed request, read-only PG, 100% coverage for PASS',()=>{
  const valid=new Ajv({allErrors:true,strict:false}).compile(proofSchema);
  const x={schema:'komerce-g6-canonical-proof/1',scenario_id:'M01',cohort:'GPT-G6',

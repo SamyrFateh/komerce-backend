@@ -149,6 +149,23 @@ describe('M03 — Hub Live exige un prix confirmé et une devise saisis par un h
   });
 });
 
+describe('M06 — confirmation manuelle avec allocations multi-vendeurs', () => {
+  const js = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/hub-live-cockpit.js'), 'utf8');
+  test('les allocations sont saisies dans le formulaire Hub et transmises au service canonique', () => {
+    expect(js).toContain("data-hlc-execution-seller");
+    expect(js).toContain("data-hlc-execution-quantity");
+    expect(js).toContain("data-hlc-execution-amount");
+    expect(js).toContain("data-hlc-execution-proof");
+    expect(js).toContain("executions.push({ purchase_line_id: purchaseLineId, seller_label: sellerLabel");
+    expect(js).toContain("...(executions ? { executions } : (confirmSeller.value.trim() ? { seller_label: confirmSeller.value.trim() } : {}))");
+    expect(js).toContain('Les allocations vendeurs doivent couvrir exactement la quantité confirmée de chaque ligne.');
+  });
+  test('le chemin mono-vendeur reste celui utilisé par M01/M03', () => {
+    expect(js).toContain("seller_label: confirmSeller.value.trim()");
+    expect(js).toContain("if (confirmExecutions.length)");
+  });
+});
+
 
 describe('G6 M03 — la PO partagée reste isolable par commande', () => {
   const cockpit = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/hub-live-cockpit.js'), 'utf8');

@@ -33,3 +33,13 @@ test('Achats : le nom du fournisseur ouvre la fiche Fournisseur 360 (admin) avec
   expect(src).toContain("context.user.role === 'admin'");
   expect(src).toContain("nav.withEntityReturnTo(`/admin/suppliers/${encodeURIComponent(group.supplier_id)}`, nav.currentReturnTarget(null), 'Retour aux achats')");
 });
+
+test('la confirmation manuelle permet plusieurs allocations tracées et vérifie leur couverture par ligne', () => {
+  expect(source).toContain("data-purchase-add-allocation");
+  expect(source).toContain("data-purchase-execution-seller");
+  expect(source).toContain("data-purchase-execution-quantity");
+  expect(source).toContain("data-purchase-execution-proof");
+  expect(source).toContain('manualExecutions.push({ purchase_line_id: purchaseLineId, seller_label: sellerLabel');
+  expect(source).toContain('manualExecutions ? { executions: manualExecutions }');
+  expect(source).toContain('Les allocations vendeurs doivent couvrir exactement la quantité confirmée de chaque ligne.');
+});
