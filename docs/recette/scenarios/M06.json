@@ -33,6 +33,7 @@
     "market": "KM",
     "product": {
       "fixture_ref": "G6-M06-KM",
+      "product_ref": "KPR-000255",
       "source_kind": "central_hub_manual",
       "supplier_system_key": "central_hub",
       "internal_sku": "generated_unique_per_run",
