@@ -147,7 +147,45 @@ describe('G6-G4B N21 (agent d\'un autre relais) et N22 (relais A/B)',()=>{
   expect(s).toMatch(/agent_at_A_vs_order_at_B/);expect(s).toMatch(/contains_order/);expect(s).toMatch(/G6_N22_PREREQ_MISSING_ORDER_AT_RELAY_B/);expect(s).toMatch(/steps_reached/);expect(s).not.toMatch(/screenshot/);
   expect(read('scripts/recette/g6-prereq-probe.js')).toMatch(/PREREQ_MISSING_SECOND_RELAY/);
  });
- it('workflow : titres N21/N22 pour KM, CM et CG',()=>{
+ it('N22 fail-closed : deux commandes fraîches, picker Chromium, refus dans les deux sens',()=>{
+   const runner=read('scripts/recette/canonical/negative-runner.js');
+   const buyer=read('scripts/recette/g6-p2-buyer-order-real-chromium.js');
+   const cross=read('scripts/recette/g6-negative-n21-n22-cross-relay-chromium.js');
+   expect(runner).toContain('G6_N22_EXCLUDE_RELAY_ID:first.relais_id');
+   expect(runner).toContain("const second=await bootstrapFreshScenario({scenario,toStage:'LOCAL_RELAY_AVAILABLE',adapters:bAdapters})");
+   expect(runner).toContain('G6_N22_REVERSE_ORDER_ID:n22Second.id');
+   expect(runner).toContain('orderId:n22Second.id,scenario,assertNoHubOrTransport');
+   expect(runner).toContain('g6-n22-a');
+   expect(runner).toContain('g6-n22-b');
+   expect(buyer).toContain('G6_N22_EXCLUDE_RELAY_ID');
+   expect(buyer).toContain('G6_N22_PREREQ_MISSING_BROWSER_SELECTABLE_SECOND_RELAY');
+   expect(buyer).toContain('G6_N22_SECOND_ORDER_RELAY_PG_MISMATCH');
+   expect(cross).toContain('G6_N22_REVERSE_ORDER_ID');
+   expect(cross).toContain('G6_N22_REVERSE_ORDER_REFERENCE');
+   expect(cross).toContain('G6_N22_REVERSE_RELAY_ID');
+   expect(runner).toContain('G6_N22_REVERSE_RELAY_ID:n22Second.relay_id');
+   expect(cross).toContain('G6_N22_SCREEN_MISSING_A_TO_B_COUNTER');
+   expect(cross).toContain('G6_N22_SCREEN_MISSING_BIDIRECTIONAL_COUNTER');
+   expect(cross).toContain('G6_N22_PRODUCT_GAP_OWNER_A_CANNOT_READ');
+   expect(cross).toContain('G6_N22_PRODUCT_GAP_OWNER_B_CANNOT_READ');
+   expect(cross).toContain("const {markE2eTestAccount,ensureRelayAgentMembership}");
+   expect(cross).toContain("agentId=await provisionRelayB()");
+   expect(cross).toContain("report.control.agent_id!==agentId");
+   expect(cross).toContain("G6_N22_RELAY_B_");
+   expect(cross).toContain("G6_N22_PRODUCT_GAP_SAME_AGENT_A_B");
+   expect(cross).toContain("via:'NETWORK_UI'");
+   expect(cross).toContain('N22_REVERSE_WRITE_ACCEPTED');
+   expect(cross).toContain('N22_REVERSE_READ_NOT_404_');
+   expect(cross).toContain('N22_FORWARD_READ_NOT_404_');
+   expect(cross).toContain('N22_REVERSE_WRITE_NOT_403_');
+   expect(cross).toContain('N22_FORWARD_WRITE_NOT_403_');
+   expect(cross).not.toContain('ORDER BY created_at DESC LIMIT 1');
+   expect(N.classifyNegative('N22','G6_N22_PREREQ_MISSING_BROWSER_SELECTABLE_SECOND_RELAY'))
+    .toBe('PREREQ_MISSING_BROWSER_SELECTABLE_SECOND_RELAY');
+   expect(N.classifyNegative('N22','G6_N22_PREREQ_MISSING_FRESH_ORDER_B'))
+    .toBe('PREREQ_MISSING_FRESH_ORDER_B');
+  });
+  it('workflow : titres N21/N22 pour KM, CM et CG',()=>{
   const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
   for(const id of ['N21','N22'])for(const m of ['KM','CM','CG'])
    expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");

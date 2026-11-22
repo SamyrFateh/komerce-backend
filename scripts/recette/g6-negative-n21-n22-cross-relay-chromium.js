@@ -3,14 +3,18 @@
  * @domain orders
  * @layer script
  * @owner backend-core
- * @purpose N21 (agent d'un autre relais) et N22 (relais A/B, deux sens) : écriture refusée, aucune donnée divulguée en lecture (table R) ; staging only, aucune écriture SQL.
+ * @purpose N21 (agent d'un autre relais) et N22 (relais A/B, deux sens) : écriture refusée, aucune donnée divulguée en lecture (table R) ; staging only, aucune écriture SQL métier (comptes E2E par writers canoniques).
  * @db-read orders, users, relais, markets, scans, parcels, parcel_items
- * @db-write none
+ * @db-write users, e2e_test_accounts (N22: test identities via canonical writers only, no business SQL writes)
  * @impact-areas staging-only, pickup, security
  */
 'use strict';
 const MK=require('./canonical/market-profile').marketProfile(process.env);
-const fs=require('node:fs'),path=require('node:path');
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+const bcrypt=require('bcryptjs');
+const {createAdminUser}=require('../../services/user-mutation-service');
+const {markE2eTestAccount,ensureRelayAgentMembership}=require('./staging-e2e-provision');
+const delegation=require('../../services/market-delegation-service');
 const {chromium}=require('playwright');
 const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
@@ -45,14 +49,36 @@ async function probeReads(page,id,ref){
  }
  return out;
 }
-async function agentSession(browser,tag){
- const actor=await login(browser,'E2E_AGENT_RELAIS_','agent_relais');
+async function agentSession(browser,tag,prefix='E2E_AGENT_RELAIS_'){
+ const actor=await login(browser,prefix,'agent_relais');
  const me=await (await actor.page.request.get('/api/auth/me')).json();
  actor.page.on('dialog',d=>d.type()==='confirm'?d.accept():d.dismiss());
  pageEvents(actor.page,tag);
  return {actor,agentId:me.id};
 }
 async function relayOf(agentId){return (await db.query('SELECT relais_id FROM users WHERE id=$1',[agentId])).rows[0]?.relais_id}
+async function provisionRelayB(){
+ check(SCEN==='N22'&&env.NODE_ENV==='test'&&env.KOMERCE_ENV==='staging'&&
+  env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER,'G6_N22_RELAY_B_FIXTURE_STAGING_ONLY');
+ const {rows:admins}=await db.query("SELECT id FROM users WHERE lower(email)=lower($1) AND role::text='admin'",[env.E2E_ADMIN_EMAIL]);
+ check(admins.length===1,'G6_N22_PREREQ_MISSING_FIXTURE_ADMIN');
+ const run=crypto.randomBytes(6).toString('hex'),email='g6-n22-relay-b-'+run+'@komerce.test';
+ const password=crypto.randomBytes(24).toString('base64url')+'Aa1!';
+ const c=await db.getClient();
+ try{
+  await c.query('BEGIN');
+  const {rows:[actor]}=await createAdminUser(c,{fullName:'G6 N22 Relais B '+run,
+   email,role:'agent_relais',currencyPref:MK.code==='KM'?'KMF':'XAF',
+   passwordHash:await bcrypt.hash(password,10)});
+  check(!!actor?.id,'G6_N22_PREREQ_RELAY_B_AGENT_CREATION');
+  await markE2eTestAccount(c,{userId:actor.id,actorId:admins[0].id});
+  await ensureRelayAgentMembership(c,{delegation},{userId:actor.id,marketCode:MK.code,actorId:admins[0].id});
+  await c.query('COMMIT');
+  env.G6_N22_RELAY_B_EMAIL=email;env.G6_N22_RELAY_B_PASSWORD=password;
+  return actor.id;
+ }catch(e){await c.query('ROLLBACK').catch(()=>{});throw e}
+ finally{c.release()}
+}
 async function main(){
  let browser,clientContext;
  try{
@@ -69,8 +95,12 @@ async function main(){
     (o.pickup_secret_hash IS NOT NULL) AS has_secret,u.phone,u.email,u.role::text AS role FROM orders o JOIN users u ON u.id=o.user_id WHERE o.id=$1`,[ID]);
   check(o&&o.reference===REF&&o.status==='available'&&o.payment_status==='paid'&&o.has_secret,'G6_'+SCEN+'_PRECONDITION_NOT_PAID_AVAILABLE');
   // Second relais actif du même marché, lu en lecture seule ; sinon prérequis manquant.
+  const relayB=SCEN==='N22'?env.G6_N22_REVERSE_RELAY_ID:null;
+  if(SCEN==='N22')check(/^[a-f0-9-]{36}$/i.test(relayB||''),
+    'G6_N22_PREREQ_MISSING_FRESH_RELAY_B');
   const {rows:[b]}=await db.query(`SELECT r.id,r.name FROM relais r JOIN markets m ON m.id=r.market_id AND m.code=$2
-    WHERE r.is_active=TRUE AND r.id<>$1 ORDER BY r.created_at LIMIT 1`,[o.relais_id,MK.code]);
+    WHERE r.is_active=TRUE AND r.id<>$1 AND ($3::uuid IS NULL OR r.id=$3::uuid)
+    ORDER BY r.created_at LIMIT 1`,[o.relais_id,MK.code,relayB]);
   if(!b)throw Error('PREREQ_MISSING_SECOND_RELAY_'+MK.code);
   report.relay_b_found=true;
   const buyer={id:o.user_id,email:o.email,phone:o.phone,role:o.role};
@@ -78,33 +108,94 @@ async function main(){
   browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   const c=await customer(browser,buyer);clientContext=c.ctx;reach('CLIENT_CODE_FROM_CLIENT_SCREEN');
   // Profil de contrôle (N22) : agent du relais de la commande ; lecture permise, et sens inverse (commande du relais B vue depuis A).
-  let agentId;
+  let agentId,second=null;
   if(SCEN==='N22'){
-   const s=await agentSession(browser,'control');agentId=s.agentId;
+   // Le runner parent doit fournir la commande B créée pendant CETTE campagne
+   // par le vrai parcours buyer/cash/available, pas une commande historique.
+   const bid=env.G6_N22_REVERSE_ORDER_ID,bref=env.G6_N22_REVERSE_ORDER_REFERENCE;
+   check(/^[a-f0-9-]{36}$/i.test(bid||'')&&/^[A-Z0-9-]{6,64}$/.test(bref||''),
+    'G6_N22_PREREQ_MISSING_FRESH_ORDER_B');
+   const {rows:[ob]}=await db.query(`SELECT o.id,o.reference,o.relais_id,o.user_id,
+      o.status::text AS status,o.payment_status::text AS payment_status,o.simulation_scope,
+      (o.pickup_secret_hash IS NOT NULL) AS has_secret,
+      u.phone,u.email,u.role::text AS role,m.code AS market
+      FROM orders o JOIN users u ON u.id=o.user_id JOIN markets m ON m.id=o.market_id
+      WHERE o.id=$1`,[bid]);
+   check(ob&&ob.reference===bref&&ob.id!==ID&&ob.relais_id===b.id&&
+    ob.user_id!==o.user_id&&ob.market===MK.code&&ob.status==='available'&&
+    ob.payment_status==='paid'&&ob.has_secret&&ob.simulation_scope==='G6-BUYER',
+    'G6_N22_PREREQ_MISSING_ORDER_AT_RELAY_B');
+   const buyerB={id:ob.user_id,email:ob.email,phone:ob.phone,role:ob.role};
+   check(await verifyMarkedG6Buyer(db,buyerB,env),'G6_N22_PREREQ_UNMARKED_BUYER_B');
+   second=await customer(browser,buyerB);
+   const pre=await agentSession(browser,'pre-control-a');agentId=pre.agentId;
+   await pre.actor.ctx.close();
+   // Attacher d'abord par l'écran Réseau, puis ouvrir une NOUVELLE session :
+   // ne jamais compter sur les permissions d'un ancien JWT après réaffectation.
+   if(await relayOf(agentId)!==o.relais_id)await attachDedicatedRelayByUI(browser,agentId,o.relais_id);
+   check(await relayOf(agentId)===o.relais_id,'G6_N22_PRECONDITION_AGENT_NOT_AT_ORDER_RELAY');
+   const s=await agentSession(browser,'control-a');
    try{
-    check(await relayOf(agentId)===o.relais_id,'G6_N22_PRECONDITION_AGENT_NOT_AT_ORDER_RELAY');
-    const list=(await probeReads(s.actor.page,ID,REF));
-    report.control={profile:'agent_at_order_relay',reads:list};
-    const {rows:[ob]}=await db.query('SELECT id,reference FROM orders WHERE relais_id=$1 ORDER BY created_at DESC LIMIT 1',[b.id]);
-    if(ob){const rev=await probeReads(s.actor.page,ob.id,ob.reference);
-     report.reverse={direction:'agent_at_A_vs_order_at_B',reads:rev};
-     for(const r of rev)if(r.contains_order)report.gaps.push('N22_REVERSE_READ_'+r.label);
-    }else {
-     report.reverse={direction:'agent_at_A_vs_order_at_B',not_played:'NO_ORDER_AT_RELAY_B'};
-     save();
-     if(SCEN==='N22')throw Error('G6_N22_PREREQ_MISSING_ORDER_AT_RELAY_B');
+    const own=await probeReads(s.actor.page,ID,REF);
+    report.control={profile:'agent_at_order_relay_A',agent_id:agentId,reads:own};
+    check(own.filter(r=>['order_by_id','order_by_ref'].includes(r.label))
+     .every(r=>r.http===200&&r.contains_order),'G6_N22_PRODUCT_GAP_OWNER_A_CANNOT_READ');
+    const foreign=await probeReads(s.actor.page,ob.id,ob.reference);
+    report.reverse={direction:'agent_at_A_vs_order_at_B',order_id:ob.id,reads:foreign,write:null};
+    for(const r of foreign){
+     if(r.contains_order)report.gaps.push('N22_REVERSE_READ_'+r.label);
+     if(['order_by_id','order_by_ref','parcels','history'].includes(r.label)&&r.http!==404)
+      report.gaps.push('N22_REVERSE_READ_NOT_404_'+r.label+'_'+r.http);
     }
-    await s.actor.ctx.close();
-   }catch(e){await s.actor.ctx.close().catch(()=>{});throw e}
+    const wait={expect:norm(second.code),used:false};
+    await guardCollect(s.actor.page,wait,s.actor.blocked);
+    const box=await openRelayLive(s.actor.page,{selector:'[data-manual-pickup-code]',timeout:25000,entry:'remises'})
+     .catch(()=>null);
+    check(!!box&&await box.locator('[data-pickup-code-confirm]').isEnabled().catch(()=>false),
+     'G6_N22_SCREEN_MISSING_A_TO_B_COUNTER');
+    const visible=await s.actor.page.locator('body').innerText().catch(()=>'');
+    if(visible.includes(ob.reference))report.gaps.push('N22_REVERSE_SCREEN_READ');
+    await humanFill(null,counter(s.actor.page).locator('[data-pickup-code-input]'),second.code);
+    const pending=s.actor.page.waitForResponse(r=>r.url()===URL_COLLECT&&r.request().method()==='POST',
+     {timeout:25000}).catch(()=>null);
+    await humanClick(null,counter(s.actor.page).locator('[data-pickup-code-confirm]'));
+    const response=await pending;
+    report.reverse.write={via:'UI_COUNTER',http:response?response.status():null};
+    second.code=null;
+    if(!response)throw Error('G6_N22_SCREEN_MISSING_A_TO_B_RESPONSE');
+    if(response.status()===200)report.gaps.push('N22_REVERSE_WRITE_ACCEPTED');
+    else if(response.status()!==403)
+     report.gaps.push('N22_REVERSE_WRITE_NOT_403_'+response.status());
+    check(s.actor.blocked.length===0,'G6_N22_UNEXPECTED_REVERSE_WRITE');
+    reach('REVERSE_A_TO_B_READ_AND_WRITE_REFUSED');
+   }finally{await s.actor.ctx.close().catch(()=>{});await second.ctx.close().catch(()=>{})}
    reach('CONTROL_PROFILE_READ');
   }
-  // Rattachement de l'agent au relais B par l'écran Réseau (jamais en SQL), puis nouvelle session.
-  const first=await agentSession(browser,'pre-attach');agentId=first.agentId;await first.actor.ctx.close();
+  // N22 : conserver le profil A, provisionner un SECOND profil B réellement distinct.
+  let prefix='E2E_AGENT_RELAIS_';
+  if(SCEN==='N22'){
+   agentId=await provisionRelayB();
+   prefix='G6_N22_RELAY_B_';
+  }else{
+   const first=await agentSession(browser,'pre-attach');
+   agentId=first.agentId;await first.actor.ctx.close();
+  }
   await attachDedicatedRelayByUI(browser,agentId,b.id);
   check(await relayOf(agentId)===b.id,'G6_'+SCEN+'_AGENT_NOT_ATTACHED_TO_RELAY_B');
+  if(SCEN==='N22'){
+   check(report.control?.agent_id&&report.control.agent_id!==agentId,'G6_N22_PRODUCT_GAP_SAME_AGENT_A_B');
+   report.actors={distinct_agents:true,agent_a_scope:'relay_A',agent_b_scope:'relay_B',via:'NETWORK_UI'};
+  }
   reach('AGENT_ATTACHED_TO_OTHER_RELAY');
-  const s=await agentSession(browser,'intruder'),actor=s.actor;
+  const s=await agentSession(browser,'intruder',prefix),actor=s.actor;
+  if(SCEN==='N22')check(s.agentId===agentId,'G6_N22_PRODUCT_GAP_AGENT_B_SESSION_MISMATCH');
   try{
+   if(SCEN==='N22'){
+    const ownB=await probeReads(actor.page,env.G6_N22_REVERSE_ORDER_ID,env.G6_N22_REVERSE_ORDER_REFERENCE);
+    report.control_b={profile:'agent_at_order_relay_B',reads:ownB};
+    check(ownB.filter(r=>['order_by_id','order_by_ref'].includes(r.label))
+     .every(r=>r.http===200&&r.contains_order),'G6_N22_PRODUCT_GAP_OWNER_B_CANNOT_READ');
+   }
    const seen=[];
    actor.page.on('response',async r=>{try{if(new URL(r.url()).pathname.startsWith('/api/')&&r.request().method()==='GET'){
     const t=await r.text();if(t.includes(REF)||t.includes(ID))seen.push(new URL(r.url()).pathname.replace(ID,':id').replace(REF,':ref'))}}catch(_){}});
@@ -134,11 +225,18 @@ async function main(){
    check(actor.blocked.length===0,'G6_'+SCEN+'_UNEXPECTED_RELAY_WRITE');
   }finally{await actor.ctx.close()}
   const w=report.intruder.write;
+  if(SCEN==='N22'&&(w?.via!=='UI_COUNTER'||report.reverse?.write?.via!=='UI_COUNTER'))
+   throw Error('G6_N22_SCREEN_MISSING_BIDIRECTIONAL_COUNTER');
   if(w.http===200)report.gaps.push('WRITE_ACCEPTED');
   else if(/^csrf_/.test(w.error_code||''))throw Error('G6_'+SCEN+'_SCREEN_MISSING_WRITE_PROBE_'+w.error_code);
   else if(w.http===null)throw Error('G6_'+SCEN+'_SCREEN_MISSING_NO_WRITE_RESPONSE');
-  else if(![403,404,401].includes(w.http))report.gaps.push('WRITE_UNEXPECTED_'+w.http);
-  for(const r of report.intruder.reads)if(r.contains_order)report.gaps.push('READ_'+r.label);
+  else if(SCEN==='N22'&&w.http!==403)report.gaps.push('N22_FORWARD_WRITE_NOT_403_'+w.http);
+  else if(SCEN!=='N22'&&![403,404,401].includes(w.http))report.gaps.push('WRITE_UNEXPECTED_'+w.http);
+  for(const r of report.intruder.reads){
+   if(r.contains_order)report.gaps.push('READ_'+r.label);
+   if(SCEN==='N22'&&['order_by_id','order_by_ref','parcels','history'].includes(r.label)&&r.http!==404)
+    report.gaps.push('N22_FORWARD_READ_NOT_404_'+r.label+'_'+r.http);
+  }
   if(report.intruder.ui.order_reference_on_screen)report.gaps.push('READ_SCREEN');
   if(report.intruder.ui.api_responses_with_order.length)report.gaps.push('READ_UI_API');
   await runtime();
