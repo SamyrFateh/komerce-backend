@@ -1,3 +1,4 @@
+/** @test-kind unit @test-runner jest @test-requires none */
 'use strict';
 const { deriveIndicativeBudget, loadIndicativeBudget } = require('../../scripts/recette/canonical/g6-manual-hub-staging-budget');
 
