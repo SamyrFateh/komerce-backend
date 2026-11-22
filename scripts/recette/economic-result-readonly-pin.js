@@ -42,8 +42,8 @@ function manifestTestOnly(staging,head) {
   const old=git('show',staging+':'+file);
   const now=fs.readFileSync(path.resolve(file),'utf8').trim();
   const normalized=now
-    .replace(/^\s*'tests\/unit\/economic-result-real-readonly\.test\.js',\n/gm,'\n')
-    .replace(/^\s*'tests\/unit\/economic-result-readonly-pin\.test\.js',\n/gm,'\n')
+    .replace(/^      'tests\/unit\/economic-result-real-readonly\.test\.js',\r?\n/gm,'')
+    .replace(/^      'tests\/unit\/economic-result-readonly-pin\.test\.js',\r?\n/gm,'')
     .trim();
   // The two newly owned Jest files are the only permitted feature declaration change.
   return normalized===old;
