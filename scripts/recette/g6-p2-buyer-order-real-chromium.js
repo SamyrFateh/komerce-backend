@@ -453,6 +453,38 @@ async function browserCheckout({buyer,phone,code}){
   await page.locator('#k-order-modal.open').waitFor({state:'visible',timeout:15000});
   const confirm=page.locator('#btn-confirm-order');
   await confirm.waitFor({state:'visible',timeout:15000});
+  // N22 uniquement : la deuxième commande doit cibler un autre relais PAR L'INTERFACE.
+  // Ne jamais forcer order.relais_id ni le panier par API / SQL.
+  const targetRelay=process.env.G6_N22_TARGET_RELAY_ID;
+  if(targetRelay){
+   check(process.env.G6_CANONICAL_SCENARIO==='N22'&&
+    /^[a-f0-9-]{36}$/i.test(targetRelay),'G6_N22_RELAY_SELECTION_OWNER_GUARD');
+   const {rows:targets}=await db.query(`SELECT r.name FROM relais r
+    JOIN markets m ON m.id=r.market_id AND m.code=$2
+    WHERE r.id=$1 AND r.is_active=TRUE`,[targetRelay,MARKET]);
+   check(targets.length===1,'G6_N22_PREREQ_MISSING_ACTIVE_TARGET_RELAY');
+   const expectedName=String(targets[0].name||'').trim();
+   check(!!expectedName,'G6_N22_PREREQ_MISSING_TARGET_RELAY_NAME');
+   await humanClick(null,page.locator('#ck-relais-summary'));
+   const picker=page.locator('.ck-relais-overlay.is-open');
+   await picker.waitFor({state:'visible',timeout:10000});
+   // Le frontend sélectionne un relais par île. Seules ses options réellement
+   // proposées sont cliquables : aucun DOM injection / choix de relais caché.
+   const islands=await picker.locator('button[data-ile]').all();
+   let found=(await picker.locator('.ck-relais-auto-name').innerText().catch(()=>'')).trim()===expectedName;
+   for(let i=0;i<islands.length&&!found;i++){
+    const ile=await islands[i].getAttribute('data-ile');
+    await humanClick(null,picker.locator('button[data-ile]').filter({hasText:ile}).first());
+    found=(await picker.locator('.ck-relais-auto-name').innerText().catch(()=>'')).trim()===expectedName;
+   }
+   check(found,'G6_N22_PREREQ_MISSING_BROWSER_SELECTABLE_SECOND_RELAY');
+   await humanClick(null,picker.locator('.ck-relais-sheet-cta'));
+   check((await page.locator('#ck-relais-summary').innerText()).includes(expectedName),
+    'G6_N22_TARGET_RELAY_NOT_SELECTED_IN_CHECKOUT');
+   record('N22_SECOND_RELAY_SELECTED_BY_CHROMIUM',{via:'CHECKOUT_PICKER',relay_name:expectedName});
+   // Un changement de relais déclenche un nouveau devis serveur avant Commander.
+   await page.waitForFunction(()=>{const el=document.getElementById('btn-confirm-order');return el&&!el.disabled},null,{timeout:20000});
+  }
   await page.waitForFunction(()=>{const el=document.getElementById('btn-confirm-order');return el&&!el.disabled},null,{timeout:16000});
   check(report.preview_http_statuses.length>0&&report.preview_http_statuses.every(x=>x===200),
     'G6_AUTHENTICATED_SERVER_QUOTE_NOT_200');
@@ -518,6 +550,11 @@ for(const ev of ['unhandledRejection','uncaughtException'])process.on(ev,e=>{rep
   if(NEG==='N08'&&orders.length!==1)throw Error('G6_N08_PRODUCT_GAP_ORDERS_'+orders.length);
   check(orders.length===1,'G6_EXACTLY_ONE_ORDER_NOT_SATISFIED');
   const o=orders[0];
+  if(process.env.G6_N22_TARGET_RELAY_ID){
+   const {rows:[targetOrder]}=await db.query('SELECT relais_id FROM orders WHERE id=$1',[o.id]);
+   check(targetOrder?.relais_id===process.env.G6_N22_TARGET_RELAY_ID,
+    'G6_N22_SECOND_ORDER_RELAY_PG_MISMATCH');
+  }
   check(o.id===order.id&&o.reference===order.reference&&o.simulation_scope==='G6-BUYER'&&
     o.market===MARKET&&Number(o.display_total_amount)===report.checkout_display_total&&
     o.display_currency===(MARKET==='KM'?'KMF':'XAF')&&Number(o.total_kmf)>0&&
