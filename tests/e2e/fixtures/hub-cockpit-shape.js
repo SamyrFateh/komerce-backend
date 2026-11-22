@@ -58,8 +58,9 @@ function shapeDossier(source, { viewer = { role: 'agent_hub', can_authorize_comm
         anomaly: sum('anomaly'), to_control: sum('to_control'), controlled: sum('controlled'), in_bags: sum('in_bags'), in_boxes: sum('in_boxes'), shipped: sum('shipped'),
       },
       readiness: {
-        complete, partial: !complete && sum('received') > 0, ready_to_pack: complete && sum('anomaly') === 0, unbagged_received: sum('received') - sum('in_bags') - sum('in_boxes'),
-        bag_open: false, pending_items: pending,
+        complete, partial: !complete && sum('received') > 0,
+        ready_to_combox: sum('received') - sum('in_bags') - sum('in_boxes') > 0 && sum('anomaly') === 0,
+        unboxed_received: sum('received') - sum('in_bags') - sum('in_boxes'), pending_items: pending,
         blockers: complete ? [] : ['Articles non reçus : ' + pending.map((p) => `${p.product} (${p.missing})`).join(', ')],
       },
     };
@@ -67,7 +68,7 @@ function shapeDossier(source, { viewer = { role: 'agent_hub', can_authorize_comm
   d.cockpit = {
     allocation_rule: 'FIFO : la commande la plus ancienne est servie en premier (par SKU dans la PO)',
     unit_legend: ['none', 'draft', 'pending', 'shipped', 'received', 'boxed'].map((state) => ({ state, label: state })),
-    physical: [['received', 'Reçu au Hub · non ensaché'], ['bags', 'Sacs clients'], ['boxes', 'KOM-BOX'], ['shipped', 'Expédié au relais'], ['reliquats', 'Reliquats attendus']]
+    physical: [['received', 'Reçu au Hub · à répartir en COMBOX'], ['boxes', 'COMBOX'], ['shipped', 'Expédié au relais'], ['reliquats', 'Reliquats attendus']]
       .map(([key, title]) => ({ key, title, tone: 'grey', items: [], empty_text: 'Rien.' })),
     po_steps: STEPS, viewer, need_batches: needBatches, todo, ...(source.cockpit || {}),
   };

@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-21T17:28:06.553Z",
+  "generatedAt": "2026-11-22T17:41:15.462Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 844,
+  "count": 845,
   "routes": [
     {
       "method": "GET",
@@ -2754,6 +2754,16 @@
       "fullPath": "/api/admin/workspaces/operations/market/:marketCode/boxes/:unitId/bags",
       "mountPrefix": "/api/admin/workspaces/operations",
       "localPath": "/market/:marketCode/boxes/:unitId/bags",
+      "routeFile": "routes/admin-operations-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/operations/market/:marketCode/boxes/:unitId/close",
+      "mountPrefix": "/api/admin/workspaces/operations",
+      "localPath": "/market/:marketCode/boxes/:unitId/close",
       "routeFile": "routes/admin-operations-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

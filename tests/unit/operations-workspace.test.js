@@ -86,13 +86,17 @@ test('Catalogue global : filtres accessibles et panneau taxonomie secondaire sur
   expect(css).toContain('.kmc-catalog-filter { flex-basis: 100%; }');
 });
 
-describe('operations-workspace.js — provenance manuelle (#3900)', () => {
+describe('operations-workspace.js — composition directe COMBOX (#3900)', () => {
   const ui = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/operations-workspace.js'), 'utf8');
-  test('sac -> KOM-BOX et réception exposent le mode manuel avec justification', () => {
-    expect(ui).toContain('data-hub-box-evidence-method');
-    expect(ui).toContain('data-hub-box-manual-proof');
+  test('COMBOX et articles exposent la preuve SCAN ou MANUAL', () => {
+    expect(ui).toContain("boxScan.setAttribute('data-hub-box-scan','')");
+    expect(ui).toContain("['SCAN','Scanner le code article'],['MANUAL','Mode dégradé · constat manuel']");
+    expect(ui).toContain("evidence_method:'SCAN',evidence_code:code.value.trim()");
+    expect(ui).toContain("evidence_method:'MANUAL',evidence_ref:proofRef");
     expect(ui).toContain('data-receive-manual-proof');
     expect(ui).toContain('data-receive-manual-toggle');
+    expect(ui).not.toContain('data-hub-bag-preparation');
+    expect(ui).toContain("'Fermer la COMBOX'");
   });
 });
 
@@ -145,7 +149,7 @@ describe('Hub UX guidée — atelier physique canonique', () => {
     expect(src).toContain('secondary.open = true');
     expect(src).toContain("context.view = 'reception';");
     expect(src).toContain("context.renderCurrent();");
-    expect(src).toContain("bags: '[data-hub-bag-preparation]'");
+    expect(src).not.toContain("bags: '[data-hub-bag-preparation]'");
     expect(src).toContain("boxes: '[data-supply-box-create]'");
     expect(src).toContain("shipments: '[data-supply-shipment-bar]'");
     expect(src).toContain("'create-shipment-from-boxes'");
@@ -160,13 +164,21 @@ describe('Hub UX guidée — atelier physique canonique', () => {
   });
 });
 
-test('Hub UX : accès directs Sacs puis KOM-BOX puis Expéditions sans animation parasite', () => {
+test('Hub UX : accès directs COMBOX puis Expéditions sans animation parasite', () => {
   const src=fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
-  expect(src).toContain("bags: '[data-hub-bag-preparation]'");
+  expect(src).not.toContain("bags: '[data-hub-bag-preparation]'");
   expect(src).toContain("boxes: '[data-supply-box-create]'");
   expect(src).toContain("shipments: '[data-supply-shipment-bar]'");
   expect(src).toContain("anchor.scrollIntoView?.({ block: 'start', behavior: 'auto' });");
   expect(src).not.toContain("anchor.scrollIntoView?.({ block: 'start', behavior: 'smooth' });");
+});
+
+test('Hub Live compose directement les articles reçus sans créer de sac numérique', () => {
+  const src=fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+  expect(src).toContain("endpointFor(context.marketCode,'boxes/'+encodeURIComponent(box.unit_id)+'/fill')");
+  expect(src).toContain("endpointFor(context.marketCode,'boxes/'+encodeURIComponent(box.unit_id)+'/close')");
+  expect(src).not.toContain('data-hub-bag-preparation');
+  expect(src).not.toContain('bag_reference_scan');
 });
 
 test('Relais guidé : zone unique synchronisée sur le choix de file, non sur un nouveau writer',()=>{

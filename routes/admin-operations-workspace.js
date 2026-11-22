@@ -292,7 +292,7 @@ router.get(
 // Composition des KOM-BOX depuis Hub Live : mêmes commandes canoniques que /api/hub/* (hub-operations), avec le marché
 // du Workspace imposé côté serveur (allocation et contenu du carton doivent appartenir au marché).
 async function boxMarketGuard(unitId, marketId, allocationId) {
-  const { rows: [unit] } = await db.query(`SELECT unit_type FROM hub_physical_units WHERE id = $1`, [unitId]);
+  const { rows: [unit] } = await db.query(`SELECT unit_type, reference FROM hub_physical_units WHERE id = $1`, [unitId]);
   if (!unit || unit.unit_type !== 'MARKET_PARCEL') return { status: 404, body: { error: 'KOM-BOX introuvable', code: 'BOX_NOT_FOUND' } };
   const { rows: foreign } = await db.query(
     `SELECT 1 FROM hub_physical_unit_placements p JOIN hub_purchase_allocations a ON a.id = p.allocation_id
@@ -334,11 +334,58 @@ router.post(
       const body = req.body || {};
       const refused = await boxMarketGuard(req.params.unitId, req.workspaceMarket.id, body.allocation_id);
       if (refused) return res.status(refused.status).json(refused.body);
+      const { rows: [box] } = await db.query('SELECT reference FROM hub_physical_units WHERE id=$1', [req.params.unitId]);
+      if (String(body.box_reference_scan || '').trim() !== box.reference) {
+        return res.status(409).json({ error: 'Scannez la référence de la COMBOX cible', code: 'HUB_BOX_SCAN_MISMATCH' });
+      }
+      if (!['SCAN','MANUAL'].includes(String(body.evidence_method || '').trim().toUpperCase())) {
+        return res.status(400).json({ error: 'Le scan article ou sa preuve manuelle est obligatoire', code: 'HUB_BOX_ITEM_EVIDENCE_REQUIRED' });
+      }
       const out = await hubOps.moveAllocationCommand({
         from_unit_id: body.from_unit_id, to_unit_id: req.params.unitId, allocation_id: body.allocation_id,
         quantity: body.quantity, operation_type: 'REPACK',
+        evidence_method: body.evidence_method, evidence_code: body.evidence_code, evidence_ref: body.evidence_ref,
       }, req.user.id);
       return res.status(out.status).json(out.body);
+    } catch (err) { return sendWorkspaceError(err, res, next); }
+  }
+);
+
+router.post(
+  '/market/:marketCode/boxes/:unitId/close',
+  attachHubExecutionCapability('execution.parcel.ship'),
+  requireHubWorkspaceAction,
+  async (req, res, next) => {
+    try {
+      const refused = await boxMarketGuard(req.params.unitId, req.workspaceMarket.id, null);
+      if (refused) return res.status(refused.status).json(refused.body);
+      const body = req.body || {};
+      const result = await db.withTransaction(async client => {
+        const { rows: [box] } = await client.query(
+          "SELECT id, reference, state FROM hub_physical_units WHERE id=$1 AND unit_type='MARKET_PARCEL' FOR UPDATE",
+          [req.params.unitId]
+        );
+        if (!box) throw Object.assign(new Error('COMBOX introuvable'), { status: 404, code: 'BOX_NOT_FOUND' });
+        if (String(body.box_reference_scan || '').trim() !== box.reference) {
+          throw Object.assign(new Error('Scannez la référence de la COMBOX'), { status: 409, code: 'HUB_BOX_SCAN_MISMATCH' });
+        }
+        if (box.state === 'PACKED') return { id: box.id, state: box.state, already_closed: true };
+        const sequence = ['RECEIVED','IDENTIFIED','QUALITY_CHECKED','LOCATED','ALLOCATED','PICKED','PACKED'];
+        if (!sequence.includes(box.state)) throw Object.assign(new Error('COMBOX non fermable'), { status: 409, code: 'HUB_BOX_NOT_CLOSABLE' });
+        const { rows: [contents] } = await client.query(
+          'SELECT COUNT(*)::integer AS count FROM hub_physical_unit_placements WHERE physical_unit_id=$1 AND removed_at IS NULL',
+          [box.id]
+        );
+        if (Number(contents.count) < 1) throw Object.assign(new Error('COMBOX vide'), { status: 409, code: 'HUB_BOX_EMPTY' });
+        for (let i = sequence.indexOf(box.state) + 1; i < sequence.length; i++) {
+          await physicalIdentity.transitionPhysicalUnit(client, {
+            unitId: box.id, toState: sequence[i], actorId: req.user.id,
+            details: { operator_action: 'close_combox' },
+          });
+        }
+        return { id: box.id, state: 'PACKED', already_closed: false };
+      });
+      return res.json(result);
     } catch (err) { return sendWorkspaceError(err, res, next); }
   }
 );
