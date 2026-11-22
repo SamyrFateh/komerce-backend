@@ -3,7 +3,7 @@
  * @domain orders
  * @layer script
  * @owner backend-core
- * @purpose N21 (agent d'un autre relais) et N22 (relais A/B, deux sens) : écriture refusée, aucune donnée divulguée en lecture (table R) ; staging only, aucune écriture SQL.
+ * @purpose N21 (agent d'un autre relais) et N22 (relais A/B, deux sens) : écriture refusée, aucune donnée divulguée en lecture (table R) ; staging only, aucune écriture SQL métier (comptes E2E par writers canoniques).
  * @db-read orders, users, relais, markets, scans, parcels, parcel_items
  * @db-write users, e2e_test_accounts (N22: test identities via canonical writers only, no business SQL writes)
  * @impact-areas staging-only, pickup, security
@@ -184,6 +184,7 @@ async function main(){
   }
   reach('AGENT_ATTACHED_TO_OTHER_RELAY');
   const s=await agentSession(browser,'intruder',prefix),actor=s.actor;
+  if(SCEN==='N22')check(s.agentId===agentId,'G6_N22_PRODUCT_GAP_AGENT_B_SESSION_MISMATCH');
   try{
    if(SCEN==='N22'){
     const ownB=await probeReads(actor.page,env.G6_N22_REVERSE_ORDER_ID,env.G6_N22_REVERSE_ORDER_REFERENCE);
