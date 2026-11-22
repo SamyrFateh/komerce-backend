@@ -55,13 +55,23 @@ async function deleteSupplier(id, forceDelete = false) {
     await client.query('BEGIN');
 
     const { rows: [sup] } = await client.query(
-      'SELECT id, name FROM suppliers WHERE id = $1 AND deleted_at IS NULL',
+      'SELECT id, name, system_key FROM suppliers WHERE id = $1 AND deleted_at IS NULL FOR UPDATE',
       [id]
     );
     if (!sup) {
       await client.query('ROLLBACK');
       const err = new Error('Fournisseur non trouvé');
       err.status = 404;
+      throw err;
+    }
+
+    // N34a : le Fournisseur central Hub est une identité système immuable.
+    // Refus explicite AVANT toute annulation de PO, mapping ou ligne ouverte,
+    // même avec x-force-delete ; la transaction sera annulée dans catch.
+    if (sup.system_key === 'central_hub') {
+      const err = new Error('Le Fournisseur central Hub est protégé et ne peut pas être supprimé.');
+      err.status = 409;
+      err.code = 'CENTRAL_HUB_SUPPLIER_IMMUTABLE';
       throw err;
     }
 
