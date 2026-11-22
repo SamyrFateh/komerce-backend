@@ -129,7 +129,7 @@ describe('G6-G4B N21 (agent d\'un autre relais) et N22 (relais A/B)',()=>{
   expect(N.classifyNegative('N22','G6_N22_PREREQ_MISSING_ORDER_AT_RELAY_B')).toBe('PREREQ_MISSING_ORDER_AT_RELAY_B');
   expect(N.classifyNegative('N22','G6_N22_PRODUCT_GAP_READ_order_by_ref')).toBe('PRODUCT_GAP');
   expect(N.classifyNegative('N32','G6_N32_PREREQ_MISSING_RESTRICTED_HUB_DELEGATION_OR_FOREIGN_PO')).toBe('PREREQ_MISSING_RESTRICTED_HUB_DELEGATION_OR_FOREIGN_PO');
-  expect(read('scripts/recette/g6-negative-n28-n32-chromium.js')).toContain("throw Error('G6_N32_PREREQ_MISSING_RESTRICTED_HUB_DELEGATION_OR_FOREIGN_PO')");
+  expect(read('scripts/recette/g6-negative-n28-n32-chromium.js')).toContain("throw Error('G6_N32_PREREQ_MISSING_FOREIGN_MARKET_ORDER_WITH_PO')");
   const orchestrator=read('scripts/recette/canonical/negative-runner.js');
   expect(orchestrator).toContain('G6_N22_PREREQ_MISSING_ORDER_AT_RELAY_B');
   expect(orchestrator).toContain('G6_N32_PREREQ_MISSING_RESTRICTED_HUB_DELEGATION_OR_FOREIGN_PO');
@@ -478,6 +478,38 @@ describe('G6-G5C N28 (échec réseau puis réessai) et N32 (marché et rôles cr
   expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);expect(a).toMatch(/connectionreset/);expect(a).toMatch(/FALSE_SUCCESS_SHOWN_ON_HTTP500/);
   expect(a).toMatch(/PREREQ_MISSING_FOREIGN_MARKET_ORDER/);expect(a).not.toMatch(/screenshot/);expect(validateChromiumScriptSources()).toBeGreaterThan(0);
   expect(N.classifyNegative('N32','x PREREQ_MISSING_FOREIGN_MARKET_ORDER')).toBe('PREREQ_MISSING_FOREIGN_MARKET_ORDER');
+ });
+ it('N32 : Hub reel restreint et vraie PO etrangere, HTTP 403 metier, refus sans faux PASS',()=>{
+  const src=read('scripts/recette/g6-negative-n28-n32-chromium.js');
+  expect(src).toContain("async function provisionRestrictedHub(marketId,foreignMarketId)");
+  expect(src).toContain("role:'agent_hub'");
+  expect(src).toContain("await markE2eTestAccount(c");
+  expect(src).toContain("await delegation.addMembership(c");
+  expect(src).toContain("capabilities:['operations.read'],actorIsCentral:true");
+  expect(src).toContain("grants.length===1");
+  expect(src).toContain("G6_N32_RESTRICTED_HUB_");
+  expect(src).toContain("me.id===hubId&&me.role==='agent_hub'");
+  expect(src).toContain("JOIN purchase_lines pl");
+  expect(src).toContain("JOIN purchase_orders po");
+  expect(src).toContain("po.status NOT IN ('draft','cancelled')");
+  expect(src).toContain("G6_N32_PREREQ_MISSING_FOREIGN_MARKET_ORDER_WITH_PO");
+  expect(src).toContain("purchase_order_id:f.po_id,product_sku_id:f.sku_id");
+  expect(src).toContain("expected_error_code:'HUB_PHYSICAL_MARKET_SCOPE_MISMATCH'");
+  expect(src).toContain("w?.status()===403");
+  expect(src).toContain("G6_N32_PREREQ_RESTRICTED_HUB_DELEGATION_INVALID");
+  expect(src).toContain("role_denial_attested:wj.your_role===r.role");
+  expect(src).toContain("WRONG_ROLE_DENIAL_REASON_");
+  expect(src).toContain("WRONG_AUTHORITY_REASON_");
+  expect(src).toContain("WRONG_REFUSAL_HTTP_");
+  expect(src).toContain("report.snapshot={before,after,unchanged:");
+  expect(src).toContain("foreign_sku_codes_hash");
+  expect(src).toContain("GET own_order_by_ref");
+  expect(src).toContain("G6_N32_PRODUCT_GAP_OWNER_READ_CONTROL_");
+  expect(src).toContain("G6_N32_SCREEN_MISSING_RESTRICTED_HUB_EXECUTION");
+  expect(src).toContain("report.hub_actor.workspace_visible=true");
+  expect(src).toContain("HUB_FOREIGN_PO_DENIAL_NOT_PROVEN");
+  expect(src).not.toContain("hub=await login(browser,'E2E_AGENT_HUB_'");
+  expect(src).not.toContain("const {rows:[po]}=await db.query('SELECT DISTINCT purchase_order_id FROM v_purchase_line_market");
  });
  it('workflow : titres N28/N32 pour KM, CM et CG et alias de scénario',()=>{
   const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
