@@ -42,16 +42,28 @@ function decide({staging,head,isAncestor,hasRequiredFix,changed,manifestOnlyTest
   if(!manifestOnlyTests)return {allowed:false,reason:'FEATURE_MANIFEST_UNREVIEWED_CHANGE'};
   return {allowed:true,reason:'ONLY_EXPLICIT_TEST_AND_METADATA_DELTA'};
 }
-function manifestTestOnly(staging,head) {
+const CERT_TESTS=[
+  'tests/unit/economic-result-real-readonly.test.js',
+  'tests/unit/economic-result-readonly-pin.test.js'
+];
+function onlyAllowedFeatureTestAdditions(oldText, currentText) {
+  const old=String(oldText).trim();
+  let normalized=String(currentText).trim();
+  // Compare with the ACTUAL deployed manifest, not a hard-coded historic SHA.
+  // A test already present on staging must remain present in the HEAD comparison.
+  for(const testPath of CERT_TESTS){
+    const marker="      '"+testPath+"',";
+    if(old.includes(marker))continue;
+    if(!normalized.includes(marker))return false;
+    normalized=normalized.replace(marker+'\n','');
+  }
+  return normalized.trim()===old;
+}
+function manifestTestOnly(staging) {
   const file='features/economic-engine.feature.js';
   const old=git('show',staging+':'+file);
-  const now=fs.readFileSync(path.resolve(file),'utf8').trim();
-  const normalized=now
-    .replace(/^      'tests\/unit\/economic-result-real-readonly\.test\.js',\r?\n/gm,'')
-    .replace(/^      'tests\/unit\/economic-result-readonly-pin\.test\.js',\r?\n/gm,'')
-    .trim();
-  // The two newly owned Jest files are the only permitted feature declaration change.
-  return normalized===old;
+  const now=fs.readFileSync(path.resolve(file),'utf8');
+  return onlyAllowedFeatureTestAdditions(old,now);
 }
 async function main(){
   const env=process.env;
@@ -66,7 +78,7 @@ async function main(){
     try{git('merge-base','--is-ancestor',staging,head);ancestor=true}catch(_){}
     try{git('merge-base','--is-ancestor',MIN_RUNTIME_SHA,staging);fix=true}catch(_){}
     if(ancestor)changed=git('diff','--name-only',staging+'..'+head).split('\n').filter(Boolean);
-    if(ancestor && (changed.includes('features/economic-engine.feature.js')))manifest=manifestTestOnly(staging,head);
+    if(ancestor && (changed.includes('features/economic-engine.feature.js')))manifest=manifestTestOnly(staging);
     else manifest=true;
   }
   const verdict=decide({staging,head,isAncestor:ancestor,hasRequiredFix:fix,changed,manifestOnlyTests:manifest});
@@ -79,4 +91,4 @@ async function main(){
   if(env.GITHUB_ENV)fs.appendFileSync(env.GITHUB_ENV,'E2E_EXPECTED_DEPLOY_SHA='+staging+'\n');
 }
 if(require.main===module)main().catch(e=>{console.error(String(e.message).slice(0,250));process.exitCode=2});
-module.exports={decide,ALLOWED,MIN_RUNTIME_SHA};
+module.exports={decide,ALLOWED,MIN_RUNTIME_SHA,onlyAllowedFeatureTestAdditions};
