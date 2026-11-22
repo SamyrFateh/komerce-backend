@@ -192,11 +192,16 @@ async function runN32(o,buyer,browser){
    for(const [label,url] of reads){
     const res=await r.page.request.get(url).catch(()=>null);
     const text=res?await res.text().catch(()=>''):'';
-    report.probes.push({role:r.role,gesture:'GET '+label,via:'SCREEN_ROUTE_READ',http:res?res.status():null,discloses_foreign_order:!!res&&res.status()===200&&(text.includes(f.reference)||text.includes(f.id))});
+    report.probes.push({role:r.role,gesture:'GET '+label,
+     via:'AUTHENTICATED_CHROMIUM_HTTP_READ',http:res?res.status():null,
+     expected_http:label==='order_360'?[403,404]:[404],
+     discloses_foreign_order:!!res&&res.status()===200&&(text.includes(f.reference)||text.includes(f.id))});
    }
    const w=await r.page.request.post(URL_CONFIRM,{headers:{origin:BASE},data:confirmBody}).catch(()=>null);
    const wj=w?await w.json().catch(()=>({})):{};
-   report.probes.push({role:r.role,gesture:'POST hub/physical-codes/confirm',via:'API_PROBE_NO_SCREEN_GESTURE',http:w?w.status():null,error_code:wj.code||null});
+   report.probes.push({role:r.role,gesture:'POST hub/physical-codes/confirm',
+    via:'AUTHENTICATED_CHROMIUM_API_PROBE_NO_SCREEN_GESTURE',
+    expected_http:[403],http:w?w.status():null,error_code:wj.code||null});
   }
   reach('ROLE_PROBES_DONE');
   // The isolated Hub actor owns operations.read on exactly this market.
@@ -230,13 +235,16 @@ async function runN32(o,buyer,browser){
   reach('HUB_MARKET_LEG');
   const after=await snap();
   report.snapshot={before,after,unchanged:JSON.stringify(before)===JSON.stringify(after)};
+  if(report.hub_market_leg!=='DENIED_PROVEN')report.gaps.push('HUB_FOREIGN_PO_DENIAL_NOT_PROVEN');
   if(!report.snapshot.unchanged)report.gaps.push('MUTATION_DURING_REFUSED_PROBES');
   for(const p of report.probes){
    if(p.discloses_foreign_order)report.gaps.push('DISCLOSURE_'+p.role+'_'+p.gesture.replace(/\W+/g,'_'));
    else if(/^csrf_/.test(p.error_code||''))throw Error('G6_N32_SCREEN_MISSING_PROBE_'+p.error_code);
    else if(p.http===null)throw Error('G6_N32_SCREEN_MISSING_NO_RESPONSE_'+p.gesture.replace(/\W+/g,'_'));
-   else if(p.http>=200&&p.http<300)report.gaps.push('ACCEPTED_'+p.role+'_'+p.gesture.replace(/\W+/g,'_'));
-   else if(p.http>=500)report.gaps.push('HTTP_'+p.http+'_'+p.role);
+   else if(!p.expected_http.includes(p.http))
+    report.gaps.push('WRONG_REFUSAL_HTTP_'+p.role+'_'+p.gesture.replace(/\W+/g,'_')+'_'+p.http);
+   else if(p.expected_error_code&&p.error_code!==p.expected_error_code)
+    report.gaps.push('WRONG_AUTHORITY_REASON_'+p.role+'_'+String(p.error_code||'none'));
   }
  }finally{if(relay)await relay.ctx.close().catch(()=>{});if(hub)await hub.ctx.close().catch(()=>{});await c.ctx.close().catch(()=>{})}
 }
