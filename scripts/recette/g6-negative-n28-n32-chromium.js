@@ -232,8 +232,13 @@ async function runN32(o,buyer,browser){
   const doc=await humanGoto(hub.page,
    BASE+'/admin/workspaces/operations?market='+MK.code,{waitUntil:'domcontentloaded'});
   check(doc?.status()===200,'G6_N32_SCREEN_MISSING_HUB_WORKSPACE');
+  const hubWorkspace=hub.page.locator('[data-workspace-mode="execution"]');
+  await hubWorkspace.waitFor({state:'visible',timeout:25000}).catch(()=>{
+   throw Error('G6_N32_SCREEN_MISSING_RESTRICTED_HUB_EXECUTION');
+  });
   report.hub_actor.workspace_http=doc.status();
   report.hub_actor.browser_session=true;
+  report.hub_actor.workspace_visible=true;
   const w=await hub.page.request.post(URL_CONFIRM,{
    headers:{origin:BASE},
    data:{purchase_order_id:f.po_id,product_sku_id:f.sku_id,
