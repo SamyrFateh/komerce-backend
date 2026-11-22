@@ -21,6 +21,11 @@ const ALLOWED=new Set([
   'docs/FEATURE_360.json',
   'docs/FEATURE_360.md',
   'features/economic-engine.feature.js',
+  // M06-only staging recipe scripts already merged into main while this proof runs:
+  // never imported by the deployed backend or the economic UI.
+  'scripts/recette/canonical/m06-receipt-plan.js',
+  'scripts/recette/g6-m06-receiving-chromium.js',
+  'tests/unit/g6-m06-receipt-plan.test.js',
   'scripts/recette/economic-result-real-readonly.js',
   'scripts/recette/economic-result-readonly-pin.js',
   'tests/unit/economic-result-real-readonly.test.js',
