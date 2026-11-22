@@ -26,9 +26,15 @@
       "method": null,
       "simulated_only": true
     },
-    "steps": [],
-    "branches": []
+    "steps": [
+      "N34_CENTRAL_IMMUTABILITY",
+      "N34_EXPLICIT_SOURCE"
+    ],
+    "branches": [
+      "N34A",
+      "N34B"
+    ]
   },
   "expected_oracle_ids": [],
-  "binding_status": "NOT_BOUND"
+  "binding_status": "READY_FOR_REVIEW"
 }
