@@ -1,6 +1,6 @@
 'use strict';
 /** @test-kind unit @test-runner jest @test-requires none */
-const {attestHealthVersion}=require('../../scripts/recette/canonical/health-read-only-retry');
+const {attestHealthVersion,fetchHealthReadOnly}=require('../../scripts/recette/canonical/health-read-only-retry');
 const SHA='2b5fa4456d9b200eb3bc567b239835136c6ae48f';
 const URL='https://komerce-backend-production.up.railway.app/health/version';
 const good=()=>({ok:true,status:200,json:async()=>({commit:SHA})});
@@ -51,4 +51,36 @@ test('refuses a non-health destination before making a request',async()=>{
  await expect(attestHealthVersion({fetchImpl,url:URL.replace('/health/version','/api/orders'),expectedSha:SHA}))
   .rejects.toThrow('G6_DYNAMIC_DEPLOY_HEALTH_ARGUMENTS_INVALID');
  expect(fetchImpl).not.toHaveBeenCalled();
+});
+
+test('target identity GET /health survives one transport drop, then returns response to canonical PG verifier',async()=>{
+ const target=URL.replace('/health/version','/health');
+ const body={target:{fingerprint:'fingerprint-from-server'}};
+ const fetchImpl=jest.fn().mockRejectedValueOnce(new TypeError('fetch failed')).mockResolvedValueOnce({
+  ok:true,status:200,json:async()=>body
+ });
+ const sleep=jest.fn().mockResolvedValue();
+ const response=await fetchHealthReadOnly({fetchImpl,url:target,sleep});
+ expect(await response.json()).toEqual(body);
+ expect(fetchImpl.mock.calls.map(([url,request])=>[url,request.method])).toEqual([[target,'GET'],[target,'GET']]);
+ expect(sleep).toHaveBeenCalledTimes(1);
+});
+
+test('target identity HTTP 200 does not imply PG match; mismatched target body remains visible for confirmTarget',async()=>{
+ const url=URL.replace('/health/version','/health');
+ const fake={target:{fingerprint:'wrong-pg-target'}};
+ const fetchImpl=jest.fn().mockResolvedValue({ok:true,status:200,json:async()=>fake});
+ const response=await fetchHealthReadOnly({fetchImpl,url,sleep:jest.fn()});
+ expect(await response.json()).toEqual(fake);
+ expect(fetchImpl).toHaveBeenCalledTimes(1);
+});
+
+test('target identity transport exhaustion is fail-closed; no mutation ever retried',async()=>{
+ const url=URL.replace('/health/version','/health');
+ const fetchImpl=jest.fn().mockRejectedValue(new TypeError('fetch failed'));
+ const sleep=jest.fn().mockResolvedValue();
+ await expect(fetchHealthReadOnly({fetchImpl,url,sleep}))
+  .rejects.toThrow('G6_DYNAMIC_DEPLOY_HEALTH_TRANSPORT_EXHAUSTED');
+ expect(fetchImpl).toHaveBeenCalledTimes(3);
+ expect(fetchImpl.mock.calls.every(([_,request])=>request.method==='GET')).toBe(true);
 });
