@@ -164,9 +164,10 @@ jobs:
        github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N27-KM' ||
        github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N27-CM' ||
        github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-N27-CG' ||
-       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M03-KM')
+       github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M03-KM' ||
+       github.event.issue.title == '[staging-op] g6-m06-certify-KM')
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: ${{ github.event.issue.title == '[staging-op] g6-m06-certify-KM' && 90 || 45 }}
     env:
       NODE_ENV: test
       KOMERCE_ENV: staging
@@ -174,9 +175,9 @@ jobs:
       KOMERCE_DISABLE_CRONS: 'true'
       STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
       EXPECTED_RAILWAY_ENVIRONMENT: staging
-      G6_CANONICAL_SCENARIO: ${{ contains(github.event.issue.title, '-full-N39F1-') && 'N39F1' || contains(github.event.issue.title, '-full-N39F2-') && 'N39F2' || contains(github.event.issue.title, '-full-N39F3-') && 'N39F3' || contains(github.event.issue.title, '-full-N08-') && 'N08' || contains(github.event.issue.title, '-full-N10-') && 'N10' || contains(github.event.issue.title, '-full-N01-') && 'N01' || contains(github.event.issue.title, '-full-N02-') && 'N02' || contains(github.event.issue.title, '-full-N03-') && 'N03' || contains(github.event.issue.title, '-full-N05-') && 'N05' || contains(github.event.issue.title, '-full-N06-') && 'N06' || contains(github.event.issue.title, '-full-N07-') && 'N07' || contains(github.event.issue.title, '-full-N09-') && 'N09' || contains(github.event.issue.title, '-full-N04-') && 'N04' || contains(github.event.issue.title, '-full-N33-') && 'N33' || contains(github.event.issue.title, '-full-N23-') && 'N23' || contains(github.event.issue.title, '-full-N20-') && 'N20' || contains(github.event.issue.title, '-full-N29-') && 'N29' || contains(github.event.issue.title, '-full-N21-') && 'N21' || contains(github.event.issue.title, '-full-N22-') && 'N22' || contains(github.event.issue.title, '-full-N24-') && 'N24' || contains(github.event.issue.title, '-full-N11-') && 'N11' || contains(github.event.issue.title, '-full-N12-') && 'N12' || contains(github.event.issue.title, '-full-N13-') && 'N13' || contains(github.event.issue.title, '-full-N14-') && 'N14' || contains(github.event.issue.title, '-full-N15-') && 'N15' || contains(github.event.issue.title, '-full-N16-') && 'N16' || contains(github.event.issue.title, '-full-N17-') && 'N17' || contains(github.event.issue.title, '-full-N18-') && 'N18' || contains(github.event.issue.title, '-full-N19-') && 'N19' || contains(github.event.issue.title, '-full-N28-') && 'N28' || contains(github.event.issue.title, '-full-N32-') && 'N32' || contains(github.event.issue.title, '-full-N35-') && 'N35' || contains(github.event.issue.title, '-full-N36-') && 'N36' || contains(github.event.issue.title, '-full-N37-') && 'N37' || contains(github.event.issue.title, '-full-N38-') && 'N38' || contains(github.event.issue.title, '-full-N30-') && 'N30' || contains(github.event.issue.title, '-full-N31-') && 'N31' || contains(github.event.issue.title, '-full-N25-') && 'N25' || contains(github.event.issue.title, '-full-N26b-') && 'N26b' || contains(github.event.issue.title, '-full-N26a-') && 'N26a' || contains(github.event.issue.title, '-full-N27-') && 'N27' || contains(github.event.issue.title, '-full-N40-') && 'N40' || contains(github.event.issue.title, '-full-M03-') && 'M03' || contains(github.event.issue.title, '-full-M02-') && 'M02' || 'M01' }}
+      G6_CANONICAL_SCENARIO: ${{ github.event.issue.title == '[staging-op] g6-m06-certify-KM' && 'M06' || contains(github.event.issue.title, '-full-N39F1-') && 'N39F1' || contains(github.event.issue.title, '-full-N39F2-') && 'N39F2' || contains(github.event.issue.title, '-full-N39F3-') && 'N39F3' || contains(github.event.issue.title, '-full-N08-') && 'N08' || contains(github.event.issue.title, '-full-N10-') && 'N10' || contains(github.event.issue.title, '-full-N01-') && 'N01' || contains(github.event.issue.title, '-full-N02-') && 'N02' || contains(github.event.issue.title, '-full-N03-') && 'N03' || contains(github.event.issue.title, '-full-N05-') && 'N05' || contains(github.event.issue.title, '-full-N06-') && 'N06' || contains(github.event.issue.title, '-full-N07-') && 'N07' || contains(github.event.issue.title, '-full-N09-') && 'N09' || contains(github.event.issue.title, '-full-N04-') && 'N04' || contains(github.event.issue.title, '-full-N33-') && 'N33' || contains(github.event.issue.title, '-full-N23-') && 'N23' || contains(github.event.issue.title, '-full-N20-') && 'N20' || contains(github.event.issue.title, '-full-N29-') && 'N29' || contains(github.event.issue.title, '-full-N21-') && 'N21' || contains(github.event.issue.title, '-full-N22-') && 'N22' || contains(github.event.issue.title, '-full-N24-') && 'N24' || contains(github.event.issue.title, '-full-N11-') && 'N11' || contains(github.event.issue.title, '-full-N12-') && 'N12' || contains(github.event.issue.title, '-full-N13-') && 'N13' || contains(github.event.issue.title, '-full-N14-') && 'N14' || contains(github.event.issue.title, '-full-N15-') && 'N15' || contains(github.event.issue.title, '-full-N16-') && 'N16' || contains(github.event.issue.title, '-full-N17-') && 'N17' || contains(github.event.issue.title, '-full-N18-') && 'N18' || contains(github.event.issue.title, '-full-N19-') && 'N19' || contains(github.event.issue.title, '-full-N28-') && 'N28' || contains(github.event.issue.title, '-full-N32-') && 'N32' || contains(github.event.issue.title, '-full-N35-') && 'N35' || contains(github.event.issue.title, '-full-N36-') && 'N36' || contains(github.event.issue.title, '-full-N37-') && 'N37' || contains(github.event.issue.title, '-full-N38-') && 'N38' || contains(github.event.issue.title, '-full-N30-') && 'N30' || contains(github.event.issue.title, '-full-N31-') && 'N31' || contains(github.event.issue.title, '-full-N25-') && 'N25' || contains(github.event.issue.title, '-full-N26b-') && 'N26b' || contains(github.event.issue.title, '-full-N26a-') && 'N26a' || contains(github.event.issue.title, '-full-N27-') && 'N27' || contains(github.event.issue.title, '-full-N40-') && 'N40' || contains(github.event.issue.title, '-full-M03-') && 'M03' || contains(github.event.issue.title, '-full-M02-') && 'M02' || 'M01' }}
       G6_TARGET_MARKET: ${{ contains(github.event.issue.title, '-full-N') && endsWith(github.event.issue.title, '-CM') && 'CM' || contains(github.event.issue.title, '-full-N') && endsWith(github.event.issue.title, '-CG') && 'CG' || endsWith(github.event.issue.title, '-M01-CM') && 'CM' || endsWith(github.event.issue.title, '-M02-CM') && 'CM' || endsWith(github.event.issue.title, '-M01-CG') && 'CG' || endsWith(github.event.issue.title, '-M02-CG') && 'CG' || 'KM' }}
-      G6_DYNAMIC_TO_STAGE: ${{ github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M03-KM' && 'M03_COLLECTED_FINAL' || (github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M02-KM' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M02-CM' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M02-CG') && 'LOCAL_CLIENT_PICKUP' || (github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M01-KM' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M01-CM' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M01-CG') && 'CLIENT_PICKUP' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-kom-box-M01-KM' && 'HUB_KOM_BOX' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-customer-bag-M01-KM' && 'HUB_CUSTOMER_BAG' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-receiving-readback-M01-KM' && 'HUB_RECEIVING_READBACK' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-receiving-M01-KM' && 'HUB_RECEIVING' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-vendor-simulation-M01-KM' && 'HUB_VENDOR_SIMULATION' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-vendor-readiness-M01-KM' && 'HUB_VENDOR_READINESS' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-commitment-M01-KM' && 'HUB_COMMITMENT' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-buyer-cash-hub-po-M01-KM' && 'HUB_PO' || 'RELAY_CASH' }}
+      G6_DYNAMIC_TO_STAGE: ${{ github.event.issue.title == '[staging-op] g6-m06-certify-KM' && 'M06_SAV_ORACLE' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M03-KM' && 'M03_COLLECTED_FINAL' || (github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M02-KM' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M02-CM' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M02-CG') && 'LOCAL_CLIENT_PICKUP' || (github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M01-KM' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M01-CM' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M01-CG') && 'CLIENT_PICKUP' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-kom-box-M01-KM' && 'HUB_KOM_BOX' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-customer-bag-M01-KM' && 'HUB_CUSTOMER_BAG' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-receiving-readback-M01-KM' && 'HUB_RECEIVING_READBACK' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-receiving-M01-KM' && 'HUB_RECEIVING' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-vendor-simulation-M01-KM' && 'HUB_VENDOR_SIMULATION' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-vendor-readiness-M01-KM' && 'HUB_VENDOR_READINESS' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-hub-commitment-M01-KM' && 'HUB_COMMITMENT' || github.event.issue.title == '[staging-op] g6-dynamic-fresh-buyer-cash-hub-po-M01-KM' && 'HUB_PO' || 'RELAY_CASH' }}
       G6_G5A_NEGATIVE_BRANCH: ${{ contains(github.event.issue.title, '-full-N03-ROUTE-') && 'ROUTE_MISSING' || contains(github.event.issue.title, '-full-N05-SOI-') && 'SOI_INCOMPLETE' || '' }}
       E2E_AGENT_TRANSITAIRE_EMAIL: ${{ secrets.E2E_AGENT_TRANSITAIRE_EMAIL }}
       E2E_AGENT_TRANSITAIRE_PASSWORD: ${{ secrets.E2E_AGENT_TRANSITAIRE_PASSWORD }}
@@ -195,6 +196,13 @@ jobs:
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      G6_M06_ACTUAL_PURCHASE_CAPTURE: ${{ secrets.G6_M06_ACTUAL_PURCHASE_CAPTURE }}
+      G6_M06_PAYMENT_AUTHORIZATION_PROOF: ${{ secrets.G6_M06_PAYMENT_AUTHORIZATION_PROOF }}
+      G6_M06_RECEIPT_PROOF_REF: ${{ secrets.G6_M06_RECEIPT_PROOF_REF }}
+      G6_M06_COMBOX_PROOF_REF: ${{ secrets.G6_M06_COMBOX_PROOF_REF }}
+      G6_M06_FORWARDER_NAME: ${{ secrets.G6_M06_FORWARDER_NAME }}
+      G6_M06_TRANSPORT_MODE: ${{ secrets.G6_M06_TRANSPORT_MODE }}
+      G6_M06_HANDOVER_PROOF_REF: ${{ secrets.G6_M06_HANDOVER_PROOF_REF }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -205,6 +213,9 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci --ignore-scripts
+      - name: Validate operator supplied M06 facts before creating any staging order
+        if: github.event.issue.title == '[staging-op] g6-m06-certify-KM'
+        run: node scripts/recette/g6-m06-input-preflight.js
       - name: Pin immutable main SHA for a real staging deployment
         shell: bash
         run: |
@@ -270,6 +281,12 @@ jobs:
             test-results/g6-canonical-customs/
             test-results/g6-canonical-relay-receipt/
             test-results/g6-canonical-client-pickup/
+            test-results/g6-m06-manual-purchase/
+            test-results/g6-m06-supplier-payment-authorization/
+            test-results/g6-m06-receiving/
+            test-results/g6-m06-direct-combox/
+            test-results/g6-m06-shipment-handover/
+            test-results/g6-m06-sav-ui-oracle/
             test-results/g6-local-relay-available/
             test-results/g6-local-client-pickup/
             test-results/g6-m03-not-collected/
