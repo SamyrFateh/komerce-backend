@@ -31,7 +31,9 @@ function mixedBasketParams(env,market){
 function basketLines(params){
  // N33 : un produit, deux variantes (SKU distincts), une unité chacune.
  if(params.variants)return params.variants.map(v=>({product_ref:params.product_ref,price:params.unit_price,fulfillment:null,sku_id:v.sku_id,variant_combo:v.variant_combo}));
- return params.basket||[{product_ref:params.product_ref,price:params.expected_price,fulfillment:params.fulfillment}];
+ return params.basket||[{product_ref:params.product_ref,price:params.unit_price||params.expected_price,
+  fulfillment:params.fulfillment,...(params.quantity?{quantity:params.quantity}:{}),
+  ...(params.centralHubManual?{source_key:'central_hub'}:{})}];
 }
 // N33 : produit vendable à >= 2 SKU distincts, résolu en lecture seule (adaptateur) puis lié par G6_N33_VARIANTS.
 function multiVariantParams(env,market){
@@ -43,9 +45,22 @@ function multiVariantParams(env,market){
  return Object.freeze({scenario:'N33',market,product_ref:v.product_ref,expected_price:v.price*2,unit_price:v.price,
   source:'RESOLVED_MULTI_SKU',fulfillment:null,variants:Object.freeze(v.skus.map(k=>Object.freeze({sku_id:k.sku_id,variant_combo:k.variant_combo})))});
 }
+// M06 : produit Hub manuel vendu sur commande, sans stock physique.
+function m06HubParams(env,market){
+ const ref=String(env.G6_BUYER_PRODUCT_REF||''),unitPrice=Number(env.G6_BUYER_EXPECTED_PRICE);
+ if(ref!=='KPR-000255'||!Number.isSafeInteger(unitPrice)||unitPrice<=0||!Number.isSafeInteger(unitPrice*3))
+  throw Error('G6_M06_CENTRAL_HUB_PRODUCT_NOT_BOUND');
+ return Object.freeze({scenario:'M06',market,product_ref:ref,expected_price:unitPrice*3,
+  unit_price:unitPrice,quantity:3,source:'RESOLVED_CENTRAL_HUB_ON_ORDER',
+  fulfillment:'IMPORT',centralHubManual:true});
+}
 function buyerParams(env=process.env){
- const scenario=scenarioProfile(env.G6_CANONICAL_SCENARIO||'M01');
+ const rawScenario=String(env.G6_CANONICAL_SCENARIO||'M01');
  const market=String(env.G6_TARGET_MARKET||'KM').toUpperCase();
+ // Keep the buyer's isolated M06 contract testable before the full scenario is
+ // admitted to the canonical stage registry and owner-only staging workflow.
+ if(rawScenario==='M06')return m06HubParams(env,market);
+ const scenario=scenarioProfile(rawScenario);
  // Scénarios négatifs : N07 = produit Golden M01 ; N33 = multi-SKU ; N04 et N09 = produit LOCAL_STOCK comme M02.
  if(['N07','N08','N10'].includes(scenario))return Object.freeze({scenario,market,product_ref:M01_PRODUCT_REF,
   expected_price:M01_MARKET_PRICE[market],source:'FIXED_CATALOGUE',fulfillment:null});

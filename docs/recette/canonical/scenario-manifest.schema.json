@@ -192,9 +192,10 @@
         "product": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["fixture_ref", "source_kind", "supplier_system_key", "internal_sku", "physical_stock", "sellable_status"],
+          "required": ["fixture_ref", "product_ref", "source_kind", "supplier_system_key", "internal_sku", "physical_stock", "sellable_status"],
           "properties": {
             "fixture_ref": { "const": "G6-M06-KM" },
+            "product_ref": { "const": "KPR-000255" },
             "source_kind": { "const": "central_hub_manual" },
             "supplier_system_key": { "const": "central_hub" },
             "internal_sku": { "const": "generated_unique_per_run" },
