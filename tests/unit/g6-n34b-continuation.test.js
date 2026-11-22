@@ -31,6 +31,14 @@ describe('N34b continuation — no second import, explicit operator family, PG s
   expect(boutique).toContain("if(!await visible(select,12000))");
   expect(boutique.indexOf("if(!await visible(select,12000))")).toBeLessThan(boutique.indexOf("await humanClick(null,refresh)"));
   expect(boutique).not.toContain('await humanClick(null,open)');
+  // Server stores subcategory key Outillage; UI labels it Outils & Fixation.
+  expect(boutique).toContain('Outils & Fixation');
+  expect(boutique).toContain("b?.category==='Bricolage'&&b?.subcategory==='Outillage'");
+  expect(boutique).toContain("candidate-apply-boutique-suggestion");
+  expect(boutique).toContain("check(await select.inputValue()===choose.value");
+  expect(boutique).toContain("await humanClick(null,apply)");
+  expect(boutique).toContain("choose.label.startsWith('Proposé · ')");
+
   expect(source).toContain('if(!cand.product_id){');
   expect(source.indexOf('await boutiqueCategory(actor)')).toBeLessThan(source.indexOf('await promote(actor)'));
   expect(source).toContain("b?.category==='Bricolage'&&b?.subcategory==='Outillage'");
