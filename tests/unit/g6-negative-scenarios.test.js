@@ -461,6 +461,12 @@ describe('G6-G5C N28 (échec réseau puis réessai) et N32 (marché et rôles cr
   expect(src).toContain("WRONG_AUTHORITY_REASON_");
   expect(src).toContain("WRONG_REFUSAL_HTTP_");
   expect(src).toContain("report.snapshot={before,after,unchanged:");
+  expect(src).toContain("foreign_sku_codes_hash");
+  expect(src).toContain("GET own_order_by_ref");
+  expect(src).toContain("G6_N32_PRODUCT_GAP_OWNER_READ_CONTROL_");
+  expect(src).toContain("G6_N32_SCREEN_MISSING_RESTRICTED_HUB_EXECUTION");
+  expect(src).toContain("report.hub_actor.workspace_visible=true");
+  expect(src).toContain("HUB_FOREIGN_PO_DENIAL_NOT_PROVEN");
   expect(src).not.toContain("hub=await login(browser,'E2E_AGENT_HUB_'");
   expect(src).not.toContain("const {rows:[po]}=await db.query('SELECT DISTINCT purchase_order_id FROM v_purchase_line_market");
  });
