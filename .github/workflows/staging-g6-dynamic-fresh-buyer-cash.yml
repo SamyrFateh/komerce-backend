@@ -263,6 +263,7 @@ jobs:
             test-results/g6-hub-receiving/
             test-results/g6-hub-receiving-readback/
             test-results/g6-hub-customer-bag/
+            test-results/g6-m03-parcel-distribution/
             test-results/g6-hub-kom-box/
             test-results/g6-hub-shipment/
             test-results/g6-canonical-forwarder/
