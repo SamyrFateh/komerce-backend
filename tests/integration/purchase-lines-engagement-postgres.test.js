@@ -176,9 +176,9 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
   afterEach(() => { delete process.env.ADMIN_PHONE; });
 
   // ─── fixtures ─────────────────────────────────────────────────────────────────────────────────
-  async function seedSupplier({ platform = 'manual', name = 'Fournisseur', phone = null } = {}) {
+  async function seedSupplier({ platform = 'manual', name = 'Fournisseur', phone = null, systemKey = null } = {}) {
     const supplier = id();
-    await q('INSERT INTO suppliers(id, name, platform, contact_phone) VALUES ($1,$2,$3,$4)', [supplier, name, platform, phone]);
+    await q('INSERT INTO suppliers(id, name, platform, contact_phone, system_key) VALUES ($1,$2,$3,$4,$5)', [supplier, name, platform, phone, systemKey]);
     return supplier;
   }
 
@@ -334,7 +334,7 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
   // ─── confirm ──────────────────────────────────────────────────────────────────────────────────
   describe('confirm', () => {
     it('M03 : confirmation manuelle sans devis crée une devise confirmée append-only sans modifier la devise de devis', async () => {
-      const supplier = await seedSupplier();
+      const supplier = await seedSupplier({ systemKey: 'central_hub' });
       const a = await seedLine({ supplier, quantity: 1, market: 'KM', price: null });
       const po = await submittedPo(supplier, [a.line]);
       const before = await row('SELECT supplier_unit_price, supplier_currency, confirmed_currency FROM purchase_lines WHERE id=$1', [a.line]);
@@ -367,7 +367,7 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
     });
 
     it('M03 : devise de confirmation non injectable avant notification ou après confirmation', async () => {
-      const supplier = await seedSupplier();
+      const supplier = await seedSupplier({ systemKey: 'central_hub' });
       const a = await seedLine({ supplier, quantity: 1, market: 'KM', price: null });
       const draft = await preparedPo(supplier, [a.line]);
       await expect(q(`UPDATE purchase_lines SET confirmed_quantity=1, confirmed_unit_price=10,
