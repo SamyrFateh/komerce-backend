@@ -127,7 +127,7 @@ async function main(){
     'G6_N22_PREREQ_MISSING_ORDER_AT_RELAY_B');
    const buyerB={id:ob.user_id,email:ob.email,phone:ob.phone,role:ob.role};
    check(await verifyMarkedG6Buyer(db,buyerB,env),'G6_N22_PREREQ_UNMARKED_BUYER_B');
-   second=await customer(browser,buyerB);
+   second=await customer(browser,buyerB,{orderId:bid,orderReference:bref});
    const pre=await agentSession(browser,'pre-control-a');agentId=pre.agentId;
    await pre.actor.ctx.close();
    // Attacher d'abord par l'écran Réseau, puis ouvrir une NOUVELLE session :

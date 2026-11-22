@@ -160,6 +160,15 @@ describe('G6-G4B N21 (agent d\'un autre relais) et N22 (relais A/B)',()=>{
    expect(buyer).toContain('G6_N22_EXCLUDE_RELAY_ID');
    expect(buyer).toContain('G6_N22_PREREQ_MISSING_BROWSER_SELECTABLE_SECOND_RELAY');
    expect(buyer).toContain('G6_N22_SECOND_ORDER_RELAY_PG_MISMATCH');
+   const pickup=read('scripts/recette/g6-canonical-client-pickup-chromium.js');
+   expect(cross).toContain('second=await customer(browser,buyerB,{orderId:bid,orderReference:bref})');
+   expect(pickup).toContain('const targetOrderId=hasOrderOverride?opts.orderId:ID');
+   expect(pickup).toContain('const targetReference=hasOrderOverride?opts.orderReference:');
+   expect(pickup).toContain("const revealPath='/api/pickup/customer-regenerate/'+targetOrderId");
+   expect(pickup).toContain("const card=page.locator('.k-myorder-card[data-ref=");
+   expect(pickup).toContain("'+targetReference+'");
+   expect(pickup).toContain('G6_N22_PICKUP_SECOND_ORDER_OWNER_SCOPE_INVALID');
+   expect(pickup).toContain('user_id=$3::uuid');
    expect(cross).toContain('G6_N22_REVERSE_ORDER_ID');
    expect(cross).toContain('G6_N22_REVERSE_ORDER_REFERENCE');
    expect(cross).toContain('G6_N22_REVERSE_RELAY_ID');
