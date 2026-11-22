@@ -78,7 +78,7 @@ test('chromium-policy validates every discovered Chromium script (no fixed count
  expect(assertGestureSourceUsesHelper('s.js',"// .click() in comment\nawait humanClick(page,'#a');")).toBe(true);
  const fs=require('node:fs'),path=require('node:path');
  const scripts=fs.readdirSync(path.join(__dirname,'../../scripts/recette'))
-  .filter(file=>/^g6-.*chromium\\.js$/.test(file));
+  .filter(file=>/^g6-.*chromium\.js$/.test(file));
  expect(scripts.length).toBeGreaterThanOrEqual(39);
  expect(validateChromiumScriptSources()).toBe(scripts.length);
 });
