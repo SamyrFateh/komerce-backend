@@ -114,4 +114,6 @@ test('le résultat est masqué lorsque non décisionnel, mais un zéro mesuré r
   expect(readResult()).toBe('0 KMF');
   decision.flow_break_even.economic_state.period_result_kmf = 180;
   expect(readResult()).toBe('180 KMF');
+  decision.flow_break_even.economic_state.period_result_kmf = '';
+  expect(readResult()).toBe('—');
 });
