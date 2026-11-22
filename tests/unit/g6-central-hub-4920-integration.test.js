@@ -66,8 +66,12 @@ describe('G6 preparer source Hub centrale — contrat #4920 + media canonique',(
   expect(SOURCE).toContain("PREREQ_MISSING_CANONICAL_PRODUCT_IMAGE");
   expect(SOURCE).toContain("fs.readFileSync(file)");
   expect(SOURCE).toContain("crypto.createHash('sha256')");
-  expect(WORKFLOW).toContain('vars.G6_CENTRAL_MEDIA_IMAGE_FILE');
-  expect(WORKFLOW).toContain('vars.G6_CENTRAL_MEDIA_IMAGE_SHA256');
+  const file='docs/recette/assets/g6-screwdriver-set-20261122.png';
+  const sha='642ef5386df5e62d158896117ce8245939d99d982711e485b9819dc54575484f';
+  expect(WORKFLOW).toContain('G6_CENTRAL_MEDIA_IMAGE_FILE: '+file);
+  expect(WORKFLOW).toContain('G6_CENTRAL_MEDIA_IMAGE_SHA256: '+sha);
+  expect(fs.existsSync(file)).toBe(true);
+  expect(require('node:crypto').createHash('sha256').update(fs.readFileSync(file)).digest('hex')).toBe(sha);
  });
  test('meme run peut finir le parcours entier sans bypass en 12 etapes maximum',()=>{
   expect(SOURCE).toContain('for(let i=0;i<12&&step.step;i++)');
