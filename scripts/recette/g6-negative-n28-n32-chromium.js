@@ -175,7 +175,11 @@ async function runN32(o,buyer,browser){
    (SELECT md5(status::text||payment_status::text||COALESCE(display_total_amount::text,'')) FROM orders WHERE id=$2) AS foreign_order,
    (SELECT count(*)::int FROM scans WHERE order_id IN ($1,$2)) AS scans,
    (SELECT count(*)::int FROM purchase_lines WHERE purchase_order_id=$3 AND cancelled_at IS NULL) AS po_lines,
-   (SELECT status::text FROM purchase_orders WHERE id=$3) AS po_status`,[ID,f.id,f.po_id]);
+   (SELECT status::text FROM purchase_orders WHERE id=$3) AS po_status,
+   (SELECT md5(COALESCE(string_agg(
+     concat_ws('|',id::text,trust::text,printed_on_pack::text,
+       confirmed_by::text,confirmed_at::text,confirmation_proof_ref),',' ORDER BY id),''))
+     FROM product_sku_physical_codes WHERE product_sku_id=$4) AS foreign_sku_codes_hash`,[ID,f.id,f.po_id,f.sku_id]);
   return x;
  };
  const before=await snap();
@@ -188,6 +192,17 @@ async function runN32(o,buyer,browser){
  try{
   const {actor}=await bindAgent(browser,o.relais_id);relay=actor;roles.push({role:'agent_relais',page:actor.page});
   reach('ACTORS_READY');
+  // Positive controls prevent a broken or non-existent detail route from
+  // being mistaken for a proper cross-market 404 denial.
+  for(const r of roles){
+   const own=await r.page.request.get('/api/orders/'+REF).catch(()=>null);
+   const body=own?await own.text().catch(()=>''):'';
+   report.probes.push({role:r.role,gesture:'GET own_order_by_ref',
+    via:'AUTHENTICATED_CHROMIUM_HTTP_READ',expected_http:[200],
+    http:own?own.status():null,owner_order_visible:body.includes(REF)});
+   check(own?.status()===200&&body.includes(REF),
+    'G6_N32_PRODUCT_GAP_OWNER_READ_CONTROL_'+r.role);
+  }
   for(const r of roles){
    for(const [label,url] of reads){
     const res=await r.page.request.get(url).catch(()=>null);
