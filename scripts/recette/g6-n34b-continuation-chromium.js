@@ -168,7 +168,8 @@ async function main(){
   actor=await login(browser,'E2E_ADMIN_','admin');
   await economicCategory(actor,cand);
   cand=await candidate();
-  if(!cand.product_id&&cand.scan_result?.sourcing_decision!=='TEST'){
+  // Boutique classification may be mandatory even after a TEST scan; prefer its real UI when offered.
+  if(!cand.product_id){
    const boutique=await boutiqueCategory(actor);
    report.boutique_ui_available=boutique;save();
   }
