@@ -13,6 +13,7 @@ const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypt
 const {spawnSync}=require('node:child_process');
 const N=require('./negative-scenarios');
 const {bootstrapFreshScenario}=require('./fresh-buyer-bootstrap');
+const {createRealBuyerCashAdapters}=require('./real-buyer-cash-adapters');
 const {assertNoHubOrTransport}=require('./local-stock-oracles');
 const {marketProfile}=require('./market-profile');
 const ROOT=path.resolve(__dirname,'../../..');
@@ -122,6 +123,39 @@ async function runNegativeScenario({scenario,env,db,adapters}){
   const L=LOCAL_NEG[scenario];
   const result=await bootstrapFreshScenario({scenario,toStage:L.to||'LOCAL_RELAY_AVAILABLE',adapters});
   out.order_id=result.order_id;out.reference=result.order_reference;out.stages.push(...result.stages);
+  let n22Second=null;
+  if(scenario==='N22'){
+   const {rows:[first]}=await db.query('SELECT relais_id,market_id,user_id FROM orders WHERE id=$1',[result.order_id]);
+   if(!first?.relais_id)throw Error('G6_N22_PREREQ_MISSING_ORDER_AT_RELAY_A');
+   const {rows:choices}=await db.query(`SELECT r.id FROM relais r
+    JOIN markets m ON m.id=r.market_id AND m.code=$1
+    WHERE r.is_active=TRUE AND r.id<>$2 ORDER BY r.created_at`,[market,first.relais_id]);
+   if(!choices.length)throw Error('G6_N22_PREREQ_MISSING_SECOND_RELAY');
+   // Sauvegarder les captures et oracles de A avant la seconde commande : les
+   // stages canoniques réutilisent leurs chemins de sortie pour B.
+   const paths=['g6-p2-buyer-order','g6-a-relay-cash','g6-local-relay-available'];
+   for(const p of paths){
+    const src=path.join(ROOT,'test-results',p);
+    if(!fs.existsSync(path.join(src,'report.json')))throw Error('G6_N22_PREREQ_MISSING_ORDER_A_STAGE_'+p);
+    fs.cpSync(src,path.join(ROOT,'test-results/g6-n22-a',p),{recursive:true});
+   }
+   const secondEnv={...env,G6_N22_TARGET_RELAY_ID:choices[0].id};
+   const bAdapters=createRealBuyerCashAdapters({db,env:secondEnv});
+   const second=await bootstrapFreshScenario({scenario,toStage:'LOCAL_RELAY_AVAILABLE',adapters:bAdapters});
+   const {rows:[b]}=await db.query(`SELECT o.id,o.reference,o.relais_id,o.user_id,
+      o.status::text AS status,o.payment_status::text AS payment_status,
+      o.simulation_scope,m.code AS market
+      FROM orders o JOIN markets m ON m.id=o.market_id WHERE o.id=$1`,[second.order_id]);
+   if(!b||b.id===result.order_id||b.user_id===first.user_id||
+      b.relais_id!==choices[0].id||b.market!==market||b.status!=='available'||
+      b.payment_status!=='paid'||b.simulation_scope!=='G6-BUYER')
+    throw Error('G6_N22_PRODUCT_GAP_FRESH_SECOND_ORDER_NOT_AT_RELAY_B');
+   n22Second={id:b.id,reference:b.reference,relay_id:b.relais_id};
+   for(const p of paths)fs.cpSync(path.join(ROOT,'test-results',p),
+    path.join(ROOT,'test-results/g6-n22-b',p),{recursive:true});
+   out.n22_second_order={order_id:b.id,reference:b.reference,market,
+    created_by:'CHROMIUM_BUYER_CASH_LOCAL_RELAY_AVAILABLE',stages:second.stages};
+  }
   const runtime=await adapters.attestRuntimeBeforeBuyer(),phase=L.phase;
   // Achats et Hub : PO unique de la commande, relu en PG (lecture seule) et transmis au script enfant.
   const poId=L.po?(await N.importPo(db,result.order_id)).id:null;
@@ -132,7 +166,9 @@ async function runNegativeScenario({scenario,env,db,adapters}){
   if(L.script)try{
    spawnChild(L.script,{...env,G6_DYNAMIC_FRESH_ORDER:'1',G6_CANONICAL_PHASE:phase,
     G6_CANONICAL_ORDER_ID:result.order_id,G6_CANONICAL_ORDER_REFERENCE:result.order_reference,G6_CANONICAL_DB_FINGERPRINT:runtime.db_fingerprint,
-    ...(poId?{G6_CANONICAL_PO_ID:poId}:{}),...(ship?{G6_CANONICAL_SHIPMENT_REF:ship.reference,G6_CANONICAL_SHIPMENT_ID:ship.id}:{})},L.report);
+    ...(poId?{G6_CANONICAL_PO_ID:poId}:{}),...(ship?{G6_CANONICAL_SHIPMENT_REF:ship.reference,G6_CANONICAL_SHIPMENT_ID:ship.id}:{}),
+    ...(n22Second?{G6_N22_REVERSE_ORDER_ID:n22Second.id,G6_N22_REVERSE_ORDER_REFERENCE:n22Second.reference}:{}),
+    },L.report);
   }catch(e){
    // Verdict : défaut produit ou écran manquant relevé par le script ; sinon l'erreur d'origine.
    let child=null;try{child=readJson(L.report)}catch(_){}
@@ -169,6 +205,10 @@ async function runNegativeScenario({scenario,env,db,adapters}){
    :scenario==='N14'?await N.oracleN14(db,{orderId:result.order_id,poId,ordered:g.ordered})
    :scenario==='N11'?await N.oracleN11(db,{orderId:result.order_id,poId})
    :scenario==='N12'?await N.oracleN12(db,{orderId:result.order_id,poId,commitmentProof:g.commitment_proof})
+   :scenario==='N22'?{
+      a:await N.oracleCrossRelay(db,{orderId:result.order_id,scenario,assertNoHubOrTransport}),
+      b:await N.oracleCrossRelay(db,{orderId:n22Second.id,scenario,assertNoHubOrTransport})
+    }
    :await N.oracleCrossRelay(db,{orderId:result.order_id,scenario,assertNoHubOrTransport});
   const sid=L.oracle;
   out.stages.push(evidence(sid,scenario,market,{oracle:o,order_id:result.order_id,http:g.tabs||g.intruder||(g.attempts||[]).map(a=>({kind:a.kind,http:a.http,ui_blocked:a.ui_blocked,message_visible:a.message_visible}))}));
