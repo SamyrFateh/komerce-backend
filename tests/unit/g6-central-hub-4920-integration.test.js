@@ -66,8 +66,8 @@ describe('G6 preparer source Hub centrale — contrat #4920 + media canonique',(
   expect(SOURCE).toContain("PREREQ_MISSING_CANONICAL_PRODUCT_IMAGE");
   expect(SOURCE).toContain("fs.readFileSync(file)");
   expect(SOURCE).toContain("crypto.createHash('sha256')");
-  const file='docs/recette/assets/g6-screwdriver-set-20261122.png';
-  const sha='642ef5386df5e62d158896117ce8245939d99d982711e485b9819dc54575484f';
+  const file='docs/recette/assets/g6-screwdriver-set-20261122.jpg';
+  const sha='70f4644b759553cdf20f9ebc33eb84013b4890dda7b62e774508561541a90c1f';
   expect(WORKFLOW).toContain('G6_CENTRAL_MEDIA_IMAGE_FILE: '+file);
   expect(WORKFLOW).toContain('G6_CENTRAL_MEDIA_IMAGE_SHA256: '+sha);
   expect(fs.existsSync(file)).toBe(true);
