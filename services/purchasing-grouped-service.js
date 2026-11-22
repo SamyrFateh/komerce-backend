@@ -141,7 +141,7 @@ const LINE_COLUMNS = `
     vm.market_id, mk.code AS market_code, mk.name AS market_name,
     p.name AS product_name, oi.product_id, pl.product_sku_id, pl.supplier_sku, pl.supplier_unit_ref,
     pl.quantity, vm.effective_quantity, vm.cancelled, pl.supplier_unit_price, pl.supplier_currency, pl.created_at,
-    pl.parent_line_id, pl.confirmed_quantity, pl.confirmed_unit_price, pl.confirmed_at,
+    pl.parent_line_id, pl.confirmed_quantity, pl.confirmed_unit_price, pl.confirmed_currency, pl.confirmed_at,
     pl.settled_quantity, pl.settled_at, pl.settle_reason, pl.cancel_reason,
     TRUE AS groupable,
     (pl.product_sku_id IS NOT NULL AND pl.supplier_unit_ref IS NOT NULL
@@ -184,6 +184,7 @@ function shapeLine(row) {
     parent_line_id: row.parent_line_id,
     confirmed_quantity: row.confirmed_quantity,
     confirmed_unit_price: row.confirmed_unit_price === null ? null : Number(row.confirmed_unit_price),
+    confirmed_currency: row.confirmed_currency || null,
     confirmed_at: row.confirmed_at,
     settled_quantity: row.settled_quantity,
     settled_at: row.settled_at,
@@ -243,7 +244,7 @@ async function listOpenLines({ market_id: marketId } = {}, q = db) {
       });
     }
     const group = groups.get(key);
-    if (row.supplier_currency) group.currencies.add(row.supplier_currency);
+    if (row.confirmed_currency || row.supplier_currency) group.currencies.add(row.confirmed_currency || row.supplier_currency);
     group.lines.push(shapeLine(row));
     if (row.supplier_unit_ref) {
       const agg = group.by_supplier_unit_ref.get(row.supplier_unit_ref) || { supplier_unit_ref: row.supplier_unit_ref, quantity: 0, lines: 0 };
