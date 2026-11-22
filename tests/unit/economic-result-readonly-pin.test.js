@@ -9,6 +9,9 @@ const valid=(overrides={})=>({staging:STAGE,head:HEAD,isAncestor:true,
 test('allow only an explicit test-script and metadata-only diff after the merged #5131 SHA',()=>{
   expect(MIN_RUNTIME_SHA).toMatch(/^[a-f0-9]{40}$/i);
   expect(ALLOWED.has('scripts/recette/economic-result-readonly-pin.js')).toBe(true);
+  expect(ALLOWED.has('scripts/recette/g6-m06-receiving-chromium.js')).toBe(true);
+  expect(ALLOWED.has('scripts/recette/canonical/m06-receipt-plan.js')).toBe(true);
+  expect(ALLOWED.has('tests/unit/g6-m06-receipt-plan.test.js')).toBe(true);
   expect(decide(valid())).toMatchObject({allowed:true,reason:'ONLY_EXPLICIT_TEST_AND_METADATA_DELTA'});
 });
 test('refuse deployable runtime, older staging, unknown feature edits or nonancestor',()=>{
