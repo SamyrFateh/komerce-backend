@@ -25,6 +25,8 @@ describe('N34b continuation — no second import, explicit operator family, PG s
   expect(source).toContain("b?.category_key===FAMILY");
   expect(source).toContain("after.komerce_category===FAMILY");
   expect(source).toContain('BOUTIQUE_OUTILLAGE_NOT_OFFERED');
+  expect(source).toContain('if(!cand.product_id){');
+  expect(source.indexOf('await boutiqueCategory(actor)')).toBeLessThan(source.indexOf('await promote(actor)'));
   expect(source).toContain("b?.category==='Bricolage'&&b?.subcategory==='Outillage'");
  });
  test('canonical supplier identity and economic side effects remain independently checked',()=>{
