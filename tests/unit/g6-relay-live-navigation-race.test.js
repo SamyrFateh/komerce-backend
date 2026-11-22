@@ -19,13 +19,14 @@ function actor({initial='/login.html',interruption=false,foreign=false}={}){
   waitForLoadState:jest.fn(async()=>{}),
   locator:jest.fn(()=>target)
  };
- return {page,target};
+ return {page,target,setUrl:path=>{current=BASE+path;}};
 }
 describe('G6 canonical relay navigation: same-route Chromium redirect',()=>{
  test('landing on the relay cockpit never starts a second navigation',async()=>{
   const {page,target}=actor({initial:'/admin/relais-live'});
   expect(await openRelayLive(page,{selector:'[data-relay-shipment="SIM-STAGING-EXP-TEST01"]'})).toBe(target);
   expect(page.goto).not.toHaveBeenCalled();
+  expect(page.waitForURL).not.toHaveBeenCalled();
   expect(target.waitFor).toHaveBeenCalledWith({state:'visible',timeout:30000});
  });
  test('navigates to canonical relay page without query string',async()=>{
@@ -42,6 +43,30 @@ describe('G6 canonical relay navigation: same-route Chromium redirect',()=>{
   const bad=actor({interruption:true,foreign:true});
   await expect(openRelayLive(bad.page,{selector:'[data-manual-pickup-code]'}))
    .rejects.toThrow('URL is not the expected relay cockpit');
+ });
+ test('post-login redirect also aborts first waitForURL: read-only bounded recovery',async()=>{
+  const {page,setUrl,target}=actor({initial:'/login.html'});
+  page.goto=jest.fn(async()=>{throw Error('page.goto: net::ERR_ABORTED');});
+  let waits=0;
+  page.waitForURL=jest.fn(async predicate=>{
+   waits++;
+   if(waits===1)throw Error('page.waitForURL: net::ERR_ABORTED; maybe frame was detached?');
+   setUrl('/admin/relais-live');
+   if(!predicate(new URL(page.url())))throw Error('unexpected relay route');
+  });
+  await expect(openRelayLive(page,{selector:'[data-manual-pickup-code]'})).resolves.toBe(target);
+  expect(page.goto).toHaveBeenCalledTimes(1);
+  expect(page.waitForURL).toHaveBeenCalledTimes(2);
+  expect(target.waitFor).toHaveBeenCalledWith({state:'visible',timeout:30000});
+ });
+ test('three aborted waits with a foreign destination fail closed',async()=>{
+  const {page}=actor({initial:'/login.html'});
+  page.goto=jest.fn(async()=>{throw Error('page.goto: net::ERR_ABORTED');});
+  page.waitForURL=jest.fn(async()=>{throw Error('page.waitForURL: net::ERR_ABORTED');});
+  await expect(openRelayLive(page,{selector:'[data-manual-pickup-code]'}))
+   .rejects.toThrow('G6_RELAY_NAVIGATION_RACE_UNRESOLVED');
+  expect(page.goto).toHaveBeenCalledTimes(1);
+  expect(page.waitForURL).toHaveBeenCalledTimes(3);
  });
  test('execute view is entered by clicking « Atelier réception », never by a direct URL',async()=>{
   const {page}=actor({initial:'/admin/relais-live'});

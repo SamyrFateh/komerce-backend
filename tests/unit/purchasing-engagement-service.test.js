@@ -291,6 +291,60 @@ describe('confirmGroupedPurchaseOrder — garde-fous', () => {
       .rejects.toMatchObject({ status: 400, code: 'MANUAL_PURCHASE_PROOF_REQUIRED' });
   });
 
+  it('M03 manuel sans devis : prix, devise et justificatif explicitement obligatoires; aucune écriture si absents', async () => {
+    const setup = () => scripted([
+      [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'notified', trigger_mode: 'manual' })] }],
+      [/FROM purchase_lines\s+WHERE purchase_order_id/, { rows: [{
+        id: L1, quantity: 1, supplier_unit_price: null, supplier_currency: null,
+        supplier_order_identity: null, supplier_unit_ref: 'MANUAL-CENTRAL', supplier_id: uuid(3),
+      }] }],
+      [/purchase_line_received_quantity/, { rows: [{ received: 0 }] }],
+    ]);
+    let x = setup();
+    await expect(engagement.confirmGroupedPurchaseOrder(PO, {
+      purchase_proof_ref: 'SIM-STAGING-PROOF', seller_label: 'SIM-STAGING-VENDOR',
+      lines: [{ purchase_line_id: L1, confirmed_quantity: 1 }],
+    })).rejects.toMatchObject({ status: 400, code: 'CONFIRMED_PRICE_REQUIRED' });
+    expect(x.calls.some(c => /UPDATE purchase_lines/.test(c.sql))).toBe(false);
+
+    x = setup();
+    await expect(engagement.confirmGroupedPurchaseOrder(PO, {
+      purchase_proof_ref: 'SIM-STAGING-PROOF', seller_label: 'SIM-STAGING-VENDOR',
+      lines: [{ purchase_line_id: L1, confirmed_quantity: 1, confirmed_unit_price: 10 }],
+    })).rejects.toMatchObject({ status: 400, code: 'CONFIRMED_CURRENCY_REQUIRED' });
+    expect(x.calls.some(c => /UPDATE purchase_lines/.test(c.sql))).toBe(false);
+
+    x = setup();
+    await expect(engagement.confirmGroupedPurchaseOrder(PO, {
+      purchase_proof_ref: 'SIM-STAGING-PROOF', seller_label: 'SIM-STAGING-VENDOR',
+      lines: [{ purchase_line_id: L1, confirmed_quantity: 1, confirmed_unit_price: 10, confirmed_currency: 'xx' }],
+    })).rejects.toMatchObject({ status: 400, code: 'CONFIRMED_CURRENCY_INVALID' });
+    expect(x.calls.some(c => /UPDATE purchase_lines/.test(c.sql))).toBe(false);
+  });
+
+  it('M03 manuel : prix fictif saisi + EUR et vendeur simulé, devise persistée atomiquement sans inventer le prix devis', async () => {
+    const { calls } = scripted([
+      [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'notified', trigger_mode: 'manual' })] }],
+      [/FROM purchase_lines\s+WHERE purchase_order_id/, { rows: [{
+        id: L1, quantity: 1, supplier_unit_price: null, supplier_currency: null,
+        supplier_order_identity: null, supplier_unit_ref: 'MANUAL-CENTRAL', supplier_id: uuid(3),
+      }] }],
+      [/purchase_line_received_quantity/, { rows: [{ received: 0 }] }],
+    ]);
+    db.query.mockResolvedValue({ rows: [{ id: PO, status: 'confirmed' }] });
+    await engagement.confirmGroupedPurchaseOrder(PO, {
+      purchase_proof_ref: 'SIM-STAGING-PROOF', seller_label: 'SIM-STAGING-VENDOR',
+      lines: [{ purchase_line_id: L1, confirmed_quantity: 1, confirmed_unit_price: 10, confirmed_currency: 'eur' }],
+    }, { actor: { id: uuid(8) } });
+    const up = calls.find(c => /UPDATE purchase_lines/.test(c.sql));
+    expect(up.sql).toContain('confirmed_currency = COALESCE(confirmed_currency, $4)');
+    expect(up.sql).not.toMatch(/SET[\s\S]*supplier_currency\s*=/);
+    expect(up.params).toEqual([L1, 1, 10, 'EUR']);
+    const vendor = calls.find(c => /INSERT INTO manual_purchase_executions/.test(c.sql));
+    expect(vendor.params).toEqual([PO,L1,null,'SIM-STAGING-VENDOR','other',1,10,'EUR','SIM-STAGING-PROOF',null,uuid(8)]);
+    expect(calls.some(c => /SET\s+supplier_unit_price\s*=/.test(c.sql))).toBe(false);
+  });
+
   it('HB-05 : confirmation inférieure à la quantité déjà reçue → 409 CONFIRMED_QUANTITY_BELOW_RECEIVED, sans écriture', async () => {
     const { calls } = scripted([
       [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'notified' })] }],
@@ -325,10 +379,10 @@ describe('confirmGroupedPurchaseOrder — garde-fous', () => {
     const { calls } = scripted([
       [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'notified' })] }],
       [/FROM purchase_lines\s+WHERE purchase_order_id/, { rows: [
-        { id: L1, quantity: 2, supplier_unit_ref: 'U1', supplier_sku: 'S', supplier_unit_price: 10, supplier_order_identity: identity },
-        { id: L2, quantity: 3, supplier_unit_ref: 'U1', supplier_sku: 'S', supplier_unit_price: 10, supplier_order_identity: identity },
-        { id: uuid(13), quantity: 1, supplier_unit_ref: 'U9', supplier_sku: 'S', supplier_unit_price: 10, supplier_order_identity: null },
-        { id: uuid(14), quantity: 1, supplier_unit_ref: 'U8', supplier_sku: 'S', supplier_unit_price: 10, supplier_order_identity: identity },
+        { id: L1, quantity: 2, supplier_unit_ref: 'U1', supplier_sku: 'S', supplier_unit_price: 10, supplier_currency: 'USD', supplier_order_identity: identity },
+        { id: L2, quantity: 3, supplier_unit_ref: 'U1', supplier_sku: 'S', supplier_unit_price: 10, supplier_currency: 'USD', supplier_order_identity: identity },
+        { id: uuid(13), quantity: 1, supplier_unit_ref: 'U9', supplier_sku: 'S', supplier_unit_price: 10, supplier_currency: 'USD', supplier_order_identity: null },
+        { id: uuid(14), quantity: 1, supplier_unit_ref: 'U8', supplier_sku: 'S', supplier_unit_price: 10, supplier_currency: 'USD', supplier_order_identity: identity },
       ] }],
       [/INSERT INTO purchase_lines/, { rows: [{ id: uuid(97) }] }],
     ]);
@@ -352,7 +406,7 @@ describe('confirmGroupedPurchaseOrder — garde-fous', () => {
     mockVerify.mockResolvedValue({ required: false, provider: 'noon' });
     const { calls } = scripted([
       [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'notified' })] }],
-      [/FROM purchase_lines\s+WHERE purchase_order_id/, { rows: [{ id: L1, quantity: 1, supplier_unit_ref: 'U1', supplier_sku: 'S', supplier_unit_price: 10, supplier_order_identity: { provider: 'noon' } }] }],
+      [/FROM purchase_lines\s+WHERE purchase_order_id/, { rows: [{ id: L1, quantity: 1, supplier_unit_ref: 'U1', supplier_sku: 'S', supplier_unit_price: 10, supplier_currency: 'USD', supplier_order_identity: { provider: 'noon' } }] }],
     ]);
     db.query.mockResolvedValue({ rows: [{ id: PO, status: 'confirmed' }] });
     await engagement.confirmGroupedPurchaseOrder(PO, { supplier_order_id: 'RAW', notes: 'ok', lines: okLines });
@@ -363,7 +417,7 @@ describe('confirmGroupedPurchaseOrder — garde-fous', () => {
     mockVerify.mockResolvedValue({ required: true, provider: 'allegro', commitment_verdict: 'rejected' });
     scripted([
       [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'notified' })] }],
-      [/FROM purchase_lines\s+WHERE purchase_order_id/, { rows: [{ id: L1, quantity: 1, supplier_unit_ref: 'U1', supplier_sku: 'S', supplier_unit_price: 10, supplier_order_identity: { provider: 'allegro' } }] }],
+      [/FROM purchase_lines\s+WHERE purchase_order_id/, { rows: [{ id: L1, quantity: 1, supplier_unit_ref: 'U1', supplier_sku: 'S', supplier_unit_price: 10, supplier_currency: 'USD', supplier_order_identity: { provider: 'allegro' } }] }],
     ]);
     await expect(engagement.confirmGroupedPurchaseOrder(PO, { lines: okLines })).rejects.toThrow(/raison inconnue/);
   });

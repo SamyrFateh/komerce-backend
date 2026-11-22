@@ -552,6 +552,19 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       ]);
     });
 
+
+    test('M03 : clic Répartir sur une seule commande IMPORT, jamais sur tout le marché', async ({ page }) => {
+      const posts = [];
+      await mount(page, { posts });
+      const row = page.locator('tbody tr').filter({ has: page.getByText('K-DIST-1', {exact:true}) });
+      const button = row.locator('[data-workspace-action="distribute-order"]');
+      await expect(button).toBeVisible();
+      await button.click();
+      await expect.poll(() => posts.length).toBe(1);
+      expect(posts[0].path).toBe(API+'/orders/K-DIST-1/distribute');
+      expect(posts.some(x => x.path.endsWith('/distribution/run'))).toBe(false);
+    });
+
     test('double clic : le bouton est neutralisé, une seule mutation', async ({ page }) => {
       const posts = [];
       await mount(page, { posts });

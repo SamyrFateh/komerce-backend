@@ -164,7 +164,7 @@ beforeAll(async () => {
     await client.query(`
       CREATE TABLE markets (id uuid PRIMARY KEY);
       CREATE TABLE users (id uuid PRIMARY KEY);
-      CREATE TABLE suppliers (id uuid PRIMARY KEY);
+      CREATE TABLE suppliers (id uuid PRIMARY KEY, system_key text);
       CREATE TABLE product_skus (id uuid PRIMARY KEY);
       CREATE TABLE orders (
         id uuid PRIMARY KEY,
@@ -189,6 +189,7 @@ beforeAll(async () => {
         product_supplier_id uuid REFERENCES product_suppliers(id),
         supplier_id uuid NOT NULL REFERENCES suppliers(id),
         supplier_sku text NOT NULL DEFAULT 'SKU',
+        trigger_mode text DEFAULT 'auto',
         supplier_unit_ref text,
         supplier_order_identity jsonb,
         qty integer,
@@ -243,7 +244,7 @@ beforeAll(async () => {
       ADD COLUMN order_id uuid, ADD COLUMN bag_plan jsonb`);
     await client.query(`ALTER TABLE hub_physical_unit_placements
       ADD COLUMN evidence_method text, ADD COLUMN evidence_code text, ADD COLUMN evidence_ref text`);
-    for (const name of ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql', '306_purchase_line_progress_physical.sql', '309_hub_placement_guard_exclude_outcomes.sql']) {
+    for (const name of ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql', '306_purchase_line_progress_physical.sql', '309_hub_placement_guard_exclude_outcomes.sql', '404_manual_purchase_executions.sql', '414_purchase_line_received_quantity.sql', '425_purchase_line_confirmed_currency.sql']) {
       await client.query(fs.readFileSync(path.join(__dirname, '../../migrations', name), 'utf8').replace(/public\./g, `${schema}.`));
     }
   } finally {
@@ -591,6 +592,57 @@ describe('HUB-001 — physical outcome transactional contract', () => {
 });
 
 describe('HUB-001 — réception par ligne d\'achat (PO regroupée)', () => {
+
+  test('M03 Central Hub MANUAL : physical receipt only from exact confirmed execution evidence (PG)', async () => {
+    const [market,supplier,sku,order,item,line,po,execution,relais] =
+      Array.from({length:9},()=>id());
+    await query('INSERT INTO markets(id) VALUES ($1)',[market]);
+    await query("INSERT INTO suppliers(id,system_key) VALUES($1,'central_hub')",[supplier]);
+    await query('INSERT INTO product_skus(id) VALUES($1)',[sku]);
+    await query("INSERT INTO orders(id,market_id,relais_id,reference,status) VALUES($1,$2,$3,'G6-M03-TEST','ordered')",[order,market,relais]);
+    await query('INSERT INTO order_items(id,order_id,sku_id,quantity) VALUES($1,$2,$3,1)',[item,order,sku]);
+    await query(`INSERT INTO purchase_lines(
+      id,order_item_id,supplier_id,product_sku_id,supplier_sku,supplier_unit_ref,
+      supplier_order_identity,quantity,supplier_unit_price,supplier_currency,procurement_hub_ref)
+      VALUES($1,$2,$3,$4,'CENTRAL',NULL,NULL,1,NULL,NULL,'DXB')`,[line,item,supplier,sku]);
+    await query("INSERT INTO purchase_orders(id,order_id,supplier_id,status,trigger_mode,supplier_sku) VALUES($1,NULL,$2,'draft','manual',NULL)",[po,supplier]);
+    await query('UPDATE purchase_lines SET purchase_order_id=$2 WHERE id=$1',[line,po]);
+    await query("UPDATE purchase_orders SET status='notified' WHERE id=$1",[po]);
+    await query("UPDATE purchase_lines SET confirmed_quantity=1,confirmed_unit_price=10,confirmed_currency='EUR',confirmed_at=now() WHERE id=$1",[line]);
+    await query("UPDATE purchase_orders SET status='confirmed',confirmed_at=now() WHERE id=$1",[po]);
+
+    const receive=(reference)=>transact(client=>receiveSupplierPackage(client,{
+      reference,contents:[{purchase_order_id:po,product_sku_id:sku,quantity:1,
+        evidence_method:'MANUAL',evidence_ref:'G6-SIMULATED-RECEIPT'}],
+    }));
+    const denied=await receive('G6-M03-UNPROVEN');
+    expect(denied.quarantined).toBe(true);
+    expect(denied.reason_code).toBe('HUB_SUPPLIER_IDENTITY_UNRESOLVABLE');
+    const noReceived=await query('SELECT purchase_line_received_quantity($1)::int AS n',[line]);
+    expect(noReceived.rows[0].n).toBe(0);
+
+    await query(`INSERT INTO manual_purchase_executions(id,purchase_order_id,purchase_line_id,
+      seller_label,channel,quantity,amount,currency,proof_ref)
+      VALUES($1,$2,$3,'SIM-STAGING-SELLER','other',1,10,'EUR','SIM-STAGING-PROOF')`,[execution,po,line]);
+    const received=await receive('G6-M03-WITH-PROOF');
+    expect(received.quarantined).toBe(false);
+    expect(received.allocations).toHaveLength(1);
+    expect(received.allocations[0].allocation.supplier_order_identity).toEqual({
+      provider:'komerce_manual_purchase_evidence',version:1,
+      payload:{purchase_order_id:po,purchase_line_id:line,execution_ids:[execution]},
+    });
+    const unchanged=await query('SELECT supplier_unit_ref,supplier_order_identity FROM purchase_lines WHERE id=$1',[line]);
+    expect(unchanged.rows[0]).toEqual({supplier_unit_ref:null,supplier_order_identity:null});
+    const proof=await query('SELECT purchase_line_received_quantity($1)::int AS n',[line]);
+    expect(proof.rows[0].n).toBe(1);
+
+    const deniedDuplicate=await receive('G6-M03-DUPLICATE');
+    expect(deniedDuplicate.quarantined).toBe(true);
+    expect(deniedDuplicate.reason_code).toBe('HUB_ALLOCATION_OVERRECEIVED');
+    const final=await query('SELECT purchase_line_received_quantity($1)::int AS n',[line]);
+    expect(final.rows[0].n).toBe(1);
+  });
+
   test('une réception sur une PO regroupée alloue par ligne, dans l\'ordre des commandes, et alimente la vue', async () => {
     const g = await seedGroupedPurchase({ quantities: [1, 2] });
 

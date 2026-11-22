@@ -15,6 +15,7 @@ const {chromium}=require('playwright');
 const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
 const {login,openPo}=require('./g6-hub-commitment-chromium');
+const {loadIndicativeBudget}=require('./canonical/g6-manual-hub-staging-budget');
 const env=process.env;
 const OUT=path.resolve('test-results/g6-hub-vendor-simulation');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
@@ -62,7 +63,7 @@ async function state(){
    SELECT po.id AS po_id,po.status::text AS po_status,po.sent_at,po.sent_channel,
           po.sent_by,po.sent_note,po.supplier_order_id,po.trigger_mode,
           o.id AS order_id,o.reference,o.simulation_scope,o.payment_status::text AS payment_status,
-          pl.id AS line_id,pl.quantity,pl.confirmed_quantity,
+          pl.id AS line_id,pl.quantity,pl.confirmed_quantity,pl.confirmed_unit_price,pl.confirmed_currency,pl.supplier_unit_price,pl.supplier_currency,
           (SELECT count(*)::int FROM purchase_order_authorizations a WHERE a.purchase_order_id=po.id AND a.authorization_type='purchase_commitment') AS commitments,
           (SELECT count(*)::int FROM purchase_order_authorizations a WHERE a.purchase_order_id=po.id AND a.authorization_type='supplier_payment') AS payment_authorizations,
           (SELECT count(*)::int FROM manual_purchase_executions e WHERE e.purchase_order_id=po.id AND e.purchase_line_id=pl.id) AS manual_executions,
@@ -123,8 +124,11 @@ async function main(){
   check(t.confirmed&&t.fingerprint===env.G6_CANONICAL_DB_FINGERPRINT,'G6_SIM_DB_TARGET_MISMATCH');
   report.sha=await checkedRuntimeSha();report.db_fingerprint=t.fingerprint;
   const before=await state();verifyBase(before);
-  // Une PO regroupée peut embarquer le reliquat ouvert d'un autre scénario (N13) : les preuves restent celles de LA ligne de cette commande.
+  // Pour M03, une confirmation simulée ne doit JAMAIS englober une ligne
+  // d'une autre commande, même quand le cockpit les groupe par fournisseur/SKU.
   report.po_foreign_lines=Number(before.foreign_lines);
+  check(env.G6_CANONICAL_SCENARIO!=='M03'||report.po_foreign_lines===0,
+    'G6_M03_PO_CROSS_ORDER_SCOPE_DRIFT');
   check(before.po_status==='notified'&&!before.sent_at&&!before.sent_channel&&!before.sent_note&&
     !before.supplier_order_id&&before.confirmed_quantity===null&&Number(before.manual_executions)===0,
     'G6_SIM_EXPECT_PRIOR_READONLY_CHECKPOINT');
@@ -159,10 +163,42 @@ async function main(){
      await cf.locator('[name="purchase_proof_ref"]').inputValue()==='SIM-STAGING-ACHAT-'+simulationPoId&&
      await cf.locator('[name="seller_label"]').inputValue()==='SIMULATED-STAGING-FOURNISSEUR-'+simulationPoId,
      'G6_SIM_CONFIRM_FORM_PROVENANCE_MISSING');
+   // M03 central Hub : seule la simulation explicitement marquée G6-BUYER
+   // permet un prix de confirmation FICTIF. L'opérateur le saisit par la vraie
+   // UI de confirmation ; le budget d'engagement n'est pas un devis réel.
+   const price=cf.locator('[data-hlc-confirmed-price]');
+   const priceFields=await price.count();
+   report.price_scope={fields:priceFields,scenario:env.G6_CANONICAL_SCENARIO,
+     foreign_lines:report.po_foreign_lines,
+     quoted_unit_present:before.supplier_unit_price!==null,
+     quoted_currency_present:before.supplier_currency!==null};save();
+   let simulatedMoney=null;
+   if(priceFields) {
+     check(env.G6_CANONICAL_SCENARIO==='M03'&&priceFields===1&&
+       before.supplier_unit_price===null&&before.supplier_currency===null,
+       'G6_SIM_MANUAL_PRICE_UNEXPECTED_SCOPE');
+     const indicative=await loadIndicativeBudget(db,PO,ORDER);
+     const currency=cf.locator('[data-hlc-confirmed-currency]');
+     check(await price.isEditable()&&await currency.count()===1&&await currency.isEditable(),
+       'G6_SIM_CONFIRM_SCREEN_MISSING_EXPLICIT_MONEY_FIELDS');
+     await humanFill(null,price,String(indicative.unit_amount));
+     await humanFill(null,currency,indicative.currency);
+     check(Number(await price.inputValue())===indicative.unit_amount&&
+       (await currency.inputValue()).trim().toUpperCase()===indicative.currency,
+       'G6_SIM_CONFIRM_MONEY_NOT_STABLE');
+     simulatedMoney={unit_price:indicative.unit_amount,currency:indicative.currency,
+       source_candidate_ref:indicative.candidate_ref,scope:'SIMULATED_STAGING_CONFIRMED_ONLY',
+       real_supplier_quote:false};
+     report.simulated_confirmed_money=simulatedMoney;save();
+   }
    const confirmResp=actor.page.waitForResponse(x=>new URL(x.url()).pathname==='/api/purchasing/po/'+PO+'/confirm'&&x.request().method()==='POST');
    await humanClick(null,cf.locator('[data-hlc-action="submit-confirm"]'));
    const confirmed=await confirmResp;
-   check(confirmed.status()===200,'G6_SIM_CONFIRM_HTTP_'+confirmed.status());
+   const confirmedJson=await confirmed.json().catch(()=>({}));
+   report.confirm_http={http:confirmed.status(),code:confirmedJson.code||null,
+      error:String(confirmedJson.error||'').slice(0,180)||null};
+   save();
+   check(confirmed.status()===200,'G6_SIM_CONFIRM_HTTP_'+confirmed.status()+'_'+(confirmedJson.code||'UNKNOWN'));
    report.confirmation={http:confirmed.status(),proof:'SIM-STAGING-ACHAT-'+simulationPoId,
      seller:'SIMULATED-STAGING-FOURNISSEUR-'+simulationPoId};
    check(actor.blocked.length===0,'G6_SIM_UNEXPECTED_BROWSER_WRITE');
@@ -175,7 +211,11 @@ async function main(){
     Number(after.confirmed_quantity)===Number(after.quantity)&&
     Number(after.manual_executions)===1&&
     after.seller_label==='SIMULATED-STAGING-FOURNISSEUR-'+simulationPoId&&
-    after.proof_ref==='SIM-STAGING-ACHAT-'+simulationPoId,
+    after.proof_ref==='SIM-STAGING-ACHAT-'+simulationPoId&&
+    (!report.simulated_confirmed_money||
+      (Number(after.confirmed_unit_price)===report.simulated_confirmed_money.unit_price&&
+       after.confirmed_currency===report.simulated_confirmed_money.currency&&
+       after.supplier_currency===null&&after.supplier_unit_price===null)),
     'G6_SIM_CONFIRM_PG_ORACLE_FAILED');
   await checkedRuntimeSha(report.sha);
   report.after={po_status:after.po_status,sent_channel:after.sent_channel,

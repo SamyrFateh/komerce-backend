@@ -121,12 +121,44 @@ function createM03ImportStages({db,env,ROOT,REPORT_PATH,SCRIPTS,execute,report,s
   const inv=await inventory(context,{requirePo:true});
   const receipts=receiptsOf(inv),allocations=await allocationsFor(inv,context.order_id);
   const bag=stageId==='HUB_KOM_BOX'?report('HUB_CUSTOMER_BAG').data:null;
-  const parcel=bag?.after?.parcels?.[0]?.id;
-  if(stageId==='HUB_KOM_BOX'&&(!UUID.test(String(bag?.bag_id||''))||!UUID.test(String(parcel||''))))
-   throw Error('G6_DYNAMIC_KOM_BOX_PREDECESSOR_INCOMPLETE');
+  const [it]=mp.planStage(stageId,inv,{receipts,allocations});
+  let parcel=null;
+  if(stageId==='HUB_KOM_BOX'){
+   if(!UUID.test(String(bag?.bag_id||''))||bag?.after?.parcels?.length!==0)
+    throw Error('G6_M03_KOM_BOX_BAG_OR_PARCEL_PRESTATE_INVALID');
+   // The sealed physical bag is NOT a client parcel. This stage must first play
+   // the authorized per-order "Répartir" UI gesture, after all IMPORT receipts,
+   // to create the one canonical IMPORT parcel/parcel_items membership.
+   // Never invent a parcel ID or run a global market-wide distribution.
+   const rel='test-results/g6-m03-parcel-distribution/report.json';
+   fs.rmSync(out(rel),{force:true});
+   execute('scripts/recette/g6-m03-import-distribute-chromium.js',{
+    ...baseStageEnv(stageId,context),...it.env,
+    G6_CANONICAL_BAG_ID:bag.bag_id,G6_M03_IMPORT_ITEMS:String(inv.item_count)
+   });
+   const proof=JSON.parse(fs.readFileSync(out(rel),'utf8'));
+   if(proof.verdict!=='G6_M03_IMPORT_PARCEL_DISTRIBUTION_CHROMIUM_PG_PASS'||
+      proof.order_id!==context.order_id||proof.reference!==context.order_reference||
+      proof.sha!==context.staging_sha||proof.db_fingerprint!==context.db_fingerprint||
+      proof.external_supplier_calls!==0||proof.external_payment_executed!==false||
+      !UUID.test(String(proof.parcel_id||''))||
+      !Array.isArray(proof.import_order_item_ids)||proof.import_order_item_ids.length!==inv.item_count)
+    throw Error('G6_M03_KOM_BOX_DISTRIBUTION_UI_PROOF_INVALID');
+   const {rows:members}=await db.query(
+    "SELECT p.id AS parcel_id,p.order_id AS parcel_order_id,pi.order_item_id,pi.quantity::int AS quantity "
+    +"FROM parcels p JOIN parcel_items pi ON pi.parcel_id=p.id "
+    +"JOIN order_items oi ON oi.id=pi.order_item_id "
+    +"WHERE oi.order_id=$1 AND oi.fulfillment_source='IMPORT' AND p.status<>'cancelled' AND p.cancelled_at IS NULL "
+    +"ORDER BY pi.order_item_id",[context.order_id]);
+   if(members.length!==inv.item_count||
+      members.some(m=>m.parcel_id!==proof.parcel_id||m.parcel_order_id!==context.order_id||m.quantity!==1)||
+      JSON.stringify(members.map(m=>m.order_item_id).sort())!==
+       JSON.stringify([...proof.import_order_item_ids].sort()))
+    throw Error('G6_M03_KOM_BOX_DISTRIBUTION_INDEPENDENT_PG_INVALID');
+   parcel=proof.parcel_id;
+  }
   const finals=['HUB_SHIPMENT','FORWARDER','CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP'];
   const ids=finals.includes(stageId)?await finalMileIdentity(db,context,{beforeShipment:stageId==='HUB_SHIPMENT',m03:true}):null;
-  const [it]=mp.planStage(stageId,inv,{receipts,allocations});
   fs.rmSync(out(REPORT_PATH[stageId]),{force:true});
   execute(SCRIPTS[stageId],{...baseStageEnv(stageId,context),...it.env,
    G6_CANONICAL_RECEIPT_REFERENCE:receipts[0],G6_CANONICAL_ALLOCATION_ID:allocations[0],

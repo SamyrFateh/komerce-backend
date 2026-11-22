@@ -17,6 +17,7 @@ const {readSellable,selectMixedBasket}=require('./m03-prereq');
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {spawnSync}=require('node:child_process');
 const {confirmTarget}=require('../target-guard');
+const {attestHealthVersion,fetchHealthReadOnly}=require('./health-read-only-retry');
 const {redact}=require('./observability');
 const ROOT=path.resolve(__dirname,'../../..');
 const BASE='https://komerce-backend-production.up.railway.app';
@@ -187,15 +188,21 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
  let runtimePin=null;
  const stageProofs=new Map();
  async function health(){
-  const v=await fetchImpl(BASE+'/health/version');
-  if(!v.ok)throw Error('G6_DYNAMIC_DEPLOY_HEALTH_FAILURE');
-  const version=await v.json();
-  if(version.commit!==env.E2E_EXPECTED_DEPLOY_SHA)
-   throw Error('G6_DYNAMIC_DEPLOY_SHA_DRIFT');
+  // Railway/Actions can intermittently drop a connection at a checkpoint.
+  // Only the GET health attestation is retried: no POST, checkpoint or
+  // business transition is ever replayed by the network safeguard.
+  await attestHealthVersion({
+   fetchImpl,url:BASE+'/health/version',expectedSha:env.E2E_EXPECTED_DEPLOY_SHA
+  });
  }
  async function target(){
   await health();
-  const confirmed=await confirmTarget({db,fetchImpl,env});
+  // Target identity is also read via GET /health after /health/version.
+  // Retry transport only; confirmTarget still compares the authoritative PG
+  // fingerprint and expected Railway environment on EVERY checkpoint.
+  const confirmed=await confirmTarget({
+   db,env,fetchImpl:(url)=>fetchHealthReadOnly({fetchImpl,url})
+  });
   if(!confirmed.confirmed||!confirmed.fingerprint)
    throw Error('G6_DYNAMIC_PG_TARGET_UNVERIFIED');
   return confirmed.fingerprint;

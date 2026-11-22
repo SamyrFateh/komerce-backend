@@ -125,3 +125,71 @@ test('la file de la direction Hub garde une hauteur réservée et des groupes li
   expect(src).toContain("group.setAttribute('data-hub-director-group',spec.key)");
   expect(src).toContain("task.viewer_can_act===false");
 });
+
+describe('M03 — Hub Live exige un prix confirmé et une devise saisis par un humain', () => {
+  const js = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/hub-live-cockpit.js'), 'utf8');
+
+  test('ligne sans devis : champs explicites, jamais préremplis par budget ni prix retail', () => {
+    expect(js).toContain('if (!(Number(l.unit_price) > 0) || !l.currency)');
+    expect(js).toContain("name: 'confirmed_unit_price'");
+    expect(js).toContain("textInput('EUR', 'confirmed_currency')");
+    expect(js).toContain("p.setAttribute('data-hlc-confirmed-price', '')");
+    expect(js).toContain("c.setAttribute('data-hlc-confirmed-currency', '')");
+    expect(js).toContain('const confirmMoney = new Map()');
+    expect(js).not.toMatch(/confirmed_unit_price\s*=\s*(?:l\.unit_price|po\.amount)/);
+  });
+
+  test('la soumission refuse quantité positive sans vrai prix et devise ISO', () => {
+    expect(js).toContain('if (money && row.confirmed_quantity > 0)');
+    expect(js).toContain('row.confirmed_unit_price = Number(money.p.value)');
+    expect(js).toContain('row.confirmed_currency = money.c.value.trim().toUpperCase()');
+    expect(js).toContain('Prix confirmé positif et devise obligatoire pour les lignes sans devis fournisseur.');
+    expect(js).toContain("purchase_proof_ref: confirmProof.value.trim()");
+    expect(js).toContain("seller_label: confirmSeller.value.trim()");
+  });
+});
+
+describe('M06 — confirmation manuelle avec allocations multi-vendeurs', () => {
+  const js = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/hub-live-cockpit.js'), 'utf8');
+  test('les allocations sont saisies dans le formulaire Hub et transmises au service canonique', () => {
+    expect(js).toContain("data-hlc-execution-seller");
+    expect(js).toContain("data-hlc-execution-quantity");
+    expect(js).toContain("data-hlc-execution-amount");
+    expect(js).toContain("data-hlc-execution-proof");
+    expect(js).toContain("executions.push({ purchase_line_id: purchaseLineId, seller_label: sellerLabel");
+    expect(js).toContain("...(executions ? { executions } : (confirmSeller.value.trim() ? { seller_label: confirmSeller.value.trim() } : {}))");
+    expect(js).toContain('Les allocations vendeurs doivent couvrir exactement la quantité confirmée de chaque ligne.');
+  });
+  test('le chemin mono-vendeur reste celui utilisé par M01/M03', () => {
+    expect(js).toContain("seller_label: confirmSeller.value.trim()");
+    expect(js).toContain("if (confirmExecutions.length)");
+  });
+});
+
+
+describe('G6 M03 — la PO partagée reste isolable par commande', () => {
+  const cockpit = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/hub-live-cockpit.js'), 'utf8');
+  const p3 = fs.readFileSync(path.join(__dirname, '../staging-clicks/g6-p3-kuyiyuk.spec.js'), 'utf8');
+  const simulation = fs.readFileSync(path.join(__dirname, '../../scripts/recette/g6-hub-vendor-simulation-chromium.js'), 'utf8');
+
+  test('la PO peut être préparée sur les seules lignes d’une commande', () => {
+    expect(cockpit).toContain('const byOrder = new Map()');
+    expect(cockpit).toContain("if (byOrder.size > 1)");
+    expect(cockpit).toContain("A('prepare-po-order-' + orderId,");
+    expect(cockpit).toContain('run: (b) => prepareBatch(b, g.batch, orderLines.ids, null)');
+    expect(cockpit).toContain('disabled: lock');
+  });
+
+  test('le Chromium M03 privilégie le geste par commande et certifie le périmètre PostgreSQL', () => {
+    expect(p3).toContain('prepare-po-order-');
+    expect(p3).toContain('const members=await q(');
+    expect(p3).toContain("expect(members,'G6_HUB_PO_EXACTLY_ONE_PURCHASE_LINE').toHaveLength(1)");
+    expect(p3).toContain("expect(members[0].order_id,'G6_HUB_PO_CROSS_ORDER_LINE_BLOCKED').toBe(orderId)");
+  });
+
+  test('la confirmation fournisseur simulée refuse une PO M03 contenant une autre commande', () => {
+    expect(simulation).toContain('G6_M03_PO_CROSS_ORDER_SCOPE_DRIFT');
+    expect(simulation).toContain('report.price_scope=');
+    expect(simulation).toContain('G6_SIM_MANUAL_PRICE_UNEXPECTED_SCOPE');
+  });
+});

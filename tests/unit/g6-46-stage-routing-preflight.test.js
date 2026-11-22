@@ -5,6 +5,7 @@ const root=path.resolve(__dirname,'../..');
 const matrix=require('../../docs/recette/G6_PRE_STRESS_BUSINESS_SCENARIOS.json');
 const {SCENARIO_STAGE_IDS}=require('../../scripts/recette/canonical/stage-registry');
 const wf=fs.readFileSync(path.join(root,'.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml'),'utf8');
+const n34wf=fs.readFileSync(path.join(root,'.github/workflows/staging-g6-n34-unified.yml'),'utf8');
 const selector=wf.split('\n').find(x=>x.includes('G6_CANONICAL_SCENARIO:'))||'';
 const direct=new Set(['N01','N02','N03','N05','N06']);
 function variants(s){
@@ -15,13 +16,18 @@ function variants(s){
  return [s.id];
 }
 describe('G6 46 — test stages behind real owner-only dispatch',()=>{
- test('all 44 accepted business IDs have complete stage modules or explicit Chromium handler',()=>{
-  const blocked=['M06','N34'];
+ test('all 45 accepted business IDs have complete stage modules or explicit Chromium handler',()=>{
+  const blocked=['M06'];
   expect(matrix.scenarios).toHaveLength(46);
   const dispatchable=matrix.scenarios.filter(s=>!blocked.includes(s.id));
-  expect(dispatchable).toHaveLength(44);
+  expect(dispatchable).toHaveLength(45);
   for(const scenario of dispatchable){
    for(const id of variants(scenario)){
+    if(id==='N34'){
+     expect(n34wf).toContain("g6-dynamic-fresh-full-N34-KM'");
+     for(const mk of ['KM','CM','CG'])expect(n34wf).toContain("g6-dynamic-fresh-full-N34-"+mk+"'");
+     for(const script of ['g6-n34a-api-delete-negative-chromium.js','g6-n34b-final-provenance-readonly.js','g6-n34-final-verdict.js'])expect(n34wf).toContain('node scripts/recette/'+script);
+    }
     if(direct.has(id)){
      expect(selector).toContain("'-full-"+id+"-'");
      const script=id==='N06'?'g6-negative-n06-price-changed-chromium.js':'g6-negative-g5a-storefront-chromium.js';
@@ -39,11 +45,12 @@ describe('G6 46 — test stages behind real owner-only dispatch',()=>{
    }
   }
  });
- test('M06 and N34 are explicitly not passed through M01 as a false positive',()=>{
+ test('N34 routes dedicated security stages, never through M01, while M06 remains blocked',()=>{
   expect(SCENARIO_STAGE_IDS.M06).toBeUndefined();
-  expect(SCENARIO_STAGE_IDS.N34).toBeUndefined();
+  expect(SCENARIO_STAGE_IDS.N34).toEqual(['N34_CENTRAL_IMMUTABILITY','N34_EXPLICIT_SOURCE']);
   expect(wf).not.toContain("g6-dynamic-fresh-full-M06-KM'");
   expect(wf).not.toContain("g6-dynamic-fresh-full-N34-KM'");
+  expect(n34wf).toContain('komerce-g6-canonical-real-transaction');
  });
  test('N39/N26 branches and M04/M05 market aliases are preserved',()=>{
   for(const id of ['N39F1','N39F2','N39F3','N26a','N26b']){
