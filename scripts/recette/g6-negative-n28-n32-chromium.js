@@ -219,7 +219,8 @@ async function runN32(o,buyer,browser){
    const wj=w?await w.json().catch(()=>({})):{};
    report.probes.push({role:r.role,gesture:'POST hub/physical-codes/confirm',
     via:'AUTHENTICATED_CHROMIUM_API_PROBE_NO_SCREEN_GESTURE',
-    expected_http:[403],http:w?w.status():null,error_code:wj.code||null});
+    expected_http:[403],http:w?w.status():null,error_code:wj.code||null,
+    expected_role:r.role,role_denial_attested:wj.your_role===r.role});
   }
   reach('ROLE_PROBES_DONE');
   // The isolated Hub actor owns operations.read on exactly this market.
@@ -268,6 +269,8 @@ async function runN32(o,buyer,browser){
     report.gaps.push('WRONG_REFUSAL_HTTP_'+p.role+'_'+p.gesture.replace(/\W+/g,'_')+'_'+p.http);
    else if(p.expected_error_code&&p.error_code!==p.expected_error_code)
     report.gaps.push('WRONG_AUTHORITY_REASON_'+p.role+'_'+String(p.error_code||'none'));
+   else if(p.expected_role&&!p.role_denial_attested)
+    report.gaps.push('WRONG_ROLE_DENIAL_REASON_'+p.role);
   }
  }finally{if(relay)await relay.ctx.close().catch(()=>{});if(hub)await hub.ctx.close().catch(()=>{});await c.ctx.close().catch(()=>{})}
 }
