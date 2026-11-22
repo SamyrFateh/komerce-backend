@@ -352,11 +352,11 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       ]);
     });
 
-    test('contenu réellement expédié : expédition → KOM-BOX → commande → article ; le reçu n\'est jamais prérempli et l\'attestation part du relais', async ({ page }) => {
+    test('contenu réellement expédié : expédition → COMBOX → commande → article ; le reçu n\'est jamais prérempli et l\'attestation part du relais', async ({ page }) => {
       const posts = [];
       await mount(page, posts);
       const shipment = page.locator('[data-relay-shipment="SHIP-KM-1"]');
-      await expect(shipment).toContainText('KOM-BOX BOX-KM-1');
+      await expect(shipment).toContainText('COMBOX BOX-KM-1');
       await expect(shipment).toContainText('Commande K-ORDER-1');
       const coque = shipment.locator(`[data-relay-item="${ITEM_A}"]`);
       await expect(shipment.locator('thead th')).toHaveText(['Article','Expédié','Manquant','Reçu']);
