@@ -262,6 +262,33 @@ résultat_période
     - charges_à_couvrir_période
 ```
 
+### Clarification comptable : contribution avant structure vs résultat après toutes les charges
+
+La **contribution** n'est **pas** un résultat après toutes les charges : elle exprime le revenu net diminué des **charges variables** causales, directes ou mutualisées, attribuées une seule fois. Sa fonction est de mesurer le montant disponible pour couvrir les charges fixes de la période.
+
+Le **résultat analytique après charges de structure** répond, lui, à la question du propriétaire : **les ventes ont-elles couvert toutes les charges économiques retenues dans le périmètre et la période ?** Lorsque la classification est exhaustive et sans double comptage :
+
+```text
+contribution_de_période
+  = chiffre_affaires_net_reconnu_de_la_période
+    - totalité_des_charges_variables_reconnues_de_la_période
+
+résultat_analytique_après_structure
+  = contribution_de_période
+    - charges_fixes_directes_de_la_période
+    - quotes_parts_fixes_mutualisées_de_la_période
+
+équivalent : résultat_analytique_après_structure
+  = chiffre_affaires_net_reconnu
+    - ensemble_des_charges_variables_et_fixes_du_périmètre
+```
+
+Conditions de validité : même période et même périmètre (marché ou groupe), revenus et coûts sur une base cohérente hors taxes collectées, remises/avoirs/retours et provisions pertinents pris en compte, allocations croisées conservatrices, aucune charge omise ni comptée deux fois. **Une charge mutualisée n'est pas forcément fixe** : sa part variable rejoint les coûts variables ; sa part fixe rejoint les charges de période. Une dépense de transport engagée pour un lot ou une expédition ne devient pas automatiquement une charge fixe de structure.
+
+**Terminologie** : dans la comptabilité de gestion, on parle de *marge sur coûts variables* ou de *marge contributive* si la classification respecte réellement la distinction fixe/variable. Le résultat ci-dessus est un **résultat analytique du périmètre**, et non nécessairement le résultat opérationnel ou le résultat net des états financiers : les autres écritures comptables éventuellement hors modèle doivent être rapprochées séparément. Si des données sont encore provisoires ou inconnues, afficher un résultat **estimé / non décisionnel**, jamais un bénéfice certifié.
+
+**Interprétation** : une contribution positive indique seulement que la vente contribue à couvrir les charges fixes. **Seul un résultat analytique positif sur le périmètre complet** atteste que ces charges ont été couvertes sur cette période, sous réserve de données réconciliées. On peut présenter analytiquement une quote-part fixe par SKU pour comprendre le mix, mais on ne la transforme ni en coût variable ni en prix minimal imposé.
+
 Lecture :
 
 ```text
