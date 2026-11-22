@@ -5,12 +5,16 @@
  * @owner backend-core
  * @purpose N21 (agent d'un autre relais) et N22 (relais A/B, deux sens) : écriture refusée, aucune donnée divulguée en lecture (table R) ; staging only, aucune écriture SQL.
  * @db-read orders, users, relais, markets, scans, parcels, parcel_items
- * @db-write none
+ * @db-write users, e2e_test_accounts (N22: test identities via canonical writers only, no business SQL writes)
  * @impact-areas staging-only, pickup, security
  */
 'use strict';
 const MK=require('./canonical/market-profile').marketProfile(process.env);
-const fs=require('node:fs'),path=require('node:path');
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+const bcrypt=require('bcryptjs');
+const {createAdminUser}=require('../../services/user-mutation-service');
+const {markE2eTestAccount,ensureRelayAgentMembership}=require('./staging-e2e-provision');
+const delegation=require('../../services/market-delegation-service');
 const {chromium}=require('playwright');
 const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
@@ -45,14 +49,36 @@ async function probeReads(page,id,ref){
  }
  return out;
 }
-async function agentSession(browser,tag){
- const actor=await login(browser,'E2E_AGENT_RELAIS_','agent_relais');
+async function agentSession(browser,tag,prefix='E2E_AGENT_RELAIS_'){
+ const actor=await login(browser,prefix,'agent_relais');
  const me=await (await actor.page.request.get('/api/auth/me')).json();
  actor.page.on('dialog',d=>d.type()==='confirm'?d.accept():d.dismiss());
  pageEvents(actor.page,tag);
  return {actor,agentId:me.id};
 }
 async function relayOf(agentId){return (await db.query('SELECT relais_id FROM users WHERE id=$1',[agentId])).rows[0]?.relais_id}
+async function provisionRelayB(){
+ check(SCEN==='N22'&&env.NODE_ENV==='test'&&env.KOMERCE_ENV==='staging'&&
+  env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER,'G6_N22_RELAY_B_FIXTURE_STAGING_ONLY');
+ const {rows:admins}=await db.query("SELECT id FROM users WHERE lower(email)=lower($1) AND role::text='admin'",[env.E2E_ADMIN_EMAIL]);
+ check(admins.length===1,'G6_N22_PREREQ_MISSING_FIXTURE_ADMIN');
+ const run=crypto.randomBytes(6).toString('hex'),email='g6-n22-relay-b-'+run+'@komerce.test';
+ const password=crypto.randomBytes(24).toString('base64url')+'Aa1!';
+ const c=await db.getClient();
+ try{
+  await c.query('BEGIN');
+  const {rows:[actor]}=await createAdminUser(c,{fullName:'G6 N22 Relais B '+run,
+   email,role:'agent_relais',currencyPref:MK.code==='KM'?'KMF':'XAF',
+   passwordHash:await bcrypt.hash(password,10)});
+  check(!!actor?.id,'G6_N22_PREREQ_RELAY_B_AGENT_CREATION');
+  await markE2eTestAccount(c,{userId:actor.id,actorId:admins[0].id});
+  await ensureRelayAgentMembership(c,{delegation},{userId:actor.id,marketCode:MK.code,actorId:admins[0].id});
+  await c.query('COMMIT');
+  env.G6_N22_RELAY_B_EMAIL=email;env.G6_N22_RELAY_B_PASSWORD=password;
+  return actor.id;
+ }catch(e){await c.query('ROLLBACK').catch(()=>{});throw e}
+ finally{c.release()}
+}
 async function main(){
  let browser,clientContext;
  try{
@@ -107,7 +133,7 @@ async function main(){
    const s=await agentSession(browser,'control-a');
    try{
     const own=await probeReads(s.actor.page,ID,REF);
-    report.control={profile:'agent_at_order_relay_A',reads:own};
+    report.control={profile:'agent_at_order_relay_A',agent_id:agentId,reads:own};
     check(own.filter(r=>['order_by_id','order_by_ref'].includes(r.label))
      .every(r=>r.http===200&&r.contains_order),'G6_N22_PRODUCT_GAP_OWNER_A_CANNOT_READ');
     const foreign=await probeReads(s.actor.page,ob.id,ob.reference);
@@ -141,12 +167,23 @@ async function main(){
    }finally{await s.actor.ctx.close().catch(()=>{});await second.ctx.close().catch(()=>{})}
    reach('CONTROL_PROFILE_READ');
   }
-  // Rattachement de l'agent au relais B par l'écran Réseau (jamais en SQL), puis nouvelle session.
-  const first=await agentSession(browser,'pre-attach');agentId=first.agentId;await first.actor.ctx.close();
+  // N22 : conserver le profil A, provisionner un SECOND profil B réellement distinct.
+  let prefix='E2E_AGENT_RELAIS_';
+  if(SCEN==='N22'){
+   agentId=await provisionRelayB();
+   prefix='G6_N22_RELAY_B_';
+  }else{
+   const first=await agentSession(browser,'pre-attach');
+   agentId=first.agentId;await first.actor.ctx.close();
+  }
   await attachDedicatedRelayByUI(browser,agentId,b.id);
   check(await relayOf(agentId)===b.id,'G6_'+SCEN+'_AGENT_NOT_ATTACHED_TO_RELAY_B');
+  if(SCEN==='N22'){
+   check(report.control?.agent_id&&report.control.agent_id!==agentId,'G6_N22_PRODUCT_GAP_SAME_AGENT_A_B');
+   report.actors={distinct_agents:true,agent_a_scope:'relay_A',agent_b_scope:'relay_B',via:'NETWORK_UI'};
+  }
   reach('AGENT_ATTACHED_TO_OTHER_RELAY');
-  const s=await agentSession(browser,'intruder'),actor=s.actor;
+  const s=await agentSession(browser,'intruder',prefix),actor=s.actor;
   try{
    if(SCEN==='N22'){
     const ownB=await probeReads(actor.page,env.G6_N22_REVERSE_ORDER_ID,env.G6_N22_REVERSE_ORDER_REFERENCE);
