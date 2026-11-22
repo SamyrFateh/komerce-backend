@@ -262,6 +262,7 @@ module.exports = {
       'tests/unit/pricing-market-decision-policy.test.js',
       'tests/unit/pricing-market-decision-projection.test.js',
       'tests/unit/economic-result-real-readonly.test.js',
+      'tests/unit/economic-result-readonly-pin.test.js',
       'tests/unit/pricing-market-corridor.test.js',
       'tests/unit/pricing-output.test.js',
       'tests/unit/pricing-recommend.test.js',
