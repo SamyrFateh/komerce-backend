@@ -245,7 +245,16 @@ async function main(){
       entry.currency===indicativeBudget.currency))&&
     Number(entry.pdf_bytes)>500&&after.order.po_status==='draft',
     'G6_COMMITMENT_PG_AUTHORIZATION_OR_PDF_MISMATCH');
-   report.commitment={http:actual.status(),authorization_count:1,pdf_generated:true,proof_ref:proof};
+   // L'autorisation peut figer un budget, mais elle ne doit jamais transformer
+   // le prix indicatif Sourcing en prix fournisseur confirmé sur la ligne.
+   if(indicativeBudget){
+    const sourceAfter=await loadIndicativeBudget(db,env.G6_CANONICAL_PO_ID,env.G6_CANONICAL_ORDER_ID);
+    check(sourceAfter.candidate_ref===indicativeBudget.candidate_ref&&
+      sourceAfter.amount===indicativeBudget.amount&&sourceAfter.currency===indicativeBudget.currency,
+     'G6_COMMITMENT_INDICATIVE_SOURCE_CHANGED_OR_SUPPLIER_PRICE_INJECTED');
+   }
+   report.commitment={http:actual.status(),authorization_count:1,pdf_generated:true,proof_ref:proof,
+    money_basis:indicativeBudget?'INDICATIVE_STAGING_SOURCING_BUDGET':'PRICED_PO'};
    check(director.blocked.length===0,'G6_COMMITMENT_UNEXPECTED_DIRECTOR_BROWSER_WRITE');
   }finally{await director.ctx.close();}
   report.stage='SUBMIT';save();
