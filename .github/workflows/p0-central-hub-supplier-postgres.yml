@@ -69,6 +69,26 @@ jobs:
             END;
             IF NOT v_blocked THEN RAISE EXCEPTION 'central_hub_deactivation_allowed'; END IF;
 
+            -- N34a UPDATE identity: the database trigger blocks *all* mutations
+            -- on the system row, not merely is_active=false.
+            v_blocked:=false;
+            BEGIN
+              UPDATE public.suppliers SET name='Renamed unsafe supplier' WHERE id=v_id;
+            EXCEPTION WHEN OTHERS THEN
+              IF SQLERRM<>'CENTRAL_HUB_SUPPLIER_IMMUTABLE' THEN RAISE; END IF;
+              v_blocked:=true;
+            END;
+            IF NOT v_blocked THEN RAISE EXCEPTION 'central_hub_update_allowed'; END IF;
+
+            v_blocked:=false;
+            BEGIN
+              UPDATE public.suppliers SET system_key=NULL WHERE id=v_id;
+            EXCEPTION WHEN OTHERS THEN
+              IF SQLERRM<>'CENTRAL_HUB_SUPPLIER_IMMUTABLE' THEN RAISE; END IF;
+              v_blocked:=true;
+            END;
+            IF NOT v_blocked THEN RAISE EXCEPTION 'central_hub_system_identity_detachment_allowed'; END IF;
+
             v_blocked:=false;
             BEGIN
               DELETE FROM public.suppliers WHERE id=v_id;

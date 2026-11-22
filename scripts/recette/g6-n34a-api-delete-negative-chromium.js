@@ -20,7 +20,7 @@ const {humanGoto}=require('./canonical/actors/human-gestures');
 const {fullError}=require('./canonical/observability');
 const env=process.env,BASE='https://komerce-backend-production.up.railway.app';
 const OUT=path.resolve('test-results/g6-n34a-delete-refusal');
-const report={schema:'komerce-g6-n34a-api-delete-negative/1',scenario_id:'N34a',market:'KM',
+const report={schema:'komerce-g6-n34a-api-delete-negative/1',scenario_id:'N34a',market:env.G6_TARGET_MARKET,
  verdict:'NOT_PROVEN',scenario_bound:false,production_permitted:false,db_write:false,
  external_supplier_calls:0,external_payment_executed:false,steps:[],attempts:[]};
 function check(ok,code){if(!ok)throw Error('G6_N34A_'+code)}
@@ -30,7 +30,7 @@ function authorized(){
  env.GITHUB_ACTOR===env.GITHUB_REPOSITORY_OWNER&&env.NODE_ENV==='test'&&
  env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&
  env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&env.STAGING_BASE_URL===BASE&&
- env.G6_TARGET_MARKET==='KM'&&env.G6_N34A_REFUSAL_ONLY==='1'&&
+ ['KM','CM','CG'].includes(env.G6_TARGET_MARKET)&&env.G6_N34A_REFUSAL_ONLY==='1'&&
  String(env.PGOPTIONS||'').includes('default_transaction_read_only=on');
 }
 async function snapshot(id){

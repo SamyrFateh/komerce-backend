@@ -4,6 +4,7 @@ const fs=require('node:fs'),path=require('node:path');
 const ROOT=path.resolve(__dirname,'../..');
 const matrix=JSON.parse(fs.readFileSync(path.join(ROOT,'docs/recette/G6_PRE_STRESS_BUSINESS_SCENARIOS.json'),'utf8'));
 const workflow=fs.readFileSync(path.join(ROOT,'.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml'),'utf8');
+const n34Workflow=fs.readFileSync(path.join(ROOT,'.github/workflows/staging-g6-n34-unified.yml'),'utf8');
 const resolver=workflow.split('\n').find(x=>x.includes('G6_CANONICAL_SCENARIO:'))||'';
 const isTitle=(id,mk)=>workflow.includes("github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-"+id+'-'+mk+"'");
 const hasBranch=id=>resolver.includes("contains(github.event.issue.title, '-full-"+id+"-') && '"+id+"'");
@@ -22,12 +23,17 @@ describe('G6 — 46 scenarios: matrix → true workflow dispatch and declared bl
   ]);
   expect(new Set(matrix.scenarios.map(x=>x.id)).size).toBe(46);
  });
- test('44 implemented dispatch mappings, with M06/N34 deliberately BLOCKED until central-Hub product is screen-certified',()=>{
-  const blocked=['M06','N34'];
+ test('45 implemented dispatch mappings, with M06 deliberately BLOCKED until full manual journey is screen-certified',()=>{
+  const blocked=['M06'];
   const wired=matrix.scenarios.filter(x=>!blocked.includes(x.id));
-  expect(wired).toHaveLength(44);
+  expect(wired).toHaveLength(45);
   for(const scenario of wired){
    for(const caseId of alias(scenario)){
+    if(caseId.id==='N34'){
+     for(const market of caseId.markets)expect(n34Workflow).toContain("g6-dynamic-fresh-full-N34-"+market+"'");
+     expect(n34Workflow).toContain('node scripts/recette/g6-n34-final-verdict.js');
+     continue;
+    }
     for(const market of caseId.markets)
      expect(isTitle(caseId.id,market)).toBe(true);
     // The buyer orchestrator must receive the real ID. Otherwise the issue
