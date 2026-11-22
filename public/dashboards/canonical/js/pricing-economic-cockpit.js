@@ -1589,6 +1589,20 @@
     try { decision = await fetchDecision(workspace, options); } catch (_) { decision = null; }
     const cockpit = buildCockpit(options.document, options.root, payload, options.requestedMarket || payload.scope?.market_code || 'Marché', decision, options.user);
 
+    // Le workspace historique a été monté sur un root détaché : son panneau
+    // d'équilibre peut donc ne pas être présent sur le root visible. Ne jamais
+    // le perdre pendant le swap atomique. Le même résultat serveur, y compris
+    // NOT_DECISIONAL, est affiché sans soustraction économique côté navigateur.
+    if (!cockpit.querySelector('[data-pricing-flow-equilibrium]') &&
+        rootObject.KomercePricingEquilibriumPanel?.buildPanel) {
+      const equilibrium = styleEquilibriumForCockpit(
+        rootObject.KomercePricingEquilibriumPanel.buildPanel(options.document, workspace, decision)
+      );
+      const firstCosts = cockpit.querySelector('.kmc-cockpit-costs');
+      if (firstCosts) cockpit.insertBefore(equilibrium, firstCosts);
+      else cockpit.appendChild(equilibrium);
+    }
+
     // Contrat exclusif : le mock approuvé EST l'Atelier économique.
     // pricing-workspace.js reste un fournisseur de données/actions serveur,
     // jamais une seconde surface visible ni un tiroir avancé.

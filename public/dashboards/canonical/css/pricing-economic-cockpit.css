@@ -1229,3 +1229,25 @@
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
+
+
+/* Résultat non décisionnel : le libellé et l'explication ne doivent jamais
+   imposer leur largeur intrinsèque au viewport mobile (390px / 320px). */
+@media (max-width: 640px) {
+  .kmc-flow-equilibrium-panel--cockpit {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .kmc-flow-equilibrium-panel--cockpit .kmc-flow-equilibrium-unavailable {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  .kmc-flow-equilibrium-panel--cockpit .kmc-flow-equilibrium-unavailable strong {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
