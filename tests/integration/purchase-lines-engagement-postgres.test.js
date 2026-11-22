@@ -392,7 +392,7 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       const out = await engagement.confirmGroupedPurchaseOrder(po.id, { purchase_proof_ref: 'TEST-RECEIPT', seller_label: 'Vendeur test',
         supplier_order_id: 'SUP-1', tracking_number: 'TRK',
         lines: [
-          { purchase_line_id: a.line, confirmed_quantity: 3, confirmed_unit_price: 12.5 },
+          { purchase_line_id: a.line, confirmed_quantity: 3, confirmed_unit_price: 12.5, confirmed_currency: 'USD' },
           { purchase_line_id: b.line, confirmed_quantity: 2 },
         ],
       });
@@ -416,6 +416,12 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
         confirmed_amounts: [{ currency: 'USD', amount: 57.5 }],
       });
       expect(out.purchase_order.market_id).toBe(await seedMarket('KM'));
+      // Even an explicit matching currency must never populate the independent
+      // confirmed_currency on a PO already carrying the frozen supplier quote.
+      const quote = await row('SELECT supplier_unit_price, supplier_currency, confirmed_currency FROM purchase_lines WHERE id=$1', [a.line]);
+      expect(quote.supplier_currency).toBe('USD');
+      expect(quote.confirmed_currency).toBeNull();
+      expect(Number(quote.supplier_unit_price)).toBe(10);
     });
 
     it('un reliquat ouvert est regroupable dans une nouvelle PO (même fournisseur ou autre)', async () => {
