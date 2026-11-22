@@ -496,6 +496,9 @@ describe('G6-G5C N28 (échec réseau puis réessai) et N32 (marché et rôles cr
   expect(src).toContain("purchase_order_id:f.po_id,product_sku_id:f.sku_id");
   expect(src).toContain("expected_error_code:'HUB_PHYSICAL_MARKET_SCOPE_MISMATCH'");
   expect(src).toContain("w?.status()===403");
+  expect(src).toContain("G6_N32_PREREQ_RESTRICTED_HUB_DELEGATION_INVALID");
+  expect(src).toContain("role_denial_attested:wj.your_role===r.role");
+  expect(src).toContain("WRONG_ROLE_DENIAL_REASON_");
   expect(src).toContain("WRONG_AUTHORITY_REASON_");
   expect(src).toContain("WRONG_REFUSAL_HTTP_");
   expect(src).toContain("report.snapshot={before,after,unchanged:");
