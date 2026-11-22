@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 825
+- Scanned code files: 826
 - Files with full headers: 764
-- Files with lite headers: 61
-- Files with any headers: 825
+- Files with lite headers: 62
+- Files with any headers: 826
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2103
-- Edges: 10488
+- Graph nodes: 2104
+- Edges: 10515
 - DB tables: 244
 - Doctrines: 823
 - Impact areas: 211
-- Unresolved code edges: 995
+- Unresolved code edges: 996
 - Tables multi-écrivains directs (>=2): 99
 - Avertissements db-write / db-write-via en chevauchement: 13
 
@@ -54,7 +54,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - markets: 1
 - notification: 22
 - operations: 11
-- orders: 41
+- orders: 42
 - payment: 30
 - payments: 1
 - platform-ops: 2
@@ -93,7 +93,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 139
 - route-manifest: 1
 - schema: 1
-- service: 502
+- service: 503
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -778,6 +778,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/hub-v1-fixture-checkout-guard.js -> owner backend-core (hub-v1-fixture-checkout-guard)
 - services/hub-v1-fixture-payment.js -> owner backend-core (hub-v1-fixture-payment)
 - services/market-delegation-read-authority.js -> owner backend-core (market-scoped-read-capability-fallback)
+- services/order-read-authorization.js -> owner backend-core (order-read-authorization)
 - services/providers-inquiry-service.js -> owner services/providers-service.js (providers-services-contextual-inquiry)
 - services/providers-interaction-policy.js -> owner services/providers-service.js (providers-services-interaction-policy)
 - services/rct1-checkout-reference-guard.js -> owner backend-core (rct1-checkout-reference-guard)
