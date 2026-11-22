@@ -11,7 +11,7 @@ const { orderStatus } = require('../../services/hub-procurement-dossier');
 const order = ({ states, received, requested, partial, anomaly = 0, uncovered = 0, ready = false }) => ({
   items: [{ units: states.map((state) => ({ state })) }],
   totals: { requested, received, anomaly, uncovered, in_boxes: 0 },
-  readiness: { partial, complete: received >= requested, bag_open: false, ready_to_pack: ready },
+  readiness: { partial, complete: received >= requested, ready_to_combox: ready },
 });
 
 describe('orderStatus', () => {
@@ -30,8 +30,8 @@ describe('orderStatus', () => {
     expect(orderStatus(order({ states: ['none'], received: 0, requested: 1, partial: false, uncovered: 1 })).tone).toBe('bad');
     expect(orderStatus(order({ states: ['received', 'none'], received: 1, requested: 2, partial: true, anomaly: 1 })).label).toBe('Anomalie réception');
   });
-  test('attente fournisseur, puis prête', () => {
+  test('attente fournisseur, puis prête à répartir en COMBOX', () => {
     expect(orderStatus(order({ states: ['shipped'], received: 0, requested: 1, partial: false })).label).toBe('Attente fournisseur');
-    expect(orderStatus(order({ states: ['received'], received: 1, requested: 1, partial: false, ready: true })).label).toBe('Prête à ensacher');
+    expect(orderStatus(order({ states: ['received'], received: 1, requested: 1, partial: false, ready: true })).label).toBe('À répartir en COMBOX');
   });
 });

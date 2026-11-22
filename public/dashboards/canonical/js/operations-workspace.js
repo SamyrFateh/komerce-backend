@@ -812,7 +812,7 @@
   }
 
   // Hub live · Approvisionnement : projection serveur du dossier par marché (aucun calcul métier côté navigateur).
-  // Les PO s'enregistrent dans Achats fournisseurs ; ici on suit la chaîne physique et on rattache les cartons.
+  // Les PO s'enregistrent dans Achats fournisseurs ; ici on suit la chaîne physique et rattache les COMBOX.
   function simpleTable(doc, columns, rows, empty) {
     if (!rows.length) return text(doc, 'div', 'kmc-workspace-empty', empty);
     const wrap = doc.createElement('div');
@@ -1198,14 +1198,12 @@
           if (!details) return;
           details.open = true;
           const targets = {
-            bags: '[data-hub-bag-preparation]',
             boxes: '[data-supply-box-create]',
             shipments: '[data-supply-shipment-bar]',
           };
           const selector = targets[target];
           const anchor = (selector && details.querySelector(selector)) || details;
-          // Navigation opérateur déterministe : ne pas lancer une animation
-          // avant le prochain clic Chromium (Sacs -> KOM-BOX -> Expéditions).
+          // Navigation opérateur déterministe entre réception, COMBOX et expéditions.
           anchor.scrollIntoView?.({ block: 'start', behavior: 'auto' });
         },
       });
@@ -1213,7 +1211,7 @@
         cockpitHost.replaceChildren(text(doc, 'div', 'kmc-workspace-empty', 'Cockpit Hub illisible : rechargez la page (' + String((error && error.message) || error).slice(0, 120) + ').'));
       }
     }
-    // Tout ce qui suit (écarts, réceptions brutes, sacs, KOM-BOX, expéditions) est le panneau secondaire exhaustif.
+    // Tout ce qui suit (écarts, réceptions brutes, COMBOX, expéditions) est le panneau secondaire exhaustif.
     const secondaryStart = rootNode.children.length;
     // La filiation détaillée est chargée à la demande, hors du tableau.
     const points = d.to_handle || [];
@@ -1240,7 +1238,7 @@
       'Aucun colis reçu.'));
     rootNode.appendChild(receipts);
 
-    const boxes = createSection(rootNode, ui, 'Cartons KOM-BOX', 'Ouvrez un dossier, même vide, puis composez-le progressivement. La remise au transitaire est un acte distinct avec preuve et cartons DISPATCHED.');
+    const boxes = createSection(rootNode, ui, 'COMBOX', 'Initialisez une COMBOX, scannez chaque article ajouté, puis fermez-la avant la remise au transitaire.');
     boxes.setAttribute('data-supply-boxes', '');
     const open = Array.isArray(d.open_shipments) ? d.open_shipments : [];
     const free = box => !box.shipment_ref && ['PACKED','DISPATCHED'].includes(box.state);
@@ -1253,7 +1251,7 @@
     select.setAttribute('aria-label', 'Expédition ouverte');
     select.appendChild(Object.assign(doc.createElement('option'), { value: '', textContent: open.length ? 'Choisir une expédition ouverte…' : 'Aucune expédition ouverte' }));
     open.forEach(sh => select.appendChild(Object.assign(doc.createElement('option'), {
-      value: sh.reference, textContent: `${sh.reference} · ${sh.forwarder_name || 'Transitaire à définir'} · ${sh.box_count} carton(s)`,
+      value: sh.reference, textContent: `${sh.reference} · ${sh.forwarder_name || 'Transitaire à définir'} · ${sh.box_count} COMBOX`,
     })));
     bar.appendChild(select);
     const field = (placeholder, label) => {
@@ -1281,10 +1279,10 @@
         reference: refInput.value.trim(), hub_unit_ids: [...checked],
       },
       runningMessage: 'Ouverture du dossier…',
-      successMessage: result => `Dossier ${result && result.result ? result.result.reference : ''} ouvert en préparation · ${checked.size} carton(s).`,
+      successMessage: result => `Dossier ${result && result.result ? result.result.reference : ''} ouvert en préparation · ${checked.size} COMBOX.`,
     }).catch(() => {}));
 
-    // Composition des KOM-BOX via les routes Workspace (qui délèguent aux commandes Hub canoniques) : une seule autorité.
+    // Composition directe des COMBOX via les routes Workspace et les commandes Hub canoniques.
     const BOX_NEXT_STATE = Object.freeze({
       RECEIVED: 'IDENTIFIED', IDENTIFIED: 'QUALITY_CHECKED', QUALITY_CHECKED: 'LOCATED',
       LOCATED: 'ALLOCATED', ALLOCATED: 'PICKED', PICKED: 'PACKED', PACKED: 'DISPATCHED',
@@ -1294,10 +1292,10 @@
     const createBar = doc.createElement('div');
     createBar.className = 'kmc-workspace-receive-footer';
     createBar.setAttribute('data-supply-box-create', '');
-    const newRef = field('Référence du carton (facultative)', 'Référence de la nouvelle KOM-BOX');
-    const newBox = makeActionButton(doc, 'Créer une KOM-BOX', 'create-box');
+    const newRef = field('Référence COMBOX (facultative)', 'Référence de la nouvelle COMBOX');
+    const newBox = makeActionButton(doc, 'Initialiser une COMBOX', 'create-box');
     // A2 : la clé d'opération survit à un échec (coupure réseau) pour qu'un nouvel essai du même geste
-    // renvoie la même KOM-BOX ; elle change si la référence saisie change, et après un succès.
+    // renvoie la même COMBOX ; elle change si la référence saisie change, et après un succès.
     let boxKey = null; let boxKeyRef = null;
     const makeKey = () => (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.randomUUID
       ? globalThis.crypto.randomUUID()
@@ -1310,240 +1308,87 @@
       idempotencyKey: boxKey,
       onSuccess: () => { boxKey = null; boxKeyRef = null; },
       body: wanted ? { reference: wanted } : {},
-      runningMessage: 'Création de la KOM-BOX…',
-      successMessage: result => `KOM-BOX ${result && result.physical_unit ? result.physical_unit.reference : ''} ${result && result.replayed ? 'déjà créée (rejeu reconnu)' : 'créée'}.`,
+      runningMessage: 'Initialisation de la COMBOX…',
+      successMessage: result => `COMBOX ${result && result.physical_unit ? result.physical_unit.reference : ''} ${result && result.replayed ? 'déjà initialisée (rejeu reconnu)' : 'initialisée'}.`,
       }).catch(() => {});
     });
     [newRef, newBox].forEach(node => createBar.appendChild(node));
     boxes.appendChild(createBar);
 
-    // Préparation : un sac appartient à UNE commande et son contenu est figé
-    // à l'ouverture. Un seul scan physique par référence déposée.
-    const availableByOrder = new Map();
-    fillable.forEach(line => {
-      const key = String(line.order_id);
-      if (!availableByOrder.has(key)) availableByOrder.set(key, {
-        order_id: line.order_id, order_ref: line.order_ref, lines: [],
-      });
-      availableByOrder.get(key).lines.push(line);
-    });
-    const openBags = Array.isArray(d.bags_open) ? d.bags_open : [];
-    const readyBags = Array.isArray(d.bags_ready) ? d.bags_ready : [];
-    const activeOrders = new Set(openBags.map(bag => String(bag.order_id)));
-    const prep = doc.createElement('section');
-    prep.className = 'kmc-hub-bag-prep';
-    prep.setAttribute('data-hub-bag-preparation', '');
-    prep.appendChild(text(doc, 'h4', '', 'Préparer les sacs clients'));
-    prep.appendChild(text(doc, 'p', 'kmc-workspace-muted',
-      'Une commande par sac. Scanner la référence au dépôt, confirmer la quantité, puis fermer. Aucun second scan à la fermeture.'));
-    const orderChoices = [...availableByOrder.values()].filter(order => !activeOrders.has(String(order.order_id)));
-    if (orderChoices.length) {
-      const createRow = doc.createElement('div');
-      createRow.className = 'kmc-hub-bag-controls';
-      const orderSelect = doc.createElement('select');
-      orderSelect.setAttribute('aria-label', 'Commande dont préparer le sac');
-      orderChoices.forEach((order,i) => orderSelect.appendChild(Object.assign(doc.createElement('option'), {
-        value: String(i), textContent: order.order_ref + ' · ' +
-          order.lines.reduce((sum,line) => sum + Number(line.quantity), 0) + ' unité(s) disponible(s)',
-      })));
-      const createBag = makeActionButton(doc, 'Créer le sac client', 'create-customer-bag');
-      createBag.addEventListener('click', () => {
-        const order = orderChoices[Number(orderSelect.value)];
-        if (!order) return;
-        const plans = new Map();
-        order.lines.forEach(line => {
-          const key = String(line.order_item_id);
-          plans.set(key,(plans.get(key) || 0) + Number(line.quantity));
-        });
-        const bagPlan = [...plans].map(([order_item_id, quantity]) => ({order_item_id,quantity}));
-        runAction(context, createBag, {
-          url: endpointFor(context.marketCode, 'bags'),
-          body: {order_id:order.order_id,bag_plan:bagPlan},
-          runningMessage: 'Ouverture du sac client…',
-          successMessage: result => 'Sac ' + (result.physical_unit?.reference || '') + ' créé pour ' + order.order_ref,
-        }).catch(() => {});
-      });
-      createRow.appendChild(orderSelect); createRow.appendChild(createBag); prep.appendChild(createRow);
-    } else if (!openBags.length) {
-      prep.appendChild(text(doc, 'p', 'kmc-workspace-muted','Aucune quantité réceptionnée à préparer.'));
-    }
-    openBags.forEach(bag => {
-      const holder = doc.createElement('div');
-      holder.className = 'kmc-hub-bag-open';
-      holder.appendChild(text(doc, 'strong', '', bag.reference + ' · ' + bag.order_ref));
-      const actual = new Map((bag.actual_contents || []).map(item => [String(item.order_item_id), Number(item.quantity)]));
-      const planned = new Map((bag.bag_plan || []).map(item => [String(item.order_item_id), Number(item.quantity)]));
-      const totalPlanned = [...planned.values()].reduce((a,b) => a+b,0);
-      const totalActual = [...actual.values()].reduce((a,b) => a+b,0);
-      holder.appendChild(text(doc, 'span', 'kmc-workspace-muted',
-        totalActual + ' / ' + totalPlanned + ' unité(s) physiquement déposée(s)'));
-      const options = fillable.filter(line => String(line.order_id)===String(bag.order_id)
-        && (planned.get(String(line.order_item_id)) || 0) > (actual.get(String(line.order_item_id)) || 0));
-      if (options.length) {
-        const row = doc.createElement('div'); row.className='kmc-hub-bag-controls';
-        const source=doc.createElement('select');
-        source.setAttribute('aria-label','Référence disponible pour ' + bag.reference);
-        options.forEach((line,i)=>source.appendChild(Object.assign(doc.createElement('option'),{
-          value:String(i),
-          textContent:(line.product||'Article')+' · '+line.quantity+' disponible(s) ('+line.from_unit_ref+')',
-        })));
-        const method=doc.createElement('select');
-        method.setAttribute('aria-label','Mode de preuve du dépôt dans '+bag.reference);
-        method.setAttribute('data-hub-bag-evidence-method','');
-        [['SCAN','Code physique vérifié'],['MANUAL','Mode dégradé · constat manuel']]
-          .forEach(([value,label])=>method.appendChild(Object.assign(doc.createElement('option'),
-            {value,textContent:label})));
-        const barcode=field('Scanner ou saisir EAN / référence physique',
-          'Code physique observé lors du dépôt dans '+bag.reference);
-        barcode.setAttribute('data-hub-bag-code','');
-        const proof=field('Preuve du constat manuel (référence, au moins 6 caractères)',
-          'Référence de preuve du dépôt manuel dans '+bag.reference);
-        proof.setAttribute('data-hub-bag-manual-proof','');
-        proof.hidden=true;
-        const qty=doc.createElement('input');qty.type='number';qty.min='1';qty.step='1';qty.value='1';
-        qty.setAttribute('aria-label','Quantité déposée dans '+bag.reference);
-        const put=makeActionButton(doc,'Déposer dans le sac','scan-bag-deposit');
-        const syncMethod=()=>{
-          const manual=method.value==='MANUAL';
-          barcode.hidden=manual;
-          proof.hidden=!manual;
-          if(manual)barcode.value='';
-          else proof.value='';
-        };
-        method.addEventListener('change',syncMethod);
-        const deposit=()=>{
-          const line=options[Number(source.value)];
-          if (!line) return;
-          const manual=method.value==='MANUAL';
-          const proofRef=String(proof.value||'').trim();
-          if(manual ? proofRef.length<6 : !barcode.value.trim()) {
-            setFeedback(context.root,manual
-              ? 'Mode manuel : référence de preuve obligatoire (6 caractères minimum).'
-              : 'Code physique à vérifier avant le dépôt.', 'critical');
-            return;
-          }
-          const left=(planned.get(String(line.order_item_id))||0)-(actual.get(String(line.order_item_id))||0);
-          const quantity=Number(qty.value);
-          if (!Number.isInteger(quantity)||quantity<1||quantity>Math.min(left,Number(line.quantity))) return;
-          runAction(context,put,{
-            url:endpointFor(context.marketCode, 'bags/'+encodeURIComponent(bag.unit_id)+'/deposit'),
-            body:{from_unit_id:line.from_unit_id,allocation_id:line.allocation_id,
-              quantity,
-              ...(manual ? {evidence_method:'MANUAL',evidence_ref:proofRef}
-                : {evidence_method:'SCAN',evidence_code:barcode.value.trim()})},
-            runningMessage:manual?'Contrôle du constat et dépôt…':'Contrôle du code et dépôt…',
-            successMessage:'Dépôt confirmé dans '+bag.reference+(manual?' · preuve manuelle':''),
-          }).catch(()=>{});
-        };
-        barcode.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();deposit();}});
-        proof.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();deposit();}});
-        put.addEventListener('click',deposit);
-        [source,method,barcode,proof,qty,put].forEach(node=>row.appendChild(node));
-        holder.appendChild(row);
-      }
-      if (totalPlanned>0 && totalActual===totalPlanned && [...planned].every(([id,q])=>actual.get(id)===q)) {
-        const close=makeActionButton(doc,'Fermer le sac','close-customer-bag');
-        close.addEventListener('click',()=>runAction(context,close,{
-          url:endpointFor(context.marketCode,'bags/'+encodeURIComponent(bag.unit_id)+'/close'),
-          body:{},runningMessage:'Contrôle du contenu avant fermeture…',
-          successMessage:bag.reference+' fermé et prêt pour KOM-BOX.',
-        }).catch(()=>{}));
-        holder.appendChild(close);
-      }
-      prep.appendChild(holder);
-    });
-    boxes.appendChild(prep);
-
     const composeCell = box => {
       const cell = doc.createElement('div');
       cell.className = 'kmc-workspace-box-compose';
       if (BOX_MUTABLE.has(box.state)) {
-        // V1 : on scanne le sac FERMÉ, pas les allocations en vrac.
-        // Le REPACK direct reste une API historique, mais n'est plus une action Hub Live.
-        if (readyBags.length) {
-          const boxScan=field('Scanner cette KOM-BOX une fois','Scanner référence de la KOM-BOX '+box.reference);
-          boxScan.setAttribute('data-hub-box-scan','');
-          context.hubVerifiedBoxes=context.hubVerifiedBoxes||{};
-          boxScan.value=context.hubVerifiedBoxes[String(box.unit_id)]||'';
-          const bagScan=field('Scanner le sac client','Scanner référence du sac client');
-          bagScan.setAttribute('data-hub-bag-scan','');
-          // Le serveur déduit le colis import unique de la commande du sac.
-          // Sélection explicite uniquement pour l'exception : plusieurs colis possibles.
-          const parcel=doc.createElement('select');
-          parcel.setAttribute('aria-label','Colis client si plusieurs colis pour ce sac');
-          parcel.hidden=true;
-          const add=makeActionButton(doc,'Placer le sac','put-bag-in-box');
-          const boxMethod=doc.createElement('select');
-          boxMethod.setAttribute('aria-label','Mode de preuve du rattachement dans '+box.reference);
-          boxMethod.setAttribute('data-hub-box-evidence-method','');
-          [['SCAN','Références scannées'],['MANUAL','Mode dégradé · saisie manuelle']]
-            .forEach(([value,label])=>boxMethod.appendChild(Object.assign(doc.createElement('option'),
-              {value,textContent:label})));
-          const boxProof=field('Justification de la saisie manuelle (au moins 6 caractères)',
-            'Justification de la saisie manuelle dans '+box.reference);
-          boxProof.setAttribute('data-hub-box-manual-proof','');
-          boxProof.hidden=true;
-          boxMethod.addEventListener('change',()=>{
-            boxProof.hidden=boxMethod.value!=='MANUAL';
-            if(boxProof.hidden)boxProof.value='';
-          });
-          const identify=()=>{
-            const bag=readyBags.find(b=>b.reference===bagScan.value.trim());
-            const matching=bag?(d.client_parcels||[]).filter(p=>String(p.order_id)===String(bag.order_id)):[];
-            const selected=parcel.value;
-            const ambiguous=matching.length>1;
-            parcel.replaceChildren();
-            if(ambiguous){
-              parcel.appendChild(Object.assign(doc.createElement('option'),{value:'',textContent:'Choisir le colis client (cas exceptionnel)…'}));
-              matching.forEach(p=>parcel.appendChild(Object.assign(doc.createElement('option'),{
-                value:p.id,textContent:p.reference+' · '+bag.order_ref,
-              })));
-              if(matching.some(p=>p.id===selected))parcel.value=selected;
-            }
-            parcel.hidden=!ambiguous;
-            add.disabled=!(bag&&boxScan.value.trim()===box.reference&&(!ambiguous||parcel.value));
-            return bag;
-          };
-          boxScan.addEventListener('input',()=>{
-            if(boxScan.value.trim()===box.reference){
-              context.hubVerifiedBoxes[String(box.unit_id)]=box.reference;
-            }else{
-              delete context.hubVerifiedBoxes[String(box.unit_id)];
-            }
-            identify();
-          });
-          boxScan.addEventListener('keydown',event=>{
-            if(event.key==='Enter'){event.preventDefault();bagScan.focus();}
-          });
-          bagScan.addEventListener('input',identify);
-          bagScan.addEventListener('keydown',event=>{
-            if(event.key==='Enter'){event.preventDefault();identify();(parcel.hidden?boxMethod:parcel).focus();}
-          });
-          parcel.addEventListener('change',identify);
-          add.addEventListener('click',()=>{
-            const bag=readyBags.find(b=>b.reference===bagScan.value.trim());
-            if(!bag||boxScan.value.trim()!==box.reference||(!parcel.hidden&&!parcel.value))return;
-            const manualBox=boxMethod.value==='MANUAL';
-            const boxProofRef=String(boxProof.value||'').trim();
-            if(manualBox&&boxProofRef.length<6){
-              setFeedback(context.root,'Mode manuel : justification obligatoire (6 caractères minimum).','critical');
-              return;
-            }
-            runAction(context,add,{
-              url:endpointFor(context.marketCode,'boxes/'+encodeURIComponent(box.unit_id)+'/bags'),
-              body:{
-                bag_unit_id:bag.unit_id,...(!parcel.hidden?{parcel_id:parcel.value}:{}),
-                bag_reference_scan:bagScan.value.trim(),box_reference_scan:boxScan.value.trim(),
-                ...(manualBox?{evidence_method:'MANUAL',evidence_ref:boxProofRef}:{evidence_method:'SCAN'}),
-              },
-              runningMessage:'Contrôle du sac et de la KOM-BOX…',
-              successMessage:bag.reference+' placé dans '+box.reference+' sans déplacement des articles.',
+        const boxScan=field('Scanner la COMBOX','Scanner la référence de la COMBOX '+box.reference);
+        boxScan.setAttribute('data-hub-box-scan','');
+        context.hubVerifiedBoxes=context.hubVerifiedBoxes||{};
+        boxScan.value=context.hubVerifiedBoxes[String(box.unit_id)]||'';
+        boxScan.addEventListener('input',()=>{
+          if(boxScan.value.trim()===box.reference)context.hubVerifiedBoxes[String(box.unit_id)]=box.reference;
+          else delete context.hubVerifiedBoxes[String(box.unit_id)];
+        });
+        const options=fillable.filter(line=>Number(line.quantity)>0);
+        const item=doc.createElement('select');
+        item.setAttribute('aria-label','Article réceptionné à placer dans '+box.reference);
+        options.forEach((line,i)=>item.appendChild(Object.assign(doc.createElement('option'),{
+          value:String(i),textContent:(line.product||'Article')+' · '+line.order_ref+' · '+
+            line.quantity+' disponible(s) · '+line.from_unit_ref,
+        })));
+        const method=doc.createElement('select');
+        method.setAttribute('aria-label','Mode de preuve du scan article dans '+box.reference);
+        [['SCAN','Scanner le code article'],['MANUAL','Mode dégradé · constat manuel']]
+          .forEach(([value,label])=>method.appendChild(Object.assign(doc.createElement('option'),{value,textContent:label})));
+        const code=field('Scanner le code article','Code physique de l’article à placer dans '+box.reference);
+        const proof=field('Référence de preuve manuelle (6 caractères minimum)','Preuve du constat manuel pour '+box.reference);
+        proof.hidden=true;
+        const qty=doc.createElement('input');qty.type='number';qty.min='1';qty.step='1';qty.value='1';
+        qty.setAttribute('aria-label','Quantité de cet article à placer dans '+box.reference);
+        const add=makeActionButton(doc,'Placer l’article dans la COMBOX','fill-box');
+        const syncMethod=()=>{
+          const manual=method.value==='MANUAL'; code.hidden=manual; proof.hidden=!manual;
+          if(manual)code.value=''; else proof.value='';
+        };
+        method.addEventListener('change',syncMethod);
+        const fill=()=>{
+          if(boxScan.value.trim()!==box.reference){
+            setFeedback(context.root,'Scannez d’abord la référence de cette COMBOX.','critical'); return;
+          }
+          const line=options[Number(item.value)]; if(!line)return;
+          const manual=method.value==='MANUAL';
+          const proofRef=String(proof.value||'').trim();
+          if(manual?proofRef.length<6:!code.value.trim()){
+            setFeedback(context.root,manual?'Référence de preuve obligatoire (6 caractères minimum).':'Code article obligatoire.','critical'); return;
+          }
+          const quantity=Number(qty.value);
+          if(!Number.isInteger(quantity)||quantity<1||quantity>Number(line.quantity))return;
+          if(!manual&&quantity!==1){setFeedback(context.root,'Un scan confirmé correspond à un article. Scannez chaque unité séparément.','critical');return;}
+          runAction(context,add,{
+            url:endpointFor(context.marketCode,'boxes/'+encodeURIComponent(box.unit_id)+'/fill'),
+            body:{from_unit_id:line.from_unit_id,allocation_id:line.allocation_id,quantity,
+              box_reference_scan:boxScan.value.trim(),
+              ...(manual?{evidence_method:'MANUAL',evidence_ref:proofRef}
+                :{evidence_method:'SCAN',evidence_code:code.value.trim()})},
+            runningMessage:'Vérification de l’article et placement dans la COMBOX…',
+            successMessage:quantity+' article(s) placé(s) dans '+box.reference+'.',
+          }).catch(()=>{});
+        };
+        add.disabled=!options.length;
+        [boxScan,item,method,code,proof,qty,add].forEach(node=>cell.appendChild(node));
+        code.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();fill();}});
+        proof.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();fill();}});
+        add.addEventListener('click',fill);
+        if((box.contents||[]).length){
+          const close=makeActionButton(doc,'Fermer la COMBOX','close-box');
+          close.addEventListener('click',()=>{
+            if(boxScan.value.trim()!==box.reference){setFeedback(context.root,'Scannez la COMBOX avant fermeture.','critical');return;}
+            runAction(context,close,{
+              url:endpointFor(context.marketCode,'boxes/'+encodeURIComponent(box.unit_id)+'/close'),
+              body:{box_reference_scan:boxScan.value.trim()},
+              runningMessage:'Contrôle du contenu et fermeture…',
+              successMessage:box.reference+' fermée et prête pour la suite.',
             }).catch(()=>{});
           });
-          [boxScan,bagScan,parcel,boxMethod,boxProof,add].forEach(node=>cell.appendChild(node));
-          identify();
-        }else{
-          cell.appendChild(text(doc,'span','kmc-workspace-muted','Préparer puis fermer un sac client avant mise en KOM-BOX.'));
+          cell.appendChild(close);
         }
       }
       const next = BOX_NEXT_STATE[box.state];
@@ -1562,7 +1407,7 @@
       return cell.children.length ? cell : '—';
     };
 
-    boxes.appendChild(simpleTable(doc, ['', 'Carton', 'État', 'Contenu', 'Expédition', 'Composer', 'Action'],
+    boxes.appendChild(simpleTable(doc, ['', 'COMBOX', 'État', 'Contenu', 'Expédition', 'Composer', 'Action'],
       (d.boxes || []).map(box => {
         const contents = box.contents.map(c => `${c.order_ref} ×${formatNumber(c.qty)}`).join(', ');
         let pick = '';
@@ -1579,7 +1424,7 @@
             url: endpointFor(context.marketCode, `boxes/${encodeURIComponent(box.unit_id)}/shipment`),
             body: { shipment_reference: select.value },
             runningMessage: 'Rattachement en cours…',
-            successMessage: result => (result && result.already_attached ? 'Carton déjà rattaché à cette expédition.' : 'Carton rattaché à l’expédition.'),
+            successMessage: result => (result && result.already_attached ? 'COMBOX déjà rattachée à cette expédition.' : 'COMBOX rattachée à l’expédition.'),
           }).catch(() => {}));
         }
         if (box.shipment_ref && box.shipment_stage === 'hub_ready') {
@@ -1588,12 +1433,12 @@
             url: endpointFor(context.marketCode, `boxes/${encodeURIComponent(box.unit_id)}/detach`),
             body: {},
             confirmMessage: `Retirer ${box.reference} de l’expédition ${box.shipment_ref} ?`,
-            runningMessage: 'Détachement du carton…',
-            successMessage: 'Carton retiré du dossier encore en préparation.',
+            runningMessage: 'Détachement de la COMBOX…',
+            successMessage: 'COMBOX retirée du dossier encore en préparation.',
           }).catch(() => {}));
         }
         return [pick, box.reference, box.state, contents || '—', box.shipment_ref || '—', composeCell(box), action];
-      }), 'Aucun carton.'));
+      }), 'Aucune COMBOX.'));
 
     const secondary = doc.createElement('details');
     secondary.className = 'kmc-hub-physical-secondary';
@@ -1601,7 +1446,7 @@
     // Atelier opérationnel visible par défaut : le repli est réservé aux détails
     // et ne doit jamais dissimuler les gestes attendus au Golden M01.
     secondary.open = true;
-    secondary.appendChild(text(doc, 'summary', '', 'Ateliers physiques · Sacs, KOM-BOX et expéditions'));
+    secondary.appendChild(text(doc, 'summary', '', 'Ateliers physiques · COMBOX et expéditions'));
     [...rootNode.children].slice(secondaryStart).forEach(node => secondary.appendChild(node));
     rootNode.appendChild(secondary);
   }
@@ -2413,7 +2258,7 @@
     });
   }
 
-  // Relais live — contenu réellement expédié, déroulable Expédition → KOM-BOX → commandes → articles.
+  // Relais live — contenu réellement expédié, déroulable Expédition → COMBOX → commandes → articles.
   // Le reçu n'est jamais prérempli : il n'existe que par attestation du relais, article par article.
   function renderRelayShipmentsSection(rootNode, ui, doc, context) {
     const slot = createSection(rootNode, ui, 'Arrivages importés',
@@ -2468,7 +2313,7 @@
       summary.className='kmc-relay-shipment-title';
       summary.appendChild(text(doc,'strong','kmc-relay-shipment-reference',shipment.reference));
       summary.appendChild(text(doc,'span','kmc-relay-shipment-subtitle',
-        (shipment.boxes||[]).length+' carton(s) · '+
+        (shipment.boxes||[]).length+' COMBOX · '+
         (shipment.boxes||[]).reduce((count,box)=>count+(box.orders||[]).length,0)+' commande(s)'));
       summary.appendChild(text(doc,'span','kmc-relay-shipment-status',
         actionable?'À réceptionner':shipment.stage==='relay_received'?'Réception attestée':'Aucune réception en attente'));
@@ -2480,49 +2325,16 @@
         const detailed=doc.createElement('details');
         detailed.className='kmc-relay-archive-detail';
         detailed.setAttribute('data-relay-archive-detail','');
-        detailed.appendChild(text(doc,'summary','','Voir colis, articles et retrouver un sac'));
+        detailed.appendChild(text(doc,'summary','','Voir les COMBOX et leurs articles'));
         card.appendChild(detailed);
         detailHost=detailed;
       }
-      // Même sac physique que celui fermé au Hub : son scan ouvre la commande
-      // et le colis canonique, sans attester automatiquement la réception.
-      const scanBar=doc.createElement('div');
-      scanBar.className='kmc-hub-bag-controls';
-      scanBar.setAttribute('data-relay-bag-scanner','');
-      const bagCode=doc.createElement('input');
-      bagCode.type='text';bagCode.autocomplete='off';
-      bagCode.placeholder='Scanner un sac de cette expédition';
-      bagCode.setAttribute('aria-label','Scanner le sac client reçu au relais');
-      const scan=makeActionButton(doc,'Identifier le sac','relay-lookup-bag');
-      const result=text(doc,'span','kmc-workspace-muted','Scanner un sac pour retrouver la commande et le colis client.');
-      result.setAttribute('role','status');
-      const identify=async()=>{
-        const code=bagCode.value.trim();if(!code)return;
-        scan.disabled=true;result.textContent='Recherche du sac dans cette expédition…';
-        try{
-          const info=await jsonRequest(context.fetch,endpointFor(context.marketCode,
-            'relay-shipments/'+encodeURIComponent(shipment.reference)+'/bags/'+encodeURIComponent(code)));
-          result.textContent=info.bag_reference+' → commande '+info.order_reference+
-            ' · colis '+info.parcel_reference+' · '+
-            (info.contents||[]).map(item=>(item.product_name||'Article')+' ×'+item.quantity).join(', ');
-        }catch(err){
-          result.textContent='Sac non reconnu dans cette expédition ou non autorisé pour ce relais.';
-        }finally{scan.disabled=false;}
-      };
-      bagCode.addEventListener('keydown',event=>{
-        if(event.key==='Enter'){event.preventDefault();identify();}
-      });
-      scan.addEventListener('click',identify);
-      [bagCode,scan,result].forEach(node=>scanBar.appendChild(node));
-      detailHost.appendChild(scanBar);
       const inputs = [];
       shipment.boxes.forEach(box => {
         const boxNode = doc.createElement('div');
         boxNode.className = 'kmc-relay-box';
         boxNode.setAttribute('data-relay-box', box.reference);
-        boxNode.appendChild(text(doc, 'h4', 'kmc-relay-box-title', 'KOM-BOX ' + box.reference));
-        (box.bags || []).forEach(bag => boxNode.appendChild(text(doc, 'div', 'kmc-workspace-muted',
-          'Sac '+bag.reference+' · commande '+bag.order_reference+' · colis '+bag.parcel_reference)));
+        boxNode.appendChild(text(doc, 'h4', 'kmc-relay-box-title', 'COMBOX ' + box.reference));
         box.orders.forEach(order => {
           boxNode.appendChild(text(doc, 'div', 'kmc-workspace-muted', 'Commande ' + order.reference));
           const table = doc.createElement('table');

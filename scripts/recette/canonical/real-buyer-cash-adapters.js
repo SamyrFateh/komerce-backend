@@ -14,6 +14,7 @@ const multiPo=require('./multi-po');
 const oracles=require('./local-stock-oracles');
 const m03=require('./m03-oracles');
 const {readSellable,selectMixedBasket}=require('./m03-prereq');
+const {isCentralHubOnOrderSku}=require('../../../services/central-hub-on-order');
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {spawnSync}=require('node:child_process');
 const {confirmTarget}=require('../target-guard');
@@ -161,6 +162,21 @@ async function orderPg(db,context){
    rows[0].payment_mode!=='cash_relais')throw Error('G6_DYNAMIC_ORDER_PG_IDENTITY_INVALID');
  return rows[0];
 }
+async function m06BuyerOracle(db,orderId){
+ const {rows:items}=await db.query(`SELECT i.id,i.product_id,i.quantity,i.sku_id,i.procure_on_order,
+    i.fulfillment_source::text AS fulfillment_source,p.product_ref
+   FROM order_items i JOIN products p ON p.id=i.product_id
+   WHERE i.order_id=$1 ORDER BY i.id`,[orderId]);
+ if(items.length!==1||Number(items[0].quantity)!==3||items[0].procure_on_order!==true||
+    items[0].fulfillment_source!=='IMPORT'||items[0].product_ref!=='KPR-000255'||
+    !await isCentralHubOnOrderSku(db,items[0].product_id,items[0].sku_id))
+  throw Error('G6_M06_BUYER_ON_ORDER_ORACLE_INVALID');
+ const {rows:allocations}=await db.query('SELECT 1 FROM local_stock_allocations WHERE order_id=$1 LIMIT 1',[orderId]);
+ if(allocations.length)throw Error('G6_M06_BUYER_LOCAL_STOCK_ALLOCATION_EXISTS');
+ return {order_item_id:items[0].id,product_ref:items[0].product_ref,quantity:3,
+  fulfillment_source:items[0].fulfillment_source,procure_on_order:true,
+  central_hub_on_order:true,local_stock_allocations:0,read_only:true};
+}
 function execute(script,env){
  const r=spawnSync(process.execPath,[path.join(ROOT,script)],{
   cwd:ROOT,env,stdio:'inherit',timeout:12*60*1000
@@ -235,6 +251,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
       ((pg.payment_status==='pending')&&(pg.cash_count!==0||pg.control_count!==0))||
       ((pg.payment_status==='paid')&&(pg.cash_count!==1||pg.control_count!==1)))
     throw Error('G6_DYNAMIC_BUYER_PG_READBACK_INVALID');
+   if(SCENARIO==='M06')await m06BuyerOracle(db,context.order_id);
    if(LOCAL_PG_FLOW.includes(SCENARIO))await oracles.assertNoHubOrTransport(db,context.order_id,'any');
    if(SCENARIO==='M03')await m03.assertMixedPhase(db,context.order_id,'structure');
   }else if(stageId==='RELAY_CASH'){
@@ -485,6 +502,20 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
    catch(e){throw Error(String(e.message).replace(/^G6_M03_/,'G6_M03_PRODUCT_GAP_'+market+'_'))}
    const line=p=>({product_ref:p.product_ref,price:p.price,source_key:p.source_key});
    return {basket:{local:line(basket.local),imports:basket.imports.map(line)}};
+  },
+  resolveM06HubProduct:async()=>{
+   const m=require('./manifest-loader').loadManifest('M06');
+   const ref=m.fixture_plan.product.product_ref;
+   const product=(await readSellable(db,marketProfile(env).code)).find(p=>p.product_ref===ref);
+   if(!product||product.source_key!=='central_hub'||product.local_available!==0||!product.import_ready)
+    throw Error('G6_M06_CENTRAL_HUB_PRODUCT_GAP_'+marketProfile(env).code);
+   const {rows:skus}=await db.query(`SELECT id,stock,source,supplier_order_identity
+    FROM product_skus WHERE product_id=$1 AND is_active=TRUE ORDER BY id`,[product.id]);
+   if(skus.length!==1||Number(skus[0].stock)!==0||skus[0].source!=='MANUAL'||
+     skus[0].supplier_order_identity!==null||!await isCentralHubOnOrderSku(db,product.id,skus[0].id))
+    throw Error('G6_M06_CENTRAL_HUB_ON_ORDER_PRODUCT_INVALID');
+   return {id:product.id,product_ref:product.product_ref,price:product.price,
+    quantity:m.fixture_plan.buyer_order.quantity,fulfillment:'IMPORT',source_key:'central_hub'};
   },
   // N33 : produit à >= 2 SKU distincts, choisi en lecture seule, jamais créé ici.
   resolveMultiSkuProduct:async()=>require('./negative-scenarios').resolveMultiSku(db,marketProfile(env).code),

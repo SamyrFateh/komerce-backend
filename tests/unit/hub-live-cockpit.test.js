@@ -91,8 +91,11 @@ describe('Hub UX guidée — sans nouvel acte métier', () => {
     expect(operations).toContain("context.view = 'reception';");
     expect(operations).toContain("context.renderCurrent();");
     expect(cockpit).toContain("['reception', 'Réception fournisseur']");
-    expect(cockpit).toContain("['bags', 'Préparer les sacs']");
-    expect(cockpit).toContain("['boxes', 'KOM-BOX']");
+    expect(cockpit).not.toContain("['bags', 'Préparer les sacs']");
+    expect(cockpit).toContain("['boxes', 'Préparer les COMBOX']");
+    expect(cockpit).not.toContain("ctx.endpoint('bags')");
+    expect(cockpit).toContain("'Répartir les articles en COMBOX'");
+    expect(cockpit).toContain("ctx.openPhysical('boxes')");
     expect(cockpit).toContain("['shipments', 'Expéditions']");
   });
 

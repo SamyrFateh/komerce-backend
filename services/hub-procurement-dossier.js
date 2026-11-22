@@ -90,16 +90,14 @@ function viewerRights(viewer, grants) {
   };
 }
 
-// Commande prête / partielle : une ligne complète n'est pas une commande complète, et une commande partiellement
-// reçue n'est jamais « prête à emballer » (préparation partielle = geste explicite côté route).
-function orderReadiness(order, bagsOpenByOrder) {
+// Les quantités reçues restent répartissables indépendamment du reliquat fournisseur.
+function orderReadiness(order) {
   const items = order.items;
   const pending = items.filter((i) => i.received < i.ordered).map((i) => ({
     order_item_id: i.id, product: i.product, missing: i.ordered - i.received,
   }));
   const complete = items.length > 0 && pending.length === 0;
-  const unbagged = items.reduce((t, i) => t + Math.max(0, i.received - i.in_bags - i.in_boxes), 0);
-  const bagOpen = bagsOpenByOrder.has(String(order.id));
+  const unboxed = items.reduce((t, i) => t + Math.max(0, i.received - i.in_bags - i.in_boxes), 0);
   const received = items.reduce((t, i) => t + i.received, 0);
   const blockers = [];
   if (items.some((i) => i.purchasing_missing > 0)) blockers.push('Besoin non couvert par une ligne d’achat');
@@ -108,9 +106,8 @@ function orderReadiness(order, bagsOpenByOrder) {
   return {
     complete,
     partial: !complete && received > 0,
-    ready_to_pack: complete && unbagged > 0 && !bagOpen && !items.some((i) => i.anomaly > 0),
-    unbagged_received: unbagged,
-    bag_open: bagOpen,
+    ready_to_combox: unboxed > 0 && !items.some((i) => i.anomaly > 0),
+    unboxed_received: unboxed,
     pending_items: pending,
     blockers,
   };
@@ -137,7 +134,7 @@ const PHYSICAL_BY_ITEM_SQL = `
    WHERE a.market_id = $1 AND a.order_item_id = ANY($2::uuid[])
    GROUP BY a.order_item_id`;
 
-function buildTodo({ orders, unsourced, needBatches, purchaseOrders, bagsOpen, bagsReady, boxes, viewer, parcelsToReconcile = [], blockedItems = [], queuedOrders = [], now = new Date() }) {
+function buildTodo({ orders, unsourced, needBatches, purchaseOrders, boxes, viewer, parcelsToReconcile = [], blockedItems = [], queuedOrders = [], now = new Date() }) {
   const todo = [];
   const can = (flag, reason) => (viewer === null ? { viewer_can_act: null, blocked_reason: null }
     : flag ? { viewer_can_act: true, blocked_reason: null } : { viewer_can_act: false, blocked_reason: reason });
@@ -222,36 +219,13 @@ function buildTodo({ orders, unsourced, needBatches, purchaseOrders, bagsOpen, b
     }
   }
   for (const order of orders) {
-    if (order.readiness.ready_to_pack) {
-      push({ id: `PREPARE_BAG:${order.id}`, kind: 'PREPARE_BAG', priority: 60, owner: 'agent_hub', subject: { order_id: order.id },
-        missing: `${order.reference} : sac à préparer`,
-        why: 'Commande complète : prête à emballer.',
+    if (order.readiness.ready_to_combox) {
+      push({ id: `PLACE_COMBOX:${order.id}`, kind: 'PLACE_COMBOX', priority: 60, owner: 'agent_hub', subject: { order_id: order.id },
+        missing: `${order.reference} : articles reçus à répartir en COMBOX`,
+        why: 'Les quantités reçues peuvent être réparties directement en COMBOX.',
         since: order.created_at,
-        action: { type: 'create_bag', order_id: order.id, label: 'Créer le sac client' }, ...can(true) });
+        action: { type: 'open_physical', order_id: order.id, label: 'Composer les COMBOX' }, ...can(true) });
     }
-  }
-  for (const bag of bagsOpen) {
-    const planned = (bag.bag_plan || []).reduce((t, x) => t + Number(x.quantity), 0);
-    const actual = (bag.actual_contents || []).reduce((t, x) => t + Number(x.quantity), 0);
-    if (planned > 0 && planned === actual) {
-      push({ id: `CLOSE_BAG:${bag.unit_id}`, kind: 'CLOSE_BAG', priority: 61, owner: 'agent_hub', subject: { order_id: bag.order_id, bag_unit_id: bag.unit_id },
-        missing: `${bag.order_ref} : sac à fermer`,
-        why: 'Seul un sac fermé entre en KOM-BOX.',
-        since: bag.created_at,
-        action: { type: 'close_bag', bag_unit_id: bag.unit_id, label: 'Fermer le sac' }, ...can(true) });
-    } else if (planned > 0) {
-      push({ id: `DEPOSIT_BAG:${bag.unit_id}`, kind: 'DEPOSIT_BAG', priority: 62, owner: 'agent_hub', subject: { order_id: bag.order_id, bag_unit_id: bag.unit_id },
-        missing: `${bag.order_ref} : sac ${actual}/${planned}`,
-        why: 'Chaque dépôt exige un scan.',
-        since: bag.created_at,
-        action: { type: 'open_physical', label: 'Déposer dans le sac (scan)' }, ...can(true) });
-    }
-  }
-  if (bagsReady.length) {
-    push({ id: 'BOX_BAGS', kind: 'BOX_BAGS', priority: 63, owner: 'agent_hub', subject: {},
-      missing: `${bagsReady.length} sac(s) fermé(s) à mettre en KOM-BOX`, why: 'Scan du sac puis de la KOM-BOX.',
-      since: bagsReady.map((b) => b.since).filter(Boolean).sort()[0] || null,
-      action: { type: 'open_physical', label: 'Placer en KOM-BOX (scan)' }, ...can(true) });
   }
   for (const b of boxes) {
     if (b.state === 'PACKED' && !b.shipment_ref) {
@@ -304,14 +278,14 @@ function buildTodo({ orders, unsourced, needBatches, purchaseOrders, bagsOpen, b
 const poRef = (id) => `PO-${String(id || '').slice(0, 4).toUpperCase()}`;
 const UNIT_LABELS = Object.freeze({
   none: 'À acheter', sourcing: 'Fournisseur du SKU non rattaché aux achats', draft: 'Dans une PO brouillon', pending: 'Validation responsable',
-  shipped: 'Chez / expédié fournisseur', received: 'Reçu au Hub', bag_open: 'En sac (ouvert)', bag_closed: 'Sac fermé', boxed: 'En KOM-BOX',
+  shipped: 'Chez / expédié fournisseur', received: 'Reçu au Hub', boxed: 'Dans une COMBOX',
 });
 
 function itemUnits(item, poById) {
   const units = [];
   let left = item.received;
   const take = (n, state) => { const k = Math.min(n, left); for (let i = 0; i < k; i += 1) units.push(state); left -= k; };
-  take(item.in_boxes, 'boxed'); take(item.in_bags_closed, 'bag_closed'); take(item.in_bags_open, 'bag_open'); take(left, 'received');
+  take(item.in_boxes, 'boxed'); take(left, 'received');
   const lines = [...item.lines].sort((a, b) => (a.fifo_rank || 0) - (b.fifo_rank || 0));
   for (const l of lines) {
     const po = l.po_id ? poById.get(l.po_id) : null;
@@ -332,7 +306,6 @@ function itemWhere(item, poById) {
   const poReceiving = poIds.some((id) => poById.get(id) && poById.get(id).totals.received > 0);
   if (item.received < item.ordered && poIds.length && (item.received > 0 || poReceiving)) return `reliquat ${ref}`;
   if (states.has('boxed') && !states.has('received')) return 'en KOM-BOX';
-  if ((states.has('bag_open') || states.has('bag_closed')) && !states.has('received')) return states.has('bag_open') ? 'en sac ouvert' : 'sac fermé';
   if (item.received > 0) return `reçu · ${ref}`;
   if (states.size === 1 && states.has('none')) return 'à regrouper';
   return ref || 'à regrouper';
@@ -347,9 +320,8 @@ function orderStatus(order) {
   if (t.anomaly > 0) return { label: 'Anomalie réception', tone: 'bad' };
   if (states.has('none')) return { label: t.received > 0 ? `Partielle · ${t.requested - t.received} à acheter` : 'À regrouper', tone: 'act' };
   if (r.partial && ['shipped', 'pending', 'draft'].some((k) => states.has(k))) return { label: `Reliquat ${t.received}/${t.requested}`, tone: 'warn' };
-  if (t.in_boxes > 0 && r.complete) return { label: 'Dans KOM-BOX', tone: 'done' };
-  if (r.bag_open) return { label: 'Sac en cours', tone: 'act' };
-  if (r.ready_to_pack) return { label: 'Prête à ensacher', tone: 'act' };
+  if (t.in_boxes > 0 && r.complete) return { label: 'Dans une COMBOX', tone: 'done' };
+  if (r.ready_to_combox) return { label: 'À répartir en COMBOX', tone: 'act' };
   if (states.has('draft')) return { label: 'PO brouillon', tone: 'act' };
   if (states.has('pending')) return { label: 'En validation', tone: 'amber' };
   return { label: 'Attente fournisseur', tone: 'wait' };
@@ -368,23 +340,15 @@ function poStatusView(po) {
   return { label: 'Expédiée fournisseur', tone: 'wait' };
 }
 
-function buildPhysical({ orders, bagsOpen, bagsReady, boxes, poById }) {
+function buildPhysical({ orders, boxes, poById }) {
   const item = (key, ref, meta, text, extra) => ({ key, ref, meta, text, ...(extra || {}) });
-  const unbagged = orders.filter((o) => o.readiness.unbagged_received > 0).map((o) => {
+  const unboxed = orders.filter((o) => o.readiness.unboxed_received > 0).map((o) => {
     const parts = o.items.filter((i) => i.received - i.in_bags - i.in_boxes > 0).map((i) => {
       const refs = [...new Set(i.lines.filter((l) => l.po_id && l.received > 0).map((l) => poRef(l.po_id)))].join(', ');
       return `${i.product} ×${i.received - i.in_bags - i.in_boxes}${refs ? ` (${refs})` : ''}`;
     });
     return item(`order:${o.id}`, o.reference, 'FIFO', parts.join(' · '), { order_id: o.id });
   });
-  const bags = [
-    ...bagsOpen.map((b) => {
-      const planned = (b.bag_plan || []).reduce((t, x) => t + Number(x.quantity), 0);
-      const actual = (b.actual_contents || []).reduce((t, x) => t + Number(x.quantity), 0);
-      return item(`bag:${b.unit_id}`, b.reference, `ouvert · ${actual}/${planned}`, `${b.order_ref} · dépôt scanné SKU + quantité`, { order_id: b.order_id, bag_unit_id: b.unit_id, closable: planned > 0 && planned === actual });
-    }),
-    ...bagsReady.map((b) => item(`bag:${b.unit_id}`, b.reference, `fermé · ${b.quantity}`, `${b.order_ref} · à scanner dans une KOM-BOX`, { order_id: b.order_id, bag_unit_id: b.unit_id })),
-  ];
   const boxList = [...boxes];
   const orderIdsOf = (b) => [...new Set((b.contents || []).map((c) => c.order_id).filter(Boolean))];
   const open = boxList.filter((b) => !b.shipment_ref).map((b) => item(`box:${b.unit_id}`, b.reference, b.state, `${[...new Set((b.contents || []).map((c) => c.order_ref))].join(', ') || 'KOM-BOX'} · à rattacher à une expédition`, { order_ids: orderIdsOf(b), box_unit_id: b.unit_id }));
@@ -392,16 +356,15 @@ function buildPhysical({ orders, bagsOpen, bagsReady, boxes, poById }) {
   const reliquats = orders.flatMap((o) => o.items.filter((i) => i.remaining_to_deliver > 0 && i.po_ids.some((id) => poById.get(id) && poById.get(id).totals.received > 0)).map((i) =>
     item(`order:${o.id}`, o.reference, i.po_ids.map(poRef).join(', '), `${i.product} ×${i.remaining_to_deliver} · attendu du fournisseur`, { order_id: o.id })));
   return [
-    { key: 'received', title: 'Reçu au Hub · non ensaché', tone: 'ok', items: unbagged, empty_text: 'Rien de reçu pour l’instant.' },
-    { key: 'bags', title: 'Sacs clients', tone: 'bag', items: bags, empty_text: 'Aucun sac ouvert.' },
-    { key: 'boxes', title: 'KOM-BOX', tone: 'box', items: open, empty_text: 'Aucune KOM-BOX en cours.' },
+    { key: 'received', title: 'Reçu au Hub · à répartir en COMBOX', tone: 'ok', items: unboxed, empty_text: 'Rien de reçu pour l’instant.' },
+    { key: 'boxes', title: 'COMBOX', tone: 'box', items: open, empty_text: 'Aucune COMBOX en cours.' },
     { key: 'shipped', title: 'Expédié au relais', tone: 'grey', items: shipped, empty_text: 'Aucun départ aujourd’hui.' },
     { key: 'reliquats', title: 'Reliquats attendus', tone: 'warn', items: reliquats, empty_text: 'Aucun reliquat.' },
   ];
 }
 
 async function loadCockpit({
-  q, marketId, viewer, orderMap, needsRows, purchaseOrders, unsourcedItems, bagsOpen, bagsReady, boxes,
+  q, marketId, viewer, orderMap, needsRows, purchaseOrders, unsourcedItems, boxes,
   parcelsToReconcile = [], blockedItems = [], queuedOrders = [], now = new Date(),
 }) {
   const grants = new Set();
@@ -474,7 +437,6 @@ async function loadCockpit({
       : { amount: null, currency: null, derived: false };
   }
 
-  const bagsOpenByOrder = new Set(bagsOpen.map((b) => String(b.order_id)));
   // Ligne d'achat SANS PO : même source (needsRows) que la colonne « Achats et PO ».
   const toGroupByItem = new Map();
   for (const n of needsRows) toGroupByItem.set(n.order_item_id, (toGroupByItem.get(n.order_item_id) || 0) + Number(n.quantity));
@@ -502,7 +464,7 @@ async function loadCockpit({
     }
     order.po_ids = [...new Set(order.items.flatMap((i) => i.po_ids))];
     order.supplier_count = new Set(order.po_ids.map((id) => (poById.get(id) || {}).supplier_id).filter(Boolean)).size;
-    order.readiness = orderReadiness(order, bagsOpenByOrder);
+    order.readiness = orderReadiness(order);
     order.totals = order.items.reduce((t, i) => ({
       requested: t.requested + i.ordered, covered: t.covered + i.covered, to_group: t.to_group + i.to_group, uncovered: t.uncovered + i.uncovered,
       received: t.received + i.received, remaining: t.remaining + i.remaining_to_deliver, anomaly: t.anomaly + i.anomaly,
@@ -558,8 +520,8 @@ async function loadCockpit({
     need_batches: needBatches,
     orders,
     unit_legend: Object.entries(UNIT_LABELS).filter(([state]) => state !== 'sourcing').map(([state, label]) => ({ state, label })),
-    physical: buildPhysical({ orders, bagsOpen, bagsReady, boxes, poById }),
-    todo: buildTodo({ orders, unsourced: unsourcedItems, needBatches, purchaseOrders, bagsOpen, bagsReady, boxes, viewer: rights, parcelsToReconcile, blockedItems, queuedOrders, now }),
+    physical: buildPhysical({ orders, boxes, poById }),
+    todo: buildTodo({ orders, unsourced: unsourcedItems, needBatches, purchaseOrders, boxes, viewer: rights, parcelsToReconcile, blockedItems, queuedOrders, now }),
   };
 }
 
@@ -930,7 +892,7 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
   // Cockpit : mêmes lectures, enrichies (couverture, réception, ventilation physique, autorisations, À faire maintenant).
   const cockpit = await loadCockpit({
     q, marketId, viewer, orderMap: orders, needsRows, purchaseOrders, unsourcedItems,
-    bagsOpen: bags_open, bagsReady: bags_ready, boxes: [...boxes.values()],
+    boxes: [...boxes.values()],
     parcelsToReconcile: parcelRows, queuedOrders: queuedRows, now,
     blockedItems: blockedRows.map((r) => ({ ...r, ordered: Number(r.ordered), covered: Number(r.covered) })),
   });

@@ -33,6 +33,7 @@
     "market": "KM",
     "product": {
       "fixture_ref": "G6-M06-KM",
+      "product_ref": "KPR-000255",
       "source_kind": "central_hub_manual",
       "supplier_system_key": "central_hub",
       "internal_sku": "generated_unique_per_run",
@@ -69,7 +70,8 @@
     "external_effects": false,
     "blocking_capabilities": [
       "M06_DISTINCT_CENTRAL_HUB_PRODUCT_SCREEN_FIXTURE",
-      "MANUAL_PURCHASE_MULTI_SELLER_UI",
+      "M06_MANUAL_PURCHASE_CHROMIUM_STAGE",
+      "M06_COMMITMENT_AND_PAYMENT_AUTHORIZATION_STAGES",
       "M06_SUPPLIER_AUTHORIZATION_READBACK",
       "M06_RECEIVING_AND_RELAY_PROJECTION",
       "M06_PICKUP_AND_SAV_UI_ORACLE",

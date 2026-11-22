@@ -104,8 +104,8 @@
     const activePos = pos.filter(po => !isHistoricalPo(po));
     const historyPos = pos.filter(isHistoricalPo);
     const batches = cockpit.need_batches || [];
-    const todo = cockpit.todo || [];
-    const physical = cockpit.physical || [];
+    const todo = (cockpit.todo || []).filter(item => !['PREPARE_BAG','CLOSE_BAG','DEPOSIT_BAG','BOX_BAGS'].includes(item.kind));
+    const physical = (cockpit.physical || []).filter(section => section.key !== 'bags');
     const legend = cockpit.unit_legend || [];
     const readOnly = ctx.isReadOnly;
     const marketCode = (d.market && d.market.code) || ctx.marketCode;
@@ -172,7 +172,7 @@
       const i = value.indexOf(':');
       if (i < 1) return null;
       const type = value.slice(0, i), id = value.slice(i + 1);
-      return ['po','order','need','bag','box'].includes(type) && id.length > 0 && id.length < 160 ? {type,id} : null;
+      return ['po','order','need','box'].includes(type) && id.length > 0 && id.length < 160 ? {type,id} : null;
     }
     function putUrlSelection(type, id) {
       if (!isHubRoute() || !win.history?.pushState) return;
@@ -218,21 +218,6 @@
       });
     }
 
-    function bagPlanFor(order) {
-      return order.items.map((i) => ({ order_item_id: i.id, quantity: Math.max(0, i.received - i.in_bags - i.in_boxes) })).filter((x) => x.quantity > 0);
-    }
-    function createBag(btn, order, partial) {
-      const plan = bagPlanFor(order);
-      const missing = (order.readiness.pending_items || []).map((p) => `${p.product || 'article'} (${p.missing})`).join(', ');
-      return execute(btn, {
-        url: ctx.endpoint('bags'), body: { order_id: order.id, bag_plan: plan, ...(partial ? { partial_preparation: true } : {}) },
-        confirmMessage: partial
-          ? `PRÉPARATION PARTIELLE de ${order.reference} : ${plan.reduce((t, x) => t + x.quantity, 0)} unité(s) reçue(s) seulement. Manque encore : ${missing}. Le reliquat reste suivi et ne part pas dans ce sac. Confirmer ?`
-          : `Créer le sac client de ${order.reference} (commande complète) ?`,
-        runningMessage: 'Ouverture du sac client…', successMessage: partial ? `Sac partiel ouvert pour ${order.reference} ; reliquat conservé.` : `Sac ouvert pour ${order.reference}.`,
-      });
-    }
-
     function submitPo(btn, poId) {
       return execute(btn, {
         url: purchasing(`po/${encodeURIComponent(poId)}/submit`), body: {},
@@ -240,13 +225,6 @@
         runningMessage: 'Soumission en cours…', successMessage: 'PO soumise : enregistrer maintenant son envoi réel.',
       });
     }
-    function closeBag(btn, bagId) {
-      return execute(btn, {
-        url: ctx.endpoint(`bags/${encodeURIComponent(bagId)}/close`), body: {},
-        runningMessage: 'Contrôle du contenu avant fermeture…', successMessage: 'Sac fermé, prêt pour une KOM-BOX.',
-      });
-    }
-
     // ── Sélection par défaut et lien « À faire maintenant » → objet ──
     function todoSel(item) {
       const s = item.subject || {};
@@ -256,7 +234,6 @@
         const o = orderById.get(s.order_id);
         return o && o.totals.uncovered > 0 && item.kind === 'SOURCING_REQUIRED' ? { type: 'order', id: o.id } : { type: 'order', id: s.order_id };
       }
-      if (s.bag_unit_id) return { type: 'bag', id: s.bag_unit_id };
       if (s.box_unit_id) return { type: 'box', id: s.box_unit_id };
       return null;
     }
@@ -271,7 +248,6 @@
         state.sel.type === 'order' ? orderById.has(state.sel.id) :
         state.sel.type === 'need' ? (batches.some(b => b.groups.some(g => g.key === state.sel.id)) ||
           orders.some(o => o.items.some(i => `src:${o.id}:${i.id}` === state.sel.id))) :
-        state.sel.type === 'bag' ? [...(d.bags_open || []),...(d.bags_ready || [])].some(b => b.unit_id === state.sel.id) :
         state.sel.type === 'box' ? (d.boxes || []).some(b => b.unit_id === state.sel.id) : false;
       // La tâche serveur est une référence métier valide même si la liste
       // compacte n'inclut pas le dossier : conserver sa sélection au clic.
@@ -286,20 +262,15 @@
     rootEl.setAttribute('data-hlc-selection', selKey);
 
     // ── Liens de navigation (références du dossier serveur, aucune quantité calculée) ──
-    const allBags = [
-      ...(d.bags_open || []).map((b) => ({ id: b.unit_id, ref: b.reference, order_id: b.order_id, order_ref: b.order_ref, state: 'ouvert' })),
-      ...(d.bags_ready || []).map((b) => ({ id: b.unit_id, ref: b.reference, order_id: b.order_id, order_ref: b.order_ref, state: 'fermé' })),
-    ];
     const boxOrders = (b) => [...new Set((b.contents || []).map((c) => c.order_id).filter(Boolean))];
     const needGroups = batches.flatMap((b) => b.groups.map((g) => ({ batch: b, group: g })));
     const sourcingNeeds = orders.flatMap((o) => o.items.filter((i) => i.uncovered > 0).map((i) => ({ order: o, item: i, key: `src:${o.id}:${i.id}` })));
     function related() {
-      const r = { orders: new Set(), pos: new Set(), needs: new Set(), bags: new Set(), boxes: new Set() };
+      const r = { orders: new Set(), pos: new Set(), needs: new Set(), boxes: new Set() };
       if (!sel) return r;
       if (sel.type === 'order') {
         const o = orderById.get(sel.id);
         if (o) { r.orders.add(o.id); o.po_ids.forEach((id) => r.pos.add(id)); }
-        allBags.filter((b) => b.order_id === sel.id).forEach((b) => r.bags.add(b.id));
         (d.boxes || []).filter((b) => boxOrders(b).includes(sel.id)).forEach((b) => r.boxes.add(b.unit_id));
         needGroups.filter(({ group }) => group.lines.some((l) => l.order_id === sel.id)).forEach(({ group }) => r.needs.add(group.key));
         sourcingNeeds.filter((n) => n.order.id === sel.id).forEach((n) => r.needs.add(n.key));
@@ -312,10 +283,6 @@
         const s = sourcingNeeds.find((x) => x.key === sel.id);
         if (s) r.orders.add(s.order.id);
         r.needs.add(sel.id);
-      } else if (sel.type === 'bag') {
-        const b = allBags.find((x) => x.id === sel.id);
-        if (b) r.orders.add(b.order_id);
-        r.bags.add(sel.id);
       } else if (sel.type === 'box') {
         const b = (d.boxes || []).find((x) => x.unit_id === sel.id);
         if (b) boxOrders(b).forEach((id) => r.orders.add(id));
@@ -567,7 +534,7 @@
       block.appendChild(title);
       section.items.forEach((it) => {
         const [type, id] = [it.key.slice(0, it.key.indexOf(':')), it.key.slice(it.key.indexOf(':') + 1)];
-        const hit = (type === 'order' && rel.orders.has(id) && sel && sel.type !== 'order') || (type === 'bag' && rel.bags.has(id)) || (type === 'box' && rel.boxes.has(id));
+        const hit = (type === 'order' && rel.orders.has(id) && sel && sel.type !== 'order') || (type === 'box' && rel.boxes.has(id));
         const c = card('hlc-phys-card', { 'data-hlc-phys-item': it.key }, selKey === it.key, hit, () => select(type, id));
         const r = el(doc, 'div', 'hlc-row');
         r.appendChild(el(doc, 'span', 'hlc-ref', it.ref));
@@ -585,8 +552,7 @@
     shortcuts.setAttribute('aria-label', 'Accès direct aux ateliers physiques');
     for (const [key, label] of [
       ['reception', 'Réception fournisseur'],
-      ['bags', 'Préparer les sacs'],
-      ['boxes', 'KOM-BOX'],
+      ['boxes', 'Préparer les COMBOX'],
       ['shipments', 'Expéditions'],
     ]) {
       const shortcut = button(doc, label, 'physical-' + key, 'is-link');
@@ -818,10 +784,9 @@
     // ── Panneau bas : fil de l'objet sélectionné + actions autorisées ──
     const node = (kind, ref, st, tone, title) => ({ kind, ref, state: st, tone: tone || '', title: title || '' });
     const TONE_NODE = { bad: 'bad', warn: 'warn', ok: 'ok', done: 'ok', act: 'on', amber: 'warn', wait: '' };
-    function bagBoxNodes(orderIds) {
+    function boxNodes(orderIds) {
       const out = [];
-      allBags.filter((b) => orderIds.includes(b.order_id)).forEach((b) => out.push(node('Sac', b.ref, b.state, 'ok')));
-      (d.boxes || []).filter((b) => boxOrders(b).some((id) => orderIds.includes(id))).forEach((b) => out.push(node('KOM-BOX', b.reference, b.shipment_ref ? `expédition ${b.shipment_ref}` : 'à rattacher', 'ok')));
+      (d.boxes || []).filter((b) => boxOrders(b).some((id) => orderIds.includes(id))).forEach((b) => out.push(node('COMBOX', b.reference, b.shipment_ref ? `expédition ${b.shipment_ref}` : 'à rattacher', 'ok')));
       return out;
     }
     function lineageFor() {
@@ -835,7 +800,7 @@
           o.items.forEach((i) => nodes.push(node('Ligne', `${i.product} ×${num(i.requested)}`, i.where, i.uncovered > 0 ? 'bad' : /reliquat/.test(i.where) ? 'warn' : i.complete ? 'ok' : '')));
           o.po_ids.forEach((id) => { const p = poById.get(id); if (p) nodes.push(node('PO', poRef(p), p.status_view.label, TONE_NODE[p.status_view.tone] || '')); });
           if (o.totals.received > 0) nodes.push(node('Réception', `${num(o.totals.received)}/${num(o.totals.requested)}`, cockpit.allocation_rule ? 'FIFO commande la plus ancienne' : '', o.totals.received >= o.totals.requested ? 'ok' : 'warn'));
-          nodes = nodes.concat(bagBoxNodes([o.id]));
+          nodes = nodes.concat(boxNodes([o.id]));
           nodes.push(node('Relais', o.relay_name || '—', 'à venir', '', o.relay_id ? `Relais · identifiant technique : ${o.relay_id}` : ''));
           blocker = (o.totals.uncovered > 0 ? 'Sourcing requis — aucun fournisseur admissible. ' : '') + (o.readiness.blockers || []).join(' · ');
         }
@@ -847,7 +812,7 @@
           nodes.push(node('PO', poRef(p), p.status_view.label, TONE_NODE[p.status_view.tone] || 'on'));
           const recvd = p.lines.filter((l) => l.received > 0);
           if (recvd.length) nodes.push(node('Réception', `${num(p.totals.received)}/${num(p.totals.effective)}`, `FIFO → ${recvd.map((l) => `${l.order_ref} ×${num(l.received)}`).join(', ')}`, p.totals.missing > 0 ? 'warn' : 'ok'));
-          nodes = nodes.concat(bagBoxNodes(p.order_ids));
+          nodes = nodes.concat(boxNodes(p.order_ids));
           const waiting = p.lines.filter((l) => l.missing > 0 && p.status !== 'draft');
           if (p.status === 'draft' && !p.authorizations.commitment) blocker = 'l’engagement d’achat doit être validé par la responsable Hub avant soumission.';
           else if (p.status === 'draft') blocker = 'engagement validé : la PO doit encore être soumise puis son envoi réel enregistré.';
@@ -866,17 +831,11 @@
           nodes = [node('Commande', s.order.reference, s.order.status.label, 'on'), node('Besoin', `${s.item.product} ×${num(s.item.uncovered)}`, 'sans ligne d’achat', 'warn'), node('Fournisseur', '—', 'aucun admissible', 'warn'), node('PO', '—', 'impossible', '')];
           blocker = 'Sourcing requis — aucun fournisseur admissible : aucune PO possible.';
         }
-      } else if (sel.type === 'bag') {
-        const b = allBags.find((x) => x.id === sel.id);
-        if (b) {
-          title = b.ref; sub = `sac client ${b.state} · ${b.order_ref}`;
-          nodes = [node('Commande', b.order_ref, '', 'on'), node('Sac', b.ref, b.state, 'ok'), node('KOM-BOX', '—', 'à rattacher', ''), node('Expédition', '—', 'à rattacher', '')];
-        }
       } else if (sel.type === 'box') {
         const b = (d.boxes || []).find((x) => x.unit_id === sel.id);
         if (b) {
-          title = b.reference; sub = `KOM-BOX · ${b.state}`;
-          nodes = [node('Sac', [...new Set((b.contents || []).map((c) => c.order_ref))].join(', ') || '—', 'dans la KOM-BOX', 'ok'), node('KOM-BOX', b.reference, humanPhysicalState(b.state), 'on'), node('Expédition', b.shipment_ref || '—', b.shipment_ref ? (b.shipment_stage || 'ouverte') : 'à rattacher', b.shipment_ref ? 'ok' : ''), node('Relais', '—', 'attestation à la réception', '')];
+          title = b.reference; sub = `COMBOX · ${b.state}`;
+          nodes = [node('Commandes', [...new Set((b.contents || []).map((c) => c.order_ref))].join(', ') || '—', 'articles tracés dans la COMBOX', 'ok'), node('COMBOX', b.reference, humanPhysicalState(b.state), 'on'), node('Expédition', b.shipment_ref || '—', b.shipment_ref ? (b.shipment_stage || 'ouverte') : 'à rattacher', b.shipment_ref ? 'ok' : ''), node('Relais', '—', 'attestation à la réception', '')];
         }
       }
       return { title: title || selKey, sub, nodes, blocker };
@@ -957,17 +916,10 @@
         if (o) {
           if (o.totals.uncovered > 0) A('resolve-sourcing', 'Résoudre le sourcing / créer un achat manuel', { primary: true, why: 'choisir fournisseur et ligne d’achat', disabled: lock, run: () => ctx.openSourcing(o.id) });
           const r = o.readiness;
-          if (r.ready_to_pack) A('create-bag', `Préparer le sac ${o.reference}`, { primary: true, why: 'commande complète, prête à ensacher', disabled: lock, run: (b) => createBag(b, o, false) });
-          else if (r.bag_open) A('create-bag', `Préparer le sac ${o.reference}`, { disabled: 'un sac est déjà ouvert' });
-          else if (r.partial && r.unbagged_received > 0) A('create-partial-bag', 'Préparer un sac partiel', { primary: !o.totals.uncovered, why: 'explicite : le reliquat reste suivi', disabled: lock, run: (b) => createBag(b, o, true) });
-          else A('create-bag', `Préparer le sac ${o.reference}`, { disabled: r.partial ? 'aucune unité reçue à ensacher' : 'rien reçu pour l’instant' });
+          if (r.unboxed_received > 0) A('prepare-combox', 'Répartir les articles en COMBOX', { primary: true, why: 'choisir une COMBOX et scanner chaque article reçu', disabled: lock, run: () => ctx.openPhysical('boxes') });
+          else A('prepare-combox', 'Répartir les articles en COMBOX', { disabled: 'aucune quantité disponible à placer' });
           if (o.po_ids.length) A('goto-po', 'Suivre dans ses PO', { why: 'voir les PO de la commande', run: () => select('po', o.po_ids[0]) });
         }
-      } else if (sel.type === 'bag') {
-        const b = physical.flatMap((s2) => s2.items).find((it) => it.key === selKey);
-        if (b && b.closable) A('close-bag', 'Fermer le sac', { primary: true, why: 'contenu scanné = contenu prévu', disabled: lock, run: (btn) => closeBag(btn, b.bag_unit_id) });
-        else if (b && b.bag_unit_id && /ouvert/.test(b.meta)) A('open-physical', 'Déposer (scan)', { primary: true, why: 'scan des articles dans le sac', disabled: lock, run: () => ctx.openPhysical() });
-        else A('close-bag', 'Fermer le sac', { disabled: 'sac déjà fermé' });
       } else if (sel.type === 'box') {
         const b = (d.boxes || []).find((x) => x.unit_id === sel.id);
         if (b && !b.shipment_ref) A('attach-box', 'Rattacher à une expédition', { primary: true, why: 'expéditions ouvertes du marché', disabled: lock || ((d.open_shipments || []).length ? null : 'aucune expédition ouverte'), run: () => { state.form = { kind: 'box', box: b.unit_id }; paint(); } });
@@ -980,7 +932,7 @@
       form.setAttribute('data-hlc-form', 'box');
       const selShip = doc.createElement('select');
       selShip.setAttribute('aria-label', 'Expédition ouverte');
-      (d.open_shipments || []).forEach((s2) => selShip.appendChild(Object.assign(doc.createElement('option'), { value: s2.reference, textContent: `${s2.reference} · ${s2.forwarder_name || 'transitaire'} · ${s2.box_count} carton(s)` })));
+      (d.open_shipments || []).forEach((s2) => selShip.appendChild(Object.assign(doc.createElement('option'), { value: s2.reference, textContent: `${s2.reference} · ${s2.forwarder_name || 'transitaire'} · ${s2.box_count} COMBOX` })));
       form.appendChild(selShip);
       const go = button(doc, 'Rattacher', 'submit-box', 'is-primary');
       go.type = 'submit';
@@ -988,7 +940,7 @@
       form.addEventListener('submit', (event) => {
         event.preventDefault();
         execute(go, { url: ctx.endpoint(`boxes/${encodeURIComponent(box.unit_id)}/shipment`), body: { shipment_reference: selShip.value },
-          runningMessage: 'Rattachement à l’expédition…', successMessage: `KOM-BOX ${box.reference} rattachée à ${selShip.value}.`, onSuccess: () => { state.form = null; } });
+          runningMessage: 'Rattachement à l’expédition…', successMessage: `COMBOX ${box.reference} rattachée à ${selShip.value}.`, onSuccess: () => { state.form = null; } });
       });
       return form;
     }

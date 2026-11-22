@@ -72,11 +72,17 @@ describe('admin operations workspace cash HTTP contract', () => {
   });
 });
 
-describe('admin-operations-workspace — dépôt en sac MANUAL accepté (#3900)', () => {
+describe('admin-operations-workspace — placement direct en COMBOX (#3900)', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '../../routes/admin-operations-workspace.js'), 'utf8');
-  test('la route transmet la provenance réelle et ne refuse plus MANUAL', () => {
-    expect(src).not.toContain('HUB_BAG_MANUAL_APPROVAL_REQUIRED');
-    expect(src).toContain("body.evidence_method !== 'SCAN' && body.evidence_method !== 'MANUAL'");
-    expect(src).toContain('evidence_ref:body.evidence_ref');
+  test('le placement transmet la preuve et exige le scan de la COMBOX cible', () => {
+    expect(src).toContain("'/market/:marketCode/boxes/:unitId/fill'");
+    expect(src).toContain('body.box_reference_scan');
+    expect(src).toContain('evidence_method: body.evidence_method, evidence_code: body.evidence_code, evidence_ref: body.evidence_ref');
+  });
+
+  test('la fermeture verrouille la COMBOX et refuse une boîte vide', () => {
+    expect(src).toContain("'/market/:marketCode/boxes/:unitId/close'");
+    expect(src).toContain("unit_type='MARKET_PARCEL' FOR UPDATE");
+    expect(src).toContain('if (Number(contents.count) < 1)');
   });
 });

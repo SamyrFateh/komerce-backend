@@ -75,6 +75,32 @@ Les paramètres de calibration sont gouvernés. Une valeur calculée sur un éch
 
 `objectif_commandes_mois`, volumes cibles et ratios futurs servent uniquement aux **scénarios prospectifs**. Tout fallback ou ratio non calibré dégrade explicitement la confiance et ne peut pas servir silencieusement à autoriser une stratégie agressive.
 
+### 4.1 Le coût unitaire évolue avec le volume et le temps
+
+Le coût complet et son plancher ne sont pas des constantes connues une fois pour toutes. Le volume est une donnée temporelle et il n'existe pas un compteur de volume unique : les quantités commandées, achetées, reçues, regroupées dans des COMBOX, expédiées et facturées évoluent à des moments différents. Plusieurs commandes peuvent voyager ensemble et une commande peut être répartie entre plusieurs COMBOX ; le nombre de commandes client ne peut donc pas servir de dénominateur universel pour le coût d'une expédition. La part par article dépend des volumes effectivement regroupés à chaque niveau. Il n'existe pas de plancher exact universel avant que les opérations concernées aient fourni leurs dénominateurs réels. Un calcul sans ces faits reste une projection explicitement provisoire, jamais un coût réel déguisé.
+
+Chaque composante conserve sa source, sa devise, sa période de validité, son état de preuve et son unité d'engagement/allocation. Le calcul utilise le dénominateur causal disponible : article, commande client, commande fournisseur, unité physique, colis/COMBOX, lot ou expédition, poids taxable, volume, valeur déclarée, usage ou période. Il n'applique pas un volume moyen implicite pour rendre artificiellement précis un coût encore inconnu.
+
+Au fil de l'activité, le système distingue et actualise au moins :
+
+- le prix de vente décidé pour le marché et sa version ;
+- le coût variable unitaire estimé selon les données et les regroupements connus à cet instant ;
+- le coût réel engagé puis alloué à mesure que les réceptions, COMBOX, expéditions, factures et remises sont réconciliées ;
+- la contribution de chaque vente, avec son niveau de preuve ;
+- la contribution cumulée réconciliée de la période et les charges de structure de cette même période restant à couvrir.
+
+Quand un lot se remplit, le prévisionnel de ses coûts mutualisés est recalculé avec le volume connu du lot. À la clôture, la facture et les mesures réelles remplacent la prévision dans la piste du réalisé, avec rapprochement prévu/réel selon la même clé causale. Le coût unitaire moyen d'un lot peut baisser lorsque son dénominateur augmente ; un coût fixe de période ne baisse pas pour cette seule raison. Une contribution positive supplémentaire réduit le reste de charges de structure à couvrir ; une contribution nulle ou négative ne le réduit pas.
+
+Ces recalculs actualisent les vues économiques concernées et laissent visibles l'instant de calcul, le périmètre, la source, le dénominateur et l'écart prévu/réel. Une nouvelle donnée ne réécrit pas les snapshots déjà attachés à une commande ou à un prix décidé : elle crée une nouvelle observation/version et actualise les projections courantes.
+
+### 4.2 Le prix est une décision marché ; le plancher est un repère économique
+
+La fixation initiale du prix n'attend pas qu'un historique de volumes existe. Le responsable autorisé choisit un prix pour le marché à partir des comparables locaux, de l'offre, du coût d'achat et de scénarios de coûts explicitement qualifiés. Le système présente l'incertitude et la contribution attendue ; il ne prétend pas connaître un coût variable complet qui dépend encore de futurs regroupements ou factures.
+
+Le plancher variable reste un repère nécessaire pour mesurer le risque de destruction de valeur, mais sa précision dépend des faits disponibles. Il peut être `PROVISOIRE` ou `NON_DECISIONNEL` avant rapprochement suffisant. Les règles de prix sous coût variable et leurs exceptions gouvernées restent applicables : cette incertitude ne transforme pas une vente destructrice en vente saine et ne fournit pas une autorisation implicite.
+
+Le prix commercial décidé ne change jamais automatiquement lorsque le volume, un coût ou une prévision évolue. Le système recalcule les indicateurs, explique l'écart et laisse une nouvelle décision explicite au responsable habilité.
+
 ---
 
 ## 5. Maturité, watermark et dispositions gouvernées
@@ -300,12 +326,12 @@ Les données d'assiette doivent provenir de sources opérationnelles indépendan
 
 | Repère | Nature | Autorité |
 |---|---|---|
-| **Prix plancher variable** | mécanique, dur | moteur économique |
+| **Prix plancher variable** | repère économique calculé au vu des faits disponibles ; exactitude et statut de preuve visibles | moteur économique |
 | **Prix de couverture complète** | référence économique / comptable | moteur économique |
 | **Prix marché observé / corridor** | réalité externe / terrain | données comparables vérifiées |
 | **Prix décidé** | arbitrage commercial assumé | humain autorisé, sous gates |
 
-`recommended_price` reste transitoirement une référence mécanique de couverture complète pour compatibilité. Il n'est pas automatiquement le prix commercial à appliquer.
+`recommended_price` reste transitoirement une référence mécanique de couverture complète pour compatibilité. Il n'est pas automatiquement le prix commercial à appliquer. Au démarrage, un prix peut être décidé à partir des preuves marché et d'une projection de coûts clairement qualifiée ; le système expose alors que le plancher n'est pas encore stabilisé par les volumes et frais réellement observés.
 
 Un vrai prix de test marché peut se situer entre le plancher variable et le CDR complet **uniquement si le gate de couverture du marché l'autorise** et si contribution, écart au CDR, motif, durée et budget éventuel sont tracés.
 
@@ -403,26 +429,25 @@ Aucun changement de classification ne peut améliorer silencieusement un ratio d
 
 ---
 
-## 16. Chaîne de vérité avant refonte du prix
+## 16. Cycle de vérité économique et de décision du prix
 
-La séquence canonique est :
+Le travail ne suit pas une séquence où un plancher exact serait connu avant toute décision de prix. C'est un cycle :
 
 ```text
-mesurer le réel
-→ réconcilier estimé vs réel
-→ établir la maturité / disposition gouvernée
-→ recalibrer les ratios
-→ attribuer la charge économique de structure
-→ calculer la couverture par marché et groupe
-→ observer le marché
-→ décider le prix
+avant les premières ventes : observer le marché + coût d'achat + scénarios explicitement qualifiés
+→ décision humaine du prix local, versionnée et auditée
+→ activité réelle : commandes, achats, réceptions, regroupements, expéditions, factures
+→ actualiser les dénominateurs et les allocations prévisionnelles selon les volumes observés
+→ réconcilier chaque coût prévu avec le coût engagé/réel selon la même clé causale
+→ mettre à jour contribution, maturité, charge de période et reste à couvrir
+→ éclairer une nouvelle décision humaine de prix, sans repricing automatique
 ```
 
 Deux pistes restent distinctes :
 
 ```text
-Piste A : estimé N1 + N2 vs réel N1 + N2
-Piste B : Σ contributions réconciliées vs charge économique de période
+Piste A : coût variable estimé courant vs coût variable réellement engagé/alloué
+Piste B : Σ contributions réconciliées dans la période vs charge économique réelle de cette période
 ```
 
 N3 n'est jamais réconcilié en fabriquant un « N3 réel par article ».

@@ -54,7 +54,7 @@ test('M06 has a fully specified staging-only fixture plan but remains unroutable
  expect(m.binding_status).toBe('NOT_BOUND');
  expect(m.fixture_plan).toMatchObject({
   status:'PREPARED_BLOCKED',provenance:'SIMULATED / STAGING ONLY',market:'KM',
-  product:{fixture_ref:'G6-M06-KM',source_kind:'central_hub_manual',supplier_system_key:'central_hub',physical_stock:0,sellable_status:'ON_ORDER'},
+  product:{fixture_ref:'G6-M06-KM',product_ref:'KPR-000255',source_kind:'central_hub_manual',supplier_system_key:'central_hub',physical_stock:0,sellable_status:'ON_ORDER'},
   buyer_order:{quantity:3,payment_method:'cash_relais',payment_simulated_only:true,procure_on_order:true},
   commitment:{amount:30,currency:'EUR',indicative_budget_is_not_confirmed_cost:true},
   manual_purchase_capture:{seller_identity_source:'actual_seller_entered_by_operator',confirmed_price_source:'price_confirmed_at_purchase',proof_required:true,synthetic_seller_or_price_values:false,allocation_must_cover_order_quantity:true},
