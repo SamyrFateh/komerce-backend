@@ -34,6 +34,17 @@ describe('dossier Hub - portee de simulation et ordre FIFO des lignes de PO', ()
     const { queries } = await dossierFor([]);
     expect(queries.some(s => /ORDER BY po\.created_at DESC, po\.id, o\.created_at, pl\.id/.test(s))).toBe(true);
   });
+  it('PO manuelle confirmée : devise réelle visible sans remplacer la devise devis figée', async () => {
+    const row = { ...poRow(1, 'KM03', 'G6-BUYER', '2026-11-22'),
+      status: 'confirmed', supplier_unit_price: null, supplier_currency: null,
+      confirmed_unit_price: '10.0000', confirmed_currency: 'EUR' };
+    const { d, queries } = await dossierFor([row]);
+    expect(queries.some(sql => sql.includes('pl.confirmed_unit_price, pl.confirmed_currency'))).toBe(true);
+    expect(d.purchase_orders[0].lines[0]).toMatchObject({
+      unit_price: null, currency: null, confirmed_unit_price: 10, confirmed_currency: 'EUR',
+    });
+  });
+
   it('PO simulee seulement si toutes les lignes sont G6-BUYER', async () => {
     const all = await dossierFor([poRow(1, 'KA', 'G6-BUYER', '2026-11-01'), poRow(2, 'KB', 'G6-BUYER', '2026-11-02')]);
     expect(all.d.purchase_orders[0].simulation_reference).toBe(id(50));
