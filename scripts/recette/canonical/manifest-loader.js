@@ -41,6 +41,22 @@ function assertManifestCoverage(ids=fs.readdirSync(DIR).filter(x=>x.endsWith('.j
 }
 function requireExecutableManifest(id,{market,cohort}={}){
  const manifest=loadManifest(id),config=manifest.configuration;
+ // N34 is a buyer-less SECURITY invariant, shared by markets KM/CM/CG.
+ // A fabricated basket, cash payment or fictional vendor would be a false proof.
+ // Its owner-only dedicated Chromium/PG runner is routed by N34 stages, not M01.
+ if(id==='N34'){
+  const expected=['N34_CENTRAL_IMMUTABILITY','N34_EXPLICIT_SOURCE'];
+  const valid=manifest.binding_status==='READY_FOR_REVIEW'&&!manifest.historical_proof&&
+   typeof market==='string'&&manifest.market_options.includes(market)&&
+   typeof cohort==='string'&&manifest.cohort_options.includes(cohort)&&
+   config.market===null&&config.cohort===null&&
+   config.basket.source===null&&config.basket.lines.length===0&&
+   config.payment.method===null&&config.payment.simulated_only===true&&
+   JSON.stringify(config.steps)===JSON.stringify(expected)&&
+   JSON.stringify(config.branches)===JSON.stringify(['N34A','N34B']);
+  if(!valid)throw Error('G6_MANIFEST_NOT_BOUND_N34');
+  return manifest;
+ }
  if(manifest.binding_status!=='READY_FOR_REVIEW'||manifest.historical_proof||
   !market||!cohort||config.market!==market||config.cohort!==cohort||
   !manifest.market_options.includes(market)||!manifest.cohort_options.includes(cohort)||
