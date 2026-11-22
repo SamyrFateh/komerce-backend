@@ -25,7 +25,7 @@ describe('N34b supplier provenance — real Chromium + independent PG, never bla
  });
  test('Node fetch uses boolean Response.ok property, never callable .ok()',()=>{
   expect(runner).toContain("check(v.ok===true,'HEALTH_FAILED')");
-  expect(runner).not.toMatch(/\\bv\\.ok\\s*\\(/);
+  expect(runner).not.toMatch(/\bv\.ok\s*\(/);
   expect(runner).toContain("version.commit===env.E2E_EXPECTED_DEPLOY_SHA");
  });
  test('fail-closed owner staging workflow, canonical lock, SHA, no direct business SQL write',()=>{
