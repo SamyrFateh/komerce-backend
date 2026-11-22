@@ -112,11 +112,16 @@ async function economicCategory(actor,existing){
 }
 async function boutiqueCategory(actor){
  const panel=await inspect(actor);
- const open=panel.locator('[data-workspace-action="candidate-boutique-review"]');
- if(!await visible(open,5000))return false;
- await humanClick(null,open);
+ // Catalogue calls loadBoutiqueProposal() automatically when the inspector opens.
+ // The refresh button is then HIDDEN on success: never click a disappearing button.
  const select=panel.locator('[data-catalog-candidate-category-choice]');
- check(await visible(select,12000),'BOUTIQUE_CATEGORY_CHOICES_MISSING');
+ if(!await visible(select,12000)){
+  // Only if autoload did not create the form, one GET-only retry is permitted.
+  const refresh=panel.locator('[data-workspace-action="candidate-boutique-review"]');
+  if(!await visible(refresh,3000))return false;
+  await humanClick(null,refresh);
+  check(await visible(select,12000),'BOUTIQUE_CATEGORY_CHOICES_MISSING');
+ }
  const options=await select.locator('option').evaluateAll(xs=>xs.map(x=>({value:x.value,label:x.textContent.trim()})));
  const applicable=options.filter(x=>/^(?:Proposé · )?Bricolage\s*›\s*Outillage$/i.test(x.label));
  check(applicable.length===1,'BOUTIQUE_OUTILLAGE_NOT_OFFERED');
