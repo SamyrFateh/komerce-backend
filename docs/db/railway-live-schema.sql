@@ -3722,6 +3722,50 @@ END $$;
 
 
 --
+-- Name: purchase_lines_guard_confirmed_currency(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.purchase_lines_guard_confirmed_currency() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $_$
+DECLARE
+  v_po_status text;
+  v_trigger_mode text;
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.confirmed_currency IS NOT NULL THEN
+      RAISE EXCEPTION 'confirmed_currency must be created at manual confirmation'
+        USING ERRCODE = '23514';
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  IF NEW.confirmed_currency IS DISTINCT FROM OLD.confirmed_currency THEN
+    SELECT po.status::text, po.trigger_mode INTO v_po_status, v_trigger_mode
+      FROM public.purchase_orders po WHERE po.id = OLD.purchase_order_id;
+
+    IF OLD.confirmed_currency IS NOT NULL
+       OR OLD.confirmed_at IS NOT NULL
+       OR OLD.confirmed_quantity IS NOT NULL
+       OR OLD.supplier_currency IS NOT NULL
+       OR OLD.supplier_unit_price IS NOT NULL
+       OR v_po_status IS DISTINCT FROM 'notified'
+       OR v_trigger_mode NOT IN ('manual', 'whatsapp')
+       OR NEW.confirmed_currency IS NULL
+       OR NEW.confirmed_currency !~ '^[A-Z]{3}$'
+       OR NEW.confirmed_at IS NULL
+       OR COALESCE(NEW.confirmed_quantity, 0) <= 0
+       OR NEW.confirmed_unit_price IS NULL THEN
+      RAISE EXCEPTION 'confirmed_currency frozen: only first unpriced manual PO confirmation may create it'
+        USING ERRCODE = '23514';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END $_$;
+
+
+--
 -- Name: purchase_lines_guard_delete(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -11351,8 +11395,10 @@ CREATE TABLE public.purchase_lines (
     created_by uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    confirmed_currency text,
     CONSTRAINT chk_purchase_lines_cancel_pair CHECK (((cancelled_at IS NULL) = (cancel_reason IS NULL))),
     CONSTRAINT chk_purchase_lines_confirmed_bound CHECK (((confirmed_quantity IS NULL) OR ((confirmed_quantity >= 0) AND (confirmed_quantity <= quantity)))),
+    CONSTRAINT chk_purchase_lines_confirmed_currency CHECK (((confirmed_currency IS NULL) OR ((confirmed_currency ~ '^[A-Z]{3}$'::text) AND (confirmed_at IS NOT NULL) AND (confirmed_quantity > 0) AND (confirmed_unit_price IS NOT NULL)))),
     CONSTRAINT chk_purchase_lines_confirmed_price CHECK (((confirmed_unit_price IS NULL) OR (confirmed_unit_price > (0)::numeric))),
     CONSTRAINT chk_purchase_lines_hub_ref CHECK ((btrim(procurement_hub_ref) <> ''::text)),
     CONSTRAINT chk_purchase_lines_quantity CHECK ((quantity > 0)),
@@ -11363,6 +11409,13 @@ CREATE TABLE public.purchase_lines (
     CONSTRAINT chk_purchase_lines_supplier_order_identity_shape CHECK (((supplier_order_identity IS NULL) OR ((product_sku_id IS NOT NULL) AND (supplier_unit_ref IS NOT NULL) AND (jsonb_typeof(supplier_order_identity) = 'object'::text) AND (jsonb_typeof((supplier_order_identity -> 'provider'::text)) = 'string'::text) AND (btrim((supplier_order_identity ->> 'provider'::text)) <> ''::text) AND (jsonb_typeof((supplier_order_identity -> 'version'::text)) = 'number'::text) AND ((supplier_order_identity ->> 'version'::text) ~ '^[0-9]+$'::text) AND (((supplier_order_identity ->> 'version'::text))::integer >= 1) AND (jsonb_typeof((supplier_order_identity -> 'payload'::text)) = 'object'::text) AND ((supplier_order_identity -> 'payload'::text) <> '{}'::jsonb)))),
     CONSTRAINT chk_purchase_lines_supplier_unit_ref_nonempty CHECK (((supplier_unit_ref IS NULL) OR (btrim(supplier_unit_ref) <> ''::text)))
 );
+
+
+--
+-- Name: COLUMN purchase_lines.confirmed_currency; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.purchase_lines.confirmed_currency IS 'Currency established when confirming an originally unpriced manual purchase. Append-only, never backfilled from indicative sourcing cost; quoted supplier_currency stays immutable.';
 
 
 --
@@ -22177,6 +22230,13 @@ CREATE TRIGGER trg_purchase_lines_guard_attachment BEFORE INSERT OR UPDATE ON pu
 --
 
 CREATE TRIGGER trg_purchase_lines_guard_commitment BEFORE INSERT OR UPDATE ON public.purchase_lines FOR EACH ROW EXECUTE FUNCTION public.purchase_lines_guard_commitment();
+
+
+--
+-- Name: purchase_lines trg_purchase_lines_guard_confirmed_currency; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_purchase_lines_guard_confirmed_currency BEFORE INSERT OR UPDATE OF confirmed_currency ON public.purchase_lines FOR EACH ROW EXECUTE FUNCTION public.purchase_lines_guard_confirmed_currency();
 
 
 --
