@@ -457,7 +457,7 @@ describe('G6-G5C N28 (échec réseau puis réessai) et N32 (marché et rôles cr
   expect(src).toContain("G6_N32_PREREQ_MISSING_FOREIGN_MARKET_ORDER_WITH_PO");
   expect(src).toContain("purchase_order_id:f.po_id,product_sku_id:f.sku_id");
   expect(src).toContain("expected_error_code:'HUB_PHYSICAL_MARKET_SCOPE_MISMATCH'");
-  expect(src).toContain("hubProbe.http===403");
+  expect(src).toContain("w?.status()===403");
   expect(src).toContain("WRONG_AUTHORITY_REASON_");
   expect(src).toContain("WRONG_REFUSAL_HTTP_");
   expect(src).toContain("report.snapshot={before,after,unchanged:");
