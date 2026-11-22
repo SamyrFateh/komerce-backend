@@ -463,17 +463,21 @@ async function browserCheckout({buyer,phone,code}){
     JOIN markets m ON m.id=r.market_id AND m.code=$2
     WHERE r.id=$1 AND r.is_active=TRUE`,[targetRelay,MARKET]);
    check(targets.length===1,'G6_N22_PREREQ_MISSING_ACTIVE_TARGET_RELAY');
-   const expectedName=String(targets[0].name||'').trim();
+   const expectedName=String(targets[0].name||'').trim()
+    .replace(/\s+\d{10,}(?:-[a-z0-9-]+)?$/i,'').trim();
    check(!!expectedName,'G6_N22_PREREQ_MISSING_TARGET_RELAY_NAME');
    await humanClick(null,page.locator('#ck-relais-summary'));
    const picker=page.locator('.ck-relais-overlay.is-open');
    await picker.waitFor({state:'visible',timeout:10000});
    // Le frontend sélectionne un relais par île. Seules ses options réellement
    // proposées sont cliquables : aucun DOM injection / choix de relais caché.
-   const islands=await picker.locator('button[data-ile]').all();
+   // Le picker reconstruit ses boutons à chaque changement d'île :
+   // mémoriser seulement les clés, pas les ElementHandles devenus détachés.
+   const islands=await picker.locator('button[data-ile]').evaluateAll(nodes=>
+    nodes.map(node=>node.getAttribute('data-ile')).filter(Boolean));
    let found=(await picker.locator('.ck-relais-auto-name').innerText().catch(()=>'')).trim()===expectedName;
-   for(let i=0;i<islands.length&&!found;i++){
-    const ile=await islands[i].getAttribute('data-ile');
+   for(const ile of islands){
+    if(found)break;
     await humanClick(null,picker.locator('button[data-ile]').filter({hasText:ile}).first());
     found=(await picker.locator('.ck-relais-auto-name').innerText().catch(()=>'')).trim()===expectedName;
    }
