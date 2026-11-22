@@ -166,6 +166,12 @@ describe('G6-G4B N21 (agent d\'un autre relais) et N22 (relais A/B)',()=>{
    expect(cross).toContain('G6_N22_SCREEN_MISSING_BIDIRECTIONAL_COUNTER');
    expect(cross).toContain('G6_N22_PRODUCT_GAP_OWNER_A_CANNOT_READ');
    expect(cross).toContain('G6_N22_PRODUCT_GAP_OWNER_B_CANNOT_READ');
+   expect(cross).toContain("const {markE2eTestAccount,ensureRelayAgentMembership}");
+   expect(cross).toContain("agentId=await provisionRelayB()");
+   expect(cross).toContain("report.control.agent_id!==agentId");
+   expect(cross).toContain("G6_N22_RELAY_B_");
+   expect(cross).toContain("G6_N22_PRODUCT_GAP_SAME_AGENT_A_B");
+   expect(cross).toContain("via:'NETWORK_UI'");
    expect(cross).toContain('N22_REVERSE_WRITE_ACCEPTED');
    expect(cross).toContain('N22_REVERSE_READ_NOT_404_');
    expect(cross).toContain('N22_FORWARD_READ_NOT_404_');
