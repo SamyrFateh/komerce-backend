@@ -53,13 +53,15 @@ async function runtime(){
 async function resolveCurrentSaleableProduct(){
  // Une ligne par produit du panier ; M01/M02 n'en ont qu'une (requête et contrôles inchangés).
  for(const [i,line] of LINES.entries()){
-  const lineRef=line.product_ref,linePrice=PARAMS.basket||PARAMS.variants?line.price:EXPECTED_PRICE;
-  const local=PARAMS.basket?line.fulfillment==='LOCAL_STOCK':!!PARAMS.fulfillment;
+  const lineRef=line.product_ref,linePrice=PARAMS.basket||PARAMS.variants||PARAMS.centralHubManual
+    ?line.price:EXPECTED_PRICE;
+  const local=PARAMS.basket?line.fulfillment==='LOCAL_STOCK':PARAMS.fulfillment==='LOCAL_STOCK';
   // M03 only: a central Hub manual-on-demand SKU has no external seller SKU and
   // starts at stock=0. That is not evidence of fictitious supplier stock.
   // Preserve M01/M02 and external import stock guards, and independently
   // verify the Hub procurement ownership in PostgreSQL before Chromium.
-  const centralHubManual=Boolean(PARAMS.basket && line.source_key==='central_hub' && !local);
+  const centralHubManual=Boolean((PARAMS.centralHubManual || PARAMS.basket) &&
+    line.source_key==='central_hub' && !local);
   const importSkuGate=local?'':centralHubManual
     ? `AND (sku.stock>0 OR (sku.source='MANUAL' AND sku.supplier_order_identity IS NULL
       AND EXISTS (SELECT 1 FROM suppliers h WHERE h.id=p.procurement_supplier_id
@@ -81,13 +83,16 @@ async function resolveCurrentSaleableProduct(){
    // M01 = parcours import : un stock local exposé du même produit détournerait la commande du Hub.
    const {rows:ls}=await db.query(`SELECT 1 FROM local_stock ls JOIN markets m ON m.id=ls.market_id AND m.code=$2
      WHERE ls.product_id=$1 AND ls.commercial_exposure='ENABLED'`,[rows[0].id,MARKET]);
-   check(ls.length===0,PARAMS.basket?'G6_M03_IMPORT_PRODUCT_SERVED_FROM_LOCAL_STOCK':'G6_M01_PRODUCT_SERVED_FROM_LOCAL_STOCK');
+   check(ls.length===0,PARAMS.basket?'G6_M03_IMPORT_PRODUCT_SERVED_FROM_LOCAL_STOCK':
+    PARAMS.centralHubManual?'G6_M06_PRODUCT_SERVED_FROM_LOCAL_STOCK':'G6_M01_PRODUCT_SERVED_FROM_LOCAL_STOCK');
   }
   line.id=rows[0].id;
   if(i===0){PRODUCT=rows[0].id;report.product_id=PRODUCT}
  }
  if(PARAMS.basket)report.basket=LINES.map(l=>({product_ref:l.product_ref,price:l.price,fulfillment:l.fulfillment,source_key:l.source_key||null}));
- record('CURRENT_SALEABLE_PRODUCT',{market:MARKET,ref:REF,price_market_minor:EXPECTED_PRICE,stocked:true,...(PARAMS.basket?{lines:LINES.length}:{})});
+ record('CURRENT_SALEABLE_PRODUCT',{market:MARKET,ref:REF,price_market_minor:EXPECTED_PRICE,
+  stocked:!PARAMS.centralHubManual,on_order:!!PARAMS.centralHubManual,
+  ...(PARAMS.basket?{lines:LINES.length}:{}),...(PARAMS.quantity?{quantity:PARAMS.quantity}:{})});
 }
 async function queryOrders(userId){
  const {rows}=await db.query(
@@ -174,7 +179,7 @@ async function addLineToCart(page,line,idx){
   if(axisCount===0){
     // A canonical manual Hub item genuinely has no variant axes.
     // Refuse every other missing matrix, including any unselected size/color.
-    check(Boolean(PARAMS.basket && line.source_key==='central_hub' &&
+    check(Boolean((PARAMS.centralHubManual || PARAMS.basket) && line.source_key==='central_hub' &&
       line.fulfillment==='IMPORT' && !line.variant_combo),
       'G6_VARIANT_AXES_NOT_RENDERED');
     check(actualProduct.inventory_model==='SKU'&&actualProduct.has_variants===false,
@@ -269,6 +274,16 @@ async function addLineToCart(page,line,idx){
   const before=Number(await page.locator('#k-modal-cart-badge').innerText().catch(()=>'0'))||0;
   await humanClick(null,add);
   await page.waitForFunction(n=>Number(document.querySelector('#k-modal-cart-badge')?.textContent||0)>n,before,{timeout:10000});
+  const quantity=Number(line.quantity||1);
+  for(let q=1;q<quantity;q++){
+   const prior=Number(await page.locator('#k-modal-cart-badge').innerText().catch(()=>'0'))||0;
+   const plus=page.locator('#k-qty-plus');
+   await plus.waitFor({state:'visible',timeout:5000});
+   check(await plus.isEnabled(),'G6_M06_BUYER_QUANTITY_STEPPER_DISABLED');
+   await humanClick(null,plus);
+   await page.waitForFunction(n=>Number(document.querySelector('#k-modal-cart-badge')?.textContent||0)>n,prior,{timeout:5000});
+  }
+  if(quantity>1)record('BUYER_QUANTITY_SELECTED'+sfx,{quantity,via:'Chromium quantity stepper'});
   await humanClick(null,page.locator('#k-modal-close'));
 }
 // N04 : quantité supérieure au stock local saisie dans le panier (vrais clics sur le stepper). Lecture seule en PG.
@@ -565,16 +580,29 @@ for(const ev of ['unhandledRejection','uncaughtException'])process.on(ev,e=>{rep
     o.market===MARKET&&Number(o.display_total_amount)===report.checkout_display_total&&
     o.display_currency===(MARKET==='KM'?'KMF':'XAF')&&Number(o.total_kmf)>0&&
     (MARKET!=='KM'||Number(o.total_kmf)===report.checkout_display_total)&&o.payment_mode==='cash_relais'&&
-    o.status==='pending'&&o.payment_status!=='paid'&&o.lines===LINES.length&&o.qty===LINES.length&&LINES.every(l=>o.products?.includes(l.product_ref)),
+    o.status==='pending'&&o.payment_status!=='paid'&&o.lines===LINES.length&&
+    o.qty===LINES.reduce((n,l)=>n+Number(l.quantity||1),0)&&LINES.every(l=>o.products?.includes(l.product_ref)),
     'G6_POSTGRES_CANONICAL_ORDER_MISMATCH');
  if(PARAMS.basket){
   const {rows:src}=await db.query('SELECT p.product_ref,i.fulfillment_source::text AS fulfillment_source FROM order_items i JOIN products p ON p.id=i.product_id WHERE i.order_id=$1',[o.id]);
   check(src.length===LINES.length&&LINES.every(l=>src.some(x=>x.product_ref===l.product_ref&&x.fulfillment_source===l.fulfillment)),'G6_M03_ORDER_NOT_MIXED_AS_EXPECTED');
   report.fulfillment_source='MIXED';
- }else if(PARAMS.fulfillment){
+ }else if(PARAMS.fulfillment==='LOCAL_STOCK'){
   const {rows:src}=await db.query('SELECT DISTINCT fulfillment_source FROM order_items WHERE order_id=$1',[o.id]);
   check(src.length===1&&src[0].fulfillment_source===PARAMS.fulfillment,'G6_M02_ORDER_NOT_LOCAL_STOCK');
   report.fulfillment_source=PARAMS.fulfillment;
+ }else if(PARAMS.centralHubManual){
+  const {rows:items}=await db.query(`SELECT i.id,i.quantity,i.sku_id,i.procure_on_order,
+      i.fulfillment_source::text AS fulfillment_source,p.product_ref
+    FROM order_items i JOIN products p ON p.id=i.product_id WHERE i.order_id=$1`,[o.id]);
+  check(items.length===1&&Number(items[0].quantity)===3&&items[0].procure_on_order===true&&
+    items[0].fulfillment_source==='IMPORT'&&items[0].product_ref===REF&&
+    await isCentralHubOnOrderSku(db,PRODUCT,items[0].sku_id),
+   'G6_M06_ORDER_NOT_CENTRAL_HUB_ON_ORDER');
+  const {rows:allocations}=await db.query('SELECT 1 FROM local_stock_allocations WHERE order_id=$1 LIMIT 1',[o.id]);
+  check(allocations.length===0,'G6_M06_ON_ORDER_CREATED_LOCAL_STOCK_ALLOCATION');
+  report.fulfillment_source='CENTRAL_HUB_ON_ORDER';
+  report.procure_on_order=true;
  }
   if(NEG==='N08'){
    // Les gestes N08 sont des sondes API : aucune commande de plus que celle de l'écran, sinon écart produit.
