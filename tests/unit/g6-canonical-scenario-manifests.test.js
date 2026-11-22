@@ -26,7 +26,7 @@ test('all scenario manifests match strict schema and cannot claim unwitnessed PA
    expect(m.configuration.steps).toEqual(['N34_CENTRAL_IMMUTABILITY','N34_EXPLICIT_SOURCE']);
    expect(m.configuration.branches).toEqual(['N34A','N34B']);
    for(const market of ['KM','CM','CG'])
-    expect(requireExecutableManifest('N34',{market,cohort:'GPT-G6'})).toBe(m);
+    expect(requireExecutableManifest('N34',{market,cohort:'GPT-G6'})).toEqual(m);
    expect(()=>requireExecutableManifest('N34',{market:'YT',cohort:'GPT-G6'}))
     .toThrow('G6_MANIFEST_NOT_BOUND_N34');
    expect(()=>requireExecutableManifest('N34',{market:'KM',cohort:'UNKNOWN'}))
