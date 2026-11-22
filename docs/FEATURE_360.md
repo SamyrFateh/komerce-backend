@@ -58,7 +58,85 @@ _Projection dÃ©terministe de lecture au-dessus de la chaÃ®ne Feature First O2-O7
 | platform | frontend-transversal | ğŸŸ¢ HEALTHY | ğŸŸ¢ HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
 | platform-ops | technical-transversal | ğŸŸ¢ HEALTHY | ğŸŸ¢ HEALTHY | fabrics, garment_models | auth, auth-identity, business-rules, catalog, documents, economic-engine, incident-management, infrastructure, logistics, orders, purchasing, wallet | auth-identity, auth-passkey, catalog, economic-engine, infrastructure, notifications, orders, payments, providers-services, recommendations, shared-cart, wallet | 0 |
 | providers-services | business-feature | ğŸŸ¢ HEALTHY | ğŸŸ¢ HEALTHY | inquiries, physical_offers, providers, services | auth, auth-identity, infrastructure, local-stock, market, platform-ops, recommendations | market-delegation, recommendations | 0 |
-| purchasing | business-feature | ğŸŸ¢ HEALTHY | ğŸŸ¢ HEALTHY | hub_authorization_grants, manual_purchase_executions, product_suppliers, purchase_lines, purchase_order_authorizations, purchase_orders, purchase_variance_decisions, supplier_execution_events, supplier_execution_fulfillments, supplier_execution_order_lines, supplier_execution_orders, supplier_execution_payment_proofs, supplier_execution_payments, supplier_payment_settlements, suppliers | auth, catalog, documents, economic-engine, external-provider-contracts, incident-management, infrastrucm«ëŒ+Š×®º+º$zzb¥çGW&RÂÆöv—7F–72Âæ÷F–f–6F–öç2Â÷&FW'2Â6÷W&6–ærÂ7WÆ–W"Ö6öææV7F—f—G’Â6FÆörÂF6†&ö&BÂFV6—6–öâ×6–væÇ2ÂÆöv—7F–72Â÷&FW'2Â–ÖVçG2ÂÆFf÷&ÒÖ÷2Â6÷W&6–ærÂÀ§Â&V6öÖÖVæFF–öç2Â'W6–æW72ÖfVGW&RÂ	ùú"„TÅD…’Â	ùú"„TÅD…’ÂöV7VæUòÂ6FÆörÂ–æg&7G'V7GW&RÂÆö6Â×7Fö6²ÂÆöv—7F–72ÂÖ&¶WBÂÖ&¶WBÖWFöæö×’Â÷&FW'2ÂÆFf÷&ÒÖ÷2Â&÷f–FW'2×6W'f–6W2Â–æg&7G'V7GW&RÂ&÷f–FW'2×6W'f–6W2Â6†&VBÖ6'BÂÀ§Â&VgVæG2Â'W6–æW72×G&ç7fW'6ÂÂ	ùú"„TÅD…’Â	ùú"„TÅD…’ÂÆö6Åö66…÷&VgVæEöWF†÷&—¦F–öç2ÂÆö6Åö66…÷&VgVæE÷–÷WG2ÂÆö6Åö—FVÕ÷&VgVæE÷&W6W'fF–öç2ÂÆö6ÅöÖö&–ÆU÷&VgVæEö†æFöfg2Â÷&FW%ö—FVÕ÷&VgVæE÷&W6W'fF–öç2Â&VgVæEöW†V7WF–öåö–çFVçG2Â&VgVæG2ÂFö7VÖVçG2ÂV6öæöÖ–2ÖVæv–æRÂ–æg&7G'V7GW&RÂÆöv—7F–72ÂÖ&¶WBÂæ÷F–f–6F–öç2Â÷&FW'2Â–ÖVçG2ÂvÆÆWBÂF6†&ö&BÂFö7VÖVçG2ÂV6öæöÖ–2ÖVæv–æRÂÆöv—7F–72Â÷&FW'2Â–ÖVçG2ÂÀ§Â6WGFÆVÖVçBÂ'W6–æW72ÖfVGW&RÂ	ùú"„TÅD…’Â	ùú"„TÅD…’ÂÖ&¶WE÷6WGFÆVÖVçEöWfVçG2ÂÖ&¶WE÷6WGFÆVÖVçG2ÂWF‚ÂWF‚Ö–FVçF—G’Â–æg&7G'V7GW&RÂÖ&¶WBÂÖ&¶WBÖFVÆVvF–öâÂÖ&¶WBÖFVÆVvF–öâÂÀ§Â6†&VBÖ6'BÂ'W6–æW72ÖfVGW&RÂ	ùú"„TÅD…’Â	ùú"„TÅD…’Â&6¶WEö—FV×2Â&6¶WG2Â6'E÷6†&W2Â6†&VEö6'EöWfVçG2Â6†&VEö6'Eö—FV×2Â6†&VEö6'E÷6fVEö66W72Â6†&VEö6'G2ÂWF‚ÂWF‚Ö–FVçF—G’Â6FÆörÂ–æg&7G'V7GW&RÂÖ&¶WBÖWFöæö×’Âæ÷F–f–6F–öç2Â÷&FW'2ÂÆFf÷&ÒÖ÷2Â&V6öÖÖVæFF–öç2Â6FÆörÂF6†&ö&BÂ–æg&7G'V7GW&RÂ÷&FW'2ÂÀ§Â6÷W&6–ærÂ'W6–æW72ÖfVGW&RÂ	ùú"„TÅD…’Â	ùú"„TÅD…’Â–×÷'E÷'VçF–ÖUö—FVÕöWfVçG2Â–×÷'E÷'VçF–ÖU÷'Vç2Â&÷f–FW%ö7&VFVçF–Ç2Â6÷W&6–æuö6æF–FFUöWfVçG2Â6÷W&6–æuö6æF–FFW2Â6÷W&6–æuö6æöæ–6ÅöVçF—F–W2Â6÷W&6–æuö6æöæ–6ÅöVçF—G•÷&Vg2Â6÷W&6–æuö6GW&W2Â6÷W&6–æuöÖF6…÷&÷÷6Ç2Â6÷W&6–æuöö'6W'fF–öåöWf–FVæ6RÂ6÷W&6–æuöö'6W'fF–öç2Â6÷W&6–æu÷&÷f–FW%ö6öçG&öÅöWfVçG2Â6÷W&6–æu÷&W6öÇWF–öåö&–æF–æw2Â6÷W&6–æu÷&W6öÇWF–öåöFV6—6–öç2Â6÷W&6–æu÷6÷W&6U÷&÷f–FW2Â6÷W&6–æu÷6÷W&6U÷&WVW7G2Â6÷W&6–æu÷6÷W&6W2Â7WÆ–W%ö6öÖÖW&6–Åö6FVv÷'•öÖ–æw2ÂWF‚Â6FÆörÂ7W7Fö×2ÂF6†&ö&BÂV6öæöÖ–2ÖVæv–æRÂ–æg&7G'V7GW&RÂW&6†6–ærÂ6FÆörÂF6†&ö&BÂÖ&¶WBÖ6öçG&öÂ×ÆæRÂW&6†6–ærÂÀ§Â7WÆ–W"Ö6öææV7F—f—G’Â–çFVw&F–öâÖFFW"Â	ùú"„TÅD…’Â	ùú"„TÅD…’ÂöV7VæUòÂW‡FW&æÂ×&÷f–FW"Ö6öçG&7G2Â6FÆörÂF6†&ö&BÂW&6†6–ærÂÀ§ÂVç6öÆB×&W6öÇWF–öâÂ'W6–æW72ÖfVGW&RÂ	ùú"„TÅD…’Â	ùú"„TÅD…’ÂVç6öÆEö—FV×2ÂWF‚Â6FÆörÂ–æg&7G'V7GW&RÂÖ&¶WBÖFVÆVvF–öâÂ÷&FW'2ÂöV7VæUòÂÀ§ÂvÆÆWBÂ'W6–æW72ÖfVGW&RÂ	ùú"„TÅD…’Â	ùú"„TÅD…’ÂvÆÆWEö6öç7V×F–öç2ÂvÆÆWEö7&VF—EöÆ÷G2ÂvÆÆWE÷G&ç67F–öç2ÂvÆÆWG2ÂWF‚ÂWF‚Ö–FVçF—G’ÂFö7VÖVçG2Â–æg&7G'V7GW&RÂÖ&¶WBÂ÷&FW'2ÂÆFf÷&ÒÖ÷2ÂWF‚Ö–FVçF—G’ÂF6†&ö&BÂFö7VÖVçG2Â–æg&7G'V7GW&RÂ÷&FW'2ÂÆFf÷&ÒÖ÷2Â&VgVæG2ÂÀ§ÂvÆÆWBÖÆ÷–ÇG’ÂFW&V6FVBÂ	ùú"„TÅD…’Â	ùú"„TÅD…’ÂöV7VæUòÂöV7VæUòÂöV7VæUòÂÀ ¢22FÖ–âÖF6†&ö&@ ¢¢¤¶–æB¢¢¢&ö¦V7F–öâ+r¢¥7FGW2¢¢¢&öGV7F–öà ¢¢¥6W'f–6R¢¢¢F&ÆVRFR&÷&BFÖ–â5×VÇF’×gVW2à ¢¢¥W&–ÖWFW"¢¢ ¢Òö–åò ¢ÒFÖ–âò¢ ¢Òö÷WEò ¢Ò’&6¶Væ@ ¢¢¤WF†÷&—G’¢¢¢F6†&ö&G0 ¢¢¤–çf&–çG2¢¢ ¢ÒF÷WBf–6†–W"FÖ–âò¢¢ò¢æ§2Fö—BWG&RFV6Æ&R–6 ¢¢¤÷vç2¢¢¢öV7VæUğ ¢¢¤W‡÷6W2¢¢¢–çFW&æÂ’‡2’Â…EE–çFW&f6R‡2 ¢¢¤6öç7VÖW2¢¢¢6FÆör„DT4Ä$TEôäEôô%4U%dTB’Â7W7Fö×2„DT4Ä$TEôäEôô%4U%dTB’ÂF6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’ÂFV6—6–öâ×6–væÇ2„DT4Ä$TEôäEôô%4U%dTB’ÂFö7VÖVçG2„DT4Ä$TEôäEôô%4U%dTB’ÂV6öæöÖ–2ÖVæv–æR„DT4Ä$TEôäEôô%4U%dTB’Â–çfVçF÷'’„DT4Ä$TEôäEôô%4U%dTB’ÂÆöv—7F–72„DT4Ä$TEôäEôô%4U%dTB’Â÷&FW'2„DT4Ä$TEôäEôô%4U%dTB’Â–ÖVçG2„DT4Ä$TEôäEôô%4U%dTB¢¢¤6öç7VÖVB'’¢¢¢öV7VæUğ ¢¢¥&ö¦V7F–öç2¢¢¢öV7VæUğ ¢¢¥FV6†æ–6Â6öçFW‡B¢¢¢&–Ö—F—fRFWVæFVæ6–W2ÂFW7BÖöæÇ’Â6ö×÷6—F–öâ×&ö÷@ ¢¢¤&÷VæF'’†VÇF‚¢¢¢	ùúEDTåD”ôâ(	B7&÷72ÖfVGW&R–×÷'G3¢Â'VçF–ÖR7–6ÆW3¢ÂVæ6Æ76–f–VC¢ÂFV6Æ&VBÖæ÷BÖö'6W'fVC¢¢¢¤v÷fW&ææ6R†VÇF‚¢¢¢	ùú"„TÅD…’(	B÷'†âf–ÆW3¢ÂVç&W6öÇfVB–çFW&æÂ—3¢ÂFV6Æ&VBÖöæÇ’FW3¢ÂÖ&–wV÷W2÷væW'6†—¢ÂöçFöÆöw’v3¢ ¢¢¤vFR†VÇF‚¢¢¢	ùú"„TÅD…’(	BvFW3¢öV7VåòÂf–Ã¢Âv&ã¢  ¢¢¤&6†—FV7GW&ÂFV'B¢¢ƒ’ ¢ÒDT4Ä$TEôäõEôô%4U%dTF†Æ÷r’(	B6öçG&7Bæ6öç7VÖW2L:–6Æ&R'6÷W&6–ær"(	BV7VæR&WWfRóR†æ’DT4Ä$TEôäEôô%4U%dTBÂæ’ô%4U%dTEõTäDT4Ä$TB ¢¢¤–×ÆVÖVçFF–öâ¢¢¢3‚f–6†–W"‡2’L:–6Æ,:’‡2¢Ò§2¢3€ ¥ôL:—F–Ç26ö×ÆWG2†f–6†–W'2ÂF&ÆW2Â–çFW&f6W2’¢fö—"Fö72ôdTEU$Uó3cæ§6öâ(i"fVGW&W5¶–CÒ&FÖ–âÖF6†&ö&B%Õğ ¢22WF€ ¢¢¤¶–æB¢¢¢FV6†æ–6Â×G&ç7fW'6Â+r¢¥7FGW2¢¢¢&öGV7F–öà ¢¢¥6W'f–6R¢¢¢f÷W&æ—"ÆW2v&FW2G&ç7fW'6W2BvWF†VçF–f–6F–öâWBFRl:—&–f–6F–öâBv–FVçF—L:’†Ö–FFÆWv&W2¥uB÷6W76–öâ÷,;FÆW2’6öç6öÖÜ:–W2"F÷WFW2ÆW2WG&W2fVGW&W2à ¢¢¥W&–ÖWFW"¢¢ ¢Òö–åò ¢ÒÖ–FFÆWv&W2FRv&FRG&ç7fW'6W2¢WF†VçF–f–6F–öâ¥uB÷6W76–öâÂl:—&–f–6F–öâFR,;FÆRÂ–FVçF—L:’l:—&–fœ:–RÂ,:—fö6F–öâFRFö¶VâÂ:–Ö—76–öâWBGW,:–R6æöæ—VRFR6W76–öà¢Òö÷WEò ¢ÒÆöv—VRÖWF–W"&÷&R6†VRfVGW&R6öç6öÖÖG&–6R(	BWF‚æR6—B&–VâFW26öÖÖæFW2Âæ–W'2÷R–VÖVçG0 ¢¢¤WF†÷&—G’¢¢¢&6¶VæBÖ6÷&R(	BF÷WB6†ævVÖVçBFRÖ–FFÆWv&RBvWF†VçF–f–6F–öâ÷RFRöÆ—F—VRFR6W76–öâFö—BWG&RfÆ–FR"ÆR&÷&–WF—&RFRWF€ ¢¢¤–çf&–çG2¢¢ ¢ÒF÷WFR&÷WFR×WFçFR76R"VâÖ–FFÆWv&RBvWF‚FV6Æ&R(	B¦Ö—2Bv66W2F—&V7B6ç2v&FP¢ÒF÷WFR×WFF–öâ÷'L:–R"ÆR6öö¶–RFR6W76–öâW†–vRVæR÷&–v–âW‡Æ–6—FVÖVçBWF÷&—<:–R„UD‚Ó†"¢Ò7Fv–ær÷&öGV7F–öâWF–Æ—6VçBW†6ÇW6—fVÖVçBVâ6öö¶–RFR6W76–öâõô†÷7BÒ6V7W&RÂFƒÒòWB6ç2FöÖ–â„UD‚Ó†2¢ÒÆGW,:–R'6öÇVR¥uB²6öö¶–RW7BÆföæì:–R:r¦÷W'2WB6†VR&WWfRõE÷76¶W’÷7FW×W:–ÖWBVæRæ÷WfVÆÆR§F’„UD‚Ó†B¢ÒVâ¥uB66÷VB÷RL:—÷W'gRFW26Æ–×2FR6W76–öâ6æöæ—VW2æRWWB¦Ö—2:§G&R:–ÆWl:’Vâ6W76–öâ"ÆW2Ö–FFÆWv&W2|:–ì:—&—VW2„UD‚Ó†R ¢¢¤÷vç2¢¢¢öV7VæUğ ¢¢¤W‡÷6W2¢¢¢b–çFW&æÂ’‡2’Â…EE–çFW&f6R‡2¢Ò&WV—&TWF‚ò&WV—&UfW&–f–VD–FVçF—G’ò6ögDWF††Ö–FFÆWv&RöWF‚æ§2’(	B&W6öÇfV@¢Ò&WV—&TWF‚ò&WV—&UfW&–f–VD–FVçF—G’ò6ögDWF††Ö–FFÆWv&R÷&WV—&R×fW&–f–VBÖ–FVçF—G’æ§2’(	B&W6öÇfV@¢Ò&WV—&TWF‚ò&WV—&UfW&–f–VD–FVçF—G’ò6ögDWF††Ö–FFÆWv&R÷6ögBÖWF‚æ§2’(	B&W6öÇfV@¢Ò6–väWF…Fö¶Vâò&W6öÇfU6W76–öåGFÅ6V6öæG2ò6W76–öä6Æ–×5fW&FÚ±î¸Â¸­yêë¢°k¢G§¦*^ict` (utils/auth-session-policy.js) â€” resolved
+| purchasing | business-feature | ğŸŸ¢ HEALTHY | ğŸŸ¢ HEALTHY | hub_authorization_grants, manual_purchase_executions, product_suppliers, purchase_lines, purchase_order_authorizations, purchase_orders, purchase_variance_decisions, supplier_execution_events, supplier_execution_fulfillments, supplier_execution_order_lines, supplier_execution_orders, supplier_execution_payment_proofs, supplier_execution_payments, supplier_payment_settlements, suppliers | auth, catalog, documents, economic-engine, external-provider-contracts, incident-management, infrastructure, logistics, notifications, orders, sourcing, supplier-connectivity | catalog, dashboard, decision-signals, logistics, orders, payments, platform-ops, sourcing | 0 |
+| recommendations | business-feature | ğŸŸ¢ HEALTHY | ğŸŸ¢ HEALTHY | _aucune_ | catalog, infrastructure, local-stock, logistics, market, market-autonomy, orders, platform-ops, providers-services | infrastructure, providers-services, shared-cart | 0 |
+| refunds | business-transversal | ğŸŸ¢ HEALTHY | ğŸŸ¢ HEALTHY | local_cash_refund_authorizations, local_cash_refund_payouts, local_item_refund_reservations, local_mobile_refund_handoffs, order_item_refund_reservations, refund_execution_intents, refunds | documents, economic-engine, infrastructure, logistics, market, notifications, orders, payments, wallet | dashboard, documents, economic-engine, logistics, orders, payments | 0 |
+| settlement | business-feature | ğŸŸ¢ HEALTHY | ğŸŸ¢ HEALTHY | market_settlement_events, market_settlements | auth, auth-identity, infrastructure, market, market-delegation | market-delegation | 0 |
+| shared-cart | business-feature | ğŸŸ¢ HEALTHY | ğŸŸ¢ HEALTHY | basket_items, baskets, cart_shares, shared_cart_events, shared_cart_items, shared_cart_saved_access, shared_carts | auth, auth-identity, catalog, infrastructure, market-autonomy, notifications, orders, platform-ops, recommendations | catalog, dashboard, infrastructure, orders | 0 |
+| sourcing | business-feature | ğŸŸ¢ HEALTHY | ğŸŸ¢ HEALTHY | import_runtime_item_events, import_runtime_runs, provider_credentials, sourcing_candidate_events, sourcing_candidates, sourcing_canonical_entities, sourcing_canonical_entity_refs, sourcing_captures, sourcing_match_proposals, sourcing_observation_evidence, sourcing_observations, sourcing_provider_control_events, sourcing_resolution_bindings, sourcing_resolution_decisions, sourcing_source_provides, sourcing_source_requests, sourcing_sources, supplier_commercial_category_mappings | auth, catalog, customs, dashboard, economic-engine, infrastructure, purchasing | catalog, dashboard, market-control-plane, purchasing | 0 |
+| supplier-connectivity | integration-adapter | ğŸŸ¢ HEALTHY | ğŸŸ¢ HEALTHY | _aucune_ | external-provider-contracts | catalog, dashboard, purchasing | 0 |
+| unsold-resolution | business-feature | ğŸŸ¢ HEALTHY | ğŸŸ¢ HEALTHY | unsold_items | auth, catalog, infrastructure, market-delegation, orders | _aucune_ | 0 |
+| wallet | business-feature | ğŸŸ¢ HEALTHY | ğŸŸ¢ HEALTHY | wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets | auth, auth-identity, documents, infrastructure, market, orders, platform-ops | auth-identity, dashboard, documents, infrastructure, orders, platform-ops, refunds | 0 |
+| wallet-loyalty | deprecated | ğŸŸ¢ HEALTHY | ğŸŸ¢ HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
+
+## admin-dashboard
+
+**Kind** : projection  Â·  **Status** : production
+
+**Service** : Tableau de bord admin SPA multi-vues.
+
+**Perimeter** :
+- _in_ :
+  - admin/**
+- _out_ :
+  - API backend
+
+**Authority** : dashboards
+
+**Invariants** :
+- tout fichier admin/**/*.js doit etre declare ici
+
+**Owns** : _aucune_
+
+**Exposes** : 0 internal API(s), 0 HTTP interface(s)
+
+**Consumes** : catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), inventory (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED)
+**Consumed by** : _aucune_
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¡ ATTENTION â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 1
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** (1) :
+- `DECLARED_NOT_OBSERVED` (low) â€” contract.consumes dÃ©clare "sourcing" â€” aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
+
+**Implementation** : 38 fichier(s) dÃ©clarÃ©(s)
+  - js : 38
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="admin-dashboard"]_
+
+## auth
+
+**Kind** : technical-transversal  Â·  **Status** : production
+
+**Service** : Fournir les gardes transverses d'authentification et de vÃ©rification d'identitÃ© (middlewares JWT/session/rÃ´les) consommÃ©es par toutes les autres features.
+
+**Perimeter** :
+- _in_ :
+  - middlewares de garde transverses : authentification JWT/session, vÃ©rification de rÃ´le, identitÃ© vÃ©rifiÃ©e, rÃ©vocation de token, Ã©mission et durÃ©e canonique de session
+- _out_ :
+  - logique metier propre a chaque feature consommatrice â€” auth ne sait rien des commandes, paniers ou paiements
+
+**Authority** : backend-core â€” tout changement de middleware d'authentification ou de politique de session doit etre valide par le proprietaire de auth
+
+**Invariants** :
+- toute route mutante passe par un middleware d'auth declare â€” jamais d'acces direct sans garde
+- toute mutation portÃ©e par le cookie de session exige une Origin explicitement autorisÃ©e (AUTH-8b)
+- staging/production utilisent exclusivement un cookie de session __Host- Secure, Path=/ et sans Domain (AUTH-8c)
+- la durÃ©e absolue JWT + cookie est plafonnÃ©e Ã  7 jours et chaque preuve OTP/passkey/step-up Ã©met une nouvelle jti (AUTH-8d)
+- un JWT scoped ou dÃ©pourvu des claims de session canoniques ne peut jamais Ãªtre Ã©levÃ© en session par les middlewares gÃ©nÃ©riques (AUTH-8e)
+
+**Owns** : _aucune_
+
+**Exposes** : 6 internal API(s), 0 HTTP interface(s)
+  - `requireAuth / requireVerifiedIdentity / softAuth` (middleware/auth.js) â€” resolved
+  - `requireAuth / requireVerifiedIdentity / softAuth` (middleware/require-verified-identity.js) â€” resolved
+  - `requireAuth / requireVerifiedIdentity / softAuth` (middleware/soft-auth.js) â€” resolved
+  - `signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict` (utils/auth-session-policy.js) â€” resolved
   - `signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict` (utils/auth-session.js) â€” resolved
   - `signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict` (utils/auth-token-policy.js) â€” resolved
 
@@ -342,7 +420,44 @@ _DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â
 - le pool AliExpress staging ne dÃ©passe jamais 500 rÃ©fÃ©rences propres en stock et ne peut pas s exÃ©cuter en production
 - les access/refresh tokens fournisseur sont persistÃ©s chiffrÃ©s ; l App Secret reste uniquement en variable serveur et aucun token n est exposÃ© au navigateur
 
-**Owns** : `boutique_categories`, `boutique_subcategories`, `catalog_enrichment_runs`, `catalog_field_overrides`, `catalog_field_sync_state`, `catalog_media`, `catm«ëŒ+Š×®º+º$zzb¥æÆöuöÖVF–÷&V6÷fW'•öVF—FÂ6FÆöuöÖVF–÷f—7VÅög%÷&Wf–Ww6Â6FÆöu÷&öGV7E÷VÆ—G•öæ÷FW6Â6FÆöu÷&öGV7E÷6ÆUö†öÆG6Â6FÆöu÷V&Æ–6F–öåöFV6—6–öåöVF—FÂ6FÆöu÷7Fö6µ÷7–æ5÷7FFVÂ6FÆöu÷F†öæö×•öVF—FÂ6FÆöu÷FW&Ö–æöÆöw•÷&VfW&Væ6VÂ&öGV7EöGG&–'WFW6Â&öGV7Eö6öçFVçE÷&öf–ÆVÂ&öGV7Eö6öçFVçE÷6V7F–öç6Â&öGV7EöÖ&¶WEöW‡÷7W&VÂ&öGV7E÷6·UöÖVF–Â&öGV7E÷6·W6Â&öGV7E÷f&–çG6Â&öGV7G6Â7WÆ–W%ö6FÆöuö–×÷'E÷&V¦V7F–öç6Â7WÆ–W%ö6FÆöuö–×÷'G6Â7WÆ–W%ö6FÆöu÷7–æ5ö6†V6·ö–çG6Â7WÆ–W%ööWF…ö6öææV7F–öç6 ¢¢¥w&—FW2†æ÷B÷væW"’¢¢¢6÷W&6–æuö6æF–FFW6‡w&—FW"Öæ÷BÖ÷væW" ¢¢¤W‡÷6W2¢¢¢–çFW&æÂ’‡2’ÂCr…EE–çFW&f6R‡2¢ÒÇ•&–6V‡6W'f–6W2ö6FÆör×&öGV7BÖ×WFF–öâ×6W'f–6Ræ§2’(	B&W6öÇfV@¢Ò'VÆ´76–vå6÷W&6–æu&–Æ‡6W'f–6W2ö6FÆör×&öGV7BÖ×WFF–öâ×6W'f–6Ræ§2’(	B&W6öÇfV@¢Ò7&VFTG&gDg&öÕ6÷W&6–æt6æF–FFV‡6W'f–6W2÷&öGV7BÖFÖ–â×6W'f–6Ræ§2’(	B&W6öÇfV@¢Ò7&VFTG&gE&öGV7Dg&öÕ6÷W&6–æt6æF–FFV‡6W'f–6W2ö6FÆörÖ6æF–FFR×&öGV7B×6W'f–6Ræ§2’(	B&W6öÇfV@¢ÒÖ–&TÇ”6FÆöu&öGV7E&÷WFT6æ'–‡6W'f–6W2ö6FÆör×&öGV7B×&÷WFRÖ6æ'’æ§2’(	B&W6öÇfV@¢Ò&VD6FÆöu&öGV7E6÷W&6V‡6W'f–6W2ö6FÆör×&öGV7B×6÷W&6R×&VB×6W'f–6Ræ§2’(	B&W6öÇfV@¢Ò&VE'Vå&öw&W76‡6W'f–6W2ö6FÆör×'Vâ×&öw&W72æ§2’(	B&W6öÇfV@¢Ò&WÆ6Uf&–çG4f÷%6÷W&6–æv‡6W'f–6W2ö6FÆör×&öGV7BÖ×WFF–öâ×6W'f–6Ræ§2’(	B&W6öÇfV@¢Ò&W6öÇfT6FÆöu&öGV7E&VDÖöFV‡6W'f–6W2ö6FÆör×&öGV7B×6÷W&6R×&VB×6W'f–6Ræ§2’(	B&W6öÇfV@¢ÒWFFU6÷W&6–ætf–VÆG6‡6W'f–6W2ö6FÆör×&öGV7BÖ×WFF–öâ×6W'f–6Ræ§2’(	B&W6öÇfV@ ¢¢¤6öç7VÖW2¢¢¢WF‚„DT4Ä$TEôäEôô%4U%dTB’ÂWF‚Ö–FVçF—G’„DT4Ä$TEôäEôô%4U%dTB’Â'W6–æW72×'VÆW2„DT4Ä$TEôäEôô%4U%dTB’Â7W7Fö×2„DT4Ä$TEôäEôô%4U%dTB’ÂV6öæöÖ–2ÖVæv–æR„DT4Ä$TEôäEôô%4U%dTB’ÂW‡FW&æÂ×&÷f–FW"Ö6öçG&7G2„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’ÂÆöv—7F–72„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WB„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖWFöæö×’„DT4Ä$TEôäEôô%4U%dTB’Âæ÷F–f–6F–öç2„DT4Ä$TEôäEôô%4U%dTB’Â÷&FW'2„DT4Ä$TEôäEôô%4U%dTB’ÂÆFf÷&ÒÖ÷2„DT4Ä$TEôäEôô%4U%dTB’ÂW&6†6–ær„DT4Ä$TEôäEôô%4U%dTB’Â6†&VBÖ6'B„DT4Ä$TEôäEôô%4U%dTB’Â6÷W&6–ær„DT4Ä$TEôäEôô%4U%dTB’Â7WÆ–W"Ö6öææV7F—f—G’„DT4Ä$TEôäEôô%4U%dTB¢¢¤6öç7VÖVB'’¢¢¢FÖ–âÖF6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’ÂWF‚Ö–FVçF—G’„DT4Ä$TEôäEôô%4U%dTB’Â7W7Fö×2„DT4Ä$TEôäEôô%4U%dTB’ÂF6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’ÂFö7VÖVçG2„DT4Ä$TEôäEôô%4U%dTB’ÂV6öæöÖ–2ÖVæv–æR„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’Â–çfVçF÷'’„DT4Ä$TEôäEôô%4U%dTB’ÂÆö6Â×7Fö6²„DT4Ä$TEôäEôô%4U%dTB’ÂÆöv—7F–72„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖWFöæö×’„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖ6öçG&öÂ×ÆæR„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖFVÆVvF–öâ„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖ÷W&F÷"ÖF6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’Â÷&FW'2„DT4Ä$TEôäEôô%4U%dTB’ÂÆFf÷&ÒÖ÷2„DT4Ä$TEôäEôô%4U%dTB’ÂW&6†6–ær„DT4Ä$TEôäEôô%4U%dTB’Â&V6öÖÖVæFF–öç2„DT4Ä$TEôäEôô%4U%dTB’Â6†&VBÖ6'B„DT4Ä$TEôäEôô%4U%dTB’Â6÷W&6–ær„DT4Ä$TEôäEôô%4U%dTB’ÂVç6öÆB×&W6öÇWF–öâ„DT4Ä$TEôäEôô%4U%dTB ¢¢¥&ö¦V7F–öç2¢¢¢öV7VæUğ ¢¢¥FV6†æ–6Â6öçFW‡B¢¢¢&–Ö—F—fRFWVæFVæ6–W2ÂFW7BÖöæÇ’Â6ö×÷6—F–öâ×&ö÷@ ¢¢¤&÷VæF'’†VÇF‚¢¢¢	ùú"„TÅD…’(	B7&÷72ÖfVGW&R–×÷'G3¢Â'VçF–ÖR7–6ÆW3¢ÂVæ6Æ76–f–VC¢ÂFV6Æ&VBÖæ÷BÖö'6W'fVC¢ ¢¢¤v÷fW&ææ6R†VÇF‚¢¢¢	ùú"„TÅD…’(	B÷'†âf–ÆW3¢ÂVç&W6öÇfVB–çFW&æÂ—3¢ÂFV6Æ&VBÖöæÇ’FW3¢ÂÖ&–wV÷W2÷væW'6†—¢ÂöçFöÆöw’v3¢ ¢¢¤vFR†VÇF‚¢¢¢	ùKB$Äô4´TB(	BvFW3¢6†V6³¦–×÷'G2ÂvFS¦fVGW&RÖwV&BÂf–Ã¢Âv&ã¢ ¢Ò¶6†V6³¦–×÷'G5Ò	ùúDU…BÔtDRÔD”täõ5D”2(	B)ª§2ö"×vW"æ§2(	BW‡÷'B‡2’æöâ6öç6öÖÜ:’‡2’ ¢Ò¶6†V6³¦–×÷'G5Ò	ùúDU…BÔtDRÔD”täõ5D”2(	B)ÉBV7Vâ–×÷'BfçL;FÖRæ’7–6ÆR–æ6öæçRæ’ÖöGVÆRÖçVçBà¢Ò¶vFS¦fVGW&RÖwV&EÒ	ùKBdTEU$RÔuT$B(	BFöÖ–âÖ—6ÖF6‚¢ââö§2÷&öGV7BÖ–ÖvRÖÆöF–ær×W‚æ§2FV6Æ&RFöÖ–â&&÷WF—VR"Ö—2W7BÆ—7FRFç26FÆöræfVGW&Ræ§2†FöÖ–â&6FÆör" ¢¢¤&6†—FV7GW&ÂFV'B¢¢¢öV7VæUğ ¢¢¤–×ÆVÖVçFF–öâ¢¢¢CS’f–6†–W"‡2’L:–6Æ,:’‡2’Â&÷WF—VS¢32f–6†–W"‡2¢Ò&÷WF—VR¢3¢Ò6’¢#P¢Ò6öæf–r¢¢ÒF6‚¢¢ÒFö72¢¢ÒÖ–FFÆWv&R¢¢ÒÖ–w&F–öç2¢#`¢Ò&÷WFW2¢p¢Ò66†VÖ2¢P¢Ò67&—G2¢3P¢Ò6W'f–6W2¢ƒ€¢ÒFW7G2¢#¢ÒWF–Ç2¢ ¥ôL:—F–Ç26ö×ÆWG2†f–6†–W'2ÂF&ÆW2Â–çFW&f6W2’¢fö—"Fö72ôdTEU$Uó3cæ§6öâ(i"fVGW&W5¶–CÒ&6FÆör%Õğ ¢227W7Fö×0 ¢¢¤¶–æB¢¢¢'W6–æW72ÖfVGW&R+r¢¥7FGW2¢¢¢&öGV7F–öà ¢¢¥6W'f–6R¢¢¢6Æ76W"WBFV6Æ&W"Vâ6öÆ—2F÷Væ–W&VÖVçB²ÆFV6Æ&F–öâW7BÆR—f÷BÂ¦Ö—2VæR÷F–Ö—6F–öâà ¢¢¥W&–ÖWFW"¢¢ ¢Òö–åò ¢Ò6Æ76–f–6F–öâF÷Væ–W&P¢ÒæÇ—F–72F÷VæP¢Ò6FVv÷&–W2WB6†—ÖVçG2FÖ–âF÷VæP¢Òö÷WEò ¢ÒG&ç7÷'B‡—6—VRGR6öÆ—2†fVGW&RÆöv—7F–72ÂV’6öç6öÖÖRÆR7FGWBF÷VæR¢ÒvVæW&F–öâFRÆf7GW&RF÷VæRFö7VÖVçB†fVGW&RFö7VÖVçG2 ¢¢¤WF†÷&—G’¢¢¢&6¶VæBÖ6÷&R(	BF÷WFR&VvÆRFR6Æ76–f–6F–öâFö—BWG&RfÆ–FVR"ÆR&÷&–WF—&RFR7W7Fö×2Ö6Æ76–f–6F–öâæ§2Â6öæf÷&ÖVÖVçBFö72öFö7G&–æRôDõTäUôDT4Ä$D”ôåõ•dõBæÖ@ ¢¢¤–çf&–çG2¢¢ ¢ÒÆFV6Æ&F–öâW7B–ç7G'VÖVçFVRÂ¦Ö—2÷F–Ö—6VR÷W"&VGV—&RVâ6÷W@¢ÒÆ6Æ76–f–6F–öâf÷W&æ—76WW"æR6öææ:çBV7VæR6Ì:’FR6L:–v÷&–RÜ:—F–W"VâGW"¢VÆÆR66÷&RVæ—VVÖVçBÆW27W7Fö×5ö6FVv÷&–W27F—fW2WBÆWW"6Æ76–f–6F–öå÷FW&×26öæf–wW,:¢Ò6’ÆR&öGV—B,:–VÂæRW&ÖWB2Vâ6Æ76VÖVçB7Vff—6ÖÖVçBf–&ÆRÂVæRff–æ—L:’FÖ–æ—7G&&ÆR÷'L:–R"Æ6÷W2Ö6L:–v÷&–R&÷WF—VRWWBf÷W&æ—"Æ6L:–v÷&–RF÷Væœ:‡&R7F—fRÆÇW2&ö6†R²6WGFRff–æ—L:’æR&–ÖR¦Ö—2VâÖF6‚f÷W&æ—76WW"ÖVF—VÒö†–v€ ¢¢¤÷vç2¢¢¢7W7Fö×5ö6FVv÷&–W6Â7W7Fö×5÷6†—ÖVçEöfVW6Â7W7Fö×5÷6†—ÖVçE÷&6VÅöWfVçG6Â7W7Fö×5÷6†—ÖVçE÷&6VÇ6Â7W7Fö×5÷6†—ÖVçG6 ¢¢¥w&—FW2†æ÷B÷væW"’¢¢¢÷&FW%ö—FVÕ÷&VÅö6÷7EöÆÆö6F–öç6‡w&—FW"Öæ÷BÖ÷væW" ¢¢¤W‡÷6W2¢¢¢–çFW&æÂ’‡2’Â#…EE–çFW&f6R‡2 ¢¢¤6öç7VÖW2¢¢¢WF‚„DT4Ä$TEôäEôô%4U%dTB’Â6FÆör„DT4Ä$TEôäEôô%4U%dTB’ÂFö7VÖVçG2„DT4Ä$TEôäEôô%4U%dTB’ÂV6öæöÖ–2ÖVæv–æR„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’ÂÆöv—7F–72„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WB„DT4Ä$TEôäEôô%4U%dTB’Â÷&FW'2„DT4Ä$TEôäEôô%4U%dTB¢¢¤6öç7VÖVB'’¢¢¢FÖ–âÖF6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’Â6FÆör„DT4Ä$TEôäEôô%4U%dTB’ÂF6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’ÂFö7VÖVçG2„DT4Ä$TEôäEôô%4U%dTB’ÂV6öæöÖ–2ÖVæv–æR„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’ÂÆöv—7F–72„DT4Ä$TEôäEôô%4U%dTB’Â÷&FW'2„DT4Ä$TEôäEôô%4U%dTB’Â6÷W&6–ær„DT4Ä$TEôäEôô%4U%dTB ¢¢¥&ö¦V7F–öç2¢¢¢öV7VæUğ ¢¢¥FV6†æ–6Â6öçFW‡B¢¢¢&–Ö—F—fRFWVæFVæ6–W2ÂFW7BÖöæÇ’Â6ö×÷6—F–öâ×&ö÷@ ¢¢¤&÷VæF'’†VÇF‚¢¢¢	ùú"„TÅD…’(	B7&÷72ÖfVGW&R–×÷'G3¢Â'VçF–ÖR7–6ÆW3¢ÂVæ6Æ76–f–VC¢ÂFV6Æ&VBÖæ÷BÖö'6W'fVC¢ ¢¢¤v÷fW&ææ6R†VÇF‚¢¢¢	ùú"„TÅD…’(	B÷'†âf–ÆW3¢ÂVç&W6öÇfVB–çFW&æÂ—3¢ÂFV6Æ&VBÖöæÇ’FW3¢ÂÖ&–wV÷W2÷væW'6†—¢ÂöçFöÆöw’v3¢ ¢¢¤vFR†VÇF‚¢¢¢	ùú"„TÅD…’(	BvFW3¢öV7VåòÂf–Ã¢Âv&ã¢  ¢¢¤&6†—FV7GW&ÂFV'B¢¢¢öV7VæUğ ¢¢¤–×ÆVÖVçFF–öâ¢¢¢3Rf–6†–W"‡2’L:–6Æ,:’‡2¢ÒF6‚¢ ¢ÒÖ–w&F–öç2¢€¢Ò&÷WFW2¢0¢Ò6W'f–6W2¢P¢ÒFW7G2¢p ¥ôL:—F–Ç26ö×ÆWG2†f–6†–W'2ÂF&ÆW2Â–çFW&f6W2’¢fö—"Fö72ôdTEU$Uó3cæ§6öâ(i"fVGW&W5¶–CÒ&7W7Fö×2%Õğ ¢22F6†&ö&@ ¢¢¤¶–æB¢¢¢'W6–æW72×G&ç7fW'6Â+r¢¥7FGW2¢¢¢&öGV7F–öà ¢¢¥6W'f–6R¢¢¢W‡÷6W"ÆW2w,:–vG2FR–Æ÷FvRWB÷'FW"Vâ÷'F–Â–çFW&æR6æöæ–6ÂVæ–fœ:’66W76–&ÆRFWV—2öFÖ–âÂFöçBÆæf–vF–öâWBÆW2v÷&·76W26öçBFL:—2R,;FÆRÂW‚66÷W2Ö&6Œ:’WBW‚6&–Æ—F–W2,:—6öÇW2<;GL:’6W'fWW"Â6ç2,:—WF–Æ—6W"ÆW2FWW‚|:–ì:—&F–öç2†—7F÷&—VW2FRF6†&ö&G2à ¢¢¥W&–ÖWFW"¢¢ ¢Òö–åò ¢Ò&÷WFW2w,:–|:–W2F6†&ö&BFÖ–â„µ—2Â6Æ–VçG2Â÷:—&F–öç2Â‡V"Â&VÆ—2Â&F"Â&—7VW2¢ÒVW&–W2FRÜ:—G&—VW2WB66†RF6†&ö&@¢ÒÆVv7’¢V&Æ–2öF6†&ö&G2öFÖ–âò¢¢(	B'VçF–ÖR7GVVÂÂvVÌ:’VâÖ–çFVææ6R6÷'&V7F—fRWB&öÆÆ&6²Væ—VVÖVç@¢ÒÆVv7’¢V&Æ–2öF6†&ö&G2öFÖ–âÖÆVv7’ò¢¢(	B|:–ì:—&F–öâçL:—&–WW&RFW&V6FVBÂ6öç6W'fF–öâ†—7F÷&—VR÷&öÆÆ&6°¢Ò6æöæ–6Â¢V&Æ–2öF6†&ö&G2ö6æöæ–6Âò¢¢(	B6WVÆR6–&ÆRWF÷&—<:–R÷W"F÷WBæ÷WfVRL:—fVÆ÷VÖVçBF6†&ö&@¢Ò÷'F–Â–çFW&æRVæ—VRöFÖ–â(	BÜ:¦ÖR6†VÆÂ6æöæ–6Â÷W"FÖ–æ—7G&F–öâ6VçG&ÆRÂ÷:—&FWW'2—2WB,;FÆW2FW'&–âWF÷&—<:—0¢Ò÷W&F–öç2v÷&·76R¢ÆW2,;FÆW2FW'&–âæF–g2&W7FVçB6ö×F–&ÆW2²VæRÖVÖ&W'6†——2WWBWŒ:–7WFW"VæR×WFF–öâ6WVÆVÖVçBfV2Æ6&–Æ—G’W†V7WF–öââ¢W†7FRÂ,:—6öÇVRWBVF—L:–R"Ö&¶WBÖFVÆVvF–öà¢ÒW76R6æöæ—VR*²6†G2f÷W&æ—76WW'2+²‚öFÖ–â÷v÷&·76W2÷W&6†6–ærÂFöÖ–æR÷:—&F–öç2Â,;FÆRFÖ–â’¢:–7&âFRÆV7GW&Rö7F–öâ7W"ÆW2&÷WFW2ö’÷W&6†6–ærW†—7FçFW2†Æ–væW2÷WfW'FW2w&÷W:–W2f÷W&æ—76WW"²‡V"Â,:—&F–öâFR'&÷V–ÆÆöâÂL:—F6†VÖVçBÂ6÷VÖ—76–öâÂ6öæf—&ÖF–öâ'F–VÆÆR’(	BÆÆöv—VRWBÆW2×WFF–öç2&W7FVçBFç2ÆfVGW&RW&6†6–æp¢ÒÖ–æ’Ö‡V"6æöæ–6Â‚öFÖ–âö‡V"’¢FWW‚'&æ6†W2FÖ–æ—7G&F—fW2WB÷:—&F–öææVÆÆW2Âf–ÆRFRF÷76–W'2:vV6†RÆ–ÖVçL:–R"&ö¦V7F–öç2&÷&œ:—F—&W2W†—7FçFW2ÂææVRFRG&f–Â:G&ö—FR,:—WF–Æ—6çBÆW2ÖöGVÆW26†G2ô‡V"Æ—fR²V7VæR×WFF–öâæ’W&Ö—76–öâ6Æ–VçB&ÆÌ:†ÆP¢ÒWF†VçF–f–6F–öâ6öÖ×VæRV—2ÆæF–æröæf–vF–öâ6öçFW‡GVVÆÆW2²ÆW2FVWÖÆ–æ·2öFÖ–âò¢¢&W7FVçBFW2FW7F–æF–öç2Â2FW2÷'F–Ç2<:—,:—0¢ÒFÖ–ä6öçFW‡B6æöæ–6Â(	B&ö¦V7F–öâT’BwVæRWF÷&—L:’Ö&¶WBL:–¬:,:—6öÇVR<;GL:’6W'fWW"Â¦Ö—2VæR6÷W&6RBvWF÷&—6F–öâÆö6ÆP¢ÒÆöv—7F–726öçG&öÂF÷vW"6æöæ–6Â¢&ö¦V7F–öâ&VBÖöæÇ’VæB×FòÖVæBBVæR6öÖÖæFRÖ&¶WBFRÂVævvVÖVçB6Æ–VçBR&VÆ—2ÂÖöçG&çB7W'&VçE÷7FvR²†VÇF‚²6W6R²f–Æ–F–öâ6ç27,:–W"FRÆ–fV7–6ÆRÂ7FGWB÷Rl:—&—L:’Ü:—F–W"&ÆÌ:†ÆP¢ÒF÷W"FR6öçG,;FÆRæ—fVR¢6–ç†6W2w&†—VW2&Vw&÷WVçBÆW2æWVb:—FW26æöæ—VW2WB6†VR6öÖÖæFR&W7FRVæ—VR:6öâ:—FRv÷WfW&æçFR²6÷W2Ü:—FRÂ6÷VÆWW"WB6W6Rf—6–&ÆW2Fç2Æ6'FR²&÷VvR6–væ–f–R7F–öâ&WV—6RÂ÷&ævR&W÷6R7W"Vâg&’6–væÂÜ:—F–W"Â¦Ö—27W"G&VçFRÖ–çWFW2B–æ7F—f—L:’²L:—F–Â–çL:–w,:’ÂÆ–VâfW'2W76R&÷&œ:—F—&R6÷VÖ—2R,;FÆR²ÆW26W6W27G'V7GW&VÆÆW2w,:†vVçBFW2f—G26æöæ—VW26öÖ×Vç0¢Ò6æöæ–6Â&VfW&Væ6R&W6öÇfW"¢,:—6öÇWF–öâ&VBÖöæÇ’BVæR,:–l:—&Væ6R÷:—&F–öææVÆÆRfW'26öâ–FVçF—L:’&÷&œ:—F—&RÂ66öÖÖæFR6Æ–VçFRÂ6÷6—F–öâ6öçG&öÂF÷vW"WB6FW7F–æF–öâ6æöæ—VR²V7VæRW'6—7Fæ6RÂV7Vâ7FGWB&ÆÌ:†ÆRÂV7VæR:–Ì:—fF–öâBWF÷&—L:¢ÒWF‚ÖwV&BWB6ö×÷6çG2'F|:—2FW2'VçF–ÖW2†—7F÷&—VW2FçB^(	––Ç2&W7FVçB6W'f—0¢Òö÷WEò ¢Ò×WFF–öç2FRFöæì:–W2†6†VRfVGW&RÜ:—F–W"÷vç26W2×WFF–öç2¢ÒÆöv—VRæ–W"Â6öÖÖæFW2Â–VÖVçG2†fVGW&R÷&FW'2ò–ÖVçG2ò6†&VBÖ6'B¢ÒÖ÷FWW"F&–f—&R†fVGW&RV6öæöÖ–2ÖVæv–æR¢Òæ÷WfVRL:—fVÆ÷VÖVçBF6†&ö&B6÷W2V&Æ–2öF6†&ö&G2öFÖ–âò¢¢÷RV&Æ–2öF6†&ö&G2öFÖ–âÖÆVv7’ò¢¢†÷'26÷'&V7F–bW‡Æ–6—FP¢Ò–×÷'B÷RŒ:—&—FvRT’FRFÖ–âò¢¢÷RFÖ–âÖÆVv7’ò¢¢FWV—26æöæ–6Âò¢ ¢ÒÖ–w&F–öâ:–7&â×"Ü:–7&âFW2æ6–VææW2gVW2¢VÆÆW26öçBFW26÷W&6W2FR&W6ö–ç2Â2FW2Væ—L:—2:÷'FW ¢ÒW'6—7Fæ6RBVâ:—FB6öçG&öÂF÷vW"6öæ7W'&VçB¢7W'&VçE÷7FvRö†VÇF‚&W7FVçBFW2&ö¦V7F–öç2L:—&—l:–W2FW2fVGW&W2&÷&œ:—F—&W2²F÷WFRÖL:—&–Æ—6F–öâgWGW&RW†–vRVâ&W6ö–âFRW&f÷&Öæ6RÖW7W,: ¢¢¤WF†÷&—G’¢¢¢&6¶VæBÖ6÷&R(	BF÷WB¦÷WBFR&÷WFRw,:–|:–R÷RFR&W\:§FRFRÜ:—G&—VW2Fö—B:§G&RfÆ–L:’"ÆR&÷&œ:—F—&RFRF6†&ö&BÖÖWG&–72æ§2WBF6†&ö&BÖ66†Ræ§0 ¢¢¤–çf&–çG2¢¢ ¢ÒF6†&ö&Bw,:†vRVâÆV7GW&R÷W"ÆW2gVW2FR–Æ÷FvR÷&W÷'F–ær„6öçG&öÂF÷vW"Â–Æ÷FvRÂ6çL:’Â6Æ–VçG2Â&F"Â&—7VW2’¢6W27W&f6W2ÖÌ:æR×WFVçBV7VæRFöæì:–Râ8Âv–çfW'6RÂÆW2&÷WFW2‡V"÷&VÆ—2öFÖ–â÷:—&F–öææVÆÆW2‡fö—"F"çF&ÆW2VçG,:–W2rõ%r’:–7&—fVçB,:–VÆÆVÖVçB(	Bæ6–Vâ–çf&–çB&ÆV7GW&R6WVÆR"6÷'&–|:’RÆ÷BóãRƒ##bÓrÓ"’6"6öçG&VF—B"ÆR6öFR²fö—"FV'Bæ¶æ÷väv2÷W"ÆRÆâFR&VF—7G&–'WF–öâFR6W2×WFF–öç2fW'2ÆWW'2fVGW&W2&÷&œ:—F—&W0¢ÒÆW2Ü:—G&—VW276VçB"F6†&ö&BÖ66†Ræ§2‡2FR&W\:§FW2F—&V7FW2GWÆ—\:–W2¢ÒÆVv7’V&Æ–2öF6†&ö&G2öFÖ–âÖÆVv7’ò¢¢W7BFW&V6FVBWBæR&\:vö—BV7Vâæ÷WfVRL:—fVÆ÷VÖVç@¢ÒÆVv7’V&Æ–2öF6†&ö&G2öFÖ–âò¢¢&W7FR6W'f’Ö—2W7BvVÌ:’¢6÷'&V7F–g2WB&öÆÆ&6²Væ—VVÖVçBÂV7VæRæ÷WfVÆÆR66—L:’F6†&ö&@¢Ò6æöæ–6ÂV&Æ–2öF6†&ö&G2ö6æöæ–6Âò¢¢W7BÆ6WVÆR6–&ÆRFRL:—fVÆ÷VÖVçBFW2VG&RF6†&ö&G2gWGW'2¢–Æ÷FvRÂ6öÖÖW&6RÂ÷:—&F–öç2Âf–ææ6P¢Ò6æöæ–6Âò¢¢æR,:–l:—&Væ6Ræ’î(	––×÷'FRV7Vâ6öFR÷R552FRFÖ–âò¢¢÷RFÖ–âÖÆVv7’ò¢¢²ÆW2æ6–VææW2gVW2æR6W'fVçBVRFR6÷W&6W2FR&W6ö–ç0¢ÒöFÖ–âW7BÆ÷'FRN(	–VçG,:–R–çFW&æRVæ—VR²ÆW2U$Ç2öFÖ–âò¢¢7:–6–Æ—<:–W26öçBFW2FW7F–æF–öç2öFVWÖÆ–æ·2WBæöâFW2÷'F–Ç2Ü:—F–W'2<:—,:—0¢ÒWF†VçF–f–6F–öâWBWF÷&—6F–öâ&W7FVçB<:—,:–W2¢Æöv–â:—F&Æ—BÎ(	––FVçF—L:’ÂÆR'VçF–ÖRWBÆW2—26W'fWW"6öçG,;FÆVçB,;FÆRÂ66÷RÂÖ&¶WB”BWB6&–Æ—F–W0¢ÒVâgWGW"õEWWB&Væf÷&6W"Æ&WWfRN(	––FVçF—L:’÷RVæR7F–öâ6Vç6–&ÆR6ç2FWfVæ—"VæR6÷W&6RFR,;FÆRÂ66÷RÂÖ&¶WB”B÷R6&–Æ—G¢ÒöFÖ–âÖæW‡B6W'B6æöæ–6ÂVæFçBÆ6öç7G'V7F–öâ²ÆW2&÷WFW2öFÖ–âò¢&W7FVçB7W"ÆVv7’§W7^(	–R7WF÷fW"W‡Æ–6—FVÖVçBfÆ–L:¢ÒWF‚ÖwV&Bæ§2&÷L:†vRF÷WFW2ÆW2&÷WFW2FÖ–â†—7F÷&—VW2²6æöæ–6ÂfÆ–FR66W76–öâR&ö÷G7G&WBæR6öçF÷W&æR¦Ö—2ö’öWF‚öÖP¢Ò¶öÖW&6R6VçG&ÂWBÆW2'FVæ—&W2—2'FvVçBÆRÜ:¦ÖR'VçF–ÖR6æöæ–6Â¢V7VæRf&–çFR÷R6÷–R"Ö&6Œ:¢ÒÆR,;FÆRfW'F–6ÂæRFöææR¦Ö—2Vâ66÷R—2²F÷WFRWF÷&—L:’Ö&¶WBW7B,:—6öÇVR<;GL:’6W'fWW"V—2Æ—\:–RfçBw,:–vF–öà¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢ÒVâf–ÇG&R—2GRF6†&ö&E66†VÖW7B,:—6VçFF–öææVÂ¢6æöæ–6ÂæR6†&vR¦Ö—2Vâw,:–vBvÆö&Â÷W"ÆRf–ÇG&W"Vç7V—FR<;GL:’6Æ–Vç@¢ÒÖ&¶WBW7BÂwVæ—L:’FRL:–Ì:–vF–öâ'W6–æW72²6÷'&–F÷"&W7FRVæRF–ÖVç6–öâFV6†æ—VRöÆöv—7F—VR6ç2WF÷&—L:¢ÒÆR6ö6·—BL:–Öòò7Fv–æræR÷7<:†FRV7VæRG&ç6—F–öâ¢–ÂL:–Ì:†wVR:Æ&÷WFR÷&FW'2WBÆ—BÆW2æ÷F–f–6F–öç2öFö7VÖVçG2,:–VÆÆVÖVçBW'6—7L:—0¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ ¢¢¤÷vç2¢¢¢7W7Fö×5÷6†—ÖVçEö†öÆG6Â÷&FW%ö–æ6–FVçG6Â'FæW'6 ¢¢¥w&—FW2†æ÷B÷væW"’¢¢¢&6¶WEö—FV×6‡w&—FW"Öæ÷BÖ÷væW"’Â&6¶WG6‡w&—FW"Öæ÷BÖ÷væW"’Â–çfö–6W6‡w&—FW"Öæ÷BÖ÷væW"’Â÷&FW%ö6öÖÖVçG6‡w&—FW"Öæ÷BÖ÷væW"’Â÷&FW%ö—FV×6‡w&—FW"Öæ÷BÖ÷væW"’Â÷&FW%÷7FGW5ö†—7F÷'–‡w&—FW"Öæ÷BÖ÷væW"’Â÷&FW'6‡w&—FW"Öæ÷BÖ÷væW"’Â&6VÅö—FV×6‡w&—FW"Öæ÷BÖ÷væW"’Â&6VÇ6‡w&—FW"Öæ÷BÖ÷væW"’Â&öGV7G6‡w&—FW"Öæ÷BÖ÷væW"’Â&V6—–VçG6‡w&—FW"Öæ÷BÖ÷væW"’Â&VÆ—6‡w&—FW"Öæ÷BÖ÷væW"’Â66åöWfVçG6‡w&—FW"Öæ÷BÖ÷væW"’Â6×5öÆöv‡w&—FW"Öæ÷BÖ÷væW"’ÂvÆÆWEö6öç7V×F–öç6‡w&—FW"Öæ÷BÖ÷væW"’ÂvÆÆWEö7&VF—EöÆ÷G6‡w&—FW"Öæ÷BÖ÷væW"’ÂvÆÆWE÷G&ç67F–öç6‡w&—FW"Öæ÷BÖ÷væW"’ÂvÆÆWG6‡w&—FW"Öæ÷BÖ÷væW" ¢¢¤W‡÷6Ú±î¸Â¸­yêë¢°k¢G§¦*^e : 1
+**Owns** : `boutique_categories`, `boutique_subcategories`, `catalog_enrichment_runs`, `catalog_field_overrides`, `catalog_field_sync_state`, `catalog_media`, `catalog_media_recovery_audit`, `catalog_media_visual_fr_reviews`, `catalog_product_quality_notes`, `catalog_product_sale_holds`, `catalog_publication_decision_audit`, `catalog_stock_sync_state`, `catalog_taxonomy_audit`, `catalog_terminology_reference`, `product_attributes`, `product_content_profile`, `product_content_sections`, `product_market_exposure`, `product_sku_media`, `product_skus`, `product_variants`, `products`, `supplier_catalog_import_rejections`, `supplier_catalog_imports`, `supplier_catalog_sync_checkpoints`, `supplier_oauth_connections`
+**Writes (not owner)** : `sourcing_candidates` (writer-not-owner)
+
+**Exposes** : 10 internal API(s), 47 HTTP interface(s)
+  - `applyPrice` (services/catalog-product-mutation-service.js) â€” resolved
+  - `bulkAssignSourcingRail` (services/catalog-product-mutation-service.js) â€” resolved
+  - `createDraftFromSourcingCandidate` (services/product-admin-service.js) â€” resolved
+  - `createDraftProductFromSourcingCandidate` (services/catalog-candidate-product-service.js) â€” resolved
+  - `maybeApplyCatalogProductRouteCanary` (services/catalog-product-route-canary.js) â€” resolved
+  - `readCatalogProductSource` (services/catalog-product-source-read-service.js) â€” resolved
+  - `readRunProgress` (services/catalog-run-progress.js) â€” resolved
+  - `replaceVariantsForSourcing` (services/catalog-product-mutation-service.js) â€” resolved
+  - `resolveCatalogProductReadMode` (services/catalog-product-source-read-service.js) â€” resolved
+  - `updateSourcingFields` (services/catalog-product-mutation-service.js) â€” resolved
+
+**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), external-provider-contracts (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED), supplier-connectivity (DECLARED_AND_OBSERVED)
+**Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), inventory (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERVED), market-control-plane (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), market-operator-dashboard (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED), unsold-resolution (DECLARED_AND_OBSERVED)
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸ”´ BLOCKED â€” gates: check:imports, gate:feature-guard, fail: 1, warn: 2
+  - [check:imports] ğŸŸ  TEXT-GATE-DIAGNOSTIC â€” âš  js/b-pager.js â€” 1 export(s) non consommÃ©(s) :
+  - [check:imports] ğŸŸ  TEXT-GATE-DIAGNOSTIC â€” âœ” Aucun import fantÃ´me ni cycle inconnu ni module manquant.
+  - [gate:feature-guard] ğŸ”´ FEATURE-GUARD â€” @domain mismatch : ../js/product-image-loading-ux.js declare @domain "boutique" mais est liste dans catalog.feature.js (domain "catalog")
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 459 fichier(s) dÃ©clarÃ©(s), boutique: 33 fichier(s)
+  - boutique : 39
+  - ci : 25
+  - config : 1
+  - dash : 1
+  - docs : 19
+  - middleware : 1
   - migrations : 26
   - routes : 7
   - schemas : 5
@@ -482,7 +597,237 @@ _DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â
 
 **Projections** : _aucune_
 
-**Technical context** : 0 primitivem«ëŒ+Š×®º+º$zzb¥ç&EÒ	ùKBdTEU$RÔuT$B(	BFöÖ–âÖ—6ÖF6‚¢ââö§2÷&öGV7BÖ–ÖvRÖÆöF–ær×W‚æ§2FV6Æ&RFöÖ–â&&÷WF—VR"Ö—2W7BÆ—7FRFç26FÆöræfVGW&Ræ§2†FöÖ–â&6FÆör" ¢¢¤&6†—FV7GW&ÂFV'B¢¢¢öV7VæUğ ¢¢¤–×ÆVÖVçFF–öâ¢¢¢CS’f–6†–W"‡2’L:–6Æ,:’‡2’Â&÷WF—VS¢32f–6†–W"‡2¢Ò&÷WF—VR¢3¢Ò6’¢#P¢Ò6öæf–r¢¢ÒF6‚¢¢ÒFö72¢¢ÒÖ–FFÆWv&R¢¢ÒÖ–w&F–öç2¢#`¢Ò&÷WFW2¢p¢Ò66†VÖ2¢P¢Ò67&—G2¢3P¢Ò6W'f–6W2¢ƒ€¢ÒFW7G2¢#¢ÒWF–Ç2¢ ¥ôL:—F–Ç26ö×ÆWG2†f–6†–W'2ÂF&ÆW2Â–çFW&f6W2’¢fö—"Fö72ôdTEU$Uó3cæ§6öâ(i"fVGW&W5¶–CÒ&6FÆör%Õğ ¢227W7Fö×0 ¢¢¤¶–æB¢¢¢'W6–æW72ÖfVGW&R+r¢¥7FGW2¢¢¢&öGV7F–öà ¢¢¥6W'f–6R¢¢¢6Æ76W"WBFV6Æ&W"Vâ6öÆ—2F÷Væ–W&VÖVçB²ÆFV6Æ&F–öâW7BÆR—f÷BÂ¦Ö—2VæR÷F–Ö—6F–öâà ¢¢¥W&–ÖWFW"¢¢ ¢Òö–åò ¢Ò6Æ76–f–6F–öâF÷Væ–W&P¢ÒæÇ—F–72F÷VæP¢Ò6FVv÷&–W2WB6†—ÖVçG2FÖ–âF÷VæP¢Òö÷WEò ¢ÒG&ç7÷'B‡—6—VRGR6öÆ—2†fVGW&RÆöv—7F–72ÂV’6öç6öÖÖRÆR7FGWBF÷VæR¢ÒvVæW&F–öâFRÆf7GW&RF÷VæRFö7VÖVçB†fVGW&RFö7VÖVçG2 ¢¢¤WF†÷&—G’¢¢¢&6¶VæBÖ6÷&R(	BF÷WFR&VvÆRFR6Æ76–f–6F–öâFö—BWG&RfÆ–FVR"ÆR&÷&–WF—&RFR7W7Fö×2Ö6Æ76–f–6F–öâæ§2Â6öæf÷&ÖVÖVçBFö72öFö7G&–æRôDõTäUôDT4Ä$D”ôåõ•dõBæÖ@ ¢¢¤–çf&–çG2¢¢ ¢ÒÆFV6Æ&F–öâW7B–ç7G'VÖVçFVRÂ¦Ö—2÷F–Ö—6VR÷W"&VGV—&RVâ6÷W@¢ÒÆ6Æ76–f–6F–öâf÷W&æ—76WW"æR6öææ:çBV7VæR6Ì:’FR6L:–v÷&–RÜ:—F–W"VâGW"¢VÆÆR66÷&RVæ—VVÖVçBÆW27W7Fö×5ö6FVv÷&–W27F—fW2WBÆWW"6Æ76–f–6F–öå÷FW&×26öæf–wW,:¢Ò6’ÆR&öGV—B,:–VÂæRW&ÖWB2Vâ6Æ76VÖVçB7Vff—6ÖÖVçBf–&ÆRÂVæRff–æ—L:’FÖ–æ—7G&&ÆR÷'L:–R"Æ6÷W2Ö6L:–v÷&–R&÷WF—VRWWBf÷W&æ—"Æ6L:–v÷&–RF÷Væœ:‡&R7F—fRÆÇW2&ö6†R²6WGFRff–æ—L:’æR&–ÖR¦Ö—2VâÖF6‚f÷W&æ—76WW"ÖVF—VÒö†–v€ ¢¢¤÷vç2¢¢¢7W7Fö×5ö6FVv÷&–W6Â7W7Fö×5÷6†—ÖVçEöfVW6Â7W7Fö×5÷6†—ÖVçE÷&6VÅöWfVçG6Â7W7Fö×5÷6†—ÖVçE÷&6VÇ6Â7W7Fö×5÷6†—ÖVçG6 ¢¢¥w&—FW2†æ÷B÷væW"’¢¢¢÷&FW%ö—FVÕ÷&VÅö6÷7EöÆÆö6F–öç6‡w&—FW"Öæ÷BÖ÷væW" ¢¢¤W‡÷6W2¢¢¢–çFW&æÂ’‡2’Â#…EE–çFW&f6R‡2 ¢¢¤6öç7VÖW2¢¢¢WF‚„DT4Ä$TEôäEôô%4U%dTB’Â6FÆör„DT4Ä$TEôäEôô%4U%dTB’ÂFö7VÖVçG2„DT4Ä$TEôäEôô%4U%dTB’ÂV6öæöÖ–2ÖVæv–æR„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’ÂÆöv—7F–72„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WB„DT4Ä$TEôäEôô%4U%dTB’Â÷&FW'2„DT4Ä$TEôäEôô%4U%dTB¢¢¤6öç7VÖVB'’¢¢¢FÖ–âÖF6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’Â6FÆör„DT4Ä$TEôäEôô%4U%dTB’ÂF6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’ÂFö7VÖVçG2„DT4Ä$TEôäEôô%4U%dTB’ÂV6öæöÖ–2ÖVæv–æR„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’ÂÆöv—7F–72„DT4Ä$TEôäEôô%4U%dTB’Â÷&FW'2„DT4Ä$TEôäEôô%4U%dTB’Â6÷W&6–ær„DT4Ä$TEôäEôô%4U%dTB ¢¢¥&ö¦V7F–öç2¢¢¢öV7VæUğ ¢¢¥FV6†æ–6Â6öçFW‡B¢¢¢&–Ö—F—fRFWVæFVæ6–W2ÂFW7BÖöæÇ’Â6ö×÷6—F–öâ×&ö÷@ ¢¢¤&÷VæF'’†VÇF‚¢¢¢	ùú"„TÅD…’(	B7&÷72ÖfVGW&R–×÷'G3¢Â'VçF–ÖR7–6ÆW3¢ÂVæ6Æ76–f–VC¢ÂFV6Æ&VBÖæ÷BÖö'6W'fVC¢ ¢¢¤v÷fW&ææ6R†VÇF‚¢¢¢	ùú"„TÅD…’(	B÷'†âf–ÆW3¢ÂVç&W6öÇfVB–çFW&æÂ—3¢ÂFV6Æ&VBÖöæÇ’FW3¢ÂÖ&–wV÷W2÷væW'6†—¢ÂöçFöÆöw’v3¢ ¢¢¤vFR†VÇF‚¢¢¢	ùú"„TÅD…’(	BvFW3¢öV7VåòÂf–Ã¢Âv&ã¢  ¢¢¤&6†—FV7GW&ÂFV'B¢¢¢öV7VæUğ ¢¢¤–×ÆVÖVçFF–öâ¢¢¢3Rf–6†–W"‡2’L:–6Æ,:’‡2¢ÒF6‚¢ ¢ÒÖ–w&F–öç2¢€¢Ò&÷WFW2¢0¢Ò6W'f–6W2¢P¢ÒFW7G2¢p ¥ôL:—F–Ç26ö×ÆWG2†f–6†–W'2ÂF&ÆW2Â–çFW&f6W2’¢fö—"Fö72ôdTEU$Uó3cæ§6öâ(i"fVGW&W5¶–CÒ&7W7Fö×2%Õğ ¢22F6†&ö&@ ¢¢¤¶–æB¢¢¢'W6–æW72×G&ç7fW'6Â+r¢¥7FGW2¢¢¢&öGV7F–öà ¢¢¥6W'f–6R¢¢¢W‡÷6W"ÆW2w,:–vG2FR–Æ÷FvRWB÷'FW"Vâ÷'F–Â–çFW&æR6æöæ–6ÂVæ–fœ:’66W76–&ÆRFWV—2öFÖ–âÂFöçBÆæf–vF–öâWBÆW2v÷&·76W26öçBFL:—2R,;FÆRÂW‚66÷W2Ö&6Œ:’WBW‚6&–Æ—F–W2,:—6öÇW2<;GL:’6W'fWW"Â6ç2,:—WF–Æ—6W"ÆW2FWW‚|:–ì:—&F–öç2†—7F÷&—VW2FRF6†&ö&G2à ¢¢¥W&–ÖWFW"¢¢ ¢Òö–åò ¢Ò&÷WFW2w,:–|:–W2F6†&ö&BFÖ–â„µ—2Â6Æ–VçG2Â÷:—&F–öç2Â‡V"Â&VÆ—2Â&F"Â&—7VW2¢ÒVW&–W2FRÜ:—G&—VW2WB66†RF6†&ö&@¢ÒÆVv7’¢V&Æ–2öF6†&ö&G2öFÖ–âò¢¢(	B'VçF–ÖR7GVVÂÂvVÌ:’VâÖ–çFVææ6R6÷'&V7F—fRWB&öÆÆ&6²Væ—VVÖVç@¢ÒÆVv7’¢V&Æ–2öF6†&ö&G2öFÖ–âÖÆVv7’ò¢¢(	B|:–ì:—&F–öâçL:—&–WW&RFW&V6FVBÂ6öç6W'fF–öâ†—7F÷&—VR÷&öÆÆ&6°¢Ò6æöæ–6Â¢V&Æ–2öF6†&ö&G2ö6æöæ–6Âò¢¢(	B6WVÆR6–&ÆRWF÷&—<:–R÷W"F÷WBæ÷WfVRL:—fVÆ÷VÖVçBF6†&ö&@¢Ò÷'F–Â–çFW&æRVæ—VRöFÖ–â(	BÜ:¦ÖR6†VÆÂ6æöæ–6Â÷W"FÖ–æ—7G&F–öâ6VçG&ÆRÂ÷:—&FWW'2—2WB,;FÆW2FW'&–âWF÷&—<:—0¢Ò÷W&F–öç2v÷&·76R¢ÆW2,;FÆW2FW'&–âæF–g2&W7FVçB6ö×F–&ÆW2²VæRÖVÖ&W'6†——2WWBWŒ:–7WFW"VæR×WFF–öâ6WVÆVÖVçBfV2Æ6&–Æ—G’W†V7WF–öââ¢W†7FRÂ,:—6öÇVRWBVF—L:–R"Ö&¶WBÖFVÆVvF–öà¢ÒW76R6æöæ—VR*²6†G2f÷W&æ—76WW'2+²‚öFÖ–â÷v÷&·76W2÷W&6†6–ærÂFöÖ–æR÷:—&F–öç2Â,;FÆRFÖ–â’¢:–7&âFRÆV7GW&Rö7F–öâ7W"ÆW2&÷WFW2ö’÷W&6†6–ærW†—7FçFW2†Æ–væW2÷WfW'FW2w&÷W:–W2f÷W&æ—76WW"²‡V"Â,:—&F–öâFR'&÷V–ÆÆöâÂL:—F6†VÖVçBÂ6÷VÖ—76–öâÂ6öæf—&ÖF–öâ'F–VÆÆR’(	BÆÆöv—VRWBÆW2×WFF–öç2&W7FVçBFç2ÆfVGW&RW&6†6–æp¢ÒÖ–æ’Ö‡V"6æöæ–6Â‚öFÖ–âö‡V"’¢FWW‚'&æ6†W2FÖ–æ—7G&F—fW2WB÷:—&F–öææVÆÆW2Âf–ÆRFRF÷76–W'2:vV6†RÆ–ÖVçL:–R"&ö¦V7F–öç2&÷&œ:—F—&W2W†—7FçFW2ÂææVRFRG&f–Â:G&ö—FR,:—WF–Æ—6çBÆW2ÖöGVÆW26†G2ô‡V"Æ—fR²V7VæR×WFF–öâæ’W&Ö—76–öâ6Æ–VçB&ÆÌ:†ÆP¢ÒWF†VçF–f–6F–öâ6öÖ×VæRV—2ÆæF–æröæf–vF–öâ6öçFW‡GVVÆÆW2²ÆW2FVWÖÆ–æ·2öFÖ–âò¢¢&W7FVçBFW2FW7F–æF–öç2Â2FW2÷'F–Ç2<:—,:—0¢ÒFÖ–ä6öçFW‡B6æöæ–6Â(	B&ö¦V7F–öâT’BwVæRWF÷&—L:’Ö&¶WBL:–¬:,:—6öÇVR<;GL:’6W'fWW"Â¦Ö—2VæR6÷W&6RBvWF÷&—6F–öâÆö6ÆP¢ÒÆöv—7F–726öçG&öÂF÷vW"6æöæ–6Â¢&ö¦V7F–öâ&VBÖöæÇ’VæB×FòÖVæBBVæR6öÖÖæFRÖ&¶WBFRÂVævvVÖVçB6Æ–VçBR&VÆ—2ÂÖöçG&çB7W'&VçE÷7FvR²†VÇF‚²6W6R²f–Æ–F–öâ6ç27,:–W"FRÆ–fV7–6ÆRÂ7FGWB÷Rl:—&—L:’Ü:—F–W"&ÆÌ:†ÆP¢ÒF÷W"FR6öçG,;FÆRæ—fVR¢6–ç†6W2w&†—VW2&Vw&÷WVçBÆW2æWVb:—FW26æöæ—VW2WB6†VR6öÖÖæFR&W7FRVæ—VR:6öâ:—FRv÷WfW&æçFR²6÷W2Ü:—FRÂ6÷VÆWW"WB6W6Rf—6–&ÆW2Fç2Æ6'FR²&÷VvR6–væ–f–R7F–öâ&WV—6RÂ÷&ævR&W÷6R7W"Vâg&’6–væÂÜ:—F–W"Â¦Ö—27W"G&VçFRÖ–çWFW2B–æ7F—f—L:’²L:—F–Â–çL:–w,:’ÂÆ–VâfW'2W76R&÷&œ:—F—&R6÷VÖ—2R,;FÆR²ÆW26W6W27G'V7GW&VÆÆW2w,:†vVçBFW2f—G26æöæ—VW26öÖ×Vç0¢Ò6æöæ–6Â&VfW&Væ6R&W6öÇfW"¢,:—6öÇWF–öâ&VBÖöæÇ’BVæR,:–l:—&Væ6R÷:—&F–öææVÆÆRfW'26öâ–FVçF—L:’&÷&œ:—F—&RÂ66öÖÖæFR6Æ–VçFRÂ6÷6—F–öâ6öçG&öÂF÷vW"WB6FW7F–æF–öâ6æöæ—VR²V7VæRW'6—7Fæ6RÂV7Vâ7FGWB&ÆÌ:†ÆRÂV7VæR:–Ì:—fF–öâBWF÷&—L:¢ÒWF‚ÖwV&BWB6ö×÷6çG2'F|:—2FW2'VçF–ÖW2†—7F÷&—VW2FçB^(	––Ç2&W7FVçB6W'f—0¢Òö÷WEò ¢Ò×WFF–öç2FRFöæì:–W2†6†VRfVGW&RÜ:—F–W"÷vç26W2×WFF–öç2¢ÒÆöv—VRæ–W"Â6öÖÖæFW2Â–VÖVçG2†fVGW&R÷&FW'2ò–ÖVçG2ò6†&VBÖ6'B¢ÒÖ÷FWW"F&–f—&R†fVGW&RV6öæöÖ–2ÖVæv–æR¢Òæ÷WfVRL:—fVÆ÷VÖVçBF6†&ö&B6÷W2V&Æ–2öF6†&ö&G2öFÖ–âò¢¢÷RV&Æ–2öF6†&ö&G2öFÖ–âÖÆVv7’ò¢¢†÷'26÷'&V7F–bW‡Æ–6—FP¢Ò–×÷'B÷RŒ:—&—FvRT’FRFÖ–âò¢¢÷RFÖ–âÖÆVv7’ò¢¢FWV—26æöæ–6Âò¢ ¢ÒÖ–w&F–öâ:–7&â×"Ü:–7&âFW2æ6–VææW2gVW2¢VÆÆW26öçBFW26÷W&6W2FR&W6ö–ç2Â2FW2Væ—L:—2:÷'FW ¢ÒW'6—7Fæ6RBVâ:—FB6öçG&öÂF÷vW"6öæ7W'&VçB¢7W'&VçE÷7FvRö†VÇF‚&W7FVçBFW2&ö¦V7F–öç2L:—&—l:–W2FW2fVGW&W2&÷&œ:—F—&W2²F÷WFRÖL:—&–Æ—6F–öâgWGW&RW†–vRVâ&W6ö–âFRW&f÷&Öæ6RÖW7W,: ¢¢¤WF†÷&—G’¢¢¢&6¶VæBÖ6÷&R(	BF÷WB¦÷WBFR&÷WFRw,:–|:–R÷RFR&W\:§FRFRÜ:—G&—VW2Fö—B:§G&RfÆ–L:’"ÆR&÷&œ:—F—&RFRF6†&ö&BÖÖWG&–72æ§2WBF6†&ö&BÖ66†Ræ§0 ¢¢¤–çf&–çG2¢¢ ¢ÒF6†&ö&Bw,:†vRVâÆV7GW&R÷W"ÆW2gVW2FR–Æ÷FvR÷&W÷'F–ær„6öçG&öÂF÷vW"Â–Æ÷FvRÂ6çL:’Â6Æ–VçG2Â&F"Â&—7VW2’¢6W27W&f6W2ÖÌ:æR×WFVçBV7VæRFöæì:–Râ8Âv–çfW'6RÂÆW2&÷WFW2‡V"÷&VÆ—2öFÖ–â÷:—&F–öææVÆÆW2‡fö—"F"çF&ÆW2VçG,:–W2rõ%r’:–7&—fVçB,:–VÆÆVÖVçB(	Bæ6–Vâ–çf&–çB&ÆV7GW&R6WVÆR"6÷'&–|:’RÆ÷BóãRƒ##bÓrÓ"’6"6öçG&VF—B"ÆR6öFR²fö—"FV'Bæ¶æ÷väv2÷W"ÆRÆâFR&VF—7G&–'WF–öâFR6W2×WFF–öç2fW'2ÆWW'2fVGW&W2&÷&œ:—F—&W0¢ÒÆW2Ü:—G&—VW276VçB"F6†&ö&BÖ66†Ræ§2‡2FR&W\:§FW2F—&V7FW2GWÆ—\:–W2¢ÒÆVv7’V&Æ–2öF6†&ö&G2öFÖ–âÖÆVv7’ò¢¢W7BFW&V6FVBWBæR&\:vö—BV7Vâæ÷WfVRL:—fVÆ÷VÖVç@¢ÒÆVv7’V&Æ–2öF6†&ö&G2öFÖ–âò¢¢&W7FR6W'f’Ö—2W7BvVÌ:’¢6÷'&V7F–g2WB&öÆÆ&6²Væ—VVÖVçBÂV7VæRæ÷WfVÆÆR66—L:’F6†&ö&@¢Ò6æöæ–6ÂV&Æ–2öF6†&ö&G2ö6æöæ–6Âò¢¢W7BÆ6WVÆR6–&ÆRFRL:—fVÆ÷VÖVçBFW2VG&RF6†&ö&G2gWGW'2¢–Æ÷FvRÂ6öÖÖW&6RÂ÷:—&F–öç2Âf–ææ6P¢Ò6æöæ–6Âò¢¢æR,:–l:—&Væ6Ræ’î(	––×÷'FRV7Vâ6öFR÷R552FRFÖ–âò¢¢÷RFÖ–âÖÆVv7’ò¢¢²ÆW2æ6–VææW2gVW2æR6W'fVçBVRFR6÷W&6W2FR&W6ö–ç0¢ÒöFÖ–âW7BÆ÷'FRN(	–VçG,:–R–çFW&æRVæ—VR²ÆW2U$Ç2öFÖ–âò¢¢7:–6–Æ—<:–W26öçBFW2FW7F–æF–öç2öFVWÖÆ–æ·2WBæöâFW2÷'F–Ç2Ü:—F–W'2<:—,:—0¢ÒWF†VçF–f–6F–öâWBWF÷&—6F–öâ&W7FVçB<:—,:–W2¢Æöv–â:—F&Æ—BÎ(	––FVçF—L:’ÂÆR'VçF–ÖRWBÆW2—26W'fWW"6öçG,;FÆVçB,;FÆRÂ66÷RÂÖ&¶WB”BWB6&–Æ—F–W0¢ÒVâgWGW"õEWWB&Væf÷&6W"Æ&WWfRN(	––FVçF—L:’÷RVæR7F–öâ6Vç6–&ÆR6ç2FWfVæ—"VæR6÷W&6RFR,;FÆRÂ66÷RÂÖ&¶WB”B÷R6&–Æ—G¢ÒöFÖ–âÖæW‡B6W'B6æöæ–6ÂVæFçBÆ6öç7G'V7F–öâ²ÆW2&÷WFW2öFÖ–âò¢&W7FVçB7W"ÆVv7’§W7^(	–R7WF÷fW"W‡Æ–6—FVÖVçBfÆ–L:¢ÒWF‚ÖwV&Bæ§2&÷L:†vRF÷WFW2ÆW2&÷WFW2FÖ–â†—7F÷&—VW2²6æöæ–6ÂfÆ–FR66W76–öâR&ö÷G7G&WBæR6öçF÷W&æR¦Ö—2ö’öWF‚öÖP¢Ò¶öÖW&6R6VçG&ÂWBÆW2'FVæ—&W2—2'FvVçBÆRÜ:¦ÖR'VçF–ÖR6æöæ–6Â¢V7VæRf&–çFR÷R6÷–R"Ö&6Œ:¢ÒÆR,;FÆRfW'F–6ÂæRFöææR¦Ö—2Vâ66÷R—2²F÷WFRWF÷&—L:’Ö&¶WBW7B,:—6öÇVR<;GL:’6W'fWW"V—2Æ—\:–RfçBw,:–vF–öà¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢ÒVâf–ÇG&R—2GRF6†&ö&E66†VÖW7B,:—6VçFF–öææVÂ¢6æöæ–6ÂæR6†&vR¦Ö—2Vâw,:–vBvÆö&Â÷W"ÆRf–ÇG&W"Vç7V—FR<;GL:’6Æ–Vç@¢ÒÖ&¶WBW7BÂwVæ—L:’FRL:–Ì:–vF–öâ'W6–æW72²6÷'&–F÷"&W7FRVæRF–ÖVç6–öâFV6†æ—VRöÆöv—7F—VR6ç2WF÷&—L:¢ÒÆR6ö6·—BL:–Öòò7Fv–æræR÷7<:†FRV7VæRG&ç6—F–öâ¢–ÂL:–Ì:†wVR:Æ&÷WFR÷&FW'2WBÆ—BÆW2æ÷F–f–6F–öç2öFö7VÖVçG2,:–VÆÆVÖVçBW'6—7L:—0¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ ¢¢¤÷vç2¢¢¢7W7Fö×5÷6†—ÖVçEö†öÆG6Â÷&FW%ö–æ6–FVçG6Â'FæW'6 ¢¢¥w&—FW2†æ÷B÷væW"’¢¢¢&6¶WEö—FV×6‡w&—FW"Öæ÷BÖ÷væW"’Â&6¶WG6‡w&—FW"Öæ÷BÖ÷væW"’Â–çfö–6W6‡w&—FW"Öæ÷BÖ÷væW"’Â÷&FW%ö6öÖÖVçG6‡w&—FW"Öæ÷BÖ÷væW"’Â÷&FW%ö—FV×6‡w&—FW"Öæ÷BÖ÷væW"’Â÷&FW%÷7FGW5ö†—7F÷'–‡w&—FW"Öæ÷BÖ÷væW"’Â÷&FW'6‡w&—FW"Öæ÷BÖ÷væW"’Â&6VÅö—FV×6‡w&—FW"Öæ÷BÖ÷væW"’Â&6VÇ6‡w&—FW"Öæ÷BÖ÷væW"’Â&öGV7G6‡w&—FW"Öæ÷BÖ÷væW"’Â&V6—–VçG6‡w&—FW"Öæ÷BÖ÷væW"’Â&VÆ—6‡w&—FW"Öæ÷BÖ÷væW"’Â66åöWfVçG6‡w&—FW"Öæ÷BÖ÷væW"’Â6×5öÆöv‡w&—FW"Öæ÷BÖ÷væW"’ÂvÆÆWEö6öç7V×F–öç6‡w&—FW"Öæ÷BÖ÷væW"’ÂvÆÆWEö7&VF—EöÆ÷G6‡w&—FW"Öæ÷BÖ÷væW"’ÂvÆÆWE÷G&ç67F–öç6‡w&—FW"Öæ÷BÖ÷væW"’ÂvÆÆWG6‡w&—FW"Öæ÷BÖ÷væW" ¢¢¤W‡÷6W2¢¢¢–çFW&æÂ’‡2’Âƒ’…EE–çFW&f6R‡2 ¢¢¤6öç7VÖW2¢¢¢WF‚„DT4Ä$TEôäEôô%4U%dTB’ÂWF‚Ö–FVçF—G’„DT4Ä$TEôäEôô%4U%dTB’Â'W6–æW72×'VÆW2„DT4Ä$TEôäEôô%4U%dTB’Â6FÆör„DT4Ä$TEôäEôô%4U%dTB’Â7W7Fö×2„DT4Ä$TEôäEôô%4U%dTB’ÂFV6—6–öâ×6–væÇ2„DT4Ä$TEôäEôô%4U%dTB’ÂFö7VÖVçG2„DT4Ä$TEôäEôô%4U%dTB’ÂV6öæöÖ–2ÖVæv–æR„DT4Ä$TEôäEôô%4U%dTB’ÂW‡FW&æÂ×&÷f–FW"Ö6öçG&7G2„DT4Ä$TEôäEôô%4U%dTB’Â–æ6–FVçBÖÖævVÖVçB„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’Â–çfVçF÷'’„DT4Ä$TEôäEôô%4U%dTB’ÂÆö6Â×7Fö6²„DT4Ä$TEôäEôô%4U%dTB’ÂÆöv—7F–72„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WB„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖWFöæö×’„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖFVÆVvF–öâ„DT4Ä$TEôäEôô%4U%dTB’Âæ÷F–f–6F–öç2„DT4Ä$TEôäEôô%4U%dTB’Â÷&FW'2„DT4Ä$TEôäEôô%4U%dTB’Â–ÖVçG2„DT4Ä$TEôäEôô%4U%dTB’ÂW&6†6–ær„DT4Ä$TEôäEôô%4U%dTB’Â&VgVæG2„DT4Ä$TEôäEôô%4U%dTB’Â6†&VBÖ6'B„DT4Ä$TEôäEôô%4U%dTB’Â6÷W&6–ær„DT4Ä$TEôäEôô%4U%dTB’Â7WÆ–W"Ö6öææV7F—f—G’„DT4Ä$TEôäEôô%4U%dTB’ÂvÆÆWB„DT4Ä$TEôäEôô%4U%dTB¢¢¤6öç7VÖVB'’¢¢¢FÖ–âÖF6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’ÂFV6—6–öâ×6–væÇ2„DT4Ä$TEôäEôô%4U%dTB’ÂV6öæöÖ–2ÖVæv–æR„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖ6öçG&öÂ×ÆæR„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖFVÆVvF–öâ„DT4Ä$TEôäEôô%4U%dTB’Â÷&FW'2„DT4Ä$TEôäEôô%4U%dTB’Â6÷W&6–ær„DT4Ä$TEôäEôô%4U%dTB ¢¢¥&ö¦V7F–öç2¢¢¢öV7VæUğ ¢¢¥FV6†æ–6Â6öçFW‡B¢¢¢&–Ö—F—fVÚ±î¸Â¸­yêë¢°k¢G§¦*^g partenaire ne demande jamais un credential au hasard : le type, le propriÃ©taire, les prÃ©requis, les actions de crÃ©ation et les Ã©lÃ©ments Ã  obtenir proviennent du contrat fournisseur qualifiÃ©
+**Technical context** : 0 primitive dependencies, 2 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 488 fichier(s) dÃ©clarÃ©(s)
+  - dash : 195
+  - middleware : 1
+  - migrations : 3
+  - routes : 29
+  - services : 47
+  - tests : 213
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="dashboard"]_
+
+## decision-signals
+
+**Kind** : piloting-capability  Â·  **Status** : staging
+
+**Service** : Detecter et qualifier des signaux operationnels et economiques a partir des donnees canoniques, puis porter leur cycle de vie global ou Market ID sans muter la verite metier source.
+
+**Perimeter** :
+- _in_ :
+  - generation de signaux depuis des requetes radar cross-feature (cash, colis, incidents)
+  - generation globale du signal supplier_payment_review depuis la population canonique Purchasing ambiguous/rejected/mismatched
+  - signal financial_journal_gap par marche actif : ecart de reconciliation du journal financier ou conversion EUR indisponible, auto-resolu quand le journal est conforme
+  - cycle de vie du signal : acknowledge / resolve / snooze
+  - consultation admin des signaux (routes/signals.js)
+  - Action Center Canonical global : uniquement les signaux market_id NULL
+  - Action Center Canonical pays : projection et lifecycle bornes a un Market ID resolu serveur
+  - identite dâ€™un fait actif : signal_type + market_id + entity_type + entity_id
+- _out_ :
+  - aucune decision metier engageante : la capability detecte, elle ne tranche aucun statut de commande, colis ou wallet
+  - aucune UI ne devient propriÃ©taire de la donnÃ©e source : Action Center reste une projection dashboard de cette capability
+  - aucun market_id brut fourni par le navigateur ne devient une autorite
+  - la regeneration des generateurs historiques reste globale tant quâ€™un generateur market-scoped owner nâ€™est pas explicitement livre
+  - classement produit boutique (feature recommendations, qui reste seule proprietaire du ranking)
+
+**Invariants** :
+- un signal est un constat derive, jamais une mutation d'une table possedee par une autre feature
+- acknowledge/resolve/snooze changent uniquement l'etat du signal, jamais l'etat de la donnee source
+- open, acknowledged et snoozed forment un seul lifecycle actif ; disparition de la condition => auto-resolution dans le meme scope
+- market_id NULL signifie explicitement fait global ; market_id non NULL signifie fait borne a ce Market ID canonique
+- le Centre dâ€™actions global ne lit ni ne mute jamais les signaux pays
+- le Centre dâ€™actions pays ne lit ni ne mute jamais un autre Market ID et le navigateur ne fournit jamais le market_id autoritatif
+- toute mutation lifecycle pays et son audit de dÃ©lÃ©gation partagent une seule transaction DB
+- supplier_payment_review reste global : aucune allocation Market ID nâ€™est inventÃ©e pour une PO potentiellement multi-marchÃ©s ; disparition de la condition source auto-rÃ©sout le signal seulement quand la population a Ã©tÃ© lue sans troncature
+
+**Owns** : `signals`
+
+**Exposes** : 0 internal API(s), 9 HTTP interface(s)
+
+**Consumes** : auth (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED)
+**Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), market-control-plane (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED)
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 29 fichier(s) dÃ©clarÃ©(s)
+  - middleware : 1
+  - migrations : 2
+  - routes : 2
+  - services : 9
+  - tests : 15
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="decision-signals"]_
+
+## documents
+
+**Kind** : business-transversal  Â·  **Status** : production
+
+**Service** : Generer et conserver un PDF officiel privÃ© (facture, remboursement, wallet, retrait, douane) aprÃ¨s Ã©vÃ©nement confirmÃ© ; exposer au client authentifiÃ© uniquement ses factures et remboursements essentiels.
+
+**Perimeter** :
+- _in_ :
+  - generation PDF privÃ©e de facture, preuve de retrait, facture douane, reÃ§u wallet et reÃ§u remboursement
+  - rendu PDF Ã©phÃ©mÃ¨re du devis estimatif panier (sans officialisation ni stockage dans transaction_documents)
+  - liste et tÃ©lÃ©chargement client authentifiÃ©s des factures et remboursements dans Mon Komerce et la commande concernÃ©e
+- _out_ :
+  - decision qu'un document doit etre genere (reste a la feature source : orders, customs, wallet, refunds)
+
+**Authority** : backend-core â€” tout changement de gabarit de document doit etre valide par le proprietaire de document-service.js
+
+**Invariants** :
+- un document genere est immuable une fois emis â€” toute correction passe par une nouvelle generation versionnee
+- aucun document ni lien documentaire n'est envoyÃ© par WhatsApp
+- tout tÃ©lÃ©chargement client exige une session et filtre par owner_user_id
+- la projection client ne liste que les factures et reÃ§us de remboursement ; les autres documents restent internes ou administratifs
+- une URL de tÃ©lÃ©chargement client n'est exposÃ©e que lorsque le PDF existe et est disponible
+- le PDF disponible possÃ¨de une empreinte SHA-256 et ne peut pas Ãªtre remplacÃ©
+- le PDF de facture est dÃ©rivÃ© du HTML canonique qui embarque le vrai logo Komerce et porte une template_version dÃ©diÃ©e
+
+**Owns** : `invoices`, `transaction_documents`
+
+**Exposes** : 0 internal API(s), 9 HTTP interface(s)
+
+**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
+**Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 42 fichier(s) dÃ©clarÃ©(s)
+  - migrations : 7
+  - routes : 3
+  - services : 9
+  - tests : 18
+  - utils : 5
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="documents"]_
+
+## economic-engine
+
+**Kind** : business-feature  Â·  **Status** : production
+
+**Service** : Calculer les frontiÃ¨res Ã©conomiques, la contribution et la couverture ; le marchÃ© borne le possible et le responsable autorisÃ© dÃ©cide le prix.
+
+**Perimeter** :
+- _in_ :
+  - taux sourcing PLN vers KMF explicite dans finance_config, aucun taux par dÃ©faut
+  - moteur de pricing et application des regles
+  - audit des changements de prix produit dans price_history
+  - allocation de cout
+  - vÃ©ritÃ© des charges de structure de pÃ©riode issue de faits Ã©conomiques append-only, distincte des configurations de charges
+  - vÃ©ritÃ© du risque de pÃ©riode issue de faits append-only et d un watermark de revue explicite par marchÃ©
+  - gate de couverture Ã©conomique par marchÃ©, fail-closed sur maturitÃ©, risque et charges de structure attribuÃ©es
+  - politique canonique de dÃ©cision par marchÃ© : fenÃªtre, seuils de maturitÃ©/couverture et plafond de dispositions versionnÃ©s append-only
+  - corridor de prix issu de preuves marchÃ© locales, sans fallback silencieux depuis une rÃ©fÃ©rence globale
+  - les coÃ»ts et rÃ©fÃ©rences Ã©conomiques sont consultables avant le premier prix local ; selected.price_kmf reste null et buyer_effective=false tant qu aucune dÃ©cision acheteur ne le porte, sans publication implicite
+  - Exception ciblÃ©e Catalogue pays : un admin central vÃ©rifiÃ© peut prÃ©visualiser, fixer, activer et repricer un prix local sur marchÃ© explicitement sÃ©lectionnÃ© ; mÃªmes gates Ã©conomiques, aucune ouverture des observations/politiques locales par rÃ´le seul, opÃ©rateurs toujours soumis aux capabilities.
+  - explicabilitÃ© canonique de chaque ligne de coÃ»t : source, hypothÃ¨se, mouvement, nature Ã©conomique, pÃ©rimÃ¨tre d allocation et impact
+  - strategies tarifaires et matrices admin
+  - gestion des provisions pour risque (routes/admin-risk-provisions.js â€” retaggÃ© @domain economic-engine au Lot O2, Ã©tait @domain dashboard)
+- _out_ :
+  - affichage produit cote catalogue (feature catalog, qui consomme economic-engine)
+  - facturation finale (feature orders)
+  - autorisation et audit de lâ€™enregistrement dÃ©lÃ©guÃ© dâ€™un fait MARKET_DIRECT par un opÃ©rateur pays (feature market-delegation, capability structure.event.record) â€” appelle recordStructureCostEvent() sans jamais dupliquer sa validation ni Ã©crire directement dans economic_structure_cost_events
+
+**Authority** : backend-core â€” toute frontiÃ¨re Ã©conomique, rÃ¨gle de contribution, couverture ou application de prix reste derriÃ¨re les services propriÃ©taires economic-engine ; une charge fixe n a aucune autoritÃ© de fabrication du prix SKU
+
+**Invariants** :
+- une strategie tarifaire est versionnee, jamais modifiee retroactivement sur une commande deja figee
+- aucun consommateur cross-feature ne modifie price_history directement ; l audit passe par economic-price-audit-service.js
+- chaque ligne de coÃ»t exposÃ©e Ã  la dÃ©cision dÃ©crit sa provenance, son hypothÃ¨se, sa nature Ã©conomique, son pÃ©rimÃ¨tre d allocation, son niveau de vÃ©ritÃ© et son chemin d impact sans promouvoir une configuration en rÃ©el
+- une charge fixe configurÃ©e dans charges ne devient jamais un rÃ©el de pÃ©riode ; seule une preuve append-only dans economic_structure_cost_events peut porter cette vÃ©ritÃ©
+- les articles gÃ©nÃ¨rent la contribution ; le portefeuille absorbe collectivement les charges de structure ; aucune quote-part fixe analytique ne devient dette intrinsÃ¨que du SKU
+- le coÃ»t variable complet est la frontiÃ¨re Ã©conomique unitaire ; le marchÃ© borne le possible et le prix final exige une dÃ©cision marchÃ© ou humaine autorisÃ©e
+- une disposition de maturitÃ© ne transforme jamais une commande immature en MATURE et reste bornÃ©e par une politique externe versionnÃ©e
+- un zÃ©ro de risque rÃ©alisÃ© n existe que derriÃ¨re un watermark de revue explicite ; une absence de faits ne vaut jamais preuve de zÃ©ro
+- la fenÃªtre et les seuils du gate de dÃ©cision marchÃ© proviennent d une politique append-only market-scoped ; aucune date ni seuil d autorisation n est choisi ad hoc par le navigateur
+- un gate de couverture marchÃ© ne publie un ratio autorisant que sur commandes MATURE, charges de structure marchÃ© dÃ©cisionnelles et vÃ©ritÃ© risque de pÃ©riode explicite
+- une rÃ©fÃ©rence globale de concurrence reste informative et ne devient jamais silencieusement une preuve marchÃ© locale
+
+**Owns** : `charges`, `competitor_prices`, `cost_benchmarks`, `cost_component_events`, `cost_component_market_override_events`, `cost_component_market_overrides`, `cost_components`, `economic_risk_cost_events`, `economic_risk_watermark_events`, `economic_snapshots`, `economic_structure_cost_events`, `exchange_rates`, `finance_config`, `financial_movement_documents`, `financial_movements`, `international_n1_reconciliations`, `market_cost_attributions`, `market_price_observation_events`, `market_price_observations`, `order_cost_entry_events`, `order_item_real_cost_allocations`, `price_history`, `pricing_category_dims`, `pricing_category_taxes`, `pricing_components`, `pricing_market_decision_policy_events`, `pricing_matrices_audit`, `pricing_maturity_disposition_events`, `pricing_strategies`, `pricing_strategy_history`, `risk_provisions`
+**Writes (not owner)** : `orders` (writer-not-owner)
+
+**Exposes** : 2 internal API(s), 110 HTTP interface(s)
+  - `recommend` (services/pricing-engine.js) â€” resolved
+  - `recordProductPriceChange` (services/economic-price-audit-service.js) â€” resolved
+
+**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED)
+**Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERVED), market-control-plane (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED)
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 219 fichier(s) dÃ©clarÃ©(s)
+  - dash : 6
+  - middleware : 1
+  - migrations : 34
+  - routes : 13
+  - services : 56
+  - tests : 106
+  - utils : 3
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="economic-engine"]_
+
+## external-provider-contracts
+
+**Kind** : technical-transversal  Â·  **Status** : staging
+
+**Service** : Qualifier, prouver et publier ce que Komerce peut rÃ©ellement croire d un systÃ¨me externe avant qu une feature mÃ©tier ne s appuie sur son contrat.
+
+**Perimeter** :
+- _in_ :
+  - contrat de conversation externe EXPECTS / REQUIRES / SENDS / RECEIVES / CONFIRMS / EXPOSES
+  - Ã©tats de faits KNOWN / DERIVED / UNKNOWN
+  - preuves provider P0 Business readiness â†’ P1 Raw API â†’ P2 Adapter â†’ P3 Pipeline â†’ P4 Golden E2E
+  - rÃ¨gle fail-closed commune : une preuve absente, inconnue ou ambiguÃ« ne devient jamais implicitement PASS
+  - inventaire et fiches de qualification des frontiÃ¨res API externes de Komerce
+  - contrat d onboarding humain dÃ©rivÃ© de la vÃ©ritÃ© fournisseur : prÃ©requis, lieu/action de crÃ©ation, Ã©lÃ©ments Ã  obtenir, Ã©lÃ©ments Ã  ne jamais demander et critÃ¨re de fin
+- _out_ :
+  - les adapters et clients provider spÃ©cifiques, qui restent dans la feature mÃ©tier consommatrice (payments, notifications, catalog/purchasing, etc.)
+  - les credentials/secrets et leur cycle de rotation, qui restent dans l ownership technique ou mÃ©tier appropriÃ©
+  - la dÃ©cision mÃ©tier consommant le fait externe : payer, commander, notifier, enrichir ou livrer reste propriÃ©tÃ© de sa feature
+  - les appels provider mutatifs eux-mÃªmes : cette feature prouve le contrat mais ne centralise pas les side effects externes
+
+**Authority** : backend-core â€” le vocabulaire KNOWN/DERIVED/UNKNOWN, le contrat de conversation, les Ã©tapes P0..P4 et les rÃ¨gles communes de preuve externe ne peuvent diverger par provider ou par feature consommatrice.
+
+**Invariants** :
+- rÃ©alitÃ© avant abstraction : un contrat provider rÃ©el est lu avant de figer sa reprÃ©sentation canonique
+- UNKNOWN ne devient jamais PASS, false ou capability supportÃ©e par dÃ©faut
+- une requÃªte externe acceptÃ©e ne vaut pas confirmation mÃ©tier lorsqu un read-back ou une preuve provider est nÃ©cessaire
+- une preuve Sandbox/staging ne satisfait jamais implicitement un contrat Production
+- une correspondance externe ambiguÃ« bloque : Komerce ne devine jamais une rÃ©fÃ©rence ou un Ã©tat provider
+- un Golden E2E prouve la composition de contrats Ã©lÃ©mentaires dÃ©jÃ  qualifiÃ©s ; il ne sert jamais Ã  dÃ©couvrir P0/P1 Ã  l aveugle
+- un onboarding partenaire ne demande jamais un credential au hasard : le type, le propriÃ©taire, les prÃ©requis, les actions de crÃ©ation et les Ã©lÃ©ments Ã  obtenir proviennent du contrat fournisseur qualifiÃ©
 - l IA peut accÃ©lÃ©rer la lecture et la formalisation mais ne devient jamais l autoritÃ© du contrat : la provenance reste documentation fournisseur, confirmation fournisseur ou preuve runtime explicite
 - les adapters provider et les side effects restent possÃ©dÃ©s par leurs features mÃ©tier ; external-provider-contracts ne devient jamais un god-adapter
 
@@ -701,26 +1046,421 @@ _DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â
 **Exposes** : 0 internal API(s), 8 HTTP interface(s)
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED)
-**Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), dashboard (DECLARm«ëŒ+Š×®º+º$zzb¥çF–6ÆW2R‡V"à ¢¢¥W&–ÖWFW"¢¢ ¢Òö–åò ¢Ò7V—f’FR7Fö6²WBVæGö–çBFRÆV7GW&RöÖ—6R¦÷W ¢Òö÷WEò ¢ÒFV6—6–öâFRV&Æ–6F–öâ&öGV—B†fVGW&R6FÆörÂV’6öç6öÖÖR–çfVçF÷'’ ¢¢¤WF†÷&—G’¢¢¢&6¶VæBÖ6÷&R(	BF÷WB6†ævVÖVçBFR6Æ7VÂFRF—7öæ–&–Æ—FRFö—BWG&RfÆ–FR"ÆR&÷&–WF—&RFR–çfVçF÷'’×6W'f–6Ræ§0 ¢¢¤–çf&–çG2¢¢ ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ ¢¢¤÷vç2¢¢¢–çfVçF÷'•ö—FV×6  ¢¢¤W‡÷6W2¢¢¢–çFW&æÂ’‡2’Â‚…EE–çFW&f6R‡2 ¢¢¤6öç7VÖW2¢¢¢WF‚„DT4Ä$TEôäEôô%4U%dTB’Â6FÆör„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’ÂÆöv—7F–72„DT4Ä$TEôäEôô%4U%dTB’Â÷&FW'2„DT4Ä$TEôäEôô%4U%dTB¢¢¤6öç7VÖVB'’¢¢¢FÖ–âÖF6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’ÂF6†&ö&B„DT4Ä&Ú±î¸Â¸­yêë¢°k¢G§¦*^ticles au hub.
+**Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED)
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 1 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 6 fichier(s) dÃ©clarÃ©(s)
+  - dash : 1
+  - routes : 1
+  - services : 1
+  - tests : 3
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="inventory"]_
+
+## legacy-control-tower
+
+**Kind** : deprecated  Â·  **Status** : deprecated
+
+**Service** : Ancien control tower â€” deprecated.
 
 **Perimeter** :
 - _in_ :
-  - suivi de stock et endpoint de lecture/mise a jour
+  - admin-legacy/js/**
 - _out_ :
-  - decision de publication produit (feature catalog, qui consomme inventory)
+  - admin/ (remplacement)
 
-**Authority** : backend-core â€” tout changement de calcul de disponibilite doit etre valide par le proprietaire de inventory-service.js
+**Authority** : dashboards
+
+**Invariants** :
+- tout fichier legacy doit rester ici
+
+**Owns** : _aucune_
+
+**Exposes** : 0 internal API(s), 0 HTTP interface(s)
+
+**Consumes** : _aucune_
+**Consumed by** : _aucune_
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 37 fichier(s) dÃ©clarÃ©(s)
+  - js : 37
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="legacy-control-tower"]_
+
+## local-stock
+
+**Kind** : business-feature  Â·  **Status** : staging
+
+**Service** : Porter le stock physique vendable local, calculer la disponibilitÃ© nette des allocations actives, projeter une disponibilitÃ© publique minimale et engager/consommer/libÃ©rer ce stock dans le cycle commande.
+
+**Perimeter** :
+- _in_ :
+  - table local_stock : quantitÃ© physique, marchÃ©, lieu et commercial_exposure
+  - table local_stock_allocations : engagement anti-survente avant paiement
+  - projection availability calculÃ©e AVAILABLE_NOW | UNAVAILABLE, jamais persistÃ©e
+  - projection dÃ©cisionnelle interne minimale : tracked / commercial_exposure / availability / exposable, sans quantitÃ© brute ni identifiant interne
+  - projection checkout read-only LOCAL_STOCK | IMPORT | REVIEW_REQUIRED, quantitÃ©-aware et relay-scoped, jamais persistÃ©e
+  - isStockExposable() : exposure ENABLED et disponibilitÃ© nette positive
+  - cycle allocate -> consume | release, atomique avec la transaction orders
+  - ajustement opÃ©rateur du stock local, tracÃ© via updated_by
+- _out_ :
+  - stock hub/transit : feature inventory
+  - stock import/national : feature catalog
+  - pricing transport : local-stock ne calcule aucun fret
+  - ETA import : domaine transport rail, jamais produit par local-stock
+  - parcels et retrait : feature logistics
+  - crÃ©ation et lifecycle commande : feature orders
+  - autoritÃ© transactionnelle du checkout : POST /api/orders refait toujours la rÃ©solution sous verrou
+  - rÃ©servation panier avec TTL ou cron dÃ©diÃ©
+  - granularitÃ© variant_combo : scope product_id uniquement Ã  ce stade
+
+**Authority** : backend-core â€” toute rÃ¨gle de vÃ©ritÃ© physique locale, exposition ou engageabilitÃ© reste dans la feature local-stock.
 
 **Invariants** :
 - [object Object]
 - [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
 
-**Owns** : `inventory_items`
+**Owns** : `local_stock`, `local_stock_allocations`
 
-**Exposes** : 0 internal API(s), 8 HTTP interface(s)
+**Exposes** : 6 internal API(s), 2 HTTP interface(s)
+  - `allocateForOrderItem` (services/local-stock-service.js) â€” resolved
+  - `consumeAllocationsForOrder` (services/local-stock-service.js) â€” resolved
+  - `getDecisionAvailabilityEvidence` (services/local-stock-decision-projection.js) â€” resolved
+  - `previewCheckoutFulfillmentSources` (services/local-stock-checkout-preview.js) â€” resolved
+  - `releaseAllocationsForOrder` (services/local-stock-service.js) â€” resolved
+  - `resolveCheckoutFulfillmentSources` (services/local-stock-service.js) â€” resolved
 
-**Consumes** : auth (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED)
-**Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), dashboard (DECLARm«ëŒ+Š×®º+º$zzb¥ævF–öâ6†WFWW"(	BL:–¬:Æ—g,:’<;GL:’&÷WF—VR‡V&Æ–2ö&÷WF—VRö§2öÖ&¶WBÖ6öçFW‡Bæ§2Â6†çF–W"†W&òƒ"ôƒ2’Â6öçFW‡GVVÂWB6öÖ×WF&ÆRÂ¦Ö—2ÇR"&WV—&TÖ&¶WE66÷P¢ÒÖ–w&F–öâFW2“B6öÆöææW2¥ö¶ÖbW†—7FçFW2fW'2WF–Ç2ö7W'&Væ7’æ§2(	BÓRÆ—g&RÂv÷WF–ÂFRf÷&ÖFvRÂæRF÷V6†R:V7VæR6öÆöææRæ’V7VâVÆçBW†—7FçB²&VæöÖÖW"VæR6öÆöææRFRÖöçFçBVâ&öBW7BVâ6†çF–W"<:—,:’Â:f÷'B&—7VP¢Ò6öçfW'6–öâBvff–6†vR´Ôn(i$UU"F–7÷&‡V&Æ–2ö&÷WF—VRö§2ö"×WF–Ç2æ§26f×B‚’ÂFW‚FR6†ævRL:—FV7L:’"gW6VR†÷&—&R’(	BÜ:–6æ—6ÖRF—7F–æ7BÂæöâ&V×Æ<:’"Æ&÷VæF'’FWf—6R‡V’÷'FRÆFWf—6R,8”TÄÄRBwVâÖ&6Œ:’Â2VæR6öçfW'6–öâ’â"×WF–Ç2æ§2FWf–VçBVâDDU"FR6WGFR&÷VæF'’Vâ"Â¦Ö—2Âv–çfW'6P¢ÒBõR(	BFö7VÖVçG26öçG&7GVVÇ2Æ—6çBÆR6æ6†÷B2ÂF6†&ö&G2w,:–vF–öâ7&÷72ÖÖ&¶WBVâUU"&VfW&Væ6R(	Bæöâf—G2ÂL:—VæFVçBFR2õ"&W7V7F—fVÖVç@¢ÒFWf—6W2FR6÷W&6–ærfÆ÷GFçFW2…U4BôTBô4å’’(	B6öæ6W&â<:—,:’"6öç7G'V7F–öâ†g&VW¦R–çf&–çBBóR’Â7W'&Væ7•÷&—F–W2æRÆW26öçF–VçB¦Ö—0¢Ò6WGFÆVÖVçBWBGG&–'WF–öâ:–6öæöÖ—VR"÷:—&FWW"†VçF—L:’F–fl:—,:–RÂ†÷'2:—&–Ü:‡G&R¢Ò6÷'&–F÷"g&ÖWv÷&²‡&VÆF–öâG&fW'6çBÆW266÷W2Â2Vâ†RBv÷væW'6†—Â†÷'2:—&–Ü:‡G&R¢ÒvÆÆWB×VÇF’ÖÖ&¶WB††÷'2:—&–Ü:‡G&R¢Ò&öGV7EöÖ&¶WEööffW"†L:–6ÆVæ6†WW"ÒW"Ö&6†æBÆö6ÂÂ2F—fW&vVæ6RFR&—‚Â†÷'2:—&–Ü:‡G&R¢Òf÷&ÖFvRFWf—6Rff–6Œ:’†fVGW&RV6öæöÖ–2ÖVæv–æRò&÷VæF'’FWf—6RÓRÂV’6öç6öÖÖRÖ–æ÷%÷Væ—B ¢¢¤WF†÷&—G’¢¢¢&6¶VæBÖ6÷&R(	BFö7G&–æRvVÌ:–RFç2´ôÔU$4UôÔ$´UEôÄ”U%ôe$TU¤RæÖBƒ##bÓ‚Ó’Â$TE’Dòe$TU¤R’âF÷WFRW‡FVç6–öâGR:—&–Ü:‡G&R‡6WGFÆVÖVçBÂ6÷'&–F÷"g&ÖWv÷&²ÂVçF—L:’÷:—&FWW"’W†–vRVâæ÷WfVRg&VW¦RÂ2VæRW‡FVç6–öâ6–ÆVæ6–WW6RFR6RÖæ–fW7FRà ¢¢¤–çf&–çG2¢¢ ¢ÒÖ&¶WG2÷'FRL:—6÷&Ö—2ÆRÆ–fV7–6ÆR6æöæ—VR$õd•4”ôä”ärô5D•dRõ5U5TäDTBô4Äõ4TBWB7F÷&Vg&öçE÷FW‡G2²V7VæRWF÷&—6F–öâWF–Æ—6FWW"î(	–W7BL:—&—l:–RFR6W26†×0¢ÒÖ&¶WBÖÆ–fV7–6ÆR×6W'f–6RW7BÆR6WVÂw&—FW"'VçF–ÖRFRÆ–fV7–6ÆU÷7FGW2ö—5ö7F—fR²4Äõ4TBW7BFW&Ö–æÂWBF÷WFRG&ç6—F–öâ7V—BÆÖG&–6RW‡Æ–6—FP¢Ò&÷f—6–öææW"Vâæ÷WfVRÖ&6Œ:’7,:–RVæRÆ–væR$õd•4”ôä”är²&W&÷f—6–öææW"VâÖ&¶WB”B†—7F÷&—VRW†–vRW‡Æ–6—FVÖVçBVâ:—FB$õd•4”ôä”är6ç276–væÖVçB5D•dRWB6öç6W'fRÎ(	––FVçF—L:’ö†—7F÷&—VRGRÖ&6Œ:¢Ò÷W&F÷%öÖ&¶WE÷66÷W2„Ó’Ò†—7F÷&—VRBv6<:‡2w&–âW6W"Â¦Ö—26÷W&6RGR6WGFÆVÖVçB†w&–â÷&væ—6F–öâÂF–fl:—,:’¢Ò,:—fö6F–öâBwVâ66÷RÒUDDR&Wfö¶VEöBÂ¦Ö—2DTÄUDR(	BÂv†—7F÷&—VRBv6<:‡2âvW7B2&V6öç7G'V7F–&ÆR6–æöà¢ÒÖ&¶WD6öçFW‡B‡&6÷W'26†WFWW"’W7BVâ6öçFW‡FR6Æ–VçB6öÖ×WF&ÆRÂ¦Ö—2VæRWF÷&—6F–öà¢Ò&WV—&TÖ&¶WE66÷R„Ó"’W7B,:—6öÇR6W'fWW"FWV—2÷W&F÷%öÖ&¶WE÷66÷W2Â¦Ö—2FWV—2VâÖ&¶WEö–Bf÷W&æ’"ÆR6Æ–Vç@¢Ò&VÆ—2æÖ&¶WEö–B„Ó"’W7BäõBåTÄÂ(	BVâ&VÆ—2W7BVâÆ–WR‡—6—VRÂ–ÂæRWWB2W†—7FW"6ç2Ö&6Œ:¢Ò÷&FW'2æÖ&¶WEö–B„Ó2’W7BVâ4ä4„õB,:—6öÇRGR&VÆ—2RÖöÖVçBFRÆ6öÖÖæFRÂ¦Ö—2VæRd²f—fçFR&R×7–æ6‡&öæ—<:–P¢Ò÷&FW'2ç&VÆ—5ö–BW7BäõBåTÄÂFç2ÆR66Œ:–Ö‡l:—&–fœ:’"WŒ:–7WF–öâ,:–VÆÆRÂ27W÷<:’’(	BV7VæR6öÖÖæFR6ç2&VÆ—2âvW7B÷76–&ÆRÂÆR&6¶f–ÆÂ÷&FW'2æÖ&¶WEö–BW7BFöæ2F÷FÂ"6öç7G'V7F–öà¢ÒF÷WFRÖ–w&F–öâFRÖ&¶WBV’F÷V6†RVæRF&ÆR÷7<:–L:–R"VæRWG&RfVGW&R†Wƒ¢&VÆ—2ÂÆöv—7F–72²÷&FW'2’¦÷WFRVæR6öÆöææR÷RVâ–æFW‚Â¦Ö—2VæR,:†vÆRÜ:—F–W"FR6WGFRWG&RfVGW&P¢Òf÷&&–DÖ&¶WD–B‡fÆ–FF÷'2ö–æFW‚æ§2’:–6†÷VRf÷'BƒCÂÖW76vRW‡Æ–6—FR’ÇWL;GBVRFR6ö×FW"7W"7G&—Væ¶æ÷vâ÷W"&WF—&W"Ö&¶WEö–B6–ÆVæ6–WW6VÖVçBBwVâ–ÆöB6Æ–Vç@¢Ò67&—G2ö6†V6²ÖæòÖÖ&¶WBÖ–BÖ×WFF–öâæ§2W7BVâvFRÂ2VæR6öçfVçF–öâFö7VÖVçL:–R¢VâÖ&¶WEö–B×WF&ÆRæöâv&L:’Fç2fÆ–FF÷'2ò¢æ§2f—B:–6†÷VW"Æ4¢ÒWF–Ç2ö7W'&Væ7’æ§26vWDÖ&¶WD7W'&Væ7’F‡&÷r6’ÆRÖ&6Œ:’âvW†—7FR2(	B¦Ö—2FRFWf—6R"L:–fWB6–ÆVæ6–WW6P¢ÒWF–Ç2ö7W'&Væ7’æ§26f÷&ÖDÖ÷VçB7W÷6RVâÖöçFçBL:–¬:Fç2ÂwVæ—L:’ff–6Œ:–Rƒ#SÂ2#S6÷W2×Væ—L:’’(	B6öŒ:—&VçBfV2ÆW26öÆöææW2¥ö¶ÖbW†—7FçFW2Â¦Ö—2VæR6öçfVçF–öâ6VçG2–çfVçL:–R6ç2&W6ö–â,:–VÀ¢ÒÓ†÷WfW'GW&RÖ–÷GFR’W7BVâ”å4U%B6WVÂ(	Bl:—&–fœ:’,:–VÆÆVÖVçB¢f–6†–W"FRÓôÓ"ôÓ2ôÓ"ôÓRÖöF–fœ:’÷W"÷Wg&—"6RÖ&6Œ:’Â6bâFW7G2ö–çFVw&F–öâöÖ&¶WBÖ÷VâÖÖG&—‚çFW7Bæ§0¢Ò&VfW&Væ6Uö7W'&Væ7’ÒUU"†6æöæ—VRFRÆ7W'&Væ7’&÷VæF'’’Â7G'V7GW&VÆÆVÖVçBF—7F–æ7BFRV6öæöÖ–5öVæv–æUö&6Uö7W'&Væ7’Ò´Ôb†V6öæöÖ–2ÖVæv–æRÂ–æ6†æ|:’’(	BæR¦Ö—26öæföæG&RÆW2FWW‚†g&VW¦RÂ#"Ó‚Ó##b¢Ò–çf&–çB’¢V7VæR—&RF—&V7FRVçG&RFWW‚FWf—6W2¦öæRg&æ2„´Ôn(iE„b’âvW7B¦Ö—27Fö6¼:–Ræ’6Æ7VÌ:–R6öÖÖRFVÆÆR(	BF÷WFR6öçfW'6–öâ6RL:—&—fRFRFWW‚&—L:—2fW'2UU"RÖöÖVçBGR6Æ7VÂÂ6bâ7W'&Væ7•÷&—F–W2WB&ö¦V7DÖ÷VçB‚¢Ò7W'&Væ7•÷&—F–W2W7BÆ4UTÄR6÷W&6RFR&—L:—2(	BV7VæR&—L:’æRWWB:§G&RÖ–çFVçVRÖçVVÆÆVÖVçBFç2Vâ6V6öæB'FVf7BÆ–6F–b‡6W'fW"æ§2WB"×WF–Ç2æ§26öç6öÖÖVçBf–FFW"ÂæR÷'FVçB¦Ö—2ÆWW"&÷&RfÆWW"¢ÒÆ7W'&Væ7’&÷VæF'’÷7<:†FRÆ,:†vÆRÖöì:—F—&R²WF–Ç2ö7W'&Væ7’æ§2‡6W'fWW"’WB"×WF–Ç2æ§2†6Æ–VçBÂ"’Vâ6öçBÆW2FFW'2Â¦Ö—2FW2&÷&œ:—F—&W26öæ7W'&VçG2FRÆ,:†vÆP¢ÒV7VæRFWf—6RFR6÷W&6–ærfÆ÷GFçFR…U4BôTBô4å’’Fç27W'&Væ7•÷&—F–W2(	B'6Væ6R"6öç7G'V7F–öâÂ2"÷V&Æ’†g&VW¦R–çf&–çG2BóR¢Ò"¢"×WF–Ç2æ§26f×B†Ö÷VçBÂ$´Ôb"’æRf÷&6RÇW2Vâff–6†vR´ÔbÆ—GL:—&ÂFWV—2ÆR#"Ó‚Ó##b(	B$´Ôb"W7BFWfVçRÂvÆ–2'&ö¦WGFRfW'2ÆRÖ&6Œ:’6÷W&çB"‡,:—6öÇRf–Ö&¶WBÖ6öçFW‡Bæ§2Â÷fW'&–FRöÖ&¶WCÒ–æ6ÇW2’âF÷WFRUE$RFWf—6RW‡Æ–6—FR†W‚â$UU""’v&FRÆR6ö×÷'FVÖVçBÆ—GL:—&Â†—7F÷&—VRÂf÷&<:’Â–væ÷&RÆRÖ&6Œ:’âÆW232VÇ2W†—7FçG2FRf×B‡‚Â$´Ôb"’âvöçB2:—L:’ÖöF–fœ:—2(	B–Ç2Œ:—&—FVçBGRæ÷WfVR6ö×÷'FVÖVçBWFöÖF—VVÖVçBâV–6öçVRÆ—BVâFR6W2VÇ2Fö—B6fö—"VR$´Ôb"æRfWWBÇW2F—&R&f÷&6R´Ôb ¢Ò"¢f×B‚’öf×E&–6R‚’&W7FVçB5”ä4…$ôäU2ƒ32VÆçG2Fç2FW2&÷V6ÆW2FR&VæGR’(	BÆ&ö¦V7F–öâ6öç6öÖÖRVâ6æ6†÷BL:–¬:6†&|:’†fWF6‚Væ—VRR6†&vVÖVçBGRÖöGVÆRÂ¦Ö—2Vâ&÷VæB×G&—"VÂ’âfçB,:—6öÇWF–öâGRfWF6‚†fVì:§G&R6÷W'FRÂ÷RVâ62B|:–6†V2,:—6VR’Â&WÆ’7W"Âvff–6†vR´Ôb''WB(	B¦Ö—2VâÖöçFçBfW‚æ’VæRW†6WF–öà¢Ò2¢÷&FW'2çF÷FÅö¶Öb÷F÷FÅöWW"…–ÖVçB&÷VæF'’Âf–ææ6Uö6öæf–r’6öçB5E$”5DTÔTåB”ä4„ä|8•2(	B7G&—RÂ•ÂWB66…÷&VÆ—2Æ—6VçBW†6ÇW6—fVÖVçB6W2FWW‚6öÆöææW2Â¦Ö—2F—7Æ•÷F÷FÅöÖ÷VçBöF—7Æ•ö7W'&Væ7’âÆW2FWW‚&÷VæF&–W26öW†—7FVçBÂ¦Ö—2Ü:–Ææ|:–W0¢Ò2¢F—7Æ•öÖ&¶WEö6öFR†6Æ–VçBÂ&W\:§FRõ5Bö’ö÷&FW'2’W7BVâ–æF–6RFR4ôåDU…DRÂ¦Ö—2VâÖöçFçBÂ¦Ö—2VæRWF÷&—6F–öâ(	BÆR6W'fWW"6Æ7VÆRÇV’ÖÜ:¦ÖRF—7Æ•÷F÷FÅöÖ÷VçBf–&ö¦V7DÖ÷VçB‚’‡6W'f–6W2ö÷&FW"ÖF—7Æ’×6æ6†÷Bæ§2’âVâ6öFR–çfÆ–FR÷R'6VçBæR&Æ÷VR¦Ö—2Æ6öÖÖæFP¢Ò2¢æR¦Ö—27W÷6W"6–ÆVæ6–WW6VÖVçBVR÷&FW'2æÖ&¶WEö–B†6VÇV’GR&VÆ—26†ö—6’’W7BÆRÖ&6Œ:’FRæf–vF–öâGR6Æ–VçB(	BF—7Æ•öÖ&¶WEö6öFRf—BDõT¤õU%2fö’2v–ÂW7BfÆ–FR²&VÆ—2æÖ&¶WEö–BâvW7BRwVâ&WÆ’6’V7Vâ6öFRâv:—L:’f÷W&æ’÷RRv–ÂW7B–çfÆ–FRâ&WWfRVâ&6R¢FW7G2ö–çFVw&F–öâö÷&FW"ÖF—7Æ’×6æ6†÷BçFW7Bæ§2L:–ÖöçG&RVæRÆ–væRü;’Ö&¶WEö–B„´Ò’(šF—7Æ•ö7W'&Væ7’…„b¢Ò2¢F—7Æ•÷&—G•÷6æ6†÷B„¥4ôä"’W7BVæRÜ:—FFöæì:–RBvVF—B(	BÆ&—L:’WF–Æ—<:–R÷W"ÆR6Æ7VÂÂ¦Ö—2VæR6÷W&6RFRl:—&—L:’ÇFW&æF—fRâF—7Æ•÷F÷FÅöÖ÷VçB6WVÂf—Bfö¢Ò2¢V7Vâ&V6Æ7VÂVÇL:—&–WW"GRF—7Æ’6æ6†÷B(	Bf–|:’:Æ7,:–F–öâÂ6öÖÖRF÷FÅö¶Öb÷F÷FÅöWW"â÷W"ÆW26öÖÖæFW2çL:—&–WW&W2:ÆÖ–w&F–öâC2ÂÆW226öÆöææW2&W7FVçBåTÄÂ(	BV7Vâ&6¶f–ÆÂf'&—\:’†–çf&–çBrGRg&VW¦R¢Ò2¢&W6öÇfTF—7Æ•6æ6†÷B‚’‡6W'f–6W2ö÷&FW"ÖF—7Æ’×6æ6†÷Bæ§2’æRF‡&÷r¦Ö—2(	BVâ:–6†V2FR,:—6öÇWF–öâ&WF÷W&æRVâ6æ6†÷Bf–FRÂæR&Æ÷VR¦Ö—2Æ7,:–F–öâBwVæR6öÖÖæFRâ2vW7BVæRFöæì:–RBvVF—Bö6öæf—&ÖF–öâÂ2VæRFöæì:–RFR–VÖVç@¢ÒB¢6÷'&V7F–b–ÖVçB&÷VæF'’G&÷Wl:’VæFçBÆ6'Föw&†–R2(	B6W'f–6W2ö–çfö–6R×6W'f–6Ræ§2ff–6†—B$´Ôb"6öL:’VâGW"7W"F÷WFW2ÆW2f7GW&W2ÂÜ:¦ÖRVâ–VÖVçBUU"…7G&—Rõ•Â’â6÷'&–|:’6VÆöâ–ÖVçEöÖöFRÂ6ç2F÷V6†W"7W'&Væ7•÷&—F–W2æ’F—7Æ•÷F÷FÅöÖ÷VçB(	B6RâvW7B2Vâ6†çF–W"7W'&Væ7’&÷VæF'’Âf–6†–W'2L:–6Æ,:—2Fç2Fö7VÖVçG2æfVGW&Ræ§2†Ö–w&F–öç2óCEö–çfö–6W5÷F÷FÅöWW"ç7Â’Â2–6 ¢¢¤÷vç2¢¢¢7W'&Væ7•÷&—F–W6Âg…÷V&Æ–5÷&VfW&Væ6U÷V÷FW6Âg…÷&FUöö'6W'fF–öç6ÂÖ&¶WG6Â÷W&F÷%öÖ&¶WE÷66÷W6  ¢¢¤W‡÷6W2¢¢¢–çFW&æÂ’‡2’Â…EE–çFW&f6R‡2 ¢¢¤6öç7VÖW2¢¢¢–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’Âæ÷F–f–6F–öç2„DT4Ä$TEôäEôô%4U%dTB¢¢¤6öç7VÖVB'’¢¢¢6FÆör„DT4Ä$TEôäEôô%4U%dTB’Â7W7Fö×2„DT4Ä$TEôäEôô%4U%dTB’ÂF6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’ÂV6öæöÖ–2ÖVæv–æR„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’ÂÆö6Â×7Fö6²„DT4Ä$TEôäEôô%4U%dTB’ÂÆöv—7F–72„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖWFöæö×’„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖ6öçG&öÂ×ÆæR„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖFVÆVvF–öâ„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖ÷W&F÷"ÖF6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’Â÷&FW'2„DT4Ä$TEôäEôô%4U%dTB’Â–ÖVçG2„DT4Ä$TEôäEôô%4U%dTB’Â&÷f–FW'2×6W'f–6W2„DT4Ä$TEôäEôô%4U%dTB’Â&V6öÖÖVæFF–öç2„DT4Ä$TEôäEôô%4U%dTB’Â&VgVæG2„DT4Ä$TEôäEôô%4U%dTB’Â6WGFÆVÖVçB„DT4Ä$TEôäEôô%4U%dTB’ÂvÆÆWB„DT4Ä$TEôäEôô%4U%dTB ¢¢¥&ö¦V7F–öç2¢¢¢öV7VæUğ ¢¢¥FV6†æ–6Â6öçFW‡B¢¢¢&–Ö—F—fRFWVæFVæ6–W2ÂBFW7BÖöæÇ’Â6ö×÷6—F–öâ×&ö÷@ ¢¢¤&÷VæF'’†VÇF‚¢¢¢	ùú"„TÅD…’(	B7&÷72ÖfVGW&R–×÷'G3¢Â'VçF–ÖR7–6ÆW3¢ÂVæ6Æ76–f–VC¢ÂFV6Æ&VBÖæ÷BÖö'6W'fVC¢ ¢¢¤v÷fW&ææ6R†VÇF‚¢¢¢	ùú"„TÅD…’(	B÷'†âf–ÆW3¢ÂVç&W6öÇfVB–çFW&æÂ—3¢ÂFV6Æ&VBÖöæÇ’FW3¢ÂÖ&–wV÷W2÷væW'6†—¢ÂöçFöÆöw’v3¢ ¢¢¤vFR†VÇF‚¢¢¢	ùú"„TÅD…’(	BvFW3¢öV7VåòÂf–Ã¢Âv&ã¢  ¢¢¤&6†—FV7GW&ÂFV'B¢¢¢öV7VæUğ ¢¢¤–×ÆVÖVçFF–öâ¢¢¢cf–6†–W"‡2’L:–6Æ,:’‡2¢ÒÖ–w&F–öç2¢P¢Ò67&—G2¢0¢Ò6W'f–6W2¢¢ÒFW7G2¢3  ¥ôL:—F–Ç26ö×ÆWG2†f–6†–W'2ÂF&ÆW2Â–çFW&f6W2’¢fö—"Fö72ôdTEU$Uó3cæ§6öâ(i"fVGW&W5¶–CÒ&Ö&¶WB%Õğ ¢22Ö&¶WBÖWFöæö× ¢¢¤¶–æB¢¢¢'W6–æW72ÖfVGW&R+r¢¥7FGW2¢¢¢7Fv–æp ¢¢¥6W'f–6R¢¢¢W&ÖWGG&R:Vâ&W7öç6&ÆR—2W‡Æ–6—FVÖVçB66÷:’ÖævW"FRL:–6–FW"Vâ&—‚Æö6ÂÂN(	–Vâfö—"Î(	––×7B:–6öæöÖ—VRÂV—2FRÎ(	–7F—fW"6ç2&ö&F–öâ6VçG&ÆRÆ÷'7VRÆW2vFW2WF÷&—6VçBÆ÷6—F–öâ²Äô4Åô5D•dRFWf–VçBÆ÷'2Æ6WVÆRl:—&—L:’Æö6ÆR6öç6öÖÖ&ÆR"ÆR'W–W"F‚à ¢¢¥W&–ÖWFW"¢¢ ¢Òö–åò ¢ÒL:–6—6–öâFR&—‚6öÖÖW&6–ÂÆö6ÆR"Ö&¶WEö–B²&öGV7Eö–@¢ÒFWf—6R,:—6öÇVRW†6ÇW6—fVÖVçBFWV—2ÆRÖ&6Œ:’6W'fWW ¢ÒVF—BVæBÖöæÇ’4UBõ$U4UBôUD„õ$•¤Rô5D•dDRFRÆL:–6—6–öâÆö6ÆP¢Ò&Wf–Wr:–6öæöÖ—VR4E"²6÷WfW'GW&RÖ&6Œ:’fçB7F—fF–öà¢ÒG&ç6—F–öâE$eEõTäD”äuôtDRÓâÄô4ÅôUD„õ$•¤TEõTäD”äuô5UDõdU"ÓâÄô4Åô5D•dP¢Ò&ö¦V7F–öâGR&—‚Äô4Åô5D•dRfW'2ÆR´Ôb6æöæ—VR6ç2ÖöF–f–W"&öGV7G2ç&–6Uö¶Ö`¢Ò6öç6öÖÖF–öâÄô4Åô5D•dR"6FÆöwVRÂÆ—7FR'F|:–RWB6†V6¶÷WBf–&÷VæF'’&÷&œ:—F—&P¢Ò&VgW2f–ÂÖ6Æ÷6VB6’VæRw&çVÆ&—L:’4µR÷f&–çFRW‡Æ–6—FRVçG&W&—BVâ6öæfÆ—@¢Ò&ö¦V7F–öâÖævW"÷f–WvW"FRÆ66—L:’,:–VÆÆVÖVçBF—7öæ–&ÆP¢Ò7W&f6R6æöæ–6ÂFRFW7BFRÎ(	–WFöæöÖ–R—0¢Ò7W&f6R:—V—R—2–çL:–w,:–R¢ÆV7GW&RÂ–çf—FF–öâÂL:–Ì:–vF–öâWB,:—fö6F–öâFR6&–Æ—F–W2ÂFöçB&÷f–FW"æÖævRÆ÷'7^(	––ÂW7BÄ•dP¢Ò&6÷W'2W‡Æ–6—FRN(	–66WFF–öâN(	––çf—FF–öâfV2&WF÷W"fW'2ÆRÖ&¶WB”B,:—6öÇR<;GL:’6W'fWW ¢ÒöÆ—F—VRFR&÷FV7F–öâFW2Væ6—76VÖVçG2–çL:–w,:–R:WFöæöÖ–R—2¢66‚7F–b÷7W7VæGRWBfÆ–FF–öâ4”ätÄRôETÅôÅt•0¢Òö÷WEò ¢Ò×WFF–öâFR&öGV7G2ç&–6Uö¶ÖbvÆö&À¢ÒfÆ–FF–öâ‡VÖ–æR6VçG&ÆRFRÆ7G&L:–v–R6öÖÖW&6–ÆR—0¢Ò7,:–F–öâö7F—fF–öâN(	—VâÖ&6Œ:¢Ò6WGFÆVÖVçBWBÖ÷WfVÖVçG2f–ææ6–W'0¢Ò,;FÆW2FW'&–â–×Æ–6—FW0¢Ò&—‚Æö6Â"4µR(	BFçBVR6WGFRw&çVÆ&—L:’î(	–W7B2ÖöL:–Æ—<:–RW‡Æ–6—FVÖVç@ ¢¢¤WF†÷&—G’¢¢¢&6¶VæBÖ6÷&R(	BÆ7G&L:–v–RÆö6ÆR'F–VçBRÖævW"GRÖ&6Œ:’²ÆRÖ÷FWW":–6öæöÖ—VRWWB&VgW6W"VæR7F—fF–öâFW7G'V7F—fR÷R6÷W2Ö6÷WfW'FRæöâWF÷&—<:–RÂÖ—2V7VâFÖ–â6VçG&ÂæRfÆ–FRÆR6†ö—‚6öÖÖW&6–Â—2à ¢¢¤–çf&–çG2¢¢ ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V6Ú±î¸Â¸­yêë¢°k¢G§¦*^t]
+**Consumes** : catalog (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED)
+**Consumed by** : dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), providers-services (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED)
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 9 fichier(s) dÃ©clarÃ©(s)
+  - routes : 1
+  - services : 3
+  - tests : 5
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="local-stock"]_
+
+## logistics
+
+**Kind** : business-feature  Â·  **Status** : production
+
+**Service** : Faire transiter un colis du scan initial au retrait final, avec tracking client et transporteur.
+
+**Perimeter** :
+- _in_ :
+  - scan et operations colis
+  - creation automatique de colis
+  - secrets de retrait
+  - retrait partiel parcel-scoped avec rotation one-shot du secret order-level
+  - compatibilitÃ© verifyâ†’collect : le code courant est revalidÃ© atomiquement Ã  chaque remise physique
+  - tracking client et transitaire
+  - relais et transporteurs
+  - consignes hub prescrites au scan : repack, mesure volume, photo de scelle (bornes de responsabilite)
+  - saisie volumes produits (POST /hub/volume) et photos de scelle (POST /hub/photo)
+  - HUB-001 : identitÃ© physique distincte de l allocation Ã©conomique ; snapshot exact Purchase Order â†’ order item/SKU/Supplier Order Identity â†’ Market/destination
+  - HUB-001 : placement physique et custody append-only ; SPLIT/MERGE/REPACK dÃ©placent la matiÃ¨re sans rÃ©assigner la destination Ã©conomique
+  - HUB-001 : inbound fournisseur potentiellement multi-market, outbound PACKED/DISPATCHED obligatoirement homogÃ¨ne sur exactement un Market
+  - HUB-001 : constat physique LOST/STOLEN/DESTROYED/DAMAGED_UNUSABLE atomique avec l outbox transactionnelle F0
+  - Logistics Control Chain : le HUB est une primitive Logistics transverse aux fournisseurs et Markets ; il mutualise la custody puis spÃ©cialise la sortie en outbound Market sans possÃ©der ni rÃ©Ã©crire les vÃ©ritÃ©s Orders/Purchasing/Market
+- _out_ :
+  - cout du transport (feature economic-engine)
+  - declaration douaniere (feature customs)
+  - preuve de retrait document (feature documents, consommee ici)
+  - rÃ©paration ou rÃ©interprÃ©tation de Supplier Order Identity / Canonical Unit / Purchase Order : autoritÃ© purchasing+sourcing uniquement
+  - rÃ©assignation commerciale d une ligne, d un Market ou d une destination client depuis le Hub
+
+**Authority** : backend-core â€” logistics possÃ¨de la vÃ©ritÃ© physique et la custody ; scan-engine.js reste autoritÃ© de la machine de scan colis legacy, hub-physical-identity.js possÃ¨de HUB-001 sans jamais rÃ©assigner les vÃ©ritÃ©s Purchasing/Orders/Market
+
+**Invariants** :
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- HUB-A : le Hub organise librement ses colis â€” un colis reprÃ©sente une commande s'il porte une ligne (order_items) de cette commande, ou si sa commande porteuse (parcels.order_id) n'a aucune ligne rattachÃ©e ; parcels.order_id n'est jamais rÃ©Ã©crit. Tout ajout/retrait/rÃ©affectation de ligne passe par parcel-item-mutation-service, exige un colis draft/preparation de mÃªme destination, conserve identitÃ©, quantitÃ© et compteurs qty_* (UNIQUE(order_item_id) inchangÃ©) et laisse une trace parcel_events (item_assigned / item_removed / item_reassigned_in|out) dans la mÃªme transaction. La rÃ¨gle de paiement Ã  l'expÃ©dition s'applique Ã  chaque commande reprÃ©sentÃ©e ; aucune rÃ¨gle de facturation ni d'encaissement ne change
+- le HUB est une primitive logistics Komerce, jamais la propriÃ©tÃ© d un Market, d une source ou d un fournisseur ; Supplier Leg et Market Leg restent deux jambes distinctes
+- split/merge/repack changent les enveloppes physiques sans casser la filiation order item â†’ purchase line/PO â†’ allocation/unitÃ© Hub â†’ parcel/shipment â†’ relais
+- le fret maritime ne se ventile jamais au poids : volume si snapshot, repartition egale confidence low sinon
+- un produit tague fragile ne se repacke jamais (repack_exempt) : la protection prime sur le volume
+- la photo de scelle Dubai est la borne 1 de responsabilite : avant = fournisseur, apres = transport
+- le systeme prescrit (repack/measure/photo), l agent execute, jamais l inverse (R2)
+- une PO regroupee (order_id NULL) ne s alloue au Hub que par ligne d achat (purchase_line_id), repartie dans l ordre des commandes et plafonnee au restant du effectif, et n est jamais recevable tant qu elle est en brouillon ou annulee (quarantaine) ; l allocation historique reste au niveau PO
+- un colis ne change de statut que via une sequence de scan validee
+- [object Object]
+- le retrait exceptionnel par autorisation nominative ne revele jamais le nom attendu a l'agent relais â€” comparaison aveugle uniquement
+- le compteur de tentatives du retrait exceptionnel (exceptional_pickup_attempts) est distinct de celui du code secret (pickup_secret_attempts) â€” un echec sur l'un ne bloque jamais l'autre
+- le jalon disponible au relais transmet Ã  notifications le nom et l adresse publics nÃ©cessaires au lien de localisation, sans gÃ©ocodage bloquant
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+
+**Owns** : `carriers`, `hub_box_bags`, `hub_custody_events`, `hub_physical_unit_placements`, `hub_physical_units`, `hub_purchase_allocations`, `international_shipment_charges`, `international_shipment_events`, `international_shipment_hub_units`, `international_shipment_relay_receipts`, `international_shipments`, `market_transport_sale_rates`, `parcel_events`, `parcel_items`, `parcels`, `pickup_code_generations`, `pickup_collect_failures`, `pickup_print_tokens`, `pickup_reveal_codes`, `pickup_verify_attempts`, `product_sku_physical_codes`, `relais`, `relay_product_return_receipts`, `scan_events`, `scans`, `shipments`
+**Writes (not owner)** : `order_items` (writer-not-owner), `products` (writer-not-owner)
+
+**Exposes** : 32 internal API(s), 78 HTTP interface(s)
+  - `addParcelItem` (services/parcel-item-mutation-service.js) â€” resolved
+  - `addParcelItemTraced` (services/parcel-item-mutation-service.js) â€” resolved
+  - `appendParcelShipmentInfo` (services/parcel-mutation-service.js) â€” resolved
+  - `assignParcelItem` (services/parcel-item-mutation-service.js) â€” resolved
+  - `assignSingleOrderItemToParcel` (services/parcel-item-mutation-service.js) â€” resolved
+  - `assignWholeOrderItemToParcel` (services/parcel-item-mutation-service.js) â€” resolved
+  - `createAutoPreparedParcel` (services/parcel-mutation-service.js) â€” resolved
+  - `createHubParcel` (services/parcel-mutation-service.js) â€” resolved
+  - `createPhysicalUnit` (services/hub-physical-identity.js) â€” resolved
+  - `createRelais` (services/relais-mutation-service.js) â€” resolved
+  - _...22 de plus, voir FEATURE_360.json_
+
+**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED)
+**Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), inventory (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), market-control-plane (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED)
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 2 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 189 fichier(s) dÃ©clarÃ©(s)
+  - boutique : 1
+  - dash : 2
+  - docs : 7
+  - middleware : 1
+  - migrations : 15
+  - routes : 18
+  - services : 49
+  - tests : 93
+  - utils : 3
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="logistics"]_
+
+## loyalty
+
+**Kind** : business-feature  Â·  **Status** : production
+
+**Service** : Calculer et maintenir le statut de fidelite d'un client (palier + compteur gros panier) et ses recompenses.
+
+**Perimeter** :
+- _in_ :
+  - calcul et recalcul du palier de fidelite (recalculate_loyalty(), fonction DB appelee par routes/loyalty.js)
+  - compteur et notification de gros panier (big_basket_count / big_basket_last_notified_count)
+  - creation et traitement des recompenses (pending/granted/skipped), y compris les actions admin
+  - synthese de fidelite exposee (v_loyalty_summary) et grille des paliers (loyalty_tiers)
+- _out_ :
+  - solde et mouvements wallet (feature wallet, scindee de wallet-loyalty au Lot O1)
+  - paiement carte/PayPal (feature payments)
+  - remboursement (feature refunds)
+
+**Authority** : backend-core â€” tout changement de calcul de palier ou de recompense doit etre valide par le proprietaire de loyalty-service.js
+
+**Invariants** :
+- ne pas changer les calculs de fidelite (Lot O1 â€” ontology refactor, pas product refactor)
+- le recalcul de palier est idempotent : rejouable sans dupliquer une recompense deja accordee
+
+**Owns** : `loyalty_rewards`, `loyalty_tiers`
+
+**Exposes** : 0 internal API(s), 12 HTTP interface(s)
+
+**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED)
+**Consumed by** : auth-identity (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED)
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 1 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 9 fichier(s) dÃ©clarÃ©(s)
+  - routes : 2
+  - services : 1
+  - tests : 6
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="loyalty"]_
+
+## market
+
+**Kind** : business-feature  Â·  **Status** : production
+
+**Service** : Porter le rÃ©fÃ©rentiel des marchÃ©s ouverts (pays, devise) et l'historique d'accÃ¨s des opÃ©rateurs Ã  un marchÃ© â€” jamais le settlement ni l'attribution Ã©conomique, qui restent une primitive sÃ©parÃ©e et diffÃ©rÃ©e.
+
+**Perimeter** :
+- _in_ :
+  - rÃ©fÃ©rentiel markets (code pays, devise, minor_unit) â€” M0
+  - historique d'accÃ¨s operator_market_scopes (grain user, jamais settlement) â€” M1
+  - scoping market_id sur relais et orders (snapshot rÃ©solu du relais) â€” M1b/M1c
+  - requireMarketScope autorisation (serveur, enferme l'opÃ©rateur, jamais le client) â€” M2
+  - consommation runtime de requireMarketScope par les surfaces admin canoniques scopÃ©es par marchÃ© (Dashboard, Order 360, Client, Pricing, OpÃ©rations, Finance et ExpÃ©ditions/Douane)
+  - garde Joi forbidMarketId + gate scripts/check-no-market-id-mutation.js â€” M2
+  - boundary devise utils/currency.js (formatage minor_unit-aware, lookup markets avec cache 5 min) â€” M5
+  - paritÃ©s fixes currency_parities, projection via EUR reference (jamais un axe direct entre devises Zone franc) â€” P1
+  - adapter client fmt/fmtPrice (public/boutique/js/b-utils.js), consomme currency_parities via /api/public/config, projette vers le marchÃ© courant (market-context.js, override ?market= inclus) â€” P2
+  - snapshot display_total_amount/display_currency (orders, services/order-display-snapshot.js) â€” troisiÃ¨me vÃ©ritÃ©, distincte de total_kmf/total_eur (Payment Boundary, finance_config, jamais touchÃ©e) et de currency_parities seule â€” P3, freeze 22-08-2026
+  - ouverture Mayotte (YT, EUR, minor_unit=2) â€” M10, premier marchÃ© aprÃ¨s le seed KM
+- _out_ :
+  - MarketContext navigation acheteur â€” dÃ©jÃ  livrÃ© cÃ´tÃ© boutique (public/boutique/js/market-context.js, chantier hero H2/H3), contextuel et commutable, jamais lu par requireMarketScope
+  - migration des 94 colonnes *_kmf existantes vers utils/currency.js â€” M5 livre l'outil de formatage, ne touche Ã  aucune colonne ni aucun appelant existant ; renommer une colonne de montant en prod est un chantier sÃ©parÃ©, Ã  fort risque
+  - conversion d'affichage KMFâ†’EUR diaspora (public/boutique/js/b-utils.js#fmt(), taux de change dÃ©tectÃ© par fuseau horaire) â€” mÃ©canisme distinct, non remplacÃ© par la boundary devise (qui porte la devise RÃ‰ELLE d'un marchÃ©, pas une conversion). b-utils.js devient un ADAPTER de cette boundary en P2, jamais l'inverse
+  - P4/P5 â€” documents contractuels lisant le snapshot P3, dashboards agrÃ©gation cross-market en EUR reference â€” non faits, dÃ©pendent de P3/P2 respectivement
+  - devises de sourcing flottantes (USD/AED/CNY) â€” concern sÃ©parÃ© par construction (freeze invariant 4/5), currency_parities ne les contient jamais
+  - settlement et attribution Ã©conomique par opÃ©rateur (entitÃ© diffÃ©rÃ©e, hors pÃ©rimÃ¨tre)
+  - corridor framework (relation traversant les scopes, pas un axe d'ownership, hors pÃ©rimÃ¨tre)
+  - wallet multi-market (hors pÃ©rimÃ¨tre)
+  - product_market_offer (dÃ©clencheur = 1er marchand local, pas divergence de prix, hors pÃ©rimÃ¨tre)
+  - formatage devise affichÃ© (feature economic-engine / boundary devise M5, qui consomme minor_unit)
+
+**Authority** : backend-core â€” doctrine gelÃ©e dans KOMERCE_MARKET_LAYER_FREEZE.md (2026-08-19, READY TO FREEZE). Toute extension du pÃ©rimÃ¨tre (settlement, corridor framework, entitÃ© opÃ©rateur) exige un nouveau freeze, pas une extension silencieuse de ce manifeste.
+
+**Invariants** :
+- markets porte dÃ©sormais le lifecycle canonique PROVISIONING/ACTIVE/SUSPENDED/CLOSED et storefront_texts ; aucune autorisation utilisateur nâ€™est dÃ©rivÃ©e de ces champs
+- market-lifecycle-service est le seul writer runtime de lifecycle_status/is_active ; CLOSED est terminal et toute transition suit la matrice explicite
+- provisionner un nouveau marchÃ© crÃ©e une ligne PROVISIONING ; reprovisionner un Market ID historique exige explicitement un Ã©tat PROVISIONING sans assignment ACTIVE et conserve lâ€™identitÃ©/historique du marchÃ©
+- operator_market_scopes (M1) = historique d'accÃ¨s grain user, jamais source du settlement (grain organisation, diffÃ©rÃ©)
+- rÃ©vocation d'un scope = UPDATE revoked_at, jamais DELETE â€” l'historique d'accÃ¨s n'est pas reconstructible sinon
+- MarketContext (parcours acheteur) est un contexte client commutable, jamais une autorisation
+- requireMarketScope (M2) est rÃ©solu serveur depuis operator_market_scopes, jamais depuis un market_id fourni par le client
+- relais.market_id (M1b) est NOT NULL â€” un relais est un lieu physique, il ne peut pas exister sans marchÃ©
+- orders.market_id (M1c) est un SNAPSHOT rÃ©solu du relais au moment de la commande, jamais une FK vivante re-synchronisÃ©e
+- orders.relais_id est NOT NULL dans le schÃ©ma (vÃ©rifiÃ© par exÃ©cution rÃ©elle, pas supposÃ©) â€” aucune commande sans relais n'est possible, le backfill orders.market_id est donc total par construction
+- toute migration de market qui touche une table possÃ©dÃ©e par une autre feature (ex: relais, logistics ; orders) ajoute une colonne ou un index, jamais une rÃ¨gle mÃ©tier de cette autre feature
+- forbidMarketId (validators/index.js) Ã©choue fort (400, message explicite) plutÃ´t que de compter sur stripUnknown pour retirer market_id silencieusement d'un payload client
+- scripts/check-no-market-id-mutation.js est un gate, pas une convention documentÃ©e : un market_id mutable non gardÃ© dans validators/*.js fait Ã©chouer la CI
+- utils/currency.js#getMarketCurrency throw si le marchÃ© n'existe pas â€” jamais de devise par dÃ©faut silencieuse
+- utils/currency.js#formatAmount suppose un montant dÃ©jÃ  dans l'unitÃ© affichÃ©e (12500, pas 1250000 sous-unitÃ©) â€” cohÃ©rent avec les colonnes *_kmf existantes, jamais une convention cents inventÃ©e sans besoin rÃ©el
+- M10 (ouverture Mayotte) est un INSERT seul â€” vÃ©rifiÃ© rÃ©ellement : 0 fichier de M1/M1b/M1c/M2/M5 modifiÃ© pour ouvrir ce marchÃ©, cf. tests/integration/market-open-matrix.test.js
+- reference_currency = EUR (canonique de la Currency Boundary), structurellement distinct de economic_engine_base_currency = KMF (economic-engine, inchangÃ©) â€” ne jamais confondre les deux (freeze P1, 22-08-2026)
+- invariant 9 : aucune paire directe entre deux devises Zone franc (KMFâ†”XAF) n'est jamais stockÃ©e ni calculÃ©e comme telle â€” toute conversion se dÃ©rive de deux paritÃ©s vers EUR au moment du calcul, cf. currency_parities et projectAmount()
+- currency_parities est la SEULE source de paritÃ©s â€” aucune paritÃ© ne peut Ãªtre maintenue manuellement dans un second artefact applicatif (server.js et b-utils.js consomment via adapter, ne portent jamais leur propre valeur)
+- la Currency Boundary possÃ¨de la rÃ¨gle monÃ©taire ; utils/currency.js (serveur) et b-utils.js (client, P2) en sont les adapters, jamais des propriÃ©taires concurrents de la rÃ¨gle
+- aucune devise de sourcing flottante (USD/AED/CNY) dans currency_parities â€” absence par construction, pas par oubli (freeze invariants 4/5)
+- P2 : b-utils.js#fmt(amount, "KMF") ne force plus un affichage KMF littÃ©ral depuis le 22-08-2026 â€” "KMF" est devenu l'alias "projette vers le marchÃ© courant" (rÃ©solu via market-context.js, override ?market= inclus). Toute AUTRE devise explicite (ex. "EUR") garde le comportement littÃ©ral historique, forcÃ©, ignore le marchÃ©. Les 33 appels existants de fmt(x, "KMF") n'ont pas Ã©tÃ© modifiÃ©s â€” ils hÃ©ritent du nouveau comportement automatiquement. Quiconque lit un de ces appels doit savoir que "KMF" ne veut plus dire "force KMF"
+- P2 : fmt()/fmtPrice() restent SYNCHRONES (33 appelants dans des boucles de rendu) â€” la projection consomme un snapshot dÃ©jÃ  chargÃ© (fetch unique au chargement du module, jamais un round-trip par appel). Avant rÃ©solution du fetch (fenÃªtre courte, ou en cas d'Ã©chec rÃ©seau), repli sur l'affichage KMF brut â€” jamais un montant faux ni une exception
+- P3 : orders.total_kmf/total_eur (Payment Boundary, finance_config) sont STRICTEMENT INCHANGÃ‰S â€” Stripe, PayPal et cash_relais lisent exclusivement ces deux colonnes, jamais display_total_amount/display_currency. Les deux boundaries coexistent, jamais mÃ©langÃ©es
+- P3 : display_market_code (client, requÃªte POST /api/orders) est un indice de CONTEXTE, jamais un montant, jamais une autorisation â€” le serveur calcule lui-mÃªme display_total_amount via projectAmount() (services/order-display-snapshot.js). Un code invalide ou absent ne bloque jamais la commande
+- P3 : ne jamais supposer silencieusement que orders.market_id (celui du relais choisi) est le marchÃ© de navigation du client â€” display_market_code fait TOUJOURS foi s'il est valide ; relais.market_id n'est qu'un repli si aucun code n'a Ã©tÃ© fourni ou qu'il est invalide. Preuve en base : tests/integration/order-display-snapshot.test.js dÃ©montre une ligne oÃ¹ market_id (KM) â‰  display_currency (XAF)
+- P3 : display_parity_snapshot (JSONB) est une mÃ©tadonnÃ©e d'audit â€” la paritÃ© utilisÃ©e pour le calcul, jamais une source de vÃ©ritÃ© alternative. display_total_amount seul fait foi
+- P3 : aucun recalcul ultÃ©rieur du display snapshot â€” figÃ© Ã  la crÃ©ation, comme total_kmf/total_eur. Pour les commandes antÃ©rieures Ã  la migration 143, les 3 colonnes restent NULL â€” aucun backfill fabriquÃ© (invariant 7 du freeze)
+- P3 : resolveDisplaySnapshot() (services/order-display-snapshot.js) ne throw jamais â€” un Ã©chec de rÃ©solution retourne un snapshot vide, ne bloque jamais la crÃ©ation d'une commande. C'est une donnÃ©e d'audit/confirmation, pas une donnÃ©e de paiement
+- P4 : correctif Payment Boundary trouvÃ© pendant la cartographie P3 â€” services/invoice-service.js affichait "KMF" codÃ© en dur sur toutes les factures, mÃªme en paiement EUR (Stripe/PayPal). CorrigÃ© selon payment_mode, sans toucher currency_parities ni display_total_amount â€” ce n'est pas un chantier Currency Boundary, fichiers dÃ©clarÃ©s dans documents.feature.js (migrations/144_invoices_total_eur.sql), pas ici
+
+**Owns** : `currency_parities`, `fx_public_reference_quotes`, `fx_rate_observations`, `markets`, `operator_market_scopes`
+
+**Exposes** : 0 internal API(s), 0 HTTP interface(s)
+
+**Consumes** : infrastructure (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED)
+**Consumed by** : catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERVED), market-control-plane (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), market-operator-dashboard (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), providers-services (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED), settlement (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 4 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 61 fichier(s) dÃ©clarÃ©(s)
+  - migrations : 15
+  - scripts : 3
+  - services : 11
+  - tests : 32
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="market"]_
+
+## market-autonomy
+
+**Kind** : business-feature  Â·  **Status** : staging
+
+**Service** : Permettre Ã  un responsable pays explicitement scopÃ© manager de dÃ©cider un prix local, dâ€™en voir lâ€™impact Ã©conomique, puis de lâ€™activer sans approbation centrale lorsque les gates autorisent la position ; LOCAL_ACTIVE devient alors la seule vÃ©ritÃ© locale consommable par le buyer path.
+
+**Perimeter** :
+- _in_ :
+  - dÃ©cision de prix commercial locale par market_id + product_id
+  - devise rÃ©solue exclusivement depuis le marchÃ© serveur
+  - audit append-only SET/RESET/AUTHORIZE/ACTIVATE de la dÃ©cision locale
+  - preview Ã©conomique CDR + couverture marchÃ© avant activation
+  - transition DRAFT_PENDING_GATE -> LOCAL_AUTHORIZED_PENDING_CUTOVER -> LOCAL_ACTIVE
+  - projection du prix LOCAL_ACTIVE vers le KMF canonique sans modifier products.price_kmf
+  - consommation LOCAL_ACTIVE par catalogue, liste partagÃ©e et checkout via boundary propriÃ©taire
+  - refus fail-closed si une granularitÃ© SKU/variante explicite entrerait en conflit
+  - projection manager/viewer de la capacitÃ© rÃ©ellement disponible
+  - surface Canonical de test de lâ€™autonomie pays
+  - surface Ã©quipe pays intÃ©grÃ©e : lecture, invitation, dÃ©lÃ©gation et rÃ©vocation de capabilities, dont provider.manage lorsquâ€™il est LIVE
+  - parcours explicite dâ€™acceptation dâ€™invitation avec retour vers le Market ID rÃ©solu cÃ´tÃ© serveur
+  - politique de protection des encaissements intÃ©grÃ©e Ã  Autonomie pays : cash actif/suspendu et validation SINGLE/DUAL_ALWAYS
+- _out_ :
+  - mutation de products.price_kmf global
+  - validation humaine centrale de la stratÃ©gie commerciale pays
+  - crÃ©ation/activation dâ€™un marchÃ©
+  - settlement et mouvements financiers
+  - rÃ´les terrain implicites
+  - prix local par SKU â€” tant que cette granularitÃ© nâ€™est pas modÃ©lisÃ©e explicitement
+
+**Authority** : backend-core â€” la stratÃ©gie locale appartient au manager du marchÃ© ; le moteur Ã©conomique peut refuser une activation destructive ou sous-couverte non autorisÃ©e, mais aucun admin central ne valide le choix commercial pays.
+
+**Invariants** :
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
 
 **Owns** : `product_market_price_draft_events`, `product_market_price_drafts`
 
@@ -866,4 +1606,1252 @@ _DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â
   - migration 209 : finance.act + settlement.receive deviennent LIVE et sont backfillÃ©es dans les ceilings actifs ; auto-grant seulement aux managers dÃ©jÃ  dotÃ©s de team.grant + team.revoke + finance.read
   - LOT 8 (execution bridge) : les 7 capabilities execution.* LIVE entrent dans le ceiling/template sans auto-grant manager ; team.grant peut les dÃ©lÃ©guer explicitement Ã  un membre terrain et chaque consommation est auditÃ©e avant la mutation mÃ©tier
 - _out_ :
-  - rÃ©fÃ©rentiel markets, Currency Boundary et persistance operator_market_scopes : feature markem«ëŒ+Š×®º+º$zzb¥ç@¢Ò,;FÆRvÆö&ÂW6W'2ç&öÆRWBW6W"ç&öÆRç6WB¢g&öçFœ:‡&RWF‚Ö–FVçF—G’ôu$õUÂ¦Ö—2L:–Ì:–w\:–RR'FVæ—&P¢Ò,:†vÆW2N(	–ÆÆö6F–öâu$õUWBl:—&—L:’:–6öæöÖ—VR6öç6öÆ–L:–R¢V6öæöÖ–2ÖVæv–æP¢Òföæ7F–öç2‡V"÷G&ç6—B×WGVÆ—<:–W2¢†÷'2Ö&¶WB÷W&F–ær76–væÖVç@¢Ò&÷f–FW'2÷&VÆ—26öÖÖR&–æ6—W‚Æö6W‚6V6öæF—&W2¢¦Ö—2FW276–væÖVçG26öæ7W'&VçG2²ÆWW"vW7F–öâÆö6ÆR&W7FRL:–Ì:–wV&ÆR6ç2G&ç6f÷&ÖW"ÆWW"–FVçF—L:’VâW6W%÷&öÆP¢ÒÆV7GW&RV&Æ—VRGR,:—6VR&VÆ—2„tUBö’÷&VÆ—2’WB6öâ7–6ÆRFRf–RFV6†æ—VR†÷'2L:–Ì:–vF–öâ¢fVGW&RÆöv—7F–72Â&÷&œ:—F—&RFRÆF&ÆR&VÆ—0¢Ò&÷WFvR–çFW"Ü:æÆW2´Ò†—6ÆæBö—6ÆæEö6öFR6öç6öÖÜ:—2"6W'f–6W2÷&÷WF–æræ§2’¢†÷'2:—&–Ü:‡G&RÂ6÷WÆvR|:–öw&†—VR,:’ÖW†—7FçBæöâ,:—6öÇR"6WGFRfVGW&P¢Ò6FÆöwVRvÆö&Â‡&öGV7G2’¢fVGW&R6FÆör&W7FRÆ–fV7–6ÆR÷væW"²Ö&¶WBÖFVÆVvF–öâî(	œ:–7&—B¦Ö—2&öGV7G2F—&V7FVÖVçBWBæRWWBL:–6ÆVæ6†W"VæR&VÖœ:‡&RV&Æ–6F–öâ^(	–VâL:–Ì:–wVçB:6FÆörÖ&÷fÂÆ÷'2N(	—VæRfÆ–FF–öâ‡VÖ–æRÖ&6Œ:’²&öGV7EöÖ&¶WEöW‡÷7W&R&W7FRÆ&ö¦V7F–öâ—0¢Ò<:&&ÆvRGR6†VÖ–âFRÆV7GW&R7F÷&Vg&öçB†6FÆör×V&Æ–2×f–Wræ§2ò6FÆör×&öGV7BÖFWF–Âæ§2’¢fVGW&R6FÆörÂ&÷&œ:—F—&RFRV&Æ–46FÆöuf—6–&–Æ—G•7Â‚’WBFRÆÆöv—VRFR,:—6öÇWF–öâÖ&6Œ:’²Ö&¶WBÖFVÆVvF–öâæRf—B^(	–WF÷&—6W"öVF—FW"ÆL:–6—6–öâN(	–W‡÷6—F–öâV’Æ–ÖVçFR6WGFRÆV7GW&P¢Ò6Æ7VÂWFöÖF—VR6öÖÖ—76–öâ÷&WfVçVU÷6†&RWB–÷WB&æ6—&RôÖö&–ÆRÖöæW’¢†÷'2ÄõBb²ÆfVGW&R6WGFÆVÖVçBæRf—B^(	–GFW7FW"÷G&6W"ÆR7–6ÆR6ç2–çfVçFW"FRf÷&×VÆRæ’L:–6ÆVæ6†W"FRG&ç6fW'@¢Òl:—&—L:’N(	–Væ6—76VÖVçBWB:—FBFRF÷V&ÆR6öæf—&ÖF–öâ¢fVGW&R–ÖVçG0¢Ò6öçG&B§W&–F—VR'FVæ—&R6ö×ÆWB¢†÷'2&6¶VæBÂ6WVÆR6&ö¦V7F–öâWŒ:–7WF&ÆR÷W'&VçG&W"ÇW2F&@¢ÒÖöçFçBWBL:–6—6–öâFR&VÖ&÷W'6VÖVçB†F—7WFW2ç&VgVæEö¶ÖböF—7WFW2ç&VgVæEöWW"’¢fVGW&R&VgVæG2Â¦Ö—2L:–Ì:–v&ÆR(	Bl:—&—L:’f–ææ6œ:‡&R—',:—fW'6–&ÆRâ6Æ–VçBæ66Ræ†æFÆRæR–Æ÷FRVRÆRv÷&¶fÆ÷r‡7FGWBÂ,:—6öÇWF–öâFW‡GVVÆÆR’Â¦Ö—2ÆR6†–fg&P¢Ò7–6ÆRFRf–R7FGW2†G&gBö7F—fR÷7W7VæFVB’FW26W'f–6W2WBöfg&W2‡—6—VW2¢†÷'2:—&–Ü:‡G&RFRÆö6ÅööffW"æÖævRÂV’æR&67VÆRVR6öÖÖW&6–ÅöW‡÷7W&R²—56W'f–6TW‡÷6&ÆRö—5‡—6–6ÄöffW$W‡÷6&ÆR6öçF–çVVçBN(	–W†–vW"ÆW2FWW‚‡7FGW2UBW‡÷7W&R’(	B&÷f–FW'2×6W'f–6W2&W7FR&÷&œ:—F—&RGR7–6ÆR6ö×ÆW@¢Ò7,:–F–öâ$TE’Â6†ö—‚Ö÷VçBö7W'&Væ7’WB76vR$UTU5DTBÓâ”B¢¦Ö—2VæRWF÷&—L:’FRÎ(	–÷:—&FWW"—2²$TE’WB”B&W7FVçB6VçG&W‚Fç2ÆfVGW&R6WGFÆVÖVç@ ¢¢¤WF†÷&—G’¢¢¢&6¶VæBÖ6÷&R(	B6WGFRfVGW&R÷7<:†FRÆL:–Ì:–vF–öâN(	–WF÷&—L:’Ö&6Œ:’WB6öâ:—V—R²VÆÆRæR÷7<:†FRæ’ÆR,:–l:—&VçF–VÂÖ&¶WBÂæ’÷W&F÷%öÖ&¶WE÷66÷W2Âæ’W6W'2ç&öÆRÂæ’ÆW2,:†vÆW2u$õUÂæ’ÆW2föæ7F–öç2FW'&–â×WGVÆ—<:–W2Âæ’Æl:—&—L:’Ööì:—F—&RGR6WGFÆVÖVçBà ¢¢¤–çf&–çG2¢¢ ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ ¢¢¤÷vç2¢¢¢76–væÖVçEö6&–Æ—G•ö6V–Æ–ævÂ76–væÖVçEöÖVÖ&W'6†—6Â6&–Æ—G•÷&Vv—7G'–Â6V–Æ–æu÷FV×ÆFUö6&–Æ—F–W6Â6V–Æ–æu÷FV×ÆFW6ÂÖ&¶WEö66…ö6öçG&öÅ÷öÆ–6–W6ÂÖ&¶WEöFVÆVvF–öåöVF—FÂÖ&¶WEö÷W&F–æuö76–væÖVçG6ÂÖ&¶WE÷FVÕö–çf—FF–öç6ÂÖVÖ&W'6†—ö6&–Æ—F–W6  ¢¢¤W‡÷6W2¢¢¢3R–çFW&æÂ’‡2’Â32…EE–çFW&f6R‡2¢Ò66WD–çf—FF–öæ‡6W'f–6W2öÖ&¶WBÖFVÆVvF–öâ×FVÒ×6W'f–6Ræ§2’(	B&W6öÇfV@¢ÒFDÖVÖ&W'6†—‡6W'f–6W2öÖ&¶WBÖFVÆVvF–öâ×6W'f–6Ræ§2’(	B&W6öÇfV@¢ÒGF6„Ö&¶WDFVÆVvFVE&öÆTf÷&†Ö–FFÆWv&R÷&WV—&RÖÖ&¶WBÖFVÆVvFVB×&öÆRæ§2’(	B&W6öÇfV@¢Ò6öæf—&Õ6WGFÆVÖVçE&V6V—fVF‡6W'f–6W2öÖ&¶WBÖFVÆVvF–öâ×6WGFÆVÖVçB×6W'f–6Ræ§2’(	B&W6öÇfV@¢Ò7&VFU&÷f–FW&‡6W'f–6W2öÖ&¶WBÖFVÆVvF–öâ×&÷f–FW"×6W'f–6Ræ§2’(	B&W6öÇfV@¢Ò7&VFU&VÆ—6‡6W'f–6W2öÖ&¶WBÖFVÆVvF–öâÖæWGv÷&²×6W'f–6Ræ§2’(	B&W6öÇfV@¢ÒVç7W&T÷W&F÷$ÖVÖ&W'6†—‡6W'f–6W2öÖ&¶WBÖ÷W&F÷"×&÷f—6–öæ–æræ§2’(	B&W6öÇfV@¢Òw&çDÖVÖ&W'6†—6&–Æ—F–W6‡6W'f–6W2öÖ&¶WBÖFVÆVvF–öâ×6W'f–6Ræ§2’(	B&W6öÇfV@¢Òw&çD÷W&F÷%66÷V‡6W'f–6W2öÖ&¶WBÖ÷W&F÷"×&÷f—6–öæ–æræ§2’(	B&W6öÇfV@¢Ò–çf—FUFVÔÖVÖ&W&‡6W'f–6W2öÖ&¶WBÖFVÆVvF–öâ×FVÒ×6W'f–6Ræ§2’(	B&W6öÇfV@¢Òòââã#RFRÇW2Âfö—"dTEU$Uó3cæ§6öåğ ¢¢¤6öç7VÖW2¢¢¢WF‚„DT4Ä$TEôäEôô%4U%dTB’ÂWF‚Ö–FVçF—G’„DT4Ä$TEôäEôô%4U%dTB’Â6FÆör„DT4Ä$TEôäEôô%4U%dTB’ÂF6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’ÂV6öæöÖ–2ÖVæv–æR„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’ÂÆö6Â×7Fö6²„DT4Ä$TEôäEôô%4U%dTB’ÂÆöv—7F–72„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WB„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖWFöæö×’„DT4Ä$TEôäEôô%4U%dTB’Â÷&FW'2„DT4Ä$TEôäEôô%4U%dTB’Â–ÖVçG2„DT4Ä$TEôäEôô%4U%dTB’Â&÷f–FW'2×6W'f–6W2„DT4Ä$TEôäEôô%4U%dTB’Â6WGFÆVÖVçB„DT4Ä$TEôäEôô%4U%dTB¢¢¤6öç7VÖVB'’¢¢¢F6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’ÂFV6—6–öâ×6–væÇ2„DT4Ä$TEôäEôô%4U%dTB’ÂV6öæöÖ–2ÖVæv–æR„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’ÂÆöv—7F–72„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖ6öçG&öÂ×ÆæR„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖ÷W&F÷"ÖF6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’Â÷&FW'2„DT4Ä$TEôäEôô%4U%dTB’Â–ÖVçG2„DT4Ä$TEôäEôô%4U%dTB’Â6WGFÆVÖVçB„DT4Ä$TEôäEôô%4U%dTB’ÂVç6öÆB×&W6öÇWF–öâ„DT4Ä$TEôäEôô%4U%dTB ¢¢¥&ö¦V7F–öç2¢¢¢öV7VæUğ ¢¢¥FV6†æ–6Â6öçFW‡B¢¢¢&–Ö—F—fRFWVæFVæ6–W2ÂFW7BÖöæÇ’Â6ö×÷6—F–öâ×&ö÷@ ¢¢¤&÷VæF'’†VÇF‚¢¢¢	ùú"„TÅD…’(	B7&÷72ÖfVGW&R–×÷'G3¢Â'VçF–ÖR7–6ÆW3¢ÂVæ6Æ76–f–VC¢ÂFV6Æ&VBÖæ÷BÖö'6W'fVC¢ ¢¢¤v÷fW&ææ6R†VÇF‚¢¢¢	ùú"„TÅD…’(	B÷'†âf–ÆW3¢ÂVç&W6öÇfVB–çFW&æÂ—3¢ÂFV6Æ&VBÖöæÇ’FW3¢ÂÖ&–wV÷W2÷væW'6†—¢ÂöçFöÆöw’v3¢ ¢¢¤vFR†VÇF‚¢¢¢	ùú"„TÅD…’(	BvFW3¢öV7VåòÂf–Ã¢Âv&ã¢  ¢¢¤&6†—FV7GW&ÂFV'B¢¢¢öV7VæUğ ¢¢¤–×ÆVÖVçFF–öâ¢¢¢Bf–6†–W"‡2’L:–6Æ,:’‡2¢Ò6öæf–r¢¢ÒÖ–FFÆWv&R¢@¢ÒÖ–w&F–öç2¢#0¢Ò&÷WFW2¢P¢Ò6W'f–6W2¢¢ÒFW7G2¢S  ¥ôL:—F–Ç26ö×ÆWG2†f–6†–W'2ÂF&ÆW2Â–çFW&f6W2’¢fö—"Fö72ôdTEU$Uó3cæ§6öâ(i"fVGW&W5¶–CÒ&Ö&¶WBÖFVÆVvF–öâ%Õğ ¢22Ö&¶WBÖ÷W&F÷"ÖF6†&ö&@ ¢¢¤¶–æB¢¢¢Væ6Æ76–f–VB+r¢¥7FGW2¢¢¢7Fv–æp ¢¢¥6W'f–6R¢¢¢W&ÖWGG&R:Vâ÷:—&FWW"—2†Ö&¶WEö÷W&F÷"’FR6R6öææV7FW"RF6†&ö&B6æöæ–6ÂÂFRL:–6–FW"WBW‡Æö—FW"6öâÖ&6Œ:’¢µ—2Â6öÖÖæFW2Â6FÆöwVR—2Â&–6–ærÆö6ÂÂ,:—6VR‡V"õ&VÆ—2ÂF÷VæRÂW‡:–F—F–öç2WBf–ææ6R—2(	B6ç2¦Ö—2fö—"ÆW2Föæì:–W2BwVâWG&RÖ&6Œ:’æ’&V6Wfö—"WFöÖF—VVÖVçBÆW2vW7FW2‡—6—VW2÷RWF÷&—L:—2vÆö&ÆW2FW2,;FÆW27:–6–Æ—<:—2à ¢¢¥W&–ÖWFW"¢¢ ¢Òö–åò ¢Ò÷W&F–öç2v÷&·76R‡&÷WFW2öFÖ–âÖ÷W&F–öç2×v÷&·76Ræ§2Â÷7<:–L:’"F6†&ö&F’¢ÆV7GW&R"÷W&F–öç2ç&VB²×WFF–öç2"W†V7WF–öââ¢W†7FR²W6W'2ç&öÆR6W'B6WVÆVÖVçBFR6ö×F–&–Æ—L:’&WVW7BÖÆö6Â,:‡2WF÷&—6F–öà¢Ò6FÆöwVR—2¢W‡÷6—F–öâö6öæf–wW&F–öâ&öGV—B9rÖ&6Œ:’f–ÆW2&–Ö—F—fW2Ö&¶WB×66÷VB²V7VæR×WFF–öâFRÆl:—&—L:’6FÆöwVRvÆö&ÆP¢ÒW‡:–F—F–öç2bF÷VæR¢f—6–&–Æ—L:’Â7WW'f—6–öâWB6öæf–wW&F–öâGRÖ&6Œ:’²vW7FW2‡—6—VW2÷G&ç6—B7:–6–Æ—<:—2&W7FVçB6÷VÖ—2W‚6&–Æ—F–W2L:–Fœ:–W0¢Òf–ææ6R—2¢&V6WGFW2Â6ü;·G2ÂÖ&vW2Â&&ö6†VÖVçG2Â§W7F–f–6F–g2WB6öæf–wW&F–öâÆö6ÆRÆ—g,:–R²7FW26ö×F&ÆW26Vç6–&ÆW2&W7FVçBW‡Æ–6—FVÖVçBL:–Ì:–w\:—0¢Òæf–vF–öâ6æöæ–6Â¢FöÖ–æW2f—6–&ÆW26VÆöâ&W7öç6–&–Æ—F–W2ö6&–Æ—F–W2VffV7F—fW2Â¦Ö—26VÆöâVæR6–×ÆR&öÖW76RT¢Ò&VÖöçFvRæf–vF–öâ,:‡2,:—6öÇWF–öâ7–æ2FRÆ6W76–öâ÷W"Æ—VW"ÆRf–ÇG&vR,;FÆRö6&–Æ—G¢Ò67&—B4Ä’&÷f—6–öâÖÖ&¶WBÖ÷W&F÷"æ§2¢7,:–F–öâWF–Æ—6FWW"²66÷RFöÖ—VRÂ–FV×÷FVç@¢Ò67&—B4Ä’6VVBÖÖ&¶WB×FW7BÖFFæ§2¢&æ27Fv–ær7G&–7FVÖVçBÖ&¶WB”B÷W"6FÆöwVRÂ&–6–ærWB6öÖÖæFW2FR&V6WGFR—0¢Ò&6÷W'26ö×ÆWB6–&ÆR¢Æöv–â(i"6öçFW‡B(i"F6†&ö&G266÷:—2(i"6FÆöwVR—2(i"FVÆ–W"(i"6öÖÖæFW2(i"÷:—&F–öç2ôF÷VæRôW‡:–F—F–öç2(i"f–ææ6R—2(i":—V—R÷'FæW'0¢Òö÷WEò ¢ÒF6†&ö&BÆVv7’†FÖ–âò’(	BvVÌ:’ÂÖ&¶WEö÷W&F÷"föÆöçF—&VÖVçBW†6ÇRFR$ôÄUõ4„TÄÅ0¢Ò6FÆöwVRtÄô$Âòl:—&—L:’&öGV—BvÆö&ÆRò&WV—&T6FÆötvÆö&ÄWF†÷&—G’(	B&W7FRVæRWF÷&—L:’6VçG&ÆR²æR26öæföæG&RfV26FÆöwVR—0¢Ò×WFF–öç2‡V"‡—6—VW2(	B6&–Æ—F–W2W†V7WF–öââ¢W‡Æ–6—FW2²ÆR,;FÆRW'6—7FçBæR6öç7F—GVR¦Ö—2Î(	–WF÷&—L:’Ö&6Œ:¢Ò×WFF–öç2FW'&–â&VÆ—2(	B6&–Æ—F–W2W†V7WF–öââ¢W‡Æ–6—FW2²VâvVçE÷&VÆ—2W'6—7FçB&W7FRVâÇW2&÷&ì:’"6öâ&VÆ—5ö–B‡—6—VP¢Ò7FW26ö×F&ÆW2vÆö&W‚Â6öç6öÆ–FF–öâ7&÷72ÖÖ&¶WBWBWF÷&—L:—2f–ææ6œ:‡&W26VçG&ÆW2(	B†÷'2L:–Ì:–vF–öâ—0¢Ò6÷W&6–ærvÆö&Â(	B&W7FR<:—,:’FçBVR6L:–Ì:–vF–öâ—2âvW7B2W‡Æ–6—FVÖVçBL:–6–L:–P¢Ò&–6–ær×WFF–öç2vÆö&ÆW2†Ç’7G&FVw’ÂWFFR6ö×WF—F÷"vÆö&Â’(	B,:—6W'l:–W2W‚WF÷&—L:—26÷'&W7öæFçFW2²ÆL:–6—6–öâÆö6ÆR&W7FRR—0¢Ò&Vf7GW&F–öâ×VÇF’ÖÖ&6Œ:’…&–Çv’Â‡V"f—†R’(	B6†çF–W"<:—,:’ÂL:—VæBGR&F–òFR6÷WfW'GW&P¢Ò&F–òFR6÷WfW'GW&R"Ö&6Œ:’(	B6†çF–W"&–6–ær†6R6BÂ26RÆ÷@ ¢¢¤WF†÷&—G’¢¢¢&6¶VæBÖ6÷&R(	BF÷WFRWF÷&—L:’Ö&6Œ:’FR6WGFR7W&f6RFö—B:§G&RfÆ–L:–R"Ö&¶WBÖFVÆVvF–öâ²÷W&F÷%öÖ&¶WE÷66÷W2&W7FRVæR&ö¦V7F–öâFR6ö×F–&–Æ—L:’Â¦Ö—2Æ6÷W&6RFRG&ö—BFW2v÷&·76W2Ö–w,:—2à ¢¢¤–çf&–çG2¢¢ ¢ÒÆR66÷R6W'fWW"W7BÂvWF÷&—L:’(	BÆRæf–vFWW"æR6†ö—6—B¦Ö—26öâÖ&6Œ:¢ÒVæR&ö¦V7F–öâ÷W&F÷%öÖ&¶WE÷66÷W2æR7Vff—B¦Ö—2:VÆÆR6WVÆR¢ÆW2v÷&·76W2Ö–w,:—2W†–vVçBÖVÖ&W'6†—ö6&–Æ—G’÷RVæRWF÷&—L:’6VçG&ÆRW‡Æ–6—FP¢ÒÆR&W7öç6&ÆR—2Fö—BF—7÷6W"FW2÷WF–Ç26÷'&W7öæFçB:6&W7öç6&–Æ—L:’¢6FÆöwVR—2ÂFVÆ–W"Â6öÖÖæFW2Â÷:—&F–öç2ÂF÷VæRÂW‡:–F—F–öç2WBf–ææ6R—0¢ÒVâwV&B7GVVÆÆVÖVçBG&÷&W7G&–7F–b7W"VæR&W7öç6&–Æ—L:’6–&ÆRW7BVâvBv–×Ì:–ÖVçFF–öâ:fW&ÖW"Â2VæR§W7F–f–6F–öâ÷W"&WF—&W"6WGFR&W7öç6&–Æ—L:’FRÆFö7G&–æP¢Ò6FÆöwVR—2æRWWB¦Ö—2ÖöF–f–W"6–ÆVæ6–WW6VÖVçBÆl:—&—L:’6FÆöwVRvÆö&ÆP¢ÒÆW2×WFF–öç2‡—6—VW2‡V"‡66â÷6²÷6VÂ÷6†—’&W7FVçBW†6ÇW6—fVÖVçBFW'&œ:‡&RFW26&–Æ—F–W2FW'&–âW‡Æ–6—FW0¢ÒÆW2×WFF–öç2FW'&–â&VÆ—2‡,:–6WF–öâ÷&VÖ—6Rö66‚’&W7FVçBW†6ÇW6—fVÖVçBFW'&œ:‡&RFW26&–Æ—F–W2FW'&–âW‡Æ–6—FW0¢Òf–ææ6R—2æRFöææR¦Ö—2–×Æ–6—FVÖVçBVæRWF÷&—L:’6ö×F&ÆRvÆö&ÆR÷R7&÷72ÖÖ&¶W@¢ÒÆW2WF–Æ—G’Æ–æ·2BvWF÷&—L:’vÆö&ÆR6öçBÖ7\:—2÷W"ÆW2&öf–Ç2æöâWF÷&—<:—0¢ÒvVçEö‡V"æRF—&RV7VâÖ&¶WB”BFRW6W'2ç&öÆR²ÆW2vW7FW2GRv÷&·76R÷:—&F–öç2W†–vVçBÆWW"W†V7WF–öââ¢W†7FP¢ÒvVçE÷&VÆ—2&W7FRÆ–Ö—L:’:6öâ&VÆ—5ö–B‡—6—VR÷W"6W2vW7FW2FW'&–âÂVâÇW2FRÆ6&–Æ—G’W†V7WF–öââ¢W†7FP¢ÒÆRF6†&ö&BÆVv7’†FÖ–âò’æR&\:vö—B¦Ö—2Ö&¶WEö÷W&F÷"Fç2$ôÄUõ4„TÄÅ2(	B–ÂW7BvVÌ:¢ÒÆR&÷f—6–öæ–ærW7B–FV×÷FVçB(	BæR&V7,:–Ræ’W6W"æ’66÷RW†—7Fç@¢ÒÆR6VVB7Fv–æræR7,:–RÂâvW‡÷6Ræ’æRæWGFö–R¦Ö—2VæRFöæì:–RBwVâWG&RÖ&¶WB”@¢ÒÆR6VVB7Fv–æræRf'&—VR¦Ö—2Vâ&—‚Äô4Åô5D•dR6ç276vR"ÆRvFR:–6öæöÖ—VR6æöæ—VP ¢¢¤÷vç2¢¢¢öV7VæUğ ¢¢¤W‡÷6W2¢¢¢–çFW&æÂ’‡2’Â…EE–çFW&f6R‡2 ¢¢¤6öç7VÖW2¢¢¢6FÆör„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WB„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖWFöæö×’„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖFVÆVvF–öâ„DT4Ä$TEôäEôô%4U%dTB¢¢¤6öç7VÖVB'’¢¢¢öV7VæUğ ¢¢¥&ö¦V7F–öç2¢¢¢öV7VæUğ ¢¢¥FV6†æ–6Â6öçFW‡B¢¢¢&–Ö—F—fRFWVæFVæ6–W2ÂFW7BÖöæÇ’Â6ö×÷6—F–öâ×&ö÷@ ¢¢¤&÷VæF'’†VÇF‚¢¢¢	ùúEDTåD”ôâ(	B7&÷72ÖfVGW&R–×÷'G3¢Â'VçF–ÖR7–6ÆW3¢ÂVæ6Æ76–f–VC¢ÂFV6Æ&VBÖæ÷BÖö'6W'fVC¢@¢¢¤v÷fW&ææ6R†VÇF‚¢¢¢	ùú"„TÅD…’(	B÷'†âf–ÆW3¢ÂVç&W6öÇfVB–çFW&æÂ—3¢ÂFV6Æ&VBÖöæÇ’FW3¢ÂÖ&–wV÷W2÷væW'6†—¢ÂöçFöÆöw’v3¢ ¢¢¤vFR†VÇF‚¢¢¢	ùú"„TÅD…’(	BvFW3¢öV7VåòÂf–Ã¢Âv&ã¢  ¢¢¤&6†—FV7GW&ÂFV'B¢¢ƒB’ ¢ÒDT4Ä$TEôäõEôô%4U%dTF†Æ÷r’(	B6öçG&7Bæ6öç7VÖW2L:–6Æ&R&WF‚"(	BV7VæR&WWfRóR†æ’DT4Ä$TEôäEôô%4U%dTBÂæ’ô%4U%dTEõTäDT4Ä$TB¢ÒDT4Ä$TEôäõEôô%4U%dTF†Æ÷r’(	B6öçG&7Bæ6öç7VÖW2L:–6Æ&R&F6†&ö&B"(	BV7VæR&WWfRóR†æ’DT4Ä$TEôäEôô%4U%dTBÂæ’ô%4U%dTEõTäDT4Ä$TB¢ÒDT4Ä$TEôäõEôô%4U%dTF†Æ÷r’(	B6öçG&7Bæ6öç7VÖW2L:–6Æ&R&Æöv—7F–72"(	BV7VæR&WWfRóR†æ’DT4Ä$TEôäEôô%4U%dTBÂæ’ô%4U%dTEõTäDT4Ä$TB¢ÒDT4Ä$TEôäõEôô%4U%dTF†Æ÷r’(	B6öçG&7Bæ6öç7VÖW2L:–6Æ&R&÷&FW'2"(	BV7VæR&WWfRóR†æ’DT4Ä$TEôäEôô%4U%dTBÂæ’ô%4U%dTEõTäDT4Ä$TB ¢¢¤–×ÆVÖVçFF–öâ¢¢¢Rf–6†–W"‡2’L:–6Æ,:’‡2¢Ò67&—G2¢ ¢ÒFW7G2¢0 ¥ôL:—F–Ç26ö×ÆWG2†f–6†–W'2ÂF&ÆW2Â–çFW&f6W2’¢fö—"Fö72ôdTEU$Uó3cæ§6öâ(i"fVGW&W5¶–CÒ&Ö&¶WBÖ÷W&F÷"ÖF6†&ö&B%Õğ ¢22æ÷F–f–6F–öç0 ¢¢¤¶–æB¢¢¢'W6–æW72×G&ç7fW'6Â+r¢¥7FGW2¢¢¢&öGV7F–öà ¢¢¥6W'f–6R¢¢¢&ö¦WFW"VæR–æf÷&ÖF–öâW76VçF–VÆÆRFç2ÂÆ–6F–öâfV27V—GFVÖVçB&÷&œ:—F—&R²6öç6W'fW"ÆW26æW‚6÷'FçG2†—7F÷&—VW2<:—,:—2WB&W7BÖVff÷'Bà ¢¢¥W&–ÖWFW"¢¢ ¢Òö–åò ¢ÒVçfö’v†G4f–ÖWF¢ÒÖ÷FWW"BvÆW'FW2–çFW&æW0¢Ò&÷WFW2BvVÖ—76–öâFRæ÷F–f–6F–öà¢Ò7–6ÆR–âÖ6Æ–VçB÷VâÓâ6¶æ÷vÆVFvVBÂ&W6öÇfV@¢Ò,:–6öæ6–Æ–F–öâFW2G&ö—2¦Æöç2,:—&F–öâÂW‡:–F—F–öâWBF—7öæ–&–Æ—L:¢Ò6öçG&BW‡Æ–6—FR÷&FW"æW†6WF–öââ¢÷W"ÆW2:—l:–æVÖVçG2W†6WF–öææVÇ27F–öææ&ÆW0¢Òö÷WEò ¢ÒFW7G2÷Væ—Böæ÷F–f–6F–öâ×6W'f–6RçFW7Bæ§0¢ÒL:–6—6–öâÜ:—F–W"FRæ÷F–f–W"‡&W7FR:ÆfVGW&R:–ÖWGG&–6R ¢¢¤WF†÷&—G’¢¢¢&6¶VæBÖ6÷&R(	BF÷WB6†ævVÖVçBFRFV×ÆFR÷RFR6æÂFö—BWG&RfÆ–FR"ÆR&÷&–WF—&RFRæ÷F–f–6F–öâ×6W'f–6Ræ§0 ¢¢¤–çf&–çG2¢¢ ¢Òæ÷F–f–6F–öç2W7BVâV—G2BvWfVæVÖVçG2(	BVÆÆRæRFV6–FR¦Ö—2VÆÆRÖÖVÖRRwVâWfVæVÖVçBÖWF–W"WRÆ–WP¢ÒÆ—g&—6öâ÷WF&÷VæB&W7BÖVff÷'B(	BÂvV6†V2BvVçfö’v†G4æRFö—B¦Ö—2&Æ÷VW"ÆG&ç67F–öâVÖWGG&–6R†f—&RÖæBÖf÷&vWB¢ÒVæRæ÷F–f–6F–öâ6Æ–VçBW7B–FV×÷FVçFRWB66W76–&ÆRVæ—VVÖVçB:6öâ&÷&œ:—F—&RWF†VçF–fœ:¢Ò7V—GFW"VæRæ÷F–f–6F–öâæRÖöF–f–R¦Ö—2Â:—FBÜ:—F–W"FRÆ6öÖÖæFP¢Ò6WVÇ2ÆW2:—l:–æVÖVçG2W76VçF–VÇ2WB7F–öææ&ÆW2VçG&VçBFç2ÆRfÇW‚6Æ–Vç@¢ÒÆÆV7GW&R,:–6öæ6–Æ–RVæR:–Ö—76–öâÖç\:–RFWV—2Æl:—&—L:’Ü:—F–W"6ç27,:–W"FRF÷V&Æöà¢ÒVâ¦ÆöâÇW2,:–6VçB,:—6÷WBÆR¦Æöâ,:–<:–FVçBFRÆÜ:¦ÖR6öÖÖæFR6ç27,:–W"VâÖW76vR÷W"–å÷G&ç6—@¢ÒVæRW†6WF–öâW†–vRVæR6Ì:’÷&FW"æW†6WF–öââ¢WBVâL:–6ÆVæ6†WW"Ü:—F–W"6öæf—&Ü:¢ÒÆRv†G4FRF—7öæ–&–Æ—L:’WWBVç&–6†—"6öâÖW76vRW†—7FçBBVâVæ—VRÆ–Vâ6'Föw&†—VRL:—&—l:’GRæöÒWFÚ±î¸Â¸­yêë¢°k¢G§¦*^m«ëŒ+Š×®º+º$zzb¥ç@¢Ò,;FÆRvÆö&ÂW6W'2ç&öÆRWBW6W"ç&öÆRç6WB¢g&öçFœ:‡&RWF‚Ö–FVçF—G’ôu$õUÂ¦Ö—2L:–Ì:–w\:–RR'FVæ—&P¢Ò,:†vÆW2N(	–ÆÆö6F–öâu$õUWBl:—&—L:’:–6öæöÖ—VR6öç6öÆ–L:–R¢V6öæöÖ–2ÖVæv–æP¢Òföæ7F–öç2‡V"÷G&ç6—B×WGVÆ—<:–W2¢†÷'2Ö&¶WB÷W&F–ær76–væÖVç@¢Ò&÷f–FW'2÷&VÆ—26öÖÖR&–æ6—W‚Æö6W‚6V6öæF—&W2¢¦Ö—2FW276–væÖVçG26öæ7W'&VçG2²ÆWW"vW7F–öâÆö6ÆR&W7FRL:–Ì:–wV&ÆR6ç2G&ç6f÷&ÖW"ÆWW"–FVçF—L:’VâW6W%÷&öÆP¢ÒÆV7GW&RV&Æ—VRGR,:—6VR&VÆ—2„tUBö’÷&VÆ—2’WB6öâ7–6ÆRFRf–RFV6†æ—VR†÷'2L:–Ì:–vF–öâ¢fVGW&RÆöv—7F–72Â&÷&œ:—F—&RFRÆF&ÆR&VÆ—0¢Ò&÷WFvR–çFW"Ü:æÆW2´Ò†—6ÆæBö—6ÆæEö6öFR6öç6öÖÜ:—2"6W'f–6W2÷&÷WF–æræ§2’¢†÷'2:—&–Ü:‡G&RÂ6÷WÆvR|:–öw&†—VR,:’ÖW†—7FçBæöâ,:—6öÇR"6WGFRfVGW&P¢Ò6FÆöwVRvÆö&Â‡&öGV7G2’¢fVGW&R6FÆör&W7FRÆ–fV7–6ÆR÷væW"²Ö&¶WBÖFVÆVvF–öâî(	œ:–7&—B¦Ö—2&öGV7G2F—&V7FVÖVçBWBæRWWBL:–6ÆVæ6†W"VæR&VÖœ:‡&RV&Æ–6F–öâ^(	–VâL:–Ì:–wVçB:6FÆörÖ&÷fÂÆ÷'2N(	—VæRfÆ–FF–öâ‡VÖ–æRÖ&6Œ:’²&öGV7EöÖ&¶WEöW‡÷7W&R&W7FRÆ&ö¦V7F–öâ—0¢Ò<:&&ÆvRGR6†VÖ–âFRÆV7GW&R7F÷&Vg&öçB†6FÆör×V&Æ–2×f–Wræ§2ò6FÆör×&öGV7BÖFWF–Âæ§2’¢fVGW&R6FÆörÂ&÷&œ:—F—&RFRV&Æ–46FÆöuf—6–&–Æ—G•7Â‚’WBFRÆÆöv—VRFR,:—6öÇWF–öâÖ&6Œ:’²Ö&¶WBÖFVÆVvF–öâæRf—B^(	–WF÷&—6W"öVF—FW"ÆL:–6—6–öâN(	–W‡÷6—F–öâV’Æ–ÖVçFR6WGFRÆV7GW&P¢Ò6Æ7VÂWFöÖF—VR6öÖÖ—76–öâ÷&WfVçVU÷6†&RWB–÷WB&æ6—&RôÖö&–ÆRÖöæW’¢†÷'2ÄõBb²ÆfVGW&R6WGFÆVÖVçBæRf—B^(	–GFW7FW"÷G&6W"ÆR7–6ÆR6ç2–çfVçFW"FRf÷&×VÆRæ’L:–6ÆVæ6†W"FRG&ç6fW'@¢Òl:—&—L:’N(	–Væ6—76VÖVçBWB:—FBFRF÷V&ÆR6öæf—&ÖF–öâ¢fVGW&R–ÖVçG0¢Ò6öçG&B§W&–F—VR'FVæ—&R6ö×ÆWB¢†÷'2&6¶VæBÂ6WVÆR6&ö¦V7F–öâWŒ:–7WF&ÆR÷W'&VçG&W"ÇW2F&@¢ÒÖöçFçBWBL:–6—6–öâFR&VÖ&÷W'6VÖVçB†F—7WFW2ç&VgVæEö¶ÖböF—7WFW2ç&VgVæEöWW"’¢fVGW&R&VgVæG2Â¦Ö—2L:–Ì:–v&ÆR(	Bl:—&—L:’f–ææ6œ:‡&R—',:—fW'6–&ÆRâ6Æ–VçBæ66Ræ†æFÆRæR–Æ÷FRVRÆRv÷&¶fÆ÷r‡7FGWBÂ,:—6öÇWF–öâFW‡GVVÆÆR’Â¦Ö—2ÆR6†–fg&P¢Ò7–6ÆRFRf–R7FGW2†G&gBö7F—fR÷7W7VæFVB’FW26W'f–6W2WBöfg&W2‡—6—VW2¢†÷'2:—&–Ü:‡G&RFRÆö6ÅööffW"æÖævRÂV’æR&67VÆRVR6öÖÖW&6–ÅöW‡÷7W&R²—56W'f–6TW‡÷6&ÆRö—5‡—6–6ÄöffW$W‡÷6&ÆR6öçF–çVVçBN(	–W†–vW"ÆW2FWW‚‡7FGW2UBW‡÷7W&R’(	B&÷f–FW'2×6W'f–6W2&W7FR&÷&œ:—F—&RGR7–6ÆR6ö×ÆW@¢Ò7,:–F–öâ$TE’Â6†ö—‚Ö÷VçBö7W'&Væ7’WB76vR$UTU5DTBÓâ”B¢¦Ö—2VæRWF÷&—L:’FRÎ(	–÷:—&FWW"—2²$TE’WB”B&W7FVçB6VçG&W‚Fç2ÆfVGW&R6WGFÆVÖVç@ ¢¢¤WF†÷&—G’¢¢¢&6¶VæBÖ6÷&R(	B6WGFRfVGW&R÷7<:†FRÆL:–Ì:–vF–öâN(	–WF÷&—L:’Ö&6Œ:’WB6öâ:—V—R²VÆÆRæR÷7<:†FRæ’ÆR,:–l:—&VçF–VÂÖ&¶WBÂæ’÷W&F÷%öÖ&¶WE÷66÷W2Âæ’W6W'2ç&öÆRÂæ’ÆW2,:†vÆW2u$õUÂæ’ÆW2föæ7F–öç2FW'&–â×WGVÆ—<:–W2Âæ’Æl:—&—L:’Ööì:—F—&RGR6WGFÆVÖVçBà ¢¢¤–çf&–çG2¢¢ ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ ¢¢¤÷vç2¢¢¢76–væÖVçEö6&–Æ—G•ö6V–Æ–ævÂ76–væÖVçEöÖVÖ&W'6†—6Â6&–Æ—G•÷&Vv—7G'–Â6V–Æ–æu÷FV×ÆFUö6&–Æ—F–W6Â6V–Æ–æu÷FV×ÆFW6ÂÖ&¶WEö66…ö6öçG&öÅ÷öÆ–6–W6ÂÖ&¶WEöFVÆVvF–öåöVF—FÂÖ&¶WEö÷W&F–æuö76–væÖVçG6ÂÖ&¶WE÷FVÕö–çf—FF–öç6ÂÖVÖ&W'6†—ö6&–Æ—F–W6  ¢¢¤W‡÷6W2¢¢¢3R–çFW&æÂ’‡2’Â32…EE–çFW&f6R‡2¢Ò66WD–çf—FF–öæ‡6W'f–6W2öÖ&¶WBÖFVÆVvF–öâ×FVÒ×6W'f–6Ræ§2’(	B&W6öÇfV@¢ÒFDÖVÖ&W'6†—‡6W'f–6W2öÖ&¶WBÖFVÆVvF–öâ×6W'f–6Ræ§2’(	B&W6öÇfV@¢ÒGF6„Ö&¶WDFVÆVvFVE&öÆTf÷&†Ö–FFÆWv&R÷&WV—&RÖÖ&¶WBÖFVÆVvFVB×&öÆRæ§2’(	B&W6öÇfV@¢Ò6öæf—&Õ6WGFÆVÖVçE&V6V—fVF‡6W'f–6W2öÖ&¶WBÖFVÆVvF–öâ×6WGFÆVÖVçB×6W'f–6Ræ§2’(	B&W6öÇfV@¢Ò7&VFU&÷f–FW&‡6W'f–6W2öÖ&¶WBÖFVÆVvF–öâ×&÷f–FW"×6W'f–6Ræ§2’(	B&W6öÇfV@¢Ò7&VFU&VÆ—6‡6W'f–6W2öÖ&¶WBÖFVÆVvF–öâÖæWGv÷&²×6W'f–6Ræ§2’(	B&W6öÇfV@¢ÒVç7W&T÷W&F÷$ÖVÖ&W'6†—‡6W'f–6W2öÖ&¶WBÖ÷W&F÷"×&÷f—6–öæ–æræ§2’(	B&W6öÇfV@¢Òw&çDÖVÖ&W'6†—6&–Æ—F–W6‡6W'f–6W2öÖ&¶WBÖFVÆVvF–öâ×6W'f–6Ræ§2’(	B&W6öÇfV@¢Òw&çD÷W&F÷%66÷V‡6W'f–6W2öÖ&¶WBÖ÷W&F÷"×&÷f—6–öæ–æræ§2’(	B&W6öÇfV@¢Ò–çf—FUFVÔÖVÖ&W&‡6W'f–6W2öÖ&¶WBÖFVÆVvF–öâ×FVÒ×6W'f–6Ræ§2’(	B&W6öÇfV@¢Òòââã#RFRÇW2Âfö—"dTEU$Uó3cæ§6öåğ ¢¢¤6öç7VÖW2¢¢¢WF‚„DT4Ä$TEôäEôô%4U%dTB’ÂWF‚Ö–FVçF—G’„DT4Ä$TEôäEôô%4U%dTB’Â6FÆör„DT4Ä$TEôäEôô%4U%dTB’ÂF6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’ÂV6öæöÖ–2ÖVæv–æR„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’ÂÆö6Â×7Fö6²„DT4Ä$TEôäEôô%4U%dTB’ÂÆöv—7F–72„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WB„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖWFöæö×’„DT4Ä$TEôäEôô%4U%dTB’Â÷&FW'2„DT4Ä$TEôäEôô%4U%dTB’Â–ÖVçG2„DT4Ä$TEôäEôô%4U%dTB’Â&÷f–FW'2×6W'f–6W2„DT4Ä$TEôäEôô%4U%dTB’Â6WGFÆVÖVçB„DT4Ä$TEôäEôô%4U%dTB¢¢¤6öç7VÖVB'’¢¢¢F6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’ÂFV6—6–öâ×6–væÇ2„DT4Ä$TEôäEôô%4U%dTB’ÂV6öæöÖ–2ÖVæv–æR„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’ÂÆöv—7F–72„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖ6öçG&öÂ×ÆæR„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖ÷W&F÷"ÖF6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’Â÷&FW'2„DT4Ä$TEôäEôô%4U%dTB’Â–ÖVçG2„DT4Ä$TEôäEôô%4U%dTB’Â6WGFÆVÖVçB„DT4Ä$TEôäEôô%4U%dTB’ÂVç6öÆB×&W6öÇWF–öâ„DT4Ä$TEôäEôô%4U%dTB ¢¢¥&ö¦V7F–öç2¢¢¢öV7VæUğ ¢¢¥FV6†æ–6Â6öçFW‡B¢¢¢&–Ö—F—fRFWVæFVæ6–W2ÂFW7BÖöæÇ’Â6ö×÷6—F–öâ×&ö÷@ ¢¢¤&÷VæF'’†VÇF‚¢¢¢	ùú"„TÅD…’(	B7&÷72ÖfVGW&R–×÷'G3¢Â'VçF–ÖR7–6ÆW3¢ÂVæ6Æ76–f–VC¢ÂFV6Æ&VBÖæ÷BÖö'6W'fVC¢ ¢¢¤v÷fW&ææ6R†VÇF‚¢¢¢	ùú"„TÅD…’(	B÷'†âf–ÆW3¢ÂVç&W6öÇfVB–çFW&æÂ—3¢ÂFV6Æ&VBÖöæÇ’FW3¢ÂÖ&–wV÷W2÷væW'6†—¢ÂöçFöÆöw’v3¢ ¢¢¤vFR†VÇF‚¢¢¢	ùú"„TÅD…’(	BvFW3¢öV7VåòÂf–Ã¢Âv&ã¢  ¢¢¤&6†—FV7GW&ÂFV'B¢¢¢öV7VæUğ ¢¢¤–×ÆVÖVçFF–öâ¢¢¢Bf–6†–W"‡2’L:–6Æ,:’‡2¢Ò6öæf–r¢¢ÒÖ–FFÆWv&R¢@¢ÒÖ–w&F–öç2¢#0¢Ò&÷WFW2¢P¢Ò6W'f–6W2¢¢ÒFW7G2¢S  ¥ôL:—F–Ç26ö×ÆWG2†f–6†–W'2ÂF&ÆW2Â–çFW&f6W2’¢fö—"Fö72ôdTEU$Uó3cæ§6öâ(i"fVGW&W5¶–CÒ&Ö&¶WBÖFVÆVvF–öâ%Õğ ¢22Ö&¶WBÖ÷W&F÷"ÖF6†&ö&@ ¢¢¤¶–æB¢¢¢Væ6Æ76–f–VB+r¢¥7FGW2¢¢¢7Fv–æp ¢¢¥6W'f–6R¢¢¢W&ÖWGG&R:Vâ÷:—&FWW"—2†Ö&¶WEö÷W&F÷"’FR6R6öææV7FW"RF6†&ö&B6æöæ–6ÂÂFRL:–6–FW"WBW‡Æö—FW"6öâÖ&6Œ:’¢µ—2Â6öÖÖæFW2Â6FÆöwVR—2Â&–6–ærÆö6ÂÂ,:—6VR‡V"õ&VÆ—2ÂF÷VæRÂW‡:–F—F–öç2WBf–ææ6R—2(	B6ç2¦Ö—2fö—"ÆW2Föæì:–W2BwVâWG&RÖ&6Œ:’æ’&V6Wfö—"WFöÖF—VVÖVçBÆW2vW7FW2‡—6—VW2÷RWF÷&—L:—2vÆö&ÆW2FW2,;FÆW27:–6–Æ—<:—2à ¢¢¥W&–ÖWFW"¢¢ ¢Òö–åò ¢Ò÷W&F–öç2v÷&·76R‡&÷WFW2öFÖ–âÖ÷W&F–öç2×v÷&·76Ræ§2Â÷7<:–L:’"F6†&ö&F’¢ÆV7GW&R"÷W&F–öç2ç&VB²×WFF–öç2"W†V7WF–öââ¢W†7FR²W6W'2ç&öÆR6W'B6WVÆVÖVçBFR6ö×F–&–Æ—L:’&WVW7BÖÆö6Â,:‡2WF÷&—6F–öà¢Ò6FÆöwVR—2¢W‡÷6—F–öâö6öæf–wW&F–öâ&öGV—B9rÖ&6Œ:’f–ÆW2&–Ö—F—fW2Ö&¶WB×66÷VB²V7VæR×WFF–öâFRÆl:—&—L:’6FÆöwVRvÆö&ÆP¢ÒW‡:–F—F–öç2bF÷VæR¢f—6–&–Æ—L:’Â7WW'f—6–öâWB6öæf–wW&F–öâGRÖ&6Œ:’²vW7FW2‡—6—VW2÷G&ç6—B7:–6–Æ—<:—2&W7FVçB6÷VÖ—2W‚6&–Æ—F–W2L:–Fœ:–W0¢Òf–ææ6R—2¢&V6WGFW2Â6ü;·G2ÂÖ&vW2Â&&ö6†VÖVçG2Â§W7F–f–6F–g2WB6öæf–wW&F–öâÆö6ÆRÆ—g,:–R²7FW26ö×F&ÆW26Vç6–&ÆW2&W7FVçBW‡Æ–6—FVÖVçBL:–Ì:–w\:—0¢Òæf–vF–öâ6æöæ–6Â¢FöÖ–æW2f—6–&ÆW26VÆöâ&W7öç6–&–Æ—F–W2ö6&–Æ—F–W2VffV7F—fW2Â¦Ö—26VÆöâVæR6–×ÆR&öÖW76RT¢Ò&VÖöçFvRæf–vF–öâ,:‡2,:—6öÇWF–öâ7–æ2FRÆ6W76–öâ÷W"Æ—VW"ÆRf–ÇG&vR,;FÆRö6&–Æ—G¢Ò67&—B4Ä’&÷f—6–öâÖÖ&¶WBÖ÷W&F÷"æ§2¢7,:–F–öâWF–Æ—6FWW"²66÷RFöÖ—VRÂ–FV×÷FVç@¢Ò67&—B4Ä’6VVBÖÖ&¶WB×FW7BÖFFæ§2¢&æ27Fv–ær7G&–7FVÖVçBÖ&¶WB”B÷W"6FÆöwVRÂ&–6–ærWB6öÖÖæFW2FR&V6WGFR—0¢Ò&6÷W'26ö×ÆWB6–&ÆR¢Æöv–â(i"6öçFW‡B(i"F6†&ö&G266÷:—2(i"6FÆöwVR—2(i"FVÆ–W"(i"6öÖÖæFW2(i"÷:—&F–öç2ôF÷VæRôW‡:–F—F–öç2(i"f–ææ6R—2(i":—V—R÷'FæW'0¢Òö÷WEò ¢ÒF6†&ö&BÆVv7’†FÖ–âò’(	BvVÌ:’ÂÖ&¶WEö÷W&F÷"föÆöçF—&VÖVçBW†6ÇRFR$ôÄUõ4„TÄÅ0¢Ò6FÆöwVRtÄô$Âòl:—&—L:’&öGV—BvÆö&ÆRò&WV—&T6FÆötvÆö&ÄWF†÷&—G’(	B&W7FRVæRWF÷&—L:’6VçG&ÆR²æR26öæföæG&RfV26FÆöwVR—0¢Ò×WFF–öç2‡V"‡—6—VW2(	B6&–Æ—F–W2W†V7WF–öââ¢W‡Æ–6—FW2²ÆR,;FÆRW'6—7FçBæR6öç7F—GVR¦Ö—2Î(	–WF÷&—L:’Ö&6Œ:¢Ò×WFF–öç2FW'&–â&VÆ—2(	B6&–Æ—F–W2W†V7WF–öââ¢W‡Æ–6—FW2²VâvVçE÷&VÆ—2W'6—7FçB&W7FRVâÇW2&÷&ì:’"6öâ&VÆ—5ö–B‡—6—VP¢Ò7FW26ö×F&ÆW2vÆö&W‚Â6öç6öÆ–FF–öâ7&÷72ÖÖ&¶WBWBWF÷&—L:—2f–ææ6œ:‡&W26VçG&ÆW2(	B†÷'2L:–Ì:–vF–öâ—0¢Ò6÷W&6–ærvÆö&Â(	B&W7FR<:—,:’FçBVR6L:–Ì:–vF–öâ—2âvW7B2W‡Æ–6—FVÖVçBL:–6–L:–P¢Ò&–6–ær×WFF–öç2vÆö&ÆW2†Ç’7G&FVw’ÂWFFR6ö×WF—F÷"vÆö&Â’(	B,:—6W'l:–W2W‚WF÷&—L:—26÷'&W7öæFçFW2²ÆL:–6—6–öâÆö6ÆR&W7FRR—0¢Ò&Vf7GW&F–öâ×VÇF’ÖÖ&6Œ:’…&–Çv’Â‡V"f—†R’(	B6†çF–W"<:—,:’ÂL:—VæBGR&F–òFR6÷WfW'GW&P¢Ò&F–òFR6÷WfW'GW&R"Ö&6Œ:’(	B6†çF–W"&–6–ær†6R6BÂ26RÆ÷@ ¢¢¤WF†÷&—G’¢¢¢&6¶VæBÖ6÷&R(	BF÷WFRWF÷&—L:’Ö&6Œ:’FR6WGFR7W&f6RFö—B:§G&RfÆ–L:–R"Ö&¶WBÖFVÆVvF–öâ²÷W&F÷%öÖ&¶WE÷66÷W2&W7FRVæR&ö¦V7F–öâFR6ö×F–&–Æ—L:’Â¦Ö—2Æ6÷W&6RFRG&ö—BFW2v÷&·76W2Ö–w,:—2à ¢¢¤–çf&–çG2¢¢ ¢ÒÆR66÷R6W'fWW"W7BÂvWF÷&—L:’(	BÆRæf–vFWW"æR6†ö—6—B¦Ö—26öâÖ&6Œ:¢ÒVæR&ö¦V7F–öâ÷W&F÷%öÖ&¶WE÷66÷W2æR7Vff—B¦Ö—2:VÆÆR6WVÆR¢ÆW2v÷&·76W2Ö–w,:—2W†–vVçBÖVÖ&W'6†—ö6&–Æ—G’÷RVæRWF÷&—L:’6VçG&ÆRW‡Æ–6—FP¢ÒÆR&W7öç6&ÆR—2Fö—BF—7÷6W"FW2÷WF–Ç26÷'&W7öæFçB:6&W7öç6&–Æ—L:’¢6FÆöwVR—2ÂFVÆ–W"Â6öÖÖæFW2Â÷:—&F–öç2ÂF÷VæRÂW‡:–F—F–öç2WBf–ææ6R—0¢ÒVâwV&B7GVVÆÆVÖVçBG&÷&W7G&–7F–b7W"VæR&W7öç6&–Æ—L:’6–&ÆRW7BVâvBv–×Ì:–ÖVçFF–öâ:fW&ÖW"Â2VæR§W7F–f–6F–öâ÷W"&WF—&W"6WGFR&W7öç6&–Æ—L:’FRÆFö7G&–æP¢Ò6FÆöwVR—2æRWWB¦Ö—2ÖöF–f–W"6–ÆVæ6–WW6VÖVçBÆl:—&—L:’6FÆöwVRvÆö&ÆP¢ÒÆW2×WFF–öç2‡—6—VW2‡V"‡66â÷6²÷6VÂ÷6†—’&W7FVçBW†6ÇW6—fVÖVçBFW'&œ:‡&RFW26&–Æ—F–W2FW'&–âW‡Æ–6—FW0¢ÒÆW2×WFF–öç2FW'&–â&VÆ—2‡,:–6WF–öâ÷&VÖ—6Rö66‚’&W7FVçBW†6ÇW6—fVÖVçBFW'&œ:‡&RFW26&–Æ—F–W2FW'&–âW‡Æ–6—FW0¢Òf–ææ6R—2æRFöææR¦Ö—2–×Æ–6—FVÖVçBVæRWF÷&—L:’6ö×F&ÆRvÆö&ÆR÷R7&÷72ÖÖ&¶W@¢ÒÆW2WF–Æ—G’Æ–æ·2BvWF÷&—L:’vÆö&ÆR6öçBÖ7\:—2÷W"ÆW2&öf–Ç2æöâWF÷&—<:—0¢ÒvVçEö‡V"æRF—&RV7VâÖ&¶WB”BFRW6W'2ç&öÆR²ÆW2vW7FW2GRv÷&·76R÷:—&F–öç2W†–vVçBÆWW"W†V7WF–öââ¢W†7FP¢ÒvVçE÷&VÆ—2&W7FRÆ–Ö—L:’:6öâ&VÆ—5ö–B‡—6—VR÷W"6W2vW7FW2FW'&–âÂVâÇW2FRÆ6&–Æ—G’W†V7WF–öââ¢W†7FP¢ÒÆRF6†&ö&BÆVv7’†FÖ–âò’æR&\:vö—B¦Ö—2Ö&¶WEö÷W&F÷"Fç2$ôÄUõ4„TÄÅ2(	B–ÂW7BvVÌ:¢ÒÆR&÷f—6–öæ–ærW7B–FV×÷FVçB(	BæR&V7,:–Ræ’W6W"æ’66÷RW†—7Fç@¢ÒÆR6VVB7Fv–æræR7,:–RÂâvW‡÷6Ræ’æRæWGFö–R¦Ö—2VæRFöæì:–RBwVâWG&RÖ&¶WB”@¢ÒÆR6VVB7Fv–æræRf'&—VR¦Ö—2Vâ&—‚Äô4Åô5D•dR6ç276vR"ÆRvFR:–6öæöÖ—VR6æöæ—VP ¢¢¤÷vç2¢¢¢öV7VæUğ ¢¢¤W‡÷6W2¢¢¢–çFW&æÂ’‡2’Â…EE–çFW&f6R‡2 ¢¢¤6öç7VÖW2¢¢¢6FÆör„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WB„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖWFöæö×’„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖFVÆVvF–öâ„DT4Ä$TEôäEôô%4U%dTB¢¢¤6öç7VÖVB'’¢¢¢öV7VæUğ ¢¢¥&ö¦V7F–öç2¢¢¢öV7VæUğ ¢¢¥FV6†æ–6Â6öçFW‡B¢¢¢&–Ö—F—fRFWVæFVæ6–W2ÂFW7BÖöæÇ’Â6ö×÷6—F–öâ×&ö÷@ ¢¢¤&÷VæF'’†VÇF‚¢¢¢	ùúEDTåD”ôâ(	B7&÷72ÖfVGW&R–×÷'G3¢Â'VçF–ÖR7–6ÆW3¢ÂVæ6Æ76–f–VC¢ÂFV6Æ&VBÖæ÷BÖö'6W'fVC¢@¢¢¤v÷fW&ææ6R†VÇF‚¢¢¢	ùú"„TÅD…’(	B÷'†âf–ÆW3¢ÂVç&W6öÇfVB–çFW&æÂ—3¢ÂFV6Æ&VBÖöæÇ’FW3¢ÂÖ&–wV÷W2÷væW'6†—¢ÂöçFöÆöw’v3¢ ¢¢¤vFR†VÇF‚¢¢¢	ùú"„TÅD…’(	BvFW3¢öV7VåòÂf–Ã¢Âv&ã¢  ¢¢¤&6†—FV7GW&ÂFV'B¢¢ƒB’ ¢ÒDT4Ä$TEôäõEôô%4U%dTF†Æ÷r’(	B6öçG&7Bæ6öç7VÖW2L:–6Æ&R&WF‚"(	BV7VæR&WWfRóR†æ’DT4Ä$TEôäEôô%4U%dTBÂæ’ô%4U%dTEõTäDT4Ä$TB¢ÒDT4Ä$TEôäõEôô%4U%dTF†Æ÷r’(	B6öçG&7Bæ6öç7VÖW2L:–6Æ&R&F6†&ö&B"(	BV7VæR&WWfRóR†æ’DT4Ä$TEôäEôô%4U%dTBÂæ’ô%4U%dTEõTäDT4Ä$TB¢ÒDT4Ä$TEôäõEôô%4U%dTF†Æ÷r’(	B6öçG&7Bæ6öç7VÖW2L:–6Æ&R&Æöv—7F–72"(	BV7VæR&WWfRóR†æ’DT4Ä$TEôäEôô%4U%dTBÂæ’ô%4U%dTEõTäDT4Ä$TB¢ÒDT4Ä$TEôäõEôô%4U%dTF†Æ÷r’(	B6öçG&7Bæ6öç7VÖW2L:–6Æ&R&÷&FW'2"(	BV7VæR&WWfRóR†æ’DT4Ä$TEôäEôô%4U%dTBÂæ’ô%4U%dTEõTäDT4Ä$TB ¢¢¤–×ÆVÖVçFF–öâ¢¢¢Rf–6†–W"‡2’L:–6Æ,:’‡2¢Ò67&—G2¢ ¢ÒFW7G2¢0 ¥ôL:—F–Ç26ö×ÆWG2†f–6†–W'2ÂF&ÆW2Â–çFW&f6W2’¢fö—"Fö72ôdTEU$Uó3cæ§6öâ(i"fVGW&W5¶–CÒ&Ö&¶WBÖ÷W&F÷"ÖF6†&ö&B%Õğ ¢22æ÷F–f–6F–öç0 ¢¢¤¶–æB¢¢¢'W6–æW72×G&ç7fW'6Â+r¢¥7FGW2¢¢¢&öGV7F–öà ¢¢¥6W'f–6R¢¢¢&ö¦WFW"VæR–æf÷&ÖF–öâW76VçF–VÆÆRFç2ÂÆ–6F–öâfV27V—GFVÖVçB&÷&œ:—F—&R²6öç6W'fW"ÆW26æW‚6÷'FçG2†—7F÷&—VW2<:—,:—2WB&W7BÖVff÷'Bà ¢¢¥W&–ÖWFW"¢¢ ¢Òö–åò ¢ÒVçfö’v†G4f–ÖWF¢ÒÖ÷FWW"BvÆW'FW2–çFW&æW0¢Ò&÷WFW2BvVÖ—76–öâFRæ÷F–f–6F–öà¢Ò7–6ÆR–âÖ6Æ–VçB÷VâÓâ6¶æ÷vÆVFvVBÂ&W6öÇfV@¢Ò,:–6öæ6–Æ–F–öâFW2G&ö—2¦Æöç2,:—&F–öâÂW‡:–F—F–öâWBF—7öæ–&–Æ—L:¢Ò6öçG&BW‡Æ–6—FR÷&FW"æW†6WF–öââ¢÷W"ÆW2:—l:–æVÖVçG2W†6WF–öææVÇ27F–öææ&ÆW0¢Òö÷WEò ¢ÒFW7G2÷Væ—Böæ÷F–f–6F–öâ×6W'f–6RçFW7Bæ§0¢ÒL:–6—6–öâÜ:—F–W"FRæ÷F–f–W"‡&W7FR:ÆfVGW&R:–ÖWGG&–6R ¢¢¤WF†÷&—G’¢¢¢&6¶VæBÖ6÷&R(	BF÷WB6†ævVÖVçBFRFV×ÆFR÷RFR6æÂFö—BWG&RfÆ–FR"ÆR&÷&–WF—&RFRæ÷F–f–6F–öâ×6W'f–6Ræ§0 ¢¢¤–çf&–çG2¢¢ ¢Òæ÷F–f–6F–öç2W7BVâV—G2BvWfVæVÖVçG2(	BVÆÆRæRFV6–FR¦Ö—2VÆÆRÖÖVÖRRwVâWfVæVÖVçBÖWF–W"WRÆ–WP¢ÒÆ—g&—6öâ÷WF&÷VæB&W7BÖVff÷'B(	BÂvV6†V2BvVçfö’v†G4æRFö—B¦Ö—2&Æ÷VW"ÆG&ç67F–öâVÖWGG&–6R†f—&RÖæBÖf÷&vWB¢ÒVæRæ÷F–f–6F–öâ6Æ–VçBW7B–FV×÷FVçFRWB66W76–&ÆRVæ—VVÖVçB:6öâ&÷&œ:—F—&RWF†VçF–fœ:¢Ò7V—GFW"VæRæ÷F–f–6F–öâæRÖöF–f–R¦Ö—2Â:—FBÜ:—F–W"FRÆ6öÖÖæFP¢Ò6WVÇ2ÆW2:—l:–æVÖVçG2W76VçF–VÇ2WB7F–öææ&ÆW2VçG&VçBFç2ÆRfÇW‚6Æ–Vç@¢ÒÆÆV7GW&R,:–6öæ6–Æ–RVæR:–Ö—76–öâÖç\:–RFWV—2Æl:—&—L:’Ü:—F–W"6ç27,:–W"FRF÷V&Æöà¢ÒVâ¦ÆöâÇW2,:–6VçB,:—6÷WBÆR¦Æöâ,:–<:–FVçBFRÆÜ:¦ÖR6öÖÖæFR6ç27,:–W"VâÖW76vR÷W"–å÷G&ç6—@¢ÒVæRW†6WF–öâW†–vRVæR6Ì:’÷&FW"æW†6WF–öââ¢WBVâL:–6ÆVæ6†WW"Ü:—F–W"6öæf—&Ü:¢ÒÆRv†G4FRF—7öæ–&–Æ—L:’WWBVç&–6†—"6öâÖW76vRW†—7FçBBVâVæ—VRÆ–Vâ6'Föw&†—VRL:—&—l:’GRæöÒWF6F–öç2öÖ—62æ§2’(	B&W6öÇfV@¢Ò6VæD÷GÖW76vRò6VæDÖv–4Æ–æ¶‡6W'f–6W2öæ÷F–f–6F–öç2ö÷GÖWF‚æ§2’(	B&W6öÇfV@¢Ò6WDæ÷F–f–6F–öä÷WF6öÖTÆ—7FVæW&‡6W'f–6W2öæ÷F–f–6F–öç2ö–çFW&æÇ2æ§2’(	B&W6öÇfV@ ¢¢¤6öç7VÖW2¢¢¢WF‚„DT4Ä$TEôäEôô%4U%dTB’ÂWF‚Ö–FVçF—G’„DT4Ä$TEôäEôô%4U%dTB’Â–æ6–FVçBÖÖævVÖVçB„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’ÂÆöv—7F–72„DT4Ä$TEôäEôô%4U%dTB’Â÷&FW'2„DT4Ä$TEôäEôô%4U%dTB’ÂÆFf÷&ÒÖ÷2„DT4Ä$TEôäEôô%4U%dTB¢¢¤6öç7VÖVB'’¢¢¢WF‚„DT4Ä$TEôäEôô%4U%dTB’ÂWF‚Ö–FVçF—G’„DT4Ä$TEôäEôô%4U%dTB’Â6FÆör„DT4Ä$TEôäEôô%4U%dTB’ÂF6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’ÂÆöv—7F–72„DT4Ä$TEôäEôô%4U%dTB’ÂÆ÷–ÇG’„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WB„DT4Ä$TEôäEôô%4U%dTB’Â÷&FW'2„DT4Ä$TEôäEôô%4U%dTB’Â–ÖVçG2„DT4Ä$TEôäEôô%4U%dTB’ÂW&6†6–ær„DT4Ä$TEôäEôô%4U%dTB’Â&VgVæG2„DT4Ä$TEôäEôô%4U%dTB’Â6†&VBÖ6'B„DT4Ä$TEôäEôô%4U%dTB ¢¢¥&ö¦V7F–öç2¢¢¢öV7VæUğ ¢¢¥FV6†æ–6Â6öçFW‡B¢¢¢&–Ö—F—fRFWVæFVæ6–W2ÂFW7BÖöæÇ’Â6ö×÷6—F–öâ×&ö÷@ ¢¢¤&÷VæF'’†VÇF‚¢¢¢	ùú"„TÅD…’(	B7&÷72ÖfVGW&R–×÷'G3¢Â'VçF–ÖR7–6ÆW3¢ÂVæ6Æ76–f–VC¢ÂFV6Æ&VBÖæ÷BÖö'6W'fVC¢ ¢¢¤v÷fW&ææ6R†VÇF‚¢¢¢	ùú"„TÅD…’(	B÷'†âf–ÆW3¢ÂVç&W6öÇfVB–çFW&æÂ—3¢ÂFV6Æ&VBÖöæÇ’FW3¢ÂÖ&–wV÷W2÷væW'6†—¢ÂöçFöÆöw’v3¢ ¢¢¤vFR†VÇF‚¢¢¢	ùúEDTåD”ôâ(	BvFW3¢6†V6³¦–×÷'G2Âf–Ã¢Âv&ã¢¢Ò¶6†V6³¦–×÷'G5Ò	ùúDU…BÔtDRÔD”täõ5D”2(	B)ª§2ö"Öæ÷F–f–6F–öç2æ§2(	BW‡÷'B‡2’æöâ6öç6öÖÜ:’‡2’  ¢¢¤&6†—FV7GW&ÂFV'B¢¢¢öV7VæUğ ¢¢¤–×ÆVÖVçFF–öâ¢¢¢C’f–6†–W"‡2’L:–6Æ,:’‡2’Â&÷WF—VS¢2f–6†–W"‡2¢ÒÖ–w&F–öç2¢`¢Ò&÷WFW2¢@¢Ò6W'f–6W2¢@¢ÒFW7G2¢#0¢ÒWF–Ç2¢  ¥ôL:—F–Ç26ö×ÆWG2†f–6†–W'2ÂF&ÆW2Â–çFW&f6W2’¢fö—"Fö72ôdTEU$Uó3cæ§6öâ(i"fVGW&W5¶–CÒ&æ÷F–f–6F–öç2%Õğ ¢22÷&FW'0 ¢¢¤¶–æB¢¢¢'W6–æW72ÖfVGW&R+r¢¥7FGW2¢¢¢&öGV7F–öà ¢¢¥6W'f–6R¢¢¢f—&RW†—7FW"VæR6öÖÖæFRÂFRÆ7&VF–öâR7FGWBf–æÂÂfV2Vâ6÷WBf–wW&RWBVæR&VfW&Væ6RÆ—6–&ÆRà ¢¢¥W&–ÖWFW"¢¢ ¢Òö–åò ¢Ò7&VF–öâÂæçVÆF–öâÂÖ6†–æRFR7FGWBFRÆ6öÖÖæFP¢Ò6æ6†÷BFR6÷WBÆ6öÖÖæFP¢Ò&GF6†VÖVçBW‚6öÆ—2WBW‚6†G2f÷W&æ—76WW'0¢Ò6öÆÆV7FR"R&WG&—@¢Ò&ö¦V7F–öâ6†V6¶÷WB&÷WF—VR¢f–æÆ—6F–öâN(	—VæR<:–ÆV7F–öâVâ6öÖÖæFRÂ6ç2÷væW'6†—FRÎ(	–Væ6—76VÖVç@¢Òv÷&¶fÆ÷rFRÆ—F–vR†F—7WFW2’¢7FGWB÷Vâ÷&ö6W76–ær÷&W6öÇfVBö6Æ÷6VBWBæ÷FRFR,:—6öÇWF–öâ(	B6W'f–6W2öF—7WFRÖ×WFF–öâ×6W'f–6Ræ§2Â¦Ö—2&VgVæEö¶Öb÷&VgVæEöWW"ÂV’&W7FVçB†÷'2FR6Rv÷&¶fÆ÷r‡fö—"&VgVæG26’ÖFW76÷W2¢Ò4bc¢FVÖæFRFR&WF÷W"&GF6Œ:–R:Vâ'F–6ÆR,:–VÆÆVÖVçB&VÖ—2Â6ç2&WWfRFR&W&—6R‡—6—VRæ’Ö÷WfVÖVçBf–ææ6–W ¢Òö÷WEò ¢ÒVæ6—76VÖVçBGR–VÖVçB†fVGW&R–ÖVçG2¢ÒÆöv—VRæ–W"'FvR†fVGW&R6†&VBÖ6'BÂ6öç6öÖÖG&–6RBv÷&FW'2¢Ò&VÖ&÷W'6VÖVçB†fVGW&R&VgVæG2ÂÆV7GW&R6WVÆR7W"÷&FW'2’(	BÆRÖöçFçB&VgVæEö¶Öb÷&VgVæEöWW"BwVâÆ—F–vRâvW7Bæ’ÇRæ’:–7&—B"ÆRv÷&¶fÆ÷rFR7FGWBÂÜ:¦ÖRVæBÆRÆ—F–vR76R&W6öÇfVBö6Æ÷6V@¢ÒF&–f–6F–öâ†fVGW&RV6öæöÖ–2ÖVæv–æRÂ÷&FW'2æRf—BVRÆ6öç6öÖÖW"¢ÒÖL:—&–Æ—6F–öâÂ6öç6W'fF–öâWBL:–Ì:–6†&vVÖVçBFW2f7GW&W2†fVGW&RFö7VÖVçG2²÷&FW'2æRf÷W&æ—BVRÎ(	œ:—l:–æVÖVçB6öæf—&Ü:’WBÆW2Föæì:–W26÷W&6R¢ÒVævvVÖVçBf÷W&æ—76WW"¢7,:–F–öâÂ6öæf—&ÖF–öâÂ,:–6WF–öâWBæçVÆF–öâBwVâ&öâFR6öÖÖæFR†fVGW&RW&6†6–ærÂ66–æL:–RBv÷&FW'2RÆ÷BóãBÂ##bÓrÓ"’(	B÷&FW'2L:–6ÆVæ6†RÆ7–æ6‡&öæ—6F–öâBvæçVÆF–öâf–Ât’–çFW&æRW&6†6–ærÂ6ç25ÂF—&V7B7W"W&6†6Uö÷&FW'0 ¢¢¤WF†÷&—G’¢¢¢&6¶VæBÖ6÷&R(	BF÷WB6†ævVÖVçBFRÆÖ6†–æRFR7FGWB÷RGR66†VÖ÷&FW%÷&VfW&Væ6RFö—BWG&RfÆ–FR"ÆR&÷&–WF—&RFR÷&FW"×7FGW2ÖÖ6†–æRæ§0 ¢¢¤–çf&–çG2¢¢ ¢Ò¶ö&¦V7Bö&¦V7EĞ¢ÒæçVÆF–öâÆ–'&RWBRfçB÷&FW&VB‡Ææ6†W"#F‚’²6öÖÖæFRfW&ÖRFW2÷&FW&VB(	BFVÖæFRvÆÆWBÖöæÇ’Vç7V—FR„Dô5E$”äUôäåTÄD”ôâ¢ÒÆR&FvR&VÖ&÷W'6&ÆRôfW&ÖRGR7V—f’U5BÆR6öçG&B¢–ÂæRF—B¦Ö—2WG&R6†÷6RVR6RVRÆR6öFRf—@¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢ÒG&ç6—F–öâFR7FGWBVæ—VVÖVçBf–÷&FW"×7FGW2ÖÖ6†–æRæ§0¢ÒæçVÆF–öâÆ–&W&RÆW26†G2f÷W&æ—76WW'2Æ–W2Fç2ÆÖVÖRG&ç67F–öâf–W&6†6–æp ¢¢¤÷vç2¢¢¢7W7Fö×5ö†—7F÷'–ÂF—7WFW6Â÷&FW%ö6†V6¶÷WEö–FV×÷FVæ7–Â÷&FW%ö6öÖÖVçG6Â÷&FW%ö—FVÕö6÷7Eö–×WFF–öç6Â÷&FW%ö—FV×6Â÷&FW%÷7FGW5ö†—7F÷'–Â÷&FW'6Â&V6—–VçG6Â&VÆ•÷&WGW&åö6ö×Vç6F–öç6Â6×5öÆöv ¢¢¥w&—FW2†æ÷B÷væW"’¢¢¢66ç6‡w&—FW"Öæ÷BÖ÷væW"’Â6–væÇ6‡w&—FW"Öæ÷BÖ÷væW" ¢¢¤W‡÷6W2¢¢¢3–çFW&æÂ’‡2’Â#r…EE–çFW&f6R‡2¢ÒVæD÷&FW$æ÷FV‡6W'f–6W2ö÷&FW"Ö×WFF–öâ×6W'f–6Ræ§2’(	B&W6öÇfV@¢Ò&6¶f–ÆÅ&÷WF–ætf–VÆG6‡6W'f–6W2ö÷&FW"Ö×WFF–öâ×6W'f–6Ræ§2’(	B&W6öÇfV@¢Ò6†V6¶÷WD6'F‡V&Æ–2ö&÷WF—VRö§2ö"Ö6†V6¶÷WBæ§2’(	B&W6öÇfV@¢Òf–æÆ—¦U–6·W6öÆÆV7F–öæ‡6W'f–6W2ö÷&FW"Ö×WFF–öâ×6W'f–6Ræ§2’(	B&W6öÇfV@¢Òf÷&6U–ÖVçE7FGW4f÷%6–×VÆF–öæ‡6W'f–6W2÷–ÖVçB×6W'f–6Ræ§2’(	B&W6öÇfV@¢ÒÖ¶T–çWF‡V&Æ–2ö&÷WF—VRö§2ö"Ö6†V6¶÷WBæ§2’(	B&W6öÇfV@¢ÒÖ&´66…–DF‡6W'f–6W2ö÷&FW"Ö×WFF–öâ×6W'f–6Ræ§2’(	B&W6öÇfV@¢ÒÖ&´66…&VÖ–æFW%6VçF‡6W'f–6W2ö÷&FW"Ö×WFF–öâ×6W'f–6Ræ§2’(	B&W6öÇfV@¢ÒÖ&´f–ÆVF‡6W'f–6W2÷–ÖVçB×6W'f–6Ræ§2’(	B&W6öÇfV@¢ÒÖ&µ–F‡6W'f–6W2÷–ÖVçB×6W'f–6Ræ§2’(	B&W6öÇfV@¢Òòââã#FRÇW2Âfö—"dTEU$Uó3cæ§6öåğ ¢¢¤6öç7VÖW2¢¢¢WF‚„DT4Ä$TEôäEôô%4U%dTB’ÂWF‚Ö–FVçF—G’„DT4Ä$TEôäEôô%4U%dTB’Â'W6–æW72×'VÆW2„DT4Ä$TEôäEôô%4U%dTB’Â6FÆör„DT4Ä$TEôäEôô%4U%dTB’Â7W7Fö×2„DT4Ä$TEôäEôô%4U%dTB’ÂF6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’ÂFV6—6–öâ×6–væÇ2„DT4Ä$TEôäEôô%4U%dTB’ÂFö7VÖVçG2„DT4Ä$TEôäEôô%4U%dTB’ÂV6öæöÖ–2ÖVæv–æR„DT4Ä$TEôäEôô%4U%dTB’Â–æ6–FVçBÖÖævVÖVçB„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’ÂÆö6Â×7Fö6²„DT4Ä$TEôäEôô%4U%dTB’ÂÆöv—7F–72„DT4Ä$TEôäEôô%4U%dTB’ÂÆ÷–ÇG’„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WB„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖWFöæö×’„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖFVÆVvF–öâ„DT4Ä$TEôäEôô%4U%dTB’Âæ÷F–f–6F–öç2„DT4Ä$TEôäEôô%4U%dTB’Â–ÖVçG2„DT4Ä$TEôäEôô%4U%dTB’ÂÆFf÷&ÒÖ÷2„DT4Ä$TEôäEôô%4U%dTB’ÂW&6†6–ær„DT4Ä$TEôäEôô%4U%dTB’Â&VgVæG2„DT4Ä$TEôäEôô%4U%dTB’Â6†&VBÖ6'B„DT4Ä$TEôäEôô%4U%dTB’ÂvÆÆWB„DT4Ä$TEôäEôô%4U%dTB¢¢¤6öç7VÖVB'’¢¢¢FÖ–âÖF6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’ÂWF‚Ö–FVçF—G’„DT4Ä$TEôäEôô%4U%dTB’Â6FÆör„DT4Ä$TEôäEôô%4U%dTB’Â7W7Fö×2„DT4Ä$TEôäEôô%4U%dTB’ÂF6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’ÂFö7VÖVçG2„DT4Ä$TEôäEôô%4U%dTB’ÂV6öæöÖ–2ÖVæv–æR„DT4Ä$TEôäEôô%4U%dTB’Â–æ6–FVçBÖÖævVÖVçB„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’Â–çfVçF÷'’„DT4Ä$TEôäEôô%4U%dTB’ÂÆöv—7F–72„DT4Ä$TEôäEôô%4U%dTB’ÂÆ÷–ÇG’„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖ6öçG&öÂ×ÆæR„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖFVÆVvF–öâ„DT4Ä$TEôäEôô%4U%dTB’Âæ÷F–f–6F–öç2„DT4Ä$TEôäEôô%4U%dTB’Â–ÖVçG2„DT4Ä$TEôäEôô%4U%dTB’ÂÆFf÷&ÒÖ÷2„DT4Ä$TEôäEôô%4U%dTB’ÂW&6†6–ær„DT4Ä$TEôäEôô%4U%dTB’Â&V6öÖÖVæFF–öç2„DT4Ä$TEôäEôô%4U%dTB’Â&VgVæG2„DT4Ä$TEôäEôô%4U%dTB’Â6†&VBÖ6'B„DT4Ä$TEôäEôô%4U%dTB’ÂVç6öÆB×&W6öÇWF–öâ„DT4Ä$TEôäEôô%4U%dTB’ÂvÆÆWB„DT4Ä$TEôäEôô%4U%dTB ¢¢¥&ö¦V7F–öç2¢¢¢öV7VæUğ ¢¢¥FV6†æ–6Â6öçFW‡B¢¢¢&–Ö—F—fRFWVæFVæ6–W2ÂFW7BÖöæÇ’Â6ö×÷6—F–öâ×&ö÷@ ¢¢¤&÷VæF'’†VÇF‚¢¢¢	ùúEDTåD”ôâ(	B7&÷72ÖfVGW&R–×÷'G3¢Â'VçF–ÖR7–6ÆW3¢ÂVæ6Æ76–f–VC¢ÂFV6Æ&VBÖæ÷BÖö'6W'fVC¢¢¢¤v÷fW&ææ6R†VÇF‚¢¢¢	ùú"„TÅD…’(	B÷'†âf–ÆW3¢ÂVç&W6öÇfVB–çFW&æÂ—3¢ÂFV6Æ&VBÖöæÇ’FW3¢ÂÖ&–wV÷W2÷væW'6†—¢ÂöçFöÆöw’v3¢ ¢¢¤vFR†VÇF‚¢¢¢	ùú"„TÅD…’(	BvFW3¢öV7VåòÂf–Ã¢Âv&ã¢  ¢¢¤&6†—FV7GW&ÂFV'B¢¢ƒ’ ¢ÒDT4Ä$TEôäõEôô%4U%dTF†Æ÷r’(	B6öçG&7Bæ6öç7VÖW2L:–6Æ&R&Ö&¶WBÖ6öçG&öÂ×ÆæR"(	BV7VæR&WWfRóR†æ’DT4Ä$TEôäEôô%4U%dTBÂæ’ô%4U%dTEõTäDT4Ä$TB ¢¢¤–×ÆVÖVçFF–öâ¢¢¢"f–6†–W"‡2’L:–6Æ,:’‡2’Â&÷WF—VS¢’f–6†–W"‡2¢Ò&÷WF—VR¢0¢Ò&÷WFW2¢¢Ò6W'f–6W2¢3 ¢ÒFW7G2¢cP¢ÒWF–Ç2¢ ¥ôL:—F–Ç26ö×ÆWG2†f–6†–W'2ÂF&ÆW2Â–çFW&f6W2’¢fö—"Fö72ôdTEU$Uó3cæ§6öâ(i"fVGW&W5¶–CÒ&÷&FW'2%Õğ ¢22–ÖVçG0 ¢¢¤¶–æB¢¢¢'W6–æW72ÖfVGW&R+r¢¥7FGW2¢¢¢&öGV7F–öà ¢¢¥6W'f–6R¢¢¢Væ6—76W"Vâ–VÖVçB†6'FRÂ•ÂÂÖö&–ÆRÖöæW’ÂW7V6W2R&WG&—B’WB6öæf—&ÖW"6öâWFBFRf6öâ–FV×÷FVçFRà ¢¢¥W&–ÖWFW"¢¢ ¢Òö–åò ¢Ò–çFVw&F–öâ7G&—RWB•Â†–çFVçBÂ6GW&RÂvV&†öö²ÂWfVæVÖVçG2¢ÒÖö&–ÆRÖöæW’×VÇF’×&÷f–FW""Ö&6Œ:’„÷&ævRÖöæW’4ÒÂÕDâÖôÖò4rÂ¶'F’´ÒfW'2ÕföÆô†öÆò¢Ò,:–6öæ6–Æ–F–öâ:—&–öF—VRFW2–VÖVçG2Öö&–ÆRÖöæW’VæF–ær6’6ÆÆ&6²W&GP¢Ò–VÖVçB66‚R&WG&—BWB&VÆæ6W266€¢Ò6öçG,;FÆR'F|:’FRF÷WFR6öæf—&ÖF–öâ66‚ÂfV2÷F–öâ'FVæ—&RFRF÷V&ÆR&ö&F–öâ"7FWW'2F—7F–æ7G0¢Ò6öæf—&ÖF–öâFR–VÖVçBWB–FV×÷FVæ6RvV&†öö²ö6ÆÆ&6°¢Òö÷WEò ¢Ò7&VF–öâFRÆ6öÖÖæFRVÆÆRÖÖVÖR†fVGW&R÷&FW'2¢Ò÷&6†W7G&F–öâGR6†V6¶÷WB&÷WF—VR‡&ö¦V7F–öâg&öçFVæBFR÷&FW'2¢Ò&VÖ&÷W'6VÖVçB†fVGW&R&VgVæG2ÂV’6öç6öÖÖR–ÖVçG2VâÆV7GW&R¢Ò7&VF—BvÆÆWB†fVGW&RvÆÆWBÖÆ÷–ÇG’ ¢¢¤WF†÷&—G’¢¢¢&6¶VæBÖ6÷&R(	BF÷WB6†ævVÖVçBFR&÷f–FW"Â6ÆÆ&6²ÂvV&†öö²÷RÆöv—VRB–FV×÷FVæ6R–VÖVçBFö—BWG&RfÆ–FR"ÆR&÷&œ:—F—&R–ÖVçG2à ¢¢¤–çf&–çG2¢¢ ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢ÒV7Vâ6V7&WBFR–VÖVçBVâGW"Fç2ÆR6öFP¢Ò¶ö&¦V7Bö&¦V7EĞ¢ÒVâ&÷f–FW"7F—l:’VâD"Ö—2æöâ6öæf–wW,:’'VçF–ÖR&W7FR–æF—7öæ–&ÆR†f–ÂÖ6Æ÷6VBÂV7VâfÆÆ&6²6–ÆVæ6–WW‚¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ¢Ò¶ö&¦V7Bö&¦V7EĞ ¢¢¤÷vç2¢¢¢66…ö6öÆÆV7F–öç6Â66…ö6öæf—&ÖF–öåö6öçG&öÇ6Â66…ö7W7FöG•öÆ÷76W6Â66…ö7W7FöG•÷&V6V—G6Â66…öFW÷6—EöÆÆö6F–öç6Â66…öFW÷6—G6ÂÖ&¶WEö66…öFW7F–æF–öç6ÂÖ&¶WE÷–ÖVçEö66÷VçG6ÂÖ&¶WE÷–ÖVçE÷&÷f–FW'6ÂÖö&–ÆUöÖöæW•÷G&ç67F–öç6Â—ÅöWfVçG5÷&ö6W76VFÂ7G&—UöWfVçG5÷&ö6W76VF  ¢¢¤W‡÷6W2¢¢¢–çFW&æÂ’‡2’Â#R…EE–çFW&f6R‡2 ¢¢¤6öç7VÖW2¢¢¢WF‚„DT4Ä$TEôäEôô%4U%dTB’ÂWF‚Ö–FVçF—G’„DT4Ä$TEôäEôô%4U%dTB’Â'W6–æW72×'VÆW2„DT4Ä$TEôäEôô%4U%dTB’ÂFö7VÖVçG2„DT4Ä$TEôäEôô%4U%dTB’Â–æ6–FVçBÖÖævVÖVçB„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’ÂÆöv—7F–72„DT4Ä$TEôäEôô%4U%dTB’ÂÆ÷–ÇG’„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WB„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖFVÆVvF–öâ„DT4Ä$TEôäEôô%4U%dTB’Âæ÷F–f–6F–öç2„DT4Ä$TEôäEôô%4U%dTB’Â÷&FW'2„DT4Ä$TEôäEôô%4U%dTB’ÂÆFf÷&ÒÖ÷2„DT4Ä$TEôäEôô%4U%dTB’ÂW&6†6–ær„DT4Ä$TEôäEôô%4U%dTB’Â&VgVæG2„DT4Ä$TEôäEôô%4U%dTB¢¢¤6öç7VÖVB'’¢¢¢FÖ–âÖF6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’ÂF6†&ö&B„DT4Ä$TEôäEôô%4U%dTB’ÂFV6—6–öâ×6–væÇ2„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’ÂÆöv—7F–72„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖ6öçG&öÂ×ÆæR„DT4Ä$TEôäEôô%4U%dTB’ÂÖ&¶WBÖFVÆVvF–öâ„DT4Ä$TEôäEôô%4U%dTB’Â÷&FW'2„DT4Ä$TEôäEôô%4U%dTB’Â&VgVæG2„DT4Ä$TEôäEôô%4U%dTB ¢¢¥&ö¦V7F–öç2¢¢¢öV7VæUğ ¢¢¥FV6†æ–6Â6öçFW‡B¢¢¢&–Ö—F—fRFWVæFVæ6–W2ÂFW7BÖöæÇ’Â6ö×÷6—F–öâ×&ö÷@ ¢¢¤&÷VæF'’†VÇF‚¢¢¢	ùú"„TÅD…’(	B7&÷72ÖfVGW&R–×÷'G3¢Â'VçF–ÖR7–6ÆW3¢ÂVæ6Æ76–f–VC¢ÂFV6Æ&VBÖæ÷BÖö'6W'fVC¢ ¢¢¤v÷fW&ææ6R†VÇF‚¢¢¢	ùú"„TÅD…’(	B÷'†âf–ÆW3¢ÂVç&W6öÇfVB–çFW&æÂ—3¢ÂFV6Æ&VBÖöæÇ’FW3¢ÂÖ&–wV÷W2÷væW'6†—¢ÂöçFöÆöw’v3¢ ¢¢¤vFR†VÇF‚¢¢¢	ùú"„TÅD…’(	BvFW3¢öV7VåòÂf–Ã¢Âv&ã¢  ¢¢¤&6†—FV7GW&ÂFV'B¢¢¢öV7VæUğ ¢¢¤–×ÆVÖVçFF–öâ¢¢¢ƒ"f–6†–W"‡2’L:–6Æ,:’‡2’Â&÷WF—VS¢bf–6†–W"‡2¢Ò&÷WF—VR¢@¢ÒÖ–w&F–öç2¢ ¢Ò&÷WFW2¢p¢Ò67&—G2¢¢Ò6W'f–6W2¢#0¢ÒFW7G2¢3p ¥ôL:—F–Ç26ö×ÆWG2†f–6†–W'2ÂF&ÆW2Â–çFW&f6W2’¢fö—"Fö72ôdTEU$Uó3cæ§6öâ(i"fVGW&W5¶–CÒ'–ÖVçG2%Õğ ¢22ÆFf÷&Ğ ¢¢¤¶–æB¢¢¢g&öçFVæB×G&ç7fW'6Â+r¢¥7FGW2¢¢¢&öGV7F–öà ¢¢¥6W'f–6R¢¢¢–æg&7G'V7GW&RG&ç7fW'6ÆRF6†&ö&G2†WF‚ÖwV&BÂ6W'f–6Rv÷&¶W"Â6ö×÷6çG26öÆ—2'FvW2Â"f–WvW"’à ¢¢¥W&–ÖWFW"¢¢ ¢Òö–åò ¢Ò§2ò¢Â7ræ§2(	BWF–Æ—F—&W2'FvW2†÷'2FÖ–âğ¢Òö÷WEò ¢ÒgVW2FÖ–â†6öç6öÖÖVçB6W2WF–Æ—F—&W2 ¢¢¤WF†÷&—G’¢¢¢F6†&ö&G2(	BF÷WB6†ævVÖVçBFRW&–ÖWG&RFR6RFöÖ–æRFö—BWG&R&VfÆWFR–6’à ¢¢¤–çf&–çG2¢¢ ¢ÒF÷WBf–6†–W"§2ò¢÷R7ræ§2†÷'2FÖ–âòFö—BWG&RFV6Æ&R–6 ¢¢¤÷vç2¢¢¢öV7VæUğ ¢¢¤W‡÷6W2¢¢¢–çFW&æÂ’‡2’Â…EE–çFW&f6R‡2 ¢¢¤6öç7VÖW2¢¢¢öV7VæUğ¢¢¤6öç7VÖVB'’¢¢¢öV7VæUğ ¢¢¥&ö¦V7F–öç2¢¢¢öV7VæUğ ¢¢¥FV6†æ–6Â6öçFW‡B¢¢¢&–Ö—F—fRFWVæFVæ6–W2ÂFW7BÖöæÇ’Â6ö×÷6—F–öâ×&ö÷@ ¢¢¤&÷VæF'’†VÇF‚¢¢¢	ùú"„TÅD…’(	B7&÷72ÖfVGW&R–×÷'G3¢Â'VçF–ÖR7–6ÆW3¢ÂVæ6Æ76–f–VC¢ÂFV6Æ&VBÖæ÷BÖö'6W'fVC¢ ¢¢¤v÷fW&ææ6R†VÇF‚¢¢¢	ùú"„TÅD…’(	B÷'†âf–ÆW3¢ÂVç&W6öÇfVB–çFW&æÂ—3¢ÂFV6Æ&VBÖöæÇ’FW3¢ÂÖ&–wV÷W2÷væW'6†—¢ÂöçFöÆöw’v3¢ ¢¢¤vFR†VÇF‚¢¢¢	ùú"„TÅD…’(	BvFW3¢öV7VåòÂf–Ã¢Âv&ã¢  ¢¢¤&6†—FV7GW&ÂFV'B¢¢¢öV7VæUğ ¢¢¤–×ÆVÖVçFF–öâ¢¢¢Bf–6†–W"‡2’L:–6Æ,:’‡2¢Ò§2¢@ ¥ôL:—F–Ç26ö×ÆWG2†f–6†–W'2ÂF&ÆW2Â–çFW&f6W2’¢fö—"Fö72ôdTEU$Uó3cæ§6öâ(i"fVGW&W5¶–CÒ'ÆFf÷&Ò%Õğ ¢22ÆFf÷&ÒÖ÷0 ¢¢¤¶–æB¢¢¢FV6†æ–6Â×G&ç7fW'6Â+r¢¥7FGW2¢¢¢&öGV7F–öà ¢¢¥6W'f–6R¢¢¢W‡÷6W"Æ6çFRÆ–6F—fRÂÆ6öæf–wW&F–öâWBÆW2ÖöGVÆW27F–g2(	B–æg&7G'V7GW&RBvW‡Æö—FF–öâÂ2FR6W'f–6RÖWF–W"à ¢¢¥W&–ÖWFW"¢¢ ¢Òö–åò ¢Ò†VÇF‚6†V6²Â6öæf–wW&F–öâW‡÷6VRÂÆ—7FRFRÖöGVÆW27F–g2Â’Bv÷W&F–öç2–çFW&æP¢Òö÷WEò ¢ÒF÷WFRÆöv—VRÖWF–W"(	BÆFf÷&ÒÖ÷2âv2FR&VvÆRÖWF–W"&÷&P ¢¢¤WF†÷&—G’¢¢¢&6¶VæBÖ6÷&R(	B–æg&7G'V7GW&R'FvVRÂ6†ævVÖVçBfÆ–FR"ÂvWV—RÆFVf÷&ÖP ¢¢¤–çf&–çG2¢¢ ¢ÒÆW27W&f6W2FR6çL:’WBÖöæ—F÷&–ærâ|:–7&—fVçBV7VæRFöæì:–RÜ:—F–W ¢ÒÆR6–×VÆF÷":–7&—BFç2ÆW2F&ÆW2BvWG&W2fVGW&W2"FW6–vâFR6–×VÆF–öà¢ÒÆW2ÖöGVÆW2†f'&–72Âv&ÖVçEöÖöFVÇ2’6öçBÆW26WVÆW2F&ÆW2÷7<:–L:–W2"ÆFf÷&ÒÖ÷0 ¢¢¤÷vç2¢¢¢f'&–76Âv&ÖVçEöÖöFVÇ6 ¢¢¥w&—FW2†æ÷B÷væW"’¢¢¢æ÷F–f–6F–öåöÆöv‡w&—FW"Öæ÷BÖ÷væW"’Â&6VÅö—FV×6‡w&—FW"Öæ÷BÖ÷væW"’Â&6VÇ6‡w&—FW"Öæ÷BÖ÷væW"’Â66ç6‡w&—FW"Öæ÷BÖ÷væW" ¢¢¤W‡÷6W2¢¢¢–çFW&æÂ’‡2’Â32…EE–çFW&f6R‡2 ¢¢¤6öç7VÖW2¢¢¢WF‚„DT4Ä$TEôäEôô%4U%dTB’ÂWF‚Ö–FVçF—G’„DT4Ä$TEôäEôô%4U%dTB’Â'W6–æW72×'VÆW2„DT4Ä$TEôäEôô%4U%dTB’Â6FÆör„DT4Ä$TEôäEôô%4U%dTB’ÂFö7VÖVçG2„DT4Ä$TEôäEôô%4U%dTB’ÂV6öæöÖ–2ÖVæv–æR„DT4Ä$TEôäEôô%4U%dTB’Â–æ6–FVçBÖÖævVÖVçB„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’ÂÆöv—7F–72„DT4Ä$TEôäEôô%4U%dTB’Â÷&FW'2„DT4Ä$TEôäEôô%4U%dTB’ÂW&6†6–ær„DT4Ä$TEôäEôô%4U%dTB’ÂvÆÆWB„DT4Ä$TEôäEôô%4U%dTB¢¢¤6öç7VÖVB'’¢¢¢WF‚Ö–FVçF—G’„DT4Ä$TEôäEôô%4U%dTB’ÂWF‚×76¶W’„DT4Ä$TEôäEôô%4U%dTB’Â6FÆör„DT4Ä$TEôäEôô%4U%dTB’ÂV6öæöÖ–2ÖVæv–æR„DT4Ä$TEôäEôô%4U%dTB’Â–æg&7G'V7GW&R„DT4Ä$TEôäEôô%4U%dTB’Âæ÷F–f–6F–öç2„DT4Ä$TEôäEôô%4U%dTB’Â÷&FW'2„DT4Ä$TEôäEôô%4U%dTB’Â–ÖVçG2„DT4Ä$TEôäEôô%4U%dTB’Â&÷f–FW'2×6W'f–6W2„DT4Ä$TEôäEôô%4U%dTB’Â&V6öÖÖVæFF–öç2„DT4Ä$TEôäEôô%4U%dTB’Â6†&VBÖ6'B„DT4Ä$TEôäEôô%4U%dTB’ÂvÆÆWB„DT4Ä$TEôäEôô%6Ú±î¸Â¸­yêë¢°k¢G§¦*^m«ëŒ+Š×®º+º$zzb¥âFRÂG&W76RV&Æ–72GR&VÆ—2²V7Vâ6V6öæBÖW76vRâW7B:–Ö—0 ¢¢¤÷vç2¢¢¢ÆW'G6Â6Æ–VçEöæ÷F–f–6F–öç6Âæ÷F–f–6F–öåöÆöv  ¢¢¤W‡÷6W2¢¢¢’–çFW&æÂ’‡2’Âb…EE–çFW&f6R‡2¢Ò'V–ÆE&VÆ”ÖW&Âòf÷&ÖE&VÆ•ö–çBòVæE&VÆ”Æö6F–öæ‡6W'f–6W2öæ÷F–f–6F–öç2÷&VÆ’ÖÆö6F–öâæ§2’(	B&W6öÇfV@¢Ò7&VFTÆW'F‡WF–Ç2öÆW'G2æ§2’(	B&W6öÇfV@¢ÒVÖ—D÷&FW$Ö–ÆW7FöæRòVÖ—DW†6WF–öæÂò&W6öÇfT÷&FW$Ö–ÆW7FöæW6‡6W'f–6W2ö6Æ–VçBÖæ÷F–f–6F–öâ×6W'f–6Ræ§2’(	B&W6öÇfV@¢Òæ÷F–g”Æ÷–ÇG”V&æVF‡6W'f–6W2öæ÷F–f–6F–öç2öÆ÷–ÇG’æ§2’(	B&W6öÇfV@¢Òæ÷F–g”÷&FW"¦‡6W'f–6W2öæ÷F–f–6F–öç2ö÷&FW"æ§2’(	B&W6öÇfV@¢Òæ÷F–g•&6VÂ¦‡6W'f–6W2öæ÷F–f–6F–öç2÷&6VÂæ§2’(	B&W6öÇfV@¢Òæ÷F–g•FW‡F‡6W'f–6W2öæ÷F–f
+  - rÃ©fÃ©rentiel markets, Currency Boundary et persistance operator_market_scopes : feature market
+  - rÃ´le global users.role et user.role.set : frontiÃ¨re auth-identity/GROUP, jamais dÃ©lÃ©guÃ©e au partenaire
+  - rÃ¨gles dâ€™allocation GROUP et vÃ©ritÃ© Ã©conomique consolidÃ©e : economic-engine
+  - fonctions Hub/transit mutualisÃ©es : hors Market Operating Assignment
+  - providers/relais comme principaux locaux secondaires : jamais des assignments concurrents ; leur gestion locale reste dÃ©lÃ©guable sans transformer leur identitÃ© en user_role
+  - lecture publique du rÃ©seau relais (GET /api/relais) et son cycle de vie technique hors dÃ©lÃ©gation : feature logistics, propriÃ©taire de la table relais
+  - routage inter-Ã®les KM (island/island_code consommÃ©s par services/routing.js) : hors pÃ©rimÃ¨tre, couplage gÃ©ographique prÃ©-existant non rÃ©solu par cette feature
+  - catalogue global (products) : feature catalog reste lifecycle owner ; market-delegation nâ€™Ã©crit jamais products directement et ne peut dÃ©clencher une premiÃ¨re publication quâ€™en dÃ©lÃ©guant Ã  catalog-approval lors dâ€™une validation humaine marchÃ© ; product_market_exposure reste la projection pays
+  - cÃ¢blage du chemin de lecture storefront (catalog-public-view.js / catalog-product-detail.js) : feature catalog, propriÃ©taire de publicCatalogVisibilitySql() et de la logique de rÃ©solution marchÃ© ; market-delegation ne fait quâ€™autoriser/auditer la dÃ©cision dâ€™exposition qui alimente cette lecture
+  - calcul automatique commission/revenue_share et payout bancaire/Mobile Money : hors LOT 6 ; la feature settlement ne fait quâ€™attester/tracer le cycle sans inventer de formule ni dÃ©clencher de transfert
+  - vÃ©ritÃ© dâ€™encaissement et Ã©tat de double confirmation : feature payments
+  - contrat juridique partenaire complet : hors backend, seule sa projection exÃ©cutable pourra entrer plus tard
+  - montant et dÃ©cision de remboursement (disputes.refund_kmf/disputes.refund_eur) : feature refunds, jamais dÃ©lÃ©gable â€” vÃ©ritÃ© financiÃ¨re irrÃ©versible. client.case.handle ne pilote que le workflow (statut, rÃ©solution textuelle), jamais le chiffre
+  - cycle de vie status (draft/active/suspended) des services et offres physiques : hors pÃ©rimÃ¨tre de local_offer.manage, qui ne bascule que commercial_exposure ; isServiceExposable/isPhysicalOfferExposable continuent dâ€™exiger les deux (status ET exposure) â€” providers-services reste propriÃ©taire du cycle complet
+  - crÃ©ation READY, choix amount/currency et passage REQUESTED -> PAID : jamais une autoritÃ© de lâ€™opÃ©rateur pays ; READY et PAID restent centraux dans la feature settlement
+
+**Authority** : backend-core â€” cette feature possÃ¨de la dÃ©lÃ©gation dâ€™autoritÃ© marchÃ© et son Ã©quipe ; elle ne possÃ¨de ni le rÃ©fÃ©rentiel market, ni operator_market_scopes, ni users.role, ni les rÃ¨gles GROUP, ni les fonctions terrain mutualisÃ©es, ni la vÃ©ritÃ© monÃ©taire du settlement.
+
+**Invariants** :
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+
+**Owns** : `assignment_capability_ceiling`, `assignment_memberships`, `capability_registry`, `ceiling_template_capabilities`, `ceiling_templates`, `market_cash_control_policies`, `market_delegation_audit`, `market_operating_assignments`, `market_team_invitations`, `membership_capabilities`
+
+**Exposes** : 35 internal API(s), 33 HTTP interface(s)
+  - `acceptInvitation` (services/market-delegation-team-service.js) â€” resolved
+  - `addMembership` (services/market-delegation-service.js) â€” resolved
+  - `attachMarketDelegatedRoleFor` (middleware/require-market-delegated-role.js) â€” resolved
+  - `confirmSettlementReceived` (services/market-delegation-settlement-service.js) â€” resolved
+  - `createProvider` (services/market-delegation-provider-service.js) â€” resolved
+  - `createRelais` (services/market-delegation-network-service.js) â€” resolved
+  - `ensureOperatorMembership` (services/market-operator-provisioning.js) â€” resolved
+  - `grantMembershipCapabilities` (services/market-delegation-service.js) â€” resolved
+  - `grantOperatorScope` (services/market-operator-provisioning.js) â€” resolved
+  - `inviteTeamMember` (services/market-delegation-team-service.js) â€” resolved
+  - _...25 de plus, voir FEATURE_360.json_
+
+**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), providers-services (DECLARED_AND_OBSERVED), settlement (DECLARED_AND_OBSERVED)
+**Consumed by** : dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market-control-plane (DECLARED_AND_OBSERVED), market-operator-dashboard (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), settlement (DECLARED_AND_OBSERVED), unsold-resolution (DECLARED_AND_OBSERVED)
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 1 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 114 fichier(s) dÃ©clarÃ©(s)
+  - config : 1
+  - middleware : 4
+  - migrations : 23
+  - routes : 15
+  - services : 19
+  - tests : 52
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="market-delegation"]_
+
+## market-operator-dashboard
+
+**Kind** : unclassified  Â·  **Status** : staging
+
+**Service** : Permettre Ã  un opÃ©rateur pays (market_operator) de se connecter au dashboard Canonical, de dÃ©cider et exploiter son marchÃ© : KPIs, commandes, catalogue pays, pricing local, rÃ©seau Hub/Relais, douane, expÃ©ditions et Finance pays â€” sans jamais voir les donnÃ©es d'un autre marchÃ© ni recevoir automatiquement les gestes physiques ou autoritÃ©s globales des rÃ´les spÃ©cialisÃ©s.
+
+**Perimeter** :
+- _in_ :
+  - Operations Workspace (routes/admin-operations-workspace.js, possÃ©dÃ© par `dashboard`) : lecture par operations.read ; mutations par execution.* exacte ; users.role sert seulement de compatibilitÃ© request-local aprÃ¨s autorisation
+  - Catalogue pays : exposition/configuration produit Ã— marchÃ© via les primitives market-scoped ; aucune mutation de la vÃ©ritÃ© catalogue globale
+  - ExpÃ©ditions & Douane : visibilitÃ©, supervision et configuration du marchÃ© ; gestes physiques/transit spÃ©cialisÃ©s restent soumis aux capabilities dÃ©diÃ©es
+  - Finance pays : recettes, coÃ»ts, marges, rapprochements, justificatifs et configuration locale livrÃ©e ; actes comptables sensibles restent explicitement dÃ©lÃ©guÃ©s
+  - Navigation Canonical : domaines visibles selon responsibilities/capabilities effectives, jamais selon une simple promesse UI
+  - Remontage navigation aprÃ¨s rÃ©solution async de la session pour appliquer le filtrage rÃ´le/capability
+  - Script CLI provision-market-operator.js : crÃ©ation utilisateur + scope atomique, idempotent
+  - Script CLI seed-market-test-data.js : banc staging strictement Market ID pour catalogue, pricing et commandes de recette pays
+  - Parcours complet cible : login â†’ context â†’ dashboards scopÃ©s â†’ Catalogue pays â†’ Atelier â†’ Commandes â†’ OpÃ©rations/Douane/ExpÃ©ditions â†’ Finance pays â†’ Ã©quipe/partners
+- _out_ :
+  - Dashboard Legacy (admin/) â€” gelÃ©, market_operator volontairement exclu de ROLE_SHELLS
+  - Catalogue GLOBAL / vÃ©ritÃ© produit globale / requireCatalogGlobalAuthority â€” reste une autoritÃ© centrale ; ne pas confondre avec Catalogue pays
+  - Mutations Hub physiques â€” capabilities execution.* explicites ; le rÃ´le persistant ne constitue jamais lâ€™autoritÃ© marchÃ©
+  - Mutations terrain relais â€” capabilities execution.* explicites ; un agent_relais persistant reste en plus bornÃ© par son relais_id physique
+  - Actes comptables globaux, consolidation cross-market et autoritÃ©s financiÃ¨res centrales â€” hors dÃ©lÃ©gation pays
+  - Sourcing global â€” reste sÃ©parÃ© tant que sa dÃ©lÃ©gation pays n'est pas explicitement dÃ©cidÃ©e
+  - Pricing mutations globales (apply strategy, update competitor global) â€” rÃ©servÃ©es aux autoritÃ©s correspondantes ; la dÃ©cision locale reste au pays
+  - Refacturation multi-marchÃ© (Railway, Hub fixe) â€” chantier sÃ©parÃ©, dÃ©pend du ratio de couverture
+  - Ratio de couverture par marchÃ© â€” chantier pricing Phase 3d, pas ce lot
+
+**Authority** : backend-core â€” toute autoritÃ© marchÃ© de cette surface doit Ãªtre validÃ©e par market-delegation ; operator_market_scopes reste une projection de compatibilitÃ©, jamais la source de droit des workspaces migrÃ©s.
+
+**Invariants** :
+- Le scope serveur est l'autoritÃ© â€” le navigateur ne choisit jamais son marchÃ©
+- Une projection operator_market_scopes ne suffit jamais Ã  elle seule : les workspaces migrÃ©s exigent membership/capability ou une autoritÃ© centrale explicite
+- Le Responsable pays doit disposer des outils correspondant Ã  sa responsabilitÃ© : Catalogue pays, Atelier, Commandes, OpÃ©rations, Douane, ExpÃ©ditions et Finance pays
+- Un guard actuellement trop restrictif sur une responsabilitÃ© cible est un gap d'implÃ©mentation Ã  fermer, pas une justification pour retirer cette responsabilitÃ© de la doctrine
+- Catalogue pays ne peut jamais modifier silencieusement la vÃ©ritÃ© catalogue globale
+- Les mutations physiques Hub (scan/pack/seal/ship) restent exclusivement derriÃ¨re des capabilities terrain explicites
+- Les mutations terrain relais (rÃ©ception/remise/cash) restent exclusivement derriÃ¨re des capabilities terrain explicites
+- Finance pays ne donne jamais implicitement une autoritÃ© comptable globale ou cross-market
+- Les utility links d'autoritÃ© globale sont masquÃ©s pour les profils non autorisÃ©s
+- agent_hub ne tire aucun Market ID de users.role ; les gestes du Workspace OpÃ©rations exigent leur execution.* exacte
+- agent_relais reste limitÃ© Ã  son relais_id physique pour ses gestes terrain, en plus de la capability execution.* exacte
+- Le dashboard Legacy (admin/) ne reÃ§oit jamais market_operator dans ROLE_SHELLS â€” il est gelÃ©
+- Le provisioning est idempotent â€” ne recrÃ©e ni user ni scope existant
+- Le seed staging ne crÃ©e, n'expose ni ne nettoie jamais une donnÃ©e d'un autre Market ID
+- Le seed staging ne fabrique jamais un prix LOCAL_ACTIVE sans passage par le gate Ã©conomique canonique
+
+**Owns** : _aucune_
+
+**Exposes** : 0 internal API(s), 0 HTTP interface(s)
+
+**Consumes** : catalog (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED)
+**Consumed by** : _aucune_
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¡ ATTENTION â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 4
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** (4) :
+- `DECLARED_NOT_OBSERVED` (low) â€” contract.consumes dÃ©clare "auth" â€” aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
+- `DECLARED_NOT_OBSERVED` (low) â€” contract.consumes dÃ©clare "dashboard" â€” aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
+- `DECLARED_NOT_OBSERVED` (low) â€” contract.consumes dÃ©clare "logistics" â€” aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
+- `DECLARED_NOT_OBSERVED` (low) â€” contract.consumes dÃ©clare "orders" â€” aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
+
+**Implementation** : 5 fichier(s) dÃ©clarÃ©(s)
+  - scripts : 2
+  - tests : 3
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="market-operator-dashboard"]_
+
+## notifications
+
+**Kind** : business-transversal  Â·  **Status** : production
+
+**Service** : Projeter une information essentielle dans l application avec acquittement propriÃ©taire ; conserver les canaux sortants historiques sÃ©parÃ©s et best-effort.
+
+**Perimeter** :
+- _in_ :
+  - envoi WhatsApp via Meta
+  - moteur d'alertes internes
+  - routes d'emission de notification
+  - cycle in-app client open -> acknowledged | resolved
+  - rÃ©conciliation des trois jalons prÃ©paration, expÃ©dition et disponibilitÃ©
+  - contrat explicite order.exception.* pour les Ã©vÃ©nements exceptionnels actionnables
+- _out_ :
+  - tests/unit/notification-service.test.js
+  - dÃ©cision mÃ©tier de notifier (reste Ã  la feature Ã©mettrice)
+
+**Authority** : backend-core â€” tout changement de template ou de canal doit etre valide par le proprietaire de notification-service.js
+
+**Invariants** :
+- notifications est un puits d'evenements â€” elle ne decide jamais elle-meme qu'un evenement metier a eu lieu
+- livraison outbound best-effort â€” l'echec d'envoi WhatsApp ne doit jamais bloquer la transaction emettrice (fire-and-forget)
+- une notification client est idempotente et accessible uniquement Ã  son propriÃ©taire authentifiÃ©
+- acquitter une notification ne modifie jamais l Ã©tat mÃ©tier de la commande
+- seuls les Ã©vÃ©nements essentiels et actionnables entrent dans le flux client
+- la lecture rÃ©concilie une Ã©mission manquÃ©e depuis la vÃ©ritÃ© mÃ©tier sans crÃ©er de doublon
+- un jalon plus rÃ©cent rÃ©sout le jalon prÃ©cÃ©dent de la mÃªme commande sans crÃ©er un message pour in_transit
+- une exception exige une clÃ© order.exception.* et un dÃ©clencheur mÃ©tier confirmÃ©
+- le WhatsApp de disponibilitÃ© peut enrichir son message existant d un unique lien cartographique dÃ©rivÃ© du nom et de l adresse publics du relais ; aucun second message n est Ã©mis
+
+**Owns** : `alerts`, `client_notifications`, `notification_log`
+
+**Exposes** : 9 internal API(s), 6 HTTP interface(s)
+  - `buildRelayMapUrl / formatRelayPoint / appendRelayLocation` (services/notifications/relay-location.js) â€” resolved
+  - `createAlert` (utils/alerts.js) â€” resolved
+  - `emitOrderMilestone / emitExceptional / resolveOrderMilestones` (services/client-notification-service.js) â€” resolved
+  - `notifyLoyaltyEarned` (services/notifications/loyalty.js) â€” resolved
+  - `notifyOrder*` (services/notifications/order.js) â€” resolved
+  - `notifyParcel*` (services/notifications/parcel.js) â€” resolved
+  - `notifyText` (services/notifications/misc.js) â€” resolved
+  - `sendOtpMessage / sendMagicLink` (services/notifications/otp-auth.js) â€” resolved
+  - `setNotificationOutcomeListener` (services/notifications/internals.js) â€” resolved
+
+**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED)
+**Consumed by** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED)
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¡ ATTENTION â€” gates: check:imports, fail: 0, warn: 1
+  - [check:imports] ğŸŸ  TEXT-GATE-DIAGNOSTIC â€” âš  js/b-notifications.js â€” 1 export(s) non consommÃ©(s) :
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 49 fichier(s) dÃ©clarÃ©(s), boutique: 3 fichier(s)
+  - migrations : 6
+  - routes : 4
+  - services : 14
+  - tests : 23
+  - utils : 2
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="notifications"]_
+
+## orders
+
+**Kind** : business-feature  Â·  **Status** : production
+
+**Service** : Faire exister une commande, de la creation au statut final, avec un cout figure et une reference lisible.
+
+**Perimeter** :
+- _in_ :
+  - creation, annulation, machine de statut de la commande
+  - snapshot de cout a la commande
+  - rattachement aux colis et aux achats fournisseurs
+  - collecte QR au retrait
+  - projection checkout boutique : finalisation dâ€™une sÃ©lection en commande, sans ownership de lâ€™encaissement
+  - workflow de litige (disputes) : statut open/processing/resolved/closed et note de rÃ©solution â€” services/dispute-mutation-service.js, jamais refund_kmf/refund_eur, qui restent hors de ce workflow (voir refunds ci-dessous)
+  - SAV V1 : demande de retour rattachÃ©e Ã  un article rÃ©ellement remis, sans preuve de reprise physique ni mouvement financier
+- _out_ :
+  - encaissement du paiement (feature payments)
+  - logique panier partage (feature shared-cart, consommatrice d'orders)
+  - remboursement (feature refunds, lecture seule sur orders) â€” le montant refund_kmf/refund_eur d'un litige n'est ni lu ni Ã©crit par le workflow de statut, mÃªme quand le litige passe resolved/closed
+  - tarification (feature economic-engine, orders ne fait que la consommer)
+  - matÃ©rialisation, conservation et tÃ©lÃ©chargement des factures (feature documents ; orders ne fournit que lâ€™Ã©vÃ©nement confirmÃ© et les donnÃ©es source)
+  - engagement fournisseur : crÃ©ation, confirmation, rÃ©ception et annulation d'un bon de commande (feature purchasing, scindÃ©e d'orders au Lot O1.4, 2026-07-12) â€” orders dÃ©clenche la synchronisation d'annulation via l'API interne purchasing, sans SQL direct sur purchase_orders
+
+**Authority** : backend-core â€” tout changement de la machine de statut ou du schema order_reference doit etre valide par le proprietaire de order-status-machine.js
+
+**Invariants** :
+- [object Object]
+- annulation libre et 100% avant ordered (plancher 24h) ; commande ferme des ordered â€” demande wallet-only ensuite (DOCTRINE_ANNULATION)
+- le badge Remboursable/Ferme du suivi EST le contrat : il ne dit jamais autre chose que ce que le code fait
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- transition de statut uniquement via order-status-machine.js
+- annulation libere les achats fournisseurs lies dans la meme transaction via purchasing
+
+**Owns** : `customs_history`, `disputes`, `order_checkout_idempotency`, `order_comments`, `order_item_cost_imputations`, `order_items`, `order_status_history`, `orders`, `recipients`, `relay_return_compensations`, `sms_log`
+**Writes (not owner)** : `scans` (writer-not-owner), `signals` (writer-not-owner)
+
+**Exposes** : 30 internal API(s), 27 HTTP interface(s)
+  - `appendOrderNote` (services/order-mutation-service.js) â€” resolved
+  - `backfillRoutingFields` (services/order-mutation-service.js) â€” resolved
+  - `checkoutCart` (public/boutique/js/b-checkout.js) â€” resolved
+  - `finalizePickupCollection` (services/order-mutation-service.js) â€” resolved
+  - `forcePaymentStatusForSimulation` (services/payment-service.js) â€” resolved
+  - `makeInput` (public/boutique/js/b-checkout.js) â€” resolved
+  - `markCashPaidAt` (services/order-mutation-service.js) â€” resolved
+  - `markCashReminderSent` (services/order-mutation-service.js) â€” resolved
+  - `markFailed` (services/payment-service.js) â€” resolved
+  - `markPaid` (services/payment-service.js) â€” resolved
+  - _...20 de plus, voir FEATURE_360.json_
+
+**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
+**Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), inventory (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), market-control-plane (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), unsold-resolution (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¡ ATTENTION â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 1
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** (1) :
+- `DECLARED_NOT_OBSERVED` (low) â€” contract.consumes dÃ©clare "market-control-plane" â€” aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
+
+**Implementation** : 112 fichier(s) dÃ©clarÃ©(s), boutique: 19 fichier(s)
+  - boutique : 3
+  - routes : 11
+  - services : 32
+  - tests : 65
+  - utils : 1
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="orders"]_
+
+## payments
+
+**Kind** : business-feature  Â·  **Status** : production
+
+**Service** : Encaisser un paiement (carte, PayPal, Mobile Money, especes au retrait) et confirmer son etat de facon idempotente.
+
+**Perimeter** :
+- _in_ :
+  - integration Stripe et PayPal (intent, capture, webhook, evenements)
+  - Mobile Money multi-provider par marchÃ© (Orange Money CM, MTN MoMo CG, KartaPay KM vers MVola/Holo)
+  - rÃ©conciliation pÃ©riodique des paiements Mobile Money pending si callback perdu
+  - paiement cash au retrait et relances cash
+  - contrÃ´le partagÃ© de toute confirmation cash, avec option partenaire de double approbation par acteurs distincts
+  - confirmation de paiement et idempotence webhook/callback
+- _out_ :
+  - creation de la commande elle-meme (feature orders)
+  - orchestration du checkout boutique (projection frontend de orders)
+  - remboursement (feature refunds, qui consomme payments en lecture)
+  - credit wallet (feature wallet-loyalty)
+
+**Authority** : backend-core â€” tout changement de provider, callback, webhook ou logique d idempotence paiement doit etre valide par le propriÃ©taire payments.
+
+**Invariants** :
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- aucun secret de paiement en dur dans le code
+- [object Object]
+- un provider activÃ© en DB mais non configurÃ© runtime reste indisponible (fail-closed, aucun fallback silencieux)
+- [object Object]
+- [object Object]
+- [object Object]
+
+**Owns** : `cash_collections`, `cash_confirmation_controls`, `cash_custody_losses`, `cash_custody_receipts`, `cash_deposit_allocations`, `cash_deposits`, `market_cash_destinations`, `market_payment_accounts`, `market_payment_providers`, `mobile_money_transactions`, `paypal_events_processed`, `stripe_events_processed`
+
+**Exposes** : 0 internal API(s), 25 HTTP interface(s)
+
+**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED)
+**Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market-control-plane (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED)
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 82 fichier(s) dÃ©clarÃ©(s), boutique: 6 fichier(s)
+  - boutique : 4
+  - migrations : 10
+  - routes : 7
+  - scripts : 1
+  - services : 23
+  - tests : 37
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="payments"]_
+
+## platform
+
+**Kind** : frontend-transversal  Â·  **Status** : production
+
+**Service** : Infrastructure transversale dashboards (auth-guard, service worker, composants colis partages, QR viewer).
+
+**Perimeter** :
+- _in_ :
+  - js/*, sw.js â€” utilitaires partages hors admin/
+- _out_ :
+  - vues admin (consomment ces utilitaires)
+
+**Authority** : dashboards â€” tout changement de perimetre de ce domaine doit etre reflete ici.
+
+**Invariants** :
+- tout fichier js/* ou sw.js hors admin/ doit etre declare ici
+
+**Owns** : _aucune_
+
+**Exposes** : 0 internal API(s), 0 HTTP interface(s)
+
+**Consumes** : _aucune_
+**Consumed by** : _aucune_
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 4 fichier(s) dÃ©clarÃ©(s)
+  - js : 4
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="platform"]_
+
+## platform-ops
+
+**Kind** : technical-transversal  Â·  **Status** : production
+
+**Service** : Exposer la sante applicative, la configuration et les modules actifs â€” infrastructure d'exploitation, pas de service metier.
+
+**Perimeter** :
+- _in_ :
+  - health check, configuration exposee, liste de modules actifs, API d'operations interne
+- _out_ :
+  - toute logique metier â€” platform-ops n'a pas de regle metier propre
+
+**Authority** : backend-core â€” infrastructure partagee, changement valide par l'equipe plateforme
+
+**Invariants** :
+- les surfaces de santÃ© et monitoring n'Ã©crivent aucune donnÃ©e mÃ©tier
+- le simulator Ã©crit dans les tables d'autres features par design de simulation
+- les modules (fabrics, garment_models) sont les seules tables possÃ©dÃ©es par platform-ops
+
+**Owns** : `fabrics`, `garment_models`
+**Writes (not owner)** : `notification_log` (writer-not-owner), `parcel_items` (writer-not-owner), `parcels` (writer-not-owner), `scans` (writer-not-owner)
+
+**Exposes** : 0 internal API(s), 33 HTTP interface(s)
+
+**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
+**Consumed by** : auth-identity (DECLARED_AND_OBSERVED), auth-passkey (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), providers-services (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 1 test-only, 5 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸ”´ BLOCKED â€” gates: check:css-specificity-guard, fail: 1, warn: 0
+  - [check:css-specificity-guard] ğŸ”´ TEXT-GATE-DIAGNOSTIC â€” âœ– 9 nouvel/nouveaux override(s) hors baseline.
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 45 fichier(s) dÃ©clarÃ©(s), boutique: 26 fichier(s)
+  - boutique : 6
+  - compositionRoots : 3
+  - middleware : 2
+  - routes : 5
+  - services : 6
+  - tests : 23
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="platform-ops"]_
+
+## providers-services
+
+**Kind** : business-feature  Â·  **Status** : staging
+
+**Service** : Porter lâ€™identitÃ© dâ€™un provider tiers, ses services et offres physiques, leur exposabilitÃ©, leur nom public minimal, leurs mÃ©dias publics optionnels et le cycle contextualisÃ© de demande/rappel. La cible service_id XOR physical_offer_id porte toujours le propos connu ; le client choisit request ou callback. Pour un Service explicitement compatible WhatsApp, le serveur peut remettre un handoff de conversation aprÃ¨s crÃ©ation de l Inquiry, sans publier le numÃ©ro dans le dÃ©tail. Aucun paiement, settlement, calendrier structurÃ© ou order Komerce nâ€™est crÃ©Ã© par cette interaction.
+
+**Perimeter** :
+- _in_ :
+  - table providers (identitÃ© et contact privÃ©, market, statut pending|active|suspended)
+  - table services (prestation dâ€™un provider, exposition DISABLED par dÃ©faut, image_ref public optionnel)
+  - table physical_offers (produit physique tiers, image_ref public optionnel)
+  - actions_enabled historiques sur service/physical_offer, projetÃ©es publiquement vers request et/ou callback ; whatsapp reste en plus un capability flag de handoff pour Service
+  - projection publique provider_name pour humaniser une fiche exposable sans exposer provider_id ni contact privÃ©
+  - projection publique service whatsapp_available boolÃ©enne ; jamais le numÃ©ro provider lui-mÃªme
+  - table inquiries (cycle sent -> answered -> accepted|declined ; exactement une cible service_id XOR physical_offer_id)
+  - intent request|callback et requester_note facultative : la note enrichit la cible sans jamais remplacer le propos connu
+  - handoff=whatsapp facultatif sur POST /inquiries pour Service seulement : rÃ©solution serveur de public_whatsapp, rÃ©fÃ©rence SR-* et URL prÃ©remplie remises aprÃ¨s succÃ¨s de l Inquiry
+  - isServiceExposable() / isPhysicalOfferExposable() â€” provider actif + objet actif + exposition ENABLED + marchÃ© correspondant
+  - POST /api/providers-services/inquiries â€” mutation client authentifiÃ©e, tÃ©lÃ©phone demandeur dÃ©rivÃ© de la session canonique serveur
+  - consumer Boutique des actions request/callback et handoff WhatsApp service â€” identitÃ© Komerce puis crÃ©ation de lâ€™Inquiry propriÃ©taire
+  - seed Discovery staging Anjouan â€” dataset dÃ©terministe, idempotent, strictement opt-in et impossible en production
+  - seed modal V2 staging â€” cas sÃ©rieux piÃ¨ce auto, plomberie, Ã©lectricitÃ©, ciment et rÃ©ception
+  - listProviders(marketId) â€” lecture scopÃ©e marchÃ©, suspendus en dernier
+  - getOwnedProvider(providerId, marketId) â€” null (jamais une erreur) si le provider existe sur un autre marchÃ©
+  - updateProvider(providerId, marketId, patch) â€” coordonnÃ©es uniquement ; le marchÃ© nâ€™est jamais rÃ©assignable par cette voie
+  - listServicesForMarket(marketId) / listPhysicalOffersForMarket(marketId) â€” lecture scopÃ©e marchÃ©, masquÃ©s en dernier
+  - getOwnedService(serviceId, marketId) / getOwnedPhysicalOffer(physicalOfferId, marketId) â€” null (jamais une erreur) si la ressource existe sur un autre marchÃ©
+  - setServiceExposure(serviceId, marketId, exposure) / setPhysicalOfferExposure(physicalOfferId, marketId, exposure) â€” bascule commercial_exposure uniquement, jamais le status ; idempotent (changed:false sans Ã©criture si dÃ©jÃ  dans lâ€™Ã©tat demandÃ©)
+- _out_ :
+  - authentification provider (pas de users / user_role pour le provider)
+  - profil public provider riche, bio, tÃ©lÃ©phone, adresse exacte, mÃ©triques sociales ou comparaison de providers
+  - exposition brute de providers.phone, public_phone ou public_whatsapp dans le dÃ©tail client
+  - appel direct tel: provider ou WhatsApp sans identitÃ© et Inquiry prÃ©alables
+  - handoff WhatsApp pour physical_offer
+  - scheduler / crÃ©neaux structurÃ©s : requested_window/proposed_window restent du texte libre
+  - paiement, commission, settlement, provider wallet
+  - orders Komerce : request/callback/handoff crÃ©ent une Inquiry, jamais une ligne orders
+  - action order sur providers-services tant quâ€™aucun contrat orders explicite nâ€™existe ; un Product Komerce continue dâ€™utiliser le parcours product
+  - market_offer / multi-offres / ranking
+  - god-table Listing/Offer unifiÃ©e
+  - prescription artisan et shared-cart
+  - composition, ranking et ordre Ã©ditorial du rail PrÃ¨s de vous â€” owner recommendations
+  - surface produit/catalogue et navigation â€” owner catalog
+  - hÃ©bergement/stockage binaire des mÃ©dias â€” image_ref reste une rÃ©fÃ©rence, pas un media service
+
+**Authority** : backend-core â€” providers-services possÃ¨de le cycle demande/confirmation, la projection request/callback, le capability WhatsApp service, la rÃ©solution serveur du handoff aprÃ¨s Inquiry, le nom public minimal du provider, les mÃ©dias source service/physical_offer, le contexte Inquiry et ses donnÃ©es de dÃ©monstration staging ; recommendations ne fait que projeter ces lectures.
+
+**Invariants** :
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+
+**Owns** : `inquiries`, `physical_offers`, `providers`, `services`
+
+**Exposes** : 0 internal API(s), 3 HTTP interface(s)
+
+**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED)
+**Consumed by** : market-delegation (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED)
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 20 fichier(s) dÃ©clarÃ©(s), boutique: 4 fichier(s)
+  - boutique : 2
+  - ci : 1
+  - migrations : 3
+  - routes : 1
+  - scripts : 2
+  - services : 4
+  - tests : 7
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="providers-services"]_
+
+## purchasing
+
+**Kind** : business-feature  Â·  **Status** : production
+
+**Service** : Transformer un besoin d'approvisionnement issu d'une commande en engagement fournisseur traÃ§able (bon de commande), puis constater sa rÃ©ception.
+
+**Perimeter** :
+- _in_ :
+  - prÃ©flight Allegro Sandbox : identitÃ© exacte et stock/prix live ; fulfillment manuel prÃªt sans prÃ©tendre Ã  un buyer placeOrder API
+  - rÃ©conciliation d'achat manuel Allegro Sandbox : le proof runner peut dÃ©couvrir de faÃ§on bornÃ©e la commande vendeur READY_FOR_PROCESSING postÃ©rieure Ã  la PO, exige un match unique sur offer_id/SOI + quantitÃ© + monnaie native, puis confirme uniquement ce checkoutForm exact
+  - dÃ©clenchement automatique d'un bon de commande (purchase_order) quand une commande client nÃ©cessite un rÃ©assort fournisseur
+  - notification/confirmation du fournisseur (manuel ou WhatsApp) et suivi du statut du bon de commande
+  - rÃ©ception (partielle ou totale) d'un bon de commande, et rattachement au flux logistique
+  - synchronisation d'annulation : pending/notified suivent l'annulation de la commande ; les POs engagÃ©es dÃ©clenchent une alerte sans forÃ§age
+  - rÃ©paration/rattrapage des commandes marquÃ©es "ordered" sans (ou avec) bon de commande cohÃ©rent (outils admin de correction)
+  - gestion des fournisseurs et de leur mapping produit (routes/purchasing.js /suppliers/*)
+  - rÃ©fÃ©rentiel systÃ¨me Fournisseur central Hub permanent et protÃ©gÃ©, utilisÃ© comme responsable dâ€™approvisionnement pour les imports manuels sans fournisseur rÃ©el sÃ©lectionnÃ© ; il ne reprÃ©sente ni vendeur, ni provider, ni dette fournisseur (migration 403)
+  - administration transverse des bons de commande, historiquement exposÃ©e depuis le dashboard (services/purchasing-admin-service.js â€” retaggÃ© @domain purchasing au Lot O2, Ã©crit orders/product_suppliers/purchase_orders/suppliers)
+  - Supplier Order Identity universelle : une unitÃ© vendable doit se rÃ©soudre sans ambiguÃ¯tÃ© vers exactement une unitÃ© commandable fournisseur avant tout engagement
+  - Procurement Route canonique : l'achat fournisseur est routÃ© vers un Procurement Hub explicite avant la jambe logistique Market ; aucune destination client/Market brute ne peut Ãªtre assimilÃ©e Ã  la destination fournisseur
+  - Logistics Control Chain : Purchasing traduit le Procurement Hub rÃ©solu en destination fournisseur et conserve la filiation purchase line/PO vers order item ; il ne possÃ¨de ni le HUB physique ni la jambe Market aval
+  - prÃ©flight fournisseur AliExpress avant engagement : rÃ©conciliation SKU, stock/prix live, fret Supplier â†’ Procurement Hub et construction fail-closed du payload d'achat sans exÃ©cution automatique
+  - Supplier Fulfillment Readiness dynamique : Ã©valuer SKU Ã— quantitÃ© Ã— Procurement Route Ã  partir de l'identitÃ© fournisseur persistÃ©e, du refresh live et du fret, sans mutation fournisseur
+  - Supplier Fulfillment Adapter Contract universel : chaque fournisseur dÃ©clare son provider et renvoie exclusivement les verdicts canoniques Purchasing, tandis que son payload natif reste opaque au coeur Komerce
+  - workflow capability-driven : AUTO_API, MANUAL_EXTERNAL, READINESS_ONLY ou BLOCKED sont dÃ©rivÃ©s des capacitÃ©s rÃ©ellement prouvÃ©es ; aucune Ã©tape humaine n est inventÃ©e comme fallback gÃ©nÃ©rique
+  - Shipping Capability Adapter Contract : les faits de livraison natifs d'un provider sont traduits en capacitÃ© canonique sans fuite de champs provider ni dÃ©faut implicite sur les faits inconnus
+  - Purchase Order exacte : pour une ligne vendue avec sku_id, la PO conserve order_item_id, product_sku_id et la Supplier Order Identity snapshotÃ©e ; un mapping produit-level ne peut pas remplacer la variante vendue
+  - engagement d'une PO regroupÃ©e (PR 5) : soumission par groupe supplier_unit_ref, confirmation par PO ligne par ligne avec reliquat en ligne ouverte, Ã©cart Ã  la rÃ©ception (solde d'une ligne confirmÃ©e), crÃ©ation manuelle d'une ligne ouverte ; contrat adaptateur items[] (buildOrderPayload / reconcile)
+  - complÃ©tude d'achat aprÃ¨s rÃ©ception Hub (PR 7) : purchasing-completion-service passe une PO regroupÃ©e en hub_received quand toutes ses lignes non annulÃ©es sont reÃ§ues et une commande ordered en preparation (puis SCAN 3) quand chaque item non LOCAL_STOCK est couvert ET reÃ§u, appelÃ©e aprÃ¨s COMMIT par hub-operations, jamais bloquante (alerte purchasing_completion_failed) ; deleteSupplier annule les lignes ouvertes et refuse les PO en brouillon ; signaux lus sur les lignes
+  - Supplier money canonique : pour une ligne SKU/SOI exacte, la PO snapshotte supplier_unit_price + supplier_currency depuis la Canonical Unit ; aucun prix natif non-AED ne peut Ãªtre Ã©crit dans unit_price_aed
+  - Golden E2E achat provider + full-chain : chaque capacitÃ© fournisseur est qualifiÃ©e P0â†’P4 sÃ©parÃ©ment, puis la chaÃ®ne B2C paid â†’ purchase_line/PO â†’ provider evidence â†’ coÃ»t B2B â†’ compta B2B/B2C scopÃ©e â†’ rapprochement est prouvÃ©e sans gate de confirmation humaine Komerce
+  - RÃ©conciliation fournisseur canonique : ORDER, PAYMENT et FULFILLMENT restent trois scopes distincts ; chaque comparaison expected â†’ observed â†’ evidence produit uniquement MATCHED, NOT_FOUND, MISMATCH, AMBIGUOUS ou PENDING, fail-closed et sans interprÃ©tation de statut provider dans le coeur
+- _out_ :
+  - cycle de vie de la commande cliente elle-mÃªme â€” orders reste seul propriÃ©taire de order-status-machine.js (feature orders, scindÃ©e au Lot O1.4)
+  - confirmation de paiement client (order-payment-confirmation.js, reste dans orders)
+  - mouvement physique du colis une fois reÃ§u (feature logistics, lecture seule sur purchase_orders/product_suppliers)
+  - entrÃ©e catalogue / import fournisseur en amont (feature catalog â€” sourcing/catalog-import, hors pÃ©rimÃ¨tre purchasing)
+
+**Authority** : backend-core â€” tout changement du flux d'engagement fournisseur (Procurement Route, readiness dynamique, dÃ©clenchement, confirmation, rÃ©ception, annulation) doit rester derriÃ¨re les services propriÃ©taires purchasing ; supplier-connectivity possÃ¨de l'identitÃ© provider, la Supplier Order Identity et le contrat gÃ©nÃ©rique d'adapter
+
+**Invariants** :
+- [object Object]
+- le dÃ©tail GET /api/purchasing/po/:po_id conserve son guard admin et son contrat PO regroupÃ©e ; supplier_execution projette en lecture seule ordres, liens de lignes, groupes, membres, paiements, preuves et Ã©vÃ©nements depuis un mÃªme snapshot SQL, sans appel provider, nouveau verdict ni agrÃ©gat monÃ©taire ; montants dÃ©cimaux en texte et devises explicites, aucun facts/message provider brut exposÃ©
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- purchasing peut consommer et lire la commande cliente, mais ne possÃ¨de jamais son cycle de vie â€” toute mutation de orders.status continue de passer exclusivement par order-status-machine.js (feature orders)
+- une rÃ©ception ne peut Ãªtre appliquÃ©e qu'Ã  un bon de commande existant et cohÃ©rent
+- aucun consommateur cross-feature ne modifie purchase_orders directement : la synchronisation d'annulation passe par purchasing-cancel-service.js
+- tout message WhatsApp fournisseur part d un purchase_order dÃ©jÃ  persistÃ© ; un rejeu de notification ne recrÃ©e jamais le bon ni ne confirme son statut
+- un prÃ©flight fournisseur ne peut jamais crÃ©er de commande fournisseur ni dÃ©clencher un paiement ; toute mutation externe exige un gate explicite sÃ©parÃ©
+
+**Owns** : `hub_authorization_grants`, `manual_purchase_executions`, `product_suppliers`, `purchase_lines`, `purchase_order_authorizations`, `purchase_orders`, `purchase_variance_decisions`, `supplier_execution_events`, `supplier_execution_fulfillments`, `supplier_execution_order_lines`, `supplier_execution_orders`, `supplier_execution_payment_proofs`, `supplier_execution_payments`, `supplier_payment_settlements`, `suppliers`
+
+**Exposes** : 14 internal API(s), 21 HTTP interface(s)
+  - `adaptShippingRate` (services/suppliers/allegro-shipping-capability-adapter.js) â€” resolved
+  - `compareLegacyCanonicalUnit` (services/suppliers/canonical-unit-cutover-comparison.js) â€” resolved
+  - `confirmGroupedPurchaseOrder` (services/purchasing-engagement-service.js) â€” resolved
+  - `createManualLine` (services/purchasing-engagement-service.js) â€” resolved
+  - `evaluateSupplierFulfillmentReadiness` (services/suppliers/supplier-fulfillment-readiness.js) â€” resolved
+  - `normalizeCapability` (services/suppliers/shipping-capability-contract.js) â€” resolved
+  - `prepareCanonicalUnitPurchase` (services/suppliers/canonical-unit-purchasing-gate.js) â€” resolved
+  - `reconcile` (services/suppliers/allegro-purchase-reconciliation.js) â€” resolved
+  - `repairOrderedWithoutPurchaseOrders` (services/repair-ordered-without-purchase-orders.js) â€” resolved
+  - `resolveCanonicalSupplierMoney` (services/purchasing-canonical-money.js) â€” resolved
+  - _...4 de plus, voir FEATURE_360.json_
+
+**Consumes** : auth (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), external-provider-contracts (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED), supplier-connectivity (DECLARED_AND_OBSERVED)
+**Consumed by** : catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED)
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 2 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 177 fichier(s) dÃ©clarÃ©(s)
+  - migrations : 17
+  - routes : 1
+  - scripts : 14
+  - services : 53
+  - tests : 92
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="purchasing"]_
+
+## recommendations
+
+**Kind** : business-feature  Â·  **Status** : staging
+
+**Service** : Classer et suggÃ©rer des produits boutique selon un moteur de ranking dÃ©diÃ©. Compose aussi en mÃ©moire un rail Discovery local mixte (DiscoveryCard â€” Product Komerce, produit physique tiers, service tiers) et porte sa politique Ã©ditoriale dâ€™activation serveur, sans jamais possÃ©der ni cloner les donnÃ©es sources.
+
+**Perimeter** :
+- _in_ :
+  - moteur de classement boutique
+  - endpoint de suggestions, avec une surface PDP limitÃ©e aux produits visibles sur le marchÃ© et liÃ©s au produit consultÃ©
+  - DiscoveryCard â€” projection de lecture mixte (product|physical_offer|service), jamais persistÃ©e
+  - politique Ã©ditoriale serveur explicite du rail local : activation globale, candidats et ordre
+- _out_ :
+  - donnÃ©es produit source (feature catalog)
+  - prix affichÃ© (feature economic-engine / market-autonomy)
+  - vÃ©ritÃ© dâ€™exposabilitÃ© stock/service/offre physique (local-stock / providers-services)
+  - dÃ©cision dâ€™exposition commerciale pays (catalog)
+  - cycle Inquiry, paiement, rÃ©servation ou settlement
+  - taxonomie ou navigation frontend parallÃ¨le pour le local
+
+**Authority** : backend-core â€” recommendations possÃ¨de le ranking et lâ€™ordre Ã©ditorial du rail ; les features sources possÃ¨dent seules leur vÃ©ritÃ© mÃ©tier et leur exposabilitÃ©.
+
+**Invariants** :
+- le ranking ne modifie jamais les donnÃ©es produit, lecture seule sur catalog
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+
+**Owns** : _aucune_
+
+**Exposes** : 0 internal API(s), 1 HTTP interface(s)
+
+**Consumes** : catalog (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), providers-services (DECLARED_AND_OBSERVED)
+**Consumed by** : infrastructure (DECLARED_AND_OBSERVED), providers-services (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED)
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 10 fichier(s) dÃ©clarÃ©(s), boutique: 6 fichier(s)
+  - routes : 1
+  - scripts : 1
+  - services : 3
+  - tests : 5
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="recommendations"]_
+
+## refunds
+
+**Kind** : business-transversal  Â·  **Status** : production
+
+**Service** : Rembourser un client de facon tracable et sans double remboursement, quel que soit le flux appelant.
+
+**Perimeter** :
+- _in_ :
+  - service de remboursement transverse et son orchestration
+- _out_ :
+  - credit wallet lui-meme (feature wallet, consommee ici)
+  - reÃ§u de remboursement document (feature documents, consommee ici)
+
+**Authority** : backend-core â€” tout changement de logique de remboursement doit etre valide par le proprietaire de refund-service.js
+
+**Invariants** :
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- un remboursement n'est jamais applique deux fois pour le meme evenement source
+- tout refund externe ou crÃ©dit compensatoire est idempotent par Ã©vÃ©nement source ; un rejeu ne dÃ©clenche jamais un second remboursement
+
+**Owns** : `local_cash_refund_authorizations`, `local_cash_refund_payouts`, `local_item_refund_reservations`, `local_mobile_refund_handoffs`, `order_item_refund_reservations`, `refund_execution_intents`, `refunds`
+
+**Exposes** : 1 internal API(s), 0 HTTP interface(s)
+  - `processRefund(orderOrCartId, reason)`  â€” documented-signature-no-file
+
+**Consumes** : documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
+**Consumed by** : dashboard (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED)
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 1 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 43 fichier(s) dÃ©clarÃ©(s)
+  - migrations : 3
+  - services : 12
+  - tests : 25
+  - utils : 3
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="refunds"]_
+
+## settlement
+
+**Kind** : business-feature  Â·  **Status** : staging
+
+**Service** : Tracer de bout en bout le rÃ¨glement dÃ» Ã  un opÃ©rateur pays : READY attestÃ© centralement, REQUESTED par le pays, PAID centralement, RECEIVED par le pays.
+
+**Perimeter** :
+- _in_ :
+  - market_settlements : snapshot monÃ©taire amount + currency immuable, rattachÃ© au Market Operating Assignment et jamais supprimÃ©
+  - market_settlement_events : journal strictement append-only READY_ATTESTED / REQUESTED / PAID / RECEIVED
+  - crÃ©ation READY exclusivement par acteur central admin/finance, montant explicitement attestÃ© et devise dÃ©rivÃ©e du marchÃ© cÃ´tÃ© serveur
+  - machine stricte READY -> REQUESTED -> PAID -> RECEIVED, Ã©galement protÃ©gÃ©e par trigger DB
+  - boundary lifecycle interne consommÃ©e par market-delegation pour REQUESTED et RECEIVED
+- _out_ :
+  - promotion des capabilities finance.act + settlement.receive : migration 209 possÃ©dÃ©e par market-delegation, pas par ce slice lifecycle
+  - route et service dâ€™orchestration dÃ©lÃ©guÃ©s : propriÃ©tÃ© market-delegation ; settlement ne revendique que la boundary lifecycle
+  - calcul automatique du montant dÃ» : aucune rÃ¨gle commission/margin_share/revenue_share fiable nâ€™existe encore dans le code
+  - payout bancaire ou Mobile Money : aucun transfert externe nâ€™est initiÃ© par cette feature dans ce lot
+  - choix de devise par le navigateur : currency vient toujours de markets.currency
+  - modification dâ€™un READY existant : amount/currency/assignment/source sont immuables ; une correction future crÃ©e une nouvelle attestation, jamais un UPDATE silencieux
+  - suppression destructive dâ€™un settlement ou rÃ©Ã©criture dâ€™un Ã©vÃ©nement financier : interdites au niveau DB
+  - refund client : feature refunds, totalement distincte du settlement opÃ©rateur
+  - rÃ©conciliation cash terrain -> Komerce : feature payments/dashboard, flux Ã©conomique inverse et distinct
+  - configuration gÃ©nÃ©rale du marchÃ© : market_config.update reste hors pÃ©rimÃ¨tre
+
+**Authority** : backend-core â€” toute modification de amount/currency, de la machine de statut ou du sens de PAID exige une dÃ©cision financiÃ¨re explicite ; finance.act ne doit jamais devenir un payout implicite.
+
+**Invariants** :
+- READY signifie montant attestÃ© par lâ€™autoritÃ© centrale, jamais montant calculÃ© implicitement par Komerce
+- amount, currency, market_id, assignment_id et provenance de lâ€™attestation sont immuables aprÃ¨s crÃ©ation
+- currency est dÃ©rivÃ©e de markets.currency cÃ´tÃ© serveur et vÃ©rifiÃ©e en DB ; aucun client ne choisit la devise
+- la boundary lifecycle ne connaÃ®t aucun rÃ´le pays : lâ€™autorisation finance.act / settlement.receive reste dans market-delegation
+- seul le central peut faire REQUESTED -> PAID et une payment_reference est obligatoire
+- market_settlements ne peut jamais Ãªtre supprimÃ© ; une correction crÃ©e une nouvelle attestation
+- market_settlement_events est append-only : UPDATE et DELETE bloquÃ©s par trigger DB
+- la migration dâ€™activation des capabilities ne crÃ©e ni ne modifie aucune vÃ©ritÃ© market_settlements
+
+**Owns** : `market_settlement_events`, `market_settlements`
+
+**Exposes** : 5 internal API(s), 3 HTTP interface(s)
+  - `confirmReceived()`  â€” documented-signature-no-file
+  - `createReadySettlement()`  â€” documented-signature-no-file
+  - `listForAssignment()`  â€” documented-signature-no-file
+  - `markPaid()`  â€” documented-signature-no-file
+  - `requestSettlement()`  â€” documented-signature-no-file
+
+**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED)
+**Consumed by** : market-delegation (DECLARED_AND_OBSERVED)
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 7 fichier(s) dÃ©clarÃ©(s)
+  - migrations : 1
+  - routes : 1
+  - services : 1
+  - tests : 4
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="settlement"]_
+
+## shared-cart
+
+**Kind** : business-feature  Â·  **Status** : production
+
+**Service** : Permettre Ã  un crÃ©ateur de publier une liste immuable par lien public ; chaque acheteur sÃ©lectionne une ou plusieurs lignes disponibles, passe par le rÃ©capitulatif puis le checkout canonique sans mÃ©langer son panier personnel ; la liste se ferme automatiquement lorsque sa derniÃ¨re ligne est rÃ©clamÃ©e.
+
+**Perimeter** :
+- _in_ :
+  - crÃ©ation puis publication immuable, fermeture explicite ou automatique et annulation de la liste partagÃ©e
+  - lecture publique et propriÃ©taire (avec statut de rÃ©clamation dÃ©rivÃ© par jointure)
+  - rÃ©conciliation de complÃ©tion : derniÃ¨re ligne rÃ©clamÃ©e => OPEN -> CLOSED
+- _out_ :
+  - paiement carte/PayPal/cash (feature payments, consommÃ©e en sortie)
+  - arbitrage de la rÃ©clamation d'un article (index unique order_items.shared_cart_item_id, migration 123 â€” feature orders)
+  - crÃ©ation de la commande (feature orders)
+  - crÃ©dit wallet (feature wallet)
+
+**Authority** : backend-core â€” le domaine shared-cart est seul autorisÃ© Ã  Ã©crire son lifecycle : close/cancel explicites via shared-cart-lifecycle.js ; fermeture automatique de complÃ©tion via la frontiÃ¨re cross-feature cart-share-service.js appelÃ©e par orders.
+
+**Invariants** :
+- une liste publiÃ©e est un snapshot structurellement immuable : OPEN signifie achetable, jamais Ã©ditable
+- tant que les listes V1 ne sont pas nommables, un crÃ©ateur possÃ¨de au maximum une liste OPEN
+- Mon panier reste indÃ©pendant ; une seule liste OPEN peut occuper le slot partagÃ© local
+- une sÃ©lection de liste est locale, ne rÃ©serve rien et passe toujours par rÃ©capitulatif puis checkout canonique
+- une commande porte soit sur PERSONAL_CART soit sur SHARED_LIST, jamais les deux
+- un article de liste n'est jamais rÃ©clamable deux fois â€” arbitrÃ© par index unique, pas par verrou applicatif (migration 123)
+- dÃ¨s que toutes les lignes possÃ¨dent un order_items.shared_cart_item_id, la liste passe automatiquement OPEN -> CLOSED ; aucun Ã©tat observable 100% rÃ©clamÃ© + OPEN
+- aucune donnÃ©e financiÃ¨re n'est stockÃ©e sur shared_carts â€” le total se calcule toujours par SUM() sur shared_cart_items
+- lien partagÃ© ouvre une boutique â€” jamais un guichet de paiement (Boutique First)
+- annulation de liste (cancel) n'effectue jamais de remboursement â€” aucune contribution n'y transite
+
+**Owns** : `basket_items`, `baskets`, `cart_shares`, `shared_cart_events`, `shared_cart_items`, `shared_cart_saved_access`, `shared_carts`
+
+**Exposes** : 3 internal API(s), 16 HTTP interface(s)
+  - `closeCompletedSharedCartForOrderItems` (services/cart-share-service.js) â€” resolved
+  - `deleteUserBasketData` (services/shared-cart-user-cleanup.js) â€” resolved
+  - `markShareConvertedToOrder` (services/cart-share-service.js) â€” resolved
+
+**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED)
+**Consumed by** : catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED)
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 62 fichier(s) dÃ©clarÃ©(s), boutique: 18 fichier(s)
+  - boutique : 10
+  - dash : 1
+  - migrations : 20
+  - routes : 4
+  - services : 9
+  - tests : 18
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="shared-cart"]_
+
+## sourcing
+
+**Kind** : business-feature  Â·  **Status** : production
+
+**Service** : Identifier, qualifier et arbitrer des opportunitÃ©s fournisseur ou produit (scan pricing, dÃ©cision garder/watchlist/rejeter) avant leur entrÃ©e dans le catalogue.
+
+**Perimeter** :
+- _in_ :
+  - ingestion catalogue fournisseur brut (dispatch CSV / saisie manuelle / API)
+  - transport de lâ€™identitÃ© fournisseur/Hub sÃ©lectionnÃ©e depuis lâ€™import vers le candidat, sans en devenir lâ€™autoritÃ© ni crÃ©er une identitÃ© provider
+  - coffre applicatif des identifiants fournisseur (Provider Credential Authority) : chiffrement serveur AES-256-GCM, configuration / test / remplacement / rÃ©vocation depuis Sources, jamais relu par le navigateur ; le repli process.env reste actif pendant la transition
+  - activation explicite Source ON/OFF pour l acquisition automatique rÃ©currente : OFF par dÃ©faut, runner provider-agnostic, pull bornÃ© et lock distribuÃ© par source
+  - shadow ingestion NormalizedSupplierProduct V2 vers Source/Capture/Observation, sans bascule d autorite
+  - Candidate Retrieval et Resolution shadow des Observations vers Canonical Product/Offer/Unit sans Selection
+  - preuve multi-source read-only avant essai de projection canonique Product
+  - Golden E2E provider-agnostic de Source Ã  Canonical Unit puis Purchasing HARD_STOP
+  - projection canonique Product read-only en shadow, consensus-only avec conflits prÃ©servÃ©s
+  - comparaison parallÃ¨le read-only entre projection Product canonique et autoritÃ© historique reliÃ©e
+  - santÃ© opÃ©rationnelle read-only et snapshot d autoritÃ© finale Sourcing sans inventer de tendance
+  - scan de candidat (pricing-engine) et dÃ©cision garder / watchlist / rejeter
+  - cycle de vie du candidat : raw_imported â†’ normalized â†’ scanned â†’ imported_to_catalog / rejected / watchlist
+  - suivi du lot aprÃ¨s import : consomme la projection Catalogue et visibilitÃ© marchÃ© sans mutation ni changement du statut import
+  - transformation candidat â†’ produit (dÃ©clenchement, pas la fiche catalogue elle-mÃªme)
+  - journal d'Ã©vÃ©nements candidat (audit, correction manuelle, scan, dÃ©cision)
+  - persistence lifecycle des sourcing_candidates issus des imports catalog via frontiÃ¨re owner dÃ©diÃ©e
+  - certification sourcing canonique v1 : chaque input fournisseur doit aboutir Ã  une issue explicite et traÃ§able, avec comptabilitÃ© batch UNACCOUNTED=0 / OVERFLOW=0 indÃ©pendante du fournisseur
+- _out_ :
+  - connecteurs fournisseur eux-mÃªmes et normalisation NormalizedSupplierProduct (feature catalog, services/suppliers/connectors/* + services/supplier-catalog-scanner.js restent dans catalog â€” leur service principal reste l'entrÃ©e catalogue, pas la qualification)
+  - orchestration d'import idempotent supplier_catalog_imports (feature catalog, services/suppliers/catalog-import-orchestrator.js)
+  - enrichissement FR de la fiche produit aprÃ¨s import (feature catalog, catalog-enrichment)
+  - fiche produit elle-mÃªme une fois crÃ©Ã©e (feature catalog)
+  - moteur margin/rail admin economic-engine (routes/sourcing.js, services/sourcing-analysis.js, services/sourcing-mutations.js) â€” HOMONYME sans rapport : voir note ci-dessous
+  - calcul de prix (feature economic-engine, pricing-engine, consommÃ© ici en lecture)
+  - Selection fournisseur, publication, exposition commerciale et commande fournisseur
+  - routage Hub, consolidation physique, destination pays et sÃ©paration des flux Hub
+
+**Authority** : backend-core â€” tout changement du cycle de vie candidat (states, transitions) doit Ãªtre validÃ© par le propriÃ©taire de routes/sourcing-scanner.js
+
+**Invariants** :
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- un candidat exclu (rejet manuel ou auto-exclusion douane/lÃ©gale) n'est jamais rÃ©-importable (ING-5 verrou 1)
+- une devise hors whitelist (AED, EUR, USD, KMF, PLN ; PLN exige un taux explicite) ne produit jamais de purchase_price_kmf faux (ING-5 verrou 2)
+- un candidat dÃ©jÃ  importÃ© (Ã©tat imported_to_catalog + product_id) ne peut pas Ãªtre rÃ©-importÃ©
+- le payload fournisseur brut est conservÃ© intÃ©gralement (raw_payload) pour rejouabilitÃ©
+- une rÃ©-observation V2 crÃ©e une nouvelle Capture et de nouvelles Observations ; elle ne mute jamais une Observation existante
+- un Ã©chec du writer shadow ne bloque jamais l import sourcing_candidates autoritatif
+- Candidate Retrieval rÃ©duit l espace de comparaison mais ne dÃ©cide jamais seul de l identitÃ©
+- Resolution ne compare jamais prix, stock, fret ou dÃ©lai et ne sÃ©lectionne aucun fournisseur
+- un LINK automatique PR 3 exige une preuve forte non contradictoire : source_ref exacte, contexte Offer mÃªme Source+parent, ou GTIN exact
+- le Product projection trial reste ferme tant que la preuve multi-source n est pas invariant-safe et cross-source
+- la projection Product shadow ne projette aucun prix, devise, stock, MOQ, dÃ©lai, sellable_unit ou Supplier Order Identity
+- un conflit descriptif multi-source est prÃ©servÃ© explicitement et ne devient jamais une valeur canonique silencieuse
+- la comparaison Product parallÃ¨le ne fabrique jamais un lien catalogue : seul sourcing_candidates.product_id autorise la paritÃ© products
+- l absence de produit catalogue reliÃ© bloque le gate de cutover sans invalider la projection canonique
+- Manual, CJ et AliExpress sont des preuves minimales, jamais une whitelist : une source future reste compatible via refs namespacÃ©es et SOI opaque
+- le Golden E2E est read-only et termine toujours par HARD_STOP ou BLOCKED_SUPPLIER_IDENTITY sans placeOrder
+- l autopilot est une autorisation opÃ©rateur distincte du lifecycle source ; il reste false par dÃ©faut et ne dÃ©marre jamais une source historique implicitement
+- le runner autopilot ne contient aucune branche fournisseur et n execute que des pulls bornÃ©s dÃ©clarÃ©s par le registry connecteur
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- Production ne peut Ãªtre autorisÃ©e que si un import API rÃ©el a atteint CANONICAL_RESOLVED et a persistÃ© le capture_id complete correspondant sur la source
+- [object Object]
+- [object Object]
+- [object Object]
+- le dashboard Sourcing affiche BROKEN uniquement lorsqu un invariant d intÃ©gritÃ© est rompu ; ATTENTION couvre les exceptions opÃ©rationnelles bloquÃ©es
+- le dashboard ne fabrique aucune tendance sans historique persistant
+- le routage Hub et la destination physique restent hors autoritÃ© Sourcing et constituent le domaine suivant
+
+**Owns** : `import_runtime_item_events`, `import_runtime_runs`, `provider_credentials`, `sourcing_candidate_events`, `sourcing_candidates`, `sourcing_canonical_entities`, `sourcing_canonical_entity_refs`, `sourcing_captures`, `sourcing_match_proposals`, `sourcing_observation_evidence`, `sourcing_observations`, `sourcing_provider_control_events`, `sourcing_resolution_bindings`, `sourcing_resolution_decisions`, `sourcing_source_provides`, `sourcing_source_requests`, `sourcing_sources`, `supplier_commercial_category_mappings`
+
+**Exposes** : 24 internal API(s), 30 HTTP interface(s)
+  - `applyCanonicalSourceReadSeam` (services/catalog-product-read-cutover-trial.js) â€” resolved
+  - `archiveMissingCandidatesFromCatalogImport` (services/sourcing-candidate-import-service.js) â€” resolved
+  - `buildFinalAuthoritySnapshot` (services/sourcing-integrity-service.js) â€” resolved
+  - `buildHealthDashboard` (services/sourcing-integrity-service.js) â€” resolved
+  - `certifyGateA` (services/sourcing-certification-gate-a.js) â€” resolved
+  - `collectCanonicalOfferProjectionById` (services/sourcing-canonical-offer-projection.js) â€” resolved
+  - `collectCanonicalProductProjectionById` (services/sourcing-canonical-product-projection.js) â€” resolved
+  - `collectCanonicalProductProjections` (services/sourcing-canonical-product-projection.js) â€” resolved
+  - `collectCanonicalUnitProjectionById` (services/sourcing-canonical-unit-projection.js) â€” resolved
+  - `collectCatalogProductReadCutoverTrial` (services/catalog-product-read-cutover-trial.js) â€” resolved
+  - _...14 de plus, voir FEATURE_360.json_
+
+**Consumes** : auth (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED)
+**Consumed by** : catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), market-control-plane (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED)
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 117 fichier(s) dÃ©clarÃ©(s)
+  - middleware : 1
+  - migrations : 15
+  - routes : 2
+  - scripts : 8
+  - services : 34
+  - tests : 57
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="sourcing"]_
+
+## supplier-connectivity
+
+**Kind** : integration-adapter  Â·  **Status** : staging
+
+**Service** : Permettre Ã  Komerce d accueillir un fournisseur par une autoritÃ© unique d identitÃ© provider, une Supplier Order Identity opaque et une rÃ©solution d adapter fail-closed, sans dÃ©placer les dÃ©cisions mÃ©tier des features consommatrices.
+
+**Perimeter** :
+- _in_ :
+  - autoritÃ© canonique des providers supportÃ©s et sÃ©paration stricte provider identity / execution mode
+  - Supplier Order Identity canonique {provider, version, payload opaque}
+  - contrat gÃ©nÃ©rique de validation des adapters fulfillment et reconciliation, provider-scopÃ© et fail-closed
+  - dÃ©claration en code des seules exigences de preflight et de reconciliation dÃ©jÃ  prouvÃ©es
+- _out_ :
+  - cycle de vie, persistence, readiness, exÃ©cution, confirmation et rÃ©ception des Purchase Orders â€” feature purchasing
+  - connecteurs d import catalogue et normalisation produit fournisseur â€” feature catalog
+  - qualification et rÃ©solution des observations multi-source â€” feature sourcing
+  - mÃ©canisme de discovery d une rÃ©fÃ©rence externe â€” adapter-owned et provider-specific
+  - adapters concrets et appels provider mutatifs â€” propriÃ©tÃ© de la feature mÃ©tier consommatrice
+  - credentials, secrets, rotation de tokens et connexion provider
+
+**Authority** : backend-core â€” cette feature est la seule autoritÃ© de l identitÃ© provider supportÃ©e, de la Supplier Order Identity opaque et du contrat gÃ©nÃ©rique de rÃ©solution d adapter ; les features consommatrices restent seules propriÃ©taires de leurs dÃ©cisions et side effects mÃ©tier.
+
+**Invariants** :
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- Purchasing, Sourcing et Catalogue ne doivent jamais brancher leur cÅ“ur sur un nom de provider ni parser le payload SOI pour inventer une dÃ©cision gÃ©nÃ©rique
+- aucune table supplier_providers ni capability non prouvÃ©e ne peut Ãªtre ajoutÃ©e au seul motif d accueillir un futur provider hypothÃ©tique
+
+**Owns** : _aucune_
+
+**Exposes** : 10 internal API(s), 0 HTTP interface(s)
+  - `identitiesMatch` (services/suppliers/supplier-order-identity.js) â€” resolved
+  - `isSupportedProvider` (services/suppliers/provider-authority.js) â€” resolved
+  - `normalizeIdentity` (services/suppliers/supplier-order-identity.js) â€” resolved
+  - `normalizeProviderCode` (services/suppliers/provider-authority.js) â€” resolved
+  - `reconciliationRequirement` (services/suppliers/provider-authority.js) â€” resolved
+  - `remotePreflightRequirement` (services/suppliers/provider-authority.js) â€” resolved
+  - `resolveSupplierUnit` (services/suppliers/supplier-order-identity.js) â€” resolved
+  - `validateAdapter` (services/suppliers/supplier-fulfillment-adapter-contract.js) â€” resolved
+  - `validateExecutionAdapter` (services/suppliers/supplier-fulfillment-adapter-contract.js) â€” resolved
+  - `validateReconciliationAdapter` (services/suppliers/supplier-fulfillment-adapter-contract.js) â€” resolved
+
+**Consumes** : external-provider-contracts (DECLARED_AND_OBSERVED)
+**Consumed by** : catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED)
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 1 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 9 fichier(s) dÃ©clarÃ©(s)
+  - services : 4
+  - tests : 5
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="supplier-connectivity"]_
+
+## unsold-resolution
+
+**Kind** : business-feature  Â·  **Status** : production
+
+**Service** : Garder les colis non retirÃ©s sous responsabilitÃ© du relais ; la liquidation n'est autorisÃ©e qu'aprÃ¨s clÃ´ture physique, juridique et financiÃ¨re certifiÃ©e.
+
+**Perimeter** :
+- _in_ :
+  - scan historique J+14 bloquÃ© faute de clÃ´ture de garde et de droits client certifiÃ©e
+  - mutation de l'invendu uniquement pour des commandes non payÃ©es et un Ã©tat available
+  - projection GET en lecture seule pour le responsable pays, filtrÃ©e en SQL sur les marchÃ©s operations.read dÃ©lÃ©guÃ©s
+  - prohibition de la promotion ou cession de marchandises payÃ©es tant que les droits de retrait persistent
+- _out_ :
+  - rÃ©ception, affectation et dispatch des articles au hub (feature inventory â€” aucun point de contact technique : pas de table Ã©crite en commun, pas de require croisÃ©)
+  - dÃ©cision de publication produit (feature catalog)
+
+**Authority** : backend-core â€” tout changement de calcul de liquidation doit etre valide par le proprietaire de routes/unsold.js
+
+**Invariants** :
+- [object Object]
+- [object Object]
+- un invendu rÃ©solu ne revient jamais en available
+- toute rÃ©solution possÃ¨de un statut terminal autorisÃ© et un horodatage resolved_at
+
+**Owns** : `unsold_items`
+
+**Exposes** : 0 internal API(s), 7 HTTP interface(s)
+
+**Consumes** : auth (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED)
+**Consumed by** : _aucune_
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 10 fichier(s) dÃ©clarÃ©(s)
+  - dash : 3
+  - migrations : 2
+  - routes : 1
+  - tests : 4
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="unsold-resolution"]_
+
+## wallet
+
+**Kind** : business-feature  Â·  **Status** : production
+
+**Service** : Tenir un solde client et son historique de credit/debit, avec application exactement une fois.
+
+**Perimeter** :
+- _in_ :
+  - solde wallet et historique de credit/debit
+  - application du wallet atomique au checkout (orders.wallet_applied_kmf) et restitution par annulation mÃ©tier uniquement ; routes legacy apply/remove refusÃ©es en 409 (FA-01/02/15)
+- _out_ :
+  - paiement carte/PayPal (feature payments)
+  - remboursement initiateur (feature refunds, qui credite le wallet)
+  - avoir admin depuis commande via endpoint legacy (FA-06 : route maintenue en 409, remboursement via refunds)
+  - programme de fidelite et ses recompenses (feature loyalty, scindee de wallet-loyalty au Lot O1)
+  - emission du recu wallet (services/documents/wallet-receipt.js, @domain documents â€” consommateur en aval, pas ownership wallet)
+
+**Authority** : backend-core â€” tout changement de calcul de solde doit etre valide par le proprietaire de wallet-service.js
+
+**Invariants** :
+- [object Object]
+- solde jamais negatif sans flag explicite admin
+
+**Owns** : `wallet_consumptions`, `wallet_credit_lots`, `wallet_transactions`, `wallets`
+
+**Exposes** : 0 internal API(s), 9 HTTP interface(s)
+
+**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED)
+**Consumed by** : auth-identity (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED)
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 1 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 12 fichier(s) dÃ©clarÃ©(s), boutique: 3 fichier(s)
+  - boutique : 2
+  - migrations : 2
+  - routes : 1
+  - services : 1
+  - tests : 6
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="wallet"]_
+
+## wallet-loyalty
+
+**Kind** : deprecated  Â·  **Status** : deprecated
+
+**Service** : DÃ‰PRÃ‰CIÃ‰ â€” scindÃ© au Lot O1.2 (2026-07-12) en features/wallet.feature.js et features/loyalty.feature.js. Ne rend plus aucun service propre.
+
+**Perimeter** :
+- _out_ :
+  - tout â€” voir features/wallet.feature.js et features/loyalty.feature.js
+
+**Authority** : backend-core â€” manifest dÃ©prÃ©ciÃ©, aucune autoritÃ© propre ; voir wallet.feature.js et loyalty.feature.js
+
+**Owns** : _aucune_
+
+**Exposes** : 0 internal API(s), 0 HTTP interface(s)
+
+**Consumes** : _aucune_
+**Consumed by** : _aucune_
+
+**Projections** : _aucune_
+
+**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+
+**Boundary health** : ğŸŸ¢ HEALTHY â€” cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Governance health** : ğŸŸ¢ HEALTHY â€” orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
+**Gate health** : ğŸŸ¢ HEALTHY â€” gates: _aucun_, fail: 0, warn: 0
+
+**Architectural debt** : _aucune_
+
+**Implementation** : 0 fichier(s) dÃ©clarÃ©(s)
+
+_DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â†’ features[id="wallet-loyalty"]_

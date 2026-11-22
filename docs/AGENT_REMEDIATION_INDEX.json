@@ -758,4 +758,271 @@
       "scope": "backend",
       "owner": "owner canonique du fichier dans features/*.feature.js",
       "cause": "Une rÃ¨gle de qualitÃ© dÃ©tecte complexitÃ©, taille, duplication ou construction interdite.",
-      "action": "RÃ©duire la cause dans le fichier owner; extraire par responsabilitÃ© si nÃ©cessm«ëŒ+Š×ž®º+º$zzb¥æ—&RV—2&VÆæ6W"VÆ—G“¦vFRâ"À¢&f÷&&–FFVâ#¢$æR2¦÷WFW"VÆ—G’ÖF—6&ÆRÂW†V×F–öâFRf–6†–W"÷R'VFvWB7WÌ:–ÖVçF—&R6ç2L:–6—6–öâ&6†—FV7GW&ÆRW‡Æ–6—FRâ"À¢&&6VÆ–æUöÆ–7’#¢&æWfW"Ö–æ7&V6R×Fò×72"À¢'6WfW&—G’#¢&W'&÷""À¢&WFõ&VÖVF–F–öâ#¢G'VP¢ÒÀ¢$$4´TäBÔdTEU$RÔõtäU%4„•#¢°¢'66÷R#¢&&6¶VæB"À¢&÷væW"#¢&fVGW&W2ò¢æfVGW&Ræ§2"À¢&6W6R#¢%Vâf–6†–W"÷RVæRL:—VæFæ6R&6¶VæBî(	–W7B26÷'&V7FVÖVçB&GF6Œ:’:VæRfVGW&R6æöæ—VRâ"À¢&7F–öâ#¢%&GF6†W"ÆRf–6†–W":Î(	–÷væW"Ü:—F–W",:–VÂ÷RL:—Æ6W"Æ&W7öç6&–Æ—L:’fW'26WB÷væW"ÂV—2,:–|:–ì:—&W"ÆW2&ö¦V7F–öç2â"À¢&f÷&&–FFVâ#¢$æR2&WfVæF—VW"&&—G&—&VÖVçBÆRf–6†–W"Fç2VæRfVGW&Rfö—6–æR÷W"f—&RF—7&:çG&RÎ(	–÷'†VÆ–ââ"À¢&&6VÆ–æUöÆ–7’#¢&æWfW"Ö–æ7&V6R×Fò×72"À¢'6WfW&—G’#¢&W'&÷""À¢&WFõ&VÖVF–F–öâ#¢G'VP¢ÒÀ¢$$4´TäBÔ4ôåE$5B#¢°¢'66÷R#¢&&6¶VæB"À¢&÷væW"#¢&6öçG&B’6æöæ—VR²÷væW"&÷WFR÷6W'f–6R"À¢&6W6R#¢$ÆR&öGV7FWW"&6¶VæBWB6öâ6öçG&B6öç6öÖÖFWW"F—fW&vVçBâ"À¢&7F–öâ#¢$6÷'&–vW"Î(	––×Ì:–ÖVçFF–öâ÷RÆR6öçG&BRæ—fVRFRÆ6÷W&6RFRl:—&—L:’V—2ÖWGG&R:¦÷W"ÆW2L:–Öö–ç26öæ6W&ì:—2â"À¢&f÷&&–FFVâ#¢$æR2GWÆ—VW"ÆR6öçG&BFç2Vâ6V6öæBf–6†–W"æ’Ö7VW"Î(	œ:–6'B<;GL:’6öç6öÖÖFWW"â"À¢&&6VÆ–æUöÆ–7’#¢&æWfW"Ö–æ7&V6R×Fò×72"À¢'6WfW&—G’#¢&W'&÷""À¢&WFõ&VÖVF–F–öâ#¢G'VP¢ÒÀ¢$$4´TäBÕ4T5U$•E’#¢°¢'66÷R#¢&&6¶VæB"À¢&÷væW"#¢&÷væW"FRÆg&öçFœ:‡&RFR<:–7W&—L:’6öæ6W&ì:–R"À¢&6W6R#¢%VæR&÷FV7F–öâFR<:–7W&—L:’ÖW7W,:–R,:–w&W7<:’÷R6öâ6æ6†÷Bî(	–W7BÇW2g&—2â"À¢&7F–öâ#¢%&W7FW&W"ÆR6öçG,;FÆRFç2Î(	–÷væW"W†—7FçBWB,:–|:–ì:—&W"Æ&WWfR6V7W&—G’3c6’ÆÖöF–f–6F–öâW7BföÆöçF—&Râ"À¢&f÷&&–FFVâ#¢$æR2&VÆWfW"VæR&6VÆ–æR<:–7W&—L:’÷W"66WFW"VæRæ÷WfVÆÆRf–&ÆW76Râ"À¢&&6VÆ–æUöÆ–7’#¢&æWfW"Ö–æ7&V6R×Fò×72"À¢'6WfW&—G’#¢&W'&÷""À¢&WFõ&VÖVF–F–öâ#¢G'VP¢ÒÀ¢$$4´TäBÔÔ”u$D”ôâÔ”ÔÕUD$”Ä•E’#¢°¢'66÷R#¢&&6¶VæB"À¢&÷væW"#¢&Ö–w&F–öç2ò²Ö–w&F–öç2ôt2æÖB"À¢&6W6R#¢%VæRÖ–w&F–öâL:–¬:V&Æœ:–R:—L:’ÖöF–fœ:–R÷RVæR6öÆÆ—6–öâæöâv÷WfW&ì:–RW7B'VRâ"À¢&7F–öâ#¢$7,:–W"VæRæ÷WfVÆÆRÖ–w&F–öâ6÷'&V7F—fS²÷W"VæR6öÆÆ—6–öâ†—7F÷&—VRÂ6öç6W'fW"Î(	–Vç6VÖ&ÆRW†7BFö7VÖVçL:’â"À¢&f÷&&–FFVâ#¢$æR¦Ö—2,:œ:–7&—&R÷R&VæöÖÖW"VæRÖ–w&F–öâL:–¬:fW'6–öæì:–R÷W"f—&R76W"ÆRvFRâ"À¢&&6VÆ–æUöÆ–7’#¢&æWfW"Ö–æ7&V6R×Fò×72"À¢'6WfW&—G’#¢&W'&÷""À¢&WFõ&VÖVF–F–öâ#¢G'VP¢ÒÀ¢$$4´TäBÕ44„TÔÔe$U4„äU52#¢°¢'66÷R#¢&&6¶VæB"À¢&÷væW"#¢&Fö72öF"÷&–Çv’ÖÆ—fR×66†VÖç7Â²Ö–w&F–öç2ò"À¢&6W6R#¢$ÆR6æ6†÷BFR66Œ:–ÖWBÆ6†:ææRFRÖ–w&F–öç2æRL:–7&—fVçBÇW2ÆRÜ:¦ÖR:—FBâ"À¢&7F–öâ#¢%,:–|:–ì:—&W"÷&öÖ÷Wfö—"ÆR6æ6†÷B"ÆW26öÖÖæFW26æöæ—VW2,:‡2fö—"6÷'&–|:’ÆÖ–w&F–öâ6÷W&6Râ"À¢&f÷&&–FFVâ#¢$æR2:–F—FW"ÆRGV×:ÆÖ–â÷W"Ö7VW"VâG&–gBâ"À¢&&6VÆ–æUöÆ–7’#¢&æWfW"Ö–æ7&V6R×Fò×72"À¢'6WfW&—G’#¢&W'&÷""À¢&WFõ&VÖVF–F–öâ#¢G'VP¢ÒÀ¢$$4´TäBÕ44„TÔÕ$U5U%$T5D”ôâ#¢°¢'66÷R#¢&&6¶VæB"À¢&÷væW"#¢&Ö–w&F–öç2ò²66Œ:–Ö6æöæ—VR"À¢&6W6R#¢%Vâö&¦WB7W&–Ü:’÷Rö'6öÌ:‡FR,:–&:çBFç2ÆR66Œ:–Öâ"À¢&7F–öâ#¢$–FVçF–f–W"ÆÖ–w&F–öâV’&W77W66—FRÎ(	–ö&¦WBWB6÷'&–vW"6WGFRæ÷WfVÆÆRÖ–w&F–öâ÷R6öâ÷&G&Râ"À¢&f÷&&–FFVâ#¢$æR2¦÷WFW"Î(	–ö&¦WB&W77W66—L:’:VæRÆÆ÷vÆ—7Bâ"À¢&&6VÆ–æUöÆ–7’#¢&æWfW"Ö–æ7&V6R×Fò×72"À¢'6WfW&—G’#¢&W'&÷""À¢&WFõ&VÖVF–F–öâ#¢G'VP¢ÒÀ¢$$4´TäBÔtôÄDTâÔ4E"#¢°¢'66÷R#¢&&6¶VæB"À¢&÷væW"#¢'&–6–æröV6öæöÖ–26æöæ–6Â÷væW'2²FööÇ2övöÆFVâÖ6G""À¢&6W6R#¢$ÆR6ö×÷'FVÖVçB:–6öæöÖ—VRF—fW&|:’GR6æ6†÷BvöÆFVâ4E"â"À¢&7F–öâ#¢$6÷'&–vW"ÆÆöv—VR6’ÆF—fW&vVæ6RW7B66–FVçFVÆÆS²6–æöâ&V6GW&W"ÆRvöÆFVâfV2§W7F–f–6F–öâÜ:—F–W"W‡Æ–6—FRâ"À¢&f÷&&–FFVâ#¢$æR2&V6GW&W"ÆRvöÆFVâVæ—VVÖVçB÷W"&VæG&RÆ4’fW'FRâ"À¢&&6VÆ–æUöÆ–7’#¢&æWfW"Ö–æ7&V6R×Fò×72"À¢'6WfW&—G’#¢&W'&÷""À¢&WFõ&VÖVF–F–öâ#¢G'VP¢ÒÀ¢$$4´TäBÕ$Ud”UtTBÔU„4UD”ôâ#¢°¢'66÷R#¢&&6¶VæB"À¢&÷væW"#¢&W†6WF–öâW†7FRFö7VÖVçL:–RFç26öâvFR6÷W&6R"À¢&6W6R#¢%VæRW†6WF–öâ†—7F÷&—VRÂFRvÇVRÂFRFW7B÷RFR6†÷2W7BÖW7W,:–RWBW‡Æ–6—FVÖVçB§W7F–fœ:–Râ"À¢&7F–öâ#¢$æR&–Vâ6†ævW"FçBVRÆ&W7öç6&–Æ—L:’&W7FR–FVçF—VS²,:–VF—FW"6’ÆRf–6†–W"ÂÆR:—&–Ü:‡G&R÷RÆR6ö×÷'FVÖVçB:—föÇVRâ"À¢&f÷&&–FFVâ#¢$æR26÷–W"6WGFRW†6WF–öâ7W"Vâæ÷WfVRf–6†–W"â"À¢&&6VÆ–æUöÆ–7’#¢&æWfW"Ö–æ7&V6R×Fò×72"À¢'6WfW&—G’#¢&–æfò"À¢&WFõ&VÖVF–F–öâ#¢fÇ6P¢ÒÀ¢$$4´TäBÔ„TÅD…’ÔÔT5U$TÔTåB#¢°¢'66÷R#¢&&6¶VæB"À¢&÷væW"#¢&vFR÷R&F6†WB6÷W&6RV’&öGV—BÆÖW7W&R"À¢&6W6R#¢%VæRÖW7W&RFRv÷WfW&ææ6RW7B,:—6VçFRFç2ÆR&÷'BÖ—26FWGFRVffV7F—fRW7BL:–¬::¬:—&òâ"À¢&7F–öâ#¢$æR&–Vâ6÷'&–vW#²6öç6W'fW"ÆR6Æ—VWB:¬:—&òWB,:–v—"Væ—VVÖVçB6’6fÆWW"gWGW&RVvÖVçFRâ"À¢&f÷&&–FFVâ#¢$æR2G&ç6f÷&ÖW"VæRÖW7W&R6–æRVâÆÆ÷vÆ—7Bæ’&VÆWfW"ÆR6Æ—VWBâ"À¢&&6VÆ–æUöÆ–7’#¢&æWfW"Ö–æ7&V6R×Fò×72"À¢'6WfW&—G’#¢&–æfò"À¢&WFõ&VÖVF–F–öâ#¢fÇ6P¢ÒÀ¢$D4‚Ôõ%„âÕ$õUDR#¢°¢'66÷R#¢&F6†&ö&B"À¢&÷væW"#¢'V&Æ–2öF6†&ö&G2öFÖ–âö§2öæ§2²gVRL:–6Æ,:–R"À¢&6W6R#¢%VæR&÷WFR5ö–çFRfW'2VæRgVR'6VçFRâ"À¢&7F–öâ#¢%&W7FW&W"ö7,:–W"ÆgVR÷væW"GFVæGVR÷R&WF—&W"Æ&÷WFRFWfVçVRÖ÷'FRÂV—2,:–|:–ì:—&W"D4„$ô$E5ó3câ"À¢&f÷&&–FFVâ#¢$æR27,:–W"VæRgVRÆ6V†öÆFW"Væ—VVÖVçB÷W"6F—6f—&RÆRvFRâ"À¢&&6VÆ–æUöÆ–7’#¢&æWfW"Ö–æ7&V6R×Fò×72"À¢'6WfW&—G’#¢&W'&÷""À¢&WFõ&VÖVF–F–öâ#¢G'VP¢ÒÀ¢$D4‚ÔDTBÔ’ÔÔUD„ôB#¢°¢'66÷R#¢&F6†&ö&B"À¢&÷væW"#¢'V&Æ–2öF6†&ö&G2öFÖ–âö§2ö’Ö6Æ–VçBæ§2"À¢&6W6R#¢%VæRÜ:—F†öFR¶Ö4’W7BW‡÷'L:–RÖ—2î(	–ÇW2FR6öç6öÖÖFWW"F6†&ö&Bâ"À¢&7F–öâ#¢%7W&–ÖW"Î(	–W‡÷'B,:–VÆÆVÖVçBÖ÷'B÷R&W7FW&W"ÆR6öç6öÖÖFWW"6æöæ—VR>(	––ÂÖçVRâ"À¢&f÷&&–FFVâ#¢$æR2¦÷WFW"VâVÂf7F–6R÷W"6öç6W'fW"VæR’Ö÷'FRâ"À¢&&6VÆ–æUöÆ–7’#¢&æWfW"Ö–æ7&V6R×Fò×72"À¢'6WfW&—G’#¢&W'&÷""À¢&WFõ&VÖVF–F–öâ#¢G'VP¢ÒÀ¢$D4‚ÔÔ•54”ärÔ’ÔÔUD„ôB#¢°¢'66÷R#¢&F6†&ö&B"À¢&÷væW"#¢'V&Æ–2öF6†&ö&G2öFÖ–âö§2ö’Ö6Æ–VçBæ§2"À¢&6W6R#¢%VæRgVRVÆÆRVæRÜ:—F†öFR¶Ö4’V’î(	–W7B2W‡÷'L:–Râ"À¢&7F–öâ#¢$¦÷WFW"÷,:—F&Æ—"ÆÜ:—F†öFRFç2’Ö6Æ–VçBæ§2÷R6÷'&–vW"ÆgVRfW'2ÆÜ:—F†öFR6æöæ—VRW†—7FçFRâ"À¢&f÷&&–FFVâ#¢$æR2f—&RFRfWF6‚‚’''WBFç2ÆgVR÷W"6öçF÷W&æW"¶Ö4’â"À¢&&6VÆ–æUöÆ–7’#¢&æWfW"Ö–æ7&V6R×Fò×72"À¢'6WfW&—G’#¢&W'&÷""À¢&WFõ&VÖVF–F–öâ#¢G'VP¢ÒÀ¢$D4‚ÔDô5E$”äRÔdUD4‚#¢°¢'66÷R#¢&F6†&ö&B"À¢&÷væW"#¢$¶Ö4’ò’Ö6Æ–VçBæ§2"À¢&6W6R#¢%VæRgVR6÷W2Fö7G&–æR¶Ö5ö•ööæÇ’VffV7GVRVâ6<:‡2,:—6VR''WBâ"À¢&7F–öâ#¢$L:—Æ6W"Î(	–6<:‡2Fç2’Ö6Æ–VçBæ§2†÷R†VÇW",:—6VR÷væW"L:–¬:Fö7VÖVçL:’’WBVÆW"¶Ö4’FWV—2ÆgVRâ"À¢&f÷&&–FFVâ#¢$æR2¦÷WFW"¶Ö2Ö’ÖÆÆ÷r6ç2§W7F–f–6F–öâÆö6ÆR,:–VÆÆRâ"À¢&&6VÆ–æUöÆ–7’#¢&æWfW"Ö–æ7&V6R×Fò×72"À¢'6WfW&—G’#¢&W'&÷""À¢&WFõ&VÖVF–F–öâ#¢G'VP¢ÒÀ¢$D4‚ÕTå$õdTâÔ4ôåE$5B#¢°¢'66÷R#¢&F6†&ö&B"À¢&÷væW"#¢'&÷WFR&6¶VæB²Fö72ö6öçG&7Bö÷Væ’æ§6öâ²FW7BFR6öçG&B"À¢&6W6R#¢%VâVæGö–çB6öç6öÖÜ:’"ÆRF6†&ö&BW7B6öæçRÖ—22Væ6÷&R$õdTâFç2ÆR6öçG&Bâ"À¢&7F–öâ#¢$¦÷WFW"ö6ö×Ì:—FW"ÆRFW7BFR6öçG&B&6¶VæBWB,:–|:–ì:—&W"ÆR6öçG&B÷Vä’÷W"f—&R76W"Tä´äõtâ:$õdTââ"À¢&f÷&&–FFVâ#¢$æR2Ö'VW"$õdTâÖçVVÆÆVÖVçB6ç2L:–Öö–âWŒ:–7WF&ÆRâ"À¢&&6VÆ–æUöÆ–7’#¢&æWfW"Ö–æ7&V6R×Fò×72"À¢'6WfW&—G’#¢'v&æ–ær"À¢&WFõ&VÖVF–F–öâ#¢G'VP¢ÒÀ¢$D4‚Ô4äôä”4Â#¢°¢'66÷R#¢&F6†&ö&B"À¢&÷væW"#¢'V&Æ–2öF6†&ö&G2ö6æöæ–6Â²F6†&ö&E66†VÖ"À¢&6W6R#¢$Æ&ö¦V7F–öâ6æöæ–6ÂÂÆRF6†&ö&E66†VÖ÷R6W26÷W&6W2&6¶VæBF—fW&vVçBâ"À¢&7F–öâ#¢$6÷'&–vW"Æ6÷W&6R&6¶VæB÷RÆR66Œ:–Ö6æöæ—VR÷væW"ÂV—2,:–|:–ì:—&W"ÆW2'FVf7G2F6†&ö&BL:—VæFçG2â"À¢&f÷&&–FFVâ#¢$æR2F6†W"VæRgVR6æöæ–6Â÷W"6ö×Vç6W"VæRF—fW&vVæ6RFR6÷W&6Râ"À¢&&6VÆ–æUöÆ–7’#¢&æWfW"Ö–æ7&V6R×Fò×72"À¢'6WfW&—G’#¢&W'&÷""À¢&WFõ&VÖVF–F–öâ#¢G'VP¢ÒÀ¢$$õUD•TRÔ444DR#¢°¢'66÷R#¢&&÷WF—VR"À¢&÷væW"#¢&÷væW"&–æ6—ÂGR<:–ÆV7FWW"Fç27&—F–6Â×6VÆV7F÷"Ö÷væW'6†—æ§2"À¢&6W6R#¢$FWW‚6†VÖ–ç2552FöææVçBFW2fÆWW'2F–fl:—&VçFW2:ÆÜ:¦ÖR&÷&œ:—L:’Fç2ÆRÜ:¦ÖR6öçFW‡FRâ"À¢&7F–öâ#¢$6öç6W'fW"ÆfÆWW"vvæçFRf÷VÇVRFç2Î(	–÷væW"6æöæ—VRWB7W&–ÖW"÷&RÖ†öÖW"ÆL:–6Æ&F–öâ6öæ7W'&VçFRâ"À¢&f÷&&–FFVâ#¢$æR¦Ö—2&VÆWfW"æ772ÖwV&BÖ&6VÆ–æRæ§6öâ÷W"66WFW"ÆR6öæfÆ—Bâ"À¢&&6VÆ–æUöÆ–7’#¢&æWfW"Ö–æ7&V6R×Fò×72"À¢'6WfW&—G’#¢&W'&÷""À¢&WFõ&VÖVF–F–öâ#¢G'VP¢ÒÀ¢$$õUD•TRÕ5T4”d”4•E’#¢°¢'66÷R#¢&&÷WF—VR"À¢&÷væW"#¢&÷væW"&–æ6—ÂGR<:–ÆV7FWW""À¢&6W6R#¢%VæR6Æ76RvÆö&ÆR7,:–RVâ÷fW'&–FR6–ÆVæ6–WW‚FR7:–6–f–6—L:’â"À¢&7F–öâ#¢%&RÖ†öÖW"Æ&÷&œ:—L:’Fç2Î(	–÷væW"6æöæ—VR÷RæWWG&Æ—6W"Æ7:–6–f–6—L:’6ç26†ævW"ÆfÆWW"vvæçFRâ"À¢&f÷&&–FFVâ#¢$æR¦Ö—2&VÆWfW"æ772×7V6–f–6—G’ÖwV&BÖ&6VÆ–æRæ§6öâ÷W"66WFW"Î(	–÷fW'&–FRâ"À¢&&6VÆ–æUöÆ–7’#¢&æWfW"Ö–æ7&V6R×Fò×72"À¢'6WfW&—G’#¢&W'&÷""À¢&WFõ&VÖVF–F–öâ#¢G'VP¢ÒÀ¢$$õUD•TRÔ”Õõ%DåB#¢°¢'66÷R#¢&&÷WF—VR"À¢&÷væW"#¢&÷væW"5526öæ6W&ì:’²$Ud”UtTEôuT$E2"À¢&6W6R#¢%Vâ–×÷'FçBæöâ&WgR&:çB÷RVæRW†6WF–öâW†7FRL:—&—l:’â"À¢&7F–öâ#¢%7W&–ÖW"ÆR–×÷'FçB"÷væW'6†—ö666FRæ÷&ÖÆR÷RFö7VÖVçFW"VæRW†6WF–öâW†7FR,:–VÆÆVÖVçB–æF—7Vç6&ÆRâ"À¢&f÷&&–FFVâ#¢$æR2VvÖVçFW"Æ&6VÆ–æRFRFWGFR–×÷'FçB÷WfW'FRâ"À¢&&6VÆ–æUöÆ–7’#¢&æWfW"Ö–æ7&V6R×Fò×72"À¢'6WfW&—G’#¢&W'&÷""À¢&WFõ&VÖVF–F–öâ#¢G'VP¢ÒÀ¢$$õUD•TRÕ4TÄT5Dõ"ÔõtäU%4„•#¢°¢'66÷R#¢&&÷WF—VR"À¢&÷væW"#¢&7&—F–6Â×6VÆV7F÷"Ö÷væW'6†—æ§2"À¢&6W6R#¢%Vâ<:–ÆV7FWW"7&—F—VRW7BF÷V6Œ:’"Vâ÷væW"÷R6öçFW‡FRæöâWF÷&—<:’Â÷R6öâ&–æ6—ÂF—7'Râ"À¢&7F–öâ#¢$ÖöF–f–W"ÆR&–æ6—Âö6öçFW‡GVVÂL:–¬:6öçG&7L:“²6’ÆRFW6–vâ6†ævR,:–VÆÆVÖVçBÂÖöF–f–W"W‡Æ–6—FVÖVçBÆR6öçG&BfV2&WWfRâ"À¢&f÷&&–FFVâ#¢$æR2¦÷WFW"Vâ÷væW"R&Vv—7G&RVæ—VVÖVçB÷W"f—&R76W"ÆRvFRâ"À¢&&6VÆ–æUöÆ–7’#¢&æWfW"Ö–æ7&V6R×Fò×72"À¢'6WfW&—G’#¢&W'&÷""À¢&WFõ&VÖVF–F–öâ#¢G'VP¢ÒÀ¢$$õUD•TRÕ%TåD”ÔRÕd"ÔõtäU%4„•#¢°¢'66÷R#¢&&÷WF—VR"À¢&÷væW"#¢''VçF–ÖRÖ772×f"Ö÷væW'6†—æ§2"À¢&6W6R#¢%VæRf&–&ÆR552'VçF–ÖRVâæ÷WfVR&öGV7FWW"ÂG&÷FR6†VÖ–ç2N(	œ:–7&—GW&R÷RW&B6öâ&–æ6—Ââ"À¢&7F–öâ#¢$6öç6W'fW"ÆR&öGV7FWW"&–æ6—ÂWBÆW2FFF–öç26öçG&7L:–W3²gW6–öææW"ÆW26†VÖ–ç2N(	œ:–7&—GW&R&VFöæFçG2â"À¢&f÷&&–FFVâ#¢$æR2¦÷WFW"&öGV7FWW"öÖ…w&—FW2÷W"Ö7VW"VæRGWÆ–6F–öââ"À¢&&6VÆ–æUöÆ–7’#¢&æWfW"Ö–æ7&V6R×Fò×72"À¢'6WfW&—G’#¢&W'&÷""À¢&WFõ&VÖVF–F–öâ#¢G'VP¢ÒÀ¢$$õUD•TRÔtÄô$ÂÔõtäU%4„•#¢°¢'66÷R#¢&&÷WF—VR"À¢&÷væW"#¢&fVGW&W2ò¢æfVGW&Ræ§2²V&Æ–2ö&÷WF—VRöfVGW&W2ò¢æfVGW&Ræ§2"À¢&6W6R#¢%Vâf–6†–W"'VçF–ÖR&÷WF—VRî(	–2N(	–÷væW"6æöæ—VRVæ—VRâ"À¢&7F–öâ#¢%&GF6†W"ÆRf–6†–W":ÆfVGW&RV’÷7<:†FR,:–VÆÆVÖVçBÆ&W7öç6&–Æ—L:’÷RL:—Æ6W"ÆR6öFRfW'26WB÷væW"â"À¢&f÷&&–FFVâ#¢$æR2&GF6†W"'F–f–6–VÆÆVÖVçBVâf–6†–W"÷W"ö'FVæ—"Râ"À¢&&6VÆ–æUöÆ–7’#¢&æWfW"Ö–æ7&V6R×Fò×72"À¢'6WfW&—G’#¢&W'&÷""À¢&WFõ&VÖVF–F–öâ#¢G'VP¢ÒÀ¢$$õUD•TRÕ5DD”2ÔtDR#¢°¢'66÷R#¢&&÷WF—VR"À¢&÷væW"#¢&÷væW"GRf–6†–W"&÷WF—VR6–væÌ:’"À¢&6W6R#¢%Vâ–çf&–çB7FF—VR&÷WF—VR†–×÷'G2ÂFö¶Vç2Â'&V·ö–çG2Â¢Ö–æFW‚Â7F–6·’Â&öG’6Æ76W2Â–æ¦V7F–öâÂ…DÔÂ’W7Bf–öÌ:’â"À¢&7F–öâ#¢$6÷'&–vW"ÆÆ–væR6–væÌ:–RFÚ±î¸Â¸­yêë¢°k¢G§¦*^
+      "action": "RÃ©duire la cause dans le fichier owner; extraire par responsabilitÃ© si nÃ©cessaire puis relancer quality:gate.",
+      "forbidden": "Ne pas ajouter quality-disable, exemption de fichier ou budget supplÃ©mentaire sans dÃ©cision architecturale explicite.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BACKEND-FEATURE-OWNERSHIP": {
+      "scope": "backend",
+      "owner": "features/*.feature.js",
+      "cause": "Un fichier ou une dÃ©pendance backend nâ€™est pas correctement rattachÃ© Ã  une feature canonique.",
+      "action": "Rattacher le fichier Ã  lâ€™owner mÃ©tier rÃ©el ou dÃ©placer la responsabilitÃ© vers cet owner, puis rÃ©gÃ©nÃ©rer les projections.",
+      "forbidden": "Ne pas revendiquer arbitrairement le fichier dans une feature voisine pour faire disparaÃ®tre lâ€™orphelin.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BACKEND-CONTRACT": {
+      "scope": "backend",
+      "owner": "contrat API canonique + owner route/service",
+      "cause": "Le producteur backend et son contrat consommateur divergent.",
+      "action": "Corriger lâ€™implÃ©mentation ou le contrat au niveau de la source de vÃ©ritÃ© puis mettre Ã  jour les tÃ©moins concernÃ©s.",
+      "forbidden": "Ne pas dupliquer le contrat dans un second fichier ni masquer lâ€™Ã©cart cÃ´tÃ© consommateur.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BACKEND-SECURITY": {
+      "scope": "backend",
+      "owner": "owner de la frontiÃ¨re de sÃ©curitÃ© concernÃ©e",
+      "cause": "Une protection de sÃ©curitÃ© mesurÃ©e a rÃ©gressÃ© ou son snapshot nâ€™est plus frais.",
+      "action": "Restaurer le contrÃ´le dans lâ€™owner existant et rÃ©gÃ©nÃ©rer la preuve Security 360 si la modification est volontaire.",
+      "forbidden": "Ne pas relever une baseline sÃ©curitÃ© pour accepter une nouvelle faiblesse.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BACKEND-MIGRATION-IMMUTABILITY": {
+      "scope": "backend",
+      "owner": "migrations/ + migrations/GAPS.md",
+      "cause": "Une migration dÃ©jÃ  publiÃ©e a Ã©tÃ© modifiÃ©e ou une collision non gouvernÃ©e est apparue.",
+      "action": "CrÃ©er une nouvelle migration corrective; pour une collision historique, conserver lâ€™ensemble exact documentÃ©.",
+      "forbidden": "Ne jamais rÃ©Ã©crire ou renommer une migration dÃ©jÃ  versionnÃ©e pour faire passer le gate.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BACKEND-SCHEMA-FRESHNESS": {
+      "scope": "backend",
+      "owner": "docs/db/railway-live-schema.sql + migrations/",
+      "cause": "Le snapshot de schÃ©ma et la chaÃ®ne de migrations ne dÃ©crivent plus le mÃªme Ã©tat.",
+      "action": "RÃ©gÃ©nÃ©rer/promouvoir le snapshot par les commandes canoniques aprÃ¨s avoir corrigÃ© la migration source.",
+      "forbidden": "Ne pas Ã©diter le dump Ã  la main pour masquer un drift.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BACKEND-SCHEMA-RESURRECTION": {
+      "scope": "backend",
+      "owner": "migrations/ + schÃ©ma canonique",
+      "cause": "Un objet supprimÃ© ou obsolÃ¨te rÃ©apparaÃ®t dans le schÃ©ma.",
+      "action": "Identifier la migration qui ressuscite lâ€™objet et corriger cette nouvelle migration ou son ordre.",
+      "forbidden": "Ne pas ajouter lâ€™objet ressuscitÃ© Ã  une allowlist.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BACKEND-GOLDEN-CDR": {
+      "scope": "backend",
+      "owner": "pricing/economic canonical owners + tools/golden-cdr",
+      "cause": "Le comportement Ã©conomique a divergÃ© du snapshot Golden CDR.",
+      "action": "Corriger la logique si la divergence est accidentelle; sinon recapturer le golden avec justification mÃ©tier explicite.",
+      "forbidden": "Ne pas recapturer le golden uniquement pour rendre la CI verte.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BACKEND-REVIEWED-EXCEPTION": {
+      "scope": "backend",
+      "owner": "exception exacte documentÃ©e dans son gate source",
+      "cause": "Une exception historique, de glue, de test ou de chaos est mesurÃ©e et explicitement justifiÃ©e.",
+      "action": "Ne rien changer tant que la responsabilitÃ© reste identique; rÃ©auditer si le fichier, le pÃ©rimÃ¨tre ou le comportement Ã©volue.",
+      "forbidden": "Ne pas copier cette exception sur un nouveau fichier.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "info",
+      "autoRemediation": false
+    },
+    "BACKEND-HEALTHY-MEASUREMENT": {
+      "scope": "backend",
+      "owner": "gate ou ratchet source qui produit la mesure",
+      "cause": "Une mesure de gouvernance est prÃ©sente dans le rapport mais sa dette effective est dÃ©jÃ  Ã  zÃ©ro.",
+      "action": "Ne rien corriger; conserver le cliquet Ã  zÃ©ro et rÃ©agir uniquement si sa valeur future augmente.",
+      "forbidden": "Ne pas transformer une mesure saine en allowlist ni relever le cliquet.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "info",
+      "autoRemediation": false
+    },
+    "DASH-ORPHAN-ROUTE": {
+      "scope": "dashboard",
+      "owner": "public/dashboards/admin/js/app.js + vue dÃ©clarÃ©e",
+      "cause": "Une route SPA pointe vers une vue absente.",
+      "action": "Restaurer/crÃ©er la vue owner attendue ou retirer la route devenue morte, puis rÃ©gÃ©nÃ©rer DASHBOARDS_360.",
+      "forbidden": "Ne pas crÃ©er une vue placeholder uniquement pour satisfaire le gate.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "DASH-DEAD-API-METHOD": {
+      "scope": "dashboard",
+      "owner": "public/dashboards/admin/js/api-client.js",
+      "cause": "Une mÃ©thode KmcApi est exportÃ©e mais nâ€™a plus de consommateur dashboard.",
+      "action": "Supprimer lâ€™export rÃ©ellement mort ou restaurer le consommateur canonique sâ€™il manque.",
+      "forbidden": "Ne pas ajouter un appel factice pour conserver une API morte.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "DASH-MISSING-API-METHOD": {
+      "scope": "dashboard",
+      "owner": "public/dashboards/admin/js/api-client.js",
+      "cause": "Une vue appelle une mÃ©thode KmcApi qui nâ€™est pas exportÃ©e.",
+      "action": "Ajouter/rÃ©tablir la mÃ©thode dans api-client.js ou corriger la vue vers la mÃ©thode canonique existante.",
+      "forbidden": "Ne pas faire de fetch() brut dans la vue pour contourner KmcApi.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "DASH-DOCTRINE-FETCH": {
+      "scope": "dashboard",
+      "owner": "KmcApi / api-client.js",
+      "cause": "Une vue sous doctrine kmc_api_only effectue un accÃ¨s rÃ©seau brut.",
+      "action": "DÃ©placer lâ€™accÃ¨s dans api-client.js (ou helper rÃ©seau owner dÃ©jÃ  documentÃ©) et appeler KmcApi depuis la vue.",
+      "forbidden": "Ne pas ajouter kmc-api-allow sans justification locale rÃ©elle.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "DASH-UNPROVEN-CONTRACT": {
+      "scope": "dashboard",
+      "owner": "route backend + docs/contract/openapi.json + test de contrat",
+      "cause": "Un endpoint consommÃ© par le dashboard est connu mais pas encore PROVEN dans le contrat.",
+      "action": "Ajouter/complÃ©ter le test de contrat backend et rÃ©gÃ©nÃ©rer le contrat OpenAPI pour faire passer UNKNOWN Ã  PROVEN.",
+      "forbidden": "Ne pas marquer PROVEN manuellement sans tÃ©moin exÃ©cutable.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "warning",
+      "autoRemediation": true
+    },
+    "DASH-CANONICAL": {
+      "scope": "dashboard",
+      "owner": "public/dashboards/canonical + DashboardSchema",
+      "cause": "La projection Canonical, le DashboardSchema ou ses sources backend divergent.",
+      "action": "Corriger la source backend ou le schÃ©ma canonique owner, puis rÃ©gÃ©nÃ©rer les artefacts dashboard dÃ©pendants.",
+      "forbidden": "Ne pas patcher une vue Canonical pour compenser une divergence de source.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BOUTIQUE-CASCADE": {
+      "scope": "boutique",
+      "owner": "owner principal du sÃ©lecteur dans critical-selector-ownership.js",
+      "cause": "Deux chemins CSS donnent des valeurs diffÃ©rentes Ã  la mÃªme propriÃ©tÃ© dans le mÃªme contexte.",
+      "action": "Conserver la valeur gagnante voulue dans lâ€™owner canonique et supprimer/re-homer la dÃ©claration concurrente.",
+      "forbidden": "Ne jamais relever .css-guard-baseline.json pour accepter le conflit.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BOUTIQUE-SPECIFICITY": {
+      "scope": "boutique",
+      "owner": "owner principal du sÃ©lecteur",
+      "cause": "Une classe globale crÃ©e un override silencieux de spÃ©cificitÃ©.",
+      "action": "Re-homer la propriÃ©tÃ© dans lâ€™owner canonique ou neutraliser la spÃ©cificitÃ© sans changer la valeur gagnante.",
+      "forbidden": "Ne jamais relever .css-specificity-guard-baseline.json pour accepter lâ€™override.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BOUTIQUE-IMPORTANT": {
+      "scope": "boutique",
+      "owner": "owner CSS concernÃ© + REVIEWED_GUARDS",
+      "cause": "Un !important non revu apparaÃ®t ou une exception exacte a dÃ©rivÃ©.",
+      "action": "Supprimer le !important par ownership/cascade normale ou documenter une exception exacte rÃ©ellement indispensable.",
+      "forbidden": "Ne pas augmenter la baseline de dette !important ouverte.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BOUTIQUE-SELECTOR-OWNERSHIP": {
+      "scope": "boutique",
+      "owner": "critical-selector-ownership.js",
+      "cause": "Un sÃ©lecteur critique est touchÃ© par un owner ou contexte non autorisÃ©, ou son principal a disparu.",
+      "action": "Modifier le principal/contextuel dÃ©jÃ  contractÃ©; si le design change rÃ©ellement, modifier explicitement le contrat avec preuve.",
+      "forbidden": "Ne pas ajouter un owner au registre uniquement pour faire passer le gate.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BOUTIQUE-RUNTIME-VAR-OWNERSHIP": {
+      "scope": "boutique",
+      "owner": "runtime-css-var-ownership.js",
+      "cause": "Une variable CSS runtime a un nouveau producteur, trop de chemins dâ€™Ã©criture ou perd son principal.",
+      "action": "Conserver le producteur principal et les adaptations contractÃ©es; fusionner les chemins dâ€™Ã©criture redondants.",
+      "forbidden": "Ne pas ajouter producteur/maxWrites pour masquer une duplication.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BOUTIQUE-GLOBAL-OWNERSHIP": {
+      "scope": "boutique",
+      "owner": "features/*.feature.js + public/boutique/features/*.feature.js",
+      "cause": "Un fichier runtime Boutique nâ€™a pas dâ€™owner canonique unique.",
+      "action": "Rattacher le fichier Ã  la feature qui possÃ¨de rÃ©ellement la responsabilitÃ© ou dÃ©placer le code vers cet owner.",
+      "forbidden": "Ne pas rattacher artificiellement un fichier pour obtenir 100%.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BOUTIQUE-STATIC-GATE": {
+      "scope": "boutique",
+      "owner": "owner du fichier Boutique signalÃ©",
+      "cause": "Un invariant statique Boutique (imports, tokens, breakpoints, z-index, sticky, body classes, injection, HTML) est violÃ©.",
+      "action": "Corriger la ligne signalÃ©e dans son owner canonique et relancer le gate source.",
+      "forbidden": "Ne pas crÃ©er dâ€™exception globale ou de deuxiÃ¨me chemin de modification.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "BOUTIQUE-ARCH": {
+      "scope": "boutique",
+      "owner": "BOUTIQUE_ARCHITECTURE.md + registres exÃ©cutables",
+      "cause": "Lâ€™architecture observÃ©e ne respecte plus ses invariants canoniques.",
+      "action": "Corriger la source owner ou le registre canonique si la responsabilitÃ© a rÃ©ellement changÃ©, puis rÃ©gÃ©nÃ©rer le LIVE.",
+      "forbidden": "Ne pas modifier le LIVE Ã  la main.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "GOV-BUSINESS-GRAPH": {
+      "scope": "governance",
+      "owner": "features/*.feature.js + Business Feature Graph generator",
+      "cause": "Le graphe business nâ€™est plus reconstructible/frais ou un fichier est mal projetÃ©.",
+      "action": "Corriger lâ€™ownership/import dans la source canonique puis rÃ©gÃ©nÃ©rer le graphe.",
+      "forbidden": "Ne pas Ã©diter BUSINESS_FEATURE_GRAPH Ã  la main.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "GOV-FEATURE-360": {
+      "scope": "governance",
+      "owner": "Feature 360 canonical projection",
+      "cause": "La projection Feature 360 est stale ou incohÃ©rente avec les manifests/gate findings.",
+      "action": "Corriger les sources, rÃ©gÃ©nÃ©rer Gate Findings puis Feature 360.",
+      "forbidden": "Ne pas Ã©diter FEATURE_360 Ã  la main.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    },
+    "GOV-REMEDIATION-CONTRACT": {
+      "scope": "governance",
+      "owner": "scripts/agent-remediation-contract.js",
+      "cause": "Un gate mesurÃ© nâ€™a pas de stratÃ©gie de remÃ©diation machine-readable ou lâ€™index est stale.",
+      "action": "Ajouter/corriger le contrat, puis rÃ©gÃ©nÃ©rer AGENT_REMEDIATION_INDEX.json.",
+      "forbidden": "Ne pas exclure le gate du checker pour faire passer la CI.",
+      "baselinePolicy": "never-increase-to-pass",
+      "severity": "error",
+      "autoRemediation": true
+    }
+  }
+}

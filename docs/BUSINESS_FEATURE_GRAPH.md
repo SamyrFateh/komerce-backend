@@ -284,7 +284,546 @@ _dash_ : pas de Technical Architecture Graph propre au d√©p√¥t dash dans ce pipe
 
 ### external-provider-contracts _(technical-transversal)_
 
-> Qualifier, prouver et publier ce qum´Îå+ä◊ûÆ∫+∫$zzb•ÊR∂ˆ÷W&6RWWB,:ñV∆∆V÷VÁB7&ˆó&RBV‚7ó7L:Ü÷RWáFW&ÊRfÁBRVÊRfVGW&R‹:óFñW"ÊR2VñR7W"6ˆ‚6ˆÁG&B‡†¢“6W'fñ6W3¢¢“67&óG3¢`¢“v˜&∂f∆˜w3¢p¢“6ˆÊfñs¢ ¢“FW7G3¢Ä¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢ ¢“F&∆W2w&óGFV„¢ ¢“ñÁFW&f6W2Wá˜6VC¢ ¢“ñÁFW&Ê¬ó3¢ ¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢(	BñÊg&7G'V7GW&P¢“6ˆÁ7V÷W'3¢B(	B6F∆ˆr¬F6Ü&ˆ&B¬W&6Ü6ñÊr¬7W∆ñW"÷6ˆÊÊV7FófóGê†¢222ñÊ6ñFVÁB÷÷ÊvV÷VÁBÚÜ'W6ñÊW72◊G&Á7fW'6¬ï†£‚L:óFV7FW"¬V∆ñfñW"WB,:ó6˜VG&R∆W2:ñ6'G2VÁG&R¬|:óFBGFVÊGRWB¬|:óFB,:ñV¬BwVÊR˜:ó&Fñˆ‚¬fV2ñ◊7B6∆ñVÁBG&:v&∆R‡†¢“6W'fñ6W3¢P¢“FW7G3¢Ä¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢(	BñÊ6ñFVÁG6 ¢“F&∆W2w&óGFV„¢¢“ñÁFW&f6W2Wá˜6VC¢ ¢“ñÁFW&Ê¬ó3¢p¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢B(	B˜&FW'2¬ñÊg&7G'V7GW&R¬∆ˆvó7Fñ72¬FV6ó6ñˆ‚◊6ñvÊ«0¢“6ˆÁ7V÷W'3¢r(	BF6Ü&ˆ&B¬∆ˆvó7Fñ72¬Ê˜Fñfñ6FñˆÁ2¬˜&FW'2¬ñ÷VÁG2¬∆Ff˜&“÷˜2¬W&6Ü6ñÊp†¢222ñÊg&7G'V7GW&RÚáFV6ÜÊñ6¬÷f˜VÊFFñˆ‚ï†£‚ñÊg&7G'V7GW&RG&Á7fW'6∆R6ˆÁ6ˆ÷‹:ñR"F˜WFW2∆W2fVGW&W2¢÷ñFF∆Wv&RÊˆ‚÷WFÇÜW'&˜"÷ÜÊF∆W"¬&FR÷∆ñ÷óB¬&WVW7B÷ñB¬W∆ˆB¬f∆ñFFRí¬WFñ∆óFó&W2'F|:ó2Ü∆ˆvvW"¬ÜˆÊR¬&FW2¬&VfW&VÊ6R¬'V∆W2í¬&'&V¬FRf∆ñFFñˆ‚¶ˆí¬WB&ˆ˜G7G&∆ñ6FñbÑWá&W72¬&˜WFW2¬7&ˆÁ2¬VÁb¬<:ñ7W&óL:í¬÷ñw&FñˆÁ27F'GWí‡†¢“6W'fñ6W3¢0¢“÷ñFF∆Wv&S¢p¢“WFñ«3¢P¢“f∆ñFF˜'3¢¢“&ˆ˜G7G&¢ê¢“÷ñw&FñˆÁ3¢ê¢“67&óG3¢@¢“Fˆ73¢c¢“6ì¢#`¢“76WG3¢30¢“F#¢`¢“&˜WFW3¢¢“6ˆÊfñs¢ ¢“FW7G3¢p¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢2(	B66ÜV÷ˆ÷ñw&FñˆÁ6¬˜WF&˜ÖˆWfVÁG6¬áó6ñ6≈ˆ˜WF6ˆ÷U˜&V6VóG6 ¢“F&∆W2w&óGFV„¢ ¢“ñÁFW&f6W2Wá˜6VC¢@¢“ñÁFW&Ê¬ó3¢¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢r(	B÷&∂WB¬WFÇ¬WFÇ÷ñFVÁFóGí¬6F∆ˆr¬7W7Fˆ◊2¬F6Ü&ˆ&B¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬ñÁfVÁF˜'í¬∆ˆvó7Fñ72¬÷&∂WB÷FV∆VvFñˆ‚¬Ê˜Fñfñ6FñˆÁ2¬∆Ff˜&“÷˜2¬˜&FW'2¬ñ÷VÁG2¬&V6ˆ÷÷VÊFFñˆÁ2¬6Ü&VB÷6'B¬v∆∆W@¢“6ˆÁ7V÷W'3¢3B(	BWFÇ¬WFÇ÷ñFVÁFóGí¬WFÇ◊76∂Wí¬'W6ñÊW72◊'V∆W2¬6F∆ˆr¬7W7Fˆ◊2¬F6Ü&ˆ&B¬Fˆ7V÷VÁG2¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬WáFW&Ê¬◊&˜fñFW"÷6ˆÁG&7G2¬ñÊ6ñFVÁB÷÷ÊvV÷VÁB¬ñÁfVÁF˜'í¬∆ˆ6¬◊7Fˆ6≤¬∆ˆvó7Fñ72¬∆˜ñ«Gí¬÷&∂WB¬÷&∂WB÷WFˆÊˆ◊í¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¬÷&∂WB÷FV∆VvFñˆ‚¬÷&∂WB÷˜W&F˜"÷F6Ü&ˆ&B¬Ê˜Fñfñ6FñˆÁ2¬˜&FW'2¬ñ÷VÁG2¬∆Ff˜&“÷˜2¬&˜fñFW'2◊6W'fñ6W2¬W&6Ü6ñÊr¬&V6ˆ÷÷VÊFFñˆÁ2¬&VgVÊG2¬6WGF∆V÷VÁB¬6Ü&VB÷6'B¬6˜W&6ñÊr¬VÁ6ˆ∆B◊&W6ˆ«WFñˆ‚¬v∆∆WB¬FV6ó6ñˆ‚◊6ñvÊ«0†¢222ñÁfVÁF˜'íÚÜ'W6ñÊW72÷fVGW&Rï†£‚,:ñ6WFñˆÊÊW"¬ffV7FW"WBFó7F6ÜW"∆W2'Fñ6∆W2RáV"‡†¢“6W'fñ6W3¢¢“&˜WFW3¢¢“F6É¢¢“FW7G3¢0¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢(	BñÁfVÁF˜'ïˆóFV◊6 ¢“F&∆W2w&óGFV„¢¢“ñÁFW&f6W2Wá˜6VC¢Ä¢“ñÁFW&Ê¬ó3¢ ¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢R(	B˜&FW'2¬6F∆ˆr¬∆ˆvó7Fñ72¬ñÊg&7G'V7GW&R¬WFÄ¢“6ˆÁ7V÷W'3¢2(	BF6Ü&ˆ&B¬ñÊg&7G'V7GW&R¬F÷ñ‚÷F6Ü&ˆ&@†¢222∆Vv7í÷6ˆÁG&ˆ¬◊F˜vW"ÚÜFW&V6FVBï†£‚Ê6ñV‚6ˆÁG&ˆ¬F˜vW"(	BFW&V6FVB‡†¢“ß3¢3p¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢ ¢“F&∆W2w&óGFV„¢ ¢“ñÁFW&f6W2Wá˜6VC¢ ¢“ñÁFW&Ê¬ó3¢ ¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢ ¢“6ˆÁ7V÷W'3¢ †¢222∆ˆ6¬◊7Fˆ6≤ÚÜ'W6ñÊW72÷fVGW&Rï†£‚˜'FW"∆R7Fˆ6≤áó6óVRfVÊF&∆R∆ˆ6¬¬6∆7V∆W"∆Fó7ˆÊñ&ñ∆óL:íÊWGFRFW2∆∆ˆ6FñˆÁ27FófW2¬&ˆ¶WFW"VÊRFó7ˆÊñ&ñ∆óL:íV&∆óVR÷ñÊñ÷∆RWBVÊvvW"ˆ6ˆÁ6ˆ÷÷W"ˆ∆ñ,:ó&W"6R7Fˆ6≤FÁ2∆R7ñ6∆R6ˆ÷÷ÊFR‡†¢“6W'fñ6W3¢0¢“&˜WFW3¢¢“FW7G3¢P¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢"(	B∆ˆ6≈˜7Fˆ6∂¬∆ˆ6≈˜7Fˆ6µˆ∆∆ˆ6FñˆÁ6 ¢“F&∆W2w&óGFV„¢ ¢“ñÁFW&f6W2Wá˜6VC¢ ¢“ñÁFW&Ê¬ó3¢`¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢B(	B6F∆ˆr¬÷&∂WB¬∆ˆvó7Fñ72¬ñÊg&7G'V7GW&P¢“6ˆÁ7V÷W'3¢r(	BF6Ü&ˆ&B¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬∆ˆvó7Fñ72¬÷&∂WB÷FV∆VvFñˆ‚¬˜&FW'2¬&˜fñFW'2◊6W'fñ6W2¬&V6ˆ÷÷VÊFFñˆÁ0†¢222∆ˆvó7Fñ72ÚÜ'W6ñÊW72÷fVGW&Rï†£‚fó&RG&Á6óFW"V‚6ˆ∆ó2GR66‚ñÊóFñ¬R&WG&óBfñÊ¬¬fV2G&6∂ñÊr6∆ñVÁBWBG&Á7˜'FWW"‡†¢“÷ñFF∆Wv&S¢¢“÷ñw&FñˆÁ3¢P¢“Fˆ73¢p¢“WFñ«3¢0¢“6W'fñ6W3¢Cê¢“&˜WFW3¢Ä¢“&˜WFóVS¢¢“F6É¢ ¢“FW7G3¢ì0¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢#b(	B&6V«6¬&V∆ó6¬&6V≈ˆóFV◊6¬áV%˜áó6ñ6≈˜VÊóE˜∆6V÷VÁG6¬áV%˜áó6ñ6≈˜VÊóG6¬áV%˜W&6Ü6Uˆ∆∆ˆ6FñˆÁ6¬66ÂˆWfVÁG6¬66Á6¬ñ6∑W˜&ñÁE˜Fˆ∂VÁ6¬ñ6∑W˜&WfV≈ˆ6ˆFW6¬&V∆ï˜&ˆGV7E˜&WGW&Â˜&V6VóG6¬6'&ñW'6¬áV%ˆ7W7FˆGïˆWfVÁG6¬áV%ˆ&˜Öˆ&w6¬ñÁFW&ÊFñˆÊ≈˜6Üó÷VÁEˆ6Ü&vW6¬ñÁFW&ÊFñˆÊ≈˜6Üó÷VÁEˆWfVÁG6¬ñÁFW&ÊFñˆÊ≈˜6Üó÷VÁEˆáV%˜VÊóG6¬ñÁFW&ÊFñˆÊ≈˜6Üó÷VÁE˜&V∆ï˜&V6VóG6¬ñÁFW&ÊFñˆÊ≈˜6Üó÷VÁG6¬÷&∂WE˜G&Á7˜'E˜6∆U˜&FW6¬&6V≈ˆWfVÁG6¬ñ6∑Wˆ6ˆ∆∆V7Eˆfñ«W&W6¬ñ6∑Wˆ6ˆFUˆvVÊW&FñˆÁ6¬ñ6∑W˜fW&ñgïˆGFV◊G6¬&ˆGV7E˜6∑U˜áó6ñ6≈ˆ6ˆFW6¬6Üó÷VÁG6 ¢“F&∆W2w&óGFV„¢#Ä¢“ñÁFW&f6W2Wá˜6VC¢sÄ¢“ñÁFW&Ê¬ó3¢3 ¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢r(	B7W7Fˆ◊2¬Fˆ7V÷VÁG2¬ñÊ6ñFVÁB÷÷ÊvV÷VÁB¬ñÊg&7G'V7GW&R¬'W6ñÊW72◊'V∆W2¬˜&FW'2¬∆ˆ6¬◊7Fˆ6≤¬WFÇ¬WFÇ÷ñFVÁFóGí¬6F∆ˆr¬Ê˜Fñfñ6FñˆÁ2¬ñ÷VÁG2¬&VgVÊG2¬W&6Ü6ñÊr¬∆˜ñ«Gí¬÷&∂WB¬÷&∂WB÷FV∆VvFñˆ‡¢“6ˆÁ7V÷W'3¢#"(	BWFÇ÷ñFVÁFóGí¬6F∆ˆr¬7W7Fˆ◊2¬F6Ü&ˆ&B¬Fˆ7V÷VÁG2¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬ñÊ6ñFVÁB÷÷ÊvV÷VÁB¬ñÊg&7G'V7GW&R¬ñÁfVÁF˜'í¬∆ˆ6¬◊7Fˆ6≤¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¬÷&∂WB÷FV∆VvFñˆ‚¬÷&∂WB÷˜W&F˜"÷F6Ü&ˆ&B¬Ê˜Fñfñ6FñˆÁ2¬˜&FW'2¬ñ÷VÁG2¬∆Ff˜&“÷˜2¬W&6Ü6ñÊr¬&V6ˆ÷÷VÊFFñˆÁ2¬&VgVÊG2¬F÷ñ‚÷F6Ü&ˆ&B¬FV6ó6ñˆ‚◊6ñvÊ«0†¢222∆˜ñ«GíÚÜ'W6ñÊW72÷fVGW&Rï†£‚6∆7V∆W"WB÷ñÁFVÊó"∆R7FGWBFRfñFV∆óFRBwV‚6∆ñVÁBá∆ñW"≤6ˆ◊FWW"w&˜2ÊñW"íWB6W2&V6ˆ◊VÁ6W2‡†¢“6W'fñ6W3¢¢“&˜WFW3¢ ¢“FW7G3¢`¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢"(	B∆˜ñ«Gï˜FñW'6¬∆˜ñ«Gï˜&Wv&G6 ¢“F&∆W2w&óGFV„¢ ¢“ñÁFW&f6W2Wá˜6VC¢ ¢“ñÁFW&Ê¬ó3¢ ¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢b(	B˜&FW'2¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬ñÊg&7G'V7GW&R¬WFÇ¬Ê˜Fñfñ6FñˆÁ2¬WFÇ÷ñFVÁFóGê¢“6ˆÁ7V÷W'3¢R(	BWFÇ÷ñFVÁFóGí¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬∆ˆvó7Fñ72¬˜&FW'2¬ñ÷VÁG0†¢222÷&∂WBÚÜ'W6ñÊW72÷fVGW&Rï†£‚˜'FW"∆R,:ñl:ó&VÁFñV¬FW2÷&6å:ó2˜WfW'G2áó2¬FWfó6RíWB¬vÜó7F˜&óVRBv6<:á2FW2˜:ó&FWW'2:V‚÷&6å:í(	B¶÷ó2∆R6WGF∆V÷VÁBÊí¬vGG&ñ'WFñˆ‚:ñ6ˆÊˆ÷óVR¬Ví&W7FVÁBVÊR&ñ÷óFófR<:ó,:ñRWBFñfl:ó,:ñR‡†¢“67&óG3¢0¢“÷ñw&FñˆÁ3¢P¢“6W'fñ6W3¢¢“FW7G3¢3 ¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢R(	B÷&∂WG6¬˜W&F˜%ˆ÷&∂WE˜66˜W6¬7W'&VÊ7ï˜&óFñW6¬gÖ˜&FUˆˆ'6W'fFñˆÁ6¬gÖ˜V&∆ñ5˜&VfW&VÊ6U˜V˜FW6 ¢“F&∆W2w&óGFV„¢P¢“ñÁFW&f6W2Wá˜6VC¢ ¢“ñÁFW&Ê¬ó3¢ ¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢"(	BñÊg&7G'V7GW&R¬Ê˜Fñfñ6FñˆÁ0¢“6ˆÁ7V÷W'3¢Ç(	B6F∆ˆr¬7W7Fˆ◊2¬F6Ü&ˆ&B¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬ñÊg&7G'V7GW&R¬∆ˆ6¬◊7Fˆ6≤¬∆ˆvó7Fñ72¬÷&∂WB÷WFˆÊˆ◊í¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¬÷&∂WB÷FV∆VvFñˆ‚¬÷&∂WB÷˜W&F˜"÷F6Ü&ˆ&B¬˜&FW'2¬ñ÷VÁG2¬&˜fñFW'2◊6W'fñ6W2¬&V6ˆ÷÷VÊFFñˆÁ2¬&VgVÊG2¬6WGF∆V÷VÁB¬v∆∆W@†¢222÷&∂WB÷WFˆÊˆ◊íÚÜ'W6ñÊW72÷fVGW&Rï†£‚W&÷WGG&R:V‚&W7ˆÁ6&∆Ró2Wá∆ñ6óFV÷VÁB66˜:í÷ÊvW"FRL:ñ6ñFW"V‚&óÇ∆ˆ6¬¬N(	ñV‚fˆó"Œ(	ññ◊7B:ñ6ˆÊˆ÷óVR¬Vó2FRŒ(	ñ7FófW"6Á2&ˆ&Fñˆ‚6VÁG&∆R∆˜'7VR∆W2vFW2WF˜&ó6VÁB∆˜6óFñˆ‚≤ƒÙ4≈Ù5DïdRFWfñVÁB∆˜'2∆6WV∆Rl:ó&óL:í∆ˆ6∆R6ˆÁ6ˆ÷÷&∆R"∆R'WñW"FÇ‡†¢“6W'fñ6W3¢@¢“÷ñw&FñˆÁ3¢0¢“F6É¢#P¢“FW7G3¢¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢"(	B&ˆGV7Eˆ÷&∂WE˜&ñ6UˆG&gG6¬&ˆGV7Eˆ÷&∂WE˜&ñ6UˆG&gEˆWfVÁG6 ¢“F&∆W2w&óGFV„¢ ¢“ñÁFW&f6W2Wá˜6VC¢ ¢“ñÁFW&Ê¬ó3¢ ¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢b(	B÷&∂WB¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬6F∆ˆr¬ñÊg&7G'V7GW&R¬÷&∂WB÷FV∆VvFñˆ‚¬WFÇ÷ñFVÁFóGê¢“6ˆÁ7V÷W'3¢Ç(	B6F∆ˆr¬F6Ü&ˆ&B¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬÷&∂WB÷FV∆VvFñˆ‚¬÷&∂WB÷˜W&F˜"÷F6Ü&ˆ&B¬˜&FW'2¬&V6ˆ÷÷VÊFFñˆÁ2¬6Ü&VB÷6'@†¢222÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊRÚÜ'W6ñÊW72÷fVGW&Rï†£‚÷ˆÁG&W":Œ(	ñF÷ñÊó7G&Fñˆ‚6VÁG&∆R¬˜W"6ÜVR÷&6å:í¬Œ(	ú:óFB,:ñV¬FR6÷ó6RV‚Wá∆ˆóFFñˆ‚WB∆∆ó7FRWá∆ñ6óFRFW2:ñ6'G2¬6Á2&ñV‚:ñ7&ó&RÊíL:ñ6ñFW"N(	ñWF˜&ó6Fñˆ‚‡†¢“67&óG3¢ ¢“6W'fñ6W3¢@¢“&˜WFW3¢¢“FW7G3¢ ¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢(	B÷&∂WEˆFV∆ófW'ïˆGFW7FFñˆÁ6 ¢“F&∆W2w&óGFV„¢¢“ñÁFW&f6W2Wá˜6VC¢p¢“ñÁFW&Ê¬ó3¢ê¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢2(	B˜&FW'2¬÷&∂WB¬÷&∂WB÷FV∆VvFñˆ‚¬&˜fñFW'2◊6W'fñ6W2¬ñ÷VÁG2¬∆ˆvó7Fñ72¬F6Ü&ˆ&B¬6F∆ˆr¬FV6ó6ñˆ‚◊6ñvÊ«2¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬6˜W&6ñÊr¬WFÇ¬ñÊg&7G'V7GW&P¢“6ˆÁ7V÷W'3¢(	B˜&FW'0†¢222÷&∂WB÷FV∆VvFñˆ‚ÚÜ'W6ñÊW72÷fVGW&Rï†£‚L:ñÃ:ñwVW"FRf:vˆ‚Wá∆ñ6óFR¬VFóF&∆RWB,:ófˆ6&∆RŒ(	ñWF˜&óL:íN(	ñWá∆ˆóFFñˆ‚N(	óV‚÷&∂WBîB:V‚˜:ó&FWW"&ñÊ6ó¬WB:6ˆ‚:óVóR¬F˜WBV‚,:ó6W'fÁB∆W2g&ˆÁFú:á&W2u$ıUFR∂ˆ÷W&6R‡†¢“÷ñw&FñˆÁ3¢#0¢“6ˆÊfñs¢¢“÷ñFF∆Wv&S¢@¢“6W'fñ6W3¢ê¢“&˜WFW3¢P¢“FW7G3¢S ¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢(	B÷&∂WEˆ˜W&FñÊuˆ76ñvÊ÷VÁG6¬76ñvÊ÷VÁEˆ÷V÷&W'6Üó6¬÷V÷&W'6Üóˆ6&ñ∆óFñW6¬76ñvÊ÷VÁEˆ6&ñ∆óGïˆ6Vñ∆ñÊv¬÷&∂WEˆ66Öˆ6ˆÁG&ˆ≈˜ˆ∆ñ6ñW6¬6&ñ∆óGï˜&Vvó7G'ñ¬6Vñ∆ñÊu˜FV◊∆FW6¬6Vñ∆ñÊu˜FV◊∆FUˆ6&ñ∆óFñW6¬÷&∂WEˆFV∆VvFñˆÂˆVFóF¬÷&∂WE˜FV’ˆñÁfóFFñˆÁ6 ¢“F&∆W2w&óGFV„¢ ¢“ñÁFW&f6W2Wá˜6VC¢30¢“ñÁFW&Ê¬ó3¢3P¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢B(	B∆ˆ6¬◊7Fˆ6≤¬÷&∂WB¬WFÇ¬WFÇ÷ñFVÁFóGí¬ñÊg&7G'V7GW&R¬∆ˆvó7Fñ72¬6F∆ˆr¬&˜fñFW'2◊6W'fñ6W2¬˜&FW'2¬6WGF∆V÷VÁB¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬÷&∂WB÷WFˆÊˆ◊í¬F6Ü&ˆ&B¬ñ÷VÁG0¢“6ˆÁ7V÷W'3¢2(	BF6Ü&ˆ&B¬F6Ü&ˆ&B¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬ñÊg&7G'V7GW&R¬∆ˆvó7Fñ72¬÷&∂WB÷WFˆÊˆ◊í¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¬÷&∂WB÷˜W&F˜"÷F6Ü&ˆ&B¬˜&FW'2¬ñ÷VÁG2¬6WGF∆V÷VÁB¬VÁ6ˆ∆B◊&W6ˆ«WFñˆ‚¬FV6ó6ñˆ‚◊6ñvÊ«0†¢222÷&∂WB÷˜W&F˜"÷F6Ü&ˆ&BÚáVÊ6∆76ñfñVBï†£‚W&÷WGG&R:V‚˜:ó&FWW"ó2Ü÷&∂WEˆ˜W&F˜"íFR6R6ˆÊÊV7FW"RF6Ü&ˆ&B6ÊˆÊñ6¬¬FRL:ñ6ñFW"WBWá∆ˆóFW"6ˆ‚÷&6å:í¢µó2¬6ˆ÷÷ÊFW2¬6F∆ˆwVRó2¬&ñ6ñÊr∆ˆ6¬¬,:ó6VRáV"ı&V∆ó2¬F˜VÊR¬Wá:ñFóFñˆÁ2WBfñÊÊ6Ró2(	B6Á2¶÷ó2fˆó"∆W2FˆÊÏ:ñW2BwV‚WG&R÷&6å:íÊí&V6Wfˆó"WFˆ÷FóVV÷VÁB∆W2vW7FW2áó6óVW2˜RWF˜&óL:ó2v∆ˆ&∆W2FW2,;F∆W27:ñ6ñ∆ó<:ó2‡†¢“67&óG3¢ ¢“FW7G3¢0¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢ ¢“F&∆W2w&óGFV„¢ ¢“ñÁFW&f6W2Wá˜6VC¢ ¢“ñÁFW&Ê¬ó3¢ ¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢í(	B÷&∂WB¬WFÇ¬F6Ü&ˆ&B¬6F∆ˆr¬÷&∂WB÷WFˆÊˆ◊í¬˜&FW'2¬∆ˆvó7Fñ72¬÷&∂WB÷FV∆VvFñˆ‚¬ñÊg&7G'V7GW&P¢“6ˆÁ7V÷W'3¢ †¢222Ê˜Fñfñ6FñˆÁ2ÚÜ'W6ñÊW72◊G&Á7fW'6¬ï†£‚&ˆ¶WFW"VÊRñÊf˜&÷Fñˆ‚W76VÁFñV∆∆RFÁ2¬∆ñ6Fñˆ‚fV27VóGFV÷VÁB&˜&ú:óFó&R≤6ˆÁ6W'fW"∆W26ÊWÇ6˜'FÁG2Üó7F˜&óVW2<:ó,:ó2WB&W7B÷Vff˜'B‡†¢“FW7G3¢#0¢“÷ñw&FñˆÁ3¢`¢“WFñ«3¢ ¢“6W'fñ6W3¢@¢“&˜WFW3¢@¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢2(	B6∆ñVÁEˆÊ˜Fñfñ6FñˆÁ6¬∆W'G6¬Ê˜Fñfñ6FñˆÂˆ∆ˆv ¢“F&∆W2w&óGFV„¢0¢“ñÁFW&f6W2Wá˜6VC¢`¢“ñÁFW&Ê¬ó3¢ê¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢r(	B˜&FW'2¬∆ˆvó7Fñ72¬WFÇ÷ñFVÁFóGí¬ñÊ6ñFVÁB÷÷ÊvV÷VÁB¬∆Ff˜&“÷˜2¬ñÊg&7G'V7GW&R¬WFÄ¢“6ˆÁ7V÷W'3¢2(	BWFÇ¬WFÇ÷ñFVÁFóGí¬6F∆ˆr¬F6Ü&ˆ&B¬ñÊg&7G'V7GW&R¬∆ˆvó7Fñ72¬∆˜ñ«Gí¬÷&∂WB¬˜&FW'2¬ñ÷VÁG2¬W&6Ü6ñÊr¬&VgVÊG2¬6Ü&VB÷6'@†¢222˜&FW'2ÚÜ'W6ñÊW72÷fVGW&Rï†£‚fó&RWÜó7FW"VÊR6ˆ÷÷ÊFR¬FR∆7&VFñˆ‚R7FGWBfñÊ¬¬fV2V‚6˜WBfñwW&RWBVÊR&VfW&VÊ6R∆ó6ñ&∆R‡†¢“WFñ«3¢¢“6W'fñ6W3¢3 ¢“&˜WFW3¢¢“&˜WFóVS¢0¢“FW7G3¢cP¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢(	B˜&FW%ˆóFV◊6¬˜&FW'6¬Fó7WFW6¬˜&FW%ˆ6ˆ÷÷VÁG6¬˜&FW%ˆóFV’ˆ6˜7Eˆñ◊WFFñˆÁ6¬˜&FW%˜7FGW5ˆÜó7F˜'ñ¬&V6óñVÁG6¬6◊5ˆ∆ˆv¬7W7Fˆ◊5ˆÜó7F˜'ñ¬&V∆ï˜&WGW&Âˆ6ˆ◊VÁ6FñˆÁ6¬˜&FW%ˆ6ÜV6∂˜WEˆñFV◊˜FVÊ7ñ ¢“F&∆W2w&óGFV„¢0¢“ñÁFW&f6W2Wá˜6VC¢#p¢“ñÁFW&Ê¬ó3¢3 ¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢#R(	BF6Ü&ˆ&B¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¬÷&∂WB÷FV∆VvFñˆ‚¬∆Ff˜&“÷˜2¬ñÊg&7G'V7GW&R¬FV6ó6ñˆ‚◊6ñvÊ«2¬ñÊ6ñFVÁB÷÷ÊvV÷VÁB¬'W6ñÊW72◊'V∆W2¬v∆∆WB¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬∆ˆvó7Fñ72¬6F∆ˆr¬÷&∂WB÷WFˆÊˆ◊í¬∆ˆ6¬◊7Fˆ6≤¬÷&∂WB¬W&6Ü6ñÊr¬∆˜ñ«Gí¬ñ÷VÁG2¬WFÇ¬WFÇ÷ñFVÁFóGí¬7W7Fˆ◊2¬Fˆ7V÷VÁG2¬Ê˜Fñfñ6FñˆÁ2¬&VgVÊG2¬6Ü&VB÷6'@¢“6ˆÁ7V÷W'3¢#B(	BWFÇ÷ñFVÁFóGí¬6F∆ˆr¬7W7Fˆ◊2¬F6Ü&ˆ&B¬Fˆ7V÷VÁG2¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬ñÊ6ñFVÁB÷÷ÊvV÷VÁB¬ñÊg&7G'V7GW&R¬ñÁfVÁF˜'í¬∆ˆvó7Fñ72¬∆˜ñ«Gí¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¬÷&∂WB÷FV∆VvFñˆ‚¬÷&∂WB÷˜W&F˜"÷F6Ü&ˆ&B¬Ê˜Fñfñ6FñˆÁ2¬ñ÷VÁG2¬∆Ff˜&“÷˜2¬W&6Ü6ñÊr¬&V6ˆ÷÷VÊFFñˆÁ2¬&VgVÊG2¬6Ü&VB÷6'B¬VÁ6ˆ∆B◊&W6ˆ«WFñˆ‚¬v∆∆WB¬F÷ñ‚÷F6Ü&ˆ&@†¢222ñ÷VÁG2ÚÜ'W6ñÊW72÷fVGW&Rï†£‚VÊ6ó76W"V‚ñV÷VÁBÜ6'FR¬ï¬¬÷ˆ&ñ∆R÷ˆÊWí¬W7V6W2R&WG&óBíWB6ˆÊfó&÷W"6ˆ‚WFBFRf6ˆ‚ñFV◊˜FVÁFR‡†¢“67&óG3¢¢“6W'fñ6W3¢#0¢“&˜WFW3¢p¢“÷ñw&FñˆÁ3¢ ¢“&˜WFóVS¢@¢“FW7G3¢3p¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢"(	B÷&∂WE˜ñ÷VÁE˜&˜fñFW'6¬66Öˆ6ˆ∆∆V7FñˆÁ6¬66ÖˆFW˜6óEˆ∆∆ˆ6FñˆÁ6¬66ÖˆFW˜6óG6¬÷&∂WEˆ66ÖˆFW7FñÊFñˆÁ6¬66Öˆ6ˆÊfó&÷FñˆÂˆ6ˆÁG&ˆ«6¬÷ˆ&ñ∆Uˆ÷ˆÊWï˜G&Á67FñˆÁ6¬ó≈ˆWfVÁG5˜&ˆ6W76VF¬7G&óUˆWfVÁG5˜&ˆ6W76VF¬66Öˆ7W7FˆGïˆ∆˜76W6¬66Öˆ7W7FˆGï˜&V6VóG6¬÷&∂WE˜ñ÷VÁEˆ66˜VÁG6 ¢“F&∆W2w&óGFV„¢ ¢“ñÁFW&f6W2Wá˜6VC¢#P¢“ñÁFW&Ê¬ó3¢ ¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢R(	BWFÇ÷ñFVÁFóGí¬ñÊ6ñFVÁB÷÷ÊvV÷VÁB¬ñÊg&7G'V7GW&R¬∆Ff˜&“÷˜2¬WFÇ¬&VgVÊG2¬Fˆ7V÷VÁG2¬Ê˜Fñfñ6FñˆÁ2¬'W6ñÊW72◊'V∆W2¬˜&FW'2¬÷&∂WB¬∆ˆvó7Fñ72¬∆˜ñ«Gí¬W&6Ü6ñÊr¬÷&∂WB÷FV∆VvFñˆ‡¢“6ˆÁ7V÷W'3¢í(	BF6Ü&ˆ&B¬ñÊg&7G'V7GW&R¬∆ˆvó7Fñ72¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¬÷&∂WB÷FV∆VvFñˆ‚¬˜&FW'2¬&VgVÊG2¬F÷ñ‚÷F6Ü&ˆ&B¬FV6ó6ñˆ‚◊6ñvÊ«0†¢222∆Ff˜&“ÚÜg&ˆÁFVÊB◊G&Á7fW'6¬ï†£‚ñÊg&7G'V7GW&RG&Á7fW'6∆RF6Ü&ˆ&G2ÜWFÇ÷wV&B¬6W'fñ6Rv˜&∂W"¬6ˆ◊˜6ÁG26ˆ∆ó2'FvW2¬"fñWvW"í‡†¢“ß3¢@¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢ ¢“F&∆W2w&óGFV„¢ ¢“ñÁFW&f6W2Wá˜6VC¢ ¢“ñÁFW&Ê¬ó3¢ ¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢ ¢“6ˆÁ7V÷W'3¢ †¢222∆Ff˜&“÷˜2ÚáFV6ÜÊñ6¬◊G&Á7fW'6¬ï†£‚Wá˜6W"∆6ÁFR∆ñ6FófR¬∆6ˆÊfñwW&Fñˆ‚WB∆W2÷ˆGV∆W27Fñg2(	BñÊg&7G'V7GW&RBvWá∆ˆóFFñˆ‚¬2FR6W'fñ6R÷WFñW"‡†¢“÷ñFF∆Wv&S¢ ¢“6ˆ◊˜6óFñˆÂ&ˆ˜G3¢0¢“6W'fñ6W3¢`¢“&˜WFW3¢P¢“&˜WFóVS¢`¢“FW7G3¢#0¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢"(	Bf'&ñ76¬v&÷VÁEˆ÷ˆFV«6 ¢“F&∆W2w&óGFV„¢`¢“ñÁFW&f6W2Wá˜6VC¢30¢“ñÁFW&Ê¬ó3¢ ¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢"(	BFˆ7V÷VÁG2¬ñÊ6ñFVÁB÷÷ÊvV÷VÁB¬W&6Ü6ñÊr¬6F∆ˆr¬WFÇ÷ñFVÁFóGí¬ñÊg&7G'V7GW&R¬'W6ñÊW72◊'V∆W2¬WFÇ¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬∆ˆvó7Fñ72¬˜&FW'2¬v∆∆W@¢“6ˆÁ7V÷W'3¢"(	BWFÇ÷ñFVÁFóGí¬WFÇ◊76∂Wí¬6F∆ˆr¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬ñÊg&7G'V7GW&R¬Ê˜Fñfñ6FñˆÁ2¬˜&FW'2¬ñ÷VÁG2¬&˜fñFW'2◊6W'fñ6W2¬&V6ˆ÷÷VÊFFñˆÁ2¬6Ü&VB÷6'B¬v∆∆W@†¢222&˜fñFW'2◊6W'fñ6W2ÚÜ'W6ñÊW72÷fVGW&Rï†£‚˜'FW"Œ(	ññFVÁFóL:íN(	óV‚&˜fñFW"FñW'2¬6W26W'fñ6W2WBˆfg&W2áó6óVW2¬∆WW"Wá˜6&ñ∆óL:í¬∆WW"Êˆ“V&∆ñ2÷ñÊñ÷¬¬∆WW'2‹:ñFñ2V&∆ñ72˜FñˆÊÊV«2WB∆R7ñ6∆R6ˆÁFWáGV∆ó<:íFRFV÷ÊFR˜&V¬‚∆6ñ&∆R6W'fñ6UˆñBÑı"áó6ñ6≈ˆˆffW%ˆñB˜'FRF˜V¶˜W'2∆R&˜˜26ˆÊÁR≤∆R6∆ñVÁB6Üˆó6óB&WVW7B˜R6∆∆&6≤‚˜W"V‚6W'fñ6RWá∆ñ6óFV÷VÁB6ˆ◊Fñ&∆RvÜG4¬∆R6W'fWW"WWB&V÷WGG&RV‚ÜÊFˆfbFR6ˆÁfW'6Fñˆ‚,:á27,:ñFñˆ‚FR¬ñÁVó'í¬6Á2V&∆ñW"∆RÁV‹:ó&ÚFÁ2∆RL:óFñ¬‚V7V‚ñV÷VÁB¬6WGF∆V÷VÁB¬6∆VÊG&ñW"7G'V7GW,:í˜R˜&FW"∂ˆ÷W&6RÓ(	ñW7B7,:ú:í"6WGFRñÁFW&7Fñˆ‚‡†¢“6W'fñ6W3¢@¢“&˜WFW3¢¢“&˜WFóVS¢ ¢“6ì¢¢“67&óG3¢ ¢“÷ñw&FñˆÁ3¢0¢“FW7G3¢p¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢B(	B&˜fñFW'6¬6W'fñ6W6¬áó6ñ6≈ˆˆffW'6¬ñÁVó&ñW6 ¢“F&∆W2w&óGFV„¢@¢“ñÁFW&f6W2Wá˜6VC¢0¢“ñÁFW&Ê¬ó3¢ ¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢r(	BWFÇ¬WFÇ÷ñFVÁFóGí¬∆Ff˜&“÷˜2¬÷&∂WB¬∆ˆ6¬◊7Fˆ6≤¬&V6ˆ÷÷VÊFFñˆÁ2¬ñÊg&7G'V7GW&P¢“6ˆÁ7V÷W'3¢2(	B÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¬÷&∂WB÷FV∆VvFñˆ‚¬&V6ˆ÷÷VÊFFñˆÁ0†¢222W&6Ü6ñÊrÚÜ'W6ñÊW72÷fVGW&Rï†£‚G&Á6f˜&÷W"V‚&W6ˆñ‚Bv&˜fó6ñˆÊÊV÷VÁB⁄±Ó∏¬∏≠yÍÎ¢∞k¢Gß¶*^m´Îå+ä◊ûÆ∫+∫$zzb•Êó77RBwVÊR6ˆ÷÷ÊFRV‚VÊvvV÷VÁBf˜W&Êó76WW"G&:v&∆RÜ&ˆ‚FR6ˆ÷÷ÊFRí¬Vó26ˆÁ7FFW"6,:ñ6WFñˆ‚‡†¢“6W'fñ6W3¢S0¢“&˜WFW3¢¢“÷ñw&FñˆÁ3¢p¢“67&óG3¢@¢“FW7G3¢ì ¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢R(	B7W∆ñW'6¬W&6Ü6Uˆ∆ñÊW6¬W&6Ü6Uˆ˜&FW'6¬&ˆGV7E˜7W∆ñW'6¬W&6Ü6Uˆ˜&FW%ˆWFÜ˜&ó¶FñˆÁ6¬áV%ˆWFÜ˜&ó¶FñˆÂˆw&ÁG6¬7W∆ñW%ˆWÜV7WFñˆÂ˜ñ÷VÁG6¬7W∆ñW%˜ñ÷VÁE˜6WGF∆V÷VÁG6¬÷ÁV≈˜W&6Ü6UˆWÜV7WFñˆÁ6¬W&6Ü6U˜f&ñÊ6UˆFV6ó6ñˆÁ6¬7W∆ñW%ˆWÜV7WFñˆÂˆWfVÁG6¬7W∆ñW%ˆWÜV7WFñˆÂˆgV∆fñ∆∆÷VÁG6¬7W∆ñW%ˆWÜV7WFñˆÂˆ˜&FW%ˆ∆ñÊW6¬7W∆ñW%ˆWÜV7WFñˆÂˆ˜&FW'6¬7W∆ñW%ˆWÜV7WFñˆÂ˜ñ÷VÁE˜&ˆˆg6 ¢“F&∆W2w&óGFV„¢P¢“ñÁFW&f6W2Wá˜6VC¢#¢“ñÁFW&Ê¬ó3¢@¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢"(	BFˆ7V÷VÁG2¬7W∆ñW"÷6ˆÊÊV7FófóGí¬WáFW&Ê¬◊&˜fñFW"÷6ˆÁG&7G2¬6˜W&6ñÊr¬6F∆ˆr¬ñÊg&7G'V7GW&R¬˜&FW'2¬WFÇ¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬Ê˜Fñfñ6FñˆÁ2¬ñÊ6ñFVÁB÷÷ÊvV÷VÁB¬∆ˆvó7Fñ70¢“6ˆÁ7V÷W'3¢Ç(	B6F∆ˆr¬F6Ü&ˆ&B¬∆ˆvó7Fñ72¬˜&FW'2¬ñ÷VÁG2¬∆Ff˜&“÷˜2¬6˜W&6ñÊr¬FV6ó6ñˆ‚◊6ñvÊ«0†¢222&V6ˆ÷÷VÊFFñˆÁ2ÚÜ'W6ñÊW72÷fVGW&Rï†£‚6∆76W"WB7Vv|:ó&W"FW2&ˆGVóG2&˜WFóVR6V∆ˆ‚V‚÷˜FWW"FR&Ê∂ñÊrL:ñFú:í‚6ˆ◊˜6RW76íV‚‹:ñ÷ˆó&RV‚&ñ¬Fó66˜fW'í∆ˆ6¬÷óáFRÑFó66˜fW'î6&B(	B&ˆGV7B∂ˆ÷W&6R¬&ˆGVóBáó6óVRFñW'2¬6W'fñ6RFñW'2íWB˜'FR6ˆ∆óFóVR:ñFóF˜&ñ∆RN(	ñ7FófFñˆ‚6W'fWW"¬6Á2¶÷ó2˜7<:ñFW"Êí6∆ˆÊW"∆W2FˆÊÏ:ñW26˜W&6W2‡†¢“67&óG3¢¢“6W'fñ6W3¢0¢“&˜WFW3¢¢“FW7G3¢P¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢ ¢“F&∆W2w&óGFV„¢ ¢“ñÁFW&f6W2Wá˜6VC¢¢“ñÁFW&Ê¬ó3¢ ¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢(	B6F∆ˆr¬6F∆ˆr¬÷&∂WB÷WFˆÊˆ◊í¬∆Ff˜&“÷˜2¬ñÊg&7G'V7GW&R¬∆ˆvó7Fñ72¬˜&FW'2¬÷&∂WB¬∆ˆ6¬◊7Fˆ6≤¬&˜fñFW'2◊6W'fñ6W0¢“6ˆÁ7V÷W'3¢2(	BñÊg&7G'V7GW&R¬&˜fñFW'2◊6W'fñ6W2¬6Ü&VB÷6'@†¢222&VgVÊG2ÚÜ'W6ñÊW72◊G&Á7fW'6¬ï†£‚&V÷&˜W'6W"V‚6∆ñVÁBFRf6ˆ‚G&6&∆RWB6Á2F˜V&∆R&V÷&˜W'6V÷VÁB¬VV¬VR6ˆóB∆Rf«WÇV∆ÁB‡†¢“WFñ«3¢0¢“÷ñw&FñˆÁ3¢0¢“6W'fñ6W3¢ ¢“FW7G3¢#P¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢r(	B&VgVÊG6¬&VgVÊEˆWÜV7WFñˆÂˆñÁFVÁG6¬˜&FW%ˆóFV’˜&VgVÊE˜&W6W'fFñˆÁ6¬∆ˆ6≈ˆóFV’˜&VgVÊE˜&W6W'fFñˆÁ6¬∆ˆ6≈ˆ66Ö˜&VgVÊEˆWFÜ˜&ó¶FñˆÁ6¬∆ˆ6≈ˆ66Ö˜&VgVÊE˜ñ˜WG6¬∆ˆ6≈ˆ÷ˆ&ñ∆U˜&VgVÊEˆÜÊFˆfg6 ¢“F&∆W2w&óGFV„¢p¢“ñÁFW&f6W2Wá˜6VC¢ ¢“ñÁFW&Ê¬ó3¢¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢í(	B÷&∂WB¬ñÊg&7G'V7GW&R¬˜&FW'2¬∆ˆvó7Fñ72¬ñ÷VÁG2¬v∆∆WB¬Fˆ7V÷VÁG2¬Ê˜Fñfñ6FñˆÁ2¬V6ˆÊˆ÷ñ2÷VÊvñÊP¢“6ˆÁ7V÷W'3¢b(	BF6Ü&ˆ&B¬Fˆ7V÷VÁG2¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬∆ˆvó7Fñ72¬˜&FW'2¬ñ÷VÁG0†¢2226WGF∆V÷VÁBÚÜ'W6ñÊW72÷fVGW&Rï†£‚G&6W"FR&˜WBV‚&˜WB∆R,:Üv∆V÷VÁBL;≤:V‚˜:ó&FWW"ó2¢$TEíGFW7L:í6VÁG&∆V÷VÁB¬$UTU5DTB"∆Ró2¬îB6VÁG&∆V÷VÁB¬$T4TïdTB"∆Ró2‡†¢“÷ñw&FñˆÁ3¢¢“6W'fñ6W3¢¢“&˜WFW3¢¢“FW7G3¢@¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢"(	B÷&∂WE˜6WGF∆V÷VÁG6¬÷&∂WE˜6WGF∆V÷VÁEˆWfVÁG6 ¢“F&∆W2w&óGFV„¢ ¢“ñÁFW&f6W2Wá˜6VC¢0¢“ñÁFW&Ê¬ó3¢P¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢R(	B÷&∂WB¬÷&∂WB÷FV∆VvFñˆ‚¬WFÇ¬WFÇ÷ñFVÁFóGí¬ñÊg&7G'V7GW&P¢“6ˆÁ7V÷W'3¢(	B÷&∂WB÷FV∆VvFñˆ‡†¢2226Ü&VB÷6'BÚÜ'W6ñÊW72÷fVGW&Rï†£‚W&÷WGG&R:V‚7,:ñFWW"FRV&∆ñW"VÊR∆ó7FRñ÷◊V&∆R"∆ñV‚V&∆ñ2≤6ÜVR6ÜWFWW"<:ñ∆V7FñˆÊÊRVÊR˜R«W6ñWW'2∆ñvÊW2Fó7ˆÊñ&∆W2¬76R"∆R,:ñ6óGV∆FñbVó2∆R6ÜV6∂˜WB6ÊˆÊóVR6Á2‹:ñ∆ÊvW"6ˆ‚ÊñW"W'6ˆÊÊV¬≤∆∆ó7FR6RfW&÷RWFˆ÷FóVV÷VÁB∆˜'7VR6FW&Êú:á&R∆ñvÊRW7B,:ñ6∆‹:ñR‡†¢“6W'fñ6W3¢ê¢“&˜WFW3¢@¢“÷ñw&FñˆÁ3¢# ¢“FW7G3¢Ä¢“&˜WFóVS¢ ¢“F6É¢¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢r(	B&6∂WEˆóFV◊6¬&6∂WG6¬6'E˜6Ü&W6¬6Ü&VEˆ6'EˆWfVÁG6¬6Ü&VEˆ6'EˆóFV◊6¬6Ü&VEˆ6'E˜6fVEˆ66W76¬6Ü&VEˆ6'G6 ¢“F&∆W2w&óGFV„¢p¢“ñÁFW&f6W2Wá˜6VC¢`¢“ñÁFW&Ê¬ó3¢0¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢í(	B&V6ˆ÷÷VÊFFñˆÁ2¬∆Ff˜&“÷˜2¬ñÊg&7G'V7GW&R¬˜&FW'2¬6F∆ˆr¬÷&∂WB÷WFˆÊˆ◊í¬Ê˜Fñfñ6FñˆÁ2¬WFÇ¬WFÇ÷ñFVÁFóGê¢“6ˆÁ7V÷W'3¢B(	B6F∆ˆr¬F6Ü&ˆ&B¬ñÊg&7G'V7GW&R¬˜&FW'0†¢2226˜W&6ñÊrÚÜ'W6ñÊW72÷fVGW&Rï†£‚ñFVÁFñfñW"¬V∆ñfñW"WB&&óG&W"FW2˜˜'GVÊóL:ó2f˜W&Êó76WW"˜R&ˆGVóBá66‚&ñ6ñÊr¬L:ñ6ó6ñˆ‚v&FW"˜vF6Ü∆ó7B˜&V¶WFW"ífÁB∆WW"VÁG,:ñRFÁ2∆R6F∆ˆwVR‡†¢“÷ñFF∆Wv&S¢¢“÷ñw&FñˆÁ3¢P¢“67&óG3¢Ä¢“6W'fñ6W3¢3@¢“&˜WFW3¢ ¢“FW7G3¢Sp¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢Ç(	B6˜W&6ñÊuˆ6ÊFñFFW6¬ñ◊˜'E˜'VÁFñ÷U˜'VÁ6¬6˜W&6ñÊuˆ6ÊFñFFUˆWfVÁG6¬6˜W&6ñÊu˜6˜W&6W6¬6˜W&6ñÊu˜&˜fñFW%ˆ6ˆÁG&ˆ≈ˆWfVÁG6¬6˜W&6ñÊu˜6˜W&6U˜&˜fñFW6¬6˜W&6ñÊuˆ6GW&W6¬6˜W&6ñÊuˆˆ'6W'fFñˆÁ6¬6˜W&6ñÊuˆˆ'6W'fFñˆÂˆWfñFVÊ6V¬6˜W&6ñÊuˆ6ÊˆÊñ6≈ˆVÁFóFñW6¬6˜W&6ñÊuˆ6ÊˆÊñ6≈ˆVÁFóGï˜&Vg6¬6˜W&6ñÊuˆ÷F6Ö˜&˜˜6«6¬6˜W&6ñÊu˜&W6ˆ«WFñˆÂˆFV6ó6ñˆÁ6¬6˜W&6ñÊu˜&W6ˆ«WFñˆÂˆ&ñÊFñÊw6¬ñ◊˜'E˜'VÁFñ÷UˆóFV’ˆWfVÁG6¬&˜fñFW%ˆ7&VFVÁFñ«6¬6˜W&6ñÊu˜6˜W&6U˜&WVW7G6¬7W∆ñW%ˆ6ˆ÷÷W&6ñ≈ˆ6FVv˜'ïˆ÷ñÊw6 ¢“F&∆W2w&óGFV„¢Ä¢“ñÁFW&f6W2Wá˜6VC¢3 ¢“ñÁFW&Ê¬ó3¢#@¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢r(	BñÊg&7G'V7GW&R¬6F∆ˆr¬W&6Ü6ñÊr¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬7W7Fˆ◊2¬WFÇ¬F6Ü&ˆ&@¢“6ˆÁ7V÷W'3¢b(	B6F∆ˆr¬6F∆ˆr¬F6Ü&ˆ&B¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¬W&6Ü6ñÊr¬F÷ñ‚÷F6Ü&ˆ&@†¢2227W∆ñW"÷6ˆÊÊV7FófóGíÚÜñÁFVw&Fñˆ‚÷FFW"ï†£‚W&÷WGG&R:∂ˆ÷W&6RB67VVñ∆∆ó"V‚f˜W&Êó76WW""VÊRWF˜&óL:íVÊóVRBñFVÁFóL:í&˜fñFW"¬VÊR7W∆ñW"˜&FW"ñFVÁFóGí˜VRWBVÊR,:ó6ˆ«WFñˆ‚BFFW"fñ¬÷6∆˜6VB¬6Á2L:ó∆6W"∆W2L:ñ6ó6ñˆÁ2‹:óFñW"FW2fVGW&W26ˆÁ6ˆ÷÷G&ñ6W2‡†¢“6W'fñ6W3¢@¢“FW7G3¢P¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢ ¢“F&∆W2w&óGFV„¢ ¢“ñÁFW&f6W2Wá˜6VC¢ ¢“ñÁFW&Ê¬ó3¢ ¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢(	BWáFW&Ê¬◊&˜fñFW"÷6ˆÁG&7G0¢“6ˆÁ7V÷W'3¢2(	B6F∆ˆr¬F6Ü&ˆ&B¬W&6Ü6ñÊp†¢222VÁ6ˆ∆B◊&W6ˆ«WFñˆ‚ÚÜ'W6ñÊW72÷fVGW&Rï†£‚v&FW"∆W26ˆ∆ó2Êˆ‚&WFó,:ó26˜W2&W7ˆÁ6&ñ∆óL:íGR&V∆ó2≤∆∆óVñFFñˆ‚‚vW7BWF˜&ó<:ñRRv,:á26Ã;GGW&Ráó6óVR¬ßW&ñFóVRWBfñÊÊ6ú:á&R6W'Fñfú:ñR‡†¢“÷ñw&FñˆÁ3¢ ¢“&˜WFW3¢¢“F6É¢0¢“FW7G3¢@¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢(	BVÁ6ˆ∆EˆóFV◊6 ¢“F&∆W2w&óGFV„¢¢“ñÁFW&f6W2Wá˜6VC¢p¢“ñÁFW&Ê¬ó3¢ ¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢R(	B˜&FW'2¬6F∆ˆr¬WFÇ¬÷&∂WB÷FV∆VvFñˆ‚¬ñÊg&7G'V7GW&P¢“6ˆÁ7V÷W'3¢ †¢222v∆∆WBÚÜ'W6ñÊW72÷fVGW&Rï†£‚FVÊó"V‚6ˆ∆FR6∆ñVÁBWB6ˆ‚Üó7F˜&óVRFR7&VFóBˆFV&óB¬fV2∆ñ6Fñˆ‚WÜ7FV÷VÁBVÊRfˆó2‡†¢“6W'fñ6W3¢¢“&˜WFW3¢¢“÷ñw&FñˆÁ3¢ ¢“&˜WFóVS¢ ¢“FW7G3¢`¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢B(	Bv∆∆WE˜G&Á67FñˆÁ6¬v∆∆WG6¬v∆∆WEˆ6ˆÁ7V◊FñˆÁ6¬v∆∆WEˆ7&VFóEˆ∆˜G6 ¢“F&∆W2w&óGFV„¢@¢“ñÁFW&f6W2Wá˜6VC¢ê¢“ñÁFW&Ê¬ó3¢ ¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢r(	B÷&∂WB¬˜&FW'2¬∆Ff˜&“÷˜2¬ñÊg&7G'V7GW&R¬WFÇ¬Fˆ7V÷VÁG2¬WFÇ÷ñFVÁFóGê¢“6ˆÁ7V÷W'3¢r(	BWFÇ÷ñFVÁFóGí¬F6Ü&ˆ&B¬Fˆ7V÷VÁG2¬ñÊg&7G'V7GW&R¬˜&FW'2¬∆Ff˜&“÷˜2¬&VgVÊG0†¢222v∆∆WB÷∆˜ñ«GíÚÜFW&V6FVBï†£‚L8ï,8î4ú8í(	B66ñÊL:íR∆˜BÛ„"É##b”r”"íV‚fVGW&W2˜v∆∆WBÊfVGW&RÊß2WBfVGW&W2ˆ∆˜ñ«GíÊfVGW&RÊß2‚ÊR&VÊB«W2V7V‚6W'fñ6R&˜&R‡†¢“F&∆W2˜vÊVBÜ∆ñfV7ñ6∆Rì¢ ¢“F&∆W2w&óGFV„¢ ¢“ñÁFW&f6W2Wá˜6VC¢ ¢“ñÁFW&Ê¬ó3¢ ¢“FWVÊFVÊ6ñW2Ü6ˆÁ7V÷W2ì¢ ¢“6ˆÁ7V÷W'3¢ †¢22F&∆R˜vÊW'6Üó †ß¬F&∆R¬∆ñfV7ñ6∆R˜vÊW"¬,:ó6ˆ«WFñˆ‚¬w&óFW'2¬&VFW'2¿ß¬““◊¬““◊¬““◊¬““◊¬““◊¿ß¬∆W'G6¬Ê˜Fñfñ6FñˆÁ6¬FV6∆&VB◊F&∆R÷˜vÊW"¬Ê˜Fñfñ6FñˆÁ2¬(	B¿ß¬76ñvÊ÷VÁEˆ6&ñ∆óGïˆ6Vñ∆ñÊv¬÷&∂WB÷FV∆VvFñˆÊ¬FV6∆&VB◊F&∆R÷˜vÊW"¬÷&∂WB÷FV∆VvFñˆ‚¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¿ß¬76ñvÊ÷VÁEˆ÷V÷&W'6Üó6¬÷&∂WB÷FV∆VvFñˆÊ¬FV6∆&VB◊F&∆R÷˜vÊW"¬÷&∂WB÷FV∆VvFñˆ‚¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¿ß¬&6∂WEˆóFV◊6¬6Ü&VB÷6'F¬◊V«Fí◊w&óFW"◊&W6ˆ«fVB÷'í÷6∆76ñfñ6Fñˆ‚◊6ñvÊ¬¬F6Ü&ˆ&B¬6Ü&VB÷6'B¬(	B¿ß¬&6∂WG6¬6Ü&VB÷6'F¬◊V«Fí◊w&óFW"◊&W6ˆ«fVB÷'í÷6∆76ñfñ6Fñˆ‚◊6ñvÊ¬¬F6Ü&ˆ&B¬6Ü&VB÷6'B¬(	B¿ß¬&˜WFóVUˆ6FVv˜&ñW6¬6F∆ˆv¬6ñÊv∆R◊w&óFW"¬6F∆ˆr¬(	B¿ß¬&˜WFóVU˜7V&6FVv˜&ñW6¬6F∆ˆv¬6ñÊv∆R◊w&óFW"¬6F∆ˆr¬(	B¿ß¬'W6ñÊW75˜'V∆W6¬'W6ñÊW72◊'V∆W6¬6ñÊv∆R◊w&óFW"¬'W6ñÊW72◊'V∆W2¬F6Ü&ˆ&B¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬∆ˆvó7Fñ72¿ß¬'W6ñÊW75˜'V∆W5ˆÜó7F˜'ñ¬'W6ñÊW72◊'V∆W6¬6ñÊv∆R◊w&óFW"¬'W6ñÊW72◊'V∆W2¬F6Ü&ˆ&B¿ß¬6&ñ∆óGï˜&Vvó7G'ñ¬÷&∂WB÷FV∆VvFñˆÊ¬FV6∆&VB◊F&∆R÷˜vÊW"¬÷&∂WB÷FV∆VvFñˆ‚¬(	B¿ß¬6'&ñW'6¬∆ˆvó7Fñ76¬6ñÊv∆R◊w&óFW"¬∆ˆvó7Fñ72¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¿ß¬6'E˜6Ü&W6¬6Ü&VB÷6'F¬FV6∆&VB◊F&∆R÷˜vÊW"¬6Ü&VB÷6'B¬(	B¿ß¬66Öˆ6ˆ∆∆V7FñˆÁ6¬ñ÷VÁG6¬6ñÊv∆R◊w&óFW"¬ñ÷VÁG2¬(	B¿ß¬66Öˆ6ˆÊfó&÷FñˆÂˆ6ˆÁG&ˆ«6¬ñ÷VÁG6¬6ñÊv∆R◊w&óFW"¬ñ÷VÁG2¬(	B¿ß¬66Öˆ7W7FˆGïˆ∆˜76W6¬ñ÷VÁG6¬FV6∆&VB◊F&∆R÷˜vÊW"¬ñ÷VÁG2¬(	B¿ß¬66Öˆ7W7FˆGï˜&V6VóG6¬ñ÷VÁG6¬FV6∆&VB◊F&∆R÷˜vÊW"¬ñ÷VÁG2¬(	B¿ß¬66ÖˆFW˜6óEˆ∆∆ˆ6FñˆÁ6¬ñ÷VÁG6¬6ñÊv∆R◊w&óFW"¬ñ÷VÁG2¬(	B¿ß¬66ÖˆFW˜6óG6¬ñ÷VÁG6¬6ñÊv∆R◊w&óFW"¬ñ÷VÁG2¬(	B¿ß¬6F∆ˆuˆVÁ&ñ6Ü÷VÁE˜'VÁ6¬6F∆ˆv¬6ñÊv∆R◊w&óFW"¬6F∆ˆr¬(	B¿ß¬6F∆ˆuˆWÜ6«W6ñˆÁ6¬ˆ÷&ñw\:µÚ¬ÊÚ÷FV6∆&VB◊w&óFW"¬(	B¬6F∆ˆr¿ß¬6F∆ˆuˆfñV∆Eˆ˜fW'&ñFW6¬6F∆ˆv¬6ñÊv∆R◊w&óFW"¬6F∆ˆr¬(	B¿ß¬6F∆ˆuˆfñV∆E˜7ñÊ5˜7FFV¬6F∆ˆv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6F∆ˆr¬(	B¿ß¬6F∆ˆuˆv∆ˆ&≈ˆ66W75ˆw&ÁG6¬ˆ÷&ñw\:µÚ¬ÊÚ÷FV6∆&VB◊w&óFW"¬(	B¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¿ß¬6F∆ˆuˆv∆˜76'ñ¬ˆ÷&ñw\:µÚ¬ÊÚ÷FV6∆&VB◊w&óFW"¬(	B¬6F∆ˆr¿ß¬6F∆ˆuˆ÷VFñ¬6F∆ˆv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6F∆ˆr¬F6Ü&ˆ&B¬6˜W&6ñÊr¿ß¬6F∆ˆuˆ÷VFñ˜&V6˜fW'ïˆVFóF¬6F∆ˆv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6F∆ˆr¬(	B¿ß¬6F∆ˆuˆ÷VFñ˜fó7V≈ˆg%˜&WfñWw6¬6F∆ˆv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6F∆ˆr¬(	B¿ß¬6F∆ˆu˜&ˆGV7E˜V∆óGïˆÊ˜FW6¬6F∆ˆv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6F∆ˆr¬(	B¿ß¬6F∆ˆu˜&ˆGV7E˜6∆UˆÜˆ∆G6¬6F∆ˆv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6F∆ˆr¬(	B¿ß¬6F∆ˆu˜V&∆ñ6FñˆÂˆFV6ó6ñˆÂˆVFóF¬6F∆ˆv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6F∆ˆr¬(	B¿ß¬6F∆ˆu˜7Fˆ6µ˜7ñÊ5˜7FFV¬6F∆ˆv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6F∆ˆr¬(	B¿ß¬6F∆ˆu˜FÜˆÊˆ◊ïˆVFóF¬6F∆ˆv¬6ñÊv∆R◊w&óFW"¬6F∆ˆr¬(	B¿ß¬6F∆ˆu˜FW&÷ñÊˆ∆ˆwï˜&VfW&VÊ6V¬6F∆ˆv¬6ñÊv∆R◊w&óFW"¬6F∆ˆr¬(	B¿ß¬6Vñ∆ñÊu˜FV◊∆FUˆ6&ñ∆óFñW6¬÷&∂WB÷FV∆VvFñˆÊ¬FV6∆&VB◊F&∆R÷˜vÊW"¬÷&∂WB÷FV∆VvFñˆ‚¬(	B¿ß¬6Vñ∆ñÊu˜FV◊∆FW6¬÷&∂WB÷FV∆VvFñˆÊ¬FV6∆&VB◊F&∆R÷˜vÊW"¬÷&∂WB÷FV∆VvFñˆ‚¬(	B¿ß¬6Ü&vW6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬◊V«Fí◊w&óFW"◊&W6ˆ«fVB÷'í÷6∆76ñfñ6Fñˆ‚◊6ñvÊ¬¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬ñÊg&7G'V7GW&R¬(	B¿ß¬6∆ñVÁEˆÊ˜Fñfñ6FñˆÁ6¬Ê˜Fñfñ6FñˆÁ6¬6ñÊv∆R◊w&óFW"¬Ê˜Fñfñ6FñˆÁ2¬F6Ü&ˆ&B¿ß¬6ˆ◊WFóF˜%˜&ñ6W6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬6ñÊv∆R◊w&óFW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬6˜7Eˆ&VÊ6Ü÷&∑6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬6ñÊv∆R◊w&óFW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬6˜7Eˆ6ˆ◊ˆÊVÁEˆWfVÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬6ñÊv∆R◊w&óFW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬6˜7Eˆ6ˆ◊ˆÊVÁEˆ÷&∂WEˆ˜fW'&ñFUˆWfVÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬FV6∆&VB◊F&∆R÷˜vÊW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬6˜7Eˆ6ˆ◊ˆÊVÁEˆ÷&∂WEˆ˜fW'&ñFW6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬FV6∆&VB◊F&∆R÷˜vÊW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬6˜7Eˆ6ˆ◊ˆÊVÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬6ñÊv∆R◊w&óFW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬7&VFVÁFñ≈ˆ7FñˆÂ˜Fˆ∂VÁ6¬WFÇ÷ñFVÁFóGñ¬6ñÊv∆R◊w&óFW"¬WFÇ÷ñFVÁFóGí¬(	B¿ß¬7W'&VÊ7ï˜&óFñW6¬÷&∂WF¬FV6∆&VB◊F&∆R÷˜vÊW"¬÷&∂WB¬÷&∂WB÷WFˆÊˆ◊í¿ß¬7W7Fˆ◊5ˆ6FVv˜&ñW6¬7W7Fˆ◊6¬6ñÊv∆R◊w&óFW"¬7W7Fˆ◊2¬V6ˆÊˆ÷ñ2÷VÊvñÊR¿ß¬7W7Fˆ◊5ˆVffV7FófU˜&FW6¬ˆ÷&ñw\:µÚ¬ÊÚ÷FV6∆&VB◊w&óFW"¬(	B¬7W7Fˆ◊2¬F6Ü&ˆ&B¿ß¬7W7Fˆ◊5ˆÜó7F˜'ñ¬˜&FW'6¬6ñÊv∆R◊w&óFW"¬˜&FW'2¬(	B¿ß¬7W7Fˆ◊5˜6Üó÷VÁEˆfVW6¬7W7Fˆ◊6¬FV6∆&VB◊F&∆R÷˜vÊW"¬7W7Fˆ◊2¬(	B¿ß¬7W7Fˆ◊5˜6Üó÷VÁEˆÜˆ∆G6¬F6Ü&ˆ&F¬6ñÊv∆R◊w&óFW"¬F6Ü&ˆ&B¬(	B¿ß¬7W7Fˆ◊5˜6Üó÷VÁE˜&6V≈ˆWfVÁG6¬7W7Fˆ◊6¬FV6∆&VB◊F&∆R÷˜vÊW"¬7W7Fˆ◊2¬(	B¿ß¬7W7Fˆ◊5˜6Üó÷VÁE˜&6V«6¬7W7Fˆ◊6¬6ñÊv∆R◊w&óFW"¬7W7Fˆ◊2¬F6Ü&ˆ&B¬Fˆ7V÷VÁG2¬V6ˆÊˆ÷ñ2÷VÊvñÊR¿ß¬7W7Fˆ◊5˜6Üó÷VÁG6¬7W7Fˆ◊6¬6ñÊv∆R◊w&óFW"¬7W7Fˆ◊2¬F6Ü&ˆ&B¬Fˆ7V÷VÁG2¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬∆ˆvó7Fñ72¿ß¬F6Ü&ˆ&Eˆv∆ˆ&≈ˆ66W75ˆw&ÁG6¬ˆ÷&ñw\:µÚ¬ÊÚ÷FV6∆&VB◊w&óFW"¬(	B¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¿ß¬FV6ó6ñˆÂ˜6ñvÊ≈ˆv∆ˆ&≈ˆ66W75ˆw&ÁG6¬ˆ÷&ñw\:µÚ¬ÊÚ÷FV6∆&VB◊w&óFW"¬(	B¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¿ß¬Fó7WFW6¬˜&FW'6¬6ñÊv∆R◊w&óFW"¬˜&FW'2¬6F∆ˆr¬÷&∂WB÷FV∆VvFñˆ‚¿ß¬V6ˆÊˆ÷ñ5˜&ó6µˆ6˜7EˆWfVÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬FV6∆&VB◊F&∆R÷˜vÊW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬V6ˆÊˆ÷ñ5˜&ó6µ˜vFW&÷&µˆWfVÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬FV6∆&VB◊F&∆R÷˜vÊW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬V6ˆÊˆ÷ñ5˜6Ê6Ü˜G6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬FV6∆&VB◊F&∆R÷˜vÊW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬ñÊg&7G'V7GW&R¬(	B¿ß¬V6ˆÊˆ÷ñ5˜7G'V7GW&Uˆ6˜7EˆWfVÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬FV6∆&VB◊F&∆R÷˜vÊW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬÷&∂WB÷FV∆VvFñˆ‚¿ß¬V6ˆÊˆ÷ñ5˜f&ñ&∆W6¬ˆ÷&ñw\:µÚ¬ÊÚ÷FV6∆&VB◊w&óFW"¬(	B¬V6ˆÊˆ÷ñ2÷VÊvñÊR¿ß¬WÜ6ÜÊvU˜&FW6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬6ñÊv∆R◊w&óFW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬F6Ü&ˆ&B¿ß¬f'&ñ76¬∆Ff˜&“÷˜6¬6ñÊv∆R◊w&óFW"¬∆Ff˜&“÷˜2¬V6ˆÊˆ÷ñ2÷VÊvñÊR¿ß¬fñÊÊ6Uˆ6ˆÊfñv¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬◊V«Fí◊w&óFW"◊&W6ˆ«fVB÷'í÷6∆76ñfñ6Fñˆ‚◊6ñvÊ¬¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬ñÊg&7G'V7GW&R¬∆˜ñ«Gí¿ß¬fñÊÊ6ñ≈ˆ÷˜fV÷VÁEˆFˆ7V÷VÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬FV6∆&VB◊F&∆R÷˜vÊW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬fñÊÊ6ñ≈ˆ÷˜fV÷VÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬FV6∆&VB◊F&∆R÷˜vÊW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬gÖ˜V&∆ñ5˜&VfW&VÊ6U˜V˜FW6¬÷&∂WF¬FV6∆&VB◊F&∆R÷˜vÊW"¬÷&∂WB¬(	B¿ß¬gÖ˜&FUˆˆ'6W'fFñˆÁ6¬÷&∂WF¬FV6∆&VB◊F&∆R÷˜vÊW"¬÷&∂WB¬(	B¿ß¬v&÷VÁEˆ÷ˆFV«6¬∆Ff˜&“÷˜6¬6ñÊv∆R◊w&óFW"¬∆Ff˜&“÷˜2¬V6ˆÊˆ÷ñ2÷VÊvñÊR¿ß¬áV%ˆWFÜ˜&ó¶FñˆÂˆw&ÁG6¬W&6Ü6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬W&6Ü6ñÊr¬∆ˆvó7Fñ72¿ß¬áV%ˆ&˜Öˆ&w6¬∆ˆvó7Fñ76¬FV6∆&VB◊F&∆R÷˜vÊW"¬∆ˆvó7Fñ72¬(	B¿ß¬áV%ˆ7W7FˆGïˆWfVÁG6¬∆ˆvó7Fñ76¬FV6∆&VB◊F&∆R÷˜vÊW"¬∆ˆvó7Fñ72¬(	B¿ß¬áV%˜áó6ñ6≈˜VÊóE˜∆6V÷VÁG6¬∆ˆvó7Fñ76¬FV6∆&VB◊F&∆R÷˜vÊW"¬∆ˆvó7Fñ72¬F6Ü&ˆ&B¿ß¬áV%˜áó6ñ6≈˜VÊóG6¬∆ˆvó7Fñ76¬FV6∆&VB◊F&∆R÷˜vÊW"¬∆ˆvó7Fñ72¬F6Ü&ˆ&B¿ß¬áV%˜W&6Ü6Uˆ∆∆ˆ6FñˆÁ6¬∆ˆvó7Fñ76¬FV6∆&VB◊F&∆R÷˜vÊW"¬∆ˆvó7Fñ72¬F6Ü&ˆ&B¿ß¬ñ◊˜'E˜'VÁFñ÷UˆóFV’ˆWfVÁG6¬6˜W&6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6˜W&6ñÊr¬(	B¿ß¬ñ◊˜'E˜'VÁFñ÷U˜'VÁ6¬6˜W&6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6˜W&6ñÊr¬6F∆ˆr¬F6Ü&ˆ&B¿ß¬ñÊ6ñFVÁG6¬ñÊ6ñFVÁB÷÷ÊvV÷VÁF¬FV6∆&VB◊F&∆R÷˜vÊW"¬ñÊ6ñFVÁB÷÷ÊvV÷VÁB¬F6Ü&ˆ&B¬∆ˆvó7Fñ72¬Ê˜Fñfñ6FñˆÁ2¬ñ÷VÁG2¬∆Ff˜&“÷˜2¿ß¬ñÁVó&ñW6¬&˜fñFW'2◊6W'fñ6W6¬6ñÊv∆R◊w&óFW"¬&˜fñFW'2◊6W'fñ6W2¬(	B¿ß¬ñÁFW&ÊFñˆÊ≈ˆ„˜&V6ˆÊ6ñ∆ñFñˆÁ6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬FV6∆&VB◊F&∆R÷˜vÊW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬ñÁFW&ÊFñˆÊ≈˜6Üó÷VÁEˆ6Ü&vW6¬∆ˆvó7Fñ76¬FV6∆&VB◊F&∆R÷˜vÊW"¬∆ˆvó7Fñ72¬(	B¿ß¬ñÁFW&ÊFñˆÊ≈˜6Üó÷VÁEˆWfVÁG6¬∆ˆvó7Fñ76¬FV6∆&VB◊F&∆R÷˜vÊW"¬∆ˆvó7Fñ72¬(	B¿ß¬ñÁFW&ÊFñˆÊ≈˜6Üó÷VÁEˆáV%˜VÊóG6¬∆ˆvó7Fñ76¬FV6∆&VB◊F&∆R÷˜vÊW"¬∆ˆvó7Fñ72¬(	B¿ß¬ñÁFW&ÊFñˆÊ≈˜6Üó÷VÁE˜&V∆ï˜&V6VóG6¬∆ˆvó7Fñ76¬FV6∆&VB◊F&∆R÷˜vÊW"¬∆ˆvó7Fñ72¬&VgVÊG2¿ß¬ñÁFW&ÊFñˆÊ≈˜6Üó÷VÁG6¬∆ˆvó7Fñ76¬FV6∆&VB◊F&∆R÷˜vÊW"¬∆ˆvó7Fñ72¬(	B¿ß¬ñÁfVÁF˜'ïˆóFV◊6¬ñÁfVÁF˜'ñ¬6ñÊv∆R◊w&óFW"¬ñÁfVÁF˜'í¬(	B¿ß¬ñÁfˆñ6W6¬Fˆ7V÷VÁG6¬◊V«Fí◊w&óFW"◊&W6ˆ«fVB÷'í÷6∆76ñfñ6Fñˆ‚◊6ñvÊ¬¬F6Ü&ˆ&B¬Fˆ7V÷VÁG2¬WFÇ÷ñFVÁFóGí¬∆ˆvó7Fñ72¬∆Ff˜&“÷˜2¿ß¬∆ˆ6≈ˆ66Ö˜&VgVÊEˆWFÜ˜&ó¶FñˆÁ6¬&VgVÊG6¬6ñÊv∆R◊w&óFW"¬&VgVÊG2∆⁄±Ó∏¬∏≠yÍÎ¢∞k¢Gß¶*^ ‚Äî |
+> Qualifier, prouver et publier ce que Komerce peut r√©ellement croire d un syst√®me externe avant qu une feature m√©tier ne s appuie sur son contrat.
+
+- services: 1
+- scripts: 6
+- workflows: 7
+- config: 2
+- tests: 8
+- tables owned (lifecycle): 0
+- tables written: 0
+- interfaces exposed: 0
+- internal APIs: 12
+- dependencies (consumes): 1 ‚Äî infrastructure
+- consumers: 4 ‚Äî catalog, dashboard, purchasing, supplier-connectivity
+
+### incident-management _(business-transversal)_
+
+> D√©tecter, qualifier et r√©soudre les √©carts entre l'√©tat attendu et l'√©tat r√©el d'une op√©ration, avec impact client tra√ßable.
+
+- services: 5
+- tests: 8
+- tables owned (lifecycle): 1 ‚Äî `incidents`
+- tables written: 1
+- interfaces exposed: 0
+- internal APIs: 17
+- dependencies (consumes): 4 ‚Äî orders, infrastructure, logistics, decision-signals
+- consumers: 7 ‚Äî dashboard, logistics, notifications, orders, payments, platform-ops, purchasing
+
+### infrastructure _(technical-foundation)_
+
+> Infrastructure transversale consomm√©e par toutes les features : middleware non-auth (error-handler, rate-limit, request-id, upload, validate), utilitaires partag√©s (logger, phone, rates, reference, rules), barrel de validation Joi, et bootstrap applicatif (Express, routes, crons, env, s√©curit√©, migrations startup).
+
+- services: 3
+- middleware: 7
+- utils: 5
+- validators: 1
+- bootstrap: 9
+- migrations: 9
+- scripts: 114
+- docs: 61
+- ci: 26
+- assets: 33
+- db: 16
+- routes: 1
+- config: 12
+- tests: 107
+- tables owned (lifecycle): 3 ‚Äî `schema_migrations`, `outbox_events`, `physical_outcome_receipts`
+- tables written: 10
+- interfaces exposed: 4
+- internal APIs: 11
+- dependencies (consumes): 17 ‚Äî market, auth, auth-identity, catalog, customs, dashboard, economic-engine, inventory, logistics, market-delegation, notifications, platform-ops, orders, payments, recommendations, shared-cart, wallet
+- consumers: 34 ‚Äî auth, auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, documents, economic-engine, external-provider-contracts, incident-management, inventory, local-stock, logistics, loyalty, market, market-autonomy, market-control-plane, market-delegation, market-operator-dashboard, notifications, orders, payments, platform-ops, providers-services, purchasing, recommendations, refunds, settlement, shared-cart, sourcing, unsold-resolution, wallet, decision-signals
+
+### inventory _(business-feature)_
+
+> R√©ceptionner, affecter et dispatcher les articles au hub.
+
+- services: 1
+- routes: 1
+- dash: 1
+- tests: 3
+- tables owned (lifecycle): 1 ‚Äî `inventory_items`
+- tables written: 1
+- interfaces exposed: 8
+- internal APIs: 0
+- dependencies (consumes): 5 ‚Äî orders, catalog, logistics, infrastructure, auth
+- consumers: 3 ‚Äî dashboard, infrastructure, admin-dashboard
+
+### legacy-control-tower _(deprecated)_
+
+> Ancien control tower ‚Äî deprecated.
+
+- js: 37
+- tables owned (lifecycle): 0
+- tables written: 0
+- interfaces exposed: 0
+- internal APIs: 0
+- dependencies (consumes): 0
+- consumers: 0
+
+### local-stock _(business-feature)_
+
+> Porter le stock physique vendable local, calculer la disponibilit√© nette des allocations actives, projeter une disponibilit√© publique minimale et engager/consommer/lib√©rer ce stock dans le cycle commande.
+
+- services: 3
+- routes: 1
+- tests: 5
+- tables owned (lifecycle): 2 ‚Äî `local_stock`, `local_stock_allocations`
+- tables written: 2
+- interfaces exposed: 2
+- internal APIs: 6
+- dependencies (consumes): 4 ‚Äî catalog, market, logistics, infrastructure
+- consumers: 7 ‚Äî dashboard, economic-engine, logistics, market-delegation, orders, providers-services, recommendations
+
+### logistics _(business-feature)_
+
+> Faire transiter un colis du scan initial au retrait final, avec tracking client et transporteur.
+
+- middleware: 1
+- migrations: 15
+- docs: 7
+- utils: 3
+- services: 49
+- routes: 18
+- boutique: 1
+- dash: 2
+- tests: 93
+- tables owned (lifecycle): 26 ‚Äî `parcels`, `relais`, `parcel_items`, `hub_physical_unit_placements`, `hub_physical_units`, `hub_purchase_allocations`, `scan_events`, `scans`, `pickup_print_tokens`, `pickup_reveal_codes`, `relay_product_return_receipts`, `carriers`, `hub_custody_events`, `hub_box_bags`, `international_shipment_charges`, `international_shipment_events`, `international_shipment_hub_units`, `international_shipment_relay_receipts`, `international_shipments`, `market_transport_sale_rates`, `parcel_events`, `pickup_collect_failures`, `pickup_code_generations`, `pickup_verify_attempts`, `product_sku_physical_codes`, `shipments`
+- tables written: 28
+- interfaces exposed: 78
+- internal APIs: 32
+- dependencies (consumes): 17 ‚Äî customs, documents, incident-management, infrastructure, business-rules, orders, local-stock, auth, auth-identity, catalog, notifications, payments, refunds, purchasing, loyalty, market, market-delegation
+- consumers: 22 ‚Äî auth-identity, catalog, customs, dashboard, documents, economic-engine, incident-management, infrastructure, inventory, local-stock, market-control-plane, market-delegation, market-operator-dashboard, notifications, orders, payments, platform-ops, purchasing, recommendations, refunds, admin-dashboard, decision-signals
+
+### loyalty _(business-feature)_
+
+> Calculer et maintenir le statut de fidelite d'un client (palier + compteur gros panier) et ses recompenses.
+
+- services: 1
+- routes: 2
+- tests: 6
+- tables owned (lifecycle): 2 ‚Äî `loyalty_tiers`, `loyalty_rewards`
+- tables written: 2
+- interfaces exposed: 12
+- internal APIs: 0
+- dependencies (consumes): 6 ‚Äî orders, economic-engine, infrastructure, auth, notifications, auth-identity
+- consumers: 5 ‚Äî auth-identity, economic-engine, logistics, orders, payments
+
+### market _(business-feature)_
+
+> Porter le r√©f√©rentiel des march√©s ouverts (pays, devise) et l'historique d'acc√®s des op√©rateurs √† un march√© ‚Äî jamais le settlement ni l'attribution √©conomique, qui restent une primitive s√©par√©e et diff√©r√©e.
+
+- scripts: 3
+- migrations: 15
+- services: 11
+- tests: 32
+- tables owned (lifecycle): 5 ‚Äî `markets`, `operator_market_scopes`, `currency_parities`, `fx_rate_observations`, `fx_public_reference_quotes`
+- tables written: 5
+- interfaces exposed: 0
+- internal APIs: 0
+- dependencies (consumes): 2 ‚Äî infrastructure, notifications
+- consumers: 18 ‚Äî catalog, customs, dashboard, economic-engine, infrastructure, local-stock, logistics, market-autonomy, market-control-plane, market-delegation, market-operator-dashboard, orders, payments, providers-services, recommendations, refunds, settlement, wallet
+
+### market-autonomy _(business-feature)_
+
+> Permettre √† un responsable pays explicitement scop√© manager de d√©cider un prix local, d‚Äôen voir l‚Äôimpact √©conomique, puis de l‚Äôactiver sans approbation centrale lorsque les gates autorisent la position ; LOCAL_ACTIVE devient alors la seule v√©rit√© locale consommable par le buyer path.
+
+- services: 4
+- migrations: 3
+- dash: 25
+- tests: 11
+- tables owned (lifecycle): 2 ‚Äî `product_market_price_drafts`, `product_market_price_draft_events`
+- tables written: 2
+- interfaces exposed: 0
+- internal APIs: 0
+- dependencies (consumes): 6 ‚Äî market, economic-engine, catalog, infrastructure, market-delegation, auth-identity
+- consumers: 8 ‚Äî catalog, dashboard, economic-engine, market-delegation, market-operator-dashboard, orders, recommendations, shared-cart
+
+### market-control-plane _(business-feature)_
+
+> Montrer √† l‚Äôadministration centrale, pour chaque march√©, l‚Äô√©tat r√©el de sa mise en exploitation et la liste explicite des √©carts, sans rien √©crire ni d√©cider d‚Äôautorisation.
+
+- scripts: 2
+- services: 4
+- routes: 1
+- tests: 12
+- tables owned (lifecycle): 1 ‚Äî `market_delivery_attestations`
+- tables written: 1
+- interfaces exposed: 7
+- internal APIs: 9
+- dependencies (consumes): 13 ‚Äî orders, market, market-delegation, providers-services, payments, logistics, dashboard, catalog, decision-signals, economic-engine, sourcing, auth, infrastructure
+- consumers: 1 ‚Äî orders
+
+### market-delegation _(business-feature)_
+
+> D√©l√©guer de fa√ßon explicite, auditable et r√©vocable l‚Äôautorit√© d‚Äôexploitation d‚Äôun Market ID √† un op√©rateur principal et √† son √©quipe, tout en pr√©servant les fronti√®res GROUP de Komerce.
+
+- migrations: 23
+- config: 1
+- middleware: 4
+- services: 19
+- routes: 15
+- tests: 52
+- tables owned (lifecycle): 10 ‚Äî `market_operating_assignments`, `assignment_memberships`, `membership_capabilities`, `assignment_capability_ceiling`, `market_cash_control_policies`, `capability_registry`, `ceiling_templates`, `ceiling_template_capabilities`, `market_delegation_audit`, `market_team_invitations`
+- tables written: 10
+- interfaces exposed: 33
+- internal APIs: 35
+- dependencies (consumes): 14 ‚Äî local-stock, market, auth, auth-identity, infrastructure, logistics, catalog, providers-services, orders, settlement, economic-engine, market-autonomy, dashboard, payments
+- consumers: 13 ‚Äî dashboard, dashboard, economic-engine, infrastructure, logistics, market-autonomy, market-control-plane, market-operator-dashboard, orders, payments, settlement, unsold-resolution, decision-signals
+
+### market-operator-dashboard _(unclassified)_
+
+> Permettre √† un op√©rateur pays (market_operator) de se connecter au dashboard Canonical, de d√©cider et exploiter son march√© : KPIs, commandes, catalogue pays, pricing local, r√©seau Hub/Relais, douane, exp√©ditions et Finance pays ‚Äî sans jamais voir les donn√©es d'un autre march√© ni recevoir automatiquement les gestes physiques ou autorit√©s globales des r√¥les sp√©cialis√©s.
+
+- scripts: 2
+- tests: 3
+- tables owned (lifecycle): 0
+- tables written: 0
+- interfaces exposed: 0
+- internal APIs: 0
+- dependencies (consumes): 9 ‚Äî market, auth, dashboard, catalog, market-autonomy, orders, logistics, market-delegation, infrastructure
+- consumers: 0
+
+### notifications _(business-transversal)_
+
+> Projeter une information essentielle dans l application avec acquittement propri√©taire ; conserver les canaux sortants historiques s√©par√©s et best-effort.
+
+- tests: 23
+- migrations: 6
+- utils: 2
+- services: 14
+- routes: 4
+- tables owned (lifecycle): 3 ‚Äî `client_notifications`, `alerts`, `notification_log`
+- tables written: 3
+- interfaces exposed: 6
+- internal APIs: 9
+- dependencies (consumes): 7 ‚Äî orders, logistics, auth-identity, incident-management, platform-ops, infrastructure, auth
+- consumers: 13 ‚Äî auth, auth-identity, catalog, dashboard, infrastructure, logistics, loyalty, market, orders, payments, purchasing, refunds, shared-cart
+
+### orders _(business-feature)_
+
+> Faire exister une commande, de la creation au statut final, avec un cout figure et une reference lisible.
+
+- utils: 1
+- services: 32
+- routes: 11
+- boutique: 3
+- tests: 65
+- tables owned (lifecycle): 11 ‚Äî `order_items`, `orders`, `disputes`, `order_comments`, `order_item_cost_imputations`, `order_status_history`, `recipients`, `sms_log`, `customs_history`, `relay_return_compensations`, `order_checkout_idempotency`
+- tables written: 13
+- interfaces exposed: 27
+- internal APIs: 30
+- dependencies (consumes): 25 ‚Äî dashboard, market-control-plane, market-delegation, platform-ops, infrastructure, decision-signals, incident-management, business-rules, wallet, economic-engine, logistics, catalog, market-autonomy, local-stock, market, purchasing, loyalty, payments, auth, auth-identity, customs, documents, notifications, refunds, shared-cart
+- consumers: 24 ‚Äî auth-identity, catalog, customs, dashboard, documents, economic-engine, incident-management, infrastructure, inventory, logistics, loyalty, market-control-plane, market-delegation, market-operator-dashboard, notifications, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, unsold-resolution, wallet, admin-dashboard
+
+### payments _(business-feature)_
+
+> Encaisser un paiement (carte, PayPal, Mobile Money, especes au retrait) et confirmer son etat de facon idempotente.
+
+- scripts: 1
+- services: 23
+- routes: 7
+- migrations: 10
+- boutique: 4
+- tests: 37
+- tables owned (lifecycle): 12 ‚Äî `market_payment_providers`, `cash_collections`, `cash_deposit_allocations`, `cash_deposits`, `market_cash_destinations`, `cash_confirmation_controls`, `mobile_money_transactions`, `paypal_events_processed`, `stripe_events_processed`, `cash_custody_losses`, `cash_custody_receipts`, `market_payment_accounts`
+- tables written: 12
+- interfaces exposed: 25
+- internal APIs: 0
+- dependencies (consumes): 15 ‚Äî auth-identity, incident-management, infrastructure, platform-ops, auth, refunds, documents, notifications, business-rules, orders, market, logistics, loyalty, purchasing, market-delegation
+- consumers: 9 ‚Äî dashboard, infrastructure, logistics, market-control-plane, market-delegation, orders, refunds, admin-dashboard, decision-signals
+
+### platform _(frontend-transversal)_
+
+> Infrastructure transversale dashboards (auth-guard, service worker, composants colis partages, QR viewer).
+
+- js: 4
+- tables owned (lifecycle): 0
+- tables written: 0
+- interfaces exposed: 0
+- internal APIs: 0
+- dependencies (consumes): 0
+- consumers: 0
+
+### platform-ops _(technical-transversal)_
+
+> Exposer la sante applicative, la configuration et les modules actifs ‚Äî infrastructure d'exploitation, pas de service metier.
+
+- middleware: 2
+- compositionRoots: 3
+- services: 6
+- routes: 5
+- boutique: 6
+- tests: 23
+- tables owned (lifecycle): 2 ‚Äî `fabrics`, `garment_models`
+- tables written: 6
+- interfaces exposed: 33
+- internal APIs: 0
+- dependencies (consumes): 12 ‚Äî documents, incident-management, purchasing, catalog, auth-identity, infrastructure, business-rules, auth, economic-engine, logistics, orders, wallet
+- consumers: 12 ‚Äî auth-identity, auth-passkey, catalog, economic-engine, infrastructure, notifications, orders, payments, providers-services, recommendations, shared-cart, wallet
+
+### providers-services _(business-feature)_
+
+> Porter l‚Äôidentit√© d‚Äôun provider tiers, ses services et offres physiques, leur exposabilit√©, leur nom public minimal, leurs m√©dias publics optionnels et le cycle contextualis√© de demande/rappel. La cible service_id XOR physical_offer_id porte toujours le propos connu ; le client choisit request ou callback. Pour un Service explicitement compatible WhatsApp, le serveur peut remettre un handoff de conversation apr√®s cr√©ation de l Inquiry, sans publier le num√©ro dans le d√©tail. Aucun paiement, settlement, calendrier structur√© ou order Komerce n‚Äôest cr√©√© par cette interaction.
+
+- services: 4
+- routes: 1
+- boutique: 2
+- ci: 1
+- scripts: 2
+- migrations: 3
+- tests: 7
+- tables owned (lifecycle): 4 ‚Äî `providers`, `services`, `physical_offers`, `inquiries`
+- tables written: 4
+- interfaces exposed: 3
+- internal APIs: 0
+- dependencies (consumes): 7 ‚Äî auth, auth-identity, platform-ops, market, local-stock, recommendations, infrastructure
+- consumers: 3 ‚Äî market-control-plane, market-delegation, recommendations
+
+### purchasing _(business-feature)_
+
+> Transformer un besoin d'approvisionnement issu d'une commande en engagement fournisseur tra√ßable (bon de commande), puis constater sa r√©ception.
+
+- services: 53
+- routes: 1
+- migrations: 17
+- scripts: 14
+- tests: 92
+- tables owned (lifecycle): 15 ‚Äî `suppliers`, `purchase_lines`, `purchase_orders`, `product_suppliers`, `purchase_order_authorizations`, `hub_authorization_grants`, `supplier_execution_payments`, `supplier_payment_settlements`, `manual_purchase_executions`, `purchase_variance_decisions`, `supplier_execution_events`, `supplier_execution_fulfillments`, `supplier_execution_order_lines`, `supplier_execution_orders`, `supplier_execution_payment_proofs`
+- tables written: 15
+- interfaces exposed: 21
+- internal APIs: 14
+- dependencies (consumes): 12 ‚Äî documents, supplier-connectivity, external-provider-contracts, sourcing, catalog, infrastructure, orders, auth, economic-engine, notifications, incident-management, logistics
+- consumers: 8 ‚Äî catalog, dashboard, logistics, orders, payments, platform-ops, sourcing, decision-signals
+
+### recommendations _(business-feature)_
+
+> Classer et sugg√©rer des produits boutique selon un moteur de ranking d√©di√©. Compose aussi en m√©moire un rail Discovery local mixte (DiscoveryCard ‚Äî Product Komerce, produit physique tiers, service tiers) et porte sa politique √©ditoriale d‚Äôactivation serveur, sans jamais poss√©der ni cloner les donn√©es sources.
+
+- scripts: 1
+- services: 3
+- routes: 1
+- tests: 5
+- tables owned (lifecycle): 0
+- tables written: 0
+- interfaces exposed: 1
+- internal APIs: 0
+- dependencies (consumes): 10 ‚Äî catalog, catalog, market-autonomy, platform-ops, infrastructure, logistics, orders, market, local-stock, providers-services
+- consumers: 3 ‚Äî infrastructure, providers-services, shared-cart
+
+### refunds _(business-transversal)_
+
+> Rembourser un client de facon tracable et sans double remboursement, quel que soit le flux appelant.
+
+- utils: 3
+- migrations: 3
+- services: 12
+- tests: 25
+- tables owned (lifecycle): 7 ‚Äî `refunds`, `refund_execution_intents`, `order_item_refund_reservations`, `local_item_refund_reservations`, `local_cash_refund_authorizations`, `local_cash_refund_payouts`, `local_mobile_refund_handoffs`
+- tables written: 7
+- interfaces exposed: 0
+- internal APIs: 1
+- dependencies (consumes): 9 ‚Äî market, infrastructure, orders, logistics, payments, wallet, documents, notifications, economic-engine
+- consumers: 6 ‚Äî dashboard, documents, economic-engine, logistics, orders, payments
+
+### settlement _(business-feature)_
+
+> Tracer de bout en bout le r√®glement d√ª √† un op√©rateur pays : READY attest√© centralement, REQUESTED par le pays, PAID centralement, RECEIVED par le pays.
+
+- migrations: 1
+- services: 1
+- routes: 1
+- tests: 4
+- tables owned (lifecycle): 2 ‚Äî `market_settlements`, `market_settlement_events`
+- tables written: 2
+- interfaces exposed: 3
+- internal APIs: 5
+- dependencies (consumes): 5 ‚Äî market, market-delegation, auth, auth-identity, infrastructure
+- consumers: 1 ‚Äî market-delegation
+
+### shared-cart _(business-feature)_
+
+> Permettre √† un cr√©ateur de publier une liste immuable par lien public ; chaque acheteur s√©lectionne une ou plusieurs lignes disponibles, passe par le r√©capitulatif puis le checkout canonique sans m√©langer son panier personnel ; la liste se ferme automatiquement lorsque sa derni√®re ligne est r√©clam√©e.
+
+- services: 9
+- routes: 4
+- migrations: 20
+- tests: 18
+- boutique: 10
+- dash: 1
+- tables owned (lifecycle): 7 ‚Äî `basket_items`, `baskets`, `cart_shares`, `shared_cart_events`, `shared_cart_items`, `shared_cart_saved_access`, `shared_carts`
+- tables written: 7
+- interfaces exposed: 16
+- internal APIs: 3
+- dependencies (consumes): 9 ‚Äî recommendations, platform-ops, infrastructure, orders, catalog, market-autonomy, notifications, auth, auth-identity
+- consumers: 4 ‚Äî catalog, dashboard, infrastructure, orders
+
+### sourcing _(business-feature)_
+
+> Identifier, qualifier et arbitrer des opportunit√©s fournisseur ou produit (scan pricing, d√©cision garder/watchlist/rejeter) avant leur entr√©e dans le catalogue.
+
+- middleware: 1
+- migrations: 15
+- scripts: 8
+- services: 34
+- routes: 2
+- tests: 57
+- tables owned (lifecycle): 18 ‚Äî `sourcing_candidates`, `import_runtime_runs`, `sourcing_candidate_events`, `sourcing_sources`, `sourcing_provider_control_events`, `sourcing_source_provides`, `sourcing_captures`, `sourcing_observations`, `sourcing_observation_evidence`, `sourcing_canonical_entities`, `sourcing_canonical_entity_refs`, `sourcing_match_proposals`, `sourcing_resolution_decisions`, `sourcing_resolution_bindings`, `import_runtime_item_events`, `provider_credentials`, `sourcing_source_requests`, `supplier_commercial_category_mappings`
+- tables written: 18
+- interfaces exposed: 30
+- internal APIs: 24
+- dependencies (consumes): 7 ‚Äî infrastructure, catalog, purchasing, economic-engine, customs, auth, dashboard
+- consumers: 6 ‚Äî catalog, catalog, dashboard, market-control-plane, purchasing, admin-dashboard
+
+### supplier-connectivity _(integration-adapter)_
+
+> Permettre √† Komerce d accueillir un fournisseur par une autorit√© unique d identit√© provider, une Supplier Order Identity opaque et une r√©solution d adapter fail-closed, sans d√©placer les d√©cisions m√©tier des features consommatrices.
+
+- services: 4
+- tests: 5
+- tables owned (lifecycle): 0
+- tables written: 0
+- interfaces exposed: 0
+- internal APIs: 10
+- dependencies (consumes): 1 ‚Äî external-provider-contracts
+- consumers: 3 ‚Äî catalog, dashboard, purchasing
+
+### unsold-resolution _(business-feature)_
+
+> Garder les colis non retir√©s sous responsabilit√© du relais ; la liquidation n'est autoris√©e qu'apr√®s cl√¥ture physique, juridique et financi√®re certifi√©e.
+
+- migrations: 2
+- routes: 1
+- dash: 3
+- tests: 4
+- tables owned (lifecycle): 1 ‚Äî `unsold_items`
+- tables written: 1
+- interfaces exposed: 7
+- internal APIs: 0
+- dependencies (consumes): 5 ‚Äî orders, catalog, auth, market-delegation, infrastructure
+- consumers: 0
+
+### wallet _(business-feature)_
+
+> Tenir un solde client et son historique de credit/debit, avec application exactement une fois.
+
+- services: 1
+- routes: 1
+- migrations: 2
+- boutique: 2
+- tests: 6
+- tables owned (lifecycle): 4 ‚Äî `wallet_transactions`, `wallets`, `wallet_consumptions`, `wallet_credit_lots`
+- tables written: 4
+- interfaces exposed: 9
+- internal APIs: 0
+- dependencies (consumes): 7 ‚Äî market, orders, platform-ops, infrastructure, auth, documents, auth-identity
+- consumers: 7 ‚Äî auth-identity, dashboard, documents, infrastructure, orders, platform-ops, refunds
+
+### wallet-loyalty _(deprecated)_
+
+> D√âPR√âCI√â ‚Äî scind√© au Lot O1.2 (2026-07-12) en features/wallet.feature.js et features/loyalty.feature.js. Ne rend plus aucun service propre.
+
+- tables owned (lifecycle): 0
+- tables written: 0
+- interfaces exposed: 0
+- internal APIs: 0
+- dependencies (consumes): 0
+- consumers: 0
+
+## Table ownership
+
+| Table | Lifecycle owner | R√©solution | Writers | Readers |
+|---|---|---|---|---|
+| `alerts` | `notifications` | declared-table-owner | notifications | ‚Äî |
+| `assignment_capability_ceiling` | `market-delegation` | declared-table-owner | market-delegation | market-control-plane |
+| `assignment_memberships` | `market-delegation` | declared-table-owner | market-delegation | market-control-plane |
+| `basket_items` | `shared-cart` | multi-writer-resolved-by-classification-signal | dashboard, shared-cart | ‚Äî |
+| `baskets` | `shared-cart` | multi-writer-resolved-by-classification-signal | dashboard, shared-cart | ‚Äî |
+| `boutique_categories` | `catalog` | single-writer | catalog | ‚Äî |
+| `boutique_subcategories` | `catalog` | single-writer | catalog | ‚Äî |
+| `business_rules` | `business-rules` | single-writer | business-rules | dashboard, economic-engine, logistics |
+| `business_rules_history` | `business-rules` | single-writer | business-rules | dashboard |
+| `capability_registry` | `market-delegation` | declared-table-owner | market-delegation | ‚Äî |
+| `carriers` | `logistics` | single-writer | logistics | market-control-plane |
+| `cart_shares` | `shared-cart` | declared-table-owner | shared-cart | ‚Äî |
+| `cash_collections` | `payments` | single-writer | payments | ‚Äî |
+| `cash_confirmation_controls` | `payments` | single-writer | payments | ‚Äî |
+| `cash_custody_losses` | `payments` | declared-table-owner | payments | ‚Äî |
+| `cash_custody_receipts` | `payments` | declared-table-owner | payments | ‚Äî |
+| `cash_deposit_allocations` | `payments` | single-writer | payments | ‚Äî |
+| `cash_deposits` | `payments` | single-writer | payments | ‚Äî |
+| `catalog_enrichment_runs` | `catalog` | single-writer | catalog | ‚Äî |
+| `catalog_exclusions` | _ambigu√´_ | no-declared-writer | ‚Äî | catalog |
+| `catalog_field_overrides` | `catalog` | single-writer | catalog | ‚Äî |
+| `catalog_field_sync_state` | `catalog` | declared-table-owner | catalog | ‚Äî |
+| `catalog_global_access_grants` | _ambigu√´_ | no-declared-writer | ‚Äî | market-control-plane |
+| `catalog_glossary` | _ambigu√´_ | no-declared-writer | ‚Äî | catalog |
+| `catalog_media` | `catalog` | declared-table-owner | catalog | dashboard, sourcing |
+| `catalog_media_recovery_audit` | `catalog` | declared-table-owner | catalog | ‚Äî |
+| `catalog_media_visual_fr_reviews` | `catalog` | declared-table-owner | catalog | ‚Äî |
+| `catalog_product_quality_notes` | `catalog` | declared-table-owner | catalog | ‚Äî |
+| `catalog_product_sale_holds` | `catalog` | declared-table-owner | catalog | ‚Äî |
+| `catalog_publication_decision_audit` | `catalog` | declared-table-owner | catalog | ‚Äî |
+| `catalog_stock_sync_state` | `catalog` | declared-table-owner | catalog | ‚Äî |
+| `catalog_taxonomy_audit` | `catalog` | single-writer | catalog | ‚Äî |
+| `catalog_terminology_reference` | `catalog` | single-writer | catalog | ‚Äî |
+| `ceiling_template_capabilities` | `market-delegation` | declared-table-owner | market-delegation | ‚Äî |
+| `ceiling_templates` | `market-delegation` | declared-table-owner | market-delegation | ‚Äî |
+| `charges` | `economic-engine` | multi-writer-resolved-by-classification-signal | economic-engine, infrastructure | ‚Äî |
+| `client_notifications` | `notifications` | single-writer | notifications | dashboard |
+| `competitor_prices` | `economic-engine` | single-writer | economic-engine | ‚Äî |
+| `cost_benchmarks` | `economic-engine` | single-writer | economic-engine | ‚Äî |
+| `cost_component_events` | `economic-engine` | single-writer | economic-engine | ‚Äî |
+| `cost_component_market_override_events` | `economic-engine` | declared-table-owner | economic-engine | ‚Äî |
+| `cost_component_market_overrides` | `economic-engine` | declared-table-owner | economic-engine | ‚Äî |
+| `cost_components` | `economic-engine` | single-writer | economic-engine | ‚Äî |
+| `credential_action_tokens` | `auth-identity` | single-writer | auth-identity | ‚Äî |
+| `currency_parities` | `market` | declared-table-owner | market | market-autonomy |
+| `customs_categories` | `customs` | single-writer | customs | economic-engine |
+| `customs_effective_rates` | _ambigu√´_ | no-declared-writer | ‚Äî | customs, dashboard |
+| `customs_history` | `orders` | single-writer | orders | ‚Äî |
+| `customs_shipment_fees` | `customs` | declared-table-owner | customs | ‚Äî |
+| `customs_shipment_holds` | `dashboard` | single-writer | dashboard | ‚Äî |
+| `customs_shipment_parcel_events` | `customs` | declared-table-owner | customs | ‚Äî |
+| `customs_shipment_parcels` | `customs` | single-writer | customs | dashboard, documents, economic-engine |
+| `customs_shipments` | `customs` | single-writer | customs | dashboard, documents, economic-engine, logistics |
+| `dashboard_global_access_grants` | _ambigu√´_ | no-declared-writer | ‚Äî | market-control-plane |
+| `decision_signal_global_access_grants` | _ambigu√´_ | no-declared-writer | ‚Äî | market-control-plane |
+| `disputes` | `orders` | single-writer | orders | catalog, market-delegation |
+| `economic_risk_cost_events` | `economic-engine` | declared-table-owner | economic-engine | ‚Äî |
+| `economic_risk_watermark_events` | `economic-engine` | declared-table-owner | economic-engine | ‚Äî |
+| `economic_snapshots` | `economic-engine` | declared-table-owner | economic-engine, infrastructure | ‚Äî |
+| `economic_structure_cost_events` | `economic-engine` | declared-table-owner | economic-engine | market-delegation |
+| `economic_variables` | _ambigu√´_ | no-declared-writer | ‚Äî | economic-engine |
+| `exchange_rates` | `economic-engine` | single-writer | economic-engine | dashboard |
+| `fabrics` | `platform-ops` | single-writer | platform-ops | economic-engine |
+| `finance_config` | `economic-engine` | multi-writer-resolved-by-classification-signal | economic-engine, infrastructure | loyalty |
+| `financial_movement_documents` | `economic-engine` | declared-table-owner | economic-engine | ‚Äî |
+| `financial_movements` | `economic-engine` | declared-table-owner | economic-engine | ‚Äî |
+| `fx_public_reference_quotes` | `market` | declared-table-owner | market | ‚Äî |
+| `fx_rate_observations` | `market` | declared-table-owner | market | ‚Äî |
+| `garment_models` | `platform-ops` | single-writer | platform-ops | economic-engine |
+| `hub_authorization_grants` | `purchasing` | declared-table-owner | purchasing | logistics |
+| `hub_box_bags` | `logistics` | declared-table-owner | logistics | ‚Äî |
+| `hub_custody_events` | `logistics` | declared-table-owner | logistics | ‚Äî |
+| `hub_physical_unit_placements` | `logistics` | declared-table-owner | logistics | dashboard |
+| `hub_physical_units` | `logistics` | declared-table-owner | logistics | dashboard |
+| `hub_purchase_allocations` | `logistics` | declared-table-owner | logistics | dashboard |
+| `import_runtime_item_events` | `sourcing` | declared-table-owner | sourcing | ‚Äî |
+| `import_runtime_runs` | `sourcing` | declared-table-owner | sourcing | catalog, dashboard |
+| `incidents` | `incident-management` | declared-table-owner | incident-management | dashboard, logistics, notifications, payments, platform-ops |
+| `inquiries` | `providers-services` | single-writer | providers-services | ‚Äî |
+| `international_n1_reconciliations` | `economic-engine` | declared-table-owner | economic-engine | ‚Äî |
+| `international_shipment_charges` | `logistics` | declared-table-owner | logistics | ‚Äî |
+| `international_shipment_events` | `logistics` | declared-table-owner | logistics | ‚Äî |
+| `international_shipment_hub_units` | `logistics` | declared-table-owner | logistics | ‚Äî |
+| `international_shipment_relay_receipts` | `logistics` | declared-table-owner | logistics | refunds |
+| `international_shipments` | `logistics` | declared-table-owner | logistics | ‚Äî |
+| `inventory_items` | `inventory` | single-writer | inventory | ‚Äî |
+| `invoices` | `documents` | multi-writer-resolved-by-classification-signal | dashboard, documents | auth-identity, logistics, platform-ops |
+| `local_cash_refund_authorizations` | `refunds` | single-writer | refunds | ‚Äî |
 | `local_cash_refund_payouts` | `refunds` | single-writer | refunds | ‚Äî |
 | `local_item_refund_reservations` | `refunds` | single-writer | refunds | ‚Äî |
 | `local_mobile_refund_handoffs` | `refunds` | single-writer | refunds | ‚Äî |
@@ -324,7 +863,168 @@ _dash_ : pas de Technical Architecture Graph propre au d√©p√¥t dash dans ce pipe
 | `orders` | `orders` | declared-table-owner | dashboard, economic-engine, orders | auth-identity, catalog, customs, documents, incident-management, inventory, logistics, loyalty, market-control-plane, notifications, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, unsold-resolution, wallet |
 | `otp_codes` | `auth-identity` | single-writer | auth-identity | ‚Äî |
 | `outbox_events` | `infrastructure` | single-writer | infrastructure | ‚Äî |
-| `parcel_events` | `logistics` | decm´Îå+ä◊ûÆ∫+∫$zzb•Ê∂WB÷FV∆VvFñˆ‚¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¬ñ÷VÁG2¿ß¬÷&∂WEˆ66ÖˆFW7FñÊFñˆÁ6¬ñ÷VÁG6¬6ñÊv∆R◊w&óFW"¬ñ÷VÁG2¬(	B¿ß¬÷&∂WEˆ6˜7EˆGG&ñ'WFñˆÁ6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬FV6∆&VB◊F&∆R÷˜vÊW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬÷&∂WEˆFV∆VvFñˆÂˆVFóF¬÷&∂WB÷FV∆VvFñˆÊ¬FV6∆&VB◊F&∆R÷˜vÊW"¬÷&∂WB÷FV∆VvFñˆ‚¬(	B¿ß¬÷&∂WEˆFV∆ófW'ïˆGFW7FFñˆÁ6¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊV¬6ñÊv∆R◊w&óFW"¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¬(	B¿ß¬÷&∂WEˆ˜W&FñÊuˆ76ñvÊ÷VÁG6¬÷&∂WB÷FV∆VvFñˆÊ¬FV6∆&VB◊F&∆R÷˜vÊW"¬÷&∂WB÷FV∆VvFñˆ‚¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¬ñ÷VÁG2¬6WGF∆V÷VÁB¿ß¬÷&∂WE˜ñ÷VÁEˆ66˜VÁG6¬ñ÷VÁG6¬FV6∆&VB◊F&∆R÷˜vÊW"¬ñ÷VÁG2¬(	B¿ß¬÷&∂WE˜ñ÷VÁE˜&˜fñFW'6¬ñ÷VÁG6¬FV6∆&VB◊F&∆R÷˜vÊW"¬ñ÷VÁG2¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¿ß¬÷&∂WE˜&ñ6Uˆˆ'6W'fFñˆÂˆWfVÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬FV6∆&VB◊F&∆R÷˜vÊW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬÷&∂WE˜&ñ6Uˆˆ'6W'fFñˆÁ6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬FV6∆&VB◊F&∆R÷˜vÊW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬÷&∂WE˜6WGF∆V÷VÁEˆWfVÁG6¬6WGF∆V÷VÁF¬FV6∆&VB◊F&∆R÷˜vÊW"¬6WGF∆V÷VÁB¬(	B¿ß¬÷&∂WE˜6WGF∆V÷VÁG6¬6WGF∆V÷VÁF¬FV6∆&VB◊F&∆R÷˜vÊW"¬6WGF∆V÷VÁB¬÷&∂WB÷FV∆VvFñˆ‚¿ß¬÷&∂WE˜FV’ˆñÁfóFFñˆÁ6¬÷&∂WB÷FV∆VvFñˆÊ¬FV6∆&VB◊F&∆R÷˜vÊW"¬÷&∂WB÷FV∆VvFñˆ‚¬(	B¿ß¬÷&∂WE˜G&Á7˜'E˜6∆U˜&FW6¬∆ˆvó7Fñ76¬FV6∆&VB◊F&∆R÷˜vÊW"¬∆ˆvó7Fñ72¬(	B¿ß¬÷&∂WG6¬÷&∂WF¬FV6∆&VB◊F&∆R÷˜vÊW"¬÷&∂WB¬6F∆ˆr¬F6Ü&ˆ&B¬∆ˆ6¬◊7Fˆ6≤¬÷&∂WB÷WFˆÊˆ◊í¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¬÷&∂WB÷FV∆VvFñˆ‚¬&˜fñFW'2◊6W'fñ6W2¬&V6ˆ÷÷VÊFFñˆÁ2¬6WGF∆V÷VÁB¿ß¬÷V÷&W'6Üóˆ6&ñ∆óFñW6¬÷&∂WB÷FV∆VvFñˆÊ¬FV6∆&VB◊F&∆R÷˜vÊW"¬÷&∂WB÷FV∆VvFñˆ‚¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¿ß¬÷ˆ&ñ∆Uˆ÷ˆÊWï˜G&Á67FñˆÁ6¬ñ÷VÁG6¬6ñÊv∆R◊w&óFW"¬ñ÷VÁG2¬(	B¿ß¬Ê˜Fñfñ6FñˆÂˆ∆ˆv¬Ê˜Fñfñ6FñˆÁ6¬FV6∆&VB◊F&∆R÷˜vÊW"¬Ê˜Fñfñ6FñˆÁ2¬∆Ff˜&“÷˜2¬(	B¿ß¬˜W&F˜%ˆ÷&∂WE˜66˜W6¬÷&∂WF¬FV6∆&VB◊F&∆R÷˜vÊW"¬÷&∂WB¬÷&∂WB÷FV∆VvFñˆ‚¿ß¬˜&FW%ˆ6ÜV6∂˜WEˆñFV◊˜FVÊ7ñ¬˜&FW'6¬FV6∆&VB◊F&∆R÷˜vÊW"¬˜&FW'2¬(	B¿ß¬˜&FW%ˆ6ˆ÷÷VÁG6¬˜&FW'6¬◊V«Fí◊w&óFW"◊&W6ˆ«fVB÷'í÷6∆76ñfñ6Fñˆ‚◊6ñvÊ¬¬F6Ü&ˆ&B¬˜&FW'2¬(	B¿ß¬˜&FW%ˆ6˜7EˆVÁG'ïˆWfVÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬FV6∆&VB◊F&∆R÷˜vÊW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬˜&FW%ˆñÊ6ñFVÁG6¬F6Ü&ˆ&F¬6ñÊv∆R◊w&óFW"¬F6Ü&ˆ&B¬(	B¿ß¬˜&FW%ˆóFV’ˆ6˜7Eˆñ◊WFFñˆÁ6¬˜&FW'6¬6ñÊv∆R◊w&óFW"¬˜&FW'2¬F6Ü&ˆ&B¬V6ˆÊˆ÷ñ2÷VÊvñÊR¿ß¬˜&FW%ˆóFV’˜&V≈ˆ6˜7Eˆ∆∆ˆ6FñˆÁ6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬FV6∆&VB◊F&∆R÷˜vÊW"¬7W7Fˆ◊2¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬F6Ü&ˆ&B¿ß¬˜&FW%ˆóFV’˜&VgVÊE˜&W6W'fFñˆÁ6¬&VgVÊG6¬6ñÊv∆R◊w&óFW"¬&VgVÊG2¬(	B¿ß¬˜&FW%ˆóFV◊6¬˜&FW'6¬FV6∆&VB◊F&∆R÷˜vÊW"¬F6Ü&ˆ&B¬∆ˆvó7Fñ72¬˜&FW'2¬WFÇ÷ñFVÁFóGí¬6F∆ˆr¬7W7Fˆ◊2¬Fˆ7V÷VÁG2¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬ñÁfVÁF˜'í¬ñ÷VÁG2¬∆Ff˜&“÷˜2¬W&6Ü6ñÊr¬&V6ˆ÷÷VÊFFñˆÁ2¬&VgVÊG2¬6Ü&VB÷6'B¿ß¬˜&FW%˜7FGW5ˆÜó7F˜'ñ¬˜&FW'6¬◊V«Fí◊w&óFW"◊&W6ˆ«fVB÷'í÷6∆76ñfñ6Fñˆ‚◊6ñvÊ¬¬F6Ü&ˆ&B¬˜&FW'2¬(	B¿ß¬˜&FW'6¬˜&FW'6¬FV6∆&VB◊F&∆R÷˜vÊW"¬F6Ü&ˆ&B¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬˜&FW'2¬WFÇ÷ñFVÁFóGí¬6F∆ˆr¬7W7Fˆ◊2¬Fˆ7V÷VÁG2¬ñÊ6ñFVÁB÷÷ÊvV÷VÁB¬ñÁfVÁF˜'í¬∆ˆvó7Fñ72¬∆˜ñ«Gí¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¬Ê˜Fñfñ6FñˆÁ2¬ñ÷VÁG2¬∆Ff˜&“÷˜2¬W&6Ü6ñÊr¬&V6ˆ÷÷VÊFFñˆÁ2¬&VgVÊG2¬6Ü&VB÷6'B¬VÁ6ˆ∆B◊&W6ˆ«WFñˆ‚¬v∆∆WB¿ß¬˜Gˆ6ˆFW6¬WFÇ÷ñFVÁFóGñ¬6ñÊv∆R◊w&óFW"¬WFÇ÷ñFVÁFóGí¬(	B¿ß¬˜WF&˜ÖˆWfVÁG6¬ñÊg&7G'V7GW&V¬6ñÊv∆R◊w&óFW"¬ñÊg&7G'V7GW&R¬(	B¿ß¬&6V≈ˆWfVÁG6¬∆ˆvó7Fñ76¬FV6∆&VB◊F&∆R÷˜vÊW"¬∆ˆvó7Fñ72¬(	B¿ß¬&6V≈ˆóFV◊6¬∆ˆvó7Fñ76¬FV6∆&VB◊F&∆R÷˜vÊW"¬F6Ü&ˆ&B¬∆ˆvó7Fñ72¬∆Ff˜&“÷˜2¬7W7Fˆ◊2¬F6Ü&ˆ&B¬Fˆ7V÷VÁG2¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬ñÁfVÁF˜'í¬˜&FW'2¬ñ÷VÁG2¿ß¬&6V«6¬∆ˆvó7Fñ76¬FV6∆&VB◊F&∆R÷˜vÊW"¬F6Ü&ˆ&B¬∆ˆvó7Fñ72¬∆Ff˜&“÷˜2¬WFÇ÷ñFVÁFóGí¬7W7Fˆ◊2¬F6Ü&ˆ&B¬Fˆ7V÷VÁG2¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬ñÊ6ñFVÁB÷÷ÊvV÷VÁB¬ñÁfVÁF˜'í¬Ê˜Fñfñ6FñˆÁ2¬˜&FW'2¬ñ÷VÁG2¬&V6ˆ÷÷VÊFFñˆÁ2¿ß¬'FÊW'6¬F6Ü&ˆ&F¬6ñÊv∆R◊w&óFW"¬F6Ü&ˆ&B¬(	B¿ß¬ó≈ˆWfVÁG5˜&ˆ6W76VF¬ñ÷VÁG6¬6ñÊv∆R◊w&óFW"¬ñ÷VÁG2¬(	B¿ß¬áó6ñ6≈ˆˆffW'6¬&˜fñFW'2◊6W'fñ6W6¬6ñÊv∆R◊w&óFW"¬&˜fñFW'2◊6W'fñ6W2¬÷&∂WB÷FV∆VvFñˆ‚¿ß¬áó6ñ6≈ˆ˜WF6ˆ÷U˜&V6VóG6¬ñÊg&7G'V7GW&V¬6ñÊv∆R◊w&óFW"¬ñÊg&7G'V7GW&R¬(	B¿ß¬ñ6∑Wˆ6ˆFUˆvVÊW&FñˆÁ6¬∆ˆvó7Fñ76¬FV6∆&VB◊F&∆R÷˜vÊW"¬∆ˆvó7Fñ72¬(	B¿ß¬ñ6∑Wˆ6ˆ∆∆V7Eˆfñ«W&W6¬∆ˆvó7Fñ76¬FV6∆&VB◊F&∆R÷˜vÊW"¬∆ˆvó7Fñ72¬(	B¿ß¬ñ6∑W˜&ñÁE˜Fˆ∂VÁ6¬∆ˆvó7Fñ76¬FV6∆&VB◊F&∆R÷˜vÊW"¬ñÊg&7G'V7GW&R¬∆ˆvó7Fñ72¬(	B¿ß¬ñ6∑W˜&WfV≈ˆ6ˆFW6¬∆ˆvó7Fñ76¬FV6∆&VB◊F&∆R÷˜vÊW"¬ñÊg&7G'V7GW&R¬∆ˆvó7Fñ72¬(	B¿ß¬ñ6∑W˜fW&ñgïˆGFV◊G6¬∆ˆvó7Fñ76¬6ñÊv∆R◊w&óFW"¬∆ˆvó7Fñ72¬(	B¿ß¬&ñ6UˆÜó7F˜'ñ¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬FV6∆&VB◊F&∆R÷˜vÊW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬&ñ6ñÊuˆ&VÊ6Ü÷&∑6¬ˆ÷&ñw\:µÚ¬ÊÚ÷FV6∆&VB◊w&óFW"¬(	B¬V6ˆÊˆ÷ñ2÷VÊvñÊR¿ß¬&ñ6ñÊuˆ6FVv˜'ïˆFñ◊6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬6ñÊv∆R◊w&óFW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬&ñ6ñÊuˆ6FVv˜'ï˜FÜW6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬6ñÊv∆R◊w&óFW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬&ñ6ñÊuˆ6ˆ◊ˆÊVÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬6ñÊv∆R◊w&óFW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬&ñ6ñÊuˆv∆ˆ&≈ˆ66W75ˆw&ÁG6¬ˆ÷&ñw\:µÚ¬ÊÚ÷FV6∆&VB◊w&óFW"¬(	B¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¿ß¬&ñ6ñÊuˆ÷&∂WEˆFV6ó6ñˆÂ˜ˆ∆ñ7ïˆWfVÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬FV6∆&VB◊F&∆R÷˜vÊW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬&ñ6ñÊuˆ÷G&ñ6W5ˆVFóF¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬6ñÊv∆R◊w&óFW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬&ñ6ñÊuˆ÷GW&óGïˆFó7˜6óFñˆÂˆWfVÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬FV6∆&VB◊F&∆R÷˜vÊW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬&ñ6ñÊu˜7G&FVvñW6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬6ñÊv∆R◊w&óFW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬&ñ6ñÊu˜7G&FVwïˆÜó7F˜'ñ¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬6ñÊv∆R◊w&óFW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬&ˆGV7EˆGG&ñ'WFW6¬6F∆ˆv¬6ñÊv∆R◊w&óFW"¬6F∆ˆr¬(	B¿ß¬&ˆGV7Eˆ6ˆÁFVÁE˜&ˆfñ∆V¬6F∆ˆv¬6ñÊv∆R◊w&óFW"¬6F∆ˆr¬(	B¿ß¬&ˆGV7Eˆ6ˆÁFVÁE˜6V7FñˆÁ6¬6F∆ˆv¬6ñÊv∆R◊w&óFW"¬6F∆ˆr¬(	B¿ß¬&ˆGV7Eˆ÷&∂WEˆWá˜7W&V¬6F∆ˆv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6F∆ˆr¬F6Ü&ˆ&B¬÷&∂WB÷FV∆VvFñˆ‚¿ß¬&ˆGV7Eˆ÷&∂WE˜&ñ6UˆG&gEˆWfVÁG6¬÷&∂WB÷WFˆÊˆ◊ñ¬FV6∆&VB◊F&∆R÷˜vÊW"¬÷&∂WB÷WFˆÊˆ◊í¬(	B¿ß¬&ˆGV7Eˆ÷&∂WE˜&ñ6UˆG&gG6¬÷&∂WB÷WFˆÊˆ◊ñ¬FV6∆&VB◊F&∆R÷˜vÊW"¬÷&∂WB÷WFˆÊˆ◊í¬6F∆ˆr¬F6Ü&ˆ&B¬÷&∂WB÷FV∆VvFñˆ‚¿ß¬&ˆGV7E˜6∑Uˆ÷VFñ¬6F∆ˆv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6F∆ˆr¬6˜W&6ñÊr¿ß¬&ˆGV7E˜6∑U˜áó6ñ6≈ˆ6ˆFW6¬∆ˆvó7Fñ76¬FV6∆&VB◊F&∆R÷˜vÊW"¬∆ˆvó7Fñ72¬(	B¿ß¬&ˆGV7E˜6∑W6¬6F∆ˆv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6F∆ˆr¬÷&∂WB÷WFˆÊˆ◊í¬W&6Ü6ñÊr¬6˜W&6ñÊr¿ß¬&ˆGV7E˜7W∆ñW'6¬W&6Ü6ñÊv¬6ñÊv∆R◊w&óFW"¬W&6Ü6ñÊr¬∆ˆvó7Fñ72¿ß¬&ˆGV7E˜f&ñÁG6¬6F∆ˆv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6F∆ˆr¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬∆ˆvó7Fñ72¬÷&∂WB÷WFˆÊˆ◊í¬˜&FW'2¬6˜W&6ñÊr¿ß¬&ˆGV7G6¬6F∆ˆv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6F∆ˆr¬F6Ü&ˆ&B¬∆ˆvó7Fñ72¬WFÇ÷ñFVÁFóGí¬7W7Fˆ◊2¬Fˆ7V÷VÁG2¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬ñÁfVÁF˜'í¬∆ˆ6¬◊7Fˆ6≤¬÷&∂WB÷WFˆÊˆ◊í¬÷&∂WB÷FV∆VvFñˆ‚¬˜&FW'2¬∆Ff˜&“÷˜2¬W&6Ü6ñÊr¬&V6ˆ÷÷VÊFFñˆÁ2¬6Ü&VB÷6'B¬6˜W&6ñÊr¬VÁ6ˆ∆B◊&W6ˆ«WFñˆ‚¿ß¬&˜fñFW%ˆ7&VFVÁFñ«6¬6˜W&6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6˜W&6ñÊr¬(	B¿ß¬&˜fñFW'6¬&˜fñFW'2◊6W'fñ6W6¬6ñÊv∆R◊w&óFW"¬&˜fñFW'2◊6W'fñ6W2¬÷&∂WB÷FV∆VvFñˆ‚¿ß¬W&6Ü6Uˆ∆ñÊW6¬W&6Ü6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬W&6Ü6ñÊr¬F6Ü&ˆ&B¿ß¬W&6Ü6Uˆ˜&FW%ˆWFÜ˜&ó¶FñˆÁ6¬W&6Ü6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬W&6Ü6ñÊr¬∆ˆvó7Fñ72¿ß¬W&6Ü6Uˆ˜&FW'6¬W&6Ü6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬W&6Ü6ñÊr¬F6Ü&ˆ&B¬∆ˆvó7Fñ72¿ß¬W&6Ü6U˜f&ñÊ6UˆFV6ó6ñˆÁ6¬W&6Ü6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬W&6Ü6ñÊr¬(	B¿ß¬&V6óñVÁG6¬˜&FW'6¬◊V«Fí◊w&óFW"◊&W6ˆ«fVB÷'í÷6∆76ñfñ6Fñˆ‚◊6ñvÊ¬¬F6Ü&ˆ&B¬˜&FW'2¬Fˆ7V÷VÁG2¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬∆ˆvó7Fñ72¬Ê˜Fñfñ6FñˆÁ2¿ß¬&VgVÊEˆWÜV7WFñˆÂˆñÁFVÁG6¬&VgVÊG6¬6ñÊv∆R◊w&óFW"¬&VgVÊG2¬(	B¿ß¬&VgVÊG6¬&VgVÊG6¬6ñÊv∆R◊w&óFW"¬&VgVÊG2¬Fˆ7V÷VÁG2¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬˜&FW'2¿ß¬&V∆ó6¬∆ˆvó7Fñ76¬FV6∆&VB◊F&∆R÷˜vÊW"¬F6Ü&ˆ&B¬∆ˆvó7Fñ72¬WFÇ÷ñFVÁFóGí¬Fˆ7V÷VÁG2¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬∆ˆ6¬◊7Fˆ6≤¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¬÷&∂WB÷FV∆VvFñˆ‚¬Ê˜Fñfñ6FñˆÁ2¬˜&FW'2¬∆Ff˜&“÷˜2¬W&6Ü6ñÊr¿ß¬&V∆ï˜&ˆGV7E˜&WGW&Â˜&V6VóG6¬∆ˆvó7Fñ76¬FV6∆&VB◊F&∆R÷˜vÊW"¬∆ˆvó7Fñ72¬(	B¿ß¬&V∆ï˜&WGW&Âˆ6ˆ◊VÁ6FñˆÁ6¬˜&FW'6¬FV6∆&VB◊F&∆R÷˜vÊW"¬˜&FW'2¬(	B¿ß¬&Wfˆ∂VE˜Fˆ∂VÁ6¬WFÇ÷ñFVÁFóGñ¬FV6∆&VB◊F&∆R÷˜vÊW"¬WFÇ÷ñFVÁFóGí¬ñÊg&7G'V7GW&R¬WFÇ¿ß¬&ó6µ˜&˜fó6ñˆÁ6¬V6ˆÊˆ÷ñ2÷VÊvñÊV¬6ñÊv∆R◊w&óFW"¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬(	B¿ß¬66ÂˆWfVÁG6¬∆ˆvó7Fñ76¬FV6∆&VB◊F&∆R÷˜vÊW"¬F6Ü&ˆ&B¬∆ˆvó7Fñ72¬ñÊ6ñFVÁB÷÷ÊvV÷VÁB¬Ê˜Fñfñ6FñˆÁ2¬ñ÷VÁG2¬∆Ff˜&“÷˜2¿ß¬66Á6¬∆ˆvó7Fñ76¬FV6∆&VB◊F&∆R÷˜vÊW"¬∆ˆvó7Fñ72¬˜&FW'2¬∆Ff˜&“÷˜2¬F6Ü&ˆ&B¿ß¬66ÜV÷ˆ÷ñw&FñˆÁ6¬ñÊg&7G'V7GW&V¬6ñÊv∆R◊w&óFW"¬ñÊg&7G'V7GW&R¬(	B¿ß¬6W'fñ6W6¬&˜fñFW'2◊6W'fñ6W6¬6ñÊv∆R◊w&óFW"¬&˜fñFW'2◊6W'fñ6W2¬÷&∂WB÷FV∆VvFñˆ‚¿ß¬6Ü&VEˆ6'EˆWfVÁG6¬6Ü&VB÷6'F¬6ñÊv∆R◊w&óFW"¬6Ü&VB÷6'B¬(	B¿ß¬6Ü&VEˆ6'EˆóFV◊6¬6Ü&VB÷6'F¬6ñÊv∆R◊w&óFW"¬6Ü&VB÷6'B¬(	B¿ß¬6Ü&VEˆ6'E˜6fVEˆ66W76¬6Ü&VB÷6'F¬6ñÊv∆R◊w&óFW"¬6Ü&VB÷6'B¬(	B¿ß¬6Ü&VEˆ6'G6¬6Ü&VB÷6'F¬6ñÊv∆R◊w&óFW"¬6Ü&VB÷6'B¬(	B¿ß¬6Üó÷VÁG6¬∆ˆvó7Fñ76¬6ñÊv∆R◊w&óFW"¬∆ˆvó7Fñ72¬(	B¿ß¬6ñvÊ«6¬FV6ó6ñˆ‚◊6ñvÊ«6¬FV6∆&VB◊F&∆R÷˜vÊW"¬˜&FW'2¬FV6ó6ñˆ‚◊6ñvÊ«2¬F6Ü&ˆ&B¿ß¬6◊5ˆ∆ˆv¬˜&FW'6¬◊V«Fí◊w&óFW"◊&W6ˆ«fVB÷'í÷6∆76ñfñ6Fñˆ‚◊6ñvÊ¬¬F6Ü&ˆ&B¬˜&FW'2¬(	B¿ß¬6˜W&6ñÊuˆ6ÊFñFFUˆWfVÁG6¬6˜W&6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6˜W&6ñÊr¬(	B¿ß¬6˜W&6ñÊuˆ6ÊFñFFW6¬6˜W&6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6F∆ˆr¬6˜W&6ñÊr¬F6Ü&ˆ&B¿ß¬6˜W&6ñÊuˆ6ÊˆÊñ6≈ˆVÁFóFñW6¬6˜W&6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6˜W&6ñÊr¬(	B¿ß¬6˜W&6ñÊuˆ6ÊˆÊñ6≈ˆVÁFóGï˜&Vg6¬6˜W&6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6˜W&6ñÊr¬(	B¿ß¬6˜W&6ñÊuˆ6GW&W6¬6˜W&6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6˜W&6ñÊr¬(	B¿ß¬6˜W&6ñÊuˆv∆ˆ&≈ˆ66W75ˆw&ÁG6¬ˆ÷&ñw\:µÚ¬ÊÚ÷FV6∆&VB◊w&óFW"¬(	B¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¿ß¬6˜W&6ñÊuˆ÷F6Ö˜&˜˜6«6¬6˜W&6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6˜W&6ñÊr¬(	B¿ß¬6˜W&6ñÊuˆˆ'6W'fFñˆÂˆWfñFVÊ6V¬6˜W&6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6˜W&6ñÊr¬(	B¿ß¬6˜W&6ñÊuˆˆ'6W'fFñˆÁ6¬6˜W&6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6˜W&6ñÊr¬(	B¿ß¬6˜W&6ñÊu˜&˜fñFW%ˆ6ˆÁG&ˆ≈ˆWfVÁG6¬6˜W&6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6˜W&6ñÊr¬(	B¿ß¬6˜W&6ñÊu˜&W6ˆ«WFñˆÂˆ&ñÊFñÊw6¬6˜W&6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6˜W&6ñÊr¬(	B¿ß¬6˜W&6ñÊu˜&W6ˆ«WFñˆÂˆFV6ó6ñˆÁ6¬6˜W&6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6˜W&6ñÊr¬(	B¿ß¬6˜W&6ñÊu˜6˜W&6U˜&˜fñFW6¬6˜W&6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6˜W&6ñÊr¬(	B¿ß¬6˜W&6ñÊu˜6˜W&6U˜&WVW7G6¬6˜W&6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6˜W&6ñÊr¬(	B¿ß¬6˜W&6ñÊu˜6˜W&6W6¬6˜W&6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6˜W&6ñÊr¬(	B¿ß¬7F˜&Uˆ7&VFóG6¬ˆ÷&ñw\:µÚ¬ÊÚ÷FV6∆&VB◊w&óFW"¬(	B¬V6ˆÊˆ÷ñ2÷VÊvñÊR¿ß¬7G&óUˆWfVÁG5˜&ˆ6W76VF¬ñ÷VÁG6¬6ñÊv∆R◊w&óFW"¬ñ÷VÁG2¬(	B¿ß¬7W∆ñW%ˆ6F∆ˆuˆñ◊˜'E˜&V¶V7FñˆÁ6¬6F∆ˆv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6F∆ˆr¬(	B¿ß¬7W∆ñW%ˆ6F∆ˆuˆñ◊˜'G6¬6F∆ˆv¬6ñÊv∆R◊w&óFW"¬6F∆ˆr¬6˜W&6ñÊr¿ß¬7W∆ñW%ˆ6F∆ˆu˜7ñÊ5ˆ6ÜV6∑ˆñÁG6¬6F∆ˆv¬6ñÊv∆R◊w&óFW"¬6F∆ˆr¬(	B¿ß¬7W∆ñW%ˆ6ˆ÷÷W&6ñ≈ˆ6FVv˜'ïˆ÷ñÊw6¬6˜W&6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬6˜W&6ñÊr¬(	B¿ß¬7W∆ñW%ˆWÜV7WFñˆÂˆWfVÁG6¬W&6Ü6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬W&6Ü6ñÊr¬(	B¿ß¬7W∆ñW%ˆWÜV7WFñˆÂˆgV∆fñ∆∆÷VÁG6¬W&6Ü6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬W&6Ü6ñÊr¬(	B¿ß¬7W∆ñW%ˆWÜV7WFñˆÂˆ˜&FW%ˆ∆ñÊW6¬W&6Ü6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬W&6Ü6ñÊr¬(	B¿ß¬7W∆ñW%ˆWÜV7WFñˆÂˆ˜&FW'6¬W&6Ü6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬W&6Ü6ñÊr¬(	B¿ß¬7W∆ñW%ˆWÜV7WFñˆÂ˜ñ÷VÁE˜&ˆˆg6¬W&6Ü6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬W&6Ü6ñÊr¬(	B¿ß¬7W∆ñW%ˆWÜV7WFñˆÂ˜ñ÷VÁG6¬W&6Ü6ñÊv¬FV6∆&VB◊F&∆R÷˜vÊW"¬W&6Ü6ñÊr¬(	B¿ß¬7W∆ñW%ˆˆWFÖˆ6ˆÊÊV7FñˆÁ6¬6F∆ˆv¬6ñÊv∆R◊w&óFW"¬6F∆ˆr¬(	B¿ß¬7W∆ñW%˜ñ÷VÁE˜6WGF∆V÷VÁG6¬W&6Ü6ñÊv¬6ñÊv∆R◊w&óFW"¬W&6Ü6ñÊr¬(	B¿ß¬7W∆ñW'6¬W&6Ü6ñÊv¬6ñÊv∆R◊w&óFW"¬W&6Ü6ñÊr¬6F∆ˆr¬6˜W&6ñÊr¿ß¬7W∆ñW'5˜7FG6¬ˆ÷&ñw\:µÚ¬ÊÚ÷FV6∆&VB◊w&óFW"¬(	B¬F6Ü&ˆ&B¿ß¬G&Á67FñˆÂˆFˆ7V÷VÁG6¬Fˆ7V÷VÁG6¬6ñÊv∆R◊w&óFW"¬Fˆ7V÷VÁG2¬F6Ü&ˆ&B¿ß¬VÁ6ˆ∆EˆóFV◊6¬VÁ6ˆ∆B◊&W6ˆ«WFñˆÊ¬6ñÊv∆R◊w&óFW"¬VÁ6ˆ∆B◊&W6ˆ«WFñˆ‚¬(	B¿ß¬W6W%˜ñ6∑WˆWFÜ˜&ó¶FñˆÁ6¬WFÇ÷ñFVÁFóGñ¬6ñÊv∆R◊w&óFW"¬WFÇ÷ñFVÁFóGí¬(	B¿ß¬W6W'6¬WFÇ÷ñFVÁFóGñ¬FV6∆&VB◊F&∆R÷˜vÊW"¬WFÇ÷ñFVÁFóGí¬ñÊg&7G'V7GW&R¬WFÇ¬WFÇ◊76∂Wí¬'W6ñÊW72◊'V∆W2¬F6Ü&ˆ&B¬Fˆ7V÷VÁG2¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬∆ˆvó7Fñ72¬∆˜ñ«Gí¬÷&∂WB÷FV∆VvFñˆ‚¬Ê˜Fñfñ6FñˆÁ2¬˜&FW'2¬ñ÷VÁG2¬∆Ff˜&“÷˜2¬6WGF∆V÷VÁB¬6Ü&VB÷6'B¬v∆∆WB¿ß¬eˆ∆˜ñ«Gï˜7V÷÷'ñ¬ˆ÷&ñw\:µÚ¬ÊÚ÷FV6∆&VB◊w&óFW"¬(	B¬∆˜ñ«Gí¿ß¬e˜VÁ6ˆ∆E˜óV∆ñÊV¬ˆ÷&ñw\:µÚ¬ÊÚ÷FV6∆&VB◊w&óFW"¬(	B¬VÁ6ˆ∆B◊&W6ˆ«WFñˆ‚¿ß¬v∆∆WEˆ6ˆÁ7V◊FñˆÁ6¬v∆∆WF¬◊V«Fí◊w&óFW"◊&W6ˆ«fVB÷'í÷6∆76ñfñ6Fñˆ‚◊6ñvÊ¬¬F6Ü&ˆ&B¬v∆∆WB¬(	B¿ß¬v∆∆WEˆ7&VFóEˆ∆˜G6¬v∆∆WF¬◊V«Fí◊w&óFW"◊&W6ˆ«fVB÷'í÷6∆76ñfñ6Fñˆ‚◊6ñvÊ¬¬F6Ü&ˆ&B¬v∆∆WB¬(	B¿ß¬v∆∆WE˜G&Á67FñˆÁ6¬v∆∆WF¬◊V«Fí◊w&óFW"◊&W6ˆ«fVB÷'í÷6∆76ñfñ6Fñˆ‚◊6ñvÊ¬¬F6Ü&ˆ&B¬v∆∆WB¬Fˆ7V÷VÁG2¿ß¬v∆∆WG6¬v∆∆WF¬◊V«Fí◊w&óFW"◊&W6ˆ«fVB÷'í÷6∆76ñfñ6Fñˆ‚◊6ñvÊ¬¬F6Ü&ˆ&B¬v∆∆WB¬Fˆ7V÷VÁG2¬&VgVÊG2¿ß¬vV&WFÜÂˆ6Ü∆∆VÊvW6¬WFÇ◊76∂Wñ¬6ñÊv∆R◊w&óFW"¬WFÇ◊76∂Wí¬(	B¿ß¬vV&WFÜÂˆ7&VFVÁFñ«6¬WFÇ◊76∂Wñ¬6ñÊv∆R◊w&óFW"¬WFÇ◊76∂Wí¬(	B¿†¢22ñÁFW&f6R˜vÊW'6Üó †¢222&˜WFW2Ü6ˆÁG&7BÊWá˜6W2ê†ß¬&˜WFR¬fVGW&R¬,:ó6ˆ«WFñˆ‚FV6ÜÊóVR¿ß¬““◊¬““◊¬““◊¿ß¬ı5BˆíˆWFÇˆ˜G˜&WVW7F¬WFÇ÷ñFVÁFóGí¬&˜WFW2ˆ˜GÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆWFÇˆ˜G˜fW&ñgñ¬WFÇ÷ñFVÁFóGí¬&˜WFW2ˆ˜GÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆWFÇˆ˜G˜FW7B◊&W6WF¬WFÇ÷ñFVÁFóGí¬&˜WFW2ˆ˜GÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆWFÇˆF÷ñ‚◊&W6WF¬WFÇ÷ñFVÁFóGí¬&˜WFW2ˆWFÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆWFÇˆWFÚ◊&Vvó7FW&¬WFÇ÷ñFVÁFóGí¬&˜WFW2ˆWFÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆWFÇˆwVW7B÷6ÜV6∂˜WF¬WFÇ÷ñFVÁFóGí¬&˜WFW2ˆWFÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆWFÇˆñÁfˆñ6W6¬WFÇ÷ñFVÁFóGí¬&˜WFW2ˆ6∆ñVÁB÷WFÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆWFÇˆ∆ˆvñÊ¬WFÇ÷ñFVÁFóGí¬&˜WFW2ˆWFÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆWFÇˆ∆ˆv˜WF¬WFÇ÷ñFVÁFóGí¬&˜WFW2ˆWFÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆWFÇˆ÷vñ2÷∆ñÊ∂¬WFÇ÷ñFVÁFóGí¬&˜WFW2ˆ6∆ñVÁB÷WFÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆWFÇˆ÷vñ2÷∆ñÊ≤˜f∆ñFFV¬WFÇ÷ñFVÁFóGí¬&˜WFW2ˆ6∆ñVÁB÷WFÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆWFÇˆ÷V¬WFÇ÷ñFVÁFóGí¬&˜WFW2ˆWFÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆWFÇˆ÷V¬WFÇ÷ñFVÁFóGí¬&˜WFW2ˆWFÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆWFÇˆ˜&FW'6¬WFÇ÷ñFVÁFóGí¬&˜WFW2ˆ6∆ñVÁB÷WFÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆWFÇ˜&Vvó7FW&¬WFÇ÷ñFVÁFóGí¬&˜WFW2ˆWFÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ6∆ñVÁBˆñÁfˆñ6W6¬WFÇ÷ñFVÁFóGí¬&˜WFW2ˆ6∆ñVÁB÷WFÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆíˆ6∆ñVÁBˆ÷vñ2÷∆ñÊ∂¬WFÇ÷ñFVÁFóGí¬&˜WFW2ˆ6∆ñVÁB÷WFÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ6∆⁄±Ó∏¬∏≠yÍÎ¢∞k¢Gß¶*^}` | catalog | `routes/admin-boutique-categories.js` (resolved-owned) |
+| `parcel_events` | `logistics` | declared-table-owner | logistics | ‚Äî |
+| `parcel_items` | `logistics` | declared-table-owner | dashboard, logistics, platform-ops | customs, dashboard, documents, economic-engine, inventory, orders, payments |
+| `parcels` | `logistics` | declared-table-owner | dashboard, logistics, platform-ops | auth-identity, customs, dashboard, documents, economic-engine, incident-management, inventory, notifications, orders, payments, recommendations |
+| `partners` | `dashboard` | single-writer | dashboard | ‚Äî |
+| `paypal_events_processed` | `payments` | single-writer | payments | ‚Äî |
+| `physical_offers` | `providers-services` | single-writer | providers-services | market-delegation |
+| `physical_outcome_receipts` | `infrastructure` | single-writer | infrastructure | ‚Äî |
+| `pickup_code_generations` | `logistics` | declared-table-owner | logistics | ‚Äî |
+| `pickup_collect_failures` | `logistics` | declared-table-owner | logistics | ‚Äî |
+| `pickup_print_tokens` | `logistics` | declared-table-owner | infrastructure, logistics | ‚Äî |
+| `pickup_reveal_codes` | `logistics` | declared-table-owner | infrastructure, logistics | ‚Äî |
+| `pickup_verify_attempts` | `logistics` | single-writer | logistics | ‚Äî |
+| `price_history` | `economic-engine` | declared-table-owner | economic-engine | ‚Äî |
+| `pricing_benchmarks` | _ambigu√´_ | no-declared-writer | ‚Äî | economic-engine |
+| `pricing_category_dims` | `economic-engine` | single-writer | economic-engine | ‚Äî |
+| `pricing_category_taxes` | `economic-engine` | single-writer | economic-engine | ‚Äî |
+| `pricing_components` | `economic-engine` | single-writer | economic-engine | ‚Äî |
+| `pricing_global_access_grants` | _ambigu√´_ | no-declared-writer | ‚Äî | economic-engine, market-control-plane |
+| `pricing_market_decision_policy_events` | `economic-engine` | declared-table-owner | economic-engine | ‚Äî |
+| `pricing_matrices_audit` | `economic-engine` | single-writer | economic-engine | ‚Äî |
+| `pricing_maturity_disposition_events` | `economic-engine` | declared-table-owner | economic-engine | ‚Äî |
+| `pricing_strategies` | `economic-engine` | single-writer | economic-engine | ‚Äî |
+| `pricing_strategy_history` | `economic-engine` | single-writer | economic-engine | ‚Äî |
+| `product_attributes` | `catalog` | single-writer | catalog | ‚Äî |
+| `product_content_profile` | `catalog` | single-writer | catalog | ‚Äî |
+| `product_content_sections` | `catalog` | single-writer | catalog | ‚Äî |
+| `product_market_exposure` | `catalog` | declared-table-owner | catalog | dashboard, market-delegation |
+| `product_market_price_draft_events` | `market-autonomy` | declared-table-owner | market-autonomy | ‚Äî |
+| `product_market_price_drafts` | `market-autonomy` | declared-table-owner | market-autonomy | catalog, dashboard, market-delegation |
+| `product_sku_media` | `catalog` | declared-table-owner | catalog | sourcing |
+| `product_sku_physical_codes` | `logistics` | declared-table-owner | logistics | ‚Äî |
+| `product_skus` | `catalog` | declared-table-owner | catalog | market-autonomy, purchasing, sourcing |
+| `product_suppliers` | `purchasing` | single-writer | purchasing | logistics |
+| `product_variants` | `catalog` | declared-table-owner | catalog | economic-engine, logistics, market-autonomy, orders, sourcing |
+| `products` | `catalog` | declared-table-owner | catalog, dashboard, logistics | auth-identity, customs, documents, economic-engine, inventory, local-stock, market-autonomy, market-delegation, orders, platform-ops, purchasing, recommendations, shared-cart, sourcing, unsold-resolution |
+| `provider_credentials` | `sourcing` | declared-table-owner | sourcing | ‚Äî |
+| `providers` | `providers-services` | single-writer | providers-services | market-delegation |
+| `purchase_lines` | `purchasing` | declared-table-owner | purchasing | dashboard |
+| `purchase_order_authorizations` | `purchasing` | declared-table-owner | purchasing | logistics |
+| `purchase_orders` | `purchasing` | declared-table-owner | purchasing | dashboard, logistics |
+| `purchase_variance_decisions` | `purchasing` | declared-table-owner | purchasing | ‚Äî |
+| `recipients` | `orders` | multi-writer-resolved-by-classification-signal | dashboard, orders | documents, economic-engine, logistics, notifications |
+| `refund_execution_intents` | `refunds` | single-writer | refunds | ‚Äî |
+| `refunds` | `refunds` | single-writer | refunds | documents, economic-engine, orders |
+| `relais` | `logistics` | declared-table-owner | dashboard, logistics | auth-identity, documents, economic-engine, local-stock, market-control-plane, market-delegation, notifications, orders, platform-ops, purchasing |
+| `relay_product_return_receipts` | `logistics` | declared-table-owner | logistics | ‚Äî |
+| `relay_return_compensations` | `orders` | declared-table-owner | orders | ‚Äî |
+| `revoked_tokens` | `auth-identity` | declared-table-owner | auth-identity, infrastructure | auth |
+| `risk_provisions` | `economic-engine` | single-writer | economic-engine | ‚Äî |
+| `scan_events` | `logistics` | declared-table-owner | dashboard, logistics | incident-management, notifications, payments, platform-ops |
+| `scans` | `logistics` | declared-table-owner | logistics, orders, platform-ops | dashboard |
+| `schema_migrations` | `infrastructure` | single-writer | infrastructure | ‚Äî |
+| `services` | `providers-services` | single-writer | providers-services | market-delegation |
+| `shared_cart_events` | `shared-cart` | single-writer | shared-cart | ‚Äî |
+| `shared_cart_items` | `shared-cart` | single-writer | shared-cart | ‚Äî |
+| `shared_cart_saved_access` | `shared-cart` | single-writer | shared-cart | ‚Äî |
+| `shared_carts` | `shared-cart` | single-writer | shared-cart | ‚Äî |
+| `shipments` | `logistics` | single-writer | logistics | ‚Äî |
+| `signals` | `decision-signals` | declared-table-owner | orders, decision-signals | dashboard |
+| `sms_log` | `orders` | multi-writer-resolved-by-classification-signal | dashboard, orders | ‚Äî |
+| `sourcing_candidate_events` | `sourcing` | declared-table-owner | sourcing | ‚Äî |
+| `sourcing_candidates` | `sourcing` | declared-table-owner | catalog, sourcing | dashboard |
+| `sourcing_canonical_entities` | `sourcing` | declared-table-owner | sourcing | ‚Äî |
+| `sourcing_canonical_entity_refs` | `sourcing` | declared-table-owner | sourcing | ‚Äî |
+| `sourcing_captures` | `sourcing` | declared-table-owner | sourcing | ‚Äî |
+| `sourcing_global_access_grants` | _ambigu√´_ | no-declared-writer | ‚Äî | market-control-plane |
+| `sourcing_match_proposals` | `sourcing` | declared-table-owner | sourcing | ‚Äî |
+| `sourcing_observation_evidence` | `sourcing` | declared-table-owner | sourcing | ‚Äî |
+| `sourcing_observations` | `sourcing` | declared-table-owner | sourcing | ‚Äî |
+| `sourcing_provider_control_events` | `sourcing` | declared-table-owner | sourcing | ‚Äî |
+| `sourcing_resolution_bindings` | `sourcing` | declared-table-owner | sourcing | ‚Äî |
+| `sourcing_resolution_decisions` | `sourcing` | declared-table-owner | sourcing | ‚Äî |
+| `sourcing_source_provides` | `sourcing` | declared-table-owner | sourcing | ‚Äî |
+| `sourcing_source_requests` | `sourcing` | declared-table-owner | sourcing | ‚Äî |
+| `sourcing_sources` | `sourcing` | declared-table-owner | sourcing | ‚Äî |
+| `store_credits` | _ambigu√´_ | no-declared-writer | ‚Äî | economic-engine |
+| `stripe_events_processed` | `payments` | single-writer | payments | ‚Äî |
+| `supplier_catalog_import_rejections` | `catalog` | declared-table-owner | catalog | ‚Äî |
+| `supplier_catalog_imports` | `catalog` | single-writer | catalog | sourcing |
+| `supplier_catalog_sync_checkpoints` | `catalog` | single-writer | catalog | ‚Äî |
+| `supplier_commercial_category_mappings` | `sourcing` | declared-table-owner | sourcing | ‚Äî |
+| `supplier_execution_events` | `purchasing` | declared-table-owner | purchasing | ‚Äî |
+| `supplier_execution_fulfillments` | `purchasing` | declared-table-owner | purchasing | ‚Äî |
+| `supplier_execution_order_lines` | `purchasing` | declared-table-owner | purchasing | ‚Äî |
+| `supplier_execution_orders` | `purchasing` | declared-table-owner | purchasing | ‚Äî |
+| `supplier_execution_payment_proofs` | `purchasing` | declared-table-owner | purchasing | ‚Äî |
+| `supplier_execution_payments` | `purchasing` | declared-table-owner | purchasing | ‚Äî |
+| `supplier_oauth_connections` | `catalog` | single-writer | catalog | ‚Äî |
+| `supplier_payment_settlements` | `purchasing` | single-writer | purchasing | ‚Äî |
+| `suppliers` | `purchasing` | single-writer | purchasing | catalog, sourcing |
+| `suppliers_stats` | _ambigu√´_ | no-declared-writer | ‚Äî | dashboard |
+| `transaction_documents` | `documents` | single-writer | documents | dashboard |
+| `unsold_items` | `unsold-resolution` | single-writer | unsold-resolution | ‚Äî |
+| `user_pickup_authorizations` | `auth-identity` | single-writer | auth-identity | ‚Äî |
+| `users` | `auth-identity` | declared-table-owner | auth-identity, infrastructure | auth, auth-passkey, business-rules, dashboard, documents, economic-engine, logistics, loyalty, market-delegation, notifications, orders, payments, platform-ops, settlement, shared-cart, wallet |
+| `v_loyalty_summary` | _ambigu√´_ | no-declared-writer | ‚Äî | loyalty |
+| `v_unsold_pipeline` | _ambigu√´_ | no-declared-writer | ‚Äî | unsold-resolution |
+| `wallet_consumptions` | `wallet` | multi-writer-resolved-by-classification-signal | dashboard, wallet | ‚Äî |
+| `wallet_credit_lots` | `wallet` | multi-writer-resolved-by-classification-signal | dashboard, wallet | ‚Äî |
+| `wallet_transactions` | `wallet` | multi-writer-resolved-by-classification-signal | dashboard, wallet | documents |
+| `wallets` | `wallet` | multi-writer-resolved-by-classification-signal | dashboard, wallet | documents, refunds |
+| `webauthn_challenges` | `auth-passkey` | single-writer | auth-passkey | ‚Äî |
+| `webauthn_credentials` | `auth-passkey` | single-writer | auth-passkey | ‚Äî |
+
+## Interface ownership
+
+### Routes (contract.exposes)
+
+| Route | Feature | R√©solution technique |
+|---|---|---|
+| `POST /api/auth/otp/request` | auth-identity | `routes/otp.js` (resolved-owned) |
+| `POST /api/auth/otp/verify` | auth-identity | `routes/otp.js` (resolved-owned) |
+| `POST /api/auth/otp/test-reset` | auth-identity | `routes/otp.js` (resolved-owned) |
+| `POST /api/auth/admin-reset` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `POST /api/auth/auto-register` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `POST /api/auth/guest-checkout` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `GET /api/auth/invoices` | auth-identity | `routes/client-auth.js` (resolved-owned) |
+| `POST /api/auth/login` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `POST /api/auth/logout` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `POST /api/auth/magic-link` | auth-identity | `routes/client-auth.js` (resolved-owned) |
+| `GET /api/auth/magic-link/validate` | auth-identity | `routes/client-auth.js` (resolved-owned) |
+| `GET /api/auth/me` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `PUT /api/auth/me` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `GET /api/auth/orders` | auth-identity | `routes/client-auth.js` (resolved-owned) |
+| `POST /api/auth/register` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `GET /api/client/invoices` | auth-identity | `routes/client-auth.js` (resolved-owned) |
+| `POST /api/client/magic-link` | auth-identity | `routes/client-auth.js` (resolved-owned) |
+| `GET /api/client/magic-link/validate` | auth-identity | `routes/client-auth.js` (resolved-owned) |
+| `GET /api/client/orders` | auth-identity | `routes/client-auth.js` (resolved-owned) |
+| `GET /api/auth/me/pickup-authorization` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `PUT /api/auth/me/pickup-authorization` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `DELETE /api/auth/me/pickup-authorization` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `PUT /api/auth/me/password` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `POST /api/auth/activate-account` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `POST /api/auth/password-reset/request` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `POST /api/auth/password-reset/confirm` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `POST /api/auth/step-up/otp/request` | auth-identity | `routes/auth-step-up-otp.js` (resolved-owned) |
+| `POST /api/auth/step-up/otp/verify` | auth-identity | `routes/auth-step-up-otp.js` (resolved-owned) |
+| `POST /api/auth/passkey/register/options` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
+| `POST /api/auth/passkey/register/verify` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
+| `POST /api/auth/passkey/login/options` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
+| `POST /api/auth/passkey/login/verify` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
+| `GET /api/auth/passkey/credentials` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
+| `DELETE /api/auth/passkey/credentials/{id}` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
+| `POST /api/auth/passkey/step-up/options` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
+| `POST /api/auth/passkey/step-up/verify` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
+| `GET /api/admin/rules` | business-rules | `routes/admin-rules.js` (resolved-owned) |
+| `GET /api/admin/rules/{id}` | business-rules | `routes/admin-rules.js` (resolved-owned) |
+| `PATCH /api/admin/rules/{id}` | business-rules | `routes/admin-rules.js` (resolved-owned) |
+| `POST /api/admin/rules/{id}/reset` | business-rules | `routes/admin-rules.js` (resolved-owned) |
+| `GET /api/admin/rules/audit` | business-rules | `routes/admin-rules.js` (resolved-owned) |
+| `GET /api/products` | catalog | `routes/products.js` (resolved-owned) |
+| `GET /api/products/{id}` | catalog | `routes/products.js` (resolved-owned) |
+| `GET /api/products/{id}/detail` | catalog | `routes/catalog-product-detail.js` (resolved-owned) |
+| `GET /api/admin/catalog/approval-queue` | catalog | `routes/admin/catalog-approval.js` (resolved-owned) |
+| `POST /api/admin/catalog/approval-queue/{id}/approve` | catalog | `routes/admin/catalog-approval.js` (resolved-owned) |
+| `POST /api/admin/catalog/approval-queue/{id}/reject` | catalog | `routes/admin/catalog-approval.js` (resolved-owned) |
+| `POST /api/admin/catalog/approval-queue/{id}/override` | catalog | `routes/admin/catalog-approval.js` (resolved-owned) |
+| `GET /api/admin/boutique-categories` | catalog | `routes/admin-boutique-categories.js` (resolved-owned) |
+| `POST /api/admin/boutique-categories` | catalog | `routes/admin-boutique-categories.js` (resolved-owned) |
+| `DELETE /api/admin/boutique-categories/{id}` | catalog | `routes/admin-boutique-categories.js` (resolved-owned) |
+| `GET /api/admin/boutique-categories/{id}` | catalog | `routes/admin-boutique-categories.js` (resolved-owned) |
 | `PUT /api/admin/boutique-categories/{id}` | catalog | `routes/admin-boutique-categories.js` (resolved-owned) |
 | `GET /api/admin/boutique-categories/{id}/subcategories` | catalog | `routes/admin-boutique-categories.js` (resolved-owned) |
 | `POST /api/admin/boutique-categories/{id}/subcategories` | catalog | `routes/admin-boutique-categories.js` (resolved-owned) |
@@ -465,13 +1165,585 @@ _dash_ : pas de Technical Architecture Graph propre au d√©p√¥t dash dans ce pipe
 | `POST /api/admin/workspaces/operations/market/{id}/parcels/{id}/ship` | dashboard | `routes/admin-operations-workspace.js` (resolved-owned) |
 | `GET /api/admin/workspaces/shipping-customs/market/{id}` | dashboard | `routes/admin-shipping-customs-workspace.js` (resolved-owned) |
 | `POST /api/admin/workspaces/shipping-customs/market/{id}/customs/shipments` | dashboard | `routes/admin-shipping-customs-workspace.js` (resolved-owned) |
-| `POST /api/admin/workspaces/shipping-customs/market/{id}/customs/shipmm´Îå+ä◊ûÆ∫+∫$zzb•Á6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆáV"÷F6Ç˜VWVV¬F6Ü&ˆ&B¬&˜WFW2ˆáV"÷F6Ü&ˆ&BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆáV"÷F6Ç˜f∆ñFFR˜∂ñG÷¬F6Ü&ˆ&B¬&˜WFW2ˆáV"÷F6Ü&ˆ&BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜&V∆íˆ˜&FW'6¬F6Ü&ˆ&B¬&˜WFW2˜&V∆í÷F6Ü&ˆ&BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜&V∆íˆ˜&FW'2˜∂ñG÷¬F6Ü&ˆ&B¬&˜WFW2˜&V∆í÷F6Ü&ˆ&BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬D4Çˆí˜&V∆íˆ˜&FW'2˜∂ñG“ˆ6∆ñVÁB÷'6VÁF¬F6Ü&ˆ&B¬&˜WFW2˜&V∆í÷F6Ü&ˆ&BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜&V∆íˆ˜&FW'2˜∂ñG“ˆ6ˆ÷÷VÁF¬F6Ü&ˆ&B¬&˜WFW2˜&V∆í÷F6Ü&ˆ&BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜&V∆íˆ˜&FW'2˜∂ñG“ˆW66∆FV¬F6Ü&ˆ&B¬&˜WFW2˜&V∆í÷F6Ü&ˆ&BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜&V∆íˆ˜&FW'2˜∂ñG“ˆñÊ6ñFVÁF¬F6Ü&ˆ&B¬&˜WFW2˜&V∆í÷F6Ü&ˆ&BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆVÁFóFñW2ˆ6∆ñVÁG2˜∂ñG÷¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚÷6∆ñVÁB”3cÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆVÁFóFñW2ˆ˜&FW'2˜∂ñG÷¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚÷˜&FW"”3cÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆF6Ü&ˆ&B˜&VfW&VÊ6R˜&W6ˆ«fV¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚÷F6Ü&ˆ&B÷÷&∂WBÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆVÁFóFñW2˜&ˆGV7G2˜∂ñG÷¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚◊&ˆGV7B”3cÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜W6W'2˜∂ñG“ˆ÷&∂WB◊66˜W6¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚˜W6W'2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜W6W'2˜∂ñG“ˆ÷&∂WB◊66˜W6¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚˜W6W'2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬DTƒUDRˆíˆF÷ñ‚˜W6W'2˜∂ñG“ˆ÷&∂WB◊66˜W2˜∂ñG÷¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚˜W6W'2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜W6W'2ˆ÷&∂WG6¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚˜W6W'2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜v˜&∑76W2ˆ66˜VÁFñÊrˆ÷&∂WB˜∂ñG÷¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚÷fñÊÊ6R÷66˜VÁFñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2ˆ66˜VÁFñÊrˆ÷&∂WB˜∂ñG“ˆFW˜6óG6¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚÷fñÊÊ6R÷66˜VÁFñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2ˆ66˜VÁFñÊrˆ÷&∂WB˜∂ñG“ˆFW˜6óG2˜∂ñG“ˆFó7WFV¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚÷fñÊÊ6R÷66˜VÁFñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2ˆ66˜VÁFñÊrˆ÷&∂WB˜∂ñG“ˆFW˜6óG2˜∂ñG“˜fW&ñgñ¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚÷fñÊÊ6R÷66˜VÁFñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜v˜&∑76W2ˆ˜W&FñˆÁ2ˆ÷&∂WB˜∂ñG÷¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚÷˜W&FñˆÁ2◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2ˆ˜W&FñˆÁ2ˆ÷&∂WB˜∂ñG“ˆFó7G&ñ'WFñˆ‚˜'VÊ¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚÷˜W&FñˆÁ2◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2ˆ˜W&FñˆÁ2ˆ÷&∂WB˜∂ñG“ˆñÁfVÁF˜'íˆóFV◊2˜∂ñG“ˆ76ñvÊ¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚÷˜W&FñˆÁ2◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2ˆ˜W&FñˆÁ2ˆ÷&∂WB˜∂ñG“ˆ˜&FW'2˜∂ñG“ˆ6ˆÊfó&“÷66Ü¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚÷˜W&FñˆÁ2◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2ˆ˜W&FñˆÁ2ˆ÷&∂WB˜∂ñG“˜&6V«2˜∂ñG“ˆ6ˆ∆∆V7F¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚÷˜W&FñˆÁ2◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2ˆ˜W&FñˆÁ2ˆ÷&∂WB˜∂ñG“˜&6V«2˜∂ñG“˜6Üó¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚÷˜W&FñˆÁ2◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜v˜&∑76W2˜6ÜóñÊr÷7W7Fˆ◊2ˆ÷&∂WB˜∂ñG÷¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚◊6ÜóñÊr÷7W7Fˆ◊2◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜6ÜóñÊr÷7W7Fˆ◊2ˆ÷&∂WB˜∂ñG“ˆ7W7Fˆ◊2˜6Üó÷VÁG6¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚◊6ÜóñÊr÷7W7Fˆ◊2◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜6ÜóñÊr÷7W7Fˆ◊2ˆ÷&∂WB˜∂ñG“ˆ7W7Fˆ◊2˜6Üó÷VÁG2˜∂ñG“ˆ7FófFV¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚◊6ÜóñÊr÷7W7Fˆ◊2◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜6ÜóñÊr÷7W7Fˆ◊2ˆ÷&∂WB˜∂ñG“ˆ7W7Fˆ◊2˜6Üó÷VÁG2˜∂ñG“ˆFV7FófFV¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚◊6ÜóñÊr÷7W7Fˆ◊2◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜6ÜóñÊr÷7W7Fˆ◊2ˆ÷&∂WB˜∂ñG“ˆ7W7Fˆ◊2˜6Üó÷VÁG2˜∂ñG“ˆFV6∆&V¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚◊6ÜóñÊr÷7W7Fˆ◊2◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜6ÜóñÊr÷7W7Fˆ◊2ˆ÷&∂WB˜∂ñG“ˆ7W7Fˆ◊2˜6Üó÷VÁG2˜∂ñG“˜WFFV¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚◊6ÜóñÊr÷7W7Fˆ◊2◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜6ÜóñÊr÷7W7Fˆ◊2ˆ÷&∂WB˜∂ñG“˜&6V«2˜∂ñG“ˆ6ˆÊfó&“◊G&Á6óF¬F6Ü&ˆ&B¬&˜WFW2ˆF÷ñ‚◊6ÜóñÊr÷7W7Fˆ◊2◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆFˆ7V÷VÁG6¬Fˆ7V÷VÁG2¬&˜WFW2ˆF÷ñ‚ˆFˆ7V÷VÁG2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆFˆ7V÷VÁG2˜7V÷÷'ñ¬Fˆ7V÷VÁG2¬&˜WFW2ˆF÷ñ‚ˆFˆ7V÷VÁG2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆFˆ7V÷VÁG2˜∂ñG÷¬Fˆ7V÷VÁG2¬&˜WFW2ˆF÷ñ‚ˆFˆ7V÷VÁG2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆWFÇˆ÷RˆFˆ7V÷VÁG6¬Fˆ7V÷VÁG2¬&˜WFW2ˆFˆ7V÷VÁG2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆWFÇˆ÷RˆFˆ7V÷VÁG2˜∂ñG“ˆF˜vÊ∆ˆF¬Fˆ7V÷VÁG2¬&˜WFW2ˆFˆ7V÷VÁG2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆñÁfˆñ6W6¬Fˆ7V÷VÁG2¬&˜WFW2ˆñÁfˆñ6W2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆñÁfˆñ6W2˜∂ñG÷¬Fˆ7V÷VÁG2¬&˜WFW2ˆñÁfˆñ6W2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆñÁfˆñ6W2˜∂ñG“ˆß6ˆÊ¬Fˆ7V÷VÁG2¬&˜WFW2ˆñÁfˆñ6W2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆñÁfˆñ6W2˜∂ñG“ˆF˜vÊ∆ˆF¬Fˆ7V÷VÁG2¬&˜WFW2ˆñÁfˆñ6W2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜&ñ6ñÊr˜&V6ˆ÷÷VÊF¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2˜&ñ6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊv¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊr˜6ñ◊V∆FV¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊrˆf∆˜v¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊr˜&ˆGV7G2˜∂ñG“ˆ«í◊&ñ6V¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊr˜7G&FVwñ¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊr˜7G&FVwíˆ«ñ¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊrˆ6ˆ◊WFóF˜'6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊrˆ6ˆ◊WFóF˜'2˜∂ñG“ˆFV7FófFV¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊrˆ6˜7B÷6ˆ◊ˆÊVÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊrˆ6˜7B÷6ˆ◊ˆÊVÁG2˜∂ñG“˜WFFV¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊrˆ6˜7B÷6ˆ◊ˆÊVÁG2˜∂ñG“˜Fˆvv∆V¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊrˆ÷&∂WB˜∂ñG÷¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊrˆ÷&∂WB˜∂ñG“ˆFV6ó6ñˆÊ¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊrˆ÷&∂WB˜∂ñG“ˆFV6ó6ñˆ‚◊ˆ∆ñ7íˆÜó7F˜'ñ¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊrˆ÷&∂WB˜∂ñG“ˆFV6ó6ñˆ‚◊ˆ∆ñ7ñ¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊrˆ÷&∂WB˜∂ñG“ˆ6˜7B÷6ˆ◊ˆÊVÁG2˜∂ñG“˜WFFV¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊrˆ÷&∂WB˜∂ñG“ˆ6˜7B÷6ˆ◊ˆÊVÁG2˜∂ñG“˜Fˆvv∆V¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊrˆ÷&∂WB˜∂ñG“ˆ6˜7B÷6ˆ◊ˆÊVÁG2˜∂ñG“˜&W6WF¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊrˆ÷&∂WB˜∂ñG“ˆ6˜'&ñF˜&¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊrˆ÷&∂WB˜∂ñG“˜&ñ6R÷ˆ'6W'fFñˆÁ6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊrˆ÷&∂WB˜∂ñG“˜&ñ6R÷ˆ'6W'fFñˆÁ2˜∂ñG“ˆFV7FófFV¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆ6˜7B÷6ˆ◊ˆÊVÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚÷6˜7B÷6ˆ◊ˆÊVÁG2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚ˆ6˜7B÷6ˆ◊ˆÊVÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚÷6˜7B÷6ˆ◊ˆÊVÁG2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆ6˜7B÷6ˆ◊ˆÊVÁG2ıˆ÷WF¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚÷6˜7B÷6ˆ◊ˆÊVÁG2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬DTƒUDRˆíˆF÷ñ‚ˆ6˜7B÷6ˆ◊ˆÊVÁG2˜∂ñG÷¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚÷6˜7B÷6ˆ◊ˆÊVÁG2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆ6˜7B÷6ˆ◊ˆÊVÁG2˜∂ñG÷¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚÷6˜7B÷6ˆ◊ˆÊVÁG2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆF÷ñ‚ˆ6˜7B÷6ˆ◊ˆÊVÁG2˜∂ñG÷¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚÷6˜7B÷6ˆ◊ˆÊVÁG2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚ˆ6˜7B÷6ˆ◊ˆÊVÁG2˜∂ñG“˜Fˆvv∆V¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚÷6˜7B÷6ˆ◊ˆÊVÁG2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆV6ˆÊˆ÷ñ2ˆ6Ü&vW6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆV6ˆÊˆ÷ñ2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚ˆV6ˆÊˆ÷ñ2ˆ6Ü&vW6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆV6ˆÊˆ÷ñ2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬DTƒUDRˆíˆF÷ñ‚ˆV6ˆÊˆ÷ñ2ˆ6Ü&vW2˜∂ñG÷¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆV6ˆÊˆ÷ñ2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆF÷ñ‚ˆV6ˆÊˆ÷ñ2ˆ6Ü&vW2˜∂ñG÷¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆV6ˆÊˆ÷ñ2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆF÷ñ‚ˆV6ˆÊˆ÷ñ2ˆ6Ü&vW2˜∂ñG“˜Fˆvv∆V¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆV6ˆÊˆ÷ñ2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆV6ˆÊˆ÷ñ2ˆ6ˆÜW&VÊ6V¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆV6ˆÊˆ÷ñ2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆV6ˆÊˆ÷ñ2ˆWÜV7WFófV¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆV6ˆÊˆ÷ñ2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆV6ˆÊˆ÷ñ2ˆÜó7F˜'ñ¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆV6ˆÊˆ÷ñ2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚ˆV6ˆÊˆ÷ñ2˜&VFó7G&ñ'WFV¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆV6ˆÊˆ÷ñ2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆV6ˆÊˆ÷ñ2˜f&ñ&∆W6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆV6ˆÊˆ÷ñ2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆF÷ñ‚ˆV6ˆÊˆ÷ñ2˜f&ñ&∆W2˜∂ñG÷¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆV6ˆÊˆ÷ñ2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆfñÊÊ6R÷6ˆÊfñv¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚÷fñÊÊ6R÷6ˆÊfñrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆF÷ñ‚ˆfñÊÊ6R÷6ˆÊfñv¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚÷fñÊÊ6R÷6ˆÊfñrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆfñÊÊ6R÷6ˆÊfñr˜66ÜV÷¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚÷fñÊÊ6R÷6ˆÊfñrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆfñÊÊ6RˆWá˜'F¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆfñÊÊ6RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆfñÊÊ6R˜&W˜'F¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆfñÊÊ6RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆfñÊÊ6R˜7G&óR◊&ˆˆg6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆfñÊÊ6RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆfñÊÊ6R˜7V÷÷'ñ¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆfñÊÊ6RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜&ñ6ñÊr÷6ˆ◊ˆÊVÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr÷6ˆ◊ˆÊVÁG2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜&ñ6ñÊr÷6ˆ◊ˆÊVÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr÷6ˆ◊ˆÊVÁG2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬DTƒUDRˆíˆF÷ñ‚˜&ñ6ñÊr÷6ˆ◊ˆÊVÁG2˜∂ñG÷¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr÷6ˆ◊ˆÊVÁG2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜&ñ6ñÊr÷6ˆ◊ˆÊVÁG2˜∂ñG÷¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr÷6ˆ◊ˆÊVÁG2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆF÷ñ‚˜&ñ6ñÊr÷6ˆ◊ˆÊVÁG2˜∂ñG÷¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr÷6ˆ◊ˆÊVÁG2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆF÷ñ‚˜&ñ6ñÊr÷6ˆ◊ˆÊVÁG2˜∂ñG“˜Fˆvv∆V¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr÷6ˆ◊ˆÊVÁG2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜&ñ6ñÊr÷÷G&ñ6W2ˆFñ◊6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr÷÷G&ñ6W2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆF÷ñ‚˜&ñ6ñÊr÷÷G&ñ6W2ˆFñ◊2˜∂ñG÷¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr÷÷G&ñ6W2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜&ñ6ñÊr÷÷G&ñ6W2˜FÜW6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr÷÷G&ñ6W2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆF÷ñ‚˜&ñ6ñÊr÷÷G&ñ6W2˜FÜW2˜∂ñG÷¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr÷÷G&ñ6W2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜6˜W&6ñÊrˆÊ«ó6ó6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2˜6˜W&6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜6˜W&6ñÊrˆÊ«ó6ó2˜∂ñG÷¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2˜6˜W&6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜6˜W&6ñÊrˆ'V∆≤◊&ñ∆¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2˜6˜W&6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜6˜W&6ñÊrˆ6ˆÊfñv¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2˜6˜W&6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆF÷ñ‚˜6˜W&6ñÊr˜&ˆGV7G2˜∂ñG÷¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2˜6˜W&6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜6˜W&6ñÊr˜&ˆGV7G2˜∂ñG“˜f&ñÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2˜6˜W&6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆF÷ñ‚˜6˜W&6ñÊr˜&ˆGV7G2˜∂ñG“˜f&ñÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2˜6˜W&6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜6˜W&6ñÊr˜7ñÁFÜW6ó6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2˜6˜W&6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜&ó6≤◊&˜fó6ñˆÁ6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ó6≤◊&˜fó6ñˆÁ2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜&ó6≤◊&˜fó6ñˆÁ6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ó6≤◊&˜fó6ñˆÁ2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬DTƒUDRˆíˆF÷ñ‚˜&ó6≤◊&˜fó6ñˆÁ2˜∂ñG÷¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ó6≤◊&˜fó6ñˆÁ2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜&ó6≤◊&˜fó6ñˆÁ2˜∂ñG÷¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ó6≤◊&˜fó6ñˆÁ2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆF÷ñ‚˜&ó6≤◊&˜fó6ñˆÁ2˜∂ñG÷¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ó6≤◊&˜fó6ñˆÁ2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆF÷ñ‚˜&ó6≤◊&˜fó6ñˆÁ2˜∂ñG“˜Fˆvv∆V¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ó6≤◊&˜fó6ñˆÁ2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF6Ü&ˆ&BˆÊÁV∆FñˆÁ2◊&6V«6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF6Ü&ˆ&B÷fñÊÊ6RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF6Ü&ˆ&BˆfñÊÊ6V¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF6Ü&ˆ&B÷fñÊÊ6RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF6Ü&ˆ&B˜ñ÷VÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF6Ü&ˆ&B÷fñÊÊ6RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF6Ü&ˆ&B˜6∆W6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF6Ü&ˆ&B÷fñÊÊ6RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆí˜&ñ6ñÊrˆ«í÷∆∆¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2˜&ñ6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆí˜&ñ6ñÊrˆ«í◊&ñ6R˜∂ñG÷¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2˜&ñ6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜&ñ6ñÊrˆ&VÊ6Ü÷&∑6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2˜&ñ6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆí˜&ñ6ñÊrˆ&VÊ6Ü÷&∑6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2˜&ñ6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜&ñ6ñÊrˆ&VÊ6Ü÷&∑2÷v¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2˜&ñ6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬DTƒUDRˆí˜&ñ6ñÊrˆ&VÊ6Ü÷&∑2˜∂ñG“˜∂ñG÷¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2˜&ñ6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜&ñ6ñÊrˆ6∆7V∆FV¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2˜&ñ6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜&ñ6ñÊrˆ6˜WGW&V¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2˜&ñ6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜&ñ6ñÊrˆF6Ü&ˆ&F¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2˜&ñ6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜&ñ6ñÊrˆf∆˜v¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2˜&ñ6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜&ñ6ñÊr˜&FW6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2˜&ñ6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆí˜&ñ6ñÊr˜&FW6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2˜&ñ6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜&ñ6ñÊr˜&V6ˆ÷÷VÊB÷&F6Ü¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2˜&ñ6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜&ñ6ñÊr˜7G&FVwñ¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2˜&ñ6ñÊr◊7G&FVwíÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜&ñ6ñÊr˜7G&FVwíˆ«ñ¬ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊrˆ÷&∂WB˜∂ñG“˜&ˆGV7G2˜∂ñG“ˆ∆ˆ6¬◊&ñ6V¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊrˆ÷&∂WB˜∂ñG“˜&ˆGV7G2˜∂ñG“ˆ∆ˆ6¬◊&ñ6Rˆ7FófFV¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊrˆ÷&∂WB˜∂ñG“˜&ˆGV7G2˜∂ñG“ˆ∆ˆ6¬◊&ñ6Rˆ7FófFñˆ‚◊&WfñWv¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊrˆ÷&∂WB˜∂ñG“˜&ˆGV7G2˜∂ñG“ˆ∆ˆ6¬◊&ñ6R˜&W6WF¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆñ⁄±Ó∏¬∏≠yÍÎ¢∞k¢Gß¶*^m´Îå+ä◊ûÆ∫+∫$zzb•‚ˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊrˆ÷&∂WB˜∂ñG“˜6ñ◊V∆FR÷ñ◊7F¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊrˆ÷&∂WB˜∂ñG“˜7G'V7GW&R÷WfVÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊrˆ÷&∂WB˜∂ñG“˜7G'V7GW&R÷WfVÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊr˜6ñ◊V∆FR÷ñ◊7F¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊr˜7G'V7GW&R÷WfVÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊr˜7G'V7GW&R÷WfVÁG6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊr˜7G'V7GW&R÷WfVÁG2˜∂ñG“ˆGG&ñ'WFñˆÁ6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊr˜7G'V7GW&R÷WfVÁG2˜∂ñG“ˆGG&ñ'WFñˆÁ6¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊr˜7G'V7GW&R÷WfVÁG2˜∂ñG“ˆGG&ñ'WFñˆÁ2˜&WfW'6V¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜&ñ6ñÊr˜7G'V7GW&R÷WfVÁG2˜∂ñG“ˆGG&ñ'WFñˆÁ2ˆ6˜'&V7F¬V6ˆÊˆ÷ñ2÷VÊvñÊR¬&˜WFW2ˆF÷ñ‚◊&ñ6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆÜV«FÜ¬ñÊg&7G'V7GW&R¬6W'fW"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜V&∆ñ2ˆ6ˆÊfñv¬ñÊg&7G'V7GW&R¬6W'fW"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUB˜vV&Üˆˆ≤ˆWFÜ∂Wí◊vÜG6¬ñÊg&7G'V7GW&R¬(	BÜÊ˜B÷ñ‚÷˜VÊí÷6ˆÁG&7Bí¿ß¬tUBÚ¢ÊáF÷∆¬ñÊg&7G'V7GW&R¬(	BÜÊ˜B÷ñ‚÷˜VÊí÷6ˆÁG&7Bí¿ß¬tUBˆíˆáV"ˆñÁfVÁF˜'íˆ'VffW&¬ñÁfVÁF˜'í¬&˜WFW2ˆñÁfVÁF˜'í÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆáV"ˆñÁfVÁF˜'íˆ˜V‚◊&6V«6¬ñÁfVÁF˜'í¬&˜WFW2ˆñÁfVÁF˜'í÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆáV"ˆñÁfVÁF˜'íˆ˜&FW"˜∂ñG“ˆFó7F6Ü¬ñÁfVÁF˜'í¬&˜WFW2ˆñÁfVÁF˜'í÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆáV"ˆñÁfVÁF˜'í˜&˜˜6«6¬ñÁfVÁF˜'í¬&˜WFW2ˆñÁfVÁF˜'í÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆáV"ˆñÁfVÁF˜'í˜&˜˜6R÷∆∆¬ñÁfVÁF˜'í¬&˜WFW2ˆñÁfVÁF˜'í÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆáV"ˆñÁfVÁF˜'í˜&V6VófV¬ñÁfVÁF˜'í¬&˜WFW2ˆñÁfVÁF˜'í÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆáV"ˆñÁfVÁF˜'í˜66‚÷76ñvÊ¬ñÁfVÁF˜'í¬&˜WFW2ˆñÁfVÁF˜'í÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆáV"ˆñÁfVÁF˜'í˜7FG6¬ñÁfVÁF˜'í¬&˜WFW2ˆñÁfVÁF˜'í÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ∆ˆ6¬◊7Fˆ6≤ˆfñ∆&ñ∆óGñ¬∆ˆ6¬◊7Fˆ6≤¬&˜WFW2ˆ∆ˆ6¬◊7Fˆ6≤Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ∆ˆ6¬◊7Fˆ6≤ˆ6ÜV6∂˜WB◊&WfñWv¬∆ˆ6¬◊7Fˆ6≤¬&˜WFW2ˆ∆ˆ6¬◊7Fˆ6≤Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜c"˜&6V«2˜∂ñG“˜66Ê¬∆ˆvó7Fñ72¬&˜WFW2˜&6V¬÷í◊c"˜66Á2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜G&6∂ñÊr˜∂ñG÷¬∆ˆvó7Fñ72¬&˜WFW2˜G&6∂ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ6'&ñW'6¬∆ˆvó7Fñ72¬&˜WFW2ˆ6'&ñW'2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆíˆ6'&ñW'6¬∆ˆvó7Fñ72¬&˜WFW2ˆ6'&ñW'2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬DTƒUDRˆíˆ6'&ñW'2˜∂ñG÷¬∆ˆvó7Fñ72¬&˜WFW2ˆ6'&ñW'2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬D4Çˆíˆ6'&ñW'2˜∂ñG÷¬∆ˆvó7Fñ72¬&˜WFW2ˆ6'&ñW'2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬D4Çˆíˆ6'&ñW'2ˆ7W7Fˆ◊2˜∂ñG÷¬∆ˆvó7Fñ72¬&˜WFW2ˆ6'&ñW'2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ6∆ñVÁB˜G&6∂ñÊv¬∆ˆvó7Fñ72¬&˜WFW2ˆ6∆ñVÁB◊G&6∂ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆáV"ˆWFÚ÷Fó7G&ñ'WFV¬∆ˆvó7Fñ72¬&˜WFW2ˆWFÚ÷Fó7G&ñ'WFR÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆáV"ˆWFÚ÷Fó7G&ñ'WFV¬∆ˆvó7Fñ72¬&˜WFW2ˆWFÚ÷Fó7G&ñ'WFR÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆáV"ˆWFÚ÷Fó7G&ñ'WFRˆ6∆VÁW¬∆ˆvó7Fñ72¬&˜WFW2ˆWFÚ÷Fó7G&ñ'WFR÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆáV"ˆ&F6Ç◊66Ê¬∆ˆvó7Fñ72¬&˜WFW2ˆáV"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆáV"˜6∂¬∆ˆvó7Fñ72¬&˜WFW2ˆáV"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆáV"˜VÊFñÊv¬∆ˆvó7Fñ72¬&˜WFW2ˆáV"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆáV"˜Ü˜Fˆ¬∆ˆvó7Fñ72¬&˜WFW2ˆáV"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆáV"˜66Ê¬∆ˆvó7Fñ72¬&˜WFW2ˆáV"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆáV"˜6V∆¬∆ˆvó7Fñ72¬&˜WFW2ˆáV"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆáV"˜6V&6Ü¬∆ˆvó7Fñ72¬&˜WFW2ˆáV"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆáV"˜7FG2˜vVV∂¬∆ˆvó7Fñ72¬&˜WFW2ˆáV"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆáV"˜FˆFñ¬∆ˆvó7Fñ72¬&˜WFW2ˆáV"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆáV"˜fˆ«V÷V¬∆ˆvó7Fñ72¬&˜WFW2ˆáV"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ∆ˆvó7Fñ72ˆ∆&V«2˜∂ñG÷¬∆ˆvó7Fñ72¬&˜WFW2ˆ∆ˆvó7Fñ72Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ∆ˆvó7Fñ72ˆ÷ÊñfW7B˜∂ñG÷¬∆ˆvó7Fñ72¬&˜WFW2ˆ∆ˆvó7Fñ72Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ∆ˆvó7Fñ72˜6Üó÷VÁG6¬∆ˆvó7Fñ72¬&˜WFW2ˆ∆ˆvó7Fñ72Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆíˆ∆ˆvó7Fñ72˜6Üó÷VÁG6¬∆ˆvó7Fñ72¬&˜WFW2ˆ∆ˆvó7Fñ72Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬D4Çˆíˆ∆ˆvó7Fñ72˜6Üó÷VÁG2˜∂ñG÷¬∆ˆvó7Fñ72¬&˜WFW2ˆ∆ˆvó7Fñ72Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜&6V«2˜∂ñG“ˆóFV◊6¬∆ˆvó7Fñ72¬&˜WFW2˜&6V«2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬DTƒUDRˆí˜&6V«2˜∂ñG“ˆóFV◊2˜∂ñG÷¬∆ˆvó7Fñ72¬&˜WFW2˜&6V«2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬D4Çˆí˜&6V«2˜∂ñG“˜7FGW6¬∆ˆvó7Fñ72¬&˜WFW2˜&6V«2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜&6V«2˜∂ñG“˜fW&ñgí◊6V∆¬∆ˆvó7Fñ72¬&˜WFW2˜&6V«2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜&6V«2˜∂ñG“˜vVñváF¬∆ˆvó7Fñ72¬&˜WFW2˜&6V«2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜&6V«2˜∂ñG÷¬∆ˆvó7Fñ72¬&˜WFW2˜&6V«2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜&6V«2˜∂ñG“ˆWfVÁG6¬∆ˆvó7Fñ72¬&˜WFW2˜&6V«2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜&6V«2ˆ&ˆ˜G7G&˜∂ñG÷¬∆ˆvó7Fñ72¬&˜WFW2˜&6V«2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜&6V«2ˆ˜Fñ÷ó¶V¬∆ˆvó7Fñ72¬&˜WFW2˜&6V«2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜ñ6∑Wˆ6ˆ∆∆V7B˜∂ñG÷¬∆ˆvó7Fñ72¬&˜WFW2˜ñ6∑W◊6V7&WBÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜ñ6∑W˜í÷66Ç˜∂ñG÷¬∆ˆvó7Fñ72¬&˜WFW2˜ñ6∑W◊6V7&WBÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜ñ6∑W˜&V6VóB˜∂ñG÷¬∆ˆvó7Fñ72¬&˜WFW2˜ñ6∑W◊6V7&WBÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜ñ6∑W˜&VvVÊW&FR˜∂ñG÷¬∆ˆvó7Fñ72¬&˜WFW2˜ñ6∑W◊6V7&WBÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜ñ6∑W˜&WfV¬÷ˆÊ6R˜∂ñG÷¬∆ˆvó7Fñ72¬&˜WFW2˜ñ6∑W◊6V7&WBÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜ñ6∑W˜7FGW2˜∂ñG÷¬∆ˆvó7Fñ72¬&˜WFW2˜ñ6∑W◊6V7&WBÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜ñ6∑W˜fW&ñgí˜∂ñG÷¬∆ˆvó7Fñ72¬&˜WFW2˜ñ6∑W◊6V7&WBÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜ñ6∑WˆWÜ6WFñˆÊ¬◊ñ6∑W˜∂ñG÷¬∆ˆvó7Fñ72¬&˜WFW2˜ñ6∑W◊6V7&WBÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜ñ6∑WˆWÜ6WFñˆÊ¬◊ñ6∑W˜∂ñG“ˆ6ˆ∆∆V7F¬∆ˆvó7Fñ72¬&˜WFW2˜ñ6∑W◊6V7&WBÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜&V∆ó6¬∆ˆvó7Fñ72¬&˜WFW2˜&V∆ó2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜&V∆ó2˜∂ñG÷¬∆ˆvó7Fñ72¬&˜WFW2˜&V∆ó2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜&V∆ó2˜V&∆ñ6¬∆ˆvó7Fñ72¬&˜WFW2˜&V∆ó2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜66Á6¬∆ˆvó7Fñ72¬&˜WFW2˜66Á2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜66Á2˜∂ñG÷¬∆ˆvó7Fñ72¬&˜WFW2˜66Á2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜66Á2ˆ6ˆ∆∆V7F¬∆ˆvó7Fñ72¬&˜WFW2˜66Á2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜66Á2ˆáV"˜VÊFñÊv¬∆ˆvó7Fñ72¬&˜WFW2˜66Á2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜66Á2ˆáV"˜&V6VófV¬∆ˆvó7Fñ72¬&˜WFW2˜66Á2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜66Á2ˆáV"˜&V6ˆÊ6ñ∆V¬∆ˆvó7Fñ72¬&˜WFW2˜66Á2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜66Á2˜fW&ñgí◊&¬∆ˆvó7Fñ72¬&˜WFW2˜66Á2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜G&6∂ñÊr˜∂ñG“˜fW&ñgí◊ñ6∑W¬∆ˆvó7Fñ72¬&˜WFW2˜G&6∂ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜G&Á6óF¬∆ˆvó7Fñ72¬&˜WFW2˜G&Á6óB÷F6Ü&ˆ&BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜G&Á6óB÷F6Ü&ˆ&F¬∆ˆvó7Fñ72¬&˜WFW2˜G&Á6óB÷F6Ü&ˆ&BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜G&Á6óB÷F6Ü&ˆ&B˜∂ñG“˜G&Á6óF¬∆ˆvó7Fñ72¬&˜WFW2˜G&Á6óB÷F6Ü&ˆ&BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜G&Á6óB˜∂ñG“˜G&Á6óF¬∆ˆvó7Fñ72¬&˜WFW2˜G&Á6óB÷F6Ü&ˆ&BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜G&Á6óFó&RˆÜó7F˜'ñ¬∆ˆvó7Fñ72¬&˜WFW2˜G&Á6óFó&R÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜G&Á6óFó&R˜&6V«6¬∆ˆvó7Fñ72¬&˜WFW2˜G&Á6óFó&R÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜G&Á6óFó&R˜6Üó¬∆ˆvó7Fñ72¬&˜WFW2˜G&Á6óFó&R÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜G&Á6óFó&R˜7FG6¬∆ˆvó7Fñ72¬&˜WFW2˜G&Á6óFó&R÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜c"˜&6V«6¬∆ˆvó7Fñ72¬&˜WFW2˜&6V¬÷í◊c"˜&VBÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜c"˜&6V«2˜∂ñG÷¬∆ˆvó7Fñ72¬&˜WFW2˜&6V¬÷í◊c"˜&VBÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜c"˜&6V«2˜∂ñG“ˆ∆&V∆¬∆ˆvó7Fñ72¬&˜WFW2˜&6V¬÷∆&V¬Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜c"˜&6V«2˜∂ñG“˜Fñ÷V∆ñÊV¬∆ˆvó7Fñ72¬&˜WFW2˜&6V¬÷í◊c"˜&VBÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜c"˜&6V«2ˆ∆W'G6¬∆ˆvó7Fñ72¬&˜WFW2˜&6V¬÷í◊c"˜&VBÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜c"˜&6V«2ˆ7&óFñ6∆¬∆ˆvó7Fñ72¬&˜WFW2˜&6V¬÷í◊c"˜&VBÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜c"˜&6V«2ˆ∑ó6¬∆ˆvó7Fñ72¬&˜WFW2˜&6V¬÷í◊c"˜&VBÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜c"˜&6V«2˜&V6ˆÊ6ñ∆ñFñˆÊ¬∆ˆvó7Fñ72¬&˜WFW2˜&6V¬÷í◊c"˜&VBÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆáV"ˆ÷˜fV¬∆ˆvó7Fñ72¬&˜WFW2ˆáV"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆáV"ˆ˜WF6ˆ÷V¬∆ˆvó7Fñ72¬&˜WFW2ˆáV"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆáV"˜&Wf∆ñFFV¬∆ˆvó7Fñ72¬&˜WFW2ˆáV"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆáV"˜G&Á6óFñˆÊ¬∆ˆvó7Fñ72¬&˜WFW2ˆáV"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆáV"˜VÊóF¬∆ˆvó7Fñ72¬&˜WFW2ˆáV"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜&6V«6¬∆ˆvó7Fñ72¬&˜WFW2˜&6V«2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜&6V«6¬∆ˆvó7Fñ72¬&˜WFW2˜&6V«2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ∆˜ñ«Gí˜FñW'6¬∆˜ñ«Gí¬&˜WFW2ˆ∆˜ñ«GíÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆ∆˜ñ«Gí˜VÊFñÊv¬∆˜ñ«Gí¬&˜WFW2ˆF÷ñ‚÷∆˜ñ«GíÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆ∆˜ñ«GíˆÜó7F˜'ñ¬∆˜ñ«Gí¬&˜WFW2ˆF÷ñ‚÷∆˜ñ«GíÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚ˆ∆˜ñ«Gí˜&Wv&B˜∂ñG÷¬∆˜ñ«Gí¬&˜WFW2ˆF÷ñ‚÷∆˜ñ«GíÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚ˆ∆˜ñ«Gí˜6∂ó˜∂ñG÷¬∆˜ñ«Gí¬&˜WFW2ˆF÷ñ‚÷∆˜ñ«GíÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆ∆˜ñ«Gí˜7FG6¬∆˜ñ«Gí¬&˜WFW2ˆF÷ñ‚÷∆˜ñ«GíÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ∆˜ñ«Gíˆ÷V¬∆˜ñ«Gí¬&˜WFW2ˆ∆˜ñ«GíÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ∆˜ñ«Gí˜W6W'6¬∆˜ñ«Gí¬&˜WFW2ˆ∆˜ñ«GíÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ∆˜ñ«Gí˜7FG6¬∆˜ñ«Gí¬&˜WFW2ˆ∆˜ñ«GíÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆ∆˜ñ«Gí˜FñW'2˜∂ñG÷¬∆˜ñ«Gí¬&˜WFW2ˆ∆˜ñ«GíÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆíˆ∆˜ñ«Gí˜&V6∆7V∆FR˜∂ñG÷¬∆˜ñ«Gí¬&˜WFW2ˆ∆˜ñ«GíÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆíˆ∆˜ñ«Gí˜&V6∆7V∆FR÷∆∆¬∆˜ñ«Gí¬&˜WFW2ˆ∆˜ñ«GíÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚ˆ÷&∂WG6¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¬&˜WFW2ˆF÷ñ‚÷÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊRÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚ˆ÷&∂WG2˜∂ñG“ˆ∆ñfV7ñ6∆V¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¬&˜WFW2ˆF÷ñ‚÷÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊRÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆF÷ñ‚ˆ÷&∂WG2˜∂ñG“˜7F˜&Vg&ˆÁF¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¬&˜WFW2ˆF÷ñ‚÷÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊRÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚ˆ÷&∂WG2˜∂ñG“˜&W&˜fó6ñˆÊ¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¬&˜WFW2ˆF÷ñ‚÷÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊRÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆ÷&∂WG6¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¬&˜WFW2ˆF÷ñ‚÷÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊRÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆ÷&∂WG2ˆ6VÁG&¬÷WFÜ˜&óGñ¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¬&˜WFW2ˆF÷ñ‚÷÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊRÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆ÷&∂WG2˜∂ñG“ˆ6ˆÁG&ˆ¬◊∆ÊV¬÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊR¬&˜WFW2ˆF÷ñ‚÷÷&∂WB÷6ˆÁG&ˆ¬◊∆ÊRÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“˜FV÷¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚◊FV“Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“˜FV“ˆñÁfóFFñˆÁ6¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚◊FV“Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆíˆ÷&∂WB÷FV∆VvFñˆ‚˜FV“ˆñÁfóFFñˆÁ2˜∂ñG“ˆ66WF¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚◊FV“Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“˜FV“˜∂ñG“ˆ6&ñ∆óFñW6¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚◊FV“Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬DTƒUDRˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“˜FV“˜∂ñG÷¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚◊FV“Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬DTƒUDRˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“˜FV“ˆñÁfóFFñˆÁ2˜∂ñG÷¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚◊FV“Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“ˆ66Ç÷6ˆÁG&ˆ¬◊ˆ∆ñ7ñ¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚÷66Ç÷6ˆÁG&ˆ¬Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“ˆ66Ç÷6ˆÁG&ˆ¬◊ˆ∆ñ7ñ¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚÷66Ç÷6ˆÁG&ˆ¬Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“ˆÊWGv˜&≤˜&V∆ó6¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚÷ÊWGv˜&≤Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“ˆÊWGv˜&≤˜&V∆ó6¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚÷ÊWGv˜&≤Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“ˆÊWGv˜&≤˜&V∆ó2˜∂ñG÷¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚÷ÊWGv˜&≤Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“ˆÊWGv˜&≤˜&V∆ó2˜∂ñG“˜7W7VÊF¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚÷ÊWGv˜&≤Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“ˆÊWGv˜&≤˜&V∆ó2˜∂ñG“ˆ7FófFV¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚÷ÊWGv˜&≤Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“ˆÊWGv˜&≤˜&˜fñFW'6¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚◊&˜fñFW"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“ˆÊWGv˜&≤˜&˜fñFW'6¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚◊&˜fñFW"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“ˆÊWGv˜&≤˜&˜fñFW'2˜∂ñG÷¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚◊&˜fñFW"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“ˆÊWGv˜&≤˜&˜fñFW'2˜∂ñG“˜7W7VÊF¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚◊&˜fñFW"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“ˆÊWGv˜&≤˜&˜fñFW'2˜∂ñG“ˆ7FófFV¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚◊&˜fñFW"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“ˆ6F∆ˆrˆWá˜7W&V¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚÷6F∆ˆrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“ˆ6F∆ˆr˜&WfñWr˜∂ñG“˜f∆ñFFV¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚÷6F∆ˆrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“ˆ6F∆ˆrˆWá˜7W&R˜∂ñG÷¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚÷6F∆ˆrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“ˆ∆ˆ6¬÷ˆffW"˜6W'fñ6W6¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚÷∆ˆ6¬÷ˆffW"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“ˆ∆ˆ6¬÷ˆffW"˜6W'fñ6W2˜∂ñG÷¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚÷∆ˆ6¬÷ˆffW"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“ˆ∆ˆ6¬÷ˆffW"˜áó6ñ6¬÷ˆffW'6¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚÷∆ˆ6¬÷ˆffW"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆ÷&∂WB÷FV∆VvFñˆ‚ˆ÷&∂WG2˜∂ñG“ˆ∆ˆ6¬÷ˆffW"˜áó6ñ6¬÷ˆffW'2˜∂ñG÷¬÷&∂WB÷FV∆VvFñˆ‚¬&˜WFW2ˆ÷&∂WB÷FV∆VvFñˆ‚÷∆ˆ6¬÷ˆffW"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ÷&≤¬˜&FW'2¬&˜WFW2ˆ˜&FW'2ˆ∆ó7BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ˜&FW'2˜&WG&óB˜∂ñG÷¬˜&FW'2¬&˜WFW2ˆ˜&FW'2˜"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬D4Çˆíˆ˜&FW'2˜7V"÷˜&FW'2˜∂ñG“˜7FGW6¬˜&FW'2¬&˜WFW2ˆ˜&FW'2˜&6V«2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜c"ˆ˜&FW'6¬˜&FW'2¬&˜WFW2ˆ˜&FW"÷í◊c"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜c"ˆ˜&FW'2˜∂ñG÷¬˜&FW'2¬&˜WFW2ˆ˜&FW"÷í◊c"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜c"ˆ˜&FW'2˜∂ñG“ˆ6ˆÊfó&“÷66Ü¬˜&FW'2¬&˜WFW2ˆ˜&FW"÷í◊c"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜c"ˆ˜&FW'2˜∂ñG“ˆ7&VFR◊&6V∆¬˜&FW'2¬&˜WFW2ˆ˜&FW"÷í◊c"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜c"ˆ˜&FW'2˜VÊFñÊr÷66Ü¬˜&FW'2¬&˜WFW2ˆ˜&FW"÷í◊c"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜c"ˆ˜&FW'2˜&VGí÷f˜"◊&6V∆¬˜&FW'2¬&˜WFW2ˆ˜&FW"÷í◊c"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜ñ÷VÁG2˜7G&óRˆñÁFVÁF¬ñ÷VÁG2¬&˜WFW2˜ñ÷VÁG2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜ñ÷VÁG2˜ó¬˜vV&Üˆˆ∂¬ñ÷VÁG2¬&˜WFW2˜ñ÷VÁG2◊ó¬Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜ñ÷VÁG2ˆ66Çˆ6ˆÊfó&÷¬ñ÷VÁG2¬&˜WFW2˜ñ÷VÁG2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜ñ÷VÁG2ˆ÷ˆ&ñ∆R÷÷ˆÊWíˆfñ∆&ñ∆óGñ¬ñ÷VÁG2¬&˜WFW2˜ñ÷VÁG2÷÷ˆ&ñ∆R÷÷ˆÊWíÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜ñ÷VÁG2ˆ÷ˆ&ñ∆R÷÷ˆÊWíˆñÊóFñFV¬ñ÷VÁG2¬&˜WFW2˜ñ÷VÁG2÷÷ˆ&ñ∆R÷÷ˆÊWíÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜ñ÷VÁG2ˆ÷ˆ&ñ∆R÷÷ˆÊWí˜G&Á67FñˆÁ2˜∂ñG÷¬ñ÷VÁG2¬&˜WFW2˜ñ÷VÁG2÷÷ˆ&ñ∆R÷÷ˆÊWíÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜ñ÷VÁG2ˆ÷ˆ&ñ∆R÷÷ˆÊWí˜G&Á67FñˆÁ2˜∂ñG“˜&Vg&W6Ü¬ñ÷VÁG2¬&˜WFW2˜ñ÷VÁG2÷÷ˆ&ñ∆R÷÷ˆÊWíÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜ñ÷VÁG2ˆ÷ˆ&ñ∆R÷÷ˆÊWíˆ6∆∆&6≤˜∂ñG“˜∂ñG÷¬ñ÷VÁG2¬&˜WFW2˜ñ÷VÁG2÷÷ˆ&ñ∆R÷÷ˆÊWíÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜ñ÷VÁG2ˆ÷ˆ&ñ∆R÷÷ˆÊWí˜vV&Üˆˆ≤˜∂ñG÷¬ñ÷VÁG2¬&˜WFW2˜ñ÷VÁG2÷÷ˆ&ñ∆R÷÷ˆÊWíÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜ñ÷VÁG2ˆ÷ˆ&ñ∆R÷÷ˆÊWíˆF÷ñ‚˜VÊFñÊv¬ñ÷VÁG2¬&˜WFW2˜ñ÷VÁG2÷÷ˆ&ñ∆R÷÷ˆÊWíÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆíˆ66Çˆ6ˆ∆∆V7B˜∂ñG÷¬ñ÷VÁG2¬&˜WFW2ˆ66ÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ66Çˆ6ˆ∆∆V7FñˆÁ6¬ñ÷VÁG2¬&˜WFW2ˆ66ÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆíˆ66ÇˆFW˜6óF¬ñ÷VÁG2¬&˜WFW2ˆ66ÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ66ÇˆFW˜6óG6¬ñ÷VÁG2¬&˜WFW2ˆ66ÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆíˆ66ÇˆFW˜6óG2˜∂ñG“ˆFó7WFV¬ñ÷VÁG2¬&˜WFW2ˆ66ÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆíˆ66ÇˆFW˜6óG2˜∂ñG“˜fW&ñgñ¬ñ÷VÁG2¬&˜WFW2ˆ66ÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ66Ç˜&V6ˆÊ6ñ∆ñFñˆÊ¬ñ÷VÁG2¬&˜WFW2ˆ66ÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ66Ç˜&V6ˆÊ6ñ∆ñFñˆ‚ˆvVÁG6¬ñ÷VÁG2¬&˜WFW2ˆ66ÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ66Ç˜VÊ6ˆ∆∆V7FVF¬ñ÷VÁG2¬&˜WFW2ˆ66ÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜ñ÷VÁG2ˆ6ˆÊfñv¬ñ÷VÁG2¬&˜WFW2˜ñ÷VÁG2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜ñ÷VÁG2˜ó¬ˆ6GW&R˜∂ñG÷¬ñ÷VÁG2¬&˜WFW2˜ñ÷VÁG2◊ó¬Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜ñ÷VÁG2˜ó¬ˆ7&VFR÷˜&FW&¬ñ÷VÁG2¬&˜WFW2˜ñ÷VÁG2◊ó¬Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜ñ÷VÁG2˜ó¬˜&VgVÊB˜∂ñG÷¬ñ÷VÁG2¬&˜WFW2˜ñ÷VÁG2◊ó¬Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜ñ÷VÁG2˜&FW6¬ñ÷VÁG2¬&˜WFW2˜ñ÷VÁG2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜ñ÷VÁG2˜7G&óR˜vV&Üˆˆ∂¬ñ÷VÁG2¬&˜WFW2˜ñ÷VÁG2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆÜV«FÜ¬∆Ff˜&“÷˜2¬&˜WFW2ˆÜV«FÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ÷ˆGV∆W6¬∆Ff˜&“÷˜2¬&˜WFW2ˆ÷ˆGV∆W2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜6ñ◊V∆F˜"ˆ6∆VÁW¬∆Ff˜&“÷˜2¬&˜WFW2˜6ñ◊V∆F˜"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜6ñ◊V∆F˜"ˆ¶˜W&Ê∆¬∆Ff˜&“÷˜2¬&˜WFW2˜6ñ◊V∆F˜"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜6ñ◊V∆F˜"˜7F'F¬∆Ff˜&“÷˜2¬&˜WFW2˜6ñ◊V∆F˜"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜6ñ◊V∆F˜"˜7FGW6¬∆Ff˜&“÷˜2¬&˜WFW2˜6ñ◊V∆F˜"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜6ñ◊V∆F˜"˜7F˜¬∆Ff˜&“÷˜2¬&˜WFW2˜6ñ◊V∆F˜"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ÷ˆGV∆W2˜∂ñG÷¬∆Ff˜&“÷˜2¬&˜WFW2ˆ÷ˆGV∆W2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ÷ˆGV∆W2ˆf'&ñ76¬∆Ff˜&“÷˜2¬&˜WFW2ˆ÷ˆGV∆W2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆíˆ÷ˆGV∆W2ˆf'&ñ76¬∆Ff˜&“÷˜2¬&˜WFW2ˆ÷ˆGV∆W2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ÷ˆGV∆W2ˆ÷ˆFV«6¬∆Ff˜&“÷˜2¬&˜WFW2ˆ÷ˆGV∆W2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆíˆ÷ˆGV∆W2ˆ÷ˆFV«6¬∆Ff˜&“÷˜2¬&˜WFW2ˆ÷ˆGV∆W2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆíˆ÷ˆGV∆W2˜&ñ6V¬∆Ff˜&“÷˜2¬&˜WFW2ˆ÷ˆGV∆W2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜6ñ◊V∆F˜"ˆ6∆VÁW¬∆Ff˜&“÷˜2¬&˜WFW2˜6ñ◊V∆F˜"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜6ñ◊V∆F˜"ˆ¶˜W&Ê∆¬∆Ff˜&“÷˜2¬&˜WFW2˜6ñ◊V∆F˜"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜6ñ◊V∆F˜"˜7F'F¬∆Ff˜&“÷˜2¬&˜WFW2˜6ñ◊V∆F˜"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜6ñ◊V∆F˜"˜7FGW6¬∆Ff˜&“÷˜2¬&˜WFW2˜6ñ◊V∆F˜"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜6ñ◊V∆F˜"˜7F˜¬∆Ff˜&“÷˜2¬&˜WFW2˜6ñ◊V∆F˜"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜c"ˆ∆W'G6¬∆Ff˜&“÷˜2¬&˜WFW2ˆ˜2÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜c"ˆ∆W'G2˜∂ñG“ˆ6∂Ê˜v∆VFvV¬∆Ff˜&“÷˜2¬&˜WFW2ˆ˜2÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜c"ˆv∆ˆ&∆¬∆Ff˜&“÷˜2¬&˜WFW2ˆ˜2÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜c"ˆñÊ6ñFVÁG6¬∆Ff˜&“÷˜2¬&˜WFW2ˆ˜2÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜c"ˆñÁfˆñ6W6¬∆Ff˜&“÷˜2¬&˜WFW2ˆ˜2÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜c"˜&6V«2˜∂ñG“ˆ˜&FW'6¬∆Ff˜&“÷˜2¬&˜WFW2ˆ˜2÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜c"˜&6V«2˜∂ñG“˜66Á6¬∆Ff˜&“÷˜2¬&˜WFW2ˆ˜2÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜c"˜&6V«2˜∂ñG“ˆFWFñ∆¬∆Ff˜&“÷˜2¬&˜WFW2ˆ˜2÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜c"˜&V6ˆÊ6ñ∆ñFñˆÊ¬∆Ff˜&“÷˜2¬&˜WFW2ˆ˜2÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜c"˜&V6ˆÊ6ñ∆ñFñˆ‚˜7V÷÷'ñ¬∆Ff˜&“÷˜2¬&˜WFW2ˆ˜2÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜c"˜66‚÷WfVÁG6¬∆Ff˜&“÷˜2¬&˜WFW2ˆ˜2÷íÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆÜV«FÇˆFWFñ∆VF¬∆Ff˜&“÷˜2¬&˜WFW2ˆÜV«FÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆÜV«FÇˆ÷WG&ñ76¬∆Ff˜&“÷˜2¬&˜WFW2ˆÜV«FÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆÜV«FÇ˜&VGñ¬∆Ff˜&“÷˜2¬&˜WFW2ˆÜV«FÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆÜV«FÇ˜fW'6ñˆÊ¬∆Ff˜&“÷˜2¬&˜WFW2ˆÜV«FÇÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜&˜fñFW'2◊6W'fñ6W2˜6W'fñ6W2˜∂ñG÷¬&˜fñFW'2◊6W'fñ6W2¬&˜WFW2˜&˜fñFW'2◊6W'fñ6W2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜&˜fñFW'2◊6W'fñ6W2˜áó6ñ6¬÷ˆffW'2˜∂ñG÷¬&˜fñFW'2◊6W'fñ6W2¬&˜WFW2˜&˜fñFW'2◊6W'fñ6W2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜&˜fñFW'2◊6W'fñ6W2ˆñÁVó&ñW6¬&˜fñFW'2◊6W'fñ6W2¬&˜WFW2˜&˜fñFW'2◊6W'fñ6W2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜W&6Ü6ñÊv¬W&6Ü6ñÊr¬&˜WFW2˜W&6Ü6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜W&6Ü6ñÊr˜7W∆ñW'6¬W&6Ü6ñÊr¬&˜WFW2˜W&6Ü6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜W&6Ü6ñÊr˜7W∆ñW'6¬W&6Ü6ñÊr¬&˜WFW2˜W&6Ü6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜W&6Ü6ñÊr˜7W∆ñW'2˜∂ñG“ˆ÷¬W&6Ü6ñÊr¬&˜WFW2˜W&6Ü6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬DTƒUDRˆí˜W&6Ü6ñÊr˜7W∆ñW'2˜∂ñG÷¬W&6Ü6ñÊr¬&˜WFW2˜W&6Ü6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜W&6Ü6ñÊrˆ˜&FW"˜∂ñG“ˆ6ˆ◊∆WFVÊW76¬W&6Ü6ñÊr¬&˜WFW2˜W&6Ü6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜W&6Ü6ñÊr˜∂ñG÷¬W&6Ü6ñÊr¬&˜WFW2˜W&6Ü6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜W&6Ü6ñÊr˜∂ñG“ˆ6ˆÊfó&÷¬W&6Ü6ñÊr¬&˜WFW2˜W&6Ü6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜W&6Ü6ñÊr˜∂ñG“˜&V6VófV¬W&6Ü6ñÊr¬&˜WFW2˜W&6Ü6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬DTƒUDRˆí˜W&6Ü6ñÊr˜Ú˜∂ñG÷¬W&6Ü6ñÊr¬&˜WFW2˜W&6Ü6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜W&6Ü6ñÊrˆ˜V‚÷∆ñÊW6¬W&6Ü6ñÊr¬&˜WFW2˜W&6Ü6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜W&6Ü6ñÊr˜Ú˜∂ñG÷¬W&6Ü6ñÊr¬&˜WFW2˜W&6Ü6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜W&6Ü6ñÊr˜Ú˜∂ñG“ˆ6ˆ÷÷óF÷VÁB◊Ff¬W&6Ü6ñÊr¬&˜WFW2˜W&6Ü6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜W&6Ü6ñÊr˜Ú˜&W&V¬W&6Ü6ñÊr¬&˜WFW2˜W&6Ü6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜W&6Ü6ñÊr˜Ú˜∂ñG“ˆFWF6Ü¬W&6Ü6ñÊr¬&˜WFW2˜W&6Ü6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜W&6Ü6ñÊr˜Ú˜∂ñG“ˆFó66&F¬W&6Ü6ñÊr¬&˜WFW2˜W&6Ü6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜W&6Ü6ñÊrˆ∆ñÊW2˜∂ñG“ˆ6Ê6V∆¬W&6Ü6ñÊr¬&˜WFW2˜W&6Ü6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜W&6Ü6ñÊr˜Ú˜∂ñG“˜7V&÷óF¬W&6Ü6ñÊr¬&˜WFW2˜W&6Ü6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜W&6Ü6ñÊr˜Ú˜∂ñG“ˆ6ˆÊfó&÷¬W&6Ü6ñÊr¬&˜WFW2˜W&6Ü6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜W&6Ü6ñÊrˆ∆ñÊW6¬W&6Ü6ñÊr¬&˜WFW2˜W&6Ü6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜W&6Ü6ñÊrˆ∆ñÊW2˜∂ñG“˜6WGF∆V¬W&6Ü6ñÊr¬&˜WFW2˜W&6Ü6ñÊrÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆ&˜WFóVR˜7VvvW7FñˆÁ6¬&V6ˆ÷÷VÊFFñˆÁ2¬&˜WFW2ˆ&˜WFóVR◊7VvvW7FñˆÁ2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚ˆ÷&∂WB◊6WGF∆V÷VÁG2ˆ÷&∂WG2˜∂ñG“˜6WGF∆V÷VÁG6¬6WGF∆V÷VÁB¬&˜WFW2ˆF÷ñ‚÷÷&∂WB◊6WGF∆V÷VÁBÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚ˆ÷&∂WB◊6WGF∆V÷VÁG2ˆ÷&∂WG2˜∂ñG“˜6WGF∆V÷VÁG2˜&VGñ¬6WGF∆V÷VÁB¬&˜WFW2ˆF÷ñ‚÷÷&∂WB◊6WGF∆V÷VÁBÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚ˆ÷&∂WB◊6WGF∆V÷VÁG2˜6WGF∆V÷VÁG2˜∂ñG“˜ñF¬6WGF∆V÷VÁB¬&˜WFW2ˆF÷ñ‚÷÷&∂WB◊6WGF∆V÷VÁBÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜6Ü&VB÷6'G2˜V&∆ñ2˜∂ñG÷¬6Ü&VB÷6'B¬&˜WFW2˜6Ü&VB÷6'BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜6Ü&VB÷6'G2ˆg&ˆ“÷6'B÷óFV◊6¬6Ü&VB÷6'B¬&˜WFW2˜6Ü&VB÷6'BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜6Ü&VB÷6'G2ˆg&ˆ“÷&6∂WF¬6Ü&VB÷6'B¬&˜WFW2˜6Ü&VB÷6'BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜6Ü&VB÷6'G2ˆ÷ñÊV¬6Ü&VB÷6'B¬&˜WFW2˜6Ü&VB÷6'BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜6Ü&VB÷6'G2ˆ∆ñ'&'ñ¬6Ü&VB÷6'B¬&˜WFW2˜6Ü&VB÷6'BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜6Ü&VB÷6'G2˜6fV¬6Ü&VB÷6'B¬&˜WFW2˜6Ü&VB÷6'BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬DTƒUDRˆí˜6Ü&VB÷6'G2˜6fVB˜∂ñG÷¬6Ü&VB÷6'B¬&˜WFW2˜6Ü&VB÷6'B◊6fVBÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜6Ü&W6¬6Ü&VB÷6'B¬&˜WFW2˜6Ü&W2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜6Ü&W2˜∂ñG÷¬6Ü&VB÷6'B¬&˜WFW2˜6Ü&W2Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆí˜6Ü&VB÷6'G2˜∂ñG÷¬6Ü&VB÷6'B¬&˜WFW2˜6Ü&VB÷6'BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜6Ü&VB÷6'G2˜∂ñG“ˆ6∆˜6V¬6Ü&VB÷6'B¬&˜WFW2˜6Ü&VB÷6'BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5Bˆí˜6Ü&VB÷6'G2˜∂ñG“ˆ6Ê6V∆¬6Ü&VB÷6'B¬&˜WFW2˜6Ü&VB÷6'BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜6Ü&VB÷6'G6¬6Ü&VB÷6'B¬&˜WFW2˜6Ü&VB÷6'BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜6Ü&VB÷6'G2˜∂ñG÷¬6Ü&VB÷6'B¬&˜WFW2˜6Ü&VB÷6'BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜6Ü&VB÷6'G2˜∂ñG“ˆWáó&V¬6Ü&VB÷6'B¬&˜WFW2˜6Ü&VB÷6'BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜6Ü&VB÷6'G2˜∂ñG“ˆÊ˜FV¬6Ü&VB÷6'B¬&˜WFW2˜6Ü&VB÷6'BÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜6˜W&6ñÊrˆ6ˆÊÊV7F˜'6¬6˜W&6ñÊr¬&˜WFW2˜6˜W&6ñÊr◊66ÊÊW"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜6˜W&6ñÊrˆ6F∆ˆw2ˆñ◊˜'F¬6˜W&6ñÊr¬&˜WFW2˜6˜W&6ñÊr◊66ÊÊW"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜6˜W&6ñÊrˆ6F∆ˆw6¬6˜W&6ñÊr¬&˜WFW2˜6˜W&6ñÊr◊66ÊÊW"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜6˜W&6ñÊrˆ6ÊFñFFW6¬6˜W&6ñÊr¬&˜WFW2˜6˜W&6ñÊr◊66ÊÊW"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜6˜W&6ñÊrˆ6ÊFñFFW2˜∂ñG÷¬6˜W&6ñÊr¬&˜WFW2˜6˜W&6ñÊr◊66ÊÊW"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬UBˆíˆF÷ñ‚˜6˜W&6ñÊrˆ6ÊFñFFW2˜∂ñG÷¬6˜W&6ñÊr¬&˜WFW2˜6˜W&6ñÊr◊66ÊÊW"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜6˜W&6ñÊrˆ6ÊFñFFW2˜∂ñG“˜66Ê¬6˜W&6ñÊr¬&˜WFW2˜6˜W&6ñÊr◊66ÊÊW"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜6˜W&6ñÊrˆ6ÊFñFFW2˜66‚÷&F6Ü¬6˜W&6ñÊr¬&˜WFW2˜6˜W&6ñÊr◊66ÊÊW"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜6˜W&6ñÊrˆ6ÊFñFFW2˜∂ñG“ˆñ◊˜'B◊&ˆGV7F¬6˜W&6ñÊr¬&˜WFW2˜6˜W&6ñÊr◊66ÊÊW"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜6˜W&6ñÊrˆ6ÊFñFFW2˜∂ñG“˜&V¶V7F¬6˜W&6ñÊr¬&˜WFW2˜6˜W&6ñÊr◊66ÊÊW"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜6˜W&6ñÊrˆ6ÊFñFFW2˜∂ñG“˜vF6Ü∆ó7F¬6˜W&6ñÊr¬&˜WFW2˜6˜W&6ñÊr◊66ÊÊW"Êß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜v˜&∑76W2˜6˜W&6ñÊv¬6˜W&6ñÊr¬&˜WFW2ˆF÷ñ‚◊6˜W&6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬tUBˆíˆF÷ñ‚˜v˜&∑76W2˜6˜W&6ñÊrˆñ◊˜'B÷6ˆ6∑óF¬6˜W&6ñÊr¬&˜WFW2ˆF÷ñ‚◊6˜W&6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜6˜W&6ñÊrˆñ◊˜'G6¬6˜W&6ñÊr¬&˜WFW2ˆF÷ñ‚◊6˜W&6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜6˜W&6ñÊr˜6˜W&6W2˜∂ñG“ˆ6F∆ˆr÷6ÜÊvW2ˆˆ'6W'fV¬6˜W&6ñÊr¬&˜WFW2ˆF÷ñ‚◊6˜W&6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜6˜W&6ñÊr˜6˜W&6W2˜∂ñG“ˆ6&ñ∆óFñW2˜∂ñG÷¬6˜W&6ñÊr¬&˜WFW2ˆF÷ñ‚◊6˜W&6ñÊr◊v˜&∑76RÊß6á&W6ˆ«fVB÷˜vÊVBí¿ß¬ı5BˆíˆF÷ñ‚˜v˜&∑76W2˜6˜W&6ñÊr˜&ˆGV7G2˜∂ñG“˜WFFV¬6˜V⁄±Ó∏¬∏≠yÍÎ¢∞k¢Gß¶*^ (resolved-owned) |
+| `POST /api/admin/workspaces/shipping-customs/market/{id}/customs/shipments/{id}/activate` | dashboard | `routes/admin-shipping-customs-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/shipping-customs/market/{id}/customs/shipments/{id}/deactivate` | dashboard | `routes/admin-shipping-customs-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/shipping-customs/market/{id}/customs/shipments/{id}/declare` | dashboard | `routes/admin-shipping-customs-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/shipping-customs/market/{id}/customs/shipments/{id}/update` | dashboard | `routes/admin-shipping-customs-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/shipping-customs/market/{id}/parcels/{id}/confirm-transit` | dashboard | `routes/admin-shipping-customs-workspace.js` (resolved-owned) |
+| `GET /api/admin/documents` | documents | `routes/admin/documents.js` (resolved-owned) |
+| `GET /api/admin/documents/summary` | documents | `routes/admin/documents.js` (resolved-owned) |
+| `GET /api/admin/documents/{id}` | documents | `routes/admin/documents.js` (resolved-owned) |
+| `GET /api/auth/me/documents` | documents | `routes/documents.js` (resolved-owned) |
+| `GET /api/auth/me/documents/{id}/download` | documents | `routes/documents.js` (resolved-owned) |
+| `GET /api/invoices` | documents | `routes/invoices.js` (resolved-owned) |
+| `GET /api/invoices/{id}` | documents | `routes/invoices.js` (resolved-owned) |
+| `GET /api/invoices/{id}/json` | documents | `routes/invoices.js` (resolved-owned) |
+| `GET /api/invoices/{id}/download` | documents | `routes/invoices.js` (resolved-owned) |
+| `POST /api/pricing/recommend` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/simulate` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/flow` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/products/{id}/apply-price` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/strategy` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/strategy/apply` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/competitors` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/competitors/{id}/deactivate` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/cost-components` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/cost-components/{id}/update` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/cost-components/{id}/toggle` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/market/{id}` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/market/{id}/decision` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/market/{id}/decision-policy/history` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/decision-policy` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/update` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/toggle` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/cost-components/{id}/reset` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/market/{id}/corridor` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/price-observations` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/price-observations/{id}/deactivate` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/cost-components` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
+| `POST /api/admin/cost-components` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
+| `GET /api/admin/cost-components/_meta` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
+| `DELETE /api/admin/cost-components/{id}` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
+| `GET /api/admin/cost-components/{id}` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
+| `PUT /api/admin/cost-components/{id}` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
+| `POST /api/admin/cost-components/{id}/toggle` | economic-engine | `routes/admin-cost-components.js` (resolved-owned) |
+| `GET /api/admin/economic/charges` | economic-engine | `routes/economic.js` (resolved-owned) |
+| `POST /api/admin/economic/charges` | economic-engine | `routes/economic.js` (resolved-owned) |
+| `DELETE /api/admin/economic/charges/{id}` | economic-engine | `routes/economic.js` (resolved-owned) |
+| `PUT /api/admin/economic/charges/{id}` | economic-engine | `routes/economic.js` (resolved-owned) |
+| `PUT /api/admin/economic/charges/{id}/toggle` | economic-engine | `routes/economic.js` (resolved-owned) |
+| `GET /api/admin/economic/coherence` | economic-engine | `routes/economic.js` (resolved-owned) |
+| `GET /api/admin/economic/executive` | economic-engine | `routes/economic.js` (resolved-owned) |
+| `GET /api/admin/economic/history` | economic-engine | `routes/economic.js` (resolved-owned) |
+| `POST /api/admin/economic/redistribute` | economic-engine | `routes/economic.js` (resolved-owned) |
+| `GET /api/admin/economic/variables` | economic-engine | `routes/economic.js` (resolved-owned) |
+| `PUT /api/admin/economic/variables/{id}` | economic-engine | `routes/economic.js` (resolved-owned) |
+| `GET /api/admin/finance-config` | economic-engine | `routes/admin-finance-config.js` (resolved-owned) |
+| `PUT /api/admin/finance-config` | economic-engine | `routes/admin-finance-config.js` (resolved-owned) |
+| `GET /api/admin/finance-config/schema` | economic-engine | `routes/admin-finance-config.js` (resolved-owned) |
+| `GET /api/admin/finance/export` | economic-engine | `routes/finance.js` (resolved-owned) |
+| `GET /api/admin/finance/report` | economic-engine | `routes/finance.js` (resolved-owned) |
+| `GET /api/admin/finance/stripe-proofs` | economic-engine | `routes/finance.js` (resolved-owned) |
+| `GET /api/admin/finance/summary` | economic-engine | `routes/finance.js` (resolved-owned) |
+| `GET /api/admin/pricing-components` | economic-engine | `routes/admin-pricing-components.js` (resolved-owned) |
+| `POST /api/admin/pricing-components` | economic-engine | `routes/admin-pricing-components.js` (resolved-owned) |
+| `DELETE /api/admin/pricing-components/{id}` | economic-engine | `routes/admin-pricing-components.js` (resolved-owned) |
+| `GET /api/admin/pricing-components/{id}` | economic-engine | `routes/admin-pricing-components.js` (resolved-owned) |
+| `PUT /api/admin/pricing-components/{id}` | economic-engine | `routes/admin-pricing-components.js` (resolved-owned) |
+| `PUT /api/admin/pricing-components/{id}/toggle` | economic-engine | `routes/admin-pricing-components.js` (resolved-owned) |
+| `GET /api/admin/pricing-matrices/dims` | economic-engine | `routes/admin-pricing-matrices.js` (resolved-owned) |
+| `PUT /api/admin/pricing-matrices/dims/{id}` | economic-engine | `routes/admin-pricing-matrices.js` (resolved-owned) |
+| `GET /api/admin/pricing-matrices/taxes` | economic-engine | `routes/admin-pricing-matrices.js` (resolved-owned) |
+| `PUT /api/admin/pricing-matrices/taxes/{id}` | economic-engine | `routes/admin-pricing-matrices.js` (resolved-owned) |
+| `GET /api/admin/sourcing/analysis` | economic-engine | `routes/sourcing.js` (resolved-owned) |
+| `GET /api/admin/sourcing/analysis/{id}` | economic-engine | `routes/sourcing.js` (resolved-owned) |
+| `POST /api/admin/sourcing/bulk-rail` | economic-engine | `routes/sourcing.js` (resolved-owned) |
+| `GET /api/admin/sourcing/config` | economic-engine | `routes/sourcing.js` (resolved-owned) |
+| `PUT /api/admin/sourcing/products/{id}` | economic-engine | `routes/sourcing.js` (resolved-owned) |
+| `GET /api/admin/sourcing/products/{id}/variants` | economic-engine | `routes/sourcing.js` (resolved-owned) |
+| `PUT /api/admin/sourcing/products/{id}/variants` | economic-engine | `routes/sourcing.js` (resolved-owned) |
+| `GET /api/admin/sourcing/synthesis` | economic-engine | `routes/sourcing.js` (resolved-owned) |
+| `GET /api/admin/risk-provisions` | economic-engine | `routes/admin-risk-provisions.js` (resolved-owned) |
+| `POST /api/admin/risk-provisions` | economic-engine | `routes/admin-risk-provisions.js` (resolved-owned) |
+| `DELETE /api/admin/risk-provisions/{id}` | economic-engine | `routes/admin-risk-provisions.js` (resolved-owned) |
+| `GET /api/admin/risk-provisions/{id}` | economic-engine | `routes/admin-risk-provisions.js` (resolved-owned) |
+| `PUT /api/admin/risk-provisions/{id}` | economic-engine | `routes/admin-risk-provisions.js` (resolved-owned) |
+| `PUT /api/admin/risk-provisions/{id}/toggle` | economic-engine | `routes/admin-risk-provisions.js` (resolved-owned) |
+| `GET /api/dashboard/annulations-parcels` | economic-engine | `routes/dashboard-finance.js` (resolved-owned) |
+| `GET /api/dashboard/finance` | economic-engine | `routes/dashboard-finance.js` (resolved-owned) |
+| `GET /api/dashboard/payments` | economic-engine | `routes/dashboard-finance.js` (resolved-owned) |
+| `GET /api/dashboard/sales` | economic-engine | `routes/dashboard-finance.js` (resolved-owned) |
+| `PUT /api/pricing/apply-all` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `PUT /api/pricing/apply-price/{id}` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `GET /api/pricing/benchmarks` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `PUT /api/pricing/benchmarks` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `GET /api/pricing/benchmarks-gap` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `DELETE /api/pricing/benchmarks/{id}/{id}` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `POST /api/pricing/calculate` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `POST /api/pricing/couture` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `GET /api/pricing/dashboard` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `POST /api/pricing/flow` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `GET /api/pricing/rates` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `PUT /api/pricing/rates` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `POST /api/pricing/recommend-batch` | economic-engine | `routes/pricing.js` (resolved-owned) |
+| `GET /api/pricing/strategy` | economic-engine | `routes/pricing-strategy.js` (resolved-owned) |
+| `POST /api/pricing/strategy/apply` | economic-engine | `routes/pricing-strategy.js` (resolved-owned) |
+| `GET /api/pricing/strategy/competitors` | economic-engine | `routes/pricing-strategy.js` (resolved-owned) |
+| `POST /api/pricing/strategy/competitors` | economic-engine | `routes/pricing-strategy.js` (resolved-owned) |
+| `DELETE /api/pricing/strategy/competitors/{id}` | economic-engine | `routes/pricing-strategy.js` (resolved-owned) |
+| `GET /api/pricing/strategy/history` | economic-engine | `routes/pricing-strategy.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/market/{id}/charges` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/market/{id}/commercial-prices` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/products/{id}/local-price` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/products/{id}/local-price/activate` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/market/{id}/products/{id}/local-price/activation-preview` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/products/{id}/local-price/reset` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/simulate-impact` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/market/{id}/structure-events` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/structure-events` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/simulate-impact` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/structure-events` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/structure-events` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/structure-events/{id}/attributions` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/structure-events/{id}/attributions` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/structure-events/{id}/attributions/reverse` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/structure-events/{id}/attributions/correct` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/health` | infrastructure | `server.js` (resolved-owned) |
+| `GET /api/public/config` | infrastructure | `server.js` (resolved-owned) |
+| `GET /webhook/authkey-whatsapp` | infrastructure | ‚Äî (not-in-openapi-contract) |
+| `GET /*.html` | infrastructure | ‚Äî (not-in-openapi-contract) |
+| `GET /api/hub/inventory/buffer` | inventory | `routes/inventory-api.js` (resolved-owned) |
+| `GET /api/hub/inventory/open-parcels` | inventory | `routes/inventory-api.js` (resolved-owned) |
+| `GET /api/hub/inventory/order/{id}/dispatch` | inventory | `routes/inventory-api.js` (resolved-owned) |
+| `GET /api/hub/inventory/proposals` | inventory | `routes/inventory-api.js` (resolved-owned) |
+| `POST /api/hub/inventory/propose-all` | inventory | `routes/inventory-api.js` (resolved-owned) |
+| `POST /api/hub/inventory/receive` | inventory | `routes/inventory-api.js` (resolved-owned) |
+| `POST /api/hub/inventory/scan-assign` | inventory | `routes/inventory-api.js` (resolved-owned) |
+| `GET /api/hub/inventory/stats` | inventory | `routes/inventory-api.js` (resolved-owned) |
+| `GET /api/local-stock/availability` | local-stock | `routes/local-stock.js` (resolved-owned) |
+| `GET /api/local-stock/checkout-preview` | local-stock | `routes/local-stock.js` (resolved-owned) |
+| `POST /api/v2/parcels/{id}/scan` | logistics | `routes/parcel-api-v2/scans.js` (resolved-owned) |
+| `GET /api/tracking/{id}` | logistics | `routes/tracking.js` (resolved-owned) |
+| `GET /api/carriers` | logistics | `routes/carriers.js` (resolved-owned) |
+| `POST /api/carriers` | logistics | `routes/carriers.js` (resolved-owned) |
+| `DELETE /api/carriers/{id}` | logistics | `routes/carriers.js` (resolved-owned) |
+| `PATCH /api/carriers/{id}` | logistics | `routes/carriers.js` (resolved-owned) |
+| `PATCH /api/carriers/customs/{id}` | logistics | `routes/carriers.js` (resolved-owned) |
+| `GET /api/client/tracking` | logistics | `routes/client-tracking.js` (resolved-owned) |
+| `GET /api/hub/auto-distribute` | logistics | `routes/auto-distribute-api.js` (resolved-owned) |
+| `POST /api/hub/auto-distribute` | logistics | `routes/auto-distribute-api.js` (resolved-owned) |
+| `POST /api/hub/auto-distribute/cleanup` | logistics | `routes/auto-distribute-api.js` (resolved-owned) |
+| `POST /api/hub/batch-scan` | logistics | `routes/hub.js` (resolved-owned) |
+| `POST /api/hub/pack` | logistics | `routes/hub.js` (resolved-owned) |
+| `GET /api/hub/pending` | logistics | `routes/hub.js` (resolved-owned) |
+| `POST /api/hub/photo` | logistics | `routes/hub.js` (resolved-owned) |
+| `POST /api/hub/scan` | logistics | `routes/hub.js` (resolved-owned) |
+| `POST /api/hub/seal` | logistics | `routes/hub.js` (resolved-owned) |
+| `GET /api/hub/search` | logistics | `routes/hub.js` (resolved-owned) |
+| `GET /api/hub/stats/week` | logistics | `routes/hub.js` (resolved-owned) |
+| `GET /api/hub/today` | logistics | `routes/hub.js` (resolved-owned) |
+| `POST /api/hub/volume` | logistics | `routes/hub.js` (resolved-owned) |
+| `GET /api/logistics/labels/{id}` | logistics | `routes/logistics.js` (resolved-owned) |
+| `GET /api/logistics/manifest/{id}` | logistics | `routes/logistics.js` (resolved-owned) |
+| `GET /api/logistics/shipments` | logistics | `routes/logistics.js` (resolved-owned) |
+| `POST /api/logistics/shipments` | logistics | `routes/logistics.js` (resolved-owned) |
+| `PATCH /api/logistics/shipments/{id}` | logistics | `routes/logistics.js` (resolved-owned) |
+| `POST /api/parcels/{id}/items` | logistics | `routes/parcels.js` (resolved-owned) |
+| `DELETE /api/parcels/{id}/items/{id}` | logistics | `routes/parcels.js` (resolved-owned) |
+| `PATCH /api/parcels/{id}/status` | logistics | `routes/parcels.js` (resolved-owned) |
+| `POST /api/parcels/{id}/verify-seal` | logistics | `routes/parcels.js` (resolved-owned) |
+| `POST /api/parcels/{id}/weight` | logistics | `routes/parcels.js` (resolved-owned) |
+| `GET /api/parcels/{id}` | logistics | `routes/parcels.js` (resolved-owned) |
+| `GET /api/parcels/{id}/events` | logistics | `routes/parcels.js` (resolved-owned) |
+| `POST /api/parcels/bootstrap/{id}` | logistics | `routes/parcels.js` (resolved-owned) |
+| `POST /api/parcels/optimize` | logistics | `routes/parcels.js` (resolved-owned) |
+| `POST /api/pickup/collect/{id}` | logistics | `routes/pickup-secret.js` (resolved-owned) |
+| `POST /api/pickup/pay-cash/{id}` | logistics | `routes/pickup-secret.js` (resolved-owned) |
+| `GET /api/pickup/receipt/{id}` | logistics | `routes/pickup-secret.js` (resolved-owned) |
+| `POST /api/pickup/regenerate/{id}` | logistics | `routes/pickup-secret.js` (resolved-owned) |
+| `GET /api/pickup/reveal-once/{id}` | logistics | `routes/pickup-secret.js` (resolved-owned) |
+| `GET /api/pickup/status/{id}` | logistics | `routes/pickup-secret.js` (resolved-owned) |
+| `POST /api/pickup/verify/{id}` | logistics | `routes/pickup-secret.js` (resolved-owned) |
+| `GET /api/pickup/exceptional-pickup/{id}` | logistics | `routes/pickup-secret.js` (resolved-owned) |
+| `POST /api/pickup/exceptional-pickup/{id}/collect` | logistics | `routes/pickup-secret.js` (resolved-owned) |
+| `GET /api/relais` | logistics | `routes/relais.js` (resolved-owned) |
+| `GET /api/relais/{id}` | logistics | `routes/relais.js` (resolved-owned) |
+| `GET /api/relais/public` | logistics | `routes/relais.js` (resolved-owned) |
+| `POST /api/scans` | logistics | `routes/scans.js` (resolved-owned) |
+| `GET /api/scans/{id}` | logistics | `routes/scans.js` (resolved-owned) |
+| `POST /api/scans/collect` | logistics | `routes/scans.js` (resolved-owned) |
+| `GET /api/scans/hub/pending` | logistics | `routes/scans.js` (resolved-owned) |
+| `POST /api/scans/hub/receive` | logistics | `routes/scans.js` (resolved-owned) |
+| `POST /api/scans/hub/reconcile` | logistics | `routes/scans.js` (resolved-owned) |
+| `POST /api/scans/verify-qr` | logistics | `routes/scans.js` (resolved-owned) |
+| `POST /api/tracking/{id}/verify-pickup` | logistics | `routes/tracking.js` (resolved-owned) |
+| `GET /api/transit` | logistics | `routes/transit-dashboard.js` (resolved-owned) |
+| `GET /api/transit-dashboard` | logistics | `routes/transit-dashboard.js` (resolved-owned) |
+| `POST /api/transit-dashboard/{id}/transit` | logistics | `routes/transit-dashboard.js` (resolved-owned) |
+| `POST /api/transit/{id}/transit` | logistics | `routes/transit-dashboard.js` (resolved-owned) |
+| `GET /api/transitaire/history` | logistics | `routes/transitaire-api.js` (resolved-owned) |
+| `GET /api/transitaire/parcels` | logistics | `routes/transitaire-api.js` (resolved-owned) |
+| `POST /api/transitaire/ship` | logistics | `routes/transitaire-api.js` (resolved-owned) |
+| `GET /api/transitaire/stats` | logistics | `routes/transitaire-api.js` (resolved-owned) |
+| `GET /api/v2/parcels` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
+| `GET /api/v2/parcels/{id}` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
+| `GET /api/v2/parcels/{id}/label` | logistics | `routes/parcel-label.js` (resolved-owned) |
+| `GET /api/v2/parcels/{id}/timeline` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
+| `GET /api/v2/parcels/alerts` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
+| `GET /api/v2/parcels/critical` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
+| `GET /api/v2/parcels/kpis` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
+| `GET /api/v2/parcels/reconciliation` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
+| `POST /api/hub/move` | logistics | `routes/hub.js` (resolved-owned) |
+| `POST /api/hub/outcome` | logistics | `routes/hub.js` (resolved-owned) |
+| `POST /api/hub/revalidate` | logistics | `routes/hub.js` (resolved-owned) |
+| `POST /api/hub/transition` | logistics | `routes/hub.js` (resolved-owned) |
+| `POST /api/hub/unit` | logistics | `routes/hub.js` (resolved-owned) |
+| `GET /api/parcels` | logistics | `routes/parcels.js` (resolved-owned) |
+| `POST /api/parcels` | logistics | `routes/parcels.js` (resolved-owned) |
+| `GET /api/loyalty/tiers` | loyalty | `routes/loyalty.js` (resolved-owned) |
+| `GET /api/admin/loyalty/pending` | loyalty | `routes/admin-loyalty.js` (resolved-owned) |
+| `GET /api/admin/loyalty/history` | loyalty | `routes/admin-loyalty.js` (resolved-owned) |
+| `POST /api/admin/loyalty/reward/{id}` | loyalty | `routes/admin-loyalty.js` (resolved-owned) |
+| `POST /api/admin/loyalty/skip/{id}` | loyalty | `routes/admin-loyalty.js` (resolved-owned) |
+| `GET /api/admin/loyalty/stats` | loyalty | `routes/admin-loyalty.js` (resolved-owned) |
+| `GET /api/loyalty/me` | loyalty | `routes/loyalty.js` (resolved-owned) |
+| `GET /api/loyalty/users` | loyalty | `routes/loyalty.js` (resolved-owned) |
+| `GET /api/loyalty/stats` | loyalty | `routes/loyalty.js` (resolved-owned) |
+| `PUT /api/loyalty/tiers/{id}` | loyalty | `routes/loyalty.js` (resolved-owned) |
+| `POST /api/loyalty/recalculate/{id}` | loyalty | `routes/loyalty.js` (resolved-owned) |
+| `POST /api/loyalty/recalculate-all` | loyalty | `routes/loyalty.js` (resolved-owned) |
+| `POST /api/admin/markets` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
+| `POST /api/admin/markets/{id}/lifecycle` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
+| `PUT /api/admin/markets/{id}/storefront` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
+| `POST /api/admin/markets/{id}/reprovision` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
+| `GET /api/admin/markets` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
+| `GET /api/admin/markets/central-authority` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
+| `GET /api/admin/markets/{id}/control-plane` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/team` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/team/invitations` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
+| `POST /api/market-delegation/team/invitations/{id}/accept` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
+| `PUT /api/market-delegation/markets/{id}/team/{id}/capabilities` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
+| `DELETE /api/market-delegation/markets/{id}/team/{id}` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
+| `DELETE /api/market-delegation/markets/{id}/team/invitations/{id}` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/cash-control-policy` | market-delegation | `routes/market-delegation-cash-control.js` (resolved-owned) |
+| `PUT /api/market-delegation/markets/{id}/cash-control-policy` | market-delegation | `routes/market-delegation-cash-control.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/network/relais` | market-delegation | `routes/market-delegation-network.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/network/relais` | market-delegation | `routes/market-delegation-network.js` (resolved-owned) |
+| `PUT /api/market-delegation/markets/{id}/network/relais/{id}` | market-delegation | `routes/market-delegation-network.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/network/relais/{id}/suspend` | market-delegation | `routes/market-delegation-network.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/network/relais/{id}/activate` | market-delegation | `routes/market-delegation-network.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/network/providers` | market-delegation | `routes/market-delegation-provider.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/network/providers` | market-delegation | `routes/market-delegation-provider.js` (resolved-owned) |
+| `PUT /api/market-delegation/markets/{id}/network/providers/{id}` | market-delegation | `routes/market-delegation-provider.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/network/providers/{id}/suspend` | market-delegation | `routes/market-delegation-provider.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/network/providers/{id}/activate` | market-delegation | `routes/market-delegation-provider.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/catalog/exposure` | market-delegation | `routes/market-delegation-catalog.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/catalog/review/{id}/validate` | market-delegation | `routes/market-delegation-catalog.js` (resolved-owned) |
+| `PUT /api/market-delegation/markets/{id}/catalog/exposure/{id}` | market-delegation | `routes/market-delegation-catalog.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/local-offer/services` | market-delegation | `routes/market-delegation-local-offer.js` (resolved-owned) |
+| `PUT /api/market-delegation/markets/{id}/local-offer/services/{id}` | market-delegation | `routes/market-delegation-local-offer.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/local-offer/physical-offers` | market-delegation | `routes/market-delegation-local-offer.js` (resolved-owned) |
+| `PUT /api/market-delegation/markets/{id}/local-offer/physical-offers/{id}` | market-delegation | `routes/market-delegation-local-offer.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/client-cases/disputes` | market-delegation | `routes/market-delegation-client-case.js` (resolved-owned) |
+| `PUT /api/market-delegation/markets/{id}/client-cases/disputes/{id}` | market-delegation | `routes/market-delegation-client-case.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/settlements` | market-delegation | `routes/market-delegation-settlement.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/settlements/{id}/request` | market-delegation | `routes/market-delegation-settlement.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/settlements/{id}/receive` | market-delegation | `routes/market-delegation-settlement.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/structure-events` | market-delegation | `routes/market-delegation-structure-event.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/structure-events` | market-delegation | `routes/market-delegation-structure-event.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/performance` | market-delegation | `routes/market-delegation-performance.js` (resolved-owned) |
+| `GET /api/v2/notifications` | notifications | `routes/notification-api.js` (resolved-owned) |
+| `GET /api/v2/notifications/stats` | notifications | `routes/notification-api.js` (resolved-owned) |
+| `GET /api/auth/me/notifications` | notifications | `routes/client-notifications.js` (resolved-owned) |
+| `POST /api/auth/me/notifications/{id}/ack` | notifications | `routes/client-notifications.js` (resolved-owned) |
+| `GET /webhook/meta-whatsapp` | notifications | `routes/meta-whatsapp.js` (resolved-owned) |
+| `POST /webhook/meta-whatsapp` | notifications | `routes/meta-whatsapp.js` (resolved-owned) |
+| `GET /api/orders/{id}` | orders | `routes/orders/detail.js` (resolved-owned) |
+| `POST /api/orders/{id}/cancel` | orders | `routes/orders/cancel.js` (resolved-owned) |
+| `GET /api/admin/orders` | orders | `routes/admin/orders.js` (resolved-owned) |
+| `DELETE /api/admin/orders/{id}` | orders | `routes/admin/orders.js` (resolved-owned) |
+| `POST /api/admin/orders/{id}/refund` | orders | `routes/admin/orders.js` (resolved-owned) |
+| `POST /api/orders/{id}/cancel-backorder` | orders | `routes/orders/parcels.js` (resolved-owned) |
+| `PATCH /api/orders/{id}/cost` | orders | `routes/orders/status.js` (resolved-owned) |
+| `GET /api/orders/{id}/history` | orders | `routes/orders/detail.js` (resolved-owned) |
+| `POST /api/orders/{id}/mark-availability` | orders | `routes/orders/parcels.js` (resolved-owned) |
+| `GET /api/orders/{id}/parcels` | orders | `routes/orders/parcels.js` (resolved-owned) |
+| `POST /api/orders/{id}/partial-ship` | orders | `routes/orders/parcels.js` (resolved-owned) |
+| `POST /api/orders/{id}/qr-token` | orders | `routes/orders/qr.js` (resolved-owned) |
+| `PATCH /api/orders/{id}/status` | orders | `routes/orders/status.js` (resolved-owned) |
+| `POST /api/orders/{id}/local-relay-receipt` | orders | `routes/orders/status.js` (resolved-owned) |
+| `GET /api/orders/{id}/sub-orders` | orders | `routes/orders/parcels.js` (resolved-owned) |
+| `GET /api/orders/credits` | orders | `routes/orders/list.js` (resolved-owned) |
+| `PATCH /api/orders/parcels/{id}/status` | orders | `routes/orders/parcels.js` (resolved-owned) |
+| `GET /api/orders/problems` | orders | `routes/orders/list.js` (resolved-owned) |
+| `GET /api/orders/relais` | orders | `routes/orders/list.js` (resolved-owned) |
+| `GET /api/orders/retrait/{id}` | orders | `routes/orders/qr.js` (resolved-owned) |
+| `PATCH /api/orders/sub-orders/{id}/status` | orders | `routes/orders/parcels.js` (resolved-owned) |
+| `GET /api/v2/orders` | orders | `routes/order-api-v2.js` (resolved-owned) |
+| `GET /api/v2/orders/{id}` | orders | `routes/order-api-v2.js` (resolved-owned) |
+| `POST /api/v2/orders/{id}/confirm-cash` | orders | `routes/order-api-v2.js` (resolved-owned) |
+| `POST /api/v2/orders/{id}/create-parcel` | orders | `routes/order-api-v2.js` (resolved-owned) |
+| `GET /api/v2/orders/pending-cash` | orders | `routes/order-api-v2.js` (resolved-owned) |
+| `GET /api/v2/orders/ready-for-parcel` | orders | `routes/order-api-v2.js` (resolved-owned) |
+| `POST /api/payments/stripe/intent` | payments | `routes/payments.js` (resolved-owned) |
+| `POST /api/payments/paypal/webhook` | payments | `routes/payments-paypal.js` (resolved-owned) |
+| `POST /api/payments/cash/confirm` | payments | `routes/payments.js` (resolved-owned) |
+| `GET /api/payments/mobile-money/availability` | payments | `routes/payments-mobile-money.js` (resolved-owned) |
+| `POST /api/payments/mobile-money/initiate` | payments | `routes/payments-mobile-money.js` (resolved-owned) |
+| `GET /api/payments/mobile-money/transactions/{id}` | payments | `routes/payments-mobile-money.js` (resolved-owned) |
+| `POST /api/payments/mobile-money/transactions/{id}/refresh` | payments | `routes/payments-mobile-money.js` (resolved-owned) |
+| `POST /api/payments/mobile-money/callback/{id}/{id}` | payments | `routes/payments-mobile-money.js` (resolved-owned) |
+| `POST /api/payments/mobile-money/webhook/{id}` | payments | `routes/payments-mobile-money.js` (resolved-owned) |
+| `GET /api/payments/mobile-money/admin/pending` | payments | `routes/payments-mobile-money.js` (resolved-owned) |
+| `POST /api/cash/collect/{id}` | payments | `routes/cash.js` (resolved-owned) |
+| `GET /api/cash/collections` | payments | `routes/cash.js` (resolved-owned) |
+| `POST /api/cash/deposit` | payments | `routes/cash.js` (resolved-owned) |
+| `GET /api/cash/deposits` | payments | `routes/cash.js` (resolved-owned) |
+| `POST /api/cash/deposits/{id}/dispute` | payments | `routes/cash.js` (resolved-owned) |
+| `POST /api/cash/deposits/{id}/verify` | payments | `routes/cash.js` (resolved-owned) |
+| `GET /api/cash/reconciliation` | payments | `routes/cash.js` (resolved-owned) |
+| `GET /api/cash/reconciliation/agents` | payments | `routes/cash.js` (resolved-owned) |
+| `GET /api/cash/uncollected` | payments | `routes/cash.js` (resolved-owned) |
+| `GET /api/payments/config` | payments | `routes/payments.js` (resolved-owned) |
+| `POST /api/payments/paypal/capture/{id}` | payments | `routes/payments-paypal.js` (resolved-owned) |
+| `POST /api/payments/paypal/create-order` | payments | `routes/payments-paypal.js` (resolved-owned) |
+| `POST /api/payments/paypal/refund/{id}` | payments | `routes/payments-paypal.js` (resolved-owned) |
+| `GET /api/payments/rates` | payments | `routes/payments.js` (resolved-owned) |
+| `POST /api/payments/stripe/webhook` | payments | `routes/payments.js` (resolved-owned) |
+| `GET /health` | platform-ops | `routes/health.js` (resolved-owned) |
+| `GET /api/modules` | platform-ops | `routes/modules.js` (resolved-owned) |
+| `POST /api/admin/simulator/cleanup` | platform-ops | `routes/simulator.js` (resolved-owned) |
+| `GET /api/admin/simulator/journal` | platform-ops | `routes/simulator.js` (resolved-owned) |
+| `POST /api/admin/simulator/start` | platform-ops | `routes/simulator.js` (resolved-owned) |
+| `GET /api/admin/simulator/status` | platform-ops | `routes/simulator.js` (resolved-owned) |
+| `POST /api/admin/simulator/stop` | platform-ops | `routes/simulator.js` (resolved-owned) |
+| `GET /api/modules/{id}` | platform-ops | `routes/modules.js` (resolved-owned) |
+| `GET /api/modules/fabrics` | platform-ops | `routes/modules.js` (resolved-owned) |
+| `POST /api/modules/fabrics` | platform-ops | `routes/modules.js` (resolved-owned) |
+| `GET /api/modules/models` | platform-ops | `routes/modules.js` (resolved-owned) |
+| `POST /api/modules/models` | platform-ops | `routes/modules.js` (resolved-owned) |
+| `POST /api/modules/price` | platform-ops | `routes/modules.js` (resolved-owned) |
+| `POST /api/simulator/cleanup` | platform-ops | `routes/simulator.js` (resolved-owned) |
+| `GET /api/simulator/journal` | platform-ops | `routes/simulator.js` (resolved-owned) |
+| `POST /api/simulator/start` | platform-ops | `routes/simulator.js` (resolved-owned) |
+| `GET /api/simulator/status` | platform-ops | `routes/simulator.js` (resolved-owned) |
+| `POST /api/simulator/stop` | platform-ops | `routes/simulator.js` (resolved-owned) |
+| `GET /api/v2/alerts` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `POST /api/v2/alerts/{id}/acknowledge` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `GET /api/v2/global` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `GET /api/v2/incidents` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `GET /api/v2/invoices` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `GET /api/v2/parcels/{id}/orders` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `GET /api/v2/parcels/{id}/scans` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `GET /api/v2/parcels/{id}/detail` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `GET /api/v2/reconciliation` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `GET /api/v2/reconciliation/summary` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `GET /api/v2/scan-events` | platform-ops | `routes/ops-api.js` (resolved-owned) |
+| `GET /health/detailed` | platform-ops | `routes/health.js` (resolved-owned) |
+| `GET /health/metrics` | platform-ops | `routes/health.js` (resolved-owned) |
+| `GET /health/ready` | platform-ops | `routes/health.js` (resolved-owned) |
+| `GET /health/version` | platform-ops | `routes/health.js` (resolved-owned) |
+| `GET /api/providers-services/services/{id}` | providers-services | `routes/providers-services.js` (resolved-owned) |
+| `GET /api/providers-services/physical-offers/{id}` | providers-services | `routes/providers-services.js` (resolved-owned) |
+| `POST /api/providers-services/inquiries` | providers-services | `routes/providers-services.js` (resolved-owned) |
+| `GET /api/purchasing` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `GET /api/purchasing/suppliers` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/suppliers` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/suppliers/{id}/map` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `DELETE /api/purchasing/suppliers/{id}` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `GET /api/purchasing/order/{id}/completeness` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `GET /api/purchasing/{id}` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/{id}/confirm` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/{id}/receive` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `DELETE /api/purchasing/po/{id}` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `GET /api/purchasing/open-lines` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `GET /api/purchasing/po/{id}` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `GET /api/purchasing/po/{id}/commitment-pdf` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/po/prepare` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/po/{id}/detach` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/po/{id}/discard` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/lines/{id}/cancel` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/po/{id}/submit` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/po/{id}/confirm` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/lines` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/lines/{id}/settle` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `GET /api/boutique/suggestions` | recommendations | `routes/boutique-suggestions.js` (resolved-owned) |
+| `GET /api/admin/market-settlements/markets/{id}/settlements` | settlement | `routes/admin-market-settlement.js` (resolved-owned) |
+| `POST /api/admin/market-settlements/markets/{id}/settlements/ready` | settlement | `routes/admin-market-settlement.js` (resolved-owned) |
+| `POST /api/admin/market-settlements/settlements/{id}/paid` | settlement | `routes/admin-market-settlement.js` (resolved-owned) |
+| `GET /api/shared-carts/public/{id}` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/shared-carts/from-cart-items` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/shared-carts/from-basket` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `GET /api/shared-carts/mine` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `GET /api/shared-carts/library` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/shared-carts/save` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `DELETE /api/shared-carts/saved/{id}` | shared-cart | `routes/shared-cart-saved.js` (resolved-owned) |
+| `POST /api/shares` | shared-cart | `routes/shares.js` (resolved-owned) |
+| `GET /api/shares/{id}` | shared-cart | `routes/shares.js` (resolved-owned) |
+| `GET /api/shared-carts/{id}` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/shared-carts/{id}/close` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/shared-carts/{id}/cancel` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `GET /api/admin/shared-carts` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `GET /api/admin/shared-carts/{id}` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/admin/shared-carts/{id}/expire` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `POST /api/admin/shared-carts/{id}/note` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
+| `GET /api/admin/sourcing/connectors` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `POST /api/admin/sourcing/catalogs/import` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `GET /api/admin/sourcing/catalogs` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `GET /api/admin/sourcing/candidates` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `GET /api/admin/sourcing/candidates/{id}` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `PUT /api/admin/sourcing/candidates/{id}` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `POST /api/admin/sourcing/candidates/{id}/scan` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `POST /api/admin/sourcing/candidates/scan-batch` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `POST /api/admin/sourcing/candidates/{id}/import-product` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `POST /api/admin/sourcing/candidates/{id}/reject` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
+| `POST /api/admin/sourcing/candidates/{id}/watchlist` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
 | `GET /api/admin/workspaces/sourcing` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
 | `GET /api/admin/workspaces/sourcing/import-cockpit` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
 | `POST /api/admin/workspaces/sourcing/imports` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
 | `POST /api/admin/workspaces/sourcing/sources/{id}/catalog-changes/observe` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
 | `POST /api/admin/workspaces/sourcing/sources/{id}/capabilities/{id}` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
-| `POST /api/admin/workspaces/sourcing/products/{id}/update` | soum´Îå+ä◊ûÆ∫+∫$zzb•Ê⁄±Ó∏¬∏≠yÍÎ¢∞k¢Gß¶*^` | market-control-plane | documented-signature-no-file |
+| `POST /api/admin/workspaces/sourcing/products/{id}/update` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/sourcing/candidates/{id}/category-options` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/candidates/{id}/resolve-category` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/candidates/{id}/update` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/candidates/{id}/scan` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/candidates/{id}/promote` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/candidates/{id}/watchlist` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/candidates/{id}/reject` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/suppliers` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/suppliers/{id}/update` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/suppliers/{id}/deactivate` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/suppliers/{id}/activate` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/sources/{id}/activate` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/sourcing/sources/{id}/deactivate` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
+| `GET /api/unsold` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
+| `GET /api/unsold/{id}` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
+| `PATCH /api/unsold/{id}` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
+| `POST /api/unsold/{id}/resolve` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
+| `GET /api/unsold/{id}/whatsapp` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
+| `POST /api/unsold/scan` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
+| `GET /api/unsold/stats/summary` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
+| `GET /api/wallet` | wallet | `routes/wallet.js` (resolved-owned) |
+| `GET /api/wallet/transactions` | wallet | `routes/wallet.js` (resolved-owned) |
+| `POST /api/wallet/apply` | wallet | `routes/wallet.js` (resolved-owned) |
+| `POST /api/wallet/remove` | wallet | `routes/wallet.js` (resolved-owned) |
+| `GET /api/wallet/admin` | wallet | `routes/wallet.js` (resolved-owned) |
+| `GET /api/wallet/admin/{id}` | wallet | `routes/wallet.js` (resolved-owned) |
+| `POST /api/wallet/admin/credit` | wallet | `routes/wallet.js` (resolved-owned) |
+| `POST /api/wallet/admin/order-credit/{id}` | wallet | `routes/wallet.js` (resolved-owned) |
+| `POST /api/wallet/admin/reverse-lot` | wallet | `routes/wallet.js` (resolved-owned) |
+| `GET /api/admin/action-center` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
+| `POST /api/admin/action-center/generate` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
+| `POST /api/admin/action-center/signals/{id}/acknowledge` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
+| `POST /api/admin/action-center/signals/{id}/snooze` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
+| `POST /api/admin/action-center/signals/{id}/resolve` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
+| `GET /api/admin/action-center/market/{id}` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
+| `POST /api/admin/action-center/market/{id}/signals/{id}/acknowledge` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
+| `POST /api/admin/action-center/market/{id}/signals/{id}/snooze` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
+| `POST /api/admin/action-center/market/{id}/signals/{id}/resolve` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
+
+### API internes (contract.internalApi)
+
+| Fonction | Fichier | Feature | Statut |
+|---|---|---|---|
+| `requireAuth / requireVerifiedIdentity / softAuth` | `middleware/auth.js` | auth | resolved |
+| `requireAuth / requireVerifiedIdentity / softAuth` | `middleware/require-verified-identity.js` | auth | resolved |
+| `requireAuth / requireVerifiedIdentity / softAuth` | `middleware/soft-auth.js` | auth | resolved |
+| `signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict` | `utils/auth-session.js` | auth | resolved |
+| `signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict` | `utils/auth-session-policy.js` | auth | resolved |
+| `signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict` | `utils/auth-token-policy.js` | auth | resolved |
+| `makeIntlPhoneInput` | `public/boutique/js/b-phone.js` | auth-identity | resolved |
+| `createAdminUser` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `markUserPendingActivation` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `setUserRole` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `setUserPasswordHash` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `anonymizeUser` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `deleteUser` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `deleteNonAdminUsers` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `incrementBigBasketCount` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `markBigBasketNotified` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `recalculateUserLoyalty` | `services/user-mutation-service.js` | auth-identity | resolved |
+| `getActiveAuthorizationForUpdate` | `services/pickup-authorization-service.js` | auth-identity | resolved |
+| `hasActiveAuthorization` | `services/pickup-authorization-service.js` | auth-identity | resolved |
+| `getRuleNumber` | `utils/rules.js` | business-rules | resolved |
+| `getRule` | `utils/rules.js` | business-rules | resolved |
+| `getAllRules` | `utils/rules.js` | business-rules | resolved |
+| `setRule` | `utils/rules.js` | business-rules | resolved |
+| `readRunProgress` | `services/catalog-run-progress.js` | catalog | resolved |
+| `createDraftFromSourcingCandidate` | `services/product-admin-service.js` | catalog | resolved |
+| `createDraftProductFromSourcingCandidate` | `services/catalog-candidate-product-service.js` | catalog | resolved |
+| `applyPrice` | `services/catalog-product-mutation-service.js` | catalog | resolved |
+| `updateSourcingFields` | `services/catalog-product-mutation-service.js` | catalog | resolved |
+| `bulkAssignSourcingRail` | `services/catalog-product-mutation-service.js` | catalog | resolved |
+| `replaceVariantsForSourcing` | `services/catalog-product-mutation-service.js` | catalog | resolved |
+| `maybeApplyCatalogProductRouteCanary` | `services/catalog-product-route-canary.js` | catalog | resolved |
+| `readCatalogProductSource` | `services/catalog-product-source-read-service.js` | catalog | resolved |
+| `resolveCatalogProductReadMode` | `services/catalog-product-source-read-service.js` | catalog | resolved |
+| `recommend` | `services/pricing-engine.js` | economic-engine | resolved |
+| `recordProductPriceChange` | `services/economic-price-audit-service.js` | economic-engine | resolved |
+| `buildConversation` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
+| `buildProof` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
+| `assertConversation` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
+| `assertThrough` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
+| `summary` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
+| `publicContract` | `services/external-provider-onboarding-contracts.js` | external-provider-contracts | resolved |
+| `checkReady` | `services/external-provider-onboarding-contracts.js` | external-provider-contracts | resolved |
+| `scanRepository` | `scripts/external-provider-boundary-scan.js` | external-provider-contracts | resolved |
+| `runBatch` | `scripts/external-provider-batch-proof.js` | external-provider-contracts | resolved |
+| `run` | `scripts/provider-certification-reconciliation.js` | external-provider-contracts | resolved |
+| `runStripeReadOnlyProof` | `scripts/stripe-provider-contract-proof.js` | external-provider-contracts | resolved |
+| `runEbayBrowseReadOnlyProof` | `scripts/ebay-sandbox-browse-proof.js` | external-provider-contracts | resolved |
+| `listIncidents` | `services/incident-service.js` | incident-management | resolved |
+| `getIncident` | `services/incident-service.js` | incident-management | resolved |
+| `resolveIncident` | `services/incident-service.js` | incident-management | resolved |
+| `escalateIncident` | `services/incident-service.js` | incident-management | resolved |
+| `getIncidentDashboard` | `services/incident-service.js` | incident-management | resolved |
+| `createScanIncident` | `services/incident-write-service.js` | incident-management | resolved |
+| `createReconciliationIncident` | `services/incident-write-service.js` | incident-management | resolved |
+| `createAlertEngineIncidentIfNew` | `services/incident-write-service.js` | incident-management | resolved |
+| `acknowledgeAlertEngineIncident` | `services/incident-write-service.js` | incident-management | resolved |
+| `createSupplierShortageIncident` | `services/incident-write-service.js` | incident-management | resolved |
+| `resolveOpsIncident` | `services/incident-write-service.js` | incident-management | resolved |
+| `resolvePhysicalProofIncident` | `services/incident-write-service.js` | incident-management | resolved |
+| `resolveUpstreamTruthIncident` | `services/incident-write-service.js` | incident-management | resolved |
+| `detachUserFromIncidents` | `services/incident-write-service.js` | incident-management | resolved |
+| `seedIncident` | `services/incident-write-service.js` | incident-management | resolved |
+| `scanOverdueIncidents` | `services/incident-escalation.js` | incident-management | resolved |
+| `assertParcelTransitionAllowed` | `services/parcel-transition-guard.js` | incident-management | resolved |
+| `‚Äî` | `middleware/error-handler.js` | infrastructure | resolved |
+| `‚Äî` | `middleware/rate-limit.js` | infrastructure | resolved |
+| `‚Äî` | `middleware/request-id.js` | infrastructure | resolved |
+| `‚Äî` | `middleware/upload.js` | infrastructure | resolved |
+| `‚Äî` | `middleware/validate.js` | infrastructure | resolved |
+| `‚Äî` | `utils/logger.js` | infrastructure | resolved |
+| `‚Äî` | `utils/phone.js` | infrastructure | resolved |
+| `‚Äî` | `utils/rates.js` | infrastructure | resolved |
+| `‚Äî` | `utils/reference.js` | infrastructure | resolved |
+| `‚Äî` | `validators/index.js` | infrastructure | resolved |
+| `‚Äî` | `bootstrap/*` | infrastructure | resolved |
+| `getDecisionAvailabilityEvidence` | `services/local-stock-decision-projection.js` | local-stock | resolved |
+| `resolveCheckoutFulfillmentSources` | `services/local-stock-service.js` | local-stock | resolved |
+| `allocateForOrderItem` | `services/local-stock-service.js` | local-stock | resolved |
+| `consumeAllocationsForOrder` | `services/local-stock-service.js` | local-stock | resolved |
+| `releaseAllocationsForOrder` | `services/local-stock-service.js` | local-stock | resolved |
+| `previewCheckoutFulfillmentSources` | `services/local-stock-checkout-preview.js` | local-stock | resolved |
+| `transitionParcelStatus` | `services/parcel-operations.js` | logistics | resolved |
+| `recordHubPreparationScan` | `services/scan-write-service.js` | logistics | resolved |
+| `recordQrCollectionScan` | `services/scan-write-service.js` | logistics | resolved |
+| `createRelais` | `services/relais-mutation-service.js` | logistics | resolved |
+| `updateRelais` | `services/relais-mutation-service.js` | logistics | resolved |
+| `setRelaisActive` | `services/relais-mutation-service.js` | logistics | resolved |
+| `listRelais` | `services/relais-mutation-service.js` | logistics | resolved |
+| `getOwnedRelais` | `services/relais-mutation-service.js` | logistics | resolved |
+| `detachUserFromScans` | `services/scan-write-service.js` | logistics | resolved |
+| `assignWholeOrderItemToParcel` | `services/parcel-item-mutation-service.js` | logistics | resolved |
+| `assignParcelItem` | `services/parcel-item-mutation-service.js` | logistics | resolved |
+| `addParcelItem` | `services/parcel-item-mutation-service.js` | logistics | resolved |
+| `removeParcelItem` | `services/parcel-item-mutation-service.js` | logistics | resolved |
+| `assignSingleOrderItemToParcel` | `services/parcel-item-mutation-service.js` | logistics | resolved |
+| `addParcelItemTraced` | `services/parcel-item-mutation-service.js` | logistics | resolved |
+| `removeParcelItemTraced` | `services/parcel-item-mutation-service.js` | logistics | resolved |
+| `reassignParcelItem` | `services/parcel-item-mutation-service.js` | logistics | resolved |
+| `listParcelsRepresentingOrder` | `services/parcel-order-membership.js` | logistics | resolved |
+| `listOrdersRepresentedByParcels` | `services/parcel-order-membership.js` | logistics | resolved |
+| `createHubParcel` | `services/parcel-mutation-service.js` | logistics | resolved |
+| `createAutoPreparedParcel` | `services/parcel-mutation-service.js` | logistics | resolved |
+| `setParcelWeight` | `services/parcel-mutation-service.js` | logistics | resolved |
+| `appendParcelShipmentInfo` | `services/parcel-mutation-service.js` | logistics | resolved |
+| `markCustomsCleared` | `services/parcel-mutation-service.js` | logistics | resolved |
+| `markBackorderReminderSent` | `services/parcel-mutation-service.js` | logistics | resolved |
+| `resolvePurchaseSnapshot` | `services/hub-physical-identity.js` | logistics | resolved |
+| `snapshotPurchaseAllocation` | `services/hub-physical-identity.js` | logistics | resolved |
+| `createPhysicalUnit` | `services/hub-physical-identity.js` | logistics | resolved |
+| `receiveSupplierPackage` | `services/hub-physical-identity.js` | logistics | resolved |
+| `transitionPhysicalUnit` | `services/hub-physical-identity.js` | logistics | resolved |
+| `moveAllocationQuantity` | `services/hub-physical-identity.js` | logistics | resolved |
+| `recordPhysicalUnitOutcome` | `services/hub-physical-identity.js` | logistics | resolved |
+| `listMarkets()` | `null` | market-control-plane | documented-signature-no-file |
+| `getControlPlane()` | `null` | market-control-plane | documented-signature-no-file |
+| `computeGaps()` | `null` | market-control-plane | documented-signature-no-file |
 | `readinessFromGaps()` | `null` | market-control-plane | documented-signature-no-file |
 | `provisionMarket()` | `null` | market-control-plane | documented-signature-no-file |
 | `reprovisionMarket()` | `null` | market-control-plane | documented-signature-no-file |
@@ -629,11 +1901,147 @@ _dash_ : pas de Technical Architecture Graph propre au d√©p√¥t dash dans ce pipe
 | auth-identity | wallet (`wallet (projection boutique account : b-komerce.js lit uniquement le solde canonique via GET /api/wallet)`) | ‚úî |
 | auth-identity | documents (`documents (projection boutique account : b-komerce.js liste et t√©l√©charge les factures et remboursements priv√©s)`) | ‚úî |
 | auth-passkey | auth (`auth (middleware/auth.js ‚Äî authenticate, utils/auth-cookie.js ‚Äî setAuthCookie, utils/auth-session.js ‚Äî signAuthToken, politique de session canonique AUTH-8)`) | ‚úî |
-| auth-passkey | auth-identity (`auth-identity (users ‚Äî identit√© utilisateur canonique lue sans mutation)m´Îå+ä◊ûÆ∫+∫$zzb•Ê⁄±Ó∏¬∏≠yÍÎ¢∞k¢Gß¶*^ions (services/notification-service.js ‚Äî envoi OTP/alertes depuis routes/client-auth.js, routes/otp.js)`) | ‚úî |
-| auth-identity | wallet (`wallet (projection boutique account : b-komerce.js lit uniquement le solde canonique via GET /api/wallet)`) | ‚úî |
-| auth-identity | documents (`documents (projection boutique account : b-komerce.js liste et t√©l√©charge les factures et remboursements priv√©s)`) | ‚úî |
-| auth-passkey | auth (`auth (middleware/auth.js ‚Äî authenticate, utils/auth-cookie.js ‚Äî setAuthCookie, utils/auth-session.js ‚Äî signAuthToken, politique de session canonique AUTH-8)`) | ‚úî |
-| auth-passkey | auth-identity (`auth-identity (users ‚Äî identit√© utilisateur canonique lue sans mutation)market_scopes`) | ‚úî |
+| auth-passkey | auth-identity (`auth-identity (users ‚Äî identit√© utilisateur canonique lue sans mutation)`) | ‚úî |
+| auth-passkey | infrastructure (`infrastructure (db.js ‚Äî acc√®s aux tables WebAuthn et users en lecture)`) | ‚úî |
+| auth-passkey | platform-ops (`platform-ops (utils/logger.js ‚Äî journalisation structur√©e des √©v√©nements WebAuthn)`) | ‚úî |
+| business-rules | auth-identity (`auth-identity (d√©pendance data cross-feature observ√©e et gouvern√©e par O5)`) | ‚úî |
+| business-rules | auth (`auth (garde de route admin)`) | ‚úî |
+| business-rules | infrastructure (`infrastructure (journalisation, acces base)`) | ‚úî |
+| catalog | external-provider-contracts (`external-provider-contracts (contrat transverse de preuve provider : Conversation + KNOWN/DERIVED/UNKNOWN + P0..P4 consomm√© par les scripts Allegro catalog)`) | ‚úî |
+| catalog | sourcing (`sourcing (API internes findCanonicalProductIdsForCatalogProduct, collectCanonicalProductProjectionById et applyCanonicalSourceReadSeam)`) | ‚úî |
+| catalog | notifications (`notifications (alert persistence via utils/alerts.js)`) | ‚úî |
+| catalog | auth-identity (`auth-identity (projection boutique b-greeting consomme /api/auth/me pour personnaliser la surface catalogue)`) | ‚úî |
+| catalog | platform-ops (`platform-ops (monitoring/exploitation transverse observ√© dans le code)`) | ‚úî |
+| catalog | infrastructure (`infrastructure (d√©pendance technique transversale observ√©e : DB, logger, helpers ou bootstrap poss√©d√©s par infrastructure)`) | ‚úî |
+| catalog | business-rules (`business-rules (FF-C1 2026-07-29 ‚Äî lecture du r√©f√©rentiel de r√®gles m√©tier ; preuve: services/suppliers/catalog-import-orchestrator.js -> utils/rules.js ; services/catalog-product-detail.js -> utils/rules.js ; services/catalog-enrichment.js -> utils/rules.js)`) | ‚úî |
+| catalog | economic-engine (`economic-engine (prix produit, valorisation commerciale transport et audit price_history propri√©taire)`) | ‚úî |
+| catalog | customs (`customs (classification fournisseur dynamique consomm√©e depuis customs_categories ; le catalogue ne conna√Æt aucune cl√© de cat√©gorie douani√®re en dur)`) | ‚úî |
+| catalog | market-autonomy (`market-autonomy (r√©solution buyer du prix LOCAL_ACTIVE par march√© ; le catalogue reste propri√©taire du produit global ; la projection commerciale lit ce statut sans l √©crire)`) | ‚úî |
+| catalog | market (`market (lecture du r√©f√©rentiel des march√©s actifs pour projeter l assortiment commercial sans poss√©der la d√©cision pays)`) | ‚úî |
+| catalog | sourcing (`sourcing (persistence lifecycle sourcing_candidates et sourcing_candidate_events via sourcing-candidate-import-service ; catalog n execute plus de SQL direct sur ces tables)`) | ‚úî |
+| catalog | supplier-connectivity (`supplier-connectivity (Supplier Order Identity canonique : catalog persiste et valide l‚Äôidentit√© commandable via services/suppliers/supplier-order-identity.js ; aucun payload fournisseur n‚Äôest r√©interpr√©t√© par heuristique)`) | ‚úî |
+| catalog | purchasing (`purchasing (scripts/allegro-sandbox-check.js compose l adapter Allegro fulfillment poss√©d√© par Purchasing pour la preuve sandbox ; aucune autorit√© Purchasing n est recopi√©e dans Catalogue)`) | ‚úî |
+| catalog | logistics (`logistics (rails et eligibilite transport ; le catalog ne decide jamais le rail)`) | ‚úî |
+| catalog | shared-cart (`shared-cart (ne pas reutiliser la modal catalogue pour la fiche snapshot)`) | ‚úî |
+| catalog | auth (`auth`) | ‚úî |
+| catalog | orders (`orders (actions panier depuis les surfaces produit boutique ‚Äî preuve: b-catalog.js, render-product-card.js, b-modal-desktop-product.js, b-subcat.js, b-favs.js, b-modal-buybox-shared.js (+ tests) -> b-cart-core.js/b-cart.js, propriete orders-client canonicalFeature:orders)`) | ‚úî |
+| customs | catalog (`catalog (d√©pendance data cross-feature observ√©e et gouvern√©e par O5)`) | ‚úî |
+| customs | orders (`orders (persistence via order-mutation-service ? LOT11)`) | ‚úî |
+| customs | logistics (`logistics (colis a classer)`) | ‚úî |
+| customs | infrastructure (`infrastructure (d√©pendance technique transversale observ√©e : DB, logger, helpers ou bootstrap poss√©d√©s par infrastructure)`) | ‚úî |
+| customs | documents (`documents (facture douane generee)`) | ‚úî |
+| customs | auth (`auth`) | ‚úî |
+| customs | economic-engine (`economic-engine`) | ‚úî |
+| customs | market (`market (garde Q2 market-operation-guard : nouvelle exp√©dition refus√©e hors march√© actif)`) | ‚úî |
+| dashboard | shared-cart (`shared-cart (suppression des paniers utilisateur via API interne lifecycle-owned)`) | ‚úî |
+| dashboard | incident-management (`incident-management (incident persistence via incident-write-service)`) | ‚úî |
+| dashboard | orders (`orders (lecture commandes)`) | ‚úî |
+| dashboard | infrastructure (`infrastructure (d√©pendance technique transversale observ√©e : DB, logger, helpers ou bootstrap poss√©d√©s par infrastructure)`) | ‚úî |
+| dashboard | payments (`payments (lecture paiements)`) | ‚úî |
+| dashboard | refunds (`refunds (Relais Live d√©l√®gue les remises cash F1 √† local-cash-refund-handoff ; le propri√©taire refunds contr√¥le la garde et la preuve)`) | ‚úî |
+| dashboard | logistics (`logistics (lecture colis)`) | ‚úî |
+| dashboard | inventory (`inventory (lecture stock hub/transit)`) | ‚úî |
+| dashboard | local-stock (`local-stock (lecture de disponibilit√© physique market-scoped via local-stock-service ; jamais products.stock)`) | ‚úî |
+| dashboard | economic-engine (`economic-engine (m√©triques financi√®res)`) | ‚úî |
+| dashboard | wallet (`wallet (soldes et cr√©dits)`) | ‚úî |
+| dashboard | auth (`auth`) | ‚úî |
+| dashboard | auth-identity (`auth-identity (mutations users via services/user-mutation-service.js ? LOT12)`) | ‚úî |
+| dashboard | market-delegation (`market-delegation (attribution d‚Äôun scope march√© op√©rateur via services/market-operator-provisioning.js : membership de d√©l√©gation, jamais une √©criture directe de operator_market_scopes)`) | ‚úî |
+| dashboard | customs (`customs`) | ‚úî |
+| dashboard | documents (`documents`) | ‚úî |
+| dashboard | notifications (`notifications (r√©conciliation idempotente des jalons client affich√©s dans le cockpit de d√©mo)`) | ‚úî |
+| dashboard | purchasing (`purchasing (r√©pare les commandes sans purchase order via services/repair-ordered-without-purchase-orders.js ; Order 360 consomme en lecture seule les PO li√©es ; Finance globale consomme en lecture seule la file canonique de paiements fournisseur √† revoir, sans ventilation march√©)`) | ‚úî |
+| dashboard | supplier-connectivity (`supplier-connectivity (Supplier 360 et Product 360 consomment le projecteur partag√© de preuves provider ; identit√©, manual_procurement et auto_order restent des observations s√©par√©es de toute activation runtime)`) | ‚úî |
+| dashboard | external-provider-contracts (`external-provider-contracts (Supplier 360 lit le registre complet de certifications ; Product 360 ne projette pour ses fournisseurs que les preuves purchasing.manual_procurement / purchasing.auto_order, sans capability m√©tier invent√©e ni d√©duction par nom de provider)`) | ‚úî |
+| dashboard | business-rules (`business-rules (utils/rules.js ‚Äî routes/dashboard-shared.js lit une r√®gle en vigueur)`) | ‚úî |
+| dashboard | decision-signals (`decision-signals (services/radar-queries.js ‚Äî routes/admin-radar.js ; Commerce r√©utilise son vocabulaire de projection sans persistance market implicite)`) | ‚úî |
+| dashboard | market (`market (r√©f√©rentiel Markets et codes pays ; les surfaces D migr√©es n‚Äôutilisent plus requireMarketScope comme autorit√©)`) | ‚úî |
+| dashboard | market-delegation (`market-delegation (capabilities march√© exactes ; Shipping & Customs consomme logistics.read / execution.transit.confirm ; Finance consomme finance.read / finance.act ; Operations consomme operations.read et chaque execution.* ; Hub et Relay bornent lecture/supervision ; Entity 360 consomme client.read/catalog.read/operations.read ; Dashboard Market Canonical consomme dashboard.market.read, operations.read et finance.read, avec dashboard global explicite en alternative centrale)`) | ‚úî |
+| dashboard | sourcing (`sourcing (lecture des lots KIR et de leurs candidats pour le cockpit d√©cisionnel)`) | ‚úî |
+| dashboard | catalog (`catalog (lecture de readiness et des d√©cisions Catalogue)`) | ‚úî |
+| dashboard | market-autonomy (`market-autonomy (lecture du statut de prix local LOCAL_ACTIVE pour d√©terminer une approbation r√©elle √† la vente)`) | ‚úî |
+| documents | logistics (`logistics (d√©pendance data cross-feature observ√©e et gouvern√©e par O5)`) | ‚úî |
+| documents | catalog (`catalog (d√©pendance data cross-feature observ√©e et gouvern√©e par O5)`) | ‚úî |
+| documents | auth (`auth (gardes authenticate/requireAdmin sur les routes documents et factures)`) | ‚úî |
+| documents | infrastructure (`infrastructure (d√©pendance technique transversale observ√©e : DB, logger, helpers ou bootstrap poss√©d√©s par infrastructure)`) | ‚úî |
+| documents | orders (`orders`) | ‚úî |
+| documents | customs (`customs`) | ‚úî |
+| documents | wallet (`wallet`) | ‚úî |
+| documents | refunds (`refunds`) | ‚úî |
+| documents | auth-identity (`auth-identity`) | ‚úî |
+| economic-engine | local-stock (`local-stock (provenance LOCAL_STOCK : applicabilit√© de la cha√Æne import au CDR ; preuve: services/pricing-engine.js -> services/local-stock-service.js)`) | ‚úî |
+| economic-engine | refunds (`refunds (d√©pendance data cross-feature observ√©e et gouvern√©e par O5)`) | ‚úî |
+| economic-engine | platform-ops (`platform-ops (d√©pendance data cross-feature observ√©e et gouvern√©e par O5)`) | ‚úî |
+| economic-engine | customs (`customs (d√©pendance data cross-feature observ√©e et gouvern√©e par O5)`) | ‚úî |
+| economic-engine | business-rules (`business-rules (d√©pendance data cross-feature observ√©e et gouvern√©e par O5)`) | ‚úî |
+| economic-engine | auth-identity (`auth-identity (d√©pendance data cross-feature observ√©e et gouvern√©e par O5)`) | ‚úî |
+| economic-engine | market (`market (autorit√© serveur des mod√®les Pricing pays via markets et operator_market_scopes)`) | ‚úî |
+| economic-engine | market-autonomy (`market-autonomy (d√©cision de prix local et activation LOCAL_ACTIVE consomm√©es par la projection √©conomique sans transfert d ownership)`) | ‚úî |
+| economic-engine | market-delegation (`market-delegation (bridge request-local des memberships projet√©es vers Pricing march√©, sans mutation du r√¥le global)`) | ‚úî |
+| economic-engine | infrastructure (`infrastructure (d√©pendance technique transversale observ√©e : DB, logger, helpers ou bootstrap poss√©d√©s par infrastructure)`) | ‚úî |
+| economic-engine | logistics (`logistics (FF-C1 2026-07-29 ‚Äî lecture ou orchestration logistique ; preuve: services/transport-pricing.js -> services/transport-rails.js)`) | ‚úî |
+| economic-engine | catalog (`catalog (donnees produit source)`) | ‚úî |
+| economic-engine | auth (`auth`) | ‚úî |
+| economic-engine | dashboard (`dashboard`) | ‚úî |
+| economic-engine | orders (`orders`) | ‚úî |
+| economic-engine | loyalty (`loyalty (invalidation du cache de configuration finance apres modification admin ‚Äî services/loyalty-service.js invalidateConfigCache, O7.3 provider loyalty)`) | ‚úî |
+| external-provider-contracts | infrastructure (`infrastructure ‚Äî runtime Node et primitives techniques uniquement ; aucune v√©rit√© m√©tier externe n est d√©l√©gu√©e √† infrastructure`) | ‚úî |
+| incident-management | orders (`orders (d√©pendance data cross-feature observ√©e et gouvern√©e par O5)`) | ‚úî |
+| incident-management | infrastructure (`infrastructure (DB/logger/bootstrap techniques)`) | ‚úî |
+| incident-management | logistics (`logistics (producteur d‚Äôincidents physiques via incident-write-service ; consommateur du guard de transition F2/F3)`) | ‚úî |
+| incident-management | decision-signals (`decision-signals (sink durable Action Center pour escalade SLA via signal-service)`) | ‚úî |
+| infrastructure | market (`market ‚Äî utils/rates.js lit l'autorit√© de conversion FX unique (services/fx-authority.js), plus aucun taux propre`) | ‚úî |
+| infrastructure | auth (`auth ‚Äî bootstrap/api-routes.js monte les routes auth`) | ‚úî |
+| infrastructure | auth-identity (`auth-identity ‚Äî le provisionneur E2E appelle le writer canonique createAdminUser / setUserPasswordHash pour les comptes de recette`) | ‚úî |
+| infrastructure | catalog (`catalog ‚Äî bootstrap/api-routes.js monte les routes catalog`) | ‚úî |
+| infrastructure | customs (`customs ‚Äî bootstrap/api-routes.js monte les routes customs`) | ‚úî |
+| infrastructure | dashboard (`dashboard ‚Äî bootstrap/api-routes.js monte les routes dashboard`) | ‚úî |
+| infrastructure | economic-engine (`economic-engine ‚Äî bootstrap/api-routes.js monte les routes economic-engine`) | ‚úî |
+| infrastructure | inventory (`inventory ‚Äî bootstrap/api-routes.js monte les routes inventory`) | ‚úî |
+| infrastructure | logistics (`logistics ‚Äî bootstrap/api-routes.js monte les routes logistics`) | ‚úî |
+| infrastructure | market-delegation (`market-delegation ‚Äî le provisionneur E2E attribue les scopes op√©rateur via grantOperatorScope et les memberships via addMembership`) | ‚úî |
+| infrastructure | notifications (`notifications ‚Äî bootstrap/api-routes.js monte les routes notification`) | ‚úî |
+| infrastructure | platform-ops (`platform-ops ‚Äî bootstrap/api-routes.js monte les routes operations`) | ‚úî |
+| infrastructure | orders (`orders ‚Äî bootstrap/api-routes.js monte les routes orders`) | ‚úî |
+| infrastructure | payments (`payments ‚Äî bootstrap/api-routes.js monte les routes payment`) | ‚úî |
+| infrastructure | recommendations (`recommendations ‚Äî bootstrap/api-routes.js monte les routes recommendations`) | ‚úî |
+| infrastructure | shared-cart (`shared-cart ‚Äî bootstrap/api-routes.js monte les routes shared-cart`) | ‚úî |
+| infrastructure | wallet (`wallet ‚Äî bootstrap/api-routes.js monte les routes wallet`) | ‚úî |
+| inventory | orders (`orders (persistence via order-mutation-service ? LOT11)`) | ‚úî |
+| inventory | catalog (`catalog (produit concerne)`) | ‚úî |
+| inventory | logistics (`logistics (mutation parcel_items via parcel-item-mutation-service)`) | ‚úî |
+| inventory | infrastructure (`infrastructure (d√©pendance technique transversale observ√©e : DB, logger, helpers ou bootstrap poss√©d√©s par infrastructure)`) | ‚úî |
+| inventory | auth (`auth`) | ‚úî |
+| local-stock | catalog (`catalog`) | ‚úî |
+| local-stock | market (`market`) | ‚úî |
+| local-stock | logistics (`logistics`) | ‚úî |
+| local-stock | infrastructure (`infrastructure`) | ‚úî |
+| logistics | customs (`customs (lien documentaire international : le service douane poss√®de seul la d√©claration des droits et taxes ; le Hub orchestre sa transaction)`) | ‚úî |
+| logistics | documents (`documents (d√©pendance data cross-feature observ√©e et gouvern√©e par O5)`) | ‚úî |
+| logistics | incident-management (`incident-management (incident persistence via incident-write-service)`) | ‚úî |
+| logistics | infrastructure (`infrastructure (DB + transactional outbox F0 ; les constats physiques sont publi√©s via outbox-producer dans la transaction du fait)`) | ‚úî |
+| logistics | business-rules (`business-rules (FF-C1 2026-07-29 ‚Äî lecture du r√©f√©rentiel de r√®gles m√©tier ; preuve: utils/parcels.js -> utils/rules.js ; services/parcel-operations.js -> utils/rules.js)`) | ‚úî |
+| logistics | orders (`orders (commande rattach√©e au colis ; HUB-001 ne lit que order_id/order_item_id/market_id/relais_id autoritatifs et ne les r√©assigne jamais)`) | ‚úî |
+| logistics | local-stock (`local-stock (lecture par SKU et march√© des allocations consomm√©es pour la r√©ception directe au relais, sans Hub fictif)`) | ‚úî |
+| logistics | auth (`auth`) | ‚úî |
+| logistics | auth-identity (`auth-identity (autorisation nominative de retrait exceptionnel ‚Äî services/pickup-authorization-service.js:getActiveAuthorizationForUpdate/hasActiveAuthorization, jamais de requ√™te directe sur user_pickup_authorizations, Lot 5)`) | ‚úî |
+| logistics | catalog (`catalog`) | ‚úî |
+| logistics | notifications (`notifications`) | ‚úî |
+| logistics | payments (`payments (marque une commande payee ‚Äî services/payment-service.js ; confirme un paiement cash pickup transactionnel ‚Äî services/confirm-pickup-cash-payment.js ; O7.2 Cycle B)`) | ‚úî |
+| logistics | refunds (`refunds`) | ‚úî |
+| logistics | purchasing (`purchasing (lecture seule de purchase_orders : HUB-001 snapshotte l identit√© d achat exacte d√©j√† persist√©e ; aucune mutation/heuristique fournisseur)`) | ‚úî |
+| logistics | loyalty (`loyalty (recalcul de palier apres collecte cash relais / scan preparation ‚Äî services/loyalty-service.js recalculateLoyalty/handleOrderConfirmed, O7.3 provider loyalty)`) | ‚úî |
+| logistics | market (`market (r√©f√©rentiel Market et orders.market_id autoritatif ; HUB-001 h√©rite le march√© de la commande, jamais de market_id client)`) | ‚úî |
+| logistics | market-delegation (`market-delegation (capabilities march√© explicites ; D1 lie agent_transitaire √† un march√© ; D4 borne les lectures Hub market_operator par operations.read et la supervision Hub par hub.supervise ; users.role ne donne aucun droit march√©)`) | ‚úî |
+| loyalty | orders (`orders (d√©pendance data cross-feature observ√©e et gouvern√©e par O5)`) | ‚úî |
+| loyalty | economic-engine (`economic-engine (d√©pendance data cross-feature observ√©e et gouvern√©e par O5)`) | ‚úî |
+| loyalty | infrastructure (`infrastructure (d√©pendance technique transversale observ√©e : DB, logger, helpers ou bootstrap poss√©d√©s par infrastructure)`) | ‚úî |
+| loyalty | auth (`auth (FF-C1 2026-07-29 ‚Äî garde de route et contexte d‚Äôidentit√© ; preuve: routes/loyalty.js -> middleware/auth.js)`) | ‚úî |
+| loyalty | notifications (`notifications (FF-C1 2026-07-29 ‚Äî √©mission de message ; preuve: services/loyalty-service.js -> services/notification-service.js)`) | ‚úî |
+| loyalty | auth-identity (`auth-identity (identification du client)`) | ‚úî |
+| market | infrastructure (`infrastructure (db.js ‚Äî pool de connexion Postgres, seule d√©pendance de middleware/require-market-scope.js)`) | ‚úî |
+| market | notifications (`notifications (utils/alerts.js ‚Äî alerte d'√©cart EUR/USD cr√©√©e √† l'approbation par services/fx-observation-service.js)`) | ‚úî |
+| market-autonomy | market (`market ‚Äî r√©f√©rentiel markets, currency_parities et scope serveur operator_market_scopes`) | ‚úî |
 | market-autonomy | economic-engine (`economic-engine ‚Äî CDR, politique march√© et gate de couverture`) | ‚úî |
 | market-autonomy | catalog (`catalog ‚Äî products/SKU en lecture ; le prix global reste inchang√©`) | ‚úî |
 | market-autonomy | infrastructure (`infrastructure ‚Äî db.js pour transaction et audit`) | ‚úî |
@@ -728,7 +2136,7 @@ _dash_ : pas de Technical Architecture Graph propre au d√©p√¥t dash dans ce pipe
 | platform-ops | catalog (`catalog (shell/client API transversal monte et appelle les surfaces catalogue sans en poss√©der l‚Äô√©tat)`) | ‚úî |
 | platform-ops | auth-identity (`auth-identity (client API transversal et shell identit√© consomment les endpoints auth)`) | ‚úî |
 | platform-ops | infrastructure (`infrastructure (d√©pendance technique transversale observ√©e : DB, logger, helpers ou bootstrap poss√©d√©s par infrastructure)`) | ‚úî |
-| platform-ops | business-rules (`business-rules (FF-C1 2026-07-29 ‚Äî lecture du r√©f√©rentiel de r√®gles m√©tier ; preuve: roum´Îå+ä◊ûÆ∫+∫$zzb•Ê⁄±Ó∏¬∏≠yÍÎ¢∞k¢Gß¶*^tes/config.js -> utils/rules.js)`) | ‚úî |
+| platform-ops | business-rules (`business-rules (FF-C1 2026-07-29 ‚Äî lecture du r√©f√©rentiel de r√®gles m√©tier ; preuve: routes/config.js -> utils/rules.js)`) | ‚úî |
 | platform-ops | auth (`auth (FF-C1 2026-07-29 ‚Äî garde de route et contexte d‚Äôidentit√© ; preuve: routes/modules.js -> middleware/auth.js ; routes/health.js -> middleware/auth.js ; routes/ops-api.js -> middleware/auth.js ; +2)`) | ‚úî |
 | platform-ops | economic-engine (`economic-engine (calcul de prix ponctuel pour modules sur-mesure ‚Äî services/pricing-engine.js recommend, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)`) | ‚úî |
 | platform-ops | logistics (`logistics (simulateur declenche une transition colis via transitionParcelStatus ‚Äî services/parcel-operations.js, O7.1 OWNERSHIP_CONFIRMED_BOUNDARY_REQUIRED, boundary formalisee O7.3)`) | ‚úî |
@@ -850,9 +2258,6 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 - **[DASH-MANIFEST-DUPLICATE-COPY]** legacy-control-tower ‚Äî "public/features/legacy-control-tower.feature.js" est une copie d√©clar√©e de "public/dashboards/features/legacy-control-tower.feature.js" (APP_FEATURE_REGISTRY.md) ‚Äî non charg√©e comme n≈ìud s√©par√©, r√©solue uniquement contre le canonique
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** dashboard -> loyalty ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 1 preuve(s)) sans contract.consumes d√©clar√© chez "dashboard" vers "loyalty"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** dashboard -> platform ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 1 preuve(s)) sans contract.consumes d√©clar√© chez "dashboard" vers "platform"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> autheatures/legacy-control-tower.feature.js" est une copie d√©clar√©e de "public/dashboards/features/legacy-control-tower.feature.js" (APP_FEATURE_REGISTRY.md) ‚Äî non charg√©e comme n≈ìud s√©par√©, r√©solue uniquement contre le canonique
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** dashboard -> loyalty ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 1 preuve(s)) sans contract.consumes d√©clar√© chez "dashboard" vers "loyalty"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** dashboard -> platform ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 1 preuve(s)) sans contract.consumes d√©clar√© chez "dashboard" vers "platform"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> auth-passkey ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 1 preuve(s)) sans contract.consumes d√©clar√© chez "infrastructure" vers "auth-passkey"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> business-rules ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 2 preuve(s)) sans contract.consumes d√©clar√© chez "infrastructure" vers "business-rules"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> decision-signals ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 4 preuve(s)) sans contract.consumes d√©clar√© chez "infrastructure" vers "decision-signals"
@@ -868,4 +2273,645 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> unsold-resolution ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 1 preuve(s)) sans contract.consumes d√©clar√© chez "infrastructure" vers "unsold-resolution"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** inventory -> payments ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 1 preuve(s)) sans contract.consumes d√©clar√© chez "inventory" vers "payments"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** logistics -> dashboard ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 2 preuve(s)) sans contract.consumes d√©clar√© chez "logistics" vers "dashboard"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** logistics -> economic-engine ‚Äî d√©pendance cross-fem´Îå+ä◊ûÆ∫+∫$zzb•
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** logistics -> economic-engine ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 1 preuve(s)) sans contract.consumes d√©clar√© chez "logistics" vers "economic-engine"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** loyalty -> logistics ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 1 preuve(s)) sans contract.consumes d√©clar√© chez "loyalty" vers "logistics"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** market -> customs ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 1 preuve(s)) sans contract.consumes d√©clar√© chez "market" vers "customs"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** market -> dashboard ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 1 preuve(s)) sans contract.consumes d√©clar√© chez "market" vers "dashboard"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** market -> market-delegation ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 2 preuve(s)) sans contract.consumes d√©clar√© chez "market" vers "market-delegation"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** market -> orders ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 1 preuve(s)) sans contract.consumes d√©clar√© chez "market" vers "orders"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** market-autonomy -> market-control-plane ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 2 preuve(s)) sans contract.consumes d√©clar√© chez "market-autonomy" vers "market-control-plane"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** market-delegation -> market-operator-dashboard ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 1 preuve(s)) sans contract.consumes d√©clar√© chez "market-delegation" vers "market-operator-dashboard"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** platform-ops -> auth-passkey ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 1 preuve(s)) sans contract.consumes d√©clar√© chez "platform-ops" vers "auth-passkey"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** platform-ops -> notifications ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 3 preuve(s)) sans contract.consumes d√©clar√© chez "platform-ops" vers "notifications"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** platform-ops -> payments ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 1 preuve(s)) sans contract.consumes d√©clar√© chez "platform-ops" vers "payments"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** platform-ops -> providers-services ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 1 preuve(s)) sans contract.consumes d√©clar√© chez "platform-ops" vers "providers-services"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** platform-ops -> recommendations ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 1 preuve(s)) sans contract.consumes d√©clar√© chez "platform-ops" vers "recommendations"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** platform-ops -> shared-cart ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 6 preuve(s)) sans contract.consumes d√©clar√© chez "platform-ops" vers "shared-cart"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** purchasing -> decision-signals ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 1 preuve(s)) sans contract.consumes d√©clar√© chez "purchasing" vers "decision-signals"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** purchasing -> refunds ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 1 preuve(s)) sans contract.consumes d√©clar√© chez "purchasing" vers "refunds"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** refunds -> auth ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 1 preuve(s)) sans contract.consumes d√©clar√© chez "refunds" vers "auth"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** supplier-connectivity -> purchasing ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 5 preuve(s)) sans contract.consumes d√©clar√© chez "supplier-connectivity" vers "purchasing"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** wallet -> notifications ‚Äî d√©pendance cross-feature observ√©e (canal: static-code, 1 preuve(s)) sans contract.consumes d√©clar√© chez "wallet" vers "notifications"
+- **[WRITER-NOT-OWNER]** invoices ‚Äî table "invoices" : lifecycle owner = documents (classification.signals.ownsTables), mais aussi √©crite par dashboard
+- **[WRITER-NOT-OWNER]** order_comments ‚Äî table "order_comments" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi √©crite par dashboard
+- **[WRITER-NOT-OWNER]** order_status_history ‚Äî table "order_status_history" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi √©crite par dashboard
+- **[WRITER-NOT-OWNER]** recipients ‚Äî table "recipients" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi √©crite par dashboard
+- **[WRITER-NOT-OWNER]** relais ‚Äî table "relais" : lifecycle owner = logistics (db.tables "!"), mais aussi √©crite par dashboard
+- **[WRITER-NOT-OWNER]** scan_events ‚Äî table "scan_events" : lifecycle owner = logistics (db.tables "!"), mais aussi √©crite par dashboard
+- **[WRITER-NOT-OWNER]** sms_log ‚Äî table "sms_log" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi √©crite par dashboard
+- **[WRITER-NOT-OWNER]** wallet_transactions ‚Äî table "wallet_transactions" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi √©crite par dashboard
+- **[WRITER-NOT-OWNER]** wallets ‚Äî table "wallets" : lifecycle owner = wallet (classification.signals.ownsTables), mais aussi √©crite par dashboard
+
+### LIMITES DU G√âN√âRATEUR ‚Äî hors dette (12)
+
+- **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** scope:backend ‚Äî 30 appel(s) require()/import() dynamique(s) non r√©solu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | tests/unit/canonical-purchasing-workspace-boundary.test.js: path.join(ROOT, WORKSPACE | tests/unit/canonical-pricing-atelier-views.test.js: path.join(CANONICAL, 'js', 'pricing-atelier-views.js') ‚Äî limitation du mod√®le statique O5, jamais invent√©
+- **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** scope:boutique ‚Äî 1 appel(s) require()/import() dynamique(s) non r√©solu(s) statiquement dans le scope boutique (ex. public/boutique/tests/unit/modal-cart-sku-guard.test.js: bundleConfigPath) ‚Äî limitation du mod√®le statique O5, jamais invent√©
+- **[EXPOSE-ENTRY-UNPARSED]** logistics / GET/POST /api/parcels ‚Äî entr√©e contract.exposes non parseable (attendu "METHOD /path")
+- **[EXPOSE-ENTRY-UNPARSED]** orders / GET/POST /api/orders ‚Äî entr√©e contract.exposes non parseable (attendu "METHOD /path")
+- **[EXPOSED-ROUTE-UNRESOLVED]** infrastructure / GET /*.html ‚Äî "GET /*.html" d√©clar√© par infrastructure mais absent du contrat OpenAPI g√©n√©r√© (docs/contract/openapi.json)
+- **[EXPOSED-ROUTE-UNRESOLVED]** infrastructure / GET /webhook/authkey-whatsapp ‚Äî "GET /webhook/authkey-whatsapp" d√©clar√© par infrastructure mais absent du contrat OpenAPI g√©n√©r√© (docs/contract/openapi.json)
+- **[INTERFACE-CONSUMER-FILE-UNRESOLVED]** dash:SourcingScannerView (/api/admin/customs-categories) ‚Äî module consumer "SourcingScannerView" (scope dash, endpoint /api/admin/customs-categories) non r√©solu vers un fileId gouvern√© ‚Äî INTERFACE-CONSUMER-FILE-UNRESOLVED
+- **[INTERFACE-CONSUMER-FILE-UNRESOLVED]** dash:SourcingScannerView (/api/admin/sourcing/candidates) ‚Äî module consumer "SourcingScannerView" (scope dash, endpoint /api/admin/sourcing/candidates) non r√©solu vers un fileId gouvern√© ‚Äî INTERFACE-CONSUMER-FILE-UNRESOLVED
+- **[INTERFACE-CONSUMER-FILE-UNRESOLVED]** dash:SourcingScannerView (/api/admin/sourcing/catalogs) ‚Äî module consumer "SourcingScannerView" (scope dash, endpoint /api/admin/sourcing/catalogs) non r√©solu vers un fileId gouvern√© ‚Äî INTERFACE-CONSUMER-FILE-UNRESOLVED
+- **[INTERFACE-CONSUMER-FILE-UNRESOLVED]** dash:SourcingScannerView (/api/admin/sourcing/catalogs/import) ‚Äî module consumer "SourcingScannerView" (scope dash, endpoint /api/admin/sourcing/catalogs/import) non r√©solu vers un fileId gouvern√© ‚Äî INTERFACE-CONSUMER-FILE-UNRESOLVED
+- **[INTERFACE-CONSUMER-FILE-UNRESOLVED]** dash:SourcingView (/api/admin/sourcing/analysis) ‚Äî module consumer "SourcingView" (scope dash, endpoint /api/admin/sourcing/analysis) non r√©solu vers un fileId gouvern√© ‚Äî INTERFACE-CONSUMER-FILE-UNRESOLVED
+- **[INTERFACE-CONSUMER-FILE-UNRESOLVED]** dash:SourcingView (/api/admin/sourcing/synthesis) ‚Äî module consumer "SourcingView" (scope dash, endpoint /api/admin/sourcing/synthesis) non r√©solu vers un fileId gouvern√© ‚Äî INTERFACE-CONSUMER-FILE-UNRESOLVED
+
+## Orphan technical nodes
+
+Fichiers pr√©sents dans le Technical Architecture Graph, non revendiqu√©s par une carte feature ni un transversal d√©clar√© (`governance/transversal-paths.json`).
+
+- none
+
+## Lot O5 ‚Äî Feature Dependency Conformance & Hidden Coupling Gate
+
+Meta Graph mont√© : oui.
+
+### Coverage par scope
+
+- backend : 2376 fichier(s) `.js`/`.mjs` observ√©s (canal A)
+- boutique : 218 fichier(s) observ√©s, dont 15 sous manifest non-canonique (canonicalFeature=null)
+- dash : 79 fichier(s) observ√©s
+  - _dash static-string local dependency file coverage: COMPLETE (fichiers .js d√©clar√©s, r√©solus)_
+  - _dash interface channel: consumer file resolution c√¢bl√©e via docs/DASHBOARDS_360.json (bridge vue -> fileId bas√© sur les entr√©es "views/" d√©j√† gouvern√©es par implementedByEdges) ‚Äî les modules dashboards r√©f√©renc√©s par META_GRAPH mais absents des vues gouvern√©es (ou ambigus) restent INTERFACE-CONSUMER-FILE-UNRESOLVED, jamais devin√©s_
+  - _dash total runtime dependency observability: LIMITED BY O5 STATIC MODEL (dynamic import, registry lookup, dependency injection, event-driven dependency hors p√©rim√®tre statique)_
+
+### Dependency conformance summary (paires canonical-feature ‚Üí canonical-feature)
+
+| Consumer | Provider | Canaux | Preuves | Statut |
+|---|---|---|---|---|
+| admin-dashboard | catalog | interface | 2 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | customs | interface | 3 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | dashboard | interface | 14 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | decision-signals | interface | 3 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | documents | interface | 1 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | economic-engine | interface | 20 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | inventory | interface | 5 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | logistics | interface | 7 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | orders | interface | 2 | **DECLARED_AND_OBSERVED** |
+| admin-dashboard | payments | interface | 6 | **DECLARED_AND_OBSERVED** |
+| auth | auth-identity | static-code, data-read | 9 | **DECLARED_AND_OBSERVED** |
+| auth | infrastructure | static-code | 16 | **DECLARED_AND_OBSERVED** |
+| auth | notifications | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| auth-identity | auth | static-code | 12 | **DECLARED_AND_OBSERVED** |
+| auth-identity | auth-passkey | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| auth-identity | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| auth-identity | documents | interface, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| auth-identity | infrastructure | static-code | 23 | **DECLARED_AND_OBSERVED** |
+| auth-identity | logistics | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
+| auth-identity | loyalty | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| auth-identity | notifications | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| auth-identity | orders | data-read | 2 | **DECLARED_AND_OBSERVED** |
+| auth-identity | platform-ops | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| auth-identity | wallet | interface | 1 | **DECLARED_AND_OBSERVED** |
+| auth-passkey | auth | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| auth-passkey | auth-identity | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| auth-passkey | infrastructure | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| auth-passkey | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| business-rules | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| business-rules | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| business-rules | infrastructure | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| catalog | auth | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| catalog | auth-identity | interface | 1 | **DECLARED_AND_OBSERVED** |
+| catalog | business-rules | static-code | 12 | **DECLARED_AND_OBSERVED** |
+| catalog | customs | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| catalog | economic-engine | static-code | 16 | **DECLARED_AND_OBSERVED** |
+| catalog | external-provider-contracts | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| catalog | infrastructure | static-code | 113 | **DECLARED_AND_OBSERVED** |
+| catalog | logistics | static-code, interface | 12 | **DECLARED_AND_OBSERVED** |
+| catalog | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| catalog | market-autonomy | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| catalog | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| catalog | orders | static-code, data-read | 16 | **DECLARED_AND_OBSERVED** |
+| catalog | platform-ops | static-code | 78 | **DECLARED_AND_OBSERVED** |
+| catalog | purchasing | static-code, data-read | 14 | **DECLARED_AND_OBSERVED** |
+| catalog | shared-cart | static-code, interface | 13 | **DECLARED_AND_OBSERVED** |
+| catalog | sourcing | static-code, data-write, data-read | 39 | **DECLARED_AND_OBSERVED** |
+| catalog | supplier-connectivity | static-code | 9 | **DECLARED_AND_OBSERVED** |
+| customs | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| customs | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| customs | documents | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| customs | economic-engine | static-code, data-write | 13 | **DECLARED_AND_OBSERVED** |
+| customs | infrastructure | static-code | 10 | **DECLARED_AND_OBSERVED** |
+| customs | logistics | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| customs | market | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| customs | orders | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| dashboard | auth | static-code | 22 | **DECLARED_AND_OBSERVED** |
+| dashboard | auth-identity | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
+| dashboard | business-rules | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
+| dashboard | catalog | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
+| dashboard | customs | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| dashboard | decision-signals | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| dashboard | documents | static-code, data-write, data-read | 3 | **DECLARED_AND_OBSERVED** |
+| dashboard | economic-engine | static-code, data-read | 24 | **DECLARED_AND_OBSERVED** |
+| dashboard | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| dashboard | incident-management | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
+| dashboard | infrastructure | static-code | 112 | **DECLARED_AND_OBSERVED** |
+| dashboard | inventory | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| dashboard | local-stock | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| dashboard | logistics | static-code, data-read, data-write | 35 | **DECLARED_AND_OBSERVED** |
+| dashboard | loyalty | static-code | 1 | **OBSERVED_UNDECLARED** |
+| dashboard | market | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
+| dashboard | market-autonomy | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| dashboard | market-delegation | static-code | 31 | **DECLARED_AND_OBSERVED** |
+| dashboard | notifications | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| dashboard | orders | static-code, data-write, data-read | 16 | **DECLARED_AND_OBSERVED** |
+| dashboard | payments | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| dashboard | platform | static-code | 1 | **OBSERVED_UNDECLARED** |
+| dashboard | purchasing | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
+| dashboard | refunds | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| dashboard | shared-cart | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| dashboard | sourcing | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| dashboard | supplier-connectivity | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| dashboard | wallet | data-write | 2 | **DECLARED_AND_OBSERVED** |
+| decision-signals | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| decision-signals | business-rules | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| decision-signals | dashboard | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| decision-signals | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| decision-signals | infrastructure | static-code | 8 | **DECLARED_AND_OBSERVED** |
+| decision-signals | logistics | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| decision-signals | market-delegation | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| decision-signals | payments | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| decision-signals | purchasing | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| documents | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| documents | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| documents | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| documents | customs | data-read | 2 | **DECLARED_AND_OBSERVED** |
+| documents | infrastructure | static-code | 25 | **DECLARED_AND_OBSERVED** |
+| documents | logistics | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| documents | orders | data-read | 3 | **DECLARED_AND_OBSERVED** |
+| documents | refunds | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| documents | wallet | data-read | 2 | **DECLARED_AND_OBSERVED** |
+| economic-engine | auth | static-code | 12 | **DECLARED_AND_OBSERVED** |
+| economic-engine | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| economic-engine | business-rules | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
+| economic-engine | catalog | static-code, data-read | 9 | **DECLARED_AND_OBSERVED** |
+| economic-engine | customs | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| economic-engine | dashboard | static-code | 17 | **DECLARED_AND_OBSERVED** |
+| economic-engine | infrastructure | static-code | 119 | **DECLARED_AND_OBSERVED** |
+| economic-engine | local-stock | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| economic-engine | logistics | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
+| economic-engine | loyalty | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| economic-engine | market | static-code | 9 | **DECLARED_AND_OBSERVED** |
+| economic-engine | market-autonomy | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| economic-engine | market-delegation | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| economic-engine | orders | static-code, data-read, data-write | 6 | **DECLARED_AND_OBSERVED** |
+| economic-engine | platform-ops | data-read | 2 | **DECLARED_AND_OBSERVED** |
+| economic-engine | refunds | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| incident-management | decision-signals | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| incident-management | infrastructure | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| incident-management | logistics | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
+| incident-management | orders | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| infrastructure | auth | static-code | 6 | **DECLARED_AND_OBSERVED** |
+| infrastructure | auth-identity | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| infrastructure | auth-passkey | static-code | 1 | **OBSERVED_UNDECLARED** |
+| infrastructure | business-rules | static-code | 2 | **OBSERVED_UNDECLARED** |
+| infrastructure | catalog | static-code | 6 | **DECLARED_AND_OBSERVED** |
+| infrastructure | customs | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| infrastructure | dashboard | static-code | 19 | **DECLARED_AND_OBSERVED** |
+| infrastructure | decision-signals | static-code | 4 | **OBSERVED_UNDECLARED** |
+| infrastructure | documents | static-code | 2 | **OBSERVED_UNDECLARED** |
+| infrastructure | economic-engine | static-code | 13 | **DECLARED_AND_OBSERVED** |
+| infrastructure | incident-management | static-code | 1 | **OBSERVED_UNDECLARED** |
+| infrastructure | inventory | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| infrastructure | local-stock | static-code | 2 | **OBSERVED_UNDECLARED** |
+| infrastructure | logistics | static-code | 23 | **DECLARED_AND_OBSERVED** |
+| infrastructure | loyalty | static-code | 2 | **OBSERVED_UNDECLARED** |
+| infrastructure | market | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| infrastructure | market-control-plane | static-code | 1 | **OBSERVED_UNDECLARED** |
+| infrastructure | market-delegation | static-code | 19 | **DECLARED_AND_OBSERVED** |
+| infrastructure | notifications | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| infrastructure | orders | static-code | 6 | **DECLARED_AND_OBSERVED** |
+| infrastructure | payments | static-code | 10 | **DECLARED_AND_OBSERVED** |
+| infrastructure | platform-ops | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| infrastructure | providers-services | static-code | 2 | **OBSERVED_UNDECLARED** |
+| infrastructure | purchasing | static-code | 4 | **OBSERVED_UNDECLARED** |
+| infrastructure | recommendations | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| infrastructure | settlement | static-code | 1 | **OBSERVED_UNDECLARED** |
+| infrastructure | shared-cart | static-code | 6 | **DECLARED_AND_OBSERVED** |
+| infrastructure | sourcing | static-code | 2 | **OBSERVED_UNDECLARED** |
+| infrastructure | unsold-resolution | static-code | 1 | **OBSERVED_UNDECLARED** |
+| infrastructure | wallet | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| inventory | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| inventory | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| inventory | infrastructure | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| inventory | logistics | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| inventory | orders | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| inventory | payments | static-code | 1 | **OBSERVED_UNDECLARED** |
+| local-stock | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| local-stock | infrastructure | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| local-stock | logistics | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| local-stock | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| logistics | auth | static-code | 13 | **DECLARED_AND_OBSERVED** |
+| logistics | auth-identity | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
+| logistics | business-rules | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| logistics | catalog | static-code, data-write, data-read | 3 | **DECLARED_AND_OBSERVED** |
+| logistics | customs | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| logistics | dashboard | static-code | 2 | **OBSERVED_UNDECLARED** |
+| logistics | documents | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| logistics | economic-engine | static-code | 1 | **OBSERVED_UNDECLARED** |
+| logistics | incident-management | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| logistics | infrastructure | static-code | 121 | **DECLARED_AND_OBSERVED** |
+| logistics | local-stock | data-read | 2 | **DECLARED_AND_OBSERVED** |
+| logistics | loyalty | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| logistics | market | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| logistics | market-delegation | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| logistics | notifications | static-code | 17 | **DECLARED_AND_OBSERVED** |
+| logistics | orders | static-code, data-write, data-read | 43 | **DECLARED_AND_OBSERVED** |
+| logistics | payments | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| logistics | purchasing | static-code, data-read | 16 | **DECLARED_AND_OBSERVED** |
+| logistics | refunds | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| loyalty | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| loyalty | auth-identity | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
+| loyalty | economic-engine | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| loyalty | infrastructure | static-code | 8 | **DECLARED_AND_OBSERVED** |
+| loyalty | logistics | static-code | 1 | **OBSERVED_UNDECLARED** |
+| loyalty | notifications | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| loyalty | orders | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| market | customs | static-code | 1 | **OBSERVED_UNDECLARED** |
+| market | dashboard | static-code | 1 | **OBSERVED_UNDECLARED** |
+| market | infrastructure | static-code | 23 | **DECLARED_AND_OBSERVED** |
+| market | market-delegation | static-code | 2 | **OBSERVED_UNDECLARED** |
+| market | notifications | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| market | orders | static-code | 1 | **OBSERVED_UNDECLARED** |
+| market-autonomy | catalog | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| market-autonomy | economic-engine | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| market-autonomy | infrastructure | static-code | 6 | **DECLARED_AND_OBSERVED** |
+| market-autonomy | market | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| market-autonomy | market-control-plane | static-code | 2 | **OBSERVED_UNDECLARED** |
+| market-control-plane | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | catalog | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | dashboard | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | decision-signals | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | infrastructure | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | logistics | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | market | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | market-delegation | static-code, data-read | 16 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | orders | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | payments | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | sourcing | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| market-delegation | auth | static-code | 15 | **DECLARED_AND_OBSERVED** |
+| market-delegation | auth-identity | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| market-delegation | catalog | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| market-delegation | dashboard | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| market-delegation | economic-engine | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
+| market-delegation | infrastructure | static-code | 25 | **DECLARED_AND_OBSERVED** |
+| market-delegation | local-stock | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| market-delegation | logistics | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| market-delegation | market | static-code, data-read | 8 | **DECLARED_AND_OBSERVED** |
+| market-delegation | market-autonomy | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| market-delegation | market-operator-dashboard | static-code | 1 | **OBSERVED_UNDECLARED** |
+| market-delegation | orders | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| market-delegation | payments | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| market-delegation | providers-services | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
+| market-delegation | settlement | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| market-operator-dashboard | catalog | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| market-operator-dashboard | infrastructure | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| market-operator-dashboard | market | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| market-operator-dashboard | market-autonomy | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| market-operator-dashboard | market-delegation | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| notifications | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| notifications | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| notifications | incident-management | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| notifications | infrastructure | static-code | 15 | **DECLARED_AND_OBSERVED** |
+| notifications | logistics | data-read | 3 | **DECLARED_AND_OBSERVED** |
+| notifications | orders | data-read | 2 | **DECLARED_AND_OBSERVED** |
+| notifications | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| orders | auth | static-code | 14 | **DECLARED_AND_OBSERVED** |
+| orders | auth-identity | static-code, interface, data-read | 12 | **DECLARED_AND_OBSERVED** |
+| orders | business-rules | static-code | 9 | **DECLARED_AND_OBSERVED** |
+| orders | catalog | static-code, data-read | 14 | **DECLARED_AND_OBSERVED** |
+| orders | customs | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| orders | dashboard | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| orders | decision-signals | static-code, data-write | 2 | **DECLARED_AND_OBSERVED** |
+| orders | documents | static-code, interface | 10 | **DECLARED_AND_OBSERVED** |
+| orders | economic-engine | static-code | 10 | **DECLARED_AND_OBSERVED** |
+| orders | incident-management | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| orders | infrastructure | static-code, interface | 72 | **DECLARED_AND_OBSERVED** |
+| orders | local-stock | static-code, interface | 5 | **DECLARED_AND_OBSERVED** |
+| orders | logistics | static-code, interface, data-read | 40 | **DECLARED_AND_OBSERVED** |
+| orders | loyalty | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| orders | market | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| orders | market-autonomy | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| orders | market-delegation | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| orders | notifications | static-code | 15 | **DECLARED_AND_OBSERVED** |
+| orders | payments | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
+| orders | platform-ops | static-code | 43 | **DECLARED_AND_OBSERVED** |
+| orders | purchasing | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| orders | refunds | static-code, data-read | 14 | **DECLARED_AND_OBSERVED** |
+| orders | shared-cart | static-code | 9 | **DECLARED_AND_OBSERVED** |
+| orders | wallet | static-code, interface | 12 | **DECLARED_AND_OBSERVED** |
+| payments | auth | static-code | 9 | **DECLARED_AND_OBSERVED** |
+| payments | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| payments | business-rules | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| payments | documents | static-code | 10 | **DECLARED_AND_OBSERVED** |
+| payments | incident-management | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| payments | infrastructure | static-code, interface | 54 | **DECLARED_AND_OBSERVED** |
+| payments | logistics | static-code, data-read | 17 | **DECLARED_AND_OBSERVED** |
+| payments | loyalty | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| payments | market | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| payments | market-delegation | static-code, data-read | 8 | **DECLARED_AND_OBSERVED** |
+| payments | notifications | static-code | 18 | **DECLARED_AND_OBSERVED** |
+| payments | orders | static-code, data-read | 23 | **DECLARED_AND_OBSERVED** |
+| payments | platform-ops | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| payments | purchasing | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| payments | refunds | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| platform-ops | auth | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| platform-ops | auth-identity | static-code, interface, data-read | 7 | **DECLARED_AND_OBSERVED** |
+| platform-ops | auth-passkey | static-code | 1 | **OBSERVED_UNDECLARED** |
+| platform-ops | business-rules | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| platform-ops | catalog | static-code, interface, data-read | 24 | **DECLARED_AND_OBSERVED** |
+| platform-ops | documents | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| platform-ops | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| platform-ops | incident-management | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| platform-ops | infrastructure | static-code, interface | 31 | **DECLARED_AND_OBSERVED** |
+| platform-ops | logistics | static-code, interface, data-read | 14 | **DECLARED_AND_OBSERVED** |
+| platform-ops | notifications | static-code | 3 | **OBSERVED_UNDECLARED** |
+| platform-ops | orders | static-code, interface, data-read | 21 | **DECLARED_AND_OBSERVED** |
+| platform-ops | payments | static-code | 1 | **OBSERVED_UNDECLARED** |
+| platform-ops | providers-services | static-code | 1 | **OBSERVED_UNDECLARED** |
+| platform-ops | purchasing | interface | 1 | **DECLARED_AND_OBSERVED** |
+| platform-ops | recommendations | static-code | 1 | **OBSERVED_UNDECLARED** |
+| platform-ops | shared-cart | static-code | 6 | **OBSERVED_UNDECLARED** |
+| platform-ops | wallet | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| providers-services | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| providers-services | auth-identity | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| providers-services | infrastructure | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| providers-services | local-stock | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| providers-services | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| providers-services | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| providers-services | recommendations | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| purchasing | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| purchasing | catalog | static-code, data-read | 21 | **DECLARED_AND_OBSERVED** |
+| purchasing | decision-signals | static-code | 1 | **OBSERVED_UNDECLARED** |
+| purchasing | documents | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| purchasing | economic-engine | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| purchasing | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| purchasing | incident-management | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| purchasing | infrastructure | static-code | 61 | **DECLARED_AND_OBSERVED** |
+| purchasing | logistics | static-code, data-read | 17 | **DECLARED_AND_OBSERVED** |
+| purchasing | notifications | static-code | 11 | **DECLARED_AND_OBSERVED** |
+| purchasing | orders | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| purchasing | refunds | static-code | 1 | **OBSERVED_UNDECLARED** |
+| purchasing | sourcing | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| purchasing | supplier-connectivity | static-code | 25 | **DECLARED_AND_OBSERVED** |
+| recommendations | catalog | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
+| recommendations | infrastructure | static-code | 6 | **DECLARED_AND_OBSERVED** |
+| recommendations | local-stock | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| recommendations | logistics | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| recommendations | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| recommendations | market-autonomy | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| recommendations | orders | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
+| recommendations | platform-ops | static-code | 10 | **DECLARED_AND_OBSERVED** |
+| recommendations | providers-services | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| refunds | auth | static-code | 1 | **OBSERVED_UNDECLARED** |
+| refunds | documents | static-code | 14 | **DECLARED_AND_OBSERVED** |
+| refunds | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| refunds | infrastructure | static-code | 15 | **DECLARED_AND_OBSERVED** |
+| refunds | logistics | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| refunds | market | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| refunds | notifications | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| refunds | orders | static-code, data-read | 15 | **DECLARED_AND_OBSERVED** |
+| refunds | payments | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| refunds | wallet | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
+| settlement | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| settlement | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| settlement | infrastructure | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| settlement | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| settlement | market-delegation | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| shared-cart | auth | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| shared-cart | auth-identity | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| shared-cart | catalog | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
+| shared-cart | infrastructure | static-code | 18 | **DECLARED_AND_OBSERVED** |
+| shared-cart | market-autonomy | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| shared-cart | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| shared-cart | orders | static-code, data-read | 13 | **DECLARED_AND_OBSERVED** |
+| shared-cart | platform-ops | static-code | 50 | **DECLARED_AND_OBSERVED** |
+| shared-cart | recommendations | static-code, interface | 3 | **DECLARED_AND_OBSERVED** |
+| sourcing | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| sourcing | catalog | static-code, data-read | 33 | **DECLARED_AND_OBSERVED** |
+| sourcing | customs | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| sourcing | dashboard | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| sourcing | economic-engine | static-code | 6 | **DECLARED_AND_OBSERVED** |
+| sourcing | infrastructure | static-code | 51 | **DECLARED_AND_OBSERVED** |
+| sourcing | purchasing | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| supplier-connectivity | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| supplier-connectivity | purchasing | static-code | 5 | **OBSERVED_UNDECLARED** |
+| unsold-resolution | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| unsold-resolution | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| unsold-resolution | infrastructure | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| unsold-resolution | market-delegation | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| unsold-resolution | orders | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| wallet | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| wallet | auth-identity | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
+| wallet | documents | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| wallet | infrastructure | static-code | 8 | **DECLARED_AND_OBSERVED** |
+| wallet | market | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| wallet | notifications | static-code | 1 | **OBSERVED_UNDECLARED** |
+| wallet | orders | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| wallet | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |
+
+### Observed undeclared dependencies
+
+- `dashboard` ‚Üí `loyalty` (canaux: static-code)
+- `dashboard` ‚Üí `platform` (canaux: static-code)
+- `infrastructure` ‚Üí `auth-passkey` (canaux: static-code)
+- `infrastructure` ‚Üí `business-rules` (canaux: static-code)
+- `infrastructure` ‚Üí `decision-signals` (canaux: static-code)
+- `infrastructure` ‚Üí `documents` (canaux: static-code)
+- `infrastructure` ‚Üí `incident-management` (canaux: static-code)
+- `infrastructure` ‚Üí `local-stock` (canaux: static-code)
+- `infrastructure` ‚Üí `loyalty` (canaux: static-code)
+- `infrastructure` ‚Üí `market-control-plane` (canaux: static-code)
+- `infrastructure` ‚Üí `providers-services` (canaux: static-code)
+- `infrastructure` ‚Üí `purchasing` (canaux: static-code)
+- `infrastructure` ‚Üí `settlement` (canaux: static-code)
+- `infrastructure` ‚Üí `sourcing` (canaux: static-code)
+- `infrastructure` ‚Üí `unsold-resolution` (canaux: static-code)
+- `inventory` ‚Üí `payments` (canaux: static-code)
+- `logistics` ‚Üí `dashboard` (canaux: static-code)
+- `logistics` ‚Üí `economic-engine` (canaux: static-code)
+- `loyalty` ‚Üí `logistics` (canaux: static-code)
+- `market` ‚Üí `customs` (canaux: static-code)
+- `market` ‚Üí `dashboard` (canaux: static-code)
+- `market` ‚Üí `market-delegation` (canaux: static-code)
+- `market` ‚Üí `orders` (canaux: static-code)
+- `market-autonomy` ‚Üí `market-control-plane` (canaux: static-code)
+- `market-delegation` ‚Üí `market-operator-dashboard` (canaux: static-code)
+- `platform-ops` ‚Üí `auth-passkey` (canaux: static-code)
+- `platform-ops` ‚Üí `notifications` (canaux: static-code)
+- `platform-ops` ‚Üí `payments` (canaux: static-code)
+- `platform-ops` ‚Üí `providers-services` (canaux: static-code)
+- `platform-ops` ‚Üí `recommendations` (canaux: static-code)
+- `platform-ops` ‚Üí `shared-cart` (canaux: static-code)
+- `purchasing` ‚Üí `decision-signals` (canaux: static-code)
+- `purchasing` ‚Üí `refunds` (canaux: static-code)
+- `refunds` ‚Üí `auth` (canaux: static-code)
+- `supplier-connectivity` ‚Üí `purchasing` (canaux: static-code)
+- `wallet` ‚Üí `notifications` (canaux: static-code)
+
+### Declared without observed evidence (canal A/D uniquement ‚Äî ne signifie pas "d√©pendance inexistante")
+
+- `external-provider-contracts` ‚Üí `infrastructure` (d√©clar√© : `infrastructure ‚Äî runtime Node et primitives techniques uniquement ; aucune v√©rit√© m√©tier externe n est d√©l√©gu√©e √† infrastructure`)
+- `market-autonomy` ‚Üí `market-delegation` (d√©clar√© : `market-delegation ‚Äî memberships, capabilities team.*, provider.manage, cash_control.policy.manage et acceptation d‚Äôinvitation ; l‚ÄôUI n‚Äôinvente aucune autorit√©`)
+- `market-autonomy` ‚Üí `auth-identity` (d√©clar√© : `auth-identity ‚Äî cr√©ation optionnelle d‚Äôun compte client depuis le lien d‚Äôinvitation avant acceptation explicite`)
+- `market-control-plane` ‚Üí `providers-services` (d√©clar√© : `providers-services (fournisseurs de paiement du march√© lus)`)
+- `market-operator-dashboard` ‚Üí `auth` (d√©clar√© : `auth (authenticate, requireRole + capabilities market-scoped)`)
+- `market-operator-dashboard` ‚Üí `dashboard` (d√©clar√© : `dashboard (admin-dashboard-market routes, admin-context, canonical navigation/app.js, operations workspace, admin-finance-accounting-workspace ‚Äî projection Finance pays et actions explicitement d√©l√©gu√©es, jamais autorit√© globale implicite)`)
+- `market-operator-dashboard` ‚Üí `orders` (d√©clar√© : `orders (commandes et order_items market-scoped)`)
+- `market-operator-dashboard` ‚Üí `logistics` (d√©clar√© : `logistics (Hub/Relais, exp√©ditions, douane et primitives de suivi market-scoped)`)
+- `orders` ‚Üí `market-control-plane` (d√©clar√© : `market-control-plane (destination relais actif : march√© de rattachement et disponibilit√© du relais valid√©s au checkout ; attestation transporteur non requise)`)
+- `admin-dashboard` ‚Üí `sourcing` (d√©clar√© : `sourcing`)
+
+### Transversal topology (consumer = local-manifest frontend-transversal, hors ontology gap)
+
+- `boutique-manifest:boutique` ‚Üí orders (static-code), platform-ops (static-code), shared-cart (static-code)
+
+### Local-manifest dependencies without canonical consumer (ontology gap, KNOWN_DEBT)
+
+- none
+
+### Ambiguous owners / providers (jamais collaps√©s arbitrairement)
+
+- none
+
+### Interface consumer unresolved (canal D)
+
+- dash:`SourcingScannerView` (endpoint /api/admin/sourcing/catalogs) ‚Äî INTERFACE-CONSUMER-FILE-UNRESOLVED
+- dash:`SourcingScannerView` (endpoint /api/admin/sourcing/candidates) ‚Äî INTERFACE-CONSUMER-FILE-UNRESOLVED
+- dash:`SourcingScannerView` (endpoint /api/admin/customs-categories) ‚Äî INTERFACE-CONSUMER-FILE-UNRESOLVED
+- dash:`SourcingScannerView` (endpoint /api/admin/sourcing/catalogs/import) ‚Äî INTERFACE-CONSUMER-FILE-UNRESOLVED
+- dash:`SourcingView` (endpoint /api/admin/sourcing/synthesis) ‚Äî INTERFACE-CONSUMER-FILE-UNRESOLVED
+- dash:`SourcingView` (endpoint /api/admin/sourcing/analysis) ‚Äî INTERFACE-CONSUMER-FILE-UNRESOLVED
+
+### Dynamic dependencies non r√©solues statiquement (limitation du mod√®le, jamais invent√©es)
+
+- scope `backend` : 30 appel(s) ‚Äî ex. `tests/unit/modal-mobile-canonical.test.js`: `CSS_BUNDLES_PATH`, `tests/unit/canonical-purchasing-workspace-boundary.test.js`: `path.join(ROOT, WORKSPACE`, `tests/unit/canonical-pricing-atelier-views.test.js`: `path.join(CANONICAL, 'js', 'pricing-atelier-views.js'`
+- scope `boutique` : 1 appel(s) ‚Äî ex. `public/boutique/tests/unit/modal-cart-sku-guard.test.js`: `bundleConfigPath`
+
+## O6 ‚Äî Dependency Disposition
+
+> Couche de qualification/d√©cision au-dessus des paires O5 `OBSERVED_UNDECLARED`. O6 classifie et gouverne la dette ; **O6 ne rem√©die pas** encore les coutures cross-feature. D√©tail par paire : `docs/O6_INVENTORY.md`. Enforcement : `npm run business-graph:disposition-check`.
+
+Composition-root owners (d√©riv√©s de l'ownership des fichiers wiring, pas du nom) : `infrastructure`, `platform-ops`.
+
+### Summary by family
+
+| Family | N | Policy |
+|---|---|---|
+| PROJECTION | 0 | projection-dependency-policy |
+| COMPOSITION_ROOT_WIRING | 18 | application-wiring-not-consumption |
+| NON_RUNTIME_TEST | 18 | non-runtime-evidence |
+| TECHNICAL_PRIMITIVE | 0 | technical-dependency-policy |
+| BUSINESS_TRANSVERSAL_SERVICE | 0 | business-dependency-declare-candidate |
+| CROSS_FEATURE_DIRECT_IMPORT | 0 | boundary-remediation-required |
+| BUSINESS_FEATURE_INTERFACE | 0 | business-dependency-declare-candidate |
+| PILOTING_CAPABILITY | 0 | piloting-capability-dependency |
+| UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
+| **TOTAL** | **36** | |
+
+### Projection dependencies
+
+Vues Dash ‚Üí endpoint backend. Jamais dans un `contract.consumes` backend.
+
+- _none_
+
+### Composition root wiring
+
+Bootstrap/cron/error-handler qui montent ou d√©clenchent une feature. Pas une consommation de service.
+
+- `infrastructure` ‚Üí `auth-passkey` ‚Äî business-file-import, RUNTIME_ONLY
+- `infrastructure` ‚Üí `business-rules` ‚Äî import-mixed, RUNTIME_ONLY
+- `infrastructure` ‚Üí `decision-signals` ‚Äî business-file-import, RUNTIME_ONLY
+- `infrastructure` ‚Üí `documents` ‚Äî business-file-import, RUNTIME_ONLY
+- `infrastructure` ‚Üí `incident-management` ‚Äî business-file-import, RUNTIME_ONLY
+- `infrastructure` ‚Üí `local-stock` ‚Äî business-file-import, RUNTIME_AND_TEST
+- `infrastructure` ‚Üí `loyalty` ‚Äî business-file-import, RUNTIME_ONLY
+- `infrastructure` ‚Üí `market-control-plane` ‚Äî business-file-import, RUNTIME_ONLY
+- `infrastructure` ‚Üí `providers-services` ‚Äî business-file-import, RUNTIME_AND_TEST
+- `infrastructure` ‚Üí `purchasing` ‚Äî business-file-import, MIXED
+- `infrastructure` ‚Üí `settlement` ‚Äî business-file-import, RUNTIME_ONLY
+- `infrastructure` ‚Üí `sourcing` ‚Äî business-file-import, RUNTIME_ONLY
+- `infrastructure` ‚Üí `unsold-resolution` ‚Äî business-file-import, RUNTIME_ONLY
+- `platform-ops` ‚Üí `auth-passkey` ‚Äî business-file-import, RUNTIME_ONLY
+- `platform-ops` ‚Üí `notifications` ‚Äî business-file-import, RUNTIME_AND_TEST
+- `platform-ops` ‚Üí `providers-services` ‚Äî business-file-import, RUNTIME_ONLY
+- `platform-ops` ‚Üí `recommendations` ‚Äî business-file-import, RUNTIME_ONLY
+- `platform-ops` ‚Üí `shared-cart` ‚Äî business-file-import, RUNTIME_AND_TEST
+
+### Non-runtime test evidence
+
+Preuves 100 % tests/. Visible mais hors dette de contrat runtime.
+
+- `dashboard` ‚Üí `loyalty` ‚Äî business-file-import, TEST_ONLY
+- `dashboard` ‚Üí `platform` ‚Äî business-file-import, TEST_ONLY
+- `inventory` ‚Üí `payments` ‚Äî business-file-import, TEST_ONLY
+- `logistics` ‚Üí `dashboard` ‚Äî business-file-import, TEST_ONLY
+- `logistics` ‚Üí `economic-engine` ‚Äî business-file-import, TEST_ONLY
+- `loyalty` ‚Üí `logistics` ‚Äî business-file-import, TEST_ONLY
+- `market-autonomy` ‚Üí `market-control-plane` ‚Äî business-file-import, TEST_ONLY
+- `market-delegation` ‚Üí `market-operator-dashboard` ‚Äî business-file-import, TEST_ONLY
+- `market` ‚Üí `customs` ‚Äî business-file-import, TEST_ONLY
+- `market` ‚Üí `dashboard` ‚Äî business-file-import, TEST_ONLY
+- `market` ‚Üí `market-delegation` ‚Äî business-file-import, TEST_ONLY
+- `market` ‚Üí `orders` ‚Äî business-file-import, TEST_ONLY
+- `platform-ops` ‚Üí `payments` ‚Äî business-file-import, TEST_ONLY
+- `purchasing` ‚Üí `decision-signals` ‚Äî business-file-import, TEST_ONLY
+- `purchasing` ‚Üí `refunds` ‚Äî business-file-import, TEST_ONLY
+- `refunds` ‚Üí `auth` ‚Äî technical-primitive, TEST_ONLY
+- `supplier-connectivity` ‚Üí `purchasing` ‚Äî business-file-import, TEST_ONLY
+- `wallet` ‚Üí `notifications` ‚Äî technical-primitive, TEST_ONLY
+
+### Technical primitives
+
+Usage de db.js / middleware / logger / utils / validators d'un transversal technique. Politique technique, pas `contract.consumes`.
+
+- _none_
+
+### Business transversal services
+
+Consommation r√©elle d'un service transversal m√©tier ‚Äî candidat `contract.consumes` (internal API pr√©f√©r√©e).
+
+- _none_
+
+### Cross-feature direct imports
+
+require() direct d'un fichier d'une autre business-feature ‚Äî couture √† casser AVANT d√©claration.
+
+- _none_
+
+### Business feature interfaces
+
+Consommation d'une business-feature via interface/http ‚Äî candidat `contract.consumes`.
+
+- _none_
+
+### Piloting capability dependencies
+
+Consommation de decision-signals (capacit√© de pilotage).
+
+- _none_
+
+### Exceptions requiring human decision
+
+Ledger `governance/feature-dependency-exceptions.json` ‚Äî uniquement les paires dont la politique de famille ne suffit pas (imports directs, cycles, ownership suspects). Une entr√©e dont la paire dispara√Æt d'O5 devient stale (bloquant).
+
+- _none_
+
+### Runtime cycles
+
+Cycles runtime r√©els (apr√®s exclusion test-only + composition-root). Chaque direction porte une d√©cision dans le ledger.
+
+- _none_
+
+### Ontology gap coverage (flux local-manifest s√©par√©, hors paires)
+
+`tracking` et consorts vivent dans `model.o5.localManifestDependenciesWithoutCanonicalConsumer`, pas dans les paires `from ‚Üí to`. Couverture par le registre ontologique autoritaire.
+
+- _none_
+
+### Unclassified dependencies
+
+- _none_ (gate vert)
+
