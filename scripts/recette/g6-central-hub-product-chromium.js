@@ -5,22 +5,23 @@
  * @domain catalog
  * @layer test
  * @owner backend-core
- * @purpose Prérequis M03/M06 : produit vendable Fournisseur central Hub par les écrans (Import manuel, scan, Transmettre, approbation Catalogue, prix LOCAL_ACTIVE, exposition), idempotent, reprise par étape lue en PG ; SCREEN_MISSING_* sans contournement.
+ * @purpose Prérequis M03/M06 : produit vendable Fournisseur central Hub par les écrans (Import manuel, scan, Transmettre, média et revue visuelle, approbation Catalogue, prix LOCAL_ACTIVE, exposition), idempotent, reprise par étape lue en PG ; SCREEN_MISSING_* sans contournement.
  * @impact-areas staging-only, catalog, sourcing
  */
 'use strict';
 const MK=require('./canonical/market-profile').marketProfile(process.env);
-const fs=require('node:fs'),path=require('node:path');
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
 const {observe,fullError,startTraceAfterAuth}=require('./canonical/observability');
-const {humanGoto,humanClick,humanFill,humanSelect,humanPress}=require('./canonical/actors/human-gestures');
+const {humanGoto,humanClick,humanFill,humanSelect,humanPress,humanSetInputFiles}=require('./canonical/actors/human-gestures');
 const env=process.env,BASE='https://komerce-backend-production.up.railway.app';
 const OUT=path.resolve('test-results/g6-central-hub-product');
-// Marqueur recette G6 : le produit se retrouve par ce préfixe de nom et par le supplier_product_id.
+// Marqueur G6 : central_hub_manual V2 (#4920) ne porte aucun identifiant/SKU vendeur.
+// Retrouver le candidat par nom métier exact et fournisseur système.
 const G6_PREFIX='[G6-HUB] ';
 // V2 : l'import V1 (KSC-000812 en KM) est resté WATCH sans catégorie ; il est ignoré, jamais ré-édité ni re-scanné.
-const G6_SUPPLIER_PRODUCT_ID='G6-CENTRAL-'+MK.code+'-V2';
+const G6_SUPPLIER_PRODUCT_ID='G6-CENTRAL-'+MK.code+'-V2'; // marqueur historique, jamais envoyé comme SKU vendeur
 // Le classifieur Sourcing lit les termes du nom et de la catégorie fournisseur ; le préfixe G6 reste le marqueur de recette.
 // Termes configurés (migrations 248/249, famille « materiels », cible de marge 35 %) : « screwdriver », « hand tool ».
 const PRODUCT_NAME=G6_PREFIX+'Screwdriver set '+MK.code;
@@ -53,14 +54,27 @@ const readSellable=async()=>(await db.query(SELLABLE_SQL,[MK.code,G6_PREFIX])).r
 // Lecture seule : candidat G6 (issu de l'import manuel), produit promu, prix et exposition du marché.
 const CANDIDATE_SQL=`SELECT sc.candidate_ref,sc.state,sc.product_id,sc.supplier_name,sc.scan_result->>'sourcing_decision' AS decision,sc.komerce_category,sc.data_sources->>'category' AS category_source,
  sc.scan_result->>'economic_test_health_status' AS scan_health,
- p.id AS pid,p.product_ref,p.lifecycle_status,p.is_active,p.description,p.needs_review,p.boutique_category_key,p.boutique_subcategory_key,
+ p.id AS pid,p.product_ref,p.lifecycle_status,p.is_active,p.has_variants,p.inventory_model,p.description,p.needs_review,p.boutique_category_key,p.boutique_subcategory_key,
  (SELECT COUNT(*)::int FROM catalog_media cm WHERE cm.product_id=p.id AND cm.is_active=TRUE) AS media_count,
+ EXISTS (SELECT 1 FROM product_skus ps WHERE ps.product_id=p.id AND ps.variant_combo IS NULL) AS default_sku_exists,
+ EXISTS (SELECT 1 FROM product_skus ps WHERE ps.product_id=p.id AND ps.variant_combo IS NULL AND ps.is_active=TRUE) AS default_sku_active,
+ COALESCE((SELECT bool_and(cm.source_media_id IS NOT NULL
+   AND vr.media_id IS NOT NULL AND vr.source_media_id=cm.source_media_id
+   AND vr.source_url=cm.url AND vr.text_presence IN ('NONE','PRESENT')
+   AND (vr.text_presence<>'PRESENT' OR (NULLIF(vr.source_transcription,'') IS NOT NULL
+     AND NULLIF(vr.french_translation,'') IS NOT NULL AND vr.french_presentation IS NOT NULL)))
+   FROM catalog_media cm LEFT JOIN catalog_media_visual_fr_reviews vr ON vr.media_id=cm.id
+   WHERE cm.product_id=p.id AND cm.is_active=TRUE),FALSE) AS visual_review_ready,
  sc.normalized_source_contract->>'schema_version' AS contract_version,
  (SELECT d.status FROM product_market_price_drafts d JOIN markets m ON m.id=d.market_id WHERE d.product_id=p.id AND m.code=$2) AS price_status,
  (SELECT e.commercial_exposure FROM product_market_exposure e JOIN markets m ON m.id=e.market_id WHERE e.product_id=p.id AND m.code=$2) AS exposure
  FROM sourcing_candidates sc LEFT JOIN products p ON p.id=sc.product_id
- WHERE sc.supplier_product_id=$1 ORDER BY sc.created_at DESC LIMIT 1`;
-const readCandidate=async()=>(await db.query(CANDIDATE_SQL,[G6_SUPPLIER_PRODUCT_ID,MK.code])).rows[0]||null;
+ WHERE sc.product_name=$1
+   AND sc.normalized_source_contract->>'source_kind'='central_hub_manual'
+   AND NOT (sc.normalized_source_contract ?| ARRAY['supplier_name','supplier_product_id','sellable_units'])
+   AND EXISTS (SELECT 1 FROM suppliers s WHERE s.id=sc.supplier_id AND s.system_key='central_hub')
+ ORDER BY sc.created_at DESC,sc.id DESC LIMIT 1`;
+const readCandidate=async()=>(await db.query(CANDIDATE_SQL,[PRODUCT_NAME,MK.code])).rows[0]||null;
 // Pur : prochain geste selon l'état lu en PG. Un écran absent donne SCREEN_MISSING_*, jamais de contournement.
 function nextStep({sellable,candidate}){
  if(sellable&&sellable.length===1)return {verdict:'G6_CENTRAL_HUB_PRODUCT_ALREADY_SELLABLE_PASS',done:true};
@@ -77,6 +91,13 @@ function nextStep({sellable,candidate}){
  }
  const ref=candidate.product_ref;
  if(!(candidate.is_active===true&&candidate.lifecycle_status==='active')){
+  // #4920 : photo canonique via Catalogue AVANT approbation, jamais un faux SKU vendeur.
+  if(Number(candidate.media_count||0)<1)return {step:'catalog-media',product_ref:ref};
+  if(candidate.visual_review_ready!==true)return {step:'catalog-visual-review',product_ref:ref,product_id:candidate.pid};
+   if(candidate.has_variants===false&&candidate.inventory_model!=='SKU'&&candidate.default_sku_exists!==true)
+    return {step:'catalog-default-sku',product_ref:ref,product_id:candidate.pid};
+   if(candidate.has_variants===false&&candidate.inventory_model!=='SKU'&&candidate.default_sku_active!==true)
+    return {verdict:'G6_CENTRAL_DEFAULT_SKU_INACTIVE_REQUIRES_REVIEW',done:true,fail:true};
   // Préparation éditoriale puis classement boutique par l'inspecteur Catalogue, avant l'approbation humaine.
   if(!String(candidate.description||'').trim()||candidate.needs_review!==false)return {step:'catalog-editorial',product_ref:ref};
   if(!candidate.boutique_category_key||!candidate.boutique_subcategory_key)return {step:'catalog-taxonomy',product_ref:ref};
@@ -152,7 +173,7 @@ async function manualImport(actor){
  const selected=await select.evaluate(s=>s.selectedOptions[0]?.getAttribute('data-system-key'));
  check(selected==='central_hub','G6_CENTRAL_HUB_SUPPLIER_NOT_PRESELECTED');
  await humanFill(null,actor.page.locator('[data-manual-products]'),JSON.stringify([{
-  supplier_product_id:G6_SUPPLIER_PRODUCT_ID,product_name:PRODUCT_NAME,purchase_price:PURCHASE_PRICE,currency:CURRENCY,supplier_category:SUPPLIER_CATEGORY,weight_kg:WEIGHT_KG,dimensions:DIMENSIONS}]));
+  product_name:PRODUCT_NAME,purchase_price:PURCHASE_PRICE,currency:CURRENCY,supplier_category:SUPPLIER_CATEGORY,weight_kg:WEIGHT_KG,dimensions:DIMENSIONS}]));
  await fire(actor,'POST',API+'/imports',()=>humanClick(null,actor.page.locator('[data-workspace-action="submit-manual-import"]')),'manual-import-central-hub');
  return true;
 }
@@ -243,8 +264,94 @@ async function catalogTaxonomy(actor,ref){
  await fire(actor,'POST',path,()=>humanSelect(null,sub,BOUTIQUE_PAIR.subcategory),'catalog-taxonomy-classify',{product_ref:ref,...BOUTIQUE_PAIR});
  return true;
 }
+// #4920 : photographie/illustration du bon produit, approuvée pour staging,
+// jamais un screenshot UI ni une image interchangeable. SHA256 épinglé.
+function canonicalMediaFile(){
+ const rel=String(env.G6_CENTRAL_MEDIA_IMAGE_FILE||'').trim(),want=String(env.G6_CENTRAL_MEDIA_IMAGE_SHA256||'').trim().toLowerCase();
+ if(!rel||!/^[a-f0-9]{64}$/.test(want))return null;
+ const root=path.resolve(__dirname,'../..'),file=path.resolve(root,rel);
+ if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile())return null;
+ const ext=path.extname(file).toLowerCase();
+ if(!['.png','.jpg','.jpeg','.webp'].includes(ext))return null;
+ const buf=fs.readFileSync(file),bytes=buf.length;
+ if(bytes<1024||bytes>5*1024*1024)return null;
+ const sha256=crypto.createHash('sha256').update(buf).digest('hex');
+ if(sha256!==want)return null;
+ const signature=buf.subarray(0,12);
+ const png=ext==='.png'&&signature.subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex'));
+ const jpg=['.jpg','.jpeg'].includes(ext)&&signature[0]===0xff&&signature[1]===0xd8&&signature[2]===0xff;
+ const webp=ext==='.webp'&&signature.toString('ascii',0,4)==='RIFF'&&signature.toString('ascii',8,12)==='WEBP';
+ return png||jpg||webp?{file,sha256,bytes,name:path.basename(file)}:null;
+}
+async function catalogMedia(actor,ref){
+ const media=canonicalMediaFile();
+ if(!media)return !!missing('PREREQ_MISSING_CANONICAL_PRODUCT_IMAGE',{
+  product_ref:ref,detail:'Photo réelle ou illustration fidèle du produit G6 approuvée pour staging',
+  required:['G6_CENTRAL_MEDIA_IMAGE_FILE','G6_CENTRAL_MEDIA_IMAGE_SHA256']});
+ const endpoint=CAT+'/products/'+ref+'/media';
+ await arm(actor,'POST',endpoint);
+ if(!await openInspector(actor,ref))return false;
+ const details=actor.page.locator('details[data-catalog-complementary-info] > summary');
+ if(!await visible(details,20000))return !!missing('SCREEN_MISSING_CATALOG_MEDIA_DETAILS',{product_ref:ref,screen:await inspectorText(actor)});
+ await humanClick(null,details);
+ const form=actor.page.locator('[data-catalog-media-upload]'),input=form.locator('[data-catalog-media-upload-file]');
+ if(!await visible(input,20000))return !!missing('SCREEN_MISSING_CANONICAL_MEDIA_UPLOAD',{product_ref:ref,screen:await inspectorText(actor)});
+ await humanSetInputFiles(null,input,media.file);
+ const submit=form.locator('[data-catalog-media-upload-submit]');
+ await submit.waitFor({state:'visible',timeout:10000});
+ report.media_proof={image_file:media.name,sha256:media.sha256,bytes:media.bytes,provenance:'OWNER-APPROVED G6 STAGING IMAGE'};save();
+ await fire(actor,'POST',endpoint,()=>humanClick(null,submit),'canonical-media-upload',{product_ref:ref,image_sha256:media.sha256});
+ return true;
+}
+// Revue explicite des pixels dans l'inspecteur Catalogue. Pour l'image Hub
+// manuelle, le serveur lie d'abord son identité interne au média exact ; aucune
+// identité fournisseur n'est créée et l'automatisation reste non-humaine.
+async function catalogVisualReview(actor,ref,productId){
+ if(!await openInspector(actor,ref))return false;
+ const review=actor.page.locator('[data-catalog-visual-fr-media]').first();
+ if(!await visible(review,20000))return !!missing('SCREEN_MISSING_CATALOG_VISUAL_REVIEW',{product_ref:ref,screen:await inspectorText(actor)});
+ const mediaId=await review.getAttribute('data-catalog-visual-fr-media').catch(()=>null);
+ if(!mediaId)return !!missing('SCREEN_MISSING_CATALOG_VISUAL_REVIEW',{product_ref:ref,screen:await inspectorText(actor)});
+ const path='/api/admin/catalog/approval-queue/'+encodeURIComponent(productId)+'/media/'+encodeURIComponent(mediaId)+'/visual-fr-review';
+ await arm(actor,'POST',path);
+ const control=actor.page.locator('[data-catalog-visual-fr-media="'+mediaId+'"]');
+ if(!await visible(control,20000))return !!missing('SCREEN_MISSING_CATALOG_VISUAL_REVIEW',{product_ref:ref,screen:await inspectorText(actor)});
+ await humanClick(null,control.locator('summary'));
+ const presence=control.locator('select').first();
+ if(!await visible(presence,10000))return !!missing('SCREEN_MISSING_CATALOG_VISUAL_REVIEW_FIELDS',{product_ref:ref});
+ await humanSelect(null,presence,'NONE');
+ const mode=control.locator('[data-review-execution-mode]');
+ if(!await visible(mode,10000))return !!missing('SCREEN_MISSING_STAGING_REVIEW_MODE',{product_ref:ref});
+ await humanSelect(null,mode,'AUTOMATED_STAGING');
+ const runId=control.locator('[data-review-run-id]');
+ await humanFill(null,runId,String(env.GITHUB_RUN_ID||''));
+ const confirmed=control.locator('input[type="checkbox"]');
+ await humanClick(null,confirmed);
+ report.media_review={product_ref:ref,media_id:mediaId,text_presence:'NONE',execution_mode:'AUTOMATED_STAGING',run_id:String(env.GITHUB_RUN_ID||''),human_attestation:false};save();
+ await fire(actor,'POST',path,()=>humanClick(null,control.getByRole('button',{name:'Enregistrer la revue automatisée de recette',exact:true})),
+  'catalog-visual-media-review',{product_ref:ref,media_id:mediaId,text_presence:'NONE',human_attestation:false});
+ return true;
+}
+async function catalogDefaultSku(actor,ref){
+ if(!await openInspector(actor,ref))return false;
+ const dossier=actor.page.locator('[data-catalog-complementary-info] > summary');
+ if(await visible(dossier,20000)){
+  const container=actor.page.locator('[data-catalog-complementary-info]');
+  if((await container.getAttribute('open'))===null)await humanClick(null,dossier);
+ }
+ const panel=actor.page.locator('[data-hub-default-sku-preparation]');
+ if(!await visible(panel,20000))return !!missing('SCREEN_MISSING_HUB_DEFAULT_SKU_PREPARATION',{product_ref:ref,screen:await inspectorText(actor)});
+ const path=CAT+'/approval/'+encodeURIComponent(ref)+'/prepare-hub-default-sku';
+ await arm(actor,'POST',path);
+ // La confirmation affichée par le bouton est un geste UI distinct,
+ // nécessaire pour autoriser explicitement la création de l'unité interne.
+ actor.page.once('dialog',dialog=>dialog.accept());
+ await fire(actor,'POST',path,()=>humanClick(null,panel.locator('[data-workspace-action="catalog-default-sku"]')),
+  'catalog-hub-default-sku',{product_ref:ref,internal:true,stock:0,supplier_identity_created:false});
+ return true;
+}
 // Approbation humaine du Catalogue global : contrôle des prérequis (lecture) puis « Valider le Catalogue ».
-// Média canonique ou contrat source manquants : aucun écran de téléversement ni de contrat -> verdict avec preuve.
+// Le média canonique est une étape humaine distincte obligatoire, vérifiée en PG.
 async function approveCatalog(actor,ref){
  const path=CAT+'/approval/'+ref+'/approve';
  await arm(actor,'POST',path);
@@ -311,10 +418,10 @@ async function marketExpose(actor,ref,productId){
  await fire(actor,'PUT',put,()=>humanClick(null,btn),'market-exposure-enable',{product_ref:ref});
  return true;
 }
-const STEP_ROLE={'manual-import':'admin','scan-candidate':'admin','promote-candidate':'admin','resolve-category':'admin','catalog-approve':'admin','catalog-editorial':'admin','catalog-taxonomy':'admin',
+const STEP_ROLE={'manual-import':'admin','scan-candidate':'admin','promote-candidate':'admin','resolve-category':'admin','catalog-approve':'admin','catalog-editorial':'admin','catalog-taxonomy':'admin','catalog-media':'admin','catalog-visual-review':'admin','catalog-default-sku':'admin',
  'price-draft':'market_operator','price-activate':'market_operator','market-expose':'market_operator'};
 const DO={'manual-import':(a)=>manualImport(a),'scan-candidate':(a,s)=>scanCandidate(a,s.candidate_ref),
- 'promote-candidate':(a,s)=>promoteCandidate(a,s.candidate_ref),'resolve-category':(a,s)=>resolveCategory(a,s.candidate_ref),'catalog-approve':(a,s)=>approveCatalog(a,s.product_ref),'catalog-editorial':(a,s)=>catalogEditorial(a,s.product_ref),'catalog-taxonomy':(a,s)=>catalogTaxonomy(a,s.product_ref),
+ 'promote-candidate':(a,s)=>promoteCandidate(a,s.candidate_ref),'resolve-category':(a,s)=>resolveCategory(a,s.candidate_ref),'catalog-approve':(a,s)=>approveCatalog(a,s.product_ref),'catalog-editorial':(a,s)=>catalogEditorial(a,s.product_ref),'catalog-taxonomy':(a,s)=>catalogTaxonomy(a,s.product_ref),'catalog-media':(a,s)=>catalogMedia(a,s.product_ref),'catalog-visual-review':(a,s)=>catalogVisualReview(a,s.product_ref,s.product_id),'catalog-default-sku':(a,s)=>catalogDefaultSku(a,s.product_ref),
  'price-draft':(a,s)=>priceDraft(a,s.product_ref),'price-activate':(a,s)=>priceActivate(a,s.product_ref),
  'market-expose':(a,s)=>marketExpose(a,s.product_ref,s.product_id)};
 const readState=async()=>({sellable:await readSellable(),candidate:await readCandidate()});
@@ -326,9 +433,13 @@ async function main(){
   const guard=await confirmTarget({db,env});check(guard.confirmed,'G6_CENTRAL_DB_GUARD');
   report.db_fingerprint=guard.fingerprint;
   let state=await readState(),step=nextStep(state),last=null;
-  for(let i=0;i<8&&step.step;i++){
+  for(let i=0;i<12&&step.step;i++){
    // Pas de reclic : un même geste ne se rejoue jamais dans un run si la relecture PG n'a pas avancé.
    check(step.step!==last,'G6_CENTRAL_NO_PROGRESS_'+step.step);
+   // Refuser de créer un nouveau candidat si sa pièce source n'est pas déjà approuvée.
+   if(step.step==='manual-import'&&!canonicalMediaFile()){
+    missing('PREREQ_MISSING_CANONICAL_PRODUCT_IMAGE',{before_business_write:true,required:['G6_CENTRAL_MEDIA_IMAGE_FILE','G6_CENTRAL_MEDIA_IMAGE_SHA256']});break;
+   }
    if(!browser){const {chromium}=require('playwright');browser=await chromium.launch({headless:true});OBS=observe(browser,OUT)}
    const role=STEP_ROLE[step.step];
    if(!actors[role])actors[role]=await login(browser,role);
@@ -352,4 +463,4 @@ async function main(){
   if(OBS)await OBS.finish(!!process.exitCode).catch(()=>{});if(browser)await browser.close().catch(()=>{});await db.pool.end();console.log(JSON.stringify(report))}
 }
 if(require.main===module)main();
-module.exports={main,ownerStagingGuard,nextStep,recettePrice,SELLABLE_SQL,G6_PREFIX,G6_SUPPLIER_PRODUCT_ID,RECETTE_PRICE_FLOOR};
+module.exports={main,ownerStagingGuard,nextStep,recettePrice,SELLABLE_SQL,CANDIDATE_SQL,G6_PREFIX,G6_SUPPLIER_PRODUCT_ID,RECETTE_PRICE_FLOOR,canonicalMediaFile};

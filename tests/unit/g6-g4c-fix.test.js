@@ -31,4 +31,13 @@ describe('G6 N15 act : verdict indépendant d\'une réponse absente',()=>{
   expect(s).toContain('guard_blocked');
   expect(s).toContain("check(actor.blocked.length===0,'G6_N15_UNEXPECTED_BROWSER_WRITE')");
  });
+ it('N15 distingue un brouillon vide légitime d\'une expédition physique ou remise',()=>{
+  const s=read('scripts/recette/g6-negative-n15-n16-chromium.js');
+  expect(s).toContain("draft.stage==='hub_ready'");
+  expect(s).toContain("draft.hub_draft===true");
+  expect(s).toContain('Number(draft.attached)===0');
+  expect(s).toContain('Number(draft.handovers)===0');
+  expect(s).toContain('SHIPMENT_EMPTY_DRAFT_HAS_PHYSICAL_EFFECT');
+  expect(s).not.toContain("report.gaps.push(pickable?'SHIPMENT_CREATED_WITH_INCOMPLETE_BOX':'SHIPMENT_CREATED_WITH_EMPTY_SELECTION')");
+ });
 });

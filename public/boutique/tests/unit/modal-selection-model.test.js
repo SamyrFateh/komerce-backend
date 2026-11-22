@@ -107,6 +107,53 @@ function stateMap(state, axisKey) {
   return Object.fromEntries(state.option_states[axisKey].map((entry) => [entry.value, entry.state]));
 }
 
+describe('axisless single-SKU acquisition', () => {
+  test('one ON_ORDER SKU resolves without inventing size or color', () => {
+    const stockZero = detail({
+      option_axes: [],
+      sellable_units: [
+        { ...detail().sellable_units[0], option_values: {},
+          stock_status: 'ON_ORDER', available_quantity: 0 },
+      ],
+    });
+    const state = createModalSelection(stockZero);
+    expect(state.selected_options).toEqual({});
+    expect(state.selected_sku_id).toBe('11111111-1111-4111-8111-111111111111');
+    expect(state.option_states).toEqual({});
+  });
+
+  test('axisless unique SKU with absent option map is still unambiguous', () => {
+    const product=detail({
+      option_axes: [],
+      sellable_units:[{...detail().sellable_units[0],
+        option_values:null,stock_status:'ON_ORDER',available_quantity:0}]
+    });
+    const state=createModalSelection(product);
+    expect(state.selected_sku_id).toBe('11111111-1111-4111-8111-111111111111');
+    expect(state.option_states).toEqual({});
+  });
+
+  test('axisless product with no orderable SKU cannot select a phantom unit', () => {
+    const product=detail({
+      option_axes: [],
+      sellable_units:[{...detail().sellable_units[0],
+        option_values:{},stock_status:'OUT_OF_STOCK',available_quantity:0}]
+    });
+    expect(createModalSelection(product).selected_sku_id).toBeNull();
+  });
+
+  test('no axes with multiple orderable SKU identities must not auto-pick one', () => {
+    const units = detail().sellable_units;
+    const ambiguous = detail({
+      option_axes: [],
+      sellable_units: [units[0],units[1]].map((unit) => ({
+        ...unit, option_values:{}, stock_status:'ON_ORDER', available_quantity:0
+      })),
+    });
+    expect(createModalSelection(ambiguous).selected_sku_id).toBeNull();
+  });
+});
+
 describe('modal-selection-model', () => {
   test('état initial dérivé des unités vendables réelles', () => {
     const state = createModalSelection(detail());
@@ -174,6 +221,20 @@ describe('modal-selection-model', () => {
     expect(state.selected_sku_id).toBe(availableSku.sku_id);
     expect(state.selected_media.map(media => media.id)).toEqual(['brown-scene', 'brown-m-detail']);
     expect(stateMap(state, 'Taille').S).toBe(OPTION_STATE.OUT_OF_STOCK);
+  });
+
+  test('une unité achetable sur commande à stock zéro reste sélectionnable', () => {
+    const original=detail();
+    const onlyOnOrder=detail({
+      sellable_units:original.sellable_units.map(unit=>unit.sku_id===SKU_MAR_M
+        ? {...unit,stock_status:'ON_ORDER',available_quantity:0}
+        : {...unit,stock_status:'OUT_OF_STOCK',available_quantity:0}),
+    });
+    const state=createModalSelection(onlyOnOrder);
+    expect(state.selected_sku_id).toBe(SKU_MAR_M);
+    expect(state.selected_options).toEqual({Couleur:'Marron',Taille:'M'});
+    expect(stateMap(state,'Taille').M).toBe(OPTION_STATE.AVAILABLE);
+    expect(stateMap(state,'Taille').L).toBe(OPTION_STATE.OUT_OF_STOCK);
   });
 
   test('toutes combinaisons en rupture : aucun choix automatique et aucun faux SKU', () => {

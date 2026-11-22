@@ -35,6 +35,10 @@ const svc = require('../../services/product-admin-service');
 describe('product-admin-service', () => {
   beforeEach(() => jest.clearAllMocks());
 
+  it('expose le préparateur du SKU interne central Hub', () => {
+    expect(typeof svc.ensureCentralHubManualDefaultSku).toBe('function');
+  });
+
   it('validateProductTaxonomyPayload accepte labsence de categorie', async () => {
     await expect(svc.validateProductTaxonomyPayload({ query: jest.fn() }, {})).resolves.toEqual({ ok: true });
   });

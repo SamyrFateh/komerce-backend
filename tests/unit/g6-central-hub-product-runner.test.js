@@ -22,8 +22,10 @@ describe('G6 central Hub product: resume by step read from PG', () => {
       .toEqual({ step: 'scan-candidate', candidate_ref: 'KSC-1' });
     expect(step({ candidate_ref: 'KSC-1', product_ref: null, state: 'scanned', decision: 'TEST' }))
       .toEqual({ step: 'promote-candidate', candidate_ref: 'KSC-1' });
-    expect(step(P)).toEqual({ step: 'catalog-editorial', product_ref: 'KPR-1' });
-    const fr = { ...P, description: 'Texte', needs_review: false };
+    expect(step(P)).toEqual({ step: 'catalog-media', product_ref: 'KPR-1' });
+    const withMedia = { ...P, media_count: 1, visual_review_ready: true };
+    expect(step(withMedia)).toEqual({ step: 'catalog-editorial', product_ref: 'KPR-1' });
+    const fr = { ...withMedia, description: 'Texte', needs_review: false };
     expect(step(fr)).toEqual({ step: 'catalog-taxonomy', product_ref: 'KPR-1' });
     expect(step({ ...fr, boutique_category_key: 'Bricolage', boutique_subcategory_key: 'Outillage' }))
       .toEqual({ step: 'catalog-approve', product_ref: 'KPR-1' });
@@ -33,6 +35,20 @@ describe('G6 central Hub product: resume by step read from PG', () => {
     expect(step({ ...ok, price_status: 'LOCAL_AUTHORIZED_PENDING_CUTOVER' }).step).toBe('price-activate');
     expect(step({ ...ok, price_status: 'LOCAL_ACTIVE', pid: 'u', exposure: null }))
       .toEqual({ step: 'market-expose', product_ref: 'KPR-1', product_id: 'u' });
+  });
+
+  test('reviews a canonical image before editorial preparation or approval', () => {
+    expect(step({ ...P, pid: 'product-id', media_count: 1, visual_review_ready: false }))
+      .toEqual({ step: 'catalog-visual-review', product_ref: 'KPR-1', product_id: 'product-id' });
+  });
+
+  test('prepares an internal default unit for a variant-free Hub product before approval', () => {
+    const hub = { ...P, pid: 'product-id', media_count: 1, visual_review_ready: true,
+      has_variants: false, inventory_model: 'LEGACY_VARIANTS', default_sku_exists: false };
+    expect(step(hub)).toEqual({ step: 'catalog-default-sku', product_ref: 'KPR-1', product_id: 'product-id' });
+    expect(step({ ...hub, default_sku_exists: true, default_sku_active: false }))
+      .toMatchObject({ verdict: 'G6_CENTRAL_DEFAULT_SKU_INACTIVE_REQUIRES_REVIEW', fail: true });
+    expect(step({ ...hub, default_sku_exists: true, default_sku_active: true }).step).toBe('catalog-editorial');
   });
 
   test('WATCH without calculation family: one human category gesture, then a screen-missing verdict, never forced', () => {

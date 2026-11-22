@@ -275,6 +275,19 @@ describe('catalog product detail contract v1', () => {
     expect(detail.sellable_units.some((unit) => unit.option_values.Couleur === 'Beige')).toBe(false);
   });
 
+  test('SKU manual Hub sur commande reste achetable sans inventer de stock', async () => {
+    const skus=skuRows().map(sku => sku.id===SKU_L
+      ? {...sku,stock:0,procure_on_order:true}
+      : sku);
+    const detail=await getProductDetail(dbFor({skus}),PRODUCT_ID);
+    expect(detail.sellable_units[1]).toMatchObject({
+      stock_status:'ON_ORDER',available_quantity:0,sku_id:SKU_L
+    });
+    expect(detail.sellable_units[0]).toMatchObject({
+      stock_status:'AVAILABLE',available_quantity:4
+    });
+  });
+
   test('expose une série produit non nulle dans le contrat public', async () => {
     const product = skuProduct({ series: 'Golden Performance Series' });
     const detail = await getProductDetail(dbFor({ product }), PRODUCT_ID);

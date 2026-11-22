@@ -144,7 +144,12 @@ async function runN32(o,buyer,browser){
    const w=await hub.page.request.post(URL_CONFIRM,{headers:{origin:BASE},data:{...confirmBody,purchase_order_id:po.purchase_order_id}}).catch(()=>null);
    const wj=w?await w.json().catch(()=>({})):{};
    report.probes.push({role:'agent_hub_delegated',gesture:'POST hub/physical-codes/confirm foreign PO',via:'API_PROBE_NO_SCREEN_GESTURE',http:w?w.status():null,error_code:wj.code||null});
-  }else report.hub_market_leg='PREREQ_MISSING_RESTRICTED_HUB_DELEGATION_OR_FOREIGN_PO';
+  }else{
+   report.hub_market_leg='PREREQ_MISSING_RESTRICTED_HUB_DELEGATION_OR_FOREIGN_PO';
+   save();
+   // A cross-market N32 PASS cannot omit the restricted Hub + foreign PO leg.
+   throw Error('G6_N32_PREREQ_MISSING_RESTRICTED_HUB_DELEGATION_OR_FOREIGN_PO');
+  }
   reach('HUB_MARKET_LEG');
   const after=await snap();
   report.snapshot={before,after,unchanged:JSON.stringify(before)===JSON.stringify(after)};

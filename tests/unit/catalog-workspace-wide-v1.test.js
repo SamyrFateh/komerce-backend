@@ -240,9 +240,19 @@ test('Revues visuelles FR : état explicite sans présélection, POST canonique,
   expect(ui).toContain("confirmed.checked");
   expect(ui).toContain("'/visual-fr-review'");
   expect(ui).toContain("source_media_id: item.source_media_id");
+  expect(ui).toContain("source.textContent = media.canonical_hub_media");
+  expect(ui).toContain('preuve est une revue automatisée de recette, sans attestation humaine');
   expect(ui).toContain("option_values: item.option_values || {}");
   expect(ui).toContain('await loadProductDossier(context, doc, slot, row)');
   expect(css).toContain('.kmc-catalog-visual-fr-review');
+});
+
+test('SKU catalogue interne Hub : action explicite limitée au candidat sans variantes', () => {
+  expect(ui).toContain('data-hub-default-sku-preparation');
+  expect(ui).toContain('central_hub_manual');
+  expect(ui).toContain('stock initial de 0');
+  expect(ui).toContain('/prepare-hub-default-sku');
+  expect(ui).toContain('aucune référence fournisseur');
 });
 
 test('Fiche commerciale complète : galerie, variantes et correction FR disponibles depuis Catalogue', () => {

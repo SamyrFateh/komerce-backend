@@ -185,6 +185,13 @@ async function insertOrderItemsWithStock(client, { items, productMap, order, rel
       throw err;
     }
 
+    if (item._procure_on_order === true &&
+        (fulfillmentSource !== FULFILLMENT_SOURCE.IMPORT || !item._resolved_sku_id)) {
+      const err = new Error('Vente sur commande Hub sans import/SKU canonique');
+      err.code = 'central_hub_on_order_invalid_source';
+      throw err;
+    }
+
     // Gel de la classification douanière — I-DOUANE-1
     const clf = await resolveFrozenClassification(client, product.category);
 
@@ -198,8 +205,8 @@ async function insertOrderItemsWithStock(client, { items, productMap, order, rel
          classification_defaulted,
          requested_transport_rail,
          shared_cart_item_id,
-         fulfillment_source
-       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)`,
+         fulfillment_source, procure_on_order
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)`,
       [
         order.id,
         item.product_id,
@@ -225,6 +232,7 @@ async function insertOrderItemsWithStock(client, { items, productMap, order, rel
         item.requested_transport_rail ?? null,
         item.shared_cart_item_id || null,
         fulfillmentSource,
+        item._procure_on_order === true,
       ]
     );
 

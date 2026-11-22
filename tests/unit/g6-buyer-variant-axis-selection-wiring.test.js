@@ -16,7 +16,14 @@ describe('G6 staging real buyer axis selection',()=>{
    expect(src).toContain('await page.waitForFunction(({index,selectedValue})=>');
    expect(src).toContain("b.getAttribute('aria-pressed')==='true'");
    expect(src).toContain("throw Error('G6_NO_AVAILABLE_OPTION_IN_AXIS_'+axisKey)");
-   expect(src).toContain("check(axisCount>0,'G6_VARIANT_AXES_NOT_RENDERED')");
+ });
+ test('allows only a uniquely proven, axisless Central Hub on-order import',()=>{
+   expect(src).toContain('if(axisCount===0){');
+   expect(src).toContain("PARAMS.basket && line.source_key==='central_hub' &&");
+   expect(src).toContain("line.fulfillment==='IMPORT' && !line.variant_combo");
+   expect(src).toContain("check(actualProduct.inventory_model==='SKU'&&actualProduct.has_variants===false,");
+   expect(src).toContain("check(skus.length===1,'G6_AXISLESS_HUB_SKU_NOT_UNIQUE')");
+   expect(src).toContain("await isCentralHubOnOrderSku(db,line.id,skus[0].id)");
  });
  test('fail closed if checkout does not persist a unique scoped cash order',()=>{
    expect(src).toContain("o.simulation_scope==='G6-BUYER'");

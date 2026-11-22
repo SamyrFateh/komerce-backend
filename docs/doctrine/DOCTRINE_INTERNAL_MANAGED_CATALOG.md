@@ -109,6 +109,12 @@ Le comportement actuel `fulfillment_source = LOCAL_STOCK` qui fait ignorer la li
 
 Le coût B2B existe en amont, au moment où le stock a été acquis ou produit, pas sous forme d'une nouvelle PO fournisseur à chaque vente.
 
+### 3.3 Vente sur commande du Fournisseur central Hub
+
+Une unité `MANUAL` rattachée à un candidat `central_hub_manual` certifié et au Fournisseur central Hub actif est une **identité d'achat futur**, pas une unité de stock possédé. Son stock SKU peut être exactement zéro et son affichage client doit être **Sur commande**. Le snapshot `order_items.procure_on_order` est immuable (migration 424), limité aux imports SKU vérifiés. Le paiement ne décrémente pas de stock fictif ; annulation et reliquat ne recréditent aucun stock. Purchasing ouvre le besoin d'achat physique, qui exige toujours ses contrôles réels de vendeur, justificatif et autorisations.
+
+Ce mode n'est **jamais** équivalent à `INTERNAL_STOCK` : une ligne réellement disponible localement suit l'allocation et la sortie de stock, sans emprunter ce mode. Il n'autorise pas un SKU SUPPLIER avec disponibilité nulle, un fournisseur inactif, une source sans identité, un catalogue gelé ou une exposition/prix marché absents.
+
 ## 4. Contrat d'ingestion unique
 
 CSV, XLSX et saisie manuelle doivent converger vers le même pivot :

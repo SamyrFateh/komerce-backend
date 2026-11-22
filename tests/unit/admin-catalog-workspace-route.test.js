@@ -49,6 +49,7 @@ const mockAppendUploadedCanonicalMedia = jest.fn();
 const mockDeactivateProduct = jest.fn();
 const mockPrepareCandidateFrench = jest.fn();
 const mockApproveCandidate = jest.fn();
+const mockPrepareCentralHubDefaultSku = jest.fn();
 const mockRejectCandidate = jest.fn();
 const mockOverrideCandidate = jest.fn();
 const mockCreateCategory = jest.fn();
@@ -75,6 +76,7 @@ jest.mock('../../services/catalog-workspace', () => {
     deactivateProduct: (...args) => mockDeactivateProduct(...args),
     prepareCandidateFrench: (...args) => mockPrepareCandidateFrench(...args),
     approveCandidate: (...args) => mockApproveCandidate(...args),
+    prepareCentralHubDefaultSku: (...args) => mockPrepareCentralHubDefaultSku(...args),
     rejectCandidate: (...args) => mockRejectCandidate(...args),
     overrideCandidate: (...args) => mockOverrideCandidate(...args),
     createCategory: (...args) => mockCreateCategory(...args),
@@ -123,6 +125,8 @@ beforeEach(() => {
   mockDeactivateProduct.mockResolvedValue({ product_ref: 'KPR-000001', deactivated: true });
   mockPrepareCandidateFrench.mockResolvedValue({ product_ref: 'KPR-000001', status: 'ok', needs_review: false });
   mockApproveCandidate.mockResolvedValue({ product_ref: 'KPR-000001', is_active: true });
+  mockPrepareCentralHubDefaultSku.mockResolvedValue({ created: true, supplier_identity_created: false,
+    sku: { id: 'sku-1', variant_combo: null, stock: 0, is_active: true } });
   mockRejectCandidate.mockResolvedValue({ product_ref: 'KPR-000001', rejected: true });
   mockOverrideCandidate.mockResolvedValue({ product_ref: 'KPR-000001', overridden: ['name'] });
 });
@@ -187,6 +191,18 @@ test('validation humaine utilise product_ref, jamais UUID navigateur', async () 
     .send({});
   expect(res.status).toBe(200);
   expect(mockApproveCandidate).toHaveBeenCalledWith('KPR-000001', expect.objectContaining({ id: 'admin-central' }));
+});
+
+test('prépare le SKU interne Hub depuis la route Catalogue explicite', async () => {
+  const res = await request(app())
+    .post('/api/admin/workspaces/catalog/approval/KPR-000001/prepare-hub-default-sku')
+    .send({});
+  expect(res.status).toBe(200);
+  expect(res.body.action).toBe('hub_internal_default_sku_prepared');
+  expect(res.body.result).toMatchObject({ created: true, supplier_identity_created: false,
+    sku: { variant_combo: null, stock: 0, is_active: true } });
+  expect(mockPrepareCentralHubDefaultSku).toHaveBeenCalledWith('KPR-000001',
+    expect.objectContaining({ id: 'admin-central', role: 'admin' }));
 });
 
 

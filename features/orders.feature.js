@@ -61,6 +61,7 @@ module.exports = {
     ],
     services: [
       'services/order-service.js',
+      'services/order-read-authorization.js',
       'services/verify-qr-collection.js',
       'services/qr-collection-core.js',
       'services/order-cost-snapshot.js',
@@ -153,6 +154,7 @@ module.exports = {
       // structurellement impossible.
       'tests/e2e-api/orders.line-prices-numeric.e2e.test.js',
       'tests/unit/admin-order-refund.test.js',
+      'tests/unit/order-read-authorization.test.js',
       'tests/unit/admin-order-refund-payment-service.test.js',
       'tests/unit/cancel-order-purchase-orders.test.js',
       'tests/unit/delete-order-cascade.test.js',
@@ -333,6 +335,7 @@ module.exports = {
     consumes: [
       'dashboard (RCT1 canonical projection reuses dashboard-orders LIFECYCLE read-only contract; service dashboard-rct1-orders.js -> services/dashboard-orders.js)',
       'market-control-plane (destination relais actif : marché de rattachement et disponibilité du relais validés au checkout ; attestation transporteur non requise)',
+      'market-delegation (order-read-authorization.js consulte operations.read pour borner les détails de commande au marché délégué ; aucune capability ou identité reçue du client n’est une preuve)',
       'platform-ops (monitoring/exploitation transverse observé dans le code)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'decision-signals (sink durable Action Center pour le signal de clôture financière en attente des faits économiques via signal-service)',
@@ -367,6 +370,8 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
+    { statement: 'les détails, historiques et colis d’une commande sont lus uniquement par son client, un agent du relais lié, un agent Hub central ou un market_operator délégué à operations.read ; les autres lectures échouent sans divulgation',
+      test: 'tests/unit/order-read-authorization.test.js' },
     'annulation libre et 100% avant ordered (plancher 24h) ; commande ferme des ordered — demande wallet-only ensuite (DOCTRINE_ANNULATION)',
     'le badge Remboursable/Ferme du suivi EST le contrat : il ne dit jamais autre chose que ce que le code fait',
     { statement: 'orders.total_kmf (numeric depuis la migration 213) reste décodée en number côté JS, jamais en string — sans quoi toute arithmétique bare sur ce champ deviendrait une concaténation de chaînes',

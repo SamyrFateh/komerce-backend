@@ -57,6 +57,16 @@ test('real Chromium spec checks official staging authorization before first logi
   expect(src).toContain('.assertEphemeralTarget(process.env.DATABASE_URL, [])');
 });
 
+test('issue-only Hub Chromium locks G6 at eligible job level, not at every unrelated issue event',()=>{
+  const y=fs.readFileSync(path.join(ROOT,'.github/workflows/hub-v1-clicks-staging.yml'),'utf8');
+  const beforeJobs=y.slice(0,y.indexOf('\njobs:'));
+  expect(beforeJobs).not.toMatch(/\nconcurrency:/);
+  const job=y.slice(y.indexOf('\njobs:'));
+  expect(job).toMatch(/\njobs:\n  clicks:\n(?:.*\n)*?    concurrency:\n      group: komerce-g6-canonical-real-transaction\n      cancel-in-progress: false/);
+  expect(job).toContain("github.event.issue.user.login == github.repository_owner");
+  expect(job).toContain("'[staging-op] hub-v1-clicks-KM'");
+});
+
 test('Chromium cannot hide NOT_REACHABLE_IN_UI or NOT_RUN under a green suite',()=>{
   const src=fs.readFileSync(path.join(ROOT,'tests/staging-clicks/hub-v1-clicks.spec.js'),'utf8');
   expect(src).toContain("row.verdict!=='CLICK_PASS'");
@@ -68,6 +78,21 @@ test('Chromium cannot hide NOT_REACHABLE_IN_UI or NOT_RUN under a green suite',(
   const refusal=src.indexOf("throw new Error('HUB_V1_CHROMIUM_GESTURES_NOT_PROVEN:");
   expect(persist).toBeGreaterThan(0);
   expect(refusal).toBeGreaterThan(persist);
+});
+
+test('regression #4985: la remise transitaire déjà ouverte ne doit pas être refermée par Chromium',()=>{
+  const browser=fs.readFileSync(path.join(ROOT,'tests/staging-clicks/hub-v1-clicks.spec.js'),'utf8');
+  const panel=fs.readFileSync(path.join(ROOT,'public/dashboards/canonical/js/international-journey-panel.js'),'utf8');
+  expect(panel).toContain("openByDefault:step==='handed_over'");
+  const start=browser.indexOf('async function journeyTask(page,');
+  const end=browser.indexOf('const transitionOf =',start);
+  const helper=browser.slice(start,end);
+  expect(start).toBeGreaterThan(0);
+  expect(helper).toContain("details.evaluate(el => Boolean(el.open))");
+  expect(helper).toContain("JOURNEY_FIELD_NOT_VISIBLE:");
+  expect(helper).toContain("JOURNEY_ACTION_FORBIDDEN:");
+  expect(helper).not.toContain("await task.first().locator('summary').click();");
+  expect(browser).toContain("expect(shipment[0], 'état physique attendu avant la remise').toMatchObject({stage:'hub_ready',hub_draft:true})");
 });
 
 test('localhost cannot reuse Railway database even with HTTP_RUNNER_ALLOW_LOCAL=1',async()=>{

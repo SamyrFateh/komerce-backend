@@ -126,7 +126,13 @@ describe('G6-G4B N21 (agent d\'un autre relais) et N22 (relais A/B)',()=>{
   expect(graphFor('N21').order).toEqual([...chain,'N21_CROSS_RELAY_ATTEMPTS','N21_CROSS_RELAY_ORACLE']);
   expect(graphFor('N22').order).toEqual([...chain,'N22_TWO_RELAYS_ATTEMPTS','N22_TWO_RELAYS_ORACLE']);
   expect(N.classifyNegative('N21','PREREQ_MISSING_SECOND_RELAY_KM')).toBe('PREREQ_MISSING_SECOND_RELAY');
+  expect(N.classifyNegative('N22','G6_N22_PREREQ_MISSING_ORDER_AT_RELAY_B')).toBe('PREREQ_MISSING_ORDER_AT_RELAY_B');
   expect(N.classifyNegative('N22','G6_N22_PRODUCT_GAP_READ_order_by_ref')).toBe('PRODUCT_GAP');
+  expect(N.classifyNegative('N32','G6_N32_PREREQ_MISSING_RESTRICTED_HUB_DELEGATION_OR_FOREIGN_PO')).toBe('PREREQ_MISSING_RESTRICTED_HUB_DELEGATION_OR_FOREIGN_PO');
+  expect(read('scripts/recette/g6-negative-n28-n32-chromium.js')).toContain("throw Error('G6_N32_PREREQ_MISSING_RESTRICTED_HUB_DELEGATION_OR_FOREIGN_PO')");
+  const orchestrator=read('scripts/recette/canonical/negative-runner.js');
+  expect(orchestrator).toContain('G6_N22_PREREQ_MISSING_ORDER_AT_RELAY_B');
+  expect(orchestrator).toContain('G6_N32_PREREQ_MISSING_RESTRICTED_HUB_DELEGATION_OR_FOREIGN_PO');
   expect(validateStageModuleSources()).toBeGreaterThan(0);
  });
  it('oracle : aucune remise par l\'agent étranger, code vivant',async()=>{
@@ -138,7 +144,7 @@ describe('G6-G4B N21 (agent d\'un autre relais) et N22 (relais A/B)',()=>{
  it('script : rattachement par l\'écran Réseau, lectures sans divulgation, sens inverse, verdict PRODUCT_GAP sans contournement',()=>{
   const s=read('scripts/recette/g6-negative-n21-n22-cross-relay-chromium.js');
   expect(s).toMatch(/attachDedicatedRelayByUI/);expect(s).toMatch(/PREREQ_MISSING_SECOND_RELAY_/);
-  expect(s).toMatch(/agent_at_A_vs_order_at_B/);expect(s).toMatch(/contains_order/);expect(s).toMatch(/steps_reached/);expect(s).not.toMatch(/screenshot/);
+  expect(s).toMatch(/agent_at_A_vs_order_at_B/);expect(s).toMatch(/contains_order/);expect(s).toMatch(/G6_N22_PREREQ_MISSING_ORDER_AT_RELAY_B/);expect(s).toMatch(/steps_reached/);expect(s).not.toMatch(/screenshot/);
   expect(read('scripts/recette/g6-prereq-probe.js')).toMatch(/PREREQ_MISSING_SECOND_RELAY/);
  });
  it('workflow : titres N21/N22 pour KM, CM et CG',()=>{
@@ -297,13 +303,35 @@ describe('G6-G4C N15 (sac ou KOM-BOX incomplet) et N16 (carton non DISPATCHED, c
   expect(graphFor('M01').order).toEqual(STAGE_IDS);
   expect(validateStageModuleSources()).toBeGreaterThan(0);
  });
- const clean=[[{id:'b',state:'RECEIVED'}],[{n:0}],[{n:0}],[{id:'x',state:'RECEIVED'}],[{shipments:0,links:0,departed:0}]];
- it('oracle N15 : sac non fermé et vide, carton non fermé, aucune expédition ni départ',async()=>{
-  await expect(N.oracleN15(mk(clean),{orderId:'o',boxRef:'B',shipmentRef:'S'})).resolves.toMatchObject({bag_state:'RECEIVED',shipments:0});
-  await expect(N.oracleN15(mk([[{id:'b',state:'PACKED'}]]),{orderId:'o',boxRef:'B',shipmentRef:'S'})).rejects.toThrow('G6_N15_PRODUCT_GAP_BAG_CLOSED_WITH_MISSING_LINE');
-  await expect(N.oracleN15(mk([clean[0],clean[1],[{n:1}]]),{orderId:'o',boxRef:'B',shipmentRef:'S'})).rejects.toThrow('G6_N15_PRODUCT_GAP_INCOMPLETE_BAG_IN_BOX');
-  await expect(N.oracleN15(mk([clean[0],clean[1],clean[2],[{id:'x',state:'PACKED'}]]),{orderId:'o',boxRef:'B',shipmentRef:'S'})).rejects.toThrow('G6_N15_PRODUCT_GAP_EMPTY_BOX_CLOSED');
-  await expect(N.oracleN15(mk([...clean.slice(0,4),[{shipments:1,links:1,departed:0}]]),{orderId:'o',boxRef:'B',shipmentRef:'S'})).rejects.toThrow('G6_N15_PRODUCT_GAP_NON_CONFORMING_DEPARTURE');
+ const clean=[[{id:'b',state:'RECEIVED'}],[{n:0}],[{n:0}],[{id:'x',state:'RECEIVED'}],[],[{links:0,departed:0}]];
+ it('oracle N15 : sac incomplet, carton non fermé, brouillon vide autorisé sans effet physique',async()=>{
+  await expect(N.oracleN15(mk(clean),{orderId:'o',boxRef:'B',shipmentRef:'S'}))
+    .resolves.toMatchObject({bag_state:'RECEIVED',shipments:0,draft_only:false});
+  const draft=[{id:'draft-1',stage:'hub_ready',hub_draft:true,links:0,handovers:0}];
+  await expect(N.oracleN15(mk([...clean.slice(0,4),draft,clean[5]]),
+    {orderId:'o',boxRef:'B',shipmentRef:'S'}))
+    .resolves.toMatchObject({shipments:1,draft_only:true,departed_parcels:0});
+  await expect(N.oracleN15(mk([[{id:'b',state:'PACKED'}]]),{orderId:'o',boxRef:'B',shipmentRef:'S'}))
+    .rejects.toThrow('G6_N15_PRODUCT_GAP_BAG_CLOSED_WITH_MISSING_LINE');
+  await expect(N.oracleN15(mk([clean[0],clean[1],[{n:1}]]),{orderId:'o',boxRef:'B',shipmentRef:'S'}))
+    .rejects.toThrow('G6_N15_PRODUCT_GAP_INCOMPLETE_BAG_IN_BOX');
+  await expect(N.oracleN15(mk([clean[0],clean[1],clean[2],[{id:'x',state:'PACKED'}]]),
+    {orderId:'o',boxRef:'B',shipmentRef:'S'}))
+    .rejects.toThrow('G6_N15_PRODUCT_GAP_EMPTY_BOX_CLOSED');
+  for(const invalid of [
+    [{...draft[0],stage:'handed_over'}],
+    [{...draft[0],hub_draft:false}],
+    [{...draft[0],links:1}],
+    [{...draft[0],handovers:1}],
+    [draft[0],draft[0]],
+  ]){
+    await expect(N.oracleN15(mk([...clean.slice(0,4),invalid,clean[5]]),
+      {orderId:'o',boxRef:'B',shipmentRef:'S'}))
+      .rejects.toThrow(/G6_N15_PRODUCT_GAP_(NON_CONFORMING_DEPARTURE|SHIPMENT_NOT_UNIQUE)/);
+  }
+  await expect(N.oracleN15(mk([...clean.slice(0,5),[{links:0,departed:1}]]),
+    {orderId:'o',boxRef:'B',shipmentRef:'S'}))
+    .rejects.toThrow('G6_N15_PRODUCT_GAP_NON_CONFORMING_DEPARTURE');
  });
  const snap=(o={})=>[[{id:'x',state:'DISPATCHED'}],[{links:1,effective:1,qty:1,placements:2,removed:1,box_custody_events:7,shipment_links:1}],
   [{stage:'handed_over',forwarder_name:'F',transport_mode:'sea',...o}],[{statuses:'shipped',shipped:1}]];

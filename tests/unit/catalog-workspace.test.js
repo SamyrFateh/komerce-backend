@@ -702,6 +702,21 @@ test('Dossier sourcing autorisé : IDs canoniques, variante et revue exacte sans
   expect(JSON.stringify(result)).not.toContain('local_price_amount');
 });
 
+test('Dossier Hub manuel : identité de revue liée au média, sans inventer de référence fournisseur', () => {
+  const { publicProductDossier } = workspace._test;
+  const mediaId = '00000000-0000-0000-0000-000000000255';
+  const result = publicProductDossier({ row: {
+    has_sourcing_candidate: true, source_supplier_system_key: 'central_hub', active_media: 1,
+    normalized_source_contract: { schema_version: '2', source_kind: 'central_hub_manual' },
+  } }, { id: 'product-uuid', product_ref: 'KPR-HUB', lifecycle_status: 'candidate', is_active: false }, null, {
+    media: [{ media_id: mediaId, url: 'https://ik.imagekit.io/komerce/hub.png', source_media_id: null }],
+  });
+  expect(result.media).toMatchObject({ canonical_hub_media: true, gallery: [{
+    media_id: mediaId, source_media_id: `hub-manual:${mediaId}`,
+  }] });
+  expect(result.supplier).toMatchObject({ internal_source_label: 'Fournisseur central Hub', reference: null });
+});
+
 test('Produit déjà actif : état marché explicite, pas de fausse recertification candidat', () => {
   const {publicProductDossier}=workspace._test;
   const result=publicProductDossier(

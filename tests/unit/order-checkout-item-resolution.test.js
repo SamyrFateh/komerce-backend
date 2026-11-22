@@ -162,3 +162,40 @@ describe('order-checkout-item-resolution — estimation de coût et taux AED (au
     } finally { product.price_aed = 10; }
   });
 });
+
+describe('M03 — Central Hub manual unit sold on order, without fictitious stock', () => {
+  const { resolveActiveSku } = require('../../services/product-sku-service');
+  const product = {
+    id:'p-hub', name:'Manual Hub item', inventory_model:'SKU', procurement_supplier_id:'s-hub',
+    stock:0, price_kmf:15000, weight_kg:0.5, has_variants:false,
+    is_active:true, is_available:true,
+  };
+  const args = (client, items) => ({
+    client, items, maxQty:10, fretPerKg:0, aedKmf:0, customsPct:0,
+    pickupCodeRecipient:'buyer', userId:'buyer',
+  });
+
+  test('eligible source is stamped as procure_on_order and never consumes SKU stock during checkout', async () => {
+    resolveActiveSku.mockReset().mockResolvedValue({id:'sku-hub',stock:0,price_kmf:15000});
+    const client = {query:jest.fn()
+      .mockResolvedValueOnce({rows:[product]})
+      .mockResolvedValueOnce({rows:[{eligible:true}]})};
+    const items=[{product_id:'p-hub',quantity:2}];
+    const result=await resolveCheckoutItems(args(client,items));
+    expect(result.ok).toBe(true);
+    expect(items[0]._procure_on_order).toBe(true);
+    expect(items[0]._resolved_sku_id).toBe('sku-hub');
+    expect(client.query).toHaveBeenCalledTimes(2);
+  });
+
+  test('stock-zero external or unverified manual SKU remains blocked', async () => {
+    resolveActiveSku.mockReset().mockResolvedValue({id:'sku-supplier',stock:0,price_kmf:15000});
+    const client = {query:jest.fn()
+      .mockResolvedValueOnce({rows:[product]})
+      .mockResolvedValueOnce({rows:[{eligible:false}]})};
+    const items=[{product_id:'p-hub',quantity:1}];
+    const result=await resolveCheckoutItems(args(client,items));
+    expect(result).toMatchObject({ok:false,status:409,body:{available_stock:0}});
+    expect(items[0]._procure_on_order).toBeUndefined();
+  });
+});

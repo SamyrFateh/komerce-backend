@@ -15,6 +15,9 @@ describe('purchasing-workspace — rafraîchissement intersession sans destructi
   const freshnessPath = require('path');
   const source = freshnessFs.readFileSync(
     freshnessPath.join(__dirname, '../../public/dashboards/canonical/js/purchasing-workspace.js'), 'utf8');
+  test('attend la fin de l’actualisation de succès avant de réafficher le feedback', () => {
+    expect(source).toContain('if (spec.onSuccess) await spec.onSuccess(result);');
+  });
   test('relit les API canoniques en arrière-plan, et attend la fin de la saisie', () => {
     expect(source).toContain('KomerceDashboardFreshness?.watch?.({');
     expect(source).toContain('isBusy:workspaceBusy');

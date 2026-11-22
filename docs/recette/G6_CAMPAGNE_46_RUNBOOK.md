@@ -41,6 +41,12 @@ En fresh, M01 sur CM ou CG est catalogué M04 ou M05.
 
 Le script `scripts/recette/ops/g6-run-scenario.sh` fait l'équivalent : il ouvre l'issue, attend la fin du run, relance une annulation à vide, puis extrait le verdict.
 
+### Verrou Actions — ne pas annuler les runs propriétaires avant le premier job
+
+Les sept workflows propriétaire/staging à un seul job partagent le même groupe de concurrence **au niveau de leur job**, et non plus au niveau du workflow (Hub Chromium corrigé dans #5003 ; les six autres dans #5008). Cette PR ajoute le test anti-régression et la consigne de reprise. Tous écoutent `issues.opened`, mais seuls les jobs dont le titre exact et le propriétaire passent la garde doivent acquérir le verrou. Les workflows déclenchés pour une issue non pertinente restent `skipped` **sans remplacer une exécution métier en attente**.
+
+`cancel-in-progress: false` conserve un job d'écriture en cours ; le groupe commun garantit toujours **une seule opération de recette à la fois** (y compris les sondes de contrôle). Une seconde opération légitime en attente peut encore remplacer une attente précédente selon la politique standard GitHub : ouvrir **une seule** issue de recette à la fois, confirmer les jobs du run et ne jamais fusionner `main` pendant la preuve du SHA. Les runs annulés avant le premier job ne sont pas des PASS.
+
 ## 3. Prérequis de données (à vérifier avant tout run)
 
 | Besoin | Commande (titre d'issue) | Remarque |
@@ -111,4 +117,33 @@ Le détail des runs et des PR est dans #4550 (synthèses de lots) et dans STATUS
 **Séquence de GO** : 1) toutes les PR correctives fusionnées et `Required verdict` vert, 2) vérifier `/health/version`, identité PG et absence de run concurrent, 3) lancer les trois probes `g6-prereq-probe-{KM,CM,CG}` **par le propriétaire** pour inventaire lecture seule, 4) démarrer un seul scénario à la fois (marché KM, puis CM, puis CG) avec preuve exportée et tableau de verdicts dans #4550, 5) réévaluer la porte après chaque correction. Ne jamais déclencher un reset, une suspension de marché ou un changement de prix sans les protections et autorisations prévues.
 
 **Environnement :** l'accès du connecteur Railway dans cette session ne montre pas le service staging canonique derrière `komerce-backend-production.up.railway.app`. L'état déployé exact et les secrets ne sont donc pas attestés par cet audit de dépôt. Il faut une preuve du workflow owner-only avant de conclure `PREREQ_READY`.
+
+
+## 8. Compatibilité fournisseur central Hub après #4920 (21/11)
+
+**#4920 est fusionnée dans main** (catalogue, ImageKit, contrat source V2 `central_hub_manual`) avec CI/Chromium **locaux**. Ce changement lève une barrière de code, pas une preuve de disponibilité de la source 3/3 sur Railway staging.
+
+Le workflow owner-only `[staging-op] g6-central-hub-product-{KM|CM|CG}` prépare **uniquement une fixture source** depuis les écrans, sans valider à lui seul M03/M06/N34 :
+1. **Import manuel** : le fournisseur central est choisi par l'écran ; le JSON contient le nom du produit, poids/dimensions/coût, **jamais `supplier_product_id`, `sellable_units` ni une identité de vendeur inventée**. La reprise PG cherche le candidat exact par nom, fournisseur système et contrat V2 valide.
+2. **Photographie canonique** : le produit est encore inactif ; l'admin ouvre son dossier Catalogue et utilise le nouveau champ `[data-catalog-media-upload-file]`, puis le bouton `Téléverser l'image`. Le serveur transfère vers ImageKit et inscrit le média canonique, sans injection directe d'URL dans SQL/API. À chaque étape, une seule mutation par geste et un nouvel état PG.
+3. **Fixture réelle indispensable** : une photo ou illustration fidèle du **coffret de tournevis G6** doit être ajoutée au dépôt par le propriétaire avec les droits nécessaires. Deux variables GitHub Actions **non secrètes** doivent ensuite être renseignées : `G6_CENTRAL_MEDIA_IMAGE_FILE` (chemin relatif au dépôt, même SHA que le run) et `G6_CENTRAL_MEDIA_IMAGE_SHA256` (somme SHA-256 en 64 hex). Si l'image n'est pas présente/épinglée/valide, `PREREQ_MISSING_CANONICAL_PRODUCT_IMAGE` : **aucun nouveau candidat n'est importé**. N'utiliser ni screenshot d'écran ni image générique trompeuse.
+4. **Suite normale** : données éditoriales FR, classement, approbation Catalogue, prix du marché `LOCAL_ACTIVE`, exposition, relecture PG de la vérité physique/SKU. La source central Hub n'a pas de *SKU vendeur* ; le checkout doit toutefois prouver sa propre voie de sélection du produit, sans créer un SKU fournisseur fictif pour satisfaire artificiellement le harnais.
+5. **Reprobes** : après une exécution réussie du workflow produit et la stabilisation du SHA Railway, rejouer séquentiellement `g6-prereq-probe-KM`, puis CM, puis CG (PG read only) ; exiger `M03_READY` et la preuve d'un `source_key='central_hub'` **effectivement importable**. Les runs précédents KM #44916869049, CM #44917011664, CG #44917097696 montrent seulement 2 sources import et aucun produit central.
+
+**Porte globale inchangée : 44/46 dispatchs déclarés et vérifiés automatiquement**, mais **M06 et N34 sont NOT_BOUND**. La fixture Hub rendra possible l'écriture de leurs tests dédiés (chaîne M06 multi-acteurs avec justificatif d'achat + N34a/N34b sans dette fournisseur fictive) ; elle ne constitue pas ces tests à elle seule. Les verdicts P0 N15/N21/N22/N32, et les limites N10/N26/N27/N30/N31/N35/N38/N39/N40 restent à traiter comme indiqué au §6/7.
+
+**Protocole de lancement** : pas de reset automatique, pas de mutation du prix N06 en parallèle, pas de fusion `main` en cours de run. Deux niveaux de preuves distincts : CI locale / préflight pour la préparation, puis staging Chromium + PostgreSQL avant le `PASS` métier.
+
+
+## 9. M03 — référence manuelle Hub vendue sur commande (migration 424)
+
+Une fiche Fournisseur central Hub approuvée peut posséder **une identité SKU interne MANUAL à stock physique zéro**. Ce n'est pas un fournisseur externe ni une disponibilité fournisseur simulée. La boutique affiche explicitement `Sur commande` uniquement si :
+- le SKU est actif, exact, source `MANUAL`, sans SOI fournisseur et avec stock zéro ;
+- `products.procurement_supplier_id` pointe vers le Fournisseur central Hub actif ;
+- une source `sourcing_candidates` importée possède le contrat `central_hub_manual`, rattachée à ce même fournisseur ;
+- les gardes généraux de qualité, médias, approbation, exposition marché et prix local restent verts.
+
+Le checkout doit snapshotter `order_items.procure_on_order = true` **uniquement sur une ligne IMPORT**. La migration 424 interdit une conversion tardive de ce flag ; la confirmation de paiement revalide l'identité source puis **ne débite pas de stock SKU inexistant**. Annulation et reliquat ne le restaurent pas non plus. Le Purchasing garde son vrai parcours `central_hub` : ligne d'achat ouverte, geste humain, vendeur réel et justificatifs au moment de l'achat physique — jamais de stock, PO ou paiement fournisseur fictifs.
+
+**Porte M03** : ne pas accepter `M03_READY` comme succès de panier ; exiger Chromium de l'écran boutique au retrait et oracles PG (commande snapshot, prix cash, achats Hub, statut colis), y compris absence de mouvement de `product_skus.stock` pour la ligne sur commande. Une création de commande sans preuve d'approvisionnement ultérieur n'est pas un GO M03.
 

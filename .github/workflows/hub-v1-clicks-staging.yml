@@ -27,12 +27,13 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: komerce-hub-v1-http-actions-staging
-  cancel-in-progress: false
-
 jobs:
   clicks:
+    # Only the eligible owner-triggered writer reserves the shared G6 lock.
+    # Other issue events skip this job and must not cancel a queued real recipe.
+    concurrency:
+      group: komerce-g6-canonical-real-transaction
+      cancel-in-progress: false
     if: >-
       (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner && inputs.confirmation == 'RUN-HTTP-CLICKS') ||
       (github.event_name == 'issues' && github.event.issue.user.login == github.repository_owner &&
@@ -185,6 +186,9 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Clics Chromium
         run: npx playwright test --config=playwright.hub-v1-clicks.config.js tests/staging-clicks/hub-v1-clicks.spec.js
+      - name: Independent final PostgreSQL READ ONLY oracle (11 Chromium paths)
+        if: github.event_name == 'issues'
+        run: node scripts/recette/hub-v1-final-sql-oracle.js
       - name: Restore existing Relais account to its original assignment
         if: always() && github.event_name == 'issues'
         shell: bash
@@ -205,6 +209,7 @@ jobs:
           path: |
             test-results/hub-v1-clicks/captures/
             test-results/hub-v1-clicks/evidence.json
+            test-results/hub-v1-clicks/final-sql-oracle.json
             test-results/hub-v1-clicks/playwright.json
             test-results/hub-v1-http/hub-v1-http-actions-*.json
           if-no-files-found: warn

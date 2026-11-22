@@ -1127,7 +1127,7 @@
       setFeedback(rootNode, 'Action en cours…');
       try {
         const result = await jsonRequest(fetchFn, spec.url, { method: 'POST', body: spec.body || {} });
-        if (spec.onSuccess) spec.onSuccess(result);
+        if (spec.onSuccess) await spec.onSuccess(result);
         context.busy.delete(lockKey);
         await context.reload();
         const message = typeof spec.successMessage === 'function' ? spec.successMessage(result) : spec.successMessage;

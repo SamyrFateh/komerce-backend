@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 334,
+    "businessDependencies": 335,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -2452,8 +2452,9 @@
           "projection des rails de livraison deja commercialement exposes par logistics, sans inventer prix ni delai",
           "modal produit catalogue : un fetch Product Detail, un etat de selection SKU, deux compositions responsive mobile/desktop",
           "raffinerie catalogue : donnee source EN conservee, eligibilite douane/transport (catalog_exclusions), enrichissement FR, overrides traces, approbation humaine unique",
-          "contrat de revue du texte incruste dans les medias fournisseur : preuve attachee a la source et variante, traduction FR revue sans dependance IA specifique (verification pure, sans publication automatique)",
-          "recette propriétaire staging : revue Chromium automatisée explicitement attribuée au run GitHub et au compte authentifié sur candidats Sourcing TEST ; jamais une attestation humaine, jamais recevable hors staging, jamais une publication sans geste explicite",
+          "contrat de revue visuelle des medias source : preuve attachée à l’identité du média et à sa variante, texte incrusté présenté en FR si nécessaire, sans dépendance IA ni publication automatique ; une image canonique importée par le Hub reçoit une identité interne liée à son UUID média, jamais un faux identifiant fournisseur",
+          "produit manuel Fournisseur central Hub sans variantes : préparation explicite depuis l’inspecteur Catalogue d’une unité vendable interne par défaut, stock initial zéro, sans SKU ni identité fournisseur, avant la bascule SKU de l’approbation",
+          "recette propriétaire staging : revue Chromium automatisée explicitement attribuée au run GitHub et au compte authentifié sur candidats Sourcing TEST, y compris les médias manuels Hub ; jamais une attestation humaine, jamais recevable hors staging, jamais une publication sans geste explicite",
           "projection par lot KIR : préparation Catalogue, publication et visibilité par marché depuis les produits réellement promus ; lecture seule, sans automatiser une décision",
           "Catalogue global maître : registre paginé de toutes les fiches réellement remises depuis Sourcing/Raffinerie ; fournisseurs, taxonomie boutique, écarts actionnables et corrections par autorité sans confondre remise et vente",
           "Catalogue pré-publication : contrôle canonique des prérequis candidat à la demande en lecture seule, sans déclencher de publication ni confondre approbation Catalogue, revue visuelle FR et décisions marchés",
@@ -3403,7 +3404,7 @@
             ]
           },
           "services": {
-            "count": 87,
+            "count": 88,
             "files": [
               {
                 "declared": "services/boutique-taxonomy-admin.js",
@@ -3608,6 +3609,11 @@
               {
                 "declared": "services/catalog-workspace.js",
                 "resolvedPath": "services/catalog-workspace.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/central-hub-on-order.js",
+                "resolvedPath": "services/central-hub-on-order.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -3843,7 +3849,7 @@
             ]
           },
           "tests": {
-            "count": 210,
+            "count": 211,
             "files": [
               {
                 "declared": "tests/e2e-api/products.kmf-numeric.e2e.test.js",
@@ -4556,6 +4562,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/g6-central-hub-on-order.test.js",
+                "resolvedPath": "tests/unit/g6-central-hub-on-order.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/gate-a-final-real-seams.test.js",
                 "resolvedPath": "tests/unit/gate-a-final-real-seams.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4908,7 +4919,7 @@
             ]
           }
         },
-        "totalFiles": 457,
+        "totalFiles": 459,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 33,
@@ -24130,6 +24141,13 @@
           ]
         },
         {
+          "consumer": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "payments",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -25180,6 +25198,10 @@
       },
       "authority": "backend-core — tout changement de la machine de statut ou du schema order_reference doit etre valide par le proprietaire de order-status-machine.js",
       "invariants": [
+        {
+          "statement": "les détails, historiques et colis d’une commande sont lus uniquement par son client, un agent du relais lié, un agent Hub central ou un market_operator délégué à operations.read ; les autres lectures échouent sans divulgation",
+          "test": "tests/unit/order-read-authorization.test.js"
+        },
         "annulation libre et 100% avant ordered (plancher 24h) ; commande ferme des ordered — demande wallet-only ensuite (DOCTRINE_ANNULATION)",
         "le badge Remboursable/Ferme du suivi EST le contrat : il ne dit jamais autre chose que ce que le code fait",
         {
@@ -25304,7 +25326,7 @@
             ]
           },
           "services": {
-            "count": 31,
+            "count": 32,
             "files": [
               {
                 "declared": "services/admin-order-refund.js",
@@ -25412,6 +25434,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/order-read-authorization.js",
+                "resolvedPath": "services/order-read-authorization.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
                 "declared": "services/order-service.js",
                 "resolvedPath": "services/order-service.js",
                 "status": "resolved-in-technical-graph"
@@ -25464,7 +25491,7 @@
             ]
           },
           "tests": {
-            "count": 64,
+            "count": 65,
             "files": [
               {
                 "declared": "tests/e2e-api/customer-to-customer.golden.e2e.test.js",
@@ -25667,6 +25694,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/order-read-authorization.test.js",
+                "resolvedPath": "tests/unit/order-read-authorization.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/order-service.test.js",
                 "resolvedPath": "tests/unit/order-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -25799,7 +25831,7 @@
             ]
           }
         },
-        "totalFiles": 110,
+        "totalFiles": 112,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 19,
@@ -26530,6 +26562,13 @@
         },
         {
           "provider": "market-autonomy",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "market-delegation",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"

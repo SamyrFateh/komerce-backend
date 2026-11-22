@@ -6,11 +6,13 @@ on:
 permissions:
   contents: read
   actions: read
-concurrency:
-  group: komerce-g6-canonical-real-transaction
-  cancel-in-progress: false
 jobs:
   create:
+    # Only this guarded job participates in the shared G6 writer lock.
+    # Unrelated issue-open events must never reserve or cancel a real run.
+    concurrency:
+      group: komerce-g6-canonical-real-transaction
+      cancel-in-progress: false
     if: >-
       github.repository == 'SamyrFateh/komerce-backend' &&
       github.actor == github.repository_owner &&
@@ -28,6 +30,10 @@ jobs:
       STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
       EXPECTED_RAILWAY_ENVIRONMENT: staging
       PGOPTIONS: '-c default_transaction_read_only=on'
+      # Approved product image in the checkout (repo-relative path + immutable checksum).
+      # Missing fields => PREREQ_MISSING, never automatic placeholder publication.
+      G6_CENTRAL_MEDIA_IMAGE_FILE: ${{ vars.G6_CENTRAL_MEDIA_IMAGE_FILE }}
+      G6_CENTRAL_MEDIA_IMAGE_SHA256: ${{ vars.G6_CENTRAL_MEDIA_IMAGE_SHA256 }}
       G6_TARGET_MARKET: ${{ endsWith(github.event.issue.title, '-CM') && 'CM' || endsWith(github.event.issue.title, '-CG') && 'CG' || 'KM' }}
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
