@@ -11910,7 +11910,7 @@
             ]
           },
           "tests": {
-            "count": 106,
+            "count": 107,
             "files": [
               {
                 "declared": "tests/integration/canonical-margin-writer-real-db.test.js",
@@ -12105,6 +12105,11 @@
               {
                 "declared": "tests/unit/economic-price-audit-service.test.js",
                 "resolvedPath": "tests/unit/economic-price-audit-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/economic-result-real-readonly.test.js",
+                "resolvedPath": "tests/unit/economic-result-real-readonly.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -12465,7 +12470,7 @@
             ]
           }
         },
-        "totalFiles": 219,
+        "totalFiles": 220,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
