@@ -118,6 +118,20 @@ beforeEach(() => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('deleteSupplier', () => {
+  test.each([false, true])('N34a: Central Hub system supplier is immutable even with forceDelete=%s', async(forceDelete) => {
+    const client = makeClient([{ rows: [{ id: 'hub-id', name: 'Fournisseur central Hub', system_key: 'central_hub' }] }]);
+    mockGetClient.mockResolvedValue(client);
+    await expect(deleteSupplier('hub-id',forceDelete)).rejects.toMatchObject({
+      status:409, code:'CENTRAL_HUB_SUPPLIER_IMMUTABLE'
+    });
+    expect(client.calls.filter(c=>!/^(BEGIN|ROLLBACK|COMMIT)/i.test(c.sql))).toHaveLength(1);
+    expect(client.calls.find(c=>c.sql.startsWith('SELECT')).sql).toContain('FOR UPDATE');
+    expect(client.calls.some(c=>/^(UPDATE|INSERT|DELETE)/i.test(c.sql))).toBe(false);
+    expect(client.calls.some(c=>c.sql==='ROLLBACK')).toBe(true);
+    expect(client.calls.some(c=>c.sql==='COMMIT')).toBe(false);
+    expect(client.released).toBe(true);
+  });
+
   test('fournisseur introuvable → throw 404', async () => {
     const client = makeClient([
       { rows: [] }, // SELECT suppliers → vide
