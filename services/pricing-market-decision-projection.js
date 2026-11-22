@@ -19,6 +19,8 @@
 'use strict';
 
 function finite(value) {
+  // Number(null) and Number('') are zero: missing economic truth must stay unknown.
+  if (value == null || (typeof value === 'string' && value.trim() === '')) return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }
