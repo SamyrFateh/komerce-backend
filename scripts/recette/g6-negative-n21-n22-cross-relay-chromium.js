@@ -112,7 +112,11 @@ async function main(){
      .every(r=>r.http===200&&r.contains_order),'G6_N22_PRODUCT_GAP_OWNER_A_CANNOT_READ');
     const foreign=await probeReads(s.actor.page,ob.id,ob.reference);
     report.reverse={direction:'agent_at_A_vs_order_at_B',order_id:ob.id,reads:foreign,write:null};
-    for(const r of foreign)if(r.contains_order)report.gaps.push('N22_REVERSE_READ_'+r.label);
+    for(const r of foreign){
+     if(r.contains_order)report.gaps.push('N22_REVERSE_READ_'+r.label);
+     if(['order_by_id','order_by_ref','parcels','history'].includes(r.label)&&r.http!==404)
+      report.gaps.push('N22_REVERSE_READ_NOT_404_'+r.label+'_'+r.http);
+    }
     const wait={expect:norm(second.code),used:false};
     await guardCollect(s.actor.page,wait,s.actor.blocked);
     const box=await openRelayLive(s.actor.page,{selector:'[data-manual-pickup-code]',timeout:25000,entry:'remises'})
@@ -130,8 +134,8 @@ async function main(){
     second.code=null;
     if(!response)throw Error('G6_N22_SCREEN_MISSING_A_TO_B_RESPONSE');
     if(response.status()===200)report.gaps.push('N22_REVERSE_WRITE_ACCEPTED');
-    else if(![401,403,404].includes(response.status()))
-     report.gaps.push('N22_REVERSE_WRITE_UNEXPECTED_'+response.status());
+    else if(response.status()!==403)
+     report.gaps.push('N22_REVERSE_WRITE_NOT_403_'+response.status());
     check(s.actor.blocked.length===0,'G6_N22_UNEXPECTED_REVERSE_WRITE');
     reach('REVERSE_A_TO_B_READ_AND_WRITE_REFUSED');
    }finally{await s.actor.ctx.close().catch(()=>{});await second.ctx.close().catch(()=>{})}
@@ -184,8 +188,13 @@ async function main(){
   if(w.http===200)report.gaps.push('WRITE_ACCEPTED');
   else if(/^csrf_/.test(w.error_code||''))throw Error('G6_'+SCEN+'_SCREEN_MISSING_WRITE_PROBE_'+w.error_code);
   else if(w.http===null)throw Error('G6_'+SCEN+'_SCREEN_MISSING_NO_WRITE_RESPONSE');
-  else if(![403,404,401].includes(w.http))report.gaps.push('WRITE_UNEXPECTED_'+w.http);
-  for(const r of report.intruder.reads)if(r.contains_order)report.gaps.push('READ_'+r.label);
+  else if(SCEN==='N22'&&w.http!==403)report.gaps.push('N22_FORWARD_WRITE_NOT_403_'+w.http);
+  else if(SCEN!=='N22'&&![403,404,401].includes(w.http))report.gaps.push('WRITE_UNEXPECTED_'+w.http);
+  for(const r of report.intruder.reads){
+   if(r.contains_order)report.gaps.push('READ_'+r.label);
+   if(SCEN==='N22'&&['order_by_id','order_by_ref','parcels','history'].includes(r.label)&&r.http!==404)
+    report.gaps.push('N22_FORWARD_READ_NOT_404_'+r.label+'_'+r.http);
+  }
   if(report.intruder.ui.order_reference_on_screen)report.gaps.push('READ_SCREEN');
   if(report.intruder.ui.api_responses_with_order.length)report.gaps.push('READ_UI_API');
   await runtime();
