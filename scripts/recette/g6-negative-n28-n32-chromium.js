@@ -5,10 +5,11 @@
  * @owner backend-core
  * @purpose N28 : gestion des erreurs de remise ; N32 : périmètre marché/rôle, deux marchés et acteur Hub restreint. Aucune écriture SQL métier (identité E2E via writers canoniques).
  * @db-read orders, order_items, users, scans, parcel_items, parcels, product_sku_physical_codes, v_purchase_line_market, markets, purchase_lines, purchase_orders, market_operating_assignments, assignment_memberships, membership_capabilities
- * @db-write users, e2e_test_accounts, assignment_memberships, membership_capabilities (N32: canonical E2E identity writers only)
+ * @db-write none
  * @db-write-via:user-mutation-service users
- * @db-write-via:staging-e2e-identities-provisioner e2e_test_accounts
- * @db-write-via:market-delegation-service assignment_memberships, membership_capabilities
+ * @db-write-via:staging-e2e-provision e2e_test_accounts
+ * @db-write-via:market-delegation-service assignment_memberships, membership_capabilities, market_delegation_audit
+ * @db-txn owned (N32 staging E2E identities only)
  * @impact-areas staging-only, security
  */
 'use strict';
