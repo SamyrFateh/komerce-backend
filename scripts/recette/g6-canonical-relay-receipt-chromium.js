@@ -16,6 +16,7 @@ const {chromium}=require('playwright');
 const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
 const {readback,runtime}=require('./g6-hub-shipment-chromium');
+const {hasExpectedRelayOrderRows}=require('./canonical/relay-order-projection-guard');
 const sameSet=(a,b)=>JSON.stringify([...a].sort())===JSON.stringify([...b].sort());
 const {login}=require('./g6-canonical-forwarder-chromium');
 const {openRelayLive}=require('./canonical/relay-live-navigation');
@@ -31,7 +32,7 @@ const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const RECEIPT_PATH='/api/admin/workspaces/operations/market/'+MK.code+'/relay-shipments/'+REF+'/receive';
 const report={schema:'komerce-g6-relay-receipt/1',reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',shipment_id:ID,shipment_ref:REF,
- order_id:ORDER,parcel_id:PARCEL,market:MK.code,scenario_id:'M01',provenance:'SIMULATED / STAGING ONLY',
+ order_id:ORDER,parcel_id:PARCEL,market:MK.code,scenario_id:env.G6_CANONICAL_SCENARIO,provenance:'SIMULATED / STAGING ONLY',
  verdict:'BLOCKED',events:[],external_supplier_calls:0,external_payment_executed:false};
 const check=(ok,code)=>{if(!ok)throw Error(code)};
 function save(){fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n')}
@@ -140,7 +141,9 @@ async function main(){
   report.db_fingerprint=guard.fingerprint;report.sha=await runtime();
   const prior=JSON.parse(fs.readFileSync((env.G6_DYNAMIC_FRESH_ORDER==='1'?'test-results/g6-canonical-customs/report.json':'test-results/g6-canonical-resume/g6-canonical-customs/report.json'),'utf8'));
   const before=await state();report.before=before;save();
-  check(before.base.order.length===1&&before.base.order[0].id===ORDER&&before.base.parcelItems.length===SC.items&&
+  check(hasExpectedRelayOrderRows(before.base.order,{orderId:ORDER,
+    reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',expectedRows:SC.items})&&
+    before.base.parcelItems.length===SC.items&&
     before.base.parcelEvents.length===1&&before.base.parcelEvents[0].event_type==='shipped'&&
     isDeepStrictEqual(before.base,prior.after.base)&&before.base.shipments[0].stage==='local_delivery'&&
     before.base.parcels[0].id===PARCEL&&before.base.parcels[0].status==='shipped'&&
