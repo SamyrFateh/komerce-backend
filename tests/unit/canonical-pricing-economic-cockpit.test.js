@@ -14,7 +14,7 @@ test('Atelier économique charge la surface cockpit fidèle au mock approuvé', 
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-economic-cockpit.css'), 'utf8');
 
   expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=261122-equilibrium-1');
-  expect(index).toContain('/dashboards/canonical/css/pricing-economic-cockpit.css?v=261101-marketlabels-1');
+  expect(index).toContain('/dashboards/canonical/css/pricing-economic-cockpit.css?v=261122-equilibrium-mobile-1');
   expect(source).toContain('Charges structurelles à couvrir');
   expect(source).toContain('Coûts variables');
   expect(source).toContain('Charges fixes directes');
@@ -30,6 +30,8 @@ test('Atelier économique charge la surface cockpit fidèle au mock approuvé', 
   expect(css).toContain('.kmc-cockpit-costs');
   expect(css).toContain('.kmc-cockpit-portfolio-table');
   expect(css).toContain('.kmc-cockpit-detail-grid');
+  expect(css).toContain('.kmc-flow-equilibrium-panel--cockpit .kmc-flow-equilibrium-unavailable strong');
+  expect(css).toContain('overflow-wrap: anywhere;');
   expect(css).toContain('MOCK PARITY FINAL');
   expect(css).toContain('background: #0b84f3');
   expect(source).toContain('options.root.replaceChildren(cockpit)');
