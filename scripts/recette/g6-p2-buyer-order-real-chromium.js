@@ -464,7 +464,7 @@ async function browserCheckout({buyer,phone,code}){
     WHERE r.id=$1 AND r.is_active=TRUE`,[excludeRelay,MARKET]);
    check(!!a?.name,'G6_N22_PREREQ_MISSING_ACTIVE_RELAY_A');
    const displayName=name=>String(name||'').trim()
-    .replace(/\\s+\\d{10,}(?:-[a-z0-9-]+)?$/i,'').trim();
+    .replace(/\s+\d{10,}(?:-[a-z0-9-]+)?$/i,'').trim();
    const relayAName=displayName(a.name);
    await humanClick(null,page.locator('#ck-relais-summary'));
    const picker=page.locator('.ck-relais-overlay.is-open');
