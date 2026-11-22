@@ -3,27 +3,27 @@
  * @domain recette
  * @layer script
  * @owner backend-core
- * @purpose Bound transport retries for the GET health/version pin; never retry a business mutation or accept a changed SHA.
+ * @purpose Bound transport retries for the GET staging health/target pin; never retry business mutations or accept identity drift.
  * @impact-areas staging-only, e2e-certification
  */
 'use strict';
 
 const RETRY_DELAYS_MS=Object.freeze([250,750]);
 const HEALTH_TIMEOUT_MS=8000;
+const BASE='https://komerce-backend-production.up.railway.app';
+const ALLOWED_HEALTH_URLS=new Set([BASE+'/health/version',BASE+'/health']);
 
 /**
- * The network between the Actions runner and Railway can fail transiently even
- * while staging serves 200s to other clients. Reissue ONLY the idempotent,
- * read-only GET /health/version. A response with a wrong SHA, an HTTP error or
- * malformed JSON fails immediately: no retry can turn it into an attestation.
+ * Railway/Actions can drop a read-only health connection after long E2E runs.
+ * Retry only an actual transport/timeout exception from the fetch itself:
+ * at most 3 attempts, with fresh 8s timeouts. HTTP errors fail immediately.
+ * Never retry POST/PUT/PATCH/DELETE, or any call off these two fixed endpoints.
  *
- * No POST is retried. Never use this helper for an E2E business command.
- * A successful retry still attests the exact SHA of the immutable staging run.
+ * A successful GET is not an attestation by itself. Consumers MUST still
+ * independently compare pinned SHA and/or PostgreSQL target fingerprint.
  */
-async function attestHealthVersion({fetchImpl,url,expectedSha,sleep=(ms)=>new Promise(resolve=>setTimeout(resolve,ms))}){
- if(typeof fetchImpl!=='function'||typeof url!=='string'||
-    !url.endsWith('/health/version')||!/^https:\/\//.test(url)||
-    !/^[a-f0-9]{40}$/.test(String(expectedSha||'')))
+async function fetchHealthReadOnly({fetchImpl,url,sleep=(ms)=>new Promise(resolve=>setTimeout(resolve,ms))}){
+ if(typeof fetchImpl!=='function'||!ALLOWED_HEALTH_URLS.has(url))
   throw Error('G6_DYNAMIC_DEPLOY_HEALTH_ARGUMENTS_INVALID');
 
  for(let attempt=0;attempt<=RETRY_DELAYS_MS.length;attempt++){
@@ -41,21 +41,26 @@ async function attestHealthVersion({fetchImpl,url,expectedSha,sleep=(ms)=>new Pr
    await sleep(RETRY_DELAYS_MS[attempt]);
    continue;
   }
-  // HTTP failures, redirect policy violations, malformed bodies or a changed
-  // deployment are not mere transport hiccups and cannot be silently retried.
   if(!response?.ok||(typeof response.status==='number'&&response.status!==200))
    throw Error('G6_DYNAMIC_DEPLOY_HEALTH_FAILURE');
-  let version;
-  try{version=await response.json();}
-  catch(error){
-   const invalid=new Error('G6_DYNAMIC_DEPLOY_HEALTH_JSON_INVALID');
-   invalid.cause=error;
-   throw invalid;
-  }
-  if(version?.commit!==expectedSha)
-   throw Error('G6_DYNAMIC_DEPLOY_SHA_DRIFT');
-  return version;
+  return response;
  }
  throw Error('G6_DYNAMIC_DEPLOY_HEALTH_UNREACHABLE');
 }
-module.exports={attestHealthVersion};
+
+async function attestHealthVersion({fetchImpl,url,expectedSha,sleep}){
+ if(url!==BASE+'/health/version'||!/^[a-f0-9]{40}$/.test(String(expectedSha||'')))
+  throw Error('G6_DYNAMIC_DEPLOY_HEALTH_ARGUMENTS_INVALID');
+ const response=await fetchHealthReadOnly({fetchImpl,url,sleep});
+ let version;
+ try{version=await response.json();}
+ catch(error){
+  const invalid=new Error('G6_DYNAMIC_DEPLOY_HEALTH_JSON_INVALID');
+  invalid.cause=error;
+  throw invalid;
+ }
+ if(version?.commit!==expectedSha)
+  throw Error('G6_DYNAMIC_DEPLOY_SHA_DRIFT');
+ return version;
+}
+module.exports={fetchHealthReadOnly,attestHealthVersion};
