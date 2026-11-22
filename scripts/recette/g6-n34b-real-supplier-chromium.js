@@ -24,7 +24,7 @@ const env=process.env,BASE='https://komerce-backend-production.up.railway.app';
 const API='/api/admin/workspaces/sourcing',OUT=path.resolve('test-results/g6-n34b-real-supplier');
 const report={schema:'komerce-g6-n34b-real-source/1',scenario_id:'N34b',market:env.G6_TARGET_MARKET,
  verdict:'NOT_PROVEN',scenario_bound:false,production_permitted:false,external_supplier_calls:0,
- external_payment_executed:false,events:[],steps:[],db_write_via:'Chromium-UI-only'};
+ external_payment_executed:false,events:[],steps:[],missing:[],db_write_via:'Chromium-UI-only'};
 const save=()=>{fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n');};
 const check=(v,c)=>{if(!v)throw Error('G6_N34B_'+c);};
 const visible=async(loc,ms=15000)=>{try{await loc.first().waitFor({state:'visible',timeout:ms});return true}catch(_){return false}};
