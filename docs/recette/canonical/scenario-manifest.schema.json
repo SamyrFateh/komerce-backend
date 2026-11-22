@@ -170,6 +170,93 @@
         }
       }
     },
+    "fixture_plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "provenance",
+        "market",
+        "product",
+        "buyer_order",
+        "commitment",
+        "manual_purchase_capture",
+        "supplier_payment_authorization",
+        "external_effects",
+        "blocking_capabilities"
+      ],
+      "properties": {
+        "status": { "const": "PREPARED_BLOCKED" },
+        "provenance": { "const": "SIMULATED / STAGING ONLY" },
+        "market": { "const": "KM" },
+        "product": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["fixture_ref", "source_kind", "supplier_system_key", "internal_sku", "physical_stock", "sellable_status"],
+          "properties": {
+            "fixture_ref": { "const": "G6-M06-KM" },
+            "source_kind": { "const": "central_hub_manual" },
+            "supplier_system_key": { "const": "central_hub" },
+            "internal_sku": { "const": "generated_unique_per_run" },
+            "physical_stock": { "const": 0 },
+            "sellable_status": { "const": "ON_ORDER" }
+          }
+        },
+        "buyer_order": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["quantity", "payment_method", "payment_simulated_only", "procure_on_order"],
+          "properties": {
+            "quantity": { "const": 3 },
+            "payment_method": { "const": "cash_relais" },
+            "payment_simulated_only": { "const": true },
+            "procure_on_order": { "const": true }
+          }
+        },
+        "commitment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["amount", "currency", "proof_ref", "indicative_budget_is_not_confirmed_cost"],
+          "properties": {
+            "amount": { "const": 30 },
+            "currency": { "const": "EUR" },
+            "proof_ref": { "const": "SIM-M06-COMMITMENT-<run_id>" },
+            "indicative_budget_is_not_confirmed_cost": { "const": true }
+          }
+        },
+        "manual_purchase_capture": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["allocations", "seller_identity_source", "confirmed_price_source", "proof_required", "synthetic_seller_or_price_values", "allocation_must_cover_order_quantity"],
+          "properties": {
+            "allocations": { "const": "captured_in_canonical_ui_at_purchase_time" },
+            "seller_identity_source": { "const": "actual_seller_entered_by_operator" },
+            "confirmed_price_source": { "const": "price_confirmed_at_purchase" },
+            "proof_required": { "const": true },
+            "synthetic_seller_or_price_values": { "const": false },
+            "allocation_must_cover_order_quantity": { "const": true }
+          }
+        },
+        "supplier_payment_authorization": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["amount_source", "currency", "proof_ref_source", "separate_from_commitment", "external_debit"],
+          "properties": {
+            "amount_source": { "const": "confirmed_manual_purchase_totals" },
+            "currency": { "const": "EUR" },
+            "proof_ref_source": { "const": "captured_in_canonical_ui" },
+            "separate_from_commitment": { "const": true },
+            "external_debit": { "const": false }
+          }
+        },
+        "external_effects": { "const": false },
+        "blocking_capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string" }
+        }
+      }
+    },
     "expected_oracle_ids": {
       "type": "array",
       "uniqueItems": true,

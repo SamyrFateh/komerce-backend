@@ -27,6 +27,55 @@
     "steps": [],
     "branches": []
   },
+  "fixture_plan": {
+    "status": "PREPARED_BLOCKED",
+    "provenance": "SIMULATED / STAGING ONLY",
+    "market": "KM",
+    "product": {
+      "fixture_ref": "G6-M06-KM",
+      "source_kind": "central_hub_manual",
+      "supplier_system_key": "central_hub",
+      "internal_sku": "generated_unique_per_run",
+      "physical_stock": 0,
+      "sellable_status": "ON_ORDER"
+    },
+    "buyer_order": {
+      "quantity": 3,
+      "payment_method": "cash_relais",
+      "payment_simulated_only": true,
+      "procure_on_order": true
+    },
+    "commitment": {
+      "amount": 30,
+      "currency": "EUR",
+      "proof_ref": "SIM-M06-COMMITMENT-<run_id>",
+      "indicative_budget_is_not_confirmed_cost": true
+    },
+    "manual_purchase_capture": {
+      "allocations": "captured_in_canonical_ui_at_purchase_time",
+      "seller_identity_source": "actual_seller_entered_by_operator",
+      "confirmed_price_source": "price_confirmed_at_purchase",
+      "proof_required": true,
+      "synthetic_seller_or_price_values": false,
+      "allocation_must_cover_order_quantity": true
+    },
+    "supplier_payment_authorization": {
+      "amount_source": "confirmed_manual_purchase_totals",
+      "currency": "EUR",
+      "proof_ref_source": "captured_in_canonical_ui",
+      "separate_from_commitment": true,
+      "external_debit": false
+    },
+    "external_effects": false,
+    "blocking_capabilities": [
+      "M06_DISTINCT_CENTRAL_HUB_PRODUCT_SCREEN_FIXTURE",
+      "MANUAL_PURCHASE_MULTI_SELLER_UI",
+      "M06_SUPPLIER_AUTHORIZATION_READBACK",
+      "M06_RECEIVING_AND_RELAY_PROJECTION",
+      "M06_PICKUP_AND_SAV_UI_ORACLE",
+      "N34A_N34B_CHROMIUM_BINDING"
+    ]
+  },
   "expected_oracle_ids": [
     "O-ECO",
     "O-DOC",

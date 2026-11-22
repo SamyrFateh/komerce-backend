@@ -643,6 +643,7 @@
       }
       let channel; let supplierOrder; let confirmProof; let confirmSeller; let confirmQty = [];
       const confirmMoney = new Map();
+      const confirmExecutions = [];
       if (kind === 'sent') {
         channel = field(form, simulated ? 'Canal interne de simulation (aucun envoi)' : 'Canal d’envoi réel', doc.createElement('select'));
         (simulated ? [['other', 'Simulation interne — sans contact']] : CHANNELS).forEach(([v, l]) => channel.appendChild(Object.assign(doc.createElement('option'), { value: v, textContent: l })));
@@ -676,6 +677,58 @@
           confirmProof.value = 'SIM-STAGING-ACHAT-' + ref; confirmProof.readOnly = true;
           confirmSeller.value = 'SIMULATED-STAGING-FOURNISSEUR-' + ref; confirmSeller.readOnly = true;
         }
+        const allocationPanel = el(doc, 'section', 'hlc-manual-purchase-allocations');
+        allocationPanel.appendChild(el(doc, 'p', 'hlc-zone-hint', 'Si plusieurs vendeurs ont participé, détaillez une allocation par vendeur. Les quantités doivent couvrir exactement les lignes confirmées.'));
+        const allocationRows = el(doc, 'div', 'hlc-manual-purchase-allocation-rows');
+        const addAllocation = button(doc, 'Ajouter une allocation vendeur', 'add-manual-purchase-allocation', 'is-link');
+        addAllocation.setAttribute('data-hlc-add-execution', '');
+        addAllocation.addEventListener('click', () => {
+          const row = el(doc, 'fieldset', 'hlc-manual-purchase-allocation');
+          const legend = el(doc, 'legend', '', `Allocation vendeur ${confirmExecutions.length + 1}`);
+          row.appendChild(legend);
+          const lineSelect = doc.createElement('select');
+          lineSelect.setAttribute('aria-label', 'Ligne d’achat de cette allocation');
+          lineSelect.setAttribute('data-hlc-execution-line', '');
+          po.lines.forEach((line) => lineSelect.appendChild(Object.assign(doc.createElement('option'), {
+            value: line.line_id, textContent: `${line.order_ref || poRef(po)} · ${line.product || 'Article'}`,
+          })));
+          field(row, 'Ligne', lineSelect);
+          const sellerInput = textInput(simulated ? 'Vendeur fictif de recette' : 'Magasin ou vendeur (pas le Hub central)', 'execution_seller_label');
+          sellerInput.setAttribute('aria-label', 'Vendeur de cette allocation');
+          sellerInput.setAttribute('data-hlc-execution-seller', '');
+          field(row, 'Vendeur', sellerInput);
+          const quantityInput = Object.assign(doc.createElement('input'), { type: 'number', min: '1', step: '1', value: '1', name: 'execution_quantity' });
+          quantityInput.setAttribute('aria-label', 'Quantité de cette allocation');
+          quantityInput.setAttribute('data-hlc-execution-quantity', '');
+          field(row, 'Quantité achetée', quantityInput);
+          const amountInput = Object.assign(doc.createElement('input'), { type: 'number', min: '0', step: '0.01', name: 'execution_amount' });
+          amountInput.setAttribute('aria-label', 'Montant total justifié de cette allocation');
+          amountInput.setAttribute('data-hlc-execution-amount', '');
+          field(row, 'Montant total', amountInput);
+          const currencyInput = Object.assign(textInput('EUR', 'execution_currency'), { maxLength: 3 });
+          currencyInput.setAttribute('aria-label', 'Devise de cette allocation');
+          currencyInput.setAttribute('data-hlc-execution-currency', '');
+          field(row, 'Devise', currencyInput);
+          const proofInput = textInput('Référence du reçu ou justificatif', 'execution_proof_ref');
+          proofInput.setAttribute('aria-label', 'Justificatif de cette allocation');
+          proofInput.setAttribute('data-hlc-execution-proof', '');
+          field(row, 'Justificatif', proofInput);
+          const remove = button(doc, 'Supprimer cette allocation', 'remove-manual-purchase-allocation', 'is-link');
+          remove.setAttribute('data-hlc-remove-execution', '');
+          remove.addEventListener('click', () => {
+            const index = confirmExecutions.indexOf(record);
+            if (index >= 0) confirmExecutions.splice(index, 1);
+            row.remove();
+            [...allocationRows.querySelectorAll('legend')].forEach((item, i) => { item.textContent = `Allocation vendeur ${i + 1}`; });
+          });
+          row.appendChild(remove);
+          allocationRows.appendChild(row);
+          const record = { lineSelect, sellerInput, quantityInput, amountInput, currencyInput, proofInput };
+          confirmExecutions.push(record);
+        });
+        allocationPanel.appendChild(allocationRows);
+        allocationPanel.appendChild(addAllocation);
+        form.appendChild(allocationPanel);
       }
       const submit = button(doc, { commitment: 'Valider l’engagement', payment: 'Autoriser le paiement', sent: 'Enregistrer l’envoi', confirm: 'Enregistrer la confirmation' }[kind], `submit-${kind}`, 'is-primary');
       submit.type = 'submit';
@@ -721,9 +774,39 @@
             note.textContent = 'Prix confirmé positif et devise obligatoire pour les lignes sans devis fournisseur.'; return;
           }
           if (lines.some((x) => x.confirmed_quantity > 0) && confirmProof.value.trim().length < 4) { note.textContent = 'Justificatif d’achat obligatoire (4 caractères minimum).'; return; }
+          let executions;
+          if (confirmExecutions.length) {
+            executions = [];
+            const allocated = new Map();
+            for (const entry of confirmExecutions) {
+              const purchaseLineId = entry.lineSelect.value;
+              const sellerLabel = entry.sellerInput.value.trim();
+              const quantity = Number(entry.quantityInput.value);
+              const amountValue = Number(entry.amountInput.value);
+              const currencyValue = entry.currencyInput.value.trim().toUpperCase();
+              const proofValue = entry.proofInput.value.trim();
+              if (!lines.some((line) => line.purchase_line_id === purchaseLineId && line.confirmed_quantity > 0)) {
+                note.textContent = 'Chaque allocation doit pointer vers une ligne confirmée.'; return;
+              }
+              if (!sellerLabel || sellerLabel.toLowerCase() === 'fournisseur central hub' ||
+                  !Number.isInteger(quantity) || quantity < 1 || !(amountValue > 0) ||
+                  !/^[A-Z]{3}$/.test(currencyValue) || proofValue.length < 4) {
+                note.textContent = 'Chaque allocation exige un vendeur, une quantité, un montant, une devise et son justificatif.'; return;
+              }
+              allocated.set(purchaseLineId, (allocated.get(purchaseLineId) || 0) + quantity);
+              executions.push({ purchase_line_id: purchaseLineId, seller_label: sellerLabel, channel: 'in_person', quantity, amount: amountValue, currency: currencyValue, proof_ref: proofValue });
+            }
+            for (const line of lines) {
+              if ((allocated.get(line.purchase_line_id) || 0) !== line.confirmed_quantity) {
+                note.textContent = 'Les allocations vendeurs doivent couvrir exactement la quantité confirmée de chaque ligne.'; return;
+              }
+            }
+          } else if (lines.some((x) => x.confirmed_quantity > 0) && confirmSeller.value.trim().length < 2) {
+            note.textContent = 'Indiquez le vendeur avant de confirmer l’achat manuel.'; return;
+          }
           execute(submit, {
             url: purchasing(`po/${id}/confirm`),
-            body: { lines, ...(supplierOrder.value.trim() ? { supplier_order_id: supplierOrder.value.trim() } : {}), ...(confirmProof.value.trim() ? { purchase_proof_ref: confirmProof.value.trim() } : {}), ...(confirmSeller.value.trim() ? { seller_label: confirmSeller.value.trim() } : {}), ...(simulated ? { simulated: true } : {}) },
+            body: { lines, ...(supplierOrder.value.trim() ? { supplier_order_id: supplierOrder.value.trim() } : {}), ...(confirmProof.value.trim() ? { purchase_proof_ref: confirmProof.value.trim() } : {}), ...(executions ? { executions } : (confirmSeller.value.trim() ? { seller_label: confirmSeller.value.trim() } : {})), ...(simulated ? { simulated: true } : {}) },
             confirmMessage: simulated ? 'Confirmer les quantités et l’achat FICTIFS sur staging, sans fournisseur ni paiement réel ?' : 'Enregistrer la confirmation fournisseur ? Toute quantité non confirmée redevient un besoin ouvert.',
             runningMessage: 'Enregistrement de la confirmation…', successMessage: simulated ? 'Confirmation et achat fictifs tracés — aucun fournisseur contacté.' : 'Confirmation fournisseur enregistrée.', onSuccess: () => { state.form = null; },
           });

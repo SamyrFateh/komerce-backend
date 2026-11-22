@@ -470,6 +470,7 @@
 
     let seller = null;
     let variance = null;
+    const executions = [];
     const proof = doc.createElement('input');
     if (manual) {
       proof.type = 'text';
@@ -487,6 +488,76 @@
       seller.setAttribute('aria-label', 'Vendeur réel de l’achat manuel (obligatoire)');
       seller.setAttribute('data-purchase-seller-label', '');
       form.appendChild(seller);
+      const allocationPanel = text(doc, 'section', 'kmc-purchase-allocations', 'Achats chez plusieurs vendeurs');
+      const allocationField = (label, input) => {
+        const wrap = text(doc, 'label', 'kmc-purchase-allocation-field', label);
+        wrap.appendChild(input);
+        return wrap;
+      };
+      const allocationRows = doc.createElement('div');
+      allocationRows.setAttribute('data-purchase-allocation-rows', '');
+      const addAllocation = makeButton(doc, 'Ajouter un vendeur', 'add-purchase-allocation', true);
+      addAllocation.setAttribute('data-purchase-add-allocation', '');
+      addAllocation.addEventListener('click', () => {
+        const row = doc.createElement('fieldset');
+        row.className = 'kmc-purchase-allocation';
+        const legend = text(doc, 'legend', '', `Allocation ${executions.length + 1}`);
+        row.appendChild(legend);
+        const lineSelect = doc.createElement('select');
+        lineSelect.setAttribute('aria-label', 'Ligne de commande pour cette allocation');
+        lineSelect.setAttribute('data-purchase-execution-line', '');
+        lines.filter((line) => !line.cancelled).forEach((line) => {
+          const option = doc.createElement('option');
+          option.value = line.line_id;
+          option.textContent = `${line.order_reference || shortId(line.line_id)} · ${line.product_name || line.product || 'Article'}`;
+          lineSelect.appendChild(option);
+        });
+        row.appendChild(allocationField('Ligne', lineSelect));
+        const sellerInput = doc.createElement('input');
+        sellerInput.type = 'text'; sellerInput.maxLength = 240; sellerInput.required = true;
+        sellerInput.placeholder = 'Nom du vendeur (pas le Fournisseur central Hub)';
+        sellerInput.setAttribute('aria-label', 'Vendeur de cette allocation');
+        sellerInput.setAttribute('data-purchase-execution-seller', '');
+        row.appendChild(allocationField('Vendeur', sellerInput));
+        const channel = doc.createElement('select');
+        channel.setAttribute('aria-label', 'Canal de cet achat');
+        channel.setAttribute('data-purchase-execution-channel', '');
+        [['in_person', 'En personne'], ['phone', 'Téléphone'], ['whatsapp', 'WhatsApp'], ['email', 'E-mail'], ['other', 'Autre']].forEach(([value, label]) => {
+          const option = doc.createElement('option'); option.value = value; option.textContent = label; channel.appendChild(option);
+        });
+        row.appendChild(allocationField('Canal', channel));
+        const quantity = Object.assign(doc.createElement('input'), { type: 'number', min: '1', step: '1', value: '1' });
+        quantity.setAttribute('aria-label', 'Quantité achetée chez ce vendeur');
+        quantity.setAttribute('data-purchase-execution-quantity', '');
+        row.appendChild(allocationField('Quantité', quantity));
+        const amount = Object.assign(doc.createElement('input'), { type: 'number', min: '0', step: '0.01' });
+        amount.setAttribute('aria-label', 'Montant total payé à ce vendeur');
+        amount.setAttribute('data-purchase-execution-amount', '');
+        row.appendChild(allocationField('Montant total', amount));
+        const currency = doc.createElement('input'); currency.type = 'text'; currency.maxLength = 3; currency.placeholder = 'EUR';
+        currency.setAttribute('aria-label', 'Devise payée à ce vendeur');
+        currency.setAttribute('data-purchase-execution-currency', '');
+        row.appendChild(allocationField('Devise', currency));
+        const proofRef = doc.createElement('input'); proofRef.type = 'text'; proofRef.maxLength = 240; proofRef.required = true;
+        proofRef.placeholder = 'Référence du reçu / justificatif';
+        proofRef.setAttribute('aria-label', 'Justificatif de cet achat');
+        proofRef.setAttribute('data-purchase-execution-proof', '');
+        row.appendChild(allocationField('Justificatif', proofRef));
+        const remove = makeButton(doc, 'Supprimer', 'remove-purchase-allocation', true);
+        remove.setAttribute('data-purchase-remove-allocation', '');
+        const record = { lineSelect, sellerInput, channel, quantity, amount, currency, proofRef, row };
+        remove.addEventListener('click', () => {
+          const index = executions.indexOf(record); if (index >= 0) executions.splice(index, 1);
+          row.remove();
+          [...allocationRows.querySelectorAll('legend')].forEach((item, i) => { item.textContent = `Allocation ${i + 1}`; });
+        });
+        row.appendChild(remove);
+        allocationRows.appendChild(row);
+        executions.push(record);
+      });
+      allocationPanel.appendChild(allocationRows);
+      allocationPanel.appendChild(addAllocation);
+      form.appendChild(allocationPanel);
       variance = doc.createElement('input');
       variance.type = 'text';
       variance.placeholder = 'Motif si le total justifié diffère du total confirmé (sinon laisser vide)';
@@ -536,7 +607,35 @@
         setFeedback(context.root, 'Ajoutez une référence de facture, de reçu ou de photo avant de confirmer l’achat manuel.', 'critical');
         return;
       }
-      if (manual && payloadLines.some((l) => l.confirmed_quantity > 0) && seller.value.trim().length < 2) {
+      let manualExecutions;
+      if (manual && executions.length) {
+        manualExecutions = [];
+        const allocationTotals = new Map();
+        for (const entry of executions) {
+          const purchaseLineId = entry.lineSelect.value;
+          const sellerLabel = entry.sellerInput.value.trim();
+          const quantity = Number(entry.quantity.value);
+          const amount = Number(entry.amount.value);
+          const currency = entry.currency.value.trim().toUpperCase();
+          const proofRef = entry.proofRef.value.trim();
+          if (!payloadLines.some((line) => line.purchase_line_id === purchaseLineId && line.confirmed_quantity > 0)) {
+            setFeedback(context.root, 'Chaque allocation doit concerner une ligne confirmée.', 'critical'); return;
+          }
+          if (sellerLabel.length < 2 || sellerLabel.toLowerCase() === 'fournisseur central hub' ||
+              !Number.isInteger(quantity) || quantity < 1 || !(amount > 0) ||
+              !/^[A-Z]{3}$/.test(currency) || proofRef.length < 4) {
+            setFeedback(context.root, 'Chaque vendeur doit avoir une quantité, un montant, une devise et un justificatif valides.', 'critical'); return;
+          }
+          allocationTotals.set(purchaseLineId, (allocationTotals.get(purchaseLineId) || 0) + quantity);
+          manualExecutions.push({ purchase_line_id: purchaseLineId, seller_label: sellerLabel,
+            channel: entry.channel.value, quantity, amount, currency, proof_ref: proofRef });
+        }
+        for (const line of payloadLines) {
+          if ((allocationTotals.get(line.purchase_line_id) || 0) !== line.confirmed_quantity) {
+            setFeedback(context.root, 'Les allocations vendeurs doivent couvrir exactement la quantité confirmée de chaque ligne.', 'critical'); return;
+          }
+        }
+      } else if (manual && payloadLines.some((l) => l.confirmed_quantity > 0) && seller.value.trim().length < 2) {
         setFeedback(context.root, 'Indiquez le vendeur réel (magasin ou fournisseur) avant de confirmer l’achat manuel.', 'critical');
         return;
       }
@@ -547,7 +646,7 @@
         body: {
           lines: payloadLines,
           ...(ref.value.trim() ? { supplier_order_id: ref.value.trim() } : {}),
-          ...(manual ? { purchase_proof_ref: proof.value.trim(), seller_label: seller.value.trim() } : {}),
+          ...(manual ? { purchase_proof_ref: proof.value.trim(), ...(manualExecutions ? { executions: manualExecutions } : { seller_label: seller.value.trim() }) } : {}),
           ...(manual && variance.value.trim() ? { variance_reason: variance.value.trim() } : {}),
         },
         successMessage: (result) => {
