@@ -605,7 +605,7 @@ describe('HUB-001 — réception par ligne d\'achat (PO regroupée)', () => {
       id,order_item_id,supplier_id,product_sku_id,supplier_sku,supplier_unit_ref,
       supplier_order_identity,quantity,supplier_unit_price,supplier_currency,procurement_hub_ref)
       VALUES($1,$2,$3,$4,'CENTRAL',NULL,NULL,1,NULL,NULL,'DXB')`,[line,item,supplier,sku]);
-    await query("INSERT INTO purchase_orders(id,order_id,supplier_id,status,trigger_mode) VALUES($1,NULL,$2,'draft','manual')",[po,supplier]);
+    await query("INSERT INTO purchase_orders(id,order_id,supplier_id,status,trigger_mode,supplier_sku) VALUES($1,NULL,$2,'draft','manual',NULL)",[po,supplier]);
     await query('UPDATE purchase_lines SET purchase_order_id=$2 WHERE id=$1',[line,po]);
     await query("UPDATE purchase_orders SET status='notified' WHERE id=$1",[po]);
     await query("UPDATE purchase_lines SET confirmed_quantity=1,confirmed_unit_price=10,confirmed_currency='EUR',confirmed_at=now() WHERE id=$1",[line]);
