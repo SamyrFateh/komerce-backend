@@ -108,8 +108,9 @@ function summarizeCommitmentByMarket(lines, remnants = []) {
     const quantity = Number(line.effective_quantity);
     entry.confirmed_quantity += quantity;
     const price = line.confirmed_unit_price ?? line.expected_unit_price;
-    if (price !== null && price !== undefined && line.supplier_currency) {
-      entry.amounts.set(line.supplier_currency, (entry.amounts.get(line.supplier_currency) || 0) + quantity * Number(price));
+    const currency = line.confirmed_currency || line.supplier_currency;
+    if (price !== null && price !== undefined && currency) {
+      entry.amounts.set(currency, (entry.amounts.get(currency) || 0) + quantity * Number(price));
     }
   }
   for (const remnant of remnants) {
@@ -481,7 +482,7 @@ async function buildManualExecutions(client, lines, byId, body, manualProof) {
     if (!Number.isFinite(amount) || amount < 0) throw fail(400, 'INVALID_INPUT', 'executions[].amount invalide');
     const channel = optionalText(e.channel) || 'other';
     if (!EXECUTION_CHANNELS.includes(channel)) throw fail(400, 'INVALID_INPUT', 'executions[].channel invalide');
-    const currency = String(optionalText(e.currency) || line.supplier_currency || '').toUpperCase();
+    const currency = String(optionalText(e.currency) || line.confirmed_currency || line.supplier_currency || '').toUpperCase();
     if (!/^[A-Z]{3}$/.test(currency)) throw fail(400, 'INVALID_INPUT', 'executions[].currency (devise de la PO) obligatoire');
     allocated.set(lineId, (allocated.get(lineId) || 0) + quantity);
     return { lineId, sid, label, channel, quantity, amount: money4(amount), currency, proof: optionalText(e.proof_ref) || manualProof };
@@ -495,7 +496,7 @@ async function buildManualExecutions(client, lines, byId, body, manualProof) {
   }
   const diff = new Map();
   for (const l of confirmedLines) {
-    const cur = String(l.supplier_currency || '').toUpperCase();
+    const cur = String(l.confirmed_currency || l.supplier_currency || '').toUpperCase();
     diff.set(cur, (diff.get(cur) || 0) - byId.get(l.id).confirmedQuantity * unitPrice(l));
   }
   for (const e of execs) diff.set(e.currency, (diff.get(e.currency) || 0) + e.amount);
@@ -521,7 +522,8 @@ async function insertManualExecutions(client, poId, { execs, varianceReason }, a
 async function getPurchaseReconciliation(poId) {
   requireUuid(poId, 'po_id');
   const [confirmed, justified, auths, paid] = await Promise.all([
-    db.query(`SELECT supplier_currency AS currency, SUM(confirmed_quantity * COALESCE(confirmed_unit_price, supplier_unit_price)) AS total
+    db.query(`SELECT COALESCE(confirmed_currency, supplier_currency) AS currency,
+                     SUM(confirmed_quantity * COALESCE(confirmed_unit_price, supplier_unit_price)) AS total
                 FROM purchase_lines WHERE purchase_order_id = $1 AND cancelled_at IS NULL AND confirmed_quantity > 0 GROUP BY 1`, [poId]),
     db.query('SELECT currency, SUM(amount) AS total FROM manual_purchase_executions WHERE purchase_order_id = $1 GROUP BY 1', [poId]),
     db.query('SELECT authorization_type, amount, currency FROM purchase_order_authorizations WHERE purchase_order_id = $1', [poId]),
@@ -572,7 +574,7 @@ async function confirmGroupedPurchaseOrder(poId, body = {}, { actor = null, cont
     }
     const { rows: lines } = await client.query(`
       SELECT id, order_item_id, supplier_id, product_supplier_id, product_sku_id, supplier_sku, supplier_unit_ref,
-             supplier_order_identity, quantity, supplier_unit_price, supplier_currency, procurement_hub_ref
+             supplier_order_identity, quantity, supplier_unit_price, supplier_currency, confirmed_currency, procurement_hub_ref
         FROM purchase_lines
        WHERE purchase_order_id = $1 AND cancelled_at IS NULL
        ORDER BY id FOR UPDATE
@@ -622,7 +624,7 @@ async function confirmGroupedPurchaseOrder(poId, body = {}, { actor = null, cont
         }
         // Ligne manuelle sans devis initial : devise connue seulement après achat.
         // Ne jamais la confondre avec supplier_unit_price de devis.
-        if (!known) line.supplier_currency = c.currency;
+        if (!known) line.confirmed_currency = c.currency;
       }
     }
 
@@ -641,7 +643,7 @@ async function confirmGroupedPurchaseOrder(poId, body = {}, { actor = null, cont
       await client.query(`
         UPDATE purchase_lines
            SET confirmed_quantity = $2, confirmed_unit_price = COALESCE($3, supplier_unit_price),
-               supplier_currency = COALESCE(supplier_currency, $4),
+               confirmed_currency = COALESCE(confirmed_currency, $4),
                confirmed_at = NOW(), updated_at = NOW()
          WHERE id = $1
       `, [line.id, c.confirmedQuantity, c.price,
