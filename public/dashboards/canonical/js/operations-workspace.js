@@ -2329,7 +2329,16 @@
         card.appendChild(detailed);
         detailHost=detailed;
       }
+      // Une même ligne de commande peut être répartie entre plusieurs COMBOX.
+      // L'attestation serveur est unique par ligne/expédition : calculer le total
+      // sur toutes les COMBOX et n'ouvrir qu'une seule saisie par order_item_id.
       const inputs = [];
+      const expectedByItem = new Map();
+      const inputItemIds = new Set();
+      shipment.boxes.forEach(box => box.orders.forEach(order => order.items.forEach(item => {
+        expectedByItem.set(item.order_item_id,
+          (expectedByItem.get(item.order_item_id) || 0) + Number(item.expected));
+      })));
       shipment.boxes.forEach(box => {
         const boxNode = doc.createElement('div');
         boxNode.className = 'kmc-relay-box';
@@ -2340,7 +2349,7 @@
           const table = doc.createElement('table');
           table.className = 'kmc-workspace-table';
           table.innerHTML = actionable
-            ? '<thead><tr><th>Article</th><th>Expédié</th><th>Manquant</th><th>Reçu</th></tr></thead>'
+            ? '<thead><tr><th>Article</th><th>Dans la COMBOX</th><th>Reliquat commande</th><th>Reçu sur l’expédition</th></tr></thead>'
             : '<thead><tr><th>Article</th><th>Expédié</th><th>Reçu</th><th>Remis</th></tr></thead>';
           const tbody = doc.createElement('tbody');
           order.items.forEach(item => {
@@ -2349,23 +2358,30 @@
             const productLabel=item.product+(!actionable && Number(item.missing)>0
               ? ' · reste '+formatNumber(item.missing)+' à livrer' : '');
             const columns=actionable
-              ? [productLabel,formatNumber(item.shipped),formatNumber(item.missing)]
-              : [productLabel,formatNumber(item.shipped)];
+              ? [productLabel,formatNumber(item.expected),formatNumber(item.missing)]
+              : [productLabel,formatNumber(item.expected)];
             columns.forEach(value=>tr.appendChild(text(doc,'td','',value)));
             const receivedCell = doc.createElement('td');
             if (item.received !== null) {
-              receivedCell.textContent = formatNumber(item.received) + (item.incident_id ? ' · incident ouvert' : '');
-            } else if (shipment.receivable) {
+              const gap = Number(item.received_gap || 0);
+              receivedCell.textContent = formatNumber(item.received) + ' / ' +
+                formatNumber(expectedByItem.get(item.order_item_id)) +
+                (gap > 0 ? ' · réception partielle, incident ouvert' : '');
+            } else if (shipment.receivable && !inputItemIds.has(item.order_item_id)) {
+              const expectedTotal = expectedByItem.get(item.order_item_id);
               const input = doc.createElement('input');
               input.type = 'number';
               input.min = '0';
-              input.max = String(item.expected);
+              input.max = String(expectedTotal);
               input.step = '1';
-              input.placeholder = '0 à ' + item.expected;
-              input.setAttribute('aria-label', 'Reçu ' + item.product);
+              input.placeholder = '0 à ' + expectedTotal;
+              input.setAttribute('aria-label', 'Total reçu pour ' + item.product + ' · commande ' + order.reference);
               input.setAttribute('data-relay-received', item.order_item_id);
               receivedCell.appendChild(input);
-              inputs.push({ item, input });
+              inputs.push({ item: { ...item, expected: expectedTotal }, input });
+              inputItemIds.add(item.order_item_id);
+            } else if (shipment.receivable) {
+              receivedCell.textContent = 'Comptage groupé sur la première ligne de cette commande';
             } else {
               receivedCell.textContent = 'Non attesté';
             }
@@ -2391,6 +2407,18 @@
         proof.setAttribute('aria-label', 'Preuve de réception');
         proof.setAttribute('data-relay-proof', '');
         form.appendChild(proof);
+        const expectedUnits = inputs.reduce((n, entry) => n + entry.item.expected, 0);
+        const progress = text(doc, 'p', 'kmc-workspace-note',
+          expectedUnits + ' unité(s) attendue(s) dans cet arrivage · 0 vérifiée. Le comptage manuel ne vaut pas scan d’étiquette.');
+        progress.setAttribute('data-relay-receipt-progress', '');
+        form.appendChild(progress);
+        function refreshProgress() {
+          const counted = inputs.reduce((n, entry) =>
+            n + (entry.input.value.trim() === '' ? 0 : Math.max(0, Number(entry.input.value) || 0)), 0);
+          progress.textContent = expectedUnits + ' attendue(s) · ' + counted +
+            ' déclarée(s) reçue(s). Validez uniquement les quantités physiquement contrôlées.';
+        }
+        inputs.forEach(entry => entry.input.addEventListener('input', refreshProgress));
         const submit = makeActionButton(doc, 'Attester la réception', 'relay-shipment-receive');
         submit.type = 'submit';
         form.appendChild(submit);
@@ -2417,6 +2445,9 @@
           runAction(context, submit, {
             url: endpointFor(context.marketCode, 'relay-shipments/' + encodeURIComponent(shipment.reference) + '/receive'),
             body: { proof_ref: proof.value.trim(), lines },
+            confirmMessage: lines.some(line => line.received_qty < expectedByItem.get(line.order_item_id))
+              ? 'Certaines quantités reçues sont inférieures aux quantités expédiées. Une réception partielle et un incident seront enregistrés. Confirmer le contrôle physique ?'
+              : 'Confirmer les quantités physiquement contrôlées ?',
             runningMessage: 'Attestation en cours…',
             successMessage: result => (result.result && result.result.receipts || []).some(r => r.incident_id)
               ? 'Réception attestée · écart enregistré en incident.' : 'Réception attestée.',
