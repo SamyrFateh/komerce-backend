@@ -262,9 +262,9 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
       // commande, choisir explicitement le bouton limité à NOTRE commande.
       // Le clic global pourrait autrement lier une ligne étrangère à la PO.
       const orderScoped=page.locator('[data-hlc-action="prepare-po-order-'+orderId+'"]');
-      // For M06, supplier-wide PO could mix another customer's order.
-      // Require an order-scoped gesture; leave M01 and M03 semantics intact.
-      if(M06)expect(await orderScoped.count(),'M06 PO must be order-scoped').toBe(1);
+      // The UI exposes the order-scoped action for groups with multiple orders.
+      // A single-order group uses the normal button; the PG oracle below still
+      // rejects a PO containing any other order (without replaying the mutation).
       const prepare=(MULTI||M06)&&await orderScoped.count()===1
         ? orderScoped : page.locator('[data-hlc-action="prepare-po"]');
       await prepare.waitFor({timeout:15000});
