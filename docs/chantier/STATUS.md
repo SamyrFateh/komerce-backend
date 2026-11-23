@@ -6,6 +6,11 @@ Total output lines: 292
 
 # STATUS — registre commun des chantiers Komerce
 
+## Hub/Relais — contrôle quantitatif de réception (GPT, 23/11/2026)
+
+**Responsable :** GPT. **Statut :** correctif de code enregistré sur `feat/relay-quantity-receipt-proof-20261123` (non fusionné, non certifié). **Issue :** [#5207](https://github.com/SamyrFateh/komerce-backend/issues/5207). **Changement :** `relay_received` uniquement si toutes les lignes de l'expédition ont des quantités reçues égales aux quantités attendues ; réceptions partielles/écarts restent visibles et traçables. Le poste Relais agrège les quantités d'une ligne répartie sur plusieurs COMBOX et n'envoie qu'une attestation ; compteur attendu/reçu et confirmation de l'écart. Tests d'intégration PostgreSQL et E2E Chromium simulé ajustés. **Limite :** tests/gates locaux et staging non exécutés dans cet environnement ; impression physique des étiquettes article au retour PO, codes-barres unitaires persistés, scan unitaire au Relais et remise granulaire encore à implémenter ; algorithme des lettres #5168 en HOLD. **Prochaine action :** exécuter pack/impact, tests ciblés, `npm run pr:preflight`, puis PR et preuve Chromium/API/PG staging ; ne pas annoncer GO avant.
+
+
 > Dernière vérification : **2026-11-14**, GitHub.  
 > **Seul tableau de coordination actif** pour ChatGPT/GPT, Sonnet et Opus. Il remplace les journaux de tâches historiques ; il ne remplace ni le code, ni les données live, ni `AGENTS.md`, ni les cartes Feature First, ni les checks GitHub.
 > La PR et ses checks font foi pour l'état du code. Un nom d'agent n'est pas une preuve d'exécution.
