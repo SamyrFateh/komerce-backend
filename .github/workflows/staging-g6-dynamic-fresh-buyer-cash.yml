@@ -1,5 +1,5 @@
 # Owner-only new-order replay; independent from the historical KL1WGP6 workflow.
-name: G6 dynamic — canonical scenario campaign (staging only)
+name: G6 dynamic — fresh M01/M02/M03 buyer and relay cash (staging only)
 on:
   issues:
     types: [opened]
