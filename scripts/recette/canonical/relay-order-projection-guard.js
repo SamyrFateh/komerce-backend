@@ -12,13 +12,19 @@
 // readback().order joins orders -> order_items -> purchase_lines -> purchase_orders.
 // It therefore returns one row per IMPORT purchase line, not one row per order.
 // M01 has one row; M03 has three distinct PO lines for the same order.
-function hasExpectedRelayOrderRows(rows,{orderId,reference,expectedRows}={}){
- if(!Number.isInteger(expectedRows)||expectedRows<1||!orderId||!reference||
-   !Array.isArray(rows)||rows.length!==expectedRows)return false;
+function hasExpectedRelayOrderRows(rows,{orderId,reference,expectedRows,scenario='M01'}={}){
+ if(!['M01','M03','M06'].includes(scenario)||
+   !Number.isInteger(expectedRows)||expectedRows<1||!orderId||!reference||
+   !Array.isArray(rows)||rows.length!==expectedRows||
+   (scenario==='M06'&&expectedRows!==1))return false;
  return rows.every(row=>row&&row.id===orderId&&row.reference===reference&&
   row.simulation_scope==='G6-BUYER'&&row.payment_status==='paid'&&
   row.po_status==='hub_received'&&
-  typeof row.sent_note==='string'&&row.sent_note.startsWith('[SIMULATED / STAGING ONLY]')&&
-  Number(row.payment_authorizations)===0);
+  (scenario==='M06'
+   // M06: manual purchases are authorized internally, not sent to an external
+   // supplier via the historical M01/M03 vendor-notification simulation.
+   ? row.sent_note===null&&Number(row.payment_authorizations)===1
+   : typeof row.sent_note==='string'&&row.sent_note.startsWith('[SIMULATED / STAGING ONLY]')&&
+     Number(row.payment_authorizations)===0));
 }
 module.exports={hasExpectedRelayOrderRows};
