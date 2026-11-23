@@ -27,7 +27,10 @@ const UUID=/^[a-f0-9-]{36}$/i,SHA=/^[a-f0-9]{40}$/i;
 let OBS=null;
 const report={schema:'komerce-g6-m06-receiving/1',scenario_id:'M06',market:'KM',
  order_id:ID||null,reference:REF||null,po_id:PO||null,verdict:'NOT_PROVEN',
- physical_receipt_certified:false,external_supplier_calls:0,external_payment_executed:false,
+ physical_receipt_certified:false,real_world_physical_receipt_certified:false,
+ evidence_class:env.G6_M06_INPUT_MODE==='STAGING_REHEARSAL'?'STAGING_REHEARSAL_SIMULATED_ONLY':'OPERATOR_DECLARED_UNVERIFIED',
+ simulation_only:env.G6_M06_INPUT_MODE==='STAGING_REHEARSAL',
+ external_supplier_calls:0,external_payment_executed:false,
  production_permitted:false,ui_gestures:[],oracle_ids:['O-HUB','O-FIN']};
 const save=()=>{fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n');};
 const check=(ok,code)=>{if(!ok)throw Error(code);};
