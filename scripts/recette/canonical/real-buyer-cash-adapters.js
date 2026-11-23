@@ -334,11 +334,22 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
    }[stageId];
    if(!invariants())throw Error('G6_DYNAMIC_M06_PG_ORACLE_INVALID_'+stageId);
    if(stageId==='M06_SHIPMENT_HANDOVER'){
-    const {rows}=await db.query(`SELECT s.stage::text AS stage,p.status::text AS parcel_status
-      FROM international_shipments s JOIN international_shipment_hub_units h ON h.shipment_id=s.id
-      JOIN hub_physical_units u ON u.id=h.physical_unit_id JOIN parcels p ON p.order_id=s.order_id
-      WHERE s.order_id=$1`,[context.order_id]);
-    if(rows.length!==1||rows[0].stage!=='handed_over'||rows[0].parcel_status!=='shipped')
+    // A shipment has no order_id: derive the exact customer order from the
+    // physical COMBOX placement and its immutable economic allocation.
+    const physical=await finalMileIdentity(db,context,{m06:true});
+    const {rows}=await db.query(`SELECT s.stage::text AS stage,p.status::text AS parcel_status,
+       ep.quantity::int AS boxed_quantity
+      FROM international_shipments s
+      JOIN international_shipment_hub_units h ON h.shipment_id=s.id
+      JOIN hub_box_effective_placements ep ON ep.box_unit_id=h.physical_unit_id
+      JOIN hub_purchase_allocations a ON a.id=ep.allocation_id
+      JOIN parcels p ON p.order_id=a.order_id
+      WHERE s.id=$1 AND s.reference=$6 AND h.physical_unit_id=$2
+       AND ep.bag_unit_id IS NULL AND a.id=$3 AND a.order_id=$4 AND p.id=$5`,
+     [physical.shipment_id,physical.box_id,physical.allocation_id,context.order_id,
+      physical.parcel_id,physical.shipment_ref]);
+    if(rows.length!==1||rows[0].stage!=='handed_over'||
+       rows[0].parcel_status!=='shipped'||Number(rows[0].boxed_quantity)!==3)
      throw Error('G6_DYNAMIC_M06_HANDOVER_READBACK_INVALID');
    }
   }else if(SCENARIO==='M06'&&M06_FINAL_STAGES.includes(stageId)){

@@ -43,7 +43,9 @@ async function state(){
  const {rows:receipts}=await db.query('SELECT shipment_id,order_item_id,relais_id,expected_qty,received_qty,received_by,proof_ref,incident_id FROM international_shipment_relay_receipts WHERE shipment_id=$1',[ID]);
  const {rows:events}=await db.query("SELECT event_type,from_stage,to_stage,proof_ref,actor_id FROM international_shipment_events WHERE shipment_id=$1 AND event_type='stage_changed' ORDER BY occurred_at,id",[ID]);
  check(orders.length===1&&items.length===SC.items&&sameSet(items.map(i=>i.order_item_id),ITEMS)&&base.shipments.length===1&&base.shipments[0].id===ID&&
- base.box.length===1&&base.box[0].state==='DISPATCHED'&&base.links.length===1&&base.effective.length===SC.items&&
+ base.box.length===1&&base.box[0].state==='DISPATCHED'&&
+ (env.G6_CANONICAL_SCENARIO==='M06'?base.links.length===0&&base.effective.every(e=>e.bag_unit_id===null):base.links.length===1)&&
+ base.effective.length===SC.items&&
  base.effective.reduce((n,e)=>n+Number(e.quantity),0)===SC.units,'G6_RELAY_SCOPE_DRIFT');
  return {base,orders,items,receipts,events};
 }
