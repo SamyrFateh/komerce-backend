@@ -16,6 +16,7 @@ const {confirmTarget}=require('./target-guard');
 const {login}=require('./g6-hub-commitment-chromium');
 const {marketProfile}=require('./canonical/market-profile');
 const {buildM06HandoverPlan}=require('./canonical/m06-handover-plan');
+const {assertM06HandoverResponse}=require('./canonical/m06-handover-response');
 const {observe,fullError}=require('./canonical/observability');
 const {humanGoto,humanClick,humanFill,humanSelect,humanCheck}=require('./canonical/actors/human-gestures');
 const env=process.env,MK=marketProfile(env),BASE='https://komerce-backend-production.up.railway.app';
@@ -203,11 +204,8 @@ async function main(){
     b=>b&&b.to_stage==='handed_over'&&b.forwarder_name===plan.forwarder_name&&
      b.transport_mode===plan.transport_mode&&b.proof_ref===plan.proof_ref&&
      Object.keys(b).sort().join(',')==='forwarder_name,proof_ref,to_stage,transport_mode');
-   // The canonical route returns { ok: true, result: journey.transition(...) }.
-   // Fail closed on the real envelope rather than on a nonexistent top-level stage.
-   check(result.ok===true&&result.result?.reference===SHIPMENT&&
-    result.result?.from_stage==='hub_ready'&&result.result?.stage==='handed_over',
-    'G6_M06_HANDOVER_RESPONSE_INVALID');
+   // Shipping-customs responds with {ok:true,result:{reference,from_stage,stage}}.
+   assertM06HandoverResponse(result,SHIPMENT);
   }finally{await actor.ctx.close();}
   await runtime();const after=await readback();
   const dispatched=after.custody.some(e=>e.event_type==='STATE_TRANSITION'&&
