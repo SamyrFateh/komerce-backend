@@ -24,9 +24,17 @@ describe('M06 partial canonical runner wiring',()=>{
    expect(adapter).toContain('M06_FINAL_STAGES.includes(stageId)');
   }
  });
- test('does not expose incomplete M06 in the 46-scenario staging dispatch',()=>{
-  expect(workflow).not.toContain("g6-dynamic-fresh-full-M06-KM'");
+ test('dispatches KM M06 canonically but never treats routing as physical certification',()=>{
+  const title='[staging-op] g6-dynamic-fresh-full-M06-KM';
+  expect(workflow).toContain("github.event.issue.title == '"+title+"'");
+  expect(workflow).toContain("contains(github.event.issue.title, '-full-M06-') && 'M06'");
+  expect(workflow).toContain("github.event.issue.title == '"+title+"' && 'M06_SAV_ORACLE'");
+  expect(workflow).toContain('node scripts/recette/g6-m06-input-preflight.js');
+  expect(workflow.indexOf('node scripts/recette/g6-m06-input-preflight.js'))
+   .toBeLessThan(workflow.indexOf('node scripts/recette/g6-dynamic-buyer-cash.js'));
   expect(workflow).not.toContain("g6-dynamic-fresh-full-M06-CM'");
   expect(workflow).not.toContain("g6-dynamic-fresh-full-M06-CG'");
+  expect(workflow).toContain("github.event.issue.title == '[staging-op] g6-m06-rehearsal-KM'");
+  expect(workflow).toContain('node scripts/recette/canonical/m06-staging-rehearsal-inputs.js');
  });
 });

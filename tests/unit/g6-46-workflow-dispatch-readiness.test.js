@@ -23,11 +23,9 @@ describe('G6 — 46 scenarios: matrix → true workflow dispatch and declared bl
   ]);
   expect(new Set(matrix.scenarios.map(x=>x.id)).size).toBe(46);
  });
- test('45 implemented dispatch mappings, with M06 deliberately BLOCKED until full manual journey is screen-certified',()=>{
-  const blocked=['M06'];
-  const wired=matrix.scenarios.filter(x=>!blocked.includes(x.id));
-  expect(wired).toHaveLength(45);
-  for(const scenario of wired){
+ test('46 scenario IDs have an explicit technical dispatch (not a métier PASS), including M06 KM',()=>{
+  expect(matrix.scenarios).toHaveLength(46);
+  for(const scenario of matrix.scenarios){
    for(const caseId of alias(scenario)){
     if(caseId.id==='N34'){
      for(const market of caseId.markets)expect(n34Workflow).toContain("g6-dynamic-fresh-full-N34-"+market+"'");
@@ -41,20 +39,18 @@ describe('G6 — 46 scenarios: matrix → true workflow dispatch and declared bl
     if(caseId.id!=='M01')expect(hasBranch(caseId.id)).toBe(true);
    }
   }
-  for(const id of blocked){
-   for(const market of matrix.scenarios.find(x=>x.id===id).markets)
-    expect(isTitle(id,market)).toBe(false);
-  }
  });
- test('M06 has a dedicated KM certification dispatch without entering the 46-scenario campaign alias',()=>{
-  expect(workflow).toContain("github.event.issue.title == '[staging-op] g6-m06-certify-KM'");
-  expect(resolver).toContain("github.event.issue.title == '[staging-op] g6-m06-certify-KM' && 'M06'");
-  expect(workflow).toContain("github.event.issue.title == '[staging-op] g6-m06-certify-KM' && 'M06_SAV_ORACLE'");
-  expect(isTitle('M06','KM')).toBe(false);
+ test('M06 KM uses the standard campaign title and retains operator-proof guardrails',()=>{
+  expect(isTitle('M06','KM')).toBe(true);
+  expect(hasBranch('M06')).toBe(true);
+  expect(workflow).not.toContain('g6-m06-certify-KM');
+  expect(workflow).toContain("github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M06-KM' && 'M06_SAV_ORACLE'");
+  expect(workflow).toContain("if: github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M06-KM' || github.event.issue.title == '[staging-op] g6-m06-rehearsal-KM'");
+  expect(workflow.indexOf('node scripts/recette/g6-m06-input-preflight.js')).toBeLessThan(workflow.indexOf('node scripts/recette/g6-dynamic-buyer-cash.js'));
   for(const name of ['G6_M06_ACTUAL_PURCHASE_CAPTURE','G6_M06_PAYMENT_AUTHORIZATION_PROOF',
     'G6_M06_RECEIPT_PROOF_REF','G6_M06_COMBOX_PROOF_REF','G6_M06_FORWARDER_NAME',
     'G6_M06_TRANSPORT_MODE','G6_M06_HANDOVER_PROOF_REF'])
-    expect(workflow).toContain(`secrets.${name}`);
+    expect(workflow).toContain(name+": ${{ github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M06-KM' && secrets."+name+" || '' }}");
   expect(workflow).toContain('g6-m06-input-preflight.js');
    expect(workflow).toContain("github.event.issue.title == '[staging-op] g6-m06-rehearsal-KM'");
    expect(resolver).toContain("github.event.issue.title == '[staging-op] g6-m06-rehearsal-KM' && 'M06'");
