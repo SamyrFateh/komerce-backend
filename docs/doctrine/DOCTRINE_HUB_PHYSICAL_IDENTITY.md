@@ -209,15 +209,15 @@ Cette section précise le tri, le regroupement et la remise aval. Elle complète
 
 ### 12.1. Identités et responsabilités
 
-- La référence commerciale d'une commande est immuable : `K` suivi de six caractères. Ne jamais la remplacer par une référence composite `CM-YAO1-B7Q4-X8`, une lettre ou un code de retrait.
-- Une sous-référence `KABC123-01`, `-02`, `-03` permet de reconnaître les unités ou lignes tracées, sans faire de cette convention l'identifiant primaire des unités physiques. Les UUID, SKU, allocations et scans canoniques font autorité.
-- Les identités sont distinctes : commande commerciale ; unité physique/COMBOX ; vague et regroupement temporaire ; lettre de pré-tri ; emplacement physique réel ; secret de retrait.
+- **Décision propriétaire finale (23/11/2026)** : une seule référence commerciale immuable pour toute nouvelle commande sous le moteur de vagues, de format `CM-YA01-B7Q01` : `CM` marché, `YA01` relais stable (deux lettres et deux chiffres), `B7Q` regroupement temporaire du destinataire (B = lettre de tri), `01` rang séquentiel de commande dans la vague. Ce format remplace K+6 seulement pour les nouvelles commandes éligibles après activation contrôlée du moteur ; les références K+6 historiques ne sont jamais renumérotées. Aucun deuxième identifiant commercial/logistique parallèle.
+- Une étiquette d'unité physiquement reçue s'écrit `CM-YA01-B7Q01-01`, `-02`, `-03` pour les trois unités de la commande ; elle n'est pas un nouveau numéro de commande ni l'identifiant technique primaire des unités. Les UUID, SKU, allocations, quantités et scans canoniques font autorité.
+- Les notions restent distinctes sans imposer deux références de commande : référence unique commerciale structurée ; unité physique/COMBOX ; vague et regroupement temporaire encodé dans la référence ; lettre prévisionnelle de tri ; emplacement physique réel ; secret de retrait.
 - Le Hub identifie la destination **marché + relais**, contrôle, étiquette, affecte et expédie. Le relais réceptionne, trie finement par commande/destinataire, localise et remet.
 - Le Hub ne réassigne ni la commande, ni la destination, ni l'allocation Purchasing. Aucun sac numérique obligatoire ; lecture des sacs historiques conservée.
 
 ### 12.2. Moteur de vagues et lettres
 
-- À la validation du checkout, le moteur **propose et persiste une lettre de pré-tri par relais et vague**, sans modifier la référence commerciale.
+- À la validation du checkout, le moteur **attribue et persiste une lettre de pré-tri par relais et vague**, incluse dans la référence commerciale structurée lors de la création ; celle-ci devient immuable après émission.
 - Rotation initiale A à Z, puis extension AA, AB, etc. si utile. L'attribution utilise les quantités d'articles attendues, et non le nombre de commandes ou clients. Cible indicative de dix unités par lettre, configurable et non assimilée à une capacité réelle.
 - Choisir une lettre admissible à charge prévisionnelle minimale, avec départage par rotation transactionnelle ; répartir les premières commandes plutôt que tout concentrer en A. Les opérations concurrentes doivent rester déterministes, idempotentes et sans doublons.
 - Un destinataire **vérifié** au même relais et dans la même vague ouverte conserve son regroupement entre commandes ; ni nom, ni téléphone, ni payeur seul ne suffisent à établir l'identité. Une vague fermée n'est pas réouverte par une nouvelle commande.
@@ -228,7 +228,7 @@ Cette section précise le tri, le regroupement et la remise aval. Elle complète
 ### 12.3. Hub : réception, étiquettes et COMBOX
 
 - Réception fournisseur : rapprocher PO, SKU, variantes, quantités et lignes de commande ; attester seulement ce qui est réellement reçu. Les colis entrants peuvent contenir plusieurs commandes et marchés et n'héritent d'aucune lettre unique.
-- Imprimer des étiquettes sur les unités effectivement reçues ou sur un lot explicitement traçable : référence K+6, sous-référence, article/variante, quantité, marché, relais, lettre prévisionnelle si disponible, code de scan stable. Jamais de nom, téléphone ou secret de retrait.
+- Imprimer des étiquettes sur les unités effectivement reçues ou sur un lot explicitement traçable : référence commerciale structurée, suffixe séquentiel d'unité, article/variante, quantité, marché, relais, lettre de tri incluse, code de scan stable. Jamais de nom, téléphone ou secret de retrait.
 - Préparer directement dans une KOM-BOX en scannant COMBOX et articles. Une KOM-BOX peut agréger plusieurs commandes et destinataires, **mais un seul marché et un seul relais de destination**. Une commande peut être répartie sur plusieurs KOM-BOX.
 - À PACKED, imprimer/réimprimer l'étiquette COMBOX avec identité physique, marché, relais et compteurs dérivés du contenu réel. Réimpression sans mutation de custody ni d'inventaire.
 - Les opérations SPLIT/MERGE/REPACK déplacent la matière et conservent l'historique d'allocations, quantités et custody. Pas de sac numérique intermédiaire.
@@ -250,11 +250,11 @@ Cette section précise le tri, le regroupement et la remise aval. Elle complète
 
 ### 12.6. Conséquence impérative pour PR #5206
 
-**REJETER** le remplacement de la référence commerciale par `CM-YAO1-B7Q4-X8`. **CONSERVER ET ADAPTER** la transaction de vague, l'identité destinataire vérifiée, les garde-fous et l'abandon des nouvelles mutations sac ; déplacer lettre, vague et regroupement dans des champs logistiques séparés. Revoir migration 426, checkout, projections UI, étiquettes et tests. Ne pas merger la PR #5206 tant qu'elle contredit cette doctrine.
+**RETENIR** `CM-YA01-B7Q01` comme **unique référence commerciale** des nouvelles commandes éligibles. **CONSERVER ET ADAPTER** la transaction de vague, l'identité destinataire vérifiée, la rotation A–Z équilibrée par les unités attendues, le compteur de commande atomique, les garde-fous et l'abandon des nouvelles mutations sac. La migration 426, le checkout, les projections UI, les étiquettes et les tests doivent vérifier l'unicité par marché/relais/groupe/rang et la stabilité historique. PR #5206 non fusionnable avant vérification des contrôles et de la cohérence du parcours.
 
 ### 12.7. Critères de certification avant les 46 scénarios
 
-- Référence K+6 stable ; plusieurs commandes d'un destinataire dans la même vague ; homonymes distincts ; réouverture impossible ; rotation A–Z, charge par quantités, concurrence, extension AA, réutilisation sûre.
+- Une seule référence structurée stable `CM-YA01-B7Q01` ; commande suivante du même destinataire `CM-YA01-B7Q02` ; articles suffixés `-01`, `-02` ; homonymes distincts ; pas de réouverture après première remise ; rotation A–Z, charge par quantités, concurrence, absence de collision et absence de recyclage de groupe. Toute extension éventuelle au-delà de A–Z doit être versionnée et certifiée avant activation.
 - PO partielle et étiquettes limitées aux reçus ; COMBOX multi-commandes ; commande multi-COMBOX ; scan doublé ; réimpression neutre ; marché/relais incompatible refusé.
 - Réception 2/3 non complète ; remise 1/3 puis 2/3 ; aucun double retrait ; reliquats et incidents visibles ; aucune donnée sensible sur étiquette.
 - Sur le **même SHA servi en staging** : préflight et CI requis verts ; gestes réels Chromium desktop, oracles API/HTTP, vérité PostgreSQL et dashboards. Verdict PASS/FAIL/BLOCKED/NOT_PROVEN, jamais PASS par simple présence d'écran.
