@@ -607,6 +607,7 @@ module.exports = {
       'dashboards/canonical/js/pricing-economic-cockpit.js',
       'dashboards/canonical/js/pricing-atelier-views.js',
       'dashboards/canonical/js/pricing-structure-event-panel.js',
+      'dashboards/canonical/js/pricing-equilibrium-panel.js',
       'dashboards/canonical/js/pricing-decision-chain.js',
       'dashboards/canonical/js/pricing-workspace-decision.js',
       'dashboards/canonical/js/client-360.js',

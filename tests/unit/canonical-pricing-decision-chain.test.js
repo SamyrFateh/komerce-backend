@@ -13,7 +13,7 @@ test('la chaîne économique canonical consomme les projections serveur sans rec
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-decision-chain.css'), 'utf8');
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
 
-  expect(index).toContain('/dashboards/canonical/js/pricing-decision-chain.js?v=261021-4');
+  expect(index).toContain('/dashboards/canonical/js/pricing-decision-chain.js?v=261122-1');
   expect(index).toContain('/dashboards/canonical/css/pricing-decision-chain.css?v=261010-9');
   expect(source).toContain('/corridor?product_ref=');
   expect(source).toContain('`${endpoint}/decision`');
@@ -83,4 +83,51 @@ describe('fil P1 : prix pays actif → exposition au Catalogue pays', () => {
     expect(exposureLink(corridor(), {})).toBeNull();
     expect(exposureLink({ selected: { source: 'LOCAL_ACTIVE' }, product: { product_ref: 'P' } }, { adminContext: globalCtx })).toBeNull();
   });
+});
+
+
+test('le fil économique distingue résultat réel positif, négatif, zéro et inconnu sans fausse couleur', () => {
+  const { flowBlock } = require('../../public/dashboards/canonical/js/pricing-decision-chain.js');
+  const doc = {
+    createElement(tagName) {
+      return {
+        tagName, className: '', textContent: '', dataset: {}, children: [],
+        appendChild(node) { this.children.push(node); return node; },
+      };
+    },
+  };
+  const decision = {
+    flow_break_even: {
+      status: 'READY',
+      observed_mix: {},
+      economic_state: { period_result_kmf: null },
+    },
+  };
+  const resultStep = () => {
+    const block = flowBlock(doc, {}, decision);
+    const resultRow = block.children.find(child => child.className === 'kmc-decision-chain-result');
+    return resultRow.children.find(child => child.dataset?.decisionChainStep === 'period-result');
+  };
+  const resultValue = () => resultStep().children.find(child => child.tagName === 'strong').textContent;
+  expect(resultValue()).toBe('—');
+  expect(resultStep().className).toContain('is-derived');
+
+  decision.flow_break_even.economic_state.period_result_kmf = -280;
+  expect(resultValue()).toBe('-280 KMF');
+  expect(resultStep().className).toContain('is-warning');
+
+  decision.flow_break_even.economic_state.period_result_kmf = 280;
+  expect(resultValue()).toBe('280 KMF');
+  expect(resultStep().className).toContain('is-positive');
+
+  decision.flow_break_even.economic_state.period_result_kmf = 0;
+  expect(resultValue()).toBe('0 KMF');
+  expect(resultStep().className).toContain('is-derived');
+
+  decision.flow_break_even.economic_state.period_result_kmf = '';
+  expect(resultValue()).toBe('—');
+  decision.flow_break_even.economic_state.period_result_kmf = 280;
+  decision.flow_break_even.status = 'NOT_DECISIONAL';
+  expect(resultValue()).toBe('—');
+  expect(resultStep().className).toContain('is-derived');
 });

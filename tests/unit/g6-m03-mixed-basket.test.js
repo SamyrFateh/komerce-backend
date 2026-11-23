@@ -50,7 +50,8 @@ describe('G6 M03 mixed basket',()=>{
  test('actual Chromium buyer preflight does not falsely reject central Hub MANUAL stock-zero product',()=>{
   const script=read('scripts/recette/g6-p2-buyer-order-real-chromium.js');
   // Source and type are read from the SAME pinned M03 basket and verified PG.
-  expect(script).toContain("PARAMS.basket && line.source_key==='central_hub' && !local");
+  expect(script).toContain('Boolean((PARAMS.centralHubManual || PARAMS.basket) &&');
+  expect(script).toContain("line.source_key==='central_hub' && !local");
   expect(script).toContain("sku.source='MANUAL'");
   expect(script).toContain('sku.supplier_order_identity IS NULL');
   expect(script).toContain("h.id=p.procurement_supplier_id");

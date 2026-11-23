@@ -45,8 +45,9 @@ describe('G6 46 — test stages behind real owner-only dispatch',()=>{
    }
   }
  });
- test('N34 routes dedicated security stages, never through M01, while M06 remains blocked',()=>{
-  expect(SCENARIO_STAGE_IDS.M06).toBeUndefined();
+ test('N34 routes dedicated security stages; M06 partial runner wiring stays outside full dispatch',()=>{
+  expect(SCENARIO_STAGE_IDS.M06).toEqual(['BUYER','RELAY_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS',
+   'M06_MANUAL_PURCHASE','M06_PAYMENT_AUTHORIZATION','M06_RECEIVING','M06_DIRECT_COMBOX','M06_SHIPMENT_HANDOVER','M06_FORWARDER','M06_CUSTOMS','M06_RELAY_RECEIPT','M06_CLIENT_PICKUP','M06_SAV_ORACLE']);
   expect(SCENARIO_STAGE_IDS.N34).toEqual(['N34_CENTRAL_IMMUTABILITY','N34_EXPLICIT_SOURCE']);
   expect(wf).not.toContain("g6-dynamic-fresh-full-M06-KM'");
   expect(wf).not.toContain("g6-dynamic-fresh-full-N34-KM'");

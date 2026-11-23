@@ -118,6 +118,16 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       await expect(page.locator('.kmc-cockpit-live-badge')).toContainText('Couverture non décisionnelle');
       await expect(page.locator('.kmc-cockpit-live-badge')).not.toContainText('Données réelles');
       await expect(page.locator('.kmc-cockpit-live-badge')).toHaveClass(/is-unavailable/);
+      // L'ancien workspace est rendu dans un root temporaire : le résultat
+      // doit néanmoins rester présent dans le cockpit final, même non décisionnel.
+      const equilibrium = page.locator('[data-pricing-flow-equilibrium]');
+      await expect(equilibrium).toBeVisible();
+      const analyticalResult = equilibrium.locator('.kmc-flow-equilibrium-metric').filter({
+        has: page.locator('.kmc-flow-equilibrium-label', { hasText: 'Résultat après charges fixes' }),
+      });
+      await expect(analyticalResult).toHaveCount(1);
+      await expect(analyticalResult.locator('.kmc-flow-equilibrium-value')).toHaveText('—');
+
       await expect(page.locator('[data-atelier-priorities]')).toBeVisible();
       await expect(page.locator('[data-atelier-priorities]')).toContainText('1 ligne du modèle de coûts sans valeur');
       await expect(page.locator('[data-atelier-priorities]')).toContainText('1 produit sans coût d’achat');
@@ -133,6 +143,35 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       expect(body).not.toMatch(/\bnull\b|\bundefined\b|NaN/);
       await noOverflow(page);
       await shot(page, '1-vue-economique', name);
+    });
+
+
+    test('résultat économique réel : même valeur serveur affichée dans le cockpit, jamais recalculée', async ({ page }) => {
+      const decision = {
+        ...FX.decision,
+        decision_status: 'UNCOVERED',
+        coverage: {
+          coverage_status: 'UNCOVERED', numerator_contribution_kmf: 720,
+          denominator_n3_kmf: 1000, coverage_ratio: 0.72,
+        },
+        flow_break_even: {
+          status: 'READY',
+          economic_state: {
+            period_contribution_kmf: 720, period_structural_charges_kmf: 1000,
+            period_n3_kmf: 1000, period_result_kmf: -280,
+          },
+          observed_mix: { reconciled_contribution_kmf: 720 },
+          economic_break_even: { gap_kmf: 280 },
+        },
+      };
+      await mount(page, { search: '?market=KM', decision });
+      const result = page.locator('[data-pricing-flow-equilibrium] .kmc-flow-equilibrium-metric').filter({
+        has: page.locator('.kmc-flow-equilibrium-label', { hasText: 'Résultat après charges fixes' }),
+      });
+      await expect(result).toHaveCount(1);
+      await expect(result.locator('.kmc-flow-equilibrium-value')).toHaveText(/-280\s*KMF/);
+      // La valeur principale est celle du serveur ; pas de formule parallèle dans Chromium.
+      await expect(page.locator('[data-pricing-flow-equilibrium]')).toHaveCount(1);
     });
 
     test('Prévision avant vente : trois scénarios explicites, lecture seule, aucun prix choisi', async ({ page }) => {

@@ -6923,7 +6923,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 195,
+            "count": 196,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -7708,6 +7708,11 @@
               {
                 "declared": "dashboards/canonical/js/pricing-economic-cockpit.js",
                 "resolvedPath": "public/dashboards/canonical/js/pricing-economic-cockpit.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/pricing-equilibrium-panel.js",
+                "resolvedPath": "public/dashboards/canonical/js/pricing-equilibrium-panel.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -9393,7 +9398,7 @@
             ]
           }
         },
-        "totalFiles": 488,
+        "totalFiles": 489,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -11905,7 +11910,7 @@
             ]
           },
           "tests": {
-            "count": 106,
+            "count": 108,
             "files": [
               {
                 "declared": "tests/integration/canonical-margin-writer-real-db.test.js",
@@ -12100,6 +12105,16 @@
               {
                 "declared": "tests/unit/economic-price-audit-service.test.js",
                 "resolvedPath": "tests/unit/economic-price-audit-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/economic-result-readonly-pin.test.js",
+                "resolvedPath": "tests/unit/economic-result-readonly-pin.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/economic-result-real-readonly.test.js",
+                "resolvedPath": "tests/unit/economic-result-real-readonly.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -12460,7 +12475,7 @@
             ]
           }
         },
-        "totalFiles": 219,
+        "totalFiles": 221,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
