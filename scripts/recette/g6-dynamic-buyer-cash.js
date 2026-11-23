@@ -21,7 +21,10 @@ const OUT=path.join(ROOT,'test-results/g6-dynamic-buyer-cash/report.json');
 async function main({env=process.env}={}){
  fs.mkdirSync(path.dirname(OUT),{recursive:true});
  const state={schema:'komerce-g6-dynamic-buyer-cash/1',scenario_id:String(env.G6_CANONICAL_SCENARIO||'M01'),market:marketProfile(env).code,
-  verdict:'NOT_PROVEN',full_chain_certified:false,production_permitted:false,stages:[]};
+  verdict:'NOT_PROVEN',full_chain_certified:false,production_permitted:false,stages:[],
+  ...(env.G6_CANONICAL_SCENARIO==='M06'&&env.G6_M06_INPUT_MODE==='STAGING_REHEARSAL'
+   ?{evidence_class:'STAGING_REHEARSAL_SIMULATED_ONLY',real_world_purchase_certified:false,
+     real_world_physical_handover_certified:false}:{}),};
  const save=()=>fs.writeFileSync(OUT,JSON.stringify(state,null,2)+'\n');
  save();
  try{
