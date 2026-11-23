@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Komerce · Décision SAV administrateur</title>
+<link rel="stylesheet" href="/css/g8-remboursements.css">
+<script defer src="/js/g6-sav-compensation.js"></script>
+</head>
+<body>
+<header class="topbar"><a class="brand" href="/admin/">KOMERCE <span>/ SAV</span></a><a class="back" href="/admin/">Retour administration</a></header>
+<main class="shell">
+<div class="eyebrow">G6 · N26b · Décision financière après reprise</div>
+<h1>Compensation d’un retour client</h1>
+<p>Seule une décision administrateur motivée crée une compensation. La reprise physique ne crédite jamais automatiquement le client.</p>
+<div class="notice" role="note"><strong>Attention :</strong> un crédit wallet est une écriture financière effective. Un remboursement externe doit être constaté séparément ; une intention réservée n'est pas un paiement exécuté. Aucune action ne doit servir à inventer une remise, une preuve PSP ou du stock.</div>
+<p id="sav-status" role="status" aria-live="polite">Vérification des droits…</p>
+<form id="sav-lookup">
+<label for="sav-id">Identifiant UUID du dossier SAV</label>
+<input id="sav-id" required pattern="[0-9a-fA-F-]{36}" autocomplete="off">
+<button type="submit">Consulter la proposition (lecture seule)</button>
+</form>
+<section id="sav-proposal" hidden>
+<h2>Proposition pour décision</h2>
+<p id="sav-details"></p>
+<form id="sav-decision">
+<label for="sav-movement">Mouvement autorisé</label>
+<select id="sav-movement"><option value="wallet_credit">Crédit wallet du payeur</option><option value="ledger_refund">Réserver / traiter le remboursement via ledger</option><option value="reship">Remplacement à zéro facturé (contrôle du stock)</option></select>
+<label for="sav-amount">Montant entier dans la devise du marché (0 pour remplacement)</label>
+<input id="sav-amount" type="number" min="0" step="1" required>
+<label for="sav-reason">Motif précis (minimum 10 caractères)</label>
+<textarea id="sav-reason" required minlength="10" maxlength="1000" rows="3"></textarea>
+<button id="sav-submit" type="submit">Enregistrer la décision irréversible</button>
+</form>
+</section>
+</main>
+</body></html>
