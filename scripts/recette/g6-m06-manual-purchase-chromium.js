@@ -152,7 +152,7 @@ async function main(){
        e.channel===a.channel&&e.quantity===a.quantity&&e.amount===a.amount&&
        e.currency===a.currency&&e.proof_ref===a.proof_ref));
     if(req.method()==='POST'&&allowed===0&&exactLine&&exactExecs&&
-       body.purchase_proof_ref===capture.purchase_proof_ref&&body.simulated!==true){
+       body.purchase_proof_ref===capture.purchase_proof_ref&&body.simulated===true){
      allowed++;return route.continue();
     }
     blocked++;return route.abort('blockedbyclient');
@@ -160,7 +160,7 @@ async function main(){
    const pending=admin.page.waitForResponse(r=>r.url()===url&&r.request().method()==='POST',{timeout:25000});
    await humanClick(null,form.locator('[data-workspace-action="confirm-po"]'));
    const response=await pending,json=await response.json().catch(()=>({}));
-   report.confirm_http={status:response.status(),code:json.code||null};save();
+   report.confirm_http={status:response.status(),code:json.code||null,simulation_declared:true};save();
    check(allowed===1&&blocked===0,'G6_M06_MANUAL_PURCHASE_REQUEST_SCOPE_INVALID');
    check(response.status()===200,'G6_M06_MANUAL_PURCHASE_CONFIRM_HTTP_'+response.status());
    await admin.page.screenshot({path:path.join(OUT,'after-confirm.png')});
