@@ -615,6 +615,57 @@ describe('createManualLine', () => {
 
 describe('G6 vendor simulation — backend boundaries', () => {
   const scope = [/ORDER BY o\.created_at, pl\.id/, { rows: [{ simulation_scope:'G6-BUYER', reference:'KL1WGP6' }] }];
+  describe('M06 central Hub multi-seller manual confirmation',()=>{
+    const inputs={simulated:true,purchase_proof_ref:'SIM-REHEARSAL-PROOF',
+      lines:[{purchase_line_id:L1,confirmed_quantity:3,confirmed_unit_price:10,confirmed_currency:'EUR'}],
+      executions:[
+       {purchase_line_id:L1,seller_label:'SIM-SELLER-A-NOT_REAL',channel:'other',
+        quantity:1,amount:10,currency:'EUR',proof_ref:'SIM-NO_REAL_RECEIPT-A'},
+       {purchase_line_id:L1,seller_label:'SIM-SELLER-B-NOT_REAL',channel:'other',
+        quantity:2,amount:20,currency:'EUR',proof_ref:'SIM-NO_REAL_RECEIPT-B'},
+      ]};
+    const setup=(sent={sent_at:null,sent_channel:null,sent_note:null,sent_by:null,supplier_order_id:null})=>
+      scripted([
+       [/FROM purchase_orders WHERE id = \\$1 FOR UPDATE/, {rows:[poRow({status:'notified',trigger_mode:'manual'})]}],
+       [/ORDER BY o\\.created_at, pl\\.id/, {rows:[{simulation_scope:'G6-BUYER',reference:'KM06-TEST'}]}],
+       [/SELECT system_key FROM suppliers WHERE id=\\$1/, {rows:[{system_key:'central_hub'}]}],
+       [/SELECT sent_at, sent_channel, sent_note, sent_by, supplier_order_id/, {rows:[sent]}],
+       [/FROM purchase_lines\\s+WHERE purchase_order_id/, {rows:[{id:L1,quantity:3,
+        supplier_unit_price:null,supplier_currency:null,confirmed_currency:null,
+        supplier_order_identity:null,supplier_id:uuid(3)}]}],
+       [/purchase_line_received_quantity/, {rows:[{received:0}]}],
+      ]);
+    it('accepts the real Chromium allocations on a G6 central_hub PO without fabricating supplier send',async()=>{
+      const old=process.env.KOMERCE_ENV;process.env.KOMERCE_ENV='staging';
+      try{
+       const {calls}=setup();
+       db.query.mockResolvedValue({rows:[{id:PO,status:'confirmed'}]});
+       await engagement.confirmGroupedPurchaseOrder(PO,inputs,{actor:{id:uuid(8)}});
+       const inserted=calls.filter(x=>/INSERT INTO manual_purchase_executions/.test(x.sql));
+       expect(inserted).toHaveLength(2);
+       expect(inserted.map(x=>x.params[5])).toEqual([1,2]);
+       expect(inserted.map(x=>x.params[6])).toEqual([10,20]);
+       expect(calls.some(x=>/UPDATE purchase_orders/.test(x.sql))).toBe(true);
+       expect(calls.some(x=>/record-sent|\/sent$/.test(x.sql))).toBe(false);
+      }finally{if(old===undefined)delete process.env.KOMERCE_ENV;else process.env.KOMERCE_ENV=old;}
+    });
+    it('refuses a central Hub purchase if an external supplier-send was previously declared',async()=>{
+      const old=process.env.KOMERCE_ENV;process.env.KOMERCE_ENV='staging';
+      try{
+       const {calls}=setup({sent_at:new Date(),sent_channel:'other',sent_note:'legacy',
+        sent_by:uuid(8),supplier_order_id:'SIM-LEGACY'});
+       await expect(engagement.confirmGroupedPurchaseOrder(PO,inputs)).rejects.toMatchObject({
+        status:409,code:'G6_CENTRAL_HUB_MANUAL_PURCHASE_PROOF_INVALID'});
+       expect(calls.some(x=>/INSERT INTO manual_purchase_executions/.test(x.sql))).toBe(false);
+      }finally{if(old===undefined)delete process.env.KOMERCE_ENV;else process.env.KOMERCE_ENV=old;}
+    });
+    it('refuses a central Hub multi-seller confirmation without simulated G6 declaration',async()=>{
+      const {calls}=setup();
+      await expect(engagement.confirmGroupedPurchaseOrder(PO,{...inputs,simulated:false}))
+       .rejects.toMatchObject({status:409,code:'G6_SUPPLIER_SIMULATION_DECLARATION_REQUIRED'});
+      expect(calls.some(x=>/UPDATE purchase_orders/.test(x.sql))).toBe(false);
+    });
+  });
   it('refuse la déclaration d’envoi réel non marquée pour une PO G6', async () => {
     const { calls } = scripted([
       [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status:'notified', trigger_mode:'manual' })] }],
