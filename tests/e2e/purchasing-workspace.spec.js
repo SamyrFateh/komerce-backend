@@ -236,8 +236,8 @@ test.describe('Achats fournisseurs — espace canonique', () => {
       await expect(form).toHaveAttribute('data-purchasing-simulation',scenario.expected?'G6-STAGING':'NONE');
       await form.locator('[data-purchase-proof-ref]').fill('RECEIPT-ISOLATED-TEST-001');
       await form.locator('[data-purchase-seller-label]').fill('Manually entered vendor');
-      await form.locator('[data-confirmed-price]').evaluateAll(inputs=>
-        inputs.forEach(input=>{input.value='12.5';input.dispatchEvent(new Event('input',{bubbles:true}));}));
+      for(let i=0;i<scenario.scopes.length;i++)
+        await form.locator('[data-confirmed-price]').nth(i).fill('12.5');
       await form.locator('[data-workspace-action="confirm-po"]').click();
       await expect.poll(()=>mutatingCalls(api,'/po/'+poId+'/confirm').length).toBe(1);
       const request=mutatingCalls(api,'/po/'+poId+'/confirm')[0].body;
