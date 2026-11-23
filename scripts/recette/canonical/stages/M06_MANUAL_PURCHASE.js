@@ -8,7 +8,7 @@
  */
 'use strict';
 const id="M06_MANUAL_PURCHASE";
-const requires=Object.freeze(["HUB_VENDOR_READINESS"]);
+const requires=Object.freeze(["HUB_COMMITMENT"]);
 const produces=Object.freeze(["m06_manual_purchase"]);
 const roles=Object.freeze(["agent_hub"]);
 async function run(ctx){

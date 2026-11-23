@@ -20,9 +20,10 @@ const {startTraceAfterAuth}=require('./canonical/observability');
 const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const env=process.env;
 const {loadIndicativeBudget}=require('./canonical/g6-manual-hub-staging-budget');
+const {loadManifest}=require('./canonical/manifest-loader');
 const UUID=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const SHA=/^[0-9a-f]{40}$/i;
-const report={schema:'komerce-g6-hub-commitment/1',scenario_id:'M01',market:MK.code,
+const report={schema:'komerce-g6-hub-commitment/1',scenario_id:env.G6_CANONICAL_SCENARIO||'M01',market:MK.code,
  reference:env.G6_CANONICAL_ORDER_REFERENCE||null,po_id:env.G6_CANONICAL_PO_ID||null,
  verdict:'BLOCKED',external_supplier_calls:0,external_payment_executed:false,events:[],stage:'PREFLIGHT'};
 const save=()=>{fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n');};
@@ -127,7 +128,8 @@ async function main(){
    env.GITHUB_REPOSITORY==='SamyrFateh/komerce-backend'&&env.NODE_ENV==='test'&&
    env.KOMERCE_ENV==='staging'&&env.KOMERCE_TARGET_ENV==='staging'&&
    env.STAGING_BASE_URL===ORIGIN&&env.EXPECTED_RAILWAY_ENVIRONMENT==='staging'&&
-   ['M01','M03'].includes(env.G6_CANONICAL_SCENARIO)&&env.G6_TARGET_MARKET===MK.code&&
+   ['M01','M03','M06'].includes(env.G6_CANONICAL_SCENARIO)&&env.G6_TARGET_MARKET===MK.code&&
+    (env.G6_CANONICAL_SCENARIO!=='M06'||MK.code==='KM')&&
    env.G6_CANONICAL_PHASE==='HUB_COMMITMENT'&&SHA.test(env.E2E_EXPECTED_DEPLOY_SHA||'')&&
    UUID.test(env.G6_CANONICAL_PO_ID||'')&&UUID.test(env.G6_CANONICAL_ORDER_ID||'')&&
    /^[A-Z0-9-]{6,64}$/.test(env.G6_CANONICAL_ORDER_REFERENCE||'')&&
@@ -180,10 +182,21 @@ async function main(){
    // jamais purchase_lines.supplier_unit_price, ni la confirmation, ni le paiement.
    const amountField=form.locator('input[name="amount"]');
    let indicativeBudget=null;
-   if(await amountField.count()){
-    check(await amountField.count()===1&&env.G6_CANONICAL_SCENARIO==='M03',
+   const amountFieldCount=await amountField.count();
+   if(env.G6_CANONICAL_SCENARIO==='M06')check(amountFieldCount===1,
+     'G6_M06_INDICATIVE_BUDGET_FORM_MISSING');
+   if(amountFieldCount){
+    check(amountFieldCount===1&&['M03','M06'].includes(env.G6_CANONICAL_SCENARIO),
      'G6_COMMITMENT_UNEXPECTED_UNPRICED_PURCHASE_ORDER');
     indicativeBudget=await loadIndicativeBudget(db,env.G6_CANONICAL_PO_ID,env.G6_CANONICAL_ORDER_ID);
+    if(env.G6_CANONICAL_SCENARIO==='M06'){
+     const plan=loadManifest('M06').fixture_plan;
+     check(indicativeBudget.product_ref===plan.product.product_ref&&
+      indicativeBudget.amount===plan.commitment.amount&&
+      indicativeBudget.currency===plan.commitment.currency&&
+      indicativeBudget.quantity===plan.buyer_order.quantity,
+      'G6_M06_INDICATIVE_COMMITMENT_FIXTURE_MISMATCH');
+    }
     const currencyField=form.locator('input[name="currency"]');
     check(await amountField.isEditable()&&await currencyField.isEditable(),
      'G6_COMMITMENT_INDICATIVE_BUDGET_FIELDS_UNAVAILABLE');

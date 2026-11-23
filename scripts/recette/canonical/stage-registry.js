@@ -14,7 +14,9 @@ const STAGE_IDS=Object.freeze([
  'CUSTOMS','RELAY_RECEIPT','CLIENT_PICKUP'
 ]);
 // M02 (LOCAL_STOCK) : mêmes BUYER et RELAY_CASH, puis réception locale au relais et remise ; aucun étage Hub/transport.
-const M06_STAGE_IDS=Object.freeze(['BUYER','RELAY_CASH','HUB_PO','HUB_COMMITMENT','HUB_VENDOR_READINESS',
+// A central-Hub manual purchase does not have an external supplier-send readiness step.
+// Keep purchase commitment, then collect actual sellers/prices/proofs in M06_MANUAL_PURCHASE.
+const M06_STAGE_IDS=Object.freeze(['BUYER','RELAY_CASH','HUB_PO','HUB_COMMITMENT',
  'M06_MANUAL_PURCHASE','M06_PAYMENT_AUTHORIZATION','M06_RECEIVING','M06_DIRECT_COMBOX','M06_SHIPMENT_HANDOVER',
  'M06_FORWARDER','M06_CUSTOMS','M06_RELAY_RECEIPT','M06_CLIENT_PICKUP','M06_SAV_ORACLE']);
 const M02_STAGE_IDS=Object.freeze(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','LOCAL_CLIENT_PICKUP']);
