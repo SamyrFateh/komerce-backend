@@ -16,6 +16,7 @@ const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
 const {login}=require('./g6-hub-commitment-chromium');
 const env=process.env;
+const M06=env.G6_CANONICAL_SCENARIO==='M06';
 const OUT=path.resolve('test-results/g6-hub-shipment');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
@@ -26,9 +27,9 @@ const ALLOCATION=env.G6_CANONICAL_ALLOCATION_ID;
 const SC=require('./canonical/multi-po').importScope(env,{po:PO,allocation:ALLOCATION});
 const sameSet=(a,b)=>JSON.stringify([...a].sort())===JSON.stringify([...b].sort());
 const placementIdsOf=s=>s.placement.map(p=>p.placement_id);
-const BOXREF='KOM-BOX-SIM-STAGING-'+REF;
+const BOXREF=M06?'G6-M06-COMBOX-'+REF:'KOM-BOX-SIM-STAGING-'+REF;
 const BOX=env.G6_CANONICAL_BOX_ID;
-const SHIPMENT='SIM-STAGING-EXP-'+REF;
+const SHIPMENT=M06?'G6-M06-EXP-'+REF:'SIM-STAGING-EXP-'+REF;
 const HANDOVER_PROOF='[SIMULATED / STAGING ONLY] G6-M01-REMISE-TRANSITAIRE-'+REF;
 const FORWARDER='SIMULATED-STAGING-TRANSITAIRE-'+REF;
 const PROOF='[SIMULATED / STAGING ONLY] G6-M01-KOM-BOX-'+REF;
@@ -81,6 +82,21 @@ async function readback(){
  return {order,bag,placement,parcels,box,links,effective,custody,shipments,shipmentLinks,shipmentEvents,parcelItems,parcelEvents};
 }
 function checkBase(s){
+ if(M06){
+  // M06 puts the physical allocation directly in its COMBOX: there is no
+  // customer bag or hub_box_bags link. Never synthesize one for the oracle.
+  check(s.order.length===1&&s.order[0].id===ORDER&&s.order[0].reference===REF&&
+   s.order[0].simulation_scope==='G6-BUYER'&&s.order[0].payment_status==='paid'&&
+   s.order[0].po_status==='hub_received'&&Number(s.order[0].payment_authorizations)===1,
+   'G6_M06_BOX_ORDER_SCOPE_INVALID');
+  check(s.bag.length===0&&s.placement.length===1&&
+   s.placement[0].physical_unit_id===BOX&&s.placement[0].allocation_id===ALLOCATION&&
+   Number(s.placement[0].quantity)===SC.units&&SC.items===1&&SC.units===3&&
+   s.placement[0].operation_type==='REPACK'&&s.placement[0].evidence_method==='MANUAL'&&
+   s.parcels.length===1&&s.parcels[0].id===PARCEL,
+   'G6_M06_DIRECT_BOX_CUSTODY_INVALID');
+  return;
+ }
  check(s.order.length===SC.pos.length&&s.order.every(o=>o.id===ORDER&&o.reference===REF&&
   o.simulation_scope==='G6-BUYER'&&o.payment_status==='paid'&&
   o.po_status==='hub_received'&&o.sent_note?.startsWith('[SIMULATED / STAGING ONLY]')&&
@@ -96,6 +112,14 @@ function checkBase(s){
 }
 function checkLink(s,boxId,placementIds){
  checkBase(s);
+ if(M06){
+  check(s.box.length===1&&s.box[0].id===boxId&&s.box[0].unit_type==='MARKET_PARCEL'&&
+   s.links.length===0&&s.effective.length===1&&s.effective[0].box_unit_id===boxId&&
+   s.effective[0].bag_unit_id===null&&s.effective[0].allocation_id===ALLOCATION&&
+   Number(s.effective[0].quantity)===SC.units&&sameSet(placementIdsOf(s),placementIds),
+   'G6_M06_DIRECT_BOX_LINEAGE_INVALID');
+  return;
+ }
  check(s.box.length===1&&s.box[0].id===boxId&&s.box[0].unit_type==='MARKET_PARCEL'&&
   s.links.length===1&&s.links[0].box_unit_id===boxId&&s.links[0].bag_unit_id===BAG&&s.links[0].parcel_id===PARCEL&&
   s.links[0].linked_by&&s.links[0].evidence_method==='MANUAL'&&s.links[0].evidence_ref===PROOF&&
