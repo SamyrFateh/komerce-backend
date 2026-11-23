@@ -13,6 +13,11 @@
  * @impact-areas  orders, checkout, pickup, logistics
  * @version       2026-11
  */
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 'use strict';
 
 jest.mock('../../services/relais-mutation-service', () => ({
