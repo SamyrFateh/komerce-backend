@@ -2412,11 +2412,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 43 fichier(s) déclaré(s)
+**Implementation** : 46 fichier(s) déclaré(s)
   - migrations : 3
   - services : 12
-  - tests : 25
-  - utils : 3
+  - tests : 26
+  - utils : 5
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="refunds"]_
 
