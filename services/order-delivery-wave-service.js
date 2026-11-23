@@ -4,11 +4,11 @@
  * @domain        orders
  * @layer         service
  * @criticality   critical
- * @inputs        transactional_pg_client, verified_buyer_id, market_id, relais_id, market_code
+ * @inputs        transactional_pg_client, verified_buyer_id, verified_recipient_id, market_id, relais_id, market_code
  * @outputs       unique_commercial_reference, invisible_wave_id
  * @depends       services/relais-mutation-service.js, crypto
  * @used-by       services/order-checkout-service.js, services/pickup-collection-recorder.js
- * @db-read       orders, order_delivery_waves, relais, relais
+ * @db-read       orders, order_delivery_waves, relais, recipients
  * @db-write      order_delivery_waves
  * @db-write-via:relais-mutation-service relais
  * @db-txn        participant (must use checkout / pickup transaction)
@@ -63,11 +63,11 @@ function buildReference({ marketCode, relayCode, clientCode, suffix }) {
 
 /**
  * Called only AFTER the checkout idempotency claim, in the SAME transaction
- * that persists the order. Serializes simultaneous buyer checkouts.
+ * that persists the order. Serializes simultaneous recipient/destination checkouts.
  * The returned reference is commercial and unique; the wave is private.
  */
-async function reserveWaveReference(client, { userId, marketId, relaisId, marketCode }) {
-  if (!client || !userId || !marketId || !relaisId) {
+async function reserveWaveReference(client, { userId, recipientId, marketId, relaisId, marketCode }) {
+  if (!client || !userId || !recipientId || !marketId || !relaisId) {
     throw new Error('ORDER_WAVE_VERIFIED_SCOPE_REQUIRED');
   }
   validateMarketCode(marketCode);
@@ -77,19 +77,27 @@ async function reserveWaveReference(client, { userId, marketId, relaisId, market
   );
   if (!relay) throw new Error('ORDER_WAVE_RELAIS_NOT_IN_MARKET');
 
-  // A single advisory lock per verified buyer + destination serializes
+  // Recipient identity is created by canonical checkout from the verified buyer.
+  // Never group distinct verified recipients merely because a buyer is the same.
+  const { rows: [recipient] } = await client.query(
+    'SELECT id FROM recipients WHERE id=$1 AND user_id=$2 AND relais_id=$3',
+    [recipientId, userId, relaisId]
+  );
+  if (!recipient) throw new Error('ORDER_WAVE_RECIPIENT_NOT_VERIFIED');
+
+  // A single advisory lock per verified recipient + destination serializes
   // create/join; the row lock serializes against a simultaneous closing pickup.
   await client.query(
     'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
-    ['delivery-wave:' + userId + ':' + marketId + ':' + relaisId]
+    ['delivery-wave:' + recipientId + ':' + marketId + ':' + relaisId]
   );
   const relayCode = await ensureRelaisShortCode(client, { marketId, relaisId });
   const { rows: open } = await client.query(
     `SELECT id, client_code, opened_at
        FROM order_delivery_waves
-      WHERE subject_user_id=$1 AND market_id=$2 AND relais_id=$3 AND closed_at IS NULL
+      WHERE subject_recipient_id=$1 AND market_id=$2 AND relais_id=$3 AND closed_at IS NULL
       FOR UPDATE`,
-    [userId, marketId, relaisId]
+    [recipientId, marketId, relaisId]
   );
   let wave = open[0] || null;
   if (wave && new Date(wave.opened_at).getTime() <= Date.now() - MAX_WAVE_AGE_DAYS * 86400000) {
@@ -105,11 +113,11 @@ async function reserveWaveReference(client, { userId, marketId, relaisId, market
       const candidate = randomClientCode();
       const { rows } = await client.query(
         `INSERT INTO order_delivery_waves
-           (subject_user_id, market_id, relais_id, client_code)
+           (subject_recipient_id, market_id, relais_id, client_code)
          VALUES ($1,$2,$3,$4)
          ON CONFLICT DO NOTHING
          RETURNING id, client_code`,
-        [userId, marketId, relaisId, candidate]
+        [recipientId, marketId, relaisId, candidate]
       );
       if (rows.length) { wave = rows[0]; break; }
     }
