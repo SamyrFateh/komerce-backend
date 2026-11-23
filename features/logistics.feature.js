@@ -94,7 +94,6 @@ module.exports = {
       'docs/doctrine/DOCTRINE_NON_CONFORMITE.md',
       'docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md',
       'docs/doctrine/DOCTRINE_HUB_PHYSICAL_IDENTITY.md',
-      'docs/doctrine/DOCTRINE_HUB_RELAIS_TRI_VAGUES.md',
       'docs/doctrine/DOCTRINE_LOGISTICS_CONTROL_CHAIN.md',
       'docs/ops/NOTE_OPS_CALIBRATION_DENSITE_V5.md',
       'docs/contract/INTERNATIONAL_SHIPMENT_CHAIN_V1_20261101.md',
