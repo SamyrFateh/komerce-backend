@@ -69,6 +69,9 @@ Le moteur **n'invente pas** une présence à partir de la commande payée, de la
 
 ## 6. Hub, PO, COMBOX, marché, relais
 
+**Invariant opérationnel confirmé le 23/11 — AUCUNE ENTITÉ SAC :** Le flux Hub normal est **direct vers la COMBOX** (PR [#5127](https://github.com/SamyrFateh/komerce-backend/pull/5127), fusionnée le 22/11). Les sacs ne sont **pas** des identités logistiques : pas de référence, scan, statut, cycle de vie, writer ou rattachement client obligatoire pour un sac. Un sac matériel librement utilisé par un agent est seulement un accessoire de protection/anti-perte. Il ne sert ni d'unité de tri persistée ni de prérequis à la création/remplissage/fermeture des COMBOX. La traçabilité est **article / allocation / commande → KOM-BOX**, puis unité(s) réellement remises au relais/client. Le code historique relatif aux sacs, s'il reste nécessaire à la consultation rétrocompatible, ne constitue pas la doctrine cible. L'audit Sonnet sur une PR #5127 « ouverte » reflète une branche antérieure : ne pas réintroduire le sac numérique en s'appuyant sur ses anciens états ou sur son ancienne interface.
+
+
 **Hub amont :** PO ≠ commande cliente ≠ contenant. Une PO peut agréger plusieurs commandes et lettres de tri ; on conserve la PO et `KOM-IN` autonomes, et on projette les lignes, commandes et codes de tri liés. Pas de « renommer la PO avec la lettre A » si elle contient A et B. Les colis fournisseurs sont identifiés `KOM-RCV` ; un colis entrant peut réunir plusieurs PO ou marchés et ne reçoit aucune fausse destination unique. Les réconciliations et quarantaines restent celles de HUB-001.
 
 **Hub outbound :** une `KOM-BOX` contient éventuellement plusieurs commandes du **même marché ET de la même destination** ; elle est une unité physique rangée une seule fois ; son étiquette expose son code physique, marché/destination et zone réelle, ainsi que le manifeste traçable. La fermeture/expédition libère la zone Hub une fois la sortie physique avérée.
