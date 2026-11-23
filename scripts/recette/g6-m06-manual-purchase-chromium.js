@@ -95,12 +95,15 @@ async function main(){
    payment_authorization_count:before.payment_authorization_count,execution_count:before.execution_count,
    order_quantity:Number(before.order_quantity),procure_on_order:true,read_only:true};
   report.capture={allocation_count:capture.allocations.length,
+   evidence_class:capture.source,simulation_only:capture.simulation_only===true,
    sellers:capture.allocations.map(a=>digest(a.seller_label)),
    proof_refs:capture.allocations.map(a=>digest(a.proof_ref)),
    quantities:capture.allocations.map(a=>a.quantity),amounts:capture.allocations.map(a=>a.amount),
    currency:capture.confirmed_currency,confirmed_unit_price:capture.confirmed_unit_price,
    confirmed_total:lineTotal,justified_total:capture.justified_total,
    purchase_proof_ref:digest(capture.purchase_proof_ref)};
+  report.simulation_only=capture.simulation_only===true;
+  report.real_world_purchase_certified=false;
   save();
   browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);
   const admin=await login(browser,'E2E_ADMIN_','admin');
