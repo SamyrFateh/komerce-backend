@@ -110,7 +110,7 @@ async function ensureRelaisShortCode(executor, { marketId, relaisId }) {
     [marketId, stem + '%']
   );
   const used = new Set(allocated.map(r => r.short_code));
-  for (let i = 1; i <= 9; i++) {
+  for (let i = 1; i <= 99; i++) {
     const candidate = stem + i;
     if (used.has(candidate)) continue;
     const { rows: [assigned] } = await client.query(
@@ -119,7 +119,7 @@ async function ensureRelaisShortCode(executor, { marketId, relaisId }) {
     );
     if (assigned) return assigned.short_code;
   }
-  throw new RelaisValidationError('RELAY_SHORT_CODE_EXHAUSTED', 'Neuf relais partagent le même préfixe dans ce marché : arbitrage de nom requis.', 409);
+  throw new RelaisValidationError('RELAY_SHORT_CODE_EXHAUSTED', 'Plus de 99 relais partagent le même préfixe dans ce marché : arbitrage de nom requis.', 409);
 }
 
 async function listRelais(executor, { marketId }) {
