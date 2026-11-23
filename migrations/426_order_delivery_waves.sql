@@ -12,7 +12,7 @@ BEGIN
   ) THEN
     ALTER TABLE public.relais
       ADD CONSTRAINT relais_short_code_format
-      CHECK (short_code IS NULL OR short_code ~ '^[A-Z]{2}[0-9]{2}$');
+      CHECK (short_code IS NULL OR short_code ~ '^[A-Z]{2}(0[1-9]|[1-9][0-9])$');
   END IF;
 END $migration$;
 
