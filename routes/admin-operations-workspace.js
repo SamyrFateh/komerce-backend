@@ -402,19 +402,33 @@ function refuseRetiredCustomerBag(_req, res) {
   });
 }
 
-for (const legacyMutationPath of [
+router.post(
   '/market/:marketCode/bags',
+  attachHubExecutionCapability('execution.parcel.ship'),
+  requireHubWorkspaceAction,
+  refuseRetiredCustomerBag
+);
+
+router.post(
   '/market/:marketCode/bags/:unitId/deposit',
+  attachHubExecutionCapability('execution.parcel.ship'),
+  requireHubWorkspaceAction,
+  refuseRetiredCustomerBag
+);
+
+router.post(
   '/market/:marketCode/bags/:unitId/close',
+  attachHubExecutionCapability('execution.parcel.ship'),
+  requireHubWorkspaceAction,
+  refuseRetiredCustomerBag
+);
+
+router.post(
   '/market/:marketCode/boxes/:unitId/bags',
-]) {
-  router.post(
-    legacyMutationPath,
-    attachHubExecutionCapability('execution.parcel.ship'),
-    requireHubWorkspaceAction,
-    refuseRetiredCustomerBag
-  );
-}
+  attachHubExecutionCapability('execution.parcel.ship'),
+  requireHubWorkspaceAction,
+  refuseRetiredCustomerBag
+);
 
 router.post(
   '/market/:marketCode/boxes/:unitId/advance',
