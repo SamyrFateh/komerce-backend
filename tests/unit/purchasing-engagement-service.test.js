@@ -626,11 +626,11 @@ describe('G6 vendor simulation — backend boundaries', () => {
       ]};
     const setup=(sent={sent_at:null,sent_channel:null,sent_note:null,sent_by:null,supplier_order_id:null})=>
       scripted([
-       [/FROM purchase_orders WHERE id = \\$1 FOR UPDATE/, {rows:[poRow({status:'notified',trigger_mode:'manual'})]}],
-       [/ORDER BY o\\.created_at, pl\\.id/, {rows:[{simulation_scope:'G6-BUYER',reference:'KM06-TEST'}]}],
-       [/SELECT system_key FROM suppliers WHERE id=\\$1/, {rows:[{system_key:'central_hub'}]}],
+       [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, {rows:[poRow({status:'notified',trigger_mode:'manual'})]}],
+       [/ORDER BY o\.created_at, pl\.id/, {rows:[{simulation_scope:'G6-BUYER',reference:'KM06-TEST'}]}],
+       [/SELECT system_key FROM suppliers WHERE id=\$1/, {rows:[{system_key:'central_hub'}]}],
        [/SELECT sent_at, sent_channel, sent_note, sent_by, supplier_order_id/, {rows:[sent]}],
-       [/FROM purchase_lines\\s+WHERE purchase_order_id/, {rows:[{id:L1,quantity:3,
+       [/FROM purchase_lines\s+WHERE purchase_order_id/, {rows:[{id:L1,quantity:3,
         supplier_unit_price:null,supplier_currency:null,confirmed_currency:null,
         supplier_order_identity:null,supplier_id:uuid(3)}]}],
        [/purchase_line_received_quantity/, {rows:[{received:0}]}],
