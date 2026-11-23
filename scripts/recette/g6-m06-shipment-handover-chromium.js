@@ -203,7 +203,11 @@ async function main(){
     b=>b&&b.to_stage==='handed_over'&&b.forwarder_name===plan.forwarder_name&&
      b.transport_mode===plan.transport_mode&&b.proof_ref===plan.proof_ref&&
      Object.keys(b).sort().join(',')==='forwarder_name,proof_ref,to_stage,transport_mode');
-   check(result.stage==='handed_over','G6_M06_HANDOVER_RESPONSE_INVALID');
+   // The canonical route returns { ok: true, result: journey.transition(...) }.
+   // Fail closed on the real envelope rather than on a nonexistent top-level stage.
+   check(result.ok===true&&result.result?.reference===SHIPMENT&&
+    result.result?.from_stage==='hub_ready'&&result.result?.stage==='handed_over',
+    'G6_M06_HANDOVER_RESPONSE_INVALID');
   }finally{await actor.ctx.close();}
   await runtime();const after=await readback();
   const dispatched=after.custody.some(e=>e.event_type==='STATE_TRANSITION'&&
