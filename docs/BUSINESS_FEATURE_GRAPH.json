@@ -19926,6 +19926,20 @@
       },
       {
         "feature": "refunds",
+        "category": "utils",
+        "declared": "public/g6-sav-compensation.html",
+        "resolvedPath": "public/g6-sav-compensation.html",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "refunds",
+        "category": "utils",
+        "declared": "public/js/g6-sav-compensation.js",
+        "resolvedPath": "public/js/g6-sav-compensation.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "refunds",
         "category": "migrations",
         "declared": "migrations/416_fable_local_item_refund_reservations.sql",
         "resolvedPath": "migrations/416_fable_local_item_refund_reservations.sql",
@@ -20083,6 +20097,13 @@
         "category": "tests",
         "declared": "tests/unit/g8-refund-operator-ui.test.js",
         "resolvedPath": "tests/unit/g8-refund-operator-ui.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/unit/g6-n26b-compensation-screen.test.js",
+        "resolvedPath": "tests/unit/g6-n26b-compensation-screen.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -50694,7 +50715,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2379
+        "filesObserved": 2381
       },
       "boutique": {
         "filesObserved": 218,

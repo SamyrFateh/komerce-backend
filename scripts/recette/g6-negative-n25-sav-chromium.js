@@ -81,23 +81,49 @@ async function openReturns(page){
 }
 const stockOf=async()=>(await db.query(`SELECT COALESCE(SUM(ls.qty_physical),0)::int AS n FROM local_stock ls
   JOIN orders o ON o.market_id=ls.market_id JOIN order_items oi ON oi.order_id=o.id AND oi.product_id=ls.product_id WHERE o.id=$1`,[ID])).rows[0].n;
-// N26b : l'écran admin de décision de compensation (crédit wallet motivé) est cherché sur la fiche commande et le cockpit relais.
-async function findCompensationScreen(browser){
+// N26b : suivre le parcours admin depuis les opérations financières, proposer
+// le mouvement en lecture seule puis exécuter une seule décision wallet motivée.
+async function executeCompensationDecision(browser,requestId){
  const admin=await login(browser,'E2E_ADMIN_','admin');
  try{
-  await humanGoto(admin.page,'/admin/orders/'+encodeURIComponent(REF),{waitUntil:'domcontentloaded'});
+  await humanGoto(admin.page,'/g8-remboursements.html',{waitUntil:'domcontentloaded'});
   await admin.page.waitForLoadState('networkidle',{timeout:15000}).catch(()=>{});
-  await admin.page.waitForTimeout(1500);
-  const found=await admin.page.evaluate(()=>{
-   const actions=[...document.querySelectorAll('[data-workspace-action],button')].map(e=>(e.getAttribute('data-workspace-action')||'')+'|'+(e.textContent||'').trim().slice(0,60));
-   return {actions:actions.slice(0,60),compensation:actions.some(a=>/compensation|compenser|credit.?wallet|geste commercial/i.test(a))};
-  });
-  report.screen.push({role:'admin',page:'order-360',compensation_control:found.compensation,controls_seen:found.actions.length});
-  return found.compensation;
+  const entry=admin.page.locator('[data-g6-sav-compensation-entry]');
+  await entry.waitFor({state:'visible',timeout:20000}).catch(()=>{});
+  check(await entry.isVisible(),'G6_N26B_ADMIN_COMPENSATION_NOT_DISCOVERABLE_FROM_FINANCE');
+  await humanClick(null,entry);
+  await admin.page.locator('#sav-lookup').waitFor({state:'visible',timeout:15000});
+  await humanFill(null,admin.page.locator('#sav-id'),requestId);
+  const proposalResponse=admin.page.waitForResponse(r=>r.url().includes('/api/relay/returns/'+requestId+'/compensation-proposal')&&r.request().method()==='GET',{timeout:15000});
+  await humanClick(null,admin.page.locator('#sav-lookup button[type="submit"]'));
+  const proposalHttp=await proposalResponse;
+  check(proposalHttp.ok(),'G6_N26B_COMPENSATION_PROPOSAL_HTTP_'+proposalHttp.status());
+  const proposalBody=await proposalHttp.json();
+  check(proposalBody.request_id===requestId&&proposalBody.currency&&
+   Number.isSafeInteger(Number(proposalBody.suggested_amount)),'G6_N26B_COMPENSATION_PROPOSAL_INVALID');
+  const proposal=admin.page.locator('#sav-proposal');
+  await proposal.waitFor({state:'visible',timeout:20000}).catch(()=>{});
+  check(await proposal.isVisible(),'G6_N26B_COMPENSATION_PROPOSAL_NOT_SHOWN');
+  const details=await admin.page.locator('#sav-details').innerText();
+  const amount=Number(await admin.page.locator('#sav-amount').inputValue());
+  check(amount===Number(proposalBody.suggested_amount),'G6_N26B_COMPENSATION_AMOUNT_NOT_PROPOSED');
+  const reason='Défaut constaté après reprise physique G6';
+  await humanFill(null,admin.page.locator('#sav-reason'),reason);
+  await admin.page.once('dialog',dialog=>dialog.accept());
+  const actor={...admin,blocked:[]};
+  const decision=await act(actor,'/api/relay/returns/'+encodeURIComponent(requestId)+'/compensation',
+   admin.page.locator('#sav-submit'),b=>b&&b.movement==='wallet_credit'&&b.amount===amount&&
+    b.reason===reason&&typeof b.scale_code==='string');
+  report.screen.push({role:'admin',page:'finance-to-sav-compensation',entry_visible:true,
+   proposal_visible:true,proposal_details:details.slice(0,240),amount,decision});
+  check(decision.http!==null&&is2xx(decision.http)&&decision.http!==202,
+   'G6_N26B_COMPENSATION_DECISION_NOT_CONFIRMED_'+(decision.http??'NO_RESPONSE'));
+  check(actor.blocked.length===0,'G6_N26B_UNEXPECTED_ADMIN_WRITE');
+  return {amount,currency:proposalBody.currency,proposal:details,decision};
  }finally{await admin.ctx.close()}
 }
 async function main(){
- let browser;
+ let browser, requestId = null;
  try{
   save();
   check(Object.hasOwn(PHASES,SCEN),'G6_N25_SCENARIO_UNKNOWN');
@@ -141,7 +167,7 @@ async function main(){
    await humanSelect(null,intake.locator('select[aria-label="État physique constaté"]'),'opened');
    await humanFill(null,intake.locator('input[aria-label="Lettre de zone facultative"]'),'A');
    await humanFill(null,intake.locator('textarea[aria-label="Constat physique de reprise"]'),OBS_TEXT);
-   const requestId=await intake.locator('[data-relay-intake-request]').inputValue();
+   requestId=await intake.locator('[data-relay-intake-request]').inputValue();
    const want={request_id:requestId,condition_code:'opened',storage_zone:'A',observation:OBS_TEXT};
    const rec=await act(actor,'/api/relay/returns/intake',intake.locator('[data-relay-intake-submit]'),b=>norm(b)===norm(want));
    report.screen.push({step:'intake',...rec});
@@ -173,9 +199,43 @@ async function main(){
   }finally{await actor.ctx.close()}
   if(report.gaps.length){report.verdict='PRODUCT_GAP';throw Error('G6_'+SCEN+'_PRODUCT_GAP_'+report.gaps.join('_'))}
   if(SCEN==='N26b'){
-   const present=await findCompensationScreen(browser);
+   const decision=await executeCompensationDecision(browser,requestId);
    reach('ADMIN_COMPENSATION_SCREEN_SEARCHED');
-   throw Error(present?'G6_N26B_SCREEN_PRESENT_GESTURE_NOT_MOUNTED':'G6_N26B_SCREEN_MISSING_ADMIN_COMPENSATION_DECISION');
+   const {rows:[c]}=await db.query(`SELECT rc.request_id,rc.order_id,rc.payer_user_id,rc.movement,
+      rc.amount,rc.currency,rc.reason,rc.wallet_transaction_id,o.user_id AS order_payer,
+      wt.type AS wallet_type,wt.amount_kmf,wt.reason AS wallet_reason,wt.reference_id,
+      wt.idempotency_key,wt.created_by
+     FROM relay_return_compensations rc
+     JOIN orders o ON o.id=rc.order_id
+     LEFT JOIN wallet_transactions wt ON wt.id=rc.wallet_transaction_id
+    WHERE rc.request_id=$1`,[requestId]);
+   check(c&&c.order_id===ID&&c.payer_user_id===c.order_payer&&c.movement==='wallet_credit'&&
+    Number(c.amount)===decision.amount&&c.currency===decision.currency&&c.reason==='Défaut constaté après reprise physique G6'&&
+    c.wallet_transaction_id&&c.wallet_type==='credit'&&Number(c.amount_kmf)===decision.amount&&
+    c.wallet_reason==='sav_compensation'&&c.reference_id===ID&&
+    c.idempotency_key==='sav_comp_'+requestId&&c.created_by,
+    'G6_N26B_COMPENSATION_WALLET_OR_PAYER_ORACLE_MISMATCH');
+   const {rows:[sideEffects]}=await db.query(`SELECT
+      (SELECT count(*)::int FROM refunds WHERE order_id=$1) AS refunds,
+      (SELECT count(*)::int FROM refund_execution_intents WHERE order_id=$1) AS psp_intents,
+      (SELECT count(*)::int FROM relay_return_compensations WHERE request_id=$2) AS decisions`,[ID,requestId]);
+   check(sideEffects.refunds===0&&sideEffects.psp_intents===0&&sideEffects.decisions===1,
+    'G6_N26B_DUPLICATE_OR_EXTERNAL_REFUND_ORACLE');
+   let documents={rows:[]};
+   for(let attempt=0;attempt<6&&!documents.rows.length;attempt++){
+    documents=await db.query(`SELECT document_type,status FROM transaction_documents
+      WHERE document_type='wallet_receipt' AND subject_type='wallet_tx' AND subject_id=$1`,[c.wallet_transaction_id]);
+    if(!documents.rows.length)await new Promise(resolve=>setTimeout(resolve,500));
+   }
+   check(documents.rows.length===1&&['generated','delivered'].includes(documents.rows[0].status),
+    'G6_N26B_WALLET_RECEIPT_MISSING');
+   report.pg_oracle={compensation:{movement:c.movement,amount:c.amount,currency:c.currency,
+     payer_matches_order:c.payer_user_id===c.order_payer,wallet_transaction_id:c.wallet_transaction_id},
+     effects:sideEffects,wallet_receipt:documents.rows[0],external_payment_executed:false};
+   reach('COMPENSATION_WALLET_PAYER_IDEMPOTENCE_PG_VERIFIED');
+   report.verdict='G6_N26B_SAV_COMPENSATION_DECISION_CHROMIUM_PG_PASS';save();
+   await runtime();
+   return;
   }
   await runtime();
   report.verdict='G6_N25_SAV_SINGLE_PHYSICAL_INTAKE_DOUBLE_REFUSED_CHROMIUM_PASS';save();
