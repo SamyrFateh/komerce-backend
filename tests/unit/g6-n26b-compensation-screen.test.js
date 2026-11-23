@@ -42,4 +42,14 @@ describe('G6 N26b admin decision surface', () => {
     expect(stage).toContain('G6_N26B_DUPLICATE_OR_EXTERNAL_REFUND_ORACLE');
     expect(stage).not.toContain('G6_N26B_SCREEN_PRESENT_GESTURE_NOT_MOUNTED');
   });
+  test('keeps the physical intake request ID available for the later admin decision and PG oracle', () => {
+    const declaration = stage.indexOf('let browser, requestId = null;');
+    const assignment = stage.indexOf("requestId=await intake.locator('[data-relay-intake-request]').inputValue();");
+    const closeIntakeContext = stage.indexOf('}finally{await actor.ctx.close()}');
+    const adminDecision = stage.lastIndexOf('executeCompensationDecision(browser,requestId)');
+    expect(declaration).toBeGreaterThanOrEqual(0);
+    expect(declaration).toBeLessThan(assignment);
+    expect(assignment).toBeLessThan(closeIntakeContext);
+    expect(closeIntakeContext).toBeLessThan(adminDecision);
+  });
 });
