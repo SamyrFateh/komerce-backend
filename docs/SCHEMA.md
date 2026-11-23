@@ -992,3 +992,16 @@ Migration 417 est uniquement un schéma visé. Ne pas lancer en production ni ac
 
 Le lien `refunds.local_mobile_refund_handoff_id` est restrictif et unique. La clôture, l’augmentation de `qty_refunded` et `refunds.completed` sont atomiques. Le reçu numérique suit le COMMIT. Aucune pièce d’identité, aucun numéro de téléphone et aucune empreinte ne sont publiés dans le reçu. Le flux est borné au staging derrière des flags désactivés par défaut.
 <!-- /schema-pending -->
+
+
+<!-- schema-pending: order_delivery_waves (migration 426, intended_migration_schema; non live avant déploiement) -->
+### Références uniques de commande et vagues de tri temporaires (migration 426 — intended_migration_schema)
+
+La table `order_delivery_waves` n'est **pas encore confirmée live sur Railway**. Elle porte un groupe de distribution éphémère et invisible à l'utilisateur, indexé par la **fiche destinataire vérifiée** (`subject_recipient_id`), le marché et le relais, et jamais par une identité civile exposée. Un seul groupe ouvert existe par destinataire/marché/relais ; `client_code` est composé de quatre caractères non ambigus, unique par marché/relais même après clôture. La fermeture d'admission est historisée par `closed_at` et `close_reason` ; les références déjà attribuées sont immuables.
+
+`relais.short_code` (migration 426) : colonne texte nullable, trois lettres normalisées issues du nom **réel** du relais et suffixe numérique local de 1 à 99, UNIQUE par marché. Attribuée et persistée en transaction à la première commande structurée ; le renommage du relais ne change pas les références commerciales émises. `orders.delivery_wave_id` (migration 426) : FK UUID nullable vers `order_delivery_waves(id)`, permettant à la commande commerciale de conserver la preuve du regroupement temporaire sans second numéro de tri.
+
+La référence commerciale unique suit `MARCHÉ-RELAIS-CLIENT_TEMPO-COMMANDE` (exemple indicatif `CM-YAO1-B7Q4-X8`). Le suffixe de commande est réservé en transaction et reste unique sur `orders.reference`. Ni le groupe, ni le suffixe, ni le nom du relais ne servent de preuve de retrait ; les secrets de remise restent séparés. Les COMBOX et les manifestes d'articles demeurent des identités physiques distinctes, sans création de nouveau sac client. Aucun appariement de destinataires entre acheteurs diaspora par nom ou téléphone seul.
+
+**Activation** : code sous `KOMERCE_ORDER_WAVES_ENABLED=1`, accepté seulement avec `KOMERCE_ENV=staging`, OFF par défaut. Migration à appliquer, puis PostgreSQL, HTTP, Chromium et dashboards à certifier avant GO. Les références des commandes G6 dédiées restent sous leur contrôle de recette ; la persistance de schéma ne signifie pas mise en service commerciale.
+<!-- /schema-pending -->
