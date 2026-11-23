@@ -81,7 +81,7 @@ function assertIslandCode(marketCode, islandCode) {
   if (!DESTINATIONS.includes(code)) throw new RelaisValidationError('NETWORK_ISLAND_CODE_INVALID', `island_code doit être l'une des valeurs : ${DESTINATIONS.join(', ')}.`, 400);
 }
 
-const RELAIS_COLUMNS = `id, market_id, name, short_code, agent_name, phone, address, zone, hours, island, island_code,
+const RELAIS_COLUMNS = `id, market_id, name, agent_name, phone, address, zone, hours, island, island_code,
             is_active, latitude, longitude, photo_url, created_at`;
 
 // Stable 4-character relay code, derived once from the REAL relay name.
