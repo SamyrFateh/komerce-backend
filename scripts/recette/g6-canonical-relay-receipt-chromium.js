@@ -17,6 +17,7 @@ const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
 const {readback,runtime}=require('./g6-hub-shipment-chromium');
 const {hasExpectedRelayOrderRows}=require('./canonical/relay-order-projection-guard');
+const {planFullReceiptLines}=require('./canonical/relay-receipt-quantity-plan');
 const sameSet=(a,b)=>JSON.stringify([...a].sort())===JSON.stringify([...b].sort());
 const {login}=require('./g6-canonical-forwarder-chromium');
 const {openRelayLive}=require('./canonical/relay-live-navigation');
@@ -175,14 +176,18 @@ async function main(){
   if(!await card.evaluate(el=>el.open))await humanClick(null,card.locator('summary').first());
   const field=card.locator('input[data-relay-received]');
   check(await field.count()===SC.items,'G6_RELAY_UI_ITEM_NOT_UNIQUE');
-  const shownItems=[];
+  // M06 has 3 units on one line; M01/M03 historically have one per line.
+  // Derive quantities from the actual UI, not a hardcoded one-unit fill.
+  const rows=[];
   for(let i=0;i<SC.items;i++){
-   shownItems.push(await field.nth(i).getAttribute('data-relay-received'));
-   await humanFill(null,field.nth(i),'1');
+   rows.push({order_item_id:await field.nth(i).getAttribute('data-relay-received'),
+    max:await field.nth(i).getAttribute('max')});
   }
-  check(sameSet(shownItems,ITEMS),'G6_RELAY_UI_ITEM_NOT_UNIQUE');
+  const expectedLines=planFullReceiptLines(rows,{itemIds:ITEMS,totalUnits:SC.units});
+  for(let i=0;i<expectedLines.length;i++)
+   await humanFill(null,field.nth(i),String(expectedLines[i].received_qty));
   await humanFill(null,card.locator('input[data-relay-proof]'),PROOF);
-  const expected={proof_ref:PROOF,lines:shownItems.map(id=>({order_item_id:id,received_qty:SC.units}))};
+  const expected={proof_ref:PROOF,lines:expectedLines};
   let count=0;const url=BASE+RECEIPT_PATH;
   const handler=async route=>{
    const req=route.request();if(req.method()!=='POST')return route.fallback();
