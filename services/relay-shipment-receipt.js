@@ -17,8 +17,8 @@
  *
  * Contenu réellement expédié (Expédition → KOM-BOX → commandes → articles → quantités) et réception relais.
  * Attendu = ce qui est placé (actif) dans les KOM-BOX rattachées à l'expédition. Le reçu n'existe que par attestation
- * du relais (une ligne immuable par expédition et article) ; un écart ouvre un incident. L'étape relay_received découle
- * des attestations de tous les articles attendus : ni Hub ni admin ne la posent.
+ * du relais (une ligne immuable par expédition et article) ; un écart ouvre un incident. L'étape relay_received ne découle
+ * que des attestations conformes en quantité pour TOUS les articles expédiés : ni Hub ni admin ne la posent.
  */
 'use strict';
 const db = require('../db');
@@ -193,13 +193,18 @@ async function receiveShipment({ market, actor, reference, body = {} }, database
     // L'attestation devient effective : colis puis commande disponibles pour les quantités attestées.
     newlyAvailable = await makeAttestedQuantitiesAvailable(client, lines.map((l) => l.itemId), actor, proof);
 
-    // L'étape relay_received découle des attestations : tous les articles attendus (tous relais) ont une attestation.
+    // L'étape relay_received exige une réception QUANTITATIVEMENT complète de toutes les lignes
+    // (tous relais), pas simplement la présence d'une attestation avec écart.
+    // Une ligne manquante ouvre un incident et ne peut jamais devenir « reçue en totalité » par comptage.
     const all = await loadExpected(client, s.id, null);
     const allItems = [...new Set(all.map((e) => e.order_item_id))];
-    const { rows: [{ n }] } = await client.query(
-      'SELECT count(*)::int AS n FROM international_shipment_relay_receipts WHERE shipment_id = $1 AND order_item_id = ANY($2::uuid[])',
+    const { rows: [{ n, fully_received }] } = await client.query(
+      `SELECT count(*)::int AS n,
+              count(*) FILTER (WHERE received_qty = expected_qty)::int AS fully_received
+         FROM international_shipment_relay_receipts
+        WHERE shipment_id = $1 AND order_item_id = ANY($2::uuid[])`,
       [s.id, allItems]);
-    const complete = allItems.length > 0 && n === allItems.length;
+    const complete = allItems.length > 0 && n === allItems.length && fully_received === allItems.length;
     if (complete) {
       await client.query("UPDATE international_shipments SET stage = 'relay_received', updated_at = now() WHERE id = $1", [s.id]);
       await client.query(
@@ -207,7 +212,7 @@ async function receiveShipment({ market, actor, reference, body = {} }, database
          VALUES ($1,'stage_changed','local_delivery','relay_received',$2,$3,$4::jsonb)`,
         [s.id, proof, String(actor.id), JSON.stringify({ physical_step: 'relay_received', attested_by: 'relay', receipts: n })]);
     }
-    return { reference: s.reference, receipts: results, stage: complete ? 'relay_received' : s.stage, complete };
+    return { reference: s.reference, receipts: results, stage: complete ? 'relay_received' : s.stage, complete, expected_lines: allItems.length, attested_lines: n, fully_received_lines: fully_received };
   });
   if (newlyAvailable.length) {
     const clientNotifications = require('./client-notification-service');
