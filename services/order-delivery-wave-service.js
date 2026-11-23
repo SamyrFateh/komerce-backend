@@ -72,10 +72,13 @@ function chooseLetter(rows) {
     if (totals.has(letter)) totals.set(letter, totals.get(letter) + Number(row.units || 0));
   }
   const min = Math.min(...totals.values());
-  const candidates = [...totals].filter(([, units]) => units === min).map(([letter]) => letter);
-  // Rotate ties by the total allocations at this relay (all waves, including closed).
+  // For ties, start at the relay-local rotation cursor and advance clockwise.
   const allocated = rows.reduce((sum, row) => sum + Number(row.allocations || 0), 0);
-  return candidates[allocated % candidates.length];
+  for (let offset = 0; offset < LETTERS.length; offset++) {
+    const letter = LETTERS[(allocated + offset) % LETTERS.length];
+    if (totals.get(letter) === min) return letter;
+  }
+  throw new Error('ORDER_WAVE_LETTER_UNAVAILABLE');
 }
 
 /**
