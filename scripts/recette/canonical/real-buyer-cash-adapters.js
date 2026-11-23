@@ -370,7 +370,10 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
     if(data.verdict!==expected[stageId]||data.shipment_id!==identity.shipment_id||
        (data.parcel_id&&data.parcel_id!==identity.parcel_id))
      throw Error('G6_DYNAMIC_M06_FINAL_UI_MISMATCH_'+stageId);
-    const stages={M06_FORWARDER:'arrived',M06_CUSTOMS:'local_delivery',M06_RELAY_RECEIPT:'local_delivery',M06_CLIENT_PICKUP:'local_delivery'};
+    // Reception at Relais transitions local_delivery -> relay_received; pickup
+    // retains relay_received. Match the canonical M01/M03 custody checkpoints.
+    const stages={M06_FORWARDER:'arrived',M06_CUSTOMS:'local_delivery',
+     M06_RELAY_RECEIPT:'relay_received',M06_CLIENT_PICKUP:'relay_received'};
     const {rows}=await db.query('SELECT stage::text AS stage FROM international_shipments WHERE id=$1',[identity.shipment_id]);
     if(rows.length!==1||rows[0].stage!==stages[stageId])throw Error('G6_DYNAMIC_M06_FINAL_PG_STAGE_INVALID_'+stageId);
     if(stageId==='M06_CLIENT_PICKUP'){
