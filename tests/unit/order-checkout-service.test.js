@@ -58,6 +58,7 @@ describe('order-checkout-service — vagues temporaires staging', () => {
     expect(source).toContain('userId: user.id, recipientId: recipient_id, marketId: relais.market_id, relaisId: relais.id');
     expect(source).toContain('deliveryWaveId: waveRef ? waveRef.waveId : null');
     expect(source).toContain('marketCode: checkoutMarket.code');
+    expect(source).toContain('expectedUnits: items.reduce((total, item) => total + Number(item.quantity), 0)');
   });
 
   test('deux checkouts simultanés ne peuvent pas créer deux destinataires pour le même compte/relais', () => {
