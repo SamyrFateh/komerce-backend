@@ -359,7 +359,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(shipment).toContainText('COMBOX BOX-KM-1');
       await expect(shipment).toContainText('Commande K-ORDER-1');
       const coque = shipment.locator(`[data-relay-item="${ITEM_A}"]`);
-      await expect(shipment.locator('thead th')).toHaveText(['Article','Expédié','Manquant','Reçu']);
+      await expect(shipment.locator('thead th')).toHaveText(['Article','Dans la COMBOX','Reliquat commande','Reçu sur l’expédition']);
       await expect(coque.locator('td').nth(1)).toHaveText('3');   // expédié
       await expect(coque.locator('td').nth(2)).toHaveText('1');   // manquant / reliquat
       await expect(coque.locator('input[data-relay-received]')).toHaveValue('');
@@ -374,6 +374,38 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       await expect(page.locator('[data-workspace-feedback]')).toContainText('écart enregistré en incident');
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       expect(overflow).toBeLessThanOrEqual(1);
+    });
+
+    test('une même ligne répartie dans deux COMBOX : une saisie totale, pas de double attestation', async ({ page }) => {
+      const posts = [];
+      const split = {
+        market: { code: 'KM' },
+        shipments: [{
+          reference: 'SHIP-KM-SPLIT', stage: 'local_delivery', receivable: true,
+          boxes: [1, 2].map((part, idx) => ({
+            unit_id: 'box-' + part, reference: 'BOX-KM-' + part, state: 'DISPATCHED',
+            orders: [{ order_id: 'o1', reference: 'K-ORDER-1', items: [{
+              order_item_id: ITEM_A, product: 'Coque', ordered: 3, expected: idx === 0 ? 1 : 2,
+              shipped: 3, missing: 0, received: null, received_gap: null, incident_id: null, handed: 0,
+            }] }],
+          })),
+        }],
+      };
+      await mount(page, posts, { shipments: split });
+      const shipment = page.locator('[data-relay-shipment="SHIP-KM-SPLIT"]');
+      const count = shipment.locator('[data-relay-received="' + ITEM_A + '"]');
+      await expect(count).toHaveCount(1);
+      await expect(count).toHaveAttribute('max', '3');
+      await expect(shipment.locator('[data-relay-receipt-progress]')).toContainText('3 unité(s) attendue(s)');
+      await count.fill('3');
+      await expect(shipment.locator('[data-relay-receipt-progress]')).toContainText('3 déclarée(s) reçue(s)');
+      await shipment.locator('[data-relay-proof]').fill('BORD-SPLIT');
+      await shipment.locator('[data-workspace-action="relay-shipment-receive"]').click();
+      await expect.poll(() => posts.length).toBe(1);
+      expect(posts[0]).toEqual({
+        path: `${API}/relay-shipments/SHIP-KM-SPLIT/receive`,
+        body: { proof_ref: 'BORD-SPLIT', lines: [{ order_item_id: ITEM_A, received_qty: 3 }] },
+      });
     });
 
     test('Cash & dépôts est hébergé dans Relais live (module canonique, même route marché)', async ({ page }) => {
