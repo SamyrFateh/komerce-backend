@@ -20,6 +20,19 @@ describe('M06 shared final-mile target fingerprint propagates to all Chromium st
   for(const stage of ['M06_FORWARDER','M06_CUSTOMS','M06_RELAY_RECEIPT','M06_CLIENT_PICKUP','M06_SAV_ORACLE'])
    expect(finalBranch).toContain(stage);
  });
+ test('M06 reads the canonical shipment stage after relay receipt and after client pickup',()=>{
+  const final=adapter.slice(adapter.indexOf("}else if(SCENARIO==='M06'&&M06_FINAL_STAGES.includes(stageId)){"));
+  expect(final).toContain("M06_FORWARDER:'arrived',M06_CUSTOMS:'local_delivery'");
+  expect(final).toContain("M06_RELAY_RECEIPT:'relay_received',M06_CLIENT_PICKUP:'relay_received'");
+  expect(final).toContain("rows.length!==1||rows[0].stage!==stages[stageId]");
+  expect(final).toContain('G6_DYNAMIC_M06_FINAL_PG_STAGE_INVALID_');
+  // Same doctrine as the existing M01/M03 runner and independent Chromium oracles.
+  expect(adapter).toContain("RELAY_RECEIPT:'relay_received',CLIENT_PICKUP:'relay_received'");
+  const relay=source('scripts/recette/g6-canonical-relay-receipt-chromium.js');
+  const pickup=source('scripts/recette/g6-canonical-client-pickup-chromium.js');
+  expect(relay).toContain("after.base.shipments[0].stage==='relay_received'");
+  expect(pickup).toContain("after.base.shipments[0].stage==='relay_received'");
+ });
  test('retains fail-closed target checks in each downstream real Chromium actor',()=>{
   for(const file of [
    'scripts/recette/g6-canonical-forwarder-chromium.js',
