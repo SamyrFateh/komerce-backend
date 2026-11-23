@@ -298,6 +298,7 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
       throw e;
     }
 
+    const waveGroupingEnabled = !previewOnly && !internalSimulation && !g6Buyer && wavesEnabled();
     let recipient_id = null;
     // Lot 3 (checkout) : plus de « qui récupère ? » dans le formulaire — le
     // backend n'accepte aucune identité de retrait alternative depuis le
@@ -305,10 +306,22 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
     // seule source.
     const rName  = user.full_name;
     const rPhone = user.phone;
+    if (waveGroupingEnabled && (!rName || !rPhone)) {
+      await client.query('ROLLBACK');
+      return fail(409, { code: 'ORDER_WAVE_RECIPIENT_REQUIRED',
+        error: 'Le destinataire doit être identifié avant de créer une commande.' });
+    }
 
     if (rName && rPhone) {
+      // Different checkout idempotency keys may arrive in parallel. Serialize
+      // recipient lookup+insert BEFORE reserving a wave or printing its code.
+      // This lock is per verified buyer+relay, with no personal data in its key.
+      if (waveGroupingEnabled) {
+        await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
+          ['wave-recipient-record:' + user.id + ':' + relais.id]);
+      }
       const { rows: [existingRc] } = await client.query(
-        'SELECT id FROM recipients WHERE user_id = $1 AND phone = $2 AND relais_id = $3 LIMIT 1',
+        'SELECT id FROM recipients WHERE user_id = $1 AND phone = $2 AND relais_id = $3 ORDER BY created_at ASC, id ASC LIMIT 1',
         [user.id, rPhone, relais?.id || null]
       );
 
@@ -562,7 +575,7 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
     // New commercial reference contains destination + the verified checkout recipient's temporary grouping.
     // Only real staging buyers after explicit opt-in; preserve isolated G6 fixtures.
     // Every operation joins the SAME checkout DB transaction.
-    const waveRef = (!internalSimulation && !g6Buyer && wavesEnabled())
+    const waveRef = waveGroupingEnabled
       ? await reserveWaveReference(client, {
           userId: user.id, recipientId: recipient_id, marketId: relais.market_id, relaisId: relais.id,
           marketCode: checkoutMarket.code,
