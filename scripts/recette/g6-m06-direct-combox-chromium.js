@@ -154,9 +154,12 @@ async function main(){
    const matches=[];for(const opt of optionEls){const label=(await opt.textContent())||'';if(label.includes(plan.receipt_reference))matches.push({value:await opt.getAttribute('value'),label});}
    check(matches.length===1,'G6_M06_COMBOX_FILLABLE_UNIT_NOT_UNIQUE');
    await humanSelect(null,item,matches[0].value);
-   const method=row.locator('[data-hub-box-evidence-method]');
+   // Use the operator-facing accessible labels actually rendered by the Hub screen.
+   // The old data-hub-box-evidence-method/manual-proof attributes are not emitted
+   // by operations-workspace; waiting for them blocked M06 after receipt in Chromium.
+   const method=row.getByRole('combobox',{name:'Mode de preuve du scan article dans '+BOXREF});
    await humanSelect(null,method,'MANUAL');
-   const proofInput=row.locator('[data-hub-box-manual-proof]');
+   const proofInput=row.getByRole('textbox',{name:'Preuve du constat manuel pour '+BOXREF});
    await humanFill(null,proofInput,plan.proof_ref);
    await humanFill(null,row.locator('input[aria-label="Quantité de cet article à placer dans '+BOXREF+'"]'),String(plan.quantity));
    const fill=row.locator('[data-workspace-action="fill-box"]');
