@@ -718,7 +718,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
     return report(stageId).data;
    }
    if(SCENARIO==='M06'&&M06_PREP_STAGES.includes(stageId)){
-    const predecessor={M06_MANUAL_PURCHASE:'HUB_VENDOR_READINESS',
+    const predecessor={M06_MANUAL_PURCHASE:'HUB_COMMITMENT',
      M06_PAYMENT_AUTHORIZATION:'M06_MANUAL_PURCHASE',M06_RECEIVING:'M06_PAYMENT_AUTHORIZATION',
      M06_DIRECT_COMBOX:'M06_RECEIVING',M06_SHIPMENT_HANDOVER:'M06_DIRECT_COMBOX'}[stageId];
     if(!stageProofs.has(predecessor))throw Error('G6_DYNAMIC_M06_PREDECESSOR_MISSING_'+predecessor);
