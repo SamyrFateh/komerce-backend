@@ -717,6 +717,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
     fs.rmSync(path.join(ROOT,REPORT_PATH[stageId]),{force:true});
     execute(SCRIPTS[stageId],{...env,G6_DYNAMIC_FRESH_ORDER:'1',G6_CANONICAL_PHASE:stageId,
      G6_CANONICAL_ORDER_ID:context.order_id,G6_CANONICAL_ORDER_REFERENCE:context.order_reference,
+     G6_CANONICAL_DB_FINGERPRINT:context.db_fingerprint,
      G6_CANONICAL_PO_ID:ids.po_id,G6_CANONICAL_PO_IDS:JSON.stringify([ids.po_id]),
      G6_CANONICAL_SHIPMENT_ID:ids.shipment_id,G6_CANONICAL_SHIPMENT_REF:ids.shipment_ref,
      G6_CANONICAL_PARCEL_ID:ids.parcel_id,G6_CANONICAL_BOX_ID:ids.box_id,
