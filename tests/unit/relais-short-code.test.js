@@ -13,6 +13,11 @@
  * @impact-areas  logistics, market, orders
  * @version       2026-11
  */
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
 'use strict';
 const { relayCodeStem, ensureRelaisShortCode } = require('../../services/relais-mutation-service');
 
