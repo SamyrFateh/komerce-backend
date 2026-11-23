@@ -258,17 +258,17 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
       const activeNeed=MULTI?needs.first():needs.last();
       await activeNeed.waitFor({timeout:25000});
       await humanClick(null,activeNeed);
-      // M03 : si le groupe fournisseur/SKU agrège un reliquat d'une autre
+      // Toute recette fraîche : si le groupe fournisseur/SKU agrège un reliquat d'une autre
       // commande, choisir explicitement le bouton limité à NOTRE commande.
       // Le clic global pourrait autrement lier une ligne étrangère à la PO.
       const orderScoped=page.locator('[data-hlc-action="prepare-po-order-'+orderId+'"]');
       // The UI exposes the order-scoped action for groups with multiple orders.
       // A single-order group uses the normal button; the PG oracle below still
       // rejects a PO containing any other order (without replaying the mutation).
-      const prepare=(MULTI||M06)&&await orderScoped.count()===1
+      const prepare=await orderScoped.count()===1
         ? orderScoped : page.locator('[data-hlc-action="prepare-po"]');
       await prepare.waitFor({timeout:15000});
-      evidence.po_preparation_scope=(MULTI||M06)&&prepare===orderScoped?'ORDER_ONLY':'SINGLE_GROUP';
+      evidence.po_preparation_scope=prepare===orderScoped?'ORDER_ONLY':'SINGLE_GROUP';
       save();
       const poResponse=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/purchasing/po/prepare'&&r.request().method()==='POST',{timeout:30000});
       await humanClick(null,prepare,{mutation:{path:'/api/purchasing/po/prepare',statuses:ANY_STATUS}});
