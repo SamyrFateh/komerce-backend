@@ -51,7 +51,7 @@ async function readState(){
    (SELECT coalesce(sum(v.received_quantity),0)::int FROM v_purchase_line_progress v WHERE v.line_id=pl.id) AS received_quantity,
    (SELECT count(*)::int FROM local_stock_allocations l WHERE l.order_id=o.id) AS local_stock_allocations_count,
    a.id AS allocation_id,a.quantity AS allocation_quantity,u.id AS receipt_unit_id,u.reference AS receipt_reference,
-   u.state::text AS receipt_state,p0.quantity AS placement_quantity,p0.operation_type::text AS placement_operation,
+   u.state::text AS receipt_state,p0.removed_at AS receipt_placement_removed_at,p0.quantity AS placement_quantity,p0.operation_type::text AS placement_operation,
    p0.evidence_method::text AS receipt_evidence_method,p0.evidence_ref AS receipt_evidence_ref,
    (SELECT count(DISTINCT p1.physical_unit_id)::int FROM hub_physical_unit_placements p1
       WHERE p1.allocation_id=a.id AND p1.operation_type='REPACK' AND p1.removed_at IS NULL) AS box_count,(SELECT count(*)::int FROM hub_physical_unit_placements p2 WHERE p2.allocation_id=a.id AND p2.operation_type='REPACK' AND p2.removed_at IS NULL) AS direct_combox_placement_count
@@ -59,7 +59,7 @@ async function readState(){
   JOIN order_items oi ON oi.id=pl.order_item_id JOIN products p ON p.id=oi.product_id
   JOIN orders o ON o.id=oi.order_id JOIN markets m ON m.id=o.market_id
   LEFT JOIN hub_purchase_allocations a ON a.purchase_line_id=pl.id
-  LEFT JOIN hub_physical_unit_placements p0 ON p0.allocation_id=a.id AND p0.operation_type='RECEIVE' AND p0.removed_at IS NULL
+  LEFT JOIN hub_physical_unit_placements p0 ON p0.allocation_id=a.id AND p0.operation_type='RECEIVE'
   LEFT JOIN hub_physical_units u ON u.id=p0.physical_unit_id
   WHERE po.id=$1 AND o.id=$2 AND o.reference=$3
   GROUP BY po.id,o.id,m.id,pl.id,oi.id,p.id,a.id,u.id,p0.id`,[PO,ID,REF]);
@@ -139,8 +139,8 @@ async function main(){
    await gesture(actor,'create-combox',API+'/boxes',section.locator('[data-workspace-action="create-box"]'),
     (b,req)=>b&&Object.keys(b).length===1&&b.reference===BOXREF&&!!req.headers()['idempotency-key']);
    let after=await readState();
-   check(after.receipt_unit_id===plan.receipt_unit_id&&after.receipt_state==='IDENTIFIED'&&
-    after.box_count===0&&after.direct.length===0,'G6_M06_COMBOX_CREATE_PG_INVALID');
+   check(after.receipt_unit_id===plan.receipt_unit_id&&after.receipt_state==='RECEIVED'&&
+    after.receipt_placement_removed_at==null&&after.box_count===0&&after.direct.length===0,'G6_M06_COMBOX_CREATE_PG_INVALID');
    const boxId=(await db.query('SELECT id FROM hub_physical_units WHERE reference=$1',[BOXREF])).rows[0]?.id;
    check(UUID.test(String(boxId||'')),'G6_M06_COMBOX_CREATED_UNIT_MISSING');
    report.box_id=boxId;save();
@@ -154,9 +154,12 @@ async function main(){
    const matches=[];for(const opt of optionEls){const label=(await opt.textContent())||'';if(label.includes(plan.receipt_reference))matches.push({value:await opt.getAttribute('value'),label});}
    check(matches.length===1,'G6_M06_COMBOX_FILLABLE_UNIT_NOT_UNIQUE');
    await humanSelect(null,item,matches[0].value);
-   const method=row.locator('[data-hub-box-evidence-method]');
+   // Use the operator-facing accessible labels actually rendered by the Hub screen.
+   // The old data-hub-box-evidence-method/manual-proof attributes are not emitted
+   // by operations-workspace; waiting for them blocked M06 after receipt in Chromium.
+   const method=row.getByRole('combobox',{name:'Mode de preuve du scan article dans '+BOXREF});
    await humanSelect(null,method,'MANUAL');
-   const proofInput=row.locator('[data-hub-box-manual-proof]');
+   const proofInput=row.getByRole('textbox',{name:'Preuve du constat manuel pour '+BOXREF});
    await humanFill(null,proofInput,plan.proof_ref);
    await humanFill(null,row.locator('input[aria-label="Quantité de cet article à placer dans '+BOXREF+'"]'),String(plan.quantity));
    const fill=row.locator('[data-workspace-action="fill-box"]');
@@ -171,8 +174,11 @@ async function main(){
    check(after.direct.length===1&&after.direct[0].box_id===boxId&&after.direct[0].allocation_id===plan.allocation_id&&
     Number(after.direct[0].quantity)===3&&after.direct[0].operation_type==='REPACK'&&
     after.direct[0].evidence_method==='MANUAL'&&after.direct[0].evidence_ref===proof&&
-    after.receipt_state==='IDENTIFIED','G6_M06_COMBOX_FILL_PG_INVALID');
-   report.after_fill={box_state:after.direct[0].state,placement_quantity:Number(after.direct[0].quantity),
+    after.receipt_unit_id===plan.receipt_unit_id&&
+    after.receipt_state==='SUPERSEDED'&&!!after.receipt_placement_removed_at,
+    'G6_M06_COMBOX_FILL_PG_INVALID');
+   report.after_fill={receipt_state:after.receipt_state,receipt_placement_closed:!!after.receipt_placement_removed_at,
+    box_state:after.direct[0].state,placement_quantity:Number(after.direct[0].quantity),
     operation_type:after.direct[0].operation_type,evidence_method:after.direct[0].evidence_method,
     proof_ref_hash:digest(after.direct[0].evidence_ref),read_only:true};save();
    section=await openBoxes(actor.page);const closeRow=rowFor(section,actor.page);

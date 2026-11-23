@@ -334,11 +334,22 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
    }[stageId];
    if(!invariants())throw Error('G6_DYNAMIC_M06_PG_ORACLE_INVALID_'+stageId);
    if(stageId==='M06_SHIPMENT_HANDOVER'){
-    const {rows}=await db.query(`SELECT s.stage::text AS stage,p.status::text AS parcel_status
-      FROM international_shipments s JOIN international_shipment_hub_units h ON h.shipment_id=s.id
-      JOIN hub_physical_units u ON u.id=h.physical_unit_id JOIN parcels p ON p.order_id=s.order_id
-      WHERE s.order_id=$1`,[context.order_id]);
-    if(rows.length!==1||rows[0].stage!=='handed_over'||rows[0].parcel_status!=='shipped')
+    // A shipment has no order_id: derive the exact customer order from the
+    // physical COMBOX placement and its immutable economic allocation.
+    const physical=await finalMileIdentity(db,context,{m06:true});
+    const {rows}=await db.query(`SELECT s.stage::text AS stage,p.status::text AS parcel_status,
+       ep.quantity::int AS boxed_quantity
+      FROM international_shipments s
+      JOIN international_shipment_hub_units h ON h.shipment_id=s.id
+      JOIN hub_box_effective_placements ep ON ep.box_unit_id=h.physical_unit_id
+      JOIN hub_purchase_allocations a ON a.id=ep.allocation_id
+      JOIN parcels p ON p.order_id=a.order_id
+      WHERE s.id=$1 AND s.reference=$6 AND h.physical_unit_id=$2
+       AND ep.bag_unit_id IS NULL AND a.id=$3 AND a.order_id=$4 AND p.id=$5`,
+     [physical.shipment_id,physical.box_id,physical.allocation_id,context.order_id,
+      physical.parcel_id,physical.shipment_ref]);
+    if(rows.length!==1||rows[0].stage!=='handed_over'||
+       rows[0].parcel_status!=='shipped'||Number(rows[0].boxed_quantity)!==3)
      throw Error('G6_DYNAMIC_M06_HANDOVER_READBACK_INVALID');
    }
   }else if(SCENARIO==='M06'&&M06_FINAL_STAGES.includes(stageId)){
@@ -359,7 +370,10 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
     if(data.verdict!==expected[stageId]||data.shipment_id!==identity.shipment_id||
        (data.parcel_id&&data.parcel_id!==identity.parcel_id))
      throw Error('G6_DYNAMIC_M06_FINAL_UI_MISMATCH_'+stageId);
-    const stages={M06_FORWARDER:'arrived',M06_CUSTOMS:'local_delivery',M06_RELAY_RECEIPT:'local_delivery',M06_CLIENT_PICKUP:'local_delivery'};
+    // Reception at Relais transitions local_delivery -> relay_received; pickup
+    // retains relay_received. Match the canonical M01/M03 custody checkpoints.
+    const stages={M06_FORWARDER:'arrived',M06_CUSTOMS:'local_delivery',
+     M06_RELAY_RECEIPT:'relay_received',M06_CLIENT_PICKUP:'relay_received'};
     const {rows}=await db.query('SELECT stage::text AS stage FROM international_shipments WHERE id=$1',[identity.shipment_id]);
     if(rows.length!==1||rows[0].stage!==stages[stageId])throw Error('G6_DYNAMIC_M06_FINAL_PG_STAGE_INVALID_'+stageId);
     if(stageId==='M06_CLIENT_PICKUP'){
@@ -706,6 +720,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
     fs.rmSync(path.join(ROOT,REPORT_PATH[stageId]),{force:true});
     execute(SCRIPTS[stageId],{...env,G6_DYNAMIC_FRESH_ORDER:'1',G6_CANONICAL_PHASE:stageId,
      G6_CANONICAL_ORDER_ID:context.order_id,G6_CANONICAL_ORDER_REFERENCE:context.order_reference,
+     G6_CANONICAL_DB_FINGERPRINT:context.db_fingerprint,
      G6_CANONICAL_PO_ID:ids.po_id,G6_CANONICAL_PO_IDS:JSON.stringify([ids.po_id]),
      G6_CANONICAL_SHIPMENT_ID:ids.shipment_id,G6_CANONICAL_SHIPMENT_REF:ids.shipment_ref,
      G6_CANONICAL_PARCEL_ID:ids.parcel_id,G6_CANONICAL_BOX_ID:ids.box_id,
@@ -718,7 +733,7 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
     return report(stageId).data;
    }
    if(SCENARIO==='M06'&&M06_PREP_STAGES.includes(stageId)){
-    const predecessor={M06_MANUAL_PURCHASE:'HUB_VENDOR_READINESS',
+    const predecessor={M06_MANUAL_PURCHASE:'HUB_COMMITMENT',
      M06_PAYMENT_AUTHORIZATION:'M06_MANUAL_PURCHASE',M06_RECEIVING:'M06_PAYMENT_AUTHORIZATION',
      M06_DIRECT_COMBOX:'M06_RECEIVING',M06_SHIPMENT_HANDOVER:'M06_DIRECT_COMBOX'}[stageId];
     if(!stageProofs.has(predecessor))throw Error('G6_DYNAMIC_M06_PREDECESSOR_MISSING_'+predecessor);

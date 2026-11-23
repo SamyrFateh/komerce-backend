@@ -17,6 +17,7 @@ const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
 const {readback,runtime}=require('./g6-hub-shipment-chromium');
 const {hasExpectedRelayOrderRows}=require('./canonical/relay-order-projection-guard');
+const {planFullReceiptLines}=require('./canonical/relay-receipt-quantity-plan');
 const sameSet=(a,b)=>JSON.stringify([...a].sort())===JSON.stringify([...b].sort());
 const {login}=require('./g6-canonical-forwarder-chromium');
 const {openRelayLive}=require('./canonical/relay-live-navigation');
@@ -43,7 +44,9 @@ async function state(){
  const {rows:receipts}=await db.query('SELECT shipment_id,order_item_id,relais_id,expected_qty,received_qty,received_by,proof_ref,incident_id FROM international_shipment_relay_receipts WHERE shipment_id=$1',[ID]);
  const {rows:events}=await db.query("SELECT event_type,from_stage,to_stage,proof_ref,actor_id FROM international_shipment_events WHERE shipment_id=$1 AND event_type='stage_changed' ORDER BY occurred_at,id",[ID]);
  check(orders.length===1&&items.length===SC.items&&sameSet(items.map(i=>i.order_item_id),ITEMS)&&base.shipments.length===1&&base.shipments[0].id===ID&&
- base.box.length===1&&base.box[0].state==='DISPATCHED'&&base.links.length===1&&base.effective.length===SC.items&&
+ base.box.length===1&&base.box[0].state==='DISPATCHED'&&
+ (env.G6_CANONICAL_SCENARIO==='M06'?base.links.length===0&&base.effective.every(e=>e.bag_unit_id===null):base.links.length===1)&&
+ base.effective.length===SC.items&&
  base.effective.reduce((n,e)=>n+Number(e.quantity),0)===SC.units,'G6_RELAY_SCOPE_DRIFT');
  return {base,orders,items,receipts,events};
 }
@@ -142,7 +145,8 @@ async function main(){
   const prior=JSON.parse(fs.readFileSync((env.G6_DYNAMIC_FRESH_ORDER==='1'?'test-results/g6-canonical-customs/report.json':'test-results/g6-canonical-resume/g6-canonical-customs/report.json'),'utf8'));
   const before=await state();report.before=before;save();
   check(hasExpectedRelayOrderRows(before.base.order,{orderId:ORDER,
-    reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',expectedRows:SC.items})&&
+    reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',
+     expectedRows:SC.items,scenario:env.G6_CANONICAL_SCENARIO})&&
     before.base.parcelItems.length===SC.items&&
     before.base.parcelEvents.length===1&&before.base.parcelEvents[0].event_type==='shipped'&&
     isDeepStrictEqual(before.base,prior.after.base)&&before.base.shipments[0].stage==='local_delivery'&&
@@ -172,14 +176,18 @@ async function main(){
   if(!await card.evaluate(el=>el.open))await humanClick(null,card.locator('summary').first());
   const field=card.locator('input[data-relay-received]');
   check(await field.count()===SC.items,'G6_RELAY_UI_ITEM_NOT_UNIQUE');
-  const shownItems=[];
+  // M06 has 3 units on one line; M01/M03 historically have one per line.
+  // Derive quantities from the actual UI, not a hardcoded one-unit fill.
+  const rows=[];
   for(let i=0;i<SC.items;i++){
-   shownItems.push(await field.nth(i).getAttribute('data-relay-received'));
-   await humanFill(null,field.nth(i),'1');
+   rows.push({order_item_id:await field.nth(i).getAttribute('data-relay-received'),
+    max:await field.nth(i).getAttribute('max')});
   }
-  check(sameSet(shownItems,ITEMS),'G6_RELAY_UI_ITEM_NOT_UNIQUE');
+  const expectedLines=planFullReceiptLines(rows,{itemIds:ITEMS,totalUnits:SC.units});
+  for(let i=0;i<expectedLines.length;i++)
+   await humanFill(null,field.nth(i),String(expectedLines[i].received_qty));
   await humanFill(null,card.locator('input[data-relay-proof]'),PROOF);
-  const expected={proof_ref:PROOF,lines:shownItems.map(id=>({order_item_id:id,received_qty:SC.units}))};
+  const expected={proof_ref:PROOF,lines:expectedLines};
   let count=0;const url=BASE+RECEIPT_PATH;
   const handler=async route=>{
    const req=route.request();if(req.method()!=='POST')return route.fallback();

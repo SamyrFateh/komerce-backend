@@ -56,7 +56,8 @@ describe('G6 canonical journey — same order, original matrix, real staging gua
     expect(resolveCanonicalReplay({...env,G6_CANONICAL_SCENARIO:'M03',G6_TARGET_MARKET:'KM'}).id).toBe('M03');
     for(const id of ['N20','N21','N22','N23','N24','N29'])expect(resolveCanonicalReplay({...env,G6_CANONICAL_SCENARIO:id,G6_TARGET_MARKET:'KM'}).id).toBe(id);
     expect(()=>resolveCanonicalReplay({...env,G6_CANONICAL_SCENARIO:'N07',G6_TARGET_MARKET:'KM'})).toThrow(/NOT_BOUND/);
-    expect(()=>resolveCanonicalReplay({...env,G6_CANONICAL_SCENARIO:'M06'})).toThrow();
+    expect(resolveCanonicalReplay({...env,G6_CANONICAL_SCENARIO:'M06'})).toMatchObject({id:'M06',market:'KM'});
+    expect(()=>resolveCanonicalReplay({...env,G6_CANONICAL_SCENARIO:'M06',G6_TARGET_MARKET:'CM'})).toThrow('G6_MARKET_OUTSIDE_SCENARIO');
   });
   test('pas de régression pour les 3 références historiques',()=>{
     expect(resolveRelayCashRefs({})).toEqual({KM:'K18SFYN',CM:'KW34OBY',CG:'KSJWLND'});

@@ -112,7 +112,7 @@ describe('M03 multi-PO import loop (G6-C2b)',()=>{
   for(const f of scripts){
    expect(()=>chromium.assertGestureSourceUsesHelper(path.join(dir,f))).not.toThrow();
    expect(()=>chromium.assertTraceStartsAfterAuth(path.join(dir,f))).not.toThrow();
-   expect(read('scripts/recette/'+f)).toContain("['M01','M03'].includes(env.G6_CANONICAL_SCENARIO)");
+   expect(read('scripts/recette/'+f)).toMatch(/\['M01','M03'(?:,'M06')?\]\.includes\(env\.G6_CANONICAL_SCENARIO\)/);
   }
   expect(()=>chromium.assertGestureSourceUsesHelper(path.join(ROOT,'tests/staging-clicks/g6-p3-kuyiyuk.spec.js'))).not.toThrow();
   for(const f of ['multi-po.js','m03-import-stages.js']){
@@ -126,6 +126,7 @@ describe('M03 multi-PO import loop (G6-C2b)',()=>{
   expect(spec).toContain("const MULTI=CANONICAL&&process.env.G6_CANONICAL_PO_ITERATION!==undefined");
   expect(spec).toContain("const EXPECT_PO=MULTI?ITER+1:1,EXPECT_LINES=MULTI?N_IMPORT:1;");
   expect(spec).toContain("if(!MULTI&&Number(afterCash.line_count)===0){");
-  expect(spec).toContain("expect(env.G6_CANONICAL_SCENARIO).toBe(MULTI?'M03':'M01');");
+  expect(spec).toContain("if(MULTI)expect(env.G6_CANONICAL_SCENARIO).toBe('M03');");
+   expect(spec).toContain("else expect(['M01','M06']).toContain(env.G6_CANONICAL_SCENARIO);");
  });
 });

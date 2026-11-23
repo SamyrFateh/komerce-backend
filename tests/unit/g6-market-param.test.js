@@ -32,7 +32,14 @@ describe('G6 dynamic runner market parameter',()=>{
     }
     for(const f of ['scripts/recette/canonical/real-buyer-cash-adapters.js','scripts/recette/canonical/fresh-buyer-bootstrap.js','scripts/recette/g6-dynamic-buyer-cash.js']){
       const s=read(f);
-      expect(s).not.toMatch(/market!=='KM'|market:'KM'|market==='KM'|MARKET!=='KM'|G6_CANONICAL_MARKET:'KM'/);
+      // The M06 central-Hub physical purchase fixture is KM-only by business matrix.
+       // Keep the generic M01/M02/M03 scripts market-agnostic; allow this one
+       // explicitly scenario-bound oracle, not arbitrary KM hardcoding.
+       const forbidden=[...s.matchAll(/market!=='KM'|market:'KM'|market==='KM'|MARKET!=='KM'|G6_CANONICAL_MARKET:'KM'/g)].map(x=>x[0]);
+       if(f.endsWith('real-buyer-cash-adapters.js')){
+         expect(forbidden).toEqual(["market!=='KM'"]);
+         expect(s).toContain("SCENARIO==='M06'&&M06_PREP_STAGES.includes(stageId)");
+       }else expect(forbidden).toEqual([]);
     }
   });
   test('workflow adds CM and CG titles, sets the market from the title, keeps guards',()=>{

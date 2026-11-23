@@ -402,6 +402,12 @@
     form.noValidate = true;
 
     const manual = po.trigger_mode !== 'auto';
+    // Server-derived scope on every PO line: a G6 purchase MUST declare simulation.
+    // A mixed/unknown scope never acquires simulated=true; the backend also rejects it.
+    const activeScopes = new Set(lines.filter(line => !line.cancelled)
+      .map(line => line.simulation_scope || null));
+    const isG6Simulation = activeScopes.size === 1 && activeScopes.has('G6-BUYER');
+    form.setAttribute('data-purchasing-simulation', isG6Simulation ? 'G6-STAGING' : 'NONE');
     const intro = text(doc, 'p', 'kmc-workspace-subtitle', manual
       ? 'Achat manuel : saisissez la quantité réellement achetée et la référence ou preuve d’achat. Aucune confirmation fournisseur n’est exigée pour recevoir ; l’écart devient un reliquat ouvert, jamais perdu.'
       : 'Saisissez la quantité réellement confirmée par le fournisseur pour chaque ligne. L’écart devient un reliquat ouvert, jamais perdu.');
@@ -645,6 +651,7 @@
         url: `${ENDPOINT}/po/${encodeURIComponent(po.id)}/confirm`,
         body: {
           lines: payloadLines,
+          ...(isG6Simulation ? { simulated: true } : {}),
           ...(ref.value.trim() ? { supplier_order_id: ref.value.trim() } : {}),
           ...(manual ? { purchase_proof_ref: proof.value.trim(), ...(manualExecutions ? { executions: manualExecutions } : { seller_label: seller.value.trim() }) } : {}),
           ...(manual && variance.value.trim() ? { variance_reason: variance.value.trim() } : {}),

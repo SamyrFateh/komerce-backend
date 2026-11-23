@@ -553,10 +553,22 @@ async function confirmGroupedPurchaseOrder(poId, body = {}, { actor = null, cont
 
   const outcome = await withTransaction(async (client) => {
     const po = await lockGroupedPo(client, poId, { requireDraft: false });
-    const simulation = await g6SupplierSimulation(client, po, body);
+    const simulation = await g6SupplierSimulation(client, po, body, { allowCentralHubMultiSeller: true });
     if (simulation) {
-      const { rows: [sent] } = await client.query('SELECT sent_at, sent_channel, sent_note FROM purchase_orders WHERE id=$1', [po.id]);
-      if (!sent?.sent_at || sent.sent_channel !== 'other' || !sent.sent_note?.startsWith(G6_SUPPLIER_SIM_TAG) ||
+      const { rows: [sent] } = await client.query(
+        'SELECT sent_at, sent_channel, sent_note, sent_by, supplier_order_id FROM purchase_orders WHERE id=$1', [po.id]);
+      if (simulation.centralHubMultiSeller) {
+        // Manual central-Hub purchases are recorded at the purchase itself, not as an
+        // invented supplier send. Existing G6 legacy M01/M03 simulation stays unchanged.
+        // Only G6-BUYER, staging, manual PO and the DB-backed central_hub supplier
+        // can enter this branch; manual executions are independently validated below.
+        if (sent?.sent_at || sent?.sent_channel || sent?.sent_by || sent?.supplier_order_id ||
+            supplierOrderId || trackingUrl || trackingNumber || optionalText(body.seller_label) ||
+            !Array.isArray(body.executions) || body.executions.length < 2) {
+          throw fail(409, 'G6_CENTRAL_HUB_MANUAL_PURCHASE_PROOF_INVALID',
+            'Achat Hub central : plusieurs vendeurs structurés, sans envoi fournisseur fictif ou suivi externe');
+        }
+      } else if (!sent?.sent_at || sent.sent_channel !== 'other' || !sent.sent_note?.startsWith(G6_SUPPLIER_SIM_TAG) ||
           supplierOrderId !== simulation.supplierOrderRef || manualProof !== simulation.purchaseProof ||
           optionalText(body.seller_label) !== simulation.sellerLabel ||
           body.tracking_url || body.tracking_number) {
@@ -967,7 +979,7 @@ async function changeLineSupplier(lineId, body = {}, { actor = null, context = {
 // G6 M01: an internal, explicitly labelled rehearsal is never an actual supplier transmission.
 // Read source orders under the PO lock; no fixture API/SQL path is offered to the operator.
 const G6_SUPPLIER_SIM_TAG = '[SIMULATED / STAGING ONLY]';
-async function g6SupplierSimulation(client, po, body) {
+async function g6SupplierSimulation(client, po, body, { allowCentralHubMultiSeller = false } = {}) {
   // Toute ligne active participe au contrôle de portée.
   const { rows } = await client.query(`
     SELECT NULLIF(to_jsonb(o)->>'simulation_scope','') AS simulation_scope, o.reference
@@ -986,6 +998,14 @@ async function g6SupplierSimulation(client, po, body) {
   }
   if (isG6 && (process.env.KOMERCE_ENV !== 'staging' || po.trigger_mode === 'auto' || body.simulated !== true)) {
     throw fail(403, 'G6_SUPPLIER_SIMULATION_STAGING_ONLY', 'Simulation fournisseur autorisée uniquement en staging, sur PO manuelle');
+  }
+  if (isG6 && allowCentralHubMultiSeller && po.trigger_mode === 'manual' &&
+      Array.isArray(body.executions) && body.executions.length >= 2) {
+    const { rows: [supplier] } = await client.query(
+      'SELECT system_key FROM suppliers WHERE id=$1', [po.supplier_id]);
+    if (supplier?.system_key === 'central_hub') {
+      return { centralHubMultiSeller: true, reference: po.id };
+    }
   }
   return isG6 ? { reference: po.id, supplierOrderRef: 'SIM-STAGING-' + po.id,
     purchaseProof: 'SIM-STAGING-ACHAT-' + po.id,
