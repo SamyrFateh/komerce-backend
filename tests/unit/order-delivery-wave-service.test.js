@@ -53,6 +53,7 @@ describe('order delivery waves — single commercial reference', () => {
     const client = { query: jest.fn(async (sql, params) => {
       queries.push(sql);
       if (sql.includes('SELECT id FROM relais WHERE')) return { rows: [{ id: 'r1' }] };
+      if (sql.includes('SELECT id FROM recipients WHERE')) return { rows: [{ id: 'recipient1' }] };
       if (sql.includes('pg_advisory_xact_lock')) return { rows: [] };
       if (sql.includes('FROM order_delivery_waves') && sql.includes('FOR UPDATE')) {
         return { rows: existingWave ? [existingWave] : [] };
@@ -64,7 +65,7 @@ describe('order delivery waves — single commercial reference', () => {
       if (sql.includes('FROM orders WHERE reference=')) return { rows: emitted.has(params[0]) ? [{ id: 'old' }] : [] };
       throw new Error('unexpected query: ' + sql);
     }) };
-    const p = { userId: 'u1', marketId: 'm1', relaisId: 'r1', marketCode: 'CM' };
+    const p = { userId: 'u1', recipientId: 'recipient1', marketId: 'm1', relaisId: 'r1', marketCode: 'CM' };
     const a = await waves.reserveWaveReference(client, p);
     emitted.add(a.reference);
     const b = await waves.reserveWaveReference(client, p);
