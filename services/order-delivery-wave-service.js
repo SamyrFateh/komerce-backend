@@ -57,7 +57,7 @@ function validateMarketCode(value) {
 
 function buildReference({ marketCode, relayCode, clientCode, orderNumber }) {
   validateMarketCode(marketCode);
-  if (!/^[A-Z]{2}[0-9]{2}$/.test(relayCode || '') ||
+  if (!/^[A-Z]{2}(0[1-9]|[1-9][0-9])$/.test(relayCode || '') ||
       !/^[A-Z][A-HJ-NP-Z2-9]{2}$/.test(clientCode || '') ||
       !Number.isSafeInteger(orderNumber) || orderNumber < 1 || orderNumber > MAX_ORDERS_PER_WAVE) {
     throw new Error('ORDER_WAVE_REFERENCE_PART_INVALID');
