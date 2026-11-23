@@ -14215,6 +14215,13 @@
       {
         "feature": "logistics",
         "category": "tests",
+        "declared": "tests/unit/relais-short-code.test.js",
+        "resolvedPath": "tests/unit/relais-short-code.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
         "declared": "tests/unit/order-physical-coverage-gate.test.js",
         "resolvedPath": "tests/unit/order-physical-coverage-gate.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -16798,6 +16805,13 @@
       {
         "feature": "orders",
         "category": "services",
+        "declared": "services/order-delivery-wave-service.js",
+        "resolvedPath": "services/order-delivery-wave-service.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "orders",
+        "category": "services",
         "declared": "services/order-read-authorization.js",
         "resolvedPath": "services/order-read-authorization.js",
         "status": "resolved-in-technical-graph"
@@ -17402,6 +17416,20 @@
         "category": "tests",
         "declared": "tests/unit/order-service.test.js",
         "resolvedPath": "tests/unit/order-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/unit/order-delivery-wave-service.test.js",
+        "resolvedPath": "tests/unit/order-delivery-wave-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/integration/order-delivery-wave-migration-postgres.test.js",
+        "resolvedPath": "tests/integration/order-delivery-wave-migration-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -42193,6 +42221,10 @@
                 "targetFile": "services/order-status-machine.js"
               },
               {
+                "sourceFileId": "services/pickup-collection-recorder.js",
+                "targetFile": "services/order-delivery-wave-service.js"
+              },
+              {
                 "sourceFileId": "services/pickup-exceptional-collection-service.js",
                 "targetFile": "services/order-mutation-service.js"
               },
@@ -42251,6 +42283,10 @@
               {
                 "sourceFileId": "tests/unit/pickup-collection-service.test.js",
                 "targetFile": "services/order-status-machine.js"
+              },
+              {
+                "sourceFileId": "tests/unit/pickup-collection-recorder.test.js",
+                "targetFile": "services/order-delivery-wave-service.js"
               },
               {
                 "sourceFileId": "tests/unit/pickup-collection-recorder.test.js",
@@ -42372,14 +42408,6 @@
               },
               {
                 "sourceFileId": "tests/integration/hub-physical-proof-postgres.test.js",
-                "targetFile": "services/purchasing-engagement-service.js"
-              },
-              {
-                "sourceFileId": "tests/integration/hub-order-bag-ownership-postgres.test.js",
-                "targetFile": "services/purchasing-grouped-service.js"
-              },
-              {
-                "sourceFileId": "tests/integration/hub-order-bag-ownership-postgres.test.js",
                 "targetFile": "services/purchasing-engagement-service.js"
               }
             ]
@@ -44974,6 +45002,10 @@
                 "targetFile": "services/parcel-order-membership.js"
               },
               {
+                "sourceFileId": "services/order-delivery-wave-service.js",
+                "targetFile": "services/relais-mutation-service.js"
+              },
+              {
                 "sourceFileId": "services/qr-collection-core.js",
                 "targetFile": "services/scan-write-service.js"
               },
@@ -45084,6 +45116,10 @@
               {
                 "sourceFileId": "tests/unit/order-post-commit-hooks.test.js",
                 "targetFile": "services/pickup-secret-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/order-delivery-wave-service.test.js",
+                "targetFile": "services/relais-mutation-service.js"
               },
               {
                 "sourceFileId": "tests/unit/orderParcelLinkRules.test.js",
@@ -50715,7 +50751,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2381
+        "filesObserved": 2385
       },
       "boutique": {
         "filesObserved": 218,
@@ -54060,6 +54096,19 @@
       "resolution": "single-writer"
     },
     "relay_return_compensations": {
+      "writers": [
+        {
+          "feature": "orders",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "orders",
+      "resolution": "declared-table-owner"
+    },
+    "order_delivery_waves": {
       "writers": [
         {
           "feature": "orders",

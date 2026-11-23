@@ -18786,7 +18786,7 @@
             ]
           },
           "tests": {
-            "count": 93,
+            "count": 94,
             "files": [
               {
                 "declared": "tests/e2e-api/hub-membership-readers.e2e.test.js",
@@ -19174,6 +19174,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/relais-short-code.test.js",
+                "resolvedPath": "tests/unit/relais-short-code.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/relais.test.js",
                 "resolvedPath": "tests/unit/relais.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -19276,7 +19281,7 @@
             ]
           }
         },
-        "totalFiles": 189,
+        "totalFiles": 190,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -25199,6 +25204,7 @@
       "perimeter": {
         "in": [
           "creation, annulation, machine de statut de la commande",
+          "vague de tri temporaire, avec référence commerciale structurée unique CM-YA01-B7Q01 pour les nouvelles commandes staging",
           "snapshot de cout a la commande",
           "rattachement aux colis et aux achats fournisseurs",
           "collecte QR au retrait",
@@ -25345,7 +25351,7 @@
             ]
           },
           "services": {
-            "count": 32,
+            "count": 33,
             "files": [
               {
                 "declared": "services/admin-order-refund.js",
@@ -25406,6 +25412,11 @@
                 "declared": "services/order-cost-snapshot.js",
                 "resolvedPath": "services/order-cost-snapshot.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/order-delivery-wave-service.js",
+                "resolvedPath": "services/order-delivery-wave-service.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/order-display-snapshot.js",
@@ -25510,7 +25521,7 @@
             ]
           },
           "tests": {
-            "count": 65,
+            "count": 67,
             "files": [
               {
                 "declared": "tests/e2e-api/customer-to-customer.golden.e2e.test.js",
@@ -25570,6 +25581,11 @@
               {
                 "declared": "tests/integration/hub-v1-fixture-payment-postgres.test.js",
                 "resolvedPath": "tests/integration/hub-v1-fixture-payment-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/order-delivery-wave-migration-postgres.test.js",
+                "resolvedPath": "tests/integration/order-delivery-wave-migration-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -25660,6 +25676,11 @@
               {
                 "declared": "tests/unit/order-cost-snapshot.test.js",
                 "resolvedPath": "tests/unit/order-cost-snapshot.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/order-delivery-wave-service.test.js",
+                "resolvedPath": "tests/unit/order-delivery-wave-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -25850,7 +25871,7 @@
             ]
           }
         },
-        "totalFiles": 112,
+        "totalFiles": 115,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 19,
@@ -26010,6 +26031,10 @@
             "resolution": "multi-writer-resolved-by-classification-signal"
           },
           {
+            "table": "order_delivery_waves",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "order_item_cost_imputations",
             "resolution": "single-writer"
           },
@@ -26060,6 +26085,12 @@
           {
             "table": "order_comments",
             "mode": "W",
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "order_delivery_waves",
+            "mode": "RW",
             "lifecycleOwner": "orders",
             "ownershipStatus": "owner"
           },
@@ -26168,6 +26199,10 @@
             "resolution": "multi-writer-resolved-by-classification-signal"
           },
           {
+            "table": "order_delivery_waves",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "order_item_cost_imputations",
             "resolution": "single-writer"
           },
@@ -26218,6 +26253,12 @@
           {
             "table": "order_comments",
             "mode": "W",
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "order_delivery_waves",
+            "mode": "RW",
             "lifecycleOwner": "orders",
             "ownershipStatus": "owner"
           },
