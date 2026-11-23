@@ -123,7 +123,7 @@ async function executeCompensationDecision(browser,requestId){
  }finally{await admin.ctx.close()}
 }
 async function main(){
- let browser;
+ let browser, requestId = null;
  try{
   save();
   check(Object.hasOwn(PHASES,SCEN),'G6_N25_SCENARIO_UNKNOWN');
@@ -167,7 +167,7 @@ async function main(){
    await humanSelect(null,intake.locator('select[aria-label="État physique constaté"]'),'opened');
    await humanFill(null,intake.locator('input[aria-label="Lettre de zone facultative"]'),'A');
    await humanFill(null,intake.locator('textarea[aria-label="Constat physique de reprise"]'),OBS_TEXT);
-   const requestId=await intake.locator('[data-relay-intake-request]').inputValue();
+   requestId=await intake.locator('[data-relay-intake-request]').inputValue();
    const want={request_id:requestId,condition_code:'opened',storage_zone:'A',observation:OBS_TEXT};
    const rec=await act(actor,'/api/relay/returns/intake',intake.locator('[data-relay-intake-submit]'),b=>norm(b)===norm(want));
    report.screen.push({step:'intake',...rec});
