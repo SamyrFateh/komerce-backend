@@ -12,6 +12,7 @@
 'use strict';
 
 const {captureFromEnv}=require('./canonical/m06-manual-purchase-capture');
+const {loadManifest}=require('./canonical/manifest-loader');
 const env=process.env;
 const check=(ok,code)=>{if(!ok)throw Error(code)};
 const ref=(name,min,max,input=env)=>{
@@ -21,7 +22,9 @@ const ref=(name,min,max,input=env)=>{
 };
 
 function validateM06OperatorInputs(input=env){
- const capture=captureFromEnv(input,{orderQuantity:3,commitmentAmount:Number.MAX_SAFE_INTEGER,currency:'EUR'});
+ const plan=loadManifest('M06').fixture_plan;
+ const capture=captureFromEnv(input,{orderQuantity:plan.buyer_order.quantity,
+  commitmentAmount:plan.commitment.amount,currency:plan.commitment.currency});
  ref('G6_M06_PAYMENT_AUTHORIZATION_PROOF',4,500,input);
  ref('G6_M06_RECEIPT_PROOF_REF',6,500,input);
  ref('G6_M06_COMBOX_PROOF_REF',6,500,input);
