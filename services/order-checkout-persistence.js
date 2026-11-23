@@ -53,7 +53,7 @@ const FULFILLMENT_VALUES = new Set(Object.values(FULFILLMENT_SOURCE));
 
 async function insertOrderRow(client, params) {
   const {
-    reference, userId, recipientId, relaisId, trackingPhone,
+    reference, userId, recipientId, relaisId, deliveryWaveId = null, trackingPhone,
     totalKmf, totalEur, paymentMode, stripePaymentIntent, cashRefCode,
     confectionType, confectionInstructions, confectionDelayDays, confectionArtisanId,
     moduleType, moduleFabricId, moduleFabricType, moduleSize, moduleRetouche,
@@ -67,7 +67,7 @@ async function insertOrderRow(client, params) {
   const { rows: [order] } = await client.query(
 
   `INSERT INTO orders (
-     id, reference, user_id, recipient_id, relais_id,
+     id, reference, user_id, recipient_id, relais_id, delivery_wave_id,
      tracking_phone,
      total_kmf, total_eur,
      payment_mode, payment_status, stripe_payment_id,
@@ -86,7 +86,7 @@ async function insertOrderRow(client, params) {
      display_total_amount, display_currency, display_parity_snapshot,
      market_id, transport_pricing_snapshot, fx_snapshot
    ) VALUES (
-     $1,$2,$3,$4,$5,
+     $1,$2,$3,$4,$5,$42,
      $6,
      $7,$8,
      $9,$10,$11,
@@ -142,6 +142,7 @@ async function insertOrderRow(client, params) {
     marketId || null,
     transportPricingSnapshot ? JSON.stringify(transportPricingSnapshot) : null,
     fxSnapshot ? JSON.stringify(fxSnapshot) : null,
+    deliveryWaveId,
   ]
 );
 
