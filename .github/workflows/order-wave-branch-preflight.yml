@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: order-wave-branch-preflight
+  cancel-in-progress: true
+
 jobs:
   wave-preflight:
     runs-on: ubuntu-latest
@@ -31,6 +35,6 @@ jobs:
           npm run arch:impact -- services/order-checkout-service.js
           npm run arch:impact -- services/relais-mutation-service.js
       - name: Targeted unit tests
-        run: npx jest --runInBand --no-coverage tests/unit/order-delivery-wave-service.test.js tests/unit/relais-short-code.test.js tests/unit/order-checkout-persistence.test.js tests/unit/pickup-collection-recorder.test.js
+        run: npx jest --runInBand --no-coverage tests/unit/order-delivery-wave-service.test.js tests/unit/relais-short-code.test.js tests/unit/order-checkout-persistence.test.js tests/unit/pickup-collection-recorder.test.js tests/unit/order-checkout-service.test.js tests/unit/hub-operations.test.js tests/unit/hub-bag-box-ui-contract.test.js tests/unit/admin-operations-workspace-route.test.js
       - name: Canonical PR preflight
         run: npm run pr:preflight
