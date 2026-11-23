@@ -221,14 +221,18 @@ async function main(){
       (SELECT count(*)::int FROM relay_return_compensations WHERE request_id=$2) AS decisions`,[ID,requestId]);
    check(sideEffects.refunds===0&&sideEffects.psp_intents===0&&sideEffects.decisions===1,
     'G6_N26B_DUPLICATE_OR_EXTERNAL_REFUND_ORACLE');
+   report.financial_attempt={request_id:requestId,wallet_transaction_id:c.wallet_transaction_id,
+    movement:c.movement,amount:Number(c.amount),currency:c.currency,payer_matches_order:c.payer_user_id===c.order_payer};
+   save();
    let documents={rows:[]};
-   for(let attempt=0;attempt<6&&!documents.rows.length;attempt++){
+   for(let attempt=0;attempt<30&&(!documents.rows.length||documents.rows[0].status!=='available');attempt++){
     documents=await db.query(`SELECT document_type,status FROM transaction_documents
       WHERE document_type='wallet_receipt' AND subject_type='wallet_tx' AND subject_id=$1`,[c.wallet_transaction_id]);
-    if(!documents.rows.length)await new Promise(resolve=>setTimeout(resolve,500));
+    if(!documents.rows.length||documents.rows[0].status!=='available')await new Promise(resolve=>setTimeout(resolve,500));
    }
-   check(documents.rows.length===1&&['generated','delivered'].includes(documents.rows[0].status),
-    'G6_N26B_WALLET_RECEIPT_MISSING');
+   report.wallet_receipt_observed=documents.rows[0]||null;save();
+   check(documents.rows.length===1&&documents.rows[0].status==='available',
+    'G6_N26B_WALLET_RECEIPT_NOT_AVAILABLE');
    report.pg_oracle={compensation:{movement:c.movement,amount:c.amount,currency:c.currency,
      payer_matches_order:c.payer_user_id===c.order_payer,wallet_transaction_id:c.wallet_transaction_id},
      effects:sideEffects,wallet_receipt:documents.rows[0],external_payment_executed:false};
