@@ -5,7 +5,7 @@
  * @test-runner jest
  * @test-requires postgres
  * @integration relay-shipment-receipt-postgres.test.js
- * @brief HUB lot 3 — Relais live : contenu réellement expédié (expédition → KOM-BOX → commandes → articles), réception attestée par le relais article par article, écart → incident, étape relay_received jamais posée par Hub/admin.
+ * @brief HUB lot 3 — Relais live : contenu réel, réception quantitativement attestée par relais, écart → incident ; relay_received uniquement si toutes les quantités sont conformes.
  */
 
 jest.setTimeout(60000);
@@ -129,8 +129,7 @@ if (!process.env.DATABASE_URL) {
 
   test('réception avec écart : attestation immuable + incident traçable ; l\'expédition n\'est pas reçue tant qu\'un relais n\'a pas attesté', async () => {
     const out = await relay.receiveShipment({ market, actor: agentA, reference: ref, body: { proof_ref: 'BORD-A', lines: [{ order_item_id: items.a.itemId, received_qty: 2 }] } });
-    expect(out.complete).toBe(false);
-    expect(out.stage).toBe('local_delivery');
+    expect(out).toMatchObject({ complete: false, stage: 'local_delivery', expected_lines: 2, attested_lines: 1, fully_received_lines: 0 });
     expect(out.receipts[0]).toMatchObject({ expected: 3, received: 2 });
     const inc = (await q('SELECT incident_type, detected_source, details, order_item_id FROM incidents WHERE id=$1', [out.receipts[0].incident_id])).rows[0];
     expect(inc).toMatchObject({ incident_type: 'missing_item', detected_source: 'relay_agent', order_item_id: items.a.itemId });
@@ -149,18 +148,18 @@ if (!process.env.DATABASE_URL) {
     expect(item.incident_id).toBe(out.receipts[0].incident_id);
   });
 
-  test('tous les relais ont attesté → relay_received, avec événement de preuve ; réception conforme sans incident', async () => {
+  test('tous les relais ont attesté MAIS un article manque → réception partielle, aucun faux événement relay_received', async () => {
     const out = await relay.receiveShipment({ market, actor: agentB, reference: ref, body: { proof_ref: 'BORD-B', lines: [{ order_item_id: items.b.itemId, received_qty: 2 }] } });
     expect(out.receipts[0].incident_id).toBeNull();
     const parcelB = (await q('SELECT qty_shipped,qty_received FROM parcel_items WHERE order_item_id=$1', [items.b.itemId])).rows[0];
     expect(parcelB).toMatchObject({ qty_shipped: 2, qty_received: 2 });
-    expect(out).toMatchObject({ complete: true, stage: 'relay_received' });
-    expect((await q('SELECT stage FROM international_shipments WHERE id=$1', [shipmentId])).rows[0].stage).toBe('relay_received');
-    const ev = (await q("SELECT to_stage, proof_ref, payload FROM international_shipment_events WHERE shipment_id=$1 AND to_stage='relay_received'", [shipmentId])).rows[0];
-    expect(ev).toMatchObject({ to_stage: 'relay_received', proof_ref: 'BORD-B' });
-    expect(ev.payload.attested_by).toBe('relay');
+    expect(out).toMatchObject({ complete: false, stage: 'local_delivery', expected_lines: 2, attested_lines: 2, fully_received_lines: 1 });
+    expect((await q('SELECT stage FROM international_shipments WHERE id=$1', [shipmentId])).rows[0].stage).toBe('local_delivery');
+    const events = await q("SELECT to_stage FROM international_shipment_events WHERE shipment_id=$1 AND to_stage='relay_received'", [shipmentId]);
+    expect(events.rows).toHaveLength(0);
+    // Une attestation partielle reste immuable : pas de seconde confirmation opportuniste.
     await expect(relay.receiveShipment({ market, actor: agentB, reference: ref, body: { proof_ref: 'Z', lines: [{ order_item_id: items.b.itemId, received_qty: 2 }] } }))
-      .rejects.toMatchObject({ status: 409, code: 'RELAY_SHIPMENT_NOT_AT_RELAY' });
+      .rejects.toMatchObject({ status: 409, code: 'RELAY_RECEIPT_ALREADY_ATTESTED' });
   });
 
   test('P0-1 · l\'attestation est effective : colis et commande disponibles pour les quantités attestées, code de retrait émis, écart jamais écrasé', async () => {
