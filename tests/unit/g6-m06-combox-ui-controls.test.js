@@ -21,7 +21,11 @@ describe('M06 direct COMBOX — Chromium fields match the real Hub operator UI',
   expect(runner).toContain("b.evidence_method==='MANUAL'");
   expect(runner).toContain("b.evidence_ref===fillBody.evidence_ref");
   expect(runner).toContain("after.direct[0].evidence_method==='MANUAL'");
-  expect(runner).toContain("after.receipt_state==='RECEIVED'");
+  expect(runner).toContain("after.receipt_state==='RECEIVED'"); // after empty COMBOX creation
+  expect(runner).toContain("after.receipt_state==='SUPERSEDED'"); // after moving all three units
+  expect(runner).toContain("!!after.receipt_placement_removed_at");
+  expect(runner).toContain("p0.removed_at AS receipt_placement_removed_at");
+  expect(runner).not.toContain("p0.operation_type='RECEIVE' AND p0.removed_at IS NULL");
   expect(runner).toContain("'G6_M06_COMBOX_POSTGRES_CUSTODY_INVALID'");
   expect(runner).toContain("report.verdict='G6_M06_DIRECT_COMBOX_CHROMIUM_PG_PASS'");
  });
