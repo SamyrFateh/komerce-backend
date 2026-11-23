@@ -16,9 +16,8 @@ jobs:
   wave-preflight:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    env:
-      KOMERCE_ENV: staging
-      KOMERCE_ORDER_WAVES_ENABLED: '0'
+    # Run the canonical unit suite under its default test environment.
+    # The staging-only flag is explicitly simulated within dedicated wave tests.
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,7 +34,7 @@ jobs:
           npm run arch:impact -- services/order-checkout-service.js
           npm run arch:impact -- services/relais-mutation-service.js
       - name: Targeted unit tests
-        run: npx jest --runInBand --no-coverage tests/unit/order-delivery-wave-service.test.js tests/unit/relais-short-code.test.js tests/unit/order-checkout-persistence.test.js tests/unit/pickup-collection-recorder.test.js tests/unit/order-checkout-service.test.js tests/unit/hub-operations.test.js tests/unit/hub-bag-box-ui-contract.test.js tests/unit/admin-operations-workspace-route.test.js
+        run: npx jest --runInBand --no-coverage tests/unit/order-delivery-wave-service.test.js tests/unit/relais-short-code.test.js tests/unit/order-checkout-persistence.test.js tests/unit/pickup-collection-recorder.test.js tests/unit/order-checkout-service.test.js tests/unit/orders-create-route.test.js tests/unit/hub-operations.test.js tests/unit/hub-bag-box-ui-contract.test.js tests/unit/admin-operations-workspace-route.test.js
       - name: Canonical PR preflight
         run: npm run pr:preflight
 
