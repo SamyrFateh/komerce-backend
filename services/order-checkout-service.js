@@ -559,12 +559,12 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
       ? generateCashCode()
       : null;
 
-    // New commercial reference contains destination + temporary client grouping.
+    // New commercial reference contains destination + the verified checkout recipient's temporary grouping.
     // Only real staging buyers after explicit opt-in; preserve isolated G6 fixtures.
     // Every operation joins the SAME checkout DB transaction.
     const waveRef = (!internalSimulation && !g6Buyer && wavesEnabled())
       ? await reserveWaveReference(client, {
-          userId: user.id, marketId: relais.market_id, relaisId: relais.id,
+          userId: user.id, recipientId: recipient_id, marketId: relais.market_id, relaisId: relais.id,
           marketCode: checkoutMarket.code,
         })
       : null;
