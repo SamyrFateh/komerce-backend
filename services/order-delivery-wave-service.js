@@ -8,7 +8,7 @@
  * @outputs       unique_commercial_reference, invisible_wave_id
  * @depends       services/relais-mutation-service.js, crypto
  * @used-by       services/order-checkout-service.js, services/pickup-collection-recorder.js
- * @db-read       orders, order_delivery_waves, relais
+ * @db-read       orders, order_delivery_waves, relais, relais
  * @db-write      order_delivery_waves
  * @db-write-via:relais-mutation-service relais
  * @db-txn        participant (must use checkout / pickup transaction)
