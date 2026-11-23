@@ -22,7 +22,7 @@ function buildM06ComboxPlan(state,proofRef){
    Number(state.settlement_rows)!==0||Number(state.local_stock_allocations_count)!==0)
   fail('G6_M06_COMBOX_FINANCE_OR_LOCAL_STOCK_INVALID');
  if(!state.receipt_unit_id||!/^SUPPLIER_PACKAGE-[a-f0-9-]{36}$/i.test(String(state.receipt_reference||''))||
-   state.receipt_state!=='IDENTIFIED'||!state.allocation_id||
+   state.receipt_state!=='RECEIVED'||!state.allocation_id||
    Number(state.allocation_quantity)!==3||Number(state.placement_quantity)!==3||
    state.placement_operation!=='RECEIVE'||state.receipt_evidence_method!=='MANUAL'||
    text(state.receipt_evidence_ref).length<6)
