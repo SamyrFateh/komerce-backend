@@ -60,6 +60,21 @@ describe('order-checkout-service — vagues temporaires staging', () => {
     expect(source).toContain('marketCode: checkoutMarket.code');
   });
 
+  test('deux checkouts simultanés ne peuvent pas créer deux destinataires pour le même compte/relais', () => {
+    const lock = source.indexOf("['wave-recipient-record:' + user.id + ':' + relais.id]");
+    const lookup = source.indexOf('SELECT id FROM recipients WHERE user_id = $1');
+    const insert = source.indexOf('INSERT INTO recipients (user_id, full_name, phone, relais_id, is_default)');
+    const wave = source.indexOf('await reserveWaveReference(client, {');
+    const commit = source.indexOf("await client.query('COMMIT')");
+    expect(lock).toBeGreaterThan(0);
+    expect(lookup).toBeGreaterThan(lock);
+    expect(insert).toBeGreaterThan(lookup);
+    expect(wave).toBeGreaterThan(insert);
+    expect(commit).toBeGreaterThan(wave);
+    expect(source).toContain('ORDER BY created_at ASC, id ASC LIMIT 1');
+    expect(source).toContain('ORDER_WAVE_RECIPIENT_REQUIRED');
+  });
+
   test('désactivé sur les simulations dédiées et les comptes G6 déjà certifiés', () => {
     expect(source).toContain('!internalSimulation && !g6Buyer && wavesEnabled()');
     expect(source).toContain('internalSimulation.reference');
