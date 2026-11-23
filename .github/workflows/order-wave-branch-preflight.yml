@@ -38,3 +38,33 @@ jobs:
         run: npx jest --runInBand --no-coverage tests/unit/order-delivery-wave-service.test.js tests/unit/relais-short-code.test.js tests/unit/order-checkout-persistence.test.js tests/unit/pickup-collection-recorder.test.js tests/unit/order-checkout-service.test.js tests/unit/hub-operations.test.js tests/unit/hub-bag-box-ui-contract.test.js tests/unit/admin-operations-workspace-route.test.js
       - name: Canonical PR preflight
         run: npm run pr:preflight
+
+  migration-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: komerce_wave
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d komerce_wave"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 8
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/komerce_wave
+      KOMERCE_ORDER_WAVE_PG_ISOLATED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Execute migration 426 twice and verify uniqueness against PostgreSQL 16
+        run: npx jest --runInBand --no-coverage tests/integration/order-delivery-wave-migration-postgres.test.js
