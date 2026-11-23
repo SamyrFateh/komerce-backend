@@ -33,7 +33,8 @@ function validateM06OperatorInputs(input=env){
  const mode=String(input.G6_M06_TRANSPORT_MODE||'').trim().toLowerCase();
  check(['sea','air'].includes(mode),'G6_M06_INPUT_TRANSPORT_MODE_INVALID');
  return Object.freeze({scenario_id:'M06',market:'KM',quantity:3,
-  allocation_count:capture.allocations.length,valid:true,values_redacted:true});
+  allocation_count:capture.allocations.length,valid:true,values_redacted:true,
+   evidence_class:capture.source,simulation_only:capture.simulation_only===true});
 }
 
 if(require.main===module){
