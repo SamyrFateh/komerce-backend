@@ -33,6 +33,20 @@ describe('M06 shared final-mile target fingerprint propagates to all Chromium st
   expect(relay).toContain("after.base.shipments[0].stage==='relay_received'");
   expect(pickup).toContain("after.base.shipments[0].stage==='relay_received'");
  });
+ test('M06 SAV keeps the real runtime attestation and relay actor from their proper modules',()=>{
+  const sav=source('scripts/recette/g6-m06-sav-ui-oracle-chromium.js');
+  const forwarder=source('scripts/recette/g6-canonical-forwarder-chromium.js');
+  const hub=source('scripts/recette/g6-hub-shipment-chromium.js');
+  expect(forwarder).toContain('module.exports={fillTask,login,task,snapshot,proof}');
+  expect(hub).toContain('module.exports={readback,checkShipment,runtime,SC,sameSet,placementIdsOf}');
+  expect(sav).toContain("const {login}=require('./g6-canonical-forwarder-chromium')");
+  expect(sav).toContain("const {runtime}=require('./g6-hub-shipment-chromium')");
+  expect(sav).not.toContain("const {runtime,login}=require('./g6-canonical-forwarder-chromium')");
+  expect(sav).toContain('report.sha=await runtime()');
+  expect(sav).toContain("report.verdict='G6_M06_PICKUP_SAV_UI_ORACLES_CHROMIUM_PG_PASS';await runtime();save()");
+  expect(sav).toContain('sav_create_post_count:0');
+  expect(sav).toContain("if(route.request().method()==='POST')");
+ });
  test('retains fail-closed target checks in each downstream real Chromium actor',()=>{
   for(const file of [
    'scripts/recette/g6-canonical-forwarder-chromium.js',
