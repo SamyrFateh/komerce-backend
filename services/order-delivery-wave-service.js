@@ -4,8 +4,8 @@
  * @domain        orders
  * @layer         service
  * @criticality   critical
- * @inputs        transactional_pg_client, verified_buyer_id, verified_recipient_id, market_id, relais_id, market_code
- * @outputs       unique_commercial_reference, invisible_wave_id
+ * @inputs        transactional_pg_client, verified_buyer_id, verified_recipient_id, market_id, relais_id, market_code, expected_units
+ * @outputs       unique_structured_order_reference, invisible_wave_id
  * @depends       services/relais-mutation-service.js, crypto
  * @used-by       services/order-checkout-service.js, services/pickup-collection-recorder.js
  * @db-read       orders, order_delivery_waves, relais, recipients
@@ -21,10 +21,11 @@
 const { randomInt } = require('crypto');
 const { ensureRelaisShortCode } = require('./relais-mutation-service');
 
-const LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const SYMBOLS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_WAVE_AGE_DAYS = 90;
 const MAX_RETRIES = 64;
+const MAX_ORDERS_PER_WAVE = 99;
 
 function wavesEnabled(env = process.env) {
   if (env.KOMERCE_ORDER_WAVES_ENABLED !== '1') return false;
@@ -42,8 +43,11 @@ function randomFrom(alphabet, length) {
   return code;
 }
 
-function randomClientCode() {
-  return randomFrom(LETTERS, 1) + randomFrom(SYMBOLS, 3);
+// The first character is NOT randomized. It is the relay-local load-balanced
+// letter allocated transactionally; the remaining two are collision-resistant.
+function randomClientCode(letter) {
+  if (!LETTERS.includes(letter) || letter.length !== 1) throw new Error('ORDER_WAVE_LETTER_INVALID');
+  return letter + randomFrom(SYMBOLS, 2);
 }
 
 function validateMarketCode(value) {
@@ -51,93 +55,113 @@ function validateMarketCode(value) {
   return value;
 }
 
-function buildReference({ marketCode, relayCode, clientCode, suffix }) {
+function buildReference({ marketCode, relayCode, clientCode, orderNumber }) {
   validateMarketCode(marketCode);
-  if (!/^[A-Z]{3}[1-9][0-9]?$/.test(relayCode || '') ||
-      !/^[A-HJ-NP-Z][A-HJ-NP-Z2-9]{3}$/.test(clientCode || '') ||
-      !/^[A-HJ-NP-Z2-9]{2}$/.test(suffix || '')) {
+  if (!/^[A-Z]{2}[0-9]{2}$/.test(relayCode || '') ||
+      !/^[A-Z][A-HJ-NP-Z2-9]{2}$/.test(clientCode || '') ||
+      !Number.isSafeInteger(orderNumber) || orderNumber < 1 || orderNumber > MAX_ORDERS_PER_WAVE) {
     throw new Error('ORDER_WAVE_REFERENCE_PART_INVALID');
   }
-  return [marketCode, relayCode, clientCode, suffix].join('-');
+  return marketCode + '-' + relayCode + '-' + clientCode + String(orderNumber).padStart(2, '0');
+}
+
+function chooseLetter(rows) {
+  const totals = new Map(LETTERS.split('').map(letter => [letter, 0]));
+  for (const row of rows) {
+    const letter = String(row.letter || '');
+    if (totals.has(letter)) totals.set(letter, totals.get(letter) + Number(row.units || 0));
+  }
+  const min = Math.min(...totals.values());
+  const candidates = [...totals].filter(([, units]) => units === min).map(([letter]) => letter);
+  // Rotate ties by the total allocations at this relay (all waves, including closed).
+  const allocated = rows.reduce((sum, row) => sum + Number(row.allocations || 0), 0);
+  return candidates[allocated % candidates.length];
 }
 
 /**
- * Called only AFTER the checkout idempotency claim, in the SAME transaction
- * that persists the order. Serializes simultaneous recipient/destination checkouts.
- * The returned reference is commercial and unique; the wave is private.
+ * Under the checkout transaction, serializes allocations for the entire relay
+ * so two different recipients cannot claim the same letter/candidate concurrently.
+ * The order reference is the SINGLE commercial reference.
  */
-async function reserveWaveReference(client, { userId, recipientId, marketId, relaisId, marketCode }) {
+async function reserveWaveReference(client, { userId, recipientId, marketId, relaisId, marketCode, expectedUnits = 1 }) {
   if (!client || !userId || !recipientId || !marketId || !relaisId) {
     throw new Error('ORDER_WAVE_VERIFIED_SCOPE_REQUIRED');
   }
+  if (!Number.isSafeInteger(expectedUnits) || expectedUnits < 1) throw new Error('ORDER_WAVE_UNITS_INVALID');
   validateMarketCode(marketCode);
   const { rows: [relay] } = await client.query(
     'SELECT id FROM relais WHERE id = $1 AND market_id = $2 AND is_active = TRUE',
     [relaisId, marketId]
   );
   if (!relay) throw new Error('ORDER_WAVE_RELAIS_NOT_IN_MARKET');
-
-  // Recipient identity is created by canonical checkout from the verified buyer.
-  // Never group distinct verified recipients merely because a buyer is the same.
   const { rows: [recipient] } = await client.query(
     'SELECT id FROM recipients WHERE id=$1 AND user_id=$2 AND relais_id=$3',
     [recipientId, userId, relaisId]
   );
   if (!recipient) throw new Error('ORDER_WAVE_RECIPIENT_NOT_VERIFIED');
 
-  // A single advisory lock per verified recipient + destination serializes
-  // create/join; the row lock serializes against a simultaneous closing pickup.
-  await client.query(
-    'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
-    ['delivery-wave:' + recipientId + ':' + marketId + ':' + relaisId]
-  );
+  await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
+    ['delivery-wave-relay:' + marketId + ':' + relaisId]);
   const relayCode = await ensureRelaisShortCode(client, { marketId, relaisId });
   const { rows: open } = await client.query(
-    `SELECT id, client_code, opened_at
+    `SELECT id, client_code, opened_at, next_order_number
        FROM order_delivery_waves
       WHERE subject_recipient_id=$1 AND market_id=$2 AND relais_id=$3 AND closed_at IS NULL
       FOR UPDATE`,
     [recipientId, marketId, relaisId]
   );
   let wave = open[0] || null;
-  if (wave && new Date(wave.opened_at).getTime() <= Date.now() - MAX_WAVE_AGE_DAYS * 86400000) {
+  if (wave && (new Date(wave.opened_at).getTime() <= Date.now() - MAX_WAVE_AGE_DAYS * 86400000 ||
+      Number(wave.next_order_number) > MAX_ORDERS_PER_WAVE)) {
     await client.query(
       `UPDATE order_delivery_waves SET closed_at=now(), close_reason='EXPIRED'
-        WHERE id=$1 AND closed_at IS NULL`,
-      [wave.id]
+        WHERE id=$1 AND closed_at IS NULL`, [wave.id]
     );
     wave = null;
   }
   if (!wave) {
+    const { rows: loads } = await client.query(
+      `SELECT left(client_code, 1) AS letter,
+              sum(CASE WHEN closed_at IS NULL THEN planned_units ELSE 0 END)::bigint AS units,
+              count(*)::int AS allocations
+         FROM order_delivery_waves
+        WHERE market_id=$1 AND relais_id=$2
+        GROUP BY left(client_code, 1)`,
+      [marketId, relaisId]
+    );
+    const letter = chooseLetter(loads);
     for (let i = 0; i < MAX_RETRIES; i++) {
-      const candidate = randomClientCode();
+      const candidate = randomClientCode(letter);
       const { rows } = await client.query(
         `INSERT INTO order_delivery_waves
-           (subject_recipient_id, market_id, relais_id, client_code)
-         VALUES ($1,$2,$3,$4)
+           (subject_recipient_id, market_id, relais_id, client_code, planned_units, next_order_number)
+         VALUES ($1,$2,$3,$4,0,1)
          ON CONFLICT DO NOTHING
-         RETURNING id, client_code`,
+         RETURNING id, client_code, next_order_number`,
         [recipientId, marketId, relaisId, candidate]
       );
       if (rows.length) { wave = rows[0]; break; }
     }
     if (!wave) throw new Error('ORDER_WAVE_CODE_EXHAUSTED');
   }
-  for (let i = 0; i < MAX_RETRIES; i++) {
-    const reference = buildReference({
-      marketCode, relayCode, clientCode: wave.client_code, suffix: randomFrom(SYMBOLS, 2),
-    });
-    const { rows } = await client.query('SELECT 1 FROM orders WHERE reference=$1 LIMIT 1', [reference]);
-    if (!rows.length) return { reference, waveId: wave.id, relayCode, clientCode: wave.client_code };
+  // Row-locked counter is allocated with the same transaction as INSERT orders.
+  // A rollback returns both the order number and planned quantity to the pool.
+  const orderNumber = Number(wave.next_order_number);
+  if (!Number.isSafeInteger(orderNumber) || orderNumber < 1 || orderNumber > MAX_ORDERS_PER_WAVE) {
+    throw new Error('ORDER_WAVE_ORDER_NUMBER_EXHAUSTED');
   }
-  throw new Error('ORDER_WAVE_ORDER_SUFFIX_EXHAUSTED');
+  const reference = buildReference({ marketCode, relayCode, clientCode: wave.client_code, orderNumber });
+  const { rows: allocated } = await client.query(
+    `UPDATE order_delivery_waves
+        SET next_order_number=next_order_number+1, planned_units=planned_units+$2
+      WHERE id=$1 AND next_order_number=$3
+      RETURNING id`,
+    [wave.id, expectedUnits, orderNumber]
+  );
+  if (!allocated.length) throw new Error('ORDER_WAVE_CONCURRENT_NUMBER_CONFLICT');
+  return { reference, waveId: wave.id, relayCode, clientCode: wave.client_code, orderNumber };
 }
 
-/**
- * Close admission to the wave after the FIRST actual, proven physical handoff.
- * Existing orders and their references do not change, even on partial pickup.
- * Called inside the SAME transaction as the canonical handoff proof.
- */
 async function closeWaveOnFirstHandoff(client, orderId) {
   if (!wavesEnabled()) return false;
   const { rows } = await client.query(
@@ -152,6 +176,6 @@ async function closeWaveOnFirstHandoff(client, orderId) {
 }
 
 module.exports = {
-  LETTERS, SYMBOLS, wavesEnabled, randomClientCode, buildReference,
+  LETTERS, SYMBOLS, wavesEnabled, randomClientCode, buildReference, chooseLetter,
   reserveWaveReference, closeWaveOnFirstHandoff,
 };
