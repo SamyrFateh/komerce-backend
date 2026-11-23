@@ -1,5 +1,5 @@
 -- 426: Vague temporaire de tri par destinataire et relais.
--- La reference commerciale peut porter les indices, aucun secret de retrait.
+-- Reference commerciale UNIQUE CM-YA01-B7Q01, aucun secret de retrait.
 -- La mise en service est protegee par KOMERCE_ORDER_WAVES_ENABLED=1 (staging).
 ALTER TABLE public.relais
   ADD COLUMN IF NOT EXISTS short_code text;
@@ -12,7 +12,7 @@ BEGIN
   ) THEN
     ALTER TABLE public.relais
       ADD CONSTRAINT relais_short_code_format
-      CHECK (short_code IS NULL OR short_code ~ '^[A-Z]{3}[1-9][0-9]?$');
+      CHECK (short_code IS NULL OR short_code ~ '^[A-Z]{2}[0-9]{2}$');
   END IF;
 END $migration$;
 
@@ -25,11 +25,13 @@ CREATE TABLE IF NOT EXISTS public.order_delivery_waves (
   market_id uuid NOT NULL REFERENCES public.markets(id) ON DELETE RESTRICT,
   relais_id uuid NOT NULL REFERENCES public.relais(id) ON DELETE RESTRICT,
   client_code text NOT NULL,
+  next_order_number integer NOT NULL DEFAULT 1 CHECK (next_order_number BETWEEN 1 AND 100),
+  planned_units integer NOT NULL DEFAULT 0 CHECK (planned_units >= 0),
   opened_at timestamptz NOT NULL DEFAULT now(),
   closed_at timestamptz,
   close_reason text,
   CONSTRAINT chk_order_wave_client_code
-    CHECK (client_code ~ '^[A-HJ-NP-Z][A-HJ-NP-Z2-9]{3}$'),
+    CHECK (client_code ~ '^[A-Z][A-HJ-NP-Z2-9]{2}$'),
   CONSTRAINT chk_order_wave_close
     CHECK ((closed_at IS NULL AND close_reason IS NULL)
       OR (closed_at IS NOT NULL AND
@@ -51,4 +53,4 @@ CREATE INDEX IF NOT EXISTS idx_orders_delivery_wave_id
 COMMENT ON TABLE public.order_delivery_waves IS
   'Groupe temporaire invisible par destinataire authentifie, marche et relais. Ne sert ni d identite civile, ni de code de retrait, ni de sac ou emplacement.';
 COMMENT ON COLUMN public.relais.short_code IS
-  'Code lisible derive du nom reel du relais + numero local, attribue une seule fois et non reutilise.';
+  'Code stable de deux lettres du nom reel + numero local a deux chiffres (YA01), non reutilise.';
