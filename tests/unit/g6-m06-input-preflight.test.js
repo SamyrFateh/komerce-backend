@@ -27,6 +27,19 @@ describe('M06 operator input preflight',()=>{
   expect(()=>validateM06OperatorInputs({...valid,G6_M06_ACTUAL_PURCHASE_CAPTURE:''}))
    .toThrow('G6_M06_PURCHASE_CAPTURE_REQUIRED');
  });
+ test('rejects allocations above the exact M06 30 EUR commitment before any order',()=>{
+  const over=JSON.parse(valid.G6_M06_ACTUAL_PURCHASE_CAPTURE);
+  over.allocations[0].amount=25;
+  over.allocations[1].amount=10;
+  expect(()=>validateM06OperatorInputs({...valid,G6_M06_ACTUAL_PURCHASE_CAPTURE:JSON.stringify(over)}))
+   .toThrow('G6_M06_PURCHASE_EXCEEDS_COMMITMENT');
+ });
+ test('rejects missing payment approval and physical handover evidence',()=>{
+  for(const key of ['G6_M06_PAYMENT_AUTHORIZATION_PROOF','G6_M06_RECEIPT_PROOF_REF',
+   'G6_M06_COMBOX_PROOF_REF','G6_M06_HANDOVER_PROOF_REF']){
+   expect(()=>validateM06OperatorInputs({...valid,[key]:''})).toThrow('G6_M06_INPUT_'+key+'_INVALID');
+  }
+ });
  test('rejects invalid quantity, duplicate seller, or unsupported transport mode',()=>{
   const badCapture=JSON.stringify({purchase_proof_ref:'proof-purchase-01',allocations:[
    {seller_label:'Seller A',channel:'in_person',quantity:1,amount:12,currency:'EUR',proof_ref:'receipt-a'},
