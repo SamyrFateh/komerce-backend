@@ -56,6 +56,9 @@ describe('G6 — 46 scenarios: matrix → true workflow dispatch and declared bl
     'G6_M06_TRANSPORT_MODE','G6_M06_HANDOVER_PROOF_REF'])
     expect(workflow).toContain(`secrets.${name}`);
   expect(workflow).toContain('g6-m06-input-preflight.js');
+   expect(workflow).toContain("github.event.issue.title == '[staging-op] g6-m06-rehearsal-KM'");
+   expect(resolver).toContain("github.event.issue.title == '[staging-op] g6-m06-rehearsal-KM' && 'M06'");
+   expect(workflow).toContain('m06-staging-rehearsal-inputs.js');
 });
 test('N39 phases, N26 branches and G5A route/SOI options are never replaced by M01 fallback',()=>{
   for(const id of ['N39F1','N39F2','N39F3','N26a','N26b','N01','N02','N03','N05','N06'])
