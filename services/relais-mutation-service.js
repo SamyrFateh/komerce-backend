@@ -92,7 +92,7 @@ function relayCodeStem(name) {
     .toUpperCase().replace(/[^A-Z]+/g, ' ').trim().split(/\s+/)
     .filter(token => token && !omitted.has(token));
   if (!normalized.length) throw new RelaisValidationError('RELAY_SHORT_CODE_NAME_UNUSABLE', 'Nom de relais inutilisable pour le code court.');
-  return (normalized[0] + 'XXX').slice(0, 3);
+  return (normalized[0] + 'XX').slice(0, 2);
 }
 
 async function ensureRelaisShortCode(executor, { marketId, relaisId }) {
@@ -111,7 +111,7 @@ async function ensureRelaisShortCode(executor, { marketId, relaisId }) {
   );
   const used = new Set(allocated.map(r => r.short_code));
   for (let i = 1; i <= 99; i++) {
-    const candidate = stem + i;
+    const candidate = stem + String(i).padStart(2, '0');
     if (used.has(candidate)) continue;
     const { rows: [assigned] } = await client.query(
       'UPDATE relais SET short_code=$3 WHERE id=$1 AND market_id=$2 AND short_code IS NULL RETURNING short_code',
