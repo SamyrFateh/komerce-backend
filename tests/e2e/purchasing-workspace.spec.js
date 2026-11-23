@@ -217,6 +217,36 @@ async function expectNoHorizontalOverflow(page) {
 const mutatingCalls = (api, suffix) => api.state.calls.filter((c) => c.key === `POST /api/purchasing${suffix}`);
 
 test.describe('Achats fournisseurs — espace canonique', () => {
+  for (const scenario of [
+    {name:'G6-only',scopes:['G6-BUYER'],expected:true},
+    {name:'commercial-only',scopes:[null],expected:false},
+    {name:'mixed G6 and commercial',scopes:['G6-BUYER',null],expected:false},
+  ]) {
+    test('confirmation manuelle — déclaration de simulation serveur '+scenario.name,async({page})=>{
+      const api=createFakeApi();
+      const poId='cccccccc-cccc-4ccc-8ccc-000000000077';
+      api.state.pos.set(poId,{id:poId,status:'notified',procurement_hub_ref:HUB,trigger_mode:'manual'});
+      scenario.scopes.forEach((scope,i)=>{
+        const line=api.state.lines[i];
+        line.purchase_order_id=poId;
+        line.simulation_scope=scope;
+      });
+      await mountWorkspace(page,api,{search:'?po='+poId});
+      const form=page.locator('form[data-purchasing-confirm]');
+      await expect(form).toHaveAttribute('data-purchasing-simulation',scenario.expected?'G6-STAGING':'NONE');
+      await form.locator('[data-purchase-proof-ref]').fill('RECEIPT-ISOLATED-TEST-001');
+      await form.locator('[data-purchase-seller-label]').fill('Manually entered vendor');
+      await form.locator('[data-confirmed-price]').evaluateAll(inputs=>
+        inputs.forEach(input=>{input.value='12.5';input.dispatchEvent(new Event('input',{bubbles:true}));}));
+      await form.locator('[data-workspace-action="confirm-po"]').click();
+      await expect.poll(()=>mutatingCalls(api,'/po/'+poId+'/confirm').length).toBe(1);
+      const request=mutatingCalls(api,'/po/'+poId+'/confirm')[0].body;
+      if(scenario.expected)expect(request.simulated).toBe(true);
+      else expect(request).not.toHaveProperty('simulated');
+      expect(request.lines).toHaveLength(scenario.scopes.length);
+    });
+  }
+
   test('G6-C : bouton PO réservé au scope G6, annulation uniquement par écran sans appel fournisseur',async({page},info)=>{
     const api=createFakeApi();
     const poId='cccccccc-cccc-4ccc-8ccc-000000000009';
