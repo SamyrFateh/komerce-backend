@@ -29,7 +29,7 @@ describe('order-checkout-service market lifecycle', () => {
   test('serializes RCT1 E1/G references and refuses duplicate checkout', () => {
     expect(source).toMatch(/reserveRct1OrderReference\(client, internalSimulation.reference\)/);
     expect(source).toMatch(/RCT1_ORDER_ALREADY_EXISTS/);
-    expect(source).toMatch(/internalSimulation \? internalSimulation.reference : await getUniqueRef\(db\)/);
+    expect(source).toMatch(/const reference = internalSimulation[\\s\\S]*internalSimulation.reference[\\s\\S]*waveRef[\\s\\S]*getUniqueRef\\(client\\)/);
     expect(source).toMatch(/isAllowedRct1Reference/);
   });
   test('E1 refuses checkout total mismatch before inserting order', () => {
@@ -39,6 +39,30 @@ describe('order-checkout-service market lifecycle', () => {
     const insertAt = source.indexOf('const order = await insertOrderRow(client, {');
     expect(totalGate).toBeGreaterThan(0);
     expect(insertAt).toBeGreaterThan(totalGate);
+  });
+});
+
+describe('order-checkout-service — vagues temporaires staging', () => {
+  test('résout la référence unique après l’identité vérifiée et avant insertion transactionnelle', () => {
+    const claim = source.indexOf('const checkoutClaim =');
+    const verified = source.indexOf('const g6Buyer=await verifyMarkedG6Buyer');
+    const waves = source.indexOf('await reserveWaveReference(client, {');
+    const insert = source.indexOf('const order = await insertOrderRow(client, {');
+    const commit = source.indexOf("await client.query('COMMIT')");
+    expect(claim).toBeGreaterThan(0);
+    expect(verified).toBeGreaterThan(claim);
+    expect(waves).toBeGreaterThan(verified);
+    expect(insert).toBeGreaterThan(waves);
+    expect(commit).toBeGreaterThan(insert);
+    expect(source).toContain('userId: user.id, marketId: relais.market_id, relaisId: relais.id');
+    expect(source).toContain('deliveryWaveId: waveRef ? waveRef.waveId : null');
+    expect(source).toContain('marketCode: checkoutMarket.code');
+  });
+
+  test('désactivé sur les simulations dédiées et les comptes G6 déjà certifiés', () => {
+    expect(source).toContain('!internalSimulation && !g6Buyer && wavesEnabled()');
+    expect(source).toContain('internalSimulation.reference');
+    expect(source).toContain('waveRef ? waveRef.reference : await getUniqueRef(client)');
   });
 });
 
