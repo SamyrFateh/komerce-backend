@@ -45,11 +45,13 @@ describe('G6 46 — test stages behind real owner-only dispatch',()=>{
    }
   }
  });
- test('N34 routes dedicated security stages; M06 partial runner wiring stays outside full dispatch',()=>{
+ test('N34 routes dedicated security stages; M06 full dispatch stays behind operator-fact preflight',()=>{
   expect(SCENARIO_STAGE_IDS.M06).toEqual(['BUYER','RELAY_CASH','HUB_PO','HUB_COMMITMENT',
    'M06_MANUAL_PURCHASE','M06_PAYMENT_AUTHORIZATION','M06_RECEIVING','M06_DIRECT_COMBOX','M06_SHIPMENT_HANDOVER','M06_FORWARDER','M06_CUSTOMS','M06_RELAY_RECEIPT','M06_CLIENT_PICKUP','M06_SAV_ORACLE']);
   expect(SCENARIO_STAGE_IDS.N34).toEqual(['N34_CENTRAL_IMMUTABILITY','N34_EXPLICIT_SOURCE']);
-  expect(wf).not.toContain("g6-dynamic-fresh-full-M06-KM'");
+  expect(wf).toContain("g6-dynamic-fresh-full-M06-KM'");
+  expect(wf).toContain("github.event.issue.title == '[staging-op] g6-dynamic-fresh-full-M06-KM' && 'M06_SAV_ORACLE'");
+  expect(wf).toContain('Validate real operator facts OR explicit simulated M06 rehearsal before buyer');
   expect(wf).not.toContain("g6-dynamic-fresh-full-N34-KM'");
   expect(n34wf).toContain('komerce-g6-canonical-real-transaction');
  });
