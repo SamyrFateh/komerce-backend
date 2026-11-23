@@ -38,7 +38,7 @@ describe('relay code comes from the actual relay name', () => {
     const query = jest.fn(async (sql, params) => {
       if (sql.includes('SELECT id, name, short_code')) return {rows:[{id:'r10',name:'Relais Yaoundé Quartier 10',short_code:null}]};
       if (sql.includes('pg_advisory_xact_lock')) return {rows:[]};
-      if (sql.includes('SELECT short_code FROM relais')) return {rows:Array.from({length:9},(_,i)=>({short_code:'YA'+(i+1)}))};
+      if (sql.includes('SELECT short_code FROM relais')) return {rows:Array.from({length:9},(_,i)=>({short_code:'YA'+String(i+1).padStart(2, '0')}))};
       if (sql.includes('UPDATE relais SET short_code')) return {rows:[{short_code:params[2]}]};
       throw new Error('Unexpected SQL: '+sql);
     });
