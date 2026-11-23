@@ -38,7 +38,8 @@ describe('G6 N26b admin decision surface', () => {
     expect(stage).toContain("'/api/relay/returns/'+requestId+'/compensation-proposal'");
     expect(stage).toContain("'/api/relay/returns/'+encodeURIComponent(requestId)+'/compensation'");
     expect(stage).toContain('G6_N26B_COMPENSATION_WALLET_OR_PAYER_ORACLE_MISMATCH');
-    expect(stage).toContain('G6_N26B_WALLET_RECEIPT_MISSING');
+    expect(stage).toContain("documents.rows[0].status==='available'");
+    expect(stage).toContain('wallet_receipt_observed');
     expect(stage).toContain('G6_N26B_DUPLICATE_OR_EXTERNAL_REFUND_ORACLE');
     expect(stage).not.toContain('G6_N26B_SCREEN_PRESENT_GESTURE_NOT_MOUNTED');
   });
