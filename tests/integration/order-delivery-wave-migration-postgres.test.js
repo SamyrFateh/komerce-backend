@@ -39,7 +39,7 @@ describeDb('migration 426 — real PostgreSQL transactional smoke', () => {
     await pg.query(sql); // idempotence of schema migration
     await pg.query('INSERT INTO public.users (id) VALUES ($1)', [buyer]);
     await pg.query('INSERT INTO public.markets (id) VALUES ($1)', [mkt]);
-    await pg.query('INSERT INTO public.relais (id,market_id,name,short_code) VALUES ($1,$3,\'Yaounde Centre\',\'YAO1\'),($2,$3,\'Yaounde Est\',\'YAO2\')', [relay1, relay2, mkt]);
+    await pg.query('INSERT INTO public.relais (id,market_id,name,short_code) VALUES ($1,$3,\'Yaounde Centre\',\'YA01\'),($2,$3,\'Yaounde Est\',\'YA02\')', [relay1, relay2, mkt]);
     await pg.query('INSERT INTO public.recipients (id,user_id,relais_id) VALUES ($1,$3,$4),($2,$3,$4)',[rec1,rec2,buyer,relay1]);
   });
   afterAll(async () => {
@@ -56,20 +56,22 @@ describeDb('migration 426 — real PostgreSQL transactional smoke', () => {
     if (!thrown) throw new Error('A PostgreSQL constraint was bypassed');
     expect(thrown.code).toBe(errorCode);
   }
-  test('stable name-derived relay codes are unique per market and support YAO10', async () => {
-    await expectConflict('UPDATE public.relais SET short_code=\'YAO1\' WHERE id=$1',[relay2],'23505');
-    await pg.query('UPDATE public.relais SET short_code=\'YAO10\' WHERE id=$1',[relay2]);
-    await expectConflict('UPDATE public.relais SET short_code=\'YAO0\' WHERE id=$1',[relay2],'23514');
+  test('stable name-derived relay codes are unique per market and support YA010', async () => {
+    await expectConflict('UPDATE public.relais SET short_code=\'YA01\' WHERE id=$1',[relay2],'23505');
+    await pg.query('UPDATE public.relais SET short_code=\'YA010\' WHERE id=$1',[relay2]);
+    await expectConflict('UPDATE public.relais SET short_code=\'YA00\' WHERE id=$1',[relay2],'23514');
   });
-  test('a recipient has one open wave and 4-character codes do not collide in one relay', async () => {
-    const x = await pg.query('INSERT INTO public.order_delivery_waves(subject_recipient_id,market_id,relais_id,client_code) VALUES ($1,$2,$3,$4) RETURNING id',[rec1,mkt,relay1,'B7Q4']);
+  test('a recipient has one open wave and 3-character codes do not collide in one relay', async () => {
+    const x = await pg.query('INSERT INTO public.order_delivery_waves(subject_recipient_id,market_id,relais_id,client_code) VALUES ($1,$2,$3,$4) RETURNING id',[rec1,mkt,relay1,'B7Q']);
     const waveId=x.rows[0].id;
-    await expectConflict('INSERT INTO public.order_delivery_waves(subject_recipient_id,market_id,relais_id,client_code) VALUES ($1,$2,$3,$4)',[rec1,mkt,relay1,'F6T9'],'23505');
-    await expectConflict('INSERT INTO public.order_delivery_waves(subject_recipient_id,market_id,relais_id,client_code) VALUES ($1,$2,$3,$4)',[rec2,mkt,relay1,'B7Q4'],'23505');
-    await pg.query('INSERT INTO public.order_delivery_waves(subject_recipient_id,market_id,relais_id,client_code) VALUES ($1,$2,$3,$4)',[rec2,mkt,relay1,'F6T9']);
-    await pg.query('INSERT INTO public.orders (id,reference,delivery_wave_id) VALUES ($1,$2,$3)', ['55555555-5555-4555-8555-555555555555','CM-YAO1-B7Q4-X8',waveId]);
+    await expectConflict('INSERT INTO public.order_delivery_waves(subject_recipient_id,market_id,relais_id,client_code) VALUES ($1,$2,$3,$4)',[rec1,mkt,relay1,'F6T'],'23505');
+    await expectConflict('INSERT INTO public.order_delivery_waves(subject_recipient_id,market_id,relais_id,client_code) VALUES ($1,$2,$3,$4)',[rec2,mkt,relay1,'B7Q'],'23505');
+    await pg.query('INSERT INTO public.order_delivery_waves(subject_recipient_id,market_id,relais_id,client_code) VALUES ($1,$2,$3,$4)',[rec2,mkt,relay1,'F6T']);
+    await pg.query('INSERT INTO public.orders (id,reference,delivery_wave_id) VALUES ($1,$2,$3)', ['55555555-5555-4555-8555-555555555555','CM-YA01-B7Q01',waveId]);
     await pg.query('UPDATE public.order_delivery_waves SET closed_at=now(),close_reason=\'FIRST_HANDOFF\' WHERE id=$1',[waveId]);
-    await pg.query('INSERT INTO public.order_delivery_waves(subject_recipient_id,market_id,relais_id,client_code) VALUES ($1,$2,$3,$4)',[rec1,mkt,relay1,'H5T2']);
+    await pg.query('INSERT INTO public.order_delivery_waves(subject_recipient_id,market_id,relais_id,client_code) VALUES ($1,$2,$3,$4)',[rec1,mkt,relay1,'H5T']);
+    const allocated=await pg.query('UPDATE public.order_delivery_waves SET next_order_number=next_order_number+1, planned_units=planned_units+3 WHERE id=$1 RETURNING next_order_number,planned_units',[waveId]);
+    expect(allocated.rows[0]).toMatchObject({next_order_number:2,planned_units:3});
     const result=await pg.query('SELECT count(*)::int AS count FROM public.order_delivery_waves WHERE subject_recipient_id=$1',[rec1]);
     expect(result.rows[0].count).toBe(2);
   });
