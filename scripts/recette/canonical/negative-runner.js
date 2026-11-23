@@ -177,7 +177,9 @@ async function runNegativeScenario({scenario,env,db,adapters}){
   }
   // N35 et N36 : oracles PG seuls sur la chaîne M01 (aucun geste négatif).
   const g=L.script?readJson(L.report):{order_id:result.order_id};
-  if(L.script&&(!/_CHROMIUM_PASS$/.test(String(g.verdict))||g.order_id!==result.order_id))throw Error('G6_'+scenario+'_SCREEN_MISSING_NOT_PROVEN');
+  const chromiumVerdict=String(g.verdict||'');
+  const chromiumPass=scenario==='N26b'?/_CHROMIUM_PG_PASS$/.test(chromiumVerdict):/_CHROMIUM_PASS$/.test(chromiumVerdict);
+  if(L.script&&(!chromiumPass||g.order_id!==result.order_id))throw Error('G6_'+scenario+'_SCREEN_MISSING_NOT_PROVEN');
   out.stages.push({stage_id:phase,steps_reached:g.steps_reached,page_events:g.page_events,attempts:g.attempts||null,tabs:g.tabs||null,intruder:g.intruder||null,control:g.control||null,reverse:g.reverse||null,ux_signal:g.ux_signal||null,
    legit_handoff_after_lock:g.legit_handoff_after_lock||null,after_http500:g.after_http500||null,order360:g.order360||null,commerce:g.commerce||null,after_lost_response:g.after_lost_response||null,access:g.access||null,dry_run:g.dry_run||null,screen:g.screen||null,probes:g.probes||null,director:g.director||null});
   const o=scenario==='N30'?await N.oracleN30(db,{orderId:result.order_id,order360:g.order360,commerce:g.commerce})
@@ -194,7 +196,8 @@ async function runNegativeScenario({scenario,env,db,adapters}){
    :scenario==='N39F1'?await N.oracleN39F1(db,{orderId:result.order_id,cancel:g.cancel})
    :scenario==='N39F2'?await N.oracleN39F2(db,{orderId:result.order_id,cancel:g.cancel})
    :scenario==='N39F3'?await N.oracleN39F3(db,{orderId:result.order_id,cancel:g.cancel})
-   :scenario==='N25'||scenario==='N26b'?await N.oracleN25(db,{orderId:result.order_id,stockBefore:g.stock_before})
+   :scenario==='N25'?await N.oracleN25(db,{orderId:result.order_id,stockBefore:g.stock_before})
+   :scenario==='N26b'?await N.oracleN26b(db,{orderId:result.order_id,stockBefore:g.stock_before})
    :scenario==='N40'?await N.oracleN40(db,{orderId:result.order_id,poId,confirm:g.confirm,quoted:g.quoted})
    :scenario==='N17'?await N.oracleN17(db,{orderId:result.order_id,shipmentRef:ship.reference,baseline:g.baseline})
    :scenario==='N18'?await N.oracleN18(db,{orderId:result.order_id,shipmentRef:ship.reference,customsRef:'SIM-STAGING-DOU-N18-'+result.order_reference})
