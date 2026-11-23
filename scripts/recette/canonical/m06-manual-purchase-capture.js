@@ -9,13 +9,17 @@
 'use strict';
 
 const CHANNELS=new Set(['in_person','phone','whatsapp','email','other']);
+const {MODE,assertRehearsalInputs}=require('./m06-staging-rehearsal-inputs');
+const REHEARSAL_ORIGIN='STAGING_REHEARSAL_SIMULATED_NOT_REAL';
 const text=(v)=>typeof v==='string'?v.trim():'';
 const fail=(code)=>{throw Error(code)};
 
-function parseM06ManualPurchaseCapture(raw,{orderQuantity=3,commitmentAmount=30,currency='EUR'}={}){
+function parseM06ManualPurchaseCapture(raw,{orderQuantity=3,commitmentAmount=30,currency='EUR',rehearsal=false}={}){
  let input;
  try{input=typeof raw==='string'?JSON.parse(raw):raw}catch(_){fail('G6_M06_PURCHASE_CAPTURE_INVALID_JSON')}
  if(!input||typeof input!=='object'||Array.isArray(input))fail('G6_M06_PURCHASE_CAPTURE_REQUIRED');
+ if(rehearsal?input.evidence_origin!==REHEARSAL_ORIGIN:input.evidence_origin!=null)
+  fail('G6_M06_SYNTHETIC_PROVENANCE_MODE_MISMATCH');
  const purchaseProof=text(input.purchase_proof_ref);
  const varianceReason=text(input.variance_reason);
  if(purchaseProof.length<4)fail('G6_M06_PURCHASE_PROOF_REQUIRED');
@@ -45,12 +49,18 @@ function parseM06ManualPurchaseCapture(raw,{orderQuantity=3,commitmentAmount=30,
  return Object.freeze({purchase_proof_ref:purchaseProof,allocations:Object.freeze(allocations),
   confirmed_quantity:orderQuantity,confirmed_unit_price:confirmedUnitPrice,
   confirmed_currency:expectedCurrency,justified_total:total,
-  ...(variance?{variance_reason:varianceReason}:{}),source:'OPERATOR_SUPPLIED_CAPTURE'});
+  ...(variance?{variance_reason:varianceReason}:{}),
+  source:rehearsal?'STAGING_REHEARSAL_SIMULATED_ONLY':'OPERATOR_SUPPLIED_CAPTURE',
+  simulation_only:rehearsal});
 }
 
 function captureFromEnv(env=process.env,options={}){
  if(!text(env.G6_M06_ACTUAL_PURCHASE_CAPTURE))fail('G6_M06_PURCHASE_CAPTURE_REQUIRED');
- return parseM06ManualPurchaseCapture(env.G6_M06_ACTUAL_PURCHASE_CAPTURE,options);
+ const mode=text(env.G6_M06_INPUT_MODE);
+ if(mode&&mode!==MODE)fail('G6_M06_PURCHASE_INPUT_MODE_INVALID');
+ if(mode===MODE)assertRehearsalInputs(env);
+ return parseM06ManualPurchaseCapture(env.G6_M06_ACTUAL_PURCHASE_CAPTURE,
+  {...options,rehearsal:mode===MODE});
 }
 
 module.exports={parseM06ManualPurchaseCapture,captureFromEnv};
