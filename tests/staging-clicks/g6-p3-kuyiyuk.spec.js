@@ -22,6 +22,7 @@ const ANY_STATUS=Array.from({length:400},(_,i)=>i+200);
 const CANONICAL=process.env.G6_CANONICAL_HUB_STAGE==='1';
 // M03 (multi-PO) : une itération = un PO (le suivant à constituer) ; M01 : MULTI=false, comportement strictement historique.
 const MULTI=CANONICAL&&process.env.G6_CANONICAL_PO_ITERATION!==undefined&&process.env.G6_CANONICAL_PO_ITERATION!=='';
+const M06=CANONICAL&&process.env.G6_CANONICAL_SCENARIO==='M06';
 const ITER=MULTI?Number(process.env.G6_CANONICAL_PO_ITERATION):0;
 const N_IMPORT=MULTI?Number(process.env.G6_CANONICAL_IMPORT_ITEMS):1;
 const EXPECT_PO=MULTI?ITER+1:1,EXPECT_LINES=MULTI?N_IMPORT:1;
@@ -81,7 +82,9 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
     expect(env.GITHUB_ACTOR).toBe(env.GITHUB_REPOSITORY_OWNER);
     expect(env.STAGING_BASE_URL).toBe(base);
     if(CANONICAL){
-      expect(env.G6_CANONICAL_SCENARIO).toBe(MULTI?'M03':'M01');
+      if(MULTI)expect(env.G6_CANONICAL_SCENARIO).toBe('M03');
+      else expect(['M01','M06']).toContain(env.G6_CANONICAL_SCENARIO);
+      if(M06){expect(MK.code).toBe('KM');expect(MULTI).toBe(false);}
       if(MULTI){expect(Number.isInteger(ITER)&&ITER>=0&&ITER<N_IMPORT&&N_IMPORT>=3).toBe(true);}
       expect(env.G6_TARGET_MARKET).toBe(MK.code);
       expect(REF).toMatch(/^[A-Z0-9][A-Z0-9-]{5,63}$/);
@@ -259,10 +262,13 @@ test.describe.serial('G6 P3 '+REF+' — Chromium Relais cash + Hub UI',()=>{
       // commande, choisir explicitement le bouton limité à NOTRE commande.
       // Le clic global pourrait autrement lier une ligne étrangère à la PO.
       const orderScoped=page.locator('[data-hlc-action="prepare-po-order-'+orderId+'"]');
-      const prepare=MULTI&&await orderScoped.count()===1
+      // For M06, supplier-wide PO could mix another customer's order.
+      // Require an order-scoped gesture; leave M01 and M03 semantics intact.
+      if(M06)expect(await orderScoped.count(),'M06 PO must be order-scoped').toBe(1);
+      const prepare=(MULTI||M06)&&await orderScoped.count()===1
         ? orderScoped : page.locator('[data-hlc-action="prepare-po"]');
       await prepare.waitFor({timeout:15000});
-      evidence.po_preparation_scope=MULTI&&prepare===orderScoped?'ORDER_ONLY':'SINGLE_GROUP';
+      evidence.po_preparation_scope=(MULTI||M06)&&prepare===orderScoped?'ORDER_ONLY':'SINGLE_GROUP';
       save();
       const poResponse=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/purchasing/po/prepare'&&r.request().method()==='POST',{timeout:30000});
       await humanClick(null,prepare,{mutation:{path:'/api/purchasing/po/prepare',statuses:ANY_STATUS}});
