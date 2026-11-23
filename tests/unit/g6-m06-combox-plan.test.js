@@ -5,7 +5,7 @@ const state={scenario_id:'M06',market:'KM',simulation_scope:'G6-BUYER',payment_s
  po_status:'hub_received',product_ref:'KPR-000255',procure_on_order:true,fulfillment_source:'IMPORT',
  order_quantity:3,received_quantity:3,payment_authorization_count:1,external_payment_rows:0,
  settlement_rows:0,local_stock_allocations_count:0,receipt_unit_id:'unit-1',
- receipt_reference:'SUPPLIER_PACKAGE-3e2c7d23-3ee7-4ca1-984c-83b6c41e5889',receipt_state:'IDENTIFIED',
+ receipt_reference:'SUPPLIER_PACKAGE-3e2c7d23-3ee7-4ca1-984c-83b6c41e5889',receipt_state:'RECEIVED',
  allocation_id:'allocation-1',allocation_quantity:3,placement_quantity:3,placement_operation:'RECEIVE',
  receipt_evidence_method:'MANUAL',receipt_evidence_ref:'RECEIPT-REAL-001',box_count:0,direct_combox_placement_count:0,
  order_id:'order-1',po_id:'po-1',line_id:'line-1'};

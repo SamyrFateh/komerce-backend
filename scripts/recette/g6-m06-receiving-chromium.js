@@ -17,6 +17,7 @@ const {confirmTarget}=require('./target-guard');
 const {marketProfile}=require('./canonical/market-profile');
 const {login}=require('./g6-hub-commitment-chromium');
 const {buildM06ReceiptPlan}=require('./canonical/m06-receipt-plan');
+const {validateM06ReceiptResponse}=require('./canonical/m06-receipt-response');
 const {observe,fullError}=require('./canonical/observability');
 const {humanGoto,humanClick,humanFill,humanCheck}=require('./canonical/actors/human-gestures');
 const env=process.env,MK=marketProfile(env),BASE='https://komerce-backend-production.up.railway.app';
@@ -26,7 +27,10 @@ const UUID=/^[a-f0-9-]{36}$/i,SHA=/^[a-f0-9]{40}$/i;
 let OBS=null;
 const report={schema:'komerce-g6-m06-receiving/1',scenario_id:'M06',market:'KM',
  order_id:ID||null,reference:REF||null,po_id:PO||null,verdict:'NOT_PROVEN',
- physical_receipt_certified:false,external_supplier_calls:0,external_payment_executed:false,
+ physical_receipt_certified:false,real_world_physical_receipt_certified:false,
+ evidence_class:env.G6_M06_INPUT_MODE==='STAGING_REHEARSAL'?'STAGING_REHEARSAL_SIMULATED_ONLY':'OPERATOR_DECLARED_UNVERIFIED',
+ simulation_only:env.G6_M06_INPUT_MODE==='STAGING_REHEARSAL',
+ external_supplier_calls:0,external_payment_executed:false,
  production_permitted:false,ui_gestures:[],oracle_ids:['O-HUB','O-FIN']};
 const save=()=>{fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n');};
 const check=(ok,code)=>{if(!ok)throw Error(code);};
@@ -135,13 +139,19 @@ async function main(){
     r.request().method()==='POST',{timeout:30000});
    await humanClick(null,button);
    const response=await pending,json=await response.json().catch(()=>({}));
+   report.receipt_http={status:response.status(),code:json.code||null,
+    unit_state:json.unit?.state||null,quarantined:json.quarantined??null,
+    reconciliation_pending_field_present:Object.hasOwn(json,'reconciliation_pending'),
+    allocation_count:Array.isArray(json.allocations)?json.allocations.length:null,
+    allowed_posts:allowed,blocked_posts:blocked};save();
    check(allowed===1&&blocked===0,'G6_M06_RECEIPT_REQUEST_SCOPE_INVALID');
-   check([200,201].includes(response.status())&&!json.quarantined&&
-    json.unit?.reference===receiptRef&&json.unit?.unit_type==='SUPPLIER_PACKAGE'&&
-    json.reconciliation_pending===false,'G6_M06_RECEIPT_UI_HTTP_OR_RECONCILIATION_INVALID');
+   const accepted=validateM06ReceiptResponse({http:response.status(),json,receiptRef,
+    poId:PO,orderId:ID,skuId:plan.product_sku_id,quantity:plan.quantity});
    check(actor.blocked.length===0,'G6_M06_RECEIPT_UNEXPECTED_BROWSER_WRITE');
-   report.receipt={http:response.status(),reference:receiptRef,unit_type:json.unit.unit_type,
-    state:json.unit.state,allocated_quantity:plan.quantity,manual_evidence:true};save();
+   report.receipt={http:accepted.http,reference:accepted.reference,unit_id:accepted.unit_id,
+    unit_type:accepted.unit_type,state:accepted.state,allocation_id:accepted.allocation_id,
+    allocated_quantity:accepted.received_quantity,manual_evidence:true,
+    readback_required:accepted.readback_required};save();
    report.ui_gestures.push({page:'/admin/hub-live',tab:'Réceptions',action:'receive-supplier',method:'pointer click',http:response.status()});
   }finally{await actor.ctx.close();}
   await runtime();
@@ -152,7 +162,7 @@ async function main(){
    Number(after.settlement_rows)===0&&Number(after.local_stock_allocations_count)===0,
    'G6_M06_RECEIPT_POSTGRES_PROGRESS_INVALID');
   check(physical.length===1&&physical[0].unit_type==='SUPPLIER_PACKAGE'&&
-   physical[0].state==='IDENTIFIED'&&Number(physical[0].allocation_quantity)===3&&
+   physical[0].state==='RECEIVED'&&Number(physical[0].allocation_quantity)===3&&
    Number(physical[0].received_quantity)===3&&physical[0].operation_type==='RECEIVE'&&
    physical[0].evidence_method==='MANUAL'&&physical[0].evidence_ref===proof,
    'G6_M06_RECEIPT_POSTGRES_PHYSICAL_ORACLE_INVALID');
