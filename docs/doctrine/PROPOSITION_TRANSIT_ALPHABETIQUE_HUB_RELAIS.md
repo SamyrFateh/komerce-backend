@@ -16,6 +16,27 @@ La sophistication est **progressive et facultative** : niveau 0 sans classement,
 
 Ce principe doit gouverner toute comparaison avec Grok ou Opus, et toute future implémentation.
 
+## 0 bis. Nouvelle hypothèse propriétaire à contre-expertiser : référence hiérarchique **destinataire → commandes**
+
+La liberté du rangement ne suffit pas à résoudre le **tri rapide des articles par client et leur distribution**. Un utilisateur veut pouvoir retrouver les commandes successives du *même destinataire* par un **radical commun**, chacune conservant une variante finale, tout en reconnaissant le marché immédiatement lorsqu'une étiquette ou commande se retrouve isolée.
+
+**Format strictement illustratif, non adopté** : `KM-B-7Q42-01`, `KM-B-7Q42-02`.
+- `KM` : marché canonique de la commande, affiché durablement.
+- `B` : éventuel **groupe de tri stable**, jamais un emplacement ou un bac obligatoire ; son utilité réelle et sa nécessité doivent être **prouvées**, comparées à une racine sans lettre.
+- `7Q42` : radical opaque de regroupement pour un **destinataire résolu dans son périmètre**, pas nécessairement l'acheteur/payeur.
+- `01` / `02` : variante de commande **unique**, avec paiement, items, statuts, retraits et historique **distincts** ; ne jamais fusionner économiquement les commandes sous prétexte d'un radical partagé.
+
+**Questions de conception obligatoires avant toute validation :**
+1. Le regroupement concerne-t-il le destinataire, l'acheteur diaspora, le foyer, le compte client ou une identité de remise ? Une personne peut avoir plusieurs destinataires, relais, marchés, numéros de téléphone ou délégataires. Ne pas décider par appariement de noms/téléphones. Traiter modification de destinataire, anonymat, commandes invitées, fusion/scission de comptes et retour.
+2. Le radical est-il créé lors du **premier achat**, de la première livraison, ou seulement après vérification d'une identité destinataire autoritative ? Doit-il rester permanent, par marché, par relais ou par destinataire ? Que signifie « même numéro tant qu'une commande est en cours » lorsque deux commandes sont simultanées ou qu'une commande clôture ?
+3. Le suffixe séquentiel `01/02` facilite la lecture mais révèle le nombre et l'ordre d'achats et introduit des contraintes de concurrence ; comparer suffixe opaque unique, version courte, référence commerciale actuelle inchangée + **alias d'affichage**. Vérifier unicité transactionnelle, collisions, volume, réattribution, réimpression, recherche et réversibilité.
+4. **Confidentialité** : un radical stable imprimé sur des colis permet de relier les achats d'une même personne. Évaluer la minimisation sur étiquettes publiques, QR scannables et écrans selon rôle, le risque de suivi/inférence et la durée de rétention. Le radical n'est ni authentification ni code de retrait.
+5. **Compatibilité non régressive** : le code actuel `services/order-service.js` génère `K` + 6 caractères alphanumériques et les références irriguent checkout, PSP, facture, SAV, SMS, QR, suivi et scénarios G6. Évaluer d'abord **une vue regroupée par destinataire avec les identités existantes** avant d'envisager un changement de référence ou alias durable ; aucune migration automatique des anciennes références sans revue.
+6. **Vérité physique** : une PO regroupe plusieurs commandes, une COMBOX mono-marché/destination peut contenir plusieurs clients, une commande peut se répartir sur plusieurs COMBOX. **Ni PO ni COMBOX ne reçoivent automatiquement le radical d'un seul destinataire** ; préserver manifeste détaillé `article/quantité → commande → destinataire → KOM-BOX`. Aucun sac numérique intermédiaire.
+7. **Efficacité au comptoir** : la nouvelle hiérarchie doit réellement faire gagner du temps pour retrouver *tous* les colis d'un destinataire au relais, sélectionner ceux physiquement remis, assurer les preuves colis par colis, sans imposer bac ni lettre. Comparer coût/temps/geste et fuite de données à la simple recherche multi-commandes par destinataire déjà résolu.
+
+**Mandat à Opus :** comparer explicitement (A) références actuelles + regroupement UI/DB par destinataire et marché ; (B) radical stable en **alias d'affichage** ; (C) nouvelle référence hiérarchique canonique. Produire un verdict motivé, les contre-exemples, maquettes d'étiquette Hub/Relais, un schéma de transition rétrocompatible et la voie minimale. L'idée propriétaire est **une hypothèse sérieuse, non un GO**. La doctrine Mode 0 sans bac et la non-entité des sacs restent non négociables. L'ancienne « lettre permanente = bac A partout » décrite plus loin doit être comprise comme une option **réfutée**, pas une recommandation courante.
+
 ## 1. Problème et objectif métier
 
 Komerce organise un **transit temporaire**, pas un stock commercial résident : le Hub reçoit/contrôle/constitue et expédie ; les relais réceptionnent puis remettent. Les volumes futurs, les surfaces, les bacs et l'organisation des sites sont inconnus. Chaque site doit pouvoir étiqueter librement ses zones physiques (`A` à `Z`, puis subdivisions), tout en utilisant un langage commun et des écrans synchronisés.
