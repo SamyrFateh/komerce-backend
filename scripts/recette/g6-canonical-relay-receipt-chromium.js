@@ -144,7 +144,8 @@ async function main(){
   const prior=JSON.parse(fs.readFileSync((env.G6_DYNAMIC_FRESH_ORDER==='1'?'test-results/g6-canonical-customs/report.json':'test-results/g6-canonical-resume/g6-canonical-customs/report.json'),'utf8'));
   const before=await state();report.before=before;save();
   check(hasExpectedRelayOrderRows(before.base.order,{orderId:ORDER,
-    reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',expectedRows:SC.items})&&
+    reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',
+     expectedRows:SC.items,scenario:env.G6_CANONICAL_SCENARIO})&&
     before.base.parcelItems.length===SC.items&&
     before.base.parcelEvents.length===1&&before.base.parcelEvents[0].event_type==='shipped'&&
     isDeepStrictEqual(before.base,prior.after.base)&&before.base.shipments[0].stage==='local_delivery'&&
