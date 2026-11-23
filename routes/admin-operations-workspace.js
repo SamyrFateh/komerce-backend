@@ -406,28 +406,28 @@ router.post(
   '/market/:marketCode/bags',
   attachHubExecutionCapability('execution.parcel.ship'),
   requireHubWorkspaceAction,
-  refuseRetiredCustomerBag
+  async (req, res) => refuseRetiredCustomerBag(req, res)
 );
 
 router.post(
   '/market/:marketCode/bags/:unitId/deposit',
   attachHubExecutionCapability('execution.parcel.ship'),
   requireHubWorkspaceAction,
-  refuseRetiredCustomerBag
+  async (req, res) => refuseRetiredCustomerBag(req, res)
 );
 
 router.post(
   '/market/:marketCode/bags/:unitId/close',
   attachHubExecutionCapability('execution.parcel.ship'),
   requireHubWorkspaceAction,
-  refuseRetiredCustomerBag
+  async (req, res) => refuseRetiredCustomerBag(req, res)
 );
 
 router.post(
   '/market/:marketCode/boxes/:unitId/bags',
   attachHubExecutionCapability('execution.parcel.ship'),
   requireHubWorkspaceAction,
-  refuseRetiredCustomerBag
+  async (req, res) => refuseRetiredCustomerBag(req, res)
 );
 
 router.post(
