@@ -46,7 +46,18 @@ describe('G6 — 46 scenarios: matrix → true workflow dispatch and declared bl
     expect(isTitle(id,market)).toBe(false);
   }
  });
- test('N39 phases, N26 branches and G5A route/SOI options are never replaced by M01 fallback',()=>{
+ test('M06 has a dedicated KM certification dispatch without entering the 46-scenario campaign alias',()=>{
+  expect(workflow).toContain("github.event.issue.title == '[staging-op] g6-m06-certify-KM'");
+  expect(resolver).toContain("github.event.issue.title == '[staging-op] g6-m06-certify-KM' && 'M06'");
+  expect(workflow).toContain("github.event.issue.title == '[staging-op] g6-m06-certify-KM' && 'M06_SAV_ORACLE'");
+  expect(isTitle('M06','KM')).toBe(false);
+  for(const name of ['G6_M06_ACTUAL_PURCHASE_CAPTURE','G6_M06_PAYMENT_AUTHORIZATION_PROOF',
+    'G6_M06_RECEIPT_PROOF_REF','G6_M06_COMBOX_PROOF_REF','G6_M06_FORWARDER_NAME',
+    'G6_M06_TRANSPORT_MODE','G6_M06_HANDOVER_PROOF_REF'])
+    expect(workflow).toContain(`secrets.${name}`);
+  expect(workflow).toContain('g6-m06-input-preflight.js');
+});
+test('N39 phases, N26 branches and G5A route/SOI options are never replaced by M01 fallback',()=>{
   for(const id of ['N39F1','N39F2','N39F3','N26a','N26b','N01','N02','N03','N05','N06'])
    expect(hasBranch(id)).toBe(true);
   for(const mk of ['KM','CM','CG']){
