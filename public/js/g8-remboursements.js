@@ -316,6 +316,8 @@
       if (!['admin', 'agent_relais'].includes(userRole)) {
         throw new Error('Seuls les administrateurs et agents relais habilités ont accès au parcours G8.');
       }
+      const compensationEntry = document.querySelector('[data-g6-sav-compensation-entry]');
+      if (compensationEntry && userRole === 'admin') compensationEntry.hidden = false;
       if (userRole === 'agent_relais') {
         back.href = '/relais/';
         document.querySelector('.brand').href = '/relais/';

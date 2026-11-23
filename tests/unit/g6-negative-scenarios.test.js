@@ -239,7 +239,7 @@ describe('G6-G4B-FIX runner N23, N29, N20',()=>{
  });
  it('N29 : la garde de LOCAL_RELAY_AVAILABLE accepte N29 sans autre assouplissement',()=>{
   const a=read('scripts/recette/g6-local-relay-available-chromium.js');
-  expect(a).toMatch(/\['M02','M03','N23','N24','N21','N22','N29'(?:,'N\d+')*\]\.includes\(env\.G6_CANONICAL_SCENARIO\)/);
+  expect(a).toMatch(/\['M02','M03','N23','N24','N21','N22','N29'(?:,'N[\da-z]+')*\]\.includes\(env\.G6_CANONICAL_SCENARIO\)/);
   expect(a).toMatch(/env\.G6_CANONICAL_PHASE==='LOCAL_RELAY_AVAILABLE'/);expect(a).toMatch(/G6_LOCAL_RELAY_OWNER_STAGING_GUARD/);
  });
  it('N20 : expédition retrouvée via le lien Hub quand parcels.shipment_id est vide',async()=>{
@@ -676,9 +676,26 @@ describe('G6-G5B N25 (SAV retour et double reprise) et N26b (compensation après
   const two=good();two[1]=[{id:'d',status:'open',return_quantity:1},{id:'e',status:'open',return_quantity:1}];
   await expect(N.oracleN25(mk(two),{orderId:'o',stockBefore:5})).rejects.toThrow('G6_N25_PRODUCT_GAP_DOSSIER_COUNT_2');
  });
+ it('oracle N26b : crédit unique au payeur, justificatif, sans PSP ni stock indu',async()=>{
+  const base=[[{id:'o',status:'collected',collected_scans:1}],
+   [{id:'d',status:'open',return_quantity:1}],[{quantity:1,relay_id:'r'}],
+   [{movement:'wallet_credit',amount:'1200',currency:'KMF',reason:'Défaut constaté après reprise physique G6',
+     payer_user_id:'u',order_payer:'u',wallet_transaction_id:'w',wallet_type:'credit',amount_kmf:'1200',
+     wallet_reason:'sav_compensation',reference_id:'o',idempotency_key:'sav_comp_d',created_by:'admin',
+     wallet_receipts:1,refunds:0,psp_intents:0,stock_after:5}]];
+  await expect(N.oracleN26b(mk(base),{orderId:'o',stockBefore:5})).resolves.toMatchObject({
+   movement:'wallet_credit',amount:1200,currency:'KMF',payer_matches_order:true,wallet_receipts:1,
+   refunds:0,psp_intents:0,stock_unchanged:true});
+  const wrongPayer=base.map(rows=>rows.map(row=>({...row})));wrongPayer[3][0].payer_user_id='other';
+  await expect(N.oracleN26b(mk(wrongPayer),{orderId:'o',stockBefore:5})).rejects.toThrow('G6_N26B_PRODUCT_GAP_WALLET_PAYER_OR_DECISION_MISMATCH');
+  const noReceipt=base.map(rows=>rows.map(row=>({...row})));noReceipt[3][0].wallet_receipts=0;
+  await expect(N.oracleN26b(mk(noReceipt),{orderId:'o',stockBefore:5})).rejects.toThrow('G6_N26B_PRODUCT_GAP_WALLET_RECEIPT_COUNT_0');
+ });
  it('script et workflow',()=>{
   const a=read('scripts/recette/g6-negative-n25-sav-chromium.js');
-  expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);expect(a).toMatch(/G6_N26B_SCREEN_MISSING_ADMIN_COMPENSATION_DECISION/);expect(a).toMatch(/second_dossier_same_unit/);expect(a).not.toMatch(/screenshot/);
+  expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);expect(a).toMatch(/executeCompensationDecision/);
+  expect(a).toMatch(/G6_N26B_SAV_COMPENSATION_DECISION_CHROMIUM_PG_PASS/);
+  expect(a).toMatch(/second_dossier_same_unit/);expect(a).not.toMatch(/G6_N26B_SCREEN_MISSING_ADMIN_COMPENSATION_DECISION/);expect(a).not.toMatch(/screenshot/);
   const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
   for(const id of ['N25','N26b'])for(const m of ['KM','CM','CG'])expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
   expect(['N25','N26b'].every(N.isNegative)).toBe(true);

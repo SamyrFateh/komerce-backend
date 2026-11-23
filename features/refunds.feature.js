@@ -61,6 +61,8 @@ module.exports = {
       'public/g8-remboursements.html',
       'public/css/g8-remboursements.css',
       'public/js/g8-remboursements.js',
+      'public/g6-sav-compensation.html',
+      'public/js/g6-sav-compensation.js',
     ],
     migrations: [
       'migrations/416_fable_local_item_refund_reservations.sql',
@@ -97,6 +99,7 @@ module.exports = {
       'tests/e2e-api/refunds.local-shortage-reservation.e2e.test.js',
       'tests/integration/fable-cash-refund-handoff-postgres.test.js',
       'tests/unit/g8-refund-operator-ui.test.js',
+      'tests/unit/g6-n26b-compensation-screen.test.js',
       'tests/staging-canonical/g8-refunds-readonly.spec.js',
       'tests/unit/item-refund-psp-orchestrator.test.js',
       'tests/e2e-api/refunds.item-partial-physical.e2e.test.js',

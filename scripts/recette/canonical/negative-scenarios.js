@@ -576,6 +576,40 @@ async function oracleN25(db,{orderId,stockBefore}){
  ok(c.stock_after===stockBefore,'G6_N25_PRODUCT_GAP_RETURNED_UNIT_BACK_IN_SELLABLE_STOCK_'+stockBefore+'_TO_'+c.stock_after);
  return {dossiers:1,physical_receipts:1,compensations:0,wallet_credits:0,refunds:0,stock_unchanged:true,dossier_status:d[0].status};
 }
+// N26b : la reprise physique est suivie d'une décision admin unique, motivée,
+// créditée au payeur dans la devise de marché et documentée ; aucun PSP.
+async function oracleN26b(db,{orderId,stockBefore}){
+ const o=await orderRows(db,orderId);
+ ok(o.status==='collected','G6_N26B_PRODUCT_GAP_ORDER_NOT_COLLECTED_'+o.status);
+ const {rows:d}=await db.query("SELECT id,status::text AS status,return_quantity FROM disputes WHERE order_id=$1 AND type='product_return'",[orderId]);
+ ok(d.length===1&&Number(d[0].return_quantity)===1,'G6_N26B_PRODUCT_GAP_DOSSIER_COUNT_'+d.length);
+ const {rows:r}=await db.query('SELECT quantity,relay_id FROM relay_product_return_receipts WHERE request_id=$1',[d[0].id]);
+ ok(r.length===1&&Number(r[0].quantity)===1,'G6_N26B_PRODUCT_GAP_PHYSICAL_RECEIPT_COUNT_'+r.length);
+ const {rows:[c]}=await db.query(`SELECT rc.movement,rc.amount::text AS amount,rc.currency,rc.reason,
+    rc.payer_user_id,o.user_id AS order_payer,rc.wallet_transaction_id,
+    wt.type AS wallet_type,wt.amount_kmf,wt.reason AS wallet_reason,wt.reference_id,
+    wt.idempotency_key,wt.created_by,
+    (SELECT count(*)::int FROM transaction_documents td WHERE td.document_type='wallet_receipt'
+      AND td.subject_type='wallet_tx' AND td.subject_id=wt.id) AS wallet_receipts,
+    (SELECT count(*)::int FROM refunds f WHERE f.order_id=o.id) AS refunds,
+    (SELECT count(*)::int FROM refund_execution_intents i WHERE i.order_id=o.id) AS psp_intents,
+    (SELECT COALESCE(SUM(ls.qty_physical),0)::int FROM local_stock ls JOIN order_items oi
+      ON oi.product_id=ls.product_id AND oi.market_id=ls.market_id WHERE oi.order_id=o.id) AS stock_after
+   FROM relay_return_compensations rc JOIN orders o ON o.id=rc.order_id
+   LEFT JOIN wallet_transactions wt ON wt.id=rc.wallet_transaction_id
+  WHERE rc.request_id=$1`,[d[0].id]);
+ ok(c&&c.movement==='wallet_credit'&&Number(c.amount)>0&&c.reason.length>=10&&
+   c.payer_user_id===c.order_payer&&c.wallet_transaction_id&&c.wallet_type==='credit'&&
+   Number(c.amount_kmf)===Number(c.amount)&&c.wallet_reason==='sav_compensation'&&
+   c.reference_id===orderId&&c.idempotency_key==='sav_comp_'+d[0].id&&c.created_by,
+   'G6_N26B_PRODUCT_GAP_WALLET_PAYER_OR_DECISION_MISMATCH');
+ ok(c.wallet_receipts===1,'G6_N26B_PRODUCT_GAP_WALLET_RECEIPT_COUNT_'+c.wallet_receipts);
+ ok(c.refunds===0&&c.psp_intents===0,'G6_N26B_PRODUCT_GAP_EXTERNAL_REFUND_OR_INTENT');
+ ok(c.stock_after===stockBefore,'G6_N26B_PRODUCT_GAP_RETURNED_UNIT_BACK_IN_SELLABLE_STOCK');
+ return {dossiers:1,physical_receipts:1,movement:c.movement,amount:Number(c.amount),currency:c.currency,
+  payer_matches_order:true,wallet_transaction_id:c.wallet_transaction_id,wallet_receipts:c.wallet_receipts,
+  refunds:0,psp_intents:0,stock_unchanged:true};
+}
 // N40 (G6-G5B, prix fournisseur confirmé différent du devis) : écart accepté seulement avec validation séparée ; jamais de paiement, d'autorisation ni de substitution silencieux.
 async function oracleN40(db,{orderId,poId,confirm,quoted}){
  const {rows:[l]}=await db.query(`SELECT po.status::text AS po_status,pl.confirmed_quantity,pl.confirmed_unit_price::text AS confirmed_price,pl.supplier_unit_price::text AS unit_price,pl.product_sku_id
@@ -605,7 +639,7 @@ function classifyNegative(scenario,message){
  const g=new RegExp('G6_'+scenario+'_(SCREEN_MISSING|PRODUCT_GAP)').exec(m);
  return g?g[1]:null;
 }
-module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,oracleN15,oracleN16,oracleN28,oracleN32,oracleN30,oracleN31,oracleN35,oracleN36,oracleN37,oracleN38,ecoControls,snapN16,shipmentForOrder,snapJourney,snapLocalTransport,oracleN17,oracleN18,oracleN19,cancelEffects,oracleN39F1,oracleN39F2,oracleN39F3,oracleN25,oracleN40,importPo,classifyNegative,oracleN08,snapN10,oracleN10};
+module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,oracleN15,oracleN16,oracleN28,oracleN32,oracleN30,oracleN31,oracleN35,oracleN36,oracleN37,oracleN38,ecoControls,snapN16,shipmentForOrder,snapJourney,snapLocalTransport,oracleN17,oracleN18,oracleN19,cancelEffects,oracleN39F1,oracleN39F2,oracleN39F3,oracleN25,oracleN26b,oracleN40,importPo,classifyNegative,oracleN08,snapN10,oracleN10};
 // N08 : une seule commande, une seule ligne, une unité, une clé consommée, aucun paiement ni réservation en double.
 async function oracleN08(db,{orderId,buyerId}){
  const {rows:[n]}=await db.query('SELECT count(*)::int AS n FROM orders WHERE user_id=$1',[buyerId]);
