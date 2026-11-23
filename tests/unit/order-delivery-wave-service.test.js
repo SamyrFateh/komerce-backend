@@ -78,6 +78,49 @@ describe('order delivery waves — single commercial reference', () => {
     expect(queries.filter(q => q.includes('INSERT INTO order_delivery_waves'))).toHaveLength(1);
   });
 
+  test('rejects a recipient belonging to a different buyer before creating a wave', async () => {
+    const client = { query: jest.fn(async (sql) => {
+      if (sql.includes('SELECT id FROM relais WHERE')) return { rows: [{ id: 'r1' }] };
+      if (sql.includes('SELECT id FROM recipients WHERE')) return { rows: [] };
+      throw new Error('Unexpected SQL: ' + sql);
+    }) };
+    await expect(waves.reserveWaveReference(client, {
+      userId: 'buyer1', recipientId: 'another-buyers-recipient',
+      marketId: 'm1', relaisId: 'r1', marketCode: 'CM',
+    })).rejects.toThrow('ORDER_WAVE_RECIPIENT_NOT_VERIFIED');
+    expect(client.query.mock.calls.some(([sql]) => sql.includes('INSERT INTO order_delivery_waves'))).toBe(false);
+  });
+
+  test('two verified recipients of the same buyer cannot share a temporary client code', async () => {
+    const activeByRecipient = new Map();
+    let lastRecipient = null;
+    let sequence = 0;
+    const client = { query: jest.fn(async (sql, params) => {
+      if (sql.includes('SELECT id FROM relais WHERE')) return { rows: [{ id: 'r1' }] };
+      if (sql.includes('SELECT id FROM recipients WHERE')) return { rows: [{ id: params[0] }] };
+      if (sql.includes('pg_advisory_xact_lock')) return { rows: [] };
+      if (sql.includes('FROM order_delivery_waves') && sql.includes('FOR UPDATE')) {
+        lastRecipient = params[0];
+        const record = activeByRecipient.get(params[0]);
+        return { rows: record ? [record] : [] };
+      }
+      if (sql.includes('INSERT INTO order_delivery_waves')) {
+        // Expose the actual SQL scope: recipient ID is used as the owner key.
+        expect(params[0]).toBe(lastRecipient);
+        const record = { id: 'wave' + (++sequence), client_code: params[3], opened_at: new Date().toISOString() };
+        activeByRecipient.set(params[0], record);
+        return { rows: [record] };
+      }
+      if (sql.includes('FROM orders WHERE reference=')) return { rows: [] };
+      throw new Error('Unexpected SQL: ' + sql);
+    }) };
+    const base = { userId: 'buyer1', marketId: 'm1', relaisId: 'r1', marketCode: 'CM' };
+    const a = await waves.reserveWaveReference(client, { ...base, recipientId: 'recipient1' });
+    const b = await waves.reserveWaveReference(client, { ...base, recipientId: 'recipient2' });
+    expect(a.waveId).not.toBe(b.waveId);
+    expect(a.clientCode).not.toBe(b.clientCode); // DB unique constraint enforces this for live PG
+  });
+
   test('first proven handoff closes admission in the same transaction', async () => {
     const before = process.env.KOMERCE_ENV;
     const beforeFlag = process.env.KOMERCE_ORDER_WAVES_ENABLED;
