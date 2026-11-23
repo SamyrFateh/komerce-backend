@@ -53,7 +53,12 @@ describe('M06 real Hub supplier-receive 201 response (no invented reconciliation
   expect(receipt).toContain("Number(after.external_payment_rows)===0");
   expect(receipt).toContain("Number(after.receive_placements_count)===1");
   expect(receipt).toContain("json.unit?.state||null");
-  expect(combox).toContain("after.receipt_state==='RECEIVED'");
+  expect(combox).toContain("after.receipt_state==='RECEIVED'"); // before repack
+  expect(combox).toContain("after.receipt_state==='SUPERSEDED'"); // after full repack
+  expect(combox).toContain("!!after.receipt_placement_removed_at");
+  expect(combox).toContain("p0.operation_type='RECEIVE'");
+  expect(combox).not.toContain("p0.operation_type='RECEIVE' AND p0.removed_at IS NULL");
+  expect(service).toContain("UPDATE hub_physical_units SET state = 'SUPERSEDED'");
   expect(service).toContain("initialState: 'RECEIVED'");
  });
 });
