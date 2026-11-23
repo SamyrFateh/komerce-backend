@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       services/market-transport-sale-rates.js, services/order-fx-snapshot.js, db.js, services/cart-share-service.js,
+ * @depends       services/order-delivery-wave-service.js, services/market-transport-sale-rates.js, services/order-fx-snapshot.js, db.js, services/cart-share-service.js,
  *                services/order-post-commit-hooks.js, services/order-checkout-item-resolution.js,
  *                services/order-checkout-persistence.js, services/local-stock-service.js,
  *                services/market-local-price-resolution-service.js
@@ -70,6 +70,7 @@ const { getLoyaltyDiscount }             = require('./loyalty-service');
 const { getRates } = require('../utils/rates');
 const { getRule }                        = require('../utils/rules');
 const { getUniqueRef, generateCashCode } = require('./order-service');
+const { wavesEnabled, reserveWaveReference } = require('./order-delivery-wave-service');
 const walletService = require('./wallet-service');
 const { resolveRoutingFromRelais, RoutingError } = require('./routing');
 const { resolveOrderItemTransportRail, TransportPricingError } = require('./transport-pricing');
@@ -558,7 +559,18 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
       ? generateCashCode()
       : null;
 
-    const reference = internalSimulation ? internalSimulation.reference : await getUniqueRef(db);
+    // New commercial reference contains destination + temporary client grouping.
+    // Only real staging buyers after explicit opt-in; preserve isolated G6 fixtures.
+    // Every operation joins the SAME checkout DB transaction.
+    const waveRef = (!internalSimulation && !g6Buyer && wavesEnabled())
+      ? await reserveWaveReference(client, {
+          userId: user.id, marketId: relais.market_id, relaisId: relais.id,
+          marketCode: checkoutMarket.code,
+        })
+      : null;
+    const reference = internalSimulation
+      ? internalSimulation.reference
+      : waveRef ? waveRef.reference : await getUniqueRef(client);
 
     // ── P3 : snapshot du montant PRÉSENTÉ au client (freeze 22-08-2026) ──
     // Logique complète dans services/order-display-snapshot.js (extraite
@@ -592,6 +604,7 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
 
     const order = await insertOrderRow(client, {
       reference, userId: user.id, recipientId: recipient_id, relaisId: relais?.id || null,
+      deliveryWaveId: waveRef ? waveRef.waveId : null,
       trackingPhone: tracking_phone,
       totalKmf: total_kmf, totalEur: fxSnapshotBuilt.totalEur,
       paymentMode: payment_mode, stripePaymentIntent: null, cashRefCode: cash_ref_code,
