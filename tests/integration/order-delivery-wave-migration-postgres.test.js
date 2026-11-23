@@ -56,9 +56,9 @@ describeDb('migration 426 — real PostgreSQL transactional smoke', () => {
     if (!thrown) throw new Error('A PostgreSQL constraint was bypassed');
     expect(thrown.code).toBe(errorCode);
   }
-  test('stable name-derived relay codes are unique per market and support YA010', async () => {
+  test('stable name-derived relay codes are unique per market and support YA10', async () => {
     await expectConflict('UPDATE public.relais SET short_code=\'YA01\' WHERE id=$1',[relay2],'23505');
-    await pg.query('UPDATE public.relais SET short_code=\'YA010\' WHERE id=$1',[relay2]);
+    await pg.query('UPDATE public.relais SET short_code=\'YA10\' WHERE id=$1',[relay2]);
     await expectConflict('UPDATE public.relais SET short_code=\'YA00\' WHERE id=$1',[relay2],'23514');
   });
   test('a recipient has one open wave and 3-character codes do not collide in one relay', async () => {
