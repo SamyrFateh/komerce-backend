@@ -40,7 +40,10 @@ function makeDb({ row = dossier(), existing = null } = {}) {
     release: jest.fn(),
     query: jest.fn(async (sql, params) => {
       calls.push({ sql, params });
-      if (/FROM disputes d/.test(sql)) return { rows: row ? [row] : [] };
+      if (/FROM disputes d/.test(sql)) {
+        const stagingScopeAllowed = params?.[1] === true;
+        return { rows: row && (!row.simulation_scope || stagingScopeAllowed) ? [row] : [] };
+      }
       if (/FROM relay_return_compensations/.test(sql)) return { rows: existing ? [existing] : [] };
       if (/business_rules/.test(sql)) return { rows: [] };
       if (/relay_product_return_receipts/.test(sql)) return { rows: [{ id: uuid(9), quantity: 1 }] };
@@ -145,5 +148,32 @@ describe('proposeCompensation', () => {
     const p = await svc.proposeCompensation({ actor: ADMIN, requestId: REQ, db });
     expect(p).toMatchObject({ currency: 'XAF', line_value: 6000, scale_pct: 20, suggested_amount: 1200 });
     expect(mockCredit).not.toHaveBeenCalled();
+  });
+
+  it('expose les commandes G6 marquées uniquement en staging, avec la même barrière en production', async () => {
+    const recipe = dossier({ simulation_scope: 'G6-BUYER' });
+    const staging = makeDb({ row: recipe });
+    const proposal = await svc.proposeCompensation({ actor: ADMIN, requestId: REQ, db: staging.db, env: { KOMERCE_ENV: 'staging' } });
+    expect(proposal.request_id).toBe(REQ);
+    expect(staging.calls[0].params).toEqual([REQ, true]);
+
+    const production = makeDb({ row: recipe });
+    await expect(svc.proposeCompensation({ actor: ADMIN, requestId: REQ, db: production.db, env: { KOMERCE_ENV: 'production' } }))
+      .rejects.toMatchObject({ code: 'COMPENSATION_DOSSIER_NOT_FOUND', status: 404 });
+    expect(production.calls[0].params).toEqual([REQ, false]);
+    expect(mockCredit).not.toHaveBeenCalled();
+  });
+
+  it('décide en staging sur une commande G6, sans perdre la clé idempotente du crédit', async () => {
+    const { db, calls } = makeDb({ row: dossier({ simulation_scope: 'G6-BUYER' }) });
+    const result = await svc.decideCompensation({
+      actor: ADMIN, requestId: REQ, movement: 'wallet_credit', amount: 1200,
+      reason: 'Défaut constaté sur la commande G6', db, env: { KOMERCE_ENV: 'staging' },
+    });
+    expect(calls[1].params).toEqual([REQ, true]);
+    expect(result.replayed).toBe(false);
+    expect(mockCredit).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      idempotencyKey: `sav_comp_${REQ}`,
+    }));
   });
 });
