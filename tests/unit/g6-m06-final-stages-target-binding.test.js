@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'../..');
 const source=p=>fs.readFileSync(path.join(root,p),'utf8');
 const adapter=source('scripts/recette/canonical/real-buyer-cash-adapters.js');
-const finalBranch=adapter.split("if(SCENARIO==='M06'&&M06_FINAL_STAGES.includes(stageId)){")[1]
+const finalBranch=adapter.slice(adapter.lastIndexOf("if(SCENARIO==='M06'&&M06_FINAL_STAGES.includes(stageId)){"))
  .split("if(SCENARIO==='M06'&&M06_PREP_STAGES.includes(stageId))")[0];
 
 describe('M06 shared final-mile target fingerprint propagates to all Chromium stages',()=>{
