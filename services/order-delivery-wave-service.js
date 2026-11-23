@@ -53,7 +53,7 @@ function validateMarketCode(value) {
 
 function buildReference({ marketCode, relayCode, clientCode, suffix }) {
   validateMarketCode(marketCode);
-  if (!/^[A-Z]{3}[1-9]$/.test(relayCode || '') ||
+  if (!/^[A-Z]{3}[1-9][0-9]?$/.test(relayCode || '') ||
       !/^[A-HJ-NP-Z][A-HJ-NP-Z2-9]{3}$/.test(clientCode || '') ||
       !/^[A-HJ-NP-Z2-9]{2}$/.test(suffix || '')) {
     throw new Error('ORDER_WAVE_REFERENCE_PART_INVALID');
