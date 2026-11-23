@@ -617,10 +617,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Rembourser un client de facon tracable et sans double remboursement, quel que soit le flux appelant.
 
-- utils: 3
+- utils: 5
 - migrations: 3
 - services: 12
-- tests: 25
+- tests: 26
 - tables owned (lifecycle): 7 — `refunds`, `refund_execution_intents`, `order_item_refund_reservations`, `local_item_refund_reservations`, `local_cash_refund_authorizations`, `local_cash_refund_payouts`, `local_mobile_refund_handoffs`
 - tables written: 7
 - interfaces exposed: 0
@@ -2329,7 +2329,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2379 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2381 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 218 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_

@@ -31881,7 +31881,7 @@
             ]
           },
           "tests": {
-            "count": 25,
+            "count": 26,
             "files": [
               {
                 "declared": "tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js",
@@ -31941,6 +31941,11 @@
               {
                 "declared": "tests/staging-canonical/g8-refunds-readonly.spec.js",
                 "resolvedPath": "tests/staging-canonical/g8-refunds-readonly.spec.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/g6-n26b-compensation-screen.test.js",
+                "resolvedPath": "tests/unit/g6-n26b-compensation-screen.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -32011,7 +32016,7 @@
             ]
           },
           "utils": {
-            "count": 3,
+            "count": 5,
             "files": [
               {
                 "declared": "public/css/g8-remboursements.css",
@@ -32019,8 +32024,18 @@
                 "status": "resolved-on-disk-no-header"
               },
               {
+                "declared": "public/g6-sav-compensation.html",
+                "resolvedPath": "public/g6-sav-compensation.html",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
                 "declared": "public/g8-remboursements.html",
                 "resolvedPath": "public/g8-remboursements.html",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "public/js/g6-sav-compensation.js",
+                "resolvedPath": "public/js/g6-sav-compensation.js",
                 "status": "resolved-on-disk-no-header"
               },
               {
@@ -32031,7 +32046,7 @@
             ]
           }
         },
-        "totalFiles": 43,
+        "totalFiles": 46,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
