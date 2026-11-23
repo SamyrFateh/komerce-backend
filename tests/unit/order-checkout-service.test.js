@@ -29,7 +29,8 @@ describe('order-checkout-service market lifecycle', () => {
   test('serializes RCT1 E1/G references and refuses duplicate checkout', () => {
     expect(source).toMatch(/reserveRct1OrderReference\(client, internalSimulation.reference\)/);
     expect(source).toMatch(/RCT1_ORDER_ALREADY_EXISTS/);
-    expect(source).toMatch(/const reference = internalSimulation[\\s\\S]*internalSimulation.reference[\\s\\S]*waveRef[\\s\\S]*getUniqueRef\\(client\\)/);
+    expect(source).toContain('const reference = internalSimulation');
+    expect(source).toContain('waveRef ? waveRef.reference : await getUniqueRef(client)');
     expect(source).toMatch(/isAllowedRct1Reference/);
   });
   test('E1 refuses checkout total mismatch before inserting order', () => {
