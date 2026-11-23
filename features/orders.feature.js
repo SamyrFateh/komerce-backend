@@ -183,6 +183,7 @@ module.exports = {
       'tests/unit/payment-service.test.js',
       'tests/unit/order-service.test.js',
       'tests/unit/order-delivery-wave-service.test.js',
+      'tests/integration/order-delivery-wave-migration-postgres.test.js',
       'tests/unit/orderParcelLinkRules.test.js',
       'tests/unit/orders-parcels-route.test.js',
       'tests/unit/parcels.test.js',
@@ -236,7 +237,7 @@ module.exports = {
       'order_status_history: RW',
       'orders: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'relay_return_compensations: RW!', // Compensation SAV, décision unique (A1)
-      'order_delivery_waves: RW!', // staging-only wave admission and closure owner
+      'order_delivery_waves: RW!', // staging-only, grouped by verified recipient ID
       'order_checkout_idempotency: RW!', // Unique checkout claim (migration 408 ; staged, pas encore live)
       'parcel_items: R',
       'parcels: R',
