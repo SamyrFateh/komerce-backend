@@ -28,7 +28,7 @@ module.exports = {
   perimeter: {
     in: [
       'creation, annulation, machine de statut de la commande',
-      'vague de tri temporaire invisible, incluse dans la référence unique des nouvelles commandes staging',
+      'vague de tri temporaire, avec référence commerciale structurée unique CM-YA01-B7Q01 pour les nouvelles commandes staging',
       'snapshot de cout a la commande',
       'rattachement aux colis et aux achats fournisseurs',
       'collecte QR au retrait',
