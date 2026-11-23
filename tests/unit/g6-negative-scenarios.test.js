@@ -686,6 +686,12 @@ describe('G6-G5B N25 (SAV retour et double reprise) et N26b (compensation après
   await expect(N.oracleN26b(mk(base),{orderId:'o',stockBefore:5})).resolves.toMatchObject({
    movement:'wallet_credit',amount:1200,currency:'KMF',payer_matches_order:true,wallet_receipts:1,
    refunds:0,psp_intents:0,stock_unchanged:true});
+  let stockOracleSql='';let queryIndex=0;
+  const sqlDb={query:async(sql)=>{stockOracleSql=sql;return {rows:base[queryIndex++]};}};
+  await N.oracleN26b(sqlDb,{orderId:'o',stockBefore:5});
+  expect(stockOracleSql).toContain('ls.market_id=o.market_id');
+  expect(stockOracleSql).toContain('oi.order_id=o.id AND oi.product_id=ls.product_id');
+  expect(stockOracleSql).not.toMatch(/oi\.market_id/);
   const wrongPayer=base.map(rows=>rows.map(row=>({...row})));wrongPayer[3][0].payer_user_id='other';
   await expect(N.oracleN26b(mk(wrongPayer),{orderId:'o',stockBefore:5})).rejects.toThrow('G6_N26B_PRODUCT_GAP_WALLET_PAYER_OR_DECISION_MISMATCH');
   const noReceipt=base.map(rows=>rows.map(row=>({...row})));noReceipt[3][0].wallet_receipts=0;

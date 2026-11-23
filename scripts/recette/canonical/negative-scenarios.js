@@ -593,8 +593,10 @@ async function oracleN26b(db,{orderId,stockBefore}){
       AND td.subject_type='wallet_tx' AND td.subject_id=wt.id) AS wallet_receipts,
     (SELECT count(*)::int FROM refunds f WHERE f.order_id=o.id) AS refunds,
     (SELECT count(*)::int FROM refund_execution_intents i WHERE i.order_id=o.id) AS psp_intents,
-    (SELECT COALESCE(SUM(ls.qty_physical),0)::int FROM local_stock ls JOIN order_items oi
-      ON oi.product_id=ls.product_id AND oi.market_id=ls.market_id WHERE oi.order_id=o.id) AS stock_after
+    (SELECT COALESCE(SUM(ls.qty_physical),0)::int FROM local_stock ls
+      WHERE ls.market_id=o.market_id AND EXISTS (
+        SELECT 1 FROM order_items oi WHERE oi.order_id=o.id AND oi.product_id=ls.product_id
+      )) AS stock_after
    FROM relay_return_compensations rc JOIN orders o ON o.id=rc.order_id
    LEFT JOIN wallet_transactions wt ON wt.id=rc.wallet_transaction_id
   WHERE rc.request_id=$1`,[d[0].id]);
