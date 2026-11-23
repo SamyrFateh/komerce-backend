@@ -5,7 +5,7 @@
  * @test-runner jest
  * @test-requires postgres
  * @integration mixed-order-local-receipt-before-hub-postgres.test.js
- * @brief #3900 A1 — commande mixte (LOCAL_STOCK + IMPORT) réceptionnée localement avant la répartition Hub : la ligne import reste répartissable, ensachable, mise en KOM-BOX, expédiée et reçue au relais ; les deux retraits aboutissent ; le stock local reste hors distribution Hub (#4068).
+ * @brief #3900 A1 — commande mixte (LOCAL_STOCK + IMPORT) ; réception locale et répartition réelles, ancien ensachage refusé 410 et absence de faux retrait import. Le parcours positif COMBOX directe reste à recertifier séparément.
  */
 jest.setTimeout(120000);
 
@@ -132,62 +132,30 @@ describeDb('A1 — commande mixte : réception locale avant répartition Hub (PG
     expect(await workspace.distributeSingleOrder(orderRef, market)).toMatchObject({ success: true, already_assigned: true });
   });
 
-  test('sac → KOM-BOX : plus de 409 HUB_BAG_PARCEL_NOT_READY, le sac de la ligne import se range', async () => {
+  test('un ancien sac client est rejeté 410 sans modifier la commande mixte', async () => {
+    const before = (await q('SELECT count(*)::int AS n FROM hub_physical_units WHERE order_id=$1', [orderId])).rows[0].n;
     const bag = await hubOps.createOperatorUnitCommand({
-      unit_type: 'HANDLING_UNIT', order_id: orderId, reference: tag + '-SAC',
-      bag_plan: [{ order_item_id: importItem, quantity: 1 }] }, admin);
-    expect(bag.status).toBe(201);
-    bagId = bag.body.physical_unit.id;
-    const moved = await hubOps.moveAllocationCommand({
-      from_unit_id: sourceUnitId, to_unit_id: bagId, allocation_id: importAllocation,
-      quantity: 1, operation_type: 'REPACK', evidence_method: 'SCAN', evidence_code: barcode }, admin);
-    expect(moved.status).toBe(200);
-    for (const to_state of ['IDENTIFIED', 'QUALITY_CHECKED', 'LOCATED', 'ALLOCATED', 'PICKED', 'PACKED']) {
-      expect((await hubOps.transitionOperatorUnitCommand({ unit_id: bagId, to_state, location_ref: 'HUB-DXB-SACS' }, admin)).status).toBe(200);
-    }
-    const box = await hubOps.createOperatorUnitCommand({ unit_type: 'MARKET_PARCEL', reference: tag + '-BOX' }, admin);
-    expect(box.status).toBe(201);
-    boxId = box.body.physical_unit.id;
-    for (const to_state of ['IDENTIFIED', 'QUALITY_CHECKED', 'LOCATED', 'ALLOCATED', 'PICKED']) {
-      expect((await hubOps.transitionOperatorUnitCommand({ unit_id: boxId, to_state }, admin)).status).toBe(200);
-    }
-    // parcelId omis : le service dérive le colis import unique ; le colis local (available) n'est jamais choisi.
-    const linked = await bagBox.attachBagToBox({
-      bagUnitId: bagId, boxUnitId: boxId, bagReferenceScan: tag + '-SAC', boxReferenceScan: tag + '-BOX',
-      evidenceMethod: 'SCAN', expectedMarketId: km, actorId: admin });
-    expect(linked).toMatchObject({ parcel_id: importParcelId, already_linked: false });
-  });
-
-  test('expédition puis réception relais de la ligne import', async () => {
-    shipmentRef = tag + '-SHIP';
-    const shipmentId = id();
-    await q("INSERT INTO international_shipments(id,market_id,reference,forwarder_name,transport_mode,stage,created_by) VALUES($1,$2,$3,'Transitaire','sea','local_delivery',$4)",
-      [shipmentId, km, shipmentRef, admin]);
-    await fixture(async (c) => {
-      await c.query("UPDATE hub_physical_units SET state='DISPATCHED' WHERE id=$1", [boxId]);
-      await c.query('INSERT INTO international_shipment_hub_units(shipment_id,physical_unit_id) VALUES($1,$2)', [shipmentId, boxId]);
-    });
-    const out = await relay.receiveShipment({ market, actor: relayAgent, reference: shipmentRef,
-      body: { proof_ref: 'BORD-A1', lines: [{ order_item_id: importItem, received_qty: 1 }] } });
-    expect(out.complete).toBe(true);
-    expect((await q('SELECT status FROM parcels WHERE id=$1', [importParcelId])).rows[0].status).toBe('available');
+      unit_type:'HANDLING_UNIT',order_id:orderId,reference:tag+'-SAC',
+      bag_plan:[{order_item_id:importItem,quantity:1}],
+    }, admin);
+    expect(bag).toMatchObject({status:410,body:{code:'HUB_CUSTOMER_BAG_RETIRED'}});
+    const after = (await q('SELECT count(*)::int AS n FROM hub_physical_units WHERE order_id=$1', [orderId])).rows[0].n;
+    expect(after).toBe(before);
     expect(await orderStatus()).toBe('available');
   });
 
-  test('les deux retraits aboutissent : un colis par remise, la commande reste retirable jusqu au second', async () => {
-    const { collectByPickupCode } = require('../../services/pickup-collection-service');
-    const { regenerateCode } = require('../../services/pickup-secret-service');
-    const statuses = async () => (await q("SELECT status FROM parcels WHERE order_id=$1 ORDER BY status", [orderId])).rows.map((r) => r.status);
-    expect(await statuses()).toEqual(['available', 'available']);
-    for (const expectedAfter of [['available', 'collected'], ['collected', 'collected']]) {
-      // Le code clair n'est jamais conservé : l'admin en régénère un (procédure de perte) avant chaque remise.
-      const issued = await regenerateCode({ orderId, adminId: admin, reason: 'A1 test remise' });
-      expect(issued.status).toBe(200);
-      const code = issued.body.code;
-      const out = await collectByPickupCode({ code, user: relayAgent, expectedOrderId: orderId });
-      expect(out.status).toBe(200);
-      expect(await statuses()).toEqual(expectedAfter);
-    }
-    expect(await orderStatus()).toBe('collected');
+  test('le colis import ne devient jamais reçu ou remis sans preuve COMBOX directe', async () => {
+    const {rows} = await q(
+      "SELECT p.id,p.status,oi.fulfillment_source FROM parcels p JOIN parcel_items pi ON pi.parcel_id=p.id "+
+      "JOIN order_items oi ON oi.id=pi.order_item_id WHERE p.order_id=$1 ORDER BY oi.fulfillment_source",
+      [orderId]);
+    const imported=rows.find(row=>row.fulfillment_source==='IMPORT');
+    const local=rows.find(row=>row.fulfillment_source==='LOCAL_STOCK');
+    expect(imported).toMatchObject({id:importParcelId,status:'preparation'});
+    expect(local).toMatchObject({id:localParcelId,status:'available'});
+    const {rows:[proof]}=await q(
+      "SELECT count(*)::int AS n FROM international_shipment_relay_receipts WHERE order_item_id=$1",
+      [importItem]);
+    expect(proof.n).toBe(0);
   });
 });

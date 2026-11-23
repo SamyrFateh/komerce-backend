@@ -13,11 +13,48 @@ jest.mock('../../services/order-mutation-service', () => ({
 jest.mock('../../services/order-status-machine', () => ({ transitionOrderStatus: jest.fn() }));
 jest.mock('../../services/pickup-secret-rotation-service', () => ({ rotatePickupSecretAfterPartialCollection: jest.fn() }));
 jest.mock('../../utils/parcelSync', () => ({ safeSyncScanToParcels: jest.fn() }));
+jest.mock('../../services/order-delivery-wave-service', () => ({ closeWaveOnFirstHandoff: jest.fn().mockResolvedValue(true) }));
 
 const {
   recordCanonicalCollection,
   mapCanonicalCollectionError,
 } = require('../../services/pickup-collection-recorder');
+
+describe('pickup-collection-recorder — fermeture invisible de vague', () => {
+  const { safeSyncScanToParcels } = require('../../utils/parcelSync');
+  const { closeWaveOnFirstHandoff } = require('../../services/order-delivery-wave-service');
+
+  beforeEach(() => jest.clearAllMocks());
+
+  test('une remise partielle physiquement prouvée clôture l’admission mais conserve la commande disponible', async () => {
+    safeSyncScanToParcels.mockResolvedValue({
+      synced: true, parcelsUpdated: 1, orderStatus: 'available', parcelId: 'parcel-1', parcelReference: 'KOM-P-1',
+    });
+    const client = { query: jest.fn().mockResolvedValue({ rows: [{ id: 'scan-1' }] }) };
+    const outcome = await recordCanonicalCollection({
+      client, order: { id: 'order-1', reference: 'CM-YAO1-B7Q4-X8', status: 'available', relais_id: 'relay-1' },
+      agentId: 'agent-1', role: 'agent_relais', pickupMethod: 'PICKUP_CODE', notes: 'remise contrôlée',
+    });
+    expect(outcome.partial).toBe(true);
+    expect(outcome.orderStatus).toBe('available');
+    expect(closeWaveOnFirstHandoff).toHaveBeenCalledTimes(1);
+    expect(closeWaveOnFirstHandoff).toHaveBeenCalledWith(client, 'order-1');
+  });
+
+  test('une remise exceptionnelle prouvée ferme aussi la vague sans remplacer les preuves nominatives', async () => {
+    safeSyncScanToParcels.mockResolvedValue({
+      synced: true, parcelsUpdated: 1, orderStatus: 'collected', parcelId: 'parcel-2', parcelReference: 'KOM-P-2',
+    });
+    const client = { query: jest.fn().mockResolvedValue({ rows: [{ id: 'scan-2' }] }) };
+    const outcome = await recordCanonicalCollection({
+      client, order: { id: 'order-2', reference: 'CM-YAO1-B7Q4-M2', status: 'available', relais_id: 'relay-1' },
+      agentId: 'agent-1', role: 'agent_relais', pickupMethod: 'AUTHORIZED_NAME_ID_CHECK',
+      authorizationVersion: 1, documentChecked: true, notes: 'dérogation validée',
+    });
+    expect(outcome.partial).toBe(false);
+    expect(closeWaveOnFirstHandoff).toHaveBeenCalledWith(client, 'order-2');
+  });
+});
 
 describe('pickup-collection-recorder', () => {
   test('exige un client transactionnel', async () => {
@@ -63,6 +100,7 @@ describe('pickup-collection-recorder', () => {
       notes:'code de retrait valide',
     })).rejects.toThrow('La synchronisation du colis ciblé a échoué');
     expect(transitionOrderStatus).not.toHaveBeenCalled();
+    expect(require('../../services/order-delivery-wave-service').closeWaveOnFirstHandoff).not.toHaveBeenCalled();
   });
 
   test('mappe les conflits canoniques en 409 sans masquer les erreurs inconnues', () => {

@@ -164,6 +164,23 @@ beforeEach(() => {
   mockAssignInventory.mockResolvedValue({ item_id: 'item-1', parcel_ref: 'PCL-CM-001', assigned: true });
 });
 
+test('toutes les anciennes mutations de sac client sont refusées 410 après vérification des droits Hub', async () => {
+  const routes = [
+    '/market/CM/bags',
+    '/market/CM/bags/00000000-0000-4000-8000-000000000011/deposit',
+    '/market/CM/bags/00000000-0000-4000-8000-000000000011/close',
+    '/market/CM/boxes/00000000-0000-4000-8000-000000000012/bags',
+  ];
+  for (const suffix of routes) {
+    const res = await request(app()).post('/api/admin/workspaces/operations' + suffix).send({});
+    expect(res.status).toBe(410);
+    expect(res.body.code).toBe('HUB_CUSTOMER_BAG_RETIRED');
+  }
+  mockGrantedCapabilities.delete('execution.parcel.ship@CM');
+  const denied = await request(app()).post('/api/admin/workspaces/operations/market/CM/bags').send({});
+  expect(denied.status).toBe(403);
+});
+
 test('D3 retire complètement require-market-scope du Workspace Opérations', () => {
   expect(routeSource).not.toMatch(/require\(['"][^'"]*require-market-scope/);
   expect(routeSource).not.toMatch(/\b(?:attachAuthorizedMarkets|requireMarketScope|operator_market_scopes)\b/);
