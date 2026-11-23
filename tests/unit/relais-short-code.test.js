@@ -29,6 +29,17 @@ describe('relay code comes from the actual relay name', () => {
     expect(q).toHaveBeenCalledTimes(1);
   });
 
+  test('tenth relay is numbered YAO10, not refused or renamed', async () => {
+    const query = jest.fn(async (sql, params) => {
+      if (sql.includes('SELECT id, name, short_code')) return {rows:[{id:'r10',name:'Relais Yaoundé Quartier 10',short_code:null}]};
+      if (sql.includes('pg_advisory_xact_lock')) return {rows:[]};
+      if (sql.includes('SELECT short_code FROM relais')) return {rows:Array.from({length:9},(_,i)=>({short_code:'YAO'+(i+1)}))};
+      if (sql.includes('UPDATE relais SET short_code')) return {rows:[{short_code:params[2]}]};
+      throw new Error('Unexpected SQL: '+sql);
+    });
+    expect(await ensureRelaisShortCode({query},{marketId:'m1',relaisId:'r10'})).toBe('YAO10');
+  });
+
   test('market-local numeric suffix avoids two same-named relays colliding', async () => {
     const calls = [];
     const query = jest.fn(async (sql,params) => {
