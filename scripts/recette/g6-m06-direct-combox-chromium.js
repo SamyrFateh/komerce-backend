@@ -139,7 +139,7 @@ async function main(){
    await gesture(actor,'create-combox',API+'/boxes',section.locator('[data-workspace-action="create-box"]'),
     (b,req)=>b&&Object.keys(b).length===1&&b.reference===BOXREF&&!!req.headers()['idempotency-key']);
    let after=await readState();
-   check(after.receipt_unit_id===plan.receipt_unit_id&&after.receipt_state==='IDENTIFIED'&&
+   check(after.receipt_unit_id===plan.receipt_unit_id&&after.receipt_state==='RECEIVED'&&
     after.box_count===0&&after.direct.length===0,'G6_M06_COMBOX_CREATE_PG_INVALID');
    const boxId=(await db.query('SELECT id FROM hub_physical_units WHERE reference=$1',[BOXREF])).rows[0]?.id;
    check(UUID.test(String(boxId||'')),'G6_M06_COMBOX_CREATED_UNIT_MISSING');
@@ -171,7 +171,7 @@ async function main(){
    check(after.direct.length===1&&after.direct[0].box_id===boxId&&after.direct[0].allocation_id===plan.allocation_id&&
     Number(after.direct[0].quantity)===3&&after.direct[0].operation_type==='REPACK'&&
     after.direct[0].evidence_method==='MANUAL'&&after.direct[0].evidence_ref===proof&&
-    after.receipt_state==='IDENTIFIED','G6_M06_COMBOX_FILL_PG_INVALID');
+    after.receipt_state==='RECEIVED','G6_M06_COMBOX_FILL_PG_INVALID');
    report.after_fill={box_state:after.direct[0].state,placement_quantity:Number(after.direct[0].quantity),
     operation_type:after.direct[0].operation_type,evidence_method:after.direct[0].evidence_method,
     proof_ref_hash:digest(after.direct[0].evidence_ref),read_only:true};save();
