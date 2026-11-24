@@ -112,10 +112,11 @@ test('écart déjà décidé : la preuve s’affiche sans offrir de nouvelle dé
 
 test('préparation COMBOX : navigation vers le dossier et le marché, sans mutation', async () => {
   const menu=el('div');
+  menu.setAttribute('data-hub-request','1');
   const order={id:PO_ID,reference:'KABC123',market:'CM',stage_states:{cartons:'ready'}};
   const fetchFn=jest.fn(async()=>({ok:true,json:async()=>({purchase_orders:[{id:PO_ID,lines:[{order_id:order.id,received:2}]}],boxes:[],needs:[]})}));
   await load().operations(menu,{doc,fetch:fetchFn,user:{role:'agent_hub'},order,stage:'Cartons',refresh:jest.fn()});
-  const links=walk(menu).filter(n=>n.attrs['data-hub-workflow-link']);
+  const links=walk(menu).filter(n=>Object.prototype.hasOwnProperty.call(n.attrs,'data-hub-workflow-link'));
   expect(links).toHaveLength(1);
   const url=new URL(links[0].href,'https://staging.invalid');
   expect(url.pathname).toBe('/admin/hub-live');
