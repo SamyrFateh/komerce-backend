@@ -372,6 +372,7 @@
   // Hub live · Exécution : actions Hub uniquement (jamais Relais) + réception fournisseur.
   const EXECUTION_VIEWS = Object.freeze([
     { id: 'supply', label: 'Dossiers' },
+    { id: 'labels', label: 'Étiquettes QR' },
     { id: 'reception', label: 'Réceptions' },
     { id: 'hub', label: 'Actions Hub' },
     { id: 'inventory', label: 'Stock à affecter' },
@@ -1223,6 +1224,13 @@
 
   function renderSupplySection(rootNode, ui, doc, context) {
     // Concept C : aucun bloc KPI ni titre de section redondant au-dessus du cockpit (hero existant conservé).
+    // Fast, visible entry to labels; never send operators hunting below historic COMBOX.
+    const labelJump=doc.createElement('button');
+    labelJump.type='button';labelJump.className='kmc-hub-label-shortcut';
+    labelJump.textContent='Étiquettes QR · Télécharger PDF A4 / 80 mm';
+    labelJump.setAttribute('data-hub-label-shortcut','');
+    labelJump.addEventListener('click',()=>{context.view='labels';context.renderCurrent();});
+    rootNode.appendChild(labelJump);
     const flowHost = doc.createElement('div');
     flowHost.className = 'kmc-hub-flow';
     rootNode.appendChild(flowHost);
@@ -1707,7 +1715,7 @@
       return cell.children.length ? cell : '—';
     };
 
-    boxes.appendChild(simpleTable(doc, ['', 'COMBOX', 'État', 'Contenu', 'Expédition', 'Composer', 'Action'],
+    const boxTable=simpleTable(doc, ['', 'COMBOX', 'État', 'Contenu', 'Expédition', 'Composer', 'Action'],
       (d.boxes || []).map(box => {
         const contents = box.contents.map(c => `${c.order_ref} ×${formatNumber(c.qty)}`).join(', ');
         let pick = '';
@@ -1738,7 +1746,30 @@
           }).catch(() => {}));
         }
         return [pick, box.reference, box.state, contents || '—', box.shipment_ref || '—', composeCell(box), action];
-      }), 'Aucune COMBOX.'));
+      }), 'Aucune COMBOX.');
+    const boxToolbar=doc.createElement('div');
+    boxToolbar.className='kmc-hub-box-filter';
+    const boxSearch=doc.createElement('input');
+    boxSearch.type='search';boxSearch.placeholder='Rechercher une COMBOX, commande ou expédition…';
+    boxSearch.setAttribute('aria-label','Filtrer les COMBOX physiques');
+    const boxCounter=text(doc,'span','kmc-workspace-muted','');
+    boxToolbar.append(boxSearch,boxCounter);
+    boxes.appendChild(boxToolbar);
+    boxes.appendChild(boxTable);
+    boxTable.setAttribute('data-hub-combox-scroll','');
+    const boxRows=Array.from(boxTable.querySelectorAll('tbody tr'));
+    const filterBoxes=()=>{
+      const q=boxSearch.value.trim().toLocaleLowerCase('fr');
+      let found=0;
+      for(const row of boxRows){
+        const show=!q||String(row.textContent||'').toLocaleLowerCase('fr').includes(q);
+        row.hidden=!show;
+        if(show)found++;
+      }
+      boxCounter.textContent=found+' / '+boxRows.length+' COMBOX · défilement interne';
+    };
+    boxSearch.addEventListener('input',filterBoxes);
+    filterBoxes();
 
     const secondary = doc.createElement('details');
     secondary.className = 'kmc-hub-physical-secondary';
@@ -2288,6 +2319,16 @@
 
     if (view === 'reception') renderReceptionSection(rootNode, ui, doc, context);
     if (view === 'supply') renderSupplySection(rootNode, ui, doc, context);
+    if (view === 'labels' && context.mode==='execution') {
+      const station=doc.createElement('section');
+      station.setAttribute('data-hub-labels-station','');
+      rootNode.appendChild(station);
+      const module=globalThis.KomerceHubLabelCenter;
+      if(!module)station.appendChild(text(doc,'p','kmc-workspace-empty','Poste QR indisponible : recharger la page.'));
+      else module.mount({host:station,doc,marketCode:context.marketCode,fetchFn:context.fetch,
+        fillable:Array.isArray(context.dossier?.fillable)?context.dossier.fillable:[],
+        act:(button,opts)=>runAction(context,button,opts)});
+    }
 
     if (view === 'relay') {
     context.relayCollectCount=payload.queues?.relay?.to_collect?.length||0;

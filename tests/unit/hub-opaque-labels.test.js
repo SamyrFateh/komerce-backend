@@ -136,3 +136,35 @@ describe('Étiquettes QR opaques Hub — contrat réel',()=>{
     expect(q.query.mock.calls[0][1]).toEqual(['KQ1_'+'A'.repeat(32),UUID.market,UUID.relay]);
   });
 });
+
+describe('Hub QR index: authorized market-only read after dispatch and collection',()=>{
+  test('returns issued groups without QR payload, client data or cross-market query',async()=>{
+    const q={query:jest.fn().mockResolvedValue({rows:[
+      {target_type:'ARTICLE',allocation_id:UUID.allocation,target_id:UUID.allocation,label_count:3,
+       issued_at:'2026-11-24T10:00:00Z',order_ref:'KABC123',box_ref:null,relay_code:'YA01',box_state:null},
+      {target_type:'COMBOX',target_id:UUID.box,label_count:1,
+       issued_at:'2026-11-24T11:00:00Z',order_ref:null,box_ref:'COMBOX-A',relay_code:'YA01',box_state:'DISPATCHED'}
+    ]})};
+    const index=await labels.listMarketLabelGroups(q,{marketId:UUID.market});
+    expect(index).toEqual([
+      {type:'ARTICLE',target_id:UUID.allocation,quantity:3,
+       issued_at:'2026-11-24T10:00:00Z',reference:'KABC123',relay_code:'YA01',box_state:null},
+      {type:'COMBOX',target_id:UUID.box,quantity:1,
+       issued_at:'2026-11-24T11:00:00Z',reference:'COMBOX-A',relay_code:'YA01',box_state:'DISPATCHED'}
+    ]);
+    expect(q.query).toHaveBeenCalledTimes(1);
+    const [sql,params]=q.query.mock.calls[0];
+    expect(sql).toContain('WHERE l.market_id=$1');
+    expect(sql).toContain('FROM hub_scan_labels l');
+    expect(sql).toContain('GROUP BY l.target_type,l.allocation_id,l.physical_unit_id');
+    expect(params).toEqual([UUID.market,80]);
+    expect(JSON.stringify(index)).not.toMatch(/qr_value|client_name|client_phone|created_by/);
+  });
+  test('invalid market fails before SQL query and cap cannot exceed 100',async()=>{
+    const q={query:jest.fn().mockResolvedValue({rows:[]})};
+    await expect(labels.listMarketLabelGroups(q,{marketId:'foreign'})).rejects.toThrow('HUB_LABEL_ID_INVALID');
+    expect(q.query).not.toHaveBeenCalled();
+    await labels.listMarketLabelGroups(q,{marketId:UUID.market,limit:9999});
+    expect(q.query.mock.calls[0][1]).toEqual([UUID.market,100]);
+  });
+});

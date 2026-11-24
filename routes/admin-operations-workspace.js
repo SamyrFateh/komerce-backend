@@ -293,6 +293,23 @@ router.get(
 // POST explicite pour l'émission stable ; GET d'impression/relecture strictement read-only.
 const hubLabels = require('../services/hub-opaque-labels');
 const {renderHubLabelPdf}=require('../services/hub-label-pdf');
+// FIND an already issued label directly: no stock mutation, no secret QR payload,
+// and no client PII. Useful even after COMBOX is DISPATCHED / order collected.
+router.get(
+  '/market/:marketCode/labels/index',
+  attachHubExecutionCapability('execution.parcel.receive'),
+  requireHubWorkspaceAction,
+  async(req,res,next)=>{
+    try{
+      const labels=await hubLabels.listMarketLabelGroups(db,{
+        marketId:req.workspaceMarket.id,limit:80,
+      });
+      res.set('Cache-Control','private, no-store');
+      res.set('X-Content-Type-Options','nosniff');
+      return res.status(200).json({ok:true,market:req.workspaceMarket.code,labels});
+    }catch(err){return sendWorkspaceError(err,res,next);}
+  }
+);
 router.post(
   '/market/:marketCode/labels/articles/:allocationId/issue',
   attachHubExecutionCapability('execution.parcel.receive'),
