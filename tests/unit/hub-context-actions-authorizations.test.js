@@ -107,7 +107,13 @@ test('écart fournisseur : la décision est distincte et réservée au détenteu
   expect(actions(run(po, 'Paiement', {}))).toEqual([]);
   expect(actions(run(po, 'Paiement', { supplier_payment: true }, { role: 'finance' }))).toEqual([]);
   expect(actions(run(po, 'Justificatifs', { supplier_payment: true }))).toEqual([]);
-  expect(actions(run(po, 'Paiement', { supplier_payment: true }))).toEqual(['Décider un écart fournisseur']);
+  const admin=run(po,'Paiement',{supplier_payment:true});
+  expect(actions(admin)).toEqual([]);
+  expect(links(admin)[0].href).toContain('entry=direction');
+  expect(links(admin)[0].href).toContain('decision=variance');
+  const menu=el('div');
+  load().directionVariance(menu,{doc,fetch:jest.fn(),user:{role:'agent_hub'},po:{id:PO_ID,...po},grants:{supplier_payment:true}});
+  expect(actions(menu)).toEqual(['Décider un écart fournisseur']);
 });
 
 test('écart déjà décidé : la preuve s’affiche sans offrir de nouvelle décision', () => {
@@ -152,4 +158,10 @@ test.each(['PO','Fournisseur','Réception','Cartons','Départ','Reste à solder'
     expect(url.searchParams.get('sel')).toBeTruthy();
   }
   expect(fetchFn.mock.calls.every(([,opts])=>opts.method==='GET')).toBe(true);
+});
+
+test('PO partagée : les liens permettent de choisir un vrai marché sans modifier la PO',()=>{
+ const menu=run({market:'CM · KM',status:'confirmed',payment_decision:decision},'Paiement',{supplier_payment:true});
+ expect(actions(menu)).toEqual([]);
+ expect(links(menu).map(n=>new URL(n.href,'https://staging.invalid').searchParams.get('market'))).toEqual(['CM','KM']);
 });
