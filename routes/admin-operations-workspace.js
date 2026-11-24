@@ -292,6 +292,7 @@ router.get(
 // Identités QR opaques : la génération ne mute jamais réception, allocation ou custody.
 // POST explicite pour l'émission stable ; GET d'impression/relecture strictement read-only.
 const hubLabels = require('../services/hub-opaque-labels');
+const {renderHubLabelPdf}=require('../services/hub-label-pdf');
 router.post(
   '/market/:marketCode/labels/articles/:allocationId/issue',
   attachHubExecutionCapability('execution.parcel.receive'),
@@ -346,6 +347,36 @@ router.get(
   attachHubExecutionCapability('execution.parcel.ship'),
   requireHubWorkspaceAction,
   async(req,res,next)=>renderProtectedHubLabels(req,res,next,'COMBOX')
+);
+// Secure binary PDF for test printing or on-screen camera scans.
+// The identity has already been issued; downloading never mutates Hub state.
+async function renderProtectedHubLabelsPdf(req,res,next,type){
+ try{
+  const labels=await hubLabels.listLabels(db,{
+   targetType:type,targetId:req.params.id,marketId:req.workspaceMarket.id,
+  });
+  const format=req.query.format||'a4';
+  const data=await renderHubLabelPdf(db,{
+   labels,marketCode:req.workspaceMarket.code,format,
+  });
+  res.set('Cache-Control','private, no-store');
+  res.set('X-Content-Type-Options','nosniff');
+  res.set('Content-Security-Policy',"default-src 'none'; base-uri 'none'; sandbox");
+  res.set('Content-Disposition','attachment; filename="KOMERCE-'+type+'-'+req.workspaceMarket.code+'-'+format+'.pdf"');
+  return res.status(200).type('pdf').send(data);
+ }catch(err){return sendWorkspaceError(err,res,next);}
+}
+router.get(
+ '/market/:marketCode/labels/articles/:id/pdf',
+ attachHubExecutionCapability('execution.parcel.receive'),
+ requireHubWorkspaceAction,
+ async(req,res,next)=>renderProtectedHubLabelsPdf(req,res,next,'ARTICLE')
+);
+router.get(
+ '/market/:marketCode/labels/boxes/:id/pdf',
+ attachHubExecutionCapability('execution.parcel.ship'),
+ requireHubWorkspaceAction,
+ async(req,res,next)=>renderProtectedHubLabelsPdf(req,res,next,'COMBOX')
 );
 router.get(
   '/market/:marketCode/labels/resolve',

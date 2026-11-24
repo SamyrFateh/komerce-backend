@@ -1403,6 +1403,38 @@
         setFeedback(context.root,'Impression indisponible : '+String(error.message||'erreur'),'critical');
       }
     };
+    // Direct PDF download remains authenticated through the canonical dashboard
+    // fetch; no public QR URL or backend state transition is involved.
+    const downloadLabelPdf = async(event,href,filename)=>{
+      event.preventDefault();
+      try{
+        const response=await context.fetch(href,{
+          method:'GET',credentials:'include',headers:{Accept:'application/pdf'}
+        });
+        if(!response.ok)throw new Error('HTTP '+response.status+' · émettez d’abord les étiquettes');
+        const mime=String(response.headers.get('Content-Type')||'').toLowerCase();
+        if(!mime.includes('application/pdf'))throw new Error('Document PDF invalide');
+        const blob=await response.blob();
+        if(blob.size<100||!blob.type.includes('pdf'))throw new Error('PDF vide ou invalide');
+        const url=URL.createObjectURL(blob);
+        const a=doc.createElement('a');
+        a.href=url;a.download=filename;a.style.display='none';
+        doc.body.appendChild(a);a.click();a.remove();
+        // Browsers read the blob asynchronously when a download begins.
+        setTimeout(()=>URL.revokeObjectURL(url),30000);
+      }catch(error){
+        setFeedback(context.root,'Téléchargement PDF indisponible : '+String(error.message||'erreur'),'critical');
+      }
+    };
+    const pdfLink=(type,id,format)=>{
+      const a=doc.createElement('a');
+      a.href=endpointFor(context.marketCode,'labels/'+type+'/'+encodeURIComponent(id)+'/pdf?format='+format);
+      a.textContent=format==='a4'?'Télécharger PDF A4':'Télécharger PDF 80 mm';
+      a.setAttribute('data-hub-pdf-'+(type==='articles'?'article':'box')+'-'+format,'');
+      a.addEventListener('click',event=>downloadLabelPdf(event,a.href,
+        'KOMERCE-'+(type==='articles'?'ARTICLE':'COMBOX')+'-'+context.marketCode+'-'+format+'.pdf'));
+      return a;
+    };
     const createBar = doc.createElement('div');
     createBar.className = 'kmc-workspace-receive-footer';
     createBar.setAttribute('data-supply-box-create', '');
@@ -1521,7 +1553,7 @@
         print.textContent='Imprimer les QR';
         print.setAttribute('data-hub-print-article','');
         print.addEventListener('click',event=>openLabelPrint(event,print.href));
-        row.append(issue,print);labelSection.appendChild(row);
+        row.append(issue,print,pdfLink('articles',line.allocation_id,'a4'),pdfLink('articles',line.allocation_id,'thermal'));labelSection.appendChild(row);
       }
       boxes.appendChild(labelSection);
     }
@@ -1545,7 +1577,7 @@
         printBox.textContent='Imprimer QR COMBOX';
         printBox.setAttribute('data-hub-print-box','');
         printBox.addEventListener('click',event=>openLabelPrint(event,printBox.href));
-        cell.append(createQr,printBox);
+        cell.append(createQr,printBox,pdfLink('boxes',box.unit_id,'a4'),pdfLink('boxes',box.unit_id,'thermal'));
       }else{
         cell.appendChild(text(doc,'small','kmc-workspace-note','Étiquette COMBOX après fermeture et contrôle du contenu.'));
       }
