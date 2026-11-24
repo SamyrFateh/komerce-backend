@@ -184,6 +184,8 @@ test('la remise du brouillon refuse zéro carton ou carton non expédié, puis e
   const y=fixture('hub_ready',{hub_draft:true,forwarder_name:null,transport_mode:null});
   const old=y.client.query.getMockImplementation();
   y.client.query.mockImplementation(async(sql,params)=>{
+    if(String(sql).includes('AS qr_required'))
+      return {rows:[{qr_required:true}]};
     if(String(sql).startsWith('SELECT u.id,u.reference,u.state,u.outcome_type'))
       return {rows:[{id:uuid,reference:'BOX-1',state:'DISPATCHED',outcome_type:null}]};
     return old(sql,params);
@@ -195,6 +197,7 @@ test('la remise du brouillon refuse zéro carton ou carton non expédié, puis e
   expect(y.executed.some(q=>q.sql.startsWith('UPDATE international_shipments'))).toBe(false);
   // Le geste Hub exige ensuite la preuve de scan de chaque COMBOX du manifeste.
   y.client.query.mockImplementation(async(sql,params)=>{
+    if(String(sql).includes('AS qr_required'))return {rows:[{qr_required:true}]};
     if(String(sql).includes('COUNT(*)::int AS total') && String(sql).includes('hub_box_custody_scans'))
       return {rows:[{total:1,missing:0}]};
     if(String(sql).startsWith('SELECT u.id,u.reference,u.state,u.outcome_type'))
