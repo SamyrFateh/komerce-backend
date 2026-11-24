@@ -130,8 +130,8 @@ async function transition(market,actor,reference,body={},database=db){
       await custodyScans.requireScanCoverage(client,s.id,'CARRIER_LOADED');
       if(s.transport_mode==='sea'&&!s.container_reference)
         fail(409,'JOURNEY_CONTAINER_REQUIRED','Référence conteneur obligatoire avant départ maritime');
-      if(body.container_sealed!==true)
-        fail(409,'JOURNEY_CONTAINER_SEAL_REQUIRED','Attestation explicite de fermeture et départ requise');
+      if(s.transport_mode==='sea'&&body.container_sealed!==true)
+        fail(409,'JOURNEY_CONTAINER_SEAL_REQUIRED','Attestation explicite de fermeture du conteneur et départ requise');
     }
     if(target==='in_transit'&&!s.tracking_reference&&!s.bill_of_lading_ref)
       fail(409,'JOURNEY_TRACKING_REQUIRED','Suivi ou connaissement requis avant départ');
