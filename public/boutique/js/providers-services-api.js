@@ -32,6 +32,7 @@ export async function createProviderInquiry(
   intent = 'request',
   requesterNote = null,
   handoff = null,
+  optionKey = null,
 ) {
   if (!ref || !['service', 'physical_offer'].includes(kind)) {
     return { ok: false, status: 400, code: 'invalid_target', error: 'Cible invalide' };
@@ -59,6 +60,7 @@ export async function createProviderInquiry(
   if (requestedWindow) body.requested_window = requestedWindow;
   if (requesterNote) body.requester_note = requesterNote;
   if (normalizedHandoff) body.handoff = normalizedHandoff;
+  if (kind === 'physical_offer' && optionKey) body.option_key = String(optionKey);
 
   try {
     const response = await fetch(`/api/providers-services/inquiries?market=${encodeURIComponent(market)}`, {

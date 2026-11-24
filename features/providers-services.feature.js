@@ -51,7 +51,7 @@ module.exports = {
     in: [
       'table providers (identité et contact privé, market, statut pending|active|suspended)',
       'table services (prestation d’un provider, exposition DISABLED par défaut, image_ref public optionnel)',
-      'table physical_offers (produit physique tiers, image_ref public optionnel)',
+      'table physical_offers (produit physique tiers, image_ref public optionnel, offer_options structurées informatives ; aucun SKU stock ou paiement)',
       'actions_enabled historiques sur service/physical_offer, projetées publiquement vers request et/ou callback ; whatsapp reste en plus un capability flag de handoff pour Service',
       'projection publique provider_name pour humaniser une fiche exposable sans exposer provider_id ni contact privé',
       'projection publique service whatsapp_available booléenne ; jamais le numéro provider lui-même',
@@ -114,6 +114,7 @@ module.exports = {
       'migrations/157_providers_services_media.sql',
       'migrations/160_providers_services_interaction_actions.sql',
       'migrations/161_providers_services_inquiry_context.sql',
+      'migrations/429_physical_offer_options.sql',
     ],
     tests: [
       'tests/unit/providers-service.test.js',
