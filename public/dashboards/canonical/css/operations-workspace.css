@@ -2106,3 +2106,16 @@ body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="execution"] > .
 .kmc-operations-workspace [data-supply-boxes] [data-hub-combox-scroll] tbody tr[hidden]{
   display:none;
 }
+
+/* Jalons Hub : même état serveur que le Kanban, un seul atelier propriétaire. */
+.kmc-hub-journey { margin: 8px 0 12px; padding: 10px; border: 1px solid #d5dce4; border-radius: 8px; }
+.kmc-hub-journey:empty { display: none; }
+.kmc-hub-journey-title { display: block; margin-bottom: 8px; }
+.kmc-hub-journey-steps { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 6px; }
+.kmc-hub-journey-step { display: flex; flex-direction: column; gap: 4px; text-align: left; padding: 8px; border-radius: 6px; border: 1px solid #ccd5df; background: transparent; color: inherit; min-width: 0; cursor: pointer; }
+.kmc-hub-journey-step small { font-size: 12px; }
+.kmc-hub-journey-step:disabled { cursor: default; opacity: .7; }
+.kmc-hub-journey-step.is-done { background: #e5e7eb; border-color: #cbd5e1; color: #475569; opacity: 1; }
+.kmc-hub-journey-step.is-current { background: #174c8a; color: #fff; border-color: #174c8a; box-shadow: 0 0 0 2px #93c5fd; opacity: 1; }
+.kmc-hub-journey-step[data-state="warning"]:not(.is-current),.kmc-hub-journey-step[data-state="critical"]:not(.is-current) { border-color: #b45309; }
+@media (max-width: 760px) { .kmc-hub-journey-steps { grid-template-columns: repeat(2,minmax(0,1fr)); } }
