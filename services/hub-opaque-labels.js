@@ -101,32 +101,43 @@ async function issueArticleLabels(q,{allocationId,marketId,actorId}) {
   if(rows.length!==item.count) throw new LabelError(409,'HUB_LABEL_RECEIVED_QUANTITY_MISMATCH');
   return rows;
 }
-async function issueBoxLabel(q,{boxId,marketId,relaisId,actorId}) {
-  const {rows:[relay]}=await q.query(
-    'SELECT id FROM relais WHERE id=$1 AND market_id=$2 AND is_active=TRUE',
-    [validId(relaisId),validScope(marketId)]
-  );
-  if(!relay) throw new LabelError(404,'HUB_LABEL_RELAY_NOT_IN_MARKET');
+async function issueBoxLabel(q,{boxId,marketId,relaisId=null,actorId}) {
   const {rows:[box]}=await q.query(
-    "SELECT id,market_id,unit_type FROM hub_physical_units WHERE id=$1 FOR UPDATE",
+    "SELECT id,market_id,unit_type,state FROM hub_physical_units WHERE id=$1 FOR UPDATE",
     [validId(boxId)]
   );
   if(!box||box.unit_type!=='MARKET_PARCEL'||(box.market_id&&String(box.market_id)!==String(marketId)))
     throw new LabelError(404,'HUB_LABEL_BOX_NOT_IN_MARKET');
+  // The final box label is issued only after the content is closed and locked.
+  // During composition, the Hub still uses its internal box reference for scanning.
+  if(!['PACKED','DISPATCHED'].includes(box.state))
+    throw new LabelError(409,'HUB_LABEL_BOX_NOT_CLOSED');
   const {rows:destinations}=await q.query(
     `SELECT DISTINCT a.market_id,o.relais_id
-      FROM hub_physical_unit_placements p
-      JOIN hub_purchase_allocations a ON a.id=p.allocation_id
-      JOIN orders o ON o.id=a.order_id
-      WHERE p.physical_unit_id=$1 AND p.removed_at IS NULL`,[box.id]
+       FROM hub_box_effective_placements p
+       JOIN hub_purchase_allocations a ON a.id=p.allocation_id
+       JOIN orders o ON o.id=a.order_id
+      WHERE p.box_unit_id=$1`,[box.id]
   );
-  if(destinations.some(d=>String(d.market_id)!==String(marketId)||String(d.relais_id)!==String(relaisId)))
+  if(destinations.length!==1||!destinations[0].relais_id)
+    throw new LabelError(409,'HUB_LABEL_BOX_DESTINATION_REQUIRED');
+  const destination=destinations[0];
+  if(String(destination.market_id)!==String(marketId)||
+     (relaisId&&String(destination.relais_id)!==String(relaisId)))
     throw new LabelError(409,'HUB_LABEL_BOX_DESTINATION_MISMATCH');
-  const label=await insertOpaque(q,{type:'COMBOX',boxId:box.id,marketId,relaisId,actorId:validId(actorId)});
-  if(String(label.market_id)!==String(marketId)||String(label.relais_id)!==String(relaisId))
+  const actualRelay=validId(String(destination.relais_id));
+  const {rows:[relay]}=await q.query(
+    'SELECT id FROM relais WHERE id=$1 AND market_id=$2 AND is_active=TRUE',
+    [actualRelay,validScope(marketId)]
+  );
+  if(!relay) throw new LabelError(404,'HUB_LABEL_RELAY_NOT_IN_MARKET');
+  const label=await insertOpaque(q,{type:'COMBOX',boxId:box.id,marketId,
+    relaisId:actualRelay,actorId:validId(actorId)});
+  if(String(label.market_id)!==String(marketId)||String(label.relais_id)!==actualRelay)
     throw new LabelError(409,'HUB_LABEL_BOX_DESTINATION_IMMUTABLE');
   return label;
 }
+
 async function resolveLabel(q,{code,marketId,relaisId=null}) {
   const scan=normalizeScan(code);
   const {rows:[row]}=await q.query(
