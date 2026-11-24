@@ -935,7 +935,7 @@
     header.appendChild(focusToggle);
     if (administrativeAllowed) {
       const execution = make(doc,'a','kmc-hub-app-branch','Opérations');
-      execution.setAttribute('href','/admin/hub-live?view=execute');
+      execution.setAttribute('href','/admin/hub-live?view=execute&entry=operations');
       execution.setAttribute('data-hub-open-operations','');
       execution.setAttribute('aria-label','Ouvrir le poste d’exécution Hub et choisir le marché');
       header.appendChild(execution);
