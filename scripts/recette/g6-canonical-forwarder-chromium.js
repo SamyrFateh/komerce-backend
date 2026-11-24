@@ -32,7 +32,7 @@ const report={schema:'komerce-g6-forwarder/1',shipment_id:ID,shipment_ref:REF,or
  provenance:'SIMULATED / STAGING ONLY',external_payment_executed:false,external_supplier_calls:0};
 const check=(ok,code)=>{if(!ok)throw Error(code)};
 function save(){fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n')}
-function proof(key){return '[SIMULATED / STAGING ONLY] G6-M01-'+key+'-'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6')}
+function proof(key){return '[SIMULATED / STAGING ONLY] G6-'+(M06?'M06':'M01')+'-'+key+'-'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6')}
 async function snapshot(stage,placement){
  const base=await readback();checkShipment(base,ID,stage);
  check(base.box[0].id===BOX&&base.box[0].state==='DISPATCHED'&&base.parcels[0].status==='shipped'&&
