@@ -54,6 +54,12 @@ describe('staging reset classification : garde anti-derive', () => {
     expect(c.PROTECTED.has('order_delivery_waves')).toBe(false);
   });
 
+  test('les preuves de garde COMBOX suivent la purge FK de l activité de recette', () => {
+    expect(c.classOf('hub_box_custody_scans')).toBe('purge_via_fk');
+    expect(c.isPurgeClass('hub_box_custody_scans', 'activity')).toBe(true);
+    expect(c.PROTECTED.has('hub_box_custody_scans')).toBe(false);
+  });
+
   test('referentiels critiques et comptes : jamais purges', () => {
     for (const t of ['markets', 'finance_config', 'currency_parities', 'fx_pegs', 'schema_migrations', 'sourcing_sources', 'capability_registry']) {
       expect(c.classOf(t)).toBe('foundation');

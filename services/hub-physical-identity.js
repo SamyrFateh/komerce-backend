@@ -1111,21 +1111,7 @@ async function transitionPhysicalUnit(executor, {
   if (!before) fail('HUB_PHYSICAL_UNIT_NOT_FOUND');
   if (before.state === toState) return { noop: true, unit: before };
   if(before.unit_type==='MARKET_PARCEL'&&toState==='DISPATCHED'){
-    // Les COMBOX historiques restent valides. Toute COMBOX déjà étiquetée,
-    // ou contenant une commande sur le nouveau moteur de vague, exige un QR.
-    const {rows:[qrPolicy]}=await db.query(
-      `SELECT (
-        EXISTS (SELECT 1 FROM hub_scan_labels l
-                 WHERE l.physical_unit_id=$1 AND l.target_type='COMBOX')
-        OR EXISTS (
-          SELECT 1 FROM hub_physical_unit_placements p
-          JOIN hub_purchase_allocations a ON a.id=p.allocation_id
-          JOIN orders o ON o.id=a.order_id
-          WHERE p.physical_unit_id=$1 AND p.removed_at IS NULL
-            AND o.reference ~ '^[A-Z]{2}-[A-Z]{2}[0-9]{2}-[A-Z][A-Z0-9]{2}[0-9]{2}$'
-        )
-      ) AS qr_required`,[unitId]);
-    if(qrPolicy?.qr_required){
+    if(await require('./hub-opaque-labels').boxRequiresOpaqueQr(db,unitId)){
     if(before.state!=='PACKED')fail('HUB_BOX_NOT_PACKED','Fermer la COMBOX avant sortie du Hub');
     const scan=String(details.box_qr_scan||'').trim().toUpperCase();
     if(!/^KQ1_[A-F0-9]{32}$/.test(scan)&&!/^[A-HJ-NP-Z2-9]{8}$/.test(scan))

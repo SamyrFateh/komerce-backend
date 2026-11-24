@@ -208,4 +208,22 @@ header strong{font-size:22px}header small{font-weight:bold;font-size:12px}
 </style></head><body><div class="no-print"><button onclick="window.print()">Imprimer les étiquettes</button></div>
 ${pages.join('\n')}</body></html>`;
 }
-module.exports={LabelError,normalizeScan,issueArticleLabels,issueBoxLabel,resolveLabel,listLabels,printHtml};
+async function boxRequiresOpaqueQr(db, unitId) {
+  // Les COMBOX historiques restent valides. Toute COMBOX déjà étiquetée,
+  // ou contenant une commande sur le nouveau moteur de vague, exige un QR.
+  const {rows:[qrPolicy]}=await db.query(
+    `SELECT (
+      EXISTS (SELECT 1 FROM hub_scan_labels l
+               WHERE l.physical_unit_id=$1 AND l.target_type='COMBOX')
+      OR EXISTS (
+        SELECT 1 FROM hub_physical_unit_placements p
+        JOIN hub_purchase_allocations a ON a.id=p.allocation_id
+        JOIN orders o ON o.id=a.order_id
+        WHERE p.physical_unit_id=$1 AND p.removed_at IS NULL
+          AND o.reference ~ '^[A-Z]{2}-[A-Z]{2}[0-9]{2}-[A-Z][A-Z0-9]{2}[0-9]{2}
+
+      )
+    ) AS qr_required`,[unitId]);
+  return qrPolicy?.qr_required === true;
+}
+module.exports={LabelError,normalizeScan,issueArticleLabels,issueBoxLabel,resolveLabel,listLabels,printHtml,boxRequiresOpaqueQr};

@@ -39,6 +39,15 @@ function fakeDb(received=3) {
 }
 
 describe('Étiquettes QR opaques Hub — contrat réel',()=>{
+  test('politique COMBOX : étiquette existante ou nouvelle référence impose le QR',async()=>{
+    const query=jest.fn().mockResolvedValueOnce({rows:[{qr_required:true}]}).mockResolvedValueOnce({rows:[{qr_required:false}]});
+    await expect(labels.boxRequiresOpaqueQr({query},UUID.box)).resolves.toBe(true);
+    await expect(labels.boxRequiresOpaqueQr({query},UUID.box)).resolves.toBe(false);
+    expect(query).toHaveBeenCalledTimes(2);
+    expect(query.mock.calls[0][0]).toContain("l.target_type='COMBOX'");
+    expect(query.mock.calls[0][0]).toContain('p.removed_at IS NULL');
+    expect(query.mock.calls[0][1]).toEqual([UUID.box]);
+  });
   test('valeurs illisibles, références commerciales et URL refusées',()=>{
     const qr='KQ1_'+'A'.repeat(32);
     expect(labels.normalizeScan(qr.toLowerCase())).toBe(qr);
