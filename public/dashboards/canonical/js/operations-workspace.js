@@ -1505,13 +1505,43 @@
     const composeCell = box => {
       const cell = doc.createElement('div');
       cell.className = 'kmc-workspace-box-compose';
+      const qrDestinations=new Map();
+      fillable.filter(line=>line.relais_id&&Number(line.quantity)>0).forEach(line=>{
+        qrDestinations.set(String(line.relais_id),String(line.relais_code||line.relais_id));
+      });
+      if(BOX_MUTABLE.has(box.state)&&qrDestinations.size){
+        const relayChoice=doc.createElement('select');
+        relayChoice.setAttribute('aria-label','Relais de destination de l’étiquette COMBOX');
+        for(const [relayId,relayCode] of qrDestinations){
+          relayChoice.appendChild(Object.assign(doc.createElement('option'),{
+            value:relayId,textContent:'Destination · '+relayCode,
+          }));
+        }
+        const createQr=makeActionButton(doc,'Préparer QR COMBOX','issue-box-label');
+        createQr.addEventListener('click',()=>runAction(context,createQr,{
+          url:endpointFor(context.marketCode,'labels/boxes/'+encodeURIComponent(box.unit_id)+'/issue'),
+          body:{relais_id:relayChoice.value},
+          runningMessage:'Attribution du QR de cette COMBOX…',
+          successMessage:'QR COMBOX prêt à imprimer, destination fixée.',
+        }).catch(()=>{}));
+        cell.append(relayChoice,createQr);
+      }
+      const printBox=doc.createElement('a');
+      printBox.href=endpointFor(context.marketCode,'labels/boxes/'+encodeURIComponent(box.unit_id)+'/print?format=thermal');
+      printBox.target='_blank';printBox.rel='noopener';
+      printBox.textContent='Imprimer QR COMBOX';
+      printBox.setAttribute('data-hub-print-box','');
+      cell.appendChild(printBox);
+      const readyBoxCode=value=>value===box.reference||
+        /^KQ1_[A-F0-9]{32}$/i.test(String(value||''))||
+        /^[A-HJ-NP-Z2-9]{8}$/i.test(String(value||''));
       if (BOX_MUTABLE.has(box.state)) {
         const boxScan=field('Scanner la COMBOX','Scanner la référence de la COMBOX '+box.reference);
         boxScan.setAttribute('data-hub-box-scan','');
         context.hubVerifiedBoxes=context.hubVerifiedBoxes||{};
         boxScan.value=context.hubVerifiedBoxes[String(box.unit_id)]||'';
         boxScan.addEventListener('input',()=>{
-          if(boxScan.value.trim()===box.reference)context.hubVerifiedBoxes[String(box.unit_id)]=box.reference;
+          if(readyBoxCode(boxScan.value.trim()))context.hubVerifiedBoxes[String(box.unit_id)]=boxScan.value.trim();
           else delete context.hubVerifiedBoxes[String(box.unit_id)];
         });
         const options=fillable.filter(line=>Number(line.quantity)>0);
@@ -1537,8 +1567,8 @@
         };
         method.addEventListener('change',syncMethod);
         const fill=()=>{
-          if(boxScan.value.trim()!==box.reference){
-            setFeedback(context.root,'Scannez d’abord la référence de cette COMBOX.','critical'); return;
+          if(!readyBoxCode(boxScan.value.trim())){
+            setFeedback(context.root,'Scannez la référence ou le QR de cette COMBOX.','critical'); return;
           }
           const line=options[Number(item.value)]; if(!line)return;
           const manual=method.value==='MANUAL';
@@ -1560,14 +1590,29 @@
           }).catch(()=>{});
         };
         add.disabled=!options.length;
-        [boxScan,item,method,code,proof,qty,add].forEach(node=>cell.appendChild(node));
+        const boxCamera=mobileScanControls(boxScan,'Caméra QR COMBOX');
+        const itemCamera=mobileScanControls(code,'Caméra QR article',async raw=>{
+          if(!/^KQ1_[A-F0-9]{32}$/i.test(raw)&&!/^[A-HJ-NP-Z2-9]{8}$/i.test(raw))return;
+          try{
+            const resolved=await jsonRequest(context.fetch,endpointFor(context.marketCode,
+              'labels/resolve')+'?'+new URLSearchParams({code:raw}));
+            if(resolved.label?.target_type!=='ARTICLE')throw new Error('Ce QR ne correspond pas à un article');
+            const index=options.findIndex(line=>String(line.allocation_id)===String(resolved.label.allocation_id));
+            if(index<0)throw new Error('Cet article ne figure pas parmi les quantités disponibles');
+            item.value=String(index);method.value='SCAN';syncMethod();code.value=raw;
+            setFeedback(context.root,'Article reconnu · vérifiez la COMBOX puis validez le placement.','success');
+          }catch(error){
+            code.value='';setFeedback(context.root,'QR non autorisé ou non disponible : '+String(error.message||'contrôle requis'),'critical');
+          }
+        });
+        [boxScan,boxCamera,item,method,code,itemCamera,proof,qty,add].forEach(node=>cell.appendChild(node));
         code.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();fill();}});
         proof.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();fill();}});
         add.addEventListener('click',fill);
         if((box.contents||[]).length){
           const close=makeActionButton(doc,'Fermer la COMBOX','close-box');
           close.addEventListener('click',()=>{
-            if(boxScan.value.trim()!==box.reference){setFeedback(context.root,'Scannez la COMBOX avant fermeture.','critical');return;}
+            if(!readyBoxCode(boxScan.value.trim())){setFeedback(context.root,'Scannez la COMBOX avant fermeture.','critical');return;}
             runAction(context,close,{
               url:endpointFor(context.marketCode,'boxes/'+encodeURIComponent(box.unit_id)+'/close'),
               body:{box_reference_scan:boxScan.value.trim()},
