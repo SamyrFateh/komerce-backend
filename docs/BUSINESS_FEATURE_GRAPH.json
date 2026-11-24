@@ -18624,6 +18624,13 @@
       },
       {
         "feature": "providers-services",
+        "category": "ci",
+        "declared": ".github/workflows/staging-local-offers-5245-demo.yml",
+        "resolvedPath": ".github/workflows/staging-local-offers-5245-demo.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "providers-services",
         "category": "scripts",
         "declared": "scripts/seed-discovery-staging.js",
         "resolvedPath": "scripts/seed-discovery-staging.js",
@@ -18634,6 +18641,20 @@
         "category": "scripts",
         "declared": "scripts/seed-discovery-modal-v2-staging.js",
         "resolvedPath": "scripts/seed-discovery-modal-v2-staging.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "providers-services",
+        "category": "scripts",
+        "declared": "scripts/recette/local-offers-5245-showcase.js",
+        "resolvedPath": "scripts/recette/local-offers-5245-showcase.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "providers-services",
+        "category": "scripts",
+        "declared": "scripts/recette/local-offers-5245-chromium.js",
+        "resolvedPath": "scripts/recette/local-offers-5245-chromium.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -18655,6 +18676,13 @@
         "category": "migrations",
         "declared": "migrations/161_providers_services_inquiry_context.sql",
         "resolvedPath": "migrations/161_providers_services_inquiry_context.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "providers-services",
+        "category": "migrations",
+        "declared": "migrations/429_physical_offer_options.sql",
+        "resolvedPath": "migrations/429_physical_offer_options.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -47743,6 +47771,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "scripts/recette/local-offers-5245-showcase.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/seed-discovery-staging.test.js",
                 "targetFile": "db.js"
               }
@@ -51021,7 +51053,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2399
+        "filesObserved": 2401
       },
       "boutique": {
         "filesObserved": 218,

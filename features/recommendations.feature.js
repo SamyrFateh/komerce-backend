@@ -30,7 +30,7 @@ module.exports = {
       'moteur de classement boutique',
       'endpoint de suggestions, avec une surface PDP limitée aux produits visibles sur le marché et liés au produit consulté',
       'DiscoveryCard — projection de lecture mixte (product|physical_offer|service), jamais persistée',
-      'politique éditoriale serveur explicite du rail local : activation globale, candidats et ordre',
+      'politique éditoriale serveur explicite du rail local : activation globale, candidats et ordre ; extension éditoriale opt-in par marché uniquement en staging',
     ],
     out: [
       'données produit source (feature catalog)',

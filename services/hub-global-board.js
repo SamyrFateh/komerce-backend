@@ -202,10 +202,42 @@ function summarizeMarket(market, payload) {
   return result;
 }
 
+// Projection de travail PO : une ligne par PO réelle, jamais une PO fictive
+// créée depuis une commande. Les quantités restent celles du dossier canonique.
+// Pas d'attribution COMBOX par PO déduite d'un simple order_id : une commande
+// peut être répartie entre plusieurs PO, et une COMBOX peut mixer plusieurs PO.
+function summarizePurchaseOrders(market, payload) {
+  const seen = new Set();
+  const result = [];
+  for (const po of payload.purchase_orders || []) {
+    if (!po.id || seen.has(po.id)) continue;
+    seen.add(po.id);
+    const lines = po.lines || [];
+    const orders = [...new Set(lines.map(l => l.order_ref).filter(Boolean))];
+    const cancelled = po.status === 'cancelled' || po.stage === 'cancelled';
+    const expected = sum(lines, l => l.confirmed);
+    const received = sum(lines, l => l.received);
+    const missing = sum(lines, l => l.missing == null ? Math.max(0, number(l.confirmed) - number(l.received)) : l.missing);
+    const anomalies = sum(lines, l => l.anomaly);
+    result.push({
+      id: po.id, reference: po.ref || po.id,
+      market: market.code, supplier: po.supplier_name || null,
+      order_references: orders, order_count: new Set(lines.map(l => l.order_id).filter(Boolean)).size,
+      ordered: sum(lines, l => l.ordered), expected, received, missing, anomalies,
+      purchase_stage: po.stage || null, purchase_step: po.step?.key || null,
+      trigger_mode: po.trigger_mode || null, sent: Boolean(po.sent_at),
+      cancelled,
+      // Réception complète ne signifie ni qualité validée, ni départ Hub.
+      reception_complete: !cancelled && expected > 0 && missing === 0 && received >= expected && anomalies === 0,
+    });
+  }
+  return result;
+}
+
 // La vérité Hub reste centrale. Le responsable marché ne reçoit qu'une projection
 // filtrée par ses market_id résolus côté serveur, AVANT lecture des dossiers.
 // Aucun filtrage client ne peut servir de garde de sécurité.
-async function getGlobalBoard(query = db, dossierReader = (marketId) => dossier.getDossier({ marketId }, query), { marketIds = null } = {}) {
+async function getGlobalBoard(query = db, dossierReader = (marketId) => dossier.getDossier({ marketId }, query), { marketIds = null, includePurchaseOrders = false } = {}) {
   const scoped = Array.isArray(marketIds);
   const { rows: markets } = scoped
     ? await query.query(
@@ -214,15 +246,20 @@ async function getGlobalBoard(query = db, dossierReader = (marketId) => dossier.
     )
     : await query.query('SELECT id, code, name FROM markets WHERE is_active = TRUE ORDER BY code');
   const orders = [];
+  const purchaseOrders = [];
   for (const market of markets) {
-    orders.push(...summarizeMarket(market, await dossierReader(market.id)));
+    const payload = await dossierReader(market.id);
+    orders.push(...summarizeMarket(market, payload));
+    // Ne jamais exposer la projection fournisseurs à un responsable marché.
+    if (includePurchaseOrders && !scoped) purchaseOrders.push(...summarizePurchaseOrders(market, payload));
   }
   return {
     scope: 'HUB_GLOBAL',
     ...(scoped ? { audience: 'MARKET_SCOPED' } : {}),
     markets: markets.map(m => m.code),
+    ...(includePurchaseOrders && !scoped ? { purchase_orders: purchaseOrders.sort((a,b) => a.market.localeCompare(b.market) || a.reference.localeCompare(b.reference)) } : {}),
     orders: orders.sort((a, b) => a.market.localeCompare(b.market) || a.reference.localeCompare(b.reference)),
   };
 }
 
-module.exports = { summarizeMarket, getGlobalBoard };
+module.exports = { summarizeMarket, summarizePurchaseOrders, getGlobalBoard };

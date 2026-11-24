@@ -4,7 +4,7 @@
  * @test-runner jest
  * @test-requires none
  */
-const { summarizeMarket, getGlobalBoard } = require('../../services/hub-global-board');
+const { summarizeMarket, summarizePurchaseOrders, getGlobalBoard } = require('../../services/hub-global-board');
 
 const order = (id, ref, qty) => ({
   id, reference: ref, items: [{id:'item-'+id,product:'Objet confidentiel',ordered:qty}],
@@ -223,4 +223,34 @@ test('QR partiels et réception partielle : aucun faux terminé, le tri reste di
  [row]=summarizeMarket({code:'KM'},input);
  expect(row.stage_states.labels).toBe('complete');
  expect(row.stage_states.cartons).toBe('ready');
+});
+
+describe('Kanban PO : projection centrale opt-in', () => {
+  const market={id:'km',code:'KM',name:'Comores'};
+  const po={id:'p1',ref:'PO-1',supplier_name:'Fournisseur',status:'confirmed',stage:'partially_received',
+    sent_at:'2026-11-24',lines:[
+      {order_id:'a',order_ref:'KAAAAAA',ordered:3,confirmed:3,received:3,missing:0,anomaly:0,unit_price:10},
+      {order_id:'b',order_ref:'KBBBBBB',ordered:2,confirmed:2,received:0,missing:2,anomaly:0},
+    ]};
+  test('une PO multi-commandes reste unique, reliquat exact et pas de COMBOX inférée', () => {
+    const payload={purchase_orders:[po,po],boxes:[{contents:[{order_id:'a',qty:3}]}]};
+    const rows=summarizePurchaseOrders(market,payload);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({id:'p1',order_count:2,ordered:5,expected:5,received:3,missing:2,reception_complete:false});
+    expect(rows[0].order_references).toEqual(['KAAAAAA','KBBBBBB']);
+    expect(rows[0]).not.toHaveProperty('boxes');
+    expect(JSON.stringify(rows)).not.toMatch(/unit_price|payment/);
+  });
+  test('un écart empêche de déclarer la réception complète', () => {
+    const [row]=summarizePurchaseOrders(market,{purchase_orders:[{...po,lines:[{order_id:'a',confirmed:1,ordered:1,received:1,missing:0,anomaly:1}]}]});
+    expect(row.reception_complete).toBe(false);
+  });
+  test('projection absente par défaut et interdite dans le scope marché, même opt-in', async () => {
+    const query={query:jest.fn(async()=>({rows:[market]}))};
+    const reader=jest.fn(async()=>({...empty([]),purchase_orders:[po]}));
+    expect(await getGlobalBoard(query,reader)).not.toHaveProperty('purchase_orders');
+    const central=await getGlobalBoard(query,reader,{includePurchaseOrders:true});
+    expect(central.purchase_orders).toHaveLength(1);
+    expect(await getGlobalBoard(query,reader,{marketIds:['km'],includePurchaseOrders:true})).not.toHaveProperty('purchase_orders');
+  });
 });

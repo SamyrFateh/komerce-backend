@@ -402,7 +402,7 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `providers` | Tiers local payable portant l’exécution d’un service ou d’une offre physique ; identité distincte de users. **Migration 155 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
 | `services` | Prestations de travail proposées par un provider ; exposition commerciale désactivée par défaut. **Migration 155 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
 | `inquiries` | Demandes adressées à un provider, sans réservation de ressource ; migration 156 ajoute la cible physical_offer. **Migration 155 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
-| `physical_offers` | Produits physiques proposés par un tiers local, séparés des prestations de service. **Migration 156 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
+| `physical_offers` | Produits physiques proposés par un tiers local, séparés des prestations de service. **Migration 429 (`intended_migration_schema`)** : `offer_options` JSONB optionnel, liste bornée de configurations informatives (pas de stock, SKU de checkout ou réservation). **Migration 156 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
 | `local_stock_allocations` | Engagements de commandes sur local_stock avant paiement, avec cycle allocate/consume/release anti-survente. **Migration 157 — promue le 2026-08-29 (schema-promote, dump live verifie).** |
 
 

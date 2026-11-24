@@ -58,6 +58,7 @@ async function handleDiscoveryRequest(payload = {}) {
     requesterNote = null,
     action = 'request',
     handoff = null,
+    optionKey = null,
   } = payload;
   if (!ref || !['service', 'physical_offer'].includes(kind)) return false;
   if (!['request', 'callback'].includes(action)) return false;
@@ -86,6 +87,7 @@ async function handleDiscoveryRequest(payload = {}) {
       action,
       requesterNote,
       handoff,
+      ...(optionKey ? [optionKey] : []),
     );
     if (!result?.ok) {
       showToast(failureMessage(result), 'error', 3200);
