@@ -1280,20 +1280,21 @@
         act: (button, options) => runAction(context, button, options),
         reload: () => context.reload(),
         feedback: (message, tone) => setFeedback(context.root, message, tone),
-        renderReception: purchaseOrderId => {
-          const po = ((context.receivable && context.receivable.purchase_orders) || [])
-            .find(row => String(row.purchase_order_id) === String(purchaseOrderId));
-          return po ? createReceptionCard(doc, context, po) : null;
-        },
         openSourcing: orderId => {
           const order = (d.orders || []).find(row => String(row.id) === String(orderId));
           if (order) showSourcingResolution({ id: order.id, reference: order.reference, items: order.items || [] });
         },
-        openReception: () => {
+        openReception: (purchaseOrderId) => {
+          if(purchaseOrderId){
+            context.cockpitState.sel={type:'po',id:purchaseOrderId};
+            context.cockpitState.form=null;
+          }
           context.view = 'reception';
           context.renderCurrent();
+          if(purchaseOrderId) Array.from(rootNode.querySelectorAll('[data-receive-po]'))
+            .find(n=>n.getAttribute('data-receive-po')===String(purchaseOrderId))?.scrollIntoView?.({block:'start',behavior:'auto'});
         },
-        openPhysical: (target = 'all') => {
+        openPhysical: (target = 'all', boxId = null) => {
           const details = physicalDetails();
           if (!details) return;
           details.open = true;
@@ -1303,7 +1304,8 @@
             shipments: '[data-supply-shipment-bar]',
           };
           const selector = targets[target];
-          const anchor = (selector && details.querySelector(selector)) || details;
+          const boxAnchor=boxId&&Array.from(details.querySelectorAll('[data-hub-box-target]')).find(n=>n.getAttribute('data-hub-box-target')===String(boxId));
+          const anchor = boxAnchor || (selector && details.querySelector(selector)) || details;
           // Navigation opérateur déterministe entre réception, COMBOX et expéditions.
           anchor.scrollIntoView?.({ block: 'start', behavior: 'auto' });
         },
@@ -1775,6 +1777,7 @@
           }).catch(() => {}));
         }
         const boxIdentity=doc.createElement('div');
+        boxIdentity.setAttribute('data-hub-box-target',String(box.unit_id));
         boxIdentity.appendChild(text(doc,'strong','',box.reference));
         const relayIds=new Set(box.contents.map(c=>c.relais_id).filter(Boolean));
         const relayCodes=new Set(box.contents.map(c=>c.relais_code).filter(Boolean));
@@ -3180,7 +3183,7 @@
         const anchor=hubAtelier==='reception' && sel.startsWith('po:')
           ? Array.from(rootNode.querySelectorAll('[data-receive-po]')).find(n=>n.getAttribute('data-receive-po')===sel.slice(3))
           : hubAtelier==='boxes' ? rootNode.querySelector('[data-supply-box-create]')
-          : hubAtelier==='shipments' ? rootNode.querySelector('[data-supply-shipment-bar]') : null;
+          : hubAtelier==='shipments' ? (sel.startsWith('box:') ? Array.from(rootNode.querySelectorAll('[data-hub-box-target]')).find(n=>n.getAttribute('data-hub-box-target')===sel.slice(4)) : null) || rootNode.querySelector('[data-supply-shipment-bar]') : null;
         anchor?.scrollIntoView?.({block:'start',behavior:'auto'});
       }
       // Orientation de l'agent vers la file demandée depuis le cockpit.
