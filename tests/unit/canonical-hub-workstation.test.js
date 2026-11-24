@@ -28,6 +28,7 @@ function el(tag) {
     contains(child) { for (let node=child; node; node=node.parentNode) if(node===this) return true; return false; },
     addEventListener(evt,fn) { handlers[evt]=fn; },
     click() { if (handlers.click) return handlers.click({target:this}); },
+    toggle(open) { this.open=open; return handlers.toggle?.({target:this}); },
     change(target) { if (handlers.change) handlers.change({target}); },
     input(value) { this.value=value; if (handlers.input) handlers.input({target:this}); },
     querySelectorAll(selector) {
@@ -420,4 +421,27 @@ test('le responsable marché ne reçoit pas de bascule PO fournisseurs', async (
   await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'market_operator'}});
   expect(root.querySelector('[data-hub-po-pilot-toggle]')).toBeNull();
   expect(fetch).toHaveBeenCalledTimes(1);
+});
+
+test('la cellule Achat monte le module canonique seulement au dépliage',async()=>{
+  const app=load(),root=el('main');
+  const po={id:'p1',reference:'PO-1',market:'KM',supplier:'Fournisseur A',order_count:1,
+    order_references:['KAAAAAA'],ordered:2,expected:2,received:0,missing:2,anomalies:0,purchase_step:'draft'};
+  const fetch=jest.fn(async url=>({ok:true,json:async()=>url==='/api/hub/board?view=po'
+    ?{scope:'HUB_GLOBAL',purchase_orders:[po]}:{scope:'HUB_GLOBAL',orders:[]}}));
+  const mountPurchaseActions=jest.fn(async()=>({busy:()=>false,reload:jest.fn()}));
+  const previous=global.KomerceCanonicalOperationsWorkspace;
+  global.KomerceCanonicalOperationsWorkspace={mountPurchaseActions};
+  try{
+    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'}});
+    await root.querySelector('[data-hub-po-pilot-toggle]').click();
+    const host=root.querySelector('[data-hub-inline-purchase]');
+    expect(host).not.toBeNull();
+    expect(mountPurchaseActions).not.toHaveBeenCalled();
+    await host.parentNode.toggle(true);
+    expect(mountPurchaseActions).toHaveBeenCalledWith(host,expect.objectContaining({
+      marketCode:'KM',poId:'p1',user:{role:'agent_hub'},fetch,
+    }));
+    expect(fetch).toHaveBeenCalledTimes(2);
+  }finally{global.KomerceCanonicalOperationsWorkspace=previous;}
 });
