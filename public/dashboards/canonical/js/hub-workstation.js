@@ -475,6 +475,9 @@
       if (stageKey === order.current_key && order.current_phase) {
         menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-current',
           '▶ Étape actuelle · ' + order.current_phase + ' — ' + (order.current_status || 'À vérifier')));
+        if (order.current_detail && !safe(order.remaining_detail).includes(order.current_detail)) {
+          menu.appendChild(make(doc,'p','kmc-hub-board-menu-summary',order.current_detail));
+        }
         if (order.current_expected) {
           menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-expected',
             'Attendu : ' + order.current_expected));
@@ -529,7 +532,7 @@
     const renderRows = () => {
       body.replaceChildren();
       const term = safe(search.value).trim().toLocaleLowerCase('fr');
-      const filtered = rows.filter(o => [o.reference, o.market, o.market_name]
+      const filtered = rows.filter(o => [o.reference, o.market, o.market_name, o.relay_name]
         .some(v => safe(v).toLocaleLowerCase('fr').includes(term)));
       header.lastChild.textContent = filtered.length + ' / ' + rows.length + ' commande(s)';
       if (!filtered.length) {
@@ -547,6 +550,11 @@
         const idBox = make(doc, 'div', 'kmc-hub-board-identity');
         idBox.appendChild(make(doc, 'strong', '', order.reference));
         idBox.appendChild(make(doc, 'small', '', order.market + ' · ' + (order.market_name || order.market)));
+        if (order.relay_name) {
+          const relay=make(doc,'small','kmc-hub-destination','Relais · '+order.relay_name);
+          relay.setAttribute('data-hub-relay-destination','');
+          idBox.appendChild(relay);
+        }
         if (order.current_key && !['locked','complete'].includes(order.stage_states?.[order.current_key])) {
           tr.classList.add('is-hub-active-order');
         }
@@ -554,9 +562,8 @@
           const phase = make(doc, 'div', 'kmc-hub-phase-summary');
           phase.appendChild(make(doc, 'span', 'kmc-hub-phase-title',
             order.current_phase + ' · ' + (order.current_status || 'Situation à vérifier')));
-          if (order.current_detail) phase.appendChild(make(doc, 'small', 'kmc-hub-phase-detail', order.current_detail));
-          if (order.current_expected) phase.appendChild(make(doc, 'small', 'kmc-hub-phase-expected',
-            'Attendu : ' + order.current_expected));
+          // Le détail du prochain geste appartient au menu de l’étape ;
+          // le reliquat et les anomalies restent visibles dans leur colonne.
           idBox.appendChild(phase);
         }
         if (order.next_action) {
