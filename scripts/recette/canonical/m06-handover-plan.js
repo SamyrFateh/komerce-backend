@@ -24,9 +24,8 @@ function buildM06HandoverPlan(s,{forwarderName,transportMode,proofRef}={}){
   fail('G6_M06_HANDOVER_FINANCE_INVALID');
  if(!s.box_id||s.box_reference!=='G6-M06-COMBOX-'+s.order_reference||
    s.box_unit_type!=='MARKET_PARCEL'||s.box_state!=='PACKED'||
-   Number(s.box_placement_count)!==1||Number(s.box_placement_quantity)!==3||
-   s.box_placement_operation!=='REPACK'||s.box_placement_evidence_method!=='MANUAL'||
-   text(s.box_placement_evidence_ref).length<6)
+   Number(s.box_placement_count)!==3||Number(s.box_placement_quantity)!==3||
+   Number(s.box_label_scan_count)!==3)
   fail('G6_M06_HANDOVER_COMBOX_INVALID');
  if(Number(s.customer_bag_count)!==0)fail('G6_M06_HANDOVER_LEGACY_BAG_PRESENT');
  if(Number(s.parcel_count)!==1||s.parcel_status!=='preparation'||

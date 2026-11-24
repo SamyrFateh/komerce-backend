@@ -35,5 +35,9 @@ describe('M06 real shipment handover: canonical HTTP envelope',()=>{
   expect(runner).toContain("after.parcel_status==='shipped'");
   expect(runner).toContain("Number(after.parcel_qty_shipped)===3");
   expect(runner).toContain("'G6_M06_HANDOVER_POSTGRES_ORACLE_INVALID'");
+  expect(runner).toContain("print-box-label");
+  expect(runner).toContain("b.label_applied_confirmed===true");
+  expect(runner).toContain("b.event_type==='HUB_HANDOVER'");
+  expect(runner).toContain("hub_box_custody_scans");
  });
 });
