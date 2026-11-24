@@ -564,15 +564,6 @@
           next.setAttribute('data-hub-next-action','');
           idBox.appendChild(next);
         }
-        if (canOperate && /^[A-Z]{2}$/.test(safe(order.market))) {
-          const execution = make(doc, 'a', 'kmc-hub-next-action', 'Ouvrir les opérations');
-          execution.setAttribute('data-hub-order-execution', '');
-          const params = new URLSearchParams({view:'execute', market:order.market});
-          if (/^[A-Za-z0-9-]{1,128}$/.test(safe(order.id))) params.set('sel','order:'+order.id);
-          execution.setAttribute('href','/admin/hub-live?'+params.toString());
-          execution.setAttribute('aria-label','Ouvrir les opérations Hub · '+order.reference+' · '+order.market);
-          idBox.appendChild(execution);
-        }
         identity.appendChild(idBox);
         tr.appendChild(identity);
         for (const [label, key] of [
