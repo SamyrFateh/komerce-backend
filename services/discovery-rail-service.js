@@ -152,9 +152,13 @@ function mergeCategoryKeys(card, candidate) {
  * @returns {Promise<object[]>}
  */
 async function getDiscoveryRail({ marketCode }) {
-  if (!isEnabled()) return [];
-
-  const candidates = parseEditorialCandidates();
+  const code = String(marketCode || '').toUpperCase();
+  // Separate, opt-in staging candidates: preserve the global list and all other markets.
+  const scoped = process.env.KOMERCE_ENV === 'staging' && /^[A-Z]{2}$/.test(code)
+    ? parseEditorialCandidates(process.env['DISCOVERY_RAIL_STAGING_CANDIDATES_' + code] || '').slice(0, 2) : [];
+  if (!isEnabled() && !scoped.length) return [];
+  const normal = isEnabled() ? parseEditorialCandidates() : [];
+  const candidates = [...scoped, ...normal.filter(candidate => !scoped.some(s => s.key === candidate.key))];
   if (candidates.length === 0) return [];
 
   const marketId = await resolveMarketId(marketCode);
@@ -180,7 +184,8 @@ async function getDiscoveryRail({ marketCode }) {
         category_keys: mergeCategoryKeys(card, candidate),
       };
     })
-    .filter(Boolean);
+    .filter(Boolean)
+    .slice(0, MAX_EDITORIAL_CANDIDATES);
 }
 
 module.exports = {

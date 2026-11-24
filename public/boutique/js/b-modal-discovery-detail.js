@@ -142,6 +142,15 @@ function buildContextFormHTML(kind, ref, detail, action) {
   const notePlaceholder = isCallback
     ? callbackNotePlaceholderFor(detail)
     : requestNotePlaceholderFor(kind);
+  const options = kind === 'physical_offer' && Array.isArray(detail.options) ? detail.options : [];
+  const choice = options.length ? `
+    <label class="k-modal-discovery-request">
+      <span class="k-modal-discovery-request-label">Configuration souhaitée</span>
+      <select class="k-modal-discovery-request-input" data-discovery-option required>
+        <option value="">Choisissez une configuration</option>
+        ${options.map(o => `<option value="${sanitize(o.key)}">${sanitize(o.label)}${o.demo === true && o.demo_price ? ' — ' + Number(o.demo_price).toLocaleString('fr-FR') + ' ' + sanitize(o.currency) + ' (démo)' : ''}</option>`).join('')}
+      </select>
+    </label>` : '';
   const timing = isCallback ? '' : `
     <label class="k-modal-discovery-request">
       <span class="k-modal-discovery-request-label">${sanitize(requestLabelFor(kind))} <span>· facultatif</span></span>
@@ -157,9 +166,10 @@ function buildContextFormHTML(kind, ref, detail, action) {
       <span class="k-modal-discovery-request-label">${isCallback ? 'Objet du rappel' : 'Votre demande concerne'}</span>
       <div class="k-modal-discovery-provider" data-discovery-known-subject>${sanitize(subject)}</div>
     </div>
+    ${choice}
     <label class="k-modal-discovery-request">
       <span class="k-modal-discovery-request-label">${sanitize(noteLabel)} <span>· facultatif</span></span>
-      <textarea class="k-modal-discovery-request-input" rows="3" maxlength="600"
+      <textarea class="k-modal-discovery-request-input" rows="3" maxlength="${options.length ? 400 : 600}"
         autocomplete="off" spellcheck="true"
         data-discovery-requester-note
         placeholder="${sanitize(notePlaceholder)}"></textarea>
@@ -267,7 +277,7 @@ function buildPhysicalOfferDetailHTML(ref, detail) {
       <div class="k-modal-discovery-body">
         <div class="k-modal-discovery-meta" aria-label="Type et disponibilité">
           <span class="k-modal-discovery-badge k-modal-discovery-kind">${sanitize(kindLabelFor('physical_offer'))}</span>
-          <span class="k-modal-discovery-badge">${isIllustrativeDemo(detail) ? 'Photo illustrative · démo' : sanitize(statusFor('physical_offer'))}</span>
+          <span class="k-modal-discovery-badge">${isIllustrativeDemo(detail) ? (detail.image_ref?.endsWith('.svg') ? 'Visuel illustratif · démo' : 'Photo illustrative · démo') : sanitize(statusFor('physical_offer'))}</span>
         </div>
         <h2 class="k-modal-discovery-title">${sanitize(detail.title)}</h2>
         ${provider}
@@ -344,8 +354,14 @@ function submitAction(button) {
   const requestedWindow = form?.querySelector('[data-discovery-requested-window]')?.value?.trim() || null;
   const requesterNote = form?.querySelector('[data-discovery-requester-note]')?.value?.trim() || null;
 
+  const option = form?.querySelector('[data-discovery-option]');
+  if (option && !option.value) { option.reportValidity(); return; }
   closeModal({ skipHistoryBack: true });
-  requestDiscovery(kind, ref, button, requestedWindow, action, requesterNote);
+  if (option) {
+    requestDiscovery(kind, ref, button, requestedWindow, action, requesterNote, null, option.value);
+  } else {
+    requestDiscovery(kind, ref, button, requestedWindow, action, requesterNote);
+  }
 }
 
 function submitServiceContact(button) {

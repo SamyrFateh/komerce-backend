@@ -25,7 +25,7 @@ const db = require('../db');
 const { authenticateOrCreateGuest } = require('../middleware/auth-guest');
 const {
   getService, isServiceExposable,
-  getPhysicalOffer, isPhysicalOfferExposable,
+  getPhysicalOffer, isPhysicalOfferExposable, publicPhysicalOfferOptions,
 } = require('../services/providers-service');
 const { createContextualInquiry } = require('../services/providers-inquiry-service');
 const { buildPublicInteraction } = require('../services/providers-interaction-policy');
@@ -184,6 +184,7 @@ router.get('/physical-offers/:id', async (req, res, next) => {
       market_id: offer.market_id,
       image_ref: offer.image_ref || null,
       provider_name: offer.provider_name || null,
+      options: publicPhysicalOfferOptions(offer),
       actions: interaction.actions,
       public_contact: null,
     });
@@ -232,6 +233,16 @@ router.post('/inquiries', authenticateOrCreateGuest, async (req, res, next) => {
       : await isPhysicalOfferExposable(target.physicalOfferId, marketId);
     if (!exposable) return res.status(404).json({ error: 'Offre introuvable' });
 
+    let note = requesterNote.value;
+    if (req.body?.option_key != null) {
+      if (!target.physicalOfferId || typeof req.body.option_key !== 'string') return res.status(400).json({ error: 'Configuration invalide' });
+      const offer = await getPhysicalOffer(target.physicalOfferId);
+      const option = publicPhysicalOfferOptions(offer).find(o => o.key === req.body.option_key);
+      if (!option) return res.status(400).json({ error: 'Configuration inconnue' });
+      note = `Configuration : ${option.label} (${option.key})${note ? ' — ' + note : ''}`;
+      if (note.length > 600) return res.status(400).json({ error: 'Précision trop longue' });
+    }
+
     let whatsappTarget = null;
     if (handoff.value === 'whatsapp') {
       whatsappTarget = await resolveServiceWhatsappTarget(target.serviceId, marketId);
@@ -249,7 +260,7 @@ router.post('/inquiries', authenticateOrCreateGuest, async (req, res, next) => {
       requesterPhone,
       requestedWindow: requestedWindow.value,
       intent: intent.value,
-      requesterNote: requesterNote.value,
+      requesterNote: note,
     });
 
     const payload = {

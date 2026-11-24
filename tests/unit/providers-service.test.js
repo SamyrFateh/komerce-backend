@@ -607,3 +607,10 @@ describe('listPhysicalOffersForMarket / getOwnedPhysicalOffer / setPhysicalOffer
     expect(mockQuery).not.toHaveBeenCalled();
   });
 });
+
+test('informational options refuse duplicate keys and non-demo prices', () => {
+  const svc = loadService();
+  expect(() => svc.normalizePhysicalOfferOptions([{key:'A',label:'A'},{key:'A',label:'B'}])).toThrow(/Invalid offer option/);
+  expect(() => svc.normalizePhysicalOfferOptions([{key:'A',label:'A',demo_price:100,currency:'XAF'}])).toThrow(/Invalid demo price/);
+  expect(svc.normalizePhysicalOfferOptions([{key:'A',label:'A',demo_price:100,currency:'XAF',demo:true}])).toEqual([{key:'A',label:'A',demo_price:100,currency:'XAF',demo:true}]);
+});
