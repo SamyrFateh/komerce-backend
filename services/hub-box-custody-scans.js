@@ -81,9 +81,11 @@ async function confirmBoxScan(market,actor,reference,input={},database=db){
       deny(409,'CUSTODY_BOX_NOT_DISPATCHED','COMBOX non expédiée du Hub ou en anomalie');
     if(STEPS[step].prior){
       const {rows:prior}=await q.query(
-        'SELECT 1 FROM hub_box_custody_scans WHERE shipment_id=$1 AND box_unit_id=$2 AND event_type=$3',
+        'SELECT actor_id FROM hub_box_custody_scans WHERE shipment_id=$1 AND box_unit_id=$2 AND event_type=$3',
         [shipment.id,box.id,STEPS[step].prior]);
       if(!prior.length)deny(409,'CUSTODY_PRIOR_SCAN_REQUIRED','Confirmation précédente de la COMBOX manquante');
+      if(step==='CARRIER_ACCEPTED'&&String(prior[0].actor_id)===String(actor.id))
+        deny(409,'CUSTODY_DUAL_ACTOR_REQUIRED','Remise Hub et acceptation transitaire doivent être confirmées par deux acteurs distincts');
     }
     const {rows:[saved]}=await q.query(
       `INSERT INTO hub_box_custody_scans
