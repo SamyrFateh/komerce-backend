@@ -200,3 +200,11 @@ describe('Tableau Hub : phase prouvée et tâches verrouillées', () => {
     expect(JSON.stringify(r)).not.toMatch(/SECRET|supplier_name|prix|payment_status/);
   });
 });
+
+test('la destination relais canonique est projetée sans identité client',()=>{
+ const payload=empty([{...order('a','CM-YA01-B7Q01',3),relay_name:'Yaoundé Centre',relay_id:'internal-id',client_name:'PRIVÉ'}]);
+ const [row]=summarizeMarket({id:'cm',code:'CM',name:'Cameroun'},payload);
+ expect(row.relay_name).toBe('Yaoundé Centre');
+ expect(row.reference).toBe('CM-YA01-B7Q01');
+ expect(JSON.stringify(row)).not.toMatch(/PRIVÉ|internal-id|client_name/);
+});
