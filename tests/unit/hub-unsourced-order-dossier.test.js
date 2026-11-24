@@ -13,7 +13,7 @@ const id = n => '00000000-0000-4000-8000-' + String(n).padStart(12, '0');
 const marketId = id(1);
 const orderId = id(2);
 
-function makeReader(itemRows) {
+function makeReader(itemRows, needRows = []) {
   const queries = [];
   const client = {
     query: jest.fn(async (sql, parameters) => {
@@ -22,6 +22,7 @@ function makeReader(itemRows) {
           sql.includes('JOIN order_items oi ON oi.order_id = o.id')) {
         return { rows: itemRows };
       }
+      if (sql.includes('pl.purchase_order_id IS NULL') && sql.includes('AS api_eligible')) return { rows: needRows };
       return { rows: [] };
     }),
   };
@@ -89,4 +90,22 @@ describe('Hub dossier — commandes import payées sans achats', () => {
     expect(dossier.kpis.units_sourcing_required).toBe(0);
     expect(dossier.to_handle).toHaveLength(0);
   });
+});
+
+test('Hub achats : canal API et devise proviennent de la projection fournisseur, pas du navigateur',async()=>{
+ const authority=require('../../services/suppliers/provider-authority');
+ const platform=['allegro','aliexpress','cj','noon','amazon_uae','local','whatsapp'].find(p=>
+  authority.remotePreflightRequirement(p)===authority.PREFLIGHT_REQUIREMENT.REQUIRED);
+ expect(platform).toBeTruthy();
+ const row=item(3,{ordered:2,covered:2,mapped:true});
+ const line={line_id:id(90),supplier_id:id(91),supplier_name:'Fournisseur test',supplier_platform:platform,
+  procurement_hub_ref:'DXB',product_sku_id:row.sku_id,product_name:row.product_name,
+  order_id:orderId,order_ref:row.order_ref,order_item_id:row.order_item_id,quantity:2,supplier_currency:'AED',api_eligible:true};
+ const a=makeReader([row],[line]);
+ const dossier=await getDossier({marketId},a.client);
+ expect(dossier.cockpit.need_batches[0]).toMatchObject({api_available:true,groups:[{lines:[{line_id:line.line_id,supplier_currency:'AED',api_eligible:true}]}]});
+ expect(a.queries.some(q=>q.sql.includes('pl.supplier_order_identity IS NOT NULL')&&q.parameters[0]===marketId)).toBe(true);
+ const b=makeReader([row],[{...line,supplier_platform:'whatsapp',api_eligible:false,supplier_currency:null}]);
+ const manual=await getDossier({marketId},b.client);
+ expect(manual.cockpit.need_batches[0]).toMatchObject({api_available:false,groups:[{lines:[{api_eligible:false,supplier_currency:null}]}]});
 });
