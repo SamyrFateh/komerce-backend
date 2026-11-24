@@ -8,7 +8,7 @@
  * @outputs       native-currency durable refund obligation, NEVER a payout
  * @depends       db, migrations/416_fable_local_item_refund_reservations.sql
  * @used-by       routes/admin/orders.js
- * @db-read       orders, order_items, incidents, international_shipment_relay_receipts, cash_collections, mobile_money_transactions, markets, refunds, refund_execution_intents, order_item_refund_reservations
+ * @db-read       orders, order_items, incidents, international_shipment_relay_receipts, cash_collections, mobile_money_transactions, markets, refunds, refund_execution_intents, order_item_refund_reservations, purchase_lines, purchase_orders, parcels, parcel_items, v_purchase_line_progress
  * @db-write      local_item_refund_reservations
  * @db-txn        order lock, captured amount and verified shortage, insert then COMMIT
  * @doctrine      payer_original_only, no_wallet_fallback, no_double_refund, no_unverified_payout
@@ -103,7 +103,8 @@ async function sourceForPaidLocalOrder(client, order) {
 
 /** Create only a LIABILITY; disbursement requires a separate certified cash/operator settlement. */
 async function reserveLocalShortage({
-  orderId, orderItemId, incidentId, operationKey, quantity, reason, actor, db = defaultDb
+  orderId, orderItemId, incidentId, operationKey, quantity, reason, actor,
+  requireReleasedSupply = false, db = defaultDb
 }) {
   if (![orderId, orderItemId, incidentId, operationKey].every(x => UUID.test(String(x || ''))))
     fail('LOCAL_REFUND_IDENTIFIER_INVALID', 'UUID requis', 400);
@@ -133,6 +134,54 @@ async function reserveLocalShortage({
     );
     if (!item || Number(item.qty_collected) >= Number(item.quantity))
       fail('LOCAL_REFUND_LINE_NOT_ELIGIBLE', 'Ligne absente ou intégralement remise');
+
+    if (requireReleasedSupply) {
+      // Match the Purchasing lock order (PO header, then line) so an engagement
+      // cannot appear between the N27 phase check and the liability insert.
+      await client.query(
+        `SELECT id FROM purchase_orders
+          WHERE order_item_id=$1 AND status <> 'cancelled'
+          ORDER BY id FOR UPDATE`, [orderItemId]
+      );
+      await client.query(
+        `SELECT po.id FROM purchase_orders po
+         WHERE EXISTS (SELECT 1 FROM purchase_lines pl
+                        WHERE pl.purchase_order_id=po.id
+                          AND pl.order_item_id=$1 AND pl.cancelled_at IS NULL)
+         ORDER BY po.id FOR UPDATE OF po`, [orderItemId]
+      );
+      await client.query(
+        `SELECT pl.id FROM purchase_lines pl
+         WHERE pl.order_item_id=$1 AND pl.cancelled_at IS NULL
+         ORDER BY pl.id FOR UPDATE OF pl`, [orderItemId]
+      );
+      await client.query(
+        `SELECT p.id, pi.id FROM parcel_items pi
+          JOIN parcels p ON p.id=pi.parcel_id
+         WHERE pi.order_item_id=$1 AND p.status IN
+           ('preparation','shipped','in_transit','arrived','available')
+         ORDER BY p.id, pi.id FOR UPDATE OF p, pi`, [orderItemId]
+      );
+      const { rows: [phase] } = await client.query(
+        `SELECT
+           EXISTS (
+             SELECT 1 FROM v_purchase_line_progress v
+              WHERE v.order_item_id=$1 AND NOT v.cancelled
+                AND v.received_quantity < v.effective_quantity
+                AND v.po_status IN ('notified','confirmed','partially_received')
+           ) AS supplier_pending,
+           EXISTS (
+             SELECT 1 FROM parcel_items pi
+             JOIN parcels p ON p.id=pi.parcel_id
+              WHERE pi.order_item_id=$1 AND p.status IN
+                ('preparation','shipped','in_transit','arrived','available')
+           ) AS transport_pending`, [orderItemId]
+      );
+      if (phase?.supplier_pending) fail('N27_SUPPLIER_COMMITMENT_PENDING',
+        'Le fournisseur doit confirmer l’annulation du reliquat avant toute décision financière');
+      if (phase?.transport_pending) fail('N27_TRANSPORT_PENDING',
+        'Le reliquat est encore dans un colis actif ; attendre le constat physique au relais');
+    }
 
     const { rows: [existing] } = await client.query(
       `SELECT id, order_item_id, source_incident_id, quantity, reason, status,

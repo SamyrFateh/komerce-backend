@@ -13832,21 +13832,21 @@
         "category": "services",
         "declared": "services/hub-opaque-labels.js",
         "resolvedPath": "services/hub-opaque-labels.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "logistics",
         "category": "services",
         "declared": "services/hub-label-pdf.js",
         "resolvedPath": "services/hub-label-pdf.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "logistics",
         "category": "services",
         "declared": "services/hub-box-custody-scans.js",
         "resolvedPath": "services/hub-box-custody-scans.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "logistics",
@@ -20088,6 +20088,13 @@
       {
         "feature": "refunds",
         "category": "services",
+        "declared": "services/n27-remnant-cancellation-service.js",
+        "resolvedPath": "services/n27-remnant-cancellation-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "refunds",
+        "category": "services",
         "declared": "services/local-item-refund-reservation.js",
         "resolvedPath": "services/local-item-refund-reservation.js",
         "status": "resolved-in-technical-graph"
@@ -20209,6 +20216,13 @@
         "category": "tests",
         "declared": "tests/unit/g8-remboursements.test.js",
         "resolvedPath": "tests/unit/g8-remboursements.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/unit/n27-remnant-cancellation.test.js",
+        "resolvedPath": "tests/unit/n27-remnant-cancellation.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -31117,6 +31131,12 @@
         "from": "refunds",
         "to": "incident-management",
         "raw": "incident-management (lecture de l’incident source immuable associé à la preuve de manque)",
+        "resolved": true
+      },
+      {
+        "from": "refunds",
+        "to": "purchasing",
+        "raw": "purchasing (lecture seule de l’engagement fournisseur et du progrès des lignes pour bloquer N27 tant que le reliquat est engagé)",
         "resolved": true
       },
       {
@@ -45785,6 +45805,10 @@
               },
               {
                 "sourceFileId": "routes/admin/orders.js",
+                "targetFile": "services/n27-remnant-cancellation-service.js"
+              },
+              {
+                "sourceFileId": "routes/admin/orders.js",
                 "targetFile": "services/local-item-refund-reservation.js"
               },
               {
@@ -48970,6 +48994,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/n27-remnant-cancellation-service.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/local-item-refund-reservation.js",
                 "targetFile": "db.js"
               },
@@ -49018,6 +49046,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/unit/n27-remnant-cancellation.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/stripe-refund-authority.test.js",
                 "targetFile": "db.js"
               }
@@ -49033,6 +49065,14 @@
           {
             "channel": "data-read",
             "evidence": [
+              {
+                "table": "parcels",
+                "mode": "R"
+              },
+              {
+                "table": "parcel_items",
+                "mode": "R"
+              },
               {
                 "table": "international_shipment_relay_receipts",
                 "mode": "R"
@@ -49181,6 +49221,26 @@
               {
                 "sourceFileId": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
                 "targetFile": "routes/payments.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "refunds",
+        "to": "purchasing",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "purchase_lines",
+                "mode": "R"
+              },
+              {
+                "table": "purchase_orders",
+                "mode": "R"
               }
             ]
           }
@@ -50931,7 +50991,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2397
+        "filesObserved": 2399
       },
       "boutique": {
         "filesObserved": 218,
@@ -51777,7 +51837,8 @@
         "notifications",
         "orders",
         "payments",
-        "recommendations"
+        "recommendations",
+        "refunds"
       ],
       "lifecycleOwner": "logistics",
       "resolution": "declared-table-owner"
@@ -52495,7 +52556,8 @@
         "economic-engine",
         "inventory",
         "orders",
-        "payments"
+        "payments",
+        "refunds"
       ],
       "lifecycleOwner": "logistics",
       "resolution": "declared-table-owner"
@@ -52746,7 +52808,8 @@
         }
       ],
       "readers": [
-        "dashboard"
+        "dashboard",
+        "refunds"
       ],
       "lifecycleOwner": "purchasing",
       "resolution": "declared-table-owner"
@@ -52762,7 +52825,8 @@
       ],
       "readers": [
         "dashboard",
-        "logistics"
+        "logistics",
+        "refunds"
       ],
       "lifecycleOwner": "purchasing",
       "resolution": "declared-table-owner"
@@ -54989,8 +55053,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 721,
-        "technicalNodesOwned": 721,
+        "technicalNodesTotal": 725,
+        "technicalNodesOwned": 725,
         "technicalOrphans": 0
       },
       "dash": {

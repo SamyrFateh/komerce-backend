@@ -55,14 +55,23 @@ jest.mock('../../services/item-refund-reservation-service', () => ({
   readVerifiedShortageCandidates: (...args) => mockReadVerifiedShortageCandidates(...args),
   reserveVerifiedShortage: jest.fn(),
 }));
+const mockReadN27RemnantContext = jest.fn();
+const mockReserveN27Remnant = jest.fn();
+jest.mock('../../services/n27-remnant-cancellation-service', () => ({
+  readN27RemnantContext: (...args) => mockReadN27RemnantContext(...args),
+  reserveN27Remnant: (...args) => mockReserveN27Remnant(...args),
+}));
 
 const express = require('express');
 const request = require('supertest');
 
 let app;
+const savedN27Env={environment:process.env.KOMERCE_ENV,enabled:process.env.N27_REMNANT_RESERVATIONS_ENABLED};
 
 beforeEach(() => {
   jest.clearAllMocks();
+  process.env.KOMERCE_ENV='staging';
+  process.env.N27_REMNANT_RESERVATIONS_ENABLED='0';
   mockState.user = { id: 'admin-1', role: 'admin', email: 'admin@komerce.test' };
 
   app = express();
@@ -76,6 +85,10 @@ beforeEach(() => {
   app.use((err, req, res, _next) => {
     res.status(500).json({ error: err.message });
   });
+});
+afterAll(()=>{
+  if(savedN27Env.environment===undefined)delete process.env.KOMERCE_ENV;else process.env.KOMERCE_ENV=savedN27Env.environment;
+  if(savedN27Env.enabled===undefined)delete process.env.N27_REMNANT_RESERVATIONS_ENABLED;else process.env.N27_REMNANT_RESERVATIONS_ENABLED=savedN27Env.enabled;
 });
 describe('admin/orders — garde d\'accès', () => {
   it('403 si non-admin', async () => {
@@ -244,6 +257,47 @@ describe('admin/orders — POST /orders/:id/refund', () => {
     mockRefundCancelledOrder.mockRejectedValueOnce(new Error('service refund indisponible'));
     const res = await request(app).post('/api/admin/orders/o1/refund').send({});
     expect(res.status).toBe(500);
+  });
+});
+
+describe('admin/orders — N27 remainder liability',()=>{
+  it('readiness remains off unless the explicit staging flag is on',async()=>{
+    let res=await request(app).get('/api/admin/orders/n27-remnant-readiness');
+    expect(res.body).toEqual({enabled:false});
+    process.env.N27_REMNANT_RESERVATIONS_ENABLED='1';
+    res=await request(app).get('/api/admin/orders/n27-remnant-readiness');
+    expect(res.body).toEqual({enabled:true});
+  });
+  it('context is admin-only and read-only behind explicit staging flag',async()=>{
+    process.env.N27_REMNANT_RESERVATIONS_ENABLED='1';
+    mockReadN27RemnantContext.mockResolvedValueOnce({order:{reference:'K0N27A'},items:[],candidates:[]});
+    const res=await request(app).get('/api/admin/orders/K0N27A/n27-remnant-context');
+    expect(res.status).toBe(200);
+    expect(res.headers['cache-control']).toContain('no-store');
+    expect(mockReadN27RemnantContext).toHaveBeenCalledWith({orderReference:'K0N27A',actor:mockState.user});
+  });
+  it('reservation passes only validated body fields to the owner service and stays pending',async()=>{
+    process.env.N27_REMNANT_RESERVATIONS_ENABLED='1';
+    mockReserveN27Remnant.mockResolvedValueOnce({reservationId:'r27',status:'reserved',paid:false});
+    const payload={incident_id:'incident-1',quantity:1,operation_key:'key-1',reason:'Missing at relay'};
+    const res=await request(app).post('/api/admin/orders/order-1/items/item-1/n27-remnant-reservations').send(payload);
+    expect(res.status).toBe(202);
+    expect(res.body).toMatchObject({reservationId:'r27',status:'reserved',paid:false});
+    expect(mockReserveN27Remnant).toHaveBeenCalledWith({orderId:'order-1',orderItemId:'item-1',
+      incidentId:'incident-1',quantity:1,operationKey:'key-1',reason:'Missing at relay',actor:mockState.user});
+  });
+  it('disabled endpoint refuses mutation before calling the financial service',async()=>{
+    const res=await request(app).post('/api/admin/orders/order-1/items/item-1/n27-remnant-reservations').send({});
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('N27_RESERVATIONS_NOT_CERTIFIED');
+    expect(mockReserveN27Remnant).not.toHaveBeenCalled();
+  });
+  it('does not enable the N27 writer outside staging even if the flag is set',async()=>{
+    process.env.KOMERCE_ENV='production';
+    process.env.N27_REMNANT_RESERVATIONS_ENABLED='1';
+    const res=await request(app).post('/api/admin/orders/order-1/items/item-1/n27-remnant-reservations').send({});
+    expect(res.status).toBe(409);
+    expect(mockReserveN27Remnant).not.toHaveBeenCalled();
   });
 });
 

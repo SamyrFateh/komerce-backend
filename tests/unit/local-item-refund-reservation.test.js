@@ -28,6 +28,7 @@ function fixture({
   rail = 'cash_relais', missing = 3, collected = 0, refunded = 0,
   active = 0, activeAmount = '0', previousPsp = false,
   cashProof = true, mobileProof = true, replay = null,
+  supplierPending = false, transportPending = false,
 } = {}) {
   const release = jest.fn();
   const queries = [];
@@ -36,6 +37,9 @@ function fixture({
     query: jest.fn(async (sql, params) => {
       queries.push({ sql, params });
       if (sql === 'BEGIN' || sql === 'COMMIT' || sql === 'ROLLBACK') return { rows: [] };
+      if (sql.includes('supplier_pending')) return { rows: [{ supplier_pending:supplierPending,transport_pending:transportPending }] };
+      if (sql.includes('FROM purchase_orders') || sql.includes('FROM purchase_lines') ||
+          (sql.includes('FROM parcel_items') && sql.includes('FOR UPDATE'))) return { rows: [] };
       if (sql.includes('FROM orders WHERE id=$1 FOR UPDATE')) return { rows: [{
         id: ORDER, market_id: MARKET, relais_id: RELAY,
         payment_mode: rail, payment_status: 'paid',
@@ -132,6 +136,22 @@ describe('F1/F2 — reserve one verified local debt, not a payout', () => {
     await expect(reserveLocalShortage({ ...basePayload, db: f.db }))
       .rejects.toMatchObject({ code: 'LOCAL_REFUND_SHORTAGE_EXCEEDED' });
     expect(f.queries.some(x => x.sql.includes('INSERT INTO'))).toBe(false);
+  });
+
+  test('N27 refuses an unconfirmed supplier remainder inside the reservation transaction',async()=>{
+    const f=fixture({supplierPending:true});
+    await expect(reserveLocalShortage({...basePayload,requireReleasedSupply:true,db:f.db}))
+      .rejects.toMatchObject({code:'N27_SUPPLIER_COMMITMENT_PENDING'});
+    expect(f.queries.some(x=>x.sql.includes('FOR UPDATE OF po'))).toBe(true);
+    expect(f.queries.some(x=>x.sql.includes('INSERT INTO local_item_refund_reservations'))).toBe(false);
+    expect(f.queries.map(x=>x.sql)).toContain('ROLLBACK');
+  });
+
+  test('N27 refuses a remainder attached to an active transport parcel',async()=>{
+    const f=fixture({transportPending:true});
+    await expect(reserveLocalShortage({...basePayload,requireReleasedSupply:true,db:f.db}))
+      .rejects.toMatchObject({code:'N27_TRANSPORT_PENDING'});
+    expect(f.queries.some(x=>x.sql.includes('INSERT INTO local_item_refund_reservations'))).toBe(false);
   });
   test('physical collection quantity blocks a reserved shortage', async () => {
     const f = fixture({ collected: 5 });
