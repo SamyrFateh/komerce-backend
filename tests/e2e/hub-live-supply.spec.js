@@ -186,6 +186,11 @@ test.describe('Hub UX guidée — contrat Golden conservé', () => {
     const details = page.locator('[data-hub-physical-details]');
     await expect(details).toHaveJSProperty('open', true);
     await expect(page.locator('[data-supply-boxes]')).toBeVisible();
+    const order=await page.locator('[data-supply-boxes]').evaluate(node=>{
+      const sections=['[data-hub-label-printing]','[data-supply-box-create]','[data-supply-shipment-bar]'];
+      return Array.from(node.children).flatMap(child=>sections.filter(selector=>child.matches(selector)));
+    });
+    expect(order).toEqual(['[data-hub-label-printing]','[data-supply-box-create]','[data-supply-shipment-bar]']);
     const shortcuts = page.locator('[data-hlc-physical-shortcut]');
     await expect(shortcuts).toHaveCount(4);
     await page.locator('[data-hlc-physical-shortcut="labels"]').click();
