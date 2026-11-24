@@ -299,7 +299,7 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
 
     test('actions Hub uniquement : aucun onglet ni bouton Relais', async ({ page }) => {
       await mount(page);
-      await expect(page.locator('[data-workspace-view]')).toHaveText(['Dossiers', 'Réceptions', 'Actions Hub', 'Stock à affecter']);
+      await expect(page.locator('[data-workspace-view]')).toHaveText(['Dossiers', 'Étiquettes QR', 'Réceptions', 'Actions Hub', 'Stock à affecter']);
       await expect(page.locator('[data-workspace-action="mark-ordered"]')).toHaveCount(0);
       await expect(page.locator('[data-workspace-action="run-distribution"]')).toHaveCount(1);
       await expect(page.locator('[data-workspace-action="ship"]')).toHaveCount(1);
