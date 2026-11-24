@@ -12,6 +12,7 @@ function el(tag) {
     classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } },
     appendChild(child) { this.children.push(child); child.parentNode = this; return child; },
     replaceChildren(...nodes) { this.children = nodes; },
+    remove() { if (this.parentNode) this.parentNode.children=this.parentNode.children.filter(child=>child!==this); },
     setAttribute(k, v) { this.attrs[k] = String(v); },
     getAttribute(k) { return this.attrs[k] || null; },
     addEventListener(evt, fn) { handlers[evt] = fn; },
