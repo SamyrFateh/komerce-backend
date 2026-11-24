@@ -202,3 +202,10 @@ test('accès direct aux étiquettes depuis le cockpit physique, avant la COMBOX'
   expect(src).toContain("['labels', 'Imprimer les étiquettes articles']");
   expect(src.indexOf("['labels',")).toBeLessThan(src.indexOf("['boxes', 'Préparer les COMBOX']"));
 });
+
+test('accès Kanban par commande : retrouver les besoins et toutes les PO liées',()=>{
+  const js=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-live-cockpit.js'),'utf8');
+  expect(js).toContain("A('goto-need-'+group.key");
+  expect(js).toContain("line.order_id===o.id");
+  expect(js).toContain("(o.po_ids || []).entries()");
+});
