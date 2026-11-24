@@ -27,3 +27,16 @@ CREATE INDEX IF NOT EXISTS idx_hub_scan_labels_market_relais
   ON public.hub_scan_labels(market_id,relais_id);
 COMMENT ON TABLE public.hub_scan_labels IS
   'Étiquettes QR opaques Hub #5215 : identifiant non secret, autorisation par session, référence commerciale non imprimée, scans validés par writers métier.';
+
+-- Une étiquette d'article ne peut pas justifier deux placements en COMBOX.
+-- L'écriture appartient à la même transaction que le REPACK canonique.
+CREATE TABLE IF NOT EXISTS public.hub_scan_label_box_scans (
+  label_id uuid PRIMARY KEY REFERENCES public.hub_scan_labels(id) ON DELETE RESTRICT,
+  allocation_id uuid NOT NULL REFERENCES public.hub_purchase_allocations(id) ON DELETE RESTRICT,
+  from_unit_id uuid NOT NULL REFERENCES public.hub_physical_units(id) ON DELETE RESTRICT,
+  box_unit_id uuid NOT NULL REFERENCES public.hub_physical_units(id) ON DELETE RESTRICT,
+  actor_id uuid REFERENCES public.users(id) ON DELETE SET NULL,
+  scanned_at timestamptz NOT NULL DEFAULT now()
+);
+COMMENT ON TABLE public.hub_scan_label_box_scans IS
+  'Preuve unique de placement article en COMBOX ; doublon de QR refusé transactionnellement.';
