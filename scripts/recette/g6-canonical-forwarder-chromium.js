@@ -17,16 +17,18 @@ const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
 const {readback,checkShipment,runtime,SC,sameSet}=require('./g6-hub-shipment-chromium');
 const env=process.env, BASE='https://komerce-backend-production.up.railway.app';
+const M06=env.G6_CANONICAL_SCENARIO==='M06';
 const REF=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_REF:'SIM-STAGING-EXP-KL1WGP6', ID=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_SHIPMENT_ID:'ff8591fc-78bb-49a4-b154-247508368d16';
 const BOX=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_BOX_ID:'6ca614e5-869c-40ab-80d7-3684974092fe',
- PARCEL=env.G6_CANONICAL_PARCEL_ID, TRACK='SIM-STAGING-TRK-'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6');
+ PARCEL=env.G6_CANONICAL_PARCEL_ID, TRACK='SIM-STAGING-TRK-'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6'),
+ CONTAINER='SIM-STAGING-CONT-'+(env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6');
 const OUT=path.resolve('test-results/g6-canonical-forwarder');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const {startTraceAfterAuth}=require('./canonical/observability');
 const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
 const API='/api/admin/workspaces/shipping-customs/market/'+MK.code+'/international/'+REF;
 const report={schema:'komerce-g6-forwarder/1',shipment_id:ID,shipment_ref:REF,order_id:env.G6_CANONICAL_ORDER_ID,
- reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',scenario_id:'M01',market:MK.code,role:'agent_transitaire',events:[],verdict:'BLOCKED',
+ reference:env.G6_CANONICAL_ORDER_REFERENCE||'KL1WGP6',scenario_id:M06?'M06':'M01',market:MK.code,role:'agent_transitaire',events:[],box_scans:[],verdict:'BLOCKED',
  provenance:'SIMULATED / STAGING ONLY',external_payment_executed:false,external_supplier_calls:0};
 const check=(ok,code)=>{if(!ok)throw Error(code)};
 function save(){fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2)+'\n')}
@@ -36,7 +38,7 @@ async function snapshot(stage,placement){
  check(base.box[0].id===BOX&&base.box[0].state==='DISPATCHED'&&base.parcels[0].status==='shipped'&&
  sameSet(base.effective.map(e=>e.placement_id),placement)&&base.parcelItems.length===SC.items&&base.parcelItems.reduce((n,i)=>n+Number(i.qty_shipped),0)===SC.units&&
  base.parcelEvents.length===1,'G6_FORWARDER_PHYSICAL_DRIFT');
- const {rows}=await db.query('SELECT tracking_reference,bill_of_lading_ref,departed_at,arrived_at FROM international_shipments WHERE id=$1',[ID]);
+ const {rows}=await db.query('SELECT tracking_reference,container_reference,bill_of_lading_ref,departed_at,arrived_at FROM international_shipments WHERE id=$1',[ID]);
  check(rows.length===1,'G6_FORWARDER_SHIPMENT_NOT_UNIQUE');
  return {base,tracking:rows[0]};
 }
@@ -103,7 +105,12 @@ async function fillTask(item,name,val){
 async function gesture(actor,key,title,tail,fields,expected){
  await runtime();
  const item=await task(actor.page,title);
- for(const [name,value] of Object.entries(fields))await fillTask(item,name,value);
+ for(const [name,value] of Object.entries(fields)){
+  if(name==='container_sealed'){
+   if(!await item.evaluate(e=>e.open))await humanClick(null,item.locator('summary'),{timeout:8000});
+   await humanSelect(null,item.locator('[name="container_sealed"]'),value);
+  }else await fillTask(item,name,value);
+ }
  const url=BASE+API+'/'+tail;let count=0;
  const handler=async route=>{
   const req=route.request();
@@ -116,10 +123,71 @@ async function gesture(actor,key,title,tail,fields,expected){
  try{
   const pending=actor.page.waitForResponse(r=>r.url()===url&&r.request().method()==='POST',{timeout:30000});
   await humanClick(null,item.locator('button[type="submit"]'));
-  const response=await pending;report.events.push({key,http:response.status()});save();
+  const response=await pending;const payload=await response.json().catch(()=>null);
+  report.events.push({key,http:response.status(),code:payload?.code||null});save();
   check(count===1&&response.ok()&&actor.blocked.length===0,'G6_FORWARDER_HTTP_'+key+'_'+response.status());
  }finally{await actor.page.unroute(url,handler)}
 }
+// A scan identifies and attests custody; it never transitions the shipment.
+// New QR-tagged M06 shipments require two distinct carrier scan gestures.
+async function custodyReadback(){
+ const {rows}=await db.query(
+  'SELECT c.id,c.box_unit_id,c.event_type,c.actor_id,c.proof_ref,l.short_alias,l.target_type '
+  +'FROM hub_box_custody_scans c JOIN hub_scan_labels l ON l.id=c.label_id '
+  +'WHERE c.shipment_id=$1 ORDER BY c.occurred_at,c.id',[ID]);
+ return rows;
+}
+async function scanCarrierBox(actor,step,alias){
+ check(M06&&['CARRIER_ACCEPTED','CARRIER_LOADED'].includes(step)&&/^[A-HJ-NP-Z2-9]{8}$/.test(alias),
+  'G6_M06_CARRIER_SCAN_INPUT_INVALID');
+ await runtime();
+ const prior=await custodyReadback();
+ const handover=prior.find(x=>x.event_type==='HUB_HANDOVER');
+ const accepted=prior.find(x=>x.event_type==='CARRIER_ACCEPTED');
+ check(handover&&handover.box_unit_id===BOX&&handover.target_type==='COMBOX'&&
+  prior.every(x=>x.box_unit_id===BOX&&x.short_alias===alias)&&
+  !prior.some(x=>x.event_type===step)&&
+  (step==='CARRIER_ACCEPTED'?!accepted:!!accepted),
+  'G6_M06_CARRIER_SCAN_PRIOR_INVALID_'+step);
+ const title=step==='CARRIER_ACCEPTED'?'Transitaire · scanner et accepter chaque COMBOX':
+  'Transitaire · rescanner chaque COMBOX chargée dans le conteneur';
+ const item=await task(actor.page,title);
+ const scanProof=proof(step);
+ await fillTask(item,'qr_code',alias);
+ await fillTask(item,'proof_ref',scanProof);
+ if(!await item.evaluate(e=>e.open))await humanClick(null,item.locator('summary'),{timeout:8000});
+ await humanSelect(null,item.locator('[name="confirmed"]'),'yes');
+ const url=BASE+API+'/box-scan';let count=0;
+ const expected={qr_code:alias,proof_ref:scanProof,confirmed:true,event_type:step};
+ const handler=async route=>{
+  const req=route.request();
+  if(req.method()!=='POST')return route.fallback();
+  let body;try{body=req.postDataJSON()}catch(_){}
+  if(count===0&&isDeepStrictEqual(body,expected)){count++;return route.continue()}
+  actor.blocked.push({method:req.method(),path:new URL(req.url()).pathname});
+  return route.abort('blockedbyclient');
+ };
+ await actor.page.route(url,handler);
+ try{
+  const pending=actor.page.waitForResponse(r=>r.url()===url&&r.request().method()==='POST',{timeout:30000});
+  await humanClick(null,item.locator('button[type="submit"]'));
+  const response=await pending,payload=await response.json().catch(()=>({}));
+  report.box_scans.push({step,http:response.status(),code:payload.code||null});save();
+  check(count===1&&response.status()===201&&payload.ok===true&&
+   payload.result?.event_type===step&&payload.result?.box_unit_id===BOX&&
+   payload.result?.confirmed===true&&actor.blocked.length===0,
+   'G6_M06_CARRIER_SCAN_HTTP_'+step+'_'+response.status()+'_'+(payload.code||''));
+  const after=await custodyReadback(),latest=after.at(-1);
+  check(after.length===prior.length+1&&isDeepStrictEqual(after.slice(0,-1),prior)&&
+   latest.event_type===step&&latest.box_unit_id===BOX&&latest.short_alias===alias&&
+   latest.proof_ref===scanProof&&latest.actor_id&&latest.actor_id!==handover.actor_id&&
+   (step==='CARRIER_ACCEPTED'||latest.actor_id===accepted.actor_id),
+   'G6_M06_CARRIER_SCAN_PG_INVALID_'+step);
+  report.box_scans.at(-1).pg_confirmed=true;save();
+  await actor.page.screenshot({path:path.join(OUT,'scan-'+step.toLowerCase()+'.png')});
+ }finally{await actor.page.unroute(url,handler)}
+}
+
 async function main(){
  let browser,actor;
  try{
@@ -132,7 +200,7 @@ async function main(){
   const target=await confirmTarget({db,env});check(target.confirmed&&target.fingerprint===env.G6_CANONICAL_DB_FINGERPRINT,'G6_FORWARDER_DB_DRIFT');
   report.db_fingerprint=target.fingerprint;report.sha=await runtime();
   let prior,placement,before;
-  if(env.G6_CANONICAL_SCENARIO==='M06'){
+  if(M06){
    prior=JSON.parse(fs.readFileSync('test-results/g6-m06-shipment-handover/report.json','utf8'));
    const current=await readback();placement=current.effective.map(e=>e.placement_id);
    before=await snapshot('handed_over',placement);
@@ -146,15 +214,32 @@ async function main(){
    check(isDeepStrictEqual(before.base,prior.after)&&!before.tracking.tracking_reference&&!before.tracking.bill_of_lading_ref,'G6_FORWARDER_PRIOR_DRIFT');
   }
   report.before=before;save();
+  let boxAlias=null;
+  if(M06){
+   const custody=await custodyReadback();
+   check(custody.length===1&&custody[0].event_type==='HUB_HANDOVER'&&
+    custody[0].box_unit_id===BOX&&custody[0].target_type==='COMBOX'&&
+    /^[A-HJ-NP-Z2-9]{8}$/.test(custody[0].short_alias||'')&&custody[0].actor_id,
+    'G6_M06_CARRIER_HUB_SCAN_MISSING');
+   boxAlias=custody[0].short_alias;
+  }
   browser=await chromium.launch({headless:true});OBS=observe(browser,OUT);actor=await login(browser);
   const steps=[
    ['forwarder_received','Confirmer : Réceptionné par le transitaire','transition',{proof_ref:proof('RECEPTION-TRANSITAIRE')},{proof_ref:proof('RECEPTION-TRANSITAIRE'),to_stage:'forwarder_received'},'forwarder_received','stage_changed'],
-   ['tracking','Suivi conteneur','tracking',{tracking_reference:TRACK,proof_ref:proof('SUIVI')},{tracking_reference:TRACK,proof_ref:proof('SUIVI')},'forwarder_received','tracking_updated'],
-   ['in_transit','Confirmer : Expédié / en transit','transition',{proof_ref:proof('DEPART')},{proof_ref:proof('DEPART'),to_stage:'in_transit'},'in_transit','stage_changed'],
+   ['tracking','Suivi conteneur / connaissement et ETA','tracking',
+     M06?{tracking_reference:TRACK,container_reference:CONTAINER,proof_ref:proof('SUIVI')}:{tracking_reference:TRACK,proof_ref:proof('SUIVI')},
+     M06?{tracking_reference:TRACK,container_reference:CONTAINER,proof_ref:proof('SUIVI')}:{tracking_reference:TRACK,proof_ref:proof('SUIVI')},
+     'forwarder_received','tracking_updated'],
+   ['in_transit','Confirmer : Expédié / en transit','transition',
+     M06?{proof_ref:proof('DEPART'),container_sealed:'yes'}:{proof_ref:proof('DEPART')},
+     M06?{proof_ref:proof('DEPART'),container_sealed:true,to_stage:'in_transit'}:{proof_ref:proof('DEPART'),to_stage:'in_transit'},
+     'in_transit','stage_changed'],
    ['arrived','Confirmer : Arrivé','transition',{proof_ref:proof('ARRIVEE')},{proof_ref:proof('ARRIVEE'),to_stage:'arrived'},'arrived','stage_changed']
   ];
   let last=before;
   for(const [key,title,tail,fields,expected,stage,type] of steps){
+   if(M06&&key==='forwarder_received')await scanCarrierBox(actor,'CARRIER_ACCEPTED',boxAlias);
+   if(M06&&key==='in_transit')await scanCarrierBox(actor,'CARRIER_LOADED',boxAlias);
    await gesture(actor,key,title,tail,fields,expected);
    const state=await snapshot(stage,placement),events=state.base.shipmentEvents;
    check(events.length===last.base.shipmentEvents.length+1&&isDeepStrictEqual(events.slice(0,-1),last.base.shipmentEvents)&&
@@ -163,6 +248,7 @@ async function main(){
    // Valeurs attendues = valeurs saisies (TRACK, proof_ref) : tracking absent avant la saisie, exact après.
    if(key==='forwarder_received')check(!state.tracking.tracking_reference,'G6_FORWARDER_TRACKING_BEFORE_ENTRY');
    if(key!=='forwarder_received')check(state.tracking.tracking_reference===TRACK,'G6_FORWARDER_TRACKING_MISSING');
+   if(M06&&key!=='forwarder_received')check(state.tracking.container_reference===CONTAINER,'G6_M06_CONTAINER_REFERENCE_MISSING');
    if(key==='tracking'||key==='forwarder_received')check(!state.tracking.departed_at&&!state.tracking.arrived_at,'G6_FORWARDER_DATES_TOO_EARLY');
    if(key==='in_transit')check(!state.tracking.arrived_at,'G6_FORWARDER_ARRIVAL_TOO_EARLY');
    if(key==='in_transit'||key==='arrived')check(!!state.tracking.departed_at,'G6_FORWARDER_DEPARTURE_MISSING');
