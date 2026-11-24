@@ -190,8 +190,19 @@ test('la remise du brouillon refuse zéro carton ou carton non expédié, puis e
   });
   await expectError(journey.transition(market,hub,'INT-KM-001',
     {to_stage:'handed_over',proof_ref:'HANDOVER-3',transport_mode:'sea'},y.db),'JOURNEY_INVALID_forwarder_name');
+  await expectError(journey.transition(market,hub,'INT-KM-001',
+    {to_stage:'handed_over',proof_ref:'HANDOVER-4',forwarder_name:'Transitaire réel',transport_mode:'sea'},y.db),'CUSTODY_MANIFEST_INCOMPLETE');
+  expect(y.executed.some(q=>q.sql.startsWith('UPDATE international_shipments'))).toBe(false);
+  // Le geste Hub exige ensuite la preuve de scan de chaque COMBOX du manifeste.
+  y.client.query.mockImplementation(async(sql,params)=>{
+    if(String(sql).includes('COUNT(*)::int AS total') && String(sql).includes('hub_box_custody_scans'))
+      return {rows:[{total:1,missing:0}]};
+    if(String(sql).startsWith('SELECT u.id,u.reference,u.state,u.outcome_type'))
+      return {rows:[{id:uuid,reference:'BOX-1',state:'DISPATCHED',outcome_type:null}]};
+    return old(sql,params);
+  });
   const done=await journey.transition(market,hub,'INT-KM-001',
-    {to_stage:'handed_over',proof_ref:'HANDOVER-4',forwarder_name:'Transitaire réel',transport_mode:'sea'},y.db);
+    {to_stage:'handed_over',proof_ref:'HANDOVER-5',forwarder_name:'Transitaire réel',transport_mode:'sea'},y.db);
   expect(done.stage).toBe('handed_over');
   expect(y.executed.some(q=>q.sql.includes('forwarder_name=$4')&&q.params.includes('Transitaire réel'))).toBe(true);
 });
