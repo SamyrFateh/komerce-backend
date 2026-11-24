@@ -220,10 +220,9 @@ async function boxRequiresOpaqueQr(db, unitId) {
         JOIN hub_purchase_allocations a ON a.id=p.allocation_id
         JOIN orders o ON o.id=a.order_id
         WHERE p.physical_unit_id=$1 AND p.removed_at IS NULL
-          AND o.reference ~ '^[A-Z]{2}-[A-Z]{2}[0-9]{2}-[A-Z][A-Z0-9]{2}[0-9]{2}
-
+          AND o.reference ~ $2
       )
-    ) AS qr_required`,[unitId]);
+    ) AS qr_required`,[unitId,'^[A-Z]{2}-[A-Z]{2}[0-9]{2}-[A-Z][A-Z0-9]{2}[0-9]{2}$']);
   return qrPolicy?.qr_required === true;
 }
 module.exports={LabelError,normalizeScan,issueArticleLabels,issueBoxLabel,resolveLabel,listLabels,printHtml,boxRequiresOpaqueQr};

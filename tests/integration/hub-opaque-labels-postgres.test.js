@@ -17,6 +17,11 @@ describeDb('hub_scan_labels — contraintes SQL PostgreSQL réelles',()=>{
       throw new Error('HUB_LABELS_TEST_LOCAL_POSTGRES_ONLY');
   });
   afterAll(async()=>{await db.pool.end().catch(()=>{});});
+  test('politique QR COMBOX : requête paramétrée exécutable sur PostgreSQL réel',async()=>{
+    const labels=require('../../services/hub-opaque-labels');
+    const {rows:[{id}]}=await db.query('SELECT gen_random_uuid() AS id');
+    await expect(labels.boxRequiresOpaqueQr(db,id)).resolves.toBe(false);
+  });
   test('tables créées et colonnes sensibles absentes du ticket',async()=>{
     const {rows}=await db.query(`SELECT
       to_regclass('public.hub_scan_labels')::text AS labels,

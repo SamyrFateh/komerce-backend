@@ -46,7 +46,12 @@ describe('Étiquettes QR opaques Hub — contrat réel',()=>{
     expect(query).toHaveBeenCalledTimes(2);
     expect(query.mock.calls[0][0]).toContain("l.target_type='COMBOX'");
     expect(query.mock.calls[0][0]).toContain('p.removed_at IS NULL');
-    expect(query.mock.calls[0][1]).toEqual([UUID.box]);
+    expect(query.mock.calls[0][0]).toContain('o.reference ~ $2');
+    expect(query.mock.calls[0][1]).toEqual([UUID.box,'^[A-Z]{2}-[A-Z]{2}[0-9]{2}-[A-Z][A-Z0-9]{2}[0-9]{2}$']);
+    const refPattern=new RegExp(query.mock.calls[0][1][1]);
+    expect(refPattern.test('CM-YA01-B7Q01')).toBe(true);
+    expect(refPattern.test('KABC123')).toBe(false);
+    expect(refPattern.test('CM-YA01-B7Q01-01')).toBe(false);
   });
   test('valeurs illisibles, références commerciales et URL refusées',()=>{
     const qr='KQ1_'+'A'.repeat(32);
