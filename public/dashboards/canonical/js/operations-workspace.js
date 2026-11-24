@@ -1715,7 +1715,7 @@
       return cell.children.length ? cell : '—';
     };
 
-    boxes.appendChild(simpleTable(doc, ['', 'COMBOX', 'État', 'Contenu', 'Expédition', 'Composer', 'Action'],
+    const boxTable=simpleTable(doc, ['', 'COMBOX', 'État', 'Contenu', 'Expédition', 'Composer', 'Action'],
       (d.boxes || []).map(box => {
         const contents = box.contents.map(c => `${c.order_ref} ×${formatNumber(c.qty)}`).join(', ');
         let pick = '';
@@ -1746,7 +1746,30 @@
           }).catch(() => {}));
         }
         return [pick, box.reference, box.state, contents || '—', box.shipment_ref || '—', composeCell(box), action];
-      }), 'Aucune COMBOX.'));
+      }), 'Aucune COMBOX.');
+    const boxToolbar=doc.createElement('div');
+    boxToolbar.className='kmc-hub-box-filter';
+    const boxSearch=doc.createElement('input');
+    boxSearch.type='search';boxSearch.placeholder='Rechercher une COMBOX, commande ou expédition…';
+    boxSearch.setAttribute('aria-label','Filtrer les COMBOX physiques');
+    const boxCounter=text(doc,'span','kmc-workspace-muted','');
+    boxToolbar.append(boxSearch,boxCounter);
+    boxes.appendChild(boxToolbar);
+    boxes.appendChild(boxTable);
+    boxTable.setAttribute('data-hub-combox-scroll','');
+    const boxRows=Array.from(boxTable.querySelectorAll('tbody tr'));
+    const filterBoxes=()=>{
+      const q=boxSearch.value.trim().toLocaleLowerCase('fr');
+      let found=0;
+      for(const row of boxRows){
+        const show=!q||String(row.textContent||'').toLocaleLowerCase('fr').includes(q);
+        row.hidden=!show;
+        if(show)found++;
+      }
+      boxCounter.textContent=found+' / '+boxRows.length+' COMBOX · défilement interne';
+    };
+    boxSearch.addEventListener('input',filterBoxes);
+    filterBoxes();
 
     const secondary = doc.createElement('details');
     secondary.className = 'kmc-hub-physical-secondary';
