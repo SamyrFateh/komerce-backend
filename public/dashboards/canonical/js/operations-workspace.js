@@ -2227,7 +2227,7 @@
     const j=candidates.length===1?candidates[0]:candidates.find(x=>x.id===context.journeyOrderId);
     if(!j)return;
     const steps=[['po','1 · Achats'],['supplier','2 · Fournisseur'],['reception','3 · Réception'],
-      ['cartons','4 · Étiquettes, tri et COMBOX'],['departure','5 · Départ']];
+      ['labels','4 · QR articles'],['cartons','5 · Tri / COMBOX'],['departure','6 · Départ']];
     const order=(dossier.orders||[]).find(x=>x.id===j.id);
     const pos=(dossier.purchase_orders||[]).filter(p=>(p.lines||[]).some(l=>l.order_id===j.id));
     const go=(key)=>{
@@ -2252,17 +2252,23 @@
       anchor?.scrollIntoView?.({block:'start',behavior:'auto'});
     };
     host.appendChild(text(doc,'strong','kmc-hub-journey-title',j.reference+' · Parcours Hub'));
+    if(order){
+      const route=text(doc,'p','kmc-workspace-note',context.marketCode+' · Relais '+(order.relay_code||order.relay_name||'à vérifier')+
+        (order.delivery_wave?' · Vague '+order.delivery_wave.code+(order.delivery_wave.closed?' (clôturée)':' (ouverte)'):' · Aucune vague attribuée'));
+      route.setAttribute('data-hub-journey-destination','');host.appendChild(route);
+    }
     const list=doc.createElement('div');list.className='kmc-hub-journey-steps';list.setAttribute('role','group');list.setAttribute('aria-label','Jalons métier');
     for(const [key,label] of steps){
       const state=j.stage_states?.[key]||'unknown';
       const done=state==='complete'||state==='locked';
-      const current=!done&&j.current_key===key;
+      const current=!done&&(j.physical_focus||j.current_key)===key;
       const step=doc.createElement('button');step.type='button';
       step.className='kmc-hub-journey-step'+(done?' is-done':current?' is-current':'');
       step.setAttribute('data-hub-journey-step',key);step.setAttribute('data-state',state);
       if(current)step.setAttribute('aria-current','step');
       const stateLabel=done?'✓ Terminé':current?'À traiter / suivre':state==='warning'||state==='critical'?'À contrôler':state==='progress'?'En cours':state==='ready'?'Disponible':state==='waiting'?'En attente':'À venir';
       step.appendChild(text(doc,'strong','',label));step.appendChild(text(doc,'small','',stateLabel));
+      if(key==='labels')step.appendChild(text(doc,'small','',j.stage_notes?.labels||'Preuve non renseignée'));
       step.title=j.stage_notes?.[key]||stateLabel;
       // Une étape terminée reste consultable dans le Kanban, pas réexécutable ici.
       step.disabled=done||(!current&&!['ready','progress','warning','critical'].includes(state))||isHubReadOnly(context);
@@ -2270,9 +2276,8 @@
     }
     host.appendChild(list);
     host.appendChild(text(doc,'p','kmc-workspace-note',j.current_status+' · '+(j.current_expected||j.next_action||'')));
-    // Les étiquettes restent un atelier canonique, sans prétendre qu'un QR
-    // généré prouve une impression physique ou la réalisation du tri.
-    if(!isHubReadOnly(context)&&order&&['ready','progress','warning'].includes(j.stage_states?.cartons)){
+    // Réimpression reste accessible même si les identités sont déjà émises.
+    if(!isHubReadOnly(context)&&order&&['ready','progress','warning','complete','locked'].includes(j.stage_states?.cartons)){
       const labelButton=doc.createElement('button');labelButton.type='button';
       labelButton.className='kmc-workspace-tab';labelButton.setAttribute('data-hub-journey-labels','');
       labelButton.textContent='Ouvrir les étiquettes QR';labelButton.addEventListener('click',()=>go('labels'));host.appendChild(labelButton);
