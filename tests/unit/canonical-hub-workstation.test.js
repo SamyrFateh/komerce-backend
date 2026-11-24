@@ -278,7 +278,7 @@ test('Direction Hub : engagements, paiements, arbitrages, exécution séparés e
   expect(payments).toHaveLength(1);
   expect(payments[0].className).toContain('is-readonly');
   expect(payments[0].children.some(x=>x.getAttribute('href')===
-    '/admin/hub-live?view=execute&market=KM&sel=po%3A'+po)).toBe(true);
+    '/admin/hub-live?view=execute&market=KM&entry=direction&sel=po%3A'+po)).toBe(true);
   const physical=host.querySelectorAll('[data-hub-director-task="PLACE_COMBOX"]')[0];
   expect(physical.children.some(x=>x.getAttribute('href')===
     '/admin/hub-live?view=execute&market=CG')).toBe(true);
