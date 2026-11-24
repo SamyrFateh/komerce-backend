@@ -105,10 +105,13 @@ module.exports = {
     ],
     ci: [
       '.github/workflows/staging-discovery-modal-v2-ops.yml',
+      '.github/workflows/staging-local-offers-5245-demo.yml',
     ],
     scripts: [
       'scripts/seed-discovery-staging.js',
       'scripts/seed-discovery-modal-v2-staging.js',
+      'scripts/recette/local-offers-5245-showcase.js',
+      'scripts/recette/local-offers-5245-chromium.js',
     ],
     migrations: [
       'migrations/157_providers_services_media.sql',
