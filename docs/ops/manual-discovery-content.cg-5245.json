@@ -1,0 +1,24 @@
+{
+  "market": "CG",
+  "catalog_products": [],
+  "providers": [
+    {
+      "id": "c0aaba00-5245-4000-8000-000000000001",
+      "name": "Résidence KOYAMBA",
+      "phone": "+242000000000",
+      "status": "pending"
+    }
+  ],
+  "local_products": [
+    {
+      "id": "c0aaba00-5245-4000-8000-000000000002",
+      "provider_id": "c0aaba00-5245-4000-8000-000000000001",
+      "title": "Résidence KOYAMBA — logements à vendre",
+      "description": "Projet de logements à vendre : appartement T2 (1 chambre), T3 (2 chambres), T4 (3 chambres) et villa. Surfaces, localisation précise, disponibilités, titres et prix en FCFA (XAF) à confirmer. Demande d’informations et organisation de visite ; aucun paiement ni réservation ferme. Fiche de démonstration staging, caractéristiques non vérifiées.",
+      "zone": "Congo-Brazzaville",
+      "status": "draft",
+      "expose": false
+    }
+  ],
+  "services": []
+}
