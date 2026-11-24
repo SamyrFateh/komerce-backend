@@ -25,6 +25,7 @@ const doc = { createElement: el };
 const PO_ID = '10000000-0000-4000-8000-000000000001';
 const walk = (n, out = []) => { out.push(n); (n.children || []).forEach((c) => walk(c, out)); return out; };
 const actions = (menu) => walk(menu).filter((n) => n.attrs && n.attrs['data-hub-real-action']).map((n) => n.attrs['data-hub-real-action']);
+const links = menu => walk(menu).filter(n=>Object.prototype.hasOwnProperty.call(n.attrs,'data-hub-workflow-link'));
 const texts = (menu) => walk(menu).map((n) => n.textContent).filter(Boolean).join(' | ');
 
 function load() {
@@ -36,7 +37,7 @@ function load() {
 const decision = { decided_by_name: 'Directrice', decided_at: '2026-11-03T10:00:00Z', amount: 30, currency: 'AED', proof_ref: 'BC-1' };
 const run = (po, field, grants, user = { role: 'agent_hub' }, fetchFn = jest.fn()) => {
   const menu = el('div');
-  load().administration(menu, { doc, fetch: fetchFn, user, po: { id: PO_ID, status: 'draft', ...po }, field, grants, refresh: jest.fn() });
+  load().administration(menu, { doc, fetch: fetchFn, user, po: { id: PO_ID, market:'KM', status: 'draft', ...po }, field, grants, refresh: jest.fn() });
   return menu;
 };
 
@@ -48,16 +49,18 @@ test('engagement : sans droit, aucune action ; le message dit que la PO prépar�
 
 test('engagement : le détenteur du droit voit « Valider l\'engagement d\'achat » (pas « Soumettre » tant que non validé)', () => {
   const menu = run({}, 'Engagement', { purchase_commitment: true });
-  expect(actions(menu)).toEqual(['Valider l’engagement d’achat']);
+  expect(actions(menu)).toEqual([]);
+  expect(links(menu)).toHaveLength(1);
+  expect(links(menu)[0].textContent).toContain('décision d’engagement');
 });
 
-test('engagement validé + brouillon : « Soumettre au fournisseur » poste sur la route canonique', async () => {
+test('engagement validé + brouillon : lien vers la soumission canonique sans POST', async () => {
   const fetchFn = jest.fn(async () => ({ ok: true, json: async () => ({}) }));
   const menu = run({ commitment_decision: decision }, 'Engagement', {}, undefined, fetchFn);
-  expect(actions(menu)).toEqual(['Soumettre au fournisseur']);
+  expect(actions(menu)).toEqual([]);
   expect(texts(menu)).toContain('Engagement d’achat validé par Directrice');
-  await walk(menu).find((n) => n.attrs['data-hub-real-action']).click();
-  expect(fetchFn).toHaveBeenCalledWith('/api/purchasing/po/' + PO_ID + '/submit', expect.objectContaining({ method: 'POST' }));
+  expect(links(menu)[0].href).toContain('sel=po%3A'+PO_ID);
+  expect(fetchFn).not.toHaveBeenCalled();
 });
 
 test('engagement : PO déjà soumise sans décision tracée → aucune action fictive', () => {
@@ -73,8 +76,9 @@ test('paiement : impossible avant l\'engagement, et la soumission n\'autorise ri
 
 test('paiement : sans droit aucune action ; avec droit, engagement validé et PO soumise → « Autoriser le paiement fournisseur »', () => {
   expect(actions(run({ status: 'notified', commitment_decision: decision }, 'Autorisation', { supplier_payment: false }))).toEqual([]);
-  expect(actions(run({ status: 'notified', commitment_decision: decision }, 'Autorisation', { supplier_payment: true })))
-    .toEqual(['Autoriser le paiement fournisseur']);
+  const menu=run({ status:'notified',commitment_decision:decision },'Autorisation',{supplier_payment:true});
+  expect(actions(menu)).toEqual([]);
+  expect(links(menu)[0].textContent).toContain('autorisation de paiement');
 });
 
 test('paiement déjà autorisé : décision affichée, aucune seconde action ; un débit ne vaut pas autorisation', () => {
@@ -89,8 +93,11 @@ test('rôle non Hub : aucune écriture', () => {
 
 test('régression P0-3 : un UUID réel (5 groupes) active les actions d\'achat — attester l\'envoi d\'une PO soumise', () => {
   const menu = run({ status: 'notified' }, 'Fournisseur', {});
-  expect(actions(menu)).toEqual(['Attester l’envoi fournisseur']);
-  expect(actions(run({ status: 'notified', sent_at: '2026-11-03T09:00:00Z' }, 'Fournisseur', {}))).toEqual([]);
+  expect(actions(menu)).toEqual([]);
+  expect(links(menu)[0].href).toContain('market=KM&atelier=purchasing&sel=po%3A'+PO_ID);
+  const confirmed=run({status:'notified',sent_at:'2026-11-03T09:00:00Z'},'Fournisseur',{});
+  expect(actions(confirmed)).toEqual([]);
+  expect(links(confirmed)[0].textContent).toContain('confirmer les lignes');
 });
 
 test('écart fournisseur : la décision est distincte et réservée au détenteur du grant paiement', () => {
