@@ -789,7 +789,13 @@
         "bootstrap/api-routes.js",
         "routes/admin.js",
         "routes/admin/index.js"
-   "localPath": "/documents",
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/documents",
+      "mountPrefix": "/api/admin",
+      "localPath": "/documents",
       "routeFile": "routes/admin/documents.js",
       "mountedFrom": [
         "bootstrap/api-routes.js",
@@ -4190,7 +4196,26 @@
       "localPath": "/activate-account",
       "routeFile": "routes/auth.js",
       "mountedFrom": [
-        "boountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/auth/admin-reset",
+      "mountPrefix": "/api/auth",
+      "localPath": "/admin-reset",
+      "routeFile": "routes/auth.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/auth/auto-register",
+      "mountPrefix": "/api/auth",
+      "localPath": "/auto-register",
+      "routeFile": "routes/auth.js",
+      "mountedFrom": [
         "bootstrap/api-routes.js"
       ]
     },
