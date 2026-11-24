@@ -513,11 +513,13 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       expect(layout.zones.every(width => width > 0)).toBe(true);
     });
 
-    test('formulaire « Réceptionner une livraison » : scan et tableau restent dans la colonne', async ({ page }, testInfo) => {
+    test('Réceptionner une livraison : accès à l’atelier unique, scan et tableau sans débordement', async ({ page }, testInfo) => {
       await mount(page, { view: null });
       await page.locator('[data-hlc-po]').first().click();
       await page.locator('[data-hlc-action="receive"]').click();
-      const form = page.locator('[data-hlc-form="receive"]');
+      await expect(page.locator('[data-workspace-view="reception"]')).toHaveAttribute('aria-selected','true');
+      await expect(page.locator('[data-hlc-form="receive"]')).toHaveCount(0);
+      const form = page.locator('[data-receive-po]').first();
       await expect(form.locator('.kmc-workspace-receive-scanner')).toBeVisible();
       if (process.env.KM_SHOT_DIR) await page.screenshot({ fullPage: true, path: path.join(process.env.KM_SHOT_DIR, `receive-form-${name}-${process.env.KM_SHOT_TAG || 'x'}.png`) });
       const overflow = await form.evaluate((root) => {
