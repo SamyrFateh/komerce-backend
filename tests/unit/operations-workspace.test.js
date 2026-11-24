@@ -285,3 +285,10 @@ test('jalon QR distinct et destination autoritative',()=>{
  expect(src).toContain("['labels','4 · QR articles']");
  expect(src).toContain('data-hub-journey-destination');
 });
+
+test('Direction Hub : surface dédiée, sans ateliers physiques ni onglets opérationnels',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+ expect(src).toContain("hubQuery.get('entry')==='direction'");
+ expect(src).toContain('if(context.decisionOnly)return;');
+ expect(src).toContain('data-hub-decision-workspace');
+});
