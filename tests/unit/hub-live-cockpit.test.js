@@ -209,3 +209,11 @@ test('accès Kanban par commande : retrouver les besoins et toutes les PO liées
   expect(js).toContain("line.order_id===o.id");
   expect(js).toContain("(o.po_ids || []).entries()");
 });
+
+test('achat Hub : canal API seulement pour les lignes éligibles et contrôle devise avant rattachement',()=>{
+ const js=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-live-cockpit.js'),'utf8');
+ expect(js).toContain('g.batch.api_available===true');
+ expect(js).toContain('lines.every(l=>l.api_eligible===true)');
+ expect(js).toContain('execution_mode: executionMode');
+ expect(js).toContain('devise incompatible');
+});
