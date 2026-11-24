@@ -306,8 +306,11 @@
       }
       panel._directorSignature=signature;
       panel.setAttribute('data-hub-director-state','ready');
-      heading.textContent='Direction Hub · Tous marchés · '+payload.tasks.length+
-        ' tâche(s) · '+Number(payload.overdue_count||0)+' alerte(s) ≥ 48 h';
+      const retiredKinds=new Set(['PREPARE_BAG','CLOSE_BAG','DEPOSIT_BAG','BOX_BAGS']);
+      const activeTasks=payload.tasks.filter(task=>!retiredKinds.has(task.kind));
+      const legacyCount=payload.tasks.length-activeTasks.length;
+      heading.textContent='Direction Hub · Tous marchés · '+activeTasks.length+
+        ' tâche(s) · '+activeTasks.filter(task=>task.overdue).length+' alerte(s) ≥ 48 h';
       body.replaceChildren();
       // Une file vide rend les quatre colonnes : rien à traiter reste explicite.
       // Regroupement visuel d'une projection déjà autorisée côté serveur :
@@ -322,13 +325,18 @@
         : task.kind === 'AUTHORIZE_PAYMENT' ? 'payment'
           : task.owner === 'responsable_hub' ? 'arbitrage' : 'execution';
       const groups = new Map(groupSpecs.map(spec => [spec.key, []]));
-      payload.tasks.forEach(task => groups.get(groupOf(task)).push(task));
+      activeTasks.forEach(task => groups.get(groupOf(task)).push(task));
       const decisionCount = ['commitment','payment','arbitrage'].reduce((n,key) => n+groups.get(key).length,0);
       const intro=make(doc,'div','hlc-director-intro');
       intro.appendChild(make(doc,'strong','',decisionCount+' décision(s) à examiner'));
       intro.appendChild(make(doc,'span','',
         'Engagement, autorisation de paiement et réalisation financière restent séparés. Les liens ouvrent le dossier sans valider à votre place.'));
       body.appendChild(intro);
+      if(legacyCount){
+        const notice=make(doc,'p','kmc-hub-action-explanation',legacyCount+' dossier(s) historiques à rapprocher. Consulter les preuves existantes ; aucun ancien geste de préparation n’est disponible.');
+        notice.setAttribute('data-hub-legacy-review','');
+        body.appendChild(notice);
+      }
       const list=make(doc,'div','hlc-director-list');
       list.setAttribute('data-hub-director-list','');
       for (const spec of groupSpecs) {
