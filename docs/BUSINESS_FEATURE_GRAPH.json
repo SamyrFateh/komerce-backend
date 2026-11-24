@@ -13816,6 +13816,13 @@
       {
         "feature": "logistics",
         "category": "services",
+        "declared": "services/hub-label-pdf.js",
+        "resolvedPath": "services/hub-label-pdf.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
         "declared": "services/hub-box-custody-scans.js",
         "resolvedPath": "services/hub-box-custody-scans.js",
         "status": "resolved-on-disk-no-header"
@@ -14231,6 +14238,13 @@
         "category": "tests",
         "declared": "tests/unit/hub-opaque-labels.test.js",
         "resolvedPath": "tests/unit/hub-opaque-labels.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/hub-label-pdf.test.js",
+        "resolvedPath": "tests/unit/hub-label-pdf.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -37788,6 +37802,10 @@
                 "targetFile": "services/hub-opaque-labels.js"
               },
               {
+                "sourceFileId": "routes/admin-operations-workspace.js",
+                "targetFile": "services/hub-label-pdf.js"
+              },
+              {
                 "sourceFileId": "routes/admin-shipping-customs-workspace.js",
                 "targetFile": "services/international-shipment-journey.js"
               },
@@ -50892,7 +50910,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2392
+        "filesObserved": 2394
       },
       "boutique": {
         "filesObserved": 218,

@@ -18556,7 +18556,7 @@
             ]
           },
           "services": {
-            "count": 51,
+            "count": 52,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -18597,6 +18597,11 @@
                 "declared": "services/hub-inbound-reconciliation.js",
                 "resolvedPath": "services/hub-inbound-reconciliation.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/hub-label-pdf.js",
+                "resolvedPath": "services/hub-label-pdf.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/hub-opaque-labels.js",
@@ -18816,7 +18821,7 @@
             ]
           },
           "tests": {
-            "count": 98,
+            "count": 99,
             "files": [
               {
                 "declared": "tests/e2e-api/hub-membership-readers.e2e.test.js",
@@ -18986,6 +18991,11 @@
               {
                 "declared": "tests/unit/hub-inbound-reconciliation.test.js",
                 "resolvedPath": "tests/unit/hub-inbound-reconciliation.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-label-pdf.test.js",
+                "resolvedPath": "tests/unit/hub-label-pdf.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -19331,7 +19341,7 @@
             ]
           }
         },
-        "totalFiles": 197,
+        "totalFiles": 199,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
