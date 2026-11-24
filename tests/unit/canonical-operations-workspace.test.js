@@ -185,3 +185,25 @@ test('UX1 : jsonRequest propage le Retry-After en cas de réponse 429', async ()
   await expect(workspace.jsonRequest(fetch, '/api/admin/workspaces/operations/market/CG/supply'))
     .rejects.toMatchObject({ status: 429, retryAfter: '120' });
 });
+
+test('le montage achat compact refuse un profil marché avant toute lecture', async () => {
+  const fetch=jest.fn();
+  await expect(workspace.mountPurchaseActions({}, {user:{role:'market_operator'},marketCode:'CM',poId:'p1',fetch}))
+    .rejects.toThrow('Accès achat Hub requis');
+  expect(fetch).not.toHaveBeenCalled();
+});
+
+test('le montage achat compact charge supply authentifié et échoue fermé sans viewer',async()=>{
+  const previous=global.KomerceHubLiveCockpit;
+  const render=jest.fn();
+  global.KomerceHubLiveCockpit={render};
+  try{
+    const node=()=>({children:[],setAttribute(){},appendChild(n){this.children.push(n);return n;},replaceChildren(...n){this.children=n;}});
+    const host=node(),dossier={purchase_orders:[],cockpit:{}};
+    const fetch=jest.fn(async()=>({ok:true,json:async()=>dossier}));
+    await workspace.mountPurchaseActions(host,{document:{createElement:node},fetch,user:{role:'agent_hub'},marketCode:'CM',poId:'p1'});
+    expect(fetch).toHaveBeenCalledWith('/api/admin/workspaces/operations/market/CM/supply',expect.objectContaining({method:'GET',credentials:'include'}));
+    expect(render).toHaveBeenCalledWith(expect.anything(),expect.objectContaining({dossier,purchaseOnly:true,isReadOnly:true,state:expect.objectContaining({sel:{type:'po',id:'p1'}})}));
+    expect(fetch).toHaveBeenCalledTimes(1);
+  }finally{global.KomerceHubLiveCockpit=previous;}
+});
