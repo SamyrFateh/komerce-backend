@@ -571,9 +571,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - services: 4
 - routes: 1
 - boutique: 2
-- ci: 1
-- scripts: 2
-- migrations: 3
+- ci: 2
+- scripts: 4
+- migrations: 4
 - tests: 7
 - tables owned (lifecycle): 4 — `providers`, `services`, `physical_offers`, `inquiries`
 - tables written: 4
@@ -2334,7 +2334,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2399 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2401 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 218 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2643,7 +2643,7 @@ Meta Graph monté : oui.
 | platform-ops | wallet | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | providers-services | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | providers-services | auth-identity | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| providers-services | infrastructure | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| providers-services | infrastructure | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | providers-services | local-stock | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | providers-services | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | providers-services | platform-ops | static-code | 2 | **DECLARED_AND_OBSERVED** |
