@@ -23,7 +23,7 @@
   const HUB_PATH = '/admin/hub';
   const BRANCHES = Object.freeze({
     administrative: { label: 'Administration', hint: 'Achats, fournisseurs et engagements' },
-    operations: { label: 'Opérations', hint: 'Réception, contrôle et expéditions' },
+    operations: { label: 'Kanban', hint: 'Suivre les commandes et leurs prochaines actions' },
     // Vue de supervision, pas une troisième branche métier ni un nouveau writer.
     direction: { label: 'Direction Hub', hint: 'Décisions, paiements et arbitrages' },
   });
@@ -564,6 +564,15 @@
           next.setAttribute('data-hub-next-action','');
           idBox.appendChild(next);
         }
+        if (canOperate && /^[A-Z]{2}$/.test(safe(order.market))) {
+          const execution = make(doc, 'a', 'kmc-hub-next-action', 'Ouvrir les opérations');
+          execution.setAttribute('data-hub-order-execution', '');
+          const params = new URLSearchParams({view:'execute', market:order.market});
+          if (/^[A-Za-z0-9-]{1,128}$/.test(safe(order.id))) params.set('sel','order:'+order.id);
+          execution.setAttribute('href','/admin/hub-live?'+params.toString());
+          execution.setAttribute('aria-label','Ouvrir les opérations Hub · '+order.reference+' · '+order.market);
+          idBox.appendChild(execution);
+        }
         identity.appendChild(idBox);
         tr.appendChild(identity);
         for (const [label, key] of [
@@ -933,6 +942,13 @@
       applyFocus();
     });
     header.appendChild(focusToggle);
+    if (administrativeAllowed) {
+      const execution = make(doc,'a','kmc-hub-app-branch','Opérations');
+      execution.setAttribute('href','/admin/hub-live?view=execute');
+      execution.setAttribute('data-hub-open-operations','');
+      execution.setAttribute('aria-label','Ouvrir le poste d’exécution Hub et choisir le marché');
+      header.appendChild(execution);
+    }
     applyFocus();
     root.appendChild(header);
     const nav=make(doc,'nav','kmc-hub-app-branches');
