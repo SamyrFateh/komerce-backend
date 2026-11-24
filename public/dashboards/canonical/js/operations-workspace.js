@@ -1558,6 +1558,27 @@
         print.addEventListener('click',event=>openLabelPrint(event,print.href));
         row.append(issue,print,pdfLink('articles',line.allocation_id,'a4'),pdfLink('articles',line.allocation_id,'thermal'));labelSection.appendChild(row);
       }
+      // Les allocations déjà placées ne figurent plus dans fillable. Réimpression
+      // des identités réellement émises uniquement ; aucun POST pour cet historique.
+      const reprints=new Map();
+      for(const box of (d.boxes||[]))for(const content of (box.contents||[])){
+        const id=String(content.allocation_id||'');
+        if(!id||labelRows.has(id)||Number(content.issued_label_count)<=0||!Number.isFinite(Number(content.issued_label_count)))continue;
+        if(!reprints.has(id))reprints.set(id,{id,ref:content.order_ref,count:Number(content.issued_label_count),boxes:new Set()});
+        reprints.get(id).boxes.add(box.reference);
+      }
+      if(reprints.size){
+        const history=doc.createElement('details');
+        history.setAttribute('data-hub-article-label-reprints','');
+        history.appendChild(text(doc,'summary','','Réimprimer des étiquettes déjà préparées · '+String(reprints.size)+' lot(s)'));
+        for(const item of reprints.values()){
+          const row=doc.createElement('div');row.className='kmc-workspace-receive-footer';
+          row.appendChild(text(doc,'span','',String(item.ref||'Commande')+' · '+Array.from(item.boxes).join(', ')+' · '+String(item.count)+' QR émis'));
+          row.append(pdfLink('articles',item.id,'a4'),pdfLink('articles',item.id,'thermal'));
+          history.appendChild(row);
+        }
+        labelSection.appendChild(history);
+      }
       boxes.appendChild(labelSection);
     }
 
