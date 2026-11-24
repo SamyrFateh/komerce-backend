@@ -760,7 +760,7 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
 
   // Quantités reçues pas encore mises en carton : sources proposées pour composer une KOM-BOX (REPACK), sans ressaisie.
   const { rows: fillableRows } = await q.query(`
-    SELECT p.allocation_id, u.id AS from_unit_id, u.reference AS from_unit_ref, a.order_id, o.reference AS order_ref,
+    SELECT p.allocation_id, u.id AS from_unit_id, u.reference AS from_unit_ref, a.purchase_order_id, a.order_id, o.reference AS order_ref,
            o.relais_id, rl.short_code AS relais_code,
            a.order_item_id, a.product_sku_id, pr.name AS product_name, p.quantity
       FROM hub_physical_unit_placements p
@@ -775,7 +775,7 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
      WHERE p.removed_at IS NULL AND p.quantity > 0 AND a.market_id = $1
      ORDER BY u.created_at DESC, p.allocation_id LIMIT 200`, [marketId]);
   const fillable = fillableRows.map((r) => ({
-    allocation_id: r.allocation_id, from_unit_id: r.from_unit_id, from_unit_ref: r.from_unit_ref,
+    allocation_id: r.allocation_id, from_unit_id: r.from_unit_id, from_unit_ref: r.from_unit_ref, purchase_order_id: r.purchase_order_id,
     order_id: r.order_id, order_ref: r.order_ref,
     relais_id: r.relais_id, relais_code: r.relais_code,
     order_item_id: r.order_item_id, product_sku_id: r.product_sku_id,
