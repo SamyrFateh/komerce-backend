@@ -275,7 +275,13 @@ describe('Hub: no old SAC and QR/PDF immediately reachable',()=>{
 test('Jalons Hub : projection serveur, pas de calcul local, étape terminée désactivée',()=>{
   const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
   expect(src).toContain('context.dossier?.hub_journeys');
-  expect(src).toContain("j.current_key===key");
+  expect(src).toContain("(j.physical_focus||j.current_key)===key");
   expect(src).toContain("step.disabled=done");
   expect(src).toContain("hub_journeys: dossier?.hub_journeys");
+});
+
+test('jalon QR distinct et destination autoritative',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+ expect(src).toContain("['labels','4 · QR articles']");
+ expect(src).toContain('data-hub-journey-destination');
 });
