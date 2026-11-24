@@ -552,6 +552,7 @@
     shortcuts.setAttribute('aria-label', 'Accès direct aux ateliers physiques');
     for (const [key, label] of [
       ['reception', 'Réception fournisseur'],
+      ['labels', 'Imprimer les étiquettes articles'],
       ['boxes', 'Préparer les COMBOX'],
       ['shipments', 'Expéditions'],
     ]) {

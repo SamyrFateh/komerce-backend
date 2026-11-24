@@ -172,6 +172,7 @@ function summarizeMarket(market, payload) {
     };
     result.push({
       id: order.id, reference: order.reference, market: market.code, market_name: market.name,
+      relay_name: order.relay_name || null,
       po: toSource ? 'Sourcing requis' : !po.length ? 'À constituer' : draft ? 'Brouillon' : po.length + ' PO liée(s)',
       supplier: !po.length ? 'Non commandé' : notSent ? 'Envoi à prouver' :
         notReceived ? 'Attente fournisseur' : 'Réception au Hub',

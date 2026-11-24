@@ -12,6 +12,7 @@ function el(tag) {
     classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } },
     appendChild(child) { this.children.push(child); child.parentNode = this; return child; },
     replaceChildren(...nodes) { this.children = nodes; },
+    remove() { if (this.parentNode) this.parentNode.children=this.parentNode.children.filter(child=>child!==this); },
     setAttribute(k, v) { this.attrs[k] = String(v); },
     getAttribute(k) { return this.attrs[k] || null; },
     addEventListener(evt, fn) { handlers[evt] = fn; },
@@ -107,4 +108,20 @@ test('écart déjà décidé : la preuve s’affiche sans offrir de nouvelle dé
   }, 'Paiement', { supplier_payment: true });
   expect(actions(menu)).toEqual([]);
   expect(texts(menu)).toContain('25 AED · Écart de prix · Pièce DEVIS-2');
+});
+
+test('préparation COMBOX : navigation vers le dossier et le marché, sans mutation', async () => {
+  const menu=el('div');
+  menu.setAttribute('data-hub-request','1');
+  const order={id:PO_ID,reference:'KABC123',market:'CM',stage_states:{cartons:'ready'}};
+  const fetchFn=jest.fn(async()=>({ok:true,json:async()=>({purchase_orders:[{id:PO_ID,lines:[{order_id:order.id,received:2}]}],boxes:[],needs:[]})}));
+  await load().operations(menu,{doc,fetch:fetchFn,user:{role:'agent_hub'},order,stage:'Cartons',refresh:jest.fn()});
+  const links=walk(menu).filter(n=>Object.prototype.hasOwnProperty.call(n.attrs,'data-hub-workflow-link'));
+  expect(links).toHaveLength(1);
+  const url=new URL(links[0].href,'https://staging.invalid');
+  expect(url.pathname).toBe('/admin/hub-live');
+  expect(url.searchParams.get('view')).toBe('execute');
+  expect(url.searchParams.get('market')).toBe('CM');
+  expect(url.searchParams.get('sel')).toBe('order:'+order.id);
+  expect(fetchFn.mock.calls.every(([,opts])=>opts.method==='GET')).toBe(true);
 });

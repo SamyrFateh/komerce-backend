@@ -112,7 +112,7 @@
     const relayExec = mode === 'relay-execution';
     const execution = mode === 'execution' || relayExec;
     copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', relayExec ? 'RELAIS LIVE · EXÉCUTION' : execution ? 'HUB LIVE · EXÉCUTION' : 'HUB & RELAIS'));
-    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', relayExec ? 'Poste de travail Relais' : execution ? 'Hub live · Dossiers' : 'Flux à traiter'));
+    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', relayExec ? 'Poste de travail Relais' : execution ? 'Opérations Hub' : 'Flux à traiter'));
     copy.appendChild(text(
       doc,
       'p',
@@ -123,8 +123,8 @@
 
     const nav = doc.createElement('nav');
     nav.className = 'kmc-workspace-nav';
-    const operations = text(doc, 'a', 'kmc-workspace-nav-link', relayExec ? '← Relais live' : '← Dashboard Opérations');
-    operations.setAttribute('href', relayExec ? '/admin/relais-live' : '/admin/operations');
+    const operations = text(doc, 'a', 'kmc-workspace-nav-link', relayExec ? '← Relais live' : execution ? '← Kanban Hub' : '← Dashboard Opérations');
+    operations.setAttribute('href', relayExec ? '/admin/relais-live' : execution ? '/admin/hub?branch=operations' : '/admin/operations');
     nav.appendChild(operations);
     header.appendChild(nav);
 
@@ -372,6 +372,7 @@
   // Hub live · Exécution : actions Hub uniquement (jamais Relais) + réception fournisseur.
   const EXECUTION_VIEWS = Object.freeze([
     { id: 'supply', label: 'Dossiers' },
+    { id: 'labels', label: 'Étiquettes QR' },
     { id: 'reception', label: 'Réceptions' },
     { id: 'hub', label: 'Actions Hub' },
     { id: 'inventory', label: 'Stock à affecter' },
@@ -1223,6 +1224,13 @@
 
   function renderSupplySection(rootNode, ui, doc, context) {
     // Concept C : aucun bloc KPI ni titre de section redondant au-dessus du cockpit (hero existant conservé).
+    // Fast, visible entry to labels; never send operators hunting below historic COMBOX.
+    const labelJump=doc.createElement('button');
+    labelJump.type='button';labelJump.className='kmc-hub-label-shortcut';
+    labelJump.textContent='Étiquettes QR · Télécharger PDF A4 / 80 mm';
+    labelJump.setAttribute('data-hub-label-shortcut','');
+    labelJump.addEventListener('click',()=>{context.view='labels';context.renderCurrent();});
+    rootNode.appendChild(labelJump);
     const flowHost = doc.createElement('div');
     flowHost.className = 'kmc-hub-flow';
     rootNode.appendChild(flowHost);
@@ -1289,6 +1297,7 @@
           if (!details) return;
           details.open = true;
           const targets = {
+            labels: '[data-hub-label-printing]',
             boxes: '[data-supply-box-create]',
             shipments: '[data-supply-shipment-bar]',
           };
@@ -1355,7 +1364,7 @@
     const createButton = makeActionButton(doc, 'Ouvrir le dossier', 'create-shipment-from-boxes');
     createButton.disabled = true;
     [refInput, createButton].forEach(node => bar.appendChild(node));
-    boxes.appendChild(bar);
+    // Le dossier de départ vient après la préparation physique, pas avant.
 
     const attachButtons = [];
     const syncBar = () => {
@@ -1378,6 +1387,7 @@
       RECEIVED: 'IDENTIFIED', IDENTIFIED: 'QUALITY_CHECKED', QUALITY_CHECKED: 'LOCATED',
       LOCATED: 'ALLOCATED', ALLOCATED: 'PICKED', PICKED: 'PACKED', PACKED: 'DISPATCHED',
     });
+    const BOX_STATE_LABELS=Object.freeze({RECEIVED:'À préparer',IDENTIFIED:'Identifiée',QUALITY_CHECKED:'Contrôlée',LOCATED:'Localisée',ALLOCATED:'Affectée',PICKED:'Prélevée',PACKED:'Fermée',DISPATCHED:'Prête au départ',QUARANTINED:'En quarantaine',SUPERSEDED:'Remplacée'});
     const BOX_MUTABLE = new Set(['RECEIVED', 'IDENTIFIED', 'QUALITY_CHECKED', 'LOCATED', 'ALLOCATED', 'PICKED']);
     const fillable = Array.isArray(d.fillable) ? d.fillable : [];
     // Le fetch canonique transporte l'authentification du dashboard ; un lien
@@ -1459,7 +1469,7 @@
       }).catch(() => {});
     });
     [newRef, newBox].forEach(node => createBar.appendChild(node));
-    boxes.appendChild(createBar);
+    // La création de COMBOX sera affichée après les étiquettes articles.
 
     // La caméra est une entrée de code : seule l'action opérateur confirme ensuite le
     // placement. Aucune mutation métier pendant l'ouverture ou la lecture de la caméra.
@@ -1533,15 +1543,17 @@
     fillable.filter(line=>Number(line.quantity)>0).forEach(line=>{
       if(!labelRows.has(String(line.allocation_id)))labelRows.set(String(line.allocation_id),line);
     });
-    if(labelRows.size){
-      const labelSection=doc.createElement('div');
+    {
+      const labelSection=doc.createElement('section');
       labelSection.setAttribute('data-hub-label-printing','');
-      labelSection.appendChild(text(doc,'strong','', 'Étiquettes articles · après réception physique'));
+      labelSection.appendChild(text(doc,'h3','', 'Étiquettes articles'));
+      labelSection.appendChild(text(doc,'p','kmc-workspace-note','Après réception physique, préparez les QR puis téléchargez le PDF A4 ou 80 mm. Une étiquette par article reçu.'));
+      if(!labelRows.size) labelSection.appendChild(text(doc,'p','kmc-workspace-note','Aucun article reçu disponible à préparer dans cet atelier. Consultez les réceptions fournisseurs.'));
       for(const line of labelRows.values()){
         const row=doc.createElement('div');
         row.className='kmc-workspace-receive-footer';
-        row.appendChild(text(doc,'span','',String(line.product||'Article')+' · '+String(line.relais_code||'relais')));
-        const issue=makeActionButton(doc,'Préparer les QR','issue-article-labels');
+        row.appendChild(text(doc,'span','',String(line.product||'Article')+' · '+String(line.relais_code||'relais')+' · '+String(line.quantity)+' unité(s) à placer'));
+        const issue=makeActionButton(doc,'Préparer les étiquettes','issue-article-labels');
         issue.addEventListener('click',()=>runAction(context,issue,{
           url:endpointFor(context.marketCode,'labels/articles/'+encodeURIComponent(line.allocation_id)+'/issue'),
           body:{},runningMessage:'Création des étiquettes reçues…',
@@ -1550,13 +1562,37 @@
         const print=doc.createElement('a');
         print.href=endpointFor(context.marketCode,'labels/articles/'+encodeURIComponent(line.allocation_id)+'/print?format=thermal');
         print.target='_blank';print.rel='noopener';
-        print.textContent='Imprimer les QR';
+        print.textContent='Imprimer les étiquettes';
         print.setAttribute('data-hub-print-article','');
         print.addEventListener('click',event=>openLabelPrint(event,print.href));
         row.append(issue,print,pdfLink('articles',line.allocation_id,'a4'),pdfLink('articles',line.allocation_id,'thermal'));labelSection.appendChild(row);
       }
+      // Les allocations déjà placées ne figurent plus dans fillable. Réimpression
+      // des identités réellement émises uniquement ; aucun POST pour cet historique.
+      const reprints=new Map();
+      for(const box of (d.boxes||[]))for(const content of (box.contents||[])){
+        const id=String(content.allocation_id||'');
+        if(!id||labelRows.has(id)||Number(content.issued_label_count)<=0||!Number.isFinite(Number(content.issued_label_count)))continue;
+        if(!reprints.has(id))reprints.set(id,{id,ref:content.order_ref,count:Number(content.issued_label_count),boxes:new Set()});
+        reprints.get(id).boxes.add(box.reference);
+      }
+      if(reprints.size){
+        const history=doc.createElement('details');
+        history.setAttribute('data-hub-article-label-reprints','');
+        history.appendChild(text(doc,'summary','','Réimprimer des étiquettes déjà préparées · '+String(reprints.size)+' lot(s)'));
+        for(const item of reprints.values()){
+          const row=doc.createElement('div');row.className='kmc-workspace-receive-footer';
+          row.appendChild(text(doc,'span','',String(item.ref||'Commande')+' · '+Array.from(item.boxes).join(', ')+' · '+String(item.count)+' QR émis'));
+          row.append(pdfLink('articles',item.id,'a4'),pdfLink('articles',item.id,'thermal'));
+          history.appendChild(row);
+        }
+        labelSection.appendChild(history);
+      }
       boxes.appendChild(labelSection);
     }
+    const packingHeading=text(doc,'h3','','Préparer les COMBOX');
+    boxes.appendChild(packingHeading);
+    boxes.appendChild(createBar);
 
     const composeCell = box => {
       const cell = doc.createElement('div');
@@ -1674,7 +1710,7 @@
       }
       const next = BOX_NEXT_STATE[box.state];
       if (next && (box.contents || []).length) {
-        const label = next === 'DISPATCHED' ? 'Prêt à remettre au transitaire' : `Étape suivante · ${next}`;
+        const label = next === 'DISPATCHED' ? 'Prêt à remettre au transitaire' : `Étape suivante · ${BOX_STATE_LABELS[next]||next}`;
         const step = makeActionButton(doc, label, 'advance-box');
         let finalBoxCode=null,applied=null;
         if(next==='DISPATCHED'){
@@ -1707,7 +1743,7 @@
       return cell.children.length ? cell : '—';
     };
 
-    boxes.appendChild(simpleTable(doc, ['', 'COMBOX', 'État', 'Contenu', 'Expédition', 'Composer', 'Action'],
+    const boxTable=simpleTable(doc, ['', 'COMBOX', 'État', 'Contenu', 'Expédition', 'Composer', 'Action'],
       (d.boxes || []).map(box => {
         const contents = box.contents.map(c => `${c.order_ref} ×${formatNumber(c.qty)}`).join(', ');
         let pick = '';
@@ -1737,8 +1773,42 @@
             successMessage: 'COMBOX retirée du dossier encore en préparation.',
           }).catch(() => {}));
         }
-        return [pick, box.reference, box.state, contents || '—', box.shipment_ref || '—', composeCell(box), action];
-      }), 'Aucune COMBOX.'));
+        const boxIdentity=doc.createElement('div');
+        boxIdentity.appendChild(text(doc,'strong','',box.reference));
+        const relayIds=new Set(box.contents.map(c=>c.relais_id).filter(Boolean));
+        const relayCodes=new Set(box.contents.map(c=>c.relais_code).filter(Boolean));
+        const known=box.contents.length>0&&box.contents.every(c=>c.relais_id&&c.relais_code);
+        const destination=relayIds.size>1||relayCodes.size>1?'Écart de destination à contrôler':known&&relayIds.size===1&&relayCodes.size===1?context.marketCode+' · '+Array.from(relayCodes)[0]:box.contents.length?'Destination à vérifier':'Destination après placement';
+        const dest=text(doc,'small','kmc-workspace-note',destination);
+        dest.setAttribute('data-hub-box-destination','');boxIdentity.appendChild(dest);
+        return [pick, boxIdentity, BOX_STATE_LABELS[box.state]||box.state, contents || '—', box.shipment_ref || '—', composeCell(box), action];
+      }), 'Aucune COMBOX.');
+    const boxToolbar=doc.createElement('div');
+    boxToolbar.className='kmc-hub-box-filter';
+    const boxSearch=doc.createElement('input');
+    boxSearch.type='search';boxSearch.placeholder='Rechercher une COMBOX, commande ou expédition…';
+    boxSearch.setAttribute('aria-label','Filtrer les COMBOX physiques');
+    const boxCounter=text(doc,'span','kmc-workspace-muted','');
+    boxToolbar.append(boxSearch,boxCounter);
+    boxes.appendChild(boxToolbar);
+    boxes.appendChild(boxTable);
+    boxTable.setAttribute('data-hub-combox-scroll','');
+    const boxRows=Array.from(boxTable.querySelectorAll('tbody tr'));
+    const filterBoxes=()=>{
+      const q=boxSearch.value.trim().toLocaleLowerCase('fr');
+      let found=0;
+      for(const row of boxRows){
+        const show=!q||String(row.textContent||'').toLocaleLowerCase('fr').includes(q);
+        row.hidden=!show;
+        if(show)found++;
+      }
+      boxCounter.textContent=found+' / '+boxRows.length+' COMBOX · défilement interne';
+    };
+    boxSearch.addEventListener('input',filterBoxes);
+    filterBoxes();
+    boxes.appendChild(text(doc,'h3','','Préparer le départ'));
+    boxes.appendChild(text(doc,'p','kmc-workspace-note','Sélectionnez les COMBOX prêtes, puis choisissez ou ouvrez leur dossier d’expédition.'));
+    boxes.appendChild(bar);
 
     const secondary = doc.createElement('details');
     secondary.className = 'kmc-hub-physical-secondary';
@@ -2288,6 +2358,16 @@
 
     if (view === 'reception') renderReceptionSection(rootNode, ui, doc, context);
     if (view === 'supply') renderSupplySection(rootNode, ui, doc, context);
+    if (view === 'labels' && context.mode==='execution') {
+      const station=doc.createElement('section');
+      station.setAttribute('data-hub-labels-station','');
+      rootNode.appendChild(station);
+      const module=globalThis.KomerceHubLabelCenter;
+      if(!module)station.appendChild(text(doc,'p','kmc-workspace-empty','Poste QR indisponible : recharger la page.'));
+      else module.mount({host:station,doc,marketCode:context.marketCode,fetchFn:context.fetch,
+        fillable:Array.isArray(context.dossier?.fillable)?context.dossier.fillable:[],
+        act:(button,opts)=>runAction(context,button,opts)});
+    }
 
     if (view === 'relay') {
     context.relayCollectCount=payload.queues?.relay?.to_collect?.length||0;

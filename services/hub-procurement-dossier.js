@@ -8,7 +8,7 @@
  * @outputs       market_procurement_dossier, physical_trace
  * @depends       db, services/supplier-source-resolution.js
  * @used-by       routes/hub.js, routes/admin-operations-workspace.js
- * @db-read       markets, orders, order_items, products, product_skus, product_suppliers, suppliers, purchase_lines, purchase_orders, purchase_order_authorizations, hub_authorization_grants, users, relais, v_purchase_line_progress, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_box_bags, hub_box_effective_placements, international_shipments, international_shipment_hub_units, parcels, parcel_items
+ * @db-read       markets, orders, order_items, products, product_skus, product_suppliers, suppliers, purchase_lines, purchase_orders, purchase_order_authorizations, hub_authorization_grants, users, relais, v_purchase_line_progress, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_box_bags, hub_box_effective_placements, hub_scan_labels, international_shipments, international_shipment_hub_units, parcels, parcel_items
  * @db-write      (none)
  * @db-txn        @none
  * @doctrine      une décision, une autorité, un enregistrement ; projection en lecture seule, aucune seconde source de vérité
@@ -707,11 +707,15 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
 
   const { rows: boxRows } = await q.query(`
     SELECT u.id AS unit_id, u.reference, u.state, u.market_id, u.created_at, sh.reference AS shipment_ref, sh.stage AS shipment_stage,
-           a.order_id, o.reference AS order_ref, a.purchase_line_id, p.quantity, p.bag_unit_id
+           a.order_id, o.reference AS order_ref, a.purchase_line_id, p.quantity, p.bag_unit_id,
+           a.id AS allocation_id, o.relais_id, rl.short_code AS relais_code,
+           (SELECT COUNT(*)::int FROM hub_scan_labels l WHERE l.target_type='ARTICLE'
+             AND l.allocation_id=a.id AND l.market_id=a.market_id) AS issued_label_count
       FROM hub_physical_units u
       JOIN hub_box_effective_placements p ON p.box_unit_id = u.id
       JOIN hub_purchase_allocations a ON a.id = p.allocation_id
       JOIN orders o ON o.id = a.order_id
+      LEFT JOIN relais rl ON rl.id = o.relais_id AND rl.market_id = a.market_id
       LEFT JOIN international_shipment_hub_units hs ON hs.physical_unit_id = u.id
       LEFT JOIN international_shipments sh ON sh.id = hs.shipment_id
      WHERE u.unit_type = 'MARKET_PARCEL' AND a.market_id = $1
@@ -722,7 +726,9 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
       boxes.set(r.unit_id, { unit_id: r.unit_id, reference: r.reference, state: r.state, created_at: r.created_at || null, shipment_ref: r.shipment_ref || null,
         shipment_stage: r.shipment_stage || null, contents: [] });
     }
-    boxes.get(r.unit_id).contents.push({ order_id: r.order_id, order_ref: r.order_ref, line_id: r.purchase_line_id, qty: Number(r.quantity), bag_unit_id: r.bag_unit_id || null });
+    boxes.get(r.unit_id).contents.push({ order_id: r.order_id, order_ref: r.order_ref, line_id: r.purchase_line_id, qty: Number(r.quantity), bag_unit_id: r.bag_unit_id || null,
+      allocation_id: r.allocation_id, issued_label_count: Number(r.issued_label_count || 0),
+      relais_id: r.relais_id || null, relais_code: r.relais_code || null });
   }
 
   // KOM-BOX vides (créées depuis le Hub, pas encore composées) : visibles pour pouvoir être remplies.

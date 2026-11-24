@@ -2,8 +2,8 @@
   "generatedAt": "2026-11-22T17:42:05.424Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 867,
-    "protected": 808,
+    "total": 868,
+    "protected": 809,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -6259,6 +6259,14 @@
     },
     {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/labels/articles/{allocationId}/issue",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/operations/market/{marketCode}/labels/index",
       "level": "PROTECTED",
       "roles": [
         "admin",
