@@ -1652,7 +1652,7 @@
           const confirmWrap=doc.createElement('label');
           applied=doc.createElement('input');applied.type='checkbox';
           applied.setAttribute('data-hub-box-label-applied','');
-          confirmWrap.append(applied,doc.createTextNode(' Étiquette COMBOX imprimée et physiquement collée'));
+          confirmWrap.append(applied,text(doc,'span','',' Étiquette COMBOX imprimée et physiquement collée'));
           cell.append(finalBoxCode,finalCamera,confirmWrap);
         }
         step.addEventListener('click', () => {
