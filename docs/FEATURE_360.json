@@ -618,7 +618,10 @@
                 "declared": "utils/auth-session.js",
                 "resolvedPath": "utils/auth-session.js",
                 "status": "resolved-in-technical-graph"
-utils/auth-token-policy.js",
+              },
+              {
+                "declared": "utils/auth-token-policy.js",
+                "resolvedPath": "utils/auth-token-policy.js",
                 "status": "resolved-in-technical-graph"
               }
             ]
@@ -1645,7 +1648,22 @@ utils/auth-token-policy.js",
         },
         {
           "consumer": "market-delegation",
-   osition": "DECLARED_AND_OBSERVED",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "notifications",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
             "interface",
@@ -2091,7 +2109,28 @@ utils/auth-token-policy.js",
         "unresolvedInternalApis": 0,
         "declaredOnlyDependencyCount": 0,
         "ontologyGapsLinked": 0,
-        "ambiguousOwnershipCount"on",
+        "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
+      },
+      "architecturalDebt": {
+        "debtCount": 0,
+        "debtItems": []
+      },
+      "evidence": {
+        "source": "docs/BUSINESS_FEATURE_GRAPH.json",
+        "businessFeatureGraphVersion": "O6-1.0"
+      }
+    },
+    {
+      "id": "business-rules",
+      "kind": "business-transversal",
+      "status": "production",
       "manifestFile": "features/business-rules.feature.js",
       "repo": "backend",
       "identity": {
@@ -2434,7 +2473,8 @@ utils/auth-token-policy.js",
           "dataset E2E unifié 700 historique : 200 AliExpress validés + 500 CJ semantic-positive, cohabitant dans une base Railway isolée explicitement gardée, sans exposition marché ni publication automatique",
           "dataset E2E réconcilié 712 : 200 AliExpress + 500 CJ historiques certifiés + 12 CJ nouveaux uniques, matérialisés par identité fournisseur exacte, taxonomie boutique dynamique active, SKU/SOI complets et zéro exposition marché",
           "certification catalogue canonique v1 : provider-independent, versionnée et fail-closed ; un produit certifié possède source V2, taxonomie boutique catégorie+sous-catégorie active, média, SKU/SOI, contenu FR prêt, zéro exposition marché et publication guard PASS ; les datasets 700/712 sont des corpus de preuve et non la définition de la certification",
-          "chaque sous-catégorie boutique commerciale active déclare une affinité douanière administrable ; le produit fournisseur réel garde priorité et l affinité ne sert qu en fallback de proximité ut être transféré vers le catalogue réel uniquement par replay des contrats fournisseur V2 via les autorités canoniques import/scan/promotion ; les identités déjà présentes sont laissées intactes et aucune exposition marché n est créée automatiquement",
+          "chaque sous-catégorie boutique commerciale active déclare une affinité douanière administrable ; le produit fournisseur réel garde priorité et l affinité ne sert qu en fallback de proximité pour éviter les catégories Komerce nulles sur un produit accepté",
+          "un dataset E2E certifié peut être transféré vers le catalogue réel uniquement par replay des contrats fournisseur V2 via les autorités canoniques import/scan/promotion ; les identités déjà présentes sont laissées intactes et aucune exposition marché n est créée automatiquement",
           "product_market_exposure : exposition commerciale produit x marché, fail-closed (absence de ligne = DISABLED), même patron que commercial_exposure sur physical_offers/services",
           "migration 206 : snapshot de compatibilité produit x marché, reproduction exacte de publicCatalogVisibilitySql() croisée avec chaque marché actif — cutover, pas un all x all aveugle",
           "services/catalog-public-view.js::publicCatalogVisibilitySql(alias, { marketCodeParam }) : le chemin de lecture storefront consulte désormais product_market_exposure quand un marché est fourni ; sans marché, comportement historique inchangé à l’identique"
@@ -5976,7 +6016,21 @@ utils/auth-token-policy.js",
           ]
         },
         {
-          "consumer "consumer": "logistics",
+          "consumer": "inventory",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "local-stock",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
@@ -6374,7 +6428,24 @@ utils/auth-token-policy.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "tests/unit/c     "table": "customs_categories",
+                "declared": "tests/unit/customs-shipment-service.test.js",
+                "resolvedPath": "tests/unit/customs-shipment-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          }
+        },
+        "totalFiles": 35,
+        "boutiqueManifest": null,
+        "boutiqueFiles": {
+          "count": 0,
+          "files": []
+        }
+      },
+      "ownership": {
+        "ownsTables": [
+          {
+            "table": "customs_categories",
             "resolution": "single-writer"
           },
           {
@@ -6778,7 +6849,8 @@ utils/auth-token-policy.js",
         "un futur OTP peut renforcer la preuve d’identité ou une action sensible sans devenir une source de rôle, scope, Market ID ou capability",
         "/admin-next sert canonical pendant la construction ; les routes /admin/* restent sur Legacy 1 jusqu’au cutover explicitement validé",
         "auth-guard.js protège toutes les routes admin historiques ; canonical valide sa session au bootstrap et ne contourne jamais /api/auth/me",
-        "Komerce central et les partenaires pays partagent le même runtime canonical : aucune variante ou copie par mapays ; toute autorité market est résolue côté serveur puis appliquée avant agrégation",
+        "Komerce central et les partenaires pays partagent le même runtime canonical : aucune variante ou copie par marché",
+        "le rôle vertical ne donne jamais un scope pays ; toute autorité market est résolue côté serveur puis appliquée avant agrégation",
         {
           "statement": "Finance / Comptabilité est strictement scopée : lecture par finance.read ou autorité dashboard globale explicite, agent_relais borné par son relais serveur, validation/contestation par finance.act ; operator_market_scopes et users.role ne sont jamais l’autorité marché de cette surface",
           "test": "tests/unit/admin-finance-accounting-workspace-route.test.js"
@@ -8042,7 +8114,16 @@ utils/auth-token-policy.js",
               },
               {
                 "declared": "public/js/golden-e2e-cockpit-journey.js",
-                "resolvedPath": "p           "declared": "services/canonical-reference-resolver.js",
+                "resolvedPath": "public/js/golden-e2e-cockpit-journey.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "public/js/golden-recipe-scenarios.js",
+                "resolvedPath": "public/js/golden-recipe-scenarios.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "services/canonical-reference-resolver.js",
                 "resolvedPath": "services/canonical-reference-resolver.js",
                 "status": "resolved-in-technical-graph"
               },
@@ -9858,7 +9939,28 @@ utils/auth-token-policy.js",
           },
           {
             "table": "users",
-            "lifecycle        "channels": [
+            "lifecycleOwner": "auth-identity"
+          }
+        ]
+      },
+      "interfaces": {
+        "internalApis": [],
+        "httpInterfaces": {
+          "count": 89
+        }
+      },
+      "businessDependencies": [
+        {
+          "provider": "auth",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
             "static-code",
             "data-read"
           ]
@@ -10752,7 +10854,11 @@ utils/auth-token-policy.js",
               {
                 "declared": "tests/unit/documents-route.test.js",
                 "resolvedPath": "tests/unit/documents-route.test.js",
-    ents.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/documents.test.js",
+                "resolvedPath": "tests/unit/documents.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -11234,7 +11340,11 @@ utils/auth-token-policy.js",
           "autorisation et audit de l’enregistrement délégué d’un fait MARKET_DIRECT par un opérateur pays (feature market-delegation, capability structure.event.record) — appelle recordStructureCostEvent() sans jamais dupliquer sa validation ni écrire directement dans economic_structure_cost_events"
         ]
       },
-      "authority": "backend-core — toute frontière économique, règle de contribution, couverture ou application de prix reste derrière les services propriétaires economic-engine ; une charge fixe n a aucune autorité de fabrication du prix SKU", sa provenance, son hypothèse, sa nature économique, son périmètre d allocation, son niveau de vérité et son chemin d impact sans promouvoir une configuration en réel",
+      "authority": "backend-core — toute frontière économique, règle de contribution, couverture ou application de prix reste derrière les services propriétaires economic-engine ; une charge fixe n a aucune autorité de fabrication du prix SKU",
+      "invariants": [
+        "une strategie tarifaire est versionnee, jamais modifiee retroactivement sur une commande deja figee",
+        "aucun consommateur cross-feature ne modifie price_history directement ; l audit passe par economic-price-audit-service.js",
+        "chaque ligne de coût exposée à la décision décrit sa provenance, son hypothèse, sa nature économique, son périmètre d allocation, son niveau de vérité et son chemin d impact sans promouvoir une configuration en réel",
         "une charge fixe configurée dans charges ne devient jamais un réel de période ; seule une preuve append-only dans economic_structure_cost_events peut porter cette vérité",
         "les articles génèrent la contribution ; le portefeuille absorbe collectivement les charges de structure ; aucune quote-part fixe analytique ne devient dette intrinsèque du SKU",
         "le coût variable complet est la frontière économique unitaire ; le marché borne le possible et le prix final exige une décision marché ou humaine autorisée",
@@ -13140,7 +13250,24 @@ utils/auth-token-policy.js",
             "table": "economic_variables",
             "lifecycleOwner": null
           },
-             "table": "parcel_items",
+          {
+            "table": "fabrics",
+            "lifecycleOwner": "platform-ops"
+          },
+          {
+            "table": "garment_models",
+            "lifecycleOwner": "platform-ops"
+          },
+          {
+            "table": "order_item_cost_imputations",
+            "lifecycleOwner": "orders"
+          },
+          {
+            "table": "order_items",
+            "lifecycleOwner": "orders"
+          },
+          {
+            "table": "parcel_items",
             "lifecycleOwner": "logistics"
           },
           {
@@ -13608,7 +13735,10 @@ utils/auth-token-policy.js",
               {
                 "declared": "tests/unit/provider-contract-proof.test.js",
                 "resolvedPath": "tests/unit/provider-contract-proof.test.js",
-                "status": "resolved-on-disk-out-of-arch-sc         "declared": "tests/unit/provider-proof-workflow-ownership.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/provider-proof-workflow-ownership.test.js",
                 "resolvedPath": "tests/unit/provider-proof-workflow-ownership.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
@@ -14028,7 +14158,12 @@ utils/auth-token-policy.js",
           },
           {
             "fn": "createAlertEngineIncidentIfNew",
-            "file": "services/incident-wrice.js",
+            "file": "services/incident-write-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "createReconciliationIncident",
+            "file": "services/incident-write-service.js",
             "status": "resolved"
           },
           {
@@ -15120,7 +15255,7 @@ utils/auth-token-policy.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-     /TEST_CHECKLIST_KOMERCE.md",
+                "declared": "docs/specs/TEST_CHECKLIST_KOMERCE.md",
                 "resolvedPath": "docs/specs/TEST_CHECKLIST_KOMERCE.md",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
@@ -16307,7 +16442,11 @@ utils/auth-token-policy.js",
               {
                 "declared": "tests/unit/security-guard-tokens.test.js",
                 "resolvedPath": "tests/unit/security-guard-tokens.test.js",
-                "status": "resolvet.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/shadow-domains-boundary.test.js",
+                "resolvedPath": "tests/unit/shadow-domains-boundary.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -16849,7 +16988,21 @@ utils/auth-token-policy.js",
           ]
         },
         {
-          "conmer": "market",
+          "consumer": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "loyalty",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "market",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -17775,7 +17928,8 @@ utils/auth-token-policy.js",
               },
               {
                 "declared": "tests/unit/local-stock-fulfillment-resolver.test.js",
-                "resolvedPath": "tests/unit/local-sto-disk-out-of-arch-scan-scope"
+                "resolvedPath": "tests/unit/local-stock-fulfillment-resolver.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
                 "declared": "tests/unit/local-stock-routes.test.js",
@@ -18123,7 +18277,7 @@ utils/auth-token-policy.js",
         "le compteur de tentatives du retrait exceptionnel (exceptional_pickup_attempts) est distinct de celui du code secret (pickup_secret_attempts) — un echec sur l'un ne bloque jamais l'autre",
         "le jalon disponible au relais transmet à notifications le nom et l adresse publics nécessaires au lien de localisation, sans géocodage bloquant",
         {
-          "statemeais devinés",
+          "statement": "HUB-001 : l allocation économique est snapshotée depuis une Purchase Order exacte ; Supplier Order Identity, SKU, order item, Market et destination sont immuables côté Hub et ne sont jamais devinés",
           "test": "tests/integration/hub-physical-identity-postgres.test.js"
         },
         {
@@ -19620,7 +19774,12 @@ utils/auth-token-policy.js",
             "resolution": "declared-table-owner"
           },
           {
-            "table-writer"
+            "table": "pickup_reveal_codes",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "pickup_verify_attempts",
+            "resolution": "single-writer"
           },
           {
             "table": "product_sku_physical_codes",
@@ -20176,7 +20335,17 @@ utils/auth-token-policy.js",
       ],
       "consumedBy": [
         {
-  ode",
+          "consumer": "admin-dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
+          "consumer": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
             "data-read"
           ]
         },
@@ -20723,7 +20892,10 @@ utils/auth-token-policy.js",
           "référentiel markets (code pays, devise, minor_unit) — M0",
           "historique d'accès operator_market_scopes (grain user, jamais settlement) — M1",
           "scoping market_id sur relais et orders (snapshot résolu du relais) — M1b/M1c",
-          "requireMarketScope are, lookup markets avec cache 5 min) — M5",
+          "requireMarketScope autorisation (serveur, enferme l'opérateur, jamais le client) — M2",
+          "consommation runtime de requireMarketScope par les surfaces admin canoniques scopées par marché (Dashboard, Order 360, Client, Pricing, Opérations, Finance et Expéditions/Douane)",
+          "garde Joi forbidMarketId + gate scripts/check-no-market-id-mutation.js — M2",
+          "boundary devise utils/currency.js (formatage minor_unit-aware, lookup markets avec cache 5 min) — M5",
           "parités fixes currency_parities, projection via EUR reference (jamais un axe direct entre devises Zone franc) — P1",
           "adapter client fmt/fmtPrice (public/boutique/js/b-utils.js), consomme currency_parities via /api/public/config, projette vers le marché courant (market-context.js, override ?market= inclus) — P2",
           "snapshot display_total_amount/display_currency (orders, services/order-display-snapshot.js) — troisième vérité, distincte de total_kmf/total_eur (Payment Boundary, finance_config, jamais touchée) et de currency_parities seule — P3, freeze 22-08-2026",
@@ -21365,7 +21537,14 @@ utils/auth-token-policy.js",
         },
         {
           "consumer": "settlement",
-          "disposition" "DECLARED_AND_OBSERVED",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "wallet",
+          "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
           ]
@@ -21700,7 +21879,11 @@ utils/auth-token-policy.js",
                 "declared": "tests/integration/market-dj-provisioning-postgres.test.js",
                 "resolvedPath": "tests/integration/market-dj-provisioning-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
-            scope"
+              },
+              {
+                "declared": "tests/integration/market-local-price-state-transition-real-db.test.js",
+                "resolvedPath": "tests/integration/market-local-price-state-transition-real-db.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
                 "declared": "tests/unit/market-cash-control-ui.test.js",
@@ -22111,7 +22294,16 @@ utils/auth-token-policy.js",
               {
                 "declared": "tests/unit/admin-market-control-plane-routes.test.js",
                 "resolvedPath": "tests/unit/admin-market-control-plane-routes.test.js",
-                "status": "resolved-on-disk-out-of-arch-scanmarket-delegation-audit.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/central-authority.test.js",
+                "resolvedPath": "tests/unit/central-authority.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/cm-cg-market-delegation-audit.test.js",
+                "resolvedPath": "tests/unit/cm-cg-market-delegation-audit.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -22552,7 +22744,7 @@ utils/auth-token-policy.js",
           "un relais reste rattaché à son marché d’origine ; toute tentative de lecture/écriture cross-market échoue en 404, sans confirmer l’existence de la ressource sur un autre marché",
           "un provider reste rattaché à son marché d’origine ; provider.manage ne permet jamais une réassignation cross-market et les mutations passent par providers-services, lifecycle owner",
           "D8 Partners : le registre historique multi-types est gouverné par partners.read (lecture) et partners.manage (mutation) ; provider.manage ne vaut jamais autorité implicite sur partners.",
-          "D9 Pricing Workspace : chaque endpoint marché est autorisé par sa capability exacte ; le socle require-market-scope est supprimé et la projection viewer/manager dérive dest détenues.",
+          "D9 Pricing Workspace : chaque endpoint marché est autorisé par sa capability exacte ; le socle require-market-scope est supprimé et la projection viewer/manager dérive des capabilities réellement détenues.",
           "LOT 4 (écriture) : décision d’exposition produit x marché — capability catalog.expose, upsert auditable sur product_market_exposure (catalog, lifecycle owner), jamais de SQL direct",
           "Exception Catalogue pays Admin central : rôle admin revérifié dans users, marché explicitement choisi avec assignment ACTIVE, lecture/exposition vérifiées côté serveur et écritures auditées ; les opérateurs restent soumis à catalog.read/catalog.expose et au ceiling de leur membership.",
           "LOT 4B (validation simple marché) : un candidat catalogue déjà préparé et publiable peut être validé par le Responsable pays ; market-delegation délègue la première publication à catalog-approval puis active l’exposition du marché dans la même transaction, sans reprendre l’autorité lifecycle de products",
@@ -23823,7 +24015,7 @@ utils/auth-token-policy.js",
             "status": "resolved"
           },
           {
-    "fn": "resolveActiveAssignmentByMarketCode",
+            "fn": "resolveActiveAssignmentByMarketCode",
             "file": "services/market-delegation-service.js",
             "status": "resolved"
           },
@@ -24447,7 +24639,19 @@ utils/auth-token-policy.js",
                 "status": "resolved-in-technical-graph"
               }
             ]
-   resolved-in-technical-graph"
+          },
+          "services": {
+            "count": 14,
+            "files": [
+              {
+                "declared": "services/alert-engine.js",
+                "resolvedPath": "services/alert-engine.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/authkey-client.js",
+                "resolvedPath": "services/authkey-client.js",
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/client-notification-service.js",
@@ -24891,7 +25095,8 @@ utils/auth-token-policy.js",
           ]
         },
         {
- CLARED_AND_OBSERVED",
+          "provider": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "data-read"
           ]
@@ -25271,7 +25476,11 @@ utils/auth-token-policy.js",
               {
                 "declared": "services/order-checkout-persistence.js",
                 "resolvedPath": "services/order-checkout-persistence.js",
-      ices/order-checkout-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/order-checkout-service.js",
+                "resolvedPath": "services/order-checkout-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -26582,7 +26791,11 @@ utils/auth-token-policy.js",
           "provider": "shared-cart",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "s         "provider": "wallet",
+            "static-code"
+          ]
+        },
+        {
+          "provider": "wallet",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
@@ -27019,7 +27232,12 @@ utils/auth-token-policy.js",
               },
               {
                 "declared": "routes/payments-paypal.js",
-                "resolvedPath": "route        "resolvedPath": "routes/payments.js",
+                "resolvedPath": "routes/payments-paypal.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/payments.js",
+                "resolvedPath": "routes/payments.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -27934,7 +28152,24 @@ utils/auth-token-policy.js",
         "status": "HEALTHY",
         "manifestPresent": true,
         "registryPresent": true,
-        "orpha     "evidence": {
+        "orphanFiles": 0,
+        "unresolvedInternalApis": 0,
+        "declaredOnlyDependencyCount": 0,
+        "ontologyGapsLinked": 0,
+        "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
+      },
+      "architecturalDebt": {
+        "debtCount": 0,
+        "debtItems": []
+      },
+      "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
         "businessFeatureGraphVersion": "O6-1.0"
       }
@@ -28903,7 +29138,14 @@ utils/auth-token-policy.js",
           },
           {
             "to": "notifications",
-            "family        "to": "providers-services",
+            "family": "COMPOSITION_ROOT_WIRING"
+          },
+          {
+            "to": "payments",
+            "family": "NON_RUNTIME_TEST"
+          },
+          {
+            "to": "providers-services",
             "family": "COMPOSITION_ROOT_WIRING"
           },
           {
@@ -29208,7 +29450,13 @@ utils/auth-token-policy.js",
               "resolvedPath": "public/boutique/js/providers-services-api.js",
               "category": "js",
               "exists": true,
-     ": true,
+              "status": "resolved-on-disk"
+            },
+            {
+              "declared": "../tests/unit/discovery-inquiry.test.js",
+              "resolvedPath": "public/boutique/tests/unit/discovery-inquiry.test.js",
+              "category": "tests",
+              "exists": true,
               "status": "resolved-on-disk"
             },
             {
@@ -29504,7 +29752,7 @@ utils/auth-token-policy.js",
           "test": "tests/integration/purchase-lines-postgres.test.js"
         },
         {
-          "statement": "forme regroupée (PR 4, migration 266, modèle unique) : une PO est soit historique (order_id, qty, supplier_sku renseignés) soit regroupée (détail de ligne NULL, chk_purchase_orders_header_shape) ; une PO regroupée ne reçoit que des lignes à identité exacte, même fournisseur, même hub, même devise (garde base I4) ; rattachement, détachement, abandon et annulation de ligne se font en brouillon seulement ; une PO regroupée répond 409 PURCHASE_ORDER_GROUPED_USE_PO_ROUTES aux re (order_item → order → market_id, vue v_purchase_line_market) : une PO regroupée peut mêler KM/CM/CG, la clé de regroupement est fournisseur + hub (jamais le marché), le marché est visible dans open-lines, la préparation et la lecture de PO, market_id n'est qu'un filtre opérateur et Purchasing ne réassigne jamais un marché ; l'annulation d'une commande annule ses lignes ouvertes et en brouillon et n'annule JAMAIS une ligne d'une PO regroupée déjà soumise (alerte avec purchase_line_ids)",
+          "statement": "forme regroupée (PR 4, migration 266, modèle unique) : une PO est soit historique (order_id, qty, supplier_sku renseignés) soit regroupée (détail de ligne NULL, chk_purchase_orders_header_shape) ; une PO regroupée ne reçoit que des lignes à identité exacte, même fournisseur, même hub, même devise (garde base I4) ; rattachement, détachement, abandon et annulation de ligne se font en brouillon seulement ; une PO regroupée répond 409 PURCHASE_ORDER_GROUPED_USE_PO_ROUTES aux routes historiques ; migration 369 : une ligne d'achat naît toujours ouverte (une ligne par article IMPORT payé, aucune PO par commande, aucun appel fournisseur au paiement), l'identité exacte et le prix ne sont exigés au rattachement que pour une PO en mode API, le mode d'une PO est immuable et le prix confirmé est obligatoire à la confirmation ; le marché reste une propriété de chaque ligne (order_item → order → market_id, vue v_purchase_line_market) : une PO regroupée peut mêler KM/CM/CG, la clé de regroupement est fournisseur + hub (jamais le marché), le marché est visible dans open-lines, la préparation et la lecture de PO, market_id n'est qu'un filtre opérateur et Purchasing ne réassigne jamais un marché ; l'annulation d'une commande annule ses lignes ouvertes et en brouillon et n'annule JAMAIS une ligne d'une PO regroupée déjà soumise (alerte avec purchase_line_ids)",
           "test": "tests/integration/purchase-lines-grouped-postgres.test.js"
         },
         {
@@ -29632,7 +29880,7 @@ utils/auth-token-policy.js",
           "test": "tests/unit/cj-payment-recovery.test.js"
         },
         {
-          "statement": "le dialogue fournisseur persistant est provider-neutral : les sous-ordres, leurs rattachements aux purchase_lines, les parents/groupesements vivent dans supplier_execution_* ; un même identifiant natif est unique par provider, un parent ne peut regrouper que des sous-ordres de la même PO et du même provider, et aucun secret/payload provider brut n y est stocké",
+          "statement": "le dialogue fournisseur persistant est provider-neutral : les sous-ordres, leurs rattachements aux purchase_lines, les parents/groupes et les événements vivent dans supplier_execution_* ; un même identifiant natif est unique par provider, un parent ne peut regrouper que des sous-ordres de la même PO et du même provider, et aucun secret/payload provider brut n y est stocké",
           "test": "tests/integration/supplier-execution-persistence-postgres.test.js"
         },
         {
@@ -30980,7 +31228,22 @@ utils/auth-token-policy.js",
           },
           {
             "fn": "createManualLine",
-            "file": "services/purchasing"file": "services/suppliers/canonical-unit-purchasing-gate.js",
+            "file": "services/purchasing-engagement-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "evaluateSupplierFulfillmentReadiness",
+            "file": "services/suppliers/supplier-fulfillment-readiness.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "normalizeCapability",
+            "file": "services/suppliers/shipping-capability-contract.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "prepareCanonicalUnitPurchase",
+            "file": "services/suppliers/canonical-unit-purchasing-gate.js",
             "status": "resolved"
           },
           {
@@ -31459,7 +31722,13 @@ utils/auth-token-policy.js",
             "lifecycleOwner": "logistics"
           },
           {
-            "tnternalApis": [],
+            "table": "products",
+            "lifecycleOwner": "catalog"
+          }
+        ]
+      },
+      "interfaces": {
+        "internalApis": [],
         "httpInterfaces": {
           "count": 1
         }
@@ -32303,7 +32572,14 @@ utils/auth-token-policy.js",
           ]
         }
       ],
-      "consu,
+      "consumedBy": [
+        {
+          "consumer": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
         {
           "consumer": "documents",
           "disposition": "DECLARED_AND_OBSERVED",
@@ -32899,7 +33175,13 @@ utils/auth-token-policy.js",
                 "resolvedPath": "migrations/128_shared_list_pickup_code_recipient.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
-             red": "migrations/190_shared_cart_auto_close_backfill.sql",
+              {
+                "declared": "migrations/129_shared_cart_one_open_per_organizer.sql",
+                "resolvedPath": "migrations/129_shared_cart_one_open_per_organizer.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/190_shared_cart_auto_close_backfill.sql",
                 "resolvedPath": "migrations/190_shared_cart_auto_close_backfill.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
@@ -33301,7 +33583,22 @@ utils/auth-token-policy.js",
           {
             "table": "users",
             "lifecycleOwner": "auth-identity"
-      owner"
+          }
+        ]
+      },
+      "data": {
+        "ownsTables": [
+          {
+            "table": "basket_items",
+            "resolution": "multi-writer-resolved-by-classification-signal"
+          },
+          {
+            "table": "baskets",
+            "resolution": "multi-writer-resolved-by-classification-signal"
+          },
+          {
+            "table": "cart_shares",
+            "resolution": "declared-table-owner"
           },
           {
             "table": "shared_cart_events",
@@ -33641,7 +33938,7 @@ utils/auth-token-policy.js",
           "test": "tests/integration/provider-credential-vault-real-db.test.js"
         },
         {
-          "statement": "sans credential valide (missing, untested, invalid) une source n est jamais autopilot-ready, activable, importable ni exécidé par le backend",
+          "statement": "sans credential valide (missing, untested, invalid) une source n est jamais autopilot-ready, activable, importable ni exécutée : l état crédentiel est décidé par le backend",
           "test": "tests/unit/sourcing-source-autopilot.test.js"
         },
         {
@@ -34764,7 +35061,17 @@ utils/auth-token-policy.js",
             "status": "resolved"
           },
           {
-       CutoverTrial",
+            "fn": "collectCanonicalProductProjections",
+            "file": "services/sourcing-canonical-product-projection.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "collectCanonicalUnitProjectionById",
+            "file": "services/sourcing-canonical-unit-projection.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "collectCatalogProductReadCutoverTrial",
             "file": "services/catalog-product-read-cutover-trial.js",
             "status": "resolved"
           },
@@ -35223,7 +35530,7 @@ utils/auth-token-policy.js",
       },
       "gateHealth": {
         "status": "HEALTHY",
- 0,
+        "failCount": 0,
         "warnCount": 0,
         "gatesReporting": [],
         "findings": []
