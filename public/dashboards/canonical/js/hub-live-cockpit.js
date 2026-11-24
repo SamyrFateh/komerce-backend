@@ -972,6 +972,7 @@
       return form;
     }
 
+    ctx.onSelectionChange?.(sel);
     const panel = el(doc, 'section', 'hlc-panel');
     panel.setAttribute('data-hlc-panel', '');
     panel.setAttribute('aria-label', 'Objet sélectionné');
