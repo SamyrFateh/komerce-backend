@@ -22,7 +22,7 @@ function fakeDb(stage='hub_ready',prior=false) {
       }]};
       if(sql.includes('FROM international_shipment_hub_units h')&&sql.includes('FOR UPDATE OF u'))
         return {rows:[{id:BOX,state:'DISPATCHED',outcome_type:null}]};
-      if(sql.includes('SELECT 1 FROM hub_box_custody_scans'))return {rows:prior?[{exists:true}]:[]};
+      if(sql.includes('SELECT 1 FROM hub_box_custody_scans'))return {rows:prior?[{actor_id:USER}]:[]};
       if(sql.includes('INSERT INTO hub_box_custody_scans'))
         return {rows:[{id:'proof-id',occurred_at:'2026-11-24T08:28:00Z'}]};
       if(sql.includes('COUNT(*)::int AS total'))return {rows:[{total:2,missing:1}]};
@@ -57,4 +57,11 @@ test('no role crossover and no implicit confirmation',async()=>{
 test('manifest coverage refuses missing scans',async()=>{
   const db=fakeDb();
   await assert.rejects(service.requireScanCoverage({query:async(...a)=>db.withTransaction(q=>q.query(...a))},SHIP,'CARRIER_LOADED'),{code:'CUSTODY_MANIFEST_INCOMPLETE'});
+});
+
+test('Hub and transitaire acceptance require two independent actors',async()=>{
+  await assert.rejects(
+    service.confirmBoxScan(market,actor('agent_transitaire'),'KM-SHIP-01',input('CARRIER_ACCEPTED'),fakeDb('handed_over',true)),
+    {code:'CUSTODY_DUAL_ACTOR_REQUIRED'}
+  );
 });
