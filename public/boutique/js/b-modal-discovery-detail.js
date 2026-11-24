@@ -277,7 +277,7 @@ function buildPhysicalOfferDetailHTML(ref, detail) {
       <div class="k-modal-discovery-body">
         <div class="k-modal-discovery-meta" aria-label="Type et disponibilité">
           <span class="k-modal-discovery-badge k-modal-discovery-kind">${sanitize(kindLabelFor('physical_offer'))}</span>
-          <span class="k-modal-discovery-badge">${isIllustrativeDemo(detail) ? 'Visuel illustratif · démo' : sanitize(statusFor('physical_offer'))}</span>
+          <span class="k-modal-discovery-badge">${isIllustrativeDemo(detail) ? (detail.image_ref?.endsWith('.svg') ? 'Visuel illustratif · démo' : 'Photo illustrative · démo') : sanitize(statusFor('physical_offer'))}</span>
         </div>
         <h2 class="k-modal-discovery-title">${sanitize(detail.title)}</h2>
         ${provider}
@@ -357,7 +357,11 @@ function submitAction(button) {
   const option = form?.querySelector('[data-discovery-option]');
   if (option && !option.value) { option.reportValidity(); return; }
   closeModal({ skipHistoryBack: true });
-  requestDiscovery(kind, ref, button, requestedWindow, action, requesterNote, null, option?.value || null);
+  if (option) {
+    requestDiscovery(kind, ref, button, requestedWindow, action, requesterNote, null, option.value);
+  } else {
+    requestDiscovery(kind, ref, button, requestedWindow, action, requesterNote);
+  }
 }
 
 function submitServiceContact(button) {
