@@ -425,3 +425,10 @@ test('répartir UNE commande : même capability exacte que « Répartir ce march
   expect(denied.status).toBe(403);
   expect(mockDistributeSingleOrder).not.toHaveBeenCalled();
 });
+
+test('GET supply réutilise la projection canonique du Kanban pour les jalons',()=>{
+  const source=require('fs').readFileSync(require('path').join(__dirname,'../../routes/admin-operations-workspace.js'),'utf8');
+  expect(source).toContain('summarizeMarket(market, dossier)');
+  expect(source).toContain('stage_states: row.stage_states');
+  expect(source).toContain('...dossier, hub_journeys');
+});
