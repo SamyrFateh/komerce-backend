@@ -431,6 +431,26 @@
     const scannerResult = text(doc, 'span', 'kmc-workspace-receive-scan-result', 'Scanner la référence avant de déclarer sa quantité reçue.');
     scannerResult.setAttribute('role', 'status');
     scannerPanel.appendChild(scannerResult);
+    // Caméra mobile : même identification autorisée que la douchette clavier.
+    // Ce bouton lit le code fournisseur. Les QR opaques Komerce auront
+    // un résolveur serveur dédié, ils ne sont jamais traités comme un droit d'accès.
+    const cameraButton = text(doc, 'button', 'kmc-workspace-action', 'Scanner avec la caméra');
+    cameraButton.type = 'button';
+    cameraButton.setAttribute('data-hub-mobile-camera', '');
+    const cameraStop = text(doc, 'button', 'kmc-workspace-action', 'Arrêter la caméra');
+    cameraStop.type = 'button';
+    cameraStop.hidden = true;
+    const cameraVideo = doc.createElement('video');
+    cameraVideo.setAttribute('playsinline', '');
+    cameraVideo.setAttribute('muted', '');
+    cameraVideo.muted = true;
+    cameraVideo.autoplay = true;
+    cameraVideo.hidden = true;
+    cameraVideo.style.cssText = 'display:block;width:100%;max-width:360px;max-height:320px;object-fit:cover;border-radius:8px';
+    cameraVideo.style.display = 'none';
+    scannerPanel.appendChild(cameraButton);
+    scannerPanel.appendChild(cameraStop);
+    scannerPanel.appendChild(cameraVideo);
     // Mode dégradé : sans code lisible, l'agent justifie une constatation manuelle ; la provenance
     // enregistrée est MANUAL (jamais SCAN), avec la même vérification de quantité et de variante.
     const manualProof = doc.createElement('input');
@@ -682,6 +702,77 @@
         scannerInput.disabled = false;
       }
     }
+
+    let hubCameraStream = null;
+    let hubCameraRunning = false;
+    let hubCameraFrame = null;
+    const stopHubCamera = () => {
+      hubCameraRunning = false;
+      if (hubCameraFrame != null && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(hubCameraFrame);
+      hubCameraFrame = null;
+      if (hubCameraStream) hubCameraStream.getTracks().forEach(track => track.stop());
+      hubCameraStream = null;
+      cameraVideo.srcObject = null;
+      cameraVideo.hidden = true;
+      cameraVideo.style.display = 'none';
+      cameraStop.hidden = true;
+      cameraButton.hidden = false;
+    };
+    cameraStop.addEventListener('click', stopHubCamera);
+    cameraButton.addEventListener('click', async () => {
+      if (hubCameraRunning) return;
+      const Media = typeof navigator !== 'undefined' && navigator.mediaDevices;
+      const Detector = typeof globalThis !== 'undefined' && globalThis.BarcodeDetector;
+      if (!Media || !Media.getUserMedia || !Detector) {
+        scannerResult.textContent = 'Scan caméra non disponible dans ce navigateur. Utilisez Chrome Android à jour en HTTPS, une douchette ou la saisie manuelle justifiée.';
+        scannerResult.dataset.scanTone = 'warning';
+        return;
+      }
+      cameraButton.disabled = true;
+      try {
+        const supported = await Detector.getSupportedFormats();
+        const formats = ['qr_code', 'code_128', 'ean_13', 'ean_8', 'upc_a'].filter(f => supported.includes(f));
+        if (!formats.length) throw new Error('Aucun format de code pris en charge');
+        const detector = new Detector({ formats });
+        hubCameraStream = await Media.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' } } });
+        cameraVideo.srcObject = hubCameraStream;
+        cameraVideo.hidden = false;
+        cameraVideo.style.display = 'block';
+        cameraButton.hidden = true;
+        cameraStop.hidden = false;
+        hubCameraRunning = true;
+        await cameraVideo.play();
+        const inspect = async () => {
+          if (!hubCameraRunning) return;
+          if (!cameraVideo.isConnected || (typeof document !== 'undefined' && document.hidden)) {
+            stopHubCamera();
+            return;
+          }
+          try {
+            const found = await detector.detect(cameraVideo);
+            const code = found.find(c => String(c.rawValue || '').trim());
+            if (code) {
+              const value = String(code.rawValue).trim();
+              stopHubCamera();
+              scannerInput.value = value;
+              await identify(value);
+              return;
+            }
+          } catch (error) {
+            scannerResult.textContent = 'Lecture caméra impossible : ' + String(error.message || 'réessayez');
+            scannerResult.dataset.scanTone = 'warning';
+          }
+          if (hubCameraRunning && typeof requestAnimationFrame === 'function') hubCameraFrame = requestAnimationFrame(inspect);
+        };
+        hubCameraFrame = requestAnimationFrame(inspect);
+      } catch (error) {
+        stopHubCamera();
+        scannerResult.textContent = 'Caméra indisponible ou permission refusée : ' + String(error.message || 'autorisation requise');
+        scannerResult.dataset.scanTone = 'warning';
+      } finally {
+        cameraButton.disabled = false;
+      }
+    });
 
     scannerInput.addEventListener('keydown', async event => {
       if (event.key !== 'Enter') return;
