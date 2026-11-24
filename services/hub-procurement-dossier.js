@@ -739,6 +739,7 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
   // Quantités reçues pas encore mises en carton : sources proposées pour composer une KOM-BOX (REPACK), sans ressaisie.
   const { rows: fillableRows } = await q.query(`
     SELECT p.allocation_id, u.id AS from_unit_id, u.reference AS from_unit_ref, a.order_id, o.reference AS order_ref,
+           o.relais_id, rl.short_code AS relais_code,
            a.order_item_id, a.product_sku_id, pr.name AS product_name, p.quantity
       FROM hub_physical_unit_placements p
       JOIN hub_physical_units u ON u.id = p.physical_unit_id AND u.unit_type <> 'MARKET_PARCEL'
@@ -746,6 +747,7 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
            AND NOT (u.unit_type='HANDLING_UNIT' AND u.order_id IS NOT NULL)
       JOIN hub_purchase_allocations a ON a.id = p.allocation_id
       JOIN orders o ON o.id = a.order_id
+      LEFT JOIN relais rl ON rl.id = o.relais_id
       LEFT JOIN order_items oi ON oi.id = a.order_item_id
       LEFT JOIN products pr ON pr.id = oi.product_id
      WHERE p.removed_at IS NULL AND p.quantity > 0 AND a.market_id = $1
@@ -753,6 +755,7 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
   const fillable = fillableRows.map((r) => ({
     allocation_id: r.allocation_id, from_unit_id: r.from_unit_id, from_unit_ref: r.from_unit_ref,
     order_id: r.order_id, order_ref: r.order_ref,
+    relais_id: r.relais_id, relais_code: r.relais_code,
     order_item_id: r.order_item_id, product_sku_id: r.product_sku_id,
     product: r.product_name || null, quantity: Number(r.quantity),
   }));
