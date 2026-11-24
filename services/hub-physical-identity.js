@@ -1111,6 +1111,21 @@ async function transitionPhysicalUnit(executor, {
   if (!before) fail('HUB_PHYSICAL_UNIT_NOT_FOUND');
   if (before.state === toState) return { noop: true, unit: before };
   if(before.unit_type==='MARKET_PARCEL'&&toState==='DISPATCHED'){
+    // Les COMBOX historiques restent valides. Toute COMBOX déjà étiquetée,
+    // ou contenant une commande sur le nouveau moteur de vague, exige un QR.
+    const {rows:[qrPolicy]}=await db.query(
+      `SELECT (
+        EXISTS (SELECT 1 FROM hub_scan_labels l
+                 WHERE l.physical_unit_id=$1 AND l.target_type='COMBOX')
+        OR EXISTS (
+          SELECT 1 FROM hub_physical_unit_placements p
+          JOIN hub_purchase_allocations a ON a.id=p.allocation_id
+          JOIN orders o ON o.id=a.order_id
+          WHERE p.physical_unit_id=$1 AND p.removed_at IS NULL
+            AND o.delivery_wave_id IS NOT NULL
+        )
+      ) AS qr_required`,[unitId]);
+    if(qrPolicy?.qr_required){
     if(before.state!=='PACKED')fail('HUB_BOX_NOT_PACKED','Fermer la COMBOX avant sortie du Hub');
     const scan=String(details.box_qr_scan||'').trim().toUpperCase();
     if(!/^KQ1_[A-F0-9]{32}$/.test(scan)&&!/^[A-HJ-NP-Z2-9]{8}$/.test(scan))
@@ -1123,6 +1138,7 @@ async function transitionPhysicalUnit(executor, {
           AND (qr_value=$2 OR short_alias=$2)`,
       [unitId,scan]);
     if(!label)fail('HUB_BOX_FINAL_QR_MISMATCH','QR COMBOX absent ou non associé au carton');
+    }
   }
 
   if (before.state === 'QUARANTINED') {
@@ -1233,6 +1249,12 @@ async function moveAllocationQuantity(executor, {
       fail('HUB_ORDER_BAG_DEPOSIT_EVIDENCE_REQUIRED');
     }
   } else if (target.unit_type === 'MARKET_PARCEL') {
+    const {rows:[policy]}=await db.query(
+      `SELECT (
+        EXISTS (SELECT 1 FROM hub_scan_labels WHERE allocation_id=$1 AND target_type='ARTICLE')
+        OR EXISTS (SELECT 1 FROM orders WHERE id=$2 AND delivery_wave_id IS NOT NULL)
+      ) AS qr_required`,[allocationId,allocation.order_id]);
+    if(policy?.qr_required){
     // Every physical unit placed in a COMBOX must have its own persistent Komerce QR.
     // A supplier SKU, unsigned MANUAL flag or absence of evidence cannot bypass traceability.
     if(evidenceMethod!=='SCAN') fail('HUB_BOX_ARTICLE_QR_REQUIRED',
@@ -1258,6 +1280,32 @@ async function moveAllocationQuantity(executor, {
     if(used.length) fail('HUB_BOX_ITEM_LABEL_ALREADY_USED');
     opaqueArticleLabelId=resolved.label_id;
     verifiedCode=code;
+
+    } else if (evidenceMethod) {
+      // Allocation historique sans nouvelle vague et sans QR attribué :
+      // conserver les gestes valides antérieurs, jamais pour une unité étiquetée.
+      if (evidenceMethod === 'SCAN') {
+        const physicalCodes = require('./hub-physical-codes');
+        let observation;
+        try {
+          observation = await physicalCodes.resolvePhysicalCode(db, {
+            purchaseOrderId: allocation.purchase_order_id,
+            code: evidenceCode,
+          });
+        } catch (error) {
+          fail('HUB_BOX_ITEM_SCAN_INVALID', error.code || 'Code physique inconnu');
+        }
+        if (!observation.confirmed || String(observation.product_sku_id) !== String(allocation.product_sku_id)) {
+          fail('HUB_BOX_ITEM_SCAN_SKU_MISMATCH');
+        }
+        verifiedCode = observation.code;
+      } else if (evidenceMethod === 'MANUAL' && typeof evidenceRef === 'string' && evidenceRef.trim().length >= 6) {
+        if (evidenceCode) fail('HUB_BOX_ITEM_MANUAL_CODE_FORBIDDEN');
+      } else {
+        fail('HUB_BOX_ITEM_EVIDENCE_REQUIRED');
+      }
+      if (evidenceMethod === 'SCAN' && moveQty !== 1) fail('HUB_BOX_SCAN_ONE_ITEM_PER_OPERATION');
+    }
   }
 
   const { rows: placements } = await db.query(
