@@ -140,6 +140,10 @@ async function main(){
    check(await action.count()===1&&await action.isEnabled(),'G6_M06_PAYMENT_AUTH_UI_ACTION_DISABLED');
    await director.page.screenshot({path:path.join(OUT,'payment-authorization-action.png')});
    await humanClick(null,action);
+   await director.page.locator('[data-hub-decision-workspace]').waitFor({state:'visible',timeout:20000});
+   await action.waitFor({state:'visible',timeout:20000});
+   check(await action.isEnabled(),'G6_M06_PAYMENT_DIRECTION_ACTION_DISABLED');
+   await humanClick(null,action);
    const form=director.page.locator('form[data-hlc-form="payment"]');
    await form.waitFor({state:'visible',timeout:15000});
    const amount=form.locator('input[name="amount"]'),currency=form.locator('input[name="currency"]');
