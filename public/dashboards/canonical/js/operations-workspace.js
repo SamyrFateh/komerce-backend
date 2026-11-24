@@ -1380,6 +1380,29 @@
     });
     const BOX_MUTABLE = new Set(['RECEIVED', 'IDENTIFIED', 'QUALITY_CHECKED', 'LOCATED', 'ALLOCATED', 'PICKED']);
     const fillable = Array.isArray(d.fillable) ? d.fillable : [];
+    // Le fetch canonique transporte l'authentification du dashboard ; un lien
+    // API direct ne la transmet pas forcément. Ouvrir la fenêtre sur le clic,
+    // puis charger l'HTML local authentifié dans un Blob imprimable.
+    const openLabelPrint = async(event,href)=>{
+      event.preventDefault();
+      const popup=typeof window!=='undefined'?window.open('about:blank','_blank'):null;
+      if(!popup){
+        setFeedback(context.root,'Autorisez l’ouverture de la fenêtre d’impression dans le navigateur.','critical');
+        return;
+      }
+      try{
+        const response=await context.fetch(href,{method:'GET',credentials:'include',headers:{Accept:'text/html'}});
+        if(!response.ok)throw new Error('HTTP '+response.status+' · émettez d’abord les étiquettes');
+        const documentBlob=await response.blob();
+        const printUrl=URL.createObjectURL(documentBlob);
+        popup.location.href=printUrl;
+        // Un document Blob doit rester disponible pendant l'ouverture/impression.
+        popup.addEventListener('pagehide',()=>URL.revokeObjectURL(printUrl),{once:true});
+      }catch(error){
+        popup.close();
+        setFeedback(context.root,'Impression indisponible : '+String(error.message||'erreur'),'critical');
+      }
+    };
     const createBar = doc.createElement('div');
     createBar.className = 'kmc-workspace-receive-footer';
     createBar.setAttribute('data-supply-box-create', '');
@@ -1497,6 +1520,7 @@
         print.target='_blank';print.rel='noopener';
         print.textContent='Imprimer les QR';
         print.setAttribute('data-hub-print-article','');
+        print.addEventListener('click',event=>openLabelPrint(event,print.href));
         row.append(issue,print);labelSection.appendChild(row);
       }
       boxes.appendChild(labelSection);
@@ -1531,6 +1555,7 @@
       printBox.target='_blank';printBox.rel='noopener';
       printBox.textContent='Imprimer QR COMBOX';
       printBox.setAttribute('data-hub-print-box','');
+      printBox.addEventListener('click',event=>openLabelPrint(event,printBox.href));
       cell.appendChild(printBox);
       const readyBoxCode=value=>value===box.reference||
         /^KQ1_[A-F0-9]{32}$/i.test(String(value||''))||
