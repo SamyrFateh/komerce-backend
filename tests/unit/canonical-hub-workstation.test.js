@@ -386,3 +386,12 @@ test('Kanban : destination relais visible, attendu réservé au détail contextu
  expect(src).not.toContain("'kmc-hub-phase-expected'");
  expect(src).toContain("'kmc-hub-board-menu-expected'");
 });
+
+test('Kanban global : les actions métier sont déléguées et aucun formulaire de sourcing inline ne subsiste',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-workstation.js'),'utf8');
+ const board=src.slice(src.indexOf('async function renderGlobalBoard'),src.indexOf('async function renderAdministrationBoard'));
+ expect(board).toContain('KomerceHubContextActions.operations(menu');
+ expect(board).toContain('Ouvrir l’atelier · ');
+ expect(board).not.toContain('launchSourcing');
+ expect(board).not.toContain('openManualSourcing');
+});
