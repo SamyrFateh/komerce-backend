@@ -22,7 +22,7 @@ const EXPECTED = Object.freeze({
     'flow-finance', 'workspace-accounting',
     'live-import-runtime', 'live-hub', 'live-relais',
     'markets-home', 'market-catalog', 'unsold',
-    'admin-users', 'admin-providers', 'settings',
+    'admin-users', 'admin-guided-recipe', 'admin-providers', 'settings',
   ],
   market_operator: [
     'control-tower', 'action-center',
@@ -89,6 +89,13 @@ test.describe('Navigation V4 — matrice des 8 rôles', () => {
       expect(ids).toEqual([...expected, 'help-docs']);
       await expect(page.locator('.kmc-admin-primary-link[data-dashboard="help-docs"]'))
         .toHaveAttribute('href', '/admin/documentation');
+
+      const guide = page.locator('.kmc-admin-primary-link[data-dashboard="admin-guided-recipe"]');
+      if (role === 'admin') {
+        await expect(guide).toHaveAttribute('href','/admin/golden-e2e?guide=hub#extendedRecipe');
+      } else {
+        await expect(guide).toHaveCount(0);
+      }
 
       const home = await page.evaluate(() =>
         window.KomerceCanonicalNavigation.defaultLandingFor(window.KOMERCE_CANONICAL_AUTH_USER)

@@ -351,3 +351,43 @@ test.describe('Golden cockpit V4 — parcours guidé et preuves isolées',()=>{
   });
 
 });
+
+test('entrée Recette guidée : Hub vers remise client, neuf étapes et reprise sans writer',async({page})=>{
+  const state=await mount(page);
+  await page.route(ORIGIN+'/api/admin/entities/golden-upstream?market=CM',route=>
+    route.fulfill({status:200,contentType:'application/json',body:'{}'}));
+  await page.goto(ORIGIN+'/admin/golden-e2e?guide=hub#extendedRecipe');
+  await expect(page.locator('#extendedRecipe')).toHaveJSProperty('open',true);
+  await expect(page.locator('#scenarioTrack')).toHaveValue('hub');
+  await expect(page.locator('#scenarioSha')).toHaveValue(state.version);
+  await page.locator('#scenarioMarket').selectOption('CM');
+  await page.locator('#scenarioRef').fill('CM-TEST-GUIDE');
+  await page.locator('#scenarioStart').click();
+  const links=['/CM','/admin/hub','/admin/hub?branch=administrative',
+    '/admin/hub-live?view=execute&market=CM','/admin/hub-live?view=execute&market=CM',
+    '/admin/hub-live?view=execute&market=CM','/admin/workspaces/shipping-customs?market=CM',
+    '/admin/relais-live?market=CM','/admin/relais-live?view=remises&market=CM'];
+  for(let i=0;i<links.length;i++){
+    await expect(page.locator('#scenarioCount')).toHaveText('Étape '+(i+1)+' / 9');
+    await page.locator('#scenarioNext').click();
+    await expect(page.locator('#scenarioOpen')).toBeVisible();
+    await expect(page.locator('#scenarioOpen')).toHaveAttribute('href',links[i]);
+    await page.locator('#scenarioNext').click();
+    if(i===0){
+      await page.locator('#scenarioAuthButton').click();
+      await expect(page.locator('#scenarioAuth')).toContainText('SHA staging vérifié');
+    }
+    await page.locator('#scenarioNote').fill('Constat simulé de navigation étape '+(i+1));
+    await page.locator('#scenarioProof').fill('preuve-navigation-'+(i+1));
+    await page.locator('#scenarioObserved').click();
+    await expect(page.locator('#scenarioProgress')).toContainText((i+1)+' observation(s) / 9');
+    await expect(page.locator('#scenarioState')).toContainText('NON PROUVÉ');
+    if(i<links.length-1)await page.locator('#scenarioNext').click();
+  }
+  await expect(page.locator('#scenarioTitle')).toHaveText('Remettre au client');
+  await expect(page.locator('#scenarioProofExpected')).toContainText('seconde remise refusée');
+  await page.reload();
+  await expect(page.locator('#scenarioProgress')).toContainText('9 observation(s) / 9');
+  expect(state.creates).toEqual([]);
+  expect(state.advances).toBe(0);
+});

@@ -78,3 +78,13 @@ test('garde anti-contamination : RCT1 préservé sur les vues filtrées, SHA sta
   expect(js).toContain('verifiedCommit=actual');
   expect(js).not.toMatch(/method\\s*:\\s*['"](?:POST|PUT|PATCH|DELETE)['"]/i);
 });
+
+test('le guide Hub suit trois articles de la commande à la remise, avec contexte marché et refus du doublon',()=>{
+ expect(html).toContain('<option value="hub">Hub → remise client · 3 articles</option>');
+ expect(js).toContain("hub:{label:'Hub → remise client · 3 articles'");
+ for(const step of ['Préparer la recette et commander','Réceptionner les 3 articles','Imprimer les étiquettes et trier','Remplir puis fermer la COMBOX','Expédier et remettre au transitaire','Réceptionner au relais','Remettre au client'])expect(js).toContain(step);
+ expect(js).toContain('seconde remise refusée');
+ expect(js).toContain("get('guide')==='hub'");
+ expect(js).toContain("'market='+encodeURIComponent(run.market)");
+ expect(js).not.toMatch(/method\s*:\s*['"](?:POST|PUT|PATCH|DELETE)['"]/i);
+});

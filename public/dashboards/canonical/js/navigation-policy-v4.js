@@ -876,6 +876,7 @@
     'help-docs': 'ⓘ',
     'admin-providers': '⛭',
     'admin-users': '⛭',
+    'admin-guided-recipe': '✓',
     'control-tower': '⌂',
     'action-center': '!',
     'flow-commerce': '▥',
@@ -985,6 +986,7 @@
       label: 'Administration',
       items: Object.freeze([
         Object.freeze({ id: 'admin-users', label: 'Utilisateurs', href: '/admin/users', roles: ['admin'], surfaces: ['users-admin'] }),
+        Object.freeze({ id: 'admin-guided-recipe', label: 'Recette guidée', href: '/admin/golden-e2e?guide=hub#extendedRecipe', roles: ['admin'], surfaces: ['golden-e2e'] }),
         Object.freeze({ id: 'admin-providers', label: 'Providers', href: '/admin/providers', roles: ['admin'], surfaces: ['providers-admin'] }),
         Object.freeze({ id: 'settings', label: 'Paramètres', href: '/admin/settings', roles: ['admin'], surfaces: ['settings'] }),
       ]),

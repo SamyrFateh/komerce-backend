@@ -23,6 +23,17 @@ const PREFIX='komerce.recipe.scenarios.';
 const GITHUB='https://github.com/SamyrFateh/komerce-backend/blob/';
 const e=(title,actor,path,expected,proof,source)=>({title,actor,path,expected,proof,source});
 const TRACKS=Object.freeze({
+ hub:{label:'Hub → remise client · 3 articles',steps:[
+  e('Préparer la recette et commander','Admin staging / Client','/KM','Sur le staging vérifié uniquement, réserver le créneau sans autre recette G6. Utiliser un client de test, 3 unités IMPORT disponibles au catalogue, un relais et un paiement cash simulé. Passer la commande dans la boutique du marché choisi ; noter sa référence unique.','Référence de fixture, commande et marché ; 3 unités commandées. Aucun achat ni paiement réel.','docs/doctrine/DOCTRINE_HUB_PHYSICAL_IDENTITY.md'),
+  e('Confirmer le paiement et ouvrir le Kanban','Agent relais / Hub','/admin/hub','Confirmer le cash de test depuis le poste habilité. Ouvrir le Kanban, retrouver la commande, vérifier le dossier sans doublon et le lien Opérations.','Commande payée ; référence identique et prochaine action visible.','public/dashboards/canonical/js/hub-workstation.js'),
+  e('Organiser les achats','Agent Hub / Direction','/admin/hub?branch=administrative','Créer et soumettre le PO associé à la commande ; obtenir les autorisations et attestations fournisseur simulées, chacune depuis son écran et son rôle.','PO et lignes : 3 unités attendues, aucune commande fournisseur réelle.','public/dashboards/canonical/js/hub-workstation.js'),
+  e('Réceptionner les 3 articles','Agent Hub','/admin/hub-live?view=execute','Contrôler la marchandise puis attester la réception des trois unités ; vérifier le Kanban sans recharger la page.','PO et réception 3/3 ; aucune unité en écart.','public/dashboards/canonical/js/operations-workspace.js'),
+  e('Imprimer les étiquettes et trier','Agent Hub','/admin/hub-live?view=execute','Préparer les QR articles, télécharger le PDF A4 et l’afficher sur le PC. Vérifier le relais, la destination et la vague si active ; trois QR distincts sans donnée personnelle.','PDF privé et trois unités identifiables ; réimpression sans mutation.','public/dashboards/canonical/js/operations-workspace.js'),
+  e('Remplir puis fermer la COMBOX','Agent Hub','/admin/hub-live?view=execute','Créer une COMBOX compatible avec le relais. Scanner les trois QR depuis le téléphone connecté, confirmer les placements un par un, vérifier 3/3. Rejouer un scan pour vérifier le refus ; fermer la COMBOX, préparer et afficher son PDF.','COMBOX, compteurs 1/3 → 2/3 → 3/3, refus du doublon, fermeture et QR final. Un scan écran ne prouve pas une imprimante physique.','public/dashboards/canonical/js/operations-workspace.js'),
+  e('Expédier et remettre au transitaire','Agent Hub / Transitaire','/admin/workspaces/shipping-customs','Rattacher la COMBOX au départ, attester la sortie et remise au transitaire ; faire accepter la prise en charge par un acteur distinct. Poursuivre transit et douane simulés.','Référence départ, COMBOX, remise, acceptation et arrivée autorisée ; aucun transport réel.','public/dashboards/canonical/js/shipping-customs-workspace.js'),
+  e('Réceptionner au relais','Agent relais','/admin/relais-live','Ouvrir les arrivages, identifier la COMBOX, contrôler les trois articles et attester la réception. Vérifier la disponibilité de la même commande et le statut côté client.','Même commande et destination ; 3/3 réceptionnés.','public/dashboards/canonical/js/relay-live.js'),
+  e('Remettre au client','Client / Agent relais','/admin/relais-live?view=remises','Récupérer le code de retrait depuis l’espace client de test, identifier les 3 articles au comptoir et confirmer le retrait. Rejouer la remise : refus obligatoire. Ne pas conserver le code dans les constats.','Commande collectée, 3 unités remises, reste 0, seconde remise refusée.','public/dashboards/canonical/js/operations-workspace.js')
+ ]},
  cj:{label:'CJ · lot 20 / 15 / 5',steps:[
   e('Identifier la source CJ','Sourcing','/admin/workspaces/sourcing','Identifier le run CJ exact, le Market et les références fournisseur ; ne pas réutiliser un seed comme preuve réelle.','Run ID, fournisseur, SKU, Market, date UTC, état de lecture réel.','docs/audits/FULL_RECETTE_E2E_EVIDENCE_REGISTER.md'),
   e('Rapprocher les 20 entrées','Sourcing','/admin/workspaces/sourcing','Retrouver les 20 éléments attendus par la fixture 20/15/5 ; confronter les identifiants au run canonique.','Décompte, liste des 20 IDs distincts et origine de la fixture.','services/suppliers/connectors/cj-connector.js'),
@@ -116,6 +127,10 @@ function restore(){
 }
 function showMessage(value){$('scenarioMessage').textContent=value;}
 function hrefForStep(path){
+ if(run?.track==='hub'){
+  if(path==='/KM')return '/'+encodeURIComponent(run.market);
+  if(/^\/admin\/(?:hub-live|relais-live|workspaces\/shipping-customs)(?:\?|$)/.test(path))return path+(path.includes('?')?'&':'?')+'market='+encodeURIComponent(run.market);
+ }
  if(!run||!/^RCT1(?:-|$)/.test(run.ref))return path;
  if(!/^\/admin\/(?:commerce|finance)(?:\?|$)/.test(path))return path;
  return path+(path.includes('?')?'&':'?')+'simulation_scope=RCT1';
@@ -231,10 +246,15 @@ $('scenarioRestart').addEventListener('click',()=>{
 });
 try{
  const last=JSON.parse(localStorage.getItem(PREFIX+'last')||'null');
- if(last&&TRACKS[last.track]&&['KM','CM','CG'].includes(last.market)&&typeof last.ref==='string'&&/^[0-9a-f]{7,40}$/.test(last.sha||'')){
+ if(last&&(!new URLSearchParams(location.search).has('guide')||last.track===new URLSearchParams(location.search).get('guide'))&&TRACKS[last.track]&&['KM','CM','CG'].includes(last.market)&&typeof last.ref==='string'&&/^[0-9a-f]{7,40}$/.test(last.sha||'')){
   $('scenarioTrack').value=last.track;$('scenarioMarket').value=last.market;
   $('scenarioRef').value=last.ref;$('scenarioSha').value=last.sha;
   begin();
  }
 }catch(_){}
+if(new URLSearchParams(location.search).get('guide')==='hub'){
+ $('extendedRecipe').open=true;
+ $('scenarioTrack').value='hub';
+ if(!$('scenarioSha').value)fetch('/health/version',{cache:'no-store',headers:{Accept:'application/json'}}).then(r=>r.ok?r.json():null).then(v=>{if(!run&&!$('scenarioSha').value&&/^[0-9a-f]{7,40}$/i.test(v?.commit||''))$('scenarioSha').value=v.commit;}).catch(()=>{});
+}
 })();
