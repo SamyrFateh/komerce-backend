@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 826
-- Files with full headers: 764
+- Scanned code files: 827
+- Files with full headers: 765
 - Files with lite headers: 62
-- Files with any headers: 826
+- Files with any headers: 827
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2104
-- Edges: 10517
-- DB tables: 244
-- Doctrines: 823
-- Impact areas: 211
-- Unresolved code edges: 996
+- Graph nodes: 2110
+- Edges: 10548
+- DB tables: 245
+- Doctrines: 826
+- Impact areas: 212
+- Unresolved code edges: 997
 - Tables multi-écrivains directs (>=2): 99
 - Avertissements db-write / db-write-via en chevauchement: 13
 
@@ -54,7 +54,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - markets: 1
 - notification: 22
 - operations: 11
-- orders: 42
+- orders: 43
 - payment: 30
 - payments: 1
 - platform-ops: 2
@@ -93,7 +93,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 139
 - route-manifest: 1
 - schema: 1
-- service: 503
+- service: 504
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -200,6 +200,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/order-checkout-persistence.js — orders-checkout-persistence (orders, critical, full)
 - services/order-checkout-service.js — orders-checkout-orchestrator (orders, critical, full)
 - services/order-cost-snapshot.js — orders-order-cost-snapshot (orders, critical, full)
+- services/order-delivery-wave-service.js — order-delivery-wave (orders, critical, full)
 - services/order-fx-snapshot.js — order-fx-snapshot (orders, critical, full)
 - services/order-item-refund-settlement.js — order-item-verified-refund-projection (orders, critical, full)
 - services/order-mutation-service.js — orders-cross-feature-mutation-boundary (orders, critical, full)

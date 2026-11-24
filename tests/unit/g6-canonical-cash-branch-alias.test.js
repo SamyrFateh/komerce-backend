@@ -4,7 +4,7 @@ const {canonicalScenario,resolveCanonicalReplay,resolveRelayCashRefs}=require('.
 const {SCENARIO_STAGE_IDS}=require('../../scripts/recette/canonical/stage-registry');
 
 describe('G6 executable sub-branches must retain their actual stage ID through Relais cash',()=>{
- const cases=['N26a','N26b','N39F1','N39F2','N39F3'];
+ const cases=['N26b','N39F1','N39F2','N39F3'];
  test.each(cases)('%s binds cash to its exact runnable stage, with one real business parent',id=>{
   const parent=id.startsWith('N26')?'N26':'N39';
   for(const market of ['KM','CM','CG']){
@@ -16,6 +16,15 @@ describe('G6 executable sub-branches must retain their actual stage ID through R
     G6_CANONICAL_SCENARIO:id,G6_CANONICAL_MARKET:market,
     G6_CANONICAL_ORDER_REFERENCE:'K26TEST1'
    })).toEqual({[market]:'K26TEST1'});
+  }
+ });
+ test('N26a is PSP-only and must not be aliased to the cash replay',()=>{
+  expect(SCENARIO_STAGE_IDS.N26a).toEqual(['BUYER','N26A_LINE_REFUND_PSP_DECISION']);
+  expect(SCENARIO_STAGE_IDS.N26a).not.toContain('RELAY_CASH');
+  for(const market of ['KM','CM','CG']){
+   expect(canonicalScenario('N26',market).id).toBe('N26');
+   expect(()=>resolveCanonicalReplay({G6_CANONICAL_SCENARIO:'N26a',G6_TARGET_MARKET:market}))
+    .toThrow('G6_EXISTING_BUYER_CASH_ADAPTER_NOT_BOUND_FOR_SCENARIO_N26a');
   }
  });
  test('N26b case normalization preserves the b branch, not an invalid N26B',()=>{

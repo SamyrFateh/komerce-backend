@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 826,
-    "filesWithFullHeaders": 764,
+    "scannedCodeFiles": 827,
+    "filesWithFullHeaders": 765,
     "filesWithLiteHeaders": 62,
-    "filesWithAnyHeaders": 826,
+    "filesWithAnyHeaders": 827,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2104,
-    "edges": 10517,
-    "dbTables": 244,
-    "doctrines": 823,
-    "impactAreas": 211,
-    "unresolvedCodeEdges": 996,
+    "graphNodes": 2110,
+    "edges": 10548,
+    "dbTables": 245,
+    "doctrines": 826,
+    "impactAreas": 212,
+    "unresolvedCodeEdges": 997,
     "dbWriteViaOverlapWarnings": 13,
     "multiWriterTables": 99
   },
@@ -60,7 +60,7 @@
     "market-control-plane": 5,
     "settlement": 2,
     "business-rules": 1,
-    "orders": 42,
+    "orders": 43,
     "documents": 16,
     "auth-identity": 12,
     "operations": 11,
@@ -113,7 +113,7 @@
     "schema": 1,
     "route": 139,
     "entrypoint": 1,
-    "service": 503,
+    "service": 504,
     "external-adapter": 2,
     "infrastructure": 1,
     "machine": 1,
@@ -123,7 +123,7 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 128,
+    "critical": 129,
     "medium": 155,
     "high": 471,
     "low": 71,
@@ -7927,9 +7927,14 @@
         "recipients",
         "relais",
         "users",
+        "incidents",
+        "international_shipment_relay_receipts",
         "local_cash_refund_authorizations",
         "local_item_refund_reservations",
-        "local_mobile_refund_handoffs"
+        "local_mobile_refund_handoffs",
+        "order_item_refund_reservations",
+        "refund_execution_intents",
+        "refunds"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -21858,11 +21863,13 @@
       "dbRead": [
         "orders",
         "order_items",
+        "products",
         "international_shipment_relay_receipts",
         "incidents",
         "order_item_refund_reservations",
         "refund_execution_intents",
-        "refunds"
+        "refunds",
+        "local_item_refund_reservations"
       ],
       "dbWrite": [
         "order_item_refund_reservations",
@@ -25748,6 +25755,7 @@
         "side_effects"
       ],
       "depends": [
+        "services/order-delivery-wave-service.js",
         "services/market-transport-sale-rates.js",
         "services/order-fx-snapshot.js",
         "db.js",
@@ -25842,6 +25850,74 @@
         "checkout"
       ],
       "version": "2026-09"
+    },
+    {
+      "id": "services/order-delivery-wave-service.js",
+      "file": "services/order-delivery-wave-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "order-delivery-wave",
+      "domain": "orders",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "transactional_pg_client",
+        "verified_buyer_id",
+        "verified_recipient_id",
+        "market_id",
+        "relais_id",
+        "market_code",
+        "expected_units"
+      ],
+      "outputs": [
+        "unique_structured_order_reference",
+        "invisible_wave_id"
+      ],
+      "depends": [
+        "services/relais-mutation-service.js",
+        "crypto"
+      ],
+      "usedBy": [
+        "services/order-checkout-service.js",
+        "services/pickup-collection-recorder.js"
+      ],
+      "dbRead": [
+        "orders",
+        "order_delivery_waves",
+        "relais",
+        "recipients"
+      ],
+      "dbWrite": [
+        "order_delivery_waves"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "relais-mutation-service",
+          "tables": [
+            "relais"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "participant (must use checkout / pickup transaction)"
+      ],
+      "doctrine": [
+        "single_market_relay_client_wave_order_reference",
+        "no_bags",
+        "no_public_wave_endpoint"
+      ],
+      "impactAreas": [
+        "orders",
+        "checkout",
+        "logistics",
+        "pickup",
+        "market",
+        "relay",
+        "G6"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "services/order-display-snapshot.js",
@@ -27922,6 +27998,7 @@
         "partial }"
       ],
       "depends": [
+        "services/order-delivery-wave-service.js",
         "services/order-status-machine.js",
         "services/order-mutation-service.js",
         "services/pickup-secret-rotation-service.js",
@@ -27958,6 +28035,12 @@
           "tables": [
             "parcels",
             "parcel_items"
+          ]
+        },
+        {
+          "via": "order-delivery-wave-service",
+          "tables": [
+            "order_delivery_waves"
           ]
         }
       ],
@@ -31640,7 +31723,8 @@
       ],
       "outputs": [
         "relais read model",
-        "mutated relais row"
+        "mutated relais row",
+        "stable relay short code"
       ],
       "depends": [
         "none (executor fourni par l'appelant)"
@@ -31664,7 +31748,8 @@
       ],
       "impactAreas": [
         "logistics",
-        "market-delegation"
+        "market-delegation",
+        "orders"
       ],
       "version": "2026-09"
     },
@@ -40508,6 +40593,16 @@
       "table": "invoices"
     },
     {
+      "id": "db:incidents",
+      "type": "db-table",
+      "table": "incidents"
+    },
+    {
+      "id": "db:international_shipment_relay_receipts",
+      "type": "db-table",
+      "table": "international_shipment_relay_receipts"
+    },
+    {
       "id": "db:local_cash_refund_authorizations",
       "type": "db-table",
       "table": "local_cash_refund_authorizations"
@@ -40521,6 +40616,16 @@
       "id": "db:local_mobile_refund_handoffs",
       "type": "db-table",
       "table": "local_mobile_refund_handoffs"
+    },
+    {
+      "id": "db:order_item_refund_reservations",
+      "type": "db-table",
+      "table": "order_item_refund_reservations"
+    },
+    {
+      "id": "db:refund_execution_intents",
+      "type": "db-table",
+      "table": "refund_execution_intents"
     },
     {
       "id": "db:partners",
@@ -40566,11 +40671,6 @@
       "id": "db:wallets",
       "type": "db-table",
       "table": "wallets"
-    },
-    {
-      "id": "db:incidents",
-      "type": "db-table",
-      "table": "incidents"
     },
     {
       "id": "db:operator_market_scopes (revocations)",
@@ -40726,11 +40826,6 @@
       "id": "db:notification_log",
       "type": "db-table",
       "table": "notification_log"
-    },
-    {
-      "id": "db:refund_execution_intents",
-      "type": "db-table",
-      "table": "refund_execution_intents"
     },
     {
       "id": "db:shared_carts",
@@ -41038,11 +41133,6 @@
       "table": "store_credits"
     },
     {
-      "id": "db:order_item_refund_reservations",
-      "type": "db-table",
-      "table": "order_item_refund_reservations"
-    },
-    {
       "id": "db:local_cash_refund_payouts",
       "type": "db-table",
       "table": "local_cash_refund_payouts"
@@ -41158,11 +41248,6 @@
       "table": "inventory_items"
     },
     {
-      "id": "db:international_shipment_relay_receipts",
-      "type": "db-table",
-      "table": "international_shipment_relay_receipts"
-    },
-    {
       "id": "db:product_market_price_draft_events",
       "type": "db-table",
       "table": "product_market_price_draft_events"
@@ -41191,6 +41276,11 @@
       "id": "db:order_checkout_idempotency",
       "type": "db-table",
       "table": "order_checkout_idempotency"
+    },
+    {
+      "id": "db:order_delivery_waves",
+      "type": "db-table",
+      "table": "order_delivery_waves"
     },
     {
       "id": "db:physical_outcome_receipts",
@@ -44393,6 +44483,21 @@
       "doctrine": "explicit_relay_market_anchor"
     },
     {
+      "id": "doctrine:single_market_relay_client_wave_order_reference",
+      "type": "doctrine",
+      "doctrine": "single_market_relay_client_wave_order_reference"
+    },
+    {
+      "id": "doctrine:no_bags",
+      "type": "doctrine",
+      "doctrine": "no_bags"
+    },
+    {
+      "id": "doctrine:no_public_wave_endpoint",
+      "type": "doctrine",
+      "doctrine": "no_public_wave_endpoint"
+    },
+    {
       "id": "doctrine:GAP_ANALYSIS_CURRENCY_BOUNDARY.md — FREEZE FINAL 22-08-2026",
       "type": "doctrine",
       "doctrine": "GAP_ANALYSIS_CURRENCY_BOUNDARY.md — FREEZE FINAL 22-08-2026"
@@ -46451,6 +46556,11 @@
       "id": "impact:markets",
       "type": "impact-area",
       "area": "markets"
+    },
+    {
+      "id": "impact:G6",
+      "type": "impact-area",
+      "area": "G6"
     },
     {
       "id": "impact:infrastructure",
@@ -58197,6 +58307,18 @@
     },
     {
       "from": "routes/admin/orders.js",
+      "to": "db:incidents",
+      "type": "db-read",
+      "label": "incidents"
+    },
+    {
+      "from": "routes/admin/orders.js",
+      "to": "db:international_shipment_relay_receipts",
+      "type": "db-read",
+      "label": "international_shipment_relay_receipts"
+    },
+    {
+      "from": "routes/admin/orders.js",
       "to": "db:local_cash_refund_authorizations",
       "type": "db-read",
       "label": "local_cash_refund_authorizations"
@@ -58212,6 +58334,24 @@
       "to": "db:local_mobile_refund_handoffs",
       "type": "db-read",
       "label": "local_mobile_refund_handoffs"
+    },
+    {
+      "from": "routes/admin/orders.js",
+      "to": "db:order_item_refund_reservations",
+      "type": "db-read",
+      "label": "order_item_refund_reservations"
+    },
+    {
+      "from": "routes/admin/orders.js",
+      "to": "db:refund_execution_intents",
+      "type": "db-read",
+      "label": "refund_execution_intents"
+    },
+    {
+      "from": "routes/admin/orders.js",
+      "to": "db:refunds",
+      "type": "db-read",
+      "label": "refunds"
     },
     {
       "from": "routes/admin/orders.js",
@@ -81233,6 +81373,12 @@
     },
     {
       "from": "services/item-refund-reservation-service.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/item-refund-reservation-service.js",
       "to": "db:international_shipment_relay_receipts",
       "type": "db-read",
       "label": "international_shipment_relay_receipts"
@@ -81260,6 +81406,12 @@
       "to": "db:refunds",
       "type": "db-read",
       "label": "refunds"
+    },
+    {
+      "from": "services/item-refund-reservation-service.js",
+      "to": "db:local_item_refund_reservations",
+      "type": "db-read",
+      "label": "local_item_refund_reservations"
     },
     {
       "from": "services/item-refund-reservation-service.js",
@@ -87595,6 +87747,12 @@
     },
     {
       "from": "services/order-checkout-service.js",
+      "to": "services/order-delivery-wave-service.js",
+      "type": "depends",
+      "label": "services/order-delivery-wave-service.js"
+    },
+    {
+      "from": "services/order-checkout-service.js",
       "to": "services/market-transport-sale-rates.js",
       "type": "depends",
       "label": "services/market-transport-sale-rates.js"
@@ -87838,6 +87996,127 @@
       "to": "impact:checkout",
       "type": "impact",
       "label": "checkout"
+    },
+    {
+      "from": "services/order-delivery-wave-service.js",
+      "to": "services/relais-mutation-service.js",
+      "type": "depends",
+      "label": "services/relais-mutation-service.js"
+    },
+    {
+      "from": "services/order-delivery-wave-service.js",
+      "to": "crypto",
+      "type": "depends",
+      "label": "crypto"
+    },
+    {
+      "from": "services/order-checkout-service.js",
+      "to": "services/order-delivery-wave-service.js",
+      "type": "uses",
+      "label": "services/order-checkout-service.js"
+    },
+    {
+      "from": "services/pickup-collection-recorder.js",
+      "to": "services/order-delivery-wave-service.js",
+      "type": "uses",
+      "label": "services/pickup-collection-recorder.js"
+    },
+    {
+      "from": "services/order-delivery-wave-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/order-delivery-wave-service.js",
+      "to": "db:order_delivery_waves",
+      "type": "db-read",
+      "label": "order_delivery_waves"
+    },
+    {
+      "from": "services/order-delivery-wave-service.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/order-delivery-wave-service.js",
+      "to": "db:recipients",
+      "type": "db-read",
+      "label": "recipients"
+    },
+    {
+      "from": "services/order-delivery-wave-service.js",
+      "to": "db:order_delivery_waves",
+      "type": "db-write",
+      "label": "order_delivery_waves"
+    },
+    {
+      "from": "services/order-delivery-wave-service.js",
+      "to": "db:relais",
+      "type": "db-write-via",
+      "label": "relais",
+      "via": "relais-mutation-service"
+    },
+    {
+      "from": "services/order-delivery-wave-service.js",
+      "to": "doctrine:single_market_relay_client_wave_order_reference",
+      "type": "doctrine",
+      "label": "single_market_relay_client_wave_order_reference"
+    },
+    {
+      "from": "services/order-delivery-wave-service.js",
+      "to": "doctrine:no_bags",
+      "type": "doctrine",
+      "label": "no_bags"
+    },
+    {
+      "from": "services/order-delivery-wave-service.js",
+      "to": "doctrine:no_public_wave_endpoint",
+      "type": "doctrine",
+      "label": "no_public_wave_endpoint"
+    },
+    {
+      "from": "services/order-delivery-wave-service.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/order-delivery-wave-service.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "services/order-delivery-wave-service.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/order-delivery-wave-service.js",
+      "to": "impact:pickup",
+      "type": "impact",
+      "label": "pickup"
+    },
+    {
+      "from": "services/order-delivery-wave-service.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "services/order-delivery-wave-service.js",
+      "to": "impact:relay",
+      "type": "impact",
+      "label": "relay"
+    },
+    {
+      "from": "services/order-delivery-wave-service.js",
+      "to": "impact:G6",
+      "type": "impact",
+      "label": "G6"
     },
     {
       "from": "services/order-display-snapshot.js",
@@ -91043,6 +91322,12 @@
     },
     {
       "from": "services/pickup-collection-recorder.js",
+      "to": "services/order-delivery-wave-service.js",
+      "type": "depends",
+      "label": "services/order-delivery-wave-service.js"
+    },
+    {
+      "from": "services/pickup-collection-recorder.js",
       "to": "services/order-status-machine.js",
       "type": "depends",
       "label": "services/order-status-machine.js"
@@ -91143,6 +91428,13 @@
       "type": "db-write-via",
       "label": "parcel_items",
       "via": "parcelSync"
+    },
+    {
+      "from": "services/pickup-collection-recorder.js",
+      "to": "db:order_delivery_waves",
+      "type": "db-write-via",
+      "label": "order_delivery_waves",
+      "via": "order-delivery-wave-service"
     },
     {
       "from": "services/pickup-collection-recorder.js",
@@ -97002,6 +97294,12 @@
       "to": "impact:market-delegation",
       "type": "impact",
       "label": "market-delegation"
+    },
+    {
+      "from": "services/relais-mutation-service.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
     },
     {
       "from": "services/relay-dashboard-queries.js",
@@ -118100,9 +118398,14 @@
         "recipients",
         "relais",
         "users",
+        "incidents",
+        "international_shipment_relay_receipts",
         "local_cash_refund_authorizations",
         "local_item_refund_reservations",
-        "local_mobile_refund_handoffs"
+        "local_mobile_refund_handoffs",
+        "order_item_refund_reservations",
+        "refund_execution_intents",
+        "refunds"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -118116,14 +118419,19 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:incidents",
+        "db:international_shipment_relay_receipts",
         "db:local_cash_refund_authorizations",
         "db:local_item_refund_reservations",
         "db:local_mobile_refund_handoffs",
         "db:markets",
+        "db:order_item_refund_reservations",
         "db:order_items",
         "db:orders",
         "db:products",
         "db:recipients",
+        "db:refund_execution_intents",
+        "db:refunds",
         "db:relais",
         "db:users",
         "doctrine:resolve_before_behavior_change",
@@ -132270,11 +132578,13 @@
       "dbRead": [
         "orders",
         "order_items",
+        "products",
         "international_shipment_relay_receipts",
         "incidents",
         "order_item_refund_reservations",
         "refund_execution_intents",
-        "refunds"
+        "refunds",
+        "local_item_refund_reservations"
       ],
       "dbWrite": [
         "order_item_refund_reservations",
@@ -132296,9 +132606,11 @@
       "mustCheck": [
         "db:incidents",
         "db:international_shipment_relay_receipts",
+        "db:local_item_refund_reservations",
         "db:order_item_refund_reservations",
         "db:order_items",
         "db:orders",
+        "db:products",
         "db:refund_execution_intents",
         "db:refunds",
         "doctrine:incident_proof_required",
@@ -136203,6 +136515,7 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
+        "services/order-delivery-wave-service.js",
         "services/market-transport-sale-rates.js",
         "services/order-fx-snapshot.js",
         "db.js",
@@ -136276,6 +136589,7 @@
         "services/order-checkout-idempotency.js",
         "services/order-checkout-item-resolution.js",
         "services/order-checkout-persistence.js",
+        "services/order-delivery-wave-service.js",
         "services/order-fx-snapshot.js",
         "services/order-post-commit-hooks.js"
       ]
@@ -136326,6 +136640,73 @@
         "services/cost-allocation/_helpers.js",
         "services/pricing-engine.js",
         "utils/logger.js"
+      ]
+    },
+    "services/order-delivery-wave-service.js": {
+      "role": "order-delivery-wave",
+      "domain": "orders",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/relais-mutation-service.js",
+        "crypto"
+      ],
+      "directUsedBy": [
+        "services/order-checkout-service.js",
+        "services/pickup-collection-recorder.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "order_delivery_waves",
+        "relais",
+        "recipients"
+      ],
+      "dbWrite": [
+        "order_delivery_waves"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "relais-mutation-service",
+          "tables": [
+            "relais"
+          ]
+        }
+      ],
+      "doctrines": [
+        "single_market_relay_client_wave_order_reference",
+        "no_bags",
+        "no_public_wave_endpoint"
+      ],
+      "impactAreas": [
+        "orders",
+        "checkout",
+        "logistics",
+        "pickup",
+        "market",
+        "relay",
+        "G6"
+      ],
+      "mustCheck": [
+        "db:order_delivery_waves",
+        "db:orders",
+        "db:recipients",
+        "db:relais",
+        "doctrine:no_bags",
+        "doctrine:no_public_wave_endpoint",
+        "doctrine:single_market_relay_client_wave_order_reference",
+        "impact:G6",
+        "impact:checkout",
+        "impact:logistics",
+        "impact:market",
+        "impact:orders",
+        "impact:pickup",
+        "impact:relay",
+        "services/order-checkout-service.js",
+        "services/pickup-collection-recorder.js",
+        "services/relais-mutation-service.js"
       ]
     },
     "services/order-display-snapshot.js": {
@@ -138399,6 +138780,7 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
+        "services/order-delivery-wave-service.js",
         "services/order-status-machine.js",
         "services/order-mutation-service.js",
         "services/pickup-secret-rotation-service.js",
@@ -138437,6 +138819,12 @@
             "parcels",
             "parcel_items"
           ]
+        },
+        {
+          "via": "order-delivery-wave-service",
+          "tables": [
+            "order_delivery_waves"
+          ]
         }
       ],
       "doctrines": [
@@ -138447,6 +138835,7 @@
         "pickup"
       ],
       "mustCheck": [
+        "db:order_delivery_waves",
         "db:order_status_history",
         "db:orders",
         "db:parcel_items",
@@ -138459,6 +138848,7 @@
         "doctrine:docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R9-R10",
         "impact:logistics",
         "impact:pickup",
+        "services/order-delivery-wave-service.js",
         "services/order-mutation-service.js",
         "services/order-status-machine.js",
         "services/pickup-collection-service.js",
@@ -142120,7 +142510,8 @@
       ],
       "impactAreas": [
         "logistics",
-        "market-delegation"
+        "market-delegation",
+        "orders"
       ],
       "mustCheck": [
         "db:relais",
@@ -142128,8 +142519,10 @@
         "doctrine:writer_not_owner_boundary",
         "impact:logistics",
         "impact:market-delegation",
+        "impact:orders",
         "services/market-delegation-network-service.js",
-        "services/market-provisioning-service.js"
+        "services/market-provisioning-service.js",
+        "services/order-delivery-wave-service.js"
       ]
     },
     "services/relay-collect-amount.js": {
@@ -155479,6 +155872,12 @@
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "services/order-delivery-wave-service.js",
+      "to": "crypto",
+      "type": "depends",
+      "label": "crypto"
     },
     {
       "from": "future Order 360 / Control Tower / Golden closure",

@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 335,
+    "businessDependencies": 337,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -6098,6 +6098,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "refunds",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
             "data-read"
           ]
         },
@@ -14274,7 +14281,8 @@
           "consumer": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -14298,6 +14306,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        },
+        {
+          "consumer": "refunds",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         }
       ],
@@ -26151,6 +26166,22 @@
         ],
         "readsTables": [
           {
+            "table": "incidents",
+            "lifecycleOwner": "incident-management"
+          },
+          {
+            "table": "international_shipment_relay_receipts",
+            "lifecycleOwner": "logistics"
+          },
+          {
+            "table": "local_item_refund_reservations",
+            "lifecycleOwner": "refunds"
+          },
+          {
+            "table": "order_item_refund_reservations",
+            "lifecycleOwner": "refunds"
+          },
+          {
             "table": "parcel_items",
             "lifecycleOwner": "logistics"
           },
@@ -26165,6 +26196,10 @@
           {
             "table": "products",
             "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "refund_execution_intents",
+            "lifecycleOwner": "refunds"
           },
           {
             "table": "refunds",
@@ -26319,6 +26354,22 @@
         ],
         "readsTables": [
           {
+            "table": "incidents",
+            "lifecycleOwner": "incident-management"
+          },
+          {
+            "table": "international_shipment_relay_receipts",
+            "lifecycleOwner": "logistics"
+          },
+          {
+            "table": "local_item_refund_reservations",
+            "lifecycleOwner": "refunds"
+          },
+          {
+            "table": "order_item_refund_reservations",
+            "lifecycleOwner": "refunds"
+          },
+          {
             "table": "parcel_items",
             "lifecycleOwner": "logistics"
           },
@@ -26333,6 +26384,10 @@
           {
             "table": "products",
             "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "refund_execution_intents",
+            "lifecycleOwner": "refunds"
           },
           {
             "table": "refunds",
@@ -26578,7 +26633,8 @@
           "provider": "incident-management",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -31922,7 +31978,7 @@
             ]
           },
           "tests": {
-            "count": 26,
+            "count": 27,
             "files": [
               {
                 "declared": "tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js",
@@ -31990,8 +32046,13 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "tests/unit/g8-refund-operator-ui.test.js",
-                "resolvedPath": "tests/unit/g8-refund-operator-ui.test.js",
+                "declared": "tests/unit/g6-negative-scenarios.test.js",
+                "resolvedPath": "tests/unit/g6-negative-scenarios.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/g8-remboursements.test.js",
+                "resolvedPath": "tests/unit/g8-remboursements.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -32087,7 +32148,7 @@
             ]
           }
         },
-        "totalFiles": 46,
+        "totalFiles": 47,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -32171,6 +32232,10 @@
         ],
         "readsTables": [
           {
+            "table": "incidents",
+            "lifecycleOwner": "incident-management"
+          },
+          {
             "table": "international_shipment_relay_receipts",
             "lifecycleOwner": "logistics"
           },
@@ -32181,6 +32246,10 @@
           {
             "table": "orders",
             "lifecycleOwner": "orders"
+          },
+          {
+            "table": "products",
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "wallets",
@@ -32265,6 +32334,10 @@
         ],
         "readsTables": [
           {
+            "table": "incidents",
+            "lifecycleOwner": "incident-management"
+          },
+          {
             "table": "international_shipment_relay_receipts",
             "lifecycleOwner": "logistics"
           },
@@ -32275,6 +32348,10 @@
           {
             "table": "orders",
             "lifecycleOwner": "orders"
+          },
+          {
+            "table": "products",
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "wallets",
@@ -32296,6 +32373,13 @@
       },
       "businessDependencies": [
         {
+          "provider": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "provider": "documents",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -32307,6 +32391,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        },
+        {
+          "provider": "incident-management",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {

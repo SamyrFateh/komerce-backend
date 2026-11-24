@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       markets, order_items, orders, products, recipients, relais, users, local_cash_refund_authorizations, local_item_refund_reservations, local_mobile_refund_handoffs
+ * @db-read       markets, order_items, orders, products, recipients, relais, users, incidents, international_shipment_relay_receipts, local_cash_refund_authorizations, local_item_refund_reservations, local_mobile_refund_handoffs, order_item_refund_reservations, refund_execution_intents, refunds
  * @db-write      none
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -26,7 +26,7 @@ const { authenticate, requireRole } = require('../../middleware/auth');
 const log = require('../../utils/logger').child({ module: 'admin/orders' });
 const { deleteOrderCascade } = require('./delete-order-cascade');
 const { refundCancelledOrder } = require('../../services/admin-order-refund');
-const { reserveVerifiedShortage } = require('../../services/item-refund-reservation-service');
+const { readVerifiedShortageCandidates, reserveVerifiedShortage } = require('../../services/item-refund-reservation-service');
 const { reserveLocalShortage } = require('../../services/local-item-refund-reservation');
 const { recordManualMobileRefund } = require('../../services/local-mobile-refund-handoff');
 const { authorizeCashRefund } = require('../../services/local-cash-refund-handoff');
@@ -256,6 +256,41 @@ router.post('/orders/:id/items/:itemId/refund-reservations', ...guard, async (re
     return res.status(result.replayed ? 200 : 202).json(result);
   } catch (err) {
     if (err.status && err.code) return res.status(err.status).json({ code: err.code, error: err.message });
+    return next(err);
+  }
+});
+
+// N26a: admin-only read projection, shown only when both reservation and
+// sandbox execution are explicitly enabled in staging. The writer still
+// revalidates the payment, incident and quantity under lock.
+router.get('/orders/item-refund-readiness', ...guard, async (_req,res) => {
+  const providerSandboxReady=String(process.env.STRIPE_SECRET_KEY||'').startsWith('sk_test_') ||
+    (process.env.PAYPAL_ENV==='sandbox'&&Boolean(process.env.PAYPAL_CLIENT_ID)&&Boolean(process.env.PAYPAL_CLIENT_SECRET));
+  res.set('Cache-Control','private, no-store');
+  return res.json({ enabled:process.env.KOMERCE_ENV === 'staging' &&
+    process.env.E7_ITEM_RESERVATIONS_ENABLED === '1' &&
+    process.env.E7_SANDBOX_REFUND_EXECUTION_ENABLED === '1' && providerSandboxReady });
+});
+router.get('/orders/:orderReference/item-refund-context', ...guard, async (req,res,next) => {
+  if (process.env.KOMERCE_ENV !== 'staging' ||
+      process.env.E7_ITEM_RESERVATIONS_ENABLED !== '1' ||
+      process.env.E7_SANDBOX_REFUND_EXECUTION_ENABLED !== '1') {
+    return res.status(409).json({ code:'E7_SANDBOX_PSP_DISABLED',
+      error:'Décision PSP partielle indisponible hors staging sandbox certifié' });
+  }
+  try {
+    const context = await readVerifiedShortageCandidates({
+      orderReference:req.params.orderReference, actor:req.user,
+    });
+    const providerReady=context.order.payment_mode==='stripe_eur'
+      ? String(process.env.STRIPE_SECRET_KEY||'').startsWith('sk_test_')
+      : process.env.PAYPAL_ENV==='sandbox'&&Boolean(process.env.PAYPAL_CLIENT_ID)&&Boolean(process.env.PAYPAL_CLIENT_SECRET);
+    if(!providerReady)return res.status(409).json({code:'E7_PROVIDER_SANDBOX_NOT_CONFIGURED',
+      error:'Le sandbox du PSP d’origine n’est pas configuré pour cette commande'});
+    res.set('Cache-Control','private, no-store');
+    return res.json(context);
+  } catch (err) {
+    if (err.status && err.code) return res.status(err.status).json({code:err.code,error:err.message});
     return next(err);
   }
 });

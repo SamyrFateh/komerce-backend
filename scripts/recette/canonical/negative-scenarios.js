@@ -576,6 +576,57 @@ async function oracleN25(db,{orderId,stockBefore}){
  ok(c.stock_after===stockBefore,'G6_N25_PRODUCT_GAP_RETURNED_UNIT_BACK_IN_SELLABLE_STOCK_'+stockBefore+'_TO_'+c.stock_after);
  return {dossiers:1,physical_receipts:1,compensations:0,wallet_credits:0,refunds:0,stock_unchanged:true,dossier_status:d[0].status};
 }
+// N26a: one verified partial line refund reaches the original PSP capture,
+// settles once, updates only the uncollected line quantity and emits a receipt.
+async function oracleN26a(db,{orderId,gesture}){
+ ok(gesture?.order_id===orderId&&gesture.verdict==='G6_N26A_PSP_PARTIAL_LINE_REFUND_CHROMIUM_PASS',
+  'G6_N26A_PRODUCT_GAP_CHROMIUM_GESTURE_NOT_PROVEN');
+ const req=gesture.request||{},candidate=gesture.candidate||{};
+ ok(req.operation_key&&req.incident_id===candidate.incident_id&&req.quantity===1&&
+  req.reason==='Manquant attesté — N26a', 'G6_N26A_PRODUCT_GAP_REQUEST_NOT_BOUND_TO_PROOF');
+ const {rows:[r]}=await db.query(`SELECT x.id,x.order_id,x.order_item_id,x.source_incident_id,x.operation_key,
+   x.quantity,x.amount_kmf::text AS amount_kmf,x.amount_eur::text AS amount_eur,x.status,
+   i.provider,i.capture_ref,i.provider_ref,i.status AS intent_status,
+   o.user_id,o.reference,o.payment_status::text AS payment_status,o.payment_mode::text AS payment_mode,
+   o.stripe_payment_id,o.paypal_capture_id,oi.quantity AS ordered_quantity,oi.qty_collected,oi.qty_refunded,
+   (i.provider='stripe' AND i.capture_ref=o.stripe_payment_id OR
+    i.provider='paypal' AND i.capture_ref=o.paypal_capture_id) AS original_capture_match
+  FROM order_item_refund_reservations x JOIN refund_execution_intents i ON i.id=x.refund_intent_id
+  JOIN orders o ON o.id=x.order_id JOIN order_items oi ON oi.id=x.order_item_id
+  WHERE x.order_id=$1 AND x.operation_key=$2`,[orderId,req.operation_key]);
+  ok(!!r&&r.id===gesture.reservation_response?.reservationId&&r.order_item_id===candidate.order_item_id&&
+  r.source_incident_id===candidate.incident_id&&r.status==='confirmed'&&r.intent_status==='confirmed'&&
+  r.quantity===1&&typeof r.provider_ref==='string'&&r.provider_ref.length>2&&
+  Number(r.amount_kmf)>0&&Number(r.amount_eur)>0,'G6_N26A_PRODUCT_GAP_RESERVATION_OR_INTENT_NOT_CONFIRMED');
+ ok(r.user_id===gesture.before?.payer_user_id&&r.reference===gesture.reference&&r.payment_status==='paid'&&
+  ['stripe_eur','paypal_eur'].includes(r.payment_mode)&&r.original_capture_match===true,
+  'G6_N26A_PRODUCT_GAP_ORIGINAL_PAYER_OR_CAPTURE_MISMATCH');
+ const beforeItem=(gesture.before?.items||[]).find(item=>item.id===candidate.order_item_id);
+ ok(beforeItem&&Number(r.qty_collected)===Number(beforeItem.qty_collected)&&
+  Number(r.qty_refunded)===Number(beforeItem.qty_refunded)+1&&
+  Number(r.qty_collected)+Number(r.qty_refunded)<=Number(r.ordered_quantity),
+  'G6_N26A_PRODUCT_GAP_QUANTITY_SETTLEMENT_MISMATCH');
+ const {rows:[effects]}=await db.query(`SELECT
+   (SELECT count(*)::int FROM order_item_refund_reservations WHERE order_id=$1) AS reservations,
+   (SELECT count(*)::int FROM refund_execution_intents WHERE order_id=$1 AND status='confirmed') AS confirmed_intents,
+   (SELECT count(*)::int FROM refunds WHERE order_id=$1 AND refund_type LIKE 'item:%' AND status='completed') AS item_refunds,
+   (SELECT count(*)::int FROM refunds WHERE order_id=$1 AND refund_type NOT LIKE 'item:%') AS legacy_refunds,
+   (SELECT count(*)::int FROM transaction_documents WHERE order_id=$1 AND document_type='refund_receipt') AS receipts,
+   (SELECT count(*)::int FROM local_item_refund_reservations WHERE order_id=$1) AS local_reservations,
+   (SELECT count(*)::int FROM wallet_credit_lots wcl JOIN wallet_transactions wt ON wt.id=wcl.transaction_id
+      WHERE wcl.source_order_id=$1 AND wt.type='credit') AS wallet_credits`,[orderId]);
+ ok(effects.reservations===1&&effects.confirmed_intents===1&&effects.item_refunds===1&&
+  effects.legacy_refunds===0&&effects.receipts===1&&effects.local_reservations===0&&effects.wallet_credits===0,
+  'G6_N26A_PRODUCT_GAP_DUPLICATE_OR_MISSING_SETTLEMENT_EFFECT');
+ ok(gesture.before?.effects?.reservations===0&&gesture.before?.effects?.refunds===0&&
+  gesture.before?.effects?.intents===0&&gesture.before?.effects?.local_reservations===0&&
+  gesture.before?.effects?.wallet_credits===0&&gesture.after?.effects?.reservations===1&&
+  gesture.after?.effects?.refunds===1&&gesture.after?.effects?.intents===1&&
+  gesture.after?.effects?.local_reservations===0&&gesture.after?.effects?.wallet_credits===0,
+  'G6_N26A_PRODUCT_GAP_BEFORE_AFTER_EFFECTS_MISMATCH');
+ return {reservation_id:r.id,intent_status:r.intent_status,provider:r.provider,
+  original_capture_match:true,quantity_refunded:1,refunds:effects.item_refunds,receipts:effects.receipts};
+}
 // N26b : la reprise physique est suivie d'une décision admin unique, motivée,
 // créditée au payeur dans la devise de marché et documentée ; aucun PSP.
 async function oracleN26b(db,{orderId,stockBefore}){
@@ -641,7 +692,7 @@ function classifyNegative(scenario,message){
  const g=new RegExp('G6_'+scenario+'_(SCREEN_MISSING|PRODUCT_GAP)').exec(m);
  return g?g[1]:null;
 }
-module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,oracleN15,oracleN16,oracleN28,oracleN32,oracleN30,oracleN31,oracleN35,oracleN36,oracleN37,oracleN38,ecoControls,snapN16,shipmentForOrder,snapJourney,snapLocalTransport,oracleN17,oracleN18,oracleN19,cancelEffects,oracleN39F1,oracleN39F2,oracleN39F3,oracleN25,oracleN26b,oracleN40,importPo,classifyNegative,oracleN08,snapN10,oracleN10};
+module.exports={NEGATIVE,isNegative,MULTI_SKU_SQL,pickTwoSkus,readMultiSkuProducts,resolveMultiSku,oracleN07,oracleN33,oracleN09,oracleN23,oracleN24,oracleCrossRelay,oracleN20,oracleN04,oracleN11,oracleN12,oracleN13,oracleN14,oracleN15,oracleN16,oracleN28,oracleN32,oracleN30,oracleN31,oracleN35,oracleN36,oracleN37,oracleN38,ecoControls,snapN16,shipmentForOrder,snapJourney,snapLocalTransport,oracleN17,oracleN18,oracleN19,cancelEffects,oracleN39F1,oracleN39F2,oracleN39F3,oracleN25,oracleN26a,oracleN26b,oracleN40,importPo,classifyNegative,oracleN08,snapN10,oracleN10};
 // N08 : une seule commande, une seule ligne, une unité, une clé consommée, aucun paiement ni réservation en double.
 async function oracleN08(db,{orderId,buyerId}){
  const {rows:[n]}=await db.query('SELECT count(*)::int AS n FROM orders WHERE user_id=$1',[buyerId]);
