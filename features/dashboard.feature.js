@@ -740,6 +740,7 @@ module.exports = {
       'tests/e2e/import-runtime-source-registry.spec.js',
       'tests/e2e/import-runtime-credentials.spec.js',
       'tests/e2e/hub-live-cockpit.spec.js',
+      'tests/e2e/hub-label-center.spec.js',
       'tests/e2e/hub-live-supply.spec.js',
       'tests/e2e/hub-live-flux-cockpit.spec.js',
       'tests/e2e/fixtures/hub-cockpit-shape.js',
