@@ -2111,7 +2111,7 @@ body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="execution"] > .
 .kmc-hub-journey { margin: 8px 0 12px; padding: 10px; border: 1px solid #d5dce4; border-radius: 8px; }
 .kmc-hub-journey:empty { display: none; }
 .kmc-hub-journey-title { display: block; margin-bottom: 8px; }
-.kmc-hub-journey-steps { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 6px; }
+.kmc-hub-journey-steps { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 6px; }
 .kmc-hub-journey-step { display: flex; flex-direction: column; gap: 4px; text-align: left; padding: 8px; border-radius: 6px; border: 1px solid #ccd5df; background: transparent; color: inherit; min-width: 0; cursor: pointer; }
 .kmc-hub-journey-step small { font-size: 12px; }
 .kmc-hub-journey-step:disabled { cursor: default; opacity: .7; }
