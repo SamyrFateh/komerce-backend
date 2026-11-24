@@ -140,7 +140,7 @@ async function resolveLabel(q,{code,marketId,relaisId=null}) {
         AND ($3::uuid IS NULL OR l.relais_id=$3)`, [scan,validScope(marketId),relaisId?validId(relaisId):null]
   );
   if(!row) throw new LabelError(404,'HUB_LABEL_NOT_FOUND');
-  return {target_type:row.target_type,allocation_id:row.allocation_id,
+  return {label_id:row.id,target_type:row.target_type,allocation_id:row.allocation_id,
     unit_number:row.unit_number,physical_unit_id:row.physical_unit_id,
     market_id:row.market_id,relais_id:row.relais_id,short_alias:row.short_alias,
     product_sku_id:row.product_sku_id,purchase_order_id:row.purchase_order_id,
