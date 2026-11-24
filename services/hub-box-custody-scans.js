@@ -30,23 +30,19 @@ function validateActor(actor,step){
   if(!actor||!actor.id||!STEPS[step]?.role.includes(actor.role))
     deny(403,'CUSTODY_ACTOR_FORBIDDEN','Acteur non habilité pour cette opération');
 }
-// Les dossiers historiques non étiquetés restent lisibles et transférables.
-// Une COMBOX étiquetée, un article étiqueté, ou une commande à référence
-// structurée déclenche la certification de custody pour tout le manifeste.
-async function needsScanCoverage(q,shipmentId){
-  const {rows:[r]}=await q.query(
-    `SELECT EXISTS (
-      SELECT 1 FROM international_shipment_hub_units h
-      WHERE h.shipment_id=$1 AND (
-        EXISTS (SELECT 1 FROM hub_scan_labels l
-          WHERE l.physical_unit_id=h.physical_unit_id AND l.target_type='COMBOX')
-        OR EXISTS (
-          SELECT 1 FROM hub_physical_unit_placements p
-          JOIN hub_purchase_allocations a ON a.id=p.allocation_id
-          JOIN orders o ON o.id=a.order_id
-          WHERE p.physical_unit_id=h.physical_unit_id AND p.removed_at IS NULL
-            AND (
-              o.reference ~ '^[A-Z]{2}-[A-Z]{2}[0-9]{2}-[A-Z][A-Z0-9]{2}[0-9]{2}
+// La nouvelle obligation QR s'applique aux étiquettes émises et aux références
+// structurées. Les expéditions historiques non étiquetées restent compatibles.
+async function needsScanCoverage(q, shipmentId) {
+  const sql = [
+    "SELECT EXISTS (SELECT 1 FROM international_shipment_hub_units h",
+    "WHERE h.shipment_id=$1 AND (",
+    "EXISTS (SELECT 1 FROM hub_scan_labels l",
+    "WHERE l.physical_unit_id=h.physical_unit_id AND l.target_type='COMBOX')",
+    "OR EXISTS (SELECT 1 FROM hub_physical_unit_placements p",
+    "JOIN hub_purchase_allocations a ON a.id=p.allocation_id",
+    "JOIN orders o ON o.id=a.order_id",
+    "WHERE p.physical_unit_id=h.physical_unit_id AND p.removed_at IS NULL",
+    "AND (o.reference ~ '^[A-Z]{2}-[A-Z]{2}[0-9]{2}-[A-Z][A-Z0-9]{2}[0-9]{2}
   const {rows:[r]}=await q.query(
     `SELECT COUNT(*)::int AS total,
             COUNT(*) FILTER (WHERE c.id IS NULL)::int AS missing
@@ -116,14 +112,12 @@ async function confirmBoxScan(market,actor,reference,input={},database=db){
   });
 }
 module.exports={STEPS,CustodyError,confirmBoxScan,requireScanCoverage,needsScanCoverage};
-
-              OR EXISTS (SELECT 1 FROM hub_scan_labels l
-                WHERE l.allocation_id=a.id AND l.target_type='ARTICLE')
-            )
-        )
-      )
-    ) AS qr_required`,[shipmentId]);
-  return r?.qr_required===true;
+",
+    "OR EXISTS (SELECT 1 FROM hub_scan_labels l",
+    "WHERE l.allocation_id=a.id AND l.target_type='ARTICLE'))) )) AS qr_required",
+  ].join(' ');
+  const {rows:[result]} = await q.query(sql, [shipmentId]);
+  return result?.qr_required === true;
 }
 async function requireScanCoverage(q,shipmentId,eventType){
   const {rows:[r]}=await q.query(
