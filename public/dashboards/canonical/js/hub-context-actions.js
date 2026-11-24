@@ -302,6 +302,7 @@
       const boxes=(data.boxes||[]).filter(box=>(box.contents||[]).some(c=>c.order_id===order.id));
       const received=pos.reduce((total,po)=>total+(po.lines||[])
         .filter(l=>l.order_id===order.id).reduce((s,l)=>s+(Number(l.received)||0),0),0);
+      const executionUrl='/admin/hub-live?'+new URLSearchParams({view:'execute',market:order.market,sel:'order:'+order.id}).toString();
       let count=0;
       let unavailable='';
       if(stage==='PO'){
@@ -341,7 +342,7 @@
               else action(menu,doc,'Organiser l’achat fournisseur · compléter les lignes',
                 'Formulaire officiel : fournisseur, référence, prix réel et quantité non couverte.',launch);
             } else {
-              workflowLink(menu,doc,'Ouvrir le sourcing manuel · Vue opérations','/admin/workspaces/operations');
+              workflowLink(menu,doc,'Ouvrir le dossier d’achat',executionUrl);
             }
           }else{
             unavailable='Aucune ligne d’achat préparée : identifier les lignes fournisseur avant de constituer la PO.';
@@ -370,9 +371,9 @@
         // trompeuse avant l'allocation physique et le contrôle du contenu.
         unavailable=received<=0?'Rien de réceptionné : préparer le carton seulement après le contrôle physique.':
           boxes.length?'Carton(s) présent(s) : contrôler le contenu et la preuve d’emballage avant la mise au départ.':
-          'Articles réceptionnés : préparer leur emballage dans le workspace Opérations du marché.';
+          'Articles réceptionnés : imprimer les étiquettes puis préparer la COMBOX du relais de destination.';
         if(received>0 && order.stage_states?.cartons!=='complete'){
-          workflowLink(menu,doc,'Ouvrir la préparation physique · Opérations','/admin/workspaces/operations');
+          workflowLink(menu,doc,'Ouvrir la préparation COMBOX',executionUrl);
         }
       }else if(stage==='Départ'){
         count+=Number(ship(menu,doc,boxes,data.open_shipments,fetchFn,refresh));
