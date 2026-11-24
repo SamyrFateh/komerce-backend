@@ -109,3 +109,14 @@ test('Hub achats : canal API et devise proviennent de la projection fournisseur,
  const manual=await getDossier({marketId},b.client);
  expect(manual.cockpit.need_batches[0]).toMatchObject({api_available:false,groups:[{lines:[{api_eligible:false,supplier_currency:null}]}]});
 });
+
+test('QR et vague : uniquement le code temporaire et les preuves d’émission, jamais l’identité du destinataire',async()=>{
+ const row={...item(3,{ordered:2,covered:2,mapped:true}),purchase_received:1,
+   article_labels_issued:1,relay_code:'YA01',delivery_wave_code:'B7Q',delivery_wave_closed_at:null};
+ const {client,queries}=makeReader([row]);
+ const d=await getDossier({marketId},client);
+ expect(d.orders[0]).toMatchObject({relay_code:'YA01',delivery_wave:{code:'B7Q',closed:false},items:[{article_labels_issued:1}]});
+ expect(queries[0].sql).toContain('w.market_id=o.market_id AND w.relais_id=o.relais_id');
+ expect(queries[0].sql).toContain('l.relais_id=o.relais_id');
+ expect(JSON.stringify(d.orders)).not.toContain('subject_recipient_id');
+});
