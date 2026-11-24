@@ -117,7 +117,8 @@ test('Kanban : sourcing vers Opérations, sans formulaire ni achat local',async(
 
 test('PO déjà liée ou lecteur : aucune action de sourcing manuel inadaptée',async({page})=>{
   await mount(page,{role:'market_operator',row:{...baseOrder,
-    current_key:'po',next_action:'Résoudre le sourcing',po:'Sourcing requis'}});
+    current_key:'po',next_action:'Résoudre le sourcing',po:'Sourcing requis',
+    stage_states:{...baseOrder.stage_states,po:'warning'}}});
   await expect(page.locator('[data-hub-inline-action="po"]')).toHaveCount(0);
   await page.locator('[data-hub-global-stage="PO"]').click();
   await expect(page.locator('[data-hub-global-menu]')).toContainText('Consultation seule');
@@ -135,13 +136,16 @@ test('focus lumineux : étape actuelle contrastée, libellée et non confondue a
   await expect(active.locator('[data-hub-focus-signal="warning"]')).toHaveText('POINT À RÉSOUDRE');
   const activeStyle=await active.evaluate(node=>{
     const css=getComputedStyle(node);
-    return {background:css.backgroundImage,foreground:css.color,shadow:css.boxShadow,
-      animation:css.animationName,font:css.fontSize};
+    return {background:css.backgroundColor,foreground:css.color,shadow:css.boxShadow,
+      animation:css.animationName,border:css.borderLeftColor,borderWidth:css.borderLeftWidth};
   });
-  expect(activeStyle.background).toContain('linear-gradient');
-  expect(activeStyle.foreground).toBe('rgb(255, 255, 255)');
+  // La palette actuelle est statique, claire et contrastée (pas d'ancien halo pulsant).
+  expect(activeStyle.background).toBe('rgb(255, 248, 240)');
+  expect(activeStyle.foreground).not.toBe(activeStyle.background);
+  expect(activeStyle.border).toBe('rgb(214, 109, 53)');
+  expect(activeStyle.borderWidth).toBe('2px');
   expect(activeStyle.shadow).not.toBe('none');
-  expect(activeStyle.animation).toContain('kmc-hub-stage-breathe');
+  expect(activeStyle.animation).toBe('none');
   await expect(page.locator('[data-hub-global-order="KM-302"]')).toHaveClass(/is-hub-active-order/);
   const completed=page.locator('[data-hub-global-order="KM-302"] [data-hub-global-stage="PO"]');
   await expect(completed).toHaveClass(/is-stage-locked/);
@@ -242,7 +246,13 @@ test('le menu suit la cellule lors du scroll puis disparaît si elle sort de la 
   const before=await menu.evaluate(el=>parseFloat(el.style.left));
   await scroll.evaluate(el=>{el.scrollLeft+=50;});
   await expect.poll(()=>menu.evaluate(el=>parseFloat(el.style.left))).toBeLessThan(before);
-  await scroll.evaluate(el=>{el.scrollLeft=el.scrollWidth;});
+  // Vérifier que la cellule sort réellement du viewport : à 900px la table
+  // peut être assez courte pour que PO reste partiellement visible au scroll max.
+  await scroll.evaluate(el=>{el.style.maxWidth='360px';el.scrollLeft=el.scrollWidth;});
+  await expect.poll(()=>cell.evaluate(el=>{
+    const r=el.getBoundingClientRect(),s=el.closest('.kmc-hub-board-scroll').getBoundingClientRect();
+    return r.right<=s.left+2||r.left>=s.right-2;
+  })).toBe(true);
   await expect(menu).toBeHidden();
 });
 
