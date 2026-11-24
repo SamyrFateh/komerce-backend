@@ -1227,7 +1227,7 @@
     // Fast, visible entry to labels; never send operators hunting below historic COMBOX.
     const labelJump=doc.createElement('button');
     labelJump.type='button';labelJump.className='kmc-hub-label-shortcut';
-    labelJump.textContent='Étiquettes QR · Télécharger PDF A4 / 80 mm';
+    labelJump.textContent='Archives QR · Réimprimer un PDF A4 / 80 mm';
     labelJump.setAttribute('data-hub-label-shortcut','');
     labelJump.addEventListener('click',()=>{context.view='labels';context.renderCurrent();});
     if(!context.decisionOnly)rootNode.appendChild(labelJump);
@@ -1576,27 +1576,12 @@
         print.addEventListener('click',event=>openLabelPrint(event,print.href));
         row.append(issue,print,pdfLink('articles',line.allocation_id,'a4'),pdfLink('articles',line.allocation_id,'thermal'));labelSection.appendChild(row);
       }
-      // Les allocations déjà placées ne figurent plus dans fillable. Réimpression
-      // des identités réellement émises uniquement ; aucun POST pour cet historique.
-      const reprints=new Map();
-      for(const box of (d.boxes||[]))for(const content of (box.contents||[])){
-        const id=String(content.allocation_id||'');
-        if(!id||labelRows.has(id)||Number(content.issued_label_count)<=0||!Number.isFinite(Number(content.issued_label_count)))continue;
-        if(!reprints.has(id))reprints.set(id,{id,ref:content.order_ref,count:Number(content.issued_label_count),boxes:new Set()});
-        reprints.get(id).boxes.add(box.reference);
-      }
-      if(reprints.size){
-        const history=doc.createElement('details');
-        history.setAttribute('data-hub-article-label-reprints','');
-        history.appendChild(text(doc,'summary','','Réimprimer des étiquettes déjà préparées · '+String(reprints.size)+' lot(s)'));
-        for(const item of reprints.values()){
-          const row=doc.createElement('div');row.className='kmc-workspace-receive-footer';
-          row.appendChild(text(doc,'span','',String(item.ref||'Commande')+' · '+Array.from(item.boxes).join(', ')+' · '+String(item.count)+' QR émis'));
-          row.append(pdfLink('articles',item.id,'a4'),pdfLink('articles',item.id,'thermal'));
-          history.appendChild(row);
-        }
-        labelSection.appendChild(history);
-      }
+      // Les réimpressions historiques sont propriétaires du centre QR, pas de ce panneau.
+      const history=doc.createElement('button');history.type='button';
+      history.setAttribute('data-hub-article-label-reprints','');
+      history.textContent='Rechercher et réimprimer des QR déjà émis';
+      history.addEventListener('click',()=>{context.view='labels';context.renderCurrent();});
+      labelSection.appendChild(history);
       boxes.appendChild(labelSection);
     }
     const packingHeading=text(doc,'h3','','Préparer les COMBOX');
@@ -2248,12 +2233,13 @@
         u.searchParams.set('atelier',key==='po'||key==='supplier'?'purchasing':key==='cartons'?'boxes':key==='departure'?'shipments':key);
         win.history.replaceState(win.history.state,'',u.pathname+u.search+u.hash);
       }
-      context.view=key==='reception'?'reception':key==='labels'?'labels':'supply';
+      context.view=key==='reception'?'reception':'supply';
       context.renderCurrent();
       let anchor=null;
       if(key==='reception'){
         anchor=Array.from(context.root.querySelectorAll('[data-receive-po]')).find(n=>pos.some(p=>p.id===n.getAttribute('data-receive-po')));
-      }else if(key==='cartons')anchor=context.root.querySelector('[data-supply-box-create]');
+      }else if(key==='labels')anchor=context.root.querySelector('[data-hub-label-printing]');
+      else if(key==='cartons')anchor=context.root.querySelector('[data-supply-box-create]');
       else if(key==='departure')anchor=context.root.querySelector('[data-supply-shipment-bar]');
       anchor?.scrollIntoView?.({block:'start',behavior:'auto'});
     };
@@ -2286,7 +2272,7 @@
     if(!isHubReadOnly(context)&&order&&['ready','progress','warning','complete','locked'].includes(j.stage_states?.cartons)){
       const labelButton=doc.createElement('button');labelButton.type='button';
       labelButton.className='kmc-workspace-tab';labelButton.setAttribute('data-hub-journey-labels','');
-      labelButton.textContent='Ouvrir les étiquettes QR';labelButton.addEventListener('click',()=>go('labels'));host.appendChild(labelButton);
+      labelButton.textContent='Archives et réimpression QR';labelButton.addEventListener('click',()=>{context.view='labels';context.renderCurrent();});host.appendChild(labelButton);
     }
   }
 
@@ -2485,8 +2471,8 @@
       const module=globalThis.KomerceHubLabelCenter;
       if(!module)station.appendChild(text(doc,'p','kmc-workspace-empty','Poste QR indisponible : recharger la page.'));
       else module.mount({host:station,doc,marketCode:context.marketCode,fetchFn:context.fetch,
-        fillable:Array.isArray(context.dossier?.fillable)?context.dossier.fillable:[],
-        act:(button,opts)=>runAction(context,button,opts)});
+        openPreparation:()=>{context.view='supply';context.renderCurrent();
+          context.root.querySelector('[data-hub-label-printing]')?.scrollIntoView?.({block:'start',behavior:'auto'});}});
     }
 
     if (view === 'relay') {
@@ -3146,7 +3132,7 @@
       initialFocus: options.forcedRelayFocus || (options.mode==='relay-execution' ? String(new URLSearchParams(String(globalThis.location?.search||'')).get('focus')||'') : ''),
       focusOnly:Boolean(options.focusOnly),
       activeRelayQueue:null,
-      view: options.focusOnly?'relay':options.mode === 'execution' ? (hubAtelier==='reception' ? 'reception' : hubAtelier==='labels' ? 'labels' : 'supply') : options.mode === 'relay-execution' && new URLSearchParams(String(globalThis.location?.search || '')).get('focus') === 'returns' ? 'returns' : undefined,
+      view: options.focusOnly?'relay':options.mode === 'execution' ? (hubAtelier==='reception' ? 'reception' : 'supply') : options.mode === 'relay-execution' && new URLSearchParams(String(globalThis.location?.search || '')).get('focus') === 'returns' ? 'returns' : undefined,
       confirm: typeof options.confirm === 'function'
         ? options.confirm
         : (typeof globalThis.confirm === 'function' ? globalThis.confirm.bind(globalThis) : () => true),
@@ -3202,6 +3188,7 @@
         const sel=hubQuery.get('sel')||'';
         const anchor=hubAtelier==='reception' && sel.startsWith('po:')
           ? Array.from(rootNode.querySelectorAll('[data-receive-po]')).find(n=>n.getAttribute('data-receive-po')===sel.slice(3))
+          : hubAtelier==='labels' ? rootNode.querySelector('[data-hub-label-printing]')
           : hubAtelier==='boxes' ? rootNode.querySelector('[data-supply-box-create]')
           : hubAtelier==='shipments' ? (sel.startsWith('box:') ? Array.from(rootNode.querySelectorAll('[data-hub-box-target]')).find(n=>n.getAttribute('data-hub-box-target')===sel.slice(4)) : null) || rootNode.querySelector('[data-supply-shipment-bar]') : null;
         anchor?.scrollIntoView?.({block:'start',behavior:'auto'});
