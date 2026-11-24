@@ -149,6 +149,7 @@
 
     // ── Actions : un seul point d'exécution, désactivé pendant la requête, état incertain → recharger et vérifier.
     async function execute(btn, options) {
+      if (ctx.purchaseOnly && state.pending > 0) return null;
       state.pending = (state.pending || 0) + 1;
       markReady();
       try {
