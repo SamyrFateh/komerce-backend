@@ -5,7 +5,7 @@
  * @layer test
  * @owner backend-core
  * @purpose Compose the exact three-unit M06 supplier package directly into one COMBOX, close it through Hub UI and verify persisted custody.
- * @db-read purchase_orders, purchase_lines, order_items, orders, products, markets, purchase_order_authorizations, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_custody_events, local_stock_allocations
+ * @db-read purchase_orders, purchase_lines, order_items, orders, products, markets, purchase_order_authorizations, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_custody_events, hub_scan_labels, hub_scan_label_box_scans, local_stock_allocations
  * @db-write none
  * @impact-areas staging-only, hub, logistics
  */
@@ -66,13 +66,16 @@ async function readState(){
  if(rows.length!==1)throw Error('G6_M06_COMBOX_PO_LINE_NOT_UNIQUE');
  const direct=(await db.query(`SELECT box.id AS box_id,box.reference,box.unit_type::text AS unit_type,
    box.state::text AS state,p.id AS placement_id,p.allocation_id,p.quantity,p.operation_type::text AS operation_type,
-   p.evidence_method::text AS evidence_method,p.evidence_ref,p.created_by
+   p.evidence_method::text AS evidence_method,p.evidence_ref,p.evidence_code,p.created_by
   FROM hub_physical_units box JOIN hub_physical_unit_placements p ON p.physical_unit_id=box.id AND p.removed_at IS NULL
   WHERE box.reference=$1 AND box.unit_type='MARKET_PARCEL' ORDER BY p.id`,[BOXREF])).rows;
  const custody=(await db.query(`SELECT e.event_type,e.from_state::text AS from_state,e.to_state::text AS to_state,e.actor_id
   FROM hub_custody_events e JOIN hub_physical_units box ON box.id=e.physical_unit_id
   WHERE box.reference=$1 ORDER BY e.created_at,e.id`,[BOXREF])).rows;
- return {...rows[0],direct,custody};
+ const scans=(await db.query(`SELECT s.label_id,l.short_alias,s.allocation_id,s.box_unit_id
+  FROM hub_scan_label_box_scans s JOIN hub_scan_labels l ON l.id=s.label_id
+  WHERE s.allocation_id=$1 ORDER BY l.unit_number`,[rows[0].allocation_id])).rows;
+ return {...rows[0],direct,custody,scans};
 }
 async function openBoxes(page){
  await humanGoto(page,BASE+'/admin/hub-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
@@ -107,6 +110,27 @@ async function gesture(actor,key,endpoint,button,validate){
   save();await actor.page.screenshot({path:path.join(OUT,key+'.png')});
   return json;
  }finally{await actor.page.unroute(url,handler);}
+}
+async function printLabels(actor,link,endpoint,key,expected){
+ const http=actor.page.waitForResponse(r=>r.url()===BASE+endpoint&&r.request().method()==='GET',{timeout:30000});
+ const popup=actor.page.waitForEvent('popup',{timeout:30000});
+ await humanClick(null,link);
+ const [preview,response]=await Promise.all([popup,http]);
+ try{
+  check(response.status()===200,'G6_HUB_PRINT_HTTP_'+key);
+  await preview.locator('.ticket').first().waitFor({state:'visible',timeout:30000});
+  const aliases=await preview.locator('.ticket .alias').allTextContents();
+  check(aliases.length===expected.length&&new Set(aliases).size===expected.length&&
+   expected.every(x=>aliases.includes(x)),'G6_HUB_PRINT_ALIAS_MISMATCH_'+key);
+  const qrSources=await preview.locator('.ticket img.qr').evaluateAll(images=>images.map(img=>img.getAttribute('src')));
+  check(qrSources.length===expected.length&&qrSources.every(src=>/^data:image\\/png;base64,/.test(src||''))&&
+   new Set(qrSources).size===expected.length,'G6_HUB_PRINT_QR_MISSING_OR_DUPLICATE_'+key);
+  const printedText=await preview.locator('body').innerText();
+  check(!printedText.includes(REF),'G6_HUB_PRINT_COMMERCIAL_REFERENCE_EXPOSED_'+key);
+  await preview.screenshot({path:path.join(OUT,key+'.png'),fullPage:true});
+  report.ui_gestures.push({action:key,method:'pointer click',http:response.status(),ticket_count:aliases.length});
+  report.hardware_status='HARDWARE_NOT_PROVEN';save();
+ }finally{await preview.close();}
 }
 async function main(){
  let browser;
@@ -144,43 +168,50 @@ async function main(){
    const boxId=(await db.query('SELECT id FROM hub_physical_units WHERE reference=$1',[BOXREF])).rows[0]?.id;
    check(UUID.test(String(boxId||'')),'G6_M06_COMBOX_CREATED_UNIT_MISSING');
    report.box_id=boxId;save();
-   section=await openBoxes(actor.page);const row=rowFor(section,actor.page);
-   await row.waitFor({state:'visible',timeout:25000});
-   const boxScan=row.locator('[data-hub-box-scan]');
-   await humanFill(null,boxScan,BOXREF);
-   const item=row.getByRole('combobox',{name:'Article réceptionné à placer dans '+BOXREF});
-   await item.waitFor({state:'visible',timeout:15000});
-   const optionEls=await item.locator('option').all();
-   const matches=[];for(const opt of optionEls){const label=(await opt.textContent())||'';if(label.includes(plan.receipt_reference))matches.push({value:await opt.getAttribute('value'),label});}
-   check(matches.length===1,'G6_M06_COMBOX_FILLABLE_UNIT_NOT_UNIQUE');
-   await humanSelect(null,item,matches[0].value);
-   // Use the operator-facing accessible labels actually rendered by the Hub screen.
-   // The old data-hub-box-evidence-method/manual-proof attributes are not emitted
-   // by operations-workspace; waiting for them blocked M06 after receipt in Chromium.
-   const method=row.getByRole('combobox',{name:'Mode de preuve du scan article dans '+BOXREF});
-   await humanSelect(null,method,'MANUAL');
-   const proofInput=row.getByRole('textbox',{name:'Preuve du constat manuel pour '+BOXREF});
-   await humanFill(null,proofInput,plan.proof_ref);
-   await humanFill(null,row.locator('input[aria-label="Quantité de cet article à placer dans '+BOXREF+'"]'),String(plan.quantity));
-   const fill=row.locator('[data-workspace-action="fill-box"]');
-   const fillBody={from_unit_id:plan.receipt_unit_id,allocation_id:plan.allocation_id,quantity:plan.quantity,
-    box_reference_scan:BOXREF,evidence_method:'MANUAL',evidence_ref:plan.proof_ref};
-   await gesture(actor,'fill-combox',API+'/boxes/'+boxId+'/fill',fill,b=>b&&
-    b.from_unit_id===fillBody.from_unit_id&&b.allocation_id===fillBody.allocation_id&&
-    Number(b.quantity)===3&&b.box_reference_scan===BOXREF&&b.evidence_method==='MANUAL'&&
-    b.evidence_ref===fillBody.evidence_ref&&Object.keys(b).sort().join(',')===
-    'allocation_id,box_reference_scan,evidence_method,evidence_ref,from_unit_id,quantity');
-   after=await readState();
-   check(after.direct.length===1&&after.direct[0].box_id===boxId&&after.direct[0].allocation_id===plan.allocation_id&&
-    Number(after.direct[0].quantity)===3&&after.direct[0].operation_type==='REPACK'&&
-    after.direct[0].evidence_method==='MANUAL'&&after.direct[0].evidence_ref===proof&&
-    after.receipt_unit_id===plan.receipt_unit_id&&
-    after.receipt_state==='SUPERSEDED'&&!!after.receipt_placement_removed_at,
-    'G6_M06_COMBOX_FILL_PG_INVALID');
+   section=await openBoxes(actor.page);
+   const articleBase=API+'/labels/articles/'+plan.allocation_id;
+   const labelRow=section.locator('[data-hub-label-printing] .kmc-workspace-receive-footer').filter({
+    has:actor.page.locator('a[href="'+articleBase+'/print?format=thermal"]')});
+   await labelRow.waitFor({state:'visible',timeout:25000});
+   const issued=await gesture(actor,'issue-article-labels',articleBase+'/issue',
+    labelRow.locator('[data-workspace-action="issue-article-labels"]'),b=>b&&Object.keys(b).length===0);
+   const aliases=(issued.labels||[]).map(x=>x.alias);
+   check(issued.type==='ARTICLE'&&issued.count===3&&aliases.length===3&&new Set(aliases).size===3,
+    'G6_M06_ARTICLE_LABEL_COUNT');
+   const persisted=(await db.query("SELECT short_alias FROM hub_scan_labels WHERE allocation_id=$1 AND target_type='ARTICLE' ORDER BY unit_number",[plan.allocation_id])).rows;
+   check(persisted.length===3&&persisted.every(x=>aliases.includes(x.short_alias)),'G6_M06_ARTICLE_LABEL_PG_INVALID');
+   await printLabels(actor,labelRow.locator('[data-hub-print-article]'),articleBase+'/print?format=thermal','print-article-labels',aliases);
+   for(const [index,alias] of aliases.entries()){
+    section=await openBoxes(actor.page);const row=rowFor(section,actor.page);
+    await row.waitFor({state:'visible',timeout:25000});
+    await humanFill(null,row.locator('[data-hub-box-scan]'),BOXREF);
+    const item=row.getByRole('combobox',{name:'Article réceptionné à placer dans '+BOXREF});
+    await item.waitFor({state:'visible',timeout:15000});
+    const matches=[];for(const opt of await item.locator('option').all()){
+     const label=(await opt.textContent())||'';if(label.includes(plan.receipt_reference))matches.push(await opt.getAttribute('value'));
+    }
+    check(matches.length===1,'G6_M06_COMBOX_FILLABLE_UNIT_NOT_UNIQUE');
+    await humanSelect(null,item,matches[0]);
+    const method=row.getByRole('combobox',{name:'Mode de preuve du scan article dans '+BOXREF});
+    await humanSelect(null,method,'SCAN');
+    await humanFill(null,row.getByRole('textbox',{name:'Code physique de l’article à placer dans '+BOXREF}),alias);
+    await humanFill(null,row.getByRole('spinbutton',{name:'Quantité de cet article à placer dans '+BOXREF}),'1');
+    await gesture(actor,'fill-combox-'+(index+1),API+'/boxes/'+boxId+'/fill',
+     row.locator('[data-workspace-action="fill-box"]'),b=>b&&b.from_unit_id===plan.receipt_unit_id&&
+      b.allocation_id===plan.allocation_id&&Number(b.quantity)===1&&b.box_reference_scan===BOXREF&&
+      b.evidence_method==='SCAN'&&b.evidence_code===alias&&Object.keys(b).length===6);
+    after=await readState();
+    check(after.direct.length===index+1&&after.scans.length===index+1&&
+     after.direct.every(x=>x.box_id===boxId&&x.allocation_id===plan.allocation_id&&Number(x.quantity)===1&&
+      x.operation_type==='REPACK'&&x.evidence_method==='SCAN')&&
+     after.scans.every(x=>x.box_unit_id===boxId&&aliases.slice(0,index+1).includes(x.short_alias)),
+     'G6_M06_COMBOX_FILL_PG_INVALID');
+   }
+   check(after.receipt_unit_id===plan.receipt_unit_id&&after.receipt_state==='SUPERSEDED'&&
+    !!after.receipt_placement_removed_at&&new Set(after.scans.map(x=>x.label_id)).size===3,'G6_M06_COMBOX_SOURCE_PG_INVALID');
    report.after_fill={receipt_state:after.receipt_state,receipt_placement_closed:!!after.receipt_placement_removed_at,
-    box_state:after.direct[0].state,placement_quantity:Number(after.direct[0].quantity),
-    operation_type:after.direct[0].operation_type,evidence_method:after.direct[0].evidence_method,
-    proof_ref_hash:digest(after.direct[0].evidence_ref),read_only:true};save();
+    box_state:after.direct[0].state,placement_quantity:3,operation_type:'REPACK',evidence_method:'SCAN',
+    label_scan_count:after.scans.length,read_only:true};save();
    section=await openBoxes(actor.page);const closeRow=rowFor(section,actor.page);
    await closeRow.waitFor({state:'visible',timeout:25000});
    await humanFill(null,closeRow.locator('[data-hub-box-scan]'),BOXREF);
@@ -194,14 +225,13 @@ async function main(){
   const after=await readState();
   const expected=['IDENTIFIED','QUALITY_CHECKED','LOCATED','ALLOCATED','PICKED','PACKED'];
   const transitions=after.custody.filter(e=>e.event_type==='STATE_TRANSITION').map(e=>[e.from_state,e.to_state]);
-  check(after.direct.length===1&&after.direct[0].box_id===report.box_id&&
-   after.direct[0].unit_type==='MARKET_PARCEL'&&after.direct[0].state==='PACKED'&&
-   Number(after.direct[0].quantity)===3&&after.direct[0].operation_type==='REPACK'&&
-   after.direct[0].evidence_ref===proof&&expected.every((state,i)=>transitions.some(t=>
+  check(after.direct.length===3&&after.scans.length===3&&new Set(after.scans.map(x=>x.label_id)).size===3&&
+   after.direct.every(x=>x.box_id===report.box_id&&x.unit_type==='MARKET_PARCEL'&&x.state==='PACKED'&&
+    Number(x.quantity)===1&&x.operation_type==='REPACK'&&x.evidence_method==='SCAN')&&expected.every((state,i)=>transitions.some(t=>
     t[0]===(i===0?'RECEIVED':expected[i-1])&&t[1]===state)),
    'G6_M06_COMBOX_POSTGRES_CUSTODY_INVALID');
   report.after={box_id:report.box_id,state:after.direct[0].state,unit_type:after.direct[0].unit_type,
-   quantity:Number(after.direct[0].quantity),placement_operation:after.direct[0].operation_type,
+   quantity:after.direct.reduce((sum,x)=>sum+Number(x.quantity),0),label_scan_count:after.scans.length,placement_operation:after.direct[0].operation_type,
    receipt_unit_id:plan.receipt_unit_id,allocation_id:plan.allocation_id,
    custody_transitions:transitions,external_payment_rows:Number(after.external_payment_rows),
    settlement_rows:Number(after.settlement_rows),local_stock_allocations_count:Number(after.local_stock_allocations_count),
