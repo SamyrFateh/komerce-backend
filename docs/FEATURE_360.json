@@ -25431,7 +25431,7 @@
               {
                 "declared": "services/order-delivery-wave-service.js",
                 "resolvedPath": "services/order-delivery-wave-service.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/order-display-snapshot.js",
