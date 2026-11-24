@@ -380,7 +380,7 @@
     };
     function paint(){
       cockpit.render(slot,{
-        document:doc,dossier,marketCode,state,isReadOnly:false,purchaseOnly:true,
+        document:doc,dossier,marketCode,state,isReadOnly:!dossier.cockpit?.viewer,purchaseOnly:true,
         act:(button,options)=>runAction(context,button,options),
         reload:context.reload,
         feedback:(message,tone)=>setFeedback(host,message,tone),
