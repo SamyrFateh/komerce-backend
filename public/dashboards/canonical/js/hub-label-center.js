@@ -20,13 +20,18 @@
   };
   const endpoint=(market,path)=>PREFIX+encodeURIComponent(market)+'/'+path;
   const safeTarget=id=>/^[0-9a-f-]{36}$/i.test(String(id||''))?id:null;
-  function mount({host,doc,marketCode,fetchFn,act,fillable=[]}){
+  function mount({host,doc,marketCode,fetchFn,openPreparation}){
     if(!host||!doc||!/^[A-Z]{2}$/.test(marketCode)||typeof fetchFn!=='function')return;
     host.replaceChildren();
     host.setAttribute('data-hub-label-center','');
     const header=el(doc,'div','kmc-hub-label-head');
     header.appendChild(el(doc,'h2','', 'Étiquettes QR · ARTICLE et COMBOX'));
-    header.appendChild(el(doc,'p','', 'Téléchargez les QR déjà émis, même si la COMBOX a quitté le Hub. Un scan identifie une unité ; seule la confirmation de l’agent valide une opération.'));
+    header.appendChild(el(doc,'p','', 'Archives et réimpression : téléchargez les QR déjà émis, même après le départ du Hub. Pour une première émission, ouvrez l’atelier physique.'));
+    if(typeof openPreparation==='function'){
+      const prepare=el(doc,'button','kmc-hub-label-reload','Ouvrir l’atelier de préparation QR');
+      prepare.type='button';prepare.setAttribute('data-hub-label-open-preparation','');
+      prepare.addEventListener('click',openPreparation);header.appendChild(prepare);
+    }
     host.appendChild(header);
     const controls=el(doc,'div','kmc-hub-label-controls');
     const search=doc.createElement('input');
@@ -97,28 +102,8 @@
           marketCode+' · relais '+(entry.relay_code||'—')+' · '+extra,
           {...entry,target_id:id}));
       }
-      const missing=new Set(issued.filter(e=>e.type==='ARTICLE').map(e=>String(e.target_id)));
-      const candidates=fillable.filter(e=>Number(e.quantity)>0&&safeTarget(e.allocation_id)&&!missing.has(String(e.allocation_id)));
-      for(const item of candidates){
-        if(chosen==='COMBOX')continue;
-        if(q&&![item.order_ref,item.product,item.relais_code].some(v=>String(v||'').toLocaleLowerCase('fr').includes(q)))continue;
-        const card=el(doc,'article','kmc-hub-label-card');
-        card.appendChild(el(doc,'strong','', 'ARTICLE · '+(item.order_ref||item.product||'Réception')));
-        card.appendChild(el(doc,'p','', marketCode+' · relais '+(item.relais_code||'—')+' · '+item.quantity+' unité(s) reçue(s), QR non émis'));
-        const create=el(doc,'button','kmc-hub-label-issue','Préparer les QR ARTICLE');
-        create.type='button';
-        create.addEventListener('click',async()=>{
-          await act(create,{
-            url:endpoint(marketCode,'labels/articles/'+encodeURIComponent(item.allocation_id)+'/issue'),
-            body:{},runningMessage:'Émission des identités QR…',
-            successMessage:'QR ARTICLE émis : PDF disponible.',
-            onSuccess:()=>load(),
-          }).catch(err=>{notice.textContent='Émission refusée : '+String(err.message||err);});
-        });
-        card.appendChild(create);list.appendChild(card);
-      }
       if(!list.children.length)list.appendChild(el(doc,'p','kmc-workspace-empty',
-        issued.length?'Aucune étiquette correspondant au filtre.':'Aucun QR émis dans ce marché : réceptionnez d’abord les articles, puis préparez leurs QR.'));
+        issued.length?'Aucune étiquette correspondant au filtre.':'Aucun QR émis dans ce marché. La première émission s’effectue dans l’atelier physique.'));
       notice.textContent=issued.length+' groupe(s) de QR émis, '+shown.length+' visible(s) (80 plus récents maximum).';
     }
     async function load(){
