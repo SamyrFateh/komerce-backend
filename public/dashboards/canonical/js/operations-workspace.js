@@ -1644,13 +1644,32 @@
       if (next && (box.contents || []).length) {
         const label = next === 'DISPATCHED' ? 'Prêt à remettre au transitaire' : `Étape suivante · ${next}`;
         const step = makeActionButton(doc, label, 'advance-box');
-        step.addEventListener('click', () => runAction(context, step, {
-          url: endpointFor(context.marketCode, `boxes/${box.unit_id}/advance`),
-          body: { to_state: next },
-          confirmMessage: next === 'DISPATCHED' ? `Confirmer que ${box.reference} est prêt pour la remise au transitaire ?` : undefined,
-          runningMessage: 'Changement d’étape…',
-          successMessage: `${box.reference} : ${next}.`,
-        }).catch(() => {}));
+        let finalBoxCode=null,applied=null;
+        if(next==='DISPATCHED'){
+          finalBoxCode=field('Scanner QR COMBOX avant sortie','Scanner l’étiquette COMBOX définitive de '+box.reference);
+          finalBoxCode.setAttribute('data-hub-final-box-scan','');
+          const finalCamera=mobileScanControls(finalBoxCode,'Caméra QR COMBOX définitive');
+          const confirmWrap=doc.createElement('label');
+          applied=doc.createElement('input');applied.type='checkbox';
+          applied.setAttribute('data-hub-box-label-applied','');
+          confirmWrap.append(applied,doc.createTextNode(' Étiquette COMBOX imprimée et physiquement collée'));
+          cell.append(finalBoxCode,finalCamera,confirmWrap);
+        }
+        step.addEventListener('click', () => {
+          if(next==='DISPATCHED'&&(!finalBoxCode.value.trim()||!applied.checked)){
+            setFeedback(context.root,'Scanner le QR COMBOX et confirmer la pose de l’étiquette avant sortie.','critical');
+            return;
+          }
+          runAction(context, step, {
+            url: endpointFor(context.marketCode, `boxes/${box.unit_id}/advance`),
+            body: {to_state:next,...(next==='DISPATCHED'?{
+              box_qr_scan:finalBoxCode.value.trim(),label_applied_confirmed:applied.checked,
+            }:{})},
+            confirmMessage: next === 'DISPATCHED' ? `Confirmer la sortie de ${box.reference} après contrôle de son QR ?` : undefined,
+            runningMessage: 'Changement d’étape…',
+            successMessage: `${box.reference} : ${next}.`,
+          }).catch(() => {});
+        });
         cell.appendChild(step);
       }
       return cell.children.length ? cell : '—';
