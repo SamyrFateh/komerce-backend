@@ -1230,7 +1230,7 @@
     labelJump.textContent='Étiquettes QR · Télécharger PDF A4 / 80 mm';
     labelJump.setAttribute('data-hub-label-shortcut','');
     labelJump.addEventListener('click',()=>{context.view='labels';context.renderCurrent();});
-    rootNode.appendChild(labelJump);
+    if(!context.decisionOnly)rootNode.appendChild(labelJump);
     const flowHost = doc.createElement('div');
     flowHost.className = 'kmc-hub-flow';
     rootNode.appendChild(flowHost);
@@ -1275,6 +1275,11 @@
       cockpitModule.render(cockpitHost, {
         document: doc, dossier: d, marketCode: context.marketCode, state: context.cockpitState,
         isReadOnly: isHubReadOnly(context),
+        decisionOnly:context.decisionOnly,
+        openDecision:poId=>{
+          const params=new URLSearchParams({view:'execute',entry:'direction',market:context.marketCode,sel:'po:'+poId});
+          doc.defaultView.location.assign('/admin/hub-live?'+params.toString());
+        },
         onSelectionChange: sel=>context.renderJourney?.(sel),
         endpoint: suffix => endpointFor(context.marketCode, suffix),
         act: (button, options) => runAction(context, button, options),
@@ -1314,6 +1319,7 @@
         cockpitHost.replaceChildren(text(doc, 'div', 'kmc-workspace-empty', 'Cockpit Hub illisible : rechargez la page (' + String((error && error.message) || error).slice(0, 120) + ').'));
       }
     }
+    if(context.decisionOnly)return;
     // Tout ce qui suit (écarts, réceptions brutes, COMBOX, expéditions) est le panneau secondaire exhaustif.
     const secondaryStart = rootNode.children.length;
     // La filiation détaillée est chargée à la demande, hors du tableau.
@@ -2302,6 +2308,14 @@
         context.marketCode+' · Identifier le bon colis, vérifier les conditions de retrait, attester la remise.';
     }
     rootNode.appendChild(header);
+    if(context.decisionOnly){
+      header.querySelector('.kmc-workspace-kicker').textContent='DIRECTION HUB · DÉCISIONS';
+      header.querySelector('.kmc-workspace-title').textContent='Direction Hub · Décisions PO';
+      header.querySelector('.kmc-workspace-subtitle').textContent=context.marketCode+' · Engagement et autorisation de paiement, sur justificatif.';
+      const back=header.querySelector('.kmc-workspace-nav-link');back.textContent='← Direction Hub';back.href='/admin/hub?branch=director';
+      rootNode.setAttribute('data-hub-decision-workspace','');
+      renderSupplySection(rootNode,ui,doc,context);return;
+    }
     if(context.mode==='execution'){
       const journey=doc.createElement('section');journey.className='kmc-hub-journey';
       journey.setAttribute('data-hub-journey','');rootNode.appendChild(journey);
@@ -3126,6 +3140,7 @@
       root: rootNode,
       fetch: fetchFn,
       marketCode,
+      decisionOnly:options.mode==='execution'&&hubQuery.get('entry')==='direction',
       mode: ['execution', 'relay-execution'].includes(options.mode) ? options.mode : 'pilot',
       user: options.user || null,
       initialFocus: options.forcedRelayFocus || (options.mode==='relay-execution' ? String(new URLSearchParams(String(globalThis.location?.search||'')).get('focus')||'') : ''),
