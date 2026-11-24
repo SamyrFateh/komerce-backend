@@ -14,6 +14,7 @@ const fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('playwright');
 const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
+const {checkM06UnitScanCustody,checkM06UnitScanLineage}=require('./canonical/m06-unit-scan-custody');
 const {login}=require('./g6-hub-commitment-chromium');
 const env=process.env;
 const M06=env.G6_CANONICAL_SCENARIO==='M06';
@@ -89,12 +90,12 @@ function checkBase(s){
    s.order[0].simulation_scope==='G6-BUYER'&&s.order[0].payment_status==='paid'&&
    s.order[0].po_status==='hub_received'&&Number(s.order[0].payment_authorizations)===1,
    'G6_M06_BOX_ORDER_SCOPE_INVALID');
-  check(s.bag.length===0&&s.placement.length===1&&
-   s.placement[0].physical_unit_id===BOX&&s.placement[0].allocation_id===ALLOCATION&&
-   Number(s.placement[0].quantity)===SC.units&&SC.items===1&&SC.units===3&&
-   s.placement[0].operation_type==='REPACK'&&s.placement[0].evidence_method==='MANUAL'&&
+  check(s.bag.length===0&&SC.items===1&&SC.units===3&&
    s.parcels.length===1&&s.parcels[0].id===PARCEL,
    'G6_M06_DIRECT_BOX_CUSTODY_INVALID');
+  // Article labels are scanned one by one: 3 distinct placement rows × 1 unit.
+  // No legacy aggregate MANUAL placement may satisfy the M06 custody oracle.
+  checkM06UnitScanCustody(s,{boxId:BOX,allocationId:ALLOCATION,units:SC.units});
   return;
  }
  check(s.order.length===SC.pos.length&&s.order.every(o=>o.id===ORDER&&o.reference===REF&&
@@ -114,10 +115,10 @@ function checkLink(s,boxId,placementIds){
  checkBase(s);
  if(M06){
   check(s.box.length===1&&s.box[0].id===boxId&&s.box[0].unit_type==='MARKET_PARCEL'&&
-   s.links.length===0&&s.effective.length===1&&s.effective[0].box_unit_id===boxId&&
-   s.effective[0].bag_unit_id===null&&s.effective[0].allocation_id===ALLOCATION&&
-   Number(s.effective[0].quantity)===SC.units&&sameSet(placementIdsOf(s),placementIds),
+   s.links.length===0&&sameSet(placementIdsOf(s),placementIds),
    'G6_M06_DIRECT_BOX_LINEAGE_INVALID');
+  // Each persisted effective row must reference exactly one scanned placement.
+  checkM06UnitScanLineage(s,{boxId,allocationId:ALLOCATION,units:SC.units,placementIds});
   return;
  }
  check(s.box.length===1&&s.box[0].id===boxId&&s.box[0].unit_type==='MARKET_PARCEL'&&
