@@ -189,3 +189,13 @@ test('Relais guidé : zone unique synchronisée sur le choix de file, non sur un
   expect(src).toContain("rootNode.setAttribute('data-relay-active-operation',key)");
   expect(src).toContain('showRelayOperation(rootNode,context.activeRelayQueue)');
 });
+
+test('Hub : retour au Kanban et station étiquettes même lorsque la file est vide', () => {
+  const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+  expect(src).toContain("execution ? '/admin/hub?branch=operations'");
+  expect(src).toContain("labels: '[data-hub-label-printing]'");
+  expect(src).toContain("if(!labelRows.size)");
+  expect(src).toContain('Aucun article reçu disponible');
+  expect(src).toContain("pdfLink('articles',line.allocation_id,'a4')");
+  expect(src).toContain("pdfLink('articles',line.allocation_id,'thermal')");
+});
