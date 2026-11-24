@@ -188,7 +188,7 @@ async function mount(page, { posts = [], failShip = false, receiveReply = null, 
   }
   await page.goto(`${ORIGIN}/admin/hub-live?view=execute`);
   await page.locator('select').first().selectOption({ label: 'KM · Comores' });
-  await expect(page.locator('h1')).toHaveText('Hub live · Dossiers');
+  await expect(page.locator('h1')).toHaveText('Opérations Hub');
   if (view) await page.locator(`[data-workspace-view="${view}"]`).click();
 }
 
@@ -237,7 +237,7 @@ test('UX1 — un 429 respecte Retry-After sans déclencher de rafraîchissement 
   await page.clock.runFor(11000);
   await secondReply;
   expect(supplyCalls).toBe(2);
-  await expect(page.locator('h1')).toHaveText('Hub live · Dossiers');
+  await expect(page.locator('h1')).toHaveText('Opérations Hub');
 });
 
 test('UX1 — trois onglets Hub / quinze minutes simulées sans 429 ni reload inutile', async ({page, context}) => {
@@ -281,7 +281,7 @@ test('UX1 — trois onglets Hub / quinze minutes simulées sans 429 ni reload in
     expect(requests).toBeLessThan(500);
     expect(responses429).toBe(0);
     expect(workspaceReloads).toBe(0); // empreinte identique : pas de rechargement complet
-    for (const tab of tabs) await expect(tab.locator('h1')).toHaveText('Hub live · Dossiers');
+    for (const tab of tabs) await expect(tab.locator('h1')).toHaveText('Opérations Hub');
   } finally {
     await Promise.all(tabs.slice(1).map(tab => tab.close()));
   }
