@@ -208,7 +208,8 @@ test('Administration : Engagement ne se confond pas avec Fournisseur ni Paiement
   await expect(menu.locator('a')).toHaveCount(0);
   await page.keyboard.press('Escape');
   await row.locator('[data-hub-admin-stage="Fournisseur"]').click({button:'right'});
-  await expect(menu.getByRole('button',{name:'Attester l’envoi fournisseur'})).toBeVisible();
+  await expect(menu.getByRole('link',{name:/attester l’envoi fournisseur/})).toHaveAttribute('href',/market=KM&atelier=purchasing&sel=po%3A/);
+  await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);
   await expect(menu).not.toContainText('L’engagement se valide');
   await page.keyboard.press('Escape');
   await row.locator('[data-hub-admin-stage="Paiement"]').click({button:'right'});
@@ -259,7 +260,8 @@ test('le menu suit la cellule lors du scroll puis disparaît si elle sort de la 
 test('Administration : une PO transmise n’est pas une décision de la directrice',async({page})=>{
   const {posts}=await mount(page,{role:'admin',admin:true});
   await page.locator('[data-hub-admin-stage="Fournisseur"]').click({button:'right'});
-  await expect(page.getByRole('button',{name:'Attester l’envoi fournisseur'})).toBeVisible();
+  await expect(page.getByRole('link',{name:/attester l’envoi fournisseur/})).toBeVisible();
+  await expect(page.locator('[data-hub-admin-menu] [data-hub-real-action]')).toHaveCount(0);
   await expect(page.locator('[data-hub-admin-po="'+PO+'"]')).toContainText('Envoi à prouver');
   expect(posts).toHaveLength(0);
 });
