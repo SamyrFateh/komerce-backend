@@ -210,6 +210,7 @@ module.exports = {
       'tests/integration/hub-order-bag-ownership-postgres.test.js',
       'tests/unit/hub-physical-codes.test.js',
       'tests/unit/hub-opaque-labels.test.js',
+      'tests/integration/hub-opaque-labels-postgres.test.js',
       'tests/unit/hub-opaque-label-ui-contract.test.js',
       'tests/unit/hub-bag-box-ui-contract.test.js',
       'tests/unit/relais-short-code.test.js',
