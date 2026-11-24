@@ -252,3 +252,16 @@ test.describe('Étapes physiques explicites du Hub',()=>{
     expect(calls).toEqual(['GET /api/hub/board']);
   });
 });
+
+test('Kanban : tri par relais de destination et détail contextuel non redondant',async({page})=>{
+  const board={...BOARD,orders:BOARD.orders.map((o,i)=>({...o,relay_name:i?'Yaoundé Centre':'Mutsamudu Centre'}))};
+  const calls=await mount(page,'market_operator','',board);
+  await page.getByRole('searchbox',{name:'Rechercher une commande ou un marché'}).fill('Yaoundé');
+  const row=page.locator('[data-hub-global-order="CM-101"]');
+  await expect(page.locator('[data-hub-global-order]')).toHaveCount(1);
+  await expect(row.locator('[data-hub-relay-destination]')).toHaveText('Relais · Yaoundé Centre');
+  await expect(row).not.toContainText('Attendre 1 article(s) du fournisseur');
+  await row.locator('[data-hub-global-stage="Réception"]').click();
+  await expect(page.locator('[data-hub-global-menu]')).toContainText('Attendu : Attendre 1 article(s) du fournisseur');
+  expect(calls).toEqual(['GET /api/hub/board']);
+});
