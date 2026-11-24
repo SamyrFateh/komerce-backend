@@ -122,7 +122,11 @@ async function printLabels(actor,link,endpoint,key,expected){
   const aliases=await preview.locator('.ticket .alias').allTextContents();
   check(aliases.length===expected.length&&new Set(aliases).size===expected.length&&
    expected.every(x=>aliases.includes(x)),'G6_HUB_PRINT_ALIAS_MISMATCH_'+key);
-  check(await preview.locator('.ticket img.qr[src^="data:image/"]').count()===expected.length,'G6_HUB_PRINT_QR_MISSING_'+key);
+  const qrSources=await preview.locator('.ticket img.qr').evaluateAll(images=>images.map(img=>img.getAttribute('src')));
+  check(qrSources.length===expected.length&&qrSources.every(src=>/^data:image\\/png;base64,/.test(src||''))&&
+   new Set(qrSources).size===expected.length,'G6_HUB_PRINT_QR_MISSING_OR_DUPLICATE_'+key);
+  const printedText=await preview.locator('body').innerText();
+  check(!printedText.includes(REF),'G6_HUB_PRINT_COMMERCIAL_REFERENCE_EXPOSED_'+key);
   await preview.screenshot({path:path.join(OUT,key+'.png'),fullPage:true});
   report.ui_gestures.push({action:key,method:'pointer click',http:response.status(),ticket_count:aliases.length});
   report.hardware_status='HARDWARE_NOT_PROVEN';save();
