@@ -22,8 +22,12 @@ test('Hub Live compose directement les COMBOX via les routes Workspace marché',
   expect(ui).toContain("'boxes/'+encodeURIComponent(box.unit_id)+'/close'");
   expect(ui).not.toContain("'/bags'");
   expect(ui).toContain('/advance`');
-  // seul l'endpoint de confirmation canonique (feat/hub-confirm-physical-code) est autorisé
-  expect(ui.replace('/api/hub/physical-codes/confirm', '')).not.toContain('/api/hub/');
+  // Exception de lecture Direction, strictement hors atelier physique.
+  const decision=ui.slice(ui.indexOf('async function renderDirectionVariance'),ui.indexOf('function renderPayload'));
+  expect(decision).toContain("jsonRequest(context.fetch,'/api/hub/administration')");
+  expect(decision).not.toContain("method:'POST'");
+  const physical=ui.replace(decision,'');
+  expect(physical.replace('/api/hub/physical-codes/confirm','')).not.toContain('/api/hub/');
 });
 
 test('les routes de composition sont gardées par la capacité parcel.ship et le marché serveur', () => {
