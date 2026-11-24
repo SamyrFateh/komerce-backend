@@ -125,3 +125,22 @@ test('préparation COMBOX : navigation vers le dossier et le marché, sans mutat
   expect(url.searchParams.get('sel')).toBe('order:'+order.id);
   expect(fetchFn.mock.calls.every(([,opts])=>opts.method==='GET')).toBe(true);
 });
+
+test.each(['PO','Fournisseur','Réception','Cartons','Départ','Reste à solder'])('Kanban %s : aucune action métier locale, seuls les liens',async stage=>{
+  const menu=el('div');
+  menu.setAttribute('data-hub-request','1');
+  const order={id:PO_ID,reference:'KABC123',market:'CM',stage_states:{}};
+  const fetchFn=jest.fn(async()=>({ok:true,json:async()=>({purchase_orders:[{id:PO_ID,lines:[{order_id:order.id,received:2}]}],boxes:[{unit_id:PO_ID,reference:'BOX-1',contents:[{order_id:order.id}]}],needs:[]})}));
+  await load().operations(menu,{doc,fetch:fetchFn,user:{role:'agent_hub'},order,stage});
+  expect(actions(menu)).toEqual([]);
+  const links=walk(menu).filter(n=>Object.prototype.hasOwnProperty.call(n.attrs,'data-hub-workflow-link'));
+  expect(links.length).toBeGreaterThan(0);
+  for(const l of links){
+    const url=new URL(l.href,'https://staging.invalid');
+    expect(url.searchParams.get('market')).toBe('CM');
+    expect(url.searchParams.get('entry')).toBe('operations');
+    expect(url.searchParams.get('atelier')).toBeTruthy();
+    expect(url.searchParams.get('sel')).toBeTruthy();
+  }
+  expect(fetchFn.mock.calls.every(([,opts])=>opts.method==='GET')).toBe(true);
+});
