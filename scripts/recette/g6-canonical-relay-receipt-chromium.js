@@ -16,6 +16,7 @@ const {chromium}=require('playwright');
 const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
 const {readback,runtime}=require('./g6-hub-shipment-chromium');
+const {checkM06UnitScanLineage}=require('./canonical/m06-unit-scan-custody');
 const {hasExpectedRelayOrderRows}=require('./canonical/relay-order-projection-guard');
 const {planFullReceiptLines}=require('./canonical/relay-receipt-quantity-plan');
 const sameSet=(a,b)=>JSON.stringify([...a].sort())===JSON.stringify([...b].sort());
@@ -28,6 +29,7 @@ const ITEM=env.G6_DYNAMIC_FRESH_ORDER==='1'?env.G6_CANONICAL_ORDER_ITEM_ID:'8c99
 // Multi-PO (M03) : un seul colis client, N lignes IMPORT reçues en un seul geste ; défauts = chemin historique (1 ligne).
 const SC=require('./canonical/multi-po').importScope(env,{item:ITEM}),ITEMS=SC.itemIds;
 const MIXED_M03=env.G6_CANONICAL_SCENARIO==='M03';
+const M06=env.G6_CANONICAL_SCENARIO==='M06';
 const OUT=path.resolve('test-results/g6-canonical-relay-receipt');
 const {observe,fullError}=require("./canonical/observability");let OBS=null;
 const {humanGoto,humanClick,humanFill,humanSelect,humanCheck,humanPress}=require('./canonical/actors/human-gestures');
@@ -43,10 +45,19 @@ async function state(){
  const {rows:items}=await db.query('SELECT pi.order_item_id,pi.quantity,pi.qty_shipped,pi.qty_received,pi.qty_collected FROM parcel_items pi WHERE pi.parcel_id=$1',[PARCEL]);
  const {rows:receipts}=await db.query('SELECT shipment_id,order_item_id,relais_id,expected_qty,received_qty,received_by,proof_ref,incident_id FROM international_shipment_relay_receipts WHERE shipment_id=$1',[ID]);
  const {rows:events}=await db.query("SELECT event_type,from_stage,to_stage,proof_ref,actor_id FROM international_shipment_events WHERE shipment_id=$1 AND event_type='stage_changed' ORDER BY occurred_at,id",[ID]);
+ if(M06){
+  // A single M06 commercial line owns 3 separately scanned physical units.
+  // Preserve the Hub's immutable placement IDs and COMBOX lineage at the relay.
+  check(SC.items===1&&SC.units===3&&base.placement.length===SC.units,
+   'G6_M06_RELAY_SCANNED_UNIT_COUNT_INVALID');
+  checkM06UnitScanLineage(base,{boxId:env.G6_CANONICAL_BOX_ID,
+   allocationId:env.G6_CANONICAL_ALLOCATION_ID,units:SC.units,
+   placementIds:base.placement.map(p=>p.placement_id)});
+ }
  check(orders.length===1&&items.length===SC.items&&sameSet(items.map(i=>i.order_item_id),ITEMS)&&base.shipments.length===1&&base.shipments[0].id===ID&&
  base.box.length===1&&base.box[0].state==='DISPATCHED'&&
- (env.G6_CANONICAL_SCENARIO==='M06'?base.links.length===0&&base.effective.every(e=>e.bag_unit_id===null):base.links.length===1)&&
- base.effective.length===SC.items&&
+ (M06?base.links.length===0&&base.effective.every(e=>e.bag_unit_id===null):base.links.length===1)&&
+ base.effective.length===(M06?SC.units:SC.items)&&
  base.effective.reduce((n,e)=>n+Number(e.quantity),0)===SC.units,'G6_RELAY_SCOPE_DRIFT');
  return {base,orders,items,receipts,events};
 }
