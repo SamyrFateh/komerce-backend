@@ -547,7 +547,11 @@
       {
         "id": "feature:settlement",
         "name": "settlement",
-        "file": "features/settlement.feature.js"
+        "file": "features/settlement.feature.js",
+        "legacyType": "feature",
+        "status": "staging",
+        "owner": "backend-core",
+        "since": "2026-09",
         "service": "Tracer de bout en bout le règlement dû à un opérateur pays : READY attesté centralement, REQUESTED par le pays, PAID centralement, RECEIVED par le pays.",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
@@ -2240,7 +2244,9 @@
       },
       {
         "feature": "catalog",
-        "category": "serviceliers/promotion-classifier.js",
+        "category": "services",
+        "declared": "services/suppliers/promotion-classifier.js",
+        "resolvedPath": "services/suppliers/promotion-classifier.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -2652,7 +2658,12 @@
       {
         "feature": "catalog",
         "category": "migrations",
-        "declared":    "feature": "catalog",
+        "declared": "migrations/206_catalog_product_market_exposure_snapshot.sql",
+        "resolvedPath": "migrations/206_catalog_product_market_exposure_snapshot.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
         "category": "migrations",
         "declared": "migrations/218_supplier_oauth_connections.sql",
         "resolvedPath": "migrations/218_supplier_oauth_connections.sql",
@@ -7949,7 +7960,16 @@
         "declared": "tests/unit/require-dashboard-global-authority.test.js",
         "resolvedPath": "tests/unit/require-dashboard-global-authority.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
-     board",
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/admin-client-360-route.test.js",
+        "resolvedPath": "tests/unit/admin-client-360-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
         "category": "tests",
         "declared": "tests/unit/admin-client-index-route.test.js",
         "resolvedPath": "tests/unit/admin-client-index-route.test.js",
@@ -9002,7 +9022,18 @@
         "feature": "economic-engine",
         "category": "services",
         "declared": "services/pricing-market-decision-projection.js",
-        "resolvedPath": "services/pricing-market-decisioonomic-engine",
+        "resolvedPath": "services/pricing-market-decision-projection.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
+        "declared": "services/pricing-market-corridor.js",
+        "resolvedPath": "services/pricing-market-corridor.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
         "category": "services",
         "declared": "services/market-cost-attribution-service.js",
         "resolvedPath": "services/market-cost-attribution-service.js",
@@ -10183,7 +10214,12 @@
         "declared": "scripts/external-provider-batch-proof.js",
         "resolvedPath": "scripts/external-provider-batch-proof.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
-      conciliation.js",
+      },
+      {
+        "feature": "external-provider-contracts",
+        "category": "scripts",
+        "declared": "scripts/provider-certification-reconciliation.js",
+        "resolvedPath": "scripts/provider-certification-reconciliation.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -10591,7 +10627,17 @@
         "declared": "migrations/_superseded/RECONCILIATION_PROD.sql",
         "resolvedPath": "migrations/_superseded/RECONCILIATION_PROD.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
-  : "migrations",
+      },
+      {
+        "feature": "infrastructure",
+        "category": "migrations",
+        "declared": "migrations/016_add_missing_indexes.sql",
+        "resolvedPath": "migrations/016_add_missing_indexes.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "migrations",
         "declared": "migrations/018_schema_reconciliation.sql",
         "resolvedPath": "migrations/018_schema_reconciliation.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -17881,7 +17927,13 @@
         "category": "migrations",
         "declared": "migrations/288_cash_custody_recipients.sql",
         "resolvedPath": "migrations/288_cash_custody_recipients.sql",
-        "status": "resolved-on-disk-out-of-arch-scan-y_provenance_edges.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "migrations",
+        "declared": "migrations/304_cash_custody_provenance_edges.sql",
+        "resolvedPath": "migrations/304_cash_custody_provenance_edges.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -26769,7 +26821,22 @@
       },
       {
         "feature": "platform-ops",
-        "entry": "GET /api/admin/simure": "platform-ops",
+        "entry": "GET /api/admin/simulator/status",
+        "method": "GET",
+        "path": "/api/admin/simulator/status",
+        "routeFile": "routes/simulator.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "platform-ops",
+        "entry": "POST /api/admin/simulator/stop",
+        "method": "POST",
+        "path": "/api/admin/simulator/stop",
+        "routeFile": "routes/simulator.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "platform-ops",
         "entry": "GET /api/modules/:type",
         "method": "GET",
         "path": "/api/modules/{id}",
@@ -28247,7 +28314,18 @@
       {
         "feature": "local-stock",
         "fn": "releaseAllocationsForOrder",
-        "file": "services/local-stock-serviatus",
+        "file": "services/local-stock-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "local-stock",
+        "fn": "previewCheckoutFulfillmentSources",
+        "file": "services/local-stock-checkout-preview.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "transitionParcelStatus",
         "file": "services/parcel-operations.js",
         "status": "resolved"
       },
@@ -28776,7 +28854,23 @@
       {
         "feature": "orders",
         "fn": "markFailed",
-        "file": "s"orders",
+        "file": "services/payment-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "forcePaymentStatusForSimulation",
+        "file": "services/payment-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
+        "fn": "setInventoryCompletion",
+        "file": "services/order-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "orders",
         "fn": "recomputeCustomsCosts",
         "file": "services/order-mutation-service.js",
         "status": "resolved"
@@ -29732,7 +29826,15 @@
         "resolved": true
       },
       {
-        "from": "documentss",
+        "from": "documents",
+        "to": "orders",
+        "raw": "orders",
+        "resolved": true
+      },
+      {
+        "from": "documents",
+        "to": "customs",
+        "raw": "customs",
         "resolved": true
       },
       {
@@ -30195,7 +30297,18 @@
         "from": "market-autonomy",
         "to": "economic-engine",
         "raw": "economic-engine — CDR, politique marché et gate de couverture",
-            "raw": "infrastructure — db.js pour transaction et audit",
+        "resolved": true
+      },
+      {
+        "from": "market-autonomy",
+        "to": "catalog",
+        "raw": "catalog — products/SKU en lecture ; le prix global reste inchangé",
+        "resolved": true
+      },
+      {
+        "from": "market-autonomy",
+        "to": "infrastructure",
+        "raw": "infrastructure — db.js pour transaction et audit",
         "resolved": true
       },
       {
@@ -30627,7 +30740,23 @@
       {
         "from": "payments",
         "to": "incident-management",
-        "raw": "incident-management (incident persistence via in      "from": "payments",
+        "raw": "incident-management (incident persistence via incident-write-service)",
+        "resolved": true
+      },
+      {
+        "from": "payments",
+        "to": "infrastructure",
+        "raw": "infrastructure (DB, logger, Currency Boundary et bootstrap)",
+        "resolved": true
+      },
+      {
+        "from": "payments",
+        "to": "platform-ops",
+        "raw": "platform-ops (monitoring et exploitation technique)",
+        "resolved": true
+      },
+      {
+        "from": "payments",
         "to": "auth",
         "raw": "auth (garde de route et contexte identité)",
         "resolved": true
@@ -31079,7 +31208,7 @@
       {
         "from": "shared-cart",
         "to": "notifications",
-        "raw": "notifications (émission uniquement — 
+        "raw": "notifications (émission uniquement — WhatsApp création de liste)",
         "resolved": true
       },
       {
@@ -36694,7 +36823,15 @@
               },
               {
                 "sourceFileId": "routes/admin-client-index.js",
-                "targeargetFile": "middleware/auth.js"
+                "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/admin-dashboard-market.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/admin-dashboard-events.js",
+                "targetFile": "middleware/auth.js"
               },
               {
                 "sourceFileId": "routes/admin-operations-workspace.js",
@@ -40063,7 +40200,11 @@
               },
               {
                 "sourceFileId": "bootstrap/api-routes.js",
-                "ta          "targetFile": "routes/integrations-aliexpress.js"
+                "targetFile": "routes/admin/catalog-approval.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/integrations-aliexpress.js"
               },
               {
                 "sourceFileId": "bootstrap/api-routes.js",
@@ -41042,7 +41183,25 @@
               {
                 "table": "order_items",
                 "mode": "R"
-            "sourceFileId": "tests/e2e-api/inventory.stock-never-negative.e2e.test.js",
+              },
+              {
+                "table": "orders",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "inventory",
+        "to": "payments",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/e2e-api/inventory.stock-never-negative.e2e.test.js",
                 "targetFile": "routes/payments.js"
               }
             ]
@@ -43972,7 +44131,9 @@
                 "sourceFileId": "routes/notification-api.js",
                 "targetFile": "middleware/auth.js"
               },
-     "
+              {
+                "sourceFileId": "routes/alerts.js",
+                "targetFile": "middleware/auth.js"
               },
               {
                 "sourceFileId": "routes/client-notifications.js",
@@ -46918,7 +47079,11 @@
                 "targetFile": "public/boutique/js/b-catalog.js"
               },
               {
-                "sourceFileI        "sourceFileId": "public/boutique/tests/unit/b-nav.test.js",
+                "sourceFileId": "public/boutique/tests/unit/b-nav.test.js",
+                "targetFile": "public/boutique/js/b-favs.js"
+              },
+              {
+                "sourceFileId": "public/boutique/tests/unit/b-nav.test.js",
                 "targetFile": "public/boutique/js/b-pager.js"
               }
             ]
@@ -47403,7 +47568,14 @@
             "channel": "interface",
             "evidence": [
               {
-    SERVED"
+                "endpoint": "/api/purchasing/suppliers",
+                "routeFile": "routes/purchasing.js",
+                "consumerFileId": "public/boutique/js/komerce-api.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
         "from": "platform-ops",
@@ -50659,7 +50831,9 @@
     "dynamicUnresolvedByScope": {
       "backend": [
         {
-   _BUNDLES_PATH"
+          "sourceFileId": "tests/unit/modal-mobile-canonical.test.js",
+          "kind": "require",
+          "raw": "CSS_BUNDLES_PATH"
         },
         {
           "sourceFileId": "tests/unit/canonical-purchasing-workspace-boundary.test.js",
@@ -53762,7 +53936,17 @@
       "writers": [
         {
           "feature": "logistics",
-          " "writers": [
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "single-writer"
+    },
+    "loyalty_rewards": {
+      "writers": [
         {
           "feature": "loyalty",
           "mode": "RW",
@@ -54428,6 +54612,20 @@
     "manual_purchase_executions": {
       "writers": [
         {
+          "feature": "purchasing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "purchasing",
+      "resolution": "declared-table-owner"
+    },
+    "purchase_variance_decisions": {
+      "writers": [
+        {
+          "feature": "purchasing",
           "mode": "RW",
           "declaredOwner": true,
           "technical": false
@@ -54989,7 +55187,18 @@
     ],
     "debt": [
       {
-        "type": "W   "ref": "orders",
+        "type": "WRITER-NOT-OWNER",
+        "ref": "order_item_real_cost_allocations",
+        "msg": "table \"order_item_real_cost_allocations\" : lifecycle owner = economic-engine (db.tables \"!\"), mais aussi écrite par customs"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "order_items",
+        "msg": "table \"order_items\" : lifecycle owner = orders (db.tables \"!\"), mais aussi écrite par logistics"
+      },
+      {
+        "type": "WRITER-NOT-OWNER",
+        "ref": "orders",
         "msg": "table \"orders\" : lifecycle owner = orders (db.tables \"!\"), mais aussi écrite par economic-engine"
       },
       {
