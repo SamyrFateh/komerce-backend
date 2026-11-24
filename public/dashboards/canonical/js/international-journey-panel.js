@@ -71,6 +71,55 @@
       f.control.addEventListener('input',()=>f.control.setAttribute('data-edited',''));
       controls[def.name]=f.control;
       form.appendChild(f.wrapper);
+      if(def.name==='qr_code'){
+        const camera=put(form,doc.createElement('div'));
+        camera.className='kmc-journey-camera';
+        const open=put(camera,text(doc,'button','kmc-workspace-action','Scanner le QR avec le téléphone'));
+        open.type='button';open.setAttribute('data-journey-camera-start','');
+        const stop=put(camera,text(doc,'button','kmc-workspace-action','Arrêter la caméra'));
+        stop.type='button';stop.hidden=true;
+        const video=put(camera,doc.createElement('video'));
+        video.setAttribute('playsinline','');video.muted=true;video.hidden=true;
+        const cameraStatus=put(camera,text(doc,'p','kmc-journey-feedback',''));
+        let stream=null,frame=0,active=false;
+        const halt=()=>{
+          active=false;
+          if(frame&&typeof cancelAnimationFrame==='function')cancelAnimationFrame(frame);
+          frame=0;
+          if(stream){for(const track of stream.getTracks())track.stop();stream=null;}
+          video.srcObject=null;video.hidden=true;open.hidden=false;stop.hidden=true;
+        };
+        stop.addEventListener('click',halt);
+        open.addEventListener('click',async()=>{
+          try{
+            if(!navigator.mediaDevices?.getUserMedia||typeof BarcodeDetector==='undefined')
+              throw Error('Caméra QR indisponible. Saisissez le code de secours.');
+            const formats=await BarcodeDetector.getSupportedFormats();
+            if(!formats.includes('qr_code'))throw Error('Lecture QR indisponible sur ce téléphone.');
+            const detector=new BarcodeDetector({formats:['qr_code']});
+            stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+            video.srcObject=stream;video.hidden=false;
+            await video.play();
+            active=true;open.hidden=true;stop.hidden=false;
+            cameraStatus.textContent='Cadrez le QR COMBOX.';
+            const scan=async()=>{
+              if(!active)return;
+              try{
+                const results=await detector.detect(video);
+                const code=String(results?.[0]?.rawValue||'').trim();
+                if(code){
+                  f.control.value=code;
+                  f.control.setAttribute('data-edited','');
+                  halt();cameraStatus.textContent='QR lu. Vérifiez la COMBOX et confirmez le geste.';
+                  return;
+                }
+              }catch(_err){ /* camera frame not yet readable */ }
+              if(active)frame=requestAnimationFrame(scan);
+            };
+            frame=requestAnimationFrame(scan);
+          }catch(error){halt();cameraStatus.textContent=error.message||'Caméra indisponible';}
+        });
+      }
     }
     const footer=put(form,doc.createElement('div'));footer.className='kmc-journey-task-actions';
     const submit=put(footer,text(doc,'button','kmc-workspace-action','Enregistrer'));
