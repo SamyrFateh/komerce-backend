@@ -47,6 +47,7 @@ const DASHBOARD_SPECS = [
   'hub-live-execution',
   'hub-global-board',
   'hub-live-supply',
+  'hub-opaque-labels',
   'dashboard-role-matrix',
   'order-360-lineage',
   'b9-ui-truth-paths',

@@ -1110,6 +1110,23 @@ async function transitionPhysicalUnit(executor, {
   );
   if (!before) fail('HUB_PHYSICAL_UNIT_NOT_FOUND');
   if (before.state === toState) return { noop: true, unit: before };
+  if(before.unit_type==='MARKET_PARCEL'&&toState==='DISPATCHED'){
+    if(await require('./hub-opaque-labels').boxRequiresOpaqueQr(db,unitId)){
+    if(before.state!=='PACKED')fail('HUB_BOX_NOT_PACKED','Fermer la COMBOX avant sortie du Hub');
+    const scan=String(details.box_qr_scan||'').trim().toUpperCase();
+    if(!/^KQ1_[A-F0-9]{32}$/.test(scan)&&!/^[A-HJ-NP-Z2-9]{8}$/.test(scan))
+      fail('HUB_BOX_FINAL_QR_REQUIRED','Scanner l’étiquette définitive COMBOX');
+    if(details.label_applied_confirmed!==true)
+      fail('HUB_BOX_LABEL_APPLIED_REQUIRED','Confirmer la pose physique de l’étiquette COMBOX');
+    const {rows:[label]}=await db.query(
+      `SELECT id FROM hub_scan_labels
+        WHERE physical_unit_id=$1 AND target_type='COMBOX'
+          AND (qr_value=$2 OR short_alias=$2)`,
+      [unitId,scan]);
+    if(!label)fail('HUB_BOX_FINAL_QR_MISMATCH','QR COMBOX absent ou non associé au carton');
+    }
+  }
+
   if (before.state === 'QUARANTINED') {
     fail('HUB_QUARANTINE_REVALIDATION_REQUIRED', 'Utiliser revalidateQuarantinedInbound après résolution F3.');
   }
@@ -1194,6 +1211,7 @@ async function moveAllocationQuantity(executor, {
   }
 
   let verifiedCode = null;
+  let opaqueArticleLabelId = null;
   if (target.unit_type === 'HANDLING_UNIT' && target.order_id) {
     if (String(target.order_id) !== String(allocation.order_id)) fail('HUB_ORDER_BAG_ALLOCATION_MISMATCH');
     if (evidenceMethod === 'SCAN') {
@@ -1216,28 +1234,64 @@ async function moveAllocationQuantity(executor, {
     } else {
       fail('HUB_ORDER_BAG_DEPOSIT_EVIDENCE_REQUIRED');
     }
-  } else if (target.unit_type === 'MARKET_PARCEL' && evidenceMethod) {
-    if (evidenceMethod === 'SCAN') {
-      const physicalCodes = require('./hub-physical-codes');
-      let observation;
-      try {
-        observation = await physicalCodes.resolvePhysicalCode(db, {
-          purchaseOrderId: allocation.purchase_order_id,
-          code: evidenceCode,
-        });
-      } catch (error) {
-        fail('HUB_BOX_ITEM_SCAN_INVALID', error.code || 'Code physique inconnu');
-      }
-      if (!observation.confirmed || String(observation.product_sku_id) !== String(allocation.product_sku_id)) {
-        fail('HUB_BOX_ITEM_SCAN_SKU_MISMATCH');
-      }
-      verifiedCode = observation.code;
-    } else if (evidenceMethod === 'MANUAL' && typeof evidenceRef === 'string' && evidenceRef.trim().length >= 6) {
-      if (evidenceCode) fail('HUB_BOX_ITEM_MANUAL_CODE_FORBIDDEN');
-    } else {
-      fail('HUB_BOX_ITEM_EVIDENCE_REQUIRED');
+  } else if (target.unit_type === 'MARKET_PARCEL') {
+    const {rows:[policy]}=await db.query(
+      `SELECT (
+        EXISTS (SELECT 1 FROM hub_scan_labels WHERE allocation_id=$1 AND target_type='ARTICLE')
+        OR EXISTS (SELECT 1 FROM orders WHERE id=$2 AND reference ~ '^[A-Z]{2}-[A-Z]{2}[0-9]{2}-[A-Z][A-Z0-9]{2}[0-9]{2}$')
+      ) AS qr_required`,[allocationId,allocation.order_id]);
+    if(policy?.qr_required){
+    // Every physical unit placed in a COMBOX must have its own persistent Komerce QR.
+    // A supplier SKU, unsigned MANUAL flag or absence of evidence cannot bypass traceability.
+    if(evidenceMethod!=='SCAN') fail('HUB_BOX_ARTICLE_QR_REQUIRED',
+      'Étiquette ARTICLE et scan QR obligatoires avant placement en COMBOX');
+    if(moveQty!==1) fail('HUB_BOX_SCAN_ONE_ITEM_PER_OPERATION');
+    const code=String(evidenceCode||'').trim().toUpperCase();
+    if(!/^KQ1_[A-F0-9]{32}$/.test(code) && !/^[A-HJ-NP-Z2-9]{8}$/.test(code))
+      fail('HUB_BOX_ARTICLE_QR_REQUIRED','Scanner le QR ARTICLE Komerce ou son alias de secours');
+    const labels=require('./hub-opaque-labels');
+    let resolved;
+    try {
+      resolved=await labels.resolveLabel(db,{code,marketId:allocation.market_id});
+    }catch(error){
+      fail('HUB_BOX_ITEM_SCAN_INVALID',error.code||'QR inconnu');
     }
-    if (evidenceMethod === 'SCAN' && moveQty !== 1) fail('HUB_BOX_SCAN_ONE_ITEM_PER_OPERATION');
+    if(resolved.target_type!=='ARTICLE'||
+       String(resolved.allocation_id)!==String(allocationId)||
+       String(resolved.product_sku_id)!==String(allocation.product_sku_id))
+      fail('HUB_BOX_ITEM_SCAN_SKU_MISMATCH');
+    await db.query('SELECT id FROM hub_scan_labels WHERE id=$1 FOR UPDATE',[resolved.label_id]);
+    const {rows:used}=await db.query(
+      'SELECT 1 FROM hub_scan_label_box_scans WHERE label_id=$1',[resolved.label_id]);
+    if(used.length) fail('HUB_BOX_ITEM_LABEL_ALREADY_USED');
+    opaqueArticleLabelId=resolved.label_id;
+    verifiedCode=code;
+
+    } else if (evidenceMethod) {
+      // Allocation historique sans nouvelle vague et sans QR attribué :
+      // conserver les gestes valides antérieurs, jamais pour une unité étiquetée.
+      if (evidenceMethod === 'SCAN') {
+        const physicalCodes = require('./hub-physical-codes');
+        let observation;
+        try {
+          observation = await physicalCodes.resolvePhysicalCode(db, {
+            purchaseOrderId: allocation.purchase_order_id,
+            code: evidenceCode,
+          });
+        } catch (error) {
+          fail('HUB_BOX_ITEM_SCAN_INVALID', error.code || 'Code physique inconnu');
+        }
+        if (!observation.confirmed || String(observation.product_sku_id) !== String(allocation.product_sku_id)) {
+          fail('HUB_BOX_ITEM_SCAN_SKU_MISMATCH');
+        }
+        verifiedCode = observation.code;
+      } else if (evidenceMethod === 'MANUAL' && typeof evidenceRef === 'string' && evidenceRef.trim().length >= 6) {
+        if (evidenceCode) fail('HUB_BOX_ITEM_MANUAL_CODE_FORBIDDEN');
+      } else {
+        fail('HUB_BOX_ITEM_EVIDENCE_REQUIRED');
+      }
+      if (evidenceMethod === 'SCAN' && moveQty !== 1) fail('HUB_BOX_SCAN_ONE_ITEM_PER_OPERATION');
+    }
   }
 
   const { rows: placements } = await db.query(
@@ -1333,6 +1387,15 @@ async function moveAllocationQuantity(executor, {
       locationRef,
       details: { emptied_by_operation: true },
     });
+  }
+
+  if (opaqueArticleLabelId) {
+    await db.query(
+      `INSERT INTO hub_scan_label_box_scans
+       (label_id,allocation_id,from_unit_id,box_unit_id,actor_id)
+       VALUES ($1,$2,$3,$4,$5)`,
+      [opaqueArticleLabelId,allocationId,fromUnitId,toUnitId,actorId]
+    );
   }
 
   return {

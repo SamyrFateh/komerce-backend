@@ -289,8 +289,110 @@ router.get(
   }
 );
 
+// Identités QR opaques : la génération ne mute jamais réception, allocation ou custody.
+// POST explicite pour l'émission stable ; GET d'impression/relecture strictement read-only.
+const hubLabels = require('../services/hub-opaque-labels');
+router.post(
+  '/market/:marketCode/labels/articles/:allocationId/issue',
+  attachHubExecutionCapability('execution.parcel.receive'),
+  requireHubWorkspaceAction,
+  async (req,res,next)=>{
+    try{
+      const labels=await db.withTransaction(client=>hubLabels.issueArticleLabels(client,{
+        allocationId:req.params.allocationId,marketId:req.workspaceMarket.id,actorId:req.user.id,
+      }));
+      res.set('Cache-Control','private, no-store');
+      return res.status(201).json({ok:true,type:'ARTICLE',count:labels.length,
+        labels:labels.map(l=>({alias:l.short_alias,unit_number:l.unit_number}))});
+    }catch(err){return sendWorkspaceError(err,res,next);}
+  }
+);
+router.post(
+  '/market/:marketCode/labels/boxes/:unitId/issue',
+  attachHubExecutionCapability('execution.parcel.ship'),
+  requireHubWorkspaceAction,
+  async(req,res,next)=>{
+    try{
+      const label=await db.withTransaction(client=>hubLabels.issueBoxLabel(client,{
+        boxId:req.params.unitId,marketId:req.workspaceMarket.id,
+        relaisId:req.body&&req.body.relais_id,actorId:req.user.id,
+      }));
+      res.set('Cache-Control','private, no-store');
+      return res.status(201).json({ok:true,type:'COMBOX',alias:label.short_alias});
+    }catch(err){return sendWorkspaceError(err,res,next);}
+  }
+);
+async function renderProtectedHubLabels(req,res,next,type) {
+  try {
+    const labels=await hubLabels.listLabels(db,{
+      targetType:type,targetId:req.params.id,marketId:req.workspaceMarket.id,
+    });
+    const html=await hubLabels.printHtml(db,{labels,
+      marketCode:req.workspaceMarket.code,format:req.query.format||'thermal'});
+    res.set('Cache-Control','private, no-store');
+    res.set('X-Content-Type-Options','nosniff');
+    res.set('Content-Security-Policy',"default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'");
+    return res.type('html').send(html);
+  }catch(err){return sendWorkspaceError(err,res,next);}
+}
+router.get(
+  '/market/:marketCode/labels/articles/:id/print',
+  attachHubExecutionCapability('execution.parcel.receive'),
+  requireHubWorkspaceAction,
+  async(req,res,next)=>renderProtectedHubLabels(req,res,next,'ARTICLE')
+);
+router.get(
+  '/market/:marketCode/labels/boxes/:id/print',
+  attachHubExecutionCapability('execution.parcel.ship'),
+  requireHubWorkspaceAction,
+  async(req,res,next)=>renderProtectedHubLabels(req,res,next,'COMBOX')
+);
+router.get(
+  '/market/:marketCode/labels/resolve',
+  attachHubExecutionCapability('execution.parcel.receive'),
+  requireHubWorkspaceAction,
+  async(req,res,next)=>{
+    try{
+      const result=await hubLabels.resolveLabel(db,{
+        code:req.query.code,marketId:req.workspaceMarket.id,
+      });
+      res.set('Cache-Control','private, no-store');
+      return res.json({ok:true,label:result});
+    }catch(err){return sendWorkspaceError(err,res,next);}
+  }
+);
+// Relais : résolution sous authentification + identité du relais du compte.
+// Aucune entrée client ne peut sélectionner le relais d'un autre agent.
+router.get(
+  '/market/:marketCode/relay/labels/resolve',
+  attachRelayExecutionCapability('execution.parcel.receive'),
+  requireRole(['agent_relais']),
+  async(req,res,next)=>{
+    try{
+      if(!req.user||!req.user.relais_id) return res.status(403).json({code:'HUB_LABEL_RELAY_SCOPE_REQUIRED'});
+      const result=await hubLabels.resolveLabel(db,{
+        code:req.query.code,marketId:req.workspaceMarket.id,relaisId:req.user.relais_id,
+      });
+      res.set('Cache-Control','private, no-store');
+      return res.json({ok:true,label:result});
+    }catch(err){return sendWorkspaceError(err,res,next);}
+  }
+);
+
 // Composition des KOM-BOX depuis Hub Live : mêmes commandes canoniques que /api/hub/* (hub-operations), avec le marché
 // du Workspace imposé côté serveur (allocation et contenu du carton doivent appartenir au marché).
+async function boxScanMatches(q, scannedValue, box, marketId) {
+  const scanned=String(scannedValue||'').trim().toUpperCase();
+  if(scanned===String(box.reference).toUpperCase()) return true; // historical scanner compatibility
+  if(!/^KQ1_[A-F0-9]{32}$/.test(scanned) && !/^[A-HJ-NP-Z2-9]{8}$/.test(scanned)) return false;
+  try {
+    const label=await hubLabels.resolveLabel(q,{code:scanned,marketId});
+    return label.target_type==='COMBOX' && String(label.physical_unit_id)===String(box.id);
+  } catch(error) {
+    if(error instanceof hubLabels.LabelError) return false;
+    throw error;
+  }
+}
 async function boxMarketGuard(unitId, marketId, allocationId) {
   const { rows: [unit] } = await db.query(`SELECT unit_type, reference FROM hub_physical_units WHERE id = $1`, [unitId]);
   if (!unit || unit.unit_type !== 'MARKET_PARCEL') return { status: 404, body: { error: 'KOM-BOX introuvable', code: 'BOX_NOT_FOUND' } };
@@ -302,6 +404,17 @@ async function boxMarketGuard(unitId, marketId, allocationId) {
     const { rows: own } = await db.query(
       `SELECT 1 FROM hub_purchase_allocations WHERE id = $1 AND market_id = $2`, [allocationId, marketId]);
     if (!own.length) return { status: 403, body: { error: 'Allocation d’un autre marché', code: 'ALLOCATION_MARKET_MISMATCH' } };
+    const { rows: mismatch } = await db.query(
+      `SELECT 1 FROM hub_scan_labels l
+       JOIN hub_purchase_allocations a ON a.id=$2
+       JOIN orders o ON o.id=a.order_id
+       WHERE l.physical_unit_id=$1 AND l.target_type='COMBOX'
+         AND (l.market_id<>a.market_id OR l.relais_id<>o.relais_id) LIMIT 1`,
+      [unitId, allocationId]
+    );
+    if (mismatch.length) return { status: 409, body: {
+      error:'Article destiné à un autre relais',code:'HUB_LABEL_BOX_RELAY_MISMATCH'
+    }};
   }
   return null;
 }
@@ -334,9 +447,9 @@ router.post(
       const body = req.body || {};
       const refused = await boxMarketGuard(req.params.unitId, req.workspaceMarket.id, body.allocation_id);
       if (refused) return res.status(refused.status).json(refused.body);
-      const { rows: [box] } = await db.query('SELECT reference FROM hub_physical_units WHERE id=$1', [req.params.unitId]);
-      if (String(body.box_reference_scan || '').trim() !== box.reference) {
-        return res.status(409).json({ error: 'Scannez la référence de la COMBOX cible', code: 'HUB_BOX_SCAN_MISMATCH' });
+      const { rows: [box] } = await db.query('SELECT id,reference FROM hub_physical_units WHERE id=$1', [req.params.unitId]);
+      if (!await boxScanMatches(db,body.box_reference_scan,box,req.workspaceMarket.id)) {
+        return res.status(409).json({ error: 'Scannez la référence ou le QR de la COMBOX cible', code: 'HUB_BOX_SCAN_MISMATCH' });
       }
       if (!['SCAN','MANUAL'].includes(String(body.evidence_method || '').trim().toUpperCase())) {
         return res.status(400).json({ error: 'Le scan article ou sa preuve manuelle est obligatoire', code: 'HUB_BOX_ITEM_EVIDENCE_REQUIRED' });
@@ -366,8 +479,8 @@ router.post(
           [req.params.unitId]
         );
         if (!box) throw Object.assign(new Error('COMBOX introuvable'), { status: 404, code: 'BOX_NOT_FOUND' });
-        if (String(body.box_reference_scan || '').trim() !== box.reference) {
-          throw Object.assign(new Error('Scannez la référence de la COMBOX'), { status: 409, code: 'HUB_BOX_SCAN_MISMATCH' });
+        if (!await boxScanMatches(client,body.box_reference_scan,box,req.workspaceMarket.id)) {
+          throw Object.assign(new Error('Scannez la référence ou le QR de la COMBOX'), { status: 409, code: 'HUB_BOX_SCAN_MISMATCH' });
         }
         if (box.state === 'PACKED') return { id: box.id, state: box.state, already_closed: true };
         const sequence = ['RECEIVED','IDENTIFIED','QUALITY_CHECKED','LOCATED','ALLOCATED','PICKED','PACKED'];
@@ -438,9 +551,11 @@ router.post(
     try {
       const refused = await boxMarketGuard(req.params.unitId, req.workspaceMarket.id, null);
       if (refused) return res.status(refused.status).json(refused.body);
+      const body=req.body||{};
       const out = await hubOps.transitionOperatorUnitCommand({
-        unit_id: req.params.unitId, to_state: (req.body || {}).to_state,
-      }, req.user.id);
+        unit_id:req.params.unitId,to_state:body.to_state,
+        details:{box_qr_scan:body.box_qr_scan,label_applied_confirmed:body.label_applied_confirmed},
+      },req.user.id);
       return res.status(out.status).json(out.body);
     } catch (err) { return sendWorkspaceError(err, res, next); }
   }

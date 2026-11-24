@@ -71,6 +71,55 @@
       f.control.addEventListener('input',()=>f.control.setAttribute('data-edited',''));
       controls[def.name]=f.control;
       form.appendChild(f.wrapper);
+      if(def.name==='qr_code'){
+        const camera=put(form,doc.createElement('div'));
+        camera.className='kmc-journey-camera';
+        const open=put(camera,text(doc,'button','kmc-workspace-action','Scanner le QR avec le téléphone'));
+        open.type='button';open.setAttribute('data-journey-camera-start','');
+        const stop=put(camera,text(doc,'button','kmc-workspace-action','Arrêter la caméra'));
+        stop.type='button';stop.hidden=true;
+        const video=put(camera,doc.createElement('video'));
+        video.setAttribute('playsinline','');video.muted=true;video.hidden=true;
+        const cameraStatus=put(camera,text(doc,'p','kmc-journey-feedback',''));
+        let stream=null,frame=0,active=false;
+        const halt=()=>{
+          active=false;
+          if(frame&&typeof cancelAnimationFrame==='function')cancelAnimationFrame(frame);
+          frame=0;
+          if(stream){for(const track of stream.getTracks())track.stop();stream=null;}
+          video.srcObject=null;video.hidden=true;open.hidden=false;stop.hidden=true;
+        };
+        stop.addEventListener('click',halt);
+        open.addEventListener('click',async()=>{
+          try{
+            if(!navigator.mediaDevices?.getUserMedia||typeof BarcodeDetector==='undefined')
+              throw Error('Caméra QR indisponible. Saisissez le code de secours.');
+            const formats=await BarcodeDetector.getSupportedFormats();
+            if(!formats.includes('qr_code'))throw Error('Lecture QR indisponible sur ce téléphone.');
+            const detector=new BarcodeDetector({formats:['qr_code']});
+            stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+            video.srcObject=stream;video.hidden=false;
+            await video.play();
+            active=true;open.hidden=true;stop.hidden=false;
+            cameraStatus.textContent='Cadrez le QR COMBOX.';
+            const scan=async()=>{
+              if(!active)return;
+              try{
+                const results=await detector.detect(video);
+                const code=String(results?.[0]?.rawValue||'').trim();
+                if(code){
+                  f.control.value=code;
+                  f.control.setAttribute('data-edited','');
+                  halt();cameraStatus.textContent='QR lu. Vérifiez la COMBOX et confirmez le geste.';
+                  return;
+                }
+              }catch(_err){ /* camera frame not yet readable */ }
+              if(active)frame=requestAnimationFrame(scan);
+            };
+            frame=requestAnimationFrame(scan);
+          }catch(error){halt();cameraStatus.textContent=error.message||'Caméra indisponible';}
+        });
+      }
     }
     const footer=put(form,doc.createElement('div'));footer.className='kmc-journey-task-actions';
     const submit=put(footer,text(doc,'button','kmc-workspace-action','Enregistrer'));
@@ -284,6 +333,34 @@
           transform:raw=>({...raw,complete_attested:raw.complete_attested==='yes',close:true}),
         });
     }
+    // A QR read identifies a COMBOX. The agent must explicitly confirm each custody event;
+    // the shipment transition is a separate action, guarded by manifest-wide coverage.
+    const custodyStep=s.stage==='hub_ready'?'HUB_HANDOVER':
+      s.stage==='handed_over'?'CARRIER_ACCEPTED':
+      s.stage==='forwarder_received'?'CARRIER_LOADED':null;
+    const custodyRole=custodyStep==='HUB_HANDOVER'?['admin','agent_hub']:['admin','agent_transitaire'];
+    if(ctx.journeyTab==='transport'&&s.hub_draft&&custodyStep&&actorCan(ctx,custodyRole)){
+      const knownBoxes=(detail?.hub_units||[]).map(box=>box.reference).filter(Boolean);
+      put(dossier,text(doc,'p','kmc-workspace-note',
+        'Scanner chaque COMBOX du manifeste : '+(knownBoxes.join(', ')||'consulter les cartons du dossier')+
+        '. Chaque scan est confirmé séparément ; il ne déclenche jamais une transition.'));
+      const custodyTitle={
+        HUB_HANDOVER:'Hub · scanner et confirmer la remise de chaque COMBOX',
+        CARRIER_ACCEPTED:'Transitaire · scanner et accepter chaque COMBOX',
+        CARRIER_LOADED:'Transitaire · rescanner chaque COMBOX chargée dans le conteneur',
+      }[custodyStep];
+      const custodyForm=task(doc,ctx,dossier,{
+        title:custodyTitle,action:ref+'/box-scan',openByDefault:true,
+        fields:[
+          {name:'qr_code',label:'QR ou alias COMBOX lu au scanner',required:true},
+          proof,
+          {name:'confirmed',label:'J’ai physiquement contrôlé cette COMBOX',required:true,
+            options:[['','Sélectionner'],['yes','Oui, je confirme le scan']]},
+        ],
+        transform:raw=>({...raw,event_type:custodyStep,confirmed:raw.confirmed==='yes'}),
+      });
+      custodyForm.setAttribute('data-journey-custody-scan',custodyStep);
+    }
     if(canTransition(ctx,step)&&(
        ctx.journeyTab==='transport'&&['handed_over','forwarder_received','in_transit','arrived'].includes(step)||
        ctx.journeyTab==='arrival'&&step==='customs_released'||
@@ -295,8 +372,12 @@
         fields:step==='handed_over'&&s.hub_draft
           ?[{name:'forwarder_name',label:'Transitaire qui prend physiquement les cartons',required:true},
             {name:'transport_mode',label:'Mode de transport',required:true,options:[['sea','Bateau'],['air','Avion']]},proof,note]
-          :[proof,note],
-        transform:raw=>({...raw,to_stage:step}),
+          :step==='in_transit'&&s.hub_draft
+            ?[proof,{name:'container_sealed',label:'Conteneur fermé et départ physiquement attesté',
+                required:true,options:[['','Sélectionnez'],['yes','Oui, fermeture et départ confirmés']]},note]
+            :[proof,note],
+        transform:raw=>({...raw,to_stage:step,
+          ...(step==='in_transit'&&s.hub_draft?{container_sealed:raw.container_sealed==='yes'}:{})}),
       });
       transitionTask.setAttribute('data-journey-next-task','');
     }

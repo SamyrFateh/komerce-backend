@@ -1380,6 +1380,29 @@
     });
     const BOX_MUTABLE = new Set(['RECEIVED', 'IDENTIFIED', 'QUALITY_CHECKED', 'LOCATED', 'ALLOCATED', 'PICKED']);
     const fillable = Array.isArray(d.fillable) ? d.fillable : [];
+    // Le fetch canonique transporte l'authentification du dashboard ; un lien
+    // API direct ne la transmet pas forcément. Ouvrir la fenêtre sur le clic,
+    // puis charger l'HTML local authentifié dans un Blob imprimable.
+    const openLabelPrint = async(event,href)=>{
+      event.preventDefault();
+      const popup=typeof window!=='undefined'?window.open('about:blank','_blank'):null;
+      if(!popup){
+        setFeedback(context.root,'Autorisez l’ouverture de la fenêtre d’impression dans le navigateur.','critical');
+        return;
+      }
+      try{
+        const response=await context.fetch(href,{method:'GET',credentials:'include',headers:{Accept:'text/html'}});
+        if(!response.ok)throw new Error('HTTP '+response.status+' · émettez d’abord les étiquettes');
+        const documentBlob=await response.blob();
+        const printUrl=URL.createObjectURL(documentBlob);
+        popup.location.href=printUrl;
+        // Un document Blob doit rester disponible pendant l'ouverture/impression.
+        popup.addEventListener('pagehide',()=>URL.revokeObjectURL(printUrl),{once:true});
+      }catch(error){
+        popup.close();
+        setFeedback(context.root,'Impression indisponible : '+String(error.message||'erreur'),'critical');
+      }
+    };
     const createBar = doc.createElement('div');
     createBar.className = 'kmc-workspace-receive-footer';
     createBar.setAttribute('data-supply-box-create', '');
@@ -1406,16 +1429,136 @@
     [newRef, newBox].forEach(node => createBar.appendChild(node));
     boxes.appendChild(createBar);
 
+    // La caméra est une entrée de code : seule l'action opérateur confirme ensuite le
+    // placement. Aucune mutation métier pendant l'ouverture ou la lecture de la caméra.
+    const mobileScanControls = (input, name, afterScan) => {
+      const wrap=doc.createElement('div');
+      const start=makeActionButton(doc,'Scanner par caméra','scan-camera');
+      const stop=makeActionButton(doc,'Arrêter la caméra','stop-camera');
+      const video=doc.createElement('video');
+      start.type='button';stop.type='button';stop.hidden=true;video.hidden=true;
+      video.autoplay=true;video.muted=true;
+      video.setAttribute('playsinline','');
+      video.style.cssText='width:100%;max-width:300px;max-height:270px;object-fit:cover;border-radius:8px';
+      video.style.display='none';
+      let active=false,stream=null,frame=null;
+      const end=()=>{
+        active=false;
+        if(frame!==null && typeof cancelAnimationFrame==='function')cancelAnimationFrame(frame);
+        frame=null;
+        if(stream)stream.getTracks().forEach(track=>track.stop());
+        stream=null;video.srcObject=null;video.hidden=true;video.style.display='none';
+        stop.hidden=true;start.hidden=false;start.disabled=false;
+      };
+      stop.addEventListener('click',end);
+      start.addEventListener('click',async()=>{
+        if(active)return;
+        if(typeof navigator==='undefined'||!navigator.mediaDevices?.getUserMedia||
+           typeof globalThis.BarcodeDetector!=='function'){
+          setFeedback(context.root,'Caméra QR non disponible : Chrome Android HTTPS requis, ou saisie du code de secours.','critical');
+          return;
+        }
+        start.disabled=true;
+        try{
+          const supported=await globalThis.BarcodeDetector.getSupportedFormats();
+          const formats=['qr_code','code_128','ean_13','ean_8'].filter(v=>supported.includes(v));
+          if(!formats.length)throw new Error('Format QR non pris en charge');
+          const detector=new globalThis.BarcodeDetector({formats});
+          stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+          video.srcObject=stream;video.hidden=false;video.style.display='block';
+          stop.hidden=false;start.hidden=true;active=true;
+          await video.play();
+          const scan=async()=>{
+            if(!active)return;
+            if(!video.isConnected || (typeof document!=='undefined'&&document.hidden)){end();return;}
+            try{
+              const codes=await detector.detect(video);
+              const raw=codes.find(c=>String(c.rawValue||'').trim());
+              if(raw){
+                const value=String(raw.rawValue).trim();
+                end();
+                input.value=value;
+                input.dispatchEvent(new Event('input',{bubbles:true}));
+                if(afterScan)await afterScan(value);
+                return;
+              }
+            }catch(error){setFeedback(context.root,'Lecture caméra : '+String(error.message||'erreur'),'critical');}
+            if(active)frame=requestAnimationFrame(scan);
+          };
+          frame=requestAnimationFrame(scan);
+        }catch(error){
+          end();setFeedback(context.root,'Accès caméra refusé ou indisponible : '+String(error.message||'autorisation requise'),'critical');
+        }
+      });
+      wrap.append(start,stop,video);
+      wrap.setAttribute('aria-label',name);
+      return wrap;
+    };
+
+    // Les articles à étiqueter viennent des allocations physiquement reçues.
+    // Un second clic est nécessaire pour imprimer après l'émission idempotente.
+    const labelRows=new Map();
+    fillable.filter(line=>Number(line.quantity)>0).forEach(line=>{
+      if(!labelRows.has(String(line.allocation_id)))labelRows.set(String(line.allocation_id),line);
+    });
+    if(labelRows.size){
+      const labelSection=doc.createElement('div');
+      labelSection.setAttribute('data-hub-label-printing','');
+      labelSection.appendChild(text(doc,'strong','', 'Étiquettes articles · après réception physique'));
+      for(const line of labelRows.values()){
+        const row=doc.createElement('div');
+        row.className='kmc-workspace-receive-footer';
+        row.appendChild(text(doc,'span','',String(line.product||'Article')+' · '+String(line.relais_code||'relais')));
+        const issue=makeActionButton(doc,'Préparer les QR','issue-article-labels');
+        issue.addEventListener('click',()=>runAction(context,issue,{
+          url:endpointFor(context.marketCode,'labels/articles/'+encodeURIComponent(line.allocation_id)+'/issue'),
+          body:{},runningMessage:'Création des étiquettes reçues…',
+          successMessage:result=>String(result.count)+' QR article(s) disponibles à imprimer.',
+        }).catch(()=>{}));
+        const print=doc.createElement('a');
+        print.href=endpointFor(context.marketCode,'labels/articles/'+encodeURIComponent(line.allocation_id)+'/print?format=thermal');
+        print.target='_blank';print.rel='noopener';
+        print.textContent='Imprimer les QR';
+        print.setAttribute('data-hub-print-article','');
+        print.addEventListener('click',event=>openLabelPrint(event,print.href));
+        row.append(issue,print);labelSection.appendChild(row);
+      }
+      boxes.appendChild(labelSection);
+    }
+
     const composeCell = box => {
       const cell = doc.createElement('div');
       cell.className = 'kmc-workspace-box-compose';
+      // L'étiquette COMBOX finale n'est émise qu'après fermeture (PACKED).
+      // La destination se déduit du manifeste physique, jamais d'un choix arbitraire.
+      if(['PACKED','DISPATCHED'].includes(box.state)){
+        const createQr=makeActionButton(doc,'Préparer QR COMBOX','issue-box-label');
+        createQr.addEventListener('click',()=>runAction(context,createQr,{
+          url:endpointFor(context.marketCode,'labels/boxes/'+encodeURIComponent(box.unit_id)+'/issue'),
+          body:{},
+          runningMessage:'Attribution du QR de cette COMBOX fermée…',
+          successMessage:'QR COMBOX définitif prêt à imprimer.',
+        }).catch(()=>{}));
+        const printBox=doc.createElement('a');
+        printBox.href=endpointFor(context.marketCode,'labels/boxes/'+encodeURIComponent(box.unit_id)+'/print?format=thermal');
+        printBox.target='_blank';printBox.rel='noopener';
+        printBox.textContent='Imprimer QR COMBOX';
+        printBox.setAttribute('data-hub-print-box','');
+        printBox.addEventListener('click',event=>openLabelPrint(event,printBox.href));
+        cell.append(createQr,printBox);
+      }else{
+        cell.appendChild(text(doc,'small','kmc-workspace-note','Étiquette COMBOX après fermeture et contrôle du contenu.'));
+      }
+      const readyBoxCode=value=>value===box.reference||
+        /^KQ1_[A-F0-9]{32}$/i.test(String(value||''))||
+        /^[A-HJ-NP-Z2-9]{8}$/i.test(String(value||''));
       if (BOX_MUTABLE.has(box.state)) {
         const boxScan=field('Scanner la COMBOX','Scanner la référence de la COMBOX '+box.reference);
         boxScan.setAttribute('data-hub-box-scan','');
         context.hubVerifiedBoxes=context.hubVerifiedBoxes||{};
         boxScan.value=context.hubVerifiedBoxes[String(box.unit_id)]||'';
         boxScan.addEventListener('input',()=>{
-          if(boxScan.value.trim()===box.reference)context.hubVerifiedBoxes[String(box.unit_id)]=box.reference;
+          if(readyBoxCode(boxScan.value.trim()))context.hubVerifiedBoxes[String(box.unit_id)]=boxScan.value.trim();
           else delete context.hubVerifiedBoxes[String(box.unit_id)];
         });
         const options=fillable.filter(line=>Number(line.quantity)>0);
@@ -1441,8 +1584,8 @@
         };
         method.addEventListener('change',syncMethod);
         const fill=()=>{
-          if(boxScan.value.trim()!==box.reference){
-            setFeedback(context.root,'Scannez d’abord la référence de cette COMBOX.','critical'); return;
+          if(!readyBoxCode(boxScan.value.trim())){
+            setFeedback(context.root,'Scannez la référence ou le QR de cette COMBOX.','critical'); return;
           }
           const line=options[Number(item.value)]; if(!line)return;
           const manual=method.value==='MANUAL';
@@ -1464,14 +1607,29 @@
           }).catch(()=>{});
         };
         add.disabled=!options.length;
-        [boxScan,item,method,code,proof,qty,add].forEach(node=>cell.appendChild(node));
+        const boxCamera=mobileScanControls(boxScan,'Caméra QR COMBOX');
+        const itemCamera=mobileScanControls(code,'Caméra QR article',async raw=>{
+          if(!/^KQ1_[A-F0-9]{32}$/i.test(raw)&&!/^[A-HJ-NP-Z2-9]{8}$/i.test(raw))return;
+          try{
+            const resolved=await jsonRequest(context.fetch,endpointFor(context.marketCode,
+              'labels/resolve')+'?'+new URLSearchParams({code:raw}));
+            if(resolved.label?.target_type!=='ARTICLE')throw new Error('Ce QR ne correspond pas à un article');
+            const index=options.findIndex(line=>String(line.allocation_id)===String(resolved.label.allocation_id));
+            if(index<0)throw new Error('Cet article ne figure pas parmi les quantités disponibles');
+            item.value=String(index);method.value='SCAN';syncMethod();code.value=raw;
+            setFeedback(context.root,'Article reconnu · vérifiez la COMBOX puis validez le placement.','success');
+          }catch(error){
+            code.value='';setFeedback(context.root,'QR non autorisé ou non disponible : '+String(error.message||'contrôle requis'),'critical');
+          }
+        });
+        [boxScan,boxCamera,item,method,code,itemCamera,proof,qty,add].forEach(node=>cell.appendChild(node));
         code.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();fill();}});
         proof.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();fill();}});
         add.addEventListener('click',fill);
         if((box.contents||[]).length){
           const close=makeActionButton(doc,'Fermer la COMBOX','close-box');
           close.addEventListener('click',()=>{
-            if(boxScan.value.trim()!==box.reference){setFeedback(context.root,'Scannez la COMBOX avant fermeture.','critical');return;}
+            if(!readyBoxCode(boxScan.value.trim())){setFeedback(context.root,'Scannez la COMBOX avant fermeture.','critical');return;}
             runAction(context,close,{
               url:endpointFor(context.marketCode,'boxes/'+encodeURIComponent(box.unit_id)+'/close'),
               body:{box_reference_scan:boxScan.value.trim()},
@@ -1486,13 +1644,32 @@
       if (next && (box.contents || []).length) {
         const label = next === 'DISPATCHED' ? 'Prêt à remettre au transitaire' : `Étape suivante · ${next}`;
         const step = makeActionButton(doc, label, 'advance-box');
-        step.addEventListener('click', () => runAction(context, step, {
-          url: endpointFor(context.marketCode, `boxes/${box.unit_id}/advance`),
-          body: { to_state: next },
-          confirmMessage: next === 'DISPATCHED' ? `Confirmer que ${box.reference} est prêt pour la remise au transitaire ?` : undefined,
-          runningMessage: 'Changement d’étape…',
-          successMessage: `${box.reference} : ${next}.`,
-        }).catch(() => {}));
+        let finalBoxCode=null,applied=null;
+        if(next==='DISPATCHED'){
+          finalBoxCode=field('Scanner QR COMBOX avant sortie','Scanner l’étiquette COMBOX définitive de '+box.reference);
+          finalBoxCode.setAttribute('data-hub-final-box-scan','');
+          const finalCamera=mobileScanControls(finalBoxCode,'Caméra QR COMBOX définitive');
+          const confirmWrap=doc.createElement('label');
+          applied=doc.createElement('input');applied.type='checkbox';
+          applied.setAttribute('data-hub-box-label-applied','');
+          confirmWrap.append(applied,text(doc,'span','',' Étiquette COMBOX imprimée et physiquement collée'));
+          cell.append(finalBoxCode,finalCamera,confirmWrap);
+        }
+        step.addEventListener('click', () => {
+          if(next==='DISPATCHED'&&(!finalBoxCode.value.trim()||!applied.checked)){
+            setFeedback(context.root,'Scanner le QR COMBOX et confirmer la pose de l’étiquette avant sortie.','critical');
+            return;
+          }
+          runAction(context, step, {
+            url: endpointFor(context.marketCode, `boxes/${box.unit_id}/advance`),
+            body: {to_state:next,...(next==='DISPATCHED'?{
+              box_qr_scan:finalBoxCode.value.trim(),label_applied_confirmed:applied.checked,
+            }:{})},
+            confirmMessage: next === 'DISPATCHED' ? `Confirmer la sortie de ${box.reference} après contrôle de son QR ?` : undefined,
+            runningMessage: 'Changement d’étape…',
+            successMessage: `${box.reference} : ${next}.`,
+          }).catch(() => {});
+        });
         cell.appendChild(step);
       }
       return cell.children.length ? cell : '—';

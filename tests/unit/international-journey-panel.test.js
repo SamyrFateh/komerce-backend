@@ -106,7 +106,10 @@ test('remise transitaire visible par défaut pour le Hub, sans ouvrir les action
     expect(tasks[0].open).toBe(true);
     expect(all(tasks[0],n=>n.tagName==='BUTTON'&&n.type==='submit')).toHaveLength(1);
     expect(all(tasks[0],n=>n.name==='proof_ref')[0].required).toBe(true);
-    expect(all(root,n=>n.tagName==='DETAILS'&&n!==tasks[0]).every(n=>!n.open)).toBe(true);
+    const custody=all(root,n=>n.attributes?.['data-journey-custody-scan']==='HUB_HANDOVER');
+    expect(custody).toHaveLength(1);
+    expect(custody[0].open).toBe(true);
+    expect(all(root,n=>n.tagName==='DETAILS'&&n!==tasks[0]&&n!==custody[0]).every(n=>!n.open)).toBe(true);
   }
   for(const role of ['agent_transitaire','market_operator','agent_relais']){
     expect(findTask(mount(role,'transport',data).root)).toHaveLength(0);
@@ -167,4 +170,17 @@ test('Bloc de guidage Shipping responsive, sans modifier les états ni créer un
   expect(source).toContain("transitionTask.setAttribute('data-journey-next-task','');");
   expect(source).toContain("transitionTask.scrollIntoView?.({block:'start',behavior:'auto'});");
   expect(source).not.toContain('window.prompt');
+});
+
+test('la chaîne COMBOX expose un scan distinct par étape et aucune action au responsable lecture seule',()=>{
+  const hub=mount('agent_hub','transport',{stage:'hub_ready',hub_draft:true});
+  expect(all(hub.root,n=>n.attributes?.['data-journey-custody-scan']==='HUB_HANDOVER')).toHaveLength(1);
+  const accepted=mount('agent_transitaire','transport',{stage:'handed_over',hub_draft:true});
+  expect(all(accepted.root,n=>n.attributes?.['data-journey-custody-scan']==='CARRIER_ACCEPTED')).toHaveLength(1);
+  const loaded=mount('agent_transitaire','transport',{stage:'forwarder_received',hub_draft:true});
+  expect(all(loaded.root,n=>n.attributes?.['data-journey-custody-scan']==='CARRIER_LOADED')).toHaveLength(1);
+  const names=all(loaded.root,n=>n.tagName==='SELECT'||n.tagName==='INPUT').map(n=>n.name);
+  expect(names).toContain('container_sealed');
+  const readOnly=mount('market_operator','transport',{stage:'handed_over',hub_draft:true});
+  expect(all(readOnly.root,n=>n.attributes?.['data-journey-custody-scan']!==undefined)).toHaveLength(0);
 });

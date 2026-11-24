@@ -123,6 +123,14 @@ jest.mock('../../db', () => ({
   }),
 }));
 
+const mockConfirmBoxCustodyScan = jest.fn();
+jest.mock('../../services/hub-box-custody-scans', () => ({
+  CustodyError: class CustodyError extends Error {
+    constructor(status,code,message){ super(message); this.status=status; this.code=code; }
+  },
+  confirmBoxScan: (...args) => mockConfirmBoxCustodyScan(...args),
+}));
+
 const express = require('express');
 const request = require('supertest');
 const router = require('../../routes/admin-shipping-customs-workspace');
@@ -179,6 +187,7 @@ beforeEach(() => {
   mockJourneyFreight.mockResolvedValue({amount_kmf:'12000'});
   mockJourneyCustoms.mockResolvedValue({customs_reference:'CUS-001'});
   mockJourneyCost.mockResolvedValue({cost_id:'cost-1'});
+  mockConfirmBoxCustodyScan.mockResolvedValue({event_type:'HUB_HANDOVER',confirmed:true,box_unit_id:'box-1'});
 
   mockCreateCustomsShipment.mockResolvedValue({ shipment: { reference: 'CUS-CM-001' } });
   mockUpdateCustomsShipment.mockResolvedValue({ shipment: { reference: 'CUS-CM-001' } });
@@ -489,4 +498,24 @@ describe('G6-E retenue en douane (N17 / N18)', () => {
   test('admin libère', async () => {
     expect((await request(app()).post(`${base}/CM/customs/shipments/D-1/release`).send({})).status).toBe(200);
   });
+});
+
+test('le scan QR international est un geste protégé, sans transition automatique',async()=>{
+  const url='/api/admin/workspaces/shipping-customs/market/CM/international/INT-CM-001/box-scan';
+  mockUserRole='market_operator';
+  const denied=await request(app()).post(url).send({event_type:'HUB_HANDOVER',qr_code:'KQ1_TEST'});
+  expect(denied.status).toBe(403);
+  expect(mockConfirmBoxCustodyScan).not.toHaveBeenCalled();
+
+  mockUserRole='agent_hub';
+  mockTransitMarketCodes=new Set(['CM']);
+  const body={event_type:'HUB_HANDOVER',qr_code:'KQ1_TEST',confirmed:true,proof_ref:'SCAN-001'};
+  const ok=await request(app()).post(url).send(body);
+  expect(ok.status).toBe(201);
+  expect(mockConfirmBoxCustodyScan).toHaveBeenCalledWith(
+    expect.objectContaining({id:'market-cm-id',code:'CM'}),
+    expect.objectContaining({role:'agent_hub'}),
+    'INT-CM-001',expect.objectContaining(body)
+  );
+  expect(mockJourneyTransition).not.toHaveBeenCalled();
 });
