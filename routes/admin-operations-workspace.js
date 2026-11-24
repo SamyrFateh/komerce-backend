@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        authenticated_operator, requested_market_code, workspace_action
  * @outputs       authorized_operations_workspace_projection, authorized_domain_mutations
- * @depends       db, middleware/auth, middleware/require-market-execution-capability, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/operations-workspace
+ * @depends       db, middleware/auth, middleware/require-market-execution-capability, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/operations-workspace, services/hub-global-board
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, users, relais, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, dashboard_global_access_grants, hub_physical_units, hub_physical_unit_placements, hub_purchase_allocations, hub_box_bags, orders, purchase_orders
  * @db-write      none
