@@ -6930,7 +6930,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 196,
+            "count": 197,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -7620,6 +7620,11 @@
               {
                 "declared": "dashboards/canonical/js/hub-context-actions.js",
                 "resolvedPath": "public/dashboards/canonical/js/hub-context-actions.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/hub-label-center.js",
+                "resolvedPath": "public/dashboards/canonical/js/hub-label-center.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -8335,7 +8340,7 @@
             ]
           },
           "tests": {
-            "count": 213,
+            "count": 215,
             "files": [
               {
                 "declared": "playwright.config.js",
@@ -8425,6 +8430,11 @@
               {
                 "declared": "tests/e2e/hub-global-board.spec.js",
                 "resolvedPath": "tests/e2e/hub-global-board.spec.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e/hub-label-center.spec.js",
+                "resolvedPath": "tests/e2e/hub-label-center.spec.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -9163,6 +9173,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/hub-label-center.test.js",
+                "resolvedPath": "tests/unit/hub-label-center.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/hub-live-journey.test.js",
                 "resolvedPath": "tests/unit/hub-live-journey.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -9405,7 +9420,7 @@
             ]
           }
         },
-        "totalFiles": 489,
+        "totalFiles": 492,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
