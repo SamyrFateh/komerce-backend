@@ -1023,3 +1023,12 @@ Chaque étiquette `ARTICLE` correspond à un couple unique (allocation d'achat, 
 
 La table `hub_scan_label_box_scans` est **prévue, non confirmée live sur Railway**. Sa clé primaire `label_id` ne permet qu'une preuve de premier placement par identité article et interdit de réutiliser un même QR pour deux mouvements COMBOX. Elle conserve l'allocation physique, l'unité source, la COMBOX cible, l'acteur et l'horodatage. L'écriture est dans la transaction du writer de déplacement Hub (REPACK) ; un QR n'est qu'une preuve d'identité, jamais un droit de mutation autonome. Le moteur maintient les gardes de quantité, d'autorisation et de destination. Les événements de custody existants restent l'autorité de traçabilité.
 <!-- /schema-pending -->
+
+
+<!-- schema-pending: hub_box_custody_scans (migration 428, intended_migration_schema; non live avant déploiement) -->
+### Preuves de scans de garde des COMBOX (migration 428 — intended_migration_schema)
+
+La table `hub_box_custody_scans` est **prévue, non confirmée live sur Railway**. Elle associe chaque COMBOX d'un manifeste d'expédition et son étiquette QR opaque à trois attestations physiques **distinctes et append-only** : `HUB_HANDOVER` (remise Hub), `CARRIER_ACCEPTED` (réception transitaire) et `CARRIER_LOADED` (second scan de chargement par le transitaire). La contrainte UNIQUE `(shipment_id, box_unit_id, event_type)` refuse une double confirmation. Acteur, justificatif et horodatage sont conservés ; le QR ne contient aucune donnée personnelle.
+
+Ces événements n'avancent **jamais** un statut d'expédition au simple scan : la transition reste un acte explicite. Pour un dossier Hub nouvellement préparé, le serveur exige la couverture **de toutes les COMBOX du manifeste** avant les transitions `handed_over`, `forwarder_received` et `in_transit` ; le départ maritime exige aussi la référence conteneur et l'attestation de fermeture. Le parcours historique reste sujet à sa migration de données et à ses propres vérifications de compatibilité. UI, PostgreSQL, vraie recette Chromium et preuve matériel requises avant GO.
+<!-- /schema-pending -->
