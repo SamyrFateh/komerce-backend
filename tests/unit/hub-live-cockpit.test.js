@@ -196,3 +196,9 @@ describe('G6 M03 — la PO partagée reste isolable par commande', () => {
     expect(simulation).toContain('G6_SIM_MANUAL_PRICE_UNEXPECTED_SCOPE');
   });
 });
+
+test('accès direct aux étiquettes depuis le cockpit physique, avant la COMBOX', () => {
+  const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-live-cockpit.js'),'utf8');
+  expect(src).toContain("['labels', 'Imprimer les étiquettes articles']");
+  expect(src.indexOf("['labels',")).toBeLessThan(src.indexOf("['boxes', 'Préparer les COMBOX']"));
+});

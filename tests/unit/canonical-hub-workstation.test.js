@@ -69,6 +69,8 @@ test('Administration et Opérations occupent toute la largeur sans rail doublon'
     location:{search:'?branch=administrative&market=KM'},fetch:mockFetch({}),
     renderAdministrative:admin,renderOperations:ops});
   expect(api.branch).toBe('administrative');
+  expect(root.querySelector('[data-hub-open-operations]').getAttribute('href')).toBe('/admin/hub-live?view=execute&entry=operations');
+  expect(root.querySelector('[data-hub-branch="operations"]').children[0].children[0].textContent).toBe('Kanban');
   expect(root.children[1].querySelectorAll('[data-hub-branch]')).toHaveLength(3);
   expect(root.querySelectorAll('[data-hub-director-todo]')).toHaveLength(0);
   expect(root.children[2].className).toContain('is-table');
@@ -93,6 +95,7 @@ test('un relais reste sur la consultation Opérations malgré une URL Administra
   const mounted=app.mount({root,user:{role:'agent_relais'},document:doc,location:{search:'?branch=administrative'},
     renderAdministrative:admin,renderOperations:ops});
   expect(mounted.branch).toBe('operations');
+  expect(root.querySelector('[data-hub-open-operations]')).toBeNull();
   expect(root.querySelectorAll('[data-hub-branch]')).toHaveLength(1);
   expect(root.querySelectorAll('[data-hub-branch="direction"]')).toHaveLength(0);
   expect(admin).not.toHaveBeenCalled();
@@ -142,7 +145,7 @@ test('la vue Opérations reste globale sans contexte de marché délégué', asy
 test('H4 : la directrice voit les tâches CM et KM depuis /admin/hub, sans writer', async () => {
   const app=load(),root=el('main');
   const task=(market,code,hours,overdue) => ({
-    id:'BOX_BAGS',kind:'BOX_BAGS',missing:'Sacs à mettre en carton',
+    id:'PLACE_COMBOX',kind:'PLACE_COMBOX',missing:'Articles à répartir en COMBOX',
     why:'Attente de préparation physique',market:{code:market},age_hours:hours,overdue,
     subject:{box_unit_id:code},
   });
@@ -162,8 +165,8 @@ test('H4 : la directrice voit les tâches CM et KM depuis /admin/hub, sans write
   expect(fetch).toHaveBeenCalledWith('/api/hub/director-todo', expect.objectContaining({method:'GET',credentials:'include'}));
   expect(mounted.branch).toBe('direction');
   expect(root.querySelectorAll('[data-hub-director-todo]')).toHaveLength(1);
-  expect(root.querySelectorAll('[data-hub-director-task="BOX_BAGS"]')).toHaveLength(2);
-  const rows=root.querySelectorAll('[data-hub-director-task="BOX_BAGS"]');
+  expect(root.querySelectorAll('[data-hub-director-task="PLACE_COMBOX"]')).toHaveLength(2);
+  const rows=root.querySelectorAll('[data-hub-director-task="PLACE_COMBOX"]');
   expect(rows[0].className).toContain('is-overdue');
   expect(rows[0].children.some(x=>x.getAttribute('href')==='/admin/hub-live?view=execute&market=CM')).toBe(true);
   expect(rows[1].children.some(x=>x.getAttribute('href')==='/admin/hub-live?view=execute&market=KM')).toBe(true);
@@ -249,7 +252,8 @@ test('Responsable pays voit Hub · Mes marchés (et pas le cockpit central)', ()
 test('Direction Hub : engagements, paiements, arbitrages, exécution séparés et liens de dossiers contextuels', async () => {
   const app=load(), host=el('section'), po='11111111-1111-4111-8111-111111111111';
   const tasks=[
-    {kind:'BOX_BAGS',owner:'agent_hub',market:{code:'CG'},missing:'Sac à emballer',age_hours:9},
+    {kind:'PLACE_COMBOX',owner:'agent_hub',market:{code:'CG'},missing:'Articles à répartir en COMBOX',age_hours:9},
+    {kind:'BOX_BAGS',owner:'agent_hub',market:{code:'CG'},missing:'Ancien sac',age_hours:50,overdue:true},
     {kind:'AUTHORIZE_PAYMENT',owner:'responsable_hub',market:{code:'KM'},subject:{po_id:po},
       missing:'Autoriser le paiement',why:'Engagement distinct',viewer_can_act:false,
       blocked_reason:'réservé à la responsable Hub',age_hours:50,overdue:true},
@@ -259,10 +263,12 @@ test('Direction Hub : engagements, paiements, arbitrages, exécution séparés e
       subject:{order_id:'22222222-2222-4222-8222-222222222222'},missing:'Rupture à arbitrer',age_hours:12},
   ];
   const fetch=jest.fn(async ()=>({ok:true,json:async()=>({
-    scope:'ALL_MARKETS',total:4,overdue_count:1,tasks,
+    scope:'ALL_MARKETS',total:5,overdue_count:2,tasks,
   })}));
   const data=await app.renderDirectorQueue(host,{document:doc,fetch,user:{role:'admin'}});
-  expect(data.total).toBe(4);
+  expect(data.total).toBe(5);
+  expect(host.querySelectorAll('[data-hub-director-task="BOX_BAGS"]')).toHaveLength(0);
+  expect(host.querySelector('[data-hub-legacy-review]').textContent).toContain('1 dossier(s) historiques');
   expect(host.querySelectorAll('[data-hub-director-list]')).toHaveLength(1);
   expect(host.querySelectorAll('[data-hub-director-group="commitment"]')).toHaveLength(1);
   expect(host.querySelectorAll('[data-hub-director-group="payment"]')).toHaveLength(1);
@@ -273,7 +279,7 @@ test('Direction Hub : engagements, paiements, arbitrages, exécution séparés e
   expect(payments[0].className).toContain('is-readonly');
   expect(payments[0].children.some(x=>x.getAttribute('href')===
     '/admin/hub-live?view=execute&market=KM&sel=po%3A'+po)).toBe(true);
-  const physical=host.querySelectorAll('[data-hub-director-task="BOX_BAGS"]')[0];
+  const physical=host.querySelectorAll('[data-hub-director-task="PLACE_COMBOX"]')[0];
   expect(physical.children.some(x=>x.getAttribute('href')===
     '/admin/hub-live?view=execute&market=CG')).toBe(true);
   expect(fetch).toHaveBeenCalledWith('/api/hub/director-todo',expect.objectContaining({method:'GET'}));
@@ -371,4 +377,12 @@ test('Direction Hub : un refus 403 efface les cartes de supervision précédemme
   await app.renderDirectorQueue(host, { document:doc, fetch, user:{role:'admin'} });
   expect(host.querySelectorAll('[data-hub-director-task]')).toHaveLength(0);
   expect(host.querySelector('[role="alert"]')?.textContent).toContain('Accès expiré ou non autorisé');
+});
+
+test('Kanban : destination relais visible, attendu réservé au détail contextuel',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-workstation.js'),'utf8');
+ expect(src).toContain("relay.setAttribute('data-hub-relay-destination','')");
+ expect(src).toContain('[o.reference, o.market, o.market_name, o.relay_name]');
+ expect(src).not.toContain("'kmc-hub-phase-expected'");
+ expect(src).toContain("'kmc-hub-board-menu-expected'");
 });
