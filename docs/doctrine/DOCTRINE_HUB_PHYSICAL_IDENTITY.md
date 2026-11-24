@@ -225,10 +225,24 @@ Cette section précise le tri, le regroupement et la remise aval. Elle complète
 - **Deux niveaux distincts :** lettre prévisionnelle dès le checkout ; localisation physique confirmée au relais uniquement après constat réel. La lettre ne garantit pas qu'une étagère A soit libre. L'agent peut ne pas utiliser de bac, choisir une zone compatible ou déclarer un débordement traçable. Une suggestion ne constitue jamais une présence physique.
 - Le moteur suit séparément charge prévue et occupation physique confirmée. Une COMBOX fermée compte comme une unité physique tant qu'elle n'est pas ouverte ; après déconditionnement, compter les unités réellement rangées. Ne pas assimiler quantité commerciale et nombre de contenants.
 
+### 12.2 bis. Étiquette opérationnelle minimale — décision figée du 24/11/2026
+
+**Le ticket n'est pas une fiche de commande.** Sa lecture doit rester rapide et son contenu non exploitable comme droit d'accès. Il comporte :
+- **KOMERCE** et le type **ARTICLE** ou **COMBOX** ;
+- **destination marché + relais** lisible en gros (ex. `CM · YA01`) quand cette destination est déjà vérifiée ;
+- **un unique QR scannable** généré localement à partir d'un identifiant opaque, stable, non devinable et résolu côté serveur uniquement pour un acteur authentifié et autorisé ;
+- un **petit code de secours opaque** (alias distinct et non réutilisé) pour saisie manuelle contrôlée si caméra ou douchette indisponible.
+
+Le nombre « 1 / 3 » est **facultatif** et affiché uniquement si sa signification est vérifiée et stable à l'impression ; une livraison partielle ou une recomposition ne doit pas créer d'étiquette trompeuse. Les libellés produit, commande, vague `B7Q`, identité personnelle, prix, contact, secret/code de retrait, jeton ou URL publique de suivi ne sont **pas imprimés**. La référence commerciale `CM-YA01-B7Q01` et la sous-référence `-01` restent résolubles dans Komerce, **mais ne sont pas encodées en clair dans le QR**. Si une ancienne étiquette permet d'exposer ces valeurs, elle n'est pas le modèle pour cette nouvelle impression.
+
+Le QR n'est **pas un secret ni une preuve de remise**. Un téléphone extérieur peut le lire ; la réponse utile et tout changement d'état nécessitent une session Komerce autorisée, la validation du marché/relais/acteur et l'invariant physique concerné. Toute réception/mutation exige son writer canonique, sa quantité et sa preuve propre ; **scanner ≠ faire avancer automatiquement**.
+
+Le contrat s'applique aux impressions **article et COMBOX** (80 mm et A4). QR généré localement (aucun service tiers), copie/réimpression sans mutation, CSP/no-store et HTML échappé. La même valeur scannée doit être acceptée par douchette clavier et par caméra mobile Chromium sur une **origine HTTPS**, avec refus explicite de permissions, inconnus, doublons, inter-marchés et inter-relais. Les tests à exécuter sur vrai staging : impression, caméra téléphone, résolution autorisée, sélection du bon geste physique puis oracles HTTP/PostgreSQL/tableaux de bord. Un scan simulé en navigateur ne remplace pas la preuve du matériel réel.
+
 ### 12.3. Hub : réception, étiquettes et COMBOX
 
 - Réception fournisseur : rapprocher PO, SKU, variantes, quantités et lignes de commande ; attester seulement ce qui est réellement reçu. Les colis entrants peuvent contenir plusieurs commandes et marchés et n'héritent d'aucune lettre unique.
-- Imprimer des étiquettes sur les unités effectivement reçues ou sur un lot explicitement traçable : référence commerciale structurée, suffixe séquentiel d'unité, article/variante, quantité, marché, relais, lettre de tri incluse, code de scan stable. Jamais de nom, téléphone ou secret de retrait.
+- Imprimer des étiquettes minimales sur les unités effectivement reçues ou sur un lot explicitement traçable, selon §12.2 bis : QR opaque, destination vérifiée et alias de secours ; les références commerciales et la variante restent disponibles **dans l'interface autorisée**, pas sur le papier. Jamais de nom, téléphone, prix ou secret de retrait.
 - Préparer directement dans une KOM-BOX en scannant COMBOX et articles. Une KOM-BOX peut agréger plusieurs commandes et destinataires, **mais un seul marché et un seul relais de destination**. Une commande peut être répartie sur plusieurs KOM-BOX.
 - À PACKED, imprimer/réimprimer l'étiquette COMBOX avec identité physique, marché, relais et compteurs dérivés du contenu réel. Réimpression sans mutation de custody ni d'inventaire.
 - Les opérations SPLIT/MERGE/REPACK déplacent la matière et conservent l'historique d'allocations, quantités et custody. Pas de sac numérique intermédiaire.
