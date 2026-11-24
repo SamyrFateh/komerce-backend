@@ -56,7 +56,7 @@ describe('M06 forwarder: explicit COMBOX scan required before each carrier trans
   expect(custody).toContain("'CUSTODY_DUAL_ACTOR_REQUIRED'");
   expect(journey).toContain("await custodyScans.requireScanCoverage(client,s.id,'CARRIER_ACCEPTED')");
   expect(journey).toContain("await custodyScans.requireScanCoverage(client,s.id,'CARRIER_LOADED')");
-  expect(ui).toContain("title:'Transitaire · scanner et accepter chaque COMBOX'");
+  expect(ui).toContain("CARRIER_ACCEPTED:'Transitaire · scanner et accepter chaque COMBOX'");
   expect(runner).toContain("M06?{tracking_reference:TRACK,container_reference:CONTAINER,proof_ref:proof('SUIVI')}:{tracking_reference:TRACK,proof_ref:proof('SUIVI')}");
  });
 });
