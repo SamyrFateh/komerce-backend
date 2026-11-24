@@ -15,8 +15,10 @@ describe('Hub label center: QR index and authenticated PDF reprinting',()=>{
  test('catalogue always reads issued labels, independent from outstanding fillable stock',()=>{
   expect(source).toContain("fetchFn(endpoint(marketCode,'labels/index')");
   expect(source).toContain('issued=data.labels;paint()');
-  expect(source).toContain("const missing=new Set(issued.filter(e=>e.type==='ARTICLE')");
-  expect(source).toContain("item.allocation_id");
+  expect(source).toContain('const shown=issued.filter(filter)');
+  expect(source).toContain('safeTarget(entry.target_id)');
+  expect(source).not.toContain('item.allocation_id');
+  expect(source).not.toContain('fillable');
   expect(source).toContain('entry.type');
  });
  test('QR identity never leaks to UI, PDF URLs use scoped authenticated download',()=>{
@@ -27,11 +29,14 @@ describe('Hub label center: QR index and authenticated PDF reprinting',()=>{
   expect(source).toContain('download.click()');
   expect(source).not.toContain('qr_value');
  });
- test('supports typed search, accessible labels and explicit user-confirmed operations',()=>{
+ test('supports accessible search and delegates first issuance to the physical workshop without mutation',()=>{
   expect(source).toContain("search.setAttribute('aria-label','Rechercher les étiquettes QR')");
   expect(source).toContain("type.setAttribute('aria-label','Type d’étiquette QR')");
   expect(source).toContain('Étiquettes QR · ARTICLE et COMBOX');
-  expect(source).toContain('seule la confirmation de l’agent valide une opération');
-  expect(source).toContain("url:endpoint(marketCode,'labels/articles/'");
+  expect(source).toContain('Pour une première émission, ouvrez l’atelier physique.');
+  expect(source).toContain("prepare.addEventListener('click',openPreparation)");
+  expect(source).toContain("method:'GET'");
+  expect(source).not.toMatch(/method\s*:\s*['"](?:POST|PUT|PATCH|DELETE)['"]/i);
+  expect(source).not.toMatch(/\/issue\b|\/emit\b/);
  });
 });
