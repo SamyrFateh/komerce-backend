@@ -23,7 +23,7 @@
   const HUB_PATH = '/admin/hub';
   const BRANCHES = Object.freeze({
     administrative: { label: 'Administration', hint: 'Achats, fournisseurs et engagements' },
-    operations: { label: 'Opérations', hint: 'Réception, contrôle et expéditions' },
+    operations: { label: 'Kanban', hint: 'Suivre les commandes et leurs prochaines actions' },
     // Vue de supervision, pas une troisième branche métier ni un nouveau writer.
     direction: { label: 'Direction Hub', hint: 'Décisions, paiements et arbitrages' },
   });
@@ -306,8 +306,11 @@
       }
       panel._directorSignature=signature;
       panel.setAttribute('data-hub-director-state','ready');
-      heading.textContent='Direction Hub · Tous marchés · '+payload.tasks.length+
-        ' tâche(s) · '+Number(payload.overdue_count||0)+' alerte(s) ≥ 48 h';
+      const retiredKinds=new Set(['PREPARE_BAG','CLOSE_BAG','DEPOSIT_BAG','BOX_BAGS']);
+      const activeTasks=payload.tasks.filter(task=>!retiredKinds.has(task.kind));
+      const legacyCount=payload.tasks.length-activeTasks.length;
+      heading.textContent='Direction Hub · Tous marchés · '+activeTasks.length+
+        ' tâche(s) · '+activeTasks.filter(task=>task.overdue).length+' alerte(s) ≥ 48 h';
       body.replaceChildren();
       // Une file vide rend les quatre colonnes : rien à traiter reste explicite.
       // Regroupement visuel d'une projection déjà autorisée côté serveur :
@@ -322,13 +325,18 @@
         : task.kind === 'AUTHORIZE_PAYMENT' ? 'payment'
           : task.owner === 'responsable_hub' ? 'arbitrage' : 'execution';
       const groups = new Map(groupSpecs.map(spec => [spec.key, []]));
-      payload.tasks.forEach(task => groups.get(groupOf(task)).push(task));
+      activeTasks.forEach(task => groups.get(groupOf(task)).push(task));
       const decisionCount = ['commitment','payment','arbitrage'].reduce((n,key) => n+groups.get(key).length,0);
       const intro=make(doc,'div','hlc-director-intro');
       intro.appendChild(make(doc,'strong','',decisionCount+' décision(s) à examiner'));
       intro.appendChild(make(doc,'span','',
         'Engagement, autorisation de paiement et réalisation financière restent séparés. Les liens ouvrent le dossier sans valider à votre place.'));
       body.appendChild(intro);
+      if(legacyCount){
+        const notice=make(doc,'p','kmc-hub-action-explanation',legacyCount+' dossier(s) historiques à rapprocher. Consulter les preuves existantes ; aucun ancien geste de préparation n’est disponible.');
+        notice.setAttribute('data-hub-legacy-review','');
+        body.appendChild(notice);
+      }
       const list=make(doc,'div','hlc-director-list');
       list.setAttribute('data-hub-director-list','');
       for (const spec of groupSpecs) {
@@ -367,8 +375,9 @@
                 ? 'order:'+String(subject.order_id) : '';
             const link=make(doc,'a','hlc-director-open',
               id.startsWith('po:')?'Examiner la PO':id.startsWith('order:')?'Examiner la commande':'Ouvrir le marché');
+            const isDecision=['AUTHORIZE_COMMITMENT','AUTHORIZE_PAYMENT'].includes(task.kind)&&id.startsWith('po:');
             link.setAttribute('href','/admin/hub-live?view=execute&market='+encodeURIComponent(market)+
-              (id?'&sel='+encodeURIComponent(id):''));
+              (isDecision?'&entry=direction':'')+(id?'&sel='+encodeURIComponent(id):''));
             row.appendChild(link);
           }
           rows.appendChild(row);
@@ -456,7 +465,7 @@
       menu.setAttribute('data-hub-request', String(++menuSerial));
       anchor?.clear();
     };
-    const openMenu = (order, label, value, event, launchSourcing = false) => {
+    const openMenu = (order, label, value, event) => {
       // Ce menu appartient à UNE étape. Aucun lien universel injecté à toutes
       // les cellules avant la lecture de l'autorité métier.
       const requestId = String(++menuSerial);
@@ -475,6 +484,9 @@
       if (stageKey === order.current_key && order.current_phase) {
         menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-current',
           '▶ Étape actuelle · ' + order.current_phase + ' — ' + (order.current_status || 'À vérifier')));
+        if (order.current_detail && !safe(order.remaining_detail).includes(order.current_detail)) {
+          menu.appendChild(make(doc,'p','kmc-hub-board-menu-summary',order.current_detail));
+        }
         if (order.current_expected) {
           menu.appendChild(make(doc, 'p', 'kmc-hub-board-menu-expected',
             'Attendu : ' + order.current_expected));
@@ -496,8 +508,7 @@
         // Le geste physique attesté est irréversible ; le détail reste consultable.
       } else if (canOperate && global.KomerceHubContextActions) {
         global.KomerceHubContextActions.operations(menu, {
-          doc, fetch:fetchFn, user, order, stage:label, launchSourcing,
-          refresh:()=>renderGlobalBoard(root,{document:doc,fetch:fetchFn,user}),
+          doc, fetch:fetchFn, user, order, stage:label,
         });
       } else {
         menu.appendChild(make(doc, 'p', 'kmc-hub-action-explanation',
@@ -529,7 +540,7 @@
     const renderRows = () => {
       body.replaceChildren();
       const term = safe(search.value).trim().toLocaleLowerCase('fr');
-      const filtered = rows.filter(o => [o.reference, o.market, o.market_name]
+      const filtered = rows.filter(o => [o.reference, o.market, o.market_name, o.relay_name]
         .some(v => safe(v).toLocaleLowerCase('fr').includes(term)));
       header.lastChild.textContent = filtered.length + ' / ' + rows.length + ' commande(s)';
       if (!filtered.length) {
@@ -547,6 +558,11 @@
         const idBox = make(doc, 'div', 'kmc-hub-board-identity');
         idBox.appendChild(make(doc, 'strong', '', order.reference));
         idBox.appendChild(make(doc, 'small', '', order.market + ' · ' + (order.market_name || order.market)));
+        if (order.relay_name) {
+          const relay=make(doc,'small','kmc-hub-destination','Relais · '+order.relay_name);
+          relay.setAttribute('data-hub-relay-destination','');
+          idBox.appendChild(relay);
+        }
         if (order.current_key && !['locked','complete'].includes(order.stage_states?.[order.current_key])) {
           tr.classList.add('is-hub-active-order');
         }
@@ -554,9 +570,8 @@
           const phase = make(doc, 'div', 'kmc-hub-phase-summary');
           phase.appendChild(make(doc, 'span', 'kmc-hub-phase-title',
             order.current_phase + ' · ' + (order.current_status || 'Situation à vérifier')));
-          if (order.current_detail) phase.appendChild(make(doc, 'small', 'kmc-hub-phase-detail', order.current_detail));
-          if (order.current_expected) phase.appendChild(make(doc, 'small', 'kmc-hub-phase-expected',
-            'Attendu : ' + order.current_expected));
+          // Le détail du prochain geste appartient au menu de l’étape ;
+          // le reliquat et les anomalies restent visibles dans leur colonne.
           idBox.appendChild(phase);
         }
         if (order.next_action) {
@@ -617,21 +632,17 @@
           });
           const actions = make(doc,'div','kmc-hub-kanban-stage-actions');
           actions.appendChild(button);
-          // Une action in situ : le bouton ouvre les contrôles et le formulaire
-          // de l'étape. Aucune mutation ne part du simple clic.
+          // Raccourci de navigation : ouvre les liens vers l’atelier canonique.
           const nextText = safe(order.next_action);
           const isWaitingOnly = /^(attendr|attente|suivre|consulter|aucune)/i.test(nextText);
           if (canOperate && order.current_key===key && !['locked','complete'].includes(state) && !isWaitingOnly) {
-            const launch = key==='po' && order.po==='Sourcing requis';
-            const command = make(doc,'button','kmc-hub-kanban-action',key==='po'
-              ?'Organiser l’achat fournisseur':nextText || 'Traiter l’étape');
+            const command = make(doc,'button','kmc-hub-kanban-action','Ouvrir l’atelier · '+label);
             command.type='button';
             command.setAttribute('data-hub-inline-action',key);
-            command.setAttribute('aria-label',order.reference+' · '+(launch
-              ?'Créer la ligne d’achat':'Ouvrir les actions : '+(nextText||label)));
+            command.setAttribute('aria-label',order.reference+' · Ouvrir l’atelier : '+label);
             command.addEventListener('click',event=>{
               event.stopPropagation();
-              openMenu(order,label,order[key],event,launch);
+              openMenu(order,label,order[key],event);
             });
             actions.appendChild(command);
           }
@@ -933,6 +944,13 @@
       applyFocus();
     });
     header.appendChild(focusToggle);
+    if (administrativeAllowed) {
+      const execution = make(doc,'a','kmc-hub-app-branch','Opérations');
+      execution.setAttribute('href','/admin/hub-live?view=execute&entry=operations');
+      execution.setAttribute('data-hub-open-operations','');
+      execution.setAttribute('aria-label','Ouvrir le poste d’exécution Hub et choisir le marché');
+      header.appendChild(execution);
+    }
     applyFocus();
     root.appendChild(header);
     const nav=make(doc,'nav','kmc-hub-app-branches');

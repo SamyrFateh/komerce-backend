@@ -112,7 +112,7 @@
     const relayExec = mode === 'relay-execution';
     const execution = mode === 'execution' || relayExec;
     copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', relayExec ? 'RELAIS LIVE · EXÉCUTION' : execution ? 'HUB LIVE · EXÉCUTION' : 'HUB & RELAIS'));
-    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', relayExec ? 'Poste de travail Relais' : execution ? 'Hub live · Dossiers' : 'Flux à traiter'));
+    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', relayExec ? 'Poste de travail Relais' : execution ? 'Opérations Hub' : 'Flux à traiter'));
     copy.appendChild(text(
       doc,
       'p',
@@ -123,8 +123,8 @@
 
     const nav = doc.createElement('nav');
     nav.className = 'kmc-workspace-nav';
-    const operations = text(doc, 'a', 'kmc-workspace-nav-link', relayExec ? '← Relais live' : '← Dashboard Opérations');
-    operations.setAttribute('href', relayExec ? '/admin/relais-live' : '/admin/operations');
+    const operations = text(doc, 'a', 'kmc-workspace-nav-link', relayExec ? '← Relais live' : execution ? '← Kanban Hub' : '← Dashboard Opérations');
+    operations.setAttribute('href', relayExec ? '/admin/relais-live' : execution ? '/admin/hub?branch=operations' : '/admin/operations');
     nav.appendChild(operations);
     header.appendChild(nav);
 
@@ -372,6 +372,7 @@
   // Hub live · Exécution : actions Hub uniquement (jamais Relais) + réception fournisseur.
   const EXECUTION_VIEWS = Object.freeze([
     { id: 'supply', label: 'Dossiers' },
+    { id: 'labels', label: 'Étiquettes QR' },
     { id: 'reception', label: 'Réceptions' },
     { id: 'hub', label: 'Actions Hub' },
     { id: 'inventory', label: 'Stock à affecter' },
@@ -431,6 +432,26 @@
     const scannerResult = text(doc, 'span', 'kmc-workspace-receive-scan-result', 'Scanner la référence avant de déclarer sa quantité reçue.');
     scannerResult.setAttribute('role', 'status');
     scannerPanel.appendChild(scannerResult);
+    // Caméra mobile : même identification autorisée que la douchette clavier.
+    // Ce bouton lit le code fournisseur. Les QR opaques Komerce auront
+    // un résolveur serveur dédié, ils ne sont jamais traités comme un droit d'accès.
+    const cameraButton = text(doc, 'button', 'kmc-workspace-action', 'Scanner avec la caméra');
+    cameraButton.type = 'button';
+    cameraButton.setAttribute('data-hub-mobile-camera', '');
+    const cameraStop = text(doc, 'button', 'kmc-workspace-action', 'Arrêter la caméra');
+    cameraStop.type = 'button';
+    cameraStop.hidden = true;
+    const cameraVideo = doc.createElement('video');
+    cameraVideo.setAttribute('playsinline', '');
+    cameraVideo.setAttribute('muted', '');
+    cameraVideo.muted = true;
+    cameraVideo.autoplay = true;
+    cameraVideo.hidden = true;
+    cameraVideo.style.cssText = 'display:block;width:100%;max-width:360px;max-height:320px;object-fit:cover;border-radius:8px';
+    cameraVideo.style.display = 'none';
+    scannerPanel.appendChild(cameraButton);
+    scannerPanel.appendChild(cameraStop);
+    scannerPanel.appendChild(cameraVideo);
     // Mode dégradé : sans code lisible, l'agent justifie une constatation manuelle ; la provenance
     // enregistrée est MANUAL (jamais SCAN), avec la même vérification de quantité et de variante.
     const manualProof = doc.createElement('input');
@@ -682,6 +703,77 @@
         scannerInput.disabled = false;
       }
     }
+
+    let hubCameraStream = null;
+    let hubCameraRunning = false;
+    let hubCameraFrame = null;
+    const stopHubCamera = () => {
+      hubCameraRunning = false;
+      if (hubCameraFrame != null && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(hubCameraFrame);
+      hubCameraFrame = null;
+      if (hubCameraStream) hubCameraStream.getTracks().forEach(track => track.stop());
+      hubCameraStream = null;
+      cameraVideo.srcObject = null;
+      cameraVideo.hidden = true;
+      cameraVideo.style.display = 'none';
+      cameraStop.hidden = true;
+      cameraButton.hidden = false;
+    };
+    cameraStop.addEventListener('click', stopHubCamera);
+    cameraButton.addEventListener('click', async () => {
+      if (hubCameraRunning) return;
+      const Media = typeof navigator !== 'undefined' && navigator.mediaDevices;
+      const Detector = typeof globalThis !== 'undefined' && globalThis.BarcodeDetector;
+      if (!Media || !Media.getUserMedia || !Detector) {
+        scannerResult.textContent = 'Scan caméra non disponible dans ce navigateur. Utilisez Chrome Android à jour en HTTPS, une douchette ou la saisie manuelle justifiée.';
+        scannerResult.dataset.scanTone = 'warning';
+        return;
+      }
+      cameraButton.disabled = true;
+      try {
+        const supported = await Detector.getSupportedFormats();
+        const formats = ['qr_code', 'code_128', 'ean_13', 'ean_8', 'upc_a'].filter(f => supported.includes(f));
+        if (!formats.length) throw new Error('Aucun format de code pris en charge');
+        const detector = new Detector({ formats });
+        hubCameraStream = await Media.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' } } });
+        cameraVideo.srcObject = hubCameraStream;
+        cameraVideo.hidden = false;
+        cameraVideo.style.display = 'block';
+        cameraButton.hidden = true;
+        cameraStop.hidden = false;
+        hubCameraRunning = true;
+        await cameraVideo.play();
+        const inspect = async () => {
+          if (!hubCameraRunning) return;
+          if (!cameraVideo.isConnected || (typeof document !== 'undefined' && document.hidden)) {
+            stopHubCamera();
+            return;
+          }
+          try {
+            const found = await detector.detect(cameraVideo);
+            const code = found.find(c => String(c.rawValue || '').trim());
+            if (code) {
+              const value = String(code.rawValue).trim();
+              stopHubCamera();
+              scannerInput.value = value;
+              await identify(value);
+              return;
+            }
+          } catch (error) {
+            scannerResult.textContent = 'Lecture caméra impossible : ' + String(error.message || 'réessayez');
+            scannerResult.dataset.scanTone = 'warning';
+          }
+          if (hubCameraRunning && typeof requestAnimationFrame === 'function') hubCameraFrame = requestAnimationFrame(inspect);
+        };
+        hubCameraFrame = requestAnimationFrame(inspect);
+      } catch (error) {
+        stopHubCamera();
+        scannerResult.textContent = 'Caméra indisponible ou permission refusée : ' + String(error.message || 'autorisation requise');
+        scannerResult.dataset.scanTone = 'warning';
+      } finally {
+        cameraButton.disabled = false;
+      }
+    });
 
     scannerInput.addEventListener('keydown', async event => {
       if (event.key !== 'Enter') return;
@@ -1132,6 +1224,13 @@
 
   function renderSupplySection(rootNode, ui, doc, context) {
     // Concept C : aucun bloc KPI ni titre de section redondant au-dessus du cockpit (hero existant conservé).
+    // Fast, visible entry to labels; never send operators hunting below historic COMBOX.
+    const labelJump=doc.createElement('button');
+    labelJump.type='button';labelJump.className='kmc-hub-label-shortcut';
+    labelJump.textContent='Archives QR · Réimprimer un PDF A4 / 80 mm';
+    labelJump.setAttribute('data-hub-label-shortcut','');
+    labelJump.addEventListener('click',()=>{context.view='labels';context.renderCurrent();});
+    if(!context.decisionOnly)rootNode.appendChild(labelJump);
     const flowHost = doc.createElement('div');
     flowHost.className = 'kmc-hub-flow';
     rootNode.appendChild(flowHost);
@@ -1176,33 +1275,42 @@
       cockpitModule.render(cockpitHost, {
         document: doc, dossier: d, marketCode: context.marketCode, state: context.cockpitState,
         isReadOnly: isHubReadOnly(context),
+        decisionOnly:context.decisionOnly,
+        openDecision:poId=>{
+          const params=new URLSearchParams({view:'execute',entry:'direction',market:context.marketCode,sel:'po:'+poId});
+          doc.defaultView.location.assign('/admin/hub-live?'+params.toString());
+        },
+        onSelectionChange: sel=>context.renderJourney?.(sel),
         endpoint: suffix => endpointFor(context.marketCode, suffix),
         act: (button, options) => runAction(context, button, options),
         reload: () => context.reload(),
         feedback: (message, tone) => setFeedback(context.root, message, tone),
-        renderReception: purchaseOrderId => {
-          const po = ((context.receivable && context.receivable.purchase_orders) || [])
-            .find(row => String(row.purchase_order_id) === String(purchaseOrderId));
-          return po ? createReceptionCard(doc, context, po) : null;
-        },
         openSourcing: orderId => {
           const order = (d.orders || []).find(row => String(row.id) === String(orderId));
           if (order) showSourcingResolution({ id: order.id, reference: order.reference, items: order.items || [] });
         },
-        openReception: () => {
+        openReception: (purchaseOrderId) => {
+          if(purchaseOrderId){
+            context.cockpitState.sel={type:'po',id:purchaseOrderId};
+            context.cockpitState.form=null;
+          }
           context.view = 'reception';
           context.renderCurrent();
+          if(purchaseOrderId) Array.from(rootNode.querySelectorAll('[data-receive-po]'))
+            .find(n=>n.getAttribute('data-receive-po')===String(purchaseOrderId))?.scrollIntoView?.({block:'start',behavior:'auto'});
         },
-        openPhysical: (target = 'all') => {
+        openPhysical: (target = 'all', boxId = null) => {
           const details = physicalDetails();
           if (!details) return;
           details.open = true;
           const targets = {
+            labels: '[data-hub-label-printing]',
             boxes: '[data-supply-box-create]',
             shipments: '[data-supply-shipment-bar]',
           };
           const selector = targets[target];
-          const anchor = (selector && details.querySelector(selector)) || details;
+          const boxAnchor=boxId&&Array.from(details.querySelectorAll('[data-hub-box-target]')).find(n=>n.getAttribute('data-hub-box-target')===String(boxId));
+          const anchor = boxAnchor || (selector && details.querySelector(selector)) || details;
           // Navigation opérateur déterministe entre réception, COMBOX et expéditions.
           anchor.scrollIntoView?.({ block: 'start', behavior: 'auto' });
         },
@@ -1211,6 +1319,7 @@
         cockpitHost.replaceChildren(text(doc, 'div', 'kmc-workspace-empty', 'Cockpit Hub illisible : rechargez la page (' + String((error && error.message) || error).slice(0, 120) + ').'));
       }
     }
+    if(context.decisionOnly)return;
     // Tout ce qui suit (écarts, réceptions brutes, COMBOX, expéditions) est le panneau secondaire exhaustif.
     const secondaryStart = rootNode.children.length;
     // La filiation détaillée est chargée à la demande, hors du tableau.
@@ -1264,7 +1373,7 @@
     const createButton = makeActionButton(doc, 'Ouvrir le dossier', 'create-shipment-from-boxes');
     createButton.disabled = true;
     [refInput, createButton].forEach(node => bar.appendChild(node));
-    boxes.appendChild(bar);
+    // Le dossier de départ vient après la préparation physique, pas avant.
 
     const attachButtons = [];
     const syncBar = () => {
@@ -1287,8 +1396,64 @@
       RECEIVED: 'IDENTIFIED', IDENTIFIED: 'QUALITY_CHECKED', QUALITY_CHECKED: 'LOCATED',
       LOCATED: 'ALLOCATED', ALLOCATED: 'PICKED', PICKED: 'PACKED', PACKED: 'DISPATCHED',
     });
+    const BOX_STATE_LABELS=Object.freeze({RECEIVED:'À préparer',IDENTIFIED:'Identifiée',QUALITY_CHECKED:'Contrôlée',LOCATED:'Localisée',ALLOCATED:'Affectée',PICKED:'Prélevée',PACKED:'Fermée',DISPATCHED:'Prête au départ',QUARANTINED:'En quarantaine',SUPERSEDED:'Remplacée'});
     const BOX_MUTABLE = new Set(['RECEIVED', 'IDENTIFIED', 'QUALITY_CHECKED', 'LOCATED', 'ALLOCATED', 'PICKED']);
     const fillable = Array.isArray(d.fillable) ? d.fillable : [];
+    // Le fetch canonique transporte l'authentification du dashboard ; un lien
+    // API direct ne la transmet pas forcément. Ouvrir la fenêtre sur le clic,
+    // puis charger l'HTML local authentifié dans un Blob imprimable.
+    const openLabelPrint = async(event,href)=>{
+      event.preventDefault();
+      const popup=typeof window!=='undefined'?window.open('about:blank','_blank'):null;
+      if(!popup){
+        setFeedback(context.root,'Autorisez l’ouverture de la fenêtre d’impression dans le navigateur.','critical');
+        return;
+      }
+      try{
+        const response=await context.fetch(href,{method:'GET',credentials:'include',headers:{Accept:'text/html'}});
+        if(!response.ok)throw new Error('HTTP '+response.status+' · émettez d’abord les étiquettes');
+        const documentBlob=await response.blob();
+        const printUrl=URL.createObjectURL(documentBlob);
+        popup.location.href=printUrl;
+        // Un document Blob doit rester disponible pendant l'ouverture/impression.
+        popup.addEventListener('pagehide',()=>URL.revokeObjectURL(printUrl),{once:true});
+      }catch(error){
+        popup.close();
+        setFeedback(context.root,'Impression indisponible : '+String(error.message||'erreur'),'critical');
+      }
+    };
+    // Direct PDF download remains authenticated through the canonical dashboard
+    // fetch; no public QR URL or backend state transition is involved.
+    const downloadLabelPdf = async(event,href,filename)=>{
+      event.preventDefault();
+      try{
+        const response=await context.fetch(href,{
+          method:'GET',credentials:'include',headers:{Accept:'application/pdf'}
+        });
+        if(!response.ok)throw new Error('HTTP '+response.status+' · émettez d’abord les étiquettes');
+        const mime=String(response.headers.get('Content-Type')||'').toLowerCase();
+        if(!mime.includes('application/pdf'))throw new Error('Document PDF invalide');
+        const blob=await response.blob();
+        if(blob.size<100||!blob.type.includes('pdf'))throw new Error('PDF vide ou invalide');
+        const url=URL.createObjectURL(blob);
+        const a=doc.createElement('a');
+        a.href=url;a.download=filename;a.style.display='none';
+        doc.body.appendChild(a);a.click();a.remove();
+        // Browsers read the blob asynchronously when a download begins.
+        setTimeout(()=>URL.revokeObjectURL(url),30000);
+      }catch(error){
+        setFeedback(context.root,'Téléchargement PDF indisponible : '+String(error.message||'erreur'),'critical');
+      }
+    };
+    const pdfLink=(type,id,format)=>{
+      const a=doc.createElement('a');
+      a.href=endpointFor(context.marketCode,'labels/'+type+'/'+encodeURIComponent(id)+'/pdf?format='+format);
+      a.textContent=format==='a4'?'Télécharger PDF A4':'Télécharger PDF 80 mm';
+      a.setAttribute('data-hub-pdf-'+(type==='articles'?'article':'box')+'-'+format,'');
+      a.addEventListener('click',event=>downloadLabelPdf(event,a.href,
+        'KOMERCE-'+(type==='articles'?'ARTICLE':'COMBOX')+'-'+context.marketCode+'-'+format+'.pdf'));
+      return a;
+    };
     const createBar = doc.createElement('div');
     createBar.className = 'kmc-workspace-receive-footer';
     createBar.setAttribute('data-supply-box-create', '');
@@ -1313,18 +1478,149 @@
       }).catch(() => {});
     });
     [newRef, newBox].forEach(node => createBar.appendChild(node));
+    // La création de COMBOX sera affichée après les étiquettes articles.
+
+    // La caméra est une entrée de code : seule l'action opérateur confirme ensuite le
+    // placement. Aucune mutation métier pendant l'ouverture ou la lecture de la caméra.
+    const mobileScanControls = (input, name, afterScan) => {
+      const wrap=doc.createElement('div');
+      const start=makeActionButton(doc,'Scanner par caméra','scan-camera');
+      const stop=makeActionButton(doc,'Arrêter la caméra','stop-camera');
+      const video=doc.createElement('video');
+      start.type='button';stop.type='button';stop.hidden=true;video.hidden=true;
+      video.autoplay=true;video.muted=true;
+      video.setAttribute('playsinline','');
+      video.style.cssText='width:100%;max-width:300px;max-height:270px;object-fit:cover;border-radius:8px';
+      video.style.display='none';
+      let active=false,stream=null,frame=null;
+      const end=()=>{
+        active=false;
+        if(frame!==null && typeof cancelAnimationFrame==='function')cancelAnimationFrame(frame);
+        frame=null;
+        if(stream)stream.getTracks().forEach(track=>track.stop());
+        stream=null;video.srcObject=null;video.hidden=true;video.style.display='none';
+        stop.hidden=true;start.hidden=false;start.disabled=false;
+      };
+      stop.addEventListener('click',end);
+      start.addEventListener('click',async()=>{
+        if(active)return;
+        if(typeof navigator==='undefined'||!navigator.mediaDevices?.getUserMedia||
+           typeof globalThis.BarcodeDetector!=='function'){
+          setFeedback(context.root,'Caméra QR non disponible : Chrome Android HTTPS requis, ou saisie du code de secours.','critical');
+          return;
+        }
+        start.disabled=true;
+        try{
+          const supported=await globalThis.BarcodeDetector.getSupportedFormats();
+          const formats=['qr_code','code_128','ean_13','ean_8'].filter(v=>supported.includes(v));
+          if(!formats.length)throw new Error('Format QR non pris en charge');
+          const detector=new globalThis.BarcodeDetector({formats});
+          stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+          video.srcObject=stream;video.hidden=false;video.style.display='block';
+          stop.hidden=false;start.hidden=true;active=true;
+          await video.play();
+          const scan=async()=>{
+            if(!active)return;
+            if(!video.isConnected || (typeof document!=='undefined'&&document.hidden)){end();return;}
+            try{
+              const codes=await detector.detect(video);
+              const raw=codes.find(c=>String(c.rawValue||'').trim());
+              if(raw){
+                const value=String(raw.rawValue).trim();
+                end();
+                input.value=value;
+                input.dispatchEvent(new Event('input',{bubbles:true}));
+                if(afterScan)await afterScan(value);
+                return;
+              }
+            }catch(error){setFeedback(context.root,'Lecture caméra : '+String(error.message||'erreur'),'critical');}
+            if(active)frame=requestAnimationFrame(scan);
+          };
+          frame=requestAnimationFrame(scan);
+        }catch(error){
+          end();setFeedback(context.root,'Accès caméra refusé ou indisponible : '+String(error.message||'autorisation requise'),'critical');
+        }
+      });
+      wrap.append(start,stop,video);
+      wrap.setAttribute('aria-label',name);
+      return wrap;
+    };
+
+    // Les articles à étiqueter viennent des allocations physiquement reçues.
+    // Un second clic est nécessaire pour imprimer après l'émission idempotente.
+    const labelRows=new Map();
+    fillable.filter(line=>Number(line.quantity)>0).forEach(line=>{
+      if(!labelRows.has(String(line.allocation_id)))labelRows.set(String(line.allocation_id),line);
+    });
+    {
+      const labelSection=doc.createElement('section');
+      labelSection.setAttribute('data-hub-label-printing','');
+      labelSection.appendChild(text(doc,'h3','', 'Étiquettes articles'));
+      labelSection.appendChild(text(doc,'p','kmc-workspace-note','Après réception physique, préparez les QR puis téléchargez le PDF A4 ou 80 mm. Une étiquette par article reçu.'));
+      if(!labelRows.size) labelSection.appendChild(text(doc,'p','kmc-workspace-note','Aucun article reçu disponible à préparer dans cet atelier. Consultez les réceptions fournisseurs.'));
+      for(const line of labelRows.values()){
+        const row=doc.createElement('div');
+        row.className='kmc-workspace-receive-footer';
+        row.appendChild(text(doc,'span','',String(line.product||'Article')+' · '+String(line.relais_code||'relais')+' · '+String(line.quantity)+' unité(s) à placer'));
+        const issue=makeActionButton(doc,'Préparer les étiquettes','issue-article-labels');
+        issue.addEventListener('click',()=>runAction(context,issue,{
+          url:endpointFor(context.marketCode,'labels/articles/'+encodeURIComponent(line.allocation_id)+'/issue'),
+          body:{},runningMessage:'Création des étiquettes reçues…',
+          successMessage:result=>String(result.count)+' QR article(s) disponibles à imprimer.',
+        }).catch(()=>{}));
+        const print=doc.createElement('a');
+        print.href=endpointFor(context.marketCode,'labels/articles/'+encodeURIComponent(line.allocation_id)+'/print?format=thermal');
+        print.target='_blank';print.rel='noopener';
+        print.textContent='Imprimer les étiquettes';
+        print.setAttribute('data-hub-print-article','');
+        print.addEventListener('click',event=>openLabelPrint(event,print.href));
+        row.append(issue,print,pdfLink('articles',line.allocation_id,'a4'),pdfLink('articles',line.allocation_id,'thermal'));labelSection.appendChild(row);
+      }
+      // Les réimpressions historiques sont propriétaires du centre QR, pas de ce panneau.
+      const history=doc.createElement('button');history.type='button';
+      history.setAttribute('data-hub-article-label-reprints','');
+      history.textContent='Rechercher et réimprimer des QR déjà émis';
+      history.addEventListener('click',()=>{context.view='labels';context.renderCurrent();});
+      labelSection.appendChild(history);
+      boxes.appendChild(labelSection);
+    }
+    const packingHeading=text(doc,'h3','','Préparer les COMBOX');
+    boxes.appendChild(packingHeading);
     boxes.appendChild(createBar);
 
     const composeCell = box => {
       const cell = doc.createElement('div');
       cell.className = 'kmc-workspace-box-compose';
+      // L'étiquette COMBOX finale n'est émise qu'après fermeture (PACKED).
+      // La destination se déduit du manifeste physique, jamais d'un choix arbitraire.
+      if(['PACKED','DISPATCHED'].includes(box.state)){
+        const createQr=makeActionButton(doc,'Préparer QR COMBOX','issue-box-label');
+        createQr.addEventListener('click',()=>runAction(context,createQr,{
+          url:endpointFor(context.marketCode,'labels/boxes/'+encodeURIComponent(box.unit_id)+'/issue'),
+          body:{},
+          runningMessage:'Attribution du QR de cette COMBOX fermée…',
+          successMessage:'QR COMBOX définitif prêt à imprimer.',
+        }).catch(()=>{}));
+        const printBox=doc.createElement('a');
+        printBox.href=endpointFor(context.marketCode,'labels/boxes/'+encodeURIComponent(box.unit_id)+'/print?format=thermal');
+        printBox.target='_blank';printBox.rel='noopener';
+        printBox.textContent='Imprimer QR COMBOX';
+        printBox.setAttribute('data-hub-print-box','');
+        printBox.addEventListener('click',event=>openLabelPrint(event,printBox.href));
+        cell.append(createQr,printBox,pdfLink('boxes',box.unit_id,'a4'),pdfLink('boxes',box.unit_id,'thermal'));
+      }else{
+        cell.appendChild(text(doc,'small','kmc-workspace-note','Étiquette COMBOX après fermeture et contrôle du contenu.'));
+      }
+      const readyBoxCode=value=>value===box.reference||
+        /^KQ1_[A-F0-9]{32}$/i.test(String(value||''))||
+        /^[A-HJ-NP-Z2-9]{8}$/i.test(String(value||''));
       if (BOX_MUTABLE.has(box.state)) {
         const boxScan=field('Scanner la COMBOX','Scanner la référence de la COMBOX '+box.reference);
         boxScan.setAttribute('data-hub-box-scan','');
         context.hubVerifiedBoxes=context.hubVerifiedBoxes||{};
         boxScan.value=context.hubVerifiedBoxes[String(box.unit_id)]||'';
         boxScan.addEventListener('input',()=>{
-          if(boxScan.value.trim()===box.reference)context.hubVerifiedBoxes[String(box.unit_id)]=box.reference;
+          if(readyBoxCode(boxScan.value.trim()))context.hubVerifiedBoxes[String(box.unit_id)]=boxScan.value.trim();
           else delete context.hubVerifiedBoxes[String(box.unit_id)];
         });
         const options=fillable.filter(line=>Number(line.quantity)>0);
@@ -1350,8 +1646,8 @@
         };
         method.addEventListener('change',syncMethod);
         const fill=()=>{
-          if(boxScan.value.trim()!==box.reference){
-            setFeedback(context.root,'Scannez d’abord la référence de cette COMBOX.','critical'); return;
+          if(!readyBoxCode(boxScan.value.trim())){
+            setFeedback(context.root,'Scannez la référence ou le QR de cette COMBOX.','critical'); return;
           }
           const line=options[Number(item.value)]; if(!line)return;
           const manual=method.value==='MANUAL';
@@ -1373,14 +1669,29 @@
           }).catch(()=>{});
         };
         add.disabled=!options.length;
-        [boxScan,item,method,code,proof,qty,add].forEach(node=>cell.appendChild(node));
+        const boxCamera=mobileScanControls(boxScan,'Caméra QR COMBOX');
+        const itemCamera=mobileScanControls(code,'Caméra QR article',async raw=>{
+          if(!/^KQ1_[A-F0-9]{32}$/i.test(raw)&&!/^[A-HJ-NP-Z2-9]{8}$/i.test(raw))return;
+          try{
+            const resolved=await jsonRequest(context.fetch,endpointFor(context.marketCode,
+              'labels/resolve')+'?'+new URLSearchParams({code:raw}));
+            if(resolved.label?.target_type!=='ARTICLE')throw new Error('Ce QR ne correspond pas à un article');
+            const index=options.findIndex(line=>String(line.allocation_id)===String(resolved.label.allocation_id));
+            if(index<0)throw new Error('Cet article ne figure pas parmi les quantités disponibles');
+            item.value=String(index);method.value='SCAN';syncMethod();code.value=raw;
+            setFeedback(context.root,'Article reconnu · vérifiez la COMBOX puis validez le placement.','success');
+          }catch(error){
+            code.value='';setFeedback(context.root,'QR non autorisé ou non disponible : '+String(error.message||'contrôle requis'),'critical');
+          }
+        });
+        [boxScan,boxCamera,item,method,code,itemCamera,proof,qty,add].forEach(node=>cell.appendChild(node));
         code.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();fill();}});
         proof.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();fill();}});
         add.addEventListener('click',fill);
         if((box.contents||[]).length){
           const close=makeActionButton(doc,'Fermer la COMBOX','close-box');
           close.addEventListener('click',()=>{
-            if(boxScan.value.trim()!==box.reference){setFeedback(context.root,'Scannez la COMBOX avant fermeture.','critical');return;}
+            if(!readyBoxCode(boxScan.value.trim())){setFeedback(context.root,'Scannez la COMBOX avant fermeture.','critical');return;}
             runAction(context,close,{
               url:endpointFor(context.marketCode,'boxes/'+encodeURIComponent(box.unit_id)+'/close'),
               body:{box_reference_scan:boxScan.value.trim()},
@@ -1393,21 +1704,40 @@
       }
       const next = BOX_NEXT_STATE[box.state];
       if (next && (box.contents || []).length) {
-        const label = next === 'DISPATCHED' ? 'Prêt à remettre au transitaire' : `Étape suivante · ${next}`;
+        const label = next === 'DISPATCHED' ? 'Prêt à remettre au transitaire' : `Étape suivante · ${BOX_STATE_LABELS[next]||next}`;
         const step = makeActionButton(doc, label, 'advance-box');
-        step.addEventListener('click', () => runAction(context, step, {
-          url: endpointFor(context.marketCode, `boxes/${box.unit_id}/advance`),
-          body: { to_state: next },
-          confirmMessage: next === 'DISPATCHED' ? `Confirmer que ${box.reference} est prêt pour la remise au transitaire ?` : undefined,
-          runningMessage: 'Changement d’étape…',
-          successMessage: `${box.reference} : ${next}.`,
-        }).catch(() => {}));
+        let finalBoxCode=null,applied=null;
+        if(next==='DISPATCHED'){
+          finalBoxCode=field('Scanner QR COMBOX avant sortie','Scanner l’étiquette COMBOX définitive de '+box.reference);
+          finalBoxCode.setAttribute('data-hub-final-box-scan','');
+          const finalCamera=mobileScanControls(finalBoxCode,'Caméra QR COMBOX définitive');
+          const confirmWrap=doc.createElement('label');
+          applied=doc.createElement('input');applied.type='checkbox';
+          applied.setAttribute('data-hub-box-label-applied','');
+          confirmWrap.append(applied,text(doc,'span','',' Étiquette COMBOX imprimée et physiquement collée'));
+          cell.append(finalBoxCode,finalCamera,confirmWrap);
+        }
+        step.addEventListener('click', () => {
+          if(next==='DISPATCHED'&&(!finalBoxCode.value.trim()||!applied.checked)){
+            setFeedback(context.root,'Scanner le QR COMBOX et confirmer la pose de l’étiquette avant sortie.','critical');
+            return;
+          }
+          runAction(context, step, {
+            url: endpointFor(context.marketCode, `boxes/${box.unit_id}/advance`),
+            body: {to_state:next,...(next==='DISPATCHED'?{
+              box_qr_scan:finalBoxCode.value.trim(),label_applied_confirmed:applied.checked,
+            }:{})},
+            confirmMessage: next === 'DISPATCHED' ? `Confirmer la sortie de ${box.reference} après contrôle de son QR ?` : undefined,
+            runningMessage: 'Changement d’étape…',
+            successMessage: `${box.reference} : ${next}.`,
+          }).catch(() => {});
+        });
         cell.appendChild(step);
       }
       return cell.children.length ? cell : '—';
     };
 
-    boxes.appendChild(simpleTable(doc, ['', 'COMBOX', 'État', 'Contenu', 'Expédition', 'Composer', 'Action'],
+    const boxTable=simpleTable(doc, ['', 'COMBOX', 'État', 'Contenu', 'Expédition', 'Composer', 'Action'],
       (d.boxes || []).map(box => {
         const contents = box.contents.map(c => `${c.order_ref} ×${formatNumber(c.qty)}`).join(', ');
         let pick = '';
@@ -1437,8 +1767,43 @@
             successMessage: 'COMBOX retirée du dossier encore en préparation.',
           }).catch(() => {}));
         }
-        return [pick, box.reference, box.state, contents || '—', box.shipment_ref || '—', composeCell(box), action];
-      }), 'Aucune COMBOX.'));
+        const boxIdentity=doc.createElement('div');
+        boxIdentity.setAttribute('data-hub-box-target',String(box.unit_id));
+        boxIdentity.appendChild(text(doc,'strong','',box.reference));
+        const relayIds=new Set(box.contents.map(c=>c.relais_id).filter(Boolean));
+        const relayCodes=new Set(box.contents.map(c=>c.relais_code).filter(Boolean));
+        const known=box.contents.length>0&&box.contents.every(c=>c.relais_id&&c.relais_code);
+        const destination=relayIds.size>1||relayCodes.size>1?'Écart de destination à contrôler':known&&relayIds.size===1&&relayCodes.size===1?context.marketCode+' · '+Array.from(relayCodes)[0]:box.contents.length?'Destination à vérifier':'Destination après placement';
+        const dest=text(doc,'small','kmc-workspace-note',destination);
+        dest.setAttribute('data-hub-box-destination','');boxIdentity.appendChild(dest);
+        return [pick, boxIdentity, BOX_STATE_LABELS[box.state]||box.state, contents || '—', box.shipment_ref || '—', composeCell(box), action];
+      }), 'Aucune COMBOX.');
+    const boxToolbar=doc.createElement('div');
+    boxToolbar.className='kmc-hub-box-filter';
+    const boxSearch=doc.createElement('input');
+    boxSearch.type='search';boxSearch.placeholder='Rechercher une COMBOX, commande ou expédition…';
+    boxSearch.setAttribute('aria-label','Filtrer les COMBOX physiques');
+    const boxCounter=text(doc,'span','kmc-workspace-muted','');
+    boxToolbar.append(boxSearch,boxCounter);
+    boxes.appendChild(boxToolbar);
+    boxes.appendChild(boxTable);
+    boxTable.setAttribute('data-hub-combox-scroll','');
+    const boxRows=Array.from(boxTable.querySelectorAll('tbody tr'));
+    const filterBoxes=()=>{
+      const q=boxSearch.value.trim().toLocaleLowerCase('fr');
+      let found=0;
+      for(const row of boxRows){
+        const show=!q||String(row.textContent||'').toLocaleLowerCase('fr').includes(q);
+        row.hidden=!show;
+        if(show)found++;
+      }
+      boxCounter.textContent=found+' / '+boxRows.length+' COMBOX · défilement interne';
+    };
+    boxSearch.addEventListener('input',filterBoxes);
+    filterBoxes();
+    boxes.appendChild(text(doc,'h3','','Préparer le départ'));
+    boxes.appendChild(text(doc,'p','kmc-workspace-note','Sélectionnez les COMBOX prêtes, puis choisissez ou ouvrez leur dossier d’expédition.'));
+    boxes.appendChild(bar);
 
     const secondary = doc.createElement('details');
     secondary.className = 'kmc-hub-physical-secondary';
@@ -1814,6 +2179,130 @@
     loadRequests().catch(() => {});
   }
 
+  // Jalons par commande : le navigateur ne calcule aucune complétude métier.
+  // La sélection d'une PO partagée ne doit pas choisir arbitrairement un client.
+  function renderHubJourney(host, doc, context, selection) {
+    if (!host) return;
+    host.replaceChildren();
+    const journeys=context.dossier?.hub_journeys;
+    if (!Array.isArray(journeys) || !journeys.length) return;
+    const dossier=context.dossier;
+    const fromUrl=()=>{
+      const value=new URLSearchParams(String(globalThis.location?.search||'')).get('sel')||'';
+      const i=value.indexOf(':');return i>0?{type:value.slice(0,i),id:value.slice(i+1)}:null;
+    };
+    const sel=selection || context.cockpitState?.sel || fromUrl();
+    let ids=[];
+    if(sel?.type==='order')ids=[sel.id];
+    if(sel?.type==='po')ids=(dossier.purchase_orders||[]).find(p=>p.id===sel.id)?.order_ids||
+      (dossier.purchase_orders||[]).find(p=>p.id===sel.id)?.lines?.map(l=>l.order_id)||[];
+    if(sel?.type==='box')ids=(dossier.boxes||[]).find(b=>b.unit_id===sel.id)?.contents?.map(c=>c.order_id)||[];
+    if(sel?.type==='need'){
+      for(const batch of dossier.cockpit?.need_batches||[]) for(const group of batch.groups||[])
+        if(group.key===sel.id)ids.push(...(group.lines||[]).map(l=>l.order_id));
+      if(!ids.length&&String(sel.id).startsWith('src:'))ids=[sel.id.split(':')[1]];
+    }
+    const candidates=journeys.filter(j=>ids.includes(j.id));
+    if(!candidates.length){
+      host.appendChild(text(doc,'p','kmc-workspace-note','Sélectionnez un dossier pour afficher ses jalons métier.'));
+      return;
+    }
+    if(candidates.length>1){
+      const picker=doc.createElement('select');picker.setAttribute('aria-label','Commande dont afficher les jalons');
+      picker.appendChild(Object.assign(doc.createElement('option'),{value:'',textContent:'Choisir une commande liée'}));
+      candidates.forEach(j=>picker.appendChild(Object.assign(doc.createElement('option'),{value:j.id,textContent:j.reference})));
+      picker.value=candidates.some(j=>j.id===context.journeyOrderId)?context.journeyOrderId:'';
+      picker.addEventListener('change',()=>{context.journeyOrderId=picker.value;renderHubJourney(host,doc,context,sel);});
+      host.appendChild(picker);
+    }
+    const j=candidates.length===1?candidates[0]:candidates.find(x=>x.id===context.journeyOrderId);
+    if(!j)return;
+    const steps=[['po','1 · Achats'],['supplier','2 · Fournisseur'],['reception','3 · Réception'],
+      ['labels','4 · QR articles'],['cartons','5 · Tri / COMBOX'],['departure','6 · Départ']];
+    const order=(dossier.orders||[]).find(x=>x.id===j.id);
+    const pos=(dossier.purchase_orders||[]).filter(p=>(p.lines||[]).some(l=>l.order_id===j.id));
+    const go=(key)=>{
+      context.journeyOrderId=j.id;
+      let target={type:'order',id:j.id};
+      if((key==='supplier'||key==='reception')&&pos.length===1)target={type:'po',id:pos[0].id};
+      if(!context.cockpitState)context.cockpitState={sel:null,form:null,todoAll:false,picked:new Set()};
+      Object.assign(context.cockpitState,{sel:target,form:null,selectionInitialized:true});
+      const win=doc.defaultView;
+      if(win?.history?.replaceState&&win.location.pathname==='/admin/hub-live'){
+        const u=new win.URL(win.location.href);u.searchParams.set('sel',target.type+':'+target.id);
+        u.searchParams.set('atelier',key==='po'||key==='supplier'?'purchasing':key==='cartons'?'boxes':key==='departure'?'shipments':key);
+        win.history.replaceState(win.history.state,'',u.pathname+u.search+u.hash);
+      }
+      context.view=key==='reception'?'reception':'supply';
+      context.renderCurrent();
+      let anchor=null;
+      if(key==='reception'){
+        anchor=Array.from(context.root.querySelectorAll('[data-receive-po]')).find(n=>pos.some(p=>p.id===n.getAttribute('data-receive-po')));
+      }else if(key==='labels')anchor=context.root.querySelector('[data-hub-label-printing]');
+      else if(key==='cartons')anchor=context.root.querySelector('[data-supply-box-create]');
+      else if(key==='departure')anchor=context.root.querySelector('[data-supply-shipment-bar]');
+      anchor?.scrollIntoView?.({block:'start',behavior:'auto'});
+    };
+    host.appendChild(text(doc,'strong','kmc-hub-journey-title',j.reference+' · Parcours Hub'));
+    if(order){
+      const route=text(doc,'p','kmc-workspace-note',context.marketCode+' · Relais '+(order.relay_code||order.relay_name||'à vérifier')+
+        (order.delivery_wave?' · Vague '+order.delivery_wave.code+(order.delivery_wave.closed?' (clôturée)':' (ouverte)'):' · Aucune vague attribuée'));
+      route.setAttribute('data-hub-journey-destination','');host.appendChild(route);
+    }
+    const list=doc.createElement('div');list.className='kmc-hub-journey-steps';list.setAttribute('role','group');list.setAttribute('aria-label','Jalons métier');
+    for(const [key,label] of steps){
+      const state=j.stage_states?.[key]||'unknown';
+      const done=state==='complete'||state==='locked';
+      const current=!done&&(j.physical_focus||j.current_key)===key;
+      const step=doc.createElement('button');step.type='button';
+      step.className='kmc-hub-journey-step'+(done?' is-done':current?' is-current':'');
+      step.setAttribute('data-hub-journey-step',key);step.setAttribute('data-state',state);
+      if(current)step.setAttribute('aria-current','step');
+      const stateLabel=done?'✓ Terminé':current?'À traiter / suivre':state==='warning'||state==='critical'?'À contrôler':state==='progress'?'En cours':state==='ready'?'Disponible':state==='waiting'?'En attente':'À venir';
+      step.appendChild(text(doc,'strong','',label));step.appendChild(text(doc,'small','',stateLabel));
+      if(key==='labels')step.appendChild(text(doc,'small','',j.stage_notes?.labels||'Preuve non renseignée'));
+      step.title=j.stage_notes?.[key]||stateLabel;
+      // Une étape terminée reste consultable dans le Kanban, pas réexécutable ici.
+      step.disabled=done||(!current&&!['ready','progress','warning','critical'].includes(state))||isHubReadOnly(context);
+      step.addEventListener('click',()=>go(key));list.appendChild(step);
+    }
+    host.appendChild(list);
+    host.appendChild(text(doc,'p','kmc-workspace-note',j.current_status+' · '+(j.current_expected||j.next_action||'')));
+    // Réimpression reste accessible même si les identités sont déjà émises.
+    if(!isHubReadOnly(context)&&order&&['ready','progress','warning','complete','locked'].includes(j.stage_states?.cartons)){
+      const labelButton=doc.createElement('button');labelButton.type='button';
+      labelButton.className='kmc-workspace-tab';labelButton.setAttribute('data-hub-journey-labels','');
+      labelButton.textContent='Archives et réimpression QR';labelButton.addEventListener('click',()=>{context.view='labels';context.renderCurrent();});host.appendChild(labelButton);
+    }
+  }
+
+  async function renderDirectionVariance(host,doc,context){
+    host.replaceChildren();
+    const title=text(doc,'h2','','Arbitrage d’écart fournisseur');host.appendChild(title);
+    const status=text(doc,'p','kmc-workspace-note','Vérification de la PO et des droits…');host.appendChild(status);
+    const params=new URLSearchParams(String(doc.defaultView.location.search||''));
+    const selected=params.get('sel')||'';
+    const id=selected.startsWith('po:')?selected.slice(3):'';
+    if(isHubReadOnly(context)||!['admin','agent_hub'].includes(context.user?.role)){
+      status.textContent='Accès en lecture seule : aucune décision autorisée.';return;
+    }
+    if(!context.dossier?.purchase_orders?.some(po=>po.id===id)){
+      status.textContent='PO absente du marché sélectionné.';return;
+    }
+    try{
+      const data=await jsonRequest(context.fetch,'/api/hub/administration');
+      const po=(data.purchase_orders||[]).find(p=>p.id===id&&String(p.market).split(' · ').includes(context.marketCode));
+      if(!po||data.scope!=='HUB_ADMINISTRATION_GLOBAL')throw Error('PO hors périmètre');
+      status.textContent=po.supplier+' · PO '+id+' · '+po.market+' · '+(po.payment_evidence||'');
+      const panel=doc.createElement('section');panel.setAttribute('data-hub-direction-variance','');host.appendChild(panel);
+      const api=globalThis.KomerceHubContextActions;
+      if(!api?.directionVariance)throw Error('Module de décision indisponible');
+      api.directionVariance(panel,{doc,fetch:context.fetch,user:context.user,po,grants:data.viewer_grants,
+        refresh:()=>renderDirectionVariance(host,doc,context)});
+      if(!panel.children.length)panel.appendChild(text(doc,'p','kmc-workspace-note','Aucun arbitrage disponible pour cette PO.'));
+    }catch(err){status.textContent='Arbitrage indisponible : '+err.message;}
+  }
+
   function renderPayload(rootNode, ui, doc, payload, context) {
     rootNode.className = 'kmc-operations-workspace';
     rootNode.setAttribute('data-workspace-kind', 'hub-relay');
@@ -1832,6 +2321,23 @@
         context.marketCode+' · Identifier le bon colis, vérifier les conditions de retrait, attester la remise.';
     }
     rootNode.appendChild(header);
+    if(context.decisionOnly){
+      header.querySelector('.kmc-workspace-kicker').textContent='DIRECTION HUB · DÉCISIONS';
+      header.querySelector('.kmc-workspace-title').textContent='Direction Hub · Décisions PO';
+      header.querySelector('.kmc-workspace-subtitle').textContent=context.marketCode+' · Engagement et autorisation de paiement, sur justificatif.';
+      const back=header.querySelector('.kmc-workspace-nav-link');back.textContent='← Direction Hub';back.href='/admin/hub?branch=direction';
+      rootNode.setAttribute('data-hub-decision-workspace','');
+      if(context.decisionKind==='variance'){
+        const host=doc.createElement('section');rootNode.appendChild(host);renderDirectionVariance(host,doc,context);return;
+      }
+      renderSupplySection(rootNode,ui,doc,context);return;
+    }
+    if(context.mode==='execution'){
+      const journey=doc.createElement('section');journey.className='kmc-hub-journey';
+      journey.setAttribute('data-hub-journey','');rootNode.appendChild(journey);
+      context.renderJourney=sel=>renderHubJourney(journey,doc,context,sel);
+      context.renderJourney();
+    }
     if(context.mode==='relay-execution') {
       const nav=doc.createElement('nav');
       nav.className='kmc-relay-main-nav';
@@ -1988,6 +2494,16 @@
 
     if (view === 'reception') renderReceptionSection(rootNode, ui, doc, context);
     if (view === 'supply') renderSupplySection(rootNode, ui, doc, context);
+    if (view === 'labels' && context.mode==='execution') {
+      const station=doc.createElement('section');
+      station.setAttribute('data-hub-labels-station','');
+      rootNode.appendChild(station);
+      const module=globalThis.KomerceHubLabelCenter;
+      if(!module)station.appendChild(text(doc,'p','kmc-workspace-empty','Poste QR indisponible : recharger la page.'));
+      else module.mount({host:station,doc,marketCode:context.marketCode,fetchFn:context.fetch,
+        openPreparation:()=>{context.view='supply';context.renderCurrent();
+          context.root.querySelector('[data-hub-label-printing]')?.scrollIntoView?.({block:'start',behavior:'auto'});}});
+    }
 
     if (view === 'relay') {
     context.relayCollectCount=payload.queues?.relay?.to_collect?.length||0;
@@ -2548,6 +3064,7 @@
       purchase_orders: dossier?.purchase_orders || [],
       need_batches: dossier?.cockpit?.need_batches || [],
       todo: dossier?.cockpit?.todo || [],
+      hub_journeys: dossier?.hub_journeys || [],
     });
     function hubInputBusy() {
       const active = doc.activeElement;
@@ -2633,16 +3150,20 @@
     }
 
     let currentPayload = null;
+    const hubQuery = new URLSearchParams(String(globalThis.location?.search || ''));
+    const hubAtelier = options.mode==='execution' && hubQuery.get('entry')==='operations' ? hubQuery.get('atelier') : null;
     const context = {
       root: rootNode,
       fetch: fetchFn,
       marketCode,
+      decisionOnly:options.mode==='execution'&&hubQuery.get('entry')==='direction',
+      decisionKind:hubQuery.get('decision'),
       mode: ['execution', 'relay-execution'].includes(options.mode) ? options.mode : 'pilot',
       user: options.user || null,
       initialFocus: options.forcedRelayFocus || (options.mode==='relay-execution' ? String(new URLSearchParams(String(globalThis.location?.search||'')).get('focus')||'') : ''),
       focusOnly:Boolean(options.focusOnly),
       activeRelayQueue:null,
-      view: options.focusOnly?'relay':options.mode === 'execution' ? 'supply' : options.mode === 'relay-execution' && new URLSearchParams(String(globalThis.location?.search || '')).get('focus') === 'returns' ? 'returns' : undefined,
+      view: options.focusOnly?'relay':options.mode === 'execution' ? (hubAtelier==='reception' ? 'reception' : 'supply') : options.mode === 'relay-execution' && new URLSearchParams(String(globalThis.location?.search || '')).get('focus') === 'returns' ? 'returns' : undefined,
       confirm: typeof options.confirm === 'function'
         ? options.confirm
         : (typeof globalThis.confirm === 'function' ? globalThis.confirm.bind(globalThis) : () => true),
@@ -2693,6 +3214,16 @@
     try {
       await reload();
       watchHubSupply();
+      // Deep link du Kanban : orientation après chargement des données, sans écriture.
+      if (context.mode==='execution' && hubAtelier) {
+        const sel=hubQuery.get('sel')||'';
+        const anchor=hubAtelier==='reception' && sel.startsWith('po:')
+          ? Array.from(rootNode.querySelectorAll('[data-receive-po]')).find(n=>n.getAttribute('data-receive-po')===sel.slice(3))
+          : hubAtelier==='labels' ? rootNode.querySelector('[data-hub-label-printing]')
+          : hubAtelier==='boxes' ? rootNode.querySelector('[data-supply-box-create]')
+          : hubAtelier==='shipments' ? (sel.startsWith('box:') ? Array.from(rootNode.querySelectorAll('[data-hub-box-target]')).find(n=>n.getAttribute('data-hub-box-target')===sel.slice(4)) : null) || rootNode.querySelector('[data-supply-shipment-bar]') : null;
+        anchor?.scrollIntoView?.({block:'start',behavior:'auto'});
+      }
       // Orientation de l'agent vers la file demandée depuis le cockpit.
       // Seules les files existantes sont navigables ; aucune action métier n'est exécutée ici.
       if (context.mode==='relay-execution' && !context.focusOnly && ['shipments','cash','receive','collect'].includes(context.initialFocus)) {

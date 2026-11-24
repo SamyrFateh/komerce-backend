@@ -41,9 +41,11 @@ test('coverage includes preparation, commitment, submission, sent, confirmation,
     "readOnly:true",
   ])expect(spec).toContain(key);
   const tests=(spec.match(/\ntest\('/g)||[]).length;
-  expect(tests).toBe(11); // 9 parcours initiaux + 2 contrôles d'isolement PO par commande
+  expect(tests).toBe(13); // 9 parcours initiaux + 2 contrôles d'isolement + mode API et devises
   expect(spec).toContain('01b - besoin multi-commandes');
   expect(spec).toContain('01c - les permissions lecture seule');
+  expect(spec).toContain('01d - mode API explicite uniquement si le fournisseur et toutes les lignes sont éligibles');
+  expect(spec).toContain('01e - deux devises incompatibles ne déclenchent aucune préparation groupée');
   expect(spec).toContain('prepare-po-order-ORDER-ISOLATED');
   expect(spec).toContain('08 - G6 fournisseur fictif');
   expect(spec).toContain('09 - G6 confirmation fictive');

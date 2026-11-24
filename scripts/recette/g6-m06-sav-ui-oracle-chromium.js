@@ -13,7 +13,9 @@ const fs=require('node:fs'),path=require('node:path');
 const {chromium}=require('playwright');
 const db=require('../../db');
 const {confirmTarget}=require('./target-guard');
-const {runtime,login}=require('./g6-canonical-forwarder-chromium');
+// The forwarder exports the authenticated actor, not the runtime attestation.
+const {login}=require('./g6-canonical-forwarder-chromium');
+const {runtime}=require('./g6-hub-shipment-chromium');
 const {humanGoto,humanFill,humanClick}=require('./canonical/actors/human-gestures');
 const {observe,fullError}=require('./canonical/observability');
 const env=process.env,BASE='https://komerce-backend-production.up.railway.app';

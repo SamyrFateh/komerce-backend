@@ -784,3 +784,27 @@ describe('Global en lecture, marché ciblé uniquement pour les actes', () => {
     expect(board).toHaveBeenCalledTimes(2);
   });
 });
+
+ test('Hub : entrée Opérations explicite, choix du marché sans second Kanban',async()=>{
+    const env=loadCanonicalApp();
+    const actor={id:'hub',role:'agent_hub'};
+    const ctx={actor,access:{mode:'hub',allowedMarkets:['KM','CM'],defaultMarket:'KM',capabilities:[]}};
+    const board=jest.fn().mockResolvedValue({});
+    const writer=jest.fn().mockResolvedValue({});
+    env.window.KomerceCanonicalHubWorkstation={renderGlobalBoard:board};
+    env.window.KomerceCanonicalOperationsWorkspace={mount:writer};
+    env.window.location.search='?view=execute&entry=operations';
+    await env.api.renderHubLive(env.root,actor,ctx);
+    expect(board).not.toHaveBeenCalled();
+    expect(writer).not.toHaveBeenCalled();
+    const select=env.root.children[0].children[1].children[1];
+    expect(select.children.map(o=>o.value)).toEqual(['','KM','CM']);
+    select.value='CM'; await select._listeners.change();
+    expect(writer).toHaveBeenCalledWith(expect.objectContaining({requestedMarket:'CM',mode:'execution'}));
+    expect(board).not.toHaveBeenCalled();
+ });
+
+test('le dossier décision Hub utilise la sélection de marché explicite',()=>{
+ const src=require('fs').readFileSync(require('path').join(__dirname,'../../public/dashboards/canonical/js/app.js'),'utf8');
+ expect(src).toContain("['operations','direction'].includes(");
+});

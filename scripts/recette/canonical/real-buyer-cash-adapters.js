@@ -327,9 +327,9 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
     M06_RECEIVING:()=>data.physical_receipt_certified===true&&data.after?.po_status==='hub_received'&&
       Number(data.after?.received_quantity)===3&&Number(data.after?.local_stock_allocations_count)===0&&state.status==='hub_received',
     M06_DIRECT_COMBOX:()=>data.direct_combox_certified===true&&data.after?.state==='PACKED'&&
-      Number(data.after?.quantity)===3&&Number(data.after?.external_payment_rows)===0,
+      Number(data.after?.quantity)===3&&Number(data.after?.label_scan_count)===3&&Number(data.after?.external_payment_rows)===0,
     M06_SHIPMENT_HANDOVER:()=>data.shipment_handover_certified===true&&data.after?.shipment_stage==='handed_over'&&
-      data.after?.box_state==='DISPATCHED'&&data.after?.parcel_status==='shipped'&&Number(data.after?.parcel_qty_shipped)===3&&
+      data.after?.box_state==='DISPATCHED'&&data.after?.parcel_status==='shipped'&&Number(data.after?.parcel_qty_shipped)===3&&Number(data.after?.handover_scan_count)===1&&
       Number(data.after?.external_payment_rows)===0
    }[stageId];
    if(!invariants())throw Error('G6_DYNAMIC_M06_PG_ORACLE_INVALID_'+stageId);
@@ -338,14 +338,15 @@ function createRealBuyerCashAdapters({db,env=process.env,fetchImpl=fetch}={}){
     // physical COMBOX placement and its immutable economic allocation.
     const physical=await finalMileIdentity(db,context,{m06:true});
     const {rows}=await db.query(`SELECT s.stage::text AS stage,p.status::text AS parcel_status,
-       ep.quantity::int AS boxed_quantity
+       sum(ep.quantity)::int AS boxed_quantity
       FROM international_shipments s
       JOIN international_shipment_hub_units h ON h.shipment_id=s.id
       JOIN hub_box_effective_placements ep ON ep.box_unit_id=h.physical_unit_id
       JOIN hub_purchase_allocations a ON a.id=ep.allocation_id
       JOIN parcels p ON p.order_id=a.order_id
       WHERE s.id=$1 AND s.reference=$6 AND h.physical_unit_id=$2
-       AND ep.bag_unit_id IS NULL AND a.id=$3 AND a.order_id=$4 AND p.id=$5`,
+       AND ep.bag_unit_id IS NULL AND a.id=$3 AND a.order_id=$4 AND p.id=$5
+      GROUP BY s.stage,p.status`,
      [physical.shipment_id,physical.box_id,physical.allocation_id,context.order_id,
       physical.parcel_id,physical.shipment_ref]);
     if(rows.length!==1||rows[0].stage!=='handed_over'||

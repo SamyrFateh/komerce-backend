@@ -992,3 +992,43 @@ Migration 417 est uniquement un schéma visé. Ne pas lancer en production ni ac
 
 Le lien `refunds.local_mobile_refund_handoff_id` est restrictif et unique. La clôture, l’augmentation de `qty_refunded` et `refunds.completed` sont atomiques. Le reçu numérique suit le COMMIT. Aucune pièce d’identité, aucun numéro de téléphone et aucune empreinte ne sont publiés dans le reçu. Le flux est borné au staging derrière des flags désactivés par défaut.
 <!-- /schema-pending -->
+
+
+<!-- schema-pending: order_delivery_waves (migration 426, intended_migration_schema; non live avant déploiement) -->
+### Référence unique structurée et vagues de tri temporaires (migration 426 — intended_migration_schema)
+
+La table `order_delivery_waves` n'est **pas encore confirmée live sur Railway**. Elle porte un groupe de distribution éphémère et invisible à l'utilisateur, indexé par la **fiche destinataire vérifiée** (`subject_recipient_id`), le marché et le relais, et jamais par une identité civile exposée. Un seul groupe ouvert existe par destinataire/marché/relais ; `client_code` est composé de trois caractères (lettre de tri équilibrée + deux caractères non ambigus), unique par marché/relais même après clôture. La fermeture d'admission est historisée par `closed_at` et `close_reason` ; les références déjà attribuées sont immuables.
+
+`relais.short_code` (migration 426) : colonne texte nullable, deux lettres normalisées issues du nom **réel** du relais et suffixe numérique local sur deux chiffres (01 à 99), UNIQUE par marché. Attribuée et persistée en transaction à la première commande structurée ; le renommage du relais ne change pas les références commerciales émises. `orders.delivery_wave_id` (migration 426) : FK UUID nullable vers `order_delivery_waves(id)`, permettant à la commande commerciale de conserver la preuve du regroupement temporaire sans deuxième référence de commande.
+
+La **seule référence commerciale** suit `MARCHÉ-RELAIS-GROUPE+N°COMMANDE` : `CM-YA01-B7Q01` pour la première commande du groupe temporaire `B7Q` au relais `YA01` du marché `CM` ; la suivante devient `CM-YA01-B7Q02`. Les unités physiques reçues se distinguent par `-01`, `-02`, etc. sans altérer `orders.reference`. La lettre initiale est attribuée **par relais**, en rotation A→Z avec équilibrage selon les quantités d'articles attendues ; elle n'est pas tirée au hasard. Le groupe garde sa lettre tant que sa vague est ouverte. `order_delivery_waves.next_order_number` (1..100) assure la réservation atomique des numéros 01..99 ; `planned_units` contribue à l'équilibrage des lettres. À 99 commandes, une nouvelle vague est ouverte, sans renuméroter les références existantes. Le marché/relais cloisonne l'unicité des groupes, qui ne sont jamais recyclés dans ce périmètre.
+
+Ni le groupe ni la référence ne constituent une preuve de retrait : les secrets de remise restent séparés. Les COMBOX et manifestes physiques ont leurs propres identités, sans création de sac client numérique. Aucun appariement de destinataires entre acheteurs diaspora par nom ou téléphone seul.
+
+**Activation** : code sous `KOMERCE_ORDER_WAVES_ENABLED=1`, accepté seulement avec `KOMERCE_ENV=staging`, OFF par défaut. Migration à appliquer, puis PostgreSQL, HTTP, Chromium et dashboards à certifier avant GO. Les références des commandes G6 dédiées restent sous leur contrôle de recette ; la persistance de schéma ne signifie pas mise en service commerciale.
+<!-- /schema-pending -->
+
+
+<!-- schema-pending: hub_scan_labels (migration 427, intended_migration_schema; non live avant déploiement) -->
+### Identités d'étiquettes QR opaques Hub–Relais (migration 427 — intended_migration_schema)
+
+La table `hub_scan_labels` est **prévue, non confirmée live sur Railway**. Elle stocke un QR opaque non prédictible (`KQ1_` suivi de 32 caractères hexadécimaux) et un alias de secours à huit caractères, tous deux uniques. Le ticket papier n'expose que KOMERCE, ARTICLE/COMBOX, le marché, le relais, le QR opaque et l'alias : **jamais le nom, le téléphone, le secret de retrait ni la référence commerciale**.
+
+Chaque étiquette `ARTICLE` correspond à un couple unique (allocation d'achat, ordinal d'unité reçue physiquement), et chaque étiquette `COMBOX` à une unité physique `MARKET_PARCEL` unique ; les FKs vers allocation, unité physique, marché et relais sont restrictives. L'émission d'étiquettes d'articles dépend d'une preuve préalable de réception physique canonique, et l'impression/réimpression ne modifie aucune quantité. La résolution exige un acteur authentifié dans le périmètre marché/relais et ne vaut pas preuve d'une remise.
+<!-- /schema-pending -->
+
+
+<!-- schema-pending: hub_scan_label_box_scans (migration 427, intended_migration_schema; non live avant déploiement) -->
+### Preuve de placement QR article dans une COMBOX (migration 427 — intended_migration_schema)
+
+La table `hub_scan_label_box_scans` est **prévue, non confirmée live sur Railway**. Sa clé primaire `label_id` ne permet qu'une preuve de premier placement par identité article et interdit de réutiliser un même QR pour deux mouvements COMBOX. Elle conserve l'allocation physique, l'unité source, la COMBOX cible, l'acteur et l'horodatage. L'écriture est dans la transaction du writer de déplacement Hub (REPACK) ; un QR n'est qu'une preuve d'identité, jamais un droit de mutation autonome. Le moteur maintient les gardes de quantité, d'autorisation et de destination. Les événements de custody existants restent l'autorité de traçabilité.
+<!-- /schema-pending -->
+
+
+<!-- schema-pending: hub_box_custody_scans (migration 428, intended_migration_schema; non live avant déploiement) -->
+### Preuves de scans de garde des COMBOX (migration 428 — intended_migration_schema)
+
+La table `hub_box_custody_scans` est **prévue, non confirmée live sur Railway**. Elle associe chaque COMBOX d'un manifeste d'expédition et son étiquette QR opaque à trois attestations physiques **distinctes et append-only** : `HUB_HANDOVER` (remise Hub), `CARRIER_ACCEPTED` (réception transitaire) et `CARRIER_LOADED` (second scan de chargement par le transitaire). La contrainte UNIQUE `(shipment_id, box_unit_id, event_type)` refuse une double confirmation. Acteur, justificatif et horodatage sont conservés ; le QR ne contient aucune donnée personnelle.
+
+Ces événements n'avancent **jamais** un statut d'expédition au simple scan : la transition reste un acte explicite. Pour un dossier Hub nouvellement préparé, le serveur exige la couverture **de toutes les COMBOX du manifeste** avant les transitions `handed_over`, `forwarder_received` et `in_transit` ; le départ maritime exige aussi la référence conteneur et l'attestation de fermeture. Le parcours historique reste sujet à sa migration de données et à ses propres vérifications de compatibilité. UI, PostgreSQL, vraie recette Chromium et preuve matériel requises avant GO.
+<!-- /schema-pending -->

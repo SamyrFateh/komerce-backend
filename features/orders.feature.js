@@ -28,6 +28,7 @@ module.exports = {
   perimeter: {
     in: [
       'creation, annulation, machine de statut de la commande',
+      'vague de tri temporaire, avec référence commerciale structurée unique CM-YA01-B7Q01 pour les nouvelles commandes staging',
       'snapshot de cout a la commande',
       'rattachement aux colis et aux achats fournisseurs',
       'collecte QR au retrait',
@@ -61,6 +62,7 @@ module.exports = {
     ],
     services: [
       'services/order-service.js',
+      'services/order-delivery-wave-service.js',
       'services/order-read-authorization.js',
       'services/verify-qr-collection.js',
       'services/qr-collection-core.js',
@@ -180,6 +182,8 @@ module.exports = {
       'tests/unit/sav-replacement-order.test.js',
       'tests/unit/payment-service.test.js',
       'tests/unit/order-service.test.js',
+      'tests/unit/order-delivery-wave-service.test.js',
+      'tests/integration/order-delivery-wave-migration-postgres.test.js',
       'tests/unit/orderParcelLinkRules.test.js',
       'tests/unit/orders-parcels-route.test.js',
       'tests/unit/parcels.test.js',
@@ -232,7 +236,10 @@ module.exports = {
       'order_items: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'order_status_history: RW',
       'orders: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
+      'incidents: R',
+      'international_shipment_relay_receipts: R',
       'relay_return_compensations: RW!', // Compensation SAV, décision unique (A1)
+      'order_delivery_waves: RW!', // staging-only, grouped by verified recipient ID
       'order_checkout_idempotency: RW!', // Unique checkout claim (migration 408 ; staged, pas encore live)
       'parcel_items: R',
       'parcels: R',
@@ -240,6 +247,9 @@ module.exports = {
       'products: R',          // W-via:product-admin-service (adjustStock — order-payment-confirmation.js, order-status-machine.js)
       'recipients: RW',
       'refunds: R',
+      'refund_execution_intents: R',
+      'order_item_refund_reservations: R',
+      'local_item_refund_reservations: R',
       'relais: R',
       'sms_log: W',
       'users: R',

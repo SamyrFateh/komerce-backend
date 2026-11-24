@@ -27,6 +27,7 @@ const { resolveAuthorization } = require('../services/market-delegation-service'
 const { resolveReadAuthority } = require('../services/market-delegation-read-authority');
 const workspace = require('../services/shipping-customs-workspace');
 const journey = require('../services/international-shipment-journey');
+const custodyScans = require('../services/hub-box-custody-scans');
 const internationalN1 = require('../services/international-n1-reconciliation');
 const log = require('../utils/logger').child({ module: 'admin-shipping-customs-workspace' });
 
@@ -289,6 +290,21 @@ router.get('/market/:marketCode/international/:reference',async(req,res,next)=>{
     return res.json(await journey.detail(req.workspaceMarket,req.params.reference));
   }catch(err){return journeyError(err,res,next);}
 });
+// Read a QR, then explicitly confirm the physical custody event. No shipment stage change here.
+router.post('/market/:marketCode/international/:reference/box-scan',
+  requireTransitAction,requireTransitExecutionForTransitaire,async(req,res,next)=>{
+    try {
+      const result=await custodyScans.confirmBoxScan(
+        req.workspaceMarket,actionActor(req),req.params.reference,req.body||{});
+      res.set('Cache-Control','no-store');
+      return res.status(201).json({ok:true,result});
+    } catch(err) {
+      if(err instanceof custodyScans.CustodyError)
+        return res.status(err.status).json({error:err.message,code:err.code});
+      return next(err);
+    }
+  });
+
 router.post('/market/:marketCode/international/:reference/transition',
   requireTransitAction,requireTransitExecutionForTransitaire,async(req,res,next)=>{
     try{

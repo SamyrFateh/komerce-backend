@@ -1,6 +1,5 @@
-/* Hub Live — actions métier réelles depuis le tableau, sans état parallèle.
- * Les menus lisent les données canoniques et soumettent aux writers existants.
- * Aucun changement de statut n'est déclenché par l'ouverture d'un menu. */
+/* Hub Live — Kanban de navigation et actions administratives distinctes.
+ * Les liens du Kanban ne soumettent aucune mutation métier. */
 (function initHubContextActions(global) {
   'use strict';
   const writableRoles = ['admin','agent_hub'];
@@ -76,6 +75,7 @@
     panel.appendChild(buttons);
     panel.addEventListener('submit',async event=>{
       event.preventDefault();
+      if(confirm.disabled)return;
       for(const [key,input] of Object.entries(entries))values[key]=input.value;
       confirm.disabled=true;
       feedback.textContent='Enregistrement en cours…';
@@ -115,298 +115,74 @@
     link.setAttribute('data-hub-workflow-link','');
     menu.appendChild(link);
   }
-  function sent(menu, doc, po, fetchFn, refresh) {
-    if(!validUuid(po.id)||po.status !== 'notified'||po.sent_at)return false;
-    action(menu,doc,'Attester l’envoi fournisseur','La PO doit avoir été réellement transmise.',()=>form(
-      menu,doc,'PO '+po.id.slice(0,8)+' · Preuve d’envoi',[
-        {name:'channel',label:'Canal utilisé',required:true,choices:[
-          {label:'WhatsApp',value:'whatsapp'},{label:'E-mail',value:'email'},
-          {label:'Téléphone',value:'phone'},{label:'API fournisseur',value:'api'},
-          {label:'Autre',value:'other'}]},
-        {name:'supplier_order_id',label:'Référence fournisseur (facultative)'},
-        {name:'note',label:'Justificatif / note de transmission'},
-      ], values=>request(fetchFn,'/api/purchasing/po/'+encodeURIComponent(po.id)+'/sent',values),refresh
-    ));
+  // Le dossier PO canonique est l’unique surface d’exécution des achats.
+  function poLink(menu,doc,po,label,entry='operations',decision=null){
+    const markets=String(po.market||'').split(' · ').filter(m=>/^[A-Z]{2}$/.test(m));
+    if(!validUuid(po.id)||!markets.length) {
+      explanation(menu,doc,'Marché ou PO non identifié : accès au dossier indisponible.');
+      return false;
+    }
+    for(const market of markets)workflowLink(menu,doc,label+(markets.length>1?' · '+market:''),'/admin/hub-live?'+new URLSearchParams({
+      view:'execute',entry,market,atelier:'purchasing',sel:'po:'+po.id,...(decision?{decision}:{})
+    }).toString());
     return true;
   }
-  // Une intention métier, deux écritures canoniques : attacher à une PO draft
-  // ou préparer une nouvelle PO. Le canal (manuel / API certifiée) appartient à la PO,
-  // jamais à un circuit d'achat concurrent.
-  async function prepare(menu,doc,order,fetchFn,refresh,isCurrent = () => true,dossier = {}) {
-    const open=await request(fetchFn,'/api/purchasing/open-lines');
-    if(!isCurrent())return false;
-    const candidates=[];
-    for(const group of open.groups||[]){
-      const orderLines=(group.lines||[]).filter(l=>l.order_id===order.id && l.groupable && validUuid(l.line_id));
-      if(!orderLines.length||!validUuid(group.supplier_id)||!group.procurement_hub_ref)continue;
-      // Une PO a une devise fournisseur. Ne jamais masquer un mélange sous un seul clic.
-      const byCurrency=new Map();
-      for(const line of orderLines){
-        const currency=text(line.supplier_currency||'').trim().toUpperCase();
-        if(!byCurrency.has(currency))byCurrency.set(currency,[]);
-        byCurrency.get(currency).push(line);
-      }
-      for(const [currency,lines] of byCurrency){
-        candidates.push({group,currency,lines,lineIds:lines.map(l=>l.line_id)});
-      }
-    }
-    if(!candidates.length)return false;
-    action(menu,doc,'Organiser l’achat fournisseur',
-      'Rattacher les lignes à une PO modifiable ou créer un nouveau brouillon, sans engager ni payer.',()=>{
-      if(!isCurrent())return;
-      menu.replaceChildren();
-      menu.scrollTop = 0;
-      menu.classList.add('is-editing','is-purchasing-flow');
-      menu.appendChild(node(doc,'strong','kmc-hub-board-menu-title',
-        'Organiser l’achat · '+order.reference));
-      explanation(menu,doc,'1. Choisir une PO du même marché, fournisseur, Hub et devise. 2. Confirmer le rattachement. Le canal de commande se choisit sur une nouvelle PO.');
-      for(const candidate of candidates){
-        const {group,lines,lineIds,currency}=candidate;
-        const section=node(doc,'section','kmc-hub-po-choice');
-        section.setAttribute('data-hub-po-group',group.supplier_id);
-        section.appendChild(node(doc,'strong','kmc-hub-po-choice-title',
-          group.supplier_name+' · '+(group.market_code||order.market)+' · '+(currency||'Devise à vérifier')));
-        section.appendChild(node(doc,'p','kmc-hub-po-choice-summary',
-          lines.length+' ligne(s), '+lines.reduce((n,l)=>n+Number(l.quantity||0),0)+
-          ' unité(s) · Hub '+group.procurement_hub_ref));
-        const batch=(dossier.need_batches||[]).find(b=>b.supplier_id===group.supplier_id &&
-          String(b.procurement_hub_ref||'')===String(group.procurement_hub_ref||'') &&
-          String(b.market_id||'')===String(group.market_id||''));
-        const draftIds=new Set(batch?.compatible_draft_po_ids||[]);
-        const drafts=(dossier.purchase_orders||[]).filter(po=>
-          draftIds.has(po.id)&&po.status==='draft'&&!po.authorizations?.commitment&&
-          po.supplier_id===group.supplier_id &&
-          String(po.market_id||'')===String(group.market_id||'') &&
-          String(po.procurement_hub_ref||'')===String(group.procurement_hub_ref||'') &&
-          (po.lines||[]).every(l=>!currency||!l.currency||String(l.currency).toUpperCase()===currency)
-        );
-        if(drafts.length)section.appendChild(node(doc,'p','kmc-hub-po-choice-caption',
-          'PO existantes compatibles · brouillons non engagés'));
-        for(const po of drafts){
-          const button=action(section,doc,'Rattacher à PO '+po.id.slice(0,8),
-            'Cette PO existe et reste modifiable : aucun nouveau bon ne sera créé.',()=>{
-            form(menu,doc,'Rattacher à PO '+po.id.slice(0,8),[
-              {name:'confirmation',label:'Vérifier le rattachement',required:true,choices:[
-                {label:'Confirmer : même fournisseur, Hub, marché et devise',value:'confirm'},
-              ]},
-            ],async values=>{
-              if(values.confirmation!=='confirm')throw new Error('Confirmation requise.');
-              return request(fetchFn,'/api/purchasing/po/'+encodeURIComponent(po.id)+'/attach',
-                {line_ids:lineIds});
-            },refresh);
-            explanation(menu,doc,group.supplier_name+' · '+(group.market_code||order.market)+
-              ' · '+lineIds.length+' ligne(s). La PO reste en brouillon. La directrice validera séparément l’engagement.');
-          });
-          button.classList.add('is-existing-po');
-          button.setAttribute('data-hub-po-target',po.id);
-        }
-        if(!drafts.length)section.appendChild(node(doc,'p','kmc-hub-po-choice-caption',
-          'Aucun brouillon compatible modifiable : vous pouvez créer une nouvelle PO.'));
-        const newPO=action(section,doc,'Créer une nouvelle PO',
-          'Préparer une nouvelle PO brouillon sur les lignes sélectionnées.',()=>{
-          const executionChoices=[{label:'Manuel · WhatsApp, e-mail, téléphone ou déplacement',value:'manual'}];
-          if(group.api_available&&lines.every(l=>l.api_eligible)){
-            executionChoices.push({label:'API fournisseur · intégration éligible',value:'api'});
-          }
-          form(menu,doc,'Nouvelle PO · '+group.supplier_name,[
-            {name:'execution_mode',label:'Canal de commande fournisseur',required:true,choices:executionChoices},
-          ],values=>request(fetchFn,'/api/purchasing/po/prepare',{
-            supplier_id:group.supplier_id,procurement_hub_ref:group.procurement_hub_ref,
-            line_ids:lineIds,execution_mode:values.execution_mode,
-          }),refresh);
-          explanation(menu,doc,(group.market_code||order.market)+' · '+lineIds.length+
-            ' ligne(s) · brouillon uniquement. Le mode manuel n’est pas un autre type d’achat : il conserve toutes les validations de la PO.');
-        });
-        newPO.setAttribute('data-hub-po-target','new');
-        section.appendChild(newPO);
-        menu.appendChild(section);
-      }
-      const back=node(doc,'button','kmc-hub-board-menu-action is-dismiss','Fermer sans modifier');
-      back.type='button';
-      back.addEventListener('click',()=>{menu.hidden=true;menu.classList.remove('is-editing','is-purchasing-flow');});
-      menu.appendChild(back);
-      menu.dispatchEvent(new doc.defaultView.Event('hub:menu-state'));
-    });
-    return true;
-  }
-
-  async function receive(menu,doc,poIds,fetchFn,refresh,isCurrent = () => true) {
-    const data=await request(fetchFn,'/api/scans/hub/receivable');
-    if(!isCurrent())return false;
-    let count=0;
-    for(const po of (data.purchase_orders || []).filter(p=>poIds.includes(p.purchase_order_id))){
-      const available=(po.lines||[]).filter(l=>validUuid(l.product_sku_id)&&l.remaining_quantity>0);
-      if(!available.length)continue;
-      action(menu,doc,'Réceptionner un colis · PO '+po.purchase_order_id.slice(0,8),
-        'Saisir les quantités réellement comptées, puis confirmer la réception physique.',()=>{
-          const fields=[
-            {name:'reference',label:'Référence physique du colis',placeholder:'Code-barres ou référence interne',required:true},
-            {name:'external_ref',label:'Suivi transporteur (facultatif)'},
-            ...available.map((line,i)=>({
-              name:'quantity_'+i,
-              label:line.product_name+' · restant '+line.remaining_quantity,
-              type:'number',min:0,max:line.remaining_quantity,step:1,value:0,required:true,
-            })),
-          ];
-          form(menu,doc,'Réception physique fournisseur',fields,async values=>{
-            const contents=available.map((line,i)=>({
-              purchase_order_id:po.purchase_order_id,
-              product_sku_id:line.product_sku_id,
-              quantity:Number(values['quantity_'+i]),
-            })).filter(item=>item.quantity>0);
-            if(!contents.length)throw new Error('Renseigner au moins une quantité réellement reçue.');
-            if(contents.some((item)=>!Number.isInteger(item.quantity)))throw new Error('Les quantités doivent être entières.');
-            return request(fetchFn,'/api/scans/hub/receive',{
-              reference:values.reference.trim(),external_ref:values.external_ref.trim()||undefined,contents,
-            });
-          },refresh);
-        });
-      count++;
-    }
-    return count>0;
-  }
-  function ship(menu,doc,boxes,shipments,fetchFn,refresh) {
-    const ready=(boxes||[]).filter(b=>b.state==='DISPATCHED'&&!b.shipment_ref&&validUuid(b.unit_id));
-    if(!ready.length||!(shipments||[]).length)return false;
-    for(const box of ready){
-      action(menu,doc,'Affecter '+box.reference+' à un départ',
-        'Rattacher une KOM-BOX réellement prête à une expédition ouverte du même marché.',()=>{
-          form(menu,doc,'Affecter une KOM-BOX à une expédition',[
-            {name:'shipment_reference',label:'Expédition ouverte',required:true,
-              choices:shipments.map(s=>({label:s.reference+' · '+(s.forwarder_name||'Transitaire à confirmer'),value:s.reference}))},
-          ],values=>request(fetchFn,'/api/hub/box/'+encodeURIComponent(box.unit_id)+'/shipment',{
-            shipment_reference:values.shipment_reference,
-          }),refresh);
-        });
-    }
-    return true;
-  }
-  async function operations(menu,{doc,fetch:fetchFn,user,order,stage,refresh,launchSourcing=false}) {
+  // Kanban : lecture et liens uniquement. Aucun formulaire ni POST métier.
+  // Le dossier serveur fournit les PO/COMBOX ; le marché et les identifiants
+  // restent des paramètres de navigation, jamais une autorité de mutation.
+  async function operations(menu,{doc,fetch:fetchFn,user,order,stage}) {
     if(!writableRoles.includes(user?.role))return false;
-    // Une ouverture d'une autre cellule annule les requêtes de l'ancien menu.
+    const key=({PO:'po',Fournisseur:'supplier',Réception:'reception',Cartons:'cartons',Départ:'departure','Reste à solder':'remaining'})[stage];
+    if(!key||['locked','complete'].includes(order.stage_states?.[key]))return false;
     const serial=menu.getAttribute('data-hub-request')||'';
-    const marker=serial+'|'+order.id+'|'+stage;
-    menu.setAttribute('data-hub-action-key',marker);
-    const isCurrent=()=>!menu.hidden &&
-      menu.getAttribute('data-hub-request')===serial &&
-      menu.getAttribute('data-hub-action-key')===marker;
-    const busy=node(doc,'p','kmc-hub-action-loading',
-      'Lecture des actions possibles pour « '+stage+' »…');
+    const isCurrent=()=>!menu.hidden && (menu.getAttribute('data-hub-request')||'')===serial;
+    const busy=node(doc,'p','kmc-hub-action-loading','Lecture du dossier opérationnel…');
     menu.appendChild(busy);
+    const url=(atelier,type,id)=>'/admin/hub-live?'+new URLSearchParams({
+      view:'execute',entry:'operations',market:order.market,atelier,sel:type+':'+id
+    }).toString();
+    let links=0;
+    const link=(label,atelier,type,id)=>{
+      workflowLink(menu,doc,label,url(atelier,type,id));links++;
+    };
     try {
       const data=await request(fetchFn,'/api/hub/dossier?market='+encodeURIComponent(order.market));
       if(!isCurrent())return false;
       const pos=(data.purchase_orders||[]).filter(po=>(po.lines||[]).some(l=>l.order_id===order.id));
-      const poIds=pos.map(po=>po.id);
       const needs=(data.needs||[]).filter(n=>n.order_id===order.id);
       const boxes=(data.boxes||[]).filter(box=>(box.contents||[]).some(c=>c.order_id===order.id));
-      const received=pos.reduce((total,po)=>total+(po.lines||[])
-        .filter(l=>l.order_id===order.id).reduce((s,l)=>s+(Number(l.received)||0),0),0);
-      let count=0;
-      let unavailable='';
+      const received=pos.reduce((total,po)=>total+(po.lines||[]).filter(l=>l.order_id===order.id).reduce((n,l)=>n+(Number(l.received)||0),0),0);
+      const poLinks=(label,atelier,rows)=>rows.forEach(po=>link(label+' · PO '+String(po.ref||po.id).slice(0,18),atelier,'po',po.id));
       if(stage==='PO'){
-        if(needs.length){
-          count+=Number(await prepare(menu,doc,order,fetchFn,refresh,isCurrent,data));
-          unavailable='Lignes d’achat ouvertes : choisir une PO existante compatible ou créer un nouveau brouillon. Si aucune ligne n’est groupable, vérifier fournisseur, Hub et références.';
-        }else if(!pos.length){
-          const dossierOrder=(data.orders||[]).find(o=>o.id===order.id);
-          const missing=(dossierOrder?.items||[]).reduce((n,item)=>
-            n+(item.sourcing_required ? Math.max(0,Number(item.purchasing_missing)||0) : 0),0);
-          if(missing>0 || order.po==='Sourcing requis'){
-            unavailable='Sourcing requis : compléter les lignes fournisseur avant de les rattacher à une PO existante ou nouvelle. Le manuel suit la même PO.';
-            const reuse = global.KomerceCanonicalOperationsWorkspace;
-            const dossierOrder = (data.orders||[]).find(o=>o.id===order.id);
-            if (reuse && typeof reuse.openManualSourcing==='function' && dossierOrder) {
-              const launch = () => {
-                if(!isCurrent())return;
-                menu.classList.add('is-sourcing-inline','is-editing');
-                menu.scrollTop = 0;
-                const viewport=doc.defaultView;
-                const compact=Number(viewport?.innerWidth||1440)<=700;
-                menu.style.left=compact?'8px':Math.max(8,Math.round(((viewport?.innerWidth||1440)-780)/2))+'px';
-                menu.style.top=compact?'8px':'58px';
-                try {
-                  reuse.openManualSourcing(menu,{
-                    document:doc,fetch:fetchFn,user,order:dossierOrder,
-                    confirm:question=>Boolean(viewport?.confirm?.(question)),
-                    onClose:()=>{menu.hidden=true;menu.classList.remove('is-sourcing-inline','is-editing');},
-                    refresh:async()=>{menu.hidden=true;await refresh?.();},
-                  });
-                }catch(error){
-                  menu.classList.remove('is-sourcing-inline','is-editing');
-                  explanation(menu,doc,'Sourcing non disponible : '+error.message);
-                }
-              };
-              if (launchSourcing) launch();
-              else action(menu,doc,'Organiser l’achat fournisseur · compléter les lignes',
-                'Formulaire officiel : fournisseur, référence, prix réel et quantité non couverte.',launch);
-            } else {
-              workflowLink(menu,doc,'Ouvrir le sourcing manuel · Vue opérations','/admin/workspaces/operations');
-            }
-          }else{
-            unavailable='Aucune ligne d’achat préparée : identifier les lignes fournisseur avant de constituer la PO.';
-          }
-        }else if(pos.some(p=>p.stage==='draft')){
-          unavailable='PO brouillon existante : compléter les lignes et faire valider l’engagement avant de soumettre le bon.';
-        }else{
-          unavailable='PO déjà constituée : voir l’étape Fournisseur pour la preuve de transmission.';
-        }
+        link('Ouvrir le dossier d’achat','purchasing','order',order.id);
       }else if(stage==='Fournisseur'){
-        for(const po of pos)if(sent(menu,doc,po,fetchFn,refresh))count++;
-        unavailable=!pos.length?'Aucune PO fournisseur : constituer d’abord la PO.':
-          pos.some(p=>p.stage==='draft')?'PO encore brouillon : l’envoi ne peut pas être attesté avant soumission.':
-          pos.every(p=>p.sent_at)?'Transmission déjà enregistrée pour les PO de cette commande.':
-          'Aucun envoi attestable : vérifier le statut de la PO et son engagement.';
+        poLinks('Ouvrir le suivi fournisseur','purchasing',pos);
       }else if(stage==='Réception'){
-        if(order.stage_states?.reception==='complete'){
-          unavailable='✓ Réception terminée : toutes les quantités attendues sont reçues. Consulter les preuves dans le dossier.';
-        }else{
-          if(poIds.length)count+=Number(await receive(menu,doc,poIds,fetchFn,refresh,isCurrent));
-          unavailable=!poIds.length?'Aucune PO associée : la réception exige une commande fournisseur.':
-            'Aucune quantité recevable actuellement : vérifier la PO et les quantités physiques restant à réceptionner.';
-        }
-      }else if(stage==='Cartons'){
-        // Une KOM-BOX vide ne prouve pas l'emballage. Ne pas proposer de création
-        // trompeuse avant l'allocation physique et le contrôle du contenu.
-        unavailable=received<=0?'Rien de réceptionné : préparer le carton seulement après le contrôle physique.':
-          boxes.length?'Carton(s) présent(s) : contrôler le contenu et la preuve d’emballage avant la mise au départ.':
-          'Articles réceptionnés : préparer leur emballage dans le workspace Opérations du marché.';
-        if(received>0 && order.stage_states?.cartons!=='complete'){
-          workflowLink(menu,doc,'Ouvrir la préparation physique · Opérations','/admin/workspaces/operations');
-        }
+        poLinks('Ouvrir l’atelier Réception','reception',pos);
+      }else if(stage==='Cartons' && received>0){
+        link('Ouvrir la préparation COMBOX','boxes','order',order.id);
       }else if(stage==='Départ'){
-        count+=Number(ship(menu,doc,boxes,data.open_shipments,fetchFn,refresh));
-        const ready=boxes.filter(box=>box.state==='DISPATCHED'&&!box.shipment_ref);
-        const planned=boxes.filter(box=>box.shipment_ref && (!box.shipment_stage || box.shipment_stage==='hub_ready'));
-        const attested=boxes.filter(box=>box.shipment_ref && box.shipment_stage && box.shipment_stage!=='hub_ready');
-        unavailable=planned.length?'Expédition créée ('+planned.map(b=>b.shipment_ref).filter(Boolean).join(', ')+') mais remise au transitaire non attestée. Attester le transfert réel dans Expéditions & Douane.':
-          attested.length && !ready.length?'Remise au transitaire déjà attestée : consulter le suivi et les justificatifs dans Expéditions & Douane.':
-          !boxes.length?'Aucun carton constitué : la préparation physique doit précéder le départ.':
-          !ready.length?'Aucun carton prêt à rattacher : confirmer l’emballage et le scellage dans le Hub.':
-          'Aucune expédition ouverte pour ce marché : créer le départ avant de rattacher le carton.';
-        if(planned.length || attested.length) workflowLink(menu,doc,
-          'Consulter le transport · Expéditions & Douane','/admin/workspaces/shipping-customs');
+        boxes.filter(b=>!b.shipment_ref).forEach(b=>link('Ouvrir le départ · '+b.reference,'shipments','box',b.unit_id));
+        if(boxes.some(b=>b.shipment_ref)){
+          workflowLink(menu,doc,'Consulter le transport · Expéditions & Douane',
+            '/admin/workspaces/shipping-customs?'+new URLSearchParams({market:order.market}).toString());links++;
+        }
       }else if(stage==='Reste à solder'){
-        if(needs.length)count+=Number(await prepare(menu,doc,order,fetchFn,refresh,isCurrent,data));
-        if(isCurrent()&&poIds.length)count+=Number(await receive(menu,doc,poIds,fetchFn,refresh,isCurrent));
-        unavailable=order.current_phase==='Remise client'?
-          'Colis arrivé au relais : seule la preuve de remise au client permettra de clore cette étape.':
-          needs.length?'Des articles restent à acheter : la préparation de PO nécessite des lignes fournisseur groupables.':
-          poIds.length?'Vérifier les quantités encore attendues ; la clôture ou le remboursement exige une décision traçable.':
-          'Aucun reliquat engagé en achat. Remboursement et clôture restent soumis à une décision métier traçable.';
-        if(order.current_phase==='Remise client') workflowLink(menu,doc,'Voir le relais · suivi des remises','/admin/relais-live');
-      }else{
-        unavailable='Étape inconnue : aucune action disponible.';
+        if(order.current_phase==='Remise client'){
+          workflowLink(menu,doc,'Consulter le suivi des remises','/admin/relais-live?'+new URLSearchParams({market:order.market}).toString());links++;
+        }else{
+          if(needs.length||!pos.length)link('Ouvrir les achats restants','purchasing','order',order.id);
+          poLinks('Ouvrir les réceptions restantes','reception',pos);
+          explanation(menu,doc,'Une clôture ou un remboursement nécessite une décision métier traçable ; aucune validation depuis le Kanban.');
+        }
       }
-      if(!isCurrent())return false;
       busy.remove();
-      if(!count)explanation(menu,doc,unavailable);
-      return count>0;
+      if(!links)explanation(menu,doc,'Aucun atelier exécutable pour cette étape actuellement. Consulter les preuves et les quantités attendues.');
+      return links>0;
     }catch(error){
       if(!isCurrent())return false;
       busy.remove();
-      explanation(menu,doc,
-        'Impossible de vérifier les actions de « '+stage+' » : '+error.message);
+      explanation(menu,doc,'Impossible de vérifier le dossier : '+error.message);
       return false;
     }
   }
@@ -416,12 +192,7 @@
   function commitment(menu,doc,po,grants,fetchFn,refresh) {
     if(po.commitment_decision){
       explanation(menu,doc,decisionLine('Engagement d’achat validé',po.commitment_decision));
-      if(validUuid(po.id)&&po.status==='draft'){
-        action(menu,doc,'Soumettre au fournisseur','La PO engagée est soumise ; l’envoi réel s’atteste ensuite.',async()=>{
-          try{await request(fetchFn,'/api/purchasing/po/'+encodeURIComponent(po.id)+'/submit',{});menu.hidden=true;await refresh?.();}
-          catch(err){explanation(menu,doc,'Soumission refusée : '+err.message);}
-        });
-      }
+      if(validUuid(po.id)&&po.status==='draft') poLink(menu,doc,po,'Ouvrir la PO pour la soumettre');
       return true;
     }
     if(!validUuid(po.id)||po.status!=='draft'){
@@ -432,15 +203,7 @@
       explanation(menu,doc,'Engagement d’achat à valider par la directrice. Votre compte ne détient pas cette autorisation (attribuée par l’Admin central) ; une PO préparée n’est pas un engagement.');
       return false;
     }
-    action(menu,doc,'Valider l’engagement d’achat','Décision tracée : décideur, date, montant, pièce.',()=>form(
-      menu,doc,'PO '+po.id.slice(0,8)+' · Engagement d’achat',[
-        {name:'proof_ref',label:'Pièce / référence de la décision',required:true},
-        {name:'amount',label:'Montant (si les lignes n’ont pas un prix fournisseur unique)',type:'number',min:0,step:'0.01'},
-        {name:'currency',label:'Devise (ex. AED)'},
-      ],values=>request(fetchFn,'/api/purchasing/po/'+encodeURIComponent(po.id)+'/authorize-commitment',{
-        proof_ref:values.proof_ref.trim(),
-        ...(values.amount?{amount:Number(values.amount),currency:values.currency.trim()}:{}),
-      }),refresh));
+    poLink(menu,doc,po,'Ouvrir la PO · décision d’engagement','direction');
     return true;
   }
   function paymentAuthorization(menu,doc,po,grants,fetchFn,refresh) {
@@ -460,17 +223,10 @@
       explanation(menu,doc,'Paiement fournisseur à autoriser par la directrice. Votre compte ne détient pas cette autorisation (attribuée par l’Admin central).');
       return false;
     }
-    action(menu,doc,'Autoriser le paiement fournisseur','Décision tracée, distincte de l’engagement et du débit.',()=>form(
-      menu,doc,'PO '+po.id.slice(0,8)+' · Autorisation de paiement',[
-        {name:'proof_ref',label:'Pièce / référence de la décision',required:true},
-        {name:'amount',label:'Montant autorisé',type:'number',min:0,step:'0.01',required:true},
-        {name:'currency',label:'Devise (ex. AED)',required:true},
-      ],values=>request(fetchFn,'/api/purchasing/po/'+encodeURIComponent(po.id)+'/authorize-payment',{
-        proof_ref:values.proof_ref.trim(),amount:Number(values.amount),currency:values.currency.trim(),
-      }),refresh));
+    poLink(menu,doc,po,'Ouvrir la PO · autorisation de paiement','direction');
     return true;
   }
-  function varianceDecision(menu, doc, po, grants, fetchFn, refresh) {
+  function varianceDecision(menu, doc, po, grants, fetchFn, refresh, executeHere=false) {
     const variance = po.variance_decision;
     if (variance) {
       explanation(menu, doc, `Écart décidé · ${variance.amount} ${variance.currency} · ${variance.reason} · Pièce ${variance.proof_ref}`);
@@ -478,6 +234,10 @@
     }
     const authorization = po.payment_decision;
     if (!validUuid(po.id) || !grants.supplier_payment || !authorization?.currency || !['notified', 'confirmed', 'hub_received'].includes(po.status)) return;
+    if(!executeHere){
+      poLink(menu,doc,po,'Ouvrir Direction · décider un écart fournisseur','direction','variance');
+      return;
+    }
     action(menu, doc, 'Décider un écart fournisseur', 'Plafond exceptionnel motivé dans la devise autorisée.', () => form(
       menu, doc, 'Décision d’écart fournisseur', [
         { name: 'approved_total', label: 'Total approuvé (' + authorization.currency + ')', type: 'number', min: '0.0001', max: authorization.amount, step: '0.0001', required: true },
@@ -492,14 +252,12 @@
   function administration(menu,{doc,fetch:fetchFn,user,po,field,refresh,grants = {}}) {
     if(!writableRoles.includes(user?.role))return false;
     if(field==='Fournisseur'){
-      if(sent(menu,doc,po,fetchFn,refresh))return true;
+      if(po.status==='notified'&&!po.sent_at) return poLink(menu,doc,po,'Ouvrir la PO · attester l’envoi fournisseur');
       explanation(menu,doc,po.sent_at?
         'Envoi déjà attesté : aucune seconde déclaration autorisée. La confirmation fournisseur ligne par ligne se saisit dans Achats fournisseurs.':
         'La PO doit être soumise (après validation de l’engagement) avant qu’un envoi réel puisse être enregistré.');
       if(po.sent_at&&po.status==='notified'){
-        const link=node(doc,'a','kmc-hub-board-menu-action is-primary','Confirmer les lignes fournisseur');
-        link.href='/admin/workspaces/purchasing';
-        menu.appendChild(link);
+        poLink(menu,doc,po,'Ouvrir la PO · confirmer les lignes fournisseur');
       }
     }else if(field==='Engagement'){
       commitment(menu,doc,po,grants,fetchFn,refresh);
@@ -518,5 +276,14 @@
     }
     return false;
   }
-  global.KomerceHubContextActions=Object.freeze({operations,administration,request});
+  // Même formulaire et writer, uniquement dans le dossier Direction ciblé.
+  function directionVariance(menu,{doc,fetch:fetchFn,user,po,grants={},refresh}){
+    if(!writableRoles.includes(user?.role)||!grants.supplier_payment){
+      explanation(menu,doc,'Droit de paiement requis pour décider un écart fournisseur.');
+      return false;
+    }
+    varianceDecision(menu,doc,po,grants,fetchFn,refresh,true);
+    return true;
+  }
+  global.KomerceHubContextActions=Object.freeze({operations,administration,directionVariance,request});
 })(typeof globalThis !== 'undefined' ? globalThis : this);

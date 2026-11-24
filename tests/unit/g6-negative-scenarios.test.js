@@ -239,7 +239,7 @@ describe('G6-G4B-FIX runner N23, N29, N20',()=>{
  });
  it('N29 : la garde de LOCAL_RELAY_AVAILABLE accepte N29 sans autre assouplissement',()=>{
   const a=read('scripts/recette/g6-local-relay-available-chromium.js');
-  expect(a).toMatch(/\['M02','M03','N23','N24','N21','N22','N29'(?:,'N\d+')*\]\.includes\(env\.G6_CANONICAL_SCENARIO\)/);
+  expect(a).toMatch(/\['M02','M03','N23','N24','N21','N22','N29'(?:,'N[\da-z]+')*\]\.includes\(env\.G6_CANONICAL_SCENARIO\)/);
   expect(a).toMatch(/env\.G6_CANONICAL_PHASE==='LOCAL_RELAY_AVAILABLE'/);expect(a).toMatch(/G6_LOCAL_RELAY_OWNER_STAGING_GUARD/);
  });
  it('N20 : expédition retrouvée via le lien Hub quand parcels.shipment_id est vide',async()=>{
@@ -676,9 +676,32 @@ describe('G6-G5B N25 (SAV retour et double reprise) et N26b (compensation après
   const two=good();two[1]=[{id:'d',status:'open',return_quantity:1},{id:'e',status:'open',return_quantity:1}];
   await expect(N.oracleN25(mk(two),{orderId:'o',stockBefore:5})).rejects.toThrow('G6_N25_PRODUCT_GAP_DOSSIER_COUNT_2');
  });
+ it('oracle N26b : crédit unique au payeur, justificatif, sans PSP ni stock indu',async()=>{
+  const base=[[{id:'o',status:'collected',collected_scans:1}],
+   [{id:'d',status:'open',return_quantity:1}],[{quantity:1,relay_id:'r'}],
+   [{movement:'wallet_credit',amount:'1200',currency:'KMF',reason:'Défaut constaté après reprise physique G6',
+     payer_user_id:'u',order_payer:'u',wallet_transaction_id:'w',wallet_type:'credit',amount_kmf:'1200',
+     wallet_reason:'sav_compensation',reference_id:'o',idempotency_key:'sav_comp_d',created_by:'admin',
+     wallet_receipts:1,refunds:0,psp_intents:0,stock_after:5}]];
+  await expect(N.oracleN26b(mk(base),{orderId:'o',stockBefore:5})).resolves.toMatchObject({
+   movement:'wallet_credit',amount:1200,currency:'KMF',payer_matches_order:true,wallet_receipts:1,
+   refunds:0,psp_intents:0,stock_unchanged:true});
+  let stockOracleSql='';let queryIndex=0;
+  const sqlDb={query:async(sql)=>{stockOracleSql=sql;return {rows:base[queryIndex++]};}};
+  await N.oracleN26b(sqlDb,{orderId:'o',stockBefore:5});
+  expect(stockOracleSql).toContain('ls.market_id=o.market_id');
+  expect(stockOracleSql).toContain('oi.order_id=o.id AND oi.product_id=ls.product_id');
+  expect(stockOracleSql).not.toMatch(/oi\.market_id/);
+  const wrongPayer=base.map(rows=>rows.map(row=>({...row})));wrongPayer[3][0].payer_user_id='other';
+  await expect(N.oracleN26b(mk(wrongPayer),{orderId:'o',stockBefore:5})).rejects.toThrow('G6_N26B_PRODUCT_GAP_WALLET_PAYER_OR_DECISION_MISMATCH');
+  const noReceipt=base.map(rows=>rows.map(row=>({...row})));noReceipt[3][0].wallet_receipts=0;
+  await expect(N.oracleN26b(mk(noReceipt),{orderId:'o',stockBefore:5})).rejects.toThrow('G6_N26B_PRODUCT_GAP_WALLET_RECEIPT_COUNT_0');
+ });
  it('script et workflow',()=>{
   const a=read('scripts/recette/g6-negative-n25-sav-chromium.js');
-  expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);expect(a).toMatch(/G6_N26B_SCREEN_MISSING_ADMIN_COMPENSATION_DECISION/);expect(a).toMatch(/second_dossier_same_unit/);expect(a).not.toMatch(/screenshot/);
+  expect(a).toMatch(/API_PROBE_NO_SCREEN_GESTURE/);expect(a).toMatch(/executeCompensationDecision/);
+  expect(a).toMatch(/G6_N26B_SAV_COMPENSATION_DECISION_CHROMIUM_PG_PASS/);
+  expect(a).toMatch(/second_dossier_same_unit/);expect(a).not.toMatch(/G6_N26B_SCREEN_MISSING_ADMIN_COMPENSATION_DECISION/);expect(a).not.toMatch(/screenshot/);
   const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
   for(const id of ['N25','N26b'])for(const m of ['KM','CM','CG'])expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
   expect(['N25','N26b'].every(N.isNegative)).toBe(true);
@@ -686,12 +709,12 @@ describe('G6-G5B N25 (SAV retour et double reprise) et N26b (compensation après
  });
 });
 
-describe('G6-G5B N40 (écart de prix fournisseur), N26a et N27 (sondes d\'écran)',()=>{
+describe('G6-G5B N40, N26a PSP et N27 reliquat',()=>{
  const up=id=>STAGE_IDS.slice(0,STAGE_IDS.indexOf(id)+1);
  const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
  it('séquences',()=>{
   expect(graphFor('N40').order).toEqual([...up('HUB_VENDOR_READINESS'),'N40_SUPPLIER_PRICE_GAP','N40_PRICE_GAP_ORACLE']);
-  expect(graphFor('N26a').order).toEqual([...up('RELAY_CASH'),'N26A_LINE_REFUND_SCREEN_PROBE']);
+  expect(graphFor('N26a').order).toEqual(['BUYER','N26A_LINE_REFUND_PSP_DECISION']);
   expect(graphFor('N27').order).toEqual([...up('HUB_VENDOR_READINESS'),'N27_REMNANT_CANCEL_SCREEN_PROBE']);
   expect(graphFor('M01').order).toEqual(STAGE_IDS);
   expect(validateStageModuleSources()).toBeGreaterThan(0);
@@ -704,9 +727,31 @@ describe('G6-G5B N40 (écart de prix fournisseur), N26a et N27 (sondes d\'écran
   const pay=row();pay[1]=[{...pay[1][0],supplier_payments:1}];
   await expect(N.oracleN40(mk(pay),{orderId:'o',poId:'p',confirm:{http:409},quoted:'10'})).rejects.toThrow('G6_N40_PRODUCT_GAP_SILENT_PAYMENT_OR_EXECUTION');
  });
+ it('oracle N26a : capture du payeur d’origine, un seul refund PSP, quantité et reçu confirmés',async()=>{
+  const gesture={order_id:'o',reference:'K1FOWL5',verdict:'G6_N26A_PSP_PARTIAL_LINE_REFUND_CHROMIUM_PASS',
+   request:{operation_key:'key-1',incident_id:'incident-1',quantity:1,reason:'Manquant attesté — N26a'},
+   candidate:{incident_id:'incident-1',order_item_id:'item-1',verified_missing:1},
+   reservation_response:{reservationId:'reservation-1'},execution_response:{status:'confirmed'},
+   before:{payer_user_id:'user-1',items:[{id:'item-1',qty_collected:0,qty_refunded:0}],
+    effects:{reservations:0,refunds:0,intents:0,local_reservations:0,wallet_credits:0}},
+   after:{effects:{reservations:1,refunds:1,intents:1,local_reservations:0,wallet_credits:0}}};
+  const reserved={id:'reservation-1',order_item_id:'item-1',source_incident_id:'incident-1',status:'confirmed',
+   quantity:1,provider:'stripe',provider_ref:'re_123',intent_status:'confirmed',user_id:'user-1',reference:'K1FOWL5',
+   payment_status:'paid',payment_mode:'stripe_eur',original_capture_match:true,amount_kmf:'1000',amount_eur:'2.00',
+   qty_collected:0,qty_refunded:1,ordered_quantity:3};
+  const mk=effects=>{let i=0;return {query:async()=>({rows:i++===0?[reserved]:[effects]})};};
+  const effects={reservations:1,confirmed_intents:1,item_refunds:1,legacy_refunds:0,receipts:1,local_reservations:0,wallet_credits:0};
+  await expect(N.oracleN26a(mk(effects),{orderId:'o',gesture})).resolves.toMatchObject({
+   provider:'stripe',original_capture_match:true,quantity_refunded:1,refunds:1,receipts:1});
+  await expect(N.oracleN26a(mk({...effects,reservations:2}),{orderId:'o',gesture}))
+   .rejects.toThrow('G6_N26A_PRODUCT_GAP_DUPLICATE_OR_MISSING_SETTLEMENT_EFFECT');
+  await expect(N.oracleN26a(mk(effects),{orderId:'o',gesture:{...gesture,verdict:'BLOCKED',
+   execution_response:{status:'unknown'}}})).rejects.toThrow('G6_N26A_PRODUCT_GAP_CHROMIUM_GESTURE_NOT_PROVEN');
+ });
  it('scripts et workflow',()=>{
-  const a=read('scripts/recette/g6-negative-n40-price-gap-chromium.js'),b=read('scripts/recette/g6-negative-n26a-n27-screen-probe-chromium.js');
-  expect(a).toMatch(/data-confirmed-price/);expect(b).toMatch(/G6_N26A_SCREEN_MISSING_LINE_REFUND_AND_PARTIAL_CREDIT/);expect(b).toMatch(/G6_N27_SCREEN_MISSING_REMNANT_CANCEL/);expect(a+b).not.toMatch(/screenshot/);
+  const a=read('scripts/recette/g6-negative-n40-price-gap-chromium.js'),b=read('scripts/recette/g6-negative-n26a-psp-refund-chromium.js'),c=read('scripts/recette/g6-negative-n26a-n27-screen-probe-chromium.js');
+  expect(a).toMatch(/data-confirmed-price/);expect(b).toMatch(/E7_N26A|item-refund-context/);
+  expect(b).toMatch(/execute-item-refund/);expect(c).toMatch(/G6_N27_SCREEN_MISSING_REMNANT_CANCEL/);expect(a+b+c).not.toMatch(/screenshot/);
   const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
   for(const id of ['N40','N26a','N27'])for(const m of ['KM','CM','CG'])expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
   expect(['N40','N26a','N27'].every(N.isNegative)).toBe(true);

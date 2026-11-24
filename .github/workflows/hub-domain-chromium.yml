@@ -1,0 +1,54 @@
+name: Hub — Chromium transversal des surfaces
+on:
+  pull_request:
+    paths:
+      - 'public/dashboards/canonical/js/hub-*.js'
+      - 'public/dashboards/canonical/js/operations-workspace.js'
+      - 'public/dashboards/canonical/css/operations-workspace.css'
+      - 'routes/admin-operations-workspace.js'
+      - 'services/hub-global-board.js'
+      - 'services/hub-procurement-dossier.js'
+      - 'tests/e2e/hub-*.spec.js'
+      - 'playwright.config.js'
+      - '.github/workflows/hub-domain-chromium.yml'
+permissions:
+  contents: read
+concurrency:
+  group: hub-domain-chromium-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  chromium:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: All Hub surfaces, navigation, roles, operations, QR and guided recipe
+        run: npx playwright test --config=playwright.config.js 'tests/e2e/(hub-|purchasing-workspace|live-ops-shell|market-readonly-views|golden-cockpit-browser-flow|dashboard-role-matrix|context-return-links)' --trace retain-on-failure
+      - name: Preserve synthetic browser failure evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hub-domain-chromium-${{ github.run_id }}
+          path: |
+            .playwright-output/
+            test-artifacts/
+            test-results/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14
+      - name: State proof scope
+        if: always()
+        run: |
+          echo "Chromium réel, HTTP simulé : vérification UI/navigation, pas de certification PostgreSQL/Railway ni de scanner physique. La certification staging reste un gate distinct." >> "$GITHUB_STEP_SUMMARY"

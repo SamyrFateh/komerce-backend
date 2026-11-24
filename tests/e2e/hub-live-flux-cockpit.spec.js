@@ -65,7 +65,7 @@ async function mount(page, { source, posts = [], delay = 0 } = {}) {
   });
   await page.goto(`${ORIGIN}/admin/hub-live?view=execute`);
   await page.locator('select').first().selectOption({ label: 'KM · Comores' });
-  await expect(page.locator('h1')).toHaveText('Hub live · Dossiers');
+  await expect(page.locator('h1')).toHaveText('Opérations Hub');
   await page.locator('[data-workspace-view="supply"]').click();
   await expect(page.locator('[data-hub-cockpit]')).toBeVisible();
 }
@@ -76,7 +76,7 @@ const enabledPrimaries = (page) => page.locator('[data-hlc-actions] .is-primary:
 test.describe('Hub live · cockpit maquette C — desktop 1440', () => {
   test('hero conservé, pas de bloc KPI ni titre « Flux du besoin », trois colonnes sans débordement, légende visible', async ({ page }) => {
     await mount(page, { source: snapshot('partial') });
-    await expect(page.locator('h1')).toHaveText('Hub live · Dossiers');
+    await expect(page.locator('h1')).toHaveText('Opérations Hub');
     await expect(page.locator('[data-metric-key]')).toHaveCount(0);
     await expect(page.getByText('Flux du besoin')).toHaveCount(0);
     const xs = await page.evaluate(() => ['orders', 'purchases', 'physical'].map((z) => document.querySelector(`[data-hlc-zone="${z}"]`).getBoundingClientRect().x));
@@ -184,6 +184,13 @@ test.describe('Hub live · cockpit maquette C — desktop 1440', () => {
     const d = snapshot('draft', ROLES.directrice);
     await mount(page, { source: d, posts, delay: 200 });
     await selectPo(page);
+    await page.locator('[data-hlc-action="authorize-commitment"]').click();
+    await expect(page).toHaveURL(/entry=direction/);
+    await expect(page.locator('[data-hub-decision-workspace]')).toBeVisible();
+    await expect(page.locator('[data-supply-boxes]')).toHaveCount(0);
+    await expect(page.locator('[data-hlc-action="detach-line"]')).toHaveCount(0);
+    await expect(page.locator('[data-workspace-view]')).toHaveCount(0);
+    await expect(page.locator('[data-hlc-form="commitment"]')).toHaveCount(0);
     await page.locator('[data-hlc-action="authorize-commitment"]').click();
     const form = page.locator('[data-hlc-form="commitment"]');
     await form.locator('input[name="proof_ref"]').fill('BC-2026-11');

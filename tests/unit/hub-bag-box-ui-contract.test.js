@@ -46,15 +46,25 @@ describe('Hub V1 — COMBOX directe / relais',()=>{
     expect(routes).toContain("requireRelayPhysicalMarket");
     expect(routes).toContain("req.relayMarketAuthority ? req.relayMarketAuthority.relais_id");
   });
-  test('POST de préparation autorisé seulement par le marché serveur et le rôle Hub',()=>{
-    const i=routes.indexOf("'/market/:marketCode/bags',");
-    expect(i).toBeGreaterThan(0);
-    const block=routes.slice(i,i+3200);
-    expect(block).toContain("attachHubExecutionCapability('execution.parcel.ship')");
-    expect(block).toContain('requireHubWorkspaceAction');
-    expect(block).toContain('market_id=$2');
-    expect(block).toContain('createOperatorUnitCommand');
+  test('les anciennes routes de mutation sac existent seulement pour renvoyer 410 sans écrivain', () => {
+    const removed = routes.slice(routes.indexOf('function refuseRetiredCustomerBag'), routes.indexOf("'/market/:marketCode/boxes/:unitId/advance'"));
+    expect(removed).toContain("code: 'HUB_CUSTOMER_BAG_RETIRED'");
+    expect(removed).toContain('res.status(410)');
+    for (const legacy of [
+      '/market/:marketCode/bags',
+      '/market/:marketCode/bags/:unitId/deposit',
+      '/market/:marketCode/bags/:unitId/close',
+      '/market/:marketCode/boxes/:unitId/bags',
+    ]) {
+      expect(removed).toContain(legacy);
+    }
+    expect(removed).toContain("attachHubExecutionCapability('execution.parcel.ship')");
+    expect(removed).toContain('requireHubWorkspaceAction');
+    expect(removed).not.toContain('createOperatorUnitCommand');
+    expect(removed).not.toContain('moveAllocationCommand');
+    expect(removed).not.toContain('attachBagToBox');
   });
+
   test('lecture historique d’un sac résout encore commande, colis et contenu authentique',async()=>{
     const fake={
       query:jest.fn()

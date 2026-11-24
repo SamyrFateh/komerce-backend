@@ -18,7 +18,8 @@ describe('M06 Hub manual purchasing — non-regression against M03',()=>{
  test('M06 Hub PO uses an allowed staging scenario and verifies PO membership independently',()=>{
   const po=source('tests/staging-clicks/g6-p3-kuyiyuk.spec.js');
   expect(po).toContain("else expect(['M01','M06']).toContain(env.G6_CANONICAL_SCENARIO)");
-  expect(po).toContain('const prepare=(MULTI||M06)');
+  expect(po).toContain('const prepare=await orderScoped.count()===1');
+  expect(po).toContain("evidence.po_preparation_scope=prepare===orderScoped?'ORDER_ONLY':'SINGLE_GROUP'");
   expect(po).toContain("expect(members,'G6_HUB_PO_EXACTLY_ONE_PURCHASE_LINE').toHaveLength(1)");
   expect(po).toContain("expect(members[0].order_id,'G6_HUB_PO_CROSS_ORDER_LINE_BLOCKED').toBe(orderId)");
  });

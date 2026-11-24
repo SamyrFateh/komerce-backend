@@ -5,14 +5,14 @@
  * @layer         service
  * @criticality   high
  * @inputs        db_or_transaction_executor, relais payload
- * @outputs       relais read model, mutated relais row
+ * @outputs       relais read model, mutated relais row, stable relay short code
  * @depends       none (executor fourni par l'appelant)
  * @used-by       services/market-delegation-network-service.js
  * @db-read       relais
  * @db-write      relais
  * @db-txn        caller_transaction_preserved
  * @doctrine      writer_not_owner_boundary, suspend_not_delete
- * @impact-areas  logistics, market-delegation
+ * @impact-areas  logistics, market-delegation, orders
  * @version       2026-09
  */
 'use strict';
@@ -83,6 +83,44 @@ function assertIslandCode(marketCode, islandCode) {
 
 const RELAIS_COLUMNS = `id, market_id, name, agent_name, phone, address, zone, hours, island, island_code,
             is_active, latitude, longitude, photo_url, created_at`;
+
+// Stable 4-character relay code, derived once from the REAL relay name.
+// A rename does not silently change references already printed.
+function relayCodeStem(name) {
+  const omitted = new Set(['RELAIS', 'KOMERCE', 'CENTRE', 'CENTER', 'POINT', 'DE', 'DU', 'DES', 'LA', 'LE', 'LES']);
+  const normalized = String(name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase().replace(/[^A-Z]+/g, ' ').trim().split(/\s+/)
+    .filter(token => token && !omitted.has(token));
+  if (!normalized.length) throw new RelaisValidationError('RELAY_SHORT_CODE_NAME_UNUSABLE', 'Nom de relais inutilisable pour le code court.');
+  return (normalized[0] + 'XX').slice(0, 2);
+}
+
+async function ensureRelaisShortCode(executor, { marketId, relaisId }) {
+  const client = requireExecutor(executor);
+  const { rows: [relay] } = await client.query(
+    'SELECT id, name, short_code FROM relais WHERE id=$1 AND market_id=$2 AND is_active=TRUE FOR UPDATE',
+    [relaisId, marketId]
+  );
+  if (!relay) throw new RelaisValidationError('NETWORK_RELAIS_NOT_FOUND', 'Relais introuvable.', 404);
+  if (relay.short_code) return relay.short_code;
+  const stem = relayCodeStem(relay.name);
+  await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', ['relay-short:' + marketId + ':' + stem]);
+  const { rows: allocated } = await client.query(
+    'SELECT short_code FROM relais WHERE market_id=$1 AND short_code LIKE $2',
+    [marketId, stem + '%']
+  );
+  const used = new Set(allocated.map(r => r.short_code));
+  for (let i = 1; i <= 99; i++) {
+    const candidate = stem + String(i).padStart(2, '0');
+    if (used.has(candidate)) continue;
+    const { rows: [assigned] } = await client.query(
+      'UPDATE relais SET short_code=$3 WHERE id=$1 AND market_id=$2 AND short_code IS NULL RETURNING short_code',
+      [relaisId, marketId, candidate]
+    );
+    if (assigned) return assigned.short_code;
+  }
+  throw new RelaisValidationError('RELAY_SHORT_CODE_EXHAUSTED', 'Plus de 99 relais partagent le même préfixe dans ce marché : arbitrage de nom requis.', 409);
+}
 
 async function listRelais(executor, { marketId }) {
   const db = requireExecutor(executor);
@@ -188,6 +226,8 @@ module.exports = {
   isIslandMarket,
   islandOptionsFor,
   listRelais,
+  relayCodeStem,
+  ensureRelaisShortCode,
   getOwnedRelais,
   createRelais,
   updateRelais,

@@ -259,3 +259,18 @@ describe('L6 — autorité unique de navigation', () => {
     }));
   });
 });
+
+test('Administration ouvre la recette Hub guidée, réservée au menu admin',()=>{
+ expect(__src).toContain("id: 'admin-guided-recipe', label: 'Recette guidée', href: '/admin/golden-e2e?guide=hub#extendedRecipe', roles: ['admin']");
+});
+
+test('Recette guidée est visible uniquement dans la projection de menu admin',()=>{
+ jest.resetModules();
+ delete global.KomerceCanonicalNavigation;
+ require('../../public/dashboards/canonical/js/navigation-policy-v4.js');
+ const nav=global.KomerceCanonicalNavigation;
+ const links=role=>nav.sidebarGroupsFor({role}).flatMap(group=>group.items).filter(item=>item.id==='admin-guided-recipe');
+ expect(links('admin')).toHaveLength(1);
+ expect(links('admin')[0].href).toBe('/admin/golden-e2e?guide=hub#extendedRecipe');
+ for(const role of ['agent_hub','agent_relais','agent_transitaire','market_operator','finance','support'])expect(links(role)).toEqual([]);
+});

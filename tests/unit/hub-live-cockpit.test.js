@@ -196,3 +196,30 @@ describe('G6 M03 — la PO partagée reste isolable par commande', () => {
     expect(simulation).toContain('G6_SIM_MANUAL_PRICE_UNEXPECTED_SCOPE');
   });
 });
+
+test('accès direct aux étiquettes depuis le cockpit physique, avant la COMBOX', () => {
+  const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-live-cockpit.js'),'utf8');
+  expect(src).toContain("['labels', 'Imprimer les étiquettes articles']");
+  expect(src.indexOf("['labels',")).toBeLessThan(src.indexOf("['boxes', 'Préparer les COMBOX']"));
+});
+
+test('accès Kanban par commande : retrouver les besoins et toutes les PO liées',()=>{
+  const js=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-live-cockpit.js'),'utf8');
+  expect(js).toContain("A('goto-need-'+group.key");
+  expect(js).toContain("line.order_id===o.id");
+  expect(js).toContain("(o.po_ids || []).entries()");
+});
+
+test('achat Hub : canal API seulement pour les lignes éligibles et contrôle devise avant rattachement',()=>{
+ const js=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-live-cockpit.js'),'utf8');
+ expect(js).toContain('g.batch.api_available===true');
+ expect(js).toContain('lines.every(l=>l.api_eligible===true)');
+ expect(js).toContain('execution_mode: executionMode');
+ expect(js).toContain('devise incompatible');
+});
+
+test('les décisions de Direction restent sur le même formulaire canonique, sans opération physique',()=>{
+ const js=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-live-cockpit.js'),'utf8');
+ expect(js).toContain('if(!decisionOnly&&ctx.openDecision)ctx.openDecision(id)');
+ expect(js).toContain("decisionOnly?acts.filter");
+});

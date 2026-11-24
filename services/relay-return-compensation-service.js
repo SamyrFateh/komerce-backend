@@ -41,7 +41,10 @@ function requireAdmin(actor) {
   }
 }
 
-async function loadDossier(client, requestId, lock) {
+async function loadDossier(client, requestId, lock, env = process.env) {
+  // G6 recipes are explicitly tagged with simulation_scope. They may reach
+  // financial decision screens only on staging; production stays fail-closed.
+  const allowStagingSimulation = String(env.KOMERCE_ENV || '').toLowerCase() === 'staging';
   const { rows: [row] } = await client.query(
     `SELECT d.id, d.status, d.type, d.return_quantity, d.return_order_item_id,
             o.id AS order_id, o.user_id AS payer_user_id, o.market_id, o.total_kmf, o.total_eur, o.fx_snapshot, o.reference,
@@ -50,8 +53,8 @@ async function loadDossier(client, requestId, lock) {
        FROM disputes d
        JOIN orders o ON o.id = d.order_id
        JOIN order_items oi ON oi.id = d.return_order_item_id AND oi.order_id = o.id
-      WHERE d.id = $1 AND o.simulation_scope IS NULL
-      ${lock ? 'FOR UPDATE OF d, oi' : ''}`, [requestId]);
+      WHERE d.id = $1 AND ($2::boolean OR o.simulation_scope IS NULL)
+      ${lock ? 'FOR UPDATE OF d, oi' : ''}`, [requestId, allowStagingSimulation]);
   if (!row || row.type !== 'product_return') fail('COMPENSATION_DOSSIER_NOT_FOUND', 'Dossier de retour introuvable.', 404);
   return row;
 }
@@ -82,10 +85,10 @@ async function cosmeticPct(client) {
 }
 
 /** Proposition par défaut (barème COMPENSATION_COSMETIC_PCT) : lecture seule, l'admin la valide ou la corrige. */
-async function proposeCompensation({ actor, requestId, db }) {
+async function proposeCompensation({ actor, requestId, db, env = process.env }) {
   requireAdmin(actor);
   if (!UUID.test(String(requestId || ''))) fail('COMPENSATION_ID_INVALID', 'Dossier invalide.');
-  const dossier = await loadDossier(db, requestId, false);
+  const dossier = await loadDossier(db, requestId, false, env);
   const { currency, lineValue } = await lineValueInMarketCurrency(db, dossier);
   const pct = await cosmeticPct(db);
   return {
@@ -115,7 +118,7 @@ async function decideCompensation({ actor, requestId, movement, amount, reason, 
   let replacement;
   try {
     await client.query('BEGIN');
-    const dossier = await loadDossier(client, requestId, true);
+    const dossier = await loadDossier(client, requestId, true, env);
     const { rows: [existing] } = await client.query('SELECT * FROM relay_return_compensations WHERE request_id = $1', [requestId]);
     if (existing) {
       if (existing.movement === movement && Number(existing.amount) === value && existing.decided_by === actor.id) {

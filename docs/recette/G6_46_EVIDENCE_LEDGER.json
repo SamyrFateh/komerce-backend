@@ -1,0 +1,631 @@
+{
+  "schema": "komerce-g6-46-evidence-ledger/1",
+  "as_of": "2026-11-23",
+  "source_of_truth": "docs/recette/G6_PRE_STRESS_BUSINESS_SCENARIOS.json",
+  "baseline_sha": "ac163dc32f0831054103c89fac895f6bca12249e",
+  "policy": {
+    "not_a_verdict_source": true,
+    "only_explicit_run_evidence": true,
+    "missing_evidence": "NOT_YET_RECONCILED",
+    "rule": "Workflow SUCCESS is not a complete scenario PASS; retain scope, market, branch, provenance and assertions. Never modify matrix verdicts from this ledger."
+  },
+  "scenarios": [
+    {
+      "id": "M01",
+      "markets": [
+        "KM"
+      ],
+      "branches": [],
+      "evidence": [
+        {
+          "id": "M01",
+          "market": "KM",
+          "run_id": 44280122740,
+          "workflow_url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/44280122740",
+          "issue_url": "https://github.com/SamyrFateh/komerce-backend/issues/4506",
+          "github_conclusion": "success",
+          "scope": "NOMINAL_PARTIAL_CHAIN",
+          "limitation": "M01/KM pickup completed; evidence across canonical checkpoint runs, not all O-ECO/O-DOC/O-NOTIF/O-HUB/O-FIN assertions"
+        }
+      ],
+      "remaining_verification": "Review all assertions, market coverage and branch-specific preconditions; recorded runs attest only the documented scope"
+    },
+    {
+      "id": "M02",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "M03",
+      "markets": [
+        "KM"
+      ],
+      "branches": [],
+      "evidence": [
+        {
+          "id": "M03",
+          "market": "KM",
+          "run_id": 45015016437,
+          "workflow_url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/45015016437",
+          "issue_url": "https://github.com/SamyrFateh/komerce-backend/issues/5088",
+          "github_conclusion": "success",
+          "scope": "CHROMIUM_PG_PASS",
+          "limitation": "18 stages, mixed LOCAL+3 IMPORT, final collected; second POST refusal not demonstrated (UI blocked it)"
+        }
+      ],
+      "remaining_verification": "Review all assertions, market coverage and branch-specific preconditions; recorded runs attest only the documented scope"
+    },
+    {
+      "id": "M04",
+      "markets": [
+        "CM"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "M05",
+      "markets": [
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "M06",
+      "markets": [
+        "KM"
+      ],
+      "branches": [],
+      "evidence": [
+        {
+          "id": "M06",
+          "market": "KM",
+          "run_id": 45164789641,
+          "workflow_url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/45164789641",
+          "issue_url": "https://github.com/SamyrFateh/komerce-backend/issues/5180",
+          "github_conclusion": "success",
+          "scope": "SIMULATED_TECHNICAL_PASS",
+          "limitation": "K2BBXZS; manual purchase seller labels NOT_REAL, 3 units; no genuine supplier purchase/payment, physical movement, or market transaction certification"
+        }
+      ],
+      "remaining_verification": "Review all assertions, market coverage and branch-specific preconditions; recorded runs attest only the documented scope"
+    },
+    {
+      "id": "N01",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N02",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N03",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [
+        "BASE",
+        "ROUTE"
+      ],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N04",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N05",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [
+        "BASE",
+        "SOI"
+      ],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N06",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N07",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N08",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N09",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N10",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N11",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N12",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N13",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N14",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N15",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [
+        {
+          "id": "N15",
+          "market": "KM",
+          "run_id": 45032881821,
+          "workflow_url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/45032881821",
+          "issue_url": "https://github.com/SamyrFateh/komerce-backend/issues/5123",
+          "github_conclusion": "success",
+          "scope": "CHROMIUM_PG_PASS",
+          "limitation": "Incomplete packing/dispatch forbidden; inert empty shipment draft 201 explicitly allowed"
+        }
+      ],
+      "remaining_verification": "Review all assertions, market coverage and branch-specific preconditions; recorded runs attest only the documented scope"
+    },
+    {
+      "id": "N16",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N17",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N18",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N19",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N20",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N21",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [
+        {
+          "id": "N21",
+          "market": "KM",
+          "run_id": 44957884467,
+          "workflow_url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/44957884467",
+          "issue_url": "https://github.com/SamyrFateh/komerce-backend/issues/5054",
+          "github_conclusion": "success",
+          "scope": "CHROMIUM_PG_PASS",
+          "limitation": "Cross-relay isolation 404/403, no foreign order disclosure"
+        }
+      ],
+      "remaining_verification": "Review all assertions, market coverage and branch-specific preconditions; recorded runs attest only the documented scope"
+    },
+    {
+      "id": "N22",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [
+        {
+          "id": "N22",
+          "market": "KM",
+          "run_id": 45032404328,
+          "workflow_url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/45032404328",
+          "issue_url": "https://github.com/SamyrFateh/komerce-backend/issues/5122",
+          "github_conclusion": "success",
+          "scope": "CHROMIUM_PG_PASS",
+          "limitation": "A/B separate relay users and orders; both directions denied, PG unchanged"
+        }
+      ],
+      "remaining_verification": "Review all assertions, market coverage and branch-specific preconditions; recorded runs attest only the documented scope"
+    },
+    {
+      "id": "N23",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N24",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N25",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N26",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [
+        "N26a",
+        "N26b"
+      ],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N27",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N28",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N29",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N30",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N31",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N32",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [
+        {
+          "id": "N32",
+          "market": "KM",
+          "run_id": 45029545653,
+          "workflow_url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/45029545653",
+          "issue_url": "https://github.com/SamyrFateh/komerce-backend/issues/5117",
+          "github_conclusion": "success",
+          "scope": "CHROMIUM_PG_PASS",
+          "limitation": "Cross-market client/relay/Hub restricted read and mutation refusals"
+        }
+      ],
+      "remaining_verification": "Review all assertions, market coverage and branch-specific preconditions; recorded runs attest only the documented scope"
+    },
+    {
+      "id": "N33",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N34",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [
+        {
+          "id": "N34",
+          "market": "KM",
+          "run_id": 45026793593,
+          "workflow_url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/45026793593",
+          "issue_url": "https://github.com/SamyrFateh/komerce-backend/issues/5089",
+          "github_conclusion": "success",
+          "scope": "SOURCE_INVARIANTS_PASS",
+          "limitation": "System supplier cannot be deleted, explicit real supplier retained; imported candidate to catalogue draft, not commercial publication"
+        },
+        {
+          "id": "N34",
+          "market": "CM",
+          "run_id": 45026946449,
+          "workflow_url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/45026946449",
+          "issue_url": "https://github.com/SamyrFateh/komerce-backend/issues/5089",
+          "github_conclusion": "success",
+          "scope": "GLOBAL_INVARIANTS_SMOKE",
+          "limitation": "Global system/explicit-supplier invariants using KM candidate, NOT a CM-local supplier import transaction"
+        },
+        {
+          "id": "N34",
+          "market": "CG",
+          "run_id": 45027071797,
+          "workflow_url": "https://github.com/SamyrFateh/komerce-backend/actions/runs/45027071797",
+          "issue_url": "https://github.com/SamyrFateh/komerce-backend/issues/5089",
+          "github_conclusion": "success",
+          "scope": "GLOBAL_INVARIANTS_SMOKE",
+          "limitation": "Global system/explicit-supplier invariants using KM candidate, NOT a CG-local supplier import transaction"
+        }
+      ],
+      "remaining_verification": "Review all assertions, market coverage and branch-specific preconditions; recorded runs attest only the documented scope"
+    },
+    {
+      "id": "N35",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N36",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N37",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N38",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N39",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [
+        "N39F1",
+        "N39F2",
+        "N39F3"
+      ],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    },
+    {
+      "id": "N40",
+      "markets": [
+        "KM",
+        "CM",
+        "CG"
+      ],
+      "branches": [],
+      "evidence": [],
+      "remaining_verification": "Locate latest canonical run report and reconcile each requested market/branch; do not infer PASS from dispatch, CI or issue title."
+    }
+  ]
+}

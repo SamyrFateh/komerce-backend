@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-22T17:41:15.462Z",
+  "generatedAt": "2026-11-24T15:31:16.474Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 845,
+  "count": 860,
   "routes": [
     {
       "method": "GET",
@@ -1453,6 +1453,18 @@
     },
     {
       "method": "POST",
+      "fullPath": "/api/admin/orders/:id/items/:itemId/n27-remnant-reservations",
+      "mountPrefix": "/api/admin",
+      "localPath": "/orders/:id/items/:itemId/n27-remnant-reservations",
+      "routeFile": "routes/admin/orders.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js",
+        "routes/admin.js",
+        "routes/admin/index.js"
+      ]
+    },
+    {
+      "method": "POST",
       "fullPath": "/api/admin/orders/:id/items/:itemId/refund-reservations",
       "mountPrefix": "/api/admin",
       "localPath": "/orders/:id/items/:itemId/refund-reservations",
@@ -1501,9 +1513,57 @@
     },
     {
       "method": "GET",
+      "fullPath": "/api/admin/orders/:orderReference/item-refund-context",
+      "mountPrefix": "/api/admin",
+      "localPath": "/orders/:orderReference/item-refund-context",
+      "routeFile": "routes/admin/orders.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js",
+        "routes/admin.js",
+        "routes/admin/index.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/orders/:orderReference/n27-remnant-context",
+      "mountPrefix": "/api/admin",
+      "localPath": "/orders/:orderReference/n27-remnant-context",
+      "routeFile": "routes/admin/orders.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js",
+        "routes/admin.js",
+        "routes/admin/index.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/orders/item-refund-readiness",
+      "mountPrefix": "/api/admin",
+      "localPath": "/orders/item-refund-readiness",
+      "routeFile": "routes/admin/orders.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js",
+        "routes/admin.js",
+        "routes/admin/index.js"
+      ]
+    },
+    {
+      "method": "GET",
       "fullPath": "/api/admin/orders/local-refunds",
       "mountPrefix": "/api/admin",
       "localPath": "/orders/local-refunds",
+      "routeFile": "routes/admin/orders.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js",
+        "routes/admin.js",
+        "routes/admin/index.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/orders/n27-remnant-readiness",
+      "mountPrefix": "/api/admin",
+      "localPath": "/orders/n27-remnant-readiness",
       "routeFile": "routes/admin/orders.js",
       "mountedFrom": [
         "bootstrap/api-routes.js",
@@ -2831,6 +2891,86 @@
     },
     {
       "method": "POST",
+      "fullPath": "/api/admin/workspaces/operations/market/:marketCode/labels/articles/:allocationId/issue",
+      "mountPrefix": "/api/admin/workspaces/operations",
+      "localPath": "/market/:marketCode/labels/articles/:allocationId/issue",
+      "routeFile": "routes/admin-operations-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/operations/market/:marketCode/labels/articles/:id/pdf",
+      "mountPrefix": "/api/admin/workspaces/operations",
+      "localPath": "/market/:marketCode/labels/articles/:id/pdf",
+      "routeFile": "routes/admin-operations-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/operations/market/:marketCode/labels/articles/:id/print",
+      "mountPrefix": "/api/admin/workspaces/operations",
+      "localPath": "/market/:marketCode/labels/articles/:id/print",
+      "routeFile": "routes/admin-operations-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/operations/market/:marketCode/labels/boxes/:id/pdf",
+      "mountPrefix": "/api/admin/workspaces/operations",
+      "localPath": "/market/:marketCode/labels/boxes/:id/pdf",
+      "routeFile": "routes/admin-operations-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/operations/market/:marketCode/labels/boxes/:id/print",
+      "mountPrefix": "/api/admin/workspaces/operations",
+      "localPath": "/market/:marketCode/labels/boxes/:id/print",
+      "routeFile": "routes/admin-operations-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/operations/market/:marketCode/labels/boxes/:unitId/issue",
+      "mountPrefix": "/api/admin/workspaces/operations",
+      "localPath": "/market/:marketCode/labels/boxes/:unitId/issue",
+      "routeFile": "routes/admin-operations-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/operations/market/:marketCode/labels/index",
+      "mountPrefix": "/api/admin/workspaces/operations",
+      "localPath": "/market/:marketCode/labels/index",
+      "routeFile": "routes/admin-operations-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/operations/market/:marketCode/labels/resolve",
+      "mountPrefix": "/api/admin/workspaces/operations",
+      "localPath": "/market/:marketCode/labels/resolve",
+      "routeFile": "routes/admin-operations-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
       "fullPath": "/api/admin/workspaces/operations/market/:marketCode/orders/:reference/confirm-cash",
       "mountPrefix": "/api/admin/workspaces/operations",
       "localPath": "/market/:marketCode/orders/:reference/confirm-cash",
@@ -2904,6 +3044,16 @@
       "fullPath": "/api/admin/workspaces/operations/market/:marketCode/relay-shipments/:reference/receive",
       "mountPrefix": "/api/admin/workspaces/operations",
       "localPath": "/market/:marketCode/relay-shipments/:reference/receive",
+      "routeFile": "routes/admin-operations-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/operations/market/:marketCode/relay/labels/resolve",
+      "mountPrefix": "/api/admin/workspaces/operations",
+      "localPath": "/market/:marketCode/relay/labels/resolve",
       "routeFile": "routes/admin-operations-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -3474,6 +3624,16 @@
       "fullPath": "/api/admin/workspaces/shipping-customs/market/:marketCode/international/:reference",
       "mountPrefix": "/api/admin/workspaces/shipping-customs",
       "localPath": "/market/:marketCode/international/:reference",
+      "routeFile": "routes/admin-shipping-customs-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/shipping-customs/market/:marketCode/international/:reference/box-scan",
+      "mountPrefix": "/api/admin/workspaces/shipping-customs",
+      "localPath": "/market/:marketCode/international/:reference/box-scan",
       "routeFile": "routes/admin-shipping-customs-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

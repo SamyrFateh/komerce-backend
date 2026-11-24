@@ -31,14 +31,22 @@ function canonicalScenario(id, market) {
   return scenario;
 }
 
+// N26/N39 are business IDs in the original 46-row matrix. Their executable
+// branches are separate stage-registry IDs and must retain their exact case.
+// Never coerce N26b to N26B or silently dispatch it as M01.
+const BRANCH_PARENT = Object.freeze({
+  N26a: 'N26', N26b: 'N26',
+  N39F1: 'N39', N39F2: 'N39', N39F3: 'N39'
+});
 function resolveCanonicalReplay(env = process.env) {
-  const id = String(env.G6_CANONICAL_SCENARIO || '').trim().toUpperCase();
+  const raw = String(env.G6_CANONICAL_SCENARIO || '').trim();
+  const id = /^N26[ab]$/i.test(raw) ? 'N26' + raw.slice(-1).toLowerCase() : raw.toUpperCase();
   const market = String(env.G6_TARGET_MARKET || '').trim().toUpperCase();
-  const scenario = canonicalScenario(id, market);
+  const scenario = canonicalScenario(BRANCH_PARENT[id] || id, market);
   if (!REPLAYABLE_IMPORT_CASH.has(id)) {
     throw new Error('G6_EXISTING_BUYER_CASH_ADAPTER_NOT_BOUND_FOR_SCENARIO_' + id);
   }
-  return { id: scenario.id, market, source_version: business.version, scenario_title: scenario.title };
+  return { id, market, source_version: business.version, scenario_title: scenario.title };
 }
 
 // The legacy three-market proof remains unchanged when no canonical variables

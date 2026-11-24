@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 335,
+    "businessDependencies": 339,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -6102,6 +6102,13 @@
           ]
         },
         {
+          "consumer": "refunds",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "consumer": "shared-cart",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -6923,7 +6930,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 196,
+            "count": 197,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -7613,6 +7620,11 @@
               {
                 "declared": "dashboards/canonical/js/hub-context-actions.js",
                 "resolvedPath": "public/dashboards/canonical/js/hub-context-actions.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/hub-label-center.js",
+                "resolvedPath": "public/dashboards/canonical/js/hub-label-center.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -8328,7 +8340,7 @@
             ]
           },
           "tests": {
-            "count": 213,
+            "count": 215,
             "files": [
               {
                 "declared": "playwright.config.js",
@@ -8418,6 +8430,11 @@
               {
                 "declared": "tests/e2e/hub-global-board.spec.js",
                 "resolvedPath": "tests/e2e/hub-global-board.spec.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e/hub-label-center.spec.js",
+                "resolvedPath": "tests/e2e/hub-label-center.spec.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -9156,6 +9173,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/hub-label-center.test.js",
+                "resolvedPath": "tests/unit/hub-label-center.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/hub-live-journey.test.js",
                 "resolvedPath": "tests/unit/hub-live-journey.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -9398,7 +9420,7 @@
             ]
           }
         },
-        "totalFiles": 489,
+        "totalFiles": 492,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -14274,7 +14296,8 @@
           "consumer": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -14298,6 +14321,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        },
+        {
+          "consumer": "refunds",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         }
       ],
@@ -18361,7 +18391,7 @@
             ]
           },
           "migrations": {
-            "count": 15,
+            "count": 16,
             "files": [
               {
                 "declared": "migrations/095_value_density_foundation.sql",
@@ -18436,6 +18466,11 @@
               {
                 "declared": "migrations/401_relay_product_return_intake.sql",
                 "resolvedPath": "migrations/401_relay_product_return_intake.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/427_hub_opaque_scan_labels.sql",
+                "resolvedPath": "migrations/427_hub_opaque_scan_labels.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -18536,7 +18571,7 @@
             ]
           },
           "services": {
-            "count": 49,
+            "count": 52,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -18551,6 +18586,11 @@
               {
                 "declared": "services/hub-bag-box-service.js",
                 "resolvedPath": "services/hub-bag-box-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/hub-box-custody-scans.js",
+                "resolvedPath": "services/hub-box-custody-scans.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -18571,6 +18611,16 @@
               {
                 "declared": "services/hub-inbound-reconciliation.js",
                 "resolvedPath": "services/hub-inbound-reconciliation.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/hub-label-pdf.js",
+                "resolvedPath": "services/hub-label-pdf.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/hub-opaque-labels.js",
+                "resolvedPath": "services/hub-opaque-labels.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -18786,7 +18836,7 @@
             ]
           },
           "tests": {
-            "count": 93,
+            "count": 99,
             "files": [
               {
                 "declared": "tests/e2e-api/hub-membership-readers.e2e.test.js",
@@ -18831,6 +18881,11 @@
               {
                 "declared": "tests/integration/hub-live-cockpit-postgres.test.js",
                 "resolvedPath": "tests/integration/hub-live-cockpit-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/hub-opaque-labels-postgres.test.js",
+                "resolvedPath": "tests/integration/hub-opaque-labels-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -18929,6 +18984,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/hub-box-custody-scans.test.js",
+                "resolvedPath": "tests/unit/hub-box-custody-scans.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/hub-director-todo-age.test.js",
                 "resolvedPath": "tests/unit/hub-director-todo-age.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -18946,6 +19006,21 @@
               {
                 "declared": "tests/unit/hub-inbound-reconciliation.test.js",
                 "resolvedPath": "tests/unit/hub-inbound-reconciliation.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-label-pdf.test.js",
+                "resolvedPath": "tests/unit/hub-label-pdf.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-opaque-label-ui-contract.test.js",
+                "resolvedPath": "tests/unit/hub-opaque-label-ui-contract.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-opaque-labels.test.js",
+                "resolvedPath": "tests/unit/hub-opaque-labels.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -19174,6 +19249,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/relais-short-code.test.js",
+                "resolvedPath": "tests/unit/relais-short-code.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/relais.test.js",
                 "resolvedPath": "tests/unit/relais.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -19276,7 +19356,7 @@
             ]
           }
         },
-        "totalFiles": 189,
+        "totalFiles": 199,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -20247,6 +20327,13 @@
         },
         {
           "provider": "refunds",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "supplier-connectivity",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -25199,6 +25286,7 @@
       "perimeter": {
         "in": [
           "creation, annulation, machine de statut de la commande",
+          "vague de tri temporaire, avec référence commerciale structurée unique CM-YA01-B7Q01 pour les nouvelles commandes staging",
           "snapshot de cout a la commande",
           "rattachement aux colis et aux achats fournisseurs",
           "collecte QR au retrait",
@@ -25345,7 +25433,7 @@
             ]
           },
           "services": {
-            "count": 32,
+            "count": 33,
             "files": [
               {
                 "declared": "services/admin-order-refund.js",
@@ -25405,6 +25493,11 @@
               {
                 "declared": "services/order-cost-snapshot.js",
                 "resolvedPath": "services/order-cost-snapshot.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/order-delivery-wave-service.js",
+                "resolvedPath": "services/order-delivery-wave-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -25510,7 +25603,7 @@
             ]
           },
           "tests": {
-            "count": 65,
+            "count": 67,
             "files": [
               {
                 "declared": "tests/e2e-api/customer-to-customer.golden.e2e.test.js",
@@ -25570,6 +25663,11 @@
               {
                 "declared": "tests/integration/hub-v1-fixture-payment-postgres.test.js",
                 "resolvedPath": "tests/integration/hub-v1-fixture-payment-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/order-delivery-wave-migration-postgres.test.js",
+                "resolvedPath": "tests/integration/order-delivery-wave-migration-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -25660,6 +25758,11 @@
               {
                 "declared": "tests/unit/order-cost-snapshot.test.js",
                 "resolvedPath": "tests/unit/order-cost-snapshot.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/order-delivery-wave-service.test.js",
+                "resolvedPath": "tests/unit/order-delivery-wave-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -25850,7 +25953,7 @@
             ]
           }
         },
-        "totalFiles": 112,
+        "totalFiles": 115,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 19,
@@ -26010,6 +26113,10 @@
             "resolution": "multi-writer-resolved-by-classification-signal"
           },
           {
+            "table": "order_delivery_waves",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "order_item_cost_imputations",
             "resolution": "single-writer"
           },
@@ -26060,6 +26167,12 @@
           {
             "table": "order_comments",
             "mode": "W",
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "order_delivery_waves",
+            "mode": "RW",
             "lifecycleOwner": "orders",
             "ownershipStatus": "owner"
           },
@@ -26120,6 +26233,22 @@
         ],
         "readsTables": [
           {
+            "table": "incidents",
+            "lifecycleOwner": "incident-management"
+          },
+          {
+            "table": "international_shipment_relay_receipts",
+            "lifecycleOwner": "logistics"
+          },
+          {
+            "table": "local_item_refund_reservations",
+            "lifecycleOwner": "refunds"
+          },
+          {
+            "table": "order_item_refund_reservations",
+            "lifecycleOwner": "refunds"
+          },
+          {
             "table": "parcel_items",
             "lifecycleOwner": "logistics"
           },
@@ -26134,6 +26263,10 @@
           {
             "table": "products",
             "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "refund_execution_intents",
+            "lifecycleOwner": "refunds"
           },
           {
             "table": "refunds",
@@ -26168,6 +26301,10 @@
             "resolution": "multi-writer-resolved-by-classification-signal"
           },
           {
+            "table": "order_delivery_waves",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "order_item_cost_imputations",
             "resolution": "single-writer"
           },
@@ -26218,6 +26355,12 @@
           {
             "table": "order_comments",
             "mode": "W",
+            "lifecycleOwner": "orders",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "order_delivery_waves",
+            "mode": "RW",
             "lifecycleOwner": "orders",
             "ownershipStatus": "owner"
           },
@@ -26278,6 +26421,22 @@
         ],
         "readsTables": [
           {
+            "table": "incidents",
+            "lifecycleOwner": "incident-management"
+          },
+          {
+            "table": "international_shipment_relay_receipts",
+            "lifecycleOwner": "logistics"
+          },
+          {
+            "table": "local_item_refund_reservations",
+            "lifecycleOwner": "refunds"
+          },
+          {
+            "table": "order_item_refund_reservations",
+            "lifecycleOwner": "refunds"
+          },
+          {
             "table": "parcel_items",
             "lifecycleOwner": "logistics"
           },
@@ -26292,6 +26451,10 @@
           {
             "table": "products",
             "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "refund_execution_intents",
+            "lifecycleOwner": "refunds"
           },
           {
             "table": "refunds",
@@ -26537,7 +26700,8 @@
           "provider": "incident-management",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
-            "static-code"
+            "static-code",
+            "data-read"
           ]
         },
         {
@@ -31272,6 +31436,13 @@
           ]
         },
         {
+          "consumer": "refunds",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "consumer": "sourcing",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -31739,6 +31910,10 @@
           "test": "tests/unit/local-item-refund-reservation.test.js"
         },
         {
+          "statement": "N27 : les unités déjà retirées restent exclues ; une dette locale n’est réservable que pour un manque attesté au palier F1, les engagements fournisseur F2 et colis transport F3 restent bloqués, sans crédit wallet ni paiement prétendu",
+          "test": "tests/unit/n27-remnant-cancellation.test.js"
+        },
+        {
           "statement": "FA-04/08 F3 : annulation Stripe reserve l intention avant COMMIT metier, jamais de POST fournisseur sous transaction, un resultat inconnu ne declenche aucun fallback wallet et reste a rapprocher",
           "test": "tests/unit/stripe-refund-authority.test.js"
         },
@@ -31816,7 +31991,7 @@
             ]
           },
           "services": {
-            "count": 12,
+            "count": 13,
             "files": [
               {
                 "declared": "services/item-refund-psp-orchestrator.js",
@@ -31841,6 +32016,11 @@
               {
                 "declared": "services/local-mobile-refund-handoff.js",
                 "resolvedPath": "services/local-mobile-refund-handoff.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/n27-remnant-cancellation-service.js",
+                "resolvedPath": "services/n27-remnant-cancellation-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -31881,7 +32061,7 @@
             ]
           },
           "tests": {
-            "count": 25,
+            "count": 28,
             "files": [
               {
                 "declared": "tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js",
@@ -31944,8 +32124,18 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "tests/unit/g8-refund-operator-ui.test.js",
-                "resolvedPath": "tests/unit/g8-refund-operator-ui.test.js",
+                "declared": "tests/unit/g6-n26b-compensation-screen.test.js",
+                "resolvedPath": "tests/unit/g6-n26b-compensation-screen.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/g6-negative-scenarios.test.js",
+                "resolvedPath": "tests/unit/g6-negative-scenarios.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/g8-remboursements.test.js",
+                "resolvedPath": "tests/unit/g8-remboursements.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -31961,6 +32151,11 @@
               {
                 "declared": "tests/unit/local-item-refund-reservation.test.js",
                 "resolvedPath": "tests/unit/local-item-refund-reservation.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/n27-remnant-cancellation.test.js",
+                "resolvedPath": "tests/unit/n27-remnant-cancellation.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -32011,7 +32206,7 @@
             ]
           },
           "utils": {
-            "count": 3,
+            "count": 5,
             "files": [
               {
                 "declared": "public/css/g8-remboursements.css",
@@ -32019,8 +32214,18 @@
                 "status": "resolved-on-disk-no-header"
               },
               {
+                "declared": "public/g6-sav-compensation.html",
+                "resolvedPath": "public/g6-sav-compensation.html",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
                 "declared": "public/g8-remboursements.html",
                 "resolvedPath": "public/g8-remboursements.html",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "public/js/g6-sav-compensation.js",
+                "resolvedPath": "public/js/g6-sav-compensation.js",
                 "status": "resolved-on-disk-no-header"
               },
               {
@@ -32031,7 +32236,7 @@
             ]
           }
         },
-        "totalFiles": 43,
+        "totalFiles": 49,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -32115,6 +32320,10 @@
         ],
         "readsTables": [
           {
+            "table": "incidents",
+            "lifecycleOwner": "incident-management"
+          },
+          {
             "table": "international_shipment_relay_receipts",
             "lifecycleOwner": "logistics"
           },
@@ -32125,6 +32334,26 @@
           {
             "table": "orders",
             "lifecycleOwner": "orders"
+          },
+          {
+            "table": "parcel_items",
+            "lifecycleOwner": "logistics"
+          },
+          {
+            "table": "parcels",
+            "lifecycleOwner": "logistics"
+          },
+          {
+            "table": "products",
+            "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "purchase_lines",
+            "lifecycleOwner": "purchasing"
+          },
+          {
+            "table": "purchase_orders",
+            "lifecycleOwner": "purchasing"
           },
           {
             "table": "wallets",
@@ -32209,6 +32438,10 @@
         ],
         "readsTables": [
           {
+            "table": "incidents",
+            "lifecycleOwner": "incident-management"
+          },
+          {
             "table": "international_shipment_relay_receipts",
             "lifecycleOwner": "logistics"
           },
@@ -32219,6 +32452,26 @@
           {
             "table": "orders",
             "lifecycleOwner": "orders"
+          },
+          {
+            "table": "parcel_items",
+            "lifecycleOwner": "logistics"
+          },
+          {
+            "table": "parcels",
+            "lifecycleOwner": "logistics"
+          },
+          {
+            "table": "products",
+            "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "purchase_lines",
+            "lifecycleOwner": "purchasing"
+          },
+          {
+            "table": "purchase_orders",
+            "lifecycleOwner": "purchasing"
           },
           {
             "table": "wallets",
@@ -32240,6 +32493,13 @@
       },
       "businessDependencies": [
         {
+          "provider": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "provider": "documents",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -32251,6 +32511,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        },
+        {
+          "provider": "incident-management",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
@@ -32294,6 +32561,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        },
+        {
+          "provider": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {
@@ -35216,6 +35490,13 @@
         },
         {
           "consumer": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"

@@ -5,7 +5,7 @@
  * @layer test
  * @owner backend-core
  * @purpose Open a shipment for the exact packed M06 COMBOX, dispatch it from Hub and hand it to the operator supplied forwarder through Chromium.
- * @db-read purchase_orders, purchase_lines, order_items, orders, products, markets, purchase_order_authorizations, supplier_execution_payments, supplier_payment_settlements, local_stock_allocations, parcels, parcel_items, parcel_events, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_custody_events, international_shipments, international_shipment_hub_units, international_shipment_events
+ * @db-read purchase_orders, purchase_lines, order_items, orders, products, markets, purchase_order_authorizations, supplier_execution_payments, supplier_payment_settlements, local_stock_allocations, parcels, parcel_items, parcel_events, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_custody_events, international_shipments, international_shipment_hub_units, international_shipment_events, hub_scan_labels, hub_scan_label_box_scans, hub_box_custody_scans
  * @db-write none
  * @impact-areas staging-only, hub, logistics
  */
@@ -55,8 +55,8 @@ async function readback(){
    a.id AS allocation_id,
    box.id AS box_id,box.reference AS box_reference,box.unit_type::text AS box_unit_type,box.state::text AS box_state,
    (SELECT count(*)::int FROM hub_physical_unit_placements bx WHERE bx.physical_unit_id=box.id AND bx.removed_at IS NULL) AS box_placement_count,
-   bp.quantity AS box_placement_quantity,bp.operation_type::text AS box_placement_operation,
-   bp.evidence_method::text AS box_placement_evidence_method,bp.evidence_ref AS box_placement_evidence_ref,
+   (SELECT coalesce(sum(bp.quantity),0)::int FROM hub_physical_unit_placements bp WHERE bp.physical_unit_id=box.id AND bp.allocation_id=a.id AND bp.removed_at IS NULL AND bp.operation_type='REPACK' AND bp.evidence_method='SCAN' AND bp.quantity=1) AS box_placement_quantity,
+   (SELECT count(*)::int FROM hub_scan_label_box_scans s WHERE s.box_unit_id=box.id AND s.allocation_id=a.id) AS box_label_scan_count,
    (SELECT count(*)::int FROM hub_physical_units bu WHERE bu.order_id=o.id AND bu.unit_type='HANDLING_UNIT') AS customer_bag_count,
    parcel.id AS parcel_id,parcel.status::text AS parcel_status,
    (SELECT count(*)::int FROM parcels p2 JOIN parcel_items pi2 ON pi2.parcel_id=p2.id JOIN order_items oi2 ON oi2.id=pi2.order_item_id WHERE p2.order_id=o.id AND oi2.fulfillment_source='IMPORT' AND p2.status<>'cancelled') AS parcel_count,
@@ -72,10 +72,9 @@ async function readback(){
   JOIN orders o ON o.id=oi.order_id JOIN markets m ON m.id=o.market_id
   LEFT JOIN hub_purchase_allocations a ON a.purchase_line_id=pl.id
   LEFT JOIN hub_physical_units box ON box.reference=$5
-  LEFT JOIN hub_physical_unit_placements bp ON bp.physical_unit_id=box.id AND bp.allocation_id=a.id AND bp.removed_at IS NULL
   LEFT JOIN parcels parcel ON parcel.order_id=o.id AND parcel.status<>'cancelled'
   WHERE po.id=$1 AND o.id=$2 AND o.reference=$3
-  GROUP BY po.id,o.id,m.id,pl.id,oi.id,p.id,a.id,box.id,bp.id,parcel.id`,
+  GROUP BY po.id,o.id,m.id,pl.id,oi.id,p.id,a.id,box.id,parcel.id`,
   [PO,ORDER,REF,SHIPMENT,BOXREF]);
  if(rows.length!==1)throw Error('G6_M06_HANDOVER_ORDER_CARDINALITY');
  const custody=(await db.query(`SELECT event_type,from_state::text AS from_state,to_state::text AS to_state,actor_id
@@ -91,7 +90,10 @@ async function readback(){
    WHERE s.reference=$1 ORDER BY e.occurred_at,e.id`,[SHIPMENT])).rows;
  const parcelEvents=(await db.query(`SELECT event_type,actor_id,metadata FROM parcel_events
    WHERE parcel_id=$1 ORDER BY id`,[rows[0].parcel_id])).rows;
- return {...rows[0],custody,shipments,links,shipmentEvents,parcelEvents};
+ const handoverScans=(await db.query(`SELECT s.box_unit_id,s.event_type,s.actor_id,s.proof_ref,l.short_alias
+  FROM hub_box_custody_scans s JOIN hub_scan_labels l ON l.id=s.label_id
+  JOIN international_shipments i ON i.id=s.shipment_id WHERE i.reference=$1`,[SHIPMENT])).rows;
+ return {...rows[0],custody,shipments,links,shipmentEvents,parcelEvents,handoverScans};
 }
 async function openHub(page){
  await humanGoto(page,BASE+'/admin/hub-live?view=execute&market=KM',{waitUntil:'domcontentloaded'});
@@ -138,6 +140,27 @@ async function openTransport(page){
  await task.waitFor({state:'visible',timeout:25000});
  await task.locator('button[type="submit"]').waitFor({state:'visible',timeout:25000});
  return task;
+}
+async function printLabels(actor,link,endpoint,key,expected){
+ const http=actor.page.waitForResponse(r=>r.url()===BASE+endpoint&&r.request().method()==='GET',{timeout:30000});
+ const popup=actor.page.waitForEvent('popup',{timeout:30000});
+ await humanClick(null,link);
+ const [preview,response]=await Promise.all([popup,http]);
+ try{
+  check(response.status()===200,'G6_HUB_PRINT_HTTP_'+key);
+  await preview.locator('.ticket').first().waitFor({state:'visible',timeout:30000});
+  const aliases=await preview.locator('.ticket .alias').allTextContents();
+  check(aliases.length===expected.length&&new Set(aliases).size===expected.length&&
+   expected.every(x=>aliases.includes(x)),'G6_HUB_PRINT_ALIAS_MISMATCH_'+key);
+  const qrSources=await preview.locator('.ticket img.qr').evaluateAll(images=>images.map(img=>img.getAttribute('src')));
+  check(qrSources.length===expected.length&&qrSources.every(src=>typeof src==='string'&&src.startsWith('data:image/png;base64,'))&&
+   new Set(qrSources).size===expected.length,'G6_HUB_PRINT_QR_MISSING_OR_DUPLICATE_'+key);
+  const printedText=await preview.locator('body').innerText();
+  check(!printedText.includes(REF),'G6_HUB_PRINT_COMMERCIAL_REFERENCE_EXPOSED_'+key);
+  await preview.screenshot({path:path.join(OUT,key+'.png'),fullPage:true});
+  report.ui_gestures.push({action:key,method:'pointer click',http:response.status(),ticket_count:aliases.length});
+  report.hardware_status='HARDWARE_NOT_PROVEN';save();
+ }finally{await preview.close();}
 }
 async function main(){
  let browser;
@@ -188,13 +211,38 @@ async function main(){
    const shipmentId=after.shipments[0].id;report.shipment_id=shipmentId;report.parcel_id=after.parcel_id;report.box_id=after.box_id;save();
    section=await openHub(actor.page);row=boxRow(section,actor.page);
    await row.waitFor({state:'visible',timeout:25000});
+   const labelBase=API+'/labels/boxes/'+plan.box_id;
+   const issued=await exactGesture(actor,'issue-box-label',labelBase+'/issue',
+    row.locator('[data-workspace-action="issue-box-label"]'),b=>b&&Object.keys(b).length===0);
+   const alias=issued.alias;
+   check(issued.type==='COMBOX'&&/^[A-HJ-NP-Z2-9]{8}$/.test(alias||''),'G6_M06_BOX_LABEL_INVALID');
+   const labels=(await db.query("SELECT short_alias FROM hub_scan_labels WHERE physical_unit_id=$1 AND target_type='COMBOX'",[plan.box_id])).rows;
+   check(labels.length===1&&labels[0].short_alias===alias,'G6_M06_BOX_LABEL_PG_INVALID');
+   await printLabels(actor,row.locator('[data-hub-print-box]'),labelBase+'/print?format=thermal','print-box-label',[alias]);
+   await humanFill(null,row.locator('[data-hub-final-box-scan]'),alias);
+   await humanCheck(null,row.locator('[data-hub-box-label-applied]'));
    await exactGesture(actor,'dispatch-box',API+'/boxes/'+plan.box_id+'/advance',
-    row.locator('[data-workspace-action="advance-box"]'),b=>b?.to_state==='DISPATCHED'&&Object.keys(b).length===1);
+    row.locator('[data-workspace-action="advance-box"]'),b=>b?.to_state==='DISPATCHED'&&
+     b.box_qr_scan===alias&&b.label_applied_confirmed===true&&Object.keys(b).length===3);
    after=await readback();
    check(after.box_state==='DISPATCHED'&&after.shipments[0].stage==='hub_ready'&&
     after.custody.some(e=>e.event_type==='STATE_TRANSITION'&&e.from_state==='PACKED'&&
       e.to_state==='DISPATCHED'&&e.actor_id)&&Number(after.parcel_qty_shipped)===0,
     'G6_M06_HANDOVER_DISPATCH_PG_INVALID');
+   await openTransport(actor.page);
+   const scanTask=actor.page.locator('[data-journey-custody-scan="HUB_HANDOVER"]');
+   await scanTask.waitFor({state:'visible',timeout:25000});
+   await humanFill(null,scanTask.locator('[name="qr_code"]'),alias);
+   await humanFill(null,scanTask.locator('[name="proof_ref"]'),plan.proof_ref);
+   await humanSelect(null,scanTask.locator('[name="confirmed"]'),'yes');
+   await exactGesture(actor,'scan-handover-box','/api/admin/workspaces/shipping-customs/market/KM/international/'+SHIPMENT+'/box-scan',
+    scanTask.locator('button[type="submit"]'),b=>b?.qr_code===alias&&b.proof_ref===plan.proof_ref&&
+     b.event_type==='HUB_HANDOVER'&&b.confirmed===true);
+   after=await readback();
+   check(after.shipments[0].stage==='hub_ready'&&Number(after.parcel_qty_shipped)===0&&
+    after.handoverScans.length===1&&after.handoverScans[0].box_unit_id===plan.box_id&&
+    after.handoverScans[0].short_alias===alias&&after.handoverScans[0].actor_id,
+    'G6_M06_HANDOVER_SCAN_PG_INVALID');
    const task=await openTransport(actor.page);
    await humanFill(null,task.locator('[name="forwarder_name"]'),plan.forwarder_name);
    await humanSelect(null,task.locator('[name="transport_mode"]'),plan.transport_mode);
@@ -215,6 +263,8 @@ async function main(){
    after.shipments[0].transport_mode===plan.transport_mode&&after.links.length===1&&
    after.links[0].physical_unit_id===plan.box_id&&after.box_state==='DISPATCHED'&&dispatched&&
    after.parcel_status==='shipped'&&Number(after.parcel_qty_shipped)===3&&
+   after.handoverScans.length===1&&after.handoverScans[0].event_type==='HUB_HANDOVER'&&
+   after.handoverScans[0].box_unit_id===plan.box_id&&
    after.shipmentEvents.length===2&&after.shipmentEvents.some(e=>e.event_type==='stage_changed'&&
     e.from_stage==='hub_ready'&&e.to_stage==='handed_over'&&e.proof_ref===plan.proof_ref&&e.actor_id)&&
    after.parcelEvents.some(e=>e.event_type==='shipped'&&e.actor_id&&e.metadata?.shipment_id===report.shipment_id&&
@@ -223,6 +273,7 @@ async function main(){
    'G6_M06_HANDOVER_POSTGRES_ORACLE_INVALID');
   report.after={shipment_id:report.shipment_id,shipment_stage:after.shipments[0].stage,
    box_state:after.box_state,parcel_status:after.parcel_status,parcel_qty_shipped:Number(after.parcel_qty_shipped),
+   handover_scan_count:after.handoverScans.length,
    forwarder_name:plan.forwarder_name,transport_mode:plan.transport_mode,
    handover_proof_ref_hash:digest(plan.proof_ref),external_payment_rows:Number(after.external_payment_rows),
    settlement_rows:Number(after.settlement_rows),local_stock_allocations_count:Number(after.local_stock_allocations_count),

@@ -164,6 +164,23 @@ beforeEach(() => {
   mockAssignInventory.mockResolvedValue({ item_id: 'item-1', parcel_ref: 'PCL-CM-001', assigned: true });
 });
 
+test('toutes les anciennes mutations de sac client sont refusées 410 après vérification des droits Hub', async () => {
+  const routes = [
+    '/market/CM/bags',
+    '/market/CM/bags/00000000-0000-4000-8000-000000000011/deposit',
+    '/market/CM/bags/00000000-0000-4000-8000-000000000011/close',
+    '/market/CM/boxes/00000000-0000-4000-8000-000000000012/bags',
+  ];
+  for (const suffix of routes) {
+    const res = await request(app()).post('/api/admin/workspaces/operations' + suffix).send({});
+    expect(res.status).toBe(410);
+    expect(res.body.code).toBe('HUB_CUSTOMER_BAG_RETIRED');
+  }
+  mockGrantedCapabilities.delete('execution.parcel.ship@CM');
+  const denied = await request(app()).post('/api/admin/workspaces/operations/market/CM/bags').send({});
+  expect(denied.status).toBe(403);
+});
+
 test('D3 retire complètement require-market-scope du Workspace Opérations', () => {
   expect(routeSource).not.toMatch(/require\(['"][^'"]*require-market-scope/);
   expect(routeSource).not.toMatch(/\b(?:attachAuthorizedMarkets|requireMarketScope|operator_market_scopes)\b/);
@@ -407,4 +424,16 @@ test('répartir UNE commande : même capability exacte que « Répartir ce march
     .post('/api/admin/workspaces/operations/market/CM/orders/CMD-CM-001/distribute').send({});
   expect(denied.status).toBe(403);
   expect(mockDistributeSingleOrder).not.toHaveBeenCalled();
+});
+
+test('GET supply réutilise la projection canonique du Kanban pour les jalons',()=>{
+  const source=require('fs').readFileSync(require('path').join(__dirname,'../../routes/admin-operations-workspace.js'),'utf8');
+  expect(source).toContain('summarizeMarket(market, dossier)');
+  expect(source).toContain('stage_states: row.stage_states');
+  expect(source).toContain('...dossier, hub_journeys');
+});
+
+test('le focus physique QR est transmis sans recomputation UI',()=>{
+ const source=require('fs').readFileSync(require('path').join(__dirname,'../../routes/admin-operations-workspace.js'),'utf8');
+ expect(source).toContain('physical_focus: row.physical_focus');
 });

@@ -552,13 +552,14 @@
   }
 
   function renderHubExecutionShell(root, user, adminContext) {
+    const fromOperations = ['operations','direction'].includes(new URLSearchParams(String(global.location?.search || '')).get('entry'));
     return renderMarketSurfaceShell(root, user, adminContext, {
       surface: 'hub-live-execution',
       title: 'Hub live · Exécution',
       requireMarket: true,
       render: renderHubExecution,
-      allowHubOverview: true,
-      renderGlobalOverview: (host, actor) => {
+      allowHubOverview: !fromOperations,
+      renderGlobalOverview: fromOperations ? null : (host, actor) => {
         const api = global.KomerceCanonicalHubWorkstation;
         if (!api || typeof api.renderGlobalBoard !== 'function') {
           throw new Error('canonical_hub_global_board_module_missing');

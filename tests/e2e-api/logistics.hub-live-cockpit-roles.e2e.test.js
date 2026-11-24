@@ -226,21 +226,25 @@ describeE2E('E2E-HUB-COCKPIT — rôles et parcours HTTP', ({ db }) => {
     expect(res.body.purchase_orders.find((p) => p.id === poA).totals).toMatchObject({ received: 2, missing: 1 });
   });
 
-  test('6 — KOM-101 incomplète : pas de sac sans préparation partielle EXPLICITE ; la commande locale n\'entre jamais au Hub', async () => {
+  test('6 — sacs clients retirés : 410 même en préparation partielle, reliquat visible et local exclu du Hub', async () => {
     const plan = [{ order_item_id: o101.items[0].itemId, quantity: 2 }];
     const refused = await request(app).post(`${WS()}/bags`).set(auth(agent)).send({ order_id: o101.orderId, bag_plan: plan });
-    expect(refused.status).toBe(409);
-    expect(refused.body.code).toBe('HUB_BAG_PARTIAL_NOT_ACKNOWLEDGED');
-    expect(refused.body.pending_items.length).toBe(1);
+    expect(refused.status).toBe(410);
+    expect(refused.body.code).toBe('HUB_CUSTOMER_BAG_RETIRED');
     const explicit = await request(app).post(`${WS()}/bags`).set(auth(agent)).send({ order_id: o101.orderId, bag_plan: plan, partial_preparation: true });
-    expect(explicit.status).toBe(201);
-    // Le reliquat reste suivi ; les unités A reçues peuvent être réparties directement en COMBOX.
+    expect(explicit.status).toBe(410);
+    expect(explicit.body.code).toBe('HUB_CUSTOMER_BAG_RETIRED');
+    // Aucun faux sac, mais la commande et sa quantité partielle restent visibles pour COMBOX directe.
     const o = (await supply(agent)).body.orders.find((x) => x.id === o101.orderId);
     expect(o.readiness).toMatchObject({ complete: false, partial: true, ready_to_combox: true });
     expect(o.readiness.pending_items).toHaveLength(1);
-    const localBag = await request(app).post(`${WS()}/bags`).set(auth(agent)).send({ order_id: local.orderId, bag_plan: [{ order_item_id: local.items[0].itemId, quantity: 1 }], partial_preparation: true });
-    expect(localBag.status).toBe(409);
-    expect(localBag.body.code).toBe('HUB_BAG_ORDER_NOT_IMPORT');
+    const localBag = await request(app).post(`${WS()}/bags`).set(auth(agent)).send({
+      order_id: local.orderId, bag_plan: [{ order_item_id: local.items[0].itemId, quantity: 1 }], partial_preparation: true,
+    });
+    expect(localBag.status).toBe(410);
+    expect(localBag.body.code).toBe('HUB_CUSTOMER_BAG_RETIRED');
+    const localInHub = (await supply(agent)).body.orders.some(x => x.id === local.orderId);
+    expect(localInHub).toBe(false);
   });
 
   test('7 — le navigateur ne fournit jamais le marché ; un compte sans délégation ne lit pas le cockpit', async () => {

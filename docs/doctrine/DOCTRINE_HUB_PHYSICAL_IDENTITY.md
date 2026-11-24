@@ -199,3 +199,80 @@ La chaîne observable est :
 `KOM-IN éventuel → KOM-RCV → ouverture/réconciliation → contrôle qualité → KOM-ITEM si nécessaire → REPACK → KOM-BOX → PACKED → DISPATCHED`.
 
 Komerce ne gère pas en V1 les racks, tables ou déplacements internes. Un scan ou une impression n'est demandé que lorsqu'il matérialise une nouvelle vérité utile.
+
+
+---
+
+## 12. HUB–RELAIS — doctrine canonique complémentaire (décision du 23 novembre 2026)
+
+Cette section précise le tri, le regroupement et la remise aval. Elle complète HUB-001/HUB-002 sans transférer leurs autorités. En cas de formulation antérieure divergente sur la lettre ou sur la référence commerciale, la présente décision tranche **le périmètre Hub–Relais**. La certification technique et le GO restent indépendants.
+
+### 12.1. Identités et responsabilités
+
+- **Décision propriétaire finale (23/11/2026)** : une seule référence commerciale immuable pour toute nouvelle commande sous le moteur de vagues, de format `CM-YA01-B7Q01` : `CM` marché, `YA01` relais stable (deux lettres et deux chiffres), `B7Q` regroupement temporaire du destinataire (B = lettre de tri), `01` rang séquentiel de commande dans la vague. Ce format remplace K+6 seulement pour les nouvelles commandes éligibles après activation contrôlée du moteur ; les références K+6 historiques ne sont jamais renumérotées. Aucun deuxième identifiant commercial/logistique parallèle.
+- Une étiquette d'unité physiquement reçue s'écrit `CM-YA01-B7Q01-01`, `-02`, `-03` pour les trois unités de la commande ; elle n'est pas un nouveau numéro de commande ni l'identifiant technique primaire des unités. Les UUID, SKU, allocations, quantités et scans canoniques font autorité.
+- Les notions restent distinctes sans imposer deux références de commande : référence unique commerciale structurée ; unité physique/COMBOX ; vague et regroupement temporaire encodé dans la référence ; lettre prévisionnelle de tri ; emplacement physique réel ; secret de retrait.
+- Le Hub identifie la destination **marché + relais**, contrôle, étiquette, affecte et expédie. Le relais réceptionne, trie finement par commande/destinataire, localise et remet.
+- Le Hub ne réassigne ni la commande, ni la destination, ni l'allocation Purchasing. Aucun sac numérique obligatoire ; lecture des sacs historiques conservée.
+
+### 12.2. Moteur de vagues et lettres
+
+- À la validation du checkout, le moteur **attribue et persiste une lettre de pré-tri par relais et vague**, incluse dans la référence commerciale structurée lors de la création ; celle-ci devient immuable après émission.
+- Rotation A à Z avec réutilisation contrôlée des lettres à chaque relais ; les deux caractères suivants distinguent les groupes attribués sous une même lettre, sans recyclage de groupe. L'attribution équilibre les quantités d'articles attendues, pas simplement le nombre de commandes ou clients. La cible indicative d'environ dix unités par lettre est une aide au tri, pas un plafond de capacité. Toute extension du format au-delà d'une lettre nécessite un arbitrage et une migration versionnée.
+- Choisir une lettre admissible à charge prévisionnelle minimale, avec départage par rotation transactionnelle ; répartir les premières commandes plutôt que tout concentrer en A. Les opérations concurrentes doivent rester déterministes, idempotentes et sans doublons.
+- Un destinataire **vérifié** au même relais et dans la même vague ouverte conserve son regroupement entre commandes ; ni nom, ni téléphone, ni payeur seul ne suffisent à établir l'identité. Une vague fermée n'est pas réouverte par une nouvelle commande.
+- Une attribution existante n'est jamais réécrite silencieusement. Le regroupement est temporaire, non public, sans pouvoir d'autorisation de retrait. Les lettres peuvent être réutilisées après clôture, grâce à la clé interne relais + vague + attribution.
+- **Deux niveaux distincts :** lettre prévisionnelle dès le checkout ; localisation physique confirmée au relais uniquement après constat réel. La lettre ne garantit pas qu'une étagère A soit libre. L'agent peut ne pas utiliser de bac, choisir une zone compatible ou déclarer un débordement traçable. Une suggestion ne constitue jamais une présence physique.
+- Le moteur suit séparément charge prévue et occupation physique confirmée. Une COMBOX fermée compte comme une unité physique tant qu'elle n'est pas ouverte ; après déconditionnement, compter les unités réellement rangées. Ne pas assimiler quantité commerciale et nombre de contenants.
+
+### 12.2 bis. Étiquette opérationnelle minimale — décision figée du 24/11/2026
+
+**Le ticket n'est pas une fiche de commande.** Sa lecture doit rester rapide et son contenu non exploitable comme droit d'accès. Il comporte :
+- **KOMERCE** et le type **ARTICLE** ou **COMBOX** ;
+- **destination marché + relais** lisible en gros (ex. `CM · YA01`) quand cette destination est déjà vérifiée ;
+- **un unique QR scannable** généré localement à partir d'un identifiant opaque, stable, non devinable et résolu côté serveur uniquement pour un acteur authentifié et autorisé ;
+- un **petit code de secours opaque** (alias distinct et non réutilisé) pour saisie manuelle contrôlée si caméra ou douchette indisponible.
+
+Le nombre « 1 / 3 » est **facultatif** et affiché uniquement si sa signification est vérifiée et stable à l'impression ; une livraison partielle ou une recomposition ne doit pas créer d'étiquette trompeuse. Les libellés produit, commande, vague `B7Q`, identité personnelle, prix, contact, secret/code de retrait, jeton ou URL publique de suivi ne sont **pas imprimés**. La référence commerciale `CM-YA01-B7Q01` et la sous-référence `-01` restent résolubles dans Komerce, **mais ne sont pas encodées en clair dans le QR**. Si une ancienne étiquette permet d'exposer ces valeurs, elle n'est pas le modèle pour cette nouvelle impression.
+
+Le QR n'est **pas un secret ni une preuve de remise**. Un téléphone extérieur peut le lire ; la réponse utile et tout changement d'état nécessitent une session Komerce autorisée, la validation du marché/relais/acteur et l'invariant physique concerné. Toute réception/mutation exige son writer canonique, sa quantité et sa preuve propre ; **scanner ≠ faire avancer automatiquement**.
+
+Le contrat s'applique aux impressions **article et COMBOX** (80 mm et A4). QR généré localement (aucun service tiers), copie/réimpression sans mutation, CSP/no-store et HTML échappé. La même valeur scannée doit être acceptée par douchette clavier et par caméra mobile Chromium sur une **origine HTTPS**, avec refus explicite de permissions, inconnus, doublons, inter-marchés et inter-relais. Les tests à exécuter sur vrai staging : impression, caméra téléphone, résolution autorisée, sélection du bon geste physique puis oracles HTTP/PostgreSQL/tableaux de bord. Un scan simulé en navigateur ne remplace pas la preuve du matériel réel.
+
+### 12.3. Hub : réception, étiquettes et COMBOX
+
+- Réception fournisseur : rapprocher PO, SKU, variantes, quantités et lignes de commande ; attester seulement ce qui est réellement reçu. Les colis entrants peuvent contenir plusieurs commandes et marchés et n'héritent d'aucune lettre unique.
+- Imprimer des étiquettes minimales sur les unités effectivement reçues ou sur un lot explicitement traçable, selon §12.2 bis : QR opaque, destination vérifiée et alias de secours ; les références commerciales et la variante restent disponibles **dans l'interface autorisée**, pas sur le papier. Jamais de nom, téléphone, prix ou secret de retrait.
+- Préparer directement dans une KOM-BOX en scannant COMBOX et articles. Une KOM-BOX peut agréger plusieurs commandes et destinataires, **mais un seul marché et un seul relais de destination**. Une commande peut être répartie sur plusieurs KOM-BOX.
+- À PACKED, imprimer/réimprimer l'étiquette COMBOX avec identité physique, marché, relais et compteurs dérivés du contenu réel. Réimpression sans mutation de custody ni d'inventaire.
+- Les opérations SPLIT/MERGE/REPACK déplacent la matière et conservent l'historique d'allocations, quantités et custody. Pas de sac numérique intermédiaire.
+
+### 12.4. Relais : réception, rangement, retrait
+
+- Scanner l'expédition/COMBOX et attester chaque ligne/quantité effectivement reçue. Si 2 unités sur 3 sont reçues, enregistrer 2/3 et ouvrir l'écart : ne pas déclarer 3/3.
+- Recherche autorisée par commande ou code de retrait : afficher lignes, attendu, expédié, reçu, disponible, remis, manquant et reliquat, y compris si la commande traverse plusieurs COMBOX.
+- Le repère alphabétique facilite le rangement ; le lieu exact est confirmé par l'agent, peut différer du pré-tri et reste propre au relais. Aucun bac physique ou numérique obligatoire.
+- À la remise, vérifier le secret de retrait distinct et les habilitations, sélectionner **explicitement les articles et quantités physiquement tendus** ; enregistrer preuve, acteur, horodatage, commande, unité et quantités. Autoriser la remise partielle, conserver les reliquats, interdire toute deuxième remise des mêmes quantités. Le statut complet découle de la couverture réelle.
+- Une livraison locale hors Hub utilise les mêmes principes de réception/placement/retrait, sans créer de fausse étape Hub.
+
+### 12.5. Autorité, sécurité, compatibilité
+
+- Autorités existantes : orders et order_items pour le commercial ; purchasing/PO pour les achats ; hub_purchase_allocations et placements physiques pour les quantités ; logistics pour custody, COMBOX, réception relais et remise.
+- Aucun writer parallèle, aucune mutation de destination depuis le Hub, aucune fuite inter-marché/inter-relais. Le code de lettre, de vague ou d'étiquette ne vaut jamais autorisation de retrait.
+- Les événements de scan, placement, déplacement, sortie et remise sont append-only/idempotents, avec acteur, site, marché, références et provenance. Mode sans scanner : saisie manuelle explicite et auditée ; perte réseau : ne pas inventer de preuve.
+- Les anciennes références K+6, commandes G6 et données physiques historiques restent lisibles ; pas de renumérotation ni de suppression des sacs historiques. Tout nouveau flag est OFF par défaut ; activation staging séparée du merge.
+
+### 12.6. Conséquence impérative pour PR #5206
+
+**RETENIR** `CM-YA01-B7Q01` comme **unique référence commerciale** des nouvelles commandes éligibles. **CONSERVER ET ADAPTER** la transaction de vague, l'identité destinataire vérifiée, la rotation A–Z équilibrée par les unités attendues, le compteur de commande atomique, les garde-fous et l'abandon des nouvelles mutations sac. La migration 426, le checkout, les projections UI, les étiquettes et les tests doivent vérifier l'unicité par marché/relais/groupe/rang et la stabilité historique. PR #5206 non fusionnable avant vérification des contrôles et de la cohérence du parcours.
+
+### 12.7. Critères de certification avant les 46 scénarios
+
+- Une seule référence structurée stable `CM-YA01-B7Q01` ; commande suivante du même destinataire `CM-YA01-B7Q02` ; articles suffixés `-01`, `-02` ; homonymes distincts ; pas de réouverture après première remise ; rotation A–Z, charge par quantités, concurrence, absence de collision et absence de recyclage de groupe. Toute extension éventuelle au-delà de A–Z doit être versionnée et certifiée avant activation.
+- PO partielle et étiquettes limitées aux reçus ; COMBOX multi-commandes ; commande multi-COMBOX ; scan doublé ; réimpression neutre ; marché/relais incompatible refusé.
+- Réception 2/3 non complète ; remise 1/3 puis 2/3 ; aucun double retrait ; reliquats et incidents visibles ; aucune donnée sensible sur étiquette.
+- Sur le **même SHA servi en staging** : préflight et CI requis verts ; gestes réels Chromium desktop, oracles API/HTTP, vérité PostgreSQL et dashboards. Verdict PASS/FAIL/BLOCKED/NOT_PROVEN, jamais PASS par simple présence d'écran.
+- Aucun GO commercial, déploiement manuel ou activation de flag implicite par la fusion documentaire.
+
+**Portée de ce document :** arbitrage canonique à intégrer dans les cartes et implémentations propriétaires ; il ne prétend pas que le code est certifié.
+

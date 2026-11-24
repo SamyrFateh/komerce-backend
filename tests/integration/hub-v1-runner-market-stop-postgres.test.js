@@ -4,7 +4,7 @@
  * @test-runner jest
  * @test-requires postgres
  * @integration hub-v1-runner-market-stop-postgres.test.js
- * @brief Runner Hub V1 : --market (CM/CG/YT en base éphémère) et --stop-after=N (fixture prête, aucun faux 13/13).
+ * @brief Runner V1 historique : --market CM/YT reste isolé et refuse le faux 13/13 après retraite des sacs.
  */
 const db = require('../../db');
 const runner = require('../../scripts/recette/hub-v1-certification-runner');
@@ -26,11 +26,14 @@ describeDb('runner Hub V1 — marché et arrêt à l’étape N', () => {
     expect(rows[0].n).toBe(0); // aucune préparation PO : réservée à l'UI
   });
 
-  test.each(['CM', 'YT'])('--market=%s : 13/13 dans la devise du marché', async (code) => {
+  test.each(['CM', 'YT'])('--market=%s : marché correctement cloisonné, 13/13 impossible avec sacs retirés', async (code) => {
     const run = runner.newRun8();
     const report = await runner.runCertification({ db, run, argv: argv(`--market=${code}`) });
     expect(report.market).toBe(code);
-    expect(report.verdict).toBe('PASS_EPHEMERAL_13_STEPS');
+    expect(report.verdict).toBe('FAIL_OR_BLOCKED');
+    expect(report.staging_go).toBe(false);
+    expect(report.checks.all_13_steps_pass).toBe(false);
+    expect(report.steps.some(step=>step.status==='FAIL'||step.status==='BLOCKED')).toBe(true);
     const { rows } = await db.query("SELECT DISTINCT o.market_id, m.code FROM orders o JOIN markets m ON m.id=o.market_id WHERE o.reference LIKE $1", [`E2E-HUB-V1-${run}-%`]);
     expect(rows.map((r) => r.code)).toEqual([code]);
   });

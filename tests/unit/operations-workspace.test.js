@@ -189,3 +189,118 @@ test('Relais guidé : zone unique synchronisée sur le choix de file, non sur un
   expect(src).toContain("rootNode.setAttribute('data-relay-active-operation',key)");
   expect(src).toContain('showRelayOperation(rootNode,context.activeRelayQueue)');
 });
+
+test('Hub : retour au Kanban et station étiquettes même lorsque la file est vide', () => {
+  const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+  expect(src).toContain("execution ? '/admin/hub?branch=operations'");
+  expect(src).toContain("labels: '[data-hub-label-printing]'");
+  expect(src).toContain("if(!labelRows.size)");
+  expect(src).toContain('Aucun article reçu disponible');
+  expect(src).toContain("pdfLink('articles',line.allocation_id,'a4')");
+  expect(src).toContain("pdfLink('articles',line.allocation_id,'thermal')");
+});
+
+test('réimpression après placement : lien vers les archives, aucune seconde émission',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+ const history=src.slice(src.indexOf('const history=doc.createElement(\'button\');',src.indexOf('const labelRows=new Map();')),src.indexOf('boxes.appendChild(labelSection);'));
+ const center=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-label-center.js'),'utf8');
+ expect(history).toContain("data-hub-article-label-reprints");
+ expect(history).toContain("context.view='labels'");
+ expect(history).not.toContain('runAction(');
+ expect(history).not.toContain('pdfLink(');
+ expect(center).toContain("labels/index");
+ expect(center).toContain("method:'GET'");
+ expect(center).not.toContain("+'/issue'");
+});
+
+test('atelier Hub : l’ordre visible suit étiquettes, préparation COMBOX, puis départ',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+ const labels=src.indexOf('boxes.appendChild(labelSection);');
+ const init=src.indexOf('boxes.appendChild(createBar);');
+ const table=src.indexOf('boxes.appendChild(boxTable);');
+ const departure=src.indexOf('boxes.appendChild(bar);');
+ expect(labels).toBeGreaterThan(0);
+ expect(init).toBeGreaterThan(labels);
+ expect(table).toBeGreaterThan(init);
+ expect(departure).toBeGreaterThan(table);
+});
+
+test('COMBOX : destination connue ou écart explicite, état lisible sans changer les codes métier',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+ expect(src).toContain("PACKED:'Fermée',DISPATCHED:'Prête au départ'");
+ expect(src).toContain("relayIds.size>1||relayCodes.size>1?'Écart de destination à contrôler'");
+ expect(src).toContain('box.contents.every(c=>c.relais_id&&c.relais_code)');
+ expect(src).toContain('data-hub-box-destination');
+});
+
+describe('Hub: no old SAC and QR/PDF immediately reachable',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+  const hubCockpit=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-live-cockpit.js'),'utf8');
+  const html=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/index.html'),'utf8');
+  test('front no longer creates or deposits in customer bags',()=>{
+    expect(source).not.toContain('Préparer les sacs clients');
+    expect(source).not.toContain('Déposer dans le sac');
+    expect(source).not.toContain('Ateliers physiques · Sacs');
+    expect(hubCockpit).toContain("filter(item => !['PREPARE_BAG'");
+    // The cockpit may filter old bag events, but never enables bag mutations.
+    expect(hubCockpit).not.toContain("ctx.endpoint('bags')");
+  });
+  test('QR station is a first-class tab and immediate dossier shortcut',()=>{
+    expect(source).toContain("{ id: 'labels', label: 'Étiquettes QR' }");
+    expect(source).toContain("labelJump.setAttribute('data-hub-label-shortcut','')");
+    expect(source).toContain("context.view='labels';context.renderCurrent()");
+    expect(source).toContain("station.setAttribute('data-hub-labels-station','')");
+    expect(source).toContain('KomerceHubLabelCenter');
+    expect(source).toContain('openPreparation:()=>');
+    expect(source).not.toContain('fillable:Array.isArray(context.dossier?.fillable)');
+  });
+  test('new script and CSS version IDs are different from the stale November 13 immutable assets',()=>{
+    expect(html).toContain('hub-label-center.js?v=261124-hub-domain-2');
+    expect(html).toContain('operations-workspace.js?v=261124-hub-domain-2');
+    expect(html).toContain('hub-live-cockpit.js?v=261124-hub-domain-2');
+    expect(html).toContain('operations-workspace.css?v=261124-hub-domain-2');
+    expect(html).not.toContain('operations-workspace.js?v=261113-director-h4');
+    for(const name of ['hub-context-actions.js','hub-workstation.js','app.js'])expect(html).toContain(name+'?v=261124-hub-domain-2');
+  });
+  test('historic COMBOX rows remain accessible but no longer occupy full page',()=>{
+    expect(source).toContain("boxSearch.setAttribute('aria-label','Filtrer les COMBOX physiques')");
+    expect(source).toContain("boxTable.setAttribute('data-hub-combox-scroll','')");
+    expect(source).toContain("boxSearch.addEventListener('input',filterBoxes)");
+    expect(css).toContain('max-height:480px;overflow:auto;scrollbar-gutter:stable');
+    expect(css).toContain("[data-hub-combox-scroll] tbody tr[hidden]");
+  });
+  test('QR search and download layout is compact and accessible on mobile',()=>{
+    expect(css).toContain('.kmc-hub-label-grid');
+    expect(css).toContain('.kmc-hub-label-controls');
+    expect(css).toContain('.kmc-hub-label-download');
+    expect(css).toContain('grid-template-columns:1fr');
+  });
+});
+
+test('Jalons Hub : projection serveur, pas de calcul local, étape terminée désactivée',()=>{
+  const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+  expect(src).toContain('context.dossier?.hub_journeys');
+  expect(src).toContain("(j.physical_focus||j.current_key)===key");
+  expect(src).toContain("step.disabled=done");
+  expect(src).toContain("hub_journeys: dossier?.hub_journeys");
+});
+
+test('jalon QR distinct et destination autoritative',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+ expect(src).toContain("['labels','4 · QR articles']");
+ expect(src).toContain('data-hub-journey-destination');
+});
+
+test('Direction Hub : surface dédiée, sans ateliers physiques ni onglets opérationnels',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+ expect(src).toContain("hubQuery.get('entry')==='direction'");
+ expect(src).toContain('if(context.decisionOnly)return;');
+ expect(src).toContain('data-hub-decision-workspace');
+});
+
+test('Direction écart fournisseur : PO du marché et droits avant formulaire',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+ expect(src).toContain("context.decisionKind==='variance'");
+ expect(src).toContain("context.dossier?.purchase_orders?.some(po=>po.id===id)");
+ expect(src).toContain('api.directionVariance(panel');
+});

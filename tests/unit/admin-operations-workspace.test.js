@@ -86,3 +86,20 @@ describe('admin-operations-workspace — placement direct en COMBOX (#3900)', ()
     expect(src).toContain('if (Number(contents.count) < 1)');
   });
 });
+
+describe('QR catalogue for already issued labels — private, read only',()=>{
+  const src=require('fs').readFileSync(require('path').join(__dirname,'../../routes/admin-operations-workspace.js'),'utf8');
+  test('only authorized Hub receiver can read market-scoped metadata',()=>{
+    expect(src).toContain("'/market/:marketCode/labels/index'");
+    expect(src).toMatch(/'\/market\/:marketCode\/labels\/index',[\s\S]*?attachHubExecutionCapability\('execution.parcel.receive'\),[\s\S]*?requireHubWorkspaceAction/);
+    expect(src).toContain('marketId:req.workspaceMarket.id,limit:80');
+    expect(src).toContain("res.set('Cache-Control','private, no-store')");
+    expect(src).toContain("return res.status(200).json({ok:true,market:req.workspaceMarket.code,labels})");
+  });
+  test('existing PDF authorization and issued labels remain unchanged',()=>{
+    expect(src).toContain("'/market/:marketCode/labels/articles/:id/pdf'");
+    expect(src).toContain("'/market/:marketCode/labels/boxes/:id/pdf'");
+    expect(src).toContain('hubLabels.listLabels(db,');
+    expect(src).toContain('const {renderHubLabelPdf}=require');
+  });
+});

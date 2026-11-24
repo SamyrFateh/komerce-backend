@@ -279,3 +279,33 @@ test('09 - G6 confirmation fictive : justificatif et vendeur explicitement simul
       lines:[{ purchase_line_id:LINE_ID,confirmed_quantity:2,confirmed_unit_price:10,confirmed_currency:'EUR' }]});
   expect(attempted).toEqual([]);
 });
+
+test('01d - mode API explicite uniquement si le fournisseur et toutes les lignes sont éligibles',async({page})=>{
+ const attempted=await cockpit(page,{need:true});
+ await page.locator('[data-hlc-need="NEED-G2"]').click();
+ await expect(page.locator('[data-hlc-action="prepare-po-api"]')).toHaveCount(0);
+ await page.evaluate(()=>{
+  const batch=window.__g2.dossier.cockpit.need_batches[0];
+  batch.api_available=true;
+  batch.groups[0].lines[0].api_eligible=true;
+  window.__g2.render();
+ });
+ await expect(page.locator('[data-hlc-action="prepare-po-api"]')).toBeEnabled();
+ await page.locator('[data-hlc-action="prepare-po-api"]').click();
+ await capture(page,'01d-api-prepare','/api/purchasing/po/prepare',{line_ids:[LINE_ID],execution_mode:'api'});
+ expect(attempted).toEqual([]);
+});
+test('01e - deux devises incompatibles ne déclenchent aucune préparation groupée',async({page})=>{
+ const attempted=await cockpit(page,{need:true,multiOrderNeed:true});
+ await page.evaluate(()=>{
+  const batch=window.__g2.dossier.cockpit.need_batches[0];
+  batch.groups[0].lines[0].supplier_currency='AED';
+  batch.groups[0].lines[1].supplier_currency='EUR';
+  window.__g2.render();
+ });
+ await page.locator('[data-hlc-need="NEED-G2"]').click();
+ await expect(page.locator('[data-hlc-action="prepare-po"]')).toBeDisabled();
+ await expect(page.locator('[data-hlc-action="prepare-po-order-ORDER-ISOLATED"]')).toBeEnabled();
+ expect(await page.evaluate(()=>window.__g2.calls)).toEqual([]);
+ expect(attempted).toEqual([]);
+});
