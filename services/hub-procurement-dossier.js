@@ -8,7 +8,7 @@
  * @outputs       market_procurement_dossier, physical_trace
  * @depends       db, services/supplier-source-resolution.js, services/suppliers/provider-authority.js
  * @used-by       routes/hub.js, routes/admin-operations-workspace.js
- * @db-read       markets, orders, order_items, products, product_skus, product_suppliers, suppliers, purchase_lines, purchase_orders, purchase_order_authorizations, hub_authorization_grants, users, relais, v_purchase_line_progress, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_box_bags, hub_box_effective_placements, hub_scan_labels, international_shipments, international_shipment_hub_units, parcels, parcel_items
+ * @db-read       markets, orders, order_items, products, product_skus, product_suppliers, suppliers, purchase_lines, purchase_orders, purchase_order_authorizations, hub_authorization_grants, users, relais, v_purchase_line_progress, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_box_bags, hub_box_effective_placements, hub_scan_labels, order_delivery_waves, international_shipments, international_shipment_hub_units, parcels, parcel_items
  * @db-write      (none)
  * @db-txn        @none
  * @doctrine      une décision, une autorité, un enregistrement ; projection en lecture seule, aucune seconde source de vérité
@@ -538,6 +538,11 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
            oi.id AS order_item_id, oi.product_id, oi.sku_id, oi.quantity AS ordered,
            p.name AS product_name, oi.fulfillment_source, o.created_at AS order_created_at,
            (SELECT rl.name FROM relais rl WHERE rl.id = o.relais_id) AS relay_name, o.relais_id AS relay_id,
+           (SELECT rl.short_code FROM relais rl WHERE rl.id=o.relais_id AND rl.market_id=o.market_id) AS relay_code,
+           w.client_code AS delivery_wave_code, w.closed_at AS delivery_wave_closed_at,
+           (SELECT COUNT(*)::int FROM hub_scan_labels l JOIN hub_purchase_allocations a ON a.id=l.allocation_id
+             WHERE a.order_item_id=oi.id AND a.market_id=o.market_id AND l.market_id=a.market_id
+               AND l.relais_id=o.relais_id AND l.target_type='ARTICLE') AS article_labels_issued,
            COALESCE((
              SELECT SUM(v.received_quantity)::int
                FROM v_purchase_line_progress v
@@ -555,6 +560,7 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
       FROM orders o
       JOIN order_items oi ON oi.order_id = o.id AND oi.fulfillment_source = 'IMPORT'
       LEFT JOIN products p ON p.id = oi.product_id
+      LEFT JOIN order_delivery_waves w ON w.id=o.delivery_wave_id AND w.market_id=o.market_id AND w.relais_id=o.relais_id
      WHERE o.market_id = $1 AND o.status NOT IN ('pending', 'cancelled', 'refunded', 'collected')
        AND ($2::uuid IS NULL OR EXISTS (
          SELECT 1 FROM purchase_lines pl
@@ -565,7 +571,8 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
   const unsourcedItems = [];
   for (const r of orderRows) {
     if (!orders.has(r.order_id)) orders.set(r.order_id, {
-      id: r.order_id, reference: r.order_ref, status: r.order_status, created_at: r.order_created_at || null, relay_name: r.relay_name || null, relay_id: r.relay_id || null, items: [],
+      id: r.order_id, reference: r.order_ref, status: r.order_status, created_at: r.order_created_at || null, relay_name: r.relay_name || null, relay_id: r.relay_id || null, relay_code:r.relay_code||null,
+      delivery_wave:r.delivery_wave_code?{code:r.delivery_wave_code,closed:Boolean(r.delivery_wave_closed_at)}:null, items: [],
     });
     // Le manque de sourcing est un fait calculé depuis la couverture achat
     // effective, pas un statut de commande ni une réception physique inventée.
@@ -578,6 +585,7 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
       purchasing_covered: Number(r.purchase_covered || 0),
       purchasing_missing: uncovered,
       received: Number(r.purchase_received || 0),
+      article_labels_issued: Number(r.article_labels_issued || 0),
       supplier_mapping_present: supplierMapped,
       sourcing_required: uncovered > 0,
     });
