@@ -708,13 +708,14 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
   const { rows: boxRows } = await q.query(`
     SELECT u.id AS unit_id, u.reference, u.state, u.market_id, u.created_at, sh.reference AS shipment_ref, sh.stage AS shipment_stage,
            a.order_id, o.reference AS order_ref, a.purchase_line_id, p.quantity, p.bag_unit_id,
-           a.id AS allocation_id,
+           a.id AS allocation_id, o.relais_id, rl.short_code AS relais_code,
            (SELECT COUNT(*)::int FROM hub_scan_labels l WHERE l.target_type='ARTICLE'
              AND l.allocation_id=a.id AND l.market_id=a.market_id) AS issued_label_count
       FROM hub_physical_units u
       JOIN hub_box_effective_placements p ON p.box_unit_id = u.id
       JOIN hub_purchase_allocations a ON a.id = p.allocation_id
       JOIN orders o ON o.id = a.order_id
+      LEFT JOIN relais rl ON rl.id = o.relais_id AND rl.market_id = a.market_id
       LEFT JOIN international_shipment_hub_units hs ON hs.physical_unit_id = u.id
       LEFT JOIN international_shipments sh ON sh.id = hs.shipment_id
      WHERE u.unit_type = 'MARKET_PARCEL' AND a.market_id = $1
@@ -726,7 +727,8 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
         shipment_stage: r.shipment_stage || null, contents: [] });
     }
     boxes.get(r.unit_id).contents.push({ order_id: r.order_id, order_ref: r.order_ref, line_id: r.purchase_line_id, qty: Number(r.quantity), bag_unit_id: r.bag_unit_id || null,
-      allocation_id: r.allocation_id, issued_label_count: Number(r.issued_label_count || 0) });
+      allocation_id: r.allocation_id, issued_label_count: Number(r.issued_label_count || 0),
+      relais_id: r.relais_id || null, relais_code: r.relais_code || null });
   }
 
   // KOM-BOX vides (créées depuis le Hub, pas encore composées) : visibles pour pouvoir être remplies.
