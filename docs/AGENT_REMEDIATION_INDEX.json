@@ -560,12 +560,7 @@
           "action": "Ajouter/rétablir la méthode dans api-client.js ou corriger la vue vers la méthode canonique existante.",
           "forbidden": "Ne pas faire de fetch() brut dans la vue pour contourner KmcApi.",
           "baselinePolicy": "never-increase-to-pass",
-          "severity": "error",
-          "autoRemediation": true,
-          "evidence": {
-            "metric": "missingApiMethods"
-          }
-        }
+          "severity": "     }
       },
       {
         "metric": "doctrineViolations",
@@ -947,10 +942,7 @@
     "DASH-DEAD-API-METHOD": {
       "scope": "dashboard",
       "owner": "public/dashboards/admin/js/api-client.js",
-      "cause": "Une méthode KmcApi est exportée mais n’a plus de consommateur dashboard.",
-      "action": "Supprimer l’export réellement mort ou restaurer le consommateur canonique s’il manque.",
-      "forbidden": "Ne pas ajouter un appel factice pour conserver une API morte.",
-      "baselinePolicy": "never-increase-to-pass",
+      "cause": "Une méthode KmcApi est exportée mais n’a plus de consommaease-to-pass",
       "severity": "error",
       "autoRemediation": true
     },
