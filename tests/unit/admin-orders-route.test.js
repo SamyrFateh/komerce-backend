@@ -50,6 +50,12 @@ jest.mock('../../services/admin-order-refund', () => ({
   refundCancelledOrder: (...args) => mockRefundCancelledOrder(...args),
 }));
 
+const mockReadVerifiedShortageCandidates = jest.fn();
+jest.mock('../../services/item-refund-reservation-service', () => ({
+  readVerifiedShortageCandidates: (...args) => mockReadVerifiedShortageCandidates(...args),
+  reserveVerifiedShortage: jest.fn(),
+}));
+
 const express = require('express');
 const request = require('supertest');
 
@@ -71,7 +77,6 @@ beforeEach(() => {
     res.status(500).json({ error: err.message });
   });
 });
-
 describe('admin/orders — garde d\'accès', () => {
   it('403 si non-admin', async () => {
     mockState.user = { id: 'u2', role: 'agent_hub' };
@@ -239,5 +244,38 @@ describe('admin/orders — POST /orders/:id/refund', () => {
     mockRefundCancelledOrder.mockRejectedValueOnce(new Error('service refund indisponible'));
     const res = await request(app).post('/api/admin/orders/o1/refund').send({});
     expect(res.status).toBe(500);
+  });
+});
+
+describe('admin/orders — N26a item refund candidate context',()=>{
+  const saveFlags=()=>Object.fromEntries(['KOMERCE_ENV','E7_ITEM_RESERVATIONS_ENABLED',
+    'E7_SANDBOX_REFUND_EXECUTION_ENABLED','STRIPE_SECRET_KEY','PAYPAL_ENV',
+    'PAYPAL_CLIENT_ID','PAYPAL_CLIENT_SECRET'].map(k=>[k,process.env[k]]));
+  const restoreFlags=previous=>Object.entries(previous).forEach(([k,v])=>{
+    if(v===undefined)delete process.env[k];else process.env[k]=v;
+  });
+  it('serves the admin candidate projection only with both staging sandbox gates enabled',async()=>{
+    const previous=saveFlags();process.env.KOMERCE_ENV='staging';
+    process.env.E7_ITEM_RESERVATIONS_ENABLED='1';process.env.E7_SANDBOX_REFUND_EXECUTION_ENABLED='1';
+    process.env.STRIPE_SECRET_KEY='sk_test_unit';
+    mockReadVerifiedShortageCandidates.mockResolvedValue({order:{id:'o1',reference:'K1FOWL5',payment_mode:'stripe_eur'},items:[],candidates:[],blocked:false});
+    try{
+      const ready=await request(app).get('/api/admin/orders/item-refund-readiness');
+      expect(ready.body).toEqual({enabled:true});
+      const res=await request(app).get('/api/admin/orders/K1FOWL5/item-refund-context');
+      expect(res.status).toBe(200);expect(res.headers['cache-control']).toContain('no-store');
+      expect(mockReadVerifiedShortageCandidates).toHaveBeenCalledWith({orderReference:'K1FOWL5',actor:mockState.user});
+    }finally{restoreFlags(previous);}
+  });
+  it('fails closed before reading when sandbox execution is disabled',async()=>{
+    const previous=saveFlags();process.env.KOMERCE_ENV='staging';
+    process.env.E7_ITEM_RESERVATIONS_ENABLED='1';delete process.env.E7_SANDBOX_REFUND_EXECUTION_ENABLED;
+    try{
+      const ready=await request(app).get('/api/admin/orders/item-refund-readiness');
+      expect(ready.body).toEqual({enabled:false});
+      const res=await request(app).get('/api/admin/orders/K1FOWL5/item-refund-context');
+      expect(res.status).toBe(409);expect(res.body.code).toBe('E7_SANDBOX_PSP_DISABLED');
+      expect(mockReadVerifiedShortageCandidates).not.toHaveBeenCalled();
+    }finally{restoreFlags(previous);}
   });
 });

@@ -236,6 +236,8 @@ module.exports = {
       'order_items: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'order_status_history: RW',
       'orders: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
+      'incidents: R',
+      'international_shipment_relay_receipts: R',
       'relay_return_compensations: RW!', // Compensation SAV, décision unique (A1)
       'order_delivery_waves: RW!', // staging-only, grouped by verified recipient ID
       'order_checkout_idempotency: RW!', // Unique checkout claim (migration 408 ; staged, pas encore live)
@@ -245,6 +247,9 @@ module.exports = {
       'products: R',          // W-via:product-admin-service (adjustStock — order-payment-confirmation.js, order-status-machine.js)
       'recipients: RW',
       'refunds: R',
+      'refund_execution_intents: R',
+      'order_item_refund_reservations: R',
+      'local_item_refund_reservations: R',
       'relais: R',
       'sms_log: W',
       'users: R',

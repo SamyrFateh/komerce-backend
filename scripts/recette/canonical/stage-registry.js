@@ -79,8 +79,9 @@ const N25_STAGE_IDS=Object.freeze([...M02_STAGE_IDS,'N25_SAV_DOUBLE_INTAKE','N25
 const N26B_STAGE_IDS=Object.freeze([...M02_STAGE_IDS,'N26B_SAV_COMPENSATION_DECISION','N26B_SAV_COMPENSATION_ORACLE']);
 // N40 (G6-G5B) : chaîne M01 jusqu'au PO notifié, puis confirmation fournisseur à un prix différent du devis.
 const N40_STAGE_IDS=Object.freeze([...upTo('HUB_VENDOR_READINESS'),'N40_SUPPLIER_PRICE_GAP','N40_PRICE_GAP_ORACLE']);
-// N26a / N27 (G6-G5B) : sondes d'écran en lecture seule (aucun écran de remboursement de ligne ni d'avoir partiel connu).
-const N26A_STAGE_IDS=Object.freeze([...upTo('RELAY_CASH'),'N26A_LINE_REFUND_SCREEN_PROBE']);
+// N26a : commande au point d'entrée, puis décision PSP partielle si le rail/capture et la preuve sont admissibles.
+const N26A_STAGE_IDS=Object.freeze([...upTo('BUYER'),'N26A_LINE_REFUND_PSP_DECISION']);
+// N27 : reste une sonde indépendante jusqu'à la conception d'une autorité de reliquat sûre.
 const N27_STAGE_IDS=Object.freeze([...upTo('HUB_VENDOR_READINESS'),'N27_REMNANT_CANCEL_SCREEN_PROBE']);
 // N08 (G6-G5A) : commande créée par l'écran (BUYER), rejouée sous la même clé d'idempotence ; oracle PG. N10 : webhooks PSP simulés non signés/dupliqués après BUYER, sans écran.
 const N08_STAGE_IDS=Object.freeze(['BUYER','N08_IDEMPOTENCY_ORACLE']);

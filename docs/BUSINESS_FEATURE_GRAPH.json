@@ -16807,7 +16807,7 @@
         "category": "services",
         "declared": "services/order-delivery-wave-service.js",
         "resolvedPath": "services/order-delivery-wave-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "orders",
@@ -20123,8 +20123,15 @@
       {
         "feature": "refunds",
         "category": "tests",
-        "declared": "tests/unit/g8-refund-operator-ui.test.js",
-        "resolvedPath": "tests/unit/g8-refund-operator-ui.test.js",
+        "declared": "tests/unit/g8-remboursements.test.js",
+        "resolvedPath": "tests/unit/g8-remboursements.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/unit/g6-negative-scenarios.test.js",
+        "resolvedPath": "tests/unit/g6-negative-scenarios.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -31014,6 +31021,18 @@
         "from": "refunds",
         "to": "economic-engine",
         "raw": "economic-engine (A8 : rafraîchissement transactionnel de la marge réelle canonique via canonical-margin-writer ; no-op si la règle CANONICAL_MARGIN_WRITER_ENABLED vaut 0)",
+        "resolved": true
+      },
+      {
+        "from": "refunds",
+        "to": "catalog",
+        "raw": "catalog (lecture du produit et vérification de sa source fournisseur pour borner le remboursement au manque physique attesté)",
+        "resolved": true
+      },
+      {
+        "from": "refunds",
+        "to": "incident-management",
+        "raw": "incident-management (lecture de l’incident source immuable associé à la preuve de manque)",
         "resolved": true
       },
       {
@@ -44638,6 +44657,15 @@
                 "targetFile": "services/incident-write-service.js"
               }
             ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "incidents",
+                "mode": "R"
+              }
+            ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
@@ -45172,6 +45200,10 @@
               {
                 "table": "parcel_items",
                 "mode": "R"
+              },
+              {
+                "table": "international_shipment_relay_receipts",
+                "mode": "R"
               }
             ]
           }
@@ -45694,6 +45726,18 @@
             "evidence": [
               {
                 "table": "refunds",
+                "mode": "R"
+              },
+              {
+                "table": "refund_execution_intents",
+                "mode": "R"
+              },
+              {
+                "table": "order_item_refund_reservations",
+                "mode": "R"
+              },
+              {
+                "table": "local_item_refund_reservations",
                 "mode": "R"
               }
             ]
@@ -48692,6 +48736,22 @@
       },
       {
         "from": "refunds",
+        "to": "catalog",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "products",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "refunds",
         "to": "documents",
         "channels": [
           {
@@ -48768,6 +48828,22 @@
               {
                 "sourceFileId": "services/refund-service.js",
                 "targetFile": "services/cost-allocation/canonical-margin-writer.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "refunds",
+        "to": "incident-management",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "incidents",
+                "mode": "R"
               }
             ]
           }
@@ -50751,7 +50827,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2385
+        "filesObserved": 2386
       },
       "boutique": {
         "filesObserved": 218,
@@ -51636,6 +51712,7 @@
         "platform-ops",
         "purchasing",
         "recommendations",
+        "refunds",
         "shared-cart",
         "sourcing",
         "unsold-resolution"
@@ -52467,8 +52544,10 @@
         "dashboard",
         "logistics",
         "notifications",
+        "orders",
         "payments",
-        "platform-ops"
+        "platform-ops",
+        "refunds"
       ],
       "lifecycleOwner": "incident-management",
       "resolution": "declared-table-owner"
@@ -53543,6 +53622,7 @@
         }
       ],
       "readers": [
+        "orders",
         "refunds"
       ],
       "lifecycleOwner": "logistics",
@@ -54134,6 +54214,51 @@
       "lifecycleOwner": "orders",
       "resolution": "declared-table-owner"
     },
+    "refund_execution_intents": {
+      "writers": [
+        {
+          "feature": "refunds",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "orders"
+      ],
+      "lifecycleOwner": "refunds",
+      "resolution": "single-writer"
+    },
+    "order_item_refund_reservations": {
+      "writers": [
+        {
+          "feature": "refunds",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "orders"
+      ],
+      "lifecycleOwner": "refunds",
+      "resolution": "single-writer"
+    },
+    "local_item_refund_reservations": {
+      "writers": [
+        {
+          "feature": "refunds",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "orders"
+      ],
+      "lifecycleOwner": "refunds",
+      "resolution": "single-writer"
+    },
     "cash_collections": {
       "writers": [
         {
@@ -54406,45 +54531,6 @@
       "readers": [],
       "lifecycleOwner": "purchasing",
       "resolution": "declared-table-owner"
-    },
-    "refund_execution_intents": {
-      "writers": [
-        {
-          "feature": "refunds",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "refunds",
-      "resolution": "single-writer"
-    },
-    "order_item_refund_reservations": {
-      "writers": [
-        {
-          "feature": "refunds",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "refunds",
-      "resolution": "single-writer"
-    },
-    "local_item_refund_reservations": {
-      "writers": [
-        {
-          "feature": "refunds",
-          "mode": "RW",
-          "declaredOwner": false,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "refunds",
-      "resolution": "single-writer"
     },
     "local_cash_refund_authorizations": {
       "writers": [
@@ -54799,8 +54885,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 720,
-        "technicalNodesOwned": 720,
+        "technicalNodesTotal": 721,
+        "technicalNodesOwned": 721,
         "technicalOrphans": 0
       },
       "dash": {
