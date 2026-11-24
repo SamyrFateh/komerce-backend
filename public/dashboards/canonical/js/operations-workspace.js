@@ -1275,6 +1275,7 @@
       cockpitModule.render(cockpitHost, {
         document: doc, dossier: d, marketCode: context.marketCode, state: context.cockpitState,
         isReadOnly: isHubReadOnly(context),
+        onSelectionChange: sel=>context.renderJourney?.(sel),
         endpoint: suffix => endpointFor(context.marketCode, suffix),
         act: (button, options) => runAction(context, button, options),
         reload: () => context.reload(),
@@ -2184,6 +2185,97 @@
     loadRequests().catch(() => {});
   }
 
+  // Jalons par commande : le navigateur ne calcule aucune complétude métier.
+  // La sélection d'une PO partagée ne doit pas choisir arbitrairement un client.
+  function renderHubJourney(host, doc, context, selection) {
+    if (!host) return;
+    host.replaceChildren();
+    const journeys=context.dossier?.hub_journeys;
+    if (!Array.isArray(journeys) || !journeys.length) return;
+    const dossier=context.dossier;
+    const fromUrl=()=>{
+      const value=new URLSearchParams(String(globalThis.location?.search||'')).get('sel')||'';
+      const i=value.indexOf(':');return i>0?{type:value.slice(0,i),id:value.slice(i+1)}:null;
+    };
+    const sel=selection || context.cockpitState?.sel || fromUrl();
+    let ids=[];
+    if(sel?.type==='order')ids=[sel.id];
+    if(sel?.type==='po')ids=(dossier.purchase_orders||[]).find(p=>p.id===sel.id)?.order_ids||
+      (dossier.purchase_orders||[]).find(p=>p.id===sel.id)?.lines?.map(l=>l.order_id)||[];
+    if(sel?.type==='box')ids=(dossier.boxes||[]).find(b=>b.unit_id===sel.id)?.contents?.map(c=>c.order_id)||[];
+    if(sel?.type==='need'){
+      for(const batch of dossier.cockpit?.need_batches||[]) for(const group of batch.groups||[])
+        if(group.key===sel.id)ids.push(...(group.lines||[]).map(l=>l.order_id));
+      if(!ids.length&&String(sel.id).startsWith('src:'))ids=[sel.id.split(':')[1]];
+    }
+    const candidates=journeys.filter(j=>ids.includes(j.id));
+    if(!candidates.length){
+      host.appendChild(text(doc,'p','kmc-workspace-note','Sélectionnez un dossier pour afficher ses jalons métier.'));
+      return;
+    }
+    if(candidates.length>1){
+      const picker=doc.createElement('select');picker.setAttribute('aria-label','Commande dont afficher les jalons');
+      picker.appendChild(Object.assign(doc.createElement('option'),{value:'',textContent:'Choisir une commande liée'}));
+      candidates.forEach(j=>picker.appendChild(Object.assign(doc.createElement('option'),{value:j.id,textContent:j.reference})));
+      picker.value=candidates.some(j=>j.id===context.journeyOrderId)?context.journeyOrderId:'';
+      picker.addEventListener('change',()=>{context.journeyOrderId=picker.value;renderHubJourney(host,doc,context,sel);});
+      host.appendChild(picker);
+    }
+    const j=candidates.length===1?candidates[0]:candidates.find(x=>x.id===context.journeyOrderId);
+    if(!j)return;
+    const steps=[['po','1 · Achats'],['supplier','2 · Fournisseur'],['reception','3 · Réception'],
+      ['cartons','4 · Étiquettes, tri et COMBOX'],['departure','5 · Départ']];
+    const order=(dossier.orders||[]).find(x=>x.id===j.id);
+    const pos=(dossier.purchase_orders||[]).filter(p=>(p.lines||[]).some(l=>l.order_id===j.id));
+    const go=(key)=>{
+      context.journeyOrderId=j.id;
+      let target={type:'order',id:j.id};
+      if((key==='supplier'||key==='reception')&&pos.length===1)target={type:'po',id:pos[0].id};
+      if(!context.cockpitState)context.cockpitState={sel:null,form:null,todoAll:false,picked:new Set()};
+      Object.assign(context.cockpitState,{sel:target,form:null,selectionInitialized:true});
+      const win=doc.defaultView;
+      if(win?.history?.replaceState&&win.location.pathname==='/admin/hub-live'){
+        const u=new win.URL(win.location.href);u.searchParams.set('sel',target.type+':'+target.id);
+        u.searchParams.set('atelier',key==='po'||key==='supplier'?'purchasing':key==='cartons'?'boxes':key==='departure'?'shipments':key);
+        win.history.replaceState(win.history.state,'',u.pathname+u.search+u.hash);
+      }
+      context.view=key==='reception'?'reception':key==='labels'?'labels':'supply';
+      context.renderCurrent();
+      let anchor=null;
+      if(key==='reception'){
+        anchor=Array.from(context.root.querySelectorAll('[data-receive-po]')).find(n=>pos.some(p=>p.id===n.getAttribute('data-receive-po')));
+      }else if(key==='cartons')anchor=context.root.querySelector('[data-supply-box-create]');
+      else if(key==='departure')anchor=context.root.querySelector('[data-supply-shipment-bar]');
+      anchor?.scrollIntoView?.({block:'start',behavior:'auto'});
+    };
+    host.appendChild(text(doc,'strong','kmc-hub-journey-title',j.reference+' · Parcours Hub'));
+    const list=doc.createElement('div');list.className='kmc-hub-journey-steps';list.setAttribute('role','group');list.setAttribute('aria-label','Jalons métier');
+    for(const [key,label] of steps){
+      const state=j.stage_states?.[key]||'unknown';
+      const done=state==='complete'||state==='locked';
+      const current=!done&&j.current_key===key;
+      const step=doc.createElement('button');step.type='button';
+      step.className='kmc-hub-journey-step'+(done?' is-done':current?' is-current':'');
+      step.setAttribute('data-hub-journey-step',key);step.setAttribute('data-state',state);
+      if(current)step.setAttribute('aria-current','step');
+      const stateLabel=done?'✓ Terminé':current?'À traiter / suivre':state==='warning'||state==='critical'?'À contrôler':state==='progress'?'En cours':state==='ready'?'Disponible':state==='waiting'?'En attente':'À venir';
+      step.appendChild(text(doc,'strong','',label));step.appendChild(text(doc,'small','',stateLabel));
+      step.title=j.stage_notes?.[key]||stateLabel;
+      // Une étape terminée reste consultable dans le Kanban, pas réexécutable ici.
+      step.disabled=done||(!current&&!['ready','progress','warning','critical'].includes(state))||isHubReadOnly(context);
+      step.addEventListener('click',()=>go(key));list.appendChild(step);
+    }
+    host.appendChild(list);
+    host.appendChild(text(doc,'p','kmc-workspace-note',j.current_status+' · '+(j.current_expected||j.next_action||'')));
+    // Les étiquettes restent un atelier canonique, sans prétendre qu'un QR
+    // généré prouve une impression physique ou la réalisation du tri.
+    if(!isHubReadOnly(context)&&order&&['ready','progress','warning'].includes(j.stage_states?.cartons)){
+      const labelButton=doc.createElement('button');labelButton.type='button';
+      labelButton.className='kmc-workspace-tab';labelButton.setAttribute('data-hub-journey-labels','');
+      labelButton.textContent='Ouvrir les étiquettes QR';labelButton.addEventListener('click',()=>go('labels'));host.appendChild(labelButton);
+    }
+  }
+
   function renderPayload(rootNode, ui, doc, payload, context) {
     rootNode.className = 'kmc-operations-workspace';
     rootNode.setAttribute('data-workspace-kind', 'hub-relay');
@@ -2202,6 +2294,12 @@
         context.marketCode+' · Identifier le bon colis, vérifier les conditions de retrait, attester la remise.';
     }
     rootNode.appendChild(header);
+    if(context.mode==='execution'){
+      const journey=doc.createElement('section');journey.className='kmc-hub-journey';
+      journey.setAttribute('data-hub-journey','');rootNode.appendChild(journey);
+      context.renderJourney=sel=>renderHubJourney(journey,doc,context,sel);
+      context.renderJourney();
+    }
     if(context.mode==='relay-execution') {
       const nav=doc.createElement('nav');
       nav.className='kmc-relay-main-nav';
@@ -2928,6 +3026,7 @@
       purchase_orders: dossier?.purchase_orders || [],
       need_batches: dossier?.cockpit?.need_batches || [],
       todo: dossier?.cockpit?.todo || [],
+      hub_journeys: dossier?.hub_journeys || [],
     });
     function hubInputBusy() {
       const active = doc.activeElement;
