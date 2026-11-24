@@ -198,7 +198,7 @@ describe('Hub: no old SAC and QR/PDF immediately reachable',()=>{
     expect(source).not.toContain('Préparer les sacs clients');
     expect(source).not.toContain('Déposer dans le sac');
     expect(source).not.toContain('Ateliers physiques · Sacs');
-    expect(hubCockpit).not.toContain("'PREPARE_BAG'");
+    expect(hubCockpit).toContain("filter(item => !['PREPARE_BAG'");
     // The cockpit may filter old bag events, but never enables bag mutations.
     expect(hubCockpit).not.toContain("ctx.endpoint('bags')");
   });
