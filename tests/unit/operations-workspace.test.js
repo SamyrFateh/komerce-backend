@@ -248,7 +248,8 @@ describe('Hub: no old SAC and QR/PDF immediately reachable',()=>{
     expect(source).toContain("context.view='labels';context.renderCurrent()");
     expect(source).toContain("station.setAttribute('data-hub-labels-station','')");
     expect(source).toContain('KomerceHubLabelCenter');
-    expect(source).toContain("fillable:Array.isArray(context.dossier?.fillable)");
+    expect(source).toContain('openPreparation:()=>');
+    expect(source).not.toContain('fillable:Array.isArray(context.dossier?.fillable)');
   });
   test('new script and CSS version IDs are different from the stale November 13 immutable assets',()=>{
     expect(html).toContain('hub-label-center.js?v=261124-hub-qr-refresh-1');
