@@ -65,7 +65,7 @@ async function mount(page, { source, posts = [], delay = 0 } = {}) {
   });
   await page.goto(`${ORIGIN}/admin/hub-live?view=execute`);
   await page.locator('select').first().selectOption({ label: 'KM · Comores' });
-  await expect(page.locator('h1')).toHaveText('Hub live · Dossiers');
+  await expect(page.locator('h1')).toHaveText('Opérations Hub');
   await page.locator('[data-workspace-view="supply"]').click();
   await expect(page.locator('[data-hub-cockpit]')).toBeVisible();
 }
@@ -76,7 +76,7 @@ const enabledPrimaries = (page) => page.locator('[data-hlc-actions] .is-primary:
 test.describe('Hub live · cockpit maquette C — desktop 1440', () => {
   test('hero conservé, pas de bloc KPI ni titre « Flux du besoin », trois colonnes sans débordement, légende visible', async ({ page }) => {
     await mount(page, { source: snapshot('partial') });
-    await expect(page.locator('h1')).toHaveText('Hub live · Dossiers');
+    await expect(page.locator('h1')).toHaveText('Opérations Hub');
     await expect(page.locator('[data-metric-key]')).toHaveCount(0);
     await expect(page.getByText('Flux du besoin')).toHaveCount(0);
     const xs = await page.evaluate(() => ['orders', 'purchases', 'physical'].map((z) => document.querySelector(`[data-hlc-zone="${z}"]`).getBoundingClientRect().x));

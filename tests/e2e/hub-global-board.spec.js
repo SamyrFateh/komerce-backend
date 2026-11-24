@@ -220,17 +220,21 @@ test.describe('Poste Hub optimisé pour le travail des agents',()=>{
 
 
 test.describe('Étapes physiques explicites du Hub',()=>{
-  test('phase et attente se lisent à gauche, étape actuelle identifiable au clavier',async({page})=>{
+  test('phase lisible dans le Kanban, attente et preuves dans le détail, étape actuelle accessible au clavier',async({page})=>{
     await mount(page,'agent_hub');
     const row=page.locator('[data-hub-global-order="CM-101"]');
     await expect(row).toContainText('Réception Hub · Partielle · 1/2 reçus');
-    await expect(row).toContainText('Attendu : Attendre 1 article(s)');
-    await expect(row).toContainText('Transport : 1/2 · Réception attendue : 1/2');
+    await expect(row).not.toContainText('Attendu : Attendre 1 article(s)');
     const step=row.locator('[data-hub-global-stage="Réception"]');
     await expect(step).toHaveClass(/is-stage-current/);
     await expect(step).toContainText('À faire / suivre maintenant');
     await step.focus();
     await expect(step).toBeFocused();
+    await step.press('Enter');
+    const menu=page.locator('[data-hub-global-menu]');
+    await expect(menu).toBeVisible();
+    await expect(menu).toContainText('Attendu : Attendre 1 article(s)');
+    await expect(menu).toContainText('Transport : 1/2 · Réception attendue : 1/2');
   });
 
   test('étape verrouillée grisée, preuve consultable et aucune mutation ou réouverture',async({page})=>{
