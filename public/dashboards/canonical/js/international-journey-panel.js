@@ -284,6 +284,34 @@
           transform:raw=>({...raw,complete_attested:raw.complete_attested==='yes',close:true}),
         });
     }
+    // A QR read identifies a COMBOX. The agent must explicitly confirm each custody event;
+    // the shipment transition is a separate action, guarded by manifest-wide coverage.
+    const custodyStep=s.stage==='hub_ready'?'HUB_HANDOVER':
+      s.stage==='handed_over'?'CARRIER_ACCEPTED':
+      s.stage==='forwarder_received'?'CARRIER_LOADED':null;
+    const custodyRole=custodyStep==='HUB_HANDOVER'?['admin','agent_hub']:['admin','agent_transitaire'];
+    if(ctx.journeyTab==='transport'&&s.hub_draft&&custodyStep&&actorCan(ctx,custodyRole)){
+      const knownBoxes=(detail?.hub_units||[]).map(box=>box.reference).filter(Boolean);
+      put(dossier,text(doc,'p','kmc-workspace-note',
+        'Scanner chaque COMBOX du manifeste : '+(knownBoxes.join(', ')||'consulter les cartons du dossier')+
+        '. Chaque scan est confirmé séparément ; il ne déclenche jamais une transition.'));
+      const custodyTitle={
+        HUB_HANDOVER:'Hub · scanner et confirmer la remise de chaque COMBOX',
+        CARRIER_ACCEPTED:'Transitaire · scanner et accepter chaque COMBOX',
+        CARRIER_LOADED:'Transitaire · rescanner chaque COMBOX chargée dans le conteneur',
+      }[custodyStep];
+      const custodyForm=task(doc,ctx,dossier,{
+        title:custodyTitle,action:ref+'/box-scan',openByDefault:true,
+        fields:[
+          {name:'qr_code',label:'QR ou alias COMBOX lu au scanner',required:true},
+          proof,
+          {name:'confirmed',label:'J’ai physiquement contrôlé cette COMBOX',required:true,
+            options:[['','Sélectionner'],['yes','Oui, je confirme le scan']]},
+        ],
+        transform:raw=>({...raw,event_type:custodyStep,confirmed:raw.confirmed==='yes'}),
+      });
+      custodyForm.setAttribute('data-journey-custody-scan',custodyStep);
+    }
     if(canTransition(ctx,step)&&(
        ctx.journeyTab==='transport'&&['handed_over','forwarder_received','in_transit','arrived'].includes(step)||
        ctx.journeyTab==='arrival'&&step==='customs_released'||
@@ -295,8 +323,12 @@
         fields:step==='handed_over'&&s.hub_draft
           ?[{name:'forwarder_name',label:'Transitaire qui prend physiquement les cartons',required:true},
             {name:'transport_mode',label:'Mode de transport',required:true,options:[['sea','Bateau'],['air','Avion']]},proof,note]
-          :[proof,note],
-        transform:raw=>({...raw,to_stage:step}),
+          :step==='in_transit'&&s.hub_draft
+            ?[proof,{name:'container_sealed',label:'Conteneur fermé et départ physiquement attesté',
+                required:true,options:[['','Sélectionnez'],['yes','Oui, fermeture et départ confirmés']]},note]
+            :[proof,note],
+        transform:raw=>({...raw,to_stage:step,
+          ...(step==='in_transit'&&s.hub_draft?{container_sealed:raw.container_sealed==='yes'}:{})}),
       });
       transitionTask.setAttribute('data-journey-next-task','');
     }
