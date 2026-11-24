@@ -167,6 +167,36 @@ async function listLabels(q,{targetType,targetId,marketId}) {
   if(!rows.length) throw new LabelError(404,'HUB_LABEL_NOT_ISSUED');
   return rows;
 }
+// Read-only worklist for already issued labels. Neither QR payloads nor
+// buyer identities leave this endpoint; PDF bytes remain capability-gated.
+async function listMarketLabelGroups(q,{marketId,limit=80}) {
+  const id=validScope(marketId);
+  const size=Math.max(1,Math.min(100,Number(limit)||80));
+  const {rows}=await q.query(
+    `SELECT l.target_type,
+            CASE WHEN l.target_type='ARTICLE' THEN l.allocation_id ELSE l.physical_unit_id END AS target_id,
+            COUNT(*)::integer AS label_count,MAX(l.created_at) AS issued_at,
+            MAX(o.reference) AS order_ref,MAX(u.reference) AS box_ref,
+            MAX(u.state) AS box_state,
+            COALESCE(MAX(r.short_code),'—') AS relay_code
+       FROM hub_scan_labels l
+       LEFT JOIN hub_purchase_allocations a ON l.target_type='ARTICLE' AND a.id=l.allocation_id
+       LEFT JOIN orders o ON o.id=a.order_id
+       LEFT JOIN hub_physical_units u ON l.target_type='COMBOX' AND u.id=l.physical_unit_id
+       LEFT JOIN relais r ON r.id=l.relais_id
+      WHERE l.market_id=$1
+      GROUP BY l.target_type,l.allocation_id,l.physical_unit_id
+      ORDER BY MAX(l.created_at) DESC
+      LIMIT $2`,[id,size]
+  );
+  return rows.map(row=>({
+    type:row.target_type,target_id:row.target_id,
+    quantity:Number(row.label_count),issued_at:row.issued_at,
+    reference:row.target_type==='ARTICLE'?row.order_ref:row.box_ref,
+    relay_code:row.relay_code,box_state:row.target_type==='COMBOX'?row.box_state:null,
+  }));
+}
+
 function escapeHtml(value) {
   return String(value==null?'':value).replace(/[&<>"']/g,c=>({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -225,4 +255,4 @@ async function boxRequiresOpaqueQr(db, unitId) {
     ) AS qr_required`,[unitId,'^[A-Z]{2}-[A-Z]{2}[0-9]{2}-[A-Z][A-Z0-9]{2}[0-9]{2}$']);
   return qrPolicy?.qr_required === true;
 }
-module.exports={LabelError,normalizeScan,issueArticleLabels,issueBoxLabel,resolveLabel,listLabels,printHtml,boxRequiresOpaqueQr};
+module.exports={LabelError,normalizeScan,issueArticleLabels,issueBoxLabel,resolveLabel,listLabels,listMarketLabelGroups,printHtml,boxRequiresOpaqueQr};
