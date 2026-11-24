@@ -8,9 +8,12 @@ const source=fs.readFileSync(path.join(__dirname,'../../routes/admin-operations-
 describe('Route Hub labels — autorité et séparation des gestes',()=>{
   test('les émissions sont des POST, les impressions des GET sous rôle et capability',()=>{
     for(const url of ['labels/articles/:allocationId/issue','labels/boxes/:unitId/issue',
-      'labels/articles/:id/print','labels/boxes/:id/print','labels/resolve']){
+      'labels/resolve']){
       expect(source).toContain(url);
     }
+    expect(source).toContain("['ARTICLE','articles','execution.parcel.receive']");
+    expect(source).toContain("['COMBOX','boxes','execution.parcel.ship']");
+    expect(source).toContain("'/:id/print'");
     expect(source).toContain("requireHubWorkspaceAction");
     expect(source).toContain("private, no-store");
     expect(source).toContain("img-src data:");
