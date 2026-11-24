@@ -1406,6 +1406,102 @@
     [newRef, newBox].forEach(node => createBar.appendChild(node));
     boxes.appendChild(createBar);
 
+    // La caméra est une entrée de code : seule l'action opérateur confirme ensuite le
+    // placement. Aucune mutation métier pendant l'ouverture ou la lecture de la caméra.
+    const mobileScanControls = (input, name, afterScan) => {
+      const wrap=doc.createElement('div');
+      const start=makeActionButton(doc,'Scanner par caméra','scan-camera');
+      const stop=makeActionButton(doc,'Arrêter la caméra','stop-camera');
+      const video=doc.createElement('video');
+      start.type='button';stop.type='button';stop.hidden=true;video.hidden=true;
+      video.autoplay=true;video.muted=true;
+      video.setAttribute('playsinline','');
+      video.style.cssText='width:100%;max-width:300px;max-height:270px;object-fit:cover;border-radius:8px';
+      video.style.display='none';
+      let active=false,stream=null,frame=null;
+      const end=()=>{
+        active=false;
+        if(frame!==null && typeof cancelAnimationFrame==='function')cancelAnimationFrame(frame);
+        frame=null;
+        if(stream)stream.getTracks().forEach(track=>track.stop());
+        stream=null;video.srcObject=null;video.hidden=true;video.style.display='none';
+        stop.hidden=true;start.hidden=false;start.disabled=false;
+      };
+      stop.addEventListener('click',end);
+      start.addEventListener('click',async()=>{
+        if(active)return;
+        if(typeof navigator==='undefined'||!navigator.mediaDevices?.getUserMedia||
+           typeof globalThis.BarcodeDetector!=='function'){
+          setFeedback(context.root,'Caméra QR non disponible : Chrome Android HTTPS requis, ou saisie du code de secours.','critical');
+          return;
+        }
+        start.disabled=true;
+        try{
+          const supported=await globalThis.BarcodeDetector.getSupportedFormats();
+          const formats=['qr_code','code_128','ean_13','ean_8'].filter(v=>supported.includes(v));
+          if(!formats.length)throw new Error('Format QR non pris en charge');
+          const detector=new globalThis.BarcodeDetector({formats});
+          stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+          video.srcObject=stream;video.hidden=false;video.style.display='block';
+          stop.hidden=false;start.hidden=true;active=true;
+          await video.play();
+          const scan=async()=>{
+            if(!active)return;
+            if(!video.isConnected || (typeof document!=='undefined'&&document.hidden)){end();return;}
+            try{
+              const codes=await detector.detect(video);
+              const raw=codes.find(c=>String(c.rawValue||'').trim());
+              if(raw){
+                const value=String(raw.rawValue).trim();
+                end();
+                input.value=value;
+                input.dispatchEvent(new Event('input',{bubbles:true}));
+                if(afterScan)await afterScan(value);
+                return;
+              }
+            }catch(error){setFeedback(context.root,'Lecture caméra : '+String(error.message||'erreur'),'critical');}
+            if(active)frame=requestAnimationFrame(scan);
+          };
+          frame=requestAnimationFrame(scan);
+        }catch(error){
+          end();setFeedback(context.root,'Accès caméra refusé ou indisponible : '+String(error.message||'autorisation requise'),'critical');
+        }
+      });
+      wrap.append(start,stop,video);
+      wrap.setAttribute('aria-label',name);
+      return wrap;
+    };
+
+    // Les articles à étiqueter viennent des allocations physiquement reçues.
+    // Un second clic est nécessaire pour imprimer après l'émission idempotente.
+    const labelRows=new Map();
+    fillable.filter(line=>Number(line.quantity)>0).forEach(line=>{
+      if(!labelRows.has(String(line.allocation_id)))labelRows.set(String(line.allocation_id),line);
+    });
+    if(labelRows.size){
+      const labelSection=doc.createElement('div');
+      labelSection.setAttribute('data-hub-label-printing','');
+      labelSection.appendChild(text(doc,'strong','', 'Étiquettes articles · après réception physique'));
+      for(const line of labelRows.values()){
+        const row=doc.createElement('div');
+        row.className='kmc-workspace-receive-footer';
+        row.appendChild(text(doc,'span','',String(line.product||'Article')+' · '+String(line.relais_code||'relais')));
+        const issue=makeActionButton(doc,'Préparer les QR','issue-article-labels');
+        issue.addEventListener('click',()=>runAction(context,issue,{
+          url:endpointFor(context.marketCode,'labels/articles/'+encodeURIComponent(line.allocation_id)+'/issue'),
+          body:{},runningMessage:'Création des étiquettes reçues…',
+          successMessage:result=>String(result.count)+' QR article(s) disponibles à imprimer.',
+        }).catch(()=>{}));
+        const print=doc.createElement('a');
+        print.href=endpointFor(context.marketCode,'labels/articles/'+encodeURIComponent(line.allocation_id)+'/print?format=thermal');
+        print.target='_blank';print.rel='noopener';
+        print.textContent='Imprimer les QR';
+        print.setAttribute('data-hub-print-article','');
+        row.append(issue,print);labelSection.appendChild(row);
+      }
+      boxes.appendChild(labelSection);
+    }
+
     const composeCell = box => {
       const cell = doc.createElement('div');
       cell.className = 'kmc-workspace-box-compose';
