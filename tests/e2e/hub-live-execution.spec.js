@@ -812,6 +812,7 @@ test('Jalons QR distincts du tri et destination de vague, sans mutation au clic'
  await expect(rail.locator('[data-hub-journey-step="cartons"]')).not.toHaveAttribute('aria-current','step');
  await expect(rail).toContainText('impression physique non attestée');
  await rail.locator('[data-hub-journey-step="labels"]').click();
- await expect(page.locator('[data-workspace-view="labels"]')).toHaveAttribute('aria-selected','true');
+ await expect(page.locator('[data-workspace-view="supply"]')).toHaveAttribute('aria-selected','true');
+ await expect(page.locator('[data-hub-label-printing]')).toBeVisible();
  expect(posts).toEqual([]);
 });
