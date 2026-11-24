@@ -2088,3 +2088,21 @@ body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="execution"] > .
   .kmc-hub-label-controls{display:grid;grid-template-columns:1fr;}
   .kmc-hub-label-grid{grid-template-columns:1fr;}
 }
+
+/* Keep archived physical COMBOX accessible without a multi-screen long table. */
+.kmc-operations-workspace [data-supply-boxes] .kmc-hub-box-filter {
+  display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:12px 0;
+}
+.kmc-operations-workspace [data-supply-boxes] .kmc-hub-box-filter input {
+  flex:1 1 240px;min-height:40px;min-width:0;
+  padding:8px 11px;border:1px solid #b4c9dd;border-radius:7px;font:inherit;
+}
+.kmc-operations-workspace [data-supply-boxes] [data-hub-combox-scroll] {
+  max-height:480px;overflow:auto;scrollbar-gutter:stable;
+}
+.kmc-operations-workspace [data-supply-boxes] [data-hub-combox-scroll] thead th {
+  position:sticky;top:0;z-index:1;background:#f4f8fc;
+}
+.kmc-operations-workspace [data-supply-boxes] [data-hub-combox-scroll] tbody tr[hidden]{
+  display:none;
+}
