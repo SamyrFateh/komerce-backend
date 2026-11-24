@@ -217,3 +217,9 @@ test('achat Hub : canal API seulement pour les lignes éligibles et contrôle de
  expect(js).toContain('execution_mode: executionMode');
  expect(js).toContain('devise incompatible');
 });
+
+test('les décisions de Direction restent sur le même formulaire canonique, sans opération physique',()=>{
+ const js=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-live-cockpit.js'),'utf8');
+ expect(js).toContain('if(!decisionOnly&&ctx.openDecision)ctx.openDecision(id)');
+ expect(js).toContain("decisionOnly?acts.filter");
+});
