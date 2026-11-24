@@ -13823,6 +13823,13 @@
       {
         "feature": "logistics",
         "category": "services",
+        "declared": "services/hub-combox-destination-guard.js",
+        "resolvedPath": "services/hub-combox-destination-guard.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
         "declared": "services/hub-physical-codes.js",
         "resolvedPath": "services/hub-physical-codes.js",
         "status": "resolved-in-technical-graph"
@@ -14322,6 +14329,13 @@
         "category": "tests",
         "declared": "tests/integration/hub-physical-hardening-postgres.test.js",
         "resolvedPath": "tests/integration/hub-physical-hardening-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/hub-combox-destination-guard.test.js",
+        "resolvedPath": "tests/unit/hub-combox-destination-guard.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -51053,7 +51067,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2401
+        "filesObserved": 2403
       },
       "boutique": {
         "filesObserved": 218,

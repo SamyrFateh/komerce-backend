@@ -18249,6 +18249,10 @@
           "test": "tests/unit/hub-bag-box-ui-contract.test.js"
         },
         {
+          "statement": "COMBOX : dès le placement, sous verrou de l’unité cible, les allocations actives et entrantes doivent partager le même marché et le même relais de destination immuable ; un refus ne modifie ni placement ni custody ; plusieurs commandes du même relais restent autorisées",
+          "test": "tests/integration/hub-physical-hardening-postgres.test.js"
+        },
+        {
           "statement": "RC-2: la clôture par colis groupés ou partiels est prouvée en PostgreSQL isolé sur tables temporaires ; toute ligne encore due empêche collected",
           "test": "tests/e2e-api/logistics.order-coverage-rc2.e2e.test.js"
         },
@@ -18571,7 +18575,7 @@
             ]
           },
           "services": {
-            "count": 52,
+            "count": 53,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -18597,6 +18601,11 @@
                 "declared": "services/hub-box-shipment-service.js",
                 "resolvedPath": "services/hub-box-shipment-service.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/hub-combox-destination-guard.js",
+                "resolvedPath": "services/hub-combox-destination-guard.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/hub-dubai-projection.js",
@@ -18836,7 +18845,7 @@
             ]
           },
           "tests": {
-            "count": 99,
+            "count": 100,
             "files": [
               {
                 "declared": "tests/e2e-api/hub-membership-readers.e2e.test.js",
@@ -18986,6 +18995,11 @@
               {
                 "declared": "tests/unit/hub-box-custody-scans.test.js",
                 "resolvedPath": "tests/unit/hub-box-custody-scans.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-combox-destination-guard.test.js",
+                "resolvedPath": "tests/unit/hub-combox-destination-guard.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -19356,7 +19370,7 @@
             ]
           }
         },
-        "totalFiles": 199,
+        "totalFiles": 201,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
