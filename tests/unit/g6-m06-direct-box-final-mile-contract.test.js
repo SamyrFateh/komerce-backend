@@ -6,6 +6,7 @@ const source=p=>fs.readFileSync(path.join(root,p),'utf8');
 const hub=source('scripts/recette/g6-hub-shipment-chromium.js');
 const adapter=source('scripts/recette/canonical/real-buyer-cash-adapters.js');
 const relay=source('scripts/recette/g6-canonical-relay-receipt-chromium.js');
+const scanOracle=source('scripts/recette/canonical/m06-unit-scan-custody.js');
 const physicalView=source('migrations/394_hub_packed_bag_box_link.sql');
 
 describe('M06 final mile: shared Chromium route, truthful direct-COMBOX physical readback',()=>{
@@ -15,16 +16,24 @@ describe('M06 final mile: shared Chromium route, truthful direct-COMBOX physical
   expect(hub).toContain("const SHIPMENT=M06?'G6-M06-EXP-'+REF:'SIM-STAGING-EXP-'+REF");
   expect(hub).toContain('module.exports={readback,checkShipment,runtime,SC,sameSet,placementIdsOf}');
  });
- test('does not fake a customer bag or hub_box_bags link for the M06 direct REPACK',()=>{
+ test('M06 direct COMBOX has 3 independent SCAN placements and no customer bag',()=>{
   expect(physicalView).toContain('NULL::uuid AS bag_unit_id');
-  expect(hub).toContain('s.bag.length===0&&s.placement.length===1');
-  expect(hub).toContain('s.links.length===0&&s.effective.length===1');
-  expect(hub).toContain('s.effective[0].bag_unit_id===null');
-  expect(hub).toContain("s.placement[0].operation_type==='REPACK'");
-  expect(hub).toContain("s.placement[0].evidence_method==='MANUAL'");
-  expect(hub).toContain("Number(s.placement[0].quantity)===SC.units&&SC.items===1&&SC.units===3");
+  expect(hub).toContain('s.bag.length===0&&SC.items===1&&SC.units===3');
+  expect(hub).toContain('checkM06UnitScanCustody(s,{boxId:BOX,allocationId:ALLOCATION,units:SC.units})');
+  expect(hub).toContain('s.links.length===0&&sameSet(placementIdsOf(s),placementIds)');
+  expect(hub).toContain('checkM06UnitScanLineage(s,{boxId,allocationId:ALLOCATION,units:SC.units,placementIds})');
   expect(hub).toContain("Number(s.order[0].payment_authorizations)===1");
-  expect(relay).toContain("env.G6_CANONICAL_SCENARIO==='M06'?base.links.length===0&&base.effective.every(e=>e.bag_unit_id===null):base.links.length===1");
+  expect(scanOracle).toContain('rows.length===units');
+  expect(scanOracle).toContain("p.evidence_method==='SCAN'");
+  expect(scanOracle).toContain("p.operation_type==='REPACK'");
+  expect(scanOracle).toContain('Number(p.quantity)===1');
+  expect(scanOracle).toContain('new Set(rows.map(p=>p.placement_id)).size===units');
+  expect(scanOracle).toContain('p.bag_unit_id===null');
+  expect(scanOracle).toContain('sameIds(rows.map(p=>p.placement_id),actualIds)');
+  expect(relay).toContain('checkM06UnitScanLineage(base,{boxId:env.G6_CANONICAL_BOX_ID,');
+  expect(relay).toContain('base.effective.length===(M06?SC.units:SC.items)');
+  expect(relay).toContain('M06?base.links.length===0&&base.effective.every(e=>e.bag_unit_id===null):base.links.length===1');
+  expect(hub).not.toContain("s.placement[0].evidence_method==='MANUAL'&&");
  });
  test('preserves original bag-based M01/M03 checks without broadening the writer',()=>{
   expect(hub).toContain("s.bag.length===1&&s.bag[0].id===BAG");
