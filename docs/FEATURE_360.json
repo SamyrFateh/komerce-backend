@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 338,
+    "businessDependencies": 339,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -20331,6 +20331,13 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "provider": "supplier-connectivity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
         }
       ],
       "consumedBy": [
@@ -35483,6 +35490,13 @@
         },
         {
           "consumer": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
