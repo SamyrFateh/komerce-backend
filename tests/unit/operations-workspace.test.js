@@ -297,3 +297,10 @@ test('Direction Hub : surface dédiée, sans ateliers physiques ni onglets opér
  expect(src).toContain('if(context.decisionOnly)return;');
  expect(src).toContain('data-hub-decision-workspace');
 });
+
+test('Direction écart fournisseur : PO du marché et droits avant formulaire',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+ expect(src).toContain("context.decisionKind==='variance'");
+ expect(src).toContain("context.dossier?.purchase_orders?.some(po=>po.id===id)");
+ expect(src).toContain('api.directionVariance(panel');
+});
