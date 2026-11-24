@@ -21,7 +21,7 @@ function fakeDb(stage='hub_ready',prior=false) {
       }]};
       if(sql.includes('FROM international_shipment_hub_units h')&&sql.includes('FOR UPDATE OF u'))
         return {rows:[{id:BOX,state:'DISPATCHED',outcome_type:null}]};
-      if(sql.includes('SELECT 1 FROM hub_box_custody_scans'))return {rows:prior?[{actor_id:USER}]:[]};
+      if(sql.includes('SELECT actor_id FROM hub_box_custody_scans'))return {rows:prior?[{actor_id:USER}]:[]};
       if(sql.includes('INSERT INTO hub_box_custody_scans'))
         return {rows:[{id:'proof-id',occurred_at:'2026-11-24T08:28:00Z'}]};
       if(sql.includes('COUNT(*)::int AS total'))return {rows:[{total:2,missing:1}]};
@@ -39,10 +39,10 @@ test('Hub confirmation records QR custody evidence, but not a shipment transitio
   expect(db.queries.filter(q=>q.sql.includes('UPDATE international_shipments'))).toHaveLength(0);
 });
 test('carrier cannot scan a COMBOX before Hub handover stage',async()=>{
-  await expect(service.confirmBoxScan(market,actor('agent_transitaire'),'KM-SHIP-01',input('CARRIER_ACCEPTED'),fakeDb()).rejects.toMatchObject({code:'CUSTODY_SHIPMENT_STAGE'});
+  await expect(service.confirmBoxScan(market,actor('agent_transitaire'),'KM-SHIP-01',input('CARRIER_ACCEPTED'),fakeDb())).rejects.toMatchObject({code:'CUSTODY_SHIPMENT_STAGE'});
 });
 test('carrier acceptance requires preceding scan of same COMBOX',async()=>{
-  await expect(service.confirmBoxScan(market,actor('agent_transitaire'),'KM-SHIP-01',input('CARRIER_ACCEPTED'),fakeDb('handed_over')).rejects.toMatchObject({code:'CUSTODY_PRIOR_SCAN_REQUIRED'});
+  await expect(service.confirmBoxScan(market,actor('agent_transitaire'),'KM-SHIP-01',input('CARRIER_ACCEPTED'),fakeDb('handed_over'))).rejects.toMatchObject({code:'CUSTODY_PRIOR_SCAN_REQUIRED'});
 });
 test('carrier loaded requires receipt proof and its exact stage',async()=>{
   const db=fakeDb('forwarder_received',true);
@@ -50,12 +50,12 @@ test('carrier loaded requires receipt proof and its exact stage',async()=>{
   expect(result.event_type).toBe('CARRIER_LOADED');
 });
 test('no role crossover and no implicit confirmation',async()=>{
-  await expect(service.confirmBoxScan(market,actor('agent_transitaire'),'KM-SHIP-01',input('HUB_HANDOVER'),fakeDb()).rejects.toMatchObject({code:'CUSTODY_ACTOR_FORBIDDEN'});
-  await expect(service.confirmBoxScan(market,actor('agent_hub'),'KM-SHIP-01',{...input('HUB_HANDOVER'),confirmed:false},fakeDb()).rejects.toMatchObject({code:'CUSTODY_CONFIRMATION_REQUIRED'});
+  await expect(service.confirmBoxScan(market,actor('agent_transitaire'),'KM-SHIP-01',input('HUB_HANDOVER'),fakeDb())).rejects.toMatchObject({code:'CUSTODY_ACTOR_FORBIDDEN'});
+  await expect(service.confirmBoxScan(market,actor('agent_hub'),'KM-SHIP-01',{...input('HUB_HANDOVER'),confirmed:false},fakeDb())).rejects.toMatchObject({code:'CUSTODY_CONFIRMATION_REQUIRED'});
 });
 test('manifest coverage refuses missing scans',async()=>{
   const db=fakeDb();
-  await expect(service.requireScanCoverage({query:async(...a)=>db.withTransaction(q=>q.query(...a))},SHIP,'CARRIER_LOADED').rejects.toMatchObject({code:'CUSTODY_MANIFEST_INCOMPLETE'});
+  await expect(service.requireScanCoverage({query:async(...a)=>db.withTransaction(q=>q.query(...a))},SHIP,'CARRIER_LOADED')).rejects.toMatchObject({code:'CUSTODY_MANIFEST_INCOMPLETE'});
 });
 
 test('Hub and transitaire acceptance require two independent actors',async()=>{
