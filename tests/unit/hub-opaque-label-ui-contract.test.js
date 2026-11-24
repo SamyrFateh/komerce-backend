@@ -43,6 +43,17 @@ describe('Hub mobile labels — secure UI and writers',()=>{
     expect(routes).toContain('boxScanMatches');
     expect(routes).toContain("labels/resolve");
   });
+  test('COMBOX final label is issued after PACKED; scan and pose guard dispatch in canonical writer',()=>{
+    const service=from('services/hub-opaque-labels.js');
+    expect(service).toContain('HUB_LABEL_BOX_NOT_CLOSED');
+    expect(ui).toContain("['PACKED','DISPATCHED'].includes(box.state)");
+    expect(ui).toContain('data-hub-final-box-scan');
+    expect(ui).toContain('data-hub-box-label-applied');
+    expect(routes).toContain('label_applied_confirmed:body.label_applied_confirmed');
+    expect(physical).toContain('HUB_BOX_FINAL_QR_REQUIRED');
+    expect(physical).toContain('HUB_BOX_LABEL_APPLIED_REQUIRED');
+    expect(physical).toContain('HUB_BOX_FINAL_QR_MISMATCH');
+  });
   test('one article QR proves only a single BOX_PACK, within the canonical transaction',()=>{
     expect(physical).toContain('HUB_BOX_ITEM_LABEL_ALREADY_USED');
     expect(physical).toContain('hub_scan_label_box_scans');
