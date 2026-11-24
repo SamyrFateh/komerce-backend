@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        market_id, optional_supplier_id, order_or_purchase_order_id
  * @outputs       market_procurement_dossier, physical_trace
- * @depends       db, services/supplier-source-resolution.js
+ * @depends       db, services/supplier-source-resolution.js, services/suppliers/provider-authority.js
  * @used-by       routes/hub.js, routes/admin-operations-workspace.js
  * @db-read       markets, orders, order_items, products, product_skus, product_suppliers, suppliers, purchase_lines, purchase_orders, purchase_order_authorizations, hub_authorization_grants, users, relais, v_purchase_line_progress, hub_purchase_allocations, hub_physical_units, hub_physical_unit_placements, hub_box_bags, hub_box_effective_placements, hub_scan_labels, international_shipments, international_shipment_hub_units, parcels, parcel_items
  * @db-write      (none)
@@ -20,6 +20,7 @@
 
 const db = require('../db');
 const { hasEligibleSourceSql } = require('./supplier-source-resolution');
+const providerAuthority = require('./suppliers/provider-authority');
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const HOUR = 3600 * 1000;
@@ -487,6 +488,7 @@ async function loadCockpit({
     const key = `${n.supplier_id}|${n.procurement_hub_ref || ''}|${marketId}`;
     if (!batches.has(key)) batches.set(key, {
       key, supplier_id: n.supplier_id, supplier_name: n.supplier_name, procurement_hub_ref: n.procurement_hub_ref || null,
+      api_available: Boolean(n.supplier_platform) && providerAuthority.remotePreflightRequirement(n.supplier_platform) === providerAuthority.PREFLIGHT_REQUIREMENT.REQUIRED,
       market_id: marketId, quantity: 0, order_ids: new Set(), groups: new Map(), oldest_at: null,
     });
     const batch = batches.get(key);
@@ -500,11 +502,13 @@ async function loadCockpit({
     });
     const group = batch.groups.get(skuKey);
     group.quantity += Number(n.quantity);
-    group.lines.push({ line_id: n.line_id, order_id: n.order_id, order_ref: n.order_ref, order_item_id: n.order_item_id, quantity: Number(n.quantity) });
+    group.lines.push({ line_id: n.line_id, order_id: n.order_id, order_ref: n.order_ref, order_item_id: n.order_item_id, quantity: Number(n.quantity),
+      supplier_currency: n.supplier_currency || null, api_eligible: n.api_eligible === true });
   }
   const needBatches = [...batches.values()].map((b) => ({
     key: b.key, supplier_id: b.supplier_id, supplier_name: b.supplier_name, procurement_hub_ref: b.procurement_hub_ref,
     market_id: b.market_id, quantity: b.quantity, order_count: b.order_ids.size, oldest_at: b.oldest_at,
+    api_available: b.api_available,
     groups: [...b.groups.values()],
     // Une ligne ne se rattache qu'à un brouillon dont l'engagement n'est pas encore validé (même fournisseur, Hub et marché).
     compatible_draft_po_ids: purchaseOrders.filter((po) => po.status === 'draft' && !po.authorizations.commitment
@@ -613,7 +617,11 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
   }
 
   const { rows: needsRows } = await q.query(`
-    SELECT pl.id AS line_id, pl.supplier_id, s.name AS supplier_name, pl.product_sku_id, pl.supplier_sku,
+    SELECT pl.id AS line_id, pl.supplier_id, s.name AS supplier_name, s.platform AS supplier_platform,
+           pl.product_sku_id, pl.supplier_sku, pl.supplier_currency,
+           (pl.product_sku_id IS NOT NULL AND pl.supplier_unit_ref IS NOT NULL
+             AND pl.supplier_order_identity IS NOT NULL AND pl.supplier_unit_price IS NOT NULL
+             AND pl.supplier_currency IS NOT NULL) AS api_eligible,
            p.name AS product_name, pl.quantity, oi.order_id, o.reference AS order_ref, pl.order_item_id, pl.created_at,
            pl.procurement_hub_ref, o.created_at AS order_created_at
       FROM purchase_lines pl
