@@ -1529,34 +1529,26 @@
     const composeCell = box => {
       const cell = doc.createElement('div');
       cell.className = 'kmc-workspace-box-compose';
-      const qrDestinations=new Map();
-      fillable.filter(line=>line.relais_id&&Number(line.quantity)>0).forEach(line=>{
-        qrDestinations.set(String(line.relais_id),String(line.relais_code||line.relais_id));
-      });
-      if(BOX_MUTABLE.has(box.state)&&qrDestinations.size){
-        const relayChoice=doc.createElement('select');
-        relayChoice.setAttribute('aria-label','Relais de destination de l’étiquette COMBOX');
-        for(const [relayId,relayCode] of qrDestinations){
-          relayChoice.appendChild(Object.assign(doc.createElement('option'),{
-            value:relayId,textContent:'Destination · '+relayCode,
-          }));
-        }
+      // L'étiquette COMBOX finale n'est émise qu'après fermeture (PACKED).
+      // La destination se déduit du manifeste physique, jamais d'un choix arbitraire.
+      if(['PACKED','DISPATCHED'].includes(box.state)){
         const createQr=makeActionButton(doc,'Préparer QR COMBOX','issue-box-label');
         createQr.addEventListener('click',()=>runAction(context,createQr,{
           url:endpointFor(context.marketCode,'labels/boxes/'+encodeURIComponent(box.unit_id)+'/issue'),
-          body:{relais_id:relayChoice.value},
-          runningMessage:'Attribution du QR de cette COMBOX…',
-          successMessage:'QR COMBOX prêt à imprimer, destination fixée.',
+          body:{},
+          runningMessage:'Attribution du QR de cette COMBOX fermée…',
+          successMessage:'QR COMBOX définitif prêt à imprimer.',
         }).catch(()=>{}));
-        cell.append(relayChoice,createQr);
+        const printBox=doc.createElement('a');
+        printBox.href=endpointFor(context.marketCode,'labels/boxes/'+encodeURIComponent(box.unit_id)+'/print?format=thermal');
+        printBox.target='_blank';printBox.rel='noopener';
+        printBox.textContent='Imprimer QR COMBOX';
+        printBox.setAttribute('data-hub-print-box','');
+        printBox.addEventListener('click',event=>openLabelPrint(event,printBox.href));
+        cell.append(createQr,printBox);
+      }else{
+        cell.appendChild(text(doc,'small','kmc-workspace-note','Étiquette COMBOX après fermeture et contrôle du contenu.'));
       }
-      const printBox=doc.createElement('a');
-      printBox.href=endpointFor(context.marketCode,'labels/boxes/'+encodeURIComponent(box.unit_id)+'/print?format=thermal');
-      printBox.target='_blank';printBox.rel='noopener';
-      printBox.textContent='Imprimer QR COMBOX';
-      printBox.setAttribute('data-hub-print-box','');
-      printBox.addEventListener('click',event=>openLabelPrint(event,printBox.href));
-      cell.appendChild(printBox);
       const readyBoxCode=value=>value===box.reference||
         /^KQ1_[A-F0-9]{32}$/i.test(String(value||''))||
         /^[A-HJ-NP-Z2-9]{8}$/i.test(String(value||''));
