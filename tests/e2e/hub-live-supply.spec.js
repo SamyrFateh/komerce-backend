@@ -41,7 +41,7 @@ const DOSSIER = {
   }],
   receipts: [{ id: 'u1', reference: 'COLIS-1', external_ref: 'EXT-1', state: 'ALLOCATED', received_at: '2026-11-01T09:00:00Z', qty: 4 }],
   boxes: [
-    { unit_id: BOX, reference: 'BOX-1', state: 'PACKED', shipment_ref: null, shipment_stage: null, contents: [{ order_ref: 'K-C1', line_id: 'l2', qty: 3 }] },
+    { unit_id: BOX, reference: 'BOX-1', state: 'PACKED', shipment_ref: null, shipment_stage: null, contents: [{ order_ref: 'K-C1', line_id: 'l2', qty: 3, relais_id: 'relay-1', relais_code: 'MU01' }] },
     { unit_id: 'b2', reference: 'BOX-2', state: 'PACKED', shipment_ref: 'SHIP-1', shipment_stage: 'hub_ready', contents: [{ order_id: '4def6c00-67b9-4584-85ed-00d2b8a24292', order_ref: 'K-C2', line_id: 'l1', qty: 2 }] },
   ],
   open_shipments: [{ reference: 'SHIP-2', forwarder_name: 'Transitaire X', transport_mode: 'sea', box_count: 0 }],
@@ -82,7 +82,7 @@ async function mount(page, posts, openPhysical = true, receivable = { purchase_o
   });
   await page.goto(`${ORIGIN}/admin/hub-live?view=execute`);
   await page.locator('select').first().selectOption({ label: 'KM · Comores' });
-  await expect(page.locator('h1')).toHaveText('Hub live · Dossiers');
+  await expect(page.locator('h1')).toHaveText('Opérations Hub');
   await page.locator('[data-workspace-view="supply"]').click();
   if (openPhysical) {
     const physical = page.locator('[data-hub-physical-details]');
@@ -240,4 +240,12 @@ test.describe('Hub UX guidée — contrat Golden conservé', () => {
     await expect(page.locator('[data-workspace-view="reception"]')).toHaveAttribute('aria-selected', 'true');
     expect(posts).toEqual([]);
   });
+});
+
+test('COMBOX : destination réelle et statut lisible',async({page})=>{
+ const posts=[];await mount(page,posts);
+ const boxes=page.locator('[data-supply-boxes]');
+ await expect(boxes.locator('[data-hub-box-destination]').first()).toHaveText('KM · MU01');
+ await expect(boxes.getByRole('cell',{name:'Fermée',exact:true})).toHaveCount(2);
+ expect(posts).toEqual([]);
 });
