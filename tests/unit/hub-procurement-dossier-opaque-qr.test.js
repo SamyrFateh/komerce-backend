@@ -13,3 +13,8 @@ describe('Projection des articles reçus pour l impression Hub',()=>{
     expect(source).toContain("p.removed_at IS NULL AND p.quantity > 0 AND a.market_id = $1");
   });
 });
+test('réimpression : le dossier projette uniquement le nombre de QR articles existants dans le même marché',()=>{
+ expect(source).toContain("a.id AS allocation_id");
+ expect(source).toContain("AND l.allocation_id=a.id AND l.market_id=a.market_id) AS issued_label_count");
+ expect(source).toContain("issued_label_count: Number(r.issued_label_count || 0)");
+});
