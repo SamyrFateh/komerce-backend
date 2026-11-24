@@ -11,9 +11,10 @@ describe('Route Hub labels — autorité et séparation des gestes',()=>{
       'labels/resolve']){
       expect(source).toContain(url);
     }
-    expect(source).toContain("['ARTICLE','articles','execution.parcel.receive']");
-    expect(source).toContain("['COMBOX','boxes','execution.parcel.ship']");
-    expect(source).toContain("'/:id/print'");
+    expect(source).toContain("'/market/:marketCode/labels/articles/:id/print'");
+    expect(source).toContain("'/market/:marketCode/labels/boxes/:id/print'");
+    expect(source).toContain("attachHubExecutionCapability('execution.parcel.receive')");
+    expect(source).toContain("attachHubExecutionCapability('execution.parcel.ship')");
     expect(source).toContain("requireHubWorkspaceAction");
     expect(source).toContain("private, no-store");
     expect(source).toContain("img-src data:");
