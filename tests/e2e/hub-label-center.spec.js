@@ -23,7 +23,7 @@ async function mount(page,logs){
  await page.route(ORIGIN+'/**',async route=>{
   const req=route.request(),url=new URL(req.url());
   logs.push(req.method()+' '+url.pathname);
-  if(url.pathname==='/qr-demo')return route.fulfill({contentType:'text/html',body:`<!doctype html><html><head><meta charset="utf-8"></head><body><main id="qr"></main><script src="/module.js"></script><script>window.KomerceHubLabelCenter.mount({host:document.getElementById('qr'),doc:document,marketCode:'KM',fetchFn:fetch.bind(window),fillable:[],act:()=>Promise.reject(Error('no writes'))});</script></body></html>`});
+  if(url.pathname==='/qr-demo')return route.fulfill({contentType:'text/html',body:`<!doctype html><html><head><meta charset="utf-8"></head><body><main id="qr"></main><script src="/module.js"></script><script>window.KomerceHubLabelCenter.mount({host:document.getElementById('qr'),doc:document,marketCode:'KM',fetchFn:fetch.bind(window),fillable:[{allocation_id:'55555555-5555-4555-8555-555555555555',quantity:2}],act:()=>Promise.reject(Error('no writes')),openPreparation:()=>{window.__openedPreparation=true;}});</script></body></html>`});
   if(url.pathname==='/module.js')return route.fulfill({contentType:'application/javascript',body:MODULE});
   if(url.pathname.endsWith('/labels/index'))return route.fulfill({contentType:'application/json',body:JSON.stringify({ok:true,market:'KM',labels})});
   if(url.pathname.endsWith('/pdf'))return route.fulfill({status:200,contentType:'application/pdf',body:fixturePdf()});
@@ -62,5 +62,14 @@ test('a truncated PDF is refused rather than downloading a corrupt label',async(
  await page.route('**/labels/articles/**/pdf?format=a4',route=>route.fulfill({status:200,contentType:'application/pdf',body:'%PDF-1.4\n%%EOF\n'}));
  await page.locator('[data-hub-label-pdf="ARTICLE-a4"]').click();
  await expect(page.getByRole('status')).toContainText('PDF vide');
+ expect(log.filter(x=>x.startsWith('POST '))).toEqual([]);
+});
+
+test('archives QR : aucune émission, le bouton ouvre l’atelier propriétaire',async({page})=>{
+ const log=[];await mount(page,log);
+ await expect(page.locator('[data-hub-label-pdf="ARTICLE-a4"]')).toBeVisible();
+ await expect(page.locator('.kmc-hub-label-issue')).toHaveCount(0);
+ await page.locator('[data-hub-label-open-preparation]').click();
+ expect(await page.evaluate(()=>window.__openedPreparation)).toBe(true);
  expect(log.filter(x=>x.startsWith('POST '))).toEqual([]);
 });
