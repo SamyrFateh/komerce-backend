@@ -2276,6 +2276,33 @@
     }
   }
 
+  async function renderDirectionVariance(host,doc,context){
+    host.replaceChildren();
+    const title=text(doc,'h2','','Arbitrage d’écart fournisseur');host.appendChild(title);
+    const status=text(doc,'p','kmc-workspace-note','Vérification de la PO et des droits…');host.appendChild(status);
+    const params=new URLSearchParams(String(doc.defaultView.location.search||''));
+    const selected=params.get('sel')||'';
+    const id=selected.startsWith('po:')?selected.slice(3):'';
+    if(isHubReadOnly(context)||!['admin','agent_hub'].includes(context.user?.role)){
+      status.textContent='Accès en lecture seule : aucune décision autorisée.';return;
+    }
+    if(!context.dossier?.purchase_orders?.some(po=>po.id===id)){
+      status.textContent='PO absente du marché sélectionné.';return;
+    }
+    try{
+      const data=await jsonRequest(context.fetch,'/api/hub/administration');
+      const po=(data.purchase_orders||[]).find(p=>p.id===id&&String(p.market).split(' · ').includes(context.marketCode));
+      if(!po||data.scope!=='HUB_ADMINISTRATION_GLOBAL')throw Error('PO hors périmètre');
+      status.textContent=po.supplier+' · PO '+id+' · '+po.market+' · '+(po.payment_evidence||'');
+      const panel=doc.createElement('section');panel.setAttribute('data-hub-direction-variance','');host.appendChild(panel);
+      const api=globalThis.KomerceHubContextActions;
+      if(!api?.directionVariance)throw Error('Module de décision indisponible');
+      api.directionVariance(panel,{doc,fetch:context.fetch,user:context.user,po,grants:data.viewer_grants,
+        refresh:()=>renderDirectionVariance(host,doc,context)});
+      if(!panel.children.length)panel.appendChild(text(doc,'p','kmc-workspace-note','Aucun arbitrage disponible pour cette PO.'));
+    }catch(err){status.textContent='Arbitrage indisponible : '+err.message;}
+  }
+
   function renderPayload(rootNode, ui, doc, payload, context) {
     rootNode.className = 'kmc-operations-workspace';
     rootNode.setAttribute('data-workspace-kind', 'hub-relay');
@@ -2300,6 +2327,9 @@
       header.querySelector('.kmc-workspace-subtitle').textContent=context.marketCode+' · Engagement et autorisation de paiement, sur justificatif.';
       const back=header.querySelector('.kmc-workspace-nav-link');back.textContent='← Direction Hub';back.href='/admin/hub?branch=direction';
       rootNode.setAttribute('data-hub-decision-workspace','');
+      if(context.decisionKind==='variance'){
+        const host=doc.createElement('section');rootNode.appendChild(host);renderDirectionVariance(host,doc,context);return;
+      }
       renderSupplySection(rootNode,ui,doc,context);return;
     }
     if(context.mode==='execution'){
@@ -3127,6 +3157,7 @@
       fetch: fetchFn,
       marketCode,
       decisionOnly:options.mode==='execution'&&hubQuery.get('entry')==='direction',
+      decisionKind:hubQuery.get('decision'),
       mode: ['execution', 'relay-execution'].includes(options.mode) ? options.mode : 'pilot',
       user: options.user || null,
       initialFocus: options.forcedRelayFocus || (options.mode==='relay-execution' ? String(new URLSearchParams(String(globalThis.location?.search||'')).get('focus')||'') : ''),
