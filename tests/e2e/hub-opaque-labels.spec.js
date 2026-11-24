@@ -37,7 +37,7 @@ const DOSSIER={
 };
 test.use({viewport:{width:1280,height:900}});
 
-async function mount(page,posts,boxState='RECEIVED') {
+async function mount(page,posts,boxState='RECEIVED',placed=false) {
   page.on('dialog',dialog=>dialog.accept());
   await page.route(ORIGIN+'/**',async(route)=>{
     const u=new URL(route.request().url());
@@ -60,7 +60,7 @@ async function mount(page,posts,boxState='RECEIVED') {
     if(u.pathname===API)return json(WORKSPACE);
     if(u.pathname==='/api/scans/hub/receivable')return json({purchase_orders:[]});
     if(u.pathname===API+'/supply')return json(shapeDossier({
-      ...DOSSIER,boxes:DOSSIER.boxes.map(box=>({...box,state:boxState}))
+      ...DOSSIER,fillable:placed?[]:DOSSIER.fillable,boxes:DOSSIER.boxes.map(box=>({...box,state:boxState,contents:placed?[{allocation_id:ALLOCATION,order_ref:'KTEST01',qty:3,issued_label_count:3}]:box.contents}))
     }));
     if(u.pathname===API+'/supply/trace')return json({chain:[]});
     if(u.pathname===API+'/labels/resolve')return json({
@@ -133,4 +133,16 @@ test('caméra Chromium simulée : reconnaître une unité, jamais valider le pla
   await cell.getByRole('button',{name:'Scanner par caméra'}).last().click();
   await expect(cell.getByLabel('Code physique de l’article à placer dans KOM-BOX-TEST')).toHaveValue(QR);
   expect(posts.some(p=>p.path.endsWith('/fill'))).toBe(false);
+});
+
+test('après placement intégral : réimpression PDF du lot existant sans nouveau QR',async({page})=>{
+  const posts=[];await mount(page,posts,'PACKED',true);
+  const history=page.locator('[data-hub-article-label-reprints]');
+  await expect(history).toBeVisible();
+  await history.locator('summary').click();
+  await expect(history).toContainText('3 QR émis');
+  await expect(history.locator('[data-hub-pdf-article-a4]')).toHaveAttribute('href',API+'/labels/articles/'+ALLOCATION+'/pdf?format=a4');
+  await expect(history.locator('[data-hub-pdf-article-thermal]')).toBeVisible();
+  await expect(page.getByRole('button',{name:'Préparer les étiquettes'})).toHaveCount(0);
+  expect(posts).toEqual([]);
 });
