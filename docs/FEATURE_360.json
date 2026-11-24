@@ -18376,7 +18376,7 @@
             ]
           },
           "migrations": {
-            "count": 15,
+            "count": 16,
             "files": [
               {
                 "declared": "migrations/095_value_density_foundation.sql",
@@ -18451,6 +18451,11 @@
               {
                 "declared": "migrations/401_relay_product_return_intake.sql",
                 "resolvedPath": "migrations/401_relay_product_return_intake.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/427_hub_opaque_scan_labels.sql",
+                "resolvedPath": "migrations/427_hub_opaque_scan_labels.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -18551,7 +18556,7 @@
             ]
           },
           "services": {
-            "count": 49,
+            "count": 51,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -18567,6 +18572,11 @@
                 "declared": "services/hub-bag-box-service.js",
                 "resolvedPath": "services/hub-bag-box-service.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/hub-box-custody-scans.js",
+                "resolvedPath": "services/hub-box-custody-scans.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/hub-box-shipment-service.js",
@@ -18587,6 +18597,11 @@
                 "declared": "services/hub-inbound-reconciliation.js",
                 "resolvedPath": "services/hub-inbound-reconciliation.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/hub-opaque-labels.js",
+                "resolvedPath": "services/hub-opaque-labels.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/hub-operations.js",
@@ -18801,7 +18816,7 @@
             ]
           },
           "tests": {
-            "count": 94,
+            "count": 98,
             "files": [
               {
                 "declared": "tests/e2e-api/hub-membership-readers.e2e.test.js",
@@ -18846,6 +18861,11 @@
               {
                 "declared": "tests/integration/hub-live-cockpit-postgres.test.js",
                 "resolvedPath": "tests/integration/hub-live-cockpit-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/hub-opaque-labels-postgres.test.js",
+                "resolvedPath": "tests/integration/hub-opaque-labels-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -18944,6 +18964,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/hub-box-custody-scans.test.js",
+                "resolvedPath": "tests/unit/hub-box-custody-scans.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/hub-director-todo-age.test.js",
                 "resolvedPath": "tests/unit/hub-director-todo-age.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -18961,6 +18986,16 @@
               {
                 "declared": "tests/unit/hub-inbound-reconciliation.test.js",
                 "resolvedPath": "tests/unit/hub-inbound-reconciliation.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-opaque-label-ui-contract.test.js",
+                "resolvedPath": "tests/unit/hub-opaque-label-ui-contract.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-opaque-labels.test.js",
+                "resolvedPath": "tests/unit/hub-opaque-labels.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -19296,7 +19331,7 @@
             ]
           }
         },
-        "totalFiles": 190,
+        "totalFiles": 197,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
