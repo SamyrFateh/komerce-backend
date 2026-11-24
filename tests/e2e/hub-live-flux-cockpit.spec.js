@@ -185,6 +185,13 @@ test.describe('Hub live · cockpit maquette C — desktop 1440', () => {
     await mount(page, { source: d, posts, delay: 200 });
     await selectPo(page);
     await page.locator('[data-hlc-action="authorize-commitment"]').click();
+    await expect(page).toHaveURL(/entry=direction/);
+    await expect(page.locator('[data-hub-decision-workspace]')).toBeVisible();
+    await expect(page.locator('[data-supply-boxes]')).toHaveCount(0);
+    await expect(page.locator('[data-hlc-action="detach-line"]')).toHaveCount(0);
+    await expect(page.locator('[data-workspace-view]')).toHaveCount(0);
+    await expect(page.locator('[data-hlc-form="commitment"]')).toHaveCount(0);
+    await page.locator('[data-hlc-action="authorize-commitment"]').click();
     const form = page.locator('[data-hlc-form="commitment"]');
     await form.locator('input[name="proof_ref"]').fill('BC-2026-11');
     await form.locator('[data-hlc-action="submit-commitment"]').dblclick();
