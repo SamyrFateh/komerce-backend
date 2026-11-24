@@ -343,4 +343,896 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/admin/customs.js — dashboard-customs (customs, high, full)
 - routes/admin/dashboard.js — dashboard-dashboard (dashboard, high, full)
 - routes/admin/index.js — dashboard-index (dashboard, high, full)
-- r
+- rard, high, full)
+- routes/admin/users.js — dashboard-users (dashboard, high, full)
+- routes/agent-action-center.js — agent-action-center-routes (decision-signals, high, full)
+- routes/auth-passkey.js — auth-passkey-endpoints (auth-passkey, high, full)
+- routes/auth-step-up-otp.js — auth-step-up-otp-endpoints (auth-identity, high, full)
+- routes/auth.js — auth-auth (auth-identity, high, full)
+- routes/boutique-suggestions.js — boutique-suggestions-http-facade (recommendations, high, full)
+- routes/catalog-product-detail.js — catalog-product-detail-http (catalog, high, full)
+- routes/client-auth.js — auth-client-auth (auth-identity, high, full)
+- routes/client-notifications.js — authenticated-client-notifications (notification, high, full)
+- routes/client-tracking.js — logistics-client-tracking (logistics, high, full)
+- routes/dashboard-clients.js — dashboard-dashboard-clients (dashboard, high, full)
+- routes/dashboard-finance.js — economic-engine-dashboard-finance (economic-engine, high, full)
+- routes/dashboard-hub.js — dashboard-dashboard-hub (dashboard, high, full)
+- routes/dashboard-ops.js — dashboard-dashboard-ops (dashboard, high, full)
+- routes/dashboard-shared.js — dashboard-dashboard-shared (dashboard, high, full)
+- routes/dashboard.js — dashboard-dashboard (dashboard, high, full)
+- routes/documents.js — authenticated-client-documents (documents, high, full)
+- routes/economic.js — economic-router (economic-engine, high, full)
+- routes/finance.js — economic-engine-finance (economic-engine, high, full)
+- routes/hub-dashboard.js — dashboard-hub-dashboard (dashboard, high, full)
+- routes/integrations-aliexpress.js — aliexpress-oauth-integration-route (catalog, high, full)
+- routes/market-delegation-catalog.js — market-delegation-catalog-api (market-delegation, high, full)
+- routes/market-delegation-client-case.js — market-delegation-client-case-api (market-delegation, high, full)
+- routes/market-delegation-client.js — market-delegation-client-api (market-delegation, high, full)
+- routes/market-delegation-cost-statement.js — market-delegation-cost-statement-api (market-delegation, high, full)
+- routes/market-delegation-customs.js — market-delegation-customs-api (market-delegation, high, full)
+- routes/market-delegation-local-offer.js — market-delegation-local-offer-api (market-delegation, high, full)
+- routes/market-delegation-network.js — market-delegation-network-api (market-delegation, high, full)
+- routes/market-delegation-payment-accounts.js — market-delegation-payment-accounts-api (market-delegation, high, full)
+- routes/market-delegation-performance.js — market-delegation-performance-api (market-delegation, high, full)
+- routes/market-delegation-provider.js — market-delegation-provider-api (market-delegation, high, full)
+- routes/market-delegation-settlement.js — market-delegation-settlement-api (market-delegation, high, full)
+- routes/market-delegation-team.js — market-delegation-team-api (market-delegation, high, full)
+- routes/market-local-stock.js — market-local-stock-api (market-delegation, high, full)
+- routes/otp.js — client-otp-session (auth-identity, high, full)
+- routes/parcel-api-v2.js — logistics-parcel-api-v2 (logistics, high, full)
+- routes/parcel-api-v2/helpers.js — logistics-helpers (logistics, high, full)
+- routes/parcel-api-v2/index.js — logistics-index (logistics, high, full)
+- routes/parcel-api-v2/read.js — logistics-read (logistics, high, full)
+- routes/parcel-api-v2/scans.js — logistics-scans (logistics, high, full)
+- routes/parcel-label.js — logistics-parcel-label (logistics, high, full)
+- routes/parcels.js — logistics-parcels (logistics, high, full)
+- routes/pricing-strategy.js — economic-engine-pricing-strategy (economic-engine, high, full)
+- routes/pricing.js — economic-engine-pricing (economic-engine, high, full)
+- routes/products.js — products-http-facade (catalog, high, full)
+- routes/relay-dashboard.js — dashboard-relay-dashboard (dashboard, high, full)
+- routes/shared-cart-saved.js — shared-cart-saved-access-http (shared-cart, high, full)
+- routes/tracking.js — logistics-tracking (logistics, high, full)
+- routes/transit-dashboard.js — logistics-transit-dashboard (logistics, high, full)
+- routes/wallet.js — wallet-http-facade (wallet, high, full)
+- services/action-center-agent-scope.js — action-center-agent-scope-service (decision-signals, high, full)
+- services/action-center-workspace.js — canonical-action-center-workspace-service (decision-signals, high, full)
+- services/apply-pricing-updates.js — economic-engine-apply-pricing-updates (economic-engine, high, full)
+- services/authkey-client.js — authkey-whatsapp-adapter (notification, high, full)
+- services/auto-parcel.js — logistics-auto-parcel (logistics, high, full)
+- services/boutique-taxonomy-admin.js — boutique-taxonomy-admin-service (catalog, high, full)
+- services/canonical-reference-resolver.js — canonical-reference-resolver (admin-dashboard, high, full)
+- services/capability-registry.js — market-delegation-capability-registry (market-delegation, high, full)
+- services/cash-deposit-service.js — payment-cash-deposit-service (payment, high, full)
+- services/cash-order-provenance-readonly.js — payment-cash-order-provenance-reader (payment, high, full)
+- services/catalog-approval.js — catalog-approval-queue (catalog, high, full)
+- services/catalog-candidate-product-service.js — catalog-candidate-product-owner (catalog, high, full)
+- services/catalog-certification-gate-b.js — catalog-certification-gate-b (catalog, high, full)
+- services/catalog-certification.js — catalog-certification (catalog, high, full)
+- services/catalog-change-intake.js — catalog-change-intake-contract (catalog, high, full)
+- services/catalog-commercial-assortment.js — catalog-commercial-assortment-projection (catalog, high, full)
+- services/catalog-eligibility.js — catalog-eligibility (catalog, high, full)
+- services/catalog-enrichment.js — catalog-enrichment (catalog, high, full)
+- services/catalog-fr-quality.js — catalog-french-quality-contract (catalog, high, full)
+- services/catalog-market-exposure-service.js — catalog-market-exposure-service (catalog, high, full)
+- services/catalog-media-recovery.js — explicitly-authorized-canonical-media-recovery (catalog, high, full)
+- services/catalog-overrides.js — catalog-field-overrides (catalog, high, full)
+- services/catalog-product-detail.js — catalog-product-detail-contract (catalog, high, full)
+- services/catalog-product-mutation-service.js — catalog-product-mutation-service (catalog, high, full)
+- services/catalog-product-read-cutover-trial.js — catalog-product-read-cutover-trial (sourcing, high, full)
+- services/catalog-product-route-canary.js — catalog-product-route-canary-compatibility (catalog, high, full)
+- services/catalog-product-source-read-service.js — catalog-product-source-read-authority (catalog, high, full)
+- services/catalog-promotion.js — catalog-promotion-orchestrator (catalog, high, full)
+- services/catalog-promotion/axes.js — catalog-promotion-axes-mapping (catalog, high, full)
+- services/catalog-promotion/content.js — catalog-promotion-content-mapping (catalog, high, full)
+- services/catalog-promotion/editorial-identity.js — catalog-draft-editorial-identity (catalog, high, full)
+- services/catalog-promotion/sku-media.js — catalog-promotion-sku-media-linking (catalog, high, full)
+- services/catalog-promotion/sku.js — catalog-promotion-sku-reconciliation (catalog, high, full)
+- services/catalog-public-view.js — catalog-public-view (catalog, high, full)
+- services/catalog-publication-decision-audit.js — catalog-publication-decision-audit (catalog, high, full)
+- services/catalog-registry.js — catalog-global-registry-read (catalog, high, full)
+- services/catalog-taxonomy-audit.js — catalog-taxonomy-audit-boundary (catalog, high, full)
+- services/catalog-unified-registry.js — unified-catalog-operator-read (catalog, high, full)
+- services/catalog-workspace.js — canonical-catalog-workspace-service (catalog, high, full)
+- services/central-authority.js — central-authority-single-lookup (market-control-plane, high, full)
+- services/client-360.js — canonical-client-360-service (admin-dashboard, high, full)
+- services/client-index.js — canonical-client-index-service (admin-dashboard, high, full)
+- services/client-notification-service.js — client-notification-service (notification, high, full)
+- services/cost-allocation/allocate.js — economic-engine-cost-allocation-allocate (economic-engine, high, full)
+- services/cost-allocation/canonical-margin-writer.js — economic-engine-canonical-margin-writer (economic-engine, high, full)
+- services/cost-allocation/cost-expectation.js — economic-engine-cost-expectation (economic-engine, high, full)
+- services/cost-allocation/cost-types.js — economic-engine-cost-type-classification (economic-engine, high, full)
+- services/cost-allocation/index.js — economic-engine-cost-allocation (economic-engine, high, full)
+- services/cost-allocation/manual-cost-entry-service.js — manual-cost-entry (economic-engine, high, full)
+- services/cost-component-admin-service.js — economic-engine-cost-component-admin-service (economic-engine, high, full)
+- services/cost-component-market-service.js — economic-engine-market-cost-component-service (economic-engine, high, full)
+- services/credential-action-store.js — credential-action-token-persistence (auth-identity, high, full)
+- services/credential-invitation-email.js — credential-invitation-delivery (auth-identity, high, full)
+- services/credential-link-token.js — credential-link-crypto (auth-identity, high, full)
+- services/customer-handoff-reconciliation.js — customer-handoff-reconciliation (logistics, high, full)
+- services/customs-classification.js — customs-classification (customs, high, full)
+- services/customs-dynamic-category-classifier.js — customs-dynamic-category-classifier (customs, high, full)
+- services/customs-shipment-fee-service.js — customs-shipment-fee-service (customs, high, full)
+- services/dashboard-admin-context.js — canonical-admin-context-resolver (admin-dashboard, high, full)
+- services/dashboard-cache.js — dashboard-dashboard-cache (dashboard, high, full)
+- services/dashboard-clients-queries.js — dashboard-dashboard-clients-queries (dashboard, high, full)
+- services/dashboard-commerce.js — canonical-commerce-dashboard-service (admin-dashboard, high, full)
+- services/dashboard-finance-canonical.js — canonical-finance-dashboard-service (admin-dashboard, high, full)
+- services/dashboard-finance-metrics.js — economic-engine-dashboard-finance-metrics (economic-engine, high, full)
+- services/dashboard-invalidation-bus.js — dashboard-post-commit-invalidation-bus (dashboard, high, full)
+- services/dashboard-metrics/_helpers.js — dashboard-metrics-helpers (dashboard, high, full)
+- services/dashboard-metrics/control-tower.js — dashboard-metrics-control-tower (dashboard, high, full)
+- services/dashboard-metrics/costing.js — dashboard-metrics-costing (dashboard, high, full)
+- services/dashboard-metrics/index.js — dashboard-dashboard-metrics (dashboard, high, full)
+- services/dashboard-metrics/logistics.js — dashboard-metrics-logistics (dashboard, high, full)
+- services/dashboard-metrics/market-currency.js — dashboard-market-currency-projection (dashboard, high, full)
+- services/dashboard-operations.js — canonical-operations-dashboard-service (admin-dashboard, high, full)
+- services/dashboard-ops-queries.js — dashboard-dashboard-ops-queries (dashboard, high, full)
+- services/dashboard-orders.js — dashboard-orders-service (admin-dashboard, high, full)
+- services/dashboard-pilotage-market.js — dashboard-pilotage-market-aggregate (admin-dashboard, high, full)
+- services/documents/customs-invoice.js — customs-invoice (documents, high, full)
+- services/documents/pdf-renderer.js — private-document-pdf-renderer (documents, high, full)
+- services/economic-config.js — economic-config-canonical-bridge (economic-engine, high, full)
+- services/economic-engine-queries.js — economic-engine-calculation-service (economic-engine, high, full)
+- services/economic-price-audit-service.js — economic-engine-product-price-audit (economic-engine, high, full)
+- services/external-provider-onboarding-contracts.js — external-provider-onboarding-contracts (external-provider-contracts, high, full)
+- services/finance-accounting-workspace.js — canonical-finance-accounting-workspace-service (admin-dashboard, high, full)
+- services/finance-metrics/annulations.js — economic-engine-annulations-parcels (economic-engine, high, full)
+- services/finance-metrics/customs-unknown.js — economic-engine-customs-unknown-predicate (economic-engine, high, full)
+- services/finance-metrics/finance-summary.js — economic-engine-finance-summary (economic-engine, high, full)
+- services/finance-metrics/index.js — economic-engine-dashboard-finance-metrics (economic-engine, high, full)
+- services/finance-metrics/payments.js — economic-engine-payments-detail (economic-engine, high, full)
+- services/finance-metrics/sales-analysis.js — economic-engine-sales-analysis (economic-engine, high, full)
+- services/fx-engine-rates.js — fx-engine-rates (market, high, full)
+- services/hub-administration-board.js — hub-administration-board-reader (purchasing, high, full)
+- services/hub-box-shipment-service.js — hub-box-shipment (logistics, high, full)
+- services/hub-dashboard-queries.js — dashboard-hub-dashboard-queries (dashboard, high, full)
+- services/hub-inbound-reconciliation.js — hub-inbound-reconciliation (logistics, high, full)
+- services/hub-physical-codes.js — hub-physical-codes (logistics, high, full)
+- services/hub-procurement-dossier.js — hub-procurement-dossier (logistics, high, full)
+- services/hub-receive-idempotency.js — hub-receive-idempotency (logistics, high, full)
+- services/hub-reference.js — hub-reference (logistics, high, full)
+- services/import-lot-registry.js — import-lot-registry-projection (admin-dashboard, high, full)
+- services/import-runtime-runs.js — import-runtime-run-projection (sourcing, high, full)
+- services/incident-escalation.js — incident-sla-escalation (incident-management, high, full)
+- services/incident-governance.js — incident-management-governance-mapping (incident-management, high, full)
+- services/incident-write-service.js — incident-management-write-boundary (incident-management, high, full)
+- services/international-n1-reconciliation.js — international-shipment-costs-owner (economic-engine, high, full)
+- services/international-shipment-journey.js — international-shipment-journey-owner (logistics, high, full)
+- services/local-mobile-refund-handoff.js — verified-manual-mobile-refund-handoff (refunds, high, full)
+- services/local-stock-checkout-preview.js — local-stock-checkout-preview (local-stock, high, full)
+- services/local-stock-decision-projection.js — local-stock-decision-projection (local-stock, high, full)
+- services/local-stock-service.js — local-stock-local-stock-service (local-stock, high, full)
+- services/logistics-control-chain-projection.js — logistics-control-chain-projection (admin-dashboard, high, full)
+- services/manual-scan-confirmation.js — manual-scan-confirmation (dashboard, high, full)
+- services/market-business-day.js — market-business-day-authority (admin-dashboard, high, full)
+- services/market-commercial-price-service.js — market-commercial-price-decision-owner (market-autonomy, high, full)
+- services/market-cost-attribution-ser.js — market-delegation-client-case-service (market-delegation, high, full)
+- services/market-delegation-cost-statement-service.js — market-delegation-cost-statement-service (market-delegation, high, full)
+- services/market-delegation-customs-service.js — market-delegation-customs-service (market-delegation, high, full)
+- services/market-delegation-local-offer-service.js — market-delegation-local-offer-service (market-delegation, high, full)
+- services/market-delegation-local-stock-service.js — market-delegation-local-stock-service (market-delegation, high, full)
+- services/market-delegation-network-service.js — market-delegation-network-service (market-delegation, high, full)
+- services/market-delegation-performance-service.js — market-delegation-performance-service (market-delegation, high, full)
+- services/market-delegation-provider-service.js — market-delegation-provider-service (market-delegation, high, full)
+- services/market-delegation-service.js — market-delegation-write-service (market-delegation, high, full)
+- services/market-delegation-settlement-service.js — market-delegation-settlement-orchestration (market-delegation, high, full)
+- services/market-delegation-team-service.js — market-delegation-team-service (market-delegation, high, full)
+- services/market-lifecycle-service.js — market-lifecycle-writer (market, high, full)
+- services/market-operation-guard.js — market-operation-guard (markets, high, full)
+- services/market-operator-provisioning.js — market-operator-provisioning (market-delegation, high, full)
+- services/market-payment-account-service.js — market-payment-account-owner (payment, high, full)
+- services/market-payment-provider-config-service.js — market-payment-provider-config-writer (payment, high, full)
+- services/market-provisioning-service.js — market-provisioning-orchestrator (market-control-plane, high, full)
+- services/market-ready-to-sell-projection.js — market-ready-to-sell-projection (market-delegation, high, full)
+- services/market-scope-admin-service.js — market-operator-scope-admin-boundary (market, high, full)
+- services/market-scope-projector.js — market-delegation-scope-projector (market-delegation, high, full)
+- services/market-settlement-service.js — market-settlement-lifecycle-owner (settlement, high, full)
+- services/mobile-money-reconciliation.js — mobile-money-reconciliation (payment, high, full)
+- services/mobile-money/registry.js — mobile-money-provider-registry (payment, high, full)
+- services/notification-service.js — customer-notification-orchestrator (notification, high, full)
+- services/notifications/internals.js — notification-internals (notification, high, full)
+- services/notifications/notification-service.js — customer-notification-orchestrator (notification, high, full)
+- services/notifications/order.js — notification-order (notification, high, full)
+- services/notifications/otp-auth.js — notification-otp-auth (notification, high, full)
+- services/notifications/parcel.js — notification-parcel (notification, high, full)
+- services/operations-relay-projection.js — dashboard-operations-relay-projection (admin-dashboard, high, full)
+- services/operations-workspace.js — canonical-operations-workspace-service (admin-dashboard, high, full)
+- services/order-360.js — canonical-order-360-service (admin-dashboard, high, full)
+- services/order-financial-closure-reconciliation.js — order-financial-closure-reconciliation (orders, high, full)
+- services/order-item-availability-service.js — orders-order-item-availability (orders, high, full)
+- services/order-service.js — order-domain-helpers (orders, high, full)
+- services/otp-test-mode.js — auth-otp-test-mode (auth-identity, high, full)
+- services/parcel-auto-create-service.js — logistics-parcel-auto-create-service (logistics, high, full)
+- services/parcel-guards.js — logistics-parcel-guards (logistics, high, full)
+- services/parcel-mutation-service.js — logistics-parcel-mutation-boundary (logistics, high, full)
+- services/parcel-operations.js — logistics-parcel-operations (logistics, high, full)
+- services/parcel-order-membership.js — logistics-parcel-order-membership (logistics, high, full)
+- services/parcel-security.js — logistics-parcel-security (logistics, high, full)
+- services/parcel-service.js — logistics-parcel-service (logistics, high, full)
+- services/parcel-shipment-handover.js — international-handover-customer-parcel-status (logistics, high, full)
+- services/parcel-transition-guard.js — incident-management-transition-guard (incident-management, high, full)
+- services/parcelOptimizationService.js — logistics-parcel-optimization-service (logistics, high, full)
+- services/partner-admin-service.js — partner-admin-service (dashboard, high, full)
+- services/pickup-agent-lockout.js — pickup-agent-lockout (logistics, high, full)
+- services/pickup-authorization-service.js — pickup-authorization-service (auth-identity, high, full)
+- services/pickup-code-helpers.js — pickup-code-helpers (logistics, high, full)
+- services/pickup-collection-service.js — pickup-collection-service (logistics, high, full)
+- services/pickup-exceptional-collection-service.js — pickup-exceptional-collection-service (logistics, high, full)
+- services/pickup-secret-customer-rotation-service.js — pickup-secret-customer-rotation (logistics, high, full)
+- services/pickup-secret-service.js — pickup-secret-service (logistics, high, full)
+- services/pipeline-certification-gate-c.js — e2e-certification-gate-c (catalog, high, full)
+- services/pipeline-certification-scenario-core.js — pipeline-certification-scenario-core (catalog, high, full)
+- services/pricing-apply.js — economic-engine-pricing-apply (economic-engine, high, full)
+- services/pricing-cdr.js — economic-engine-pricing-cdr (economic-engine, high, full)
+- services/pricing-cost-explainability.js — economic-engine-pricing-cost-explainability (economic-engine, high, full)
+- services/pricing-dashboard.js — economic-engine-pricing-dashboard (economic-engine, high, full)
+- services/pricing-engine.js — economic-engine-pricing-engine (economic-engine, high, full)
+- services/pricing-floor-forecast-preview.js — economic-engine-forecast-preview-contract (economic-engine, high, full)
+- services/pricing-floor-forecast-shadow.js — economic-engine-pricing-floor-forecast-shadow (economic-engine, high, full)
+- services/pricing-guards.js — economic-engine-pricing-guards (economic-engine, high, full)
+- services/pricing-market-corridor.js — pricing-market-corridor-owner (economic-engine, high, full)
+- services/pricing-market-coverage.js — economic-engine-pricing-market-coverage (economic-engine, high, full)
+- services/pricing-market-decision-policy.js — economic-engine-pricing-market-decision-policy (economic-engine, high, full)
+- services/pricing-market-decision-projection.js — economic-engine-pricing-market-decision-projection (economic-engine, high, full)
+- services/pricing-maturity.js — economic-engine-pricing-maturity (economic-engine, high, full)
+- services/pricing-output.js — economic-engine-pricing-output (economic-engine, high, full)
+- services/pricing-period-structure.js — economic-engine-pricing-period-structure (economic-engine, high, full)
+- services/pricing-rates.js — economic-engine-pricing-rates (economic-engine, high, full)
+- services/pricing-recommend.js — economic-engine-pricing-recommend (economic-engine, high, full)
+- services/pricing-risk-period.js — economic-engine-pricing-risk-period (economic-engine, high, full)
+- services/pricing-strategy-service.js — economic-engine-pricing-strategy-service (economic-engine, high, full)
+- services/pricing-workspace.js — canonical-pricing-workspace-service (economic-engine, high, full)
+- services/procurement-execution-context.js — procurement-execution-context (purchasing, high, full)
+- services/product-360.js — canonical-product-360-service (admin-dashboard, high, full)
+- services/product-admin-service.js — catalog-product-admin-service (catalog, high, full)
+- services/product-media-storage.js — product-media-storage (catalog, high, full)
+- services/product-price-audit.js — catalog-product-price-audit-boundary (catalog, high, full)
+- services/product-publication-guard.js — catalog-product-publication-guard (catalog, high, full)
+- services/product-sellable-service.js — catalog-product-sellable-service (catalog, high, full)
+- services/product-sku-service.js — catalog-product-sku-service (catalog, high, full)
+- services/product-variant-service.js — catalog-product-variant-service (catalog, high, full)
+- services/prompts/catalog-enrichment.prompt.js — catalog-enrichment-prompt (catalog, high, full)
+- services/provider-certification-overview.js — provider-certification-overview (admin-dashboard, high, full)
+- services/provider-status-mutation-service.js — providers-services-status-mutation-service (providers-services, high, full)
+- services/providers-service.js — providers-services-providers-service (providers-services, high, full)
+- services/public-cart-quote-service.js — public-cart-quotation (boutique, high, full)
+- services/public-market-storefront.js — public-market-storefront-read-model (market, high, full)
+- services/purchase-line-snapshot.js — purchase-line-snapshot (purchasing, high, full)
+- services/purchasing-admin-service.js — dashboard-purchasing-admin-service (purchasing, high, full)
+- services/purchasing-canonical-money.js — purchasing-canonical-supplier-money (purchasing, high, full)
+- services/purchasing-grouped-service.js — purchasing-grouped-service (purchasing, high, full)
+- services/purchasing-order-detail.js — purchasing-order-detail-reader (purchasing, high, full)
+- services/radar-alerts/cash-reconciliation-signals.js — radar-cash-reconciliation-signals (decision-signals, high, full)
+- services/refinery-fr-recheck.js — refinery-active-editorial-recheck (catalog, high, full)
+- services/relais-mutation-service.js — logistics-relais-mutation-service (logistics, high, full)
+- services/relay-collect-amount.js — dashboard-relay-collect-amount (dashboard, high, full)
+- services/relay-dashboard-queries.js — dashboard-relay-dashboard-queries (dashboard, high, full)
+- services/relay-parcel-item-reconciliation.js — relay-parcel-item-reconciliation (logistics, high, full)
+- services/relay-shipment-receipt.js — relay-shipment-receipt-owner (logistics, high, full)
+- services/sav-replacement-order.js — sav-replacement-order (orders, high, full)
+- services/shared-cart-library.js — shared-cart-library-service (shared-cart, high, full)
+- services/shared-cart-queries.js — shared-cart-db-query-service (shared-cart, high, full)
+- services/shared-cart-user-cleanup.js — shared-cart-user-cleanup-boundary (shared-cart, high, full)
+- services/shipping-customs-workspace.js — canonical-shipping-customs-workspace-service (admin-dashboard, high, full)
+- services/signal-admin-service.js — decision-signal-admin-service (decision-signals, high, full)
+- services/simulation-scope-service.js — simulation-scope (economic-engine, high, full)
+- services/sourcing-candidate-actions.js — sourcing-candidate-action-service (sourcing, high, full)
+- services/sourcing-candidate-import-service.js — sourcing-candidate-import-owner (sourcing, high, full)
+- services/sourcing-canonical-commercial-projection-core.js — sourcing-canonical-commercial-projection-core (sourcing, high, full)
+- services/sourcing-canonical-offer-projection.js — sourcing-canonical-offer-projection (sourcing, high, full)
+- services/sourcing-canonical-offer-unit-comparison.js — sourcing-canonical-offer-unit-comparison (sourcing, high, full)
+- services/sourcing-canonical-product-projection.js — sourcing-canonical-product-projection-trial (sourcing, high, full)
+- services/sourcing-canonical-unit-product-sku-resolution.js — sourcing-canonical-unit-product-sku-resolution (sourcing, high, full)
+- services/sourcing-canonical-unit-projection.js — sourcing-canonical-unit-projection (sourcing, high, full)
+- services/sourcing-catalog-change-observation.js — sourcing-catalog-change-observation (sourcing, high, full)
+- services/sourcing-catalog-change-sku-identity-proof.js — sourcing-catalog-change-sku-identity-proof (sourcing, high, full)
+- services/sourcing-catalog-change-unit-resolution-proof.js — sourcing-catalog-change-unit-resolution-proof (sourcing, high, full)
+- services/sourcing-catalog-product-linkage.js — sourcing-catalog-product-linkage (sourcing, high, full)
+- services/sourcing-certification-gate-a-fixture-harness.js — sourcing-gate-a-fixture-harness (sourcing, high, full)
+- services/sourcing-certification-gate-a.js — sourcing-certification-gate-a (sourcing, high, full)
+- services/sourcing-certification.js — sourcing-certification (sourcing, high, full)
+- services/sourcing-golden-e2e-service.js — sourcing-golden-e2e-read-model (sourcing, high, full)
+- services/sourcing-integrity-service.js — sourcing-integrity-health-service (sourcing, high, full)
+- services/sourcing-observation-shadow-service.js — sourcing-observation-shadow-owner (sourcing, high, full)
+- services/sourcing-product-read-comparison.js — sourcing-product-read-comparison (sourcing, high, full)
+- services/sourcing-provider-control-policy.js — sourcing-provider-control-policy (sourcing, high, full)
+- services/sourcing-shadow-proof-service.js — sourcing-shadow-proof (sourcing, high, full)
+- services/sourcing-shadow-quantity-trial.js — sourcing-shadow-quantity-trial (sourcing, high, full)
+- services/sourcing-shadow-resolution-service.js — sourcing-shadow-resolution-owner (sourcing, high, full)
+- services/sourcing-source-autopilot.js — sourcing-source-autopilot (sourcing, high, full)
+- services/sourcing-source-registry.js — sourcing-source-registry (sourcing, high, full)
+- services/sourcing-workspace.js — canonical-sourcing-workspace-service (sourcing, high, full)
+- services/supplier-360.js — canonical-supplier-360-service (admin-dashboard, high, full)
+- services/supplier-catalog-scanner.js — catalog-supplier-catalog-scanner (catalog, high, full)
+- services/supplier-execution-certification.js — supplier-execution-certification (purchasing, high, full)
+- services/supplier-execution-persistence.js — supplier-execution-persistence (purchasing, high, full)
+- services/supplier-payment-orchestrator.js — supplier-payment-orchestrator (purchasing, high, full)
+- services/supplier-payment-proof-persistence.js — supplier-payment-proof-persistence (purchasing, high, full)
+- services/supplier-payment-review.js — supplier-payment-review-reader (purchasing, high, full)
+- services/supplier-payment-settlement-service.js — supplier-payment-settlement-service (purchasing, high, full)
+- services/supplier-payment-state.js — supplier-payment-state (purchasing, high, full)
+- services/supplier-real-debit-verification.js — supplier-real-debit-verification (purchasing, high, full)
+- services/supplier-shortage-service.js — supplier-shortage-refund-trigger (purchasing, high, full)
+- services/supplier-source-resolution.js — supplier-source-resolution (purchasing, high, full)
+- services/suppliers/aliexpress-discovery.js — aliexpress-source-discovery (sourcing, high, full)
+- services/suppliers/aliexpress-fulfillment-adapter.js — aliexpress-fulfillment-adapter (purchasing, high, full)
+- services/suppliers/aliexpress-fulfillment-reader.js — aliexpress-provider-fulfillment-reader (purchasing, high, ment-reader.js — allegro-provider-fulfillment-reader (purchasing, high, full)
+- services/suppliers/allegro-purchase-reconciliation.js — allegro-sandbox-purchase-reconciliation (purchasing, high, full)
+- services/suppliers/allegro-sandbox-client.js — allegro-sandbox-client (catalog, high, full)
+- services/suppliers/allegro-shipping-capability-adapter.js — allegro-shipping-capability-adapter (purchasing, high, full)
+- services/suppliers/canonical-unit-cutover-comparison.js — canonical-unit-purchasing-cutover-comparison (purchasing, high, full)
+- services/suppliers/canonical-unit-purchasing-gate.js — canonical-unit-purchasing-hard-stop-gate (purchasing, high, full)
+- services/suppliers/central-hub-supplier.js — central-hub-supplier-identity (purchasing, high, full)
+- services/suppliers/cj-billing-history-reconciliation.js — cj-billing-history-reconciliation (purchasing, high, full)
+- services/suppliers/cj-fulfillment-adapter.js — cj-fulfillment-adapter (purchasing, high, full)
+- services/suppliers/cj-fulfillment-reader.js — cj-provider-fulfillment-reader (purchasing, high, full)
+- services/suppliers/cj-payment-recovery.js — cj-payment-recovery (purchasing, high, full)
+- services/suppliers/cj-purchasing-contract.js — cj-purchasing-contract (purchasing, high, full)
+- services/suppliers/connectors/allegro-connector.js — allegro-sandbox-source-connector (catalog, high, full)
+- services/suppliers/connectors/ebay-connector.js — ebay-sandbox-browse-connector (catalog, high, full)
+- services/suppliers/discovery-semantic-relevance.js — supplier-discovery-semantic-relevance (catalog, high, full)
+- services/suppliers/e2e-isolated-runtime.js — isolated-e2e-runtime-guard (catalog, high, full)
+- services/suppliers/json-source-pipeline.js — json-source-pipeline (catalog, high, full)
+- services/suppliers/managed-file-contract.js — managed-catalog-file-contract (catalog, high, full)
+- services/suppliers/media-normalizer.js — catalog-media-normalizer (catalog, high, full)
+- services/suppliers/normalized-product.js — catalog-normalized-product (catalog, high, full)
+- services/suppliers/pipeline-constants.js — catalog-pipeline-constants (catalog, high, full)
+- services/suppliers/procurement-execution-boundary.js — procurement-execution-boundary (purchasing, high, full)
+- services/suppliers/promotion-classifier.js — catalog-promotion-classifier (catalog, high, full)
+- services/suppliers/provider-authority.js — provider-authority (supplier-connectivity, high, full)
+- services/suppliers/provider-capability-certifications.js — provider-capability-certification-projector (supplier-connectivity, high, full)
+- services/suppliers/purchase-order-confirmation-boundary.js — purchase-order-confirmation-boundary (purchasing, high, full)
+- services/suppliers/purchasing-capability-execution-plan.js — purchasing-capability-execution-plan (purchasing, high, full)
+- services/suppliers/shipping-capability-contract.js — shipping-capability-contract (purchasing, high, full)
+- services/suppliers/source-product-normalizer.js — catalog-source-product-normalizer (catalog, high, full)
+- services/suppliers/supplier-fulfillment-adapter-contract.js — supplier-fulfillment-adapter-contract (supplier-connectivity, high, full)
+- services/suppliers/supplier-fulfillment-persistence.js — supplier-fulfillment-persistence (purchasing, high, full)
+- services/suppliers/supplier-fulfillment-readiness.js — supplier-fulfillment-readiness (purchasing, high, full)
+- services/suppliers/supplier-fulfillment-reconciliation.js — supplier-fulfillment-reconciliation (purchasing, high, full)
+- services/suppliers/supplier-fulfillment-runtime.js — supplier-fulfillment-runtime (purchasing, high, full)
+- services/suppliers/supplier-order-identity.js — supplier-order-identity (supplier-connectivity, high, full)
+- services/suppliers/supplier-reconciliation-contract.js — supplier-reconciliation-contract (purchasing, high, full)
+- services/target-identity.js — target-identity (infrastructure, high, full)
+- services/transport-cost-allocation.js — transport-cost-allocation-contract (economic-engine, high, full)
+- services/transport-pricing.js — transport-pricing-quote (economic-engine, high, full)
+- services/transport-rails.js — transport-rail-registry (logistics, high, full)
+- services/wallet-service.js — wallet-wallet-service (wallet, high, full)
+- services/webauthn-management-service.js — auth-passkey-management (auth-passkey, high, full)
+- services/webauthn-service.js — auth-passkey-webauthn (auth-passkey, high, full)
+- services/whatsapp-meta.js — meta-whatsapp-adapter (notification, high, full)
+- utils/alerts.js — alerts-persistence-boundary (notification, high, full)
+- utils/auth-cookie.js — auth-cookie-policy (auth, high, full)
+- utils/auth-session-policy.js — auth-session-policy (auth, high, full)
+- utils/auth-session.js — auth-session-proof (auth, high, full)
+- utils/auth-token-policy.js — auth-token-policy (auth, high, full)
+- utils/certification-accounting.js — certification-batch-accounting (infrastructure, high, full)
+- utils/credential-session-guard.js — credential-session-version-guard (auth-identity, high, full)
+- utils/documents/customs-invoice-html.js — customs-invoice-html (documents, high, full)
+- utils/name-normalize.js — name-normalize (shared, high, full)
+- utils/non-prod-phone-guard.js — non-prod-phone-guard (notification, high, full)
+- utils/parcels.js — logistics-parcels (logistics, high, full)
+- utils/parcelSync.js — logistics-parcel-sync (logistics, high, full)
+- utils/pricing-cache.js — economic-engine-pricing-cache (economic-engine, high, full)
+- utils/relay-commission.js — relay-commission-resolver (economic-engine, high, full)
+- validators/index.js — request-validation-schemas (infrastructure, high, full)
+
+## Lite Aggregated Files
+
+- public/boutique/js/anti-fouc.js -> owner public/boutique/js/b-home-premium-v1.js (boutique-anti-fouc)
+- public/boutique/js/b-boutique-wow-style.js -> owner public/boutique/js/boutique.js (boutique-product-image-fallback-polish)
+- public/boutique/js/b-cart-product-open-style.js -> owner public/boutique/js/b-modal-core.js (catalog-b-cart-product-open-style)
+- public/boutique/js/b-desktop-global-cart-access.js -> owner public/boutique/js/b-catalog.js (boutique-b-desktop-global-cart-access)
+- public/boutique/js/b-desktop-sidebar.js -> owner public/boutique/js/b-catalog.js (boutique-b-desktop-sidebar)
+- public/boutique/js/b-desktop-upgrade.js -> owner public/boutique/js/b-catalog.js (boutique-b-desktop-upgrade)
+- public/boutique/js/b-greeting.js -> owner public/boutique/js/b-catalog.js (boutique-b-greeting)
+- public/boutique/js/b-home-premium-v1.js -> owner public/boutique/js/b-catalog.js (boutique-b-home-premium-v1)
+- public/boutique/js/b-market-price-format.js -> owner public/boutique/js/b-utils.js (market-local-price-format)
+- public/boutique/js/b-modal-cart.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-cart)
+- public/boutique/js/b-modal-discovery-detail.js -> owner public/boutique/js/discovery-rail.js (catalog-modal-discovery-detail)
+- public/boutique/js/b-modal-nav.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-nav)
+- public/boutique/js/b-modal-social-proof.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-social-proof)
+- public/boutique/js/b-modal.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal)
+- public/boutique/js/b-paypal.js -> owner public/boutique/js/b-checkout.js (payment-b-paypal)
+- public/boutique/js/b-pdp-curation-suggestions.js -> owner public/boutique/js/b-modal-suggestions.js (recommendations-b-pdp-curation-suggestions)
+- public/boutique/js/b-product-open-contract.js -> owner public/boutique/js/b-modal-core.js (catalog-b-product-open-contract)
+- public/boutique/js/b-share-phone-guard.js -> owner public/boutique/js/b-share-cart.js (boutique-b-share-phone-guard)
+- public/boutique/js/card-config.js -> owner public/boutique/js/b-catalog.js (boutique-card-config)
+- public/boutique/js/cart-product-summary.js -> owner public/boutique/js/b-cart.js (cart-product-summary)
+- public/boutique/js/checkout-desktop-style.js -> owner public/boutique/js/b-checkout.js (checkout-desktop-style-loader)
+- public/boutique/js/discovery-actions.js -> owner public/boutique/js/discovery-actions.js (catalog-discovery-actions)
+- public/boutique/js/discovery-api.js -> owner public/boutique/js/discovery-api.js (boutique-discovery-api)
+- public/boutique/js/discovery-desktop-style.js -> owner public/boutique/js/discovery-rail.js (discovery-desktop-style-loader)
+- public/boutique/js/discovery-inquiry.js -> owner public/boutique/js/discovery-inquiry.js (providers-services-discovery-inquiry)
+- public/boutique/js/discovery-rail.js -> owner public/boutique/js/discovery-rail.js (catalog-discovery-rail)
+- public/boutique/js/group/group-state.js -> owner public/boutique/js/b-share-cart.js (shared-cart-group-state)
+- public/boutique/js/hero-bootstrap.js -> owner public/boutique/js/b-home-premium-v1.js (boutique-hero-bootstrap)
+- public/boutique/js/local-stock-badge-mount.js -> owner public/boutique/js/local-stock-badge-mount.js (boutique-local-stock-badge-mount)
+- public/boutique/js/local-stock-badge.js -> owner public/boutique/js/local-stock-badge.js (boutique-local-stock-badge)
+- public/boutique/js/main.js -> owner public/boutique/js/boutique.js (boutique-main)
+- public/boutique/js/market-context.js -> owner public/boutique/js/market-context.js (boutique-market-context)
+- public/boutique/js/market-hydration.js -> owner public/boutique/js/market-context.js (boutique-market-hydration)
+- public/boutique/js/preload-css-swap.js -> owner public/boutique/index.html (preload-css-swap)
+- public/boutique/js/product-image-loading-ux.js -> owner public/boutique/js/render/render-product-card.js (boutique-product-image-loading-ux)
+- public/boutique/js/providers-services-api.js -> owner public/boutique/js/providers-services-api.js (providers-services-api)
+- public/boutique/js/render/category-shelf-visuals.js -> owner public/boutique/js/render/render-categories.js (category-shelf-visual-registry)
+- public/boutique/js/render/render-categories.js -> owner public/boutique/js/b-catalog.js (boutique-render-categories)
+- public/boutique/js/render/render-discovery-rail.js -> owner public/boutique/js/discovery-rail.js (catalog-render-discovery-rail)
+- public/boutique/js/render/render-product-card.js -> owner public/boutique/js/b-catalog.js (catalog-render-product-card)
+- public/boutique/js/taxonomy-no-hardcode.test.js -> owner public/boutique/js/b-catalog.js (catalog-taxonomy-no-hardcode-test)
+- public/boutique/js/view-models/product-card-model.js -> owner public/boutique/js/b-catalog.js (catalog-product-card-model)
+- public/boutique/js/view-models/product-card-view-model.js -> owner public/boutique/js/b-catalog.js (catalog-product-card-view-model)
+- services/catalog-media-visual-fr-proof.js -> owner catalog (catalog-media-visual-fr-proof)
+- services/catalog-refinery-combined-proof.js -> owner catalog (catalog-refinery-combined-proof)
+- services/catalog-visual-fr-evidence-read.js -> owner catalog (catalog-visual-fr-evidence-read)
+- services/catalog-visual-fr-human-review-write.js -> owner catalog (catalog-visual-fr-human-review-write)
+- services/central-hub-on-order.js -> owner backend-core (central-hub-on-order-eligibility)
+- services/commercial-category-agreement.js -> owner backend-core (frozen-commercial-object-supplier-category-agreement)
+- services/commercial-taxonomy-semantics.js -> owner backend-core (commercial-taxonomy-semantic-intent)
+- services/dashboard-rct1-orders.js -> owner backend-core (rct1-orders-readonly-projection)
+- services/g6-hub-recipe-closure.js -> owner backend-core (g6-hub-recipe-closure)
+- services/g6-recipe-po-cancel-service.js -> owner backend-core (g6-recipe-po-cancel-service)
+- services/g6-staging-buyer-identity-guard.js -> owner backend-core (g6-staging-buyer-identity-guard)
+- services/hub-label-pdf.js -> owner backend-core (hub-opaque-labels-pdf)
+- services/hub-v1-fixture-checkout-guard.js -> owner backend-core (hub-v1-fixture-checkout-guard)
+- services/hub-v1-fixture-payment.js -> owner backend-core (hub-v1-fixture-payment)
+- services/market-delegation-read-authority.js -> owner backend-core (market-scoped-read-capability-fallback)
+- services/order-read-authorization.js -> owner backend-core (order-read-authorization)
+- services/providers-inquiry-service.js -> owner services/providers-service.js (providers-services-contextual-inquiry)
+- services/providers-interaction-policy.js -> owner services/providers-service.js (providers-services-interaction-policy)
+- services/rct1-checkout-reference-guard.js -> owner backend-core (rct1-checkout-reference-guard)
+- services/simulation-visibility.js -> owner backend-core (live-simulation-visibility)
+
+## DB Write Edges
+
+- WRITE services/admin-order-refund.js -> alerts
+- WRITE services/cash-operations.js -> alerts
+- WRITE services/confirm-pickup-cash-payment.js -> alerts
+- WRITE services/g6-recipe-po-cancel-service.js -> alerts
+- WRITE services/notification-service.js -> alerts
+- WRITE services/notifications/notification-service.js -> alerts
+- WRITE services/order-payment-confirmation.js -> alerts
+- WRITE services/payment-cash-confirm.js -> alerts
+- WRITE services/payment-mobile-money.js -> alerts
+- WRITE services/payment-paypal.js -> alerts
+- WRITE services/payment-stripe.js -> alerts
+- WRITE services/pickup-authorization-service.js -> alerts
+- WRITE services/pickup-collection-service.js -> alerts
+- WRITE services/pickup-exceptional-collection-service.js -> alerts
+- WRITE services/product-publication-guard.js -> alerts
+- WRITE services/purchasing-cancel-service.js -> alerts
+- WRITE services/purchasing-completion-service.js -> alerts
+- WRITE services/purchasing-engagement-service.js -> alerts
+- WRITE services/purchasing-trigger-service.js -> alerts
+- WRITE services/repair-ordered-without-purchase-orders.js -> alerts
+- WRITE services/scan-operations.js -> alerts
+- WRITE services/supplier-shortage-service.js -> alerts
+- WRITE utils/alerts.js -> alerts
+- WRITE utils/parcelSync.js -> alerts
+- WRITE services/market-delegation-service.js -> assignment_capability_ceiling
+- WRITE services/market-delegation-service.js -> assignment_memberships
+- WRITE services/market-delegation-team-service.js -> assignment_memberships
+- WRITE routes/admin/system.js -> basket_items
+- WRITE services/shared-cart-creation.js -> basket_items
+- WRITE services/shared-cart-engine.js -> basket_items
+- WRITE services/shared-cart-user-cleanup.js -> basket_items
+- WRITE routes/admin/system.js -> baskets
+- WRITE services/shared-cart-creation.js -> baskets
+- WRITE services/shared-cart-engine.js -> baskets
+- WRITE services/shared-cart-user-cleanup.js -> baskets
+- WRITE services/boutique-taxonomy-admin.js -> boutique_categories
+- WRITE services/boutique-taxonomy-admin.js -> boutique_subcategories
+- WRITE routes/admin-rules.js -> business_rules_history
+- WRITE utils/rules.js -> business_rules_history
+- WRITE routes/admin-rules.js -> business_rules
+- WRITE utils/rules.js -> business_rules
+- WRITE routes/carriers.js -> carriers
+- WRITE routes/shares.js -> cart_shares
+- WRITE services/cart-share-service.js -> cart_shares
+- WRITE services/cash-operations.js -> cash_collections
+- WRITE services/confirm-pickup-cash-payment.js -> cash_collections
+- WRITE services/paymenh_deposits
+- WRITE services/cash-deposit-service.js -> cash_deposits
+- WRITE services/catalog-enrichment.js -> catalog_enrichment_runs
+- WRITE services/catalog-overrides.js -> catalog_field_overrides
+- WRITE services/product-admin-service.js -> catalog_field_overrides
+- WRITE services/refinery-fr-recheck.js -> catalog_field_overrides
+- WRITE services/catalog-field-sync-application.js -> catalog_field_sync_state
+- WRITE services/catalog-media-recovery.js -> catalog_media_recovery_audit
+- WRITE services/catalog-visual-fr-human-review-write.js -> catalog_media_visual_fr_reviews
+- WRITE services/catalog-product-mutation-service.js -> catalog_media
+- WRITE services/catalog-promotion.js -> catalog_media
+- WRITE services/catalog-visual-fr-human-review-write.js -> catalog_media
+- WRITE services/catalog-workspace.js -> catalog_media
+- WRITE services/catalog-product-quality-service.js -> catalog_product_quality_notes
+- WRITE services/catalog-product-quality-service.js -> catalog_product_sale_holds
+- WRITE services/catalog-publication-decision-audit.js -> catalog_publication_decision_audit
+- WRITE services/catalog-stock-sync-application.js -> catalog_stock_sync_state
+- WRITE services/catalog-taxonomy-audit.js -> catalog_taxonomy_audit
+- WRITE bootstrap/startup-migrations.js -> charges
+- WRITE services/economic-engine-queries.js -> charges
+- WRITE services/market-structure-charge-reference.js -> charges
+- WRITE routes/client-notifications.js -> client_notifications
+- WRITE services/client-notification-service.js -> client_notifications
+- WRITE services/pricing-strategy-service.js -> competitor_prices
+- WRITE routes/pricing.js -> cost_benchmarks
+- WRITE services/cost-component-admin-service.js -> cost_component_events
+- WRITE services/cost-component-market-service.js -> cost_component_market_override_events
+- WRITE services/cost-component-market-service.js -> cost_component_market_overrides
+- WRITE services/cost-component-admin-service.js -> cost_components
+- WRITE services/credential-action-store.js -> credential_action_tokens
+- WRITE routes/admin-customs-categories.js -> customs_categories
+- WRITE routes/orders/status.js -> customs_history
+- WRITE services/customs-shipment-fee-service.js -> customs_shipment_fees
+- WRITE services/shipping-customs-workspace.js -> customs_shipment_holds
+- WRITE routes/admin-customs-shipments.js -> customs_shipment_parcel_events
+- WRITE services/customs-shipment-service.js -> customs_shipment_parcel_events
+- WRITE routes/admin-customs-shipments.js -> customs_shipment_parcels
+- WRITE services/customs-shipment-service.js -> customs_shipment_parcels
+- WRITE routes/admin-customs-shipments.js -> customs_shipments
+- WRITE services/customs-shipment-service.js -> customs_shipments
+- WRITE routes/admin/delete-order-cascade.js -> disputes
+- WRITE services/dispute-mutation-service.js -> disputes
+- WRITE services/pricing-risk-period.js -> economic_risk_cost_events
+- WRITE services/pricing-risk-period.js -> economic_risk_watermark_events
+- WRITE bootstrap/crons.js -> economic_snapshots
+- WRITE services/economic-engine-queries.js -> economic_snapshots
+- WRITE services/pricing-period-structure.js -> economic_structure_cost_events
+- WRITE routes/modules.js -> fabrics
+- WRITE bootstrap/startup-migrations.js -> finance_config
+- WRITE routes/admin-costing.js -> finance_config
+- WRITE routes/admin-finance-config.js -> finance_config
+- WRITE services/economic-config.js -> finance_config
+- WRITE services/economic-engine-queries.js -> finance_config
+- WRITE bootstrap/crons.js -> financial_movement_documents
+- WRITE services/financial-journal-projectors.js -> financial_movement_documents
+- WRITE services/financial-journal.js -> financial_movement_documents
+- WRITE bootstrap/crons.js -> financial_movements
+- WRITE services/financial-journal-projectors.js -> financial_movements
+- WRITE services/financial-journal.js -> financial_movements
+- WRITE bootstrap/crons.js -> fx_public_reference_quotes
+- WRITE services/fx-public-reference-feed.js -> fx_public_reference_quotes
+- WRITE routes/admin-finance-config.js -> fx_rate_observations
+- WRITE services/fx-observation-service.js -> fx_rate_observations
+- WRITE routes/modules.js -> garment_models
+- WRITE services/hub-authorization-service.js -> hub_authorization_grants
+- WRITE services/user-mutation-service.js -> hub_authorization_grants
+- WRITE services/hub-bag-box-service.js -> hub_box_bags
+
+## DB Write-Via Edges (délégation déclarée)
+
+- WRITE services/catalog-approval.js -> alerts (via alerts-persistence-boundary)
+- WRITE services/g6-recipe-po-cancel-service.js -> alerts (via alerts-persistence-boundary)
+- WRITE services/pickup-exceptional-collection-service.js -> alerts (via pickup-collection-service)
+- WRITE services/pickup-secret-service.js -> alerts (via pickup-collection-service)
+- WRITE services/pickup-secret-service.js -> alerts (via pickup-exceptional-collection-service)
+- WRITE routes/admin-market-control-plane.js -> assignment_capability_ceiling (via market-provisioning-service)
+- WRITE services/market-provisioning-service.js -> assignment_capability_ceiling (via market-delegation-service)
+- WRITE routes/admin-market-control-plane.js -> assignment_memberships (via market-provisioning-service)
+- WRITE routes/admin/users.js -> assignment_memberships (via market-operator-provisioning)
+- WRITE routes/market-delegation-team.js -> assignment_memberships (via market-delegation-team-service)
+- WRITE services/market-delegation-team-service.js -> assignment_memberships (via market-delegation-service)
+- WRITE services/market-operator-provisioning.js -> assignment_memberships (via market-delegation-service)
+- WRITE services/market-provisioning-service.js -> assignment_memberships (via market-delegation-team-service)
+- WRITE services/finance-accounting-workspace.js -> cash_deposits (via cash-deposit-service)
+- WRITE services/catalog-media-recovery.js -> catalog_media (via catalog-promotion)
+- WRITE services/sourcing-candidate-actions.js -> catalog_media (via catalog-promotion)
+- WRITE services/sourcing-source-autopilot.js -> catalog_media (via sourcing-candidate-actions)
+- WRITE services/sourcing-workspace.js -> catalog_media (via sourcing-candidate-actions)
+- WRITE services/catalog-approval.js -> catalog_publication_decision_audit (via catalog-publication-decision-audit)
+- WRITE routes/admin-customs-shipments.js -> customs_shipment_fees (via customs-shipment-fee-service)
+- WRITE services/shipping-customs-workspace.js -> customs_shipment_parcels (via customs-shipment-service)
+- WRITE services/international-shipment-journey.js -> customs_shipments (via customs-shipment-service)
+- WRITE services/order-status-machine.js -> customs_shipments (via customs-shipment-service)
+- WRITE services/shipping-customs-workspace.js -> customs_shipments (via customs-shipment-service)
+- WRITE routes/relay-dashboard.js -> disputes; catalog-product-quality-service catalog_product_quality_notes; relay-product-return-intake-service relay_product_return_receipts (via dispute-mutation-service)
+- WRITE routes/market-delegation-client-case.js -> disputes (via dispute-mutation-service)
+- WRITE services/market-delegation-client-case-service.js -> disputes (via dispute-mutation-service)
+- WRITE services/relay-return-request-service.js -> disputes (via dispute-mutation-service)
+- WRITE routes/market-delegation-structure-event.js -> economic_structure_cost_events (via pricing-period-structure)
+- WRITE services/market-delegation-structure-event-service.js -> economic_structure_cost_events (via pricing-period-structure)
+- WRITE services/market-structure-charge-reference.js -> economic_structure_cost_events (via pricing-period-structure)
+- WRITE services/g6-hub-recipe-closure.js -> hub_custody_events (via hub-physical-identity)
+- WRITE services/hub-operations.js -> hub_custody_events (via hub-physical-identity)
+- WRITE services/hub-operations.js -> hub_physical_unit_placements (via hub-physical-identity)
+- WRITE services/g6-hub-recipe-closure.js -> hub_physical_units (via hub-physical-identity)
+- WRITE services/hub-operations.js -> hub_physical_units (via hub-physical-identity)
+- WRITE services/hub-operations.js -> hub_purchase_allocations (via hub-physical-identity)
+- WRITE services/sourcing-candidate-actions.js -> import_runtime_runs (via import-runtime-runs)
+- WRITE services/sourcing-source-autopilot.js -> import_runtime_runs (via sourcing-candidate-actions)
+- WRITE services/suppliers/catalog-import-orchestrator.js -> import_runtime_runs (via import-runtime-runs)
+- WRITE routes/admin/system.js -> incidents (via incident-write-service)
+- WRITE routes/admin/users.js -> incidents (via incident-write-service)
+- WRITE routes/ops-api.js -> incidents (via incident-write-service)
+- WRITE services/alert-engine.js -> incidents (via incident-write-service)
+- WRITE services/hub-operations.js -> incidents (via hub-physical-identity)
+- WRITE services/hub-physical-identity.js -> incidents (via incident-write-service)
+- WRITE services/operations-workspace.js -> incidents (via scan-engine)
+- WRITE services/reconciliation-service.js -> incidents (via incident-write-service)
+- WRITE services/scan-engine.js -> incidents (via incident-write-service)
+- WRITE services/shipping-customs-workspace.js -> incidents (via scan-engine)
+- WRITE routes/providers-services.js -> inquiries (via providers-inquiry-service)
+- WRITE services/operations-workspace.js -> inventory_items (via inventory-service)
+- WRITE routes/admin/documents.js -> invoices (via document-reconciliation)
+- WRITE services/documents/document-reconciliation.js -> invoices (via invoice-service)
+- WRITE services/payment-mobile-money.js -> invoices (via order-payment-confirmation)
+- WRITE routes/admin/orders.js -> local_item_refund_reservations (via local-item-refund-reservation)
+- WRITE routes/market-local-stock.js -> local_stock (via market-delegation-local-stock-service)
+- WRITE services/market-delegation-local-stock-service.js -> local_stock (via local-stock-service)
+- WRITE routes/admin-market-control-plane.js -> market_cash_control_policies (via market-provisioning-service)
+- WRITE routes/market-delegation-cash-control.js -> market_cash_control_policies (via market-cash-control-policy-service)
+- WRITE services/market-provisioning-service.js -> market_cash_control_policies (via market-cash-control-policy-service)
+- WRITE routes/market-delegation-cash-control.js -> market_cash_destinations (via cash-custody-service)
+- WRITE routes/admin-action-center.js -> market_delegation_audit (via market-delegation-service)
+- WRITE routes/admin-market-control-plane.js -> market_delegation_audit (via market-delivery-proof-service)
+- WRITE routes/admin-market-control-plane.js -> market_delegation_audit (via market-transport-sale-rate-command)
+- WRITE routes/admin-market-control-plane.js -> market_delegation_audit (via market-delegation-service)
+- WRITE routes/admin-pricing-workspace.js -> market_delegation_audit (via market-delegation-service)
+- WRITE routes/market-delegation-cash-control.js -> market_delegation_audit (via market-cash-control-policy-service)
+- WRITE routes/market-delegation-catalog.js -> market_delegation_audit (via market-delegation-service)
+- WRITE routes/market-delegation-client-case.js -> market_delegation_audit (via market-delegation-service)
+- WRITE routes/market-delegation-client.js -> market_delegation_audit (via market-delegation-service)
+- WRITE routes/market-delegation-local-offer.js -> market_delegation_audit (via market-delegation-service)
+- WRITE routes/market-delegation-network.js -> market_delegation_audit (via market-delegation-service)
+- WRITE routes/market-delegation-provider.js -> market_delegation_audit (via market-delegation-service)
+- WRITE routes/market-delegation-settlement.js -> market_delegation_audit (via market-delegation-service)
+- WRITE routes/market-delegation-structure-event.js -> market_delegation_audit (via market-delegation-service)
+- WRITE routes/market-delegation-team.js -> market_delegation_audit (via market-delegation-team-service)
+- WRITE routes/market-local-stock.js -> market_delegation_audit (via market-delegation-local-stock-service)
+- WRITE services/cash-custody-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/finance-accounting-workspace.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-cash-control-policy-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-delegation-catalog-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-delegation-client-case-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-delegation-local-offer-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-delegation-local-stock-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-delegation-network-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-delegation-provider-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-delegation-settlement-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-delegation-structure-event-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-delegation-team-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-delivery-proof-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-operator-provisioning.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-payment-account-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/market-provisioning-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE routes/admin-market-control-plane.js -> market_delivery_attestations (via market-delivery-proof-service)
+- WRITE routes/admin-market-control-plane.js -> market_operating_assignments (via market-provisioning-service)
+- WRITE routes/admin/users.js -> market_operating_assignments (via market-operator-provisioning)
+- WRITE services/market-operator-provisioning.js -> market_operating_assignments (via market-delegation-service)
+- WRITE services/market-provisioning-service.js -> market_operating_assignments (via market-delegation-service)
+- WRITE routes/admin-market-payment-accounts.js -> market_payment_accounts (via market-payment-account-service)
+- WRITE routes/admin-market-control-plane.js -> market_payment_providers (via market-provisioning-service)
+- WRITE services/market-provisioning-service.js -> market_payment_providers (via market-payment-provider-config-service)
+- WRITE routes/admin-market-settlement.js -> market_settlement_events (via market-settlement-service)
+- WRITE routes/market-delegation-settlement.js -> market_settlement_events (via market-settlement-service)
+- WRITE services/market-delegation-settlement-service.js -> market_settlement_events (via market-settlement-service)
+- WRITE routes/admin-market-settlement.js -> market_settlements (via market-settlement-service)
+- WRITE routes/market-delegation-settlement.js -> market_settlements (via market-settlement-service)
+- WRITE services/market-delegation-settlement-service.js -> market_settlements (via market-settlement-service)
+- WRITE routes/market-delegation-team.js -> market_team_invitations (via market-delegation-team-service)
+- WRITE services/market-provisioning-service.js -> market_team_invitations (via market-delegation-team-service)
+- WRITE routes/admin-market-control-plane.js -> market_transport_sale_rates (via market-transport-sale-rate-command)
+- WRITE routes/admin-market-control-plane.js -> markets (via market-provisioning-serv/market-provisioning-service.js -> markets (via market-lifecycle-service)
+- WRITE routes/admin-market-control-plane.js -> membership_capabilities (via market-provisioning-service)
+- WRITE routes/admin/users.js -> membership_capabilities (via market-operator-provisioning)
+- WRITE routes/market-delegation-team.js -> membership_capabilities (via market-delegation-team-service)
+- WRITE services/market-delegation-team-service.js -> membership_capabilities (via market-delegation-service)
+- WRITE services/market-operator-provisioning.js -> membership_capabilities (via market-delegation-service)
+- WRITE services/market-provisioning-service.js -> membership_capabilities (via market-delegation-team-service)
+
+## Multi-Writer Tables (>=2 écrivains directs, hors délégations)
+
+- orders: 36 écrivains directs — routes/admin-customs-shipments.js, routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/orders/cancel.js, routes/orders/qr.js, routes/orders/status.js, routes/parcels.js, routes/tracking.js, services/admin-order-refund.js, services/cash-reminder-service.js, services/cost-allocation/canonical-margin-writer.js, services/customs-shipment-service.js, services/hub-v1-fixture-payment.js, services/inventory-service.js, services/order-checkout-persistence.js, services/order-checkout-service.js, services/order-cost-snapshot.js, services/order-mutation-service.js, services/order-status-machine.js, services/parcel-auto-create-service.js, services/parcelOptimizationService.js, services/payment-cash-confirm.js, services/payment-paypal.js, services/payment-service.js, services/payment-stripe.js, services/paypal-refund-authority.js, services/pickup-secret-access-service.js, services/pickup-secret-service.js, services/purchasing-admin-service.js, services/qr-collection-core.js, services/routing.js, services/sav-replacement-order.js, services/scan-operations.js, services/simulation-scope-service.js, services/stripe-refund-authority.js, services/verify-qr-collection.js
+- alerts: 24 écrivains directs — services/admin-order-refund.js, services/cash-operations.js, services/confirm-pickup-cash-payment.js, services/g6-recipe-po-cancel-service.js, services/notification-service.js, services/notifications/notification-service.js, services/order-payment-confirmation.js, services/payment-cash-confirm.js, services/payment-mobile-money.js, services/payment-paypal.js, services/payment-stripe.js, services/pickup-authorization-service.js, services/pickup-collection-service.js, services/pickup-exceptional-collection-service.js, services/product-publication-guard.js, services/purchasing-cancel-service.js, services/purchasing-completion-service.js, services/purchasing-engagement-service.js, services/purchasing-trigger-service.js, services/repair-ordered-without-purchase-orders.js, services/scan-operations.js, services/supplier-shortage-service.js, utils/alerts.js, utils/parcelSync.js
+- parcels: 17 écrivains directs — routes/admin-customs-shipments.js, routes/admin/system.js, routes/carriers.js, routes/parcels.js, routes/transitaire-api.js, services/auto-parcel.js, services/local-relay-receipt-service.js, services/parcel-auto-create-service.js, services/parcel-mutation-service.js, services/parcel-operations.js, services/parcel-security.js, services/parcelOptimizationService.js, services/purchasing-completion-service.js, services/scan-engine.js, services/simulator/cleanup.js, services/simulator/state-advancer.js, utils/parcelSync.js
+- parcel_items: 13 écrivains directs — routes/admin/system.js, routes/parcels.js, services/auto-parcel.js, services/local-relay-receipt-service.js, services/parcel-auto-create-service.js, services/parcel-item-mutation-service.js, services/parcel-operations.js, services/parcelOptimizationService.js, services/purchasing-completion-service.js, services/relay-parcel-item-reconciliation.js, services/scan-engine.js, services/simulator/cleanup.js, services/simulator/state-advancer.js
+- products: 13 écrivains directs — routes/admin/system.js, services/catalog-approval.js, services/catalog-candidate-product-service.js, services/catalog-enrichment.js, services/catalog-field-sync-application.js, services/catalog-overrides.js, services/catalog-product-mutation-service.js, services/catalog-workspace.js, services/hub-operations.js, services/product-admin-service.js, services/product-sku-service.js, services/product-stock-service.js, services/refinery-fr-recheck.js
+- scans: 12 écrivains directs — routes/admin/delete-order-cascade.js, routes/transit-dashboard.js, services/local-relay-receipt-service.js, services/pickup-collection-recorder.js, services/pickup-collection-service.js, services/relay-parcel-item-reconciliation.js, services/scan-operations.js, services/scan-write-service.js, services/simulator/cleanup.js, services/simulator/state-advancer.js, services/verify-qr-collection.js, utils/parcelSync.js
+- order_status_history: 10 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/admin/users.js, routes/orders/cancel.js, services/hub-v1-fixture-payment.js, services/order-checkout-persistence.js, services/order-checkout-service.js, services/order-status-machine.js, services/paypal-refund-authority.js, services/stripe-refund-authority.js
+- notification_log: 9 écrivains directs — services/notification-service.js, services/notifications/internals.js, services/notifications/loyalty.js, services/notifications/misc.js, services/notifications/notification-service.js, services/notifications/order.js, services/notifications/otp-auth.js, services/notifications/parcel.js, services/simulator/state-advancer.js
+- order_items: 9 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, services/order-checkout-persistence.js, services/order-checkout-service.js, services/order-item-availability-service.js, services/order-item-refund-settlement.js, services/order-status-machine.js, services/sav-replacement-order.js, services/scan-engine.js
+- supplier_execution_events: 9 écrivains directs — services/supplier-execution-persistence.js, services/supplier-payment-orchestrator.js, services/supplier-payment-proof-persistence.js, services/supplier-payment-state.js, services/suppliers/cj-billing-history-reconciliation.js, services/suppliers/cj-payment-recovery.js, services/suppliers/cj-supplier-payment-runtime.js, services/suppliers/supplier-fulfillment-persistence.js, services/suppliers/supplier-fulfillment-runtime.js
+- incidents: 7 écrivains directs — services/incident-escalation.js, services/incident-service.js, services/incident-write-service.js, services/purchasing-completion-service.js, services/purchasing-engagement-service.js, services/relay-shipment-receipt.js, services/supplier-shortage-service.js
+- pickup_print_tokens: 7 écrivains directs — bootstrap/crons.js, routes/pickup-secret.js, services/pickup-collection-recorder.js, services/pickup-collection-service.js, services/pickup-secret-access-service.js, services/pickup-secret-customer-rotation-service.js, services/pickup-secret-rotation-service.js
+- pickup_reveal_codes: 7 écrivains directs — bootstrap/crons.js, routes/pickup-secret.js, services/pickup-collection-recorder.js, services/pickup-collection-service.js, services/pickup-secret-access-service.js, services/pickup-secret-customer-rotation-service.js, services/pickup-secret-rotation-service.js
+- purchase_lines: 7 écrivains directs — services/g6-recipe-po-cancel-service.js, services/purchase-line-snapshot.js, services/purchasing-admin-service.js, services/purchasing-cancel-service.js, services/purchasing-engagement-service.js, services/purchasing-grouped-service.js, services/purchasing-trigger-service.js
+- refund_execution_intents: 7 écrivains directs — services/item-refund-psp-orchestrator.js, services/item-refund-reservation-service.js, services/paypal-refund-authority.js, services/refund-intent-ledger.js, services/refund-intent-reconciliation.js, services/sav-ledger-refund.js, services/stripe-refund-authority.js
+- parcel_events: 6 écrivains directs — services/local-relay-receipt-service.js, services/parcel-item-mutation-service.js, services/parcel-security.js, services/parcel-shipment-handover.js, services/relay-parcel-item-reconciliation.js, utils/parcelSync.js
+- purchase_orders: 6 écrivains directs — services/g6-recipe-po-cancel-service.js, services/purchasing-admin-service.js, services/purchasing-cancel-service.js, services/purchasing-completion-service.js, services/purchasing-engagement-service.js, services/purchasing-grouped-service.js
+- scan_events: 6 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/transitaire-api.js, services/hub-operations.js, services/parcel-auto-create-service.js, services/scan-engine.js
+- shared_cart_events: 6 écrivains directs — services/cart-share-service.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-internals.js, services/shared-cart-lifecycle.js, services/shared-cart-queries.js
+- signals: 6 écrivains directs — bootstrap/crons.js, routes/agent-action-center.js, services/action-center-agent-scope.js, services/order-financial-closure-signal.js, services/signal-admin-service.js, services/signal-service.js
+- supplier_execution_payments: 6 écrivains directs — services/supplier-payment-orchestrator.js, services/supplier-payment-proof-persistence.js, services/supplier-payment-state.js, services/suppliers/cj-billing-history-reconciliation.js, services/suppliers/cj-payment-recovery.js, services/suppliers/cj-supplier-payment-runtime.js
+- transaction_documents: 6 écrivains directs — routes/documents.js, services/documents/customs-invoice.js, services/documents/document-service.js, services/documents/pickup-proof.js, services/documents/refund-receipt.js, services/documents/wallet-receipt.js
+- finance_config: 5 écrivains directs — bootstrap/startup-migrations.js, routes/admin-costing.js, routes/admin-finance-config.js, services/economic-config.js, services/economic-engine-queries.js
+- invoices: 5 écrivains directs — routes/admin/system.js, routes/documents.js, routes/invoices.js, services/invoice-service.js, services/order-payment-confirmation.js
+- market_delegation_audit: 5 écrivains directs — middleware/require-market-delegated-capability.js, middleware/require-market-execution-capability.js, services/cash-deposit-service.js, services/market-delegation-service.js, services/market-transport-sale-rate-command.js
+- order_item_real_cost_allocations: 5 écrivains directs — services/cost-allocation/allocate.js, services/cost-allocation/index.js, services/cost-allocation/manual-cost-entry-service.js, services/customs-shipment-service.js, services/transport-cost-allocation.js
+- shared_carts: 5 écrivains directs — services/cart-share-service.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-lifecycle.js, services/shared-cart-queries.js
+- sourcing_sources: 5 écrivains directs — services/provider-credential-service.js, services/sourcing-observation-shadow-service.js, services/sourcing-provider-control-policy.js, services/sourcing-source-autopilot.js, services/sourcing-source-registry.js
+- users: 5 écrivains directs — bootstrap/startup-migrations.js, routes/auth.js, routes/client-auth.js, routes/otp.js, services/user-mutation-service.js
+- basket_items: 4 écrivains directs — routes/admin/system.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-user-cleanup.js
+- baskets: 4 écrivains directs — routes/admin/system.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-user-cleanup.js
+- cash_confirmation_controls: 4 écrivains directs — services/cash-confirmation-control-service.js, services/cash-operations.js, services/confirm-pickup-cash-payment.js, services/payment-cash-confirm.js
+- catalog_media: 4 écrivains directs — services/catalog-product-mutation-service.js, services/catalog-promotion.js, services/catalog-visual-fr-human-review-write.js, services/catalog-workspace.js
+- product_skus: 4 écrivains directs — services/catalog-promotion.js, services/catalog-stock-sync-application.js, services/product-sku-service.js, services/product-stock-service.js
+- product_variants: 4 écrivains directs — services/catalog-product-mutation-service.js, services/catalog-promotion.js, services/product-stock-service.js, services/product-variant-service.js
+- refunds: 4 écrivains directs — services/item-refund-psp-orchestrator.js, services/paypal-refund-authority.js, services/refund-service.js, services/stripe-refund-authority.js
+- sourcing_candidates: 4 écrivains directs — routes/sourcing-scanner.js, services/sourcing-candidate-actions.js, services/sourcing-candidate-import-service.js, services/suppliers/catalog-import-json.js
+- supplier_oauth_connections: 4 écrivains directs — routes/integrations-aliexpress.js, services/suppliers/aliexpress-oauth.js, services/suppliers/allegro-sandbox-client.js, services/suppliers/connectors/aliexpress-connected-connector.js
+- wallet_transactions: 4 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/wallet.js, services/wallet-service.js
+- wallets: 4 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/wallet.js, services/wallet-service.js
+- cash_collections: 3 écrivains directs — services/cash-operations.js, services/confirm-pickup-cash-payment.js, services/payment-cash-confirm.js
+- catalog_field_overrides: 3 écrivains directs — services/catalog-overrides.js, services/product-admin-service.js, services/refinery-fr-recheck.js
+- charges: 3 écrivains directs — bootstrap/startup-migrations.js, services/economic-engine-queries.js, services/market-structure-charge-reference.js
+- financial_movement_documents: 3 écrivains directs — bootstrap/crons.js, services/financial-journal-projectors.js, services/financial-journal.js
+- financial_movements: 3 écrivains directs — bootstrap/crons.js, services/financial-journal-projectors.js, services/financial-journal.js
+- international_shipment_events: 3 écrivains directs — services/hub-box-shipment-service.js, services/international-shipment-journey.js, services/relay-shipment-receipt.js
+- order_comments: 3 écrivains directs — routes/hub-dashboard.js, routes/relay-dashboard.js, services/operations-workspace.js
+- otp_codes: 3 écrivains directs — routes/auth-step-up-otp.js, routes/otp.js, services/g6-staging-buyer-identity-guard.js
+- price_history: 3 écrivains directs — services/economic-price-audit-service.js, services/pricing-apply.js, services/pricing-strategy-service.js
+- relais: 3 écrivains directs — routes/admin/system.js, services/relais-mutation-service.js, services/routing.js
+- sms_log: 3 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/admin/users.js
+- sourcing_captures: 3 écrivains directs — services/sourcing-catalog-change-observation.js, services/sourcing-observation-shadow-service.js, services/sourcing-source-autopilot.js
+- sourcing_provider_control_events: 3 écrivains directs — services/provider-credential-service.js, services/sourcing-provider-control-policy.js, services/sourcing-source-registry.js
+- supplier_execution_payment_proofs: 3 écrivains directs — services/supplier-payment-proof-persistence.js, services/suppliers/cj-billing-history-reconciliation.js, services/suppliers/cj-supplier-payment-runtime.js
+- suppliers: 3 écrivains directs — routes/purchasing.js, services/purchasing-admin-service.js, services/suppliers/central-hub-supplier.js
+- wallet_consumptions: 3 écrivains directs — routes/admin/system.js, routes/wallet.js, services/wallet-service.js
+- wallet_credit_lots: 3 écrivains directs — routes/admin/system.js, routes/wallet.js, services/wallet-service.js
+- assignment_memberships: 2 écrivains directs — services/market-delegation-service.js, services/market-delegation-team-service.js
+- business_rules: 2 écrivains directs — routes/admin-rules.js, utils/rules.js
+- business_rules_history: 2 écrivains directs — routes/admin-rules.js, utils/rules.js
+
+## DB Write / Write-Via Overlap Warnings
+
+- routes/sourcing-scanner.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> sourcing_candidates
+- services/customs-shipment-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> order_item_real_cost_allocations
+- services/g6-recipe-po-cancel-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> alerts
+- services/local-relay-receipt-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> parcels, parcel_items, parcel_events
+- services/market-delegation-team-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> assignment_memberships
+- services/order-financial-closure-signal.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> signals
+- services/pickup-collection-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> pickup_print_tokens, pickup_reveal_codes, scans
+- services/pickup-exceptional-collection-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> alerts
+- services/pickup-secret-access-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> orders
+- services/pickup-secret-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> orders
+- services/product-admin-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> products
+- services/simulator/state-advancer.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> parcels
+- services/sourcing-source-autopilot.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> sourcing_sources, sourcing_captures
+
+## Unresolved Code Edges
+
+- uses: (see files.tests in features/purchasing.feature.js — not yet -> services/suppliers/purchasing-validators.js ((see files.tests in features/purchasing.feature.js — not yet)
+- uses: accounting workspace -> services/financial-journal-reporting.js (accounting workspace)
+- uses: admin-dashboard -> routes/admin-boutique-categories.js (admin-dashboard)
+- uses: admin-dashboards -> routes/economic.js (admin-dashboards)
+- uses: admin-dashboards -> services/economic-engine-queries.js (admin-dashboards)
+- uses: admin-flows -> services/order-status-machine.js (admin-flows)
+- uses: AliExpress and CJ discovery/stress pipelines -> services/suppliers/discovery-semantic-relevance.js (AliExpress and CJ discovery/stress pipelines)
+- uses: all-boutique-js-modules -> public/boutique/js/b-store.js (all-boutique-js-modules)
+- uses: all-boutique-js-modules -> public/boutique/js/b-utils.js (all-boutique-js-modules)
+- uses: Allocation & Custody) -> services/outbox-producer.js (Allocation & Custody))
+- uses: Allocation & Custody) -> services/outbox-worker.js (Allocation & Custody))
+- uses: auth routes -> utils/auth-session.js (auth routes)
+- uses: b-modal-approche-c-hybrid.js -> public/boutique/js/b-share-cart.js (b-modal-approche-c-hybrid.js)
+- uses: b-modal-core.js (openModal) -> public/boutique/js/b-modal-product-fields.js (b-modal-core.js (openModal))
+- depends: bootstrap/api-routes.js -> routes/economic-engine.js (routes/economic-engine.js)
+- depends: bootstrap/server-lifecycle.js -> node:http (node:http)
+- depends: bootstrap/startup-migrations.js -> scripts/fix-schema.js (scripts/fix-schema.js)
+- depends: bootstrap/startup-migrations.js -> scripts/migration-037-fix-products.js (scripts/migration-037-fix-products.js)
+- depends: bootstrap/startup-migrations.js -> scripts/migration-038-replace-products.js (scripts/migration-038-replace-products.js)
+- depends: bootstrap/startup-migrations.js -> scripts/migration-039-french-descriptions.js (scripts/migration-039-french-descriptions.js)
+- depends: bootstrap/startup-migrations.js -> scripts/run-migrations.js (scripts/run-migrations.js)
+- uses: bounded operator flow / future admin action -> services/suppliers/cj-supplier-payment-runtime.js (bounded operator flow / future admin action)
+- uses: boutique checkout -> routes/payments-mobile-money.js (boutique checkout)
+- uses: boutique-discovery-rail -> routes/boutique-suggestions.js (boutique-discovery-rail)
+- uses: cancellation-flows -> services/order-status-machine.js (cancellation-flows)
+- uses: candidate for services/suppliers/execution-adapter-registry.js after runtime cutover gate -> services/suppliers/cj-fulfillment-adapter.js (candidate for services/suppliers/execution-adapter-registry.js after runtime cutover gate)
+- uses: canonical sourcing workspace -> routes/admin-sourcing-workspace.js (canonical sourcing workspace)
+- uses: cart-surfaces -> public/boutique/js/b-mini-cart.js (cart-surfaces)
+- uses: catalog diagnostics -> services/catalog-provider-capability-contract.js (catalog diagnostics)
+- uses: central admin workspace -> routes/admin-market-control-plane.js (central admin workspace)
+- uses: central admin workspace -> routes/admin-market-payment-accounts.js (central admin workspace)
+- uses: central finance workspace -> routes/admin-market-settlement.js (central finance workspace)
+- uses: checkout-flows -> services/order-service.js (checkout-flows)
+- uses: checkout -> routes/otp.js (checkout)
+- uses: CI -> services/capability-registry.js (CI)
+- depends: core/test-whatsapp-notifications.js -> services/authkey-client (services/authkey-client)
+- depends: core/test-whatsapp-notifications.js -> services/notification-service (services/notification-service)
+- uses: customs -> services/order-mutation-service.js (customs)
+- uses: dashboard -> services/market-scope-admin-service.js (dashboard)
+- uses: dashboard -> services/shared-cart-user-cleanup.js (dashboard)
+- uses: dashboard -> services/user-mutation-service.js (dashboard)
+- uses: dashboards -> routes/wallet.js (dashboards)
+- uses: desktop-enhancers -> public/boutique/js/b-scroll-owner.js (desktop-enhancers)
+- uses: evaluateCanonicalProcurementReadiness) -> services/suppliers/canonical-unit-purchasing-gate.js (evaluateCanonicalProcurementReadiness))
+- uses: feature_modules -> public/boutique/js/komerce-api.js (feature_modules)
+- uses: finance journal reconciliation -> services/financial-journal-projectors.js (finance journal reconciliation)
+- uses: finance projections -> services/financial-journal-projectors.js (finance projections)
+- uses: finance projections -> services/financial-journal-reporting.js (finance projections)
+- uses: futur HUB-001 (Physical Identity -> services/outbox-producer.js (futur HUB-001 (Physical Identity)
+- uses: futur HUB-001 (Physical Identity -> services/outbox-worker.js (futur HUB-001 (Physical Identity)
+- uses: future b-modal-core.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-core.js)
+- uses: future b-modal-desktop-enhancers.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-desktop-enhancers.js)
+- uses: future b-modal-product.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-product.js)
+- uses: future CJ fulfillment adapter / P1 proof -> services/suppliers/cj-purchasing-contract.js (future CJ fulfillment adapter / P1 proof)
+- uses: future CJ payment reconciliation runtime -> services/suppliers/cj-billing-history-reconciliation.js (future CJ payment reconciliation runtime)
+- uses: future CJ provider payment orchestrator -> services/suppliers/cj-payment-recovery.js (future CJ provider payment orchestrator)
+- uses: future Control Tower / Order 360 / financial closure -> services/customer-handoff-reconciliation.js (future Control Tower / Order 360 / financial closure)
+- uses: future CSV/XLSX adapters (M2) -> services/suppliers/managed-file-contract.js (future CSV/XLSX adapters (M2))
+- uses: future guarded refund executor (NOT ACTIVATED) -> services/refund-intent-reconciliation.js (future guarded refund executor (NOT ACTIVATED))
+- uses: future Hub/Control Tower reconciliation surfaces -> services/hub-inbound-reconciliation.js (future Hub/Control Tower reconciliation surfaces)
+- uses: future Order 360 / Control Tower / Golden closure -> services/order-financial-closure-reconciliation.js (future Order 360 / Control Tower / Golden closure)
+- uses: future pricing coverage gate -> services/pricing-maturity.js (future pricing coverage gate)
+- uses: future pricing strategy gate -> services/pricing-market-coverage.js (future pricing strategy gate)
+- uses: future provider payment adapters -> services/supplier-payment-orchestrator.js (future provider payment adapters)
+- uses: future provider payment orchestration -> services/supplier-payment-state.js (future provider payment orchestration)
+- uses: future refund settlement (NOT ACTIVATED) -> services/refund-evidence-verifier.js (future refund settlement (NOT ACTIVATED))
+- uses: future shipment cost ingestion -> services/transport-cost-allocation.js (future shipment cost ingestion)
+- uses: future supplier payment reconciliation runtime -> services/supplier-payment-proof-persistence.js (future supplier payment reconciliation runtime)
+- uses: future transport routing and packing orchestration -> services/transport-rails.js (future transport routing and packing orchestration)
+- uses: future XLSX/CSV template writers (M2b) -> services/suppliers/internal-managed-template-model.js (future XLSX/CSV template writers (M2b))
+- uses: GAP-4A — jamais evaluateSupplierFulfillmentReadiness) ; services/suppliers/aliexpress-fulfillment-adapter.js les reçoit en paramètres injectés par cet appelant -> services/suppliers/supplier-fulfillment-readiness.js (GAP-4A — jamais evaluateSupplierFulfillmentReadiness) ; services/suppliers/aliexpress-fulfillment-adapter.js les reçoit en paramètres injectés par cet appelant)
+- uses: GAP-4A) -> services/suppliers/provider-authority.js (GAP-4A))
+- uses: GAP-4A/4B -> services/suppliers/execution-adapter-registry.js (GAP-4A/4B)
+- uses: GAP-5) -> services/suppliers/execution-adapter-registry.js (GAP-5))
+- uses: GAP-5) -> services/suppliers/provider-authority.js (GAP-5))
+- uses: GAP-5) -> services/suppliers/purchase-order-confirmation-boundary.js (GAP-5))
+- uses: home-personalization -> routes/boutique-suggestions.js (home-personalization)
+- uses: HUB-001 internal logistics boundary -> services/hub-physical-identity.js (HUB-001 internal logistics boundary)
+- uses: inventory -> services/order-mutation-service.js (inventory)
+- uses: lecture verrouillée) -> services/pickup-authorization-service.js (lecture verrouillée))
+- uses: logistics -> services/order-mutation-service.js (logistics)
+- uses: magic-link validation -> utils/auth-session.js (magic-link validation)
+- uses: manual-ops -> core/test-whatsapp-notifications.js (manual-ops)
+- uses: market autonomy UI -> routes/market-delegation-cash-control.js (market autonomy UI)
+- uses: market operator dashboard (canonical Clients screen) -> routes/market-delegation-client.js (market operator dashboard (canonical Clients screen))
+- uses: market operator dashboard -> routes/market-delegation-catalog.js (market operator dashboard)
+- uses: market operator dashboard -> routes/market-delegation-client-case.js (market operator dashboard)
+- uses: market operator dashboard -> routes/market-delegation-cost-statement.js (market operator dashboard)
+- uses: market operator dashboard -> routes/market-delegation-customs.js (market operator dashboard)
+- uses: market operator dashboard -> routes/market-delegation-local-offer.js (market operator dashboard)
+- uses: market operator dashboard -> routes/market-delegation-network.js (market operator dashboard)
+- uses: market operator dashboard -> routes/market-delegation-payment-accounts.js (market operator dashboard)
+- uses: market operator dashboard -> routes/market-delegation-performance.js (market operator dashboard)
+- uses: market operator dashboard -> routes/market-delegation-provider.js (market operator dashboard)
+- uses: market operator dashboard -> routes/market-delegation-settlement.js (market operator dashboard)
+- uses: market operator dashboard -> routes/market-delegation-structure-event.js (market operator dashboard)
+- uses: market operator dashboard -> routes/market-delegation-team.js (market operator dashboard)
+- uses: market-delegation mutations -> services/market-scope-projector.js (market-delegation mutations)
+- uses: market-delegation routes -> services/market-delegation-service.js (market-delegation routes)
+- uses: market-delegation-service -> services/capability-registry.js (market-delegation-service)
+- uses: market-delegation -> services/market-scope-admin-service.js (market-delegation)
+- uses: market-scope-projector -> services/market-delegation-service.js (market-scope-projector)
+- depends: middleware/auth-guest.js -> db (db)
+- depends: middleware/auth.js -> db (db)
+- depends: middleware/require-catalog-global-authority.js -> db.js (db.js)
+- depends: middleware/require-dashboard-global-authority.js -> db.js (db.js)
+- depends: middleware/require-decision-signal-global-authority.js -> db.js (db.js)
+- depends: middleware/require-market-delegated-capability.js -> db.js (db.js)
+- depends: middleware/require-market-delegated-role.js -> db.js (db.js)
+- depends: middleware/require-market-execution-capability.js -> db.js (db.js)
+- depends: middleware/require-market-scope.js -> db.js (db.js)
+- depends: middleware/require-market-scope.js -> markets (M0) (markets (M0))
+- depends: middleware/require-market-scope.js -> operator_market_scopes (M1) (operator_market_scopes (M1))
+- depends: middleware/require-pricing-global-authority.js -> db.js (db.js)
+- depends: middleware/require-recent-auth.js -> middleware/auth.js session proof context (middleware/auth.js session proof context)
+- depends: middleware/require-sourcing-global-authority.js -> db.js (db.js)
+- depends: middleware/require-verified-identity.js -> db (db)
+- depends: middleware/soft-auth.js -> db (db)
+- depends: middleware/upload-hub.js -> middleware/upload.js (validateMagicBytes) (middleware/upload.js (validateMagicBytes))
+- depends: middleware/upload.js -> fs (fs)
+
+## Files Still Without Headers Or Aggregation
+
+- none
+
+## Files With Misplaced Headers (Shebang/Code Before Block)
+
+- none
+
+## Intervention Rule
+
+Before modifying a structural file, open `docs/komerce-arch-header-graph.json`, read `interventionIndex["<file>"]`, then check every `mustCheck` target before editing.
+
+For a lite file, follow its `owner` edge first. If no owner exists, stop and classify the file before editing.
+
+When a file starts reading/writing DB tables, update `@db-read`, `@db-write`, and `@db-txn` before regenerating this graph.
