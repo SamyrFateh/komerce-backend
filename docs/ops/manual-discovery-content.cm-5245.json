@@ -1,0 +1,24 @@
+{
+  "market": "CM",
+  "catalog_products": [],
+  "providers": [
+    {
+      "id": "ba1eba00-5245-4000-8000-000000000001",
+      "name": "BALEBA",
+      "phone": "+237000000000",
+      "status": "pending"
+    }
+  ],
+  "local_products": [
+    {
+      "id": "ba1eba00-5245-4000-8000-000000000002",
+      "provider_id": "ba1eba00-5245-4000-8000-000000000001",
+      "title": "Groupes électrogènes BALEBA",
+      "description": "Gamme de groupes électrogènes pour maisons, commerces et installations professionnelles. Configurations envisagées : 2,5 ; 5 ; 8 ; 10 ; 15 ; 30 ; 50 kVA. Puissance nominale, carburant, dimensions, disponibilité et prix en FCFA (XAF) à confirmer pour chaque modèle. Fiche de démonstration staging ; aucune offre ferme, aucun stock confirmé.",
+      "zone": "Cameroun",
+      "status": "draft",
+      "expose": false
+    }
+  ],
+  "services": []
+}

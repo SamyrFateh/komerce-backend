@@ -1,0 +1,42 @@
+name: Staging local offers BALEBA KOYAMBA
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: komerce-staging-local-offers-5245
+  cancel-in-progress: false
+jobs:
+  create-drafts:
+    if: >-
+      github.repository == 'SamyrFateh/komerce-backend' &&
+      github.actor == github.repository_owner &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.issue.user.login == github.repository_owner &&
+        github.event.issue.title == '[staging-op] local-offers-5245-drafts'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_TARGET_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      MANUAL_DISCOVERY_WRITE_ENABLED: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Verify actual staging and database identity
+        run: node scripts/recette/target-guard.js
+      - name: Validate and apply only the two unexposed local drafts
+        run: node scripts/recette/local-offers-5245-drafts.js
