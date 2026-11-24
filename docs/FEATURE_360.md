@@ -2096,7 +2096,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - _in_ :
   - table providers (identité et contact privé, market, statut pending|active|suspended)
   - table services (prestation d’un provider, exposition DISABLED par défaut, image_ref public optionnel)
-  - table physical_offers (produit physique tiers, image_ref public optionnel)
+  - table physical_offers (produit physique tiers, image_ref public optionnel, offer_options structurées informatives ; aucun SKU stock ou paiement)
   - actions_enabled historiques sur service/physical_offer, projetées publiquement vers request et/ou callback ; whatsapp reste en plus un capability flag de handoff pour Service
   - projection publique provider_name pour humaniser une fiche exposable sans exposer provider_id ni contact privé
   - projection publique service whatsapp_available booléenne ; jamais le numéro provider lui-même
@@ -2161,12 +2161,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 20 fichier(s) déclaré(s), boutique: 4 fichier(s)
+**Implementation** : 24 fichier(s) déclaré(s), boutique: 4 fichier(s)
   - boutique : 2
-  - ci : 1
-  - migrations : 3
+  - ci : 2
+  - migrations : 4
   - routes : 1
-  - scripts : 2
+  - scripts : 4
   - services : 4
   - tests : 7
 
@@ -2315,7 +2315,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - moteur de classement boutique
   - endpoint de suggestions, avec une surface PDP limitée aux produits visibles sur le marché et liés au produit consulté
   - DiscoveryCard — projection de lecture mixte (product|physical_offer|service), jamais persistée
-  - politique éditoriale serveur explicite du rail local : activation globale, candidats et ordre
+  - politique éditoriale serveur explicite du rail local : activation globale, candidats et ordre ; extension éditoriale opt-in par marché uniquement en staging
 - _out_ :
   - données produit source (feature catalog)
   - prix affiché (feature economic-engine / market-autonomy)
