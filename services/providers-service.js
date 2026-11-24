@@ -528,7 +528,7 @@ async function isPhysicalOfferExposable(physicalOfferId, marketId) {
     throw new Error('isPhysicalOfferExposable: market_id est requis — jamais une confiance aveugle en l\'appelant');
   }
   const { rows } = await db.query(
-    `SELECT o.status AS offer_status, o.commercial_exposure, o.market_id, p.status AS provider_status
+    `SELECT o.status AS offer_status, o.commercial_exposure, o.market_id, p.status AS provider_status, p.name AS provider_name
        FROM physical_offers o
        JOIN providers p ON p.id = o.provider_id
       WHERE o.id = $1`,
@@ -536,10 +536,45 @@ async function isPhysicalOfferExposable(physicalOfferId, marketId) {
   );
   if (!rows.length) return false;
   const r = rows[0];
+  if (String(r.provider_name || '').trim().toUpperCase().startsWith('[STAGING]') && process.env.KOMERCE_ENV !== 'staging') return false;
   return r.offer_status === PHYSICAL_OFFER_STATUS.ACTIVE
     && r.commercial_exposure === 'ENABLED'
     && r.provider_status === PROVIDER_STATUS.ACTIVE
     && String(r.market_id) === String(marketId);
+}
+
+// Structured informational options are owned by physical_offers, never by orders.
+function normalizePhysicalOfferOptions(options) {
+  if (!Array.isArray(options) || options.length > 30) throw new Error('Invalid offer options');
+  const keys = new Set();
+  return options.map(o => {
+    if (!o || typeof o.key !== 'string' || !/^[A-Z0-9-]{1,64}$/.test(o.key) || keys.has(o.key) ||
+        typeof o.label !== 'string' || !o.label.trim() || o.label.length > 100) throw new Error('Invalid offer option');
+    keys.add(o.key);
+    const result = { key: o.key, label: o.label.trim() };
+    if (o.demo_price != null) {
+      if (o.demo !== true || !Number.isSafeInteger(o.demo_price) || o.demo_price <= 0 || !/^[A-Z]{3}$/.test(o.currency || '')) throw new Error('Invalid demo price');
+      result.demo_price = o.demo_price;
+      result.currency = o.currency;
+      result.demo = true;
+    }
+    return result;
+  });
+}
+
+async function setPhysicalOfferOptions(physicalOfferId, marketId, options, executor = db) {
+  const normalized = normalizePhysicalOfferOptions(options);
+  const { rows } = await executor.query(
+    'UPDATE physical_offers SET offer_options = $3::jsonb, updated_at = now() WHERE id = $1 AND market_id = $2 RETURNING id, offer_options',
+    [physicalOfferId, marketId, JSON.stringify(normalized)]
+  );
+  return rows[0] || null;
+}
+
+function publicPhysicalOfferOptions(offer) {
+  try {
+    return normalizePhysicalOfferOptions(offer?.offer_options || []).filter(o => !o.demo || process.env.KOMERCE_ENV === 'staging');
+  } catch (_) { return []; }
 }
 
 // ── Inquiry ──────────────────────────────────────────────────────────────
@@ -685,6 +720,9 @@ module.exports = {
   listPhysicalOffersForMarket,
   getOwnedPhysicalOffer,
   setPhysicalOfferExposure,
+  setPhysicalOfferOptions,
+  normalizePhysicalOfferOptions,
+  publicPhysicalOfferOptions,
   isPhysicalOfferExposable,
   createInquiry,
   answerInquiry,

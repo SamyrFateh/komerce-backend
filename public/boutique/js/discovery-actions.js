@@ -23,6 +23,7 @@ export function requestDiscovery(
   action = 'request',
   requesterNote = null,
   handoff = null,
+  optionKey = null,
 ) {
   if ((kind !== 'service' && kind !== 'physical_offer') || !ref) return false;
   const normalizedAction = String(action || 'request').trim().toLowerCase();
@@ -49,6 +50,7 @@ export function requestDiscovery(
   };
   if (normalizedAction !== 'request') payload.action = normalizedAction;
   if (normalizedHandoff) payload.handoff = normalizedHandoff;
+  if (kind === 'physical_offer' && optionKey) payload.optionKey = String(optionKey);
   bus.emit('discovery:request', payload);
   return true;
 }
