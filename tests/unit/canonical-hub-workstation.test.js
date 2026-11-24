@@ -375,3 +375,11 @@ test('Direction Hub : un refus 403 efface les cartes de supervision précédemme
   expect(host.querySelectorAll('[data-hub-director-task]')).toHaveLength(0);
   expect(host.querySelector('[role="alert"]')?.textContent).toContain('Accès expiré ou non autorisé');
 });
+
+test('Kanban : destination relais visible, attendu réservé au détail contextuel',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-workstation.js'),'utf8');
+ expect(src).toContain("relay.setAttribute('data-hub-relay-destination','')");
+ expect(src).toContain('[o.reference, o.market, o.market_name, o.relay_name]');
+ expect(src).not.toContain("'kmc-hub-phase-expected'");
+ expect(src).toContain("'kmc-hub-board-menu-expected'");
+});
