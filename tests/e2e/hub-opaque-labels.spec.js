@@ -86,6 +86,21 @@ test('étiquettes article : préparer puis imprimer sans changement métier impl
   await page.getByRole('button',{name:'Préparer les QR'}).click();
   await expect.poll(()=>posts.filter(p=>p.path.includes('/labels/articles/')).length).toBe(1);
   expect(posts.some(p=>p.path.endsWith('/fill'))).toBe(false);
+  // Real Chromium clicks: authenticated HTTP response and a printable Blob popup.
+  const [articlePreview]=await Promise.all([
+    page.waitForEvent('popup'),
+    page.locator('[data-hub-print-article]').click(),
+  ]);
+  await expect(articlePreview.locator('h1')).toContainText('Etiquette');
+  await articlePreview.close();
+  await page.getByRole('button',{name:'Préparer QR COMBOX'}).click();
+  const [boxPreview]=await Promise.all([
+    page.waitForEvent('popup'),
+    page.locator('[data-hub-print-box]').click(),
+  ]);
+  await expect(boxPreview.locator('h1')).toContainText('Etiquette');
+  await boxPreview.close();
+  expect(posts.some(p=>p.path.endsWith('/fill'))).toBe(false);
 });
 test('QR COMBOX et article : validation seulement au clic, quantité 1',async({page})=>{
   const posts=[];await mount(page,posts);
