@@ -589,12 +589,6 @@
       form.addEventListener('click', (event) => event.stopPropagation());
       const close = button(doc, 'Fermer', 'close-form', 'is-link');
       close.addEventListener('click', () => { state.form = null; paint(); });
-      if (kind === 'receive') {
-        const card = ctx.renderReception(po.id);
-        form.appendChild(card || el(doc, 'p', 'hlc-empty', 'Rien à réceptionner pour cette PO (déjà reçue ou non réceptionnable).'));
-        form.appendChild(close);
-        return form;
-      }
       const proof = (kind === 'commitment' || kind === 'payment')
         ? field(form, kind === 'commitment' ? 'Pièce justificative de l’engagement' : 'Justificatif du paiement', textInput('Référence de la pièce (obligatoire)', 'proof_ref'))
         : null;
@@ -926,7 +920,7 @@
           if (po.step.key === 'validation') A('submit-po', 'Soumettre la PO', { primary: true, why: 'rien n’est encore envoyé', disabled: lock, run: (b) => submitPo(b, po.id) });
           if (po.step.key === 'engaged') A('record-sent', 'Enregistrer l’envoi fournisseur', { primary: true, why: 'canal réel, auteur, heure', disabled: lock, run: () => openForm('sent', po.id) });
           if (po.status === 'notified' && po.sent_at) A('confirm-po', 'Confirmation fournisseur', { why: 'quantités confirmées (déclaratif)', disabled: lock, run: () => openForm('confirm', po.id) });
-          if (!draft) A('receive', 'Réceptionner une livraison', { primary: po.totals.missing > 0, why: 'scan et quantité reçue', disabled: lock || (po.totals.missing > 0 ? null : 'PO soldée'), run: () => openForm('receive', po.id) });
+          if (!draft) A('receive', 'Réceptionner une livraison', { primary: po.totals.missing > 0, why: 'scan et quantité reçue', disabled: lock || (po.totals.missing > 0 ? null : 'PO soldée'), run: () => ctx.openReception(po.id) });
           else A('receive', 'Réceptionner une livraison', { disabled: 'PO encore en brouillon' });
           if (!draft && !po.authorizations.payment) A('authorize-payment', 'Autoriser le paiement fournisseur', { why: 'décision distincte de l’engagement', disabled: lock || (!po.authorizations.commitment ? 'après engagement et envoi' : grant(viewer && viewer.can_authorize_payment, 'réservé à la responsable Hub')), run: () => openForm('payment', po.id) });
           else if (draft) A('authorize-payment', 'Autoriser le paiement fournisseur', { disabled: 'après engagement et envoi' });
@@ -951,27 +945,10 @@
         }
       } else if (sel.type === 'box') {
         const b = (d.boxes || []).find((x) => x.unit_id === sel.id);
-        if (b && !b.shipment_ref) A('attach-box', 'Rattacher à une expédition', { primary: true, why: 'expéditions ouvertes du marché', disabled: lock || ((d.open_shipments || []).length ? null : 'aucune expédition ouverte'), run: () => { state.form = { kind: 'box', box: b.unit_id }; paint(); } });
+        if (b && !b.shipment_ref) A('attach-box', 'Rattacher à une expédition', { primary: true, why: 'expéditions ouvertes du marché', disabled: lock || ((d.open_shipments || []).length ? null : 'aucune expédition ouverte'), run: () => ctx.openPhysical('shipments', b.unit_id) });
         else if (b) A('attach-box', 'Rattacher à une expédition', { disabled: `déjà rattachée à ${b.shipment_ref}` });
       }
       return acts;
-    }
-    function boxForm(box) {
-      const form = el(doc, 'form', 'hlc-form');
-      form.setAttribute('data-hlc-form', 'box');
-      const selShip = doc.createElement('select');
-      selShip.setAttribute('aria-label', 'Expédition ouverte');
-      (d.open_shipments || []).forEach((s2) => selShip.appendChild(Object.assign(doc.createElement('option'), { value: s2.reference, textContent: `${s2.reference} · ${s2.forwarder_name || 'transitaire'} · ${s2.box_count} COMBOX` })));
-      form.appendChild(selShip);
-      const go = button(doc, 'Rattacher', 'submit-box', 'is-primary');
-      go.type = 'submit';
-      form.appendChild(go);
-      form.addEventListener('submit', (event) => {
-        event.preventDefault();
-        execute(go, { url: ctx.endpoint(`boxes/${encodeURIComponent(box.unit_id)}/shipment`), body: { shipment_reference: selShip.value },
-          runningMessage: 'Rattachement à l’expédition…', successMessage: `COMBOX ${box.reference} rattachée à ${selShip.value}.`, onSuccess: () => { state.form = null; } });
-      });
-      return form;
     }
     function detachForm(po) {
       const form = el(doc, 'form', 'hlc-form');
@@ -1048,10 +1025,7 @@
     if (!list.children.length) list.appendChild(el(doc, 'span', 'hlc-empty', 'Aucune action sur cet objet.'));
     rightP.appendChild(list);
     if (state.form && !readOnly) {
-      if (state.form.kind === 'box' && sel && sel.type === 'box' && state.form.box === sel.id) {
-        const box = (d.boxes || []).find((x) => x.unit_id === sel.id);
-        if (box) rightP.appendChild(boxForm(box));
-      } else if (state.form.po && sel && sel.type === 'po' && state.form.po === sel.id) {
+      if (state.form.po && sel && sel.type === 'po' && state.form.po === sel.id && !['receive','box'].includes(state.form.kind)) {
         const po = poById.get(sel.id);
         if (po) rightP.appendChild(state.form.kind === 'detach' ? detachForm(po) : poForm(po, state.form.kind));
       }
