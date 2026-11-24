@@ -244,7 +244,7 @@ router.get(
         id: row.id, reference: row.reference, current_key: row.current_key,
         current_phase: row.current_phase, current_status: row.current_status,
         current_expected: row.current_expected, next_action: row.next_action,
-        stage_states: row.stage_states, stage_notes: row.stage_notes,
+        stage_states: row.stage_states, stage_notes: row.stage_notes, physical_focus: row.physical_focus,
       }));
       return res.json({ market: { id: market.id, code: market.code }, ...dossier, hub_journeys });
     } catch (err) {
