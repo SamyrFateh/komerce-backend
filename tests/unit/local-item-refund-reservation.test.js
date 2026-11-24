@@ -143,4 +143,53 @@ describe('F1/F2 — reserve one verified local debt, not a payout', () => {
     await expect(reserveLocalShortage({...basePayload,requireReleasedSupply:true,db:f.db}))
       .rejects.toMatchObject({code:'N27_SUPPLIER_COMMITMENT_PENDING'});
     expect(f.queries.some(x=>x.sql.includes('FOR UPDATE OF po'))).toBe(true);
-    expect(f.queries.some(x=>x.sql.includes('INSERT INTO local_item_refund_reservation
+    expect(f.queries.some(x=>x.sql.includes('INSERT INTO local_item_refund_reservations'))).toBe(false);
+    expect(f.queries.map(x=>x.sql)).toContain('ROLLBACK');
+  });
+
+  test('N27 refuses a remainder attached to an active transport parcel',async()=>{
+    const f=fixture({transportPending:true});
+    await expect(reserveLocalShortage({...basePayload,requireReleasedSupply:true,db:f.db}))
+      .rejects.toMatchObject({code:'N27_TRANSPORT_PENDING'});
+    expect(f.queries.some(x=>x.sql.includes('INSERT INTO local_item_refund_reservations'))).toBe(false);
+  });
+  test('physical collection quantity blocks a reserved shortage', async () => {
+    const f = fixture({ collected: 5 });
+    await expect(reserveLocalShortage({ ...basePayload, db: f.db }))
+      .rejects.toMatchObject({ code: 'LOCAL_REFUND_SHORTAGE_EXCEEDED' });
+  });
+  test('existing PSP claim refuses a local cash double-rail', async () => {
+    const f = fixture({ previousPsp: true });
+    await expect(reserveLocalShortage({ ...basePayload, db: f.db }))
+      .rejects.toMatchObject({ code: 'LOCAL_REFUND_CROSS_RAIL_RECONCILIATION' });
+  });
+  test('identical key is replayed without writing a new liability', async () => {
+    const f = fixture({ replay: {
+      id: RESERVATION, order_item_id: ITEM, source_incident_id: INCIDENT,
+      quantity: 2, reason: basePayload.reason, status: 'reserved',
+      amount_minor: '2000', currency: 'KMF'
+    } });
+    const out = await reserveLocalShortage({ ...basePayload, db: f.db });
+    expect(out).toMatchObject({ replayed: true, paid: false, reservationId: RESERVATION });
+    expect(f.queries.some(x => x.sql.includes('INSERT INTO'))).toBe(false);
+  });
+  test('same key with different quantity returns conflict and ROLLBACK', async () => {
+    const f = fixture({ replay: {
+      id: RESERVATION, order_item_id: ITEM, source_incident_id: INCIDENT,
+      quantity: 3, reason: basePayload.reason, status: 'reserved'
+    } });
+    await expect(reserveLocalShortage({ ...basePayload, db: f.db }))
+      .rejects.toMatchObject({ code: 'LOCAL_REFUND_REPLAY_CONFLICT' });
+    expect(f.queries.map(x => x.sql)).toContain('ROLLBACK');
+  });
+  test('role, UUID and reason are rejected before opening a transaction', async () => {
+    const f = fixture();
+    await expect(reserveLocalShortage({ ...basePayload, actor: { id: ACTOR, role: 'agent_relais' }, db: f.db }))
+      .rejects.toMatchObject({ code: 'LOCAL_REFUND_ADMIN_REQUIRED' });
+    await expect(reserveLocalShortage({ ...basePayload, incidentId: 'bad', db: f.db }))
+      .rejects.toMatchObject({ code: 'LOCAL_REFUND_IDENTIFIER_INVALID' });
+    await expect(reserveLocalShortage({ ...basePayload, reason: 'bad', db: f.db }))
+      .rejects.toMatchObject({ code: 'LOCAL_REFUND_REASON_REQUIRED' });
+    expect(f.db.getClient).not.toHaveBeenCalled();
+  });
+});

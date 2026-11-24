@@ -125,3 +125,109 @@ async function reserveVerifiedShortage({
     fail('ITEM_REFUND_IDENTIFIER_INVALID', 'Identifiant UUID invalide', 400);
   }
   if (!actor?.id || actor.role !== 'admin') fail('ITEM_REFUND_ADMIN_REQUIRED', 'Arbitrage financier réservé admin', 403);
+  if (!Number.isSafeInteger(quantity) || quantity <= 0) fail('ITEM_REFUND_QTY_INVALID', 'Quantité invalide', 400);
+  if (typeof reason !== 'string' || reason.trim().length < 8) fail('ITEM_REFUND_REASON_REQUIRED', 'Motif détaillé requis', 400);
+
+  const client = await db.getClient();
+  let inTx = false;
+  try {
+    await client.query('BEGIN'); inTx = true;
+    const { rows: [order] } = await client.query(
+      'SELECT id, market_id, payment_status, payment_mode, total_kmf, total_eur, stripe_payment_id, paypal_capture_id FROM orders WHERE id = $1 FOR UPDATE',
+      [orderId]
+    );
+    if (!order || order.payment_status !== 'paid') fail('ITEM_REFUND_ORDER_NOT_PAID', 'Commande non payée');
+    const provider = order.payment_mode === 'stripe_eur' ? 'stripe'
+      : order.payment_mode === 'paypal_eur' ? 'paypal' : null;
+    const captureRef = provider === 'stripe' ? order.stripe_payment_id : order.paypal_capture_id;
+    if (!provider || !captureRef || !order.market_id) {
+      fail('ITEM_REFUND_PAYMENT_METHOD_UNSUPPORTED', 'PSP ou capture non disponible pour remboursement automatisé');
+    }
+    const { rows: [item] } = await client.query(
+      'SELECT id, order_id, quantity, price_kmf, qty_collected, qty_refunded FROM order_items WHERE id = $1 AND order_id = $2 FOR UPDATE',
+      [orderItemId, orderId]
+    );
+    if (!item || Number(item.qty_collected) >= Number(item.quantity))
+      fail('ITEM_REFUND_ITEM_NOT_ELIGIBLE', 'Article absent ou entièrement remis');
+
+    const { rows: [existing] } = await client.query(
+      'SELECT id, order_item_id, source_incident_id, quantity, reason, status, amount_eur FROM order_item_refund_reservations WHERE order_id = $1 AND operation_key = $2 FOR UPDATE',
+      [orderId, operationKey]
+    );
+    if (existing) {
+      if (String(existing.order_item_id) !== String(orderItemId) ||
+          String(existing.source_incident_id) !== String(incidentId) ||
+          Number(existing.quantity) !== quantity || existing.reason !== reason.trim()) {
+        fail('ITEM_REFUND_REPLAY_CONFLICT', 'Même événement avec des paramètres différents');
+      }
+      await client.query('COMMIT'); inTx = false;
+      return { reservationId: existing.id, status: existing.status, amountEur: existing.amount_eur, replayed: true,
+        paid: existing.status === 'confirmed' ? true : null };
+    }
+
+    const { rows: [proof] } = await client.query(
+      'SELECT COALESCE(SUM(GREATEST(expected_qty - received_qty, 0)),0)::int AS verified_missing FROM international_shipment_relay_receipts WHERE order_item_id = $1 AND incident_id = $2',
+      [orderItemId, incidentId]
+    );
+    // H1 : la clôture Hub d'une ligne d'achat sans reliquat constate aussi un manquant (incident « rupture fournisseur »).
+    const { rows: [supplier] } = await client.query(
+      `SELECT COALESCE(SUM((details->>'missing_quantity')::int), 0)::int AS verified_missing
+         FROM incidents
+        WHERE id = $1 AND order_item_id = $2 AND order_id = $3 AND incident_type = 'reconciliation_error'
+          AND details->>'type' = 'supplier_shortage'`,
+      [incidentId, orderItemId, orderId]
+    );
+    const { rows: [reserved] } = await client.query(
+      "SELECT COALESCE(SUM(quantity),0)::int AS reserved FROM order_item_refund_reservations WHERE order_item_id = $1 AND status <> 'failed'",
+      [orderItemId]
+    );
+    const missing = Number(proof?.verified_missing || 0) + Number(supplier?.verified_missing || 0), already = Number(reserved?.reserved || 0);
+    if (!missing || quantity + already > missing ||
+        quantity + already + Number(item.qty_collected) > Number(item.quantity) ||
+        Number(item.qty_refunded) > Number(item.quantity) - Number(item.qty_collected)) {
+      fail('ITEM_REFUND_EXCEEDS_VERIFIED_SHORTAGE', 'Quantité supérieure au manquant réellement attesté');
+    }
+
+    // Les remboursements legacy et les intentions non résolues exigent un
+    // rapprochement préalable. On n'additionne pas deux circuits de paiement.
+    const { rows: legacy } = await client.query("SELECT id FROM refunds WHERE order_id = $1 AND refund_type NOT LIKE 'item:%' LIMIT 1", [orderId]);
+    if (legacy.length) fail('ITEM_REFUND_LEGACY_RECONCILIATION_REQUIRED', 'Ancien remboursement non rapproché');
+    const { rows: outstanding } = await client.query(
+      "SELECT id FROM refund_execution_intents WHERE order_id = $1 AND status IN ('reserved','processing','unknown') LIMIT 1",
+      [orderId]
+    );
+    if (outstanding.length) fail('ITEM_REFUND_UNRESOLVED_INTENT', 'Intention PSP précédente encore ouverte');
+
+    const money = calculateRefundShare({
+      quantity, priceKmf: item.price_kmf, totalKmf: order.total_kmf, totalEur: order.total_eur,
+    });
+    const { rows: [totals] } = await client.query(
+      "SELECT COALESCE(SUM(amount_eur),0)::text AS used_eur FROM refund_execution_intents WHERE order_id = $1 AND status IN ('reserved','processing','unknown','confirmed')",
+      [orderId]
+    );
+    if (minorUnits(totals?.used_eur ?? '0') + money.eurCents > minorUnits(order.total_eur)) {
+      fail('ITEM_REFUND_CAPTURE_EXCEEDED', 'Cumul des intentions supérieur à la capture');
+    }
+
+    const intentKey = 'item:' + String(operationKey).toLowerCase();
+    const { rows: [intent] } = await client.query(
+      "INSERT INTO refund_execution_intents(order_id,market_id,provider,capture_ref,operation_key,amount_eur,initiated_by) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id",
+      [order.id, order.market_id, provider, captureRef, intentKey, money.amountEur, actor.id]
+    );
+    const { rows: [reservation] } = await client.query(
+      "INSERT INTO order_item_refund_reservations(order_id,order_item_id,source_incident_id,refund_intent_id,operation_key,quantity,amount_kmf,amount_eur,reason,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id",
+      [orderId, orderItemId, incidentId, intent.id, operationKey, quantity,
+        money.amountKmf, money.amountEur, reason.trim(), actor.id]
+    );
+    await client.query('COMMIT'); inTx = false;
+    return { reservationId: reservation.id, intentId: intent.id, status: 'reserved',
+      amountKmf: money.amountKmf, amountEur: money.amountEur, quantity, replayed: false, paid: false };
+  } catch (err) {
+    if (inTx) await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = { ItemRefundError, calculateRefundShare, readVerifiedShortageCandidates, reserveVerifiedShortage };

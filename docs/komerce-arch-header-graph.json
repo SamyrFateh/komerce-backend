@@ -316,4 +316,1267 @@
     },
     {
       "id": "bootstrap/env.js",
-      "fi
+      "file": "bootstrap/env.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "bootstrap-env",
+      "domain": "infrastructure",
+      "layer": "bootstrap",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "utils/logger.js",
+        "middleware/require-non-production.js"
+      ],
+      "usedBy": [
+        "server.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "bootstrap"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "bootstrap/feature-wiring.js",
+      "file": "bootstrap/feature-wiring.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "feature-boundary-composition-root",
+      "domain": "bootstrap",
+      "layer": "composition-root",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "business-rules",
+        "notification outcomes"
+      ],
+      "outputs": [
+        "runtime dependency wiring"
+      ],
+      "depends": [
+        "utils/rates.js",
+        "utils/rules.js",
+        "services/notifications/internals.js",
+        "services/signal-service.js"
+      ],
+      "usedBy": [
+        "server.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "feature_first",
+        "dependency_inversion",
+        "composition_root_only"
+      ],
+      "impactAreas": [],
+      "version": "2026-07"
+    },
+    {
+      "id": "bootstrap/html-routes.js",
+      "file": "bootstrap/html-routes.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "bootstrap-html-routes",
+      "domain": "infrastructure",
+      "layer": "bootstrap",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result"
+      ],
+      "depends": [
+        "utils/logger.js",
+        "services/public-market-storefront.js",
+        "middleware/auth.js"
+      ],
+      "usedBy": [
+        "server.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "bootstrap"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "bootstrap/security.js",
+      "file": "bootstrap/security.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "bootstrap-security",
+      "domain": "infrastructure",
+      "layer": "bootstrap",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [],
+      "usedBy": [
+        "server.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "bootstrap"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "bootstrap/server-lifecycle.js",
+      "file": "bootstrap/server-lifecycle.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "bootstrap-server-lifecycle",
+      "domain": "infrastructure",
+      "layer": "bootstrap",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "node:http",
+        "bootstrap/boot-guard.js",
+        "utils/logger.js"
+      ],
+      "usedBy": [
+        "server.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "bootstrap"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "bootstrap/startup-migrations.js",
+      "file": "bootstrap/startup-migrations.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "bootstrap-startup-migrations",
+      "domain": "infrastructure",
+      "layer": "bootstrap",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "scripts/fix-schema.js",
+        "scripts/migration-037-fix-products.js",
+        "scripts/migration-038-replace-products.js",
+        "scripts/migration-039-french-descriptions.js",
+        "scripts/run-migrations.js",
+        "utils/logger.js"
+      ],
+      "usedBy": [
+        "server.js"
+      ],
+      "dbRead": [
+        "charges",
+        "columns",
+        "pg_constraint",
+        "pg_enum",
+        "pg_type"
+      ],
+      "dbWrite": [
+        "charges",
+        "finance_config",
+        "users"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "bootstrap"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "core/test-whatsapp-notifications.js",
+      "file": "core/test-whatsapp-notifications.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "whatsapp-notification-manual-test",
+      "domain": "notification",
+      "layer": "manual-test",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": "Script manuel de test des notifications WhatsApp/AuthKey.",
+      "inputs": [
+        "CLI phone argument",
+        "env vars AUTHKEY_API_KEY",
+        "WID_OTP",
+        "WID_MAGIC_LINK"
+      ],
+      "outputs": [
+        "WhatsApp test messages",
+        "stdout report"
+      ],
+      "depends": [
+        "services/authkey-client",
+        "services/notification-service"
+      ],
+      "usedBy": [
+        "manual-ops"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [
+        "whatsapp",
+        "notifications",
+        "otp"
+      ],
+      "version": null
+    },
+    {
+      "id": "middleware/auth-guest.js",
+      "file": "middleware/auth-guest.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "auth-auth-guest",
+      "domain": "auth",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "db",
+        "utils/logger.js",
+        "utils/phone.js",
+        "utils/user-cache.js",
+        "utils/auth-token-policy.js"
+      ],
+      "usedBy": [
+        "routes/orders/create.js",
+        "routes/payments-paypal.js",
+        "routes/shared-cart.js"
+      ],
+      "dbRead": [
+        "revoked_tokens",
+        "users"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "canonical_session_claims_only",
+        "no_guest_checkout"
+      ],
+      "impactAreas": [
+        "auth"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "middleware/auth.js",
+      "file": "middleware/auth.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "auth-auth",
+      "domain": "auth",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "db",
+        "utils/logger.js",
+        "utils/user-cache.js",
+        "utils/auth-token-policy.js"
+      ],
+      "usedBy": [
+        "routes/admin-boutique-categories.js",
+        "routes/admin-cost-components.js",
+        "routes/admin-costing.js",
+        "routes/admin-customs-categories.js",
+        "routes/admin-customs-shipments.js",
+        "routes/admin-dashboard.js",
+        "routes/admin-finance-config.js",
+        "routes/admin-loyalty.js",
+        "routes/admin-pricing-components.js",
+        "routes/admin-pricing-matrices.js",
+        "routes/admin-radar.js",
+        "routes/admin-risk-provisions.js",
+        "routes/admin-rules.js",
+        "routes/admin/catalog-approval.js",
+        "routes/admin/customs.js",
+        "routes/admin/dashboard.js",
+        "routes/admin/documents.js",
+        "routes/admin/orders.js",
+        "routes/admin/partners.js",
+        "routes/admin/system.js",
+        "routes/admin/users.js",
+        "routes/alerts.js",
+        "routes/auth.js",
+        "routes/auto-distribute-api.js",
+        "routes/carriers.js",
+        "routes/cash.js",
+        "routes/client-auth.js",
+        "routes/client-tracking.js",
+        "routes/config.js",
+        "routes/dashboard.js",
+        "routes/economic.js",
+        "routes/finance.js",
+        "routes/health.js",
+        "routes/hub-dashboard.js",
+        "routes/hub-mark-ordered.js",
+        "routes/hub.js",
+        "routes/inventory-api.js",
+        "routes/invoices.js",
+        "routes/logistics.js",
+        "routes/loyalty.js",
+        "routes/modules.js",
+        "routes/notification-api.js",
+        "routes/ops-api.js",
+        "routes/order-api-v2.js",
+        "routes/orders/cancel.js",
+        "routes/orders/create.js",
+        "routes/orders/detail.js",
+        "routes/orders/list.js",
+        "routes/orders/parcels.js",
+        "routes/orders/qr.js",
+        "routes/orders/status.js",
+        "routes/parcel-api-v2/index.js",
+        "routes/parcel-label.js",
+        "routes/parcels.js",
+        "routes/payments-paypal.js",
+        "routes/payments.js",
+        "routes/pickup-pay-cash.js",
+        "routes/pickup-secret.js",
+        "routes/pricing-strategy.js",
+        "routes/pricing.js",
+        "routes/products.js",
+        "routes/purchasing.js",
+        "routes/relay-dashboard.js",
+        "routes/scans.js",
+        "routes/shared-cart-cash.js",
+        "routes/shared-cart-refund-admin.js",
+        "routes/shared-cart.js",
+        "routes/signals.js",
+        "routes/simulator.js",
+        "routes/sourcing-scanner.js",
+        "routes/sourcing.js",
+        "routes/transit-dashboard.js",
+        "routes/transitaire-api.js",
+        "routes/unsold.js",
+        "routes/wallet.js",
+        "server.js"
+      ],
+      "dbRead": [
+        "revoked_tokens",
+        "users"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "canonical_session_claims_only",
+        "scoped_tokens_never_upgrade"
+      ],
+      "impactAreas": [
+        "auth"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "middleware/csrf-origin.js",
+      "file": "middleware/csrf-origin.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "auth-csrf-origin-guard",
+      "domain": "auth",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "http_method",
+        "auth_cookie",
+        "origin_header"
+      ],
+      "outputs": [
+        "allow_or_403"
+      ],
+      "depends": [
+        "bootstrap/security.js",
+        "utils/auth-cookie.js"
+      ],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "cookie_auth_mutations_require_trusted_origin",
+        "bearer_not_csrf_surface"
+      ],
+      "impactAreas": [
+        "auth",
+        "all-api"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "middleware/deny-transitaire-hub.js",
+      "file": "middleware/deny-transitaire-hub.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "deny-transitaire-hub-scope",
+      "domain": "market-delegation",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated session role",
+        "persisted role"
+      ],
+      "outputs": [
+        "403 or next"
+      ],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "transit_role_never_enters_hub_live",
+        "persisted_role_wins_over_compat_projection"
+      ],
+      "impactAreas": [],
+      "version": null
+    },
+    {
+      "id": "middleware/error-handler.js",
+      "file": "middleware/error-handler.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "auth-error-handler",
+      "domain": "infrastructure",
+      "layer": "middleware",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "services/monitoring.js",
+        "utils/logger.js"
+      ],
+      "usedBy": [
+        "server.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "auth"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "middleware/internal-static-guard.js",
+      "file": "middleware/internal-static-guard.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "internal-static-path-guard",
+      "domain": "platform-ops",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "req.path"
+      ],
+      "outputs": [
+        "next_or_404"
+      ],
+      "depends": [],
+      "usedBy": [
+        "server.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "public_static_serves_app_assets_only"
+      ],
+      "impactAreas": [
+        "security",
+        "boutique",
+        "dashboard"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "middleware/rate-limit.js",
+      "file": "middleware/rate-limit.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "auth-rate-limit",
+      "domain": "infrastructure",
+      "layer": "middleware",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "utils/logger.js"
+      ],
+      "usedBy": [
+        "server.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "auth"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "middleware/recette-isolation-guard.js",
+      "file": "middleware/recette-isolation-guard.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "isolated-recette-write-firewall",
+      "domain": "infrastructure",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "no_live_payments",
+        "no_real_notifications",
+        "narrow_sourcing_catalog_pricing_writes"
+      ],
+      "impactAreas": [],
+      "version": null
+    },
+    {
+      "id": "middleware/request-id.js",
+      "file": "middleware/request-id.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "auth-request-id",
+      "domain": "infrastructure",
+      "layer": "middleware",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [],
+      "usedBy": [
+        "server.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "auth"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "middleware/require-catalog-global-authority.js",
+      "file": "middleware/require-catalog-global-authority.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-global-authorization-guard",
+      "domain": "catalog",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "req.user.id",
+        "catalog_global_access_grants"
+      ],
+      "outputs": [
+        "req.catalogGlobalAuthority",
+        "next_or_403"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "routes/admin-catalog-workspace.js"
+      ],
+      "dbRead": [
+        "catalog_global_access_grants"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "catalog_global_authority_explicit",
+        "admin_role_never_implies_catalog_write"
+      ],
+      "impactAreas": [
+        "catalog",
+        "admin-dashboard",
+        "authorization"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "middleware/require-dashboard-global-authority.js",
+      "file": "middleware/require-dashboard-global-authority.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "dashboard-global-authorization-guard",
+      "domain": "admin-dashboard",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "req.user.id",
+        "dashboard_global_access_grants"
+      ],
+      "outputs": [
+        "req.dashboardGlobalAuthority",
+        "next_or_403"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "routes/admin-dashboard-market.js"
+      ],
+      "dbRead": [
+        "dashboard_global_access_grants"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "server_global_context_explicit",
+        "admin_role_never_implies_global"
+      ],
+      "impactAreas": [
+        "admin-dashboard",
+        "market-authorization"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "middleware/require-decision-signal-global-authority.js",
+      "file": "middleware/require-decision-signal-global-authority.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "decision-signal-global-authorization-guard",
+      "domain": "decision-signals",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "req.user.id",
+        "decision_signal_global_access_grants"
+      ],
+      "outputs": [
+        "req.decisionSignalGlobalAuthority",
+        "next_or_403"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "routes/admin-action-center.js"
+      ],
+      "dbRead": [
+        "decision_signal_global_access_grants"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "decision_signal_global_authority_explicit",
+        "admin_role_never_implies_action_center_authority"
+      ],
+      "impactAreas": [
+        "decision-signals",
+        "admin-dashboard",
+        "authorization"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "middleware/require-market-delegated-capability.js",
+      "file": "middleware/require-market-delegated-capability.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delegated-capability-bridge",
+      "domain": "market-delegation",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated user",
+        "canonical marketCode",
+        "exact DELEGATION capability"
+      ],
+      "outputs": [
+        "403 on missing/outside-ceiling capability",
+        "request-local authz proof otherwise"
+      ],
+      "depends": [
+        "db.js",
+        "services/market-delegation-service.js"
+      ],
+      "usedBy": [
+        "routes/admin-pricing-workspace.js",
+        "routes/transitaire-api.js",
+        "routes/hub.js",
+        "routes/hub-dashboard.js"
+      ],
+      "dbRead": [
+        "markets",
+        "market_operating_assignments",
+        "assignment_memberships",
+        "membership_capabilities",
+        "assignment_capability_ceiling"
+      ],
+      "dbWrite": [
+        "market_delegation_audit"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "capability_is_the_authority_not_role",
+        "audit_before_domain_mutation",
+        "users_role_never_mutated",
+        "market_scope_is_server_resolved"
+      ],
+      "impactAreas": [
+        "market-delegation",
+        "pricing",
+        "authorization"
+      ],
+      "version": "2026-10-d4"
+    },
+    {
+      "id": "middleware/require-market-delegated-role.js",
+      "file": "middleware/require-market-delegated-role.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delegation-runtime-role-bridge",
+      "domain": "market-delegation",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated user",
+        "coarse roles already accepted by the route",
+        "active projected memberships"
+      ],
+      "outputs": [
+        "optional request-local market_operator role before canonical requireRole guard"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "routes that already admit market_operator"
+      ],
+      "dbRead": [
+        "operator_market_scopes",
+        "assignment_memberships",
+        "market_operating_assignments"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "users_role_is_not_market_authority",
+        "delegated_role_is_request_local_projection",
+        "canonical_role_guard_remains_explicit"
+      ],
+      "impactAreas": [
+        "market-delegation",
+        "authorization",
+        "admin-dashboard"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "middleware/require-market-execution-capability.js",
+      "file": "middleware/require-market-execution-capability.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-execution-capability-bridge",
+      "domain": "market-delegation",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated user",
+        "canonical marketCode",
+        "exact execution capability"
+      ],
+      "outputs": [
+        "request-local compatibility role after exact capability proof"
+      ],
+      "depends": [
+        "db.js",
+        "services/market-delegation-service.js"
+      ],
+      "usedBy": [
+        "routes/admin-operations-workspace.js"
+      ],
+      "dbRead": [
+        "markets",
+        "market_operating_assignments",
+        "assignment_memberships",
+        "membership_capabilities",
+        "assignment_capability_ceiling"
+      ],
+      "dbWrite": [
+        "market_delegation_audit"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "execution_is_explicit_capability",
+        "audit_before_domain_mutation",
+        "users_role_never_mutated",
+        "native_role_bypass_must_be_explicit"
+      ],
+      "impactAreas": [
+        "market-delegation",
+        "dashboard",
+        "operations",
+        "authorization"
+      ],
+      "version": "2026-10-d3"
+    },
+    {
+      "id": "middleware/require-market-scope.js",
+      "file": "middleware/require-market-scope.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-scope-authorization-guard",
+      "domain": "market",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "req.user.id",
+        "operator_market_scopes (DB)"
+      ],
+      "outputs": [
+        "req.authorizedMarkets (Set<uuid>)",
+        "next_or_403"
+      ],
+      "depends": [
+        "db.js",
+        "operator_market_scopes (M1)",
+        "markets (M0)"
+      ],
+      "usedBy": [
+        "routes/hub-dashboard.js (GAP-1)",
+        "routes/relay-dashboard.js (GAP-2)",
+        "routes/admin/partners.js (GAP-3)"
+      ],
+      "dbRead": [
+        "operator_market_scopes"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "KOMERCE_MARKET_LAYER_FREEZE.md §3 — authorization scope"
+      ],
+      "impactAreas": [
+        "market",
+        "admin-authorization"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "middleware/require-non-production.js",
+      "file": "middleware/require-non-production.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "runtime-environment-guard",
+      "domain": "infrastructure",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "KOMERCE_ENV",
+        "NODE_ENV",
+        "optional_bypass_env_var"
+      ],
+      "outputs": [
+        "next_or_403"
+      ],
+      "depends": [],
+      "usedBy": [
+        "routes/admin/system.js",
+        "routes/simulator.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "production_sensitive_routes_fail_closed_on_business_environment"
+      ],
+      "impactAreas": [
+        "security",
+        "admin-dashboard",
+        "simulator"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "middleware/require-pricing-global-authority.js",
+      "file": "middleware/require-pricing-global-authority.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "pricing-global-authorization-guard",
+      "domain": "economic-engine",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "req.user.id",
+        "pricing_global_access_grants"
+      ],
+      "outputs": [
+        "req.pricingGlobalAuthority",
+        "next_or_403"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "dbRead": [
+        "pricing_global_access_grants"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "pricing_global_authority_explicit",
+        "admin_role_never_implies_canonical_pricing_write"
+      ],
+      "impactAreas": [
+        "pricing",
+        "economic-engine",
+        "admin-dashboard",
+        "authorization"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "middleware/require-recent-auth.js",
+      "file": "middleware/require-recent-auth.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "auth-recent-proof-guard",
+      "domain": "auth",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "req.auth.authTime",
+        "req.auth.amr"
+      ],
+      "outputs": [
+        "next_or_428_step_up_required"
+      ],
+      "depends": [
+        "middleware/auth.js session proof context"
+      ],
+      "usedBy": [
+        "passkey management/enrollment",
+        "pickup authorization mutations"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "auth7_step_up_by_freshness_and_method"
+      ],
+      "impactAreas": [
+        "auth",
+        "account-security"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "middleware/require-sourcing-global-authority.js",
+      "file": "middleware/require-sourcing-global-authority.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "sourcing-global-authorization-guard",
+      "domain": "sourcing",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "req.user.id",
+        "sourcing_global_access_grants"
+      ],
+      "outputs": [
+        "req.sourcingGlobalAuthority",
+        "next_or_403"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "routes/admin-sourcing-workspace.js"
+      ],
+      "dbRead": [
+        "sourcing_global_access_grants"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "sourcing_global_authority_explicit",
+        "admin_role_never_implies_sourcing_write"
+      ],
+      "impactAreas": [
+        "sourcing",
+        "admin-dashboard",
+        "authorization"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "middleware/require-verified-identity.js",
+      "file": "middleware/require-verified-identity.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "auth-require-verified-identity",
+      "domain": "auth",
+      "layer": "middleware",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "db",
+        "utils/logger.js",
+        "utils/user-cache.js",
+        "utils/auth-token-policy.js"
+      ],
+      "usedBy": [],
+      "dbRead": [
+        "revoked_tokens",
+        "users"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "canonical_session_claims_only"
+      ],
+      "impactAreas": [
+        "auth"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "middleware/soft-auth.js",
+      "file": "middleware/soft-auth.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "auth-soft-auth",
+      "domain": "auth",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "runtime_context",
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "db",
+        "utils/logger.js",
+        "utils/user-cache.js",
+        "utils/auth-token-policy.js"
+      ],
+      "usedBy": [
+        "routes/orders/detail.js"
+      ],
+      "dbRead": [
+        "revoked_tokens",
+        "users"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "canonical_session_claims_only"
+      ],
+      "impactAreas": [
+        "auth"
+      ],
+      "version": "2026-08"
+    },
+    {
+      "id": "middleware/upload-hub.js",
+      "file": "middleware/upload-hub.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "middleware-upload-hub",
+      "domain": "logistics",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": "Upload des photos de scan hub Dubaï (borne 1 des fenêtres de",
+     

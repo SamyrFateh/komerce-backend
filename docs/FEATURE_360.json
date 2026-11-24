@@ -203,4 +203,917 @@
               },
               {
                 "declared": "../admin/js/views/HubRelaisView.js",
-                "
+                "resolvedPath": "dash:dashboards/admin/js/views/HubRelaisView.js",
+                "status": "resolved-in-dash-repo"
+              },
+              {
+                "declared": "../admin/js/views/InventoryView.js",
+                "resolvedPath": "dash:dashboards/admin/js/views/InventoryView.js",
+                "status": "resolved-in-dash-repo"
+              },
+              {
+                "declared": "../admin/js/views/InvoicesView.js",
+                "resolvedPath": "dash:dashboards/admin/js/views/InvoicesView.js",
+                "status": "resolved-in-dash-repo"
+              },
+              {
+                "declared": "../admin/js/views/MarketsView.js",
+                "resolvedPath": "dash:dashboards/admin/js/views/MarketsView.js",
+                "status": "resolved-in-dash-repo"
+              },
+              {
+                "declared": "../admin/js/views/OrdersLogisticsView.js",
+                "resolvedPath": "dash:dashboards/admin/js/views/OrdersLogisticsView.js",
+                "status": "resolved-in-dash-repo"
+              },
+              {
+                "declared": "../admin/js/views/PilotageFinView.js",
+                "resolvedPath": "dash:dashboards/admin/js/views/PilotageFinView.js",
+                "status": "resolved-in-dash-repo"
+              },
+              {
+                "declared": "../admin/js/views/PilotageView.js",
+                "resolvedPath": "dash:dashboards/admin/js/views/PilotageView.js",
+                "status": "resolved-in-dash-repo"
+              },
+              {
+                "declared": "../admin/js/views/PricingStrategyView.js",
+                "resolvedPath": "dash:dashboards/admin/js/views/PricingStrategyView.js",
+                "status": "resolved-in-dash-repo"
+              },
+              {
+                "declared": "../admin/js/views/PricingView.js",
+                "resolvedPath": "dash:dashboards/admin/js/views/PricingView.js",
+                "status": "resolved-in-dash-repo"
+              },
+              {
+                "declared": "../admin/js/views/PricingWorkshopView.js",
+                "resolvedPath": "dash:dashboards/admin/js/views/PricingWorkshopView.js",
+                "status": "resolved-in-dash-repo"
+              },
+              {
+                "declared": "../admin/js/views/ProblemsView.js",
+                "resolvedPath": "dash:dashboards/admin/js/views/ProblemsView.js",
+                "status": "resolved-in-dash-repo"
+              },
+              {
+                "declared": "../admin/js/views/ProvidersView.js",
+                "resolvedPath": "dash:dashboards/admin/js/views/ProvidersView.js",
+                "status": "resolved-in-dash-repo"
+              },
+              {
+                "declared": "../admin/js/views/SalesView.js",
+                "resolvedPath": "dash:dashboards/admin/js/views/SalesView.js",
+                "status": "resolved-in-dash-repo"
+              },
+              {
+                "declared": "../admin/js/views/SanteView.js",
+                "resolvedPath": "dash:dashboards/admin/js/views/SanteView.js",
+                "status": "resolved-in-dash-repo"
+              },
+              {
+                "declared": "../admin/js/views/SharedCartsView.js",
+                "resolvedPath": "dash:dashboards/admin/js/views/SharedCartsView.js",
+                "status": "resolved-in-dash-repo"
+              },
+              {
+                "declared": "../admin/js/views/SimulatorView.js",
+                "resolvedPath": "dash:dashboards/admin/js/views/SimulatorView.js",
+                "status": "resolved-in-dash-repo"
+              },
+              {
+                "declared": "../admin/js/views/SuppliersView.js",
+                "resolvedPath": "dash:dashboards/admin/js/views/SuppliersView.js",
+                "status": "resolved-in-dash-repo"
+              },
+              {
+                "declared": "../admin/js/views/TransitaireView.js",
+                "resolvedPath": "dash:dashboards/admin/js/views/TransitaireView.js",
+                "status": "resolved-in-dash-repo"
+              },
+              {
+                "declared": "../admin/portal-pilotage.js",
+                "resolvedPath": "dash:dashboards/admin/portal-pilotage.js",
+                "status": "resolved-in-dash-repo"
+              }
+            ]
+          }
+        },
+        "totalFiles": 38,
+        "boutiqueManifest": null,
+        "boutiqueFiles": {
+          "count": 0,
+          "files": []
+        }
+      },
+      "ownership": {
+        "ownsTables": [],
+        "writesTables": [],
+        "readsTables": []
+      },
+      "data": {
+        "ownsTables": [],
+        "writesTables": [],
+        "readsTables": []
+      },
+      "interfaces": {
+        "internalApis": [],
+        "httpInterfaces": {
+          "count": 0
+        }
+      },
+      "businessDependencies": [
+        {
+          "provider": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
+          "provider": "customs",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
+          "provider": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
+          "provider": "decision-signals",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
+          "provider": "documents",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
+          "provider": "economic-engine",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
+          "provider": "inventory",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
+          "provider": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
+          "provider": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        },
+        {
+          "provider": "payments",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "interface"
+          ]
+        }
+      ],
+      "consumedBy": [],
+      "projections": {
+        "projectedBy": []
+      },
+      "technicalContext": {
+        "technicalPrimitiveDependencies": 0,
+        "testOnlyRelations": 0,
+        "compositionRootRelations": 0,
+        "details": []
+      },
+      "boundaryHealth": {
+        "status": "ATTENTION",
+        "directCrossFeatureImports": 0,
+        "runtimeCycles": 0,
+        "unclassifiedDependencies": 0,
+        "declaredNotObserved": 1,
+        "declaredNotObservedEvidence": [
+          "sourcing"
+        ]
+      },
+      "governanceHealth": {
+        "status": "HEALTHY",
+        "manifestPresent": true,
+        "registryPresent": true,
+        "orphanFiles": 0,
+        "unresolvedInternalApis": 0,
+        "declaredOnlyDependencyCount": 0,
+        "ontologyGapsLinked": 0,
+        "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
+      },
+      "architecturalDebt": {
+        "debtCount": 1,
+        "debtItems": [
+          {
+            "type": "DECLARED_NOT_OBSERVED",
+            "severity": "low",
+            "evidence": "contract.consumes déclare \"sourcing\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
+          }
+        ]
+      },
+      "evidence": {
+        "source": "docs/BUSINESS_FEATURE_GRAPH.json",
+        "businessFeatureGraphVersion": "O6-1.0"
+      }
+    },
+    {
+      "id": "auth",
+      "kind": "technical-transversal",
+      "status": "production",
+      "manifestFile": "features/auth.feature.js",
+      "repo": "backend",
+      "identity": {
+        "id": "auth",
+        "kind": "technical-transversal",
+        "status": "production"
+      },
+      "service": "Fournir les gardes transverses d'authentification et de vérification d'identité (middlewares JWT/session/rôles) consommées par toutes les autres features.",
+      "perimeter": {
+        "in": [
+          "middlewares de garde transverses : authentification JWT/session, vérification de rôle, identité vérifiée, révocation de token, émission et durée canonique de session"
+        ],
+        "out": [
+          "logique metier propre a chaque feature consommatrice — auth ne sait rien des commandes, paniers ou paiements"
+        ]
+      },
+      "authority": "backend-core — tout changement de middleware d'authentification ou de politique de session doit etre valide par le proprietaire de auth",
+      "invariants": [
+        "toute route mutante passe par un middleware d'auth declare — jamais d'acces direct sans garde",
+        "toute mutation portée par le cookie de session exige une Origin explicitement autorisée (AUTH-8b)",
+        "staging/production utilisent exclusivement un cookie de session __Host- Secure, Path=/ et sans Domain (AUTH-8c)",
+        "la durée absolue JWT + cookie est plafonnée à 7 jours et chaque preuve OTP/passkey/step-up émet une nouvelle jti (AUTH-8d)",
+        "un JWT scoped ou dépourvu des claims de session canoniques ne peut jamais être élevé en session par les middlewares génériques (AUTH-8e)"
+      ],
+      "implementation": {
+        "byCategory": {
+          "middleware": {
+            "count": 7,
+            "files": [
+              {
+                "declared": "middleware/auth-guest.js",
+                "resolvedPath": "middleware/auth-guest.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "middleware/auth.js",
+                "resolvedPath": "middleware/auth.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "middleware/csrf-origin.js",
+                "resolvedPath": "middleware/csrf-origin.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "middleware/require-verified-identity.js",
+                "resolvedPath": "middleware/require-verified-identity.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "middleware/soft-auth.js",
+                "resolvedPath": "middleware/soft-auth.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "middleware/verify-authkey-webhook.js",
+                "resolvedPath": "middleware/verify-authkey-webhook.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "utils/user-cache.js",
+                "resolvedPath": "utils/user-cache.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
+          "tests": {
+            "count": 16,
+            "files": [
+              {
+                "declared": "tests/integration/auth-user-cache-real-db.test.js",
+                "resolvedPath": "tests/integration/auth-user-cache-real-db.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/auth-cookie.test.js",
+                "resolvedPath": "tests/unit/auth-cookie.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/auth-guest.test.js",
+                "resolvedPath": "tests/unit/auth-guest.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/auth-middleware.test.js",
+                "resolvedPath": "tests/unit/auth-middleware.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/auth-route.test.js",
+                "resolvedPath": "tests/unit/auth-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/auth-session-policy.test.js",
+                "resolvedPath": "tests/unit/auth-session-policy.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/auth-session.test.js",
+                "resolvedPath": "tests/unit/auth-session.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/auth-token-policy.test.js",
+                "resolvedPath": "tests/unit/auth-token-policy.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/auth.test.js",
+                "resolvedPath": "tests/unit/auth.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/csrf-origin.test.js",
+                "resolvedPath": "tests/unit/csrf-origin.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/login-market-operator-contract.test.js",
+                "resolvedPath": "tests/unit/login-market-operator-contract.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/otp-route.test.js",
+                "resolvedPath": "tests/unit/otp-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/require-verified-identity.test.js",
+                "resolvedPath": "tests/unit/require-verified-identity.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/soft-auth.test.js",
+                "resolvedPath": "tests/unit/soft-auth.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/user-cache.test.js",
+                "resolvedPath": "tests/unit/user-cache.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/verify-authkey-webhook.test.js",
+                "resolvedPath": "tests/unit/verify-authkey-webhook.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
+          "utils": {
+            "count": 4,
+            "files": [
+              {
+                "declared": "utils/auth-cookie.js",
+                "resolvedPath": "utils/auth-cookie.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "utils/auth-session-policy.js",
+                "resolvedPath": "utils/auth-session-policy.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "utils/auth-session.js",
+                "resolvedPath": "utils/auth-session.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "utils/auth-token-policy.js",
+                "resolvedPath": "utils/auth-token-policy.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          }
+        },
+        "totalFiles": 27,
+        "boutiqueManifest": null,
+        "boutiqueFiles": {
+          "count": 0,
+          "files": []
+        }
+      },
+      "ownership": {
+        "ownsTables": [],
+        "writesTables": [],
+        "readsTables": [
+          {
+            "table": "revoked_tokens",
+            "lifecycleOwner": "auth-identity"
+          },
+          {
+            "table": "users",
+            "lifecycleOwner": "auth-identity"
+          }
+        ]
+      },
+      "data": {
+        "ownsTables": [],
+        "writesTables": [],
+        "readsTables": [
+          {
+            "table": "revoked_tokens",
+            "lifecycleOwner": "auth-identity"
+          },
+          {
+            "table": "users",
+            "lifecycleOwner": "auth-identity"
+          }
+        ]
+      },
+      "interfaces": {
+        "internalApis": [
+          {
+            "fn": "requireAuth / requireVerifiedIdentity / softAuth",
+            "file": "middleware/auth.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "requireAuth / requireVerifiedIdentity / softAuth",
+            "file": "middleware/require-verified-identity.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "requireAuth / requireVerifiedIdentity / softAuth",
+            "file": "middleware/soft-auth.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict",
+            "file": "utils/auth-session-policy.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict",
+            "file": "utils/auth-session.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict",
+            "file": "utils/auth-token-policy.js",
+            "status": "resolved"
+          }
+        ],
+        "httpInterfaces": {
+          "count": 0
+        }
+      },
+      "businessDependencies": [
+        {
+          "provider": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "notifications",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        }
+      ],
+      "consumedBy": [
+        {
+          "consumer": "auth-identity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "auth-passkey",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "business-rules",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "customs",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "decision-signals",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "documents",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "economic-engine",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "inventory",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "loyalty",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "market-control-plane",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "market-delegation",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "notifications",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "payments",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "platform-ops",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "providers-services",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "settlement",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "shared-cart",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "sourcing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "unsold-resolution",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "wallet",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        }
+      ],
+      "projections": {
+        "projectedBy": []
+      },
+      "technicalContext": {
+        "technicalPrimitiveDependencies": 0,
+        "testOnlyRelations": 0,
+        "compositionRootRelations": 0,
+        "details": []
+      },
+      "boundaryHealth": {
+        "status": "HEALTHY",
+        "directCrossFeatureImports": 0,
+        "runtimeCycles": 0,
+        "unclassifiedDependencies": 0,
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
+      },
+      "governanceHealth": {
+        "status": "HEALTHY",
+        "manifestPresent": true,
+        "registryPresent": true,
+        "orphanFiles": 0,
+        "unresolvedInternalApis": 0,
+        "declaredOnlyDependencyCount": 0,
+        "ontologyGapsLinked": 0,
+        "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
+      },
+      "architecturalDebt": {
+        "debtCount": 0,
+        "debtItems": []
+      },
+      "evidence": {
+        "source": "docs/BUSINESS_FEATURE_GRAPH.json",
+        "businessFeatureGraphVersion": "O6-1.0"
+      }
+    },
+    {
+      "id": "auth-identity",
+      "kind": "business-feature",
+      "status": "production",
+      "manifestFile": "features/auth-identity.feature.js",
+      "repo": "backend",
+      "identity": {
+        "id": "auth-identity",
+        "kind": "business-feature",
+        "status": "production"
+      },
+      "service": "Authentifier un utilisateur et gérer son identité active (OTP, login/register, magic-link, guest-checkout, profil) via les routes exposées.",
+      "perimeter": {
+        "in": [
+          "routes actives d'identité : OTP (request/verify/test-reset), login/register, magic-link, guest-checkout, admin-reset, consultation/édition du profil et des commandes client"
+        ],
+        "out": [
+          "logique metier propre a chaque feature consommatrice — auth-identity ne sait rien des commandes, paniers ou paiements"
+        ]
+      },
+      "authority": "backend-core — tout changement de middleware d'authentification doit etre valide par le proprietaire de middleware/auth.js",
+      "invariants": [
+        {
+          "statement": "toute route mutante passe par un middleware d'auth declare — jamais d'acces direct sans garde",
+          "test": "tests/invariants/auth-identity.mutating-routes-guarded.test.js"
+        },
+        "les routes de ce manifeste s'appuient sur authenticate (middleware/auth.js, feature auth) — pas de garde ad-hoc",
+        "la projection boutique de l identité protège le focus du dialogue et associe chaque erreur de validation au champ concerné",
+        {
+          "statement": "une seule autorisation nominative active par utilisateur, consultée au moment exact de la remise — jamais figée par commande",
+          "test": "tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js"
+        },
+        "le nom autorisé n'est jamais exposé au relais : logistics ne reçoit que des champs normalisés via getActiveAuthorizationForUpdate, jamais authorized_given_names/authorized_family_name en clair"
+      ],
+      "implementation": {
+        "byCategory": {
+          "boutique": {
+            "count": 3,
+            "files": [
+              {
+                "declared": "css/identity.css",
+                "resolvedPath": "public/boutique/css/identity.css",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "js/b-identity.js",
+                "resolvedPath": "public/boutique/js/b-identity.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "js/b-phone.js",
+                "resolvedPath": "public/boutique/js/b-phone.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
+          "migrations": {
+            "count": 4,
+            "files": [
+              {
+                "declared": "migrations/121_exceptional_pickup_authorization.sql",
+                "resolvedPath": "migrations/121_exceptional_pickup_authorization.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/158_market_operator_user_role.sql",
+                "resolvedPath": "migrations/158_market_operator_user_role.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/367_credential_action_tokens.sql",
+                "resolvedPath": "migrations/367_credential_action_tokens.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/368_internal_account_activation.sql",
+                "resolvedPath": "migrations/368_internal_account_activation.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
+          "routes": {
+            "count": 4,
+            "files": [
+              {
+                "declared": "routes/auth-step-up-otp.js",
+                "resolvedPath": "routes/auth-step-up-otp.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/auth.js",
+                "resolvedPath": "routes/auth.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/client-auth.js",
+                "resolvedPath": "routes/client-auth.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/otp.js",
+                "resolvedPath": "routes/otp.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
+          "scripts": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "scripts/recette/l10-invite-e2e-identities.js",
+                "resolvedPath": "scripts/recette/l10-invite-e2e-identities.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
+          "services": {
+            "count": 7,
+            "files": [
+              {
+                "declared": "services/credential-action-store.js",
+                "resolvedPath": "services/credential-action-store.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/credential-invitation-email.js",
+                "resolvedPath": "services/credential-invitation-email.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/credential-link-token.js",
+                "resolvedPath": "services/credential-link-token.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/g6-staging-buyer-identity-guard.js",
+                "resolvedPath": "services/g6-staging-buyer-identity-guard.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/otp-test-mode.js",
+                "resolvedPath": "services/otp-test-mode.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/pickup-authorization-service.js",
+                "resolvedPath": "services/pickup-authorization-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/user-mutation-service.js",
+                "resolvedPath": "services/user-mutation-service.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
+          "tests": {
+            "count": 15,
+            "files": [
+              {
+                "declared": "tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/admin-authz-probe.test.js",
+                "resolvedPath": "tests/integration/admin-authz

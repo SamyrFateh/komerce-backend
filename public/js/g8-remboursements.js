@@ -166,4 +166,368 @@
     append(box, 'p', 'case-summary', 'Mobile Money manuel · ' + status +
       '. Aucun transfert n’est effectué par Komerce.');
     if (!row.mobile_status) {
-      inputForm(box, 'Autoriser le vireme
+      inputForm(box, 'Autoriser le virement manuel', [
+        'operator_id', 'payer_fingerprint', 'original_payer_proof_ref'
+      ], stem + '/manual-mobile/approve',
+      'Identifier le payeur sur une preuve opérateur extérieure au numéro fourni par le client.',
+      'Confirmez-vous avoir comparé le payeur initial à une preuve de capture opérateur indépendante ?');
+    } else if (status === 'approved') {
+      clickAction(box, 'Prendre en charge le transfert externe',
+        stem + '/manual-mobile/start',
+        'L’opérateur désigné doit ensuite exécuter le transfert dans le portail officiel. Un échec ou délai doit rester en rapprochement, jamais relancé aveuglément.');
+    } else if (status === 'transfer_pending') {
+      inputForm(box, 'Rapprocher le virement déjà exécuté', [
+        { key: 'amount_minor', value: row.amount_minor },
+        { key: 'currency', value: row.currency },
+        'payee_fingerprint', 'capture_external_transaction_id',
+        'transfer_ref', 'transfer_proof_ref', 'operator_verification_ref'
+      ], stem + '/manual-mobile/confirm',
+      'Seul un troisième administrateur indépendant peut constater sur le portail du fournisseur le montant, le compte payeur d’origine et le bénéficiaire effectif.',
+      'ATTENTION : cette confirmation inscrit un remboursement EFFECTUÉ dans la comptabilité. Avez-vous vérifié une preuve externe de virement effectivement réussi ?');
+    } else {
+      append(box, 'p', 'hint', 'Virement rapproché. Aucun nouvel ordre de transfert.');
+    }
+  }
+  function relayCase(row, box) {
+    const endpoint = '/api/relay/orders/' + encodeURIComponent(row.order_id) +
+      '/items/' + encodeURIComponent(row.order_item_id) +
+      '/local-cash-handoffs/' + encodeURIComponent(row.authorization_id);
+    const status = row.status;
+    append(box, 'p', 'case-summary', 'Remise espèces · ' + status);
+    if (status === 'approved') {
+      clickAction(box, 'Engager une remise physique', endpoint + '/start',
+        'La garde sera réservée et cette remise ne pourra pas être réengagée. Le client d’origine a-t-il été identifié physiquement au comptoir ?');
+    } else if (status === 'handoff_pending') {
+      inputForm(box, 'Confirmer après remise réelle des espèces', [
+        'signed_receipt_ref', 'payer_signature_proof_ref', 'witness_proof_ref'
+      ], endpoint + '/confirm',
+      'N’utiliser cette opération qu’après la remise effective des espèces et obtention des trois preuves.',
+      'ATTENTION : les espèces ont-elles DÉJÀ été remises au payeur initial avec une quittance signée et un témoin ?');
+    } else {
+      append(box, 'p', 'hint', 'Remise clôturée ; aucune deuxième sortie de caisse.');
+    }
+  }
+  function ensureReservationForm() {
+    if (userRole !== 'admin' || document.querySelector('#g8-new-reservation')) return;
+    const panel = node('details', 'case');
+    panel.id = 'g8-new-reservation';
+    panel.style.marginBottom = '20px';
+    const summary = append(panel, 'summary', 'case-head', 'Créer une obligation pour un manquant attesté');
+    summary.style.cursor = 'pointer';
+    const box = append(panel, 'div', 'case-body');
+    append(box, 'p', 'hint', 'La réservation ne débite aucune caisse ni opérateur. Une preuve d\'incident existante est obligatoire, et le serveur plafonne les quantités.');
+    const form = append(box, 'form');
+    const keys = [
+      ['order_id', 'UUID de la commande'],
+      ['order_item_id', 'UUID de la ligne manquante'],
+      ['incident_id', 'UUID de l’incident fournisseur ou relais'],
+      ['quantity', 'Quantité effectivement manquante'],
+      ['reason', 'Motif vérifié (au moins 8 caractères)']
+    ];
+    const inputs = {};
+    keys.forEach(([key, labelText]) => {
+      const label = append(form, 'label', 'field');
+      append(label, 'span', '', labelText);
+      const input = append(label, 'input');
+      input.type = key === 'quantity' ? 'number' : 'text';
+      input.required = true;
+      input.name = key;
+      input.autocomplete = 'off';
+      input.maxLength = 200;
+      if (key === 'quantity') input.min = '1';
+      inputs[key] = input;
+    });
+    const btn = append(form, 'button', 'action', 'Réserver cette dette');
+    btn.type = 'submit';
+    btn.setAttribute('data-g8-action', 'reserve');
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+      if (!window.confirm('Le manquant est-il attesté par un incident existant et la commande réellement encaissée ?')) return;
+      const id = inputs.order_id.value.trim(), itemId = inputs.order_item_id.value.trim();
+      btn.disabled = true;
+      announce('Réservation en cours…');
+      try {
+        const result = await json('/api/admin/orders/' + encodeURIComponent(id) +
+          '/items/' + encodeURIComponent(itemId) + '/local-refund-reservations',
+          'POST', {
+            incident_id: inputs.incident_id.value.trim(),
+            quantity: Number(inputs.quantity.value),
+            operation_key: window.crypto.randomUUID(),
+            reason: inputs.reason.value.trim()
+          });
+        announce('Dette réservée : ' + result.reservationId + '. Aucun montant n’a encore été remboursé.', 'ok');
+        form.reset();
+        await load(true);
+      } catch (error) {
+        announce((error.code ? error.code + ' — ' : '') + error.message, 'error');
+      } finally { btn.disabled = false; }
+    });
+    list.parentNode.insertBefore(panel, list);
+  }
+  function ensureItemRefundForm() {
+    if (userRole !== 'admin' || document.querySelector('#g8-item-refund')) return;
+    const panel = node('details','case'); panel.id='g8-item-refund'; panel.style.marginBottom='20px';
+    const summary=append(panel,'summary','case-head','N26a · Remboursement PSP partiel d’une ligne');
+    summary.style.cursor='pointer';
+    const box=append(panel,'div','case-body');
+    append(box,'p','hint','Réservé aux commandes payées Stripe ou PayPal et aux quantités couvertes par une preuve de manquant. La réservation et le paiement sont deux décisions séparées. L’exécution est strictement sandbox et sans nouvel essai automatique après une réponse incertaine.');
+    const lookup=append(box,'form','proof-form');
+    const refLabel=append(lookup,'label','field'); append(refLabel,'span','','Référence de commande');
+    const reference=append(refLabel,'input'); reference.name='order_reference'; reference.required=true;
+    reference.autocomplete='off'; reference.maxLength=80; reference.pattern='[A-Za-z0-9][A-Za-z0-9._-]{1,79}';
+    const loadButton=append(lookup,'button','action','Charger les lignes et preuves');
+    loadButton.type='submit'; loadButton.setAttribute('data-g8-action','load-item-refund-context');
+    const notice=append(box,'p','case-summary','Chargez une commande pour afficher les lignes admissibles.');
+    notice.setAttribute('role','status');
+    const decision=append(box,'form','proof-form'); decision.hidden=true;
+    const candidateLabel=append(decision,'label','field'); append(candidateLabel,'span','','Ligne et incident attesté');
+    const candidateSelect=append(candidateLabel,'select'); candidateSelect.name='candidate'; candidateSelect.required=true;
+    const quantityLabel=append(decision,'label','field'); append(quantityLabel,'span','','Quantité partielle');
+    const quantity=append(quantityLabel,'input'); quantity.name='quantity'; quantity.type='number';
+    quantity.min='1'; quantity.step='1'; quantity.required=true;
+    const reasonLabel=append(decision,'label','field'); append(reasonLabel,'span','','Motif (8 caractères minimum)');
+    const reason=append(reasonLabel,'input'); reason.name='reason'; reason.required=true;
+    reason.minLength=8; reason.maxLength=500; reason.autocomplete='off';
+    const reserve=append(decision,'button','action','Réserver le remboursement partiel');
+    reserve.type='submit'; reserve.setAttribute('data-g8-action','reserve-item-refund');
+    const execute=append(box,'button','action','Exécuter le remboursement PSP sandbox');
+    execute.type='button'; execute.hidden=true; execute.setAttribute('data-g8-action','execute-item-refund');
+    let context=null, operationKey=null, reservation=null, executionAttempted=false;
+    const invalidate=()=>{operationKey=null;};
+    const setLimit=()=>{
+      const c=context?.candidates?.[Number(candidateSelect.value)];
+      quantity.max=String(c?.available_quantity||1);
+      if(!quantity.value||Number(quantity.value)>Number(quantity.max))quantity.value='1';
+      invalidate();
+    };
+    candidateSelect.addEventListener('change',setLimit);
+    quantity.addEventListener('input',invalidate); reason.addEventListener('input',invalidate);
+    lookup.addEventListener('submit',async event=>{
+      event.preventDefault(); if(!lookup.reportValidity())return;
+      loadButton.disabled=true;decision.hidden=true;execute.hidden=true;context=null;reservation=null;operationKey=null;executionAttempted=false;
+      notice.textContent='Lecture des preuves de manquant…';
+      try{
+        context=await json('/api/admin/orders/'+encodeURIComponent(reference.value.trim())+'/item-refund-context');
+        candidateSelect.replaceChildren();
+        const byId=new Map((context.items||[]).map(item=>[String(item.id),item]));
+        (context.candidates||[]).forEach((candidate,index)=>{
+          const item=byId.get(String(candidate.order_item_id));
+          const option=node('option','',(item?.product_name||'Article')+' · '+candidate.available_quantity+
+            ' admissible(s) · '+candidate.proof+' · incident '+String(candidate.incident_id).slice(0,8));
+          option.value=String(index);candidateSelect.appendChild(option);
+        });
+        if(!candidateSelect.children.length){
+          notice.textContent=context.blocked?'Dossier bloqué : rail de paiement, remboursement ou intention à rapprocher.':
+            'Aucune ligne non remise avec une preuve de manquant admissible.';
+        }else{
+          notice.textContent='Commande '+context.order.reference+' · '+context.order.payment_mode+
+            ' · payée. Réservation calculée sur la capture originale; aucun taux de change courant.';
+          decision.hidden=false;setLimit();
+        }
+      }catch(error){context=null;notice.textContent=(error.code?error.code+' — ':'')+error.message;}
+      finally{loadButton.disabled=false;}
+    });
+    decision.addEventListener('submit',async event=>{
+      event.preventDefault();if(!decision.reportValidity()||!context)return;
+      const candidate=context.candidates[Number(candidateSelect.value)];
+      if(!candidate||Number(quantity.value)<1||Number(quantity.value)>Number(candidate.available_quantity))return;
+      if(!window.confirm('Réserver '+quantity.value+' unité(s) pour un remboursement partiel au payeur original ? Aucun paiement ne sera envoyé à cette étape.'))return;
+      reserve.disabled=true;
+      try{
+        operationKey=operationKey||window.crypto.randomUUID();
+        const result=await json('/api/admin/orders/'+encodeURIComponent(context.order.id)+
+          '/items/'+encodeURIComponent(candidate.order_item_id)+'/refund-reservations','POST',{
+            incident_id:candidate.incident_id,quantity:Number(quantity.value),operation_key:operationKey,reason:reason.value.trim()});
+        reservation=result.reservationId;operationKey=null;
+        notice.textContent='Réservation '+reservation+' · '+result.amountEur+' EUR · '+result.status+
+          '. Vérifiez les détails avant la décision séparée d’exécution sandbox.';
+        execute.hidden=result.status!=='reserved';
+      }catch(error){notice.textContent=(error.code?error.code+' — ':'')+error.message+
+        '. Réessayer sans modifier la décision réutilisera la même clé.';}
+      finally{reserve.disabled=false;}
+    });
+    execute.addEventListener('click',async()=>{
+      if(!reservation||executionAttempted||!window.confirm('Envoyer une seule demande de remboursement au PSP sandbox, vers la capture du payeur d’origine ? Une réponse incertaine ne sera jamais relancée automatiquement.'))return;
+      executionAttempted=true;execute.disabled=true;
+      try{
+        const candidate=context.candidates[Number(candidateSelect.value)];
+        const result=await json('/api/admin/orders/'+encodeURIComponent(context.order.id)+
+          '/items/'+encodeURIComponent(candidate.order_item_id)+'/refund-reservations/'+
+          encodeURIComponent(reservation)+'/execute','POST',{});
+        execute.hidden=true;
+        if(result.status==='confirmed'){
+          notice.textContent='Remboursement PSP confirmé; reçu partiel émis ou placé en reprise documentaire.';
+          await load(true);
+        }else if(result.status==='unknown'){
+          notice.textContent='Résultat PSP incertain. Aucun nouvel essai : rapprocher la référence existante.';
+        }else{
+          notice.textContent='Le PSP a refusé définitivement le remboursement; réservation libérée.';
+        }
+      }catch(error){execute.hidden=true;notice.textContent='Réponse à rapprocher : '+(error.code?error.code+' — ':'')+
+        error.message+'. Aucun nouvel essai automatique ou depuis cet écran.';}
+    });
+    list.parentNode.insertBefore(panel,list);
+  }
+  function ensureN27RemnantForm() {
+    if (userRole !== 'admin' || document.querySelector('#g8-n27-remnant')) return;
+    const panel=node('details','case'); panel.id='g8-n27-remnant'; panel.style.marginBottom='20px';
+    const summary=append(panel,'summary','case-head','N27 · Décider le reliquat après retrait partiel');
+    summary.style.cursor='pointer';
+    const box=append(panel,'div','case-body');
+    append(box,'p','hint','Les articles déjà remis restent exclus. Le serveur bloque les reliquats encore engagés auprès du fournisseur ou présents dans un colis actif. Une réservation crée une dette au payeur d’origine ; aucun crédit wallet ni paiement n’est déclenché.');
+    const lookup=append(box,'form','proof-form');
+    const label=append(lookup,'label','field'); append(label,'span','','Référence de commande');
+    const reference=append(label,'input'); reference.required=true; reference.autocomplete='off';
+    reference.maxLength=80; reference.pattern='[A-Za-z0-9][A-Za-z0-9._-]{1,79}';
+    const loadButton=append(lookup,'button','action','Afficher le reliquat et son palier');
+    loadButton.type='submit'; loadButton.setAttribute('data-g8-action','load-n27-context');
+    const notice=append(box,'p','case-summary','Aucune décision financière n’a été prise.'); notice.setAttribute('role','status');
+    const breakdown=append(box,'div','case-summary');
+    const form=append(box,'form','proof-form'); form.hidden=true;
+    const candidateLabel=append(form,'label','field'); append(candidateLabel,'span','','Ligne manquante et incident attesté');
+    const candidate=append(candidateLabel,'select'); candidate.required=true;
+    const quantityLabel=append(form,'label','field'); append(quantityLabel,'span','','Quantité non remise à réserver');
+    const quantity=append(quantityLabel,'input'); quantity.type='number'; quantity.min='1'; quantity.step='1'; quantity.required=true;
+    const reasonLabel=append(form,'label','field'); append(reasonLabel,'span','','Motif vérifié (8 caractères minimum)');
+    const reason=append(reasonLabel,'input'); reason.required=true; reason.minLength=8; reason.maxLength=500;
+    const reserve=append(form,'button','action action-warning','Réserver la dette du reliquat');
+    reserve.type='submit'; reserve.setAttribute('data-g8-action','reserve-n27-remnant');
+    let context=null, operationKey=null;
+    const setQuantityLimit=()=>{
+      const selected=context?.candidates?.[Number(candidate.value)];
+      quantity.max=String(selected?.available_quantity||1);
+      if(!quantity.value||Number(quantity.value)>Number(quantity.max))quantity.value='1';
+      operationKey=null;
+    };
+    candidate.addEventListener('change',setQuantityLimit);
+    quantity.addEventListener('input',()=>{operationKey=null;});
+    reason.addEventListener('input',()=>{operationKey=null;});
+    lookup.addEventListener('submit',async event=>{
+      event.preventDefault(); if(!lookup.reportValidity())return;
+      loadButton.disabled=true; form.hidden=true; context=null; operationKey=null;
+      notice.textContent='Lecture des quantités, incidents et paliers fournisseur/transport…';
+      try{
+        context=await json('/api/admin/orders/'+encodeURIComponent(reference.value.trim())+'/n27-remnant-context');
+        candidate.replaceChildren();
+        breakdown.replaceChildren();
+        (context.items||[]).forEach(item=>{
+          const line=append(breakdown,'p','case-summary',(item.product_name||'Article')+
+            ' · '+item.qty_collected+' remis · '+item.uncollected_quantity+' non remis · '+item.phase+
+            (item.blocked_reason?' · '+item.blocked_reason:''));
+          line.setAttribute('data-n27-item-phase',String(item.phase));
+        });
+        const byId=new Map((context.items||[]).map(item=>[String(item.id),item]));
+        (context.candidates||[]).forEach((entry,index)=>{
+          const item=byId.get(String(entry.order_item_id));
+          const option=node('option','',(item?.product_name||'Article')+' · '+entry.available_quantity+
+            ' admissible(s) · '+entry.phase+' · incident '+String(entry.incident_id).slice(0,8));
+          option.value=String(index); candidate.appendChild(option);
+        });
+        const collected=(context.items||[]).reduce((sum,item)=>sum+Number(item.qty_collected||0),0);
+        notice.textContent='Commande '+context.order.reference+' · '+context.order.payment_mode+
+          ' · '+collected+' unité(s) déjà remises exclues. Les phases F2/F3 restent bloquées jusqu’à preuve de libération fournisseur/transport.';
+        form.hidden=!candidate.children.length;
+        if(candidate.children.length)setQuantityLimit();
+        if(!candidate.children.length)notice.textContent+=' Aucun reliquat F1 avec manquant attesté et quantité disponible.';
+      }catch(error){context=null;notice.textContent=(error.code?error.code+' — ':'')+error.message;}
+      finally{loadButton.disabled=false;}
+    });
+    form.addEventListener('submit',async event=>{
+      event.preventDefault(); if(!context||!form.reportValidity())return;
+      const entry=context.candidates[Number(candidate.value)];
+      if(!entry||Number(quantity.value)<1||Number(quantity.value)>Number(entry.available_quantity))return;
+      if(!window.confirm('Réserver '+quantity.value+' unité(s) du reliquat attesté au payeur d’origine ? Aucun paiement ne sera effectué.'))return;
+      reserve.disabled=true;
+      try{
+        operationKey=operationKey||window.crypto.randomUUID();
+        const result=await json('/api/admin/orders/'+encodeURIComponent(context.order.id)+
+          '/items/'+encodeURIComponent(entry.order_item_id)+'/n27-remnant-reservations','POST',{
+            incident_id:entry.incident_id,quantity:Number(quantity.value),operation_key:operationKey,
+            reason:reason.value.trim()});
+        operationKey=null; form.hidden=true;
+        notice.textContent='Dette N27 réservée · '+String(result.amountMinor||'montant à relire')+' '+
+          String(result.currency||'')+' · '+result.status+
+          '. Aucun wallet crédité et aucun règlement prétendu. Le paiement suit le parcours G8 avec ses preuves.';
+      }catch(error){notice.textContent=(error.code?error.code+' — ':'')+error.message+
+        '. Recharger le dossier avant toute nouvelle décision.';}
+      finally{reserve.disabled=false;}
+    });
+    list.parentNode.insertBefore(panel,list);
+  }
+  function renderCase(row) {
+    const card = append(list, 'article', 'case');
+    card.setAttribute('data-g8-case', String(row.reservation_id || row.authorization_id));
+    const head = append(card, 'div', 'case-head');
+    append(head, 'div', 'case-eyebrow', (row.market_code || '') + ' · ' +
+      (row.payment_mode === 'cash_relais' ? 'F1 espèces' : 'F2 Mobile Money'));
+    append(head, 'h3', '', row.order_reference || row.order_id);
+    const meta = append(head, 'div', 'meta');
+    append(meta, 'span', '', 'Quantité : ' + row.quantity);
+    append(meta, 'span', '', 'Article : ' + String(row.order_item_id).slice(0, 8));
+    const body = append(card, 'div', 'case-body');
+    append(body, 'p', 'money', money(row));
+    if (row.reason) append(body, 'p', 'case-summary', row.reason);
+    if (userRole === 'admin') adminCase(row, body);
+    else relayCase(row, body);
+  }
+  async function load(preserveNotice) {
+    refresh.disabled = true;
+    if (!preserveNotice) announce('Lecture des obligations autorisées…');
+    list.replaceChildren();
+    try {
+      const url = userRole === 'admin'
+        ? '/api/admin/orders/local-refunds'
+        : '/api/relay/local-cash-refunds';
+      const payload = await json(url);
+      const rows = Array.isArray(payload.refunds) ? payload.refunds : [];
+      title.textContent = 'Obligations (' + rows.length + ')';
+      if (!rows.length) {
+        append(list, 'p', 'empty', 'Aucune obligation de remboursement dans cette file.');
+      } else {
+        rows.forEach(renderCase);
+      }
+      env.textContent = 'Recette autorisée';
+      ensureReservationForm();
+      if (!preserveNotice) announce('Lecture autorisée. Les opérations ne réalisent aucun transfert automatique.', 'ok');
+    } catch (error) {
+      env.textContent = 'Parcours désactivé';
+      title.textContent = 'Obligations indisponibles';
+      append(list, 'p', 'empty', 'La liste est masquée tant que les flags de recette ou les autorisations sont absents.');
+      announce((error.code ? error.code + ' — ' : '') + error.message, 'error');
+    } finally { refresh.disabled = false; }
+  }
+  async function boot() {
+    refresh.addEventListener('click', () => load(false));
+    try {
+      const info = await json('/api/auth/me');
+      const actor = info.user || info;
+      userRole = actor.role;
+      if (!['admin', 'agent_relais'].includes(userRole)) {
+        throw new Error('Seuls les administrateurs et agents relais habilités ont accès au parcours G8.');
+      }
+      if(userRole==='admin'){
+        try{
+          const readiness=await json('/api/admin/orders/item-refund-readiness');
+          if(readiness.enabled===true)ensureItemRefundForm();
+        }catch(_){}
+        try{
+          const readiness=await json('/api/admin/orders/n27-remnant-readiness');
+          if(readiness.enabled===true)ensureN27RemnantForm();
+        }catch(_){}
+      }
+      const compensationEntry = document.querySelector('[data-g6-sav-compensation-entry]');
+      if (compensationEntry && userRole === 'admin') compensationEntry.hidden = false;
+      if (userRole === 'agent_relais') {
+        back.href = '/relais/';
+        document.querySelector('.brand').href = '/relais/';
+      }
+      await load(false);
+    } catch (error) {
+      env.textContent = 'Accès refusé';
+      refresh.disabled = true;
+      announce(error.message, 'error');
+    }
+  }
+  boot();
+}());

@@ -148,4 +148,132 @@ async function reserveLocalShortage({
          WHERE EXISTS (SELECT 1 FROM purchase_lines pl
                         WHERE pl.purchase_order_id=po.id
                           AND pl.order_item_id=$1 AND pl.cancelled_at IS NULL)
-         ORDER BY po
+         ORDER BY po.id FOR UPDATE OF po`, [orderItemId]
+      );
+      await client.query(
+        `SELECT pl.id FROM purchase_lines pl
+         WHERE pl.order_item_id=$1 AND pl.cancelled_at IS NULL
+         ORDER BY pl.id FOR UPDATE OF pl`, [orderItemId]
+      );
+      await client.query(
+        `SELECT p.id, pi.id FROM parcel_items pi
+          JOIN parcels p ON p.id=pi.parcel_id
+         WHERE pi.order_item_id=$1 AND p.status IN
+           ('preparation','shipped','in_transit','arrived','available')
+         ORDER BY p.id, pi.id FOR UPDATE OF p, pi`, [orderItemId]
+      );
+      const { rows: [phase] } = await client.query(
+        `SELECT
+           EXISTS (
+             SELECT 1 FROM v_purchase_line_progress v
+              WHERE v.order_item_id=$1 AND NOT v.cancelled
+                AND v.received_quantity < v.effective_quantity
+                AND v.po_status IN ('notified','confirmed','partially_received')
+           ) AS supplier_pending,
+           EXISTS (
+             SELECT 1 FROM parcel_items pi
+             JOIN parcels p ON p.id=pi.parcel_id
+              WHERE pi.order_item_id=$1 AND p.status IN
+                ('preparation','shipped','in_transit','arrived','available')
+           ) AS transport_pending`, [orderItemId]
+      );
+      if (phase?.supplier_pending) fail('N27_SUPPLIER_COMMITMENT_PENDING',
+        'Le fournisseur doit confirmer l’annulation du reliquat avant toute décision financière');
+      if (phase?.transport_pending) fail('N27_TRANSPORT_PENDING',
+        'Le reliquat est encore dans un colis actif ; attendre le constat physique au relais');
+    }
+
+    const { rows: [existing] } = await client.query(
+      `SELECT id, order_item_id, source_incident_id, quantity, reason, status,
+              amount_minor, currency
+         FROM local_item_refund_reservations
+        WHERE order_id=$1 AND operation_key=$2 FOR UPDATE`,
+      [orderId, operationKey]
+    );
+    if (existing) {
+      if (String(existing.order_item_id) !== String(orderItemId)
+          || String(existing.source_incident_id) !== String(incidentId)
+          || Number(existing.quantity) !== quantity
+          || existing.reason !== reason.trim())
+        fail('LOCAL_REFUND_REPLAY_CONFLICT', 'Même événement avec des paramètres différents');
+      await client.query('COMMIT'); inTransaction = false;
+      return { reservationId: existing.id, status: existing.status, paid: false,
+        amountMinor: String(existing.amount_minor), currency: existing.currency, replayed: true };
+    }
+
+    const { rows: [relayProof] } = await client.query(
+      `SELECT COALESCE(SUM(GREATEST(expected_qty-received_qty,0)),0)::int AS missing
+         FROM international_shipment_relay_receipts
+        WHERE order_item_id=$1 AND incident_id=$2`, [orderItemId, incidentId]
+    );
+    const { rows: [supplierProof] } = await client.query(
+      `SELECT COALESCE(SUM((details->>'missing_quantity')::int),0)::int AS missing
+         FROM incidents WHERE id=$1 AND order_item_id=$2 AND order_id=$3
+           AND incident_type='reconciliation_error'
+           AND details->>'type'='supplier_shortage'`,
+      [incidentId, orderItemId, orderId]
+    );
+    const missing = Number(relayProof?.missing || 0) + Number(supplierProof?.missing || 0);
+    const { rows: [held] } = await client.query(
+      `SELECT COALESCE(SUM(quantity),0)::int AS qty,
+              COALESCE(SUM(amount_minor),0)::text AS amount_minor,
+              COALESCE(SUM(amount_kmf),0)::text AS amount_kmf
+         FROM local_item_refund_reservations WHERE order_id=$1 AND status='reserved'`,
+      [orderId]
+    );
+    const { rows: [lineHeld] } = await client.query(
+      `SELECT COALESCE(SUM(quantity),0)::int AS qty
+         FROM local_item_refund_reservations WHERE order_item_id=$1 AND status='reserved'`,
+      [orderItemId]
+    );
+    if (missing < 1 || quantity + Number(lineHeld?.qty || 0) > missing
+        || quantity + Number(lineHeld?.qty || 0)
+           + Number(item.qty_refunded || 0) + Number(item.qty_collected || 0) > Number(item.quantity))
+      fail('LOCAL_REFUND_SHORTAGE_EXCEEDED', 'Quantité au-delà du manquant attesté');
+
+    // Full hold while legacy or PSP rails are unresolved. No wallet + cash overlap.
+    const { rows: oldRefunds } = await client.query(
+      'SELECT id FROM refunds WHERE order_id=$1 LIMIT 1', [orderId]
+    );
+    const { rows: pspIntent } = await client.query(
+      'SELECT id FROM refund_execution_intents WHERE order_id=$1 LIMIT 1', [orderId]
+    );
+    const { rows: pspItem } = await client.query(
+      'SELECT id FROM order_item_refund_reservations WHERE order_id=$1 LIMIT 1', [orderId]
+    );
+    if (oldRefunds.length || pspIntent.length || pspItem.length)
+      fail('LOCAL_REFUND_CROSS_RAIL_RECONCILIATION', 'Remboursement antérieur ou PSP à rapprocher');
+
+    const source = await sourceForPaidLocalOrder(client, order);
+    const money = localShare({
+      unitKmf: item.price_kmf, quantity, totalKmf: order.total_kmf,
+      capturedMinor: source.paidMinor
+    });
+    if (BigInt(held?.amount_minor || 0) + money.amountMinor > money.captureMinor
+        || decimalMinor(held?.amount_kmf || '0', 2) + decimalMinor(money.amountKmf, 2)
+           > decimalMinor(order.total_kmf, 2))
+      fail('LOCAL_REFUND_AMOUNT_EXCEEDS_CAPTURE', 'Cumul des obligations supérieur à la capture');
+
+    const { rows: [reserved] } = await client.query(
+      `INSERT INTO local_item_refund_reservations
+          (order_id, order_item_id, source_incident_id, market_id, operation_key,
+           payment_mode, capture_ref, currency, minor_unit, amount_minor,
+           amount_kmf, quantity, reason, initiated_by)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+        RETURNING id`,
+      [orderId, orderItemId, incidentId, order.market_id, operationKey,
+       source.paymentMode, source.captureRef, source.currency, source.minorUnit,
+       String(money.amountMinor), money.amountKmf, quantity, reason.trim(), actor.id]
+    );
+    await client.query('COMMIT'); inTransaction = false;
+    return { reservationId: reserved.id, status: 'reserved', paid: false,
+      amountMinor: String(money.amountMinor), currency: source.currency, replayed: false };
+  } catch (error) {
+    if (inTransaction) await client.query('ROLLBACK').catch(() => {});
+    throw error;
+  } finally { client.release(); }
+}
+
+module.exports = {
+  LocalItemRefundError, decimalMinor, localShare, reserveLocalShortage
+};

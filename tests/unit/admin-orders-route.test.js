@@ -208,4 +208,128 @@ describe('admin/orders — DELETE /orders/:id', () => {
 });
 
 describe('admin/orders — POST /orders/:id/refund', () => {
-  it('défauts
+  it('défauts : dryRun=true, reason=null, cashMode=manual', async () => {
+    mockRefundCancelledOrder.mockResolvedValueOnce({ status: 200, body: { ok: true } });
+
+    const res = await request(app).post('/api/admin/orders/o1/refund').send({});
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true });
+    expect(mockRefundCancelledOrder).toHaveBeenCalledWith({
+      orderId: 'o1',
+      user: mockState.user,
+      dryRun: true,
+      reason: null,
+      cashMode: 'manual',
+    });
+  });
+
+  it('dry_run: false → dryRun=false explicite', async () => {
+    mockRefundCancelledOrder.mockResolvedValueOnce({ status: 200, body: { ok: true } });
+
+    await request(app).post('/api/admin/orders/o1/refund').send({
+      dry_run: false, reason: 'erreur client', cash_mode: 'relais',
+    });
+
+    expect(mockRefundCancelledOrder).toHaveBeenCalledWith({
+      orderId: 'o1',
+      user: mockState.user,
+      dryRun: false,
+      reason: 'erreur client',
+      cashMode: 'relais',
+    });
+  });
+
+  it('dry_run: true explicite reste dryRun=true', async () => {
+    mockRefundCancelledOrder.mockResolvedValueOnce({ status: 200, body: { ok: true } });
+    await request(app).post('/api/admin/orders/o1/refund').send({ dry_run: true });
+    expect(mockRefundCancelledOrder).toHaveBeenCalledWith(expect.objectContaining({ dryRun: true }));
+  });
+
+  it('propage le status/body renvoyés par le service (ex: 409 conflit)', async () => {
+    mockRefundCancelledOrder.mockResolvedValueOnce({ status: 409, body: { error: 'déjà remboursée' } });
+    const res = await request(app).post('/api/admin/orders/o1/refund').send({});
+    expect(res.status).toBe(409);
+    expect(res.body).toEqual({ error: 'déjà remboursée' });
+  });
+
+  it('erreur → next(err) → 500', async () => {
+    mockRefundCancelledOrder.mockRejectedValueOnce(new Error('service refund indisponible'));
+    const res = await request(app).post('/api/admin/orders/o1/refund').send({});
+    expect(res.status).toBe(500);
+  });
+});
+
+describe('admin/orders — N27 remainder liability',()=>{
+  it('readiness remains off unless the explicit staging flag is on',async()=>{
+    let res=await request(app).get('/api/admin/orders/n27-remnant-readiness');
+    expect(res.body).toEqual({enabled:false});
+    process.env.N27_REMNANT_RESERVATIONS_ENABLED='1';
+    res=await request(app).get('/api/admin/orders/n27-remnant-readiness');
+    expect(res.body).toEqual({enabled:true});
+  });
+  it('context is admin-only and read-only behind explicit staging flag',async()=>{
+    process.env.N27_REMNANT_RESERVATIONS_ENABLED='1';
+    mockReadN27RemnantContext.mockResolvedValueOnce({order:{reference:'K0N27A'},items:[],candidates:[]});
+    const res=await request(app).get('/api/admin/orders/K0N27A/n27-remnant-context');
+    expect(res.status).toBe(200);
+    expect(res.headers['cache-control']).toContain('no-store');
+    expect(mockReadN27RemnantContext).toHaveBeenCalledWith({orderReference:'K0N27A',actor:mockState.user});
+  });
+  it('reservation passes only validated body fields to the owner service and stays pending',async()=>{
+    process.env.N27_REMNANT_RESERVATIONS_ENABLED='1';
+    mockReserveN27Remnant.mockResolvedValueOnce({reservationId:'r27',status:'reserved',paid:false});
+    const payload={incident_id:'incident-1',quantity:1,operation_key:'key-1',reason:'Missing at relay'};
+    const res=await request(app).post('/api/admin/orders/order-1/items/item-1/n27-remnant-reservations').send(payload);
+    expect(res.status).toBe(202);
+    expect(res.body).toMatchObject({reservationId:'r27',status:'reserved',paid:false});
+    expect(mockReserveN27Remnant).toHaveBeenCalledWith({orderId:'order-1',orderItemId:'item-1',
+      incidentId:'incident-1',quantity:1,operationKey:'key-1',reason:'Missing at relay',actor:mockState.user});
+  });
+  it('disabled endpoint refuses mutation before calling the financial service',async()=>{
+    const res=await request(app).post('/api/admin/orders/order-1/items/item-1/n27-remnant-reservations').send({});
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('N27_RESERVATIONS_NOT_CERTIFIED');
+    expect(mockReserveN27Remnant).not.toHaveBeenCalled();
+  });
+  it('does not enable the N27 writer outside staging even if the flag is set',async()=>{
+    process.env.KOMERCE_ENV='production';
+    process.env.N27_REMNANT_RESERVATIONS_ENABLED='1';
+    const res=await request(app).post('/api/admin/orders/order-1/items/item-1/n27-remnant-reservations').send({});
+    expect(res.status).toBe(409);
+    expect(mockReserveN27Remnant).not.toHaveBeenCalled();
+  });
+});
+
+describe('admin/orders — N26a item refund candidate context',()=>{
+  const saveFlags=()=>Object.fromEntries(['KOMERCE_ENV','E7_ITEM_RESERVATIONS_ENABLED',
+    'E7_SANDBOX_REFUND_EXECUTION_ENABLED','STRIPE_SECRET_KEY','PAYPAL_ENV',
+    'PAYPAL_CLIENT_ID','PAYPAL_CLIENT_SECRET'].map(k=>[k,process.env[k]]));
+  const restoreFlags=previous=>Object.entries(previous).forEach(([k,v])=>{
+    if(v===undefined)delete process.env[k];else process.env[k]=v;
+  });
+  it('serves the admin candidate projection only with both staging sandbox gates enabled',async()=>{
+    const previous=saveFlags();process.env.KOMERCE_ENV='staging';
+    process.env.E7_ITEM_RESERVATIONS_ENABLED='1';process.env.E7_SANDBOX_REFUND_EXECUTION_ENABLED='1';
+    process.env.STRIPE_SECRET_KEY='sk_test_unit';
+    mockReadVerifiedShortageCandidates.mockResolvedValue({order:{id:'o1',reference:'K1FOWL5',payment_mode:'stripe_eur'},items:[],candidates:[],blocked:false});
+    try{
+      const ready=await request(app).get('/api/admin/orders/item-refund-readiness');
+      expect(ready.body).toEqual({enabled:true});
+      const res=await request(app).get('/api/admin/orders/K1FOWL5/item-refund-context');
+      expect(res.status).toBe(200);expect(res.headers['cache-control']).toContain('no-store');
+      expect(mockReadVerifiedShortageCandidates).toHaveBeenCalledWith({orderReference:'K1FOWL5',actor:mockState.user});
+    }finally{restoreFlags(previous);}
+  });
+  it('fails closed before reading when sandbox execution is disabled',async()=>{
+    const previous=saveFlags();process.env.KOMERCE_ENV='staging';
+    process.env.E7_ITEM_RESERVATIONS_ENABLED='1';delete process.env.E7_SANDBOX_REFUND_EXECUTION_ENABLED;
+    try{
+      const ready=await request(app).get('/api/admin/orders/item-refund-readiness');
+      expect(ready.body).toEqual({enabled:false});
+      const res=await request(app).get('/api/admin/orders/K1FOWL5/item-refund-context');
+      expect(res.status).toBe(409);expect(res.body.code).toBe('E7_SANDBOX_PSP_DISABLED');
+      expect(mockReadVerifiedShortageCandidates).not.toHaveBeenCalled();
+    }finally{restoreFlags(previous);}
+  });
+});

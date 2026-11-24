@@ -174,4 +174,592 @@
       "rationale": "Expose uniquement la disponibilité commerciale du provider résolu serveur pour un code marché ; aucun secret, montant de commande ou identifiant client."
     },
     {
-    
+      "key": "POST /api/payments/mobile-money/callback/{provider}/{transactionId}",
+      "kind": "APPLICATION_GUARD",
+      "evidence": "routes/payments-mobile-money.js; services/payment-mobile-money.js; tests/unit/payment-mobile-money.test.js",
+      "rationale": "Endpoint transport opérateur sans session : le body reçu n’accorde aucune autorité ; Komerce relit obligatoirement le statut, le montant et la devise auprès du provider avant toute confirmation canonique."
+    },
+    {
+      "key": "POST /api/payments/mobile-money/webhook/{provider}",
+      "kind": "APPLICATION_GUARD",
+      "evidence": "routes/payments-mobile-money.js; services/mobile-money/kartapay-km.js; tests/unit/kartapay-webhook.test.js; features/payments.feature.js",
+      "rationale": "Webhook gateway public au niveau transport mais authentifié par HMAC-SHA256 KartaPay, rapproché à la tentative locale puis relu par API provider authentifiée avant toute confirmation canonique."
+    },
+    {
+      "key": "POST /api/payments/paypal/capture/{paypalOrderId}",
+      "kind": "CAPABILITY_TOKEN",
+      "evidence": "routes/payments-paypal.js; tests/unit/payments-paypal.test.js; features/payments.feature.js",
+      "rationale": "Capture liée à un ordre PayPal opaque et réconciliée côté serveur ; l’identifiant PayPal sert de capacité."
+    },
+    {
+      "key": "POST /api/payments/paypal/create-order",
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/payments-paypal.js; tests/unit/payments-paypal.test.js; features/payments.feature.js",
+      "rationale": "Étape PayPal du checkout navigateur ; l’autorité montant/commande est résolue côté serveur, pas depuis le client."
+    },
+    {
+      "key": "POST /api/pricing/calculate",
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/pricing.js",
+      "rationale": "Calculateur de prix public ; pas de mutation d’autorité métier."
+    },
+    {
+      "key": "POST /api/pricing/couture",
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/pricing.js",
+      "rationale": "Calculateur couture public ; pas de mutation d’autorité métier."
+    },
+    {
+      "key": "GET /api/products/{id}/detail",
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/catalog-product-detail.js; schemas/catalog/product-detail.v1.schema.json",
+      "rationale": "Contrat public de détail produit ; filtre explicitement les produits non exposables."
+    },
+    {
+      "key": "GET /api/products/{id}",
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/products.js",
+      "rationale": "Fiche publique d’un produit exposable."
+    },
+    {
+      "key": "GET /api/products/categories",
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/products.js",
+      "rationale": "Projection publique des catégories catalogue."
+    },
+    {
+      "key": "GET /api/products/subcategories",
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/products.js",
+      "rationale": "Projection publique des sous-catégories catalogue."
+    },
+    {
+      "key": "GET /api/products",
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/products.js; features/catalog.feature.js",
+      "rationale": "Catalogue marchand public."
+    },
+    {
+      "key": "GET /api/providers-services/physical-offers/{id}",
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/providers-services.js",
+      "rationale": "Offre locale publique après contrôle serveur isPhysicalOfferExposable."
+    },
+    {
+      "key": "GET /api/providers-services/services/{id}",
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/providers-services.js",
+      "rationale": "Service local public après contrôle serveur isServiceExposable."
+    },
+    {
+      "key": "GET /api/relais/{id}",
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/relais.js; features/logistics.feature.js",
+      "rationale": "Détail public d’un point relais."
+    },
+    {
+      "key": "GET /api/relais/public",
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/relais.js; features/logistics.feature.js",
+      "rationale": "Projection publique des points relais."
+    },
+    {
+      "key": "GET /api/relais",
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/relais.js; features/logistics.feature.js",
+      "rationale": "Annuaire public des points relais."
+    },
+    {
+      "key": "GET /api/shares/{token}",
+      "kind": "CAPABILITY_TOKEN",
+      "evidence": "routes/shares.js; tests/unit/shares-token-entropy.test.js",
+      "rationale": "Snapshot non transactionnel adressé par token CSPRNG ; aucun paiement ni lifecycle métier n’est exposé."
+    },
+    {
+      "key": "POST /api/shares",
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/shares.js; middleware/rate-limit.js; tests/unit/shares-token-entropy.test.js",
+      "rationale": "Création publique d’un snapshot non transactionnel, rate-limitée, avec token CSPRNG."
+    },
+    {
+      "key": "POST /api/tracking/{token}/verify-pickup",
+      "kind": "CAPABILITY_TOKEN",
+      "evidence": "routes/tracking.js; tests/unit/tracking.test.js; features/logistics.feature.js",
+      "rationale": "Capability token de tracking + vérification du secret de retrait hashé ; pas d’autorité par session implicite."
+    },
+    {
+      "key": "GET /api/tracking/{token}",
+      "kind": "CAPABILITY_TOKEN",
+      "evidence": "routes/tracking.js; tests/unit/tracking.test.js; features/logistics.feature.js",
+      "rationale": "Tracking public par capability token ; données client minimisées/masquées."
+    },
+    {
+      "key": "GET /health/ready",
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/health.js",
+      "rationale": "Readiness public pour l’orchestrateur."
+    },
+    {
+      "key": "GET /health/version",
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/health.js",
+      "rationale": "Version applicative publique utilisée par les probes/outils de diagnostic."
+    },
+    {
+      "key": "GET /health",
+      "kind": "EXPECTED_PUBLIC",
+      "evidence": "routes/health.js",
+      "rationale": "Liveness public sans secret métier."
+    },
+    {
+      "key": "GET /webhook/meta-whatsapp",
+      "kind": "APPLICATION_GUARD",
+      "evidence": "routes/meta-whatsapp.js; tests/unit/meta-whatsapp.test.js",
+      "rationale": "Handshake Meta vérifié par META_WA_VERIFY_TOKEN ; un mauvais token reçoit 403."
+    },
+    {
+      "key": "POST /webhook/meta-whatsapp",
+      "kind": "APPLICATION_GUARD",
+      "evidence": "routes/meta-whatsapp.js; bootstrap/env.js; tests/unit/meta-whatsapp.test.js",
+      "rationale": "Signature X-Hub-Signature-256 HMAC-SHA256 vérifiée en temps constant ; secret obligatoire en production."
+    }
+  ],
+  "routes": [
+    {
+      "key": "POST /api/admin/action-center/generate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/action-center/market/{marketCode}/signals/{signalRef}/acknowledge",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/action-center/market/{marketCode}/signals/{signalRef}/resolve",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/action-center/market/{marketCode}/signals/{signalRef}/snooze",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "GET /api/admin/action-center/market/{marketCode}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/action-center/signals/{signalRef}/acknowledge",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/action-center/signals/{signalRef}/resolve",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/action-center/signals/{signalRef}/snooze",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "GET /api/admin/action-center",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/alerts",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "DELETE /api/admin/boutique-categories/{key}/subcategories/{subKey}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/boutique-categories/{key}/subcategories/{subKey}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/boutique-categories/{key}/subcategories",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/boutique-categories/{key}/subcategories",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "DELETE /api/admin/boutique-categories/{key}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/boutique-categories/{key}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/boutique-categories/{key}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/boutique-categories",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/boutique-categories",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/catalog/approval-queue/{id}/approve",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/catalog/approval-queue/{id}/media/{mediaId}/visual-fr-review",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/catalog/approval-queue/{id}/override",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/catalog/approval-queue/{id}/reject",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/catalog/approval-queue/{id}/visual-fr-proof",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/catalog/approval-queue",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/cost-components/_meta",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/cost-components/{id}/toggle",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "DELETE /api/admin/cost-components/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/cost-components/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/cost-components/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/cost-components",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/cost-components",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/costing/monthly-fixed/{yearMonth}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/costing/orders/{id}/lock-purchase",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/costing/orders/{id}/real-margin-shadow",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/costing/orders/{orderId}/manual-costs/{costType}/correct",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/costing/orders/{orderId}/manual-costs",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/costing/orders/{orderId}/simulation-scope",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/costing/orders/{orderId}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/costing/orders",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/costing/parcels/{id}/allocate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/costing/products/margin-steering",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/costing/products",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/costing/real-margin-shadow",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/costing/recalibration-apply",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/costing/recalibration-proposal",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/costing/relais",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/costing/shipments/{id}/allocate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/counts",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/customs-categories/{key}/toggle",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "DELETE /api/admin/customs-categories/{key}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/customs-categories/{key}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/customs-categories/{key}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/customs-categories",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/customs-categories",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/customs-shipments/{id}/activate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/customs-shipments/{id}/analytics",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/customs-shipments/{id}/deactivate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/customs-shipments/{id}/declare",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/customs-shipments/{id}/fees",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/customs-shipments/{id}/fees",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/customs-shipments/{id}/parcels/remove",
+      "level": "PROTECTED",
+   
