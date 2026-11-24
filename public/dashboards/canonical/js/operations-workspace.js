@@ -3013,6 +3013,8 @@
     }
 
     let currentPayload = null;
+    const hubQuery = new URLSearchParams(String(globalThis.location?.search || ''));
+    const hubAtelier = options.mode==='execution' && hubQuery.get('entry')==='operations' ? hubQuery.get('atelier') : null;
     const context = {
       root: rootNode,
       fetch: fetchFn,
@@ -3022,7 +3024,7 @@
       initialFocus: options.forcedRelayFocus || (options.mode==='relay-execution' ? String(new URLSearchParams(String(globalThis.location?.search||'')).get('focus')||'') : ''),
       focusOnly:Boolean(options.focusOnly),
       activeRelayQueue:null,
-      view: options.focusOnly?'relay':options.mode === 'execution' ? 'supply' : options.mode === 'relay-execution' && new URLSearchParams(String(globalThis.location?.search || '')).get('focus') === 'returns' ? 'returns' : undefined,
+      view: options.focusOnly?'relay':options.mode === 'execution' ? (hubAtelier==='reception' ? 'reception' : hubAtelier==='labels' ? 'labels' : 'supply') : options.mode === 'relay-execution' && new URLSearchParams(String(globalThis.location?.search || '')).get('focus') === 'returns' ? 'returns' : undefined,
       confirm: typeof options.confirm === 'function'
         ? options.confirm
         : (typeof globalThis.confirm === 'function' ? globalThis.confirm.bind(globalThis) : () => true),
@@ -3073,6 +3075,15 @@
     try {
       await reload();
       watchHubSupply();
+      // Deep link du Kanban : orientation après chargement des données, sans écriture.
+      if (context.mode==='execution' && hubAtelier) {
+        const sel=hubQuery.get('sel')||'';
+        const anchor=hubAtelier==='reception' && sel.startsWith('po:')
+          ? Array.from(rootNode.querySelectorAll('[data-receive-po]')).find(n=>n.getAttribute('data-receive-po')===sel.slice(3))
+          : hubAtelier==='boxes' ? rootNode.querySelector('[data-supply-box-create]')
+          : hubAtelier==='shipments' ? rootNode.querySelector('[data-supply-shipment-bar]') : null;
+        anchor?.scrollIntoView?.({block:'start',behavior:'auto'});
+      }
       // Orientation de l'agent vers la file demandée depuis le cockpit.
       // Seules les files existantes sont navigables ; aucune action métier n'est exécutée ici.
       if (context.mode==='relay-execution' && !context.focusOnly && ['shipments','cash','receive','collect'].includes(context.initialFocus)) {
