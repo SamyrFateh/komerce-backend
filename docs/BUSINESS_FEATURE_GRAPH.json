@@ -13472,6 +13472,13 @@
       },
       {
         "feature": "logistics",
+        "category": "migrations",
+        "declared": "migrations/427_hub_opaque_scan_labels.sql",
+        "resolvedPath": "migrations/427_hub_opaque_scan_labels.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
         "category": "docs",
         "declared": "docs/doctrine/DOCTRINE_DENSITE_VALEUR.md",
         "resolvedPath": "docs/doctrine/DOCTRINE_DENSITE_VALEUR.md",
@@ -13798,6 +13805,20 @@
         "declared": "services/hub-physical-codes.js",
         "resolvedPath": "services/hub-physical-codes.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
+        "declared": "services/hub-opaque-labels.js",
+        "resolvedPath": "services/hub-opaque-labels.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
+        "declared": "services/hub-box-custody-scans.js",
+        "resolvedPath": "services/hub-box-custody-scans.js",
+        "status": "resolved-on-disk-no-header"
       },
       {
         "feature": "logistics",
@@ -14203,6 +14224,34 @@
         "category": "tests",
         "declared": "tests/unit/hub-physical-codes.test.js",
         "resolvedPath": "tests/unit/hub-physical-codes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/hub-opaque-labels.test.js",
+        "resolvedPath": "tests/unit/hub-opaque-labels.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/hub-box-custody-scans.test.js",
+        "resolvedPath": "tests/unit/hub-box-custody-scans.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/integration/hub-opaque-labels-postgres.test.js",
+        "resolvedPath": "tests/integration/hub-opaque-labels-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/hub-opaque-label-ui-contract.test.js",
+        "resolvedPath": "tests/unit/hub-opaque-label-ui-contract.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -37735,8 +37784,16 @@
                 "targetFile": "services/hub-physical-codes.js"
               },
               {
+                "sourceFileId": "routes/admin-operations-workspace.js",
+                "targetFile": "services/hub-opaque-labels.js"
+              },
+              {
                 "sourceFileId": "routes/admin-shipping-customs-workspace.js",
                 "targetFile": "services/international-shipment-journey.js"
+              },
+              {
+                "sourceFileId": "routes/admin-shipping-customs-workspace.js",
+                "targetFile": "services/hub-box-custody-scans.js"
               },
               {
                 "sourceFileId": "routes/dashboard-hub.js",
@@ -41656,6 +41713,10 @@
                 "targetFile": "services/outbox-producer.js"
               },
               {
+                "sourceFileId": "services/hub-box-custody-scans.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/hub-bag-box-service.js",
                 "targetFile": "db.js"
               },
@@ -41869,6 +41930,10 @@
               },
               {
                 "sourceFileId": "tests/integration/hub-order-bag-ownership-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-opaque-labels-postgres.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -50827,7 +50892,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2386
+        "filesObserved": 2392
       },
       "boutique": {
         "filesObserved": 218,
