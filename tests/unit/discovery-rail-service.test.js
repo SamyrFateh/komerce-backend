@@ -179,3 +179,22 @@ describe('discovery-rail-service — politique éditoriale', () => {
     expect(composeDiscoveryRail).not.toHaveBeenCalled();
   });
 });
+
+test('staging scoped candidate does not replace global list or leak to another market or production', async () => {
+  const key = 'DISCOVERY_RAIL_STAGING_CANDIDATES_CM';
+  process.env[key] = `physical_offer:${OFFER_ID}`;
+  process.env.KOMERCE_ENV = 'staging';
+  process.env.DISCOVERY_RAIL_ENABLED = 'true';
+  process.env.DISCOVERY_RAIL_CANDIDATES = `product:${PRODUCT_ID}`;
+  db.query.mockResolvedValue({rows:[{id:MARKET_ID}]});
+  composeDiscoveryRail.mockImplementation(async ({physicalOfferIds}) => [
+    ...physicalOfferIds.map(id=>({kind:'physical_offer',cta_action_ref:id,provider_name:'[STAGING] Démo'})),
+    {kind:'product',cta_action_ref:PRODUCT_ID},
+  ]);
+  try {
+    expect((await getDiscoveryRail({marketCode:'CM'})).map(c=>c.cta_action_ref)).toEqual([OFFER_ID,PRODUCT_ID]);
+    expect((await getDiscoveryRail({marketCode:'CG'})).map(c=>c.cta_action_ref)).toEqual([PRODUCT_ID]);
+    process.env.KOMERCE_ENV='production';
+    expect((await getDiscoveryRail({marketCode:'CM'})).map(c=>c.cta_action_ref)).toEqual([PRODUCT_ID]);
+  } finally { delete process.env[key]; }
+});
