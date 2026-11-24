@@ -30,7 +30,7 @@ describe('Private Hub ARTICLE / COMBOX PDF exports: printed QR remain stable and
   expect(query.mock.calls[0][1]).toEqual([[relay]]);
  });
  test('COMBOX PDF remains private and uses the same QR payload',async()=>{
-  const [box]={...labels.slice(0,1).map(l=>({...l,target_type:'COMBOX'}))};
+  const box={...labels[0],target_type:'COMBOX'};
   const pdf=await renderHubLabelPdf(db,{labels:[box],marketCode:'KM',format:'a4'});
   expect(pdf.subarray(0,5).toString()).toBe('%PDF-');
   expect((pdf.toString('latin1').match(/\/Type \/Page\b/g)||[])).toHaveLength(1);
