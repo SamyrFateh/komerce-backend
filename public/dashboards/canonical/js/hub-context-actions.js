@@ -75,6 +75,7 @@
     panel.appendChild(buttons);
     panel.addEventListener('submit',async event=>{
       event.preventDefault();
+      if(confirm.disabled)return;
       for(const [key,input] of Object.entries(entries))values[key]=input.value;
       confirm.disabled=true;
       feedback.textContent='Enregistrement en cours…';
@@ -115,13 +116,14 @@
     menu.appendChild(link);
   }
   // Le dossier PO canonique est l’unique surface d’exécution des achats.
-  function poLink(menu,doc,po,label,entry='operations'){
-    if(!validUuid(po.id)||!(/^[A-Z]{2}$/.test(po.market||''))) {
+  function poLink(menu,doc,po,label,entry='operations',decision=null){
+    const markets=String(po.market||'').split(' · ').filter(m=>/^[A-Z]{2}$/.test(m));
+    if(!validUuid(po.id)||!markets.length) {
       explanation(menu,doc,'Marché ou PO non identifié : accès au dossier indisponible.');
       return false;
     }
-    workflowLink(menu,doc,label,'/admin/hub-live?'+new URLSearchParams({
-      view:'execute',entry,market:po.market,atelier:'purchasing',sel:'po:'+po.id
+    for(const market of markets)workflowLink(menu,doc,label+(markets.length>1?' · '+market:''),'/admin/hub-live?'+new URLSearchParams({
+      view:'execute',entry,market,atelier:'purchasing',sel:'po:'+po.id,...(decision?{decision}:{})
     }).toString());
     return true;
   }
@@ -224,7 +226,7 @@
     poLink(menu,doc,po,'Ouvrir la PO · autorisation de paiement','direction');
     return true;
   }
-  function varianceDecision(menu, doc, po, grants, fetchFn, refresh) {
+  function varianceDecision(menu, doc, po, grants, fetchFn, refresh, executeHere=false) {
     const variance = po.variance_decision;
     if (variance) {
       explanation(menu, doc, `Écart décidé · ${variance.amount} ${variance.currency} · ${variance.reason} · Pièce ${variance.proof_ref}`);
@@ -232,6 +234,10 @@
     }
     const authorization = po.payment_decision;
     if (!validUuid(po.id) || !grants.supplier_payment || !authorization?.currency || !['notified', 'confirmed', 'hub_received'].includes(po.status)) return;
+    if(!executeHere){
+      poLink(menu,doc,po,'Ouvrir Direction · décider un écart fournisseur','direction','variance');
+      return;
+    }
     action(menu, doc, 'Décider un écart fournisseur', 'Plafond exceptionnel motivé dans la devise autorisée.', () => form(
       menu, doc, 'Décision d’écart fournisseur', [
         { name: 'approved_total', label: 'Total approuvé (' + authorization.currency + ')', type: 'number', min: '0.0001', max: authorization.amount, step: '0.0001', required: true },
@@ -270,5 +276,14 @@
     }
     return false;
   }
-  global.KomerceHubContextActions=Object.freeze({operations,administration,request});
+  // Même formulaire et writer, uniquement dans le dossier Direction ciblé.
+  function directionVariance(menu,{doc,fetch:fetchFn,user,po,grants={},refresh}){
+    if(!writableRoles.includes(user?.role)||!grants.supplier_payment){
+      explanation(menu,doc,'Droit de paiement requis pour décider un écart fournisseur.');
+      return false;
+    }
+    varianceDecision(menu,doc,po,grants,fetchFn,refresh,true);
+    return true;
+  }
+  global.KomerceHubContextActions=Object.freeze({operations,administration,directionVariance,request});
 })(typeof globalThis !== 'undefined' ? globalThis : this);
