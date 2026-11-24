@@ -69,6 +69,8 @@ test('Administration et Opérations occupent toute la largeur sans rail doublon'
     location:{search:'?branch=administrative&market=KM'},fetch:mockFetch({}),
     renderAdministrative:admin,renderOperations:ops});
   expect(api.branch).toBe('administrative');
+  expect(root.querySelector('[data-hub-open-operations]').getAttribute('href')).toBe('/admin/hub-live?view=execute');
+  expect(root.querySelector('[data-hub-branch="operations"]').children[0].children[0].textContent).toBe('Kanban');
   expect(root.children[1].querySelectorAll('[data-hub-branch]')).toHaveLength(3);
   expect(root.querySelectorAll('[data-hub-director-todo]')).toHaveLength(0);
   expect(root.children[2].className).toContain('is-table');
@@ -93,6 +95,7 @@ test('un relais reste sur la consultation Opérations malgré une URL Administra
   const mounted=app.mount({root,user:{role:'agent_relais'},document:doc,location:{search:'?branch=administrative'},
     renderAdministrative:admin,renderOperations:ops});
   expect(mounted.branch).toBe('operations');
+  expect(root.querySelector('[data-hub-open-operations]')).toBeNull();
   expect(root.querySelectorAll('[data-hub-branch]')).toHaveLength(1);
   expect(root.querySelectorAll('[data-hub-branch="direction"]')).toHaveLength(0);
   expect(admin).not.toHaveBeenCalled();
