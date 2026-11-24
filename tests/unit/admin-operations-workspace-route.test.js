@@ -432,3 +432,8 @@ test('GET supply réutilise la projection canonique du Kanban pour les jalons',(
   expect(source).toContain('stage_states: row.stage_states');
   expect(source).toContain('...dossier, hub_journeys');
 });
+
+test('le focus physique QR est transmis sans recomputation UI',()=>{
+ const source=require('fs').readFileSync(require('path').join(__dirname,'../../routes/admin-operations-workspace.js'),'utf8');
+ expect(source).toContain('physical_focus: row.physical_focus');
+});
