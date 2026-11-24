@@ -1379,6 +1379,7 @@
       RECEIVED: 'IDENTIFIED', IDENTIFIED: 'QUALITY_CHECKED', QUALITY_CHECKED: 'LOCATED',
       LOCATED: 'ALLOCATED', ALLOCATED: 'PICKED', PICKED: 'PACKED', PACKED: 'DISPATCHED',
     });
+    const BOX_STATE_LABELS=Object.freeze({RECEIVED:'À préparer',IDENTIFIED:'Identifiée',QUALITY_CHECKED:'Contrôlée',LOCATED:'Localisée',ALLOCATED:'Affectée',PICKED:'Prélevée',PACKED:'Fermée',DISPATCHED:'Prête au départ',QUARANTINED:'En quarantaine',SUPERSEDED:'Remplacée'});
     const BOX_MUTABLE = new Set(['RECEIVED', 'IDENTIFIED', 'QUALITY_CHECKED', 'LOCATED', 'ALLOCATED', 'PICKED']);
     const fillable = Array.isArray(d.fillable) ? d.fillable : [];
     // Le fetch canonique transporte l'authentification du dashboard ; un lien
@@ -1701,7 +1702,7 @@
       }
       const next = BOX_NEXT_STATE[box.state];
       if (next && (box.contents || []).length) {
-        const label = next === 'DISPATCHED' ? 'Prêt à remettre au transitaire' : `Étape suivante · ${next}`;
+        const label = next === 'DISPATCHED' ? 'Prêt à remettre au transitaire' : `Étape suivante · ${BOX_STATE_LABELS[next]||next}`;
         const step = makeActionButton(doc, label, 'advance-box');
         let finalBoxCode=null,applied=null;
         if(next==='DISPATCHED'){
@@ -1764,7 +1765,15 @@
             successMessage: 'COMBOX retirée du dossier encore en préparation.',
           }).catch(() => {}));
         }
-        return [pick, box.reference, box.state, contents || '—', box.shipment_ref || '—', composeCell(box), action];
+        const boxIdentity=doc.createElement('div');
+        boxIdentity.appendChild(text(doc,'strong','',box.reference));
+        const relayIds=new Set(box.contents.map(c=>c.relais_id).filter(Boolean));
+        const relayCodes=new Set(box.contents.map(c=>c.relais_code).filter(Boolean));
+        const known=box.contents.length>0&&box.contents.every(c=>c.relais_id&&c.relais_code);
+        const destination=relayIds.size>1||relayCodes.size>1?'Écart de destination à contrôler':known&&relayIds.size===1&&relayCodes.size===1?context.marketCode+' · '+Array.from(relayCodes)[0]:box.contents.length?'Destination à vérifier':'Destination après placement';
+        const dest=text(doc,'small','kmc-workspace-note',destination);
+        dest.setAttribute('data-hub-box-destination','');boxIdentity.appendChild(dest);
+        return [pick, boxIdentity, BOX_STATE_LABELS[box.state]||box.state, contents || '—', box.shipment_ref || '—', composeCell(box), action];
       }), 'Aucune COMBOX.'));
     boxes.appendChild(text(doc,'h3','','Préparer le départ'));
     boxes.appendChild(text(doc,'p','kmc-workspace-note','Sélectionnez les COMBOX prêtes, puis choisissez ou ouvrez leur dossier d’expédition.'));
