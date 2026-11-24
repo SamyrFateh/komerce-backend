@@ -53,8 +53,12 @@ function makeUi(role, result, status = 200, config = {}) {
     }
     if(url==='/api/admin/orders/item-refund-readiness')
       return {ok:true,json:async()=>({enabled:config.itemRefundEnabled===true})};
+    if(url==='/api/admin/orders/n27-remnant-readiness')
+      return {ok:true,json:async()=>({enabled:config.n27Enabled===true})};
     if(url.includes('/item-refund-context'))
       return {ok:true,json:async()=>config.itemRefundContext};
+    if(url.includes('/n27-remnant-context'))
+      return {ok:true,json:async()=>config.n27Context};
     if(url.endsWith('/execute'))
       return {ok:true,status:202,json:async()=>config.execution||{status:'unknown'}};
     if(url.endsWith('/refund-reservations')&&options.method==='POST'&&config.itemRefundStatuses?.length){
@@ -85,7 +89,8 @@ describe('G8 standalone operator UI', () => {
     await settle();
     expect(x.elements['g8-env'].textContent).toBe('Parcours désactivé');
     expect(x.nodes.some(n => n.tagName === 'form')).toBe(false);
-    expect(x.calls.map(n => n.url)).toEqual(['/api/auth/me', '/api/admin/orders/item-refund-readiness', '/api/admin/orders/local-refunds']);
+    expect(x.calls.map(n => n.url)).toEqual(['/api/auth/me', '/api/admin/orders/item-refund-readiness',
+      '/api/admin/orders/n27-remnant-readiness', '/api/admin/orders/local-refunds']);
     expect(x.calls.every(n => !n.options.method)).toBe(true);
   });
   test('admin sees verified cash obligation and explicit 2-person authorization form', async () => {
@@ -100,7 +105,7 @@ describe('G8 standalone operator UI', () => {
     expect(submit).toBeTruthy();
     expect(x.nodes.some(n => n.tagName === 'form')).toBe(true);
     await submit.parentNode.listeners.submit({ preventDefault() {} });
-    expect(x.calls).toHaveLength(3); // Readiness and list are read-only; confirmation prevents financial POST
+    expect(x.calls).toHaveLength(4); // Readiness and list are read-only; confirmation prevents financial POST
   });
   test('relay only receives scoped cash API; cannot access admin refund mutations', async () => {
     const row = { authorization_id:'a1',order_id:'o1',order_item_id:'i1',
@@ -176,5 +181,32 @@ describe('G8 standalone operator UI', () => {
     expect(execute.hidden).toBe(true);
     expect(x.calls.filter(call=>call.url.endsWith('/execute')).length).toBe(1);
     expect(x.nodes.find(n=>n.attributes.role==='status').textContent).toContain('Aucun nouvel essai');
+  });
+  test('N27 shows collected quantity and reserves only eligible F1 local remainder without claiming payout',async()=>{
+    const context={order:{id:'order-27',reference:'K0N27A',payment_mode:'cash_relais',payment_status:'paid'},blocked:false,
+      items:[{id:'item-27',product_name:'Article partiellement remis',quantity:3,qty_collected:1,qty_refunded:0}],
+      candidates:[{order_item_id:'item-27',incident_id:'incident-27',phase:'F1',available_quantity:2}]};
+    const x=makeUi('admin',{refunds:[]},200,{n27Enabled:true,n27Context:context,confirm:true,
+      itemReservation:{reservationId:'local-reservation-27',status:'reserved',currency:'KMF'}});
+    await settle();
+    const panel=x.nodes.find(n=>n.id==='g8-n27-remnant');expect(panel).toBeTruthy();
+    const lookup=x.nodes.find(n=>n.attributes['data-g8-action']==='load-n27-context');
+    const reference=lookup.parentNode.children.find(n=>n.tagName==='label').children.find(n=>n.tagName==='input');
+    reference.value='K0N27A';
+    await lookup.parentNode.listeners.submit({preventDefault(){}});
+    expect(x.nodes.find(n=>n.attributes.role==='status').textContent).toContain('1 unité(s) déjà remises exclues');
+    const candidate=x.nodes.find(n=>n.tagName==='select'&&
+      n.parentNode.parentNode.parentNode.parentNode.id==='g8-n27-remnant');
+    candidate.value='0';
+    const fields=panel.children[1].children.find(n=>n.tagName==='form'&&n.hidden===false);
+    const inputs=fields.children.filter(n=>n.tagName==='label')
+      .map(label=>label.children.find(child=>child.tagName==='input')).filter(Boolean);
+    inputs[0].value='1';inputs[1].value='Manquant confirmé au relais';
+    await fields.listeners.submit({preventDefault(){}});
+    const post=x.calls.find(call=>call.url.endsWith('/n27-remnant-reservations'));
+    expect(JSON.parse(post.options.body)).toMatchObject({incident_id:'incident-27',quantity:1,
+      operation_key:'00000000-0000-4000-8000-000000000001',reason:'Manquant confirmé au relais'});
+    expect(x.nodes.find(n=>n.attributes.role==='status').textContent).toContain('Aucun wallet crédité');
+    expect(x.calls.some(call=>/execute|wallet|stripe|paypal/.test(call.url))).toBe(false);
   });
 });

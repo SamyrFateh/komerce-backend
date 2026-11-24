@@ -26,7 +26,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Read-only candidate projection for N26a. The reservation transaction below
  * remains authoritative and rechecks the shortage, quantity and payment rails. */
-async function readVerifiedShortageCandidates({ orderReference, actor, db = dbDefault }) {
+async function readVerifiedShortageCandidates({ orderReference, actor, db = dbDefault, allowLocal = false }) {
   if (!actor?.id || actor.role !== 'admin') fail('ITEM_REFUND_ADMIN_REQUIRED', 'Arbitrage financier réservé admin', 403);
   const reference = String(orderReference || '').trim();
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]{1,79}$/.test(reference))
@@ -72,8 +72,9 @@ async function readVerifiedShortageCandidates({ orderReference, actor, db = dbDe
     current.sources.add(row.source);
     grouped.set(key,current);
   });
-  const supportedProvider = ['stripe_eur','paypal_eur'].includes(order.payment_mode);
-  const blocked = order.payment_status!=='paid' || !supportedProvider || order.has_capture!==true ||
+  const supportedProvider = ['stripe_eur','paypal_eur'].includes(order.payment_mode) && order.has_capture===true;
+  const supportedLocalRail = allowLocal && ['cash_relais','mobile_money'].includes(order.payment_mode);
+  const blocked = order.payment_status!=='paid' || (!supportedProvider && !supportedLocalRail) ||
     blockers[0]?.legacy_refund || blockers[0]?.unresolved_intent || blockers[0]?.local_claim;
   const candidates = [...grouped.values()].flatMap(proof => {
     const item=itemById.get(String(proof.order_item_id));

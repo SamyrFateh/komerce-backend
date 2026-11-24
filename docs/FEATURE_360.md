@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 55286)
+Total output lines: 2859
+
 # FEATURE 360
 
 _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7.3 déjà gouvernée. Feature 360 ne crée aucune nouvelle vérité architecturale ; toute correction se fait dans la source autoritaire existante._
@@ -8,7 +11,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 - Healthy : **34**
 - Attention : **6**
 - Blocked : **0**
-- Business dependencies : **337**
+- Business dependencies : **338**
 - Direct cross-feature imports : **0**
 - Runtime cycles : **0**
 - Ambiguous ownership signals : **0**
@@ -58,9 +61,9 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | platform | frontend-transversal | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
 | platform-ops | technical-transversal | 🟢 HEALTHY | 🟢 HEALTHY | fabrics, garment_models | auth, auth-identity, business-rules, catalog, documents, economic-engine, incident-management, infrastructure, logistics, orders, purchasing, wallet | auth-identity, auth-passkey, catalog, economic-engine, infrastructure, notifications, orders, payments, providers-services, recommendations, shared-cart, wallet | 0 |
 | providers-services | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | inquiries, physical_offers, providers, services | auth, auth-identity, infrastructure, local-stock, market, platform-ops, recommendations | market-delegation, recommendations | 0 |
-| purchasing | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | hub_authorization_grants, manual_purchase_executions, product_suppliers, purchase_lines, purchase_order_authorizations, purchase_orders, purchase_variance_decisions, supplier_execution_events, supplier_execution_fulfillments, supplier_execution_order_lines, supplier_execution_orders, supplier_execution_payment_proofs, supplier_execution_payments, supplier_payment_settlements, suppliers | auth, catalog, documents, economic-engine, external-provider-contracts, incident-management, infrastructure, logistics, notifications, orders, sourcing, supplier-connectivity | catalog, dashboard, decision-signals, logistics, orders, payments, platform-ops, sourcing | 0 |
+| purchasing | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | hub_authorization_grants, manual_purchase_executions, product_suppliers, purchase_lines, purchase_order_authorizations, purchase_orders, purchase_variance_decisions, supplier_execution_events, supplier_execution_fulfillments, supplier_execution_order_lines, supplier_execution_orders, supplier_execution_payment_proofs, supplier_execution_payments, supplier_payment_settlements, suppliers | auth, catalog, documents, economic-engine, external-provider-contracts, incident-management, infrastructure, logistics, notifications, orders, sourcing, supplier-connectivity | catalog, dashboard, decision-signals, logistics, orders, payments, platform-ops, refunds, sourcing | 0 |
 | recommendations | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | catalog, infrastructure, local-stock, logistics, market, market-autonomy, orders, platform-ops, providers-services | infrastructure, providers-services, shared-cart | 0 |
-| refunds | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | local_cash_refund_authorizations, local_cash_refund_payouts, local_item_refund_reservations, local_mobile_refund_handoffs, order_item_refund_reservations, refund_execution_intents, refunds | catalog, documents, economic-engine, incident-management, infrastructure, logistics, market, notifications, orders, payments, wallet | dashboard, documents, economic-engine, logistics, orders, payments | 0 |
+| refunds | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | local_cash_refund_authorizations, local_cash_refund_payouts, local_item_refund_reservations, local_mobile_refund_handoffs, order_item_refund_reservations, refund_execution_intents, refunds | catalog, documents, economic-engine, incident-management, infrastructure, logistics, market, notifications, orders, payments, purchasing, wallet | dashboard, documents, economic-engine, logistics, orders, payments | 0 |
 | settlement | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | market_settlement_events, market_settlements | auth, auth-identity, infrastructure, market, market-delegation | market-delegation | 0 |
 | shared-cart | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | basket_items, baskets, cart_shares, shared_cart_events, shared_cart_items, shared_cart_saved_access, shared_carts | auth, auth-identity, catalog, infrastructure, market-autonomy, notifications, orders, platform-ops, recommendations | catalog, dashboard, infrastructure, orders | 0 |
 | sourcing | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | import_runtime_item_events, import_runtime_runs, provider_credentials, sourcing_candidate_events, sourcing_candidates, sourcing_canonical_entities, sourcing_canonical_entity_refs, sourcing_captures, sourcing_match_proposals, sourcing_observation_evidence, sourcing_observations, sourcing_provider_control_events, sourcing_resolution_bindings, sourcing_resolution_decisions, sourcing_source_provides, sourcing_source_requests, sourcing_sources, supplier_commercial_category_mappings | auth, catalog, customs, dashboard, economic-engine, infrastructure, purchasing | catalog, dashboard, market-control-plane, purchasing | 0 |
@@ -1207,227 +1210,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - réparation ou réinterprétation de Supplier Order Identity / Canonical Unit / Purchase Order : autorité purchasing+sourcing uniquement
   - réassignation commerciale d une ligne, d un Market ou d une destination client depuis le Hub
 
-**Authority** : backend-core — logistics possède la vérité physique et la custody ; scan-engine.js reste autorité de la machine de scan colis legacy, hub-physical-identity.js possède HUB-001 sans jamais réassigner les vérités Purchasing/Orders/Market
-
-**Invariants** :
-- [object Object]
-- [object Object]
-- [object Object]
-- [object Object]
-- [object Object]
-- [object Object]
-- [object Object]
-- HUB-A : le Hub organise librement ses colis — un colis représente une commande s'il porte une ligne (order_items) de cette commande, ou si sa commande porteuse (parcels.order_id) n'a aucune ligne rattachée ; parcels.order_id n'est jamais réécrit. Tout ajout/retrait/réaffectation de ligne passe par parcel-item-mutation-service, exige un colis draft/preparation de même destination, conserve identité, quantité et compteurs qty_* (UNIQUE(order_item_id) inchangé) et laisse une trace parcel_events (item_assigned / item_removed / item_reassigned_in|out) dans la même transaction. La règle de paiement à l'expédition s'applique à chaque commande représentée ; aucune règle de facturation ni d'encaissement ne change
-- le HUB est une primitive logistics Komerce, jamais la propriété d un Market, d une source ou d un fournisseur ; Supplier Leg et Market Leg restent deux jambes distinctes
-- split/merge/repack changent les enveloppes physiques sans casser la filiation order item → purchase line/PO → allocation/unité Hub → parcel/shipment → relais
-- le fret maritime ne se ventile jamais au poids : volume si snapshot, repartition egale confidence low sinon
-- un produit tague fragile ne se repacke jamais (repack_exempt) : la protection prime sur le volume
-- la photo de scelle Dubai est la borne 1 de responsabilite : avant = fournisseur, apres = transport
-- le systeme prescrit (repack/measure/photo), l agent execute, jamais l inverse (R2)
-- une PO regroupee (order_id NULL) ne s alloue au Hub que par ligne d achat (purchase_line_id), repartie dans l ordre des commandes et plafonnee au restant du effectif, et n est jamais recevable tant qu elle est en brouillon ou annulee (quarantaine) ; l allocation historique reste au niveau PO
-- un colis ne change de statut que via une sequence de scan validee
-- [object Object]
-- le retrait exceptionnel par autorisation nominative ne revele jamais le nom attendu a l'agent relais — comparaison aveugle uniquement
-- le compteur de tentatives du retrait exceptionnel (exceptional_pickup_attempts) est distinct de celui du code secret (pickup_secret_attempts) — un echec sur l'un ne bloque jamais l'autre
-- le jalon disponible au relais transmet à notifications le nom et l adresse publics nécessaires au lien de localisation, sans géocodage bloquant
-- [object Object]
-- [object Object]
-- [object Object]
-- [object Object]
-- [object Object]
-- [object Object]
-- [object Object]
-- [object Object]
-- [object Object]
-
-**Owns** : `carriers`, `hub_box_bags`, `hub_custody_events`, `hub_physical_unit_placements`, `hub_physical_units`, `hub_purchase_allocations`, `international_shipment_charges`, `international_shipment_events`, `international_shipment_hub_units`, `international_shipment_relay_receipts`, `international_shipments`, `market_transport_sale_rates`, `parcel_events`, `parcel_items`, `parcels`, `pickup_code_generations`, `pickup_collect_failures`, `pickup_print_tokens`, `pickup_reveal_codes`, `pickup_verify_attempts`, `product_sku_physical_codes`, `relais`, `relay_product_return_receipts`, `scan_events`, `scans`, `shipments`
-**Writes (not owner)** : `order_items` (writer-not-owner), `products` (writer-not-owner)
-
-**Exposes** : 32 internal API(s), 78 HTTP interface(s)
-  - `addParcelItem` (services/parcel-item-mutation-service.js) — resolved
-  - `addParcelItemTraced` (services/parcel-item-mutation-service.js) — resolved
-  - `appendParcelShipmentInfo` (services/parcel-mutation-service.js) — resolved
-  - `assignParcelItem` (services/parcel-item-mutation-service.js) — resolved
-  - `assignSingleOrderItemToParcel` (services/parcel-item-mutation-service.js) — resolved
-  - `assignWholeOrderItemToParcel` (services/parcel-item-mutation-service.js) — resolved
-  - `createAutoPreparedParcel` (services/parcel-mutation-service.js) — resolved
-  - `createHubParcel` (services/parcel-mutation-service.js) — resolved
-  - `createPhysicalUnit` (services/hub-physical-identity.js) — resolved
-  - `createRelais` (services/relais-mutation-service.js) — resolved
-  - _...22 de plus, voir FEATURE_360.json_
-
-**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), loyalty (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED)
-**Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), inventory (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), market-control-plane (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED)
-
-**Projections** : _aucune_
-
-**Technical context** : 0 primitive dependencies, 2 test-only, 0 composition-root
-
-**Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
-**Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
-**Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
-
-**Architectural debt** : _aucune_
-
-**Implementation** : 199 fichier(s) déclaré(s)
-  - boutique : 1
-  - dash : 2
-  - docs : 7
-  - middleware : 1
-  - migrations : 16
-  - routes : 18
-  - services : 52
-  - tests : 99
-  - utils : 3
-
-_Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="logistics"]_
-
-## loyalty
-
-**Kind** : business-feature  ·  **Status** : production
-
-**Service** : Calculer et maintenir le statut de fidelite d'un client (palier + compteur gros panier) et ses recompenses.
-
-**Perimeter** :
-- _in_ :
-  - calcul et recalcul du palier de fidelite (recalculate_loyalty(), fonction DB appelee par routes/loyalty.js)
-  - compteur et notification de gros panier (big_basket_count / big_basket_last_notified_count)
-  - creation et traitement des recompenses (pending/granted/skipped), y compris les actions admin
-  - synthese de fidelite exposee (v_loyalty_summary) et grille des paliers (loyalty_tiers)
-- _out_ :
-  - solde et mouvements wallet (feature wallet, scindee de wallet-loyalty au Lot O1)
-  - paiement carte/PayPal (feature payments)
-  - remboursement (feature refunds)
-
-**Authority** : backend-core — tout changement de calcul de palier ou de recompense doit etre valide par le proprietaire de loyalty-service.js
-
-**Invariants** :
-- ne pas changer les calculs de fidelite (Lot O1 — ontology refactor, pas product refactor)
-- le recalcul de palier est idempotent : rejouable sans dupliquer une recompense deja accordee
-
-**Owns** : `loyalty_rewards`, `loyalty_tiers`
-
-**Exposes** : 0 internal API(s), 12 HTTP interface(s)
-
-**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED)
-**Consumed by** : auth-identity (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED)
-
-**Projections** : _aucune_
-
-**Technical context** : 0 primitive dependencies, 1 test-only, 0 composition-root
-
-**Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
-**Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
-**Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
-
-**Architectural debt** : _aucune_
-
-**Implementation** : 9 fichier(s) déclaré(s)
-  - routes : 2
-  - services : 1
-  - tests : 6
-
-_Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="loyalty"]_
-
-## market
-
-**Kind** : business-feature  ·  **Status** : production
-
-**Service** : Porter le référentiel des marchés ouverts (pays, devise) et l'historique d'accès des opérateurs à un marché — jamais le settlement ni l'attribution économique, qui restent une primitive séparée et différée.
-
-**Perimeter** :
-- _in_ :
-  - référentiel markets (code pays, devise, minor_unit) — M0
-  - historique d'accès operator_market_scopes (grain user, jamais settlement) — M1
-  - scoping market_id sur relais et orders (snapshot résolu du relais) — M1b/M1c
-  - requireMarketScope autorisation (serveur, enferme l'opérateur, jamais le client) — M2
-  - consommation runtime de requireMarketScope par les surfaces admin canoniques scopées par marché (Dashboard, Order 360, Client, Pricing, Opérations, Finance et Expéditions/Douane)
-  - garde Joi forbidMarketId + gate scripts/check-no-market-id-mutation.js — M2
-  - boundary devise utils/currency.js (formatage minor_unit-aware, lookup markets avec cache 5 min) — M5
-  - parités fixes currency_parities, projection via EUR reference (jamais un axe direct entre devises Zone franc) — P1
-  - adapter client fmt/fmtPrice (public/boutique/js/b-utils.js), consomme currency_parities via /api/public/config, projette vers le marché courant (market-context.js, override ?market= inclus) — P2
-  - snapshot display_total_amount/display_currency (orders, services/order-display-snapshot.js) — troisième vérité, distincte de total_kmf/total_eur (Payment Boundary, finance_config, jamais touchée) et de currency_parities seule — P3, freeze 22-08-2026
-  - ouverture Mayotte (YT, EUR, minor_unit=2) — M10, premier marché après le seed KM
-- _out_ :
-  - MarketContext navigation acheteur — déjà livré côté boutique (public/boutique/js/market-context.js, chantier hero H2/H3), contextuel et commutable, jamais lu par requireMarketScope
-  - migration des 94 colonnes *_kmf existantes vers utils/currency.js — M5 livre l'outil de formatage, ne touche à aucune colonne ni aucun appelant existant ; renommer une colonne de montant en prod est un chantier séparé, à fort risque
-  - conversion d'affichage KMF→EUR diaspora (public/boutique/js/b-utils.js#fmt(), taux de change détecté par fuseau horaire) — mécanisme distinct, non remplacé par la boundary devise (qui porte la devise RÉELLE d'un marché, pas une conversion). b-utils.js devient un ADAPTER de cette boundary en P2, jamais l'inverse
-  - P4/P5 — documents contractuels lisant le snapshot P3, dashboards agrégation cross-market en EUR reference — non faits, dépendent de P3/P2 respectivement
-  - devises de sourcing flottantes (USD/AED/CNY) — concern séparé par construction (freeze invariant 4/5), currency_parities ne les contient jamais
-  - settlement et attribution économique par opérateur (entité différée, hors périmètre)
-  - corridor framework (relation traversant les scopes, pas un axe d'ownership, hors périmètre)
-  - wallet multi-market (hors périmètre)
-  - product_market_offer (déclencheur = 1er marchand local, pas divergence de prix, hors périmètre)
-  - formatage devise affiché (feature economic-engine / boundary devise M5, qui consomme minor_unit)
-
-**Authority** : backend-core — doctrine gelée dans KOMERCE_MARKET_LAYER_FREEZE.md (2026-08-19, READY TO FREEZE). Toute extension du périmètre (settlement, corridor framework, entité opérateur) exige un nouveau freeze, pas une extension silencieuse de ce manifeste.
-
-**Invariants** :
-- markets porte désormais le lifecycle canonique PROVISIONING/ACTIVE/SUSPENDED/CLOSED et storefront_texts ; aucune autorisation utilisateur n’est dérivée de ces champs
-- market-lifecycle-service est le seul writer runtime de lifecycle_status/is_active ; CLOSED est terminal et toute transition suit la matrice explicite
-- provisionner un nouveau marché crée une ligne PROVISIONING ; reprovisionner un Market ID historique exige explicitement un état PROVISIONING sans assignment ACTIVE et conserve l’identité/historique du marché
-- operator_market_scopes (M1) = historique d'accès grain user, jamais source du settlement (grain organisation, différé)
-- révocation d'un scope = UPDATE revoked_at, jamais DELETE — l'historique d'accès n'est pas reconstructible sinon
-- MarketContext (parcours acheteur) est un contexte client commutable, jamais une autorisation
-- requireMarketScope (M2) est résolu serveur depuis operator_market_scopes, jamais depuis un market_id fourni par le client
-- relais.market_id (M1b) est NOT NULL — un relais est un lieu physique, il ne peut pas exister sans marché
-- orders.market_id (M1c) est un SNAPSHOT résolu du relais au moment de la commande, jamais une FK vivante re-synchronisée
-- orders.relais_id est NOT NULL dans le schéma (vérifié par exécution réelle, pas supposé) — aucune commande sans relais n'est possible, le backfill orders.market_id est donc total par construction
-- toute migration de market qui touche une table possédée par une autre feature (ex: relais, logistics ; orders) ajoute une colonne ou un index, jamais une règle métier de cette autre feature
-- forbidMarketId (validators/index.js) échoue fort (400, message explicite) plutôt que de compter sur stripUnknown pour retirer market_id silencieusement d'un payload client
-- scripts/check-no-market-id-mutation.js est un gate, pas une convention documentée : un market_id mutable non gardé dans validators/*.js fait échouer la CI
-- utils/currency.js#getMarketCurrency throw si le marché n'existe pas — jamais de devise par défaut silencieuse
-- utils/currency.js#formatAmount suppose un montant déjà dans l'unité affichée (12500, pas 1250000 sous-unité) — cohérent avec les colonnes *_kmf existantes, jamais une convention cents inventée sans besoin réel
-- M10 (ouverture Mayotte) est un INSERT seul — vérifié réellement : 0 fichier de M1/M1b/M1c/M2/M5 modifié pour ouvrir ce marché, cf. tests/integration/market-open-matrix.test.js
-- reference_currency = EUR (canonique de la Currency Boundary), structurellement distinct de economic_engine_base_currency = KMF (economic-engine, inchangé) — ne jamais confondre les deux (freeze P1, 22-08-2026)
-- invariant 9 : aucune paire directe entre deux devises Zone franc (KMF↔XAF) n'est jamais stockée ni calculée comme telle — toute conversion se dérive de deux parités vers EUR au moment du calcul, cf. currency_parities et projectAmount()
-- currency_parities est la SEULE source de parités — aucune parité ne peut être maintenue manuellement dans un second artefact applicatif (server.js et b-utils.js consomment via adapter, ne portent jamais leur propre valeur)
-- la Currency Boundary possède la règle monétaire ; utils/currency.js (serveur) et b-utils.js (client, P2) en sont les adapters, jamais des propriétaires concurrents de la règle
-- aucune devise de sourcing flottante (USD/AED/CNY) dans currency_parities — absence par construction, pas par oubli (freeze invariants 4/5)
-- P2 : b-utils.js#fmt(amount, "KMF") ne force plus un affichage KMF littéral depuis le 22-08-2026 — "KMF" est devenu l'alias "projette vers le marché courant" (résolu via market-context.js, override ?market= inclus). Toute AUTRE devise explicite (ex. "EUR") garde le comportement littéral historique, forcé, ignore le marché. Les 33 appels existants de fmt(x, "KMF") n'ont pas été modifiés — ils héritent du nouveau comportement automatiquement. Quiconque lit un de ces appels doit savoir que "KMF" ne veut plus dire "force KMF"
-- P2 : fmt()/fmtPrice() restent SYNCHRONES (33 appelants dans des boucles de rendu) — la projection consomme un snapshot déjà chargé (fetch unique au chargement du module, jamais un round-trip par appel). Avant résolution du fetch (fenêtre courte, ou en cas d'échec réseau), repli sur l'affichage KMF brut — jamais un montant faux ni une exception
-- P3 : orders.total_kmf/total_eur (Payment Boundary, finance_config) sont STRICTEMENT INCHANGÉS — Stripe, PayPal et cash_relais lisent exclusivement ces deux colonnes, jamais display_total_amount/display_currency. Les deux boundaries coexistent, jamais mélangées
-- P3 : display_market_code (client, requête POST /api/orders) est un indice de CONTEXTE, jamais un montant, jamais une autorisation — le serveur calcule lui-même display_total_amount via projectAmount() (services/order-display-snapshot.js). Un code invalide ou absent ne bloque jamais la commande
-- P3 : ne jamais supposer silencieusement que orders.market_id (celui du relais choisi) est le marché de navigation du client — display_market_code fait TOUJOURS foi s'il est valide ; relais.market_id n'est qu'un repli si aucun code n'a été fourni ou qu'il est invalide. Preuve en base : tests/integration/order-display-snapshot.test.js démontre une ligne où market_id (KM) ≠ display_currency (XAF)
-- P3 : display_parity_snapshot (JSONB) est une métadonnée d'audit — la parité utilisée pour le calcul, jamais une source de vérité alternative. display_total_amount seul fait foi
-- P3 : aucun recalcul ultérieur du display snapshot — figé à la création, comme total_kmf/total_eur. Pour les commandes antérieures à la migration 143, les 3 colonnes restent NULL — aucun backfill fabriqué (invariant 7 du freeze)
-- P3 : resolveDisplaySnapshot() (services/order-display-snapshot.js) ne throw jamais — un échec de résolution retourne un snapshot vide, ne bloque jamais la création d'une commande. C'est une donnée d'audit/confirmation, pas une donnée de paiement
-- P4 : correctif Payment Boundary trouvé pendant la cartographie P3 — services/invoice-service.js affichait "KMF" codé en dur sur toutes les factures, même en paiement EUR (Stripe/PayPal). Corrigé selon payment_mode, sans toucher currency_parities ni display_total_amount — ce n'est pas un chantier Currency Boundary, fichiers déclarés dans documents.feature.js (migrations/144_invoices_total_eur.sql), pas ici
-
-**Owns** : `currency_parities`, `fx_public_reference_quotes`, `fx_rate_observations`, `markets`, `operator_market_scopes`
-
-**Exposes** : 0 internal API(s), 0 HTTP interface(s)
-
-**Consumes** : infrastructure (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED)
-**Consumed by** : catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERVED), market-control-plane (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), market-operator-dashboard (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), providers-services (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED), settlement (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
-
-**Projections** : _aucune_
-
-**Technical context** : 0 primitive dependencies, 4 test-only, 0 composition-root
-
-**Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
-**Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
-**Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
-
-**Architectural debt** : _aucune_
-
-**Implementation** : 61 fichier(s) déclaré(s)
-  - migrations : 15
-  - scripts : 3
-  - services : 11
-  - tests : 32
-
-_Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="market"]_
-
-## market-autonomy
-
-**Kind** : business-feature  ·  **Status** : staging
-
-**Service** : Permettre à un responsable pays explicitement scopé manager de décider un prix local, d’en voir l’impact économique, puis de l’activer sans approbation centrale lorsque les gates autorisent la position ; LOCAL_ACTIVE devient alors la seule vérité locale consommable par le buyer path.
-
-**Perimeter** :
-- _in_ :
-  - décision de prix commercial locale par market_id + product_id
+**Authority** : backend-core — logistics possède la vérité physique et la custody ; scan-engine.js reste autorité de …5286 tokens truncated… - décision de prix commercial locale par market_id + product_id
   - devise résolue exclusivement depuis le marché serveur
   - audit append-only SET/RESET/AUTHORIZE/ACTIVATE de la décision locale
   - preview économique CDR + couverture marché avant activation
@@ -2283,7 +2066,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - _...4 de plus, voir FEATURE_360.json_
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), external-provider-contracts (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED), supplier-connectivity (DECLARED_AND_OBSERVED)
-**Consumed by** : catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED)
+**Consumed by** : catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
@@ -2392,6 +2175,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 - [object Object]
 - [object Object]
+- [object Object]
 - un remboursement n'est jamais applique deux fois pour le meme evenement source
 - tout refund externe ou crédit compensatoire est idempotent par événement source ; un rejeu ne déclenche jamais un second remboursement
 
@@ -2400,7 +2184,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Exposes** : 1 internal API(s), 0 HTTP interface(s)
   - `processRefund(orderOrCartId, reason)`  — documented-signature-no-file
 
-**Consumes** : catalog (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
+**Consumes** : catalog (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
 **Consumed by** : dashboard (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
@@ -2413,10 +2197,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 47 fichier(s) déclaré(s)
+**Implementation** : 49 fichier(s) déclaré(s)
   - migrations : 3
-  - services : 12
-  - tests : 27
+  - services : 13
+  - tests : 28
   - utils : 5
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="refunds"]_

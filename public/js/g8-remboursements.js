@@ -369,6 +369,92 @@
     });
     list.parentNode.insertBefore(panel,list);
   }
+  function ensureN27RemnantForm() {
+    if (userRole !== 'admin' || document.querySelector('#g8-n27-remnant')) return;
+    const panel=node('details','case'); panel.id='g8-n27-remnant'; panel.style.marginBottom='20px';
+    const summary=append(panel,'summary','case-head','N27 · Décider le reliquat après retrait partiel');
+    summary.style.cursor='pointer';
+    const box=append(panel,'div','case-body');
+    append(box,'p','hint','Les articles déjà remis restent exclus. Le serveur bloque les reliquats encore engagés auprès du fournisseur ou présents dans un colis actif. Une réservation crée une dette au payeur d’origine ; aucun crédit wallet ni paiement n’est déclenché.');
+    const lookup=append(box,'form','proof-form');
+    const label=append(lookup,'label','field'); append(label,'span','','Référence de commande');
+    const reference=append(label,'input'); reference.required=true; reference.autocomplete='off';
+    reference.maxLength=80; reference.pattern='[A-Za-z0-9][A-Za-z0-9._-]{1,79}';
+    const loadButton=append(lookup,'button','action','Afficher le reliquat et son palier');
+    loadButton.type='submit'; loadButton.setAttribute('data-g8-action','load-n27-context');
+    const notice=append(box,'p','case-summary','Aucune décision financière n’a été prise.'); notice.setAttribute('role','status');
+    const breakdown=append(box,'div','case-summary');
+    const form=append(box,'form','proof-form'); form.hidden=true;
+    const candidateLabel=append(form,'label','field'); append(candidateLabel,'span','','Ligne manquante et incident attesté');
+    const candidate=append(candidateLabel,'select'); candidate.required=true;
+    const quantityLabel=append(form,'label','field'); append(quantityLabel,'span','','Quantité non remise à réserver');
+    const quantity=append(quantityLabel,'input'); quantity.type='number'; quantity.min='1'; quantity.step='1'; quantity.required=true;
+    const reasonLabel=append(form,'label','field'); append(reasonLabel,'span','','Motif vérifié (8 caractères minimum)');
+    const reason=append(reasonLabel,'input'); reason.required=true; reason.minLength=8; reason.maxLength=500;
+    const reserve=append(form,'button','action action-warning','Réserver la dette du reliquat');
+    reserve.type='submit'; reserve.setAttribute('data-g8-action','reserve-n27-remnant');
+    let context=null, operationKey=null;
+    const setQuantityLimit=()=>{
+      const selected=context?.candidates?.[Number(candidate.value)];
+      quantity.max=String(selected?.available_quantity||1);
+      if(!quantity.value||Number(quantity.value)>Number(quantity.max))quantity.value='1';
+      operationKey=null;
+    };
+    candidate.addEventListener('change',setQuantityLimit);
+    quantity.addEventListener('input',()=>{operationKey=null;});
+    reason.addEventListener('input',()=>{operationKey=null;});
+    lookup.addEventListener('submit',async event=>{
+      event.preventDefault(); if(!lookup.reportValidity())return;
+      loadButton.disabled=true; form.hidden=true; context=null; operationKey=null;
+      notice.textContent='Lecture des quantités, incidents et paliers fournisseur/transport…';
+      try{
+        context=await json('/api/admin/orders/'+encodeURIComponent(reference.value.trim())+'/n27-remnant-context');
+        candidate.replaceChildren();
+        breakdown.replaceChildren();
+        (context.items||[]).forEach(item=>{
+          const line=append(breakdown,'p','case-summary',(item.product_name||'Article')+
+            ' · '+item.qty_collected+' remis · '+item.uncollected_quantity+' non remis · '+item.phase+
+            (item.blocked_reason?' · '+item.blocked_reason:''));
+          line.setAttribute('data-n27-item-phase',String(item.phase));
+        });
+        const byId=new Map((context.items||[]).map(item=>[String(item.id),item]));
+        (context.candidates||[]).forEach((entry,index)=>{
+          const item=byId.get(String(entry.order_item_id));
+          const option=node('option','',(item?.product_name||'Article')+' · '+entry.available_quantity+
+            ' admissible(s) · '+entry.phase+' · incident '+String(entry.incident_id).slice(0,8));
+          option.value=String(index); candidate.appendChild(option);
+        });
+        const collected=(context.items||[]).reduce((sum,item)=>sum+Number(item.qty_collected||0),0);
+        notice.textContent='Commande '+context.order.reference+' · '+context.order.payment_mode+
+          ' · '+collected+' unité(s) déjà remises exclues. Les phases F2/F3 restent bloquées jusqu’à preuve de libération fournisseur/transport.';
+        form.hidden=!candidate.children.length;
+        if(candidate.children.length)setQuantityLimit();
+        if(!candidate.children.length)notice.textContent+=' Aucun reliquat F1 avec manquant attesté et quantité disponible.';
+      }catch(error){context=null;notice.textContent=(error.code?error.code+' — ':'')+error.message;}
+      finally{loadButton.disabled=false;}
+    });
+    form.addEventListener('submit',async event=>{
+      event.preventDefault(); if(!context||!form.reportValidity())return;
+      const entry=context.candidates[Number(candidate.value)];
+      if(!entry||Number(quantity.value)<1||Number(quantity.value)>Number(entry.available_quantity))return;
+      if(!window.confirm('Réserver '+quantity.value+' unité(s) du reliquat attesté au payeur d’origine ? Aucun paiement ne sera effectué.'))return;
+      reserve.disabled=true;
+      try{
+        operationKey=operationKey||window.crypto.randomUUID();
+        const result=await json('/api/admin/orders/'+encodeURIComponent(context.order.id)+
+          '/items/'+encodeURIComponent(entry.order_item_id)+'/n27-remnant-reservations','POST',{
+            incident_id:entry.incident_id,quantity:Number(quantity.value),operation_key:operationKey,
+            reason:reason.value.trim()});
+        operationKey=null; form.hidden=true;
+        notice.textContent='Dette N27 réservée · '+String(result.amountMinor||'montant à relire')+' '+
+          String(result.currency||'')+' · '+result.status+
+          '. Aucun wallet crédité et aucun règlement prétendu. Le paiement suit le parcours G8 avec ses preuves.';
+      }catch(error){notice.textContent=(error.code?error.code+' — ':'')+error.message+
+        '. Recharger le dossier avant toute nouvelle décision.';}
+      finally{reserve.disabled=false;}
+    });
+    list.parentNode.insertBefore(panel,list);
+  }
   function renderCase(row) {
     const card = append(list, 'article', 'case');
     card.setAttribute('data-g8-case', String(row.reservation_id || row.authorization_id));
@@ -424,6 +510,10 @@
         try{
           const readiness=await json('/api/admin/orders/item-refund-readiness');
           if(readiness.enabled===true)ensureItemRefundForm();
+        }catch(_){}
+        try{
+          const readiness=await json('/api/admin/orders/n27-remnant-readiness');
+          if(readiness.enabled===true)ensureN27RemnantForm();
         }catch(_){}
       }
       const compensationEntry = document.querySelector('[data-g6-sav-compensation-entry]');

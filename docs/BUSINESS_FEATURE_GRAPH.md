@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 63503)
+Total output lines: 2924
+
 # Business Feature Graph — Komerce (Lot O3)
 
 > Généré par `scripts/business-graph-gen.js`. Ne pas éditer à la main.
@@ -81,7 +84,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 36 | 36 | 721 | 721 | 0 |
+| backend | 36 | 36 | 725 | 725 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 106 | 106 | 0 |
 
@@ -596,7 +599,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 21
 - internal APIs: 14
 - dependencies (consumes): 12 — documents, supplier-connectivity, external-provider-contracts, sourcing, catalog, infrastructure, orders, auth, economic-engine, notifications, incident-management, logistics
-- consumers: 8 — catalog, dashboard, logistics, orders, payments, platform-ops, sourcing, decision-signals
+- consumers: 9 — catalog, dashboard, logistics, orders, payments, platform-ops, refunds, sourcing, decision-signals
 
 ### recommendations _(business-feature)_
 
@@ -619,13 +622,13 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - utils: 5
 - migrations: 3
-- services: 12
-- tests: 27
+- services: 13
+- tests: 28
 - tables owned (lifecycle): 7 — `refunds`, `refund_execution_intents`, `order_item_refund_reservations`, `local_item_refund_reservations`, `local_cash_refund_authorizations`, `local_cash_refund_payouts`, `local_mobile_refund_handoffs`
 - tables written: 7
 - interfaces exposed: 0
 - internal APIs: 1
-- dependencies (consumes): 11 — market, infrastructure, orders, logistics, payments, wallet, documents, notifications, economic-engine, catalog, incident-management
+- dependencies (consumes): 12 — market, infrastructure, orders, logistics, payments, wallet, documents, notifications, economic-engine, catalog, incident-management, purchasing
 - consumers: 6 — dashboard, documents, economic-engine, logistics, orders, payments
 
 ### settlement _(business-feature)_
@@ -865,8 +868,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `otp_codes` | `auth-identity` | single-writer | auth-identity | — |
 | `outbox_events` | `infrastructure` | single-writer | infrastructure | — |
 | `parcel_events` | `logistics` | declared-table-owner | logistics | — |
-| `parcel_items` | `logistics` | declared-table-owner | dashboard, logistics, platform-ops | customs, dashboard, documents, economic-engine, inventory, orders, payments |
-| `parcels` | `logistics` | declared-table-owner | dashboard, logistics, platform-ops | auth-identity, customs, dashboard, documents, economic-engine, incident-management, inventory, notifications, orders, payments, recommendations |
+| `parcel_items` | `logistics` | declared-table-owner | dashboard, logistics, platform-ops | customs, dashboard, documents, economic-engine, inventory, orders, payments, refunds |
+| `parcels` | `logistics` | declared-table-owner | dashboard, logistics, platform-ops | auth-identity, customs, dashboard, documents, economic-engine, incident-management, inventory, notifications, orders, payments, recommendations, refunds |
 | `partners` | `dashboard` | single-writer | dashboard | — |
 | `paypal_events_processed` | `payments` | single-writer | payments | — |
 | `physical_offers` | `providers-services` | single-writer | providers-services | market-delegation |
@@ -901,9 +904,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `products` | `catalog` | declared-table-owner | catalog, dashboard, logistics | auth-identity, customs, documents, economic-engine, inventory, local-stock, market-autonomy, market-delegation, orders, platform-ops, purchasing, recommendations, refunds, shared-cart, sourcing, unsold-resolution |
 | `provider_credentials` | `sourcing` | declared-table-owner | sourcing | — |
 | `providers` | `providers-services` | single-writer | providers-services | market-delegation |
-| `purchase_lines` | `purchasing` | declared-table-owner | purchasing | dashboard |
+| `purchase_lines` | `purchasing` | declared-table-owner | purchasing | dashboard, refunds |
 | `purchase_order_authorizations` | `purchasing` | declared-table-owner | purchasing | logistics |
-| `purchase_orders` | `purchasing` | declared-table-owner | purchasing | dashboard, logistics |
+| `purchase_orders` | `purchasing` | declared-table-owner | purchasing | dashboard, logistics, refunds |
 | `purchase_variance_decisions` | `purchasing` | declared-table-owner | purchasing | — |
 | `recipients` | `orders` | multi-writer-resolved-by-classification-signal | dashboard, orders | documents, economic-engine, logistics, notifications |
 | `refund_execution_intents` | `refunds` | single-writer | refunds | orders |
@@ -1361,550 +1364,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/tracking/{id}/verify-pickup` | logistics | `routes/tracking.js` (resolved-owned) |
 | `GET /api/transit` | logistics | `routes/transit-dashboard.js` (resolved-owned) |
 | `GET /api/transit-dashboard` | logistics | `routes/transit-dashboard.js` (resolved-owned) |
-| `POST /api/transit-dashboard/{id}/transit` | logistics | `routes/transit-dashboard.js` (resolved-owned) |
-| `POST /api/transit/{id}/transit` | logistics | `routes/transit-dashboard.js` (resolved-owned) |
-| `GET /api/transitaire/history` | logistics | `routes/transitaire-api.js` (resolved-owned) |
-| `GET /api/transitaire/parcels` | logistics | `routes/transitaire-api.js` (resolved-owned) |
-| `POST /api/transitaire/ship` | logistics | `routes/transitaire-api.js` (resolved-owned) |
-| `GET /api/transitaire/stats` | logistics | `routes/transitaire-api.js` (resolved-owned) |
-| `GET /api/v2/parcels` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
-| `GET /api/v2/parcels/{id}` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
-| `GET /api/v2/parcels/{id}/label` | logistics | `routes/parcel-label.js` (resolved-owned) |
-| `GET /api/v2/parcels/{id}/timeline` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
-| `GET /api/v2/parcels/alerts` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
-| `GET /api/v2/parcels/critical` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
-| `GET /api/v2/parcels/kpis` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
-| `GET /api/v2/parcels/reconciliation` | logistics | `routes/parcel-api-v2/read.js` (resolved-owned) |
-| `POST /api/hub/move` | logistics | `routes/hub.js` (resolved-owned) |
-| `POST /api/hub/outcome` | logistics | `routes/hub.js` (resolved-owned) |
-| `POST /api/hub/revalidate` | logistics | `routes/hub.js` (resolved-owned) |
-| `POST /api/hub/transition` | logistics | `routes/hub.js` (resolved-owned) |
-| `POST /api/hub/unit` | logistics | `routes/hub.js` (resolved-owned) |
-| `GET /api/parcels` | logistics | `routes/parcels.js` (resolved-owned) |
-| `POST /api/parcels` | logistics | `routes/parcels.js` (resolved-owned) |
-| `GET /api/loyalty/tiers` | loyalty | `routes/loyalty.js` (resolved-owned) |
-| `GET /api/admin/loyalty/pending` | loyalty | `routes/admin-loyalty.js` (resolved-owned) |
-| `GET /api/admin/loyalty/history` | loyalty | `routes/admin-loyalty.js` (resolved-owned) |
-| `POST /api/admin/loyalty/reward/{id}` | loyalty | `routes/admin-loyalty.js` (resolved-owned) |
-| `POST /api/admin/loyalty/skip/{id}` | loyalty | `routes/admin-loyalty.js` (resolved-owned) |
-| `GET /api/admin/loyalty/stats` | loyalty | `routes/admin-loyalty.js` (resolved-owned) |
-| `GET /api/loyalty/me` | loyalty | `routes/loyalty.js` (resolved-owned) |
-| `GET /api/loyalty/users` | loyalty | `routes/loyalty.js` (resolved-owned) |
-| `GET /api/loyalty/stats` | loyalty | `routes/loyalty.js` (resolved-owned) |
-| `PUT /api/loyalty/tiers/{id}` | loyalty | `routes/loyalty.js` (resolved-owned) |
-| `POST /api/loyalty/recalculate/{id}` | loyalty | `routes/loyalty.js` (resolved-owned) |
-| `POST /api/loyalty/recalculate-all` | loyalty | `routes/loyalty.js` (resolved-owned) |
-| `POST /api/admin/markets` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
-| `POST /api/admin/markets/{id}/lifecycle` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
-| `PUT /api/admin/markets/{id}/storefront` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
-| `POST /api/admin/markets/{id}/reprovision` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
-| `GET /api/admin/markets` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
-| `GET /api/admin/markets/central-authority` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
-| `GET /api/admin/markets/{id}/control-plane` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
-| `GET /api/market-delegation/markets/{id}/team` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `POST /api/market-delegation/markets/{id}/team/invitations` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `POST /api/market-delegation/team/invitations/{id}/accept` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `PUT /api/market-delegation/markets/{id}/team/{id}/capabilities` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `DELETE /api/market-delegation/markets/{id}/team/{id}` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `DELETE /api/market-delegation/markets/{id}/team/invitations/{id}` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `GET /api/market-delegation/markets/{id}/cash-control-policy` | market-delegation | `routes/market-delegation-cash-control.js` (resolved-owned) |
-| `PUT /api/market-delegation/markets/{id}/cash-control-policy` | market-delegation | `routes/market-delegation-cash-control.js` (resolved-owned) |
-| `GET /api/market-delegation/markets/{id}/network/relais` | market-delegation | `routes/market-delegation-network.js` (resolved-owned) |
-| `POST /api/market-delegation/markets/{id}/network/relais` | market-delegation | `routes/market-delegation-network.js` (resolved-owned) |
-| `PUT /api/market-delegation/markets/{id}/network/relais/{id}` | market-delegation | `routes/market-delegation-network.js` (resolved-owned) |
-| `POST /api/market-delegation/markets/{id}/network/relais/{id}/suspend` | market-delegation | `routes/market-delegation-network.js` (resolved-owned) |
-| `POST /api/market-delegation/markets/{id}/network/relais/{id}/activate` | market-delegation | `routes/market-delegation-network.js` (resolved-owned) |
-| `GET /api/market-delegation/markets/{id}/network/providers` | market-delegation | `routes/market-delegation-provider.js` (resolved-owned) |
-| `POST /api/market-delegation/markets/{id}/network/providers` | market-delegation | `routes/market-delegation-provider.js` (resolved-owned) |
-| `PUT /api/market-delegation/markets/{id}/network/providers/{id}` | market-delegation | `routes/market-delegation-provider.js` (resolved-owned) |
-| `POST /api/market-delegation/markets/{id}/network/providers/{id}/suspend` | market-delegation | `routes/market-delegation-provider.js` (resolved-owned) |
-| `POST /api/market-delegation/markets/{id}/network/providers/{id}/activate` | market-delegation | `routes/market-delegation-provider.js` (resolved-owned) |
-| `GET /api/market-delegation/markets/{id}/catalog/exposure` | market-delegation | `routes/market-delegation-catalog.js` (resolved-owned) |
-| `POST /api/market-delegation/markets/{id}/catalog/review/{id}/validate` | market-delegation | `routes/market-delegation-catalog.js` (resolved-owned) |
-| `PUT /api/market-delegation/markets/{id}/catalog/exposure/{id}` | market-delegation | `routes/market-delegation-catalog.js` (resolved-owned) |
-| `GET /api/market-delegation/markets/{id}/local-offer/services` | market-delegation | `routes/market-delegation-local-offer.js` (resolved-owned) |
-| `PUT /api/market-delegation/markets/{id}/local-offer/services/{id}` | market-delegation | `routes/market-delegation-local-offer.js` (resolved-owned) |
-| `GET /api/market-delegation/markets/{id}/local-offer/physical-offers` | market-delegation | `routes/market-delegation-local-offer.js` (resolved-owned) |
-| `PUT /api/market-delegation/markets/{id}/local-offer/physical-offers/{id}` | market-delegation | `routes/market-delegation-local-offer.js` (resolved-owned) |
-| `GET /api/market-delegation/markets/{id}/client-cases/disputes` | market-delegation | `routes/market-delegation-client-case.js` (resolved-owned) |
-| `PUT /api/market-delegation/markets/{id}/client-cases/disputes/{id}` | market-delegation | `routes/market-delegation-client-case.js` (resolved-owned) |
-| `GET /api/market-delegation/markets/{id}/settlements` | market-delegation | `routes/market-delegation-settlement.js` (resolved-owned) |
-| `POST /api/market-delegation/markets/{id}/settlements/{id}/request` | market-delegation | `routes/market-delegation-settlement.js` (resolved-owned) |
-| `POST /api/market-delegation/markets/{id}/settlements/{id}/receive` | market-delegation | `routes/market-delegation-settlement.js` (resolved-owned) |
-| `GET /api/market-delegation/markets/{id}/structure-events` | market-delegation | `routes/market-delegation-structure-event.js` (resolved-owned) |
-| `POST /api/market-delegation/markets/{id}/structure-events` | market-delegation | `routes/market-delegation-structure-event.js` (resolved-owned) |
-| `GET /api/market-delegation/markets/{id}/performance` | market-delegation | `routes/market-delegation-performance.js` (resolved-owned) |
-| `GET /api/v2/notifications` | notifications | `routes/notification-api.js` (resolved-owned) |
-| `GET /api/v2/notifications/stats` | notifications | `routes/notification-api.js` (resolved-owned) |
-| `GET /api/auth/me/notifications` | notifications | `routes/client-notifications.js` (resolved-owned) |
-| `POST /api/auth/me/notifications/{id}/ack` | notifications | `routes/client-notifications.js` (resolved-owned) |
-| `GET /webhook/meta-whatsapp` | notifications | `routes/meta-whatsapp.js` (resolved-owned) |
-| `POST /webhook/meta-whatsapp` | notifications | `routes/meta-whatsapp.js` (resolved-owned) |
-| `GET /api/orders/{id}` | orders | `routes/orders/detail.js` (resolved-owned) |
-| `POST /api/orders/{id}/cancel` | orders | `routes/orders/cancel.js` (resolved-owned) |
-| `GET /api/admin/orders` | orders | `routes/admin/orders.js` (resolved-owned) |
-| `DELETE /api/admin/orders/{id}` | orders | `routes/admin/orders.js` (resolved-owned) |
-| `POST /api/admin/orders/{id}/refund` | orders | `routes/admin/orders.js` (resolved-owned) |
-| `POST /api/orders/{id}/cancel-backorder` | orders | `routes/orders/parcels.js` (resolved-owned) |
-| `PATCH /api/orders/{id}/cost` | orders | `routes/orders/status.js` (resolved-owned) |
-| `GET /api/orders/{id}/history` | orders | `routes/orders/detail.js` (resolved-owned) |
-| `POST /api/orders/{id}/mark-availability` | orders | `routes/orders/parcels.js` (resolved-owned) |
-| `GET /api/orders/{id}/parcels` | orders | `routes/orders/parcels.js` (resolved-owned) |
-| `POST /api/orders/{id}/partial-ship` | orders | `routes/orders/parcels.js` (resolved-owned) |
-| `POST /api/orders/{id}/qr-token` | orders | `routes/orders/qr.js` (resolved-owned) |
-| `PATCH /api/orders/{id}/status` | orders | `routes/orders/status.js` (resolved-owned) |
-| `POST /api/orders/{id}/local-relay-receipt` | orders | `routes/orders/status.js` (resolved-owned) |
-| `GET /api/orders/{id}/sub-orders` | orders | `routes/orders/parcels.js` (resolved-owned) |
-| `GET /api/orders/credits` | orders | `routes/orders/list.js` (resolved-owned) |
-| `PATCH /api/orders/parcels/{id}/status` | orders | `routes/orders/parcels.js` (resolved-owned) |
-| `GET /api/orders/problems` | orders | `routes/orders/list.js` (resolved-owned) |
-| `GET /api/orders/relais` | orders | `routes/orders/list.js` (resolved-owned) |
-| `GET /api/orders/retrait/{id}` | orders | `routes/orders/qr.js` (resolved-owned) |
-| `PATCH /api/orders/sub-orders/{id}/status` | orders | `routes/orders/parcels.js` (resolved-owned) |
-| `GET /api/v2/orders` | orders | `routes/order-api-v2.js` (resolved-owned) |
-| `GET /api/v2/orders/{id}` | orders | `routes/order-api-v2.js` (resolved-owned) |
-| `POST /api/v2/orders/{id}/confirm-cash` | orders | `routes/order-api-v2.js` (resolved-owned) |
-| `POST /api/v2/orders/{id}/create-parcel` | orders | `routes/order-api-v2.js` (resolved-owned) |
-| `GET /api/v2/orders/pending-cash` | orders | `routes/order-api-v2.js` (resolved-owned) |
-| `GET /api/v2/orders/ready-for-parcel` | orders | `routes/order-api-v2.js` (resolved-owned) |
-| `POST /api/payments/stripe/intent` | payments | `routes/payments.js` (resolved-owned) |
-| `POST /api/payments/paypal/webhook` | payments | `routes/payments-paypal.js` (resolved-owned) |
-| `POST /api/payments/cash/confirm` | payments | `routes/payments.js` (resolved-owned) |
-| `GET /api/payments/mobile-money/availability` | payments | `routes/payments-mobile-money.js` (resolved-owned) |
-| `POST /api/payments/mobile-money/initiate` | payments | `routes/payments-mobile-money.js` (resolved-owned) |
-| `GET /api/payments/mobile-money/transactions/{id}` | payments | `routes/payments-mobile-money.js` (resolved-owned) |
-| `POST /api/payments/mobile-money/transactions/{id}/refresh` | payments | `routes/payments-mobile-money.js` (resolved-owned) |
-| `POST /api/payments/mobile-money/callback/{id}/{id}` | payments | `routes/payments-mobile-money.js` (resolved-owned) |
-| `POST /api/payments/mobile-money/webhook/{id}` | payments | `routes/payments-mobile-money.js` (resolved-owned) |
-| `GET /api/payments/mobile-money/admin/pending` | payments | `routes/payments-mobile-money.js` (resolved-owned) |
-| `POST /api/cash/collect/{id}` | payments | `routes/cash.js` (resolved-owned) |
-| `GET /api/cash/collections` | payments | `routes/cash.js` (resolved-owned) |
-| `POST /api/cash/deposit` | payments | `routes/cash.js` (resolved-owned) |
-| `GET /api/cash/deposits` | payments | `routes/cash.js` (resolved-owned) |
-| `POST /api/cash/deposits/{id}/dispute` | payments | `routes/cash.js` (resolved-owned) |
-| `POST /api/cash/deposits/{id}/verify` | payments | `routes/cash.js` (resolved-owned) |
-| `GET /api/cash/reconciliation` | payments | `routes/cash.js` (resolved-owned) |
-| `GET /api/cash/reconciliation/agents` | payments | `routes/cash.js` (resolved-owned) |
-| `GET /api/cash/uncollected` | payments | `routes/cash.js` (resolved-owned) |
-| `GET /api/payments/config` | payments | `routes/payments.js` (resolved-owned) |
-| `POST /api/payments/paypal/capture/{id}` | payments | `routes/payments-paypal.js` (resolved-owned) |
-| `POST /api/payments/paypal/create-order` | payments | `routes/payments-paypal.js` (resolved-owned) |
-| `POST /api/payments/paypal/refund/{id}` | payments | `routes/payments-paypal.js` (resolved-owned) |
-| `GET /api/payments/rates` | payments | `routes/payments.js` (resolved-owned) |
-| `POST /api/payments/stripe/webhook` | payments | `routes/payments.js` (resolved-owned) |
-| `GET /health` | platform-ops | `routes/health.js` (resolved-owned) |
-| `GET /api/modules` | platform-ops | `routes/modules.js` (resolved-owned) |
-| `POST /api/admin/simulator/cleanup` | platform-ops | `routes/simulator.js` (resolved-owned) |
-| `GET /api/admin/simulator/journal` | platform-ops | `routes/simulator.js` (resolved-owned) |
-| `POST /api/admin/simulator/start` | platform-ops | `routes/simulator.js` (resolved-owned) |
-| `GET /api/admin/simulator/status` | platform-ops | `routes/simulator.js` (resolved-owned) |
-| `POST /api/admin/simulator/stop` | platform-ops | `routes/simulator.js` (resolved-owned) |
-| `GET /api/modules/{id}` | platform-ops | `routes/modules.js` (resolved-owned) |
-| `GET /api/modules/fabrics` | platform-ops | `routes/modules.js` (resolved-owned) |
-| `POST /api/modules/fabrics` | platform-ops | `routes/modules.js` (resolved-owned) |
-| `GET /api/modules/models` | platform-ops | `routes/modules.js` (resolved-owned) |
-| `POST /api/modules/models` | platform-ops | `routes/modules.js` (resolved-owned) |
-| `POST /api/modules/price` | platform-ops | `routes/modules.js` (resolved-owned) |
-| `POST /api/simulator/cleanup` | platform-ops | `routes/simulator.js` (resolved-owned) |
-| `GET /api/simulator/journal` | platform-ops | `routes/simulator.js` (resolved-owned) |
-| `POST /api/simulator/start` | platform-ops | `routes/simulator.js` (resolved-owned) |
-| `GET /api/simulator/status` | platform-ops | `routes/simulator.js` (resolved-owned) |
-| `POST /api/simulator/stop` | platform-ops | `routes/simulator.js` (resolved-owned) |
-| `GET /api/v2/alerts` | platform-ops | `routes/ops-api.js` (resolved-owned) |
-| `POST /api/v2/alerts/{id}/acknowledge` | platform-ops | `routes/ops-api.js` (resolved-owned) |
-| `GET /api/v2/global` | platform-ops | `routes/ops-api.js` (resolved-owned) |
-| `GET /api/v2/incidents` | platform-ops | `routes/ops-api.js` (resolved-owned) |
-| `GET /api/v2/invoices` | platform-ops | `routes/ops-api.js` (resolved-owned) |
-| `GET /api/v2/parcels/{id}/orders` | platform-ops | `routes/ops-api.js` (resolved-owned) |
-| `GET /api/v2/parcels/{id}/scans` | platform-ops | `routes/ops-api.js` (resolved-owned) |
-| `GET /api/v2/parcels/{id}/detail` | platform-ops | `routes/ops-api.js` (resolved-owned) |
-| `GET /api/v2/reconciliation` | platform-ops | `routes/ops-api.js` (resolved-owned) |
-| `GET /api/v2/reconciliation/summary` | platform-ops | `routes/ops-api.js` (resolved-owned) |
-| `GET /api/v2/scan-events` | platform-ops | `routes/ops-api.js` (resolved-owned) |
-| `GET /health/detailed` | platform-ops | `routes/health.js` (resolved-owned) |
-| `GET /health/metrics` | platform-ops | `routes/health.js` (resolved-owned) |
-| `GET /health/ready` | platform-ops | `routes/health.js` (resolved-owned) |
-| `GET /health/version` | platform-ops | `routes/health.js` (resolved-owned) |
-| `GET /api/providers-services/services/{id}` | providers-services | `routes/providers-services.js` (resolved-owned) |
-| `GET /api/providers-services/physical-offers/{id}` | providers-services | `routes/providers-services.js` (resolved-owned) |
-| `POST /api/providers-services/inquiries` | providers-services | `routes/providers-services.js` (resolved-owned) |
-| `GET /api/purchasing` | purchasing | `routes/purchasing.js` (resolved-owned) |
-| `GET /api/purchasing/suppliers` | purchasing | `routes/purchasing.js` (resolved-owned) |
-| `POST /api/purchasing/suppliers` | purchasing | `routes/purchasing.js` (resolved-owned) |
-| `POST /api/purchasing/suppliers/{id}/map` | purchasing | `routes/purchasing.js` (resolved-owned) |
-| `DELETE /api/purchasing/suppliers/{id}` | purchasing | `routes/purchasing.js` (resolved-owned) |
-| `GET /api/purchasing/order/{id}/completeness` | purchasing | `routes/purchasing.js` (resolved-owned) |
-| `GET /api/purchasing/{id}` | purchasing | `routes/purchasing.js` (resolved-owned) |
-| `POST /api/purchasing/{id}/confirm` | purchasing | `routes/purchasing.js` (resolved-owned) |
-| `POST /api/purchasing/{id}/receive` | purchasing | `routes/purchasing.js` (resolved-owned) |
-| `DELETE /api/purchasing/po/{id}` | purchasing | `routes/purchasing.js` (resolved-owned) |
-| `GET /api/purchasing/open-lines` | purchasing | `routes/purchasing.js` (resolved-owned) |
-| `GET /api/purchasing/po/{id}` | purchasing | `routes/purchasing.js` (resolved-owned) |
-| `GET /api/purchasing/po/{id}/commitment-pdf` | purchasing | `routes/purchasing.js` (resolved-owned) |
-| `POST /api/purchasing/po/prepare` | purchasing | `routes/purchasing.js` (resolved-owned) |
-| `POST /api/purchasing/po/{id}/detach` | purchasing | `routes/purchasing.js` (resolved-owned) |
-| `POST /api/purchasing/po/{id}/discard` | purchasing | `routes/purchasing.js` (resolved-owned) |
-| `POST /api/purchasing/lines/{id}/cancel` | purchasing | `routes/purchasing.js` (resolved-owned) |
-| `POST /api/purchasing/po/{id}/submit` | purchasing | `routes/purchasing.js` (resolved-owned) |
-| `POST /api/purchasing/po/{id}/confirm` | purchasing | `routes/purchasing.js` (resolved-owned) |
-| `POST /api/purchasing/lines` | purchasing | `routes/purchasing.js` (resolved-owned) |
-| `POST /api/purchasing/lines/{id}/settle` | purchasing | `routes/purchasing.js` (resolved-owned) |
-| `GET /api/boutique/suggestions` | recommendations | `routes/boutique-suggestions.js` (resolved-owned) |
-| `GET /api/admin/market-settlements/markets/{id}/settlements` | settlement | `routes/admin-market-settlement.js` (resolved-owned) |
-| `POST /api/admin/market-settlements/markets/{id}/settlements/ready` | settlement | `routes/admin-market-settlement.js` (resolved-owned) |
-| `POST /api/admin/market-settlements/settlements/{id}/paid` | settlement | `routes/admin-market-settlement.js` (resolved-owned) |
-| `GET /api/shared-carts/public/{id}` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
-| `POST /api/shared-carts/from-cart-items` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
-| `POST /api/shared-carts/from-basket` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
-| `GET /api/shared-carts/mine` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
-| `GET /api/shared-carts/library` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
-| `POST /api/shared-carts/save` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
-| `DELETE /api/shared-carts/saved/{id}` | shared-cart | `routes/shared-cart-saved.js` (resolved-owned) |
-| `POST /api/shares` | shared-cart | `routes/shares.js` (resolved-owned) |
-| `GET /api/shares/{id}` | shared-cart | `routes/shares.js` (resolved-owned) |
-| `GET /api/shared-carts/{id}` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
-| `POST /api/shared-carts/{id}/close` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
-| `POST /api/shared-carts/{id}/cancel` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
-| `GET /api/admin/shared-carts` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
-| `GET /api/admin/shared-carts/{id}` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
-| `POST /api/admin/shared-carts/{id}/expire` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
-| `POST /api/admin/shared-carts/{id}/note` | shared-cart | `routes/shared-cart.js` (resolved-owned) |
-| `GET /api/admin/sourcing/connectors` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
-| `POST /api/admin/sourcing/catalogs/import` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
-| `GET /api/admin/sourcing/catalogs` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
-| `GET /api/admin/sourcing/candidates` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
-| `GET /api/admin/sourcing/candidates/{id}` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
-| `PUT /api/admin/sourcing/candidates/{id}` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
-| `POST /api/admin/sourcing/candidates/{id}/scan` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
-| `POST /api/admin/sourcing/candidates/scan-batch` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
-| `POST /api/admin/sourcing/candidates/{id}/import-product` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
-| `POST /api/admin/sourcing/candidates/{id}/reject` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
-| `POST /api/admin/sourcing/candidates/{id}/watchlist` | sourcing | `routes/sourcing-scanner.js` (resolved-owned) |
-| `GET /api/admin/workspaces/sourcing` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
-| `GET /api/admin/workspaces/sourcing/import-cockpit` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
-| `POST /api/admin/workspaces/sourcing/imports` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
-| `POST /api/admin/workspaces/sourcing/sources/{id}/catalog-changes/observe` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
-| `POST /api/admin/workspaces/sourcing/sources/{id}/capabilities/{id}` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
-| `POST /api/admin/workspaces/sourcing/products/{id}/update` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
-| `GET /api/admin/workspaces/sourcing/candidates/{id}/category-options` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
-| `POST /api/admin/workspaces/sourcing/candidates/{id}/resolve-category` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
-| `POST /api/admin/workspaces/sourcing/candidates/{id}/update` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
-| `POST /api/admin/workspaces/sourcing/candidates/{id}/scan` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
-| `POST /api/admin/workspaces/sourcing/candidates/{id}/promote` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
-| `POST /api/admin/workspaces/sourcing/candidates/{id}/watchlist` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
-| `POST /api/admin/workspaces/sourcing/candidates/{id}/reject` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
-| `POST /api/admin/workspaces/sourcing/suppliers` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
-| `POST /api/admin/workspaces/sourcing/suppliers/{id}/update` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
-| `POST /api/admin/workspaces/sourcing/suppliers/{id}/deactivate` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
-| `POST /api/admin/workspaces/sourcing/suppliers/{id}/activate` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
-| `POST /api/admin/workspaces/sourcing/sources/{id}/activate` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
-| `POST /api/admin/workspaces/sourcing/sources/{id}/deactivate` | sourcing | `routes/admin-sourcing-workspace.js` (resolved-owned) |
-| `GET /api/unsold` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
-| `GET /api/unsold/{id}` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
-| `PATCH /api/unsold/{id}` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
-| `POST /api/unsold/{id}/resolve` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
-| `GET /api/unsold/{id}/whatsapp` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
-| `POST /api/unsold/scan` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
-| `GET /api/unsold/stats/summary` | unsold-resolution | `routes/unsold.js` (resolved-owned) |
-| `GET /api/wallet` | wallet | `routes/wallet.js` (resolved-owned) |
-| `GET /api/wallet/transactions` | wallet | `routes/wallet.js` (resolved-owned) |
-| `POST /api/wallet/apply` | wallet | `routes/wallet.js` (resolved-owned) |
-| `POST /api/wallet/remove` | wallet | `routes/wallet.js` (resolved-owned) |
-| `GET /api/wallet/admin` | wallet | `routes/wallet.js` (resolved-owned) |
-| `GET /api/wallet/admin/{id}` | wallet | `routes/wallet.js` (resolved-owned) |
-| `POST /api/wallet/admin/credit` | wallet | `routes/wallet.js` (resolved-owned) |
-| `POST /api/wallet/admin/order-credit/{id}` | wallet | `routes/wallet.js` (resolved-owned) |
-| `POST /api/wallet/admin/reverse-lot` | wallet | `routes/wallet.js` (resolved-owned) |
-| `GET /api/admin/action-center` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
-| `POST /api/admin/action-center/generate` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
-| `POST /api/admin/action-center/signals/{id}/acknowledge` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
-| `POST /api/admin/action-center/signals/{id}/snooze` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
-| `POST /api/admin/action-center/signals/{id}/resolve` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
-| `GET /api/admin/action-center/market/{id}` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
-| `POST /api/admin/action-center/market/{id}/signals/{id}/acknowledge` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
-| `POST /api/admin/action-center/market/{id}/signals/{id}/snooze` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
-| `POST /api/admin/action-center/market/{id}/signals/{id}/resolve` | decision-signals | `routes/admin-action-center.js` (resolved-owned) |
-
-### API internes (contract.internalApi)
-
-| Fonction | Fichier | Feature | Statut |
-|---|---|---|---|
-| `requireAuth / requireVerifiedIdentity / softAuth` | `middleware/auth.js` | auth | resolved |
-| `requireAuth / requireVerifiedIdentity / softAuth` | `middleware/require-verified-identity.js` | auth | resolved |
-| `requireAuth / requireVerifiedIdentity / softAuth` | `middleware/soft-auth.js` | auth | resolved |
-| `signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict` | `utils/auth-session.js` | auth | resolved |
-| `signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict` | `utils/auth-session-policy.js` | auth | resolved |
-| `signAuthToken / resolveSessionTtlSeconds / sessionClaimsVerdict` | `utils/auth-token-policy.js` | auth | resolved |
-| `makeIntlPhoneInput` | `public/boutique/js/b-phone.js` | auth-identity | resolved |
-| `createAdminUser` | `services/user-mutation-service.js` | auth-identity | resolved |
-| `markUserPendingActivation` | `services/user-mutation-service.js` | auth-identity | resolved |
-| `setUserRole` | `services/user-mutation-service.js` | auth-identity | resolved |
-| `setUserPasswordHash` | `services/user-mutation-service.js` | auth-identity | resolved |
-| `anonymizeUser` | `services/user-mutation-service.js` | auth-identity | resolved |
-| `deleteUser` | `services/user-mutation-service.js` | auth-identity | resolved |
-| `deleteNonAdminUsers` | `services/user-mutation-service.js` | auth-identity | resolved |
-| `incrementBigBasketCount` | `services/user-mutation-service.js` | auth-identity | resolved |
-| `markBigBasketNotified` | `services/user-mutation-service.js` | auth-identity | resolved |
-| `recalculateUserLoyalty` | `services/user-mutation-service.js` | auth-identity | resolved |
-| `getActiveAuthorizationForUpdate` | `services/pickup-authorization-service.js` | auth-identity | resolved |
-| `hasActiveAuthorization` | `services/pickup-authorization-service.js` | auth-identity | resolved |
-| `getRuleNumber` | `utils/rules.js` | business-rules | resolved |
-| `getRule` | `utils/rules.js` | business-rules | resolved |
-| `getAllRules` | `utils/rules.js` | business-rules | resolved |
-| `setRule` | `utils/rules.js` | business-rules | resolved |
-| `readRunProgress` | `services/catalog-run-progress.js` | catalog | resolved |
-| `createDraftFromSourcingCandidate` | `services/product-admin-service.js` | catalog | resolved |
-| `createDraftProductFromSourcingCandidate` | `services/catalog-candidate-product-service.js` | catalog | resolved |
-| `applyPrice` | `services/catalog-product-mutation-service.js` | catalog | resolved |
-| `updateSourcingFields` | `services/catalog-product-mutation-service.js` | catalog | resolved |
-| `bulkAssignSourcingRail` | `services/catalog-product-mutation-service.js` | catalog | resolved |
-| `replaceVariantsForSourcing` | `services/catalog-product-mutation-service.js` | catalog | resolved |
-| `maybeApplyCatalogProductRouteCanary` | `services/catalog-product-route-canary.js` | catalog | resolved |
-| `readCatalogProductSource` | `services/catalog-product-source-read-service.js` | catalog | resolved |
-| `resolveCatalogProductReadMode` | `services/catalog-product-source-read-service.js` | catalog | resolved |
-| `recommend` | `services/pricing-engine.js` | economic-engine | resolved |
-| `recordProductPriceChange` | `services/economic-price-audit-service.js` | economic-engine | resolved |
-| `buildConversation` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
-| `buildProof` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
-| `assertConversation` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
-| `assertThrough` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
-| `summary` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
-| `publicContract` | `services/external-provider-onboarding-contracts.js` | external-provider-contracts | resolved |
-| `checkReady` | `services/external-provider-onboarding-contracts.js` | external-provider-contracts | resolved |
-| `scanRepository` | `scripts/external-provider-boundary-scan.js` | external-provider-contracts | resolved |
-| `runBatch` | `scripts/external-provider-batch-proof.js` | external-provider-contracts | resolved |
-| `run` | `scripts/provider-certification-reconciliation.js` | external-provider-contracts | resolved |
-| `runStripeReadOnlyProof` | `scripts/stripe-provider-contract-proof.js` | external-provider-contracts | resolved |
-| `runEbayBrowseReadOnlyProof` | `scripts/ebay-sandbox-browse-proof.js` | external-provider-contracts | resolved |
-| `listIncidents` | `services/incident-service.js` | incident-management | resolved |
-| `getIncident` | `services/incident-service.js` | incident-management | resolved |
-| `resolveIncident` | `services/incident-service.js` | incident-management | resolved |
-| `escalateIncident` | `services/incident-service.js` | incident-management | resolved |
-| `getIncidentDashboard` | `services/incident-service.js` | incident-management | resolved |
-| `createScanIncident` | `services/incident-write-service.js` | incident-management | resolved |
-| `createReconciliationIncident` | `services/incident-write-service.js` | incident-management | resolved |
-| `createAlertEngineIncidentIfNew` | `services/incident-write-service.js` | incident-management | resolved |
-| `acknowledgeAlertEngineIncident` | `services/incident-write-service.js` | incident-management | resolved |
-| `createSupplierShortageIncident` | `services/incident-write-service.js` | incident-management | resolved |
-| `resolveOpsIncident` | `services/incident-write-service.js` | incident-management | resolved |
-| `resolvePhysicalProofIncident` | `services/incident-write-service.js` | incident-management | resolved |
-| `resolveUpstreamTruthIncident` | `services/incident-write-service.js` | incident-management | resolved |
-| `detachUserFromIncidents` | `services/incident-write-service.js` | incident-management | resolved |
-| `seedIncident` | `services/incident-write-service.js` | incident-management | resolved |
-| `scanOverdueIncidents` | `services/incident-escalation.js` | incident-management | resolved |
-| `assertParcelTransitionAllowed` | `services/parcel-transition-guard.js` | incident-management | resolved |
-| `—` | `middleware/error-handler.js` | infrastructure | resolved |
-| `—` | `middleware/rate-limit.js` | infrastructure | resolved |
-| `—` | `middleware/request-id.js` | infrastructure | resolved |
-| `—` | `middleware/upload.js` | infrastructure | resolved |
-| `—` | `middleware/validate.js` | infrastructure | resolved |
-| `—` | `utils/logger.js` | infrastructure | resolved |
-| `—` | `utils/phone.js` | infrastructure | resolved |
-| `—` | `utils/rates.js` | infrastructure | resolved |
-| `—` | `utils/reference.js` | infrastructure | resolved |
-| `—` | `validators/index.js` | infrastructure | resolved |
-| `—` | `bootstrap/*` | infrastructure | resolved |
-| `getDecisionAvailabilityEvidence` | `services/local-stock-decision-projection.js` | local-stock | resolved |
-| `resolveCheckoutFulfillmentSources` | `services/local-stock-service.js` | local-stock | resolved |
-| `allocateForOrderItem` | `services/local-stock-service.js` | local-stock | resolved |
-| `consumeAllocationsForOrder` | `services/local-stock-service.js` | local-stock | resolved |
-| `releaseAllocationsForOrder` | `services/local-stock-service.js` | local-stock | resolved |
-| `previewCheckoutFulfillmentSources` | `services/local-stock-checkout-preview.js` | local-stock | resolved |
-| `transitionParcelStatus` | `services/parcel-operations.js` | logistics | resolved |
-| `recordHubPreparationScan` | `services/scan-write-service.js` | logistics | resolved |
-| `recordQrCollectionScan` | `services/scan-write-service.js` | logistics | resolved |
-| `createRelais` | `services/relais-mutation-service.js` | logistics | resolved |
-| `updateRelais` | `services/relais-mutation-service.js` | logistics | resolved |
-| `setRelaisActive` | `services/relais-mutation-service.js` | logistics | resolved |
-| `listRelais` | `services/relais-mutation-service.js` | logistics | resolved |
-| `getOwnedRelais` | `services/relais-mutation-service.js` | logistics | resolved |
-| `detachUserFromScans` | `services/scan-write-service.js` | logistics | resolved |
-| `assignWholeOrderItemToParcel` | `services/parcel-item-mutation-service.js` | logistics | resolved |
-| `assignParcelItem` | `services/parcel-item-mutation-service.js` | logistics | resolved |
-| `addParcelItem` | `services/parcel-item-mutation-service.js` | logistics | resolved |
-| `removeParcelItem` | `services/parcel-item-mutation-service.js` | logistics | resolved |
-| `assignSingleOrderItemToParcel` | `services/parcel-item-mutation-service.js` | logistics | resolved |
-| `addParcelItemTraced` | `services/parcel-item-mutation-service.js` | logistics | resolved |
-| `removeParcelItemTraced` | `services/parcel-item-mutation-service.js` | logistics | resolved |
-| `reassignParcelItem` | `services/parcel-item-mutation-service.js` | logistics | resolved |
-| `listParcelsRepresentingOrder` | `services/parcel-order-membership.js` | logistics | resolved |
-| `listOrdersRepresentedByParcels` | `services/parcel-order-membership.js` | logistics | resolved |
-| `createHubParcel` | `services/parcel-mutation-service.js` | logistics | resolved |
-| `createAutoPreparedParcel` | `services/parcel-mutation-service.js` | logistics | resolved |
-| `setParcelWeight` | `services/parcel-mutation-service.js` | logistics | resolved |
-| `appendParcelShipmentInfo` | `services/parcel-mutation-service.js` | logistics | resolved |
-| `markCustomsCleared` | `services/parcel-mutation-service.js` | logistics | resolved |
-| `markBackorderReminderSent` | `services/parcel-mutation-service.js` | logistics | resolved |
-| `resolvePurchaseSnapshot` | `services/hub-physical-identity.js` | logistics | resolved |
-| `snapshotPurchaseAllocation` | `services/hub-physical-identity.js` | logistics | resolved |
-| `createPhysicalUnit` | `services/hub-physical-identity.js` | logistics | resolved |
-| `receiveSupplierPackage` | `services/hub-physical-identity.js` | logistics | resolved |
-| `transitionPhysicalUnit` | `services/hub-physical-identity.js` | logistics | resolved |
-| `moveAllocationQuantity` | `services/hub-physical-identity.js` | logistics | resolved |
-| `recordPhysicalUnitOutcome` | `services/hub-physical-identity.js` | logistics | resolved |
-| `listMarkets()` | `null` | market-control-plane | documented-signature-no-file |
-| `getControlPlane()` | `null` | market-control-plane | documented-signature-no-file |
-| `computeGaps()` | `null` | market-control-plane | documented-signature-no-file |
-| `readinessFromGaps()` | `null` | market-control-plane | documented-signature-no-file |
-| `provisionMarket()` | `null` | market-control-plane | documented-signature-no-file |
-| `reprovisionMarket()` | `null` | market-control-plane | documented-signature-no-file |
-| `setMarketLifecycle()` | `null` | market-control-plane | documented-signature-no-file |
-| `central()` | `null` | market-control-plane | documented-signature-no-file |
-| `overview()` | `null` | market-control-plane | documented-signature-no-file |
-| `replaceCeiling` | `services/market-delegation-service.js` | market-delegation | resolved |
-| `addMembership` | `services/market-delegation-service.js` | market-delegation | resolved |
-| `grantMembershipCapabilities` | `services/market-delegation-service.js` | market-delegation | resolved |
-| `replaceMembershipCapabilities` | `services/market-delegation-service.js` | market-delegation | resolved |
-| `revokeMembership` | `services/market-delegation-service.js` | market-delegation | resolved |
-| `resolveAuthorization` | `services/market-delegation-service.js` | market-delegation | resolved |
-| `resolveActiveAssignmentByMarketCode` | `services/market-delegation-service.js` | market-delegation | resolved |
-| `projectAssignment` | `services/market-scope-projector.js` | market-delegation | resolved |
-| `projectionDrift` | `services/market-scope-projector.js` | market-delegation | resolved |
-| `ensureOperatorMembership` | `services/market-operator-provisioning.js` | market-delegation | resolved |
-| `grantOperatorScope` | `services/market-operator-provisioning.js` | market-delegation | resolved |
-| `attachMarketDelegatedRoleFor` | `middleware/require-market-delegated-role.js` | market-delegation | resolved |
-| `inviteTeamMember` | `services/market-delegation-team-service.js` | market-delegation | resolved |
-| `acceptInvitation` | `services/market-delegation-team-service.js` | market-delegation | resolved |
-| `readMarketCashPolicy` | `services/market-cash-control-policy-service.js` | market-delegation | resolved |
-| `updateMarketCashPolicy` | `services/market-cash-control-policy-service.js` | market-delegation | resolved |
-| `createRelais` | `services/market-delegation-network-service.js` | market-delegation | resolved |
-| `updateRelais` | `services/market-delegation-network-service.js` | market-delegation | resolved |
-| `setRelaisActive` | `services/market-delegation-network-service.js` | market-delegation | resolved |
-| `createProvider` | `services/market-delegation-provider-service.js` | market-delegation | resolved |
-| `updateProvider` | `services/market-delegation-provider-service.js` | market-delegation | resolved |
-| `setProviderStatus` | `services/market-delegation-provider-service.js` | market-delegation | resolved |
-| `listExposure` | `services/market-delegation-catalog-service.js` | market-delegation | resolved |
-| `setExposure` | `services/market-delegation-catalog-service.js` | market-delegation | resolved |
-| `listServices` | `services/market-delegation-local-offer-service.js` | market-delegation | resolved |
-| `listPhysicalOffers` | `services/market-delegation-local-offer-service.js` | market-delegation | resolved |
-| `setServiceExposure` | `services/market-delegation-local-offer-service.js` | market-delegation | resolved |
-| `setPhysicalOfferExposure` | `services/market-delegation-local-offer-service.js` | market-delegation | resolved |
-| `listDisputes` | `services/market-delegation-client-case-service.js` | market-delegation | resolved |
-| `updateDisputeWorkflow` | `services/market-delegation-client-case-service.js` | market-delegation | resolved |
-| `listSettlements` | `services/market-delegation-settlement-service.js` | market-delegation | resolved |
-| `requestSettlement` | `services/market-delegation-settlement-service.js` | market-delegation | resolved |
-| `confirmSettlementReceived` | `services/market-delegation-settlement-service.js` | market-delegation | resolved |
-| `listStructureEvents` | `services/market-delegation-structure-event-service.js` | market-delegation | resolved |
-| `recordStructureEvent` | `services/market-delegation-structure-event-service.js` | market-delegation | resolved |
-| `setNotificationOutcomeListener` | `services/notifications/internals.js` | notifications | resolved |
-| `createAlert` | `utils/alerts.js` | notifications | resolved |
-| `notifyOrder*` | `services/notifications/order.js` | notifications | resolved |
-| `notifyParcel*` | `services/notifications/parcel.js` | notifications | resolved |
-| `sendOtpMessage / sendMagicLink` | `services/notifications/otp-auth.js` | notifications | resolved |
-| `notifyLoyaltyEarned` | `services/notifications/loyalty.js` | notifications | resolved |
-| `notifyText` | `services/notifications/misc.js` | notifications | resolved |
-| `buildRelayMapUrl / formatRelayPoint / appendRelayLocation` | `services/notifications/relay-location.js` | notifications | resolved |
-| `emitOrderMilestone / emitExceptional / resolveOrderMilestones` | `services/client-notification-service.js` | notifications | resolved |
-| `transitionOrderStatus` | `services/order-status-machine.js` | orders | resolved |
-| `markPaid` | `services/payment-service.js` | orders | resolved |
-| `markRefunded` | `services/payment-service.js` | orders | resolved |
-| `markFailed` | `services/payment-service.js` | orders | resolved |
-| `forcePaymentStatusForSimulation` | `services/payment-service.js` | orders | resolved |
-| `setInventoryCompletion` | `services/order-mutation-service.js` | orders | resolved |
-| `recomputeCustomsCosts` | `services/order-mutation-service.js` | orders | resolved |
-| `backfillRoutingFields` | `services/order-mutation-service.js` | orders | resolved |
-| `setStripePaymentId` | `services/order-mutation-service.js` | orders | resolved |
-| `setPaypalOrderId` | `services/order-mutation-service.js` | orders | resolved |
-| `setPaypalCaptureMetadata` | `services/order-mutation-service.js` | orders | resolved |
-| `setPaypalCaptureId` | `services/order-mutation-service.js` | orders | resolved |
-| `appendOrderNote` | `services/order-mutation-service.js` | orders | resolved |
-| `markCashPaidAt` | `services/order-mutation-service.js` | orders | resolved |
-| `markCashReminderSent` | `services/order-mutation-service.js` | orders | resolved |
-| `setWalletApplied` | `services/order-mutation-service.js` | orders | resolved |
-| `setSupplierSnapshot` | `services/order-mutation-service.js` | orders | resolved |
-| `setComputedStatus` | `services/order-mutation-service.js` | orders | resolved |
-| `writePickupSecret` | `services/order-mutation-service.js` | orders | resolved |
-| `setPickupAttemptState` | `services/order-mutation-service.js` | orders | resolved |
-| `setPickupAttemptsOnly` | `services/order-mutation-service.js` | orders | resolved |
-| `setExceptionalPickupAttemptState` | `services/order-mutation-service.js` | orders | resolved |
-| `setCollectedByName` | `services/order-mutation-service.js` | orders | resolved |
-| `recordPickupRegeneration` | `services/order-mutation-service.js` | orders | resolved |
-| `markPickupSecretRevealed` | `services/order-mutation-service.js` | orders | resolved |
-| `finalizePickupCollection` | `services/order-mutation-service.js` | orders | resolved |
-| `updateOrderItemAvailabilityDetails` | `services/order-item-availability-service.js` | orders | resolved |
-| `setOrderItemAvailabilityStatus` | `services/order-item-availability-service.js` | orders | resolved |
-| `checkoutCart` | `public/boutique/js/b-checkout.js` | orders | resolved |
-| `makeInput` | `public/boutique/js/b-checkout.js` | orders | resolved |
-| `triggerPurchasing` | `services/purchasing-trigger-service.js` | purchasing | resolved |
-| `resolveCanonicalSupplierMoney` | `services/purchasing-canonical-money.js` | purchasing | resolved |
-| `evaluateSupplierFulfillmentReadiness` | `services/suppliers/supplier-fulfillment-readiness.js` | purchasing | resolved |
-| `normalizeCapability` | `services/suppliers/shipping-capability-contract.js` | purchasing | resolved |
-| `adaptShippingRate` | `services/suppliers/allegro-shipping-capability-adapter.js` | purchasing | resolved |
-| `prepareCanonicalUnitPurchase` | `services/suppliers/canonical-unit-purchasing-gate.js` | purchasing | resolved |
-| `compareLegacyCanonicalUnit` | `services/suppliers/canonical-unit-cutover-comparison.js` | purchasing | resolved |
-| `reconcile` | `services/suppliers/allegro-purchase-reconciliation.js` | purchasing | resolved |
-| `repairOrderedWithoutPurchaseOrders` | `services/repair-ordered-without-purchase-orders.js` | purchasing | resolved |
-| `syncPurchaseOrdersOnOrderCancel` | `services/purchasing-cancel-service.js` | purchasing | resolved |
-| `submitPurchaseOrder` | `services/purchasing-engagement-service.js` | purchasing | resolved |
-| `confirmGroupedPurchaseOrder` | `services/purchasing-engagement-service.js` | purchasing | resolved |
-| `settleLine` | `services/purchasing-engagement-service.js` | purchasing | resolved |
-| `createManualLine` | `services/purchasing-engagement-service.js` | purchasing | resolved |
-| `processRefund(orderOrCartId, reason)` | `null` | refunds | documented-signature-no-file |
-| `createReadySettlement()` | `null` | settlement | documented-signature-no-file |
-| `listForAssignment()` | `null` | settlement | documented-signature-no-file |
-| `requestSettlement()` | `null` | settlement | documented-signature-no-file |
-| `markPaid()` | `null` | settlement | documented-signature-no-file |
-| `confirmReceived()` | `null` | settlement | documented-signature-no-file |
-| `deleteUserBasketData` | `services/shared-cart-user-cleanup.js` | shared-cart | resolved |
-| `markShareConvertedToOrder` | `services/cart-share-service.js` | shared-cart | resolved |
-| `closeCompletedSharedCartForOrderItems` | `services/cart-share-service.js` | shared-cart | resolved |
-| `certifyGateA` | `services/sourcing-certification-gate-a.js` | sourcing | resolved |
-| `discoverAcquisitionPlan` | `services/suppliers/aliexpress-discovery.js` | sourcing | resolved |
-| `upsertCandidateFromCatalogImport` | `services/sourcing-candidate-import-service.js` | sourcing | resolved |
-| `archiveMissingCandidatesFromCatalogImport` | `services/sourcing-candidate-import-service.js` | sourcing | resolved |
-| `recordCatalogImportObservationsShadow` | `services/sourcing-observation-shadow-service.js` | sourcing | resolved |
-| `recordUnitStockChange` | `services/sourcing-catalog-change-observation.js` | sourcing | resolved |
-| `proveExactCanonicalUnitForStockDelta` | `services/sourcing-catalog-change-unit-resolution-proof.js` | sourcing | resolved |
-| `proveExactCatalogSkuForStockDelta` | `services/sourcing-catalog-change-sku-identity-proof.js` | sourcing | resolved |
-| `resolveCaptureShadow` | `services/sourcing-shadow-resolution-service.js` | sourcing | resolved |
-| `collectShadowProof` | `services/sourcing-shadow-proof-service.js` | sourcing | resolved |
-| `collectGoldenE2E` | `services/sourcing-golden-e2e-service.js` | sourcing | resolved |
-| `collectIntegrityAudit` | `services/sourcing-integrity-service.js` | sourcing | resolved |
-| `buildHealthDashboard` | `services/sourcing-integrity-service.js` | sourcing | resolved |
-| `buildFinalAuthoritySnapshot` | `services/sourcing-integrity-service.js` | sourcing | resolved |
-| `collectCanonicalProductProjections` | `services/sourcing-canonical-product-projection.js` | sourcing | resolved |
-| `collectCanonicalOfferProjectionById` | `services/sourcing-canonical-offer-projection.js` | sourcing | resolved |
-| `collectCanonicalUnitProjectionById` | `services/sourcing-canonical-unit-projection.js` | sourcing | resolved |
-| `resolveCanonicalUnitForProductSku` | `services/sourcing-canonical-unit-product-sku-resolution.js` | sourcing | resolved |
-| `compareCanonicalOfferUnitWithLegacy` | `services/sourcing-canonical-offer-unit-comparison.js` | sourcing | resolved |
-| `collectCanonicalProductProjectionById` | `services/sourcing-canonical-product-projection.js` | sourcing | resolved |
-| `findCanonicalProductIdsForCatalogProduct` | `services/sourcing-catalog-product-linkage.js` | sourcing | resolved |
-| `applyCanonicalSourceReadSeam` | `services/catalog-product-read-cutover-trial.js` | sourcing | resolved |
-| `collectProductReadComparison` | `services/sourcing-product-read-comparison.js` | sourcing | resolved |
-| `collectCatalogProductReadCutoverTrial` | `services/catalog-product-read-cutover-trial.js` | sourcing | resolved |
-| `isSupportedProvider` | `services/suppliers/provider-authority.js` | supplier-connectivity | resolved |
-| `normalizeProviderCode` | `services/suppliers/provider-authority.js` | supplier-connectivity | resolved |
-| `remotePreflightRequirement` | `services/suppliers/provider-authority.js` | supplier-connectivity | resolved |
-| `reconciliationRequirement` | `services/suppliers/provider-authority.js` | supplier-connectivity | resolved |
-| `normalizeIdentity` | `services/suppliers/supplier-order-identity.js` | supplier-connectivity | resolved |
-| `identitiesMatch` | `services/suppliers/supplier-order-identity.js` | supplier-connectivity | resolved |
-| `resolveSupplierUnit` | `services/suppliers/supplier-order-identity.js` | supplier-connectivity | resolved |
-| `validateAdapter` | `services/suppliers/supplier-fulfillment-adapter-contract.js` | supplier-connectivity | resolved |
-| `validateExecutionAdapter` | `services/suppliers/supplier-fulfillment-adapter-contract.js` | supplier-connectivity | resolved |
-| `validateReconciliationAdapter` | `services/suppliers/supplier-fulfillment-adapter-contract.js` | supplier-connectivity | resolved |
-
-## Cross-feature dependencies
-
-| Feature | consumes | Résolu ? |
-|---|---|---|
-| auth | auth-identity (`auth-identity`) | ✔ |
-| auth | infrastructure (`infrastructure`) | ✔ |
-| auth | notifications (`notifications`) | ✔ |
-| auth-identity | orders (`orders (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
-| auth-identity | loyalty (`loyalty (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
-| auth-identity | logistics (`logistics (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
-| auth-identity | catalog (`catalog (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
-| auth-identity | platform-ops (`platform-ops (monitoring/exploitation transverse observé dans le code)`) | ✔ |
-| auth-identity | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
-| auth-identity | auth (`auth (middleware/auth.js — garde authenticate/requireAdmin utilisée par routes/client-auth.js, routes/auth.js)`) | ✔ |
-| auth-identity | auth-passkey (`auth-passkey (middleware/require-recent-auth.js — preuve récente exigée par les mutations de sécurité du profil)`) | ✔ |
-| auth-identity | notifications (`notifications (services/notification-service.js — envoi OTP/alertes depuis routes/client-auth.js, routes/otp.js)`) | ✔ |
-| auth-identity | wallet (`wallet (projection boutique account : b-komerce.js lit uniquement le solde canonique via GET /api/wallet)`) | ✔ |
-| auth-identity | documents (`documents (projection boutique account : b-komerce.js liste et télécharge les factures et remboursements privés)`) | ✔ |
-| auth-passkey | auth (`auth (middleware/auth.js — authenticate, utils/auth-cookie.js — setAuthCookie, utils/auth-session.js — signAuthToken, politique de session canonique AUTH-8)`) | ✔ |
-| auth-passkey | auth-identity (`auth-identity (users — identité utilisateur canonique lue sans mutation)`) | ✔ |
-| auth-passkey | infrastructure (`infrastructure (db.js — accès aux tables WebAuthn et users en lecture)`) | ✔ |
-| auth-passkey | platform-ops (`platform-ops (utils/logger.js — journalisation structurée des événements WebAuthn)`) | ✔ |
+| `POST /…13503 tokens truncated…`platform-ops (utils/logger.js — journalisation structurée des événements WebAuthn)`) | ✔ |
 | business-rules | auth-identity (`auth-identity (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
 | business-rules | auth (`auth (garde de route admin)`) | ✔ |
 | business-rules | infrastructure (`infrastructure (journalisation, acces base)`) | ✔ |
@@ -2183,6 +1643,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | refunds | economic-engine (`economic-engine (A8 : rafraîchissement transactionnel de la marge réelle canonique via canonical-margin-writer ; no-op si la règle CANONICAL_MARGIN_WRITER_ENABLED vaut 0)`) | ✔ |
 | refunds | catalog (`catalog (lecture du produit et vérification de sa source fournisseur pour borner le remboursement au manque physique attesté)`) | ✔ |
 | refunds | incident-management (`incident-management (lecture de l’incident source immuable associé à la preuve de manque)`) | ✔ |
+| refunds | purchasing (`purchasing (lecture seule de l’engagement fournisseur et du progrès des lignes pour bloquer N27 tant que le reliquat est engagé)`) | ✔ |
 | settlement | market (`market (markets.currency comme devise native du snapshot)`) | ✔ |
 | settlement | market-delegation (`market-delegation (Market Operating Assignment comme principal payable et boundary consommatrice du lifecycle)`) | ✔ |
 | settlement | auth (`auth (garde des routes centrales)`) | ✔ |
@@ -2332,7 +1793,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2397 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2399 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 218 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2602,7 +2063,7 @@ Meta Graph monté : oui.
 | orders | payments | static-code, interface | 9 | **DECLARED_AND_OBSERVED** |
 | orders | platform-ops | static-code | 43 | **DECLARED_AND_OBSERVED** |
 | orders | purchasing | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| orders | refunds | static-code, data-read | 17 | **DECLARED_AND_OBSERVED** |
+| orders | refunds | static-code, data-read | 18 | **DECLARED_AND_OBSERVED** |
 | orders | shared-cart | static-code | 9 | **DECLARED_AND_OBSERVED** |
 | orders | wallet | static-code, interface | 12 | **DECLARED_AND_OBSERVED** |
 | payments | auth | static-code | 9 | **DECLARED_AND_OBSERVED** |
@@ -2673,12 +2134,13 @@ Meta Graph monté : oui.
 | refunds | documents | static-code | 14 | **DECLARED_AND_OBSERVED** |
 | refunds | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | refunds | incident-management | data-read | 1 | **DECLARED_AND_OBSERVED** |
-| refunds | infrastructure | static-code | 15 | **DECLARED_AND_OBSERVED** |
-| refunds | logistics | data-read | 1 | **DECLARED_AND_OBSERVED** |
+| refunds | infrastructure | static-code | 17 | **DECLARED_AND_OBSERVED** |
+| refunds | logistics | data-read | 3 | **DECLARED_AND_OBSERVED** |
 | refunds | market | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | refunds | notifications | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | refunds | orders | static-code, data-read | 15 | **DECLARED_AND_OBSERVED** |
 | refunds | payments | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| refunds | purchasing | data-read | 2 | **DECLARED_AND_OBSERVED** |
 | refunds | wallet | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | settlement | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | settlement | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |

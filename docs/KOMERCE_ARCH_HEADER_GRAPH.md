@@ -6,20 +6,20 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 827
-- Files with full headers: 765
-- Files with lite headers: 62
-- Files with any headers: 827
+- Scanned code files: 831
+- Files with full headers: 768
+- Files with lite headers: 63
+- Files with any headers: 831
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2110
-- Edges: 10548
-- DB tables: 245
-- Doctrines: 826
-- Impact areas: 212
-- Unresolved code edges: 997
-- Tables multi-écrivains directs (>=2): 99
+- Graph nodes: 2124
+- Edges: 10620
+- DB tables: 247
+- Doctrines: 833
+- Impact areas: 213
+- Unresolved code edges: 1006
+- Tables multi-écrivains directs (>=2): 100
 - Avertissements db-write / db-write-via en chevauchement: 13
 
 ## Domains
@@ -45,7 +45,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - infrastructure: 25
 - inventory: 2
 - local-stock: 4
-- logistics: 71
+- logistics: 74
 - loyalty: 3
 - market: 10
 - market-autonomy: 4
@@ -61,7 +61,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - providers-services: 7
 - purchasing: 53
 - recommendations: 6
-- refunds: 12
+- refunds: 13
 - settlement: 2
 - shared: 1
 - shared-cart: 25
@@ -93,7 +93,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 139
 - route-manifest: 1
 - schema: 1
-- service: 504
+- service: 508
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -174,6 +174,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/fx-public-reference-feed.js — official-fx-reference-ingestion (market, critical, full)
 - services/hub-authorization-service.js — hub-authorization-service (purchasing, critical, full)
 - services/hub-bag-box-service.js — hub-bag-box (logistics, critical, full)
+- services/hub-box-custody-scans.js — hub-box-custody-scan-service (logistics, critical, full)
+- services/hub-opaque-labels.js — hub-opaque-scan-labels (logistics, critical, full)
 - services/hub-operations.js — hub-operations (logistics, critical, full)
 - services/hub-physical-identity.js — hub-physical-identity (logistics, critical, full)
 - services/inventory-service.js — inventory-inventory-service (inventory, critical, full)
@@ -195,6 +197,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/mobile-money/kartapay-km.js — mobile-money-provider-adapter (payment, critical, full)
 - services/mobile-money/mtn-momo-cg.js — mobile-money-provider-adapter (payment, critical, full)
 - services/mobile-money/orange-money-cm.js — mobile-money-provider-adapter (payment, critical, full)
+- services/n27-remnant-cancellation-service.js — n27-remnant-cancellation-context (refunds, critical, full)
 - services/order-checkout-idempotency.js — order-checkout-idempotency (orders, critical, full)
 - services/order-checkout-item-resolution.js — orders-checkout-item-resolution (orders, critical, full)
 - services/order-checkout-persistence.js — orders-checkout-persistence (orders, critical, full)
@@ -776,6 +779,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/g6-hub-recipe-closure.js -> owner backend-core (g6-hub-recipe-closure)
 - services/g6-recipe-po-cancel-service.js -> owner backend-core (g6-recipe-po-cancel-service)
 - services/g6-staging-buyer-identity-guard.js -> owner backend-core (g6-staging-buyer-identity-guard)
+- services/hub-label-pdf.js -> owner backend-core (hub-opaque-labels-pdf)
 - services/hub-v1-fixture-checkout-guard.js -> owner backend-core (hub-v1-fixture-checkout-guard)
 - services/hub-v1-fixture-payment.js -> owner backend-core (hub-v1-fixture-payment)
 - services/market-delegation-read-authority.js -> owner backend-core (market-scoped-read-capability-fallback)
@@ -965,6 +969,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin/documents.js -> invoices (via document-reconciliation)
 - WRITE services/documents/document-reconciliation.js -> invoices (via invoice-service)
 - WRITE services/payment-mobile-money.js -> invoices (via order-payment-confirmation)
+- WRITE routes/admin/orders.js -> local_item_refund_reservations (via local-item-refund-reservation)
 - WRITE routes/market-local-stock.js -> local_stock (via market-delegation-local-stock-service)
 - WRITE services/market-delegation-local-stock-service.js -> local_stock (via local-stock-service)
 - WRITE routes/admin-market-control-plane.js -> market_cash_control_policies (via market-provisioning-service)
@@ -1029,7 +1034,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/market-delegation-team-service.js -> membership_capabilities (via market-delegation-service)
 - WRITE services/market-operator-provisioning.js -> membership_capabilities (via market-delegation-service)
 - WRITE services/market-provisioning-service.js -> membership_capabilities (via market-delegation-team-service)
-- WRITE routes/admin/users.js -> operator_market_scopes (revocations) (via market-scope-admin-service)
 
 ## Multi-Writer Tables (>=2 écrivains directs, hors délégations)
 

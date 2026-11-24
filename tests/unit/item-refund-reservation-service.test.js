@@ -55,6 +55,12 @@ describe('N26a candidate projection — read-only and PSP-only',()=>{
     const unresolved=await readVerifiedShortageCandidates({orderReference:'K1FOWL5',actor:admin,db:candidateDb({blocked:true})});
     expect(unresolved).toMatchObject({blocked:true,candidates:[]});
   });
+  test('allows the N27 read-only context to show verified local-rail candidates without changing the PSP default',async()=>{
+    const out=await readVerifiedShortageCandidates({orderReference:'K1FOWL5',actor:admin,
+      db:candidateDb({payment:'cash_relais'}),allowLocal:true});
+    expect(out).toMatchObject({blocked:false,order:{payment_mode:'cash_relais'},
+      candidates:[{incident_id:'incident-1',available_quantity:2}]});
+  });
   test('requires an admin and a valid command reference before reading',async()=>{
     const db=candidateDb();
     await expect(readVerifiedShortageCandidates({orderReference:'K1FOWL5',actor:{id:'relay',role:'agent_relais'},db}))
