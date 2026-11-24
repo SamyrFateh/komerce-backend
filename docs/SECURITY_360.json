@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-22T17:42:05.424Z",
+  "generatedAt": "2026-11-24T15:31:19.340Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 868,
-    "protected": 809,
+    "total": 871,
+    "protected": 812,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1437,6 +1437,13 @@
       ]
     },
     {
+      "key": "POST /api/admin/orders/{id}/items/{itemId}/n27-remnant-reservations",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
       "key": "POST /api/admin/orders/{id}/items/{itemId}/refund-reservations/{reservationId}/execute",
       "level": "PROTECTED",
       "roles": [
@@ -1472,7 +1479,35 @@
       ]
     },
     {
+      "key": "GET /api/admin/orders/{orderReference}/item-refund-context",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/orders/{orderReference}/n27-remnant-context",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/orders/item-refund-readiness",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
       "key": "GET /api/admin/orders/local-refunds",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/orders/n27-remnant-readiness",
       "level": "PROTECTED",
       "roles": [
         "admin"
@@ -2424,6 +2459,70 @@
       ]
     },
     {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/labels/articles/{allocationId}/issue",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/operations/market/{marketCode}/labels/articles/{id}/pdf",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/operations/market/{marketCode}/labels/articles/{id}/print",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/operations/market/{marketCode}/labels/boxes/{id}/pdf",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/operations/market/{marketCode}/labels/boxes/{id}/print",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/labels/boxes/{unitId}/issue",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/operations/market/{marketCode}/labels/index",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/operations/market/{marketCode}/labels/resolve",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/orders/{reference}/confirm-cash",
       "level": "PROTECTED",
       "roles": [
@@ -2482,6 +2581,13 @@
       "key": "GET /api/admin/workspaces/operations/market/{marketCode}/relay-shipments",
       "level": "PROTECTED",
       "roles": []
+    },
+    {
+      "key": "GET /api/admin/workspaces/operations/market/{marketCode}/relay/labels/resolve",
+      "level": "PROTECTED",
+      "roles": [
+        "agent_relais"
+      ]
     },
     {
       "key": "GET /api/admin/workspaces/operations/market/{marketCode}/supply/physical-code",
@@ -2814,6 +2920,16 @@
     },
     {
       "key": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_transitaire",
+        "market_operator"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}/box-scan",
       "level": "PROTECTED",
       "roles": [
         "admin",
@@ -6256,101 +6372,6 @@
       "key": "POST /webhook/meta-whatsapp",
       "level": "PUBLIC",
       "roles": []
-    },
-    {
-      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/labels/articles/{allocationId}/issue",
-      "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "agent_hub"
-      ]
-    },
-    {
-      "key": "GET /api/admin/workspaces/operations/market/{marketCode}/labels/index",
-      "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "agent_hub"
-      ]
-    },
-    {
-      "key": "GET /api/admin/workspaces/operations/market/{marketCode}/labels/articles/{id}/pdf",
-      "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "agent_hub"
-      ]
-    },
-    {
-      "key": "GET /api/admin/workspaces/operations/market/{marketCode}/labels/articles/{id}/print",
-      "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "agent_hub"
-      ]
-    },
-    {
-      "key": "GET /api/admin/workspaces/operations/market/{marketCode}/labels/boxes/{id}/pdf",
-      "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "agent_hub"
-      ]
-    },
-    {
-      "key": "GET /api/admin/workspaces/operations/market/{marketCode}/labels/boxes/{id}/print",
-      "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "agent_hub"
-      ]
-    },
-    {
-      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/labels/boxes/{unitId}/issue",
-      "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "agent_hub"
-      ]
-    },
-    {
-      "key": "GET /api/admin/workspaces/operations/market/{marketCode}/labels/resolve",
-      "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "agent_hub"
-      ]
-    },
-    {
-      "key": "GET /api/admin/workspaces/operations/market/{marketCode}/relay/labels/resolve",
-      "level": "PROTECTED",
-      "roles": [
-        "agent_relais"
-      ]
-    },
-    {
-      "key": "GET /api/admin/orders/{orderReference}/item-refund-context",
-      "level": "PROTECTED",
-      "roles": [
-        "admin"
-      ]
-    },
-    {
-      "key": "GET /api/admin/orders/item-refund-readiness",
-      "level": "PROTECTED",
-      "roles": [
-        "admin"
-      ]
-    },
-    {
-      "key": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}/box-scan",
-      "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "agent_hub",
-        "agent_transitaire",
-        "market_operator"
-      ]
     }
   ]
 }

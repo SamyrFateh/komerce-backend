@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 337,
+    "businessDependencies": 338,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -18591,7 +18591,7 @@
               {
                 "declared": "services/hub-box-custody-scans.js",
                 "resolvedPath": "services/hub-box-custody-scans.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/hub-box-shipment-service.js",
@@ -18616,12 +18616,12 @@
               {
                 "declared": "services/hub-label-pdf.js",
                 "resolvedPath": "services/hub-label-pdf.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/hub-opaque-labels.js",
                 "resolvedPath": "services/hub-opaque-labels.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/hub-operations.js",
@@ -31429,6 +31429,13 @@
           ]
         },
         {
+          "consumer": "refunds",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
+          ]
+        },
+        {
           "consumer": "sourcing",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -31896,6 +31903,10 @@
           "test": "tests/unit/local-item-refund-reservation.test.js"
         },
         {
+          "statement": "N27 : les unités déjà retirées restent exclues ; une dette locale n’est réservable que pour un manque attesté au palier F1, les engagements fournisseur F2 et colis transport F3 restent bloqués, sans crédit wallet ni paiement prétendu",
+          "test": "tests/unit/n27-remnant-cancellation.test.js"
+        },
+        {
           "statement": "FA-04/08 F3 : annulation Stripe reserve l intention avant COMMIT metier, jamais de POST fournisseur sous transaction, un resultat inconnu ne declenche aucun fallback wallet et reste a rapprocher",
           "test": "tests/unit/stripe-refund-authority.test.js"
         },
@@ -31973,7 +31984,7 @@
             ]
           },
           "services": {
-            "count": 12,
+            "count": 13,
             "files": [
               {
                 "declared": "services/item-refund-psp-orchestrator.js",
@@ -31998,6 +32009,11 @@
               {
                 "declared": "services/local-mobile-refund-handoff.js",
                 "resolvedPath": "services/local-mobile-refund-handoff.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/n27-remnant-cancellation-service.js",
+                "resolvedPath": "services/n27-remnant-cancellation-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -32038,7 +32054,7 @@
             ]
           },
           "tests": {
-            "count": 27,
+            "count": 28,
             "files": [
               {
                 "declared": "tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js",
@@ -32131,6 +32147,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/n27-remnant-cancellation.test.js",
+                "resolvedPath": "tests/unit/n27-remnant-cancellation.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/paypal-refund-authority.test.js",
                 "resolvedPath": "tests/unit/paypal-refund-authority.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -32208,7 +32229,7 @@
             ]
           }
         },
-        "totalFiles": 47,
+        "totalFiles": 49,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -32308,8 +32329,24 @@
             "lifecycleOwner": "orders"
           },
           {
+            "table": "parcel_items",
+            "lifecycleOwner": "logistics"
+          },
+          {
+            "table": "parcels",
+            "lifecycleOwner": "logistics"
+          },
+          {
             "table": "products",
             "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "purchase_lines",
+            "lifecycleOwner": "purchasing"
+          },
+          {
+            "table": "purchase_orders",
+            "lifecycleOwner": "purchasing"
           },
           {
             "table": "wallets",
@@ -32410,8 +32447,24 @@
             "lifecycleOwner": "orders"
           },
           {
+            "table": "parcel_items",
+            "lifecycleOwner": "logistics"
+          },
+          {
+            "table": "parcels",
+            "lifecycleOwner": "logistics"
+          },
+          {
             "table": "products",
             "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "purchase_lines",
+            "lifecycleOwner": "purchasing"
+          },
+          {
+            "table": "purchase_orders",
+            "lifecycleOwner": "purchasing"
           },
           {
             "table": "wallets",
@@ -32501,6 +32554,13 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        },
+        {
+          "provider": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "data-read"
           ]
         },
         {

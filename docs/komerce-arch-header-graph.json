@@ -13,21 +13,21 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 827,
-    "filesWithFullHeaders": 765,
-    "filesWithLiteHeaders": 62,
-    "filesWithAnyHeaders": 827,
+    "scannedCodeFiles": 831,
+    "filesWithFullHeaders": 768,
+    "filesWithLiteHeaders": 63,
+    "filesWithAnyHeaders": 831,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2110,
-    "edges": 10548,
-    "dbTables": 245,
-    "doctrines": 826,
-    "impactAreas": 212,
-    "unresolvedCodeEdges": 997,
+    "graphNodes": 2124,
+    "edges": 10620,
+    "dbTables": 247,
+    "doctrines": 833,
+    "impactAreas": 213,
+    "unresolvedCodeEdges": 1006,
     "dbWriteViaOverlapWarnings": 13,
-    "multiWriterTables": 99
+    "multiWriterTables": 100
   },
   "byDomain": {
     "infrastructure": 25,
@@ -42,7 +42,7 @@
     "market": 10,
     "economic-engine": 69,
     "sourcing": 37,
-    "logistics": 71,
+    "logistics": 74,
     "boutique": 24,
     "checkout": 4,
     "shared-cart": 25,
@@ -71,7 +71,7 @@
     "external-provider-contracts": 1,
     "finance": 3,
     "incident-management": 5,
-    "refunds": 12,
+    "refunds": 13,
     "market-autonomy": 4,
     "markets": 1,
     "payments": 1,
@@ -113,7 +113,7 @@
     "schema": 1,
     "route": 139,
     "entrypoint": 1,
-    "service": 504,
+    "service": 508,
     "external-adapter": 2,
     "infrastructure": 1,
     "machine": 1,
@@ -123,10 +123,10 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 129,
+    "critical": 132,
     "medium": 155,
     "high": 471,
-    "low": 71,
+    "low": 72,
     "unknown": 1
   },
   "nodes": [
@@ -7934,10 +7934,22 @@
         "local_mobile_refund_handoffs",
         "order_item_refund_reservations",
         "refund_execution_intents",
-        "refunds"
+        "refunds",
+        "v_purchase_line_progress",
+        "purchase_lines",
+        "purchase_orders",
+        "parcels",
+        "parcel_items"
       ],
       "dbWrite": [],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "local-item-refund-reservation",
+          "tables": [
+            "local_item_refund_reservations"
+          ]
+        }
+      ],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -20456,6 +20468,58 @@
       "version": null
     },
     {
+      "id": "services/hub-box-custody-scans.js",
+      "file": "services/hub-box-custody-scans.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "hub-box-custody-scan-service",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "scoped_market",
+        "shipment_reference",
+        "QR_scan",
+        "authenticated_actor"
+      ],
+      "outputs": [
+        "immutable_per_box_custody_evidence"
+      ],
+      "depends": [
+        "db",
+        "services/hub-opaque-labels"
+      ],
+      "usedBy": [
+        "routes/admin-shipping-customs-workspace.js",
+        "services/international-shipment-journey.js"
+      ],
+      "dbRead": [
+        "international_shipments",
+        "international_shipment_hub_units",
+        "hub_scan_labels",
+        "hub_physical_units",
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations",
+        "orders"
+      ],
+      "dbWrite": [
+        "hub_box_custody_scans"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller_owned_or_withTransaction"
+      ],
+      "doctrine": [
+        "scan_is_not_a_transition",
+        "dual_party_handover",
+        "manifest_complete_before_departure"
+      ],
+      "impactAreas": [],
+      "version": null
+    },
+    {
       "id": "services/hub-box-shipment-service.js",
       "file": "services/hub-box-shipment-service.js",
       "type": "file",
@@ -20709,6 +20773,94 @@
       "version": null
     },
     {
+      "id": "services/hub-label-pdf.js",
+      "file": "services/hub-label-pdf.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "hub-opaque-labels-pdf",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "low",
+      "owner": "backend-core",
+      "purpose": "Export already issued ARTICLE/COMBOX opaque QR labels as private A4/80mm PDFs.",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [
+        "relais"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [
+        "hub",
+        "logistics",
+        "scanning",
+        "documents"
+      ],
+      "version": null
+    },
+    {
+      "id": "services/hub-opaque-labels.js",
+      "file": "services/hub-opaque-labels.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "hub-opaque-scan-labels",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authorized_market_scope",
+        "verified_allocation_or_box",
+        "actor_id"
+      ],
+      "outputs": [
+        "immutable_opaque_qr_label",
+        "print_document",
+        "read_only_scan_resolution"
+      ],
+      "depends": [
+        "crypto",
+        "qrcode",
+        "db"
+      ],
+      "usedBy": [
+        "routes/admin-operations-workspace.js",
+        "services/hub-physical-identity.js"
+      ],
+      "dbRead": [
+        "hub_scan_labels",
+        "hub_purchase_allocations",
+        "hub_physical_unit_placements",
+        "hub_physical_units",
+        "orders",
+        "relais",
+        "markets"
+      ],
+      "dbWrite": [
+        "hub_scan_labels"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "issue transaction caller-owned; scan resolution read-only"
+      ],
+      "doctrine": [
+        "QR_is_identity_not_authorization; no_personal_data_or_commercial_reference_on_paper"
+      ],
+      "impactAreas": [
+        "hub",
+        "relay",
+        "logistics",
+        "scanning",
+        "G6"
+      ],
+      "version": "2026-11"
+    },
+    {
       "id": "services/hub-operations.js",
       "file": "services/hub-operations.js",
       "type": "file",
@@ -20947,6 +21099,7 @@
         "hub_physical_unit_placements",
         "hub_box_bags",
         "hub_box_effective_placements",
+        "hub_scan_labels",
         "international_shipments",
         "international_shipment_hub_units",
         "parcels",
@@ -22043,7 +22196,12 @@
         "markets",
         "refunds",
         "refund_execution_intents",
-        "order_item_refund_reservations"
+        "order_item_refund_reservations",
+        "purchase_lines",
+        "purchase_orders",
+        "parcels",
+        "parcel_items",
+        "v_purchase_line_progress"
       ],
       "dbWrite": [
         "local_item_refund_reservations"
@@ -24886,6 +25044,63 @@
         "unknown"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "services/n27-remnant-cancellation-service.js",
+      "file": "services/n27-remnant-cancellation-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "n27-remnant-cancellation-context",
+      "domain": "refunds",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "admin actor",
+        "order reference",
+        "verified shortage facts"
+      ],
+      "outputs": [
+        "read-only item/phase context and local refund liability reservation"
+      ],
+      "depends": [
+        "db",
+        "item-refund-reservation-service",
+        "local-item-refund-reservation"
+      ],
+      "usedBy": [
+        "routes/admin/orders.js"
+      ],
+      "dbRead": [
+        "orders",
+        "order_items",
+        "purchase_lines",
+        "purchase_orders",
+        "parcels",
+        "parcel_items",
+        "incidents",
+        "international_shipment_relay_receipts"
+      ],
+      "dbWrite": [
+        "local_item_refund_reservations"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "local reservation delegates to its owner service"
+      ],
+      "doctrine": [
+        "collected_units_excluded",
+        "open_supplier_or_transport_blocks",
+        "no_wallet_credit"
+      ],
+      "impactAreas": [
+        "refunds",
+        "purchasing",
+        "logistics",
+        "admin-dashboard"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "services/notification-service.js",
@@ -40628,6 +40843,16 @@
       "table": "refund_execution_intents"
     },
     {
+      "id": "db:v_purchase_line_progress",
+      "type": "db-table",
+      "table": "v_purchase_line_progress"
+    },
+    {
+      "id": "db:parcel_items",
+      "type": "db-table",
+      "table": "parcel_items"
+    },
+    {
       "id": "db:partners",
       "type": "db-table",
       "table": "partners"
@@ -40641,11 +40866,6 @@
       "id": "db:baskets",
       "type": "db-table",
       "table": "baskets"
-    },
-    {
-      "id": "db:parcel_items",
-      "type": "db-table",
-      "table": "parcel_items"
     },
     {
       "id": "db:scan_events",
@@ -40928,11 +41148,6 @@
       "table": "price_history"
     },
     {
-      "id": "db:v_purchase_line_progress",
-      "type": "db-table",
-      "table": "v_purchase_line_progress"
-    },
-    {
       "id": "db:supplier_execution_groups",
       "type": "db-table",
       "table": "supplier_execution_groups"
@@ -41196,6 +41411,16 @@
       "id": "db:manual_purchase_executions",
       "type": "db-table",
       "table": "manual_purchase_executions"
+    },
+    {
+      "id": "db:hub_scan_labels",
+      "type": "db-table",
+      "table": "hub_scan_labels"
+    },
+    {
+      "id": "db:hub_box_custody_scans",
+      "type": "db-table",
+      "table": "hub_box_custody_scans"
     },
     {
       "id": "db:international_shipment_events",
@@ -43663,6 +43888,21 @@
       "doctrine": "sealed_customer_bag_persists_inside_market_box; no_fake_repack_or_duplicate_allocation"
     },
     {
+      "id": "doctrine:scan_is_not_a_transition",
+      "type": "doctrine",
+      "doctrine": "scan_is_not_a_transition"
+    },
+    {
+      "id": "doctrine:dual_party_handover",
+      "type": "doctrine",
+      "doctrine": "dual_party_handover"
+    },
+    {
+      "id": "doctrine:manifest_complete_before_departure",
+      "type": "doctrine",
+      "doctrine": "manifest_complete_before_departure"
+    },
+    {
       "id": "doctrine:Allocation & Custody; une KOM-BOX appartient à au plus une expédition du même marché",
       "type": "doctrine",
       "doctrine": "Allocation & Custody; une KOM-BOX appartient à au plus une expédition du même marché"
@@ -43696,6 +43936,11 @@
       "id": "doctrine:docs/doctrine/DOCTRINE_LOGISTICS_CONTROL_CHAIN.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_LOGISTICS_CONTROL_CHAIN.md"
+    },
+    {
+      "id": "doctrine:QR_is_identity_not_authorization; no_personal_data_or_commercial_reference_on_paper",
+      "type": "doctrine",
+      "doctrine": "QR_is_identity_not_authorization; no_personal_data_or_commercial_reference_on_paper"
     },
     {
       "id": "doctrine:Allocation & Custody; HUB-002 Operator Execution Cutover; DOCTRINE_DENSITE_VALEUR",
@@ -44426,6 +44671,21 @@
       "id": "doctrine:no_credentials",
       "type": "doctrine",
       "doctrine": "no_credentials"
+    },
+    {
+      "id": "doctrine:collected_units_excluded",
+      "type": "doctrine",
+      "doctrine": "collected_units_excluded"
+    },
+    {
+      "id": "doctrine:open_supplier_or_transport_blocks",
+      "type": "doctrine",
+      "doctrine": "open_supplier_or_transport_blocks"
+    },
+    {
+      "id": "doctrine:no_wallet_credit",
+      "type": "doctrine",
+      "doctrine": "no_wallet_credit"
     },
     {
       "id": "doctrine:notification_non_bloquante",
@@ -46518,6 +46778,16 @@
       "area": "hub-live"
     },
     {
+      "id": "impact:scanning",
+      "type": "impact-area",
+      "area": "scanning"
+    },
+    {
+      "id": "impact:G6",
+      "type": "impact-area",
+      "area": "G6"
+    },
+    {
       "id": "impact:supplier-integration",
       "type": "impact-area",
       "area": "supplier-integration"
@@ -46556,11 +46826,6 @@
       "id": "impact:markets",
       "type": "impact-area",
       "area": "markets"
-    },
-    {
-      "id": "impact:G6",
-      "type": "impact-area",
-      "area": "G6"
     },
     {
       "id": "impact:infrastructure",
@@ -58352,6 +58617,43 @@
       "to": "db:refunds",
       "type": "db-read",
       "label": "refunds"
+    },
+    {
+      "from": "routes/admin/orders.js",
+      "to": "db:v_purchase_line_progress",
+      "type": "db-read",
+      "label": "v_purchase_line_progress"
+    },
+    {
+      "from": "routes/admin/orders.js",
+      "to": "db:purchase_lines",
+      "type": "db-read",
+      "label": "purchase_lines"
+    },
+    {
+      "from": "routes/admin/orders.js",
+      "to": "db:purchase_orders",
+      "type": "db-read",
+      "label": "purchase_orders"
+    },
+    {
+      "from": "routes/admin/orders.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "routes/admin/orders.js",
+      "to": "db:parcel_items",
+      "type": "db-read",
+      "label": "parcel_items"
+    },
+    {
+      "from": "routes/admin/orders.js",
+      "to": "db:local_item_refund_reservations",
+      "type": "db-write-via",
+      "label": "local_item_refund_reservations",
+      "via": "local-item-refund-reservation"
     },
     {
       "from": "routes/admin/orders.js",
@@ -78779,6 +79081,96 @@
       "label": "sealed_customer_bag_persists_inside_market_box; no_fake_repack_or_duplicate_allocation"
     },
     {
+      "from": "services/hub-box-custody-scans.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/hub-box-custody-scans.js",
+      "to": "services/hub-opaque-labels",
+      "type": "depends",
+      "label": "services/hub-opaque-labels"
+    },
+    {
+      "from": "routes/admin-shipping-customs-workspace.js",
+      "to": "services/hub-box-custody-scans.js",
+      "type": "uses",
+      "label": "routes/admin-shipping-customs-workspace.js"
+    },
+    {
+      "from": "services/international-shipment-journey.js",
+      "to": "services/hub-box-custody-scans.js",
+      "type": "uses",
+      "label": "services/international-shipment-journey.js"
+    },
+    {
+      "from": "services/hub-box-custody-scans.js",
+      "to": "db:international_shipments",
+      "type": "db-read",
+      "label": "international_shipments"
+    },
+    {
+      "from": "services/hub-box-custody-scans.js",
+      "to": "db:international_shipment_hub_units",
+      "type": "db-read",
+      "label": "international_shipment_hub_units"
+    },
+    {
+      "from": "services/hub-box-custody-scans.js",
+      "to": "db:hub_scan_labels",
+      "type": "db-read",
+      "label": "hub_scan_labels"
+    },
+    {
+      "from": "services/hub-box-custody-scans.js",
+      "to": "db:hub_physical_units",
+      "type": "db-read",
+      "label": "hub_physical_units"
+    },
+    {
+      "from": "services/hub-box-custody-scans.js",
+      "to": "db:hub_physical_unit_placements",
+      "type": "db-read",
+      "label": "hub_physical_unit_placements"
+    },
+    {
+      "from": "services/hub-box-custody-scans.js",
+      "to": "db:hub_purchase_allocations",
+      "type": "db-read",
+      "label": "hub_purchase_allocations"
+    },
+    {
+      "from": "services/hub-box-custody-scans.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/hub-box-custody-scans.js",
+      "to": "db:hub_box_custody_scans",
+      "type": "db-write",
+      "label": "hub_box_custody_scans"
+    },
+    {
+      "from": "services/hub-box-custody-scans.js",
+      "to": "doctrine:scan_is_not_a_transition",
+      "type": "doctrine",
+      "label": "scan_is_not_a_transition"
+    },
+    {
+      "from": "services/hub-box-custody-scans.js",
+      "to": "doctrine:dual_party_handover",
+      "type": "doctrine",
+      "label": "dual_party_handover"
+    },
+    {
+      "from": "services/hub-box-custody-scans.js",
+      "to": "doctrine:manifest_complete_before_departure",
+      "type": "doctrine",
+      "label": "manifest_complete_before_departure"
+    },
+    {
       "from": "services/hub-box-shipment-service.js",
       "to": "db",
       "type": "depends",
@@ -79263,6 +79655,156 @@
       "to": "impact:incident-management",
       "type": "impact",
       "label": "incident-management"
+    },
+    {
+      "from": "services/hub-label-pdf.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
+    },
+    {
+      "from": "services/hub-label-pdf.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/hub-label-pdf.js",
+      "to": "impact:hub",
+      "type": "impact",
+      "label": "hub"
+    },
+    {
+      "from": "services/hub-label-pdf.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/hub-label-pdf.js",
+      "to": "impact:scanning",
+      "type": "impact",
+      "label": "scanning"
+    },
+    {
+      "from": "services/hub-label-pdf.js",
+      "to": "impact:documents",
+      "type": "impact",
+      "label": "documents"
+    },
+    {
+      "from": "services/hub-opaque-labels.js",
+      "to": "crypto",
+      "type": "depends",
+      "label": "crypto"
+    },
+    {
+      "from": "services/hub-opaque-labels.js",
+      "to": "qrcode",
+      "type": "depends",
+      "label": "qrcode"
+    },
+    {
+      "from": "services/hub-opaque-labels.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "routes/admin-operations-workspace.js",
+      "to": "services/hub-opaque-labels.js",
+      "type": "uses",
+      "label": "routes/admin-operations-workspace.js"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "services/hub-opaque-labels.js",
+      "type": "uses",
+      "label": "services/hub-physical-identity.js"
+    },
+    {
+      "from": "services/hub-opaque-labels.js",
+      "to": "db:hub_scan_labels",
+      "type": "db-read",
+      "label": "hub_scan_labels"
+    },
+    {
+      "from": "services/hub-opaque-labels.js",
+      "to": "db:hub_purchase_allocations",
+      "type": "db-read",
+      "label": "hub_purchase_allocations"
+    },
+    {
+      "from": "services/hub-opaque-labels.js",
+      "to": "db:hub_physical_unit_placements",
+      "type": "db-read",
+      "label": "hub_physical_unit_placements"
+    },
+    {
+      "from": "services/hub-opaque-labels.js",
+      "to": "db:hub_physical_units",
+      "type": "db-read",
+      "label": "hub_physical_units"
+    },
+    {
+      "from": "services/hub-opaque-labels.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/hub-opaque-labels.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/hub-opaque-labels.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/hub-opaque-labels.js",
+      "to": "db:hub_scan_labels",
+      "type": "db-write",
+      "label": "hub_scan_labels"
+    },
+    {
+      "from": "services/hub-opaque-labels.js",
+      "to": "doctrine:QR_is_identity_not_authorization; no_personal_data_or_commercial_reference_on_paper",
+      "type": "doctrine",
+      "label": "QR_is_identity_not_authorization; no_personal_data_or_commercial_reference_on_paper"
+    },
+    {
+      "from": "services/hub-opaque-labels.js",
+      "to": "impact:hub",
+      "type": "impact",
+      "label": "hub"
+    },
+    {
+      "from": "services/hub-opaque-labels.js",
+      "to": "impact:relay",
+      "type": "impact",
+      "label": "relay"
+    },
+    {
+      "from": "services/hub-opaque-labels.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/hub-opaque-labels.js",
+      "to": "impact:scanning",
+      "type": "impact",
+      "label": "scanning"
+    },
+    {
+      "from": "services/hub-opaque-labels.js",
+      "to": "impact:G6",
+      "type": "impact",
+      "label": "G6"
     },
     {
       "from": "services/hub-operations.js",
@@ -79769,6 +80311,12 @@
       "to": "db:hub_box_effective_placements",
       "type": "db-read",
       "label": "hub_box_effective_placements"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:hub_scan_labels",
+      "type": "db-read",
+      "label": "hub_scan_labels"
     },
     {
       "from": "services/hub-procurement-dossier.js",
@@ -81750,6 +82298,36 @@
       "to": "db:order_item_refund_reservations",
       "type": "db-read",
       "label": "order_item_refund_reservations"
+    },
+    {
+      "from": "services/local-item-refund-reservation.js",
+      "to": "db:purchase_lines",
+      "type": "db-read",
+      "label": "purchase_lines"
+    },
+    {
+      "from": "services/local-item-refund-reservation.js",
+      "to": "db:purchase_orders",
+      "type": "db-read",
+      "label": "purchase_orders"
+    },
+    {
+      "from": "services/local-item-refund-reservation.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/local-item-refund-reservation.js",
+      "to": "db:parcel_items",
+      "type": "db-read",
+      "label": "parcel_items"
+    },
+    {
+      "from": "services/local-item-refund-reservation.js",
+      "to": "db:v_purchase_line_progress",
+      "type": "db-read",
+      "label": "v_purchase_line_progress"
     },
     {
       "from": "services/local-item-refund-reservation.js",
@@ -86185,6 +86763,126 @@
       "to": "impact:unknown",
       "type": "impact",
       "label": "unknown"
+    },
+    {
+      "from": "services/n27-remnant-cancellation-service.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/n27-remnant-cancellation-service.js",
+      "to": "item-refund-reservation-service",
+      "type": "depends",
+      "label": "item-refund-reservation-service"
+    },
+    {
+      "from": "services/n27-remnant-cancellation-service.js",
+      "to": "local-item-refund-reservation",
+      "type": "depends",
+      "label": "local-item-refund-reservation"
+    },
+    {
+      "from": "routes/admin/orders.js",
+      "to": "services/n27-remnant-cancellation-service.js",
+      "type": "uses",
+      "label": "routes/admin/orders.js"
+    },
+    {
+      "from": "services/n27-remnant-cancellation-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/n27-remnant-cancellation-service.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/n27-remnant-cancellation-service.js",
+      "to": "db:purchase_lines",
+      "type": "db-read",
+      "label": "purchase_lines"
+    },
+    {
+      "from": "services/n27-remnant-cancellation-service.js",
+      "to": "db:purchase_orders",
+      "type": "db-read",
+      "label": "purchase_orders"
+    },
+    {
+      "from": "services/n27-remnant-cancellation-service.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/n27-remnant-cancellation-service.js",
+      "to": "db:parcel_items",
+      "type": "db-read",
+      "label": "parcel_items"
+    },
+    {
+      "from": "services/n27-remnant-cancellation-service.js",
+      "to": "db:incidents",
+      "type": "db-read",
+      "label": "incidents"
+    },
+    {
+      "from": "services/n27-remnant-cancellation-service.js",
+      "to": "db:international_shipment_relay_receipts",
+      "type": "db-read",
+      "label": "international_shipment_relay_receipts"
+    },
+    {
+      "from": "services/n27-remnant-cancellation-service.js",
+      "to": "db:local_item_refund_reservations",
+      "type": "db-write",
+      "label": "local_item_refund_reservations"
+    },
+    {
+      "from": "services/n27-remnant-cancellation-service.js",
+      "to": "doctrine:collected_units_excluded",
+      "type": "doctrine",
+      "label": "collected_units_excluded"
+    },
+    {
+      "from": "services/n27-remnant-cancellation-service.js",
+      "to": "doctrine:open_supplier_or_transport_blocks",
+      "type": "doctrine",
+      "label": "open_supplier_or_transport_blocks"
+    },
+    {
+      "from": "services/n27-remnant-cancellation-service.js",
+      "to": "doctrine:no_wallet_credit",
+      "type": "doctrine",
+      "label": "no_wallet_credit"
+    },
+    {
+      "from": "services/n27-remnant-cancellation-service.js",
+      "to": "impact:refunds",
+      "type": "impact",
+      "label": "refunds"
+    },
+    {
+      "from": "services/n27-remnant-cancellation-service.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/n27-remnant-cancellation-service.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/n27-remnant-cancellation-service.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
     },
     {
       "from": "services/notification-service.js",
@@ -117395,6 +118093,7 @@
         "impact:payments",
         "middleware/require-market-execution-capability.js",
         "services/hub-bag-box-service.js",
+        "services/hub-opaque-labels.js",
         "services/hub-procurement-dossier.js",
         "services/operations-workspace.js",
         "services/relay-shipment-receipt.js"
@@ -117928,6 +118627,7 @@
         "impact:customs",
         "impact:logistics",
         "impact:market-authorization",
+        "services/hub-box-custody-scans.js",
         "services/international-n1-reconciliation.js",
         "services/shipping-customs-workspace.js"
       ]
@@ -118405,10 +119105,22 @@
         "local_mobile_refund_handoffs",
         "order_item_refund_reservations",
         "refund_execution_intents",
-        "refunds"
+        "refunds",
+        "v_purchase_line_progress",
+        "purchase_lines",
+        "purchase_orders",
+        "parcels",
+        "parcel_items"
       ],
       "dbWrite": [],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "local-item-refund-reservation",
+          "tables": [
+            "local_item_refund_reservations"
+          ]
+        }
+      ],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -118428,12 +119140,17 @@
         "db:order_item_refund_reservations",
         "db:order_items",
         "db:orders",
+        "db:parcel_items",
+        "db:parcels",
         "db:products",
+        "db:purchase_lines",
+        "db:purchase_orders",
         "db:recipients",
         "db:refund_execution_intents",
         "db:refunds",
         "db:relais",
         "db:users",
+        "db:v_purchase_line_progress",
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:checkout",
@@ -118445,6 +119162,7 @@
         "services/local-cash-refund-handoff.js",
         "services/local-item-refund-reservation.js",
         "services/local-mobile-refund-handoff.js",
+        "services/n27-remnant-cancellation-service.js",
         "utils/logger.js"
       ]
     },
@@ -131124,6 +131842,57 @@
         "routes/admin-operations-workspace.js"
       ]
     },
+    "services/hub-box-custody-scans.js": {
+      "role": "hub-box-custody-scan-service",
+      "domain": "logistics",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "services/hub-opaque-labels"
+      ],
+      "directUsedBy": [
+        "routes/admin-shipping-customs-workspace.js",
+        "services/international-shipment-journey.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "international_shipments",
+        "international_shipment_hub_units",
+        "hub_scan_labels",
+        "hub_physical_units",
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations",
+        "orders"
+      ],
+      "dbWrite": [
+        "hub_box_custody_scans"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "scan_is_not_a_transition",
+        "dual_party_handover",
+        "manifest_complete_before_departure"
+      ],
+      "impactAreas": [],
+      "mustCheck": [
+        "db:hub_box_custody_scans",
+        "db:hub_physical_unit_placements",
+        "db:hub_physical_units",
+        "db:hub_purchase_allocations",
+        "db:hub_scan_labels",
+        "db:international_shipment_hub_units",
+        "db:international_shipments",
+        "db:orders",
+        "doctrine:dual_party_handover",
+        "doctrine:manifest_complete_before_departure",
+        "doctrine:scan_is_not_a_transition",
+        "routes/admin-shipping-customs-workspace.js",
+        "services/international-shipment-journey.js"
+      ]
+    },
     "services/hub-box-shipment-service.js": {
       "role": "hub-box-shipment",
       "domain": "logistics",
@@ -131388,6 +132157,95 @@
         "impact:purchasing"
       ]
     },
+    "services/hub-label-pdf.js": {
+      "role": "hub-opaque-labels-pdf",
+      "domain": "logistics",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "backend-core",
+      "purpose": "Export already issued ARTICLE/COMBOX opaque QR labels as private A4/80mm PDFs.",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [
+        "relais"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [
+        "hub",
+        "logistics",
+        "scanning",
+        "documents"
+      ],
+      "mustCheck": [
+        "backend-core",
+        "db:relais",
+        "impact:documents",
+        "impact:hub",
+        "impact:logistics",
+        "impact:scanning"
+      ]
+    },
+    "services/hub-opaque-labels.js": {
+      "role": "hub-opaque-scan-labels",
+      "domain": "logistics",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "crypto",
+        "qrcode",
+        "db"
+      ],
+      "directUsedBy": [
+        "routes/admin-operations-workspace.js",
+        "services/hub-physical-identity.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "hub_scan_labels",
+        "hub_purchase_allocations",
+        "hub_physical_unit_placements",
+        "hub_physical_units",
+        "orders",
+        "relais",
+        "markets"
+      ],
+      "dbWrite": [
+        "hub_scan_labels"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "QR_is_identity_not_authorization; no_personal_data_or_commercial_reference_on_paper"
+      ],
+      "impactAreas": [
+        "hub",
+        "relay",
+        "logistics",
+        "scanning",
+        "G6"
+      ],
+      "mustCheck": [
+        "db:hub_physical_unit_placements",
+        "db:hub_physical_units",
+        "db:hub_purchase_allocations",
+        "db:hub_scan_labels",
+        "db:markets",
+        "db:orders",
+        "db:relais",
+        "doctrine:QR_is_identity_not_authorization; no_personal_data_or_commercial_reference_on_paper",
+        "impact:G6",
+        "impact:hub",
+        "impact:logistics",
+        "impact:relay",
+        "impact:scanning",
+        "routes/admin-operations-workspace.js",
+        "services/hub-physical-identity.js"
+      ]
+    },
     "services/hub-operations.js": {
       "role": "hub-operations",
       "domain": "logistics",
@@ -131581,6 +132439,7 @@
         "impact:logistics",
         "impact:market",
         "impact:purchasing",
+        "services/hub-opaque-labels.js",
         "services/hub-operations.js",
         "services/incident-write-service.js",
         "services/outbox-producer.js"
@@ -131622,6 +132481,7 @@
         "hub_physical_unit_placements",
         "hub_box_bags",
         "hub_box_effective_placements",
+        "hub_scan_labels",
         "international_shipments",
         "international_shipment_hub_units",
         "parcels",
@@ -131647,6 +132507,7 @@
         "db:hub_physical_unit_placements",
         "db:hub_physical_units",
         "db:hub_purchase_allocations",
+        "db:hub_scan_labels",
         "db:international_shipment_hub_units",
         "db:international_shipments",
         "db:markets",
@@ -132377,6 +133238,7 @@
         "doctrine:fact_not_financial_allocation",
         "doctrine:market_scope_server_owned",
         "doctrine:no_customs_clearance_inferred",
+        "services/hub-box-custody-scans.js",
         "services/parcel-shipment-handover.js"
       ]
     },
@@ -132762,7 +133624,12 @@
         "markets",
         "refunds",
         "refund_execution_intents",
-        "order_item_refund_reservations"
+        "order_item_refund_reservations",
+        "purchase_lines",
+        "purchase_orders",
+        "parcels",
+        "parcel_items",
+        "v_purchase_line_progress"
       ],
       "dbWrite": [
         "local_item_refund_reservations"
@@ -132791,8 +133658,13 @@
         "db:order_item_refund_reservations",
         "db:order_items",
         "db:orders",
+        "db:parcel_items",
+        "db:parcels",
+        "db:purchase_lines",
+        "db:purchase_orders",
         "db:refund_execution_intents",
         "db:refunds",
+        "db:v_purchase_line_progress",
         "doctrine:no_double_refund",
         "doctrine:no_unverified_payout",
         "doctrine:no_wallet_fallback",
@@ -135615,6 +136487,67 @@
         "routes/health.js",
         "routes/payments.js",
         "utils/logger.js"
+      ]
+    },
+    "services/n27-remnant-cancellation-service.js": {
+      "role": "n27-remnant-cancellation-context",
+      "domain": "refunds",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "item-refund-reservation-service",
+        "local-item-refund-reservation"
+      ],
+      "directUsedBy": [
+        "routes/admin/orders.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "order_items",
+        "purchase_lines",
+        "purchase_orders",
+        "parcels",
+        "parcel_items",
+        "incidents",
+        "international_shipment_relay_receipts"
+      ],
+      "dbWrite": [
+        "local_item_refund_reservations"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "collected_units_excluded",
+        "open_supplier_or_transport_blocks",
+        "no_wallet_credit"
+      ],
+      "impactAreas": [
+        "refunds",
+        "purchasing",
+        "logistics",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:incidents",
+        "db:international_shipment_relay_receipts",
+        "db:local_item_refund_reservations",
+        "db:order_items",
+        "db:orders",
+        "db:parcel_items",
+        "db:parcels",
+        "db:purchase_lines",
+        "db:purchase_orders",
+        "doctrine:collected_units_excluded",
+        "doctrine:no_wallet_credit",
+        "doctrine:open_supplier_or_transport_blocks",
+        "impact:admin-dashboard",
+        "impact:logistics",
+        "impact:purchasing",
+        "impact:refunds",
+        "routes/admin/orders.js"
       ]
     },
     "services/notification-service.js": {
@@ -151760,6 +152693,14 @@
       ]
     },
     {
+      "table": "local_item_refund_reservations",
+      "writerCount": 2,
+      "writers": [
+        "services/local-item-refund-reservation.js",
+        "services/n27-remnant-cancellation-service.js"
+      ]
+    },
+    {
       "table": "local_stock_allocations",
       "writerCount": 2,
       "writers": [
@@ -155304,6 +156245,18 @@
       "label": "db.js"
     },
     {
+      "from": "services/hub-box-custody-scans.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/hub-box-custody-scans.js",
+      "to": "services/hub-opaque-labels",
+      "type": "depends",
+      "label": "services/hub-opaque-labels"
+    },
+    {
       "from": "services/hub-box-shipment-service.js",
       "to": "db",
       "type": "depends",
@@ -155380,6 +156333,30 @@
       "to": "services/hub-inbound-reconciliation.js",
       "type": "uses",
       "label": "future Hub/Control Tower reconciliation surfaces"
+    },
+    {
+      "from": "services/hub-label-pdf.js",
+      "to": "backend-core",
+      "type": "owned-by",
+      "label": "backend-core"
+    },
+    {
+      "from": "services/hub-opaque-labels.js",
+      "to": "crypto",
+      "type": "depends",
+      "label": "crypto"
+    },
+    {
+      "from": "services/hub-opaque-labels.js",
+      "to": "qrcode",
+      "type": "depends",
+      "label": "qrcode"
+    },
+    {
+      "from": "services/hub-opaque-labels.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
     },
     {
       "from": "services/hub-operations.js",
@@ -155788,6 +156765,24 @@
       "to": "Orange Money Web Payment API",
       "type": "depends",
       "label": "Orange Money Web Payment API"
+    },
+    {
+      "from": "services/n27-remnant-cancellation-service.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/n27-remnant-cancellation-service.js",
+      "to": "item-refund-reservation-service",
+      "type": "depends",
+      "label": "item-refund-reservation-service"
+    },
+    {
+      "from": "services/n27-remnant-cancellation-service.js",
+      "to": "local-item-refund-reservation",
+      "type": "depends",
+      "label": "local-item-refund-reservation"
     },
     {
       "from": "services/notifications/internals.js",

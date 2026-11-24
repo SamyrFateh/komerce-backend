@@ -6,8 +6,8 @@
     "description": "Généré automatiquement par scripts/contract-generate.js.\nNE PAS ÉDITER À LA MAIN — relancer `npm run contract:generate` après tout changement de route ou de validateur.\n\nStatuts de contrat :\n  - x-contract-status: \"joi\"       → requête haute fidélité (schéma Joi)\n  - x-contract-status: \"test\"      → réponse couverte par un test intégration/unitaire\n  - x-contract-status: \"route-read\" → champs lus directement dans le handler (res.json),\n  - x-contract-status: \"service-read\" → forme top-level lue dans le service/lib appelée par la route,\n                                       pas de test sur le corps HTTP — confiance < \"test\"\n  - x-contract-status: \"scan-*\"    → champs observés dans le code front\n  - x-contract-status: \"UNKNOWN\"   → non couvert, à compléter"
   },
   "x-contract-debt": {
-    "unknown_responses": 80,
-    "total_routes": 764,
+    "unknown_responses": 120,
+    "total_routes": 804,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -1821,9 +1821,12 @@
                       "mobile_money"
                     ]
                   },
+                  "expected_total_kmf": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
                   "stripe_payment_intent": {
-                    "type": "string",
-                    "maxLength": 200
+                    "type": "any"
                   },
                   "tracking_phone": {
                     "type": "string"
@@ -2493,6 +2496,38 @@
         }
       }
     },
+    "/api/orders/{id}/close-g6-hub-recipe": {
+      "post": {
+        "summary": "POST /api/orders/{id}/close-g6-hub-recipe",
+        "x-route-file": "routes/orders/cancel.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/orders/{id}/cancel": {
       "post": {
         "summary": "POST /api/orders/{id}/cancel",
@@ -2727,6 +2762,243 @@
         }
       }
     },
+    "/api/orders/quote-pdf": {
+      "post": {
+        "summary": "POST /api/orders/quote-pdf",
+        "x-route-file": "routes/orders/create.js",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "product_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "default": 1
+                        },
+                        "requested_transport_rail": {
+                          "type": "string",
+                          "enum": [
+                            "SEA_STANDARD",
+                            "AIR_EXPRESS",
+                            null
+                          ],
+                          "default": null
+                        },
+                        "module_type": {
+                          "type": "string",
+                          "enum": [
+                            "mariage",
+                            "couture",
+                            "lunettes",
+                            "parfum",
+                            "bijoux",
+                            "electronique",
+                            "cosmetique",
+                            "alimentaire",
+                            "autre"
+                          ]
+                        },
+                        "module_fabric_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "module_fabric_type": {
+                          "type": "string",
+                          "maxLength": 100
+                        },
+                        "module_size": {
+                          "type": "string",
+                          "maxLength": 20
+                        },
+                        "module_retouche": {
+                          "type": "boolean"
+                        },
+                        "module_qty_meters": {
+                          "type": "number"
+                        },
+                        "module_accessories": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "maxLength": 100
+                          }
+                        },
+                        "variant_combo": {
+                          "type": "object"
+                        },
+                        "shared_cart_item_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      },
+                      "required": [
+                        "product_id"
+                      ]
+                    },
+                    "minItems": 1
+                  },
+                  "relais_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "payment_mode": {
+                    "type": "string",
+                    "enum": [
+                      "stripe_eur",
+                      "cash_relais",
+                      "paypal_eur",
+                      "mobile_money"
+                    ]
+                  },
+                  "expected_total_kmf": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "stripe_payment_intent": {
+                    "type": "any"
+                  },
+                  "tracking_phone": {
+                    "type": "string"
+                  },
+                  "pickup_code_recipient": {
+                    "type": "string",
+                    "enum": [
+                      "buyer",
+                      "organizer"
+                    ],
+                    "default": "buyer"
+                  },
+                  "confection_type": {
+                    "type": "string",
+                    "enum": [
+                      "aucun",
+                      "couture_standard",
+                      "sur_mesure",
+                      "lunettes_vue",
+                      "lunettes_soleil",
+                      "broderie",
+                      "retouche",
+                      "autre"
+                    ],
+                    "default": "aucun"
+                  },
+                  "confection_instructions": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "confection_delay_days": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 0
+                  },
+                  "confection_artisan_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "module_type": {
+                    "type": "string",
+                    "enum": [
+                      "mariage",
+                      "couture",
+                      "lunettes",
+                      "parfum",
+                      "bijoux",
+                      "electronique",
+                      "cosmetique",
+                      "alimentaire",
+                      "autre"
+                    ]
+                  },
+                  "module_fabric_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "module_fabric_type": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "module_size": {
+                    "type": "string",
+                    "maxLength": 20
+                  },
+                  "module_retouche": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "module_qty_meters": {
+                    "type": "number"
+                  },
+                  "module_accessories": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 100
+                    }
+                  },
+                  "order_occasion": {
+                    "type": "string",
+                    "maxLength": 50
+                  },
+                  "use_wallet": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "display_market_code": {
+                    "type": "string",
+                    "enum": [
+                      "KM",
+                      "YT",
+                      "CM",
+                      "CG",
+                      null
+                    ]
+                  },
+                  "market_id": {
+                    "type": "any"
+                  }
+                },
+                "required": [
+                  "items",
+                  "payment_mode"
+                ]
+              }
+            }
+          },
+          "x-contract-status": "joi"
+        },
+        "responses": {
+          "200": {
+            "description": "Devis estimatif PDF privé et éphémère, sans commande ni facture",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "x-contract-status": "route-read"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentification client requise"
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/orders/preview": {
       "post": {
         "summary": "POST /api/orders/preview",
@@ -2826,9 +3098,12 @@
                       "mobile_money"
                     ]
                   },
+                  "expected_total_kmf": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
                   "stripe_payment_intent": {
-                    "type": "string",
-                    "maxLength": 200
+                    "type": "any"
                   },
                   "tracking_phone": {
                     "type": "string"
@@ -2969,240 +3244,6 @@
                 }
               }
             }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/orders/quote-pdf": {
-      "post": {
-        "summary": "POST /api/orders/quote-pdf",
-        "x-route-file": "routes/orders/create.js",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "items": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "product_id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "quantity": {
-                          "type": "integer",
-                          "default": 1
-                        },
-                        "requested_transport_rail": {
-                          "type": "string",
-                          "enum": [
-                            "SEA_STANDARD",
-                            "AIR_EXPRESS",
-                            null
-                          ],
-                          "default": null
-                        },
-                        "module_type": {
-                          "type": "string",
-                          "enum": [
-                            "mariage",
-                            "couture",
-                            "lunettes",
-                            "parfum",
-                            "bijoux",
-                            "electronique",
-                            "cosmetique",
-                            "alimentaire",
-                            "autre"
-                          ]
-                        },
-                        "module_fabric_id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "module_fabric_type": {
-                          "type": "string",
-                          "maxLength": 100
-                        },
-                        "module_size": {
-                          "type": "string",
-                          "maxLength": 20
-                        },
-                        "module_retouche": {
-                          "type": "boolean"
-                        },
-                        "module_qty_meters": {
-                          "type": "number"
-                        },
-                        "module_accessories": {
-                          "type": "array",
-                          "items": {
-                            "type": "string",
-                            "maxLength": 100
-                          }
-                        },
-                        "variant_combo": {
-                          "type": "object"
-                        },
-                        "shared_cart_item_id": {
-                          "type": "string",
-                          "format": "uuid"
-                        }
-                      },
-                      "required": [
-                        "product_id"
-                      ]
-                    },
-                    "minItems": 1
-                  },
-                  "relais_id": {
-                    "type": "string",
-                    "format": "uuid"
-                  },
-                  "payment_mode": {
-                    "type": "string",
-                    "enum": [
-                      "stripe_eur",
-                      "cash_relais",
-                      "paypal_eur",
-                      "mobile_money"
-                    ]
-                  },
-                  "stripe_payment_intent": {
-                    "type": "string",
-                    "maxLength": 200
-                  },
-                  "tracking_phone": {
-                    "type": "string"
-                  },
-                  "pickup_code_recipient": {
-                    "type": "string",
-                    "enum": [
-                      "buyer",
-                      "organizer"
-                    ],
-                    "default": "buyer"
-                  },
-                  "confection_type": {
-                    "type": "string",
-                    "enum": [
-                      "aucun",
-                      "couture_standard",
-                      "sur_mesure",
-                      "lunettes_vue",
-                      "lunettes_soleil",
-                      "broderie",
-                      "retouche",
-                      "autre"
-                    ],
-                    "default": "aucun"
-                  },
-                  "confection_instructions": {
-                    "type": "string",
-                    "maxLength": 1000
-                  },
-                  "confection_delay_days": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "default": 0
-                  },
-                  "confection_artisan_id": {
-                    "type": "string",
-                    "format": "uuid"
-                  },
-                  "module_type": {
-                    "type": "string",
-                    "enum": [
-                      "mariage",
-                      "couture",
-                      "lunettes",
-                      "parfum",
-                      "bijoux",
-                      "electronique",
-                      "cosmetique",
-                      "alimentaire",
-                      "autre"
-                    ]
-                  },
-                  "module_fabric_id": {
-                    "type": "string",
-                    "format": "uuid"
-                  },
-                  "module_fabric_type": {
-                    "type": "string",
-                    "maxLength": 100
-                  },
-                  "module_size": {
-                    "type": "string",
-                    "maxLength": 20
-                  },
-                  "module_retouche": {
-                    "type": "boolean",
-                    "default": false
-                  },
-                  "module_qty_meters": {
-                    "type": "number"
-                  },
-                  "module_accessories": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "maxLength": 100
-                    }
-                  },
-                  "order_occasion": {
-                    "type": "string",
-                    "maxLength": 50
-                  },
-                  "use_wallet": {
-                    "type": "boolean",
-                    "default": false
-                  },
-                  "display_market_code": {
-                    "type": "string",
-                    "enum": [
-                      "KM",
-                      "YT",
-                      "CM",
-                      "CG",
-                      null
-                    ]
-                  },
-                  "market_id": {
-                    "type": "any"
-                  }
-                },
-                "required": [
-                  "items",
-                  "payment_mode"
-                ]
-              }
-            }
-          },
-          "x-contract-status": "joi"
-        },
-        "responses": {
-          "200": {
-            "description": "Devis estimatif PDF privé et éphémère, sans commande ni facture",
-            "content": {
-              "application/pdf": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary",
-                  "x-contract-status": "route-read"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Authentification client requise"
           },
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
@@ -5562,6 +5603,37 @@
         }
       }
     },
+    "/api/admin/dashboard/events": {
+      "get": {
+        "summary": "GET /api/admin/dashboard/events",
+        "x-route-file": "routes/admin-dashboard-events.js",
+        "responses": {
+          "200": {
+            "description": "Flux SSE de signaux opaques, invalider puis relire la projection canonique",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "x-contract-status": "route-read"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Diffusion temps réel désactivée sur cette instance"
+          },
+          "401": {
+            "description": "Authentification de session requise"
+          },
+          "403": {
+            "description": "Rôle central requis : admin ou agent_hub"
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/admin/dashboard/context": {
       "get": {
         "summary": "GET /api/admin/dashboard/context",
@@ -5588,37 +5660,6 @@
                 }
               }
             }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/admin/dashboard/events": {
-      "get": {
-        "summary": "GET /api/admin/dashboard/events",
-        "x-route-file": "routes/admin-dashboard-events.js",
-        "responses": {
-          "200": {
-            "description": "Flux SSE de signaux opaques, invalider puis relire la projection canonique",
-            "content": {
-              "text/event-stream": {
-                "schema": {
-                  "type": "string",
-                  "x-contract-status": "route-read"
-                }
-              }
-            }
-          },
-          "204": {
-            "description": "Diffusion temps réel désactivée sur cette instance"
-          },
-          "401": {
-            "description": "Authentification de session requise"
-          },
-          "403": {
-            "description": "Rôle central requis : admin ou agent_hub"
           },
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
@@ -7192,6 +7233,342 @@
         }
       }
     },
+    "/api/admin/workspaces/operations/market/{marketCode}/labels/index": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/operations/market/{marketCode}/labels/index",
+        "x-route-file": "routes/admin-operations-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/operations/market/{marketCode}/labels/articles/{allocationId}/issue": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/operations/market/{marketCode}/labels/articles/{allocationId}/issue",
+        "x-route-file": "routes/admin-operations-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "allocationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/operations/market/{marketCode}/labels/boxes/{unitId}/issue": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/operations/market/{marketCode}/labels/boxes/{unitId}/issue",
+        "x-route-file": "routes/admin-operations-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "unitId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/operations/market/{marketCode}/labels/articles/{id}/print": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/operations/market/{marketCode}/labels/articles/{id}/print",
+        "x-route-file": "routes/admin-operations-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/operations/market/{marketCode}/labels/boxes/{id}/print": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/operations/market/{marketCode}/labels/boxes/{id}/print",
+        "x-route-file": "routes/admin-operations-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/operations/market/{marketCode}/labels/articles/{id}/pdf": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/operations/market/{marketCode}/labels/articles/{id}/pdf",
+        "x-route-file": "routes/admin-operations-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/operations/market/{marketCode}/labels/boxes/{id}/pdf": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/operations/market/{marketCode}/labels/boxes/{id}/pdf",
+        "x-route-file": "routes/admin-operations-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/operations/market/{marketCode}/labels/resolve": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/operations/market/{marketCode}/labels/resolve",
+        "x-route-file": "routes/admin-operations-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/operations/market/{marketCode}/relay/labels/resolve": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/operations/market/{marketCode}/relay/labels/resolve",
+        "x-route-file": "routes/admin-operations-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/admin/workspaces/operations/market/{marketCode}/boxes": {
       "post": {
         "summary": "POST /api/admin/workspaces/operations/market/{marketCode}/boxes",
@@ -7227,6 +7604,46 @@
     "/api/admin/workspaces/operations/market/{marketCode}/boxes/{unitId}/fill": {
       "post": {
         "summary": "POST /api/admin/workspaces/operations/market/{marketCode}/boxes/{unitId}/fill",
+        "x-route-file": "routes/admin-operations-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "unitId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/operations/market/{marketCode}/boxes/{unitId}/close": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/operations/market/{marketCode}/boxes/{unitId}/close",
         "x-route-file": "routes/admin-operations-workspace.js",
         "parameters": [
           {
@@ -8343,6 +8760,86 @@
         }
       }
     },
+    "/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/hold": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/hold",
+        "x-route-file": "routes/admin-shipping-customs-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reference",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/release": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/release",
+        "x-route-file": "routes/admin-shipping-customs-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reference",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/deactivate": {
       "post": {
         "summary": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/deactivate",
@@ -8488,6 +8985,46 @@
     "/api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}": {
       "get": {
         "summary": "GET /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}",
+        "x-route-file": "routes/admin-shipping-customs-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reference",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}/box-scan": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}/box-scan",
         "x-route-file": "routes/admin-shipping-customs-workspace.js",
         "parameters": [
           {
@@ -9038,6 +9575,38 @@
         }
       }
     },
+    "/api/admin/workspaces/catalog/products/{productRef}/media": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/catalog/products/{productRef}/media",
+        "x-route-file": "routes/admin-catalog-workspace.js",
+        "parameters": [
+          {
+            "name": "productRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/admin/workspaces/catalog/products/{productRef}/classify": {
       "post": {
         "summary": "POST /api/admin/workspaces/catalog/products/{productRef}/classify",
@@ -9186,6 +9755,38 @@
                       "x-observed": true
                     }
                   }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/catalog/approval/{productRef}/prepare-hub-default-sku": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/catalog/approval/{productRef}/prepare-hub-default-sku",
+        "x-route-file": "routes/admin-catalog-workspace.js",
+        "parameters": [
+          {
+            "name": "productRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
                 }
               }
             }
@@ -12890,6 +13491,38 @@
         }
       }
     },
+    "/api/admin/workspaces/pricing/market/{marketCode}/economic-p0-audit": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/pricing/market/{marketCode}/economic-p0-audit",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/admin/workspaces/pricing/market/{marketCode}/decision": {
       "get": {
         "summary": "GET /api/admin/workspaces/pricing/market/{marketCode}/decision",
@@ -16351,6 +16984,28 @@
         }
       }
     },
+    "/api/admin/documents/reconcile": {
+      "post": {
+        "summary": "POST /api/admin/documents/reconcile",
+        "x-route-file": "routes/admin/documents.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/admin/documents": {
       "get": {
         "summary": "GET /api/admin/documents",
@@ -17645,9 +18300,323 @@
         }
       }
     },
+    "/api/admin/orders/local-refunds": {
+      "get": {
+        "summary": "GET /api/admin/orders/local-refunds",
+        "x-route-file": "routes/admin/orders.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/orders/{id}/items/{itemId}/local-refund-reservations": {
+      "post": {
+        "summary": "POST /api/admin/orders/{id}/items/{itemId}/local-refund-reservations",
+        "x-route-file": "routes/admin/orders.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/orders/{id}/items/{itemId}/local-refund-reservations/{reservationId}/authorize-cash": {
+      "post": {
+        "summary": "POST /api/admin/orders/{id}/items/{itemId}/local-refund-reservations/{reservationId}/authorize-cash",
+        "x-route-file": "routes/admin/orders.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reservationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/orders/{id}/items/{itemId}/local-refund-reservations/{reservationId}/manual-mobile/{action}": {
+      "post": {
+        "summary": "POST /api/admin/orders/{id}/items/{itemId}/local-refund-reservations/{reservationId}/manual-mobile/{action}",
+        "x-route-file": "routes/admin/orders.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reservationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "action",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/admin/orders/{id}/items/{itemId}/refund-reservations": {
       "post": {
         "summary": "POST /api/admin/orders/{id}/items/{itemId}/refund-reservations",
+        "x-route-file": "routes/admin/orders.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/orders/item-refund-readiness": {
+      "get": {
+        "summary": "GET /api/admin/orders/item-refund-readiness",
+        "x-route-file": "routes/admin/orders.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/orders/{orderReference}/item-refund-context": {
+      "get": {
+        "summary": "GET /api/admin/orders/{orderReference}/item-refund-context",
+        "x-route-file": "routes/admin/orders.js",
+        "parameters": [
+          {
+            "name": "orderReference",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/orders/{orderReference}/n27-remnant-context": {
+      "get": {
+        "summary": "GET /api/admin/orders/{orderReference}/n27-remnant-context",
+        "x-route-file": "routes/admin/orders.js",
+        "parameters": [
+          {
+            "name": "orderReference",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/orders/n27-remnant-readiness": {
+      "get": {
+        "summary": "GET /api/admin/orders/n27-remnant-readiness",
+        "x-route-file": "routes/admin/orders.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/orders/{id}/items/{itemId}/n27-remnant-reservations": {
+      "post": {
+        "summary": "POST /api/admin/orders/{id}/items/{itemId}/n27-remnant-reservations",
         "x-route-file": "routes/admin/orders.js",
         "parameters": [
           {
@@ -19423,6 +20392,38 @@
         }
       }
     },
+    "/api/admin/sourcing/candidates/{candidateRef}/restore-source-skus": {
+      "post": {
+        "summary": "POST /api/admin/sourcing/candidates/{candidateRef}/restore-source-skus",
+        "x-route-file": "routes/sourcing-scanner.js",
+        "parameters": [
+          {
+            "name": "candidateRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/admin/sourcing/candidates/{id}/import-product": {
       "post": {
         "summary": "POST /api/admin/sourcing/candidates/{id}/import-product",
@@ -20986,6 +21987,70 @@
         }
       }
     },
+    "/api/relay/returns/{id}/compensation-proposal": {
+      "get": {
+        "summary": "GET /api/relay/returns/{id}/compensation-proposal",
+        "x-route-file": "routes/relay-dashboard.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/relay/returns/{id}/compensation": {
+      "post": {
+        "summary": "POST /api/relay/returns/{id}/compensation",
+        "x-route-file": "routes/relay-dashboard.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/relay/dashboard": {
       "get": {
         "summary": "GET /api/relay/dashboard",
@@ -21278,6 +22343,124 @@
                       "x-observed": true
                     }
                   }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/relay/local-cash-refunds": {
+      "get": {
+        "summary": "GET /api/relay/local-cash-refunds",
+        "x-route-file": "routes/relay-dashboard.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/relay/orders/{id}/items/{itemId}/local-cash-handoffs/{authorizationId}/start": {
+      "post": {
+        "summary": "POST /api/relay/orders/{id}/items/{itemId}/local-cash-handoffs/{authorizationId}/start",
+        "x-route-file": "routes/relay-dashboard.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorizationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/relay/orders/{id}/items/{itemId}/local-cash-handoffs/{authorizationId}/confirm": {
+      "post": {
+        "summary": "POST /api/relay/orders/{id}/items/{itemId}/local-cash-handoffs/{authorizationId}/confirm",
+        "x-route-file": "routes/relay-dashboard.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorizationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
                 }
               }
             }
@@ -21791,6 +22974,49 @@
         }
       }
     },
+    "/api/hub-dash/orders/{id}/backorder": {
+      "post": {
+        "summary": "POST /api/hub-dash/orders/{id}/backorder",
+        "x-route-file": "routes/hub-dashboard.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/hub-dash/orders/{id}/incident": {
       "post": {
         "summary": "POST /api/hub-dash/orders/{id}/incident",
@@ -21910,49 +23136,6 @@
                       "x-observed": true
                     },
                     "comment": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/hub-dash/orders/{id}/backorder": {
-      "post": {
-        "summary": "POST /api/hub-dash/orders/{id}/backorder",
-        "x-route-file": "routes/hub-dashboard.js",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "status": {
                       "type": "string",
                       "x-observed": true
                     }
@@ -24357,57 +25540,6 @@
         }
       }
     },
-    "/api/pickup/customer-regenerate/{orderId}": {
-      "post": {
-        "summary": "POST /api/pickup/customer-regenerate/{orderId}",
-        "x-route-file": "routes/pickup-secret.js",
-        "parameters": [
-          {
-            "name": "orderId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "order_ref": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "code": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "remaining_today": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
     "/api/pickup/exceptional-pickup/{orderId}": {
       "get": {
         "summary": "GET /api/pickup/exceptional-pickup/{orderId}",
@@ -24610,6 +25742,57 @@
                       "x-observed": true
                     },
                     "total_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/pickup/customer-regenerate/{orderId}": {
+      "post": {
+        "summary": "POST /api/pickup/customer-regenerate/{orderId}",
+        "x-route-file": "routes/pickup-secret.js",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "order_ref": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "code": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "remaining_today": {
                       "type": "string",
                       "x-observed": true
                     }
@@ -30390,6 +31573,38 @@
         }
       }
     },
+    "/api/purchasing/po/{po_id}/cancel-g6-recipe": {
+      "post": {
+        "summary": "POST /api/purchasing/po/{po_id}/cancel-g6-recipe",
+        "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "po_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/purchasing/po/{po_id}/discard": {
       "post": {
         "summary": "POST /api/purchasing/po/{po_id}/discard",
@@ -30669,6 +31884,38 @@
         }
       }
     },
+    "/api/purchasing/po/{po_id}/reconciliation": {
+      "get": {
+        "summary": "GET /api/purchasing/po/{po_id}/reconciliation",
+        "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "po_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/purchasing/authorizations/grants": {
       "get": {
         "summary": "GET /api/purchasing/authorizations/grants",
@@ -30778,6 +32025,38 @@
     "/api/purchasing/po/{po_id}/authorize-payment": {
       "post": {
         "summary": "POST /api/purchasing/po/{po_id}/authorize-payment",
+        "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "po_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/purchasing/po/{po_id}/variance-decision": {
+      "post": {
+        "summary": "POST /api/purchasing/po/{po_id}/variance-decision",
         "x-route-file": "routes/purchasing.js",
         "parameters": [
           {
@@ -33560,6 +34839,110 @@
         }
       }
     },
+    "/api/markets/{marketCode}/local-stock": {
+      "get": {
+        "summary": "GET /api/markets/{marketCode}/local-stock",
+        "x-route-file": "routes/market-local-stock.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/markets/{marketCode}/local-stock/receipts": {
+      "post": {
+        "summary": "POST /api/markets/{marketCode}/local-stock/receipts",
+        "x-route-file": "routes/market-local-stock.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/markets/{marketCode}/local-stock/{productId}/exposure": {
+      "put": {
+        "summary": "PUT /api/markets/{marketCode}/local-stock/{productId}/exposure",
+        "x-route-file": "routes/market-local-stock.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/market-delegation/markets/{marketCode}/clients": {
       "get": {
         "summary": "GET /api/market-delegation/markets/{marketCode}/clients",
@@ -35544,6 +36927,28 @@
                       "x-observed": true
                     }
                   }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/public/markets": {
+      "get": {
+        "summary": "GET /api/public/markets",
+        "x-route-file": "server.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
                 }
               }
             }
