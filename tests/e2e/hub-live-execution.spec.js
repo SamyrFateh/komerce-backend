@@ -772,3 +772,26 @@ test('Accès Kanban : lien direct vers la réception de la PO, sans mutation',as
   await expect(page.locator('[data-receive-po="'+PO_ID+'"]')).toBeVisible();
   expect(posts).toEqual([]);
 });
+
+test('Jalons Opérations : état serveur actif, étapes terminées grisées et accès sans POST',async({page})=>{
+  const posts=[];
+  const order=DOSSIER.orders[0];
+  const source={...DOSSIER,hub_journeys:[{id:order.id,reference:order.reference,current_key:'reception',
+    current_status:'Partielle · 2/5 reçus',current_expected:'Attendre le reliquat',
+    stage_states:{po:'complete',supplier:'complete',reception:'warning',cartons:'ready',departure:'muted'},
+    stage_notes:{reception:'2/5 reçus'}}]};
+  await mount(page,{posts,view:null,dossier:source});
+  await page.goto(ORIGIN+'/admin/hub-live?view=execute&entry=operations&market=KM&atelier=purchasing&sel=order%3A'+order.id);
+  const rail=page.locator('[data-hub-journey]');
+  await expect(rail).toContainText(order.reference);
+  await expect(rail.locator('[data-hub-journey-step="po"]')).toBeDisabled();
+  await expect(rail.locator('[data-hub-journey-step="po"]')).toHaveClass(/is-done/);
+  const reception=rail.locator('[data-hub-journey-step="reception"]');
+  await expect(reception).toHaveAttribute('aria-current','step');
+  await expect(rail).toContainText('Attendre le reliquat');
+  await reception.click();
+  await expect(page.locator('[data-workspace-view="reception"]')).toHaveAttribute('aria-selected','true');
+  await expect(page.locator('[data-receive-po="'+PO_ID+'"]')).toBeVisible();
+  await expect(rail.locator('[data-hub-journey-step="reception"]')).toHaveAttribute('aria-current','step');
+  expect(posts).toEqual([]);
+});
