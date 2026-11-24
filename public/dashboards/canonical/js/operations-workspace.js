@@ -112,7 +112,7 @@
     const relayExec = mode === 'relay-execution';
     const execution = mode === 'execution' || relayExec;
     copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', relayExec ? 'RELAIS LIVE · EXÉCUTION' : execution ? 'HUB LIVE · EXÉCUTION' : 'HUB & RELAIS'));
-    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', relayExec ? 'Poste de travail Relais' : execution ? 'Hub live · Dossiers' : 'Flux à traiter'));
+    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', relayExec ? 'Poste de travail Relais' : execution ? 'Opérations Hub' : 'Flux à traiter'));
     copy.appendChild(text(
       doc,
       'p',
@@ -123,8 +123,8 @@
 
     const nav = doc.createElement('nav');
     nav.className = 'kmc-workspace-nav';
-    const operations = text(doc, 'a', 'kmc-workspace-nav-link', relayExec ? '← Relais live' : '← Dashboard Opérations');
-    operations.setAttribute('href', relayExec ? '/admin/relais-live' : '/admin/operations');
+    const operations = text(doc, 'a', 'kmc-workspace-nav-link', relayExec ? '← Relais live' : execution ? '← Kanban Hub' : '← Dashboard Opérations');
+    operations.setAttribute('href', relayExec ? '/admin/relais-live' : execution ? '/admin/hub?branch=operations' : '/admin/operations');
     nav.appendChild(operations);
     header.appendChild(nav);
 
@@ -1289,6 +1289,7 @@
           if (!details) return;
           details.open = true;
           const targets = {
+            labels: '[data-hub-label-printing]',
             boxes: '[data-supply-box-create]',
             shipments: '[data-supply-shipment-bar]',
           };
@@ -1533,15 +1534,17 @@
     fillable.filter(line=>Number(line.quantity)>0).forEach(line=>{
       if(!labelRows.has(String(line.allocation_id)))labelRows.set(String(line.allocation_id),line);
     });
-    if(labelRows.size){
-      const labelSection=doc.createElement('div');
+    {
+      const labelSection=doc.createElement('section');
       labelSection.setAttribute('data-hub-label-printing','');
-      labelSection.appendChild(text(doc,'strong','', 'Étiquettes articles · après réception physique'));
+      labelSection.appendChild(text(doc,'h3','', 'Étiquettes articles'));
+      labelSection.appendChild(text(doc,'p','kmc-workspace-note','Après réception physique, préparez les QR puis téléchargez le PDF A4 ou 80 mm. Une étiquette par article reçu.'));
+      if(!labelRows.size) labelSection.appendChild(text(doc,'p','kmc-workspace-note','Aucun article reçu disponible à préparer dans cet atelier. Consultez les réceptions fournisseurs.'));
       for(const line of labelRows.values()){
         const row=doc.createElement('div');
         row.className='kmc-workspace-receive-footer';
-        row.appendChild(text(doc,'span','',String(line.product||'Article')+' · '+String(line.relais_code||'relais')));
-        const issue=makeActionButton(doc,'Préparer les QR','issue-article-labels');
+        row.appendChild(text(doc,'span','',String(line.product||'Article')+' · '+String(line.relais_code||'relais')+' · '+String(line.quantity)+' unité(s) à placer'));
+        const issue=makeActionButton(doc,'Préparer les étiquettes','issue-article-labels');
         issue.addEventListener('click',()=>runAction(context,issue,{
           url:endpointFor(context.marketCode,'labels/articles/'+encodeURIComponent(line.allocation_id)+'/issue'),
           body:{},runningMessage:'Création des étiquettes reçues…',
@@ -1550,7 +1553,7 @@
         const print=doc.createElement('a');
         print.href=endpointFor(context.marketCode,'labels/articles/'+encodeURIComponent(line.allocation_id)+'/print?format=thermal');
         print.target='_blank';print.rel='noopener';
-        print.textContent='Imprimer les QR';
+        print.textContent='Imprimer les étiquettes';
         print.setAttribute('data-hub-print-article','');
         print.addEventListener('click',event=>openLabelPrint(event,print.href));
         row.append(issue,print,pdfLink('articles',line.allocation_id,'a4'),pdfLink('articles',line.allocation_id,'thermal'));labelSection.appendChild(row);
