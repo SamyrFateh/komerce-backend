@@ -29,7 +29,7 @@ function checkM06UnitScanLineage(s,{boxId,allocationId,units,placementIds}){
  const actualIds=checkM06UnitScanCustody(s,{boxId,allocationId,units});
  const rows=s?.effective;
  check(sameIds(actualIds,placementIds)&&Array.isArray(rows)&&rows.length===units&&
-  rows.every(p=>p.box_unit_id===boxId&&p.bag_unit_id==null&&
+  rows.every(p=>p.box_unit_id===boxId&&p.bag_unit_id===null&&
    p.allocation_id===allocationId&&Number(p.quantity)===1)&&
   sameIds(rows.map(p=>p.placement_id),actualIds),
   'G6_M06_DIRECT_BOX_LINEAGE_INVALID');
