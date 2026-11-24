@@ -1194,6 +1194,7 @@ async function moveAllocationQuantity(executor, {
   }
 
   let verifiedCode = null;
+  let opaqueArticleLabelId = null;
   if (target.unit_type === 'HANDLING_UNIT' && target.order_id) {
     if (String(target.order_id) !== String(allocation.order_id)) fail('HUB_ORDER_BAG_ALLOCATION_MISMATCH');
     if (evidenceMethod === 'SCAN') {
@@ -1218,20 +1219,43 @@ async function moveAllocationQuantity(executor, {
     }
   } else if (target.unit_type === 'MARKET_PARCEL' && evidenceMethod) {
     if (evidenceMethod === 'SCAN') {
-      const physicalCodes = require('./hub-physical-codes');
-      let observation;
-      try {
-        observation = await physicalCodes.resolvePhysicalCode(db, {
-          purchaseOrderId: allocation.purchase_order_id,
-          code: evidenceCode,
-        });
-      } catch (error) {
-        fail('HUB_BOX_ITEM_SCAN_INVALID', error.code || 'Code physique inconnu');
+      const code = String(evidenceCode || '').trim().toUpperCase();
+      if (/^KQ1_[A-F0-9]{32}$/.test(code)) {
+        // Article unit identity, not merely a SKU code: one unique scan for BOX_PACK.
+        const labels = require('./hub-opaque-labels');
+        let resolved;
+        try {
+          resolved = await labels.resolveLabel(db, { code, marketId: allocation.market_id });
+        } catch (error) {
+          fail('HUB_BOX_ITEM_SCAN_INVALID', error.code || 'QR inconnu');
+        }
+        if (resolved.target_type !== 'ARTICLE' ||
+            String(resolved.allocation_id) !== String(allocationId) ||
+            String(resolved.product_sku_id) !== String(allocation.product_sku_id)) {
+          fail('HUB_BOX_ITEM_SCAN_SKU_MISMATCH');
+        }
+        await db.query('SELECT id FROM hub_scan_labels WHERE id=$1 FOR UPDATE', [resolved.label_id]);
+        const { rows: used } = await db.query(
+          'SELECT 1 FROM hub_scan_label_box_scans WHERE label_id=$1', [resolved.label_id]
+        );
+        if (used.length) fail('HUB_BOX_ITEM_LABEL_ALREADY_USED');
+        opaqueArticleLabelId = resolved.label_id;
+        verifiedCode = code;
+      } else {
+        const physicalCodes = require('./hub-physical-codes');
+        let observation;
+        try {
+          observation = await physicalCodes.resolvePhysicalCode(db, {
+            purchaseOrderId: allocation.purchase_order_id, code: evidenceCode,
+          });
+        } catch (error) {
+          fail('HUB_BOX_ITEM_SCAN_INVALID', error.code || 'Code physique inconnu');
+        }
+        if (!observation.confirmed || String(observation.product_sku_id) !== String(allocation.product_sku_id)) {
+          fail('HUB_BOX_ITEM_SCAN_SKU_MISMATCH');
+        }
+        verifiedCode = observation.code;
       }
-      if (!observation.confirmed || String(observation.product_sku_id) !== String(allocation.product_sku_id)) {
-        fail('HUB_BOX_ITEM_SCAN_SKU_MISMATCH');
-      }
-      verifiedCode = observation.code;
     } else if (evidenceMethod === 'MANUAL' && typeof evidenceRef === 'string' && evidenceRef.trim().length >= 6) {
       if (evidenceCode) fail('HUB_BOX_ITEM_MANUAL_CODE_FORBIDDEN');
     } else {
@@ -1333,6 +1357,15 @@ async function moveAllocationQuantity(executor, {
       locationRef,
       details: { emptied_by_operation: true },
     });
+  }
+
+  if (opaqueArticleLabelId) {
+    await db.query(
+      `INSERT INTO hub_scan_label_box_scans
+       (label_id,allocation_id,from_unit_id,box_unit_id,actor_id)
+       VALUES ($1,$2,$3,$4,$5)`,
+      [opaqueArticleLabelId,allocationId,fromUnitId,toUnitId,actorId]
+    );
   }
 
   return {
