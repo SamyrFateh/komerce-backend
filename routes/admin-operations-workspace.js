@@ -289,6 +289,94 @@ router.get(
   }
 );
 
+// Identités QR opaques : la génération ne mute jamais réception, allocation ou custody.
+// POST explicite pour l'émission stable ; GET d'impression/relecture strictement read-only.
+const hubLabels = require('../services/hub-opaque-labels');
+router.post(
+  '/market/:marketCode/labels/articles/:allocationId/issue',
+  attachHubExecutionCapability('execution.parcel.receive'),
+  requireHubWorkspaceAction,
+  async (req,res,next)=>{
+    try{
+      const labels=await db.withTransaction(client=>hubLabels.issueArticleLabels(client,{
+        allocationId:req.params.allocationId,marketId:req.workspaceMarket.id,actorId:req.user.id,
+      }));
+      res.set('Cache-Control','private, no-store');
+      return res.status(201).json({ok:true,type:'ARTICLE',count:labels.length,
+        labels:labels.map(l=>({alias:l.short_alias,unit_number:l.unit_number}))});
+    }catch(err){return sendWorkspaceError(err,res,next);}
+  }
+);
+router.post(
+  '/market/:marketCode/labels/boxes/:unitId/issue',
+  attachHubExecutionCapability('execution.parcel.ship'),
+  requireHubWorkspaceAction,
+  async(req,res,next)=>{
+    try{
+      const label=await db.withTransaction(client=>hubLabels.issueBoxLabel(client,{
+        boxId:req.params.unitId,marketId:req.workspaceMarket.id,
+        relaisId:req.body&&req.body.relais_id,actorId:req.user.id,
+      }));
+      res.set('Cache-Control','private, no-store');
+      return res.status(201).json({ok:true,type:'COMBOX',alias:label.short_alias});
+    }catch(err){return sendWorkspaceError(err,res,next);}
+  }
+);
+for(const [type,route,capability] of [
+  ['ARTICLE','articles','execution.parcel.receive'],
+  ['COMBOX','boxes','execution.parcel.ship'],
+]){
+  router.get(
+    '/market/:marketCode/labels/'+route+'/:id/print',
+    attachHubExecutionCapability(capability),
+    requireHubWorkspaceAction,
+    async(req,res,next)=>{
+      try{
+        const labels=await hubLabels.listLabels(db,{
+          targetType:type,targetId:req.params.id,marketId:req.workspaceMarket.id,
+        });
+        const html=await hubLabels.printHtml(db,{labels,
+          marketCode:req.workspaceMarket.code,format:req.query.format||'thermal'});
+        res.set('Cache-Control','private, no-store');
+        res.set('X-Content-Type-Options','nosniff');
+        res.set('Content-Security-Policy',"default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'");
+        return res.type('html').send(html);
+      }catch(err){return sendWorkspaceError(err,res,next);}
+    }
+  );
+}
+router.get(
+  '/market/:marketCode/labels/resolve',
+  attachHubExecutionCapability('execution.parcel.receive'),
+  requireHubWorkspaceAction,
+  async(req,res,next)=>{
+    try{
+      const result=await hubLabels.resolveLabel(db,{
+        code:req.query.code,marketId:req.workspaceMarket.id,
+      });
+      res.set('Cache-Control','private, no-store');
+      return res.json({ok:true,label:result});
+    }catch(err){return sendWorkspaceError(err,res,next);}
+  }
+);
+// Relais : résolution sous authentification + identité du relais du compte.
+// Aucune entrée client ne peut sélectionner le relais d'un autre agent.
+router.get(
+  '/market/:marketCode/relay/labels/resolve',
+  attachRelayExecutionCapability('execution.parcel.receive'),
+  requireRole(['agent_relais']),
+  async(req,res,next)=>{
+    try{
+      if(!req.user||!req.user.relais_id) return res.status(403).json({code:'HUB_LABEL_RELAY_SCOPE_REQUIRED'});
+      const result=await hubLabels.resolveLabel(db,{
+        code:req.query.code,marketId:req.workspaceMarket.id,relaisId:req.user.relais_id,
+      });
+      res.set('Cache-Control','private, no-store');
+      return res.json({ok:true,label:result});
+    }catch(err){return sendWorkspaceError(err,res,next);}
+  }
+);
+
 // Composition des KOM-BOX depuis Hub Live : mêmes commandes canoniques que /api/hub/* (hub-operations), avec le marché
 // du Workspace imposé côté serveur (allocation et contenu du carton doivent appartenir au marché).
 async function boxMarketGuard(unitId, marketId, allocationId) {
