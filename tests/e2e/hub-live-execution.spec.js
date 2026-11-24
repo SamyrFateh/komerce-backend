@@ -797,3 +797,21 @@ test('Jalons Opérations : état serveur actif, étapes terminées grisées et a
   await expect(rail.locator('[data-hub-journey-step="reception"]')).toHaveAttribute('aria-current','step');
   expect(posts).toEqual([]);
 });
+
+test('Jalons QR distincts du tri et destination de vague, sans mutation au clic',async({page})=>{
+ const posts=[];const order={...DOSSIER.orders[0],relay_code:'YA01',delivery_wave:{code:'B7Q',closed:false}};
+ const source={...DOSSIER,orders:[order,...DOSSIER.orders.slice(1)],hub_journeys:[{id:order.id,reference:order.reference,
+ current_key:'cartons',physical_focus:'labels',current_status:'Articles reçus',current_expected:'Préparer les QR',
+ stage_states:{po:'complete',supplier:'complete',reception:'complete',labels:'ready',cartons:'ready',departure:'muted'},
+ stage_notes:{labels:'1/2 QR émis · impression physique non attestée'}}]};
+ await mount(page,{posts,view:null,dossier:source});
+ await page.goto(ORIGIN+'/admin/hub-live?view=execute&entry=operations&market=KM&atelier=purchasing&sel=order%3A'+order.id);
+ const rail=page.locator('[data-hub-journey]');
+ await expect(rail.locator('[data-hub-journey-destination]')).toContainText('Relais YA01 · Vague B7Q');
+ await expect(rail.locator('[data-hub-journey-step="labels"]')).toHaveAttribute('aria-current','step');
+ await expect(rail.locator('[data-hub-journey-step="cartons"]')).not.toHaveAttribute('aria-current','step');
+ await expect(rail).toContainText('impression physique non attestée');
+ await rail.locator('[data-hub-journey-step="labels"]').click();
+ await expect(page.locator('[data-workspace-view="labels"]')).toHaveAttribute('aria-selected','true');
+ expect(posts).toEqual([]);
+});
