@@ -214,7 +214,7 @@ test('atelier Hub : l’ordre visible suit étiquettes, préparation COMBOX, pui
  const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
  const labels=src.indexOf('boxes.appendChild(labelSection);');
  const init=src.indexOf('boxes.appendChild(createBar);');
- const table=src.indexOf("boxes.appendChild(simpleTable(doc, ['', 'COMBOX'");
+ const table=src.indexOf('boxes.appendChild(boxTable);');
  const departure=src.indexOf('boxes.appendChild(bar);');
  expect(labels).toBeGreaterThan(0);
  expect(init).toBeGreaterThan(labels);
@@ -228,4 +228,46 @@ test('COMBOX : destination connue ou écart explicite, état lisible sans change
  expect(src).toContain("relayIds.size>1||relayCodes.size>1?'Écart de destination à contrôler'");
  expect(src).toContain('box.contents.every(c=>c.relais_id&&c.relais_code)');
  expect(src).toContain('data-hub-box-destination');
+});
+
+describe('Hub: no old SAC and QR/PDF immediately reachable',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+  const hubCockpit=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-live-cockpit.js'),'utf8');
+  const html=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/index.html'),'utf8');
+  test('front no longer creates or deposits in customer bags',()=>{
+    expect(source).not.toContain('Préparer les sacs clients');
+    expect(source).not.toContain('Déposer dans le sac');
+    expect(source).not.toContain('Ateliers physiques · Sacs');
+    expect(hubCockpit).toContain("filter(item => !['PREPARE_BAG'");
+    // The cockpit may filter old bag events, but never enables bag mutations.
+    expect(hubCockpit).not.toContain("ctx.endpoint('bags')");
+  });
+  test('QR station is a first-class tab and immediate dossier shortcut',()=>{
+    expect(source).toContain("{ id: 'labels', label: 'Étiquettes QR' }");
+    expect(source).toContain("labelJump.setAttribute('data-hub-label-shortcut','')");
+    expect(source).toContain("context.view='labels';context.renderCurrent()");
+    expect(source).toContain("station.setAttribute('data-hub-labels-station','')");
+    expect(source).toContain('KomerceHubLabelCenter');
+    expect(source).toContain("fillable:Array.isArray(context.dossier?.fillable)");
+  });
+  test('new script and CSS version IDs are different from the stale November 13 immutable assets',()=>{
+    expect(html).toContain('hub-label-center.js?v=261124-hub-qr-refresh-1');
+    expect(html).toContain('operations-workspace.js?v=261124-hub-qr-refresh-1');
+    expect(html).toContain('hub-live-cockpit.js?v=261124-hub-qr-refresh-1');
+    expect(html).toContain('operations-workspace.css?v=261124-hub-qr-refresh-1');
+    expect(html).not.toContain('operations-workspace.js?v=261113-director-h4');
+  });
+  test('historic COMBOX rows remain accessible but no longer occupy full page',()=>{
+    expect(source).toContain("boxSearch.setAttribute('aria-label','Filtrer les COMBOX physiques')");
+    expect(source).toContain("boxTable.setAttribute('data-hub-combox-scroll','')");
+    expect(source).toContain("boxSearch.addEventListener('input',filterBoxes)");
+    expect(css).toContain('max-height:480px;overflow:auto;scrollbar-gutter:stable');
+    expect(css).toContain("[data-hub-combox-scroll] tbody tr[hidden]");
+  });
+  test('QR search and download layout is compact and accessible on mobile',()=>{
+    expect(css).toContain('.kmc-hub-label-grid');
+    expect(css).toContain('.kmc-hub-label-controls');
+    expect(css).toContain('.kmc-hub-label-download');
+    expect(css).toContain('grid-template-columns:1fr');
+  });
 });

@@ -2037,3 +2037,72 @@ body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="execution"] > .
   min-height: 40px;
   max-width: 100%;
 }
+
+/* Hub QR station: first-class, searchable and usable from a phone.
+   Do not style old SAC components; they are no longer in the Hub doctrine. */
+.kmc-operations-workspace .kmc-hub-label-shortcut {
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:10px 16px;margin:10px 0 8px;border:1px solid #194975;
+  border-radius:8px;background:#123257;color:white;font-weight:750;
+  font:inherit;cursor:pointer;text-align:center;
+}
+.kmc-operations-workspace .kmc-hub-label-shortcut:hover,
+.kmc-operations-workspace .kmc-hub-label-shortcut:focus-visible {background:#23517c;}
+.kmc-operations-workspace [data-hub-label-center] {
+  padding:14px 16px;max-width:100%;box-sizing:border-box;
+}
+.kmc-hub-label-head h2 {margin:0 0 7px;color:#142e4a;font-size:clamp(19px,2vw,25px);}
+.kmc-hub-label-head p {margin:0 0 14px;color:#3a556b;font-size:13px;line-height:1.55;}
+.kmc-hub-label-controls {display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
+.kmc-hub-label-controls input,
+.kmc-hub-label-controls select {
+  min-height:42px;padding:8px 11px;border-radius:8px;border:1px solid #b7c9dc;
+  background:white;font:inherit;color:#153a5b;
+}
+.kmc-hub-label-controls input{flex:2 1 230px;min-width:0;}
+.kmc-hub-label-controls select{flex:1 1 170px;min-width:0;}
+.kmc-hub-label-controls button,.kmc-hub-label-issue{
+  min-height:42px;border-radius:8px;border:1px solid #94b0c9;
+  background:#eff5fa;color:#193f63;font-weight:700;padding:8px 13px;cursor:pointer;
+}
+.kmc-hub-label-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px;
+  align-items:start;
+}
+.kmc-hub-label-card{
+  display:grid;gap:9px;align-content:start;padding:15px;border:1px solid #cbd9e8;
+  border-radius:10px;background:#fff;box-shadow:0 1px 2px #152a420b;
+}
+.kmc-hub-label-card strong{font-size:14px;overflow-wrap:anywhere;color:#102e4e;}
+.kmc-hub-label-card p{margin:0;color:#466079;font-size:12px;line-height:1.5;}
+.kmc-hub-label-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.kmc-hub-label-download {
+  display:inline-flex;align-items:center;min-height:40px;
+  padding:7px 11px;background:#143654;color:white;border-radius:7px;
+  font-size:12px;font-weight:750;text-decoration:none;
+}
+.kmc-hub-label-download:hover,.kmc-hub-label-download:focus-visible{background:#255f91;color:#fff;}
+@media(max-width:700px){
+  .kmc-operations-workspace [data-hub-label-center]{padding:10px 4px;}
+  .kmc-operations-workspace .kmc-hub-label-shortcut{width:100%;}
+  .kmc-hub-label-controls{display:grid;grid-template-columns:1fr;}
+  .kmc-hub-label-grid{grid-template-columns:1fr;}
+}
+
+/* Keep archived physical COMBOX accessible without a multi-screen long table. */
+.kmc-operations-workspace [data-supply-boxes] .kmc-hub-box-filter {
+  display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:12px 0;
+}
+.kmc-operations-workspace [data-supply-boxes] .kmc-hub-box-filter input {
+  flex:1 1 240px;min-height:40px;min-width:0;
+  padding:8px 11px;border:1px solid #b4c9dd;border-radius:7px;font:inherit;
+}
+.kmc-operations-workspace [data-supply-boxes] [data-hub-combox-scroll] {
+  max-height:480px;overflow:auto;scrollbar-gutter:stable;
+}
+.kmc-operations-workspace [data-supply-boxes] [data-hub-combox-scroll] thead th {
+  position:sticky;top:0;z-index:1;background:#f4f8fc;
+}
+.kmc-operations-workspace [data-supply-boxes] [data-hub-combox-scroll] tbody tr[hidden]{
+  display:none;
+}
