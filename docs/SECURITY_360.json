@@ -4455,7 +4455,12 @@
       "roles": []
     },
     {
-      "key"stody/destinations",
+      "key": "POST /api/market-delegation/markets/{marketCode}/cash-custody/destinations/{destinationId}/{verb}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/cash-custody/destinations",
       "level": "PROTECTED",
       "roles": []
     },
@@ -5130,7 +5135,24 @@
       ]
     },
     {
-      "key": "POST /api/: [
+      "key": "POST /api/pricing/calculate",
+      "level": "PUBLIC",
+      "roles": []
+    },
+    {
+      "key": "POST /api/pricing/couture",
+      "level": "PUBLIC",
+      "roles": []
+    },
+    {
+      "key": "GET /api/pricing/dashboard",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/pricing/flow",
+      "level": "PROTECTED",
+      "roles": [
         "admin"
       ]
     },
