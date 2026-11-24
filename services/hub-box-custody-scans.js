@@ -8,7 +8,7 @@
  * @outputs       immutable_per_box_custody_evidence
  * @depends       db, services/hub-opaque-labels
  * @used-by       routes/admin-shipping-customs-workspace.js, services/international-shipment-journey.js
- * @db-read       international_shipments, international_shipment_hub_units, hub_scan_labels, hub_physical_units
+ * @db-read       international_shipments, international_shipment_hub_units, hub_scan_labels, hub_physical_units, hub_physical_unit_placements, hub_purchase_allocations, orders
  * @db-write      hub_box_custody_scans
  * @db-txn        caller_owned_or_withTransaction
  * @doctrine      scan_is_not_a_transition, dual_party_handover, manifest_complete_before_departure
