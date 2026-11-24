@@ -252,11 +252,12 @@ describe('Hub: no old SAC and QR/PDF immediately reachable',()=>{
     expect(source).not.toContain('fillable:Array.isArray(context.dossier?.fillable)');
   });
   test('new script and CSS version IDs are different from the stale November 13 immutable assets',()=>{
-    expect(html).toContain('hub-label-center.js?v=261124-hub-qr-refresh-1');
-    expect(html).toContain('operations-workspace.js?v=261124-hub-qr-refresh-1');
-    expect(html).toContain('hub-live-cockpit.js?v=261124-hub-qr-refresh-1');
-    expect(html).toContain('operations-workspace.css?v=261124-hub-qr-refresh-1');
+    expect(html).toContain('hub-label-center.js?v=261124-hub-domain-2');
+    expect(html).toContain('operations-workspace.js?v=261124-hub-domain-2');
+    expect(html).toContain('hub-live-cockpit.js?v=261124-hub-domain-2');
+    expect(html).toContain('operations-workspace.css?v=261124-hub-domain-2');
     expect(html).not.toContain('operations-workspace.js?v=261113-director-h4');
+    for(const name of ['hub-context-actions.js','hub-workstation.js','app.js'])expect(html).toContain(name+'?v=261124-hub-domain-2');
   });
   test('historic COMBOX rows remain accessible but no longer occupy full page',()=>{
     expect(source).toContain("boxSearch.setAttribute('aria-label','Filtrer les COMBOX physiques')");
