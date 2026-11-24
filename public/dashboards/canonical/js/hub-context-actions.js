@@ -115,13 +115,13 @@
     menu.appendChild(link);
   }
   // Le dossier PO canonique est l’unique surface d’exécution des achats.
-  function poLink(menu,doc,po,label){
+  function poLink(menu,doc,po,label,entry='operations'){
     if(!validUuid(po.id)||!(/^[A-Z]{2}$/.test(po.market||''))) {
       explanation(menu,doc,'Marché ou PO non identifié : accès au dossier indisponible.');
       return false;
     }
     workflowLink(menu,doc,label,'/admin/hub-live?'+new URLSearchParams({
-      view:'execute',entry:'operations',market:po.market,atelier:'purchasing',sel:'po:'+po.id
+      view:'execute',entry,market:po.market,atelier:'purchasing',sel:'po:'+po.id
     }).toString());
     return true;
   }
@@ -201,7 +201,7 @@
       explanation(menu,doc,'Engagement d’achat à valider par la directrice. Votre compte ne détient pas cette autorisation (attribuée par l’Admin central) ; une PO préparée n’est pas un engagement.');
       return false;
     }
-    poLink(menu,doc,po,'Ouvrir la PO · décision d’engagement');
+    poLink(menu,doc,po,'Ouvrir la PO · décision d’engagement','direction');
     return true;
   }
   function paymentAuthorization(menu,doc,po,grants,fetchFn,refresh) {
@@ -221,7 +221,7 @@
       explanation(menu,doc,'Paiement fournisseur à autoriser par la directrice. Votre compte ne détient pas cette autorisation (attribuée par l’Admin central).');
       return false;
     }
-    poLink(menu,doc,po,'Ouvrir la PO · autorisation de paiement');
+    poLink(menu,doc,po,'Ouvrir la PO · autorisation de paiement','direction');
     return true;
   }
   function varianceDecision(menu, doc, po, grants, fetchFn, refresh) {
