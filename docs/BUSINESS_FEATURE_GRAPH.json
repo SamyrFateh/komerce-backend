@@ -16807,7 +16807,7 @@
         "category": "services",
         "declared": "services/order-delivery-wave-service.js",
         "resolvedPath": "services/order-delivery-wave-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "orders",
@@ -54885,8 +54885,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 720,
-        "technicalNodesOwned": 720,
+        "technicalNodesTotal": 721,
+        "technicalNodesOwned": 721,
         "technicalOrphans": 0
       },
       "dash": {
