@@ -1,0 +1,72 @@
+{
+  "purpose": "Prix fictifs pour recette staging, jamais une offre ferme ni un stock attesté.",
+  "markets": {
+    "CM": {
+      "offer_id": "ba1eba00-5245-4000-8000-000000000002",
+      "currency": "XAF",
+      "options": [
+        {
+          "key": "BALEBA-025",
+          "label": "2,5 kVA",
+          "demo_price": 180000
+        },
+        {
+          "key": "BALEBA-050",
+          "label": "5 kVA",
+          "demo_price": 330000
+        },
+        {
+          "key": "BALEBA-080",
+          "label": "8 kVA",
+          "demo_price": 650000
+        },
+        {
+          "key": "BALEBA-100",
+          "label": "10 kVA",
+          "demo_price": 900000
+        },
+        {
+          "key": "BALEBA-150",
+          "label": "15 kVA",
+          "demo_price": 1800000
+        },
+        {
+          "key": "BALEBA-300",
+          "label": "30 kVA",
+          "demo_price": 3900000
+        },
+        {
+          "key": "BALEBA-500",
+          "label": "50 kVA",
+          "demo_price": 6800000
+        }
+      ]
+    },
+    "CG": {
+      "offer_id": "c0aaba00-5245-4000-8000-000000000002",
+      "currency": "XAF",
+      "options": [
+        {
+          "key": "KOYAMBA-T2",
+          "label": "Appartement T2",
+          "demo_price": 25000000
+        },
+        {
+          "key": "KOYAMBA-T3",
+          "label": "Appartement T3",
+          "demo_price": 40000000
+        },
+        {
+          "key": "KOYAMBA-T4",
+          "label": "Appartement T4",
+          "demo_price": 55000000
+        },
+        {
+          "key": "KOYAMBA-VILLA",
+          "label": "Villa",
+          "demo_price": 90000000
+        }
+      ]
+    }
+  }
+}
