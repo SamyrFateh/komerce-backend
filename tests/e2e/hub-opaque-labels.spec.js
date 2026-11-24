@@ -83,7 +83,7 @@ test('étiquettes article : préparer puis imprimer sans changement métier impl
   await expect(page.locator('[data-hub-print-article]')).toHaveCount(1);
   await expect(page.locator('[data-hub-print-box]')).toHaveCount(1);
   await expect(page.getByRole('button',{name:'Préparer QR COMBOX'})).toHaveCount(1);
-  await page.getByRole('button',{name:'Préparer les QR'}).click();
+  await page.getByRole('button',{name:'Préparer les étiquettes'}).click();
   await expect.poll(()=>posts.filter(p=>p.path.includes('/labels/articles/')).length).toBe(1);
   expect(posts.some(p=>p.path.endsWith('/fill'))).toBe(false);
   // Real Chromium clicks: authenticated HTTP response and a printable Blob popup.
