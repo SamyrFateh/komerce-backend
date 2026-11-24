@@ -30,7 +30,9 @@ describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => 
     const LIVE_DOCUMENT_ROUTES = ['/admin/import-runtime', '/admin/hub-live', '/admin/relais-live'];
     // La documentation reste un document HTML autonome protégé côté serveur,
     // jamais un écran monté en SPA ni une route à authentification simulée.
-    const SERVER_DOCUMENT_ROUTES = [...LIVE_DOCUMENT_ROUTES, '/admin/documentation'];
+    // La recette guidée est aussi une page HTML autonome : elle possède son
+    // propre parcours Chromium et ne passe pas par le routeur client V4.
+    const SERVER_DOCUMENT_ROUTES = [...LIVE_DOCUMENT_ROUTES, '/admin/documentation', '/admin/golden-e2e'];
     const adminRoutes = hrefs.filter(href => href.startsWith('/admin') && !SERVER_DOCUMENT_ROUTES.includes(new URL(href, 'https://komerce.test').pathname));
     expect(adminRoutes.length).toBeGreaterThan(0);
     adminRoutes.forEach(href => {
