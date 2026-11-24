@@ -1110,6 +1110,21 @@ async function transitionPhysicalUnit(executor, {
   );
   if (!before) fail('HUB_PHYSICAL_UNIT_NOT_FOUND');
   if (before.state === toState) return { noop: true, unit: before };
+  if(before.unit_type==='MARKET_PARCEL'&&toState==='DISPATCHED'){
+    if(before.state!=='PACKED')fail('HUB_BOX_NOT_PACKED','Fermer la COMBOX avant sortie du Hub');
+    const scan=String(details.box_qr_scan||'').trim().toUpperCase();
+    if(!/^KQ1_[A-F0-9]{32}$/.test(scan)&&!/^[A-HJ-NP-Z2-9]{8}$/.test(scan))
+      fail('HUB_BOX_FINAL_QR_REQUIRED','Scanner l’étiquette définitive COMBOX');
+    if(details.label_applied_confirmed!==true)
+      fail('HUB_BOX_LABEL_APPLIED_REQUIRED','Confirmer la pose physique de l’étiquette COMBOX');
+    const {rows:[label]}=await db.query(
+      `SELECT id FROM hub_scan_labels
+        WHERE physical_unit_id=$1 AND target_type='COMBOX'
+          AND (qr_value=$2 OR short_alias=$2)`,
+      [unitId,scan]);
+    if(!label)fail('HUB_BOX_FINAL_QR_MISMATCH','QR COMBOX absent ou non associé au carton');
+  }
+
   if (before.state === 'QUARANTINED') {
     fail('HUB_QUARANTINE_REVALIDATION_REQUIRED', 'Utiliser revalidateQuarantinedInbound après résolution F3.');
   }
