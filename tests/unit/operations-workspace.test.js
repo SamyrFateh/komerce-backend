@@ -199,3 +199,13 @@ test('Hub : retour au Kanban et station étiquettes même lorsque la file est vi
   expect(src).toContain("pdfLink('articles',line.allocation_id,'a4')");
   expect(src).toContain("pdfLink('articles',line.allocation_id,'thermal')");
 });
+
+test('réimpression après placement : dédoublonne les lots et réutilise uniquement les liens PDF',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+ const history=src.slice(src.indexOf('const reprints=new Map();'),src.indexOf('boxes.appendChild(labelSection);'));
+ expect(history).toContain('labelRows.has(id)');
+ expect(history).toContain('Number(content.issued_label_count)<=0');
+ expect(history).toContain("pdfLink('articles',item.id,'a4')");
+ expect(history).toContain("pdfLink('articles',item.id,'thermal')");
+ expect(history).not.toContain('runAction(');
+});
