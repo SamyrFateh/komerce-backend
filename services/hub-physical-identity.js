@@ -1200,13 +1200,20 @@ async function moveAllocationQuantity(executor, {
   );
   if (!allocation) fail('HUB_PURCHASE_ALLOCATION_NOT_FOUND');
   if (target.unit_type === 'MARKET_PARCEL') {
-    const { rows: targetMarkets } = await db.query(
-      `SELECT DISTINCT a.market_id FROM hub_physical_unit_placements p
+    // The target unit is already locked by lockUnits above: concurrent
+    // placements cannot both establish a different destination in an empty box.
+    // Use the immutable allocation snapshot, not a client code or a mutable label.
+    const { rows: targetDestinations } = await db.query(
+      `SELECT DISTINCT a.market_id, a.destination_ref FROM hub_physical_unit_placements p
          JOIN hub_purchase_allocations a ON a.id=p.allocation_id
         WHERE p.physical_unit_id=$1 AND p.removed_at IS NULL`, [toUnitId]
     );
-    if (targetMarkets.some(row => String(row.market_id) !== String(allocation.market_id))) {
+    if (targetDestinations.some(row => String(row.market_id) !== String(allocation.market_id))) {
       fail('HUB_BOX_MARKET_MISMATCH');
+    }
+    if (!allocation.destination_ref || targetDestinations.some(row =>
+      !row.destination_ref || row.destination_ref !== allocation.destination_ref)) {
+      fail('HUB_BOX_RELAY_MISMATCH', 'Article destiné à un autre relais : choisissez une COMBOX de sa destination');
     }
   }
 
