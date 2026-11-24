@@ -1007,3 +1007,19 @@ Ni le groupe ni la référence ne constituent une preuve de retrait : les secret
 
 **Activation** : code sous `KOMERCE_ORDER_WAVES_ENABLED=1`, accepté seulement avec `KOMERCE_ENV=staging`, OFF par défaut. Migration à appliquer, puis PostgreSQL, HTTP, Chromium et dashboards à certifier avant GO. Les références des commandes G6 dédiées restent sous leur contrôle de recette ; la persistance de schéma ne signifie pas mise en service commerciale.
 <!-- /schema-pending -->
+
+
+<!-- schema-pending: hub_scan_labels (migration 427, intended_migration_schema; non live avant déploiement) -->
+### Identités d'étiquettes QR opaques Hub–Relais (migration 427 — intended_migration_schema)
+
+La table `hub_scan_labels` est **prévue, non confirmée live sur Railway**. Elle stocke un QR opaque non prédictible (`KQ1_` suivi de 32 caractères hexadécimaux) et un alias de secours à huit caractères, tous deux uniques. Le ticket papier n'expose que KOMERCE, ARTICLE/COMBOX, le marché, le relais, le QR opaque et l'alias : **jamais le nom, le téléphone, le secret de retrait ni la référence commerciale**.
+
+Chaque étiquette `ARTICLE` correspond à un couple unique (allocation d'achat, ordinal d'unité reçue physiquement), et chaque étiquette `COMBOX` à une unité physique `MARKET_PARCEL` unique ; les FKs vers allocation, unité physique, marché et relais sont restrictives. L'émission d'étiquettes d'articles dépend d'une preuve préalable de réception physique canonique, et l'impression/réimpression ne modifie aucune quantité. La résolution exige un acteur authentifié dans le périmètre marché/relais et ne vaut pas preuve d'une remise.
+<!-- /schema-pending -->
+
+
+<!-- schema-pending: hub_scan_label_box_scans (migration 427, intended_migration_schema; non live avant déploiement) -->
+### Preuve de placement QR article dans une COMBOX (migration 427 — intended_migration_schema)
+
+La table `hub_scan_label_box_scans` est **prévue, non confirmée live sur Railway**. Sa clé primaire `label_id` ne permet qu'une preuve de premier placement par identité article et interdit de réutiliser un même QR pour deux mouvements COMBOX. Elle conserve l'allocation physique, l'unité source, la COMBOX cible, l'acteur et l'horodatage. L'écriture est dans la transaction du writer de déplacement Hub (REPACK) ; un QR n'est qu'une preuve d'identité, jamais un droit de mutation autonome. Le moteur maintient les gardes de quantité, d'autorisation et de destination. Les événements de custody existants restent l'autorité de traçabilité.
+<!-- /schema-pending -->
