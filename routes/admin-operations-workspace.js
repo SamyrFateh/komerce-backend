@@ -26,6 +26,7 @@ const { requireMarketDelegatedCapability } = require('../middleware/require-mark
 const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const workspace = require('../services/operations-workspace');
 const supply = require('../services/hub-procurement-dossier');
+const { summarizeMarket } = require('../services/hub-global-board');
 const boxShipment = require('../services/hub-box-shipment-service');
 const bagBox = require('../services/hub-bag-box-service');
 const physicalIdentity = require('../services/hub-physical-identity');
@@ -237,7 +238,15 @@ router.get(
     try {
       res.set('Cache-Control', 'private, no-store');
       const dossier = await supply.getDossier({ marketId: req.workspaceMarket.id, viewer: req.user || null });
-      return res.json({ market: { id: req.workspaceMarket.id, code: req.workspaceMarket.code }, ...dossier });
+      const market = { id: req.workspaceMarket.id, code: req.workspaceMarket.code, name: req.workspaceMarket.name };
+      // Exactement la même projection que le Kanban, sur le dossier déjà lu.
+      const hub_journeys = summarizeMarket(market, dossier).map(row => ({
+        id: row.id, reference: row.reference, current_key: row.current_key,
+        current_phase: row.current_phase, current_status: row.current_status,
+        current_expected: row.current_expected, next_action: row.next_action,
+        stage_states: row.stage_states, stage_notes: row.stage_notes,
+      }));
+      return res.json({ market: { id: market.id, code: market.code }, ...dossier, hub_journeys });
     } catch (err) {
       return sendWorkspaceError(err, res, next);
     }
