@@ -322,29 +322,31 @@ router.post(
     }catch(err){return sendWorkspaceError(err,res,next);}
   }
 );
-for(const [type,route,capability] of [
-  ['ARTICLE','articles','execution.parcel.receive'],
-  ['COMBOX','boxes','execution.parcel.ship'],
-]){
-  router.get(
-    '/market/:marketCode/labels/'+route+'/:id/print',
-    attachHubExecutionCapability(capability),
-    requireHubWorkspaceAction,
-    async(req,res,next)=>{
-      try{
-        const labels=await hubLabels.listLabels(db,{
-          targetType:type,targetId:req.params.id,marketId:req.workspaceMarket.id,
-        });
-        const html=await hubLabels.printHtml(db,{labels,
-          marketCode:req.workspaceMarket.code,format:req.query.format||'thermal'});
-        res.set('Cache-Control','private, no-store');
-        res.set('X-Content-Type-Options','nosniff');
-        res.set('Content-Security-Policy',"default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'");
-        return res.type('html').send(html);
-      }catch(err){return sendWorkspaceError(err,res,next);}
-    }
-  );
+async function renderProtectedHubLabels(req,res,next,type) {
+  try {
+    const labels=await hubLabels.listLabels(db,{
+      targetType:type,targetId:req.params.id,marketId:req.workspaceMarket.id,
+    });
+    const html=await hubLabels.printHtml(db,{labels,
+      marketCode:req.workspaceMarket.code,format:req.query.format||'thermal'});
+    res.set('Cache-Control','private, no-store');
+    res.set('X-Content-Type-Options','nosniff');
+    res.set('Content-Security-Policy',"default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'");
+    return res.type('html').send(html);
+  }catch(err){return sendWorkspaceError(err,res,next);}
 }
+router.get(
+  '/market/:marketCode/labels/articles/:id/print',
+  attachHubExecutionCapability('execution.parcel.receive'),
+  requireHubWorkspaceAction,
+  async(req,res,next)=>renderProtectedHubLabels(req,res,next,'ARTICLE')
+);
+router.get(
+  '/market/:marketCode/labels/boxes/:id/print',
+  attachHubExecutionCapability('execution.parcel.ship'),
+  requireHubWorkspaceAction,
+  async(req,res,next)=>renderProtectedHubLabels(req,res,next,'COMBOX')
+);
 router.get(
   '/market/:marketCode/labels/resolve',
   attachHubExecutionCapability('execution.parcel.receive'),
