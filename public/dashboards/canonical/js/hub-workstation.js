@@ -375,8 +375,9 @@
                 ? 'order:'+String(subject.order_id) : '';
             const link=make(doc,'a','hlc-director-open',
               id.startsWith('po:')?'Examiner la PO':id.startsWith('order:')?'Examiner la commande':'Ouvrir le marché');
+            const isDecision=['AUTHORIZE_COMMITMENT','AUTHORIZE_PAYMENT'].includes(task.kind)&&id.startsWith('po:');
             link.setAttribute('href','/admin/hub-live?view=execute&market='+encodeURIComponent(market)+
-              (id?'&sel='+encodeURIComponent(id):''));
+              (isDecision?'&entry=direction':'')+(id?'&sel='+encodeURIComponent(id):''));
             row.appendChild(link);
           }
           rows.appendChild(row);
