@@ -108,6 +108,9 @@
     const physical = (cockpit.physical || []).filter(section => section.key !== 'bags');
     const legend = cockpit.unit_legend || [];
     const readOnly = ctx.isReadOnly;
+    const decisionOnly=ctx.decisionOnly===true;
+    const decisionKinds=new Set(['commitment','payment']);
+    const decide=(kind,id)=>{if(!decisionOnly&&ctx.openDecision)ctx.openDecision(id);else openForm(kind,id);};
     const marketCode = (d.market && d.market.code) || ctx.marketCode;
     if (!state.picked) state.picked = new Set();
     const orderById = new Map(orders.map((o) => [o.id, o]));
@@ -561,10 +564,10 @@
       shortcut.addEventListener('click', () => key === 'reception' ? ctx.openReception() : ctx.openPhysical(key));
       shortcuts.appendChild(shortcut);
     }
-    right.appendChild(shortcuts);
+    if(!decisionOnly)right.appendChild(shortcuts);
     const details = button(doc, 'Voir tous les ateliers physiques', 'open-physical-details', 'is-link');
     details.addEventListener('click', () => ctx.openPhysical());
-    right.appendChild(details);
+    if(!decisionOnly)right.appendChild(details);
 
     function field(form, label, input) {
       const wrap = el(doc, 'label', 'hlc-field');
@@ -908,7 +911,7 @@
           const draft = po.step.key === 'draft';
           const eff = po.totals.effective || 0;
           if (draft) {
-            A('authorize-commitment', 'Valider l’engagement d’achat', { primary: true, why: 'droit purchase_commitment', disabled: lock || grant(viewer && viewer.can_authorize_commitment, 'réservé à la responsable Hub'), run: () => openForm('commitment', po.id) });
+            A('authorize-commitment', 'Valider l’engagement d’achat', { primary: true, why: 'droit purchase_commitment', disabled: lock || grant(viewer && viewer.can_authorize_commitment, 'réservé à la responsable Hub'), run: () => decide('commitment', po.id) });
             A('detach-line', 'Retirer une ligne', { why: 'la ligne redevient un besoin ouvert', disabled: lock, run: () => openForm('detach', po.id) });
           }
           if (!readOnly && po.authorizations.commitment?.pdf_available) {
@@ -922,7 +925,7 @@
           if (po.status === 'notified' && po.sent_at) A('confirm-po', 'Confirmation fournisseur', { why: 'quantités confirmées (déclaratif)', disabled: lock, run: () => openForm('confirm', po.id) });
           if (!draft) A('receive', 'Réceptionner une livraison', { primary: po.totals.missing > 0, why: 'scan et quantité reçue', disabled: lock || (po.totals.missing > 0 ? null : 'PO soldée'), run: () => ctx.openReception(po.id) });
           else A('receive', 'Réceptionner une livraison', { disabled: 'PO encore en brouillon' });
-          if (!draft && !po.authorizations.payment) A('authorize-payment', 'Autoriser le paiement fournisseur', { why: 'décision distincte de l’engagement', disabled: lock || (!po.authorizations.commitment ? 'après engagement et envoi' : grant(viewer && viewer.can_authorize_payment, 'réservé à la responsable Hub')), run: () => openForm('payment', po.id) });
+          if (!draft && !po.authorizations.payment) A('authorize-payment', 'Autoriser le paiement fournisseur', { why: 'décision distincte de l’engagement', disabled: lock || (!po.authorizations.commitment ? 'après engagement et envoi' : grant(viewer && viewer.can_authorize_payment, 'réservé à la responsable Hub')), run: () => decide('payment', po.id) });
           else if (draft) A('authorize-payment', 'Autoriser le paiement fournisseur', { disabled: 'après engagement et envoi' });
           void eff;
         }
@@ -948,7 +951,7 @@
         if (b && !b.shipment_ref) A('attach-box', 'Rattacher à une expédition', { primary: true, why: 'expéditions ouvertes du marché', disabled: lock || ((d.open_shipments || []).length ? null : 'aucune expédition ouverte'), run: () => ctx.openPhysical('shipments', b.unit_id) });
         else if (b) A('attach-box', 'Rattacher à une expédition', { disabled: `déjà rattachée à ${b.shipment_ref}` });
       }
-      return acts;
+      return decisionOnly?acts.filter(a=>['authorize-commitment','authorize-payment','download-commitment-pdf'].includes(a.key)):acts;
     }
     function detachForm(po) {
       const form = el(doc, 'form', 'hlc-form');
@@ -1025,7 +1028,8 @@
     if (!list.children.length) list.appendChild(el(doc, 'span', 'hlc-empty', 'Aucune action sur cet objet.'));
     rightP.appendChild(list);
     if (state.form && !readOnly) {
-      if (state.form.po && sel && sel.type === 'po' && state.form.po === sel.id && !['receive','box'].includes(state.form.kind)) {
+      if (state.form.po && sel && sel.type === 'po' && state.form.po === sel.id && !['receive','box'].includes(state.form.kind)
+        && (decisionOnly?decisionKinds.has(state.form.kind):!ctx.openDecision||!decisionKinds.has(state.form.kind))) {
         const po = poById.get(sel.id);
         if (po) rightP.appendChild(state.form.kind === 'detach' ? detachForm(po) : poForm(po, state.form.kind));
       }
