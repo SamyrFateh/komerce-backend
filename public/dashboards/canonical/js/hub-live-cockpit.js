@@ -919,7 +919,15 @@
           const r = o.readiness;
           if (r.unboxed_received > 0) A('prepare-combox', 'Répartir les articles en COMBOX', { primary: true, why: 'choisir une COMBOX et scanner chaque article reçu', disabled: lock, run: () => ctx.openPhysical('boxes') });
           else A('prepare-combox', 'Répartir les articles en COMBOX', { disabled: 'aucune quantité disponible à placer' });
-          if (o.po_ids.length) A('goto-po', 'Suivre dans ses PO', { why: 'voir les PO de la commande', run: () => select('po', o.po_ids[0]) });
+          // Un accès Kanban vers une commande doit aussi retrouver ses besoins groupables.
+          for (const batch of batches) for (const group of batch.groups || []) {
+            if ((group.lines || []).some(line=>line.order_id===o.id)) {
+              A('goto-need-'+group.key, 'Ouvrir le besoin d’achat · '+(group.product || batch.supplier_name || 'Fournisseur'),
+                {why:'groupe fournisseur contenant cette commande',run:()=>select('need',group.key)});
+            }
+          }
+          for (const [index,id] of (o.po_ids || []).entries()) A(index===0?'goto-po':'goto-po-'+id, 'Ouvrir '+poRef(poById.get(id)||{id}),
+            {why:'PO liée à cette commande',run:()=>select('po',id)});
         }
       } else if (sel.type === 'box') {
         const b = (d.boxes || []).find((x) => x.unit_id === sel.id);
