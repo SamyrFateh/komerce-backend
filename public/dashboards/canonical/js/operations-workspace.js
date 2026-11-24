@@ -2312,7 +2312,7 @@
       header.querySelector('.kmc-workspace-kicker').textContent='DIRECTION HUB · DÉCISIONS';
       header.querySelector('.kmc-workspace-title').textContent='Direction Hub · Décisions PO';
       header.querySelector('.kmc-workspace-subtitle').textContent=context.marketCode+' · Engagement et autorisation de paiement, sur justificatif.';
-      const back=header.querySelector('.kmc-workspace-nav-link');back.textContent='← Direction Hub';back.href='/admin/hub?branch=director';
+      const back=header.querySelector('.kmc-workspace-nav-link');back.textContent='← Direction Hub';back.href='/admin/hub?branch=direction';
       rootNode.setAttribute('data-hub-decision-workspace','');
       renderSupplySection(rootNode,ui,doc,context);return;
     }
