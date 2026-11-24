@@ -816,3 +816,35 @@ test('Jalons QR distincts du tri et destination de vague, sans mutation au clic'
  await expect(page.locator('[data-hub-label-printing]')).toBeVisible();
  expect(posts).toEqual([]);
 });
+
+test('Direction : arbitrage fournisseur réservé au grant et POST uniquement après confirmation',async({page})=>{
+  const posts=[];await mount(page,{posts,view:null});
+  let decision=null;
+  await page.route(ORIGIN+'/api/hub/administration',route=>route.fulfill({
+    contentType:'application/json',body:JSON.stringify({
+      scope:'HUB_ADMINISTRATION_GLOBAL',viewer_grants:{supplier_payment:true},
+      purchase_orders:[{id:PO_ID,market:'KM',supplier:'Fournisseur test',status:'confirmed',
+        payment_decision:{amount:50,currency:'AED'},variance_decision:decision}]
+    })
+  }));
+  await page.route(ORIGIN+'/api/purchasing/po/'+PO_ID+'/variance-decision',route=>{
+    const body=route.request().postDataJSON();posts.push({path:'/api/purchasing/po/'+PO_ID+'/variance-decision',body});
+    decision={amount:body.approved_total,currency:body.currency,reason:body.reason,proof_ref:body.proof_ref};
+    return route.fulfill({status:201,contentType:'application/json',body:'{"ok":true}'});
+  });
+  await page.goto(ORIGIN+'/admin/hub-live?view=execute&entry=direction&market=KM&sel=po%3A'+PO_ID+'&decision=variance');
+  const panel=page.locator('[data-hub-direction-variance]');
+  await expect(panel.getByRole('button',{name:'Décider un écart fournisseur'})).toBeVisible();
+  await expect(page.locator('[data-workspace-view]')).toHaveCount(0);
+  expect(posts).toEqual([]);
+  await panel.getByRole('button',{name:'Décider un écart fournisseur'}).click();
+  await panel.locator('[name="approved_total"]').fill('45');
+  await panel.locator('[name="reason"]').fill('Écart documenté');
+  await panel.locator('[name="proof_ref"]').fill('DEVIS-2');
+  expect(posts).toEqual([]);
+  await panel.getByRole('button',{name:'Confirmer l’opération'}).click();
+  await expect.poll(()=>posts.length).toBe(1);
+  expect(posts[0].body).toEqual({approved_total:'45',currency:'AED',reason:'Écart documenté',proof_ref:'DEVIS-2'});
+  await expect(panel).toContainText('Écart décidé');
+  await expect(panel.getByRole('button',{name:'Décider un écart fournisseur'})).toHaveCount(0);
+});
