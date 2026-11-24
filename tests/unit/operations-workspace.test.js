@@ -221,3 +221,11 @@ test('atelier Hub : l’ordre visible suit étiquettes, préparation COMBOX, pui
  expect(table).toBeGreaterThan(init);
  expect(departure).toBeGreaterThan(table);
 });
+
+test('COMBOX : destination connue ou écart explicite, état lisible sans changer les codes métier',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+ expect(src).toContain("PACKED:'Fermée',DISPATCHED:'Prête au départ'");
+ expect(src).toContain("relayIds.size>1||relayCodes.size>1?'Écart de destination à contrôler'");
+ expect(src).toContain('box.contents.every(c=>c.relais_id&&c.relais_code)');
+ expect(src).toContain('data-hub-box-destination');
+});
