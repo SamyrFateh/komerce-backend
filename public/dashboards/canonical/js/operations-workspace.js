@@ -1356,7 +1356,7 @@
     const createButton = makeActionButton(doc, 'Ouvrir le dossier', 'create-shipment-from-boxes');
     createButton.disabled = true;
     [refInput, createButton].forEach(node => bar.appendChild(node));
-    boxes.appendChild(bar);
+    // Le dossier de départ vient après la préparation physique, pas avant.
 
     const attachButtons = [];
     const syncBar = () => {
@@ -1460,7 +1460,7 @@
       }).catch(() => {});
     });
     [newRef, newBox].forEach(node => createBar.appendChild(node));
-    boxes.appendChild(createBar);
+    // La création de COMBOX sera affichée après les étiquettes articles.
 
     // La caméra est une entrée de code : seule l'action opérateur confirme ensuite le
     // placement. Aucune mutation métier pendant l'ouverture ou la lecture de la caméra.
@@ -1581,6 +1581,9 @@
       }
       boxes.appendChild(labelSection);
     }
+    const packingHeading=text(doc,'h3','','Préparer les COMBOX');
+    boxes.appendChild(packingHeading);
+    boxes.appendChild(createBar);
 
     const composeCell = box => {
       const cell = doc.createElement('div');
@@ -1763,6 +1766,9 @@
         }
         return [pick, box.reference, box.state, contents || '—', box.shipment_ref || '—', composeCell(box), action];
       }), 'Aucune COMBOX.'));
+    boxes.appendChild(text(doc,'h3','','Préparer le départ'));
+    boxes.appendChild(text(doc,'p','kmc-workspace-note','Sélectionnez les COMBOX prêtes, puis choisissez ou ouvrez leur dossier d’expédition.'));
+    boxes.appendChild(bar);
 
     const secondary = doc.createElement('details');
     secondary.className = 'kmc-hub-physical-secondary';
