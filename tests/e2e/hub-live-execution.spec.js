@@ -763,3 +763,12 @@ test('UX3 — aucune sélection arbitraire, sélection PO dans URL et retour nav
   expect(posts).toEqual([]);
 });
 
+
+test('Accès Kanban : lien direct vers la réception de la PO, sans mutation',async({page})=>{
+  const posts=[];
+  await mount(page,{posts,view:null});
+  await page.goto(ORIGIN+'/admin/hub-live?view=execute&entry=operations&market=KM&atelier=reception&sel=po%3A'+PO_ID);
+  await expect(page.locator('[data-workspace-view="reception"]')).toHaveAttribute('aria-selected','true');
+  await expect(page.locator('[data-receive-po="'+PO_ID+'"]')).toBeVisible();
+  expect(posts).toEqual([]);
+});
