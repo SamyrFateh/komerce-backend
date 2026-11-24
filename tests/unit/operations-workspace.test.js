@@ -209,3 +209,15 @@ test('réimpression après placement : dédoublonne les lots et réutilise uniqu
  expect(history).toContain("pdfLink('articles',item.id,'thermal')");
  expect(history).not.toContain('runAction(');
 });
+
+test('atelier Hub : l’ordre visible suit étiquettes, préparation COMBOX, puis départ',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+ const labels=src.indexOf('boxes.appendChild(labelSection);');
+ const init=src.indexOf('boxes.appendChild(createBar);');
+ const table=src.indexOf("boxes.appendChild(simpleTable(doc, ['', 'COMBOX'");
+ const departure=src.indexOf('boxes.appendChild(bar);');
+ expect(labels).toBeGreaterThan(0);
+ expect(init).toBeGreaterThan(labels);
+ expect(table).toBeGreaterThan(init);
+ expect(departure).toBeGreaterThan(table);
+});
