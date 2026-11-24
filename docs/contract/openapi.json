@@ -769,7 +769,11 @@
                     }
                   },
                   "module_type": {
-                             "type": "string",
+                    "type": "string",
+                    "maxLength": 50
+                  },
+                  "origin_country": {
+                    "type": "string",
                     "maxLength": 50
                   },
                   "hs_code": {
@@ -11508,7 +11512,22 @@
                   "properties": {
                     "runs": {
                       "type": "string",
-                      "x-obsercing/import-passages",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/import-passages": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/sourcing/import-passages",
         "x-route-file": "routes/admin-sourcing-workspace.js",
         "responses": {
           "200": {
@@ -16179,7 +16198,22 @@
         "x-route-file": "routes/admin-costing.js",
         "parameters": [
           {
-            "n,
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
                     "success": {
@@ -22888,7 +22922,15 @@
             }
           },
           "429": {
-            "description": "Too Many Requests ⭤ashboard.js",
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/hub-dash/parcels/{id}/ship": {
+      "post": {
+        "summary": "POST /api/hub-dash/parcels/{id}/ship",
+        "x-route-file": "routes/hub-dashboard.js",
         "parameters": [
           {
             "name": "id",
@@ -27206,7 +27248,12 @@
     },
     "/api/pricing/apply-price/{product_id}": {
       "put": {
-        "summary":path",
+        "summary": "PUT /api/pricing/apply-price/{product_id}",
+        "x-route-file": "routes/pricing.js",
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "path",
             "required": true,
             "schema": {
               "type": "string"
@@ -34436,7 +34483,10 @@
             "name": "marketCode",
             "in": "path",
             "required": true,
-                 }
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -35982,7 +36032,22 @@
                       "x-observed": true
                     },
                     "provider_name": {
-                      "t    },
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "actions": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "public_contact": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
