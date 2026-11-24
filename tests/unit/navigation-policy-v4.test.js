@@ -259,3 +259,7 @@ describe('L6 — autorité unique de navigation', () => {
     }));
   });
 });
+
+test('Administration ouvre la recette Hub guidée, réservée au menu admin',()=>{
+ expect(__src).toContain("id: 'admin-guided-recipe', label: 'Recette guidée', href: '/admin/golden-e2e?guide=hub#extendedRecipe', roles: ['admin']");
+});
