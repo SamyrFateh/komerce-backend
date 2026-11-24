@@ -16,6 +16,7 @@
 'use strict';
 const db = require('../db');
 const boxShipment = require('./hub-box-shipment-service');
+const custodyScans = require('./hub-box-custody-scans');
 const customsService = require('./customs-shipment-service');
 const { markFullyHandedOverParcelsShipped } = require('./parcel-shipment-handover');
 const STAGES = Object.freeze(['hub_ready','handed_over','forwarder_received','in_transit','arrived',
@@ -120,6 +121,18 @@ async function transition(market,actor,reference,body={},database=db){
     }
     if(STAGES.indexOf(target)!==STAGES.indexOf(s.stage)+1)
       fail(409,'JOURNEY_STAGE_ORDER','Les étapes doivent être validées dans l’ordre');
+    // A dossier transition cannot substitute for individual COMBOX scan confirmations.
+    if(target==='handed_over'&&s.hub_draft)
+      await custodyScans.requireScanCoverage(client,s.id,'HUB_HANDOVER');
+    if(target==='forwarder_received'&&s.hub_draft)
+      await custodyScans.requireScanCoverage(client,s.id,'CARRIER_ACCEPTED');
+    if(target==='in_transit'&&s.hub_draft){
+      await custodyScans.requireScanCoverage(client,s.id,'CARRIER_LOADED');
+      if(s.transport_mode==='sea'&&!s.container_reference)
+        fail(409,'JOURNEY_CONTAINER_REQUIRED','Référence conteneur obligatoire avant départ maritime');
+      if(body.container_sealed!==true)
+        fail(409,'JOURNEY_CONTAINER_SEAL_REQUIRED','Attestation explicite de fermeture et départ requise');
+    }
     if(target==='in_transit'&&!s.tracking_reference&&!s.bill_of_lading_ref)
       fail(409,'JOURNEY_TRACKING_REQUIRED','Suivi ou connaissement requis avant départ');
     if(target==='customs_released'){
