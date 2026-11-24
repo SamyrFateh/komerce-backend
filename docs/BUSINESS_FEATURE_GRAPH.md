@@ -394,7 +394,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 28
 - interfaces exposed: 78
 - internal APIs: 32
-- dependencies (consumes): 17 — customs, documents, incident-management, infrastructure, business-rules, orders, local-stock, auth, auth-identity, catalog, notifications, payments, refunds, purchasing, loyalty, market, market-delegation
+- dependencies (consumes): 18 — supplier-connectivity, customs, documents, incident-management, infrastructure, business-rules, orders, local-stock, auth, auth-identity, catalog, notifications, payments, refunds, purchasing, loyalty, market, market-delegation
 - consumers: 22 — auth-identity, catalog, customs, dashboard, documents, economic-engine, incident-management, infrastructure, inventory, local-stock, market-control-plane, market-delegation, market-operator-dashboard, notifications, orders, payments, platform-ops, purchasing, recommendations, refunds, admin-dashboard, decision-signals
 
 ### loyalty _(business-feature)_
@@ -688,7 +688,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 0
 - internal APIs: 10
 - dependencies (consumes): 1 — external-provider-contracts
-- consumers: 3 — catalog, dashboard, purchasing
+- consumers: 4 — catalog, dashboard, logistics, purchasing
 
 ### unsold-resolution _(business-feature)_
 
@@ -2017,6 +2017,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | local-stock | market (`market`) | ✔ |
 | local-stock | logistics (`logistics`) | ✔ |
 | local-stock | infrastructure (`infrastructure`) | ✔ |
+| logistics | supplier-connectivity (`supplier-connectivity (lecture de remotePreflightRequirement pour afficher les canaux d’achat éligibles dans le dossier Hub, sans appel fournisseur)`) | ✔ |
 | logistics | customs (`customs (lien documentaire international : le service douane possède seul la déclaration des droits et taxes ; le Hub orchestre sa transaction)`) | ✔ |
 | logistics | documents (`documents (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
 | logistics | incident-management (`incident-management (incident persistence via incident-write-service)`) | ✔ |
@@ -2413,7 +2414,7 @@ Meta Graph monté : oui.
 | dashboard | infrastructure | static-code | 112 | **DECLARED_AND_OBSERVED** |
 | dashboard | inventory | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | local-stock | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| dashboard | logistics | static-code, data-read, data-write | 38 | **DECLARED_AND_OBSERVED** |
+| dashboard | logistics | static-code, data-read, data-write | 39 | **DECLARED_AND_OBSERVED** |
 | dashboard | loyalty | static-code | 1 | **OBSERVED_UNDECLARED** |
 | dashboard | market | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | dashboard | market-autonomy | data-read | 1 | **DECLARED_AND_OBSERVED** |
@@ -2525,6 +2526,7 @@ Meta Graph monté : oui.
 | logistics | payments | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | logistics | purchasing | static-code, data-read | 14 | **DECLARED_AND_OBSERVED** |
 | logistics | refunds | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| logistics | supplier-connectivity | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | loyalty | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | loyalty | auth-identity | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | loyalty | economic-engine | data-read | 1 | **DECLARED_AND_OBSERVED** |
