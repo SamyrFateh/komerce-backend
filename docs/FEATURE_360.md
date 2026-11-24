@@ -53,7 +53,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | market-delegation | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | assignment_capability_ceiling, assignment_memberships, capability_registry, ceiling_template_capabilities, ceiling_templates, market_cash_control_policies, market_delegation_audit, market_operating_assignments, market_team_invitations, membership_capabilities | auth, auth-identity, catalog, dashboard, economic-engine, infrastructure, local-stock, logistics, market, market-autonomy, orders, payments, providers-services, settlement | dashboard, decision-signals, economic-engine, infrastructure, logistics, market-control-plane, market-operator-dashboard, orders, payments, settlement, unsold-resolution | 0 |
 | market-operator-dashboard | unclassified | 🟡 ATTENTION | 🟢 HEALTHY | _aucune_ | catalog, infrastructure, market, market-autonomy, market-delegation | _aucune_ | 4 |
 | notifications | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | alerts, client_notifications, notification_log | auth, auth-identity, incident-management, infrastructure, logistics, orders, platform-ops | auth, auth-identity, catalog, dashboard, infrastructure, logistics, loyalty, market, orders, payments, purchasing, refunds, shared-cart | 0 |
-| orders | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | customs_history, disputes, order_checkout_idempotency, order_comments, order_item_cost_imputations, order_items, order_status_history, orders, recipients, relay_return_compensations, sms_log | auth, auth-identity, business-rules, catalog, customs, dashboard, decision-signals, documents, economic-engine, incident-management, infrastructure, local-stock, logistics, loyalty, market, market-autonomy, market-delegation, notifications, payments, platform-ops, purchasing, refunds, shared-cart, wallet | admin-dashboard, auth-identity, catalog, customs, dashboard, documents, economic-engine, incident-management, infrastructure, inventory, logistics, loyalty, market-control-plane, market-delegation, notifications, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, unsold-resolution, wallet | 1 |
+| orders | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | customs_history, disputes, order_checkout_idempotency, order_comments, order_delivery_waves, order_item_cost_imputations, order_items, order_status_history, orders, recipients, relay_return_compensations, sms_log | auth, auth-identity, business-rules, catalog, customs, dashboard, decision-signals, documents, economic-engine, incident-management, infrastructure, local-stock, logistics, loyalty, market, market-autonomy, market-delegation, notifications, payments, platform-ops, purchasing, refunds, shared-cart, wallet | admin-dashboard, auth-identity, catalog, customs, dashboard, documents, economic-engine, incident-management, infrastructure, inventory, logistics, loyalty, market-control-plane, market-delegation, notifications, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, unsold-resolution, wallet | 1 |
 | payments | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | cash_collections, cash_confirmation_controls, cash_custody_losses, cash_custody_receipts, cash_deposit_allocations, cash_deposits, market_cash_destinations, market_payment_accounts, market_payment_providers, mobile_money_transactions, paypal_events_processed, stripe_events_processed | auth, auth-identity, business-rules, documents, incident-management, infrastructure, logistics, loyalty, market, market-delegation, notifications, orders, platform-ops, purchasing, refunds | admin-dashboard, dashboard, decision-signals, infrastructure, logistics, market-control-plane, market-delegation, orders, refunds | 0 |
 | platform | frontend-transversal | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | _aucune_ | _aucune_ | 0 |
 | platform-ops | technical-transversal | 🟢 HEALTHY | 🟢 HEALTHY | fabrics, garment_models | auth, auth-identity, business-rules, catalog, documents, economic-engine, incident-management, infrastructure, logistics, orders, purchasing, wallet | auth-identity, auth-passkey, catalog, economic-engine, infrastructure, notifications, orders, payments, providers-services, recommendations, shared-cart, wallet | 0 |
@@ -1269,7 +1269,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 189 fichier(s) déclaré(s)
+**Implementation** : 190 fichier(s) déclaré(s)
   - boutique : 1
   - dash : 2
   - docs : 7
@@ -1277,7 +1277,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - migrations : 15
   - routes : 18
   - services : 49
-  - tests : 93
+  - tests : 94
   - utils : 3
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="logistics"]_
@@ -1860,6 +1860,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Perimeter** :
 - _in_ :
   - creation, annulation, machine de statut de la commande
+  - vague de tri temporaire, avec référence commerciale structurée unique CM-YA01-B7Q01 pour les nouvelles commandes staging
   - snapshot de cout a la commande
   - rattachement aux colis et aux achats fournisseurs
   - collecte QR au retrait
@@ -1892,7 +1893,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - transition de statut uniquement via order-status-machine.js
 - annulation libere les achats fournisseurs lies dans la meme transaction via purchasing
 
-**Owns** : `customs_history`, `disputes`, `order_checkout_idempotency`, `order_comments`, `order_item_cost_imputations`, `order_items`, `order_status_history`, `orders`, `recipients`, `relay_return_compensations`, `sms_log`
+**Owns** : `customs_history`, `disputes`, `order_checkout_idempotency`, `order_comments`, `order_delivery_waves`, `order_item_cost_imputations`, `order_items`, `order_status_history`, `orders`, `recipients`, `relay_return_compensations`, `sms_log`
 **Writes (not owner)** : `scans` (writer-not-owner), `signals` (writer-not-owner)
 
 **Exposes** : 30 internal API(s), 27 HTTP interface(s)
@@ -1922,11 +1923,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Architectural debt** (1) :
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "market-control-plane" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 112 fichier(s) déclaré(s), boutique: 19 fichier(s)
+**Implementation** : 115 fichier(s) déclaré(s), boutique: 19 fichier(s)
   - boutique : 3
   - routes : 11
-  - services : 32
-  - tests : 65
+  - services : 33
+  - tests : 67
   - utils : 1
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="orders"]_

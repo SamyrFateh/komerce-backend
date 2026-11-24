@@ -235,7 +235,10 @@ function runFullBackendSuite(workspace, reason) {
   console.log(`Tests cibles ${workspace.name}: ${reason} — suite unitaire backend complete forcee (pas de mapping fin fiable).`);
   const jestArgs = [];
   if (workspace.config) jestArgs.push('--config', workspace.config);
-  jestArgs.push('--runInBand');
+  // The forced full suite contains historical tests that keep open handles.
+  // --forceExit matches test:unit:coverage and preserves every Jest assertion
+  // and the nonzero exit code on failure; it prevents a hung preflight.
+  jestArgs.push('--runInBand', '--forceExit');
   const result = spawnJest(workspace, jestArgs, { stdio: 'inherit' });
   if (result.status !== 0) return { ran: true, tests: -1, failed: true, status: result.status || 1 };
   return { ran: true, tests: -1, failed: false };

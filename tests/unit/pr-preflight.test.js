@@ -15,6 +15,17 @@ function labels(scope) {
   }, 'base-sha', 'head-sha').map(step => step.label);
 }
 
+test('suite backend complète des migrations : Jest termine après assertions mais remonte tout échec', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(path.join(__dirname, '../../scripts/run-staged-related-tests.js'),'utf8');
+  const run = source.split('function runFullBackendSuite(workspace, reason) {')[1]
+    .split('function workspaceDefinitions()')[0];
+  expect(run).toContain("jestArgs.push('--runInBand', '--forceExit')");
+  expect(run).toContain('if (result.status !== 0)');
+  expect(run).toContain('failed: true');
+});
+
 test('preflight garde un socle unique de gates carte-first et debt-zero', () => {
   expect(labels({})).toEqual(expect.arrayContaining([
     'Feature registry',

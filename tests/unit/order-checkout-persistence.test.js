@@ -87,15 +87,26 @@ function params(extra = {}) {
 }
 
 describe('insertOrderRow — snapshot de tarif transport', () => {
-  test('persiste le snapshot en JSON dans la colonne dédiée (index 39 sur 41 paramètres)', async () => {
+  test('persiste le snapshot en JSON dans la colonne dédiée (index 39 sur 42 paramètres)', async () => {
     const client = { query: jest.fn().mockResolvedValue({ rows: [{ id: 'o1' }] }) };
     const snap = { version: 1, pivot_currency: 'EUR', tariff_lines: [{ rate_id: 'x' }] };
     await insertOrderRow(client, params({ transportPricingSnapshot: snap }));
     const [sql, values] = client.query.mock.calls[0];
     expect(sql).toMatch(/transport_pricing_snapshot/);
-    expect(values).toHaveLength(41);
+    expect(values).toHaveLength(42);
     expect(JSON.parse(values[39])).toEqual(snap);
     expect(values[38]).toBe('m1');
+    expect(values[41]).toBeNull(); // aucun groupe lorsque les vagues sont désactivées
+  });
+
+  test('rattache la vague au même INSERT transactionnel sans changer les anciens paramètres', async () => {
+    const client = { query: jest.fn().mockResolvedValue({ rows: [{ id: 'o1' }] }) };
+    await insertOrderRow(client, params({ deliveryWaveId: 'wave-uuid' }));
+    const [sql, values] = client.query.mock.calls[0];
+    expect(sql).toMatch(/delivery_wave_id/);
+    expect(sql).toMatch(/\$42/);
+    expect(values).toHaveLength(42);
+    expect(values[41]).toBe('wave-uuid');
   });
 
   test('sans snapshot (pas de ligne import) : NULL, jamais un objet vide inventé', async () => {

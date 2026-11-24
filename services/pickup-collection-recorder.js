@@ -6,12 +6,13 @@
  * @criticality   critical
  * @inputs        client, order, agentId, role, pickupMethod, notes, authorizationVersion?, documentChecked?
  * @outputs       { scanId, collectedAt, parcelId, parcelReference, orderStatus, partial }
- * @depends       services/order-status-machine.js, services/order-mutation-service.js, services/pickup-secret-rotation-service.js, utils/parcelSync.js
+ * @depends       services/order-delivery-wave-service.js, services/order-status-machine.js, services/order-mutation-service.js, services/pickup-secret-rotation-service.js, utils/parcelSync.js
  * @used-by       services/pickup-collection-service.js, services/pickup-exceptional-collection-service.js
  * @db-write      scans, pickup_reveal_codes, pickup_print_tokens
  * @db-write-via:order-status-machine product_variants, order_status_history, orders, products
  * @db-write-via:order-mutation-service orders
  * @db-write-via:parcelSync parcels, parcel_items
+ * @db-write-via:order-delivery-wave-service order_delivery_waves
  * @db-txn        participant (client transactionnel obligatoire)
  * @doctrine      docs/architecture/IMPACT_FEATURE_FIRST_FULFILLMENT_MIXTE.md R9-R10
  * @impact-areas  logistics, pickup
@@ -26,6 +27,7 @@ const {
 const { transitionOrderStatus } = require('./order-status-machine');
 const { rotatePickupSecretAfterPartialCollection } = require('./pickup-secret-rotation-service');
 const { safeSyncScanToParcels } = require('../utils/parcelSync');
+const { closeWaveOnFirstHandoff } = require('./order-delivery-wave-service');
 
 async function purgePickupCaches(client, orderId) {
   await client.query('DELETE FROM pickup_reveal_codes WHERE order_id = $1', [orderId]);
@@ -127,6 +129,7 @@ async function recordCanonicalCollection({
 
     await finalizePickupCollection(client, { orderId: order.id, method: pickupMethod });
     await purgePickupCaches(client, order.id);
+    await closeWaveOnFirstHandoff(client, order.id);
 
     return {
       scanId: scan.id,
@@ -170,6 +173,8 @@ async function recordCanonicalCollection({
     await finalizePickupCollection(client, { orderId: order.id, method: pickupMethod });
     await purgePickupCaches(client, order.id);
   }
+
+  await closeWaveOnFirstHandoff(client, order.id);
 
   return {
     scanId: scan.id,

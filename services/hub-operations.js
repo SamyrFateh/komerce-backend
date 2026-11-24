@@ -316,6 +316,14 @@ async function createOperatorUnitCommand(payload, userId, options = {}) {
       : generatePhysicalReference(unitType);
     const orderId = payload && payload.order_id ? requireUuid(payload.order_id, 'order_id') : null;
     const bagPlan = payload && payload.bag_plan ? payload.bag_plan : null;
+    // No new customer bag, even through a stale HTTP client or direct service call.
+    // Keep legacy physical history readable; new customer flows use MARKET_PARCEL (COMBOX).
+    if (orderId || bagPlan) {
+      return { status: 410, body: {
+        code: 'HUB_CUSTOMER_BAG_RETIRED',
+        error: 'Plus de sacs clients numériques : préparer les articles directement en COMBOX.',
+      } };
+    }
     if (bagPlan && (!orderId || !Array.isArray(bagPlan) || bagPlan.length < 1 || bagPlan.length > 100 ||
       bagPlan.some(item => !item || !/^[0-9a-f-]{36}$/i.test(item.order_item_id) ||
         !Number.isInteger(Number(item.quantity)) || Number(item.quantity) <= 0))) {

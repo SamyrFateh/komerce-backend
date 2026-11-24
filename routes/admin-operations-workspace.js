@@ -390,146 +390,44 @@ router.post(
   }
 );
 
-// Préparation du sac client depuis Hub Live (réutilise les writers HUB-001).
-async function requireBagMarket(req, res, next) {
-  try {
-    const bagId = req.params.unitId;
-    if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(bagId)) {
-      return res.status(400).json({ code: 'HUB_BAG_INVALID_ID' });
-    }
-    const { rows: [bag] } = await db.query(
-      "SELECT u.id,u.order_id,u.state,o.market_id FROM hub_physical_units u " +
-      "JOIN orders o ON o.id=u.order_id WHERE u.id=$1 AND u.unit_type='HANDLING_UNIT' " +
-      "AND o.market_id=$2 LIMIT 1", [bagId,req.workspaceMarket.id]
-    );
-    if (!bag) return res.status(404).json({ code: 'HUB_BAG_NOT_FOUND_IN_MARKET' });
-    req.hubCustomerBag = bag;
-    return next();
-  } catch (err) { return next(err); }
+// Doctrine COMBOX directe : la surface d'écriture de sac client est RETIRÉE.
+// Les URL historiques restent reconnues avec refus 410 explicite pour éviter
+// qu'un ancien client/scripteur réactive une entité logistique abandonnée.
+// Les lectures authentifiées des anciens sacs sont conservées en aval pour audit.
+function refuseRetiredCustomerBag(_req, res) {
+  res.set('Cache-Control', 'private, no-store');
+  return res.status(410).json({
+    code: 'HUB_CUSTOMER_BAG_RETIRED',
+    error: 'Les sacs clients numériques sont supprimés : utiliser directement une COMBOX.',
+  });
 }
 
 router.post(
   '/market/:marketCode/bags',
   attachHubExecutionCapability('execution.parcel.ship'),
   requireHubWorkspaceAction,
-  async (req,res,next) => {
-    try {
-      const body = req.body || {};
-      if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(String(body.order_id||''))) {
-        return res.status(400).json({code:'HUB_BAG_ORDER_INVALID'});
-      }
-      const { rows } = await db.query(
-        "SELECT id FROM orders WHERE id=$1 AND market_id=$2",
-        [body.order_id,req.workspaceMarket.id]
-      );
-      if (!rows.length) return res.status(404).json({code:'HUB_BAG_ORDER_NOT_IN_MARKET'});
-      // Préparation partielle : jamais implicite. Une commande dont tous les articles ne sont pas reçus
-      // n'est emballée que sur geste explicite (partial_preparation: true), le reliquat restant visible.
-      const readiness = await supply.getOrderCompleteness(body.order_id);
-      // Commande locale (aucun article IMPORT) : circuit direct relais, jamais un sac Hub.
-      if (!readiness.has_import) {
-        return res.status(409).json({ code: 'HUB_BAG_ORDER_NOT_IMPORT', error: 'Commande locale : elle ne passe pas par le Hub (circuit direct relais)' });
-      }
-      if (!readiness.complete && body.partial_preparation !== true) {
-        return res.status(409).json({
-          code: 'HUB_BAG_PARTIAL_NOT_ACKNOWLEDGED',
-          error: 'Commande incomplète : confirmer explicitement la préparation partielle (reliquat conservé)',
-          pending_items: readiness.pending_items,
-        });
-      }
-      const result=await hubOps.createOperatorUnitCommand({
-        unit_type:'HANDLING_UNIT',order_id:body.order_id,bag_plan:body.bag_plan,
-      },req.user.id);
-      return res.status(result.status).json(result.body);
-    } catch(err) { return sendWorkspaceError(err,res,next); }
-  }
+  async (req, res) => refuseRetiredCustomerBag(req, res)
 );
 
 router.post(
   '/market/:marketCode/bags/:unitId/deposit',
   attachHubExecutionCapability('execution.parcel.ship'),
   requireHubWorkspaceAction,
-  requireBagMarket,
-  async (req,res,next) => {
-    try {
-      const body=req.body||{};
-      // Même writer pour SCAN et MANUAL (preuve + justification) : la provenance réelle est conservée.
-      if (body.evidence_method !== 'SCAN' && body.evidence_method !== 'MANUAL') {
-        return res.status(400).json({code:'HUB_BAG_EVIDENCE_METHOD_REQUIRED',
-          error:'evidence_method doit être SCAN ou MANUAL'});
-      }
-      const {rows:[allocation]}=await db.query(
-        'SELECT order_id,market_id FROM hub_purchase_allocations WHERE id=$1',
-        [body.allocation_id]
-      );
-      if (!allocation || String(allocation.order_id)!==String(req.hubCustomerBag.order_id)
-        || String(allocation.market_id)!==String(req.workspaceMarket.id)) {
-        return res.status(409).json({code:'HUB_BAG_ALLOCATION_SCOPE_MISMATCH'});
-      }
-      const result=await hubOps.moveAllocationCommand({
-        from_unit_id:body.from_unit_id,
-        to_unit_id:req.hubCustomerBag.id,
-        allocation_id:body.allocation_id,
-        quantity:body.quantity,
-        operation_type:'REPACK',
-        evidence_method:body.evidence_method,
-        evidence_code:body.evidence_code,
-        evidence_ref:body.evidence_ref,
-      },req.user.id);
-      return res.status(result.status).json(result.body);
-    } catch(err) { return sendWorkspaceError(err,res,next); }
-  }
+  async (req, res) => refuseRetiredCustomerBag(req, res)
 );
 
 router.post(
   '/market/:marketCode/bags/:unitId/close',
   attachHubExecutionCapability('execution.parcel.ship'),
   requireHubWorkspaceAction,
-  requireBagMarket,
-  async (req,res,next) => {
-    try {
-      if (!['RECEIVED','IDENTIFIED','QUALITY_CHECKED','LOCATED','ALLOCATED','PICKED','PACKED']
-        .includes(req.hubCustomerBag.state)) {
-        return res.status(409).json({code:'HUB_BAG_NOT_PREPARABLE'});
-      }
-      const sequence=['RECEIVED','IDENTIFIED','QUALITY_CHECKED','LOCATED','ALLOCATED','PICKED','PACKED'];
-      const result=await db.withTransaction(async client => {
-        const { rows:[locked] }=await client.query(
-          'SELECT id,state FROM hub_physical_units WHERE id=$1 FOR UPDATE',
-          [req.hubCustomerBag.id]
-        );
-        if (!locked || !sequence.includes(locked.state)) throw Object.assign(
-          new Error('Sac non préparé'),{status:409,code:'HUB_BAG_NOT_PREPARABLE'});
-        for(let i=sequence.indexOf(locked.state)+1;i<sequence.length;i++) {
-          await physicalIdentity.transitionPhysicalUnit(client,{
-            unitId:locked.id,toState:sequence[i],actorId:req.user.id,
-            details:{operator_action:'close_customer_bag'}
-          });
-        }
-        return {id:locked.id,state:'PACKED',already_closed:locked.state==='PACKED'};
-      });
-      return res.json(result);
-    } catch(err) { return sendWorkspaceError(err,res,next); }
-  }
+  async (req, res) => refuseRetiredCustomerBag(req, res)
 );
 
-// Scans physiques : un sac de commande déjà PACKED est placé ENTIER dans la KOM-BOX.
 router.post(
   '/market/:marketCode/boxes/:unitId/bags',
   attachHubExecutionCapability('execution.parcel.ship'),
   requireHubWorkspaceAction,
-  async (req, res, next) => {
-    try {
-      const body = req.body || {};
-      const result = await bagBox.attachBagToBox({
-        boxUnitId: req.params.unitId, bagUnitId: body.bag_unit_id, parcelId: body.parcel_id,
-        bagReferenceScan: body.bag_reference_scan, boxReferenceScan: body.box_reference_scan,
-        evidenceMethod: body.evidence_method, evidenceRef: body.evidence_ref,
-        expectedMarketId: req.workspaceMarket.id, actorId: req.user.id,
-      });
-      return res.status(result.already_linked ? 200 : 201).json(result);
-    } catch (err) { return sendWorkspaceError(err, res, next); }
-  }
+  async (req, res) => refuseRetiredCustomerBag(req, res)
 );
 
 router.post(

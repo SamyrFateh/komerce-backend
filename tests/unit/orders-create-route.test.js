@@ -1141,8 +1141,8 @@ describe('orders/create — §6 intégrité du claim shared_cart_item_id', () =>
     // sans que ce test soit mis à jour — 6 paramètres finaux réels
     // (pickup_code_recipient, pickupCodeRecipientUserId, display_total_amount,
     // display_currency, display_parity_snapshot, market_id), pas 5.
-    // .slice(-8, -6) est le bon découpage pour ces deux valeurs précises.
-    expect(orderInsert.params.slice(-8, -6)).toEqual(['organizer', 'organizer-1']);
+    // La colonne additionnelle delivery_wave_id ajoute un paramètre terminal : -9/-7.
+    expect(orderInsert.params.slice(-9, -7)).toEqual(['organizer', 'organizer-1']);
     expect(res.body.order.pickup_code_recipient).toBe('organizer');
   });
 

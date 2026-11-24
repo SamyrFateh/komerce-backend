@@ -47,6 +47,13 @@ describe('staging reset classification : garde anti-derive', () => {
     ]) expect(c.classOf(t)).toBe('purge_root');
   });
 
+  test('les vagues temporaires sont des activites et sont purgees avec les fiches destinataire', () => {
+    expect(c.classOf('order_delivery_waves')).toBe('purge_via_fk');
+    expect(c.isPurgeClass('order_delivery_waves', 'prudent')).toBe(true);
+    expect(c.isPurgeClass('order_delivery_waves', 'activity')).toBe(true);
+    expect(c.PROTECTED.has('order_delivery_waves')).toBe(false);
+  });
+
   test('referentiels critiques et comptes : jamais purges', () => {
     for (const t of ['markets', 'finance_config', 'currency_parities', 'fx_pegs', 'schema_migrations', 'sourcing_sources', 'capability_registry']) {
       expect(c.classOf(t)).toBe('foundation');

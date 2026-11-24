@@ -992,3 +992,18 @@ Migration 417 est uniquement un schéma visé. Ne pas lancer en production ni ac
 
 Le lien `refunds.local_mobile_refund_handoff_id` est restrictif et unique. La clôture, l’augmentation de `qty_refunded` et `refunds.completed` sont atomiques. Le reçu numérique suit le COMMIT. Aucune pièce d’identité, aucun numéro de téléphone et aucune empreinte ne sont publiés dans le reçu. Le flux est borné au staging derrière des flags désactivés par défaut.
 <!-- /schema-pending -->
+
+
+<!-- schema-pending: order_delivery_waves (migration 426, intended_migration_schema; non live avant déploiement) -->
+### Référence unique structurée et vagues de tri temporaires (migration 426 — intended_migration_schema)
+
+La table `order_delivery_waves` n'est **pas encore confirmée live sur Railway**. Elle porte un groupe de distribution éphémère et invisible à l'utilisateur, indexé par la **fiche destinataire vérifiée** (`subject_recipient_id`), le marché et le relais, et jamais par une identité civile exposée. Un seul groupe ouvert existe par destinataire/marché/relais ; `client_code` est composé de trois caractères (lettre de tri équilibrée + deux caractères non ambigus), unique par marché/relais même après clôture. La fermeture d'admission est historisée par `closed_at` et `close_reason` ; les références déjà attribuées sont immuables.
+
+`relais.short_code` (migration 426) : colonne texte nullable, deux lettres normalisées issues du nom **réel** du relais et suffixe numérique local sur deux chiffres (01 à 99), UNIQUE par marché. Attribuée et persistée en transaction à la première commande structurée ; le renommage du relais ne change pas les références commerciales émises. `orders.delivery_wave_id` (migration 426) : FK UUID nullable vers `order_delivery_waves(id)`, permettant à la commande commerciale de conserver la preuve du regroupement temporaire sans deuxième référence de commande.
+
+La **seule référence commerciale** suit `MARCHÉ-RELAIS-GROUPE+N°COMMANDE` : `CM-YA01-B7Q01` pour la première commande du groupe temporaire `B7Q` au relais `YA01` du marché `CM` ; la suivante devient `CM-YA01-B7Q02`. Les unités physiques reçues se distinguent par `-01`, `-02`, etc. sans altérer `orders.reference`. La lettre initiale est attribuée **par relais**, en rotation A→Z avec équilibrage selon les quantités d'articles attendues ; elle n'est pas tirée au hasard. Le groupe garde sa lettre tant que sa vague est ouverte. `order_delivery_waves.next_order_number` (1..100) assure la réservation atomique des numéros 01..99 ; `planned_units` contribue à l'équilibrage des lettres. À 99 commandes, une nouvelle vague est ouverte, sans renuméroter les références existantes. Le marché/relais cloisonne l'unicité des groupes, qui ne sont jamais recyclés dans ce périmètre.
+
+Ni le groupe ni la référence ne constituent une preuve de retrait : les secrets de remise restent séparés. Les COMBOX et manifestes physiques ont leurs propres identités, sans création de sac client numérique. Aucun appariement de destinataires entre acheteurs diaspora par nom ou téléphone seul.
+
+**Activation** : code sous `KOMERCE_ORDER_WAVES_ENABLED=1`, accepté seulement avec `KOMERCE_ENV=staging`, OFF par défaut. Migration à appliquer, puis PostgreSQL, HTTP, Chromium et dashboards à certifier avant GO. Les références des commandes G6 dédiées restent sous leur contrôle de recette ; la persistance de schéma ne signifie pas mise en service commerciale.
+<!-- /schema-pending -->

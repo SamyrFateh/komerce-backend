@@ -179,6 +179,17 @@ test('opening reconciliation records actual content before quality check', async
   }));
 });
 
+test('retire la création numérique de sac client dans le writer HUB-001, sans transaction', async () => {
+  const byOrder = await hubOps.createOperatorUnitCommand({ unit_type: 'HANDLING_UNIT', order_id: U1 }, 'user-1');
+  const byPlan = await hubOps.createOperatorUnitCommand({ unit_type: 'HANDLING_UNIT', bag_plan: [{ order_item_id: I1, quantity: 1 }] }, 'user-1');
+  for (const response of [byOrder, byPlan]) {
+    expect(response.status).toBe(410);
+    expect(response.body.code).toBe('HUB_CUSTOMER_BAG_RETIRED');
+  }
+  expect(db.withTransaction).not.toHaveBeenCalled();
+  expect(hubPhysical.createPhysicalUnit).not.toHaveBeenCalled();
+});
+
 test('operator labels default to KOM-ITEM and KOM-BOX identities', async () => {
   hubPhysical.createPhysicalUnit
     .mockResolvedValueOnce({ id: U1, reference: 'KOM-ITEM-ABC', unit_type: 'HANDLING_UNIT', state: 'RECEIVED' })

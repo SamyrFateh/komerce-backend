@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       services/market-transport-sale-rates.js, services/order-fx-snapshot.js, db.js, services/cart-share-service.js,
+ * @depends       services/order-delivery-wave-service.js, services/market-transport-sale-rates.js, services/order-fx-snapshot.js, db.js, services/cart-share-service.js,
  *                services/order-post-commit-hooks.js, services/order-checkout-item-resolution.js,
  *                services/order-checkout-persistence.js, services/local-stock-service.js,
  *                services/market-local-price-resolution-service.js
@@ -70,6 +70,7 @@ const { getLoyaltyDiscount }             = require('./loyalty-service');
 const { getRates } = require('../utils/rates');
 const { getRule }                        = require('../utils/rules');
 const { getUniqueRef, generateCashCode } = require('./order-service');
+const { wavesEnabled, reserveWaveReference } = require('./order-delivery-wave-service');
 const walletService = require('./wallet-service');
 const { resolveRoutingFromRelais, RoutingError } = require('./routing');
 const { resolveOrderItemTransportRail, TransportPricingError } = require('./transport-pricing');
@@ -297,6 +298,7 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
       throw e;
     }
 
+    const waveGroupingEnabled = !previewOnly && !internalSimulation && !g6Buyer && wavesEnabled();
     let recipient_id = null;
     // Lot 3 (checkout) : plus de « qui récupère ? » dans le formulaire — le
     // backend n'accepte aucune identité de retrait alternative depuis le
@@ -304,10 +306,22 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
     // seule source.
     const rName  = user.full_name;
     const rPhone = user.phone;
+    if (waveGroupingEnabled && (!rName || !rPhone)) {
+      await client.query('ROLLBACK');
+      return fail(409, { code: 'ORDER_WAVE_RECIPIENT_REQUIRED',
+        error: 'Le destinataire doit être identifié avant de créer une commande.' });
+    }
 
     if (rName && rPhone) {
+      // Different checkout idempotency keys may arrive in parallel. Serialize
+      // recipient lookup+insert BEFORE reserving a wave or printing its code.
+      // This lock is per verified buyer+relay, with no personal data in its key.
+      if (waveGroupingEnabled) {
+        await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
+          ['wave-recipient-record:' + user.id + ':' + relais.id]);
+      }
       const { rows: [existingRc] } = await client.query(
-        'SELECT id FROM recipients WHERE user_id = $1 AND phone = $2 AND relais_id = $3 LIMIT 1',
+        'SELECT id FROM recipients WHERE user_id = $1 AND phone = $2 AND relais_id = $3 ORDER BY created_at ASC, id ASC LIMIT 1',
         [user.id, rPhone, relais?.id || null]
       );
 
@@ -558,7 +572,18 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
       ? generateCashCode()
       : null;
 
-    const reference = internalSimulation ? internalSimulation.reference : await getUniqueRef(db);
+    // Single commercial reference CM-YA01-B7Q01; the recipient group is temporary.
+    // Letter/sequence are transactionally reserved by relay, never a pickup secret.
+    const waveRef = waveGroupingEnabled
+      ? await reserveWaveReference(client, {
+          userId: user.id, recipientId: recipient_id, marketId: relais.market_id, relaisId: relais.id,
+          marketCode: checkoutMarket.code,
+          expectedUnits: items.reduce((total, item) => total + Number(item.quantity), 0),
+        })
+      : null;
+    const reference = internalSimulation
+      ? internalSimulation.reference
+      : waveRef ? waveRef.reference : await getUniqueRef(client);
 
     // ── P3 : snapshot du montant PRÉSENTÉ au client (freeze 22-08-2026) ──
     // Logique complète dans services/order-display-snapshot.js (extraite
@@ -592,6 +617,7 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
 
     const order = await insertOrderRow(client, {
       reference, userId: user.id, recipientId: recipient_id, relaisId: relais?.id || null,
+      deliveryWaveId: waveRef ? waveRef.waveId : null,
       trackingPhone: tracking_phone,
       totalKmf: total_kmf, totalEur: fxSnapshotBuilt.totalEur,
       paymentMode: payment_mode, stripePaymentIntent: null, cashRefCode: cash_ref_code,
