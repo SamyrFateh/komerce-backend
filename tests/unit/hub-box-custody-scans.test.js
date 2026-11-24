@@ -63,3 +63,13 @@ test('Hub and transitaire acceptance require two independent actors',async()=>{
     service.confirmBoxScan(market,actor('agent_transitaire'),'KM-SHIP-01',input('CARRIER_ACCEPTED'),fakeDb('handed_over',true)),
   ).rejects.toMatchObject({code:'CUSTODY_DUAL_ACTOR_REQUIRED'});
 });
+
+test.each([[false,'historique sans QR'],[true,'COMBOX ou article QR attribué']])(
+  'la couverture QR est ciblée : %s (%s)',async(required)=>{
+    const query=jest.fn().mockResolvedValue({rows:[{qr_required:required}]});
+    const result=await service.needsScanCoverage({query},SHIP);
+    expect(result).toBe(required);
+    expect(query).toHaveBeenCalledWith(expect.stringContaining("o.reference ~"),[SHIP]);
+    expect(query.mock.calls[0][0]).toContain("l.target_type='COMBOX'");
+    expect(query.mock.calls[0][0]).toContain("l.target_type='ARTICLE'");
+  });
