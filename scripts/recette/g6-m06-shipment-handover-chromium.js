@@ -153,7 +153,7 @@ async function printLabels(actor,link,endpoint,key,expected){
   check(aliases.length===expected.length&&new Set(aliases).size===expected.length&&
    expected.every(x=>aliases.includes(x)),'G6_HUB_PRINT_ALIAS_MISMATCH_'+key);
   const qrSources=await preview.locator('.ticket img.qr').evaluateAll(images=>images.map(img=>img.getAttribute('src')));
-  check(qrSources.length===expected.length&&qrSources.every(src=>/^data:image\\/png;base64,/.test(src||''))&&
+  check(qrSources.length===expected.length&&qrSources.every(src=>typeof src==='string'&&src.startsWith('data:image/png;base64,'))&&
    new Set(qrSources).size===expected.length,'G6_HUB_PRINT_QR_MISSING_OR_DUPLICATE_'+key);
   const printedText=await preview.locator('body').innerText();
   check(!printedText.includes(REF),'G6_HUB_PRINT_COMMERCIAL_REFERENCE_EXPOSED_'+key);
