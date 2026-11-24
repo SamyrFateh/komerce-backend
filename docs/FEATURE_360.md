@@ -170,7 +170,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - _in_ :
   - routes actives d'identité : OTP (request/verify/test-reset), login/register, magic-link, guest-checkout, admin-reset, consultation/édition du profil et des commandes client
 - _out_ :
-  - logique metier propre a chaque feature consommatrice — auth-identity ne sait rien des commandesar le proprietaire de middleware/auth.js
+  - logique metier propre a chaque feature consommatrice — auth-identity ne sait rien des commandes, paniers ou paiements
+
+**Authority** : backend-core — tout changement de middleware d'authentification doit etre valide par le proprietaire de middleware/auth.js
 
 **Invariants** :
 - [object Object]
@@ -366,7 +368,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - dataset E2E unifié 700 historique : 200 AliExpress validés + 500 CJ semantic-positive, cohabitant dans une base Railway isolée explicitement gardée, sans exposition marché ni publication automatique
   - dataset E2E réconcilié 712 : 200 AliExpress + 500 CJ historiques certifiés + 12 CJ nouveaux uniques, matérialisés par identité fournisseur exacte, taxonomie boutique dynamique active, SKU/SOI complets et zéro exposition marché
   - certification catalogue canonique v1 : provider-independent, versionnée et fail-closed ; un produit certifié possède source V2, taxonomie boutique catégorie+sous-catégorie active, média, SKU/SOI, contenu FR prêt, zéro exposition marché et publication guard PASS ; les datasets 700/712 sont des corpus de preuve et non la définition de la certification
-  - chaque sous-catégorie boutique commerciale active déclare une affinité douanière administrable ; le produit fournisseur réel garde priorité et l affinité ne sert qu en fallback de proximin ; les identités déjà présentes sont laissées intactes et aucune exposition marché n est créée automatiquement
+  - chaque sous-catégorie boutique commerciale active déclare une affinité douanière administrable ; le produit fournisseur réel garde priorité et l affinité ne sert qu en fallback de proximité pour éviter les catégories Komerce nulles sur un produit accepté
+  - un dataset E2E certifié peut être transféré vers le catalogue réel uniquement par replay des contrats fournisseur V2 via les autorités canoniques import/scan/promotion ; les identités déjà présentes sont laissées intactes et aucune exposition marché n est créée automatiquement
   - product_market_exposure : exposition commerciale produit x marché, fail-closed (absence de ligne = DISABLED), même patron que commercial_exposure sur physical_offers/services
   - migration 206 : snapshot de compatibilité produit x marché, reproduction exacte de publicCatalogVisibilitySql() croisée avec chaque marché actif — cutover, pas un all x all aveugle
   - services/catalog-public-view.js::publicCatalogVisibilitySql(alias, { marketCodeParam }) : le chemin de lecture storefront consulte désormais product_market_exposure quand un marché est fourni ; sans marché, comportement historique inchangé à l’identique
@@ -536,7 +539,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - Logistics Control Tower canonical : projection read-only end-to-end d une commande Market de l engagement client au relais, montrant current_stage + health + cause + filiation sans créer de lifecycle, statut ou vérité métier parallèle
   - Tour de contrôle niveau 1 : cinq phases graphiques regroupent les neuf étapes canoniques et chaque commande reste unique à son étape gouvernante ; sous-étape, couleur et cause visibles dans la carte ; rouge signifie action requise, orange repose sur un vrai signal métier, jamais sur trente minutes d inactivité ; détail intégré, lien vers espace propriétaire soumis au rôle ; les causes structurelles agrègent des faits canoniques communs
   - Canonical Reference Resolver : résolution read-only d une référence opérationnelle vers son identité propriétaire, sa commande cliente, sa position Control Tower et sa destination canonique ; aucune persistance, aucun statut parallèle, aucune élévation d autorité
-  - auth-guard et composants partagés des runtimes historiques tant qu’ils restent se de admin/** ou admin-legacy/** depuis canonical/**
+  - auth-guard et composants partagés des runtimes historiques tant qu’ils restent servis
+- _out_ :
+  - mutations de données (chaque feature métier owns ses mutations)
+  - logique panier, commandes, paiements (feature orders / payments / shared-cart)
+  - moteur tarifaire (feature economic-engine)
+  - nouveau développement dashboard sous public/dashboards/admin/** ou public/dashboards/admin-legacy/** hors correctif explicite
+  - import ou héritage UI de admin/** ou admin-legacy/** depuis canonical/**
   - migration écran-par-écran des anciennes vues : elles sont des sources de besoins, pas des unités à porter
   - persistance d un état Control Tower concurrent : current_stage/health restent des projections dérivées des features propriétaires ; toute matérialisation future exige un besoin de performance mesuré
 
@@ -739,7 +748,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - strategies tarifaires et matrices admin
   - gestion des provisions pour risque (routes/admin-risk-provisions.js — retaggé @domain economic-engine au Lot O2, était @domain dashboard)
 - _out_ :
-  - affichage produit cote catre ou application de prix reste derrière les services propriétaires economic-engine ; une charge fixe n a aucune autorité de fabrication du prix SKU
+  - affichage produit cote catalogue (feature catalog, qui consomme economic-engine)
+  - facturation finale (feature orders)
+  - autorisation et audit de l’enregistrement délégué d’un fait MARKET_DIRECT par un opérateur pays (feature market-delegation, capability structure.event.record) — appelle recordStructureCostEvent() sans jamais dupliquer sa validation ni écrire directement dans economic_structure_cost_events
+
+**Authority** : backend-core — toute frontière économique, règle de contribution, couverture ou application de prix reste derrière les services propriétaires economic-engine ; une charge fixe n a aucune autorité de fabrication du prix SKU
 
 **Invariants** :
 - une strategie tarifaire est versionnee, jamais modifiee retroactivement sur une commande deja figee
@@ -964,7 +977,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 
 **Owns** : `outbox_events`, `physical_outcome_receipts`, `schema_migrations`
-**Wri(writer-not-owner), `pickup_print_tokens` (writer-not-owner), `pickup_reveal_codes` (writer-not-owner), `revoked_tokens` (writer-not-owner), `users` (writer-not-owner)
+**Writes (not owner)** : `charges` (writer-not-owner), `economic_snapshots` (writer-not-owner), `finance_config` (writer-not-owner), `pickup_print_tokens` (writer-not-owner), `pickup_reveal_codes` (writer-not-owner), `revoked_tokens` (writer-not-owner), `users` (writer-not-owner)
 
 **Exposes** : 11 internal API(s), 4 HTTP interface(s)
   - `null` (bootstrap/*) — resolved
@@ -1233,7 +1246,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Exposes** : 32 internal API(s), 78 HTTP interface(s)
   - `addParcelItem` (services/parcel-item-mutation-service.js) — resolved
   - `addParcelItemTraced` (services/parcel-item-mutation-service.js) — resolved
-  - `appendParcelShipmentInfo` (serviOrderItemToParcel` (services/parcel-item-mutation-service.js) — resolved
+  - `appendParcelShipmentInfo` (services/parcel-mutation-service.js) — resolved
+  - `assignParcelItem` (services/parcel-item-mutation-service.js) — resolved
+  - `assignSingleOrderItemToParcel` (services/parcel-item-mutation-service.js) — resolved
+  - `assignWholeOrderItemToParcel` (services/parcel-item-mutation-service.js) — resolved
   - `createAutoPreparedParcel` (services/parcel-mutation-service.js) — resolved
   - `createHubParcel` (services/parcel-mutation-service.js) — resolved
   - `createPhysicalUnit` (services/hub-physical-identity.js) — resolved
@@ -1383,7 +1399,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Exposes** : 0 internal API(s), 0 HTTP interface(s)
 
 **Consumes** : infrastructure (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED)
-**Consumed by** : catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERBSERVED), wallet (DECLARED_AND_OBSERVED)
+**Consumed by** : catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERVED), market-control-plane (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), market-operator-dashboard (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), providers-services (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED), refunds (DECLARED_AND_OBSERVED), settlement (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
@@ -1578,7 +1594,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - LOT 4B (validation simple marché) : un candidat catalogue déjà préparé et publiable peut être validé par le Responsable pays ; market-delegation délègue la première publication à catalog-approval puis active l’exposition du marché dans la même transaction, sans reprendre l’autorité lifecycle de products
   - LOT 4C (prêt à vendre) : la décision pays part uniquement d’une fiche déjà publiable/certifiée ; la projection assemble corridor économique, prix proposé et état d’exposition sans écrire, puis l’UI compose les writers canoniques pricing + catalog ; le bulk est réservé aux lignes vertes
   - LOT 4 (cutover lecture) : catalog.expose LIVE — migration 206 (snapshot, catalog) préserve exactement la visibilité storefront existante au moment du cutover ; migration 207 (activation, market-delegation) ouvre le droit d’agir sans jamais toucher l’exposition elle-même ; séparation stricte entre les deux, vérifiée par test
-  - LOT 7 (structure-event) : structure.event.record — un opérateur pays enregistre un fait MARKET_DIRECT de charge structurelle pour son propre marché via le writer canonique economic-engine (recordStructureCostEvent), jamais un GROUP, jamais un market_id choissur services.commercial_exposure et physical_offers.commercial_exposure (providers-services, lifecycle owner), jamais de SQL direct, jamais de suppression
+  - LOT 7 (structure-event) : structure.event.record — un opérateur pays enregistre un fait MARKET_DIRECT de charge structurelle pour son propre marché via le writer canonique economic-engine (recordStructureCostEvent), jamais un GROUP, jamais un market_id choisi, jamais de SQL direct sur economic_structure_cost_events
+  - migration 210 : promotion LIVE de structure.event.record backfillée sur les assignments actifs (ceiling) et les managers déjà reconnus (team.grant + team.revoke + network.read), jamais un élargissement aux viewers ; ne crée jamais d’événement économique
+  - LOT 4 (local-offer) : exposition commerciale des services/offres physiques déjà créés — capability local_offer.manage, toggle ENABLED/DISABLED sur services.commercial_exposure et physical_offers.commercial_exposure (providers-services, lifecycle owner), jamais de SQL direct, jamais de suppression
   - un service ou une offre physique reste rattaché à son marché d’origine ; toute tentative cross-market échoue en 404, sans confirmer l’existence de la ressource
   - migration 204 : promotion LIVE de local_offer.manage backfillée sur les assignments actifs (ceiling) et les managers déjà reconnus (team.grant + team.revoke + network.read), jamais un élargissement aux viewers
   - LOT 5 (client-case) : workflow de litige (disputes) — capability client.case.handle, transitions open/processing/resolved/closed et note de résolution via dispute-mutation-service.js (orders, lifecycle owner), jamais refund_kmf/refund_eur
@@ -1781,7 +1799,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - réconciliation des trois jalons préparation, expédition et disponibilité
   - contrat explicite order.exception.* pour les événements exceptionnels actionnables
 - _out_ :
-  - tests/untrice)
+  - tests/unit/notification-service.test.js
+  - décision métier de notifier (reste à la feature émettrice)
 
 **Authority** : backend-core — tout changement de template ou de canal doit etre valide par le proprietaire de notification-service.js
 
@@ -2036,7 +2055,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Invariants** :
 - les surfaces de santé et monitoring n'écrivent aucune donnée métier
 - le simulator écrit dans les tables d'autres features par design de simulation
-- les modules (fabrics, garment_models) sont les seules tables possédées par platform-ointernal API(s), 33 HTTP interface(s)
+- les modules (fabrics, garment_models) sont les seules tables possédées par platform-ops
+
+**Owns** : `fabrics`, `garment_models`
+**Writes (not owner)** : `notification_log` (writer-not-owner), `parcel_items` (writer-not-owner), `parcels` (writer-not-owner), `scans` (writer-not-owner)
+
+**Exposes** : 0 internal API(s), 33 HTTP interface(s)
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
 **Consumed by** : auth-identity (DECLARED_AND_OBSERVED), auth-passkey (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), providers-services (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
@@ -2232,7 +2256,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 - [object Object]
 - [object Object]
-ée qu'à un bon de commande existant et cohérent
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- purchasing peut consommer et lire la commande cliente, mais ne possède jamais son cycle de vie — toute mutation de orders.status continue de passer exclusivement par order-status-machine.js (feature orders)
+- une réception ne peut être appliquée qu'à un bon de commande existant et cohérent
 - aucun consommateur cross-feature ne modifie purchase_orders directement : la synchronisation d'annulation passe par purchasing-cancel-service.js
 - tout message WhatsApp fournisseur part d un purchase_order déjà persisté ; un rejeu de notification ne recrée jamais le bon ni ne confirme son statut
 - un préflight fournisseur ne peut jamais créer de commande fournisseur ni déclencher un paiement ; toute mutation externe exige un gate explicite séparé
@@ -2483,7 +2513,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - tant que les listes V1 ne sont pas nommables, un créateur possède au maximum une liste OPEN
 - Mon panier reste indépendant ; une seule liste OPEN peut occuper le slot partagé local
 - une sélection de liste est locale, ne réserve rien et passe toujours par récapitulatif puis checkout canonique
-- une commande porte soit sur PERSONAL_CART soit sur SHARED_LIST, jamaoutique — jamais un guichet de paiement (Boutique First)
+- une commande porte soit sur PERSONAL_CART soit sur SHARED_LIST, jamais les deux
+- un article de liste n'est jamais réclamable deux fois — arbitré par index unique, pas par verrou applicatif (migration 123)
+- dès que toutes les lignes possèdent un order_items.shared_cart_item_id, la liste passe automatiquement OPEN -> CLOSED ; aucun état observable 100% réclamé + OPEN
+- aucune donnée financière n'est stockée sur shared_carts — le total se calcule toujours par SUM() sur shared_cart_items
+- lien partagé ouvre une boutique — jamais un guichet de paiement (Boutique First)
 - annulation de liste (cancel) n'effectue jamais de remboursement — aucune contribution n'y transite
 
 **Owns** : `basket_items`, `baskets`, `cart_shares`, `shared_cart_events`, `shared_cart_items`, `shared_cart_saved_access`, `shared_carts`
@@ -2706,7 +2740,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - projection GET en lecture seule pour le responsable pays, filtrée en SQL sur les marchés operations.read délégués
   - prohibition de la promotion ou cession de marchandises payées tant que les droits de retrait persistent
 - _out_ :
-  - réception, affectation et dispatch des articles au hub (feature inventory — aucun poinsé)
+  - réception, affectation et dispatch des articles au hub (feature inventory — aucun point de contact technique : pas de table écrite en commun, pas de require croisé)
   - décision de publication produit (feature catalog)
 
 **Authority** : backend-core — tout changement de calcul de liquidation doit etre valide par le proprietaire de routes/unsold.js
