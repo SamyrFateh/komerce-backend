@@ -27,7 +27,7 @@ function el(tag) {
     removeAttribute(k) { delete this.attrs[k]; },
     contains(child) { for (let node=child; node; node=node.parentNode) if(node===this) return true; return false; },
     addEventListener(evt,fn) { handlers[evt]=fn; },
-    click() { if (handlers.click) handlers.click({target:this}); },
+    click() { if (handlers.click) return handlers.click({target:this}); },
     change(target) { if (handlers.change) handlers.change({target}); },
     input(value) { this.value=value; if (handlers.input) handlers.input({target:this}); },
     querySelectorAll(selector) {
@@ -394,4 +394,30 @@ test('Kanban global : les actions métier sont déléguées et aucun formulaire 
  expect(board).toContain('Ouvrir l’atelier · ');
  expect(board).not.toContain('launchSourcing');
  expect(board).not.toContain('openManualSourcing');
+});
+
+test('le pilote PO conserve le Kanban et revient à la vue commandes sans mutation', async () => {
+  const app=load(), root=el('main');
+  const po={id:'p1',reference:'PO-1',market:'KM',supplier:'Fournisseur A',order_count:2,
+    order_references:['KAAAAAA','KBBBBBB'],ordered:5,expected:5,received:3,missing:2,
+    anomalies:0,purchase_step:'received',sent:true};
+  const fetch=jest.fn(async url=>({ok:true,json:async()=>url==='/api/hub/board?view=po'
+    ?{scope:'HUB_GLOBAL',purchase_orders:[po]}:{scope:'HUB_GLOBAL',orders:[]}}));
+  await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'}});
+  const toggle=root.querySelector('[data-hub-po-pilot-toggle]');
+  expect(toggle.getAttribute('aria-pressed')).toBe('false');
+  await toggle.click();
+  expect(toggle.getAttribute('aria-pressed')).toBe('true');
+  expect(root.querySelectorAll('[data-hub-pilot-po]')).toHaveLength(1);
+  expect(fetch).toHaveBeenCalledWith('/api/hub/board?view=po',expect.objectContaining({method:'GET'}));
+  await toggle.click();
+  expect(toggle.getAttribute('aria-pressed')).toBe('false');
+  expect(root.querySelectorAll('[data-hub-pilot-po]')).toHaveLength(0);
+  expect(fetch).toHaveBeenCalledTimes(2);
+});
+test('le responsable marché ne reçoit pas de bascule PO fournisseurs', async () => {
+  const app=load(),root=el('main'),fetch=mockFetch({orders:[]});
+  await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'market_operator'}});
+  expect(root.querySelector('[data-hub-po-pilot-toggle]')).toBeNull();
+  expect(fetch).toHaveBeenCalledTimes(1);
 });
