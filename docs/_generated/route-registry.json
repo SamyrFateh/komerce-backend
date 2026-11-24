@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-22T17:41:15.462Z",
+  "generatedAt": "2026-11-24T00:04:41.690Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 845,
+  "count": 847,
   "routes": [
     {
       "method": "GET",
@@ -1492,6 +1492,30 @@
       "fullPath": "/api/admin/orders/:id/refund",
       "mountPrefix": "/api/admin",
       "localPath": "/orders/:id/refund",
+      "routeFile": "routes/admin/orders.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js",
+        "routes/admin.js",
+        "routes/admin/index.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/orders/:orderReference/item-refund-context",
+      "mountPrefix": "/api/admin",
+      "localPath": "/orders/:orderReference/item-refund-context",
+      "routeFile": "routes/admin/orders.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js",
+        "routes/admin.js",
+        "routes/admin/index.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/orders/item-refund-readiness",
+      "mountPrefix": "/api/admin",
+      "localPath": "/orders/item-refund-readiness",
       "routeFile": "routes/admin/orders.js",
       "mountedFrom": [
         "bootstrap/api-routes.js",
