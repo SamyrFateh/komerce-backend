@@ -202,7 +202,7 @@
     function openForm(kind, poId) { state.form = { kind, po: poId }; state.sel = { type: 'po', id: poId }; paint(); }
 
     // ── Gestes (routes existantes) ──
-    function prepareBatch(btn, batch, lineIds, draftPoId) {
+    function prepareBatch(btn, batch, lineIds, draftPoId, executionMode = 'manual') {
       const n = lineIds.length;
       if (draftPoId) {
         return execute(btn, {
@@ -212,8 +212,8 @@
         });
       }
       return execute(btn, {
-        url: purchasing('po/prepare'), body: { supplier_id: batch.supplier_id, procurement_hub_ref: batch.procurement_hub_ref, line_ids: lineIds },
-        confirmMessage: `Préparer une PO ${batch.supplier_name} (${batch.procurement_hub_ref || 'Hub'}) avec ${n} ligne(s) ? Aucun envoi ni paiement.`,
+        url: purchasing('po/prepare'), body: { supplier_id: batch.supplier_id, procurement_hub_ref: batch.procurement_hub_ref, line_ids: lineIds, execution_mode: executionMode },
+        confirmMessage: `Préparer une PO ${batch.supplier_name} (${batch.procurement_hub_ref || 'Hub'}) avec ${n} ligne(s) en mode ${executionMode === 'api' ? 'API fournisseur' : 'manuel'} ? Aucun envoi ni paiement.`,
         runningMessage: 'Préparation de la PO…', successMessage: 'PO préparée en brouillon : validation d’engagement attendue.',
       });
     }
@@ -859,12 +859,21 @@
           const mine = g.batch.groups.filter((x) => state.picked.has(x.key));
           const crossBatch = [...state.picked].some((k) => !g.batch.groups.some((x) => x.key === k));
           const use = mine.length ? mine : [g.group];
-          const lineIds = use.flatMap((x) => x.lines.map((l) => l.line_id));
+          const selectedLines = use.flatMap(x=>x.lines);
+          const lineIds = selectedLines.map(l=>l.line_id);
+          const currenciesOf = lines => new Set(lines.map(l=>String(l.supplier_currency||l.currency||'').toUpperCase()).filter(Boolean));
+          const currencies = currenciesOf(selectedLines);
+          const crossCurrency = currencies.size>1;
+          const groupLock = lock || (crossBatch ? 'un seul fournisseur et marché par PO' : crossCurrency ? 'une seule devise par PO' : null);
+          const canApi = lines => g.batch.api_available===true && lines.length>0 && lines.every(l=>l.api_eligible===true);
           const qty = use.reduce((t, x) => t + x.quantity, 0);
           A('prepare-po', `Constituer une PO · ${num(qty)} u (${use.map((x) => x.product || 'article').join(' + ')})`, {
-            primary: true, why: 'regroupe les besoins cochés', disabled: lock || (crossBatch ? 'un seul fournisseur et marché par PO' : null),
+            primary: true, why: 'mode manuel · regroupe les besoins cochés', disabled: groupLock,
             run: (b) => prepareBatch(b, g.batch, lineIds, null),
           });
+          if(canApi(selectedLines)) A('prepare-po-api','Constituer une PO · API fournisseur',{
+            why:'intégration et lignes éligibles · brouillon uniquement',disabled:groupLock,
+            run:b=>prepareBatch(b,g.batch,lineIds,null,'api')});
           // Une même référence fournisseur/SKU peut regrouper plusieurs commandes.
           // Le Hub doit aussi pouvoir constituer une PO pour UNE commande sans
           // rattacher silencieusement les lignes des autres commandes.
@@ -879,13 +888,24 @@
               A('prepare-po-order-' + orderId,
                 `Constituer une PO · commande ${orderLines.ref} (${orderLines.ids.length} ligne(s))`, {
                   why: 'uniquement les lignes de cette commande ; autres commandes inchangées',
-                  disabled: lock,
+                  disabled: lock || (currenciesOf(g.group.lines.filter(l=>l.order_id===orderId)).size>1?'une seule devise par PO':null),
                   run: (b) => prepareBatch(b, g.batch, orderLines.ids, null),
                 });
+              const single=g.group.lines.filter(l=>l.order_id===orderId);
+              if(canApi(single)) A('prepare-po-api-order-'+orderId,'Constituer une PO API · commande '+orderLines.ref,{
+                why:'uniquement les lignes de cette commande',disabled:lock||(currenciesOf(single).size>1?'une seule devise par PO':null),
+                run:b=>prepareBatch(b,g.batch,orderLines.ids,null,'api')});
             }
           }
           if (g.batch.compatible_draft_po_ids.length) {
-            g.batch.compatible_draft_po_ids.forEach((id) => A(`attach-po-${id}`, `Ajouter au brouillon ${poRef(poById.get(id) || { id })}`, { why: 'même fournisseur · Hub · marché', disabled: lock || (crossBatch ? 'un seul fournisseur et marché par PO' : null), run: (b) => prepareBatch(b, g.batch, lineIds, id) }));
+            g.batch.compatible_draft_po_ids.forEach(id=>{
+              const po=poById.get(id);
+              const combined=new Set([...currencies,...currenciesOf(po?.lines||[])]);
+              A(`attach-po-${id}`,`Ajouter au brouillon ${poRef(po||{id})}`,{
+                why:'même fournisseur · Hub · marché · devise',
+                disabled:groupLock||(!po||po.status!=='draft'||po.authorizations?.commitment?'brouillon non modifiable':combined.size>1?'devise incompatible':null),
+                run:b=>prepareBatch(b,g.batch,lineIds,id)});
+            });
           } else A('attach-po', 'Ajouter à un PO brouillon existant', { disabled: 'aucun brouillon compatible' });
         }
       } else if (sel.type === 'po') {
