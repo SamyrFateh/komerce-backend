@@ -358,6 +358,39 @@
     return result;
   }
 
+  // Adapter du même moteur d'actions, sans deuxième formulaire ni nouvel endpoint.
+  async function mountPurchaseActions(host, {document:doc, fetch:fetchFn, user, marketCode, poId, onChange} = {}) {
+    if (!['admin','agent_hub'].includes(user?.role) || !poId) throw new Error('Accès achat Hub requis');
+    const cockpit = globalThis.KomerceHubLiveCockpit;
+    if (!cockpit) throw new Error('Module achats indisponible');
+    const feedback = text(doc,'p','kmc-workspace-feedback','');
+    feedback.setAttribute('data-workspace-feedback','');
+    feedback.setAttribute('role','status');
+    const slot = doc.createElement('div');
+    host.replaceChildren(feedback,slot);
+    const state = {sel:{type:'po',id:poId},selectionInitialized:true,form:null,picked:new Set()};
+    let dossier;
+    const context = {
+      root:host,fetch:fetchFn,confirm:message=>doc.defaultView.confirm(message),
+      reload:async()=>{
+        dossier=await jsonRequest(fetchFn,endpointFor(marketCode,'supply'));
+        paint();
+        await onChange?.(dossier);
+      },
+    };
+    function paint(){
+      cockpit.render(slot,{
+        document:doc,dossier,marketCode,state,isReadOnly:!dossier.cockpit?.viewer,purchaseOnly:true,
+        act:(button,options)=>runAction(context,button,options),
+        reload:context.reload,
+        feedback:(message,tone)=>setFeedback(host,message,tone),
+      });
+    }
+    dossier=await jsonRequest(fetchFn,endpointFor(marketCode,'supply'));
+    paint();
+    return {reload:context.reload, busy:()=>Boolean(state.pending)};
+  }
+
   const RECEIVABLE_ENDPOINT = '/api/scans/hub/receivable';
   const RECEIVE_ENDPOINT = '/api/scans/hub/receive';
   const PHYSICAL_CODE_CONFIRM_ENDPOINT = '/api/hub/physical-codes/confirm';
@@ -3256,6 +3289,7 @@
     hubPollDelayMs,
     renderPayload,
     openManualSourcing,
+    mountPurchaseActions,
     mount,
   });
 });

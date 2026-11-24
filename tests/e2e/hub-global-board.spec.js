@@ -287,3 +287,40 @@ test('Kanban : le menu actif ne contient aucun formulaire métier local',async({
   await expect(menu.locator('.kmc-hub-action-form')).toHaveCount(0);
   expect(calls.filter(call=>!call.startsWith('GET '))).toEqual([]);
 });
+
+test('pilote PO : engagement dans la cellule, formulaire canonique et droit serveur', async ({page})=>{
+  const poId='10000000-0000-4000-8000-000000000001';
+  const base={id:poId,ref:'PO-1',status:'draft',stage:'draft',step:{key:'draft'},order_ids:['one'],
+    lines:[{line_id:'l1',order_id:'one',order_ref:'KM-100',product:'Article test',ordered:2,confirmed:2}],
+    totals:{effective:2,missing:2,received:0},amount:{derived:true,amount:20,currency:'EUR'},
+    authorizations:{commitment:null,payment:null}};
+  let approved=false;
+  const writes=[];
+  const board=()=>({...BOARD,purchase_orders:[{id:poId,reference:'PO-1',market:'KM',supplier:'Fournisseur test',
+    order_count:1,order_references:['KM-100'],ordered:2,expected:2,received:0,missing:2,anomalies:0,
+    purchase_step:approved?'validation':'draft',purchase_stage:'draft'}]});
+  await mount(page,'admin','',board());
+  await page.route(ORIGIN+'/api/hub/board?view=po',route=>route.fulfill({json:board()}));
+  await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/supply',route=>route.fulfill({json:{
+    market:{code:'KM'},orders:[],purchase_orders:[{...base,step:{key:approved?'validation':'draft'},
+      authorizations:{commitment:approved?{amount:20,currency:'EUR'}:null,payment:null}}],
+    cockpit:{viewer:{role:'admin',can_authorize_commitment:true,can_authorize_payment:false}},
+  }}));
+  await page.route(ORIGIN+'/api/purchasing/po/'+poId+'/authorize-commitment',route=>{
+    writes.push(route.request().postDataJSON());
+    approved=true;return route.fulfill({json:{ok:true}});
+  });
+  await page.locator('[data-hub-po-pilot-toggle]').click();
+  const row=page.locator('[data-hub-pilot-po="'+poId+'"]');
+  await row.getByText('Engagement à valider',{exact:true}).click();
+  const cell=row.locator('[data-hub-inline-purchase]');
+  await expect(cell.locator('[data-hlc-purchase-only]')).toBeVisible();
+  await expect(cell.locator('[data-hlc-action="receive"]')).toHaveCount(0);
+  await cell.locator('[data-hlc-action="authorize-commitment"]').click();
+  await cell.locator('input[name="proof_ref"]').fill('JUSTIF-TEST');
+  await cell.locator('[data-hlc-action="submit-commitment"]').click();
+  await expect(cell.locator('[data-hlc-action="submit-po"]')).toBeVisible();
+  await expect(row.getByText('Engagement validé · à soumettre',{exact:true})).toBeVisible();
+  expect(writes).toEqual([{proof_ref:'JUSTIF-TEST'}]);
+  await expect(page).toHaveURL(ORIGIN+'/admin/hub');
+});

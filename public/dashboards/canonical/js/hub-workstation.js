@@ -575,12 +575,44 @@
         linked.appendChild(details);tr.appendChild(linked);
         const purchase=make(doc,'td'), purchaseDetails=make(doc,'details');
         const purchaseLabel=({draft:'Engagement à valider',validation:'Engagement validé · à soumettre',engaged:'Envoi à attester',sent:'Suivi fournisseur',received:'Réception constatée'})[p.purchase_step] || PO_STAGE[p.purchase_stage] || 'À vérifier';
-        purchaseDetails.appendChild(make(doc,'summary','',purchaseLabel));
-        purchaseDetails.appendChild(atelierLink(p,'purchasing','Ouvrir le dossier d’achat'));
+        const purchaseSummary=make(doc,'summary','',purchaseLabel);
+        purchaseDetails.appendChild(purchaseSummary);
+        const purchaseHost=make(doc,'div','kmc-hub-inline-purchase');
+        purchaseHost.setAttribute('data-hub-inline-purchase',p.id);
+        purchaseDetails.appendChild(purchaseHost);
+        let handle=null, loading=false;
+        purchaseDetails.addEventListener('toggle',async()=>{
+          if(!purchaseDetails.open || loading || handle?.busy())return;
+          loading=true;
+          try{
+            if(handle){await handle.reload();return;}
+            const module=global.KomerceCanonicalOperationsWorkspace;
+            if(!module?.mountPurchaseActions)throw new Error('Module achats indisponible');
+            purchaseHost.replaceChildren(make(doc,'p','','Chargement du dossier…'));
+            handle=await module.mountPurchaseActions(purchaseHost,{
+              document:doc,fetch:fetchFn,user,marketCode:p.market,poId:p.id,
+              onChange:async()=>{
+                const data=await requestJSON(fetchFn,'/api/hub/board?view=po');
+                if(data.scope!=='HUB_GLOBAL'||!Array.isArray(data.purchase_orders))throw new Error('Projection PO indisponible');
+                poRows=data.purchase_orders;
+                const fresh=poRows.find(row=>row.id===p.id);
+                if(!fresh){purchaseSummary.textContent='PO indisponible';return;}
+                purchaseSummary.textContent=({draft:'Engagement à valider',validation:'Engagement validé · à soumettre',engaged:'Envoi à attester',sent:'Suivi fournisseur',received:'Réception constatée'})[fresh.purchase_step] || PO_STAGE[fresh.purchase_stage] || 'À vérifier';
+                receiptSummary.textContent=fresh.received+' / '+fresh.expected+' reçus'+(fresh.missing?' · '+fresh.missing+' attendus':'')+(fresh.anomalies?' · '+fresh.anomalies+' écarts':'');
+                // Réception accessible uniquement avec la projection serveur actualisée.
+                receiptDetails.replaceChildren(receiptSummary,fresh.sent||fresh.received>0
+                  ?atelierLink(fresh,'reception','Ouvrir la réception de cette PO')
+                  :make(doc,'p','','Achat / envoi à vérifier.'));
+              },
+            });
+          }catch(error){purchaseHost.replaceChildren(make(doc,'p','','Dossier achat indisponible : '+error.message));handle=null;}
+          finally{loading=false;}
+        });
         purchase.appendChild(purchaseDetails);tr.appendChild(purchase);
         const reception=make(doc,'td'), receiptDetails=make(doc,'details');
         const quantity=p.received+' / '+p.expected+' reçus';
-        receiptDetails.appendChild(make(doc,'summary','',quantity+(p.missing?' · '+p.missing+' attendus':'')+(p.anomalies?' · '+p.anomalies+' écarts':'')));
+        const receiptSummary=make(doc,'summary','',quantity+(p.missing?' · '+p.missing+' attendus':'')+(p.anomalies?' · '+p.anomalies+' écarts':''));
+        receiptDetails.appendChild(receiptSummary);
         if (p.sent || p.received>0) receiptDetails.appendChild(atelierLink(p,'reception','Ouvrir la réception de cette PO'));
         else receiptDetails.appendChild(make(doc,'p','','Achat / envoi à vérifier.'));
         reception.appendChild(receiptDetails);tr.appendChild(reception);
