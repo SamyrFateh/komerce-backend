@@ -114,18 +114,15 @@
     link.setAttribute('data-hub-workflow-link','');
     menu.appendChild(link);
   }
-  function sent(menu, doc, po, fetchFn, refresh) {
-    if(!validUuid(po.id)||po.status !== 'notified'||po.sent_at)return false;
-    action(menu,doc,'Attester l’envoi fournisseur','La PO doit avoir été réellement transmise.',()=>form(
-      menu,doc,'PO '+po.id.slice(0,8)+' · Preuve d’envoi',[
-        {name:'channel',label:'Canal utilisé',required:true,choices:[
-          {label:'WhatsApp',value:'whatsapp'},{label:'E-mail',value:'email'},
-          {label:'Téléphone',value:'phone'},{label:'API fournisseur',value:'api'},
-          {label:'Autre',value:'other'}]},
-        {name:'supplier_order_id',label:'Référence fournisseur (facultative)'},
-        {name:'note',label:'Justificatif / note de transmission'},
-      ], values=>request(fetchFn,'/api/purchasing/po/'+encodeURIComponent(po.id)+'/sent',values),refresh
-    ));
+  // Le dossier PO canonique est l’unique surface d’exécution des achats.
+  function poLink(menu,doc,po,label){
+    if(!validUuid(po.id)||!(/^[A-Z]{2}$/.test(po.market||''))) {
+      explanation(menu,doc,'Marché ou PO non identifié : accès au dossier indisponible.');
+      return false;
+    }
+    workflowLink(menu,doc,label,'/admin/hub-live?'+new URLSearchParams({
+      view:'execute',entry:'operations',market:po.market,atelier:'purchasing',sel:'po:'+po.id
+    }).toString());
     return true;
   }
   // Kanban : lecture et liens uniquement. Aucun formulaire ni POST métier.
@@ -193,12 +190,7 @@
   function commitment(menu,doc,po,grants,fetchFn,refresh) {
     if(po.commitment_decision){
       explanation(menu,doc,decisionLine('Engagement d’achat validé',po.commitment_decision));
-      if(validUuid(po.id)&&po.status==='draft'){
-        action(menu,doc,'Soumettre au fournisseur','La PO engagée est soumise ; l’envoi réel s’atteste ensuite.',async()=>{
-          try{await request(fetchFn,'/api/purchasing/po/'+encodeURIComponent(po.id)+'/submit',{});menu.hidden=true;await refresh?.();}
-          catch(err){explanation(menu,doc,'Soumission refusée : '+err.message);}
-        });
-      }
+      if(validUuid(po.id)&&po.status==='draft') poLink(menu,doc,po,'Ouvrir la PO pour la soumettre');
       return true;
     }
     if(!validUuid(po.id)||po.status!=='draft'){
@@ -209,15 +201,7 @@
       explanation(menu,doc,'Engagement d’achat à valider par la directrice. Votre compte ne détient pas cette autorisation (attribuée par l’Admin central) ; une PO préparée n’est pas un engagement.');
       return false;
     }
-    action(menu,doc,'Valider l’engagement d’achat','Décision tracée : décideur, date, montant, pièce.',()=>form(
-      menu,doc,'PO '+po.id.slice(0,8)+' · Engagement d’achat',[
-        {name:'proof_ref',label:'Pièce / référence de la décision',required:true},
-        {name:'amount',label:'Montant (si les lignes n’ont pas un prix fournisseur unique)',type:'number',min:0,step:'0.01'},
-        {name:'currency',label:'Devise (ex. AED)'},
-      ],values=>request(fetchFn,'/api/purchasing/po/'+encodeURIComponent(po.id)+'/authorize-commitment',{
-        proof_ref:values.proof_ref.trim(),
-        ...(values.amount?{amount:Number(values.amount),currency:values.currency.trim()}:{}),
-      }),refresh));
+    poLink(menu,doc,po,'Ouvrir la PO · décision d’engagement');
     return true;
   }
   function paymentAuthorization(menu,doc,po,grants,fetchFn,refresh) {
@@ -237,14 +221,7 @@
       explanation(menu,doc,'Paiement fournisseur à autoriser par la directrice. Votre compte ne détient pas cette autorisation (attribuée par l’Admin central).');
       return false;
     }
-    action(menu,doc,'Autoriser le paiement fournisseur','Décision tracée, distincte de l’engagement et du débit.',()=>form(
-      menu,doc,'PO '+po.id.slice(0,8)+' · Autorisation de paiement',[
-        {name:'proof_ref',label:'Pièce / référence de la décision',required:true},
-        {name:'amount',label:'Montant autorisé',type:'number',min:0,step:'0.01',required:true},
-        {name:'currency',label:'Devise (ex. AED)',required:true},
-      ],values=>request(fetchFn,'/api/purchasing/po/'+encodeURIComponent(po.id)+'/authorize-payment',{
-        proof_ref:values.proof_ref.trim(),amount:Number(values.amount),currency:values.currency.trim(),
-      }),refresh));
+    poLink(menu,doc,po,'Ouvrir la PO · autorisation de paiement');
     return true;
   }
   function varianceDecision(menu, doc, po, grants, fetchFn, refresh) {
@@ -269,14 +246,12 @@
   function administration(menu,{doc,fetch:fetchFn,user,po,field,refresh,grants = {}}) {
     if(!writableRoles.includes(user?.role))return false;
     if(field==='Fournisseur'){
-      if(sent(menu,doc,po,fetchFn,refresh))return true;
+      if(po.status==='notified'&&!po.sent_at) return poLink(menu,doc,po,'Ouvrir la PO · attester l’envoi fournisseur');
       explanation(menu,doc,po.sent_at?
         'Envoi déjà attesté : aucune seconde déclaration autorisée. La confirmation fournisseur ligne par ligne se saisit dans Achats fournisseurs.':
         'La PO doit être soumise (après validation de l’engagement) avant qu’un envoi réel puisse être enregistré.');
       if(po.sent_at&&po.status==='notified'){
-        const link=node(doc,'a','kmc-hub-board-menu-action is-primary','Confirmer les lignes fournisseur');
-        link.href='/admin/workspaces/purchasing';
-        menu.appendChild(link);
+        poLink(menu,doc,po,'Ouvrir la PO · confirmer les lignes fournisseur');
       }
     }else if(field==='Engagement'){
       commitment(menu,doc,po,grants,fetchFn,refresh);
