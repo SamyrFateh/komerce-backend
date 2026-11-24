@@ -93,7 +93,7 @@ describe('Étiquettes QR opaques Hub — contrat réel',()=>{
     client.query=jest.fn(async(sql)=>{
       if(sql.includes('FROM relais WHERE id=$1'))return {rows:[{id:UUID.relay}]};
       if(sql.includes('FROM hub_physical_units WHERE id=$1'))return {rows:[{
-        id:UUID.box,market_id:UUID.market,unit_type:'MARKET_PARCEL',
+        id:UUID.box,market_id:UUID.market,unit_type:'MARKET_PARCEL',state:'PACKED',
       }]};
       if(sql.includes('SELECT DISTINCT a.market_id,o.relais_id'))return {rows:[{
         market_id:UUID.market,relais_id:'99999999-9999-4999-8999-999999999999',
@@ -102,6 +102,16 @@ describe('Étiquettes QR opaques Hub — contrat réel',()=>{
     });
     await expect(labels.issueBoxLabel(client,{boxId:UUID.box,marketId:UUID.market,
       relaisId:UUID.relay,actorId:UUID.actor})).rejects.toThrow('HUB_LABEL_BOX_DESTINATION_MISMATCH');
+  });
+  test('COMBOX ouverte : émission définitive refusée même avec destination valide',async()=>{
+    const {client}=fakeDb();
+    client.query=jest.fn(async sql=>{
+      if(sql.includes('FROM hub_physical_units WHERE id=$1'))
+        return {rows:[{id:UUID.box,market_id:UUID.market,unit_type:'MARKET_PARCEL',state:'PICKED'}]};
+      throw Error('Une COMBOX ouverte ne doit pas déclencher d’autre requête: '+sql);
+    });
+    await expect(labels.issueBoxLabel(client,{boxId:UUID.box,marketId:UUID.market,
+      actorId:UUID.actor})).rejects.toThrow('HUB_LABEL_BOX_NOT_CLOSED');
   });
   test('résolution de QR sous contrainte SQL du marché et du relais',async()=>{
     const q={query:jest.fn().mockResolvedValue({rows:[]})};
