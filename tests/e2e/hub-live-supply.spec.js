@@ -180,14 +180,16 @@ test.describe('Hub live · Approvisionnement — mobile 390', () => {
 });
 
 test.describe('Hub UX guidée — contrat Golden conservé', () => {
-  test('atelier physique visible par défaut ; trois accès directs sans sac numérique ; aucune écriture', async ({ page }) => {
+  test('atelier physique visible par défaut ; quatre accès directs sans sac numérique ; aucune écriture', async ({ page }) => {
     const posts = [];
     await mount(page, posts, false);
     const details = page.locator('[data-hub-physical-details]');
     await expect(details).toHaveJSProperty('open', true);
     await expect(page.locator('[data-supply-boxes]')).toBeVisible();
     const shortcuts = page.locator('[data-hlc-physical-shortcut]');
-    await expect(shortcuts).toHaveCount(3);
+    await expect(shortcuts).toHaveCount(4);
+    await page.locator('[data-hlc-physical-shortcut="labels"]').click();
+    await expect(page.locator('[data-hub-label-printing]')).toBeInViewport();
     await expect(page.locator('[data-hlc-physical-shortcut="bags"]')).toHaveCount(0);
     await page.locator('[data-hlc-physical-shortcut="boxes"]').click();
     await expect(page.locator('[data-supply-box-create]')).toBeInViewport();
