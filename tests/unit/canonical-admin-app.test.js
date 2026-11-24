@@ -803,3 +803,8 @@ describe('Global en lecture, marché ciblé uniquement pour les actes', () => {
     expect(writer).toHaveBeenCalledWith(expect.objectContaining({requestedMarket:'CM',mode:'execution'}));
     expect(board).not.toHaveBeenCalled();
  });
+
+test('le dossier décision Hub utilise la sélection de marché explicite',()=>{
+ const src=require('fs').readFileSync(require('path').join(__dirname,'../../public/dashboards/canonical/js/app.js'),'utf8');
+ expect(src).toContain("['operations','direction'].includes(");
+});
