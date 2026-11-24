@@ -709,12 +709,12 @@ describe('G6-G5B N25 (SAV retour et double reprise) et N26b (compensation après
  });
 });
 
-describe('G6-G5B N40 (écart de prix fournisseur), N26a et N27 (sondes d\'écran)',()=>{
+describe('G6-G5B N40, N26a PSP et N27 reliquat',()=>{
  const up=id=>STAGE_IDS.slice(0,STAGE_IDS.indexOf(id)+1);
  const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]})}};
  it('séquences',()=>{
   expect(graphFor('N40').order).toEqual([...up('HUB_VENDOR_READINESS'),'N40_SUPPLIER_PRICE_GAP','N40_PRICE_GAP_ORACLE']);
-  expect(graphFor('N26a').order).toEqual([...up('RELAY_CASH'),'N26A_LINE_REFUND_SCREEN_PROBE']);
+  expect(graphFor('N26a').order).toEqual(['BUYER','N26A_LINE_REFUND_PSP_DECISION']);
   expect(graphFor('N27').order).toEqual([...up('HUB_VENDOR_READINESS'),'N27_REMNANT_CANCEL_SCREEN_PROBE']);
   expect(graphFor('M01').order).toEqual(STAGE_IDS);
   expect(validateStageModuleSources()).toBeGreaterThan(0);
@@ -727,9 +727,31 @@ describe('G6-G5B N40 (écart de prix fournisseur), N26a et N27 (sondes d\'écran
   const pay=row();pay[1]=[{...pay[1][0],supplier_payments:1}];
   await expect(N.oracleN40(mk(pay),{orderId:'o',poId:'p',confirm:{http:409},quoted:'10'})).rejects.toThrow('G6_N40_PRODUCT_GAP_SILENT_PAYMENT_OR_EXECUTION');
  });
+ it('oracle N26a : capture du payeur d’origine, un seul refund PSP, quantité et reçu confirmés',async()=>{
+  const gesture={order_id:'o',reference:'K1FOWL5',verdict:'G6_N26A_PSP_PARTIAL_LINE_REFUND_CHROMIUM_PASS',
+   request:{operation_key:'key-1',incident_id:'incident-1',quantity:1,reason:'Manquant attesté — N26a'},
+   candidate:{incident_id:'incident-1',order_item_id:'item-1',verified_missing:1},
+   reservation_response:{reservationId:'reservation-1'},execution_response:{status:'confirmed'},
+   before:{payer_user_id:'user-1',items:[{id:'item-1',qty_collected:0,qty_refunded:0}],
+    effects:{reservations:0,refunds:0,intents:0,local_reservations:0,wallet_credits:0}},
+   after:{effects:{reservations:1,refunds:1,intents:1,local_reservations:0,wallet_credits:0}}};
+  const reserved={id:'reservation-1',order_item_id:'item-1',source_incident_id:'incident-1',status:'confirmed',
+   quantity:1,provider:'stripe',provider_ref:'re_123',intent_status:'confirmed',user_id:'user-1',reference:'K1FOWL5',
+   payment_status:'paid',payment_mode:'stripe_eur',original_capture_match:true,amount_kmf:'1000',amount_eur:'2.00',
+   qty_collected:0,qty_refunded:1,ordered_quantity:3};
+  const mk=effects=>{let i=0;return {query:async()=>({rows:i++===0?[reserved]:[effects]})};};
+  const effects={reservations:1,confirmed_intents:1,item_refunds:1,legacy_refunds:0,receipts:1,local_reservations:0,wallet_credits:0};
+  await expect(N.oracleN26a(mk(effects),{orderId:'o',gesture})).resolves.toMatchObject({
+   provider:'stripe',original_capture_match:true,quantity_refunded:1,refunds:1,receipts:1});
+  await expect(N.oracleN26a(mk({...effects,reservations:2}),{orderId:'o',gesture}))
+   .rejects.toThrow('G6_N26A_PRODUCT_GAP_DUPLICATE_OR_MISSING_SETTLEMENT_EFFECT');
+  await expect(N.oracleN26a(mk(effects),{orderId:'o',gesture:{...gesture,verdict:'BLOCKED',
+   execution_response:{status:'unknown'}}})).rejects.toThrow('G6_N26A_PRODUCT_GAP_CHROMIUM_GESTURE_NOT_PROVEN');
+ });
  it('scripts et workflow',()=>{
-  const a=read('scripts/recette/g6-negative-n40-price-gap-chromium.js'),b=read('scripts/recette/g6-negative-n26a-n27-screen-probe-chromium.js');
-  expect(a).toMatch(/data-confirmed-price/);expect(b).toMatch(/G6_N26A_SCREEN_MISSING_LINE_REFUND_AND_PARTIAL_CREDIT/);expect(b).toMatch(/G6_N27_SCREEN_MISSING_REMNANT_CANCEL/);expect(a+b).not.toMatch(/screenshot/);
+  const a=read('scripts/recette/g6-negative-n40-price-gap-chromium.js'),b=read('scripts/recette/g6-negative-n26a-psp-refund-chromium.js'),c=read('scripts/recette/g6-negative-n26a-n27-screen-probe-chromium.js');
+  expect(a).toMatch(/data-confirmed-price/);expect(b).toMatch(/E7_N26A|item-refund-context/);
+  expect(b).toMatch(/execute-item-refund/);expect(c).toMatch(/G6_N27_SCREEN_MISSING_REMNANT_CANCEL/);expect(a+b+c).not.toMatch(/screenshot/);
   const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
   for(const id of ['N40','N26a','N27'])for(const m of ['KM','CM','CG'])expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");
   expect(['N40','N26a','N27'].every(N.isNegative)).toBe(true);

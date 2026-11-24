@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-22T17:42:05.424Z",
+  "generatedAt": "2026-11-24T06:16:40.268Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 856,
-    "protected": 797,
+    "total": 858,
+    "protected": 799,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1466,6 +1466,20 @@
     },
     {
       "key": "DELETE /api/admin/orders/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/orders/{orderReference}/item-refund-context",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/orders/item-refund-readiness",
       "level": "PROTECTED",
       "roles": [
         "admin"
