@@ -146,7 +146,12 @@ function summarizeMarket(market, payload) {
       next_action = 'Consulter la traçabilité';
     }
 
+    // Un QR émis est une identité persistée, jamais la preuve d’une impression ou d’un tri.
+    const labelsKnown=items.length>0 && items.every(i=>Number.isSafeInteger(i.article_labels_issued)&&i.article_labels_issued>=0);
+    const labelCount=labelsKnown?sum(items,i=>i.article_labels_issued):null;
+    const labelState=!labelsKnown?'unknown':labelCount>received?'critical':!received?'muted':labelCount<received?'ready':notReceived?'progress':'complete';
     const stage_states = {
+      labels:labelState,
       po: toSource ? 'warning' : !po.length ? 'waiting' : draft || openNeeds ? 'progress' : 'complete',
       supplier: !po.length ? 'muted' : notSent ? 'warning' : notReceived ? 'progress' : 'complete',
       reception: !received ? 'muted' : anomalies ? 'critical' : notReceived ? 'warning' : 'complete',
@@ -158,6 +163,7 @@ function summarizeMarket(market, payload) {
         : handed.length || allRelayed ? 'progress' : 'muted',
     };
     const stage_notes = {
+      labels:labelsKnown?labelCount+'/'+received+' QR article(s) émis pour les unités reçues · impression physique non attestée':'Émission QR non renseignée',
       po: po.length + ' bon(s) de commande · ' + openNeeds + ' article(s) encore à grouper',
       supplier: notSent ? 'Transmission fournisseur non attestée' : 'Transmission fournisseur attestée',
       reception: received + '/' + ordered + ' reçu(s) · ' + notReceived + ' attendu(s)',
@@ -188,6 +194,8 @@ function summarizeMarket(market, payload) {
         openNeeds && openNeeds + ' à acheter', mixedDetail].filter(Boolean).join(' · '),
       attention: Boolean(notReceived || anomalies || toSource || openNeeds || !po.length || notSent),
       stage_states, stage_notes, current_key, current_phase, current_status,
+      physical_focus:current_key==='cartons'&&labelState==='ready'?'labels':current_key,
+      qr_issued_count:labelCount,
       current_expected, current_detail: mixedDetail, next_action,
     });
   }

@@ -552,7 +552,7 @@
   }
 
   function renderHubExecutionShell(root, user, adminContext) {
-    const fromOperations = new URLSearchParams(String(global.location?.search || '')).get('entry') === 'operations';
+    const fromOperations = ['operations','direction'].includes(new URLSearchParams(String(global.location?.search || '')).get('entry'));
     return renderMarketSurfaceShell(root, user, adminContext, {
       surface: 'hub-live-execution',
       title: 'Hub live · Exécution',

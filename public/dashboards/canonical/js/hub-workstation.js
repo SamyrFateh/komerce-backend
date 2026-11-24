@@ -375,8 +375,9 @@
                 ? 'order:'+String(subject.order_id) : '';
             const link=make(doc,'a','hlc-director-open',
               id.startsWith('po:')?'Examiner la PO':id.startsWith('order:')?'Examiner la commande':'Ouvrir le marché');
+            const isDecision=['AUTHORIZE_COMMITMENT','AUTHORIZE_PAYMENT'].includes(task.kind)&&id.startsWith('po:');
             link.setAttribute('href','/admin/hub-live?view=execute&market='+encodeURIComponent(market)+
-              (id?'&sel='+encodeURIComponent(id):''));
+              (isDecision?'&entry=direction':'')+(id?'&sel='+encodeURIComponent(id):''));
             row.appendChild(link);
           }
           rows.appendChild(row);
@@ -464,7 +465,7 @@
       menu.setAttribute('data-hub-request', String(++menuSerial));
       anchor?.clear();
     };
-    const openMenu = (order, label, value, event, launchSourcing = false) => {
+    const openMenu = (order, label, value, event) => {
       // Ce menu appartient à UNE étape. Aucun lien universel injecté à toutes
       // les cellules avant la lecture de l'autorité métier.
       const requestId = String(++menuSerial);
@@ -507,8 +508,7 @@
         // Le geste physique attesté est irréversible ; le détail reste consultable.
       } else if (canOperate && global.KomerceHubContextActions) {
         global.KomerceHubContextActions.operations(menu, {
-          doc, fetch:fetchFn, user, order, stage:label, launchSourcing,
-          refresh:()=>renderGlobalBoard(root,{document:doc,fetch:fetchFn,user}),
+          doc, fetch:fetchFn, user, order, stage:label,
         });
       } else {
         menu.appendChild(make(doc, 'p', 'kmc-hub-action-explanation',
@@ -632,21 +632,17 @@
           });
           const actions = make(doc,'div','kmc-hub-kanban-stage-actions');
           actions.appendChild(button);
-          // Une action in situ : le bouton ouvre les contrôles et le formulaire
-          // de l'étape. Aucune mutation ne part du simple clic.
+          // Raccourci de navigation : ouvre les liens vers l’atelier canonique.
           const nextText = safe(order.next_action);
           const isWaitingOnly = /^(attendr|attente|suivre|consulter|aucune)/i.test(nextText);
           if (canOperate && order.current_key===key && !['locked','complete'].includes(state) && !isWaitingOnly) {
-            const launch = key==='po' && order.po==='Sourcing requis';
-            const command = make(doc,'button','kmc-hub-kanban-action',key==='po'
-              ?'Organiser l’achat fournisseur':nextText || 'Traiter l’étape');
+            const command = make(doc,'button','kmc-hub-kanban-action','Ouvrir l’atelier · '+label);
             command.type='button';
             command.setAttribute('data-hub-inline-action',key);
-            command.setAttribute('aria-label',order.reference+' · '+(launch
-              ?'Créer la ligne d’achat':'Ouvrir les actions : '+(nextText||label)));
+            command.setAttribute('aria-label',order.reference+' · Ouvrir l’atelier : '+label);
             command.addEventListener('click',event=>{
               event.stopPropagation();
-              openMenu(order,label,order[key],event,launch);
+              openMenu(order,label,order[key],event);
             });
             actions.appendChild(command);
           }

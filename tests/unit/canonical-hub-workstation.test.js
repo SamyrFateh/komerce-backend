@@ -278,7 +278,7 @@ test('Direction Hub : engagements, paiements, arbitrages, exécution séparés e
   expect(payments).toHaveLength(1);
   expect(payments[0].className).toContain('is-readonly');
   expect(payments[0].children.some(x=>x.getAttribute('href')===
-    '/admin/hub-live?view=execute&market=KM&sel=po%3A'+po)).toBe(true);
+    '/admin/hub-live?view=execute&market=KM&entry=direction&sel=po%3A'+po)).toBe(true);
   const physical=host.querySelectorAll('[data-hub-director-task="PLACE_COMBOX"]')[0];
   expect(physical.children.some(x=>x.getAttribute('href')===
     '/admin/hub-live?view=execute&market=CG')).toBe(true);
@@ -385,4 +385,13 @@ test('Kanban : destination relais visible, attendu réservé au détail contextu
  expect(src).toContain('[o.reference, o.market, o.market_name, o.relay_name]');
  expect(src).not.toContain("'kmc-hub-phase-expected'");
  expect(src).toContain("'kmc-hub-board-menu-expected'");
+});
+
+test('Kanban global : les actions métier sont déléguées et aucun formulaire de sourcing inline ne subsiste',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-workstation.js'),'utf8');
+ const board=src.slice(src.indexOf('async function renderGlobalBoard'),src.indexOf('async function renderAdministrationBoard'));
+ expect(board).toContain('KomerceHubContextActions.operations(menu');
+ expect(board).toContain('Ouvrir l’atelier · ');
+ expect(board).not.toContain('launchSourcing');
+ expect(board).not.toContain('openManualSourcing');
 });

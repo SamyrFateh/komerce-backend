@@ -173,6 +173,11 @@ async function main(){
    if(!await button.count()){await openPo(director.page);}
    check(await button.isEnabled(),'G6_COMMITMENT_DIRECTOR_ACTION_DISABLED');
    await humanClick(null,button);
+   // La première action ouvre la surface Direction, sans mutation financière.
+   await director.page.locator('[data-hub-decision-workspace]').waitFor({state:'visible',timeout:20000});
+   await button.waitFor({state:'visible',timeout:20000});
+   check(await button.isEnabled(),'G6_COMMITMENT_DIRECTION_ACTION_DISABLED');
+   await humanClick(null,button);
    const form=director.page.locator('form[data-hlc-form="commitment"]');
    await form.waitFor({state:'visible',timeout:14000});
    // Un produit MANUAL du Hub n'a pas de prix fournisseur confirmé : le

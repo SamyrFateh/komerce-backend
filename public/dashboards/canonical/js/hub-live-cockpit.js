@@ -108,6 +108,9 @@
     const physical = (cockpit.physical || []).filter(section => section.key !== 'bags');
     const legend = cockpit.unit_legend || [];
     const readOnly = ctx.isReadOnly;
+    const decisionOnly=ctx.decisionOnly===true;
+    const decisionKinds=new Set(['commitment','payment']);
+    const decide=(kind,id)=>{if(!decisionOnly&&ctx.openDecision)ctx.openDecision(id);else openForm(kind,id);};
     const marketCode = (d.market && d.market.code) || ctx.marketCode;
     if (!state.picked) state.picked = new Set();
     const orderById = new Map(orders.map((o) => [o.id, o]));
@@ -202,7 +205,7 @@
     function openForm(kind, poId) { state.form = { kind, po: poId }; state.sel = { type: 'po', id: poId }; paint(); }
 
     // ── Gestes (routes existantes) ──
-    function prepareBatch(btn, batch, lineIds, draftPoId) {
+    function prepareBatch(btn, batch, lineIds, draftPoId, executionMode = 'manual') {
       const n = lineIds.length;
       if (draftPoId) {
         return execute(btn, {
@@ -212,8 +215,8 @@
         });
       }
       return execute(btn, {
-        url: purchasing('po/prepare'), body: { supplier_id: batch.supplier_id, procurement_hub_ref: batch.procurement_hub_ref, line_ids: lineIds },
-        confirmMessage: `Préparer une PO ${batch.supplier_name} (${batch.procurement_hub_ref || 'Hub'}) avec ${n} ligne(s) ? Aucun envoi ni paiement.`,
+        url: purchasing('po/prepare'), body: { supplier_id: batch.supplier_id, procurement_hub_ref: batch.procurement_hub_ref, line_ids: lineIds, execution_mode: executionMode },
+        confirmMessage: `Préparer une PO ${batch.supplier_name} (${batch.procurement_hub_ref || 'Hub'}) avec ${n} ligne(s) en mode ${executionMode === 'api' ? 'API fournisseur' : 'manuel'} ? Aucun envoi ni paiement.`,
         runningMessage: 'Préparation de la PO…', successMessage: 'PO préparée en brouillon : validation d’engagement attendue.',
       });
     }
@@ -561,10 +564,10 @@
       shortcut.addEventListener('click', () => key === 'reception' ? ctx.openReception() : ctx.openPhysical(key));
       shortcuts.appendChild(shortcut);
     }
-    right.appendChild(shortcuts);
+    if(!decisionOnly)right.appendChild(shortcuts);
     const details = button(doc, 'Voir tous les ateliers physiques', 'open-physical-details', 'is-link');
     details.addEventListener('click', () => ctx.openPhysical());
-    right.appendChild(details);
+    if(!decisionOnly)right.appendChild(details);
 
     function field(form, label, input) {
       const wrap = el(doc, 'label', 'hlc-field');
@@ -589,12 +592,6 @@
       form.addEventListener('click', (event) => event.stopPropagation());
       const close = button(doc, 'Fermer', 'close-form', 'is-link');
       close.addEventListener('click', () => { state.form = null; paint(); });
-      if (kind === 'receive') {
-        const card = ctx.renderReception(po.id);
-        form.appendChild(card || el(doc, 'p', 'hlc-empty', 'Rien à réceptionner pour cette PO (déjà reçue ou non réceptionnable).'));
-        form.appendChild(close);
-        return form;
-      }
       const proof = (kind === 'commitment' || kind === 'payment')
         ? field(form, kind === 'commitment' ? 'Pièce justificative de l’engagement' : 'Justificatif du paiement', textInput('Référence de la pièce (obligatoire)', 'proof_ref'))
         : null;
@@ -859,12 +856,21 @@
           const mine = g.batch.groups.filter((x) => state.picked.has(x.key));
           const crossBatch = [...state.picked].some((k) => !g.batch.groups.some((x) => x.key === k));
           const use = mine.length ? mine : [g.group];
-          const lineIds = use.flatMap((x) => x.lines.map((l) => l.line_id));
+          const selectedLines = use.flatMap(x=>x.lines);
+          const lineIds = selectedLines.map(l=>l.line_id);
+          const currenciesOf = lines => new Set(lines.map(l=>String(l.supplier_currency||l.currency||'').toUpperCase()).filter(Boolean));
+          const currencies = currenciesOf(selectedLines);
+          const crossCurrency = currencies.size>1;
+          const groupLock = lock || (crossBatch ? 'un seul fournisseur et marché par PO' : crossCurrency ? 'une seule devise par PO' : null);
+          const canApi = lines => g.batch.api_available===true && lines.length>0 && lines.every(l=>l.api_eligible===true);
           const qty = use.reduce((t, x) => t + x.quantity, 0);
           A('prepare-po', `Constituer une PO · ${num(qty)} u (${use.map((x) => x.product || 'article').join(' + ')})`, {
-            primary: true, why: 'regroupe les besoins cochés', disabled: lock || (crossBatch ? 'un seul fournisseur et marché par PO' : null),
+            primary: true, why: 'mode manuel · regroupe les besoins cochés', disabled: groupLock,
             run: (b) => prepareBatch(b, g.batch, lineIds, null),
           });
+          if(canApi(selectedLines)) A('prepare-po-api','Constituer une PO · API fournisseur',{
+            why:'intégration et lignes éligibles · brouillon uniquement',disabled:groupLock,
+            run:b=>prepareBatch(b,g.batch,lineIds,null,'api')});
           // Une même référence fournisseur/SKU peut regrouper plusieurs commandes.
           // Le Hub doit aussi pouvoir constituer une PO pour UNE commande sans
           // rattacher silencieusement les lignes des autres commandes.
@@ -879,13 +885,24 @@
               A('prepare-po-order-' + orderId,
                 `Constituer une PO · commande ${orderLines.ref} (${orderLines.ids.length} ligne(s))`, {
                   why: 'uniquement les lignes de cette commande ; autres commandes inchangées',
-                  disabled: lock,
+                  disabled: lock || (currenciesOf(g.group.lines.filter(l=>l.order_id===orderId)).size>1?'une seule devise par PO':null),
                   run: (b) => prepareBatch(b, g.batch, orderLines.ids, null),
                 });
+              const single=g.group.lines.filter(l=>l.order_id===orderId);
+              if(canApi(single)) A('prepare-po-api-order-'+orderId,'Constituer une PO API · commande '+orderLines.ref,{
+                why:'uniquement les lignes de cette commande',disabled:lock||(currenciesOf(single).size>1?'une seule devise par PO':null),
+                run:b=>prepareBatch(b,g.batch,orderLines.ids,null,'api')});
             }
           }
           if (g.batch.compatible_draft_po_ids.length) {
-            g.batch.compatible_draft_po_ids.forEach((id) => A(`attach-po-${id}`, `Ajouter au brouillon ${poRef(poById.get(id) || { id })}`, { why: 'même fournisseur · Hub · marché', disabled: lock || (crossBatch ? 'un seul fournisseur et marché par PO' : null), run: (b) => prepareBatch(b, g.batch, lineIds, id) }));
+            g.batch.compatible_draft_po_ids.forEach(id=>{
+              const po=poById.get(id);
+              const combined=new Set([...currencies,...currenciesOf(po?.lines||[])]);
+              A(`attach-po-${id}`,`Ajouter au brouillon ${poRef(po||{id})}`,{
+                why:'même fournisseur · Hub · marché · devise',
+                disabled:groupLock||(!po||po.status!=='draft'||po.authorizations?.commitment?'brouillon non modifiable':combined.size>1?'devise incompatible':null),
+                run:b=>prepareBatch(b,g.batch,lineIds,id)});
+            });
           } else A('attach-po', 'Ajouter à un PO brouillon existant', { disabled: 'aucun brouillon compatible' });
         }
       } else if (sel.type === 'po') {
@@ -894,7 +911,7 @@
           const draft = po.step.key === 'draft';
           const eff = po.totals.effective || 0;
           if (draft) {
-            A('authorize-commitment', 'Valider l’engagement d’achat', { primary: true, why: 'droit purchase_commitment', disabled: lock || grant(viewer && viewer.can_authorize_commitment, 'réservé à la responsable Hub'), run: () => openForm('commitment', po.id) });
+            A('authorize-commitment', 'Valider l’engagement d’achat', { primary: true, why: 'droit purchase_commitment', disabled: lock || grant(viewer && viewer.can_authorize_commitment, 'réservé à la responsable Hub'), run: () => decide('commitment', po.id) });
             A('detach-line', 'Retirer une ligne', { why: 'la ligne redevient un besoin ouvert', disabled: lock, run: () => openForm('detach', po.id) });
           }
           if (!readOnly && po.authorizations.commitment?.pdf_available) {
@@ -906,9 +923,9 @@
           if (po.step.key === 'validation') A('submit-po', 'Soumettre la PO', { primary: true, why: 'rien n’est encore envoyé', disabled: lock, run: (b) => submitPo(b, po.id) });
           if (po.step.key === 'engaged') A('record-sent', 'Enregistrer l’envoi fournisseur', { primary: true, why: 'canal réel, auteur, heure', disabled: lock, run: () => openForm('sent', po.id) });
           if (po.status === 'notified' && po.sent_at) A('confirm-po', 'Confirmation fournisseur', { why: 'quantités confirmées (déclaratif)', disabled: lock, run: () => openForm('confirm', po.id) });
-          if (!draft) A('receive', 'Réceptionner une livraison', { primary: po.totals.missing > 0, why: 'scan et quantité reçue', disabled: lock || (po.totals.missing > 0 ? null : 'PO soldée'), run: () => openForm('receive', po.id) });
+          if (!draft) A('receive', 'Réceptionner une livraison', { primary: po.totals.missing > 0, why: 'scan et quantité reçue', disabled: lock || (po.totals.missing > 0 ? null : 'PO soldée'), run: () => ctx.openReception(po.id) });
           else A('receive', 'Réceptionner une livraison', { disabled: 'PO encore en brouillon' });
-          if (!draft && !po.authorizations.payment) A('authorize-payment', 'Autoriser le paiement fournisseur', { why: 'décision distincte de l’engagement', disabled: lock || (!po.authorizations.commitment ? 'après engagement et envoi' : grant(viewer && viewer.can_authorize_payment, 'réservé à la responsable Hub')), run: () => openForm('payment', po.id) });
+          if (!draft && !po.authorizations.payment) A('authorize-payment', 'Autoriser le paiement fournisseur', { why: 'décision distincte de l’engagement', disabled: lock || (!po.authorizations.commitment ? 'après engagement et envoi' : grant(viewer && viewer.can_authorize_payment, 'réservé à la responsable Hub')), run: () => decide('payment', po.id) });
           else if (draft) A('authorize-payment', 'Autoriser le paiement fournisseur', { disabled: 'après engagement et envoi' });
           void eff;
         }
@@ -919,31 +936,22 @@
           const r = o.readiness;
           if (r.unboxed_received > 0) A('prepare-combox', 'Répartir les articles en COMBOX', { primary: true, why: 'choisir une COMBOX et scanner chaque article reçu', disabled: lock, run: () => ctx.openPhysical('boxes') });
           else A('prepare-combox', 'Répartir les articles en COMBOX', { disabled: 'aucune quantité disponible à placer' });
-          if (o.po_ids.length) A('goto-po', 'Suivre dans ses PO', { why: 'voir les PO de la commande', run: () => select('po', o.po_ids[0]) });
+          // Un accès Kanban vers une commande doit aussi retrouver ses besoins groupables.
+          for (const batch of batches) for (const group of batch.groups || []) {
+            if ((group.lines || []).some(line=>line.order_id===o.id)) {
+              A('goto-need-'+group.key, 'Ouvrir le besoin d’achat · '+(group.product || batch.supplier_name || 'Fournisseur'),
+                {why:'groupe fournisseur contenant cette commande',run:()=>select('need',group.key)});
+            }
+          }
+          for (const [index,id] of (o.po_ids || []).entries()) A(index===0?'goto-po':'goto-po-'+id, 'Ouvrir '+poRef(poById.get(id)||{id}),
+            {why:'PO liée à cette commande',run:()=>select('po',id)});
         }
       } else if (sel.type === 'box') {
         const b = (d.boxes || []).find((x) => x.unit_id === sel.id);
-        if (b && !b.shipment_ref) A('attach-box', 'Rattacher à une expédition', { primary: true, why: 'expéditions ouvertes du marché', disabled: lock || ((d.open_shipments || []).length ? null : 'aucune expédition ouverte'), run: () => { state.form = { kind: 'box', box: b.unit_id }; paint(); } });
+        if (b && !b.shipment_ref) A('attach-box', 'Rattacher à une expédition', { primary: true, why: 'expéditions ouvertes du marché', disabled: lock || ((d.open_shipments || []).length ? null : 'aucune expédition ouverte'), run: () => ctx.openPhysical('shipments', b.unit_id) });
         else if (b) A('attach-box', 'Rattacher à une expédition', { disabled: `déjà rattachée à ${b.shipment_ref}` });
       }
-      return acts;
-    }
-    function boxForm(box) {
-      const form = el(doc, 'form', 'hlc-form');
-      form.setAttribute('data-hlc-form', 'box');
-      const selShip = doc.createElement('select');
-      selShip.setAttribute('aria-label', 'Expédition ouverte');
-      (d.open_shipments || []).forEach((s2) => selShip.appendChild(Object.assign(doc.createElement('option'), { value: s2.reference, textContent: `${s2.reference} · ${s2.forwarder_name || 'transitaire'} · ${s2.box_count} COMBOX` })));
-      form.appendChild(selShip);
-      const go = button(doc, 'Rattacher', 'submit-box', 'is-primary');
-      go.type = 'submit';
-      form.appendChild(go);
-      form.addEventListener('submit', (event) => {
-        event.preventDefault();
-        execute(go, { url: ctx.endpoint(`boxes/${encodeURIComponent(box.unit_id)}/shipment`), body: { shipment_reference: selShip.value },
-          runningMessage: 'Rattachement à l’expédition…', successMessage: `COMBOX ${box.reference} rattachée à ${selShip.value}.`, onSuccess: () => { state.form = null; } });
-      });
-      return form;
+      return decisionOnly?acts.filter(a=>['authorize-commitment','authorize-payment','download-commitment-pdf'].includes(a.key)):acts;
     }
     function detachForm(po) {
       const form = el(doc, 'form', 'hlc-form');
@@ -964,6 +972,7 @@
       return form;
     }
 
+    ctx.onSelectionChange?.(sel);
     const panel = el(doc, 'section', 'hlc-panel');
     panel.setAttribute('data-hlc-panel', '');
     panel.setAttribute('aria-label', 'Objet sélectionné');
@@ -1019,10 +1028,8 @@
     if (!list.children.length) list.appendChild(el(doc, 'span', 'hlc-empty', 'Aucune action sur cet objet.'));
     rightP.appendChild(list);
     if (state.form && !readOnly) {
-      if (state.form.kind === 'box' && sel && sel.type === 'box' && state.form.box === sel.id) {
-        const box = (d.boxes || []).find((x) => x.unit_id === sel.id);
-        if (box) rightP.appendChild(boxForm(box));
-      } else if (state.form.po && sel && sel.type === 'po' && state.form.po === sel.id) {
+      if (state.form.po && sel && sel.type === 'po' && state.form.po === sel.id && !['receive','box'].includes(state.form.kind)
+        && (decisionOnly?decisionKinds.has(state.form.kind):!ctx.openDecision||!decisionKinds.has(state.form.kind))) {
         const po = poById.get(sel.id);
         if (po) rightP.appendChild(state.form.kind === 'detach' ? detachForm(po) : poForm(po, state.form.kind));
       }

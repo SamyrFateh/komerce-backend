@@ -98,40 +98,27 @@ async function mount(page,{role='agent_hub',row=baseOrder,dossierData=dossier,ad
   return {posts,reads};
 }
 
-test('action PO dans le Kanban : sourcing en place, sans achat ni mutation au simple clic',async({page})=>{
+test('Kanban : sourcing vers Opérations, sans formulaire ni achat local',async({page})=>{
   const row={...baseOrder,po:'Sourcing requis',current_key:'po',
     current_phase:'Achats',current_status:'Bloqué · sourcing requis',
-    current_expected:'Identifier le fournisseur de 2 articles',
-    next_action:'Résoudre le sourcing',
+    current_expected:'Identifier le fournisseur de 2 articles',next_action:'Résoudre le sourcing',
     stage_states:{...baseOrder.stage_states,po:'warning'}};
-  const dossierData={...dossier,needs:[],purchase_orders:[],boxes:[],
-    orders:[{id:ORDER,reference:'KM-302',items:[{
-      id:'abc00000-0000-4000-8000-000000000012',
-      product_id:'abc00000-0000-4000-8000-000000000013',
-      product:'Article test',sourcing_required:true,purchasing_missing:2,
-    }]}]};
-  const {posts}=await mount(page,{row,dossierData});
-  await page.route('**/api/purchasing/suppliers?**',route=>route.fulfill({
-    contentType:'application/json',body:JSON.stringify([]),
-  }));
-  const inline=page.locator('[data-hub-global-order="KM-302"] [data-hub-inline-action="po"]');
-  await expect(inline).toHaveText('Organiser l’achat fournisseur');
+  const {posts}=await mount(page,{row});
+  const inline=page.locator('[data-hub-inline-action="po"]');
+  await expect(inline).toHaveText('Ouvrir l’atelier · PO');
   await inline.click();
   const menu=page.locator('[data-hub-global-menu]');
-  await expect(menu).toHaveClass(/is-sourcing-inline/);
-  await expect(menu.locator('[data-hub-sourcing-form]')).toBeVisible();
-  await expect(menu).toContainText('Résoudre le sourcing · KM-302');
-  await expect(menu).toContainText('La quantité à acheter est calculée');
-  await expect(menu.locator('[data-sourcing-quantity]')).toContainText('2 unités');
-  expect(posts).toHaveLength(0);
-  await menu.locator('[data-sourcing-close]').click();
-  await expect(menu).toBeHidden();
-  expect(posts).toHaveLength(0);
+  await expect(menu).toContainText('Identifier le fournisseur');
+  await expect(menu.locator('[data-hub-sourcing-form]')).toHaveCount(0);
+  await expect(menu.locator('[data-hub-workflow-link]')).toHaveAttribute('href',
+    '/admin/hub-live?view=execute&entry=operations&market=KM&atelier=purchasing&sel=order%3A'+ORDER);
+  expect(posts).toEqual([]);
 });
 
 test('PO déjà liée ou lecteur : aucune action de sourcing manuel inadaptée',async({page})=>{
   await mount(page,{role:'market_operator',row:{...baseOrder,
-    current_key:'po',next_action:'Résoudre le sourcing',po:'Sourcing requis'}});
+    current_key:'po',next_action:'Résoudre le sourcing',po:'Sourcing requis',
+    stage_states:{...baseOrder.stage_states,po:'warning'}}});
   await expect(page.locator('[data-hub-inline-action="po"]')).toHaveCount(0);
   await page.locator('[data-hub-global-stage="PO"]').click();
   await expect(page.locator('[data-hub-global-menu]')).toContainText('Consultation seule');
@@ -149,13 +136,16 @@ test('focus lumineux : étape actuelle contrastée, libellée et non confondue a
   await expect(active.locator('[data-hub-focus-signal="warning"]')).toHaveText('POINT À RÉSOUDRE');
   const activeStyle=await active.evaluate(node=>{
     const css=getComputedStyle(node);
-    return {background:css.backgroundImage,foreground:css.color,shadow:css.boxShadow,
-      animation:css.animationName,font:css.fontSize};
+    return {background:css.backgroundColor,foreground:css.color,shadow:css.boxShadow,
+      animation:css.animationName,border:css.borderLeftColor,borderWidth:css.borderLeftWidth};
   });
-  expect(activeStyle.background).toContain('linear-gradient');
-  expect(activeStyle.foreground).toBe('rgb(255, 255, 255)');
+  // La palette actuelle est statique, claire et contrastée (pas d'ancien halo pulsant).
+  expect(activeStyle.background).toBe('rgb(255, 248, 240)');
+  expect(activeStyle.foreground).not.toBe(activeStyle.background);
+  expect(activeStyle.border).toBe('rgb(214, 109, 53)');
+  expect(activeStyle.borderWidth).toBe('2px');
   expect(activeStyle.shadow).not.toBe('none');
-  expect(activeStyle.animation).toContain('kmc-hub-stage-breathe');
+  expect(activeStyle.animation).toBe('none');
   await expect(page.locator('[data-hub-global-order="KM-302"]')).toHaveClass(/is-hub-active-order/);
   const completed=page.locator('[data-hub-global-order="KM-302"] [data-hub-global-stage="PO"]');
   await expect(completed).toHaveClass(/is-stage-locked/);
@@ -190,30 +180,22 @@ test('colors et prochaine action restent des faits lisibles, sans détail articl
   await page.screenshot({path:'test-results/hub-context-colors-1440.png',fullPage:true});
 });
 
-test('clic droit : PO, fournisseur, cartons et départ affichent des menus vraiment distincts',async({page})=>{
+test('clic droit : menus distincts, destination canonique et aucune mutation',async({page})=>{
   const {posts}=await mount(page);
   const row=page.locator('[data-hub-global-order="KM-302"]');
   const menu=page.locator('[data-hub-global-menu]');
   await row.locator('[data-hub-global-stage="PO"]').click({button:'right'});
-  await expect(menu).toContainText('PO déjà constituée');
+  await expect(menu).toContainText('Aucune réouverture');
   await expect(menu.locator('a')).toHaveCount(0);
-  await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);
-
-  await row.locator('[data-hub-global-stage="Fournisseur"]').click({button:'right'});
-  await expect(menu.getByRole('button',{name:'Attester l’envoi fournisseur'})).toBeVisible();
-  await expect(menu).not.toContainText('PO déjà constituée');
-  await expect(menu.locator('a')).toHaveCount(0);
-
-  await row.locator('[data-hub-global-stage="Cartons"]').click({button:'right'});
-  await expect(menu).toContainText('Carton(s) présent(s)');
-  await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);
-  await expect(menu.locator('[data-hub-workflow-link]')).toHaveAttribute('href','/admin/workspaces/operations');
-
-  await row.locator('[data-hub-global-stage="Départ"]').click({button:'right'});
-  await expect(menu.getByRole('button',{name:/Affecter KOM-BOX-302 à un départ/})).toBeVisible();
-  await expect(menu).not.toContainText('Carton(s) présent(s)');
-  await expect(menu.locator('a')).toHaveCount(0);
-  expect(posts).toHaveLength(0);
+  for(const [stage,atelier,type,id] of [
+    ['Fournisseur','purchasing','po',PO],['Réception','reception','po',PO],
+    ['Cartons','boxes','order',ORDER],['Départ','shipments','box',BOX]]){
+    await row.locator('[data-hub-global-stage="'+stage+'"]').click({button:'right'});
+    await expect(menu.locator('[data-hub-workflow-link]')).toHaveAttribute('href',
+      '/admin/hub-live?view=execute&entry=operations&market=KM&atelier='+atelier+'&sel='+type+'%3A'+id);
+    await expect(menu.locator('[data-hub-real-action],.kmc-hub-action-form')).toHaveCount(0);
+  }
+  expect(posts).toEqual([]);
 });
 
 test('Administration : Engagement ne se confond pas avec Fournisseur ni Paiement',async({page})=>{
@@ -226,7 +208,8 @@ test('Administration : Engagement ne se confond pas avec Fournisseur ni Paiement
   await expect(menu.locator('a')).toHaveCount(0);
   await page.keyboard.press('Escape');
   await row.locator('[data-hub-admin-stage="Fournisseur"]').click({button:'right'});
-  await expect(menu.getByRole('button',{name:'Attester l’envoi fournisseur'})).toBeVisible();
+  await expect(menu.getByRole('link',{name:/attester l’envoi fournisseur/})).toHaveAttribute('href',/market=KM&atelier=purchasing&sel=po%3A/);
+  await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);
   await expect(menu).not.toContainText('L’engagement se valide');
   await page.keyboard.press('Escape');
   await row.locator('[data-hub-admin-stage="Paiement"]').click({button:'right'});
@@ -235,150 +218,23 @@ test('Administration : Engagement ne se confond pas avec Fournisseur ni Paiement
   expect(posts).toHaveLength(0);
 });
 
-test('ouvrir un formulaire après un long menu repart en haut sans scroller le Kanban',async({page})=>{
-  const {posts}=await mount(page);
-  const cell=page.locator('[data-hub-global-stage="Fournisseur"]');
-  const menu=page.locator('[data-hub-global-menu]');
-  const background=page.locator('.kmc-hub-board-scroll').first();
-  await cell.click();
-  await expect(menu).toBeVisible();
-  await menu.evaluate(el=>{
-    for(let i=0;i<28;i++){
-      const line=document.createElement('p');
-      line.textContent='Historique '+(i+1);
-      line.style.cssText='min-height:32px;margin:0;padding:3px 8px';
-      el.appendChild(line);
-    }
-    el.scrollTop=el.scrollHeight;
+// Les mutations anciennement testées dans les menus (envoi, réception, PO,
+// rattachement COMBOX) sont désormais exercées dans les suites propriétaires :
+// hub-live-execution, hub-live-supply, purchasing-workspace et G2 Hub PO Chromium.
+// Ce contrat vérifie toutes les entrées du Kanban, sans substituer un POST simulé
+// à un clic métier dans l'atelier.
+for(const [stage,atelier] of [['PO','purchasing'],['Fournisseur','purchasing'],
+  ['Réception','reception'],['Cartons','boxes'],['Départ','shipments']]){
+  test('Kanban '+stage+' : lien contextualisé et aucun formulaire',async({page})=>{
+    const row={...baseOrder,stage_states:{...baseOrder.stage_states,po:'ready',departure:'ready'}};
+    const {posts}=await mount(page,{row});
+    await page.locator('[data-hub-global-stage="'+stage+'"]').click();
+    const menu=page.locator('[data-hub-global-menu]');
+    await expect(menu.locator('[data-hub-workflow-link]').first()).toHaveAttribute('href',new RegExp('atelier='+atelier));
+    await expect(menu.locator('[data-hub-real-action],.kmc-hub-action-form,[data-hub-sourcing-form]')).toHaveCount(0);
+    expect(posts).toEqual([]);
   });
-  expect(await menu.evaluate(el=>el.scrollTop)).toBeGreaterThan(0);
-  const before=await background.evaluate(el=>({top:el.scrollTop,left:el.scrollLeft}));
-  await menu.getByRole('button',{name:'Attester l’envoi fournisseur'}).click();
-  await expect(menu).toHaveClass(/is-editing/);
-  await expect(menu.locator('.kmc-hub-action-form')).toBeVisible();
-  expect(await menu.evaluate(el=>el.scrollTop)).toBe(0);
-  await expect(menu.locator('.kmc-hub-action-input').first()).toBeFocused();
-  expect(await background.evaluate(el=>({top:el.scrollTop,left:el.scrollLeft}))).toEqual(before);
-  expect(posts).toHaveLength(0);
-});
-
-test('fournisseur : preuve d’envoi saisie puis POST canonique seulement après confirmation',async({page})=>{
-  const {posts}=await mount(page);
-  await page.locator('[data-hub-global-stage="Fournisseur"]').click({button:'right'});
-  const action=page.getByRole('button',{name:'Attester l’envoi fournisseur'});
-  await expect(action).toBeVisible();
-  expect(posts).toHaveLength(0);
-  await action.click();
-  await expect(page.getByText('Canal utilisé')).toBeVisible();
-  await page.getByLabel('Référence fournisseur (facultative)').fill('SUP-777');
-  expect(posts).toHaveLength(0);
-  await page.getByRole('button',{name:'Confirmer l’opération'}).click();
-  await expect.poll(()=>posts.length).toBe(1);
-  expect(posts[0]).toMatchObject({url:'/api/purchasing/po/'+PO+'/sent',
-    body:{channel:'whatsapp',supplier_order_id:'SUP-777'}});
-});
-
-test('réception : manifeste physique explicite, quantité 0 non recevable',async({page})=>{
-  const {posts}=await mount(page);
-  await page.locator('[data-hub-global-stage="Réception"]').click({button:'right'});
-  await page.getByRole('button',{name:/Réceptionner un colis/}).click();
-  await page.getByLabel('Référence physique du colis').fill('SUP-PKG-302');
-  await page.getByRole('button',{name:'Confirmer l’opération'}).click();
-  await expect(page.getByText('Renseigner au moins une quantité réellement reçue.')).toBeVisible();
-  expect(posts).toHaveLength(0);
-  await page.getByLabel(/Chargeur · restant 1/).fill('1');
-  await page.getByRole('button',{name:'Confirmer l’opération'}).click();
-  await expect.poll(()=>posts.length).toBe(1);
-  expect(posts[0]).toEqual({url:'/api/scans/hub/receive',body:{
-    reference:'SUP-PKG-302',contents:[{purchase_order_id:PO,product_sku_id:SKU,quantity:1}],
-  }});
-});
-
-test('départ : rattacher la KOM-BOX DISPATCHED à une expédition ouverte',async({page})=>{
-  const {posts}=await mount(page);
-  await page.locator('[data-hub-global-stage="Départ"]').click({button:'right'});
-  await page.getByRole('button',{name:/Affecter KOM-BOX-302 à un départ/}).click();
-  expect(posts).toHaveLength(0);
-  await page.getByRole('button',{name:'Confirmer l’opération'}).click();
-  await expect.poll(()=>posts.length).toBe(1);
-  expect(posts[0]).toEqual({url:'/api/hub/box/'+BOX+'/shipment',body:{shipment_reference:'KM-SHIP-7'}});
-});
-
-test('achat manuel : la constitution crée un brouillon sans soumettre ni payer',async({page})=>{
-  const row={...baseOrder,po:'À constituer',supplier:'Non commandé',
-    next_action:'Constituer PO',stage_states:{...baseOrder.stage_states,po:'waiting'}};
-  const data={...dossier,purchase_orders:[],needs:[{order_id:ORDER,supplier_id:SUPPLIER,line_id:LINE}]};
-  const {posts}=await mount(page,{row,dossierData:data});
-  await page.locator('[data-hub-global-stage="PO"]').click({button:'right'});
-  await page.getByRole('button',{name:'Organiser l’achat fournisseur',exact:true}).last().click();
-   await page.locator('[data-hub-po-target="new"]').click();
-  expect(posts).toHaveLength(0);
-  await page.getByRole('button',{name:'Confirmer l’opération'}).click();
-  await expect.poll(()=>posts.length).toBe(1);
-  expect(posts[0]).toEqual({url:'/api/purchasing/po/prepare',body:{
-    supplier_id:SUPPLIER,procurement_hub_ref:'DXB-1',line_ids:[LINE],execution_mode:'manual',
-  }});
-});
-
-
-test('achat fournisseur : rattacher des lignes à une PO draft compatible sans créer de nouvelle PO',async({page})=>{
-  const row={...baseOrder,po:'Achats à organiser',current_key:'po',current_phase:'Achats',
-    next_action:'Organiser les achats',stage_states:{...baseOrder.stage_states,po:'ready'}};
-  const draft={id:PO,status:'draft',supplier_id:SUPPLIER,market_id:MARKET,
-    procurement_hub_ref:'DXB-1',lines:[{order_id:'autre-commande',currency:'AED'}],
-    authorizations:{commitment:null}};
-  const data={...dossier,needs:[{order_id:ORDER,line_id:LINE}],purchase_orders:[draft],
-    need_batches:[{market_id:MARKET,supplier_id:SUPPLIER,procurement_hub_ref:'DXB-1',
-      compatible_draft_po_ids:[PO]}]};
-  const {posts}=await mount(page,{row,dossierData:data});
-  await page.locator('[data-hub-global-stage="PO"]').click();
-  await page.getByRole('button',{name:'Organiser l’achat fournisseur',exact:true}).last().click();
-  const menu=page.locator('[data-hub-global-menu]');
-  await expect(menu.locator('[data-hub-po-target="'+PO+'"]')).toBeVisible();
-  await expect(menu.locator('[data-hub-po-target="new"]')).toBeVisible();
-  await menu.locator('[data-hub-po-target="'+PO+'"]').click();
-  expect(posts).toHaveLength(0);
-  await page.getByRole('button',{name:'Confirmer l’opération'}).click();
-  await expect.poll(()=>posts.length).toBe(1);
-  expect(posts[0]).toEqual({url:'/api/purchasing/po/'+PO+'/attach',body:{line_ids:[LINE]}});
-});
-
-test('PO existante engagée ou mauvais marché : aucun rattachement proposé',async({page})=>{
-  const row={...baseOrder,po:'Achats à organiser',current_key:'po',next_action:'Organiser les achats',
-    stage_states:{...baseOrder.stage_states,po:'ready'}};
-  const data={...dossier,needs:[{order_id:ORDER,line_id:LINE}],
-    purchase_orders:[{id:PO,status:'draft',market_id:'autre',supplier_id:SUPPLIER,
-      procurement_hub_ref:'DXB-1',lines:[],authorizations:{commitment:{id:'validé'}}}],
-    need_batches:[{market_id:MARKET,supplier_id:SUPPLIER,procurement_hub_ref:'DXB-1',
-      compatible_draft_po_ids:[PO]}]};
-  const {posts}=await mount(page,{row,dossierData:data});
-  await page.locator('[data-hub-global-stage="PO"]').click();
-  await page.getByRole('button',{name:'Organiser l’achat fournisseur',exact:true}).last().click();
-  const menu=page.locator('[data-hub-global-menu]');
-  await expect(menu.locator('[data-hub-po-target="'+PO+'"]')).toHaveCount(0);
-  await expect(menu.locator('[data-hub-po-target="new"]')).toBeVisible();
-  expect(posts).toHaveLength(0);
-});
-
-test('choix API fournisseur uniquement avec capacité backend et lignes éligibles',async({page})=>{
-  const row={...baseOrder,po:'Achats à organiser',current_key:'po',next_action:'Organiser les achats',
-    stage_states:{...baseOrder.stage_states,po:'ready'}};
-  const data={...dossier,needs:[{order_id:ORDER,line_id:LINE}],purchase_orders:[]};
-  const openLines={groups:[{supplier_id:SUPPLIER,supplier_name:'Alpha',
-    procurement_hub_ref:'DXB-1',market_id:MARKET,market_code:'KM',
-    api_available:true,lines:[{order_id:ORDER,line_id:LINE,
-      supplier_currency:'AED',quantity:2,groupable:true,api_eligible:true}]}]};
-  const {posts}=await mount(page,{row,dossierData:data,openLines});
-  await page.locator('[data-hub-global-stage="PO"]').click();
-  await page.getByRole('button',{name:'Organiser l’achat fournisseur',exact:true}).last().click();
-  await page.locator('[data-hub-po-target="new"]').click();
-  const choices=page.locator('select[name="execution_mode"] option');
-  await expect(choices).toHaveCount(2);
-  await page.locator('select[name="execution_mode"]').selectOption('api');
-  await page.getByRole('button',{name:'Confirmer l’opération'}).click();
-  await expect.poll(()=>posts.length).toBe(1);
-  expect(posts[0].body.execution_mode).toBe('api');
-});
+}
 
 test('le menu suit la cellule lors du scroll puis disparaît si elle sort de la vue',async({page})=>{
   await page.setViewportSize({width:900,height:790});
@@ -391,14 +247,21 @@ test('le menu suit la cellule lors du scroll puis disparaît si elle sort de la 
   const before=await menu.evaluate(el=>parseFloat(el.style.left));
   await scroll.evaluate(el=>{el.scrollLeft+=50;});
   await expect.poll(()=>menu.evaluate(el=>parseFloat(el.style.left))).toBeLessThan(before);
-  await scroll.evaluate(el=>{el.scrollLeft=el.scrollWidth;});
+  // Vérifier que la cellule sort réellement du viewport : à 900px la table
+  // peut être assez courte pour que PO reste partiellement visible au scroll max.
+  await scroll.evaluate(el=>{el.style.maxWidth='360px';el.scrollLeft=el.scrollWidth;});
+  await expect.poll(()=>cell.evaluate(el=>{
+    const r=el.getBoundingClientRect(),s=el.closest('.kmc-hub-board-scroll').getBoundingClientRect();
+    return r.right<=s.left+2||r.left>=s.right-2;
+  })).toBe(true);
   await expect(menu).toBeHidden();
 });
 
 test('Administration : une PO transmise n’est pas une décision de la directrice',async({page})=>{
   const {posts}=await mount(page,{role:'admin',admin:true});
   await page.locator('[data-hub-admin-stage="Fournisseur"]').click({button:'right'});
-  await expect(page.getByRole('button',{name:'Attester l’envoi fournisseur'})).toBeVisible();
+  await expect(page.getByRole('link',{name:/attester l’envoi fournisseur/})).toBeVisible();
+  await expect(page.locator('[data-hub-admin-menu] [data-hub-real-action]')).toHaveCount(0);
   await expect(page.locator('[data-hub-admin-po="'+PO+'"]')).toContainText('Envoi à prouver');
   expect(posts).toHaveLength(0);
 });
@@ -422,9 +285,8 @@ test('Sourcing requis : le menu PO indique la dépendance et la vraie surface de
   const {posts}=await mount(page,{row,dossierData:data});
   await page.locator('[data-hub-global-stage="PO"]').click({button:'right'});
   const menu=page.locator('[data-hub-global-menu]');
-  await expect(menu).toContainText('Sourcing requis : compléter les lignes fournisseur');
   await expect(menu).toContainText('Attendu : Identifier le fournisseur de 2 articles');
-  await expect(menu.locator('[data-hub-workflow-link]')).toHaveAttribute('href','/admin/workspaces/operations');
+  await expect(menu.locator('[data-hub-workflow-link]')).toHaveAttribute('href',/atelier=purchasing&sel=order%3A/);
   await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);
   expect(posts).toHaveLength(0);
 });
@@ -437,8 +299,7 @@ test('départ lié mais non remis : le menu distingue attestation du simple ratt
   const {posts}=await mount(page,{row,dossierData:data});
   await page.locator('[data-hub-global-stage="Départ"]').click({button:'right'});
   const menu=page.locator('[data-hub-global-menu]');
-  await expect(menu).toContainText('remise au transitaire non attestée');
-  await expect(menu.locator('[data-hub-workflow-link]')).toHaveAttribute('href','/admin/workspaces/shipping-customs');
+  await expect(menu.locator('[data-hub-workflow-link]')).toHaveAttribute('href','/admin/workspaces/shipping-customs?market=KM');
   await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);
   expect(posts).toHaveLength(0);
 });
@@ -551,9 +412,10 @@ test.describe('Journal immuable par étape',()=>{
   });
 });
 
-test('Navigation Hub : Opérations ouvre directement le Kanban ; Direction est un onglet séparé',async({page})=>{
+test('Navigation Hub : Kanban, Opérations et Direction restent distincts',async({page})=>{
   const {posts,reads}=await mount(page,{role:'admin'});
   await expect(page.locator('[data-hub-branch]')).toHaveCount(3);
+  await expect(page.locator('[data-hub-open-operations]')).toHaveAttribute('href','/admin/hub-live?view=execute&entry=operations');
   await expect(page.locator('[data-hub-director-todo]')).toHaveCount(0);
   await expect(page.locator('[data-hub-global-order]')).toHaveCount(1);
   expect(reads.some(url=>url.startsWith('/api/hub/director-todo'))).toBe(false);

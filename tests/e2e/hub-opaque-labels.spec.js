@@ -135,14 +135,14 @@ test('caméra Chromium simulée : reconnaître une unité, jamais valider le pla
   expect(posts.some(p=>p.path.endsWith('/fill'))).toBe(false);
 });
 
-test('après placement intégral : réimpression PDF du lot existant sans nouveau QR',async({page})=>{
+test('après placement intégral : l’atelier renvoie vers les archives QR sans nouvelle émission',async({page})=>{
   const posts=[];await mount(page,posts,'PACKED',true);
   const history=page.locator('[data-hub-article-label-reprints]');
   await expect(history).toBeVisible();
-  await history.locator('summary').click();
-  await expect(history).toContainText('3 QR émis');
-  await expect(history.locator('[data-hub-pdf-article-a4]')).toHaveAttribute('href',API+'/labels/articles/'+ALLOCATION+'/pdf?format=a4');
-  await expect(history.locator('[data-hub-pdf-article-thermal]')).toBeVisible();
+  await expect(page.locator('[data-hub-pdf-article-a4]')).toHaveCount(0);
+  await history.click();
+  await expect(page.locator('[data-workspace-view="labels"]')).toHaveAttribute('aria-selected','true');
+  await expect(page.locator('[data-hub-labels-station]')).toBeVisible();
   await expect(page.getByRole('button',{name:'Préparer les étiquettes'})).toHaveCount(0);
   expect(posts).toEqual([]);
 });

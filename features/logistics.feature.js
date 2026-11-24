@@ -466,6 +466,7 @@ module.exports = {
       { fn: 'recordPhysicalUnitOutcome', file: 'services/hub-physical-identity.js' },
     ],
     consumes: [
+      'supplier-connectivity (lecture de remotePreflightRequirement pour afficher les canaux d’achat éligibles dans le dossier Hub, sans appel fournisseur)',
       'customs (lien documentaire international : le service douane possède seul la déclaration des droits et taxes ; le Hub orchestre sa transaction)',
       'documents (dépendance data cross-feature observée et gouvernée par O5)',
       'incident-management (incident persistence via incident-write-service)',

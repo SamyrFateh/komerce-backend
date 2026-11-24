@@ -200,14 +200,17 @@ test('Hub : retour au Kanban et station étiquettes même lorsque la file est vi
   expect(src).toContain("pdfLink('articles',line.allocation_id,'thermal')");
 });
 
-test('réimpression après placement : dédoublonne les lots et réutilise uniquement les liens PDF',()=>{
+test('réimpression après placement : lien vers les archives, aucune seconde émission',()=>{
  const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
- const history=src.slice(src.indexOf('const reprints=new Map();'),src.indexOf('boxes.appendChild(labelSection);'));
- expect(history).toContain('labelRows.has(id)');
- expect(history).toContain('Number(content.issued_label_count)<=0');
- expect(history).toContain("pdfLink('articles',item.id,'a4')");
- expect(history).toContain("pdfLink('articles',item.id,'thermal')");
+ const history=src.slice(src.indexOf('const history=doc.createElement(\'button\');',src.indexOf('const labelRows=new Map();')),src.indexOf('boxes.appendChild(labelSection);'));
+ const center=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-label-center.js'),'utf8');
+ expect(history).toContain("data-hub-article-label-reprints");
+ expect(history).toContain("context.view='labels'");
  expect(history).not.toContain('runAction(');
+ expect(history).not.toContain('pdfLink(');
+ expect(center).toContain("labels/index");
+ expect(center).toContain("method:'GET'");
+ expect(center).not.toContain("+'/issue'");
 });
 
 test('atelier Hub : l’ordre visible suit étiquettes, préparation COMBOX, puis départ',()=>{
@@ -248,14 +251,16 @@ describe('Hub: no old SAC and QR/PDF immediately reachable',()=>{
     expect(source).toContain("context.view='labels';context.renderCurrent()");
     expect(source).toContain("station.setAttribute('data-hub-labels-station','')");
     expect(source).toContain('KomerceHubLabelCenter');
-    expect(source).toContain("fillable:Array.isArray(context.dossier?.fillable)");
+    expect(source).toContain('openPreparation:()=>');
+    expect(source).not.toContain('fillable:Array.isArray(context.dossier?.fillable)');
   });
   test('new script and CSS version IDs are different from the stale November 13 immutable assets',()=>{
-    expect(html).toContain('hub-label-center.js?v=261124-hub-qr-refresh-1');
-    expect(html).toContain('operations-workspace.js?v=261124-hub-qr-refresh-1');
-    expect(html).toContain('hub-live-cockpit.js?v=261124-hub-qr-refresh-1');
-    expect(html).toContain('operations-workspace.css?v=261124-hub-qr-refresh-1');
+    expect(html).toContain('hub-label-center.js?v=261124-hub-domain-2');
+    expect(html).toContain('operations-workspace.js?v=261124-hub-domain-2');
+    expect(html).toContain('hub-live-cockpit.js?v=261124-hub-domain-2');
+    expect(html).toContain('operations-workspace.css?v=261124-hub-domain-2');
     expect(html).not.toContain('operations-workspace.js?v=261113-director-h4');
+    for(const name of ['hub-context-actions.js','hub-workstation.js','app.js'])expect(html).toContain(name+'?v=261124-hub-domain-2');
   });
   test('historic COMBOX rows remain accessible but no longer occupy full page',()=>{
     expect(source).toContain("boxSearch.setAttribute('aria-label','Filtrer les COMBOX physiques')");
@@ -270,4 +275,32 @@ describe('Hub: no old SAC and QR/PDF immediately reachable',()=>{
     expect(css).toContain('.kmc-hub-label-download');
     expect(css).toContain('grid-template-columns:1fr');
   });
+});
+
+test('Jalons Hub : projection serveur, pas de calcul local, étape terminée désactivée',()=>{
+  const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+  expect(src).toContain('context.dossier?.hub_journeys');
+  expect(src).toContain("(j.physical_focus||j.current_key)===key");
+  expect(src).toContain("step.disabled=done");
+  expect(src).toContain("hub_journeys: dossier?.hub_journeys");
+});
+
+test('jalon QR distinct et destination autoritative',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+ expect(src).toContain("['labels','4 · QR articles']");
+ expect(src).toContain('data-hub-journey-destination');
+});
+
+test('Direction Hub : surface dédiée, sans ateliers physiques ni onglets opérationnels',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+ expect(src).toContain("hubQuery.get('entry')==='direction'");
+ expect(src).toContain('if(context.decisionOnly)return;');
+ expect(src).toContain('data-hub-decision-workspace');
+});
+
+test('Direction écart fournisseur : PO du marché et droits avant formulaire',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
+ expect(src).toContain("context.decisionKind==='variance'");
+ expect(src).toContain("context.dossier?.purchase_orders?.some(po=>po.id===id)");
+ expect(src).toContain('api.directionVariance(panel');
 });

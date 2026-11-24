@@ -513,11 +513,13 @@ for (const [name, viewport] of [['desktop', { width: 1536, height: 1024 }], ['mo
       expect(layout.zones.every(width => width > 0)).toBe(true);
     });
 
-    test('formulaire « Réceptionner une livraison » : scan et tableau restent dans la colonne', async ({ page }, testInfo) => {
+    test('Réceptionner une livraison : accès à l’atelier unique, scan et tableau sans débordement', async ({ page }, testInfo) => {
       await mount(page, { view: null });
       await page.locator('[data-hlc-po]').first().click();
       await page.locator('[data-hlc-action="receive"]').click();
-      const form = page.locator('[data-hlc-form="receive"]');
+      await expect(page.locator('[data-workspace-view="reception"]')).toHaveAttribute('aria-selected','true');
+      await expect(page.locator('[data-hlc-form="receive"]')).toHaveCount(0);
+      const form = page.locator('[data-receive-po]').first();
       await expect(form.locator('.kmc-workspace-receive-scanner')).toBeVisible();
       if (process.env.KM_SHOT_DIR) await page.screenshot({ fullPage: true, path: path.join(process.env.KM_SHOT_DIR, `receive-form-${name}-${process.env.KM_SHOT_TAG || 'x'}.png`) });
       const overflow = await form.evaluate((root) => {
@@ -763,3 +765,86 @@ test('UX3 — aucune sélection arbitraire, sélection PO dans URL et retour nav
   expect(posts).toEqual([]);
 });
 
+
+test('Accès Kanban : lien direct vers la réception de la PO, sans mutation',async({page})=>{
+  const posts=[];
+  await mount(page,{posts,view:null});
+  await page.goto(ORIGIN+'/admin/hub-live?view=execute&entry=operations&market=KM&atelier=reception&sel=po%3A'+PO_ID);
+  await expect(page.locator('[data-workspace-view="reception"]')).toHaveAttribute('aria-selected','true');
+  await expect(page.locator('[data-receive-po="'+PO_ID+'"]')).toBeVisible();
+  expect(posts).toEqual([]);
+});
+
+test('Jalons Opérations : état serveur actif, étapes terminées grisées et accès sans POST',async({page})=>{
+  const posts=[];
+  const order=DOSSIER.orders[0];
+  const source={...DOSSIER,hub_journeys:[{id:order.id,reference:order.reference,current_key:'reception',
+    current_status:'Partielle · 2/5 reçus',current_expected:'Attendre le reliquat',
+    stage_states:{po:'complete',supplier:'complete',reception:'warning',cartons:'ready',departure:'muted'},
+    stage_notes:{reception:'2/5 reçus'}}]};
+  await mount(page,{posts,view:null,dossier:source});
+  await page.goto(ORIGIN+'/admin/hub-live?view=execute&entry=operations&market=KM&atelier=purchasing&sel=order%3A'+order.id);
+  const rail=page.locator('[data-hub-journey]');
+  await expect(rail).toContainText(order.reference);
+  await expect(rail.locator('[data-hub-journey-step="po"]')).toBeDisabled();
+  await expect(rail.locator('[data-hub-journey-step="po"]')).toHaveClass(/is-done/);
+  const reception=rail.locator('[data-hub-journey-step="reception"]');
+  await expect(reception).toHaveAttribute('aria-current','step');
+  await expect(rail).toContainText('Attendre le reliquat');
+  await reception.click();
+  await expect(page.locator('[data-workspace-view="reception"]')).toHaveAttribute('aria-selected','true');
+  await expect(page.locator('[data-receive-po="'+PO_ID+'"]')).toBeVisible();
+  await expect(rail.locator('[data-hub-journey-step="reception"]')).toHaveAttribute('aria-current','step');
+  expect(posts).toEqual([]);
+});
+
+test('Jalons QR distincts du tri et destination de vague, sans mutation au clic',async({page})=>{
+ const posts=[];const order={...DOSSIER.orders[0],relay_code:'YA01',delivery_wave:{code:'B7Q',closed:false}};
+ const source={...DOSSIER,orders:[order,...DOSSIER.orders.slice(1)],hub_journeys:[{id:order.id,reference:order.reference,
+ current_key:'cartons',physical_focus:'labels',current_status:'Articles reçus',current_expected:'Préparer les QR',
+ stage_states:{po:'complete',supplier:'complete',reception:'complete',labels:'ready',cartons:'ready',departure:'muted'},
+ stage_notes:{labels:'1/2 QR émis · impression physique non attestée'}}]};
+ await mount(page,{posts,view:null,dossier:source});
+ await page.goto(ORIGIN+'/admin/hub-live?view=execute&entry=operations&market=KM&atelier=purchasing&sel=order%3A'+order.id);
+ const rail=page.locator('[data-hub-journey]');
+ await expect(rail.locator('[data-hub-journey-destination]')).toContainText('Relais YA01 · Vague B7Q');
+ await expect(rail.locator('[data-hub-journey-step="labels"]')).toHaveAttribute('aria-current','step');
+ await expect(rail.locator('[data-hub-journey-step="cartons"]')).not.toHaveAttribute('aria-current','step');
+ await expect(rail).toContainText('impression physique non attestée');
+ await rail.locator('[data-hub-journey-step="labels"]').click();
+ await expect(page.locator('[data-workspace-view="supply"]')).toHaveAttribute('aria-selected','true');
+ await expect(page.locator('[data-hub-label-printing]')).toBeVisible();
+ expect(posts).toEqual([]);
+});
+
+test('Direction : arbitrage fournisseur réservé au grant et POST uniquement après confirmation',async({page})=>{
+  const posts=[];await mount(page,{posts,view:null});
+  let decision=null;
+  await page.route(ORIGIN+'/api/hub/administration',route=>route.fulfill({
+    contentType:'application/json',body:JSON.stringify({
+      scope:'HUB_ADMINISTRATION_GLOBAL',viewer_grants:{supplier_payment:true},
+      purchase_orders:[{id:PO_ID,market:'KM',supplier:'Fournisseur test',status:'confirmed',
+        payment_decision:{amount:50,currency:'AED'},variance_decision:decision}]
+    })
+  }));
+  await page.route(ORIGIN+'/api/purchasing/po/'+PO_ID+'/variance-decision',route=>{
+    const body=route.request().postDataJSON();posts.push({path:'/api/purchasing/po/'+PO_ID+'/variance-decision',body});
+    decision={amount:body.approved_total,currency:body.currency,reason:body.reason,proof_ref:body.proof_ref};
+    return route.fulfill({status:201,contentType:'application/json',body:'{"ok":true}'});
+  });
+  await page.goto(ORIGIN+'/admin/hub-live?view=execute&entry=direction&market=KM&sel=po%3A'+PO_ID+'&decision=variance');
+  const panel=page.locator('[data-hub-direction-variance]');
+  await expect(panel.getByRole('button',{name:'Décider un écart fournisseur'})).toBeVisible();
+  await expect(page.locator('[data-workspace-view]')).toHaveCount(0);
+  expect(posts).toEqual([]);
+  await panel.getByRole('button',{name:'Décider un écart fournisseur'}).click();
+  await panel.locator('[name="approved_total"]').fill('45');
+  await panel.locator('[name="reason"]').fill('Écart documenté');
+  await panel.locator('[name="proof_ref"]').fill('DEVIS-2');
+  expect(posts).toEqual([]);
+  await panel.getByRole('button',{name:'Confirmer l’opération'}).click();
+  await expect.poll(()=>posts.length).toBe(1);
+  expect(posts[0].body).toEqual({approved_total:'45',currency:'AED',reason:'Écart documenté',proof_ref:'DEVIS-2'});
+  await expect(panel).toContainText('Écart décidé');
+  await expect(panel.getByRole('button',{name:'Décider un écart fournisseur'})).toHaveCount(0);
+});

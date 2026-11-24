@@ -208,3 +208,19 @@ test('la destination relais canonique est projetée sans identité client',()=>{
  expect(row.reference).toBe('CM-YA01-B7Q01');
  expect(JSON.stringify(row)).not.toMatch(/PRIVÉ|internal-id|client_name/);
 });
+
+test('QR partiels et réception partielle : aucun faux terminé, le tri reste distinct',()=>{
+ const input=empty([{...order('a','KM-3',3),items:[{ordered:3,received:2,article_labels_issued:1}]}]);
+ input.purchase_orders=[{id:'po',stage:'confirmed',sent_at:'2026-11-02',lines:[{order_id:'a',received:2}]}];
+ let [row]=summarizeMarket({code:'KM'},input);
+ expect(row).toMatchObject({physical_focus:'labels',stage_states:{labels:'ready',reception:'warning'}});
+ input.orders[0].items[0].article_labels_issued=2;
+ [row]=summarizeMarket({code:'KM'},input);
+ expect(row.stage_states.labels).toBe('progress');
+ expect(row.stage_notes.labels).toContain('impression physique non attestée');
+ expect(row.physical_focus).toBe('cartons');
+ input.orders[0].items[0].received=3;input.orders[0].items[0].article_labels_issued=3;
+ [row]=summarizeMarket({code:'KM'},input);
+ expect(row.stage_states.labels).toBe('complete');
+ expect(row.stage_states.cartons).toBe('ready');
+});

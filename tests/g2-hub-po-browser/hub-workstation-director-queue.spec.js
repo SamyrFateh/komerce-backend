@@ -69,7 +69,7 @@ test('Direction Hub : décisions hiérarchisées, PO ciblée et aucun geste fina
   await expect(page.locator('[data-hub-director-group="payment"]')).toContainText('Autorisation paiement');
   await expect(page.locator('[data-hub-director-task="AUTHORIZE_PAYMENT"]')).toContainText('Droit de paiement requis');
   await expect(page.locator('[data-hub-director-task="AUTHORIZE_PAYMENT"] a')).toHaveAttribute(
-    'href', /market=CM&sel=po%3A11111111-1111-4111-8111-111111111111/);
+    'href', /market=CM&entry=direction&sel=po%3A11111111-1111-4111-8111-111111111111/);
   await page.setViewportSize({width:390,height:844});
   const overflow=await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);

@@ -1227,10 +1227,10 @@
     // Fast, visible entry to labels; never send operators hunting below historic COMBOX.
     const labelJump=doc.createElement('button');
     labelJump.type='button';labelJump.className='kmc-hub-label-shortcut';
-    labelJump.textContent='Étiquettes QR · Télécharger PDF A4 / 80 mm';
+    labelJump.textContent='Archives QR · Réimprimer un PDF A4 / 80 mm';
     labelJump.setAttribute('data-hub-label-shortcut','');
     labelJump.addEventListener('click',()=>{context.view='labels';context.renderCurrent();});
-    rootNode.appendChild(labelJump);
+    if(!context.decisionOnly)rootNode.appendChild(labelJump);
     const flowHost = doc.createElement('div');
     flowHost.className = 'kmc-hub-flow';
     rootNode.appendChild(flowHost);
@@ -1275,24 +1275,31 @@
       cockpitModule.render(cockpitHost, {
         document: doc, dossier: d, marketCode: context.marketCode, state: context.cockpitState,
         isReadOnly: isHubReadOnly(context),
+        decisionOnly:context.decisionOnly,
+        openDecision:poId=>{
+          const params=new URLSearchParams({view:'execute',entry:'direction',market:context.marketCode,sel:'po:'+poId});
+          doc.defaultView.location.assign('/admin/hub-live?'+params.toString());
+        },
+        onSelectionChange: sel=>context.renderJourney?.(sel),
         endpoint: suffix => endpointFor(context.marketCode, suffix),
         act: (button, options) => runAction(context, button, options),
         reload: () => context.reload(),
         feedback: (message, tone) => setFeedback(context.root, message, tone),
-        renderReception: purchaseOrderId => {
-          const po = ((context.receivable && context.receivable.purchase_orders) || [])
-            .find(row => String(row.purchase_order_id) === String(purchaseOrderId));
-          return po ? createReceptionCard(doc, context, po) : null;
-        },
         openSourcing: orderId => {
           const order = (d.orders || []).find(row => String(row.id) === String(orderId));
           if (order) showSourcingResolution({ id: order.id, reference: order.reference, items: order.items || [] });
         },
-        openReception: () => {
+        openReception: (purchaseOrderId) => {
+          if(purchaseOrderId){
+            context.cockpitState.sel={type:'po',id:purchaseOrderId};
+            context.cockpitState.form=null;
+          }
           context.view = 'reception';
           context.renderCurrent();
+          if(purchaseOrderId) Array.from(rootNode.querySelectorAll('[data-receive-po]'))
+            .find(n=>n.getAttribute('data-receive-po')===String(purchaseOrderId))?.scrollIntoView?.({block:'start',behavior:'auto'});
         },
-        openPhysical: (target = 'all') => {
+        openPhysical: (target = 'all', boxId = null) => {
           const details = physicalDetails();
           if (!details) return;
           details.open = true;
@@ -1302,7 +1309,8 @@
             shipments: '[data-supply-shipment-bar]',
           };
           const selector = targets[target];
-          const anchor = (selector && details.querySelector(selector)) || details;
+          const boxAnchor=boxId&&Array.from(details.querySelectorAll('[data-hub-box-target]')).find(n=>n.getAttribute('data-hub-box-target')===String(boxId));
+          const anchor = boxAnchor || (selector && details.querySelector(selector)) || details;
           // Navigation opérateur déterministe entre réception, COMBOX et expéditions.
           anchor.scrollIntoView?.({ block: 'start', behavior: 'auto' });
         },
@@ -1311,6 +1319,7 @@
         cockpitHost.replaceChildren(text(doc, 'div', 'kmc-workspace-empty', 'Cockpit Hub illisible : rechargez la page (' + String((error && error.message) || error).slice(0, 120) + ').'));
       }
     }
+    if(context.decisionOnly)return;
     // Tout ce qui suit (écarts, réceptions brutes, COMBOX, expéditions) est le panneau secondaire exhaustif.
     const secondaryStart = rootNode.children.length;
     // La filiation détaillée est chargée à la demande, hors du tableau.
@@ -1567,27 +1576,12 @@
         print.addEventListener('click',event=>openLabelPrint(event,print.href));
         row.append(issue,print,pdfLink('articles',line.allocation_id,'a4'),pdfLink('articles',line.allocation_id,'thermal'));labelSection.appendChild(row);
       }
-      // Les allocations déjà placées ne figurent plus dans fillable. Réimpression
-      // des identités réellement émises uniquement ; aucun POST pour cet historique.
-      const reprints=new Map();
-      for(const box of (d.boxes||[]))for(const content of (box.contents||[])){
-        const id=String(content.allocation_id||'');
-        if(!id||labelRows.has(id)||Number(content.issued_label_count)<=0||!Number.isFinite(Number(content.issued_label_count)))continue;
-        if(!reprints.has(id))reprints.set(id,{id,ref:content.order_ref,count:Number(content.issued_label_count),boxes:new Set()});
-        reprints.get(id).boxes.add(box.reference);
-      }
-      if(reprints.size){
-        const history=doc.createElement('details');
-        history.setAttribute('data-hub-article-label-reprints','');
-        history.appendChild(text(doc,'summary','','Réimprimer des étiquettes déjà préparées · '+String(reprints.size)+' lot(s)'));
-        for(const item of reprints.values()){
-          const row=doc.createElement('div');row.className='kmc-workspace-receive-footer';
-          row.appendChild(text(doc,'span','',String(item.ref||'Commande')+' · '+Array.from(item.boxes).join(', ')+' · '+String(item.count)+' QR émis'));
-          row.append(pdfLink('articles',item.id,'a4'),pdfLink('articles',item.id,'thermal'));
-          history.appendChild(row);
-        }
-        labelSection.appendChild(history);
-      }
+      // Les réimpressions historiques sont propriétaires du centre QR, pas de ce panneau.
+      const history=doc.createElement('button');history.type='button';
+      history.setAttribute('data-hub-article-label-reprints','');
+      history.textContent='Rechercher et réimprimer des QR déjà émis';
+      history.addEventListener('click',()=>{context.view='labels';context.renderCurrent();});
+      labelSection.appendChild(history);
       boxes.appendChild(labelSection);
     }
     const packingHeading=text(doc,'h3','','Préparer les COMBOX');
@@ -1774,6 +1768,7 @@
           }).catch(() => {}));
         }
         const boxIdentity=doc.createElement('div');
+        boxIdentity.setAttribute('data-hub-box-target',String(box.unit_id));
         boxIdentity.appendChild(text(doc,'strong','',box.reference));
         const relayIds=new Set(box.contents.map(c=>c.relais_id).filter(Boolean));
         const relayCodes=new Set(box.contents.map(c=>c.relais_code).filter(Boolean));
@@ -2184,6 +2179,130 @@
     loadRequests().catch(() => {});
   }
 
+  // Jalons par commande : le navigateur ne calcule aucune complétude métier.
+  // La sélection d'une PO partagée ne doit pas choisir arbitrairement un client.
+  function renderHubJourney(host, doc, context, selection) {
+    if (!host) return;
+    host.replaceChildren();
+    const journeys=context.dossier?.hub_journeys;
+    if (!Array.isArray(journeys) || !journeys.length) return;
+    const dossier=context.dossier;
+    const fromUrl=()=>{
+      const value=new URLSearchParams(String(globalThis.location?.search||'')).get('sel')||'';
+      const i=value.indexOf(':');return i>0?{type:value.slice(0,i),id:value.slice(i+1)}:null;
+    };
+    const sel=selection || context.cockpitState?.sel || fromUrl();
+    let ids=[];
+    if(sel?.type==='order')ids=[sel.id];
+    if(sel?.type==='po')ids=(dossier.purchase_orders||[]).find(p=>p.id===sel.id)?.order_ids||
+      (dossier.purchase_orders||[]).find(p=>p.id===sel.id)?.lines?.map(l=>l.order_id)||[];
+    if(sel?.type==='box')ids=(dossier.boxes||[]).find(b=>b.unit_id===sel.id)?.contents?.map(c=>c.order_id)||[];
+    if(sel?.type==='need'){
+      for(const batch of dossier.cockpit?.need_batches||[]) for(const group of batch.groups||[])
+        if(group.key===sel.id)ids.push(...(group.lines||[]).map(l=>l.order_id));
+      if(!ids.length&&String(sel.id).startsWith('src:'))ids=[sel.id.split(':')[1]];
+    }
+    const candidates=journeys.filter(j=>ids.includes(j.id));
+    if(!candidates.length){
+      host.appendChild(text(doc,'p','kmc-workspace-note','Sélectionnez un dossier pour afficher ses jalons métier.'));
+      return;
+    }
+    if(candidates.length>1){
+      const picker=doc.createElement('select');picker.setAttribute('aria-label','Commande dont afficher les jalons');
+      picker.appendChild(Object.assign(doc.createElement('option'),{value:'',textContent:'Choisir une commande liée'}));
+      candidates.forEach(j=>picker.appendChild(Object.assign(doc.createElement('option'),{value:j.id,textContent:j.reference})));
+      picker.value=candidates.some(j=>j.id===context.journeyOrderId)?context.journeyOrderId:'';
+      picker.addEventListener('change',()=>{context.journeyOrderId=picker.value;renderHubJourney(host,doc,context,sel);});
+      host.appendChild(picker);
+    }
+    const j=candidates.length===1?candidates[0]:candidates.find(x=>x.id===context.journeyOrderId);
+    if(!j)return;
+    const steps=[['po','1 · Achats'],['supplier','2 · Fournisseur'],['reception','3 · Réception'],
+      ['labels','4 · QR articles'],['cartons','5 · Tri / COMBOX'],['departure','6 · Départ']];
+    const order=(dossier.orders||[]).find(x=>x.id===j.id);
+    const pos=(dossier.purchase_orders||[]).filter(p=>(p.lines||[]).some(l=>l.order_id===j.id));
+    const go=(key)=>{
+      context.journeyOrderId=j.id;
+      let target={type:'order',id:j.id};
+      if((key==='supplier'||key==='reception')&&pos.length===1)target={type:'po',id:pos[0].id};
+      if(!context.cockpitState)context.cockpitState={sel:null,form:null,todoAll:false,picked:new Set()};
+      Object.assign(context.cockpitState,{sel:target,form:null,selectionInitialized:true});
+      const win=doc.defaultView;
+      if(win?.history?.replaceState&&win.location.pathname==='/admin/hub-live'){
+        const u=new win.URL(win.location.href);u.searchParams.set('sel',target.type+':'+target.id);
+        u.searchParams.set('atelier',key==='po'||key==='supplier'?'purchasing':key==='cartons'?'boxes':key==='departure'?'shipments':key);
+        win.history.replaceState(win.history.state,'',u.pathname+u.search+u.hash);
+      }
+      context.view=key==='reception'?'reception':'supply';
+      context.renderCurrent();
+      let anchor=null;
+      if(key==='reception'){
+        anchor=Array.from(context.root.querySelectorAll('[data-receive-po]')).find(n=>pos.some(p=>p.id===n.getAttribute('data-receive-po')));
+      }else if(key==='labels')anchor=context.root.querySelector('[data-hub-label-printing]');
+      else if(key==='cartons')anchor=context.root.querySelector('[data-supply-box-create]');
+      else if(key==='departure')anchor=context.root.querySelector('[data-supply-shipment-bar]');
+      anchor?.scrollIntoView?.({block:'start',behavior:'auto'});
+    };
+    host.appendChild(text(doc,'strong','kmc-hub-journey-title',j.reference+' · Parcours Hub'));
+    if(order){
+      const route=text(doc,'p','kmc-workspace-note',context.marketCode+' · Relais '+(order.relay_code||order.relay_name||'à vérifier')+
+        (order.delivery_wave?' · Vague '+order.delivery_wave.code+(order.delivery_wave.closed?' (clôturée)':' (ouverte)'):' · Aucune vague attribuée'));
+      route.setAttribute('data-hub-journey-destination','');host.appendChild(route);
+    }
+    const list=doc.createElement('div');list.className='kmc-hub-journey-steps';list.setAttribute('role','group');list.setAttribute('aria-label','Jalons métier');
+    for(const [key,label] of steps){
+      const state=j.stage_states?.[key]||'unknown';
+      const done=state==='complete'||state==='locked';
+      const current=!done&&(j.physical_focus||j.current_key)===key;
+      const step=doc.createElement('button');step.type='button';
+      step.className='kmc-hub-journey-step'+(done?' is-done':current?' is-current':'');
+      step.setAttribute('data-hub-journey-step',key);step.setAttribute('data-state',state);
+      if(current)step.setAttribute('aria-current','step');
+      const stateLabel=done?'✓ Terminé':current?'À traiter / suivre':state==='warning'||state==='critical'?'À contrôler':state==='progress'?'En cours':state==='ready'?'Disponible':state==='waiting'?'En attente':'À venir';
+      step.appendChild(text(doc,'strong','',label));step.appendChild(text(doc,'small','',stateLabel));
+      if(key==='labels')step.appendChild(text(doc,'small','',j.stage_notes?.labels||'Preuve non renseignée'));
+      step.title=j.stage_notes?.[key]||stateLabel;
+      // Une étape terminée reste consultable dans le Kanban, pas réexécutable ici.
+      step.disabled=done||(!current&&!['ready','progress','warning','critical'].includes(state))||isHubReadOnly(context);
+      step.addEventListener('click',()=>go(key));list.appendChild(step);
+    }
+    host.appendChild(list);
+    host.appendChild(text(doc,'p','kmc-workspace-note',j.current_status+' · '+(j.current_expected||j.next_action||'')));
+    // Réimpression reste accessible même si les identités sont déjà émises.
+    if(!isHubReadOnly(context)&&order&&['ready','progress','warning','complete','locked'].includes(j.stage_states?.cartons)){
+      const labelButton=doc.createElement('button');labelButton.type='button';
+      labelButton.className='kmc-workspace-tab';labelButton.setAttribute('data-hub-journey-labels','');
+      labelButton.textContent='Archives et réimpression QR';labelButton.addEventListener('click',()=>{context.view='labels';context.renderCurrent();});host.appendChild(labelButton);
+    }
+  }
+
+  async function renderDirectionVariance(host,doc,context){
+    host.replaceChildren();
+    const title=text(doc,'h2','','Arbitrage d’écart fournisseur');host.appendChild(title);
+    const status=text(doc,'p','kmc-workspace-note','Vérification de la PO et des droits…');host.appendChild(status);
+    const params=new URLSearchParams(String(doc.defaultView.location.search||''));
+    const selected=params.get('sel')||'';
+    const id=selected.startsWith('po:')?selected.slice(3):'';
+    if(isHubReadOnly(context)||!['admin','agent_hub'].includes(context.user?.role)){
+      status.textContent='Accès en lecture seule : aucune décision autorisée.';return;
+    }
+    if(!context.dossier?.purchase_orders?.some(po=>po.id===id)){
+      status.textContent='PO absente du marché sélectionné.';return;
+    }
+    try{
+      const data=await jsonRequest(context.fetch,'/api/hub/administration');
+      const po=(data.purchase_orders||[]).find(p=>p.id===id&&String(p.market).split(' · ').includes(context.marketCode));
+      if(!po||data.scope!=='HUB_ADMINISTRATION_GLOBAL')throw Error('PO hors périmètre');
+      status.textContent=po.supplier+' · PO '+id+' · '+po.market+' · '+(po.payment_evidence||'');
+      const panel=doc.createElement('section');panel.setAttribute('data-hub-direction-variance','');host.appendChild(panel);
+      const api=globalThis.KomerceHubContextActions;
+      if(!api?.directionVariance)throw Error('Module de décision indisponible');
+      api.directionVariance(panel,{doc,fetch:context.fetch,user:context.user,po,grants:data.viewer_grants,
+        refresh:()=>renderDirectionVariance(host,doc,context)});
+      if(!panel.children.length)panel.appendChild(text(doc,'p','kmc-workspace-note','Aucun arbitrage disponible pour cette PO.'));
+    }catch(err){status.textContent='Arbitrage indisponible : '+err.message;}
+  }
+
   function renderPayload(rootNode, ui, doc, payload, context) {
     rootNode.className = 'kmc-operations-workspace';
     rootNode.setAttribute('data-workspace-kind', 'hub-relay');
@@ -2202,6 +2321,23 @@
         context.marketCode+' · Identifier le bon colis, vérifier les conditions de retrait, attester la remise.';
     }
     rootNode.appendChild(header);
+    if(context.decisionOnly){
+      header.querySelector('.kmc-workspace-kicker').textContent='DIRECTION HUB · DÉCISIONS';
+      header.querySelector('.kmc-workspace-title').textContent='Direction Hub · Décisions PO';
+      header.querySelector('.kmc-workspace-subtitle').textContent=context.marketCode+' · Engagement et autorisation de paiement, sur justificatif.';
+      const back=header.querySelector('.kmc-workspace-nav-link');back.textContent='← Direction Hub';back.href='/admin/hub?branch=direction';
+      rootNode.setAttribute('data-hub-decision-workspace','');
+      if(context.decisionKind==='variance'){
+        const host=doc.createElement('section');rootNode.appendChild(host);renderDirectionVariance(host,doc,context);return;
+      }
+      renderSupplySection(rootNode,ui,doc,context);return;
+    }
+    if(context.mode==='execution'){
+      const journey=doc.createElement('section');journey.className='kmc-hub-journey';
+      journey.setAttribute('data-hub-journey','');rootNode.appendChild(journey);
+      context.renderJourney=sel=>renderHubJourney(journey,doc,context,sel);
+      context.renderJourney();
+    }
     if(context.mode==='relay-execution') {
       const nav=doc.createElement('nav');
       nav.className='kmc-relay-main-nav';
@@ -2365,8 +2501,8 @@
       const module=globalThis.KomerceHubLabelCenter;
       if(!module)station.appendChild(text(doc,'p','kmc-workspace-empty','Poste QR indisponible : recharger la page.'));
       else module.mount({host:station,doc,marketCode:context.marketCode,fetchFn:context.fetch,
-        fillable:Array.isArray(context.dossier?.fillable)?context.dossier.fillable:[],
-        act:(button,opts)=>runAction(context,button,opts)});
+        openPreparation:()=>{context.view='supply';context.renderCurrent();
+          context.root.querySelector('[data-hub-label-printing]')?.scrollIntoView?.({block:'start',behavior:'auto'});}});
     }
 
     if (view === 'relay') {
@@ -2928,6 +3064,7 @@
       purchase_orders: dossier?.purchase_orders || [],
       need_batches: dossier?.cockpit?.need_batches || [],
       todo: dossier?.cockpit?.todo || [],
+      hub_journeys: dossier?.hub_journeys || [],
     });
     function hubInputBusy() {
       const active = doc.activeElement;
@@ -3013,16 +3150,20 @@
     }
 
     let currentPayload = null;
+    const hubQuery = new URLSearchParams(String(globalThis.location?.search || ''));
+    const hubAtelier = options.mode==='execution' && hubQuery.get('entry')==='operations' ? hubQuery.get('atelier') : null;
     const context = {
       root: rootNode,
       fetch: fetchFn,
       marketCode,
+      decisionOnly:options.mode==='execution'&&hubQuery.get('entry')==='direction',
+      decisionKind:hubQuery.get('decision'),
       mode: ['execution', 'relay-execution'].includes(options.mode) ? options.mode : 'pilot',
       user: options.user || null,
       initialFocus: options.forcedRelayFocus || (options.mode==='relay-execution' ? String(new URLSearchParams(String(globalThis.location?.search||'')).get('focus')||'') : ''),
       focusOnly:Boolean(options.focusOnly),
       activeRelayQueue:null,
-      view: options.focusOnly?'relay':options.mode === 'execution' ? 'supply' : options.mode === 'relay-execution' && new URLSearchParams(String(globalThis.location?.search || '')).get('focus') === 'returns' ? 'returns' : undefined,
+      view: options.focusOnly?'relay':options.mode === 'execution' ? (hubAtelier==='reception' ? 'reception' : 'supply') : options.mode === 'relay-execution' && new URLSearchParams(String(globalThis.location?.search || '')).get('focus') === 'returns' ? 'returns' : undefined,
       confirm: typeof options.confirm === 'function'
         ? options.confirm
         : (typeof globalThis.confirm === 'function' ? globalThis.confirm.bind(globalThis) : () => true),
@@ -3073,6 +3214,16 @@
     try {
       await reload();
       watchHubSupply();
+      // Deep link du Kanban : orientation après chargement des données, sans écriture.
+      if (context.mode==='execution' && hubAtelier) {
+        const sel=hubQuery.get('sel')||'';
+        const anchor=hubAtelier==='reception' && sel.startsWith('po:')
+          ? Array.from(rootNode.querySelectorAll('[data-receive-po]')).find(n=>n.getAttribute('data-receive-po')===sel.slice(3))
+          : hubAtelier==='labels' ? rootNode.querySelector('[data-hub-label-printing]')
+          : hubAtelier==='boxes' ? rootNode.querySelector('[data-supply-box-create]')
+          : hubAtelier==='shipments' ? (sel.startsWith('box:') ? Array.from(rootNode.querySelectorAll('[data-hub-box-target]')).find(n=>n.getAttribute('data-hub-box-target')===sel.slice(4)) : null) || rootNode.querySelector('[data-supply-shipment-bar]') : null;
+        anchor?.scrollIntoView?.({block:'start',behavior:'auto'});
+      }
       // Orientation de l'agent vers la file demandée depuis le cockpit.
       // Seules les files existantes sont navigables ; aucune action métier n'est exécutée ici.
       if (context.mode==='relay-execution' && !context.focusOnly && ['shipments','cash','receive','collect'].includes(context.initialFocus)) {

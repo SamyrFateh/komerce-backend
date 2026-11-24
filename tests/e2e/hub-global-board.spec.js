@@ -269,3 +269,21 @@ test('Kanban : tri par relais de destination et détail contextuel non redondant
   await expect(page.locator('[data-hub-global-menu]')).toContainText('Attendu : Attendre 1 article(s) du fournisseur');
   expect(calls).toEqual(['GET /api/hub/board']);
 });
+
+test('Kanban : le menu actif ne contient aucun formulaire métier local',async({page})=>{
+  const calls=await mount(page,'agent_hub');
+  await page.route(ORIGIN+'/api/hub/dossier?market=CM',route=>route.fulfill({
+    contentType:'application/json',body:JSON.stringify({purchase_orders:[
+      {id:'6748895a-89bf-4236-9fb0-737fcf1e59ca',lines:[{order_id:'two',received:1}]}
+    ]})
+  }));
+  const row=page.locator('[data-hub-global-order="CM-101"]');
+  await row.locator('[data-hub-global-stage="Réception"]').click();
+  const menu=page.locator('[data-hub-global-menu]');
+  await expect(menu).toBeVisible();
+  const link=menu.getByRole('link',{name:/Ouvrir l’atelier Réception/});
+  await expect(link).toHaveAttribute('href',/market=CM&atelier=reception&sel=po%3A6748895a/);
+  await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);
+  await expect(menu.locator('.kmc-hub-action-form')).toHaveCount(0);
+  expect(calls.filter(call=>!call.startsWith('GET '))).toEqual([]);
+});

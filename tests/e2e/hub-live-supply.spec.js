@@ -249,3 +249,11 @@ test('COMBOX : destination réelle et statut lisible',async({page})=>{
  await expect(boxes.getByRole('cell',{name:'Fermée',exact:true})).toHaveCount(2);
  expect(posts).toEqual([]);
 });
+
+test('COMBOX : une seule surface de rattachement, le cockpit navigue vers le dossier physique',async({page})=>{
+ const posts=[];await mount(page,posts);
+ await expect(page.locator('[data-hub-box-target="'+BOX+'"]')).toBeVisible();
+ await expect(page.locator('[data-workspace-action="attach-box-shipment"]')).toHaveCount(1);
+ await expect(page.locator('[data-hlc-form="box"]')).toHaveCount(0);
+ expect(posts).toEqual([]);
+});
