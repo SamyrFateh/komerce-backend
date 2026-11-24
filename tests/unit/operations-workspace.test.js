@@ -217,6 +217,13 @@ describe('Hub: no old SAC and QR/PDF immediately reachable',()=>{
     expect(html).toContain('operations-workspace.css?v=261124-hub-qr-refresh-1');
     expect(html).not.toContain('operations-workspace.js?v=261113-director-h4');
   });
+  test('historic COMBOX rows remain accessible but no longer occupy full page',()=>{
+    expect(source).toContain("boxSearch.setAttribute('aria-label','Filtrer les COMBOX physiques')");
+    expect(source).toContain("boxTable.setAttribute('data-hub-combox-scroll','')");
+    expect(source).toContain("boxSearch.addEventListener('input',filterBoxes)");
+    expect(css).toContain('max-height:480px;overflow:auto;scrollbar-gutter:stable');
+    expect(css).toContain("[data-hub-combox-scroll] tbody tr[hidden]");
+  });
   test('QR search and download layout is compact and accessible on mobile',()=>{
     expect(css).toContain('.kmc-hub-label-grid');
     expect(css).toContain('.kmc-hub-label-controls');
