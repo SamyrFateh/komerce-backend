@@ -551,9 +551,11 @@ router.post(
     try {
       const refused = await boxMarketGuard(req.params.unitId, req.workspaceMarket.id, null);
       if (refused) return res.status(refused.status).json(refused.body);
+      const body=req.body||{};
       const out = await hubOps.transitionOperatorUnitCommand({
-        unit_id: req.params.unitId, to_state: (req.body || {}).to_state,
-      }, req.user.id);
+        unit_id:req.params.unitId,to_state:body.to_state,
+        details:{box_qr_scan:body.box_qr_scan,label_applied_confirmed:body.label_applied_confirmed},
+      },req.user.id);
       return res.status(out.status).json(out.body);
     } catch (err) { return sendWorkspaceError(err, res, next); }
   }
