@@ -425,9 +425,11 @@
     boardDisposers.delete(root);
     root.replaceChildren();
     const header = make(doc, 'div', 'kmc-hub-global-toolbar');
-    header.appendChild(make(doc, 'strong', '', user?.role === 'market_operator'
-      ? 'Commandes import · Mes marchés autorisés' : 'Toutes les commandes import · Tous les marchés'));
-    header.appendChild(make(doc, 'span', 'kmc-hub-global-count', 'Chargement…'));
+    const headerTitle = make(doc, 'strong', '', user?.role === 'market_operator'
+      ? 'Commandes import · Mes marchés autorisés' : 'Toutes les commandes import · Tous les marchés');
+    const headerCount = make(doc, 'span', 'kmc-hub-global-count', 'Chargement…');
+    header.appendChild(headerTitle);
+    header.appendChild(headerCount);
     root.appendChild(header);
     const search = make(doc, 'input', 'kmc-hub-app-search');
     search.type = 'search';
@@ -540,7 +542,7 @@
     let poRows = null;
     let poMode = false;
     let pilotRequest = 0;
-    const orderHeader = header.firstChild.textContent;
+    const orderHeader = headerTitle.textContent;
     const setHeaders = labels => {
       titleRow.replaceChildren();
       labels.forEach(label => titleRow.appendChild(make(doc,'th','',label)));
@@ -550,7 +552,7 @@
       const term=safe(search.value).trim().toLocaleLowerCase('fr');
       const filtered=(poRows || []).filter(p => !p.cancelled && [p.reference,p.market,p.supplier,...(p.order_references || [])]
         .some(v=>safe(v).toLocaleLowerCase('fr').includes(term)));
-      header.lastChild.textContent=filtered.length+' PO';
+      headerCount.textContent=filtered.length+' PO';
       setHeaders(['PO / Fournisseur','Commandes associées','Achat','Réception']);
       if (!filtered.length) {
         const tr=make(doc,'tr'), td=make(doc,'td','','Aucune PO correspondante.');
@@ -592,7 +594,7 @@
       const term = safe(search.value).trim().toLocaleLowerCase('fr');
       const filtered = rows.filter(o => [o.reference, o.market, o.market_name, o.relay_name]
         .some(v => safe(v).toLocaleLowerCase('fr').includes(term)));
-      header.lastChild.textContent = filtered.length + ' / ' + rows.length + ' commande(s)';
+      headerCount.textContent = filtered.length + ' / ' + rows.length + ' commande(s)';
       if (!filtered.length) {
         const tr = make(doc, 'tr');
         const td = make(doc, 'td', '', term ? 'Aucune commande correspondante.' : 'Aucune commande import active.');
@@ -706,13 +708,13 @@
       const pilot=make(doc,'button','kmc-hub-app-branch','Vue PO · pilote');
       pilot.type='button';pilot.setAttribute('data-hub-po-pilot-toggle','');
       pilot.setAttribute('aria-pressed','false');
-      header.insertBefore(pilot,header.lastChild);
+      header.replaceChildren(headerTitle,pilot,headerCount);
       pilot.addEventListener('click',async()=>{
         closeMenu();
         const serial=++pilotRequest;
         if(poMode){
           poMode=false;pilot.setAttribute('aria-pressed','false');pilot.textContent='Vue PO · pilote';
-          header.firstChild.textContent=orderHeader;search.placeholder='Rechercher une commande ou un marché';
+          headerTitle.textContent=orderHeader;search.placeholder='Rechercher une commande ou un marché';
           search.setAttribute('aria-label',search.placeholder);renderRows();return;
         }
         pilot.disabled=true;
@@ -722,10 +724,10 @@
           if(data.scope!=='HUB_GLOBAL'||!Array.isArray(data.purchase_orders))throw new Error('Projection PO indisponible');
           poRows=data.purchase_orders;poMode=true;
           pilot.setAttribute('aria-pressed','true');pilot.textContent='Revenir aux commandes';
-          header.firstChild.textContent='PO fournisseurs · Tous les marchés';
+          headerTitle.textContent='PO fournisseurs · Tous les marchés';
           search.placeholder='Rechercher PO, fournisseur, commande ou marché';search.setAttribute('aria-label',search.placeholder);
           renderRows();
-        }catch(error){header.lastChild.textContent='Vue PO indisponible : '+error.message;}
+        }catch(error){headerCount.textContent='Vue PO indisponible : '+error.message;}
         finally{pilot.disabled=false;}
       });
     }
@@ -740,7 +742,7 @@
       return payload;
     } catch (error) {
       body.replaceChildren();
-      header.lastChild.textContent = 'Indisponible';
+      headerCount.textContent = 'Indisponible';
       const tr = make(doc, 'tr');
       const td = make(doc, 'td', 'kmc-hub-app-list-error',
         'Impossible de charger la vue centrale Hub : ' + error.message);
