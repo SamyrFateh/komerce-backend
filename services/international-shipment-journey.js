@@ -122,10 +122,11 @@ async function transition(market,actor,reference,body={},database=db){
     if(STAGES.indexOf(target)!==STAGES.indexOf(s.stage)+1)
       fail(409,'JOURNEY_STAGE_ORDER','Les étapes doivent être validées dans l’ordre');
     // A dossier transition cannot substitute for individual COMBOX scan confirmations.
-    if(target==='forwarder_received'&&s.hub_draft)
+    if(target==='forwarder_received'&&s.hub_draft&&await custodyScans.needsScanCoverage(client,s.id))
       await custodyScans.requireScanCoverage(client,s.id,'CARRIER_ACCEPTED');
     if(target==='in_transit'&&s.hub_draft){
-      await custodyScans.requireScanCoverage(client,s.id,'CARRIER_LOADED');
+      if(await custodyScans.needsScanCoverage(client,s.id))
+        await custodyScans.requireScanCoverage(client,s.id,'CARRIER_LOADED');
       if(s.transport_mode==='sea'&&!s.container_reference)
         fail(409,'JOURNEY_CONTAINER_REQUIRED','Référence conteneur obligatoire avant départ maritime');
       if(s.transport_mode==='sea'&&body.container_sealed!==true)
@@ -163,7 +164,8 @@ async function transition(market,actor,reference,body={},database=db){
       transferDetails={forwarder_name:forwarder,transport_mode:mode};
       // Valider d'abord le manifeste, l'état DISPATCHED et le transitaire.
       // Les scans individuels sont ensuite obligatoires avant toute transition.
-      await custodyScans.requireScanCoverage(client,s.id,'HUB_HANDOVER');
+      if(await custodyScans.needsScanCoverage(client,s.id))
+        await custodyScans.requireScanCoverage(client,s.id,'HUB_HANDOVER');
       await client.query(
         'UPDATE international_shipments SET stage=$3,forwarder_name=$4,transport_mode=$5,updated_at=now() WHERE id=$1 AND market_id=$2',
         [s.id,market.id,target,forwarder,mode]);
