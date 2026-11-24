@@ -37,7 +37,7 @@ const DOSSIER={
 };
 test.use({viewport:{width:1280,height:900}});
 
-async function mount(page,posts) {
+async function mount(page,posts,boxState='RECEIVED') {
   page.on('dialog',dialog=>dialog.accept());
   await page.route(ORIGIN+'/**',async(route)=>{
     const u=new URL(route.request().url());
@@ -59,7 +59,9 @@ async function mount(page,posts) {
     if(u.pathname==='/api/admin/dashboard/context')return json(FX.context);
     if(u.pathname===API)return json(WORKSPACE);
     if(u.pathname==='/api/scans/hub/receivable')return json({purchase_orders:[]});
-    if(u.pathname===API+'/supply')return json(shapeDossier(DOSSIER));
+    if(u.pathname===API+'/supply')return json(shapeDossier({
+      ...DOSSIER,boxes:DOSSIER.boxes.map(box=>({...box,state:boxState}))
+    }));
     if(u.pathname===API+'/supply/trace')return json({chain:[]});
     if(u.pathname===API+'/labels/resolve')return json({
       ok:true,label:{target_type:'ARTICLE',allocation_id:ALLOCATION,short_alias:'ABCDEFGH'},
@@ -76,10 +78,11 @@ async function mount(page,posts) {
   await expect(page.locator('[data-supply-boxes]')).toBeVisible();
 }
 test('étiquettes article : préparer puis imprimer sans changement métier implicite',async({page})=>{
-  const posts=[];await mount(page,posts);
+  const posts=[];await mount(page,posts,'PACKED');
   await expect(page.locator('[data-hub-label-printing]')).toBeVisible();
   await expect(page.locator('[data-hub-print-article]')).toHaveCount(1);
   await expect(page.locator('[data-hub-print-box]')).toHaveCount(1);
+  await expect(page.getByRole('button',{name:'Préparer QR COMBOX'})).toHaveCount(1);
   await page.getByRole('button',{name:'Préparer les QR'}).click();
   await expect.poll(()=>posts.filter(p=>p.path.includes('/labels/articles/')).length).toBe(1);
   expect(posts.some(p=>p.path.endsWith('/fill'))).toBe(false);
@@ -87,10 +90,8 @@ test('étiquettes article : préparer puis imprimer sans changement métier impl
 test('QR COMBOX et article : validation seulement au clic, quantité 1',async({page})=>{
   const posts=[];await mount(page,posts);
   const cell=page.locator('.kmc-workspace-box-compose').first();
-  await cell.getByLabel('Relais de destination de l’étiquette COMBOX').selectOption(RELAY);
-  await cell.getByRole('button',{name:'Préparer QR COMBOX'}).click();
-  await expect.poll(()=>posts.filter(p=>p.path.includes('/labels/boxes/')).length).toBe(1);
-  await cell.locator('[data-hub-box-scan]').fill(QR);
+  await expect(cell.getByRole('button',{name:'Préparer QR COMBOX'})).toHaveCount(0);
+  await cell.locator('[data-hub-box-scan]').fill('KOM-BOX-TEST');
   await cell.getByLabel('Code physique de l’article à placer dans KOM-BOX-TEST').fill('KQ1_'+'B'.repeat(32));
   expect(posts.some(p=>p.path.endsWith('/fill'))).toBe(false);
   await cell.getByRole('button',{name:'Placer l’article dans la COMBOX'}).click();
@@ -98,7 +99,7 @@ test('QR COMBOX et article : validation seulement au clic, quantité 1',async({p
   const move=posts.find(p=>p.path.endsWith('/fill')).body;
   expect(move).toMatchObject({
     allocation_id:ALLOCATION,from_unit_id:SUPPLIER_UNIT,quantity:1,
-    box_reference_scan:QR,evidence_method:'SCAN',evidence_code:'KQ1_'+'B'.repeat(32),
+    box_reference_scan:'KOM-BOX-TEST',evidence_method:'SCAN',evidence_code:'KQ1_'+'B'.repeat(32),
   });
 });
 test('caméra Chromium simulée : reconnaître une unité, jamais valider le placement',async({page})=>{
