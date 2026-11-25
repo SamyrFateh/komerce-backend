@@ -11,8 +11,9 @@ const route = fs.readFileSync(path.join(__dirname, '../../routes/admin-operation
 
 test('A2 : l’initialisation de COMBOX envoie une Idempotency-Key conservée après échec et la route l’exige', () => {
   expect(ui).toContain("'Idempotency-Key': options.idempotencyKey");
-  expect(ui).toContain('idempotencyKey: boxKey');
-  expect(ui).toContain('onSuccess: () => { boxKey = null; boxKeyRef = null; }');
+  expect(ui).toContain('idempotencyKey: prior.key');
+  expect(ui).toContain('keys.set(keyScope,prior)');
+  expect(ui).toContain('onSuccess: () => { keys.delete(keyScope);prior=null; }');
   expect(route).toContain("req.get('Idempotency-Key')");
 });
 

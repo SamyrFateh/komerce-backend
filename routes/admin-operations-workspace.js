@@ -298,6 +298,45 @@ router.get(
   }
 );
 
+// Confirmation de l'identification ou du contrôle qualité du colis reçu.
+// Le marché et la PO exacte sont vérifiés sur toutes ses allocations sous verrou.
+router.post(
+  '/market/:marketCode/supply/receipts/:unitId/quality',
+  attachHubExecutionCapability('execution.parcel.receive'),
+  requireHubWorkspaceAction,
+  async (req,res,next)=>{
+    try{
+      const unitId=req.params.unitId, poId=String(req.body?.purchase_order_id||'');
+      const toState=String(req.body?.to_state||'');
+      const uuid=/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
+      if(!uuid.test(unitId)||!uuid.test(poId)||!['IDENTIFIED','QUALITY_CHECKED'].includes(toState)){
+        return res.status(400).json({code:'HUB_RECEIPT_QUALITY_INVALID',error:'Réception, PO ou étape invalide'});
+      }
+      const result=await db.withTransaction(async client=>{
+        const {rows:[unit]}=await client.query(
+          "SELECT id,state FROM hub_physical_units WHERE id=$1 AND unit_type='SUPPLIER_PACKAGE' FOR UPDATE",[unitId]);
+        const {rows:[scope]}=await client.query(
+          `SELECT COUNT(*)::int AS total,
+                  COUNT(*) FILTER (WHERE a.market_id=$2 AND a.purchase_order_id=$3)::int AS matching
+             FROM hub_physical_unit_placements p
+             JOIN hub_purchase_allocations a ON a.id=p.allocation_id
+            WHERE p.physical_unit_id=$1 AND p.operation_type='RECEIVE'`,
+          [unitId,req.workspaceMarket.id,poId]);
+        if(!unit||!scope||Number(scope.total)<1||Number(scope.total)!==Number(scope.matching)){
+          throw Object.assign(new Error('Réception hors périmètre de cette PO'),{status:404,code:'HUB_RECEIPT_PO_SCOPE'});
+        }
+        const expected={RECEIVED:'IDENTIFIED',IDENTIFIED:'QUALITY_CHECKED'}[unit.state];
+        if(toState!==expected)throw Object.assign(new Error('Étape qualité non autorisée'),{status:409,code:'HUB_RECEIPT_QUALITY_STATE'});
+        return physicalIdentity.transitionPhysicalUnit(client,{
+          unitId,toState,actorId:req.user.id,
+          details:{operator_action:toState==='IDENTIFIED'?'identify_received_contents':'physical_quality_checked'},
+        });
+      });
+      return res.json(result);
+    }catch(err){return sendWorkspaceError(err,res,next);}
+  }
+);
+
 // Identités QR opaques : la génération ne mute jamais réception, allocation ou custody.
 // POST explicite pour l'émission stable ; GET d'impression/relecture strictement read-only.
 const hubLabels = require('../services/hub-opaque-labels');

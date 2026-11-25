@@ -1019,6 +1019,37 @@
     return (dossier.fillable || []).filter(row=>String(row.purchase_order_id || '')===String(poId));
   }
 
+  function sourceQualityChecked(row){
+    return ['QUALITY_CHECKED','LOCATED','ALLOCATED','PICKED'].includes(row.source_state);
+  }
+  function renderReceiptQuality(doc,context,dossier,poId){
+    const section=doc.createElement('section');
+    section.setAttribute('data-hub-inline-quality','');
+    section.appendChild(text(doc,'h3','','Contrôle physique des réceptions'));
+    for(const receipt of (dossier.receipts||[]).filter(r=>(r.po_ids||[]).some(id=>String(id)===String(poId)))){
+      const row=doc.createElement('div');
+      row.appendChild(text(doc,'strong','',receipt.reference+' · '+receipt.qty+' unité(s)'));
+      const next={RECEIVED:'IDENTIFIED',IDENTIFIED:'QUALITY_CHECKED'}[receipt.state];
+      if(!next){
+        row.appendChild(text(doc,'p','kmc-workspace-note',sourceQualityChecked({source_state:receipt.state})?'Contrôle qualité attesté':receipt.state));section.appendChild(row);continue;
+      }
+      if(!receipt.single_purchase_order){
+        row.appendChild(text(doc,'p','kmc-workspace-note','Colis multi-PO : contrôle de tout le colis requis, pas de validation partielle depuis cette ligne.'));
+        section.appendChild(row);continue;
+      }
+      const label=next==='IDENTIFIED'?'Confirmer le contenu identifié':'Confirmer le contrôle qualité';
+      const check=makeActionButton(doc,label,'receipt-quality-'+next.toLowerCase());
+      check.addEventListener('click',()=>runAction(context,check,{
+        url:endpointFor(context.marketCode,'supply/receipts/'+encodeURIComponent(receipt.id)+'/quality'),
+        body:{purchase_order_id:poId,to_state:next},
+        confirmMessage:next==='IDENTIFIED'?'Confirmez que le contenu réel a été déballé, identifié et compté.':'Confirmez que tous les articles de ce colis ont été réellement contrôlés et sont conformes. En cas d’écart, ne validez pas.',
+        successMessage:next==='IDENTIFIED'?'Contenu identifié.':'Contrôle qualité attesté.',
+      }).catch(()=>{}));
+      row.appendChild(check);section.appendChild(row);
+    }
+    return section;
+  }
+
   async function mountReceptionActions(host,{document:doc,fetch:fetchFn,user,marketCode,poId,onChange,receiveRefs=new Map()}={}){
     if(!['admin','agent_hub'].includes(user?.role)||!poId)throw Error('Accès réception Hub requis');
     const feedback=text(doc,'p','kmc-workspace-feedback','');
@@ -1041,7 +1072,8 @@
         slot.replaceChildren();
         if(receipt)slot.appendChild(createReceptionCard(doc,context,receipt));
         else slot.appendChild(text(doc,'p','kmc-workspace-note','Aucune quantité en attente dans cette PO. Consultez les quantités et écarts du Kanban.'));
-        slot.appendChild(renderArticleLabelActions(doc,context,receptionLabelRows(dossier,poId)));
+        slot.appendChild(renderReceiptQuality(doc,context,dossier,poId));
+        slot.appendChild(renderArticleLabelActions(doc,context,receptionLabelRows(dossier,poId).filter(sourceQualityChecked)));
         await onChange?.(dossier);
       }finally{pending=false;}
     };
@@ -1390,6 +1422,335 @@
     return true;
   }
 
+  // Same physical controls in the canonical workshop and the Kanban. The
+  // compact view passes an explicit destination/rail selection, not a client.
+  function buildBoxPreparation(doc,context,d,{compact=false,selectedGroup=null}={}) {
+    const field=(placeholder,label)=>{
+      const input=doc.createElement('input');
+      input.type='text';input.maxLength=120;input.placeholder=placeholder;
+      input.className='kmc-workspace-receive-tracking';input.setAttribute('aria-label',label);
+      return input;
+    };
+    // Composition directe des COMBOX via les routes Workspace et les commandes Hub canoniques.
+    const BOX_NEXT_STATE = Object.freeze({
+      RECEIVED: 'IDENTIFIED', IDENTIFIED: 'QUALITY_CHECKED', QUALITY_CHECKED: 'LOCATED',
+      LOCATED: 'ALLOCATED', ALLOCATED: 'PICKED', PICKED: 'PACKED', PACKED: 'DISPATCHED',
+    });
+    const BOX_STATE_LABELS=Object.freeze({RECEIVED:'À préparer',IDENTIFIED:'Identifiée',QUALITY_CHECKED:'Contrôlée',LOCATED:'Localisée',ALLOCATED:'Affectée',PICKED:'Prélevée',PACKED:'Fermée',DISPATCHED:'Prête au départ',QUARANTINED:'En quarantaine',SUPERSEDED:'Remplacée'});
+    const BOX_MUTABLE = new Set(['RECEIVED', 'IDENTIFIED', 'QUALITY_CHECKED', 'LOCATED', 'ALLOCATED', 'PICKED']);
+    const fillable = (Array.isArray(d.fillable) ? d.fillable : []).filter(line=>!compact||(matchesPackingGroup(line,selectedGroup)&&sourceQualityChecked(line)));
+    // Le fetch canonique transporte l'authentification du dashboard ; un lien
+    // API direct ne la transmet pas forcément. Ouvrir la fenêtre sur le clic,
+    // puis charger l'HTML local authentifié dans un Blob imprimable.
+    const {openLabelPrint,pdfLink}=articleLabelLinks(doc,context);
+    const createBar = doc.createElement('div');
+    createBar.className = 'kmc-workspace-receive-footer';
+    createBar.setAttribute('data-supply-box-create', '');
+    const newRef = field('Référence COMBOX (facultative)', 'Référence de la nouvelle COMBOX');
+    const newBox = makeActionButton(doc, 'Initialiser une COMBOX', 'create-box');
+    // A2 : la clé d'opération survit à un échec (coupure réseau) pour qu'un nouvel essai du même geste
+    // renvoie la même COMBOX ; elle change si la référence saisie change, et après un succès.
+    const keys=context.boxCreateKeys||(context.boxCreateKeys=new Map());
+    const keyScope=compact?JSON.stringify(selectedGroup):'workshop';
+    let prior=keys.get(keyScope);
+    const makeKey = () => (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.randomUUID
+      ? globalThis.crypto.randomUUID()
+      : `box-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`);
+    newBox.addEventListener('click', () => {
+      const wanted = newRef.value.trim();
+      if (!prior || prior.ref !== wanted) { prior={key:makeKey(),ref:wanted};keys.set(keyScope,prior); }
+      return runAction(context, newBox, {
+      url: endpointFor(context.marketCode, 'boxes'),
+      idempotencyKey: prior.key,
+      onSuccess: () => { keys.delete(keyScope);prior=null; },
+      body: wanted ? { reference: wanted } : {},
+      runningMessage: 'Initialisation de la COMBOX…',
+      successMessage: result => `COMBOX ${result && result.physical_unit ? result.physical_unit.reference : ''} ${result && result.replayed ? 'déjà initialisée (rejeu reconnu)' : 'initialisée'}.`,
+      }).catch(() => {});
+    });
+    [newRef, newBox].forEach(node => createBar.appendChild(node));
+    // La création de COMBOX sera affichée après les étiquettes articles.
+
+    // La caméra est une entrée de code : seule l'action opérateur confirme ensuite le
+    // placement. Aucune mutation métier pendant l'ouverture ou la lecture de la caméra.
+    const mobileScanControls = (input, name, afterScan) => {
+      const wrap=doc.createElement('div');
+      const start=makeActionButton(doc,'Scanner par caméra','scan-camera');
+      const stop=makeActionButton(doc,'Arrêter la caméra','stop-camera');
+      const video=doc.createElement('video');
+      start.type='button';stop.type='button';stop.hidden=true;video.hidden=true;
+      video.autoplay=true;video.muted=true;
+      video.setAttribute('playsinline','');
+      video.style.cssText='width:100%;max-width:300px;max-height:270px;object-fit:cover;border-radius:8px';
+      video.style.display='none';
+      let active=false,stream=null,frame=null;
+      const end=()=>{
+        active=false;
+        if(frame!==null && typeof cancelAnimationFrame==='function')cancelAnimationFrame(frame);
+        frame=null;
+        if(stream)stream.getTracks().forEach(track=>track.stop());
+        stream=null;video.srcObject=null;video.hidden=true;video.style.display='none';
+        stop.hidden=true;start.hidden=false;start.disabled=false;
+      };
+      stop.addEventListener('click',end);
+      start.addEventListener('click',async()=>{
+        if(active)return;
+        if(typeof navigator==='undefined'||!navigator.mediaDevices?.getUserMedia||
+           typeof globalThis.BarcodeDetector!=='function'){
+          setFeedback(context.root,'Caméra QR non disponible : Chrome Android HTTPS requis, ou saisie du code de secours.','critical');
+          return;
+        }
+        start.disabled=true;
+        try{
+          const supported=await globalThis.BarcodeDetector.getSupportedFormats();
+          const formats=['qr_code','code_128','ean_13','ean_8'].filter(v=>supported.includes(v));
+          if(!formats.length)throw new Error('Format QR non pris en charge');
+          const detector=new globalThis.BarcodeDetector({formats});
+          stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+          video.srcObject=stream;video.hidden=false;video.style.display='block';
+          stop.hidden=false;start.hidden=true;active=true;
+          await video.play();
+          const scan=async()=>{
+            if(!active)return;
+            if(!video.isConnected || (typeof document!=='undefined'&&document.hidden)){end();return;}
+            try{
+              const codes=await detector.detect(video);
+              const raw=codes.find(c=>String(c.rawValue||'').trim());
+              if(raw){
+                const value=String(raw.rawValue).trim();
+                end();
+                input.value=value;
+                input.dispatchEvent(new Event('input',{bubbles:true}));
+                if(afterScan)await afterScan(value);
+                return;
+              }
+            }catch(error){setFeedback(context.root,'Lecture caméra : '+String(error.message||'erreur'),'critical');}
+            if(active)frame=requestAnimationFrame(scan);
+          };
+          frame=requestAnimationFrame(scan);
+        }catch(error){
+          end();setFeedback(context.root,'Accès caméra refusé ou indisponible : '+String(error.message||'autorisation requise'),'critical');
+        }
+      });
+      wrap.append(start,stop,video);
+      wrap.setAttribute('aria-label',name);
+      return wrap;
+    };
+
+
+    const composeCell = box => {
+      const cell = doc.createElement('div');
+      cell.className = 'kmc-workspace-box-compose';
+      // L'étiquette COMBOX finale n'est émise qu'après fermeture (PACKED).
+      // La destination se déduit du manifeste physique, jamais d'un choix arbitraire.
+      if(['PACKED','DISPATCHED'].includes(box.state)){
+        const createQr=makeActionButton(doc,'Préparer QR COMBOX','issue-box-label');
+        createQr.addEventListener('click',()=>runAction(context,createQr,{
+          url:endpointFor(context.marketCode,'labels/boxes/'+encodeURIComponent(box.unit_id)+'/issue'),
+          body:{},
+          runningMessage:'Attribution du QR de cette COMBOX fermée…',
+          successMessage:'QR COMBOX définitif prêt à imprimer.',
+        }).catch(()=>{}));
+        const printBox=doc.createElement('a');
+        printBox.href=endpointFor(context.marketCode,'labels/boxes/'+encodeURIComponent(box.unit_id)+'/print?format=thermal');
+        printBox.target='_blank';printBox.rel='noopener';
+        printBox.textContent='Imprimer QR COMBOX';
+        printBox.setAttribute('data-hub-print-box','');
+        printBox.addEventListener('click',event=>openLabelPrint(event,printBox.href));
+        cell.append(createQr,printBox,pdfLink('boxes',box.unit_id,'a4'),pdfLink('boxes',box.unit_id,'thermal'));
+      }else{
+        cell.appendChild(text(doc,'small','kmc-workspace-note','Étiquette COMBOX après fermeture et contrôle du contenu.'));
+      }
+      const readyBoxCode=value=>value===box.reference||
+        /^KQ1_[A-F0-9]{32}$/i.test(String(value||''))||
+        /^[A-HJ-NP-Z2-9]{8}$/i.test(String(value||''));
+      if (BOX_MUTABLE.has(box.state)) {
+        const boxScan=field('Scanner la COMBOX','Scanner la référence de la COMBOX '+box.reference);
+        boxScan.setAttribute('data-hub-box-scan','');
+        context.hubVerifiedBoxes=context.hubVerifiedBoxes||{};
+        boxScan.value=context.hubVerifiedBoxes[String(box.unit_id)]||'';
+        boxScan.addEventListener('input',()=>{
+          if(readyBoxCode(boxScan.value.trim()))context.hubVerifiedBoxes[String(box.unit_id)]=boxScan.value.trim();
+          else delete context.hubVerifiedBoxes[String(box.unit_id)];
+        });
+        const options=fillable.filter(line=>Number(line.quantity)>0 && (!compact||packingBoxMatches(box,selectedGroup)));
+        const item=doc.createElement('select');
+        item.setAttribute('aria-label','Article réceptionné à placer dans '+box.reference);
+        options.forEach((line,i)=>item.appendChild(Object.assign(doc.createElement('option'),{
+          value:String(i),textContent:(line.product||'Article')+' · '+(compact?(line.relais_code||'Relais à vérifier'):line.order_ref)+' · '+
+            line.quantity+' disponible(s) · '+line.from_unit_ref,
+        })));
+        const method=doc.createElement('select');
+        method.setAttribute('aria-label','Mode de preuve du scan article dans '+box.reference);
+        [['SCAN','Scanner le code article'],['MANUAL','Mode dégradé · constat manuel']]
+          .forEach(([value,label])=>method.appendChild(Object.assign(doc.createElement('option'),{value,textContent:label})));
+        const code=field('Scanner le code article','Code physique de l’article à placer dans '+box.reference);
+        const proof=field('Référence de preuve manuelle (6 caractères minimum)','Preuve du constat manuel pour '+box.reference);
+        proof.hidden=true;
+        const qty=doc.createElement('input');qty.type='number';qty.min='1';qty.step='1';qty.value='1';
+        qty.setAttribute('aria-label','Quantité de cet article à placer dans '+box.reference);
+        const add=makeActionButton(doc,'Placer l’article dans la COMBOX','fill-box');
+        const syncMethod=()=>{
+          const manual=method.value==='MANUAL'; code.hidden=manual; proof.hidden=!manual;
+          if(manual)code.value=''; else proof.value='';
+        };
+        method.addEventListener('change',syncMethod);
+        const fill=()=>{
+          if(!readyBoxCode(boxScan.value.trim())){
+            setFeedback(context.root,'Scannez la référence ou le QR de cette COMBOX.','critical'); return;
+          }
+          const line=options[Number(item.value)]; if(!line)return;
+          const manual=method.value==='MANUAL';
+          const proofRef=String(proof.value||'').trim();
+          if(manual?proofRef.length<6:!code.value.trim()){
+            setFeedback(context.root,manual?'Référence de preuve obligatoire (6 caractères minimum).':'Code article obligatoire.','critical'); return;
+          }
+          const quantity=Number(qty.value);
+          if(!Number.isInteger(quantity)||quantity<1||quantity>Number(line.quantity))return;
+          if(!manual&&quantity!==1){setFeedback(context.root,'Un scan confirmé correspond à un article. Scannez chaque unité séparément.','critical');return;}
+          runAction(context,add,{
+            url:endpointFor(context.marketCode,'boxes/'+encodeURIComponent(box.unit_id)+'/fill'),
+            body:{from_unit_id:line.from_unit_id,allocation_id:line.allocation_id,quantity,
+              box_reference_scan:boxScan.value.trim(),
+              ...(manual?{evidence_method:'MANUAL',evidence_ref:proofRef}
+                :{evidence_method:'SCAN',evidence_code:code.value.trim()})},
+            runningMessage:'Vérification de l’article et placement dans la COMBOX…',
+            successMessage:quantity+' article(s) placé(s) dans '+box.reference+'.',
+          }).catch(()=>{});
+        };
+        add.disabled=!options.length;
+        const boxCamera=mobileScanControls(boxScan,'Caméra QR COMBOX');
+        const itemCamera=mobileScanControls(code,'Caméra QR article',async raw=>{
+          if(!/^KQ1_[A-F0-9]{32}$/i.test(raw)&&!/^[A-HJ-NP-Z2-9]{8}$/i.test(raw))return;
+          try{
+            const resolved=await jsonRequest(context.fetch,endpointFor(context.marketCode,
+              'labels/resolve')+'?'+new URLSearchParams({code:raw}));
+            if(resolved.label?.target_type!=='ARTICLE')throw new Error('Ce QR ne correspond pas à un article');
+            const index=options.findIndex(line=>String(line.allocation_id)===String(resolved.label.allocation_id));
+            if(index<0)throw new Error('Cet article ne figure pas parmi les quantités disponibles');
+            item.value=String(index);method.value='SCAN';syncMethod();code.value=raw;
+            setFeedback(context.root,'Article reconnu · vérifiez la COMBOX puis validez le placement.','success');
+          }catch(error){
+            code.value='';setFeedback(context.root,'QR non autorisé ou non disponible : '+String(error.message||'contrôle requis'),'critical');
+          }
+        });
+        [boxScan,boxCamera,item,method,code,itemCamera,proof,qty,add].forEach(node=>cell.appendChild(node));
+        code.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();fill();}});
+        proof.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();fill();}});
+        add.addEventListener('click',fill);
+        if((box.contents||[]).length){
+          const close=makeActionButton(doc,'Fermer la COMBOX','close-box');
+          close.addEventListener('click',()=>{
+            if(!readyBoxCode(boxScan.value.trim())){setFeedback(context.root,'Scannez la COMBOX avant fermeture.','critical');return;}
+            runAction(context,close,{
+              url:endpointFor(context.marketCode,'boxes/'+encodeURIComponent(box.unit_id)+'/close'),
+              body:{box_reference_scan:boxScan.value.trim()},
+              runningMessage:'Contrôle du contenu et fermeture…',
+              successMessage:box.reference+' fermée et prête pour la suite.',
+            }).catch(()=>{});
+          });
+          cell.appendChild(close);
+        }
+      }
+      const next = compact ? null : BOX_NEXT_STATE[box.state];
+      if (next && (box.contents || []).length) {
+        const label = next === 'DISPATCHED' ? 'Prêt à remettre au transitaire' : `Étape suivante · ${BOX_STATE_LABELS[next]||next}`;
+        const step = makeActionButton(doc, label, 'advance-box');
+        let finalBoxCode=null,applied=null;
+        if(next==='DISPATCHED'){
+          finalBoxCode=field('Scanner QR COMBOX avant sortie','Scanner l’étiquette COMBOX définitive de '+box.reference);
+          finalBoxCode.setAttribute('data-hub-final-box-scan','');
+          const finalCamera=mobileScanControls(finalBoxCode,'Caméra QR COMBOX définitive');
+          const confirmWrap=doc.createElement('label');
+          applied=doc.createElement('input');applied.type='checkbox';
+          applied.setAttribute('data-hub-box-label-applied','');
+          confirmWrap.append(applied,text(doc,'span','',' Étiquette COMBOX imprimée et physiquement collée'));
+          cell.append(finalBoxCode,finalCamera,confirmWrap);
+        }
+        step.addEventListener('click', () => {
+          if(next==='DISPATCHED'&&(!finalBoxCode.value.trim()||!applied.checked)){
+            setFeedback(context.root,'Scanner le QR COMBOX et confirmer la pose de l’étiquette avant sortie.','critical');
+            return;
+          }
+          runAction(context, step, {
+            url: endpointFor(context.marketCode, `boxes/${box.unit_id}/advance`),
+            body: {to_state:next,...(next==='DISPATCHED'?{
+              box_qr_scan:finalBoxCode.value.trim(),label_applied_confirmed:applied.checked,
+            }:{})},
+            confirmMessage: next === 'DISPATCHED' ? `Confirmer la sortie de ${box.reference} après contrôle de son QR ?` : undefined,
+            runningMessage: 'Changement d’étape…',
+            successMessage: `${box.reference} : ${next}.`,
+          }).catch(() => {});
+        });
+        cell.appendChild(step);
+      }
+      return cell.children.length ? cell : '—';
+    };
+
+
+    return {createBar,composeCell,fillable,BOX_STATE_LABELS};
+  }
+
+  function packingGroups(dossier,poId){
+    const groups=new Map();
+    const add=(row)=>{
+      if(!row.relais_id)return;
+      const relay=String(row.relais_id),rail=row.requested_transport_rail||null;
+      const key=JSON.stringify([relay,rail]);
+      if(!groups.has(key))groups.set(key,{relay,relayCode:row.relais_code||'Relais à vérifier',rail,key});
+    };
+    (dossier.fillable||[]).filter(r=>String(r.purchase_order_id||'')===String(poId)&&Number(r.quantity)>0).forEach(add);
+    for(const b of dossier.boxes||[])for(const r of b.contents||[])if(String(r.purchase_order_id||'')===String(poId))add(r);
+    return [...groups.values()].sort((a,b)=>a.relayCode.localeCompare(b.relayCode)||String(a.rail||'').localeCompare(String(b.rail||'')));
+  }
+  function matchesPackingGroup(row,group){
+    return Boolean(group&&row.relais_id&&String(row.relais_id)===group.relay&&(row.requested_transport_rail||null)===group.rail);
+  }
+  function packingBoxMatches(box,group){
+    return !(box.contents||[]).length||(box.contents||[]).every(row=>matchesPackingGroup(row,group));
+  }
+  async function mountBoxActions(host,{document:doc,fetch:fetchFn,user,marketCode,poId,onChange,boxCreateKeys=new Map(),hubVerifiedBoxes={}}={}){
+    if(!['admin','agent_hub'].includes(user?.role)||!poId)throw Error('Accès COMBOX Hub requis');
+    const feedback=text(doc,'p','kmc-workspace-feedback','');feedback.setAttribute('data-workspace-feedback','');feedback.setAttribute('role','status');
+    const slot=doc.createElement('div');host.replaceChildren(feedback,slot);
+    let pending=false,selectedKey=null,dossier;
+    const context={root:host,fetch:fetchFn,marketCode,boxCreateKeys,hubVerifiedBoxes,confirm:message=>doc.defaultView.confirm(message)};
+    function paint(){
+      slot.replaceChildren();
+      const groups=packingGroups(dossier,poId);
+      if(!groups.length){slot.appendChild(text(doc,'p','kmc-workspace-note','Aucun article reçu avec un relais identifié pour cette PO.'));return;}
+      const selection=doc.createElement('select');selection.setAttribute('aria-label','Relais puis rail demandé');
+      for(const g of groups)selection.appendChild(Object.assign(doc.createElement('option'),{value:g.key,textContent:g.relayCode+' · '+(g.rail||'Rail non affecté (UNASSIGNED)')}));
+      if(!groups.some(g=>g.key===selectedKey))selectedKey=groups[0].key;
+      selection.value=selectedKey;
+      selection.addEventListener('change',()=>{selectedKey=selection.value;paint();});
+      slot.appendChild(selection);
+      const group=groups.find(g=>g.key===selectedKey);
+      slot.appendChild(text(doc,'p','kmc-workspace-note','Préparation commune au relais et au rail demandé : plusieurs PO compatibles peuvent alimenter la même COMBOX. Rail demandé ≠ rail exécuté.'));
+      const {createBar,composeCell,fillable,BOX_STATE_LABELS}=buildBoxPreparation(doc,context,dossier,{compact:true,selectedGroup:group});
+      slot.appendChild(createBar);
+      const list=doc.createElement('div');list.setAttribute('data-hub-inline-box-list','');
+      for(const box of (dossier.boxes||[]).filter(b=>packingBoxMatches(b,group)&&!b.shipment_ref&&!['DISPATCHED','SUPERSEDED','QUARANTINED'].includes(b.state))){
+        const details=doc.createElement('details');details.setAttribute('data-hub-inline-box',box.unit_id);
+        details.appendChild(text(doc,'summary','',box.reference+' · '+(BOX_STATE_LABELS[box.state]||box.state)+' · '+(box.contents||[]).reduce((n,r)=>n+Number(r.qty||0),0)+' article(s)'));
+        details.appendChild(composeCell(box));list.appendChild(details);
+      }
+      slot.appendChild(list);
+      if(!list.children.length)slot.appendChild(text(doc,'p','kmc-workspace-note','Aucune COMBOX compatible ouverte ou fermée à étiqueter.'));
+      if(!fillable.length)slot.appendChild(text(doc,'p','kmc-workspace-note','Aucun article disponible pour ce groupe.'));
+    }
+    context.reload=async()=>{
+      pending=true;
+      try{
+        dossier=await jsonRequest(fetchFn,endpointFor(marketCode,'supply'));
+        if(!dossier.cockpit?.viewer||!(dossier.purchase_orders||[]).some(p=>String(p.id)===String(poId)))throw Error('Dossier PO indisponible ou accès refusé');
+        paint();await onChange?.(dossier);
+      }finally{pending=false;}
+    };
+    await context.reload();
+    return {reload:context.reload,busy:()=>pending};
+  }
+
   function renderSupplySection(rootNode, ui, doc, context) {
     // Concept C : aucun bloc KPI ni titre de section redondant au-dessus du cockpit (hero existant conservé).
     // Fast, visible entry to labels; never send operators hunting below historic COMBOX.
@@ -1559,110 +1920,7 @@
       successMessage: result => `Dossier ${result && result.result ? result.result.reference : ''} ouvert en préparation · ${checked.size} COMBOX.`,
     }).catch(() => {}));
 
-    // Composition directe des COMBOX via les routes Workspace et les commandes Hub canoniques.
-    const BOX_NEXT_STATE = Object.freeze({
-      RECEIVED: 'IDENTIFIED', IDENTIFIED: 'QUALITY_CHECKED', QUALITY_CHECKED: 'LOCATED',
-      LOCATED: 'ALLOCATED', ALLOCATED: 'PICKED', PICKED: 'PACKED', PACKED: 'DISPATCHED',
-    });
-    const BOX_STATE_LABELS=Object.freeze({RECEIVED:'À préparer',IDENTIFIED:'Identifiée',QUALITY_CHECKED:'Contrôlée',LOCATED:'Localisée',ALLOCATED:'Affectée',PICKED:'Prélevée',PACKED:'Fermée',DISPATCHED:'Prête au départ',QUARANTINED:'En quarantaine',SUPERSEDED:'Remplacée'});
-    const BOX_MUTABLE = new Set(['RECEIVED', 'IDENTIFIED', 'QUALITY_CHECKED', 'LOCATED', 'ALLOCATED', 'PICKED']);
-    const fillable = Array.isArray(d.fillable) ? d.fillable : [];
-    // Le fetch canonique transporte l'authentification du dashboard ; un lien
-    // API direct ne la transmet pas forcément. Ouvrir la fenêtre sur le clic,
-    // puis charger l'HTML local authentifié dans un Blob imprimable.
-    const {openLabelPrint,pdfLink}=articleLabelLinks(doc,context);
-    const createBar = doc.createElement('div');
-    createBar.className = 'kmc-workspace-receive-footer';
-    createBar.setAttribute('data-supply-box-create', '');
-    const newRef = field('Référence COMBOX (facultative)', 'Référence de la nouvelle COMBOX');
-    const newBox = makeActionButton(doc, 'Initialiser une COMBOX', 'create-box');
-    // A2 : la clé d'opération survit à un échec (coupure réseau) pour qu'un nouvel essai du même geste
-    // renvoie la même COMBOX ; elle change si la référence saisie change, et après un succès.
-    let boxKey = null; let boxKeyRef = null;
-    const makeKey = () => (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.randomUUID
-      ? globalThis.crypto.randomUUID()
-      : `box-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`);
-    newBox.addEventListener('click', () => {
-      const wanted = newRef.value.trim();
-      if (!boxKey || boxKeyRef !== wanted) { boxKey = makeKey(); boxKeyRef = wanted; }
-      return runAction(context, newBox, {
-      url: endpointFor(context.marketCode, 'boxes'),
-      idempotencyKey: boxKey,
-      onSuccess: () => { boxKey = null; boxKeyRef = null; },
-      body: wanted ? { reference: wanted } : {},
-      runningMessage: 'Initialisation de la COMBOX…',
-      successMessage: result => `COMBOX ${result && result.physical_unit ? result.physical_unit.reference : ''} ${result && result.replayed ? 'déjà initialisée (rejeu reconnu)' : 'initialisée'}.`,
-      }).catch(() => {});
-    });
-    [newRef, newBox].forEach(node => createBar.appendChild(node));
-    // La création de COMBOX sera affichée après les étiquettes articles.
-
-    // La caméra est une entrée de code : seule l'action opérateur confirme ensuite le
-    // placement. Aucune mutation métier pendant l'ouverture ou la lecture de la caméra.
-    const mobileScanControls = (input, name, afterScan) => {
-      const wrap=doc.createElement('div');
-      const start=makeActionButton(doc,'Scanner par caméra','scan-camera');
-      const stop=makeActionButton(doc,'Arrêter la caméra','stop-camera');
-      const video=doc.createElement('video');
-      start.type='button';stop.type='button';stop.hidden=true;video.hidden=true;
-      video.autoplay=true;video.muted=true;
-      video.setAttribute('playsinline','');
-      video.style.cssText='width:100%;max-width:300px;max-height:270px;object-fit:cover;border-radius:8px';
-      video.style.display='none';
-      let active=false,stream=null,frame=null;
-      const end=()=>{
-        active=false;
-        if(frame!==null && typeof cancelAnimationFrame==='function')cancelAnimationFrame(frame);
-        frame=null;
-        if(stream)stream.getTracks().forEach(track=>track.stop());
-        stream=null;video.srcObject=null;video.hidden=true;video.style.display='none';
-        stop.hidden=true;start.hidden=false;start.disabled=false;
-      };
-      stop.addEventListener('click',end);
-      start.addEventListener('click',async()=>{
-        if(active)return;
-        if(typeof navigator==='undefined'||!navigator.mediaDevices?.getUserMedia||
-           typeof globalThis.BarcodeDetector!=='function'){
-          setFeedback(context.root,'Caméra QR non disponible : Chrome Android HTTPS requis, ou saisie du code de secours.','critical');
-          return;
-        }
-        start.disabled=true;
-        try{
-          const supported=await globalThis.BarcodeDetector.getSupportedFormats();
-          const formats=['qr_code','code_128','ean_13','ean_8'].filter(v=>supported.includes(v));
-          if(!formats.length)throw new Error('Format QR non pris en charge');
-          const detector=new globalThis.BarcodeDetector({formats});
-          stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
-          video.srcObject=stream;video.hidden=false;video.style.display='block';
-          stop.hidden=false;start.hidden=true;active=true;
-          await video.play();
-          const scan=async()=>{
-            if(!active)return;
-            if(!video.isConnected || (typeof document!=='undefined'&&document.hidden)){end();return;}
-            try{
-              const codes=await detector.detect(video);
-              const raw=codes.find(c=>String(c.rawValue||'').trim());
-              if(raw){
-                const value=String(raw.rawValue).trim();
-                end();
-                input.value=value;
-                input.dispatchEvent(new Event('input',{bubbles:true}));
-                if(afterScan)await afterScan(value);
-                return;
-              }
-            }catch(error){setFeedback(context.root,'Lecture caméra : '+String(error.message||'erreur'),'critical');}
-            if(active)frame=requestAnimationFrame(scan);
-          };
-          frame=requestAnimationFrame(scan);
-        }catch(error){
-          end();setFeedback(context.root,'Accès caméra refusé ou indisponible : '+String(error.message||'autorisation requise'),'critical');
-        }
-      });
-      wrap.append(start,stop,video);
-      wrap.setAttribute('aria-label',name);
-      return wrap;
-    };
-
+    const {createBar,composeCell,fillable,BOX_STATE_LABELS}=buildBoxPreparation(doc,context,d);
     // Les articles à étiqueter viennent des allocations physiquement reçues.
     // Un second clic est nécessaire pour imprimer après l'émission idempotente.
     boxes.appendChild(renderArticleLabelActions(doc,context,fillable,true));
@@ -1670,154 +1928,6 @@
     boxes.appendChild(packingHeading);
     boxes.appendChild(createBar);
 
-    const composeCell = box => {
-      const cell = doc.createElement('div');
-      cell.className = 'kmc-workspace-box-compose';
-      // L'étiquette COMBOX finale n'est émise qu'après fermeture (PACKED).
-      // La destination se déduit du manifeste physique, jamais d'un choix arbitraire.
-      if(['PACKED','DISPATCHED'].includes(box.state)){
-        const createQr=makeActionButton(doc,'Préparer QR COMBOX','issue-box-label');
-        createQr.addEventListener('click',()=>runAction(context,createQr,{
-          url:endpointFor(context.marketCode,'labels/boxes/'+encodeURIComponent(box.unit_id)+'/issue'),
-          body:{},
-          runningMessage:'Attribution du QR de cette COMBOX fermée…',
-          successMessage:'QR COMBOX définitif prêt à imprimer.',
-        }).catch(()=>{}));
-        const printBox=doc.createElement('a');
-        printBox.href=endpointFor(context.marketCode,'labels/boxes/'+encodeURIComponent(box.unit_id)+'/print?format=thermal');
-        printBox.target='_blank';printBox.rel='noopener';
-        printBox.textContent='Imprimer QR COMBOX';
-        printBox.setAttribute('data-hub-print-box','');
-        printBox.addEventListener('click',event=>openLabelPrint(event,printBox.href));
-        cell.append(createQr,printBox,pdfLink('boxes',box.unit_id,'a4'),pdfLink('boxes',box.unit_id,'thermal'));
-      }else{
-        cell.appendChild(text(doc,'small','kmc-workspace-note','Étiquette COMBOX après fermeture et contrôle du contenu.'));
-      }
-      const readyBoxCode=value=>value===box.reference||
-        /^KQ1_[A-F0-9]{32}$/i.test(String(value||''))||
-        /^[A-HJ-NP-Z2-9]{8}$/i.test(String(value||''));
-      if (BOX_MUTABLE.has(box.state)) {
-        const boxScan=field('Scanner la COMBOX','Scanner la référence de la COMBOX '+box.reference);
-        boxScan.setAttribute('data-hub-box-scan','');
-        context.hubVerifiedBoxes=context.hubVerifiedBoxes||{};
-        boxScan.value=context.hubVerifiedBoxes[String(box.unit_id)]||'';
-        boxScan.addEventListener('input',()=>{
-          if(readyBoxCode(boxScan.value.trim()))context.hubVerifiedBoxes[String(box.unit_id)]=boxScan.value.trim();
-          else delete context.hubVerifiedBoxes[String(box.unit_id)];
-        });
-        const options=fillable.filter(line=>Number(line.quantity)>0);
-        const item=doc.createElement('select');
-        item.setAttribute('aria-label','Article réceptionné à placer dans '+box.reference);
-        options.forEach((line,i)=>item.appendChild(Object.assign(doc.createElement('option'),{
-          value:String(i),textContent:(line.product||'Article')+' · '+line.order_ref+' · '+
-            line.quantity+' disponible(s) · '+line.from_unit_ref,
-        })));
-        const method=doc.createElement('select');
-        method.setAttribute('aria-label','Mode de preuve du scan article dans '+box.reference);
-        [['SCAN','Scanner le code article'],['MANUAL','Mode dégradé · constat manuel']]
-          .forEach(([value,label])=>method.appendChild(Object.assign(doc.createElement('option'),{value,textContent:label})));
-        const code=field('Scanner le code article','Code physique de l’article à placer dans '+box.reference);
-        const proof=field('Référence de preuve manuelle (6 caractères minimum)','Preuve du constat manuel pour '+box.reference);
-        proof.hidden=true;
-        const qty=doc.createElement('input');qty.type='number';qty.min='1';qty.step='1';qty.value='1';
-        qty.setAttribute('aria-label','Quantité de cet article à placer dans '+box.reference);
-        const add=makeActionButton(doc,'Placer l’article dans la COMBOX','fill-box');
-        const syncMethod=()=>{
-          const manual=method.value==='MANUAL'; code.hidden=manual; proof.hidden=!manual;
-          if(manual)code.value=''; else proof.value='';
-        };
-        method.addEventListener('change',syncMethod);
-        const fill=()=>{
-          if(!readyBoxCode(boxScan.value.trim())){
-            setFeedback(context.root,'Scannez la référence ou le QR de cette COMBOX.','critical'); return;
-          }
-          const line=options[Number(item.value)]; if(!line)return;
-          const manual=method.value==='MANUAL';
-          const proofRef=String(proof.value||'').trim();
-          if(manual?proofRef.length<6:!code.value.trim()){
-            setFeedback(context.root,manual?'Référence de preuve obligatoire (6 caractères minimum).':'Code article obligatoire.','critical'); return;
-          }
-          const quantity=Number(qty.value);
-          if(!Number.isInteger(quantity)||quantity<1||quantity>Number(line.quantity))return;
-          if(!manual&&quantity!==1){setFeedback(context.root,'Un scan confirmé correspond à un article. Scannez chaque unité séparément.','critical');return;}
-          runAction(context,add,{
-            url:endpointFor(context.marketCode,'boxes/'+encodeURIComponent(box.unit_id)+'/fill'),
-            body:{from_unit_id:line.from_unit_id,allocation_id:line.allocation_id,quantity,
-              box_reference_scan:boxScan.value.trim(),
-              ...(manual?{evidence_method:'MANUAL',evidence_ref:proofRef}
-                :{evidence_method:'SCAN',evidence_code:code.value.trim()})},
-            runningMessage:'Vérification de l’article et placement dans la COMBOX…',
-            successMessage:quantity+' article(s) placé(s) dans '+box.reference+'.',
-          }).catch(()=>{});
-        };
-        add.disabled=!options.length;
-        const boxCamera=mobileScanControls(boxScan,'Caméra QR COMBOX');
-        const itemCamera=mobileScanControls(code,'Caméra QR article',async raw=>{
-          if(!/^KQ1_[A-F0-9]{32}$/i.test(raw)&&!/^[A-HJ-NP-Z2-9]{8}$/i.test(raw))return;
-          try{
-            const resolved=await jsonRequest(context.fetch,endpointFor(context.marketCode,
-              'labels/resolve')+'?'+new URLSearchParams({code:raw}));
-            if(resolved.label?.target_type!=='ARTICLE')throw new Error('Ce QR ne correspond pas à un article');
-            const index=options.findIndex(line=>String(line.allocation_id)===String(resolved.label.allocation_id));
-            if(index<0)throw new Error('Cet article ne figure pas parmi les quantités disponibles');
-            item.value=String(index);method.value='SCAN';syncMethod();code.value=raw;
-            setFeedback(context.root,'Article reconnu · vérifiez la COMBOX puis validez le placement.','success');
-          }catch(error){
-            code.value='';setFeedback(context.root,'QR non autorisé ou non disponible : '+String(error.message||'contrôle requis'),'critical');
-          }
-        });
-        [boxScan,boxCamera,item,method,code,itemCamera,proof,qty,add].forEach(node=>cell.appendChild(node));
-        code.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();fill();}});
-        proof.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();fill();}});
-        add.addEventListener('click',fill);
-        if((box.contents||[]).length){
-          const close=makeActionButton(doc,'Fermer la COMBOX','close-box');
-          close.addEventListener('click',()=>{
-            if(!readyBoxCode(boxScan.value.trim())){setFeedback(context.root,'Scannez la COMBOX avant fermeture.','critical');return;}
-            runAction(context,close,{
-              url:endpointFor(context.marketCode,'boxes/'+encodeURIComponent(box.unit_id)+'/close'),
-              body:{box_reference_scan:boxScan.value.trim()},
-              runningMessage:'Contrôle du contenu et fermeture…',
-              successMessage:box.reference+' fermée et prête pour la suite.',
-            }).catch(()=>{});
-          });
-          cell.appendChild(close);
-        }
-      }
-      const next = BOX_NEXT_STATE[box.state];
-      if (next && (box.contents || []).length) {
-        const label = next === 'DISPATCHED' ? 'Prêt à remettre au transitaire' : `Étape suivante · ${BOX_STATE_LABELS[next]||next}`;
-        const step = makeActionButton(doc, label, 'advance-box');
-        let finalBoxCode=null,applied=null;
-        if(next==='DISPATCHED'){
-          finalBoxCode=field('Scanner QR COMBOX avant sortie','Scanner l’étiquette COMBOX définitive de '+box.reference);
-          finalBoxCode.setAttribute('data-hub-final-box-scan','');
-          const finalCamera=mobileScanControls(finalBoxCode,'Caméra QR COMBOX définitive');
-          const confirmWrap=doc.createElement('label');
-          applied=doc.createElement('input');applied.type='checkbox';
-          applied.setAttribute('data-hub-box-label-applied','');
-          confirmWrap.append(applied,text(doc,'span','',' Étiquette COMBOX imprimée et physiquement collée'));
-          cell.append(finalBoxCode,finalCamera,confirmWrap);
-        }
-        step.addEventListener('click', () => {
-          if(next==='DISPATCHED'&&(!finalBoxCode.value.trim()||!applied.checked)){
-            setFeedback(context.root,'Scanner le QR COMBOX et confirmer la pose de l’étiquette avant sortie.','critical');
-            return;
-          }
-          runAction(context, step, {
-            url: endpointFor(context.marketCode, `boxes/${box.unit_id}/advance`),
-            body: {to_state:next,...(next==='DISPATCHED'?{
-              box_qr_scan:finalBoxCode.value.trim(),label_applied_confirmed:applied.checked,
-            }:{})},
-            confirmMessage: next === 'DISPATCHED' ? `Confirmer la sortie de ${box.reference} après contrôle de son QR ?` : undefined,
-            runningMessage: 'Changement d’étape…',
-            successMessage: `${box.reference} : ${next}.`,
-          }).catch(() => {});
-        });
-        cell.appendChild(step);
-      }
-      return cell.children.length ? cell : '—';
-    };
 
     const boxTable=simpleTable(doc, ['', 'COMBOX', 'État', 'Contenu', 'Expédition', 'Composer', 'Action'],
       (d.boxes || []).map(box => {
@@ -3340,6 +3450,11 @@
     openManualSourcing,
     mountPurchaseActions,
     mountReceptionActions,
+    mountBoxActions,
+    packingGroups,
+    matchesPackingGroup,
+    packingBoxMatches,
+    sourceQualityChecked,
     receptionLabelRows,
     mount,
   });
