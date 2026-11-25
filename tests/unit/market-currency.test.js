@@ -43,6 +43,15 @@ test('un marché XAF voit ses KPI KMF projetés en XAF via EUR, arrondis au mino
   expect(out.rows[0].total_kmf).toBe(5000);
 });
 
+test('une alerte cash structurée suit aussi la devise d’affichage du marché', async () => {
+  const payload = { signals: [{ amount: { value: 491.96775, unit: 'KMF' } }] };
+  const out = await projectMarketPayload(payload, { currency: 'XAF', minor_unit: 0 });
+  expect(out.signals[0].amount).toEqual({
+    value: Math.round(655.957), unit: 'XAF', base_currency: 'KMF',
+  });
+  expect(payload.signals[0].amount).toEqual({ value: 491.96775, unit: 'KMF' });
+});
+
 test('le payload source (cache partagé) n’est jamais muté', async () => {
   const payload = { kpis: [kpi(1000)] };
   await projectMarketPayload(payload, { currency: 'XAF', minor_unit: 0 });

@@ -77,6 +77,15 @@ test('délégation mono-marché : CM automatique', async () => {
   expect(marketCalls(calls).every(u => /\/CM(\/|$)/.test(u))).toBe(true);
 });
 
+test('les ancres de navigation sont résolues après le montage asynchrone des sections', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/market-autonomy.js'), 'utf8');
+  expect(source).toContain("new Set(['market-team', 'market-network', 'market-cash-control'])");
+  expect(source).toContain('scrollToRequestedSection');
+  expect(source).toContain('anchorObserver?.observe(root, { childList: true, subtree: true })');
+});
+
 test('délégation réseau granulaire : contexte dashboard refusé, accès réseau serveur autorisé', async () => {
   const { root, calls } = await boot(monoCtx, '?market=KM', { deniedDashboard: true });
   expect(calls).toContain('/api/market-delegation/markets/KM/network/relais');

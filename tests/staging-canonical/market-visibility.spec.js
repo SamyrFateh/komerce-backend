@@ -94,13 +94,12 @@ test('Responsable marché : Hub et Order 360 isolés, lecture seule par capabili
 
     await page.goto('/admin/hub',{waitUntil:'domcontentloaded'});
     await expect(page.locator('.kmc-hub-app-title h1')).toHaveText('Hub · Mes marchés',{timeout:20000});
-    // The complete canonical business menu must remain visible, including
-    // central domains through their explicit market-scoped read-only projections.
+    // Keep one market-scoped destination per operation: Hub is single-entry,
+    // and Operations is not relabelled as a separate Relay workspace.
     const requiredMenu=[
       'control-tower','action-center','flow-commerce','flow-orders','entity-clients',
       'workspace-pricing','workspace-catalog','flow-operations','workspace-shipping',
-      'workspace-purchasing','flow-finance','workspace-accounting',
-      'live-import-runtime','live-hub','live-relais',
+      'flow-finance','workspace-accounting','live-hub',
       'markets-home','market-autonomy','market-catalog','unsold',
       'admin-users','admin-providers','settings','help-docs'
     ];

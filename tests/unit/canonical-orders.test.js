@@ -20,6 +20,22 @@ const payload = {
 };
 
 describe('canonical orders view (lecture seule sur la projection dashboard-orders)', () => {
+  test('un appel dashboard bloqué est annulé et renvoie une erreur réessayable après 20 secondes', async () => {
+    jest.useFakeTimers();
+    try {
+      const fetchFn = jest.fn((_url, { signal }) => new Promise((_resolve, reject) => {
+        signal.addEventListener('abort', () => reject(new Error('aborted')));
+      }));
+      const request = orders.jsonRequest(fetchFn, '/api/admin/dashboard/orders/market/CG');
+      const result = expect(request).rejects.toThrow('Le serveur met trop de temps à répondre. Réessayez.');
+      await jest.advanceTimersByTimeAsync(20000);
+      await result;
+      expect(fetchFn).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ signal: expect.any(AbortSignal) }));
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   test('buildRows fusionne les files serveur sans recalcul ni doublon', () => {
     const rows = orders.buildRows(payload);
     expect(rows.map(r => r.reference)).toEqual(['CMD-1', 'CMD-2', 'CMD-3']);

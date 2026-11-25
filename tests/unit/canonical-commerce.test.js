@@ -458,6 +458,23 @@ describe('Commerce — top produits cliquables vers la fiche Produit 360', () =>
   });
 });
 
+test('Commerce : un montage périmé ou sans payload ne plante pas sur period', async () => {
+  const renderer = { render: jest.fn() };
+  const options = {
+    root: {}, document: {}, ui: {},
+    renderer: { createRenderer: jest.fn(() => renderer) },
+  };
+  const empty = commerceDecision.enhance({ mount: async () => ({}) }, {});
+  await expect(empty.mount(options)).resolves.toEqual({});
+  expect(renderer.render).toHaveBeenCalledWith(options.root, [], expect.objectContaining({ state: 'error' }));
+
+  const staleRenderer = { render: jest.fn() };
+  const stale = commerceDecision.enhance({ mount: async () => ({ stale: true }) }, {});
+  await expect(stale.mount({ ...options, renderer: { createRenderer: () => staleRenderer } }))
+    .resolves.toEqual({ stale: true });
+  expect(staleRenderer.render).not.toHaveBeenCalled();
+});
+
 test('L10 : aucun écran Finance/Pilotage n’affiche « CA encaissé » ; libellés Q3', () => {
   const fs = require('fs');
   const dir = require('path').join(__dirname, '../../public/dashboards/canonical/js');

@@ -187,9 +187,14 @@
         ? 'critical'
         : (rawLevel === 'warning' ? 'warning' : 'info');
       const message = [row.summary, row.recommendation].filter(Boolean).join(' · ') || 'Action requise';
+      const amount = row.amount && Number.isFinite(Number(row.amount.value)) && row.amount.unit
+        ? `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(Number(row.amount.value))} ${row.amount.unit}`
+        : '';
       return {
         level,
-        title: row.title || row.signal_type || 'Signal opérationnel',
+        title: row.signal_type === 'cash_expiring'
+          ? `Cash non couvert${amount ? ` — ${amount}` : ''}`
+          : (row.title || row.signal_type || 'Signal opérationnel'),
         message,
       };
     });

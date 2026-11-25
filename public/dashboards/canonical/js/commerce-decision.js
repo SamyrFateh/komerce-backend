@@ -594,6 +594,20 @@
       ...base,
       mount(options) {
         return baseMount(options).then(result => {
+          // Le montage de base peut finir après qu'une nouvelle vue a remplacé
+          // celle-ci. Dans ce cas, il n'y a ni payload ni rendu à enrichir.
+          if (result?.stale) return result;
+          if (!result || !result.payload) {
+            const renderer = options.renderer?.createRenderer?.({
+              document: options.document,
+              ui: options.ui,
+            });
+            renderer?.render?.(options.root, [], {
+              state: 'error',
+              stateMessage: 'Les données Commerce n’ont pas été reçues. Relancez l’écran.',
+            });
+            return result || Object.freeze({ stale: false, unavailable: true });
+          }
           const rerender = nextPeriod => enhanced.mount({ ...options, period: nextPeriod });
           return {
             ...result,

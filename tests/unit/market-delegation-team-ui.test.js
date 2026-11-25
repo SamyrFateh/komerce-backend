@@ -19,6 +19,18 @@ describe('market-delegation team UI', () => {
     expect(html).not.toMatch(/<script(?![^>]*\bsrc=)[^>]*>/i);
   });
 
+  test('les liens d’ancre Autonomie correspondent à des sections montées de façon asynchrone', () => {
+    const team = read('public/dashboards/canonical/js/market-team.js');
+    const network = read('public/dashboards/canonical/js/market-network.js');
+    const cash = read('public/dashboards/canonical/js/market-cash-control.js');
+    const autonomy = read('public/dashboards/canonical/js/market-autonomy.js');
+    expect(team).toContain("section.id = 'market-team'");
+    expect(network).toContain("section.id = 'market-network'");
+    expect(cash).toContain("section.id = 'market-cash-control'");
+    expect(autonomy).toContain('scrollToRequestedSection');
+    expect(autonomy).toContain("anchorObserver?.observe(root, { childList: true, subtree: true })");
+  });
+
   test('la page invitation conserve le lien pendant login, permet de créer un compte client puis accepte explicitement', () => {
     const html = read('public/dashboards/canonical/team-invite.html');
     const js = read('public/dashboards/canonical/js/team-invite.js');

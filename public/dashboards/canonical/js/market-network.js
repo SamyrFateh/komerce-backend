@@ -390,6 +390,7 @@
       if (relaisError === 'absent' && providersError === 'absent') return;
 
       const section = el('section', 'kmc-section kmc-team-section');
+      section.id = 'market-network';
       section.dataset.marketNetwork = '';
       section.appendChild(el('h2', 'kmc-section-title', 'Réseau local'));
       section.appendChild(el('p', 'kmc-workspace-note', 'Relais et prestataires rattachés à ce Market ID. Un relais suspendu reste dans l’historique mais ne reçoit plus de nouvelles affectations.'));

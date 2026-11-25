@@ -40,6 +40,12 @@ describe('Komerce layout canon v1', () => {
     expect(css).toContain('@media (max-width: 760px)');
     expect(css).toContain('max-height: none');
   });
+
+  test('Opérations garde ses huit KPI lisibles en quatre, deux puis une colonne', () => {
+    expect(css).toContain('[data-dashboard-id="operations"] .kmc-metric-strip');
+    expect(css).toContain('grid-template-columns: repeat(4, minmax(0, 1fr))');
+    expect(css).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))');
+  });
 });
 
 describe('komerce-layout-canon-v1 — canon visuel validé (parité mocks)', () => {
