@@ -55,15 +55,31 @@
   }
 
   async function jsonRequest(fetchFn, url) {
-    const response = await fetchFn(url, { method: 'GET', credentials: 'include', headers: { Accept: 'application/json' } });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      const error = new Error(body.error || `Erreur HTTP ${response.status}`);
-      error.status = response.status;
-      error.code = body.code || null;
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    const timeout = controller ? setTimeout(() => controller.abort(), 20000) : null;
+    let response;
+    try {
+      response = await fetchFn(url, {
+        method: 'GET', credentials: 'include', headers: { Accept: 'application/json' },
+        ...(controller ? { signal: controller.signal } : {}),
+      });
+      const body = await response.json().catch(error => {
+        if (controller?.signal.aborted) throw error;
+        return {};
+      });
+      if (!response.ok) {
+        const error = new Error(body.error || `Erreur HTTP ${response.status}`);
+        error.status = response.status;
+        error.code = body.code || null;
+        throw error;
+      }
+      return body;
+    } catch (error) {
+      if (controller?.signal.aborted) throw new Error('Le serveur met trop de temps à répondre. Réessayez.');
       throw error;
+    } finally {
+      if (timeout) clearTimeout(timeout);
     }
-    return body;
   }
 
   function hubExecutionHref(marketCode) {
@@ -291,6 +307,10 @@
           const box = el(doc, 'div', 'kmc-ord-error', text);
           box.setAttribute('role', 'alert');
           rootNode.appendChild(box);
+          const retry = el(doc, 'button', 'kmc-workspace-action is-secondary', 'Réessayer');
+          retry.type = 'button';
+          retry.addEventListener('click', () => readFresh().catch(() => {}));
+          rootNode.appendChild(retry);
           rootNode.removeAttribute?.('data-dashboard-stale');
           hasData = false;
         } else {
@@ -308,5 +328,5 @@
   }
 
   return Object.freeze({ mount, buildRows, endpointForContext, hubExecutionHref, STATUS_LABELS, TABS,
-    orderHref, initialQueue, reflectQueueInUrl });
+    orderHref, initialQueue, reflectQueueInUrl, jsonRequest });
 });

@@ -144,6 +144,15 @@ test('un compte habilité CG seulement ne voit qu’un lien ouvrable CG', async 
     .map(node => node.attributes['data-market-inaccessible'])).toEqual(['CM','KM']);
 });
 
+test('les lectures catalogue se terminent après 20 secondes et présentent une reprise', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/market-catalog.js'), 'utf8');
+  expect(source).toContain('setTimeout(() => controller.abort(), 20000)');
+  expect(source).toContain('Le serveur met trop de temps à répondre. Réessayez.');
+  expect(source).toContain("el('button', 'kmc-workspace-action is-secondary', 'Réessayer')");
+});
+
 test('KM sélectionné mais sans catalog.read : message contextualisé et zéro lecture KM', async () => {
   const { root, calls } = await boot(globalCtx, '?product_ref=KPR-000092&market=KM', []);
   expect(descend(root, node => node.textContent === 'Habilitation marché requise')).toBeTruthy();

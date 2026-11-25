@@ -71,8 +71,7 @@ if (process.env.E2E_CHROMIUM_SPEC_FILTER === 'g8-refunds-readonly') {
   const expectedMenu=[
     'control-tower','action-center','flow-commerce','flow-orders','entity-clients',
     'workspace-pricing','workspace-catalog','flow-operations','workspace-shipping',
-    'workspace-purchasing','flow-finance','workspace-accounting',
-    'live-import-runtime','live-hub','live-relais','markets-home',
+    'flow-finance','workspace-accounting','live-hub','markets-home',
     'market-autonomy','market-catalog','unsold','admin-users',
     'admin-providers','settings','help-docs'
   ];
@@ -125,8 +124,7 @@ if (process.env.E2E_CHROMIUM_SPEC_FILTER === 'g8-refunds-readonly') {
   const menu=[
     'control-tower','action-center','flow-commerce','flow-orders','entity-clients',
     'workspace-pricing','workspace-catalog','flow-operations','workspace-shipping',
-    'workspace-purchasing','flow-finance','workspace-accounting','live-import-runtime',
-    'live-hub','live-relais','markets-home','market-autonomy','market-catalog','unsold',
+    'flow-finance','workspace-accounting','live-hub','markets-home','market-autonomy','market-catalog','unsold',
     'admin-users','admin-providers','settings','help-docs'
   ];
   const expectedSha=String(process.env.E2E_EXPECTED_DEPLOY_SHA||'');

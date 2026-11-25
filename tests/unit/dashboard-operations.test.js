@@ -54,7 +54,7 @@ function seedRows() {
   db.query
     .mockResolvedValueOnce({ rows: [{ reference: 'CMD-1', status: 'preparation', payment_status: 'paid', total_kmf: '25000', destination_island: 'Centre', relais_name: 'Relais A', parcels_count: '1', hours_since_last_event: '30', created_at: '2026-08-23T08:00:00Z' }] })
     .mockResolvedValueOnce({ rows: [{ tracking_number: 'TRK-1', status: 'in_transit', shipped_at: '2026-08-01T08:00:00Z', order_reference: 'CMD-2', relais_name: 'Relais B', days_in_transit: '23' }] })
-    .mockResolvedValueOnce({ rows: [{ signal_type: 'parcel_blocked', severity: 'critical', title: 'Colis bloqué', summary: 'Bloqué depuis plusieurs jours', recommendation: 'Vérifier le suivi', owner_role: 'hub', entity_type: 'parcel', status: 'open', created_at: '2026-08-20T08:00:00Z' }] });
+    .mockResolvedValueOnce({ rows: [{ signal_type: 'cash_expiring', severity: 'warning', title: 'Cash non couvert — 5 990 KMF', summary: 'Encaissement non couvert', recommendation: 'Contrôler le relais', amount_kmf: '5990', owner_role: 'hub', entity_type: 'order', status: 'open', created_at: '2026-08-20T08:00:00Z' }] });
 }
 
 beforeEach(() => {
@@ -103,6 +103,9 @@ describe('dashboard-operations', () => {
     expect(String(signalSql)).toContain('scope_o.market_id = $2');
     expect(signalParams[1]).toBe('market-cm-id');
     expect(result.kpis).toHaveLength(8);
+    expect(result.signals[0]).toMatchObject({
+      signal_type: 'cash_expiring', title: 'Cash non couvert', amount: { value: 5990, unit: 'KMF' },
+    });
     expect(mockControlChain).toHaveBeenCalledWith({ market });
     // Les files « Cash à confirmer » / « Colis à créer » viennent de la projection dashboard-orders, bornée au même marché.
     expect(mockWorkQueues).toHaveBeenCalledWith(market);
@@ -121,6 +124,16 @@ describe('dashboard-operations', () => {
     db.query.mock.calls.forEach(([, params]) => expect(params).not.toContain('market-cm-id'));
     expect(String(db.query.mock.calls[2][0])).toContain('AND 1=1');
     expect(mockControlChain).toHaveBeenCalledWith({ market: null });
+  });
+
+  test('les montants des alertes cash sont extraits des métadonnées comme valeur structurée', async () => {
+    db.query.mockReset().mockResolvedValue({ rows: [{
+      signal_type: 'cash_expiring', severity: 'warning', title: 'Cash non couvert — 5 990 KMF',
+      amount_kmf: '5990', summary: 'Cash à contrôler', recommendation: 'Vérifier', status: 'open',
+    }] });
+    const [signal] = await operations.getOperationalSignals({ market_id: 'market-cg-id' });
+    expect(signal).toMatchObject({ title: 'Cash non couvert', amount: { value: 5990, unit: 'KMF' } });
+    expect(String(db.query.mock.calls[0][0])).toContain("s.meta->>'amount_kmf'");
   });
 });
 

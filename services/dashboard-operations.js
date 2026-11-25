@@ -148,6 +148,7 @@ async function getOperationalSignals(filters = {}) {
       s.title,
       s.summary,
       s.recommendation,
+      CASE WHEN s.signal_type = 'cash_expiring' THEN s.meta->>'amount_kmf' END AS amount_kmf,
       s.owner_role,
       s.entity_type,
       s.status,
@@ -171,9 +172,14 @@ async function getOperationalSignals(filters = {}) {
   return rows.map(row => ({
     signal_type: row.signal_type,
     severity: row.severity,
-    title: row.title,
+    // L'alerte historique sérialise son montant en KMF dans le titre. Le
+    // dashboard marché projette la valeur structurée via Currency Boundary.
+    title: row.signal_type === 'cash_expiring' ? 'Cash non couvert' : row.title,
     summary: row.summary || null,
     recommendation: row.recommendation || null,
+    ...(row.signal_type === 'cash_expiring' && row.amount_kmf != null && Number.isFinite(Number(row.amount_kmf))
+      ? { amount: { value: Number(row.amount_kmf), unit: 'KMF' } }
+      : {}),
     owner_role: row.owner_role || null,
     entity_type: row.entity_type || null,
     status: row.status,
