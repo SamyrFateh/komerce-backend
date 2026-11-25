@@ -545,6 +545,7 @@
     const receiveRefs=new Map();
     const boxCreateKeys=new Map(),hubVerifiedBoxes={};
     let activeBoxDetails=null;
+    const updatePORows=new Map();
     const orderHeader = headerTitle.textContent;
     const setHeaders = labels => {
       titleRow.replaceChildren();
@@ -552,14 +553,15 @@
     };
     const renderPOs = () => {
       body.replaceChildren();
+      updatePORows.clear();
       const term=safe(search.value).trim().toLocaleLowerCase('fr');
       const filtered=(poRows || []).filter(p => !p.cancelled && [p.reference,p.market,p.supplier,...(p.order_references || [])]
         .some(v=>safe(v).toLocaleLowerCase('fr').includes(term)));
       headerCount.textContent=filtered.length+' PO';
-      setHeaders(['PO / Fournisseur','Commandes associées','Achat','Réception','COMBOX']);
+      setHeaders(['PO / Fournisseur','Commandes associées','Achat','Réception','COMBOX','Départ']);
       if (!filtered.length) {
         const tr=make(doc,'tr'), td=make(doc,'td','','Aucune PO correspondante.');
-        td.colSpan=5;tr.appendChild(td);body.appendChild(tr);return;
+        td.colSpan=6;tr.appendChild(td);body.appendChild(tr);return;
       }
       for (const p of filtered) {
         const tr=make(doc,'tr');tr.setAttribute('data-hub-pilot-po',p.id);
@@ -607,11 +609,15 @@
           const data=await requestJSON(fetchFn,'/api/hub/board?view=po');
           if(data.scope!=='HUB_GLOBAL'||!Array.isArray(data.purchase_orders))throw Error('Projection PO indisponible');
           poRows=data.purchase_orders;
-          const fresh=poRows.find(row=>row.id===p.id);
+          for(const [id,update] of updatePORows)update(poRows.find(row=>row.id===id));
+        };
+        const updateRow=fresh=>{
           if(!fresh){purchaseSummary.textContent='PO indisponible';receiptSummary.textContent='PO indisponible';return;}
           current=fresh;
           purchaseSummary.textContent=({draft:'Engagement à valider',validation:'Engagement validé · à soumettre',engaged:'Envoi à attester',sent:'Suivi fournisseur',received:'Réception constatée'})[fresh.purchase_step] || PO_STAGE[fresh.purchase_stage] || 'À vérifier';
           receiptSummary.textContent=fresh.received+' / '+fresh.expected+' reçus'+(fresh.missing?' · '+fresh.missing+' attendus':'')+(fresh.anomalies?' · '+fresh.anomalies+' écarts':'');
+          boxSummary.textContent=boxLabel(fresh);
+          departureSummary.textContent=departureLabel(fresh);
         };
         receiptDetails.addEventListener('toggle',async()=>{
           if(!receiptDetails.open||receiptLoading||receiptHandle?.busy())return;
@@ -632,7 +638,9 @@
         });
         reception.appendChild(receiptDetails);tr.appendChild(reception);
         const boxCell=make(doc,'td'),boxDetails=make(doc,'details');
-        boxDetails.appendChild(make(doc,'summary','','Préparation COMBOX'));
+        const boxLabel=row=>row.boxed_quantity==null?'Préparation COMBOX':row.boxed_quantity+' / '+row.received+' en COMBOX · '+row.box_count+' carton(s)';
+        const boxSummary=make(doc,'summary','',boxLabel(p));
+        boxDetails.appendChild(boxSummary);
         const boxHost=make(doc,'div','kmc-hub-inline-boxes');
         boxHost.setAttribute('data-hub-inline-combox',p.id);
         boxDetails.appendChild(boxHost);
@@ -657,6 +665,35 @@
           finally{boxLoading=false;}
         });
         boxCell.appendChild(boxDetails);tr.appendChild(boxCell);
+        const departure=make(doc,'td'),departureDetails=make(doc,'details');
+        const departureLabel=row=>row.handed_quantity==null?'Départ Hub':row.handed_quantity+' / '+row.expected+' remis · '+row.dispatched_quantity+' sorti(s)';
+        const departureSummary=make(doc,'summary','',departureLabel(p));
+        departureDetails.appendChild(departureSummary);
+        const departureHost=make(doc,'div','kmc-hub-inline-departure');
+        departureHost.setAttribute('data-hub-inline-departure',p.id);
+        departureDetails.appendChild(departureHost);
+        let departureHandle=null,departureLoading=false;
+        departureDetails.addEventListener('toggle',async()=>{
+          if(!departureDetails.open||departureLoading||departureHandle?.busy())return;
+          if(activeBoxDetails&&activeBoxDetails!==departureDetails)activeBoxDetails.open=false;
+          activeBoxDetails=departureDetails;
+          if(!(current.received>0)){
+            departureHost.replaceChildren(make(doc,'p','','Aucun article reçu pour cette PO.'));return;
+          }
+          departureLoading=true;
+          try{
+            if(departureHandle){await departureHandle.reload();return;}
+            const module=global.KomerceCanonicalOperationsWorkspace;
+            if(!module?.mountDepartureActions)throw Error('Module départ indisponible');
+            departureHost.replaceChildren(make(doc,'p','','Chargement du départ…'));
+            departureHandle=await module.mountDepartureActions(departureHost,{
+              document:doc,fetch:fetchFn,user,marketCode:p.market,poId:p.id,hubVerifiedBoxes,onChange:refreshRow,
+            });
+          }catch(error){departureHost.replaceChildren(make(doc,'p','','Départ indisponible : '+error.message));departureHandle=null;}
+          finally{departureLoading=false;}
+        });
+        departure.appendChild(departureDetails);tr.appendChild(departure);
+        updatePORows.set(p.id,updateRow);
         body.appendChild(tr);
       }
     };

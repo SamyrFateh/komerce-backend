@@ -219,6 +219,11 @@ function summarizePurchaseOrders(market, payload) {
     const received = sum(lines, l => l.received);
     const missing = sum(lines, l => l.missing == null ? Math.max(0, number(l.confirmed) - number(l.received)) : l.missing);
     const anomalies = sum(lines, l => l.anomaly);
+    const linkedBoxes=(payload.boxes||[]).filter(b=>(b.contents||[]).some(c=>String(c.purchase_order_id||'')===String(po.id)));
+    const qty=boxes=>sum(boxes,b=>sum((b.contents||[]).filter(c=>String(c.purchase_order_id||'')===String(po.id)),c=>c.qty));
+    const validBoxes=linkedBoxes.filter(b=>!['QUARANTINED','SUPERSEDED'].includes(b.state));
+    const dispatched=validBoxes.filter(b=>b.state==='DISPATCHED');
+    const handed=dispatched.filter(b=>shipmentLevel(b.shipment_stage)>=1);
     result.push({
       id: po.id, reference: po.ref || po.id,
       market: market.code, supplier: po.supplier_name || null,
@@ -229,6 +234,8 @@ function summarizePurchaseOrders(market, payload) {
       cancelled,
       // Réception complète ne signifie ni qualité validée, ni départ Hub.
       reception_complete: !cancelled && expected > 0 && missing === 0 && received >= expected && anomalies === 0,
+      boxed_quantity:qty(validBoxes), dispatched_quantity:qty(dispatched), handed_quantity:qty(handed),
+      box_count:validBoxes.length, shipment_count:new Set(validBoxes.map(b=>b.shipment_ref).filter(Boolean)).size,
     });
   }
   return result;

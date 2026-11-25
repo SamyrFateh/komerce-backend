@@ -485,3 +485,22 @@ test('COMBOX : la préparation commune est montée uniquement au dépliage de la
     expect(fetch).toHaveBeenCalledTimes(2);
   }finally{global.KomerceCanonicalOperationsWorkspace=previous;}
 });
+
+test('cellule Départ : chargement lazy du module canonique pour une PO reçue',async()=>{
+  const app=load(),root=el('main');
+  const po={id:'p1',reference:'PO-1',market:'KM',supplier:'Fournisseur A',order_count:1,order_references:['KAAAAAA'],ordered:2,expected:2,received:1,missing:1,anomalies:0,purchase_step:'received',sent:true,boxed_quantity:1,box_count:1,dispatched_quantity:0,handed_quantity:0};
+  const fetch=jest.fn(async url=>({ok:true,json:async()=>url==='/api/hub/board?view=po'?{scope:'HUB_GLOBAL',purchase_orders:[po]}:{scope:'HUB_GLOBAL',orders:[]}}));
+  const mountDepartureActions=jest.fn(async()=>({busy:()=>false,reload:jest.fn()}));
+  const previous=global.KomerceCanonicalOperationsWorkspace;
+  global.KomerceCanonicalOperationsWorkspace={mountDepartureActions};
+  try{
+    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'}});
+    await root.querySelector('[data-hub-po-pilot-toggle]').click();
+    const host=root.querySelector('[data-hub-inline-departure]');
+    expect(host).not.toBeNull();
+    expect(mountDepartureActions).not.toHaveBeenCalled();
+    await host.parentNode.toggle(true);
+    expect(mountDepartureActions).toHaveBeenCalledWith(host,expect.objectContaining({marketCode:'KM',poId:'p1',fetch}));
+    expect(fetch).toHaveBeenCalledTimes(2);
+  }finally{global.KomerceCanonicalOperationsWorkspace=previous;}
+});

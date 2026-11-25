@@ -1424,7 +1424,7 @@
 
   // Same physical controls in the canonical workshop and the Kanban. The
   // compact view passes an explicit destination/rail selection, not a client.
-  function buildBoxPreparation(doc,context,d,{compact=false,selectedGroup=null}={}) {
+  function buildBoxPreparation(doc,context,d,{compact=false,selectedGroup=null,departureOnly=false}={}) {
     const field=(placeholder,label)=>{
       const input=doc.createElement('input');
       input.type='text';input.maxLength=120;input.placeholder=placeholder;
@@ -1541,6 +1541,7 @@
     const composeCell = box => {
       const cell = doc.createElement('div');
       cell.className = 'kmc-workspace-box-compose';
+      if(!departureOnly){
       // L'étiquette COMBOX finale n'est émise qu'après fermeture (PACKED).
       // La destination se déduit du manifeste physique, jamais d'un choix arbitraire.
       if(['PACKED','DISPATCHED'].includes(box.state)){
@@ -1652,7 +1653,8 @@
           cell.appendChild(close);
         }
       }
-      const next = compact ? null : BOX_NEXT_STATE[box.state];
+      }
+      const next = departureOnly ? (box.state==='PACKED'?'DISPATCHED':null) : compact ? null : BOX_NEXT_STATE[box.state];
       if (next && (box.contents || []).length) {
         const label = next === 'DISPATCHED' ? 'Prêt à remettre au transitaire' : `Étape suivante · ${BOX_STATE_LABELS[next]||next}`;
         const step = makeActionButton(doc, label, 'advance-box');
@@ -1744,6 +1746,132 @@
       try{
         dossier=await jsonRequest(fetchFn,endpointFor(marketCode,'supply'));
         if(!dossier.cockpit?.viewer||!(dossier.purchase_orders||[]).some(p=>String(p.id)===String(poId)))throw Error('Dossier PO indisponible ou accès refusé');
+        paint();await onChange?.(dossier);
+      }finally{pending=false;}
+    };
+    await context.reload();
+    return {reload:context.reload,busy:()=>pending};
+  }
+
+  function departureBoxes(dossier,poId){
+    return (dossier.boxes||[]).filter(box=>(box.contents||[]).some(row=>String(row.purchase_order_id||'')===String(poId)));
+  }
+  function departureReady(box){
+    return box.state==='DISPATCHED'&&!box.shipment_ref&&(box.contents||[]).length>0;
+  }
+  function departureShipmentRefs(dossier,poId){
+    return [...new Set(departureBoxes(dossier,poId).map(box=>box.shipment_ref).filter(Boolean))];
+  }
+
+  async function mountDepartureActions(host,{document:doc,fetch:fetchFn,user,marketCode,poId,onChange,hubVerifiedBoxes={}}={}){
+    if(!['admin','agent_hub'].includes(user?.role)||!poId)throw Error('Accès départ Hub requis');
+    const panel=globalThis.KomerceInternationalJourneyPanel;
+    if(!panel?.renderHubHandover)throw Error('Module remise transitaire indisponible');
+    const feedback=text(doc,'p','kmc-workspace-feedback','');feedback.setAttribute('data-workspace-feedback','');feedback.setAttribute('role','status');
+    const slot=doc.createElement('div');host.replaceChildren(feedback,slot);
+    let pending=false,dossier,selectedGroupKey=null,selectedShipment=null,detail=null;
+    const picked=new Set();
+    let newReference='',attachRef='';
+    const context={root:host,fetch:fetchFn,user,marketCode,journeyTab:'transport',hubVerifiedBoxes,confirm:message=>doc.defaultView.confirm(message)};
+    const groupBoxes=group=>(dossier.boxes||[]).filter(b=>(b.contents||[]).length&&packingBoxMatches(b,group));
+    function paint(){
+      // Preserve the current explicitly edited evidence form when a read-only
+      // refresh occurs. Completed forms remove their own capture marker.
+      const tasks=panel.capture(slot,doc);
+      slot.replaceChildren();
+      const groups=packingGroups(dossier,poId);
+      if(!groups.length){slot.appendChild(text(doc,'p','kmc-workspace-note','Aucune destination identifiée pour cette PO.'));return;}
+      const select=doc.createElement('select');select.setAttribute('aria-label','Relais puis rail de départ');
+      for(const g of groups)select.appendChild(Object.assign(doc.createElement('option'),{value:g.key,textContent:g.relayCode+' · '+(g.rail||'Rail non affecté (UNASSIGNED)')}));
+      if(!groups.some(g=>g.key===selectedGroupKey))selectedGroupKey=groups[0].key;
+      select.value=selectedGroupKey;
+      select.addEventListener('change',()=>{if(pending)return;selectedGroupKey=select.value;picked.clear();newReference='';attachRef='';selectedShipment=null;detail=null;paint();});
+      slot.appendChild(select);
+      const group=groups.find(g=>g.key===selectedGroupKey);
+      const boxes=groupBoxes(group);
+      const eligible=boxes.filter(departureReady);
+      const ids=new Set(eligible.map(b=>String(b.unit_id)));
+      for(const id of picked)if(!ids.has(id))picked.delete(id);
+      const {composeCell}=buildBoxPreparation(doc,context,dossier,{compact:true,selectedGroup:group,departureOnly:true});
+      slot.appendChild(text(doc,'p','kmc-workspace-note','Scannez le QR définitif et confirmez la pose de l’étiquette de chaque COMBOX fermée. La sortie Hub n’est pas une remise au transitaire.'));
+      for(const box of boxes){
+        if(box.shipment_ref&&box.shipment_stage!=='hub_ready')continue;
+        if(!['PACKED','DISPATCHED'].includes(box.state))continue;
+        const row=doc.createElement('div');row.setAttribute('data-hub-inline-departure-box',box.unit_id);
+        row.appendChild(text(doc,'strong','',box.reference+' · '+(box.state==='PACKED'?'Fermée · sortie à scanner':'Sortie Hub attestée')+(box.shipment_ref?' · '+box.shipment_ref:'')));
+        if(box.state==='PACKED')row.appendChild(composeCell(box));
+        if(departureReady(box)){
+          const label=doc.createElement('label'),input=doc.createElement('input');
+          input.type='checkbox';input.checked=picked.has(String(box.unit_id));input.setAttribute('aria-label','Inclure '+box.reference);
+          input.addEventListener('change',()=>{if(input.checked)picked.add(String(box.unit_id));else picked.delete(String(box.unit_id));sync();});
+          label.append(input,text(doc,'span','',' Inclure dans un dossier d’expédition'));row.appendChild(label);
+        }
+        slot.appendChild(row);
+      }
+      const refInput=doc.createElement('input');refInput.type='text';refInput.value=newReference;refInput.setAttribute('aria-label','Référence de la nouvelle expédition');
+      const create=makeActionButton(doc,'Ouvrir le dossier d’expédition','create-shipment-from-boxes');
+      const sync=()=>{create.disabled=!picked.size||!refInput.value.trim();};
+      refInput.addEventListener('input',()=>{newReference=refInput.value;sync();});
+      create.addEventListener('click',()=>{
+        if(!picked.size||!newReference.trim())return;
+        return runAction(context,create,{
+          url:endpointFor(marketCode,'boxes/shipment'),body:{reference:newReference.trim(),hub_unit_ids:[...picked]},
+          onSuccess:r=>{selectedShipment=r.result?.reference||null;picked.clear();newReference='';},
+          successMessage:'Dossier ouvert en préparation. La remise reste à attester.',
+        }).catch(()=>{});
+      });
+      const createSection=doc.createElement('div');createSection.append(refInput,create);slot.appendChild(createSection);sync();
+      // Only offer an open dossier whose known physical manifest is compatible
+      // with the selected requested rail (null remains unassigned). A dossier
+      // may already contain several relays; no client grouping is imposed.
+      const open=(dossier.open_shipments||[]).filter(sh=>{
+        const manifest=(dossier.boxes||[]).filter(b=>b.shipment_ref===sh.reference);
+        return manifest.length&&manifest.every(b=>(b.contents||[]).length&&b.contents.every(r=>(r.requested_transport_rail||null)===group.rail));
+      });
+      const target=doc.createElement('select');target.setAttribute('aria-label','Expédition ouverte compatible');
+      target.appendChild(Object.assign(doc.createElement('option'),{value:'',textContent:'Choisir une expédition ouverte…'}));
+      for(const sh of open)target.appendChild(Object.assign(doc.createElement('option'),{value:sh.reference,textContent:sh.reference+' · '+sh.box_count+' COMBOX'}));
+      target.value=open.some(s=>s.reference===attachRef)?attachRef:'';
+      const attachBar=doc.createElement('div');attachBar.appendChild(target);
+      for(const box of eligible){
+        const attach=makeActionButton(doc,'Rattacher '+box.reference,'attach-box-shipment');
+        attach.disabled=!target.value;
+        target.addEventListener('change',()=>{attachRef=target.value;attach.disabled=!target.value;});
+        attach.addEventListener('click',()=>runAction(context,attach,{
+          url:endpointFor(marketCode,'boxes/'+encodeURIComponent(box.unit_id)+'/shipment'),
+          body:{shipment_reference:target.value},onSuccess:()=>{selectedShipment=target.value;},
+          successMessage:'COMBOX rattachée au dossier. Remise non attestée.',
+        }).catch(()=>{}));
+        attachBar.appendChild(attach);
+      }
+      if(eligible.length&&open.length)slot.appendChild(attachBar);
+      const related=[...new Set(boxes.map(b=>b.shipment_ref).filter(Boolean))];
+      const choice=doc.createElement('select');choice.setAttribute('aria-label','Dossier d’expédition à remettre');
+      choice.appendChild(Object.assign(doc.createElement('option'),{value:'',textContent:'Choisir le dossier à consulter…'}));
+      for(const ref of related)choice.appendChild(Object.assign(doc.createElement('option'),{value:ref,textContent:ref}));
+      if(!related.includes(selectedShipment)){selectedShipment=null;detail=null;}
+      choice.value=selectedShipment||'';
+      choice.addEventListener('change',async()=>{if(pending)return;selectedShipment=choice.value||null;detail=null;try{await context.reload();}catch(e){setFeedback(host,e.message,'critical');}});
+      slot.appendChild(choice);
+      if(detail&&detail.shipment?.reference===selectedShipment){
+        const stage=detail.shipment.stage;
+        slot.appendChild(text(doc,'p','kmc-workspace-note',selectedShipment+' · '+(panel.STAGE_LABEL[stage]||stage)));
+        if(stage==='hub_ready')panel.renderHubHandover(doc,slot,context,detail);
+        else slot.appendChild(text(doc,'p','kmc-workspace-note','Remise Hub enregistrée : les étapes suivantes appartiennent au transitaire et au relais.'));
+      }
+      panel.restore(slot,tasks);
+    }
+    context.reload=async()=>{
+      pending=true;
+      try{
+        dossier=await jsonRequest(fetchFn,endpointFor(marketCode,'supply'));
+        if(!dossier.cockpit?.viewer||!(dossier.purchase_orders||[]).some(p=>String(p.id)===String(poId)))throw Error('Dossier PO indisponible ou accès refusé');
+        const groups=packingGroups(dossier,poId);
+        const group=groups.find(g=>g.key===selectedGroupKey)||groups[0];
+        if(selectedShipment&&group&&groupBoxes(group).some(b=>b.shipment_ref===selectedShipment)){
+          detail=await jsonRequest(fetchFn,panel.endpoint(context,encodeURIComponent(selectedShipment)));
+          if(detail.shipment?.reference!==selectedShipment)throw Error('Manifeste indisponible');
+        }else{selectedShipment=null;detail=null;}
         paint();await onChange?.(dossier);
       }finally{pending=false;}
     };
@@ -3451,6 +3579,10 @@
     mountPurchaseActions,
     mountReceptionActions,
     mountBoxActions,
+    mountDepartureActions,
+    departureBoxes,
+    departureReady,
+    departureShipmentRefs,
     packingGroups,
     matchesPackingGroup,
     packingBoxMatches,
