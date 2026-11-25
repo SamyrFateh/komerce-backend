@@ -73,7 +73,7 @@ test('Administration et Opérations occupent toute la largeur sans rail doublon'
     location:{search:'?branch=administrative&market=KM'},fetch:mockFetch({}),
     renderAdministrative:admin,renderOperations:ops});
   expect(api.branch).toBe('administrative');
-  expect(root.querySelector('[data-hub-open-operations]').getAttribute('href')).toBe('/admin/hub-live?view=execute&entry=operations');
+  expect(root.querySelector('[data-hub-open-operations]')).toBeNull();
   expect(root.querySelector('[data-hub-branch="operations"]').children[0].children[0].textContent).toBe('Kanban');
   expect(root.children[1].querySelectorAll('[data-hub-branch]')).toHaveLength(3);
   expect(root.querySelectorAll('[data-hub-director-todo]')).toHaveLength(0);
@@ -586,5 +586,5 @@ test('V8 uses the mock visual tokens and scoped styles for real forms',()=>{
  for(const token of ['--nav:#13273a','--ink:#182c3b','--muted:#647588','--line:#dce4e9','--bg:#f3f6f8','--blue:#1765ad'])expect(css).toContain(token);
  expect(css).toContain('.kmc-hub-po-visual .hlc-form .hlc-btn.is-primary');
  const app=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/app.js'),'utf8');
- expect(app).toContain("global.location.replace('/admin/hub?branch=operations&sel='+encodeURIComponent(sel)+'&decision=review')");
+ expect(app).toContain("global.location.replace('/admin/hub?branch=operations&sel='+encodeURIComponent(sel)+'&decision='+(params.get('decision')||'review'))");
 });
