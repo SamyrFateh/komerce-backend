@@ -27,7 +27,7 @@ test.use({ screenshot: 'off', trace: 'off', video: 'off' });
 
 async function cockpit(page, { step = 'draft', status = 'draft',
   commitment = false, payment = false, director = false, need = false, readOnly = false, simulation = false,
-  sentAt = null, unpriced = false, multiOrderNeed = false } = {}) {
+  sentAt = null, unpriced = false, multiOrderNeed = false, compactPO = false } = {}) {
   // Network-deny is deliberate. These are actual Chromium UI clicks, NOT backend
   // transaction clicks; no synthetic response can be mistaken for HTTP/PG proof.
   const attempted = [];
@@ -39,7 +39,7 @@ async function cockpit(page, { step = 'draft', status = 'draft',
   await page.setContent('<!doctype html><html lang="fr"><body><main id="workplace"></main></body></html>');
   await page.addScriptTag({ content: SCRIPT });
   await page.evaluate(({ poId, lineId, step, status, commitment, payment,
-    director, need, readOnly, sentAt, simulation, unpriced, multiOrderNeed }) => {
+    director, need, readOnly, sentAt, simulation, unpriced, multiOrderNeed, compactPO }) => {
     const line = { line_id: lineId, order_id: 'ORDER-ISOLATED', order_ref: 'G2-ISOLATED',
       product: 'Produit de recette hors ligne', ordered: 2, confirmed: 2,
       received: 0, missing: 2, fifo_rank: 1, fifo_next: true,
@@ -70,11 +70,11 @@ async function cockpit(page, { step = 'draft', status = 'draft',
         }] : [],
       },
     };
-    window.__g2 = { calls: [], outbound: 0, dossier, state: {} };
+    window.__g2 = { calls: [], outbound: 0, dossier, state: compactPO?{sel:{type:'po',id:poId},selectionInitialized:true}:{} };
     window.fetch = () => { window.__g2.outbound++; throw Error('G2_NO_NETWORK_ALLOWED'); };
     window.XMLHttpRequest = class { open() { window.__g2.outbound++; throw Error('G2_NO_NETWORK_ALLOWED'); } };
     const ctx = {
-      document, dossier, state: window.__g2.state, marketCode: 'KM', isReadOnly: readOnly,
+      document, dossier, state: window.__g2.state, marketCode: 'KM', isReadOnly: readOnly, purchaseOnly:compactPO, compactPO,
       endpoint: p => '/api/admin/workspaces/operations/market/KM/' + p,
       act: async (_, action) => {
         // This is a controlled capture of the *real click's* action specification,
@@ -89,7 +89,7 @@ async function cockpit(page, { step = 'draft', status = 'draft',
       document.getElementById('workplace'), ctx);
     window.__g2.render();
   }, { poId: PO_ID, lineId: LINE_ID, step, status, commitment, payment, director,
-    need, readOnly, sentAt, simulation, unpriced, multiOrderNeed });
+    need, readOnly, sentAt, simulation, unpriced, multiOrderNeed, compactPO });
   return attempted;
 }
 
@@ -309,3 +309,24 @@ test('01e - deux devises incompatibles ne déclenchent aucune préparation group
  expect(await page.evaluate(()=>window.__g2.calls)).toEqual([]);
  expect(attempted).toEqual([]);
 });
+
+for(const missing of [0,1]){
+  test('PO compacte : confirmation '+(missing?'avec écart':'intégrale sans ressaisie'),async({page})=>{
+    const attempted=await cockpit(page,{compactPO:true,step:'sent',status:'notified',commitment:true,sentAt:'2026-11-10T00:00:00Z'});
+    await page.locator('[data-hlc-action="confirm-po"]').click();
+    const form=page.locator('form[data-hlc-form="confirm"]');
+    const gap=form.locator('[data-hlc-confirm-missing]');
+    await expect(gap).toBeHidden();
+    if(missing){
+      await form.locator('.hlc-confirm-gaps summary').click();
+      await gap.fill(String(missing));
+      await expect(form).toContainText('1 confirmés · 1 non confirmés');
+    }
+    await form.locator('input[name=purchase_proof_ref]').fill('CI-COMPACT-PROOF');
+    await form.locator('input[name=seller_label]').fill('Vendeur CI');
+    await form.locator('button[type=submit]').click();
+    await capture(page,'compact-confirm-'+missing,'/api/purchasing/po/'+PO_ID+'/confirm',
+      {lines:[{purchase_line_id:LINE_ID,confirmed_quantity:2-missing}],purchase_proof_ref:'CI-COMPACT-PROOF'});
+    expect(attempted).toEqual([]);
+  });
+}
