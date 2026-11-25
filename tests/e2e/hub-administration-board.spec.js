@@ -49,7 +49,10 @@ async function mount(page,role='admin',branch='administrative'){
     }
     if(u.pathname==='/api/hub/board'){
       calls.push('GET /api/hub/board'+u.search);
-      return route.fulfill({contentType:'application/json',body:JSON.stringify(operations)});
+      const data=u.searchParams.get('view')==='po'?{...operations,purchase_orders:[{
+        id:PO1,reference:'PO-KM-1',market:'KM',supplier:'Alpha Trading',purchase_step:'draft',ordered:4,expected:4,received:0,missing:4,order_count:1,order_references:['KM-1']
+      }]}:operations;
+      return route.fulfill({contentType:'application/json',body:JSON.stringify(data)});
     }
     return route.fulfill({status:404,body:''});
   });
@@ -101,5 +104,9 @@ test('recherche locale sans requête serveur et bascule Opérations préservée'
   await expect(page.locator('[data-hub-admin-po]')).toHaveCount(1);
   expect(calls).toEqual(['GET /api/hub/administration']);
   await page.locator('[data-hub-branch="operations"]').click();
-  await expect(page.locator('[data-hub-global-order="KM-1"]')).toBeVisible();
+  await expect(page.locator('[data-hub-po-v8]')).toBeVisible();
+  await expect(page.locator('[data-hub-po-v8-card="'+PO1+'"]')).toBeVisible();
+  await expect(page.locator('[data-hub-global-order]')).toHaveCount(0);
+  expect(calls).toContain('GET /api/hub/board?view=po');
+  expect(calls.every(c=>c.startsWith('GET '))).toBe(true);
 });
