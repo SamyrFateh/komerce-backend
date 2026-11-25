@@ -825,3 +825,11 @@ test('ancienne URL arbitrage : préserve la décision variance dans V8',()=>{
  expect(env.replace).toHaveBeenCalledWith('/admin/hub?branch=operations&sel=po%3Ap1&decision=variance&market=KM');
  expect(env.fetch).not.toHaveBeenCalled();
 });
+
+test('ancien lien d’achat d’une PO : ouvre V8 avec le contexte de marché',()=>{
+ const env=loadCanonicalApp();
+ env.window.location.search='?view=execute&entry=operations&market=KM&atelier=purchasing&sel=po%3Ap1';
+ env.api.renderHubLive(env.root,{role:'admin'},null);
+ expect(env.replace).toHaveBeenCalledWith('/admin/hub?branch=operations&sel=po%3Ap1&market=KM');
+ expect(env.fetch).not.toHaveBeenCalled();
+});
