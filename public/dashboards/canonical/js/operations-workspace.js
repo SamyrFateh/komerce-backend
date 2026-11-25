@@ -359,7 +359,7 @@
   }
 
   // Adapter du même moteur d'actions, sans deuxième formulaire ni nouvel endpoint.
-  async function mountPurchaseActions(host, {document:doc, fetch:fetchFn, user, marketCode, poId, onChange} = {}) {
+  async function mountPurchaseActions(host, {document:doc, fetch:fetchFn, user, marketCode, poId, onChange, compactPO=false} = {}) {
     if (!['admin','agent_hub'].includes(user?.role) || !poId) throw new Error('Accès achat Hub requis');
     const cockpit = globalThis.KomerceHubLiveCockpit;
     if (!cockpit) throw new Error('Module achats indisponible');
@@ -380,7 +380,7 @@
     };
     function paint(){
       cockpit.render(slot,{
-        document:doc,dossier,marketCode,state,isReadOnly:!dossier.cockpit?.viewer,purchaseOnly:true,
+        document:doc,dossier,marketCode,state,isReadOnly:!dossier.cockpit?.viewer,purchaseOnly:true,compactPO,
         act:(button,options)=>runAction(context,button,options),
         reload:context.reload,
         feedback:(message,tone)=>setFeedback(host,message,tone),
@@ -437,6 +437,20 @@
       return `Colis mis en quarantaine (${result.reason_code || 'écart constaté'}) : un incident de réconciliation est ouvert, le stock n’est pas augmenté.`;
     }
     return 'Réception enregistrée.';
+  }
+
+  // Le raccourci ne préremplit jamais au montage : seulement après un geste
+  // explicite, avec preuve de chaque référence restante.
+  function canFillVerifiedReceipt(inputs, scannedCodeBySku, manual, proof) {
+    const remaining=inputs.filter(({line})=>Number(line.remaining_quantity)>0);
+    return remaining.length>0 && remaining.every(({line})=>Boolean(line.product_sku_id)&&
+      (manual?String(proof||'').trim().length>=6:scannedCodeBySku.has(String(line.product_sku_id))));
+  }
+
+  function fillVerifiedReceipt(inputs, scannedCodeBySku, manual, proof) {
+    if(!canFillVerifiedReceipt(inputs,scannedCodeBySku,manual,proof))return false;
+    for(const {input,line} of inputs)input.value=String(line.remaining_quantity);
+    return true;
   }
 
   function createReceptionCard(doc, context, po) {
@@ -567,6 +581,18 @@
     button.disabled = true;
     footer.appendChild(button);
     card.appendChild(footer);
+    // Réception intégrale de ce qui reste sur la PO : raccourci explicite,
+    // sans POST et sans changement de la règle FIFO d'allocation serveur.
+    let fullReceipt=null;
+    if(context.compactPO){
+      fullReceipt=makeActionButton(doc,'Tout le restant est reçu et compté','receive-full-verified');
+      fullReceipt.disabled=true;
+      fullReceipt.addEventListener('click',()=>{
+        if(fullReceipt.disabled)return;
+        if(fillVerifiedReceipt(inputs,scannedCodeBySku,manualToggle.checked,manualProof.value))sync();
+      });
+      footer.insertBefore(fullReceipt,button);
+    }
 
     function collect() {
       const contents = [];
@@ -596,6 +622,9 @@
       const { contents, invalid } = collect();
       const unverified = contents.some(item => !item.evidence_code && item.evidence_method !== 'MANUAL');
       button.disabled = invalid || contents.length === 0 || unverified;
+      if(fullReceipt){
+        fullReceipt.disabled=!canFillVerifiedReceipt(inputs,scannedCodeBySku,manualToggle.checked,manualProof.value);
+      }
       hint.textContent = invalid
         ? 'Quantité invalide : entier entre 0 et le restant attendu.'
         : unverified ? (manualToggle.checked
@@ -1054,7 +1083,7 @@
     return section;
   }
 
-  async function mountReceptionActions(host,{document:doc,fetch:fetchFn,user,marketCode,poId,onChange,receiveRefs=new Map()}={}){
+  async function mountReceptionActions(host,{document:doc,fetch:fetchFn,user,marketCode,poId,onChange,receiveRefs=new Map(),compactPO=false}={}){
     if(!['admin','agent_hub'].includes(user?.role)||!poId)throw Error('Accès réception Hub requis');
     const feedback=text(doc,'p','kmc-workspace-feedback','');
     feedback.setAttribute('data-workspace-feedback','');
@@ -1062,7 +1091,7 @@
     const slot=doc.createElement('div');
     host.replaceChildren(feedback,slot);
     let pending=false;
-    const context={root:host,fetch:fetchFn,marketCode,receiveRefs,confirm:message=>doc.defaultView.confirm(message)};
+    const context={root:host,fetch:fetchFn,marketCode,receiveRefs,compactPO,confirm:message=>doc.defaultView.confirm(message)};
     const reload=async()=>{
       pending=true;
       try{
@@ -1731,7 +1760,7 @@
     return {createBar,composeCell,fillable,BOX_STATE_LABELS};
   }
 
-  function packingGroups(dossier,poId){
+  function packingGroups(dossier,poId,{marketWide=false}={}){
     const groups=new Map();
     const add=(row)=>{
       if(!row.relais_id)return;
@@ -1739,8 +1768,8 @@
       const key=JSON.stringify([relay,rail]);
       if(!groups.has(key))groups.set(key,{relay,relayCode:row.relais_code||'Relais à vérifier',rail,key});
     };
-    (dossier.fillable||[]).filter(r=>String(r.purchase_order_id||'')===String(poId)&&Number(r.quantity)>0).forEach(add);
-    for(const b of dossier.boxes||[])for(const r of b.contents||[])if(String(r.purchase_order_id||'')===String(poId))add(r);
+    (dossier.fillable||[]).filter(r=>(marketWide||String(r.purchase_order_id||'')===String(poId))&&Number(r.quantity)>0).forEach(add);
+    for(const b of dossier.boxes||[])for(const r of b.contents||[])if(marketWide||String(r.purchase_order_id||'')===String(poId))add(r);
     return [...groups.values()].sort((a,b)=>a.relayCode.localeCompare(b.relayCode)||String(a.rail||'').localeCompare(String(b.rail||'')));
   }
   function matchesPackingGroup(row,group){
@@ -1749,16 +1778,16 @@
   function packingBoxMatches(box,group){
     return !(box.contents||[]).length||(box.contents||[]).every(row=>matchesPackingGroup(row,group));
   }
-  async function mountBoxActions(host,{document:doc,fetch:fetchFn,user,marketCode,poId,onChange,boxCreateKeys=new Map(),hubVerifiedBoxes={}}={}){
-    if(!['admin','agent_hub'].includes(user?.role)||!poId)throw Error('Accès COMBOX Hub requis');
+  async function mountBoxActions(host,{document:doc,fetch:fetchFn,user,marketCode,poId,onChange,boxCreateKeys=new Map(),hubVerifiedBoxes={},marketWide=false}={}){
+    if(!['admin','agent_hub'].includes(user?.role)||(!poId&&!marketWide)|| (marketWide&&!/^[A-Z]{2}$/.test(String(marketCode||''))))throw Error('Accès COMBOX Hub requis');
     const feedback=text(doc,'p','kmc-workspace-feedback','');feedback.setAttribute('data-workspace-feedback','');feedback.setAttribute('role','status');
     const slot=doc.createElement('div');host.replaceChildren(feedback,slot);
     let pending=false,selectedKey=null,dossier;
     const context={root:host,fetch:fetchFn,marketCode,boxCreateKeys,hubVerifiedBoxes,confirm:message=>doc.defaultView.confirm(message)};
     function paint(){
       slot.replaceChildren();
-      const groups=packingGroups(dossier,poId);
-      if(!groups.length){slot.appendChild(text(doc,'p','kmc-workspace-note','Aucun article reçu avec un relais identifié pour cette PO.'));return;}
+      const groups=packingGroups(dossier,poId,{marketWide});
+      if(!groups.length){slot.appendChild(text(doc,'p','kmc-workspace-note',marketWide?'Aucun article reçu avec un relais identifié pour ce marché.':'Aucun article reçu avec un relais identifié pour cette PO.'));return;}
       const selection=doc.createElement('select');selection.setAttribute('aria-label','Relais puis rail demandé');
       for(const g of groups)selection.appendChild(Object.assign(doc.createElement('option'),{value:g.key,textContent:g.relayCode+' · '+(g.rail||'Rail non affecté (UNASSIGNED)')}));
       if(!groups.some(g=>g.key===selectedKey))selectedKey=groups[0].key;
@@ -1783,7 +1812,7 @@
       pending=true;
       try{
         dossier=await jsonRequest(fetchFn,endpointFor(marketCode,'supply'));
-        if(!dossier.cockpit?.viewer||!(dossier.purchase_orders||[]).some(p=>String(p.id)===String(poId)))throw Error('Dossier PO indisponible ou accès refusé');
+        if(!dossier.cockpit?.viewer||(!marketWide&&!(dossier.purchase_orders||[]).some(p=>String(p.id)===String(poId))))throw Error('Dossier PO indisponible ou accès refusé');
         paint();await onChange?.(dossier);
       }finally{pending=false;}
     };
@@ -1801,8 +1830,8 @@
     return [...new Set(departureBoxes(dossier,poId).map(box=>box.shipment_ref).filter(Boolean))];
   }
 
-  async function mountDepartureActions(host,{document:doc,fetch:fetchFn,user,marketCode,poId,onChange,hubVerifiedBoxes={}}={}){
-    if(!['admin','agent_hub'].includes(user?.role)||!poId)throw Error('Accès départ Hub requis');
+  async function mountDepartureActions(host,{document:doc,fetch:fetchFn,user,marketCode,poId,onChange,hubVerifiedBoxes={},marketWide=false}={}){
+    if(!['admin','agent_hub'].includes(user?.role)||(!poId&&!marketWide)|| (marketWide&&!/^[A-Z]{2}$/.test(String(marketCode||''))))throw Error('Accès départ Hub requis');
     const panel=globalThis.KomerceInternationalJourneyPanel;
     if(!panel?.renderHubHandover)throw Error('Module remise transitaire indisponible');
     const feedback=text(doc,'p','kmc-workspace-feedback','');feedback.setAttribute('data-workspace-feedback','');feedback.setAttribute('role','status');
@@ -1817,8 +1846,8 @@
       // refresh occurs. Completed forms remove their own capture marker.
       const tasks=panel.capture(slot,doc);
       slot.replaceChildren();
-      const groups=packingGroups(dossier,poId);
-      if(!groups.length){slot.appendChild(text(doc,'p','kmc-workspace-note','Aucune destination identifiée pour cette PO.'));return;}
+      const groups=packingGroups(dossier,poId,{marketWide});
+      if(!groups.length){slot.appendChild(text(doc,'p','kmc-workspace-note',marketWide?'Aucune destination identifiée pour ce marché.':'Aucune destination identifiée pour cette PO.'));return;}
       const select=doc.createElement('select');select.setAttribute('aria-label','Relais puis rail de départ');
       for(const g of groups)select.appendChild(Object.assign(doc.createElement('option'),{value:g.key,textContent:g.relayCode+' · '+(g.rail||'Rail non affecté (UNASSIGNED)')}));
       if(!groups.some(g=>g.key===selectedGroupKey))selectedGroupKey=groups[0].key;
@@ -1903,8 +1932,8 @@
       pending=true;
       try{
         dossier=await jsonRequest(fetchFn,endpointFor(marketCode,'supply'));
-        if(!dossier.cockpit?.viewer||!(dossier.purchase_orders||[]).some(p=>String(p.id)===String(poId)))throw Error('Dossier PO indisponible ou accès refusé');
-        const groups=packingGroups(dossier,poId);
+        if(!dossier.cockpit?.viewer||(!marketWide&&!(dossier.purchase_orders||[]).some(p=>String(p.id)===String(poId))))throw Error('Dossier PO indisponible ou accès refusé');
+        const groups=packingGroups(dossier,poId,{marketWide});
         const group=groups.find(g=>g.key===selectedGroupKey)||groups[0];
         if(selectedShipment&&group&&groupBoxes(group).some(b=>b.shipment_ref===selectedShipment)){
           detail=await jsonRequest(fetchFn,panel.endpoint(context,encodeURIComponent(selectedShipment)));
@@ -3629,6 +3658,8 @@
     sourceQualityChecked,
     receptionLabelRows,
     receptionOrdersForMarket,
+    canFillVerifiedReceipt,
+    fillVerifiedReceipt,
     mount,
   });
 });
