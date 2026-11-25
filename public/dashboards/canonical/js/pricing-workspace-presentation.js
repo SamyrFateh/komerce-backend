@@ -129,6 +129,66 @@
     return GROUPS.map(group => ({ ...group, components: grouped.get(group.key) })).filter(group => group.components.length);
   }
 
+  // Cartographie de lecture uniquement : les catégories historiques ne sont pas
+  // une preuve d'affectation comptable. Les montants hétérogènes ne sont pas additionnés.
+  const COST_CENTERS = Object.freeze([
+    { key: 'PUR', title: 'Achats de marchandises', examples: 'Achats fournisseur, sourcing, approvisionnement', basis: 'Article / PO' },
+    { key: 'LOG', title: 'Logistique', examples: 'Hub, personnel, matériel, consommables, fret, douane, transport, réception relais', basis: 'Expédition clôturée / période' },
+    { key: 'MKT', title: 'Marketing et acquisition', examples: 'Publicité, campagnes, création de contenu', basis: 'Campagne / période' },
+    { key: 'SAL', title: 'Commercialisation et encaissement', examples: 'Paiement, commissions, traitement de vente', basis: 'Transaction / commande / période' },
+    { key: 'SAV', title: 'Service après-vente', examples: 'Retours, litiges, incidents, pertes', basis: 'Incident / période' },
+    { key: 'STR', title: 'Structure et fonctionnement', examples: 'Direction, administration, IT, frais généraux', basis: 'Période' },
+    { key: 'UNMAPPED', title: 'Centre à qualifier', examples: 'Affectation non établie ; aucune ventilation automatique', basis: 'À définir' },
+  ]);
+  const CENTER_BY_CATEGORY = Object.freeze({
+    product_purchase: 'PUR', sourcing: 'PUR',
+    hub: 'LOG', packaging: 'LOG', freight: 'LOG', transit: 'LOG', customs: 'LOG',
+    douane: 'LOG', port_transitary: 'LOG', local_distribution: 'LOG',
+    marketing_campaign: 'MKT', marketing: 'MKT', payment: 'SAL', paiement: 'SAL',
+    incident: 'SAV', returns: 'SAV',
+  });
+  function groupCostCenters(components = []) {
+    const groups = COST_CENTERS.map(center => ({ ...center, components: [] }));
+    const byKey = new Map(groups.map(center => [center.key, center]));
+    for (const component of components) {
+      // Une charge générale, un risque ou le relais peuvent couvrir plusieurs
+      // activités : pas de rattachement présumé à la structure ou à la logistique.
+      const category = component.category;
+      const key = Object.prototype.hasOwnProperty.call(CENTER_BY_CATEGORY, category)
+        ? CENTER_BY_CATEGORY[category] : 'UNMAPPED';
+      byKey.get(key).components.push(component);
+    }
+    return groups;
+  }
+  function createCostCenters(doc, components = []) {
+    const section = el(doc, 'section', 'kmc-cost-group');
+    section.dataset.costCenters = '';
+    section.appendChild(el(doc, 'h3', 'kmc-cost-group-title', 'Centres de coûts · cartographie'));
+    section.appendChild(el(doc, 'p', 'kmc-cost-group-description',
+      'Dépenses réelles et budgets par centre : non encore raccordés. Les lignes ci-dessous sont des paramètres de calcul, pas un relevé de factures. Rattachements proposés à valider.'));
+    groupCostCenters(components).forEach(center => {
+      const details = el(doc, 'details', 'kmc-cost-refine');
+      details.dataset.costCenter = center.key;
+      details.appendChild(el(doc, 'summary', '', center.key + ' · ' + center.title + ' · ' + center.components.length + ' paramètre(s)'));
+      details.appendChild(el(doc, 'p', 'kmc-cost-group-description', center.examples + ' — mesure : ' + center.basis));
+      details.appendChild(el(doc, 'p', 'kmc-cost-group-description', 'Budget : non raccordé · Réel : non raccordé · Part dans l’effort : non calculable'));
+      const list = el(doc, 'ul', '');
+      center.components.forEach(component => {
+        const nature = ['variable', 'fixed'].includes(component.economic_nature) ? natureLabel(component.economic_nature) : 'Nature à qualifier';
+        const perimeter = ['direct', 'mutualized'].includes(component.allocation_perimeter) ? perimeterLabel(component.allocation_perimeter) : 'Périmètre à qualifier';
+        list.appendChild(el(doc, 'li', '', [
+          component.key, component.label || categoryLabel(component.category), nature, perimeter,
+          formatComponentValue(component.default_value, component.unit),
+          component.is_active === false ? 'Inactif' : 'Paramètre actif',
+          component.source || 'Source à qualifier',
+        ].join(' · ')));
+      });
+      details.appendChild(list);
+      section.appendChild(details);
+    });
+    return section;
+  }
+
   function unitLabel(unit) { return UNIT_LABELS[unit] || unit || 'unité'; }
   function categoryLabel(category) { return CATEGORY_LABELS[category] || String(category || 'Autre').replaceAll('_', ' '); }
   function scopeLabel(scope) { return SCOPE_LABELS[scope] || scope || 'Global'; }
@@ -402,6 +462,7 @@
     if (marketMode && !canManage) slot.appendChild(el(doc, 'div', 'kmc-cost-inactive-note', 'Mode viewer · les calculs et leviers restent visibles, les mutations sont réservées au manager du marché.'));
 
     const components = Array.isArray(payload.cost_components) ? payload.cost_components : [];
+    slot.appendChild(createCostCenters(doc, components));
     if (!components.length) slot.appendChild(el(doc, 'div', 'kmc-workspace-empty', 'Aucune charge disponible.'));
     else groupComponents(components).forEach(group => slot.appendChild(createGroup(doc, group, marketMode, marketCode, canManage)));
     if (!marketMode) slot.appendChild(createGlobalComponentForm(doc));
@@ -426,7 +487,7 @@
 
   return {
     GROUPS, CATEGORY_LABELS, UNIT_LABELS, TRUTH_LABELS, ALLOCATION_LABELS,
-    economicNature, allocationPerimeter, groupKey, groupComponents, unitLabel, categoryLabel,
+    economicNature, allocationPerimeter, groupKey, groupComponents, groupCostCenters, createCostCenters, unitLabel, categoryLabel,
     scopeLabel, allocationLabel, formatComponentValue, canManageCosts, createExplainability, enhance, install,
   };
 });
