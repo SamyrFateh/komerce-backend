@@ -108,7 +108,12 @@ test('réception fournisseur : route canonique, référence stable, aucune quant
   expect(SOURCE).toContain('receptionReferenceFor(context, po.purchase_order_id)');
   expect(SOURCE).toContain('Aucune quantité n’est préremplie');
   expect(SOURCE).toContain('(information, pas une réception)');
-  expect(SOURCE).not.toMatch(/input\.value\s*=\s*String\(line\./);
+  const mountSource=SOURCE.slice(SOURCE.indexOf('function createReceptionCard'),SOURCE.indexOf('function collect()',SOURCE.indexOf('function createReceptionCard')));
+  expect(mountSource).not.toMatch(/input\.value\s*=/);
+  expect(mountSource).toContain("fullReceipt.disabled=true");
+  expect(mountSource).toContain("fullReceipt.addEventListener('click',()=>{");
+  expect(mountSource).toContain("if(fullReceipt.disabled)return;");
+  expect(mountSource).toContain("if(fillVerifiedReceipt(inputs,scannedCodeBySku,manualToggle.checked,manualProof.value))sync();");
 });
 
 
@@ -265,4 +270,53 @@ test('réception : la file globale ne peut afficher que les PO du dossier march�
   const a={purchase_order_id:'p1'},b={purchase_order_id:'p2'},c={purchase_order_id:'foreign'};
   expect(workspace.receptionOrdersForMarket({purchase_orders:[{id:'p1'},{id:'p2'}]},{purchase_orders:[a,b,c]})).toEqual([a,b]);
   expect(workspace.receptionOrdersForMarket(null,{purchase_orders:[a,b,c]})).toEqual([]);
+});
+
+test('logistique marché : toutes les PO du dossier canonique, relais et rails distincts',()=>{
+  const a={purchase_order_id:'p1',relais_id:'A',relais_code:'A',requested_transport_rail:'SEA_STANDARD',quantity:2};
+  const b={purchase_order_id:'p2',relais_id:'A',relais_code:'A',requested_transport_rail:'AIR_EXPRESS',quantity:1};
+  const c={purchase_order_id:'p3',relais_id:'B',relais_code:'B',requested_transport_rail:null};
+  const dossier={fillable:[a,b],boxes:[{contents:[c]}]};
+  expect(workspace.packingGroups(dossier,'p1').map(g=>[g.relay,g.rail])).toEqual([['A','SEA_STANDARD']]);
+  expect(workspace.packingGroups(dossier,null,{marketWide:true}).map(g=>[g.relay,g.rail])).toEqual([['A','AIR_EXPRESS'],['A','SEA_STANDARD'],['B',null]]);
+});
+test('logistique marché : lecture seule et marché invalide refusés avant requête',async()=>{
+  const fetch=jest.fn();
+  for(const mount of [workspace.mountBoxActions,workspace.mountDepartureActions]){
+    await expect(mount({}, {user:{role:'market_operator'},marketCode:'CM',marketWide:true,fetch})).rejects.toThrow();
+    await expect(mount({}, {user:{role:'agent_hub'},marketCode:'',marketWide:true,fetch})).rejects.toThrow();
+    await expect(mount({}, {user:{role:'agent_hub'},marketCode:'CM',fetch})).rejects.toThrow();
+  }
+  expect(fetch).not.toHaveBeenCalled();
+});
+
+test('réception intégrale : aucune quantité sans preuve de toutes les références restantes',()=>{
+  const make=(sku,qty)=>({input:{value:''},line:{product_sku_id:sku,remaining_quantity:qty}});
+  const rows=[make('sku-1',2),make('sku-2',3),make('sku-3',0)];
+  const scans=new Map([['sku-1','proof-1']]);
+  expect(workspace.canFillVerifiedReceipt(rows,scans,false,'')).toBe(false);
+  expect(workspace.fillVerifiedReceipt(rows,scans,false,'')).toBe(false);
+  expect(rows.map(r=>r.input.value)).toEqual(['','','']);
+  scans.set('sku-2','proof-2');
+  expect(workspace.canFillVerifiedReceipt(rows,scans,false,'')).toBe(true);
+  expect(rows.map(r=>r.input.value)).toEqual(['','','']);
+  expect(workspace.fillVerifiedReceipt(rows,scans,false,'')).toBe(true);
+  expect(rows.map(r=>r.input.value)).toEqual(['2','3','0']);
+});
+test('réception intégrale : mode manuel justifié, SKU obligatoire et aucun restant refusé',()=>{
+  const row={input:{value:''},line:{product_sku_id:'sku-1',remaining_quantity:2}};
+  const scans=new Map();
+  expect(workspace.fillVerifiedReceipt([row],scans,true,'court')).toBe(false);
+  expect(row.input.value).toBe('');
+  expect(workspace.fillVerifiedReceipt([row],scans,true,'contrôle visuel')).toBe(true);
+  expect(row.input.value).toBe('2');
+  expect(workspace.fillVerifiedReceipt([{input:{value:''},line:{remaining_quantity:1}}],scans,true,'contrôle visuel')).toBe(false);
+  expect(workspace.fillVerifiedReceipt([{input:{value:''},line:{product_sku_id:'sku-1',remaining_quantity:0}}],scans,true,'contrôle visuel')).toBe(false);
+});
+
+
+test('V8 decision adapter uses canonical writer and guarded initial form',()=>{
+ expect(SOURCE).toContain('purchaseOnly:true,compactPO,decisionOnly');
+ expect(SOURCE).toContain("form:['commitment','payment'].includes(decisionOnly)?{po:poId,kind:decisionOnly}:null");
+ expect(SOURCE).toContain('act:(button,options)=>runAction(context,button,options)');
 });

@@ -21,6 +21,9 @@ function el(tag) {
       contains(key) { return classes.has(key); },
     },
     appendChild(child) { this.children.push(child); child.parentNode=this; return child; },
+    append(...nodes) { nodes.forEach(child=>this.appendChild(child)); },
+    insertBefore(child, before) { const i=this.children.indexOf(before); if(i<0)return this.appendChild(child); this.children.splice(i,0,child); child.parentNode=this; return child; },
+    remove() { if(this.parentNode){const parent=this.parentNode;parent.children=parent.children.filter(child=>child!==this);this.parentNode=null;} },
     replaceChildren(...nodes) { this.children=nodes; nodes.forEach(x=>x.parentNode=this); },
     setAttribute(k,v) { this.attrs[k]=String(v); },
     getAttribute(k) { return this.attrs[k] || null; },
@@ -279,7 +282,7 @@ test('Direction Hub : engagements, paiements, arbitrages, exécution séparés e
   expect(payments).toHaveLength(1);
   expect(payments[0].className).toContain('is-readonly');
   expect(payments[0].children.some(x=>x.getAttribute('href')===
-    '/admin/hub-live?view=execute&market=KM&entry=direction&sel=po%3A'+po)).toBe(true);
+    '/admin/hub?branch=operations&sel=po%3A'+po+'&decision=payment')).toBe(true);
   const physical=host.querySelectorAll('[data-hub-director-task="PLACE_COMBOX"]')[0];
   expect(physical.children.some(x=>x.getAttribute('href')===
     '/admin/hub-live?view=execute&market=CG')).toBe(true);
@@ -404,7 +407,7 @@ test('le pilote PO conserve le Kanban et revient à la vue commandes sans mutati
     anomalies:0,purchase_step:'received',sent:true};
   const fetch=jest.fn(async url=>({ok:true,json:async()=>url==='/api/hub/board?view=po'
     ?{scope:'HUB_GLOBAL',purchase_orders:[po]}:{scope:'HUB_GLOBAL',orders:[]}}));
-  await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'}});
+  await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'},location:{search:'?ux=legacy'}});
   const toggle=root.querySelector('[data-hub-po-pilot-toggle]');
   expect(toggle.getAttribute('aria-pressed')).toBe('false');
   await toggle.click();
@@ -433,7 +436,7 @@ test('la cellule Achat monte le module canonique seulement au dépliage',async()
   const previous=global.KomerceCanonicalOperationsWorkspace;
   global.KomerceCanonicalOperationsWorkspace={mountPurchaseActions};
   try{
-    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'}});
+    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'},location:{search:'?ux=legacy'}});
     await root.querySelector('[data-hub-po-pilot-toggle]').click();
     const host=root.querySelector('[data-hub-inline-purchase]');
     expect(host).not.toBeNull();
@@ -456,7 +459,7 @@ test('la cellule Réception monte seulement la PO expédiée, au dépliage',asyn
   const previous=global.KomerceCanonicalOperationsWorkspace;
   global.KomerceCanonicalOperationsWorkspace={mountReceptionActions};
   try{
-    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'}});
+    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'},location:{search:'?ux=legacy'}});
     await root.querySelector('[data-hub-po-pilot-toggle]').click();
     const host=root.querySelector('[data-hub-inline-reception]');
     expect(host).not.toBeNull();
@@ -475,7 +478,7 @@ test('COMBOX : la préparation commune est montée uniquement au dépliage de la
   const previous=global.KomerceCanonicalOperationsWorkspace;
   global.KomerceCanonicalOperationsWorkspace={mountBoxActions};
   try{
-    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'}});
+    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'},location:{search:'?ux=legacy'}});
     await root.querySelector('[data-hub-po-pilot-toggle]').click();
     const host=root.querySelector('[data-hub-inline-combox]');
     expect(host).not.toBeNull();
@@ -494,7 +497,7 @@ test('cellule Départ : chargement lazy du module canonique pour une PO reçue',
   const previous=global.KomerceCanonicalOperationsWorkspace;
   global.KomerceCanonicalOperationsWorkspace={mountDepartureActions};
   try{
-    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'}});
+    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'},location:{search:'?ux=legacy'}});
     await root.querySelector('[data-hub-po-pilot-toggle]').click();
     const host=root.querySelector('[data-hub-inline-departure]');
     expect(host).not.toBeNull();
@@ -503,4 +506,85 @@ test('cellule Départ : chargement lazy du module canonique pour une PO reçue',
     expect(mountDepartureActions).toHaveBeenCalledWith(host,expect.objectContaining({marketCode:'KM',poId:'p1',fetch}));
     expect(fetch).toHaveBeenCalledTimes(2);
   }finally{global.KomerceCanonicalOperationsWorkspace=previous;}
+});
+
+test('aperçu PO V8 : deux dossiers distincts, retour Kanban et chargement par PO exacte',async()=>{
+  const app=load(),root=el('main');
+  const po=id=>({id,reference:'PO-'+id,market:'KM',supplier:'Fournisseur',order_count:1,order_references:['KAAAAAA'],ordered:2,expected:2,received:0,missing:2,purchase_step:'sent',order_lines:[{order_ref:'KAAAAAA',product:'Article '+id,ordered:2,expected:2,received:0,missing:2}]});
+  const fetch=jest.fn(async url=>({ok:true,json:async()=>url==='/api/hub/board?view=po'?{scope:'HUB_GLOBAL',purchase_orders:[po('p1'),po('p2')]}:{scope:'HUB_GLOBAL',orders:[]}}));
+  const mountPurchaseActions=jest.fn(async()=>({busy:()=>false,reload:jest.fn()}));
+  const prev=global.KomerceCanonicalOperationsWorkspace;
+  const loc=Object.getOwnPropertyDescriptor(global,'location');
+  Object.defineProperty(global,'location',{configurable:true,value:{search:''}});
+  global.KomerceCanonicalOperationsWorkspace={mountPurchaseActions};
+  const walk=(node,predicate)=>[node,...node.children.flatMap(n=>walk(n,predicate))].filter(predicate);
+  try{
+    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'}});
+    expect(root.querySelector('[data-hub-po-v8]')).not.toBeNull();
+    root.querySelector('[data-hub-po-v8-card="p1"]').click();
+    await Promise.resolve();await Promise.resolve();
+    expect(mountPurchaseActions).toHaveBeenCalledWith(expect.anything(),expect.objectContaining({poId:'p1',marketCode:'KM',compactPO:true}));
+    walk(root,n=>n.tagName==='BUTTON'&&n.textContent==='Kanban')[0].click();
+    root.querySelector('[data-hub-po-v8-card="p2"]').click();
+    await Promise.resolve();await Promise.resolve();
+    expect(mountPurchaseActions).toHaveBeenCalledWith(expect.anything(),expect.objectContaining({poId:'p2'}));
+    expect(walk(root,n=>n.className==='kmc-hub-po-v8-panel')).toHaveLength(2);
+    expect(walk(root,n=>n.className==='kmc-hub-po-v8-panel'&&!n.hidden)).toHaveLength(1);
+  }finally{
+    global.KomerceCanonicalOperationsWorkspace=prev;
+    if(loc)Object.defineProperty(global,'location',loc);else delete global.location;
+  }
+});
+test('styles V8 limités au nouveau poste, masquage des panneaux et cartes compactes',()=>{
+  const css=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/css/hub-workstation.css'),'utf8');
+  expect(css).toContain('.kmc-hub-po-visual [hidden]');
+  expect(css).toMatch(/\.kmc-hub-po-v8-board\{[^}]*grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
+  expect(css).toMatch(/\.kmc-hub-po-v8-card\{[^}]*width:100%/);
+});
+
+test('V8 : filtre marché, six étapes du mock, exceptions et bilan non déduit de la réception',async()=>{
+ const app=load(),root=el('main');
+ const base={market:'KM',supplier:'Fournisseur',order_count:1,order_references:[],ordered:2,expected:2,received:0,missing:2,purchase_step:'sent'};
+ const pos=[{...base,id:'active',reference:'PO-A'},{...base,id:'received',reference:'PO-R',reception_complete:true,received:2,missing:0},
+  {...base,id:'other',reference:'PO-CG',market:'CG',exceptions:[{kind:'PO_MISSING_QTY',reason:'Écart confirmé'}]}];
+ const fetch=jest.fn(async url=>({ok:true,json:async()=>url==='/api/hub/board?view=po'?{scope:'HUB_GLOBAL',markets:['CG','KM'],purchase_orders:pos}:{scope:'HUB_GLOBAL',orders:[]}}));
+ await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'admin'},location:{search:''}});
+ expect(root.querySelectorAll('[data-hub-v8-lane]')).toHaveLength(6);
+ expect(root.querySelector('[data-hub-v8-lane="4"]').querySelector('[data-hub-po-v8-card="received"]')).not.toBeNull();
+ expect(root.querySelector('[data-hub-v8-lane="5"]').querySelectorAll('[data-hub-po-v8-card]')).toHaveLength(0);
+ const filter=root.querySelector('[data-hub-v8-market]');filter.value='KM';filter.change(filter);
+ expect(root.querySelector('[data-hub-po-v8-card="other"]')).toBeNull();
+ expect(root.querySelector('[data-hub-po-v8-card="active"]')).not.toBeNull();
+ filter.value='ALL';filter.change(filter);
+ root.querySelector('[data-hub-v8-view="exceptions"]').click();
+ expect(root.querySelectorAll('[data-hub-po-v8-card]')).toHaveLength(1);
+ expect(root.querySelector('[data-hub-po-v8-card="other"]')).not.toBeNull();
+ root.querySelector('[data-hub-v8-view="archive"]').click();
+ expect(root.querySelectorAll('[data-hub-po-v8-card]')).toHaveLength(0);
+});
+
+test('Direction V8 : ouvre exactement la PO demandée, décision distincte même après réception',async()=>{
+ const app=load(),root=el('main');
+ const po={id:'p1',reference:'PO-1',market:'KM',supplier:'Fournisseur',order_count:0,ordered:2,expected:2,received:2,missing:0,reception_complete:true};
+ const fetch=jest.fn(async url=>({ok:true,json:async()=>url==='/api/hub/board?view=po'?{scope:'HUB_GLOBAL',purchase_orders:[po]}:{scope:'HUB_GLOBAL',orders:[]}}));
+ const mountPurchaseActions=jest.fn(async()=>({busy:()=>false}));
+ const mountReceptionActions=jest.fn();
+ const prev=global.KomerceCanonicalOperationsWorkspace;
+ global.KomerceCanonicalOperationsWorkspace={mountPurchaseActions,mountReceptionActions};
+ try{
+  await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'admin'},location:{search:'?branch=operations&sel=po%3Ap1&decision=payment'}});
+  await Promise.resolve();await Promise.resolve();
+  expect(mountPurchaseActions).toHaveBeenCalledWith(expect.anything(),expect.objectContaining({poId:'p1',marketCode:'KM',decisionOnly:'payment'}));
+  expect(mountReceptionActions).not.toHaveBeenCalled();
+  expect(fetch.mock.calls.every(([,options])=>options.method==='GET')).toBe(true);
+ }finally{global.KomerceCanonicalOperationsWorkspace=prev;}
+});
+
+
+test('V8 uses the mock visual tokens and scoped styles for real forms',()=>{
+ const css=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/css/hub-workstation.css'),'utf8');
+ for(const token of ['--nav:#13273a','--ink:#182c3b','--muted:#647588','--line:#dce4e9','--bg:#f3f6f8','--blue:#1765ad'])expect(css).toContain(token);
+ expect(css).toContain('.kmc-hub-po-visual .hlc-form .hlc-btn.is-primary');
+ const app=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/app.js'),'utf8');
+ expect(app).toContain("global.location.replace('/admin/hub?branch=operations&sel='+encodeURIComponent(sel)+'&decision=review')");
 });

@@ -1001,3 +1001,123 @@
   .kmc-hub-app .kmc-hub-app-branch-copy strong {font-size:11px;}
   .kmc-hub-app .kmc-hub-app-branch-copy small {display:none;}
 }
+
+/* Hub V8 — structure et proportions du mock validé, limitée au poste PO. */
+.kmc-hub-app .kmc-hub-global-toolbar[hidden],.kmc-hub-po-visual [hidden],.kmc-hub-po-visual[hidden],.kmc-hub-app-workspace .kmc-hub-board-scroll[hidden]{display:none}
+.kmc-hub-po-visual{min-width:0;width:100%;background:#f3f6f8;color:#182c3b;padding:16px;border-radius:10px}
+.kmc-hub-po-visual *{box-sizing:border-box}
+.kmc-hub-po-v8-tabs{display:flex;gap:5px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #dce4e9;margin-bottom:18px}
+.kmc-hub-po-v8-tabs .kmc-hub-app-branch{border:1px solid transparent;background:transparent;color:#647588;padding:9px 12px;border-radius:7px 7px 0 0;font-weight:650}
+.kmc-hub-po-v8-tabs button[aria-pressed=true]{border-color:#dce4e9;border-bottom-color:#fff;background:#fff;color:#1765ad;box-shadow:0 -2px 0 #1765ad}
+.kmc-hub-po-v8-tab{display:flex;align-items:center;gap:2px;min-width:0}
+.kmc-hub-po-v8-close{border:0;background:transparent;color:#758696;font-size:17px;cursor:pointer;padding:7px}
+.kmc-hub-po-v8-topline,.kmc-hub-po-v8-dossier-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.kmc-hub-po-v8-heading h2,.kmc-hub-po-v8-summary h2{font-size:26px;letter-spacing:-.6px;margin:3px 0;color:#182c3b}
+.kmc-hub-po-v8-heading p{margin:3px 0}
+.kmc-hub-po-v8-eyebrow{font-size:11px;font-weight:750;letter-spacing:.8px;text-transform:uppercase;color:#647588;display:block}
+.kmc-hub-po-v8-muted,.kmc-hub-po-v8-empty{font-size:12px;color:#647588}
+.kmc-hub-po-v8-board-controls,.kmc-hub-po-v8-toolbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.kmc-hub-po-v8-toolbar{margin:16px 0}
+.kmc-hub-po-v8-toolbar .kmc-hub-app-search{margin:0;width:min(340px,100%)}
+.kmc-hub-po-v8-toolbar select{font:inherit;padding:9px 11px;border:1px solid #ccd8e0;background:white;color:#182c3b;border-radius:6px;min-width:145px}
+.kmc-hub-po-v8-log-access{position:relative;margin-left:auto}
+.kmc-hub-po-v8-log-access summary{list-style:none;cursor:pointer;border:1px solid #cbd8e0;border-radius:7px;background:white;color:#31536c;padding:9px 13px;font-weight:650}
+.kmc-hub-po-v8-log-access summary::-webkit-details-marker{display:none}
+.kmc-hub-po-v8-log-access summary::after{content:' ▾'}
+.kmc-hub-po-v8-log-menu{position:absolute;right:0;top:calc(100% + 7px);width:min(330px,80vw);background:white;border:1px solid #dce4e9;border-radius:8px;box-shadow:0 8px 24px #13273a20;padding:10px;z-index:8;max-height:360px;overflow:auto}
+.kmc-hub-po-v8-log-group{padding:8px;border-bottom:1px solid #e5ebef}
+.kmc-hub-po-v8-log-item{display:block;width:100%;text-align:left;border:0;background:white;color:#1765ad;padding:8px;cursor:pointer}
+.kmc-hub-po-v8-log-item:hover{background:#eef5fa}
+.kmc-hub-po-v8-chrome .kmc-hub-global-count{display:block;text-transform:uppercase;letter-spacing:.6px;font-size:11px;font-weight:750;color:#647588}
+.kmc-hub-po-v8-board{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;align-items:start;padding:8px 0}
+.kmc-hub-po-v8-board.is-list{grid-template-columns:repeat(3,minmax(0,1fr))}
+.kmc-hub-po-v8-lane{min-width:0;background:#e8edf1;border:1px solid #dfe6eb;border-radius:8px;padding:9px;min-height:320px;max-height:68vh;overflow-y:auto}
+.kmc-hub-po-v8-lane h3{font-size:12px;font-weight:750;margin:0 0 8px;overflow-wrap:anywhere}
+.kmc-hub-po-v8-lanehead{display:flex;justify-content:space-between;align-items:center;gap:4px;min-height:35px}
+.kmc-hub-po-v8-count{font-size:11px;background:#d8e2e9;padding:3px 7px;border-radius:5px}
+.kmc-hub-po-v8-card{display:flex;flex-direction:column;text-align:left;gap:4px;background:white;color:#182c3b;border:1px solid #dce4ea;border-radius:7px;width:100%;padding:12px 10px;margin:0 0 8px;cursor:pointer;overflow-wrap:anywhere;box-shadow:0 1px 2px #142c3b0a}
+.kmc-hub-po-v8-card strong{font-size:14px}
+.kmc-hub-po-v8-card:hover,.kmc-hub-po-v8-card:focus-visible{border-color:#1765ad}
+.kmc-hub-po-v8-tag{display:inline-block;background:#e6f1fc;color:#1765ad;border-radius:5px;padding:4px 9px;font-size:12px;font-weight:650;align-self:flex-start}
+.kmc-hub-po-v8-card .kmc-hub-po-v8-tag{font-size:10px;padding:3px 5px;margin-top:3px}
+.kmc-hub-po-v8-panel{min-width:0}
+.kmc-hub-po-v8-summary,.kmc-hub-po-v8-actions,.kmc-hub-po-v8-order-card,.kmc-hub-po-v8-proofs{background:white;border:1px solid #dce4e9;border-radius:10px;padding:20px;margin-bottom:15px;min-width:0;box-shadow:0 1px 2px #1a334308}
+.kmc-hub-po-v8-content{display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,330px);gap:15px;align-items:start}
+.kmc-hub-po-v8-main{min-width:0}
+.kmc-hub-po-v8-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:18px 0}
+.kmc-hub-po-v8-metric{padding:12px;background:#f4f7f9;border:1px solid #e9eef1;border-radius:7px}
+.kmc-hub-po-v8-metric strong{display:block;font-size:23px}
+.kmc-hub-po-v8-progress{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-top:20px}
+.kmc-hub-po-v8-progress span{border-top:4px solid #dce4e9;border-radius:3px;padding:7px 0;font-size:11px;overflow-wrap:anywhere;color:#647588}
+.kmc-hub-po-v8-progress .is-current{border-color:#1765ad;color:#1765ad;font-weight:750}
+.kmc-hub-po-v8-progress .is-done{border-color:#36856a;color:#247c5c}
+.kmc-hub-po-v8-actions{max-width:100%}
+.kmc-hub-po-v8-order{border:1px solid #dce4e9;border-radius:7px;padding:12px;margin:8px 0}
+.kmc-hub-po-v8-order summary,.kmc-hub-po-v8-proofs summary{cursor:pointer;font-weight:650}
+.kmc-hub-po-v8-proofs details{padding:12px 0;border-bottom:1px solid #e5ebef}
+.kmc-hub-po-v8-proofs p{font-size:12px;color:#647588;overflow-wrap:anywhere}
+@media(max-width:1050px){.kmc-hub-po-v8-board,.kmc-hub-po-v8-progress{grid-template-columns:repeat(3,minmax(0,1fr))}.kmc-hub-po-v8-content{grid-template-columns:1fr}.kmc-hub-po-v8-lane{min-height:190px}}
+
+/* Référence : komerce_hub_mock_v8.html, palette et composants du poste.
+ * Limité au V8 ; aucun style global body/header ou changement de l'ancien cockpit. */
+.kmc-hub-po-visual{
+  --nav:#13273a;--ink:#182c3b;--muted:#647588;--line:#dce4e9;--bg:#f3f6f8;
+  --blue:#1765ad;--green:#247c5c;--amber:#9c671d;
+  background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;
+  max-width:1500px;margin:0 auto;padding:18px 28px 34px;
+}
+.kmc-hub-app:has(.kmc-hub-po-visual) .kmc-hub-app-header{
+  background:#13273a;color:white;border-radius:8px;padding:15px 30px;
+}
+.kmc-hub-app:has(.kmc-hub-po-visual) .kmc-hub-app-header h1{color:white}
+.kmc-hub-app:has(.kmc-hub-po-visual) .kmc-hub-app-header .kmc-hub-app-eyebrow,
+.kmc-hub-app:has(.kmc-hub-po-visual) .kmc-hub-app-header p{color:#b9c8d4}
+.kmc-hub-po-visual .kmc-hub-app-branch,
+.kmc-hub-po-visual .hlc-btn,
+.kmc-hub-po-visual .kmc-workspace-action{
+  border:1px solid #cbd8e0;border-radius:7px;background:white;color:#31536c;
+  padding:9px 13px;font:inherit;font-weight:650;text-decoration:none;
+}
+.kmc-hub-po-visual .kmc-hub-po-v8-tabs .kmc-hub-app-branch{
+  border:1px solid transparent;background:transparent;color:var(--muted);
+  border-radius:7px 7px 0 0;padding:9px 12px;
+}
+.kmc-hub-po-visual .kmc-hub-po-v8-tabs button[aria-pressed=true]{
+  border-color:var(--line);border-bottom-color:white;background:white;color:var(--blue);
+  box-shadow:0 -2px 0 var(--blue);
+}
+.kmc-hub-po-visual .hlc-btn.is-primary{
+  background:var(--blue);color:white;border-color:var(--blue);
+}
+.kmc-hub-po-visual .hlc-btn:disabled{cursor:not-allowed;opacity:.46}
+.kmc-hub-po-visual .hlc-btn.is-link{
+  border:0;background:transparent;color:var(--blue);padding:6px;
+}
+.kmc-hub-po-visual .kmc-hub-po-v8-heading h2,
+.kmc-hub-po-visual .kmc-hub-po-v8-summary h2{font-size:29px;letter-spacing:-.8px;margin:3px 0}
+.kmc-hub-po-visual .kmc-hub-po-v8-tag.is-neutral{background:#e8eef3;color:#546779}
+.kmc-hub-po-visual .kmc-hub-po-v8-tag.is-green{background:#e5f3ec;color:var(--green)}
+.kmc-hub-po-visual .kmc-hub-po-v8-progress span{border-radius:10px}
+.kmc-hub-po-visual .kmc-hub-po-v8-summary,
+.kmc-hub-po-visual .kmc-hub-po-v8-actions,
+.kmc-hub-po-visual .kmc-hub-po-v8-order-card,
+.kmc-hub-po-visual .kmc-hub-po-v8-proofs{padding:20px;border:1px solid var(--line);border-radius:10px;background:white}
+.kmc-hub-po-visual .kmc-hub-po-v8-actions h3,
+.kmc-hub-po-visual .kmc-hub-po-v8-order-card h3,
+.kmc-hub-po-visual .kmc-hub-po-v8-proofs h3{font-size:19px;letter-spacing:-.3px;margin:0 0 12px}
+.kmc-hub-po-visual .hlc-form{display:grid;gap:12px;margin:12px 0;border:0;padding:0;background:transparent}
+.kmc-hub-po-visual .hlc-form label,.kmc-hub-po-visual .hlc-field{font-size:12px;font-weight:650}
+.kmc-hub-po-visual input:not([type=checkbox]):not([type=radio]),
+.kmc-hub-po-visual select{
+  font:inherit;border:1px solid #ccd8e0;border-radius:6px;background:white;
+  color:var(--ink);padding:9px 11px;min-width:0;max-width:100%;
+}
+.kmc-hub-po-visual input[type=checkbox]{accent-color:var(--blue)}
+.kmc-hub-po-visual .hlc-form .hlc-btn.is-primary{width:100%;text-align:center}
+.kmc-hub-po-visual .hlc-zone-hint{background:#eef5fa;color:#365b75;padding:12px;border-radius:6px;font-size:13px}
+.kmc-hub-po-visual .hlc-meta,.kmc-hub-po-visual .hlc-reason,.kmc-hub-po-visual .hlc-empty{color:var(--muted);font-size:12px}
+.kmc-hub-po-visual .kmc-hub-po-v8-order{padding:0 12px;margin:0 0 8px}
+.kmc-hub-po-visual .kmc-hub-po-v8-order>summary{padding:12px 0;display:flex;justify-content:space-between;gap:7px;align-items:center}
+.kmc-hub-po-visual .kmc-hub-po-v8-order>summary::after{content:'▾';color:var(--muted)}
+.kmc-hub-po-visual .kmc-hub-po-v8-order[open]>summary::after{content:'▴'}
+@media(max-width:650px){.kmc-hub-po-visual{padding:12px}.kmc-hub-po-visual .kmc-hub-po-v8-board{grid-template-columns:repeat(2,minmax(0,1fr))}}

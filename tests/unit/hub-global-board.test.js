@@ -268,3 +268,27 @@ test('départ PO : trois faits distincts, carton partagé compté seulement pour
   const [r]=summarizePurchaseOrders({code:'KM'},{purchase_orders:[po],boxes});
   expect(r).toMatchObject({boxed_quantity:3,dispatched_quantity:2,handed_quantity:1,box_count:3,shipment_count:2,missing:1,reception_complete:false});
 });
+
+test('projection PO compacte : articles et FIFO strictement issus de la PO, sans données financières ou client',()=>{
+  const own={order_id:'a',order_ref:'KAAAAAA',product:'Lampe',product_sku_id:'sku-1',ordered:3,confirmed:3,received:1,missing:2,fifo_rank:1,fifo_next:true,unit_price:99,client_email:'private@example.test'};
+  const later={...own,order_id:'b',order_ref:'KBBBBBB',received:0,missing:3,fifo_rank:2,fifo_next:false};
+  const foreign={...own,product:'Article autre PO',product_sku_id:'sku-2'};
+  const rows=summarizePurchaseOrders({code:'KM'},{purchase_orders:[{id:'p1',lines:[own,later]},{id:'p2',lines:[foreign]}]});
+  expect(rows[0].order_lines).toEqual([
+    {order_ref:'KAAAAAA',product:'Lampe',product_sku_id:'sku-1',ordered:3,expected:3,received:1,missing:2,fifo_rank:1,fifo_next:true},
+    {order_ref:'KBBBBBB',product:'Lampe',product_sku_id:'sku-1',ordered:3,expected:3,received:0,missing:3,fifo_rank:2,fifo_next:false}
+  ]);
+  expect(rows[0].order_lines).not.toContainEqual(expect.objectContaining({product:'Article autre PO'}));
+  expect(JSON.stringify(rows[0])).not.toMatch(/unit_price|client_email|private@example/);
+});
+
+test('V8 : preuves de réception et exceptions limitées à la PO exacte',()=>{
+ const payload={purchase_orders:[{id:'p1',sent_at:'2026-11-24',sent_channel:'email',confirmed_at:'2026-11-25',lines:[]}],
+ receipts:[{reference:'REC-1',po_ids:['p1'],state:'QUALITY_CHECKED',received_at:'2026-11-25'},{reference:'REC-2',po_ids:['p2'],state:'RECEIVED'}],
+ to_handle:[{po_id:'p1',kind:'PO_MISSING_QTY',reason:'Écart'},{po_id:'p2',kind:'PO_MISSING_QTY',reason:'Autre PO'}]};
+ const [r]=summarizePurchaseOrders({code:'KM'},payload);
+ expect(r.receipt_evidence).toEqual([{reference:'REC-1',state:'QUALITY_CHECKED',received_at:'2026-11-25'}]);
+ expect(r.exceptions).toEqual([{kind:'PO_MISSING_QTY',reason:'Écart'}]);
+ expect(r.sent_channel).toBe('email');
+ expect(r).not.toHaveProperty('physical_settled');
+});

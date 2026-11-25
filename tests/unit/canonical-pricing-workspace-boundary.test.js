@@ -76,7 +76,7 @@ test('runtime Pricing n’importe aucune vue Legacy ni API historique', () => {
 test('Atelier market rend le viewer en lecture seule et réserve les mutations au manager', () => {
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
   const presentation = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-workspace-presentation.js'), 'utf8');
-  expect(index).toContain('/dashboards/canonical/js/pricing-workspace-presentation.js?v=261017-1');
+  expect(index).toContain('/dashboards/canonical/js/pricing-workspace-presentation.js?v=261125-centers-1');
   expect(index).toContain('/dashboards/canonical/css/pricing-workspace-economic-v3.css?v=261010-9');
   expect(presentation).toContain('payload.capabilities?.cost_overrides');
   expect(presentation).toContain("payload.access?.read_only !== true");

@@ -52,7 +52,7 @@ test('engagement : le détenteur du droit voit « Valider l\'engagement d\'achat
   expect(actions(menu)).toEqual([]);
   expect(links(menu)).toHaveLength(1);
   expect(links(menu)[0].textContent).toContain('décision d’engagement');
-  expect(links(menu)[0].href).toContain('entry=direction');
+  expect(links(menu)[0].href).toContain('decision=commitment');
 });
 
 test('engagement validé + brouillon : lien vers la soumission canonique sans POST', async () => {
@@ -80,7 +80,7 @@ test('paiement : sans droit aucune action ; avec droit, engagement validé et PO
   const menu=run({ status:'notified',commitment_decision:decision },'Autorisation',{supplier_payment:true});
   expect(actions(menu)).toEqual([]);
   expect(links(menu)[0].textContent).toContain('autorisation de paiement');
-  expect(links(menu)[0].href).toContain('entry=direction');
+  expect(links(menu)[0].href).toContain('decision=payment');
 });
 
 test('paiement déjà autorisé : décision affichée, aucune seconde action ; un débit ne vaut pas autorisation', () => {

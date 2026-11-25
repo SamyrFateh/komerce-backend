@@ -122,6 +122,10 @@
       explanation(menu,doc,'Marché ou PO non identifié : accès au dossier indisponible.');
       return false;
     }
+    if(entry==='direction'&&['commitment','payment'].includes(decision)){
+      workflowLink(menu,doc,label,'/admin/hub?'+new URLSearchParams({branch:'operations',sel:'po:'+po.id,decision}).toString());
+      return true;
+    }
     for(const market of markets)workflowLink(menu,doc,label+(markets.length>1?' · '+market:''),'/admin/hub-live?'+new URLSearchParams({
       view:'execute',entry,market,atelier:'purchasing',sel:'po:'+po.id,...(decision?{decision}:{})
     }).toString());
@@ -203,7 +207,7 @@
       explanation(menu,doc,'Engagement d’achat à valider par la directrice. Votre compte ne détient pas cette autorisation (attribuée par l’Admin central) ; une PO préparée n’est pas un engagement.');
       return false;
     }
-    poLink(menu,doc,po,'Ouvrir la PO · décision d’engagement','direction');
+    poLink(menu,doc,po,'Ouvrir la PO · décision d’engagement','direction','commitment');
     return true;
   }
   function paymentAuthorization(menu,doc,po,grants,fetchFn,refresh) {
@@ -223,7 +227,7 @@
       explanation(menu,doc,'Paiement fournisseur à autoriser par la directrice. Votre compte ne détient pas cette autorisation (attribuée par l’Admin central).');
       return false;
     }
-    poLink(menu,doc,po,'Ouvrir la PO · autorisation de paiement','direction');
+    poLink(menu,doc,po,'Ouvrir la PO · autorisation de paiement','direction','payment');
     return true;
   }
   function varianceDecision(menu, doc, po, grants, fetchFn, refresh, executeHere=false) {

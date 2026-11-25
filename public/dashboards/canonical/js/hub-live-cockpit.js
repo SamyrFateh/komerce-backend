@@ -278,16 +278,16 @@
       lines.appendChild(el(doc, 'summary', '', po.lines.length + ' ligne(s) d’achat'));
       for (const l of po.lines) lines.appendChild(el(doc, 'p', 'hlc-meta',
         (l.order_ref || '—') + ' · ' + (l.product || 'Article') + ' × ' + num(l.ordered)));
-      rootEl.appendChild(lines);
+      if(!ctx.decisionOnly)rootEl.appendChild(lines);
       const list = el(doc, 'div', 'hlc-actions');
-      const allowed = new Set(['authorize-commitment','submit-po','record-sent','confirm-po','authorize-payment','download-commitment-pdf']);
+      const allowed = new Set(ctx.decisionOnly==='commitment'?['authorize-commitment','download-commitment-pdf']:ctx.decisionOnly==='payment'?['authorize-payment']:ctx.decisionOnly==='review'?['authorize-commitment','authorize-payment','download-commitment-pdf']:['authorize-commitment','submit-po','record-sent','confirm-po','authorize-payment','download-commitment-pdf']);
       // Le paiement est une décision distincte, jamais proposée sur un brouillon
       // (même si l'engagement vient d'être approuvé). Les droits et les autres
       // prérequis restent ceux du moteur canonique.
       const actions = actionsFor().filter(a => allowed.has(a.key) &&
         (a.key !== 'authorize-payment' || po.status !== 'draft'));
       for (const a of actions) appendAction(list,a);
-      if (!actions.length) list.appendChild(el(doc,'p','hlc-empty','Aucune action d’achat disponible.'));
+      if (!actions.length) list.appendChild(el(doc,'p','hlc-empty',ctx.decisionOnly?'Aucune décision disponible pour cette PO. Consultez son état et vos habilitations.':'Aucune action d’achat disponible.'));
       rootEl.appendChild(list);
       const kinds = {'authorize-commitment':'commitment','record-sent':'sent','confirm-po':'confirm','authorize-payment':'payment'};
       const canOpen = actions.some(a => !a.disabled && kinds[a.key] === state.form?.kind);
@@ -647,9 +647,23 @@
         if (simulated) { supplierOrder.value = simulationRef; supplierOrder.readOnly = true; }
       }
       if (kind === 'confirm') {
-        form.appendChild(el(doc, 'p', 'hlc-zone-hint', 'Quantités confirmées par le fournisseur (déclaratif, pas une réception). Le reliquat éventuel redevient un besoin ouvert.'));
+        const compact=ctx.compactPO===true;
+        form.appendChild(el(doc, 'p', 'hlc-zone-hint', compact?'Confirmation intégrale par défaut. Indiquez uniquement les quantités non confirmées.':'Quantités confirmées par le fournisseur (déclaratif, pas une réception). Le reliquat éventuel redevient un besoin ouvert.'));
+        const gaps=compact?el(doc,'details','hlc-confirm-gaps'):null;
+        if(gaps){
+          gaps.appendChild(el(doc,'summary','','Signaler un écart fournisseur'));
+          form.appendChild(gaps);
+        }
+        const tally=compact?el(doc,'p','hlc-meta',''):null;
+        const updateTally=()=>{
+          if(!tally)return;
+          const expected=confirmQty.reduce((n,[l])=>n+Number(l.ordered),0);
+          const missing=confirmQty.reduce((n,[,q])=>n+Number(q.value),0);
+          tally.textContent=Number.isFinite(missing)?(expected-missing)+' confirmés · '+missing+' non confirmés':'Quantités à vérifier';
+        };
         po.lines.forEach((l) => {
-          const q = field(form, `${l.order_ref} · ${l.product || 'Article'} (commandé ${l.ordered})`, Object.assign(doc.createElement('input'), { type: 'number', min: '0', max: String(l.ordered), step: '1', value: String(l.ordered) }));
+          const q = field(gaps||form, `${l.order_ref} · ${l.product || 'Article'} (commandé ${l.ordered})`, Object.assign(doc.createElement('input'), { type: 'number', min: '0', max: String(l.ordered), step: '1', value: compact?'0':String(l.ordered), required:true }));
+          if(compact){q.setAttribute('data-hlc-confirm-missing','');q.addEventListener('input',updateTally);}
           confirmQty.push([l, q]);
           // Le produit manuel central Hub peut ne pas avoir de devis fournisseur initial.
           // Prix constaté et devise saisis à la CONFIRMATION, jamais déduits du prix retail
@@ -664,6 +678,7 @@
             confirmMoney.set(l.line_id, { p, c });
           }
         });
+        if(tally){updateTally();form.appendChild(tally);}
         supplierOrder = field(form, 'Référence de commande fournisseur', textInput('', 'supplier_order_id'));
         confirmProof = field(form, 'Justificatif d’achat (obligatoire)', textInput('Facture, capture, reçu…', 'purchase_proof_ref'));
         confirmSeller = field(form, simulated ? 'Fournisseur fictif — recette uniquement' : 'Vendeur réel (obligatoire pour un achat manuel, pas le Hub central)', textInput('Magasin ou vendeur', 'seller_label'));
@@ -755,8 +770,11 @@
             runningMessage: simulated ? 'Enregistrement de la simulation interne…' : 'Enregistrement de l’envoi…', successMessage: simulated ? 'Étape fournisseur simulée enregistrée — aucun contact extérieur.' : 'Envoi enregistré (canal, auteur, heure).', onSuccess: () => { state.form = null; },
           });
         } else if (kind === 'confirm') {
+          if(confirmQty.some(([l,q])=>q.value.trim()===''||!Number.isInteger(Number(q.value))||Number(q.value)<0||Number(q.value)>Number(l.ordered))){
+            note.textContent='Quantité invalide : vérifier les écarts de chaque ligne.';return;
+          }
           const lines = confirmQty.map(([l, q]) => {
-            const row = { purchase_line_id: l.line_id, confirmed_quantity: Number(q.value) };
+            const row = { purchase_line_id: l.line_id, confirmed_quantity: ctx.compactPO===true?Number(l.ordered)-Number(q.value):Number(q.value) };
             const money = confirmMoney.get(l.line_id);
             if (money && row.confirmed_quantity > 0) {
               row.confirmed_unit_price = Number(money.p.value);

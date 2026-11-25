@@ -137,6 +137,18 @@ describe('routes/relay-dashboard', () => {
   });
 
   describe('GET /orders', () => {
+    test('V4 : transmet marché et référence sans modifier l’autorité de lecture',async()=>{
+      queries.getOrders.mockResolvedValueOnce({orders:[]});
+      const res=await request(buildApp()).get('/api/relay-dashboard/orders').query({market:'KM',reference:'K123456'});
+      expect(res.status).toBe(200);
+      expect(queries.getOrders).toHaveBeenCalledWith(mockUser,expect.objectContaining({market:'KM',reference:'K123456'}),{authorizedMarkets:undefined,includeSimulation:false});
+    });
+    test('V4 : refuse marché invalide avant lecture',async()=>{
+      const res=await request(buildApp()).get('/api/relay-dashboard/orders').query({market:'INVALID'});
+      expect(res.status).toBe(400);
+      expect(queries.getOrders).not.toHaveBeenCalled();
+    });
+
     test('transmet les filtres de requête avec défauts limit/offset', async () => {
       queries.getOrders.mockResolvedValueOnce({ count: 0, orders: [] });
       await request(buildApp()).get('/api/relay-dashboard/orders').query({ status: 'available' });
