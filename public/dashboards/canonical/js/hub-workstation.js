@@ -543,6 +543,8 @@
     let poMode = false;
     let pilotRequest = 0;
     const receiveRefs=new Map();
+    const boxCreateKeys=new Map(),hubVerifiedBoxes={};
+    let activeBoxDetails=null;
     const orderHeader = headerTitle.textContent;
     const setHeaders = labels => {
       titleRow.replaceChildren();
@@ -554,10 +556,10 @@
       const filtered=(poRows || []).filter(p => !p.cancelled && [p.reference,p.market,p.supplier,...(p.order_references || [])]
         .some(v=>safe(v).toLocaleLowerCase('fr').includes(term)));
       headerCount.textContent=filtered.length+' PO';
-      setHeaders(['PO / Fournisseur','Commandes associées','Achat','Réception']);
+      setHeaders(['PO / Fournisseur','Commandes associées','Achat','Réception','COMBOX']);
       if (!filtered.length) {
         const tr=make(doc,'tr'), td=make(doc,'td','','Aucune PO correspondante.');
-        td.colSpan=4;tr.appendChild(td);body.appendChild(tr);return;
+        td.colSpan=5;tr.appendChild(td);body.appendChild(tr);return;
       }
       for (const p of filtered) {
         const tr=make(doc,'tr');tr.setAttribute('data-hub-pilot-po',p.id);
@@ -629,6 +631,32 @@
           finally{receiptLoading=false;}
         });
         reception.appendChild(receiptDetails);tr.appendChild(reception);
+        const boxCell=make(doc,'td'),boxDetails=make(doc,'details');
+        boxDetails.appendChild(make(doc,'summary','','Préparation COMBOX'));
+        const boxHost=make(doc,'div','kmc-hub-inline-boxes');
+        boxHost.setAttribute('data-hub-inline-combox',p.id);
+        boxDetails.appendChild(boxHost);
+        let boxHandle=null,boxLoading=false;
+        boxDetails.addEventListener('toggle',async()=>{
+          if(!boxDetails.open||boxLoading||boxHandle?.busy())return;
+          if(activeBoxDetails&&activeBoxDetails!==boxDetails)activeBoxDetails.open=false;
+          activeBoxDetails=boxDetails;
+          if(!(current.received>0)){
+            boxHost.replaceChildren(make(doc,'p','','Aucun article reçu pour cette PO.'));return;
+          }
+          boxLoading=true;
+          try{
+            if(boxHandle){await boxHandle.reload();return;}
+            const module=global.KomerceCanonicalOperationsWorkspace;
+            if(!module?.mountBoxActions)throw Error('Module COMBOX indisponible');
+            boxHost.replaceChildren(make(doc,'p','','Chargement des COMBOX…'));
+            boxHandle=await module.mountBoxActions(boxHost,{
+              document:doc,fetch:fetchFn,user,marketCode:p.market,poId:p.id,boxCreateKeys,hubVerifiedBoxes,onChange:refreshRow,
+            });
+          }catch(error){boxHost.replaceChildren(make(doc,'p','','COMBOX indisponibles : '+error.message));boxHandle=null;}
+          finally{boxLoading=false;}
+        });
+        boxCell.appendChild(boxDetails);tr.appendChild(boxCell);
         body.appendChild(tr);
       }
     };
