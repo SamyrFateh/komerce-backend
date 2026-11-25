@@ -359,7 +359,7 @@
   }
 
   // Adapter du même moteur d'actions, sans deuxième formulaire ni nouvel endpoint.
-  async function mountPurchaseActions(host, {document:doc, fetch:fetchFn, user, marketCode, poId, onChange, compactPO=false} = {}) {
+  async function mountPurchaseActions(host, {document:doc, fetch:fetchFn, user, marketCode, poId, onChange, compactPO=false, decisionOnly=null} = {}) {
     if (!['admin','agent_hub'].includes(user?.role) || !poId) throw new Error('Accès achat Hub requis');
     const cockpit = globalThis.KomerceHubLiveCockpit;
     if (!cockpit) throw new Error('Module achats indisponible');
@@ -368,7 +368,7 @@
     feedback.setAttribute('role','status');
     const slot = doc.createElement('div');
     host.replaceChildren(feedback,slot);
-    const state = {sel:{type:'po',id:poId},selectionInitialized:true,form:null,picked:new Set()};
+    const state = {sel:{type:'po',id:poId},selectionInitialized:true,form:['commitment','payment'].includes(decisionOnly)?{po:poId,kind:decisionOnly}:null,picked:new Set()};
     let dossier;
     const context = {
       root:host,fetch:fetchFn,confirm:message=>doc.defaultView.confirm(message),
@@ -380,7 +380,7 @@
     };
     function paint(){
       cockpit.render(slot,{
-        document:doc,dossier,marketCode,state,isReadOnly:!dossier.cockpit?.viewer,purchaseOnly:true,compactPO,
+        document:doc,dossier,marketCode,state,isReadOnly:!dossier.cockpit?.viewer,purchaseOnly:true,compactPO,decisionOnly,
         act:(button,options)=>runAction(context,button,options),
         reload:context.reload,
         feedback:(message,tone)=>setFeedback(host,message,tone),

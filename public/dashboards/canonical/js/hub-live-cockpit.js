@@ -278,16 +278,16 @@
       lines.appendChild(el(doc, 'summary', '', po.lines.length + ' ligne(s) d’achat'));
       for (const l of po.lines) lines.appendChild(el(doc, 'p', 'hlc-meta',
         (l.order_ref || '—') + ' · ' + (l.product || 'Article') + ' × ' + num(l.ordered)));
-      rootEl.appendChild(lines);
+      if(!ctx.decisionOnly)rootEl.appendChild(lines);
       const list = el(doc, 'div', 'hlc-actions');
-      const allowed = new Set(['authorize-commitment','submit-po','record-sent','confirm-po','authorize-payment','download-commitment-pdf']);
+      const allowed = new Set(ctx.decisionOnly==='commitment'?['authorize-commitment','download-commitment-pdf']:ctx.decisionOnly==='payment'?['authorize-payment']:ctx.decisionOnly==='review'?['authorize-commitment','authorize-payment','download-commitment-pdf']:['authorize-commitment','submit-po','record-sent','confirm-po','authorize-payment','download-commitment-pdf']);
       // Le paiement est une décision distincte, jamais proposée sur un brouillon
       // (même si l'engagement vient d'être approuvé). Les droits et les autres
       // prérequis restent ceux du moteur canonique.
       const actions = actionsFor().filter(a => allowed.has(a.key) &&
         (a.key !== 'authorize-payment' || po.status !== 'draft'));
       for (const a of actions) appendAction(list,a);
-      if (!actions.length) list.appendChild(el(doc,'p','hlc-empty','Aucune action d’achat disponible.'));
+      if (!actions.length) list.appendChild(el(doc,'p','hlc-empty',ctx.decisionOnly?'Aucune décision disponible pour cette PO. Consultez son état et vos habilitations.':'Aucune action d’achat disponible.'));
       rootEl.appendChild(list);
       const kinds = {'authorize-commitment':'commitment','record-sent':'sent','confirm-po':'confirm','authorize-payment':'payment'};
       const canOpen = actions.some(a => !a.disabled && kinds[a.key] === state.form?.kind);

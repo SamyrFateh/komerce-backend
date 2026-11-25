@@ -46,7 +46,7 @@ async function mount(page, { source, posts = [], delay = 0 } = {}) {
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
     const json = (body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
-    if (url.pathname === '/admin/hub-live') return route.fulfill({ contentType: 'text/html', path: path.join(CANONICAL, 'index.html') });
+    if (['/admin/hub-live','/admin/hub'].includes(url.pathname)) return route.fulfill({ contentType: 'text/html', path: path.join(CANONICAL, 'index.html') });
     if (url.pathname.startsWith('/dashboards/canonical/')) {
       const file = path.join(CANONICAL, url.pathname.replace('/dashboards/canonical/', ''));
       return fs.existsSync(file) ? route.fulfill({ path: file }) : route.fulfill({ status: 404, body: '' });
@@ -59,6 +59,14 @@ async function mount(page, { source, posts = [], delay = 0 } = {}) {
     if (url.pathname === '/api/auth/me') return json(FX.auth_me);
     if (url.pathname === '/api/admin/dashboard/context') return json(FX.context);
     if (url.pathname === API) return json(WORKSPACE);
+    if (url.pathname === '/api/hub/board') {
+      if(url.searchParams.get('view')!=='po')return json({scope:'HUB_GLOBAL',orders:[]});
+      return json({scope:'HUB_GLOBAL',markets:['KM'],purchase_orders:source.purchase_orders.map(po=>({
+        id:po.id,reference:po.ref,supplier:po.supplier_name,market:'KM',purchase_step:po.step.key,
+        ordered:po.lines.reduce((n,l)=>n+Number(l.ordered),0),expected:po.totals.effective,
+        received:po.totals.received,missing:po.totals.missing,order_references:[],order_count:0
+      }))});
+    }
     if (url.pathname === '/api/scans/hub/receivable') return json({ purchase_orders: [] });
     if (url.pathname === `${API}/supply`) return json(source);
     return route.fulfill({ status: 404, body: '' });
@@ -185,8 +193,9 @@ test.describe('Hub live · cockpit maquette C — desktop 1440', () => {
     await mount(page, { source: d, posts, delay: 200 });
     await selectPo(page);
     await page.locator('[data-hlc-action="authorize-commitment"]').click();
-    await expect(page).toHaveURL(/entry=direction/);
-    await expect(page.locator('[data-hub-decision-workspace]')).toBeVisible();
+    await expect(page).toHaveURL(/\/admin\/hub\?branch=operations&sel=po%3A[^&]+&decision=review/);
+    await expect(page.locator('[data-hub-po-v8]')).toBeVisible();
+    await expect(page.locator('[data-hlc-purchase-only]')).toBeVisible();
     await expect(page.locator('[data-supply-boxes]')).toHaveCount(0);
     await expect(page.locator('[data-hlc-action="detach-line"]')).toHaveCount(0);
     await expect(page.locator('[data-workspace-view]')).toHaveCount(0);
