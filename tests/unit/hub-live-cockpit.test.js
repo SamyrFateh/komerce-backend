@@ -263,3 +263,12 @@ describe('Mode Achat compact du Kanban', () => {
     expect(act).not.toHaveBeenCalled();
   });
 });
+
+test('confirmation compacte : défaut intégral, saisie des écarts, mêmes contrôles et writer',()=>{
+  const js=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-live-cockpit.js'),'utf8');
+  expect(js).toContain("value: compact?'0':String(l.ordered)");
+  expect(js).toContain("confirmed_quantity: ctx.compactPO===true?Number(l.ordered)-Number(q.value):Number(q.value)");
+  expect(js).toContain("Number(q.value)>Number(l.ordered)");
+  expect(js).toContain("Justificatif d’achat obligatoire");
+  expect(js).toContain("data-hlc-confirm-missing");
+});

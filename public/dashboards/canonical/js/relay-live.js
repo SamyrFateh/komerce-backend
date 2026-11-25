@@ -65,7 +65,8 @@
   const offsetOf = p => Math.max(0, num(p.offset));
   const listUrl = (list, offset = 0, search = '') => `${BASE}${queryString({ view:'orders', list, offset:offset > 0 ? offset : '', search:search||'', ...simParams() })}`;
   const orderUrl = (id, from) => `${BASE}${queryString({ view:'order', order:id, from, ...simParams() })}`;
-  const previewUrl = id => `${BASE}${queryString({ sel:id, ...simParams() })}`;
+  const overviewUrl = (extra={}) => `${BASE}${queryString({ view:'overview', ...extra, ...simParams() })}`;
+  const previewUrl = id => overviewUrl({sel:id});
   const paymentLabel = o => (o.cash_pending ? 'Cash à encaisser' : o.payment_status === 'paid' ? 'Payée' : 'Paiement en attente');
 
 
@@ -206,7 +207,7 @@
     if (!sel) return '';
     if (!detail) {
       return `<aside class="lk-block lk-relay-detail kmc-relay-work-inspector" data-relay-detail aria-label="Dossier contextuel">
-        <header class="kmc-relay-inspector-head"><strong>Dossier indisponible</strong><a href="${BASE+queryString(simParams())}" data-cockpit-nav>Fermer ×</a></header>
+        <header class="kmc-relay-inspector-head"><strong>Dossier indisponible</strong><a href="${overviewUrl()}" data-cockpit-nav>Fermer ×</a></header>
         <p>Ce dossier est indisponible ou hors de votre périmètre.</p></aside>`;
     }
     const o = detail.order || {};
@@ -216,7 +217,7 @@
     const wait = o.status === 'available' ? ageLabel(o.heures_attente) : ageLabel(num(o.age_jours) * 24);
     const fact = (label, value) => `<div><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`;
     return `<aside class="lk-block lk-relay-detail kmc-relay-work-inspector" data-relay-detail aria-label="Dossier contextuel">
-      <header class="kmc-relay-inspector-head"><span class="kmc-relay-work-eyebrow">DOSSIER CONTEXTUEL</span><a href="${BASE+queryString(simParams())}" data-cockpit-nav aria-label="Fermer le dossier">Fermer ×</a></header>
+      <header class="kmc-relay-inspector-head"><span class="kmc-relay-work-eyebrow">DOSSIER CONTEXTUEL</span><a href="${overviewUrl()}" data-cockpit-nav aria-label="Fermer le dossier">Fermer ×</a></header>
       <h3>${esc(o.reference || 'Colis')}</h3>
       <div class="lk-facts">
         ${fact('Statut', STATUS[o.status] || o.status || '—')}
@@ -253,6 +254,7 @@
             <strong>Remettre un colis</strong><small>Ouvrir le comptoir Remises →</small>
           </a>
         </nav>
+        <p><a href="${BASE}" data-cockpit-nav>Retour au poste Relais →</a></p>
         ${relayWorkboard(p,data)}
         ${num(k.incidents_ouverts)>0?`<div class="kmc-relay-attention">
           <strong>${num(k.incidents_ouverts)} incident(s) ouvert(s)</strong>
@@ -319,7 +321,7 @@
           ${relaySimToggle()}
         </div>
         <div class="kmc-relay-list-results"><strong>${rows.length} résultat(s) affiché(s)</strong>
-          <a href="${BASE+queryString(simParams())}" data-cockpit-nav>← Poste de travail</a></div>
+          <a href="${overviewUrl()}" data-cockpit-nav>← Poste de travail</a></div>
         ${table(ORDER_COLUMNS,rows.map(order=>orderRow(order,list)),{empty:search?'Aucun résultat pour cette recherche.':'Aucun dossier dans cette file.'})}${pager}`,
     };
   }
@@ -412,7 +414,85 @@
     };
   }
 
+  // Poste V4 : aucun writer supplémentaire. Un manifeste COMBOX ne prouve
+  // pas une réception par carton : le reçu existant porte sur expédition/article.
+  const v4Market=p=>/^[A-Z]{2}$/.test(String(p.market||''))?String(p.market):'';
+  const v4Url=(market,extra={})=>BASE+queryString({market,...extra,...simParams()});
+  function v4Boxes(shipments){
+    return (shipments||[]).flatMap(sh=>(sh.boxes||[]).filter(box=>
+      (box.orders||[]).some(o=>(o.items||[]).some(i=>i.received==null||Number(i.received_gap)>0))
+    ).map(box=>({shipment:sh.reference,receivable:sh.receivable===true,box})));
+  }
+  function renderV4(p,data){
+    const market=v4Market(p)||v4Market({market:data?.selectedMarket}),search=String(p.search||'').trim().toUpperCase();
+    const matches=(...values)=>!search||values.some(v=>String(v||'').toUpperCase().includes(search));
+    const rows=Array.isArray(data?.orders)?data.orders.filter(o=>o.market_code===market):[];
+    const boxes=v4Boxes(data?.shipments?.shipments).filter(({box,shipment})=>matches(box.reference,shipment,...(box.orders||[]).map(o=>o.reference)));
+    const ready=rows.filter(o=>o.status==='available'&&o.payment_status==='paid'&&Number(o.relay_ready_units)>0&&matches(o.reference));
+    const done=rows.filter(o=>o.status==='collected'&&matches(o.reference));
+    const blocked=rows.filter(o=>o.status==='available'&&o.payment_status!=='paid'&&matches(o.reference));
+    const boxCard=({box,shipment,receivable})=>{
+      const orders=box.orders||[];
+      const qty=orders.reduce((n,o)=>n+(o.items||[]).reduce((m,i)=>m+num(i.expected),0),0);
+      const gap=orders.some(o=>(o.items||[]).some(i=>Number(i.received_gap)>0));
+      return `<details class="kmc-relay-v4-card" data-relay-v4-box="${esc(box.reference)}">
+        <summary><strong>${esc(box.reference)}</strong><span>${qty} articles annoncés · ${orders.length} commandes</span></summary>
+        <small>${esc(gap?'Écart sur expédition':receivable?'Arrivage à contrôler':'En acheminement')} · ${esc(shipment)}</small>
+        ${orders.map(o=>`<details class="kmc-relay-v4-content"><summary>${esc(o.reference)} · ${(o.items||[]).reduce((n,i)=>n+num(i.expected),0)} articles</summary>
+          ${(o.items||[]).map(i=>`<div>${esc(i.product)} · × ${num(i.expected)}</div>`).join('')}</details>`).join('')}
+        ${receivable?`<a href="${esc(executionUrl(market,'shipments'))}">Contrôler l’expédition →</a>`:''}
+        </details>`;
+    };
+    const orderCard=(o,handed=false)=>{
+      const qty=handed?o.relay_handed_units:o.relay_ready_units;
+      const detail=data?.detail?.order?.id===o.id?data.detail:null;
+      return `<article class="kmc-relay-v4-card" data-relay-v4-order="${esc(o.id)}"><strong>${esc(o.reference)}</strong>
+        <span class="kmc-relay-v4-quantity">${qty==null?'Quantité indisponible':num(qty)+' articles '+(handed?'remis':'disponibles')}</span>
+        ${detail?`<details class="kmc-relay-v4-content"><summary>Articles de la commande</summary>
+          ${(detail.items||[]).map(i=>`<div>${esc(i.produit||i.produit_nom||'Article')} · × ${num(i.quantity)} commandé(s)</div>`).join('')}
+          </details>`:`<a href="${esc(v4Url(market,{sel:o.id,search:p.search||''}))}" data-cockpit-nav>Consulter les articles</a>`}
+        ${!handed?`<a href="${esc(remisesUrl(market))}">Ouvrir le comptoir →</a>`:''}</article>`;
+    };
+    const lane=(key,label,items)=>`<section class="kmc-relay-v4-lane" data-relay-v4-lane="${key}"><h3>${label} <small>${items.length}</small></h3>${items.join('')||'<p>Aucun dossier affiché</p>'}</section>`;
+    const markets=[...new Set(data?.markets||[])].filter(x=>/^[A-Z]{2}$/.test(x));
+    return {hero:`<header class="kmc-relay-flow-heading"><div><h1>Relais · poste de travail</h1><p>COMBOX, commandes et remises</p></div><a href="${BASE}?view=overview">Vue de secours / encaissements</a></header>`,
+      body:`<section class="kmc-relay-v4" data-relay-v4>
+        <form method="get" action="${BASE}" role="search" class="kmc-relay-v4-search">
+          <label>Marché <select name="market" required><option value="">Choisir</option>${[...new Set([market,...markets].filter(Boolean))].map(m=>`<option value="${esc(m)}"${m===market?' selected':''}>${esc(m)}</option>`).join('')}</select></label>
+          <label>Référence <input type="search" name="search" maxlength="120" value="${esc(p.search||'')}" placeholder="COMBOX ou commande"></label><button type="submit">Rechercher</button></form>
+        ${!market?'<p>Sélectionnez un marché autorisé pour consulter les arrivages.</p>':`
+          ${data?.shipmentsError?'<p role="alert">Arrivages indisponibles : aucune réception déduite.</p>':''}
+          <div class="kmc-relay-v4-board">
+          ${lane('expected','COMBOX attendues',boxes.map(boxCard))}
+          ${lane('ready','À remettre',ready.map(o=>orderCard(o)))}
+          ${lane('done','Remises',done.map(o=>orderCard(o,true)))}</div>
+          ${blocked.length?`<p>${blocked.length} commande(s) exclue(s) du parcours prépayé. <a href="${esc(executionUrl(market,'cash'))}">Circuit historique autorisé</a></p>`:''}
+          ${data?.truncated?'<p>Liste limitée aux dossiers récents ; les autres dossiers restent consultables dans la vue existante.</p>':''}
+          <p><a href="${esc(executionUrl(market,'receive'))}">Réception locale</a> · <a href="${esc(BASE+'?view=incidents')}">Incidents et SAV</a></p>`}</section>`};
+  }
+  async function loadV4(p,api){
+    const requestedMarket=v4Market(p);
+    const [available,collected,transit]=await Promise.all([
+      api('/api/relay/orders?status=available&limit=100&projection=live'),
+      api('/api/relay/orders?status=collected&limit=100&projection=live'),
+      api('/api/relay/orders?status=shipped,in_transit&limit=100&projection=live'),
+    ]);
+    const all=[...(available.orders||[]),...(collected.orders||[]),...(transit.orders||[])];
+    const markets=[...new Set(all.map(o=>o.market_code).filter(m=>/^[A-Z]{2}$/.test(String(m||''))))];
+    const market=requestedMarket||(markets.length===1?markets[0]:'');
+    // Le marché demandé ne confère aucun droit : les GET canoniques revalident le périmètre.
+    let shipments=null,shipmentsError=false;
+    if(market){
+      try{shipments=await api('/api/admin/workspaces/operations/market/'+encodeURIComponent(market)+'/relay-shipments');}
+      catch(_error){shipmentsError=true;}
+    }
+    const selected=all.find(o=>o.id===p.sel&&o.market_code===market);
+    const detail=selected?await api('/api/relay/orders/'+encodeURIComponent(selected.id)+'?projection=live').catch(()=>null):null;
+    return {orders:all,markets,selectedMarket:market,shipments,shipmentsError,detail,truncated:[available,collected,transit].some(x=>(x.orders||[]).length>=100)};
+  }
+
   const views = {
+    v4:{tab:()=> 'flux',load:loadV4,render:renderV4,nav:()=>({crumbs:[],back:null})},
     overview:{
       tab:() => 'flux',
       async load(p, api) {
@@ -455,7 +535,7 @@
     },
   };
 
-  const cockpit = kit.createCockpit({ basePath:BASE, domainLabel:'Relais', tabs:relayTabs(), views, defaultView:'overview', ownsNavigation:true });
+  const cockpit = kit.createCockpit({ basePath:BASE, domainLabel:'Relais', tabs:relayTabs(), views, defaultView:'v4', ownsNavigation:true });
 
   const incidentListeners=new WeakSet();
   function attachIncidentReporting(options){

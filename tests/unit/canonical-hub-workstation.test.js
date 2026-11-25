@@ -21,6 +21,9 @@ function el(tag) {
       contains(key) { return classes.has(key); },
     },
     appendChild(child) { this.children.push(child); child.parentNode=this; return child; },
+    append(...nodes) { nodes.forEach(child=>this.appendChild(child)); },
+    insertBefore(child, before) { const i=this.children.indexOf(before); if(i<0)return this.appendChild(child); this.children.splice(i,0,child); child.parentNode=this; return child; },
+    remove() { if(this.parentNode){const parent=this.parentNode;parent.children=parent.children.filter(child=>child!==this);this.parentNode=null;} },
     replaceChildren(...nodes) { this.children=nodes; nodes.forEach(x=>x.parentNode=this); },
     setAttribute(k,v) { this.attrs[k]=String(v); },
     getAttribute(k) { return this.attrs[k] || null; },
@@ -404,7 +407,7 @@ test('le pilote PO conserve le Kanban et revient à la vue commandes sans mutati
     anomalies:0,purchase_step:'received',sent:true};
   const fetch=jest.fn(async url=>({ok:true,json:async()=>url==='/api/hub/board?view=po'
     ?{scope:'HUB_GLOBAL',purchase_orders:[po]}:{scope:'HUB_GLOBAL',orders:[]}}));
-  await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'}});
+  await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'},location:{search:'?ux=legacy'}});
   const toggle=root.querySelector('[data-hub-po-pilot-toggle]');
   expect(toggle.getAttribute('aria-pressed')).toBe('false');
   await toggle.click();
@@ -433,7 +436,7 @@ test('la cellule Achat monte le module canonique seulement au dépliage',async()
   const previous=global.KomerceCanonicalOperationsWorkspace;
   global.KomerceCanonicalOperationsWorkspace={mountPurchaseActions};
   try{
-    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'}});
+    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'},location:{search:'?ux=legacy'}});
     await root.querySelector('[data-hub-po-pilot-toggle]').click();
     const host=root.querySelector('[data-hub-inline-purchase]');
     expect(host).not.toBeNull();
@@ -456,7 +459,7 @@ test('la cellule Réception monte seulement la PO expédiée, au dépliage',asyn
   const previous=global.KomerceCanonicalOperationsWorkspace;
   global.KomerceCanonicalOperationsWorkspace={mountReceptionActions};
   try{
-    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'}});
+    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'},location:{search:'?ux=legacy'}});
     await root.querySelector('[data-hub-po-pilot-toggle]').click();
     const host=root.querySelector('[data-hub-inline-reception]');
     expect(host).not.toBeNull();
@@ -475,7 +478,7 @@ test('COMBOX : la préparation commune est montée uniquement au dépliage de la
   const previous=global.KomerceCanonicalOperationsWorkspace;
   global.KomerceCanonicalOperationsWorkspace={mountBoxActions};
   try{
-    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'}});
+    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'},location:{search:'?ux=legacy'}});
     await root.querySelector('[data-hub-po-pilot-toggle]').click();
     const host=root.querySelector('[data-hub-inline-combox]');
     expect(host).not.toBeNull();
@@ -494,7 +497,7 @@ test('cellule Départ : chargement lazy du module canonique pour une PO reçue',
   const previous=global.KomerceCanonicalOperationsWorkspace;
   global.KomerceCanonicalOperationsWorkspace={mountDepartureActions};
   try{
-    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'}});
+    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'},location:{search:'?ux=legacy'}});
     await root.querySelector('[data-hub-po-pilot-toggle]').click();
     const host=root.querySelector('[data-hub-inline-departure]');
     expect(host).not.toBeNull();
@@ -503,4 +506,38 @@ test('cellule Départ : chargement lazy du module canonique pour une PO reçue',
     expect(mountDepartureActions).toHaveBeenCalledWith(host,expect.objectContaining({marketCode:'KM',poId:'p1',fetch}));
     expect(fetch).toHaveBeenCalledTimes(2);
   }finally{global.KomerceCanonicalOperationsWorkspace=previous;}
+});
+
+test('aperçu PO V8 : deux dossiers distincts, retour Kanban et chargement par PO exacte',async()=>{
+  const app=load(),root=el('main');
+  const po=id=>({id,reference:'PO-'+id,market:'KM',supplier:'Fournisseur',order_count:1,order_references:['KAAAAAA'],ordered:2,expected:2,received:0,missing:2,purchase_step:'sent',order_lines:[{order_ref:'KAAAAAA',product:'Article '+id,ordered:2,expected:2,received:0,missing:2}]});
+  const fetch=jest.fn(async url=>({ok:true,json:async()=>url==='/api/hub/board?view=po'?{scope:'HUB_GLOBAL',purchase_orders:[po('p1'),po('p2')]}:{scope:'HUB_GLOBAL',orders:[]}}));
+  const mountPurchaseActions=jest.fn(async()=>({busy:()=>false,reload:jest.fn()}));
+  const prev=global.KomerceCanonicalOperationsWorkspace;
+  const loc=Object.getOwnPropertyDescriptor(global,'location');
+  Object.defineProperty(global,'location',{configurable:true,value:{search:''}});
+  global.KomerceCanonicalOperationsWorkspace={mountPurchaseActions};
+  const walk=(node,predicate)=>[node,...node.children.flatMap(n=>walk(n,predicate))].filter(predicate);
+  try{
+    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'}});
+    expect(root.querySelector('[data-hub-po-v8]')).not.toBeNull();
+    root.querySelector('[data-hub-po-v8-card="p1"]').click();
+    await Promise.resolve();await Promise.resolve();
+    expect(mountPurchaseActions).toHaveBeenCalledWith(expect.anything(),expect.objectContaining({poId:'p1',marketCode:'KM',compactPO:true}));
+    walk(root,n=>n.tagName==='BUTTON'&&n.textContent==='Kanban')[0].click();
+    root.querySelector('[data-hub-po-v8-card="p2"]').click();
+    await Promise.resolve();await Promise.resolve();
+    expect(mountPurchaseActions).toHaveBeenCalledWith(expect.anything(),expect.objectContaining({poId:'p2'}));
+    expect(walk(root,n=>n.className==='kmc-hub-po-v8-panel')).toHaveLength(2);
+    expect(walk(root,n=>n.className==='kmc-hub-po-v8-panel'&&!n.hidden)).toHaveLength(1);
+  }finally{
+    global.KomerceCanonicalOperationsWorkspace=prev;
+    if(loc)Object.defineProperty(global,'location',loc);else delete global.location;
+  }
+});
+test('styles V8 limités au nouveau poste, masquage des panneaux et cartes compactes',()=>{
+  const css=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/css/hub-workstation.css'),'utf8');
+  expect(css).toContain('.kmc-hub-po-visual [hidden]');
+  expect(css).toMatch(/\.kmc-hub-po-v8-board\{[^}]*grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
+  expect(css).toMatch(/\.kmc-hub-po-v8-card\{[^}]*width:100%/);
 });
