@@ -700,7 +700,7 @@
     // Prévisualisation réelle du poste PO, explicite et réversible.
     // Les ateliers canoniques restent les seuls writers. Aucun état métier local.
     const visualPO = canOperate && new URLSearchParams(safe(global.location?.search)).get('ux')==='po-v8';
-    let visualHost, visualTabs, visualBoard, visualPanels, visualActive=null;
+    let visualHost, visualTabs, visualBoard, visualPanels, visualActive=null,visualMarket=null;
     const visualOpen=new Map();
     const visualLanes=['Engagement','Soumission','Envoi fournisseur','Confirmation / suivi','Réception','Réception complète'];
     const visualStage=p=>{
@@ -718,6 +718,35 @@
       visualActive=id;
       renderVisualPO();
     };
+    // Un dossier logistique porte sur un marché, et non sur une PO.
+    // Les groupes relais/rail sont construits par les adaptateurs canoniques.
+    const openLogistics=(market,kind)=>{
+      const id='logistics:'+market+':'+kind;
+      if(!visualOpen.has(id)){
+        const panel=make(doc,'section','kmc-hub-po-v8-panel');
+        const summary=make(doc,'div','kmc-hub-po-v8-summary');
+        const actions=make(doc,'div','kmc-hub-po-v8-actions');
+        panel.append(summary,actions);visualPanels.appendChild(panel);
+        visualOpen.set(id,{kind,market,panel,summary,actions,handle:null,loading:false,
+          po:{reference:(kind==='boxes'?'COMBOX':'Expédition')+' · '+market}});
+      }
+      visualSelect(id);
+    };
+    function renderLogistics(entry){
+      entry.summary.replaceChildren(make(doc,'h2','',entry.po.reference));
+      if(visualActive!=='logistics:'+entry.market+':'+entry.kind||entry.loading||entry.handle)return;
+      const module=global.KomerceCanonicalOperationsWorkspace;
+      const mount=entry.kind==='boxes'?module?.mountBoxActions:module?.mountDepartureActions;
+      if(!mount){entry.actions.replaceChildren(make(doc,'p','','Atelier canonique indisponible.'));return;}
+      entry.loading=true;
+      entry.actions.replaceChildren(make(doc,'p','','Chargement…'));
+      Promise.resolve().then(()=>mount(entry.actions,{document:doc,fetch:fetchFn,user,
+        marketCode:entry.market,marketWide:true,boxCreateKeys,hubVerifiedBoxes,
+        onChange:async()=>{await visualRefresh();}}))
+        .then(handle=>{entry.handle=handle;})
+        .catch(error=>{entry.actions.replaceChildren(make(doc,'p','','Action indisponible : '+error.message));})
+        .finally(()=>{entry.loading=false;});
+    }
     function renderVisualPO(){
       if(!visualHost){
         visualHost=make(doc,'section','kmc-hub-po-visual');
@@ -746,6 +775,23 @@
         close.addEventListener('click',()=>{if(entry.loading||entry.handle?.busy?.())return;entry.panel.remove();visualOpen.delete(id);if(visualActive===id)visualActive=null;renderVisualPO();});
         visualTabs.appendChild(close);
       }
+      // Deux raccourcis légers : pas de files physiques dupliquées sous le Kanban.
+      if(!visualActive){
+        const markets=[...new Set([...(poRows||[]).map(p=>p.market),...rows.map(o=>o.market)].filter(m=>/^[A-Z]{2}$/.test(String(m||''))))].sort();
+        if(markets.length){
+          const tools=make(doc,'div','kmc-hub-po-v8-logistics');
+          const select=make(doc,'select','');select.setAttribute('aria-label','Marché des opérations logistiques');
+          for(const market of markets){const option=make(doc,'option','',market);option.value=market;select.appendChild(option);}
+          if(markets.includes(visualMarket))select.value=visualMarket;
+          select.addEventListener('change',()=>{visualMarket=select.value;});
+          tools.appendChild(select);
+          for(const [kind,label] of [['boxes','COMBOX'],['departure','Expédition']]){
+            const button=make(doc,'button','kmc-hub-app-branch',label);button.type='button';
+            button.addEventListener('click',()=>{visualMarket=select.value;openLogistics(select.value,kind);});tools.appendChild(button);
+          }
+          visualTabs.appendChild(tools);
+        }
+      }
       visualBoard.hidden=Boolean(visualActive);
       visualBoard.replaceChildren();
       for(const [i,label] of [...visualLanes,'À vérifier'].entries()){
@@ -772,6 +818,7 @@
       }
       for(const [id,entry] of visualOpen){
         entry.panel.hidden=visualActive!==id;
+        if(entry.kind){renderLogistics(entry);continue;}
         const p=all.find(row=>row.id===id);
         entry.summary.replaceChildren();
         if(!p){entry.summary.appendChild(make(doc,'p','','PO indisponible ou annulée.'));entry.actions.hidden=true;continue;}
