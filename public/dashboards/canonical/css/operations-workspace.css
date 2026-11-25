@@ -2119,3 +2119,29 @@ body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="execution"] > .
 .kmc-hub-journey-step.is-current { background: #174c8a; color: #fff; border-color: #174c8a; box-shadow: 0 0 0 2px #93c5fd; opacity: 1; }
 .kmc-hub-journey-step[data-state="warning"]:not(.is-current),.kmc-hub-journey-step[data-state="critical"]:not(.is-current) { border-color: #b45309; }
 @media (max-width: 760px) { .kmc-hub-journey-steps { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+
+/* Hub reception: a focused workstation, not a wall of full forms.
+   The same component is used inside the PO Kanban and the standalone workshop. */
+.kmc-hub-reception-toolbar{display:flex;align-items:end;flex-wrap:wrap;gap:12px;margin:0 0 16px}
+.kmc-hub-reception-toolbar .kmc-workspace-receive-field-label{flex:1 1 320px;max-width:760px}
+.kmc-hub-reception-toolbar select,.kmc-workspace-receive-card [data-hub-unmanifested-form] input{box-sizing:border-box;width:100%;min-width:0;min-height:42px;padding:9px 12px;border:1px solid #c9d3e6;border-radius:8px;background:#fff;color:#163653;font:inherit}
+.kmc-workspace-receive-card .kmc-workspace-receive-head{padding-bottom:10px;border-bottom:1px solid #e3e9f3;gap:5px}
+.kmc-workspace-receive-card .kmc-workspace-receive-scanner{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px;padding:12px;margin:0 0 12px;background:#f4f7fb;border:1px solid #dbe5f1;border-radius:10px}
+.kmc-workspace-receive-card .kmc-workspace-receive-scan-label{min-width:0;width:100%}
+.kmc-workspace-receive-card .kmc-workspace-receive-scan-input{box-sizing:border-box;width:100%;min-width:0}
+.kmc-workspace-receive-card .kmc-workspace-receive-scan-result{grid-column:1/-1;min-width:0;font-size:12px;line-height:1.45}
+.kmc-workspace-receive-card .kmc-workspace-receive-manual-toggle{grid-column:1/-1;display:flex;align-items:center;gap:8px;justify-self:start;font-size:13px}
+.kmc-workspace-receive-card .kmc-workspace-receive-scanner .kmc-workspace-receive-field-label,.kmc-workspace-receive-card .kmc-workspace-receive-confirm,.kmc-workspace-receive-card .kmc-workspace-receive-scanner video{grid-column:1/-1;min-width:0}
+.kmc-workspace-receive-card .kmc-workspace-receive-field-label{display:grid;gap:6px;min-width:0;font-size:12px;font-weight:700;color:#26394d}
+.kmc-workspace-receive-card .kmc-workspace-receive-field-label[hidden]{display:none}
+.kmc-workspace-receive-card .kmc-workspace-receive-field-label input{box-sizing:border-box;width:100%;min-width:0;min-height:42px}
+.kmc-workspace-receive-card .kmc-workspace-table-wrap{overflow-x:auto}
+.kmc-workspace-receive-card .kmc-workspace-table td:last-child,.kmc-workspace-receive-card .kmc-workspace-table th:last-child{text-align:right}
+.kmc-workspace-receive-card .kmc-workspace-receive-qty{box-sizing:border-box;width:92px}
+.kmc-hub-reception-exception{margin-top:16px;border:1px solid #dbe5f1;border-radius:10px;background:#fff}
+.kmc-hub-reception-exception>summary{padding:12px 16px;font-weight:650;color:#26394d;cursor:pointer}
+.kmc-hub-reception-exception>.kmc-workspace-receive-card{border:0;border-top:1px solid #e3e9f3;border-radius:0 0 10px 10px;margin:0}
+.kmc-workspace-receive-card [data-hub-unmanifested-form]{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px;align-items:end}
+.kmc-workspace-receive-card [data-hub-unmanifested-form]>p{grid-column:1/-1;margin:0}
+.kmc-workspace-receive-card [data-hub-unmanifested-form]>button{grid-column:1/-1;justify-self:start}
+@media(max-width:680px){.kmc-workspace-receive-card .kmc-workspace-receive-scanner{grid-template-columns:minmax(0,1fr)}.kmc-hub-reception-toolbar .kmc-workspace-action{width:100%}}
