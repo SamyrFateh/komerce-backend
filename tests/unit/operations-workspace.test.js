@@ -266,7 +266,7 @@ describe('Hub: no old SAC and QR/PDF immediately reachable',()=>{
     expect(['261125-hub-kanban-default','261125-hub-v8-fidelity','261125-v8-direction-1']).toContain(hubVersion);
     expect(html).toContain('hub-workstation.css?v='+hubVersion+'"');
     expect(html).not.toContain('hub-workstation.js?v=261124-hub-po-inline-2');
-    expect(html).toContain('hub-context-actions.js?v=261124-hub-domain-2');
+    expect(html).toContain('hub-context-actions.js?v=261125-v8-direction-1');
     expect(html).toContain('app.js?v=261125-v8-direction-1');
   });
   test('historic COMBOX rows remain accessible but no longer occupy full page',()=>{
