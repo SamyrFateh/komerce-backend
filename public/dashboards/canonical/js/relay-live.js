@@ -65,7 +65,8 @@
   const offsetOf = p => Math.max(0, num(p.offset));
   const listUrl = (list, offset = 0, search = '') => `${BASE}${queryString({ view:'orders', list, offset:offset > 0 ? offset : '', search:search||'', ...simParams() })}`;
   const orderUrl = (id, from) => `${BASE}${queryString({ view:'order', order:id, from, ...simParams() })}`;
-  const previewUrl = id => `${BASE}${queryString({ sel:id, ...simParams() })}`;
+  const overviewUrl = (extra={}) => `${BASE}${queryString({ view:'overview', ...extra, ...simParams() })}`;
+  const previewUrl = id => overviewUrl({sel:id});
   const paymentLabel = o => (o.cash_pending ? 'Cash à encaisser' : o.payment_status === 'paid' ? 'Payée' : 'Paiement en attente');
 
 
@@ -206,7 +207,7 @@
     if (!sel) return '';
     if (!detail) {
       return `<aside class="lk-block lk-relay-detail kmc-relay-work-inspector" data-relay-detail aria-label="Dossier contextuel">
-        <header class="kmc-relay-inspector-head"><strong>Dossier indisponible</strong><a href="${BASE+queryString(simParams())}" data-cockpit-nav>Fermer ×</a></header>
+        <header class="kmc-relay-inspector-head"><strong>Dossier indisponible</strong><a href="${overviewUrl()}" data-cockpit-nav>Fermer ×</a></header>
         <p>Ce dossier est indisponible ou hors de votre périmètre.</p></aside>`;
     }
     const o = detail.order || {};
@@ -216,7 +217,7 @@
     const wait = o.status === 'available' ? ageLabel(o.heures_attente) : ageLabel(num(o.age_jours) * 24);
     const fact = (label, value) => `<div><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`;
     return `<aside class="lk-block lk-relay-detail kmc-relay-work-inspector" data-relay-detail aria-label="Dossier contextuel">
-      <header class="kmc-relay-inspector-head"><span class="kmc-relay-work-eyebrow">DOSSIER CONTEXTUEL</span><a href="${BASE+queryString(simParams())}" data-cockpit-nav aria-label="Fermer le dossier">Fermer ×</a></header>
+      <header class="kmc-relay-inspector-head"><span class="kmc-relay-work-eyebrow">DOSSIER CONTEXTUEL</span><a href="${overviewUrl()}" data-cockpit-nav aria-label="Fermer le dossier">Fermer ×</a></header>
       <h3>${esc(o.reference || 'Colis')}</h3>
       <div class="lk-facts">
         ${fact('Statut', STATUS[o.status] || o.status || '—')}
@@ -320,7 +321,7 @@
           ${relaySimToggle()}
         </div>
         <div class="kmc-relay-list-results"><strong>${rows.length} résultat(s) affiché(s)</strong>
-          <a href="${BASE+queryString(simParams())}" data-cockpit-nav>← Poste de travail</a></div>
+          <a href="${overviewUrl()}" data-cockpit-nav>← Poste de travail</a></div>
         ${table(ORDER_COLUMNS,rows.map(order=>orderRow(order,list)),{empty:search?'Aucun résultat pour cette recherche.':'Aucun dossier dans cette file.'})}${pager}`,
     };
   }
