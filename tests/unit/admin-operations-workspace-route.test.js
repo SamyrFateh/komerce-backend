@@ -437,3 +437,22 @@ test('le focus physique QR est transmis sans recomputation UI',()=>{
  const source=require('fs').readFileSync(require('path').join(__dirname,'../../routes/admin-operations-workspace.js'),'utf8');
  expect(source).toContain('physical_focus: row.physical_focus');
 });
+
+test('qualité réception : capability de réception obligatoire, même avec un rôle admin',async()=>{
+  mockGrantedCapabilities.delete('execution.parcel.receive@CM');
+  const result=await request(app()).post('/api/admin/workspaces/operations/market/CM/supply/receipts/30000000-0000-4000-8000-000000000001/quality').send({purchase_order_id:'10000000-0000-4000-8000-000000000001',to_state:'IDENTIFIED'});
+  expect(result.status).toBe(403);
+});
+test('qualité réception : une étape non autorisée est refusée avant mutation',async()=>{
+  const result=await request(app()).post('/api/admin/workspaces/operations/market/CM/supply/receipts/30000000-0000-4000-8000-000000000001/quality').send({purchase_order_id:'10000000-0000-4000-8000-000000000001',to_state:'PACKED'});
+  expect(result.status).toBe(400);
+  expect(result.body.code).toBe('HUB_RECEIPT_QUALITY_INVALID');
+});
+test('qualité réception : verrou et contrôle de toutes les allocations avant transition',()=>{
+  const block=routeSource.slice(routeSource.indexOf("'/market/:marketCode/supply/receipts/:unitId/quality'"),routeSource.indexOf('// Identités QR opaques'));
+  expect(block).toContain("attachHubExecutionCapability('execution.parcel.receive')");
+  expect(block).toContain("unit_type='SUPPLIER_PACKAGE' FOR UPDATE");
+  expect(block).toContain('a.market_id=$2 AND a.purchase_order_id=$3');
+  expect(block).toContain('Number(scope.total)!==Number(scope.matching)');
+  expect(block).toContain('physicalIdentity.transitionPhysicalUnit(client');
+});
