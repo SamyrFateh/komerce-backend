@@ -320,3 +320,10 @@ test('V8 decision adapter uses canonical writer and guarded initial form',()=>{
  expect(SOURCE).toContain("form:['commitment','payment'].includes(decisionOnly)?{po:poId,kind:decisionOnly}:null");
  expect(SOURCE).toContain('act:(button,options)=>runAction(context,button,options)');
 });
+
+test('V8 variance uses the existing guarded writer and explicit PO context',()=>{
+ expect(typeof workspace.mountVarianceActions).toBe('function');
+ expect(SOURCE).toContain("mode:'execution',fetch:fetchFn,user,marketCode,dossier,poId");
+ expect(SOURCE).toContain('const id=context.poId||');
+ expect(SOURCE).toContain('refresh:context.onVarianceChange||');
+});
