@@ -706,6 +706,7 @@
     const initialParams=new URLSearchParams(safe(location?.search));
     const initialPO=/^po:[A-Za-z0-9-]{1,128}$/.test(initialParams.get('sel')||'')?initialParams.get('sel').slice(3):null;
     const initialDecision=['commitment','payment','review','variance'].includes(initialParams.get('decision'))?initialParams.get('decision'):null;
+    const initialMarket=initialParams.get('market');
     let initialSelectionHandled=false;
     const visualLanes=['Engagement','Soumission','Envoi fournisseur','Confirmation & suivi','Réception & QR','Bilan PO'];
     const visualStage=p=>{
@@ -797,7 +798,7 @@
       if(!initialSelectionHandled){
         initialSelectionHandled=true;
         if(initialPO){
-          const selected=all.find(p=>String(p.id)===initialPO);
+          const selected=all.find(p=>String(p.id)===initialPO&&(!initialMarket||p.market===initialMarket));
           if(selected){createVisualEntry(selected,initialDecision);visualActive=selected.id;}
           else{const notice=make(doc,'p','kmc-hub-action-explanation','PO indisponible dans votre périmètre.');notice.setAttribute('role','alert');visualHost.insertBefore(notice,visualChrome);}
         }
@@ -896,7 +897,7 @@
       for(const [id,entry] of visualOpen){
         entry.panel.hidden=visualActive!==id;
         if(entry.kind){renderLogistics(entry);continue;}
-        const p=all.find(row=>row.id===id);
+        const p=all.find(row=>row.id===id&&row.market===entry.po.market);
         entry.summary.replaceChildren();
         if(!p){entry.summary.appendChild(make(doc,'p','','PO indisponible ou annulée.'));entry.actions.hidden=true;continue;}
         entry.po=p;entry.actions.hidden=false;
