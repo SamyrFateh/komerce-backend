@@ -386,3 +386,60 @@ test('pilote PO : réception partielle et QR dans la cellule, sans navigation ni
   await expect(cell.locator('[data-hub-pdf-article-a4]')).toHaveCount(1);
   await expect(page).toHaveURL(ORIGIN+'/admin/hub');
 });
+
+test('pilote PO : préparation COMBOX partagée, filtrée par relais, rail et contrôle qualité',async({page})=>{
+  const poId='10000000-0000-4000-8000-000000000001', other='10000000-0000-4000-8000-000000000002';
+  const boxId='20000000-0000-4000-8000-000000000001';
+  let placed=false, closed=false, issued=false;
+  const row=(id,po,relay,rail,product,state='QUALITY_CHECKED')=>({allocation_id:id,purchase_order_id:po,relais_id:relay,relais_code:relay,requested_transport_rail:rail,source_state:state,product,quantity:1,from_unit_id:'source-'+id,from_unit_ref:'RCV-'+id});
+  const a=row('a',poId,'M01','SEA_STANDARD','Article PO 1');
+  const b=row('b',other,'M01','SEA_STANDARD','Article PO 2');
+  const c=row('c',poId,'M01','AIR_EXPRESS','Article aérien');
+  const d=row('d',poId,'M02','SEA_STANDARD','Autre relais');
+  const e=row('e',other,'M01','SEA_STANDARD','Non contrôlé','RECEIVED');
+  const board={...BOARD,purchase_orders:[{id:poId,reference:'PO-1',market:'KM',supplier:'Fournisseur test',order_count:1,order_references:['KM-100'],ordered:3,expected:3,received:3,missing:0,anomalies:0,purchase_step:'received',sent:true}]};
+  await mount(page,'agent_hub','',board);
+  await page.route(ORIGIN+'/api/hub/board?view=po',route=>route.fulfill({json:board}));
+  await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/supply',route=>route.fulfill({json:{
+    purchase_orders:[{id:poId},{id:other}],cockpit:{viewer:{role:'agent_hub'}},
+    fillable:[a,...(placed?[]:[b]),c,d,e],
+    boxes:[{unit_id:boxId,reference:'KOM-BOX-TEST',state:closed?'PACKED':'RECEIVED',contents:placed?[{...b,qty:1}]:[]}],
+  }}));
+  const writes=[];
+  await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/boxes/'+boxId+'/fill',route=>{
+    writes.push(route.request().postDataJSON());placed=true;return route.fulfill({json:{ok:true}});
+  });
+  await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/boxes/'+boxId+'/close',route=>{
+    closed=true;return route.fulfill({json:{state:'PACKED'}});
+  });
+  await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/labels/boxes/'+boxId+'/issue',route=>{
+    issued=true;return route.fulfill({json:{count:1}});
+  });
+  await page.locator('[data-hub-po-pilot-toggle]').click();
+  const po=page.locator('[data-hub-pilot-po="'+poId+'"]');
+  await po.getByText('Préparation COMBOX',{exact:true}).click();
+  const cell=po.locator('[data-hub-inline-combox]');
+  await cell.getByLabel('Relais puis rail demandé').selectOption({label:'M01 · SEA_STANDARD'});
+  let box=cell.locator('[data-hub-inline-box="'+boxId+'"]');
+  await box.locator('summary').click();
+  const options=box.getByLabel('Article réceptionné à placer dans KOM-BOX-TEST');
+  await expect(options.locator('option')).toHaveCount(2);
+  for(const excluded of ['Article aérien','Autre relais','Non contrôlé'])await expect(options.locator('option').filter({hasText:excluded})).toHaveCount(0);
+  await options.selectOption({label:'Article PO 2 · M01 · 1 disponible(s) · RCV-b'});
+  await box.getByLabel('Scanner la référence de la COMBOX KOM-BOX-TEST').fill('KOM-BOX-TEST');
+  await box.getByLabel('Mode de preuve du scan article dans KOM-BOX-TEST').selectOption('MANUAL');
+  await box.getByLabel('Preuve du constat manuel pour KOM-BOX-TEST').fill('Contrôle test');
+  await box.getByRole('button',{name:'Placer l’article dans la COMBOX'}).click();
+  await expect(cell.getByText('1 article(s) placé(s) dans KOM-BOX-TEST.')).toBeVisible();
+  expect(writes).toHaveLength(1);
+  expect(writes[0].allocation_id).toBe('b');
+  await cell.locator('[data-hub-inline-box="'+boxId+'"] summary').click();
+  await cell.getByRole('button',{name:'Fermer la COMBOX'}).click();
+  await expect(cell.getByText('KOM-BOX-TEST fermée et prête pour la suite.')).toBeVisible();
+  await cell.locator('[data-hub-inline-box="'+boxId+'"] summary').click();
+  await cell.getByRole('button',{name:'Préparer QR COMBOX'}).click();
+  await expect(cell.getByText('QR COMBOX définitif prêt à imprimer.')).toBeVisible();
+  expect(issued).toBe(true);
+  await expect(cell.locator('[data-hub-pdf-box-a4]')).toHaveCount(1);
+  await expect(page).toHaveURL(ORIGIN+'/admin/hub');
+});
