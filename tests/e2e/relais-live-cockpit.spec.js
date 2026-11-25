@@ -21,7 +21,7 @@ const dashboard = { kpi:{ en_transit:4, disponibles:9, cash_a_encaisser:3, monta
 const detail = (n) => ({ order:{ id:`r-${n}`, reference:`KMC-0${100 + n}`, status:'available', heures_attente:80, age_jours:4, market_code:'KM' }, client:{ nom:`Client ${n}` },
   relais:{ nom:'Relais Mitsamiouli', ile:'Grande Comore' }, paiement:{ cash_pending:true, total_kmf:12000 }, items:[{ produit:'Coque', quantity:1, prix_kmf:12000 }], timeline:[], incidents:[] });
 
-async function mountRelay(page, search = '', { failDetail = false, empty = false, role = null, completed = false } = {}) {
+async function mountRelay(page, search = '', { failDetail = false, empty = false, role = null, completed = false, visual = false } = {}) {
   const state = { calls:[], writes:[], searchTerms:[], simQueries:[] };
   await page.route(`${ORIGIN}/**`, async (route) => {
     const req = route.request();
@@ -46,6 +46,7 @@ async function mountRelay(page, search = '', { failDetail = false, empty = false
       status:201,contentType:'application/json',body:'{"success":true,"incident":{"id":"saved-1"}}'
     });
     if (url.pathname === '/api/relay/dashboard') { state.calls.push('dashboard'); const value=empty?{kpi:{...Object.fromEntries(Object.keys(dashboard.kpi).map(k=>[k,0])),collectes_aujourd_hui:completed?1:0},alertes:[]}:dashboard; return route.fulfill({ contentType:'application/json', body:JSON.stringify(value) }); }
+    if (url.pathname === '/api/admin/workspaces/operations/market/KM/relay-shipments') return route.fulfill({contentType:'application/json',body:JSON.stringify({shipments:[{reference:'SHIP-1',receivable:true,boxes:[{reference:'BOX-1',orders:[{reference:'KAAAAAA',items:[{product:'Lampe',expected:2,received:null}]}]}]}]})});
     if (url.pathname === '/api/relay/orders') {
       const status = url.searchParams.get('status');
       state.searchTerms.push(url.searchParams.get('search'));
@@ -54,7 +55,7 @@ async function mountRelay(page, search = '', { failDetail = false, empty = false
       state.calls.push(`orders:${status || 'all'}:${offset}`);
       const limit = Number(url.searchParams.get('limit') || 25);
       const length = limit === 25 && offset > 0 ? 3 : limit;
-      const rows = status==='collected' && completed
+      const rows = visual ? (status==='available'?[order(1,{cash_pending:false,payment_status:'paid',relay_ready_units:2})]:status==='collected'?[order(2,{status:'collected',cash_pending:false,payment_status:'paid',relay_handed_units:1})]:[]) : status==='collected' && completed
         ? [order(99,{status:'collected',cash_pending:false,payment_status:'paid'})]
         : empty ? [] : Array.from({ length }, (_, i) => order(i + 1 + offset));
       return route.fulfill({ contentType:'application/json', body:JSON.stringify({ total:rows.length, orders:rows }) });
@@ -70,7 +71,9 @@ async function mountRelay(page, search = '', { failDetail = false, empty = false
     return route.fulfill({ status:404, body:'{}' });
   });
   await page.setViewportSize({ width:1672, height:941 });
-  await page.goto(`${ORIGIN}/admin/relais-live${search}`);
+  const params = new URLSearchParams(search);
+  if (!visual && !params.has('view')) params.set('view','overview');
+  await page.goto(`${ORIGIN}/admin/relais-live${params.size?'?'+params.toString():''}`);
   await page.evaluate(role => window.KomerceCanonicalRelayLive.mount({ root:document.getElementById('root'), user:role?{role}:null }),role);
   return state;
 }
@@ -224,3 +227,14 @@ test.describe('Cockpit Relais — navigation canonique', () => {
     });
   }
 });
+
+ test('Relais : URL normale, trois colonnes et quantités attestées sans mutation',async({page})=>{
+   const state=await mountRelay(page,'',{role:'agent_relais',visual:true});
+   await expect(page).toHaveURL(ORIGIN+'/admin/relais-live');
+   await expect(page.locator('[data-relay-v4]')).toBeVisible();
+   await expect(page.locator('[data-relay-v4-lane]')).toHaveCount(3);
+   await expect(page.locator('[data-relay-v4-lane="expected"]')).toContainText('BOX-1');
+   await expect(page.locator('[data-relay-v4-lane="ready"]')).toContainText('2 articles disponibles');
+   await expect(page.locator('[data-relay-v4-lane="done"]')).toContainText('1 articles remis');
+   expect(state.writes).toEqual([]);
+ });
