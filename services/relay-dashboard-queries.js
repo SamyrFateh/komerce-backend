@@ -283,6 +283,17 @@ async function getOrders(user, { status, search, limit = 50, offset = 0 }, { aut
       EXTRACT(EPOCH FROM (NOW() - COALESCE(o.available_at, o.updated_at))) / 3600 AS heures_attente,
       EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 86400 AS age_jours,
       (SELECT COUNT(*) FROM order_items WHERE order_id = o.id)::int AS nb_items,
+      -- Quantités physiques, et non nombre de lignes commerciales.
+      (SELECT COALESCE(SUM(GREATEST(COALESCE(pi.qty_received,0)-COALESCE(pi.qty_collected,0),0)),0)::int
+         FROM parcels pa JOIN parcel_items pi ON pi.parcel_id=pa.id
+         JOIN order_items oi ON oi.id=pi.order_item_id
+        WHERE pa.order_id=o.id AND oi.order_id=o.id AND pa.relais_id=o.relais_id
+          AND pa.status='available' AND pa.cancelled_at IS NULL) AS relay_ready_units,
+      (SELECT COALESCE(SUM(pi.qty_collected),0)::int
+         FROM parcels pa JOIN parcel_items pi ON pi.parcel_id=pa.id
+         JOIN order_items oi ON oi.id=pi.order_item_id
+        WHERE pa.order_id=o.id AND oi.order_id=o.id AND pa.relais_id=o.relais_id
+          AND pa.status='collected' AND pa.cancelled_at IS NULL) AS relay_handed_units,
       (SELECT p.name FROM order_items oi JOIN products p ON p.id = oi.product_id
        WHERE oi.order_id = o.id ORDER BY oi.created_at ASC LIMIT 1) AS premier_produit,
       ((SELECT COUNT(*)::int FROM order_incidents WHERE order_id = o.id AND status IN ('open','in_progress'))
