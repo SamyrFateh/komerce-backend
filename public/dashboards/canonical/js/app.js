@@ -663,6 +663,11 @@
       global.location.replace('/admin/hub?branch=operations&sel='+encodeURIComponent(sel)+'&decision='+(params.get('decision')||'review')+(market?'&market='+encodeURIComponent(market):''));
       return;
     }
+    if(params.get('view')==='execute'&&params.get('entry')==='operations'&&params.get('atelier')==='purchasing'&&/^po:[A-Za-z0-9-]{1,128}$/.test(sel)&&['admin','agent_hub'].includes(user?.role)){
+      const market=params.get('market');
+      global.location.replace('/admin/hub?branch=operations&sel='+encodeURIComponent(sel)+(market?'&market='+encodeURIComponent(market):''));
+      return;
+    }
     if (isHubExecutionRequest()) return renderHubExecutionShell(root, user, adminContext);
     if (!global.KomerceCanonicalHubLive) throw new Error('canonical_hub_live_module_missing');
     return global.KomerceCanonicalHubLive.mount({ root, user, document: global.document, fetch: global.fetch.bind(global) });
