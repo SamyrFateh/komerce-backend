@@ -281,3 +281,14 @@ test('projection PO compacte : articles et FIFO strictement issus de la PO, sans
   expect(rows[0].order_lines).not.toContainEqual(expect.objectContaining({product:'Article autre PO'}));
   expect(JSON.stringify(rows[0])).not.toMatch(/unit_price|client_email|private@example/);
 });
+
+test('V8 : preuves de réception et exceptions limitées à la PO exacte',()=>{
+ const payload={purchase_orders:[{id:'p1',sent_at:'2026-11-24',sent_channel:'email',confirmed_at:'2026-11-25',lines:[]}],
+ receipts:[{reference:'REC-1',po_ids:['p1'],state:'QUALITY_CHECKED',received_at:'2026-11-25'},{reference:'REC-2',po_ids:['p2'],state:'RECEIVED'}],
+ to_handle:[{po_id:'p1',kind:'PO_MISSING_QTY',reason:'Écart'},{po_id:'p2',kind:'PO_MISSING_QTY',reason:'Autre PO'}]};
+ const [r]=summarizePurchaseOrders({code:'KM'},payload);
+ expect(r.receipt_evidence).toEqual([{reference:'REC-1',state:'QUALITY_CHECKED',received_at:'2026-11-25'}]);
+ expect(r.exceptions).toEqual([{kind:'PO_MISSING_QTY',reason:'Écart'}]);
+ expect(r.sent_channel).toBe('email');
+ expect(r).not.toHaveProperty('physical_settled');
+});

@@ -239,6 +239,12 @@ function summarizePurchaseOrders(market, payload) {
       })),
       ordered: sum(lines, l => l.ordered), expected, received, missing, anomalies,
       purchase_stage: po.stage || null, purchase_step: po.step?.key || null,
+      sent_at: po.sent_at || null, sent_channel: po.sent_channel || null,
+      confirmed_at: po.confirmed_at || null,
+      receipt_evidence: (payload.receipts || []).filter(r => (r.po_ids || []).some(id => String(id) === String(po.id)))
+        .map(r => ({ reference:r.reference, state:r.state, received_at:r.received_at })),
+      exceptions: (payload.to_handle || []).filter(t => String(t.po_id || '') === String(po.id))
+        .map(t => ({ kind:t.kind, reason:t.reason })),
       trigger_mode: po.trigger_mode || null, sent: Boolean(po.sent_at),
       cancelled,
       // Réception complète ne signifie ni qualité validée, ni départ Hub.

@@ -541,3 +541,24 @@ test('styles V8 limités au nouveau poste, masquage des panneaux et cartes compa
   expect(css).toMatch(/\.kmc-hub-po-v8-board\{[^}]*grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
   expect(css).toMatch(/\.kmc-hub-po-v8-card\{[^}]*width:100%/);
 });
+
+test('V8 : filtre marché, six étapes du mock, exceptions et bilan non déduit de la réception',async()=>{
+ const app=load(),root=el('main');
+ const base={market:'KM',supplier:'Fournisseur',order_count:1,order_references:[],ordered:2,expected:2,received:0,missing:2,purchase_step:'sent'};
+ const pos=[{...base,id:'active',reference:'PO-A'},{...base,id:'received',reference:'PO-R',reception_complete:true,received:2,missing:0},
+  {...base,id:'other',reference:'PO-CG',market:'CG',exceptions:[{kind:'PO_MISSING_QTY',reason:'Écart confirmé'}]}];
+ const fetch=jest.fn(async url=>({ok:true,json:async()=>url==='/api/hub/board?view=po'?{scope:'HUB_GLOBAL',markets:['CG','KM'],purchase_orders:pos}:{scope:'HUB_GLOBAL',orders:[]}}));
+ await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'admin'},location:{search:''}});
+ expect(root.querySelectorAll('[data-hub-v8-lane]')).toHaveLength(6);
+ expect(root.querySelector('[data-hub-v8-lane="4"]').querySelector('[data-hub-po-v8-card="received"]')).not.toBeNull();
+ expect(root.querySelector('[data-hub-v8-lane="5"]').querySelectorAll('[data-hub-po-v8-card]')).toHaveLength(0);
+ const filter=root.querySelector('[data-hub-v8-market]');filter.value='KM';filter.change(filter);
+ expect(root.querySelector('[data-hub-po-v8-card="other"]')).toBeNull();
+ expect(root.querySelector('[data-hub-po-v8-card="active"]')).not.toBeNull();
+ filter.value='ALL';filter.change(filter);
+ root.querySelector('[data-hub-v8-view="exceptions"]').click();
+ expect(root.querySelectorAll('[data-hub-po-v8-card]')).toHaveLength(1);
+ expect(root.querySelector('[data-hub-po-v8-card="other"]')).not.toBeNull();
+ root.querySelector('[data-hub-v8-view="archive"]').click();
+ expect(root.querySelectorAll('[data-hub-po-v8-card]')).toHaveLength(0);
+});
