@@ -254,3 +254,17 @@ describe('Kanban PO : projection centrale opt-in', () => {
     expect(await getGlobalBoard(query,reader,{marketIds:['km'],includePurchaseOrders:true})).not.toHaveProperty('purchase_orders');
   });
 });
+
+test('départ PO : trois faits distincts, carton partagé compté seulement pour ses allocations exactes',()=>{
+  const po={id:'p1',lines:[{order_id:'a',confirmed:5,ordered:5,received:4,missing:1}]};
+  const own={purchase_order_id:'p1',qty:1,order_id:'a'},other={purchase_order_id:'p2',qty:9,order_id:'a'};
+  const boxes=[
+    {state:'PACKED',contents:[own,other]},
+    {state:'DISPATCHED',shipment_ref:'S1',shipment_stage:'hub_ready',contents:[own]},
+    {state:'DISPATCHED',shipment_ref:'S2',shipment_stage:'handed_over',contents:[own,other]},
+    {state:'QUARANTINED',contents:[own]},
+    {state:'DISPATCHED',shipment_ref:'S2',shipment_stage:'handed_over',contents:[other]},
+  ];
+  const [r]=summarizePurchaseOrders({code:'KM'},{purchase_orders:[po],boxes});
+  expect(r).toMatchObject({boxed_quantity:3,dispatched_quantity:2,handed_quantity:1,box_count:3,shipment_count:2,missing:1,reception_complete:false});
+});
