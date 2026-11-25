@@ -445,3 +445,24 @@ test('la cellule Achat monte le module canonique seulement au dépliage',async()
     expect(fetch).toHaveBeenCalledTimes(2);
   }finally{global.KomerceCanonicalOperationsWorkspace=previous;}
 });
+
+test('la cellule Réception monte seulement la PO expédiée, au dépliage',async()=>{
+  const app=load(),root=el('main');
+  const po={id:'p1',reference:'PO-1',market:'KM',supplier:'Fournisseur A',order_count:1,
+    order_references:['KAAAAAA'],ordered:2,expected:2,received:1,missing:1,anomalies:0,purchase_step:'sent',sent:true};
+  const fetch=jest.fn(async url=>({ok:true,json:async()=>url==='/api/hub/board?view=po'
+    ?{scope:'HUB_GLOBAL',purchase_orders:[po]}:{scope:'HUB_GLOBAL',orders:[]}}));
+  const mountReceptionActions=jest.fn(async()=>({busy:()=>false,reload:jest.fn()}));
+  const previous=global.KomerceCanonicalOperationsWorkspace;
+  global.KomerceCanonicalOperationsWorkspace={mountReceptionActions};
+  try{
+    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'}});
+    await root.querySelector('[data-hub-po-pilot-toggle]').click();
+    const host=root.querySelector('[data-hub-inline-reception]');
+    expect(host).not.toBeNull();
+    expect(mountReceptionActions).not.toHaveBeenCalled();
+    await host.parentNode.toggle(true);
+    expect(mountReceptionActions).toHaveBeenCalledWith(host,expect.objectContaining({marketCode:'KM',poId:'p1',receiveRefs:expect.any(Map),fetch}));
+    expect(fetch).toHaveBeenCalledTimes(2);
+  }finally{global.KomerceCanonicalOperationsWorkspace=previous;}
+});

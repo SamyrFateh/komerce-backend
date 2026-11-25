@@ -207,3 +207,14 @@ test('le montage achat compact charge supply authentifié et échoue fermé sans
     expect(fetch).toHaveBeenCalledTimes(1);
   }finally{global.KomerceHubLiveCockpit=previous;}
 });
+
+test('le montage réception compact refuse les rôles hors Hub avant toute lecture',async()=>{
+  const fetch=jest.fn();
+  await expect(workspace.mountReceptionActions({}, {user:{role:'market_operator'},marketCode:'CM',poId:'p1',fetch})).rejects.toThrow('Accès réception Hub requis');
+  expect(fetch).not.toHaveBeenCalled();
+});
+test('les QR de réception sont limités à la PO exacte, même pour une commande partagée',()=>{
+  const own={allocation_id:'a1',purchase_order_id:'p1',order_id:'o1',quantity:1};
+  const other={allocation_id:'a2',purchase_order_id:'p2',order_id:'o1',quantity:1};
+  expect(workspace.receptionLabelRows({fillable:[own,other,{allocation_id:'a3',order_id:'o1'}]},'p1')).toEqual([own]);
+});

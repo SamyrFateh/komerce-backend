@@ -324,3 +324,54 @@ test('pilote PO : engagement dans la cellule, formulaire canonique et droit serv
   expect(writes).toEqual([{proof_ref:'JUSTIF-TEST'}]);
   await expect(page).toHaveURL(ORIGIN+'/admin/hub');
 });
+
+test('pilote PO : réception partielle et QR dans la cellule, sans navigation ni QR d’une autre PO',async({page})=>{
+  const poId='10000000-0000-4000-8000-000000000001';
+  const otherId='10000000-0000-4000-8000-000000000002';
+  const alloc='20000000-0000-4000-8000-000000000001';
+  let received=0,issued=false;
+  const writes=[];
+  const board=()=>({...BOARD,purchase_orders:[{id:poId,reference:'PO-1',market:'KM',supplier:'Fournisseur test',
+    order_count:1,order_references:['KM-100'],ordered:2,expected:2,received,missing:2-received,anomalies:0,
+    purchase_step:received?'received':'sent',purchase_stage:'confirmed',sent:true}]});
+  await mount(page,'agent_hub','',board());
+  await page.route(ORIGIN+'/api/hub/board?view=po',route=>route.fulfill({json:board()}));
+  await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/supply',route=>route.fulfill({json:{
+    purchase_orders:[{id:poId},{id:otherId}],cockpit:{viewer:{role:'agent_hub'}},
+    fillable:[...(received?[{allocation_id:alloc,purchase_order_id:poId,order_id:'one',quantity:received,product:'Article reçu',relais_code:'M01'}]:[]),
+      {allocation_id:'20000000-0000-4000-8000-000000000002',purchase_order_id:otherId,order_id:'one',quantity:1,product:'Article autre PO'}],
+  }}));
+  await page.route(ORIGIN+'/api/scans/hub/receivable',route=>route.fulfill({json:{purchase_orders:[
+    {purchase_order_id:poId,po_status:'confirmed',supplier:{name:'Fournisseur test'},
+      lines:[{product_name:'Article test',product_sku_id:'sku1',expected_quantity:2,received_quantity:received,remaining_quantity:2-received,reception_state:received?'PARTIAL':'NOT_RECEIVED'}]},
+    {purchase_order_id:otherId,po_status:'confirmed',lines:[]},
+  ]}}));
+  await page.route(ORIGIN+'/api/scans/hub/receive',route=>{
+    writes.push(route.request().postDataJSON());received=1;return route.fulfill({json:{quarantined:false}});
+  });
+  await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/labels/articles/'+alloc+'/issue',route=>{
+    issued=true;return route.fulfill({json:{count:1}});
+  });
+  page.on('dialog',dialog=>dialog.accept());
+  await page.locator('[data-hub-po-pilot-toggle]').click();
+  const row=page.locator('[data-hub-pilot-po="'+poId+'"]');
+  await row.getByText('0 / 2 reçus · 2 attendus',{exact:true}).click();
+  const cell=row.locator('[data-hub-inline-reception]');
+  await expect(cell.locator('[data-receive-po="'+poId+'"]')).toBeVisible();
+  await expect(cell.locator('[data-receive-po="'+otherId+'"]')).toHaveCount(0);
+  await expect(cell.getByText('Article autre PO')).toHaveCount(0);
+  expect(writes).toHaveLength(0);
+  await cell.locator('[data-receive-manual-toggle]').check();
+  await cell.locator('[data-receive-manual-proof]').fill('Contrôle visuel test');
+  await cell.locator('[data-receive-line="0"]').fill('1');
+  await cell.getByRole('button',{name:'Enregistrer la réception'}).click();
+  await expect(row.getByText('1 / 2 reçus · 1 attendus',{exact:true})).toBeVisible();
+  expect(writes).toHaveLength(1);
+  expect(writes[0].contents).toEqual([{purchase_order_id:poId,product_sku_id:'sku1',quantity:1,evidence_method:'MANUAL',evidence_ref:'Contrôle visuel test'}]);
+  await expect(cell.getByText('Article autre PO')).toHaveCount(0);
+  await cell.getByRole('button',{name:'Préparer les étiquettes'}).click();
+  await expect(cell.getByText('1 QR article(s) disponibles à imprimer.')).toBeVisible();
+  expect(issued).toBe(true);
+  await expect(cell.locator('[data-hub-pdf-article-a4]')).toHaveCount(1);
+  await expect(page).toHaveURL(ORIGIN+'/admin/hub');
+});

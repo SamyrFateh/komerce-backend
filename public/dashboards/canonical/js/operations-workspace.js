@@ -915,6 +915,141 @@
     return card;
   }
 
+  // Same authenticated PDF/print handlers for both the physical workshop and Kanban.
+  function articleLabelLinks(doc,context) {
+    const openLabelPrint = async(event,href)=>{
+      event.preventDefault();
+      const popup=typeof window!=='undefined'?window.open('about:blank','_blank'):null;
+      if(!popup){
+        setFeedback(context.root,'Autorisez l’ouverture de la fenêtre d’impression dans le navigateur.','critical');
+        return;
+      }
+      try{
+        const response=await context.fetch(href,{method:'GET',credentials:'include',headers:{Accept:'text/html'}});
+        if(!response.ok)throw new Error('HTTP '+response.status+' · émettez d’abord les étiquettes');
+        const documentBlob=await response.blob();
+        const printUrl=URL.createObjectURL(documentBlob);
+        popup.location.href=printUrl;
+        // Un document Blob doit rester disponible pendant l'ouverture/impression.
+        popup.addEventListener('pagehide',()=>URL.revokeObjectURL(printUrl),{once:true});
+      }catch(error){
+        popup.close();
+        setFeedback(context.root,'Impression indisponible : '+String(error.message||'erreur'),'critical');
+      }
+    };
+    // Direct PDF download remains authenticated through the canonical dashboard
+    // fetch; no public QR URL or backend state transition is involved.
+    const downloadLabelPdf = async(event,href,filename)=>{
+      event.preventDefault();
+      try{
+        const response=await context.fetch(href,{
+          method:'GET',credentials:'include',headers:{Accept:'application/pdf'}
+        });
+        if(!response.ok)throw new Error('HTTP '+response.status+' · émettez d’abord les étiquettes');
+        const mime=String(response.headers.get('Content-Type')||'').toLowerCase();
+        if(!mime.includes('application/pdf'))throw new Error('Document PDF invalide');
+        const blob=await response.blob();
+        if(blob.size<100||!blob.type.includes('pdf'))throw new Error('PDF vide ou invalide');
+        const url=URL.createObjectURL(blob);
+        const a=doc.createElement('a');
+        a.href=url;a.download=filename;a.style.display='none';
+        doc.body.appendChild(a);a.click();a.remove();
+        // Browsers read the blob asynchronously when a download begins.
+        setTimeout(()=>URL.revokeObjectURL(url),30000);
+      }catch(error){
+        setFeedback(context.root,'Téléchargement PDF indisponible : '+String(error.message||'erreur'),'critical');
+      }
+    };
+    const pdfLink=(type,id,format)=>{
+      const a=doc.createElement('a');
+      a.href=endpointFor(context.marketCode,'labels/'+type+'/'+encodeURIComponent(id)+'/pdf?format='+format);
+      a.textContent=format==='a4'?'Télécharger PDF A4':'Télécharger PDF 80 mm';
+      a.setAttribute('data-hub-pdf-'+(type==='articles'?'article':'box')+'-'+format,'');
+      a.addEventListener('click',event=>downloadLabelPdf(event,a.href,
+        'KOMERCE-'+(type==='articles'?'ARTICLE':'COMBOX')+'-'+context.marketCode+'-'+format+'.pdf'));
+      return a;
+    };
+
+    return {openLabelPrint,pdfLink};
+  }
+
+  function renderArticleLabelActions(doc,context,fillable,includeHistory=false) {
+    const {openLabelPrint,pdfLink}=articleLabelLinks(doc,context);
+    const labelRows=new Map();
+    fillable.filter(line=>Number(line.quantity)>0).forEach(line=>{
+      if(!labelRows.has(String(line.allocation_id)))labelRows.set(String(line.allocation_id),line);
+    });
+      const labelSection=doc.createElement('section');
+      labelSection.setAttribute('data-hub-label-printing','');
+      labelSection.appendChild(text(doc,'h3','', 'Étiquettes articles'));
+      labelSection.appendChild(text(doc,'p','kmc-workspace-note','Après réception physique, préparez les QR puis téléchargez le PDF A4 ou 80 mm. Une étiquette par article reçu.'));
+      if(!labelRows.size) labelSection.appendChild(text(doc,'p','kmc-workspace-note','Aucun article reçu disponible à préparer dans cet atelier. Consultez les réceptions fournisseurs.'));
+      for(const line of labelRows.values()){
+        const row=doc.createElement('div');
+        row.className='kmc-workspace-receive-footer';
+        row.appendChild(text(doc,'span','',String(line.product||'Article')+' · '+String(line.relais_code||'relais')+' · '+String(line.quantity)+' unité(s) à placer'));
+        const issue=makeActionButton(doc,'Préparer les étiquettes','issue-article-labels');
+        issue.addEventListener('click',()=>runAction(context,issue,{
+          url:endpointFor(context.marketCode,'labels/articles/'+encodeURIComponent(line.allocation_id)+'/issue'),
+          body:{},runningMessage:'Création des étiquettes reçues…',
+          successMessage:result=>String(result.count)+' QR article(s) disponibles à imprimer.',
+        }).catch(()=>{}));
+        const print=doc.createElement('a');
+        print.href=endpointFor(context.marketCode,'labels/articles/'+encodeURIComponent(line.allocation_id)+'/print?format=thermal');
+        print.target='_blank';print.rel='noopener';
+        print.textContent='Imprimer les étiquettes';
+        print.setAttribute('data-hub-print-article','');
+        print.addEventListener('click',event=>openLabelPrint(event,print.href));
+        row.append(issue,print,pdfLink('articles',line.allocation_id,'a4'),pdfLink('articles',line.allocation_id,'thermal'));labelSection.appendChild(row);
+      }
+
+    if(includeHistory){
+      const history=doc.createElement('button');history.type='button';
+      history.setAttribute('data-hub-article-label-reprints','');
+      history.textContent='Rechercher et réimprimer des QR déjà émis';
+      history.addEventListener('click',()=>{context.view='labels';context.renderCurrent();});
+      labelSection.appendChild(history);
+    }
+    return labelSection;
+  }
+
+  // PO identity is the allocation's immutable purchase_order_id, never inferred
+  // from an order shared by multiple POs.
+  function receptionLabelRows(dossier,poId){
+    return (dossier.fillable || []).filter(row=>String(row.purchase_order_id || '')===String(poId));
+  }
+
+  async function mountReceptionActions(host,{document:doc,fetch:fetchFn,user,marketCode,poId,onChange,receiveRefs=new Map()}={}){
+    if(!['admin','agent_hub'].includes(user?.role)||!poId)throw Error('Accès réception Hub requis');
+    const feedback=text(doc,'p','kmc-workspace-feedback','');
+    feedback.setAttribute('data-workspace-feedback','');
+    feedback.setAttribute('role','status');
+    const slot=doc.createElement('div');
+    host.replaceChildren(feedback,slot);
+    let pending=false;
+    const context={root:host,fetch:fetchFn,marketCode,receiveRefs,confirm:message=>doc.defaultView.confirm(message)};
+    const reload=async()=>{
+      pending=true;
+      try{
+        const [dossier,receivable]=await Promise.all([
+          jsonRequest(fetchFn,endpointFor(marketCode,'supply')),
+          jsonRequest(fetchFn,RECEIVABLE_ENDPOINT),
+        ]);
+        const po=(dossier.purchase_orders||[]).find(p=>String(p.id)===String(poId));
+        if(!po||!dossier.cockpit?.viewer)throw Error('Dossier PO indisponible ou accès refusé');
+        const receipt=(receivable.purchase_orders||[]).find(p=>String(p.purchase_order_id)===String(poId));
+        slot.replaceChildren();
+        if(receipt)slot.appendChild(createReceptionCard(doc,context,receipt));
+        else slot.appendChild(text(doc,'p','kmc-workspace-note','Aucune quantité en attente dans cette PO. Consultez les quantités et écarts du Kanban.'));
+        slot.appendChild(renderArticleLabelActions(doc,context,receptionLabelRows(dossier,poId)));
+        await onChange?.(dossier);
+      }finally{pending=false;}
+    };
+    context.reload=reload;
+    await reload();
+    return {reload,busy:()=>pending};
+  }
+
   function renderReceptionSection(rootNode, ui, doc, context) {
     const slot = createSection(
       rootNode,
@@ -1435,58 +1570,7 @@
     // Le fetch canonique transporte l'authentification du dashboard ; un lien
     // API direct ne la transmet pas forcément. Ouvrir la fenêtre sur le clic,
     // puis charger l'HTML local authentifié dans un Blob imprimable.
-    const openLabelPrint = async(event,href)=>{
-      event.preventDefault();
-      const popup=typeof window!=='undefined'?window.open('about:blank','_blank'):null;
-      if(!popup){
-        setFeedback(context.root,'Autorisez l’ouverture de la fenêtre d’impression dans le navigateur.','critical');
-        return;
-      }
-      try{
-        const response=await context.fetch(href,{method:'GET',credentials:'include',headers:{Accept:'text/html'}});
-        if(!response.ok)throw new Error('HTTP '+response.status+' · émettez d’abord les étiquettes');
-        const documentBlob=await response.blob();
-        const printUrl=URL.createObjectURL(documentBlob);
-        popup.location.href=printUrl;
-        // Un document Blob doit rester disponible pendant l'ouverture/impression.
-        popup.addEventListener('pagehide',()=>URL.revokeObjectURL(printUrl),{once:true});
-      }catch(error){
-        popup.close();
-        setFeedback(context.root,'Impression indisponible : '+String(error.message||'erreur'),'critical');
-      }
-    };
-    // Direct PDF download remains authenticated through the canonical dashboard
-    // fetch; no public QR URL or backend state transition is involved.
-    const downloadLabelPdf = async(event,href,filename)=>{
-      event.preventDefault();
-      try{
-        const response=await context.fetch(href,{
-          method:'GET',credentials:'include',headers:{Accept:'application/pdf'}
-        });
-        if(!response.ok)throw new Error('HTTP '+response.status+' · émettez d’abord les étiquettes');
-        const mime=String(response.headers.get('Content-Type')||'').toLowerCase();
-        if(!mime.includes('application/pdf'))throw new Error('Document PDF invalide');
-        const blob=await response.blob();
-        if(blob.size<100||!blob.type.includes('pdf'))throw new Error('PDF vide ou invalide');
-        const url=URL.createObjectURL(blob);
-        const a=doc.createElement('a');
-        a.href=url;a.download=filename;a.style.display='none';
-        doc.body.appendChild(a);a.click();a.remove();
-        // Browsers read the blob asynchronously when a download begins.
-        setTimeout(()=>URL.revokeObjectURL(url),30000);
-      }catch(error){
-        setFeedback(context.root,'Téléchargement PDF indisponible : '+String(error.message||'erreur'),'critical');
-      }
-    };
-    const pdfLink=(type,id,format)=>{
-      const a=doc.createElement('a');
-      a.href=endpointFor(context.marketCode,'labels/'+type+'/'+encodeURIComponent(id)+'/pdf?format='+format);
-      a.textContent=format==='a4'?'Télécharger PDF A4':'Télécharger PDF 80 mm';
-      a.setAttribute('data-hub-pdf-'+(type==='articles'?'article':'box')+'-'+format,'');
-      a.addEventListener('click',event=>downloadLabelPdf(event,a.href,
-        'KOMERCE-'+(type==='articles'?'ARTICLE':'COMBOX')+'-'+context.marketCode+'-'+format+'.pdf'));
-      return a;
-    };
+    const {openLabelPrint,pdfLink}=articleLabelLinks(doc,context);
     const createBar = doc.createElement('div');
     createBar.className = 'kmc-workspace-receive-footer';
     createBar.setAttribute('data-supply-box-create', '');
@@ -1581,42 +1665,7 @@
 
     // Les articles à étiqueter viennent des allocations physiquement reçues.
     // Un second clic est nécessaire pour imprimer après l'émission idempotente.
-    const labelRows=new Map();
-    fillable.filter(line=>Number(line.quantity)>0).forEach(line=>{
-      if(!labelRows.has(String(line.allocation_id)))labelRows.set(String(line.allocation_id),line);
-    });
-    {
-      const labelSection=doc.createElement('section');
-      labelSection.setAttribute('data-hub-label-printing','');
-      labelSection.appendChild(text(doc,'h3','', 'Étiquettes articles'));
-      labelSection.appendChild(text(doc,'p','kmc-workspace-note','Après réception physique, préparez les QR puis téléchargez le PDF A4 ou 80 mm. Une étiquette par article reçu.'));
-      if(!labelRows.size) labelSection.appendChild(text(doc,'p','kmc-workspace-note','Aucun article reçu disponible à préparer dans cet atelier. Consultez les réceptions fournisseurs.'));
-      for(const line of labelRows.values()){
-        const row=doc.createElement('div');
-        row.className='kmc-workspace-receive-footer';
-        row.appendChild(text(doc,'span','',String(line.product||'Article')+' · '+String(line.relais_code||'relais')+' · '+String(line.quantity)+' unité(s) à placer'));
-        const issue=makeActionButton(doc,'Préparer les étiquettes','issue-article-labels');
-        issue.addEventListener('click',()=>runAction(context,issue,{
-          url:endpointFor(context.marketCode,'labels/articles/'+encodeURIComponent(line.allocation_id)+'/issue'),
-          body:{},runningMessage:'Création des étiquettes reçues…',
-          successMessage:result=>String(result.count)+' QR article(s) disponibles à imprimer.',
-        }).catch(()=>{}));
-        const print=doc.createElement('a');
-        print.href=endpointFor(context.marketCode,'labels/articles/'+encodeURIComponent(line.allocation_id)+'/print?format=thermal');
-        print.target='_blank';print.rel='noopener';
-        print.textContent='Imprimer les étiquettes';
-        print.setAttribute('data-hub-print-article','');
-        print.addEventListener('click',event=>openLabelPrint(event,print.href));
-        row.append(issue,print,pdfLink('articles',line.allocation_id,'a4'),pdfLink('articles',line.allocation_id,'thermal'));labelSection.appendChild(row);
-      }
-      // Les réimpressions historiques sont propriétaires du centre QR, pas de ce panneau.
-      const history=doc.createElement('button');history.type='button';
-      history.setAttribute('data-hub-article-label-reprints','');
-      history.textContent='Rechercher et réimprimer des QR déjà émis';
-      history.addEventListener('click',()=>{context.view='labels';context.renderCurrent();});
-      labelSection.appendChild(history);
-      boxes.appendChild(labelSection);
-    }
+    boxes.appendChild(renderArticleLabelActions(doc,context,fillable,true));
     const packingHeading=text(doc,'h3','','Préparer les COMBOX');
     boxes.appendChild(packingHeading);
     boxes.appendChild(createBar);
@@ -3290,6 +3339,8 @@
     renderPayload,
     openManualSourcing,
     mountPurchaseActions,
+    mountReceptionActions,
+    receptionLabelRows,
     mount,
   });
 });

@@ -542,6 +542,7 @@
     let poRows = null;
     let poMode = false;
     let pilotRequest = 0;
+    const receiveRefs=new Map();
     const orderHeader = headerTitle.textContent;
     const setHeaders = labels => {
       titleRow.replaceChildren();
@@ -558,11 +559,6 @@
         const tr=make(doc,'tr'), td=make(doc,'td','','Aucune PO correspondante.');
         td.colSpan=4;tr.appendChild(td);body.appendChild(tr);return;
       }
-      const atelierLink=(p,atelier,label)=>{
-        const a=make(doc,'a','kmc-hub-board-menu-action',label);
-        a.setAttribute('href','/admin/hub-live?'+new URLSearchParams({view:'execute',entry:'operations',market:p.market,atelier,sel:'po:'+p.id}).toString());
-        return a;
-      };
       for (const p of filtered) {
         const tr=make(doc,'tr');tr.setAttribute('data-hub-pilot-po',p.id);
         const identity=make(doc,'td');
@@ -591,19 +587,7 @@
             purchaseHost.replaceChildren(make(doc,'p','','Chargement du dossier…'));
             handle=await module.mountPurchaseActions(purchaseHost,{
               document:doc,fetch:fetchFn,user,marketCode:p.market,poId:p.id,
-              onChange:async()=>{
-                const data=await requestJSON(fetchFn,'/api/hub/board?view=po');
-                if(data.scope!=='HUB_GLOBAL'||!Array.isArray(data.purchase_orders))throw new Error('Projection PO indisponible');
-                poRows=data.purchase_orders;
-                const fresh=poRows.find(row=>row.id===p.id);
-                if(!fresh){purchaseSummary.textContent='PO indisponible';return;}
-                purchaseSummary.textContent=({draft:'Engagement à valider',validation:'Engagement validé · à soumettre',engaged:'Envoi à attester',sent:'Suivi fournisseur',received:'Réception constatée'})[fresh.purchase_step] || PO_STAGE[fresh.purchase_stage] || 'À vérifier';
-                receiptSummary.textContent=fresh.received+' / '+fresh.expected+' reçus'+(fresh.missing?' · '+fresh.missing+' attendus':'')+(fresh.anomalies?' · '+fresh.anomalies+' écarts':'');
-                // Réception accessible uniquement avec la projection serveur actualisée.
-                receiptDetails.replaceChildren(receiptSummary,fresh.sent||fresh.received>0
-                  ?atelierLink(fresh,'reception','Ouvrir la réception de cette PO')
-                  :make(doc,'p','','Achat / envoi à vérifier.'));
-              },
+              onChange:refreshRow,
             });
           }catch(error){purchaseHost.replaceChildren(make(doc,'p','','Dossier achat indisponible : '+error.message));handle=null;}
           finally{loading=false;}
@@ -613,8 +597,37 @@
         const quantity=p.received+' / '+p.expected+' reçus';
         const receiptSummary=make(doc,'summary','',quantity+(p.missing?' · '+p.missing+' attendus':'')+(p.anomalies?' · '+p.anomalies+' écarts':''));
         receiptDetails.appendChild(receiptSummary);
-        if (p.sent || p.received>0) receiptDetails.appendChild(atelierLink(p,'reception','Ouvrir la réception de cette PO'));
-        else receiptDetails.appendChild(make(doc,'p','','Achat / envoi à vérifier.'));
+        const receiptHost=make(doc,'div','kmc-hub-inline-reception');
+        receiptHost.setAttribute('data-hub-inline-reception',p.id);
+        receiptDetails.appendChild(receiptHost);
+        let current=p, receiptHandle=null, receiptLoading=false;
+        const refreshRow=async()=>{
+          const data=await requestJSON(fetchFn,'/api/hub/board?view=po');
+          if(data.scope!=='HUB_GLOBAL'||!Array.isArray(data.purchase_orders))throw Error('Projection PO indisponible');
+          poRows=data.purchase_orders;
+          const fresh=poRows.find(row=>row.id===p.id);
+          if(!fresh){purchaseSummary.textContent='PO indisponible';receiptSummary.textContent='PO indisponible';return;}
+          current=fresh;
+          purchaseSummary.textContent=({draft:'Engagement à valider',validation:'Engagement validé · à soumettre',engaged:'Envoi à attester',sent:'Suivi fournisseur',received:'Réception constatée'})[fresh.purchase_step] || PO_STAGE[fresh.purchase_stage] || 'À vérifier';
+          receiptSummary.textContent=fresh.received+' / '+fresh.expected+' reçus'+(fresh.missing?' · '+fresh.missing+' attendus':'')+(fresh.anomalies?' · '+fresh.anomalies+' écarts':'');
+        };
+        receiptDetails.addEventListener('toggle',async()=>{
+          if(!receiptDetails.open||receiptLoading||receiptHandle?.busy())return;
+          if(!current.sent&&!(current.received>0)){
+            receiptHost.replaceChildren(make(doc,'p','','Achat / envoi à vérifier.'));return;
+          }
+          receiptLoading=true;
+          try{
+            if(receiptHandle){await receiptHandle.reload();return;}
+            const module=global.KomerceCanonicalOperationsWorkspace;
+            if(!module?.mountReceptionActions)throw Error('Module réception indisponible');
+            receiptHost.replaceChildren(make(doc,'p','','Chargement de la réception…'));
+            receiptHandle=await module.mountReceptionActions(receiptHost,{
+              document:doc,fetch:fetchFn,user,marketCode:p.market,poId:p.id,receiveRefs,onChange:refreshRow,
+            });
+          }catch(error){receiptHost.replaceChildren(make(doc,'p','','Réception indisponible : '+error.message));receiptHandle=null;}
+          finally{receiptLoading=false;}
+        });
         reception.appendChild(receiptDetails);tr.appendChild(reception);
         body.appendChild(tr);
       }
