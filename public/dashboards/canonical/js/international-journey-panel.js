@@ -127,6 +127,7 @@
     const note=put(form,text(doc,'p','kmc-journey-feedback',''));note.setAttribute('role','status');
     form.addEventListener('submit',async ev=>{
       ev.preventDefault();
+      if(submit.disabled)return;
       const raw={};
       for(const [name,control] of Object.entries(controls)){
         const value=String(control.value||'').trim();
@@ -192,6 +193,66 @@
         if(saved.start!=null)focus.setSelectionRange(saved.start,saved.end);
       }
     }
+  }
+  function renderCustodyTask(doc,ctx,dossier,detail,custodyStep,ref){
+      const knownBoxes=(detail?.hub_units||[]).map(box=>box.reference).filter(Boolean);
+      put(dossier,text(doc,'p','kmc-workspace-note',
+        'Scanner chaque COMBOX du manifeste : '+(knownBoxes.join(', ')||'consulter les cartons du dossier')+
+        '. Chaque scan est confirmé séparément ; il ne déclenche jamais une transition.'));
+      const custodyTitle={
+        HUB_HANDOVER:'Hub · scanner et confirmer la remise de chaque COMBOX',
+        CARRIER_ACCEPTED:'Transitaire · scanner et accepter chaque COMBOX',
+        CARRIER_LOADED:'Transitaire · rescanner chaque COMBOX chargée dans le conteneur',
+      }[custodyStep];
+      const custodyForm=task(doc,ctx,dossier,{
+        title:custodyTitle,action:ref+'/box-scan',openByDefault:true,
+        fields:[
+          {name:'qr_code',label:'QR ou alias COMBOX lu au scanner',required:true},
+          proof,
+          {name:'confirmed',label:'J’ai physiquement contrôlé cette COMBOX',required:true,
+            options:[['','Sélectionner'],['yes','Oui, je confirme le scan']]},
+        ],
+        transform:raw=>({...raw,event_type:custodyStep,confirmed:raw.confirmed==='yes'}),
+      });
+      custodyForm.setAttribute('data-journey-custody-scan',custodyStep);
+    return custodyForm;
+  }
+  function renderTransitionTask(doc,ctx,dossier,s,step,ref,{explicitMode=false}={}){
+      const transitionTask=task(doc,ctx,dossier,{
+        title:'Confirmer : '+STAGE_LABEL[step],
+        openByDefault:step==='handed_over',
+        action:ref+'/transition',
+        fields:step==='handed_over'&&s.hub_draft
+          ?[{name:'forwarder_name',label:'Transitaire qui prend physiquement les cartons',required:true},
+            {name:'transport_mode',label:'Mode de transport',required:true,options:[...(explicitMode?[['','Sélectionner le mode réel']]:[]),['sea','Bateau'],['air','Avion']]},proof,note]
+          :step==='in_transit'&&s.hub_draft
+            ?[proof,{name:'container_sealed',label:'Conteneur fermé et départ physiquement attesté',
+                required:true,options:[['','Sélectionnez'],['yes','Oui, fermeture et départ confirmés']]},note]
+            :[proof,note],
+        transform:raw=>({...raw,to_stage:step,
+          ...(step==='in_transit'&&s.hub_draft?{container_sealed:raw.container_sealed==='yes'}:{})}),
+      });
+      transitionTask.setAttribute('data-journey-next-task','');
+    return transitionTask;
+  }
+  // Hub-only view of the exact same custody and transition forms, never carrier
+  // receipt, transit, customs or financial actions.
+  function renderHubHandover(doc,root,ctx,detail){
+    const s=detail?.shipment;
+    if(!actorCan(ctx,['admin','agent_hub'])||!s||s.stage!=='hub_ready'||s.hub_draft!==true)return null;
+    const boxes=detail.hub_units||[];
+    const host=put(root,doc.createElement('section'));
+    host.setAttribute('data-hub-handover-manifest',s.reference);
+    put(host,text(doc,'h3','','Manifeste complet · '+s.reference+' · '+boxes.length+' COMBOX'));
+    for(const box of boxes)put(host,text(doc,'p','kmc-workspace-note',box.reference+' · '+box.state));
+    if(!boxes.length||boxes.some(box=>box.state!=='DISPATCHED')){
+      put(host,text(doc,'p','kmc-workspace-note','Toutes les COMBOX du manifeste doivent être scannées en sortie du Hub avant la remise.'));
+      return host;
+    }
+    const ref=encodeURIComponent(s.reference);
+    renderCustodyTask(doc,ctx,host,detail,'HUB_HANDOVER',ref);
+    renderTransitionTask(doc,ctx,host,s,'handed_over',ref,{explicitMode:true});
+    return host;
   }
   function render(doc,root,ctx,rows=[],detail=null,error=null){
     const section=put(root,doc.createElement('section'));
@@ -340,46 +401,13 @@
       s.stage==='forwarder_received'?'CARRIER_LOADED':null;
     const custodyRole=custodyStep==='HUB_HANDOVER'?['admin','agent_hub']:['admin','agent_transitaire'];
     if(ctx.journeyTab==='transport'&&s.hub_draft&&custodyStep&&actorCan(ctx,custodyRole)){
-      const knownBoxes=(detail?.hub_units||[]).map(box=>box.reference).filter(Boolean);
-      put(dossier,text(doc,'p','kmc-workspace-note',
-        'Scanner chaque COMBOX du manifeste : '+(knownBoxes.join(', ')||'consulter les cartons du dossier')+
-        '. Chaque scan est confirmé séparément ; il ne déclenche jamais une transition.'));
-      const custodyTitle={
-        HUB_HANDOVER:'Hub · scanner et confirmer la remise de chaque COMBOX',
-        CARRIER_ACCEPTED:'Transitaire · scanner et accepter chaque COMBOX',
-        CARRIER_LOADED:'Transitaire · rescanner chaque COMBOX chargée dans le conteneur',
-      }[custodyStep];
-      const custodyForm=task(doc,ctx,dossier,{
-        title:custodyTitle,action:ref+'/box-scan',openByDefault:true,
-        fields:[
-          {name:'qr_code',label:'QR ou alias COMBOX lu au scanner',required:true},
-          proof,
-          {name:'confirmed',label:'J’ai physiquement contrôlé cette COMBOX',required:true,
-            options:[['','Sélectionner'],['yes','Oui, je confirme le scan']]},
-        ],
-        transform:raw=>({...raw,event_type:custodyStep,confirmed:raw.confirmed==='yes'}),
-      });
-      custodyForm.setAttribute('data-journey-custody-scan',custodyStep);
+      renderCustodyTask(doc,ctx,dossier,detail,custodyStep,ref);
     }
     if(canTransition(ctx,step)&&(
        ctx.journeyTab==='transport'&&['handed_over','forwarder_received','in_transit','arrived'].includes(step)||
        ctx.journeyTab==='arrival'&&step==='customs_released'||
        ctx.journeyTab==='relay'&&['local_delivery','relay_received'].includes(step))){
-      transitionTask=task(doc,ctx,dossier,{
-        title:'Confirmer : '+STAGE_LABEL[step],
-        openByDefault:step==='handed_over',
-        action:ref+'/transition',
-        fields:step==='handed_over'&&s.hub_draft
-          ?[{name:'forwarder_name',label:'Transitaire qui prend physiquement les cartons',required:true},
-            {name:'transport_mode',label:'Mode de transport',required:true,options:[['sea','Bateau'],['air','Avion']]},proof,note]
-          :step==='in_transit'&&s.hub_draft
-            ?[proof,{name:'container_sealed',label:'Conteneur fermé et départ physiquement attesté',
-                required:true,options:[['','Sélectionnez'],['yes','Oui, fermeture et départ confirmés']]},note]
-            :[proof,note],
-        transform:raw=>({...raw,to_stage:step,
-          ...(step==='in_transit'&&s.hub_draft?{container_sealed:raw.container_sealed==='yes'}:{})}),
-      });
-      transitionTask.setAttribute('data-journey-next-task','');
+      transitionTask=renderTransitionTask(doc,ctx,dossier,s,step,ref);
     }
     if(ctx.journeyTab==='transport'){
       if(actorCan(ctx,['admin','agent_transitaire']))task(doc,ctx,dossier,{
@@ -444,5 +472,5 @@
     }
     return section;
   }
-  return Object.freeze({render,capture,restore,STAGES,STAGE_LABEL,TABS,nextStage,endpoint});
+  return Object.freeze({render,renderHubHandover,capture,restore,STAGES,STAGE_LABEL,TABS,nextStage,endpoint});
 });
