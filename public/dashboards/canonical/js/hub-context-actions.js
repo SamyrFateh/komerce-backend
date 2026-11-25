@@ -122,13 +122,11 @@
       explanation(menu,doc,'Marché ou PO non identifié : accès au dossier indisponible.');
       return false;
     }
-    if(entry==='direction'&&['commitment','payment'].includes(decision)){
+    if(entry==='direction'&&['commitment','payment','variance'].includes(decision)){
       workflowLink(menu,doc,label,'/admin/hub?'+new URLSearchParams({branch:'operations',sel:'po:'+po.id,decision}).toString());
       return true;
     }
-    for(const market of markets)workflowLink(menu,doc,label+(markets.length>1?' · '+market:''),'/admin/hub-live?'+new URLSearchParams({
-      view:'execute',entry,market,atelier:'purchasing',sel:'po:'+po.id,...(decision?{decision}:{})
-    }).toString());
+    workflowLink(menu,doc,label,'/admin/hub?'+new URLSearchParams({branch:'operations',sel:'po:'+po.id}).toString());
     return true;
   }
   // Kanban : lecture et liens uniquement. Aucun formulaire ni POST métier.
