@@ -848,3 +848,26 @@ test('Direction : arbitrage fournisseur réservé au grant et POST uniquement ap
   await expect(panel).toContainText('Écart décidé');
   await expect(panel.getByRole('button',{name:'Décider un écart fournisseur'})).toHaveCount(0);
 });
+
+test('Réception focalisée : uniquement la PO sélectionnée, exception repliée, aucun POST',async({page})=>{
+  const posts=[],second=DOSSIER.purchase_orders[1].id;
+  const foreign='aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa';
+  const receivable={...RECEIVABLE_PAYLOAD,purchase_orders:[...RECEIVABLE_PAYLOAD.purchase_orders,
+    {...RECEIVABLE_PAYLOAD.purchase_orders[0],purchase_order_id:second,supplier:{name:'Autre fournisseur'}},
+    {...RECEIVABLE_PAYLOAD.purchase_orders[0],purchase_order_id:foreign,supplier:{name:'Autre marché'}}]};
+  await mount(page,{posts,view:null,receivable});
+  await page.goto(ORIGIN+'/admin/hub-live?view=execute&entry=operations&market=KM&atelier=reception&sel=po%3A'+PO_ID);
+  const station=page.locator('[data-hub-reception-station]');
+  await expect(station.locator('[data-receive-po]')).toHaveCount(1);
+  await expect(station.locator('[data-receive-po="'+PO_ID+'"]')).toBeVisible();
+  const selector=station.getByLabel('Choisir le bon fournisseur à réceptionner');
+  await expect(selector.locator('option[value="'+foreign+'"]')).toHaveCount(0);
+  await expect(station.locator('[data-hub-unmanifested-form]')).not.toBeVisible();
+  await selector.selectOption(second);
+  await expect(station.locator('[data-receive-po="'+second+'"]')).toBeVisible();
+  await expect(station.locator('[data-receive-po="'+PO_ID+'"]')).toHaveCount(0);
+  await station.locator('[data-hub-unmanifested-details] summary').click();
+  await expect(station.locator('[data-hub-unmanifested-form]')).toBeVisible();
+  await expect(station.getByLabel('Zone physique où le colis est reçu')).toBeVisible();
+  expect(posts).toEqual([]);
+});

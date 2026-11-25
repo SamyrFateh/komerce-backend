@@ -260,3 +260,9 @@ test('montage départ interdit à un responsable marché avant toute lecture',as
   await expect(workspace.mountDepartureActions({}, {user:{role:'market_operator'},marketCode:'CM',poId:'p1',fetch})).rejects.toThrow('Accès départ Hub requis');
   expect(fetch).not.toHaveBeenCalled();
 });
+
+test('réception : la file globale ne peut afficher que les PO du dossier marché chargé',()=>{
+  const a={purchase_order_id:'p1'},b={purchase_order_id:'p2'},c={purchase_order_id:'foreign'};
+  expect(workspace.receptionOrdersForMarket({purchase_orders:[{id:'p1'},{id:'p2'}]},{purchase_orders:[a,b,c]})).toEqual([a,b]);
+  expect(workspace.receptionOrdersForMarket(null,{purchase_orders:[a,b,c]})).toEqual([]);
+});

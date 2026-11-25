@@ -111,7 +111,8 @@ describe('T8 — arrivée fournisseur sans manifeste (HB-08)', () => {
     expect(ui).toContain("data-hub-unmanifested-reference");
     expect(ui).toContain("data-hub-unmanifested-location");
     expect(ui).toContain("data-hub-unmanifested-tracking");
-    expect(ui).toMatch(/slot\.appendChild\(createUnmanifestedArrivalCard\(doc, context\)\);[\s\S]*if \(context\.receivableError\)/);
+    expect(ui).toContain("arrival.appendChild(createUnmanifestedArrivalCard(doc,context));");
+    expect(ui).toContain("arrival.open=Boolean(context.unmanifestedArrivalOpen)");
     expect(ui).toMatch(/url: RECEIVE_ENDPOINT,[\s\S]*contents: \[\],/);
     expect(ui).not.toContain("data-hub-unmanifested-purchase-order");
   });
@@ -256,10 +257,10 @@ describe('Hub: no old SAC and QR/PDF immediately reachable',()=>{
   });
   test('new script and CSS version IDs are different from the stale November 13 immutable assets',()=>{
     expect(html).toContain('hub-label-center.js?v=261124-hub-domain-2');
-    expect(html).toContain('operations-workspace.js?v=261125-hub-po-departure-5');
+    expect(html).toContain('operations-workspace.js?v=261125-hub-reception-focus');
     expect(html).not.toContain('operations-workspace.js?v=261124-hub-po-inline-2');
     expect(html).toContain('hub-live-cockpit.js?v=261124-hub-po-inline-2');
-    expect(html).toContain('operations-workspace.css?v=261124-hub-domain-2');
+    expect(html).toContain('operations-workspace.css?v=261125-hub-reception-focus');
     expect(html).not.toContain('operations-workspace.js?v=261113-director-h4');
     expect(html).toContain('hub-workstation.js?v=261125-hub-po-departure-5');
     expect(html).not.toContain('hub-workstation.js?v=261124-hub-po-inline-2');
