@@ -653,6 +653,15 @@
   }
 
   function renderHubLive(root, user, adminContext) {
+    const params=new URLSearchParams(String(global.location?.search||''));
+    const sel=params.get('sel')||'';
+    // Anciennes URL Direction : ouvrir la PO V8, jamais le cockpit générique.
+    // Le type historique n'étant pas précisé, le moteur expose uniquement les
+    // décisions encore applicables, sans déduire l'engagement ni le paiement.
+    if(params.get('entry')==='direction'&&params.get('view')==='execute'&&/^po:[A-Za-z0-9-]{1,128}$/.test(sel)&&['admin','agent_hub'].includes(user?.role)){
+      global.location.replace('/admin/hub?branch=operations&sel='+encodeURIComponent(sel)+'&decision=review');
+      return;
+    }
     if (isHubExecutionRequest()) return renderHubExecutionShell(root, user, adminContext);
     if (!global.KomerceCanonicalHubLive) throw new Error('canonical_hub_live_module_missing');
     return global.KomerceCanonicalHubLive.mount({ root, user, document: global.document, fetch: global.fetch.bind(global) });
