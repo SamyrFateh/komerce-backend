@@ -313,3 +313,10 @@ test('réception intégrale : mode manuel justifié, SKU obligatoire et aucun re
   expect(workspace.fillVerifiedReceipt([{input:{value:''},line:{remaining_quantity:1}}],scans,true,'contrôle visuel')).toBe(false);
   expect(workspace.fillVerifiedReceipt([{input:{value:''},line:{product_sku_id:'sku-1',remaining_quantity:0}}],scans,true,'contrôle visuel')).toBe(false);
 });
+
+
+test('V8 decision adapter uses canonical writer and guarded initial form',()=>{
+ expect(SOURCE).toContain('purchaseOnly:true,compactPO,decisionOnly');
+ expect(SOURCE).toContain("form:['commitment','payment'].includes(decisionOnly)?{po:poId,kind:decisionOnly}:null");
+ expect(SOURCE).toContain('act:(button,options)=>runAction(context,button,options)');
+});
