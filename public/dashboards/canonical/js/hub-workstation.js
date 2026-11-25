@@ -749,6 +749,7 @@
       visualBoard.hidden=Boolean(visualActive);
       visualBoard.replaceChildren();
       for(const [i,label] of [...visualLanes,'À vérifier'].entries()){
+        if(i===6&&!filtered.some(p=>visualStage(p)===-1))continue;
         const lane=make(doc,'section','kmc-hub-po-v8-lane');
         const list=filtered.filter(p=>visualStage(p)===(i===6?-1:i));
         lane.appendChild(make(doc,'h3','',label+' · '+list.length));
@@ -781,8 +782,23 @@
         visualLanes.forEach((label,i)=>{const item=make(doc,'span',i===stage?'is-current':i<stage?'is-done':'',label);if(i===stage)item.setAttribute('aria-current','step');progress.appendChild(item);});
         entry.summary.appendChild(progress);
         if(stage>=4)entry.summary.appendChild(make(doc,'p','','Reçus : '+p.received+' / '+p.expected+' · Reliquat : '+p.missing));
-        const orders=make(doc,'details');orders.appendChild(make(doc,'summary','',p.order_count+' commande(s) associée(s)'));
-        for(const ref of p.order_references||[])orders.appendChild(make(doc,'div','',ref));
+        const previousOpen=new Set(entry.openOrders||[]);
+        const orders=make(doc,'div','kmc-hub-po-v8-orders');
+        orders.appendChild(make(doc,'h3','',p.order_count+' commande(s) associée(s)'));
+        for(const ref of p.order_references||[]){
+          const lines=(p.order_lines||[]).filter(l=>l.order_ref===ref);
+          const details=make(doc,'details');details.open=previousOpen.has(ref);
+          const qty=lines.reduce((n,l)=>n+Number(stage<4?l.ordered:l.expected),0);
+          const got=lines.reduce((n,l)=>n+Number(l.received),0);
+          const title=ref+(lines.length?' · '+(stage<4?qty+' attendus':got+' / '+qty+' reçus'):'');
+          details.appendChild(make(doc,'summary','',title));
+          for(const line of lines){
+            const q=stage<4?line.ordered+' attendus':line.received+' / '+line.expected+' reçus'+(line.missing?' · '+line.missing+' attendus':'');
+            details.appendChild(make(doc,'p','', (line.product||'Article')+' · '+q));
+          }
+          details.addEventListener('toggle',()=>{const set=new Set(entry.openOrders||[]);if(details.open)set.add(ref);else set.delete(ref);entry.openOrders=[...set];});
+          orders.appendChild(details);
+        }
         entry.summary.appendChild(orders);
         if(visualActive!==id)continue;
         const mode=stage===4?'reception':stage>=0&&stage<4?'purchase':null;
