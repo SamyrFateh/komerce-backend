@@ -351,7 +351,7 @@ test('pilote PO : réception partielle et QR dans la cellule, sans navigation ni
   await page.route(ORIGIN+'/api/scans/hub/receive',route=>{
     writes.push(route.request().postDataJSON());received=1;return route.fulfill({json:{quarantined:false}});
   });
-  await page.route(ORIGIN+'/api/hub/transition',route=>{
+  await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/supply/receipts/30000000-0000-4000-8000-000000000001/quality',route=>{
     const body=route.request().postDataJSON();qualityWrites.push(body.to_state);qualityState=body.to_state;return route.fulfill({json:{state:qualityState}});
   });
   await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/labels/articles/'+alloc+'/issue',route=>{
