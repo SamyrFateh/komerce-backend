@@ -233,6 +233,7 @@ function summarizePurchaseOrders(market, payload) {
       order_lines: lines.filter(l => l.order_ref).map(l => ({
         order_ref:l.order_ref, product:l.product || null,
         product_sku_id:l.product_sku_id || null, ordered:number(l.ordered),
+        fifo_rank:Number.isInteger(l.fifo_rank)?l.fifo_rank:null, fifo_next:l.fifo_next===true,
         expected:number(l.confirmed), received:number(l.received),
         missing:l.missing == null ? Math.max(0,number(l.confirmed)-number(l.received)) : number(l.missing),
       })),
