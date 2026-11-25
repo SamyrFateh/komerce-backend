@@ -586,7 +586,7 @@ test('V8 uses the mock visual tokens and scoped styles for real forms',()=>{
  for(const token of ['--nav:#13273a','--ink:#182c3b','--muted:#647588','--line:#dce4e9','--bg:#f3f6f8','--blue:#1765ad'])expect(css).toContain(token);
  expect(css).toContain('.kmc-hub-po-visual .hlc-form .hlc-btn.is-primary');
  const app=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/app.js'),'utf8');
- expect(app).toContain("global.location.replace('/admin/hub?branch=operations&sel='+encodeURIComponent(sel)+'&decision='+(params.get('decision')||'review'))");
+ expect(app).toContain("global.location.replace('/admin/hub?branch=operations&sel='+encodeURIComponent(sel)+'&decision='+(params.get('decision')||'review')+(market?'&market='+encodeURIComponent(market):''))");
 });
 
 test('PO partagée : arbitrage V8 ouvre le marché explicitement choisi, sans basculer sur le premier dossier',async()=>{
