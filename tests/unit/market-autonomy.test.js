@@ -81,7 +81,7 @@ test('les ancres de navigation sont résolues après le montage asynchrone des s
   const fs = require('fs');
   const path = require('path');
   const source = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/market-autonomy.js'), 'utf8');
-  expect(source).toContain("new Set(['market-team', 'market-network', 'market-cash-control'])");
+  expect(source).toContain("new Set(['market-team', 'market-network', 'market-providers', 'market-cash-control'])");
   expect(source).toContain('scrollToRequestedSection');
   expect(source).toContain('anchorObserver?.observe(root, { childList: true, subtree: true })');
 });
