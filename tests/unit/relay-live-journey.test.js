@@ -31,7 +31,7 @@ const back = h => { const m = h.match(/<a href="([^"]+)" data-cockpit-nav class=
 const activeTab = h => (h.match(/is-active[^>]*>([^<]+)</) || [])[1];
 
 test.each([
-  ['Flux', '', { ...OVERVIEW, queue:{ orders:[] } }],
+  ['Flux', '?view=overview', { ...OVERVIEW, queue:{ orders:[] } }],
   ['Incidents', '?view=incidents', { incidents:[] }],
   ['Historique', '?view=orders&list=collected', LIST],
   ['Dossier', '?view=order&order=r-1', DETAIL],
@@ -44,7 +44,7 @@ test.each([
 });
 
 test('Flux : quatre étapes visibles, pas de fausse attestation physique', () => {
-  const h=html('',{...OVERVIEW,queue:{orders:[ORDER()]}});
+  const h=html('?view=overview',{...OVERVIEW,queue:{orders:[ORDER()]}});
   expect(h).toContain('Préparer les colis');
   expect(h).toContain('aria-label="Kanban Relais · étapes et actions"');
   for(const key of ['transit','receive','organize','available']) {
@@ -59,7 +59,7 @@ test('Flux : quatre étapes visibles, pas de fausse attestation physique', () =>
 });
 
 test('Flux : en transit peut ouvrir une réception canonique, sans exécuter de writer', () => {
-  const h=html('',{...OVERVIEW,queue:{orders:[ORDER({status:'shipped'})]}});
+  const h=html('?view=overview',{...OVERVIEW,queue:{orders:[ORDER({status:'shipped'})]}});
   expect(h).toContain('data-relay-stage-action="shipments"');
   expect(h).toContain('href="/admin/relais-live?view=execute&amp;market=KM&amp;focus=shipments"');
   expect(h).toContain('Après réception');
@@ -68,7 +68,7 @@ test('Flux : en transit peut ouvrir une réception canonique, sans exécuter de 
 });
 
 test('Flux vide : le parcours et les liens restent présents sans dossier fictif', () => {
-  const h=html('',{...OVERVIEW,queue:{orders:[]}});
+  const h=html('?view=overview',{...OVERVIEW,queue:{orders:[]}});
   expect(h).toContain('Flux sans commande active');
   for(const key of ['transit','receive','organize','available']) {
     expect(h).toContain('data-relay-empty-lane="'+key+'"');
@@ -78,7 +78,7 @@ test('Flux vide : le parcours et les liens restent présents sans dossier fictif
 });
 
 test('La remise enregistrée ne réapparaît pas dans le flux de préparation', () => {
-  const h=html('',{...OVERVIEW,queue:{orders:[ORDER({status:'collected',id:'r-99'})]}});
+  const h=html('?view=overview',{...OVERVIEW,queue:{orders:[ORDER({status:'collected',id:'r-99'})]}});
   expect(h).not.toContain('data-relay-workboard-order="r-99"');
   expect(h).toContain('Historique');
 });
@@ -180,3 +180,10 @@ test('V4 : erreur manifeste affichée, pas de COMBOX fictive ni de prêt au retr
  expect(h).not.toContain('data-relay-v4-box=');
  expect(h).not.toContain('data-relay-v4-order=');
 });
+
+ test('URL Relais normale : le Kanban trois colonnes est la vue par défaut',()=>{
+   const h=html('',{selectedMarket:'KM',markets:['KM'],orders:[],shipments:{shipments:[]}});
+   expect(h).toContain('data-relay-v4');
+   for(const lane of ['expected','ready','done']) expect(h).toContain('data-relay-v4-lane="'+lane+'"');
+   expect(h).toContain('/admin/relais-live?view=overview');
+ });

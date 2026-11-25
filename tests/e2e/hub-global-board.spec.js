@@ -31,7 +31,7 @@ const BOARD = {
 
 test.use({ viewport:{width:1440,height:900} });
 
-async function mount(page,role='agent_relais',search='',board=BOARD) {
+async function mount(page,role='agent_relais',search='',board=BOARD,visual=false) {
   const calls=[];
   await page.route(ORIGIN+'/**', async route=>{
     const req=route.request(),url=new URL(req.url());
@@ -52,8 +52,11 @@ async function mount(page,role='agent_relais',search='',board=BOARD) {
     }
     return route.fulfill({status:404,body:''});
   });
-  await page.goto(ORIGIN+'/admin/hub'+search);
-  await expect(page.locator('[data-hub-global-order]')).toHaveCount(board.orders.length);
+  const params=new URLSearchParams(search);
+  if(!visual && ['admin','agent_hub'].includes(role)) params.set('ux','legacy');
+  await page.goto(ORIGIN+'/admin/hub'+(params.size?'?'+params.toString():''));
+  if(visual) await expect(page.locator('[data-hub-po-v8]')).toBeVisible();
+  else await expect(page.locator('[data-hub-global-order]')).toHaveCount(board.orders.length);
   return calls;
 }
 
@@ -95,7 +98,7 @@ test.describe('Hub global sans scope marché',()=>{
 
   test('une URL héritée ?market=KM ne filtre pas le Hub et est nettoyée',async({page})=>{
     const calls=await mount(page,'agent_hub','?market=KM');
-    await expect(page).toHaveURL(ORIGIN+'/admin/hub');
+    await expect(page).toHaveURL(ORIGIN+'/admin/hub?ux=legacy');
     await expect(page.locator('[data-hub-global-order]')).toHaveCount(2);
     expect(calls).toEqual(['GET /api/hub/board']);
     await page.screenshot({path:'test-results/hub-global-board-1440.png',fullPage:true});
@@ -322,7 +325,7 @@ test('pilote PO : engagement dans la cellule, formulaire canonique et droit serv
   await expect(cell.locator('[data-hlc-action="submit-po"]')).toBeVisible();
   await expect(row.getByText('Engagement validé · à soumettre',{exact:true})).toBeVisible();
   expect(writes).toEqual([{proof_ref:'JUSTIF-TEST'}]);
-  await expect(page).toHaveURL(ORIGIN+'/admin/hub');
+  await expect(page).toHaveURL(ORIGIN+'/admin/hub?ux=legacy');
 });
 
 test('pilote PO : réception partielle et QR dans la cellule, sans navigation ni QR d’une autre PO',async({page})=>{
@@ -384,7 +387,7 @@ test('pilote PO : réception partielle et QR dans la cellule, sans navigation ni
   await expect(cell.getByText('1 QR article(s) disponibles à imprimer.')).toBeVisible();
   expect(issued).toBe(true);
   await expect(cell.locator('[data-hub-pdf-article-a4]')).toHaveCount(1);
-  await expect(page).toHaveURL(ORIGIN+'/admin/hub');
+  await expect(page).toHaveURL(ORIGIN+'/admin/hub?ux=legacy');
 });
 
 test('pilote PO : préparation COMBOX partagée, filtrée par relais, rail et contrôle qualité',async({page})=>{
@@ -441,7 +444,7 @@ test('pilote PO : préparation COMBOX partagée, filtrée par relais, rail et co
   await expect(cell.getByText('QR COMBOX définitif prêt à imprimer.')).toBeVisible();
   expect(issued).toBe(true);
   await expect(cell.locator('[data-hub-pdf-box-a4]')).toHaveCount(1);
-  await expect(page).toHaveURL(ORIGIN+'/admin/hub');
+  await expect(page).toHaveURL(ORIGIN+'/admin/hub?ux=legacy');
 });
 
 test('pilote PO : sortie Hub, dossier et remise transitaire sur manifeste complet',async({page})=>{
@@ -491,5 +494,18 @@ test('pilote PO : sortie Hub, dossier et remise transitaire sur manifeste comple
   expect(writes[2][1]).toMatchObject({event_type:'HUB_HANDOVER',confirmed:true,proof_ref:'PREUVE-SCAN'});
   expect(writes[3][1]).toMatchObject({to_stage:'handed_over',proof_ref:'BON-REMISE-TEST',forwarder_name:'Transitaire test',transport_mode:'sea'});
   await expect(cell.locator('[data-journey-next-task]')).toHaveCount(0);
-  await expect(page).toHaveURL(ORIGIN+'/admin/hub');
+  await expect(page).toHaveURL(ORIGIN+'/admin/hub?ux=legacy');
 });
+
+// The normal URL must exercise the new board, independently of legacy contracts.
+for(const role of ['admin','agent_hub']) {
+  test(role+' : Kanban PO par défaut sur URL normale, sans contexte marché',async({page})=>{
+    const board={...BOARD,purchase_orders:[{id:'po-default',reference:'PO-DEFAULT',market:'KM',supplier:'Fournisseur A',order_count:1,order_references:['KAAAAAA'],ordered:2,expected:2,received:0,missing:2,purchase_step:'sent',order_lines:[]}]};
+    const calls=await mount(page,role,'?market=KM',board,true);
+    await expect(page).toHaveURL(ORIGIN+'/admin/hub');
+    await expect(page.locator('[data-hub-po-v8-card="po-default"]')).toBeVisible();
+    await expect(page.locator('[data-hub-global-order]')).toHaveCount(0);
+    expect(calls).toEqual(['GET /api/hub/board?view=po','GET /api/hub/board']);
+    await expect(page.locator('.kmc-market-context-select')).toHaveCount(0);
+  });
+}

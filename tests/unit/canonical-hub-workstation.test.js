@@ -407,7 +407,7 @@ test('le pilote PO conserve le Kanban et revient à la vue commandes sans mutati
     anomalies:0,purchase_step:'received',sent:true};
   const fetch=jest.fn(async url=>({ok:true,json:async()=>url==='/api/hub/board?view=po'
     ?{scope:'HUB_GLOBAL',purchase_orders:[po]}:{scope:'HUB_GLOBAL',orders:[]}}));
-  await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'}});
+  await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'},location:{search:'?ux=legacy'}});
   const toggle=root.querySelector('[data-hub-po-pilot-toggle]');
   expect(toggle.getAttribute('aria-pressed')).toBe('false');
   await toggle.click();
@@ -436,7 +436,7 @@ test('la cellule Achat monte le module canonique seulement au dépliage',async()
   const previous=global.KomerceCanonicalOperationsWorkspace;
   global.KomerceCanonicalOperationsWorkspace={mountPurchaseActions};
   try{
-    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'}});
+    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'},location:{search:'?ux=legacy'}});
     await root.querySelector('[data-hub-po-pilot-toggle]').click();
     const host=root.querySelector('[data-hub-inline-purchase]');
     expect(host).not.toBeNull();
@@ -459,7 +459,7 @@ test('la cellule Réception monte seulement la PO expédiée, au dépliage',asyn
   const previous=global.KomerceCanonicalOperationsWorkspace;
   global.KomerceCanonicalOperationsWorkspace={mountReceptionActions};
   try{
-    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'}});
+    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'},location:{search:'?ux=legacy'}});
     await root.querySelector('[data-hub-po-pilot-toggle]').click();
     const host=root.querySelector('[data-hub-inline-reception]');
     expect(host).not.toBeNull();
@@ -478,7 +478,7 @@ test('COMBOX : la préparation commune est montée uniquement au dépliage de la
   const previous=global.KomerceCanonicalOperationsWorkspace;
   global.KomerceCanonicalOperationsWorkspace={mountBoxActions};
   try{
-    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'}});
+    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'},location:{search:'?ux=legacy'}});
     await root.querySelector('[data-hub-po-pilot-toggle]').click();
     const host=root.querySelector('[data-hub-inline-combox]');
     expect(host).not.toBeNull();
@@ -497,7 +497,7 @@ test('cellule Départ : chargement lazy du module canonique pour une PO reçue',
   const previous=global.KomerceCanonicalOperationsWorkspace;
   global.KomerceCanonicalOperationsWorkspace={mountDepartureActions};
   try{
-    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'}});
+    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'agent_hub'},location:{search:'?ux=legacy'}});
     await root.querySelector('[data-hub-po-pilot-toggle]').click();
     const host=root.querySelector('[data-hub-inline-departure]');
     expect(host).not.toBeNull();
@@ -515,7 +515,7 @@ test('aperçu PO V8 : deux dossiers distincts, retour Kanban et chargement par P
   const mountPurchaseActions=jest.fn(async()=>({busy:()=>false,reload:jest.fn()}));
   const prev=global.KomerceCanonicalOperationsWorkspace;
   const loc=Object.getOwnPropertyDescriptor(global,'location');
-  Object.defineProperty(global,'location',{configurable:true,value:{search:'?ux=po-v8'}});
+  Object.defineProperty(global,'location',{configurable:true,value:{search:''}});
   global.KomerceCanonicalOperationsWorkspace={mountPurchaseActions};
   const walk=(node,predicate)=>[node,...node.children.flatMap(n=>walk(n,predicate))].filter(predicate);
   try{
