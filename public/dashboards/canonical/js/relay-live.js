@@ -466,7 +466,7 @@
           ${lane('ready','À remettre',ready.map(o=>orderCard(o)))}
           ${lane('done','Remises',done.map(o=>orderCard(o,true)))}</div>
           ${blocked.length?`<p>${blocked.length} commande(s) exclue(s) du parcours prépayé. <a href="${esc(executionUrl(market,'cash'))}">Circuit historique autorisé</a></p>`:''}
-          ${data?.truncated?'<p>Liste limitée : recherchez par référence pour les autres dossiers.</p>':''}
+          ${data?.truncated?'<p>Liste limitée aux dossiers récents ; les autres dossiers restent consultables dans la vue existante.</p>':''}
           <p><a href="${esc(executionUrl(market,'receive'))}">Réception locale</a> · <a href="${esc(BASE+'?view=incidents')}">Incidents et SAV</a></p>`}</section>`};
   }
   async function loadV4(p,api){
@@ -478,7 +478,7 @@
     ]);
     const all=[...(available.orders||[]),...(collected.orders||[]),...(transit.orders||[])];
     const markets=[...new Set(all.map(o=>o.market_code).filter(Boolean))];
-    if(market&&!markets.includes(market))markets.push(market);
+    // Le marché demandé ne confère aucun droit : les GET canoniques revalident le périmètre.
     let shipments=null,shipmentsError=false;
     if(market){
       try{shipments=await api('/api/admin/workspaces/operations/market/'+encodeURIComponent(market)+'/relay-shipments');}
