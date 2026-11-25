@@ -328,8 +328,10 @@
 
       try {
         const payload = await jsonRequest(fetchFn, `${endpoint}?period=${encodeURIComponent(period)}${simulationQuery(options)}`);
-        if (requestId !== requestSeq || rootNode.isConnected === false
-            || rootNode.__dashboardViewIdentity !== identity) return Object.freeze({ stale: true });
+        // The SPA mounts route content in a detached staging root and commits it
+        // only after this initial read resolves. isConnected is therefore false
+        // for a valid mount; identity + request sequence are the stale guards.
+        if (requestId !== requestSeq || rootNode.__dashboardViewIdentity !== identity) return Object.freeze({ stale: true });
         const result = renderer.render(rootNode, schema, {
           data: resolveSources(payload),
           filters: { period },
