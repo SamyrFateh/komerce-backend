@@ -812,7 +812,25 @@
         if(!mount){entry.actions.appendChild(make(doc,'p','','Atelier canonique indisponible.'));continue;}
         entry.loading=true;
         entry.actions.appendChild(make(doc,'p','','Chargement…'));
-        Promise.resolve().then(()=>mount(entry.actions,{document:doc,fetch:fetchFn,user,marketCode:p.market,poId:p.id,receiveRefs,onChange:visualRefresh})).then(handle=>{entry.handle=handle;}).catch(error=>{entry.actions.replaceChildren(make(doc,'p','','Action indisponible : '+error.message));}).finally(()=>{entry.loading=false;});
+        const changed=async()=>{
+          await visualRefresh();
+          // Le writer canonique termine sa requête après onChange. Ne pas
+          // démonter un formulaire en cours de POST ; attendre sa libération.
+          const win=doc.defaultView;
+          if(win?.setTimeout){
+            let attempts=0;
+            const settle=()=>{
+              if(!root.contains(visualHost)||visualOpen.get(id)!==entry)return;
+              if(entry.loading||entry.handle?.busy?.()){
+                if(++attempts<40)win.setTimeout(settle,100);
+                return;
+              }
+              if(poMode)renderVisualPO();
+            };
+            win.setTimeout(settle,0);
+          }
+        };
+        Promise.resolve().then(()=>mount(entry.actions,{document:doc,fetch:fetchFn,user,marketCode:p.market,poId:p.id,receiveRefs,compactPO:true,onChange:changed})).then(handle=>{entry.handle=handle;}).catch(error=>{entry.actions.replaceChildren(make(doc,'p','','Action indisponible : '+error.message));}).finally(()=>{entry.loading=false;});
       }
     }
 
@@ -965,7 +983,16 @@
     if(visualPO){
       const refresh=make(doc,'button','kmc-hub-app-branch','Actualiser les PO');
       refresh.type='button';
-      refresh.addEventListener('click',async()=>{refresh.disabled=true;try{await visualRefresh();}catch(error){headerCount.textContent=error.message;}finally{refresh.disabled=false;}});
+      refresh.addEventListener('click',async()=>{
+        refresh.disabled=true;
+        try{
+          if(!poMode){poMode=true;headerTitle.textContent='PO fournisseurs · Tous les marchés';}
+          await visualRefresh();
+          const entry=visualOpen.get(visualActive);
+          if(entry?.handle && !entry.loading && !entry.handle.busy?.())await entry.handle.reload?.();
+        }catch(error){headerCount.textContent=error.message;}
+        finally{refresh.disabled=false;}
+      });
       header.appendChild(refresh);
       // En aperçu seulement, ouverture directe sur le Kanban PO.
       try{await visualRefresh();poMode=true;headerTitle.textContent='PO fournisseurs · Tous les marchés';search.placeholder='Rechercher une PO';search.setAttribute('aria-label',search.placeholder);renderVisualPO();
