@@ -51,3 +51,20 @@ test('« Comment lire l’atelier » est une aide repliée par défaut', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/pricing-workspace-presentation.js'), 'utf8');
   expect(src).toContain("el(doc, 'details', 'kmc-cockpit-secondary kmc-cost-formula-help')");
 });
+
+test('cartographie les centres sans inventer la nature ou les dépenses réelles', () => {
+  const rows = [
+    { key: 'purchase', category: 'product_purchase', economic_nature: 'variable' },
+    { key: 'hub_salary', category: 'hub', economic_nature: 'fixed', allocation_perimeter: 'mutualized' },
+    { key: 'freight', category: 'freight', economic_nature: 'variable', allocation_perimeter: 'mutualized' },
+    { key: 'ads', category: 'marketing_campaign' },
+    { key: 'commission', category: 'relay' },
+    { key: 'other', category: 'toString' },
+  ];
+  const groups = presentation.groupCostCenters(rows);
+  expect(groups.map(g => g.key)).toEqual(['PUR','LOG','MKT','SAL','SAV','STR','UNMAPPED']);
+  expect(groups.find(g => g.key === 'LOG').components).toEqual([rows[1], rows[2]]);
+  expect(groups.find(g => g.key === 'UNMAPPED').components).toEqual([rows[4], rows[5]]);
+  expect(groups.flatMap(g => g.components)).toHaveLength(rows.length);
+  expect(groups.every(g => !Object.hasOwn(g, 'actual_cost'))).toBe(true);
+});
