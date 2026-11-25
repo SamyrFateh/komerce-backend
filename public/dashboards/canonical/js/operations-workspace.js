@@ -1019,6 +1019,37 @@
     return (dossier.fillable || []).filter(row=>String(row.purchase_order_id || '')===String(poId));
   }
 
+  function sourceQualityChecked(row){
+    return ['QUALITY_CHECKED','LOCATED','ALLOCATED','PICKED'].includes(row.source_state);
+  }
+  function renderReceiptQuality(doc,context,dossier,poId){
+    const section=doc.createElement('section');
+    section.setAttribute('data-hub-inline-quality','');
+    section.appendChild(text(doc,'h3','','Contrôle physique des réceptions'));
+    for(const receipt of (dossier.receipts||[]).filter(r=>(r.po_ids||[]).some(id=>String(id)===String(poId)))){
+      const row=doc.createElement('div');
+      row.appendChild(text(doc,'strong','',receipt.reference+' · '+receipt.qty+' unité(s)'));
+      const next={RECEIVED:'IDENTIFIED',IDENTIFIED:'QUALITY_CHECKED'}[receipt.state];
+      if(!next){
+        row.appendChild(text(doc,'p','kmc-workspace-note',sourceQualityChecked({source_state:receipt.state})?'Contrôle qualité attesté':receipt.state));section.appendChild(row);continue;
+      }
+      if(!receipt.single_purchase_order){
+        row.appendChild(text(doc,'p','kmc-workspace-note','Colis multi-PO : contrôle de tout le colis requis, pas de validation partielle depuis cette ligne.'));
+        section.appendChild(row);continue;
+      }
+      const label=next==='IDENTIFIED'?'Confirmer le contenu identifié':'Confirmer le contrôle qualité';
+      const check=makeActionButton(doc,label,'receipt-quality-'+next.toLowerCase());
+      check.addEventListener('click',()=>runAction(context,check,{
+        url:'/api/hub/transition',
+        body:{unit_id:receipt.id,to_state:next,details:{operator_action:next==='IDENTIFIED'?'identify_received_contents':'physical_quality_checked'}},
+        confirmMessage:next==='IDENTIFIED'?'Confirmez que le contenu réel a été déballé, identifié et compté.':'Confirmez que tous les articles de ce colis ont été réellement contrôlés et sont conformes. En cas d’écart, ne validez pas.',
+        successMessage:next==='IDENTIFIED'?'Contenu identifié.':'Contrôle qualité attesté.',
+      }).catch(()=>{}));
+      row.appendChild(check);section.appendChild(row);
+    }
+    return section;
+  }
+
   async function mountReceptionActions(host,{document:doc,fetch:fetchFn,user,marketCode,poId,onChange,receiveRefs=new Map()}={}){
     if(!['admin','agent_hub'].includes(user?.role)||!poId)throw Error('Accès réception Hub requis');
     const feedback=text(doc,'p','kmc-workspace-feedback','');
@@ -1041,7 +1072,8 @@
         slot.replaceChildren();
         if(receipt)slot.appendChild(createReceptionCard(doc,context,receipt));
         else slot.appendChild(text(doc,'p','kmc-workspace-note','Aucune quantité en attente dans cette PO. Consultez les quantités et écarts du Kanban.'));
-        slot.appendChild(renderArticleLabelActions(doc,context,receptionLabelRows(dossier,poId)));
+        slot.appendChild(renderReceiptQuality(doc,context,dossier,poId));
+        slot.appendChild(renderArticleLabelActions(doc,context,receptionLabelRows(dossier,poId).filter(sourceQualityChecked)));
         await onChange?.(dossier);
       }finally{pending=false;}
     };
@@ -1406,7 +1438,7 @@
     });
     const BOX_STATE_LABELS=Object.freeze({RECEIVED:'À préparer',IDENTIFIED:'Identifiée',QUALITY_CHECKED:'Contrôlée',LOCATED:'Localisée',ALLOCATED:'Affectée',PICKED:'Prélevée',PACKED:'Fermée',DISPATCHED:'Prête au départ',QUARANTINED:'En quarantaine',SUPERSEDED:'Remplacée'});
     const BOX_MUTABLE = new Set(['RECEIVED', 'IDENTIFIED', 'QUALITY_CHECKED', 'LOCATED', 'ALLOCATED', 'PICKED']);
-    const fillable = (Array.isArray(d.fillable) ? d.fillable : []).filter(line=>!compact||matchesPackingGroup(line,selectedGroup));
+    const fillable = (Array.isArray(d.fillable) ? d.fillable : []).filter(line=>!compact||(matchesPackingGroup(line,selectedGroup)&&sourceQualityChecked(line)));
     // Le fetch canonique transporte l'authentification du dashboard ; un lien
     // API direct ne la transmet pas forcément. Ouvrir la fenêtre sur le clic,
     // puis charger l'HTML local authentifié dans un Blob imprimable.
@@ -3422,6 +3454,7 @@
     packingGroups,
     matchesPackingGroup,
     packingBoxMatches,
+    sourceQualityChecked,
     receptionLabelRows,
     mount,
   });
