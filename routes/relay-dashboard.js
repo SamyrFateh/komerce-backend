@@ -252,8 +252,10 @@ router.get('/incidents', ...relayRead, async (req, res, next) => {
 // GET /orders
 router.get('/orders', ...relayRead, async (req, res, next) => {
   try {
-    const { status, search, limit = 50, offset = 0 } = req.query;
-    res.json(applyLiveProjection(req, await getOrders(req.user, { status, search, limit, offset }, { authorizedMarkets: req.authorizedMarkets, includeSimulation: wantsSimulation(req.user, req.query) })));
+    const { status, search, market, reference, limit = 50, offset = 0 } = req.query;
+    if (market != null && market !== '' && (typeof market !== 'string' || !/^[A-Z]{2}$/.test(market))) return res.status(400).json({ error: 'Marché invalide' });
+    if (reference != null && (typeof reference !== 'string' || reference.length > 120)) return res.status(400).json({ error: 'Référence invalide' });
+    res.json(applyLiveProjection(req, await getOrders(req.user, { status, search, ...(market ? {market} : {}), ...(reference ? {reference} : {}), limit, offset }, { authorizedMarkets: req.authorizedMarkets, includeSimulation: wantsSimulation(req.user, req.query) })));
   } catch(err) { next(err); }
 });
 

@@ -19,3 +19,11 @@ test('V4 desktop : trois colonnes rétractables, détails natifs sans règle de 
  const v4=css.slice(css.indexOf('/* V4 :'));
  expect(v4).not.toContain('!important');
 });
+
+test('V4 : palette claire du mock, boutons identiques et absence de débordement horizontal des colonnes',()=>{
+ const css=require('fs').readFileSync(require('path').join(__dirname,'../../public/dashboards/canonical/css/relay-workboard.css'),'utf8');
+ expect(css).toMatch(/\.kmc-relay-v4-lane\{[^}]*background:#e8edf1/);
+ expect(css).toMatch(/\.kmc-relay-v4-card\{[^}]*background:white/);
+ expect(css).toContain('.kmc-relay-v4-button.is-primary{background:#1765ad');
+ expect(css).toMatch(/\.kmc-relay-v4-board\{[^}]*min-width:0/);
+});

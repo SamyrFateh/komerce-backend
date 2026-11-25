@@ -187,3 +187,19 @@ test('V4 : erreur manifeste affichée, pas de COMBOX fictive ni de prêt au retr
    for(const lane of ['expected','ready','done']) expect(h).toContain('data-relay-v4-lane="'+lane+'"');
    expect(h).toContain('/admin/relais-live?view=overview');
  });
+
+test('V4 fidèle : un seul marché (shell), deux gestes distincts et boutons canoniques',()=>{
+ const data={selectedMarket:'KM',orders:[],shipments:{shipments:[{reference:'S1',receivable:true,transport_mode:'air',boxes:[{reference:'BOX-1',orders:[{reference:'KREF001',items:[{product:'Lampe',expected:2,received:null}]}]}]}]}};
+ const h=html('?market=KM',data);
+ expect(h).not.toContain('<select name="market"');
+ expect(h).toContain('name="market" value="KM"');
+ expect(h).toContain('name="search"');
+ expect(h).toContain('name="box"');
+ expect(h).toContain('kmc-relay-v4-button is-primary');
+ expect(h).toContain('Commandes (1)');
+ expect(h).toContain('À contrôler');
+ const exact=html('?market=KM&box=BOX-1',data);
+ expect(exact).toContain('kmc-relay-v4-content" open');
+ expect(exact).toContain('Ouverture du manifeste uniquement');
+ expect(html('?market=KM&box=BOX-999',data)).toContain('COMBOX introuvable');
+});
