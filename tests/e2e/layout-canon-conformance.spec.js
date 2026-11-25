@@ -318,8 +318,11 @@ test.describe('Layout Canon — conformité aux mocks approuvés', () => {
     for (const route of ['/admin/commerce', '/admin/pilotage', '/admin/operations', '/admin/pilotage']) {
       await page.click(`.kmc-admin-navigation a[href^="${route}"]`);
       await page.waitForURL(`**${route}*`);
-      await page.waitForSelector('[data-dashboard-role="hero"]');
-      await page.waitForTimeout(400);
+      await page.waitForFunction(() =>
+        document.querySelector('[data-dashboard-role="hero"]') &&
+        document.querySelector('.kmc-admin-topbar .kmc-admin-search') &&
+        document.querySelector('.kmc-admin-topbar .kmc-admin-market-select'),
+      );
       const r = await page.evaluate(() => {
         const box = el => { const b = el.getBoundingClientRect(); return { left:b.left, right:b.right, top:b.top, bottom:b.bottom }; };
         const duplicate = document.querySelector('.kmc-market-context');
