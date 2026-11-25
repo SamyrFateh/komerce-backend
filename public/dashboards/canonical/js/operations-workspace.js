@@ -368,7 +368,7 @@
     feedback.setAttribute('role','status');
     const slot = doc.createElement('div');
     host.replaceChildren(feedback,slot);
-    const state = {sel:{type:'po',id:poId},selectionInitialized:true,form:null,picked:new Set()};
+    const state = {sel:{type:'po',id:poId},selectionInitialized:true,form:['commitment','payment'].includes(decisionOnly)?{po:poId,kind:decisionOnly}:null,picked:new Set()};
     let dossier;
     const context = {
       root:host,fetch:fetchFn,confirm:message=>doc.defaultView.confirm(message),
