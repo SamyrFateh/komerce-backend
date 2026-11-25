@@ -262,7 +262,7 @@ describe('Hub: no old SAC and QR/PDF immediately reachable',()=>{
     expect(html).toContain('hub-live-cockpit.js?v=261124-hub-po-inline-2');
     expect(html).toContain('operations-workspace.css?v=261125-hub-reception-focus');
     expect(html).not.toContain('operations-workspace.js?v=261113-director-h4');
-    expect(html).toContain('hub-workstation.js?v=261125-hub-po-departure-5');
+    expect(html).toContain('hub-workstation.js?v=261125-hub-v8-fidelity');
     expect(html).not.toContain('hub-workstation.js?v=261124-hub-po-inline-2');
     for(const name of ['hub-context-actions.js','app.js'])expect(html).toContain(name+'?v=261124-hub-domain-2');
   });
