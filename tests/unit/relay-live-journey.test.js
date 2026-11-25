@@ -137,3 +137,46 @@ test('Projection et simulation : mêmes sources et même cloisonnement rôle/mar
   expect(src).toContain("projection=live");
   expect(src).toContain('setViewer(relayViewer)');
 });
+
+test('V4 : COMBOX puis commandes, articles repliés, quantités physiques et aucun prix',()=>{
+ const h=html('?view=v4&market=KM',{markets:['KM','CM'],orders:[
+  ORDER({id:'ready',reference:'KREADY1',payment_status:'paid',cash_pending:false,relay_ready_units:6}),
+  ORDER({id:'blocked',reference:'KBLOCK1',payment_status:'pending',relay_ready_units:4}),
+  ORDER({id:'done',reference:'KDONE01',status:'collected',relay_handed_units:3}),
+  ORDER({id:'foreign',reference:'KOTHER1',market_code:'CM',payment_status:'paid',relay_ready_units:9})
+ ],shipments:{shipments:[{reference:'SHIP-1',receivable:true,boxes:[
+  {reference:'BOX-1',orders:[{reference:'KBOX001',items:[{product:'Lampe',expected:2,received:null},{product:'Robe',expected:3,received:null}]}]},
+  {reference:'BOX-2',orders:[{reference:'KBOX002',items:[{product:'Coque',expected:1,received:1,received_gap:0}]}]}
+ ]}]}});
+ expect((h.match(/data-relay-v4-lane=/g)||[])).toHaveLength(3);
+ expect(h).toContain('COMBOX attendues');
+ expect(h).toContain('À remettre');
+ expect(h).toContain('Remises');
+ expect(h).toContain('BOX-1');
+ expect(h).toContain('5 articles annoncés');
+ expect(h).toContain('KBOX001');
+ expect(h).not.toContain('BOX-2');
+ expect(h).toContain('6 articles disponibles');
+ expect(h).toContain('3 articles remis');
+ expect(h).not.toContain('KBLOCK1');
+ expect(h).not.toContain('KOTHER1');
+ expect(h).not.toContain('Fatima');
+ expect(h).not.toContain('KMF');
+ expect(h).not.toMatch(/<details[^>]*\sopen(?:\s|>)/);
+ expect(h).not.toContain('data-workspace-action=');
+});
+test('V4 : un écart attesté reste dans la file COMBOX et les quantités commandées ne sont pas des quantités à remettre',()=>{
+ const h=html('?view=v4&market=KM&sel=ready',{orders:[ORDER({id:'ready',payment_status:'paid',relay_ready_units:2})],
+  detail:{order:{id:'ready'},items:[{produit:'Coque',quantity:5}]},
+  shipments:{shipments:[{reference:'SHIP',receivable:false,boxes:[{reference:'BOX-GAP',orders:[{reference:'KREF001',items:[{expected:2,received:1,received_gap:1}]}]}]}]}});
+ expect(h).toContain('Écart sur expédition');
+ expect(h).toContain('2 articles disponibles');
+ expect(h).toContain('5 commandé(s)');
+ expect(h).toContain('Articles de la commande');
+});
+test('V4 : erreur manifeste affichée, pas de COMBOX fictive ni de prêt au retrait sans quantité',()=>{
+ const h=html('?view=v4&market=KM',{shipmentsError:true,orders:[ORDER({payment_status:'paid',relay_ready_units:0})]});
+ expect(h).toContain('Arrivages indisponibles');
+ expect(h).not.toContain('data-relay-v4-box=');
+ expect(h).not.toContain('data-relay-v4-order=');
+});
