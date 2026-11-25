@@ -43,7 +43,7 @@
     params.set('branch', branch);
     if (branch !== 'administrative') params.delete('po');
     // Changer de poste ferme le deep link ; le Kanban reste global.
-    for(const key of ['market','sel','decision','atelier','ux'])params.delete(key);
+    for(const key of ['market','sel','decision','atelier'])params.delete(key);
     return HUB_PATH + '?' + params.toString();
   };
   const make = (doc, tag, css, textContent) => {
@@ -985,7 +985,8 @@
     }
 
     const renderRows = () => {
-      if(poMode){if(visualPO)renderVisualPO();else renderPOs();return;}
+      if(visualPO){if(poMode)renderVisualPO();return;}
+      if(poMode){renderPOs();return;}
       if(visualHost)visualHost.hidden=true;
       header.hidden=false;scroll.hidden=false;
       setHeaders(['Commande / Marché','PO','Fournisseur','Réception','Cartons','Départ','Reste à solder']);
@@ -1147,7 +1148,6 @@
       // Ouverture directe sur le Kanban PO depuis le menu normal.
       try{await visualRefresh();poMode=true;headerTitle.textContent='PO fournisseurs · Tous les marchés';search.placeholder='Rechercher une PO ou un fournisseur';search.setAttribute('aria-label',search.placeholder);renderVisualPO();
       }catch(error){if(visualHost)visualHost.hidden=true;scroll.hidden=true;header.hidden=false;search.hidden=true;headerTitle.textContent='Kanban opérationnel';headerCount.textContent='Vue PO indisponible : '+error.message;}
-      if(!poMode)return null;
     }
     search.addEventListener('input', ()=>{closeMenu();renderRows();});
     try {
@@ -1159,6 +1159,7 @@
       renderRows();
       return payload;
     } catch (error) {
+      if(visualPO)return null;
       body.replaceChildren();
       headerCount.textContent = 'Indisponible';
       const tr = make(doc, 'tr');
