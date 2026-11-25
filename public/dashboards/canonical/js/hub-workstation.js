@@ -1134,11 +1134,12 @@
     if(visualPO){
       const refresh=make(doc,'button','kmc-hub-app-branch','Actualiser les PO');
       refresh.type='button';
+      refresh.setAttribute('data-hub-v8-retry','');
       refresh.addEventListener('click',async()=>{
         refresh.disabled=true;
         try{
           await visualRefresh();
-          poMode=true;search.hidden=false;headerTitle.textContent='PO fournisseurs · Tous les marchés';
+          poMode=true;search.hidden=false;search.placeholder='Rechercher une PO ou un fournisseur';search.setAttribute('aria-label',search.placeholder);headerTitle.textContent='PO fournisseurs · Tous les marchés';
           const entry=visualOpen.get(visualActive);
           if(entry?.handle && !entry.loading && !entry.handle.busy?.())await entry.handle.reload?.();
         }catch(error){headerCount.textContent=error.message;}
