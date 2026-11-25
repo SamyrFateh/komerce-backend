@@ -282,7 +282,7 @@ test('Direction Hub : engagements, paiements, arbitrages, exécution séparés e
   expect(payments).toHaveLength(1);
   expect(payments[0].className).toContain('is-readonly');
   expect(payments[0].children.some(x=>x.getAttribute('href')===
-    '/admin/hub-live?view=execute&market=KM&entry=direction&sel=po%3A'+po)).toBe(true);
+    '/admin/hub?branch=operations&sel=po%3A'+po+'&decision=payment')).toBe(true);
   const physical=host.querySelectorAll('[data-hub-director-task="PLACE_COMBOX"]')[0];
   expect(physical.children.some(x=>x.getAttribute('href')===
     '/admin/hub-live?view=execute&market=CG')).toBe(true);
@@ -561,4 +561,21 @@ test('V8 : filtre marché, six étapes du mock, exceptions et bilan non déduit 
  expect(root.querySelector('[data-hub-po-v8-card="other"]')).not.toBeNull();
  root.querySelector('[data-hub-v8-view="archive"]').click();
  expect(root.querySelectorAll('[data-hub-po-v8-card]')).toHaveLength(0);
+});
+
+test('Direction V8 : ouvre exactement la PO demandée, décision distincte même après réception',async()=>{
+ const app=load(),root=el('main');
+ const po={id:'p1',reference:'PO-1',market:'KM',supplier:'Fournisseur',order_count:0,ordered:2,expected:2,received:2,missing:0,reception_complete:true};
+ const fetch=jest.fn(async url=>({ok:true,json:async()=>url==='/api/hub/board?view=po'?{scope:'HUB_GLOBAL',purchase_orders:[po]}:{scope:'HUB_GLOBAL',orders:[]}}));
+ const mountPurchaseActions=jest.fn(async()=>({busy:()=>false}));
+ const mountReceptionActions=jest.fn();
+ const prev=global.KomerceCanonicalOperationsWorkspace;
+ global.KomerceCanonicalOperationsWorkspace={mountPurchaseActions,mountReceptionActions};
+ try{
+  await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'admin'},location:{search:'?branch=operations&sel=po%3Ap1&decision=payment'}});
+  await Promise.resolve();await Promise.resolve();
+  expect(mountPurchaseActions).toHaveBeenCalledWith(expect.anything(),expect.objectContaining({poId:'p1',marketCode:'KM',decisionOnly:'payment'}));
+  expect(mountReceptionActions).not.toHaveBeenCalled();
+  expect(fetch.mock.calls.every(([,options])=>options.method==='GET')).toBe(true);
+ }finally{global.KomerceCanonicalOperationsWorkspace=prev;}
 });
