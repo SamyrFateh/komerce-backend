@@ -1040,8 +1040,8 @@
       const label=next==='IDENTIFIED'?'Confirmer le contenu identifié':'Confirmer le contrôle qualité';
       const check=makeActionButton(doc,label,'receipt-quality-'+next.toLowerCase());
       check.addEventListener('click',()=>runAction(context,check,{
-        url:'/api/hub/transition',
-        body:{unit_id:receipt.id,to_state:next,details:{operator_action:next==='IDENTIFIED'?'identify_received_contents':'physical_quality_checked'}},
+        url:endpointFor(context.marketCode,'supply/receipts/'+encodeURIComponent(receipt.id)+'/quality'),
+        body:{purchase_order_id:poId,to_state:next},
         confirmMessage:next==='IDENTIFIED'?'Confirmez que le contenu réel a été déballé, identifié et compté.':'Confirmez que tous les articles de ce colis ont été réellement contrôlés et sont conformes. En cas d’écart, ne validez pas.',
         successMessage:next==='IDENTIFIED'?'Contenu identifié.':'Contrôle qualité attesté.',
       }).catch(()=>{}));
