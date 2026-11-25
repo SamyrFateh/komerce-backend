@@ -183,6 +183,7 @@
       } catch (error) {
         if (error.status === 403) return;
         const section = el('section', 'kmc-section kmc-cash-section');
+        section.id = 'market-cash-control';
         section.dataset.marketCashControl = '';
         section.appendChild(el('h2', 'kmc-section-title', 'Protection des encaissements'));
         section.appendChild(el('div', 'kmc-cash-feedback is-critical', `${error.message}${error.code ? ` · ${error.code}` : ''}`));
@@ -191,6 +192,7 @@
       }
 
       const section = el('section', 'kmc-section kmc-cash-section');
+      section.id = 'market-cash-control';
       section.dataset.marketCashControl = '';
       renderPolicy(section, marketCode, payload);
 

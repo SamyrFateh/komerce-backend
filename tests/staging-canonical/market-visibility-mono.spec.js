@@ -21,8 +21,7 @@ const ORIGIN=new URL(process.env.E2E_STAGING_BASE_URL||BASE).origin;
 const MENU=[
  'control-tower','action-center','flow-commerce','flow-orders','entity-clients',
  'workspace-pricing','workspace-catalog','flow-operations','workspace-shipping',
- 'workspace-purchasing','flow-finance','workspace-accounting','live-import-runtime',
- 'live-hub','live-relais','markets-home','market-autonomy','market-catalog','unsold',
+ 'flow-finance','workspace-accounting','live-hub','markets-home','market-autonomy','market-catalog','unsold',
  'admin-users','admin-providers','settings','help-docs'
 ];
 const MUTATION_LABEL=/\b(enregistrer|valider|annuler|créer|confirmer|recevoir|rattacher|payer|expédier|modifier|supprimer|encaisser|remettre|abandonner)\b/i;
@@ -248,7 +247,7 @@ for(const market of MARKETS){
      })));
      proof.navigation.items=menu.map(item=>item.id);
      expect(proof.navigation.items).toEqual(MENU);
-     expect(new Set(menu.map(item=>item.href)).size,'23 menu rubriques must resolve to the 18 canonical market destinations').toBe(18);
+     expect(new Set(menu.map(item=>item.href)).size,'20 menu rubriques must resolve to the 18 canonical market destinations').toBe(18);
      for(const item of menu)expect(String(item.href||'').startsWith('/')).toBe(true);
      const forbiddenCentral=['/admin/workspaces/catalog','/admin/workspaces/purchasing','/admin/import-runtime',
        '/admin/relais-live','/admin/users','/admin/providers','/admin/settings'];

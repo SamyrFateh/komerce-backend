@@ -63,7 +63,7 @@ describe('Canonical standalone shell V4.1', () => {
     expect(policy).toContain('_dedupeShell: dedupeShell');
 
     expect(sync).toContain("typeof nav._dedupeShell === 'function'");
-    expect(sync).toContain('if (header === lastHeader) return;');
+    expect(sync).toContain('if (header === lastHeader && hasCompleteTopbar(doc)) return;')
   });
 
   test('une session expirée repart vers login avec retour vers la page courante', () => {

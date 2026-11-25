@@ -902,14 +902,10 @@
     unsold: '▦',
   });
 
-  // Menu métier complet pour le responsable marché : une entrée n'accorde
-  // aucun droit API. Les anciennes destinations admin-only sont remplacées
-  // par des projections marché existantes (autorité résolue côté serveur).
+  // Destinations marché réellement scopées. Les liens masqués faute de vue
+  // marché correspondante ne sont pas réintroduits comme doublons de menu.
   const MARKET_MENU_PROJECTIONS = Object.freeze({
     'workspace-catalog': Object.freeze({ href:'/dashboards/canonical/market-catalog.html', label:'Catalogue · Mon marché' }),
-    'workspace-purchasing': Object.freeze({ href:'/admin/hub', label:'Achats fournisseurs · Suivi marché' }),
-    'live-import-runtime': Object.freeze({ href:'/admin/hub', label:'Sourcing · Suivi commandes' }),
-    'live-relais': Object.freeze({ href:'/admin/operations', label:'Relais · Suivi marché' }),
     'markets-home': Object.freeze({ href:'/dashboards/canonical/market-autonomy.html#market-team', label:'Équipe et délégations' }),
     'unsold': Object.freeze({ href:'/dashboards/canonical/unsold.html', label:'Invendus · Mes marchés' }),
     'admin-users': Object.freeze({ href:'/dashboards/canonical/market-autonomy.html#market-team', label:'Utilisateurs de mon marché' }),

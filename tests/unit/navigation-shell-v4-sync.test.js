@@ -64,14 +64,16 @@ function makeShell({ headerAlreadyOwnsMarket = false } = {}) {
   header.append(utilities);
 
   const topbar = new Node('kmc-admin-topbar', { id: 'canonical-admin-topbar', 'data-canonical-shell-role': 'topbar' });
+  const search = new Node('kmc-admin-search');
   const right = new Node('kmc-admin-topbar-right');
   const market = new Node('kmc-admin-market-control');
   const account = new Node('kmc-admin-account');
   right.append(market, account);
-  topbar.append(right);
+  topbar.append(search, right);
   body.append(header, topbar);
 
   const applied = [];
+  let onMutation = null;
   const doc = {
     readyState: 'complete',
     body,
@@ -84,6 +86,7 @@ function makeShell({ headerAlreadyOwnsMarket = false } = {}) {
     _applyHybridShell: (appliedHeader, options) => {
       // reproduit createTopbar : la topbar reconstruite emprunte marché et compte au header
       const rebuilt = new Node('kmc-admin-topbar', { id: 'canonical-admin-topbar', 'data-canonical-shell-role': 'topbar' });
+      rebuilt.append(new Node('kmc-admin-search'));
       const rebuiltRight = new Node('kmc-admin-topbar-right');
       const pool = appliedHeader.querySelector('.kmc-admin-utility-nav');
       ['.kmc-admin-market-control', '.kmc-admin-account'].forEach(selector => {
@@ -99,11 +102,11 @@ function makeShell({ headerAlreadyOwnsMarket = false } = {}) {
   const sandbox = {
     document: doc,
     KomerceCanonicalNavigation: nav,
-    MutationObserver: function MutationObserver() { this.observe = () => {}; },
+    MutationObserver: function MutationObserver(callback) { onMutation = callback; this.observe = () => {}; },
     location: { pathname: '/admin/pilotage' },
   };
   sandbox.window = sandbox;
-  return { sandbox, header, utilities, ownMarket, market, account, topbar, applied, body };
+  return { sandbox, header, utilities, ownMarket, market, account, topbar, applied, body, notifyMutation: () => onMutation?.() };
 }
 
 describe('navigation-shell-v4-sync — le marché survit à la reconstruction de la topbar', () => {
@@ -132,6 +135,20 @@ describe('navigation-shell-v4-sync — le marché survit à la reconstruction de
     expect(shell.body.querySelectorAll('.kmc-admin-market-control')).toHaveLength(1);
     // le compte, absent du header, est récupéré de l'ancienne topbar
     expect(hosted.querySelector('.kmc-admin-account')).toBe(shell.account);
+  });
+
+  test('reconstruit le chrome manquant quand le routeur garde le même header', () => {
+    const shell = makeShell();
+    vm.runInNewContext(SOURCE, shell.sandbox);
+    const firstTopbar = shell.applied[0].rebuilt;
+
+    firstTopbar.remove();
+    shell.notifyMutation();
+
+    expect(shell.applied).toHaveLength(2);
+    expect(shell.body.querySelectorAll('.kmc-admin-topbar')).toHaveLength(1);
+    expect(shell.body.querySelector('.kmc-admin-topbar').querySelector('.kmc-admin-market-control')).toBe(shell.market);
+    expect(shell.body.querySelector('.kmc-admin-topbar').querySelector('.kmc-admin-account')).toBe(shell.account);
   });
 
   test('ne fait rien sans header propriétaire', () => {

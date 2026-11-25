@@ -19,17 +19,41 @@
 
 (function initCanonicalShellV4Sync(global) {
   let lastHeader = null;
+  const retainedControls = new Map();
+
+  function rememberControls(doc, header) {
+    const selectors = ['.kmc-admin-market-control', '.kmc-admin-account'];
+    const topbars = Array.from(doc.querySelectorAll?.('#canonical-admin-topbar, [data-canonical-shell-role="topbar"]') || []);
+    selectors.forEach(selector => {
+      const live = header?.querySelector?.(selector)
+        || topbars.map(topbar => topbar.querySelector?.(selector)).find(Boolean);
+      if (live) retainedControls.set(selector, live);
+    });
+  }
+
+  function hasCompleteTopbar(doc) {
+    const topbars = Array.from(doc.querySelectorAll?.('#canonical-admin-topbar, [data-canonical-shell-role="topbar"]') || []);
+    if (topbars.length !== 1 || !topbars[0].querySelector?.('.kmc-admin-search')) return false;
+    const pathname = String(global.location?.pathname || '');
+    if (pathname === '/admin/hub') return !!topbars[0].querySelector?.('.kmc-hub-global-scope');
+    const access = global.KOMERCE_CANONICAL_ADMIN_CONTEXT?.access;
+    const marketExpected = Array.isArray(access?.allowedMarkets) && access.allowedMarkets.length > 0;
+    return !marketExpected || !!topbars[0].querySelector?.('.kmc-admin-market-select');
+  }
 
   function synchronize() {
     const doc = global.document;
     const nav = global.KomerceCanonicalNavigation;
     if (!doc || !nav || typeof nav._applyHybridShell !== 'function') return;
 
+    const currentHeader = doc.getElementById?.('canonical-admin-navigation')
+      || doc.querySelector?.('[data-canonical-shell-role="navigation"]');
+    rememberControls(doc, currentHeader);
     if (typeof nav._dedupeShell === 'function') nav._dedupeShell(doc);
     const header = doc.getElementById?.('canonical-admin-navigation')
       || doc.querySelector?.('[data-canonical-shell-role="navigation"]');
     if (!header) return;
-    if (header === lastHeader) return;
+    if (header === lastHeader && hasCompleteTopbar(doc)) return;
     lastHeader = header;
 
     // Topbar et tabs sont des projections du header courant. Lorsqu'un
@@ -42,9 +66,10 @@
     const utilities = header.querySelector?.('.kmc-admin-utility-nav');
     const topbars = Array.from(doc.querySelectorAll?.('#canonical-admin-topbar, [data-canonical-shell-role="topbar"]') || []);
     if (utilities) {
-      const hosted = ['.kmc-admin-market-control', '.kmc-admin-account']
+      const selectors = ['.kmc-admin-market-control', '.kmc-admin-account'];
+      const hosted = selectors
         .filter(selector => !utilities.querySelector(selector))
-        .map(selector => topbars.map(topbar => topbar.querySelector?.(selector)).find(Boolean))
+        .map(selector => topbars.map(topbar => topbar.querySelector?.(selector)).find(Boolean) || retainedControls.get(selector))
         .filter(Boolean);
       if (hosted.length) utilities.prepend(...hosted);
     }

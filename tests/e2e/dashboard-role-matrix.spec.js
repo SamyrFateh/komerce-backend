@@ -27,9 +27,9 @@ const EXPECTED = Object.freeze({
   market_operator: [
     'control-tower', 'action-center',
     'flow-commerce', 'flow-orders', 'entity-clients', 'workspace-pricing', 'workspace-catalog',
-    'flow-operations', 'workspace-shipping', 'workspace-purchasing',
+    'flow-operations', 'workspace-shipping',
     'flow-finance', 'workspace-accounting',
-    'live-import-runtime', 'live-hub', 'live-relais',
+    'live-hub',
     'markets-home', 'market-autonomy', 'market-catalog', 'unsold',
     'admin-users', 'admin-providers', 'settings',
   ],
@@ -130,9 +130,10 @@ test('navigation Chromium Responsable marché : mêmes menus, routes alternative
   const links=Object.fromEntries(await page.$$eval('.kmc-admin-primary-link',
     els=>els.map(e=>[e.dataset.dashboard,e.getAttribute('href')])));
   expect(links['workspace-catalog']).toBe('/dashboards/canonical/market-catalog.html');
-  expect(links['workspace-purchasing']).toBe('/admin/hub');
-  expect(links['live-import-runtime']).toBe('/admin/hub');
-  expect(links['live-relais']).toBe('/admin/operations');
+  expect(links['workspace-purchasing']).toBeUndefined();
+  expect(links['live-import-runtime']).toBeUndefined();
+  expect(links['live-relais']).toBeUndefined();
+  expect(links['live-hub']).toBe('/admin/hub');
   expect(links.unsold).toBe('/dashboards/canonical/unsold.html');
   expect(links['admin-users']).toContain('#market-team');
   expect(links['admin-providers']).toContain('#market-network');
