@@ -359,7 +359,7 @@
   }
 
   // Adapter du même moteur d'actions, sans deuxième formulaire ni nouvel endpoint.
-  async function mountPurchaseActions(host, {document:doc, fetch:fetchFn, user, marketCode, poId, onChange, compactPO=false} = {}) {
+  async function mountPurchaseActions(host, {document:doc, fetch:fetchFn, user, marketCode, poId, onChange, compactPO=false, decisionOnly=null} = {}) {
     if (!['admin','agent_hub'].includes(user?.role) || !poId) throw new Error('Accès achat Hub requis');
     const cockpit = globalThis.KomerceHubLiveCockpit;
     if (!cockpit) throw new Error('Module achats indisponible');
@@ -380,7 +380,7 @@
     };
     function paint(){
       cockpit.render(slot,{
-        document:doc,dossier,marketCode,state,isReadOnly:!dossier.cockpit?.viewer,purchaseOnly:true,compactPO,
+        document:doc,dossier,marketCode,state,isReadOnly:!dossier.cockpit?.viewer,purchaseOnly:true,compactPO,decisionOnly,
         act:(button,options)=>runAction(context,button,options),
         reload:context.reload,
         feedback:(message,tone)=>setFeedback(host,message,tone),
