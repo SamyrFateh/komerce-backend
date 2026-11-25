@@ -218,3 +218,28 @@ test('les QR de réception sont limités à la PO exacte, même pour une command
   const other={allocation_id:'a2',purchase_order_id:'p2',order_id:'o1',quantity:1};
   expect(workspace.receptionLabelRows({fillable:[own,other,{allocation_id:'a3',order_id:'o1'}]},'p1')).toEqual([own]);
 });
+
+test('COMBOX : groupes relais puis rail demandé, plusieurs PO compatibles, aucun rail implicite',()=>{
+  const r=(po,relay,rail,state='QUALITY_CHECKED')=>({purchase_order_id:po,relais_id:relay,relais_code:relay,requested_transport_rail:rail,source_state:state,quantity:1});
+  const a=r('p1','A','SEA_STANDARD'), b=r('p2','A','SEA_STANDARD'), c=r('p1','A','AIR_EXPRESS'), d=r('p1','B',null), e=r('p1','A',null), f=r('p2','C','SEA_STANDARD');
+  const groups=workspace.packingGroups({fillable:[a,b,c,d,e,f],boxes:[]},'p1');
+  expect(groups.map(g=>[g.relay,g.rail])).toEqual([['A',null],['A','AIR_EXPRESS'],['A','SEA_STANDARD'],['B',null]]);
+  const sea=groups.find(g=>g.rail==='SEA_STANDARD');
+  expect([a,b,c,d,e,f].filter(row=>workspace.matchesPackingGroup(row,sea))).toEqual([a,b]);
+  expect(workspace.packingBoxMatches({contents:[a,b]},sea)).toBe(true);
+  expect(workspace.packingBoxMatches({contents:[a,c]},sea)).toBe(false);
+  expect(workspace.packingBoxMatches({contents:[a,d]},sea)).toBe(false);
+  expect(workspace.sourceQualityChecked(a)).toBe(true);
+  expect(workspace.sourceQualityChecked(r('p1','A','SEA_STANDARD','RECEIVED'))).toBe(false);
+  expect(workspace.sourceQualityChecked(r('p1','A','SEA_STANDARD','IDENTIFIED'))).toBe(false);
+  expect(workspace.sourceQualityChecked({})).toBe(false);
+});
+test('COMBOX : groupe maintenu après placement de tous les articles de la PO',()=>{
+  const row={purchase_order_id:'p1',relais_id:'A',relais_code:'A',requested_transport_rail:null};
+  expect(workspace.packingGroups({fillable:[],boxes:[{contents:[row]}]},'p1')).toEqual([expect.objectContaining({relay:'A',rail:null})]);
+});
+test('le montage COMBOX refuse un rôle non Hub avant toute lecture',async()=>{
+  const fetch=jest.fn();
+  await expect(workspace.mountBoxActions({}, {user:{role:'market_operator'},marketCode:'CM',poId:'p1',fetch})).rejects.toThrow('Accès COMBOX Hub requis');
+  expect(fetch).not.toHaveBeenCalled();
+});
