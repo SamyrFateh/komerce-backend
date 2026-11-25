@@ -436,3 +436,17 @@ describe('couture incidents : visibilite relais de la chaine operationnelle', ()
     expect(data.kpi.incidents_ouverts).toBe(2);
   });
 });
+
+test('V4 : le nombre physique disponible et remis reste distinct du nombre de lignes',async()=>{
+  db.query.mockResolvedValueOnce({rows:[{id:1,status:'available',total_kmf:1000,nb_items:2,relay_ready_units:6,relay_handed_units:3}]});
+  const {orders}=await relayQueries.getOrders(RELAY_USER,{status:'available'});
+  expect(orders[0]).toMatchObject({nb_items:2,relay_ready_units:6,relay_handed_units:3});
+  const [sql,params]=db.query.mock.calls[0];
+  expect(sql).toContain("pa.status='available'");
+  expect(sql).toContain("pa.status='collected'");
+  expect(sql).toContain('pi.qty_received');
+  expect(sql).toContain('pi.qty_collected');
+  expect(sql).toContain('pa.relais_id=o.relais_id');
+  expect(sql).toContain('oi.order_id=o.id');
+  expect(params[0]).toBe(RELAY_USER.relais_id);
+});

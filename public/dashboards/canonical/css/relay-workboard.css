@@ -1338,3 +1338,20 @@ body.kmc-shell-v4 .kmc-operations-workspace[data-relay-counter="true"] > .kmc-wo
     padding: 10px 12px;
   }
 }
+
+/* V4 : une seule surface, trois colonnes, aucun onglet métier ajouté. */
+.kmc-relay-v4{min-width:0}
+.kmc-relay-v4-search{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:0 0 16px}
+.kmc-relay-v4-search label{display:grid;gap:5px}
+.kmc-relay-v4-search input,.kmc-relay-v4-search select{font:inherit;padding:9px;border:1px solid #64748b;border-radius:6px;background:#fff;color:#172033}
+.kmc-relay-v4-search button{font:inherit;padding:9px 14px;cursor:pointer}
+.kmc-relay-v4-board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
+.kmc-relay-v4-lane{background:#1b283c;border:1px solid #43516a;border-radius:10px;padding:12px;min-width:0;min-height:180px;color:#f2f5fa}
+.kmc-relay-v4-lane h3{margin:0 0 12px;font-size:16px;display:flex;justify-content:space-between}
+.kmc-relay-v4-card{display:block;background:#26364c;color:#f2f5fa;padding:12px;margin:0 0 9px;border:1px solid #52627a;border-radius:8px;overflow-wrap:anywhere}
+.kmc-relay-v4-card summary{cursor:pointer}
+.kmc-relay-v4-card summary span,.kmc-relay-v4-quantity{display:block;margin:5px 0;font-size:14px;font-weight:600}
+.kmc-relay-v4-card a{display:block;margin:8px 0 0;color:#b8dcff}
+.kmc-relay-v4-content{margin:8px 0;border-top:1px solid #52627a;padding-top:8px}
+.kmc-relay-v4-content div{margin:5px 0;font-size:13px}
+@media(max-width:850px){.kmc-relay-v4-board{grid-template-columns:1fr}}
