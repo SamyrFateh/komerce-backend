@@ -807,6 +807,15 @@
         close.addEventListener('click',()=>{if(entry.loading||entry.handle?.busy?.())return;entry.panel.remove();visualOpen.delete(id);if(visualActive===id)visualActive=null;renderVisualPO();});
         tabGroup.appendChild(close);visualTabs.appendChild(tabGroup);
       }
+      if(visualActive){
+        const refreshTab=make(doc,'button','kmc-hub-app-branch','Actualiser le dossier');
+        refreshTab.type='button';refreshTab.addEventListener('click',async()=>{
+          const entry=visualOpen.get(visualActive);
+          if(entry?.loading||entry?.handle?.busy?.())return;
+          // Relecture du statut sans détruire le formulaire en cours.
+          refreshTab.disabled=true;try{await visualRefresh();}catch(error){if(entry?.summary)entry.summary.appendChild(make(doc,'p','','Actualisation indisponible : '+error.message));}finally{refreshTab.disabled=false;}
+        });visualTabs.appendChild(refreshTab);
+      }
       // Menu logistique unique, dans la barre du Kanban (pas de panneau permanent).
       // Les dossiers restent indépendants des PO et utilisent les adapters réels.
       const wasOpen=visualLogistics.open;
@@ -911,9 +920,15 @@
         // Quantités reçues complètes ne prouvent pas le contrôle qualité ni l'étiquetage.
         const mode=stage===4?'reception':stage>=0&&stage<4?'purchase':null;
         if(entry.loading||entry.handle?.busy?.())continue;
-        if(entry.mode===mode && entry.handle)continue;
+        if(entry.mode===mode && entry.handle){
+          if(entry.actionTitle)entry.actionTitle.textContent=visualLanes[stage]||'À vérifier';
+          if(entry.actionEyebrow)entry.actionEyebrow.textContent='Étape active · '+(stage+1)+'/6';
+          continue;
+        }
         entry.mode=mode;entry.handle=null;
-        entry.actions.replaceChildren(make(doc,'small','kmc-hub-po-v8-eyebrow','Étape active · '+(stage+1)+'/6'),make(doc,'h3','',visualLanes[stage]||'À vérifier'));
+        entry.actionEyebrow=make(doc,'small','kmc-hub-po-v8-eyebrow','Étape active · '+(stage+1)+'/6');
+        entry.actionTitle=make(doc,'h3','',visualLanes[stage]||'À vérifier');
+        entry.actions.replaceChildren(entry.actionEyebrow,entry.actionTitle);
         const actionHost=make(doc,'div','kmc-hub-po-v8-action-host');entry.actions.appendChild(actionHost);
         if(!mode){entry.actions.appendChild(make(doc,'p','',stage===5?'Réception complète. Les opérations logistiques restent accessibles dans le parcours existant.':'Étape non déterminée par le serveur.'));continue;}
         const module=global.KomerceCanonicalOperationsWorkspace;
@@ -1104,7 +1119,7 @@
       });
       header.appendChild(refresh);
       // Ouverture directe sur le Kanban PO depuis le menu normal.
-      try{await visualRefresh();poMode=true;headerTitle.textContent='PO fournisseurs · Tous les marchés';search.placeholder='Rechercher une PO';search.setAttribute('aria-label',search.placeholder);renderVisualPO();
+      try{await visualRefresh();poMode=true;headerTitle.textContent='PO fournisseurs · Tous les marchés';search.placeholder='Rechercher une PO ou un fournisseur';search.setAttribute('aria-label',search.placeholder);renderVisualPO();
       }catch(error){if(visualHost)visualHost.hidden=true;scroll.hidden=false;headerCount.textContent='Vue PO indisponible : '+error.message;}
       if(!poMode){const legacy=make(doc,'a','','Vue de secours');legacy.setAttribute('href','/admin/hub?branch=operations&ux=legacy');header.appendChild(legacy);}
     }
