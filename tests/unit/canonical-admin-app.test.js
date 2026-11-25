@@ -808,3 +808,13 @@ test('le dossier décision Hub utilise la sélection de marché explicite',()=>{
  const src=require('fs').readFileSync(require('path').join(__dirname,'../../public/dashboards/canonical/js/app.js'),'utf8');
  expect(src).toContain("['operations','direction'].includes(");
 });
+
+test.each(['admin','agent_hub'])('ancienne URL décision PO : %s redirigé vers V8, sans ouvrir le cockpit',role=>{
+ const env=loadCanonicalApp();
+ env.window.location.pathname='/admin/hub-live';
+ env.window.location.search='?view=execute&entry=direction&market=KM&sel=po%3Ap1';
+ env.api.renderHubLive(env.root,{role},null);
+ expect(env.replace).toHaveBeenCalledWith('/admin/hub?branch=operations&sel=po%3Ap1&decision=review');
+ expect(env.fetch).not.toHaveBeenCalled();
+ expect(env.root.children).toHaveLength(0);
+});
