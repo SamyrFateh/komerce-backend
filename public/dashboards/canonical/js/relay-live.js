@@ -418,77 +418,89 @@
   // pas une réception par carton : le reçu existant porte sur expédition/article.
   const v4Market=p=>/^[A-Z]{2}$/.test(String(p.market||''))?String(p.market):'';
   const v4Url=(market,extra={})=>BASE+queryString({market,...extra,...simParams()});
-  function v4Boxes(shipments){
-    return (shipments||[]).flatMap(sh=>(sh.boxes||[]).filter(box=>
+  function v4Boxes(shipments,{includeReceived=false}={}){
+    return (shipments||[]).flatMap(sh=>(sh.boxes||[]).filter(box=>includeReceived||
       (box.orders||[]).some(o=>(o.items||[]).some(i=>i.received==null||Number(i.received_gap)>0))
-    ).map(box=>({shipment:sh.reference,receivable:sh.receivable===true,box})));
+    ).map(box=>({shipment:sh.reference,receivable:sh.receivable===true,rail:sh.transport_mode,box})));
   }
   function renderV4(p,data){
     const market=v4Market(p)||v4Market({market:data?.selectedMarket}),search=String(p.search||'').trim().toUpperCase();
+    const scan=String(p.box||'').trim().toUpperCase();
     const matches=(...values)=>!search||values.some(v=>String(v||'').toUpperCase().includes(search));
     const rows=Array.isArray(data?.orders)?data.orders.filter(o=>o.market_code===market):[];
-    const boxes=v4Boxes(data?.shipments?.shipments).filter(({box,shipment})=>matches(box.reference,shipment,...(box.orders||[]).map(o=>o.reference)));
+    const boxes=v4Boxes(data?.shipments?.shipments,{includeReceived:Boolean(search||scan)}).filter(({box,shipment})=>scan?String(box.reference).toUpperCase()===scan:matches(box.reference,shipment,...(box.orders||[]).map(o=>o.reference)));
     const ready=rows.filter(o=>o.status==='available'&&o.payment_status==='paid'&&Number(o.relay_ready_units)>0&&matches(o.reference));
     const done=rows.filter(o=>o.status==='collected'&&matches(o.reference));
     const blocked=rows.filter(o=>o.status==='available'&&o.payment_status!=='paid'&&matches(o.reference));
-    const boxCard=({box,shipment,receivable})=>{
+    const tag=(label,state='')=>`<span class="kmc-relay-v4-tag ${state}">${esc(label)}</span>`;
+    const boxCard=({box,shipment,receivable,rail})=>{
       const orders=box.orders||[];
       const qty=orders.reduce((n,o)=>n+(o.items||[]).reduce((m,i)=>m+num(i.expected),0),0);
       const gap=orders.some(o=>(o.items||[]).some(i=>Number(i.received_gap)>0));
-      return `<details class="kmc-relay-v4-card" data-relay-v4-box="${esc(box.reference)}">
-        <summary><strong>${esc(box.reference)}</strong><span>${qty} articles annoncés · ${orders.length} commandes</span></summary>
-        <small>${esc(gap?'Écart sur expédition':receivable?'Arrivage à contrôler':'En acheminement')} · ${esc(shipment)}</small>
-        ${orders.map(o=>`<details class="kmc-relay-v4-content"><summary>${esc(o.reference)} · ${(o.items||[]).reduce((n,i)=>n+num(i.expected),0)} articles</summary>
-          ${(o.items||[]).map(i=>`<div>${esc(i.product)} · × ${num(i.expected)}</div>`).join('')}</details>`).join('')}
-        ${receivable?`<a href="${esc(executionUrl(market,'shipments'))}">Contrôler l’expédition →</a>`:''}
-        </details>`;
+      const received=orders.length>0&&orders.every(o=>(o.items||[]).every(i=>i.received!=null&&Number(i.received_gap)===0));
+      return `<article class="kmc-relay-v4-card" data-relay-v4-box="${esc(box.reference)}">
+        <a class="kmc-relay-v4-box-open" href="${esc(v4Url(market,{box:box.reference}))}" data-cockpit-nav><strong>${esc(box.reference)}</strong></a>
+        <div class="kmc-relay-v4-muted">${rail?esc(rail)+' · ':''}${qty} articles annoncés · ${orders.length} commande(s)</div>
+        ${tag(gap?'Écart sur expédition':received?'Réception attestée':receivable?'À contrôler':'Attendue',gap?'is-amber':received?'is-green':receivable?'is-blue':'')}
+        <details class="kmc-relay-v4-content"${scan?' open':''}><summary>Commandes (${orders.length})</summary>
+        ${orders.map(o=>`<details class="kmc-relay-v4-nested"><summary><b>${esc(o.reference)}</b><span>${(o.items||[]).reduce((n,i)=>n+num(i.expected),0)} articles</span></summary>
+          ${(o.items||[]).map(i=>`<div class="kmc-relay-v4-item"><span>${esc(i.product)}</span><b>${num(i.expected)}</b></div>`).join('')}</details>`).join('')}</details>
+        ${receivable?`<a class="kmc-relay-v4-button is-primary" href="${esc(executionUrl(market,'shipments'))}">Contrôler l’expédition</a>`:''}
+        ${scan?`<small class="kmc-relay-v4-muted">Expédition : ${esc(shipment)}. Ouverture du manifeste uniquement.</small>`:''}
+        </article>`;
     };
     const orderCard=(o,handed=false)=>{
       const qty=handed?o.relay_handed_units:o.relay_ready_units;
       const detail=data?.detail?.order?.id===o.id?data.detail:null;
       return `<article class="kmc-relay-v4-card" data-relay-v4-order="${esc(o.id)}"><strong>${esc(o.reference)}</strong>
         <span class="kmc-relay-v4-quantity">${qty==null?'Quantité indisponible':num(qty)+' articles '+(handed?'remis':'disponibles')}</span>
+        ${tag(handed?'Remise confirmée':'Prête au retrait',handed?'is-green':'is-blue')}
         ${detail?`<details class="kmc-relay-v4-content"><summary>Articles de la commande</summary>
-          ${(detail.items||[]).map(i=>`<div>${esc(i.produit||i.produit_nom||'Article')} · × ${num(i.quantity)} commandé(s)</div>`).join('')}
-          </details>`:`<a href="${esc(v4Url(market,{sel:o.id,search:p.search||''}))}" data-cockpit-nav>Consulter les articles</a>`}
-        ${!handed?`<a href="${esc(remisesUrl(market))}">Ouvrir le comptoir →</a>`:''}</article>`;
+          ${(detail.items||[]).map(i=>`<div class="kmc-relay-v4-item"><span>${esc(i.produit||i.produit_nom||'Article')}</span><b>${num(i.quantity)} commandé(s)</b></div>`).join('')}
+          </details>`:`<a class="kmc-relay-v4-button" href="${esc(v4Url(market,{sel:o.id,search:p.search||''}))}" data-cockpit-nav>Consulter les articles</a>`}
+        ${!handed?`<a class="kmc-relay-v4-button is-primary" href="${esc(remisesUrl(market))}">Ouvrir le comptoir</a>`:''}</article>`;
     };
-    const lane=(key,label,items)=>`<section class="kmc-relay-v4-lane" data-relay-v4-lane="${key}"><h3>${label} <small>${items.length}</small></h3>${items.join('')||'<p>Aucun dossier affiché</p>'}</section>`;
-    const markets=[...new Set(data?.markets||[])].filter(x=>/^[A-Z]{2}$/.test(x));
-    return {hero:`<header class="kmc-relay-flow-heading"><div><h1>Relais · poste de travail</h1><p>COMBOX, commandes et remises</p></div><a href="${BASE}?view=overview">Vue de secours / encaissements</a></header>`,
+    const lane=(key,label,items,empty)=>`<section class="kmc-relay-v4-lane" data-relay-v4-lane="${key}"><h3>${label} <small>${items.length}</small></h3>${items.join('')||'<p class="kmc-relay-v4-muted">'+empty+'</p>'}</section>`;
+    return {hero:`<header class="kmc-relay-v4-heading"><div><h1>Kanban Relais</h1><p class="kmc-relay-v4-muted">${esc(market||'Marché à sélectionner')} · COMBOX, commandes et remises</p></div><a class="kmc-relay-v4-button" href="${BASE}?view=overview">Vue de secours</a></header>`,
       body:`<section class="kmc-relay-v4" data-relay-v4>
+        <div class="kmc-relay-v4-toolbar">
         <form method="get" action="${BASE}" role="search" class="kmc-relay-v4-search">
-          <label>Marché <select name="market" required><option value="">Choisir</option>${[...new Set([market,...markets].filter(Boolean))].map(m=>`<option value="${esc(m)}"${m===market?' selected':''}>${esc(m)}</option>`).join('')}</select></label>
-          <label>Référence <input type="search" name="search" maxlength="120" value="${esc(p.search||'')}" placeholder="COMBOX ou commande"></label><button type="submit">Rechercher</button></form>
-        ${!market?'<p>Sélectionnez un marché autorisé pour consulter les arrivages.</p>':`
+          <input type="hidden" name="market" value="${esc(market)}">
+          <input aria-label="Rechercher COMBOX ou commande" type="search" name="search" maxlength="120" value="${esc(p.search||'')}" placeholder="Rechercher COMBOX ou commande…"><button class="kmc-relay-v4-button" type="submit">Rechercher</button></form>
+        ${market?`<form method="get" action="${BASE}" class="kmc-relay-v4-scan"><input type="hidden" name="market" value="${esc(market)}"><input type="text" name="box" aria-label="Référence COMBOX à ouvrir" placeholder="Scanner ou saisir une COMBOX" maxlength="120" autocomplete="off" required><button class="kmc-relay-v4-button is-primary" type="submit">Ouvrir</button></form>`:''}
+        ${search||scan||p.sel?`<a class="kmc-relay-v4-button" href="${esc(v4Url(market))}" data-cockpit-nav>Effacer</a>`:''}
+        </div>
+        ${!market?'<p>Sélectionnez un marché autorisé dans le sélecteur du back-office.</p>':`
           ${data?.shipmentsError?'<p role="alert">Arrivages indisponibles : aucune réception déduite.</p>':''}
+          ${scan&&!boxes.length?'<p role="status">COMBOX introuvable dans les manifestes chargés. Vérifiez la référence et le marché.</p>':''}
           <div class="kmc-relay-v4-board">
-          ${lane('expected','COMBOX attendues',boxes.map(boxCard))}
-          ${lane('ready','À remettre',ready.map(o=>orderCard(o)))}
-          ${lane('done','Remises',done.map(o=>orderCard(o,true)))}</div>
-          ${blocked.length?`<p>${blocked.length} commande(s) exclue(s) du parcours prépayé. <a href="${esc(executionUrl(market,'cash'))}">Circuit historique autorisé</a></p>`:''}
-          ${data?.truncated?'<p>Liste limitée aux dossiers récents ; les autres dossiers restent consultables dans la vue existante.</p>':''}
-          <p><a href="${esc(executionUrl(market,'receive'))}">Réception locale</a> · <a href="${esc(BASE+'?view=incidents')}">Incidents et SAV</a></p>`}</section>`};
+          ${lane('expected','COMBOX attendues',boxes.map(boxCard),'Aucune COMBOX à traiter')}
+          ${lane('ready','À remettre',ready.map(o=>orderCard(o)),'Aucune commande prête')}
+          ${lane('done','Remises',done.map(o=>orderCard(o,true)),'Aucune remise')}</div>
+          ${blocked.length?`<p class="kmc-relay-v4-muted">${blocked.length} commande(s) hors parcours prépayé. <a class="kmc-relay-v4-button" href="${esc(executionUrl(market,'cash'))}">Circuit historique</a></p>`:''}
+          ${data?.truncated?'<p class="kmc-relay-v4-muted">Affichage limité à 100 commandes par état ; recherchez une référence précise.</p>':''}
+          <div class="kmc-relay-v4-secondary"><a class="kmc-relay-v4-button" href="${esc(executionUrl(market,'receive'))}">Réception locale</a><a class="kmc-relay-v4-button" href="${esc(BASE+'?view=incidents&market='+market)}">Incidents et SAV</a></div>`}</section>`};
   }
   async function loadV4(p,api){
     const requestedMarket=v4Market(p);
-    const [available,collected,transit]=await Promise.all([
-      api('/api/relay/orders?status=available&limit=100&projection=live'),
-      api('/api/relay/orders?status=collected&limit=100&projection=live'),
-      api('/api/relay/orders?status=shipped,in_transit&limit=100&projection=live'),
-    ]);
-    const all=[...(available.orders||[]),...(collected.orders||[]),...(transit.orders||[])];
-    const markets=[...new Set(all.map(o=>o.market_code).filter(m=>/^[A-Z]{2}$/.test(String(m||''))))];
+    const scopedQuery=market=>queryString({market,reference:String(p.search||'').slice(0,120),limit:100,projection:'live'});
+    async function readOrders(market){
+      const suffix=scopedQuery(market);
+      const [available,collected,transit]=await Promise.all(['available','collected','shipped,in_transit'].map(status=>
+        api('/api/relay/orders'+suffix+'&status='+encodeURIComponent(status))));
+      return {all:[...(available.orders||[]),...(collected.orders||[]),...(transit.orders||[])],truncated:[available,collected,transit].some(x=>(x.orders||[]).length>=100)};
+    }
+    const result=await readOrders(requestedMarket);
+    const markets=[...new Set(result.all.map(o=>o.market_code).filter(m=>/^[A-Z]{2}$/.test(String(m||''))))];
     const market=requestedMarket||(markets.length===1?markets[0]:'');
-    // Le marché demandé ne confère aucun droit : les GET canoniques revalident le périmètre.
     let shipments=null,shipmentsError=false;
     if(market){
       try{shipments=await api('/api/admin/workspaces/operations/market/'+encodeURIComponent(market)+'/relay-shipments');}
       catch(_error){shipmentsError=true;}
     }
-    const selected=all.find(o=>o.id===p.sel&&o.market_code===market);
+    const selected=result.all.find(o=>o.id===p.sel&&o.market_code===market);
     const detail=selected?await api('/api/relay/orders/'+encodeURIComponent(selected.id)+'?projection=live').catch(()=>null):null;
-    return {orders:all,markets,selectedMarket:market,shipments,shipmentsError,detail,truncated:[available,collected,transit].some(x=>(x.orders||[]).length>=100)};
+    return {orders:result.all,markets,selectedMarket:market,shipments,shipmentsError,detail,truncated:result.truncated};
   }
 
   const views = {
