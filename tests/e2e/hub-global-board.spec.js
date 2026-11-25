@@ -329,7 +329,8 @@ test('pilote PO : réception partielle et QR dans la cellule, sans navigation ni
   const poId='10000000-0000-4000-8000-000000000001';
   const otherId='10000000-0000-4000-8000-000000000002';
   const alloc='20000000-0000-4000-8000-000000000001';
-  let received=0,issued=false;
+  let received=0,issued=false,qualityState='RECEIVED';
+  const qualityWrites=[];
   const writes=[];
   const board=()=>({...BOARD,purchase_orders:[{id:poId,reference:'PO-1',market:'KM',supplier:'Fournisseur test',
     order_count:1,order_references:['KM-100'],ordered:2,expected:2,received,missing:2-received,anomalies:0,
@@ -338,7 +339,8 @@ test('pilote PO : réception partielle et QR dans la cellule, sans navigation ni
   await page.route(ORIGIN+'/api/hub/board?view=po',route=>route.fulfill({json:board()}));
   await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/supply',route=>route.fulfill({json:{
     purchase_orders:[{id:poId},{id:otherId}],cockpit:{viewer:{role:'agent_hub'}},
-    fillable:[...(received?[{allocation_id:alloc,purchase_order_id:poId,order_id:'one',quantity:received,product:'Article reçu',relais_code:'M01'}]:[]),
+    receipts:received?[{id:'30000000-0000-4000-8000-000000000001',reference:'KOM-RCV-1',state:qualityState,po_ids:[poId],qty:received,single_purchase_order:true}]:[],
+    fillable:[...(received?[{allocation_id:alloc,purchase_order_id:poId,order_id:'one',quantity:received,product:'Article reçu',relais_code:'M01',source_state:qualityState}]:[]),
       {allocation_id:'20000000-0000-4000-8000-000000000002',purchase_order_id:otherId,order_id:'one',quantity:1,product:'Article autre PO'}],
   }}));
   await page.route(ORIGIN+'/api/scans/hub/receivable',route=>route.fulfill({json:{purchase_orders:[
@@ -348,6 +350,9 @@ test('pilote PO : réception partielle et QR dans la cellule, sans navigation ni
   ]}}));
   await page.route(ORIGIN+'/api/scans/hub/receive',route=>{
     writes.push(route.request().postDataJSON());received=1;return route.fulfill({json:{quarantined:false}});
+  });
+  await page.route(ORIGIN+'/api/hub/transition',route=>{
+    const body=route.request().postDataJSON();qualityWrites.push(body.to_state);qualityState=body.to_state;return route.fulfill({json:{state:qualityState}});
   });
   await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/labels/articles/'+alloc+'/issue',route=>{
     issued=true;return route.fulfill({json:{count:1}});
@@ -369,6 +374,12 @@ test('pilote PO : réception partielle et QR dans la cellule, sans navigation ni
   expect(writes).toHaveLength(1);
   expect(writes[0].contents).toEqual([{purchase_order_id:poId,product_sku_id:'sku1',quantity:1,evidence_method:'MANUAL',evidence_ref:'Contrôle visuel test'}]);
   await expect(cell.getByText('Article autre PO')).toHaveCount(0);
+  await expect(cell.getByRole('button',{name:'Préparer les étiquettes'})).toHaveCount(0);
+  await cell.getByRole('button',{name:'Confirmer le contenu identifié'}).click();
+  await expect(cell.getByRole('button',{name:'Préparer les étiquettes'})).toHaveCount(0);
+  await cell.getByRole('button',{name:'Confirmer le contrôle qualité'}).click();
+  await expect(cell.getByRole('button',{name:'Préparer les étiquettes'})).toBeVisible();
+  expect(qualityWrites).toEqual(['IDENTIFIED','QUALITY_CHECKED']);
   await cell.getByRole('button',{name:'Préparer les étiquettes'}).click();
   await expect(cell.getByText('1 QR article(s) disponibles à imprimer.')).toBeVisible();
   expect(issued).toBe(true);
