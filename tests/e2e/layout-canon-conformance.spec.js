@@ -318,23 +318,23 @@ test.describe('Layout Canon — conformité aux mocks approuvés', () => {
     for (const route of ['/admin/commerce', '/admin/pilotage', '/admin/operations', '/admin/pilotage']) {
       await page.click(`.kmc-admin-navigation a[href^="${route}"]`);
       await page.waitForURL(`**${route}*`);
-      await page.waitForFunction(() =>
-        document.querySelector('[data-dashboard-role="hero"]') &&
-        document.querySelector('.kmc-admin-topbar .kmc-admin-search') &&
-        document.querySelector('.kmc-admin-topbar .kmc-admin-market-select'),
-      );
-      const r = await page.evaluate(() => {
+      const layout = await page.waitForFunction(() => {
+        const hero = document.querySelector('[data-dashboard-role="hero"]');
+        const search = document.querySelector('.kmc-admin-topbar .kmc-admin-search');
+        const market = document.querySelector('.kmc-admin-topbar .kmc-admin-market-select');
+        if (!hero || !search || !market) return false;
         const box = el => { const b = el.getBoundingClientRect(); return { left:b.left, right:b.right, top:b.top, bottom:b.bottom }; };
         const duplicate = document.querySelector('.kmc-market-context');
         return {
           topbars: document.querySelectorAll('.kmc-admin-topbar').length,
           marketControls: document.querySelectorAll('.kmc-admin-topbar .kmc-admin-market-select').length,
           duplicateVisible: !!duplicate && getComputedStyle(duplicate).display !== 'none',
-          hero: box(document.querySelector('[data-dashboard-role="hero"]')),
-          search: box(document.querySelector('.kmc-admin-topbar .kmc-admin-search')),
-          market: box(document.querySelector('.kmc-admin-topbar .kmc-admin-market-select')),
+          hero: box(hero),
+          search: box(search),
+          market: box(market),
         };
       });
+      const r = await layout.jsonValue();
       expect(r.topbars, route).toBe(1);
       expect(r.marketControls, route).toBe(1);
       expect(r.duplicateVisible, route).toBe(false);
