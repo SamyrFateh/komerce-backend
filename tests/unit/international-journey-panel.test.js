@@ -184,3 +184,19 @@ test('la chaîne COMBOX expose un scan distinct par étape et aucune action au r
   const readOnly=mount('market_operator','transport',{stage:'handed_over',hub_draft:true});
   expect(all(readOnly.root,n=>n.attributes?.['data-journey-custody-scan']!==undefined)).toHaveLength(0);
 });
+
+test('Kanban départ : manifeste complet avant remise, aucune tâche transitaire ou financière',()=>{
+  const doc={createElement:node},root=node('main');
+  const ctx={user:{role:'agent_hub'},marketCode:'KM',journeyTab:'transport',fetch:jest.fn(),reload:jest.fn()};
+  const shipment={reference:'S1',stage:'hub_ready',hub_draft:true};
+  const boxes=[{reference:'BOX-A',state:'DISPATCHED'},{reference:'BOX-B',state:'PACKED'}];
+  panel.renderHubHandover(doc,root,ctx,{shipment,hub_units:boxes});
+  expect(all(root,n=>n.tagName==='FORM')).toHaveLength(0);
+  boxes[1].state='DISPATCHED';
+  const ready=node('main');
+  panel.renderHubHandover(doc,ready,ctx,{shipment,hub_units:boxes});
+  expect(all(ready,n=>n.tagName==='SUMMARY').map(n=>n.textContent)).toEqual(['Hub · scanner et confirmer la remise de chaque COMBOX','Confirmer : Remis au transitaire']);
+  expect(all(ready,n=>n.name==='transport_mode')[0].children[0].value).toBe('');
+  expect(panel.renderHubHandover(doc,node('main'),{...ctx,user:{role:'agent_transitaire'}},{shipment,hub_units:boxes})).toBeNull();
+  expect(panel.renderHubHandover(doc,node('main'),ctx,{shipment:{...shipment,stage:'handed_over'},hub_units:boxes})).toBeNull();
+});
