@@ -714,7 +714,11 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
 
   const { rows: receiptRows } = await q.query(`
     SELECT u.id, u.reference, u.external_ref, u.state, u.created_at,
-           ARRAY_AGG(DISTINCT a.purchase_order_id) AS po_ids, SUM(p.quantity)::int AS qty
+           ARRAY_AGG(DISTINCT a.purchase_order_id) AS po_ids, SUM(p.quantity)::int AS qty,
+           (SELECT COUNT(DISTINCT aa.purchase_order_id)=1
+              FROM hub_physical_unit_placements pp
+              JOIN hub_purchase_allocations aa ON aa.id=pp.allocation_id
+             WHERE pp.physical_unit_id=u.id AND pp.operation_type='RECEIVE') AS single_purchase_order
       FROM hub_physical_units u
       JOIN hub_physical_unit_placements p ON p.physical_unit_id = u.id AND p.operation_type = 'RECEIVE'
       JOIN hub_purchase_allocations a ON a.id = p.allocation_id
@@ -948,7 +952,7 @@ async function getDossier({ marketId, supplierId = null, viewer = null, now = ne
     needs: needsRows,
     purchase_orders: purchaseOrders,
     receipts: receiptRows.map((r) => ({ id: r.id, reference: r.reference, external_ref: r.external_ref, state: r.state,
-      received_at: r.created_at, po_ids: r.po_ids, qty: Number(r.qty) })),
+      received_at: r.created_at, po_ids: r.po_ids, qty: Number(r.qty), single_purchase_order: r.single_purchase_order === true })),
     boxes: [...boxes.values()],
     bags_ready,
     bags_open,
