@@ -122,11 +122,14 @@
       explanation(menu,doc,'Marché ou PO non identifié : accès au dossier indisponible.');
       return false;
     }
-    if(entry==='direction'&&['commitment','payment','variance'].includes(decision)){
-      workflowLink(menu,doc,label,'/admin/hub?'+new URLSearchParams({branch:'operations',sel:'po:'+po.id,decision}).toString());
-      return true;
+    // Une PO partagée conserve le choix d'un vrai périmètre de lecture.
+    // Le lien ne confère aucun droit ; le dossier serveur reste l'autorité.
+    for(const market of [...new Set(markets)]){
+      const params=new URLSearchParams({branch:'operations',sel:'po:'+po.id});
+      if(entry==='direction'&&['commitment','payment','variance'].includes(decision))params.set('decision',decision);
+      if(markets.length>1)params.set('market',market);
+      workflowLink(menu,doc,label+(markets.length>1?' · '+market:''),'/admin/hub?'+params.toString());
     }
-    workflowLink(menu,doc,label,'/admin/hub?'+new URLSearchParams({branch:'operations',sel:'po:'+po.id}).toString());
     return true;
   }
   // Kanban : lecture et liens uniquement. Aucun formulaire ni POST métier.
