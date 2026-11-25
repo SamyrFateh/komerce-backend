@@ -69,9 +69,41 @@ test('Direction Hub : décisions hiérarchisées, PO ciblée et aucun geste fina
   await expect(page.locator('[data-hub-director-group="payment"]')).toContainText('Autorisation paiement');
   await expect(page.locator('[data-hub-director-task="AUTHORIZE_PAYMENT"]')).toContainText('Droit de paiement requis');
   await expect(page.locator('[data-hub-director-task="AUTHORIZE_PAYMENT"] a')).toHaveAttribute(
-    'href', /market=CM&entry=direction&sel=po%3A11111111-1111-4111-8111-111111111111/);
+    'href', /branch=operations&sel=po%3A11111111-1111-4111-8111-111111111111&decision=payment/);
   await page.setViewportSize({width:390,height:844});
   const overflow=await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);
   expect(await page.evaluate(() => window.__hubWrites)).toEqual([]);
+});
+
+test('V8 direction desktop : exact dossier, formulaire canonique monté et palette du mock',async({page},testInfo)=>{
+ await page.setViewportSize({width:1600,height:900});
+ await page.route('**/*',r=>r.abort('blockedbyclient'));
+ await page.goto('about:blank');
+ await page.setContent('<!doctype html><html lang="fr"><body><main id="hub"></main></body></html>');
+ await page.addStyleTag({content:fs.readFileSync(path.join(base,'css/hub-workstation.css'),'utf8')});
+ await page.addStyleTag({content:CSS});
+ await page.addScriptTag({content:WS});
+ await page.evaluate(async()=>{
+  const po={id:'po-1',reference:'PO-CI-0001',market:'KM',supplier:'Fournisseur CI',ordered:2,expected:2,received:0,missing:2,order_count:0,purchase_step:'draft'};
+  window.__v8Mount=[];
+  window.KomerceCanonicalOperationsWorkspace={mountPurchaseActions:async(host,ctx)=>{
+    window.__v8Mount.push([ctx.poId,ctx.decisionOnly]);
+    const form=document.createElement('form');form.className='hlc-form';
+    const field=document.createElement('input');field.name='proof_ref';form.appendChild(field);
+    const button=document.createElement('button');button.type='button';button.className='hlc-btn is-primary';button.textContent='Valider l’engagement';form.appendChild(button);
+    host.replaceChildren(form);return {busy:()=>false};
+  }};
+  await window.KomerceCanonicalHubWorkstation.renderGlobalBoard(document.getElementById('hub'),{
+   document,user:{role:'admin'},location:{search:'?branch=operations&sel=po%3Apo-1&decision=commitment'},
+   fetch:async(url,opts)=>{if(opts.method!=='GET')throw Error('Unexpected write');return {ok:true,json:async()=>url.includes('view=po')?{scope:'HUB_GLOBAL',purchase_orders:[po]}:{scope:'HUB_GLOBAL',orders:[]}};}
+  });
+ });
+ await expect(page.getByRole('heading',{name:'PO-CI-0001'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Valider l’engagement'})).toBeVisible();
+ await expect(page.locator('[data-hub-po-v8]')).toHaveCSS('background-color','rgb(243, 246, 248)');
+ await expect(page.getByRole('button',{name:'Valider l’engagement'})).toHaveCSS('background-color','rgb(23, 101, 173)');
+ expect(await page.evaluate(()=>window.__v8Mount)).toEqual([['po-1','commitment']]);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+ await page.screenshot({path:testInfo.outputPath('v8-decision-desktop.png'),fullPage:true});
 });

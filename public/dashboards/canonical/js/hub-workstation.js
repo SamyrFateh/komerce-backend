@@ -376,8 +376,9 @@
             const link=make(doc,'a','hlc-director-open',
               id.startsWith('po:')?'Examiner la PO':id.startsWith('order:')?'Examiner la commande':'Ouvrir le marché');
             const isDecision=['AUTHORIZE_COMMITMENT','AUTHORIZE_PAYMENT'].includes(task.kind)&&id.startsWith('po:');
-            link.setAttribute('href','/admin/hub-live?view=execute&market='+encodeURIComponent(market)+
-              (isDecision?'&entry=direction':'')+(id?'&sel='+encodeURIComponent(id):''));
+            link.setAttribute('href',isDecision
+              ? HUB_PATH+'?branch=operations&sel='+encodeURIComponent(id)+'&decision='+(task.kind==='AUTHORIZE_COMMITMENT'?'commitment':'payment')
+              : '/admin/hub-live?view=execute&market='+encodeURIComponent(market)+(id?'&sel='+encodeURIComponent(id):''));
             row.appendChild(link);
           }
           rows.appendChild(row);
@@ -702,6 +703,10 @@
     const visualPO = canOperate && new URLSearchParams(safe(location?.search)).get('ux')!=='legacy';
     let visualHost, visualTabs, visualBoard, visualPanels, visualChrome, visualControls, visualMarketSelect, visualLogistics, visualActive=null,visualMarket='ALL',visualView='board',visualMarkets=[];
     const visualOpen=new Map();
+    const initialParams=new URLSearchParams(safe(location?.search));
+    const initialPO=/^po:[A-Za-z0-9-]{1,128}$/.test(initialParams.get('sel')||'')?initialParams.get('sel').slice(3):null;
+    const initialDecision=['commitment','payment','review'].includes(initialParams.get('decision'))?initialParams.get('decision'):null;
+    let initialSelectionHandled=false;
     const visualLanes=['Engagement','Soumission','Envoi fournisseur','Confirmation & suivi','Réception & QR','Bilan PO'];
     const visualStage=p=>{
       if(p.physical_settled===true)return 5;
@@ -749,10 +754,24 @@
         .catch(error=>{entry.actions.replaceChildren(make(doc,'p','','Action indisponible : '+error.message));})
         .finally(()=>{entry.loading=false;});
     }
+    function createVisualEntry(p,decision=null){
+          if(!visualOpen.has(p.id)){
+            const panel=make(doc,'section','kmc-hub-po-v8-panel');
+            const summary=make(doc,'div','kmc-hub-po-v8-summary');
+            const actions=make(doc,'div','kmc-hub-po-v8-actions');
+            const content=make(doc,'div','kmc-hub-po-v8-content');
+            const orders=make(doc,'div','kmc-hub-po-v8-order-card');
+            const proofs=make(doc,'aside','kmc-hub-po-v8-proofs');
+            const main=make(doc,'div','kmc-hub-po-v8-main');if(decision)main.append(orders,actions);else main.append(actions,orders);content.append(main,proofs);
+            panel.append(summary,content);visualPanels.appendChild(panel);
+            visualOpen.set(p.id,{decision,po:p,panel,summary,actions,orders,proofs,handle:null,mode:null,loading:false});
+          }
+    }
     function renderVisualPO(){
       if(!visualHost){
         visualHost=make(doc,'section','kmc-hub-po-visual');
         visualHost.setAttribute('data-hub-po-v8','');
+        if(initialDecision)visualHost.classList.add('is-direction-decision');
         visualTabs=make(doc,'nav','kmc-hub-po-v8-tabs');visualTabs.setAttribute('aria-label','Dossiers PO ouverts');
         visualBoard=make(doc,'div','kmc-hub-po-v8-board');
         visualPanels=make(doc,'div','kmc-hub-po-v8-panels');
@@ -775,6 +794,14 @@
       scroll.hidden=true;visualHost.hidden=false;
       header.hidden=true;
       const all=(poRows||[]).filter(p=>!p.cancelled);
+      if(!initialSelectionHandled){
+        initialSelectionHandled=true;
+        if(initialPO){
+          const selected=all.find(p=>String(p.id)===initialPO);
+          if(selected){createVisualEntry(selected,initialDecision);visualActive=selected.id;}
+          else{const notice=make(doc,'p','kmc-hub-action-explanation','PO indisponible dans votre périmètre.');notice.setAttribute('role','alert');visualHost.insertBefore(notice,visualChrome);}
+        }
+      }
       const term=safe(search.value).trim().toLocaleLowerCase('fr');
       const filtered=all.filter(p=>(visualMarket==='ALL'||p.market===visualMarket)&&[p.reference,p.market,p.supplier,...(p.order_references||[])].some(v=>safe(v).toLocaleLowerCase('fr').includes(term)));
       const markets=[...new Set([...visualMarkets,...all.map(p=>p.market),...rows.map(o=>o.market)].filter(m=>/^[A-Z]{2}$/.test(String(m||''))))].sort();
@@ -808,6 +835,9 @@
         tabGroup.appendChild(close);visualTabs.appendChild(tabGroup);
       }
       if(visualActive){
+        if(visualOpen.get(visualActive)?.decision){
+          const backDirection=make(doc,'a','kmc-hub-app-branch','Retour Direction Hub');backDirection.setAttribute('href',HUB_PATH+'?branch=direction');visualTabs.appendChild(backDirection);
+        }
         const refreshTab=make(doc,'button','kmc-hub-app-branch','Actualiser le dossier');
         refreshTab.type='button';refreshTab.addEventListener('click',async()=>{
           const entry=visualOpen.get(visualActive);
@@ -842,17 +872,7 @@
         if(stage===4)card.appendChild(make(doc,'small','',p.received+' / '+p.expected+' reçus'));
         if(visualView==='exceptions')for(const e of p.exceptions||[])card.appendChild(make(doc,'small','',e.reason||e.kind));
         card.addEventListener('click',()=>{
-          if(!visualOpen.has(p.id)){
-            const panel=make(doc,'section','kmc-hub-po-v8-panel');
-            const summary=make(doc,'div','kmc-hub-po-v8-summary');
-            const actions=make(doc,'div','kmc-hub-po-v8-actions');
-            const content=make(doc,'div','kmc-hub-po-v8-content');
-            const orders=make(doc,'div','kmc-hub-po-v8-order-card');
-            const proofs=make(doc,'aside','kmc-hub-po-v8-proofs');
-            const main=make(doc,'div','kmc-hub-po-v8-main');main.append(actions,orders);content.append(main,proofs);
-            panel.append(summary,content);visualPanels.appendChild(panel);
-            visualOpen.set(p.id,{po:p,panel,summary,actions,orders,proofs,handle:null,mode:null,loading:false});
-          }
+          createVisualEntry(p);
           visualSelect(p.id);
         });return card;
       }
@@ -883,13 +903,13 @@
         const stage=visualStage(p);
         const dossierHead=make(doc,'div','kmc-hub-po-v8-dossier-head');
         const identity=make(doc,'div','');identity.append(make(doc,'small','kmc-hub-po-v8-eyebrow','Dossier fournisseur · '+p.market),make(doc,'h2','',p.reference),make(doc,'strong','',p.supplier||'Fournisseur non renseigné'));
-        dossierHead.append(identity,make(doc,'span','kmc-hub-po-v8-tag',visualLanes[stage]||'À vérifier'));entry.summary.appendChild(dossierHead);
+        dossierHead.append(identity,make(doc,'span','kmc-hub-po-v8-tag'+(stage===0?' is-neutral':stage===5?' is-green':''),visualLanes[stage]||'À vérifier'));entry.summary.appendChild(dossierHead);
         const metrics=make(doc,'div','kmc-hub-po-v8-metrics');
         for(const [label,value] of (stage<4?[['Attendus',p.ordered]]:[['Reçus',p.received],...(p.missing>0?[['Reliquat',p.missing]]:[])])){
           const metric=make(doc,'div','kmc-hub-po-v8-metric');metric.append(make(doc,'small','',label),make(doc,'strong','',String(value)));metrics.appendChild(metric);
         }entry.summary.appendChild(metrics);
         const progress=make(doc,'div','kmc-hub-po-v8-progress');
-        visualLanes.forEach((label,i)=>{const item=make(doc,'span',i===stage?'is-current':i<stage?'is-done':'',label);if(i===stage)item.setAttribute('aria-current','step');progress.appendChild(item);});
+        visualLanes.forEach((label,i)=>{const item=make(doc,'span',i===stage?'is-current':i<stage?'is-done':'',(i<stage?'✓ ':'')+(i+1)+'. '+label);if(i===stage)item.setAttribute('aria-current','step');progress.appendChild(item);});
         entry.summary.appendChild(progress);
         if(p.reception_complete&&stage!==5)entry.summary.appendChild(make(doc,'p','kmc-hub-po-v8-muted','Réception complète · contrôle qualité, QR et bilan à vérifier.'));
         const previousOpen=new Set(entry.openOrders||[]);
@@ -918,16 +938,18 @@
         if(proofs.children.length===1)proofs.appendChild(make(doc,'p','kmc-hub-po-v8-muted','Aucune preuve de ces étapes disponible.'));
         if(visualActive!==id)continue;
         // Quantités reçues complètes ne prouvent pas le contrôle qualité ni l'étiquetage.
-        const mode=stage===4?'reception':stage>=0&&stage<4?'purchase':null;
+        const mode=entry.decision?'purchase':stage===4?'reception':stage>=0&&stage<4?'purchase':null;
+        entry.panel.classList.toggle('is-direction-decision',Boolean(entry.decision));
+        const actionLabel=entry.decision==='commitment'?'Validation de l’engagement':entry.decision==='payment'?'Autorisation de paiement':entry.decision==='review'?'Décisions PO':visualLanes[stage]||'À vérifier';
         if(entry.loading||entry.handle?.busy?.())continue;
         if(entry.mode===mode && entry.handle){
-          if(entry.actionTitle)entry.actionTitle.textContent=visualLanes[stage]||'À vérifier';
+          if(entry.actionTitle)entry.actionTitle.textContent=actionLabel;
           if(entry.actionEyebrow)entry.actionEyebrow.textContent='Étape active · '+(stage+1)+'/6';
           continue;
         }
         entry.mode=mode;entry.handle=null;
         entry.actionEyebrow=make(doc,'small','kmc-hub-po-v8-eyebrow','Étape active · '+(stage+1)+'/6');
-        entry.actionTitle=make(doc,'h3','',visualLanes[stage]||'À vérifier');
+        entry.actionTitle=make(doc,'h3','',actionLabel);
         entry.actions.replaceChildren(entry.actionEyebrow,entry.actionTitle);
         const actionHost=make(doc,'div','kmc-hub-po-v8-action-host');entry.actions.appendChild(actionHost);
         if(!mode){entry.actions.appendChild(make(doc,'p','',stage===5?'Réception complète. Les opérations logistiques restent accessibles dans le parcours existant.':'Étape non déterminée par le serveur.'));continue;}
@@ -954,7 +976,7 @@
             win.setTimeout(settle,0);
           }
         };
-        Promise.resolve().then(()=>mount(actionHost,{document:doc,fetch:fetchFn,user,marketCode:p.market,poId:p.id,receiveRefs,compactPO:true,onChange:changed})).then(handle=>{entry.handle=handle;}).catch(error=>{entry.actions.replaceChildren(make(doc,'p','','Action indisponible : '+error.message));}).finally(()=>{entry.loading=false;});
+        Promise.resolve().then(()=>mount(actionHost,{document:doc,fetch:fetchFn,user,marketCode:p.market,poId:p.id,receiveRefs,compactPO:true,decisionOnly:entry.decision,onChange:changed})).then(handle=>{entry.handle=handle;}).catch(error=>{entry.actions.replaceChildren(make(doc,'p','','Action indisponible : '+error.message));}).finally(()=>{entry.loading=false;});
       }
     }
 
