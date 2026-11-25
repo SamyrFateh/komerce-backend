@@ -841,7 +841,8 @@
           details.appendChild(make(doc,'summary','',title));
           for(const line of lines){
             const q=stage<4?line.ordered+' attendus':line.received+' / '+line.expected+' reçus'+(line.missing?' · '+line.missing+' attendus':'');
-            details.appendChild(make(doc,'p','', (line.product||'Article')+' · '+q));
+            const fifo=stage>=4&&line.missing>0&&line.fifo_next?' · Prochaine attribution FIFO de cette référence':'';
+            details.appendChild(make(doc,'p','', (line.product||'Article')+' · '+q+fifo));
           }
           details.addEventListener('toggle',()=>{const set=new Set(entry.openOrders||[]);if(details.open)set.add(ref);else set.delete(ref);entry.openOrders=[...set];});
           orders.appendChild(details);
