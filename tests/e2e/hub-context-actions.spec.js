@@ -208,7 +208,7 @@ test('Administration : Engagement ne se confond pas avec Fournisseur ni Paiement
   await expect(menu.locator('a')).toHaveCount(0);
   await page.keyboard.press('Escape');
   await row.locator('[data-hub-admin-stage="Fournisseur"]').click({button:'right'});
-  await expect(menu.getByRole('link',{name:/attester l’envoi fournisseur/})).toHaveAttribute('href',/market=KM&atelier=purchasing&sel=po%3A/);
+  await expect(menu.getByRole('link',{name:/attester l’envoi fournisseur/})).toHaveAttribute('href',/branch=operations&sel=po%3A/);
   await expect(menu.locator('[data-hub-real-action]')).toHaveCount(0);
   await expect(menu).not.toContainText('L’engagement se valide');
   await page.keyboard.press('Escape');
@@ -412,10 +412,10 @@ test.describe('Journal immuable par étape',()=>{
   });
 });
 
-test('Navigation Hub : Kanban, Opérations et Direction restent distincts',async({page})=>{
+test('Navigation Hub : Kanban et Direction sans bouton cockpit concurrent',async({page})=>{
   const {posts,reads}=await mount(page,{role:'admin'});
   await expect(page.locator('[data-hub-branch]')).toHaveCount(3);
-  await expect(page.locator('[data-hub-open-operations]')).toHaveAttribute('href','/admin/hub-live?view=execute&entry=operations');
+  await expect(page.locator('[data-hub-open-operations]')).toHaveCount(0);
   await expect(page.locator('[data-hub-director-todo]')).toHaveCount(0);
   await expect(page.locator('[data-hub-global-order]')).toHaveCount(1);
   expect(reads.some(url=>url.startsWith('/api/hub/director-todo'))).toBe(false);
