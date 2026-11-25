@@ -108,7 +108,12 @@ test('réception fournisseur : route canonique, référence stable, aucune quant
   expect(SOURCE).toContain('receptionReferenceFor(context, po.purchase_order_id)');
   expect(SOURCE).toContain('Aucune quantité n’est préremplie');
   expect(SOURCE).toContain('(information, pas une réception)');
-  expect(SOURCE).not.toMatch(/input\.value\s*=\s*String\(line\./);
+  const mountSource=SOURCE.slice(SOURCE.indexOf('function createReceptionCard'),SOURCE.indexOf('function collect()',SOURCE.indexOf('function createReceptionCard')));
+  expect(mountSource).not.toMatch(/input\.value\s*=/);
+  expect(mountSource).toContain("fullReceipt.disabled=true");
+  expect(mountSource).toContain("fullReceipt.addEventListener('click',()=>{");
+  expect(mountSource).toContain("if(fullReceipt.disabled)return;");
+  expect(mountSource).toContain("if(fillVerifiedReceipt(inputs,scannedCodeBySku,manualToggle.checked,manualProof.value))sync();");
 });
 
 
@@ -283,4 +288,28 @@ test('logistique marché : lecture seule et marché invalide refusés avant requ
     await expect(mount({}, {user:{role:'agent_hub'},marketCode:'CM',fetch})).rejects.toThrow();
   }
   expect(fetch).not.toHaveBeenCalled();
+});
+
+test('réception intégrale : aucune quantité sans preuve de toutes les références restantes',()=>{
+  const make=(sku,qty)=>({input:{value:''},line:{product_sku_id:sku,remaining_quantity:qty}});
+  const rows=[make('sku-1',2),make('sku-2',3),make('sku-3',0)];
+  const scans=new Map([['sku-1','proof-1']]);
+  expect(workspace.canFillVerifiedReceipt(rows,scans,false,'')).toBe(false);
+  expect(workspace.fillVerifiedReceipt(rows,scans,false,'')).toBe(false);
+  expect(rows.map(r=>r.input.value)).toEqual(['','','']);
+  scans.set('sku-2','proof-2');
+  expect(workspace.canFillVerifiedReceipt(rows,scans,false,'')).toBe(true);
+  expect(rows.map(r=>r.input.value)).toEqual(['','','']);
+  expect(workspace.fillVerifiedReceipt(rows,scans,false,'')).toBe(true);
+  expect(rows.map(r=>r.input.value)).toEqual(['2','3','0']);
+});
+test('réception intégrale : mode manuel justifié, SKU obligatoire et aucun restant refusé',()=>{
+  const row={input:{value:''},line:{product_sku_id:'sku-1',remaining_quantity:2}};
+  const scans=new Map();
+  expect(workspace.fillVerifiedReceipt([row],scans,true,'court')).toBe(false);
+  expect(row.input.value).toBe('');
+  expect(workspace.fillVerifiedReceipt([row],scans,true,'contrôle visuel')).toBe(true);
+  expect(row.input.value).toBe('2');
+  expect(workspace.fillVerifiedReceipt([{input:{value:''},line:{remaining_quantity:1}}],scans,true,'contrôle visuel')).toBe(false);
+  expect(workspace.fillVerifiedReceipt([{input:{value:''},line:{product_sku_id:'sku-1',remaining_quantity:0}}],scans,true,'contrôle visuel')).toBe(false);
 });
