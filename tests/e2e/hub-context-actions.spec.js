@@ -42,10 +42,11 @@ const receivable={
   }],
 };
 test.use({viewport:{width:1440,height:900}});
-async function mount(page,{role='agent_hub',row=baseOrder,dossierData=dossier,admin=false,stageNotes=[],openLines=null}={}){
+async function mount(page,{role='agent_hub',row=baseOrder,dossierData=dossier,admin=false,stageNotes=[],openLines=null,v8=false,projectionUnavailable=false}={}){
   const posts=[];
   const reads=[];
   const notes=[...stageNotes];
+  let projectionReady=!projectionUnavailable;
   const administration={scope:'HUB_ADMINISTRATION_GLOBAL',markets:['KM'],kpis:{
     purchase_orders:1,drafts:0,to_send:1,supplier_waiting:0,payment_to_reconcile:0,
   },purchase_orders:[{id:PO,supplier:'Alpha',market:'KM',order_count:1,stage:'issued_not_sent',
@@ -72,7 +73,12 @@ async function mount(page,{role='agent_hub',row=baseOrder,dossierData=dossier,ad
     }
     if(url.pathname==='/api/auth/me')return route.fulfill({contentType:'application/json',body:JSON.stringify({role,id:'f761a3ed-0000-4000-8000-000000000001'})});
     let data;
-    if(url.pathname==='/api/hub/board')data={scope:'HUB_GLOBAL',markets:['KM'],orders:[row]};
+    if(url.pathname==='/api/hub/board'){
+      if(url.searchParams.get('view')==='po')data=projectionReady?{scope:'HUB_GLOBAL',markets:['KM'],purchase_orders:[{
+        id:PO,reference:'PO-302',market:'KM',supplier:'Alpha',purchase_step:'draft',ordered:2,expected:2,received:0,missing:2,order_count:1,order_references:[row.reference],order_lines:[]
+      }]}:{scope:'UNAVAILABLE'};
+      else data={scope:'HUB_GLOBAL',markets:['KM'],orders:[row]};
+    }
     if(url.pathname==='/api/hub/director-todo')data={scope:'ALL_MARKETS',overdue_count:1,tasks:[{
       kind:'AUTHORIZE_COMMITMENT',owner:'responsable_hub',
       market:{code:'KM'},subject:{po_id:PO},missing:'Engagement à décider',
@@ -93,9 +99,13 @@ async function mount(page,{role='agent_hub',row=baseOrder,dossierData=dossier,ad
     }
     return route.fulfill({status:404,body:''});
   });
-  await page.goto(ORIGIN+'/admin/hub?branch='+(admin?'administrative':'operations'));
-  await expect(page.locator(admin?'[data-hub-admin-po]':'[data-hub-global-order]')).toHaveCount(1);
-  return {posts,reads};
+  // Les assertions historiques ci-dessous ciblent explicitement la surface encore
+  // disponible pendant la migration. Jamais de fallback implicite dans le test V8.
+  await page.goto(ORIGIN+'/admin/hub?branch='+(admin?'administrative':'operations')+(!admin&&!v8?'&ux=legacy':''));
+  if(v8&&!admin){
+    await expect(page.locator(projectionUnavailable?'[data-hub-v8-retry]':'[data-hub-po-v8]')).toBeVisible();
+  }else await expect(page.locator(admin?'[data-hub-admin-po]':'[data-hub-global-order]')).toHaveCount(1);
+  return {posts,reads,restoreProjection:()=>{projectionReady=true;}};
 }
 
 test('Kanban : sourcing vers Opérations, sans formulaire ni achat local',async({page})=>{
@@ -413,11 +423,12 @@ test.describe('Journal immuable par étape',()=>{
 });
 
 test('Navigation Hub : Kanban et Direction sans bouton cockpit concurrent',async({page})=>{
-  const {posts,reads}=await mount(page,{role:'admin'});
+  const {posts,reads}=await mount(page,{role:'admin',v8:true});
   await expect(page.locator('[data-hub-branch]')).toHaveCount(3);
   await expect(page.locator('[data-hub-open-operations]')).toHaveCount(0);
   await expect(page.locator('[data-hub-director-todo]')).toHaveCount(0);
-  await expect(page.locator('[data-hub-global-order]')).toHaveCount(1);
+  await expect(page.locator('[data-hub-po-v8]')).toBeVisible();
+  await expect(page.locator('[data-hub-global-order]')).toHaveCount(0);
   expect(reads.some(url=>url.startsWith('/api/hub/director-todo'))).toBe(false);
   await page.locator('[data-hub-branch="direction"]').click();
   await expect(page).toHaveURL(/branch=direction/);
@@ -425,7 +436,24 @@ test('Navigation Hub : Kanban et Direction sans bouton cockpit concurrent',async
   await expect(page.locator('[data-hub-director-task="AUTHORIZE_COMMITMENT"]')).toBeVisible();
   await expect(page.locator('[data-hub-global-order]')).toHaveCount(0);
   await page.locator('[data-hub-branch="operations"]').click();
-  await expect(page.locator('[data-hub-global-order]')).toHaveCount(1);
+  await expect(page.locator('[data-hub-po-v8]')).toBeVisible();
+  await expect(page.locator('[data-hub-global-order]')).toHaveCount(0);
   await expect(page.locator('[data-hub-director-todo]')).toHaveCount(0);
   expect(posts).toHaveLength(0);
+});
+
+test('V8 : panne de projection, actualisation puis Kanban sans retour historique ni écriture',async({page})=>{
+  const {posts,reads,restoreProjection}=await mount(page,{role:'admin',v8:true,projectionUnavailable:true});
+  await expect(page.locator('[data-hub-global-order]')).toHaveCount(0);
+  await expect(page.locator('[data-hub-po-pilot-toggle]')).toHaveCount(0);
+  await expect(page.getByRole('link',{name:'Vue de secours'})).toHaveCount(0);
+  await expect(page.locator('[data-hub-v8-retry]')).toBeVisible();
+  restoreProjection();
+  await page.locator('[data-hub-v8-retry]').click();
+  await expect(page.locator('[data-hub-po-v8]')).toBeVisible();
+  await expect(page.locator('[data-hub-v8-lane]')).toHaveCount(6);
+  await expect(page.locator('[data-hub-po-v8-card="'+PO+'"]')).toBeVisible();
+  await expect(page.locator('[data-hub-global-order]')).toHaveCount(0);
+  expect(reads.filter(url=>url==='/api/hub/board?view=po')).toHaveLength(2);
+  expect(posts).toEqual([]);
 });
