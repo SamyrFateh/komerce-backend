@@ -138,7 +138,7 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     expect(links['live-relais']).toBeUndefined();
     expect(groups.find(group => group.id === 'live').items.map(item => item.id)).toEqual(['live-hub']);
     expect(links['admin-users']).toContain('#market-team');
-    expect(links['admin-providers']).toContain('#market-network');
+    expect(links['admin-providers']).toContain('#market-providers');
     expect(links['settings']).toContain('#market-cash-control');
     expect(links.unsold).toBe('/dashboards/canonical/unsold.html');
     for(const central of ['/admin/workspaces/purchasing','/admin/workspaces/catalog',
