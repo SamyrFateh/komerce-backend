@@ -130,9 +130,10 @@ test('navigation Chromium Responsable marché : mêmes menus, routes alternative
   const links=Object.fromEntries(await page.$$eval('.kmc-admin-primary-link',
     els=>els.map(e=>[e.dataset.dashboard,e.getAttribute('href')])));
   expect(links['workspace-catalog']).toBe('/dashboards/canonical/market-catalog.html');
-  expect(links['workspace-purchasing']).toBe('/admin/hub');
-  expect(links['live-import-runtime']).toBe('/admin/hub');
-  expect(links['live-relais']).toBe('/admin/operations');
+  expect(links['workspace-purchasing']).toBeUndefined();
+  expect(links['live-import-runtime']).toBeUndefined();
+  expect(links['live-relais']).toBeUndefined();
+  expect(links['live-hub']).toBe('/admin/hub');
   expect(links.unsold).toBe('/dashboards/canonical/unsold.html');
   expect(links['admin-users']).toContain('#market-team');
   expect(links['admin-providers']).toContain('#market-network');
