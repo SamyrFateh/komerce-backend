@@ -234,7 +234,7 @@ async function getDashboardKPIs(user, { authorizedMarkets = null } = {}) {
   };
 }
 
-async function getOrders(user, { status, search, limit = 50, offset = 0 }, { authorizedMarkets = null, includeSimulation = false } = {}) {
+async function getOrders(user, { status, search, market, reference, limit = 50, offset = 0 }, { authorizedMarkets = null, includeSimulation = false } = {}) {
   let where = `WHERE ${simulationClause('o', includeSimulation)}`;
   const params = [];
   let pi = 1;
@@ -257,6 +257,18 @@ async function getOrders(user, { status, search, limit = 50, offset = 0 }, { aut
   } else {
     // « Tous les colis » inclut ceux en transit, comme la tuile du tableau de bord (LIVE-04).
     where += ` AND o.status IN ('shipped','in_transit','available','collected')`;
+  }
+
+  // Filtres V4 additifs : jamais de remplacement des restrictions acteur.
+  if (market != null && market !== '') {
+    where += ` AND o.market_id IN (SELECT m.id FROM markets m WHERE m.code = ${pi})`;
+    params.push(String(market).toUpperCase());
+    pi++;
+  }
+  if (reference) {
+    where += ` AND strpos(upper(o.reference), upper(${pi})) > 0`;
+    params.push(String(reference).slice(0,120));
+    pi++;
   }
 
   if (search) {
