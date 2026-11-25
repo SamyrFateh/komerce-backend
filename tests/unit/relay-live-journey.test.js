@@ -31,7 +31,7 @@ const back = h => { const m = h.match(/<a href="([^"]+)" data-cockpit-nav class=
 const activeTab = h => (h.match(/is-active[^>]*>([^<]+)</) || [])[1];
 
 test.each([
-  ['Flux', '', { ...OVERVIEW, queue:{ orders:[] } }],
+  ['Flux', '?view=overview', { ...OVERVIEW, queue:{ orders:[] } }],
   ['Incidents', '?view=incidents', { incidents:[] }],
   ['Historique', '?view=orders&list=collected', LIST],
   ['Dossier', '?view=order&order=r-1', DETAIL],
