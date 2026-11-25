@@ -474,6 +474,10 @@
       fixedDirectCard(doc, structure, canEditStructure),
       fixedMutualizedCard(doc, structure, marketLabel, canManageGroup)];
     section.dataset.costLayout = 'columns';
+    const centers = globalThis.KomercePricingWorkshopPresentation;
+    if (centers && typeof centers.createCostCenters === 'function') {
+      section.appendChild(centers.createCostCenters(doc, payload.cost_components || []));
+    }
     section.appendChild(costReading(doc, decision));
     const families = el(doc, 'div', 'kmc-economic-family-grid');
     cards.forEach(card => families.appendChild(card));
