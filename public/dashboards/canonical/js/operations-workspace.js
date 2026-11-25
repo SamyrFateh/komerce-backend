@@ -2664,13 +2664,29 @@
     }
   }
 
+  // Adaptateur V8 : même formulaire et même writer d'arbitrage, hors cockpit.
+  async function mountVarianceActions(host,{document:doc,fetch:fetchFn,user,marketCode,poId,onChange}={}){
+    if(!['admin','agent_hub'].includes(user?.role)||!poId||! /^[A-Z]{2}$/.test(marketCode||''))throw Error('Accès arbitrage Hub requis');
+    let loading=false;
+    const reload=async()=>{
+      loading=true;
+      try{
+        const dossier=await jsonRequest(fetchFn,endpointFor(marketCode,'supply'));
+        await renderDirectionVariance(host,doc,{fetch:fetchFn,user,marketCode,dossier,poId,
+          onVarianceChange:async()=>{await reload();await onChange?.();}});
+      }finally{loading=false;}
+    };
+    await reload();
+    return {reload,busy:()=>loading||Boolean(host.querySelector?.('button[type="submit"]:disabled'))};
+  }
+
   async function renderDirectionVariance(host,doc,context){
     host.replaceChildren();
     const title=text(doc,'h2','','Arbitrage d’écart fournisseur');host.appendChild(title);
     const status=text(doc,'p','kmc-workspace-note','Vérification de la PO et des droits…');host.appendChild(status);
     const params=new URLSearchParams(String(doc.defaultView.location.search||''));
     const selected=params.get('sel')||'';
-    const id=selected.startsWith('po:')?selected.slice(3):'';
+    const id=context.poId||(selected.startsWith('po:')?selected.slice(3):'');
     if(isHubReadOnly(context)||!['admin','agent_hub'].includes(context.user?.role)){
       status.textContent='Accès en lecture seule : aucune décision autorisée.';return;
     }
@@ -2686,7 +2702,7 @@
       const api=globalThis.KomerceHubContextActions;
       if(!api?.directionVariance)throw Error('Module de décision indisponible');
       api.directionVariance(panel,{doc,fetch:context.fetch,user:context.user,po,grants:data.viewer_grants,
-        refresh:()=>renderDirectionVariance(host,doc,context)});
+        refresh:context.onVarianceChange||(()=>renderDirectionVariance(host,doc,context))});
       if(!panel.children.length)panel.appendChild(text(doc,'p','kmc-workspace-note','Aucun arbitrage disponible pour cette PO.'));
     }catch(err){status.textContent='Arbitrage indisponible : '+err.message;}
   }
@@ -3646,6 +3662,7 @@
     renderPayload,
     openManualSourcing,
     mountPurchaseActions,
+    mountVarianceActions,
     mountReceptionActions,
     mountBoxActions,
     mountDepartureActions,
