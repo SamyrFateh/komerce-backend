@@ -818,3 +818,10 @@ test.each(['admin','agent_hub'])('ancienne URL décision PO : %s redirigé vers 
  expect(env.fetch).not.toHaveBeenCalled();
  expect(env.root.children).toHaveLength(0);
 });
+
+test('ancienne URL arbitrage : préserve la décision variance dans V8',()=>{
+ const env=loadCanonicalApp();env.window.location.search='?view=execute&entry=direction&market=KM&sel=po%3Ap1&decision=variance';
+ env.api.renderHubLive(env.root,{role:'admin'},null);
+ expect(env.replace).toHaveBeenCalledWith('/admin/hub?branch=operations&sel=po%3Ap1&decision=variance');
+ expect(env.fetch).not.toHaveBeenCalled();
+});
