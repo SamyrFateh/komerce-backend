@@ -450,3 +450,12 @@ test('V4 : le nombre physique disponible et remis reste distinct du nombre de li
   expect(sql).toContain('oi.order_id=o.id');
   expect(params[0]).toBe(RELAY_USER.relais_id);
 });
+
+test('V4 : marché et référence littérale filtrent avant pagination sans élargir le scope relais',async()=>{
+ await relayQueries.getOrders(RELAY_USER,{status:'available',market:'KM',reference:'K_123%',limit:100});
+ const [sql,params]=db.query.mock.calls[0];
+ expect(sql).toContain('o.relais_id = $1');
+ expect(sql).toContain('m.code = $3');
+ expect(sql).toContain('strpos(upper(o.reference), upper($4)) > 0');
+ expect(params).toEqual([7,['available'],'KM','K_123%',100,0]);
+});
