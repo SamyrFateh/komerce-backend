@@ -311,6 +311,9 @@ test.describe('Layout Canon — conformité aux mocks approuvés', () => {
 
   test('après navigation SPA la recherche et le marché restent au-dessus du Hero sans doublon', async ({ page }) => {
     await page.setViewportSize({ width: 2142, height: 760 });
+    const browserErrors = [];
+    page.on('pageerror', error => browserErrors.push(error.message));
+    page.on('console', message => { if (message.type() === 'error') browserErrors.push(message.text()); });
     await page.goto(`${ORIGIN}/admin/pilotage`);
     await page.waitForSelector('[data-dashboard-role="hero"]');
     // Régression : le sync du shell détruisait la topbar reconstruite par le routeur client ;
@@ -318,7 +321,20 @@ test.describe('Layout Canon — conformité aux mocks approuvés', () => {
     for (const route of ['/admin/commerce', '/admin/pilotage', '/admin/operations', '/admin/pilotage']) {
       await page.click(`.kmc-admin-navigation a[href^="${route}"]`);
       await page.waitForURL(`**${route}*`);
-      await page.waitForSelector('[data-dashboard-role="hero"]');
+      const heroReady = await page.waitForSelector('[data-dashboard-role="hero"]', { timeout: 8000 }).then(() => true).catch(() => false);
+      if (!heroReady) {
+        const state = await page.evaluate(() => {
+          const root = document.getElementById('canonical-admin-root');
+          return {
+            href: location.href,
+            routePending: document.body.hasAttribute('data-canonical-route-pending'),
+            rootClass: root?.className || null,
+            rootHTML: root?.innerHTML?.slice(0, 1800) || null,
+            bodyText: document.body.innerText.slice(0, 1000),
+          };
+        });
+        throw new Error(`Hero absent après navigation vers ${route}: ${JSON.stringify({ state, browserErrors })}`);
+      }
       await page.waitForTimeout(400);
       const r = await page.evaluate(() => {
         const box = el => { const b = el.getBoundingClientRect(); return { left:b.left, right:b.right, top:b.top, bottom:b.bottom }; };
