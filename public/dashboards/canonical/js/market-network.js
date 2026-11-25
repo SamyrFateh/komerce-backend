@@ -433,6 +433,8 @@
         const canManage = (providersData.actor_capabilities || []).includes('provider.manage');
 
         const summary = el('div', 'kmc-team-summary');
+        summary.id = 'market-providers';
+        summary.dataset.marketProviders = '';
         summary.appendChild(pill('Prestataires', true));
         summary.appendChild(pill(`${(providersData.providers || []).filter(p => p.status === 'active').length} actifs`));
         summary.appendChild(pill(`${(providersData.providers || []).filter(p => p.status === 'pending').length} en attente`));
