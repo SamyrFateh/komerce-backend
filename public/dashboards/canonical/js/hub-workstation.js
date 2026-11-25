@@ -705,7 +705,7 @@
     const visualOpen=new Map();
     const initialParams=new URLSearchParams(safe(location?.search));
     const initialPO=/^po:[A-Za-z0-9-]{1,128}$/.test(initialParams.get('sel')||'')?initialParams.get('sel').slice(3):null;
-    const initialDecision=['commitment','payment'].includes(initialParams.get('decision'))?initialParams.get('decision'):null;
+    const initialDecision=['commitment','payment','review'].includes(initialParams.get('decision'))?initialParams.get('decision'):null;
     let initialSelectionHandled=false;
     const visualLanes=['Engagement','Soumission','Envoi fournisseur','Confirmation & suivi','Réception & QR','Bilan PO'];
     const visualStage=p=>{
@@ -762,7 +762,7 @@
             const content=make(doc,'div','kmc-hub-po-v8-content');
             const orders=make(doc,'div','kmc-hub-po-v8-order-card');
             const proofs=make(doc,'aside','kmc-hub-po-v8-proofs');
-            const main=make(doc,'div','kmc-hub-po-v8-main');main.append(actions,orders);content.append(main,proofs);
+            const main=make(doc,'div','kmc-hub-po-v8-main');if(decision)main.append(orders,actions);else main.append(actions,orders);content.append(main,proofs);
             panel.append(summary,content);visualPanels.appendChild(panel);
             visualOpen.set(p.id,{decision,po:p,panel,summary,actions,orders,proofs,handle:null,mode:null,loading:false});
           }
@@ -771,6 +771,7 @@
       if(!visualHost){
         visualHost=make(doc,'section','kmc-hub-po-visual');
         visualHost.setAttribute('data-hub-po-v8','');
+        if(initialDecision)visualHost.classList.add('is-direction-decision');
         visualTabs=make(doc,'nav','kmc-hub-po-v8-tabs');visualTabs.setAttribute('aria-label','Dossiers PO ouverts');
         visualBoard=make(doc,'div','kmc-hub-po-v8-board');
         visualPanels=make(doc,'div','kmc-hub-po-v8-panels');
@@ -902,13 +903,13 @@
         const stage=visualStage(p);
         const dossierHead=make(doc,'div','kmc-hub-po-v8-dossier-head');
         const identity=make(doc,'div','');identity.append(make(doc,'small','kmc-hub-po-v8-eyebrow','Dossier fournisseur · '+p.market),make(doc,'h2','',p.reference),make(doc,'strong','',p.supplier||'Fournisseur non renseigné'));
-        dossierHead.append(identity,make(doc,'span','kmc-hub-po-v8-tag',visualLanes[stage]||'À vérifier'));entry.summary.appendChild(dossierHead);
+        dossierHead.append(identity,make(doc,'span','kmc-hub-po-v8-tag'+(stage===0?' is-neutral':stage===5?' is-green':''),visualLanes[stage]||'À vérifier'));entry.summary.appendChild(dossierHead);
         const metrics=make(doc,'div','kmc-hub-po-v8-metrics');
         for(const [label,value] of (stage<4?[['Attendus',p.ordered]]:[['Reçus',p.received],...(p.missing>0?[['Reliquat',p.missing]]:[])])){
           const metric=make(doc,'div','kmc-hub-po-v8-metric');metric.append(make(doc,'small','',label),make(doc,'strong','',String(value)));metrics.appendChild(metric);
         }entry.summary.appendChild(metrics);
         const progress=make(doc,'div','kmc-hub-po-v8-progress');
-        visualLanes.forEach((label,i)=>{const item=make(doc,'span',i===stage?'is-current':i<stage?'is-done':'',label);if(i===stage)item.setAttribute('aria-current','step');progress.appendChild(item);});
+        visualLanes.forEach((label,i)=>{const item=make(doc,'span',i===stage?'is-current':i<stage?'is-done':'',(i<stage?'✓ ':'')+(i+1)+'. '+label);if(i===stage)item.setAttribute('aria-current','step');progress.appendChild(item);});
         entry.summary.appendChild(progress);
         if(p.reception_complete&&stage!==5)entry.summary.appendChild(make(doc,'p','kmc-hub-po-v8-muted','Réception complète · contrôle qualité, QR et bilan à vérifier.'));
         const previousOpen=new Set(entry.openOrders||[]);
@@ -938,7 +939,8 @@
         if(visualActive!==id)continue;
         // Quantités reçues complètes ne prouvent pas le contrôle qualité ni l'étiquetage.
         const mode=entry.decision?'purchase':stage===4?'reception':stage>=0&&stage<4?'purchase':null;
-        const actionLabel=entry.decision==='commitment'?'Validation de l’engagement':entry.decision==='payment'?'Autorisation de paiement':visualLanes[stage]||'À vérifier';
+        entry.panel.classList.toggle('is-direction-decision',Boolean(entry.decision));
+        const actionLabel=entry.decision==='commitment'?'Validation de l’engagement':entry.decision==='payment'?'Autorisation de paiement':entry.decision==='review'?'Décisions PO':visualLanes[stage]||'À vérifier';
         if(entry.loading||entry.handle?.busy?.())continue;
         if(entry.mode===mode && entry.handle){
           if(entry.actionTitle)entry.actionTitle.textContent=actionLabel;
