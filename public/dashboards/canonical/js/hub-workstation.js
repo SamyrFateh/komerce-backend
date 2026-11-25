@@ -1136,8 +1136,8 @@
       refresh.addEventListener('click',async()=>{
         refresh.disabled=true;
         try{
-          if(!poMode){poMode=true;headerTitle.textContent='PO fournisseurs · Tous les marchés';}
           await visualRefresh();
+          poMode=true;search.hidden=false;headerTitle.textContent='PO fournisseurs · Tous les marchés';
           const entry=visualOpen.get(visualActive);
           if(entry?.handle && !entry.loading && !entry.handle.busy?.())await entry.handle.reload?.();
         }catch(error){headerCount.textContent=error.message;}
