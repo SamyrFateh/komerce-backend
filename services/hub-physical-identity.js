@@ -21,6 +21,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const { checkBoxDestination } = require('./hub-combox-destination-guard');
 const { reportPhysicalOutcome, VALID_OUTCOME_TYPES } = require('./outbox-producer');
 const {
   createHubPhysicalReconciliationIncident,
@@ -1200,14 +1201,8 @@ async function moveAllocationQuantity(executor, {
   );
   if (!allocation) fail('HUB_PURCHASE_ALLOCATION_NOT_FOUND');
   if (target.unit_type === 'MARKET_PARCEL') {
-    const { rows: targetMarkets } = await db.query(
-      `SELECT DISTINCT a.market_id FROM hub_physical_unit_placements p
-         JOIN hub_purchase_allocations a ON a.id=p.allocation_id
-        WHERE p.physical_unit_id=$1 AND p.removed_at IS NULL`, [toUnitId]
-    );
-    if (targetMarkets.some(row => String(row.market_id) !== String(allocation.market_id))) {
-      fail('HUB_BOX_MARKET_MISMATCH');
-    }
+    const mismatch = await checkBoxDestination(db, toUnitId, allocation);
+    if (mismatch) fail(mismatch.code, mismatch.message);
   }
 
   let verifiedCode = null;

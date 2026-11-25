@@ -232,42 +232,63 @@ afterAll(async () => {
 });
 
 describe('HUB-001 hardening — destination commerciale', () => {
-  test('same Market but different relais cannot become one outbound Market Parcel', async () => {
+  test('multiple orders same relay accepted; foreign relay refused at placement with zero mutation, then separate boxes close', async () => {
     const market = id();
-    const a = await seedPurchase({ marketId: market, relaisId: id(), supplierUnitRef: 'A' });
+    const relayA = id();
+    const a = await seedPurchase({ marketId: market, relaisId: relayA, supplierUnitRef: 'A' });
     const b = await seedPurchase({ marketId: market, relaisId: id(), supplierUnitRef: 'B' });
-
+    const c = await seedPurchase({ marketId: market, relaisId: relayA, supplierUnitRef: 'C' });
     const inbound = await transact((client) => receiveSupplierPackage(client, {
       reference: 'IN-SAME-MARKET-DIFF-DEST',
-      contents: [
-        { purchase_order_id: a.po, quantity: 1 },
-        { purchase_order_id: b.po, quantity: 1 },
-      ],
+      contents: [a,b,c].map(p => ({ purchase_order_id: p.po, quantity: 1 })),
     }));
     expect(inbound.quarantined).toBe(false);
-
-    const target = await transact((client) => createPhysicalUnit(client, {
-      reference: 'OUT-MIXED-DEST', unitType: 'MARKET_PARCEL', initialState: 'RECEIVED',
-    }));
-    await advanceToPicked(target.id);
-
-    for (const item of inbound.allocations) {
-      await transact((client) => moveAllocationQuantity(client, {
-        fromUnitId: inbound.unit.id,
-        toUnitId: target.id,
-        allocationId: item.allocation.id,
-        quantity: 1,
-        operationType: 'SPLIT',
-      }));
-    }
-
-    await expect(transact((client) => transitionPhysicalUnit(client, {
-      unitId: target.id,
-      toState: 'PACKED',
+    expect(inbound.allocations).toHaveLength(3);
+    await advanceToPicked(inbound.unit.id);
+    // The independent PG closing invariant is retained for mixed inbound.
+    await expect(transact(client => transitionPhysicalUnit(client, {
+      unitId: inbound.unit.id, toState: 'PACKED',
     }))).rejects.toThrow(/hub_outbound_destination_not_homogeneous/);
 
-    const { rows: [state] } = await query('SELECT state, market_id FROM hub_physical_units WHERE id=$1', [target.id]);
-    expect(state).toEqual({ state: 'PICKED', market_id: null });
+    const makeBox = reference => transact(client => createPhysicalUnit(client, {
+      reference, unitType: 'MARKET_PARCEL', initialState: 'RECEIVED',
+    }));
+    const first = await makeBox('OUT-RELAY-A');
+    const second = await makeBox('OUT-RELAY-B');
+    await advanceToPicked(first.id);
+    await advanceToPicked(second.id);
+    const allocationFor = p => inbound.allocations.find(x => String(x.allocation.order_id) === String(p.order)).allocation.id;
+    const move = (p, target) => transact(client => moveAllocationQuantity(client, {
+      fromUnitId: inbound.unit.id, toUnitId: target.id,
+      allocationId: allocationFor(p), quantity: 1, operationType: 'SPLIT',
+    }));
+    const snapshot = async () => ({
+      placements: (await query('SELECT id, physical_unit_id, allocation_id, quantity, removed_at FROM hub_physical_unit_placements ORDER BY id')).rows,
+      custody: (await query('SELECT COUNT(*)::integer AS n FROM hub_custody_events')).rows[0].n,
+      units: (await query('SELECT id,state,market_id FROM hub_physical_units ORDER BY id')).rows,
+    });
+    await move(a, first);
+    const before = await snapshot();
+    await expect(move(b, first)).rejects.toMatchObject({code:'HUB_BOX_RELAY_MISMATCH'});
+    expect(await snapshot()).toEqual(before);
+    await move(c, first);
+    await move(b, second);
+    for (const box of [first,second]) {
+      await transact(client => transitionPhysicalUnit(client, {unitId:box.id,toState:'PACKED'}));
+    }
+    const contents = async box => (await query(`
+      SELECT a.order_id,a.destination_ref,p.quantity
+      FROM hub_physical_unit_placements p JOIN hub_purchase_allocations a ON a.id=p.allocation_id
+      WHERE p.physical_unit_id=$1 AND p.removed_at IS NULL ORDER BY a.order_id`,[box.id])).rows;
+    expect((await contents(first)).map(x=>x.order_id).sort()).toEqual([a.order,c.order].sort());
+    expect(await contents(first)).toEqual(expect.arrayContaining([
+      expect.objectContaining({order_id:a.order,destination_ref:'relais:'+relayA,quantity:1}),
+      expect.objectContaining({order_id:c.order,destination_ref:'relais:'+relayA,quantity:1}),
+    ]));
+    expect(await contents(second)).toEqual([{order_id:b.order,destination_ref:'relais:'+b.destination,quantity:1}]);
+    const {rows:states}=await query('SELECT state,market_id FROM hub_physical_units WHERE id=ANY($1::uuid[])',[ [first.id,second.id] ]);
+    expect(states).toHaveLength(2);
+    expect(states.every(x=>x.state==='PACKED'&&x.market_id===market)).toBe(true);
   });
 });
 

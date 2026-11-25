@@ -19,6 +19,7 @@ jest.mock('../../services/providers-service', () => ({
   isServiceExposable: (...a) => mockIsServiceExposable(...a),
   getPhysicalOffer: (...a) => mockGetPhysicalOffer(...a),
   isPhysicalOfferExposable: (...a) => mockIsPhysicalOfferExposable(...a),
+  publicPhysicalOfferOptions: offer => offer?.offer_options || [],
 }));
 jest.mock('../../services/providers-inquiry-service', () => ({
   createContextualInquiry: (...a) => mockCreateContextualInquiry(...a),
@@ -264,4 +265,19 @@ describe('POST /inquiries', () => {
       .send({ service_id: SERVICE_ID });
     expect(res.status).toBe(401);
   });
+});
+test('physical offer option is projected and attached canonically to inquiry; unknown key refused', async () => {
+  marketOk();
+  mockIsPhysicalOfferExposable.mockResolvedValue(true);
+  const option = {key:'TEST-50', label:'50 kVA'};
+  mockGetPhysicalOffer.mockResolvedValue({id: OFFER_ID, title:'Groupe', offer_options:[option]});
+  let res = await request(app).get(`/api/providers-services/physical-offers/${OFFER_ID}`).query({market:'CM'});
+  expect(res.body.options).toEqual([option]);
+  res = await request(app).post('/api/providers-services/inquiries').query({market:'CM'}).send({physical_offer_id:OFFER_ID, option_key:'OTHER'});
+  expect(res.status).toBe(400);
+  expect(mockCreateContextualInquiry).not.toHaveBeenCalled();
+  mockCreateContextualInquiry.mockResolvedValue({id:INQUIRY_ID,status:'sent',intent:'request'});
+  res = await request(app).post('/api/providers-services/inquiries').query({market:'CM'}).send({physical_offer_id:OFFER_ID, option_key:'TEST-50', requester_note:'Un devis'});
+  expect(res.status).toBe(201);
+  expect(mockCreateContextualInquiry).toHaveBeenCalledWith(expect.objectContaining({requesterNote:'Configuration : 50 kVA (TEST-50) — Un devis'}));
 });

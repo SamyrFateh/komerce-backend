@@ -223,3 +223,43 @@ test('les décisions de Direction restent sur le même formulaire canonique, san
  expect(js).toContain('if(!decisionOnly&&ctx.openDecision)ctx.openDecision(id)');
  expect(js).toContain("decisionOnly?acts.filter");
 });
+
+describe('Mode Achat compact du Kanban', () => {
+  const cockpit = require('../../public/dashboards/canonical/js/hub-live-cockpit');
+  function element(tag) {
+    const handlers={};
+    return {tagName:tag, children:[], attrs:{}, textContent:'', disabled:false,
+      appendChild(c){this.children.push(c);return c;},
+      replaceChildren(...c){this.children=c;},
+      setAttribute(k,v){this.attrs[k]=String(v);},getAttribute(k){return this.attrs[k];},
+      addEventListener(k,fn){handlers[k]=fn;},click(){handlers.click?.({stopPropagation(){}});},
+      querySelector(){return null;}};
+  }
+  function nodes(node,predicate){return [node,...node.children.flatMap(n=>nodes(n,predicate))].filter(predicate);}
+  const po={id:'p1',ref:'PO-1',status:'draft',step:{key:'draft'},lines:[],order_ids:[],
+    totals:{effective:2,missing:2},amount:{derived:true,amount:20,currency:'EUR'},authorizations:{}};
+  function mount(viewer, isReadOnly=false){
+    const host=element('div'),act=jest.fn();
+    const state={sel:{type:'po',id:'p1'},selectionInitialized:true};
+    cockpit.render(host,{document:{createElement:element},dossier:{purchase_orders:[po],cockpit:{viewer}},
+      state,isReadOnly,purchaseOnly:true,act});
+    return {host,act,state};
+  }
+  test('ouvre uniquement le formulaire canonique engagement et ne poste rien à l’ouverture',()=>{
+    const {host,act,state}=mount({role:'admin',can_authorize_commitment:true});
+    const buttons=nodes(host,n=>n.attrs['data-hlc-action']);
+    expect(buttons.map(b=>b.attrs['data-hlc-action'])).toEqual(['authorize-commitment']);
+    expect(buttons[0].disabled).toBe(false);
+    buttons[0].click();
+    expect(state.form.kind).toBe('commitment');
+    expect(nodes(host,n=>n.attrs['data-hlc-form']==='commitment')).toHaveLength(1);
+    expect(act).not.toHaveBeenCalled();
+  });
+  test('sans délégation, engagement désactivé et pas de formulaire',()=>{
+    const {host,act}=mount({role:'agent_hub',can_authorize_commitment:false});
+    const [button]=nodes(host,n=>n.attrs['data-hlc-action']==='authorize-commitment');
+    expect(button.disabled).toBe(true);
+    expect(nodes(host,n=>n.attrs['data-hlc-form'])).toHaveLength(0);
+    expect(act).not.toHaveBeenCalled();
+  });
+});

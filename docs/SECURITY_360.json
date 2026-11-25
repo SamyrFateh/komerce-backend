@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-24T15:31:19.340Z",
+  "generatedAt": "2026-11-25T00:20:36.831Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 871,
-    "protected": 812,
+    "total": 872,
+    "protected": 813,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2591,6 +2591,14 @@
     },
     {
       "key": "GET /api/admin/workspaces/operations/market/{marketCode}/supply/physical-code",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/operations/market/{marketCode}/supply/receipts/{unitId}/quality",
       "level": "PROTECTED",
       "roles": [
         "admin",

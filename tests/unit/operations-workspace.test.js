@@ -202,7 +202,7 @@ test('Hub : retour au Kanban et station étiquettes même lorsque la file est vi
 
 test('réimpression après placement : lien vers les archives, aucune seconde émission',()=>{
  const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
- const history=src.slice(src.indexOf('const history=doc.createElement(\'button\');',src.indexOf('const labelRows=new Map();')),src.indexOf('boxes.appendChild(labelSection);'));
+ const history=src.slice(src.indexOf('const history=doc.createElement(\'button\');',src.indexOf('const labelRows=new Map();')),src.indexOf('return labelSection;',src.indexOf('function renderArticleLabelActions')));
  const center=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-label-center.js'),'utf8');
  expect(history).toContain("data-hub-article-label-reprints");
  expect(history).toContain("context.view='labels'");
@@ -215,7 +215,7 @@ test('réimpression après placement : lien vers les archives, aucune seconde é
 
 test('atelier Hub : l’ordre visible suit étiquettes, préparation COMBOX, puis départ',()=>{
  const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/operations-workspace.js'),'utf8');
- const labels=src.indexOf('boxes.appendChild(labelSection);');
+ const labels=src.indexOf('boxes.appendChild(renderArticleLabelActions(doc,context,fillable,true));');
  const init=src.indexOf('boxes.appendChild(createBar);');
  const table=src.indexOf('boxes.appendChild(boxTable);');
  const departure=src.indexOf('boxes.appendChild(bar);');
@@ -256,11 +256,14 @@ describe('Hub: no old SAC and QR/PDF immediately reachable',()=>{
   });
   test('new script and CSS version IDs are different from the stale November 13 immutable assets',()=>{
     expect(html).toContain('hub-label-center.js?v=261124-hub-domain-2');
-    expect(html).toContain('operations-workspace.js?v=261124-hub-domain-2');
-    expect(html).toContain('hub-live-cockpit.js?v=261124-hub-domain-2');
+    expect(html).toContain('operations-workspace.js?v=261125-hub-po-departure-5');
+    expect(html).not.toContain('operations-workspace.js?v=261124-hub-po-inline-2');
+    expect(html).toContain('hub-live-cockpit.js?v=261124-hub-po-inline-2');
     expect(html).toContain('operations-workspace.css?v=261124-hub-domain-2');
     expect(html).not.toContain('operations-workspace.js?v=261113-director-h4');
-    for(const name of ['hub-context-actions.js','hub-workstation.js','app.js'])expect(html).toContain(name+'?v=261124-hub-domain-2');
+    expect(html).toContain('hub-workstation.js?v=261125-hub-po-departure-5');
+    expect(html).not.toContain('hub-workstation.js?v=261124-hub-po-inline-2');
+    for(const name of ['hub-context-actions.js','app.js'])expect(html).toContain(name+'?v=261124-hub-domain-2');
   });
   test('historic COMBOX rows remain accessible but no longer occupy full page',()=>{
     expect(source).toContain("boxSearch.setAttribute('aria-label','Filtrer les COMBOX physiques')");

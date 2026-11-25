@@ -13823,6 +13823,13 @@
       {
         "feature": "logistics",
         "category": "services",
+        "declared": "services/hub-combox-destination-guard.js",
+        "resolvedPath": "services/hub-combox-destination-guard.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
         "declared": "services/hub-physical-codes.js",
         "resolvedPath": "services/hub-physical-codes.js",
         "status": "resolved-in-technical-graph"
@@ -14322,6 +14329,13 @@
         "category": "tests",
         "declared": "tests/integration/hub-physical-hardening-postgres.test.js",
         "resolvedPath": "tests/integration/hub-physical-hardening-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/hub-combox-destination-guard.test.js",
+        "resolvedPath": "tests/unit/hub-combox-destination-guard.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -18624,6 +18638,13 @@
       },
       {
         "feature": "providers-services",
+        "category": "ci",
+        "declared": ".github/workflows/staging-local-offers-5245-demo.yml",
+        "resolvedPath": ".github/workflows/staging-local-offers-5245-demo.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "providers-services",
         "category": "scripts",
         "declared": "scripts/seed-discovery-staging.js",
         "resolvedPath": "scripts/seed-discovery-staging.js",
@@ -18634,6 +18655,20 @@
         "category": "scripts",
         "declared": "scripts/seed-discovery-modal-v2-staging.js",
         "resolvedPath": "scripts/seed-discovery-modal-v2-staging.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "providers-services",
+        "category": "scripts",
+        "declared": "scripts/recette/local-offers-5245-showcase.js",
+        "resolvedPath": "scripts/recette/local-offers-5245-showcase.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "providers-services",
+        "category": "scripts",
+        "declared": "scripts/recette/local-offers-5245-chromium.js",
+        "resolvedPath": "scripts/recette/local-offers-5245-chromium.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -18655,6 +18690,13 @@
         "category": "migrations",
         "declared": "migrations/161_providers_services_inquiry_context.sql",
         "resolvedPath": "migrations/161_providers_services_inquiry_context.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "providers-services",
+        "category": "migrations",
+        "declared": "migrations/429_physical_offer_options.sql",
+        "resolvedPath": "migrations/429_physical_offer_options.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -47743,6 +47785,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "scripts/recette/local-offers-5245-showcase.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/seed-discovery-staging.test.js",
                 "targetFile": "db.js"
               }
@@ -51021,7 +51067,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2399
+        "filesObserved": 2403
       },
       "boutique": {
         "filesObserved": 218,

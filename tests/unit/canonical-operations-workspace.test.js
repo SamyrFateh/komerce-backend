@@ -185,3 +185,78 @@ test('UX1 : jsonRequest propage le Retry-After en cas de réponse 429', async ()
   await expect(workspace.jsonRequest(fetch, '/api/admin/workspaces/operations/market/CG/supply'))
     .rejects.toMatchObject({ status: 429, retryAfter: '120' });
 });
+
+test('le montage achat compact refuse un profil marché avant toute lecture', async () => {
+  const fetch=jest.fn();
+  await expect(workspace.mountPurchaseActions({}, {user:{role:'market_operator'},marketCode:'CM',poId:'p1',fetch}))
+    .rejects.toThrow('Accès achat Hub requis');
+  expect(fetch).not.toHaveBeenCalled();
+});
+
+test('le montage achat compact charge supply authentifié et échoue fermé sans viewer',async()=>{
+  const previous=global.KomerceHubLiveCockpit;
+  const render=jest.fn();
+  global.KomerceHubLiveCockpit={render};
+  try{
+    const node=()=>({children:[],setAttribute(){},appendChild(n){this.children.push(n);return n;},replaceChildren(...n){this.children=n;}});
+    const host=node(),dossier={purchase_orders:[],cockpit:{}};
+    const fetch=jest.fn(async()=>({ok:true,json:async()=>dossier}));
+    await workspace.mountPurchaseActions(host,{document:{createElement:node},fetch,user:{role:'agent_hub'},marketCode:'CM',poId:'p1'});
+    expect(fetch).toHaveBeenCalledWith('/api/admin/workspaces/operations/market/CM/supply',expect.objectContaining({method:'GET',credentials:'include'}));
+    expect(render).toHaveBeenCalledWith(expect.anything(),expect.objectContaining({dossier,purchaseOnly:true,isReadOnly:true,state:expect.objectContaining({sel:{type:'po',id:'p1'}})}));
+    expect(fetch).toHaveBeenCalledTimes(1);
+  }finally{global.KomerceHubLiveCockpit=previous;}
+});
+
+test('le montage réception compact refuse les rôles hors Hub avant toute lecture',async()=>{
+  const fetch=jest.fn();
+  await expect(workspace.mountReceptionActions({}, {user:{role:'market_operator'},marketCode:'CM',poId:'p1',fetch})).rejects.toThrow('Accès réception Hub requis');
+  expect(fetch).not.toHaveBeenCalled();
+});
+test('les QR de réception sont limités à la PO exacte, même pour une commande partagée',()=>{
+  const own={allocation_id:'a1',purchase_order_id:'p1',order_id:'o1',quantity:1};
+  const other={allocation_id:'a2',purchase_order_id:'p2',order_id:'o1',quantity:1};
+  expect(workspace.receptionLabelRows({fillable:[own,other,{allocation_id:'a3',order_id:'o1'}]},'p1')).toEqual([own]);
+});
+
+test('COMBOX : groupes relais puis rail demandé, plusieurs PO compatibles, aucun rail implicite',()=>{
+  const r=(po,relay,rail,state='QUALITY_CHECKED')=>({purchase_order_id:po,relais_id:relay,relais_code:relay,requested_transport_rail:rail,source_state:state,quantity:1});
+  const a=r('p1','A','SEA_STANDARD'), b=r('p2','A','SEA_STANDARD'), c=r('p1','A','AIR_EXPRESS'), d=r('p1','B',null), e=r('p1','A',null), f=r('p2','C','SEA_STANDARD');
+  const groups=workspace.packingGroups({fillable:[a,b,c,d,e,f],boxes:[]},'p1');
+  expect(groups.map(g=>[g.relay,g.rail])).toEqual([['A',null],['A','AIR_EXPRESS'],['A','SEA_STANDARD'],['B',null]]);
+  const sea=groups.find(g=>g.rail==='SEA_STANDARD');
+  expect([a,b,c,d,e,f].filter(row=>workspace.matchesPackingGroup(row,sea))).toEqual([a,b]);
+  expect(workspace.packingBoxMatches({contents:[a,b]},sea)).toBe(true);
+  expect(workspace.packingBoxMatches({contents:[a,c]},sea)).toBe(false);
+  expect(workspace.packingBoxMatches({contents:[a,d]},sea)).toBe(false);
+  expect(workspace.sourceQualityChecked(a)).toBe(true);
+  expect(workspace.sourceQualityChecked(r('p1','A','SEA_STANDARD','RECEIVED'))).toBe(false);
+  expect(workspace.sourceQualityChecked(r('p1','A','SEA_STANDARD','IDENTIFIED'))).toBe(false);
+  expect(workspace.sourceQualityChecked({})).toBe(false);
+});
+test('COMBOX : groupe maintenu après placement de tous les articles de la PO',()=>{
+  const row={purchase_order_id:'p1',relais_id:'A',relais_code:'A',requested_transport_rail:null};
+  expect(workspace.packingGroups({fillable:[],boxes:[{contents:[row]}]},'p1')).toEqual([expect.objectContaining({relay:'A',rail:null})]);
+});
+test('le montage COMBOX refuse un rôle non Hub avant toute lecture',async()=>{
+  const fetch=jest.fn();
+  await expect(workspace.mountBoxActions({}, {user:{role:'market_operator'},marketCode:'CM',poId:'p1',fetch})).rejects.toThrow('Accès COMBOX Hub requis');
+  expect(fetch).not.toHaveBeenCalled();
+});
+
+test('départ : seul DISPATCHED non rattaché est sélectionnable et liaison PO exacte',()=>{
+  const own={unit_id:'b1',state:'DISPATCHED',contents:[{purchase_order_id:'p1',qty:1},{purchase_order_id:'p2',qty:2}]};
+  const other={unit_id:'b2',state:'PACKED',contents:[{purchase_order_id:'p2',qty:1}]};
+  const linked={...own,unit_id:'b3',shipment_ref:'SHIP'};
+  expect(workspace.departureBoxes({boxes:[own,other,linked]},'p1')).toEqual([own,linked]);
+  expect(workspace.departureReady(own)).toBe(true);
+  expect(workspace.departureReady({...own,state:'PACKED'})).toBe(false);
+  expect(workspace.departureReady(linked)).toBe(false);
+  expect(workspace.departureReady({...own,contents:[]})).toBe(false);
+  expect(workspace.departureShipmentRefs({boxes:[own,other,linked]},'p1')).toEqual(['SHIP']);
+});
+test('montage départ interdit à un responsable marché avant toute lecture',async()=>{
+  const fetch=jest.fn();
+  await expect(workspace.mountDepartureActions({}, {user:{role:'market_operator'},marketCode:'CM',poId:'p1',fetch})).rejects.toThrow('Accès départ Hub requis');
+  expect(fetch).not.toHaveBeenCalled();
+});

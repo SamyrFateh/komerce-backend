@@ -1217,6 +1217,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 - [object Object]
 - [object Object]
+- [object Object]
 - HUB-A : le Hub organise librement ses colis — un colis représente une commande s'il porte une ligne (order_items) de cette commande, ou si sa commande porteuse (parcels.order_id) n'a aucune ligne rattachée ; parcels.order_id n'est jamais réécrit. Tout ajout/retrait/réaffectation de ligne passe par parcel-item-mutation-service, exige un colis draft/preparation de même destination, conserve identité, quantité et compteurs qty_* (UNIQUE(order_item_id) inchangé) et laisse une trace parcel_events (item_assigned / item_removed / item_reassigned_in|out) dans la même transaction. La règle de paiement à l'expédition s'applique à chaque commande représentée ; aucune règle de facturation ni d'encaissement ne change
 - le HUB est une primitive logistics Komerce, jamais la propriété d un Market, d une source ou d un fournisseur ; Supplier Leg et Market Leg restent deux jambes distinctes
 - split/merge/repack changent les enveloppes physiques sans casser la filiation order item → purchase line/PO → allocation/unité Hub → parcel/shipment → relais
@@ -1269,15 +1270,15 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 199 fichier(s) déclaré(s)
+**Implementation** : 201 fichier(s) déclaré(s)
   - boutique : 1
   - dash : 2
   - docs : 7
   - middleware : 1
   - migrations : 16
   - routes : 18
-  - services : 52
-  - tests : 99
+  - services : 53
+  - tests : 100
   - utils : 3
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="logistics"]_
@@ -2096,7 +2097,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - _in_ :
   - table providers (identité et contact privé, market, statut pending|active|suspended)
   - table services (prestation d’un provider, exposition DISABLED par défaut, image_ref public optionnel)
-  - table physical_offers (produit physique tiers, image_ref public optionnel)
+  - table physical_offers (produit physique tiers, image_ref public optionnel, offer_options structurées informatives ; aucun SKU stock ou paiement)
   - actions_enabled historiques sur service/physical_offer, projetées publiquement vers request et/ou callback ; whatsapp reste en plus un capability flag de handoff pour Service
   - projection publique provider_name pour humaniser une fiche exposable sans exposer provider_id ni contact privé
   - projection publique service whatsapp_available booléenne ; jamais le numéro provider lui-même
@@ -2161,12 +2162,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 20 fichier(s) déclaré(s), boutique: 4 fichier(s)
+**Implementation** : 24 fichier(s) déclaré(s), boutique: 4 fichier(s)
   - boutique : 2
-  - ci : 1
-  - migrations : 3
+  - ci : 2
+  - migrations : 4
   - routes : 1
-  - scripts : 2
+  - scripts : 4
   - services : 4
   - tests : 7
 
@@ -2315,7 +2316,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - moteur de classement boutique
   - endpoint de suggestions, avec une surface PDP limitée aux produits visibles sur le marché et liés au produit consulté
   - DiscoveryCard — projection de lecture mixte (product|physical_offer|service), jamais persistée
-  - politique éditoriale serveur explicite du rail local : activation globale, candidats et ordre
+  - politique éditoriale serveur explicite du rail local : activation globale, candidats et ordre ; extension éditoriale opt-in par marché uniquement en staging
 - _out_ :
   - données produit source (feature catalog)
   - prix affiché (feature economic-engine / market-autonomy)

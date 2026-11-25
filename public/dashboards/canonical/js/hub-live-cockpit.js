@@ -149,6 +149,7 @@
 
     // ── Actions : un seul point d'exécution, désactivé pendant la requête, état incertain → recharger et vérifier.
     async function execute(btn, options) {
+      if (ctx.purchaseOnly && state.pending > 0) return null;
       state.pending = (state.pending || 0) + 1;
       markReady();
       try {
@@ -263,6 +264,37 @@
     const sel = state.sel;
     const selKey = sel ? `${sel.type}:${sel.id}` : '';
     rootEl.setAttribute('data-hlc-selection', selKey);
+
+    // Présentation compacte dans le Kanban : mêmes actions et mêmes formulaires
+    // que le cockpit, sans créer la file physique, les colonnes ou le fil.
+    if (ctx.purchaseOnly === true) {
+      const po = sel?.type === 'po' ? poById.get(sel.id) : null;
+      rootEl.setAttribute('data-hlc-purchase-only', '');
+      if (!po) {
+        rootEl.appendChild(el(doc, 'p', 'hlc-empty', 'PO indisponible ou annulée. Actualisez le Kanban.'));
+        return rootEl;
+      }
+      const lines = el(doc, 'details', 'hlc-purchase-lines');
+      lines.appendChild(el(doc, 'summary', '', po.lines.length + ' ligne(s) d’achat'));
+      for (const l of po.lines) lines.appendChild(el(doc, 'p', 'hlc-meta',
+        (l.order_ref || '—') + ' · ' + (l.product || 'Article') + ' × ' + num(l.ordered)));
+      rootEl.appendChild(lines);
+      const list = el(doc, 'div', 'hlc-actions');
+      const allowed = new Set(['authorize-commitment','submit-po','record-sent','confirm-po','authorize-payment','download-commitment-pdf']);
+      // Le paiement est une décision distincte, jamais proposée sur un brouillon
+      // (même si l'engagement vient d'être approuvé). Les droits et les autres
+      // prérequis restent ceux du moteur canonique.
+      const actions = actionsFor().filter(a => allowed.has(a.key) &&
+        (a.key !== 'authorize-payment' || po.status !== 'draft'));
+      for (const a of actions) appendAction(list,a);
+      if (!actions.length) list.appendChild(el(doc,'p','hlc-empty','Aucune action d’achat disponible.'));
+      rootEl.appendChild(list);
+      const kinds = {'authorize-commitment':'commitment','record-sent':'sent','confirm-po':'confirm','authorize-payment':'payment'};
+      const canOpen = actions.some(a => !a.disabled && kinds[a.key] === state.form?.kind);
+      if (state.form?.po === po.id && !readOnly && canOpen) rootEl.appendChild(poForm(po,state.form.kind));
+      else state.form = null;
+      return rootEl;
+    }
 
     // ── Liens de navigation (références du dossier serveur, aucune quantité calculée) ──
     const boxOrders = (b) => [...new Set((b.contents || []).map((c) => c.order_id).filter(Boolean))];
@@ -839,6 +871,18 @@
       return { title: title || selKey, sub, nodes, blocker };
     }
 
+    function appendAction(list,a) {
+      const row = el(doc, 'div', 'hlc-action-row');
+      const b = a.href ? el(doc, 'a', 'hlc-btn', a.label)
+        : button(doc, a.label, a.key, a.primary ? 'is-primary' : '');
+      if (a.href) b.setAttribute('href', a.href);
+      if (a.disabled) { b.disabled = true; b.setAttribute('aria-disabled', 'true'); b.title = a.disabled; }
+      else if (a.run) b.addEventListener('click', () => { a.run(b); });
+      row.appendChild(b);
+      row.appendChild(el(doc, 'span', 'hlc-reason', a.disabled || a.why || ''));
+      list.appendChild(row);
+    }
+
     // Actions : exécutent la route réelle ; impossibles → désactivées AVEC la raison (jamais masquées sans explication).
     function actionsFor() {
       const acts = [];
@@ -1015,15 +1059,7 @@
     let primaryUsed = false;
     actionsFor().forEach((a) => {
       if (a.primary && !a.disabled) { if (primaryUsed) a.primary = false; else primaryUsed = true; } else if (a.disabled) a.primary = false;
-      const row = el(doc, 'div', 'hlc-action-row');
-      const b = a.href ? el(doc, 'a', 'hlc-btn', a.label)
-        : button(doc, a.label, a.key, a.primary ? 'is-primary' : '');
-      if (a.href) b.setAttribute('href', a.href);
-      if (a.disabled) { b.disabled = true; b.setAttribute('aria-disabled', 'true'); b.title = a.disabled; }
-      else if (a.run) b.addEventListener('click', () => { a.run(b); });
-      row.appendChild(b);
-      row.appendChild(el(doc, 'span', 'hlc-reason', a.disabled || a.why || ''));
-      list.appendChild(row);
+      appendAction(list,a);
     });
     if (!list.children.length) list.appendChild(el(doc, 'span', 'hlc-empty', 'Aucune action sur cet objet.'));
     rightP.appendChild(list);

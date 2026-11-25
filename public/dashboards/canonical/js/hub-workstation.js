@@ -425,9 +425,11 @@
     boardDisposers.delete(root);
     root.replaceChildren();
     const header = make(doc, 'div', 'kmc-hub-global-toolbar');
-    header.appendChild(make(doc, 'strong', '', user?.role === 'market_operator'
-      ? 'Commandes import · Mes marchés autorisés' : 'Toutes les commandes import · Tous les marchés'));
-    header.appendChild(make(doc, 'span', 'kmc-hub-global-count', 'Chargement…'));
+    const headerTitle = make(doc, 'strong', '', user?.role === 'market_operator'
+      ? 'Commandes import · Mes marchés autorisés' : 'Toutes les commandes import · Tous les marchés');
+    const headerCount = make(doc, 'span', 'kmc-hub-global-count', 'Chargement…');
+    header.appendChild(headerTitle);
+    header.appendChild(headerCount);
     root.appendChild(header);
     const search = make(doc, 'input', 'kmc-hub-app-search');
     search.type = 'search';
@@ -537,12 +539,172 @@
     installMenuDismiss(root, doc, menu, closeMenu, anchor.move, anchor.restoreFocus);
 
     let rows = [];
+    let poRows = null;
+    let poMode = false;
+    let pilotRequest = 0;
+    const receiveRefs=new Map();
+    const boxCreateKeys=new Map(),hubVerifiedBoxes={};
+    let activeBoxDetails=null;
+    const updatePORows=new Map();
+    const orderHeader = headerTitle.textContent;
+    const setHeaders = labels => {
+      titleRow.replaceChildren();
+      labels.forEach(label => titleRow.appendChild(make(doc,'th','',label)));
+    };
+    const renderPOs = () => {
+      body.replaceChildren();
+      updatePORows.clear();
+      const term=safe(search.value).trim().toLocaleLowerCase('fr');
+      const filtered=(poRows || []).filter(p => !p.cancelled && [p.reference,p.market,p.supplier,...(p.order_references || [])]
+        .some(v=>safe(v).toLocaleLowerCase('fr').includes(term)));
+      headerCount.textContent=filtered.length+' PO';
+      setHeaders(['PO / Fournisseur','Commandes associées','Achat','Réception','COMBOX','Départ']);
+      if (!filtered.length) {
+        const tr=make(doc,'tr'), td=make(doc,'td','','Aucune PO correspondante.');
+        td.colSpan=6;tr.appendChild(td);body.appendChild(tr);return;
+      }
+      for (const p of filtered) {
+        const tr=make(doc,'tr');tr.setAttribute('data-hub-pilot-po',p.id);
+        const identity=make(doc,'td');
+        identity.appendChild(make(doc,'strong','',p.reference));
+        identity.appendChild(make(doc,'small','',p.market+' · '+(p.supplier||'Fournisseur non renseigné')));
+        tr.appendChild(identity);
+        const linked=make(doc,'td'), details=make(doc,'details');
+        details.appendChild(make(doc,'summary','',p.order_count+' commande(s) · '+p.ordered+' unité(s)'));
+        for(const ref of p.order_references || []) details.appendChild(make(doc,'div','',ref));
+        linked.appendChild(details);tr.appendChild(linked);
+        const purchase=make(doc,'td'), purchaseDetails=make(doc,'details');
+        const purchaseLabel=({draft:'Engagement à valider',validation:'Engagement validé · à soumettre',engaged:'Envoi à attester',sent:'Suivi fournisseur',received:'Réception constatée'})[p.purchase_step] || PO_STAGE[p.purchase_stage] || 'À vérifier';
+        const purchaseSummary=make(doc,'summary','',purchaseLabel);
+        purchaseDetails.appendChild(purchaseSummary);
+        const purchaseHost=make(doc,'div','kmc-hub-inline-purchase');
+        purchaseHost.setAttribute('data-hub-inline-purchase',p.id);
+        purchaseDetails.appendChild(purchaseHost);
+        let handle=null, loading=false;
+        purchaseDetails.addEventListener('toggle',async()=>{
+          if(!purchaseDetails.open || loading || handle?.busy())return;
+          loading=true;
+          try{
+            if(handle){await handle.reload();return;}
+            const module=global.KomerceCanonicalOperationsWorkspace;
+            if(!module?.mountPurchaseActions)throw new Error('Module achats indisponible');
+            purchaseHost.replaceChildren(make(doc,'p','','Chargement du dossier…'));
+            handle=await module.mountPurchaseActions(purchaseHost,{
+              document:doc,fetch:fetchFn,user,marketCode:p.market,poId:p.id,
+              onChange:refreshRow,
+            });
+          }catch(error){purchaseHost.replaceChildren(make(doc,'p','','Dossier achat indisponible : '+error.message));handle=null;}
+          finally{loading=false;}
+        });
+        purchase.appendChild(purchaseDetails);tr.appendChild(purchase);
+        const reception=make(doc,'td'), receiptDetails=make(doc,'details');
+        const quantity=p.received+' / '+p.expected+' reçus';
+        const receiptSummary=make(doc,'summary','',quantity+(p.missing?' · '+p.missing+' attendus':'')+(p.anomalies?' · '+p.anomalies+' écarts':''));
+        receiptDetails.appendChild(receiptSummary);
+        const receiptHost=make(doc,'div','kmc-hub-inline-reception');
+        receiptHost.setAttribute('data-hub-inline-reception',p.id);
+        receiptDetails.appendChild(receiptHost);
+        let current=p, receiptHandle=null, receiptLoading=false;
+        const refreshRow=async()=>{
+          const data=await requestJSON(fetchFn,'/api/hub/board?view=po');
+          if(data.scope!=='HUB_GLOBAL'||!Array.isArray(data.purchase_orders))throw Error('Projection PO indisponible');
+          poRows=data.purchase_orders;
+          for(const [id,update] of updatePORows)update(poRows.find(row=>row.id===id));
+        };
+        const updateRow=fresh=>{
+          if(!fresh){purchaseSummary.textContent='PO indisponible';receiptSummary.textContent='PO indisponible';return;}
+          current=fresh;
+          purchaseSummary.textContent=({draft:'Engagement à valider',validation:'Engagement validé · à soumettre',engaged:'Envoi à attester',sent:'Suivi fournisseur',received:'Réception constatée'})[fresh.purchase_step] || PO_STAGE[fresh.purchase_stage] || 'À vérifier';
+          receiptSummary.textContent=fresh.received+' / '+fresh.expected+' reçus'+(fresh.missing?' · '+fresh.missing+' attendus':'')+(fresh.anomalies?' · '+fresh.anomalies+' écarts':'');
+          boxSummary.textContent=boxLabel(fresh);
+          departureSummary.textContent=departureLabel(fresh);
+        };
+        receiptDetails.addEventListener('toggle',async()=>{
+          if(!receiptDetails.open||receiptLoading||receiptHandle?.busy())return;
+          if(!current.sent&&!(current.received>0)){
+            receiptHost.replaceChildren(make(doc,'p','','Achat / envoi à vérifier.'));return;
+          }
+          receiptLoading=true;
+          try{
+            if(receiptHandle){await receiptHandle.reload();return;}
+            const module=global.KomerceCanonicalOperationsWorkspace;
+            if(!module?.mountReceptionActions)throw Error('Module réception indisponible');
+            receiptHost.replaceChildren(make(doc,'p','','Chargement de la réception…'));
+            receiptHandle=await module.mountReceptionActions(receiptHost,{
+              document:doc,fetch:fetchFn,user,marketCode:p.market,poId:p.id,receiveRefs,onChange:refreshRow,
+            });
+          }catch(error){receiptHost.replaceChildren(make(doc,'p','','Réception indisponible : '+error.message));receiptHandle=null;}
+          finally{receiptLoading=false;}
+        });
+        reception.appendChild(receiptDetails);tr.appendChild(reception);
+        const boxCell=make(doc,'td'),boxDetails=make(doc,'details');
+        const boxLabel=row=>row.boxed_quantity==null?'Préparation COMBOX':row.boxed_quantity+' / '+row.received+' en COMBOX · '+row.box_count+' carton(s)';
+        const boxSummary=make(doc,'summary','',boxLabel(p));
+        boxDetails.appendChild(boxSummary);
+        const boxHost=make(doc,'div','kmc-hub-inline-boxes');
+        boxHost.setAttribute('data-hub-inline-combox',p.id);
+        boxDetails.appendChild(boxHost);
+        let boxHandle=null,boxLoading=false;
+        boxDetails.addEventListener('toggle',async()=>{
+          if(!boxDetails.open||boxLoading||boxHandle?.busy())return;
+          if(activeBoxDetails&&activeBoxDetails!==boxDetails)activeBoxDetails.open=false;
+          activeBoxDetails=boxDetails;
+          if(!(current.received>0)){
+            boxHost.replaceChildren(make(doc,'p','','Aucun article reçu pour cette PO.'));return;
+          }
+          boxLoading=true;
+          try{
+            if(boxHandle){await boxHandle.reload();return;}
+            const module=global.KomerceCanonicalOperationsWorkspace;
+            if(!module?.mountBoxActions)throw Error('Module COMBOX indisponible');
+            boxHost.replaceChildren(make(doc,'p','','Chargement des COMBOX…'));
+            boxHandle=await module.mountBoxActions(boxHost,{
+              document:doc,fetch:fetchFn,user,marketCode:p.market,poId:p.id,boxCreateKeys,hubVerifiedBoxes,onChange:refreshRow,
+            });
+          }catch(error){boxHost.replaceChildren(make(doc,'p','','COMBOX indisponibles : '+error.message));boxHandle=null;}
+          finally{boxLoading=false;}
+        });
+        boxCell.appendChild(boxDetails);tr.appendChild(boxCell);
+        const departure=make(doc,'td'),departureDetails=make(doc,'details');
+        const departureLabel=row=>row.handed_quantity==null?'Départ Hub':row.handed_quantity+' / '+row.expected+' remis · '+row.dispatched_quantity+' sorti(s)';
+        const departureSummary=make(doc,'summary','',departureLabel(p));
+        departureDetails.appendChild(departureSummary);
+        const departureHost=make(doc,'div','kmc-hub-inline-departure');
+        departureHost.setAttribute('data-hub-inline-departure',p.id);
+        departureDetails.appendChild(departureHost);
+        let departureHandle=null,departureLoading=false;
+        departureDetails.addEventListener('toggle',async()=>{
+          if(!departureDetails.open||departureLoading||departureHandle?.busy())return;
+          if(activeBoxDetails&&activeBoxDetails!==departureDetails)activeBoxDetails.open=false;
+          activeBoxDetails=departureDetails;
+          if(!(current.received>0)){
+            departureHost.replaceChildren(make(doc,'p','','Aucun article reçu pour cette PO.'));return;
+          }
+          departureLoading=true;
+          try{
+            if(departureHandle){await departureHandle.reload();return;}
+            const module=global.KomerceCanonicalOperationsWorkspace;
+            if(!module?.mountDepartureActions)throw Error('Module départ indisponible');
+            departureHost.replaceChildren(make(doc,'p','','Chargement du départ…'));
+            departureHandle=await module.mountDepartureActions(departureHost,{
+              document:doc,fetch:fetchFn,user,marketCode:p.market,poId:p.id,hubVerifiedBoxes,onChange:refreshRow,
+            });
+          }catch(error){departureHost.replaceChildren(make(doc,'p','','Départ indisponible : '+error.message));departureHandle=null;}
+          finally{departureLoading=false;}
+        });
+        departure.appendChild(departureDetails);tr.appendChild(departure);
+        updatePORows.set(p.id,updateRow);
+        body.appendChild(tr);
+      }
+    };
     const renderRows = () => {
+      if(poMode){renderPOs();return;}
+      setHeaders(['Commande / Marché','PO','Fournisseur','Réception','Cartons','Départ','Reste à solder']);
       body.replaceChildren();
       const term = safe(search.value).trim().toLocaleLowerCase('fr');
       const filtered = rows.filter(o => [o.reference, o.market, o.market_name, o.relay_name]
         .some(v => safe(v).toLocaleLowerCase('fr').includes(term)));
-      header.lastChild.textContent = filtered.length + ' / ' + rows.length + ' commande(s)';
+      headerCount.textContent = filtered.length + ' / ' + rows.length + ' commande(s)';
       if (!filtered.length) {
         const tr = make(doc, 'tr');
         const td = make(doc, 'td', '', term ? 'Aucune commande correspondante.' : 'Aucune commande import active.');
@@ -652,6 +814,33 @@
         body.appendChild(tr);
       }
     };
+    if(canOperate){
+      const pilot=make(doc,'button','kmc-hub-app-branch','Vue PO · pilote');
+      pilot.type='button';pilot.setAttribute('data-hub-po-pilot-toggle','');
+      pilot.setAttribute('aria-pressed','false');
+      header.replaceChildren(headerTitle,pilot,headerCount);
+      pilot.addEventListener('click',async()=>{
+        closeMenu();
+        const serial=++pilotRequest;
+        if(poMode){
+          poMode=false;pilot.setAttribute('aria-pressed','false');pilot.textContent='Vue PO · pilote';
+          headerTitle.textContent=orderHeader;search.placeholder='Rechercher une commande ou un marché';
+          search.setAttribute('aria-label',search.placeholder);renderRows();return;
+        }
+        pilot.disabled=true;
+        try{
+          const data=await requestJSON(fetchFn,'/api/hub/board?view=po');
+          if(serial!==pilotRequest)return;
+          if(data.scope!=='HUB_GLOBAL'||!Array.isArray(data.purchase_orders))throw new Error('Projection PO indisponible');
+          poRows=data.purchase_orders;poMode=true;
+          pilot.setAttribute('aria-pressed','true');pilot.textContent='Revenir aux commandes';
+          headerTitle.textContent='PO fournisseurs · Tous les marchés';
+          search.placeholder='Rechercher PO, fournisseur, commande ou marché';search.setAttribute('aria-label',search.placeholder);
+          renderRows();
+        }catch(error){headerCount.textContent='Vue PO indisponible : '+error.message;}
+        finally{pilot.disabled=false;}
+      });
+    }
     search.addEventListener('input', ()=>{closeMenu();renderRows();});
     try {
       const payload = await requestJSON(fetchFn, '/api/hub/board');
@@ -663,7 +852,7 @@
       return payload;
     } catch (error) {
       body.replaceChildren();
-      header.lastChild.textContent = 'Indisponible';
+      headerCount.textContent = 'Indisponible';
       const tr = make(doc, 'tr');
       const td = make(doc, 'td', 'kmc-hub-app-list-error',
         'Impossible de charger la vue centrale Hub : ' + error.message);

@@ -18249,6 +18249,10 @@
           "test": "tests/unit/hub-bag-box-ui-contract.test.js"
         },
         {
+          "statement": "COMBOX : dès le placement, sous verrou de l’unité cible, les allocations actives et entrantes doivent partager le même marché et le même relais de destination immuable ; un refus ne modifie ni placement ni custody ; plusieurs commandes du même relais restent autorisées",
+          "test": "tests/integration/hub-physical-hardening-postgres.test.js"
+        },
+        {
           "statement": "RC-2: la clôture par colis groupés ou partiels est prouvée en PostgreSQL isolé sur tables temporaires ; toute ligne encore due empêche collected",
           "test": "tests/e2e-api/logistics.order-coverage-rc2.e2e.test.js"
         },
@@ -18571,7 +18575,7 @@
             ]
           },
           "services": {
-            "count": 52,
+            "count": 53,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -18597,6 +18601,11 @@
                 "declared": "services/hub-box-shipment-service.js",
                 "resolvedPath": "services/hub-box-shipment-service.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/hub-combox-destination-guard.js",
+                "resolvedPath": "services/hub-combox-destination-guard.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/hub-dubai-projection.js",
@@ -18836,7 +18845,7 @@
             ]
           },
           "tests": {
-            "count": 99,
+            "count": 100,
             "files": [
               {
                 "declared": "tests/e2e-api/hub-membership-readers.e2e.test.js",
@@ -18986,6 +18995,11 @@
               {
                 "declared": "tests/unit/hub-box-custody-scans.test.js",
                 "resolvedPath": "tests/unit/hub-box-custody-scans.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-combox-destination-guard.test.js",
+                "resolvedPath": "tests/unit/hub-combox-destination-guard.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -19356,7 +19370,7 @@
             ]
           }
         },
-        "totalFiles": 199,
+        "totalFiles": 201,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -29226,7 +29240,7 @@
         "in": [
           "table providers (identité et contact privé, market, statut pending|active|suspended)",
           "table services (prestation d’un provider, exposition DISABLED par défaut, image_ref public optionnel)",
-          "table physical_offers (produit physique tiers, image_ref public optionnel)",
+          "table physical_offers (produit physique tiers, image_ref public optionnel, offer_options structurées informatives ; aucun SKU stock ou paiement)",
           "actions_enabled historiques sur service/physical_offer, projetées publiquement vers request et/ou callback ; whatsapp reste en plus un capability flag de handoff pour Service",
           "projection publique provider_name pour humaniser une fiche exposable sans exposer provider_id ni contact privé",
           "projection publique service whatsapp_available booléenne ; jamais le numéro provider lui-même",
@@ -29320,17 +29334,22 @@
             ]
           },
           "ci": {
-            "count": 1,
+            "count": 2,
             "files": [
               {
                 "declared": ".github/workflows/staging-discovery-modal-v2-ops.yml",
                 "resolvedPath": ".github/workflows/staging-discovery-modal-v2-ops.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/staging-local-offers-5245-demo.yml",
+                "resolvedPath": ".github/workflows/staging-local-offers-5245-demo.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
           "migrations": {
-            "count": 3,
+            "count": 4,
             "files": [
               {
                 "declared": "migrations/157_providers_services_media.sql",
@@ -29346,6 +29365,11 @@
                 "declared": "migrations/161_providers_services_inquiry_context.sql",
                 "resolvedPath": "migrations/161_providers_services_inquiry_context.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/429_physical_offer_options.sql",
+                "resolvedPath": "migrations/429_physical_offer_options.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -29360,8 +29384,18 @@
             ]
           },
           "scripts": {
-            "count": 2,
+            "count": 4,
             "files": [
+              {
+                "declared": "scripts/recette/local-offers-5245-chromium.js",
+                "resolvedPath": "scripts/recette/local-offers-5245-chromium.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/recette/local-offers-5245-showcase.js",
+                "resolvedPath": "scripts/recette/local-offers-5245-showcase.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "scripts/seed-discovery-modal-v2-staging.js",
                 "resolvedPath": "scripts/seed-discovery-modal-v2-staging.js",
@@ -29440,7 +29474,7 @@
             ]
           }
         },
-        "totalFiles": 20,
+        "totalFiles": 24,
         "boutiqueManifest": "providers-services",
         "boutiqueFiles": {
           "count": 4,
@@ -31520,7 +31554,7 @@
           "moteur de classement boutique",
           "endpoint de suggestions, avec une surface PDP limitée aux produits visibles sur le marché et liés au produit consulté",
           "DiscoveryCard — projection de lecture mixte (product|physical_offer|service), jamais persistée",
-          "politique éditoriale serveur explicite du rail local : activation globale, candidats et ordre"
+          "politique éditoriale serveur explicite du rail local : activation globale, candidats et ordre ; extension éditoriale opt-in par marché uniquement en staging"
         ],
         "out": [
           "données produit source (feature catalog)",

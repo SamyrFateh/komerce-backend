@@ -287,3 +287,209 @@ test('Kanban : le menu actif ne contient aucun formulaire métier local',async({
   await expect(menu.locator('.kmc-hub-action-form')).toHaveCount(0);
   expect(calls.filter(call=>!call.startsWith('GET '))).toEqual([]);
 });
+
+test('pilote PO : engagement dans la cellule, formulaire canonique et droit serveur', async ({page})=>{
+  const poId='10000000-0000-4000-8000-000000000001';
+  const base={id:poId,ref:'PO-1',status:'draft',stage:'draft',step:{key:'draft'},order_ids:['one'],
+    lines:[{line_id:'l1',order_id:'one',order_ref:'KM-100',product:'Article test',ordered:2,confirmed:2}],
+    totals:{effective:2,missing:2,received:0},amount:{derived:true,amount:20,currency:'EUR'},
+    authorizations:{commitment:null,payment:null}};
+  let approved=false;
+  const writes=[];
+  const board=()=>({...BOARD,purchase_orders:[{id:poId,reference:'PO-1',market:'KM',supplier:'Fournisseur test',
+    order_count:1,order_references:['KM-100'],ordered:2,expected:2,received:0,missing:2,anomalies:0,
+    purchase_step:approved?'validation':'draft',purchase_stage:'draft'}]});
+  await mount(page,'admin','',board());
+  await page.route(ORIGIN+'/api/hub/board?view=po',route=>route.fulfill({json:board()}));
+  await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/supply',route=>route.fulfill({json:{
+    market:{code:'KM'},orders:[],purchase_orders:[{...base,step:{key:approved?'validation':'draft'},
+      authorizations:{commitment:approved?{amount:20,currency:'EUR'}:null,payment:null}}],
+    cockpit:{viewer:{role:'admin',can_authorize_commitment:true,can_authorize_payment:false}},
+  }}));
+  await page.route(ORIGIN+'/api/purchasing/po/'+poId+'/authorize-commitment',route=>{
+    writes.push(route.request().postDataJSON());
+    approved=true;return route.fulfill({json:{ok:true}});
+  });
+  await page.locator('[data-hub-po-pilot-toggle]').click();
+  const row=page.locator('[data-hub-pilot-po="'+poId+'"]');
+  await row.getByText('Engagement à valider',{exact:true}).click();
+  const cell=row.locator('[data-hub-inline-purchase]');
+  await expect(cell.locator('[data-hlc-purchase-only]')).toBeVisible();
+  await expect(cell.locator('[data-hlc-action="receive"]')).toHaveCount(0);
+  await cell.locator('[data-hlc-action="authorize-commitment"]').click();
+  await cell.locator('input[name="proof_ref"]').fill('JUSTIF-TEST');
+  await cell.locator('[data-hlc-action="submit-commitment"]').click();
+  await expect(cell.locator('[data-hlc-action="submit-po"]')).toBeVisible();
+  await expect(row.getByText('Engagement validé · à soumettre',{exact:true})).toBeVisible();
+  expect(writes).toEqual([{proof_ref:'JUSTIF-TEST'}]);
+  await expect(page).toHaveURL(ORIGIN+'/admin/hub');
+});
+
+test('pilote PO : réception partielle et QR dans la cellule, sans navigation ni QR d’une autre PO',async({page})=>{
+  const poId='10000000-0000-4000-8000-000000000001';
+  const otherId='10000000-0000-4000-8000-000000000002';
+  const alloc='20000000-0000-4000-8000-000000000001';
+  let received=0,issued=false,qualityState='RECEIVED';
+  const qualityWrites=[];
+  const writes=[];
+  const board=()=>({...BOARD,purchase_orders:[{id:poId,reference:'PO-1',market:'KM',supplier:'Fournisseur test',
+    order_count:1,order_references:['KM-100'],ordered:2,expected:2,received,missing:2-received,anomalies:0,
+    purchase_step:received?'received':'sent',purchase_stage:'confirmed',sent:true}]});
+  await mount(page,'agent_hub','',board());
+  await page.route(ORIGIN+'/api/hub/board?view=po',route=>route.fulfill({json:board()}));
+  await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/supply',route=>route.fulfill({json:{
+    purchase_orders:[{id:poId},{id:otherId}],cockpit:{viewer:{role:'agent_hub'}},
+    receipts:received?[{id:'30000000-0000-4000-8000-000000000001',reference:'KOM-RCV-1',state:qualityState,po_ids:[poId],qty:received,single_purchase_order:true}]:[],
+    fillable:[...(received?[{allocation_id:alloc,purchase_order_id:poId,order_id:'one',quantity:received,product:'Article reçu',relais_code:'M01',source_state:qualityState}]:[]),
+      {allocation_id:'20000000-0000-4000-8000-000000000002',purchase_order_id:otherId,order_id:'one',quantity:1,product:'Article autre PO'}],
+  }}));
+  await page.route(ORIGIN+'/api/scans/hub/receivable',route=>route.fulfill({json:{purchase_orders:[
+    {purchase_order_id:poId,po_status:'confirmed',supplier:{name:'Fournisseur test'},
+      lines:[{product_name:'Article test',product_sku_id:'sku1',expected_quantity:2,received_quantity:received,remaining_quantity:2-received,reception_state:received?'PARTIAL':'NOT_RECEIVED'}]},
+    {purchase_order_id:otherId,po_status:'confirmed',lines:[]},
+  ]}}));
+  await page.route(ORIGIN+'/api/scans/hub/receive',route=>{
+    writes.push(route.request().postDataJSON());received=1;return route.fulfill({json:{quarantined:false}});
+  });
+  await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/supply/receipts/30000000-0000-4000-8000-000000000001/quality',route=>{
+    const body=route.request().postDataJSON();qualityWrites.push(body.to_state);qualityState=body.to_state;return route.fulfill({json:{state:qualityState}});
+  });
+  await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/labels/articles/'+alloc+'/issue',route=>{
+    issued=true;return route.fulfill({json:{count:1}});
+  });
+  page.on('dialog',dialog=>dialog.accept());
+  await page.locator('[data-hub-po-pilot-toggle]').click();
+  const row=page.locator('[data-hub-pilot-po="'+poId+'"]');
+  await row.getByText('0 / 2 reçus · 2 attendus',{exact:true}).click();
+  const cell=row.locator('[data-hub-inline-reception]');
+  await expect(cell.locator('[data-receive-po="'+poId+'"]')).toBeVisible();
+  await expect(cell.locator('[data-receive-po="'+otherId+'"]')).toHaveCount(0);
+  await expect(cell.getByText('Article autre PO')).toHaveCount(0);
+  expect(writes).toHaveLength(0);
+  await cell.locator('[data-receive-manual-toggle]').check();
+  await cell.locator('[data-receive-manual-proof]').fill('Contrôle visuel test');
+  await cell.locator('[data-receive-line="0"]').fill('1');
+  await cell.getByRole('button',{name:'Enregistrer la réception'}).click();
+  await expect(row.getByText('1 / 2 reçus · 1 attendus',{exact:true})).toBeVisible();
+  expect(writes).toHaveLength(1);
+  expect(writes[0].contents).toEqual([{purchase_order_id:poId,product_sku_id:'sku1',quantity:1,evidence_method:'MANUAL',evidence_ref:'Contrôle visuel test'}]);
+  await expect(cell.getByText('Article autre PO')).toHaveCount(0);
+  await expect(cell.getByRole('button',{name:'Préparer les étiquettes'})).toHaveCount(0);
+  await cell.getByRole('button',{name:'Confirmer le contenu identifié'}).click();
+  await expect(cell.getByRole('button',{name:'Préparer les étiquettes'})).toHaveCount(0);
+  await cell.getByRole('button',{name:'Confirmer le contrôle qualité'}).click();
+  await expect(cell.getByRole('button',{name:'Préparer les étiquettes'})).toBeVisible();
+  expect(qualityWrites).toEqual(['IDENTIFIED','QUALITY_CHECKED']);
+  await cell.getByRole('button',{name:'Préparer les étiquettes'}).click();
+  await expect(cell.getByText('1 QR article(s) disponibles à imprimer.')).toBeVisible();
+  expect(issued).toBe(true);
+  await expect(cell.locator('[data-hub-pdf-article-a4]')).toHaveCount(1);
+  await expect(page).toHaveURL(ORIGIN+'/admin/hub');
+});
+
+test('pilote PO : préparation COMBOX partagée, filtrée par relais, rail et contrôle qualité',async({page})=>{
+  const poId='10000000-0000-4000-8000-000000000001', other='10000000-0000-4000-8000-000000000002';
+  const boxId='20000000-0000-4000-8000-000000000001';
+  let placed=false, closed=false, issued=false;
+  const row=(id,po,relay,rail,product,state='QUALITY_CHECKED')=>({allocation_id:id,purchase_order_id:po,relais_id:relay,relais_code:relay,requested_transport_rail:rail,source_state:state,product,quantity:1,from_unit_id:'source-'+id,from_unit_ref:'RCV-'+id});
+  const a=row('a',poId,'M01','SEA_STANDARD','Article PO 1');
+  const b=row('b',other,'M01','SEA_STANDARD','Article PO 2');
+  const c=row('c',poId,'M01','AIR_EXPRESS','Article aérien');
+  const d=row('d',poId,'M02','SEA_STANDARD','Autre relais');
+  const e=row('e',other,'M01','SEA_STANDARD','Non contrôlé','RECEIVED');
+  const board={...BOARD,purchase_orders:[{id:poId,reference:'PO-1',market:'KM',supplier:'Fournisseur test',order_count:1,order_references:['KM-100'],ordered:3,expected:3,received:3,missing:0,anomalies:0,purchase_step:'received',sent:true}]};
+  await mount(page,'agent_hub','',board);
+  await page.route(ORIGIN+'/api/hub/board?view=po',route=>route.fulfill({json:board}));
+  await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/supply',route=>route.fulfill({json:{
+    purchase_orders:[{id:poId},{id:other}],cockpit:{viewer:{role:'agent_hub'}},
+    fillable:[a,...(placed?[]:[b]),c,d,e],
+    boxes:[{unit_id:boxId,reference:'KOM-BOX-TEST',state:closed?'PACKED':'RECEIVED',contents:placed?[{...b,qty:1}]:[]}],
+  }}));
+  const writes=[];
+  await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/boxes/'+boxId+'/fill',route=>{
+    writes.push(route.request().postDataJSON());placed=true;return route.fulfill({json:{ok:true}});
+  });
+  await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/boxes/'+boxId+'/close',route=>{
+    closed=true;return route.fulfill({json:{state:'PACKED'}});
+  });
+  await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/labels/boxes/'+boxId+'/issue',route=>{
+    issued=true;return route.fulfill({json:{count:1}});
+  });
+  await page.locator('[data-hub-po-pilot-toggle]').click();
+  const po=page.locator('[data-hub-pilot-po="'+poId+'"]');
+  await po.getByText('Préparation COMBOX',{exact:true}).click();
+  const cell=po.locator('[data-hub-inline-combox]');
+  await cell.getByLabel('Relais puis rail demandé').selectOption({label:'M01 · SEA_STANDARD'});
+  let box=cell.locator('[data-hub-inline-box="'+boxId+'"]');
+  await box.locator('summary').click();
+  const options=box.getByLabel('Article réceptionné à placer dans KOM-BOX-TEST');
+  await expect(options.locator('option')).toHaveCount(2);
+  for(const excluded of ['Article aérien','Autre relais','Non contrôlé'])await expect(options.locator('option').filter({hasText:excluded})).toHaveCount(0);
+  await options.selectOption({label:'Article PO 2 · M01 · 1 disponible(s) · RCV-b'});
+  await box.getByLabel('Scanner la référence de la COMBOX KOM-BOX-TEST').fill('KOM-BOX-TEST');
+  await box.getByLabel('Mode de preuve du scan article dans KOM-BOX-TEST').selectOption('MANUAL');
+  await box.getByLabel('Preuve du constat manuel pour KOM-BOX-TEST').fill('Contrôle test');
+  await box.getByRole('button',{name:'Placer l’article dans la COMBOX'}).click();
+  await expect(cell.getByText('1 article(s) placé(s) dans KOM-BOX-TEST.')).toBeVisible();
+  expect(writes).toHaveLength(1);
+  expect(writes[0].allocation_id).toBe('b');
+  await cell.locator('[data-hub-inline-box="'+boxId+'"] summary').click();
+  await cell.getByRole('button',{name:'Fermer la COMBOX'}).click();
+  await expect(cell.getByText('KOM-BOX-TEST fermée et prête pour la suite.')).toBeVisible();
+  await cell.locator('[data-hub-inline-box="'+boxId+'"] summary').click();
+  await cell.getByRole('button',{name:'Préparer QR COMBOX'}).click();
+  await expect(cell.getByText('QR COMBOX définitif prêt à imprimer.')).toBeVisible();
+  expect(issued).toBe(true);
+  await expect(cell.locator('[data-hub-pdf-box-a4]')).toHaveCount(1);
+  await expect(page).toHaveURL(ORIGIN+'/admin/hub');
+});
+
+test('pilote PO : sortie Hub, dossier et remise transitaire sur manifeste complet',async({page})=>{
+  const poId='10000000-0000-4000-8000-000000000001',boxId='20000000-0000-4000-8000-000000000001';
+  const ref='INT-KM-TEST',base=ORIGIN+'/api/admin/workspaces/operations/market/KM';
+  const journey=ORIGIN+'/api/admin/workspaces/shipping-customs/market/KM/international/'+ref;
+  const writes=[];let state='PACKED',linked=false,scanned=false,stage='hub_ready';
+  const board=()=>({...BOARD,purchase_orders:[{id:poId,reference:'PO-1',market:'KM',supplier:'Fournisseur test',order_count:1,order_references:['KM-100'],ordered:2,expected:2,received:1,missing:1,anomalies:0,purchase_step:'received',sent:true,boxed_quantity:1,box_count:1,dispatched_quantity:state==='DISPATCHED'?1:0,handed_quantity:stage==='handed_over'?1:0}]});
+  const box=()=>({unit_id:boxId,reference:'KOM-BOX-TEST',state,shipment_ref:linked?ref:null,shipment_stage:linked?stage:null,contents:[{purchase_order_id:poId,relais_id:'M01',relais_code:'M01',requested_transport_rail:'SEA_STANDARD',qty:1}]});
+  await mount(page,'agent_hub','',board());
+  await page.route(ORIGIN+'/api/hub/board?view=po',route=>route.fulfill({json:board()}));
+  await page.route(base+'/supply',route=>route.fulfill({json:{purchase_orders:[{id:poId}],cockpit:{viewer:{role:'agent_hub'}},fillable:[],boxes:[box()],open_shipments:linked&&stage==='hub_ready'?[{reference:ref,box_count:1}]:[]}}));
+  await page.route(base+'/boxes/'+boxId+'/advance',route=>{writes.push(['advance',route.request().postDataJSON()]);state='DISPATCHED';return route.fulfill({json:{state}});});
+  await page.route(base+'/boxes/shipment',route=>{writes.push(['create',route.request().postDataJSON()]);linked=true;return route.fulfill({json:{result:{reference:ref}}});});
+  await page.route(journey,route=>route.fulfill({json:{shipment:{reference:ref,stage,hub_draft:true},hub_units:[box()],events:[],charges:[]}}));
+  await page.route(journey+'/box-scan',route=>{writes.push(['scan',route.request().postDataJSON()]);scanned=true;return route.fulfill({json:{ok:true}});});
+  await page.route(journey+'/transition',route=>{writes.push(['handover',route.request().postDataJSON()]);if(!scanned)return route.fulfill({status:409,json:{error:'Manifeste incomplet'}});stage='handed_over';return route.fulfill({json:{result:{stage}}});});
+  page.on('dialog',dialog=>dialog.accept());
+  await page.locator('[data-hub-po-pilot-toggle]').click();
+  const po=page.locator('[data-hub-pilot-po="'+poId+'"]');
+  await po.getByText('0 / 2 remis · 0 sorti(s)',{exact:true}).click();
+  const cell=po.locator('[data-hub-inline-departure]');
+  await expect(cell.getByRole('button',{name:'Ouvrir le dossier d’expédition'})).toBeDisabled();
+  await cell.locator('[data-hub-final-box-scan]').fill('KQ1_0123456789ABCDEF0123456789ABCDEF');
+  await cell.locator('[data-hub-box-label-applied]').check();
+  await cell.getByRole('button',{name:'Prêt à remettre au transitaire'}).click();
+  await expect(po.getByText('0 / 2 remis · 1 sorti(s)',{exact:true})).toBeVisible();
+  await cell.getByLabel('Inclure KOM-BOX-TEST').check();
+  await cell.getByLabel('Référence de la nouvelle expédition').fill(ref);
+  await cell.getByRole('button',{name:'Ouvrir le dossier d’expédition'}).click();
+  const manifest=cell.locator('[data-hub-handover-manifest="'+ref+'"]');
+  await expect(manifest).toBeVisible();
+  const scan=manifest.locator('[data-journey-custody-scan="HUB_HANDOVER"]');
+  await scan.locator('[name=qr_code]').fill('KQ1_0123456789ABCDEF0123456789ABCDEF');
+  await scan.locator('[name=proof_ref]').fill('PREUVE-SCAN');
+  await scan.locator('[name=confirmed]').selectOption('yes');
+  await scan.getByRole('button',{name:'Enregistrer'}).click();
+  await expect.poll(()=>writes.length).toBe(3);
+  const hand=manifest.locator('[data-journey-next-task]');
+  await hand.locator('[name=forwarder_name]').fill('Transitaire test');
+  await hand.locator('[name=transport_mode]').selectOption('sea');
+  await hand.locator('[name=proof_ref]').fill('BON-REMISE-TEST');
+  await hand.getByRole('button',{name:'Enregistrer'}).click();
+  await expect(po.getByText('1 / 2 remis · 1 sorti(s)',{exact:true})).toBeVisible();
+  expect(writes.map(w=>w[0])).toEqual(['advance','create','scan','handover']);
+  expect(writes[1][1].hub_unit_ids).toEqual([boxId]);
+  expect(writes[2][1]).toMatchObject({event_type:'HUB_HANDOVER',confirmed:true,proof_ref:'PREUVE-SCAN'});
+  expect(writes[3][1]).toMatchObject({to_stage:'handed_over',proof_ref:'BON-REMISE-TEST',forwarder_name:'Transitaire test',transport_mode:'sea'});
+  await expect(cell.locator('[data-journey-next-task]')).toHaveCount(0);
+  await expect(page).toHaveURL(ORIGIN+'/admin/hub');
+});

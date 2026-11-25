@@ -24,3 +24,15 @@ test('destination COMBOX issue des allocations et du relais de même marché',()
  expect(source).toContain('rl.id = o.relais_id AND rl.market_id = a.market_id');
  expect(source).toContain('relais_id: r.relais_id || null, relais_code: r.relais_code || null');
 });
+
+test('allocation disponible : identité PO exacte projetée depuis le snapshot physique',()=>{
+  expect(source).toContain('a.purchase_order_id, a.order_id, o.reference AS order_ref');
+  expect(source).toContain('purchase_order_id: r.purchase_order_id');
+});
+
+test('préparation : rail demandé et état qualité proviennent du dossier serveur, sans défaut implicite',()=>{
+  expect(source).toContain('oi.requested_transport_rail, u.state AS source_state');
+  expect(source).toContain('requested_transport_rail: r.requested_transport_rail || null');
+  expect(source).toContain('source_state: r.source_state || null');
+  expect(source).toContain('single_purchase_order: r.single_purchase_order === true');
+});
