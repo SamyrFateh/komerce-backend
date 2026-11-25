@@ -417,7 +417,7 @@
   // Le Hub est une entité centrale : ce tableau agrège TOUS les marchés
   // sans sélecteur de marché. Les opérations utilisent ensuite, si besoin,
   // le marché d'une commande pour cibler leur writer canonique.
-  async function renderGlobalBoard(root, { document:doc, fetch:fetchFn, user } = {}) {
+  async function renderGlobalBoard(root, { document:doc, fetch:fetchFn, user, location = global.location } = {}) {
     if (!root || !doc || typeof fetchFn !== 'function') {
       throw new Error('hub_global_board_context_missing');
     }
@@ -697,9 +697,9 @@
         body.appendChild(tr);
       }
     };
-    // Prévisualisation réelle du poste PO, explicite et réversible.
+    // Poste PO opérationnel par défaut ; ancienne lecture accessible en secours.
     // Les ateliers canoniques restent les seuls writers. Aucun état métier local.
-    const visualPO = canOperate && new URLSearchParams(safe(global.location?.search)).get('ux')==='po-v8';
+    const visualPO = canOperate && new URLSearchParams(safe(location?.search)).get('ux')!=='legacy';
     let visualHost, visualTabs, visualBoard, visualPanels, visualActive=null,visualMarket=null;
     const visualOpen=new Map();
     const visualLanes=['Engagement','Soumission','Envoi fournisseur','Confirmation / suivi','Réception','Réception complète'];
@@ -1002,7 +1002,7 @@
         body.appendChild(tr);
       }
     };
-    if(canOperate){
+    if(canOperate && !visualPO){
       const pilot=make(doc,'button','kmc-hub-app-branch','Vue PO · pilote');
       pilot.type='button';pilot.setAttribute('data-hub-po-pilot-toggle','');
       pilot.setAttribute('aria-pressed','false');
@@ -1043,9 +1043,10 @@
         finally{refresh.disabled=false;}
       });
       header.appendChild(refresh);
-      // En aperçu seulement, ouverture directe sur le Kanban PO.
+      // Ouverture directe sur le Kanban PO depuis le menu normal.
       try{await visualRefresh();poMode=true;headerTitle.textContent='PO fournisseurs · Tous les marchés';search.placeholder='Rechercher une PO';search.setAttribute('aria-label',search.placeholder);renderVisualPO();
       }catch(error){if(visualHost)visualHost.hidden=true;scroll.hidden=false;headerCount.textContent='Vue PO indisponible : '+error.message;}
+      if(!poMode){const legacy=make(doc,'a','','Vue de secours');legacy.setAttribute('href','/admin/hub?branch=operations&ux=legacy');header.appendChild(legacy);}
     }
     search.addEventListener('input', ()=>{closeMenu();renderRows();});
     try {
