@@ -604,3 +604,26 @@ test('PO partagée : arbitrage V8 ouvre le marché explicitement choisi, sans ba
   expect(fetch.mock.calls.every(([,opts])=>opts.method==='GET')).toBe(true);
  }finally{global.KomerceCanonicalOperationsWorkspace=prev;}
 });
+
+test('mount Hub conserve le marché uniquement pour un dossier PO explicite',async()=>{
+ const app=load(),root=el('main'),history={replaceState:jest.fn()},ops=jest.fn();
+ app.mount({root,user:{role:'admin'},document:doc,location:{search:'?branch=operations&sel=po%3Ap1&market=KM&decision=variance'},history,fetch:mockFetch({}),renderOperations:ops,renderAdministrative:jest.fn()});
+ expect(history.replaceState).not.toHaveBeenCalled();
+ expect(root.querySelector('[data-hub-branch="operations"]').getAttribute('href')).toBe('/admin/hub?branch=operations');
+ expect(ops).toHaveBeenCalledTimes(1);
+});
+test('projection V8 indisponible : aucune bascule historique, puis récupération par actualisation',async()=>{
+ const app=load(),root=el('main');
+ let available=false;
+ const fetch=jest.fn(async url=>({ok:true,json:async()=>url==='/api/hub/board?view=po'
+  ? available?{scope:'HUB_GLOBAL',markets:['KM'],purchase_orders:[]}:{scope:'UNAVAILABLE'}
+  : {scope:'HUB_GLOBAL',orders:[{id:'o1',reference:'K123456',market:'KM'}]}}));
+ await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'admin'},location:{search:''}});
+ expect(root.querySelectorAll('[data-hub-global-order]')).toHaveLength(0);
+ expect(root.querySelectorAll('[data-hub-po-pilot-toggle]')).toHaveLength(0);
+ const retry=root.querySelector('[data-hub-v8-retry]');expect(retry).not.toBeNull();
+ available=true;await retry.click();
+ expect(root.querySelector('[data-hub-po-v8]')).not.toBeNull();
+ expect(root.querySelectorAll('[data-hub-v8-lane]')).toHaveLength(6);
+ expect(root.querySelectorAll('[data-hub-global-order]')).toHaveLength(0);
+});
