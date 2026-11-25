@@ -814,7 +814,7 @@ test.each(['admin','agent_hub'])('ancienne URL décision PO : %s redirigé vers 
  env.window.location.pathname='/admin/hub-live';
  env.window.location.search='?view=execute&entry=direction&market=KM&sel=po%3Ap1';
  env.api.renderHubLive(env.root,{role},null);
- expect(env.replace).toHaveBeenCalledWith('/admin/hub?branch=operations&sel=po%3Ap1&decision=review');
+ expect(env.replace).toHaveBeenCalledWith('/admin/hub?branch=operations&sel=po%3Ap1&decision=review&market=KM');
  expect(env.fetch).not.toHaveBeenCalled();
  expect(env.root.children).toHaveLength(0);
 });
@@ -822,6 +822,6 @@ test.each(['admin','agent_hub'])('ancienne URL décision PO : %s redirigé vers 
 test('ancienne URL arbitrage : préserve la décision variance dans V8',()=>{
  const env=loadCanonicalApp();env.window.location.search='?view=execute&entry=direction&market=KM&sel=po%3Ap1&decision=variance';
  env.api.renderHubLive(env.root,{role:'admin'},null);
- expect(env.replace).toHaveBeenCalledWith('/admin/hub?branch=operations&sel=po%3Ap1&decision=variance');
+ expect(env.replace).toHaveBeenCalledWith('/admin/hub?branch=operations&sel=po%3Ap1&decision=variance&market=KM');
  expect(env.fetch).not.toHaveBeenCalled();
 });
