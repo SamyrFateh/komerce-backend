@@ -318,26 +318,27 @@ test.describe('Layout Canon — conformité aux mocks approuvés', () => {
     for (const route of ['/admin/commerce', '/admin/pilotage', '/admin/operations', '/admin/pilotage']) {
       await page.click(`.kmc-admin-navigation a[href^="${route}"]`);
       await page.waitForURL(`**${route}*`);
-      const layout = await page.waitForFunction(() => {
-        const hero = document.querySelector('[data-dashboard-role="hero"]');
-        const search = document.querySelector('.kmc-admin-topbar .kmc-admin-search');
-        const market = document.querySelector('.kmc-admin-topbar .kmc-admin-market-select');
-        if (!hero || !search || !market) return false;
+      await page.waitForSelector('[data-dashboard-role="hero"]');
+      await page.waitForTimeout(400);
+      const r = await page.evaluate(() => {
         const box = el => { const b = el.getBoundingClientRect(); return { left:b.left, right:b.right, top:b.top, bottom:b.bottom }; };
+        const safeBox = el => el ? box(el) : null;
         const duplicate = document.querySelector('.kmc-market-context');
         return {
           topbars: document.querySelectorAll('.kmc-admin-topbar').length,
           marketControls: document.querySelectorAll('.kmc-admin-topbar .kmc-admin-market-select').length,
           duplicateVisible: !!duplicate && getComputedStyle(duplicate).display !== 'none',
-          hero: box(hero),
-          search: box(search),
-          market: box(market),
+          hero: safeBox(document.querySelector('[data-dashboard-role="hero"]')),
+          search: safeBox(document.querySelector('.kmc-admin-topbar .kmc-admin-search')),
+          market: safeBox(document.querySelector('.kmc-admin-topbar .kmc-admin-market-select')),
         };
       });
-      const r = await layout.jsonValue();
       expect(r.topbars, route).toBe(1);
       expect(r.marketControls, route).toBe(1);
       expect(r.duplicateVisible, route).toBe(false);
+      expect(r.hero, route).not.toBeNull();
+      expect(r.search, route).not.toBeNull();
+      expect(r.market, route).not.toBeNull();
       for (const control of [r.search, r.market]) {
         expect(control.right, route).toBeLessThanOrEqual(r.hero.right - 8);
         expect(control.bottom, route).toBeLessThanOrEqual(r.hero.top - 8);
