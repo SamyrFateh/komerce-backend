@@ -228,6 +228,14 @@ function summarizePurchaseOrders(market, payload) {
       id: po.id, reference: po.ref || po.id,
       market: market.code, supplier: po.supplier_name || null,
       order_references: orders, order_count: new Set(lines.map(l => l.order_id).filter(Boolean)).size,
+      // Projection minimale, uniquement les lignes réellement rattachées à cette PO.
+      // Aucun nom, téléphone, paiement ou autre article de la commande.
+      order_lines: lines.filter(l => l.order_ref).map(l => ({
+        order_ref:l.order_ref, product:l.product || null,
+        product_sku_id:l.product_sku_id || null, ordered:number(l.ordered),
+        expected:number(l.confirmed), received:number(l.received),
+        missing:l.missing == null ? Math.max(0,number(l.confirmed)-number(l.received)) : number(l.missing),
+      })),
       ordered: sum(lines, l => l.ordered), expected, received, missing, anomalies,
       purchase_stage: po.stage || null, purchase_step: po.step?.key || null,
       trigger_mode: po.trigger_mode || null, sent: Boolean(po.sent_at),
