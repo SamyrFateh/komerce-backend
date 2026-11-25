@@ -2672,7 +2672,7 @@
       loading=true;
       try{
         const dossier=await jsonRequest(fetchFn,endpointFor(marketCode,'supply'));
-        await renderDirectionVariance(host,doc,{fetch:fetchFn,user,marketCode,dossier,poId,
+        await renderDirectionVariance(host,doc,{mode:'execution',fetch:fetchFn,user,marketCode,dossier,poId,
           onVarianceChange:async()=>{await reload();await onChange?.();}});
       }finally{loading=false;}
     };
