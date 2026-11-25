@@ -697,8 +697,113 @@
         body.appendChild(tr);
       }
     };
+    // Prévisualisation réelle du poste PO, explicite et réversible.
+    // Les ateliers canoniques restent les seuls writers. Aucun état métier local.
+    const visualPO = canOperate && new URLSearchParams(safe(global.location?.search)).get('ux')==='po-v8';
+    let visualHost, visualTabs, visualBoard, visualPanels, visualActive=null;
+    const visualOpen=new Map();
+    const visualLanes=['Engagement','Soumission','Envoi fournisseur','Confirmation / suivi','Réception','Réception complète'];
+    const visualStage=p=>{
+      if(p.reception_complete)return 5;
+      if(p.received>0 || p.purchase_step==='received' || ['confirmed','partially_received','hub_received'].includes(p.purchase_stage))return 4;
+      return ({draft:0,validation:1,engaged:2,sent:3})[p.purchase_step]??-1;
+    };
+    const visualRefresh=async()=>{
+      const data=await requestJSON(fetchFn,'/api/hub/board?view=po');
+      if(data.scope!=='HUB_GLOBAL'||!Array.isArray(data.purchase_orders))throw Error('Projection PO indisponible');
+      poRows=data.purchase_orders;
+      renderVisualPO();
+    };
+    const visualSelect=id=>{
+      visualActive=id;
+      renderVisualPO();
+    };
+    function renderVisualPO(){
+      if(!visualHost){
+        visualHost=make(doc,'section','kmc-hub-po-visual');
+        visualHost.setAttribute('data-hub-po-v8','');
+        visualTabs=make(doc,'nav','kmc-hub-po-v8-tabs');visualTabs.setAttribute('aria-label','Dossiers PO ouverts');
+        visualBoard=make(doc,'div','kmc-hub-po-v8-board');
+        visualPanels=make(doc,'div','kmc-hub-po-v8-panels');
+        visualHost.append(visualTabs,visualBoard,visualPanels);
+        root.insertBefore(visualHost,scroll);
+      }
+      scroll.hidden=true;visualHost.hidden=false;
+      const all=(poRows||[]).filter(p=>!p.cancelled);
+      const term=safe(search.value).trim().toLocaleLowerCase('fr');
+      const filtered=all.filter(p=>[p.reference,p.market,p.supplier,...(p.order_references||[])].some(v=>safe(v).toLocaleLowerCase('fr').includes(term)));
+      headerCount.textContent=filtered.length+' PO';
+      visualTabs.replaceChildren();
+      const back=make(doc,'button','kmc-hub-app-branch','Kanban');
+      back.type='button';back.setAttribute('aria-pressed',String(!visualActive));back.addEventListener('click',()=>visualSelect(null));visualTabs.appendChild(back);
+      for(const [id,entry] of visualOpen){
+        const tab=make(doc,'button','kmc-hub-app-branch',entry.po.reference);
+        tab.type='button';tab.setAttribute('aria-pressed',String(id===visualActive));tab.addEventListener('click',()=>visualSelect(id));
+        visualTabs.appendChild(tab);
+        const close=make(doc,'button','kmc-hub-po-v8-close','×');
+        close.type='button';close.setAttribute('aria-label','Fermer '+entry.po.reference);
+        close.disabled=Boolean(entry.loading||entry.handle?.busy?.());
+        close.addEventListener('click',()=>{if(entry.loading||entry.handle?.busy?.())return;entry.panel.remove();visualOpen.delete(id);if(visualActive===id)visualActive=null;renderVisualPO();});
+        visualTabs.appendChild(close);
+      }
+      visualBoard.hidden=Boolean(visualActive);
+      visualBoard.replaceChildren();
+      for(const [i,label] of [...visualLanes,'À vérifier'].entries()){
+        const lane=make(doc,'section','kmc-hub-po-v8-lane');
+        const list=filtered.filter(p=>visualStage(p)===(i===6?-1:i));
+        lane.appendChild(make(doc,'h3','',label+' · '+list.length));
+        for(const p of list){
+          const card=make(doc,'button','kmc-hub-po-v8-card');
+          card.type='button';card.setAttribute('data-hub-po-v8-card',p.id);
+          card.append(make(doc,'strong','',p.reference),make(doc,'small','',p.supplier||'Fournisseur non renseigné'),make(doc,'small','',p.market+' · '+p.order_count+' commande(s)'),make(doc,'small','',i<4?p.ordered+' attendus':p.received+' / '+p.expected+' reçus'));
+          card.addEventListener('click',()=>{
+            if(!visualOpen.has(p.id)){
+              const panel=make(doc,'section','kmc-hub-po-v8-panel');
+              const summary=make(doc,'div','kmc-hub-po-v8-summary');
+              const actions=make(doc,'div','kmc-hub-po-v8-actions');
+              panel.append(summary,actions);visualPanels.appendChild(panel);
+              visualOpen.set(p.id,{po:p,panel,summary,actions,handle:null,mode:null,loading:false});
+            }
+            visualSelect(p.id);
+          });lane.appendChild(card);
+        }
+        visualBoard.appendChild(lane);
+      }
+      for(const [id,entry] of visualOpen){
+        entry.panel.hidden=visualActive!==id;
+        const p=all.find(row=>row.id===id);
+        entry.summary.replaceChildren();
+        if(!p){entry.summary.appendChild(make(doc,'p','','PO indisponible ou annulée.'));entry.actions.hidden=true;continue;}
+        entry.po=p;entry.actions.hidden=false;
+        const stage=visualStage(p);
+        entry.summary.append(make(doc,'h2','',p.reference),make(doc,'p','',p.supplier+' · '+p.market+' · '+p.ordered+' unité(s) commandée(s)'));
+        const progress=make(doc,'div','kmc-hub-po-v8-progress');
+        visualLanes.forEach((label,i)=>{const item=make(doc,'span',i===stage?'is-current':i<stage?'is-done':'',label);if(i===stage)item.setAttribute('aria-current','step');progress.appendChild(item);});
+        entry.summary.appendChild(progress);
+        if(stage>=4)entry.summary.appendChild(make(doc,'p','','Reçus : '+p.received+' / '+p.expected+' · Reliquat : '+p.missing));
+        const orders=make(doc,'details');orders.appendChild(make(doc,'summary','',p.order_count+' commande(s) associée(s)'));
+        for(const ref of p.order_references||[])orders.appendChild(make(doc,'div','',ref));
+        entry.summary.appendChild(orders);
+        if(visualActive!==id)continue;
+        const mode=stage===4?'reception':stage>=0&&stage<4?'purchase':null;
+        if(entry.loading||entry.handle?.busy?.())continue;
+        if(entry.mode===mode && entry.handle)continue;
+        entry.mode=mode;entry.handle=null;
+        entry.actions.replaceChildren();
+        if(!mode){entry.actions.appendChild(make(doc,'p','',stage===5?'Réception complète. Les opérations logistiques restent accessibles dans le parcours existant.':'Étape non déterminée par le serveur.'));continue;}
+        const module=global.KomerceCanonicalOperationsWorkspace;
+        const mount=mode==='purchase'?module?.mountPurchaseActions:module?.mountReceptionActions;
+        if(!mount){entry.actions.appendChild(make(doc,'p','','Atelier canonique indisponible.'));continue;}
+        entry.loading=true;
+        entry.actions.appendChild(make(doc,'p','','Chargement…'));
+        Promise.resolve().then(()=>mount(entry.actions,{document:doc,fetch:fetchFn,user,marketCode:p.market,poId:p.id,receiveRefs,onChange:visualRefresh})).then(handle=>{entry.handle=handle;}).catch(error=>{entry.actions.replaceChildren(make(doc,'p','','Action indisponible : '+error.message));}).finally(()=>{entry.loading=false;});
+      }
+    }
+
     const renderRows = () => {
-      if(poMode){renderPOs();return;}
+      if(poMode){if(visualPO)renderVisualPO();else renderPOs();return;}
+      if(visualHost)visualHost.hidden=true;
+      scroll.hidden=false;
       setHeaders(['Commande / Marché','PO','Fournisseur','Réception','Cartons','Départ','Reste à solder']);
       body.replaceChildren();
       const term = safe(search.value).trim().toLocaleLowerCase('fr');
@@ -840,6 +945,15 @@
         }catch(error){headerCount.textContent='Vue PO indisponible : '+error.message;}
         finally{pilot.disabled=false;}
       });
+    }
+    if(visualPO){
+      const refresh=make(doc,'button','kmc-hub-app-branch','Actualiser les PO');
+      refresh.type='button';
+      refresh.addEventListener('click',async()=>{refresh.disabled=true;try{await visualRefresh();}catch(error){headerCount.textContent=error.message;}finally{refresh.disabled=false;}});
+      header.appendChild(refresh);
+      // En aperçu seulement, ouverture directe sur le Kanban PO.
+      try{await visualRefresh();poMode=true;headerTitle.textContent='PO fournisseurs · Tous les marchés';search.placeholder='Rechercher une PO';search.setAttribute('aria-label',search.placeholder);renderVisualPO();
+      }catch(error){if(visualHost)visualHost.hidden=true;scroll.hidden=false;headerCount.textContent='Vue PO indisponible : '+error.message;}
     }
     search.addEventListener('input', ()=>{closeMenu();renderRows();});
     try {
