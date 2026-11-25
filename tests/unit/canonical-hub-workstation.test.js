@@ -588,3 +588,19 @@ test('V8 uses the mock visual tokens and scoped styles for real forms',()=>{
  const app=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/app.js'),'utf8');
  expect(app).toContain("global.location.replace('/admin/hub?branch=operations&sel='+encodeURIComponent(sel)+'&decision='+(params.get('decision')||'review'))");
 });
+
+test('PO partagée : arbitrage V8 ouvre le marché explicitement choisi, sans basculer sur le premier dossier',async()=>{
+ const app=load(),root=el('main');
+ const po={id:'p1',reference:'PO-1',supplier:'Fournisseur',order_count:0,ordered:2,expected:2,received:1,missing:1,purchase_step:'received'};
+ const fetch=jest.fn(async url=>({ok:true,json:async()=>url==='/api/hub/board?view=po'?{scope:'HUB_GLOBAL',purchase_orders:[{...po,market:'CM'},{...po,market:'KM'}]}:{scope:'HUB_GLOBAL',orders:[]}}));
+ const mountVarianceActions=jest.fn(async()=>({busy:()=>false}));
+ const prev=global.KomerceCanonicalOperationsWorkspace;
+ global.KomerceCanonicalOperationsWorkspace={mountVarianceActions};
+ try{
+  await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'admin'},location:{search:'?branch=operations&sel=po%3Ap1&decision=variance&market=KM'}});
+  await Promise.resolve();await Promise.resolve();
+  expect(mountVarianceActions).toHaveBeenCalledTimes(1);
+  expect(mountVarianceActions).toHaveBeenCalledWith(expect.anything(),expect.objectContaining({poId:'p1',marketCode:'KM'}));
+  expect(fetch.mock.calls.every(([,opts])=>opts.method==='GET')).toBe(true);
+ }finally{global.KomerceCanonicalOperationsWorkspace=prev;}
+});
