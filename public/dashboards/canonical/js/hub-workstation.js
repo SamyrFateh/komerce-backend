@@ -705,7 +705,7 @@
     const visualOpen=new Map();
     const initialParams=new URLSearchParams(safe(location?.search));
     const initialPO=/^po:[A-Za-z0-9-]{1,128}$/.test(initialParams.get('sel')||'')?initialParams.get('sel').slice(3):null;
-    const initialDecision=['commitment','payment','review'].includes(initialParams.get('decision'))?initialParams.get('decision'):null;
+    const initialDecision=['commitment','payment','review','variance'].includes(initialParams.get('decision'))?initialParams.get('decision'):null;
     let initialSelectionHandled=false;
     const visualLanes=['Engagement','Soumission','Envoi fournisseur','Confirmation & suivi','Réception & QR','Bilan PO'];
     const visualStage=p=>{
@@ -938,9 +938,9 @@
         if(proofs.children.length===1)proofs.appendChild(make(doc,'p','kmc-hub-po-v8-muted','Aucune preuve de ces étapes disponible.'));
         if(visualActive!==id)continue;
         // Quantités reçues complètes ne prouvent pas le contrôle qualité ni l'étiquetage.
-        const mode=entry.decision?'purchase':stage===4?'reception':stage>=0&&stage<4?'purchase':null;
+        const mode=entry.decision==='variance'?'variance':entry.decision?'purchase':stage===4?'reception':stage>=0&&stage<4?'purchase':null;
         entry.panel.classList.toggle('is-direction-decision',Boolean(entry.decision));
-        const actionLabel=entry.decision==='commitment'?'Validation de l’engagement':entry.decision==='payment'?'Autorisation de paiement':entry.decision==='review'?'Décisions PO':visualLanes[stage]||'À vérifier';
+        const actionLabel=entry.decision==='commitment'?'Validation de l’engagement':entry.decision==='payment'?'Autorisation de paiement':entry.decision==='review'?'Décisions PO':entry.decision==='variance'?'Arbitrage d’écart fournisseur':visualLanes[stage]||'À vérifier';
         if(entry.loading||entry.handle?.busy?.())continue;
         if(entry.mode===mode && entry.handle){
           if(entry.actionTitle)entry.actionTitle.textContent=actionLabel;
@@ -954,7 +954,7 @@
         const actionHost=make(doc,'div','kmc-hub-po-v8-action-host');entry.actions.appendChild(actionHost);
         if(!mode){entry.actions.appendChild(make(doc,'p','',stage===5?'Réception complète. Les opérations logistiques restent accessibles dans le parcours existant.':'Étape non déterminée par le serveur.'));continue;}
         const module=global.KomerceCanonicalOperationsWorkspace;
-        const mount=mode==='purchase'?module?.mountPurchaseActions:module?.mountReceptionActions;
+        const mount=mode==='variance'?module?.mountVarianceActions:mode==='purchase'?module?.mountPurchaseActions:module?.mountReceptionActions;
         if(!mount){entry.actions.appendChild(make(doc,'p','','Atelier canonique indisponible.'));continue;}
         entry.loading=true;
         actionHost.appendChild(make(doc,'p','','Chargement…'));
@@ -1437,13 +1437,6 @@
       applyFocus();
     });
     header.appendChild(focusToggle);
-    if (administrativeAllowed) {
-      const execution = make(doc,'a','kmc-hub-app-branch','Opérations');
-      execution.setAttribute('href','/admin/hub-live?view=execute&entry=operations');
-      execution.setAttribute('data-hub-open-operations','');
-      execution.setAttribute('aria-label','Ouvrir le poste d’exécution Hub et choisir le marché');
-      header.appendChild(execution);
-    }
     applyFocus();
     root.appendChild(header);
     const nav=make(doc,'nav','kmc-hub-app-branches');
