@@ -261,12 +261,12 @@ async function getOrders(user, { status, search, market, reference, limit = 50, 
 
   // Filtres V4 additifs : jamais de remplacement des restrictions acteur.
   if (market != null && market !== '') {
-    where += ` AND o.market_id IN (SELECT m.id FROM markets m WHERE m.code = ${pi})`;
+    where += ` AND o.market_id IN (SELECT m.id FROM markets m WHERE m.code = $${pi})`;
     params.push(String(market).toUpperCase());
     pi++;
   }
   if (reference) {
-    where += ` AND strpos(upper(o.reference), upper(${pi})) > 0`;
+    where += ` AND strpos(upper(o.reference), upper($${pi})) > 0`;
     params.push(String(reference).slice(0,120));
     pi++;
   }
