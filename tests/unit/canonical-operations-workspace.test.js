@@ -266,3 +266,21 @@ test('réception : la file globale ne peut afficher que les PO du dossier march�
   expect(workspace.receptionOrdersForMarket({purchase_orders:[{id:'p1'},{id:'p2'}]},{purchase_orders:[a,b,c]})).toEqual([a,b]);
   expect(workspace.receptionOrdersForMarket(null,{purchase_orders:[a,b,c]})).toEqual([]);
 });
+
+test('logistique marché : toutes les PO du dossier canonique, relais et rails distincts',()=>{
+  const a={purchase_order_id:'p1',relais_id:'A',relais_code:'A',requested_transport_rail:'SEA_STANDARD',quantity:2};
+  const b={purchase_order_id:'p2',relais_id:'A',relais_code:'A',requested_transport_rail:'AIR_EXPRESS',quantity:1};
+  const c={purchase_order_id:'p3',relais_id:'B',relais_code:'B',requested_transport_rail:null};
+  const dossier={fillable:[a,b],boxes:[{contents:[c]}]};
+  expect(workspace.packingGroups(dossier,'p1').map(g=>[g.relay,g.rail])).toEqual([['A','SEA_STANDARD']]);
+  expect(workspace.packingGroups(dossier,null,{marketWide:true}).map(g=>[g.relay,g.rail])).toEqual([['A','AIR_EXPRESS'],['A','SEA_STANDARD'],['B',null]]);
+});
+test('logistique marché : lecture seule et marché invalide refusés avant requête',async()=>{
+  const fetch=jest.fn();
+  for(const mount of [workspace.mountBoxActions,workspace.mountDepartureActions]){
+    await expect(mount({}, {user:{role:'market_operator'},marketCode:'CM',marketWide:true,fetch})).rejects.toThrow();
+    await expect(mount({}, {user:{role:'agent_hub'},marketCode:'',marketWide:true,fetch})).rejects.toThrow();
+    await expect(mount({}, {user:{role:'agent_hub'},marketCode:'CM',fetch})).rejects.toThrow();
+  }
+  expect(fetch).not.toHaveBeenCalled();
+});
