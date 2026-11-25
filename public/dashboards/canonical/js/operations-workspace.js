@@ -464,7 +464,7 @@
     scannerPanel.appendChild(scannerLabel);
     const scannerResult = text(doc, 'span', 'kmc-workspace-receive-scan-result', 'Scanner la référence avant de déclarer sa quantité reçue.');
     scannerResult.setAttribute('role', 'status');
-    scannerPanel.appendChild(scannerResult);
+    scannerResult.setAttribute('aria-live','polite');
     // Caméra mobile : même identification autorisée que la douchette clavier.
     // Ce bouton lit le code fournisseur. Les QR opaques Komerce auront
     // un résolveur serveur dédié, ils ne sont jamais traités comme un droit d'accès.
@@ -503,6 +503,7 @@
     manualToggle.setAttribute('aria-label', 'Saisie manuelle : provenance MANUAL avec justification obligatoire');
     manualToggleLabel.appendChild(manualToggle);
     scannerPanel.appendChild(manualToggleLabel);
+    scannerPanel.appendChild(scannerResult);
     const manualProofLabel = text(doc, 'label', 'kmc-workspace-receive-field-label',
       'Justification manuelle · obligatoire (6 caractères minimum)');
     manualProofLabel.hidden = true;
@@ -875,7 +876,10 @@
     tracking.placeholder = 'Tracking fournisseur (facultatif)';
     tracking.setAttribute('aria-label', 'Tracking réel du colis sans manifeste');
     tracking.setAttribute('data-hub-unmanifested-tracking', '');
-    [physical, location, tracking].forEach(node => form.appendChild(node));
+    for(const [node,label] of [[physical,'Référence physique du colis'],[location,'Zone de réception · obligatoire'],[tracking,'Suivi fournisseur · facultatif']]){
+      const wrapper=text(doc,'label','kmc-workspace-receive-field-label',label);
+      wrapper.appendChild(node);form.appendChild(wrapper);
+    }
     const button = makeActionButton(doc, 'Attester l’arrivée sans manifeste', 'hub-unmanifested-arrival');
     button.type = 'submit';
     button.disabled = true;
@@ -1082,25 +1086,59 @@
     return {reload,busy:()=>pending};
   }
 
+  function receptionOrdersForMarket(dossier,receivable){
+    const known=new Set((dossier?.purchase_orders||[]).map(p=>String(p.id)));
+    return (receivable?.purchase_orders||[]).filter(p=>known.has(String(p.purchase_order_id)));
+  }
+
   function renderReceptionSection(rootNode, ui, doc, context) {
-    const slot = createSection(
-      rootNode,
-      ui,
-      'Hub · Réception fournisseur',
-      'Enregistrez uniquement les quantités physiquement arrivées au Hub. La mention « expédié par le fournisseur » ne prouve pas une réception ; les réceptions partielles sont acceptées.'
-    );
-    // Accessible même sans PO en attente : c’est précisément le cas d’un colis à rapprocher.
-    slot.appendChild(createUnmanifestedArrivalCard(doc, context));
-    if (context.receivableError) {
-      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', `Réception indisponible : ${context.receivableError}`));
-      return;
+    const slot = createSection(rootNode,ui,'Hub · Réception fournisseur',
+      'Identifiez les articles arrivés, saisissez les quantités réelles et enregistrez. Les réceptions partielles sont acceptées.');
+    slot.setAttribute('data-hub-reception-station','');
+    const selected=context.receptionPO;
+    const orders=receptionOrdersForMarket(context.dossier,context.receivable);
+    const known=(context.dossier?.purchase_orders||[]).find(p=>String(p.id)===String(selected));
+    const top=doc.createElement('div');top.className='kmc-hub-reception-toolbar';
+    const select=doc.createElement('select');select.setAttribute('aria-label','Choisir le bon fournisseur à réceptionner');
+    select.appendChild(Object.assign(doc.createElement('option'),{value:'',textContent:'Choisir une PO à réceptionner…'}));
+    for(const po of orders){
+      const dossierPO=(context.dossier?.purchase_orders||[]).find(p=>String(p.id)===String(po.purchase_order_id));
+      const title=[dossierPO?.ref||'PO '+String(po.purchase_order_id).slice(0,8),po.supplier?.name||'Fournisseur',po.supplier_order_ref].filter(Boolean).join(' · ');
+      select.appendChild(Object.assign(doc.createElement('option'),{value:String(po.purchase_order_id),textContent:title}));
     }
-    const orders = (context.receivable && context.receivable.purchase_orders) || [];
-    if (!orders.length) {
-      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun bon fournisseur en attente de réception.'));
-      return;
+    if(known&&!orders.some(p=>String(p.purchase_order_id)===String(selected)))select.appendChild(Object.assign(doc.createElement('option'),{value:String(selected),textContent:(known.ref||'PO '+String(selected).slice(0,8))+' · Aucune quantité attendue'}));
+    const label=text(doc,'label','kmc-workspace-receive-field-label','Bon fournisseur');
+    label.appendChild(select);top.appendChild(label);
+    const back=text(doc,'button','kmc-workspace-action is-secondary','Retour aux achats');
+    back.type='button';back.addEventListener('click',()=>{context.receptionPO=null;context.view='supply';context.renderCurrent();});top.appendChild(back);
+    slot.appendChild(top);
+    const body=doc.createElement('div');body.setAttribute('data-hub-reception-selected','');slot.appendChild(body);
+    function paint(){
+      body.replaceChildren();
+      const id=context.receptionPO;
+      const po=orders.find(p=>String(p.purchase_order_id)===String(id));
+      const dossierPO=(context.dossier?.purchase_orders||[]).find(p=>String(p.id)===String(id));
+      if(context.receivableError||context.dossierError||!context.dossier){
+        body.appendChild(text(doc,'div','kmc-workspace-empty','Réception indisponible : '+(context.receivableError||context.dossierError||'dossier marché non chargé')));return;
+      }
+      if(po)body.appendChild(createReceptionCard(doc,context,po));
+      else body.appendChild(text(doc,'p','kmc-workspace-empty',id&&!dossierPO?'PO absente de ce marché.':id?'Aucune quantité attendue pour cette PO.':orders.length?'Sélectionnez une PO pour afficher uniquement son dossier.':'Aucun bon fournisseur en attente de réception.'));
+      if(dossierPO){
+        body.appendChild(renderReceiptQuality(doc,context,context.dossier,id));
+        body.appendChild(renderArticleLabelActions(doc,context,receptionLabelRows(context.dossier,id).filter(sourceQualityChecked)));
+      }
     }
-    orders.forEach(po => slot.appendChild(createReceptionCard(doc, context, po)));
+    // A single PO can open automatically, never a random PO among several.
+    if(!selected&&orders.length===1)context.receptionPO=String(orders[0].purchase_order_id);
+    select.value=context.receptionPO||'';
+    select.addEventListener('change',()=>{context.receptionPO=select.value||null;paint();});
+    paint();
+    const arrival=doc.createElement('details');arrival.className='kmc-hub-reception-exception';arrival.setAttribute('data-hub-unmanifested-details','');
+    arrival.open=Boolean(context.unmanifestedArrivalOpen);
+    arrival.appendChild(text(doc,'summary','','Colis non identifié · arrivée sans manifeste'));
+    arrival.appendChild(createUnmanifestedArrivalCard(doc,context));
+    arrival.addEventListener('toggle',()=>{context.unmanifestedArrivalOpen=arrival.open;});
+    slot.appendChild(arrival);
   }
 
   // Hub live · Approvisionnement : projection serveur du dossier par marché (aucun calcul métier côté navigateur).
@@ -1951,6 +1989,7 @@
             context.cockpitState.sel={type:'po',id:purchaseOrderId};
             context.cockpitState.form=null;
           }
+          context.receptionPO= purchaseOrderId || null;
           context.view = 'reception';
           context.renderCurrent();
           if(purchaseOrderId) Array.from(rootNode.querySelectorAll('[data-receive-po]'))
@@ -3478,6 +3517,7 @@
       marketCode,
       decisionOnly:options.mode==='execution'&&hubQuery.get('entry')==='direction',
       decisionKind:hubQuery.get('decision'),
+      receptionPO:hubAtelier==='reception'&&(hubQuery.get('sel')||'').startsWith('po:')?hubQuery.get('sel').slice(3):null,
       mode: ['execution', 'relay-execution'].includes(options.mode) ? options.mode : 'pilot',
       user: options.user || null,
       initialFocus: options.forcedRelayFocus || (options.mode==='relay-execution' ? String(new URLSearchParams(String(globalThis.location?.search||'')).get('focus')||'') : ''),
@@ -3588,6 +3628,7 @@
     packingBoxMatches,
     sourceQualityChecked,
     receptionLabelRows,
+    receptionOrdersForMarket,
     mount,
   });
 });
