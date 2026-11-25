@@ -272,3 +272,11 @@ test('confirmation compacte : défaut intégral, saisie des écarts, mêmes cont
   expect(js).toContain("Justificatif d’achat obligatoire");
   expect(js).toContain("data-hlc-confirm-missing");
 });
+
+
+test('V8 decision focus exposes only existing decision actions',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-live-cockpit.js'),'utf8');
+ expect(src).toContain("ctx.decisionOnly==='commitment'?['authorize-commitment','download-commitment-pdf']");
+ expect(src).toContain("ctx.decisionOnly==='payment'?['authorize-payment']");
+ expect(src).toContain('actionsFor().filter(a => allowed.has(a.key)');
+});
