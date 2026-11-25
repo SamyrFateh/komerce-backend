@@ -567,6 +567,19 @@
     button.disabled = true;
     footer.appendChild(button);
     card.appendChild(footer);
+    // Réception intégrale de ce qui reste sur la PO : raccourci explicite,
+    // sans POST et sans changement de la règle FIFO d'allocation serveur.
+    let fullReceipt=null;
+    if(context.compactPO){
+      fullReceipt=makeActionButton(doc,'Tout le restant est reçu et compté','receive-full-verified');
+      fullReceipt.disabled=true;
+      fullReceipt.addEventListener('click',()=>{
+        if(fullReceipt.disabled)return;
+        for(const {input,line} of inputs)input.value=String(line.remaining_quantity);
+        sync();
+      });
+      footer.insertBefore(fullReceipt,button);
+    }
 
     function collect() {
       const contents = [];
@@ -596,6 +609,11 @@
       const { contents, invalid } = collect();
       const unverified = contents.some(item => !item.evidence_code && item.evidence_method !== 'MANUAL');
       button.disabled = invalid || contents.length === 0 || unverified;
+      if(fullReceipt){
+        const remaining=inputs.filter(({line})=>Number(line.remaining_quantity)>0);
+        fullReceipt.disabled=!remaining.length||remaining.some(({line})=>!line.product_sku_id||
+          (manualToggle.checked?String(manualProof.value||'').trim().length<6:!scannedCodeBySku.has(String(line.product_sku_id))));
+      }
       hint.textContent = invalid
         ? 'Quantité invalide : entier entre 0 et le restant attendu.'
         : unverified ? (manualToggle.checked
@@ -1054,7 +1072,7 @@
     return section;
   }
 
-  async function mountReceptionActions(host,{document:doc,fetch:fetchFn,user,marketCode,poId,onChange,receiveRefs=new Map()}={}){
+  async function mountReceptionActions(host,{document:doc,fetch:fetchFn,user,marketCode,poId,onChange,receiveRefs=new Map(),compactPO=false}={}){
     if(!['admin','agent_hub'].includes(user?.role)||!poId)throw Error('Accès réception Hub requis');
     const feedback=text(doc,'p','kmc-workspace-feedback','');
     feedback.setAttribute('data-workspace-feedback','');
@@ -1062,7 +1080,7 @@
     const slot=doc.createElement('div');
     host.replaceChildren(feedback,slot);
     let pending=false;
-    const context={root:host,fetch:fetchFn,marketCode,receiveRefs,confirm:message=>doc.defaultView.confirm(message)};
+    const context={root:host,fetch:fetchFn,marketCode,receiveRefs,compactPO,confirm:message=>doc.defaultView.confirm(message)};
     const reload=async()=>{
       pending=true;
       try{
