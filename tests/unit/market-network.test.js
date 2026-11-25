@@ -30,5 +30,6 @@ describe('market-network (Réseau local) — île et rattachement agent', () => 
   });
   test('le lien de l’équipe pointe sur la section Réseau Local', () => {
     expect(ui).toContain("section.id = 'market-network'");
+    expect(ui).toContain("summary.id = 'market-providers'");
   });
 });
