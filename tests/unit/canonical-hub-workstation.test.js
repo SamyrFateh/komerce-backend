@@ -579,3 +579,12 @@ test('Direction V8 : ouvre exactement la PO demandée, décision distincte même
   expect(fetch.mock.calls.every(([,options])=>options.method==='GET')).toBe(true);
  }finally{global.KomerceCanonicalOperationsWorkspace=prev;}
 });
+
+
+test('V8 uses the mock visual tokens and scoped styles for real forms',()=>{
+ const css=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/css/hub-workstation.css'),'utf8');
+ for(const token of ['--nav:#13273a','--ink:#182c3b','--muted:#647588','--line:#dce4e9','--bg:#f3f6f8','--blue:#1765ad'])expect(css).toContain(token);
+ expect(css).toContain('.kmc-hub-po-visual .hlc-form .hlc-btn.is-primary');
+ const app=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/app.js'),'utf8');
+ expect(app).toContain("global.location.replace('/admin/hub?branch=operations&sel='+encodeURIComponent(sel)+'&decision=review')");
+});
