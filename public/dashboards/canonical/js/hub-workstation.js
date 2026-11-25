@@ -801,7 +801,8 @@
         }
         entry.summary.appendChild(orders);
         if(visualActive!==id)continue;
-        const mode=stage===4?'reception':stage>=0&&stage<4?'purchase':null;
+        // Quantités reçues complètes ne prouvent pas le contrôle qualité ni l'étiquetage.
+        const mode=stage>=4?'reception':stage>=0&&stage<4?'purchase':null;
         if(entry.loading||entry.handle?.busy?.())continue;
         if(entry.mode===mode && entry.handle)continue;
         entry.mode=mode;entry.handle=null;
