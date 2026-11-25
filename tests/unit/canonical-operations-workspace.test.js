@@ -243,3 +243,20 @@ test('le montage COMBOX refuse un rôle non Hub avant toute lecture',async()=>{
   await expect(workspace.mountBoxActions({}, {user:{role:'market_operator'},marketCode:'CM',poId:'p1',fetch})).rejects.toThrow('Accès COMBOX Hub requis');
   expect(fetch).not.toHaveBeenCalled();
 });
+
+test('départ : seul DISPATCHED non rattaché est sélectionnable et liaison PO exacte',()=>{
+  const own={unit_id:'b1',state:'DISPATCHED',contents:[{purchase_order_id:'p1',qty:1},{purchase_order_id:'p2',qty:2}]};
+  const other={unit_id:'b2',state:'PACKED',contents:[{purchase_order_id:'p2',qty:1}]};
+  const linked={...own,unit_id:'b3',shipment_ref:'SHIP'};
+  expect(workspace.departureBoxes({boxes:[own,other,linked]},'p1')).toEqual([own,linked]);
+  expect(workspace.departureReady(own)).toBe(true);
+  expect(workspace.departureReady({...own,state:'PACKED'})).toBe(false);
+  expect(workspace.departureReady(linked)).toBe(false);
+  expect(workspace.departureReady({...own,contents:[]})).toBe(false);
+  expect(workspace.departureShipmentRefs({boxes:[own,other,linked]},'p1')).toEqual(['SHIP']);
+});
+test('montage départ interdit à un responsable marché avant toute lecture',async()=>{
+  const fetch=jest.fn();
+  await expect(workspace.mountDepartureActions({}, {user:{role:'market_operator'},marketCode:'CM',poId:'p1',fetch})).rejects.toThrow('Accès départ Hub requis');
+  expect(fetch).not.toHaveBeenCalled();
+});
