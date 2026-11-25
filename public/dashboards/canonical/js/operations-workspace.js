@@ -439,6 +439,20 @@
     return 'Réception enregistrée.';
   }
 
+  // Le raccourci ne préremplit jamais au montage : seulement après un geste
+  // explicite, avec preuve de chaque référence restante.
+  function canFillVerifiedReceipt(inputs, scannedCodeBySku, manual, proof) {
+    const remaining=inputs.filter(({line})=>Number(line.remaining_quantity)>0);
+    return remaining.length>0 && remaining.every(({line})=>Boolean(line.product_sku_id)&&
+      (manual?String(proof||'').trim().length>=6:scannedCodeBySku.has(String(line.product_sku_id))));
+  }
+
+  function fillVerifiedReceipt(inputs, scannedCodeBySku, manual, proof) {
+    if(!canFillVerifiedReceipt(inputs,scannedCodeBySku,manual,proof))return false;
+    for(const {input,line} of inputs)input.value=String(line.remaining_quantity);
+    return true;
+  }
+
   function createReceptionCard(doc, context, po) {
     const card = doc.createElement('article');
     card.className = 'kmc-workspace-receive-card';
@@ -575,8 +589,7 @@
       fullReceipt.disabled=true;
       fullReceipt.addEventListener('click',()=>{
         if(fullReceipt.disabled)return;
-        for(const {input,line} of inputs)input.value=String(line.remaining_quantity);
-        sync();
+        if(fillVerifiedReceipt(inputs,scannedCodeBySku,manualToggle.checked,manualProof.value))sync();
       });
       footer.insertBefore(fullReceipt,button);
     }
@@ -610,9 +623,7 @@
       const unverified = contents.some(item => !item.evidence_code && item.evidence_method !== 'MANUAL');
       button.disabled = invalid || contents.length === 0 || unverified;
       if(fullReceipt){
-        const remaining=inputs.filter(({line})=>Number(line.remaining_quantity)>0);
-        fullReceipt.disabled=!remaining.length||remaining.some(({line})=>!line.product_sku_id||
-          (manualToggle.checked?String(manualProof.value||'').trim().length<6:!scannedCodeBySku.has(String(line.product_sku_id))));
+        fullReceipt.disabled=!canFillVerifiedReceipt(inputs,scannedCodeBySku,manualToggle.checked,manualProof.value);
       }
       hint.textContent = invalid
         ? 'Quantité invalide : entier entre 0 et le restant attendu.'
@@ -3647,6 +3658,8 @@
     sourceQualityChecked,
     receptionLabelRows,
     receptionOrdersForMarket,
+    canFillVerifiedReceipt,
+    fillVerifiedReceipt,
     mount,
   });
 });
