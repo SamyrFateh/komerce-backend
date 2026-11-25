@@ -129,7 +129,7 @@ async function mount(page, { posts = [], failShip = false, receiveReply = null, 
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
     const json = (body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
-    if (url.pathname === '/admin/hub-live' || url.pathname === '/admin/workspaces/operations') return route.fulfill({ contentType: 'text/html', path: path.join(CANONICAL, 'index.html') });
+    if (['/admin/hub-live','/admin/hub','/admin/workspaces/operations'].includes(url.pathname)) return route.fulfill({ contentType: 'text/html', path: path.join(CANONICAL, 'index.html') });
     if (url.pathname.startsWith('/dashboards/canonical/')) {
       const file = path.join(CANONICAL, url.pathname.replace('/dashboards/canonical/', ''));
       return fs.existsSync(file) ? route.fulfill({ path: file }) : route.fulfill({ status: 404, body: '' });
@@ -169,6 +169,15 @@ async function mount(page, { posts = [], failShip = false, receiveReply = null, 
     if (url.pathname === '/api/admin/dashboard/context') return json(FX.context);
     if (url.pathname === API) return json(emptyDistribution ? { ...WORKSPACE, distribution: { unassigned: [] } } : WORKSPACE);
     if (url.pathname === `${API}/supply`) return json(dossier.cockpit ? dossier : shapeDossier(dossier));
+    if (url.pathname === '/api/hub/board') {
+      if(url.searchParams.get('view')!=='po')return json({scope:'HUB_GLOBAL',orders:[]});
+      return json({scope:'HUB_GLOBAL',markets:['KM'],purchase_orders:(dossier.purchase_orders||[]).map(po=>({
+        id:po.id,reference:po.ref||'PO-'+po.id.slice(0,4),market:'KM',supplier:po.supplier_name,
+        purchase_step:po.step?.key||'received',purchase_stage:po.status,
+        ordered:po.lines.reduce((n,l)=>n+Number(l.ordered),0),expected:po.totals.effective,
+        received:po.totals.received,missing:po.totals.missing,order_references:[],order_count:0
+      }))});
+    }
     if (url.pathname === `${API}/supply/physical-code`) {
       const scanned = url.searchParams.get('code');
       if (learned.has(scanned)) return json({ product_sku_id: SKU_ID, purchase_order_id: PO_ID, confirmed: true, code: scanned });
@@ -833,6 +842,8 @@ test('Direction : arbitrage fournisseur réservé au grant et POST uniquement ap
     return route.fulfill({status:201,contentType:'application/json',body:'{"ok":true}'});
   });
   await page.goto(ORIGIN+'/admin/hub-live?view=execute&entry=direction&market=KM&sel=po%3A'+PO_ID+'&decision=variance');
+  await expect(page).toHaveURL(/\/admin\/hub\?branch=operations&sel=po%3A[^&]+&decision=variance/);
+  await expect(page.locator('[data-hub-po-v8]')).toBeVisible();
   const panel=page.locator('[data-hub-direction-variance]');
   await expect(panel.getByRole('button',{name:'Décider un écart fournisseur'})).toBeVisible();
   await expect(page.locator('[data-workspace-view]')).toHaveCount(0);
