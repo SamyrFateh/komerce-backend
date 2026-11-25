@@ -1866,7 +1866,9 @@
       try{
         dossier=await jsonRequest(fetchFn,endpointFor(marketCode,'supply'));
         if(!dossier.cockpit?.viewer||!(dossier.purchase_orders||[]).some(p=>String(p.id)===String(poId)))throw Error('Dossier PO indisponible ou accès refusé');
-        if(selectedShipment&&departureShipmentRefs(dossier,poId).includes(selectedShipment)){
+        const groups=packingGroups(dossier,poId);
+        const group=groups.find(g=>g.key===selectedGroupKey)||groups[0];
+        if(selectedShipment&&group&&groupBoxes(group).some(b=>b.shipment_ref===selectedShipment)){
           detail=await jsonRequest(fetchFn,panel.endpoint(context,encodeURIComponent(selectedShipment)));
           if(detail.shipment?.reference!==selectedShipment)throw Error('Manifeste indisponible');
         }else{selectedShipment=null;detail=null;}
