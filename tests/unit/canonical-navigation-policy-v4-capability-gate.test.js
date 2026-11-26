@@ -127,24 +127,37 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     expect(groups.map(g=>g.id)).toEqual(['pilot','commerce','economy','operations','finance','live','markets','administration','help']);
     const links=Object.fromEntries(groups.flatMap(g=>g.items).map(i=>[i.id,i.href]));
     for(const id of ['control-tower','action-center','flow-commerce','flow-orders',
-      'entity-clients','workspace-pricing','workspace-catalog','flow-operations',
-      'workspace-shipping','flow-finance','workspace-accounting','live-hub','markets-home',
-      'market-autonomy','market-catalog','unsold','admin-users','admin-providers','settings']) {
+      'entity-clients','workspace-pricing','flow-operations',
+      'workspace-shipping','flow-finance','workspace-accounting','live-hub',
+      'market-autonomy','market-catalog','unsold','admin-providers','settings']) {
       expect(links[id]).toBeDefined();
     }
-    expect(links['workspace-catalog']).toBe('/dashboards/canonical/market-catalog.html');
+    expect(links['workspace-catalog']).toBeUndefined();
+    expect(links['markets-home']).toBeUndefined();
+    expect(links['admin-users']).toBeUndefined();
     expect(links['workspace-purchasing']).toBeUndefined();
     expect(links['live-import-runtime']).toBeUndefined();
     expect(links['live-relais']).toBeUndefined();
     expect(groups.find(group => group.id === 'live').items.map(item => item.id)).toEqual(['live-hub']);
-    expect(links['admin-users']).toContain('#market-team');
     expect(links['admin-providers']).toContain('#market-providers');
     expect(links['settings']).toContain('#market-cash-control');
     expect(links.unsold).toBe('/dashboards/canonical/unsold.html');
+    const marketHrefs = groups.flatMap(group => group.items).map(item => item.href);
+    expect(new Set(marketHrefs).size).toBe(marketHrefs.length);
     for(const central of ['/admin/workspaces/purchasing','/admin/workspaces/catalog',
       '/admin/import-runtime','/admin/relais-live','/admin/users','/admin/providers','/admin/settings']) {
       expect(Object.values(links)).not.toContain(central);
     }
+  });
+
+  test('la topbar Hub expose le scope serveur du responsable pays', () => {
+    const nav = loadPolicy();
+    expect(nav.hubMarketScopeLabel(marketAdminContext([]))).toBe('Hub · CM');
+    expect(nav.hubMarketScopeLabel({ access: {
+      mode: 'market', allowedMarkets: ['CM', 'CG'], defaultMarket: null,
+    } })).toBe('Hub · CM, CG');
+    expect(nav.hubMarketScopeLabel({ access: { mode: 'global' } })).toBe('Global · Tous les marchés');
+    expect(nav.hubMarketScopeLabel({ access: { mode: 'hub' } })).toBe('Hub · Périmètre Hub');
   });
 
   test('admin sees domain groups (Commerce / Opérations / Finance) with existing destinations only', () => {
