@@ -272,7 +272,7 @@
 
   // Shared candidate contract. Exported for integration and desktop proof;
   // not activated in enhance() until the complete approved surface is ready.
-  function createV7V6Tabs(doc, model, initial='centers'){
+  function createV7V6Tabs(doc, model, initial='centers', onTabChange){
     const shell=el(doc,'section','kmc-v7v6-tabs'),nav=el(doc,'nav','kmc-v7-families'),content=el(doc,'div','kmc-v7v6-content');
     nav.setAttribute('aria-label','Atelier économique');
     const defs=[['centers','Centres de coûts'],['activity','Activité'],['profit','Rentabilité']];
@@ -286,7 +286,7 @@
       else content.append(createV6Profitability(doc,model));
     }
     for(const [key,label] of defs){
-      const btn=el(doc,'button','kmc-v7-family',label);btn.type='button';btn.addEventListener('click',()=>{active=key;render();});tabs.push([key,btn]);nav.append(btn);
+      const btn=el(doc,'button','kmc-v7-family',label);btn.type='button';btn.addEventListener('click',()=>{active=key;render();if(typeof onTabChange==='function')onTabChange(key);});tabs.push([key,btn]);nav.append(btn);
     }
     shell.append(nav,content);render();return shell;
   }
@@ -297,6 +297,47 @@
     const result=await workspace.jsonRequest(options.fetch,endpoint+'/cost-centers?periodStart='+encodeURIComponent(periodStart));
     if(!result||result.periodStart!==periodStart||result.marketCode!==(options.requestedMarket||null))throw new Error('Périmètre économique incohérent');
     return result;
+  }
+
+  // Common read controller for the approved three-tab cockpit. The outer
+  // workspace owns the market; never keep a model after a failed scope/period
+  // change. Only the server supplies economic values.
+  function createV7V6Session(doc, workspace, options, initialPeriod) {
+    const host=el(doc,'section','kmc-v7v6-session');
+    const status=el(doc,'p','kmc-v7-coverage');
+    status.setAttribute('role','status');
+    const content=el(doc,'div','kmc-v7v6-session-content');
+    host.append(status,content);
+    let generation=0, active='centers', disposed=false;
+    const context={...options,requestedMarket:options.requestedMarket||null};
+    async function refresh(periodStart=initialPeriod){
+      if(disposed)return false;
+      const request=++generation;
+      content.replaceChildren();
+      status.textContent='Chargement de la période '+periodStart+'…';
+      host.setAttribute('aria-busy','true');
+      try{
+        const model=await fetchV7V6Model(workspace,context,periodStart);
+        if(disposed||request!==generation)return false;
+        content.append(createV7V6Tabs(doc,model,active,key=>{active=key;}));
+        status.textContent='';
+        return true;
+      }catch(error){
+        if(disposed||request!==generation)return false;
+        content.replaceChildren();
+        status.textContent='Données économiques indisponibles pour cette période.';
+        return false;
+      }finally{
+        if(!disposed&&request===generation)host.setAttribute('aria-busy','false');
+      }
+    }
+    function dispose(){
+      disposed=true;generation++;
+      content.replaceChildren();
+      status.textContent='';
+      host.setAttribute('aria-busy','false');
+    }
+    return {element:host,refresh,dispose};
   }
 
   function finite(value) {
@@ -1906,6 +1947,7 @@
     createV6Profitability,
     createV7V6Tabs,
     fetchV7V6Model,
+    createV7V6Session,
     v7Money,
     classifyComponents,
     economicNature,

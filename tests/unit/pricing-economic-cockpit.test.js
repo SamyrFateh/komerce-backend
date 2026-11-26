@@ -16,7 +16,7 @@ test('L5 : l’avis « politique de marché absente » est un bloc d’informati
   expect(css).not.toMatch(/kmc-pricing-configuration[^{]*\{[^}]*cursor:\s*pointer/);
 });
 
-const {v7Money,createV7CostCenters,createV6Activity,createV6Profitability,createV7V6Tabs,fetchV7V6Model}=require('../../public/dashboards/canonical/js/pricing-economic-cockpit');
+const {v7Money,createV7CostCenters,createV6Activity,createV6Profitability,createV7V6Tabs,fetchV7V6Model,createV7V6Session}=require('../../public/dashboards/canonical/js/pricing-economic-cockpit');
 function node(tag){
   return {tag,children:[],dataset:{},attrs:{},textContent:'',append(...xs){this.children.push(...xs);},appendChild(x){this.children.push(x);return x;},replaceChildren(){this.children=[];},addEventListener(e,fn){this[e]=fn;},setAttribute(k,v){this.attrs[k]=v;}};
 }
@@ -81,4 +81,34 @@ test('canonical mature cohort result never replaces complete cockpit KPI',()=>{
  const o={periodStart:'2026-01-01',coefficient:'1.1310',observations:1,physicalClosedCount:2,purchaseKmf:'1000.00',transportKmf:'131.00',measuredWeightCount:0};
  const view=createV6Profitability(doc,{profitability:{points:[],ranges:{month:o,quarter:o,ytd:o},periodDecisionEvidence:{status:'AVAILABLE_ON_MATURE_COHORT',matureOrderCount:4,revenueBasisKmf:'2000.00',variableCostsKmf:'1200.00',actualRiskKmf:'80.00',contributionKmf:'720.00',structureKmf:'1000.00',resultKmf:'-280.00',remainingKmf:'280.00',coverageRatio:'0.72'}}});
  expect(texts(view)).toContain('Résultat de la cohorte mature');expect(texts(view)).toContain('Formation du résultat — cohorte mature');expect(texts(view)).toContain('Non disponible');expect(texts(view)).toContain('720 KMF');
+});
+
+test('shared economic session rejects stale period replies, preserves active tab, clears failures',async()=>{
+  const pending=[];
+  const workspace={endpointFor:jest.fn(()=>'/api/admin/workspaces/pricing/market/CM'),jsonRequest:jest.fn(()=>new Promise((resolve,reject)=>pending.push({resolve,reject})))};
+  const session=createV7V6Session(doc,workspace,{requestedMarket:'CM',fetch:jest.fn()},'2026-01-01');
+  const first=session.refresh();
+  const second=session.refresh('2026-02-01');
+  pending[1].resolve({...activityModel,periodStart:'2026-02-01'});
+  await expect(second).resolves.toBe(true);
+  find(session.element,'Activité').click();
+  expect(texts(session.element)).toContain('S1 · Maritime');
+  pending[0].resolve(activityModel);
+  await expect(first).resolves.toBe(false);
+  expect(texts(session.element)).toContain('S1 · Maritime');
+  const third=session.refresh('2026-03-01');
+  expect(texts(session.element)).not.toContain('S1 · Maritime');
+  pending[2].resolve({...activityModel,periodStart:'2026-03-01'});
+  await expect(third).resolves.toBe(true);
+  expect(texts(session.element)).toContain('S1 · Maritime');
+  const wrong=session.refresh('2026-04-01');
+  pending[3].resolve({...activityModel,periodStart:'2026-04-01',marketCode:'CG'});
+  await expect(wrong).resolves.toBe(false);
+  expect(texts(session.element)).not.toContain('S1 · Maritime');
+  expect(texts(session.element)).toContain('Données économiques indisponibles pour cette période.');
+  const last=session.refresh('2026-05-01');
+  session.dispose();
+  pending[4].resolve({...activityModel,periodStart:'2026-05-01'});
+  await expect(last).resolves.toBe(false);
+  expect(find(session.element,'Activité')).toBeUndefined();
 });
