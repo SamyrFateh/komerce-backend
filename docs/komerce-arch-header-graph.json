@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 2143,
-    "edges": 10669,
+    "edges": 10670,
     "dbTables": 254,
     "doctrines": 842,
     "impactAreas": 213,
@@ -19114,7 +19114,8 @@
       "depends": [
         "db",
         "middleware/require-pricing-global-authority.js",
-        "services/market-delegation-service.js"
+        "services/market-delegation-service.js",
+        "services/fx-authority.js"
       ],
       "usedBy": [
         "routes/admin-pricing-workspace.js"
@@ -76811,6 +76812,12 @@
       "label": "services/market-delegation-service.js"
     },
     {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "services/fx-authority.js",
+      "type": "depends",
+      "label": "services/fx-authority.js"
+    },
+    {
       "from": "routes/admin-pricing-workspace.js",
       "to": "services/economic-cost-center-read-model.js",
       "type": "uses",
@@ -130940,7 +130947,8 @@
       "directDependsOn": [
         "db",
         "middleware/require-pricing-global-authority.js",
-        "services/market-delegation-service.js"
+        "services/market-delegation-service.js",
+        "services/fx-authority.js"
       ],
       "directUsedBy": [
         "routes/admin-pricing-workspace.js"
@@ -130989,6 +130997,7 @@
         "impact:market-authorization",
         "middleware/require-pricing-global-authority.js",
         "routes/admin-pricing-workspace.js",
+        "services/fx-authority.js",
         "services/market-delegation-service.js"
       ]
     },
@@ -131753,6 +131762,7 @@
         "impact:pricing",
         "impact:transport",
         "services/economic-cost-budget-service.js",
+        "services/economic-cost-center-read-model.js",
         "services/financial-journal.js",
         "services/fx-chain-service.js",
         "services/fx-engine-rates.js",
