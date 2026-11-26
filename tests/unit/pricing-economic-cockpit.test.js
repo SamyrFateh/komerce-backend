@@ -18,7 +18,7 @@ test('L5 : l’avis « politique de marché absente » est un bloc d’informati
 
 const {v7Money,createV7CostCenters,createV6Activity,createV6Profitability,createV7V6Tabs,fetchV7V6Model,createV7V6Session,install}=require('../../public/dashboards/canonical/js/pricing-economic-cockpit');
 function node(tag){
-  return {tag,children:[],dataset:{},attrs:{},textContent:'',append(...xs){this.children.push(...xs);},appendChild(x){this.children.push(x);return x;},replaceChildren(){this.children=[];},addEventListener(e,fn){this[e]=fn;},setAttribute(k,v){this.attrs[k]=v;}};
+  return {tag,children:[],dataset:{},attrs:{},textContent:'',append(...xs){this.children.push(...xs);},appendChild(x){this.children.push(x);return x;},replaceChildren(...xs){this.children=[...xs];},addEventListener(e,fn){this[e]=fn;},setAttribute(k,v){this.attrs[k]=v;}};
 }
 const doc={createElement:node};
 function all(n){return [n,...n.children.flatMap(all)];}
