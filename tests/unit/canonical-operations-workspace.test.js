@@ -342,6 +342,7 @@ test('réception V3 : le formulaire réel ne remplace le parcours existant que s
   expect(SOURCE).toContain("if(error.code!=='HUB_QUALITY_V3_DISABLED')throw error;");
   expect(SOURCE).toContain('quality?.eligible?renderQualityReceiptV3(doc,context,receipt):createReceptionCard');
   expect(SOURCE).toContain('renderSupplierReturnsV3(doc,context,quality.checks,po)');
-  expect(SOURCE).toContain("physical_confirmed:true,observations:collect()");
+  expect(SOURCE).toContain("physical_confirmed:true,observations");
+  expect(SOURCE).toContain('if(dossier.supplier_quality_v3_enabled===true)quality=await jsonRequest');
   expect(SOURCE).toContain('busy:()=>pending||qualityDirty');
 });
