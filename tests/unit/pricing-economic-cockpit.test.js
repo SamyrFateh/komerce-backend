@@ -16,7 +16,7 @@ test('L5 : l’avis « politique de marché absente » est un bloc d’informati
   expect(css).not.toMatch(/kmc-pricing-configuration[^{]*\{[^}]*cursor:\s*pointer/);
 });
 
-const {v7Money,createV7CostCenters,createV6Activity,createV6Profitability,createV7V6Tabs,fetchV7V6Model,createV7V6Session,install}=require('../../public/dashboards/canonical/js/pricing-economic-cockpit');
+const {v7Money,createV7CostCenters,createV6Activity,createV6Profitability,createV7V6Tabs,fetchV7V6Model,createV7V6Session,createV7BudgetForm,install}=require('../../public/dashboards/canonical/js/pricing-economic-cockpit');
 function node(tag){
   return {tag,children:[],dataset:{},attrs:{},textContent:'',append(...xs){this.children.push(...xs);},appendChild(x){this.children.push(x);return x;},replaceChildren(...xs){this.children=[...xs];},addEventListener(e,fn){this[e]=fn;},setAttribute(k,v){this.attrs[k]=v;}};
 }
@@ -130,4 +130,15 @@ test('exclusive V7/V6 mount replaces legacy DOM without invoking old mount, for 
   }
   expect(original).not.toHaveBeenCalled();
   expect(workspace.__economicV7V6Installed).toBe(true);
+});
+
+test('budget form is contextual and hidden for non-central readers',()=>{
+  const base={...activityModel,centers:[{id:'a',label:'Centre'}],families:[{id:'f',center_id:'a',label:'Famille'}],posts:[{id:'p',center_id:'a',family_id:'f',label:'Poste',budget:{native:'100.0000',currency:'EUR',revision:2}}]};
+  for(const central of [false,true]){
+    const view=createV7CostCenters(doc,{...base,central},{reviseBudget:jest.fn()});
+    find(view,'Consulter').click();find(view,'Poste').click();
+    expect(Boolean(find(view,'Valider le budget'))).toBe(central);
+  }
+  const form=createV7BudgetForm(doc,base,base.posts[0],{reviseBudget:jest.fn()});
+  expect(all(form).find(x=>x.name==='amountNative').value).toBe('100');
 });

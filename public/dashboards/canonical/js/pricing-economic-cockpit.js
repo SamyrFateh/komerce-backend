@@ -44,7 +44,7 @@
     return grouped+(decimals?','+decimals:'')+' '+currency;
   }
 
-  function createV7CostCenters(doc, model) {
+  function createV7CostCenters(doc, model, actions={}) {
     const host=el(doc,'section','kmc-v7-centers');
     host.dataset.v7Centers='';
     const state={centerId:null,familyId:null,postId:null};
@@ -142,10 +142,44 @@
           metric('Budget',post.budget?v7Money(post.budget.native,post.budget.currency):'Non renseigné'),
           metric('Engagements',commitmentText(post)),metric('Charges constatées',structureText(post.structureEvidence)),metric('Disponible','Non calculable'),
           button('Fermer le détail',()=>{state.postId=null;render();}));
+        if(model.central===true&&typeof actions.reviseBudget==='function')detail.append(createV7BudgetForm(doc,model,post,actions));
         host.append(detail);
       }
     }
     render();return host;
+  }
+
+  function createV7BudgetForm(doc,model,post,actions){
+    const form=el(doc,'form','kmc-v7-budget-form');
+    const heading=el(doc,'h4','','Réviser le budget du poste');
+    const field=(label,name,value,placeholder)=>{
+      const wrap=el(doc,'label','kmc-v7-metric',label);
+      const input=el(doc,'input','');input.name=name;input.value=value;input.placeholder=placeholder;input.required=true;
+      wrap.append(input);form.append(wrap);return input;
+    };
+    form.append(heading);
+    const amount=field('Montant natif','amountNative',post.budget?.native?.replace(/\\.?0+$/,'')||'','0.00');
+    // Keep integer amounts intact; strip only insignificant fractional zeros.
+    amount.value=post.budget?.native?.includes('.')?post.budget.native.replace(/0+$/,'').replace(/\\.$/,''):post.budget?.native||'';
+    const currency=field('Devise ISO','currency',post.budget?.currency||'EUR','EUR');currency.maxLength=3;
+    const reason=field('Motif de la révision','reason','','Justification');
+    const submit=el(doc,'button','kmc-v7-action','Valider le budget');submit.type='submit';
+    const feedback=el(doc,'p','kmc-v7-coverage');feedback.setAttribute('role','status');
+    form.append(submit,feedback);
+    let key=null,fingerprint=null,busy=false;
+    form.addEventListener('submit',async event=>{
+      event.preventDefault();if(busy)return;
+      const body={periodStart:model.periodStart,expectedRevision:post.budget?.revision||0,currency:currency.value.trim().toUpperCase(),amountNative:amount.value.trim().replace(',','.'),reason:reason.value.trim()};
+      if(!/^(0|[1-9][0-9]{0,13})(\\.[0-9]{1,4})?$/.test(body.amountNative)||!/^[A-Z]{3}$/.test(body.currency)||body.reason.length<3){feedback.textContent='Montant, devise ou motif invalide.';return;}
+      const nextFingerprint=JSON.stringify(body);
+      if(fingerprint!==nextFingerprint){key=null;fingerprint=nextFingerprint;}
+      if(!key){if(typeof globalThis.crypto?.randomUUID!=='function'){feedback.textContent='Identifiant de requête indisponible.';return;}key=globalThis.crypto.randomUUID();}
+      busy=true;submit.disabled=true;
+      try{await actions.reviseBudget(post.id,{...body,requestKey:key});feedback.textContent='Budget enregistré.';}
+      catch(error){feedback.textContent=error.message||'Révision refusée.';}
+      finally{busy=false;submit.disabled=false;}
+    });
+    return form;
   }
 
   // V6 activity: display only server projections; no browser aggregation.
@@ -269,7 +303,7 @@
   }
 
   // Exclusive three-tab contract: one server snapshot for all views.
-  function createV7V6Tabs(doc, model, initial='centers', onTabChange){
+  function createV7V6Tabs(doc, model, initial='centers', onTabChange,actions){
     const shell=el(doc,'section','kmc-v7v6-tabs'),nav=el(doc,'nav','kmc-v7-families'),content=el(doc,'div','kmc-v7v6-content');
     nav.setAttribute('aria-label','Atelier économique');
     const defs=[['centers','Centres de coûts'],['activity','Activité'],['profit','Rentabilité']];
@@ -278,7 +312,7 @@
     function render(){
       for(const [key,btn] of tabs)btn.setAttribute('aria-pressed',String(key===active));
       content.replaceChildren();
-      if(active==='centers')content.append(createV7CostCenters(doc,model));
+      if(active==='centers')content.append(createV7CostCenters(doc,model,actions));
       else if(active==='activity')content.append(createV6Activity(doc,model));
       else content.append(createV6Profitability(doc,model));
     }
@@ -318,7 +352,14 @@
         const model=await fetchV7V6Model(workspace,context,periodStart);
         if(disposed||request!==generation)return false;
         currentModel=model;
-        content.append(createV7V6Tabs(doc,model,active,key=>{active=key;}));
+        const actions={reviseBudget:async(postId,body)=>{
+          if(disposed||request!==generation||currentModel!==model||model.central!==true)throw new Error('Périmètre économique obsolète.');
+          const endpoint=workspace.endpointFor({requestedMarket:context.requestedMarket});
+          const result=await workspace.jsonRequest(context.fetch,endpoint+'/cost-centers/posts/'+encodeURIComponent(postId)+'/budget-revisions',{method:'POST',body});
+          if(!disposed&&request===generation)await refresh(model.periodStart);
+          return result;
+        }};
+        content.append(createV7V6Tabs(doc,model,active,key=>{active=key;},actions));
         status.textContent='';
         return true;
       }catch(error){
@@ -1934,6 +1975,7 @@
 
   return {
     createV7CostCenters,
+    createV7BudgetForm,
     createV6Activity,
     createV6Profitability,
     createV7V6Tabs,
