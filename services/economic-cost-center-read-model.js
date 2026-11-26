@@ -186,7 +186,10 @@ function shipmentActivity(rows){
   const grams=v=>{if(typeof v!=='string'||!/^\d{1,9}(?:\.\d{1,3})?$/.test(v))return null;const [a,b='']=v.split('.');const n=BigInt(a+b.padEnd(3,'0'));return n>0n?n:null;};
   const kg=v=>{const s=v.toString().padStart(4,'0');return s.slice(0,-3)+'.'+s.slice(-3);};
   const costPerKg=(cents,g)=>display(roundHalfEven(cents*10n,g,2));
-  let documented=0n,freightCustoms=0n,closed=0,allWeight=0n,weightedWeight=0n,weightedCost=0n,weightCount=0,weightedCount=0,purchases=0n,purchaseCount=0,pairedPurchase=0n,pairedTransport=0n,pairedCount=0;
+  const volumeUnits=v=>{if(typeof v!=='string'||!/^\d{1,12}(?:\.\d{1,5})?$/.test(v))return null;const [a,b='']=v.split('.');const n=BigInt(a+b.padEnd(5,'0'));return n>0n?n:null;};
+  const volumeText=v=>{const s=v.toString().padStart(6,'0');return s.slice(0,-5)+'.'+s.slice(-5);};
+  const sumCount=field=>rows.length&&rows.every(r=>Number.isSafeInteger(r[field])&&r[field]>=0)?rows.reduce((n,r)=>n+BigInt(r[field]),0n).toString():null;
+  let documented=0n,freightCustoms=0n,closed=0,allWeight=0n,weightedWeight=0n,weightedCost=0n,weightCount=0,weightedCount=0,purchases=0n,purchaseCount=0,pairedPurchase=0n,pairedTransport=0n,pairedCount=0,pairedFreightCustoms=0n,volume=0n,volumeCount=0,minKg=null,maxKg=null;
   const shipments=rows.map(s=>{
     const amounts=[s.freight_kmf,s.customs_kmf,s.arrival_kmf,s.local_kmf,s.customs_fees_kmf,s.documented_kmf].map(money);
     const complete=Boolean(s.financial_closed_at&&s.financial_close_proof_ref&&s.snapshot_hash&&s.freight_known===true&&
@@ -195,9 +198,11 @@ function shipmentActivity(rows){
     const transport=complete?amounts[0]+amounts[1]:null;
     if(complete){closed++;documented+=amounts[5];freightCustoms+=transport;}
     const g=s.weight_basis==='MEASURED_GROSS_KG'&&s.weight_proof_ref?grams(s.actual_weight_kg):null;
-    if(g!==null){weightCount++;allWeight+=g;if(complete){weightedCount++;weightedWeight+=g;weightedCost+=amounts[5];}}
+    if(g!==null){weightCount++;allWeight+=g;if(complete){weightedCount++;weightedWeight+=g;weightedCost+=amounts[5];
+      const ratio=roundHalfEven(amounts[5]*10n,g,2);if(minKg===null||ratio<minKg)minKg=ratio;if(maxKg===null||ratio>maxKg)maxKg=ratio;}}
+    const v=volumeUnits(s.volume_m3);if(v!==null){volumeCount++;volume+=v;}
     const purchase=money(s.purchase?.amount);
-    if(purchase!==null){purchaseCount++;purchases+=purchase;if(complete&&purchase>0n){pairedCount++;pairedPurchase+=purchase;pairedTransport+=amounts[5];}}
+    if(purchase!==null){purchaseCount++;purchases+=purchase;if(complete&&purchase>0n){pairedCount++;pairedPurchase+=purchase;pairedTransport+=amounts[5];pairedFreightCustoms+=transport;}}
     return {reference:s.reference,rail:s.rail,physicalClosedAt:s.physical_closed_at,
       financialClosedAt:s.financial_closed_at||null,financialStatus:complete?'DOCUMENTED_CLOSED':'NOT_RECONCILED',
       volumeM3:s.volume_m3,boxCount:s.box_count,expectedArticles:s.expected_articles,receivedArticles:s.received_articles,
@@ -208,6 +213,8 @@ function shipmentActivity(rows){
   });
   return {cohort:'RELAY_RECEIPT_MONTH_UTC',scopeCoverage:'EXACT_MARKET_NON_SIMULATED',
     physicalClosedCount:shipments.length,financialClosedCount:closed,
+    boxCount:sumCount('box_count'),expectedArticles:sumCount('expected_articles'),receivedArticles:sumCount('received_articles'),
+    volumeM3:shipments.length&&volumeCount===shipments.length?volumeText(volume):null,volumeSubtotalM3:volumeCount?volumeText(volume):null,volumeCoveredCount:volumeCount,
     documentedTransportSubtotalKmf:closed?display(documented):null,
     freightCustomsSubtotalKmf:closed?display(freightCustoms):null,
     documentedTransportTotalKmf:shipments.length&&closed===shipments.length?display(documented):null,
@@ -215,9 +222,12 @@ function shipmentActivity(rows){
     weightKg:shipments.length&&weightCount===shipments.length?kg(allWeight):null,measuredWeightSubtotalKg:weightCount?kg(allWeight):null,measuredWeightCount:weightCount,
     weightedTransportKmf:weightedCount?display(weightedCost):null,weightedWeightKg:weightedCount?kg(weightedWeight):null,
     weightedShipmentCount:weightedCount,costPerKgKmf:weightedCount?costPerKg(weightedCost,weightedWeight):null,
+    minCostPerKgKmf:minKg===null?null:display(minKg),maxCostPerKgKmf:maxKg===null?null:display(maxKg),
     costPerKgCoverage:!weightedCount?'NO_WEIGHTED_OBSERVATIONS':weightedCount===shipments.length?'COMPLETE':'PARTIAL',purchaseKmf:shipments.length&&purchaseCount===shipments.length?display(purchases):null,
     purchaseSubtotalKmf:purchaseCount?display(purchases):null,purchaseCoveredCount:purchaseCount,
     purchaseTransportObservation:{purchaseKmf:pairedCount?display(pairedPurchase):null,transportKmf:pairedCount?display(pairedTransport):null,
+      freightCustomsKmf:pairedCount?display(pairedFreightCustoms):null,otherTransportKmf:pairedCount?display(pairedTransport-pairedFreightCustoms):null,
+      documentedSubtotalKmf:pairedCount?display(pairedPurchase+pairedTransport):null,fullEconomicCostKmf:null,
       observations:pairedCount,coefficient:pairedCount?(()=>{const n=roundHalfEven(pairedPurchase+pairedTransport,pairedPurchase,4).toString().padStart(5,'0');return n.slice(0,-4)+'.'+n.slice(-4);})():null,
       coverage:!pairedCount?'NO_OBSERVATIONS':pairedCount===shipments.length?'COMPLETE_FOR_PURCHASE_TRANSPORT_ONLY':'PARTIAL',scope:'PURCHASE_PLUS_DOCUMENTED_TRANSPORT_ONLY',decisional:false},shipments};
 }

@@ -150,6 +150,86 @@
     render();return host;
   }
 
+  // V6 activity: display only server projections; no browser aggregation.
+  function createV6Activity(doc, model) {
+    const host=el(doc,'section','kmc-v7-centers kmc-v6-activity');
+    host.append(el(doc,'div','kmc-v7-heading','Activité'));
+    const a=model?.activity;
+    if(!a){host.append(el(doc,'p','kmc-v7-empty','Activité tous marchés non consolidée. Sélectionnez un marché autorisé.'));return host;}
+    const amount=x=>v7Money(x,'KMF');
+    const measure=(x,unit)=>typeof x==='string'?x.replace('.',',')+' '+unit:'Non disponible';
+    const count=x=>x==null?'Non disponible':String(x);
+    const coverage=(n,total)=>count(n)+' / '+count(total)+' expéditions';
+    function metric(label,value,sub){
+      const m=el(doc,'div','kmc-v7-metric');m.append(el(doc,'span','',label),el(doc,'strong','',value));
+      if(sub)m.append(el(doc,'small','kmc-v7-coverage',sub));return m;
+    }
+    const kpis=el(doc,'div','kmc-v7-kpis');
+    kpis.append(metric('Expéditions reçues',count(a.physicalClosedCount),count(a.financialClosedCount)+' clôturées financièrement'),
+      metric('Poids / volume',measure(a.weightKg??a.measuredWeightSubtotalKg,'kg'),measure(a.volumeM3??a.volumeSubtotalM3,'m³')+' · poids '+coverage(a.measuredWeightCount,a.physicalClosedCount)+' · volume renseigné '+coverage(a.volumeCoveredCount,a.physicalClosedCount)),
+      metric('Articles reçus / KOM-BOX',count(a.receivedArticles),count(a.expectedArticles)+' attendus · '+count(a.boxCount)+' KOM-BOX'),
+      metric('Fret + douane constatés',amount(a.freightCustomsSubtotalKmf),coverage(a.financialClosedCount,a.physicalClosedCount)));
+    host.append(kpis);
+    const panel=el(doc,'section','kmc-v6-panel');panel.append(el(doc,'h4','','Expéditions de la période'),el(doc,'p','kmc-v7-coverage','Cohorte par réception relais UTC · montants sources KMF · clôture financière distincte.'));
+    const table=el(doc,'table','kmc-v7-posts kmc-v6-shipments'),head=el(doc,'thead',''),hr=el(doc,'tr','');
+    for(const label of ['Référence / rail','Poids','Achats','Fret + douane','Coût transport/kg','Volume / articles','Clôture']){
+      const th=el(doc,'th','',label);th.scope='col';hr.append(th);
+    }
+    head.append(hr);table.append(head);
+    const body=el(doc,'tbody','');
+    for(const s of a.shipments||[]){
+      const row=el(doc,'tr','');
+      for(const value of [s.reference+' · '+({sea:'Maritime',air:'Aérien'}[s.rail]||'Rail non renseigné'),measure(s.weightKg,'kg'),amount(s.purchaseKmf),amount(s.freightCustomsKmf),amount(s.costPerKgKmf),measure(s.volumeM3,'m³')+' · '+count(s.receivedArticles)+' articles',s.financialStatus==='DOCUMENTED_CLOSED'?'Financièrement clôturée':'Financier à rapprocher'])row.append(el(doc,'td','',value));
+      body.append(row);
+    }
+    table.append(body);
+    const foot=el(doc,'tfoot',''),fr=el(doc,'tr','');
+    for(const value of ['Total / pondéré',measure(a.weightKg,'kg'),amount(a.purchaseKmf),amount(a.coverage==='TRANSPORT_DOCUMENTED'?a.freightCustomsSubtotalKmf:null),amount(a.costPerKgKmf),measure(a.volumeM3,'m³')+' · '+count(a.receivedArticles)+' articles',coverage(a.weightedShipmentCount,a.physicalClosedCount)])fr.append(el(doc,'td','',value));
+    foot.append(fr);table.append(foot);panel.append(table);
+    if(!(a.shipments||[]).length)panel.append(el(doc,'p','kmc-v7-empty','Aucune expédition attestée sur la période.'));
+    host.append(panel);
+    const cards=el(doc,'div','kmc-v7-center-grid'),rec=el(doc,'article','kmc-v6-panel'),variation=el(doc,'article','kmc-v6-panel');
+    const obs=a.purchaseTransportObservation||{};
+    rec.append(el(doc,'h4','','Rapprochement des coûts'),metric('Achats réels',amount(obs.purchaseKmf)),metric('Fret + douane',amount(obs.freightCustomsKmf)),metric('Autres frais de transport',amount(obs.otherTransportKmf)),metric('Sous-total documenté',amount(obs.documentedSubtotalKmf),coverage(obs.observations,a.physicalClosedCount)),metric('Coût complet de période',amount(obs.fullEconomicCostKmf),'Autres charges et imputations à rapprocher'));
+    variation.append(el(doc,'h4','','Variabilité du coût logistique/kg'),metric('Minimum',amount(a.minCostPerKgKmf)),metric('Maximum',amount(a.maxCostPerKgKmf)),metric('Pondéré',amount(a.costPerKgKmf),coverage(a.weightedShipmentCount,a.physicalClosedCount)),el(doc,'p','kmc-v7-coverage','Coût documenté / poids brut mesuré, sur la même cohorte.'));
+    cards.append(rec,variation);host.append(cards);return host;
+  }
+
+  // Shared candidate contract. Exported for integration and desktop proof;
+  // not activated in enhance() until the complete approved surface is ready.
+  function createV7V6Tabs(doc, model, initial='centers'){
+    const shell=el(doc,'section','kmc-v7v6-tabs'),nav=el(doc,'nav','kmc-v7-families'),content=el(doc,'div','kmc-v7v6-content');
+    nav.setAttribute('aria-label','Atelier économique');
+    const defs=[['centers','Centres de coûts'],['activity','Activité'],['profit','Rentabilité']];
+    let active=defs.some(d=>d[0]===initial)?initial:'centers';
+    const tabs=[];
+    function render(){
+      for(const [key,btn] of tabs)btn.setAttribute('aria-pressed',String(key===active));
+      content.replaceChildren();
+      if(active==='centers')content.append(createV7CostCenters(doc,model));
+      else if(active==='activity')content.append(createV6Activity(doc,model));
+      else {
+        const panel=el(doc,'section','kmc-v7-centers');
+        panel.append(el(doc,'h3','','Rentabilité'),el(doc,'p','kmc-v7-coverage','Résultat économique non calculable : rapprochement des ventes, charges variables et structure à compléter.'));
+        const observation=model?.activity?.purchaseTransportObservation;
+        if(observation?.coefficient!=null)panel.append(el(doc,'p','','Observation partielle achat + transport : '+observation.coefficient.replace('.',',')+' · non décisionnelle'));
+        content.append(panel);
+      }
+    }
+    for(const [key,label] of defs){
+      const btn=el(doc,'button','kmc-v7-family',label);btn.type='button';btn.addEventListener('click',()=>{active=key;render();});tabs.push([key,btn]);nav.append(btn);
+    }
+    shell.append(nav,content);render();return shell;
+  }
+
+  async function fetchV7V6Model(workspace, options, periodStart){
+    if(typeof periodStart!=='string'||!/^\d{4}-(0[1-9]|1[0-2])-01$/.test(periodStart))throw new Error('Période mensuelle invalide');
+    const endpoint=workspace.endpointFor({requestedMarket:options.requestedMarket});
+    const result=await workspace.jsonRequest(options.fetch,endpoint+'/cost-centers?periodStart='+encodeURIComponent(periodStart));
+    if(!result||result.periodStart!==periodStart||result.marketCode!==(options.requestedMarket||null))throw new Error('Périmètre économique incohérent');
+    return result;
+  }
+
   function finite(value) {
     if (value == null || value === '') return null;
     const number = Number(value);
@@ -1753,6 +1833,9 @@
 
   return {
     createV7CostCenters,
+    createV6Activity,
+    createV7V6Tabs,
+    fetchV7V6Model,
     v7Money,
     classifyComponents,
     economicNature,

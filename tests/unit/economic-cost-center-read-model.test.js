@@ -130,3 +130,11 @@ test('purchase + transport coefficient is explicitly non-decisional and weighted
   expect(shipmentActivity([closed,second]).purchaseTransportObservation).toMatchObject({purchaseKmf:'4000.00',transportKmf:'262.00',coefficient:'1.0655',observations:2,decisional:false});
   expect(shipmentActivity([closed,{...second,financial_closed_at:null}]).purchaseTransportObservation).toMatchObject({coefficient:'1.1310',observations:1,coverage:'PARTIAL',decisional:false});
 });
+
+test('activity totals keep cohort and coverage, separate documented subtotal from complete economic cost',()=>{
+  const a={reference:'A',rail:'sea',physical_closed_at:'2026-01-15T10:00:00Z',financial_closed_at:'2026-02-10T10:00:00Z',financial_close_proof_ref:'proof',snapshot_hash:'a'.repeat(64),freight_known:true,allocation_rows:0,freight_kmf:'100.10',customs_kmf:'20.00',arrival_kmf:'5.00',local_kmf:'4.90',customs_fees_kmf:'1.00',documented_kmf:'131.00',actual_weight_kg:'10',weight_proof_ref:'weigh',weight_basis:'MEASURED_GROSS_KG',volume_m3:'0.25000',box_count:1,expected_articles:3,received_articles:2,purchase:{amount:'1000.00',status:'SETTLEMENT_RECONCILED'}};
+  const b={...a,reference:'B',actual_weight_kg:'30.000',freight_kmf:'300.10',documented_kmf:'331.00',volume_m3:'0.75',box_count:2,expected_articles:4,received_articles:4,purchase:{amount:'3000.00',status:'SETTLEMENT_RECONCILED'}};
+  expect(shipmentActivity([a,b])).toMatchObject({boxCount:'3',expectedArticles:'7',receivedArticles:'6',volumeM3:'1.00000',volumeCoveredCount:2,minCostPerKgKmf:'11.03',maxCostPerKgKmf:'13.10',costPerKgKmf:'11.55',purchaseTransportObservation:{purchaseKmf:'4000.00',freightCustomsKmf:'440.20',otherTransportKmf:'21.80',documentedSubtotalKmf:'4462.00',fullEconomicCostKmf:null,observations:2,decisional:false}});
+  expect(shipmentActivity([a,{...b,volume_m3:null,financial_closed_at:null}])).toMatchObject({volumeM3:null,volumeSubtotalM3:'0.25000',volumeCoveredCount:1,minCostPerKgKmf:'13.10',maxCostPerKgKmf:'13.10',purchaseTransportObservation:{documentedSubtotalKmf:'1131.00',fullEconomicCostKmf:null,observations:1,coverage:'PARTIAL'}});
+  expect(shipmentActivity([])).toMatchObject({boxCount:null,volumeM3:null,minCostPerKgKmf:null,purchaseTransportObservation:{documentedSubtotalKmf:null,fullEconomicCostKmf:null}});
+});

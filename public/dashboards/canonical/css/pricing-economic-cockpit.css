@@ -1271,3 +1271,11 @@
 .kmc-v7-posts th { color:#526577; }
 .kmc-v7-post-detail { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; padding:16px; background:#fff; border-radius:12px; }
 .kmc-v7-post-detail h4 { grid-column:1/-1; margin:0; }
+
+/* V6 activity uses existing canonical V7 card language; desktop no overflow. */
+.kmc-v7v6-tabs,.kmc-v7v6-content,.kmc-v6-activity{min-width:0;display:grid;gap:14px;}
+.kmc-v6-panel{min-width:0;display:grid;gap:10px;background:#fff;padding:16px;border:1px solid #dce3e9;border-radius:12px;}
+.kmc-v6-panel h4,.kmc-v6-panel p{margin:0;}
+.kmc-v6-shipments{table-layout:fixed;width:100%;}
+.kmc-v6-shipments td,.kmc-v6-shipments th{overflow-wrap:anywhere;vertical-align:top;}
+.kmc-v6-shipments tfoot{background:#e8f3f2;font-weight:600;}

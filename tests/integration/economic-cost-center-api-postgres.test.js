@@ -135,6 +135,7 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect(closed).toMatchObject({rail:'sea',boxCount:1,expectedArticles:1,receivedArticles:1,documentedTransportKmf:'131.00',freightCustomsKmf:'120.10',financialStatus:'DOCUMENTED_CLOSED',weightKg:'10.000',costPerKgKmf:'13.10'});
     expect(response.body.activity).toMatchObject({weightKg:null,measuredWeightSubtotalKg:'10.000',weightedShipmentCount:1,weightedWeightKg:'10.000',weightedTransportKmf:'131.00',costPerKgKmf:'13.10',costPerKgCoverage:'PARTIAL'});
     expect(closed).toMatchObject({purchaseKmf:'1000.00',purchaseStatus:'SETTLEMENT_RECONCILED'});
+    expect(response.body.activity).toMatchObject({boxCount:'2',expectedArticles:'2',receivedArticles:'2',volumeM3:'0.50000',volumeCoveredCount:2,minCostPerKgKmf:'13.10',maxCostPerKgKmf:'13.10',purchaseTransportObservation:{freightCustomsKmf:'120.10',otherTransportKmf:'10.90',documentedSubtotalKmf:'1131.00',fullEconomicCostKmf:null}});
     expect(response.body.activity).toMatchObject({purchaseKmf:null,purchaseSubtotalKmf:'1000.00',purchaseCoveredCount:1,purchaseTransportObservation:{purchaseKmf:'1000.00',transportKmf:'131.00',coefficient:'1.1310',observations:1,decisional:false,coverage:'PARTIAL'}});
     expect(closed.physicalClosedAt.slice(0,10)).toBe('2026-01-15');
     expect(closed.financialClosedAt.slice(0,10)).toBe('2026-02-10');
