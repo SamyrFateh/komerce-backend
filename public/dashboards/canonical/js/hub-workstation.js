@@ -791,7 +791,8 @@
       entry.actions.replaceChildren(make(doc,'p','','Chargement…'));
       Promise.resolve().then(()=>mount(entry.actions,{document:doc,fetch:fetchFn,user,
         marketCode:entry.market,marketWide:true,railFilter:entry.railFilter,groupKey:entry.groupKey,boxCreateKeys,hubVerifiedBoxes,
-        onChange:async()=>{await visualRefresh();}}))
+        // An automatic board refresh already awaits this atelier reload. Do not await it recursively.
+        onChange:async()=>{if(!visualRead)await visualRefresh();}}))
         .then(handle=>{entry.handle=handle;})
         .catch(error=>{entry.actions.replaceChildren(make(doc,'p','','Action indisponible : '+error.message));})
         .finally(()=>{entry.loading=false;});
@@ -1029,7 +1030,8 @@
         entry.loading=true;
         actionHost.appendChild(make(doc,'p','','Chargement…'));
         const changed=async()=>{
-          await visualRefresh();
+          // Background refresh already awaits this PO's canonical reload.
+          if(!visualRead)await visualRefresh();
           // Le writer canonique termine sa requête après onChange. Ne pas
           // démonter un formulaire en cours de POST ; attendre sa libération.
           const win=doc.defaultView;

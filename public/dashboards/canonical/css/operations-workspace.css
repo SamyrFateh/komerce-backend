@@ -2168,3 +2168,28 @@ body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="execution"] > .
 [data-hub-quality-v3] input[type="text"] { flex:1; width:100%; min-width:0; padding:5px; box-sizing:border-box; }
 [data-hub-quality-v3] .kmc-quality-v3-footer { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding-top:8px; }
 [data-hub-quality-v3] .kmc-quality-v3-footer p { margin:0; }
+
+/* UX-HUB-DENSITY-01 — ateliers ouverts depuis le Kanban, pas le parcours historique. */
+.kmc-hub-po-v8-actions .kmc-workshop-destination {margin:0 0 8px;font-size:13px;font-weight:650;}
+.kmc-hub-po-v8-actions .kmc-hub-workshop-table {width:100%;table-layout:fixed;border-collapse:collapse;font-size:13px;}
+.kmc-hub-po-v8-actions .kmc-hub-workshop-table th,
+.kmc-hub-po-v8-actions .kmc-hub-workshop-table td {padding:6px 8px;vertical-align:middle;overflow-wrap:anywhere;}
+.kmc-hub-po-v8-actions .kmc-hub-workshop-table th:first-child {width:40%;}
+.kmc-hub-po-v8-actions .kmc-hub-workshop-table th:nth-child(2) {width:26%;}
+.kmc-hub-po-v8-actions .kmc-hub-workshop-table th:nth-child(3) {width:17%;}
+.kmc-hub-po-v8-actions .kmc-hub-workshop-table th:last-child {width:17%;}
+.kmc-hub-po-v8-actions .kmc-hub-workshop-table tr.is-selected {background:var(--kmc-blue-soft,#eef5fa);}
+.kmc-hub-po-v8-actions .kmc-hub-workshop-table button {max-width:100%;white-space:normal;}
+.kmc-hub-po-v8-actions .kmc-hub-workshop-action {margin-top:8px;padding:10px;border:1px solid var(--kmc-line,#dce4e9);border-radius:8px;min-width:0;}
+.kmc-hub-po-v8-actions .kmc-hub-workshop-action[hidden] {display:none;}
+.kmc-hub-po-v8-actions .kmc-hub-workshop-action h3 {margin:0 0 8px;font-size:14px;}
+
+.kmc-hub-po-v8-actions .kmc-hub-workshop-table-viewport {max-height: min(32vh,300px);overflow:auto;border:1px solid var(--kmc-line,#dce4e9);border-radius:8px;}
+.kmc-hub-po-v8-actions .kmc-hub-workshop-table thead th {position:sticky;top:0;background:var(--kmc-card,#fff);z-index:1;}
+
+.kmc-hub-po-v8-actions .kmc-workshop-inline-actions {display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0;}
+.kmc-hub-po-v8-actions .kmc-workshop-inline-actions input,.kmc-hub-po-v8-actions .kmc-workshop-inline-actions select {min-width:0;max-width:100%;flex:1 1 200px;}
+.kmc-hub-po-v8-actions .kmc-hub-departure-table th:first-child {width:31%;}
+.kmc-hub-po-v8-actions .kmc-hub-departure-table th:nth-child(2) {width:25%;}
+.kmc-hub-po-v8-actions .kmc-hub-departure-table th:nth-child(3) {width:26%;}
+.kmc-hub-po-v8-actions .kmc-hub-departure-table th:last-child {width:18%;}

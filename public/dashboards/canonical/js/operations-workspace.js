@@ -1916,11 +1916,15 @@
   function packingBoxMatches(box,group){
     return !(box.contents||[]).length||(box.contents||[]).every(row=>matchesPackingGroup(row,group));
   }
+  function workshopDestinationLabel(group){
+    const rail=group.rail==='SEA_STANDARD'?'Maritime':group.rail==='AIR_EXPRESS'?'Aérien':group.rail===null?'À affecter':String(group.rail);
+    return group.relayCode+' · '+rail+' (rail demandé)';
+  }
   async function mountBoxActions(host,{document:doc,fetch:fetchFn,user,marketCode,poId,onChange,boxCreateKeys=new Map(),hubVerifiedBoxes={},marketWide=false,groupKey}={}){
     if(!['admin','agent_hub'].includes(user?.role)||(!poId&&!marketWide)|| (marketWide&&!/^[A-Z]{2}$/.test(String(marketCode||''))))throw Error('Accès COMBOX Hub requis');
     const feedback=text(doc,'p','kmc-workspace-feedback','');feedback.setAttribute('data-workspace-feedback','');feedback.setAttribute('role','status');
     const slot=doc.createElement('div');host.replaceChildren(feedback,slot);
-    let pending=false,selectedKey=groupKey??null,dossier;
+    let pending=false,selectedKey=groupKey??null,selectedBoxId=null,dossier;
     const context={root:host,fetch:fetchFn,marketCode,boxCreateKeys,hubVerifiedBoxes,confirm:message=>doc.defaultView.confirm(message)};
     function paint(){
       slot.replaceChildren();
@@ -1930,20 +1934,59 @@
       for(const g of groups)selection.appendChild(Object.assign(doc.createElement('option'),{value:g.key,textContent:g.relayCode+' · '+(g.rail||'Rail non affecté (UNASSIGNED)')}));
       if(!groups.some(g=>g.key===selectedKey))selectedKey=groups[0].key;
       selection.value=selectedKey;
-      selection.addEventListener('change',()=>{selectedKey=selection.value;paint();});
-      slot.appendChild(selection);
+      selection.addEventListener('change',()=>{selectedKey=selection.value;selectedBoxId=null;paint();});
       const group=groups.find(g=>g.key===selectedKey);
+      if(marketWide&&groupKey!==undefined){
+        const destination=text(doc,'p','kmc-workshop-destination',workshopDestinationLabel(group));
+        destination.setAttribute('data-hub-workshop-destination','');slot.appendChild(destination);
+      }else slot.appendChild(selection);
       slot.appendChild(text(doc,'p','kmc-workspace-note','Préparation commune au relais et au rail demandé : plusieurs PO compatibles peuvent alimenter la même COMBOX. Rail demandé ≠ rail exécuté.'));
       const {createBar,composeCell,fillable,BOX_STATE_LABELS}=buildBoxPreparation(doc,context,dossier,{compact:true,selectedGroup:group});
       slot.appendChild(createBar);
       const list=doc.createElement('div');list.setAttribute('data-hub-inline-box-list','');
-      for(const box of (dossier.boxes||[]).filter(b=>packingBoxMatches(b,group)&&!b.shipment_ref&&!['DISPATCHED','SUPERSEDED','QUARANTINED'].includes(b.state))){
+      const boxes=(dossier.boxes||[]).filter(b=>packingBoxMatches(b,group)&&!b.shipment_ref&&!['DISPATCHED','SUPERSEDED','QUARANTINED'].includes(b.state));
+      if(marketWide&&boxes.length){
+        // One row per COMBOX; build physical action controls only for the chosen unit.
+        // Do not infer a destination for an empty box: the first canonical placement determines it.
+        if(!boxes.some(b=>String(b.unit_id)===selectedBoxId))selectedBoxId=boxes.length===1?String(boxes[0].unit_id):null;
+        const table=doc.createElement('table');table.className='kmc-workspace-table kmc-hub-workshop-table';
+        table.setAttribute('data-hub-compact-box-table','');
+        const head=doc.createElement('thead'),titles=doc.createElement('tr');
+        for(const label of ['COMBOX','État','Articles placés','Action']){
+          const th=text(doc,'th','',label);th.setAttribute('scope','col');titles.appendChild(th);
+        }
+        head.appendChild(titles);table.appendChild(head);
+        const body=doc.createElement('tbody');table.appendChild(body);
+        const actionPanel=doc.createElement('section');actionPanel.className='kmc-hub-workshop-action';
+        actionPanel.setAttribute('data-hub-compact-box-action','');
+        const buttons=[];
+        function showSelected(){
+          const current=boxes.find(b=>String(b.unit_id)===selectedBoxId);
+          for(const [id,button,row] of buttons){const active=id===selectedBoxId;button.setAttribute('aria-pressed',String(active));row.classList.toggle('is-selected',active);}
+          actionPanel.replaceChildren();
+          actionPanel.hidden=!current;
+          if(!current)return;
+          actionPanel.appendChild(text(doc,'h3','',current.reference+' · '+(BOX_STATE_LABELS[current.state]||current.state)));
+          actionPanel.appendChild(composeCell(current));
+        }
+        for(const box of boxes){
+          const id=String(box.unit_id),row=doc.createElement('tr');row.setAttribute('data-hub-inline-box',id);
+          const quantity=(box.contents||[]).reduce((n,r)=>n+Number(r.qty||0),0);
+          for(const value of [box.reference,BOX_STATE_LABELS[box.state]||box.state,String(quantity)])row.appendChild(text(doc,'td','',value));
+          const cell=doc.createElement('td'),button=makeActionButton(doc,box.state==='PACKED'?'Étiqueter':'Préparer','open-compact-box');
+          button.setAttribute('aria-label',(box.state==='PACKED'?'Étiqueter ':'Préparer ')+box.reference);
+          button.addEventListener('click',()=>{if(pending)return;if(selectedBoxId===id)return;selectedBoxId=id;showSelected();});
+          cell.appendChild(button);row.appendChild(cell);body.appendChild(row);buttons.push([id,button,row]);
+        }
+        const tableViewport=doc.createElement('div');tableViewport.className='kmc-hub-workshop-table-viewport';
+        tableViewport.appendChild(table);list.append(tableViewport,actionPanel);showSelected();
+      }else for(const box of boxes){
         const details=doc.createElement('details');details.setAttribute('data-hub-inline-box',box.unit_id);
         details.appendChild(text(doc,'summary','',box.reference+' · '+(BOX_STATE_LABELS[box.state]||box.state)+' · '+(box.contents||[]).reduce((n,r)=>n+Number(r.qty||0),0)+' article(s)'));
         details.appendChild(composeCell(box));list.appendChild(details);
       }
       slot.appendChild(list);
-      if(!list.children.length)slot.appendChild(text(doc,'p','kmc-workspace-note','Aucune COMBOX compatible ouverte ou fermée à étiqueter.'));
+      if(!boxes.length)slot.appendChild(text(doc,'p','kmc-workspace-note','Aucune COMBOX compatible ouverte ou fermée à étiqueter.'));
       if(!fillable.length)slot.appendChild(text(doc,'p','kmc-workspace-note','Aucun article disponible pour ce groupe.'));
     }
     context.reload=async()=>{
@@ -1981,10 +2024,10 @@
     if(!panel?.renderHubHandover)throw Error('Module remise transitaire indisponible');
     const feedback=text(doc,'p','kmc-workspace-feedback','');feedback.setAttribute('data-workspace-feedback','');feedback.setAttribute('role','status');
     const slot=doc.createElement('div');host.replaceChildren(feedback,slot);
-    let pending=false,dossier,selectedGroupKey=groupKey??null,selectedShipment=null,detail=null;
+    let pending=false,dossier,selectedGroupKey=groupKey??null,selectedShipment=null,selectedDepartureBox=null,detail=null;
     const picked=new Set();
     let newReference='',attachRef='';
-    const context={root:host,fetch:fetchFn,user,marketCode,journeyTab:'transport',hubVerifiedBoxes,confirm:message=>doc.defaultView.confirm(message)};
+    const context={root:host,fetch:fetchFn,user,marketCode,journeyTab:'transport',compactWorkshop:marketWide,hubVerifiedBoxes,confirm:message=>doc.defaultView.confirm(message)};
     const groupBoxes=group=>(dossier.boxes||[]).filter(b=>(b.contents||[]).length&&packingBoxMatches(b,group));
     const visibleGroups=()=>departureGroups(dossier,poId,{marketWide,railFilter,groupKey});
     function paint(){
@@ -1999,16 +2042,61 @@
       for(const g of groups)select.appendChild(Object.assign(doc.createElement('option'),{value:g.key,textContent:railFilter===undefined?g.relayCode+' · '+(g.rail||'Rail non affecté (UNASSIGNED)'):g.relayCode}));
       if(!groups.some(g=>g.key===selectedGroupKey))selectedGroupKey=groups[0].key;
       select.value=selectedGroupKey;
-      select.addEventListener('change',()=>{if(pending)return;selectedGroupKey=select.value;picked.clear();newReference='';attachRef='';selectedShipment=null;detail=null;paint();});
-      slot.appendChild(select);
+      select.addEventListener('change',()=>{if(pending)return;selectedGroupKey=select.value;picked.clear();newReference='';attachRef='';selectedShipment=null;selectedDepartureBox=null;detail=null;paint();});
       const group=groups.find(g=>g.key===selectedGroupKey);
+      if(marketWide&&groupKey!==undefined){
+        const destination=text(doc,'p','kmc-workshop-destination',workshopDestinationLabel(group));
+        destination.setAttribute('data-hub-workshop-destination','');slot.appendChild(destination);
+      }else slot.appendChild(select);
       const boxes=groupBoxes(group);
       const eligible=boxes.filter(departureReady);
       const ids=new Set(eligible.map(b=>String(b.unit_id)));
       for(const id of picked)if(!ids.has(id))picked.delete(id);
       const {composeCell}=buildBoxPreparation(doc,context,dossier,{compact:true,selectedGroup:group,departureOnly:true});
       slot.appendChild(text(doc,'p','kmc-workspace-note','Scannez le QR définitif et confirmez la pose de l’étiquette de chaque COMBOX fermée. La sortie Hub n’est pas une remise au transitaire.'));
-      for(const box of boxes){
+      let syncAttach=()=>{};
+      const departureRows=boxes.filter(b=>(!b.shipment_ref||b.shipment_stage==='hub_ready')&&['PACKED','DISPATCHED'].includes(b.state));
+      if(marketWide&&departureRows.length){
+        const table=doc.createElement('table');table.className='kmc-workspace-table kmc-hub-workshop-table kmc-hub-departure-table';table.setAttribute('data-hub-compact-departure-table','');
+        const head=doc.createElement('thead'),titles=doc.createElement('tr');
+        for(const label of ['COMBOX','État','Expédition','Action']){
+          const th=text(doc,'th','',label);th.setAttribute('scope','col');titles.appendChild(th);
+        }
+        head.appendChild(titles);table.appendChild(head);
+        const body=doc.createElement('tbody');table.appendChild(body);
+        const actionPanel=doc.createElement('section');actionPanel.className='kmc-hub-workshop-action';actionPanel.setAttribute('data-hub-compact-departure-action','');
+        const packed=departureRows.filter(b=>b.state==='PACKED');
+        if(!packed.some(b=>String(b.unit_id)===selectedDepartureBox))selectedDepartureBox=packed.length===1?String(packed[0].unit_id):null;
+        const buttons=[];
+        function showSelected(){
+          const current=packed.find(b=>String(b.unit_id)===selectedDepartureBox);
+          for(const [id,button,row] of buttons){const active=id===selectedDepartureBox;button.setAttribute('aria-pressed',String(active));row.classList.toggle('is-selected',active);}
+          actionPanel.replaceChildren();actionPanel.hidden=!current;
+          if(current){actionPanel.appendChild(text(doc,'h3','',current.reference+' · Sortie Hub'));actionPanel.appendChild(composeCell(current));}
+        }
+        for(const box of departureRows){
+          const id=String(box.unit_id),row=doc.createElement('tr');row.setAttribute('data-hub-inline-departure-box',id);
+          const status=box.state==='PACKED'?'Sortie à scanner':box.shipment_ref?'À remettre':'Sortie attestée';
+          for(const value of [box.reference,status,box.shipment_ref||'—'])row.appendChild(text(doc,'td','',value));
+          const cell=doc.createElement('td');
+          if(box.state==='PACKED'){
+            const button=makeActionButton(doc,'Scanner','open-compact-departure');button.setAttribute('aria-label','Scanner '+box.reference);
+            button.addEventListener('click',()=>{if(pending||selectedDepartureBox===id)return;selectedDepartureBox=id;showSelected();});
+            cell.appendChild(button);buttons.push([id,button,row]);
+          }else if(departureReady(box)){
+            const label=doc.createElement('label'),input=doc.createElement('input');input.type='checkbox';input.checked=picked.has(id);input.setAttribute('aria-label','Inclure '+box.reference);
+            input.addEventListener('change',()=>{if(input.checked)picked.add(id);else picked.delete(id);sync();syncAttach();});
+            label.append(input,text(doc,'span','',' Inclure'));cell.appendChild(label);
+          }else if(box.shipment_ref){
+            const button=makeActionButton(doc,'Manifeste','open-departure-manifest');button.setAttribute('aria-label','Consulter le manifeste '+box.reference);
+            button.addEventListener('click',async()=>{if(pending)return;selectedShipment=box.shipment_ref;detail=null;try{await context.reload();}catch(e){setFeedback(host,e.message,'critical');}});
+            cell.appendChild(button);
+          }
+          row.appendChild(cell);body.appendChild(row);
+        }
+        const viewport=doc.createElement('div');viewport.className='kmc-hub-workshop-table-viewport';viewport.appendChild(table);
+        slot.append(viewport,actionPanel);showSelected();
+      }else if(!marketWide)for(const box of boxes){
         if(box.shipment_ref&&box.shipment_stage!=='hub_ready')continue;
         if(!['PACKED','DISPATCHED'].includes(box.state))continue;
         const row=doc.createElement('div');row.setAttribute('data-hub-inline-departure-box',box.unit_id);
@@ -2034,7 +2122,7 @@
           successMessage:'Dossier ouvert en préparation. La remise reste à attester.',
         }).catch(()=>{});
       });
-      const createSection=doc.createElement('div');createSection.append(refInput,create);slot.appendChild(createSection);sync();
+      const createSection=doc.createElement('div');createSection.className='kmc-workshop-inline-actions';createSection.append(refInput,create);if(!marketWide||eligible.length)slot.appendChild(createSection);sync();
       // Only offer an open dossier whose known physical manifest is compatible
       // with the selected requested rail (null remains unassigned). A dossier
       // may already contain several relays; no client grouping is imposed.
@@ -2047,7 +2135,20 @@
       for(const sh of open)target.appendChild(Object.assign(doc.createElement('option'),{value:sh.reference,textContent:sh.reference+' · '+sh.box_count+' COMBOX'}));
       target.value=open.some(s=>s.reference===attachRef)?attachRef:'';
       const attachBar=doc.createElement('div');attachBar.appendChild(target);
-      for(const box of eligible){
+      if(marketWide){
+        const attach=makeActionButton(doc,'Rattacher la COMBOX sélectionnée','attach-box-shipment');
+        syncAttach=()=>{attach.disabled=!target.value||picked.size!==1;};
+        target.addEventListener('change',()=>{attachRef=target.value;syncAttach();});
+        attach.addEventListener('click',()=>{
+          const id=[...picked][0];if(picked.size!==1||!target.value||!ids.has(id))return;
+          return runAction(context,attach,{
+            url:endpointFor(marketCode,'boxes/'+encodeURIComponent(id)+'/shipment'),
+            body:{shipment_reference:target.value},onSuccess:()=>{selectedShipment=target.value;picked.delete(id);},
+            successMessage:'COMBOX rattachée au dossier. Remise non attestée.',
+          }).catch(()=>{});
+        });
+        attachBar.className='kmc-workshop-inline-actions';attachBar.appendChild(attach);syncAttach();
+      }else for(const box of eligible){
         const attach=makeActionButton(doc,'Rattacher '+box.reference,'attach-box-shipment');
         attach.disabled=!target.value;
         target.addEventListener('change',()=>{attachRef=target.value;attach.disabled=!target.value;});
@@ -2066,7 +2167,7 @@
       if(!related.includes(selectedShipment)){selectedShipment=null;detail=null;}
       choice.value=selectedShipment||'';
       choice.addEventListener('change',async()=>{if(pending)return;selectedShipment=choice.value||null;detail=null;try{await context.reload();}catch(e){setFeedback(host,e.message,'critical');}});
-      slot.appendChild(choice);
+      if(!marketWide||related.length)slot.appendChild(choice);
       if(detail&&detail.shipment?.reference===selectedShipment){
         const stage=detail.shipment.stage;
         slot.appendChild(text(doc,'p','kmc-workspace-note',selectedShipment+' · '+(panel.STAGE_LABEL[stage]||stage)));
@@ -3819,6 +3920,7 @@
     departureGroups,
     departureShipmentRefs,
     packingGroups,
+    workshopDestinationLabel,
     matchesPackingGroup,
     packingBoxMatches,
     sourceQualityChecked,

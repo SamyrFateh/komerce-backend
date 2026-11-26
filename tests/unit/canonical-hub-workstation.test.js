@@ -677,3 +677,15 @@ test('cinq postes : cartes logistiques issues de la charge serveur, séparation 
   expect(fetch.mock.calls.every(([,opts])=>opts.method==='GET')).toBe(true);
  }finally{global.KomerceCanonicalOperationsWorkspace=prev;}
 });
+
+test('C1 : relecture d’atelier ne réentre pas dans un refresh Kanban déjà attendu',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-workstation.js'),'utf8');
+  expect(source).toContain("onChange:async()=>{if(!visualRead)await visualRefresh();}");
+});
+
+test('C3 : la relecture PO ne réentre pas dans le refresh Kanban qui l’attend',()=>{
+ const source=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-workstation.js'),'utf8');
+ const changed=source.slice(source.indexOf('const changed=async()=>{'),source.indexOf('Promise.resolve().then(()=>mount(actionHost'));
+ expect(changed).toContain('if(!visualRead)await visualRefresh();');
+ expect(changed).toContain('if(poMode)renderVisualPO();');
+});

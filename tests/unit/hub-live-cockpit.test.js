@@ -280,3 +280,14 @@ test('V8 decision focus exposes only existing decision actions',()=>{
  expect(src).toContain("ctx.decisionOnly==='payment'?['authorize-payment']");
  expect(src).toContain('actionsFor().filter(a => allowed.has(a.key)');
 });
+
+test('C3 : commandes en tableau, décisions distinctes et écarts compacts sans changer les writers',()=>{
+ const js=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-live-cockpit.js'),'utf8');
+ const css=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/css/hub-live-cockpit.css'),'utf8');
+ expect(js).toContain('data-hlc-compact-purchase-lines');
+ expect(js).toContain('data-hlc-compact-direction-actions');
+ expect(js).toContain("['Article','Commandé','Non confirmé']");
+ expect(js).toContain("compact?'details':'section', 'hlc-manual-purchase-allocations'");
+ expect(js).toContain("confirmed_quantity: ctx.compactPO===true?Number(l.ordered)-Number(q.value):Number(q.value)");
+ expect(css).toContain('.hlc-form.hlc-form-compact-purchase {grid-template-columns:repeat(2,minmax(0,1fr))');
+});
