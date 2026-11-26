@@ -53,11 +53,13 @@ test('Catalogue global maître : raffinerie sans file humaine ni préparation au
   expect(s).toContain('Rechercher cette référence dans le Catalogue');
 });
 
-test('Shell : une seule navigation Catalogue global et un Catalogue pays distinct', () => {
+test('Shell : une seule destination Catalogue, libellé et lentille selon le périmètre', () => {
   const s=load('public/dashboards/canonical/js/navigation-policy-v4.js');
   expect(s).not.toContain("id: 'workspace-refinery'");
-  expect(s).toContain("id: 'workspace-catalog', label: 'Catalogue global'");
-  expect(s).toContain("id: 'market-catalog', label: 'Catalogue pays'");
+  expect(s).toContain("id: 'workspace-catalog', label: 'Catalogue', href: '/admin/workspaces/catalog'");
+  expect(s).toContain("label:'Catalogue global'");
+  expect(s).not.toContain("id: 'market-catalog', label: 'Catalogue pays'");
+  expect(s).toContain("capability: 'catalog.read'");
 });
 
 test('Assets des écrans Catalogue/Sourcing toujours référencés avec versions', () => {

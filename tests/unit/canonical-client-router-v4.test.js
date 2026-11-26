@@ -75,14 +75,16 @@ describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => 
     expect(catalogBlock).not.toContain('catalog-country');
   });
 
-  test('Catalogue pays appartient au domaine Marchés', () => {
+  test('Catalogue pays utilise le Catalogue canonique, sans destination Marchés dupliquée', () => {
     const policy = read('public/dashboards/canonical/js/navigation-policy-v4.js');
     const marketsBlock = policy.slice(
       policy.indexOf('markets: Object.freeze(['),
       policy.indexOf('const PRICING_SECTION_IDS')
     );
-    expect(marketsBlock).toContain("id: 'catalog-country'");
-    expect(marketsBlock).toContain('/dashboards/canonical/market-catalog.html');
+    expect(marketsBlock).not.toContain("id: 'catalog-country'");
+    expect(marketsBlock).not.toContain('/dashboards/canonical/market-catalog.html');
+    expect(policy).toContain("'market-catalog': 'catalog'");
+    expect(policy).toContain("href: '/admin/workspaces/catalog'");
   });
 
   test('Atelier économique ne propose plus de tabs vers des sections supprimées', () => {

@@ -10,7 +10,7 @@ const ui = fs.readFileSync(path.join(__dirname, '..', '..', 'public', 'dashboard
 describe('market-network (Réseau local) — île et rattachement agent', () => {
   test('résolution du Market ID identique à Autonomie pays, sans fallback silencieux', () => {
     expect(ui).toContain('KomerceAdminContext');
-    expect(ui).toContain('contract.resolveExplicitMarket(context, global.location.search).marketCode');
+    expect(ui).toContain('contract.resolveExplicitMarket(context, search).marketCode');
     expect(ui).not.toContain('return allowed[0] || null');
   });
   test('marché insulaire : sélecteur d\'île alimenté par island_options du serveur, obligatoire, remplace le champ libre', () => {

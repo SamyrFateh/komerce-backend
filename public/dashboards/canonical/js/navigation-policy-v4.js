@@ -1101,6 +1101,7 @@
         items: Object.freeze(group.items
           .filter(item => sidebarItemVisible(item, user, adminContext))
           .map(item => {
+            if (roleOf(user) === 'admin' && item.id === 'workspace-catalog' && !market) return Object.freeze({...item,label:'Catalogue global'});
             if (!market) return item;
             if (item.id === 'live-hub') return Object.freeze({...item, label:'Hub · Mes marchés', market_scoped:true});
             return Object.freeze({...item, market_scoped:true});

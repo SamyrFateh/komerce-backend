@@ -25,10 +25,10 @@ test('Administration expose l’entrée Providers (lecture seule)', () => {
   expect(source).toContain('/admin/providers');
 });
 
-test('Administration expose l’entrée Utilisateurs (lecture seule, admin)', () => {
+test('Administration expose Utilisateurs à admin et au marché avec team.read', () => {
   const source = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/navigation-policy-v4.js'), 'utf8');
   expect(source).toContain("id: 'admin-users'");
-  expect(source).toContain("href: '/admin/users', roles: ['admin']");
+  expect(source).toContain("href: '/admin/users', roles: ['admin', 'market_operator'], capability: 'team.read'");
 });
 
 
