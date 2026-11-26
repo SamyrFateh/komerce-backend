@@ -132,6 +132,8 @@ supplier_execution_groups supplier_payment_settlements unsold_items`.split(/\s+/
   F('economic_cost_resources', 'ressources du referentiel'),
   F('economic_cost_posts', 'postes de couts et liens aux charges canoniques'),
   F('economic_cost_budget_revisions', 'historique budgetaire versionne protege; fixtures identifiees hors purge globale'),
+  F('economic_cost_commitments', 'engagements economiques et preuves proteges'),
+  F('economic_cost_commitment_movements', 'historique de consommation et liberation protege'),
   F('customs_categories', 'categories douane'), F('carriers', 'transporteurs'), F('suppliers', 'fournisseurs (achats)', true),
   F('boutique_categories', 'taxonomie boutique'), F('boutique_subcategories', 'taxonomie boutique'),
   F('catalog_exclusions', 'exclusions catalogue'), F('catalog_glossary', 'glossaire catalogue'),

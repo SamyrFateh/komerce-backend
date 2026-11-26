@@ -236,6 +236,25 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 ### 4.8 Pricing et économie (tables live + 2 objets visés)
 
 <!-- schema-pending
+object: economic_cost_commitments
+kind: table
+migration: 432
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Engagement administratif par poste et mois, montant natif et EUR figés, preuve et auteur.
+-->
+
+<!-- schema-pending
+object: economic_cost_commitment_movements
+kind: table
+migration: 432
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Mouvements append-only de libération ou consommation partielle liée au fait canonique, plafonds de conservation.
+-->
+
+**Migration 432 — intention uniquement :** aucun fait réel créé par un engagement. Premier lien limité aux ACCRUAL de structure non corrigés, même poste/devise/période. Projection décisionnelle et corrections, autres sources, FX et autorisations à raccorder avant activation. Aucune donnée live attestée.
+
+
+<!-- schema-pending
 object: economic_cost_budget_revisions
 kind: table
 migration: 431
