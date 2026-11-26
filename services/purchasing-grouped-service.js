@@ -92,6 +92,32 @@ function mapDbError(err) {
   return err;
 }
 
+// P0 #5281: fail closed on the current commercial source, never on a UI snapshot.
+// The caller holds its PO/line locks. NOWAIT on the order prevents a lock cycle
+// with cancellation/refund transactions which may already own the order.
+function assertCommercialPurchaseItem(row) {
+  if (row.fulfillment_source !== 'IMPORT') throw fail(409, 'ORDER_ITEM_LOCAL_STOCK', 'Seul un article IMPORT relève des achats commerciaux');
+  if (['cancelled','refunded'].includes(row.order_status)) throw fail(409, 'ORDER_CANCELLED', 'Commande annulée ou remboursée : achat commercial interdit');
+  if (row.payment_status !== 'paid') throw fail(409, 'ORDER_PAYMENT_NOT_CONFIRMED', 'Paiement client intégral non confirmé : achat commercial interdit');
+}
+async function commercialRead(client, sql, params) {
+  try { return await client.query(sql, params); }
+  catch (error) {
+    if (error.code === '55P03') throw fail(409, 'PURCHASE_COMMERCIAL_STATE_BUSY', 'Commande en cours de modification : réessayez après actualisation');
+    throw error;
+  }
+}
+async function assertEligiblePurchaseLines(client, ids) {
+  const { rows } = await commercialRead(client, `
+    SELECT pl.id, oi.fulfillment_source, o.status::text AS order_status, o.payment_status::text AS payment_status
+      FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id JOIN orders o ON o.id=oi.order_id
+     WHERE pl.id=ANY($1::uuid[]) AND pl.cancelled_at IS NULL
+     ORDER BY o.id, oi.id, pl.id FOR SHARE OF o,oi NOWAIT
+  `, [ids]);
+  if (rows.length !== ids.length) throw fail(409, 'PURCHASE_LINES_UNAVAILABLE', 'Ligne d’achat absente ou annulée');
+  rows.forEach(assertCommercialPurchaseItem);
+}
+
 // HB-11 : une PO regroupée se réceptionne par variante ; une ligne sans product_sku_id ne correspondrait à aucune réception.
 async function assertLinesHaveVariant(client, ids) {
   const { rows } = await client.query(
@@ -345,6 +371,7 @@ async function preparePurchaseOrder({ supplier_id, procurement_hub_ref, line_ids
 
     await client.query('SELECT id FROM purchase_lines WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE', [ids]);
     await assertLinesHaveVariant(client, ids);
+    await assertEligiblePurchaseLines(client, ids);
     // I2 : rattachement uniquement depuis l'état ouvert ; tout écart de compte annule tout.
     const { rows: attached } = await client.query(`
       UPDATE purchase_lines
@@ -381,6 +408,7 @@ async function attachDraftLines(poId, lineIds) {
     await assertCommitmentNotAuthorized(client, po.id);
     await client.query('SELECT id FROM purchase_lines WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE', [ids]);
     await assertLinesHaveVariant(client, ids);
+    await assertEligiblePurchaseLines(client, ids);
     const { rows: attached } = await client.query(`
       UPDATE purchase_lines
          SET purchase_order_id = $1, updated_at = NOW()
@@ -486,7 +514,7 @@ async function cancelLine(lineId, reason) {
 
 // Partagé avec purchasing-engagement-service (PR 5) : mêmes erreurs, même transaction, même ordre de verrouillage.
 const shared = {
-  fail, requireUuid, withTransaction, lockGroupedPo,
+  fail, requireUuid, withTransaction, lockGroupedPo, assertCommercialPurchaseItem, commercialRead,
   loadPurchaseOrderLines, summarizeMarkets, shapeLine, LINE_COLUMNS, LINE_JOINS,
 };
 
