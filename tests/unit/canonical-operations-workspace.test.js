@@ -327,3 +327,21 @@ test('V8 variance uses the existing guarded writer and explicit PO context',()=>
  expect(SOURCE).toContain('const id=context.poId||');
  expect(SOURCE).toContain('refresh:context.onVarianceChange||');
 });
+
+test('départ : Maritime, Aérien et À affecter filtrent les groupes réels sans rail implicite',()=>{
+  const row=(po,relay,rail)=>({purchase_order_id:po,relais_id:relay,relais_code:relay,requested_transport_rail:rail,quantity:1});
+  const dossier={fillable:[row('p1','A','SEA_STANDARD'),row('p2','A','AIR_EXPRESS'),row('p2','B',null)],boxes:[{contents:[row('p3','C','SEA_STANDARD')]}]};
+  const groups=railFilter=>workspace.departureGroups(dossier,null,{marketWide:true,railFilter}).map(g=>[g.relay,g.rail]);
+  expect(groups('SEA_STANDARD')).toEqual([['A','SEA_STANDARD'],['C','SEA_STANDARD']]);
+  expect(groups('AIR_EXPRESS')).toEqual([['A','AIR_EXPRESS']]);
+  expect(groups(null)).toEqual([['B',null]]);
+  expect(groups(undefined)).toHaveLength(4);
+  expect(()=>groups('UNKNOWN')).toThrow('Rail de départ invalide');
+  expect(workspace.departureGroups(dossier,'p1',{railFilter:'AIR_EXPRESS'})).toEqual([]);
+  expect(workspace.departureGroups({fillable:[],boxes:[]},null,{marketWide:true,railFilter:'SEA_STANDARD'})).toEqual([]);
+});
+test('départ : filtre invalide refusé avant lecture ou mutation',async()=>{
+  const fetch=jest.fn();
+  await expect(workspace.mountDepartureActions({}, {user:{role:'agent_hub'},marketCode:'CM',marketWide:true,railFilter:'UNKNOWN',fetch})).rejects.toThrow('Rail de départ invalide');
+  expect(fetch).not.toHaveBeenCalled();
+});
