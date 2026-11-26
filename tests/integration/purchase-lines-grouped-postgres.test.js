@@ -57,7 +57,7 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
         CREATE TABLE product_skus (id uuid PRIMARY KEY);
         CREATE TABLE products (id uuid PRIMARY KEY, name text);
         CREATE TABLE markets (id uuid PRIMARY KEY, code text NOT NULL UNIQUE, name text NOT NULL);
-        CREATE TABLE orders (id uuid PRIMARY KEY, reference text, market_id uuid REFERENCES markets(id), created_at timestamptz NOT NULL DEFAULT now());
+        CREATE TABLE orders (id uuid PRIMARY KEY, reference text, market_id uuid REFERENCES markets(id), created_at timestamptz NOT NULL DEFAULT now(), status text NOT NULL DEFAULT 'ordered', payment_status text NOT NULL DEFAULT 'paid');
         CREATE FUNCTION prevent_orders_market_id_mutation() RETURNS trigger AS $f$
         BEGIN
           IF NEW.market_id IS DISTINCT FROM OLD.market_id THEN RAISE EXCEPTION 'orders_market_id_immutable'; END IF;
@@ -69,7 +69,8 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
           id uuid PRIMARY KEY,
           order_id uuid NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
           product_id uuid,
-          quantity integer NOT NULL DEFAULT 1
+          quantity integer NOT NULL DEFAULT 1,
+          fulfillment_source text NOT NULL DEFAULT 'IMPORT'
         );
         -- Décisions d'autorisation (migration 380) : le contenu d'une PO engagée est figé, le service le vérifie.
         CREATE TABLE purchase_order_authorizations (purchase_order_id uuid NOT NULL, authorization_type text NOT NULL);
