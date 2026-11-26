@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        authenticated_actor, explicit_market_scope, calendar_month
  * @outputs       scoped_centers_families_resources_posts, latest_budget_revisions, outstanding_commitments, explicit_actual_coverage_status
- * @depends       db, middleware/require-pricing-global-authority.js, services/market-delegation-service.js, services/fx-authority.js
+ * @depends       db, middleware/require-pricing-global-authority.js, services/market-delegation-service.js, services/fx-authority.js, services/cost-allocation/real-margin-shadow.js
  * @used-by       routes/admin-pricing-workspace.js
- * @db-read       markets, economic_cost_centers, economic_cost_families, economic_cost_resources, economic_cost_posts, economic_cost_budget_revisions, economic_cost_commitments, economic_cost_commitment_movements, economic_structure_cost_events, international_shipments, international_shipment_events, international_shipment_relay_receipts, international_shipment_hub_units, international_n1_reconciliations, hub_physical_units, hub_box_effective_placements, hub_purchase_allocations, order_items, orders
+ * @db-read       markets, economic_cost_centers, economic_cost_families, economic_cost_resources, economic_cost_posts, economic_cost_budget_revisions, economic_cost_commitments, economic_cost_commitment_movements, economic_structure_cost_events, international_shipments, international_shipment_events, international_shipment_relay_receipts, international_shipment_hub_units, international_n1_reconciliations, hub_physical_units, hub_box_effective_placements, hub_purchase_allocations, order_items, orders, purchase_lines, supplier_execution_payments, supplier_payment_settlements
  * @db-write      none
  * @db-txn        service_owned_read_only_repeatable_read
  * @doctrine      exact_market_scope, budget_is_not_realized_cost, no_fake_zero, group_raw_not_delegated
@@ -18,6 +18,7 @@
 'use strict';
 const db = require('../db');
 const {parseDecimal,roundHalfEven,convert,FxError}=require('./fx-authority');
+const {computePurchaseReal}=require('./cost-allocation/real-margin-shadow');
 const {hasPricingGlobalAuthority} = require('../middleware/require-pricing-global-authority');
 const {resolveAuthorization} = require('./market-delegation-service');
 function error(code,status,message){return Object.assign(new Error(message),{code,status});}
@@ -121,13 +122,71 @@ function structureEurProjector(client){
 // Canonical shipment observation: physical relay receipt, not the date a
 // supplier invoice was recorded. Read the per-shipment reconciled snapshot;
 // never add historical per-order transport allocations to these amounts.
+// Purchase truth belongs to the existing settlement calculator. The flag
+// in_order means selected complete purchase lines here, not a second valuation.
+// Partial lines, cancelled lines and mixed simulation PO are intentionally
+// not valued until a conserved line-to-shipment split is specified.
+function shipmentPurchase({lines,payments,settlements}){
+  const own=lines.filter(l=>l.in_order);
+  if(!own.length||own.some(l=>l.full_line!==true)||lines.some(l=>l.real_order!==true))
+    return {amount:null,status:'PURCHASE_SCOPE_INCOMPLETE'};
+  const result=computePurchaseReal({lines,payments,settlements});
+  if(!result.complete||!Number.isFinite(result.real_kmf)||result.real_kmf<=0||
+     !Number.isSafeInteger(Math.round(result.real_kmf*100)))
+    return {amount:null,status:'PURCHASE_SETTLEMENT_INCOMPLETE'};
+  return {amount:result.real_kmf.toFixed(2),status:'SETTLEMENT_RECONCILED'};
+}
+async function loadShipmentPurchase(client,shipmentId,marketId){
+  const {rows:selection}=await client.query(
+    `SELECT a.purchase_line_id AS id,SUM(p.quantity)::int AS shipped,
+      BOOL_AND(l.id IS NOT NULL AND l.cancelled_at IS NULL
+        AND l.purchase_order_id=a.purchase_order_id AND l.order_item_id=a.order_item_id
+        AND o.market_id=$2 AND o.simulation_scope IS NULL) AS valid
+      FROM international_shipment_hub_units h
+      JOIN hub_box_effective_placements p ON p.box_unit_id=h.physical_unit_id
+      JOIN hub_purchase_allocations a ON a.id=p.allocation_id
+      LEFT JOIN purchase_lines l ON l.id=a.purchase_line_id
+      LEFT JOIN orders o ON o.id=a.order_id
+      WHERE h.shipment_id=$1 GROUP BY a.purchase_line_id`,[shipmentId,marketId]);
+  if(!selection.length||selection.some(l=>!l.id||l.valid!==true))
+    return {amount:null,status:'PURCHASE_SCOPE_INCOMPLETE'};
+  const selected=new Map(selection.map(l=>[l.id,l.shipped]));
+  const {rows:lines}=await client.query(
+    `SELECT l.id,l.purchase_order_id,l.confirmed_at,l.confirmed_quantity,
+      l.confirmed_unit_price::text AS confirmed_unit_price,
+      COALESCE(l.confirmed_currency,l.supplier_currency) AS supplier_currency,
+      l.id=ANY($1::uuid[]) AS in_order,
+      (o.id IS NOT NULL AND o.simulation_scope IS NULL) AS real_order,
+      NOT EXISTS(SELECT 1 FROM international_shipment_hub_units h
+        JOIN hub_box_effective_placements p ON p.box_unit_id=h.physical_unit_id
+        JOIN hub_purchase_allocations a ON a.id=p.allocation_id
+        WHERE a.purchase_line_id=l.id AND h.shipment_id<>$2) AS exclusive_shipment
+      FROM purchase_lines l
+      JOIN order_items oi ON oi.id=l.order_item_id JOIN orders o ON o.id=oi.order_id
+      WHERE l.cancelled_at IS NULL AND (l.id=ANY($1::uuid[]) OR l.purchase_order_id IN
+        (SELECT purchase_order_id FROM purchase_lines WHERE id=ANY($1::uuid[])))
+      ORDER BY l.id`,[[...selected.keys()],shipmentId]);
+  if(lines.filter(l=>l.in_order).length!==selected.size)
+    return {amount:null,status:'PURCHASE_SCOPE_INCOMPLETE'};
+  for(const l of lines)if(l.in_order)l.full_line=l.exclusive_shipment===true&&l.confirmed_quantity===selected.get(l.id);
+  if(lines.some(l=>l.in_order&&!l.full_line)||lines.some(l=>!l.real_order))
+    return {amount:null,status:'PURCHASE_SCOPE_INCOMPLETE'};
+  const poIds=[...new Set(lines.map(l=>l.purchase_order_id).filter(Boolean))];
+  const {rows:payments}=await client.query(
+    'SELECT id,purchase_order_id,status,real_debit_verified,reconciliation_status,currency FROM supplier_execution_payments WHERE purchase_order_id=ANY($1::uuid[])',[poIds]);
+  const {rows:settlements}=await client.query(
+    `SELECT supplier_execution_payment_id,kind,amount_currency::text AS amount_currency,currency,
+      amount_kmf::text AS amount_kmf,fees_kmf::text AS fees_kmf
+      FROM supplier_payment_settlements WHERE supplier_execution_payment_id=ANY($1::uuid[])`,[payments.map(p=>p.id)]);
+  return shipmentPurchase({lines,payments,settlements});
+}
 function shipmentActivity(rows){
   const money=v=>typeof v==='string'&&/^\d+\.\d{2}$/.test(v)?BigInt(v.replace('.','')):null;
   const display=v=>{const s=v.toString().padStart(3,'0');return s.slice(0,-2)+'.'+s.slice(-2);};
   const grams=v=>{if(typeof v!=='string'||!/^\d{1,9}(?:\.\d{1,3})?$/.test(v))return null;const [a,b='']=v.split('.');const n=BigInt(a+b.padEnd(3,'0'));return n>0n?n:null;};
   const kg=v=>{const s=v.toString().padStart(4,'0');return s.slice(0,-3)+'.'+s.slice(-3);};
   const costPerKg=(cents,g)=>display(roundHalfEven(cents*10n,g,2));
-  let documented=0n,freightCustoms=0n,closed=0,allWeight=0n,weightedWeight=0n,weightedCost=0n,weightCount=0,weightedCount=0;
+  let documented=0n,freightCustoms=0n,closed=0,allWeight=0n,weightedWeight=0n,weightedCost=0n,weightCount=0,weightedCount=0,purchases=0n,purchaseCount=0,pairedPurchase=0n,pairedTransport=0n,pairedCount=0;
   const shipments=rows.map(s=>{
     const amounts=[s.freight_kmf,s.customs_kmf,s.arrival_kmf,s.local_kmf,s.customs_fees_kmf,s.documented_kmf].map(money);
     const complete=Boolean(s.financial_closed_at&&s.financial_close_proof_ref&&s.snapshot_hash&&s.freight_known===true&&
@@ -137,13 +196,15 @@ function shipmentActivity(rows){
     if(complete){closed++;documented+=amounts[5];freightCustoms+=transport;}
     const g=s.weight_basis==='MEASURED_GROSS_KG'&&s.weight_proof_ref?grams(s.actual_weight_kg):null;
     if(g!==null){weightCount++;allWeight+=g;if(complete){weightedCount++;weightedWeight+=g;weightedCost+=amounts[5];}}
+    const purchase=money(s.purchase?.amount);
+    if(purchase!==null){purchaseCount++;purchases+=purchase;if(complete&&purchase>0n){pairedCount++;pairedPurchase+=purchase;pairedTransport+=amounts[5];}}
     return {reference:s.reference,rail:s.rail,physicalClosedAt:s.physical_closed_at,
       financialClosedAt:s.financial_closed_at||null,financialStatus:complete?'DOCUMENTED_CLOSED':'NOT_RECONCILED',
       volumeM3:s.volume_m3,boxCount:s.box_count,expectedArticles:s.expected_articles,receivedArticles:s.received_articles,
       freightCustomsKmf:complete?display(transport):null,documentedTransportKmf:complete?display(amounts[5]):null,
       freightKmf:complete?s.freight_kmf:null,customsKmf:complete?s.customs_kmf:null,
       arrivalFeesKmf:complete?display(amounts[2]+amounts[4]):null,localTransportKmf:complete?s.local_kmf:null,
-      weightKg:g===null?null:kg(g),weightProofRef:g===null?null:s.weight_proof_ref,weightBasis:g===null?null:'MEASURED_GROSS_KG',purchaseKmf:null,costPerKgKmf:complete&&g!==null?costPerKg(amounts[5],g):null};
+      weightKg:g===null?null:kg(g),weightProofRef:g===null?null:s.weight_proof_ref,weightBasis:g===null?null:'MEASURED_GROSS_KG',purchaseKmf:purchase===null?null:display(purchase),purchaseStatus:s.purchase?.status||'PURCHASE_SCOPE_INCOMPLETE',costPerKgKmf:complete&&g!==null?costPerKg(amounts[5],g):null};
   });
   return {cohort:'RELAY_RECEIPT_MONTH_UTC',scopeCoverage:'EXACT_MARKET_NON_SIMULATED',
     physicalClosedCount:shipments.length,financialClosedCount:closed,
@@ -154,12 +215,16 @@ function shipmentActivity(rows){
     weightKg:shipments.length&&weightCount===shipments.length?kg(allWeight):null,measuredWeightSubtotalKg:weightCount?kg(allWeight):null,measuredWeightCount:weightCount,
     weightedTransportKmf:weightedCount?display(weightedCost):null,weightedWeightKg:weightedCount?kg(weightedWeight):null,
     weightedShipmentCount:weightedCount,costPerKgKmf:weightedCount?costPerKg(weightedCost,weightedWeight):null,
-    costPerKgCoverage:!weightedCount?'NO_WEIGHTED_OBSERVATIONS':weightedCount===shipments.length?'COMPLETE':'PARTIAL',purchaseKmf:null,shipments};
+    costPerKgCoverage:!weightedCount?'NO_WEIGHTED_OBSERVATIONS':weightedCount===shipments.length?'COMPLETE':'PARTIAL',purchaseKmf:shipments.length&&purchaseCount===shipments.length?display(purchases):null,
+    purchaseSubtotalKmf:purchaseCount?display(purchases):null,purchaseCoveredCount:purchaseCount,
+    purchaseTransportObservation:{purchaseKmf:pairedCount?display(pairedPurchase):null,transportKmf:pairedCount?display(pairedTransport):null,
+      observations:pairedCount,coefficient:pairedCount?(()=>{const n=roundHalfEven(pairedPurchase+pairedTransport,pairedPurchase,4).toString().padStart(5,'0');return n.slice(0,-4)+'.'+n.slice(-4);})():null,
+      coverage:!pairedCount?'NO_OBSERVATIONS':pairedCount===shipments.length?'COMPLETE_FOR_PURCHASE_TRANSPORT_ONLY':'PARTIAL',scope:'PURCHASE_PLUS_DOCUMENTED_TRANSPORT_ONLY',decisional:false},shipments};
 }
 async function loadShipmentActivity(client,marketId,periodStart){
   if(marketId===null)return null; // GROUP-only centers are not all markets.
   const {rows}=await client.query(
-    `SELECT s.reference,s.transport_mode AS rail,s.volume_m3::text AS volume_m3,
+    `SELECT s.id AS shipment_id,s.reference,s.transport_mode AS rail,s.volume_m3::text AS volume_m3,
       physical.closed_at AS physical_closed_at,receipt.expected_articles,receipt.received_articles,
       weight.actual_weight_kg,weight.weight_basis,weight.weight_proof_ref,
       (SELECT COUNT(*)::int FROM international_shipment_hub_units h WHERE h.shipment_id=s.id) AS box_count,
@@ -215,6 +280,7 @@ async function loadShipmentActivity(client,marketId,periodStart){
        AND physical.closed_at>=($2::date::timestamp AT TIME ZONE 'UTC')
        AND physical.closed_at<(($2::date+interval '1 month') AT TIME ZONE 'UTC')
      ORDER BY physical.closed_at,s.reference`,[marketId,periodStart]);
+  for(const row of rows)row.purchase=await loadShipmentPurchase(client,row.shipment_id,marketId);
   return shipmentActivity(rows);
 }
 async function readCostCenters(actor,raw){
@@ -277,4 +343,4 @@ async function readCostCenters(actor,raw){
       centers:centerModels,families,resources,posts:model,budgetSummary:budgetSummary(model),commitmentSummary:commitmentSummary(model),structureEvidence,activity,actualCoverage:'NOT_RECONCILED',available:null};
   }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
 }
-module.exports={readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,loadShipmentActivity};
+module.exports={readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,loadShipmentActivity,shipmentPurchase};

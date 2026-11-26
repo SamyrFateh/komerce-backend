@@ -31,7 +31,8 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
   // are test facts, NOT certification of the logistics writer or Chromium.
   async function seedActivity(market,suffix,{financial=true,simulated=false,attested=true}={}){
     const ref=tag+'-'+suffix, id=()=>crypto.randomUUID();
-    const [relay,product,sku,order,item,supplier,po,allocation,unit,box,shipment]=Array.from({length:11},id);
+    const [relay,product,sku,order,item,supplier,po,allocation,unit,box,shipment,line,group,payment]=Array.from({length:14},id);
+    const purchase=financial&&!simulated;
     const identity=JSON.stringify({provider:'manual',version:1,payload:{supplier_sku:ref}});
     await q("INSERT INTO relais(id,name,agent_name,phone,address,market_id) VALUES($1,$2,'CI','+2693000001','CI',$3)",[relay,ref,market.id]);
     await q("INSERT INTO products(id,name,price_kmf,stock) VALUES($1,$2,10000,0)",[product,ref]);
@@ -41,10 +42,20 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     await q(`INSERT INTO orders(id,user_id,relais_id,market_id,reference,status,payment_status,payment_mode,total_kmf,total_eur,simulation_scope)
       VALUES($1,$2,$3,$4,$5,'confirmed','paid','cash_relais',10000,20,$6)`,[order,fx.viewerA.id,relay,market.id,ref,simulated?'G6-BUYER':null]);
     await q("INSERT INTO order_items(id,order_id,product_id,quantity,price_kmf,sku_id,fulfillment_source) VALUES($1,$2,$3,1,10000,$4,'IMPORT')",[item,order,product,sku]);
-    await q(`INSERT INTO purchase_orders(id,order_id,order_item_id,product_sku_id,supplier_id,supplier_sku,supplier_unit_ref,supplier_order_identity,qty,status)
+    if(purchase){
+      await q(`INSERT INTO purchase_orders(id,order_id,supplier_id,market_id,status,trigger_mode,procurement_hub_ref,qty,supplier_sku) VALUES($1,NULL,$2,$3,'draft','auto','DXB',NULL,NULL)`,[po,supplier,market.id]);
+      await q(`INSERT INTO purchase_lines(id,order_item_id,supplier_id,product_sku_id,supplier_sku,supplier_unit_ref,supplier_order_identity,quantity,supplier_unit_price,supplier_currency,procurement_hub_ref) VALUES($1,$2,$3,$4,$5,$5,$6::jsonb,1,10,'USD','DXB')`,[line,item,supplier,sku,ref,identity]);
+      await q('UPDATE purchase_lines SET purchase_order_id=$2 WHERE id=$1',[line,po]);
+      await q("UPDATE purchase_orders SET status='notified' WHERE id=$1",[po]);
+      await q("UPDATE purchase_lines SET confirmed_quantity=1,confirmed_unit_price=10,confirmed_currency='USD',confirmed_at=now() WHERE id=$1",[line]);
+      await q("UPDATE purchase_orders SET status='confirmed',confirmed_at=now() WHERE id=$1",[po]);
+      await q("INSERT INTO supplier_execution_groups(id,purchase_order_id,provider,supplier_parent_order_id) VALUES($1,$2,'cj',$3)",[group,po,ref+'-GROUP']);
+      await q(`INSERT INTO supplier_execution_payments(id,purchase_order_id,provider,payment_execution_key,supplier_execution_group_id,expected_amount,observed_amount,currency,status,reconciliation_status,real_debit_verified) VALUES($1,$2,'cj',$3,$4,10,10,'USD','succeeded','matched',true)`,[payment,po,ref+'-PAY',group]);
+      await q(`INSERT INTO supplier_payment_settlements(supplier_execution_payment_id,kind,amount_currency,currency,amount_kmf,fees_kmf,proof_ref,idempotency_key) VALUES($1,'payment',10,'USD',1000,25,$2,$3)`,[payment,ref+'-DEBIT',ref+'-IDEM']);
+    }else await q(`INSERT INTO purchase_orders(id,order_id,order_item_id,product_sku_id,supplier_id,supplier_sku,supplier_unit_ref,supplier_order_identity,qty,status)
       VALUES($1,$2,$3,$4,$5,$6,$6,$7::jsonb,1,'confirmed')`,[po,order,item,sku,supplier,ref,identity]);
-    await q(`INSERT INTO hub_purchase_allocations(id,purchase_order_id,order_id,order_item_id,product_sku_id,supplier_id,supplier_unit_ref,supplier_order_identity,quantity,market_id,destination_ref)
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8::jsonb,1,$9,$10)`,[allocation,po,order,item,sku,supplier,ref,identity,market.id,'relais:'+relay]);
+    await q(`INSERT INTO hub_purchase_allocations(id,purchase_order_id,order_id,order_item_id,product_sku_id,supplier_id,supplier_unit_ref,supplier_order_identity,quantity,market_id,destination_ref,purchase_line_id)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8::jsonb,1,$9,$10,$11)`,[allocation,po,order,item,sku,supplier,ref,identity,market.id,'relais:'+relay,purchase?line:null]);
     await q("INSERT INTO hub_physical_units(id,reference,unit_type,state,external_ref,current_location_ref) VALUES($1,$2,'SUPPLIER_PACKAGE','RECEIVED',$2,'DXB-HUB')",[unit,ref+'-UNIT']);
     await q("INSERT INTO hub_physical_units(id,reference,unit_type,state,current_location_ref) VALUES($1,$2,'MARKET_PARCEL','RECEIVED','DXB-HUB')",[box,ref+'-BOX']);
     await q("INSERT INTO hub_physical_unit_placements(physical_unit_id,allocation_id,quantity,operation_type) VALUES($1,$2,1,'RECEIVE')",[unit,allocation]);
@@ -123,6 +134,8 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     const closed=response.body.activity.shipments.find(s=>s.reference===activityRefs.closed);
     expect(closed).toMatchObject({rail:'sea',boxCount:1,expectedArticles:1,receivedArticles:1,documentedTransportKmf:'131.00',freightCustomsKmf:'120.10',financialStatus:'DOCUMENTED_CLOSED',weightKg:'10.000',costPerKgKmf:'13.10'});
     expect(response.body.activity).toMatchObject({weightKg:null,measuredWeightSubtotalKg:'10.000',weightedShipmentCount:1,weightedWeightKg:'10.000',weightedTransportKmf:'131.00',costPerKgKmf:'13.10',costPerKgCoverage:'PARTIAL'});
+    expect(closed).toMatchObject({purchaseKmf:'1000.00',purchaseStatus:'SETTLEMENT_RECONCILED'});
+    expect(response.body.activity).toMatchObject({purchaseKmf:null,purchaseSubtotalKmf:'1000.00',purchaseCoveredCount:1,purchaseTransportObservation:{purchaseKmf:'1000.00',transportKmf:'131.00',coefficient:'1.1310',observations:1,decisional:false,coverage:'PARTIAL'}});
     expect(closed.physicalClosedAt.slice(0,10)).toBe('2026-01-15');
     expect(closed.financialClosedAt.slice(0,10)).toBe('2026-02-10');
     expect(response.body.activity.shipments.find(s=>s.reference===activityRefs.pending)).toMatchObject({financialStatus:'NOT_RECONCILED',documentedTransportKmf:null});

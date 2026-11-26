@@ -4,7 +4,7 @@ const mockQuery=jest.fn(),mockRelease=jest.fn(),mockClient=jest.fn(),mockGrant=j
 jest.mock('../../db',()=>({getClient:(...a)=>mockClient(...a)}));
 jest.mock('../../middleware/require-pricing-global-authority',()=>({hasPricingGlobalAuthority:(...a)=>mockGrant(...a)}));
 jest.mock('../../services/market-delegation-service',()=>({resolveAuthorization:(...a)=>mockAuthz(...a)}));
-const {readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity}=require('../../services/economic-cost-center-read-model');
+const {readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,shipmentPurchase}=require('../../services/economic-cost-center-read-model');
 const client={query:mockQuery,release:mockRelease},actor={id:'actor',role:'admin'},month='2026-01-01';
 const ok=(rows=[])=>({rows});
 beforeEach(()=>{jest.resetAllMocks();mockClient.mockResolvedValue(client);mockGrant.mockResolvedValue(true);});
@@ -111,4 +111,22 @@ test('weighted transport cost uses same financially closed measured cohort, no a
   const pending={...b,financial_closed_at:null};const y=shipmentActivity([a,pending]);expect(y).toMatchObject({weightKg:'40.000',weightedShipmentCount:1,costPerKgKmf:'13.10',costPerKgCoverage:'PARTIAL'});
   const unknown={...b,weight_proof_ref:null};expect(shipmentActivity([a,unknown])).toMatchObject({weightKg:null,measuredWeightSubtotalKg:'10.000',weightedShipmentCount:1,costPerKgCoverage:'PARTIAL'});
   expect(shipmentActivity([{...a,weight_basis:'CHARGEABLE'}])).toMatchObject({costPerKgKmf:null,weightKg:null,costPerKgCoverage:'NO_WEIGHTED_OBSERVATIONS'});
+});
+
+test('shipment purchase reuses reconciled real PO valuation, rejects split and simulation',()=>{
+  const base={lines:[{id:'a',purchase_order_id:'po',confirmed_at:'2026-01-01',confirmed_quantity:1,confirmed_unit_price:'10.0000',supplier_currency:'USD',in_order:true,full_line:true,real_order:true},
+    {id:'b',purchase_order_id:'po',confirmed_at:'2026-01-01',confirmed_quantity:1,confirmed_unit_price:'30.0000',supplier_currency:'USD',in_order:false,real_order:true}],
+    payments:[{id:'p',purchase_order_id:'po',status:'succeeded',real_debit_verified:true,reconciliation_status:'matched',currency:'USD'}],
+    settlements:[{supplier_execution_payment_id:'p',kind:'payment',amount_currency:'40.0000',currency:'USD',amount_kmf:'16000.00',fees_kmf:'100.00'}]};
+  expect(shipmentPurchase(base)).toEqual({amount:'4000.00',status:'SETTLEMENT_RECONCILED'});
+  expect(shipmentPurchase({...base,lines:[{...base.lines[0],full_line:false},base.lines[1]]}).amount).toBeNull();
+  expect(shipmentPurchase({...base,lines:[base.lines[0],{...base.lines[1],real_order:false}]}).amount).toBeNull();
+  expect(shipmentPurchase({...base,payments:[{...base.payments[0],real_debit_verified:false}]}).amount).toBeNull();
+  expect(shipmentPurchase({...base,settlements:[]}).amount).toBeNull();
+});
+test('purchase + transport coefficient is explicitly non-decisional and weighted on matching observations',()=>{
+  const closed={reference:'S1',rail:'sea',physical_closed_at:'2026-01-15T10:00:00Z',financial_closed_at:'2026-02-10T10:00:00Z',financial_close_proof_ref:'proof',snapshot_hash:'a'.repeat(64),freight_known:true,allocation_rows:0,freight_kmf:'100.10',customs_kmf:'20.00',arrival_kmf:'5.00',local_kmf:'4.90',customs_fees_kmf:'1.00',documented_kmf:'131.00',purchase:{amount:'1000.00',status:'SETTLEMENT_RECONCILED'}};
+  const second={...closed,reference:'S2',purchase:{amount:'3000.00',status:'SETTLEMENT_RECONCILED'}};
+  expect(shipmentActivity([closed,second]).purchaseTransportObservation).toMatchObject({purchaseKmf:'4000.00',transportKmf:'262.00',coefficient:'1.0655',observations:2,decisional:false});
+  expect(shipmentActivity([closed,{...second,financial_closed_at:null}]).purchaseTransportObservation).toMatchObject({coefficient:'1.1310',observations:1,coverage:'PARTIAL',decisional:false});
 });
