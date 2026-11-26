@@ -21808,7 +21808,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 25,
+            "count": 27,
             "files": [
               {
                 "declared": "dashboards/canonical/access.html",
@@ -21876,6 +21876,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/js/market-client-case.js",
+                "resolvedPath": "public/dashboards/canonical/js/market-client-case.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/js/market-local-offer.js",
                 "resolvedPath": "public/dashboards/canonical/js/market-local-offer.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -21898,6 +21903,11 @@
               {
                 "declared": "dashboards/canonical/js/market-ready-to-sell.js",
                 "resolvedPath": "public/dashboards/canonical/js/market-ready-to-sell.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/market-settlement.js",
+                "resolvedPath": "public/dashboards/canonical/js/market-settlement.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -22043,7 +22053,7 @@
             ]
           }
         },
-        "totalFiles": 43,
+        "totalFiles": 45,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
