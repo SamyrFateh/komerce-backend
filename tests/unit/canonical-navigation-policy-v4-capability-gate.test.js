@@ -215,7 +215,7 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     const labels = id => groups.find(group => group.id === id).items.map(item => item.label);
     expect(labels('pilot')).toEqual(['Tour de contrôle', 'À traiter']);
     expect(labels('commerce')).toEqual(['Vue commerce', 'Commandes', 'Clients']);
-    expect(labels('economy')).toEqual(['Prix & économie', 'Catalogue']);
+    expect(labels('economy')).toEqual(['Prix & économie', 'Catalogue global']);
     expect(labels('operations')).toEqual(['Vue opérations', 'Expéditions & Douane', 'Achats fournisseurs']);
     expect(labels('finance')).toEqual(['Vue finance', 'Comptabilité']);
     expect(groups.find(group => group.id === 'live').items.map(item => item.href))
