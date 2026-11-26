@@ -791,7 +791,8 @@
       entry.actions.replaceChildren(make(doc,'p','','Chargement…'));
       Promise.resolve().then(()=>mount(entry.actions,{document:doc,fetch:fetchFn,user,
         marketCode:entry.market,marketWide:true,railFilter:entry.railFilter,groupKey:entry.groupKey,boxCreateKeys,hubVerifiedBoxes,
-        onChange:async()=>{await visualRefresh();}}))
+        // An automatic board refresh already awaits this atelier reload. Do not await it recursively.
+        onChange:async()=>{if(!visualRead)await visualRefresh();}}))
         .then(handle=>{entry.handle=handle;})
         .catch(error=>{entry.actions.replaceChildren(make(doc,'p','','Action indisponible : '+error.message));})
         .finally(()=>{entry.loading=false;});
