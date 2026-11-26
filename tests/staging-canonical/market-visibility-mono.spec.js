@@ -20,9 +20,9 @@ const CODES=['KM','CM','CG','DJ','YT'];
 const ORIGIN=new URL(process.env.E2E_STAGING_BASE_URL||BASE).origin;
 const MENU=[
  'control-tower','action-center','flow-commerce','flow-orders','entity-clients',
- 'workspace-pricing','workspace-catalog','flow-operations','workspace-shipping',
- 'flow-finance','workspace-accounting','live-hub','markets-home','market-autonomy','market-catalog','unsold',
- 'admin-users','admin-providers','settings','help-docs'
+ 'workspace-pricing','flow-operations','workspace-shipping','flow-finance',
+ 'workspace-accounting','live-hub','market-autonomy','market-catalog','unsold',
+ 'admin-providers','settings','help-docs'
 ];
 const MUTATION_LABEL=/\b(enregistrer|valider|annuler|créer|confirmer|recevoir|rattacher|payer|expédier|modifier|supprimer|encaisser|remettre|abandonner)\b/i;
 const apiPath=url=>{try{return new URL(url).pathname;}catch{return '';}};
@@ -105,6 +105,7 @@ for(const market of MARKETS){
    ],version:null,finalVersion:null,loginStatus:null,allowedMarkets:[],hubMarkets:[],
      hubOrderCount:null,oracle:{order_refs:[],markets:[],purchase_order_counts:[],customer_targets_present:0},
      navigation:{items:[],visited:[]},consultations:[],order360:[],foreign_order_denials:[],
+     teamDirectory:null,
      foreign_po_denials:[],foreign_client_denials:[],visible_mutation_controls:[],
      foreignDataLeaks:[],foreignMarketLeaks:[],blockedWrites:[],jsErrors:[],readOnlyOracle:true,
      apiResponseAuditComplete:false,apiResponseAuditReplayed:0};
@@ -247,7 +248,7 @@ for(const market of MARKETS){
      })));
      proof.navigation.items=menu.map(item=>item.id);
      expect(proof.navigation.items).toEqual(MENU);
-     expect(new Set(menu.map(item=>item.href)).size,'20 menu rubriques must resolve to the 18 canonical market destinations').toBe(18);
+     expect(new Set(menu.map(item=>item.href)).size,'17 menu rubriques must resolve to 17 explicit market destinations').toBe(MENU.length);
      for(const item of menu)expect(String(item.href||'').startsWith('/')).toBe(true);
      const forbiddenCentral=['/admin/workspaces/catalog','/admin/workspaces/purchasing','/admin/import-runtime',
        '/admin/relais-live','/admin/users','/admin/providers','/admin/settings'];
@@ -266,6 +267,23 @@ for(const market of MARKETS){
        for(const control of controls)if(control.action||MUTATION_LABEL.test(control.label))proof.visible_mutation_controls.push({href,...control});
      }
      expect(proof.visible_mutation_controls,'No mutation control may be visible').toEqual([]);
+
+     // The market team remains complete in the DOM for search/accessibility,
+     // while the desktop page initially exposes at most one 12-member batch.
+     await page.goto('/dashboards/canonical/market-autonomy.html',{waitUntil:'domcontentloaded'});
+     await expect(page.locator('[data-member-card]').first()).toBeAttached({timeout:20000});
+     const teamDirectory=await page.locator('[data-member-card]').evaluateAll(cards=>({
+       total:cards.length,
+       visible:cards.filter(card=>!card.hidden).length,
+     }));
+     proof.teamDirectory=teamDirectory;
+     expect(teamDirectory.total,'Autonomie marché must expose the complete team directory').toBeGreaterThan(0);
+     expect(teamDirectory.visible,'Autonomie marché must show at most the first desktop batch').toBeLessThanOrEqual(12);
+     expect(teamDirectory.visible).toBe(Math.min(12,teamDirectory.total));
+     if(teamDirectory.total>12){
+       await expect(page.getByRole('searchbox',{name:'Rechercher un membre'})).toBeVisible();
+       await expect(page.getByRole('button',{name:/^Afficher \d+ de plus$/})).toBeVisible();
+     }
      await page.goto('/admin/hub',{waitUntil:'domcontentloaded'});
      await expect(page.locator('[data-hub-global-order]')).toHaveCount(board.body.orders.length,{timeout:20000});
 
