@@ -51,6 +51,7 @@ const {
   procurementHubLabel,
 } = require('./purchase-line-snapshot');
 const { shared } = require('./purchasing-grouped-service');
+const { assertCommercialPurchaseItem, commercialRead } = shared;
 const { openSupplierShortage } = require('./supplier-shortage-service');
 const log = require('../utils/logger').child({ module: 'purchasing-engagement' });
 
@@ -285,8 +286,9 @@ async function submitPurchaseOrder(poId, { actor = null, context = {} } = {}) {
   const outcome = await withTransaction(async (client) => {
     const po = await lockGroupedPo(client, poId);
     await require('./hub-authorization-service').assertCommitmentAuthorized(client, po.id);
-    const { rows: lineRows } = await client.query(`
+    const { rows: lineRows } = await commercialRead(client, `
       SELECT pl.id, pl.product_sku_id, pl.supplier_sku, pl.supplier_unit_ref, pl.supplier_order_identity,
+             oi.fulfillment_source, o.status::text AS order_status, o.payment_status::text AS payment_status,
              pl.quantity, pl.supplier_unit_price, pl.supplier_currency, p.name AS product_name,
               NULLIF(to_jsonb(o)->>'simulation_scope','') AS simulation_scope
         FROM purchase_lines pl
@@ -294,9 +296,10 @@ async function submitPurchaseOrder(poId, { actor = null, context = {} } = {}) {
         JOIN orders o ON o.id = oi.order_id
         LEFT JOIN products p ON p.id = oi.product_id
        WHERE pl.purchase_order_id = $1 AND pl.cancelled_at IS NULL
-       ORDER BY pl.id FOR UPDATE OF pl
+       ORDER BY o.id, oi.id, pl.id FOR UPDATE OF pl FOR SHARE OF o,oi NOWAIT
     `, [po.id]);
     if (!lineRows.length) throw fail(409, 'PURCHASE_ORDER_EMPTY', 'Une PO sans ligne ne peut pas être soumise');
+    lineRows.forEach(assertCommercialPurchaseItem);
     // Une PO simulée ne doit jamais contenir une vente réelle ou d'un autre
     // scénario. Aucune simulation ne doit déclencher un adaptateur fournisseur.
     const scopes = new Set(lineRows.map((line) => line.simulation_scope || null));
@@ -836,16 +839,15 @@ function supplierMoneyUnavailable(ps) {
 }
 
 async function createLineInTransaction(client, { orderItemId, productSupplierId, quantity, actor, context, executionMode, actualMoney = null, parentLineId = null }) {
-  const { rows: [item] } = await client.query(`
-    SELECT oi.*, p.name AS product_name, o.status AS order_status
+  const { rows: [item] } = await commercialRead(client, `
+    SELECT oi.*, p.name AS product_name, o.status::text AS order_status, o.payment_status::text AS payment_status
       FROM order_items oi
       JOIN orders o ON o.id = oi.order_id
       JOIN products p ON p.id = oi.product_id
-     WHERE oi.id = $1
+     WHERE oi.id = $1 FOR SHARE OF o,oi NOWAIT
   `, [orderItemId]);
   if (!item) throw fail(404, 'ORDER_ITEM_NOT_FOUND', 'Article de commande introuvable');
-  if (item.fulfillment_source === 'LOCAL_STOCK') throw fail(409, 'ORDER_ITEM_LOCAL_STOCK', 'Un article en stock local ne s\'achète pas');
-  if (item.order_status === 'cancelled') throw fail(409, 'ORDER_CANCELLED', 'La commande est annulée');
+  assertCommercialPurchaseItem(item);
 
   const { rows: [ps] } = await client.query(`
     SELECT ps.*, s.name AS supplier_name, s.platform, s.auto_order, s.contact_phone
