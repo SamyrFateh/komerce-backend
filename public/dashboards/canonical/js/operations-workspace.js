@@ -1830,6 +1830,11 @@
     return [...new Set(departureBoxes(dossier,poId).map(box=>box.shipment_ref).filter(Boolean))];
   }
 
+  function departureGroups(dossier,poId,{marketWide=false,railFilter}={}){
+    if(railFilter!==undefined&&![null,'SEA_STANDARD','AIR_EXPRESS'].includes(railFilter))throw Error('Rail de départ invalide');
+    return packingGroups(dossier,poId,{marketWide}).filter(g=>railFilter===undefined||g.rail===railFilter);
+  }
+
   async function mountDepartureActions(host,{document:doc,fetch:fetchFn,user,marketCode,poId,onChange,hubVerifiedBoxes={},marketWide=false,railFilter}={}){
     if(!['admin','agent_hub'].includes(user?.role)||(!poId&&!marketWide)|| (marketWide&&!/^[A-Z]{2}$/.test(String(marketCode||''))))throw Error('Accès départ Hub requis');
     if(railFilter!==undefined&&![null,'SEA_STANDARD','AIR_EXPRESS'].includes(railFilter))throw Error('Rail de départ invalide');
@@ -1843,7 +1848,7 @@
     let newReference='',attachRef='';
     const context={root:host,fetch:fetchFn,user,marketCode,journeyTab:'transport',hubVerifiedBoxes,confirm:message=>doc.defaultView.confirm(message)};
     const groupBoxes=group=>(dossier.boxes||[]).filter(b=>(b.contents||[]).length&&packingBoxMatches(b,group));
-    const visibleGroups=()=>packingGroups(dossier,poId,{marketWide}).filter(g=>railFilter===undefined||g.rail===railFilter);
+    const visibleGroups=()=>departureGroups(dossier,poId,{marketWide,railFilter});
     function paint(){
       // Preserve the current explicitly edited evidence form when a read-only
       // refresh occurs. Completed forms remove their own capture marker.
@@ -3672,6 +3677,7 @@
     mountDepartureActions,
     departureBoxes,
     departureReady,
+    departureGroups,
     departureShipmentRefs,
     packingGroups,
     matchesPackingGroup,
