@@ -11,6 +11,7 @@
  * contient réellement — jamais par simple appartenance de rôle.
  */
 
+const fs = require('fs');
 const path = require('path');
 
 function loadPolicy() {
@@ -121,6 +122,15 @@ describe('navigation-policy-v4 — domaine Live (coque noire des cockpits opéra
 
 
 describe('navigation-policy-v4 — grouped sidebar information architecture', () => {
+  test('toutes les pages Canonical invalident le cache du shell partagé', () => {
+    const version = 'v=261126-market-dashboard-scope-menu-1';
+    const pages = ['index.html', 'market-autonomy.html', 'market-catalog.html', 'access.html', 'documentation.html', 'unsold.html'];
+    for (const page of pages) {
+      const html = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical', page), 'utf8');
+      expect(html).toContain(`/dashboards/canonical/js/navigation-policy-v4.js?${version}`);
+    }
+  });
+
   test('les neuf groupes et tous les tableaux de bord métier restent visibles en lecture seule',()=>{
     const nav=loadPolicy();
     const groups=nav.sidebarGroupsFor({role:'market_operator'},marketAdminContext([]));
