@@ -149,7 +149,7 @@ test('navigation Chromium Responsable marché sans operations.read masque Invend
 
 test('navigation Chromium Responsable marché avec operations.read ouvre Invendus',async({page})=>{
   await mount(page,'market_operator',{
-    access:{mode:'market',defaultMarket:'CM',delegatedCapabilities:{CM:['operations.read']}},
+    access:{mode:'market',allowedMarkets:['CM'],defaultMarket:'CM',delegatedCapabilities:{CM:['operations.read']}},
   });
   const link=page.locator('.kmc-admin-primary-link[data-dashboard="unsold"]');
   await expect(link).toHaveAttribute('href','/dashboards/canonical/unsold.html');
