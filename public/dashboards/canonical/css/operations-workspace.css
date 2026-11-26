@@ -2186,3 +2186,10 @@ body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="execution"] > .
 
 .kmc-hub-po-v8-actions .kmc-hub-workshop-table-viewport {max-height: min(32vh,300px);overflow:auto;border:1px solid var(--kmc-line,#dce4e9);border-radius:8px;}
 .kmc-hub-po-v8-actions .kmc-hub-workshop-table thead th {position:sticky;top:0;background:var(--kmc-card,#fff);z-index:1;}
+
+.kmc-hub-po-v8-actions .kmc-workshop-inline-actions {display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0;}
+.kmc-hub-po-v8-actions .kmc-workshop-inline-actions input,.kmc-hub-po-v8-actions .kmc-workshop-inline-actions select {min-width:0;max-width:100%;flex:1 1 200px;}
+.kmc-hub-po-v8-actions .kmc-hub-departure-table th:first-child {width:31%;}
+.kmc-hub-po-v8-actions .kmc-hub-departure-table th:nth-child(2) {width:25%;}
+.kmc-hub-po-v8-actions .kmc-hub-departure-table th:nth-child(3) {width:26%;}
+.kmc-hub-po-v8-actions .kmc-hub-departure-table th:last-child {width:18%;}
