@@ -86,6 +86,13 @@ test('les ancres de navigation sont résolues après le montage asynchrone des s
   expect(source).toContain('anchorObserver?.observe(root, { childList: true, subtree: true })');
 });
 
+test('la page autonome invalide aussi le cache de son menu canonical', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const html = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/market-autonomy.html'), 'utf8');
+  expect(html).toContain('navigation-policy-v4.js?v=261126-market-providers-anchor-2');
+});
+
 test('délégation réseau granulaire : contexte dashboard refusé, accès réseau serveur autorisé', async () => {
   const { root, calls } = await boot(monoCtx, '?market=KM', { deniedDashboard: true });
   expect(calls).toContain('/api/market-delegation/markets/KM/network/relais');
