@@ -81,6 +81,7 @@ module.exports = {
       'middleware/require-pricing-global-authority.js',
     ],
     services: [
+      'services/economic-cost-center-read-model.js',
       'services/economic-cost-budget-service.js',
       'services/pricing-apply.js',
       'services/cost-component-admin-service.js',
@@ -207,6 +208,7 @@ module.exports = {
       'dashboards/admin/js/views/EconomicFlowView.js',
     ],
     tests: [
+      'tests/unit/economic-cost-center-read-model.test.js',
       'tests/unit/economic-cost-budget-service.test.js',
       'tests/integration/economic-cost-commitments-postgres.test.js',
       'tests/integration/economic-cost-budget-revisions-postgres.test.js',
