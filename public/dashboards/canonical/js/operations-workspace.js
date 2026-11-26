@@ -1106,28 +1106,40 @@
     const rows=qualityReceiptRows(receipt.lines);
     if(!rows.length){card.appendChild(text(doc,'p','','Aucune quantité attendue.'));return card;}
     const fields=[];
-    function checkbox(label,checked=false){
-      const wrap=text(doc,'label','kmc-workspace-receive-field-label',label+' ');
-      const input=doc.createElement('input');input.type='checkbox';input.checked=checked;wrap.appendChild(input);
+    const table=doc.createElement('table');table.className='kmc-workspace-table kmc-quality-v3-table';
+    const thead=doc.createElement('thead'),head=doc.createElement('tr');
+    for(const title of ['Article','Attendu','Reçu / confirmé','Conforme','Retour','Identification']){
+      const th=text(doc,'th','',title);th.setAttribute('scope','col');head.appendChild(th);
+    }
+    thead.appendChild(head);table.appendChild(thead);
+    const tbody=doc.createElement('tbody');table.appendChild(tbody);card.appendChild(table);
+    function checkbox(label,checked=false,visible=''){
+      const wrap=doc.createElement('label');wrap.className='kmc-quality-v3-check';
+      const input=doc.createElement('input');input.type='checkbox';input.checked=checked;input.setAttribute('aria-label',label);wrap.appendChild(input);
+      if(visible)wrap.appendChild(text(doc,'span','',visible));
       return {wrap,input};
     }
     function qty(label,value,max){
-      const wrap=text(doc,'label','kmc-workspace-receive-field-label',label+' ');
+      const wrap=doc.createElement('label');wrap.className='kmc-quality-v3-qty';
       const input=doc.createElement('input');input.type='number';input.min='0';input.max=String(max);input.step='1';input.value=String(value);input.setAttribute('aria-label',label);wrap.appendChild(input);
       return {wrap,input};
     }
     for(const line of rows){
-      const row=doc.createElement('section');row.className='kmc-workspace-receive-card';row.setAttribute('data-hub-quality-sku',line.sku);
-      row.appendChild(text(doc,'strong','',line.name+' · '+line.quantity+' attendu(s)'));
-      const ok=checkbox('Conforme — à emballer',true),bad=checkbox('Non conforme — à retourner'),missing=checkbox('Non reçu');
-      const received=qty('Quantité reçue',line.quantity,line.quantity),rejected=qty('Quantité à retourner',0,line.quantity);
-      const confirmed=checkbox('Quantité confirmée'),manual=checkbox('Contrôle visuel sans scanner (code illisible ou indisponible)');
-      const scan=doc.createElement('input');scan.type='text';scan.maxLength=128;scan.autocomplete='off';scan.placeholder='Scanner le code fournisseur';scan.setAttribute('aria-label','Code physique '+line.name);
-      const proof=doc.createElement('div');proof.append(scan,manual.wrap);
-      row.append(ok.wrap,bad.wrap);
-      if(line.quantity===1)row.appendChild(missing.wrap);
-      else row.append(received.wrap,confirmed.wrap,rejected.wrap);
-      row.appendChild(proof);card.appendChild(row);
+      const row=doc.createElement('tr');row.setAttribute('data-hub-quality-sku',line.sku);
+      const cell=(...nodes)=>{const td=doc.createElement('td');td.append(...nodes);row.appendChild(td);return td;};
+      cell(text(doc,'strong','',line.name));cell(text(doc,'span','',String(line.quantity)));
+      const ok=checkbox('Conforme — à emballer : '+line.name,true),bad=checkbox('Non conforme — à retourner : '+line.name),missing=checkbox('Non reçu : '+line.name,false,'Non reçu');
+      const received=qty('Quantité reçue : '+line.name,line.quantity,line.quantity),rejected=qty('Quantité à retourner : '+line.name,0,line.quantity);
+      const confirmed=checkbox('Quantité confirmée : '+line.name),manual=checkbox('Contrôle visuel sans scanner (code illisible ou indisponible) : '+line.name,false,'Visuel');
+      const scan=doc.createElement('input');scan.type='text';scan.maxLength=128;scan.autocomplete='off';scan.placeholder='Code fournisseur';scan.setAttribute('aria-label','Code physique '+line.name);
+      const proof=doc.createElement('div');proof.className='kmc-quality-v3-inline';proof.append(scan,manual.wrap);
+      const receiveCell=cell();const receiveControls=doc.createElement('div');receiveControls.className='kmc-quality-v3-inline';receiveCell.appendChild(receiveControls);
+      if(line.quantity===1)receiveControls.appendChild(missing.wrap);
+      else receiveControls.append(received.wrap,confirmed.wrap);
+      cell(ok.wrap);
+      const returnCell=cell();const returnControls=doc.createElement('div');returnControls.className='kmc-quality-v3-inline';returnControls.appendChild(bad.wrap);
+      if(line.quantity>1)returnControls.appendChild(rejected.wrap);
+      returnCell.appendChild(returnControls);cell(proof);tbody.appendChild(row);
       const f={line,ok,bad,missing,received,rejected,confirmed,manual,scan,proof};fields.push(f);
       const change=()=>{context.markQualityDirty?.();sync();};
       ok.input.addEventListener('change',()=>{bad.input.checked=!ok.input.checked;if(missing.input.checked){received.input.value=String(line.quantity);confirmed.input.checked=false;}missing.input.checked=false;rejected.input.value=ok.input.checked?'0':received.input.value;change();});
@@ -1141,7 +1153,7 @@
     }
     const totals=text(doc,'p','kmc-workspace-note','');totals.setAttribute('role','status');
     const button=makeActionButton(doc,'Valider la réception','receive-supplier-v3');
-    card.append(totals,button);
+    const footer=doc.createElement('div');footer.className='kmc-quality-v3-footer';footer.append(totals,button);card.appendChild(footer);
     let sending=false;
     const collect=()=>fields.map(f=>{
       const received=f.received.input.value===''?NaN:Number(f.received.input.value),rejected=f.rejected.input.value===''?NaN:Number(f.rejected.input.value);
