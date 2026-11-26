@@ -20,6 +20,22 @@ const payload = {
 };
 
 describe('canonical orders view (lecture seule sur la projection dashboard-orders)', () => {
+  test('un appel dashboard bloqué est annulé et renvoie une erreur réessayable après 20 secondes', async () => {
+    jest.useFakeTimers();
+    try {
+      const fetchFn = jest.fn((_url, { signal }) => new Promise((_resolve, reject) => {
+        signal.addEventListener('abort', () => reject(new Error('aborted')));
+      }));
+      const request = orders.jsonRequest(fetchFn, '/api/admin/dashboard/orders/market/CG');
+      const result = expect(request).rejects.toThrow('Le serveur met trop de temps à répondre. Réessayez.');
+      await jest.advanceTimersByTimeAsync(20000);
+      await result;
+      expect(fetchFn).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ signal: expect.any(AbortSignal) }));
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   test('buildRows fusionne les files serveur sans recalcul ni doublon', () => {
     const rows = orders.buildRows(payload);
     expect(rows.map(r => r.reference)).toEqual(['CMD-1', 'CMD-2', 'CMD-3']);
@@ -80,4 +96,12 @@ test('Orders dashboard has no RCT1 toggle or alternate data fetch', () => {
   expect(src).not.toContain('/api/admin/dashboard/orders/rct1');
   expect(src).not.toContain('renderRct1');
   expect(src).toContain('const endpoint = normalEndpoint;');
+});
+
+test('Orders mount supports detached SPA stage roots and menu policy is cache-busted', () => {
+  const src = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/orders.js'), 'utf8');
+  const html = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/index.html'), 'utf8');
+  expect(src).not.toMatch(/rootNode\.isConnected\s*===\s*false/);
+  expect(src).toContain('rootNode.__dashboardViewIdentity !== identity');
+  expect(html).toContain('navigation-policy-v4.js?v=261125-market-menu-v2');
 });

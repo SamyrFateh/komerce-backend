@@ -11,8 +11,7 @@ const MARKETS=['KM','CM','CG'];
 const MENU=[
  'control-tower','action-center','flow-commerce','flow-orders','entity-clients',
  'workspace-pricing','workspace-catalog','flow-operations','workspace-shipping',
- 'workspace-purchasing','flow-finance','workspace-accounting','live-import-runtime',
- 'live-hub','live-relais','markets-home','market-autonomy','market-catalog','unsold',
+ 'flow-finance','workspace-accounting','live-hub','markets-home','market-autonomy','market-catalog','unsold',
  'admin-users','admin-providers','settings','help-docs'
 ];
 function proof(market){return {

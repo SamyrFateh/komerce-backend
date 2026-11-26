@@ -128,17 +128,17 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     const links=Object.fromEntries(groups.flatMap(g=>g.items).map(i=>[i.id,i.href]));
     for(const id of ['control-tower','action-center','flow-commerce','flow-orders',
       'entity-clients','workspace-pricing','workspace-catalog','flow-operations',
-      'workspace-shipping','workspace-purchasing','flow-finance','workspace-accounting',
-      'live-import-runtime','live-hub','live-relais','markets-home',
+      'workspace-shipping','flow-finance','workspace-accounting','live-hub','markets-home',
       'market-autonomy','market-catalog','unsold','admin-users','admin-providers','settings']) {
       expect(links[id]).toBeDefined();
     }
     expect(links['workspace-catalog']).toBe('/dashboards/canonical/market-catalog.html');
-    expect(links['workspace-purchasing']).toBe('/admin/hub');
-    expect(links['live-import-runtime']).toBe('/admin/hub');
-    expect(links['live-relais']).toBe('/admin/operations');
+    expect(links['workspace-purchasing']).toBeUndefined();
+    expect(links['live-import-runtime']).toBeUndefined();
+    expect(links['live-relais']).toBeUndefined();
+    expect(groups.find(group => group.id === 'live').items.map(item => item.id)).toEqual(['live-hub']);
     expect(links['admin-users']).toContain('#market-team');
-    expect(links['admin-providers']).toContain('#market-network');
+    expect(links['admin-providers']).toContain('#market-providers');
     expect(links['settings']).toContain('#market-cash-control');
     expect(links.unsold).toBe('/dashboards/canonical/unsold.html');
     for(const central of ['/admin/workspaces/purchasing','/admin/workspaces/catalog',

@@ -395,5 +395,26 @@
     }
   }
 
+  const sectionAnchors = new Set(['market-team', 'market-network', 'market-providers', 'market-cash-control']);
+  function scrollToRequestedSection() {
+    let id = String(global.location.hash || '').replace(/^#/, '');
+    try { id = decodeURIComponent(id); } catch (_) { return false; }
+    if (!sectionAnchors.has(id)) return false;
+    const target = global.document.getElementById(id);
+    if (!target || !root.contains(target)) return false;
+    target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    return true;
+  }
+
+  const anchorObserver = typeof global.MutationObserver === 'function'
+    ? new global.MutationObserver(() => {
+      if (scrollToRequestedSection()) anchorObserver.disconnect();
+    })
+    : null;
+  anchorObserver?.observe(root, { childList: true, subtree: true });
+  global.addEventListener?.('hashchange', () => {
+    if (!scrollToRequestedSection()) anchorObserver?.observe(root, { childList: true, subtree: true });
+  });
+
   load();
 })(globalThis);

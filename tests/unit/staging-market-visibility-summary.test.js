@@ -15,8 +15,7 @@ const SHA='a'.repeat(40);
 const menu=[
   'control-tower','action-center','flow-commerce','flow-orders','entity-clients',
   'workspace-pricing','workspace-catalog','flow-operations','workspace-shipping',
-  'workspace-purchasing','flow-finance','workspace-accounting',
-  'live-import-runtime','live-hub','live-relais','markets-home',
+  'flow-finance','workspace-accounting','live-hub','markets-home',
   'market-autonomy','market-catalog','unsold','admin-users',
   'admin-providers','settings','help-docs'
 ];
@@ -58,7 +57,7 @@ function run(proof) {
 test('PASS uniquement pour une preuve complète, stable, scoped et sans écriture',()=>{
   const result=run(validProof());
   expect(result.exit).toBe(0);
-  expect(result.summary).toMatchObject({status:'PASS',menu_items:23,
+  expect(result.summary).toMatchObject({status:'PASS',menu_items:20,
     checks:{sha:true,login:true,role:true,menu:true,market_scope:true,order360:true,zero_errors:true}});
   expect(result.report).toContain('Verdict: PASS');
 });

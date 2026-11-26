@@ -42,7 +42,8 @@
     const params = new URLSearchParams(safe(search));
     params.set('branch', branch);
     if (branch !== 'administrative') params.delete('po');
-    params.delete('market'); // Hub global : jamais de contexte marché sur la vue centrale.
+    // Changer de poste ferme le deep link ; le Kanban reste global.
+    for(const key of ['market','sel','decision','atelier'])params.delete(key);
     return HUB_PATH + '?' + params.toString();
   };
   const make = (doc, tag, css, textContent) => {
@@ -705,7 +706,8 @@
     const visualOpen=new Map();
     const initialParams=new URLSearchParams(safe(location?.search));
     const initialPO=/^po:[A-Za-z0-9-]{1,128}$/.test(initialParams.get('sel')||'')?initialParams.get('sel').slice(3):null;
-    const initialDecision=['commitment','payment','review'].includes(initialParams.get('decision'))?initialParams.get('decision'):null;
+    const initialDecision=['commitment','payment','review','variance'].includes(initialParams.get('decision'))?initialParams.get('decision'):null;
+    const initialMarket=initialParams.get('market');
     let initialSelectionHandled=false;
     const visualLanes=['Engagement','Soumission','Envoi fournisseur','Confirmation & suivi','Réception & QR','Bilan PO'];
     const visualStage=p=>{
@@ -754,8 +756,10 @@
         .catch(error=>{entry.actions.replaceChildren(make(doc,'p','','Action indisponible : '+error.message));})
         .finally(()=>{entry.loading=false;});
     }
+    const poTabKey=p=>'po:'+p.market+':'+p.id;
     function createVisualEntry(p,decision=null){
-          if(!visualOpen.has(p.id)){
+          const key=poTabKey(p);
+          if(!visualOpen.has(key)){
             const panel=make(doc,'section','kmc-hub-po-v8-panel');
             const summary=make(doc,'div','kmc-hub-po-v8-summary');
             const actions=make(doc,'div','kmc-hub-po-v8-actions');
@@ -764,8 +768,9 @@
             const proofs=make(doc,'aside','kmc-hub-po-v8-proofs');
             const main=make(doc,'div','kmc-hub-po-v8-main');if(decision)main.append(orders,actions);else main.append(actions,orders);content.append(main,proofs);
             panel.append(summary,content);visualPanels.appendChild(panel);
-            visualOpen.set(p.id,{decision,po:p,panel,summary,actions,orders,proofs,handle:null,mode:null,loading:false});
+            visualOpen.set(key,{decision,po:p,panel,summary,actions,orders,proofs,handle:null,mode:null,loading:false});
           }
+          return key;
     }
     function renderVisualPO(){
       if(!visualHost){
@@ -797,8 +802,8 @@
       if(!initialSelectionHandled){
         initialSelectionHandled=true;
         if(initialPO){
-          const selected=all.find(p=>String(p.id)===initialPO);
-          if(selected){createVisualEntry(selected,initialDecision);visualActive=selected.id;}
+          const selected=all.find(p=>String(p.id)===initialPO&&(!initialMarket||p.market===initialMarket));
+          if(selected){visualActive=createVisualEntry(selected,initialDecision);}
           else{const notice=make(doc,'p','kmc-hub-action-explanation','PO indisponible dans votre périmètre.');notice.setAttribute('role','alert');visualHost.insertBefore(notice,visualChrome);}
         }
       }
@@ -872,8 +877,7 @@
         if(stage===4)card.appendChild(make(doc,'small','',p.received+' / '+p.expected+' reçus'));
         if(visualView==='exceptions')for(const e of p.exceptions||[])card.appendChild(make(doc,'small','',e.reason||e.kind));
         card.addEventListener('click',()=>{
-          createVisualEntry(p);
-          visualSelect(p.id);
+          visualSelect(createVisualEntry(p));
         });return card;
       }
       if(visualView==='board'){
@@ -896,7 +900,7 @@
       for(const [id,entry] of visualOpen){
         entry.panel.hidden=visualActive!==id;
         if(entry.kind){renderLogistics(entry);continue;}
-        const p=all.find(row=>row.id===id);
+        const p=all.find(row=>row.id===entry.po.id&&row.market===entry.po.market);
         entry.summary.replaceChildren();
         if(!p){entry.summary.appendChild(make(doc,'p','','PO indisponible ou annulée.'));entry.actions.hidden=true;continue;}
         entry.po=p;entry.actions.hidden=false;
@@ -938,9 +942,9 @@
         if(proofs.children.length===1)proofs.appendChild(make(doc,'p','kmc-hub-po-v8-muted','Aucune preuve de ces étapes disponible.'));
         if(visualActive!==id)continue;
         // Quantités reçues complètes ne prouvent pas le contrôle qualité ni l'étiquetage.
-        const mode=entry.decision?'purchase':stage===4?'reception':stage>=0&&stage<4?'purchase':null;
+        const mode=entry.decision==='variance'?'variance':entry.decision?'purchase':stage===4?'reception':stage>=0&&stage<4?'purchase':null;
         entry.panel.classList.toggle('is-direction-decision',Boolean(entry.decision));
-        const actionLabel=entry.decision==='commitment'?'Validation de l’engagement':entry.decision==='payment'?'Autorisation de paiement':entry.decision==='review'?'Décisions PO':visualLanes[stage]||'À vérifier';
+        const actionLabel=entry.decision==='commitment'?'Validation de l’engagement':entry.decision==='payment'?'Autorisation de paiement':entry.decision==='review'?'Décisions PO':entry.decision==='variance'?'Arbitrage d’écart fournisseur':visualLanes[stage]||'À vérifier';
         if(entry.loading||entry.handle?.busy?.())continue;
         if(entry.mode===mode && entry.handle){
           if(entry.actionTitle)entry.actionTitle.textContent=actionLabel;
@@ -954,7 +958,7 @@
         const actionHost=make(doc,'div','kmc-hub-po-v8-action-host');entry.actions.appendChild(actionHost);
         if(!mode){entry.actions.appendChild(make(doc,'p','',stage===5?'Réception complète. Les opérations logistiques restent accessibles dans le parcours existant.':'Étape non déterminée par le serveur.'));continue;}
         const module=global.KomerceCanonicalOperationsWorkspace;
-        const mount=mode==='purchase'?module?.mountPurchaseActions:module?.mountReceptionActions;
+        const mount=mode==='variance'?module?.mountVarianceActions:mode==='purchase'?module?.mountPurchaseActions:module?.mountReceptionActions;
         if(!mount){entry.actions.appendChild(make(doc,'p','','Atelier canonique indisponible.'));continue;}
         entry.loading=true;
         actionHost.appendChild(make(doc,'p','','Chargement…'));
@@ -981,7 +985,8 @@
     }
 
     const renderRows = () => {
-      if(poMode){if(visualPO)renderVisualPO();else renderPOs();return;}
+      if(visualPO){if(poMode)renderVisualPO();return;}
+      if(poMode){renderPOs();return;}
       if(visualHost)visualHost.hidden=true;
       header.hidden=false;scroll.hidden=false;
       setHeaders(['Commande / Marché','PO','Fournisseur','Réception','Cartons','Départ','Reste à solder']);
@@ -1129,11 +1134,12 @@
     if(visualPO){
       const refresh=make(doc,'button','kmc-hub-app-branch','Actualiser les PO');
       refresh.type='button';
+      refresh.setAttribute('data-hub-v8-retry','');
       refresh.addEventListener('click',async()=>{
         refresh.disabled=true;
         try{
-          if(!poMode){poMode=true;headerTitle.textContent='PO fournisseurs · Tous les marchés';}
           await visualRefresh();
+          poMode=true;search.hidden=false;search.placeholder='Rechercher une PO ou un fournisseur';search.setAttribute('aria-label',search.placeholder);headerTitle.textContent='PO fournisseurs · Tous les marchés';
           const entry=visualOpen.get(visualActive);
           if(entry?.handle && !entry.loading && !entry.handle.busy?.())await entry.handle.reload?.();
         }catch(error){headerCount.textContent=error.message;}
@@ -1142,8 +1148,7 @@
       header.appendChild(refresh);
       // Ouverture directe sur le Kanban PO depuis le menu normal.
       try{await visualRefresh();poMode=true;headerTitle.textContent='PO fournisseurs · Tous les marchés';search.placeholder='Rechercher une PO ou un fournisseur';search.setAttribute('aria-label',search.placeholder);renderVisualPO();
-      }catch(error){if(visualHost)visualHost.hidden=true;scroll.hidden=false;headerCount.textContent='Vue PO indisponible : '+error.message;}
-      if(!poMode){const legacy=make(doc,'a','','Vue de secours');legacy.setAttribute('href','/admin/hub?branch=operations&ux=legacy');header.appendChild(legacy);}
+      }catch(error){if(visualHost)visualHost.hidden=true;scroll.hidden=true;header.hidden=false;search.hidden=true;headerTitle.textContent='Kanban opérationnel';headerCount.textContent='Vue PO indisponible : '+error.message;}
     }
     search.addEventListener('input', ()=>{closeMenu();renderRows();});
     try {
@@ -1155,6 +1160,7 @@
       renderRows();
       return payload;
     } catch (error) {
+      if(visualPO)return null;
       body.replaceChildren();
       headerCount.textContent = 'Indisponible';
       const tr = make(doc, 'tr');
@@ -1403,7 +1409,8 @@
     if(!visibleRoles.includes(role)) throw new Error('hub_workstation_role_not_allowed');
     const administrativeAllowed = role === 'admin' || role === 'agent_hub';
     const params = new URLSearchParams(safe(location?.search));
-    if (params.has('market') && history?.replaceState) {
+    const scopedPO=/^po:[A-Za-z0-9-]{1,128}$/.test(params.get('sel')||'')&&/^[A-Z]{2}$/.test(params.get('market')||'')&&parseBranch(safe(location?.search))==='operations'&&administrativeAllowed;
+    if (params.has('market') && !scopedPO && history?.replaceState) {
       params.delete('market');
       history.replaceState(null,'',HUB_PATH + (params.toString() ? '?' + params.toString() : ''));
     }
@@ -1437,13 +1444,6 @@
       applyFocus();
     });
     header.appendChild(focusToggle);
-    if (administrativeAllowed) {
-      const execution = make(doc,'a','kmc-hub-app-branch','Opérations');
-      execution.setAttribute('href','/admin/hub-live?view=execute&entry=operations');
-      execution.setAttribute('data-hub-open-operations','');
-      execution.setAttribute('aria-label','Ouvrir le poste d’exécution Hub et choisir le marché');
-      header.appendChild(execution);
-    }
     applyFocus();
     root.appendChild(header);
     const nav=make(doc,'nav','kmc-hub-app-branches');

@@ -15,4 +15,8 @@ describe('market-team — libellés des capacités', () => {
   test('le contrôle des encaissements reste libellé', () => {
     expect(src).toContain("'cash_control.policy.manage': 'Gérer le contrôle des encaissements'");
   });
+
+  test('l’ancre Équipe reste présente sur la section montée', () => {
+    expect(src).toContain("section.id = 'market-team'");
+  });
 });

@@ -308,6 +308,32 @@ describe('LOT 2D-CANON — Commerce vivant', () => {
     }));
   });
 
+  test('SPA : un root de staging détaché reçoit le dashboard avant son commit', async () => {
+    const root = { isConnected: false };
+    const render = jest.fn();
+    const renderer = { createRenderer: jest.fn(() => ({ render })) };
+    const fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue(payloadFixture()),
+    });
+
+    const result = await commerce.mount({
+      root,
+      document: {},
+      ui: {},
+      fetch,
+      renderer,
+      adminContext: globalContext(),
+      contextContract: adminContextContract,
+      user: { role: 'admin' },
+    });
+
+    expect(result.stale).toBeUndefined();
+    expect(render).toHaveBeenNthCalledWith(2, root, commerce.COMMERCE_SCHEMA, expect.objectContaining({
+      data: expect.objectContaining({ 'commerce.metrics': expect.any(Object) }),
+    }));
+  });
+
   test('période non supportée retombe sur 30 jours', () => {
     expect(commerce.normalizePeriod('7')).toBe('7');
     expect(commerce.normalizePeriod('90')).toBe('90');
@@ -456,6 +482,23 @@ describe('Commerce — top produits cliquables vers la fiche Produit 360', () =>
     dates.forEach(d => expect(d).toEqual(['18/10/2026', 'Non disponible']));
     expect(commerceDecision.businessDayLabel('x')).toBe('Non disponible');
   });
+});
+
+test('Commerce : un montage périmé ou sans payload ne plante pas sur period', async () => {
+  const renderer = { render: jest.fn() };
+  const options = {
+    root: {}, document: {}, ui: {},
+    renderer: { createRenderer: jest.fn(() => renderer) },
+  };
+  const empty = commerceDecision.enhance({ mount: async () => ({}) }, {});
+  await expect(empty.mount(options)).resolves.toEqual({});
+  expect(renderer.render).toHaveBeenCalledWith(options.root, [], expect.objectContaining({ state: 'error' }));
+
+  const staleRenderer = { render: jest.fn() };
+  const stale = commerceDecision.enhance({ mount: async () => ({ stale: true }) }, {});
+  await expect(stale.mount({ ...options, renderer: { createRenderer: () => staleRenderer } }))
+    .resolves.toEqual({ stale: true });
+  expect(staleRenderer.render).not.toHaveBeenCalled();
 });
 
 test('L10 : aucun écran Finance/Pilotage n’affiche « CA encaissé » ; libellés Q3', () => {

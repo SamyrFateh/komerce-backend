@@ -29,23 +29,37 @@
   }
 
   async function request(url, options = {}) {
-    const response = await global.fetch(url, {
-      method: options.method || 'GET',
-      credentials: 'include',
-      headers: {
-        Accept: 'application/json',
-        ...(options.body == null ? {} : { 'Content-Type': 'application/json' }),
-      },
-      body: options.body == null ? undefined : JSON.stringify(options.body),
-    });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      const error = new Error(body.error || `HTTP ${response.status}`);
-      error.status = response.status;
-      error.code = body.code || null;
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    const timeout = controller ? setTimeout(() => controller.abort(), 20000) : null;
+    let response;
+    try {
+      response = await global.fetch(url, {
+        method: options.method || 'GET',
+        credentials: 'include',
+        headers: {
+          Accept: 'application/json',
+          ...(options.body == null ? {} : { 'Content-Type': 'application/json' }),
+        },
+        body: options.body == null ? undefined : JSON.stringify(options.body),
+        ...(controller ? { signal: controller.signal } : {}),
+      });
+      const body = await response.json().catch(error => {
+        if (controller?.signal.aborted) throw error;
+        return {};
+      });
+      if (!response.ok) {
+        const error = new Error(body.error || `HTTP ${response.status}`);
+        error.status = response.status;
+        error.code = body.code || null;
+        throw error;
+      }
+      return body;
+    } catch (error) {
+      if (controller?.signal.aborted) throw new Error('Le serveur met trop de temps à répondre. Réessayez.');
       throw error;
+    } finally {
+      if (timeout) clearTimeout(timeout);
     }
-    return body;
   }
 
   // L1 : aucun repli sur le premier marché autorisé (CG pour un admin global).
@@ -468,6 +482,10 @@
       root.appendChild(el('p', 'canonical-eyebrow', 'KOMERCE · CATALOGUE PAYS'));
       root.appendChild(el('h1', '', 'Catalogue indisponible'));
       root.appendChild(el('p', '', `${error.message}${error.code ? ` · ${error.code}` : ''}`));
+      const retry = el('button', 'kmc-workspace-action is-secondary', 'Réessayer');
+      retry.type = 'button';
+      retry.addEventListener('click', () => load());
+      root.appendChild(retry);
     }
   }
 

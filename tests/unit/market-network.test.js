@@ -28,4 +28,8 @@ describe('market-network (Réseau local) — île et rattachement agent', () => 
     expect(ui).toContain('body: { user_id: select.value }');
     expect(ui).not.toMatch(/market_id|marketId/);
   });
+  test('le lien de l’équipe pointe sur la section Réseau Local', () => {
+    expect(ui).toContain("section.id = 'market-network'");
+    expect(ui).toContain("summary.id = 'market-providers'");
+  });
 });

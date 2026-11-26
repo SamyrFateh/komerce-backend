@@ -387,6 +387,7 @@
       } catch (error) {
         if (error.status === 403) return;
         const section = el('section', 'kmc-section kmc-team-section');
+        section.id = 'market-team';
         section.dataset.marketTeam = '';
         section.appendChild(el('h2', 'kmc-section-title', 'Équipe & délégation'));
         section.appendChild(el('div', 'kmc-team-empty', `${error.message}${error.code ? ` · ${error.code}` : ''}`));
@@ -395,6 +396,7 @@
       }
 
       const section = el('section', 'kmc-section kmc-team-section');
+      section.id = 'market-team';
       section.dataset.marketTeam = '';
       section.appendChild(el('h2', 'kmc-section-title', 'Équipe & délégation'));
       section.appendChild(el('p', 'kmc-workspace-note', 'Le partenaire gère son équipe dans son propre Market ID. Les capacités GROUP restent hors de portée.'));

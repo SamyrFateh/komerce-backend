@@ -96,7 +96,7 @@ test('rôle non Hub : aucune écriture', () => {
 test('régression P0-3 : un UUID réel (5 groupes) active les actions d\'achat — attester l\'envoi d\'une PO soumise', () => {
   const menu = run({ status: 'notified' }, 'Fournisseur', {});
   expect(actions(menu)).toEqual([]);
-  expect(links(menu)[0].href).toContain('market=KM&atelier=purchasing&sel=po%3A'+PO_ID);
+  expect(links(menu)[0].href).toContain('branch=operations&sel=po%3A'+PO_ID);
   const confirmed=run({status:'notified',sent_at:'2026-11-03T09:00:00Z'},'Fournisseur',{});
   expect(actions(confirmed)).toEqual([]);
   expect(links(confirmed)[0].textContent).toContain('confirmer les lignes');
@@ -109,7 +109,7 @@ test('écart fournisseur : la décision est distincte et réservée au détenteu
   expect(actions(run(po, 'Justificatifs', { supplier_payment: true }))).toEqual([]);
   const admin=run(po,'Paiement',{supplier_payment:true});
   expect(actions(admin)).toEqual([]);
-  expect(links(admin)[0].href).toContain('entry=direction');
+  expect(links(admin)[0].href).toContain('/admin/hub?branch=operations');
   expect(links(admin)[0].href).toContain('decision=variance');
   const menu=el('div');
   load().directionVariance(menu,{doc,fetch:jest.fn(),user:{role:'agent_hub'},po:{id:PO_ID,...po},grants:{supplier_payment:true}});

@@ -73,7 +73,7 @@ test('Administration et Opérations occupent toute la largeur sans rail doublon'
     location:{search:'?branch=administrative&market=KM'},fetch:mockFetch({}),
     renderAdministrative:admin,renderOperations:ops});
   expect(api.branch).toBe('administrative');
-  expect(root.querySelector('[data-hub-open-operations]').getAttribute('href')).toBe('/admin/hub-live?view=execute&entry=operations');
+  expect(root.querySelector('[data-hub-open-operations]')).toBeNull();
   expect(root.querySelector('[data-hub-branch="operations"]').children[0].children[0].textContent).toBe('Kanban');
   expect(root.children[1].querySelectorAll('[data-hub-branch]')).toHaveLength(3);
   expect(root.querySelectorAll('[data-hub-director-todo]')).toHaveLength(0);
@@ -586,5 +586,44 @@ test('V8 uses the mock visual tokens and scoped styles for real forms',()=>{
  for(const token of ['--nav:#13273a','--ink:#182c3b','--muted:#647588','--line:#dce4e9','--bg:#f3f6f8','--blue:#1765ad'])expect(css).toContain(token);
  expect(css).toContain('.kmc-hub-po-visual .hlc-form .hlc-btn.is-primary');
  const app=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/app.js'),'utf8');
- expect(app).toContain("global.location.replace('/admin/hub?branch=operations&sel='+encodeURIComponent(sel)+'&decision=review')");
+ expect(app).toContain("global.location.replace('/admin/hub?branch=operations&sel='+encodeURIComponent(sel)+'&decision='+(params.get('decision')||'review')+(market?'&market='+encodeURIComponent(market):''))");
+});
+
+test('PO partagée : arbitrage V8 ouvre le marché explicitement choisi, sans basculer sur le premier dossier',async()=>{
+ const app=load(),root=el('main');
+ const po={id:'p1',reference:'PO-1',supplier:'Fournisseur',order_count:0,ordered:2,expected:2,received:1,missing:1,purchase_step:'received'};
+ const fetch=jest.fn(async url=>({ok:true,json:async()=>url==='/api/hub/board?view=po'?{scope:'HUB_GLOBAL',purchase_orders:[{...po,market:'CM'},{...po,market:'KM'}]}:{scope:'HUB_GLOBAL',orders:[]}}));
+ const mountVarianceActions=jest.fn(async()=>({busy:()=>false}));
+ const prev=global.KomerceCanonicalOperationsWorkspace;
+ global.KomerceCanonicalOperationsWorkspace={mountVarianceActions};
+ try{
+  await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'admin'},location:{search:'?branch=operations&sel=po%3Ap1&decision=variance&market=KM'}});
+  await Promise.resolve();await Promise.resolve();
+  expect(mountVarianceActions).toHaveBeenCalledTimes(1);
+  expect(mountVarianceActions).toHaveBeenCalledWith(expect.anything(),expect.objectContaining({poId:'p1',marketCode:'KM'}));
+  expect(fetch.mock.calls.every(([,opts])=>opts.method==='GET')).toBe(true);
+ }finally{global.KomerceCanonicalOperationsWorkspace=prev;}
+});
+
+test('mount Hub conserve le marché uniquement pour un dossier PO explicite',async()=>{
+ const app=load(),root=el('main'),history={replaceState:jest.fn()},ops=jest.fn();
+ app.mount({root,user:{role:'admin'},document:doc,location:{search:'?branch=operations&sel=po%3Ap1&market=KM&decision=variance'},history,fetch:mockFetch({}),renderOperations:ops,renderAdministrative:jest.fn()});
+ expect(history.replaceState).not.toHaveBeenCalled();
+ expect(root.querySelector('[data-hub-branch="operations"]').getAttribute('href')).toBe('/admin/hub?branch=operations');
+ expect(ops).toHaveBeenCalledTimes(1);
+});
+test('projection V8 indisponible : aucune bascule historique, puis récupération par actualisation',async()=>{
+ const app=load(),root=el('main');
+ let available=false;
+ const fetch=jest.fn(async url=>({ok:true,json:async()=>url==='/api/hub/board?view=po'
+  ? available?{scope:'HUB_GLOBAL',markets:['KM'],purchase_orders:[]}:{scope:'UNAVAILABLE'}
+  : {scope:'HUB_GLOBAL',orders:[{id:'o1',reference:'K123456',market:'KM'}]}}));
+ await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'admin'},location:{search:''}});
+ expect(root.querySelectorAll('[data-hub-global-order]')).toHaveLength(0);
+ expect(root.querySelectorAll('[data-hub-po-pilot-toggle]')).toHaveLength(0);
+ const retry=root.querySelector('[data-hub-v8-retry]');expect(retry).not.toBeNull();
+ available=true;await retry.click();
+ expect(root.querySelector('[data-hub-po-v8]')).not.toBeNull();
+ expect(root.querySelectorAll('[data-hub-v8-lane]')).toHaveLength(6);
+ expect(root.querySelectorAll('[data-hub-global-order]')).toHaveLength(0);
 });

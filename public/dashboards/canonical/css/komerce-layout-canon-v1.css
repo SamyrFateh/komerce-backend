@@ -109,6 +109,19 @@ body.kmc-shell-v4 .kmc-finance-essential-metrics > * {
   box-sizing: border-box;
 }
 
+/* Operations has eight KPIs: keep readable cards on two rows at desktop widths. */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-metric-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-flow: row;
+  grid-auto-columns: auto;
+  align-items: stretch;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-metric-strip > * {
+  height: auto;
+  min-height: 96px;
+}
+
 /* Primary object gets the remaining first-viewport mass. */
 body.kmc-shell-v4 [data-dashboard-role="primary"],
 body.kmc-shell-v4 .is-control-tower-flow,
@@ -171,6 +184,10 @@ body.kmc-shell-v4 .kmc-action-center {
     grid-auto-flow: row;
   }
 
+  body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-metric-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   body.kmc-shell-v4 [data-dashboard-role="attention"] .kmc-decision-card,
   body.kmc-shell-v4 .kmc-metric-strip > *,
   body.kmc-shell-v4 .kmc-commerce-essential-metrics > *,
@@ -211,5 +228,9 @@ body.kmc-shell-v4 .kmc-action-center {
   body.kmc-shell-v4 .kmc-decision-dashboard-grid-2 {
     grid-template-columns: 1fr;
     grid-auto-flow: row;
+  }
+
+  body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-metric-strip {
+    grid-template-columns: 1fr;
   }
 }

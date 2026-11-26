@@ -390,6 +390,7 @@
       if (relaisError === 'absent' && providersError === 'absent') return;
 
       const section = el('section', 'kmc-section kmc-team-section');
+      section.id = 'market-network';
       section.dataset.marketNetwork = '';
       section.appendChild(el('h2', 'kmc-section-title', 'Réseau local'));
       section.appendChild(el('p', 'kmc-workspace-note', 'Relais et prestataires rattachés à ce Market ID. Un relais suspendu reste dans l’historique mais ne reçoit plus de nouvelles affectations.'));
@@ -432,6 +433,8 @@
         const canManage = (providersData.actor_capabilities || []).includes('provider.manage');
 
         const summary = el('div', 'kmc-team-summary');
+        summary.id = 'market-providers';
+        summary.dataset.marketProviders = '';
         summary.appendChild(pill('Prestataires', true));
         summary.appendChild(pill(`${(providersData.providers || []).filter(p => p.status === 'active').length} actifs`));
         summary.appendChild(pill(`${(providersData.providers || []).filter(p => p.status === 'pending').length} en attente`));
