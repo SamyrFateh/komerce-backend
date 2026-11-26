@@ -1105,7 +1105,7 @@
   function hubMarketScopeLabel(adminContext) {
     const access = adminContext?.access;
     if (access?.mode === 'global') return 'Global · Tous les marchés';
-    if (access?.mode === 'hub') return 'Hub · Périmètre Hub';
+    if (access?.mode === 'hub') return 'Global · Tous les marchés';
     if (!access) return 'Hub · Périmètre non déterminé';
     const markets = Array.isArray(access.allowedMarkets) ? access.allowedMarkets : [];
     const selected = access.defaultMarket && markets.includes(access.defaultMarket)
