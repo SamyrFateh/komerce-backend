@@ -271,6 +271,19 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     const actual=await post(fx.managerA,fx.marketA.code,'/posts/'+a.post+'/actuals',{periodStart:month,currency:'KMF',amountNative:'10',evidenceRef:tag+'LOCAL-FACT'});
     expect(actual.status).toBe(201);
   });
+  test('reference initialization is idempotent and contains no economic facts',async()=>{
+    const post=(actor,code)=>request(app).post(endpoint(code)+'/initialize').set('Authorization',actor.token).send({});
+    expect((await post(fx.viewerA,fx.marketA.code)).status).toBe(403);
+    expect((await post(fx.managerA,fx.marketB.code)).status).toBe(403);
+    expect((await post(fx.managerA,null)).status).toBe(403);
+    const first=await post(fx.managerA,fx.marketA.code);
+    expect(first.status).toBe(200);expect(first.body).toEqual({centers:3,families:9});
+    expect((await post(fx.managerA,fx.marketA.code)).body).toEqual({centers:0,families:0});
+    const model=(await get(fx.central,fx.marketA.code)).body;
+    const ids=model.centers.filter(c=>['RELAIS_LOCAL','TRANSPORT_DOUANE','SERVICES_MARCHE'].includes(c.code)).map(c=>c.id);
+    expect(ids).toHaveLength(3);expect(model.posts.filter(p=>ids.includes(p.center_id))).toEqual([]);
+    expect((await post(fx.central,null)).body).toEqual({centers:2,families:7});
+  });
   test('browser authority injection and invalid period rejected',async()=>{
     expect((await request(app).get(endpoint(fx.marketA.code)).query({periodStart:month,market_id:fx.marketB.id}).set('Authorization',fx.viewerA.token)).status).toBe(400);
     expect((await get(fx.central,fx.marketA.code,'2026-01-02')).status).toBe(400);

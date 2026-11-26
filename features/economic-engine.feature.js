@@ -463,6 +463,8 @@ module.exports = {
       'POST /api/admin/workspaces/pricing/cost-centers/posts/:postId/budget-revisions',
       'POST /api/admin/workspaces/pricing/cost-centers/posts/:postId/actuals',
       'POST /api/admin/workspaces/pricing/cost-centers/families/:familyId/posts',
+      'POST /api/admin/workspaces/pricing/cost-centers/initialize',
+      'POST /api/admin/workspaces/pricing/market/:marketCode/cost-centers/initialize',
       'POST /api/admin/workspaces/pricing/market/:marketCode/cost-centers/families/:familyId/posts',
       'POST /api/admin/workspaces/pricing/market/:marketCode/cost-centers/posts/:postId/actuals',
       'POST /api/admin/workspaces/pricing/cost-centers/posts/:postId/commitments',
