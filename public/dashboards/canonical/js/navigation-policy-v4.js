@@ -920,18 +920,7 @@
     unsold: '▦',
   });
 
-  // Destinations marché réellement scopées. Les liens masqués faute de vue
-  // marché correspondante ne sont pas réintroduits comme doublons de menu.
-  const MARKET_MENU_PROJECTIONS = Object.freeze({
-    'unsold': Object.freeze({
-      href:'/dashboards/canonical/unsold.html',
-      label:'Invendus · Mes marchés',
-      capability:'operations.read',
-    }),
-    'admin-providers': Object.freeze({ href:'/dashboards/canonical/market-autonomy.html#market-providers', label:'Prestataires de mon marché' }),
-    'settings': Object.freeze({ href:'/dashboards/canonical/market-autonomy.html#market-cash-control', label:'Paramètres de mon marché' }),
-  });
-
+  // Destinations transitoires déclarées sur leur entrée canonique jusqu'au lot 4.
   const SIDEBAR_GROUPS = Object.freeze([
     Object.freeze({
       id: 'pilot',
@@ -982,7 +971,7 @@
       items: Object.freeze([
         // Une seule entrée Sourcing : le cockpit LIVE est la porte principale ; les vues détaillées restent accessibles par leurs liens contextuels.
         Object.freeze({ id: 'live-import-runtime', label: 'Sourcing', href: '/admin/import-runtime', roles: ['admin', 'sourcing'], surfaces: ['import-runtime', 'sourcing-workspace', 'supplier-360'] }),
-        Object.freeze({ id: 'live-hub', label: 'Hub · Tous les marchés', href: '/admin/hub', roles: ['admin', 'market_operator', 'finance', 'sourcing', 'agent_hub', 'agent_relais', 'support'], surfaces: ['hub-workstation', 'hub-live'] }),
+        Object.freeze({ id: 'live-hub', label: 'Hub · Tous les marchés', href: '/admin/hub', roles: ['admin', 'market_operator', 'finance', 'sourcing', 'agent_hub', 'agent_relais', 'support'], capability: 'operations.read', surfaces: ['hub-workstation', 'hub-live'] }),
         Object.freeze({ id: 'live-relais', label: 'Relais live', href: '/admin/relais-live', roles: ['admin', 'agent_relais'], surfaces: ['relais-live'] }),
       ]),
     }),
@@ -993,7 +982,7 @@
         Object.freeze({ id: 'markets-home', label: 'Responsables pays', href: '/dashboards/canonical/access.html', roles: ['admin'], surfaces: ['market-access'] }),
         Object.freeze({ id: 'market-autonomy', label: 'Autonomie marché', href: '/dashboards/canonical/market-autonomy.html', roles: ['market_operator'], surfaces: ['market-autonomy'] }),
         Object.freeze({ id: 'market-catalog', label: 'Catalogue pays', href: '/dashboards/canonical/market-catalog.html', roles: ['admin', 'market_operator'], surfaces: ['market-catalog'] }),
-        Object.freeze({ id: 'unsold', label: 'Invendus', href: '/dashboards/canonical/unsold.html', roles: ['admin'], surfaces: ['unsold'] }),
+        Object.freeze({ id: 'unsold', label: 'Invendus', href: '/dashboards/canonical/unsold.html', roles: ['admin', 'market_operator'], capability: 'operations.read', requiresResolvedContext: true, surfaces: ['unsold'] }),
       ]),
     }),
     Object.freeze({
@@ -1002,8 +991,8 @@
       items: Object.freeze([
         Object.freeze({ id: 'admin-users', label: 'Utilisateurs', href: '/admin/users', roles: ['admin'], surfaces: ['users-admin'] }),
         Object.freeze({ id: 'admin-guided-recipe', label: 'Recette guidée', href: '/admin/golden-e2e?guide=hub#extendedRecipe', roles: ['admin'], surfaces: ['golden-e2e'] }),
-        Object.freeze({ id: 'admin-providers', label: 'Providers', href: '/admin/providers', roles: ['admin'], surfaces: ['providers-admin'] }),
-        Object.freeze({ id: 'settings', label: 'Paramètres', href: '/admin/settings', roles: ['admin'], surfaces: ['settings'] }),
+        Object.freeze({ id: 'admin-providers', label: 'Providers', href: '/admin/providers', roles: ['admin', 'market_operator'], marketCompatibilityHref: '/dashboards/canonical/market-autonomy.html#market-providers', marketCompatibilityLabel: 'Prestataires de mon marché', surfaces: ['providers-admin'] }),
+        Object.freeze({ id: 'settings', label: 'Paramètres', href: '/admin/settings', roles: ['admin', 'market_operator'], marketCompatibilityHref: '/dashboards/canonical/market-autonomy.html#market-cash-control', marketCompatibilityLabel: 'Paramètres de mon marché', surfaces: ['settings'] }),
       ]),
     }),
     Object.freeze({
@@ -1017,15 +1006,15 @@
 
   const LOCAL_TABS = Object.freeze({
     pricing: Object.freeze([
-      Object.freeze({ id: 'pricing-overview', label: 'Vue d’ensemble', href: '/admin/workspaces/pricing', roles: ['admin', 'market_operator'] }),
+      Object.freeze({ id: 'pricing-overview', label: 'Vue d’ensemble', href: '/admin/workspaces/pricing', roles: ['admin', 'market_operator'], capability: 'pricing.read' }),
     ]),
     catalog: Object.freeze([
       Object.freeze({ id: 'catalog-overview', label: 'Catalogue global', href: '/admin/workspaces/catalog', roles: ['admin'] }),
 
     ]),
     orders: Object.freeze([
-      Object.freeze({ id: 'commerce', label: 'Vue d’ensemble', href: '/admin/commerce', roles: ['admin', 'market_operator'] }),
-      Object.freeze({ id: 'orders', label: 'Commandes', href: '/admin/orders', roles: ['admin', 'market_operator'] }),
+      Object.freeze({ id: 'commerce', label: 'Vue d’ensemble', href: '/admin/commerce', roles: ['admin', 'market_operator'], capability: 'dashboard.market.read' }),
+      Object.freeze({ id: 'orders', label: 'Commandes', href: '/admin/orders', roles: ['admin', 'market_operator'], capability: 'dashboard.market.read' }),
       // GAP 3 / LOT A (A2) : 'client.read' est une capability DELEGATION
       // (cf. config/market-delegation-capabilities.js) — un market_operator
       // qui la détient sur son marché doit voir la tab, un admin (global ou
@@ -1037,7 +1026,7 @@
       Object.freeze({ id: 'market-access', label: 'Accès pays', href: '/dashboards/canonical/access.html', roles: ['admin'] }),
       Object.freeze({ id: 'market-autonomy', label: 'Autonomie marché', href: '/dashboards/canonical/market-autonomy.html', roles: ['market_operator'] }),
       Object.freeze({ id: 'catalog-country', label: 'Catalogue pays', href: '/dashboards/canonical/market-catalog.html', roles: ['admin', 'market_operator'] }),
-      Object.freeze({ id: 'unsold', label: 'Invendus', href: '/dashboards/canonical/unsold.html', roles: ['admin'] }),
+      Object.freeze({ id: 'unsold', label: 'Invendus', href: '/dashboards/canonical/unsold.html', roles: ['admin', 'market_operator'], capability: 'operations.read', requiresResolvedContext: true }),
     ]),
   });
 
@@ -1094,22 +1083,20 @@
     const role = roleOf(user);
     // La visibilité d'une rubrique métier n'est pas une autorisation d'action.
     // Les données affichées restent soumises aux capabilities READ du serveur.
-    if (role === 'market_operator') {
-      const projection = MARKET_MENU_PROJECTIONS[item.id];
-      if (projection?.capability) return hasCapability(adminContext, projection.capability);
-      return (item.roles || []).includes(role)
-        || Boolean(projection);
-    }
     if (!(item.roles || []).includes(role)) return false;
+    if (item.requiresResolvedContext && role === 'market_operator' && !adminContext?.access) return false;
     // Les agents terrain possèdent leur propre garde serveur /api/agent/action-center.
     // Une délégation commerciale de marché n'est pas l'autorité de cette page.
     if (item.id === 'action-center' && FIELD_ACTION_CENTER_ROLES.includes(role)) return true;
     if (item.id === 'workspace-shipping' && ['agent_hub', 'agent_transitaire'].includes(role)) return true;
+    if (role === 'finance' && item.id === 'workspace-accounting') return true;
+    if (item.id === 'live-hub' && ['agent_hub', 'agent_relais', 'finance', 'sourcing', 'support'].includes(role)) return true;
     return tabCapabilityGranted(item, adminContext);
   }
 
   function sidebarGroupsFor(user, adminContext) {
-    const market = roleOf(user) === 'market_operator';
+    const market = adminContext?.access?.mode === 'market'
+      || (!adminContext?.access && roleOf(user) === 'market_operator');
     return SIDEBAR_GROUPS
       .map(group => Object.freeze({
         ...group,
@@ -1117,8 +1104,9 @@
           .filter(item => sidebarItemVisible(item, user, adminContext))
           .map(item => {
             if (!market) return item;
-            const scoped = MARKET_MENU_PROJECTIONS[item.id];
-            if (scoped) return Object.freeze({...item, ...scoped, market_scoped:true});
+            if (item.marketCompatibilityHref && roleOf(user) === 'market_operator') return Object.freeze({
+              ...item, href: item.marketCompatibilityHref, label: item.marketCompatibilityLabel, market_scoped: true,
+            });
             if (item.id === 'live-hub') return Object.freeze({...item, label:'Hub · Mes marchés', market_scoped:true});
             return Object.freeze({...item, market_scoped:true});
           })),
@@ -1173,7 +1161,7 @@
         }
         link.appendChild(createNode(doc, 'span', 'kmc-admin-primary-icon', ICONS[item.id] || '•'));
         link.appendChild(createNode(doc, 'span', 'kmc-admin-primary-label',
-          item.id === 'live-hub' && roleOf(user) === 'market_operator' ? 'Hub · Mes marchés' : item.label));
+          item.label));
         wrap.appendChild(link);
       });
       primary.appendChild(wrap);
@@ -1259,8 +1247,7 @@
     }
     const local = LOCAL_TABS[domainId];
     if (local) {
-      return local.filter(tab => tab.roles.includes(role)
-        && (role === 'market_operator' || tabCapabilityGranted(tab, adminContext)));
+      return local.filter(tab => sidebarItemVisible(tab, user, adminContext));
     }
 
     const domain = visibleDomainsFor(user).find(row => row.id === domainId);
