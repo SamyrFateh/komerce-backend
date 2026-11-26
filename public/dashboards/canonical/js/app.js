@@ -1187,7 +1187,7 @@
       global.location.replace(operationsWorkspaceTarget(user));
       return user;
     }
-    const adminContext = ((surface === SURFACES.CATALOG_WORKSPACE && !isMarketCatalogLens(user)) || surface === SURFACES.SOURCING_WORKSPACE || surface === SURFACES.PURCHASING_WORKSPACE || surface === SURFACES.IMPORT_RUNTIME || surface === SURFACES.HUB_WORKSTATION || surface === SURFACES.ACTION_CENTER || (surface === SURFACES.SETTINGS && user?.role !== 'market_operator'))
+    const adminContext = ((surface === SURFACES.CATALOG_WORKSPACE && !isMarketCatalogLens(user)) || surface === SURFACES.SOURCING_WORKSPACE || surface === SURFACES.PURCHASING_WORKSPACE || surface === SURFACES.IMPORT_RUNTIME || (surface === SURFACES.HUB_WORKSTATION && user?.role !== 'market_operator') || surface === SURFACES.ACTION_CENTER || (surface === SURFACES.SETTINGS && user?.role !== 'market_operator'))
       ? null
       : await requireAdminContext();
     global.KOMERCE_CANONICAL_AUTH_USER = user;

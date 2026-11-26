@@ -1293,7 +1293,7 @@
       // Même signal inter-instances que la Direction, mais relecture ciblée
       // du Kanban : aucun remontage du poste ni perte des onglets ouverts.
       global.KomerceDashboardFreshness?.watch?.({
-        root, pollMs:30000,
+        root, pollMs:30000, streamEnabled: !marketReadOnly,
         isBusy:()=>Boolean(visualRead||visualOpen.get(visualActive)?.loading||visualOpen.get(visualActive)?.handle?.busy?.()||editingPO()),
         refresh:async()=>{
           try{
