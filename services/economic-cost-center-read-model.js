@@ -40,6 +40,19 @@ async function resolveScope(client,actor,marketCode,central){
   if(!authz.market_id)throw error('economic_reference_scope_missing',403,'Périmètre non résolu');
   return authz.market_id;
 }
+// Server-side aggregation of frozen EUR budget snapshots, never realized cost.
+// An incomplete set exposes its coverage and a subtotal, not a complete budget.
+function budgetSummary(posts){
+  let eur=0n,covered=0;
+  for(const p of posts){
+    const amount=p.budget?.eur;
+    if(typeof amount!=='string'||!/^\d+\.\d{2}$/.test(amount))continue;
+    eur+=BigInt(amount.replace('.',''));covered++;
+  }
+  const digits=eur.toString().padStart(3,'0');
+  const recordedEur=covered?digits.slice(0,-2)+'.'+digits.slice(-2):null;
+  return {recordedEur,totalEur:posts.length>0&&covered===posts.length?recordedEur:null,coveredPosts:covered,totalPosts:posts.length};
+}
 async function readCostCenters(actor,raw){
   if(!actor?.id)throw error('AUTH_REQUIRED',401,'Authentification requise');
   const input=validate(raw);
@@ -82,7 +95,7 @@ async function readCostCenters(actor,raw){
       commitments:byPost.get(p.id)||[],actual:null,available:null,coverage:'NOT_RECONCILED'}));
     await client.query('COMMIT');
     return {scope:input.marketCode===null?'GROUP':'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,central,readOnly:true,
-      centers,families,resources,posts:model,actualCoverage:'NOT_RECONCILED',available:null};
+      centers:centers.map(c=>({...c,budgetSummary:budgetSummary(model.filter(p=>p.center_id===c.id))})),families,resources,posts:model,budgetSummary:budgetSummary(model),actualCoverage:'NOT_RECONCILED',available:null};
   }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
 }
-module.exports={readCostCenters};
+module.exports={readCostCenters,budgetSummary};

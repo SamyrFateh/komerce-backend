@@ -4,7 +4,7 @@ const mockQuery=jest.fn(),mockRelease=jest.fn(),mockClient=jest.fn(),mockGrant=j
 jest.mock('../../db',()=>({getClient:(...a)=>mockClient(...a)}));
 jest.mock('../../middleware/require-pricing-global-authority',()=>({hasPricingGlobalAuthority:(...a)=>mockGrant(...a)}));
 jest.mock('../../services/market-delegation-service',()=>({resolveAuthorization:(...a)=>mockAuthz(...a)}));
-const {readCostCenters}=require('../../services/economic-cost-center-read-model');
+const {readCostCenters,budgetSummary}=require('../../services/economic-cost-center-read-model');
 const client={query:mockQuery,release:mockRelease},actor={id:'actor',role:'admin'},month='2026-01-01';
 const ok=(rows=[])=>({rows});
 beforeEach(()=>{jest.resetAllMocks();mockClient.mockResolvedValue(client);mockGrant.mockResolvedValue(true);});
@@ -45,4 +45,10 @@ test('latest revision preserves explicit zero distinct from absent budget; no in
   expect(x.actualCoverage).toBe('NOT_RECONCILED');
   expect(mockQuery.mock.calls[4][0]).toContain('ORDER BY revision DESC LIMIT 1');
   expect(mockRelease).toHaveBeenCalledTimes(1);
+});
+
+test('budget subtotal preserves exact cents and distinguishes coverage from zero',()=>{
+  expect(budgetSummary([{budget:{eur:'99999999999999.99'}},{budget:{eur:'0.02'}}])).toEqual({recordedEur:'100000000000000.01',totalEur:'100000000000000.01',coveredPosts:2,totalPosts:2});
+  expect(budgetSummary([{budget:{eur:'0.00'}},{budget:null}])).toEqual({recordedEur:'0.00',totalEur:null,coveredPosts:1,totalPosts:2});
+  expect(budgetSummary([])).toEqual({recordedEur:null,totalEur:null,coveredPosts:0,totalPosts:0});
 });

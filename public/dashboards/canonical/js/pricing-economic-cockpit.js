@@ -35,6 +35,112 @@
     return node;
   }
 
+  // ECO-2a: first persistent V7 consultation component. It is exported for
+  // isolated verification, not mounted into the exclusive cockpit until its
+  // three-tab contract and server reconciliation are ready. No business math.
+  function v7Money(value, currency = 'EUR') {
+    if (typeof value !== 'string' || !/^\d+(?:\.\d+)?$/.test(value)) return 'Non disponible';
+    const [integer, fraction=''] = value.split('.');
+    const grouped=integer.replace(/\B(?=(\d{3})+(?!\d))/g,'\u202f');
+    const decimals=currency==='EUR'?fraction.slice(0,2).padEnd(2,'0'):fraction.replace(/0+$/,'');
+    return grouped+(decimals?','+decimals:'')+' '+currency;
+  }
+
+  function createV7CostCenters(doc, model) {
+    const host=el(doc,'section','kmc-v7-centers');
+    host.dataset.v7Centers='';
+    const state={centerId:null,familyId:null,postId:null};
+    const centers=Array.isArray(model?.centers)?model.centers:[];
+    const families=Array.isArray(model?.families)?model.families:[];
+    const posts=Array.isArray(model?.posts)?model.posts:[];
+    const resources=Array.isArray(model?.resources)?model.resources:[];
+    function button(label,handler,className='kmc-v7-action'){
+      const node=el(doc,'button',className,label);node.type='button';node.addEventListener('click',handler);return node;
+    }
+    function metric(label,value){
+      const node=el(doc,'div','kmc-v7-metric');
+      node.append(el(doc,'span','',label),el(doc,'strong','',value));return node;
+    }
+    function budgetText(summary){
+      if(!summary)return 'Non disponible';
+      if(summary.totalEur!=null)return v7Money(summary.totalEur);
+      return summary.recordedEur==null?'Non renseigné':v7Money(summary.recordedEur)+' · partiel ('+summary.coveredPosts+'/'+summary.totalPosts+')';
+    }
+    function metrics(summary){
+      const row=el(doc,'div','kmc-v7-kpis');
+      row.append(metric('Budget enregistré (EUR)',budgetText(summary)),metric('Engagements ouverts','À rapprocher'),
+        metric('Charges constatées','À rapprocher'),metric('Disponible','Non calculable'));return row;
+    }
+    function commitmentText(p){
+      const list=p.commitments||[];
+      if(!list.length)return 'Aucun engagement enregistré';
+      return list.map(k=>v7Money(k.remaining_native,k.currency)+(k.requires_reconciliation?' · correction à rapprocher':'')).join(' ; ');
+    }
+    function render(){
+      host.replaceChildren();
+      const center=centers.find(c=>c.id===state.centerId);
+      const heading=el(doc,'div','kmc-v7-heading');
+      heading.append(el(doc,'h3','',center?center.label:'Centres de coûts'),
+        el(doc,'p','',model?.scope==='GROUP'?'Centres groupe · '+(model.periodStart||''):('Marché '+(model?.marketCode||'')+' · '+(model?.periodStart||''))));
+      if(center)heading.append(button('Tous les centres',()=>{state.centerId=null;state.familyId=null;state.postId=null;render();}));
+      host.append(heading,metrics(center?center.budgetSummary:model?.budgetSummary));
+      if(!center){
+        const grid=el(doc,'div','kmc-v7-center-grid');
+        for(const c of centers){
+          const card=el(doc,'article','kmc-v7-center-card');
+          card.append(el(doc,'h4','',c.label),el(doc,'p','',c.is_active?'Centre actif':'Centre à configurer'),
+            metric('Charges constatées','À rapprocher'),metric('Budget enregistré (EUR)',budgetText(c.budgetSummary)),
+            el(doc,'p','kmc-v7-coverage','Couverture économique non rapprochée'));
+          card.append(button('Consulter',()=>{state.centerId=c.id;state.familyId=null;state.postId=null;render();}));
+          grid.append(card);
+        }
+        if(!centers.length)grid.append(el(doc,'p','kmc-v7-empty','Aucun centre enregistré dans ce périmètre.'));
+        host.append(grid);return;
+      }
+      const fs=families.filter(f=>f.center_id===center.id);
+      const family=fs.find(f=>f.id===state.familyId)||fs[0];
+      state.familyId=family?.id||null;
+      const selectors=el(doc,'div','kmc-v7-families');
+      for(const f of fs){
+        const btn=button(f.label,()=>{state.familyId=f.id;state.postId=null;render();},'kmc-v7-family');
+        btn.setAttribute('aria-pressed',String(f.id===state.familyId));selectors.append(btn);
+      }
+      host.append(selectors);
+      if(!family){host.append(el(doc,'p','kmc-v7-empty','Aucune famille enregistrée.'));return;}
+      const ps=posts.filter(p=>p.center_id===center.id&&p.family_id===family.id);
+      const table=el(doc,'table','kmc-v7-posts');
+      const head=el(doc,'thead',''), hr=el(doc,'tr','');
+      for(const label of ['Poste','Budget','Engagement restant','Réel','Situation']){
+        const th=el(doc,'th','',label);th.scope='col';hr.append(th);
+      }
+      head.append(hr);table.append(head);
+      const body=el(doc,'tbody','');
+      for(const p of ps){
+        const tr=el(doc,'tr',''),cell=el(doc,'td','');
+        cell.append(button(p.label,()=>{state.postId=p.id;render();},'kmc-v7-post-button'));
+        tr.append(cell,el(doc,'td','',p.budget?v7Money(p.budget.native,p.budget.currency):'Non renseigné'),
+          el(doc,'td','',commitmentText(p)),el(doc,'td','','À rapprocher'),el(doc,'td','','Non décisionnel'));
+        body.append(tr);
+      }
+      table.append(body);host.append(table);
+      if(!ps.length)host.append(el(doc,'p','kmc-v7-empty','Aucun poste dans cette famille.'));
+      const post=ps.find(p=>p.id===state.postId);
+      if(post){
+        const detail=el(doc,'section','kmc-v7-post-detail');
+        const resource=resources.find(r=>r.id===post.resource_id&&r.center_id===center.id);
+        detail.append(el(doc,'h4','',post.label),metric('Ressource',resource?.label||'Non renseignée'),
+          metric('Nature',({FIXED:'Fixe',VARIABLE:'Variable',MIXED:'Mixte'})[post.economic_nature]||'À qualifier'),
+          metric('Périmètre',({DIRECT:'Direct',MUTUALIZED:'Mutualisé'})[post.allocation_perimeter]||'À qualifier'),
+          metric('Clé d’imputation',post.allocation_basis||'Non renseignée'),
+          metric('Budget',post.budget?v7Money(post.budget.native,post.budget.currency):'Non renseigné'),
+          metric('Engagements',commitmentText(post)),metric('Disponible','Non calculable'),
+          button('Fermer le détail',()=>{state.postId=null;render();}));
+        host.append(detail);
+      }
+    }
+    render();return host;
+  }
+
   function finite(value) {
     if (value == null || value === '') return null;
     const number = Number(value);
@@ -1637,6 +1743,8 @@
   }
 
   return {
+    createV7CostCenters,
+    v7Money,
     classifyComponents,
     economicNature,
     allocationPerimeter,
