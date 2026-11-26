@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 2143,
-    "edges": 10670,
+    "edges": 10677,
     "dbTables": 254,
     "doctrines": 842,
     "impactAreas": 213,
@@ -19129,7 +19129,14 @@
         "economic_cost_budget_revisions",
         "economic_cost_commitments",
         "economic_cost_commitment_movements",
-        "economic_structure_cost_events"
+        "economic_structure_cost_events",
+        "international_shipments",
+        "international_shipment_events",
+        "international_shipment_relay_receipts",
+        "international_shipment_hub_units",
+        "international_n1_reconciliations",
+        "order_items",
+        "orders"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -41555,6 +41562,21 @@
       "table": "economic_cost_commitment_movements"
     },
     {
+      "id": "db:international_shipment_events",
+      "type": "db-table",
+      "table": "international_shipment_events"
+    },
+    {
+      "id": "db:international_shipment_hub_units",
+      "type": "db-table",
+      "table": "international_shipment_hub_units"
+    },
+    {
+      "id": "db:international_n1_reconciliations",
+      "type": "db-table",
+      "table": "international_n1_reconciliations"
+    },
+    {
       "id": "db:economic_variables",
       "type": "db-table",
       "table": "economic_variables"
@@ -41568,11 +41590,6 @@
       "id": "db:fx_pegs",
       "type": "db-table",
       "table": "fx_pegs"
-    },
-    {
-      "id": "db:international_shipment_hub_units",
-      "type": "db-table",
-      "table": "international_shipment_hub_units"
     },
     {
       "id": "db:hub_custody_events",
@@ -41625,11 +41642,6 @@
       "table": "hub_box_custody_scans"
     },
     {
-      "id": "db:international_shipment_events",
-      "type": "db-table",
-      "table": "international_shipment_events"
-    },
-    {
       "id": "db:outbox_events",
       "type": "db-table",
       "table": "outbox_events"
@@ -41668,11 +41680,6 @@
       "id": "db:international_shipment_charges",
       "type": "db-table",
       "table": "international_shipment_charges"
-    },
-    {
-      "id": "db:international_n1_reconciliations",
-      "type": "db-table",
-      "table": "international_n1_reconciliations"
     },
     {
       "id": "db:inventory_items",
@@ -76876,6 +76883,48 @@
       "to": "db:economic_structure_cost_events",
       "type": "db-read",
       "label": "economic_structure_cost_events"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:international_shipments",
+      "type": "db-read",
+      "label": "international_shipments"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:international_shipment_events",
+      "type": "db-read",
+      "label": "international_shipment_events"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:international_shipment_relay_receipts",
+      "type": "db-read",
+      "label": "international_shipment_relay_receipts"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:international_shipment_hub_units",
+      "type": "db-read",
+      "label": "international_shipment_hub_units"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:international_n1_reconciliations",
+      "type": "db-read",
+      "label": "international_n1_reconciliations"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
     },
     {
       "from": "services/economic-cost-center-read-model.js",
@@ -130963,7 +131012,14 @@
         "economic_cost_budget_revisions",
         "economic_cost_commitments",
         "economic_cost_commitment_movements",
-        "economic_structure_cost_events"
+        "economic_structure_cost_events",
+        "international_shipments",
+        "international_shipment_events",
+        "international_shipment_relay_receipts",
+        "international_shipment_hub_units",
+        "international_n1_reconciliations",
+        "order_items",
+        "orders"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -130987,7 +131043,14 @@
         "db:economic_cost_posts",
         "db:economic_cost_resources",
         "db:economic_structure_cost_events",
+        "db:international_n1_reconciliations",
+        "db:international_shipment_events",
+        "db:international_shipment_hub_units",
+        "db:international_shipment_relay_receipts",
+        "db:international_shipments",
         "db:markets",
+        "db:order_items",
+        "db:orders",
         "doctrine:budget_is_not_realized_cost",
         "doctrine:exact_market_scope",
         "doctrine:group_raw_not_delegated",
