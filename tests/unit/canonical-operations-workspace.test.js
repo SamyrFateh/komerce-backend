@@ -399,3 +399,12 @@ test('C1 : le tableau COMBOX n’instancie que les actions de la ligne active',(
   expect(block).toContain("if(!boxes.some(b=>String(b.unit_id)===selectedBoxId))");
   expect(block).toContain("data-hub-inline-box");
 });
+
+test('C2 : le départ compact conserve sortie, sélection, rattachement unitaire et manifeste',()=>{
+ const block=SOURCE.slice(SOURCE.indexOf('async function mountDepartureActions'),SOURCE.indexOf('function renderSupplySection'));
+ expect(block).toContain("data-hub-compact-departure-table");
+ expect(block).toContain("actionPanel.appendChild(composeCell(current))");
+ expect(block).toContain("if(picked.size!==1||!target.value||!ids.has(id))return");
+ expect(block).toContain("body:{reference:newReference.trim(),hub_unit_ids:[...picked]}");
+ expect(block).toContain("panel.renderHubHandover(doc,slot,context,detail)");
+});
