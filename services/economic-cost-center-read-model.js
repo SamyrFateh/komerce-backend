@@ -8,7 +8,7 @@
  * @outputs       scoped_centers_families_resources_posts, latest_budget_revisions, outstanding_commitments, explicit_actual_coverage_status
  * @depends       db, middleware/require-pricing-global-authority.js, services/market-delegation-service.js, services/fx-authority.js
  * @used-by       routes/admin-pricing-workspace.js
- * @db-read       markets, economic_cost_centers, economic_cost_families, economic_cost_resources, economic_cost_posts, economic_cost_budget_revisions, economic_cost_commitments, economic_cost_commitment_movements, economic_structure_cost_events, international_shipments, international_shipment_events, international_shipment_relay_receipts, international_shipment_hub_units, international_n1_reconciliations, order_items, orders
+ * @db-read       markets, economic_cost_centers, economic_cost_families, economic_cost_resources, economic_cost_posts, economic_cost_budget_revisions, economic_cost_commitments, economic_cost_commitment_movements, economic_structure_cost_events, international_shipments, international_shipment_events, international_shipment_relay_receipts, international_shipment_hub_units, international_n1_reconciliations, hub_physical_units, hub_box_effective_placements, hub_purchase_allocations, order_items, orders
  * @db-write      none
  * @db-txn        service_owned_read_only_repeatable_read
  * @doctrine      exact_market_scope, budget_is_not_realized_cost, no_fake_zero, group_raw_not_delegated
@@ -165,12 +165,31 @@ async function loadShipmentActivity(client,marketId,periodStart){
          AND e.payload->>'attested_by'='relay' AND length(btrim(e.proof_ref))>0
      ) physical ON physical.closed_at IS NOT NULL
      JOIN LATERAL (
-       SELECT COUNT(*)::int AS n, SUM(rr.expected_qty)::int AS expected_articles,
+       WITH expected AS (
+         SELECT a.order_item_id,SUM(pl.quantity)::int AS expected_qty,
+           BOOL_AND(o.id IS NOT NULL AND o.market_id IS NOT DISTINCT FROM s.market_id
+             AND o.simulation_scope IS NULL AND u.market_id IS NOT DISTINCT FROM s.market_id
+             AND u.outcome_type IS NULL AND o.relais_id IS NOT NULL
+             AND a.order_id IS NOT DISTINCT FROM oi.order_id) AS market_ok
+         FROM international_shipment_hub_units h
+         JOIN hub_physical_units u ON u.id=h.physical_unit_id AND u.unit_type='MARKET_PARCEL'
+         JOIN hub_box_effective_placements pl ON pl.box_unit_id=u.id
+         JOIN hub_purchase_allocations a ON a.id=pl.allocation_id
+         LEFT JOIN order_items oi ON oi.id=a.order_item_id
+         LEFT JOIN orders o ON o.id=oi.order_id
+         WHERE h.shipment_id=s.id GROUP BY a.order_item_id
+       ), attested AS (
+         SELECT rr.order_item_id,rr.expected_qty,rr.received_qty,rr.received_at,
+           rr.relais_id IS NOT DISTINCT FROM o.relais_id AS relay_ok
+         FROM international_shipment_relay_receipts rr
+         LEFT JOIN order_items oi ON oi.id=rr.order_item_id
+         LEFT JOIN orders o ON o.id=oi.order_id WHERE rr.shipment_id=s.id
+       )
+       SELECT COUNT(*)::int AS n,SUM(x.expected_qty)::int AS expected_articles,
          SUM(rr.received_qty)::int AS received_articles,MAX(rr.received_at) AS last_received,
-         BOOL_AND(o.id IS NOT NULL AND o.market_id IS NOT DISTINCT FROM s.market_id AND o.simulation_scope IS NULL) AS real_market
-       FROM international_shipment_relay_receipts rr
-       LEFT JOIN order_items oi ON oi.id=rr.order_item_id LEFT JOIN orders o ON o.id=oi.order_id
-       WHERE rr.shipment_id=s.id
+         BOOL_AND(x.order_item_id IS NOT NULL AND rr.order_item_id IS NOT NULL
+           AND x.market_ok IS TRUE AND rr.relay_ok IS TRUE AND rr.expected_qty=x.expected_qty) AS real_market
+       FROM expected x FULL JOIN attested rr USING (order_item_id)
      ) receipt ON receipt.n>0 AND receipt.real_market IS TRUE AND receipt.last_received<=physical.closed_at
      LEFT JOIN international_n1_reconciliations n ON n.shipment_id=s.id
      WHERE s.market_id=$1 AND s.stage='relay_received'

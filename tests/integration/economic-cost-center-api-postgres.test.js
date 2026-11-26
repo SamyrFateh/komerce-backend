@@ -16,7 +16,7 @@ jest.setTimeout(60000);
 run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
   const db=require('../../db');
   const tag='ECOAPI'+crypto.randomBytes(5).toString('hex').toUpperCase();
-  let fx,app,a,b,g;
+  let fx,app,a,b,g,activityRefs;
   const month='2026-01-01', mount='/api/admin/workspaces/pricing';
   const q=(sql,params)=>db.query(sql,params);
   async function seed(marketId,suffix){
@@ -25,6 +25,46 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     const resource=(await q("INSERT INTO economic_cost_resources(center_id,code,label,resource_kind) VALUES ($1,'EQUIPE','Equipe','PERSONNEL') RETURNING id",[center])).rows[0].id;
     const post=(await q("INSERT INTO economic_cost_posts(center_id,family_id,resource_id,code,label,economic_nature,allocation_perimeter,allocation_basis) VALUES ($1,$2,$3,'SALAIRES','Salaires','FIXED','DIRECT','PERIOD') RETURNING id",[center,family,resource])).rows[0].id;
     return {center,post};
+  }
+  // Historical projection fixtures in disposable CI only. Populate the
+  // physical chain with normal DB guards enabled; snapshots and dated events
+  // are test facts, NOT certification of the logistics writer or Chromium.
+  async function seedActivity(market,suffix,{financial=true,simulated=false,attested=true}={}){
+    const ref=tag+'-'+suffix, id=()=>crypto.randomUUID();
+    const [relay,product,sku,order,item,supplier,po,allocation,unit,box,shipment]=Array.from({length:11},id);
+    const identity=JSON.stringify({provider:'manual',version:1,payload:{supplier_sku:ref}});
+    await q("INSERT INTO relais(id,name,agent_name,phone,address,market_id) VALUES($1,$2,'CI','+2693000001','CI',$3)",[relay,ref,market.id]);
+    await q("INSERT INTO products(id,name,price_kmf,stock) VALUES($1,$2,10000,0)",[product,ref]);
+    await q("INSERT INTO suppliers(id,name,platform) VALUES($1,$2,'cj')",[supplier,ref]);
+    await q(`INSERT INTO product_skus(id,product_id,sku,stock,is_active,source,supplier_sku,supplier_unit_ref,supplier_order_identity)
+      VALUES($1,$2,$3,0,true,'SUPPLIER',$3,$3,$4::jsonb)`,[sku,product,ref,identity]);
+    await q(`INSERT INTO orders(id,user_id,relais_id,market_id,reference,status,payment_status,payment_mode,total_kmf,total_eur,simulation_scope)
+      VALUES($1,$2,$3,$4,$5,'confirmed','paid','cash_relais',10000,20,$6)`,[order,fx.viewerA.id,relay,market.id,ref,simulated?'G6-BUYER':null]);
+    await q("INSERT INTO order_items(id,order_id,product_id,quantity,price_kmf,sku_id,fulfillment_source) VALUES($1,$2,$3,1,10000,$4,'IMPORT')",[item,order,product,sku]);
+    await q(`INSERT INTO purchase_orders(id,order_id,order_item_id,product_sku_id,supplier_id,supplier_sku,supplier_unit_ref,supplier_order_identity,qty,status)
+      VALUES($1,$2,$3,$4,$5,$6,$6,$7::jsonb,1,'confirmed')`,[po,order,item,sku,supplier,ref,identity]);
+    await q(`INSERT INTO hub_purchase_allocations(id,purchase_order_id,order_id,order_item_id,product_sku_id,supplier_id,supplier_unit_ref,supplier_order_identity,quantity,market_id,destination_ref)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8::jsonb,1,$9,$10)`,[allocation,po,order,item,sku,supplier,ref,identity,market.id,'relais:'+relay]);
+    await q("INSERT INTO hub_physical_units(id,reference,unit_type,state,external_ref,current_location_ref) VALUES($1,$2,'SUPPLIER_PACKAGE','RECEIVED',$2,'DXB-HUB')",[unit,ref+'-UNIT']);
+    await q("INSERT INTO hub_physical_units(id,reference,unit_type,state,current_location_ref) VALUES($1,$2,'MARKET_PARCEL','RECEIVED','DXB-HUB')",[box,ref+'-BOX']);
+    await q("INSERT INTO hub_physical_unit_placements(physical_unit_id,allocation_id,quantity,operation_type) VALUES($1,$2,1,'RECEIVE')",[unit,allocation]);
+    await q("UPDATE hub_physical_unit_placements SET removed_at=GREATEST(clock_timestamp(),placed_at+interval '1 microsecond') WHERE physical_unit_id=$1 AND allocation_id=$2 AND removed_at IS NULL",[unit,allocation]);
+    await q("INSERT INTO hub_physical_unit_placements(physical_unit_id,allocation_id,quantity,operation_type) VALUES($1,$2,1,'REPACK')",[box,allocation]);
+    for(const state of ['IDENTIFIED','QUALITY_CHECKED','LOCATED','ALLOCATED','PICKED','PACKED'])
+      await q('UPDATE hub_physical_units SET state=$1 WHERE id=$2',[state,box]);
+    await q("INSERT INTO international_shipments(id,market_id,reference,created_by,hub_draft,volume_m3) VALUES($1,$2,$3,$4,true,0.25000)",[shipment,market.id,ref,fx.central.id]);
+    await q("INSERT INTO international_shipment_hub_units(shipment_id,physical_unit_id) VALUES($1,$2)",[shipment,box]);
+    await q("UPDATE hub_physical_units SET state='DISPATCHED' WHERE id=$1",[box]);
+    await q("UPDATE international_shipments SET stage='handed_over',forwarder_name='CI carrier',transport_mode='sea' WHERE id=$1",[shipment]);
+    await q("UPDATE international_shipments SET stage='local_delivery' WHERE id=$1",[shipment]);
+    if(attested)await q(`INSERT INTO international_shipment_relay_receipts(shipment_id,order_item_id,relais_id,expected_qty,received_qty,proof_ref,received_at)
+      VALUES($1,$2,$3,1,1,'CI receipt','2026-01-15T10:00:00Z')`,[shipment,item,relay]);
+    await q("UPDATE international_shipments SET stage='relay_received' WHERE id=$1",[shipment]);
+    await q(`INSERT INTO international_shipment_events(shipment_id,event_type,from_stage,to_stage,proof_ref,actor_id,occurred_at,payload)
+      VALUES($1,'stage_changed','local_delivery','relay_received','CI attestation',$2,'2026-01-15T10:01:00Z','{"attested_by":"relay"}')`,[shipment,fx.central.id]);
+    if(financial)await q(`INSERT INTO international_n1_reconciliations(shipment_id,snapshot_hash,total_freight_kmf,total_arrival_kmf,total_local_kmf,allocation_rows,actor_id,freight_known,total_customs_kmf,total_customs_fees_kmf,documented_total_kmf,financial_closed_at,financial_closed_by,financial_close_proof_ref)
+      VALUES($1,$2,100.10,5.00,4.90,0,$3,true,20.00,1.00,131.00,'2026-02-10T10:00:00Z',$3,'CI financial proof')`,[shipment,crypto.createHash('sha256').update(ref).digest('hex'),fx.central.id]);
+    return ref;
   }
   const endpoint=code=>mount+(code?'/market/'+code:'')+'/cost-centers';
   const get=(actor,code,period=month)=>request(app).get(endpoint(code)).query({periodStart:period}).set('Authorization',actor.token);
@@ -49,6 +89,7 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     const event={charge_id:charge,scope_kind:'MARKET_DIRECT',market_id:fx.marketA.id,event_kind:'ACCRUAL',economic_from:'2026-01-01T00:00:00Z',economic_to:'2026-02-01T00:00:00Z',amount_original:1000,currency:'KMF',fx_rate_to_kmf:1,fx_source:'CI fixture',amount_kmf:1000,source_kind:'MANUAL',evidence_ref:'CI canonical structure'};
     await recordStructureCostEvent(event,fx.central.id);
     await recordStructureCostEvent({...event,economic_to:'2026-03-01T00:00:00Z',amount_original:2000,amount_kmf:2000},fx.central.id);
+    activityRefs={closed:await seedActivity(fx.marketA,'CLOSED'),pending:await seedActivity(fx.marketA,'PENDING',{financial:false}),simulated:await seedActivity(fx.marketA,'SIM',{simulated:true}),foreign:await seedActivity(fx.marketB,'FOREIGN')};
 
   });
   test('central sees exact market, latest budget and remaining commitment; no fake actual',async()=>{
@@ -72,10 +113,19 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect(response.body.structureEvidence.fxLegs[0]).toMatchObject({pair:'EUR/KMF',source:'currency_parities'});
     expect(response.body.centers.find(c=>c.id===a.center).structureEvidence.amountEur).toBe('2.03');
     expect(p.actual).toBeNull();expect(p.available).toBeNull();
-    expect(response.body.activity).toMatchObject({physicalClosedCount:0,financialClosedCount:0,documentedTransportTotalKmf:null});
+    expect(response.body.activity).toMatchObject({physicalClosedCount:2,financialClosedCount:1,documentedTransportSubtotalKmf:'131.00',freightCustomsSubtotalKmf:'120.10',documentedTransportTotalKmf:null,coverage:'PARTIAL'});
+    expect(response.body.activity.shipments.map(s=>s.reference).sort()).toEqual([activityRefs.closed,activityRefs.pending].sort());
+    const closed=response.body.activity.shipments.find(s=>s.reference===activityRefs.closed);
+    expect(closed).toMatchObject({rail:'sea',boxCount:1,expectedArticles:1,receivedArticles:1,documentedTransportKmf:'131.00',freightCustomsKmf:'120.10',financialStatus:'DOCUMENTED_CLOSED'});
+    expect(closed.physicalClosedAt.slice(0,10)).toBe('2026-01-15');
+    expect(closed.financialClosedAt.slice(0,10)).toBe('2026-02-10');
+    expect(response.body.activity.shipments.find(s=>s.reference===activityRefs.pending)).toMatchObject({financialStatus:'NOT_RECONCILED',documentedTransportKmf:null});
   });
   test('market reader can read own scope only; group and foreign market refused',async()=>{
-    expect((await get(fx.viewerA,fx.marketA.code)).status).toBe(200);
+    const own=await get(fx.viewerA,fx.marketA.code);expect(own.status).toBe(200);
+    expect(own.body.activity.shipments.map(s=>s.reference).sort()).toEqual([activityRefs.closed,activityRefs.pending].sort());
+    const foreign=await get(fx.central,fx.marketB.code);expect(foreign.status).toBe(200);
+    expect(foreign.body.activity.shipments.map(s=>s.reference)).toEqual([activityRefs.foreign]);
     expect((await get(fx.viewerA,fx.marketB.code)).status).toBe(403);
     expect((await get(fx.viewerA,null)).status).toBe(403);
     expect((await get(fx.outsider,fx.marketA.code)).status).toBe(403);
@@ -89,6 +139,7 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     const next=await get(fx.central,fx.marketA.code,'2026-02-01');
     expect(next.status).toBe(200);
     expect(next.body.posts.find(p=>p.id===a.post)).toMatchObject({budget:null,commitments:[],actual:null});
+    expect(next.body.activity).toMatchObject({physicalClosedCount:0,financialClosedCount:0,documentedTransportTotalKmf:null});
   });
   test('browser authority injection and invalid period rejected',async()=>{
     expect((await request(app).get(endpoint(fx.marketA.code)).query({periodStart:month,market_id:fx.marketB.id}).set('Authorization',fx.viewerA.token)).status).toBe(400);
