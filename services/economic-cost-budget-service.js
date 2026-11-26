@@ -7,7 +7,7 @@
  * @inputs        authenticated_central_actor, explicit_market_code_or_group, post_id, month, expected_revision, native_amount, currency, reason, request_key
  * @outputs       immutable_budget_revision, idempotent_replay
  * @depends       db, middleware/require-pricing-global-authority.js, services/fx-authority.js
- * @used-by       none
+ * @used-by       routes/admin-pricing-workspace.js
  * @db-read       markets, economic_cost_centers, economic_cost_posts, economic_cost_budget_revisions
  * @db-write      economic_cost_budget_revisions
  * @db-txn        service_owned_transaction
@@ -52,7 +52,7 @@ async function assertCentral(actor) {
 }
 async function reviseBudget(actor, raw) {
   // Initial central-only service. Delegated local budget authority must be
-  // explicitly defined before adding a market mutation path. No HTTP mount.
+  // explicitly defined before adding a delegated market mutation path.
   await assertCentral(actor);
   const input = parseInput(raw);
   const client = await db.getClient();

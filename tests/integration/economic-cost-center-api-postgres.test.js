@@ -170,6 +170,24 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect(next.body.profitability.points[1]).toMatchObject({monthly:{coefficient:null,observations:0},cumulative:{coefficient:'1.1310',observations:1},rolling3:{coefficient:'1.1310',observations:1}});
     expect(next.body.profitability.ranges.ytd).toMatchObject({coefficient:'1.1310',observations:1,physicalClosedCount:2});
   });
+  test('budget HTTP revision preserves scope, actor, immutable history and idempotency',async()=>{
+    const post=(actor,code,id,body)=>request(app).post(endpoint(code)+'/posts/'+id+'/budget-revisions').set('Authorization',actor.token).send(body);
+    const input={periodStart:month,expectedRevision:2,currency:'EUR',amountNative:'500.00',reason:'CI budget revision',requestKey:tag+'HTTP'};
+    expect((await post(fx.viewerA,fx.marketA.code,a.post,input)).status).toBe(403);
+    expect((await post(fx.central,fx.marketB.code,a.post,input)).status).toBe(404);
+    expect((await post(fx.central,fx.marketA.code,a.post,{...input,marketCode:fx.marketB.code})).status).toBe(400);
+    const created=await post(fx.central,fx.marketA.code,a.post,input);
+    expect(created.status).toBe(201);
+    expect(created.body).toMatchObject({outcome:'created',revision:{revision:3,previous_revision:2,recorded_by:fx.central.id}});
+    const replay=await post(fx.central,fx.marketA.code,a.post,input);
+    expect(replay.status).toBe(200);expect(replay.body.outcome).toBe('replayed');
+    expect((await post(fx.central,fx.marketA.code,a.post,{...input,amountNative:'501'})).status).toBe(409);
+    expect((await post(fx.central,fx.marketA.code,a.post,{...input,requestKey:tag+'STALE'})).status).toBe(409);
+    expect((await get(fx.central,fx.marketA.code)).body.posts.find(p=>p.id===a.post).budget).toMatchObject({revision:3,currency:'EUR',native:'500.0000'});
+    const group=await post(fx.central,null,g.post,{...input,expectedRevision:0,requestKey:tag+'GROUP'});
+    expect(group.status).toBe(201);
+    expect((await post(fx.central,null,a.post,input)).status).toBe(404);
+  });
   test('browser authority injection and invalid period rejected',async()=>{
     expect((await request(app).get(endpoint(fx.marketA.code)).query({periodStart:month,market_id:fx.marketB.id}).set('Authorization',fx.viewerA.token)).status).toBe(400);
     expect((await get(fx.central,fx.marketA.code,'2026-01-02')).status).toBe(400);

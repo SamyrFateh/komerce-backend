@@ -455,6 +455,8 @@ module.exports = {
       'GET /api/admin/workspaces/pricing/market/:marketCode',
       'GET /api/admin/workspaces/pricing/market/:marketCode/cost-centers',
       'GET /api/admin/workspaces/pricing/cost-centers',
+      'POST /api/admin/workspaces/pricing/market/:marketCode/cost-centers/posts/:postId/budget-revisions',
+      'POST /api/admin/workspaces/pricing/cost-centers/posts/:postId/budget-revisions',
       'GET /api/admin/workspaces/pricing/market/:marketCode/decision',
       'GET /api/admin/workspaces/pricing/market/:marketCode/decision-policy/history',
       'POST /api/admin/workspaces/pricing/market/:marketCode/decision-policy',
