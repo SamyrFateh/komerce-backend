@@ -2145,3 +2145,26 @@ body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-mode="execution"] > .
 .kmc-workspace-receive-card [data-hub-unmanifested-form]>p{grid-column:1/-1;margin:0}
 .kmc-workspace-receive-card [data-hub-unmanifested-form]>button{grid-column:1/-1;justify-self:start}
 @media(max-width:680px){.kmc-workspace-receive-card .kmc-workspace-receive-scanner{grid-template-columns:minmax(0,1fr)}.kmc-hub-reception-toolbar .kmc-workspace-action{width:100%}}
+
+/* Hub V3 desktop: one operational row per SKU, no stacked product cards. */
+[data-hub-quality-v3] { min-width:0; }
+[data-hub-quality-v3] .kmc-quality-v3-table { width:100%; table-layout:fixed; border-collapse:collapse; font-size:13px; }
+[data-hub-quality-v3] .kmc-quality-v3-table th,
+[data-hub-quality-v3] .kmc-quality-v3-table td { padding:7px 6px; vertical-align:middle; text-align:center; }
+[data-hub-quality-v3] .kmc-quality-v3-table th:first-child,
+[data-hub-quality-v3] .kmc-quality-v3-table td:first-child { width:28%; text-align:left; overflow-wrap:anywhere; }
+[data-hub-quality-v3] .kmc-quality-v3-table th:nth-child(2) { width:7%; }
+[data-hub-quality-v3] .kmc-quality-v3-table th:nth-child(3) { width:17%; }
+[data-hub-quality-v3] .kmc-quality-v3-table th:nth-child(4) { width:10%; }
+[data-hub-quality-v3] .kmc-quality-v3-table th:nth-child(5) { width:14%; }
+[data-hub-quality-v3] .kmc-quality-v3-table th:nth-child(6) { width:24%; }
+[data-hub-quality-v3] .kmc-quality-v3-inline,
+[data-hub-quality-v3] .kmc-quality-v3-check,
+[data-hub-quality-v3] .kmc-quality-v3-qty { display:flex; align-items:center; justify-content:center; gap:6px; min-width:0; margin:0; }
+[data-hub-quality-v3] .kmc-quality-v3-inline[hidden],
+[data-hub-quality-v3] .kmc-quality-v3-qty[hidden] { display:none; }
+[data-hub-quality-v3] input[type="checkbox"] { width:17px; height:17px; flex:none; margin:0; }
+[data-hub-quality-v3] input[type="number"] { width:52px; min-width:0; padding:4px; box-sizing:border-box; }
+[data-hub-quality-v3] input[type="text"] { flex:1; width:100%; min-width:0; padding:5px; box-sizing:border-box; }
+[data-hub-quality-v3] .kmc-quality-v3-footer { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding-top:8px; }
+[data-hub-quality-v3] .kmc-quality-v3-footer p { margin:0; }
