@@ -1,0 +1,31 @@
+name: Hub — diagnostic lecture seule des verdicts centraux
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+permissions:
+  actions: read
+  contents: read
+jobs:
+  inspect:
+    if: github.head_ref == 'feat/hub-reception-v3-quality' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Identify exact trusted enforcement runs and failed jobs (read only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          for sha in f4850056185787a9ca1cb76fb107cc23118c8f61 e8093510d6e68719c46c15c37d52ef4c0990298a; do
+            echo "=== SHA $sha ==="
+            gh api "repos/$GH_REPO/actions/workflows/pr-enforcement.yml/runs?event=workflow_dispatch&head_sha=$sha&per_page=20" --jq '.workflow_runs[] | {id,head_sha,status,conclusion,html_url,created_at}'
+            run="$(gh api "repos/$GH_REPO/actions/workflows/pr-enforcement.yml/runs?event=workflow_dispatch&head_sha=$sha&per_page=20" --jq '.workflow_runs | map(select(.head_sha=="'"$sha"'" and .status=="completed")) | .[0].id // empty')"
+            if [[ -z "$run" ]]; then echo "No completed exact-SHA enforcement run found"; continue; fi
+            gh api "repos/$GH_REPO/actions/runs/$run/jobs?per_page=100" --jq '.jobs[] | {id,name,conclusion,failed_steps:[.steps[]|select(.conclusion=="failure")|.name]}'
+            echo "=== Failed step excerpts (GitHub-masked logs) ==="
+            gh run view "$run" --repo "$GH_REPO" --log-failed > "/tmp/enforcement-$run.log" || true
+            grep -Ei 'error:|##\[error\]|✖|FAIL |failed:|failure|expected:|received:|missing|bloqu|périmé|absent|drift|schema|migration' "/tmp/enforcement-$run.log" | cut -c 1-400 | tail -n 100 || true
+          done
