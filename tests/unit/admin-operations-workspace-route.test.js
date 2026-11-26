@@ -87,7 +87,21 @@ jest.mock('../../utils/logger', () => ({
   child: () => ({ error: jest.fn(), warn: jest.fn(), info: jest.fn(), debug: jest.fn() }),
 }));
 
+const mockObserveSupplierReceipt=jest.fn();
+const mockAttestSupplierReturn=jest.fn();
+const mockCompleteOrdersForPhysicalUnit=jest.fn();
+const mockQualityTransactionClient={query:jest.fn()};
+jest.mock('../../services/hub-supplier-receipt-quality',()=>({
+  observeSupplierReceipt:(...args)=>mockObserveSupplierReceipt(...args),
+  attestSupplierReturn:(...args)=>mockAttestSupplierReturn(...args),
+}));
+jest.mock('../../services/purchasing-completion-service',()=>({
+  ...jest.requireActual('../../services/purchasing-completion-service'),
+  completeOrdersForPhysicalUnit:(...args)=>mockCompleteOrdersForPhysicalUnit(...args),
+}));
+
 jest.mock('../../db', () => ({
+  withTransaction: jest.fn(async work=>work(mockQualityTransactionClient)),
   query: jest.fn(async (sql, params) => {
     const text = String(sql);
     if (text.includes('FROM markets')) {
@@ -455,4 +469,58 @@ test('qualité réception : verrou et contrôle de toutes les allocations avant 
   expect(block).toContain('a.market_id=$2 AND a.purchase_order_id=$3');
   expect(block).toContain('Number(scope.total)!==Number(scope.matching)');
   expect(block).toContain('physicalIdentity.transitionPhysicalUnit(client');
+});
+
+describe('V3 réception fournisseur : routes protégées et inactives par défaut',()=>{
+ const db=require('../../db');
+ const receipt='/api/admin/workspaces/operations/market/CM/supply/receipt-checks';
+ const returns='/api/admin/workspaces/operations/market/CM/supply/receipt-check-lines/line-1/returns';
+ const payload={purchase_order_id:'po-1',reference:'RECEIPT-1',physical_confirmed:true,observations:[]};
+ let prior;
+ beforeEach(()=>{
+  prior=process.env.HUB_SUPPLIER_QUALITY_V3_ENABLED;
+  process.env.HUB_SUPPLIER_QUALITY_V3_ENABLED='true';
+  mockObserveSupplierReceipt.mockResolvedValue({check:{id:'check-1',conforming_unit_id:'unit-1'},replayed:false});
+  mockAttestSupplierReturn.mockResolvedValue({attestation:{id:'return-1'},replayed:false});
+  mockCompleteOrdersForPhysicalUnit.mockResolvedValue([]);
+ });
+ afterEach(()=>{
+  if(prior===undefined)delete process.env.HUB_SUPPLIER_QUALITY_V3_ENABLED;
+  else process.env.HUB_SUPPLIER_QUALITY_V3_ENABLED=prior;
+ });
+ test('désactivée par défaut, aucune mutation',async()=>{
+  delete process.env.HUB_SUPPLIER_QUALITY_V3_ENABLED;
+  expect((await request(app()).post(receipt).send(payload)).status).toBe(404);
+  expect((await request(app()).post(returns).send({})).status).toBe(404);
+  expect(db.withTransaction).not.toHaveBeenCalled();
+ });
+ test('marché en lecture seule même avec capability déléguée',async()=>{
+  mockUserRole='market_operator';
+  expect((await request(app()).post(receipt).send(payload)).status).toBe(403);
+  expect(db.withTransaction).not.toHaveBeenCalled();
+ });
+ test('capability exacte requise pour admin et marché client interdit',async()=>{
+  mockGrantedCapabilities.delete('execution.parcel.receive@CM');
+  expect((await request(app()).post(receipt).send(payload)).status).toBe(403);
+  expect((await request(app()).post(receipt).send({...payload,market_id:'foreign'})).status).toBe(400);
+  expect(db.withTransaction).not.toHaveBeenCalled();
+ });
+ test('constat transactionnel avec scope et acteur serveur, complétude après commit',async()=>{
+  const response=await request(app()).post(receipt).send(payload);
+  expect(response.status).toBe(201);
+  expect(mockObserveSupplierReceipt).toHaveBeenCalledWith(mockQualityTransactionClient,{purchaseOrderId:'po-1',marketId:'market-cm-id',actorId:'admin-1',reference:'RECEIPT-1',observations:[],physicalConfirmed:true});
+  expect(mockCompleteOrdersForPhysicalUnit).toHaveBeenCalledWith('unit-1',{actor:{id:'admin-1'}});
+ });
+ test('rejeu sans nouveau statut 201 et rattrapage de complétude',async()=>{
+  mockObserveSupplierReceipt.mockResolvedValueOnce({check:{id:'check-1',conforming_unit_id:'unit-1'},replayed:true});
+  const response=await request(app()).post(receipt).send(payload);
+  expect(response.status).toBe(200);
+  expect(mockCompleteOrdersForPhysicalUnit).toHaveBeenCalledTimes(1);
+ });
+ test('retour physique sans complétude, ni paiement',async()=>{
+  const response=await request(app()).post(returns).send({reference:'RET-1',quantity:1,physical_confirmed:true});
+  expect(response.status).toBe(201);
+  expect(mockAttestSupplierReturn).toHaveBeenCalledWith(mockQualityTransactionClient,{checkLineId:'line-1',marketId:'market-cm-id',actorId:'admin-1',reference:'RET-1',quantity:1,physicalConfirmed:true});
+  expect(mockCompleteOrdersForPhysicalUnit).not.toHaveBeenCalled();
+ });
 });
