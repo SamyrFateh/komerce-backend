@@ -71,3 +71,11 @@ test('Hub UX : les ateliers visibles ne peuvent agrandir la grille desktop ou mo
   expect(css).toContain(scoped + ' [data-hub-physical-details] .kmc-workspace-table-wrap {');
   expect(css).toContain('overflow-x: auto;');
 });
+
+test('V3 desktop : tableau dense et barre de validation, styles limités à la réception V3',()=>{
+ expect(css).toContain('[data-hub-quality-v3] .kmc-quality-v3-table');
+ expect(css).toContain('table-layout:fixed');
+ expect(css).toContain('padding:7px 6px');
+ expect(css).toContain('[data-hub-quality-v3] .kmc-quality-v3-footer');
+ expect(css).toContain('.kmc-quality-v3-qty[hidden] { display:none; }');
+});
