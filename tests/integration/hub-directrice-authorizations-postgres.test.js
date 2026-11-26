@@ -127,6 +127,46 @@ if (!process.env.DATABASE_URL) {
     await expect(auth.decide({ purchaseOrderId: po3, authorizationType: 'supplier_payment', actor: directrice, body: { proof_ref: 'P', amount: 15, currency: 'AED' } })).rejects.toMatchObject({ status: 409, code: 'PURCHASE_COMMITMENT_REQUIRED' });
   });
 
+
+  // P0 #5281: isolated PG negative proofs. The direct UPDATE deliberately
+  // models a persisted change after a purchase line existed, without invoking
+  // any upstream automatic cleanup. The canonical writer must fail closed.
+  const commercialCases=[
+    ['paiement en attente','pending','pending'],
+    ['paiement remboursé','refunded','refunded'],
+    ['commande annulée','cancelled','paid'],
+  ];
+  async function changeCommercialState(poId,status,paymentStatus){
+    const {rows:[row]}=await q(`SELECT DISTINCT oi.order_id FROM purchase_lines pl
+      JOIN order_items oi ON oi.id=pl.order_item_id WHERE pl.purchase_order_id=$1`,[poId]);
+    expect(row).toBeDefined();
+    await q('UPDATE orders SET status=$2,payment_status=$3 WHERE id=$1',[row.order_id,status,paymentStatus]);
+    const persisted=(await q('SELECT status::text,payment_status::text FROM orders WHERE id=$1',[row.order_id])).rows[0];
+    expect(persisted).toEqual({status,payment_status:paymentStatus});
+  }
+  async function purchaseSnapshot(poId){
+    const {rows:[header]}=await q('SELECT status::text,updated_at,notes FROM purchase_orders WHERE id=$1',[poId]);
+    const {rows:lines}=await q('SELECT id,purchase_order_id,quantity,confirmed_quantity,cancelled_at,updated_at FROM purchase_lines WHERE purchase_order_id=$1 ORDER BY id',[poId]);
+    const {rows:decisions}=await q('SELECT id,authorization_type,amount,currency,proof_ref FROM purchase_order_authorizations WHERE purchase_order_id=$1 ORDER BY id',[poId]);
+    return {header,lines,decisions};
+  }
+  test.each(commercialCases)('P0 engagement refusé : %s, aucune mutation',async(label,status,paymentStatus)=>{
+    const candidate=await draftPo(10);
+    await changeCommercialState(candidate,status,paymentStatus);
+    const before=await purchaseSnapshot(candidate);
+    await expect(auth.decide({purchaseOrderId:candidate,authorizationType:'purchase_commitment',actor:directrice,body:{proof_ref:'P0-'+label}})).rejects.toMatchObject({status:409});
+    expect(await purchaseSnapshot(candidate)).toEqual(before);
+  });
+  test.each(commercialCases)('P0 soumission refusée après engagement valide : %s, preuve conservée',async(label,status,paymentStatus)=>{
+    const candidate=await draftPo(10);
+    const approval=await auth.decide({purchaseOrderId:candidate,authorizationType:'purchase_commitment',actor:directrice,body:{proof_ref:'P0-VALID'}});
+    await changeCommercialState(candidate,status,paymentStatus);
+    const before=await purchaseSnapshot(candidate);
+    expect(before.decisions.map(x=>x.id)).toEqual([approval.id]);
+    await expect(engagement.submitPurchaseOrder(candidate,{actor:agent})).rejects.toMatchObject({status:409});
+    expect(await purchaseSnapshot(candidate)).toEqual(before);
+  });
+
   test('révocation : motif obligatoire, le détenteur perd immédiatement le pouvoir, les décisions passées restent', async () => {
     const [g] = (await auth.listGrants({ userId: directrice.id })).filter((x) => x.authorization_type === 'purchase_commitment');
     await expect(auth.revoke({ grantId: g.id, reason: '', actor: admin })).rejects.toMatchObject({ status: 400 });
