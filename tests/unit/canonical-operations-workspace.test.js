@@ -327,3 +327,21 @@ test('V8 variance uses the existing guarded writer and explicit PO context',()=>
  expect(SOURCE).toContain('const id=context.poId||');
  expect(SOURCE).toContain('refresh:context.onVarianceChange||');
 });
+
+test('réception V3 : agrège les lignes d’une même variante, sans mélanger les SKU',()=>{
+  expect(workspace.qualityReceiptRows([
+    {product_sku_id:'sku-a',product_name:'Chargeur',remaining_quantity:2},
+    {product_sku_id:'sku-a',product_name:'Chargeur',remaining_quantity:3},
+    {product_sku_id:'sku-b',product_name:'Montre',remaining_quantity:1},
+    {product_sku_id:'sku-c',remaining_quantity:0},
+  ])).toEqual([{sku:'sku-a',name:'Chargeur',quantity:5},{sku:'sku-b',name:'Montre',quantity:1}]);
+  expect(()=>workspace.qualityReceiptRows([{remaining_quantity:2}])).toThrow('Variante attendue non identifiée');
+  expect(()=>workspace.qualityReceiptRows([{product_sku_id:'a',remaining_quantity:-1}])).toThrow('Quantité attendue invalide');
+});
+test('réception V3 : le formulaire réel ne remplace le parcours existant que sur activation explicite',()=>{
+  expect(SOURCE).toContain("if(error.code!=='HUB_QUALITY_V3_DISABLED')throw error;");
+  expect(SOURCE).toContain('quality?.eligible?renderQualityReceiptV3(doc,context,receipt):createReceptionCard');
+  expect(SOURCE).toContain('renderSupplierReturnsV3(doc,context,quality.checks,po)');
+  expect(SOURCE).toContain("physical_confirmed:true,observations:collect()");
+  expect(SOURCE).toContain('busy:()=>pending||qualityDirty');
+});
