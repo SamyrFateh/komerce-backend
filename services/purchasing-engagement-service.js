@@ -143,6 +143,28 @@ async function loadLinesByIds(q, ids) {
 // ─── Reliquat : ligne ouverte copiée de la ligne d'origine ────────────────────────────────────────
 
 async function insertRemnant(client, line, quantity, actor) {
+  // A supplier confirmation/physical settlement is a fact even if the
+  // customer order ceased to be eligible. Do not lose that fact, but never
+  // turn the missing quantity into a new purchase need without revalidation.
+  const { rows: [current] } = await commercialRead(client, `
+    SELECT oi.id AS commercial_item_id, o.id AS commercial_order_id, oi.fulfillment_source,
+           o.status::text AS order_status, o.payment_status::text AS payment_status,
+           to_jsonb(o)->>'payment_mode' AS payment_mode
+      FROM order_items oi JOIN orders o ON o.id=oi.order_id
+     WHERE oi.id=$1 FOR SHARE OF o,oi NOWAIT
+  `, [line.order_item_id]);
+  if (!current) throw fail(409, 'ORDER_ITEM_NOT_FOUND', 'Article de commande introuvable');
+  try {
+    await assertCommercialPurchaseItem(client, current);
+  } catch (error) {
+    const blocked = ['ORDER_CANCELLED', 'ORDER_PAYMENT_NOT_CONFIRMED', 'ORDER_ITEM_LOCAL_STOCK', 'PURCHASE_SAV_PROOF_REQUIRED'];
+    if (!blocked.includes(error.code)) throw error; // concurrency/SQL failure: rollback and retry
+    await client.query(`
+      UPDATE purchase_orders SET notes=CONCAT(COALESCE(notes,''),$2::text),updated_at=NOW()
+       WHERE id=(SELECT purchase_order_id FROM purchase_lines WHERE id=$1)
+    `, [line.id, `\n[RELIQUAT_BLOQUE] ligne=${line.id} quantité=${quantity} motif=${error.code} — arbitrage administratif requis`]);
+    return null;
+  }
   const { rows: [remnant] } = await client.query(`
     INSERT INTO purchase_lines
       (purchase_order_id, order_item_id, supplier_id, product_supplier_id, product_sku_id,
@@ -668,7 +690,10 @@ async function confirmGroupedPurchaseOrder(poId, body = {}, { actor = null, cont
     const remnantIds = [];
     for (const line of lines) {
       const remaining = line.quantity - byId.get(line.id).confirmedQuantity;
-      if (remaining > 0) remnantIds.push(await insertRemnant(client, line, remaining, actor));
+      if (remaining > 0) {
+        const remnantId = await insertRemnant(client, line, remaining, actor);
+        if (remnantId) remnantIds.push(remnantId);
+      }
     }
 
     if (allZero) {

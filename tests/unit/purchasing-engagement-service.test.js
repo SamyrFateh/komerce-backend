@@ -56,6 +56,9 @@ function scripted(handlers) {
       for (const [pattern, reply] of handlers) {
         if (pattern.test(sql)) return typeof reply === 'function' ? reply(sql, params) : reply;
       }
+      if (sql.includes('AS commercial_item_id') && sql.includes('WHERE oi.id=$1 FOR SHARE OF o,oi NOWAIT')) {
+        return { rows: [{ fulfillment_source: 'IMPORT', order_status: 'ordered', payment_status: 'paid' }] };
+      }
       // Legacy unit fixtures exercise non-simulated PO flows and mock only the
       // queries under test; their linked order remains a real (unmarked) one.
       if (/ORDER BY o\.created_at, pl\.id/.test(sql)) return { rows: [{ simulation_scope: null, reference: 'LEGACY-UNIT' }] };
