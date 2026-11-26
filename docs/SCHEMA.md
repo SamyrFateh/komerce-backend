@@ -1032,3 +1032,32 @@ La table `hub_box_custody_scans` est **prévue, non confirmée live sur Railway*
 
 Ces événements n'avancent **jamais** un statut d'expédition au simple scan : la transition reste un acte explicite. Pour un dossier Hub nouvellement préparé, le serveur exige la couverture **de toutes les COMBOX du manifeste** avant les transitions `handed_over`, `forwarder_received` et `in_transit` ; le départ maritime exige aussi la référence conteneur et l'attestation de fermeture. Le parcours historique reste sujet à sa migration de données et à ses propres vérifications de compatibilité. UI, PostgreSQL, vraie recette Chromium et preuve matériel requises avant GO.
 <!-- /schema-pending -->
+
+
+### Hub — réception qualité et retour fournisseur V3 (migration 450 — schéma visé, non appliqué)
+
+Les constats de réception et les attestations de retour sont append-only. Le lot conforme seul emprunte le writer physique canonique ; les refusés sont journalisés séparément et ne créent ni allocation client ni droit à compensation. La remise physique au fournisseur est un fait distinct, éventuellement partiel, plafonné par la quantité refusée. Le reliquat physique au constat ne vaut pas clôture de l'obligation fournisseur.
+
+<!-- schema-pending
+object: hub_supplier_receipt_checks
+kind: table
+migration: 450
+section: ### 4.1 Logistique commande (7 tables)
+role: En-tête du constat qualité fournisseur, référence idempotente, acteur et lien unité conforme.
+-->
+<!-- schema-pending
+object: hub_supplier_receipt_check_lines
+kind: table
+migration: 450
+section: ### 4.1 Logistique commande (7 tables)
+role: Ventilation par SKU attendu/reçu/refusé, conforme et manquant calculés.
+-->
+<!-- schema-pending
+object: hub_supplier_return_attestations
+kind: table
+migration: 450
+section: ### 4.1 Logistique commande (7 tables)
+role: Preuves physiques de remise fournisseur, cumul borné au refusé, sans effet financier.
+-->
+
+Déploiement prévu : migration additive avant activation du routeur V3 ; vérifier numéro disponible et graphe architecture avant fusion. Repli : désactiver le nouveau parcours sans effacer le journal ni les faits physiques déjà attestés. Aucun déploiement ou schéma live vérifié à ce stade.
