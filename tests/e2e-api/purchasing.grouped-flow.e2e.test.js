@@ -71,7 +71,7 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
        VALUES ($1, $2, $3, (SELECT id FROM markets WHERE code = $4), $5, 'ordered', 'paid', 'cash_relais', 25000, 50)`,
       [orderId, clientId, relaisByMarket[market], market, `E2EGR-${tag(label)}`.toUpperCase()]
     );
-    await q('INSERT INTO order_items (id, order_id, product_id, quantity, price_kmf) VALUES ($1, $2, $3, $4, 25000)', [itemId, orderId, productId, quantity]);
+    await q('INSERT INTO order_items (id, order_id, product_id, quantity, price_kmf, fulfillment_source) VALUES ($1, $2, $3, $4, 25000, \'IMPORT\')', [itemId, orderId, productId, quantity]);
     const line = await one(`
       INSERT INTO purchase_lines (order_item_id, supplier_id, product_sku_id, supplier_sku, supplier_unit_ref,
                                   supplier_order_identity, quantity, supplier_unit_price, supplier_currency, procurement_hub_ref)
