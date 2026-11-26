@@ -1030,7 +1030,8 @@
         entry.loading=true;
         actionHost.appendChild(make(doc,'p','','Chargement…'));
         const changed=async()=>{
-          await visualRefresh();
+          // Background refresh already awaits this PO's canonical reload.
+          if(!visualRead)await visualRefresh();
           // Le writer canonique termine sa requête après onChange. Ne pas
           // démonter un formulaire en cours de POST ; attendre sa libération.
           const win=doc.defaultView;
