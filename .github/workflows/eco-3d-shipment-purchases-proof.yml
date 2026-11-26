@@ -10,18 +10,18 @@ concurrency:
   group: eco-3d-shipment-purchases-proof
   cancel-in-progress: false
 env:
-  ECO_HEAD: '7df52a8809a0ef923f4304ced97c209b92d2815e'
+  ECO_HEAD: '9a467c1ba790274f176ec399934a1f793a87c945'
 jobs:
   proof:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
-      ECO_SOURCE: '7df52a8809a0ef923f4304ced97c209b92d2815e'
+      ECO_SOURCE: '9a467c1ba790274f176ec399934a1f793a87c945'
       ECO_BASE: 'a7df2352e08f3a0c9c74043a472cf255754d2906'
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: '7df52a8809a0ef923f4304ced97c209b92d2815e'
+          ref: '9a467c1ba790274f176ec399934a1f793a87c945'
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
@@ -48,7 +48,7 @@ jobs:
           git diff --exit-code
           git diff --check "$ECO_BASE" HEAD
           echo "ECO_GENERATED=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
-          git push origin HEAD:refs/heads/wip/eco-3d-purchases-graph-7df52a8
+          git push origin HEAD:refs/heads/wip/eco-3d-purchases-graph-9a467c1
       - name: Governance checks on generated candidate
         run: |
           set -euo pipefail
@@ -96,7 +96,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: '7df52a8809a0ef923f4304ced97c209b92d2815e'
+          ref: '9a467c1ba790274f176ec399934a1f793a87c945'
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v4
