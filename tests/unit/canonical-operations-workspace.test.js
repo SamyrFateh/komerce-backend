@@ -384,3 +384,18 @@ test('départ : le dossier ouvert ne bascule jamais silencieusement vers un autr
   expect(workspace.departureGroups(dossier,null,{marketWide:true,railFilter:'AIR_EXPRESS',groupKey:'["A","SEA_STANDARD"]'})).toEqual([]);
   expect(workspace.departureGroups({fillable:[row('A','AIR_EXPRESS')],boxes:[]},null,{marketWide:true,railFilter:'AIR_EXPRESS',groupKey:'["B","AIR_EXPRESS"]'})).toEqual([]);
 });
+
+test('C1 : la destination déjà choisie présente le rail demandé, sans choix arbitraire',()=>{
+  expect(workspace.workshopDestinationLabel({relayCode:'M01',rail:'SEA_STANDARD'})).toBe('M01 · Maritime (rail demandé)');
+  expect(workspace.workshopDestinationLabel({relayCode:'M01',rail:'AIR_EXPRESS'})).toBe('M01 · Aérien (rail demandé)');
+  expect(workspace.workshopDestinationLabel({relayCode:'M01',rail:null})).toBe('M01 · À affecter (rail demandé)');
+});
+test('C1 : le tableau COMBOX n’instancie que les actions de la ligne active',()=>{
+  const block=SOURCE.slice(SOURCE.indexOf('async function mountBoxActions'),SOURCE.indexOf('function departureBoxes'));
+  expect(block).toContain("if(marketWide&&groupKey!==undefined)");
+  expect(block).toContain("data-hub-compact-box-table");
+  expect(block).toContain("data-hub-compact-box-action");
+  expect(block).toContain("actionPanel.appendChild(composeCell(current))");
+  expect(block).toContain("if(!boxes.some(b=>String(b.unit_id)===selectedBoxId))");
+  expect(block).toContain("data-hub-inline-box");
+});
