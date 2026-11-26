@@ -10,6 +10,10 @@ Total output lines: 292
 > **Seul tableau de coordination actif** pour ChatGPT/GPT, Sonnet et Opus. Il remplace les journaux de tâches historiques ; il ne remplace ni le code, ni les données live, ni `AGENTS.md`, ni les cartes Feature First, ni les checks GitHub.
 > La PR et ses checks font foi pour l'état du code. Un nom d'agent n'est pas une preuve d'exécution.
 
+## Économie — ECO-1 référentiel des centres de coûts (GPT, 26/11/2026)
+
+**Responsable : GPT / feature economic-engine, backend-core.** [#5280](https://github.com/SamyrFateh/komerce-backend/issues/5280). ECO-0 documentaire fusionné [#5294](https://github.com/SamyrFateh/komerce-backend/pull/5294), main `473d7da`, préflight et Required verts. ECO-1 branche `feat/eco-1-cost-center-reference` ; packs migration/authz/service et impact [run 45785901637](https://github.com/SamyrFateh/komerce-backend/actions/runs/45785901637) verts. Réservation : migration 430, référentiel centres/familles/postes/ressources, carte economic-engine, SCHEMA.md (intention uniquement), test PG transactionnel. Aucune modification des writers réels, des prix, de sourcing #4210, du coût N1/N2 #3822, de la production ou des données staging. Première tranche : hiérarchie persistante et frontières de scope ; budgets/engagements, API/droits et provisioning restent à réaliser. Prochaine action : préflight, preuve PG isolée, PR et revue de migration selon gouvernance. Non certifié, aucune activation.
+
 ## Orders/Logistics — référence unique marché–relais–destinataire temporaire–commande (GPT, 23/11/2026)
 
 **Responsable :** GPT. **Statut : code sur branche `feat/staging-order-wave-reference`, NON MERGÉ, NON CERTIFIÉ, NON ACTIVÉ ; préflight et impact non exécutés (pas de checkout exécutable dans cette session).** Issue de coordination [#5168](https://github.com/SamyrFateh/komerce-backend/issues/5168).

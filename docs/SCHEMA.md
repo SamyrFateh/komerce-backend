@@ -235,6 +235,41 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 
 ### 4.8 Pricing et économie (tables live + 2 objets visés)
 
+<!-- schema-pending
+object: economic_cost_centers
+kind: table
+migration: 430
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Référentiel de centres groupe ou marché, responsable explicite avant activation.
+-->
+
+<!-- schema-pending
+object: economic_cost_families
+kind: table
+migration: 430
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Familles extensibles par centre, sans source de dépenses.
+-->
+
+<!-- schema-pending
+object: economic_cost_resources
+kind: table
+migration: 430
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Ressources identifiées par centre, sans écriture de coût.
+-->
+
+<!-- schema-pending
+object: economic_cost_posts
+kind: table
+migration: 430
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Postes classés nature/périmètre/base causale, liens structure existants à scope identique, aucun journal de réel.
+-->
+
+**Migration 430 — intention uniquement :** référentiel administratif ECO-1a. Aucune donnée insérée, aucun fait réel créé. Validation PostgreSQL CI avant fusion, déploiement et vérification live séparés. Le retrait éventuel nécessite une migration compensatrice gouvernée, jamais la suppression de faits.
+
+
 | Table | Rôle |
 |---|---|
 | `finance_config` | **Singleton (id=1)** — source de vérité unique post-ADR-009. Intention migration 235 (non attestée live) : `taux_pln_kmf` (`NUMERIC(18,6)`) nullable, strictement positif lorsque renseigné, aucun taux par défaut. Colonne `provision_risque_pct NUMERIC(6,4) DEFAULT 0.01` ajoutée en migration 067 : taux de provision risque mensuel. **Migration 316 (2026-10-22, `intended_migration_schema`)** : `taux_change_eur_kmf` et `taux_aed_kmf` DÉPRÉCIÉES (plus de NOT NULL ni de valeur par défaut, COMMENT DEPRECATED) : jamais lues ni écrites, l'autorité FX est `services/fx-authority.js` (`currency_parities`, `fx_rate_observations`, `fx_pegs`). DROP dans une PR séparée. Les paramètres économiques de la table sont inchangés. |
