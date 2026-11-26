@@ -4,7 +4,7 @@
  * @test-runner jest
  * @test-requires none
  */
-const { summarizeMarket, summarizePurchaseOrders, getGlobalBoard } = require('../../services/hub-global-board');
+const { summarizeMarket, summarizePurchaseOrders, summarizeLogisticsWork, getGlobalBoard } = require('../../services/hub-global-board');
 
 const order = (id, ref, qty) => ({
   id, reference: ref, items: [{id:'item-'+id,product:'Objet confidentiel',ordered:qty}],
@@ -291,4 +291,26 @@ test('V8 : preuves de réception et exceptions limitées à la PO exacte',()=>{
  expect(r.exceptions).toEqual([{kind:'PO_MISSING_QTY',reason:'Écart'}]);
  expect(r.sent_channel).toBe('email');
  expect(r).not.toHaveProperty('physical_settled');
+});
+
+test('charge logistique: comptage unique des cartons, distinction des rails et preuves de départ',()=>{
+ const row=(relay,rail,state='QUALITY_CHECKED')=>({relais_id:relay,relais_code:relay,requested_transport_rail:rail,source_state:state,quantity:2});
+ const a=row('A','SEA_STANDARD'),b=row('A','AIR_EXPRESS'),u=row('B',null);
+ const box=(id,state,contents,shipment_ref=null,shipment_stage=null)=>({unit_id:id,state,contents,shipment_ref,shipment_stage});
+ const ready=box('one','DISPATCHED',[a,a]);
+ const payload={fillable:[a,b,u,row('C','SEA_STANDARD','RECEIVED')],boxes:[
+  ready,ready,box('two','PACKED',[a]),box('three','PICKED',[a]),box('four','DISPATCHED',[b],'S','hub_ready'),
+  box('five','DISPATCHED',[b],'T','handed_over'),box('six','QUARANTINED',[a]),box('seven','PACKED',[a,b])
+ ]};
+ const groups=summarizeLogisticsWork({code:'CM'},payload);
+ expect(groups).toHaveLength(3);
+ expect(groups.find(g=>g.rail==='SEA_STANDARD')).toMatchObject({market:'CM',relay:'A',to_pack:2,boxes_in_progress:1,boxes_to_dispatch:1,boxes_to_attach:1,boxes_to_handover:0});
+ expect(groups.find(g=>g.rail==='AIR_EXPRESS')).toMatchObject({to_pack:2,boxes_to_handover:1,boxes_to_attach:0});
+ expect(groups.find(g=>g.rail===null)).toMatchObject({relay:'B',to_pack:2});
+});
+test('charge logistique centrale uniquement, scope marché sans projection',async()=>{
+ const query={query:jest.fn(async()=>({rows:[{id:'m1',code:'CM',name:'Cameroun'}]}))};
+ const reader=jest.fn(async()=>({...empty([]),fillable:[{relais_id:'r1',requested_transport_rail:'AIR_EXPRESS',quantity:2,source_state:'QUALITY_CHECKED'}]}));
+ expect((await getGlobalBoard(query,reader,{includePurchaseOrders:true})).logistics_work).toHaveLength(1);
+ expect(await getGlobalBoard(query,reader,{marketIds:['m1'],includePurchaseOrders:true})).not.toHaveProperty('logistics_work');
 });
