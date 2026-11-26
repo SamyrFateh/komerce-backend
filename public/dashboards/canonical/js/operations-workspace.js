@@ -1130,10 +1130,10 @@
       row.appendChild(proof);card.appendChild(row);
       const f={line,ok,bad,missing,received,rejected,confirmed,manual,scan,proof};fields.push(f);
       const change=()=>{context.markQualityDirty?.();sync();};
-      ok.input.addEventListener('change',()=>{bad.input.checked=!ok.input.checked;missing.input.checked=false;received.input.value=String(line.quantity);rejected.input.value=ok.input.checked?'0':received.input.value;confirmed.input.checked=false;change();});
-      bad.input.addEventListener('change',()=>{ok.input.checked=!bad.input.checked;missing.input.checked=false;rejected.input.value=bad.input.checked?received.input.value:'0';change();});
+      ok.input.addEventListener('change',()=>{bad.input.checked=!ok.input.checked;if(missing.input.checked){received.input.value=String(line.quantity);confirmed.input.checked=false;}missing.input.checked=false;rejected.input.value=ok.input.checked?'0':received.input.value;change();});
+      bad.input.addEventListener('change',()=>{ok.input.checked=!bad.input.checked;if(missing.input.checked){received.input.value=String(line.quantity);confirmed.input.checked=false;}missing.input.checked=false;rejected.input.value=bad.input.checked?received.input.value:'0';change();});
       missing.input.addEventListener('change',()=>{ok.input.checked=!missing.input.checked;bad.input.checked=false;received.input.value=missing.input.checked?'0':'1';rejected.input.value='0';change();});
-      received.input.addEventListener('input',()=>{confirmed.input.checked=false;if(Number(rejected.input.value)>Number(received.input.value))rejected.input.value=received.input.value;change();});
+      received.input.addEventListener('input',()=>{confirmed.input.checked=false;if(Number(rejected.input.value)>Number(received.input.value))rejected.input.value=received.input.value;bad.input.checked=Number(rejected.input.value)>0;ok.input.checked=!bad.input.checked&&Number(received.input.value)>0;change();});
       rejected.input.addEventListener('input',()=>{bad.input.checked=Number(rejected.input.value)>0;ok.input.checked=!bad.input.checked;change();});
       confirmed.input.addEventListener('change',change);
       manual.input.addEventListener('change',()=>{if(manual.input.checked)scan.value='';change();});
@@ -1164,13 +1164,14 @@
     button.addEventListener('click',async()=>{
       if(button.disabled||sending)return;
       if(!context.confirm('Confirmez que ces quantités et leur état correspondent aux articles réellement contrôlés.'))return;
-      sending=true;context.markQualityDirty?.();sync();
+      const observations=collect();sending=true;context.markQualityDirty?.();
+      const inputs=Array.from(card.querySelectorAll('input'));for(const input of inputs)input.disabled=true;sync();
       const key='v3:'+receipt.purchase_order_id;
       try{
         await runAction(context,button,{url:endpointFor(context.marketCode,'supply/receipt-checks'),body:{
-          purchase_order_id:receipt.purchase_order_id,reference:receptionReferenceFor(context,key),physical_confirmed:true,observations:collect()
+          purchase_order_id:receipt.purchase_order_id,reference:receptionReferenceFor(context,key),physical_confirmed:true,observations
         },onSuccess:()=>{context.receiveRefs.delete(key);context.clearQualityDirty?.();},successMessage:'Réception contrôlée et enregistrée.'});
-      }catch(_){sending=false;sync();}
+      }catch(_){sending=false;for(const input of inputs)input.disabled=false;sync();}
     });
     sync();return card;
   }
