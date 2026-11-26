@@ -154,6 +154,7 @@ module.exports = {
       'routes/sourcing.js',
     ],
     migrations: [
+      'migrations/431_economic_cost_budget_revisions.sql',
       'migrations/430_economic_cost_center_reference.sql',
       'migrations/235_sourcing_pln_rate.sql',
       'migrations/019_finance_columns.sql',
@@ -204,6 +205,7 @@ module.exports = {
       'dashboards/admin/js/views/EconomicFlowView.js',
     ],
     tests: [
+      'tests/integration/economic-cost-budget-revisions-postgres.test.js',
       'tests/integration/economic-cost-center-reference-postgres.test.js',
       'tests/integration/txg01-pricing-matrices.test.js',
       'tests/integration/txg02-pricing-strategy-service.test.js',
@@ -380,6 +382,7 @@ module.exports = {
       'economic_cost_families: RW!',
       'economic_cost_resources: RW!',
       'economic_cost_posts: RW!',
+      'economic_cost_budget_revisions: RW!',
       'economic_variables: R',
       'exchange_rates: RW',
       'fabrics: R',

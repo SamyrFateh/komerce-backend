@@ -236,6 +236,17 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 ### 4.8 Pricing et économie (tables live + 2 objets visés)
 
 <!-- schema-pending
+object: economic_cost_budget_revisions
+kind: table
+migration: 431
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Versions append-only du budget mensuel par poste ; devise native et snapshot EUR sourcé, dernière révision seulement ; distinct des charges réelles et engagements.
+-->
+
+**Migration 431 — intention uniquement :** aucun budget initial, aucune conversion autonome ni écriture dans le journal réel. Service et habilitations restent à raccorder à l'autorité FX existante. Validation CI sur PostgreSQL jetable avant PR ; live non attesté.
+
+
+<!-- schema-pending
 object: economic_cost_centers
 kind: table
 migration: 430
