@@ -47,7 +47,7 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
       await q(`INSERT INTO purchase_lines(id,order_item_id,supplier_id,product_sku_id,supplier_sku,supplier_unit_ref,supplier_order_identity,quantity,supplier_unit_price,supplier_currency,procurement_hub_ref) VALUES($1,$2,$3,$4,$5,$5,$6::jsonb,1,10,'USD','DXB')`,[line,item,supplier,sku,ref,identity]);
       await q('UPDATE purchase_lines SET purchase_order_id=$2 WHERE id=$1',[line,po]);
       await q("UPDATE purchase_orders SET status='notified' WHERE id=$1",[po]);
-      await q("UPDATE purchase_lines SET confirmed_quantity=1,confirmed_unit_price=10,confirmed_currency='USD',confirmed_at=now() WHERE id=$1",[line]);
+      await q("UPDATE purchase_lines SET confirmed_quantity=1,confirmed_unit_price=10,confirmed_at=now() WHERE id=$1",[line]);
       await q("UPDATE purchase_orders SET status='confirmed',confirmed_at=now() WHERE id=$1",[po]);
       await q("INSERT INTO supplier_execution_groups(id,purchase_order_id,provider,supplier_parent_order_id) VALUES($1,$2,'cj',$3)",[group,po,ref+'-GROUP']);
       await q(`INSERT INTO supplier_execution_payments(id,purchase_order_id,provider,payment_execution_key,supplier_execution_group_id,expected_amount,observed_amount,currency,status,reconciliation_status,real_debit_verified) VALUES($1,$2,'cj',$3,$4,10,10,'USD','succeeded','matched',true)`,[payment,po,ref+'-PAY',group]);
