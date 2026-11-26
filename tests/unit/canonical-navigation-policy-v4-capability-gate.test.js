@@ -123,7 +123,7 @@ describe('navigation-policy-v4 — domaine Live (coque noire des cockpits opéra
 
 describe('navigation-policy-v4 — grouped sidebar information architecture', () => {
   test('toutes les pages Canonical invalident le cache du shell partagé', () => {
-    const version = 'v=261126-canon-market-nav-2';
+    const version = 'v=261126-canon-market-nav-5';
     const pages = ['index.html', 'market-autonomy.html', 'market-catalog.html', 'access.html', 'documentation.html', 'unsold.html'];
     for (const page of pages) {
       const html = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical', page), 'utf8');
@@ -134,30 +134,31 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
   test('les rubriques Marchés sont filtrées par les capacités de lecture requises',()=>{
     const nav=loadPolicy();
     const groups=nav.sidebarGroupsFor({role:'market_operator'},marketAdminContext([
-      'dashboard.market.read','client.read','pricing.read','operations.read','finance.read','logistics.read',
+      'dashboard.market.read','client.read','pricing.read','operations.read','finance.read','logistics.read','catalog.read','team.read','network.read','market_config.read',
     ]));
     expect(groups.map(g=>g.id)).toEqual(['pilot','commerce','economy','operations','finance','live','markets','administration','help']);
     const links=Object.fromEntries(groups.flatMap(g=>g.items).map(i=>[i.id,i.href]));
     for(const id of ['control-tower','action-center','flow-commerce','flow-orders',
       'entity-clients','workspace-pricing','flow-operations',
       'workspace-shipping','flow-finance','workspace-accounting','live-hub',
-      'market-autonomy','market-catalog','admin-providers','settings']) {
+      'market-autonomy','workspace-catalog','admin-users','admin-providers','settings']) {
       expect(links[id]).toBeDefined();
     }
     expect(links.unsold).toBe('/dashboards/canonical/unsold.html');
-    expect(links['workspace-catalog']).toBeUndefined();
+    expect(links['workspace-catalog']).toBe('/admin/workspaces/catalog');
+    expect(links['market-catalog']).toBeUndefined();
     expect(links['markets-home']).toBeUndefined();
-    expect(links['admin-users']).toBeUndefined();
+    expect(links['admin-users']).toBe('/admin/users');
     expect(links['workspace-purchasing']).toBeUndefined();
     expect(links['live-import-runtime']).toBeUndefined();
     expect(links['live-relais']).toBeUndefined();
     expect(groups.find(group => group.id === 'live').items.map(item => item.id)).toEqual(['live-hub']);
-    expect(links['admin-providers']).toContain('#market-providers');
-    expect(links['settings']).toContain('#market-cash-control');
+    expect(links['admin-providers']).toBe('/admin/providers');
+    expect(links['settings']).toBe('/admin/settings');
     const marketHrefs = groups.flatMap(group => group.items).map(item => item.href);
     expect(new Set(marketHrefs).size).toBe(marketHrefs.length);
-    for(const central of ['/admin/workspaces/purchasing','/admin/workspaces/catalog',
-      '/admin/import-runtime','/admin/relais-live','/admin/users','/admin/providers','/admin/settings']) {
+    for(const central of ['/admin/workspaces/purchasing',
+      '/admin/import-runtime','/admin/relais-live']) {
       expect(Object.values(links)).not.toContain(central);
     }
   });
@@ -219,7 +220,7 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     expect(labels('finance')).toEqual(['Vue finance', 'Comptabilité']);
     expect(groups.find(group => group.id === 'live').items.map(item => item.href))
       .toEqual(['/admin/import-runtime', '/admin/hub', '/admin/relais-live']);
-    expect(labels('markets')).toEqual(['Responsables pays', 'Catalogue pays', 'Invendus']);
+    expect(labels('markets')).toEqual(['Responsables pays', 'Invendus']);
     expect(labels('help')).toEqual(['Documentation']);
     const all = groups.flatMap(group => group.items);
     expect(all.some(item => item.href === '/admin/suppliers')).toBe(false);
@@ -270,7 +271,9 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     const nav = loadPolicy();
     const none = nav.sidebarGroupsFor({ role: 'market_operator' }, marketAdminContext([]))
       .flatMap(group => group.items.map(item => item.id));
-    expect(none).toEqual(expect.arrayContaining(['market-autonomy', 'market-catalog']));
+    expect(none).toContain('market-autonomy');
+    expect(none).not.toContain('workspace-catalog');
+    expect(nav.sidebarGroupsFor({role:'market_operator'},marketAdminContext(['catalog.read'])).flatMap(g=>g.items).filter(i=>i.id==='workspace-catalog')).toHaveLength(1);
     ['control-tower', 'flow-finance', 'flow-operations', 'entity-clients', 'workspace-pricing', 'workspace-accounting']
       .forEach(id => expect(none).not.toContain(id));
 
@@ -522,4 +525,12 @@ describe('CANON-MARKET — selected market authority for navigation', () => {
       expect(nav.hubMarketScopeLabel(context)).toBe('Hub · CM');
     });
   });
+});
+
+test('Paramètres : aucune destination marché sans capability de lecture ou de gestion cash', () => {
+  const nav = loadPolicy();
+  const hasSettings = caps => nav.sidebarGroupsFor({role:'market_operator'}, marketAdminContext(caps)).flatMap(g => g.items).some(item => item.id === 'settings');
+  expect(hasSettings([])).toBe(false);
+  expect(hasSettings(['market_config.read'])).toBe(true);
+  expect(hasSettings(['cash_control.policy.manage'])).toBe(true);
 });

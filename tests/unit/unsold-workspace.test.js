@@ -38,6 +38,6 @@ test('le tableau Invendus marché garde le shell cohérent et une largeur adapt�
   expect(source).toContain("root.classList.remove('canonical-boot')");
   expect(source).toContain("root.classList.add('unsold-workspace')");
   expect(source).toContain("readOnly ? 'Valeur indicative' : 'Valeur liquidation'");
-  expect(html).toContain('navigation-policy-v4.js?v=261126-canon-market-nav-2');
+  expect(html).toContain('navigation-policy-v4.js?v=261126-canon-market-nav-5');
   expect(html).toContain('width: min(calc(100% - 48px), 1180px)');
 });

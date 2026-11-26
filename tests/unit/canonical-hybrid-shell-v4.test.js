@@ -78,7 +78,9 @@ describe('Canonical Hybrid Shell V4 — doctrine + mock style contract', () => {
     // Post #1559 (« business truth ») : Sources/Raffinerie/Boutique retirés du
     // menu Catalogue, la nav ne doit plus promettre de destinations qui
     // n'existent pas côté produit — voir @version 2026-09-v4.2-business-truth.
-    expect(source).toContain("id: 'catalog-overview', label: 'Catalogue global'");
+    expect(source).toContain("id: 'catalog-overview', label: 'Catalogue', href: '/admin/workspaces/catalog'");
+    expect(source).toContain("item.id === 'workspace-catalog' && !market");
+    expect(source).not.toContain('MARKET_MENU_PROJECTIONS');
     expect(source).not.toContain("id: 'catalog-refinery'");
     // Atelier prix : plus d'ancres #pricing-* (vue d'ensemble unique).
     expect(source).not.toContain('#pricing-costs');

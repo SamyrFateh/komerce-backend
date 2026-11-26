@@ -39,7 +39,7 @@
       id: 'catalog',
       label: 'Catalogue',
       href: '/admin/workspaces/catalog',
-      roles: Object.freeze(['admin']),
+      roles: Object.freeze(['admin', 'market_operator']),
     }),
     Object.freeze({
       id: 'orders',
@@ -103,7 +103,7 @@
     demo: 'dashboard',
     'pricing-workspace': 'pricing',
     'catalog-workspace': 'catalog',
-    'market-catalog': 'markets',
+    'market-catalog': 'catalog',
     unsold: 'markets',
     'product-360': 'catalog',
     commerce: 'orders',
@@ -944,7 +944,7 @@
       label: 'Économie',
       items: Object.freeze([
         Object.freeze({ id: 'workspace-pricing', label: 'Prix & économie', href: '/admin/workspaces/pricing', roles: ['admin', 'market_operator'], capability: 'pricing.read', surfaces: ['pricing-workspace'] }),
-        Object.freeze({ id: 'workspace-catalog', label: 'Catalogue global', href: '/admin/workspaces/catalog', roles: ['admin'], surfaces: ['catalog-workspace', 'product-360'] }),
+        Object.freeze({ id: 'workspace-catalog', label: 'Catalogue', href: '/admin/workspaces/catalog', roles: ['admin', 'market_operator'], capability: 'catalog.read', surfaces: ['catalog-workspace', 'market-catalog', 'product-360'] }),
       ]),
     }),
     Object.freeze({
@@ -981,18 +981,17 @@
       items: Object.freeze([
         Object.freeze({ id: 'markets-home', label: 'Responsables pays', href: '/dashboards/canonical/access.html', roles: ['admin'], surfaces: ['market-access'] }),
         Object.freeze({ id: 'market-autonomy', label: 'Autonomie marché', href: '/dashboards/canonical/market-autonomy.html', roles: ['market_operator'], surfaces: ['market-autonomy'] }),
-        Object.freeze({ id: 'market-catalog', label: 'Catalogue pays', href: '/dashboards/canonical/market-catalog.html', roles: ['admin', 'market_operator'], surfaces: ['market-catalog'] }),
-        Object.freeze({ id: 'unsold', label: 'Invendus', href: '/dashboards/canonical/unsold.html', roles: ['admin', 'market_operator'], capability: 'operations.read', requiresResolvedContext: true, surfaces: ['unsold'] }),
+         Object.freeze({ id: 'unsold', label: 'Invendus', href: '/dashboards/canonical/unsold.html', roles: ['admin', 'market_operator'], capability: 'operations.read', requiresResolvedContext: true, surfaces: ['unsold'] }),
       ]),
     }),
     Object.freeze({
       id: 'administration',
       label: 'Administration',
       items: Object.freeze([
-        Object.freeze({ id: 'admin-users', label: 'Utilisateurs', href: '/admin/users', roles: ['admin'], surfaces: ['users-admin'] }),
+        Object.freeze({ id: 'admin-users', label: 'Utilisateurs', href: '/admin/users', roles: ['admin', 'market_operator'], capability: 'team.read', surfaces: ['users-admin'] }),
         Object.freeze({ id: 'admin-guided-recipe', label: 'Recette guidée', href: '/admin/golden-e2e?guide=hub#extendedRecipe', roles: ['admin'], surfaces: ['golden-e2e'] }),
-        Object.freeze({ id: 'admin-providers', label: 'Providers', href: '/admin/providers', roles: ['admin', 'market_operator'], marketCompatibilityHref: '/dashboards/canonical/market-autonomy.html#market-providers', marketCompatibilityLabel: 'Prestataires de mon marché', surfaces: ['providers-admin'] }),
-        Object.freeze({ id: 'settings', label: 'Paramètres', href: '/admin/settings', roles: ['admin', 'market_operator'], marketCompatibilityHref: '/dashboards/canonical/market-autonomy.html#market-cash-control', marketCompatibilityLabel: 'Paramètres de mon marché', surfaces: ['settings'] }),
+        Object.freeze({ id: 'admin-providers', label: 'Relais & prestataires', href: '/admin/providers', roles: ['admin', 'market_operator'], capabilitiesAny: ['network.read', 'provider.manage'], surfaces: ['providers-admin'] }),
+        Object.freeze({ id: 'settings', label: 'Paramètres', href: '/admin/settings', roles: ['admin', 'market_operator'], capabilitiesAny: ['market_config.read', 'cash_control.policy.manage'], surfaces: ['settings'] }),
       ]),
     }),
     Object.freeze({
@@ -1009,7 +1008,7 @@
       Object.freeze({ id: 'pricing-overview', label: 'Vue d’ensemble', href: '/admin/workspaces/pricing', roles: ['admin', 'market_operator'], capability: 'pricing.read' }),
     ]),
     catalog: Object.freeze([
-      Object.freeze({ id: 'catalog-overview', label: 'Catalogue global', href: '/admin/workspaces/catalog', roles: ['admin'] }),
+      Object.freeze({ id: 'catalog-overview', label: 'Catalogue', href: '/admin/workspaces/catalog', roles: ['admin', 'market_operator'], capability: 'catalog.read' }),
 
     ]),
     orders: Object.freeze([
@@ -1025,8 +1024,7 @@
     markets: Object.freeze([
       Object.freeze({ id: 'market-access', label: 'Accès pays', href: '/dashboards/canonical/access.html', roles: ['admin'] }),
       Object.freeze({ id: 'market-autonomy', label: 'Autonomie marché', href: '/dashboards/canonical/market-autonomy.html', roles: ['market_operator'] }),
-      Object.freeze({ id: 'catalog-country', label: 'Catalogue pays', href: '/dashboards/canonical/market-catalog.html', roles: ['admin', 'market_operator'] }),
-      Object.freeze({ id: 'unsold', label: 'Invendus', href: '/dashboards/canonical/unsold.html', roles: ['admin', 'market_operator'], capability: 'operations.read', requiresResolvedContext: true }),
+       Object.freeze({ id: 'unsold', label: 'Invendus', href: '/dashboards/canonical/unsold.html', roles: ['admin', 'market_operator'], capability: 'operations.read', requiresResolvedContext: true }),
     ]),
   });
 
@@ -1103,10 +1101,8 @@
         items: Object.freeze(group.items
           .filter(item => sidebarItemVisible(item, user, adminContext))
           .map(item => {
+            if (roleOf(user) === 'admin' && item.id === 'workspace-catalog' && !market) return Object.freeze({...item,label:'Catalogue global'});
             if (!market) return item;
-            if (item.marketCompatibilityHref && roleOf(user) === 'market_operator') return Object.freeze({
-              ...item, href: item.marketCompatibilityHref, label: item.marketCompatibilityLabel, market_scoped: true,
-            });
             if (item.id === 'live-hub') return Object.freeze({...item, label:'Hub · Mes marchés', market_scoped:true});
             return Object.freeze({...item, market_scoped:true});
           })),

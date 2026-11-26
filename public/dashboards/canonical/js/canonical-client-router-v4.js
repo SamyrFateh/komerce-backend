@@ -211,7 +211,13 @@
     return !CONTEXTLESS_SURFACES.has(surface);
   }
 
-  async function contextForSurface(app, surface) {
+  async function contextForSurface(app, surface, user, targetUrl) {
+    // Le catalogue global garde son contexte historique ; sa lentille marché
+    // exige un contexte serveur, comme les autres workspaces scopés.
+    if (surface === 'catalog-workspace' && app.isMarketCatalogLens?.(user, targetUrl?.search)) {
+      return app.requireAdminContext();
+    }
+    if (surface === 'settings' && user?.role === 'market_operator') return app.requireAdminContext();
     if (!requiresAdminContext(surface)) return null;
     if (global.KOMERCE_CANONICAL_ADMIN_CONTEXT) return global.KOMERCE_CANONICAL_ADMIN_CONTEXT;
     return app.requireAdminContext();
@@ -262,7 +268,9 @@
   }
 
   function commitStage(doc, oldRoot, stage, user, adminContext, surface, targetUrl) {
-    if (surface !== 'catalog-workspace') doc.body?.classList?.remove('kmc-catalog-live-mode');
+    if (surface !== 'catalog-workspace' || global.KomerceCanonicalAdmin?.isMarketCatalogLens?.(user, targetUrl.search)) {
+      doc.body?.classList?.remove('kmc-catalog-live-mode');
+    }
     stage.removeAttribute('data-client-route-stage');
     oldRoot.replaceWith(stage);
     global.KOMERCE_CANONICAL_ADMIN_CONTEXT = adminContext;
@@ -300,7 +308,7 @@
     doc.body?.setAttribute?.('data-canonical-route-pending', 'true');
 
     try {
-      const adminContext = await contextForSurface(app, surface);
+      const adminContext = await contextForSurface(app, surface, user, targetUrl);
       if (seq !== navigationSeq) return false;
 
       if (options.history !== 'none') global.history.pushState({}, '', targetUrl.href);

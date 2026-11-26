@@ -31,8 +31,8 @@ async function mount(page, { populated = false, autoMarket = false, posts = [] }
       return fs.existsSync(file) ? route.fulfill({ path: file }) : route.fulfill({ status: 404, body: '' });
     }
     if (route.request().method() === 'POST') { posts.push({ path: url.pathname, body: route.request().postDataJSON() }); return json({ ok: true }); }
-    if (url.pathname === '/api/auth/me') return json(FX.auth_me);
-    if (url.pathname === '/api/admin/dashboard/context') return json(autoMarket ? { ...FX.context, actor: { ...FX.context.actor, role: 'market_operator' }, access: { ...FX.context.access, mode: 'market', allowedMarkets: ['KM'], defaultMarket: 'KM', capabilities: ['pricing.read'] } } : FX.context);
+    if (url.pathname === '/api/auth/me') return json(autoMarket?{...FX.auth_me,role:'market_operator'}:FX.auth_me);
+    if (url.pathname === '/api/admin/dashboard/context') return json(autoMarket ? { ...FX.context, actor: { ...FX.context.actor, role: 'market_operator' }, access: { ...FX.context.access, mode: 'market', allowedMarkets: ['KM'], defaultMarket: 'KM', capabilities: [], delegatedCapabilities:{KM:['pricing.read']} } } : FX.context);
     if (url.pathname === '/api/admin/workspaces/pricing') return json(FX.global);
     if (url.pathname === '/api/admin/workspaces/pricing/market/KM') return json(market);
     if (url.pathname === '/api/admin/workspaces/pricing/market/KM/decision') return json(FX.decision);

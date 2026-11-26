@@ -443,11 +443,38 @@ test('le pilote PO conserve le Kanban et revient à la vue commandes sans mutati
   expect(root.querySelectorAll('[data-hub-pilot-po]')).toHaveLength(0);
   expect(fetch).toHaveBeenCalledTimes(2);
 });
-test('le responsable marché ne reçoit pas de bascule PO fournisseurs', async () => {
-  const app=load(),root=el('main'),fetch=mockFetch({orders:[]});
-  await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'market_operator'}});
-  expect(root.querySelector('[data-hub-po-pilot-toggle]')).toBeNull();
-  expect(fetch).toHaveBeenCalledTimes(1);
+test('CANON-MARKET : même Kanban PO, dossier et charge logistique en lecture seule', async () => {
+  const app=load(),root=el('main');
+  const po={id:'p1',reference:'PO-1',market:'CM',market_scoped:true,order_count:1,
+    order_references:['KAAAAAA'],order_lines:[{order_ref:'KAAAAAA',product:'Article CM',ordered:2,expected:2,received:1,missing:1}],
+    ordered:2,expected:2,received:1,missing:1,anomalies:0,purchase_stage:'partially_received',
+    boxed_quantity:1,dispatched_quantity:0,handed_quantity:0};
+  const work=[{market:'CM',relay:'A',relay_code:'Douala',rail:'SEA_STANDARD',group_key:'A-sea',
+    to_pack:1,boxes_in_progress:0,boxes_to_dispatch:0,boxes_to_attach:0,boxes_to_handover:0}];
+  const fetch=jest.fn(async url=>({ok:true,json:async()=>url.includes('view=po')
+    ?{scope:'HUB_GLOBAL',audience:'MARKET_SCOPED',markets:['CM'],purchase_orders:[po],logistics_work:work}
+    :{scope:'HUB_GLOBAL',audience:'MARKET_SCOPED',markets:['CM'],orders:[]}}));
+  const previous=global.KomerceCanonicalOperationsWorkspace;
+  const writers={mountPurchaseActions:jest.fn(),mountReceptionActions:jest.fn(),
+    mountBoxActions:jest.fn(),mountDepartureActions:jest.fn(),mountVarianceActions:jest.fn()};
+  global.KomerceCanonicalOperationsWorkspace=writers;
+  const walk=(node,predicate)=>[node,...node.children.flatMap(n=>walk(n,predicate))].filter(predicate);
+  try{
+    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'market_operator'},location:{search:'?market=CM&decision=payment'}});
+    expect(root.querySelector('[data-hub-po-v8]')).not.toBeNull();
+    expect(root.querySelectorAll('[data-hub-v8-lane]')).toHaveLength(5);
+    expect(root.querySelector('[data-hub-po-pilot-toggle]')).toBeNull();
+    root.querySelector('[data-hub-po-v8-card="p1"]').click();
+    expect(walk(root,n=>n.textContent==='Suivi opérationnel · Lecture seule')).toHaveLength(1);
+    expect(walk(root,n=>n.textContent==='Article CM · 1 / 2 reçus · 1 attendus')).toHaveLength(1);
+    walk(root,n=>n.tagName==='BUTTON'&&n.textContent==='Kanban')[0].click();
+    root.querySelector('[data-hub-workshop="boxes"]').click();
+    expect(walk(root,n=>n.textContent==='Suivi logistique · Lecture seule')).toHaveLength(1);
+    for(const writer of Object.values(writers))expect(writer).not.toHaveBeenCalled();
+    expect(fetch).toHaveBeenCalledWith('/api/hub/board?view=po&market=CM',expect.objectContaining({method:'GET'}));
+    expect(fetch).toHaveBeenCalledWith('/api/hub/board?market=CM',expect.objectContaining({method:'GET'}));
+    expect(fetch.mock.calls.every(([,opts])=>opts.method==='GET')).toBe(true);
+  }finally{global.KomerceCanonicalOperationsWorkspace=previous;}
 });
 
 test('la cellule Achat monte le module canonique seulement au dépliage',async()=>{

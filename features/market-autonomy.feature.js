@@ -95,6 +95,8 @@ module.exports = {
       'dashboards/canonical/css/market-cash-control.css',
       'dashboards/canonical/js/market-cash-control.js',
       'dashboards/canonical/js/market-readonly-views.js',
+      'dashboards/canonical/js/market-client-case.js',
+      'dashboards/canonical/js/market-settlement.js',
       'dashboards/canonical/team-invite.html',
       'dashboards/canonical/js/team-invite.js',
     ],
