@@ -158,9 +158,9 @@
       wrap.append(input);form.append(wrap);return input;
     };
     form.append(heading);
-    const amount=field('Montant natif','amountNative',post.budget?.native?.replace(/\\.?0+$/,'')||'','0.00');
     // Keep integer amounts intact; strip only insignificant fractional zeros.
-    amount.value=post.budget?.native?.includes('.')?post.budget.native.replace(/0+$/,'').replace(/\\.$/,''):post.budget?.native||'';
+    const native=post.budget?.native||'';
+    const amount=field('Montant natif','amountNative',native.includes('.')?native.replace(/0+$/,'').replace(/\.$/,''):native,'0.00');
     const currency=field('Devise ISO','currency',post.budget?.currency||'EUR','EUR');currency.maxLength=3;
     const reason=field('Motif de la révision','reason','','Justification');
     const submit=el(doc,'button','kmc-v7-action','Valider le budget');submit.type='submit';
@@ -170,7 +170,7 @@
     form.addEventListener('submit',async event=>{
       event.preventDefault();if(busy)return;
       const body={periodStart:model.periodStart,expectedRevision:post.budget?.revision||0,currency:currency.value.trim().toUpperCase(),amountNative:amount.value.trim().replace(',','.'),reason:reason.value.trim()};
-      if(!/^(0|[1-9][0-9]{0,13})(\\.[0-9]{1,4})?$/.test(body.amountNative)||!/^[A-Z]{3}$/.test(body.currency)||body.reason.length<3){feedback.textContent='Montant, devise ou motif invalide.';return;}
+      if(!/^(0|[1-9][0-9]{0,13})(\.[0-9]{1,4})?$/.test(body.amountNative)||!/^[A-Z]{3}$/.test(body.currency)||body.reason.length<3){feedback.textContent='Montant, devise ou motif invalide.';return;}
       const nextFingerprint=JSON.stringify(body);
       if(fingerprint!==nextFingerprint){key=null;fingerprint=nextFingerprint;}
       if(!key){if(typeof globalThis.crypto?.randomUUID!=='function'){feedback.textContent='Identifiant de requête indisponible.';return;}key=globalThis.crypto.randomUUID();}
