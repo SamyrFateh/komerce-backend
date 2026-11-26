@@ -39,8 +39,7 @@
  *     désigne que le libellé du log, jamais la valeur stockée).
  */
 (function bootMarketLocalOffer(global) {
-  const root = global.document && global.document.getElementById('market-autonomy-root');
-  if (!root) return;
+  function createInstance(root, { embedded = false, selectedMarket = null } = {}) {
 
   let mounting = false;
 
@@ -73,12 +72,14 @@
   }
 
   function marketFromContext(context) {
-    const access = context && context.access || {};
-    const allowed = Array.isArray(access.allowedMarkets) ? access.allowedMarkets : [];
-    const requested = new URL(global.location.href).searchParams.get('market');
-    if (requested && allowed.includes(requested.toUpperCase())) return requested.toUpperCase();
-    if (access.defaultMarket && allowed.includes(access.defaultMarket)) return access.defaultMarket;
-    return allowed[0] || null;
+    const contract = global.KomerceAdminContext;
+    if (!contract || typeof contract.resolveExplicitMarket !== 'function') {
+      throw new Error('CANONICAL_MARKET_CONTEXT_UNAVAILABLE');
+    }
+    const search = embedded && selectedMarket != null
+      ? '?market=' + encodeURIComponent(selectedMarket)
+      : global.location.search;
+    return contract.resolveExplicitMarket(context, search).marketCode;
   }
 
   function pill(value, active = false) {
@@ -133,8 +134,11 @@
       if (error.status !== 403) section.appendChild(el('div', 'kmc-team-empty', `${error.message}${error.code ? ` · ${error.code}` : ''}`));
       return;
     }
+    const canManage = data.can_manage === true;
     section.appendChild(el('h3', 'kmc-section-title', 'Stock local'));
-    section.appendChild(el('p', 'kmc-workspace-note', 'Déclarer une réception : la quantité s’ajoute au stock du marché. Le relais, le justificatif et la quantité sont tracés.'));
+    section.appendChild(el('p', 'kmc-workspace-note', canManage
+      ? 'Déclarer une réception : la quantité s’ajoute au stock du marché. Le relais, le justificatif et la quantité sont tracés.'
+      : 'Consultation du stock de ce marché. Les réceptions et l’exposition restent réservées au responsable habilité.'));
     const list = el('div', 'kmc-team-list');
     if (!(data.stock || []).length) list.appendChild(el('div', 'kmc-team-empty', 'Aucun stock local déclaré pour ce Market ID.'));
     (data.stock || []).forEach((row) => {
@@ -148,6 +152,7 @@
       head.appendChild(copy);
       head.appendChild(pill(row.commercial_exposure === 'ENABLED' ? 'Exposé' : 'Masqué', row.commercial_exposure === 'ENABLED'));
       card.appendChild(head);
+      if (canManage) {
       const next = row.commercial_exposure === 'ENABLED' ? 'DISABLED' : 'ENABLED';
       const btn = el('button', 'kmc-workspace-action is-secondary', next === 'ENABLED' ? 'Exposer' : 'Masquer');
       btn.type = 'button';
@@ -160,9 +165,11 @@
         } catch (error) { global.alert(`${error.message}${error.code ? ` · ${error.code}` : ''}`); btn.disabled = false; }
       });
       card.appendChild(btn);
+      }
       list.appendChild(card);
     });
     section.appendChild(list);
+    if (!canManage) return;
 
     const form = el('form', 'kmc-team-invite');
     const field = (name, placeholder, type = 'text') => {
@@ -230,7 +237,7 @@
       // models : soit les deux réussissent, soit les deux 403 ensemble —
       // ce cas double-absent reste géré explicitement (jamais de section
       // vide affichée sans raison).
-      if (servicesError === 'absent' && offersError === 'absent') return;
+      const onlyStock = servicesError === 'absent' && offersError === 'absent';
 
       const section = el('section', 'kmc-section kmc-team-section');
       section.dataset.marketLocalOffer = '';
@@ -274,14 +281,29 @@
         section.appendChild(el('div', 'kmc-team-empty', `${offersError.message}${offersError.code ? ` · ${offersError.code}` : ''}`));
       }
 
+      const beforeStock = section.children.length;
       await appendLocalStock(section, marketCode, refresh);
+      if (onlyStock && section.children.length === beforeStock) return;
       root.appendChild(section);
     } finally {
       mounting = false;
     }
   }
 
-  const observer = new MutationObserver(() => { void mountLocalOffer(); });
-  observer.observe(root, { childList: true, attributes: true, attributeFilter: ['class'] });
-  void mountLocalOffer();
+  if (!embedded) {
+    const observer = new MutationObserver(() => { void mountLocalOffer(); });
+    observer.observe(root, { childList: true, attributes: true, attributeFilter: ['class'] });
+    void mountLocalOffer();
+  }
+  return Object.freeze({ mount: mountLocalOffer });
+  }
+
+  global.KomerceMarketLocalOffer = Object.freeze({
+    mount: ({ root, marketCode = null } = {}) => {
+      if (!root) throw new Error('market-local-offer_root_missing');
+      return createInstance(root, { embedded: true, selectedMarket: marketCode }).mount();
+    },
+  });
+  const standalone = global.document && global.document.getElementById('market-autonomy-root');
+  if (standalone) createInstance(standalone);
 })(window);

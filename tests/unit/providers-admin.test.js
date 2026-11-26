@@ -53,7 +53,7 @@ describe('Providers admin — câblage de la surface', () => {
     expect(read('public/dashboards/canonical/index.html')).toContain('/dashboards/canonical/js/providers-admin.js');
     expect(read('public/dashboards/canonical/js/canonical-client-router-v4.js')).toContain("'/admin/providers'");
     const nav = read('public/dashboards/canonical/js/navigation-policy-v4.js');
-    expect(nav).toMatch(/id: 'admin-providers', label: 'Providers', href: '\/admin\/providers', roles: \['admin', 'market_operator'\], marketCompatibilityHref: '\/dashboards\/canonical\/market-autonomy\.html#market-providers', marketCompatibilityLabel: 'Prestataires de mon marché', surfaces: \['providers-admin'\]/);
+    expect(nav).toMatch(/id: 'admin-providers', label: 'Relais & prestataires', href: '\/admin\/providers', roles: \['admin', 'market_operator'\], capabilitiesAny: \['network.read', 'provider.manage'\], surfaces: \['providers-admin'\]/);
   });
 
   test('l’avis « activer ≠ autoriser » est rendu dans le DOM', () => {

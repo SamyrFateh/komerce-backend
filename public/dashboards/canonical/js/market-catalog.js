@@ -18,8 +18,11 @@
 'use strict';
 
 (function bootMarketCatalog(global) {
-  const root = global.document && global.document.getElementById('market-catalog-root');
-  if (!root) return;
+  // Une instance par montage, y compris le stage SPA du workspace central.
+  // Aucun nouveau calcul ni writer : le module existant reste propriétaire.
+  function createInstance(root, { embedded = false } = {}) {
+  let loadSequence = 0;
+  let activeUser = null;
 
   function el(tag, className, value) {
     const node = global.document.createElement(tag);
@@ -211,6 +214,7 @@
   }
 
   function refreshNavigation(user, context) {
+    if (embedded) return; // coque canonique déjà montée par app/router
     global.KOMERCE_AUTH_USER = user;
     global.KOMERCE_CANONICAL_AUTH_USER = user;
     global.KOMERCE_CANONICAL_ADMIN_CONTEXT = context;
@@ -426,17 +430,34 @@
   }
 
   async function load() {
+    const sequence = ++loadSequence;
+    const current = () => sequence === loadSequence;
     try {
       const [user, context] = await Promise.all([
         request('/api/auth/me'),
         request('/api/admin/dashboard/context'),
       ]);
+      if (!current()) return;
+      activeUser = user;
       const explicit = explicitMarket(context);
-      // Only a focused cross-dashboard handoff needs the effective capability
-      // inventory. Generic market pages preserve their existing behavior.
-      const permittedCodes = focusedRef() ? await catalogReadableCodes() : null;
+      // La lentille canonique utilise la découverte serveur des droits
+      // également hors handoff. Jamais de repli sur le catalogue central.
+      const permittedCodes = (embedded || focusedRef()) ? await catalogReadableCodes() : null;
+      if (!current()) return;
       if (!explicit.marketCode) {
         renderMarketPrompt(explicit, permittedCodes || []);
+        if (embedded && !focusedRef()) {
+          const choices = el('div', 'kmc-market-handoff-options');
+          for (const code of explicit.allowedMarkets || []) {
+            if (!(permittedCodes || []).includes(code)) continue;
+            const link = el('a', 'kmc-workspace-action is-secondary', 'Ouvrir ' + code);
+            link.href = urlWithMarket(code);
+            link.setAttribute('data-handoff-market', code);
+            choices.appendChild(link);
+          }
+          root.appendChild(choices);
+          renderGlobalBack();
+        }
         refreshNavigation(user, context);
         return;
       }
@@ -451,6 +472,7 @@
       const priceSearch = currentUrl.searchParams.get('price_search') || '';
       const payload = await request(`/api/market-delegation/markets/${encodeURIComponent(marketCode)}/catalog/exposure?price_page=${encodeURIComponent(pricePage)}&price_search=${encodeURIComponent(priceSearch)}`);
 
+      if (!current()) return;
       root.className = 'kmc-workspace';
       root.setAttribute('data-workspace-kind', 'market-catalog');
       root.setAttribute('data-dashboard-hierarchy', 'hero-attention-primary-secondary');
@@ -458,14 +480,26 @@
       refreshNavigation(user, context);
       const header = renderHeader(payload, marketCode);
       header.setAttribute('data-dashboard-role', 'hero');
-      renderMarketSelector(context, marketCode, header);
+      const selectorContext = embedded && permittedCodes
+        ? { ...context, access: { ...context.access, allowedMarkets: context.access.allowedMarkets.filter(code => permittedCodes.includes(code)) } }
+        : context;
+      renderMarketSelector(selectorContext, marketCode, header);
+      renderGlobalBack();
       renderProductMarketFocus(payload, marketCode);
       // One principal surface: the market pricing catalogue owns both price
       // and exposure decisions. The old dashboard strips remain as safe fallback.
       if (!global.KomerceMarketCatalogPricingList) renderDecisionOverview(payload);
       renderReadyToSell(payload, marketCode);
       if (!global.KomerceMarketCatalogPricingList) renderExposure(payload, marketCode);
+      if (embedded && global.KomerceMarketLocalOffer?.mount) {
+        const offers = el('div', 'kmc-workspace');
+        offers.setAttribute('data-market-domain-module', 'local-offer');
+        root.appendChild(offers);
+        await global.KomerceMarketLocalOffer.mount({root: offers, marketCode});
+        if (!offers.children.length) offers.remove();
+      }
     } catch (error) {
+      if (!current()) return;
       if (error.status === 401) {
         global.location.replace('/login.html?next=' + encodeURIComponent(global.location.pathname + global.location.search));
         return;
@@ -489,6 +523,28 @@
     }
   }
 
-  global.KomerceMarketCatalog = Object.freeze({ marketFromContext, load });
-  load();
+  function renderGlobalBack() {
+    if (!embedded || activeUser?.role !== 'admin') return;
+    const link = el('a', 'kmc-workspace-action is-secondary', 'Catalogue global');
+    link.href = '/admin/workspaces/catalog';
+    link.setAttribute('data-catalog-global-link', '');
+    root.appendChild(link);
+  }
+
+  return Object.freeze({ marketFromContext, load });
+  }
+
+  const standalone = global.document && global.document.getElementById('market-catalog-root');
+  const instance = standalone ? createInstance(standalone) : null;
+  global.KomerceMarketCatalog = Object.freeze({
+    ...(instance || {}),
+    mount: ({root} = {}) => {
+      if (!root) throw new Error('market_catalog_root_missing');
+      const host = global.document.createElement('div');
+      host.id = 'market-catalog-root'; // existing CSS and feature selectors
+      root.replaceChildren(host);
+      return createInstance(host, { embedded: true }).load();
+    },
+  });
+  if (instance) instance.load();
 })(globalThis);

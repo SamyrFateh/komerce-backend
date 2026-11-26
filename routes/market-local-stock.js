@@ -47,7 +47,12 @@ router.get('/:marketCode/local-stock', authenticate, async (req, res, next) => {
       actorUserId: req.user.id, actorRole: req.user.role, marketCode: req.params.marketCode,
     }));
     res.set('Cache-Control', 'private, no-store');
-    res.json({ market: { code: out.authz.market_code }, stock: out.stock, relais: out.relais });
+    // The read service already proved local_offer.manage for non-admins.
+    // The central admin branch is strictly GET-only.
+    res.json({
+      market: { code: out.authz.market_code }, stock: out.stock, relais: out.relais,
+      can_manage: req.user.role !== 'admin',
+    });
   } catch (e) { if (!sendError(res, e)) next(e); }
 });
 

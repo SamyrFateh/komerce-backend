@@ -196,7 +196,7 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=261108-quality-freeze-1');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261121-hub-media-1');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261126-canon-market-4');
   expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261126-hub-workshops-c1');
 });
 
@@ -253,7 +253,7 @@ test('Catalogue conserve un relais visible vers la décision marché après publ
   const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
   expect(workspace).toContain('Suite commerciale');
   expect(workspace).toContain('Publication Catalogue terminée · décision commerciale marché encore requise.');
-  expect(workspace).toContain('/dashboards/canonical/market-catalog.html?');
+  expect(workspace).toContain('/admin/workspaces/catalog?lens=market&');
   expect(workspace).toContain('product_ref');
 });
 
@@ -328,7 +328,7 @@ test('la vue business lit uniquement le Workspace Catalogue canonique', () => {
 test('Catalogue global : les décisions commerciales sont dirigées vers Catalogue pays', () => {
   const workspace=read('public/dashboards/canonical/js/catalog-workspace.js');
   expect(workspace).toContain('Décisions marchés');
-  expect(workspace).toContain('/dashboards/canonical/market-catalog.html?product_ref=');
+  expect(workspace).toContain('/admin/workspaces/catalog?lens=market&product_ref=');
   expect(workspace).not.toContain('function renderApproval(');
 });
 

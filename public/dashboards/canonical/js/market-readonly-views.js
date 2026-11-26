@@ -25,8 +25,7 @@
  * c'est l'unité comptable de la plateforme, pas la devise locale du Market.
  */
 (function bootMarketReadonlyViews(global) {
-  const root = global.document && global.document.getElementById('market-autonomy-root');
-  if (!root) return;
+  function createInstance(root, { embedded = false, selectedMarket = null, viewKeys = null } = {}) {
 
   const mounting = new Set();
   const denied = new Set();
@@ -59,12 +58,14 @@
   }
 
   function marketFromContext(context) {
-    const access = context && context.access || {};
-    const allowed = Array.isArray(access.allowedMarkets) ? access.allowedMarkets : [];
-    const requested = new URL(global.location.href).searchParams.get('market');
-    if (requested && allowed.includes(requested.toUpperCase())) return requested.toUpperCase();
-    if (access.defaultMarket && allowed.includes(access.defaultMarket)) return access.defaultMarket;
-    return allowed[0] || null;
+    const contract = global.KomerceAdminContext;
+    if (!contract || typeof contract.resolveExplicitMarket !== 'function') {
+      throw new Error('CANONICAL_MARKET_CONTEXT_UNAVAILABLE');
+    }
+    const search = embedded && selectedMarket != null
+      ? '?market=' + encodeURIComponent(selectedMarket)
+      : global.location.search;
+    return contract.resolveExplicitMarket(context, search).marketCode;
   }
 
   function pill(value, active = false) {
@@ -199,11 +200,18 @@
     section.appendChild(list);
   }
 
+  function renderMarketConfig(section, data) {
+    section.appendChild(row('Marché', dash(data.market_code)));
+    section.appendChild(row('Libellé', dash(data.name)));
+    section.appendChild(row('Ouverture', day(data.created_at)));
+  }
+
   const VIEWS = Object.freeze([
     { key: 'performance', title: 'Performance économique', path: 'performance', render: renderPerformance },
     { key: 'cost-statement', title: 'Relevé de coûts', path: 'cost-statement', render: renderCostStatement },
     { key: 'customs', title: 'Douane et expéditions', path: 'customs-shipments', render: renderCustoms },
     { key: 'payment-accounts', title: 'Comptes de paiement', path: 'payment-accounts', render: renderPaymentAccounts },
+    { key: 'market-config', title: 'Référentiel du marché', path: 'config', render: renderMarketConfig },
   ]);
 
   async function mountView(view) {
@@ -229,9 +237,24 @@
     }
   }
 
-  function mountAll() { VIEWS.forEach(view => { void mountView(view); }); }
+  function mountAll() {
+    const views = viewKeys ? VIEWS.filter(view => viewKeys.includes(view.key)) : VIEWS.filter(view => view.key !== 'market-config');
+    return Promise.all(views.map(view => mountView(view)));
+  }
+  if (!embedded) {
+    const observer = new MutationObserver(() => { void mountAll(); });
+    observer.observe(root, { childList: true, attributes: true, attributeFilter: ['class'] });
+    void mountAll();
+  }
+  return Object.freeze({ mount: mountAll });
+  }
 
-  const observer = new MutationObserver(mountAll);
-  observer.observe(root, { childList: true, attributes: true, attributeFilter: ['class'] });
-  mountAll();
+  global.KomerceMarketReadonlyViews = Object.freeze({
+    mount: ({ root, marketCode = null, viewKeys = [] } = {}) => {
+      if (!root) throw new Error('market_readonly_root_missing');
+      return createInstance(root, { embedded: true, selectedMarket: marketCode, viewKeys }).mount();
+    },
+  });
+  const standalone = global.document && global.document.getElementById('market-autonomy-root');
+  if (standalone) createInstance(standalone);
 })(window);

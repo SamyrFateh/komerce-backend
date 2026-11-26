@@ -19,8 +19,7 @@
 'use strict';
 
 (function bootMarketAutonomy(global) {
-  const root = global.document && global.document.getElementById('market-autonomy-root');
-  if (!root) return;
+  function createInstance(root, { embedded = false, selectedMarket = null } = {}) {
 
   function el(tag, className, value) {
     const node = global.document.createElement(tag);
@@ -67,7 +66,7 @@
   function explicitMarket(context) {
     const contract = global.KomerceAdminContext;
     if (!contract || typeof contract.resolveExplicitMarket !== 'function') throw new Error('Contrat de contexte marché indisponible.');
-    return contract.resolveExplicitMarket(context, global.location.search);
+    return contract.resolveExplicitMarket(context, embedded ? '?market=' + encodeURIComponent(selectedMarket || '') : global.location.search);
   }
 
   function marketFromContext(context) {
@@ -166,7 +165,7 @@
     section.appendChild(el('h2', 'kmc-section-title', 'Prix des produits'));
     section.appendChild(el('p', 'kmc-workspace-note', 'Définissez le prix de vente sur ce marché. Le prix global reste inchangé.'));
     const catalog = el('a', 'kmc-autonomy-catalog-link', 'Gérer les produits en vente');
-    catalog.href = '/dashboards/canonical/market-catalog.html?market=' + encodeURIComponent(marketCode);
+    catalog.href = '/admin/workspaces/catalog?market=' + encodeURIComponent(marketCode);
     section.appendChild(catalog);
 
     const toolbar = el('div', 'kmc-autonomy-toolbar');
@@ -375,7 +374,7 @@
     try {
       const context = await request('/api/admin/dashboard/context');
       const explicit = explicitMarket(context);
-      if (!explicit.marketCode) { renderMarketPrompt(explicit); return; }
+      if (!explicit.marketCode) { if (!embedded) renderMarketPrompt(explicit); return; }
       const marketCode = explicit.marketCode;
       const [workspace, prices] = await Promise.all([
         request(`/api/admin/workspaces/pricing/market/${encodeURIComponent(marketCode)}`),
@@ -384,11 +383,19 @@
 
       root.className = 'kmc-workspace';
       root.replaceChildren();
-      renderHeader(context, marketCode, workspace);
-      renderCapabilities(workspace);
+      if (embedded) {
+        const status = el('div', 'kmc-workspace-feedback', '');
+        status.dataset.autonomyFeedback = '';
+        status.setAttribute('role', 'status');
+        root.appendChild(status);
+      } else {
+        renderHeader(context, marketCode, workspace);
+        renderCapabilities(workspace);
+      }
       renderPrices(marketCode, workspace, prices);
     } catch (error) {
-      if (await renderAuthorizedNetworkOnly(error)) return;
+      if (embedded && error.status === 403) { root.replaceChildren(); return; }
+      if (!embedded && await renderAuthorizedNetworkOnly(error)) return;
       root.className = 'canonical-boot';
       root.replaceChildren();
       root.appendChild(el('p', 'canonical-eyebrow', 'KOMERCE · AUTONOMIE PAYS'));
@@ -411,15 +418,28 @@
     return true;
   }
 
-  const anchorObserver = typeof global.MutationObserver === 'function'
+  const anchorObserver = !embedded && typeof global.MutationObserver === 'function'
     ? new global.MutationObserver(() => {
       if (scrollToRequestedSection()) anchorObserver.disconnect();
     })
     : null;
   anchorObserver?.observe(root, { childList: true, subtree: true });
-  global.addEventListener?.('hashchange', () => {
+  if (!embedded) global.addEventListener?.('hashchange', () => {
     if (!scrollToRequestedSection()) anchorObserver?.observe(root, { childList: true, subtree: true });
   });
 
-  load();
+  return Object.freeze({ mount: load });
+  }
+  global.KomerceMarketLocalPrices = Object.freeze({
+    mount: ({ root, marketCode } = {}) => {
+      if (!root || !marketCode) throw new Error('market_local_prices_scope_required');
+      const host = global.document.createElement('div');
+      host.id = 'market-autonomy-root'; // reuse price editor styles and selectors
+      root.replaceChildren(host);
+      return createInstance(host, { embedded: true, selectedMarket: marketCode }).mount()
+        .then(() => { if (!host.children.length) host.remove(); });
+    },
+  });
+  const standalone = global.document && global.document.getElementById('market-autonomy-root');
+  if (standalone) createInstance(standalone).mount();
 })(globalThis);
