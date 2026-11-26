@@ -44,3 +44,28 @@ describe('purchasing-grouped-service — dossiers mono-marché', () => {
     expect(query).toHaveBeenCalledTimes(1);
   });
 });
+
+
+describe('P0 éligibilité achat commercial / remplacement SAV',()=>{
+ const guard=grouped.shared.assertCommercialPurchaseItem;
+ const nominal={fulfillment_source:'IMPORT',order_status:'ordered',payment_status:'paid'};
+ test('IMPORT payé accepté, aucun oracle SAV requis',async()=>{
+   const q={query:jest.fn()};
+   await expect(guard(q,nominal)).resolves.toBeUndefined();
+   expect(q.query).not.toHaveBeenCalled();
+ });
+ test.each(['pending','failed','partially_paid','refunded',null])('paiement %s refusé',async payment_status=>{
+   await expect(guard({query:jest.fn()},{...nominal,payment_status})).rejects.toMatchObject({status:409,code:'ORDER_PAYMENT_NOT_CONFIRMED'});
+ });
+ test('LOCAL_STOCK et commande annulée refusés même payés',async()=>{
+   await expect(guard({}, {...nominal,fulfillment_source:'LOCAL_STOCK'})).rejects.toMatchObject({code:'ORDER_ITEM_LOCAL_STOCK'});
+   await expect(guard({}, {...nominal,order_status:'cancelled'})).rejects.toMatchObject({code:'ORDER_CANCELLED'});
+ });
+ test('SAV : ni mode seul ni paiement artificiel ne remplacent les preuves',async()=>{
+   const row={...nominal,payment_status:'pending',payment_mode:'sav_replacement',commercial_order_id:'replacement',commercial_item_id:'item'};
+   const q={query:jest.fn().mockResolvedValueOnce({rows:[]}).mockResolvedValueOnce({rows:[{id:'compensation'}]})};
+   await expect(guard(q,row)).rejects.toMatchObject({code:'PURCHASE_SAV_PROOF_REQUIRED'});
+   await expect(guard(q,row)).resolves.toBeUndefined();
+   expect(q.query).toHaveBeenLastCalledWith(expect.stringContaining("replacement.replacement_source_item_id=origin.id"),['replacement','item']);
+ });
+});

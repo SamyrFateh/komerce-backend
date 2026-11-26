@@ -1,12 +1,14 @@
 'use strict';
 /** @test-kind integration @test-runner jest @test-requires postgres
  * ECO disposable database proof. Committed immutable fixtures are necessary for
- * real HTTP requests on separate connections. Run ONLY on dedicated CI postgres
- * container with explicit opt-in; no trigger disable, reset, or shared database.
+ * real HTTP requests on separate connections. The runner must provision a
+ * disposable database, either the CI container or a named loopback cluster.
  */
 const request=require('supertest');
 const {createMarketDelegationFixture,makeApp}=require('../helpers/marketDelegationE2EKit');
 const {reviseBudget}=require('../../services/economic-cost-budget-service');
+const {loadComparableSaleShipments}=require('../../services/cost-allocation/product-margin-steering');
+const {findWithdrawnSkuRail,sweepSkuRailWithdrawals}=require('../../services/economic-sku-rail-selection');
 const crypto=require('crypto');
 const {recordStructureCostEvent}=require('../../services/pricing-period-structure');
 const url=process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL) : null;
@@ -85,10 +87,13 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
   const endpoint=code=>mount+(code?'/market/'+code:'')+'/cost-centers';
   const get=(actor,code,period=month)=>request(app).get(endpoint(code)).query({periodStart:period}).set('Authorization',actor.token);
   beforeAll(async()=>{
-    if(process.env.GITHUB_ACTIONS!=='true'||!url||url.hostname!=='localhost'||url.pathname!=='/komerce_test'||process.env.NODE_ENV!=='test')
-      throw new Error('Refusing committed ECO fixtures outside disposable CI postgres');
-    const pin=(await q('SELECT current_database() AS name')).rows[0].name;
-    if(pin!=='komerce_test')throw new Error('Unexpected database');
+    const ci = process.env.GITHUB_ACTIONS === 'true' && url?.hostname === 'localhost';
+    const local = process.env.ECO_LOCAL_PG_PROOF === '1' && url?.hostname === '127.0.0.1' && url.port === '55433';
+    if ((!ci && !local) || url?.pathname !== '/komerce_test' || process.env.NODE_ENV !== 'test')
+      throw new Error('Refusing committed ECO fixtures outside disposable PostgreSQL');
+    const { name, cluster } = (await q("SELECT current_database() AS name, current_setting('cluster_name') AS cluster")).rows[0];
+    if (name !== 'komerce_test' || (local && cluster !== 'komerce_eco_disposable'))
+      throw new Error('Unexpected ECO proof cluster');
     fx=await createMarketDelegationFixture(db);
     await q("INSERT INTO pricing_global_access_grants(user_id,reason) VALUES ($1,'ECO isolated CI') ON CONFLICT DO NOTHING",[fx.central.id]);
     app=makeApp([{mount,modulePath:'../../routes/admin-pricing-workspace'}]);
@@ -155,12 +160,17 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect((await get(fx.viewerA,null)).status).toBe(403);
     expect((await get(fx.outsider,fx.marketA.code)).status).toBe(403);
   });
-  test('central group excludes both local markets and period with no budget stays null',async()=>{
+  test('central group keeps central centers and consolidates market activity',async()=>{
     const result=await get(fx.central,null);expect(result.status).toBe(200);
     expect(result.body.centers.map(c=>c.id)).toContain(g.center);
     expect(result.body.centers.map(c=>c.id)).not.toContain(a.center);
     expect(result.body.structureEvidence.amountKmf).toBeNull();
-    expect(result.body.activity).toBeNull();
+    expect(result.body.profitability.structureCoverage).toMatchObject({
+      status:'GROUP_PERIOD_TRUTH_AVAILABLE',evidenceCount:2,groupSharedKmf:0,marketDirectKmf:2050.85,recognizedKmf:2050.85,
+    });
+    expect(result.body.activity.scopeCoverage).toBe('ALL_MARKETS_NON_SIMULATED');
+    expect(result.body.activity.shipments.map(s=>s.reference)).toContain(activityRefs.foreign);
+    expect(result.body.profitability.salesEvidence).toMatchObject({scope:'ALL_MARKETS_NON_SIMULATED',decisional:false});
     const next=await get(fx.central,fx.marketA.code,'2026-02-01');
     expect(next.status).toBe(200);
     expect(next.body.posts.find(p=>p.id===a.post)).toMatchObject({budget:null,commitments:[],actual:null});
@@ -298,10 +308,130 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     const owner={kind:'RESPONSIBLE',centerId,responsibleUserId:fx.managerA.id,expectedResponsibleUserId:null,reason:'CI owner'};
     expect((await post(fx.central,fx.marketA.code,{...owner,responsibleUserId:fx.managerB.id})).status).toBe(403);
     expect((await post(fx.central,fx.marketA.code,owner)).status).toBe(201);
+    const staleRemoval={...owner,responsibleUserId:null,reason:'CI concurrent removal'};
+    expect((await post(fx.central,fx.marketA.code,staleRemoval)).status).toBe(409);
     const model=(await get(fx.managerA,fx.marketA.code)).body;
     expect(model.centers.find(c=>c.id===centerId)).toMatchObject({responsible_user_id:fx.managerA.id,is_active:true});
     expect(model.responsibleCandidates.some(x=>x.id===fx.managerB.id)).toBe(false);
   });
+  test('documented activity stays isolated across the five reference markets', async () => {
+    const currencies = { KM: 'KMF', CM: 'XAF', CG: 'XAF', DJ: 'DJF', YT: 'EUR' };
+    const { rows: markets } = await q(
+      'SELECT id, code, currency, is_active FROM markets WHERE code=ANY($1::text[]) ORDER BY code',
+      [Object.keys(currencies)],
+    );
+    expect(Object.fromEntries(markets.map(({ code, currency }) => [code, currency]))).toEqual(currencies);
+    const references = new Map();
+    for (const market of markets) references.set(market.code, await seedActivity(market, market.code));
+
+    for (const market of markets) {
+      const response = await get(fx.central, market.code);
+      if (!market.is_active) {
+        expect(response.status).toBe(404);
+        continue;
+      }
+      expect(response.status).toBe(200);
+      expect(response.body.marketCode).toBe(market.code);
+      expect(response.body.activity.shipments.map(({ reference }) => reference).filter((reference) => reference.startsWith(tag)))
+        .toEqual([references.get(market.code)]);
+      expect(response.body.activity.purchaseTransportObservation.coefficient).toBe('1.1310');
+    }
+
+    const group = await get(fx.central, null);
+    expect(group.status).toBe(200);
+    const groupRefs = group.body.activity.shipments.map(({ reference }) => reference);
+    expect(groupRefs).toEqual(expect.arrayContaining([...references.values()]));
+    expect((await q("SELECT is_active FROM markets WHERE code='DJ'")).rows[0].is_active).toBe(false);
+  });
+
+  test('after-sale scope retains financially closed, nonsimulated shipments only', async () => {
+    const { rows } = await q(
+      'SELECT oi.id AS order_item_id, o.reference FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE o.reference=ANY($1::text[])',
+      [Object.values(activityRefs)],
+    );
+    const lines = rows.map((line) => ({ ...line, result: { reconciled_after_sale_margin_kmf: -10 } }));
+    const scoped = await loadComparableSaleShipments(fx.marketA.id, lines);
+    const closedLine = rows.find(({ reference }) => reference === activityRefs.closed);
+    expect([...scoped.keys()]).toEqual([closedLine.order_item_id]);
+    expect(scoped.get(closedLine.order_item_id)).toMatchObject({ rail: 'sea', sku_line_count: 1 });
+  });
+
+  test('buyer lookup applies a withdrawal and restore to the exact SKU, market and rail', async () => {
+    const { rows: [{ sku_id: skuId }] } = await q(
+      'SELECT oi.sku_id FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE o.reference=$1',
+      [activityRefs.closed],
+    );
+    const event = (action) => q(
+      `INSERT INTO economic_sku_rail_selection_events
+        (market_id,sku_id,rail,action,policy_version,evidence,reason,actor_id)
+       VALUES ($1,$2,'SEA_STANDARD',$3,$4,'{}','CI selection fixture',$5)`,
+      [fx.marketA.id, skuId, action, tag, fx.central.id],
+    );
+    const sea = [{ skuId, rail: 'SEA_STANDARD' }];
+    await event('WITHDRAW');
+    expect(await findWithdrawnSkuRail(db, fx.marketA.id, sea)).toEqual({ sku_id: skuId, rail: 'SEA_STANDARD' });
+    expect(await findWithdrawnSkuRail(db, fx.marketB.id, sea)).toBeNull();
+    expect(await findWithdrawnSkuRail(db, fx.marketA.id, [{ skuId, rail: 'AIR_EXPRESS' }])).toBeNull();
+    await expect(q('DELETE FROM economic_sku_rail_selection_events WHERE sku_id=$1', [skuId])).rejects.toThrow(/append-only/);
+    await event('RESTORE');
+    expect(await findWithdrawnSkuRail(db, fx.marketA.id, sea)).toBeNull();
+    const policyEvent = (action, actorId) => q(
+      `INSERT INTO economic_sku_rail_selection_events
+        (market_id,sku_id,rail,action,policy_version,evidence,reason,actor_id,decision_source)
+       VALUES ($1,$2,'SEA_STANDARD',$3,$4,'{}','CI selection automation',$5,'POLICY_AUTOMATION')`,
+      [fx.marketA.id, skuId, action, tag, actorId],
+    );
+    await expect(policyEvent('WITHDRAW', fx.central.id)).rejects.toThrow(/decision_source_check/);
+    await expect(policyEvent('RESTORE', null)).rejects.toThrow(/decision_source_check/);
+    await policyEvent('WITHDRAW', null);
+    expect(await findWithdrawnSkuRail(db, fx.marketA.id, sea)).toEqual({ sku_id: skuId, rail: 'SEA_STANDARD' });
+  });
+
+  test('market family thresholds are persisted as a new policy and isolated by market', async () => {
+    const path = (code) => mount + '/market/' + code + '/decision-policy';
+    const selection_by_family = { audio: { minimum_contribution_kmf: 150, loss_observation_count: 3 } };
+    const input = {
+      version: tag + '-POLICY',
+      window_days: 30, maturity_threshold: 0.9, coverage_threshold: 1, max_disposition_ratio: 0.05,
+      source: 'CI family policy', evidence_ref: tag, rationale: 'Recette des seuils par famille',
+      selection_by_family,
+    };
+    const post = (actor, code) => request(app).post(path(code)).set('Authorization', actor.token).send(input);
+    expect((await post(fx.viewerA, fx.marketA.code)).status).toBe(403);
+    expect((await post(fx.managerA, fx.marketB.code)).status).toBe(403);
+    const created = await post(fx.managerA, fx.marketA.code);
+    expect(created.status).toBe(201);
+    expect(created.body.result.selection_by_family).toEqual(selection_by_family);
+    const history = await request(app).get(path(fx.marketA.code) + '/history').set('Authorization', fx.viewerA.token);
+    expect(history.body.policies).toContainEqual(expect.objectContaining({ version: input.version, selection_by_family }));
+    const persisted = await q(
+      'SELECT market_id, selection_by_family, recorded_by FROM pricing_market_decision_policy_events WHERE version=$1',
+      [input.version],
+    );
+    expect(persisted.rows).toEqual([{
+      market_id: fx.marketA.id, selection_by_family, recorded_by: fx.managerA.id,
+    }]);
+    await expect(sweepSkuRailWithdrawals()).resolves.toEqual({ recorded: 0, cursor: null });
+  });
+
+  test('a later charge invalidates a documented coefficient until reconciliation', async () => {
+    const { rows: [{ id }] } = await q(
+      'SELECT id FROM international_shipments WHERE reference=$1', [activityRefs.closed],
+    );
+    await q(
+      `INSERT INTO international_shipment_charges
+         (shipment_id,fee_type,kind,amount_kmf,proof_ref,idempotency_key,actor_id,recorded_at)
+       SELECT shipment_id,'local_transport','charge',10,$2,$2,$3,reconciled_at + interval '1 second'
+         FROM international_n1_reconciliations WHERE shipment_id=$1`,
+      [id, tag + '-LATE', fx.central.id],
+    );
+    const response = await get(fx.central, fx.marketA.code);
+    expect(response.status).toBe(200);
+    expect(response.body.activity.shipments.find(({ reference }) => reference === activityRefs.closed))
+      .toMatchObject({ financialStatus: 'PENDING_RECONCILIATION', documentedTransportKmf: null });
+    expect(response.body.profitability.ranges.month).toMatchObject({ coefficient: null, observations: 0 });
+  });
+
   test('browser authority injection and invalid period rejected',async()=>{
     expect((await request(app).get(endpoint(fx.marketA.code)).query({periodStart:month,market_id:fx.marketB.id}).set('Authorization',fx.viewerA.token)).status).toBe(400);
     expect((await get(fx.central,fx.marketA.code,'2026-01-02')).status).toBe(400);

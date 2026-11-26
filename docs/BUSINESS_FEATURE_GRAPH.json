@@ -8671,6 +8671,48 @@
       {
         "feature": "economic-engine",
         "category": "services",
+        "declared": "services/economic-cost-center-read-model.js",
+        "resolvedPath": "services/economic-cost-center-read-model.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
+        "declared": "services/economic-cost-budget-service.js",
+        "resolvedPath": "services/economic-cost-budget-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
+        "declared": "services/economic-cost-commitment-service.js",
+        "resolvedPath": "services/economic-cost-commitment-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
+        "declared": "services/economic-cost-post-actual-service.js",
+        "resolvedPath": "services/economic-cost-post-actual-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
+        "declared": "services/economic-cost-reference-service.js",
+        "resolvedPath": "services/economic-cost-reference-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
+        "declared": "services/economic-cost-write-authority.js",
+        "resolvedPath": "services/economic-cost-write-authority.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
         "declared": "services/pricing-apply.js",
         "resolvedPath": "services/pricing-apply.js",
         "status": "resolved-in-technical-graph"
@@ -8827,6 +8869,13 @@
         "category": "services",
         "declared": "services/cost-allocation/product-margin-steering.js",
         "resolvedPath": "services/cost-allocation/product-margin-steering.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
+        "declared": "services/economic-sku-rail-selection.js",
+        "resolvedPath": "services/economic-sku-rail-selection.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -9154,6 +9203,48 @@
       {
         "feature": "economic-engine",
         "category": "migrations",
+        "declared": "migrations/432_economic_cost_commitments.sql",
+        "resolvedPath": "migrations/432_economic_cost_commitments.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/433_market_economic_selection_policy.sql",
+        "resolvedPath": "migrations/433_market_economic_selection_policy.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/434_economic_sku_rail_selection_events.sql",
+        "resolvedPath": "migrations/434_economic_sku_rail_selection_events.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/435_economic_selection_decision_source.sql",
+        "resolvedPath": "migrations/435_economic_selection_decision_source.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/431_economic_cost_budget_revisions.sql",
+        "resolvedPath": "migrations/431_economic_cost_budget_revisions.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/430_economic_cost_center_reference.sql",
+        "resolvedPath": "migrations/430_economic_cost_center_reference.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "migrations",
         "declared": "migrations/235_sourcing_pln_rate.sql",
         "resolvedPath": "migrations/235_sourcing_pln_rate.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -9434,6 +9525,48 @@
       {
         "feature": "economic-engine",
         "category": "tests",
+        "declared": "tests/integration/economic-cost-center-api-postgres.test.js",
+        "resolvedPath": "tests/integration/economic-cost-center-api-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/economic-cost-center-read-model.test.js",
+        "resolvedPath": "tests/unit/economic-cost-center-read-model.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/economic-cost-budget-service.test.js",
+        "resolvedPath": "tests/unit/economic-cost-budget-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/integration/economic-cost-commitments-postgres.test.js",
+        "resolvedPath": "tests/integration/economic-cost-commitments-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/integration/economic-cost-budget-revisions-postgres.test.js",
+        "resolvedPath": "tests/integration/economic-cost-budget-revisions-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/integration/economic-cost-center-reference-postgres.test.js",
+        "resolvedPath": "tests/integration/economic-cost-center-reference-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
         "declared": "tests/integration/txg01-pricing-matrices.test.js",
         "resolvedPath": "tests/integration/txg01-pricing-matrices.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -9625,6 +9758,13 @@
         "category": "tests",
         "declared": "tests/unit/product-margin-steering.test.js",
         "resolvedPath": "tests/unit/product-margin-steering.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/economic-sku-rail-selection.test.js",
+        "resolvedPath": "tests/unit/economic-sku-rail-selection.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -13825,14 +13965,14 @@
         "category": "services",
         "declared": "services/hub-reception-quality-plan.js",
         "resolvedPath": "services/hub-reception-quality-plan.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "logistics",
         "category": "services",
         "declared": "services/hub-supplier-receipt-quality.js",
         "resolvedPath": "services/hub-supplier-receipt-quality.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "logistics",
@@ -13846,7 +13986,7 @@
         "category": "services",
         "declared": "services/hub-combox-destination-guard.js",
         "resolvedPath": "services/hub-combox-destination-guard.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "logistics",
@@ -15519,6 +15659,20 @@
         "category": "dash",
         "declared": "dashboards/canonical/js/market-readonly-views.js",
         "resolvedPath": "public/dashboards/canonical/js/market-readonly-views.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/market-client-case.js",
+        "resolvedPath": "public/dashboards/canonical/js/market-client-case.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/market-settlement.js",
+        "resolvedPath": "public/dashboards/canonical/js/market-settlement.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -24485,6 +24639,142 @@
         "entry": "GET /api/admin/workspaces/pricing/market/:marketCode",
         "method": "GET",
         "path": "/api/admin/workspaces/pricing/market/{id}",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "GET /api/admin/workspaces/pricing/market/:marketCode/cost-centers",
+        "method": "GET",
+        "path": "/api/admin/workspaces/pricing/market/{id}/cost-centers",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "GET /api/admin/workspaces/pricing/cost-centers",
+        "method": "GET",
+        "path": "/api/admin/workspaces/pricing/cost-centers",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/market/:marketCode/cost-centers/posts/:postId/budget-revisions",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/market/{id}/cost-centers/posts/{id}/budget-revisions",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/cost-centers/posts/:postId/budget-revisions",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/cost-centers/posts/{id}/budget-revisions",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/cost-centers/posts/:postId/actuals",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/cost-centers/posts/{id}/actuals",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/cost-centers/families/:familyId/posts",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/cost-centers/families/{id}/posts",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/cost-centers/initialize",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/cost-centers/initialize",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/cost-centers/references",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/cost-centers/references",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/costing/products/:productId/sku-rail-selection",
+        "method": "POST",
+        "path": "/api/admin/costing/products/{id}/sku-rail-selection",
+        "routeFile": "routes/admin-costing.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/market/:marketCode/cost-centers/references",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/market/{id}/cost-centers/references",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/market/:marketCode/cost-centers/initialize",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/market/{id}/cost-centers/initialize",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/market/:marketCode/cost-centers/families/:familyId/posts",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/market/{id}/cost-centers/families/{id}/posts",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/market/:marketCode/cost-centers/posts/:postId/actuals",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/market/{id}/cost-centers/posts/{id}/actuals",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/cost-centers/posts/:postId/commitments",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/cost-centers/posts/{id}/commitments",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/cost-centers/commitments/:commitmentId/movements",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/cost-centers/commitments/{id}/movements",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/market/:marketCode/cost-centers/posts/:postId/commitments",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/market/{id}/cost-centers/posts/{id}/commitments",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/market/:marketCode/cost-centers/commitments/:commitmentId/movements",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/market/{id}/cost-centers/commitments/{id}/movements",
         "routeFile": "routes/admin-pricing-workspace.js",
         "status": "resolved-owned"
       },
@@ -39366,6 +39656,26 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/economic-cost-center-read-model.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/economic-cost-budget-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/economic-cost-commitment-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/economic-cost-post-actual-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/economic-cost-reference-service.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/pricing-apply.js",
                 "targetFile": "db.js"
               },
@@ -39451,6 +39761,10 @@
               },
               {
                 "sourceFileId": "services/cost-allocation/product-margin-steering.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/economic-sku-rail-selection.js",
                 "targetFile": "db.js"
               },
               {
@@ -39626,6 +39940,22 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/integration/economic-cost-center-api-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/economic-cost-commitments-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/economic-cost-budget-revisions-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/economic-cost-center-reference-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/integration/txg02-pricing-strategy-service.test.js",
                 "targetFile": "db.js"
               },
@@ -39655,6 +39985,10 @@
               },
               {
                 "sourceFileId": "tests/integration/financial-journal-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/economic-sku-rail-selection.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -39915,6 +40249,22 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/economic-cost-center-read-model.js",
+                "targetFile": "services/fx-authority.js"
+              },
+              {
+                "sourceFileId": "services/economic-cost-budget-service.js",
+                "targetFile": "services/fx-authority.js"
+              },
+              {
+                "sourceFileId": "services/economic-cost-commitment-service.js",
+                "targetFile": "services/fx-authority.js"
+              },
+              {
+                "sourceFileId": "services/economic-cost-post-actual-service.js",
+                "targetFile": "services/fx-authority.js"
+              },
+              {
                 "sourceFileId": "services/pricing-recommend.js",
                 "targetFile": "services/fx-engine-rates.js"
               },
@@ -39990,6 +40340,18 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "services/economic-cost-center-read-model.js",
+                "targetFile": "services/market-delegation-service.js"
+              },
+              {
+                "sourceFileId": "services/economic-cost-reference-service.js",
+                "targetFile": "services/market-delegation-service.js"
+              },
+              {
+                "sourceFileId": "services/economic-cost-write-authority.js",
+                "targetFile": "services/market-delegation-service.js"
+              },
               {
                 "sourceFileId": "routes/admin-pricing-workspace.js",
                 "targetFile": "middleware/require-market-delegated-capability.js"
@@ -40552,6 +40914,10 @@
               {
                 "sourceFileId": "bootstrap/crons.js",
                 "targetFile": "services/financial-journal-projectors.js"
+              },
+              {
+                "sourceFileId": "bootstrap/crons.js",
+                "targetFile": "services/economic-sku-rail-selection.js"
               }
             ]
           }
@@ -42531,6 +42897,10 @@
                 "targetFile": "services/relay-return-compensation-service.js"
               },
               {
+                "sourceFileId": "tests/integration/relay-return-intake-postgres.test.js",
+                "targetFile": "services/sav-replacement-order.js"
+              },
+              {
                 "sourceFileId": "tests/unit/order-physical-coverage-gate.test.js",
                 "targetFile": "services/order-status-machine.js"
               },
@@ -42675,6 +43045,10 @@
               {
                 "sourceFileId": "tests/integration/hub-physical-proof-postgres.test.js",
                 "targetFile": "services/purchasing-engagement-service.js"
+              },
+              {
+                "sourceFileId": "tests/integration/relay-return-intake-postgres.test.js",
+                "targetFile": "services/purchasing-trigger-service.js"
               }
             ]
           },
@@ -43214,6 +43588,10 @@
               {
                 "sourceFileId": "tests/integration/market-local-price-state-transition-real-db.test.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-commercial-price-service.test.js",
+                "targetFile": "db.js"
               }
             ]
           }
@@ -43355,6 +43733,10 @@
               {
                 "sourceFileId": "services/central-authority.js",
                 "targetFile": "middleware/require-pricing-global-authority.js"
+              },
+              {
+                "sourceFileId": "services/market-provisioning-service.js",
+                "targetFile": "services/economic-cost-reference-service.js"
               }
             ]
           }
@@ -44890,6 +45272,10 @@
               {
                 "sourceFileId": "services/order-checkout-service.js",
                 "targetFile": "services/transport-pricing.js"
+              },
+              {
+                "sourceFileId": "services/order-checkout-service.js",
+                "targetFile": "services/economic-sku-rail-selection.js"
               },
               {
                 "sourceFileId": "services/public-cart-quote-service.js",
@@ -50648,7 +51034,7 @@
             "evidence": [
               {
                 "sourceFileId": "routes/unsold.js",
-                "targetFile": "services/market-delegation-service.js"
+                "targetFile": "middleware/require-market-delegated-capability.js"
               }
             ]
           }
@@ -51142,7 +51528,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2407
+        "filesObserved": 2423
       },
       "boutique": {
         "filesObserved": 218,
@@ -53399,6 +53785,19 @@
       "lifecycleOwner": "economic-engine",
       "resolution": "declared-table-owner"
     },
+    "economic_sku_rail_selection_events": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
     "economic_structure_cost_events": {
       "writers": [
         {
@@ -53411,6 +53810,97 @@
       "readers": [
         "market-delegation"
       ],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
+    "economic_cost_centers": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
+    "economic_cost_families": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
+    "economic_cost_resources": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
+    "economic_cost_posts": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
+    "economic_cost_budget_revisions": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
+    "economic_cost_commitments": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
+    "economic_cost_commitment_movements": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
       "lifecycleOwner": "economic-engine",
       "resolution": "declared-table-owner"
     },
@@ -55244,8 +55734,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 725,
-        "technicalNodesOwned": 725,
+        "technicalNodesTotal": 735,
+        "technicalNodesOwned": 735,
         "technicalOrphans": 0
       },
       "dash": {

@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        timers, database_state, rules
  * @outputs       automatic_transitions, purges, reminders, incident_sla_escalations, continuous_decision_signals
- * @depends       services/fx-public-reference-feed.js, services/outbox-worker.js, services/cash-reminder-service.js, services/inventory-service.js,
+ * @depends       services/economic-sku-rail-selection.js, services/fx-public-reference-feed.js, services/outbox-worker.js, services/cash-reminder-service.js, services/inventory-service.js,
  *                services/mobile-money-reconciliation.js, services/incident-escalation.js,
  *                services/signal-service.js, services/financial-journal-projectors.js, utils/rules.js
  * @db-write      fx_public_reference_quotes, economic_snapshots, pickup_print_tokens, pickup_reveal_codes, revoked_tokens, signals, financial_movements, financial_movement_documents
@@ -203,6 +203,28 @@ function startOperationalCrons() {
   startOutboxWorkerCron(); // HUB-000 F0 — consommateur durable de l'outbox (reçus d'audit)
   startFinancialJournalCron(); // Lot 5 — projection idempotente du journal financier
   startPurchasingCompletionSweepCron(); // H1 — rattrapage des commandes reçues restées ordered
+  if (process.env.KOMERCE_ECONOMIC_SELECTION_AUTO_ENABLED === 'true') startEconomicSelectionCron();
+}
+
+function startEconomicSelectionCron() {
+  const { sweepSkuRailWithdrawals } = require('../services/economic-sku-rail-selection');
+  let cursor = null;
+  let running = false;
+  const run = async () => {
+    if (running) return;
+    running = true;
+    try {
+      const result = await sweepSkuRailWithdrawals({ cursor });
+      cursor = result.cursor;
+      if (result.recorded) log.info({ recorded: result.recorded }, 'Economic SKU rail withdrawals recorded');
+    } catch (err) {
+      log.error({ err }, 'Economic selection sweep failed');
+    } finally {
+      running = false;
+    }
+  };
+  setTimeout(run, 90 * 1000).unref?.();
+  setInterval(run, 5 * 60 * 1000).unref?.();
 }
 
 // HUB-000 F3 — SLA incident : composition root uniquement.

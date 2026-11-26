@@ -278,7 +278,19 @@
       lines.appendChild(el(doc, 'summary', '', po.lines.length + ' ligne(s) d’achat'));
       for (const l of po.lines) lines.appendChild(el(doc, 'p', 'hlc-meta',
         (l.order_ref || '—') + ' · ' + (l.product || 'Article') + ' × ' + num(l.ordered)));
-      if(!ctx.decisionOnly)rootEl.appendChild(lines);
+      if(!ctx.decisionOnly){
+        if(ctx.compactPO===true){
+          const viewport=el(doc,'div','kmc-hub-workshop-table-viewport');
+          const table=el(doc,'table','kmc-workspace-table kmc-hub-workshop-table hlc-compact-purchase-table');
+          table.setAttribute('data-hlc-compact-purchase-lines','');
+          const head=el(doc,'thead'),titles=el(doc,'tr');
+          for(const label of ['Article','Quantité commandée']){const th=el(doc,'th','',label);th.setAttribute('scope','col');titles.appendChild(th);}
+          head.appendChild(titles);table.appendChild(head);
+          const body=el(doc,'tbody');
+          for(const line of po.lines){const row=el(doc,'tr');row.appendChild(el(doc,'td','',line.product||'Article'));row.appendChild(el(doc,'td','',String(num(line.ordered))));body.appendChild(row);}
+          table.appendChild(body);viewport.appendChild(table);rootEl.appendChild(viewport);
+        }else rootEl.appendChild(lines);
+      }
       const list = el(doc, 'div', 'hlc-actions');
       const allowed = new Set(ctx.decisionOnly==='commitment'?['authorize-commitment','download-commitment-pdf']:ctx.decisionOnly==='payment'?['authorize-payment']:ctx.decisionOnly==='review'?['authorize-commitment','authorize-payment','download-commitment-pdf']:['authorize-commitment','submit-po','record-sent','confirm-po','authorize-payment','download-commitment-pdf']);
       // Le paiement est une décision distincte, jamais proposée sur un brouillon
@@ -286,7 +298,22 @@
       // prérequis restent ceux du moteur canonique.
       const actions = actionsFor().filter(a => allowed.has(a.key) &&
         (a.key !== 'authorize-payment' || po.status !== 'draft'));
-      for (const a of actions) appendAction(list,a);
+      if(ctx.compactPO===true&&!ctx.decisionOnly){
+        const decisionKeys=new Set(['authorize-commitment','authorize-payment','download-commitment-pdf']);
+        const operational=actions.filter(a=>!decisionKeys.has(a.key));
+        const decisions=actions.filter(a=>decisionKeys.has(a.key));
+        if(operational.length){
+          list.appendChild(el(doc,'h4','','Action d’achat'));
+          for(const a of operational)appendAction(list,a);
+        }
+        if(decisions.length){
+          const section=el(doc,'section','hlc-compact-direction-actions');
+          section.setAttribute('data-hlc-compact-direction-actions','');
+          section.appendChild(el(doc,'h4','','Décisions & documents · Direction'));
+          for(const a of decisions)appendAction(section,a);
+          list.appendChild(section);
+        }
+      }else for (const a of actions) appendAction(list,a);
       if (!actions.length) list.appendChild(el(doc,'p','hlc-empty',ctx.decisionOnly?'Aucune décision disponible pour cette PO. Consultez son état et vos habilitations.':'Aucune action d’achat disponible.'));
       rootEl.appendChild(list);
       const kinds = {'authorize-commitment':'commitment','record-sent':'sent','confirm-po':'confirm','authorize-payment':'payment'};
@@ -621,6 +648,7 @@
         form.appendChild(el(doc, 'p', 'hlc-zone-hint', 'SIMULATION STAGING UNIQUEMENT — aucune commande, confirmation ou transmission vers un fournisseur extérieur. Les justificatifs et le vendeur sont fictifs.'));
       }
       form.setAttribute('data-hlc-form', kind);
+      if(ctx.compactPO===true)form.className+=' hlc-form-compact-purchase';
       form.addEventListener('click', (event) => event.stopPropagation());
       const close = button(doc, 'Fermer', 'close-form', 'is-link');
       close.addEventListener('click', () => { state.form = null; paint(); });
@@ -661,9 +689,19 @@
           const missing=confirmQty.reduce((n,[,q])=>n+Number(q.value),0);
           tally.textContent=Number.isFinite(missing)?(expected-missing)+' confirmés · '+missing+' non confirmés':'Quantités à vérifier';
         };
+        const gapBody=compact?el(doc,'tbody'):null;
+        if(gapBody){
+          const viewport=el(doc,'div','kmc-hub-workshop-table-viewport');
+          const table=el(doc,'table','kmc-workspace-table kmc-hub-workshop-table hlc-confirm-gap-table');
+          const head=el(doc,'thead'),titles=el(doc,'tr');
+          for(const label of ['Article','Commandé','Non confirmé']){const th=el(doc,'th','',label);th.setAttribute('scope','col');titles.appendChild(th);}
+          head.appendChild(titles);table.appendChild(head);table.appendChild(gapBody);viewport.appendChild(table);gaps.appendChild(viewport);
+        }
         po.lines.forEach((l) => {
-          const q = field(gaps||form, `${l.order_ref} · ${l.product || 'Article'} (commandé ${l.ordered})`, Object.assign(doc.createElement('input'), { type: 'number', min: '0', max: String(l.ordered), step: '1', value: compact?'0':String(l.ordered), required:true }));
-          if(compact){q.setAttribute('data-hlc-confirm-missing','');q.addEventListener('input',updateTally);}
+          const gapCell=gapBody?el(doc,'td'):null;
+          if(gapCell){const row=el(doc,'tr');row.appendChild(el(doc,'td','',l.product||'Article'));row.appendChild(el(doc,'td','',String(l.ordered)));row.appendChild(gapCell);gapBody.appendChild(row);}
+          const q = field(gapCell||form, `${l.order_ref} · ${l.product || 'Article'} (commandé ${l.ordered})`, Object.assign(doc.createElement('input'), { type: 'number', min: '0', max: String(l.ordered), step: '1', value: compact?'0':String(l.ordered), required:true }));
+          if(compact){q.setAttribute('data-hlc-confirm-missing','');q.setAttribute('aria-label','Quantité non confirmée · '+(l.product||'Article')+' · '+(l.order_ref||l.line_id));q.addEventListener('input',updateTally);}
           confirmQty.push([l, q]);
           // Le produit manuel central Hub peut ne pas avoir de devis fournisseur initial.
           // Prix constaté et devise saisis à la CONFIRMATION, jamais déduits du prix retail
@@ -688,7 +726,8 @@
           confirmProof.value = 'SIM-STAGING-ACHAT-' + ref; confirmProof.readOnly = true;
           confirmSeller.value = 'SIMULATED-STAGING-FOURNISSEUR-' + ref; confirmSeller.readOnly = true;
         }
-        const allocationPanel = el(doc, 'section', 'hlc-manual-purchase-allocations');
+        const allocationPanel = el(doc, compact?'details':'section', 'hlc-manual-purchase-allocations');
+        if(compact)allocationPanel.appendChild(el(doc,'summary','','Plusieurs vendeurs · ajouter des allocations'));
         allocationPanel.appendChild(el(doc, 'p', 'hlc-zone-hint', 'Si plusieurs vendeurs ont participé, détaillez une allocation par vendeur. Les quantités doivent couvrir exactement les lignes confirmées.'));
         const allocationRows = el(doc, 'div', 'hlc-manual-purchase-allocation-rows');
         const addAllocation = button(doc, 'Ajouter une allocation vendeur', 'add-manual-purchase-allocation', 'is-link');

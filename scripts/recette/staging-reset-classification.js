@@ -63,6 +63,7 @@ const ENTRIES = [
   R('sourcing_canonical_entities', 'sourcing'),
   R('sourcing_canonical_entity_refs', 'sourcing'), R('products', 'catalogue produits (reconstruit par API)'),
   R('catalog_product_quality_notes', 'observations SAV et qualité historisées, purgées avec les produits de recette'),
+  V('economic_sku_rail_selection_events', 'retraits versionnes des variantes de recette, purges avec leurs SKU hors mode activity'),
   R('catalog_product_sale_holds', 'gel qualité de produits de recette, purgé sans toucher les référentiels globaux'),
   R('relay_product_return_receipts', 'preuves de retour SAV des commandes de recette, purgeables avec les litiges de test'),
   R('relay_return_compensations', 'compensations SAV, purgées avec les dossiers de retour de recette'),
@@ -206,7 +207,7 @@ const ACTIVITY_PRESERVED_GROUPS = Object.freeze({
     product_sku_physical_codes catalog_field_overrides catalog_field_sync_state catalog_enrichment_runs catalog_publication_decision_audit
     catalog_stock_sync_state catalog_product_sale_holds local_stock`,
   medias: 'catalog_media catalog_media_recovery_audit catalog_media_visual_fr_reviews product_sku_media',
-  prix: `product_market_exposure product_market_price_drafts product_market_price_draft_events pricing_strategies pricing_strategy_history
+  prix: `product_market_exposure product_market_price_drafts product_market_price_draft_events economic_sku_rail_selection_events pricing_strategies pricing_strategy_history
     price_history competitor_prices market_price_observations market_price_observation_events`,
   sourcing: `supplier_catalog_imports supplier_catalog_sync_checkpoints supplier_catalog_import_rejections import_runtime_runs
     import_runtime_item_events sourcing_candidates sourcing_observations sourcing_candidate_events sourcing_canonical_entities

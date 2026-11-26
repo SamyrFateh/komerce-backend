@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        authenticated_actor, explicit_market_scope, calendar_month
  * @outputs       scoped_centers_families_resources_posts, latest_budget_revisions, outstanding_commitments, explicit_actual_coverage_status
- * @depends       db, middleware/require-pricing-global-authority.js, services/market-delegation-service.js, services/fx-authority.js, services/cost-allocation/real-margin-shadow.js, services/economic-cost-write-authority.js, services/economic-cost-reference-service.js
+ * @depends       db, middleware/require-pricing-global-authority.js, services/market-delegation-service.js, services/fx-authority.js, services/cost-allocation/real-margin-shadow.js, services/economic-cost-write-authority.js, services/economic-cost-reference-service.js, services/pricing-period-structure.js
  * @used-by       routes/admin-pricing-workspace.js
- * @db-read       markets, users, economic_cost_centers, economic_cost_families, economic_cost_resources, economic_cost_posts, economic_cost_budget_revisions, economic_cost_commitments, economic_cost_commitment_movements, economic_structure_cost_events, international_shipments, international_shipment_events, international_shipment_relay_receipts, international_shipment_hub_units, international_n1_reconciliations, hub_physical_units, hub_box_effective_placements, hub_purchase_allocations, order_items, orders, purchase_lines, supplier_execution_payments, supplier_payment_settlements, refunds
+ * @db-read       markets, users, economic_cost_centers, economic_cost_families, economic_cost_resources, economic_cost_posts, economic_cost_budget_revisions, economic_cost_commitments, economic_cost_commitment_movements, economic_structure_cost_events, international_shipments, international_shipment_events, international_shipment_relay_receipts, international_shipment_hub_units, international_n1_reconciliations, hub_physical_units, hub_box_effective_placements, hub_purchase_allocations, order_items, orders, purchase_lines, supplier_execution_payments, supplier_payment_settlements, refunds, international_shipment_charges, customs_shipments
  * @db-write      none
  * @db-txn        service_owned_read_only_repeatable_read
  * @doctrine      exact_market_scope, budget_is_not_realized_cost, no_fake_zero, group_raw_not_delegated
@@ -19,6 +19,7 @@
 const db = require('../db');
 const {parseDecimal,roundHalfEven,convert,FxError}=require('./fx-authority');
 const {computePurchaseReal}=require('./cost-allocation/real-margin-shadow');
+const {computePeriodStructureTruth}=require('./pricing-period-structure');
 const {hasPricingGlobalAuthority} = require('../middleware/require-pricing-global-authority');
 const {resolveAuthorization} = require('./market-delegation-service');
 const costAuthority=require('./economic-cost-write-authority');
@@ -204,7 +205,7 @@ async function loadShipmentPurchase(client,shipmentId,marketId){
       FROM supplier_payment_settlements WHERE supplier_execution_payment_id=ANY($1::uuid[])`,[payments.map(p=>p.id)]);
   return shipmentPurchase({lines,payments,settlements});
 }
-function shipmentActivity(rows){
+function shipmentActivity(rows,scopeCoverage='EXACT_MARKET_NON_SIMULATED'){
   const money=v=>typeof v==='string'&&/^\d+\.\d{2}$/.test(v)?BigInt(v.replace('.','')):null;
   const display=v=>{const s=v.toString().padStart(3,'0');return s.slice(0,-2)+'.'+s.slice(-2);};
   const grams=v=>{if(typeof v!=='string'||!/^\d{1,9}(?:\.\d{1,3})?$/.test(v))return null;const [a,b='']=v.split('.');const n=BigInt(a+b.padEnd(3,'0'));return n>0n?n:null;};
@@ -214,9 +215,16 @@ function shipmentActivity(rows){
   const volumeText=v=>{const s=v.toString().padStart(6,'0');return s.slice(0,-5)+'.'+s.slice(-5);};
   const sumCount=field=>rows.length&&rows.every(r=>Number.isSafeInteger(r[field])&&r[field]>=0)?rows.reduce((n,r)=>n+BigInt(r[field]),0n).toString():null;
   let documented=0n,freightCustoms=0n,closed=0,allWeight=0n,weightedWeight=0n,weightedCost=0n,weightCount=0,weightedCount=0,purchases=0n,purchaseCount=0,pairedPurchase=0n,pairedTransport=0n,pairedCount=0,pairedFreightCustoms=0n,volume=0n,volumeCount=0,minKg=null,maxKg=null;
+  let minCoefficient=null,maxCoefficient=null,pairedWeight=0n,pairedWeightCount=0;
+  const formatCoefficient=value=>{
+    if(value===null)return null;
+    const digits=value.toString().padStart(5,'0');
+    return digits.slice(0,-4)+'.'+digits.slice(-4);
+  };
   const shipments=rows.map(s=>{
     const amounts=[s.freight_kmf,s.customs_kmf,s.arrival_kmf,s.local_kmf,s.customs_fees_kmf,s.documented_kmf].map(money);
-    const complete=Boolean(s.financial_closed_at&&s.financial_close_proof_ref&&s.snapshot_hash&&s.freight_known===true&&
+    const stale=s.reconciliation_stale===true;
+    const complete=Boolean(!stale&&s.financial_closed_at&&s.financial_close_proof_ref&&s.snapshot_hash&&s.freight_known===true&&
       s.allocation_rows===0&&new Date(s.financial_closed_at)>=new Date(s.physical_closed_at)&&amounts.every(v=>v!==null)&&
       amounts.slice(0,5).reduce((sum,v)=>sum+v,0n)===amounts[5]);
     const transport=complete?amounts[0]+amounts[1]:null;
@@ -226,16 +234,23 @@ function shipmentActivity(rows){
       const ratio=roundHalfEven(amounts[5]*10n,g,2);if(minKg===null||ratio<minKg)minKg=ratio;if(maxKg===null||ratio>maxKg)maxKg=ratio;}}
     const v=volumeUnits(s.volume_m3);if(v!==null){volumeCount++;volume+=v;}
     const purchase=money(s.purchase?.amount);
-    if(purchase!==null){purchaseCount++;purchases+=purchase;if(complete&&purchase>0n){pairedCount++;pairedPurchase+=purchase;pairedTransport+=amounts[5];pairedFreightCustoms+=transport;}}
+    if(purchase!==null){purchaseCount++;purchases+=purchase;}
+    if(complete&&purchase!==null&&purchase>0n){
+      pairedCount++;pairedPurchase+=purchase;pairedTransport+=amounts[5];pairedFreightCustoms+=transport;
+      if(g!==null){pairedWeight+=g;pairedWeightCount++;}
+      const coefficient=roundHalfEven(purchase+amounts[5],purchase,4);
+      if(minCoefficient===null||coefficient<minCoefficient)minCoefficient=coefficient;
+      if(maxCoefficient===null||coefficient>maxCoefficient)maxCoefficient=coefficient;
+    }
     return {reference:s.reference,rail:s.rail,physicalClosedAt:s.physical_closed_at,
-      financialClosedAt:s.financial_closed_at||null,financialStatus:complete?'DOCUMENTED_CLOSED':'NOT_RECONCILED',
+      financialClosedAt:s.financial_closed_at||null,financialStatus:complete?'DOCUMENTED_CLOSED':stale?'PENDING_RECONCILIATION':'NOT_RECONCILED',
       volumeM3:s.volume_m3,boxCount:s.box_count,expectedArticles:s.expected_articles,receivedArticles:s.received_articles,
       freightCustomsKmf:complete?display(transport):null,documentedTransportKmf:complete?display(amounts[5]):null,
       freightKmf:complete?s.freight_kmf:null,customsKmf:complete?s.customs_kmf:null,
       arrivalFeesKmf:complete?display(amounts[2]+amounts[4]):null,localTransportKmf:complete?s.local_kmf:null,
       weightKg:g===null?null:kg(g),weightProofRef:g===null?null:s.weight_proof_ref,weightBasis:g===null?null:'MEASURED_GROSS_KG',purchaseKmf:purchase===null?null:display(purchase),purchaseStatus:s.purchase?.status||'PURCHASE_SCOPE_INCOMPLETE',costPerKgKmf:complete&&g!==null?costPerKg(amounts[5],g):null};
   });
-  return {cohort:'RELAY_RECEIPT_MONTH_UTC',scopeCoverage:'EXACT_MARKET_NON_SIMULATED',
+  return {cohort:'RELAY_RECEIPT_MONTH_UTC',scopeCoverage,
     physicalClosedCount:shipments.length,financialClosedCount:closed,
     boxCount:sumCount('box_count'),expectedArticles:sumCount('expected_articles'),receivedArticles:sumCount('received_articles'),
     volumeM3:shipments.length&&volumeCount===shipments.length?volumeText(volume):null,volumeSubtotalM3:volumeCount?volumeText(volume):null,volumeCoveredCount:volumeCount,
@@ -252,19 +267,21 @@ function shipmentActivity(rows){
     purchaseTransportObservation:{purchaseKmf:pairedCount?display(pairedPurchase):null,transportKmf:pairedCount?display(pairedTransport):null,
       freightCustomsKmf:pairedCount?display(pairedFreightCustoms):null,otherTransportKmf:pairedCount?display(pairedTransport-pairedFreightCustoms):null,
       documentedSubtotalKmf:pairedCount?display(pairedPurchase+pairedTransport):null,fullEconomicCostKmf:null,
-      observations:pairedCount,coefficient:pairedCount?(()=>{const n=roundHalfEven(pairedPurchase+pairedTransport,pairedPurchase,4).toString().padStart(5,'0');return n.slice(0,-4)+'.'+n.slice(-4);})():null,
+      observations:pairedCount,coefficient:formatCoefficient(pairedCount?roundHalfEven(pairedPurchase+pairedTransport,pairedPurchase,4):null),
+      minCoefficient:formatCoefficient(minCoefficient),maxCoefficient:formatCoefficient(maxCoefficient),
+      coefficientWeightKg:pairedWeightCount?kg(pairedWeight):null,coefficientWeightCount:pairedWeightCount,
       coverage:!pairedCount?'NO_OBSERVATIONS':pairedCount===shipments.length?'COMPLETE_FOR_PURCHASE_TRANSPORT_ONLY':'PARTIAL',scope:'PURCHASE_PLUS_DOCUMENTED_TRANSPORT_ONLY',decisional:false},shipments};
 }
 // All series use the same receipt cohort and the same read snapshot.
 function monthShift(month,offset){
   const d=new Date(month+'T00:00:00Z');d.setUTCMonth(d.getUTCMonth()+offset);return d.toISOString().slice(0,10);
 }
-function observedProfitability(rows,periodStart){
+function observedProfitability(rows,periodStart,scopeCoverage){
   const year=periodStart.slice(0,4)+'-01-01';
   const months=Number(periodStart.slice(5,7));
   const select=(from,to)=>rows.filter(r=>{const t=new Date(r.physical_closed_at).toISOString().slice(0,10);return t>=from&&t<to;});
   function observation(from,to){
-    const a=shipmentActivity(select(from,to)),o=a.purchaseTransportObservation;
+    const a=shipmentActivity(select(from,to),scopeCoverage),o=a.purchaseTransportObservation;
     return {...o,physicalClosedCount:a.physicalClosedCount,financialClosedCount:a.financialClosedCount,
       measuredWeightKg:a.measuredWeightSubtotalKg,measuredWeightCount:a.measuredWeightCount,periodStart:from,periodEndExclusive:to};
   }
@@ -278,14 +295,15 @@ function observedProfitability(rows,periodStart){
     netSalesKmf:null,variableContributionKmf:null,economicResultKmf:null,fullCoefficient:null,structureCoverage:null};
 }
 async function loadShipmentActivity(client,marketId,periodStart,{includeHistory=false}={}){
-  if(marketId===null)return null; // GROUP-only centers are not all markets.
+  const scope=marketId===null?'ALL_MARKETS_NON_SIMULATED':'EXACT_MARKET_NON_SIMULATED';
   const from=includeHistory?monthShift(periodStart.slice(0,4)+'-01-01',-2):periodStart;
   const until=monthShift(periodStart,1);
   const {rows}=await client.query(
-    `SELECT s.id AS shipment_id,s.reference,s.transport_mode AS rail,s.volume_m3::text AS volume_m3,
+    `SELECT s.id AS shipment_id,s.market_id,s.reference,s.transport_mode AS rail,s.volume_m3::text AS volume_m3,
       physical.closed_at AS physical_closed_at,receipt.expected_articles,receipt.received_articles,
       weight.actual_weight_kg,weight.weight_basis,weight.weight_proof_ref,
       (SELECT COUNT(*)::int FROM international_shipment_hub_units h WHERE h.shipment_id=s.id) AS box_count,
+      (n.shipment_id IS NOT NULL AND n.reconciled_at < GREATEST(s.updated_at, cs.declared_at, late_cost.last_at)) AS reconciliation_stale,
       n.financial_closed_at,n.financial_close_proof_ref,n.snapshot_hash,n.freight_known,n.allocation_rows,
       n.total_freight_kmf::text AS freight_kmf,n.total_customs_kmf::text AS customs_kmf,
       n.total_arrival_kmf::text AS arrival_kmf,n.total_local_kmf::text AS local_kmf,
@@ -324,6 +342,10 @@ async function loadShipmentActivity(client,marketId,periodStart,{includeHistory=
        FROM expected x FULL JOIN attested rr USING (order_item_id)
      ) receipt ON receipt.n>0 AND receipt.real_market IS TRUE AND receipt.last_received<=physical.closed_at
      LEFT JOIN international_n1_reconciliations n ON n.shipment_id=s.id
+     LEFT JOIN customs_shipments cs ON cs.id=s.customs_shipment_id AND cs.market_id=s.market_id
+     LEFT JOIN LATERAL (
+       SELECT MAX(c.recorded_at) AS last_at FROM international_shipment_charges c WHERE c.shipment_id=s.id
+     ) late_cost ON true
      LEFT JOIN LATERAL (
        SELECT MIN(e.payload->>'actual_weight_kg') AS actual_weight_kg,MIN(e.payload->>'weight_basis') AS weight_basis,
          MIN(e.payload->>'weight_proof_ref') AS weight_proof_ref
@@ -334,19 +356,19 @@ async function loadShipmentActivity(client,marketId,periodStart,{includeHistory=
          AND (n.financial_closed_at IS NULL OR e.occurred_at<=n.financial_closed_at)
        HAVING COUNT(*)=1
      ) weight ON true
-     WHERE s.market_id=$1 AND s.stage='relay_received'
+     WHERE s.market_id IS NOT NULL AND ($1::uuid IS NULL OR s.market_id=$1) AND s.stage='relay_received'
        AND physical.closed_at>=($2::date::timestamp AT TIME ZONE 'UTC')
        AND physical.closed_at<($3::date::timestamp AT TIME ZONE 'UTC')
      ORDER BY physical.closed_at,s.reference`,[marketId,from,until]);
-  for(const row of rows)row.purchase=await loadShipmentPurchase(client,row.shipment_id,marketId);
-  if(!includeHistory)return shipmentActivity(rows);
-  return {activity:shipmentActivity(rows.filter(r=>new Date(r.physical_closed_at).toISOString().slice(0,10)>=periodStart)),profitability:observedProfitability(rows,periodStart)};
+  for(const row of rows)row.purchase=await loadShipmentPurchase(client,row.shipment_id,row.market_id ?? marketId);
+  if(!includeHistory)return shipmentActivity(rows,scope);
+  return {activity:shipmentActivity(rows.filter(r=>new Date(r.physical_closed_at).toISOString().slice(0,10)>=periodStart),scope),profitability:observedProfitability(rows,periodStart,scope)};
 }
 // Commercial order cohort, not the cash journal nor the shipment cohort.
 // Same net-sale identity as real-margin-shadow: checkout total is already
 // net of discounts and wallet; wallet is a payment instrument. Completed
 // refunds restate the originating cohort, pending refunds do not.
-function periodSalesEvidence(rows){
+function periodSalesEvidence(rows,scope='EXACT_MARKET_NON_SIMULATED'){
   const money=v=>{if(typeof v!=='string'||!/^\d+(?:\.\d{1,2})?$/.test(v))return null;const [a,b='']=v.split('.');return BigInt(a+b.padEnd(2,'0'));};
   const text=n=>{const s=(n<0n?-n:n).toString().padStart(3,'0');return (n<0n?'-':'')+s.slice(0,-2)+'.'+s.slice(-2);};
   let paid=0,covered=0,invalid=0,pendingRefundOrders=0,terminalExceptions=0,unpaid=0,gross=0n,wallet=0n,refunds=0n;
@@ -361,7 +383,7 @@ function periodSalesEvidence(rows){
     if((row.status==='cancelled'||row.status==='refunded'||row.payment_status==='refunded')&&refund===0n){terminalExceptions++;continue;}
     covered++;gross+=total;wallet+=w;refunds+=refund;
   }
-  return {basis:'ORDER_CREATED_MONTH_UTC_CURRENT_STATE',scope:'EXACT_MARKET_NON_SIMULATED',
+  return {basis:'ORDER_CREATED_MONTH_UTC_CURRENT_STATE',scope,
     paidOrderCount:paid,coveredOrderCount:covered,unpaidOrderCount:unpaid,pendingRefundOrders,terminalExceptions,invalidOrderCount:invalid,
     checkoutSubtotalKmf:covered?text(gross):null,walletSubtotalKmf:covered?text(wallet):null,completedRefundSubtotalKmf:covered?text(refunds):null,
     observedNetSalesKmf:covered?text(gross+wallet-refunds):null,
@@ -369,7 +391,6 @@ function periodSalesEvidence(rows){
     decisional:false,recognition:'COMMERCIAL_OBSERVATION_NOT_ACCOUNTING_PERIOD'};
 }
 async function loadPeriodSalesEvidence(client,marketId,periodStart){
-  if(marketId===null)return null;
   const {rows}=await client.query(
     `SELECT o.status::text AS status,o.payment_status::text AS payment_status,
       o.total_kmf::text AS total_kmf,COALESCE(o.wallet_applied_kmf,0)::text AS wallet_kmf,
@@ -380,11 +401,11 @@ async function loadPeriodSalesEvidence(client,marketId,periodStart){
           COUNT(*) FILTER (WHERE x.status='pending') AS pending
         FROM refunds x WHERE x.order_id=o.id
       ) r ON true
-      WHERE o.market_id=$1 AND o.simulation_scope IS NULL
+      WHERE o.market_id IS NOT NULL AND ($1::uuid IS NULL OR o.market_id=$1) AND o.simulation_scope IS NULL
         AND o.created_at>=($2::date::timestamp AT TIME ZONE 'UTC')
         AND o.created_at<(($2::date+interval '1 month') AT TIME ZONE 'UTC')
       ORDER BY o.id`,[marketId,periodStart]);
-  return periodSalesEvidence(rows);
+  return periodSalesEvidence(rows,marketId===null?'ALL_MARKETS_NON_SIMULATED':'EXACT_MARKET_NON_SIMULATED');
 }
 async function readCostCenters(actor,raw){
   if(!actor?.id)throw error('AUTH_REQUIRED',401,'Authentification requise');
@@ -450,6 +471,18 @@ async function readCostCenters(actor,raw){
     const activity=history?.activity??null,profitability=history?.profitability??null;
     const salesEvidence=await loadPeriodSalesEvidence(client,marketId,input.periodStart);
     if(profitability)profitability.salesEvidence=salesEvidence;
+    if(marketId===null&&profitability){
+      const truth=await computePeriodStructureTruth({
+        from:input.periodStart,to:monthShift(input.periodStart,1),executor:client,
+      });
+      profitability.structureCoverage={
+        status:truth.status,
+        evidenceCount:truth.evidence_event_count,
+        groupSharedKmf:truth.evidence_event_count?truth.group_pool_kmf:null,
+        marketDirectKmf:truth.evidence_event_count?truth.other_market_direct_kmf:null,
+        recognizedKmf:truth.evidence_event_count?truth.recognized_total_kmf:null,
+      };
+    }
     const responsibleCandidates=costCapabilities.reference?await listResponsibleCandidates(client,marketId):[];
     await client.query('COMMIT');
     return {scope:input.marketCode===null?'GROUP':'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,central,costCapabilities,readOnly:!Object.values(costCapabilities).some(Boolean),

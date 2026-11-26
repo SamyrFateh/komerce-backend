@@ -46,7 +46,7 @@ async function boot(context, search, options = {}) {
 }
 
 afterEach(() => {
-  ['window', 'document', 'location', 'fetch', 'KomerceAdminContext', 'KomerceMarketPrompt', 'KomerceMarketCatalog'].forEach(k => { delete global[k]; });
+  ['window', 'document', 'location', 'fetch', 'KomerceAdminContext', 'KomerceMarketPrompt', 'KomerceMarketCatalog', 'KomerceMarketLocalPrices'].forEach(k => { delete global[k]; });
 });
 
 const globalCtx = { actor: { id: 'a', role: 'admin' }, access: { mode: 'global', allowedMarkets: ['CG', 'CM', 'KM'], defaultMarket: null, capabilities: [] } };
@@ -90,7 +90,7 @@ test('la page autonome invalide aussi le cache de son menu canonical', () => {
   const fs = require('fs');
   const path = require('path');
   const html = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/market-autonomy.html'), 'utf8');
-  expect(html).toContain('navigation-policy-v4.js?v=261126-unsold-read-capability-1');
+  expect(html).toContain('navigation-policy-v4.js?v=261126-canon-market-nav-5');
 });
 
 test('un prix global nul ou absent est présenté comme non renseigné, jamais comme zéro KMF', () => {
@@ -101,7 +101,7 @@ test('un prix global nul ou absent est présenté comme non renseigné, jamais c
   expect(source).toContain("? 'Non renseigné'");
   expect(source).toContain('globalPrice <= 0');
   expect(source).not.toContain('row.global_price_kmf || 0');
-  expect(html).toContain('market-autonomy.js?v=261126-market-global-price-1');
+  expect(html).toContain('market-autonomy.js?v=261126-canon-market-prices-1');
 });
 
 test('délégation réseau granulaire : contexte dashboard refusé, accès réseau serveur autorisé', async () => {
@@ -123,4 +123,22 @@ test('sans marché explicite : aucune tentative de fallback réseau', async () =
   const { root, calls } = await boot(monoCtx, '', { deniedDashboard: true });
   expect(calls.some(url => url.includes('/network/relais'))).toBe(false);
   expect(root.dataset.networkOnlyMarket).toBeUndefined();
+});
+
+test('module de prix intégré : le marché sélectionné est la seule cible, sans repli URL', async () => {
+  await boot(monoCtx, '?market=CM');
+  const api = global.KomerceMarketLocalPrices;
+  expect(api).toBeDefined();
+  global.fetch.mockClear();
+  const host = fakeNode('div');
+  host.remove = () => {};
+  const create = global.document.createElement;
+  global.document.createElement = (...args) => Object.assign(create(...args), { remove() {} });
+  await api.mount({ root: host, marketCode: 'CG' });
+  expect(global.fetch.mock.calls.map(([url]) => url)).toEqual(['/api/admin/dashboard/context']);
+  global.fetch.mockClear();
+  await api.mount({ root: host, marketCode: 'CM' });
+  const calls = global.fetch.mock.calls.map(([url]) => url);
+  expect(calls.some(url => url.includes('/market/CM/commercial-prices'))).toBe(true);
+  expect(calls.every(url => !url.includes('/market/CG'))).toBe(true);
 });

@@ -69,6 +69,16 @@ test('aucun seuil silencieux : tous les paramètres décisionnels sont requis', 
     .toThrow('policy.max_disposition_ratio must be between 0 and 1');
 });
 
+test('les seuils de sélection par famille sont explicites et entiers', () => {
+  const rule = { minimum_contribution_kmf: 0, loss_observation_count: 1 };
+  expect(normalizePolicyInput(policyInput({ selection_by_family: { audio: rule } }), ACTOR, { now: NOW }).selection_by_family)
+    .toEqual({ audio: rule });
+  expect(() => normalizePolicyInput(policyInput({ selection_by_family: { audio: { ...rule, loss_observation_count: 0 } } }), ACTOR, { now: NOW }))
+    .toThrow(/positive loss observation count/);
+  expect(() => normalizePolicyInput(policyInput({ selection_by_family: { audio: { loss_observation_count: 1 } } }), ACTOR, { now: NOW }))
+    .toThrow(/nonnegative KMF minimum/);
+});
+
 test('une politique ne peut pas être antidatée', () => {
   expect(() => normalizePolicyInput(policyInput({ effective_from: '2026-09-06T00:00:00.000Z' }), ACTOR, { now: NOW }))
     .toThrow('policy.effective_from cannot be backdated');
@@ -139,17 +149,20 @@ test('evaluateMarketDecision rejette un period malformé', async () => {
 });
 
 test('recordMarketDecisionPolicy écrit un nouvel événement append-only avec preuve', async () => {
+  const selection_by_family = { audio: { minimum_contribution_kmf: 150, loss_observation_count: 3 } };
   const client = {
     query: jest.fn()
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ rows: [{ id: MARKET }] })
-      .mockResolvedValueOnce({ rows: [policyRow()] })
+      .mockResolvedValueOnce({ rows: [policyRow({ selection_by_family })] })
       .mockResolvedValueOnce({}),
     release: jest.fn(),
   };
   db.getClient.mockResolvedValue(client);
 
-  const result = await recordMarketDecisionPolicy(MARKET, policyInput(), ACTOR, { now: NOW });
+  const result = await recordMarketDecisionPolicy(MARKET, policyInput({ selection_by_family }), ACTOR, { now: NOW });
+  expect(JSON.parse(client.query.mock.calls[2][1][13])).toEqual(selection_by_family);
+  expect(result.selection_by_family).toEqual(selection_by_family);
 
   expect(client.query.mock.calls[2][0]).toContain('INSERT INTO pricing_market_decision_policy_events');
   expect(client.query.mock.calls[2][0]).not.toContain('UPDATE pricing_market_decision_policy_events');

@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*, services/cost-allocation/real-margin-shadow.js, services/cost-allocation/product-margin-steering.js
+ * @depends       db.js, middleware/auth.js, services/*, services/cost-allocation/real-margin-shadow.js, services/cost-allocation/product-margin-steering.js, services/economic-sku-rail-selection.js, middleware/require-pricing-global-authority.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       customs_shipments, finance_config, markets, order_item_cost_imputations, order_item_real_cost_allocations, order_items, orders, parcels, products, refunds, purchase_lines, relais, supplier_execution_payments
  * @db-write      finance_config
@@ -52,6 +52,8 @@ const costAllocation = require('../services/cost-allocation');
 const manualCostEntry = require('../services/cost-allocation/manual-cost-entry-service');
 const realMarginShadow = require('../services/cost-allocation/real-margin-shadow');
 const productMarginSteering = require('../services/cost-allocation/product-margin-steering');
+const { recordSkuRailSelection } = require('../services/economic-sku-rail-selection');
+const { hasPricingGlobalAuthority } = require('../middleware/require-pricing-global-authority');
 const dashboardCache = require('../services/dashboard-cache');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const log = require('../utils/logger').child({ module: 'admin-costing' });
@@ -731,6 +733,26 @@ router.get('/products/margin-steering', authenticate, requireAdmin, async (req, 
     res.json(result);
   } catch (err) {
     next(err);
+  }
+});
+
+router.post('/products/:productId/sku-rail-selection', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    if (!await hasPricingGlobalAuthority(req.user.id)) {
+      return res.status(403).json({ code: 'ECONOMIC_SELECTION_AUTHORITY_REQUIRED' });
+    }
+    const { market_id: marketId, sku_id: skuId, rail, action, reason } = req.body || {};
+    const { productId } = req.params;
+    if (![marketId, productId, skuId].every((value) => typeof value === 'string' && _UUID_RE.test(value))) {
+      return res.status(400).json({ code: 'ECONOMIC_SELECTION_INVALID', error: 'Marché, produit et variante requis.' });
+    }
+    const result = await recordSkuRailSelection({ marketId, productId, skuId, rail, action, reason, actorId: req.user.id });
+    return res.status(result.outcome === 'replayed' ? 200 : 201).json(result);
+  } catch (error) {
+    if (/^ECONOMIC_SELECTION_/.test(error.code || '')) {
+      return res.status(error.status).json({ code: error.code, error: error.message });
+    }
+    return next(error);
   }
 });
 

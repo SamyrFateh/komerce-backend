@@ -104,10 +104,16 @@
           host.append(initialize,feedback);
           if(typeof actions.configureReference==='function')host.append(createV7ReferenceForm(doc,model,null,'CENTER',actions));
         }
+        const overBudget=centers.filter(c=>c.recordedBalance?.status==='RECORDED_OVER_BUDGET');
+        if(!overBudget.length)state.onlyOverBudget=false;
+        if(overBudget.length){
+          host.append(button(state.onlyOverBudget?'Tous les centres':'Centres en écart',()=>{
+            state.onlyOverBudget=!state.onlyOverBudget;
+            render();
+          }));
+        }
         const grid=el(doc,'div','kmc-v7-center-grid');
-        if(centers.some(c=>c.recordedBalance?.status==='RECORDED_OVER_BUDGET'))grid.append(button(state.onlyOverBudget?'Tous les centres':'Centres en écart',()=>{state.onlyOverBudget=!state.onlyOverBudget;render();}));
-        for(const c of centers){
-          if(state.onlyOverBudget&&c.recordedBalance?.status!=='RECORDED_OVER_BUDGET')continue;
+        for(const c of state.onlyOverBudget?overBudget:centers){
           const card=el(doc,'article','kmc-v7-center-card');
           card.append(el(doc,'h4','',c.label),el(doc,'p','',c.is_active?'Centre actif':'Centre à configurer'),
             metric('Charges constatées',structureText(c.structureEvidence)),metric('Budget enregistré (EUR)',budgetText(c.budgetSummary)),metric('Engagements ouverts (EUR)',commitmentTotal(c.commitmentSummary)),
@@ -415,7 +421,16 @@
     function render(key){
       const o=data.ranges[key],from=o.periodStart;
       for(const [k,b] of buttons)b.setAttribute('aria-pressed',String(k===key));
-      focus.replaceChildren();focus.append(metric('Coefficient observé',fmt(o.coefficient),o.observations+' / '+o.physicalClosedCount+' expéditions'),metric('Achats rapprochés',v7Money(o.purchaseKmf,'KMF')),metric('Transport documenté',v7Money(o.transportKmf,'KMF')),metric('Poids renseigné',fmt(o.measuredWeightKg)+(o.measuredWeightKg==null?'':' kg'),o.measuredWeightCount+' / '+o.physicalClosedCount+' expéditions'));
+      const coverage=o.observations+' / '+o.physicalClosedCount+' expéditions';
+      const dispersion=o.minCoefficient!=null&&o.maxCoefficient!=null
+        ? coverage+' · min. '+fmt(o.minCoefficient)+' · max. '+fmt(o.maxCoefficient)
+        : coverage;
+      const weight=o.coefficientWeightKg;
+      focus.replaceChildren();
+      focus.append(metric('Coefficient observé',fmt(o.coefficient),dispersion),
+        metric('Achats rapprochés',v7Money(o.purchaseKmf,'KMF')),
+        metric('Transport documenté',v7Money(o.transportKmf,'KMF')),
+        metric('Poids renseigné',fmt(weight)+(weight==null?'':' kg'),(o.coefficientWeightCount??0)+' / '+o.observations+' expéditions du coefficient'));
       chart.replaceChildren();const points=data.points.filter(p=>p.periodStart>=from);
       const svg=createObservedCurve(doc,points);if(svg)chart.append(svg);
       chart.append(el(doc,'p','kmc-v7-coverage','Mensuel (gris) · cumul année (teal) · glissant 3 mois (or). Lacunes non interpolées.'));
@@ -438,6 +453,12 @@
     }else{
       result.append(el(doc,'h4','','Formation du résultat'),...['Ventes nettes','Achats du périmètre complet','Charges variables','Contribution variable','Charges de structure','Résultat économique'].map(k=>metric(k,'À rapprocher')));
       structure.append(el(doc,'h4','','Couverture de structure'),metric('Couverture','Non calculable'),metric('Reste à couvrir','Non calculable'),el(doc,'p','kmc-v7-coverage','Sous-activité : référence insuffisante. Le coefficient partiel ne détermine pas les prix.'));
+      const documented=data.structureCoverage;
+      if(documented?.recognizedKmf!=null)structure.append(
+        metric('Charges de structure documentées',v7Money(String(documented.recognizedKmf),'KMF'),
+          documented.evidenceCount+' événement(s) de période'),
+        metric('Charges directes des marchés',v7Money(String(documented.marketDirectKmf),'KMF')),
+        metric('Charges mutualisées du groupe',v7Money(String(documented.groupSharedKmf),'KMF')));
       if(decision)structure.append(el(doc,'p','kmc-v7-coverage','Motif moteur : '+(decision.reason==='MARKET_DECISION_POLICY_REQUIRED'?'Politique de marché absente':decision.reason==='DECISION_SCOPE_MISMATCH'?'Périmètre de décision incohérent':'Rapprochement canonique indisponible')));
     }
     cards.append(result,structure);host.append(cards);return host;

@@ -75,14 +75,16 @@ describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => 
     expect(catalogBlock).not.toContain('catalog-country');
   });
 
-  test('Catalogue pays appartient au domaine Marchés', () => {
+  test('Catalogue pays utilise le Catalogue canonique, sans destination Marchés dupliquée', () => {
     const policy = read('public/dashboards/canonical/js/navigation-policy-v4.js');
     const marketsBlock = policy.slice(
       policy.indexOf('markets: Object.freeze(['),
       policy.indexOf('const PRICING_SECTION_IDS')
     );
-    expect(marketsBlock).toContain("id: 'catalog-country'");
-    expect(marketsBlock).toContain('/dashboards/canonical/market-catalog.html');
+    expect(marketsBlock).not.toContain("id: 'catalog-country'");
+    expect(marketsBlock).not.toContain('/dashboards/canonical/market-catalog.html');
+    expect(policy).toContain("'market-catalog': 'catalog'");
+    expect(policy).toContain("href: '/admin/workspaces/catalog'");
   });
 
   test('Atelier économique ne propose plus de tabs vers des sections supprimées', () => {
@@ -168,7 +170,7 @@ describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => 
   test('index charge le routeur après le shell V4', () => {
     const html = read('public/dashboards/canonical/index.html');
     const shell = html.search(/\/dashboards\/canonical\/js\/navigation-shell-v4-sync\.js\?v=[^"'<>\s]+/);
-    const clientRouter = html.indexOf('/dashboards/canonical/js/canonical-client-router-v4.js?v=261109-1');
+    const clientRouter = html.indexOf('/dashboards/canonical/js/canonical-client-router-v4.js?v=261126-canon-market-domains-5');
     expect(shell).toBeGreaterThanOrEqual(0);
     expect(clientRouter).toBeGreaterThan(shell);
   });

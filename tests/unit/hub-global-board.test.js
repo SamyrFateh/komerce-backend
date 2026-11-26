@@ -255,6 +255,51 @@ describe('Kanban PO : projection centrale opt-in', () => {
   });
 });
 
+test('CANON-MARKET : PO marché en projection minimale, sans autre dossier ni secret fournisseur', async () => {
+  const market = { id: 'm-cm', code: 'CM', name: 'Cameroun' };
+  const query = { query: jest.fn(async (_sql, params) => ({
+    rows: params && params[0].includes(market.id) ? [market] : [],
+  })) };
+  const reader = jest.fn(async id => {
+    expect(id).toBe(market.id);
+    return {
+      ...empty([]),
+      purchase_orders: [{
+        id: 'po-mixed', ref: 'PO-1', supplier_name: 'SECRET_SUPPLIER',
+        supplier_order_id: 'SECRET_ORDER', status: 'confirmed', stage: 'partially_received',
+        sent_channel: 'SECRET_CHANNEL', authorizations: { commitment: { amount: 90000 } },
+        lines: [{
+          order_id: 'o-cm', order_ref: 'KAAAAAA', product: 'Article CM',
+          product_sku_id: 'SECRET_SKU', unit_price: 9000, ordered: 3, confirmed: 3, received: 2, missing: 1,
+        }],
+      }],
+      boxes: [{ state: 'PACKED', contents: [{ purchase_order_id: 'po-mixed', order_id: 'o-cm', qty: 2 }] }],
+      receipts: [{ po_ids: ['po-mixed'], reference: 'SECRET_RECEIPT' }],
+      to_handle: [{ po_id: 'po-mixed', kind: 'TEST', reason: 'SECRET_REASON' }],
+    };
+  });
+  const result = await getGlobalBoard(query, reader, {
+    marketIds: ['m-cm'], includePurchaseOrders: true, includeMarketPurchaseOrders: true,
+  });
+  expect(query.query).toHaveBeenCalledWith(expect.stringContaining('id = ANY($1::uuid[])'), [['m-cm']]);
+  expect(reader).toHaveBeenCalledTimes(1);
+  expect(result.audience).toBe('MARKET_SCOPED');
+  expect(result.markets).toEqual(['CM']);
+  expect(result.purchase_orders).toHaveLength(1);
+  expect(result.purchase_orders[0]).toMatchObject({
+    market: 'CM', market_scoped: true, order_references: ['KAAAAAA'],
+    ordered: 3, expected: 3, received: 2, missing: 1, boxed_quantity: 2, reception_complete: false,
+  });
+  expect(result.purchase_orders[0].order_lines).toEqual([
+    { order_ref: 'KAAAAAA', product: 'Article CM', ordered: 3, expected: 3, received: 2, missing: 1 },
+  ]);
+  expect(JSON.stringify(result)).not.toMatch(/SECRET_|unit_price|supplier_name|authorizations|receipt_evidence/);
+  expect(result.logistics_work).toEqual([]);
+  const denied = await getGlobalBoard(query, reader, { marketIds: [], includeMarketPurchaseOrders: true });
+  expect(denied.purchase_orders).toEqual([]);
+  expect(reader).toHaveBeenCalledTimes(1);
+});
+
 test('départ PO : trois faits distincts, carton partagé compté seulement pour ses allocations exactes',()=>{
   const po={id:'p1',lines:[{order_id:'a',confirmed:5,ordered:5,received:4,missing:1}]};
   const own={purchase_order_id:'p1',qty:1,order_id:'a'},other={purchase_order_id:'p2',qty:9,order_id:'a'};

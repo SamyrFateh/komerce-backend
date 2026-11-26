@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 831,
-    "filesWithFullHeaders": 768,
+    "scannedCodeFiles": 841,
+    "filesWithFullHeaders": 778,
     "filesWithLiteHeaders": 63,
-    "filesWithAnyHeaders": 831,
+    "filesWithAnyHeaders": 841,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2124,
-    "edges": 10620,
-    "dbTables": 247,
-    "doctrines": 833,
+    "graphNodes": 2172,
+    "edges": 10846,
+    "dbTables": 258,
+    "doctrines": 860,
     "impactAreas": 213,
-    "unresolvedCodeEdges": 1006,
+    "unresolvedCodeEdges": 1016,
     "dbWriteViaOverlapWarnings": 13,
     "multiWriterTables": 100
   },
@@ -40,9 +40,9 @@
     "admin-dashboard": 39,
     "decision-signals": 14,
     "market": 10,
-    "economic-engine": 69,
+    "economic-engine": 76,
     "sourcing": 37,
-    "logistics": 74,
+    "logistics": 76,
     "boutique": 24,
     "checkout": 4,
     "shared-cart": 25,
@@ -70,6 +70,7 @@
     "unsold-resolution": 1,
     "external-provider-contracts": 1,
     "finance": 3,
+    "logistics,purchasing": 1,
     "incident-management": 5,
     "refunds": 13,
     "market-autonomy": 4,
@@ -113,7 +114,7 @@
     "schema": 1,
     "route": 139,
     "entrypoint": 1,
-    "service": 508,
+    "service": 518,
     "external-adapter": 2,
     "infrastructure": 1,
     "machine": 1,
@@ -123,9 +124,9 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 132,
+    "critical": 133,
     "medium": 155,
-    "high": 471,
+    "high": 480,
     "low": 72,
     "unknown": 1
   },
@@ -269,6 +270,7 @@
         "continuous_decision_signals"
       ],
       "depends": [
+        "services/economic-sku-rail-selection.js",
         "services/fx-public-reference-feed.js",
         "services/outbox-worker.js",
         "services/cash-reminder-service.js",
@@ -6165,7 +6167,9 @@
         "middleware/auth.js",
         "services/*",
         "services/cost-allocation/real-margin-shadow.js",
-        "services/cost-allocation/product-margin-steering.js"
+        "services/cost-allocation/product-margin-steering.js",
+        "services/economic-sku-rail-selection.js",
+        "middleware/require-pricing-global-authority.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
@@ -6850,7 +6854,10 @@
         "middleware/require-market-execution-capability",
         "middleware/require-market-delegated-capability",
         "middleware/require-dashboard-global-authority",
-        "services/operations-workspace"
+        "services/operations-workspace",
+        "services/hub-global-board",
+        "services/hub-supplier-receipt-quality",
+        "services/purchasing-completion-service"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
@@ -7080,7 +7087,12 @@
         "services/market-commercial-price-service.js",
         "services/market-local-price-activation-service.js",
         "services/pricing-period-structure.js",
-        "services/market-cost-attribution-service.js"
+        "services/market-cost-attribution-service.js",
+        "services/economic-cost-center-read-model.js",
+        "services/economic-cost-budget-service.js",
+        "services/economic-cost-commitment-service.js",
+        "services/economic-cost-post-actual-service.js",
+        "services/economic-cost-reference-service.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
@@ -16796,7 +16808,8 @@
         "utils/rules.js",
         "services/cost-allocation/cost-types.js",
         "services/cost-allocation/_helpers.js",
-        "services/cost-allocation/real-margin-shadow.js"
+        "services/cost-allocation/real-margin-shadow.js",
+        "services/pricing-market-decision-policy.js"
       ],
       "usedBy": [
         "routes/admin-costing.js"
@@ -16812,7 +16825,11 @@
         "customs_shipments",
         "customs_shipment_parcels",
         "parcel_items",
-        "business_rules"
+        "business_rules",
+        "international_shipment_relay_receipts",
+        "international_shipments",
+        "international_n1_reconciliations",
+        "international_shipment_charges"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -19029,6 +19046,418 @@
       "version": "2026-08"
     },
     {
+      "id": "services/economic-cost-budget-service.js",
+      "file": "services/economic-cost-budget-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-cost-budget-service",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_actor",
+        "explicit_market_code_or_group",
+        "post_id",
+        "month",
+        "expected_revision",
+        "native_amount",
+        "currency",
+        "reason",
+        "request_key"
+      ],
+      "outputs": [
+        "immutable_budget_revision",
+        "idempotent_replay"
+      ],
+      "depends": [
+        "db",
+        "services/economic-cost-write-authority.js",
+        "services/fx-authority.js"
+      ],
+      "usedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "dbRead": [
+        "markets",
+        "economic_cost_centers",
+        "economic_cost_posts",
+        "economic_cost_budget_revisions"
+      ],
+      "dbWrite": [
+        "economic_cost_budget_revisions"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "service_owned_transaction"
+      ],
+      "doctrine": [
+        "budget_is_not_realized_cost",
+        "explicit_global_authority",
+        "exact_scope",
+        "eur_is_the_pivot",
+        "immutable_budget_revision"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "finance",
+        "governance"
+      ],
+      "version": "2026-11"
+    },
+    {
+      "id": "services/economic-cost-center-read-model.js",
+      "file": "services/economic-cost-center-read-model.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-cost-center-read-model",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_actor",
+        "explicit_market_scope",
+        "calendar_month"
+      ],
+      "outputs": [
+        "scoped_centers_families_resources_posts",
+        "latest_budget_revisions",
+        "outstanding_commitments",
+        "explicit_actual_coverage_status"
+      ],
+      "depends": [
+        "db",
+        "middleware/require-pricing-global-authority.js",
+        "services/market-delegation-service.js",
+        "services/fx-authority.js",
+        "services/cost-allocation/real-margin-shadow.js",
+        "services/economic-cost-write-authority.js",
+        "services/economic-cost-reference-service.js",
+        "services/pricing-period-structure.js"
+      ],
+      "usedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "dbRead": [
+        "markets",
+        "users",
+        "economic_cost_centers",
+        "economic_cost_families",
+        "economic_cost_resources",
+        "economic_cost_posts",
+        "economic_cost_budget_revisions",
+        "economic_cost_commitments",
+        "economic_cost_commitment_movements",
+        "economic_structure_cost_events",
+        "international_shipments",
+        "international_shipment_events",
+        "international_shipment_relay_receipts",
+        "international_shipment_hub_units",
+        "international_n1_reconciliations",
+        "hub_physical_units",
+        "hub_box_effective_placements",
+        "hub_purchase_allocations",
+        "order_items",
+        "orders",
+        "purchase_lines",
+        "supplier_execution_payments",
+        "supplier_payment_settlements",
+        "refunds",
+        "international_shipment_charges",
+        "customs_shipments"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "service_owned_read_only_repeatable_read"
+      ],
+      "doctrine": [
+        "exact_market_scope",
+        "budget_is_not_realized_cost",
+        "no_fake_zero",
+        "group_raw_not_delegated"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "finance",
+        "market-authorization"
+      ],
+      "version": "2026-11"
+    },
+    {
+      "id": "services/economic-cost-commitment-service.js",
+      "file": "services/economic-cost-commitment-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-cost-commitment-service",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_actor",
+        "explicit_scope",
+        "post_or_commitment_ref",
+        "period",
+        "native_amount",
+        "evidence",
+        "request_key"
+      ],
+      "outputs": [
+        "immutable_commitment_or_movement",
+        "idempotent_replay"
+      ],
+      "depends": [
+        "db.js",
+        "services/economic-cost-write-authority.js",
+        "services/fx-authority.js"
+      ],
+      "usedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "dbRead": [
+        "markets",
+        "economic_cost_centers",
+        "economic_cost_posts",
+        "economic_cost_commitments",
+        "economic_cost_commitment_movements",
+        "economic_structure_cost_events"
+      ],
+      "dbWrite": [
+        "economic_cost_commitments",
+        "economic_cost_commitment_movements"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "service_owned_read_committed_transaction"
+      ],
+      "doctrine": [
+        "commitments_are_not_real_costs",
+        "exact_scope",
+        "frozen_fx",
+        "append_only",
+        "canonical_fact_consumption_only",
+        "no_double_count"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "finance",
+        "governance"
+      ],
+      "version": "2026-11"
+    },
+    {
+      "id": "services/economic-cost-post-actual-service.js",
+      "file": "services/economic-cost-post-actual-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-cost-post-actual-service",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_actor",
+        "explicit_scope",
+        "post",
+        "period",
+        "native_amount",
+        "evidence"
+      ],
+      "outputs": [
+        "canonical_structure_fact",
+        "explicit_replay"
+      ],
+      "depends": [
+        "db.js",
+        "services/economic-cost-write-authority.js",
+        "services/pricing-period-structure.js",
+        "services/fx-authority.js"
+      ],
+      "usedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "dbRead": [
+        "markets",
+        "economic_cost_centers",
+        "economic_cost_posts",
+        "charges",
+        "economic_structure_cost_events"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "pricing-period-structure",
+          "tables": [
+            "economic_structure_cost_events"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "service_owned_transaction"
+      ],
+      "doctrine": [
+        "canonical_structure_journal_only",
+        "no_operational_cost_reentry",
+        "evidence_required",
+        "exact_scope",
+        "governed_fx"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "finance"
+      ],
+      "version": "2026-11"
+    },
+    {
+      "id": "services/economic-cost-reference-service.js",
+      "file": "services/economic-cost-reference-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-cost-reference-service",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_actor",
+        "explicit_scope",
+        "family_id",
+        "post_metadata",
+        "reason"
+      ],
+      "outputs": [
+        "cost_post_reference",
+        "idempotent_replay",
+        "audit_record"
+      ],
+      "depends": [
+        "db.js",
+        "services/economic-cost-write-authority.js",
+        "services/market-structure-charge-reference.js",
+        "services/market-delegation-service.js"
+      ],
+      "usedBy": [
+        "routes/admin-pricing-workspace.js",
+        "services/market-provisioning-service.js"
+      ],
+      "dbRead": [
+        "markets",
+        "users",
+        "pricing_global_access_grants",
+        "market_operating_assignments",
+        "assignment_memberships",
+        "membership_capabilities",
+        "assignment_capability_ceiling",
+        "economic_cost_centers",
+        "economic_cost_families",
+        "economic_cost_resources",
+        "economic_cost_posts"
+      ],
+      "dbWrite": [
+        "economic_cost_centers",
+        "economic_cost_families",
+        "economic_cost_resources",
+        "economic_cost_posts"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "market-structure-charge-reference",
+          "tables": [
+            "charges"
+          ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "service_owned_transaction"
+      ],
+      "doctrine": [
+        "exact_scope",
+        "reference_is_not_realized_cost",
+        "no_duplicate_authority",
+        "audit_creation"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "finance"
+      ],
+      "version": "2026-11"
+    },
+    {
+      "id": "services/economic-cost-write-authority.js",
+      "file": "services/economic-cost-write-authority.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-cost-write-authority",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_actor",
+        "explicit_scope",
+        "cost_action"
+      ],
+      "outputs": [
+        "exact_market_capability",
+        "audited_authorization"
+      ],
+      "depends": [
+        "middleware/require-pricing-global-authority.js",
+        "services/market-delegation-service.js"
+      ],
+      "usedBy": [
+        "services/economic-cost-budget-service.js",
+        "services/economic-cost-commitment-service.js",
+        "services/economic-cost-post-actual-service.js",
+        "services/economic-cost-reference-service.js",
+        "services/economic-cost-center-read-model.js"
+      ],
+      "dbRead": [
+        "pricing_global_access_grants",
+        "market_operating_assignments",
+        "assignment_memberships",
+        "membership_capabilities",
+        "assignment_capability_ceiling"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "caller_owned"
+      ],
+      "doctrine": [
+        "exact_scope",
+        "no_role_bypass",
+        "no_payment_authority",
+        "group_central_only"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "market-authorization"
+      ],
+      "version": "2026-11"
+    },
+    {
       "id": "services/economic-engine-queries.js",
       "file": "services/economic-engine-queries.js",
       "type": "file",
@@ -19135,6 +19564,65 @@
         "pricing"
       ],
       "version": "2026-08"
+    },
+    {
+      "id": "services/economic-sku-rail-selection.js",
+      "file": "services/economic-sku-rail-selection.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-sku-rail-selection",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "market",
+        "product",
+        "SKU",
+        "commercial rail",
+        "authorized action"
+      ],
+      "outputs": [
+        "scoped withdrawal state and append-only proof"
+      ],
+      "depends": [
+        "db.js",
+        "services/cost-allocation/product-margin-steering.js",
+        "services/pricing-market-decision-policy.js"
+      ],
+      "usedBy": [
+        "routes/admin-costing.js",
+        "services/order-checkout-service.js",
+        "bootstrap/crons.js"
+      ],
+      "dbRead": [
+        "economic_sku_rail_selection_events",
+        "markets",
+        "product_skus",
+        "orders",
+        "order_items",
+        "products",
+        "pricing_market_decision_policy_events"
+      ],
+      "dbWrite": [
+        "economic_sku_rail_selection_events"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "service_owned_selection_event_transaction"
+      ],
+      "doctrine": [
+        "exact_market_sku_rail",
+        "canonical_after_sale_evidence",
+        "pricing_unchanged"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "catalog",
+        "orders"
+      ],
+      "version": "2026-11"
     },
     {
       "id": "services/external-provider-onboarding-contracts.js",
@@ -20374,7 +20862,8 @@
       ],
       "depends": [
         "db",
-        "services/documents/pdf-renderer.js"
+        "services/documents/pdf-renderer.js",
+        "services/purchasing-grouped-service.js"
       ],
       "usedBy": [
         "routes/purchasing.js",
@@ -20392,6 +20881,7 @@
         "users",
         "suppliers",
         "order_items",
+        "orders",
         "products"
       ],
       "dbWrite": [
@@ -20563,6 +21053,48 @@
       ],
       "impactAreas": [
         "logistics"
+      ],
+      "version": "2026-11"
+    },
+    {
+      "id": "services/hub-combox-destination-guard.js",
+      "file": "services/hub-combox-destination-guard.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "hub-combox-destination-guard",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "caller_locked_transaction_executor",
+        "target_unit_id",
+        "immutable_allocation"
+      ],
+      "outputs": [
+        "destination_mismatch_or_null"
+      ],
+      "depends": [],
+      "usedBy": [
+        "services/hub-physical-identity.js"
+      ],
+      "dbRead": [
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller_owned_transaction_required"
+      ],
+      "doctrine": [
+        "HUB-001 mono-relais COMBOX",
+        "same-market destination isolation"
+      ],
+      "impactAreas": [
+        "logistics",
+        "market"
       ],
       "version": "2026-11"
     },
@@ -21073,7 +21605,8 @@
       ],
       "depends": [
         "db",
-        "services/supplier-source-resolution.js"
+        "services/supplier-source-resolution.js",
+        "services/suppliers/provider-authority.js"
       ],
       "usedBy": [
         "routes/hub.js",
@@ -21100,6 +21633,7 @@
         "hub_box_bags",
         "hub_box_effective_placements",
         "hub_scan_labels",
+        "order_delivery_waves",
         "international_shipments",
         "international_shipment_hub_units",
         "parcels",
@@ -21217,6 +21751,49 @@
       "version": "2026-10"
     },
     {
+      "id": "services/hub-reception-quality-plan.js",
+      "file": "services/hub-reception-quality-plan.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "hub-reception-quality-plan",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "PO",
+        "server market scope",
+        "explicit operator observations and transaction client"
+      ],
+      "outputs": [
+        "validated per-SKU quantity partition; no mutation"
+      ],
+      "depends": [],
+      "usedBy": [
+        "pending canonical reception integration (#5298)"
+      ],
+      "dbRead": [
+        "purchase_orders",
+        "purchase_lines",
+        "order_items",
+        "orders"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller-owned transaction with PO and purchase-line locks"
+      ],
+      "doctrine": [
+        "explicit_physical_observation_no_implicit_receipt"
+      ],
+      "impactAreas": [
+        "logistics",
+        "purchasing"
+      ],
+      "version": "2026-11-v1"
+    },
+    {
       "id": "services/hub-reference.js",
       "file": "services/hub-reference.js",
       "type": "file",
@@ -21256,6 +21833,58 @@
         "supplier-integration"
       ],
       "version": "2026-10"
+    },
+    {
+      "id": "services/hub-supplier-receipt-quality.js",
+      "file": "services/hub-supplier-receipt-quality.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "hub-supplier-receipt-quality",
+      "domain": "logistics,purchasing",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "server market and actor",
+        "PO",
+        "stable reference",
+        "explicit physical observations"
+      ],
+      "outputs": [
+        "immutable receipt and return attestations",
+        "canonical conforming placements"
+      ],
+      "depends": [
+        "services/hub-reception-quality-plan.js",
+        "services/hub-physical-identity.js"
+      ],
+      "usedBy": [
+        "routes/admin-operations-workspace.js"
+      ],
+      "dbRead": [
+        "purchase_orders",
+        "hub_supplier_receipt_checks",
+        "hub_supplier_receipt_check_lines",
+        "hub_supplier_return_attestations"
+      ],
+      "dbWrite": [
+        "hub_supplier_receipt_checks",
+        "hub_supplier_receipt_check_lines",
+        "hub_supplier_return_attestations"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller-owned transaction; reference advisory lock then PO/line locks"
+      ],
+      "doctrine": [
+        "no_rejected_client_stock_no_implicit_supplier_return"
+      ],
+      "impactAreas": [
+        "logistics",
+        "purchasing"
+      ],
+      "version": "2026-11-v1"
     },
     {
       "id": "services/hub-v1-fixture-checkout-guard.js",
@@ -23264,7 +23893,9 @@
         "products",
         "relais",
         "local_stock",
-        "market_delegation_audit"
+        "market_delegation_audit",
+        "catalog_global_access_grants",
+        "markets"
       ],
       "dbWrite": [],
       "dbWriteVia": [
@@ -24334,7 +24965,8 @@
         "services/market-payment-provider-config-service.js",
         "services/relais-mutation-service.js",
         "services/central-authority.js",
-        "services/market-control-plane.js"
+        "services/market-control-plane.js",
+        "services/economic-cost-reference-service.js"
       ],
       "usedBy": [
         "routes/admin-market-control-plane.js"
@@ -24388,6 +25020,13 @@
           "via": "relais-mutation-service",
           "tables": [
             "relais"
+          ]
+        },
+        {
+          "via": "economic-cost-reference-service",
+          "tables": [
+            "economic_cost_centers",
+            "economic_cost_families"
           ]
         }
       ],
@@ -30877,7 +31516,8 @@
       "dbRead": [
         "order_items",
         "purchase_lines",
-        "purchase_orders"
+        "purchase_orders",
+        "purchase_order_authorizations"
       ],
       "dbWrite": [
         "alerts",
@@ -31122,7 +31762,10 @@
         "suppliers",
         "v_purchase_line_market",
         "v_purchase_line_progress",
-        "purchase_order_authorizations"
+        "purchase_order_authorizations",
+        "relay_return_compensations",
+        "disputes",
+        "relay_product_return_receipts"
       ],
       "dbWrite": [
         "purchase_lines",
@@ -31212,6 +31855,7 @@
         "services/notification-service.js",
         "services/hub-reference.js",
         "services/purchase-line-snapshot.js",
+        "services/purchasing-grouped-service.js",
         "services/supplier-source-resolution.js",
         "services/supplier-execution-persistence.js",
         "services/suppliers/supplier-order-identity.js",
@@ -32042,7 +32686,9 @@
         "recipients",
         "relais",
         "sms_log",
-        "users"
+        "users",
+        "parcels",
+        "parcel_items"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -41313,6 +41959,21 @@
       "table": "order_cost_entry_events"
     },
     {
+      "id": "db:international_shipments",
+      "type": "db-table",
+      "table": "international_shipments"
+    },
+    {
+      "id": "db:international_n1_reconciliations",
+      "type": "db-table",
+      "table": "international_n1_reconciliations"
+    },
+    {
+      "id": "db:international_shipment_charges",
+      "type": "db-table",
+      "table": "international_shipment_charges"
+    },
+    {
       "id": "db:cost_component_events",
       "type": "db-table",
       "table": "cost_component_events"
@@ -41338,11 +41999,6 @@
       "table": "customs_shipment_holds"
     },
     {
-      "id": "db:international_shipments",
-      "type": "db-table",
-      "table": "international_shipments"
-    },
-    {
       "id": "db:store_credits",
       "type": "db-table",
       "table": "store_credits"
@@ -41353,9 +42009,69 @@
       "table": "local_cash_refund_payouts"
     },
     {
+      "id": "db:economic_cost_centers",
+      "type": "db-table",
+      "table": "economic_cost_centers"
+    },
+    {
+      "id": "db:economic_cost_posts",
+      "type": "db-table",
+      "table": "economic_cost_posts"
+    },
+    {
+      "id": "db:economic_cost_budget_revisions",
+      "type": "db-table",
+      "table": "economic_cost_budget_revisions"
+    },
+    {
+      "id": "db:economic_cost_families",
+      "type": "db-table",
+      "table": "economic_cost_families"
+    },
+    {
+      "id": "db:economic_cost_resources",
+      "type": "db-table",
+      "table": "economic_cost_resources"
+    },
+    {
+      "id": "db:economic_cost_commitments",
+      "type": "db-table",
+      "table": "economic_cost_commitments"
+    },
+    {
+      "id": "db:economic_cost_commitment_movements",
+      "type": "db-table",
+      "table": "economic_cost_commitment_movements"
+    },
+    {
+      "id": "db:international_shipment_events",
+      "type": "db-table",
+      "table": "international_shipment_events"
+    },
+    {
+      "id": "db:international_shipment_hub_units",
+      "type": "db-table",
+      "table": "international_shipment_hub_units"
+    },
+    {
+      "id": "db:hub_box_effective_placements",
+      "type": "db-table",
+      "table": "hub_box_effective_placements"
+    },
+    {
       "id": "db:economic_variables",
       "type": "db-table",
       "table": "economic_variables"
+    },
+    {
+      "id": "db:economic_sku_rail_selection_events",
+      "type": "db-table",
+      "table": "economic_sku_rail_selection_events"
+    },
+    {
+      "id": "db:pricing_market_decision_policy_events",
+      "type": "db-table",
+      "table": "pricing_market_decision_policy_events"
     },
     {
       "id": "db:supplier_execution_payment_proofs",
@@ -41366,11 +42082,6 @@
       "id": "db:fx_pegs",
       "type": "db-table",
       "table": "fx_pegs"
-    },
-    {
-      "id": "db:international_shipment_hub_units",
-      "type": "db-table",
-      "table": "international_shipment_hub_units"
     },
     {
       "id": "db:hub_custody_events",
@@ -41423,11 +42134,6 @@
       "table": "hub_box_custody_scans"
     },
     {
-      "id": "db:international_shipment_events",
-      "type": "db-table",
-      "table": "international_shipment_events"
-    },
-    {
       "id": "db:outbox_events",
       "type": "db-table",
       "table": "outbox_events"
@@ -41443,9 +42149,24 @@
       "table": "v_purchase_line_market"
     },
     {
-      "id": "db:hub_box_effective_placements",
+      "id": "db:order_delivery_waves",
       "type": "db-table",
-      "table": "hub_box_effective_placements"
+      "table": "order_delivery_waves"
+    },
+    {
+      "id": "db:hub_supplier_receipt_checks",
+      "type": "db-table",
+      "table": "hub_supplier_receipt_checks"
+    },
+    {
+      "id": "db:hub_supplier_receipt_check_lines",
+      "type": "db-table",
+      "table": "hub_supplier_receipt_check_lines"
+    },
+    {
+      "id": "db:hub_supplier_return_attestations",
+      "type": "db-table",
+      "table": "hub_supplier_return_attestations"
     },
     {
       "id": "db:local_stock_allocations",
@@ -41456,16 +42177,6 @@
       "id": "db:import_runtime_item_events",
       "type": "db-table",
       "table": "import_runtime_item_events"
-    },
-    {
-      "id": "db:international_shipment_charges",
-      "type": "db-table",
-      "table": "international_shipment_charges"
-    },
-    {
-      "id": "db:international_n1_reconciliations",
-      "type": "db-table",
-      "table": "international_n1_reconciliations"
     },
     {
       "id": "db:inventory_items",
@@ -41501,11 +42212,6 @@
       "id": "db:order_checkout_idempotency",
       "type": "db-table",
       "table": "order_checkout_idempotency"
-    },
-    {
-      "id": "db:order_delivery_waves",
-      "type": "db-table",
-      "table": "order_delivery_waves"
     },
     {
       "id": "db:physical_outcome_receipts",
@@ -41563,11 +42269,6 @@
       "table": "market_price_observation_events"
     },
     {
-      "id": "db:pricing_market_decision_policy_events",
-      "type": "db-table",
-      "table": "pricing_market_decision_policy_events"
-    },
-    {
       "id": "db:pricing_maturity_disposition_events",
       "type": "db-table",
       "table": "pricing_maturity_disposition_events"
@@ -41593,6 +42294,16 @@
       "table": "pricing_strategy_history"
     },
     {
+      "id": "db:relay_return_compensations",
+      "type": "db-table",
+      "table": "relay_return_compensations"
+    },
+    {
+      "id": "db:relay_product_return_receipts",
+      "type": "db-table",
+      "table": "relay_product_return_receipts"
+    },
+    {
       "id": "db:supplier_execution_group_members",
       "type": "db-table",
       "table": "supplier_execution_group_members"
@@ -41601,16 +42312,6 @@
       "id": "db:supplier_execution_events",
       "type": "db-table",
       "table": "supplier_execution_events"
-    },
-    {
-      "id": "db:relay_product_return_receipts",
-      "type": "db-table",
-      "table": "relay_product_return_receipts"
-    },
-    {
-      "id": "db:relay_return_compensations",
-      "type": "db-table",
-      "table": "relay_return_compensations"
     },
     {
       "id": "db:shared_cart_saved_access",
@@ -43658,6 +44359,116 @@
       "doctrine": "economic_variables_read_only"
     },
     {
+      "id": "doctrine:budget_is_not_realized_cost",
+      "type": "doctrine",
+      "doctrine": "budget_is_not_realized_cost"
+    },
+    {
+      "id": "doctrine:explicit_global_authority",
+      "type": "doctrine",
+      "doctrine": "explicit_global_authority"
+    },
+    {
+      "id": "doctrine:exact_scope",
+      "type": "doctrine",
+      "doctrine": "exact_scope"
+    },
+    {
+      "id": "doctrine:eur_is_the_pivot",
+      "type": "doctrine",
+      "doctrine": "eur_is_the_pivot"
+    },
+    {
+      "id": "doctrine:immutable_budget_revision",
+      "type": "doctrine",
+      "doctrine": "immutable_budget_revision"
+    },
+    {
+      "id": "doctrine:exact_market_scope",
+      "type": "doctrine",
+      "doctrine": "exact_market_scope"
+    },
+    {
+      "id": "doctrine:no_fake_zero",
+      "type": "doctrine",
+      "doctrine": "no_fake_zero"
+    },
+    {
+      "id": "doctrine:group_raw_not_delegated",
+      "type": "doctrine",
+      "doctrine": "group_raw_not_delegated"
+    },
+    {
+      "id": "doctrine:commitments_are_not_real_costs",
+      "type": "doctrine",
+      "doctrine": "commitments_are_not_real_costs"
+    },
+    {
+      "id": "doctrine:frozen_fx",
+      "type": "doctrine",
+      "doctrine": "frozen_fx"
+    },
+    {
+      "id": "doctrine:append_only",
+      "type": "doctrine",
+      "doctrine": "append_only"
+    },
+    {
+      "id": "doctrine:canonical_fact_consumption_only",
+      "type": "doctrine",
+      "doctrine": "canonical_fact_consumption_only"
+    },
+    {
+      "id": "doctrine:canonical_structure_journal_only",
+      "type": "doctrine",
+      "doctrine": "canonical_structure_journal_only"
+    },
+    {
+      "id": "doctrine:no_operational_cost_reentry",
+      "type": "doctrine",
+      "doctrine": "no_operational_cost_reentry"
+    },
+    {
+      "id": "doctrine:evidence_required",
+      "type": "doctrine",
+      "doctrine": "evidence_required"
+    },
+    {
+      "id": "doctrine:governed_fx",
+      "type": "doctrine",
+      "doctrine": "governed_fx"
+    },
+    {
+      "id": "doctrine:reference_is_not_realized_cost",
+      "type": "doctrine",
+      "doctrine": "reference_is_not_realized_cost"
+    },
+    {
+      "id": "doctrine:no_duplicate_authority",
+      "type": "doctrine",
+      "doctrine": "no_duplicate_authority"
+    },
+    {
+      "id": "doctrine:audit_creation",
+      "type": "doctrine",
+      "doctrine": "audit_creation"
+    },
+    {
+      "id": "doctrine:no_role_bypass",
+      "type": "doctrine",
+      "doctrine": "no_role_bypass"
+    },
+    {
+      "id": "doctrine:no_payment_authority",
+      "type": "doctrine",
+      "doctrine": "no_payment_authority"
+    },
+    {
+      "id": "doctrine:group_central_only",
+      "type": "doctrine",
+      "doctrine": "group_central_only"
+    },
+    {
       "id": "doctrine:couts_repartis_par_commande",
       "type": "doctrine",
       "doctrine": "couts_repartis_par_commande"
@@ -43671,6 +44482,21 @@
       "id": "doctrine:snapshot_debounce",
       "type": "doctrine",
       "doctrine": "snapshot_debounce"
+    },
+    {
+      "id": "doctrine:exact_market_sku_rail",
+      "type": "doctrine",
+      "doctrine": "exact_market_sku_rail"
+    },
+    {
+      "id": "doctrine:canonical_after_sale_evidence",
+      "type": "doctrine",
+      "doctrine": "canonical_after_sale_evidence"
+    },
+    {
+      "id": "doctrine:pricing_unchanged",
+      "type": "doctrine",
+      "doctrine": "pricing_unchanged"
     },
     {
       "id": "doctrine:docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_ONBOARDING.md",
@@ -43741,11 +44567,6 @@
       "id": "doctrine:reconcile_before_validate",
       "type": "doctrine",
       "doctrine": "reconcile_before_validate"
-    },
-    {
-      "id": "doctrine:eur_is_the_pivot",
-      "type": "doctrine",
-      "doctrine": "eur_is_the_pivot"
     },
     {
       "id": "doctrine:single_conversion_authority",
@@ -43828,11 +44649,6 @@
       "doctrine": "dated_provenance"
     },
     {
-      "id": "doctrine:append_only",
-      "type": "doctrine",
-      "doctrine": "append_only"
-    },
-    {
       "id": "doctrine:no_rate_fallback",
       "type": "doctrine",
       "doctrine": "no_rate_fallback"
@@ -43906,6 +44722,16 @@
       "id": "doctrine:Allocation & Custody; une KOM-BOX appartient à au plus une expédition du même marché",
       "type": "doctrine",
       "doctrine": "Allocation & Custody; une KOM-BOX appartient à au plus une expédition du même marché"
+    },
+    {
+      "id": "doctrine:HUB-001 mono-relais COMBOX",
+      "type": "doctrine",
+      "doctrine": "HUB-001 mono-relais COMBOX"
+    },
+    {
+      "id": "doctrine:same-market destination isolation",
+      "type": "doctrine",
+      "doctrine": "same-market destination isolation"
     },
     {
       "id": "doctrine:market_operator_scoping (GAP-1)",
@@ -44003,9 +44829,19 @@
       "doctrine": "never_double_place"
     },
     {
+      "id": "doctrine:explicit_physical_observation_no_implicit_receipt",
+      "type": "doctrine",
+      "doctrine": "explicit_physical_observation_no_implicit_receipt"
+    },
+    {
       "id": "doctrine:docs/doctrine/DOCTRINE_HUB_PHYSICAL_IDENTITY.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_HUB_PHYSICAL_IDENTITY.md"
+    },
+    {
+      "id": "doctrine:no_rejected_client_stock_no_implicit_supplier_return",
+      "type": "doctrine",
+      "doctrine": "no_rejected_client_stock_no_implicit_supplier_return"
     },
     {
       "id": "doctrine:dashboard_shows_decisions_not_pipeline_noise",
@@ -46743,6 +47579,11 @@
       "area": "finance-config"
     },
     {
+      "id": "impact:governance",
+      "type": "impact-area",
+      "area": "governance"
+    },
+    {
       "id": "impact:external-provider-contracts",
       "type": "impact-area",
       "area": "external-provider-contracts"
@@ -46811,11 +47652,6 @@
       "id": "impact:pickup",
       "type": "impact-area",
       "area": "pickup"
-    },
-    {
-      "id": "impact:governance",
-      "type": "impact-area",
-      "area": "governance"
     },
     {
       "id": "impact:market-control-plane",
@@ -47216,6 +48052,12 @@
       "to": "impact:bootstrap",
       "type": "impact",
       "label": "bootstrap"
+    },
+    {
+      "from": "bootstrap/crons.js",
+      "to": "services/economic-sku-rail-selection.js",
+      "type": "depends",
+      "label": "services/economic-sku-rail-selection.js"
     },
     {
       "from": "bootstrap/crons.js",
@@ -55542,6 +56384,18 @@
       "label": "services/cost-allocation/product-margin-steering.js"
     },
     {
+      "from": "routes/admin-costing.js",
+      "to": "services/economic-sku-rail-selection.js",
+      "type": "depends",
+      "label": "services/economic-sku-rail-selection.js"
+    },
+    {
+      "from": "routes/admin-costing.js",
+      "to": "middleware/require-pricing-global-authority.js",
+      "type": "depends",
+      "label": "middleware/require-pricing-global-authority.js"
+    },
+    {
       "from": "bootstrap/api-routes.js",
       "to": "routes/admin-costing.js",
       "type": "uses",
@@ -56749,6 +57603,24 @@
       "label": "services/operations-workspace"
     },
     {
+      "from": "routes/admin-operations-workspace.js",
+      "to": "services/hub-global-board",
+      "type": "depends",
+      "label": "services/hub-global-board"
+    },
+    {
+      "from": "routes/admin-operations-workspace.js",
+      "to": "services/hub-supplier-receipt-quality",
+      "type": "depends",
+      "label": "services/hub-supplier-receipt-quality"
+    },
+    {
+      "from": "routes/admin-operations-workspace.js",
+      "to": "services/purchasing-completion-service",
+      "type": "depends",
+      "label": "services/purchasing-completion-service"
+    },
+    {
       "from": "bootstrap/api-routes.js",
       "to": "routes/admin-operations-workspace.js",
       "type": "uses",
@@ -57209,6 +58081,36 @@
       "to": "services/market-cost-attribution-service.js",
       "type": "depends",
       "label": "services/market-cost-attribution-service.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/economic-cost-center-read-model.js",
+      "type": "depends",
+      "label": "services/economic-cost-center-read-model.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/economic-cost-budget-service.js",
+      "type": "depends",
+      "label": "services/economic-cost-budget-service.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/economic-cost-commitment-service.js",
+      "type": "depends",
+      "label": "services/economic-cost-commitment-service.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/economic-cost-post-actual-service.js",
+      "type": "depends",
+      "label": "services/economic-cost-post-actual-service.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/economic-cost-reference-service.js",
+      "type": "depends",
+      "label": "services/economic-cost-reference-service.js"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -72677,6 +73579,12 @@
       "label": "services/cost-allocation/real-margin-shadow.js"
     },
     {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "services/pricing-market-decision-policy.js",
+      "type": "depends",
+      "label": "services/pricing-market-decision-policy.js"
+    },
+    {
       "from": "routes/admin-costing.js",
       "to": "services/cost-allocation/product-margin-steering.js",
       "type": "uses",
@@ -72747,6 +73655,30 @@
       "to": "db:business_rules",
       "type": "db-read",
       "label": "business_rules"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "db:international_shipment_relay_receipts",
+      "type": "db-read",
+      "label": "international_shipment_relay_receipts"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "db:international_shipments",
+      "type": "db-read",
+      "label": "international_shipments"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "db:international_n1_reconciliations",
+      "type": "db-read",
+      "label": "international_n1_reconciliations"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "db:international_shipment_charges",
+      "type": "db-read",
+      "label": "international_shipment_charges"
     },
     {
       "from": "services/cost-allocation/product-margin-steering.js",
@@ -76439,6 +77371,886 @@
       "label": "finance-config"
     },
     {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "services/economic-cost-write-authority.js",
+      "type": "depends",
+      "label": "services/economic-cost-write-authority.js"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "services/fx-authority.js",
+      "type": "depends",
+      "label": "services/fx-authority.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/economic-cost-budget-service.js",
+      "type": "uses",
+      "label": "routes/admin-pricing-workspace.js"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "db:economic_cost_centers",
+      "type": "db-read",
+      "label": "economic_cost_centers"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "db:economic_cost_posts",
+      "type": "db-read",
+      "label": "economic_cost_posts"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "db:economic_cost_budget_revisions",
+      "type": "db-read",
+      "label": "economic_cost_budget_revisions"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "db:economic_cost_budget_revisions",
+      "type": "db-write",
+      "label": "economic_cost_budget_revisions"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "doctrine:budget_is_not_realized_cost",
+      "type": "doctrine",
+      "label": "budget_is_not_realized_cost"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "doctrine:explicit_global_authority",
+      "type": "doctrine",
+      "label": "explicit_global_authority"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "doctrine:exact_scope",
+      "type": "doctrine",
+      "label": "exact_scope"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "doctrine:eur_is_the_pivot",
+      "type": "doctrine",
+      "label": "eur_is_the_pivot"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "doctrine:immutable_budget_revision",
+      "type": "doctrine",
+      "label": "immutable_budget_revision"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "impact:governance",
+      "type": "impact",
+      "label": "governance"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "middleware/require-pricing-global-authority.js",
+      "type": "depends",
+      "label": "middleware/require-pricing-global-authority.js"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "services/market-delegation-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-service.js"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "services/fx-authority.js",
+      "type": "depends",
+      "label": "services/fx-authority.js"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "services/cost-allocation/real-margin-shadow.js",
+      "type": "depends",
+      "label": "services/cost-allocation/real-margin-shadow.js"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "services/economic-cost-write-authority.js",
+      "type": "depends",
+      "label": "services/economic-cost-write-authority.js"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "services/economic-cost-reference-service.js",
+      "type": "depends",
+      "label": "services/economic-cost-reference-service.js"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "services/pricing-period-structure.js",
+      "type": "depends",
+      "label": "services/pricing-period-structure.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/economic-cost-center-read-model.js",
+      "type": "uses",
+      "label": "routes/admin-pricing-workspace.js"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:economic_cost_centers",
+      "type": "db-read",
+      "label": "economic_cost_centers"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:economic_cost_families",
+      "type": "db-read",
+      "label": "economic_cost_families"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:economic_cost_resources",
+      "type": "db-read",
+      "label": "economic_cost_resources"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:economic_cost_posts",
+      "type": "db-read",
+      "label": "economic_cost_posts"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:economic_cost_budget_revisions",
+      "type": "db-read",
+      "label": "economic_cost_budget_revisions"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:economic_cost_commitments",
+      "type": "db-read",
+      "label": "economic_cost_commitments"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:economic_cost_commitment_movements",
+      "type": "db-read",
+      "label": "economic_cost_commitment_movements"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:economic_structure_cost_events",
+      "type": "db-read",
+      "label": "economic_structure_cost_events"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:international_shipments",
+      "type": "db-read",
+      "label": "international_shipments"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:international_shipment_events",
+      "type": "db-read",
+      "label": "international_shipment_events"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:international_shipment_relay_receipts",
+      "type": "db-read",
+      "label": "international_shipment_relay_receipts"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:international_shipment_hub_units",
+      "type": "db-read",
+      "label": "international_shipment_hub_units"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:international_n1_reconciliations",
+      "type": "db-read",
+      "label": "international_n1_reconciliations"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:hub_physical_units",
+      "type": "db-read",
+      "label": "hub_physical_units"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:hub_box_effective_placements",
+      "type": "db-read",
+      "label": "hub_box_effective_placements"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:hub_purchase_allocations",
+      "type": "db-read",
+      "label": "hub_purchase_allocations"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:purchase_lines",
+      "type": "db-read",
+      "label": "purchase_lines"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:supplier_execution_payments",
+      "type": "db-read",
+      "label": "supplier_execution_payments"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:supplier_payment_settlements",
+      "type": "db-read",
+      "label": "supplier_payment_settlements"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:refunds",
+      "type": "db-read",
+      "label": "refunds"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:international_shipment_charges",
+      "type": "db-read",
+      "label": "international_shipment_charges"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:customs_shipments",
+      "type": "db-read",
+      "label": "customs_shipments"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "doctrine:exact_market_scope",
+      "type": "doctrine",
+      "label": "exact_market_scope"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "doctrine:budget_is_not_realized_cost",
+      "type": "doctrine",
+      "label": "budget_is_not_realized_cost"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "doctrine:no_fake_zero",
+      "type": "doctrine",
+      "label": "no_fake_zero"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "doctrine:group_raw_not_delegated",
+      "type": "doctrine",
+      "label": "group_raw_not_delegated"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "impact:market-authorization",
+      "type": "impact",
+      "label": "market-authorization"
+    },
+    {
+      "from": "services/economic-cost-commitment-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/economic-cost-commitment-service.js",
+      "to": "services/economic-cost-write-authority.js",
+      "type": "depends",
+      "label": "services/economic-cost-write-authority.js"
+    },
+    {
+      "from": "services/economic-cost-commitment-service.js",
+      "to": "services/fx-authority.js",
+      "type": "depends",
+      "label": "services/fx-authority.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/economic-cost-commitment-service.js",
+      "type": "uses",
+      "label": "routes/admin-pricing-workspace.js"
+    },
+    {
+      "from": "services/economic-cost-commitment-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/economic-cost-commitment-service.js",
+      "to": "db:economic_cost_centers",
+      "type": "db-read",
+      "label": "economic_cost_centers"
+    },
+    {
+      "from": "services/economic-cost-commitment-service.js",
+      "to": "db:economic_cost_posts",
+      "type": "db-read",
+      "label": "economic_cost_posts"
+    },
+    {
+      "from": "services/economic-cost-commitment-service.js",
+      "to": "db:economic_cost_commitments",
+      "type": "db-read",
+      "label": "economic_cost_commitments"
+    },
+    {
+      "from": "services/economic-cost-commitment-service.js",
+      "to": "db:economic_cost_commitment_movements",
+      "type": "db-read",
+      "label": "economic_cost_commitment_movements"
+    },
+    {
+      "from": "services/economic-cost-commitment-service.js",
+      "to": "db:economic_structure_cost_events",
+      "type": "db-read",
+      "label": "economic_structure_cost_events"
+    },
+    {
+      "from": "services/economic-cost-commitment-service.js",
+      "to": "db:economic_cost_commitments",
+      "type": "db-write",
+      "label": "economic_cost_commitments"
+    },
+    {
+      "from": "services/economic-cost-commitment-service.js",
+      "to": "db:economic_cost_commitment_movements",
+      "type": "db-write",
+      "label": "economic_cost_commitment_movements"
+    },
+    {
+      "from": "services/economic-cost-commitment-service.js",
+      "to": "doctrine:commitments_are_not_real_costs",
+      "type": "doctrine",
+      "label": "commitments_are_not_real_costs"
+    },
+    {
+      "from": "services/economic-cost-commitment-service.js",
+      "to": "doctrine:exact_scope",
+      "type": "doctrine",
+      "label": "exact_scope"
+    },
+    {
+      "from": "services/economic-cost-commitment-service.js",
+      "to": "doctrine:frozen_fx",
+      "type": "doctrine",
+      "label": "frozen_fx"
+    },
+    {
+      "from": "services/economic-cost-commitment-service.js",
+      "to": "doctrine:append_only",
+      "type": "doctrine",
+      "label": "append_only"
+    },
+    {
+      "from": "services/economic-cost-commitment-service.js",
+      "to": "doctrine:canonical_fact_consumption_only",
+      "type": "doctrine",
+      "label": "canonical_fact_consumption_only"
+    },
+    {
+      "from": "services/economic-cost-commitment-service.js",
+      "to": "doctrine:no_double_count",
+      "type": "doctrine",
+      "label": "no_double_count"
+    },
+    {
+      "from": "services/economic-cost-commitment-service.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/economic-cost-commitment-service.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
+    },
+    {
+      "from": "services/economic-cost-commitment-service.js",
+      "to": "impact:governance",
+      "type": "impact",
+      "label": "governance"
+    },
+    {
+      "from": "services/economic-cost-post-actual-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/economic-cost-post-actual-service.js",
+      "to": "services/economic-cost-write-authority.js",
+      "type": "depends",
+      "label": "services/economic-cost-write-authority.js"
+    },
+    {
+      "from": "services/economic-cost-post-actual-service.js",
+      "to": "services/pricing-period-structure.js",
+      "type": "depends",
+      "label": "services/pricing-period-structure.js"
+    },
+    {
+      "from": "services/economic-cost-post-actual-service.js",
+      "to": "services/fx-authority.js",
+      "type": "depends",
+      "label": "services/fx-authority.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/economic-cost-post-actual-service.js",
+      "type": "uses",
+      "label": "routes/admin-pricing-workspace.js"
+    },
+    {
+      "from": "services/economic-cost-post-actual-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/economic-cost-post-actual-service.js",
+      "to": "db:economic_cost_centers",
+      "type": "db-read",
+      "label": "economic_cost_centers"
+    },
+    {
+      "from": "services/economic-cost-post-actual-service.js",
+      "to": "db:economic_cost_posts",
+      "type": "db-read",
+      "label": "economic_cost_posts"
+    },
+    {
+      "from": "services/economic-cost-post-actual-service.js",
+      "to": "db:charges",
+      "type": "db-read",
+      "label": "charges"
+    },
+    {
+      "from": "services/economic-cost-post-actual-service.js",
+      "to": "db:economic_structure_cost_events",
+      "type": "db-read",
+      "label": "economic_structure_cost_events"
+    },
+    {
+      "from": "services/economic-cost-post-actual-service.js",
+      "to": "db:economic_structure_cost_events",
+      "type": "db-write-via",
+      "label": "economic_structure_cost_events",
+      "via": "pricing-period-structure"
+    },
+    {
+      "from": "services/economic-cost-post-actual-service.js",
+      "to": "doctrine:canonical_structure_journal_only",
+      "type": "doctrine",
+      "label": "canonical_structure_journal_only"
+    },
+    {
+      "from": "services/economic-cost-post-actual-service.js",
+      "to": "doctrine:no_operational_cost_reentry",
+      "type": "doctrine",
+      "label": "no_operational_cost_reentry"
+    },
+    {
+      "from": "services/economic-cost-post-actual-service.js",
+      "to": "doctrine:evidence_required",
+      "type": "doctrine",
+      "label": "evidence_required"
+    },
+    {
+      "from": "services/economic-cost-post-actual-service.js",
+      "to": "doctrine:exact_scope",
+      "type": "doctrine",
+      "label": "exact_scope"
+    },
+    {
+      "from": "services/economic-cost-post-actual-service.js",
+      "to": "doctrine:governed_fx",
+      "type": "doctrine",
+      "label": "governed_fx"
+    },
+    {
+      "from": "services/economic-cost-post-actual-service.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/economic-cost-post-actual-service.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "services/economic-cost-write-authority.js",
+      "type": "depends",
+      "label": "services/economic-cost-write-authority.js"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "services/market-structure-charge-reference.js",
+      "type": "depends",
+      "label": "services/market-structure-charge-reference.js"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "services/market-delegation-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-service.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/economic-cost-reference-service.js",
+      "type": "uses",
+      "label": "routes/admin-pricing-workspace.js"
+    },
+    {
+      "from": "services/market-provisioning-service.js",
+      "to": "services/economic-cost-reference-service.js",
+      "type": "uses",
+      "label": "services/market-provisioning-service.js"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "db:pricing_global_access_grants",
+      "type": "db-read",
+      "label": "pricing_global_access_grants"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "db:market_operating_assignments",
+      "type": "db-read",
+      "label": "market_operating_assignments"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "db:assignment_memberships",
+      "type": "db-read",
+      "label": "assignment_memberships"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "db:membership_capabilities",
+      "type": "db-read",
+      "label": "membership_capabilities"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "db:assignment_capability_ceiling",
+      "type": "db-read",
+      "label": "assignment_capability_ceiling"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "db:economic_cost_centers",
+      "type": "db-read",
+      "label": "economic_cost_centers"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "db:economic_cost_families",
+      "type": "db-read",
+      "label": "economic_cost_families"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "db:economic_cost_resources",
+      "type": "db-read",
+      "label": "economic_cost_resources"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "db:economic_cost_posts",
+      "type": "db-read",
+      "label": "economic_cost_posts"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "db:economic_cost_centers",
+      "type": "db-write",
+      "label": "economic_cost_centers"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "db:economic_cost_families",
+      "type": "db-write",
+      "label": "economic_cost_families"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "db:economic_cost_resources",
+      "type": "db-write",
+      "label": "economic_cost_resources"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "db:economic_cost_posts",
+      "type": "db-write",
+      "label": "economic_cost_posts"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "db:charges",
+      "type": "db-write-via",
+      "label": "charges",
+      "via": "market-structure-charge-reference"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-delegation-service"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "doctrine:exact_scope",
+      "type": "doctrine",
+      "label": "exact_scope"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "doctrine:reference_is_not_realized_cost",
+      "type": "doctrine",
+      "label": "reference_is_not_realized_cost"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "doctrine:no_duplicate_authority",
+      "type": "doctrine",
+      "label": "no_duplicate_authority"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "doctrine:audit_creation",
+      "type": "doctrine",
+      "label": "audit_creation"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
+    },
+    {
+      "from": "services/economic-cost-write-authority.js",
+      "to": "middleware/require-pricing-global-authority.js",
+      "type": "depends",
+      "label": "middleware/require-pricing-global-authority.js"
+    },
+    {
+      "from": "services/economic-cost-write-authority.js",
+      "to": "services/market-delegation-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-service.js"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "services/economic-cost-write-authority.js",
+      "type": "uses",
+      "label": "services/economic-cost-budget-service.js"
+    },
+    {
+      "from": "services/economic-cost-commitment-service.js",
+      "to": "services/economic-cost-write-authority.js",
+      "type": "uses",
+      "label": "services/economic-cost-commitment-service.js"
+    },
+    {
+      "from": "services/economic-cost-post-actual-service.js",
+      "to": "services/economic-cost-write-authority.js",
+      "type": "uses",
+      "label": "services/economic-cost-post-actual-service.js"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "services/economic-cost-write-authority.js",
+      "type": "uses",
+      "label": "services/economic-cost-reference-service.js"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "services/economic-cost-write-authority.js",
+      "type": "uses",
+      "label": "services/economic-cost-center-read-model.js"
+    },
+    {
+      "from": "services/economic-cost-write-authority.js",
+      "to": "db:pricing_global_access_grants",
+      "type": "db-read",
+      "label": "pricing_global_access_grants"
+    },
+    {
+      "from": "services/economic-cost-write-authority.js",
+      "to": "db:market_operating_assignments",
+      "type": "db-read",
+      "label": "market_operating_assignments"
+    },
+    {
+      "from": "services/economic-cost-write-authority.js",
+      "to": "db:assignment_memberships",
+      "type": "db-read",
+      "label": "assignment_memberships"
+    },
+    {
+      "from": "services/economic-cost-write-authority.js",
+      "to": "db:membership_capabilities",
+      "type": "db-read",
+      "label": "membership_capabilities"
+    },
+    {
+      "from": "services/economic-cost-write-authority.js",
+      "to": "db:assignment_capability_ceiling",
+      "type": "db-read",
+      "label": "assignment_capability_ceiling"
+    },
+    {
+      "from": "services/economic-cost-write-authority.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-delegation-service"
+    },
+    {
+      "from": "services/economic-cost-write-authority.js",
+      "to": "doctrine:exact_scope",
+      "type": "doctrine",
+      "label": "exact_scope"
+    },
+    {
+      "from": "services/economic-cost-write-authority.js",
+      "to": "doctrine:no_role_bypass",
+      "type": "doctrine",
+      "label": "no_role_bypass"
+    },
+    {
+      "from": "services/economic-cost-write-authority.js",
+      "to": "doctrine:no_payment_authority",
+      "type": "doctrine",
+      "label": "no_payment_authority"
+    },
+    {
+      "from": "services/economic-cost-write-authority.js",
+      "to": "doctrine:group_central_only",
+      "type": "doctrine",
+      "label": "group_central_only"
+    },
+    {
+      "from": "services/economic-cost-write-authority.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/economic-cost-write-authority.js",
+      "to": "impact:market-authorization",
+      "type": "impact",
+      "label": "market-authorization"
+    },
+    {
       "from": "services/economic-engine-queries.js",
       "to": "db.js",
       "type": "depends",
@@ -76623,6 +78435,126 @@
       "to": "impact:pricing",
       "type": "impact",
       "label": "pricing"
+    },
+    {
+      "from": "services/economic-sku-rail-selection.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/economic-sku-rail-selection.js",
+      "to": "services/cost-allocation/product-margin-steering.js",
+      "type": "depends",
+      "label": "services/cost-allocation/product-margin-steering.js"
+    },
+    {
+      "from": "services/economic-sku-rail-selection.js",
+      "to": "services/pricing-market-decision-policy.js",
+      "type": "depends",
+      "label": "services/pricing-market-decision-policy.js"
+    },
+    {
+      "from": "routes/admin-costing.js",
+      "to": "services/economic-sku-rail-selection.js",
+      "type": "uses",
+      "label": "routes/admin-costing.js"
+    },
+    {
+      "from": "services/order-checkout-service.js",
+      "to": "services/economic-sku-rail-selection.js",
+      "type": "uses",
+      "label": "services/order-checkout-service.js"
+    },
+    {
+      "from": "bootstrap/crons.js",
+      "to": "services/economic-sku-rail-selection.js",
+      "type": "uses",
+      "label": "bootstrap/crons.js"
+    },
+    {
+      "from": "services/economic-sku-rail-selection.js",
+      "to": "db:economic_sku_rail_selection_events",
+      "type": "db-read",
+      "label": "economic_sku_rail_selection_events"
+    },
+    {
+      "from": "services/economic-sku-rail-selection.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/economic-sku-rail-selection.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/economic-sku-rail-selection.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/economic-sku-rail-selection.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/economic-sku-rail-selection.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/economic-sku-rail-selection.js",
+      "to": "db:pricing_market_decision_policy_events",
+      "type": "db-read",
+      "label": "pricing_market_decision_policy_events"
+    },
+    {
+      "from": "services/economic-sku-rail-selection.js",
+      "to": "db:economic_sku_rail_selection_events",
+      "type": "db-write",
+      "label": "economic_sku_rail_selection_events"
+    },
+    {
+      "from": "services/economic-sku-rail-selection.js",
+      "to": "doctrine:exact_market_sku_rail",
+      "type": "doctrine",
+      "label": "exact_market_sku_rail"
+    },
+    {
+      "from": "services/economic-sku-rail-selection.js",
+      "to": "doctrine:canonical_after_sale_evidence",
+      "type": "doctrine",
+      "label": "canonical_after_sale_evidence"
+    },
+    {
+      "from": "services/economic-sku-rail-selection.js",
+      "to": "doctrine:pricing_unchanged",
+      "type": "doctrine",
+      "label": "pricing_unchanged"
+    },
+    {
+      "from": "services/economic-sku-rail-selection.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/economic-sku-rail-selection.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/economic-sku-rail-selection.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
     },
     {
       "from": "services/external-provider-onboarding-contracts.js",
@@ -78859,6 +80791,12 @@
       "label": "services/documents/pdf-renderer.js"
     },
     {
+      "from": "services/hub-authorization-service.js",
+      "to": "services/purchasing-grouped-service.js",
+      "type": "depends",
+      "label": "services/purchasing-grouped-service.js"
+    },
+    {
       "from": "routes/purchasing.js",
       "to": "services/hub-authorization-service.js",
       "type": "uses",
@@ -78935,6 +80873,12 @@
       "to": "db:order_items",
       "type": "db-read",
       "label": "order_items"
+    },
+    {
+      "from": "services/hub-authorization-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
     },
     {
       "from": "services/hub-authorization-service.js",
@@ -79229,6 +81173,48 @@
       "to": "impact:logistics",
       "type": "impact",
       "label": "logistics"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "services/hub-combox-destination-guard.js",
+      "type": "uses",
+      "label": "services/hub-physical-identity.js"
+    },
+    {
+      "from": "services/hub-combox-destination-guard.js",
+      "to": "db:hub_physical_unit_placements",
+      "type": "db-read",
+      "label": "hub_physical_unit_placements"
+    },
+    {
+      "from": "services/hub-combox-destination-guard.js",
+      "to": "db:hub_purchase_allocations",
+      "type": "db-read",
+      "label": "hub_purchase_allocations"
+    },
+    {
+      "from": "services/hub-combox-destination-guard.js",
+      "to": "doctrine:HUB-001 mono-relais COMBOX",
+      "type": "doctrine",
+      "label": "HUB-001 mono-relais COMBOX"
+    },
+    {
+      "from": "services/hub-combox-destination-guard.js",
+      "to": "doctrine:same-market destination isolation",
+      "type": "doctrine",
+      "label": "same-market destination isolation"
+    },
+    {
+      "from": "services/hub-combox-destination-guard.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/hub-combox-destination-guard.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
     },
     {
       "from": "services/hub-dashboard-queries.js",
@@ -80187,6 +82173,12 @@
       "label": "services/supplier-source-resolution.js"
     },
     {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "services/suppliers/provider-authority.js",
+      "type": "depends",
+      "label": "services/suppliers/provider-authority.js"
+    },
+    {
       "from": "routes/hub.js",
       "to": "services/hub-procurement-dossier.js",
       "type": "uses",
@@ -80317,6 +82309,12 @@
       "to": "db:hub_scan_labels",
       "type": "db-read",
       "label": "hub_scan_labels"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:order_delivery_waves",
+      "type": "db-read",
+      "label": "order_delivery_waves"
     },
     {
       "from": "services/hub-procurement-dossier.js",
@@ -80541,6 +82539,54 @@
       "label": "purchasing"
     },
     {
+      "from": "pending canonical reception integration (#5298)",
+      "to": "services/hub-reception-quality-plan.js",
+      "type": "uses",
+      "label": "pending canonical reception integration (#5298)"
+    },
+    {
+      "from": "services/hub-reception-quality-plan.js",
+      "to": "db:purchase_orders",
+      "type": "db-read",
+      "label": "purchase_orders"
+    },
+    {
+      "from": "services/hub-reception-quality-plan.js",
+      "to": "db:purchase_lines",
+      "type": "db-read",
+      "label": "purchase_lines"
+    },
+    {
+      "from": "services/hub-reception-quality-plan.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/hub-reception-quality-plan.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/hub-reception-quality-plan.js",
+      "to": "doctrine:explicit_physical_observation_no_implicit_receipt",
+      "type": "doctrine",
+      "label": "explicit_physical_observation_no_implicit_receipt"
+    },
+    {
+      "from": "services/hub-reception-quality-plan.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/hub-reception-quality-plan.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
       "from": "services/hub-reference.js",
       "to": "crypto",
       "type": "depends",
@@ -80581,6 +82627,84 @@
       "to": "impact:supplier-integration",
       "type": "impact",
       "label": "supplier-integration"
+    },
+    {
+      "from": "services/hub-supplier-receipt-quality.js",
+      "to": "services/hub-reception-quality-plan.js",
+      "type": "depends",
+      "label": "services/hub-reception-quality-plan.js"
+    },
+    {
+      "from": "services/hub-supplier-receipt-quality.js",
+      "to": "services/hub-physical-identity.js",
+      "type": "depends",
+      "label": "services/hub-physical-identity.js"
+    },
+    {
+      "from": "routes/admin-operations-workspace.js",
+      "to": "services/hub-supplier-receipt-quality.js",
+      "type": "uses",
+      "label": "routes/admin-operations-workspace.js"
+    },
+    {
+      "from": "services/hub-supplier-receipt-quality.js",
+      "to": "db:purchase_orders",
+      "type": "db-read",
+      "label": "purchase_orders"
+    },
+    {
+      "from": "services/hub-supplier-receipt-quality.js",
+      "to": "db:hub_supplier_receipt_checks",
+      "type": "db-read",
+      "label": "hub_supplier_receipt_checks"
+    },
+    {
+      "from": "services/hub-supplier-receipt-quality.js",
+      "to": "db:hub_supplier_receipt_check_lines",
+      "type": "db-read",
+      "label": "hub_supplier_receipt_check_lines"
+    },
+    {
+      "from": "services/hub-supplier-receipt-quality.js",
+      "to": "db:hub_supplier_return_attestations",
+      "type": "db-read",
+      "label": "hub_supplier_return_attestations"
+    },
+    {
+      "from": "services/hub-supplier-receipt-quality.js",
+      "to": "db:hub_supplier_receipt_checks",
+      "type": "db-write",
+      "label": "hub_supplier_receipt_checks"
+    },
+    {
+      "from": "services/hub-supplier-receipt-quality.js",
+      "to": "db:hub_supplier_receipt_check_lines",
+      "type": "db-write",
+      "label": "hub_supplier_receipt_check_lines"
+    },
+    {
+      "from": "services/hub-supplier-receipt-quality.js",
+      "to": "db:hub_supplier_return_attestations",
+      "type": "db-write",
+      "label": "hub_supplier_return_attestations"
+    },
+    {
+      "from": "services/hub-supplier-receipt-quality.js",
+      "to": "doctrine:no_rejected_client_stock_no_implicit_supplier_return",
+      "type": "doctrine",
+      "label": "no_rejected_client_stock_no_implicit_supplier_return"
+    },
+    {
+      "from": "services/hub-supplier-receipt-quality.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/hub-supplier-receipt-quality.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
     },
     {
       "from": "services/hub-v1-fixture-checkout-guard.js",
@@ -84081,6 +86205,18 @@
     },
     {
       "from": "services/market-delegation-local-stock-service.js",
+      "to": "db:catalog_global_access_grants",
+      "type": "db-read",
+      "label": "catalog_global_access_grants"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
       "to": "db:local_stock",
       "type": "db-write-via",
       "label": "local_stock",
@@ -85782,6 +87918,12 @@
       "label": "services/market-control-plane.js"
     },
     {
+      "from": "services/market-provisioning-service.js",
+      "to": "services/economic-cost-reference-service.js",
+      "type": "depends",
+      "label": "services/economic-cost-reference-service.js"
+    },
+    {
       "from": "routes/admin-market-control-plane.js",
       "to": "services/market-provisioning-service.js",
       "type": "uses",
@@ -85898,6 +88040,20 @@
       "type": "db-write-via",
       "label": "relais",
       "via": "relais-mutation-service"
+    },
+    {
+      "from": "services/market-provisioning-service.js",
+      "to": "db:economic_cost_centers",
+      "type": "db-write-via",
+      "label": "economic_cost_centers",
+      "via": "economic-cost-reference-service"
+    },
+    {
+      "from": "services/market-provisioning-service.js",
+      "to": "db:economic_cost_families",
+      "type": "db-write-via",
+      "label": "economic_cost_families",
+      "via": "economic-cost-reference-service"
     },
     {
       "from": "services/market-provisioning-service.js",
@@ -96259,6 +98415,12 @@
     },
     {
       "from": "services/purchasing-cancel-service.js",
+      "to": "db:purchase_order_authorizations",
+      "type": "db-read",
+      "label": "purchase_order_authorizations"
+    },
+    {
+      "from": "services/purchasing-cancel-service.js",
       "to": "db:alerts",
       "type": "db-write",
       "label": "alerts"
@@ -96805,6 +98967,24 @@
     },
     {
       "from": "services/purchasing-grouped-service.js",
+      "to": "db:relay_return_compensations",
+      "type": "db-read",
+      "label": "relay_return_compensations"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
+      "to": "db:disputes",
+      "type": "db-read",
+      "label": "disputes"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
+      "to": "db:relay_product_return_receipts",
+      "type": "db-read",
+      "label": "relay_product_return_receipts"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
       "to": "db:purchase_lines",
       "type": "db-write",
       "label": "purchase_lines"
@@ -96940,6 +99120,12 @@
       "to": "services/purchase-line-snapshot.js",
       "type": "depends",
       "label": "services/purchase-line-snapshot.js"
+    },
+    {
+      "from": "services/purchasing-trigger-service.js",
+      "to": "services/purchasing-grouped-service.js",
+      "type": "depends",
+      "label": "services/purchasing-grouped-service.js"
     },
     {
       "from": "services/purchasing-trigger-service.js",
@@ -98124,6 +100310,18 @@
       "to": "db:users",
       "type": "db-read",
       "label": "users"
+    },
+    {
+      "from": "services/relay-dashboard-queries.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/relay-dashboard-queries.js",
+      "to": "db:parcel_items",
+      "type": "db-read",
+      "label": "parcel_items"
     },
     {
       "from": "services/relay-dashboard-queries.js",
@@ -111227,6 +113425,7 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
+        "services/economic-sku-rail-selection.js",
         "services/fx-public-reference-feed.js",
         "services/outbox-worker.js",
         "services/cash-reminder-service.js",
@@ -111293,6 +113492,7 @@
         "impact:payments",
         "server.js",
         "services/cash-reminder-service.js",
+        "services/economic-sku-rail-selection.js",
         "services/fx-public-reference-feed.js",
         "services/incident-escalation.js",
         "services/inventory-service.js",
@@ -112438,8 +114638,11 @@
         "impact:authorization",
         "impact:economic-engine",
         "impact:pricing",
+        "routes/admin-costing.js",
         "routes/admin-pricing-workspace.js",
-        "services/central-authority.js"
+        "services/central-authority.js",
+        "services/economic-cost-center-read-model.js",
+        "services/economic-cost-write-authority.js"
       ]
     },
     "middleware/require-recent-auth.js": {
@@ -117320,7 +119523,9 @@
         "middleware/auth.js",
         "services/*",
         "services/cost-allocation/real-margin-shadow.js",
-        "services/cost-allocation/product-margin-steering.js"
+        "services/cost-allocation/product-margin-steering.js",
+        "services/economic-sku-rail-selection.js",
+        "middleware/require-pricing-global-authority.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
@@ -117371,11 +119576,13 @@
         "impact:admin-dashboard",
         "impact:economic-engine",
         "middleware/auth.js",
+        "middleware/require-pricing-global-authority.js",
         "services/cost-allocation/index.js",
         "services/cost-allocation/manual-cost-entry-service.js",
         "services/cost-allocation/product-margin-steering.js",
         "services/cost-allocation/real-margin-shadow.js",
         "services/dashboard-cache.js",
+        "services/economic-sku-rail-selection.js",
         "utils/logger.js"
       ]
     },
@@ -118025,7 +120232,10 @@
         "middleware/require-market-execution-capability",
         "middleware/require-market-delegated-capability",
         "middleware/require-dashboard-global-authority",
-        "services/operations-workspace"
+        "services/operations-workspace",
+        "services/hub-global-board",
+        "services/hub-supplier-receipt-quality",
+        "services/purchasing-completion-service"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
@@ -118095,6 +120305,7 @@
         "services/hub-bag-box-service.js",
         "services/hub-opaque-labels.js",
         "services/hub-procurement-dossier.js",
+        "services/hub-supplier-receipt-quality.js",
         "services/operations-workspace.js",
         "services/relay-shipment-receipt.js"
       ]
@@ -118258,7 +120469,12 @@
         "services/market-commercial-price-service.js",
         "services/market-local-price-activation-service.js",
         "services/pricing-period-structure.js",
-        "services/market-cost-attribution-service.js"
+        "services/market-cost-attribution-service.js",
+        "services/economic-cost-center-read-model.js",
+        "services/economic-cost-budget-service.js",
+        "services/economic-cost-commitment-service.js",
+        "services/economic-cost-post-actual-service.js",
+        "services/economic-cost-reference-service.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
@@ -118344,6 +120560,11 @@
         "middleware/require-market-delegated-capability.js",
         "middleware/require-pricing-global-authority.js",
         "services/cost-component-market-service.js",
+        "services/economic-cost-budget-service.js",
+        "services/economic-cost-center-read-model.js",
+        "services/economic-cost-commitment-service.js",
+        "services/economic-cost-post-actual-service.js",
+        "services/economic-cost-reference-service.js",
         "services/market-commercial-price-service.js",
         "services/market-cost-attribution-service.js",
         "services/market-local-price-activation-service.js",
@@ -128048,7 +130269,8 @@
         "utils/rules.js",
         "services/cost-allocation/cost-types.js",
         "services/cost-allocation/_helpers.js",
-        "services/cost-allocation/real-margin-shadow.js"
+        "services/cost-allocation/real-margin-shadow.js",
+        "services/pricing-market-decision-policy.js"
       ],
       "directUsedBy": [
         "routes/admin-costing.js"
@@ -128065,7 +130287,11 @@
         "customs_shipments",
         "customs_shipment_parcels",
         "parcel_items",
-        "business_rules"
+        "business_rules",
+        "international_shipment_relay_receipts",
+        "international_shipments",
+        "international_n1_reconciliations",
+        "international_shipment_charges"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -128082,6 +130308,10 @@
         "db:customs_shipment_parcels",
         "db:customs_shipments",
         "db:finance_config",
+        "db:international_n1_reconciliations",
+        "db:international_shipment_charges",
+        "db:international_shipment_relay_receipts",
+        "db:international_shipments",
         "db:order_item_cost_imputations",
         "db:order_item_real_cost_allocations",
         "db:order_items",
@@ -128095,6 +130325,8 @@
         "services/cost-allocation/_helpers.js",
         "services/cost-allocation/cost-types.js",
         "services/cost-allocation/real-margin-shadow.js",
+        "services/economic-sku-rail-selection.js",
+        "services/pricing-market-decision-policy.js",
         "utils/rules.js"
       ]
     },
@@ -128159,6 +130391,7 @@
         "services/cost-allocation/canonical-margin-writer.js",
         "services/cost-allocation/cost-types.js",
         "services/cost-allocation/product-margin-steering.js",
+        "services/economic-cost-center-read-model.js",
         "services/finance-metrics/customs-unknown.js"
       ]
     },
@@ -130332,6 +132565,450 @@
         "utils/eco-bridge.js"
       ]
     },
+    "services/economic-cost-budget-service.js": {
+      "role": "economic-cost-budget-service",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "services/economic-cost-write-authority.js",
+        "services/fx-authority.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "markets",
+        "economic_cost_centers",
+        "economic_cost_posts",
+        "economic_cost_budget_revisions"
+      ],
+      "dbWrite": [
+        "economic_cost_budget_revisions"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "budget_is_not_realized_cost",
+        "explicit_global_authority",
+        "exact_scope",
+        "eur_is_the_pivot",
+        "immutable_budget_revision"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "finance",
+        "governance"
+      ],
+      "mustCheck": [
+        "db:economic_cost_budget_revisions",
+        "db:economic_cost_centers",
+        "db:economic_cost_posts",
+        "db:markets",
+        "doctrine:budget_is_not_realized_cost",
+        "doctrine:eur_is_the_pivot",
+        "doctrine:exact_scope",
+        "doctrine:explicit_global_authority",
+        "doctrine:immutable_budget_revision",
+        "impact:economic-engine",
+        "impact:finance",
+        "impact:governance",
+        "routes/admin-pricing-workspace.js",
+        "services/economic-cost-write-authority.js",
+        "services/fx-authority.js"
+      ]
+    },
+    "services/economic-cost-center-read-model.js": {
+      "role": "economic-cost-center-read-model",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "middleware/require-pricing-global-authority.js",
+        "services/market-delegation-service.js",
+        "services/fx-authority.js",
+        "services/cost-allocation/real-margin-shadow.js",
+        "services/economic-cost-write-authority.js",
+        "services/economic-cost-reference-service.js",
+        "services/pricing-period-structure.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "markets",
+        "users",
+        "economic_cost_centers",
+        "economic_cost_families",
+        "economic_cost_resources",
+        "economic_cost_posts",
+        "economic_cost_budget_revisions",
+        "economic_cost_commitments",
+        "economic_cost_commitment_movements",
+        "economic_structure_cost_events",
+        "international_shipments",
+        "international_shipment_events",
+        "international_shipment_relay_receipts",
+        "international_shipment_hub_units",
+        "international_n1_reconciliations",
+        "hub_physical_units",
+        "hub_box_effective_placements",
+        "hub_purchase_allocations",
+        "order_items",
+        "orders",
+        "purchase_lines",
+        "supplier_execution_payments",
+        "supplier_payment_settlements",
+        "refunds",
+        "international_shipment_charges",
+        "customs_shipments"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "exact_market_scope",
+        "budget_is_not_realized_cost",
+        "no_fake_zero",
+        "group_raw_not_delegated"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "finance",
+        "market-authorization"
+      ],
+      "mustCheck": [
+        "db:customs_shipments",
+        "db:economic_cost_budget_revisions",
+        "db:economic_cost_centers",
+        "db:economic_cost_commitment_movements",
+        "db:economic_cost_commitments",
+        "db:economic_cost_families",
+        "db:economic_cost_posts",
+        "db:economic_cost_resources",
+        "db:economic_structure_cost_events",
+        "db:hub_box_effective_placements",
+        "db:hub_physical_units",
+        "db:hub_purchase_allocations",
+        "db:international_n1_reconciliations",
+        "db:international_shipment_charges",
+        "db:international_shipment_events",
+        "db:international_shipment_hub_units",
+        "db:international_shipment_relay_receipts",
+        "db:international_shipments",
+        "db:markets",
+        "db:order_items",
+        "db:orders",
+        "db:purchase_lines",
+        "db:refunds",
+        "db:supplier_execution_payments",
+        "db:supplier_payment_settlements",
+        "db:users",
+        "doctrine:budget_is_not_realized_cost",
+        "doctrine:exact_market_scope",
+        "doctrine:group_raw_not_delegated",
+        "doctrine:no_fake_zero",
+        "impact:economic-engine",
+        "impact:finance",
+        "impact:market-authorization",
+        "middleware/require-pricing-global-authority.js",
+        "routes/admin-pricing-workspace.js",
+        "services/cost-allocation/real-margin-shadow.js",
+        "services/economic-cost-reference-service.js",
+        "services/economic-cost-write-authority.js",
+        "services/fx-authority.js",
+        "services/market-delegation-service.js",
+        "services/pricing-period-structure.js"
+      ]
+    },
+    "services/economic-cost-commitment-service.js": {
+      "role": "economic-cost-commitment-service",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/economic-cost-write-authority.js",
+        "services/fx-authority.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "markets",
+        "economic_cost_centers",
+        "economic_cost_posts",
+        "economic_cost_commitments",
+        "economic_cost_commitment_movements",
+        "economic_structure_cost_events"
+      ],
+      "dbWrite": [
+        "economic_cost_commitments",
+        "economic_cost_commitment_movements"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "commitments_are_not_real_costs",
+        "exact_scope",
+        "frozen_fx",
+        "append_only",
+        "canonical_fact_consumption_only",
+        "no_double_count"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "finance",
+        "governance"
+      ],
+      "mustCheck": [
+        "db:economic_cost_centers",
+        "db:economic_cost_commitment_movements",
+        "db:economic_cost_commitments",
+        "db:economic_cost_posts",
+        "db:economic_structure_cost_events",
+        "db:markets",
+        "doctrine:append_only",
+        "doctrine:canonical_fact_consumption_only",
+        "doctrine:commitments_are_not_real_costs",
+        "doctrine:exact_scope",
+        "doctrine:frozen_fx",
+        "doctrine:no_double_count",
+        "impact:economic-engine",
+        "impact:finance",
+        "impact:governance",
+        "routes/admin-pricing-workspace.js",
+        "services/economic-cost-write-authority.js",
+        "services/fx-authority.js"
+      ]
+    },
+    "services/economic-cost-post-actual-service.js": {
+      "role": "economic-cost-post-actual-service",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/economic-cost-write-authority.js",
+        "services/pricing-period-structure.js",
+        "services/fx-authority.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "markets",
+        "economic_cost_centers",
+        "economic_cost_posts",
+        "charges",
+        "economic_structure_cost_events"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "pricing-period-structure",
+          "tables": [
+            "economic_structure_cost_events"
+          ]
+        }
+      ],
+      "doctrines": [
+        "canonical_structure_journal_only",
+        "no_operational_cost_reentry",
+        "evidence_required",
+        "exact_scope",
+        "governed_fx"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "finance"
+      ],
+      "mustCheck": [
+        "db:charges",
+        "db:economic_cost_centers",
+        "db:economic_cost_posts",
+        "db:economic_structure_cost_events",
+        "db:markets",
+        "doctrine:canonical_structure_journal_only",
+        "doctrine:evidence_required",
+        "doctrine:exact_scope",
+        "doctrine:governed_fx",
+        "doctrine:no_operational_cost_reentry",
+        "impact:economic-engine",
+        "impact:finance",
+        "routes/admin-pricing-workspace.js",
+        "services/economic-cost-write-authority.js",
+        "services/fx-authority.js",
+        "services/pricing-period-structure.js"
+      ]
+    },
+    "services/economic-cost-reference-service.js": {
+      "role": "economic-cost-reference-service",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/economic-cost-write-authority.js",
+        "services/market-structure-charge-reference.js",
+        "services/market-delegation-service.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-pricing-workspace.js",
+        "services/market-provisioning-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "markets",
+        "users",
+        "pricing_global_access_grants",
+        "market_operating_assignments",
+        "assignment_memberships",
+        "membership_capabilities",
+        "assignment_capability_ceiling",
+        "economic_cost_centers",
+        "economic_cost_families",
+        "economic_cost_resources",
+        "economic_cost_posts"
+      ],
+      "dbWrite": [
+        "economic_cost_centers",
+        "economic_cost_families",
+        "economic_cost_resources",
+        "economic_cost_posts"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "market-structure-charge-reference",
+          "tables": [
+            "charges"
+          ]
+        },
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "doctrines": [
+        "exact_scope",
+        "reference_is_not_realized_cost",
+        "no_duplicate_authority",
+        "audit_creation"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "finance"
+      ],
+      "mustCheck": [
+        "db:assignment_capability_ceiling",
+        "db:assignment_memberships",
+        "db:charges",
+        "db:economic_cost_centers",
+        "db:economic_cost_families",
+        "db:economic_cost_posts",
+        "db:economic_cost_resources",
+        "db:market_delegation_audit",
+        "db:market_operating_assignments",
+        "db:markets",
+        "db:membership_capabilities",
+        "db:pricing_global_access_grants",
+        "db:users",
+        "doctrine:audit_creation",
+        "doctrine:exact_scope",
+        "doctrine:no_duplicate_authority",
+        "doctrine:reference_is_not_realized_cost",
+        "impact:economic-engine",
+        "impact:finance",
+        "routes/admin-pricing-workspace.js",
+        "services/economic-cost-center-read-model.js",
+        "services/economic-cost-write-authority.js",
+        "services/market-delegation-service.js",
+        "services/market-provisioning-service.js",
+        "services/market-structure-charge-reference.js"
+      ]
+    },
+    "services/economic-cost-write-authority.js": {
+      "role": "economic-cost-write-authority",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "middleware/require-pricing-global-authority.js",
+        "services/market-delegation-service.js"
+      ],
+      "directUsedBy": [
+        "services/economic-cost-budget-service.js",
+        "services/economic-cost-commitment-service.js",
+        "services/economic-cost-post-actual-service.js",
+        "services/economic-cost-reference-service.js",
+        "services/economic-cost-center-read-model.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "pricing_global_access_grants",
+        "market_operating_assignments",
+        "assignment_memberships",
+        "membership_capabilities",
+        "assignment_capability_ceiling"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "doctrines": [
+        "exact_scope",
+        "no_role_bypass",
+        "no_payment_authority",
+        "group_central_only"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "market-authorization"
+      ],
+      "mustCheck": [
+        "db:assignment_capability_ceiling",
+        "db:assignment_memberships",
+        "db:market_delegation_audit",
+        "db:market_operating_assignments",
+        "db:membership_capabilities",
+        "db:pricing_global_access_grants",
+        "doctrine:exact_scope",
+        "doctrine:group_central_only",
+        "doctrine:no_payment_authority",
+        "doctrine:no_role_bypass",
+        "impact:economic-engine",
+        "impact:market-authorization",
+        "middleware/require-pricing-global-authority.js",
+        "services/economic-cost-budget-service.js",
+        "services/economic-cost-center-read-model.js",
+        "services/economic-cost-commitment-service.js",
+        "services/economic-cost-post-actual-service.js",
+        "services/economic-cost-reference-service.js",
+        "services/market-delegation-service.js"
+      ]
+    },
     "services/economic-engine-queries.js": {
       "role": "economic-engine-calculation-service",
       "domain": "economic-engine",
@@ -130435,6 +133112,68 @@
         "services/apply-pricing-updates.js",
         "services/product-price-audit.js",
         "utils/logger.js"
+      ]
+    },
+    "services/economic-sku-rail-selection.js": {
+      "role": "economic-sku-rail-selection",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/cost-allocation/product-margin-steering.js",
+        "services/pricing-market-decision-policy.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-costing.js",
+        "services/order-checkout-service.js",
+        "bootstrap/crons.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "economic_sku_rail_selection_events",
+        "markets",
+        "product_skus",
+        "orders",
+        "order_items",
+        "products",
+        "pricing_market_decision_policy_events"
+      ],
+      "dbWrite": [
+        "economic_sku_rail_selection_events"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "exact_market_sku_rail",
+        "canonical_after_sale_evidence",
+        "pricing_unchanged"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "catalog",
+        "orders"
+      ],
+      "mustCheck": [
+        "bootstrap/crons.js",
+        "db:economic_sku_rail_selection_events",
+        "db:markets",
+        "db:order_items",
+        "db:orders",
+        "db:pricing_market_decision_policy_events",
+        "db:product_skus",
+        "db:products",
+        "doctrine:canonical_after_sale_evidence",
+        "doctrine:exact_market_sku_rail",
+        "doctrine:pricing_unchanged",
+        "impact:catalog",
+        "impact:economic-engine",
+        "impact:orders",
+        "routes/admin-costing.js",
+        "services/cost-allocation/product-margin-steering.js",
+        "services/order-checkout-service.js",
+        "services/pricing-market-decision-policy.js"
       ]
     },
     "services/external-provider-onboarding-contracts.js": {
@@ -131092,6 +133831,10 @@
         "impact:payments",
         "impact:pricing",
         "impact:transport",
+        "services/economic-cost-budget-service.js",
+        "services/economic-cost-center-read-model.js",
+        "services/economic-cost-commitment-service.js",
+        "services/economic-cost-post-actual-service.js",
         "services/financial-journal.js",
         "services/fx-chain-service.js",
         "services/fx-engine-rates.js",
@@ -131732,7 +134475,8 @@
       "purpose": null,
       "directDependsOn": [
         "db",
-        "services/documents/pdf-renderer.js"
+        "services/documents/pdf-renderer.js",
+        "services/purchasing-grouped-service.js"
       ],
       "directUsedBy": [
         "routes/purchasing.js",
@@ -131751,6 +134495,7 @@
         "users",
         "suppliers",
         "order_items",
+        "orders",
         "products"
       ],
       "dbWrite": [
@@ -131772,6 +134517,7 @@
         "db:hub_authorization_grants",
         "db:manual_purchase_executions",
         "db:order_items",
+        "db:orders",
         "db:products",
         "db:purchase_lines",
         "db:purchase_order_authorizations",
@@ -131788,6 +134534,7 @@
         "routes/purchasing.js",
         "services/documents/pdf-renderer.js",
         "services/purchasing-engagement-service.js",
+        "services/purchasing-grouped-service.js",
         "services/supplier-payment-orchestrator.js"
       ]
     },
@@ -131933,6 +134680,42 @@
         "doctrine:HUB-001 Physical Identity",
         "impact:logistics",
         "routes/hub.js"
+      ]
+    },
+    "services/hub-combox-destination-guard.js": {
+      "role": "hub-combox-destination-guard",
+      "domain": "logistics",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "services/hub-physical-identity.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "HUB-001 mono-relais COMBOX",
+        "same-market destination isolation"
+      ],
+      "impactAreas": [
+        "logistics",
+        "market"
+      ],
+      "mustCheck": [
+        "db:hub_physical_unit_placements",
+        "db:hub_purchase_allocations",
+        "doctrine:HUB-001 mono-relais COMBOX",
+        "doctrine:same-market destination isolation",
+        "impact:logistics",
+        "impact:market",
+        "services/hub-physical-identity.js"
       ]
     },
     "services/hub-dashboard-queries.js": {
@@ -132439,8 +135222,10 @@
         "impact:logistics",
         "impact:market",
         "impact:purchasing",
+        "services/hub-combox-destination-guard.js",
         "services/hub-opaque-labels.js",
         "services/hub-operations.js",
+        "services/hub-supplier-receipt-quality.js",
         "services/incident-write-service.js",
         "services/outbox-producer.js"
       ]
@@ -132454,7 +135239,8 @@
       "purpose": null,
       "directDependsOn": [
         "db",
-        "services/supplier-source-resolution.js"
+        "services/supplier-source-resolution.js",
+        "services/suppliers/provider-authority.js"
       ],
       "directUsedBy": [
         "routes/hub.js",
@@ -132482,6 +135268,7 @@
         "hub_box_bags",
         "hub_box_effective_placements",
         "hub_scan_labels",
+        "order_delivery_waves",
         "international_shipments",
         "international_shipment_hub_units",
         "parcels",
@@ -132511,6 +135298,7 @@
         "db:international_shipment_hub_units",
         "db:international_shipments",
         "db:markets",
+        "db:order_delivery_waves",
         "db:order_items",
         "db:orders",
         "db:parcel_items",
@@ -132536,7 +135324,8 @@
         "routes/hub.js",
         "services/hub-administration-board.js",
         "services/hub-global-board.js",
-        "services/supplier-source-resolution.js"
+        "services/supplier-source-resolution.js",
+        "services/suppliers/provider-authority.js"
       ]
     },
     "services/hub-receivable.js": {
@@ -132635,6 +135424,44 @@
         "services/hub-operations.js"
       ]
     },
+    "services/hub-reception-quality-plan.js": {
+      "role": "hub-reception-quality-plan",
+      "domain": "logistics",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "pending canonical reception integration (#5298)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "purchase_orders",
+        "purchase_lines",
+        "order_items",
+        "orders"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "explicit_physical_observation_no_implicit_receipt"
+      ],
+      "impactAreas": [
+        "logistics",
+        "purchasing"
+      ],
+      "mustCheck": [
+        "db:order_items",
+        "db:orders",
+        "db:purchase_lines",
+        "db:purchase_orders",
+        "doctrine:explicit_physical_observation_no_implicit_receipt",
+        "impact:logistics",
+        "impact:purchasing",
+        "services/hub-supplier-receipt-quality.js"
+      ]
+    },
     "services/hub-reference.js": {
       "role": "hub-reference",
       "domain": "logistics",
@@ -132669,6 +135496,53 @@
         "services/hub-operations.js",
         "services/purchasing-engagement-service.js",
         "services/purchasing-trigger-service.js"
+      ]
+    },
+    "services/hub-supplier-receipt-quality.js": {
+      "role": "hub-supplier-receipt-quality",
+      "domain": "logistics,purchasing",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/hub-reception-quality-plan.js",
+        "services/hub-physical-identity.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-operations-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "purchase_orders",
+        "hub_supplier_receipt_checks",
+        "hub_supplier_receipt_check_lines",
+        "hub_supplier_return_attestations"
+      ],
+      "dbWrite": [
+        "hub_supplier_receipt_checks",
+        "hub_supplier_receipt_check_lines",
+        "hub_supplier_return_attestations"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "no_rejected_client_stock_no_implicit_supplier_return"
+      ],
+      "impactAreas": [
+        "logistics",
+        "purchasing"
+      ],
+      "mustCheck": [
+        "db:hub_supplier_receipt_check_lines",
+        "db:hub_supplier_receipt_checks",
+        "db:hub_supplier_return_attestations",
+        "db:purchase_orders",
+        "doctrine:no_rejected_client_stock_no_implicit_supplier_return",
+        "impact:logistics",
+        "impact:purchasing",
+        "routes/admin-operations-workspace.js",
+        "services/hub-physical-identity.js",
+        "services/hub-reception-quality-plan.js"
       ]
     },
     "services/hub-v1-fixture-checkout-guard.js": {
@@ -134702,7 +137576,9 @@
         "products",
         "relais",
         "local_stock",
-        "market_delegation_audit"
+        "market_delegation_audit",
+        "catalog_global_access_grants",
+        "markets"
       ],
       "dbWrite": [],
       "dbWriteVia": [
@@ -134729,8 +137605,10 @@
         "local-stock"
       ],
       "mustCheck": [
+        "db:catalog_global_access_grants",
         "db:local_stock",
         "db:market_delegation_audit",
+        "db:markets",
         "db:products",
         "db:relais",
         "doctrine:country_lead_only_local_stock_declaration",
@@ -135010,6 +137888,9 @@
         "services/cash-custody-service.js",
         "services/cash-deposit-service.js",
         "services/dashboard-admin-context.js",
+        "services/economic-cost-center-read-model.js",
+        "services/economic-cost-reference-service.js",
+        "services/economic-cost-write-authority.js",
         "services/finance-accounting-workspace.js",
         "services/market-cash-control-policy-service.js",
         "services/market-control-plane.js",
@@ -135794,7 +138675,8 @@
         "services/market-payment-provider-config-service.js",
         "services/relais-mutation-service.js",
         "services/central-authority.js",
-        "services/market-control-plane.js"
+        "services/market-control-plane.js",
+        "services/economic-cost-reference-service.js"
       ],
       "directUsedBy": [
         "routes/admin-market-control-plane.js"
@@ -135850,6 +138732,13 @@
           "tables": [
             "relais"
           ]
+        },
+        {
+          "via": "economic-cost-reference-service",
+          "tables": [
+            "economic_cost_centers",
+            "economic_cost_families"
+          ]
         }
       ],
       "doctrines": [
@@ -135869,6 +138758,8 @@
         "db:catalog_global_access_grants",
         "db:dashboard_global_access_grants",
         "db:decision_signal_global_access_grants",
+        "db:economic_cost_centers",
+        "db:economic_cost_families",
         "db:market_cash_control_policies",
         "db:market_delegation_audit",
         "db:market_operating_assignments",
@@ -135888,6 +138779,7 @@
         "impact:market-delegation",
         "routes/admin-market-control-plane.js",
         "services/central-authority.js",
+        "services/economic-cost-reference-service.js",
         "services/market-cash-control-policy-service.js",
         "services/market-control-plane.js",
         "services/market-delegation-service.js",
@@ -136129,7 +139021,8 @@
         "db:markets",
         "doctrine:accounting_truth_is_append_only",
         "doctrine:market_scope_from_resolved_route",
-        "doctrine:zero_reference_is_not_a_fact"
+        "doctrine:zero_reference_is_not_a_fact",
+        "services/economic-cost-reference-service.js"
       ]
     },
     "services/market-transport-sale-rate-command.js": {
@@ -137514,6 +140407,7 @@
         "impact:shared-cart",
         "routes/orders/create.js",
         "services/cart-share-service.js",
+        "services/economic-sku-rail-selection.js",
         "services/market-delivery-proof-service.js",
         "services/market-local-price-resolution-service.js",
         "services/market-payment-collection-gate.js",
@@ -140866,6 +143760,8 @@
         "impact:operational-flow",
         "impact:pricing",
         "routes/admin-pricing-workspace.js",
+        "services/cost-allocation/product-margin-steering.js",
+        "services/economic-sku-rail-selection.js",
         "services/market-delegation-performance-service.js",
         "services/market-local-price-activation-service.js",
         "services/pricing-market-coverage.js"
@@ -141086,6 +143982,8 @@
         "impact:governance",
         "impact:pricing",
         "routes/admin-pricing-workspace.js",
+        "services/economic-cost-center-read-model.js",
+        "services/economic-cost-post-actual-service.js",
         "services/market-cost-attribution-service.js",
         "services/market-delegation-structure-event-service.js",
         "services/pricing-market-coverage.js"
@@ -142359,7 +145257,8 @@
       "dbRead": [
         "order_items",
         "purchase_lines",
-        "purchase_orders"
+        "purchase_orders",
+        "purchase_order_authorizations"
       ],
       "dbWrite": [
         "alerts",
@@ -142379,6 +145278,7 @@
         "db:alerts",
         "db:order_items",
         "db:purchase_lines",
+        "db:purchase_order_authorizations",
         "db:purchase_orders",
         "doctrine:writer_not_owner_campaign_2026_08",
         "impact:cancellation",
@@ -142620,7 +145520,10 @@
         "suppliers",
         "v_purchase_line_market",
         "v_purchase_line_progress",
-        "purchase_order_authorizations"
+        "purchase_order_authorizations",
+        "relay_return_compensations",
+        "disputes",
+        "relay_product_return_receipts"
       ],
       "dbWrite": [
         "purchase_lines",
@@ -142635,6 +145538,7 @@
         "admin-dashboard"
       ],
       "mustCheck": [
+        "db:disputes",
         "db:markets",
         "db:order_items",
         "db:orders",
@@ -142642,6 +145546,8 @@
         "db:purchase_lines",
         "db:purchase_order_authorizations",
         "db:purchase_orders",
+        "db:relay_product_return_receipts",
+        "db:relay_return_compensations",
         "db:suppliers",
         "db:v_purchase_line_market",
         "db:v_purchase_line_progress",
@@ -142649,10 +145555,12 @@
         "impact:admin-dashboard",
         "impact:purchasing",
         "routes/purchasing.js",
+        "services/hub-authorization-service.js",
         "services/purchase-line-snapshot.js",
         "services/purchasing-admin-service.js",
         "services/purchasing-engagement-service.js",
         "services/purchasing-order-detail.js",
+        "services/purchasing-trigger-service.js",
         "utils/logger.js"
       ]
     },
@@ -142718,6 +145626,7 @@
         "services/notification-service.js",
         "services/hub-reference.js",
         "services/purchase-line-snapshot.js",
+        "services/purchasing-grouped-service.js",
         "services/supplier-source-resolution.js",
         "services/supplier-execution-persistence.js",
         "services/suppliers/supplier-order-identity.js",
@@ -142778,6 +145687,7 @@
         "services/procurement-execution-context.js",
         "services/purchase-line-snapshot.js",
         "services/purchasing-canonical-money.js",
+        "services/purchasing-grouped-service.js",
         "services/sav-replacement-order.js",
         "services/supplier-execution-persistence.js",
         "services/supplier-source-resolution.js",
@@ -143517,7 +146427,9 @@
         "recipients",
         "relais",
         "sms_log",
-        "users"
+        "users",
+        "parcels",
+        "parcel_items"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -143538,6 +146450,8 @@
         "db:order_items",
         "db:order_status_history",
         "db:orders",
+        "db:parcel_items",
+        "db:parcels",
         "db:products",
         "db:recipients",
         "db:relais",
@@ -149372,6 +152286,7 @@
         "doctrine:docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md",
         "impact:purchasing",
         "impact:supplier-integration",
+        "services/hub-procurement-dossier.js",
         "services/purchasing-engagement-service.js",
         "services/suppliers/canonical-unit-purchasing-gate.js",
         "services/suppliers/provider-capability-certifications.js",
@@ -153707,6 +156622,24 @@
       "label": "services/operations-workspace"
     },
     {
+      "from": "routes/admin-operations-workspace.js",
+      "to": "services/hub-global-board",
+      "type": "depends",
+      "label": "services/hub-global-board"
+    },
+    {
+      "from": "routes/admin-operations-workspace.js",
+      "to": "services/hub-supplier-receipt-quality",
+      "type": "depends",
+      "label": "services/hub-supplier-receipt-quality"
+    },
+    {
+      "from": "routes/admin-operations-workspace.js",
+      "to": "services/purchasing-completion-service",
+      "type": "depends",
+      "label": "services/purchasing-completion-service"
+    },
+    {
       "from": "routes/admin-order-360.js",
       "to": "middleware/auth",
       "type": "depends",
@@ -155987,6 +158920,36 @@
       "label": "db.js"
     },
     {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/economic-cost-commitment-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/economic-cost-post-actual-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/economic-cost-reference-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "services/economic-engine-queries.js",
       "to": "db.js",
       "type": "depends",
@@ -156009,6 +158972,12 @@
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "services/economic-sku-rail-selection.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "services/external-provider-onboarding-contracts.js",
@@ -156399,6 +159368,12 @@
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "pending canonical reception integration (#5298)",
+      "to": "services/hub-reception-quality-plan.js",
+      "type": "uses",
+      "label": "pending canonical reception integration (#5298)"
     },
     {
       "from": "services/hub-reference.js",

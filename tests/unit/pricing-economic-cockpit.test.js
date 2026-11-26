@@ -49,6 +49,22 @@ test('V7 scoped center -> family -> post drill-down uses server data; one family
   expect(texts(host)).toContain('Centres de coûts');
 });
 
+test('V7 restores the center grid when a refresh clears the last budget overrun',()=>{
+  const centerState={};
+  const center={id:'a',label:'Relais',recordedBalance:{status:'RECORDED_OVER_BUDGET'}};
+  const other={id:'b',label:'Hub'};
+  const view=createV7CostCenters(doc,{centers:[center,other]},{centerState});
+  find(view,'Centres en écart').click();
+  expect(texts(view)).toContain('Relais');
+  expect(texts(view)).not.toContain('Hub');
+
+  const updated={...center,recordedBalance:{status:'RECORDED_BALANCE'}};
+  const refreshed=createV7CostCenters(doc,{centers:[updated,other]},{centerState});
+  expect(texts(refreshed)).toContain('Relais');
+  expect(texts(refreshed)).toContain('Hub');
+  expect(find(refreshed,'Centres en écart')).toBeUndefined();
+});
+
 const activityModel={scope:'MARKET',marketCode:'CM',periodStart:'2026-01-01',centers:[],activity:{physicalClosedCount:2,financialClosedCount:1,measuredWeightSubtotalKg:'10.000',measuredWeightCount:1,volumeM3:'0.50000',volumeCoveredCount:2,receivedArticles:'2',expectedArticles:'2',boxCount:'2',freightCustomsSubtotalKmf:'120.10',coverage:'PARTIAL',costPerKgKmf:'13.10',weightedShipmentCount:1,minCostPerKgKmf:'13.10',maxCostPerKgKmf:'13.10',shipments:[{reference:'S1',rail:'sea',weightKg:'10.000',purchaseKmf:'1000.00',freightCustomsKmf:'120.10',costPerKgKmf:'13.10',volumeM3:'0.25',receivedArticles:1,financialStatus:'DOCUMENTED_CLOSED'},{reference:'S2',rail:'air',financialStatus:'NOT_RECONCILED'}],purchaseTransportObservation:{purchaseKmf:'1000.00',freightCustomsKmf:'120.10',otherTransportKmf:'10.90',documentedSubtotalKmf:'1131.00',fullEconomicCostKmf:null,observations:1,coefficient:'1.1310',decisional:false}}};
 test('V6 activity renders server amounts and missing totals explicitly',()=>{
   const view=createV6Activity(doc,activityModel);expect(texts(view)).toContain('S1 · Maritime');expect(texts(view)).toContain('Financier à rapprocher');expect(texts(view)).toContain('1\u202f131 KMF');expect(texts(view)).toContain('Coût complet de période');expect(texts(view)).toContain('Non disponible');expect(texts(view)).toContain('13,1 KMF');
@@ -63,9 +79,11 @@ test('API model request uses canonical scope and rejects stale/wrong scope',asyn
 });
 
 test('V6 profitability windows display server coefficients, unavailable full result and gaps',()=>{
- const obs={periodStart:'2026-01-01',coefficient:'1.0655',observations:2,physicalClosedCount:3,purchaseKmf:'4000.00',transportKmf:'262.00',measuredWeightCount:0};
- const feb={...obs,periodStart:'2026-02-01',coefficient:null,observations:0,physicalClosedCount:0};
+ const obs={periodStart:'2026-01-01',coefficient:'1.0655',observations:2,physicalClosedCount:3,purchaseKmf:'4000.00',transportKmf:'262.00',measuredWeightCount:3,measuredWeightKg:'40.000',coefficientWeightCount:1,coefficientWeightKg:'25.000',minCoefficient:'1.0437',maxCoefficient:'1.1310'};
+ const feb={...obs,periodStart:'2026-02-01',coefficient:null,observations:0,physicalClosedCount:0,coefficientWeightCount:0,coefficientWeightKg:null,minCoefficient:null,maxCoefficient:null};
  const view=createV6Profitability(doc,{profitability:{points:[{periodStart:'2026-01-01',monthly:obs,cumulative:obs,rolling3:obs},{periodStart:'2026-02-01',monthly:feb,cumulative:obs,rolling3:obs}],ranges:{month:feb,quarter:obs,ytd:obs}}});
+ expect(texts(view)).toContain('25,000 kg');expect(texts(view)).not.toContain('40,000 kg');
+ expect(texts(view)).toContain('2 / 3 expéditions · min. 1,0437 · max. 1,1310');
  expect(texts(view)).toContain('1,0655');expect(texts(view)).toContain('2026-01');expect(texts(view)).toContain('Non disponible');
  find(view,'Mois').click();expect(texts(view)).not.toContain('2026-01');expect(texts(view)).toContain('2026-02');expect(texts(view)).toContain('0 / 0 expéditions');
  find(view,'Année à date').click();expect(texts(view)).toContain('2026-01');
@@ -75,6 +93,13 @@ test('profitability distinguishes commercial sales cohort from shipment observat
  const obs={periodStart:'2026-01-01',coefficient:'1.1310',observations:1,physicalClosedCount:2,purchaseKmf:'1000.00',transportKmf:'131.00',measuredWeightCount:0};
  const view=createV6Profitability(doc,{profitability:{points:[],ranges:{month:obs,quarter:obs,ytd:obs},salesEvidence:{observedNetSalesKmf:'20000.00',paidOrderCount:2,coveredOrderCount:2,pendingRefundOrders:1,terminalExceptions:0,invalidOrderCount:0}}});
  expect(texts(view)).toContain('20\u202f000 KMF');expect(texts(view)).toContain('Ventes nettes observées');expect(texts(view).some(t=>t.includes('Cohorte distincte des expéditions'))).toBe(true);expect(texts(view)).toContain('Non disponible');
+});
+
+test('group profitability displays recognized structure evidence without inferring the economic result',()=>{
+ const o={periodStart:'2026-01-01',observations:0,physicalClosedCount:0};
+ const view=createV6Profitability(doc,{profitability:{points:[],ranges:{month:o,quarter:o,ytd:o},
+   structureCoverage:{evidenceCount:2,groupSharedKmf:100,marketDirectKmf:50,recognizedKmf:150}}});
+ expect(texts(view)).toEqual(expect.arrayContaining(['Charges de structure documentées','150 KMF','100 KMF','50 KMF','Non calculable']));
 });
 
 test('canonical mature cohort result never replaces complete cockpit KPI',()=>{

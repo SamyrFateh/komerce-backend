@@ -14,7 +14,7 @@ const { test, expect } = require('@playwright/test');
 const SCRIPT = path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'js', 'market-readonly-views.js');
 const BASE = '/api/market-delegation/markets/CM';
 
-const CONTEXT = { access: { allowedMarkets: ['CM'], defaultMarket: 'CM' } };
+const CONTEXT = { actor:{id:'op',role:'market_operator'}, access: { mode:'market', allowedMarkets: ['CM'], defaultMarket: 'CM', capabilities: [], delegatedCapabilities:{CM:['finance.read','operations.read','team.read']} } };
 const PERFORMANCE = {
   market: { code: 'CM', name: 'Cameroun', currency: 'XAF' }, status: 'AVAILABLE', reason: null,
   period: { from: '2026-09-01T00:00:00.000Z', to: '2026-10-01T00:00:00.000Z' },
@@ -54,6 +54,7 @@ async function mount(page, responses) {
   });
   await page.goto('http://localhost/blank');
   await page.setContent('<main id="market-autonomy-root" class="kmc-workspace"></main>');
+  await page.addScriptTag({ path: path.join(path.dirname(SCRIPT),'admin-context.js') });
   await page.addScriptTag({ path: SCRIPT });
   return calls;
 }

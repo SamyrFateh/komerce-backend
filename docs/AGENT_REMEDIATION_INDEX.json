@@ -1,7 +1,7 @@
 {
   "version": "ARI-1.0",
   "contractVersion": "ARC-1.0",
-  "generatedAt": "2026-11-24",
+  "generatedAt": "2026-11-26",
   "policy": {
     "principle": "1 measured deviation = 1 stable remediation code = 1 canonical owner = 1 allowed repair path",
     "baselineRule": "never increase an allowlist/baseline only to make a gate pass",
@@ -9,7 +9,7 @@
   },
   "backend": {
     "measuredRows": 8,
-    "openDebtCount": 120,
+    "openDebtCount": 121,
     "reviewedExceptionCount": 11,
     "healthyMeasurementCount": 2,
     "measured": [
@@ -229,7 +229,7 @@
       {
         "rule": "CONTRACT",
         "label": "Réponses API 200 sans forme prouvée",
-        "count": 120,
+        "count": 121,
         "entries": [
           "UNKNOWN response #1",
           "UNKNOWN response #2",
@@ -350,7 +350,8 @@
           "UNKNOWN response #117",
           "UNKNOWN response #118",
           "UNKNOWN response #119",
-          "UNKNOWN response #120"
+          "UNKNOWN response #120",
+          "UNKNOWN response #121"
         ],
         "lot": "Fermer chaque UNKNOWN par test, lecture de route/service fiable ou contrat explicite",
         "note": "Source : docs/contract/openapi.json → x-contract-debt.unknown_responses",
@@ -488,7 +489,8 @@
               "UNKNOWN response #117",
               "UNKNOWN response #118",
               "UNKNOWN response #119",
-              "UNKNOWN response #120"
+              "UNKNOWN response #120",
+              "UNKNOWN response #121"
             ]
           }
         }

@@ -926,7 +926,8 @@ async function computePeriodStructureTruth(options = {}) {
   const period = parsePeriod(options.from, options.to);
   const marketId = options.marketId || null;
 
-  const { rows } = await db.query(
+  const executor = options.executor || db;
+  const { rows } = await executor.query(
     `SELECT e.id, e.charge_id,
             e.charge_family_snapshot, e.charge_name_snapshot,
             e.recurrence_period_snapshot,

@@ -1158,6 +1158,9 @@ const KNOWN_RESPONSES = {
   },
   // Pilotage marge par produit (#2595/écran) : tests/unit/admin-costing-real-margin-shadow.test.js
   // asserte res.body.products / market_id → 'test'.
+  '/api/admin/costing/products/{productId}/sku-rail-selection': {
+    post: { fields: ['outcome', 'event'], source: 'test' },
+  },
   '/api/admin/costing/products/margin-steering': {
     get: { fields: ['market_id','since_days','rules','products','truncated'], source: 'test' }
   },

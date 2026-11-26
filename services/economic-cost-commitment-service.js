@@ -8,7 +8,7 @@
  * @outputs       immutable_commitment_or_movement, idempotent_replay
  * @depends       db.js, services/economic-cost-write-authority.js, services/fx-authority.js
  * @used-by       routes/admin-pricing-workspace.js
- * @db-read       markets, economic_cost_centers, economic_cost_posts, economic_cost_commitments, economic_cost_commitment_movements
+ * @db-read       markets, economic_cost_centers, economic_cost_posts, economic_cost_commitments, economic_cost_commitment_movements, economic_structure_cost_events
  * @db-write      economic_cost_commitments, economic_cost_commitment_movements
  * @db-txn        service_owned_read_committed_transaction
  * @doctrine      commitments_are_not_real_costs, exact_scope, frozen_fx, append_only, canonical_fact_consumption_only, no_double_count

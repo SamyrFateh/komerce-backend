@@ -325,7 +325,7 @@ role: Postes classés nature/périmètre/base causale, liens structure existants
 | `economic_structure_cost_events` | Journal append-only des charges structurelles de période avec preuve, devise/FX, périmètre GROUP ou MARKET_DIRECT et corrections par événements sans mutation historique. Ces charges sont couvertes collectivement par la contribution du portefeuille ; elles ne constituent pas une dette SKU. **Migration 166 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 | `economic_risk_cost_events` | Journal append-only des coûts de risque réellement constatés par marché, datés économiquement, avec preuve, devise/FX et corrections par événements ; l'absence de ligne ne vaut jamais zéro. **Migration 167 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 | `economic_risk_watermark_events` | Certifications append-only de revue du risque par marché ; closed_through permet de prouver une période revue à zéro et devient stale si un fait backdaté est enregistré après certification. **Migration 167 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
-| `pricing_market_decision_policy_events` | Journal append-only de la politique canonique de décision par marché : largeur de fenêtre, seuil de maturité, seuil de couverture, plafond de dispositions, source, preuve, justification et date d'effet ; aucune valeur numérique implicite. **Migration 168 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
+| `pricing_market_decision_policy_events` | Journal append-only de la politique canonique de décision par marché : largeur de fenêtre, seuil de maturité, seuil de couverture, plafond de dispositions, source, preuve, justification et date d'effet ; aucune valeur numérique implicite. **Migration 168 — promue le 2026-09-07 (schema-promote, dump live verifie).** Migration 433 ajoute `selection_by_family` pour les seuils de contribution et d’observation versionnés par famille. |
 | `product_market_price_drafts` | Décision commerciale de prix locale par market_id + product_id ; devise issue du marché serveur ; états DRAFT_PENDING_GATE, LOCAL_AUTHORIZED_PENDING_CUTOVER et LOCAL_ACTIVE. **Migration 170 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 | `product_market_price_draft_events` | Journal append-only des décisions prix pays SET, RESET, AUTHORIZE et ACTIVATE avec acteur, raison et snapshot économique. **Migration 170 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 | `market_price_observations` | Observations de prix locales market-scoped par produit, devise du marché, source, preuve et date d'observation ; source du corridor pays distincte de competitor_prices global. **Migration 192 — promue le 2026-09-08 (schema-promote, dump live verifie).** |
@@ -1126,3 +1126,11 @@ role: Preuves physiques de remise fournisseur, cumul borné au refusé, sans eff
 -->
 
 Déploiement prévu : migration additive avant activation du routeur V3 ; vérifier numéro disponible et graphe architecture avant fusion. Repli : désactiver le nouveau parcours sans effacer le journal ni les faits physiques déjà attestés. Aucun déploiement ou schéma live vérifié à ce stade.
+
+<!-- schema-pending
+object: economic_sku_rail_selection_events
+kind: table
+migration: 434
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Retrait et réouverture versionnés, pour une variante, un marché et un rail, avec décision et preuve. Migration 435 ajoute `decision_source`. Une décision `MANUAL` exige un acteur humain. Une décision `POLICY_AUTOMATION` autorise uniquement un retrait et conserve `actor_id` à NULL.
+-->

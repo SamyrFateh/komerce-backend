@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/notification-service.js, services/hub-reference.js, services/purchase-line-snapshot.js, services/supplier-source-resolution.js, services/supplier-execution-persistence.js, services/suppliers/supplier-order-identity.js, services/suppliers/canonical-unit-purchasing-gate.js, services/suppliers/procurement-execution-boundary.js, services/suppliers/execution-adapter-registry.js, utils/logger.js
+ * @depends       db, services/notification-service.js, services/hub-reference.js, services/purchase-line-snapshot.js, services/purchasing-grouped-service.js, services/supplier-source-resolution.js, services/supplier-execution-persistence.js, services/suppliers/supplier-order-identity.js, services/suppliers/canonical-unit-purchasing-gate.js, services/suppliers/procurement-execution-boundary.js, services/suppliers/execution-adapter-registry.js, utils/logger.js
  * @used-by       routes/cash.js, routes/purchasing.js
  * @db-read       order_items, orders, product_skus, product_suppliers, products, purchase_lines, suppliers
  * @db-write      alerts, purchase_lines
@@ -31,6 +31,7 @@ const {
   resolveProcurementHubRef,
 } = require('./purchase-line-snapshot');
 const { resolveSupplierSource, SOURCE_STATUS } = require('./supplier-source-resolution');
+const { shared: { assertCommercialPurchaseItem, commercialRead } } = require('./purchasing-grouped-service');
 const log = require('../utils/logger').child({ module: 'purchasing-trigger' });
 
 async function notifyAdminNoSupplier(order, item) {
@@ -175,6 +176,17 @@ async function triggerPurchasing(orderId, options = {}) {
           await client.query(`RELEASE SAVEPOINT po_item_${idx}`);
           continue;
         }
+        // Read the authoritative order again inside the short write transaction.
+        // Never create a need from the pre-read snapshot if payment or order changed.
+        const { rows: [current] } = await commercialRead(client, `
+          SELECT oi.id AS commercial_item_id, o.id AS commercial_order_id, oi.fulfillment_source,
+                 o.status::text AS order_status, o.payment_status::text AS payment_status,
+                 to_jsonb(o)->>'payment_mode' AS payment_mode
+            FROM order_items oi JOIN orders o ON o.id=oi.order_id
+           WHERE oi.id=$1 AND o.id=$2 FOR SHARE OF o,oi NOWAIT
+        `, [item.id, orderId]);
+        if (!current) throw Object.assign(new Error('Article de commande indisponible'),{status:409,code:'ORDER_ITEM_NOT_FOUND'});
+        await assertCommercialPurchaseItem(client,current);
         const coverage = await findItemCoverage(client, item);
         if (coverage) {
           results.push({ item: item.product_name, status: 'already_exists', purchase_order_id: coverage.id || null, purchase_order_status: coverage.status || null });

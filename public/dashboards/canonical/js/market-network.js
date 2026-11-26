@@ -33,8 +33,7 @@
  *   - GET/POST/PUT/suspend/activate network/providers     → provider.manage (capacité unique)
  */
 (function bootMarketNetwork(global) {
-  const root = global.document && global.document.getElementById('market-autonomy-root');
-  if (!root) return;
+  function createInstance(root, { embedded = false, selectedMarket = null } = {}) {
 
   let mounting = false;
 
@@ -66,13 +65,14 @@
   }
 
   function marketFromContext(context) {
-    // Le même contrat explicite que l'écran parent : pas de marché implicite.
-    // Un réseau local ne doit jamais s'afficher sous un Market ID de secours.
     const contract = global.KomerceAdminContext;
     if (!contract || typeof contract.resolveExplicitMarket !== 'function') {
       throw new Error('CANONICAL_MARKET_CONTEXT_UNAVAILABLE');
     }
-    return contract.resolveExplicitMarket(context, global.location.search).marketCode;
+    const search = embedded && selectedMarket != null
+      ? '?market=' + encodeURIComponent(selectedMarket)
+      : global.location.search;
+    return contract.resolveExplicitMarket(context, search).marketCode;
   }
 
   function pill(value, active = false) {
@@ -82,7 +82,7 @@
   async function resolveMarketCode() {
     // Only trust a market marked after a successful server-side network.read GET
     // from the authorized, market-scoped minimal shell.
-    if (root.dataset.networkOnlyMarket) return root.dataset.networkOnlyMarket;
+    if (!embedded && root.dataset.networkOnlyMarket) return root.dataset.networkOnlyMarket;
     const context = await request('/api/admin/dashboard/context');
     return marketFromContext(context);
   }
@@ -457,7 +457,20 @@
     }
   }
 
-  const observer = new MutationObserver(() => { void mountNetwork(); });
-  observer.observe(root, { childList: true, attributes: true, attributeFilter: ['class'] });
-  void mountNetwork();
+  if (!embedded) {
+    const observer = new MutationObserver(() => { void mountNetwork(); });
+    observer.observe(root, { childList: true, attributes: true, attributeFilter: ['class'] });
+    void mountNetwork();
+  }
+  return Object.freeze({ mount: mountNetwork });
+  }
+
+  global.KomerceMarketNetwork = Object.freeze({
+    mount: ({ root, marketCode = null } = {}) => {
+      if (!root) throw new Error('market-network_root_missing');
+      return createInstance(root, { embedded: true, selectedMarket: marketCode }).mount();
+    },
+  });
+  const standalone = global.document && global.document.getElementById('market-autonomy-root');
+  if (standalone) createInstance(standalone);
 })(window);

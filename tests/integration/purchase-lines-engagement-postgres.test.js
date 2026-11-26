@@ -79,12 +79,13 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
           created_at timestamptz NOT NULL DEFAULT now()
         );
         CREATE TABLE markets (id uuid PRIMARY KEY, code text NOT NULL UNIQUE, name text NOT NULL);
-        CREATE TABLE orders (id uuid PRIMARY KEY, reference text, market_id uuid REFERENCES markets(id), created_at timestamptz NOT NULL DEFAULT now());
+        CREATE TABLE orders (id uuid PRIMARY KEY, reference text, market_id uuid REFERENCES markets(id), created_at timestamptz NOT NULL DEFAULT now(), status text NOT NULL DEFAULT 'ordered', payment_status text NOT NULL DEFAULT 'paid');
         CREATE TABLE order_items (
           id uuid PRIMARY KEY,
           order_id uuid NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
           product_id uuid,
-          quantity integer NOT NULL DEFAULT 1
+          quantity integer NOT NULL DEFAULT 1,
+          fulfillment_source text NOT NULL DEFAULT 'IMPORT'
         );
         CREATE TABLE purchase_orders (
           id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -424,6 +425,24 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       expect(Number(quote.supplier_unit_price)).toBe(10);
     });
 
+    it.each([['cancelled','paid','ORDER_CANCELLED'],['ordered','refunded','ORDER_PAYMENT_NOT_CONFIRMED']])(
+      'P0 : confirmation physique conservée, aucun nouveau besoin sur commande %s/%s',
+      async (status,payment,code) => {
+        const supplier = await seedSupplier();
+        const a = await seedLine({ supplier, quantity: 5 });
+        const po = await submittedPo(supplier, [a.line]);
+        await q('UPDATE orders SET status=$2,payment_status=$3 WHERE id=(SELECT order_id FROM order_items WHERE id=$1)',[a.item,status,payment]);
+        const out = await engagement.confirmGroupedPurchaseOrder(po.id, { purchase_proof_ref: 'TEST-RECEIPT', seller_label: 'Vendeur test',
+          lines: [{ purchase_line_id: a.line, confirmed_quantity: 3 }],
+        });
+        expect(out.purchase_order.status).toBe('confirmed');
+        expect(out.purchase_order.notes).toContain(code);
+        expect(out.remnants).toEqual([]);
+        expect((await row('SELECT confirmed_quantity FROM purchase_lines WHERE id=$1',[a.line])).confirmed_quantity).toBe(3);
+        expect((await row('SELECT count(*)::int AS n FROM purchase_lines WHERE parent_line_id=$1',[a.line])).n).toBe(0);
+        expect((await row('SELECT count(*)::int AS n FROM manual_purchase_executions WHERE purchase_order_id=$1',[po.id])).n).toBe(1);
+      });
+
     it('un reliquat ouvert est regroupable dans une nouvelle PO (même fournisseur ou autre)', async () => {
       const supplier = await seedSupplier();
       const a = await seedLine({ supplier, quantity: 4 });
@@ -567,6 +586,18 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
       // L'autre ligne n'est pas encore reçue : la PO n'est pas clôturée.
       expect(out.purchase_order.status).toBe('confirmed');
       expect(others).toHaveLength(1);
+    });
+
+    it('P0 : constat reçu conservé après annulation, sans nouveau reliquat ni incident de remboursement automatique', async () => {
+      const { line,item,po } = await confirmedLine({ quantity: 6 });
+      await receive(line,4);
+      await q("UPDATE orders SET status='cancelled' WHERE id=(SELECT order_id FROM order_items WHERE id=$1)",[item]);
+      const out = await engagement.settleLine(line, { settled_quantity:4,reason:'écart constaté',reopen_remainder:true });
+      expect(out.line).toMatchObject({ settled_quantity:4,effective_quantity:4 });
+      expect(out.remnant).toBeNull();
+      expect((await row('SELECT notes FROM purchase_orders WHERE id=$1',[po.id])).notes).toContain('ORDER_CANCELLED');
+      expect((await row('SELECT count(*)::int AS n FROM purchase_lines WHERE parent_line_id=$1',[line])).n).toBe(0);
+      expect((await row('SELECT count(*)::int AS n FROM incidents')).n).toBe(0);
     });
 
     it('reopen_remainder:false explicite : aucune ligne créée', async () => {

@@ -44,16 +44,17 @@ async function mount(page,role='agent_relais',search='',board=BOARD,visual=false
     if(url.pathname==='/api/auth/me') return route.fulfill({contentType:'application/json',body:JSON.stringify({role,id:'f761a3ed-0000-4000-8000-000000000001'})});
     if(url.pathname==='/api/hub/board') {
       calls.push('GET /api/hub/board'+url.search);
-      return route.fulfill({contentType:'application/json',body:JSON.stringify(board)});
+      return route.fulfill({contentType:'application/json',body:JSON.stringify(role==='market_operator'?{...board,audience:'MARKET_SCOPED'}:board)});
     }
     if(url.pathname==='/api/admin/dashboard/context') {
+      if(role==='market_operator') return route.fulfill({json:{actor:{id:'f761a3ed-0000-4000-8000-000000000001',role},access:{mode:'market',allowedMarkets:board.markets,defaultMarket:board.markets[0],capabilities:[],delegatedCapabilities:Object.fromEntries(board.markets.map(code=>[code,['operations.read']]))}}});
       calls.push('UNEXPECTED_ADMIN_CONTEXT');
       return route.fulfill({status:403,contentType:'application/json',body:JSON.stringify({error:'should not fetch admin context'})});
     }
     return route.fulfill({status:404,body:''});
   });
   const params=new URLSearchParams(search);
-  if(!visual && ['admin','agent_hub'].includes(role)) params.set('ux','legacy');
+  if(!visual && ['admin','agent_hub','market_operator'].includes(role)) params.set('ux','legacy');
   await page.goto(ORIGIN+'/admin/hub'+(params.size?'?'+params.toString():''));
   if(visual) await expect(page.locator('[data-hub-po-v8]')).toBeVisible();
   else await expect(page.locator('[data-hub-global-order]')).toHaveCount(board.orders.length);
@@ -558,5 +559,106 @@ for(const [width,height] of [[1280,720],[1366,768],[1920,1080]]){
   await expect(form.getByRole('button',{name:'Valider la réception'})).toBeDisabled();
   expect(calls.filter(x=>x.startsWith('POST'))).toEqual([]);
   await page.screenshot({path:'test-results/hub-v3-density-'+width+'x'+height+'.png',fullPage:false});
+ });
+}
+
+
+// UX-HUB-DENSITY-01 : 30 COMBOX réelles dans le DOM, un seul formulaire de geste.
+for(const [width,height] of [[1280,720],[1366,768],[1920,1080]]){
+ test('C1 emballage compact 30 COMBOX '+width+'x'+height,async({page})=>{
+  await page.setViewportSize({width,height});
+  const group={market:'KM',relay:'M01',relay_code:'M01',rail:'SEA_STANDARD',group_key:'["M01","SEA_STANDARD"]',
+    to_pack:30,boxes_in_progress:30,boxes_to_dispatch:0,boxes_to_attach:0,boxes_to_handover:0};
+  const item={purchase_order_id:'po-1',allocation_id:'alloc-1',relais_id:'M01',relais_code:'M01',
+    requested_transport_rail:'SEA_STANDARD',source_state:'QUALITY_CHECKED',product:'Chargeur',quantity:30,from_unit_id:'receipt-1',from_unit_ref:'RCV-1'};
+  const boxes=Array.from({length:30},(_,i)=>({unit_id:'box-'+i,reference:'KOM-BOX-'+String(i+1).padStart(3,'0'),state:'RECEIVED',contents:[]}));
+  boxes.push({unit_id:'foreign',reference:'KOM-BOX-AIR',state:'RECEIVED',contents:[{...item,requested_transport_rail:'AIR_EXPRESS',qty:1}]});
+  const board={...BOARD,purchase_orders:[],logistics_work:[group]};
+  const calls=await mount(page,'agent_hub','',board,true);
+  await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/supply',route=>route.fulfill({json:{
+    purchase_orders:[],cockpit:{viewer:{role:'agent_hub'}},fillable:[item],boxes
+  }}));
+  await page.locator('[data-hub-workshop="boxes"]').click();
+  const table=page.locator('[data-hub-compact-box-table]');
+  await expect(table).toBeVisible();
+  await expect(table.locator('tbody tr')).toHaveCount(30);
+  await expect(table.getByText('KOM-BOX-AIR')).toHaveCount(0);
+  await expect(page.locator('[data-hub-workshop-destination]')).toHaveText('M01 · Maritime (rail demandé)');
+  await expect(page.getByLabel('Relais puis rail demandé')).toHaveCount(0);
+  const panel=page.locator('[data-hub-compact-box-action]');
+  await expect(panel).toBeHidden();
+  await table.getByRole('button',{name:'Préparer KOM-BOX-001'}).click();
+  await expect(panel.getByLabel('Scanner la référence de la COMBOX KOM-BOX-001')).toBeVisible();
+  await expect(panel.getByLabel('Article réceptionné à placer dans KOM-BOX-001')).toHaveCount(1);
+  await table.getByRole('button',{name:'Préparer KOM-BOX-002'}).click();
+  await expect(panel.getByLabel('Scanner la référence de la COMBOX KOM-BOX-002')).toBeVisible();
+  await expect(panel.getByLabel('Scanner la référence de la COMBOX KOM-BOX-001')).toHaveCount(0);
+  await expect(panel.getByRole('button',{name:'Placer l’article dans la COMBOX'})).toHaveCount(1);
+  const geometry=await table.evaluate(el=>{
+    const rows=[...el.querySelectorAll('tbody tr')],viewport=el.parentElement;
+    return {overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,tableOverflow:el.scrollWidth-el.clientWidth,
+      height:viewport.getBoundingClientRect().height,median:rows.map(r=>r.getBoundingClientRect().height).sort((a,b)=>a-b)[15]};
+  });
+  expect(geometry.overflow).toBeLessThanOrEqual(1);
+  expect(geometry.tableOverflow).toBeLessThanOrEqual(1);
+  expect(geometry.height).toBeLessThanOrEqual(302);
+  expect(geometry.median).toBeLessThanOrEqual(58);
+  expect(calls.filter(x=>x.startsWith('POST'))).toEqual([]);
+  await page.screenshot({path:'test-results/hub-c1-boxes-'+width+'x'+height+'.png',fullPage:false});
+ });
+}
+
+
+for(const [width,height] of [[1280,720],[1366,768],[1920,1080]]){
+ test('C2 expédition compacte 30 COMBOX '+width+'x'+height,async({page})=>{
+  await page.setViewportSize({width,height});
+  const group={market:'KM',relay:'M01',relay_code:'M01',rail:'SEA_STANDARD',group_key:'["M01","SEA_STANDARD"]',
+    to_pack:0,boxes_in_progress:0,boxes_to_dispatch:28,boxes_to_attach:2,boxes_to_handover:0};
+  const item={purchase_order_id:'po-1',relais_id:'M01',relais_code:'M01',requested_transport_rail:'SEA_STANDARD',qty:1};
+  const boxes=Array.from({length:30},(_,i)=>({unit_id:'box-'+i,reference:'KOM-BOX-'+String(i+1).padStart(3,'0'),state:i<28?'PACKED':'DISPATCHED',contents:[item]}));
+  boxes.push({unit_id:'foreign',reference:'KOM-BOX-AIR',state:'PACKED',contents:[{...item,requested_transport_rail:'AIR_EXPRESS'}]});
+  const calls=await mount(page,'agent_hub','',{...BOARD,purchase_orders:[],logistics_work:[group]},true);
+  await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/supply',route=>route.fulfill({json:{purchase_orders:[],cockpit:{viewer:{role:'agent_hub'}},fillable:[],boxes,open_shipments:[]}}));
+  await page.locator('[data-hub-workshop="departure"]').click();
+  const table=page.locator('[data-hub-compact-departure-table]');
+  await expect(table.locator('tbody tr')).toHaveCount(30);
+  await expect(table.getByText('KOM-BOX-AIR')).toHaveCount(0);
+  await expect(page.getByLabel('Relais de destination')).toHaveCount(0);
+  const panel=page.locator('[data-hub-compact-departure-action]');
+  await table.getByRole('button',{name:'Scanner KOM-BOX-001'}).click();
+  await expect(panel.locator('[data-hub-final-box-scan]')).toHaveCount(1);
+  await table.getByRole('button',{name:'Scanner KOM-BOX-002'}).click();
+  await expect(panel.getByRole('heading',{name:'KOM-BOX-002 · Sortie Hub'})).toBeVisible();
+  await expect(panel.locator('[data-hub-final-box-scan]')).toHaveCount(1);
+  await table.getByLabel('Inclure KOM-BOX-029').check();
+  await expect(page.getByRole('button',{name:'Ouvrir le dossier d’expédition'})).toBeDisabled();
+  await page.getByLabel('Référence de la nouvelle expédition').fill('INT-TEST');
+  await expect(page.getByRole('button',{name:'Ouvrir le dossier d’expédition'})).toBeEnabled();
+  const geometry=await table.evaluate(el=>({overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,tableOverflow:el.scrollWidth-el.clientWidth,height:el.parentElement.getBoundingClientRect().height}));
+  expect(geometry.overflow).toBeLessThanOrEqual(1);expect(geometry.tableOverflow).toBeLessThanOrEqual(1);expect(geometry.height).toBeLessThanOrEqual(302);
+  expect(calls.filter(x=>x.startsWith('POST'))).toEqual([]);
+  await page.screenshot({path:'test-results/hub-c2-departure-'+width+'x'+height+'.png',fullPage:false});
+ });
+ test('C3 achats compacts 30 lignes '+width+'x'+height,async({page})=>{
+  await page.setViewportSize({width,height});
+  const poId='10000000-0000-4000-8000-000000000001';
+  const lines=Array.from({length:30},(_,i)=>({line_id:'line-'+i,order_id:'one',order_ref:'KM-100',product:'Article '+(i+1),ordered:2,unit_price:10,currency:'EUR'}));
+  const po={id:poId,ref:'PO-ACHAT',status:'engaged',stage:'engaged',step:{key:'engaged'},order_ids:['one'],lines,totals:{effective:60,missing:60,received:0},amount:{derived:true,amount:600,currency:'EUR'},authorizations:{commitment:{amount:600,currency:'EUR'},payment:null}};
+  const board={...BOARD,purchase_orders:[{id:poId,reference:'PO-ACHAT',market:'KM',supplier:'Fournisseur test',order_count:1,order_references:['KM-100'],ordered:60,expected:60,received:0,missing:60,purchase_step:'engaged',order_lines:[]}]};
+  const calls=await mount(page,'agent_hub','',board,true);
+  await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/supply',route=>route.fulfill({json:{market:{code:'KM'},orders:[],purchase_orders:[po],cockpit:{viewer:{role:'agent_hub',can_authorize_commitment:false,can_authorize_payment:false}}}}));
+  await page.locator('[data-hub-po-v8-card="'+poId+'"]').click();
+  const table=page.locator('[data-hlc-compact-purchase-lines]');
+  await expect(table.locator('tbody tr')).toHaveCount(30);
+  const purchase=page.locator('[data-hlc-purchase-only]');
+  await expect(purchase.locator('[data-hlc-action="record-sent"]')).toBeVisible();
+  await expect(purchase.locator('[data-hlc-compact-direction-actions] [data-hlc-action="authorize-payment"]')).toBeDisabled();
+  await purchase.locator('[data-hlc-action="record-sent"]').click();
+  await expect(purchase.locator('[data-hlc-form="sent"]')).toBeVisible();
+  await expect(purchase.locator('[data-hlc-form]')).toHaveCount(1);
+  const geometry=await table.evaluate(el=>({overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,tableOverflow:el.scrollWidth-el.clientWidth,height:el.parentElement.getBoundingClientRect().height}));
+  expect(geometry.overflow).toBeLessThanOrEqual(1);expect(geometry.tableOverflow).toBeLessThanOrEqual(1);expect(geometry.height).toBeLessThanOrEqual(302);
+  expect(calls.filter(x=>x.startsWith('POST'))).toEqual([]);
+  await page.screenshot({path:'test-results/hub-c3-purchases-'+width+'x'+height+'.png',fullPage:false});
  });
 }

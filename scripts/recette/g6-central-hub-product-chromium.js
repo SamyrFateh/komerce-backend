@@ -116,7 +116,7 @@ function recettePrice(corridor,code=MK.code){
  return Number.isFinite(ref)&&ref>0?Math.max(floor,Math.ceil(ref/100)*100):floor;
 }
 const ROLES={admin:['E2E_ADMIN_EMAIL','E2E_ADMIN_PASSWORD','/admin/workspaces/sourcing'],
- market_operator:['E2E_MARKET_OPERATOR_'+MK.code+'_EMAIL','E2E_MARKET_OPERATOR_'+MK.code+'_PASSWORD','/dashboards/canonical/market-autonomy.html?market='+MK.code]};
+ market_operator:['E2E_MARKET_OPERATOR_'+MK.code+'_EMAIL','E2E_MARKET_OPERATOR_'+MK.code+'_PASSWORD','/admin/workspaces/pricing?market='+MK.code]};
 async function login(browser,role){
  const [ke,kp,next]=ROLES[role],email=env[ke],password=env[kp];
  check(email&&password,'G6_CENTRAL_CREDENTIALS_MISSING_'+role);
@@ -375,9 +375,9 @@ async function approveCatalog(actor,ref){
  return true;
 }
 async function openPriceRow(actor,ref){
- await humanGoto(actor.page,'/dashboards/canonical/market-autonomy.html?market='+MK.code,{waitUntil:'domcontentloaded'});
+ await humanGoto(actor.page,'/admin/workspaces/pricing?market='+MK.code,{waitUntil:'domcontentloaded'});
  const row=actor.page.locator('tr.kmc-autonomy-row').filter({hasText:ref});
- if(!await visible(row,30000))return missing('SCREEN_MISSING_PRICE_ROW',{product_ref:ref,page:'market-autonomy.html'});
+ if(!await visible(row,30000))return missing('SCREEN_MISSING_PRICE_ROW',{product_ref:ref,page:'/admin/workspaces/pricing'});
  await humanClick(null,row.getByRole('button',{name:'Gérer le prix',exact:true}));
  return row;
 }
@@ -411,10 +411,10 @@ async function priceActivate(actor,ref){
 async function marketExpose(actor,ref,productId){
  const put='/api/market-delegation/markets/'+MK.code+'/catalog/exposure/'+productId;
  await arm(actor,'PUT',put);
- await humanGoto(actor.page,'/dashboards/canonical/market-catalog.html?market='+MK.code,{waitUntil:'domcontentloaded'});
+ await humanGoto(actor.page,'/admin/workspaces/catalog?market='+MK.code,{waitUntil:'domcontentloaded'});
  const row=actor.page.locator('tr').filter({hasText:ref});
  const btn=row.getByRole('button',{name:'Exposer',exact:true});
- if(!await visible(btn,30000))return !!missing('SCREEN_MISSING_MARKET_EXPOSE',{product_ref:ref,page:'market-catalog.html'});
+ if(!await visible(btn,30000))return !!missing('SCREEN_MISSING_MARKET_EXPOSE',{product_ref:ref,page:'/admin/workspaces/catalog'});
  await fire(actor,'PUT',put,()=>humanClick(null,btn),'market-exposure-enable',{product_ref:ref});
  return true;
 }

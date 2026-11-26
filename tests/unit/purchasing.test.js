@@ -66,7 +66,7 @@ const PS_AUTO = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function makeClient(script = []) {
+function makeClient(script = [], commercialState = { fulfillment_source: 'IMPORT', order_status: 'ordered', payment_status: 'paid' }) {
   const queue = [...script];
   const calls = [];
   const client = {
@@ -77,6 +77,9 @@ function makeClient(script = []) {
       calls.push({ sql: s, params });
       if (/^(BEGIN|COMMIT|ROLLBACK|SAVEPOINT|RELEASE SAVEPOINT|ROLLBACK TO SAVEPOINT)/i.test(s)) {
         return { rows: [], rowCount: 0 };
+      }
+      if (s.includes('AS commercial_item_id') && s.includes('FOR SHARE OF o,oi NOWAIT')) {
+        return { rows: [commercialState], rowCount: 1 };
       }
       const next = queue.shift();
       if (!next) throw new Error(`No mock for: ${s.slice(0, 60)}`);
@@ -128,6 +131,21 @@ describe('triggerPurchasing', () => {
     expect(result.purchase_orders[0]).toMatchObject({ status: 'line_opened', purchase_order_id: null, purchase_line_id: 'line-1' });
     expect(client.calls.filter(c => c.sql.startsWith('INSERT INTO purchase_orders'))).toHaveLength(0);
     expect(client.calls.filter(c => c.sql.startsWith('INSERT INTO purchase_lines'))).toHaveLength(1);
+  });
+
+  test.each(['pending', 'refunded'])('paiement %s relu sous verrou : aucun achat', async payment_status => {
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [ORDER] })
+      .mockResolvedValueOnce({ rows: [{ ...ITEM, id: 'oi-1' }] });
+    const client = makeClient([{ rows: [PS_LOCAL] }, { rows: [] }], {
+      fulfillment_source: 'IMPORT', order_status: 'ordered', payment_status,
+    });
+    mockGetClient.mockResolvedValue(client);
+    const result = await triggerPurchasing('order-uuid');
+    expect(result.purchase_orders[0]).toMatchObject({ status: 'error' });
+    expect(client.calls.filter(c => c.sql.startsWith('INSERT INTO purchase_lines'))).toHaveLength(0);
+    expect(client.calls.some(c => c.sql.includes('FOR SHARE OF o,oi NOWAIT'))).toBe(true);
+    expect(client.calls.some(c => c.sql.startsWith('ROLLBACK TO SAVEPOINT'))).toBe(true);
   });
 
   test('already_exists → idempotent, aucun INSERT', async () => {

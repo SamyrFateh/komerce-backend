@@ -163,10 +163,13 @@ function projectPeriodDecisionEvidence(decision,marketId,periodStart){
   if(contribution===null||structure===null||Number(structure)<=0||typeof ratio!=='number'||!Number.isFinite(ratio))
     return {...base,reason:'DECISION_AMOUNTS_UNAVAILABLE'};
   const flow=decision.flow_break_even,es=flow?.economic_state;
-  const result=flow?.status==='READY'&&es&&money(es.period_contribution_kmf)===contribution&&money(es.period_structural_charges_kmf)===structure
-    ?money(es.period_result_kmf):null;
-  const gap=flow?.status==='READY'&&es&&money(es.period_contribution_kmf)===contribution&&money(es.period_structural_charges_kmf)===structure
-    ?money(es.break_even_gap_kmf):null;
+  const cents=value=>BigInt(value.replace('.',''));
+  const expectedResult=cents(contribution)-cents(structure);
+  const expectedGap=expectedResult<0n?-expectedResult:0n;
+  const storedResult=money(es?.period_result_kmf),storedGap=money(es?.break_even_gap_kmf);
+  const matchingFlow=flow?.status==='READY'&&money(es?.period_contribution_kmf)===contribution&&money(es?.period_structural_charges_kmf)===structure;
+  const result=matchingFlow&&storedResult!==null&&cents(storedResult)===expectedResult?storedResult:null;
+  const gap=matchingFlow&&storedGap!==null&&cents(storedGap)===expectedGap?storedGap:null;
   return {...base,status:'AVAILABLE_ON_MATURE_COHORT',reason:null,gateStatus:decision.decision_status,
     evaluatedAt:decision.evaluated_at||null,contributionKmf:contribution,structureKmf:structure,resultKmf:result,remainingKmf:gap,
     coverageRatio:String(ratio),matureOrderCount:Number.isSafeInteger(c.contribution?.mature_order_count)?c.contribution.mature_order_count:null,

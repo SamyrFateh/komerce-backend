@@ -72,12 +72,13 @@ async function mount(page,{role='agent_hub',row=baseOrder,dossierData=dossier,ad
       return fs.existsSync(name)?route.fulfill({path:name}):route.fulfill({status:404,body:''});
     }
     if(url.pathname==='/api/auth/me')return route.fulfill({contentType:'application/json',body:JSON.stringify({role,id:'f761a3ed-0000-4000-8000-000000000001'})});
+    if(url.pathname==='/api/admin/dashboard/context'&&role==='market_operator')return route.fulfill({json:{actor:{id:'f761a3ed-0000-4000-8000-000000000001',role},access:{mode:'market',allowedMarkets:['KM'],defaultMarket:'KM',capabilities:[],delegatedCapabilities:{KM:['operations.read']}}}});
     let data;
     if(url.pathname==='/api/hub/board'){
       if(url.searchParams.get('view')==='po')data=projectionReady?{scope:'HUB_GLOBAL',markets:['KM'],purchase_orders:[{
         id:PO,reference:'PO-302',market:'KM',supplier:'Alpha',purchase_step:'draft',ordered:2,expected:2,received:0,missing:2,order_count:1,order_references:[row.reference],order_lines:[]
       }]}:{scope:'UNAVAILABLE'};
-      else data={scope:'HUB_GLOBAL',markets:['KM'],orders:[row]};
+      else data={scope:'HUB_GLOBAL',...(role==='market_operator'?{audience:'MARKET_SCOPED'}:{}),markets:['KM'],orders:[row]};
     }
     if(url.pathname==='/api/hub/director-todo')data={scope:'ALL_MARKETS',overdue_count:1,tasks:[{
       kind:'AUTHORIZE_COMMITMENT',owner:'responsable_hub',
@@ -434,6 +435,12 @@ test('Navigation Hub : Kanban et Direction sans bouton cockpit concurrent',async
   await page.locator('[data-hub-branch="direction"]').click();
   await expect(page).toHaveURL(/branch=direction/);
   await expect(page.locator('[data-hub-director-todo]')).toBeVisible();
+  await expect(page.locator('[data-hub-v3-pilotage]')).toBeVisible();
+  await page.locator('[data-hub-v3-pilot-filter="decide"]').click();
+  await expect(page.locator('[data-hub-v3-gestion]')).toBeVisible();
+  const dossier=page.locator('[data-hub-v3-dossier]').filter({has:page.locator('[data-hub-director-task="AUTHORIZE_COMMITMENT"]')});
+  await expect(dossier).toHaveCount(1);
+  await dossier.locator('summary').click();
   await expect(page.locator('[data-hub-director-task="AUTHORIZE_COMMITMENT"]')).toBeVisible();
   await expect(page.locator('[data-hub-global-order]')).toHaveCount(0);
   await page.locator('[data-hub-branch="operations"]').click();

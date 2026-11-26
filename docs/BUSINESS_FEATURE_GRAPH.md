@@ -81,7 +81,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 36 | 36 | 725 | 725 | 0 |
+| backend | 36 | 36 | 735 | 735 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 106 | 106 | 0 |
 
@@ -270,14 +270,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - utils: 3
 - middleware: 1
-- services: 56
+- services: 63
 - routes: 13
-- migrations: 34
+- migrations: 40
 - dash: 6
-- tests: 108
-- tables owned (lifecycle): 31 — `order_item_real_cost_allocations`, `exchange_rates`, `charges`, `competitor_prices`, `cost_benchmarks`, `cost_component_events`, `cost_component_market_override_events`, `cost_component_market_overrides`, `cost_components`, `economic_risk_cost_events`, `economic_risk_watermark_events`, `economic_snapshots`, `economic_structure_cost_events`, `finance_config`, `international_n1_reconciliations`, `financial_movements`, `financial_movement_documents`, `market_price_observations`, `market_price_observation_events`, `price_history`, `pricing_category_dims`, `pricing_category_taxes`, `pricing_components`, `pricing_matrices_audit`, `pricing_market_decision_policy_events`, `pricing_maturity_disposition_events`, `pricing_strategies`, `pricing_strategy_history`, `risk_provisions`, `market_cost_attributions`, `order_cost_entry_events`
-- tables written: 32
-- interfaces exposed: 110
+- tests: 115
+- tables owned (lifecycle): 39 — `order_item_real_cost_allocations`, `exchange_rates`, `charges`, `competitor_prices`, `cost_benchmarks`, `cost_component_events`, `cost_component_market_override_events`, `cost_component_market_overrides`, `cost_components`, `economic_risk_cost_events`, `economic_risk_watermark_events`, `economic_snapshots`, `economic_sku_rail_selection_events`, `economic_structure_cost_events`, `economic_cost_centers`, `economic_cost_families`, `economic_cost_resources`, `economic_cost_posts`, `economic_cost_budget_revisions`, `economic_cost_commitments`, `economic_cost_commitment_movements`, `finance_config`, `international_n1_reconciliations`, `financial_movements`, `financial_movement_documents`, `market_price_observations`, `market_price_observation_events`, `price_history`, `pricing_category_dims`, `pricing_category_taxes`, `pricing_components`, `pricing_matrices_audit`, `pricing_market_decision_policy_events`, `pricing_maturity_disposition_events`, `pricing_strategies`, `pricing_strategy_history`, `risk_provisions`, `market_cost_attributions`, `order_cost_entry_events`
+- tables written: 40
+- interfaces exposed: 127
 - internal APIs: 2
 - dependencies (consumes): 16 — local-stock, refunds, platform-ops, customs, business-rules, auth-identity, market, market-autonomy, market-delegation, infrastructure, logistics, catalog, auth, dashboard, orders, loyalty
 - consumers: 15 — catalog, customs, dashboard, infrastructure, loyalty, market-autonomy, market-control-plane, market-delegation, orders, platform-ops, purchasing, refunds, sourcing, admin-dashboard, decision-signals
@@ -432,7 +432,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - services: 4
 - migrations: 3
-- dash: 25
+- dash: 27
 - tests: 11
 - tables owned (lifecycle): 2 — `product_market_price_drafts`, `product_market_price_draft_events`
 - tables written: 2
@@ -792,8 +792,16 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `dashboard_global_access_grants` | _ambiguë_ | no-declared-writer | — | market-control-plane |
 | `decision_signal_global_access_grants` | _ambiguë_ | no-declared-writer | — | market-control-plane |
 | `disputes` | `orders` | single-writer | orders | catalog, market-delegation |
+| `economic_cost_budget_revisions` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `economic_cost_centers` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `economic_cost_commitment_movements` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `economic_cost_commitments` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `economic_cost_families` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `economic_cost_posts` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `economic_cost_resources` | `economic-engine` | declared-table-owner | economic-engine | — |
 | `economic_risk_cost_events` | `economic-engine` | declared-table-owner | economic-engine | — |
 | `economic_risk_watermark_events` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `economic_sku_rail_selection_events` | `economic-engine` | declared-table-owner | economic-engine | — |
 | `economic_snapshots` | `economic-engine` | declared-table-owner | economic-engine, infrastructure | — |
 | `economic_structure_cost_events` | `economic-engine` | declared-table-owner | economic-engine | market-delegation |
 | `economic_variables` | _ambiguë_ | no-declared-writer | — | economic-engine |
@@ -1199,6 +1207,23 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/admin/workspaces/pricing/cost-components/{id}/update` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
 | `POST /api/admin/workspaces/pricing/cost-components/{id}/toggle` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
 | `GET /api/admin/workspaces/pricing/market/{id}` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/market/{id}/cost-centers` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `GET /api/admin/workspaces/pricing/cost-centers` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/cost-centers/posts/{id}/budget-revisions` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/cost-centers/posts/{id}/budget-revisions` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/cost-centers/posts/{id}/actuals` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/cost-centers/families/{id}/posts` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/cost-centers/initialize` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/cost-centers/references` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/costing/products/{id}/sku-rail-selection` | economic-engine | `routes/admin-costing.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/cost-centers/references` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/cost-centers/initialize` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/cost-centers/families/{id}/posts` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/cost-centers/posts/{id}/actuals` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/cost-centers/posts/{id}/commitments` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/cost-centers/commitments/{id}/movements` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/cost-centers/posts/{id}/commitments` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/market/{id}/cost-centers/commitments/{id}/movements` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
 | `GET /api/admin/workspaces/pricing/market/{id}/decision` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
 | `GET /api/admin/workspaces/pricing/market/{id}/decision-policy/history` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
 | `POST /api/admin/workspaces/pricing/market/{id}/decision-policy` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
@@ -2340,7 +2365,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2407 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2423 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 218 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2459,13 +2484,13 @@ Meta Graph monté : oui.
 | economic-engine | catalog | static-code, data-read | 9 | **DECLARED_AND_OBSERVED** |
 | economic-engine | customs | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | economic-engine | dashboard | static-code | 17 | **DECLARED_AND_OBSERVED** |
-| economic-engine | infrastructure | static-code | 119 | **DECLARED_AND_OBSERVED** |
+| economic-engine | infrastructure | static-code | 130 | **DECLARED_AND_OBSERVED** |
 | economic-engine | local-stock | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | economic-engine | logistics | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | economic-engine | loyalty | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| economic-engine | market | static-code | 9 | **DECLARED_AND_OBSERVED** |
+| economic-engine | market | static-code | 13 | **DECLARED_AND_OBSERVED** |
 | economic-engine | market-autonomy | static-code | 4 | **DECLARED_AND_OBSERVED** |
-| economic-engine | market-delegation | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| economic-engine | market-delegation | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | economic-engine | orders | static-code, data-read, data-write | 6 | **DECLARED_AND_OBSERVED** |
 | economic-engine | platform-ops | data-read | 2 | **DECLARED_AND_OBSERVED** |
 | economic-engine | refunds | data-read | 1 | **DECLARED_AND_OBSERVED** |
@@ -2482,7 +2507,7 @@ Meta Graph monté : oui.
 | infrastructure | dashboard | static-code | 19 | **DECLARED_AND_OBSERVED** |
 | infrastructure | decision-signals | static-code | 4 | **OBSERVED_UNDECLARED** |
 | infrastructure | documents | static-code | 2 | **OBSERVED_UNDECLARED** |
-| infrastructure | economic-engine | static-code | 13 | **DECLARED_AND_OBSERVED** |
+| infrastructure | economic-engine | static-code | 14 | **DECLARED_AND_OBSERVED** |
 | infrastructure | incident-management | static-code | 1 | **OBSERVED_UNDECLARED** |
 | infrastructure | inventory | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | infrastructure | local-stock | static-code | 2 | **OBSERVED_UNDECLARED** |
@@ -2528,9 +2553,9 @@ Meta Graph monté : oui.
 | logistics | market | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | logistics | market-delegation | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | logistics | notifications | static-code | 17 | **DECLARED_AND_OBSERVED** |
-| logistics | orders | static-code, data-write, data-read | 45 | **DECLARED_AND_OBSERVED** |
+| logistics | orders | static-code, data-write, data-read | 46 | **DECLARED_AND_OBSERVED** |
 | logistics | payments | static-code | 2 | **DECLARED_AND_OBSERVED** |
-| logistics | purchasing | static-code, data-read | 15 | **DECLARED_AND_OBSERVED** |
+| logistics | purchasing | static-code, data-read | 16 | **DECLARED_AND_OBSERVED** |
 | logistics | refunds | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | logistics | supplier-connectivity | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | loyalty | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -2548,14 +2573,14 @@ Meta Graph monté : oui.
 | market | orders | static-code | 1 | **OBSERVED_UNDECLARED** |
 | market-autonomy | catalog | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | market-autonomy | economic-engine | static-code | 7 | **DECLARED_AND_OBSERVED** |
-| market-autonomy | infrastructure | static-code | 6 | **DECLARED_AND_OBSERVED** |
+| market-autonomy | infrastructure | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | market-autonomy | market | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | market-autonomy | market-control-plane | static-code | 2 | **OBSERVED_UNDECLARED** |
 | market-control-plane | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | catalog | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | dashboard | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | decision-signals | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| market-control-plane | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | economic-engine | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | infrastructure | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | logistics | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | market | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
@@ -2598,7 +2623,7 @@ Meta Graph monté : oui.
 | orders | dashboard | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | orders | decision-signals | static-code, data-write | 2 | **DECLARED_AND_OBSERVED** |
 | orders | documents | static-code, interface | 10 | **DECLARED_AND_OBSERVED** |
-| orders | economic-engine | static-code | 10 | **DECLARED_AND_OBSERVED** |
+| orders | economic-engine | static-code | 11 | **DECLARED_AND_OBSERVED** |
 | orders | incident-management | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | orders | infrastructure | static-code, interface | 72 | **DECLARED_AND_OBSERVED** |
 | orders | local-stock | static-code, interface | 5 | **DECLARED_AND_OBSERVED** |

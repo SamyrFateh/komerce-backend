@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 121,
-    "total_routes": 807,
+    "total_routes": 824,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -13658,6 +13658,446 @@
         }
       }
     },
+    "/api/admin/workspaces/pricing/market/{marketCode}/cost-centers": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/pricing/market/{marketCode}/cost-centers",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "marketCode": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "periodStart": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "central": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "readOnly": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "centers": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "families": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "resources": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "posts": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "budgetSummary": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "commitmentSummary": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "structureEvidence": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "activity": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "profitability": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "actualCoverage": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "available": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/market/{marketCode}/cost-centers/posts/{postId}/budget-revisions": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/posts/{postId}/budget-revisions",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "postId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "outcome": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "revision": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/market/{marketCode}/cost-centers/posts/{postId}/commitments": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/posts/{postId}/commitments",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "postId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "outcome": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "commitment": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/market/{marketCode}/cost-centers/commitments/{commitmentId}/movements": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/commitments/{commitmentId}/movements",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "commitmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "outcome": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "movement": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/market/{marketCode}/cost-centers/posts/{postId}/actuals": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/posts/{postId}/actuals",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "postId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "outcome": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "fact": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/market/{marketCode}/cost-centers/families/{familyId}/posts": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/families/{familyId}/posts",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "familyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "outcome": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "post": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/market/{marketCode}/cost-centers/initialize": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/initialize",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "centers": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "families": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/market/{marketCode}/cost-centers/references": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/references",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "outcome": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "reference": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/admin/workspaces/pricing/market/{marketCode}": {
       "get": {
         "summary": "GET /api/admin/workspaces/pricing/market/{marketCode}",
@@ -14871,6 +15311,376 @@
                       "x-observed": true
                     },
                     "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/cost-centers": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/pricing/cost-centers",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "scope": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "marketCode": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "periodStart": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "central": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "readOnly": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "centers": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "families": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "resources": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "posts": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "budgetSummary": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "commitmentSummary": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "structureEvidence": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "activity": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "profitability": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "actualCoverage": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "available": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/cost-centers/posts/{postId}/budget-revisions": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/cost-centers/posts/{postId}/budget-revisions",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "parameters": [
+          {
+            "name": "postId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "outcome": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "revision": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/cost-centers/posts/{postId}/commitments": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/cost-centers/posts/{postId}/commitments",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "parameters": [
+          {
+            "name": "postId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "outcome": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "commitment": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/cost-centers/commitments/{commitmentId}/movements": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/cost-centers/commitments/{commitmentId}/movements",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "parameters": [
+          {
+            "name": "commitmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "outcome": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "movement": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/cost-centers/posts/{postId}/actuals": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/cost-centers/posts/{postId}/actuals",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "parameters": [
+          {
+            "name": "postId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "outcome": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "fact": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/cost-centers/families/{familyId}/posts": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/cost-centers/families/{familyId}/posts",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "parameters": [
+          {
+            "name": "familyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "outcome": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "post": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/cost-centers/initialize": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/cost-centers/initialize",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "centers": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "families": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/cost-centers/references": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/cost-centers/references",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "outcome": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "reference": {
                       "type": "string",
                       "x-observed": true
                     }
@@ -16702,6 +17512,49 @@
                       "x-observed": true
                     },
                     "truncated": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/costing/products/{productId}/sku-rail-selection": {
+      "post": {
+        "summary": "POST /api/admin/costing/products/{productId}/sku-rail-selection",
+        "x-route-file": "routes/admin-costing.js",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "outcome": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "event": {
                       "type": "string",
                       "x-observed": true
                     }

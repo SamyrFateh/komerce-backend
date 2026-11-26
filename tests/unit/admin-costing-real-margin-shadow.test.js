@@ -28,6 +28,11 @@ jest.mock('../../services/cost-allocation/product-margin-steering', () => ({
   listProductMarginSteering: (...a) => mockSteering(...a),
 }));
 
+jest.mock('../../middleware/require-pricing-global-authority', () => ({ hasPricingGlobalAuthority: jest.fn() }));
+jest.mock('../../services/economic-sku-rail-selection', () => ({ recordSkuRailSelection: jest.fn() }));
+const { hasPricingGlobalAuthority } = require('../../middleware/require-pricing-global-authority');
+const { recordSkuRailSelection } = require('../../services/economic-sku-rail-selection');
+
 const express = require('express');
 const request = require('supertest');
 
@@ -40,6 +45,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   user = { id: 'admin-1', role: 'admin' };
   app = express();
+  app.use(express.json());
   app.use((req, res, next) => { req.user = user; next(); });
   app.use('/api/admin/costing', require('../../routes/admin-costing'));
   app.use((err, req, res, next) => { res.status(500).json({ error: err.message }); }); // eslint-disable-line no-unused-vars
@@ -100,5 +106,31 @@ describe('GET /products/margin-steering', () => {
   it('non admin → 403', async () => {
     user = { id: 'u', role: 'client' };
     expect((await request(app).get(`/api/admin/costing/products/margin-steering?market_id=${MID}`)).status).toBe(403);
+  });
+});
+
+describe('POST /products/:productId/sku-rail-selection', () => {
+  const path = `/api/admin/costing/products/${OID}/sku-rail-selection`;
+  const body = { market_id: MID, sku_id: OID, rail: 'SEA_STANDARD', action: 'WITHDRAW', reason: 'Preuve rapprochée' };
+
+  it('requires the existing global pricing authority', async () => {
+    hasPricingGlobalAuthority.mockResolvedValue(false);
+    const result = await request(app).post(path).send(body);
+    expect(result.status).toBe(403);
+    expect(recordSkuRailSelection).not.toHaveBeenCalled();
+  });
+
+  it('uses the authenticated actor and surfaces domain refusals', async () => {
+    hasPricingGlobalAuthority.mockResolvedValue(true);
+    recordSkuRailSelection.mockRejectedValueOnce(Object.assign(new Error('Preuve insuffisante'), {
+      code: 'ECONOMIC_SELECTION_EVIDENCE_INSUFFICIENT', status: 409,
+    }));
+    expect((await request(app).post(path).send({ ...body, actorId: 'untrusted' })).status).toBe(409);
+    expect(recordSkuRailSelection).toHaveBeenCalledWith({
+      marketId: MID, productId: OID, skuId: OID, rail: body.rail, action: body.action,
+      reason: body.reason, actorId: 'admin-1',
+    });
+    recordSkuRailSelection.mockResolvedValueOnce({ outcome: 'recorded', event: { id: '1' } });
+    expect((await request(app).post(path).send(body)).status).toBe(201);
   });
 });

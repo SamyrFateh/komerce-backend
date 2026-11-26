@@ -56,6 +56,9 @@ function scripted(handlers) {
       for (const [pattern, reply] of handlers) {
         if (pattern.test(sql)) return typeof reply === 'function' ? reply(sql, params) : reply;
       }
+      if (sql.includes('AS commercial_item_id') && sql.includes('WHERE oi.id=$1 FOR SHARE OF o,oi NOWAIT')) {
+        return { rows: [{ fulfillment_source: 'IMPORT', order_status: 'ordered', payment_status: 'paid' }] };
+      }
       // Legacy unit fixtures exercise non-simulated PO flows and mock only the
       // queries under test; their linked order remains a real (unmarked) one.
       if (/ORDER BY o\.created_at, pl\.id/.test(sql)) return { rows: [{ simulation_scope: null, reference: 'LEGACY-UNIT' }] };
@@ -70,7 +73,7 @@ const poRow = (extra = {}) => ({ id: PO, order_id: null, status: 'draft', suppli
 const submitLine = (extra = {}) => ({
   id: L1, product_sku_id: uuid(5), supplier_sku: 'SKU', supplier_unit_ref: 'U1',
   supplier_order_identity: { provider: 'noon', version: 1, payload: { a: 1 } },
-  quantity: 2, supplier_unit_price: '10.0000', supplier_currency: 'USD', product_name: null, ...extra,
+  quantity: 2, supplier_unit_price: '10.0000', supplier_currency: 'USD', product_name: null, fulfillment_source: 'IMPORT', order_status: 'confirmed', payment_status: 'paid', ...extra,
 });
 
 beforeEach(() => {
@@ -507,7 +510,7 @@ describe('settleLine — garde-fous', () => {
 
 describe('createManualLine', () => {
   const body = { order_item_id: uuid(20), product_supplier_id: uuid(21), quantity: 2, execution_mode: 'api' };
-  const item = { id: uuid(20), product_id: uuid(22), sku_id: uuid(23), fulfillment_source: 'IMPORT', order_status: 'confirmed' };
+  const item = { id: uuid(20), product_id: uuid(22), sku_id: uuid(23), fulfillment_source: 'IMPORT', order_status: 'confirmed', payment_status: 'paid' };
   const ps = { id: uuid(21), supplier_id: uuid(3), platform: 'Noon' };
   const handlers = (over = {}) => [
     [/FROM order_items oi/, { rows: [over.item === undefined ? item : over.item] }],
@@ -538,6 +541,15 @@ describe('createManualLine', () => {
     await expect(engagement.createManualLine(body)).rejects.toMatchObject({ status: 409, code: 'ORDER_CANCELLED' });
     scripted([[/FROM order_items oi/, { rows: [item] }], [/FROM product_suppliers ps/, { rows: [] }]]);
     await expect(engagement.createManualLine(body)).rejects.toMatchObject({ status: 404, code: 'PRODUCT_SUPPLIER_NOT_FOUND' });
+  });
+
+
+  it.each(['pending','failed','partially_paid','refunded'])('P0 : création manuelle refusée pour paiement %s',async payment_status=>{
+    const {calls}=scripted(handlers({item:{...item,payment_status}}));
+    await expect(engagement.createManualLine(body)).rejects.toMatchObject({status:409,code:'ORDER_PAYMENT_NOT_CONFIRMED'});
+    expect(snapshot.insertOpenPurchaseLine).not.toHaveBeenCalled();
+    expect(calls.some(x=>x.sql.includes('FOR SHARE OF o,oi NOWAIT'))).toBe(true);
+    expect(calls.some(x=>x.sql==='ROLLBACK')).toBe(true);
   });
 
   it('SKU non exact → 409 EXACT_IDENTITY_REQUIRED ; provider différent → 409 SUPPLIER_PROVIDER_MISMATCH', async () => {

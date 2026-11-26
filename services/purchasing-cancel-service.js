@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, utils/alerts.js, utils/logger.js
  * @used-by       services/cancel-order-purchase-orders.js
- * @db-read       order_items, purchase_lines, purchase_orders
+ * @db-read       order_items, purchase_lines, purchase_orders, purchase_order_authorizations
  * @db-write      alerts, purchase_lines, purchase_orders
  * @db-txn        caller_managed
  * @doctrine      writer_not_owner_campaign_2026_08
@@ -116,7 +116,8 @@ async function syncHistoricalPurchaseOrders(q, { orderId, orderReference, actor,
 /**
  * Forme regroupée (PR 4) : une commande annulée ne doit jamais laisser une ligne vivante côté achats.
  *   - ligne ouverte (sans PO)              → annulée (cancel_reason='order_cancelled') ;
- *   - ligne d'une PO regroupée en `draft`  → détachée puis annulée ; une PO brouillon vidée passe en `cancelled` ;
+ *   - ligne d'une PO regroupée en `draft` sans engagement validé → détachée puis annulée ; une PO brouillon vidée passe en `cancelled` ;
+ *   - engagement validé même en `draft` → conserver les lignes et les preuves, alerte d'arbitrage ;
  *   - ligne d'une PO regroupée déjà soumise (notified/confirmed/reçue…) → RIEN d'automatique : le fournisseur est
  *     sollicité, alerte `order_cancel_purchasing_blocked` avec purchase_line_ids, l'humain décide.
  * Ordre de verrouillage commun avec purchasing-grouped-service : PO d'abord, lignes ensuite (identifiants triés).
@@ -139,6 +140,12 @@ async function syncGroupedLinesOnOrderCancel(q, { orderId, orderReference, actor
       [poIds]
     )
     : { rows: [] };
+  // Read authorizations AFTER acquiring PO locks: the statement which waited
+  // for a PO may have started before the decision transaction committed.
+  const { rows: commitments } = poIds.length
+    ? await q.query("SELECT purchase_order_id FROM purchase_order_authorizations WHERE purchase_order_id=ANY($1::uuid[]) AND authorization_type='purchase_commitment'", [poIds])
+    : { rows: [] };
+  const authorizedIds = new Set(commitments.map(row=>String(row.purchase_order_id)));
   const poById = new Map(poRows.map((po) => [po.id, po]));
 
   const { rows: lines } = await q.query(
@@ -157,7 +164,7 @@ async function syncGroupedLinesOnOrderCancel(q, { orderId, orderReference, actor
     const po = line.purchase_order_id ? poById.get(line.purchase_order_id) : null;
     if (!line.purchase_order_id) {
       cancellableIds.push(line.id);
-    } else if (po && po.status === 'draft') {
+    } else if (po && po.status === 'draft' && !authorizedIds.has(String(po.id))) {
       detachIds.push(line.id);
       cancellableIds.push(line.id);
       touchedDraftPos.add(po.id);

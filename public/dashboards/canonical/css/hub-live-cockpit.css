@@ -275,3 +275,17 @@ button.hlc-chip.is-link { width: fit-content; flex: 0 0 auto; cursor: pointer; b
   .hlc-director-task { grid-template-columns: 34px minmax(0, 1fr) 65px; }
   .hlc-director-open { grid-column: 2 / 4; justify-self: start; }
 }
+
+/* C3 — les actions opérationnelles et les décisions restent distinctes. */
+.hlc-compact-purchase-table th:first-child {width:75%;}
+.hlc-compact-purchase-table td:last-child {text-align:right;}
+.hlc-compact-direction-actions {border-top:1px solid var(--hlc-line);padding-top:6px;min-width:0;}
+.hlc-compact-direction-actions h4,.hlc-actions > h4 {margin:4px 0;font-size:13px;}
+.hlc-form.hlc-form-compact-purchase {grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:6px 12px;}
+.hlc-form-compact-purchase > :not(.hlc-field):not(.hlc-btn) {grid-column:1/-1;}
+.hlc-form-compact-purchase .hlc-field {min-width:0;}
+.hlc-form-compact-purchase .hlc-field input,.hlc-form-compact-purchase .hlc-field select {width:100%;min-width:0;box-sizing:border-box;}
+.hlc-confirm-gap-table th:first-child {width:53%;}
+.hlc-confirm-gap-table td .hlc-field span {display:none;}
+.hlc-confirm-gap-table td input {max-width:90px;}
+.hlc-form-compact-purchase details.hlc-manual-purchase-allocations > summary {cursor:pointer;font-weight:650;}
