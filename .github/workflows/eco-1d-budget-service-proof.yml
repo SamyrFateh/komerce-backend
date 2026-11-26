@@ -1,0 +1,67 @@
+name: ECO-1d budget service and generated graph (temporary)
+on:
+  push:
+    branches: [research/eco-centres-v6-preflight]
+    paths: ['.github/workflows/eco-1d-budget-service-proof.yml']
+permissions:
+  contents: write
+  issues: write
+concurrency:
+  group: eco-1d-budget-service-proof
+  cancel-in-progress: false
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      ECO_SOURCE: 'b16c37259a92fe8402ee002bb98de65b8d320757'
+      ECO_BASE: 'a7df2352e08f3a0c9c74043a472cf255754d2906'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 'b16c37259a92fe8402ee002bb98de65b8d320757'
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Targeted service proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$ECO_SOURCE"
+          npx jest --runInBand --runTestsByPath tests/unit/economic-cost-budget-service.test.js tests/unit/require-pricing-global-authority.test.js
+      - name: Generate canonical architecture graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run arch:gen
+          git diff --stat
+          git diff --name-only | grep -v -E '^docs/(KOMERCE_ARCH_HEADER_GRAPH\.md|komerce-arch-header-graph\.json)$' && exit 1 || true
+          git add -- docs/KOMERCE_ARCH_HEADER_GRAPH.md docs/komerce-arch-header-graph.json
+          git -c user.name='Komerce ECO research' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'docs(arch): regenerate graph for ECO-1d budget service'
+          git diff --exit-code
+          git diff --check "$ECO_BASE" HEAD
+          echo "ECO_GENERATED=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          git push origin HEAD:refs/heads/wip/eco-1d-budget-service-graph-b16c372
+      - name: Canonical preflight on generated candidate
+        env:
+          PR_BODY: |
+            ## Pourquoi
+            Référentiel économique et révision budgétaire par autorité centrale.
+            ## Quoi
+            Migrations 430 à 432, service budget, carte et graph régénéré.
+            ## Tests
+            Preflight canonique, tests ciblés, PostgreSQL jetable à confirmer sur SHA final.
+            ## Reprise
+            Pas de montage HTTP ni activation; poursuivre délégation locale et provisioning.
+        run: npm run pr:preflight -- --base "$ECO_BASE"
+      - name: Report
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ job.status }}
+        shell: bash
+        run: |
+          gh issue comment 5280 --repo "$GITHUB_REPOSITORY" --body "ECO-1d proof: $RESULT. Source: $ECO_SOURCE. Graph candidate: ${ECO_GENERATED:-not-generated}. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID. WIP only; no PR/merge/deploy."
