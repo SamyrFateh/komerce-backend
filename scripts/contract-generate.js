@@ -399,6 +399,8 @@ const KNOWN_RESPONSES = {
   '/api/admin/workspaces/pricing/market/{marketCode}/cost-centers/families/{familyId}/posts': { post: { fields: ['outcome','post'], source: 'test' } },
   '/api/admin/workspaces/pricing/cost-centers/initialize': { post: { fields: ['centers','families'], source: 'test' } },
   '/api/admin/workspaces/pricing/market/{marketCode}/cost-centers/initialize': { post: { fields: ['centers','families'], source: 'test' } },
+  '/api/admin/workspaces/pricing/cost-centers/references': { post: { fields: ['outcome','reference'], source: 'test' } },
+  '/api/admin/workspaces/pricing/market/{marketCode}/cost-centers/references': { post: { fields: ['outcome','reference'], source: 'test' } },
   // LOT 4F — réponses Pricing Workspace consommées par Canonical.
   // LOT 4V — décision économique market-scoped : formes lues dans les routes/services canoniques.
   // LOT 3 (2026-09) — tests/unit/admin-pricing-workspace-market-route.test.js
@@ -2856,6 +2858,8 @@ if (inventory.length < 150) {
 }
 
 const SUCCESS_STATUS_OVERRIDES = Object.freeze({
+  'POST /api/admin/workspaces/pricing/cost-centers/references': '201',
+  'POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/references': '201',
   'POST /api/admin/workspaces/pricing/cost-centers/families/{familyId}/posts': '201',
   'POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/families/{familyId}/posts': '201',
   'POST /api/admin/workspaces/pricing/cost-centers/posts/{postId}/actuals': '201',

@@ -8,8 +8,8 @@
  * @outputs       cost_post_reference, idempotent_replay, audit_record
  * @depends       db.js, services/economic-cost-write-authority.js, services/market-structure-charge-reference.js, services/market-delegation-service.js
  * @used-by       routes/admin-pricing-workspace.js, services/market-provisioning-service.js
- * @db-read       markets, economic_cost_centers, economic_cost_families, economic_cost_resources, economic_cost_posts
- * @db-write      economic_cost_centers, economic_cost_families, economic_cost_posts
+ * @db-read       markets, users, pricing_global_access_grants, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, economic_cost_centers, economic_cost_families, economic_cost_resources, economic_cost_posts
+ * @db-write      economic_cost_centers, economic_cost_families, economic_cost_resources, economic_cost_posts
  * @db-write-via:market-structure-charge-reference charges
  * @db-write-via:market-delegation-service market_delegation_audit
  * @db-txn        service_owned_transaction
@@ -21,7 +21,7 @@
 const db=require('../db');
 const costAuthority=require('./economic-cost-write-authority');
 const {insertStructureReference}=require('./market-structure-charge-reference');
-const {audit}=require('./market-delegation-service');
+const {audit,resolveAuthorization}=require('./market-delegation-service');
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function fail(code,status,message){return Object.assign(new Error(message),{code,status});}
 const invalid=field=>fail('economic_reference_invalid',400,field+' invalide');
@@ -112,4 +112,76 @@ async function initializeCostReferences(actor,marketCode){
     await client.query('COMMIT');return result;
   }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
 }
-module.exports={createPost,parsePost,provisionCostReferences,initializeCostReferences};
+// Extend reference data without creating facts, and assign an eligible existing
+// user, not a new account or an implicit capability. All writes are audited.
+async function configureReference(actor,raw){
+  if(!raw||(raw.marketCode!==null&&(typeof raw.marketCode!=='string'||!/^[A-Z]{2}$/.test(raw.marketCode))))throw invalid('Périmètre');
+  const kind=raw.kind;
+  if(!['CENTER','FAMILY','RESOURCE','RESPONSIBLE'].includes(kind))throw invalid('Type de référence');
+  const reason=str(raw.reason,3,500,'Motif');
+  const centerId=kind==='CENTER'?null:ref(raw.centerId,'Centre');
+  const responsibleId=kind==='RESPONSIBLE'?(raw.responsibleUserId===null?null:ref(raw.responsibleUserId,'Responsable')):null;
+  const expected=kind==='RESPONSIBLE'?(raw.expectedResponsibleUserId===null?null:ref(raw.expectedResponsibleUserId,'Responsable attendu')):null;
+  let code=null,label=null,resourceKind=null;
+  if(kind!=='RESPONSIBLE'){
+    code=str(raw.code,2,64,'Code');if(!/^[A-Z][A-Z0-9_]{1,63}$/.test(code))throw invalid('Code');
+    label=str(raw.label,1,200,'Libellé');
+    if(kind==='RESOURCE')resourceKind=str(raw.resourceKind,1,80,'Nature de ressource');
+  }
+  const central=await costAuthority.classifyActor(actor,raw.marketCode),client=await db.getClient();
+  try{
+    await client.query('BEGIN');
+    let marketId=null;
+    if(raw.marketCode!==null){
+      const {rows}=await client.query('SELECT id FROM markets WHERE code=$1 AND is_active=TRUE',[raw.marketCode]);
+      if(!rows.length)throw fail('market_not_found',404,'Marché introuvable');
+      marketId=rows[0].id;
+    }
+    await costAuthority.check(client,actor,raw.marketCode,marketId,central,'reference',{record:true});
+    let center=null,reference=null,before=null;
+    if(centerId){
+      const {rows}=await client.query('SELECT * FROM economic_cost_centers WHERE id=$1 AND market_id IS NOT DISTINCT FROM $2::uuid FOR UPDATE',[centerId,marketId]);
+      if(!rows.length)throw fail('economic_reference_center_not_found',404,'Centre introuvable dans ce périmètre');
+      center=rows[0];
+    }
+    if(kind==='RESPONSIBLE'){
+      before={responsible_user_id:center.responsible_user_id,is_active:center.is_active};
+      if(center.responsible_user_id!==expected)throw fail('economic_reference_owner_conflict',409,'Responsable modifié entre-temps');
+      if(responsibleId!==null){
+        if(marketId===null){
+          const {rows}=await client.query("SELECT u.id FROM users u JOIN pricing_global_access_grants g ON g.user_id=u.id AND g.revoked_at IS NULL WHERE u.id=$1 AND u.role='admin'",[responsibleId]);
+          if(!rows.length)throw fail('economic_reference_owner_forbidden',403,'Responsable hors périmètre');
+        }else{
+          for(const capability of ['pricing.read','pricing.cost_component.update']){
+            const proof=await resolveAuthorization(client,{userId:responsibleId,marketCode:raw.marketCode,requiredCapability:capability});
+            if(String(proof.market_id)!==String(marketId))throw fail('economic_reference_owner_forbidden',403,'Responsable hors périmètre');
+          }
+        }
+      }
+      if(center.responsible_user_id===responsibleId&&center.is_active===Boolean(responsibleId)){await client.query('COMMIT');return {outcome:'replayed',reference:center};}
+      reference=(await client.query('UPDATE economic_cost_centers SET responsible_user_id=$2,is_active=$3 WHERE id=$1 RETURNING *',[centerId,responsibleId,Boolean(responsibleId)])).rows[0];
+    }else{
+      // Fixed statement choices, never SQL identifiers from a request.
+      const writes={
+        CENTER:['INSERT INTO economic_cost_centers(market_id,code,label) VALUES($1,$2,$3) ON CONFLICT(market_id,code) DO NOTHING RETURNING *','SELECT * FROM economic_cost_centers WHERE market_id IS NOT DISTINCT FROM $1::uuid AND code=$2',[marketId,code,label]],
+        FAMILY:['INSERT INTO economic_cost_families(center_id,code,label) VALUES($1,$2,$3) ON CONFLICT(center_id,code) DO NOTHING RETURNING *','SELECT * FROM economic_cost_families WHERE center_id=$1 AND code=$2',[centerId,code,label]],
+        RESOURCE:['INSERT INTO economic_cost_resources(center_id,code,label,resource_kind) VALUES($1,$2,$3,$4) ON CONFLICT(center_id,code) DO NOTHING RETURNING *','SELECT * FROM economic_cost_resources WHERE center_id=$1 AND code=$2',[centerId,code,label,resourceKind]]
+      };
+      const [insert,select,args]=writes[kind];
+      const result=await client.query(insert,args);
+      reference=result.rows[0];
+      if(!reference){
+        reference=(await client.query(select,args.slice(0,2))).rows[0];
+        if(!reference||reference.label!==label||(kind==='RESOURCE'&&reference.resource_kind!==resourceKind))throw fail('economic_reference_conflict',409,'Code déjà utilisé avec des données différentes');
+        await client.query('COMMIT');return {outcome:'replayed',reference};
+      }
+    }
+    await audit(client,{actorUserId:actor.id,marketId,action:'ECONOMIC_COST_REFERENCE_CONFIGURED',before,after:{kind,id:reference.id,center_id:centerId,reason,code,resource_kind:resourceKind,responsible_user_id:responsibleId}});
+    await client.query('COMMIT');return {outcome:'created',reference};
+  }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
+}
+async function listResponsibleCandidates(client,marketId){
+  if(marketId===null)return (await client.query("SELECT DISTINCT u.id,u.full_name AS label FROM users u JOIN pricing_global_access_grants g ON g.user_id=u.id WHERE u.role='admin' AND g.revoked_at IS NULL ORDER BY label,u.id")).rows;
+  return (await client.query("SELECT DISTINCT u.id,u.full_name AS label FROM users u JOIN assignment_memberships am ON am.user_id=u.id AND am.status='ACTIVE' JOIN market_operating_assignments a ON a.id=am.assignment_id AND a.status='ACTIVE' WHERE a.market_id=$1 AND NOT EXISTS (SELECT 1 FROM unnest(ARRAY['pricing.read','pricing.cost_component.update']::text[]) AS required(capability) WHERE NOT EXISTS (SELECT 1 FROM membership_capabilities mc WHERE mc.membership_id=am.id AND mc.capability=required.capability AND mc.revoked_at IS NULL) OR NOT EXISTS (SELECT 1 FROM assignment_capability_ceiling acc WHERE acc.assignment_id=a.id AND acc.capability=required.capability AND acc.revoked_at IS NULL)) ORDER BY label,u.id",[marketId])).rows;
+}
+module.exports={createPost,parsePost,provisionCostReferences,initializeCostReferences,configureReference,listResponsibleCandidates};

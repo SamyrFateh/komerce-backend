@@ -284,6 +284,24 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect(ids).toHaveLength(3);expect(model.posts.filter(p=>ids.includes(p.center_id))).toEqual([]);
     expect((await post(fx.central,null)).body).toEqual({centers:2,families:7});
   });
+  test('reference hierarchy extensions and responsible are scoped and audited',async()=>{
+    const post=(actor,code,body)=>request(app).post(endpoint(code)+'/references').set('Authorization',actor.token).send(body);
+    const base={kind:'CENTER',code:'EXTENSION',label:'Centre ajouté',reason:'CI extension'};
+    expect((await post(fx.viewerA,fx.marketA.code,base)).status).toBe(403);
+    const created=await post(fx.managerA,fx.marketA.code,base);expect(created.status).toBe(201);
+    const centerId=created.body.reference.id;
+    expect((await post(fx.managerA,fx.marketA.code,base)).body.outcome).toBe('replayed');
+    const family={kind:'FAMILY',centerId,code:'EXT_FAMILY',label:'Famille',reason:'CI extension'};
+    expect((await post(fx.central,fx.marketB.code,family)).status).toBe(404);
+    expect((await post(fx.managerA,fx.marketA.code,family)).status).toBe(201);
+    expect((await post(fx.managerA,fx.marketA.code,{...family,kind:'RESOURCE',code:'EXT_RESOURCE',resourceKind:'Personnel'})).status).toBe(201);
+    const owner={kind:'RESPONSIBLE',centerId,responsibleUserId:fx.managerA.id,expectedResponsibleUserId:null,reason:'CI owner'};
+    expect((await post(fx.central,fx.marketA.code,{...owner,responsibleUserId:fx.managerB.id})).status).toBe(403);
+    expect((await post(fx.central,fx.marketA.code,owner)).status).toBe(201);
+    const model=(await get(fx.managerA,fx.marketA.code)).body;
+    expect(model.centers.find(c=>c.id===centerId)).toMatchObject({responsible_user_id:fx.managerA.id,is_active:true});
+    expect(model.responsibleCandidates.some(x=>x.id===fx.managerB.id)).toBe(false);
+  });
   test('browser authority injection and invalid period rejected',async()=>{
     expect((await request(app).get(endpoint(fx.marketA.code)).query({periodStart:month,market_id:fx.marketB.id}).set('Authorization',fx.viewerA.token)).status).toBe(400);
     expect((await get(fx.central,fx.marketA.code,'2026-01-02')).status).toBe(400);

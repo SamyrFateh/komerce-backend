@@ -75,10 +75,11 @@
       if(evidence?.amountEur!=null)return v7Money(evidence.amountEur,'EUR')+' · structure partielle';
       return evidence?.amountKmf!=null?v7Money(evidence.amountKmf,'KMF')+' · structure partielle (EUR indisponible)':'À rapprocher';
     }
-    function metrics(summary,commitments,evidence){
+    function balanceText(balance){return balance?.recordedAvailableEur!=null?v7Money(balance.recordedAvailableEur)+' · sur faits enregistrés':'Non calculable';}
+    function metrics(summary,commitments,evidence,balance){
       const row=el(doc,'div','kmc-v7-kpis');
       row.append(metric('Budget enregistré (EUR)',budgetText(summary)),metric('Engagements ouverts (EUR)',commitmentTotal(commitments)),
-        metric('Charges constatées',structureText(evidence)),metric('Disponible','Non calculable'));return row;
+        metric('Charges constatées',structureText(evidence)),metric('Disponible',balanceText(balance)));return row;
     }
     function commitmentText(p){
       const list=p.commitments||[];
@@ -92,7 +93,7 @@
       heading.append(el(doc,'h3','',center?center.label:'Centres de coûts'),
         el(doc,'p','',model?.scope==='GROUP'?'Centres groupe · '+(model.periodStart||''):('Marché '+(model?.marketCode||'')+' · '+(model?.periodStart||''))));
       if(center)heading.append(button('Tous les centres',()=>{state.centerId=null;state.familyId=null;state.postId=null;render();}));
-      host.append(heading,metrics(center?center.budgetSummary:model?.budgetSummary,center?center.commitmentSummary:model?.commitmentSummary,center?center.structureEvidence:model?.structureEvidence));
+      host.append(heading,metrics(center?center.budgetSummary:model?.budgetSummary,center?center.commitmentSummary:model?.commitmentSummary,center?center.structureEvidence:model?.structureEvidence,center?center.recordedBalance:model?.recordedBalance));
       if(!center){
         if(canCost(model,'reference')&&typeof actions.initializeReferences==='function'){
           const feedback=el(doc,'p','kmc-v7-coverage');feedback.setAttribute('role','status');
@@ -101,19 +102,24 @@
             try{await actions.initializeReferences();}catch(e){feedback.textContent=e.message||'Initialisation refusée.';}finally{initialize.disabled=false;}
           });
           host.append(initialize,feedback);
+          if(typeof actions.configureReference==='function')host.append(createV7ReferenceForm(doc,model,null,'CENTER',actions));
         }
         const grid=el(doc,'div','kmc-v7-center-grid');
+        if(centers.some(c=>c.recordedBalance?.status==='RECORDED_OVER_BUDGET'))grid.append(button(state.onlyOverBudget?'Tous les centres':'Centres en écart',()=>{state.onlyOverBudget=!state.onlyOverBudget;render();}));
         for(const c of centers){
+          if(state.onlyOverBudget&&c.recordedBalance?.status!=='RECORDED_OVER_BUDGET')continue;
           const card=el(doc,'article','kmc-v7-center-card');
           card.append(el(doc,'h4','',c.label),el(doc,'p','',c.is_active?'Centre actif':'Centre à configurer'),
             metric('Charges constatées',structureText(c.structureEvidence)),metric('Budget enregistré (EUR)',budgetText(c.budgetSummary)),metric('Engagements ouverts (EUR)',commitmentTotal(c.commitmentSummary)),
-            el(doc,'p','kmc-v7-coverage','Couverture économique non rapprochée'));
+            metric('Disponible',balanceText(c.recordedBalance)),el(doc,'p','kmc-v7-coverage',c.recordedBalance?.status==='RECORDED_OVER_BUDGET'?'Écart sur faits enregistrés':'Couverture économique non rapprochée'));
           card.append(button('Consulter',()=>{state.centerId=c.id;state.familyId=null;state.postId=null;render();}));
           grid.append(card);
         }
         if(!centers.length)grid.append(el(doc,'p','kmc-v7-empty','Aucun centre enregistré dans ce périmètre.'));
         host.append(grid);return;
       }
+      host.append(metric('Responsable',center.responsible_label||'Non renseigné'));
+      if(canCost(model,'reference')&&typeof actions.configureReference==='function')for(const kind of ['FAMILY','RESOURCE','RESPONSIBLE'])host.append(createV7ReferenceForm(doc,model,center,kind,actions));
       const fs=families.filter(f=>f.center_id===center.id);
       const family=fs.find(f=>f.id===state.familyId)||fs[0];
       state.familyId=family?.id||null;
@@ -136,7 +142,7 @@
         const tr=el(doc,'tr',''),cell=el(doc,'td','');
         cell.append(button(p.label,()=>{state.postId=p.id;render();},'kmc-v7-post-button'));
         tr.append(cell,el(doc,'td','',p.budget?v7Money(p.budget.native,p.budget.currency):'Non renseigné'),
-          el(doc,'td','',commitmentText(p)),el(doc,'td','',structureText(p.structureEvidence)),el(doc,'td','','Non décisionnel'));
+          el(doc,'td','',commitmentText(p)),el(doc,'td','',structureText(p.structureEvidence)),el(doc,'td','',p.recordedBalance?.status==='RECORDED_OVER_BUDGET'?'Écart enregistré':p.recordedBalance?.recordedAvailableEur!=null?balanceText(p.recordedBalance):'Non décisionnel'));
         body.append(tr);
       }
       table.append(body);host.append(table);
@@ -151,7 +157,7 @@
           metric('Périmètre',({DIRECT:'Direct',MUTUALIZED:'Mutualisé'})[post.allocation_perimeter]||'À qualifier'),
           metric('Clé d’imputation',post.allocation_basis||'Non renseignée'),
           metric('Budget',post.budget?v7Money(post.budget.native,post.budget.currency):'Non renseigné'),
-          metric('Engagements',commitmentText(post)),metric('Charges constatées',structureText(post.structureEvidence)),metric('Disponible','Non calculable'),
+          metric('Engagements',commitmentText(post)),metric('Charges constatées',structureText(post.structureEvidence)),metric('Disponible',balanceText(post.recordedBalance)),
           button('Fermer le détail',()=>{state.postId=null;render();}));
         if(canCost(model,'budget')&&typeof actions.reviseBudget==='function')detail.append(createV7BudgetForm(doc,model,post,actions));
         if((canCost(model,'commitment')||canCost(model,'actual'))&&typeof actions.openCommitment==='function'&&typeof actions.moveCommitment==='function')detail.append(createV7CommitmentForms(doc,model,post,actions));
@@ -159,6 +165,45 @@
       }
     }
     render();return host;
+  }
+
+  function createV7ReferenceForm(doc,model,center,kind,actions){
+    const labels={CENTER:'Ajouter un centre',FAMILY:'Ajouter une famille',RESOURCE:'Ajouter une ressource',RESPONSIBLE:'Affecter le responsable'};
+    const details=el(doc,'details','kmc-v7-commitment'),form=el(doc,'form','kmc-v7-budget-form');
+    details.append(el(doc,'summary','',labels[kind]),form);
+    function field(label,name,choices){
+      const wrap=el(doc,'label','kmc-v7-metric',label),input=el(doc,choices?'select':'input','');
+      input.name=name;input.required=true;
+      if(choices){for(const [v,t] of choices){const option=el(doc,'option','',t);option.value=v;input.append(option);}input.value=choices[0][0];}
+      wrap.append(input);form.append(wrap);return input;
+    }
+    const fields={};
+    if(kind==='RESPONSIBLE'){
+      fields.responsibleUserId=field('Responsable','responsibleUserId',[['','Non affecté'],...(model.responsibleCandidates||[]).map(u=>[u.id,u.label||'Responsable'])]);
+      fields.responsibleUserId.required=false;fields.responsibleUserId.value=center.responsible_user_id||'';
+    }else{
+      fields.code=field('Code','code');fields.label=field('Libellé','label');
+      if(kind==='RESOURCE')fields.resourceKind=field('Nature','resourceKind');
+    }
+    fields.reason=field('Motif','reason');
+    const submit=el(doc,'button','kmc-v7-action','Enregistrer'),feedback=el(doc,'p','kmc-v7-coverage');
+    submit.type='submit';feedback.setAttribute('role','status');form.append(submit,feedback);
+    let busy=false;
+    form.addEventListener('submit',async e=>{
+      e.preventDefault();if(busy)return;
+      const body={kind,centerId:center?.id||null,reason:fields.reason.value.trim()};
+      if(kind==='RESPONSIBLE'){
+        body.responsibleUserId=fields.responsibleUserId.value||null;body.expectedResponsibleUserId=center.responsible_user_id||null;
+      }else{
+        body.code=fields.code.value.trim().toUpperCase();body.label=fields.label.value.trim();
+        if(kind==='RESOURCE')body.resourceKind=fields.resourceKind.value.trim();
+        if(!/^[A-Z][A-Z0-9_]{1,63}$/.test(body.code)||!body.label||(kind==='RESOURCE'&&!body.resourceKind)){feedback.textContent='Référence invalide.';return;}
+      }
+      if(body.reason.length<3){feedback.textContent='Motif obligatoire.';return;}
+      busy=true;submit.disabled=true;
+      try{await actions.configureReference(body);}catch(error){feedback.textContent=error.message||'Opération refusée.';}finally{busy=false;submit.disabled=false;}
+    });
+    return details;
   }
 
   function createV7PostForm(doc,model,family,resources,actions){
@@ -465,6 +510,7 @@
           recordActual:(id,body)=>mutate('actual','/posts/'+encodeURIComponent(id)+'/actuals',body),
           createPost:(id,body)=>mutate('reference','/families/'+encodeURIComponent(id)+'/posts',body),
           initializeReferences:()=>mutate('reference','/initialize',{}),
+          configureReference:body=>mutate('reference','/references',body),
           moveCommitment:(id,body)=>mutate(body.kind==='CONSUME_STRUCTURE'?'consume':'commitment','/commitments/'+encodeURIComponent(id)+'/movements',body)
         };
         content.append(createV7V6Tabs(doc,model,active,key=>{active=key;},actions));

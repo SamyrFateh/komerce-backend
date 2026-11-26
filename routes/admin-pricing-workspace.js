@@ -43,7 +43,7 @@ const { readCostCenters } = require('../services/economic-cost-center-read-model
 const { reviseBudget } = require('../services/economic-cost-budget-service');
 const { openCommitment, moveCommitment } = require('../services/economic-cost-commitment-service');
 const { recordPostActual } = require('../services/economic-cost-post-actual-service');
-const { createPost, initializeCostReferences } = require('../services/economic-cost-reference-service');
+const { createPost, initializeCostReferences, configureReference } = require('../services/economic-cost-reference-service');
 const { decorateMarketDecision, projectPeriodDecisionEvidence } = marketDecisionProjection;
 
 const MARKET_CODE = /^[A-Z]{2}$/;
@@ -314,6 +314,14 @@ async function initializeEconomicReferences(req,res,next){
   }catch(e){handleError(e,res,next);}
 }
 router.post('/market/:marketCode/cost-centers/initialize',requirePricingCapability('pricing.cost_component.update'),initializeEconomicReferences);
+async function configureCostReference(req,res,next){
+  try{
+    const b=req.body||{};
+    const result=await configureReference(req.user,{marketCode:req.workspaceMarket?.code||null,kind:b.kind,centerId:b.centerId,code:b.code,label:b.label,resourceKind:b.resourceKind,responsibleUserId:b.responsibleUserId,expectedResponsibleUserId:b.expectedResponsibleUserId,reason:b.reason});
+    res.set('Cache-Control','private, no-store');res.status(result.outcome==='created'?201:200).json(result);
+  }catch(e){handleError(e,res,next);}
+}
+router.post('/market/:marketCode/cost-centers/references',requirePricingCapability('pricing.cost_component.update'),configureCostReference);
 
 router.get('/market/:marketCode', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
   try {
@@ -765,6 +773,7 @@ router.post('/cost-centers/commitments/:commitmentId/movements',recordCommitment
 router.post('/cost-centers/posts/:postId/actuals',recordCostPostActual);
 router.post('/cost-centers/families/:familyId/posts',createCostReferencePost);
 router.post('/cost-centers/initialize',initializeEconomicReferences);
+router.post('/cost-centers/references',configureCostReference);
 
 // Ajustements de charge structurelle mutualisée (N3, scope GROUP) — admin
 // only : un fait GROUP affecte la quote-part de tous les marchés à la fois,

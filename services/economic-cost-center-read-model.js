@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        authenticated_actor, explicit_market_scope, calendar_month
  * @outputs       scoped_centers_families_resources_posts, latest_budget_revisions, outstanding_commitments, explicit_actual_coverage_status
- * @depends       db, middleware/require-pricing-global-authority.js, services/market-delegation-service.js, services/fx-authority.js, services/cost-allocation/real-margin-shadow.js
+ * @depends       db, middleware/require-pricing-global-authority.js, services/market-delegation-service.js, services/fx-authority.js, services/cost-allocation/real-margin-shadow.js, services/economic-cost-write-authority.js, services/economic-cost-reference-service.js
  * @used-by       routes/admin-pricing-workspace.js
- * @db-read       markets, economic_cost_centers, economic_cost_families, economic_cost_resources, economic_cost_posts, economic_cost_budget_revisions, economic_cost_commitments, economic_cost_commitment_movements, economic_structure_cost_events, international_shipments, international_shipment_events, international_shipment_relay_receipts, international_shipment_hub_units, international_n1_reconciliations, hub_physical_units, hub_box_effective_placements, hub_purchase_allocations, order_items, orders, purchase_lines, supplier_execution_payments, supplier_payment_settlements, refunds
+ * @db-read       markets, users, economic_cost_centers, economic_cost_families, economic_cost_resources, economic_cost_posts, economic_cost_budget_revisions, economic_cost_commitments, economic_cost_commitment_movements, economic_structure_cost_events, international_shipments, international_shipment_events, international_shipment_relay_receipts, international_shipment_hub_units, international_n1_reconciliations, hub_physical_units, hub_box_effective_placements, hub_purchase_allocations, order_items, orders, purchase_lines, supplier_execution_payments, supplier_payment_settlements, refunds
  * @db-write      none
  * @db-txn        service_owned_read_only_repeatable_read
  * @doctrine      exact_market_scope, budget_is_not_realized_cost, no_fake_zero, group_raw_not_delegated
@@ -22,6 +22,7 @@ const {computePurchaseReal}=require('./cost-allocation/real-margin-shadow');
 const {hasPricingGlobalAuthority} = require('../middleware/require-pricing-global-authority');
 const {resolveAuthorization} = require('./market-delegation-service');
 const costAuthority=require('./economic-cost-write-authority');
+const {listResponsibleCandidates}=require('./economic-cost-reference-service');
 function error(code,status,message){return Object.assign(new Error(message),{code,status});}
 function validate(raw){
   if(!raw || !Object.prototype.hasOwnProperty.call(raw,'marketCode') ||
@@ -127,6 +128,28 @@ function structureEurProjector(client){
 // in_order means selected complete purchase lines here, not a second valuation.
 // Partial lines, cancelled lines and mixed simulation PO are intentionally
 // not valued until a conserved line-to-shipment split is specified.
+function cents(value){return typeof value==='string'&&/^-?\d+\.\d{2}$/.test(value)?BigInt(value.replace('.','')):null;}
+function eurString(value){const abs=(value<0n?-value:value).toString().padStart(3,'0');return (value<0n?'-':'')+abs.slice(0,-2)+'.'+abs.slice(-2);}
+// Recorded-only balance is explicitly not the full economic availability:
+// no inference that a missing invoice is a zero charge. Unmapped/cross-period
+// facts and corrected commitments prevent a misleading balance.
+function recordedPostBalance(post){
+  const budget=cents(post.budget?.eur),committed=cents(commitmentSummary([post]).totalEur),actual=cents(post.structureEvidence?.amountEur);
+  const e=post.structureEvidence;
+  if(!post.acceptsStructureActual||budget===null||committed===null||actual===null||!e||e.unmapped||e.crossPeriod||e.invalid)
+    return {recordedActualEur:actual===null?null:eurString(actual),recordedAvailableEur:null,status:'NOT_RECONCILED',decisional:false};
+  const available=budget-committed-actual;
+  return {recordedActualEur:eurString(actual),recordedAvailableEur:eurString(available),status:available<0n?'RECORDED_OVER_BUDGET':'RECORDED_BALANCE',decisional:false};
+}
+function recordedBalanceSummary(posts){
+  let sum=0n,actual=0n,covered=0,actualCovered=0;
+  for(const p of posts){
+    const balance=p.recordedBalance||recordedPostBalance(p),a=cents(balance.recordedActualEur),b=cents(balance.recordedAvailableEur);
+    if(a!==null){actual+=a;actualCovered++;}
+    if(b!==null){sum+=b;covered++;}
+  }
+  return {recordedActualEur:actualCovered?eurString(actual):null,recordedAvailableEur:covered===posts.length&&covered>0?eurString(sum):null,partialAvailableEur:covered?eurString(sum):null,coveredPosts:covered,totalPosts:posts.length,status:covered===posts.length&&covered>0?(sum<0n?'RECORDED_OVER_BUDGET':'RECORDED_BALANCE'):'NOT_RECONCILED',decisional:false};
+}
 function shipmentPurchase({lines,payments,settlements}){
   const own=lines.filter(l=>l.in_order);
   if(!own.length||own.some(l=>l.full_line!==true)||lines.some(l=>l.real_order!==true))
@@ -373,7 +396,7 @@ async function readCostCenters(actor,raw){
     const marketId=await resolveScope(client,actor,input.marketCode,central);
     const costCapabilities=await costAuthority.project(client,actor,input.marketCode,marketId,central);
     const {rows:centers}=await client.query(
-      'SELECT id,code,label,responsible_user_id,is_active FROM economic_cost_centers WHERE market_id IS NOT DISTINCT FROM $1::uuid ORDER BY code,id',[marketId]);
+      'SELECT c.id,c.code,c.label,c.responsible_user_id,c.is_active,u.full_name AS responsible_label FROM economic_cost_centers c LEFT JOIN users u ON u.id=c.responsible_user_id WHERE c.market_id IS NOT DISTINCT FROM $1::uuid ORDER BY c.code,c.id',[marketId]);
     const {rows:families}=await client.query(
       'SELECT f.id,f.center_id,f.code,f.label FROM economic_cost_families f JOIN economic_cost_centers c ON c.id=f.center_id WHERE c.market_id IS NOT DISTINCT FROM $1::uuid ORDER BY f.code,f.id',[marketId]);
     const {rows:resources}=await client.query(
@@ -420,15 +443,17 @@ async function readCostCenters(actor,raw){
     const projectStructure=structureEurProjector(client);
     const model=await Promise.all(posts.map(async p=>({...p,budget:p.budget_revision===null?null:{revision:p.budget_revision,currency:p.budget_currency,native:p.budget_native,eur:p.budget_eur},
       commitments:byPost.get(p.id)||[],eligibleStructureFacts:structureEvents.filter(e=>e.post_id===p.id&&e.whole_period&&e.consumable_native!=null&&/^[0-9]+(?:\.[0-9]+)?$/.test(e.consumable_native)&&/[1-9]/.test(e.consumable_native)).map(e=>({id:e.id,currency:e.currency,evidenceRef:e.evidence_ref,remainingNative:e.consumable_native})),structureEvidence:await projectStructure(structureEvents.filter(e=>e.post_id===p.id)),actual:null,available:null,coverage:'NOT_RECONCILED'})));
-    const centerModels=await Promise.all(centers.map(async c=>({...c,budgetSummary:budgetSummary(model.filter(p=>p.center_id===c.id)),commitmentSummary:commitmentSummary(model.filter(p=>p.center_id===c.id)),structureEvidence:await projectStructure(structureEvents.filter(e=>e.center_id===c.id))})));
+    for(const p of model)p.recordedBalance=recordedPostBalance(p);
+    const centerModels=await Promise.all(centers.map(async c=>({...c,budgetSummary:budgetSummary(model.filter(p=>p.center_id===c.id)),commitmentSummary:commitmentSummary(model.filter(p=>p.center_id===c.id)),structureEvidence:await projectStructure(structureEvents.filter(e=>e.center_id===c.id)),recordedBalance:recordedBalanceSummary(model.filter(p=>p.center_id===c.id))})));
     const structureEvidence=await projectStructure(structureEvents);
     const history=await loadShipmentActivity(client,marketId,input.periodStart,{includeHistory:true});
     const activity=history?.activity??null,profitability=history?.profitability??null;
     const salesEvidence=await loadPeriodSalesEvidence(client,marketId,input.periodStart);
     if(profitability)profitability.salesEvidence=salesEvidence;
+    const responsibleCandidates=costCapabilities.reference?await listResponsibleCandidates(client,marketId):[];
     await client.query('COMMIT');
     return {scope:input.marketCode===null?'GROUP':'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,central,costCapabilities,readOnly:!Object.values(costCapabilities).some(Boolean),
-      centers:centerModels,families,resources,posts:model,budgetSummary:budgetSummary(model),commitmentSummary:commitmentSummary(model),structureEvidence,activity,profitability,actualCoverage:'NOT_RECONCILED',available:null};
+      centers:centerModels,families,resources,responsibleCandidates,posts:model,recordedBalance:recordedBalanceSummary(model),budgetSummary:budgetSummary(model),commitmentSummary:commitmentSummary(model),structureEvidence,activity,profitability,actualCoverage:'NOT_RECONCILED',available:null};
   }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
 }
-module.exports={readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,loadShipmentActivity,shipmentPurchase,observedProfitability,periodSalesEvidence};
+module.exports={readCostCenters,budgetSummary,recordedPostBalance,recordedBalanceSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,loadShipmentActivity,shipmentPurchase,observedProfitability,periodSalesEvidence};

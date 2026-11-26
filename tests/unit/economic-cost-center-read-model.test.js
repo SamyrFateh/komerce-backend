@@ -4,13 +4,14 @@ const mockQuery=jest.fn(),mockRelease=jest.fn(),mockClient=jest.fn(),mockGrant=j
 jest.mock('../../db',()=>({getClient:(...a)=>mockClient(...a)}));
 jest.mock('../../middleware/require-pricing-global-authority',()=>({hasPricingGlobalAuthority:(...a)=>mockGrant(...a)}));
 jest.mock('../../services/market-delegation-service',()=>({resolveAuthorization:(...a)=>mockAuthz(...a)}));
-const {readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,shipmentPurchase,observedProfitability,periodSalesEvidence}=require('../../services/economic-cost-center-read-model');
+const {readCostCenters,budgetSummary,recordedPostBalance,recordedBalanceSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,shipmentPurchase,observedProfitability,periodSalesEvidence}=require('../../services/economic-cost-center-read-model');
 const client={query:mockQuery,release:mockRelease},actor={id:'actor',role:'admin'},month='2026-01-01';
 const ok=(rows=[])=>({rows});
 beforeEach(()=>{jest.resetAllMocks();mockClient.mockResolvedValue(client);mockGrant.mockResolvedValue(true);});
 function projection(postRows=[],commitmentRows=[],structureRows=[],market=false){
   mockQuery.mockResolvedValueOnce(ok([{id:'center'}])).mockResolvedValueOnce(ok([{id:'family'}])).mockResolvedValueOnce(ok([{id:'resource'}])).mockResolvedValueOnce(ok(postRows)).mockResolvedValueOnce(ok(commitmentRows)).mockResolvedValueOnce(ok(structureRows));
   if(market)mockQuery.mockResolvedValueOnce(ok()).mockResolvedValueOnce(ok());
+  if(!market)mockQuery.mockResolvedValueOnce(ok());
   mockQuery.mockResolvedValueOnce(ok());
 }
 test('reject unauthenticated and implicit scope',async()=>{
@@ -158,4 +159,12 @@ test('net commercial sales use paid cohort only, restore wallet, subtract comple
  expect(x).toMatchObject({observedNetSalesKmf:'2100.50',paidOrderCount:3,coveredOrderCount:2,unpaidOrderCount:1,terminalExceptions:1,pendingRefundOrders:1,coverage:'PARTIAL'});
  expect(periodSalesEvidence([])).toMatchObject({observedNetSalesKmf:null,coverage:'NO_PAID_ORDERS'});
  expect(periodSalesEvidence([{...row,refunds_kmf:'9999.00'}])).toMatchObject({observedNetSalesKmf:null,invalidOrderCount:1});
+});
+
+test('recorded balance conserves budget, remaining commitments and actual evidence without certifying completeness',()=>{
+  const post={acceptsStructureActual:true,budget:{eur:'100.00'},commitments:[{remaining_eur:'25.00'}],structureEvidence:{amountEur:'80.00',unmapped:0,crossPeriod:0,invalid:0}};
+  expect(recordedPostBalance(post)).toEqual({recordedActualEur:'80.00',recordedAvailableEur:'-5.00',status:'RECORDED_OVER_BUDGET',decisional:false});
+  expect(recordedPostBalance({...post,structureEvidence:{...post.structureEvidence,crossPeriod:1}}).recordedAvailableEur).toBeNull();
+  expect(recordedPostBalance({...post,commitments:[{remaining_eur:null}]}).recordedAvailableEur).toBeNull();
+  expect(recordedBalanceSummary([post,{budget:null}])).toMatchObject({recordedAvailableEur:null,partialAvailableEur:'-5.00',coveredPosts:1,totalPosts:2,decisional:false});
 });
