@@ -1,0 +1,42 @@
+name: ECO-2a V7 component proof (temporary)
+on:
+  push:
+    branches: [research/eco-centres-v6-preflight]
+    paths: ['.github/workflows/eco-2a-v7-component-retry.yml']
+permissions:
+  contents: read
+  issues: write
+jobs:
+  component:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 'bff6baf8d73399de92bb39aea953d3d2e13f9c8f'
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Dashboard context and impact
+        run: |
+          set -euo pipefail
+          npm run agent:context -- --pack service --feature dashboard
+          npm run arch:impact -- public/dashboards/canonical/js/pricing-economic-cockpit.js
+      - name: Targeted unit and UI regressions
+        run: |
+          set -euo pipefail
+          git diff --check a7df2352e08f3a0c9c74043a472cf255754d2906 HEAD
+          npx jest --runInBand --runTestsByPath tests/unit/economic-cost-center-read-model.test.js tests/unit/pricing-economic-cockpit.test.js tests/unit/canonical-pricing-economic-cockpit.test.js tests/unit/canonical-pricing-atelier-views.test.js
+          npm run arch:gen
+          git diff --exit-code
+      - name: Report
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ job.status }}
+        run: |
+          gh issue comment 5280 --repo "$GITHUB_REPOSITORY" --body "ECO-2a component proof: $RESULT. Candidate bff6baf8d73399de92bb39aea953d3d2e13f9c8f. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID. Component only, no staging/activation or final Chromium proof."
