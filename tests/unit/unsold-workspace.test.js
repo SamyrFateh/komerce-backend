@@ -30,3 +30,14 @@ test('le rendu des invendus marché est strictement lecture seule',()=>{
   expect(source).toContain('scan.hidden=market');
   expect(source).toContain('root.querySelector');
 });
+test('le tableau Invendus marché garde le shell cohérent et une largeur adaptée',()=>{
+  const fs=require('fs');
+  const path=require('path');
+  const source=fs.readFileSync(path.resolve(__dirname,'../../public/dashboards/canonical/js/unsold-workspace.js'),'utf8');
+  const html=fs.readFileSync(path.resolve(__dirname,'../../public/dashboards/canonical/unsold.html'),'utf8');
+  expect(source).toContain("root.classList.remove('canonical-boot')");
+  expect(source).toContain("root.classList.add('unsold-workspace')");
+  expect(source).toContain("readOnly ? 'Valeur indicative' : 'Valeur liquidation'");
+  expect(html).toContain('navigation-policy-v4.js?v=261126-market-shell-refresh-1');
+  expect(html).toContain('width: min(calc(100% - 48px), 1180px)');
+});

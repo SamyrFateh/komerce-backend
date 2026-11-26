@@ -1,11 +1,11 @@
 /**
  * @komerce-arch
- * @role          unsold-admin-screen
+ * @role          unsold-market-readonly-admin-resolution
  * @domain        unsold-resolution
  * @layer         ui-workspace
  * @criticality   medium
  * @inputs        /api/unsold (liste, stats, PATCH, resolve, whatsapp, scan)
- * @outputs       gestes admin sur invendus ; refus F3 affichés
+ * @outputs       invendus marché en lecture seule ; résolution et actions réservées à l'Admin ; refus F3 affichés
  * @depends       routes/unsold.js (inchangée)
  * @used-by       /dashboards/canonical/unsold.html
  * @db-read       none
@@ -124,8 +124,9 @@
 
   function render(rows, stats, readOnly = false) {
     body.textContent = '';
+    const valueLabel = readOnly ? 'Valeur indicative' : 'Valeur liquidation';
     const kpis = el('p', 'unsold-kpis',
-      'Articles actifs : ' + (stats.total_actifs || 0) + ' · Valeur liquidation : ' + fmt(stats.valeur_liquidation_kmf));
+      'Articles actifs : ' + (stats.total_actifs || 0) + ' · ' + valueLabel + ' : ' + fmt(stats.valeur_liquidation_kmf));
     kpis.setAttribute('data-unsold-kpis', '');
     body.appendChild(kpis);
     if (!rows.length) { body.appendChild(el('p', 'unsold-empty', 'Aucun invendu à traiter.')); return; }
@@ -173,6 +174,8 @@
     say(refusalMessage(r.status, r.data), !r.ok);
   };
 
+  root.classList.remove('canonical-boot');
+  root.classList.add('unsold-workspace');
   root.textContent = '';
   root.appendChild(el('p', 'canonical-eyebrow', 'KOMERCE · OPÉRATIONS'));
   root.appendChild(el('h1', null, 'Invendus'));
