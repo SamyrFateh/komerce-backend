@@ -9946,7 +9946,7 @@
       "interfaces": {
         "internalApis": [],
         "httpInterfaces": {
-          "count": 89
+          "count": 92
         }
       },
       "businessDependencies": [
@@ -18219,6 +18219,7 @@
           "HUB-001 : identité physique distincte de l allocation économique ; snapshot exact Purchase Order → order item/SKU/Supplier Order Identity → Market/destination",
           "HUB-001 : placement physique et custody append-only ; SPLIT/MERGE/REPACK déplacent la matière sans réassigner la destination économique",
           "HUB-001 : inbound fournisseur potentiellement multi-market, outbound PACKED/DISPATCHED obligatoirement homogène sur exactement un Market",
+          "Réception fournisseur V3 : constat qualité par SKU et retour physique distinct, sans allocation client pour les refusés ; activation conditionnée à la certification",
           "HUB-001 : constat physique LOST/STOLEN/DESTROYED/DAMAGED_UNUSABLE atomique avec l outbox transactionnelle F0",
           "Logistics Control Chain : le HUB est une primitive Logistics transverse aux fournisseurs et Markets ; il mutualise la custody puis spécialise la sortie en outbound Market sans posséder ni réécrire les vérités Orders/Purchasing/Market"
         ],
@@ -18395,7 +18396,7 @@
             ]
           },
           "migrations": {
-            "count": 16,
+            "count": 17,
             "files": [
               {
                 "declared": "migrations/095_value_density_foundation.sql",
@@ -18475,6 +18476,11 @@
               {
                 "declared": "migrations/427_hub_opaque_scan_labels.sql",
                 "resolvedPath": "migrations/427_hub_opaque_scan_labels.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/450_hub_supplier_receipt_quality.sql",
+                "resolvedPath": "migrations/450_hub_supplier_receipt_quality.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -18575,7 +18581,7 @@
             ]
           },
           "services": {
-            "count": 53,
+            "count": 55,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -18663,9 +18669,19 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/hub-reception-quality-plan.js",
+                "resolvedPath": "services/hub-reception-quality-plan.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
                 "declared": "services/hub-reference.js",
                 "resolvedPath": "services/hub-reference.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/hub-supplier-receipt-quality.js",
+                "resolvedPath": "services/hub-supplier-receipt-quality.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/international-shipment-journey.js",
@@ -18845,7 +18861,7 @@
             ]
           },
           "tests": {
-            "count": 100,
+            "count": 102,
             "files": [
               {
                 "declared": "tests/e2e-api/hub-membership-readers.e2e.test.js",
@@ -19058,8 +19074,18 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/hub-reception-quality-plan.test.js",
+                "resolvedPath": "tests/unit/hub-reception-quality-plan.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/hub-reference.test.js",
                 "resolvedPath": "tests/unit/hub-reference.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-supplier-receipt-quality.test.js",
+                "resolvedPath": "tests/unit/hub-supplier-receipt-quality.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -19370,7 +19396,7 @@
             ]
           }
         },
-        "totalFiles": 201,
+        "totalFiles": 206,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -19401,6 +19427,18 @@
           },
           {
             "table": "hub_purchase_allocations",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "hub_supplier_receipt_check_lines",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "hub_supplier_receipt_checks",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "hub_supplier_return_attestations",
             "resolution": "declared-table-owner"
           },
           {
@@ -19517,6 +19555,24 @@
           },
           {
             "table": "hub_purchase_allocations",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "hub_supplier_receipt_check_lines",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "hub_supplier_receipt_checks",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "hub_supplier_return_attestations",
             "mode": "RW",
             "lifecycleOwner": "logistics",
             "ownershipStatus": "owner"
@@ -19694,6 +19750,10 @@
           {
             "table": "product_variants",
             "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "purchase_lines",
+            "lifecycleOwner": "purchasing"
           },
           {
             "table": "purchase_order_authorizations",
@@ -19740,6 +19800,18 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "hub_supplier_receipt_check_lines",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "hub_supplier_receipt_checks",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "hub_supplier_return_attestations",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "international_shipment_charges",
             "resolution": "declared-table-owner"
           },
@@ -19853,6 +19925,24 @@
           },
           {
             "table": "hub_purchase_allocations",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "hub_supplier_receipt_check_lines",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "hub_supplier_receipt_checks",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "hub_supplier_return_attestations",
             "mode": "RW",
             "lifecycleOwner": "logistics",
             "ownershipStatus": "owner"
@@ -20030,6 +20120,10 @@
           {
             "table": "product_variants",
             "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "purchase_lines",
+            "lifecycleOwner": "purchasing"
           },
           {
             "table": "purchase_order_authorizations",
