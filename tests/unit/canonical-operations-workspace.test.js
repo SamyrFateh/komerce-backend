@@ -345,3 +345,12 @@ test('départ : filtre invalide refusé avant lecture ou mutation',async()=>{
   await expect(workspace.mountDepartureActions({}, {user:{role:'agent_hub'},marketCode:'CM',marketWide:true,railFilter:'UNKNOWN',fetch})).rejects.toThrow('Rail de départ invalide');
   expect(fetch).not.toHaveBeenCalled();
 });
+
+test('départ : le dossier ouvert ne bascule jamais silencieusement vers un autre relais',()=>{
+  const row=(relay,rail)=>({purchase_order_id:'p1',relais_id:relay,relais_code:relay,requested_transport_rail:rail,quantity:1});
+  const dossier={fillable:[row('A','AIR_EXPRESS'),row('B','AIR_EXPRESS'),row('A','SEA_STANDARD')],boxes:[]};
+  const exact=workspace.departureGroups(dossier,null,{marketWide:true,railFilter:'AIR_EXPRESS',groupKey:'["B","AIR_EXPRESS"]'});
+  expect(exact.map(g=>[g.relay,g.rail])).toEqual([['B','AIR_EXPRESS']]);
+  expect(workspace.departureGroups(dossier,null,{marketWide:true,railFilter:'AIR_EXPRESS',groupKey:'["A","SEA_STANDARD"]'})).toEqual([]);
+  expect(workspace.departureGroups({fillable:[row('A','AIR_EXPRESS')],boxes:[]},null,{marketWide:true,railFilter:'AIR_EXPRESS',groupKey:'["B","AIR_EXPRESS"]'})).toEqual([]);
+});
