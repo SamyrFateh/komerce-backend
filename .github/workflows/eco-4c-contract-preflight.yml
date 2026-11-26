@@ -10,18 +10,18 @@ concurrency:
   group: eco-4c-contract-preflight
   cancel-in-progress: false
 env:
-  ECO_HEAD: '1e43d2b88089c2f8a4ac544c8a45a2a067521af1'
+  ECO_HEAD: '0d3e3b78e6b0eb13ac60b632dbaa1895f682a9a3'
 jobs:
   proof:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
-      ECO_SOURCE: '1e43d2b88089c2f8a4ac544c8a45a2a067521af1'
+      ECO_SOURCE: '0d3e3b78e6b0eb13ac60b632dbaa1895f682a9a3'
       ECO_BASE: 'c6be97d41ae60580ba23334baa60bc9f2a374f46'
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: '1e43d2b88089c2f8a4ac544c8a45a2a067521af1'
+          ref: '0d3e3b78e6b0eb13ac60b632dbaa1895f682a9a3'
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
@@ -51,7 +51,7 @@ jobs:
           git diff --exit-code
           git diff --check "$ECO_BASE" HEAD
           echo "ECO_GENERATED=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
-          git push origin HEAD:refs/heads/wip/eco-4c-contract-graph-1e43d2b
+          git push origin HEAD:refs/heads/wip/eco-budget-contract-graph-0d3e3b7
       - name: Governance checks on generated candidate
         run: |
           set -euo pipefail
@@ -111,7 +111,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: '1e43d2b88089c2f8a4ac544c8a45a2a067521af1'
+          ref: '0d3e3b78e6b0eb13ac60b632dbaa1895f682a9a3'
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v4
