@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 831,
-    "filesWithFullHeaders": 768,
+    "scannedCodeFiles": 833,
+    "filesWithFullHeaders": 770,
     "filesWithLiteHeaders": 63,
-    "filesWithAnyHeaders": 831,
+    "filesWithAnyHeaders": 833,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2124,
-    "edges": 10620,
-    "dbTables": 247,
-    "doctrines": 833,
+    "graphNodes": 2135,
+    "edges": 10648,
+    "dbTables": 250,
+    "doctrines": 839,
     "impactAreas": 213,
-    "unresolvedCodeEdges": 1006,
+    "unresolvedCodeEdges": 1008,
     "dbWriteViaOverlapWarnings": 13,
     "multiWriterTables": 100
   },
@@ -40,9 +40,9 @@
     "admin-dashboard": 39,
     "decision-signals": 14,
     "market": 10,
-    "economic-engine": 69,
+    "economic-engine": 70,
     "sourcing": 37,
-    "logistics": 74,
+    "logistics": 75,
     "boutique": 24,
     "checkout": 4,
     "shared-cart": 25,
@@ -113,7 +113,7 @@
     "schema": 1,
     "route": 139,
     "entrypoint": 1,
-    "service": 508,
+    "service": 510,
     "external-adapter": 2,
     "infrastructure": 1,
     "machine": 1,
@@ -123,9 +123,9 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 132,
+    "critical": 133,
     "medium": 155,
-    "high": 471,
+    "high": 472,
     "low": 72,
     "unknown": 1
   },
@@ -6850,7 +6850,8 @@
         "middleware/require-market-execution-capability",
         "middleware/require-market-delegated-capability",
         "middleware/require-dashboard-global-authority",
-        "services/operations-workspace"
+        "services/operations-workspace",
+        "services/hub-global-board"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
@@ -19029,6 +19030,65 @@
       "version": "2026-08"
     },
     {
+      "id": "services/economic-cost-budget-service.js",
+      "file": "services/economic-cost-budget-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-cost-budget-service",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_central_actor",
+        "explicit_market_code_or_group",
+        "post_id",
+        "month",
+        "expected_revision",
+        "native_amount",
+        "currency",
+        "reason",
+        "request_key"
+      ],
+      "outputs": [
+        "immutable_budget_revision",
+        "idempotent_replay"
+      ],
+      "depends": [
+        "db",
+        "middleware/require-pricing-global-authority.js",
+        "services/fx-authority.js"
+      ],
+      "usedBy": [],
+      "dbRead": [
+        "markets",
+        "economic_cost_centers",
+        "economic_cost_posts",
+        "economic_cost_budget_revisions"
+      ],
+      "dbWrite": [
+        "economic_cost_budget_revisions"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "service_owned_transaction"
+      ],
+      "doctrine": [
+        "budget_is_not_realized_cost",
+        "explicit_global_authority",
+        "exact_scope",
+        "eur_is_the_pivot",
+        "immutable_budget_revision"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "finance",
+        "governance"
+      ],
+      "version": "2026-11"
+    },
+    {
       "id": "services/economic-engine-queries.js",
       "file": "services/economic-engine-queries.js",
       "type": "file",
@@ -20567,6 +20627,48 @@
       "version": "2026-11"
     },
     {
+      "id": "services/hub-combox-destination-guard.js",
+      "file": "services/hub-combox-destination-guard.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "hub-combox-destination-guard",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "caller_locked_transaction_executor",
+        "target_unit_id",
+        "immutable_allocation"
+      ],
+      "outputs": [
+        "destination_mismatch_or_null"
+      ],
+      "depends": [],
+      "usedBy": [
+        "services/hub-physical-identity.js"
+      ],
+      "dbRead": [
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller_owned_transaction_required"
+      ],
+      "doctrine": [
+        "HUB-001 mono-relais COMBOX",
+        "same-market destination isolation"
+      ],
+      "impactAreas": [
+        "logistics",
+        "market"
+      ],
+      "version": "2026-11"
+    },
+    {
       "id": "services/hub-dashboard-queries.js",
       "file": "services/hub-dashboard-queries.js",
       "type": "file",
@@ -21073,7 +21175,8 @@
       ],
       "depends": [
         "db",
-        "services/supplier-source-resolution.js"
+        "services/supplier-source-resolution.js",
+        "services/suppliers/provider-authority.js"
       ],
       "usedBy": [
         "routes/hub.js",
@@ -21100,6 +21203,7 @@
         "hub_box_bags",
         "hub_box_effective_placements",
         "hub_scan_labels",
+        "order_delivery_waves",
         "international_shipments",
         "international_shipment_hub_units",
         "parcels",
@@ -32042,7 +32146,9 @@
         "recipients",
         "relais",
         "sms_log",
-        "users"
+        "users",
+        "parcels",
+        "parcel_items"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -41353,6 +41459,21 @@
       "table": "local_cash_refund_payouts"
     },
     {
+      "id": "db:economic_cost_centers",
+      "type": "db-table",
+      "table": "economic_cost_centers"
+    },
+    {
+      "id": "db:economic_cost_posts",
+      "type": "db-table",
+      "table": "economic_cost_posts"
+    },
+    {
+      "id": "db:economic_cost_budget_revisions",
+      "type": "db-table",
+      "table": "economic_cost_budget_revisions"
+    },
+    {
       "id": "db:economic_variables",
       "type": "db-table",
       "table": "economic_variables"
@@ -41448,6 +41569,11 @@
       "table": "hub_box_effective_placements"
     },
     {
+      "id": "db:order_delivery_waves",
+      "type": "db-table",
+      "table": "order_delivery_waves"
+    },
+    {
       "id": "db:local_stock_allocations",
       "type": "db-table",
       "table": "local_stock_allocations"
@@ -41501,11 +41627,6 @@
       "id": "db:order_checkout_idempotency",
       "type": "db-table",
       "table": "order_checkout_idempotency"
-    },
-    {
-      "id": "db:order_delivery_waves",
-      "type": "db-table",
-      "table": "order_delivery_waves"
     },
     {
       "id": "db:physical_outcome_receipts",
@@ -43658,6 +43779,31 @@
       "doctrine": "economic_variables_read_only"
     },
     {
+      "id": "doctrine:budget_is_not_realized_cost",
+      "type": "doctrine",
+      "doctrine": "budget_is_not_realized_cost"
+    },
+    {
+      "id": "doctrine:explicit_global_authority",
+      "type": "doctrine",
+      "doctrine": "explicit_global_authority"
+    },
+    {
+      "id": "doctrine:exact_scope",
+      "type": "doctrine",
+      "doctrine": "exact_scope"
+    },
+    {
+      "id": "doctrine:eur_is_the_pivot",
+      "type": "doctrine",
+      "doctrine": "eur_is_the_pivot"
+    },
+    {
+      "id": "doctrine:immutable_budget_revision",
+      "type": "doctrine",
+      "doctrine": "immutable_budget_revision"
+    },
+    {
       "id": "doctrine:couts_repartis_par_commande",
       "type": "doctrine",
       "doctrine": "couts_repartis_par_commande"
@@ -43741,11 +43887,6 @@
       "id": "doctrine:reconcile_before_validate",
       "type": "doctrine",
       "doctrine": "reconcile_before_validate"
-    },
-    {
-      "id": "doctrine:eur_is_the_pivot",
-      "type": "doctrine",
-      "doctrine": "eur_is_the_pivot"
     },
     {
       "id": "doctrine:single_conversion_authority",
@@ -43906,6 +44047,16 @@
       "id": "doctrine:Allocation & Custody; une KOM-BOX appartient à au plus une expédition du même marché",
       "type": "doctrine",
       "doctrine": "Allocation & Custody; une KOM-BOX appartient à au plus une expédition du même marché"
+    },
+    {
+      "id": "doctrine:HUB-001 mono-relais COMBOX",
+      "type": "doctrine",
+      "doctrine": "HUB-001 mono-relais COMBOX"
+    },
+    {
+      "id": "doctrine:same-market destination isolation",
+      "type": "doctrine",
+      "doctrine": "same-market destination isolation"
     },
     {
       "id": "doctrine:market_operator_scoping (GAP-1)",
@@ -46743,6 +46894,11 @@
       "area": "finance-config"
     },
     {
+      "id": "impact:governance",
+      "type": "impact-area",
+      "area": "governance"
+    },
+    {
       "id": "impact:external-provider-contracts",
       "type": "impact-area",
       "area": "external-provider-contracts"
@@ -46811,11 +46967,6 @@
       "id": "impact:pickup",
       "type": "impact-area",
       "area": "pickup"
-    },
-    {
-      "id": "impact:governance",
-      "type": "impact-area",
-      "area": "governance"
     },
     {
       "id": "impact:market-control-plane",
@@ -56747,6 +56898,12 @@
       "to": "services/operations-workspace",
       "type": "depends",
       "label": "services/operations-workspace"
+    },
+    {
+      "from": "routes/admin-operations-workspace.js",
+      "to": "services/hub-global-board",
+      "type": "depends",
+      "label": "services/hub-global-board"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -76439,6 +76596,102 @@
       "label": "finance-config"
     },
     {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "middleware/require-pricing-global-authority.js",
+      "type": "depends",
+      "label": "middleware/require-pricing-global-authority.js"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "services/fx-authority.js",
+      "type": "depends",
+      "label": "services/fx-authority.js"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "db:economic_cost_centers",
+      "type": "db-read",
+      "label": "economic_cost_centers"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "db:economic_cost_posts",
+      "type": "db-read",
+      "label": "economic_cost_posts"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "db:economic_cost_budget_revisions",
+      "type": "db-read",
+      "label": "economic_cost_budget_revisions"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "db:economic_cost_budget_revisions",
+      "type": "db-write",
+      "label": "economic_cost_budget_revisions"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "doctrine:budget_is_not_realized_cost",
+      "type": "doctrine",
+      "label": "budget_is_not_realized_cost"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "doctrine:explicit_global_authority",
+      "type": "doctrine",
+      "label": "explicit_global_authority"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "doctrine:exact_scope",
+      "type": "doctrine",
+      "label": "exact_scope"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "doctrine:eur_is_the_pivot",
+      "type": "doctrine",
+      "label": "eur_is_the_pivot"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "doctrine:immutable_budget_revision",
+      "type": "doctrine",
+      "label": "immutable_budget_revision"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "impact:governance",
+      "type": "impact",
+      "label": "governance"
+    },
+    {
       "from": "services/economic-engine-queries.js",
       "to": "db.js",
       "type": "depends",
@@ -79231,6 +79484,48 @@
       "label": "logistics"
     },
     {
+      "from": "services/hub-physical-identity.js",
+      "to": "services/hub-combox-destination-guard.js",
+      "type": "uses",
+      "label": "services/hub-physical-identity.js"
+    },
+    {
+      "from": "services/hub-combox-destination-guard.js",
+      "to": "db:hub_physical_unit_placements",
+      "type": "db-read",
+      "label": "hub_physical_unit_placements"
+    },
+    {
+      "from": "services/hub-combox-destination-guard.js",
+      "to": "db:hub_purchase_allocations",
+      "type": "db-read",
+      "label": "hub_purchase_allocations"
+    },
+    {
+      "from": "services/hub-combox-destination-guard.js",
+      "to": "doctrine:HUB-001 mono-relais COMBOX",
+      "type": "doctrine",
+      "label": "HUB-001 mono-relais COMBOX"
+    },
+    {
+      "from": "services/hub-combox-destination-guard.js",
+      "to": "doctrine:same-market destination isolation",
+      "type": "doctrine",
+      "label": "same-market destination isolation"
+    },
+    {
+      "from": "services/hub-combox-destination-guard.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/hub-combox-destination-guard.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
       "from": "services/hub-dashboard-queries.js",
       "to": "db",
       "type": "depends",
@@ -80187,6 +80482,12 @@
       "label": "services/supplier-source-resolution.js"
     },
     {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "services/suppliers/provider-authority.js",
+      "type": "depends",
+      "label": "services/suppliers/provider-authority.js"
+    },
+    {
       "from": "routes/hub.js",
       "to": "services/hub-procurement-dossier.js",
       "type": "uses",
@@ -80317,6 +80618,12 @@
       "to": "db:hub_scan_labels",
       "type": "db-read",
       "label": "hub_scan_labels"
+    },
+    {
+      "from": "services/hub-procurement-dossier.js",
+      "to": "db:order_delivery_waves",
+      "type": "db-read",
+      "label": "order_delivery_waves"
     },
     {
       "from": "services/hub-procurement-dossier.js",
@@ -98127,6 +98434,18 @@
     },
     {
       "from": "services/relay-dashboard-queries.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/relay-dashboard-queries.js",
+      "to": "db:parcel_items",
+      "type": "db-read",
+      "label": "parcel_items"
+    },
+    {
+      "from": "services/relay-dashboard-queries.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
@@ -112439,7 +112758,8 @@
         "impact:economic-engine",
         "impact:pricing",
         "routes/admin-pricing-workspace.js",
-        "services/central-authority.js"
+        "services/central-authority.js",
+        "services/economic-cost-budget-service.js"
       ]
     },
     "middleware/require-recent-auth.js": {
@@ -118025,7 +118345,8 @@
         "middleware/require-market-execution-capability",
         "middleware/require-market-delegated-capability",
         "middleware/require-dashboard-global-authority",
-        "services/operations-workspace"
+        "services/operations-workspace",
+        "services/hub-global-board"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
@@ -130332,6 +130653,59 @@
         "utils/eco-bridge.js"
       ]
     },
+    "services/economic-cost-budget-service.js": {
+      "role": "economic-cost-budget-service",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "middleware/require-pricing-global-authority.js",
+        "services/fx-authority.js"
+      ],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [
+        "markets",
+        "economic_cost_centers",
+        "economic_cost_posts",
+        "economic_cost_budget_revisions"
+      ],
+      "dbWrite": [
+        "economic_cost_budget_revisions"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "budget_is_not_realized_cost",
+        "explicit_global_authority",
+        "exact_scope",
+        "eur_is_the_pivot",
+        "immutable_budget_revision"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "finance",
+        "governance"
+      ],
+      "mustCheck": [
+        "db:economic_cost_budget_revisions",
+        "db:economic_cost_centers",
+        "db:economic_cost_posts",
+        "db:markets",
+        "doctrine:budget_is_not_realized_cost",
+        "doctrine:eur_is_the_pivot",
+        "doctrine:exact_scope",
+        "doctrine:explicit_global_authority",
+        "doctrine:immutable_budget_revision",
+        "impact:economic-engine",
+        "impact:finance",
+        "impact:governance",
+        "middleware/require-pricing-global-authority.js",
+        "services/fx-authority.js"
+      ]
+    },
     "services/economic-engine-queries.js": {
       "role": "economic-engine-calculation-service",
       "domain": "economic-engine",
@@ -131092,6 +131466,7 @@
         "impact:payments",
         "impact:pricing",
         "impact:transport",
+        "services/economic-cost-budget-service.js",
         "services/financial-journal.js",
         "services/fx-chain-service.js",
         "services/fx-engine-rates.js",
@@ -131935,6 +132310,42 @@
         "routes/hub.js"
       ]
     },
+    "services/hub-combox-destination-guard.js": {
+      "role": "hub-combox-destination-guard",
+      "domain": "logistics",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "services/hub-physical-identity.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "HUB-001 mono-relais COMBOX",
+        "same-market destination isolation"
+      ],
+      "impactAreas": [
+        "logistics",
+        "market"
+      ],
+      "mustCheck": [
+        "db:hub_physical_unit_placements",
+        "db:hub_purchase_allocations",
+        "doctrine:HUB-001 mono-relais COMBOX",
+        "doctrine:same-market destination isolation",
+        "impact:logistics",
+        "impact:market",
+        "services/hub-physical-identity.js"
+      ]
+    },
     "services/hub-dashboard-queries.js": {
       "role": "dashboard-hub-dashboard-queries",
       "domain": "dashboard",
@@ -132439,6 +132850,7 @@
         "impact:logistics",
         "impact:market",
         "impact:purchasing",
+        "services/hub-combox-destination-guard.js",
         "services/hub-opaque-labels.js",
         "services/hub-operations.js",
         "services/incident-write-service.js",
@@ -132454,7 +132866,8 @@
       "purpose": null,
       "directDependsOn": [
         "db",
-        "services/supplier-source-resolution.js"
+        "services/supplier-source-resolution.js",
+        "services/suppliers/provider-authority.js"
       ],
       "directUsedBy": [
         "routes/hub.js",
@@ -132482,6 +132895,7 @@
         "hub_box_bags",
         "hub_box_effective_placements",
         "hub_scan_labels",
+        "order_delivery_waves",
         "international_shipments",
         "international_shipment_hub_units",
         "parcels",
@@ -132511,6 +132925,7 @@
         "db:international_shipment_hub_units",
         "db:international_shipments",
         "db:markets",
+        "db:order_delivery_waves",
         "db:order_items",
         "db:orders",
         "db:parcel_items",
@@ -132536,7 +132951,8 @@
         "routes/hub.js",
         "services/hub-administration-board.js",
         "services/hub-global-board.js",
-        "services/supplier-source-resolution.js"
+        "services/supplier-source-resolution.js",
+        "services/suppliers/provider-authority.js"
       ]
     },
     "services/hub-receivable.js": {
@@ -143517,7 +143933,9 @@
         "recipients",
         "relais",
         "sms_log",
-        "users"
+        "users",
+        "parcels",
+        "parcel_items"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -143538,6 +143956,8 @@
         "db:order_items",
         "db:order_status_history",
         "db:orders",
+        "db:parcel_items",
+        "db:parcels",
         "db:products",
         "db:recipients",
         "db:relais",
@@ -149372,6 +149792,7 @@
         "doctrine:docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md",
         "impact:purchasing",
         "impact:supplier-integration",
+        "services/hub-procurement-dossier.js",
         "services/purchasing-engagement-service.js",
         "services/suppliers/canonical-unit-purchasing-gate.js",
         "services/suppliers/provider-capability-certifications.js",
@@ -153707,6 +154128,12 @@
       "label": "services/operations-workspace"
     },
     {
+      "from": "routes/admin-operations-workspace.js",
+      "to": "services/hub-global-board",
+      "type": "depends",
+      "label": "services/hub-global-board"
+    },
+    {
       "from": "routes/admin-order-360.js",
       "to": "middleware/auth",
       "type": "depends",
@@ -155985,6 +156412,12 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "services/economic-cost-budget-service.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
     },
     {
       "from": "services/economic-engine-queries.js",
