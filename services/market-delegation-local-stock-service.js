@@ -7,7 +7,7 @@
  * @inputs        actor user, market code, product_id, relais_id, qty_received, proof_ref, Idempotency-Key
  * @outputs       local_stock_row, receipt_audit, exposure_row
  * @depends       services/local-stock-service.js, services/market-delegation-service.js, services/market-delegation-team-service.js
- * @db-read       products, relais, local_stock, market_delegation_audit
+ * @db-read       products, relais, local_stock, market_delegation_audit, catalog_global_access_grants, markets
  * @db-write      none
  * @db-write-via:local-stock-service local_stock
  * @db-write-via:market-delegation-service market_delegation_audit
@@ -21,7 +21,7 @@
 /**
  * Décision propriétaire (W3) : seul le responsable pays du marché (membership active avec la
  * capability local_offer.manage de l'offre locale) déclare une réception et décide de l'exposition.
- * Admin et tout autre rôle : 403. Stock en pool par marché (location KM_MAIN, lue par le checkout) ;
+ * Admin et tout autre rôle sans délégation : 403 sur les écritures. Lecture centrale distincte. Stock en pool par marché (location KM_MAIN, lue par le checkout) ;
  * le relais de réception, le justificatif et la quantité sont tracés dans market_delegation_audit.
  * Aucun second writer : setLocalStock / setLocalStockExposure.
  */
@@ -44,8 +44,29 @@ async function authorize(db, { actorUserId, actorRole, marketCode }) {
   return resolveAuthorization(db, { userId: actorUserId, marketCode, requiredCapability: CAPABILITY });
 }
 
+// W3 writers retain authorize() exactly as before. Only the read model may
+// be consulted by a central admin with the existing catalogue-global grant,
+// for one explicitly selected active market. Never grant a W3 writer here.
+async function authorizeStockRead(db, actor) {
+  if (actor.actorRole !== 'admin') return authorize(db, actor);
+  if (!actor.actorUserId) throw err('AUTH_REQUIRED', 'Authentification requise.', 401);
+  const { rows: grants } = await db.query(
+    'SELECT 1 FROM catalog_global_access_grants WHERE user_id = $1 AND revoked_at IS NULL LIMIT 1',
+    [actor.actorUserId]
+  );
+  if (!grants.length) throw err('catalog_global_access_denied', 'Autorité catalogue globale requise.', 403);
+  const code = String(actor.marketCode || '').trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(code)) throw err('MARKET_REQUIRED', 'Marché explicite requis.', 400);
+  const { rows: markets } = await db.query(
+    'SELECT id AS market_id, code AS market_code FROM markets WHERE code = $1 AND is_active = TRUE LIMIT 1',
+    [code]
+  );
+  if (!markets.length) throw err('MARKET_NOT_FOUND', 'Marché introuvable.', 404);
+  return markets[0];
+}
+
 async function listMarketStock(db, { actorUserId, actorRole, marketCode }) {
-  const authz = await authorize(db, { actorUserId, actorRole, marketCode });
+  const authz = await authorizeStockRead(db, { actorUserId, actorRole, marketCode });
   const { rows } = await db.query(
     `SELECT ls.product_id, p.name, ls.location, ls.qty_physical, ls.commercial_exposure, ls.updated_at
        FROM local_stock ls JOIN products p ON p.id = ls.product_id
