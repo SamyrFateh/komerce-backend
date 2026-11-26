@@ -64,6 +64,7 @@ const DASHBOARD_SPECS = [
   'golden-cockpit-browser-flow',
   'market-context-explicit',
   'market-catalog-pricing-list',
+  'market-team-desktop-directory',
 ];
 
 module.exports = defineConfig({
