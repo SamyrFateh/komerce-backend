@@ -1,12 +1,14 @@
 name: Hub V3 — génération contrôlée du contrat (branche de travail)
 # Temporary branch-scoped proof, read-only token, no deployment.
 on:
-  push:
-    branches: [feat/hub-reception-v3-quality]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
 permissions:
   contents: read
 jobs:
   generate-contract:
+    if: github.head_ref == 'feat/hub-reception-v3-quality' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
@@ -45,6 +47,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
