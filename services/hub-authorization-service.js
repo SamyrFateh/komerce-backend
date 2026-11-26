@@ -99,7 +99,8 @@ async function poAmount(client, po, body) {
   const { rows } = await commercialRead(client,
     `SELECT pl.quantity, pl.supplier_unit_price, pl.supplier_currency, pl.supplier_sku,
             p.name AS product_name, s.name AS supplier_name,
-            oi.fulfillment_source, o.status::text AS order_status, o.payment_status::text AS payment_status
+            oi.id AS commercial_item_id, o.id AS commercial_order_id, oi.fulfillment_source,
+            o.status::text AS order_status, o.payment_status::text AS payment_status, to_jsonb(o)->>'payment_mode' AS payment_mode
        FROM purchase_lines pl
        JOIN suppliers s ON s.id = pl.supplier_id
        JOIN order_items oi ON oi.id = pl.order_item_id
@@ -108,7 +109,7 @@ async function poAmount(client, po, body) {
       WHERE pl.purchase_order_id = $1 AND pl.cancelled_at IS NULL
       ORDER BY o.id, oi.id, pl.id FOR SHARE OF o,oi NOWAIT`, [po.id]);
   if (!rows.length) fail(409, 'PURCHASE_ORDER_EMPTY', 'PO sans ligne');
-  rows.forEach(assertCommercialPurchaseItem);
+  for (const row of rows) await assertCommercialPurchaseItem(client, row);
   const priced = rows.every((r) => r.supplier_unit_price != null && r.supplier_currency);
   if (priced && new Set(rows.map((r) => r.supplier_currency)).size === 1) {
     const amount = rows.reduce((s, r) => s + Number(r.quantity) * Number(r.supplier_unit_price), 0);
