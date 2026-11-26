@@ -340,6 +340,16 @@
       }
       const list=make(doc,'div','hlc-director-list');
       list.setAttribute('data-hub-director-list','');
+      const filters=make(doc,'div','kmc-hub-admin-tabs kmc-hub-director-filters');
+      const filterButtons=[];
+      const sections=[];
+      let selectedGroup=host._directionGroup || 'commitment';
+      const applyGroup=()=>{
+        host._directionGroup=selectedGroup;
+        for(const [key,section] of sections) section.hidden=key!==selectedGroup;
+        for(const [key,button] of filterButtons){button.classList.toggle('is-active',key===selectedGroup);button.setAttribute('aria-pressed',String(key===selectedGroup));}
+      };
+      body.appendChild(filters);
       for (const spec of groupSpecs) {
         const tasks=groups.get(spec.key);
         // Quatre colonnes stables, même si l'une ne contient aucune tâche.
@@ -386,7 +396,12 @@
         }
         group.appendChild(rows);
         list.appendChild(group);
+        sections.push([spec.key,group]);
+        const filter=make(doc,'button','kmc-hub-admin-tab',spec.title.replace(/^\d · /,'')+' ('+tasks.length+')');
+        filter.type='button';filter.addEventListener('click',()=>{selectedGroup=spec.key;applyGroup();});
+        filterButtons.push([spec.key,filter]);filters.appendChild(filter);
       }
+      applyGroup();
       body.appendChild(list);
       return payload;
     } catch(error) {
@@ -1415,7 +1430,7 @@
       history.replaceState(null,'',HUB_PATH + (params.toString() ? '?' + params.toString() : ''));
     }
     const requested=parseBranch(safe(location?.search));
-    const branch=(requested === 'administrative' || requested === 'direction') && !administrativeAllowed ? 'operations' : requested;
+    const branch=(requested === 'administrative' || requested === 'direction') ? (administrativeAllowed ? 'direction' : 'operations') : requested;
     root.replaceChildren();
     root.className='kmc-hub-app';
     const header=make(doc,'header','kmc-hub-app-header');
@@ -1448,7 +1463,7 @@
     root.appendChild(header);
     const nav=make(doc,'nav','kmc-hub-app-branches');
     nav.setAttribute('aria-label','Postes de travail Hub');
-    for(const id of ['operations','administrative','direction']){
+    for(const id of ['operations','direction']){
       if(id !== 'operations' && !administrativeAllowed)continue;
       const spec=BRANCHES[id];
       const link=make(doc,'a','kmc-hub-app-branch');
@@ -1472,10 +1487,39 @@
     content.appendChild(host);
     layout.appendChild(content);
     root.appendChild(layout);
+    let directionView = requested === 'administrative' ? 'administration' : 'decisions';
+    let directorHost = host, adminHost = null, adminLoad = null;
+    if (branch === 'direction') {
+      const tabs=make(doc,'nav','kmc-hub-admin-tabs kmc-hub-direction-tabs');
+      tabs.setAttribute('aria-label','Gestion du Hub');
+      directorHost=make(doc,'div','kmc-hub-direction-decisions');
+      adminHost=make(doc,'div','kmc-hub-direction-administration');
+      const buttons=[];
+      const applyView=()=>{
+        directorHost.hidden=directionView!=='decisions';
+        adminHost.hidden=directionView!=='administration';
+        for(const [id,button] of buttons){
+          button.classList.toggle('is-active',directionView===id);
+          button.setAttribute('aria-pressed',String(directionView===id));
+        }
+        if(directionView==='administration' && !adminLoad){
+          adminLoad=Promise.resolve().then(()=>renderAdministrative(adminHost));
+          adminLoad.catch(()=>{adminLoad=null;});
+        }
+      };
+      for(const [id,label] of [['decisions','Pilotage et décisions'],['administration','Administration et finance']]){
+        const button=make(doc,'button','kmc-hub-admin-tab',label);
+        button.type='button';
+        button.addEventListener('click',()=>{directionView=id;applyView();});
+        buttons.push([id,button]);tabs.appendChild(button);
+      }
+      host.appendChild(tabs);host.appendChild(directorHost);host.appendChild(adminHost);
+      applyView();
+    }
     const reloadCases=()=>Promise.resolve(
       branch === 'direction'
-        ? renderDirectorQueue(host,{document:doc,fetch:fetchFn,user})
-        : branch === 'administrative' ? renderAdministrative(host) : renderOperations(host)
+        ? renderDirectorQueue(directorHost,{document:doc,fetch:fetchFn,user})
+        : renderOperations(host)
     );
     const selected=reloadCases();
     const directorLoad=branch==='direction' ? selected : Promise.resolve(null);
@@ -1486,8 +1530,8 @@
       : null;
     selected.catch?.(()=>{});
     const selectPO=id=>{
-      if(branch !== 'administrative')return;
-      const cells=host.querySelectorAll?.('[data-hub-admin-po]') || [];
+      if(branch !== 'direction' || !adminHost)return;
+      const cells=adminHost.querySelectorAll?.('[data-hub-admin-po]') || [];
       const row=[...cells].find(node=>node.getAttribute('data-hub-admin-po')===id);
       if(row?.scrollIntoView)row.scrollIntoView({block:'nearest'});
     };
