@@ -67,30 +67,32 @@ const mockFetch = data => jest.fn(async url => ({
     {orders:data.orders||[],purchase_orders:data.po||[]},
 }));
 
-test('Administration et Opérations occupent toute la largeur sans rail doublon', async () => {
+test('Direction Hub et Administration restent dans un seul poste de travail', async () => {
   const app=load(),root=el('main'),admin=jest.fn(),ops=jest.fn();
   const api=app.mount({root,user:{role:'admin'},document:doc,
     location:{search:'?branch=administrative&market=KM'},fetch:mockFetch({}),
     renderAdministrative:admin,renderOperations:ops});
-  expect(api.branch).toBe('administrative');
+  expect(api.branch).toBe('direction');
   expect(root.querySelector('[data-hub-open-operations]')).toBeNull();
   expect(root.querySelector('[data-hub-branch="operations"]').children[0].children[0].textContent).toBe('Kanban');
-  expect(root.children[1].querySelectorAll('[data-hub-branch]')).toHaveLength(3);
-  expect(root.querySelectorAll('[data-hub-director-todo]')).toHaveLength(0);
+  expect(root.children[1].querySelectorAll('[data-hub-branch]')).toHaveLength(2);
+  expect(root.querySelectorAll('[data-hub-director-todo]')).toHaveLength(1);
   expect(root.children[2].className).toContain('is-table');
   expect(root.querySelectorAll('[data-hub-case-list]')).toHaveLength(0);
+  await Promise.resolve();
   expect(admin).toHaveBeenCalledTimes(1);
   expect(ops).not.toHaveBeenCalled();
   await api.reloadCases();
-  expect(admin).toHaveBeenCalledTimes(2);
+  expect(admin).toHaveBeenCalledTimes(1);
 });
 
-test('un agent Hub voit les deux branches et la supervision dédiée, sans autorisation ajoutée', () => {
+test('un agent Hub voit le Kanban et la Direction avec l’administration comme onglet', async () => {
   const app=load(),root=el('main'),admin=jest.fn();
   const mounted=app.mount({root,user:{role:'agent_hub'},document:doc,location:{search:'?branch=administrative'},
     renderAdministrative:admin,renderOperations:jest.fn()});
-  expect(mounted.branch).toBe('administrative');
-  expect(root.querySelectorAll('[data-hub-branch]')).toHaveLength(3);
+  expect(mounted.branch).toBe('direction');
+  expect(root.querySelectorAll('[data-hub-branch]')).toHaveLength(2);
+  await Promise.resolve();
   expect(admin).toHaveBeenCalledTimes(1);
 });
 
@@ -237,6 +239,25 @@ test('le tableau global n’expose aucune action Hub à un relais et agrège plu
   expect(root.querySelectorAll('[data-hub-global-menu]')).toHaveLength(1);
   expect(root.querySelectorAll('[data-hub-global-menu]')[0].children.some(x=>x.tagName==='A')).toBe(false);
   expect(JSON.stringify(data)).not.toContain('supplier_price');
+});
+
+test('le Hub affiche les marchés autorisés depuis la projection serveur du responsable pays', async () => {
+  const app=load(),root=el('main'),scope=el('span');
+  const previousQuery=doc.querySelector;
+  doc.querySelector=jest.fn(selector=>selector==='.kmc-hub-global-scope'?scope:null);
+  try {
+    const fetch=jest.fn(async()=>({ok:true,json:async()=>({
+      scope:'HUB_GLOBAL',audience:'MARKET_SCOPED',markets:['CM'],orders:[
+        {id:'cm-1',reference:'KCM001',market:'CM',market_name:'Cameroun',po:'À constituer',supplier:'Non commandé',
+          reception:'Non reçue',cartons:'À préparer',departure:'Pas de départ',remaining:'1 non reçue(s)'},
+      ],
+    })}));
+    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'market_operator'}});
+    expect(scope.textContent).toBe('Hub · CM');
+  } finally {
+    if(previousQuery)doc.querySelector=previousQuery;
+    else delete doc.querySelector;
+  }
 });
 
 test('Hub global refuse agent_transitaire (acces limite a Expeditions & Douane)', () => {

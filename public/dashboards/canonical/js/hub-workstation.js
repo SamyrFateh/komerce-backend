@@ -1215,6 +1215,17 @@
       if (payload.scope !== 'HUB_GLOBAL' || !Array.isArray(payload.orders)) {
         throw new Error('Réponse globale Hub invalide');
       }
+      if (user?.role === 'market_operator'
+        && payload.audience === 'MARKET_SCOPED'
+        && Array.isArray(payload.markets)) {
+        const scopeLabel = doc.querySelector?.('.kmc-hub-global-scope');
+        if (scopeLabel) {
+          const markets = [...new Set(payload.markets.map(market => safe(market).trim()).filter(Boolean))];
+          scopeLabel.textContent = markets.length
+            ? 'Hub · ' + markets.join(', ')
+            : 'Hub · Aucun marché autorisé';
+        }
+      }
       rows = payload.orders;
       renderRows();
       return payload;
