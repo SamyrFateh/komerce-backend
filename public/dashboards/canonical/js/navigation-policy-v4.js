@@ -905,7 +905,11 @@
   // Destinations marché réellement scopées. Les liens masqués faute de vue
   // marché correspondante ne sont pas réintroduits comme doublons de menu.
   const MARKET_MENU_PROJECTIONS = Object.freeze({
-    'unsold': Object.freeze({ href:'/dashboards/canonical/unsold.html', label:'Invendus · Mes marchés' }),
+    'unsold': Object.freeze({
+      href:'/dashboards/canonical/unsold.html',
+      label:'Invendus · Mes marchés',
+      capability:'operations.read',
+    }),
     'admin-providers': Object.freeze({ href:'/dashboards/canonical/market-autonomy.html#market-providers', label:'Prestataires de mon marché' }),
     'settings': Object.freeze({ href:'/dashboards/canonical/market-autonomy.html#market-cash-control', label:'Paramètres de mon marché' }),
   });
@@ -1073,8 +1077,10 @@
     // La visibilité d'une rubrique métier n'est pas une autorisation d'action.
     // Les données affichées restent soumises aux capabilities READ du serveur.
     if (role === 'market_operator') {
+      const projection = MARKET_MENU_PROJECTIONS[item.id];
+      if (projection?.capability) return hasCapability(adminContext, projection.capability);
       return (item.roles || []).includes(role)
-        || Object.prototype.hasOwnProperty.call(MARKET_MENU_PROJECTIONS, item.id);
+        || Boolean(projection);
     }
     if (!(item.roles || []).includes(role)) return false;
     // Les agents terrain possèdent leur propre garde serveur /api/agent/action-center.
