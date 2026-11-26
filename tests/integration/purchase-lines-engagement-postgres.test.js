@@ -79,12 +79,13 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
           created_at timestamptz NOT NULL DEFAULT now()
         );
         CREATE TABLE markets (id uuid PRIMARY KEY, code text NOT NULL UNIQUE, name text NOT NULL);
-        CREATE TABLE orders (id uuid PRIMARY KEY, reference text, market_id uuid REFERENCES markets(id), created_at timestamptz NOT NULL DEFAULT now());
+        CREATE TABLE orders (id uuid PRIMARY KEY, reference text, market_id uuid REFERENCES markets(id), created_at timestamptz NOT NULL DEFAULT now(), status text NOT NULL DEFAULT 'ordered', payment_status text NOT NULL DEFAULT 'paid');
         CREATE TABLE order_items (
           id uuid PRIMARY KEY,
           order_id uuid NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
           product_id uuid,
-          quantity integer NOT NULL DEFAULT 1
+          quantity integer NOT NULL DEFAULT 1,
+          fulfillment_source text NOT NULL DEFAULT 'IMPORT'
         );
         CREATE TABLE purchase_orders (
           id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
