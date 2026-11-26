@@ -124,7 +124,10 @@ function structureEurProjector(client){
 function shipmentActivity(rows){
   const money=v=>typeof v==='string'&&/^\d+\.\d{2}$/.test(v)?BigInt(v.replace('.','')):null;
   const display=v=>{const s=v.toString().padStart(3,'0');return s.slice(0,-2)+'.'+s.slice(-2);};
-  let documented=0n,freightCustoms=0n,closed=0;
+  const grams=v=>{if(typeof v!=='string'||!/^\d{1,9}(?:\.\d{1,3})?$/.test(v))return null;const [a,b='']=v.split('.');const n=BigInt(a+b.padEnd(3,'0'));return n>0n?n:null;};
+  const kg=v=>{const s=v.toString().padStart(4,'0');return s.slice(0,-3)+'.'+s.slice(-3);};
+  const costPerKg=(cents,g)=>display(roundHalfEven(cents*10n,g,2));
+  let documented=0n,freightCustoms=0n,closed=0,allWeight=0n,weightedWeight=0n,weightedCost=0n,weightCount=0,weightedCount=0;
   const shipments=rows.map(s=>{
     const amounts=[s.freight_kmf,s.customs_kmf,s.arrival_kmf,s.local_kmf,s.customs_fees_kmf,s.documented_kmf].map(money);
     const complete=Boolean(s.financial_closed_at&&s.financial_close_proof_ref&&s.snapshot_hash&&s.freight_known===true&&
@@ -132,13 +135,15 @@ function shipmentActivity(rows){
       amounts.slice(0,5).reduce((sum,v)=>sum+v,0n)===amounts[5]);
     const transport=complete?amounts[0]+amounts[1]:null;
     if(complete){closed++;documented+=amounts[5];freightCustoms+=transport;}
+    const g=s.weight_basis==='MEASURED_GROSS_KG'&&s.weight_proof_ref?grams(s.actual_weight_kg):null;
+    if(g!==null){weightCount++;allWeight+=g;if(complete){weightedCount++;weightedWeight+=g;weightedCost+=amounts[5];}}
     return {reference:s.reference,rail:s.rail,physicalClosedAt:s.physical_closed_at,
       financialClosedAt:s.financial_closed_at||null,financialStatus:complete?'DOCUMENTED_CLOSED':'NOT_RECONCILED',
       volumeM3:s.volume_m3,boxCount:s.box_count,expectedArticles:s.expected_articles,receivedArticles:s.received_articles,
       freightCustomsKmf:complete?display(transport):null,documentedTransportKmf:complete?display(amounts[5]):null,
       freightKmf:complete?s.freight_kmf:null,customsKmf:complete?s.customs_kmf:null,
       arrivalFeesKmf:complete?display(amounts[2]+amounts[4]):null,localTransportKmf:complete?s.local_kmf:null,
-      weightKg:null,purchaseKmf:null,costPerKgKmf:null};
+      weightKg:g===null?null:kg(g),weightProofRef:g===null?null:s.weight_proof_ref,weightBasis:g===null?null:'MEASURED_GROSS_KG',purchaseKmf:null,costPerKgKmf:complete&&g!==null?costPerKg(amounts[5],g):null};
   });
   return {cohort:'RELAY_RECEIPT_MONTH_UTC',scopeCoverage:'EXACT_MARKET_NON_SIMULATED',
     physicalClosedCount:shipments.length,financialClosedCount:closed,
@@ -146,13 +151,17 @@ function shipmentActivity(rows){
     freightCustomsSubtotalKmf:closed?display(freightCustoms):null,
     documentedTransportTotalKmf:shipments.length&&closed===shipments.length?display(documented):null,
     coverage:!shipments.length?'NO_OBSERVATIONS':closed===shipments.length?'TRANSPORT_DOCUMENTED':'PARTIAL',
-    weightKg:null,purchaseKmf:null,costPerKgKmf:null,shipments};
+    weightKg:shipments.length&&weightCount===shipments.length?kg(allWeight):null,measuredWeightSubtotalKg:weightCount?kg(allWeight):null,measuredWeightCount:weightCount,
+    weightedTransportKmf:weightedCount?display(weightedCost):null,weightedWeightKg:weightedCount?kg(weightedWeight):null,
+    weightedShipmentCount:weightedCount,costPerKgKmf:weightedCount?costPerKg(weightedCost,weightedWeight):null,
+    costPerKgCoverage:!weightedCount?'NO_WEIGHTED_OBSERVATIONS':weightedCount===shipments.length?'COMPLETE':'PARTIAL',purchaseKmf:null,shipments};
 }
 async function loadShipmentActivity(client,marketId,periodStart){
   if(marketId===null)return null; // GROUP-only centers are not all markets.
   const {rows}=await client.query(
     `SELECT s.reference,s.transport_mode AS rail,s.volume_m3::text AS volume_m3,
       physical.closed_at AS physical_closed_at,receipt.expected_articles,receipt.received_articles,
+      weight.actual_weight_kg,weight.weight_basis,weight.weight_proof_ref,
       (SELECT COUNT(*)::int FROM international_shipment_hub_units h WHERE h.shipment_id=s.id) AS box_count,
       n.financial_closed_at,n.financial_close_proof_ref,n.snapshot_hash,n.freight_known,n.allocation_rows,
       n.total_freight_kmf::text AS freight_kmf,n.total_customs_kmf::text AS customs_kmf,
@@ -192,6 +201,16 @@ async function loadShipmentActivity(client,marketId,periodStart){
        FROM expected x FULL JOIN attested rr USING (order_item_id)
      ) receipt ON receipt.n>0 AND receipt.real_market IS TRUE AND receipt.last_received<=physical.closed_at
      LEFT JOIN international_n1_reconciliations n ON n.shipment_id=s.id
+     LEFT JOIN LATERAL (
+       SELECT MIN(e.payload->>'actual_weight_kg') AS actual_weight_kg,MIN(e.payload->>'weight_basis') AS weight_basis,
+         MIN(e.payload->>'weight_proof_ref') AS weight_proof_ref
+       FROM international_shipment_events e
+       WHERE e.shipment_id=s.id AND e.event_type='freight_recorded' AND e.proof_ref=s.freight_invoice_ref
+         AND e.payload->>'weight_basis'='MEASURED_GROSS_KG'
+         AND length(btrim(e.payload->>'weight_proof_ref')) BETWEEN 1 AND 240
+         AND (n.financial_closed_at IS NULL OR e.occurred_at<=n.financial_closed_at)
+       HAVING COUNT(*)=1
+     ) weight ON true
      WHERE s.market_id=$1 AND s.stage='relay_received'
        AND physical.closed_at>=($2::date::timestamp AT TIME ZONE 'UTC')
        AND physical.closed_at<(($2::date+interval '1 month') AT TIME ZONE 'UTC')

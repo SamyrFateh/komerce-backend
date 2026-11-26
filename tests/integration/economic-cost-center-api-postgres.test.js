@@ -62,6 +62,11 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     await q("UPDATE international_shipments SET stage='relay_received' WHERE id=$1",[shipment]);
     await q(`INSERT INTO international_shipment_events(shipment_id,event_type,from_stage,to_stage,proof_ref,actor_id,occurred_at,payload)
       VALUES($1,'stage_changed','local_delivery','relay_received','CI attestation',$2,'2026-01-15T10:01:00Z','{"attested_by":"relay"}')`,[shipment,fx.central.id]);
+    if(financial){
+      await q("UPDATE international_shipments SET freight_invoice_kmf=100.10,freight_invoice_ref=$2 WHERE id=$1",[shipment,ref+'-FREIGHT']);
+      await q(`INSERT INTO international_shipment_events(shipment_id,event_type,from_stage,to_stage,proof_ref,actor_id,occurred_at,payload)
+        VALUES($1,'freight_recorded','forwarder_received','forwarder_received',$2,$3,'2026-01-10T10:00:00Z',$4::jsonb)`,[shipment,ref+'-FREIGHT',fx.central.id,JSON.stringify({amount_kmf:'100.10',actual_weight_kg:'10.000',weight_proof_ref:ref+'-WEIGH',weight_basis:'MEASURED_GROSS_KG'})]);
+    }
     if(financial)await q(`INSERT INTO international_n1_reconciliations(shipment_id,snapshot_hash,total_freight_kmf,total_arrival_kmf,total_local_kmf,allocation_rows,actor_id,freight_known,total_customs_kmf,total_customs_fees_kmf,documented_total_kmf,financial_closed_at,financial_closed_by,financial_close_proof_ref)
       VALUES($1,$2,100.10,5.00,4.90,0,$3,true,20.00,1.00,131.00,'2026-02-10T10:00:00Z',$3,'CI financial proof')`,[shipment,crypto.createHash('sha256').update(ref).digest('hex'),fx.central.id]);
     return ref;
@@ -116,7 +121,8 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect(response.body.activity).toMatchObject({physicalClosedCount:2,financialClosedCount:1,documentedTransportSubtotalKmf:'131.00',freightCustomsSubtotalKmf:'120.10',documentedTransportTotalKmf:null,coverage:'PARTIAL'});
     expect(response.body.activity.shipments.map(s=>s.reference).sort()).toEqual([activityRefs.closed,activityRefs.pending].sort());
     const closed=response.body.activity.shipments.find(s=>s.reference===activityRefs.closed);
-    expect(closed).toMatchObject({rail:'sea',boxCount:1,expectedArticles:1,receivedArticles:1,documentedTransportKmf:'131.00',freightCustomsKmf:'120.10',financialStatus:'DOCUMENTED_CLOSED'});
+    expect(closed).toMatchObject({rail:'sea',boxCount:1,expectedArticles:1,receivedArticles:1,documentedTransportKmf:'131.00',freightCustomsKmf:'120.10',financialStatus:'DOCUMENTED_CLOSED',weightKg:'10.000',costPerKgKmf:'13.10'});
+    expect(response.body.activity).toMatchObject({weightKg:null,measuredWeightSubtotalKg:'10.000',weightedShipmentCount:1,weightedWeightKg:'10.000',weightedTransportKmf:'131.00',costPerKgKmf:'13.10',costPerKgCoverage:'PARTIAL'});
     expect(closed.physicalClosedAt.slice(0,10)).toBe('2026-01-15');
     expect(closed.financialClosedAt.slice(0,10)).toBe('2026-02-10');
     expect(response.body.activity.shipments.find(s=>s.reference===activityRefs.pending)).toMatchObject({financialStatus:'NOT_RECONCILED',documentedTransportKmf:null});

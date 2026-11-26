@@ -102,3 +102,13 @@ test('shipment cohort uses closed reconciled snapshot exactly once; unknown is n
   expect(shipmentActivity([{...closed,allocation_rows:1}])).toMatchObject({financialClosedCount:0});
   expect(shipmentActivity([])).toMatchObject({coverage:'NO_OBSERVATIONS',documentedTransportTotalKmf:null,purchaseKmf:null});
 });
+
+test('weighted transport cost uses same financially closed measured cohort, no averaging ratios',()=>{
+  const a={reference:'A',rail:'sea',physical_closed_at:'2026-01-15T10:00:00Z',financial_closed_at:'2026-02-10T10:00:00Z',financial_close_proof_ref:'proof',snapshot_hash:'a'.repeat(64),freight_known:true,allocation_rows:0,freight_kmf:'100.10',customs_kmf:'20.00',arrival_kmf:'5.00',local_kmf:'4.90',customs_fees_kmf:'1.00',documented_kmf:'131.00',actual_weight_kg:'10',weight_proof_ref:'weigh',weight_basis:'MEASURED_GROSS_KG'};
+  const b={...a,reference:'B',actual_weight_kg:'30.000',freight_kmf:'300.10',documented_kmf:'331.00'};
+  const x=shipmentActivity([a,b]);expect(x).toMatchObject({weightKg:'40.000',weightedTransportKmf:'462.00',weightedWeightKg:'40.000',costPerKgKmf:'11.55',costPerKgCoverage:'COMPLETE'});
+  expect(x.shipments[0].costPerKgKmf).toBe('13.10');
+  const pending={...b,financial_closed_at:null};const y=shipmentActivity([a,pending]);expect(y).toMatchObject({weightKg:'40.000',weightedShipmentCount:1,costPerKgKmf:'13.10',costPerKgCoverage:'PARTIAL'});
+  const unknown={...b,weight_proof_ref:null};expect(shipmentActivity([a,unknown])).toMatchObject({weightKg:null,measuredWeightSubtotalKg:'10.000',weightedShipmentCount:1,costPerKgCoverage:'PARTIAL'});
+  expect(shipmentActivity([{...a,weight_basis:'CHARGEABLE'}])).toMatchObject({costPerKgKmf:null,weightKg:null,costPerKgCoverage:'NO_WEIGHTED_OBSERVATIONS'});
+});

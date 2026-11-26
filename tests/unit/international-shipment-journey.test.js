@@ -217,3 +217,15 @@ test('schema has FK and audit-only financial boundary, no automatic N1 double co
   expect(migration).toContain('BEFORE UPDATE OR DELETE');
   expect(migration).not.toMatch(/INSERT INTO public\.order_item_real_cost_allocations/);
 });
+
+test('measured gross weight is optional and requires a document, never guessed from m3',async()=>{
+  const x=fixture('forwarder_received');
+  const result=await journey.recordFreight(market,admin,'INT-KM-001',{invoice_ref:'F-1',amount_kmf:'15000',actual_weight_kg:'12.345',weight_proof_ref:'WEIGH-1'},x.db);
+  expect(result).toMatchObject({actual_weight_kg:'12.345',weight_proof_ref:'WEIGH-1'});
+  const evt=x.executed.find(q=>q.sql.includes('INSERT INTO international_shipment_events'));
+  expect(JSON.parse(evt.params[6])).toMatchObject({actual_weight_kg:'12.345',weight_proof_ref:'WEIGH-1',weight_basis:'MEASURED_GROSS_KG'});
+  await expectError(journey.recordFreight(market,admin,'INT-KM-001',{invoice_ref:'F-1',amount_kmf:'100',actual_weight_kg:'12'},fixture('forwarder_received').db),'JOURNEY_WEIGHT_PROOF_REQUIRED');
+  await expectError(journey.recordFreight(market,admin,'INT-KM-001',{invoice_ref:'F-1',amount_kmf:'100',actual_weight_kg:'0',weight_proof_ref:'WEIGH'},fixture('forwarder_received').db),'JOURNEY_INVALID_actual_weight_kg');
+  const y=fixture('forwarder_received');await journey.recordFreight(market,admin,'INT-KM-001',{invoice_ref:'F-1',amount_kmf:'100',volume_m3:'1'},y.db);
+  expect(JSON.parse(y.executed.find(q=>q.sql.includes('INSERT INTO international_shipment_events')).params[6])).not.toHaveProperty('actual_weight_kg');
+});
