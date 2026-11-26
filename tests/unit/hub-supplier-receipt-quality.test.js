@@ -8,7 +8,7 @@ jest.mock('../../services/hub-physical-identity',()=>({receiveSupplierPackage:je
 jest.mock('../../services/hub-reception-quality-plan',()=>({lockReceptionQualityPlan:jest.fn()}));
 const physical=require('../../services/hub-physical-identity');
 const {lockReceptionQualityPlan}=require('../../services/hub-reception-quality-plan');
-const {observeSupplierReceipt,attestSupplierReturn}=require('../../services/hub-supplier-receipt-quality');
+const {observeSupplierReceipt,attestSupplierReturn,listSupplierReceiptChecks}=require('../../services/hub-supplier-receipt-quality');
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
 const args={purchaseOrderId:id(1),marketId:id(2),actorId:id(3),reference:'QUALITY-1',physicalConfirmed:true,
  observations:[{product_sku_id:id(4),received_quantity:4,rejected_quantity:1,quantity_confirmed:true,evidence_method:'SCAN',evidence_code:'SKU-1'}]};
@@ -56,4 +56,20 @@ test('retour excédentaire et scope étranger refusés avant écriture',async()=
  await expect(attestSupplierReturn(client,data)).rejects.toThrow('HUB_SUPPLIER_RETURN_EXCEEDS_REJECTED');
  expect(client.query).toHaveBeenCalledTimes(4);
  await expect(attestSupplierReturn(executor([],[]),data)).rejects.toThrow('HUB_SUPPLIER_RETURN_SCOPE');
+});
+
+test('projection des retours : lecture limitée à la PO et au marché',async()=>{
+ const client=executor([{id:id(1),order_id:null}],[{line_id:id(7),rejected_quantity:3,returned_quantity:1,to_return_quantity:2}]);
+ const result=await listSupplierReceiptChecks(client,{purchaseOrderId:id(1),marketId:id(2)});
+ expect(result).toEqual({eligible:true,checks:[{line_id:id(7),rejected_quantity:3,returned_quantity:1,to_return_quantity:2}]});
+ expect(client.query.mock.calls[1][1]).toEqual([id(1),id(2)]);
+ expect(client.query.mock.calls[1][0]).toContain('c.purchase_order_id=$1 AND c.market_id=$2');
+ await expect(listSupplierReceiptChecks(executor([]),{purchaseOrderId:id(1),marketId:id(2)})).rejects.toThrow('HUB_QUALITY_PO_SCOPE');
+});
+test('retour rejoué : aucune seconde insertion',async()=>{
+ const prior={id:id(8),check_line_id:id(7),quantity:1};
+ const client=executor([],[{id:id(7),rejected_quantity:3}],[prior]);
+ const result=await attestSupplierReturn(client,{checkLineId:id(7),marketId:id(2),actorId:id(3),reference:'RETURN-1',quantity:1,physicalConfirmed:true});
+ expect(result).toEqual({attestation:prior,replayed:true});
+ expect(client.query).toHaveBeenCalledTimes(3);
 });
