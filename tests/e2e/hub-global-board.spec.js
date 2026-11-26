@@ -509,3 +509,54 @@ for(const role of ['admin','agent_hub']) {
     await expect(page.locator('.kmc-market-context-select')).toHaveCount(0);
   });
 }
+
+
+// UX-HUB-DENSITY-01 — real canonical screen, mocked reads only.
+// This certifies geometry/interaction, not physical stock writes.
+for(const [width,height] of [[1280,720],[1366,768],[1920,1080]]){
+ test('V3 réception compacte 30 références '+width+'x'+height,async({page})=>{
+  await page.setViewportSize({width,height});
+  const poId='10000000-0000-4000-8000-000000000001';
+  const lines=Array.from({length:30},(_,i)=>({
+    product_sku_id:'sku-'+i,product_name:i===0?'Chargeur USB-C secteur haute puissance avec câble renforcé et adaptateur international':'Article '+(i+1),
+    expected_quantity:i===1?5:1,received_quantity:0,remaining_quantity:i===1?5:1,reception_state:'NOT_RECEIVED'
+  }));
+  const board={...BOARD,purchase_orders:[{id:poId,reference:'PO-DENSITY',market:'KM',supplier:'Fournisseur test',order_count:1,order_references:[],ordered:34,expected:34,received:0,missing:34,purchase_step:'sent',purchase_stage:'confirmed',order_lines:[]}]};
+  const calls=await mount(page,'agent_hub','',board,true);
+  await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/supply',route=>route.fulfill({json:{
+    purchase_orders:[{id:poId,lines:[]}],cockpit:{viewer:{role:'agent_hub'}},receipts:[],fillable:[],supplier_quality_v3_enabled:true
+  }}));
+  await page.route(ORIGIN+'/api/scans/hub/receivable',route=>route.fulfill({json:{purchase_orders:[{purchase_order_id:poId,lines,po_status:'confirmed',supplier:{name:'Fournisseur test'}}]}}));
+  await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/supply/receipt-checks?purchase_order_id='+poId,route=>route.fulfill({json:{eligible:true,checks:[]}}));
+  await page.locator('[data-hub-po-v8-card="'+poId+'"]').click();
+  const form=page.locator('[data-hub-quality-v3]');
+  await expect(form).toBeVisible();
+  await expect(form.locator('tbody tr[data-hub-quality-sku]')).toHaveCount(30);
+  await expect(form.locator('thead')).toHaveCount(1);
+  const geometry=await form.evaluate(el=>{
+    const table=el.querySelector('table'),rows=[...table.querySelectorAll('tbody tr')];
+    const root=document.documentElement;
+    return {overflow:root.scrollWidth-root.clientWidth,tableOverflow:table.scrollWidth-table.clientWidth,
+      maxRowHeight:Math.max(...rows.map(r=>r.getBoundingClientRect().height)),
+      medianRowHeight:rows.map(r=>r.getBoundingClientRect().height).sort((a,b)=>a-b)[15],
+      clipped:[...table.querySelectorAll('input')].filter(n=>n.getClientRects().length).some(n=>{
+        const r=n.getBoundingClientRect(),cell=n.closest('td').getBoundingClientRect();
+        return r.left<cell.left-1||r.right>cell.right+1;
+      })};
+  });
+  expect(geometry.overflow).toBeLessThanOrEqual(1);
+  expect(geometry.tableOverflow).toBeLessThanOrEqual(1);
+  expect(geometry.medianRowHeight).toBeLessThanOrEqual(58);
+  expect(geometry.maxRowHeight).toBeLessThanOrEqual(100);
+  expect(geometry.clipped).toBe(false);
+  const multi=form.locator('[data-hub-quality-sku="sku-1"]');
+  await expect(multi.getByRole('checkbox',{name:'Quantité confirmée : Article 2'})).not.toBeChecked();
+  await multi.getByRole('checkbox',{name:'Non conforme — à retourner : Article 2'}).check();
+  await multi.getByRole('spinbutton',{name:'Quantité à retourner : Article 2'}).fill('1');
+  await multi.getByRole('checkbox',{name:'Quantité confirmée : Article 2'}).check();
+  await expect(form.getByRole('status')).toContainText('33 à emballer · 1 à retourner');
+  await expect(form.getByRole('button',{name:'Valider la réception'})).toBeDisabled();
+  expect(calls.filter(x=>x.startsWith('POST'))).toEqual([]);
+  await page.screenshot({path:'test-results/hub-v3-density-'+width+'x'+height+'.png',fullPage:false});
+ });
+}
