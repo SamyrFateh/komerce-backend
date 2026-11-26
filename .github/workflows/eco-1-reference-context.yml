@@ -1,0 +1,56 @@
+name: ECO-1 cost center reference context (temporary)
+on:
+  push:
+    branches:
+      - research/eco-centres-v6-preflight
+    paths:
+      - '.github/workflows/eco-1-reference-context.yml'
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: eco-1-reference-context
+  cancel-in-progress: false
+jobs:
+  context:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      ECO_BASE: '473d7daaa6b24ed3350abcc5a80ec8239eab7faf'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: '473d7daaa6b24ed3350abcc5a80ec8239eab7faf'
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Context and impact for reference
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$ECO_BASE"
+          npm run agent:context -- --pack migration --feature economic-engine | tee /tmp/eco1-migration.txt
+          npm run agent:context -- --pack authz --feature economic-engine | tee /tmp/eco1-authz.txt
+          npm run agent:context -- --pack service --feature economic-engine | tee /tmp/eco1-service.txt
+          npm run arch:impact -- economic-engine | tee /tmp/eco1-impact.txt
+          git ls-files migrations | sort -V | tail -15
+          git grep -n -i -E 'ECO-1|5280|coût|pricing|economi|gel G7|gel des fusions' -- docs/chantier/STATUS.md | cut -c1-500 || true
+      - name: Retain context
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eco-1-reference-context
+          path: /tmp/eco1-*.txt
+      - name: Report result
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ job.status }}
+        shell: bash
+        run: |
+          printf 'ECO-1 context — %s\nBase SHA: %s\nRun: %s/%s/actions/runs/%s\nNo runtime modifications or deployment.\n' "$RESULT" "$ECO_BASE" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > /tmp/eco1-report.md
+          gh issue comment 5280 --repo "$GITHUB_REPOSITORY" --body-file /tmp/eco1-report.md
