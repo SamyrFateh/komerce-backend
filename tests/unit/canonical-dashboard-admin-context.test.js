@@ -52,6 +52,24 @@ describe('LOT 2C-CANON — AdminContext et MarketScope', () => {
     expect(Object.isFrozen(context.access)).toBe(true);
     expect(Object.isFrozen(context.access.allowedMarkets)).toBe(true);
     expect(Object.isFrozen(context.access.capabilities)).toBe(true);
+    expect(context.access.delegatedCapabilities).toEqual({ CM: [] });
+    expect(Object.isFrozen(context.access.delegatedCapabilities)).toBe(true);
+  });
+
+  test('conserve les capacités déléguées par marché pour les projections UI', () => {
+    const context = validateAdminContext(scopedContext({
+      delegatedCapabilities: { CM: ['operations.read', 'client.read'] },
+    }));
+    expect(context.access.delegatedCapabilities).toEqual({
+      CM: ['operations.read', 'client.read'],
+    });
+    expect(Object.isFrozen(context.access.delegatedCapabilities.CM)).toBe(true);
+  });
+
+  test('refuse les capacités déléguées d’un marché hors périmètre serveur', () => {
+    expect(() => validateAdminContext(scopedContext({
+      delegatedCapabilities: { CG: ['operations.read'] },
+    }))).toThrow(/marché non autorisé/);
   });
 
   test('enferme un partenaire dans un marché autorisé', () => {
