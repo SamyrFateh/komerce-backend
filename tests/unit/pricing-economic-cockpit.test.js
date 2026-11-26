@@ -165,3 +165,13 @@ test('actual entry is available only for linked structure posts and authorized a
     expect(find(view,'Enregistrer la charge')).toBeUndefined();
   }
 });
+
+test('post creation is inside the selected family and absent for read-only readers',()=>{
+  const base={...activityModel,centers:[{id:'a',label:'Centre'}],families:[{id:'f',center_id:'a',label:'Famille'}],resources:[{id:'r',center_id:'a',label:'Ressource locale'},{id:'r2',center_id:'b',label:'Ressource étrangère'}],posts:[]};
+  for(const central of [false,true]){
+    const view=createV7CostCenters(doc,{...base,central},{createPost:jest.fn()});
+    find(view,'Consulter').click();
+    expect(Boolean(find(view,'Créer le poste'))).toBe(central);
+    expect(all(view).some(x=>x.value==='r2')).toBe(false);
+  }
+});

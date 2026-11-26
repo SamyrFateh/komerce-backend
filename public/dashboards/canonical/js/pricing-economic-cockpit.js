@@ -130,6 +130,7 @@
         body.append(tr);
       }
       table.append(body);host.append(table);
+      if(model.central===true&&typeof actions.createPost==='function')host.append(createV7PostForm(doc,model,family,resources.filter(r=>r.center_id===center.id),actions));
       if(!ps.length)host.append(el(doc,'p','kmc-v7-empty','Aucun poste dans cette famille.'));
       const post=ps.find(p=>p.id===state.postId);
       if(post){
@@ -148,6 +149,35 @@
       }
     }
     render();return host;
+  }
+
+  function createV7PostForm(doc,model,family,resources,actions){
+    const details=el(doc,'details','kmc-v7-commitment'),form=el(doc,'form','kmc-v7-budget-form');
+    details.append(el(doc,'summary','','Ajouter un poste'),form);
+    function field(label,name,choices){
+      const wrap=el(doc,'label','kmc-v7-metric',label),input=el(doc,choices?'select':'input','');
+      input.name=name;input.required=true;
+      if(choices)for(const [value,title] of choices){const option=el(doc,'option','',title);option.value=value;input.append(option);}
+      if(choices)input.value=choices[0][0];
+      wrap.append(input);form.append(wrap);return input;
+    }
+    const label=field('Libellé','label'),code=field('Code','code'),nature=field('Nature','economicNature',[['FIXED','Fixe'],['VARIABLE','Variable'],['MIXED','Mixte']]);
+    const perimeter=field('Attribution','allocationPerimeter',model.scope==='GROUP'?[['MUTUALIZED','Mutualisé'],['DIRECT','Direct']]:[['DIRECT','Direct'],['MUTUALIZED','Mutualisé']]);
+    const basis=field('Clé d’imputation','allocationBasis');
+    const source=field('Source du réel','source',[['CANONICAL_SOURCE','Source métier propriétaire (pas de ressaisie)'],['STRUCTURE','Journal des charges de structure']]);
+    const resource=field('Ressource','resourceId',[['','Non renseignée'],...resources.map(r=>[r.id,r.label])]);resource.required=false;
+    const reason=field('Motif','reason'),submit=el(doc,'button','kmc-v7-action','Créer le poste'),feedback=el(doc,'p','kmc-v7-coverage');
+    submit.type='submit';feedback.setAttribute('role','status');form.append(submit,feedback);
+    let busy=false;
+    form.addEventListener('submit',async e=>{
+      e.preventDefault();if(busy)return;
+      const body={label:label.value.trim(),code:code.value.trim().toUpperCase(),economicNature:nature.value,allocationPerimeter:perimeter.value,allocationBasis:basis.value.trim(),source:source.value,resourceId:resource.value||null,reason:reason.value.trim()};
+      if(!/^[A-Z][A-Z0-9_]{1,63}$/.test(body.code)||body.label.length<3||!body.allocationBasis||body.reason.length<3){feedback.textContent='Libellé, code, clé ou motif invalide.';return;}
+      if(body.source==='STRUCTURE'&&(body.economicNature!=='FIXED'||body.allocationPerimeter!==(model.scope==='GROUP'?'MUTUALIZED':'DIRECT'))){feedback.textContent='La structure doit être fixe et respecter le périmètre du centre.';return;}
+      busy=true;submit.disabled=true;
+      try{await actions.createPost(family.id,body);feedback.textContent='Poste créé.';}catch(error){feedback.textContent=error.message||'Création refusée.';}finally{busy=false;submit.disabled=false;}
+    });
+    return details;
   }
 
   function createV7BudgetForm(doc,model,post,actions){
@@ -422,6 +452,7 @@
           reviseBudget:(id,body)=>mutate('/posts/'+encodeURIComponent(id)+'/budget-revisions',body),
           openCommitment:(id,body)=>mutate('/posts/'+encodeURIComponent(id)+'/commitments',body),
           recordActual:(id,body)=>mutate('/posts/'+encodeURIComponent(id)+'/actuals',body),
+          createPost:(id,body)=>mutate('/families/'+encodeURIComponent(id)+'/posts',body),
           moveCommitment:(id,body)=>mutate('/commitments/'+encodeURIComponent(id)+'/movements',body)
         };
         content.append(createV7V6Tabs(doc,model,active,key=>{active=key;},actions));
@@ -2041,6 +2072,7 @@
   return {
     createV7CostCenters,
     createV7BudgetForm,
+    createV7PostForm,
     createV7CommitmentForms,
     createV6Activity,
     createV6Profitability,
