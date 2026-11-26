@@ -540,6 +540,15 @@ describe('createManualLine', () => {
     await expect(engagement.createManualLine(body)).rejects.toMatchObject({ status: 404, code: 'PRODUCT_SUPPLIER_NOT_FOUND' });
   });
 
+
+  it.each(['pending','failed','partially_paid','refunded'])('P0 : création manuelle refusée pour paiement %s',async payment_status=>{
+    const {calls}=scripted(handlers({item:{...item,payment_status}}));
+    await expect(engagement.createManualLine(body)).rejects.toMatchObject({status:409,code:'ORDER_PAYMENT_NOT_CONFIRMED'});
+    expect(snapshot.insertOpenPurchaseLine).not.toHaveBeenCalled();
+    expect(calls.some(x=>x.sql.includes('FOR SHARE OF o,oi NOWAIT'))).toBe(true);
+    expect(calls.some(x=>x.sql==='ROLLBACK')).toBe(true);
+  });
+
   it('SKU non exact → 409 EXACT_IDENTITY_REQUIRED ; provider différent → 409 SUPPLIER_PROVIDER_MISMATCH', async () => {
     scripted(handlers());
     snapshot.loadExactSoldSku.mockResolvedValueOnce(null);
