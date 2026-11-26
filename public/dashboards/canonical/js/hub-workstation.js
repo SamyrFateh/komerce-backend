@@ -731,12 +731,28 @@
       if(p.received>0 || p.purchase_step==='received' || ['confirmed','partially_received','hub_received'].includes(p.purchase_stage))return 4;
       return ({draft:0,validation:1,engaged:2,sent:3})[p.purchase_step]??-1;
     };
-    const visualRefresh=async()=>{
-      const data=await requestJSON(fetchFn,'/api/hub/board?view=po');
-      if(data.scope!=='HUB_GLOBAL'||!Array.isArray(data.purchase_orders))throw Error('Projection PO indisponible');
-      poRows=data.purchase_orders;
-      visualMarkets=Array.isArray(data.markets)?data.markets:[];
-      renderVisualPO();
+    let visualSignature=null, visualRead=null;
+    const visualRefresh=async({background=false}={})=>{
+      if(visualRead)return visualRead;
+      visualRead=(async()=>{
+        const data=await requestJSON(fetchFn,'/api/hub/board?view=po');
+        if(data.scope!=='HUB_GLOBAL'||!Array.isArray(data.purchase_orders))throw Error('Projection PO indisponible');
+        if(root.isConnected===false)return null;
+        const signature=JSON.stringify([data.purchase_orders,data.markets||[]]);
+        if(background&&signature===visualSignature)return data;
+        // Ne pas remplacer les actions pendant une saisie ou une mutation.
+        const active=visualOpen.get(visualActive);
+        if(background&&(active?.loading||active?.handle?.busy?.()||root.contains?.(doc.activeElement)))return null;
+        poRows=data.purchase_orders;
+        visualMarkets=Array.isArray(data.markets)?data.markets:[];
+        renderVisualPO();
+        if(background&&active?.handle&&!active.loading&&!active.handle.busy?.()){
+          await active.handle.reload?.();
+        }
+        visualSignature=signature;
+        return data;
+      })();
+      try{return await visualRead;}finally{visualRead=null;}
     };
     const visualSelect=id=>{
       visualActive=id;visualView='board';
@@ -1164,6 +1180,27 @@
       // Ouverture directe sur le Kanban PO depuis le menu normal.
       try{await visualRefresh();poMode=true;headerTitle.textContent='PO fournisseurs · Tous les marchés';search.placeholder='Rechercher une PO ou un fournisseur';search.setAttribute('aria-label',search.placeholder);renderVisualPO();
       }catch(error){if(visualHost)visualHost.hidden=true;scroll.hidden=true;header.hidden=false;search.hidden=true;headerTitle.textContent='Kanban opérationnel';headerCount.textContent='Vue PO indisponible : '+error.message;}
+      // Même signal inter-instances que la Direction, mais relecture ciblée
+      // du Kanban : aucun remontage du poste ni perte des onglets ouverts.
+      global.KomerceDashboardFreshness?.watch?.({
+        root, pollMs:30000,
+        isBusy:()=>Boolean(visualRead||visualOpen.get(visualActive)?.loading||visualOpen.get(visualActive)?.handle?.busy?.()||root.contains?.(doc.activeElement)),
+        refresh:async()=>{
+          try{
+            const data=await visualRefresh({background:true});
+            if(data){poMode=true;search.hidden=false;headerCount.removeAttribute('data-hub-v8-stale');}
+            return data;
+          }catch(error){
+            headerCount.setAttribute('data-hub-v8-stale','true');
+            headerCount.textContent='Actualisation indisponible — données potentiellement périmées.';
+            if(error.status===401||error.status===403){
+              if(visualHost)visualHost.hidden=true;
+              header.hidden=false;root.setAttribute('data-hub-v8-access-denied','true');
+            }
+            return null;
+          }
+        },
+      });
     }
     search.addEventListener('input', ()=>{closeMenu();renderRows();});
     try {
