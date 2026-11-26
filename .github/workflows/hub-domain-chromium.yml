@@ -8,6 +8,10 @@ on:
       - 'routes/admin-operations-workspace.js'
       - 'services/hub-global-board.js'
       - 'services/hub-procurement-dossier.js'
+      - 'services/hub-reception-quality-plan.js'
+      - 'services/hub-supplier-receipt-quality.js'
+      - 'migrations/*_hub_supplier_receipt_quality.sql'
+      - 'tests/integration/hub-physical-identity-postgres.test.js'
       - 'tests/e2e/hub-*.spec.js'
       - 'playwright.config.js'
       - '.github/workflows/hub-domain-chromium.yml'
@@ -52,3 +56,52 @@ jobs:
         if: always()
         run: |
           echo "Chromium réel, HTTP simulé : vérification UI/navigation, pas de certification PostgreSQL/Railway ni de scanner physique. La certification staging reste un gate distinct." >> "$GITHUB_STEP_SUMMARY"
+
+  reception-pg16:
+    name: Hub — réception V3 sur PostgreSQL 16 isolé
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 6
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_DISABLE_CRONS: 'true'
+      DATABASE_URL: postgresql://komerce:komerce@localhost:5432/komerce_test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Exécuter le banc Hub-001 dans son schéma PostgreSQL jetable
+        run: |
+          set -euo pipefail
+          mkdir -p test-results/hub-reception-pg
+          node node_modules/jest/bin/jest.js tests/integration/hub-physical-identity-postgres.test.js --runInBand --ci --forceExit |& tee test-results/hub-reception-pg/integration.log
+      - name: Archiver la preuve PG isolée
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hub-reception-pg16-${{ github.run_id }}
+          path: test-results/hub-reception-pg/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Scope de la preuve
+        if: always()
+        run: echo "PG16 réel dans un schéma jetable, hors Railway et production. Le GO staging reste distinct." >> "$GITHUB_STEP_SUMMARY"

@@ -91,6 +91,9 @@ const ENTRIES = [
   R('economic_risk_watermark_events', 'jalons de risque calcules sur commandes (FK RESTRICT users)', { uncertain: true }),
 
   // ── purge_via_fk : fermeture FK (verifiee contre PostgreSQL par le test d integration) ──
+  V('hub_supplier_receipt_checks', 'constats qualité des PO de recette, enfants FK des achats purgeables'),
+  V('hub_supplier_receipt_check_lines', 'lignes des constats qualité, enfants FK des constats purgeables'),
+  V('hub_supplier_return_attestations', 'preuves de retours fournisseur de recette, enfants FK des lignes de constat purgeables'),
   V('hub_box_custody_scans', 'preuves de garde de recette, enfants FK des expeditions et unites Hub purgees'),
   ...`basket_items cash_confirmation_controls cash_custody_provenance_edges catalog_enrichment_runs catalog_field_overrides catalog_media
 catalog_media_recovery_audit catalog_media_visual_fr_reviews catalog_publication_decision_audit catalog_stock_sync_state competitor_prices

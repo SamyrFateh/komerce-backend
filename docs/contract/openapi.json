@@ -6,8 +6,8 @@
     "description": "Généré automatiquement par scripts/contract-generate.js.\nNE PAS ÉDITER À LA MAIN — relancer `npm run contract:generate` après tout changement de route ou de validateur.\n\nStatuts de contrat :\n  - x-contract-status: \"joi\"       → requête haute fidélité (schéma Joi)\n  - x-contract-status: \"test\"      → réponse couverte par un test intégration/unitaire\n  - x-contract-status: \"route-read\" → champs lus directement dans le handler (res.json),\n  - x-contract-status: \"service-read\" → forme top-level lue dans le service/lib appelée par la route,\n                                       pas de test sur le corps HTTP — confiance < \"test\"\n  - x-contract-status: \"scan-*\"    → champs observés dans le code front\n  - x-contract-status: \"UNKNOWN\"   → non couvert, à compléter"
   },
   "x-contract-debt": {
-    "unknown_responses": 120,
-    "total_routes": 804,
+    "unknown_responses": 121,
+    "total_routes": 807,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -7208,6 +7208,228 @@
         "parameters": [
           {
             "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/operations/market/{marketCode}/supply/receipt-checks": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/operations/market/{marketCode}/supply/receipt-checks",
+        "x-route-file": "routes/admin-operations-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "eligible": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "checks": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Périmètre ou identifiant invalide"
+          },
+          "403": {
+            "description": "Accès Hub requis"
+          },
+          "404": {
+            "description": "PO hors périmètre ou réception V3 désactivée"
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      },
+      "post": {
+        "summary": "POST /api/admin/workspaces/operations/market/{marketCode}/supply/receipt-checks",
+        "x-route-file": "routes/admin-operations-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Constat déjà enregistré, rejeu identique"
+          },
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "check": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "replayed": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Constat, preuve ou quantités invalides"
+          },
+          "403": {
+            "description": "Rôle Hub et capacité de réception requis"
+          },
+          "404": {
+            "description": "Réception V3 désactivée"
+          },
+          "409": {
+            "description": "Conflit de référence ou réception physique refusée"
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/operations/market/{marketCode}/supply/receipt-check-lines/{lineId}/returns": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/operations/market/{marketCode}/supply/receipt-check-lines/{lineId}/returns",
+        "x-route-file": "routes/admin-operations-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lineId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Retour déjà attesté, rejeu identique"
+          },
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "attestation": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "replayed": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Quantité ou confirmation physique invalide"
+          },
+          "403": {
+            "description": "Rôle Hub et capacité de réception requis"
+          },
+          "404": {
+            "description": "Ligne hors périmètre ou réception V3 désactivée"
+          },
+          "409": {
+            "description": "Conflit de référence ou retour supérieur au refusé"
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/operations/market/{marketCode}/supply/receipts/{unitId}/quality": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/operations/market/{marketCode}/supply/receipts/{unitId}/quality",
+        "x-route-file": "routes/admin-operations-workspace.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "unitId",
             "in": "path",
             "required": true,
             "schema": {

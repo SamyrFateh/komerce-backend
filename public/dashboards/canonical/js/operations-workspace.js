@@ -1083,6 +1083,136 @@
     return section;
   }
 
+  // V3 reuses the canonical receipt writer via the guarded quality endpoint.
+  // No new UI state is treated as physical proof before an explicit submit.
+  function qualityReceiptRows(lines){
+    const bySku=new Map();
+    for(const line of lines||[]){
+      const quantity=Number(line.remaining_quantity);
+      if(!Number.isSafeInteger(quantity)||quantity<0)throw Error('Quantité attendue invalide');
+      if(!quantity)continue;
+      const sku=String(line.product_sku_id||'');
+      if(!sku)throw Error('Variante attendue non identifiée');
+      const current=bySku.get(sku)||{sku,name:line.product_name||sku,quantity:0};
+      current.quantity+=quantity;bySku.set(sku,current);
+    }
+    return [...bySku.values()];
+  }
+  function renderQualityReceiptV3(doc,context,receipt){
+    const card=doc.createElement('article');card.className='kmc-workspace-receive-card';
+    card.setAttribute('data-hub-quality-v3','');card.setAttribute('data-receive-po',receipt.purchase_order_id);
+    card.appendChild(text(doc,'h3','','Réception et contrôle qualité'));
+    card.appendChild(text(doc,'p','kmc-workspace-note','Contrôlez les articles réellement arrivés. Les conformes seront disponibles pour étiquetage ; les autres seront à retourner.'));
+    const rows=qualityReceiptRows(receipt.lines);
+    if(!rows.length){card.appendChild(text(doc,'p','','Aucune quantité attendue.'));return card;}
+    const fields=[];
+    const table=doc.createElement('table');table.className='kmc-workspace-table kmc-quality-v3-table';
+    const thead=doc.createElement('thead'),head=doc.createElement('tr');
+    for(const title of ['Article','Attendu','Reçu / confirmé','Conforme','Retour','Identification']){
+      const th=text(doc,'th','',title);th.setAttribute('scope','col');head.appendChild(th);
+    }
+    thead.appendChild(head);table.appendChild(thead);
+    const tbody=doc.createElement('tbody');table.appendChild(tbody);card.appendChild(table);
+    function checkbox(label,checked=false,visible=''){
+      const wrap=doc.createElement('label');wrap.className='kmc-quality-v3-check';
+      const input=doc.createElement('input');input.type='checkbox';input.checked=checked;input.setAttribute('aria-label',label);wrap.appendChild(input);
+      if(visible)wrap.appendChild(text(doc,'span','',visible));
+      return {wrap,input};
+    }
+    function qty(label,value,max){
+      const wrap=doc.createElement('label');wrap.className='kmc-quality-v3-qty';
+      const input=doc.createElement('input');input.type='number';input.min='0';input.max=String(max);input.step='1';input.value=String(value);input.setAttribute('aria-label',label);wrap.appendChild(input);
+      return {wrap,input};
+    }
+    for(const line of rows){
+      const row=doc.createElement('tr');row.setAttribute('data-hub-quality-sku',line.sku);
+      const cell=(...nodes)=>{const td=doc.createElement('td');td.append(...nodes);row.appendChild(td);return td;};
+      cell(text(doc,'strong','',line.name));cell(text(doc,'span','',String(line.quantity)));
+      const ok=checkbox('Conforme — à emballer : '+line.name,true),bad=checkbox('Non conforme — à retourner : '+line.name),missing=checkbox('Non reçu : '+line.name,false,'Non reçu');
+      const received=qty('Quantité reçue : '+line.name,line.quantity,line.quantity),rejected=qty('Quantité à retourner : '+line.name,0,line.quantity);
+      const confirmed=checkbox('Quantité confirmée : '+line.name),manual=checkbox('Contrôle visuel sans scanner (code illisible ou indisponible) : '+line.name,false,'Visuel');
+      const scan=doc.createElement('input');scan.type='text';scan.maxLength=128;scan.autocomplete='off';scan.placeholder='Code fournisseur';scan.setAttribute('aria-label','Code physique '+line.name);
+      const proof=doc.createElement('div');proof.className='kmc-quality-v3-inline';proof.append(scan,manual.wrap);
+      const receiveCell=cell();const receiveControls=doc.createElement('div');receiveControls.className='kmc-quality-v3-inline';receiveCell.appendChild(receiveControls);
+      if(line.quantity===1)receiveControls.appendChild(missing.wrap);
+      else receiveControls.append(received.wrap,confirmed.wrap);
+      cell(ok.wrap);
+      const returnCell=cell();const returnControls=doc.createElement('div');returnControls.className='kmc-quality-v3-inline';returnControls.appendChild(bad.wrap);
+      if(line.quantity>1)returnControls.appendChild(rejected.wrap);
+      returnCell.appendChild(returnControls);cell(proof);tbody.appendChild(row);
+      const f={line,ok,bad,missing,received,rejected,confirmed,manual,scan,proof};fields.push(f);
+      const change=()=>{context.markQualityDirty?.();sync();};
+      ok.input.addEventListener('change',()=>{bad.input.checked=!ok.input.checked;if(missing.input.checked){received.input.value=String(line.quantity);confirmed.input.checked=false;}missing.input.checked=false;rejected.input.value=ok.input.checked?'0':received.input.value;change();});
+      bad.input.addEventListener('change',()=>{ok.input.checked=!bad.input.checked;if(missing.input.checked){received.input.value=String(line.quantity);confirmed.input.checked=false;}missing.input.checked=false;rejected.input.value=bad.input.checked?received.input.value:'0';change();});
+      missing.input.addEventListener('change',()=>{ok.input.checked=!missing.input.checked;bad.input.checked=false;received.input.value=missing.input.checked?'0':'1';rejected.input.value='0';change();});
+      received.input.addEventListener('input',()=>{confirmed.input.checked=false;if(Number(rejected.input.value)>Number(received.input.value))rejected.input.value=received.input.value;bad.input.checked=Number(rejected.input.value)>0;ok.input.checked=!bad.input.checked&&Number(received.input.value)>0;change();});
+      rejected.input.addEventListener('input',()=>{bad.input.checked=Number(rejected.input.value)>0;ok.input.checked=!bad.input.checked;change();});
+      confirmed.input.addEventListener('change',change);
+      manual.input.addEventListener('change',()=>{if(manual.input.checked)scan.value='';change();});
+      scan.addEventListener('input',change);
+    }
+    const totals=text(doc,'p','kmc-workspace-note','');totals.setAttribute('role','status');
+    const button=makeActionButton(doc,'Valider la réception','receive-supplier-v3');
+    const footer=doc.createElement('div');footer.className='kmc-quality-v3-footer';footer.append(totals,button);card.appendChild(footer);
+    let sending=false;
+    const collect=()=>fields.map(f=>{
+      const received=f.received.input.value===''?NaN:Number(f.received.input.value),rejected=f.rejected.input.value===''?NaN:Number(f.rejected.input.value);
+      return {product_sku_id:f.line.sku,received_quantity:received,rejected_quantity:rejected,quantity_confirmed:f.line.quantity===1||f.confirmed.input.checked,
+        ...(received>rejected?(f.manual.input.checked?{evidence_method:'MANUAL',evidence_ref:'Contrôle visuel attesté : code illisible ou scanner indisponible'}:{evidence_method:'SCAN',evidence_code:f.scan.value.trim()}):{})};
+    });
+    function sync(){
+      const observations=collect();
+      let valid=true,good=0,bad=0,missing=0;
+      for(const [i,o] of observations.entries()){
+        const f=fields[i],r=o.received_quantity,b=o.rejected_quantity;
+        f.rejected.wrap.hidden=!f.bad.input.checked;
+        f.proof.hidden=!(r>b);f.scan.disabled=f.manual.input.checked||sending;
+        if(!Number.isSafeInteger(r)||!Number.isSafeInteger(b)||r<0||r>f.line.quantity||b<0||b>r||!o.quantity_confirmed||(r>b&&!o.evidence_code&&!o.evidence_ref))valid=false;
+        if(Number.isSafeInteger(r)&&Number.isSafeInteger(b)){good+=r-b;bad+=b;missing+=f.line.quantity-r;}
+      }
+      totals.textContent=good+' à emballer · '+bad+' à retourner · '+missing+' manquant(s)';
+      button.disabled=sending||!valid;
+    }
+    button.addEventListener('click',async()=>{
+      if(button.disabled||sending)return;
+      if(!context.confirm('Confirmez que ces quantités et leur état correspondent aux articles réellement contrôlés.'))return;
+      const observations=collect();sending=true;context.markQualityDirty?.();
+      const inputs=Array.from(card.querySelectorAll('input'));for(const input of inputs)input.disabled=true;sync();
+      const key='v3:'+receipt.purchase_order_id;
+      try{
+        await runAction(context,button,{url:endpointFor(context.marketCode,'supply/receipt-checks'),body:{
+          purchase_order_id:receipt.purchase_order_id,reference:receptionReferenceFor(context,key),physical_confirmed:true,observations
+        },onSuccess:()=>{context.receiveRefs.delete(key);context.clearQualityDirty?.();},successMessage:'Réception contrôlée et enregistrée.'});
+      }catch(_){sending=false;for(const input of inputs)input.disabled=false;sync();}
+    });
+    sync();return card;
+  }
+  function renderSupplierReturnsV3(doc,context,checks,po){
+    const section=doc.createElement('section');section.setAttribute('data-hub-supplier-returns-v3','');
+    section.appendChild(text(doc,'h3','','Retours fournisseur'));
+    for(const line of checks||[]){
+      if(!Number(line.rejected_quantity))continue;
+      const name=(po.lines||[]).find(x=>String(x.product_sku_id)===String(line.product_sku_id))?.product||line.product_sku_id;
+      const row=doc.createElement('div');
+      row.appendChild(text(doc,'strong','',name+' · '+line.to_return_quantity+' à retourner · '+line.returned_quantity+' retourné(s)'));
+      const remaining=Number(line.to_return_quantity);
+      if(remaining>0){
+        const input=doc.createElement('input');input.type='number';input.min='1';input.max=String(remaining);input.value=String(remaining);input.setAttribute('aria-label','Quantité à retourner pour '+name);
+        const button=makeActionButton(doc,'Confirmer le retour physique','supplier-return-v3');
+        input.addEventListener('input',()=>{context.markQualityDirty?.();const n=Number(input.value);button.disabled=!Number.isSafeInteger(n)||n<1||n>remaining;});
+        button.addEventListener('click',()=>{const n=Number(input.value);if(button.disabled||!Number.isSafeInteger(n)||n<1||n>remaining)return;
+          const key='return:'+line.line_id;
+          runAction(context,button,{url:endpointFor(context.marketCode,'supply/receipt-check-lines/'+encodeURIComponent(line.line_id)+'/returns'),body:{reference:receptionReferenceFor(context,key),quantity:n,physical_confirmed:true},
+            confirmMessage:'Confirmez la remise physique au fournisseur.',onSuccess:()=>{context.receiveRefs.delete(key);context.clearQualityDirty?.();},successMessage:'Retour physique attesté.'}).catch(()=>{});
+        });
+        if(remaining>1)row.appendChild(input);row.appendChild(button);
+      }
+      section.appendChild(row);
+    }
+    if(section.children.length===1)section.appendChild(text(doc,'p','kmc-workspace-note','Aucun article refusé.'));
+    return section;
+  }
+
   async function mountReceptionActions(host,{document:doc,fetch:fetchFn,user,marketCode,poId,onChange,receiveRefs=new Map(),compactPO=false}={}){
     if(!['admin','agent_hub'].includes(user?.role)||!poId)throw Error('Accès réception Hub requis');
     const feedback=text(doc,'p','kmc-workspace-feedback','');
@@ -1090,8 +1220,8 @@
     feedback.setAttribute('role','status');
     const slot=doc.createElement('div');
     host.replaceChildren(feedback,slot);
-    let pending=false;
-    const context={root:host,fetch:fetchFn,marketCode,receiveRefs,compactPO,confirm:message=>doc.defaultView.confirm(message)};
+    let pending=false,qualityDirty=false;
+    const context={root:host,fetch:fetchFn,marketCode,receiveRefs,compactPO,markQualityDirty:()=>{qualityDirty=true;},clearQualityDirty:()=>{qualityDirty=false;},confirm:message=>doc.defaultView.confirm(message)};
     const reload=async()=>{
       pending=true;
       try{
@@ -1103,8 +1233,16 @@
         if(!po||!dossier.cockpit?.viewer)throw Error('Dossier PO indisponible ou accès refusé');
         const receipt=(receivable.purchase_orders||[]).find(p=>String(p.purchase_order_id)===String(poId));
         slot.replaceChildren();
-        if(receipt)slot.appendChild(createReceptionCard(doc,context,receipt));
+        let quality=null;
+        try{
+          if(dossier.supplier_quality_v3_enabled===true)quality=await jsonRequest(fetchFn,endpointFor(marketCode,'supply/receipt-checks')+'?purchase_order_id='+encodeURIComponent(poId));
+        }catch(error){
+          // Only explicit disabled response permits the historical path.
+          if(error.code!=='HUB_QUALITY_V3_DISABLED')throw error;
+        }
+        if(receipt)slot.appendChild(quality?.eligible?renderQualityReceiptV3(doc,context,receipt):createReceptionCard(doc,context,receipt));
         else slot.appendChild(text(doc,'p','kmc-workspace-note','Aucune quantité en attente dans cette PO. Consultez les quantités et écarts du Kanban.'));
+        if(quality?.eligible)slot.appendChild(renderSupplierReturnsV3(doc,context,quality.checks,po));
         slot.appendChild(renderReceiptQuality(doc,context,dossier,poId));
         slot.appendChild(renderArticleLabelActions(doc,context,receptionLabelRows(dossier,poId).filter(sourceQualityChecked)));
         await onChange?.(dossier);
@@ -1112,7 +1250,7 @@
     };
     context.reload=reload;
     await reload();
-    return {reload,busy:()=>pending};
+    return {reload,busy:()=>pending||qualityDirty};
   }
 
   function receptionOrdersForMarket(dossier,receivable){
@@ -3673,6 +3811,7 @@
     mountPurchaseActions,
     mountVarianceActions,
     mountReceptionActions,
+    qualityReceiptRows,
     mountBoxActions,
     mountDepartureActions,
     departureBoxes,
