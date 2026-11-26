@@ -1,6 +1,6 @@
 # Doctrine économique Komerce
 
-> **Version** : 3.0 — 2026-09-08  
+> **Version** : 4.0 — 2026-11-26
 > **Statut** : document fondamental canonique  
 > **Classification des charges** : `DOCTRINE_CLASSIFICATION_CHARGES.md`  
 > **Flux / équilibre** : `DOCTRINE_FLUX_CONTRIBUTION_POINT_EQUILIBRE.md`  
@@ -73,7 +73,7 @@ Exemples : Hub régional, Railway, équipe centrale, outils SaaS communs, infras
 
 ## 3. Allocation et causalité
 
-Le niveau d'engagement d'une charge ne change pas sa nature.
+Le niveau d'engagement d'une charge ne change pas sa nature. Elle est qualifiée à l'échelle d'activité pertinente : un forfait par expédition est direct à l'expédition sans être nécessairement variable par article. Le coût par article dépend du remplissage constaté.
 
 ```text
 frais paiement commande
@@ -81,7 +81,7 @@ frais paiement commande
 → réparti une seule fois sur les articles concernés
 
 fret shipment
-→ VARIABLE + DIRECT au shipment
+→ DIRECT au shipment ; nature variable, forfaitaire ou par palier selon contrat
 → réparti une seule fois selon la règle logistique canonique
 
 Railway abonnement
@@ -303,7 +303,7 @@ Le gap monétaire est la vérité primaire. Les articles, commandes ou colis éq
 
 ## 11. Le volume et le mix modifient la vitesse de couverture
 
-La contribution unitaire d'un SKU ne baisse pas mécaniquement avec le volume.
+La contribution unitaire d'un SKU ne baisse pas mécaniquement avec le volume. Elle peut varier lorsque le coût variable imputé évolue avec le remplissage, le mix, le rail ou les paliers réels ; ne pas supposer ces volumes à l'avance.
 
 Ce qui change avec le volume global est la vitesse à laquelle la structure est absorbée.
 
@@ -353,6 +353,22 @@ Exemples de valeurs qui doivent progressivement apprendre du flux réel :
 
 ---
 
+### 12.1 Centres de coûts et observation de l'activité (décision #5280)
+
+Le centre de coûts est l'unité de responsabilité et de pilotage : responsable, ressources, familles, postes, budget versionné, engagements ouverts et dépenses constatées justifiées. Ressources et charges ne constituent pas deux vérités concurrentes. Un engagement restant n'est pas une charge réalisée ; son règlement économique consomme la part correspondante de l'engagement sans double compte. La charge réelle de période demeure un fait canonique append-only. Le cash, les achats de marchandises, les investissements/amortissements, remboursements et taxes collectées sont distingués ; la consolidation en EUR conserve devise source, taux et période.
+
+Le volume, le mix, la fréquence et le remplissage ne sont pas présumés. Un transport peut être forfaitaire par expédition, à la tranche ou réellement proportionnel. L'expédition arrivée au relais et clôturée est l'unité d'observation logistique, non la seule source de coûts : l'activité locale est distinguée et les charges de période existent même sans expédition. Clôture physique et maturité/clôture économique sont distinctes ; les frais tardifs créent une régularisation traçable, sans réécrire les snapshots de commande. Les clés causales versionnées conservent chaque montant et exposent les résidus non imputés.
+
+Le statut de connaissance (certain contractuel, estimé sourcé, constaté/réconcilié) est distinct de la nature technique MEASURE/ASSUMPTION/POLICY/COST/DERIVED et de l'état de maturité. Il accompagne la source, la date, le périmètre, la suffisance et le caractère provisoire ou régularisé. Un budget certain n'est pas un réel certain ; l'absence de preuve n'est jamais un zéro. Les estimations restent séparées de l'observé.
+
+### 12.2 Apprentissage économique et référence complète
+
+Sur une assiette comparable, un coefficient complet observé est le ratio des sommes (achats + charges imputées pertinentes) / achats, non une moyenne simple de ratios. Publier le dénominateur, le périmètre, la couverture, les effectifs et volumes, ainsi que la dispersion ; dénominateur nul ou preuves insuffisantes : non calculable ou provisoire, pas de chiffre faussement décisionnel. Les séries mensuelles, trimestrielles, annuelles à date et glissantes distinguent tendances récentes et cumul. Le lissage seul ne prouve pas la convergence. Ventiler par marché/rail/famille seulement sur données comparables et suffisantes.
+
+La capacité normale se mesure progressivement ; ne pas inventer une capacité au lancement. Quand elle est défendable, isoler la sous-activité sans la retirer du résultat global ; sinon libeller « sous-activité incluse / non isolée ». Les charges de période non imputées, y compris sans expédition, restent visibles dans le rapprochement global. L'indicateur complet est une référence analytique et ne constitue ni dette fixe intrinsèque d'un SKU ni prix automatique. La contribution variable et la couverture globale restent distinctes. Les gardes de sélection estimée/constatée sont définies dans DOCTRINE_PRICING_ANCRE_MARCHE_VIABILITE.md.
+
+---
+
 ## 13. Propagation automatique
 
 Toute modification d'un levier économique doit provoquer un recalcul serveur de ses impacts.
@@ -389,43 +405,7 @@ SOURCE MÉTIER → MOTEUR → AGRÉGATEUR → WORKSPACE / DASHBOARD
 
 ## 14. Contrat UI de l'Atelier
 
-La page principale ne doit montrer que ce qui aide à comprendre ou à décider.
-
-### En haut : quelques indicateurs dérivés
-
-Maximum attendu :
-
-- charges à couvrir ;
-- contribution générée ;
-- couverture ;
-- reste à couvrir ;
-- contribution moyenne / article ;
-- éventuellement unités équivalentes restantes au mix actuel.
-
-Les valeurs dérivées sont non éditables et visuellement plus discrètes.
-
-### Zone charges
-
-Deux lectures simples :
-
-- charges fixes directes ;
-- charges mutualisées avec clé d'allocation visible.
-
-Une porte d'entrée permet d'affiner, compléter et administrer les catégories sans surcharger la page principale.
-
-### Zone portefeuille
-
-Par catégorie puis produit / SKU :
-
-- coût d'achat ;
-- coût variable complet ;
-- borne basse / cible / haute / très haute ;
-- prix décidé ;
-- contribution unitaire ;
-- quantité réelle / projetée ;
-- contribution totale générée.
-
-Les champs actionnables sont visuellement distincts des résultats dérivés.
+Le contrat détaillé unique est DOCTRINE_ATELIER_ECONOMIQUE_UI.md : cockpit à trois onglets, Centres de coûts V7 (cartes puis centre, famille et poste), Activité et Rentabilité V6 strictement conservées. Les trois onglets partagent la vérité serveur, le marché et la période. Les valeurs dérivées sont non éditables ; les coûts opérationnels viennent de leurs autorités propriétaires. Le pricing par produit reste dans sa surface de décision autorisée, sans dupliquer le cockpit. Aucun changement de prix automatique.
 
 ---
 

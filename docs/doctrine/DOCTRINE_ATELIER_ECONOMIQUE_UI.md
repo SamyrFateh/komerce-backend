@@ -1,100 +1,43 @@
 # Doctrine — Atelier économique Komerce
 
-> **Statut : FIGÉ — contrat UI de pilotage économique**  
-> **Date : 2026-09-08**  
+> **Statut : FIGÉ — contrat UI de pilotage économique V7/V6**
+> **Date : 2026-11-26**
 > **Surface : Pricing Workspace / Atelier économique**
+> **Validation propriétaire :** [#5280](https://github.com/SamyrFateh/komerce-backend/issues/5280). Contrat cible, non preuve de livraison.
 
-## 1. Règle de surface
+## 1. Règle de surface et parcours
 
-L’Atelier économique est un **Workspace de décision**. Il ne doit pas devenir un dashboard rempli d’indicateurs.
+L'Atelier économique est un workspace unique de gestion et de décision. Les valeurs dérivées sont non éditables et calculées côté serveur. La présentation V7 remplace les trois blocs de charges et la longue arborescence de l'ancien contrat ; les deux autres onglets conservent le V6.
 
-La page principale n’affiche que :
+**Socle commun :** un cockpit canonique partagé Hub/marchés selon habilitation, exactement trois onglets : Centres de coûts / Activité / Rentabilité. En-tête navy, accents teal, fonds clairs, cartes compactes, statuts contextualisés et montants alignés. Filtres marché et période communs, données synchronisées côté serveur. Direction : consolidation EUR et filtre tous marchés ; responsable : uniquement périmètre autorisé et écritures locales selon capacités ; quotes-parts centrales en lecture seule côté marché. Pas de double saisie ni de second cockpit. Desktop responsive 1280/1440/1920 sans scroll horizontal ni repaint destructeur. Marchés dynamiques, devise locale ; fixtures indépendantes KM/CM/CG/DJ/YT exclusivement staging isolé, sans activation commerciale.
 
-- les quelques valeurs nécessaires pour comprendre l’équilibre ;
-- les leviers sur lesquels un opérateur peut réellement agir ;
-- les conséquences recalculées automatiquement par le moteur.
+**Onglet 1 — Centres de coûts V7 (seule modification visuelle par rapport au V6)**
+- Niveau 1 : quatre KPI budget, engagements ouverts, charges constatées hors achat marchandises, disponible (budget − engagé − réalisé). Vue synthétique par cartes de centres (exemples : relais local, transport et douane, Hub central, services centraux), grille compacte deux colonnes, réalisé mis en évidence, budget et engagements, barre réalisé/engagé/disponible, situation/écarts et action Gérer ou Consulter selon habilitation. Filtre des centres en écart.
+- Niveau 2 : ouvrir un centre dédié avec fil d’Ariane et retour Tous les centres ; KPI du seul centre ; familles présentées en sélecteurs/onglets contextuels ; une seule famille active avec tableau de ses postes (budget, engagé restant, réalisé, situation). Pas d'arborescence géante centre/famille/poste sur la même page. Familles et centres extensibles selon référentiel.
+- Niveau 3 : détail contextualisé du poste (ressource, responsable, nature fixe/variable/mixte, direct/mutualisé, preuve, statut de connaissance, disponible, historique). Saisie d'une charge constatée, d'un engagement ou d'une révision budgétaire ; création de poste dans la famille active ; justificatif/motif obligatoire ; possibilité de solder partiellement un engagement lié sans double compte ; contrôles de montants et droits. Ressources intégrées dans leur centre/famille, aucun menu supplémentaire. Les coûts opérationnels et quotes-parts sont alimentés par leur source propriétaire, pas ressaisis.
+- Le prototype V7 était autonome : dans l'implémentation, relier ses saisies à la même source canonique que les deux autres onglets ; conserver le contexte sans mélange de marchés.
 
-Les valeurs dérivées sont visuellement plus discrètes / grisées et ne sont jamais éditables.
+**Onglet 2 — Activité V6 strictement conservée**
+- KPI expéditions arrivées/clôturées, poids et volume, articles et COMBOX, fret + douane constatés.
+- Tableau des expéditions de période : référence/rail, poids, achats, fret + douane, coût/kg, volume et articles ; total pondéré. Réconciliation achats + fret/douane + autres charges = coût complet de période ; variabilité min/max et valeur pondérée du coût logistique/kg. Clôture physique distincte de la clôture économique et régularisations tardives. Aucune ressaisie opérationnelle. Conserver présentation, structure, navigation et interactions V6.
 
-## 2. Classification canonique des charges
+**Onglet 3 — Rentabilité V6 strictement conservée**
+- KPI ventes nettes, contribution variable, résultat économique, coefficient du mois. Courbes coefficient mensuel, cumul pondéré et glissant trois mois ; sélecteurs mois/trimestre/année à date ; couverture (expéditions, achats, poids) et statut de connaissance visibles. Ratio des sommes sur assiette comparable, jamais moyenne simple des coefficients ; absence de données ≠ zéro.
+- Formation du résultat mensuel (ventes nettes, achats, charges variables, contribution, charges de structure, résultat), couverture de structure et reste à couvrir, coefficient glissant, mention sous-activité incluse/non isolée si référence insuffisante. Coefficient complet indicatif et non tarif automatique ; gardes détaillées dans sourcing/catalogue. Conserver présentation, structure, navigation et interactions V6. La séparation effective des coûts mixtes et la cohérence des cohortes doivent être garanties par le serveur ; les simplifications fictives du prototype ne deviennent pas des règles de calcul.
+- Ne pas modifier les onglets 2/3 sous prétexte d'optimisation du premier. Toute nécessité technique doit préserver le contrat UX et la vérité économique.
 
-Chaque charge porte deux axes indépendants :
+**Critères supplémentaires ECO-2/ECO-6 :** vérification des cartes et totaux, drill-down centre → famille → poste → saisie → retour, filtre écarts, soldes partiels, droits lecture/écriture, synchronisation immédiate des trois onglets après opération et changement de périmètre, fidélité visuelle V7/V6. Captures Chromium aux trois largeurs desktop. Pas de régression fonctionnelle ni de faux PASS. La validation du mock est acquise, la certification technique reste à démontrer.
 
-```text
-nature       = VARIABLE | FIXED
-périmètre    = DIRECT | MUTUALIZED
-allocation   = article | commande | colis | usage | poids | valeur | GMV | période | autre clé gouvernée
-```
+## 2. Nature, périmètre, allocation et connaissance
 
-`MUTUALIZED` n’est jamais une nature de charge.
+Les axes restent indépendants : VARIABLE/FIXED (composantes des coûts mixtes séparées), DIRECT/MUTUALIZED, clé causale gouvernée. Un coût direct à une expédition n'est pas automatiquement proportionnel à chaque article. Les quotes-parts sont une vérité serveur, jamais un calcul navigateur. Les statuts certain, estimé et constaté ne confondent pas budget, engagement, mesure, politique et résultat calculé. Aucun vocabulaire N1/N2/N3 en UI canonique.
 
-Une charge mutualisée peut donc être :
+## 3. Décision produit sans deuxième cockpit
 
-- `VARIABLE + MUTUALIZED` ;
-- `FIXED + MUTUALIZED`.
+La surface de décision produit autorisée (catalogue/sourcing/pricing selon ownership) garde coût d'achat, coût variable estimé ou constaté, preuve de marché, prix commercial décidé et contribution. Le prix demeure une décision explicite, versionnée et auditée, sous les gardes existantes et la double garde cible de sélection ; aucune modification automatique. Les coûts et allocations sont modifiables seulement par leur autorité propriétaire. Les charges fixes ne sont pas une dette intrinsèque SKU. Une évolution de cette surface n'ajoute pas d'onglet ou de saisie redondante au cockpit.
 
-Toute charge mutualisée est rattachée à une **quote-part Market ID** selon sa clé d’allocation. La quote-part est une vérité moteur / serveur, pas un calcul navigateur.
+## 4. Invariants visuels et recette
 
-## 3. Les trois blocs visibles de charges
+Valeurs dérivées visuellement distinctes des actions autorisées ; aucun recalcul économique navigateur. Ne jamais transformer une référence globale en fait local. Fixtures fictives, versionnées, idempotentes et cohérentes sur plusieurs périodes, idéalement douze, selon [le complément de recette #5280](https://github.com/SamyrFateh/komerce-backend/issues/5280#issuecomment-7180049833). Validation desktop réelle Chromium, readback API et PostgreSQL sur le même SHA ; les captures et gestes du contrat V7/V6 sont la référence, aucune réinterprétation. Aucune activation commerciale de marché de test.
 
-La page principale expose exactement :
-
-1. **Coûts variables** — directs et mutualisés ; ils déterminent le coût variable complet et l’espace de contribution.
-2. **Charges fixes directes** — structure propre au marché.
-3. **Charges fixes mutualisées** — structure partagée, avec coût global, clé d’allocation et quote-part du Market ID.
-
-L’exceptionnel et le détail des lignes restent accessibles dans la porte **Affiner les catégories de charges, hypothèses et preuves**.
-
-## 4. Chaîne produit
-
-La lecture produit est :
-
-```text
-coût d’achat
-→ coûts variables hors achat
-→ coût variable complet
-→ borne marché basse / cible / haute
-→ prix final marché retenu
-→ contribution unitaire
-```
-
-`Coûts variables hors achat` et `coût variable complet` sont calculés par le moteur. Ils sont grisés et non éditables dans le tableau produit.
-
-## 5. Levier de décision produit
-
-Sur la page principale, **le seul levier produit directement manipulable est le prix final marché retenu**.
-
-Le responsable marché peut le monter ou le descendre dans le cadre de la preuve marché. Toute modification déclenche un recalcul serveur de :
-
-- contribution unitaire ;
-- contribution portefeuille ;
-- couverture ;
-- reste à couvrir ;
-- résultat / équilibre.
-
-Les coûts d’achat, charges, clés d’allocation et mutualisations restent modifiables dans leurs panneaux de gestion dédiés, jamais comme sliders concurrents dans la ligne SKU.
-
-## 6. Indicateurs de tête
-
-La surface principale reste volontairement courte :
-
-- charges structurelles à couvrir ;
-- contribution générée ;
-- couverture ;
-- reste à couvrir ;
-- contribution moyenne / article.
-
-Les détails articles / commandes / colis et les équivalents restent secondaires et repliables.
-
-## 7. Invariants visuels
-
-- **Gris léger** : calculé par le moteur, non éditable.
-- **Blanc / contour actif** : décision ou paramètre réellement manipulable.
-- **Prix final marché retenu** : levier produit clairement mis en évidence.
-- La référence globale reste informative et ne devient jamais silencieusement une vérité locale.
-- Aucune valeur économique n’est recalculée dans le navigateur.
-- Aucun N1/N2/N3 n’est utilisé comme catégorie métier.
-
-## 8. Phrase de contrôle
-
-> **Le marché borne le prix. Les coûts variables déterminent l’espace de contribution. Les articles génèrent la contribution. Le portefeuille couvre les charges fixes directes et mutualisées. Toute mutualisation est allouée par Market ID.**
+> **Le marché borne le prix ; les centres de coûts maîtrisent les dépenses ; l'activité observée apprend le coût ; le portefeuille couvre les charges de structure.**
