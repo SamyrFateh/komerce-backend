@@ -9,7 +9,7 @@
  * @depends       db.js, services/economic-cost-write-authority.js, services/market-structure-charge-reference.js, services/market-delegation-service.js
  * @used-by       routes/admin-pricing-workspace.js, services/market-provisioning-service.js
  * @db-read       markets, economic_cost_centers, economic_cost_families, economic_cost_resources, economic_cost_posts
- * @db-write      economic_cost_centers, economic_cost_families, economic_cost_resources, economic_cost_posts
+ * @db-write      economic_cost_centers, economic_cost_families, economic_cost_posts
  * @db-write-via:market-structure-charge-reference charges
  * @db-write-via:market-delegation-service market_delegation_audit
  * @db-txn        service_owned_transaction

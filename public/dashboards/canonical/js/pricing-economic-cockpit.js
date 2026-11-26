@@ -94,11 +94,19 @@
       if(center)heading.append(button('Tous les centres',()=>{state.centerId=null;state.familyId=null;state.postId=null;render();}));
       host.append(heading,metrics(center?center.budgetSummary:model?.budgetSummary,center?center.commitmentSummary:model?.commitmentSummary,center?center.structureEvidence:model?.structureEvidence));
       if(!center){
+        if(canCost(model,'reference')&&typeof actions.initializeReferences==='function'){
+          const feedback=el(doc,'p','kmc-v7-coverage');feedback.setAttribute('role','status');
+          const initialize=button('Initialiser les centres et familles',async()=>{
+            initialize.disabled=true;
+            try{await actions.initializeReferences();}catch(e){feedback.textContent=e.message||'Initialisation refusée.';}finally{initialize.disabled=false;}
+          });
+          host.append(initialize,feedback);
+        }
         const grid=el(doc,'div','kmc-v7-center-grid');
         for(const c of centers){
           const card=el(doc,'article','kmc-v7-center-card');
           card.append(el(doc,'h4','',c.label),el(doc,'p','',c.is_active?'Centre actif':'Centre à configurer'),
-            metric('Charges constatées','À rapprocher'),metric('Budget enregistré (EUR)',budgetText(c.budgetSummary)),metric('Engagements ouverts (EUR)',commitmentTotal(c.commitmentSummary)),
+            metric('Charges constatées',structureText(c.structureEvidence)),metric('Budget enregistré (EUR)',budgetText(c.budgetSummary)),metric('Engagements ouverts (EUR)',commitmentTotal(c.commitmentSummary)),
             el(doc,'p','kmc-v7-coverage','Couverture économique non rapprochée'));
           card.append(button('Consulter',()=>{state.centerId=c.id;state.familyId=null;state.postId=null;render();}));
           grid.append(card);
@@ -456,6 +464,7 @@
           openCommitment:(id,body)=>mutate('commitment','/posts/'+encodeURIComponent(id)+'/commitments',body),
           recordActual:(id,body)=>mutate('actual','/posts/'+encodeURIComponent(id)+'/actuals',body),
           createPost:(id,body)=>mutate('reference','/families/'+encodeURIComponent(id)+'/posts',body),
+          initializeReferences:()=>mutate('reference','/initialize',{}),
           moveCommitment:(id,body)=>mutate(body.kind==='CONSUME_STRUCTURE'?'consume':'commitment','/commitments/'+encodeURIComponent(id)+'/movements',body)
         };
         content.append(createV7V6Tabs(doc,model,active,key=>{active=key;},actions));

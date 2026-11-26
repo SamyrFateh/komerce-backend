@@ -24,7 +24,7 @@ test('global grant required for group; role alone does not grant it',async()=>{
   expect(mockQuery.mock.calls[1][0]).toBe('ROLLBACK');
 });
 test('market delegation resolves exact market and no other scope is queried',async()=>{
-  mockAuthz.mockResolvedValue({market_id:'market-CM'});
+  mockAuthz.mockImplementation(async(_client,{requiredCapability})=>{if(requiredCapability!=='pricing.read')throw Object.assign(new Error('read only'),{status:403});return {market_id:'market-CM'};});
   mockQuery.mockResolvedValueOnce(ok());projection([],[],[],true);
   const result=await readCostCenters({id:'member',role:'market_operator'},{marketCode:'CM',periodStart:month});
   expect(mockAuthz).toHaveBeenCalledWith(client,{userId:'member',marketCode:'CM',requiredCapability:'pricing.read'});
