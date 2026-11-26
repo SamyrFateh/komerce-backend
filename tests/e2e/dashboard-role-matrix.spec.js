@@ -30,7 +30,7 @@ const EXPECTED = Object.freeze({
     'flow-operations', 'workspace-shipping',
     'flow-finance', 'workspace-accounting',
     'live-hub',
-    'market-autonomy', 'market-catalog', 'unsold',
+    'market-autonomy', 'market-catalog',
     'admin-providers', 'settings',
   ],
   agent_hub: ['action-center', 'workspace-shipping', 'live-hub'],
@@ -52,7 +52,7 @@ const ROLE_HOME = Object.freeze({
   support: '/portail',
 });
 
-async function mount(page, role) {
+async function mount(page, role, adminContext = null) {
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
     if (url.pathname === PAGE_PATH) {
@@ -61,7 +61,8 @@ async function mount(page, role) {
         body: `<!doctype html><html lang="fr"><head><meta charset="utf-8"></head>
           <body data-admin-generation="canonical">
             <main id="canonical-admin-root"></main>
-            <script>window.KOMERCE_CANONICAL_AUTH_USER=${JSON.stringify({ role })};</script>
+            <script>window.KOMERCE_CANONICAL_AUTH_USER=${JSON.stringify({ role })};
+              window.KOMERCE_CANONICAL_ADMIN_CONTEXT=${JSON.stringify(adminContext)};</script>
             <script src="/dashboards/canonical/js/navigation-policy-v4.js"></script>
           </body></html>`,
       });
@@ -125,7 +126,7 @@ test.describe('Navigation V4 — matrice des 8 rôles', () => {
   });
 });
 
-test('navigation Chromium Responsable marché : mêmes menus, routes alternatives sûres',async({page})=>{
+test('navigation Chromium Responsable marché sans operations.read masque Invendus',async({page})=>{
   await mount(page,'market_operator');
   const links=Object.fromEntries(await page.$$eval('.kmc-admin-primary-link',
     els=>els.map(e=>[e.dataset.dashboard,e.getAttribute('href')])));
@@ -136,7 +137,7 @@ test('navigation Chromium Responsable marché : mêmes menus, routes alternative
   expect(links['live-import-runtime']).toBeUndefined();
   expect(links['live-relais']).toBeUndefined();
   expect(links['live-hub']).toBe('/admin/hub');
-  expect(links.unsold).toBe('/dashboards/canonical/unsold.html');
+  expect(links.unsold).toBeUndefined();
   expect(links['admin-providers']).toContain('#market-providers');
   expect(links.settings).toContain('#market-cash-control');
   const hrefs=Object.values(links);
@@ -144,4 +145,12 @@ test('navigation Chromium Responsable marché : mêmes menus, routes alternative
   expect(Object.values(links)).not.toContain('/admin/workspaces/purchasing');
   expect(Object.values(links)).not.toContain('/admin/import-runtime');
   expect(Object.values(links)).not.toContain('/admin/settings');
+});
+
+test('navigation Chromium Responsable marché avec operations.read ouvre Invendus',async({page})=>{
+  await mount(page,'market_operator',{
+    access:{mode:'market',defaultMarket:'CM',delegatedCapabilities:{CM:['operations.read']}},
+  });
+  const link=page.locator('.kmc-admin-primary-link[data-dashboard="unsold"]');
+  await expect(link).toHaveAttribute('href','/dashboards/canonical/unsold.html');
 });
