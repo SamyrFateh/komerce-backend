@@ -197,7 +197,8 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     } })).toBe('Hub · CM, CG');
     expect(nav.hubMarketScopeLabel({ access: { mode: 'global' } })).toBe('Global · Tous les marchés');
     expect(nav.hubMarketScopeLabel({ access: { mode: 'hub' } })).toBe('Global · Tous les marchés');
-    expect(nav.hubMarketScopeLabel(null, { role: 'admin' })).toBe('Global · Tous les marchés');
+    expect(nav.hubMarketScopeLabel(null, { role: 'admin' })).toBe('Hub · Périmètre non déterminé');
+    expect(nav.hubMarketScopeLabel(marketAdminContext([]), { role: 'admin' })).toBe('Hub · CM');
   });
 
   test('admin sees domain groups (Commerce / Opérations / Finance) with existing destinations only', () => {
@@ -468,5 +469,53 @@ describe('Navigation Live — trois métiers, onglets contextuels uniques', () =
     const nav = loadPolicy();
     expect(nav._localTabsFor('live', { role: 'admin' }).map(tab => tab.label)).toEqual(labels);
     expect(nav._activeLocalTab('live', pathname.includes('hub') ? 'hub-live' : 'relais-live')).toBe(active);
+  });
+});
+
+
+describe('CANON-MARKET — selected market authority for navigation', () => {
+  const context = { access: {
+    mode: 'market', allowedMarkets: ['CM', 'CG'], defaultMarket: 'CM',
+    delegatedCapabilities: { CM: ['client.read', 'operations.read'], CG: ['finance.read'], DJ: ['operations.read'] },
+  } };
+
+  function withSearch(search, run) {
+    const descriptor = Object.getOwnPropertyDescriptor(global, 'location');
+    Object.defineProperty(global, 'location', { configurable: true, writable: true, value: { search } });
+    try { run(); } finally {
+      if (descriptor) Object.defineProperty(global, 'location', descriptor);
+      else delete global.location;
+    }
+  }
+
+  test('selected authorized market wins over default and explicit target remains validated', () => {
+    const nav = loadPolicy();
+    withSearch('?market=CG', () => {
+      expect(nav.hasCapability(context, 'finance.read')).toBe(true);
+      expect(nav.hasCapability(context, 'operations.read')).toBe(false);
+      expect(nav.hasCapability(context, 'operations.read', 'CM')).toBe(true);
+      expect(nav.hasCapability(context, 'operations.read', 'DJ')).toBe(false);
+      expect(nav.hubMarketScopeLabel(context)).toBe('Hub · CG');
+      const links = nav.sidebarGroupsFor({ role: 'market_operator' }, context).flatMap(g => g.items);
+      expect(links.some(i => i.id === 'unsold')).toBe(false);
+    });
+  });
+
+  test('unauthorized selection never silently falls back to default', () => {
+    const nav = loadPolicy();
+    withSearch('?market=DJ', () => {
+      expect(nav.hasCapability(context, 'operations.read')).toBe(false);
+      expect(nav.hasCapability(context, 'finance.read')).toBe(false);
+      expect(nav.hubMarketScopeLabel(context)).toBe('Hub · Périmètre non déterminé');
+    });
+  });
+
+  test('without selection the valid server default remains usable', () => {
+    const nav = loadPolicy();
+    withSearch('', () => {
+      expect(nav.hasCapability(context, 'operations.read')).toBe(true);
+      expect(nav.hasCapability(context, 'finance.read')).toBe(false);
+      expect(nav.hubMarketScopeLabel(context)).toBe('Hub · CM');
+    });
   });
 });
