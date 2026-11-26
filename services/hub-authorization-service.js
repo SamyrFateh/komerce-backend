@@ -6,9 +6,9 @@
  * @criticality   critical
  * @inputs        user_id, authorization_type, purchase_order_id, proof_ref
  * @outputs       hub_authorization_grants, purchase_order_authorizations
- * @depends       db, services/documents/pdf-renderer.js
+ * @depends       db, services/documents/pdf-renderer.js, services/purchasing-grouped-service.js
  * @used-by       routes/purchasing.js, services/purchasing-engagement-service.js, services/supplier-payment-orchestrator.js
- * @db-read       hub_authorization_grants, purchase_lines, purchase_orders, purchase_order_authorizations, supplier_execution_payments, manual_purchase_executions, purchase_variance_decisions, users, suppliers, order_items, products
+ * @db-read       hub_authorization_grants, purchase_lines, purchase_orders, purchase_order_authorizations, supplier_execution_payments, manual_purchase_executions, purchase_variance_decisions, users, suppliers, order_items, orders, products
  * @db-write      hub_authorization_grants, purchase_order_authorizations, purchase_variance_decisions
  * @db-txn        owns_transaction
  * @doctrine      two_distinct_directrice_authorizations, no_implicit_power, append_only_decisions
@@ -19,6 +19,7 @@
 
 const db = require('../db');
 const { renderPdf } = require('./documents/pdf-renderer');
+const { shared: { assertCommercialPurchaseItem, commercialRead } } = require('./purchasing-grouped-service');
 
 const TYPES = Object.freeze(['purchase_commitment', 'supplier_payment']);
 
@@ -95,16 +96,19 @@ async function hasGrant(client, userId, type) {
 }
 
 async function poAmount(client, po, body) {
-  const { rows } = await client.query(
+  const { rows } = await commercialRead(client,
     `SELECT pl.quantity, pl.supplier_unit_price, pl.supplier_currency, pl.supplier_sku,
-            p.name AS product_name, s.name AS supplier_name
+            p.name AS product_name, s.name AS supplier_name,
+            oi.fulfillment_source, o.status::text AS order_status, o.payment_status::text AS payment_status
        FROM purchase_lines pl
        JOIN suppliers s ON s.id = pl.supplier_id
        JOIN order_items oi ON oi.id = pl.order_item_id
+       JOIN orders o ON o.id = oi.order_id
        LEFT JOIN products p ON p.id = oi.product_id
       WHERE pl.purchase_order_id = $1 AND pl.cancelled_at IS NULL
-      ORDER BY pl.id`, [po.id]);
+      ORDER BY o.id, oi.id, pl.id FOR SHARE OF o,oi NOWAIT`, [po.id]);
   if (!rows.length) fail(409, 'PURCHASE_ORDER_EMPTY', 'PO sans ligne');
+  rows.forEach(assertCommercialPurchaseItem);
   const priced = rows.every((r) => r.supplier_unit_price != null && r.supplier_currency);
   if (priced && new Set(rows.map((r) => r.supplier_currency)).size === 1) {
     const amount = rows.reduce((s, r) => s + Number(r.quantity) * Number(r.supplier_unit_price), 0);
