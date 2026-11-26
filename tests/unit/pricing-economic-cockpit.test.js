@@ -154,3 +154,14 @@ test('commitment forms expose only scoped canonical charge candidates and author
     expect(all(view).some(x=>x.value==='other')).toBe(false);
   }
 });
+
+test('actual entry is available only for linked structure posts and authorized actors',()=>{
+  const base={...activityModel,centers:[{id:'a',label:'Centre'}],families:[{id:'f',center_id:'a',label:'Famille'}],posts:[{id:'p',center_id:'a',family_id:'f',label:'Poste',acceptsStructureActual:true},{id:'q',center_id:'a',family_id:'f',label:'Opération',acceptsStructureActual:false}]};
+  for(const central of [false,true]){
+    const view=createV7CostCenters(doc,{...base,central},{openCommitment:jest.fn(),moveCommitment:jest.fn(),recordActual:jest.fn()});
+    find(view,'Consulter').click();find(view,'Poste').click();
+    expect(Boolean(find(view,'Enregistrer la charge'))).toBe(central);
+    find(view,'Opération').click();
+    expect(find(view,'Enregistrer la charge')).toBeUndefined();
+  }
+});

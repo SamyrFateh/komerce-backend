@@ -66,12 +66,16 @@ async function recordPostActual(actor,raw){
     const rate=await fx.convert({amount:'1',from:x.currency,to:'KMF',at,client,round:false});
     // The existing journal stores the applied rate to six decimals and KMF
     // to two decimals. Compute the amount against that exact stored rate.
-    const {rows:money}=await client.query('SELECT round($1::numeric,6)::text AS rate,round($2::numeric*round($1::numeric,6),2)::text AS kmf',[rate.amount_text,x.amountNative]);
-    if(Number(money[0].kmf)<=0||Number(money[0].rate)<=0)throw invalid();
+    const decimal=(n,scale)=>{const digits=n.toString().padStart(scale+1,'0');return digits.slice(0,-scale)+'.'+digits.slice(-scale);};
+    const r=fx.parseDecimal(rate.amount_text),a=fx.parseDecimal(x.amountNative);
+    const rateScaled=fx.roundHalfEven(r.n,r.d,6);
+    const kmfScaled=fx.roundHalfEven(a.n*rateScaled,a.d*1000000n,2);
+    if(kmfScaled<=0n||rateScaled<=0n||kmfScaled>999999999999999999n||rateScaled>999999999999999999n)throw invalid();
+    const money={rate:decimal(rateScaled,6),kmf:decimal(kmfScaled,2)};
     const fact=await recordStructureCostEvent({
       charge_id:chargeId,scope_kind:marketId?'MARKET_DIRECT':'GROUP',market_id:marketId,event_kind:'ACCRUAL',
       economic_from:from.toISOString(),economic_to:to.toISOString(),amount_original:x.amountNative,currency:x.currency,
-      fx_rate_to_kmf:money[0].rate,amount_kmf:money[0].kmf,fx_source:'FX authority · '+at.toISOString(),source_kind:'INVOICE',
+      fx_rate_to_kmf:money.rate,amount_kmf:money.kmf,fx_source:'FX authority · '+at.toISOString(),source_kind:'INVOICE',
       evidence_ref:x.evidenceRef,notes:JSON.stringify({fxLegs:rate.legs,rateAsOf:at.toISOString()})
     },actor.id,{executor:client});
     await client.query('COMMIT');return {outcome:'created',fact};

@@ -218,6 +218,11 @@
       });
       return form;
     }
+    if(post.acceptsStructureActual===true&&typeof actions.recordActual==='function'){
+      section.append(operation('Charge constatée','Enregistrer la charge',{currency:post.budget?.currency},({requestKey,...body})=>actions.recordActual(post.id,body)));
+    }else if(post.acceptsStructureActual===false){
+      section.append(el(doc,'p','kmc-v7-coverage','Réel alimenté par la source propriétaire ; aucune ressaisie.'));
+    }
     section.append(operation('Nouvel engagement','Enregistrer l’engagement',{currency:post.budget?.currency},body=>actions.openCommitment(post.id,body)));
     for(const k of post.commitments||[]){
       if(typeof k.remaining_native!=='string'||!/[1-9]/.test(k.remaining_native))continue;
@@ -416,6 +421,7 @@
         const actions={centerState,
           reviseBudget:(id,body)=>mutate('/posts/'+encodeURIComponent(id)+'/budget-revisions',body),
           openCommitment:(id,body)=>mutate('/posts/'+encodeURIComponent(id)+'/commitments',body),
+          recordActual:(id,body)=>mutate('/posts/'+encodeURIComponent(id)+'/actuals',body),
           moveCommitment:(id,body)=>mutate('/commitments/'+encodeURIComponent(id)+'/movements',body)
         };
         content.append(createV7V6Tabs(doc,model,active,key=>{active=key;},actions));
