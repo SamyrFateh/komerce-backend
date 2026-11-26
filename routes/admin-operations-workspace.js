@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        authenticated_operator, requested_market_code, workspace_action
  * @outputs       authorized_operations_workspace_projection, authorized_domain_mutations
- * @depends       db, middleware/auth, middleware/require-market-execution-capability, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/operations-workspace, services/hub-global-board
+ * @depends       db, middleware/auth, middleware/require-market-execution-capability, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/operations-workspace, services/hub-global-board, services/hub-supplier-receipt-quality, services/purchasing-completion-service
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, users, relais, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, dashboard_global_access_grants, hub_physical_units, hub_physical_unit_placements, hub_purchase_allocations, hub_box_bags, orders, purchase_orders
  * @db-write      none
@@ -246,7 +246,8 @@ router.get(
         current_expected: row.current_expected, next_action: row.next_action,
         stage_states: row.stage_states, stage_notes: row.stage_notes, physical_focus: row.physical_focus,
       }));
-      return res.json({ market: { id: market.id, code: market.code }, ...dossier, hub_journeys });
+      return res.json({ market: { id: market.id, code: market.code }, ...dossier, hub_journeys,
+        supplier_quality_v3_enabled:process.env.HUB_SUPPLIER_QUALITY_V3_ENABLED==='true'&&['admin','agent_hub'].includes(req.user?.role) });
     } catch (err) {
       return sendWorkspaceError(err, res, next);
     }
@@ -298,6 +299,67 @@ router.get(
   }
 );
 
+// V3: activation explicite seulement après migration et certification.
+const supplierReceiptQuality = require('../services/hub-supplier-receipt-quality');
+const {completeOrdersForPhysicalUnit} = require('../services/purchasing-completion-service');
+function requireSupplierQualityV3(req,res,next){
+  if(process.env.HUB_SUPPLIER_QUALITY_V3_ENABLED!=='true')
+    return res.status(404).json({code:'HUB_QUALITY_V3_DISABLED',error:'Réception V3 non activée'});
+  if(!['admin','agent_hub'].includes(req.user?.persisted_role||req.user?.role))
+    return res.status(403).json({code:'HUB_QUALITY_HUB_ROLE_REQUIRED',error:'Action réservée au Hub'});
+  return next();
+}
+router.get(
+  '/market/:marketCode/supply/receipt-checks',
+  requireHubSupplyReadAccess,
+  requireSupplierQualityV3,
+  async(req,res,next)=>{
+    try{
+      const result=await supplierReceiptQuality.listSupplierReceiptChecks(db,{
+        purchaseOrderId:req.query.purchase_order_id,marketId:req.workspaceMarket.id
+      });
+      res.set('Cache-Control','private, no-store');
+      return res.json(result);
+    }catch(err){return sendWorkspaceError(err,res,next);}
+  }
+);
+router.post(
+  '/market/:marketCode/supply/receipt-checks',
+  attachHubExecutionCapability('execution.parcel.receive'),
+  requireHubWorkspaceAction,
+  requireSupplierQualityV3,
+  async(req,res,next)=>{
+    try{
+      const body=req.body||{};
+      const result=await db.withTransaction(client=>supplierReceiptQuality.observeSupplierReceipt(client,{
+        purchaseOrderId:body.purchase_order_id,marketId:req.workspaceMarket.id,actorId:req.user.id,
+        reference:body.reference,observations:body.observations,physicalConfirmed:body.physical_confirmed
+      }));
+      // After commit, including replay after a network interruption.
+      if(result.check.conforming_unit_id)await completeOrdersForPhysicalUnit(result.check.conforming_unit_id,{actor:{id:req.user.id}});
+      return res.status(result.replayed?200:201).json({ok:true,check:result.check,replayed:result.replayed});
+    }catch(err){
+      if(err instanceof physicalIdentity.HubPhysicalError)return res.status(409).json({code:err.code,error:err.message});
+      return sendWorkspaceError(err,res,next);
+    }
+  }
+);
+router.post(
+  '/market/:marketCode/supply/receipt-check-lines/:lineId/returns',
+  attachHubExecutionCapability('execution.parcel.receive'),
+  requireHubWorkspaceAction,
+  requireSupplierQualityV3,
+  async(req,res,next)=>{
+    try{
+      const body=req.body||{};
+      const result=await db.withTransaction(client=>supplierReceiptQuality.attestSupplierReturn(client,{
+        checkLineId:req.params.lineId,marketId:req.workspaceMarket.id,actorId:req.user.id,
+        reference:body.reference,quantity:body.quantity,physicalConfirmed:body.physical_confirmed
+      }));
+      return res.status(result.replayed?200:201).json({ok:true,...result});
+    }catch(err){return sendWorkspaceError(err,res,next);}
+  }
+);
 // Confirmation de l'identification ou du contrôle qualité du colis reçu.
 // Le marché et la PO exacte sont vérifiés sur toutes ses allocations sous verrou.
 router.post(

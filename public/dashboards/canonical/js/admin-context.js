@@ -79,6 +79,25 @@
       requiredString
     );
 
+    const rawDelegatedCapabilities = raw.access.delegatedCapabilities ?? {};
+    if (!rawDelegatedCapabilities || typeof rawDelegatedCapabilities !== 'object' || Array.isArray(rawDelegatedCapabilities)) {
+      fail('access.delegatedCapabilities doit être une projection par marché');
+    }
+    const delegatedMarketCodes = Object.keys(rawDelegatedCapabilities);
+    if (delegatedMarketCodes.some(code => !allowedMarkets.includes(code))) {
+      fail('access.delegatedCapabilities contient un marché non autorisé');
+    }
+    const delegatedCapabilities = mode === 'market'
+      ? Object.freeze(Object.fromEntries(allowedMarkets.map(code => [
+        code,
+        Object.freeze(normalizeStringList(
+          rawDelegatedCapabilities[code] ?? [],
+          `access.delegatedCapabilities.${code}`,
+          requiredString
+        )),
+      ])))
+      : Object.freeze({});
+
     const defaultMarket = raw.access.defaultMarket === null || raw.access.defaultMarket === undefined
       ? (mode === 'market' || mode === 'hub' ? allowedMarkets[0] : null)
       : marketCode(raw.access.defaultMarket, 'access.defaultMarket');
@@ -89,7 +108,7 @@
 
     return Object.freeze({
       actor,
-      access: Object.freeze({ mode, allowedMarkets, defaultMarket, capabilities }),
+      access: Object.freeze({ mode, allowedMarkets, defaultMarket, capabilities, delegatedCapabilities }),
     });
   }
 

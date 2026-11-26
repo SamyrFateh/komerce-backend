@@ -341,8 +341,9 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
         return route.abort('blockedbyclient');
       });
       await p.goto('/admin/hub?branch=direction', { waitUntil: 'domcontentloaded' });
-      await p.locator('[data-hub-director-group]').first().waitFor({timeout:30000});
-      await p.waitForFunction(() => document.querySelectorAll('[data-hub-director-group]').length === 4, null, {timeout:15000});
+      await p.locator('[data-hub-v3-pilotage]').waitFor({timeout:30000});
+      await p.locator('[data-hub-v3-view="gestion"]').click();
+      await expect(p.locator('[data-hub-v3-filter]')).toHaveCount(4);
       await p.waitForFunction(() => window.__t8Cross?.connected > 0, null, {timeout:15000});
       const api = await p.request.get('/api/hub/director-todo');
       expect(api.status(), 'T8 API before observer ' + role).toBe(200);
@@ -390,6 +391,11 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
     const taskId = 'RECONCILE_PARCEL:' + unit.id;
     for (const obs of observers) {
       await obs.page.waitForFunction(before => window.__t8Cross.signals > before, obs.original.signal, {timeout:20000});
+      const dossier=obs.page.locator('[data-hub-v3-dossier]').filter({has:obs.page.locator('[data-hub-director-task="RECONCILE_PARCEL"]').filter({hasText:reference})});
+      await expect(dossier).toBeVisible({timeout:20000});
+      expect((await obs.page.evaluate(() => window.scrollY)),
+        'T8 scroll preserved on live refresh').toBe(obs.original.y);
+      if(!await dossier.evaluate(node=>node.open))await dossier.locator('summary').click();
       await expect(obs.page.locator('[data-hub-director-task="RECONCILE_PARCEL"]').filter({hasText:reference}),
         'T8 live Director task ' + obs.role).toBeVisible({timeout:20000});
       await expect.poll(() => obs.stats.reads, {timeout:15000}).toBeGreaterThan(obs.readsBefore);
@@ -398,13 +404,11 @@ test.describe.serial(`Hub V1 : clics reels Chromium (${MARKET_CODE}, fixture E2E
       const current = await afterApi.json();
       expect(current.tasks.filter(t => t.id === taskId),
         'T8 persisted reconciliation task in canonical API').toHaveLength(1);
-      const ui = await obs.page.locator('[data-hub-director-group]').evaluateAll(groups =>
-        Object.fromEntries(groups.map(g => [g.getAttribute('data-hub-director-group'),
-          Number(g.querySelector('.hlc-director-group-count')?.textContent || 0)])));
+      const ui = await obs.page.locator('[data-hub-v3-dossier]').evaluateAll(groups =>
+        Object.fromEntries(groups.map(g => [g.getAttribute('data-hub-v3-dossier'),g.querySelectorAll('[data-hub-director-task]').length])));
       expect(Object.values(ui).reduce((a, n) => a + n, 0),
-        'T8 four-column Kanban count equals canonical API').toBe(current.tasks.length);
-      expect((await obs.page.evaluate(() => window.scrollY)),
-        'T8 scroll preserved on live refresh').toBe(obs.original.y);
+        'T8 unique dossiers cover canonical active tasks').toBe(current.tasks.filter(t=>!['PREPARE_BAG','CLOSE_BAG','DEPOSIT_BAG','BOX_BAGS'].includes(t.kind)).length);
+
       cross.participants.push({role:obs.role,auto_refetched:true,
         task_visible_without_reload:true,kanban_total:current.tasks.length,
         before_total:obs.count,latency_from_click_ms:Date.now()-clickStarted});

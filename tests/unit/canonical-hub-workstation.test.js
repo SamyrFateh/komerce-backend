@@ -68,7 +68,7 @@ const mockFetch = data => jest.fn(async url => ({
     {orders:data.orders||[],purchase_orders:data.po||[]},
 }));
 
-test('Administration et Opérations occupent toute la largeur sans rail doublon', async () => {
+test('Direction Hub et Administration restent dans un seul poste de travail', async () => {
   const app=load(),root=el('main'),admin=jest.fn(),ops=jest.fn();
   const api=app.mount({root,user:{role:'admin'},document:doc,
     location:{search:'?branch=administrative&market=KM'},fetch:mockFetch({}),
@@ -80,18 +80,20 @@ test('Administration et Opérations occupent toute la largeur sans rail doublon'
   expect(root.querySelectorAll('[data-hub-director-todo]')).toHaveLength(0);
   expect(root.children[2].className).toContain('is-table');
   expect(root.querySelectorAll('[data-hub-case-list]')).toHaveLength(0);
+  await Promise.resolve();
   expect(admin).toHaveBeenCalledTimes(1);
   expect(ops).not.toHaveBeenCalled();
   await api.reloadCases();
   expect(admin).toHaveBeenCalledTimes(2);
 });
 
-test('un agent Hub voit les deux branches et la supervision dédiée, sans autorisation ajoutée', () => {
+test('un agent Hub conserve l’accès administratif direct sans troisième onglet', async () => {
   const app=load(),root=el('main'),admin=jest.fn();
   const mounted=app.mount({root,user:{role:'agent_hub'},document:doc,location:{search:'?branch=administrative'},
     renderAdministrative:admin,renderOperations:jest.fn()});
   expect(mounted.branch).toBe('direction');
   expect(root.querySelectorAll('[data-hub-branch]')).toHaveLength(2);
+  await Promise.resolve();
   expect(admin).toHaveBeenCalledTimes(1);
 });
 
@@ -240,6 +242,25 @@ test('le tableau global n’expose aucune action Hub à un relais et agrège plu
   expect(JSON.stringify(data)).not.toContain('supplier_price');
 });
 
+test('le Hub affiche les marchés autorisés depuis la projection serveur du responsable pays', async () => {
+  const app=load(),root=el('main'),scope=el('span');
+  const previousQuery=doc.querySelector;
+  doc.querySelector=jest.fn(selector=>selector==='.kmc-hub-global-scope'?scope:null);
+  try {
+    const fetch=jest.fn(async()=>({ok:true,json:async()=>({
+      scope:'HUB_GLOBAL',audience:'MARKET_SCOPED',markets:['CM'],orders:[
+        {id:'cm-1',reference:'KCM001',market:'CM',market_name:'Cameroun',po:'À constituer',supplier:'Non commandé',
+          reception:'Non reçue',cartons:'À préparer',departure:'Pas de départ',remaining:'1 non reçue(s)'},
+      ],
+    })}));
+    await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'market_operator'}});
+    expect(scope.textContent).toBe('Hub · CM');
+  } finally {
+    if(previousQuery)doc.querySelector=previousQuery;
+    else delete doc.querySelector;
+  }
+});
+
 test('Hub global refuse agent_transitaire (acces limite a Expeditions & Douane)', () => {
   const app=load();
   expect(() => app.mount({root:el('main'),user:{role:'agent_transitaire'},document:doc,location:{search:''},
@@ -332,7 +353,7 @@ test('Direction Hub ne rend aucun workspace administratif ou physique concurrent
   expect(fetch).toHaveBeenCalledTimes(1);
 });
 
-test('Direction Hub Kanban : quatre colonnes stables, y compris sans tâches', async () => {
+test('Direction Hub  : quatre filtres stables, y compris sans tâches', async () => {
   const app=load(), host=el('section');
   const fetch=jest.fn(async () => ({ ok:true, json:async () => ({
     scope:'ALL_MARKETS', overdue_count:0, tasks:[],
@@ -538,23 +559,31 @@ test('aperçu PO V8 : deux dossiers distincts, retour Kanban et chargement par P
     if(loc)Object.defineProperty(global,'location',loc);else delete global.location;
   }
 });
+test('Direction Hub : masquage des lignes filtrées sans !important, même avec la grille des tâches',()=>{
+  const css=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/css/hub-workstation.css'),'utf8');
+  expect(css).toContain('.kmc-hub-app [data-hub-active-branch="direction"] [hidden][hidden] { display:none; }');
+  expect(css).not.toContain('display:none !important');
+  expect(css).toContain('.kmc-hub-app [data-hub-active-branch="direction"] .hlc-director-task { display:grid;');
+});
+
 test('styles V8 limités au nouveau poste, masquage des panneaux et cartes compactes',()=>{
   const css=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/css/hub-workstation.css'),'utf8');
   expect(css).toContain('.kmc-hub-po-visual [hidden]');
-  expect(css).toMatch(/\.kmc-hub-po-v8-board\{[^}]*grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
+  expect(css).toMatch(/\.kmc-hub-po-v8-board\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
   expect(css).toMatch(/\.kmc-hub-po-v8-card\{[^}]*width:100%/);
 });
 
-test('V8 : filtre marché, six étapes du mock, exceptions et bilan non déduit de la réception',async()=>{
+test('V8 : filtre marché, cinq postes de travail, exceptions et bilan non déduit de la réception',async()=>{
  const app=load(),root=el('main');
  const base={market:'KM',supplier:'Fournisseur',order_count:1,order_references:[],ordered:2,expected:2,received:0,missing:2,purchase_step:'sent'};
  const pos=[{...base,id:'active',reference:'PO-A'},{...base,id:'received',reference:'PO-R',reception_complete:true,received:2,missing:0},
   {...base,id:'other',reference:'PO-CG',market:'CG',exceptions:[{kind:'PO_MISSING_QTY',reason:'Écart confirmé'}]}];
  const fetch=jest.fn(async url=>({ok:true,json:async()=>url==='/api/hub/board?view=po'?{scope:'HUB_GLOBAL',markets:['CG','KM'],purchase_orders:pos}:{scope:'HUB_GLOBAL',orders:[]}}));
  await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'admin'},location:{search:''}});
- expect(root.querySelectorAll('[data-hub-v8-lane]')).toHaveLength(6);
- expect(root.querySelector('[data-hub-v8-lane="4"]').querySelector('[data-hub-po-v8-card="received"]')).not.toBeNull();
- expect(root.querySelector('[data-hub-v8-lane="5"]').querySelectorAll('[data-hub-po-v8-card]')).toHaveLength(0);
+ expect(root.querySelectorAll('[data-hub-v8-lane]')).toHaveLength(5);
+ expect(root.querySelector('[data-hub-v8-lane="2"]').querySelector('[data-hub-po-v8-card="received"]')).not.toBeNull();
+ expect(root.querySelector('[data-hub-v8-lane="3"]').querySelectorAll('[data-hub-workshop="boxes"]')).toHaveLength(2);
+ expect(root.querySelector('[data-hub-v8-lane="4"]').querySelectorAll('[data-hub-workshop="departure"]')).toHaveLength(6);
  const filter=root.querySelector('[data-hub-v8-market]');filter.value='KM';filter.change(filter);
  expect(root.querySelector('[data-hub-po-v8-card="other"]')).toBeNull();
  expect(root.querySelector('[data-hub-po-v8-card="active"]')).not.toBeNull();
@@ -627,6 +656,57 @@ test('projection V8 indisponible : aucune bascule historique, puis récupératio
  const retry=root.querySelector('[data-hub-v8-retry]');expect(retry).not.toBeNull();
  available=true;await retry.click();
  expect(root.querySelector('[data-hub-po-v8]')).not.toBeNull();
- expect(root.querySelectorAll('[data-hub-v8-lane]')).toHaveLength(6);
+ expect(root.querySelectorAll('[data-hub-v8-lane]')).toHaveLength(5);
  expect(root.querySelectorAll('[data-hub-global-order]')).toHaveLength(0);
+});
+
+test('cinq postes : cartes logistiques issues de la charge serveur, séparation des rails et filtre marché',async()=>{
+ const app=load(),root=el('main');
+ const base={market:'CM',relay:'A',relay_code:'Douala',to_pack:0,boxes_in_progress:0,boxes_to_dispatch:0,boxes_to_attach:0,boxes_to_handover:0};
+ const work=[{...base,rail:'SEA_STANDARD',group_key:'["A","SEA_STANDARD"]',to_pack:4,boxes_to_attach:2},{...base,rail:'AIR_EXPRESS',group_key:'["A","AIR_EXPRESS"]',boxes_to_handover:1},{...base,market:'CG',relay:'B',relay_code:'Brazzaville',rail:null,group_key:'["B",null]',boxes_to_dispatch:1}];
+ const fetch=jest.fn(async url=>({ok:true,json:async()=>url==='/api/hub/board?view=po'?{scope:'HUB_GLOBAL',markets:['CG','CM'],purchase_orders:[],logistics_work:work}:{scope:'HUB_GLOBAL',orders:[]}}));
+ const mountDepartureActions=jest.fn(async()=>({busy:()=>false}));
+ const prev=global.KomerceCanonicalOperationsWorkspace;
+ global.KomerceCanonicalOperationsWorkspace={mountDepartureActions};
+ try{
+  await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'admin'},location:{search:''}});
+  expect(root.querySelectorAll('[data-hub-workshop="boxes"]')).toHaveLength(1);
+  expect(root.querySelectorAll('[data-hub-workshop="departure"]')).toHaveLength(3);
+  const filter=root.querySelector('[data-hub-v8-market]');filter.value='CM';filter.change(filter);
+  expect(root.querySelectorAll('[data-hub-workshop="departure"]')).toHaveLength(2);
+  root.querySelectorAll('[data-hub-workshop="departure"]')[0].click();
+  await Promise.resolve();await Promise.resolve();
+  expect(mountDepartureActions).toHaveBeenCalledWith(expect.anything(),expect.objectContaining({marketCode:'CM',marketWide:true,railFilter:'SEA_STANDARD',groupKey:'["A","SEA_STANDARD"]'}));
+  expect(fetch.mock.calls.every(([,opts])=>opts.method==='GET')).toBe(true);
+ }finally{global.KomerceCanonicalOperationsWorkspace=prev;}
+});
+
+test('C1 : relecture d’atelier ne réentre pas dans un refresh Kanban déjà attendu',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-workstation.js'),'utf8');
+  expect(source).toContain("onChange:async()=>{if(!visualRead)await visualRefresh();}");
+});
+
+test('C3 : la relecture PO ne réentre pas dans le refresh Kanban qui l’attend',()=>{
+ const source=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/js/hub-workstation.js'),'utf8');
+ const changed=source.slice(source.indexOf('const changed=async()=>{'),source.indexOf('Promise.resolve().then(()=>mount(actionHost'));
+ expect(changed).toContain('if(!visualRead)await visualRefresh();');
+ expect(changed).toContain('if(poMode)renderVisualPO();');
+});
+
+
+test('Direction V3 : filtre et dossier ouvert conservés au refresh, marchés isolés',async()=>{
+ const app=load(),host=el('section'),id='11111111-1111-4111-8111-111111111111';
+ let tasks=[{kind:'AUTHORIZE_COMMITMENT',market:{code:'KM'},subject:{po_id:id},owner:'responsable_hub'},{kind:'AUTHORIZE_PAYMENT',market:{code:'KM'},subject:{po_id:id},owner:'responsable_hub'},{kind:'AUTHORIZE_PAYMENT',market:{code:'CM'},subject:{po_id:id},owner:'responsable_hub'}];
+ const fetch=jest.fn(async()=>({ok:true,json:async()=>({scope:'ALL_MARKETS',tasks,overdue_count:0})}));
+ await app.renderDirectorQueue(host,{document:doc,fetch,user:{role:'admin'}});
+ host.querySelector('[data-hub-v3-pilot-filter="decide"]').click();
+ const dossier=host.querySelector('[data-hub-v3-dossier="KM:po_id:'+id+'"]');
+ expect(host.querySelectorAll('[data-hub-v3-dossier]')).toHaveLength(2);
+ expect(dossier.querySelectorAll('[data-hub-director-task]')).toHaveLength(2);
+ host._directionOpened.add('KM:po_id:'+id);
+ tasks=tasks.slice(1);
+ await app.renderDirectorQueue(host,{document:doc,fetch,user:{role:'admin'}});
+ expect(host.querySelector('[data-hub-v3-gestion]').hidden).toBe(false);
+ expect(host.querySelector('[data-hub-v3-dossier="KM:po_id:'+id+'"]').open).toBe(true);
+ expect(host.querySelector('[data-hub-v3-proofs]').getAttribute('href')).toBe('/admin/hub?branch=administrative');
 });

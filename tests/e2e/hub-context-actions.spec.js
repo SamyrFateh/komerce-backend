@@ -458,7 +458,7 @@ test('V8 : panne de projection, actualisation puis Kanban sans retour historique
   restoreProjection();
   await page.locator('[data-hub-v8-retry]').click();
   await expect(page.locator('[data-hub-po-v8]')).toBeVisible();
-  await expect(page.locator('[data-hub-v8-lane]')).toHaveCount(6);
+  await expect(page.locator('[data-hub-v8-lane]')).toHaveCount(5);
   await expect(page.locator('[data-hub-po-v8-card="'+PO+'"]')).toBeVisible();
   await expect(page.locator('[data-hub-global-order]')).toHaveCount(0);
   expect(reads.filter(url=>url==='/api/hub/board?view=po')).toHaveLength(2);

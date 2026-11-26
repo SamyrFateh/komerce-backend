@@ -23,6 +23,8 @@ const {
   recordPhysicalUnitOutcome,
 } = require('../../services/hub-physical-identity');
 
+const {observeSupplierReceipt,attestSupplierReturn,listSupplierReceiptChecks}=require('../../services/hub-supplier-receipt-quality');
+
 jest.setTimeout(30000);
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -102,7 +104,7 @@ async function seedPurchase({ marketId, relaisId, qty = 1, soi = null, supplierU
 }
 
 // PO regroupée (order_id NULL) : lignes ouvertes → PO draft → rattachement → PO confirmée.
-async function seedGroupedPurchase({ quantities = [1, 1], confirmed = null, submit = true } = {}) {
+async function seedGroupedPurchase({ quantities = [1, 1], confirmed = null, submit = true, singleMarket = null } = {}) {
   const supplier = id();
   const sku = id();
   const po = id();
@@ -110,11 +112,11 @@ async function seedGroupedPurchase({ quantities = [1, 1], confirmed = null, subm
   await query('INSERT INTO product_skus(id) VALUES ($1)', [sku]);
   const lines = [];
   for (const quantity of quantities) {
-    const market = id();
+    const market = singleMarket || id();
     const order = id();
     const item = id();
     const line = id();
-    await query('INSERT INTO markets(id) VALUES ($1)', [market]);
+    await query('INSERT INTO markets(id) VALUES ($1) ON CONFLICT DO NOTHING', [market]);
     await query(
       'INSERT INTO orders(id, market_id, relais_id, reference, status) VALUES ($1,$2,$3,$4,$5)',
       [order, market, id(), `ORD-${order.slice(0, 8)}`, 'ordered']
@@ -164,6 +166,7 @@ beforeAll(async () => {
     await client.query(`
       CREATE TABLE markets (id uuid PRIMARY KEY);
       CREATE TABLE users (id uuid PRIMARY KEY);
+      CREATE TABLE relais (id uuid PRIMARY KEY);
       CREATE TABLE suppliers (id uuid PRIMARY KEY, system_key text);
       CREATE TABLE product_skus (id uuid PRIMARY KEY);
       CREATE TABLE orders (
@@ -183,6 +186,7 @@ beforeAll(async () => {
       CREATE TABLE product_suppliers (id uuid PRIMARY KEY);
       CREATE TABLE purchase_orders (
         id uuid PRIMARY KEY,
+        market_id uuid REFERENCES markets(id),
         order_id uuid REFERENCES orders(id),
         order_item_id uuid REFERENCES order_items(id),
         product_sku_id uuid REFERENCES product_skus(id),
@@ -244,7 +248,7 @@ beforeAll(async () => {
       ADD COLUMN order_id uuid, ADD COLUMN bag_plan jsonb`);
     await client.query(`ALTER TABLE hub_physical_unit_placements
       ADD COLUMN evidence_method text, ADD COLUMN evidence_code text, ADD COLUMN evidence_ref text`);
-    for (const name of ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql', '306_purchase_line_progress_physical.sql', '309_hub_placement_guard_exclude_outcomes.sql', '404_manual_purchase_executions.sql', '414_purchase_line_received_quantity.sql', '425_purchase_line_confirmed_currency.sql']) {
+    for (const name of ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql', '306_purchase_line_progress_physical.sql', '309_hub_placement_guard_exclude_outcomes.sql', '404_manual_purchase_executions.sql', '414_purchase_line_received_quantity.sql', '425_purchase_line_confirmed_currency.sql', '427_hub_opaque_scan_labels.sql', '450_hub_supplier_receipt_quality.sql']) {
       await client.query(fs.readFileSync(path.join(__dirname, '../../migrations', name), 'utf8').replace(/public\./g, `${schema}.`));
     }
   } finally {
@@ -928,5 +932,76 @@ describe('C2 — couverture physique quantitative avant préparation (PO histori
     expect((await coverage(purchase.order)).uncovered[0]).toMatchObject({ needed: 1, usable: 0 });
     await query("UPDATE orders SET simulation_scope='RCT1' WHERE id=$1", [purchase.order]);
     expect((await coverage(purchase.order)).covered).toBe(true);
+  });
+});
+
+
+describe('Réception V3 — preuve PostgreSQL réelle dans un schéma jetable',()=>{
+  async function fixture(quantities=[5]){
+    const market=id(),actor=id();
+    const g=await seedGroupedPurchase({quantities,singleMarket:market});
+    await query('UPDATE purchase_orders SET market_id=$2 WHERE id=$1',[g.po,market]);
+    await query('INSERT INTO users(id) VALUES($1)',[actor]);
+    const observe=(reference,received,rejected,overrides={})=>transact(client=>observeSupplierReceipt(client,{
+      purchaseOrderId:g.po,marketId:market,actorId:actor,reference,physicalConfirmed:true,
+      observations:[{product_sku_id:g.sku,received_quantity:received,rejected_quantity:rejected,quantity_confirmed:true,evidence_method:'MANUAL',evidence_ref:'Contrôle physique réel de recette'}],...overrides
+    }));
+    const remaining=async()=>listSupplierReceiptChecks({query},{purchaseOrderId:g.po,marketId:market});
+    const received=async()=>Number((await query('SELECT SUM(purchase_line_received_quantity(id)) AS n FROM purchase_lines WHERE purchase_order_id=$1',[g.po])).rows[0].n);
+    return {g,market,actor,observe,remaining,received};
+  }
+  test('mixte : seuls les conformes entrent dans le writer, retour partiel puis remplacement',async()=>{
+    const f=await fixture([2,3]);
+    const once=await f.observe('V3-MIX',4,1);
+    expect(once.replayed).toBe(false);
+    expect(await f.received()).toBe(3);
+    const unit=(await query('SELECT state FROM hub_physical_units WHERE id=$1',[once.check.conforming_unit_id])).rows[0];
+    expect(unit.state).toBe('QUALITY_CHECKED');
+    const again=await f.observe('V3-MIX',4,1);
+    expect(again.replayed).toBe(true);
+    expect(again.check.id).toBe(once.check.id);
+    expect(await f.received()).toBe(3);
+    const [line]=(await f.remaining()).checks;
+    expect(line).toMatchObject({expected_quantity:5,received_quantity:4,rejected_quantity:1,conforming_quantity:3,missing_quantity:1,to_return_quantity:1});
+    const result=await transact(client=>attestSupplierReturn(client,{checkLineId:line.line_id,marketId:f.market,actorId:f.actor,reference:'RET-MIX',quantity:1,physicalConfirmed:true}));
+    expect(result.replayed).toBe(false);
+    expect((await f.remaining()).checks[0].to_return_quantity).toBe(0);
+    expect(await f.received()).toBe(3);
+    await f.observe('V3-REPLACEMENT',2,0);
+    expect(await f.received()).toBe(5);
+  });
+  test('tout refusé : aucun placement, retour concurrent plafonné et historique immuable',async()=>{
+    const f=await fixture([2]);
+    const once=await f.observe('V3-ALL-BAD',2,2);
+    expect(once.check.conforming_unit_id).toBeNull();
+    expect(await f.received()).toBe(0);
+    const [line]=(await f.remaining()).checks;
+    const handoff=reference=>transact(client=>attestSupplierReturn(client,{checkLineId:line.line_id,marketId:f.market,actorId:f.actor,reference,quantity:2,physicalConfirmed:true}));
+    const results=await Promise.allSettled([handoff('RET-RACE-A'),handoff('RET-RACE-B')]);
+    expect(results.filter(x=>x.status==='fulfilled')).toHaveLength(1);
+    expect(results.find(x=>x.status==='rejected').reason.code).toBe('HUB_SUPPLIER_RETURN_EXCEEDS_REJECTED');
+    expect((await f.remaining()).checks[0]).toMatchObject({returned_quantity:2,to_return_quantity:0});
+    await expect(query('UPDATE hub_supplier_receipt_check_lines SET rejected_quantity=0 WHERE id=$1',[line.line_id])).rejects.toMatchObject({code:'P0001'});
+    await expect(query('INSERT INTO hub_supplier_return_attestations(reference,check_line_id,quantity,returned_by) VALUES($1,$2,1,$3)',['RET-DB-BYPASS',line.line_id,f.actor])).rejects.toMatchObject({code:'23514'});
+    expect(await f.received()).toBe(0);
+  });
+  test('réception concurrente de la même matière : une seule gagnante et aucun dépassement',async()=>{
+    const f=await fixture([2]);
+    const results=await Promise.allSettled([f.observe('V3-RACE-A',2,0),f.observe('V3-RACE-B',2,0)]);
+    expect(results.filter(x=>x.status==='fulfilled')).toHaveLength(1);
+    expect(results.find(x=>x.status==='rejected').reason.code).toBe('HUB_QUALITY_NO_REMAINING');
+    expect(await f.received()).toBe(2);
+    expect((await f.remaining()).checks).toHaveLength(1);
+  });
+  test('scope étranger et rollback : aucun constat ou placement résiduel',async()=>{
+    const f=await fixture([2]);
+    await expect(f.observe('V3-FOREIGN',2,0,{marketId:id()})).rejects.toMatchObject({code:'HUB_QUALITY_PO_SCOPE'});
+    await expect(transact(async client=>{
+      await observeSupplierReceipt(client,{purchaseOrderId:f.g.po,marketId:f.market,actorId:f.actor,reference:'V3-ROLLBACK',physicalConfirmed:true,
+        observations:[{product_sku_id:f.g.sku,received_quantity:2,rejected_quantity:0,quantity_confirmed:true,evidence_method:'MANUAL',evidence_ref:'Contrôle physique réel'}]});
+      throw Error('ROLLBACK_TEST');
+    })).rejects.toThrow('ROLLBACK_TEST');
+    expect(await f.received()).toBe(0);
+    expect((await f.remaining()).checks).toEqual([]);
   });
 });

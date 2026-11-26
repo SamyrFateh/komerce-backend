@@ -75,6 +75,8 @@
     'execution.cash.confirm',
   ]);
 
+  const MEMBER_PAGE_SIZE = 12;
+
   let mounting = false;
 
   function el(tag, className, value) {
@@ -194,8 +196,16 @@
 
     const available = [...(team.actor_grantable_capabilities || team.actor_capabilities)].sort();
     const checklist = capabilityChecklist(available, READ_PRESET.filter(cap => available.includes(cap)));
-    card.appendChild(presetControls(checklist, available, team.actor_capabilities));
-    card.appendChild(checklist);
+    const rights = global.document.createElement('details');
+    rights.className = 'kmc-team-rights';
+    const rightsSummary = global.document.createElement('summary');
+    rightsSummary.textContent = `Choisir les droits (${selectedCapabilities(checklist).length} sélectionnés)`;
+    rights.appendChild(rightsSummary);
+    const rightsBody = el('div', 'kmc-team-member-editor');
+    rightsBody.appendChild(presetControls(checklist, available, team.actor_capabilities));
+    rightsBody.appendChild(checklist);
+    rights.appendChild(rightsBody);
+    card.appendChild(rights);
 
     const submit = el('button', 'kmc-workspace-action', 'Inviter');
     submit.type = 'button';
@@ -282,9 +292,15 @@
     card.appendChild(head);
 
     if (member.capabilities && member.capabilities.length) {
+      const details = global.document.createElement('details');
+      details.className = 'kmc-team-rights';
+      const summary = global.document.createElement('summary');
+      summary.textContent = `Voir les ${member.capabilities.length} droits`;
+      details.appendChild(summary);
       const current = el('div', 'kmc-team-summary');
       member.capabilities.forEach(cap => current.appendChild(pill(capabilityLabel(cap))));
-      card.appendChild(current);
+      details.appendChild(current);
+      card.appendChild(details);
     }
 
     if (canEdit) {
@@ -337,6 +353,76 @@
       card.appendChild(actions);
     }
     return card;
+  }
+
+  function renderMemberDirectory(team, marketCode, refresh) {
+    const list = el('div', 'kmc-team-list');
+    const members = [...(team.members || [])].sort((a, b) => {
+      const ownA = a.membership_id === team.actor_membership_id ? 1 : 0;
+      const ownB = b.membership_id === team.actor_membership_id ? 1 : 0;
+      if (ownA !== ownB) return ownB - ownA;
+      const activeA = a.status === 'ACTIVE' ? 1 : 0;
+      const activeB = b.status === 'ACTIVE' ? 1 : 0;
+      if (activeA !== activeB) return activeB - activeA;
+      return String(a.full_name || a.email || '').localeCompare(String(b.full_name || b.email || ''), 'fr');
+    });
+
+    list.appendChild(el('strong', '', 'Membres'));
+    if (!members.length) {
+      list.appendChild(el('div', 'kmc-team-empty', 'Aucun membre dans ce mandat.'));
+      return list;
+    }
+
+    let visibleLimit = MEMBER_PAGE_SIZE;
+    let query = '';
+    const cards = members.map(member => {
+      const card = renderMember(team, marketCode, member, refresh);
+      card.dataset.memberCard = '';
+      card.dataset.memberSearch = `${member.full_name || ''} ${member.email || ''} ${member.phone || ''}`.toLocaleLowerCase('fr');
+      list.appendChild(card);
+      return card;
+    });
+
+    if (members.length > MEMBER_PAGE_SIZE) {
+      const controls = el('div', 'kmc-team-directory-controls');
+      const search = global.document.createElement('input');
+      search.type = 'search';
+      search.className = 'kmc-team-input';
+      search.placeholder = 'Rechercher un membre';
+      search.setAttribute('aria-label', 'Rechercher un membre');
+      const status = el('span', 'kmc-team-help');
+      status.setAttribute('aria-live', 'polite');
+      controls.append(search, status);
+      list.insertBefore(controls, cards[0]);
+
+      const more = el('button', 'kmc-workspace-action is-secondary', 'Afficher plus');
+      more.type = 'button';
+      more.dataset.memberMore = '';
+      list.appendChild(more);
+
+      const apply = () => {
+        const matching = cards.filter(card => !query || card.dataset.memberSearch.includes(query));
+        cards.forEach(card => { card.hidden = true; });
+        matching.slice(0, visibleLimit).forEach(card => { card.hidden = false; });
+        const shown = Math.min(visibleLimit, matching.length);
+        status.textContent = `${shown} sur ${matching.length} membres affichés`;
+        more.hidden = shown >= matching.length;
+        more.textContent = `Afficher ${Math.min(MEMBER_PAGE_SIZE, matching.length - shown)} de plus`;
+      };
+
+      search.addEventListener('input', () => {
+        query = search.value.trim().toLocaleLowerCase('fr');
+        visibleLimit = MEMBER_PAGE_SIZE;
+        apply();
+      });
+      more.addEventListener('click', () => {
+        visibleLimit += MEMBER_PAGE_SIZE;
+        apply();
+      });
+      apply();
+    }
+
+    return list;
   }
 
   function renderPending(team, marketCode, invitation, refresh) {
@@ -415,11 +501,7 @@
       const invite = renderInvite(team, marketCode, refresh);
       if (invite) section.appendChild(invite);
 
-      const memberList = el('div', 'kmc-team-list');
-      memberList.appendChild(el('strong', '', 'Membres'));
-      if (!(team.members || []).length) memberList.appendChild(el('div', 'kmc-team-empty', 'Aucun membre dans ce mandat.'));
-      (team.members || []).forEach(member => memberList.appendChild(renderMember(team, marketCode, member, refresh)));
-      section.appendChild(memberList);
+      section.appendChild(renderMemberDirectory(team, marketCode, refresh));
 
       const pending = (team.invitations || []).filter(invitation => invitation.status === 'PENDING');
       if (pending.length) {

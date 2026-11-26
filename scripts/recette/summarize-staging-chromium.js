@@ -123,9 +123,9 @@ if (process.env.E2E_CHROMIUM_SPEC_FILTER === 'g8-refunds-readonly') {
   const markets=['KM','CM','CG'];
   const menu=[
     'control-tower','action-center','flow-commerce','flow-orders','entity-clients',
-    'workspace-pricing','workspace-catalog','flow-operations','workspace-shipping',
-    'flow-finance','workspace-accounting','live-hub','markets-home','market-autonomy','market-catalog','unsold',
-    'admin-users','admin-providers','settings','help-docs'
+    'workspace-pricing','flow-operations','workspace-shipping','flow-finance',
+    'workspace-accounting','live-hub','market-autonomy','market-catalog','unsold',
+    'admin-providers','settings','help-docs'
   ];
   const expectedSha=String(process.env.E2E_EXPECTED_DEPLOY_SHA||'');
   const runId=String(process.env.GITHUB_RUN_ID||'NOT_ASSIGNED');
@@ -139,7 +139,10 @@ if (process.env.E2E_CHROMIUM_SPEC_FILTER === 'g8-refunds-readonly') {
       login:proof.loginStatus===200,
       one_market:JSON.stringify(proof.allowedMarkets)===JSON.stringify([market])&&JSON.stringify(proof.hubMarkets)===JSON.stringify([market]),
       navigation:JSON.stringify(proof.navigation?.items)===JSON.stringify(menu)&&Array.isArray(proof.navigation?.visited)&&
-        proof.navigation.visited.length===18&&proof.navigation.visited.every(x=>x.http===200&&x.path!=='/login.html'),
+        proof.navigation.visited.length===menu.length&&proof.navigation.visited.every(x=>x.http===200&&x.path!=='/login.html'),
+      team_directory:Number.isInteger(proof.teamDirectory?.total)&&proof.teamDirectory.total>0&&
+        Number.isInteger(proof.teamDirectory?.visible)&&proof.teamDirectory.visible>0&&
+        proof.teamDirectory.visible<=12&&proof.teamDirectory.visible<=proof.teamDirectory.total,
       consultations:Array.isArray(proof.consultations)&&proof.consultations.length>0&&proof.consultations.every(x=>x.http===200&&x.market===market&&x.collection),
       oracle:proof.readOnlyOracle===true&&proof.oracle?.hub?.count===proof.hubOrderCount&&
         proof.oracle?.hub?.active_match===true&&
@@ -159,7 +162,7 @@ if (process.env.E2E_CHROMIUM_SPEC_FILTER === 'g8-refunds-readonly') {
       no_foreign_markets:Array.isArray(proof.foreignMarketLeaks)&&proof.foreignMarketLeaks.length===0,
       no_writes:Array.isArray(proof.blockedWrites)&&proof.blockedWrites.length===0&&proof.readOnlyOracle===true,
       no_js_errors:Array.isArray(proof.jsErrors)&&proof.jsErrors.length===0
-    }:Object.fromEntries(['sha','login','one_market','navigation','consultations','oracle','order360',
+    }:Object.fromEntries(['sha','login','one_market','navigation','team_directory','consultations','oracle','order360',
       'direct_order_refusals','direct_po_refusals','direct_client_refusals','no_actions','api_audit','no_foreign_data','no_foreign_markets','no_writes','no_js_errors'].map(k=>[k,false]));
     const pass=Boolean(proof&&proof.result==='PASS'&&Object.values(checks).every(Boolean));
     const summary={market,status:pass?'PASS':'FAIL',checks,
@@ -178,7 +181,8 @@ if (process.env.E2E_CHROMIUM_SPEC_FILTER === 'g8-refunds-readonly') {
       `Run : ${runId} (${runUrl})`,
       `Artefact : ${summary.artifact_name}`,
       `SHA staging stable : ${summary.sha}`,
-      `Rubriques : ${summary.rubric_count}/23 ; destinations HTTP 200 : ${summary.destination_count}`,
+      `Rubriques : ${summary.rubric_count}/17 ; destinations HTTP 200 : ${summary.destination_count}`,
+      `Annuaire équipe : ${checks.team_directory?'complet, 12 cartes maximum au chargement':'FAIL'}`,
       `Marché autorisé : ${(summary.allowed_markets||[]).join(', ')||'NOT_PROVEN'}`,
       `Hub : ${summary.hub_orders===null?'NOT_PROVEN':summary.hub_orders+' commandes, vérifiées par oracle PG'}`,
       `Refus directs : commande ${summary.direct_order_refusals}, PO ${summary.direct_po_refusals}, client ${summary.direct_client_refusals}`,
@@ -196,7 +200,7 @@ if (process.env.E2E_CHROMIUM_SPEC_FILTER === 'g8-refunds-readonly') {
     `Verdict global : **${summary.status}** (PASS exige les trois marchés).`,
     `Run : ${runId} (${runUrl})`,`Artefact : ${summary.artifact_name}`,'',
     ...perMarket.flatMap(x=>[`## ${x.market} — ${x.status}`,
-      `SHA : ${x.sha} ; rubriques : ${x.rubric_count}/23 ; destinations HTTP 200 : ${x.destination_count}`,
+      `SHA : ${x.sha} ; rubriques : ${x.rubric_count}/17 ; destinations HTTP 200 : ${x.destination_count}`,
       `Refus directs : commande ${x.direct_order_refusals}, PO ${x.direct_po_refusals}, client ${x.direct_client_refusals}`,
       `Contrôles : ${Object.entries(x.checks).map(([k,v])=>`${k}=${v?'PASS':'FAIL'}`).join(', ')}`,'']),
     'Lecture seule uniquement : aucun GO production ni GO transactionnel.'

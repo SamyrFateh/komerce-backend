@@ -129,3 +129,20 @@ l'engagement d'une PO et celle autorisant le paiement fournisseur ne disposent
 pas encore de preuve distincte dans la projection. Le menu n'ajoute ni bouton
 d'approbation non prouvée ni bouton de remboursement. La certification de
 l'ergonomie n'est pas la certification du workflow financier.
+
+
+## 26 novembre — Règle ergonomique obligatoire desktop (UX-HUB-DENSITY-01)
+
+Décision propriétaire #5239. Ce chapitre remplace les prescriptions de présentation antérieures lorsqu'elles divergent. Le Kanban canonique conserve cinq postes : Validation, Achats, Réception, Emballage, Expédition (Maritime/Aérien visibles). Aucun changement de statuts techniques, de droits ou de preuve métier.
+
+**Invariant : exploiter la largeur utile avant de consommer de la hauteur.** Une liste opérationnelle est une grille dense, une ligne par objet métier (référence SKU, PO, COMBOX, expédition, retour), sans cartes verticales répétées. Les cartes restent adaptées au Kanban. Informations, quantités, cases et actions utiles sont alignées sur la ligne ; les en-têtes et actions globales sont mutualisés. Les détails administratifs et historiques sont contextualisés à la demande, pas répétés sur chaque ligne. Ne jamais réduire les caractères ou cibles de clic au point de nuire à la lisibilité.
+
+### Critères bloquants de recette desktop
+
+- Chromium aux résolutions 1280×720, 1366×768, 1920×1080 ; largeur réelle du poste avec navigation canonique. Aucun débordement horizontal document ni contenu/actions essentiels coupés.
+- Réception : PO de 30 références distinctes, une ligne par SKU, quantités multiples confirmées explicitement, conforme présélectionné et exceptions visibles, retour et identification sur la ligne. Cas de noms longs. Une barre de synthèse et validation compacte.
+- Achats, Emballage, Expédition et exceptions : listes représentatives de 30 objets, en-têtes uniques, actions contextualisées, aucune carte empilée par objet. Pas de scroll supplémentaire imposé par la répétition de formulaires. Scroll vertical naturel si la liste dépasse la fenêtre ; pas de promesse de voir 30 lignes simultanément.
+- Contrôler dimensions réelles et visibilité des commandes, pas seulement présence DOM ou regex CSS. Captures aux trois résolutions et preuve du parcours opérateur.
+- Les tests mockés ne certifient que le rendu et les gestes, pas la réalité des écritures. Recette Chromium staging sur SHA déployé avec oracles HTTP/PG nécessaire pour le GO métier. Toute régression UX bloque la certification ; aucune fusion hors gouvernance.
+
+Première application : réception V3, PR #5299 ; extension aux autres postes dans #5239. Certification de cette règle encore à exécuter.

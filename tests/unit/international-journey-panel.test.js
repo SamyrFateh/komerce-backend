@@ -200,3 +200,12 @@ test('Kanban départ : manifeste complet avant remise, aucune tâche transitaire
   expect(panel.renderHubHandover(doc,node('main'),{...ctx,user:{role:'agent_transitaire'}},{shipment,hub_units:boxes})).toBeNull();
   expect(panel.renderHubHandover(doc,node('main'),ctx,{shipment:{...shipment,stage:'handed_over'},hub_units:boxes})).toBeNull();
 });
+
+test('C2 : manifeste compact complet, aucune transition si une COMBOX non sortie',()=>{
+ const root=node('main'),ctx={user:{role:'agent_hub'},compactWorkshop:true,marketCode:'KM',journeyTab:'transport',fetch:jest.fn()};
+ panel.renderHubHandover({createElement:node},root,ctx,{shipment:{reference:'INT-1',stage:'hub_ready',hub_draft:true},hub_units:[{reference:'BOX-1',state:'DISPATCHED'},{reference:'BOX-2',state:'PACKED'}]});
+ expect(all(root,n=>n.attributes['data-hub-compact-manifest']!==undefined)).toHaveLength(1);
+ expect(all(root,n=>n.tagName==='TD').map(n=>n.textContent)).toEqual(['BOX-1','Attestée','BOX-2','À contrôler · PACKED']);
+ expect(all(root,n=>n.attributes['data-journey-next-task']!==undefined)).toHaveLength(0);
+ expect(ctx.fetch).not.toHaveBeenCalled();
+});

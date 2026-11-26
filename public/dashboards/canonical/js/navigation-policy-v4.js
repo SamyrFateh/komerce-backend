@@ -905,10 +905,11 @@
   // Destinations marché réellement scopées. Les liens masqués faute de vue
   // marché correspondante ne sont pas réintroduits comme doublons de menu.
   const MARKET_MENU_PROJECTIONS = Object.freeze({
-    'workspace-catalog': Object.freeze({ href:'/dashboards/canonical/market-catalog.html', label:'Catalogue · Mon marché' }),
-    'markets-home': Object.freeze({ href:'/dashboards/canonical/market-autonomy.html#market-team', label:'Équipe et délégations' }),
-    'unsold': Object.freeze({ href:'/dashboards/canonical/unsold.html', label:'Invendus · Mes marchés' }),
-    'admin-users': Object.freeze({ href:'/dashboards/canonical/market-autonomy.html#market-team', label:'Utilisateurs de mon marché' }),
+    'unsold': Object.freeze({
+      href:'/dashboards/canonical/unsold.html',
+      label:'Invendus · Mes marchés',
+      capability:'operations.read',
+    }),
     'admin-providers': Object.freeze({ href:'/dashboards/canonical/market-autonomy.html#market-providers', label:'Prestataires de mon marché' }),
     'settings': Object.freeze({ href:'/dashboards/canonical/market-autonomy.html#market-cash-control', label:'Paramètres de mon marché' }),
   });
@@ -1076,8 +1077,10 @@
     // La visibilité d'une rubrique métier n'est pas une autorisation d'action.
     // Les données affichées restent soumises aux capabilities READ du serveur.
     if (role === 'market_operator') {
+      const projection = MARKET_MENU_PROJECTIONS[item.id];
+      if (projection?.capability) return hasCapability(adminContext, projection.capability);
       return (item.roles || []).includes(role)
-        || Object.prototype.hasOwnProperty.call(MARKET_MENU_PROJECTIONS, item.id);
+        || Boolean(projection);
     }
     if (!(item.roles || []).includes(role)) return false;
     // Les agents terrain possèdent leur propre garde serveur /api/agent/action-center.
@@ -1103,6 +1106,18 @@
           })),
       }))
       .filter(group => group.items.length > 0);
+  }
+
+  function hubMarketScopeLabel(adminContext, user = global.KOMERCE_CANONICAL_AUTH_USER) {
+    const access = adminContext?.access;
+    if (access?.mode === 'global' || access?.mode === 'hub' || roleOf(user) === 'admin') return 'Global · Tous les marchés';
+    if (!access) return 'Hub · Périmètre non déterminé';
+    const markets = Array.isArray(access.allowedMarkets) ? access.allowedMarkets : [];
+    const selected = access.defaultMarket && markets.includes(access.defaultMarket)
+      ? [access.defaultMarket]
+      : markets;
+    if (!selected.length) return 'Hub · Marché autorisé';
+    return `Hub · ${selected.join(', ')}`;
   }
 
   function sidebarItemActive(item, surface) {
@@ -1458,9 +1473,10 @@
     const utilities = header.querySelector?.('.kmc-admin-utility-nav');
     const market = utilities?.querySelector?.('.kmc-admin-market-control');
     const account = utilities?.querySelector?.('.kmc-admin-account');
-    // Le Hub est transversal : un sélecteur de marché serait trompeur ici.
+    // Le Hub reste en lecture seule pour le responsable pays, mais son périmètre
+    // reflète les marchés réellement autorisés par le contexte serveur.
     if (String(global.location?.pathname || '') === '/admin/hub') {
-      right.appendChild(createNode(doc,'span','kmc-hub-global-scope','Global · Tous les marchés'));
+      right.appendChild(createNode(doc,'span','kmc-hub-global-scope',hubMarketScopeLabel(global.KOMERCE_CANONICAL_ADMIN_CONTEXT)));
     } else if (market) right.appendChild(market);
     if (account) right.appendChild(account);
     topbar.appendChild(right);
@@ -1582,6 +1598,7 @@
     LOCAL_TABS,
     SIDEBAR_GROUPS,
     sidebarGroupsFor,
+    hubMarketScopeLabel,
     safeCanonicalHref,
     renderReferenceResults,
     REFERENCE_SEARCH_ENDPOINT,

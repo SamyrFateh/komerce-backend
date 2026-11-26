@@ -11,6 +11,7 @@
  * contient réellement — jamais par simple appartenance de rôle.
  */
 
+const fs = require('fs');
 const path = require('path');
 
 function loadPolicy() {
@@ -121,30 +122,82 @@ describe('navigation-policy-v4 — domaine Live (coque noire des cockpits opéra
 
 
 describe('navigation-policy-v4 — grouped sidebar information architecture', () => {
-  test('les neuf groupes et tous les tableaux de bord métier restent visibles en lecture seule',()=>{
+  test('toutes les pages Canonical invalident le cache du shell partagé', () => {
+    const version = 'v=261126-unsold-read-capability-1';
+    const pages = ['index.html', 'market-autonomy.html', 'market-catalog.html', 'access.html', 'documentation.html', 'unsold.html'];
+    for (const page of pages) {
+      const html = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical', page), 'utf8');
+      expect(html).toContain(`/dashboards/canonical/js/navigation-policy-v4.js?${version}`);
+    }
+  });
+
+  test('les rubriques Marchés sont filtrées par les capacités de lecture requises',()=>{
     const nav=loadPolicy();
     const groups=nav.sidebarGroupsFor({role:'market_operator'},marketAdminContext([]));
     expect(groups.map(g=>g.id)).toEqual(['pilot','commerce','economy','operations','finance','live','markets','administration','help']);
     const links=Object.fromEntries(groups.flatMap(g=>g.items).map(i=>[i.id,i.href]));
     for(const id of ['control-tower','action-center','flow-commerce','flow-orders',
-      'entity-clients','workspace-pricing','workspace-catalog','flow-operations',
-      'workspace-shipping','flow-finance','workspace-accounting','live-hub','markets-home',
-      'market-autonomy','market-catalog','unsold','admin-users','admin-providers','settings']) {
+      'entity-clients','workspace-pricing','flow-operations',
+      'workspace-shipping','flow-finance','workspace-accounting','live-hub',
+      'market-autonomy','market-catalog','admin-providers','settings']) {
       expect(links[id]).toBeDefined();
     }
-    expect(links['workspace-catalog']).toBe('/dashboards/canonical/market-catalog.html');
+    expect(links.unsold).toBeUndefined();
+    expect(links['workspace-catalog']).toBeUndefined();
+    expect(links['markets-home']).toBeUndefined();
+    expect(links['admin-users']).toBeUndefined();
     expect(links['workspace-purchasing']).toBeUndefined();
     expect(links['live-import-runtime']).toBeUndefined();
     expect(links['live-relais']).toBeUndefined();
     expect(groups.find(group => group.id === 'live').items.map(item => item.id)).toEqual(['live-hub']);
-    expect(links['admin-users']).toContain('#market-team');
     expect(links['admin-providers']).toContain('#market-providers');
     expect(links['settings']).toContain('#market-cash-control');
-    expect(links.unsold).toBe('/dashboards/canonical/unsold.html');
+    const marketHrefs = groups.flatMap(group => group.items).map(item => item.href);
+    expect(new Set(marketHrefs).size).toBe(marketHrefs.length);
     for(const central of ['/admin/workspaces/purchasing','/admin/workspaces/catalog',
       '/admin/import-runtime','/admin/relais-live','/admin/users','/admin/providers','/admin/settings']) {
       expect(Object.values(links)).not.toContain(central);
     }
+  });
+
+  test('Invendus est visible uniquement si operations.read est accordée sur le marché',()=>{
+    const nav=loadPolicy();
+    const links=capabilities=>nav.sidebarGroupsFor({role:'market_operator'},marketAdminContext(capabilities))
+      .flatMap(group=>group.items);
+    expect(links([]).some(item=>item.id==='unsold')).toBe(false);
+    const granted=links(['operations.read']).find(item=>item.id==='unsold');
+    expect(granted).toMatchObject({
+      href:'/dashboards/canonical/unsold.html',
+      label:'Invendus · Mes marchés',
+      market_scoped:true,
+    });
+    expect(granted.capability).toBe('operations.read');
+  });
+
+  test('les droits serveur validés par AdminContext alimentent le menu Invendus',()=>{
+    const nav=loadPolicy();
+    const context=require('../../public/dashboards/canonical/js/admin-context').validateAdminContext({
+      actor:{id:'operator-cm',role:'market_operator'},
+      access:{
+        mode:'market',allowedMarkets:['CM'],defaultMarket:'CM',capabilities:['pilotage.read'],
+        delegatedCapabilities:{CM:['operations.read']},
+      },
+    });
+    const links=nav.sidebarGroupsFor({role:'market_operator'},context)
+      .flatMap(group=>group.items);
+    expect(links.find(item=>item.id==='unsold')?.href)
+      .toBe('/dashboards/canonical/unsold.html');
+  });
+
+  test('la topbar Hub expose le scope serveur du responsable pays', () => {
+    const nav = loadPolicy();
+    expect(nav.hubMarketScopeLabel(marketAdminContext([]))).toBe('Hub · CM');
+    expect(nav.hubMarketScopeLabel({ access: {
+      mode: 'market', allowedMarkets: ['CM', 'CG'], defaultMarket: null,
+    } })).toBe('Hub · CM, CG');
+    expect(nav.hubMarketScopeLabel({ access: { mode: 'global' } })).toBe('Global · Tous les marchés');
+    expect(nav.hubMarketScopeLabel({ access: { mode: 'hub' } })).toBe('Global · Tous les marchés');
+    expect(nav.hubMarketScopeLabel(null, { role: 'admin' })).toBe('Global · Tous les marchés');
   });
 
   test('admin sees domain groups (Commerce / Opérations / Finance) with existing destinations only', () => {

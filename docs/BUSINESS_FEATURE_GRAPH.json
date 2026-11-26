@@ -13500,6 +13500,13 @@
       },
       {
         "feature": "logistics",
+        "category": "migrations",
+        "declared": "migrations/450_hub_supplier_receipt_quality.sql",
+        "resolvedPath": "migrations/450_hub_supplier_receipt_quality.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
         "category": "docs",
         "declared": "docs/doctrine/DOCTRINE_DENSITE_VALEUR.md",
         "resolvedPath": "docs/doctrine/DOCTRINE_DENSITE_VALEUR.md",
@@ -13812,6 +13819,20 @@
         "declared": "services/hub-receive-idempotency.js",
         "resolvedPath": "services/hub-receive-idempotency.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
+        "declared": "services/hub-reception-quality-plan.js",
+        "resolvedPath": "services/hub-reception-quality-plan.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
+        "declared": "services/hub-supplier-receipt-quality.js",
+        "resolvedPath": "services/hub-supplier-receipt-quality.js",
+        "status": "resolved-on-disk-no-header"
       },
       {
         "feature": "logistics",
@@ -14210,6 +14231,20 @@
         "category": "tests",
         "declared": "tests/unit/hub-global-board.test.js",
         "resolvedPath": "tests/unit/hub-global-board.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/hub-reception-quality-plan.test.js",
+        "resolvedPath": "tests/unit/hub-reception-quality-plan.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/hub-supplier-receipt-quality.test.js",
+        "resolvedPath": "tests/unit/hub-supplier-receipt-quality.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -24154,6 +24189,30 @@
         "entry": "GET /api/admin/workspaces/operations/market/:marketCode",
         "method": "GET",
         "path": "/api/admin/workspaces/operations/market/{id}",
+        "routeFile": "routes/admin-operations-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "GET /api/admin/workspaces/operations/market/:marketCode/supply/receipt-checks",
+        "method": "GET",
+        "path": "/api/admin/workspaces/operations/market/{id}/supply/receipt-checks",
+        "routeFile": "routes/admin-operations-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "POST /api/admin/workspaces/operations/market/:marketCode/supply/receipt-checks",
+        "method": "POST",
+        "path": "/api/admin/workspaces/operations/market/{id}/supply/receipt-checks",
+        "routeFile": "routes/admin-operations-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "POST /api/admin/workspaces/operations/market/:marketCode/supply/receipt-check-lines/:lineId/returns",
+        "method": "POST",
+        "path": "/api/admin/workspaces/operations/market/{id}/supply/receipt-check-lines/{id}/returns",
         "routeFile": "routes/admin-operations-workspace.js",
         "status": "resolved-owned"
       },
@@ -37695,6 +37754,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/unit/admin-operations-workspace-route.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/client-360-service.test.js",
                 "targetFile": "db.js"
               },
@@ -37889,6 +37952,10 @@
               {
                 "sourceFileId": "routes/admin-operations-workspace.js",
                 "targetFile": "services/hub-physical-codes.js"
+              },
+              {
+                "sourceFileId": "routes/admin-operations-workspace.js",
+                "targetFile": "services/hub-supplier-receipt-quality.js"
               },
               {
                 "sourceFileId": "routes/admin-operations-workspace.js",
@@ -38375,6 +38442,10 @@
               {
                 "sourceFileId": "routes/admin/system.js",
                 "targetFile": "services/repair-ordered-without-purchase-orders.js"
+              },
+              {
+                "sourceFileId": "routes/admin-operations-workspace.js",
+                "targetFile": "services/purchasing-completion-service.js"
               },
               {
                 "sourceFileId": "tests/unit/system.test.js",
@@ -42610,6 +42681,10 @@
           {
             "channel": "data-read",
             "evidence": [
+              {
+                "table": "purchase_lines",
+                "mode": "R"
+              },
               {
                 "table": "purchase_orders",
                 "mode": "R"
@@ -51067,7 +51142,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2403
+        "filesObserved": 2407
       },
       "boutique": {
         "filesObserved": 218,
@@ -52885,6 +52960,7 @@
       ],
       "readers": [
         "dashboard",
+        "logistics",
         "refunds"
       ],
       "lifecycleOwner": "purchasing",
@@ -53805,6 +53881,45 @@
       "resolution": "declared-table-owner"
     },
     "hub_box_bags": {
+      "writers": [
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
+    },
+    "hub_supplier_receipt_checks": {
+      "writers": [
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
+    },
+    "hub_supplier_receipt_check_lines": {
+      "writers": [
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
+    },
+    "hub_supplier_return_attestations": {
       "writers": [
         {
           "feature": "logistics",

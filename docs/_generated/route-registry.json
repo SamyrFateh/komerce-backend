@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-24T15:31:16.474Z",
+  "generatedAt": "2026-11-26T14:22:28.722Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 860,
+  "count": 864,
   "routes": [
     {
       "method": "GET",
@@ -3074,6 +3074,46 @@
       "fullPath": "/api/admin/workspaces/operations/market/:marketCode/supply/physical-code",
       "mountPrefix": "/api/admin/workspaces/operations",
       "localPath": "/market/:marketCode/supply/physical-code",
+      "routeFile": "routes/admin-operations-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/operations/market/:marketCode/supply/receipt-check-lines/:lineId/returns",
+      "mountPrefix": "/api/admin/workspaces/operations",
+      "localPath": "/market/:marketCode/supply/receipt-check-lines/:lineId/returns",
+      "routeFile": "routes/admin-operations-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/operations/market/:marketCode/supply/receipt-checks",
+      "mountPrefix": "/api/admin/workspaces/operations",
+      "localPath": "/market/:marketCode/supply/receipt-checks",
+      "routeFile": "routes/admin-operations-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/operations/market/:marketCode/supply/receipt-checks",
+      "mountPrefix": "/api/admin/workspaces/operations",
+      "localPath": "/market/:marketCode/supply/receipt-checks",
+      "routeFile": "routes/admin-operations-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/operations/market/:marketCode/supply/receipts/:unitId/quality",
+      "mountPrefix": "/api/admin/workspaces/operations",
+      "localPath": "/market/:marketCode/supply/receipts/:unitId/quality",
       "routeFile": "routes/admin-operations-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
