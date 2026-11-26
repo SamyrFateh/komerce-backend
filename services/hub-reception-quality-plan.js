@@ -4,13 +4,13 @@
  * @domain        logistics
  * @layer         service
  * @criticality   high
- * @inputs        canonical expected SKU quantities under transaction lock; explicit operator observations
+ * @inputs        PO, server market scope, explicit operator observations and transaction client
  * @outputs       validated per-SKU quantity partition; no mutation
  * @depends       none
  * @used-by       pending canonical reception integration (#5298)
- * @db-read      none
+ * @db-read      purchase_orders, purchase_lines, order_items, orders
  * @db-write     none
- * @db-txn       none
+ * @db-txn       caller-owned transaction with PO and purchase-line locks
  * @doctrine     explicit_physical_observation_no_implicit_receipt
  * @impact-areas logistics, purchasing
  * @version      2026-11-v1
@@ -64,4 +64,44 @@ function planReceptionQuality(expectedRows, observations) {
   return {lines, totals};
 }
 
-module.exports = {planReceptionQuality, ReceptionQualityPlanError};
+/**
+ * Load the remaining quantities inside the SAME caller-owned transaction
+ * that will persist the physical receipt. The PO header is locked first
+ * (same ordering as purchasing confirmation and receiveSupplierPackage).
+ * Read received quantities only after acquiring the line locks, not from
+ * a stale snapshot taken before a competing receipt completes.
+ *
+ * Restricted to grouped POs; legacy single-order POs keep their existing
+ * flow until separately certified. No writes or stock transitions here.
+ */
+async function lockReceptionQualityPlan(client,{purchaseOrderId,marketId,observations}={}) {
+  if (!client || typeof client.query !== 'function' || !skuKey(purchaseOrderId) || !skuKey(marketId)) fail('HUB_QUALITY_SCOPE_INVALID');
+  const {rows:[po]} = await client.query(
+    'SELECT id, order_id, status, market_id FROM purchase_orders WHERE id=$1 FOR UPDATE',
+    [purchaseOrderId]
+  );
+  if (!po || String(po.market_id) !== String(marketId)) fail('HUB_QUALITY_PO_SCOPE');
+  if (po.order_id !== null) fail('HUB_QUALITY_GROUPED_PO_REQUIRED');
+  if (['draft','pending','cancelled'].includes(po.status)) fail('HUB_QUALITY_PO_NOT_RECEIVABLE');
+  const {rows:lines} = await client.query(
+    `SELECT pl.id, pl.product_sku_id, o.market_id,
+            purchase_line_effective_quantity(pl.cancelled_at, pl.settled_quantity, pl.confirmed_quantity, pl.quantity) AS effective
+       FROM purchase_lines pl
+       JOIN order_items oi ON oi.id=pl.order_item_id
+       JOIN orders o ON o.id=oi.order_id
+      WHERE pl.purchase_order_id=$1 AND pl.cancelled_at IS NULL
+      ORDER BY o.created_at ASC, pl.id ASC
+      FOR UPDATE OF pl`, [purchaseOrderId]
+  );
+  if (!lines.length || lines.some(l=>String(l.market_id)!==String(marketId))) fail('HUB_QUALITY_PO_SCOPE');
+  const expected=[];
+  for (const line of lines) {
+    const {rows:[receipt]}=await client.query('SELECT purchase_line_received_quantity($1) AS received',[line.id]);
+    const effective=Number(line.effective),received=Number(receipt?.received);
+    if(!receipt||line.effective==null||receipt.received==null||!isQty(effective)||!isQty(received)||received>effective) fail('HUB_QUALITY_EXPECTED_INVALID');
+    expected.push({product_sku_id:line.product_sku_id,remaining_quantity:effective-received});
+  }
+  return planReceptionQuality(expected,observations);
+}
+
+module.exports = {planReceptionQuality, lockReceptionQualityPlan, ReceptionQualityPlanError};
