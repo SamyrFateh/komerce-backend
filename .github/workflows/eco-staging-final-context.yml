@@ -1,0 +1,27 @@
+name: ECO final staging context (temporary)
+on:
+  push:
+    branches: [research/eco-centres-v6-preflight]
+    paths: ['.github/workflows/eco-staging-final-context.yml']
+permissions:
+  contents: read
+jobs:
+  context:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 79c12870a1ea64f33a24f63a116a27620938c5a1
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npm run agent:context -- --pack ui --feature economic-engine
+      - run: npm run agent:context -- --pack authz --feature economic-engine
+      - run: npm run agent:context -- --pack service --feature economic-engine
+      - run: npm run arch:impact -- economic-engine
+      - run: npm run arch:impact -- public/dashboards/canonical/js/pricing-economic-cockpit.js
