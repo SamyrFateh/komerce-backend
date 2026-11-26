@@ -78,6 +78,21 @@ function commitmentSummary(posts){
   const recordedEur=posts.length&&(covered||!items.length)?s.slice(0,-2)+'.'+s.slice(-2):null;
   return {recordedEur,totalEur:covered===items.length?recordedEur:null,coveredCommitments:covered,totalCommitments:items.length,valuation:'FROZEN_OPENING_EUR'};
 }
+// Evidence subtotal only. Do not project cross-period events using an
+// independent allocation rule; the period truth service owns proration.
+// Unmapped events remain visible as missing coverage, never a silent zero.
+function structureEvidenceSummary(events){
+  let cents=0n,included=0,unmapped=0,crossPeriod=0,invalid=0;
+  for(const e of events){
+    if(!e.post_id){unmapped++;continue;}
+    if(e.whole_period!==true){crossPeriod++;continue;}
+    if(typeof e.amount_kmf!=='string'||!(/^-?\d+\.\d{2}$/).test(e.amount_kmf)){invalid++;continue;}
+    cents+=BigInt(e.amount_kmf.replace('.',''));included++;
+  }
+  const abs=(cents<0n?-cents:cents).toString().padStart(3,'0');
+  const amountKmf=included?(cents<0n?'-':'')+abs.slice(0,-2)+'.'+abs.slice(-2):null;
+  return {amountKmf,included,unmapped,crossPeriod,invalid,coverage:'STRUCTURE_EVIDENCE_ONLY'};
+}
 async function readCostCenters(actor,raw){
   if(!actor?.id)throw error('AUTH_REQUIRED',401,'Authentification requise');
   const input=validate(raw);
@@ -114,13 +129,24 @@ async function readCostCenters(actor,raw){
          )) AS has_correction FROM economic_cost_commitment_movements x WHERE x.commitment_id=k.id
        ) m ON true
        WHERE c.market_id IS NOT DISTINCT FROM $1::uuid AND k.period_start=$2::date ORDER BY k.id`,[marketId,input.periodStart]);
+    const {rows:structureEvents}=await client.query(
+      `SELECT e.id,p.id AS post_id,p.center_id,e.amount_kmf::text AS amount_kmf,
+        (e.economic_from>=($2::date::timestamp AT TIME ZONE 'UTC')
+          AND e.economic_to<=(($2::date+interval '1 month') AT TIME ZONE 'UTC')) AS whole_period
+       FROM economic_structure_cost_events e
+       LEFT JOIN economic_cost_posts p ON p.structure_charge_id=e.charge_id
+         AND EXISTS (SELECT 1 FROM economic_cost_centers c WHERE c.id=p.center_id AND c.market_id IS NOT DISTINCT FROM $1::uuid)
+       WHERE e.market_id IS NOT DISTINCT FROM $1::uuid
+         AND e.economic_from < (($2::date+interval '1 month') AT TIME ZONE 'UTC')
+         AND e.economic_to > ($2::date::timestamp AT TIME ZONE 'UTC')
+       ORDER BY e.id`,[marketId,input.periodStart]);
     const byPost=new Map();
     for(const k of commitments){if(!byPost.has(k.post_id))byPost.set(k.post_id,[]);byPost.get(k.post_id).push({...k,remaining_eur:commitmentRemainingEur(k)});}
     const model=posts.map(p=>({...p,budget:p.budget_revision===null?null:{revision:p.budget_revision,currency:p.budget_currency,native:p.budget_native,eur:p.budget_eur},
-      commitments:byPost.get(p.id)||[],actual:null,available:null,coverage:'NOT_RECONCILED'}));
+      commitments:byPost.get(p.id)||[],structureEvidence:structureEvidenceSummary(structureEvents.filter(e=>e.post_id===p.id)),actual:null,available:null,coverage:'NOT_RECONCILED'}));
     await client.query('COMMIT');
     return {scope:input.marketCode===null?'GROUP':'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,central,readOnly:true,
-      centers:centers.map(c=>({...c,budgetSummary:budgetSummary(model.filter(p=>p.center_id===c.id)),commitmentSummary:commitmentSummary(model.filter(p=>p.center_id===c.id))})),families,resources,posts:model,budgetSummary:budgetSummary(model),commitmentSummary:commitmentSummary(model),actualCoverage:'NOT_RECONCILED',available:null};
+      centers:centers.map(c=>({...c,budgetSummary:budgetSummary(model.filter(p=>p.center_id===c.id)),commitmentSummary:commitmentSummary(model.filter(p=>p.center_id===c.id)),structureEvidence:structureEvidenceSummary(structureEvents.filter(e=>e.center_id===c.id))})),families,resources,posts:model,budgetSummary:budgetSummary(model),commitmentSummary:commitmentSummary(model),structureEvidence:structureEvidenceSummary(structureEvents),actualCoverage:'NOT_RECONCILED',available:null};
   }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
 }
-module.exports={readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary};
+module.exports={readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary};

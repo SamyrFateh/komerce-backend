@@ -39,7 +39,7 @@
   // isolated verification, not mounted into the exclusive cockpit until its
   // three-tab contract and server reconciliation are ready. No business math.
   function v7Money(value, currency = 'EUR') {
-    if (typeof value !== 'string' || !/^\d+(?:\.\d+)?$/.test(value)) return 'Non disponible';
+    if (typeof value !== 'string' || !(/^-?\d+(?:\.\d+)?$/).test(value)) return 'Non disponible';
     const [integer, fraction=''] = value.split('.');
     const grouped=integer.replace(/\B(?=(\d{3})+(?!\d))/g,'\u202f');
     const decimals=currency==='EUR'?fraction.slice(0,2).padEnd(2,'0'):fraction.replace(/0+$/,'');
@@ -71,10 +71,13 @@
       if(summary.totalEur!=null)return v7Money(summary.totalEur);
       return summary.recordedEur==null?'À rapprocher':v7Money(summary.recordedEur)+' · partiel ('+summary.coveredCommitments+'/'+summary.totalCommitments+')';
     }
-    function metrics(summary,commitments){
+    function structureText(evidence){
+      return evidence?.amountKmf!=null?v7Money(evidence.amountKmf,'KMF')+' · structure partielle':'À rapprocher';
+    }
+    function metrics(summary,commitments,evidence){
       const row=el(doc,'div','kmc-v7-kpis');
       row.append(metric('Budget enregistré (EUR)',budgetText(summary)),metric('Engagements ouverts (EUR)',commitmentTotal(commitments)),
-        metric('Charges constatées','À rapprocher'),metric('Disponible','Non calculable'));return row;
+        metric('Charges constatées',structureText(evidence)),metric('Disponible','Non calculable'));return row;
     }
     function commitmentText(p){
       const list=p.commitments||[];
@@ -88,7 +91,7 @@
       heading.append(el(doc,'h3','',center?center.label:'Centres de coûts'),
         el(doc,'p','',model?.scope==='GROUP'?'Centres groupe · '+(model.periodStart||''):('Marché '+(model?.marketCode||'')+' · '+(model?.periodStart||''))));
       if(center)heading.append(button('Tous les centres',()=>{state.centerId=null;state.familyId=null;state.postId=null;render();}));
-      host.append(heading,metrics(center?center.budgetSummary:model?.budgetSummary,center?center.commitmentSummary:model?.commitmentSummary));
+      host.append(heading,metrics(center?center.budgetSummary:model?.budgetSummary,center?center.commitmentSummary:model?.commitmentSummary,center?center.structureEvidence:model?.structureEvidence));
       if(!center){
         const grid=el(doc,'div','kmc-v7-center-grid');
         for(const c of centers){
@@ -124,7 +127,7 @@
         const tr=el(doc,'tr',''),cell=el(doc,'td','');
         cell.append(button(p.label,()=>{state.postId=p.id;render();},'kmc-v7-post-button'));
         tr.append(cell,el(doc,'td','',p.budget?v7Money(p.budget.native,p.budget.currency):'Non renseigné'),
-          el(doc,'td','',commitmentText(p)),el(doc,'td','','À rapprocher'),el(doc,'td','','Non décisionnel'));
+          el(doc,'td','',commitmentText(p)),el(doc,'td','',structureText(p.structureEvidence)),el(doc,'td','','Non décisionnel'));
         body.append(tr);
       }
       table.append(body);host.append(table);
@@ -138,7 +141,7 @@
           metric('Périmètre',({DIRECT:'Direct',MUTUALIZED:'Mutualisé'})[post.allocation_perimeter]||'À qualifier'),
           metric('Clé d’imputation',post.allocation_basis||'Non renseignée'),
           metric('Budget',post.budget?v7Money(post.budget.native,post.budget.currency):'Non renseigné'),
-          metric('Engagements',commitmentText(post)),metric('Disponible','Non calculable'),
+          metric('Engagements',commitmentText(post)),metric('Charges constatées',structureText(post.structureEvidence)),metric('Disponible','Non calculable'),
           button('Fermer le détail',()=>{state.postId=null;render();}));
         host.append(detail);
       }

@@ -8,6 +8,7 @@ const request=require('supertest');
 const {createMarketDelegationFixture,makeApp}=require('../helpers/marketDelegationE2EKit');
 const {reviseBudget}=require('../../services/economic-cost-budget-service');
 const crypto=require('crypto');
+const {recordStructureCostEvent}=require('../../services/pricing-period-structure');
 const url=process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL) : null;
 const enabled=process.env.ECO_DISPOSABLE_PG_PROOF==='1';
 const run=enabled?describe:describe.skip;
@@ -43,6 +44,12 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     await expect(reviseBudget(fx.central,{...input,amountNative:'327979',expectedRevision:1,requestKey:tag+'B2'})).resolves.toMatchObject({outcome:'replayed'});
     const k=(await q("INSERT INTO economic_cost_commitments(post_id,period_start,currency,amount_native,amount_eur,fx_legs,fx_as_of,evidence_ref,request_key,recorded_by) VALUES ($1,$2,'EUR',100,100,'[]',now(),'CI contract',$3,$4) RETURNING id",[a.post,month,tag+'K1',fx.central.id])).rows[0].id;
     await q("INSERT INTO economic_cost_commitment_movements(commitment_id,kind,amount_native,evidence_ref,request_key,recorded_by) VALUES ($1,'RELEASE',30,'CI release',$2,$3)",[k,tag+'M1',fx.central.id]);
+    const charge=(await q("INSERT INTO charges(family,name,amount_kmf,is_recurring,recurrence_period,market_owner_id) VALUES ('operationnelle',$1,0,true,'monthly',$2) RETURNING id",[tag,fx.marketA.id])).rows[0].id;
+    await q('UPDATE economic_cost_posts SET structure_charge_id=$1 WHERE id=$2',[charge,a.post]);
+    const event={charge_id:charge,scope_kind:'MARKET_DIRECT',market_id:fx.marketA.id,event_kind:'ACCRUAL',economic_from:'2026-01-01T00:00:00Z',economic_to:'2026-02-01T00:00:00Z',amount_original:1000,currency:'KMF',fx_rate_to_kmf:1,fx_source:'CI fixture',amount_kmf:1000,source_kind:'MANUAL',evidence_ref:'CI canonical structure'};
+    await recordStructureCostEvent(event,fx.central.id);
+    await recordStructureCostEvent({...event,economic_to:'2026-03-01T00:00:00Z',amount_original:2000,amount_kmf:2000},fx.central.id);
+
   });
   test('central sees exact market, latest budget and remaining commitment; no fake actual',async()=>{
     const response=await get(fx.central,fx.marketA.code);
@@ -60,6 +67,8 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect(response.body.commitmentSummary).toMatchObject({totalEur:'70.00',valuation:'FROZEN_OPENING_EUR'});
     expect(response.body.centers.find(c=>c.id===a.center).commitmentSummary.totalEur).toBe('70.00');
     expect(response.body.budgetSummary.totalEur).toBe(actual);
+    expect(p.structureEvidence).toMatchObject({amountKmf:'1000.00',included:1,crossPeriod:1});
+    expect(response.body.structureEvidence).toMatchObject({amountKmf:'1000.00',included:1,crossPeriod:1});
     expect(p.actual).toBeNull();expect(p.available).toBeNull();
   });
   test('market reader can read own scope only; group and foreign market refused',async()=>{
@@ -72,6 +81,7 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     const result=await get(fx.central,null);expect(result.status).toBe(200);
     expect(result.body.centers.map(c=>c.id)).toContain(g.center);
     expect(result.body.centers.map(c=>c.id)).not.toContain(a.center);
+    expect(result.body.structureEvidence.amountKmf).toBeNull();
     const next=await get(fx.central,fx.marketA.code,'2026-02-01');
     expect(next.status).toBe(200);
     expect(next.body.posts.find(p=>p.id===a.post)).toMatchObject({budget:null,commitments:[],actual:null});
