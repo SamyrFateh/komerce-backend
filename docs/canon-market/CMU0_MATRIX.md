@@ -1,4 +1,94 @@
-# CMU-0 — Inventaire préparatoire CANON-MARKET
+# CMU-0 — Périmètre de convergence CANON-MARKET
+
+## Décision de périmètre (proposition pour les cinq PR)
+
+Références : #5272, plan [7199903236](https://github.com/SamyrFateh/komerce-backend/issues/5272#issuecomment-7199903236), revue unique [7200002546](https://github.com/SamyrFateh/komerce-backend/issues/5272#issuecomment-7200002546). Base 4937c8da. Responsable GPT.
+
+**Liste fermée conservatoire :** les seules lectures existantes dont une évolution de scope est proposée au lot 3 sont celles du tableau A. Toutes les autres routes centrales demeurent protégées par leurs gardes actuels. Les routes du tableau B sont des lectures marché existantes à réutiliser, jamais des autorisations supplémentaires. Les destinations du tableau C convergent exclusivement par remontage des modules déjà autorisés (lot 4). Aucun GET non énuméré ne peut être élargi ; si une destination exige une nouvelle lecture, compléter cette matrice explicitement dans la pile avant revue globale. Aucune route d'écriture élargie, aucun nouveau droit, aucun geste physique Hub pour market_operator. Les qualifications du relevé historique ci-dessous sont informatives et ne remplacent pas cette règle.
+
+### A — Lecture à corriger (liste fermée de candidats, non validée)
+
+| Route exacte | READ existant/cible | Delta autorisé dans la proposition |
+|---|---|---|
+| GET /api/unsold/:id | operations.read | aligner détail sur liste/statistiques et scope avant réponse, 404 hors scope |
+| GET /api/hub/board | operations.read | projection PO limitée aux lignes autorisées ; aucun simple élargissement de includePurchaseOrders ; admin global et filtre explicite conservés |
+| GET /api/markets/:marketCode/local-stock | local_offer.manage (actuellement opérateur uniquement) | parité de lecture admin filtré ; service GET distinct si nécessaire, aucun changement de authorize partagé avec POST/PUT |
+
+**Exclusions explicites** : GET /api/purchasing, /api/purchasing/open-lines, /api/purchasing/po/:po_id, /api/purchasing/po/:po_id/reconciliation et /api/purchasing/po/:po_id/commitment-pdf ne sont pas ouverts en l'état. Le besoin de lecture PO marché est porté par /api/hub/board et une projection bornée, pas par l'API centrale brute. GET /api/hub/administration, /api/hub/director-todo, /api/unsold/:id/whatsapp, les retours/compensations centrales, scans, étiquettes, exports globaux et données fournisseurs confidentielles restent hors liste. Si une projection manque, le lot 3 doit le signaler et proposer un amendement explicite, non une autorisation implicite.
+
+### B — Lectures déjà disponibles à réutiliser
+
+| Destination | GET exact (préfixe inclus) | Droit / frontière |
+|---|---|---|
+| Pilotage | /api/admin/dashboard/context | contexte canonique, aucun accès métier implicite |
+| Pilotage | /api/admin/dashboard/unified/market/:marketCode | dashboard.market.read |
+| Commerce | /api/admin/dashboard/commerce/market/:marketCode | dashboard.market.read |
+| Commandes | /api/admin/dashboard/orders/market/:marketCode | dashboard.market.read |
+| Opérations | /api/admin/dashboard/operations/market/:marketCode | operations.read |
+| Finance | /api/admin/dashboard/finance/market/:marketCode | finance.read |
+| À traiter | /api/admin/action-center/market/:marketCode | garde/service actuel, à préserver |
+| Clients | /api/admin/entities/clients/market/:marketCode | client.read |
+| Client 360 | /api/admin/entities/clients/:clientPhone | client.read |
+| Commande 360 | /api/admin/entities/orders/:orderReference | operations.read ; finance.read pour coûts |
+| Produit 360 | /api/admin/entities/products/:productRef | catalog.read ; données centrales exclues |
+| Catalogue | /api/market-delegation/catalog/authorized-markets | résolution serveur existante |
+| Catalogue | /api/market-delegation/markets/:marketCode/catalog/exposure | catalog.read ; filtres et pages |
+| Économie | /api/admin/workspaces/pricing/market/:marketCode | pricing.read |
+| Économie | /api/admin/workspaces/pricing/market/:marketCode/commercial-prices | pricing.read |
+| Économie | /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/activation-preview | pricing.read ; garder G6 |
+| Opérations | /api/admin/workspaces/operations/market/:marketCode | garde lecture existant |
+| Opérations | /api/admin/workspaces/operations/market/:marketCode/supply | operations.read / garde existant |
+| Opérations | /api/admin/workspaces/operations/market/:marketCode/supply/trace | garde existant |
+| Opérations | /api/admin/workspaces/operations/market/:marketCode/supply/receipt-checks | garde existant + qualité |
+| Opérations | /api/admin/workspaces/operations/market/:marketCode/relay-shipments | garde existant |
+| Expéditions | /api/admin/workspaces/shipping-customs/market/:marketCode | logistics.read / garde existant |
+| Expéditions | /api/admin/workspaces/shipping-customs/market/:marketCode/international | garde existant |
+| Expéditions | /api/admin/workspaces/shipping-customs/market/:marketCode/international/:reference | garde existant |
+| Comptabilité | /api/admin/workspaces/accounting/market/:marketCode | finance.read / garde existant |
+| Comptabilité | /api/admin/workspaces/accounting/market/:marketCode/journal/:view(summary,movements,documents,reconciliation) | garde lecture journal existant |
+| Hub | /api/hub/dossier | operations.read + marché autorisé |
+| Hub | /api/hub/trace | operations.read + scope |
+| Hub | /api/hub/search | operations.read + scope |
+| Hub | /api/hub/stats/week | operations.read + scope |
+| Hub | /api/hub/pending | operations.read + scope |
+| Hub | /api/hub/today | operations.read + scope |
+| Hub | /api/hub-dash/dashboard | operations.read |
+| Hub | /api/hub-dash/dubai | operations.read |
+| Hub | /api/hub-dash/queue | operations.read |
+| Hub | /api/hub-dash/orders/:id | operations.read |
+| Hub | /api/hub-dash/validate/:id | operations.read ; lecture uniquement |
+| Relais | /api/relay/dashboard | operations.read ; liaison relais des agents conservée |
+| Relais | /api/relay/incidents | operations.read |
+| Relais | /api/relay/orders | operations.read |
+| Relais | /api/relay/orders/:id | operations.read |
+| Invendus | /api/unsold/ | operations.read |
+| Invendus | /api/unsold/stats/summary | operations.read |
+
+### C — Modules marchés à remonter sans élargissement
+
+| Module | Destination | Lectures existantes (préfixe /api/market-delegation/markets/:marketCode sauf stock W3) | Écriture |
+|---|---|---|---|
+| market-catalog | /admin/workspaces/catalog | /catalog/exposure | catalog.expose, garde inchangé |
+| market-autonomy | /admin/workspaces/pricing | workspace pricing listé B | prix local, activation/reset inchangés |
+| market-local-offer | Catalogue/Opérations | /local-offer/services ; /local-offer/physical-offers ; GET /api/markets/:marketCode/local-stock | local_offer.manage, writers W3 inchangés |
+| market-team | /admin/users | /team | droits existants team.* |
+| market-network | /admin/providers | /network/relais ; /network/relais-agents ; /network/providers | droits existants network.* / provider.manage |
+| market-cash-control | /admin/finance | /cash-control-policy ; /cash-custody | droits existants cash_control.policy.manage et service |
+| market-settlement | /admin/finance | /settlements | règlement existant |
+| market-client-case | /admin/clients | /client-cases/disputes | client.case.handle |
+| market-readonly-views | Commerce/Économie/Expéditions/Finance | /performance ; /cost-statement ; /customs-shipments ; /payment-accounts | aucune ; finance.read / operations.read |
+| Paramètres locaux | /admin/settings | lecture existante à qualifier, aucun élargissement central | market_config.update central-held |
+
+### D — Destinations HTML et contrôles de sortie
+
+Le menu cible est le menu canonique, avec catalogue local comme lentille du workspace central. Les destinations de A/B/C ne sont affichées qu'une fois le backend et les composants prêts ; conserver provisoirement les accès G6 historiques. Les destinations exclusivement centrales (sourcing/import, gestion globale catalogue, grants, administration groupe, recette, Direction Hub centrale) ne gagnent aucun droit. Les annexes donnent les références par fichier/ligne : [routes centrales](CMU0_CENTRAL_WORKSPACES.md), [délégations](CMU0_DELEGATIONS.md), [UI centrale](CMU0_CENTRAL_UI_CALLS.md), [UI marché](CMU0_MARKET_UI_CALLS.md). Le relevé historique ci-dessous documente les destinations, aliases à qualifier et limites. Ne pas traiter les candidats des annexes comme une allowlist.
+
+**Statut :** proposition conservatoire pour PR documentaire en brouillon. Complétude par rapport aux destinations dynamiques, règles A1/A2, gates carte-first et preflight restent à prouver. Aucune certification ni validation de sécurité. Revue globale des cinq PR, puis fusion uniquement après contrôles. Aucune écriture ni modification staging.
+
+---
+
+## Relevé historique (preuves et détails, non normatif)
+
 
 Responsable GPT · base `4937c8da271c6bc448a6154f62bb0f3bb6a225d3` · #5272.
 Plan Opus [7199903236](https://github.com/SamyrFateh/komerce-backend/issues/5272#issuecomment-7199903236).
