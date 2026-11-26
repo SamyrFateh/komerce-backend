@@ -79,3 +79,10 @@ test('V3 desktop : tableau dense et barre de validation, styles limités à la r
  expect(css).toContain('[data-hub-quality-v3] .kmc-quality-v3-footer');
  expect(css).toContain('.kmc-quality-v3-qty[hidden] { display:none; }');
 });
+
+test('C1 : tableau COMBOX borné et fiche d’action unique dans le poste',()=>{
+  expect(css).toContain('.kmc-hub-po-v8-actions .kmc-hub-workshop-table');
+  expect(css).toContain('max-height: min(32vh,300px);overflow:auto');
+  expect(css).toContain('.kmc-hub-po-v8-actions .kmc-hub-workshop-table thead th {position:sticky');
+  expect(css).toContain('.kmc-hub-po-v8-actions .kmc-hub-workshop-action[hidden] {display:none;}');
+});
