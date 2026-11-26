@@ -1,0 +1,59 @@
+name: ECO-0 documentation preflight retry (temporary)
+on:
+  push:
+    branches:
+      - research/eco-centres-v6-preflight
+    paths:
+      - '.github/workflows/eco-0-doc-preflight-retry.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: eco-centres-v6-context
+  cancel-in-progress: true
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      ECO_HEAD: 'f68f3b818b0842c6eca420e25270265d2d608eb3'
+      ECO_BASE: 'a3833cc1244577b4eec418357ccd3e4b7cea1ff4'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 'f68f3b818b0842c6eca420e25270265d2d608eb3'
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Verify exact documentation candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$ECO_HEAD"
+          git diff --check "$ECO_BASE" HEAD
+          git diff --name-only "$ECO_BASE" HEAD
+          test "$(git diff --name-only "$ECO_BASE" HEAD | wc -l)" -eq 4
+          test -z "$(git diff --name-only "$ECO_BASE" HEAD | grep -v '^docs/doctrine/DOCTRINE_' || true)"
+      - name: Refresh canonical context
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run agent:context -- --pack service --feature economic-engine
+          npm run agent:context -- --pack ui --feature economic-engine
+          npm run arch:impact -- economic-engine
+      - name: Canonical PR preflight
+        run: npm run pr:preflight -- --base "$ECO_BASE"
+      - name: Report result
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ job.status }}
+        shell: bash
+        run: |
+          printf 'ECO-0 documentation preflight — %s\nCandidate SHA: %s\nBase: %s\nRun: %s/%s/actions/runs/%s\nNo runtime changes or deployment.\n' "$RESULT" "$ECO_HEAD" "$ECO_BASE" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > /tmp/eco-report.md
+          gh issue comment 5280 --repo "$GITHUB_REPOSITORY" --body-file /tmp/eco-report.md
