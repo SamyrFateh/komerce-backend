@@ -88,11 +88,13 @@ jest.mock('../../utils/logger', () => ({
 }));
 
 const mockObserveSupplierReceipt=jest.fn();
+const mockListSupplierReceiptChecks=jest.fn();
 const mockAttestSupplierReturn=jest.fn();
 const mockCompleteOrdersForPhysicalUnit=jest.fn();
 const mockQualityTransactionClient={query:jest.fn()};
 jest.mock('../../services/hub-supplier-receipt-quality',()=>({
   observeSupplierReceipt:(...args)=>mockObserveSupplierReceipt(...args),
+  listSupplierReceiptChecks:(...args)=>mockListSupplierReceiptChecks(...args),
   attestSupplierReturn:(...args)=>mockAttestSupplierReturn(...args),
 }));
 jest.mock('../../services/purchasing-completion-service',()=>({
@@ -523,4 +525,19 @@ describe('V3 réception fournisseur : routes protégées et inactives par défau
   expect(mockAttestSupplierReturn).toHaveBeenCalledWith(mockQualityTransactionClient,{checkLineId:'line-1',marketId:'market-cm-id',actorId:'admin-1',reference:'RET-1',quantity:1,physicalConfirmed:true});
   expect(mockCompleteOrdersForPhysicalUnit).not.toHaveBeenCalled();
  });
+});
+
+test('projection V3 des retours : scope serveur et activation explicite',async()=>{
+ const old=process.env.HUB_SUPPLIER_QUALITY_V3_ENABLED;
+ const url='/api/admin/workspaces/operations/market/CM/supply/receipt-checks?purchase_order_id=po-1';
+ try{
+  process.env.HUB_SUPPLIER_QUALITY_V3_ENABLED='true';
+  mockListSupplierReceiptChecks.mockResolvedValueOnce({eligible:true,checks:[]});
+  expect((await request(app()).get(url)).status).toBe(200);
+  expect(mockListSupplierReceiptChecks).toHaveBeenCalledWith(require('../../db'),{purchaseOrderId:'po-1',marketId:'market-cm-id'});
+  mockUserRole='market_operator';
+  expect((await request(app()).get(url)).status).toBe(403);
+  mockUserRole='admin';delete process.env.HUB_SUPPLIER_QUALITY_V3_ENABLED;
+  expect((await request(app()).get(url)).status).toBe(404);
+ }finally{if(old===undefined)delete process.env.HUB_SUPPLIER_QUALITY_V3_ENABLED;else process.env.HUB_SUPPLIER_QUALITY_V3_ENABLED=old;}
 });
