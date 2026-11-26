@@ -556,23 +556,31 @@ test('aperçu PO V8 : deux dossiers distincts, retour Kanban et chargement par P
     if(loc)Object.defineProperty(global,'location',loc);else delete global.location;
   }
 });
+test('Direction Hub : masquage des lignes filtrées sans !important, même avec la grille des tâches',()=>{
+  const css=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/css/hub-workstation.css'),'utf8');
+  expect(css).toContain('.kmc-hub-app [data-hub-active-branch="direction"] [hidden][hidden] { display:none; }');
+  expect(css).not.toContain('display:none !important');
+  expect(css).toContain('.kmc-hub-app [data-hub-active-branch="direction"] .hlc-director-task { display:grid;');
+});
+
 test('styles V8 limités au nouveau poste, masquage des panneaux et cartes compactes',()=>{
   const css=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/css/hub-workstation.css'),'utf8');
   expect(css).toContain('.kmc-hub-po-visual [hidden]');
-  expect(css).toMatch(/\.kmc-hub-po-v8-board\{[^}]*grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
+  expect(css).toMatch(/\.kmc-hub-po-v8-board\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
   expect(css).toMatch(/\.kmc-hub-po-v8-card\{[^}]*width:100%/);
 });
 
-test('V8 : filtre marché, six étapes du mock, exceptions et bilan non déduit de la réception',async()=>{
+test('V8 : filtre marché, cinq postes de travail, exceptions et bilan non déduit de la réception',async()=>{
  const app=load(),root=el('main');
  const base={market:'KM',supplier:'Fournisseur',order_count:1,order_references:[],ordered:2,expected:2,received:0,missing:2,purchase_step:'sent'};
  const pos=[{...base,id:'active',reference:'PO-A'},{...base,id:'received',reference:'PO-R',reception_complete:true,received:2,missing:0},
   {...base,id:'other',reference:'PO-CG',market:'CG',exceptions:[{kind:'PO_MISSING_QTY',reason:'Écart confirmé'}]}];
  const fetch=jest.fn(async url=>({ok:true,json:async()=>url==='/api/hub/board?view=po'?{scope:'HUB_GLOBAL',markets:['CG','KM'],purchase_orders:pos}:{scope:'HUB_GLOBAL',orders:[]}}));
  await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'admin'},location:{search:''}});
- expect(root.querySelectorAll('[data-hub-v8-lane]')).toHaveLength(6);
- expect(root.querySelector('[data-hub-v8-lane="4"]').querySelector('[data-hub-po-v8-card="received"]')).not.toBeNull();
- expect(root.querySelector('[data-hub-v8-lane="5"]').querySelectorAll('[data-hub-po-v8-card]')).toHaveLength(0);
+ expect(root.querySelectorAll('[data-hub-v8-lane]')).toHaveLength(5);
+ expect(root.querySelector('[data-hub-v8-lane="2"]').querySelector('[data-hub-po-v8-card="received"]')).not.toBeNull();
+ expect(root.querySelector('[data-hub-v8-lane="3"]').querySelectorAll('[data-hub-workshop="boxes"]')).toHaveLength(2);
+ expect(root.querySelector('[data-hub-v8-lane="4"]').querySelectorAll('[data-hub-workshop="departure"]')).toHaveLength(6);
  const filter=root.querySelector('[data-hub-v8-market]');filter.value='KM';filter.change(filter);
  expect(root.querySelector('[data-hub-po-v8-card="other"]')).toBeNull();
  expect(root.querySelector('[data-hub-po-v8-card="active"]')).not.toBeNull();
@@ -645,6 +653,27 @@ test('projection V8 indisponible : aucune bascule historique, puis récupératio
  const retry=root.querySelector('[data-hub-v8-retry]');expect(retry).not.toBeNull();
  available=true;await retry.click();
  expect(root.querySelector('[data-hub-po-v8]')).not.toBeNull();
- expect(root.querySelectorAll('[data-hub-v8-lane]')).toHaveLength(6);
+ expect(root.querySelectorAll('[data-hub-v8-lane]')).toHaveLength(5);
  expect(root.querySelectorAll('[data-hub-global-order]')).toHaveLength(0);
+});
+
+test('cinq postes : cartes logistiques issues de la charge serveur, séparation des rails et filtre marché',async()=>{
+ const app=load(),root=el('main');
+ const base={market:'CM',relay:'A',relay_code:'Douala',to_pack:0,boxes_in_progress:0,boxes_to_dispatch:0,boxes_to_attach:0,boxes_to_handover:0};
+ const work=[{...base,rail:'SEA_STANDARD',group_key:'["A","SEA_STANDARD"]',to_pack:4,boxes_to_attach:2},{...base,rail:'AIR_EXPRESS',group_key:'["A","AIR_EXPRESS"]',boxes_to_handover:1},{...base,market:'CG',relay:'B',relay_code:'Brazzaville',rail:null,group_key:'["B",null]',boxes_to_dispatch:1}];
+ const fetch=jest.fn(async url=>({ok:true,json:async()=>url==='/api/hub/board?view=po'?{scope:'HUB_GLOBAL',markets:['CG','CM'],purchase_orders:[],logistics_work:work}:{scope:'HUB_GLOBAL',orders:[]}}));
+ const mountDepartureActions=jest.fn(async()=>({busy:()=>false}));
+ const prev=global.KomerceCanonicalOperationsWorkspace;
+ global.KomerceCanonicalOperationsWorkspace={mountDepartureActions};
+ try{
+  await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'admin'},location:{search:''}});
+  expect(root.querySelectorAll('[data-hub-workshop="boxes"]')).toHaveLength(1);
+  expect(root.querySelectorAll('[data-hub-workshop="departure"]')).toHaveLength(3);
+  const filter=root.querySelector('[data-hub-v8-market]');filter.value='CM';filter.change(filter);
+  expect(root.querySelectorAll('[data-hub-workshop="departure"]')).toHaveLength(2);
+  root.querySelectorAll('[data-hub-workshop="departure"]')[0].click();
+  await Promise.resolve();await Promise.resolve();
+  expect(mountDepartureActions).toHaveBeenCalledWith(expect.anything(),expect.objectContaining({marketCode:'CM',marketWide:true,railFilter:'SEA_STANDARD',groupKey:'["A","SEA_STANDARD"]'}));
+  expect(fetch.mock.calls.every(([,opts])=>opts.method==='GET')).toBe(true);
+ }finally{global.KomerceCanonicalOperationsWorkspace=prev;}
 });

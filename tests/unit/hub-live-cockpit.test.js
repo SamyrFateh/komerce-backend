@@ -35,7 +35,7 @@ describe('H4 #3998 — branchement global de la directrice dans le vrai poste Hu
     // La surface interne `host` conserve son propre cycle de rendu :
     // l'ancien contrat attendait le conteneur `content` et était obsolète.
     expect(central).toContain("branch === 'direction'");
-    expect(central).toContain('renderDirectorQueue(host,{document:doc,fetch:fetchFn,user})');
+    expect(central).toContain('renderDirectorQueue(directorHost,{document:doc,fetch:fetchFn,user})');
     expect(central).toContain("requestJSON(fetchFn,'/api/hub/director-todo')");
     expect(central).toContain("['admin', 'agent_hub'].includes(user && user.role)");
     expect(central).toContain('data-hub-director-list');
