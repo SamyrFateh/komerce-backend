@@ -1029,7 +1029,7 @@
 .kmc-hub-po-v8-log-item{display:block;width:100%;text-align:left;border:0;background:white;color:#1765ad;padding:8px;cursor:pointer}
 .kmc-hub-po-v8-log-item:hover{background:#eef5fa}
 .kmc-hub-po-v8-chrome .kmc-hub-global-count{display:block;text-transform:uppercase;letter-spacing:.6px;font-size:11px;font-weight:750;color:#647588}
-.kmc-hub-po-v8-board{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;align-items:start;padding:8px 0}
+.kmc-hub-po-v8-board{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;align-items:start;padding:8px 0}
 .kmc-hub-po-v8-board.is-list{grid-template-columns:repeat(3,minmax(0,1fr))}
 .kmc-hub-po-v8-lane{min-width:0;background:#e8edf1;border:1px solid #dfe6eb;border-radius:8px;padding:9px;min-height:320px;max-height:68vh;overflow-y:auto}
 .kmc-hub-po-v8-lane h3{font-size:12px;font-weight:750;margin:0 0 8px;overflow-wrap:anywhere}
@@ -1047,7 +1047,7 @@
 .kmc-hub-po-v8-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:18px 0}
 .kmc-hub-po-v8-metric{padding:12px;background:#f4f7f9;border:1px solid #e9eef1;border-radius:7px}
 .kmc-hub-po-v8-metric strong{display:block;font-size:23px}
-.kmc-hub-po-v8-progress{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-top:20px}
+.kmc-hub-po-v8-progress{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:20px}
 .kmc-hub-po-v8-progress span{border-top:4px solid #dce4e9;border-radius:3px;padding:7px 0;font-size:11px;overflow-wrap:anywhere;color:#647588}
 .kmc-hub-po-v8-progress .is-current{border-color:#1765ad;color:#1765ad;font-weight:750}
 .kmc-hub-po-v8-progress .is-done{border-color:#36856a;color:#247c5c}
