@@ -288,7 +288,8 @@ async function submitPurchaseOrder(poId, { actor = null, context = {} } = {}) {
     await require('./hub-authorization-service').assertCommitmentAuthorized(client, po.id);
     const { rows: lineRows } = await commercialRead(client, `
       SELECT pl.id, pl.product_sku_id, pl.supplier_sku, pl.supplier_unit_ref, pl.supplier_order_identity,
-             oi.fulfillment_source, o.status::text AS order_status, o.payment_status::text AS payment_status,
+             oi.id AS commercial_item_id, o.id AS commercial_order_id, oi.fulfillment_source,
+             o.status::text AS order_status, o.payment_status::text AS payment_status, to_jsonb(o)->>'payment_mode' AS payment_mode,
              pl.quantity, pl.supplier_unit_price, pl.supplier_currency, p.name AS product_name,
               NULLIF(to_jsonb(o)->>'simulation_scope','') AS simulation_scope
         FROM purchase_lines pl
@@ -299,7 +300,7 @@ async function submitPurchaseOrder(poId, { actor = null, context = {} } = {}) {
        ORDER BY o.id, oi.id, pl.id FOR UPDATE OF pl FOR SHARE OF o,oi NOWAIT
     `, [po.id]);
     if (!lineRows.length) throw fail(409, 'PURCHASE_ORDER_EMPTY', 'Une PO sans ligne ne peut pas être soumise');
-    lineRows.forEach(assertCommercialPurchaseItem);
+    for (const row of lineRows) await assertCommercialPurchaseItem(client, row);
     // Une PO simulée ne doit jamais contenir une vente réelle ou d'un autre
     // scénario. Aucune simulation ne doit déclencher un adaptateur fournisseur.
     const scopes = new Set(lineRows.map((line) => line.simulation_scope || null));
@@ -840,14 +841,15 @@ function supplierMoneyUnavailable(ps) {
 
 async function createLineInTransaction(client, { orderItemId, productSupplierId, quantity, actor, context, executionMode, actualMoney = null, parentLineId = null }) {
   const { rows: [item] } = await commercialRead(client, `
-    SELECT oi.*, p.name AS product_name, o.status::text AS order_status, o.payment_status::text AS payment_status
+    SELECT oi.*, p.name AS product_name, oi.id AS commercial_item_id, o.id AS commercial_order_id,
+           o.status::text AS order_status, o.payment_status::text AS payment_status, to_jsonb(o)->>'payment_mode' AS payment_mode
       FROM order_items oi
       JOIN orders o ON o.id = oi.order_id
       JOIN products p ON p.id = oi.product_id
      WHERE oi.id = $1 FOR SHARE OF o,oi NOWAIT
   `, [orderItemId]);
   if (!item) throw fail(404, 'ORDER_ITEM_NOT_FOUND', 'Article de commande introuvable');
-  assertCommercialPurchaseItem(item);
+  await assertCommercialPurchaseItem(client, item);
 
   const { rows: [ps] } = await client.query(`
     SELECT ps.*, s.name AS supplier_name, s.platform, s.auto_order, s.contact_phone
