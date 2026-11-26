@@ -298,7 +298,7 @@
       }
       if (existing) {
         // Un clic en cours reste prioritaire : le prochain tick relira la vérité.
-        if (doc.activeElement && existing.contains?.(doc.activeElement)) {
+        if (doc.activeElement && existing.contains?.(doc.activeElement) && doc.activeElement.matches?.('input, textarea, select, [contenteditable="true"]')) {
           existing.setAttribute('data-hub-director-update-pending','true');
           return payload;
         }
@@ -731,6 +731,13 @@
       if(p.received>0 || p.purchase_step==='received' || ['confirmed','partially_received','hub_received'].includes(p.purchase_stage))return 4;
       return ({draft:0,validation:1,engaged:2,sent:3})[p.purchase_step]??-1;
     };
+    // Le focus d'un bouton ou d'un filtre ne doit jamais immobiliser le Kanban.
+    const editingPO=()=>{
+      const element=doc.activeElement;
+      return Boolean(element && root.contains?.(element) &&
+        element.closest?.('.kmc-hub-po-v8-actions') &&
+        element.matches?.('input:not([type="button"]):not([type="submit"]), textarea, select, [contenteditable="true"]'));
+    };
     let visualSignature=null, visualRead=null;
     const visualRefresh=async({background=false}={})=>{
       if(visualRead)return visualRead;
@@ -739,10 +746,10 @@
         if(data.scope!=='HUB_GLOBAL'||!Array.isArray(data.purchase_orders))throw Error('Projection PO indisponible');
         if(root.isConnected===false)return null;
         const signature=JSON.stringify([data.purchase_orders,data.markets||[]]);
-        if(background&&signature===visualSignature)return data;
+        if(background&&signature===visualSignature&&!headerCount.hasAttribute('data-hub-v8-stale')&&!root.hasAttribute('data-hub-v8-access-denied'))return data;
         // Ne pas remplacer les actions pendant une saisie ou une mutation.
         const active=visualOpen.get(visualActive);
-        if(background&&(active?.loading||active?.handle?.busy?.()||root.contains?.(doc.activeElement)))return null;
+        if(background&&(active?.loading||active?.handle?.busy?.()||editingPO()))return null;
         poRows=data.purchase_orders;
         visualMarkets=Array.isArray(data.markets)?data.markets:[];
         renderVisualPO();
@@ -1184,11 +1191,11 @@
       // du Kanban : aucun remontage du poste ni perte des onglets ouverts.
       global.KomerceDashboardFreshness?.watch?.({
         root, pollMs:30000,
-        isBusy:()=>Boolean(visualRead||visualOpen.get(visualActive)?.loading||visualOpen.get(visualActive)?.handle?.busy?.()||root.contains?.(doc.activeElement)),
+        isBusy:()=>Boolean(visualRead||visualOpen.get(visualActive)?.loading||visualOpen.get(visualActive)?.handle?.busy?.()||editingPO()),
         refresh:async()=>{
           try{
             const data=await visualRefresh({background:true});
-            if(data){poMode=true;search.hidden=false;headerCount.removeAttribute('data-hub-v8-stale');}
+            if(data){poMode=true;search.hidden=false;headerCount.removeAttribute('data-hub-v8-stale');root.removeAttribute('data-hub-v8-access-denied');}
             return data;
           }catch(error){
             headerCount.setAttribute('data-hub-v8-stale','true');
