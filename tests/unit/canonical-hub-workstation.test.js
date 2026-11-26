@@ -649,3 +649,24 @@ test('projection V8 indisponible : aucune bascule historique, puis récupératio
  expect(root.querySelectorAll('[data-hub-v8-lane]')).toHaveLength(5);
  expect(root.querySelectorAll('[data-hub-global-order]')).toHaveLength(0);
 });
+
+test('cinq postes : cartes logistiques issues de la charge serveur, séparation des rails et filtre marché',async()=>{
+ const app=load(),root=el('main');
+ const base={market:'CM',relay:'A',relay_code:'Douala',to_pack:0,boxes_in_progress:0,boxes_to_dispatch:0,boxes_to_attach:0,boxes_to_handover:0};
+ const work=[{...base,rail:'SEA_STANDARD',group_key:'["A","SEA_STANDARD"]',to_pack:4,boxes_to_attach:2},{...base,rail:'AIR_EXPRESS',group_key:'["A","AIR_EXPRESS"]',boxes_to_handover:1},{...base,market:'CG',relay:'B',relay_code:'Brazzaville',rail:null,group_key:'["B",null]',boxes_to_dispatch:1}];
+ const fetch=jest.fn(async url=>({ok:true,json:async()=>url==='/api/hub/board?view=po'?{scope:'HUB_GLOBAL',markets:['CG','CM'],purchase_orders:[],logistics_work:work}:{scope:'HUB_GLOBAL',orders:[]}}));
+ const mountDepartureActions=jest.fn(async()=>({busy:()=>false}));
+ const prev=global.KomerceCanonicalOperationsWorkspace;
+ global.KomerceCanonicalOperationsWorkspace={mountDepartureActions};
+ try{
+  await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'admin'},location:{search:''}});
+  expect(root.querySelectorAll('[data-hub-workshop="boxes"]')).toHaveLength(1);
+  expect(root.querySelectorAll('[data-hub-workshop="departure"]')).toHaveLength(3);
+  const filter=root.querySelector('[data-hub-v8-market]');filter.value='CM';filter.change(filter);
+  expect(root.querySelectorAll('[data-hub-workshop="departure"]')).toHaveLength(2);
+  root.querySelectorAll('[data-hub-workshop="departure"]')[0].click();
+  await Promise.resolve();await Promise.resolve();
+  expect(mountDepartureActions).toHaveBeenCalledWith(expect.anything(),expect.objectContaining({marketCode:'CM',marketWide:true,railFilter:'SEA_STANDARD',groupKey:'["A","SEA_STANDARD"]'}));
+  expect(fetch.mock.calls.every(([,opts])=>opts.method==='GET')).toBe(true);
+ }finally{global.KomerceCanonicalOperationsWorkspace=prev;}
+});
