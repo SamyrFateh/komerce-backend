@@ -1223,7 +1223,7 @@
         slot.replaceChildren();
         let quality=null;
         try{
-          quality=await jsonRequest(fetchFn,endpointFor(marketCode,'supply/receipt-checks')+'?purchase_order_id='+encodeURIComponent(poId));
+          if(dossier.supplier_quality_v3_enabled===true)quality=await jsonRequest(fetchFn,endpointFor(marketCode,'supply/receipt-checks')+'?purchase_order_id='+encodeURIComponent(poId));
         }catch(error){
           // Only explicit disabled response permits the historical path.
           if(error.code!=='HUB_QUALITY_V3_DISABLED')throw error;
