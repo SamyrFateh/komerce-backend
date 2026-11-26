@@ -66,3 +66,18 @@ Base `4937c8da271c6bc448a6154f62bb0f3bb6a225d3`. Annexe du [CMU0_MATRIX.md](CMU0
 ## Points encore à fermer
 
 Recouper les guards de services, les actions dynamiques, les deux runners G6, les appels des workspaces centraux et les autres pages legacy. Les paramètres prix, fournisseur et marché ne doivent pas devenir des permissions client. La liste fermée du lot 3 demeure non validée. Aucun runtime touché.
+
+
+## Guards effectifs contrôlés — points de convergence
+
+| Lecture / action | Autorité constatée | Décision pour la convergence |
+|---|---|---|
+| GET /api/markets/:marketCode/local-stock | services/market-delegation-local-stock-service.js:32-57 : authorize, local_offer.manage, admin explicitement 403 LOCAL_STOCK_COUNTRY_LEAD_ONLY | **Écart de parité :** l'admin filtré ne peut pas appeler ce GET aujourd'hui. Prévoir une projection de lecture admin distincte ou une correction strictement GET, après validation ; aucun changement de authorize partagé par les mutations. |
+| POST /api/markets/:marketCode/local-stock/receipts | même authorize, local_offer.manage, admin refusé, idempotency key (l. 62-68) | Conserver intégralement ; G6 W3 responsable marché, jamais admin par défaut. |
+| PUT /api/markets/:marketCode/local-stock/:productId/exposure | même authorize, local_offer.manage (l.118-128) | Conserver garde existant ; aucune écriture élargie. |
+| GET /api/market-delegation/markets/:marketCode/performance | services/market-delegation-performance-service.js:64 : finance.read | **finance.read**, non dashboard.market.read ; préserver le droit réel. |
+| GET /api/market-delegation/markets/:marketCode/cost-statement | services/market-delegation-cost-statement-service.js:76 : finance.read | finance.read, intégrer ECO #5280 sans second calcul. |
+| GET /api/market-delegation/markets/:marketCode/customs-shipments | services/market-delegation-customs-service.js:71 : operations.read | operations.read, lecture seule. |
+| GET /api/market-delegation/markets/:marketCode/payment-accounts | services/market-payment-account-service.js:224-226 : finance.read | finance.read, sans modification de comptes. |
+
+Le service stock contient aussi `POOL_LOCATION = 'KM_MAIN'` (l.33). Vérifier que cette constante désigne réellement une localisation logistique canonique et ne crée pas une dépendance pays pour le marché fictif ; ne pas la modifier sur simple présomption. La parité UI ne signifie pas parité des droits d'écriture. Le test T2 doit tenir compte des gardes lecture réels et de cet écart admin, pas le masquer.
