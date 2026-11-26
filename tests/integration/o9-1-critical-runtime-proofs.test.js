@@ -179,8 +179,8 @@ if (!hasIntegrationEnv) {
 
   async function seedOrderItem(orderId, productId, quantity = 1, priceKmf = 10000) {
     await db.query(
-      `INSERT INTO order_items (order_id, product_id, quantity, price_kmf)
-       VALUES ($1,$2,$3,$4)`,
+      `INSERT INTO order_items (order_id, product_id, quantity, price_kmf, fulfillment_source)
+       VALUES ($1,$2,$3,$4,'IMPORT')`,
       [orderId, productId, quantity, priceKmf]
     );
   }

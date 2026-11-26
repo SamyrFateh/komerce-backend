@@ -285,6 +285,44 @@ describe('Invendus Responsable Marché — scopes READ stricts',()=>{
     expect(res.status).toBe(403);
     expect(mockDbQuery).not.toHaveBeenCalled();
   });
+  test('détail du marché autorisé : SQL scopé par le serveur, sans tenir compte de market_id client',async()=>{
+    const rows=[{id:'unsold-own',order_ref:'KM-101'}];
+    mockDbQuery.mockResolvedValueOnce({rows});
+    const res=await request(buildApp()).get('/api/unsold/unsold-own?market_id=foreign');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(rows[0]);
+    expect(res.headers['cache-control']).toBe('private, no-store');
+    expect(mockAuthorizedMarkets).toHaveBeenCalledWith(expect.anything(),{
+      userId:'operator-1',requiredCapability:'operations.read'
+    });
+    expect(mockDbQuery).toHaveBeenCalledWith(
+      expect.stringContaining('o.market_id = ANY($2::uuid[])'),['unsold-own',[marketId]]
+    );
+    expect(mockDbQuery.mock.calls[0][0]).toContain("o.payment_status IS DISTINCT FROM 'paid'");
+  });
+  test('détail hors scope ou inexistant : même 404, aucune donnée retournée',async()=>{
+    mockDbQuery.mockResolvedValueOnce({rows:[]});
+    const res=await request(buildApp()).get('/api/unsold/foreign');
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({error:'Invendu introuvable'});
+    expect(mockDbQuery).toHaveBeenCalledWith(
+      expect.stringContaining('o.market_id = ANY($2::uuid[])'),['foreign',[marketId]]
+    );
+  });
+  test('capability révoquée : refus de toutes les lectures avant SQL métier',async()=>{
+    mockAuthorizedMarkets.mockResolvedValue([]);
+    for (const url of ['/api/unsold','/api/unsold/stats/summary','/api/unsold/unsold-own']) {
+      const res=await request(buildApp()).get(url);
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('MARKET_READ_CAPABILITY_REQUIRED');
+    }
+    expect(mockDbQuery).not.toHaveBeenCalled();
+  });
+  test('le message commercial reste réservé à admin même avec operations.read',async()=>{
+    const res=await request(buildApp()).get('/api/unsold/unsold-own/whatsapp');
+    expect(res.status).toBe(403);
+    expect(mockDbQuery).not.toHaveBeenCalled();
+  });
   test('le responsable marché ne peut pas utiliser PATCH, résolution ou scan',async()=>{
     for(const [method,url] of [
       ['post','/api/unsold/scan'],['patch','/api/unsold/x'],['post','/api/unsold/x/resolve']

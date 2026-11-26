@@ -245,10 +245,24 @@ router.get('/board', ...hubBoardRead, attachHubReadAuthority, async (req, res, n
     res.set('Cache-Control', 'private, no-store');
     // La vue centrale reste globale pour les rôles centraux. Un responsable marché ne peut
     // lire que ses markets operations.read, filtrés côté SQL avant lecture des dossiers.
-    const marketIds = req.user.role === 'market_operator'
-      ? Array.from(req.authorizedMarkets || []) : null;
+    const isMarketOperator = req.user.role === 'market_operator';
+    let marketIds = isMarketOperator ? Array.from(req.authorizedMarkets || []) : null;
+    // Le choix éventuel de marché ne peut que réduire le scope déjà prouvé.
+    if (isMarketOperator && req.query.market != null && req.query.market !== '') {
+      const code = req.query.market;
+      if (typeof code !== 'string' || !/^[A-Z]{2}$/.test(code)) {
+        return res.status(400).json({ error: 'Marché invalide', code: 'MARKET_REQUIRED' });
+      }
+      const selected = (req.marketDelegatedMarkets || []).find(row =>
+        row.market_code === code && marketIds.includes(row.market_id));
+      if (!selected) return res.status(404).json({ error: 'Marché introuvable' });
+      marketIds = [selected.market_id];
+    }
     const includePurchaseOrders = req.query.view === 'po' && ['admin', 'agent_hub'].includes(req.user.role);
-    return res.json(await globalHubBoard.getGlobalBoard(db, undefined, { marketIds, includePurchaseOrders }));
+    const includeMarketPurchaseOrders = req.query.view === 'po' && isMarketOperator;
+    return res.json(await globalHubBoard.getGlobalBoard(db, undefined, {
+      marketIds, includePurchaseOrders, includeMarketPurchaseOrders,
+    }));
   } catch (err) { return next(err); }
 });
 
