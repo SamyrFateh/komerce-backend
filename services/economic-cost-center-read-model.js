@@ -21,6 +21,7 @@ const {parseDecimal,roundHalfEven,convert,FxError}=require('./fx-authority');
 const {computePurchaseReal}=require('./cost-allocation/real-margin-shadow');
 const {hasPricingGlobalAuthority} = require('../middleware/require-pricing-global-authority');
 const {resolveAuthorization} = require('./market-delegation-service');
+const costAuthority=require('./economic-cost-write-authority');
 function error(code,status,message){return Object.assign(new Error(message),{code,status});}
 function validate(raw){
   if(!raw || !Object.prototype.hasOwnProperty.call(raw,'marketCode') ||
@@ -370,6 +371,7 @@ async function readCostCenters(actor,raw){
   try{
     await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
     const marketId=await resolveScope(client,actor,input.marketCode,central);
+    const costCapabilities=await costAuthority.project(client,actor,input.marketCode,marketId,central);
     const {rows:centers}=await client.query(
       'SELECT id,code,label,responsible_user_id,is_active FROM economic_cost_centers WHERE market_id IS NOT DISTINCT FROM $1::uuid ORDER BY code,id',[marketId]);
     const {rows:families}=await client.query(
@@ -425,7 +427,7 @@ async function readCostCenters(actor,raw){
     const salesEvidence=await loadPeriodSalesEvidence(client,marketId,input.periodStart);
     if(profitability)profitability.salesEvidence=salesEvidence;
     await client.query('COMMIT');
-    return {scope:input.marketCode===null?'GROUP':'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,central,readOnly:true,
+    return {scope:input.marketCode===null?'GROUP':'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,central,costCapabilities,readOnly:!Object.values(costCapabilities).some(Boolean),
       centers:centerModels,families,resources,posts:model,budgetSummary:budgetSummary(model),commitmentSummary:commitmentSummary(model),structureEvidence,activity,profitability,actualCoverage:'NOT_RECONCILED',available:null};
   }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
 }

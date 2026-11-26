@@ -4,9 +4,9 @@
  * @domain        economic-engine
  * @layer         service
  * @criticality   high
- * @inputs        authenticated_central_actor, explicit_scope, post, period, native_amount, evidence
+ * @inputs        authenticated_actor, explicit_scope, post, period, native_amount, evidence
  * @outputs       canonical_structure_fact, explicit_replay
- * @depends       db.js, middleware/require-pricing-global-authority.js, services/pricing-period-structure.js, services/fx-authority.js
+ * @depends       db.js, services/economic-cost-write-authority.js, services/pricing-period-structure.js, services/fx-authority.js
  * @used-by       routes/admin-pricing-workspace.js
  * @db-read       markets, economic_cost_centers, economic_cost_posts, charges, economic_structure_cost_events
  * @db-write      none
@@ -19,7 +19,7 @@
 'use strict';
 const db=require('../db');
 const fx=require('./fx-authority');
-const {hasPricingGlobalAuthority}=require('../middleware/require-pricing-global-authority');
+const costAuthority=require('./economic-cost-write-authority');
 const {recordStructureCostEvent}=require('./pricing-period-structure');
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function fail(code,status,message){return Object.assign(new Error(message),{code,status});}
@@ -33,9 +33,7 @@ function parse(raw){
   return {postId:raw.postId,marketCode:raw.marketCode,periodStart:raw.periodStart,currency,amountNative:m[1]+'.'+(m[2]||'').padEnd(4,'0'),evidenceRef:raw.evidenceRef.trim()};
 }
 async function recordPostActual(actor,raw){
-  if(!actor?.id)throw fail('AUTH_REQUIRED',401,'Authentification requise');
-  if(actor.role!=='admin'||!await hasPricingGlobalAuthority(actor.id))throw fail('pricing_global_access_denied',403,'Autorité globale requise');
-  const x=parse(raw),client=await db.getClient();
+  const x=parse(raw),central=await costAuthority.classifyActor(actor,x.marketCode),client=await db.getClient();
   try{
     await client.query('BEGIN');
     let marketId=null;
@@ -44,6 +42,7 @@ async function recordPostActual(actor,raw){
       if(!rows.length)throw fail('market_not_found',404,'Marché introuvable');
       marketId=rows[0].id;
     }
+    await costAuthority.check(client,actor,x.marketCode,marketId,central,'actual',{record:true});
     const {rows:posts}=await client.query('SELECT p.structure_charge_id FROM economic_cost_posts p JOIN economic_cost_centers c ON c.id=p.center_id WHERE p.id=$1 AND c.market_id IS NOT DISTINCT FROM $2::uuid FOR UPDATE OF p',[x.postId,marketId]);
     if(!posts.length)throw fail('economic_actual_post_not_found',404,'Poste introuvable dans ce périmètre');
     const chargeId=posts[0].structure_charge_id;

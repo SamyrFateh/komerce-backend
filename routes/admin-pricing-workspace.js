@@ -273,7 +273,7 @@ async function reviseCostCenterBudget(req,res,next) {
     res.status(result.outcome==='created'?201:200).json(result);
   } catch(error) { handleError(error,res,next); }
 }
-router.post('/market/:marketCode/cost-centers/posts/:postId/budget-revisions', requirePricingGlobalAuthority, reviseCostCenterBudget);
+router.post('/market/:marketCode/cost-centers/posts/:postId/budget-revisions', requirePricingCapability('pricing.cost_component.update'), reviseCostCenterBudget);
 
 async function openCostCommitment(req,res,next){
   try{
@@ -289,8 +289,8 @@ async function recordCommitmentMovement(req,res,next){
     res.set('Cache-Control','private, no-store');res.status(result.outcome==='created'?201:200).json(result);
   }catch(e){handleError(e,res,next);}
 }
-router.post('/market/:marketCode/cost-centers/posts/:postId/commitments',requirePricingGlobalAuthority,openCostCommitment);
-router.post('/market/:marketCode/cost-centers/commitments/:commitmentId/movements',requirePricingGlobalAuthority,recordCommitmentMovement);
+router.post('/market/:marketCode/cost-centers/posts/:postId/commitments',requirePricingCapability('pricing.cost_component.update'),openCostCommitment);
+router.post('/market/:marketCode/cost-centers/commitments/:commitmentId/movements',requirePricingCapability('pricing.cost_component.update'),recordCommitmentMovement);
 async function recordCostPostActual(req,res,next){
   try{
     const b=req.body||{};
@@ -298,7 +298,7 @@ async function recordCostPostActual(req,res,next){
     res.set('Cache-Control','private, no-store');res.status(result.outcome==='created'?201:200).json(result);
   }catch(e){handleStructureEventError(e,res,next);}
 }
-router.post('/market/:marketCode/cost-centers/posts/:postId/actuals',requirePricingGlobalAuthority,recordCostPostActual);
+router.post('/market/:marketCode/cost-centers/posts/:postId/actuals',requirePricingCapability('structure.event.record'),recordCostPostActual);
 async function createCostReferencePost(req,res,next){
   try{
     const b=req.body||{};
@@ -306,7 +306,7 @@ async function createCostReferencePost(req,res,next){
     res.set('Cache-Control','private, no-store');res.status(result.outcome==='created'?201:200).json(result);
   }catch(e){handleError(e,res,next);}
 }
-router.post('/market/:marketCode/cost-centers/families/:familyId/posts',requirePricingGlobalAuthority,createCostReferencePost);
+router.post('/market/:marketCode/cost-centers/families/:familyId/posts',requirePricingCapability('pricing.cost_component.update'),createCostReferencePost);
 
 router.get('/market/:marketCode', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
   try {

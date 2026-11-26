@@ -4,9 +4,9 @@
  * @domain        economic-engine
  * @layer         service
  * @criticality   high
- * @inputs        authenticated_central_actor, explicit_market_code_or_group, post_id, month, expected_revision, native_amount, currency, reason, request_key
+ * @inputs        authenticated_actor, explicit_market_code_or_group, post_id, month, expected_revision, native_amount, currency, reason, request_key
  * @outputs       immutable_budget_revision, idempotent_replay
- * @depends       db, middleware/require-pricing-global-authority.js, services/fx-authority.js
+ * @depends       db, services/economic-cost-write-authority.js, services/fx-authority.js
  * @used-by       routes/admin-pricing-workspace.js
  * @db-read       markets, economic_cost_centers, economic_cost_posts, economic_cost_budget_revisions
  * @db-write      economic_cost_budget_revisions
@@ -19,7 +19,7 @@
 
 const db = require('../db');
 const fx = require('./fx-authority');
-const { hasPricingGlobalAuthority } = require('../middleware/require-pricing-global-authority');
+const costAuthority=require('./economic-cost-write-authority');
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function fail(code, status, message) { return Object.assign(new Error(message), { code, status }); }
@@ -44,17 +44,9 @@ function parseInput(raw) {
   return { postId:raw.postId, marketCode:raw.marketCode, periodStart:raw.periodStart, expectedRevision:raw.expectedRevision,
     currency, amountNative:m[1]+'.'+(m[2]||'').padEnd(4,'0'), reason:text(raw.reason,3,1000,'Motif'), requestKey:text(raw.requestKey,8,200,'Clé de requête') };
 }
-async function assertCentral(actor) {
-  // Actor must come from authenticated server context, never a request body.
-  if (!actor || !actor.id) throw fail('AUTH_REQUIRED',401,'Authentification requise');
-  if (actor.role !== 'admin' || !await hasPricingGlobalAuthority(actor.id))
-    throw fail('pricing_global_access_denied',403,'Autorité globale requise');
-}
 async function reviseBudget(actor, raw) {
-  // Initial central-only service. Delegated local budget authority must be
-  // explicitly defined before adding a delegated market mutation path.
-  await assertCentral(actor);
   const input = parseInput(raw);
+  const central=await costAuthority.classifyActor(actor,input.marketCode);
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
@@ -64,6 +56,7 @@ async function reviseBudget(actor, raw) {
       if (!rows.length) throw fail('market_not_found',404,'Marché introuvable');
       marketId=rows[0].id;
     }
+    await costAuthority.check(client,actor,input.marketCode,marketId,central,'budget',{record:true});
     // Serializes concurrent budget changes on the same post; scope is resolved
     // server-side. No lock or read of another market's budget history.
     const { rows: posts } = await client.query(

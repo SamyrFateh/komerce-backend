@@ -4,9 +4,9 @@
  * @domain        economic-engine
  * @layer         service
  * @criticality   high
- * @inputs        authenticated_central_actor, explicit_scope, family_id, post_metadata, reason
+ * @inputs        authenticated_actor, explicit_scope, family_id, post_metadata, reason
  * @outputs       cost_post_reference, idempotent_replay, audit_record
- * @depends       db.js, middleware/require-pricing-global-authority.js, services/market-structure-charge-reference.js, services/market-delegation-service.js
+ * @depends       db.js, services/economic-cost-write-authority.js, services/market-structure-charge-reference.js, services/market-delegation-service.js
  * @used-by       routes/admin-pricing-workspace.js
  * @db-read       markets, economic_cost_centers, economic_cost_families, economic_cost_resources, economic_cost_posts
  * @db-write      economic_cost_posts
@@ -19,7 +19,7 @@
  */
 'use strict';
 const db=require('../db');
-const {hasPricingGlobalAuthority}=require('../middleware/require-pricing-global-authority');
+const costAuthority=require('./economic-cost-write-authority');
 const {insertStructureReference}=require('./market-structure-charge-reference');
 const {audit}=require('./market-delegation-service');
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -38,9 +38,7 @@ function parsePost(raw){
   return {marketCode:raw.marketCode,familyId:ref(raw.familyId,'Famille'),resourceId:raw.resourceId==null?null:ref(raw.resourceId,'Ressource'),code,label:str(raw.label,3,120,'Libellé'),economicNature:raw.economicNature,allocationPerimeter:raw.allocationPerimeter,allocationBasis:str(raw.allocationBasis,1,200,'Clé'),source:raw.source,reason:str(raw.reason,3,500,'Motif')};
 }
 async function createPost(actor,raw){
-  if(!actor?.id)throw fail('AUTH_REQUIRED',401,'Authentification requise');
-  if(actor.role!=='admin'||!await hasPricingGlobalAuthority(actor.id))throw fail('pricing_global_access_denied',403,'Autorité globale requise');
-  const x=parsePost(raw),client=await db.getClient();
+  const x=parsePost(raw),central=await costAuthority.classifyActor(actor,x.marketCode),client=await db.getClient();
   try{
     await client.query('BEGIN');
     let marketId=null;
@@ -49,6 +47,7 @@ async function createPost(actor,raw){
       if(!rows.length)throw fail('market_not_found',404,'Marché introuvable');
       marketId=rows[0].id;
     }
+    await costAuthority.check(client,actor,x.marketCode,marketId,central,'reference',{record:true});
     const {rows:families}=await client.query('SELECT f.id,f.center_id FROM economic_cost_families f JOIN economic_cost_centers c ON c.id=f.center_id WHERE f.id=$1 AND c.market_id IS NOT DISTINCT FROM $2::uuid FOR UPDATE OF f',[x.familyId,marketId]);
     if(!families.length)throw fail('economic_reference_family_not_found',404,'Famille introuvable dans ce périmètre');
     const centerId=families[0].center_id;

@@ -44,6 +44,8 @@
     return grouped+(decimals?','+decimals:'')+' '+currency;
   }
 
+  function canCost(model,action){return model?.central===true||model?.costCapabilities?.[action]===true;}
+
   function createV7CostCenters(doc, model, actions={}) {
     const host=el(doc,'section','kmc-v7-centers');
     host.dataset.v7Centers='';
@@ -130,7 +132,7 @@
         body.append(tr);
       }
       table.append(body);host.append(table);
-      if(model.central===true&&typeof actions.createPost==='function')host.append(createV7PostForm(doc,model,family,resources.filter(r=>r.center_id===center.id),actions));
+      if(canCost(model,'reference')&&typeof actions.createPost==='function')host.append(createV7PostForm(doc,model,family,resources.filter(r=>r.center_id===center.id),actions));
       if(!ps.length)host.append(el(doc,'p','kmc-v7-empty','Aucun poste dans cette famille.'));
       const post=ps.find(p=>p.id===state.postId);
       if(post){
@@ -143,8 +145,8 @@
           metric('Budget',post.budget?v7Money(post.budget.native,post.budget.currency):'Non renseigné'),
           metric('Engagements',commitmentText(post)),metric('Charges constatées',structureText(post.structureEvidence)),metric('Disponible','Non calculable'),
           button('Fermer le détail',()=>{state.postId=null;render();}));
-        if(model.central===true&&typeof actions.reviseBudget==='function')detail.append(createV7BudgetForm(doc,model,post,actions));
-        if(model.central===true&&typeof actions.openCommitment==='function'&&typeof actions.moveCommitment==='function')detail.append(createV7CommitmentForms(doc,model,post,actions));
+        if(canCost(model,'budget')&&typeof actions.reviseBudget==='function')detail.append(createV7BudgetForm(doc,model,post,actions));
+        if((canCost(model,'commitment')||canCost(model,'actual'))&&typeof actions.openCommitment==='function'&&typeof actions.moveCommitment==='function')detail.append(createV7CommitmentForms(doc,model,post,actions));
         host.append(detail);
       }
     }
@@ -248,11 +250,12 @@
       });
       return form;
     }
-    if(post.acceptsStructureActual===true&&typeof actions.recordActual==='function'){
+    if(canCost(model,'actual')&&post.acceptsStructureActual===true&&typeof actions.recordActual==='function'){
       section.append(operation('Charge constatée','Enregistrer la charge',{currency:post.budget?.currency},({requestKey,...body})=>actions.recordActual(post.id,body)));
     }else if(post.acceptsStructureActual===false){
       section.append(el(doc,'p','kmc-v7-coverage','Réel alimenté par la source propriétaire ; aucune ressaisie.'));
     }
+    if(!canCost(model,'commitment'))return section;
     section.append(operation('Nouvel engagement','Enregistrer l’engagement',{currency:post.budget?.currency},body=>actions.openCommitment(post.id,body)));
     for(const k of post.commitments||[]){
       if(typeof k.remaining_native!=='string'||!/[1-9]/.test(k.remaining_native))continue;
@@ -261,7 +264,7 @@
       if(k.requires_reconciliation)block.append(el(doc,'p','kmc-v7-coverage','Correction à rapprocher avant consommation.'));
       block.append(operation('Libérer une partie','Libérer',{currency:k.currency,fixedCurrency:true},({currency,...body})=>actions.moveCommitment(k.id,{...body,kind:'RELEASE'})));
       const facts=(post.eligibleStructureFacts||[]).filter(f=>f.currency===k.currency);
-      if(!k.requires_reconciliation&&facts.length)block.append(operation('Rapprocher une charge existante','Consommer l’engagement',{currency:k.currency,fixedCurrency:true},({currency,...body})=>actions.moveCommitment(k.id,{...body,kind:'CONSUME_STRUCTURE'}),facts));
+      if(canCost(model,'consume')&&!k.requires_reconciliation&&facts.length)block.append(operation('Rapprocher une charge existante','Consommer l’engagement',{currency:k.currency,fixedCurrency:true},({currency,...body})=>actions.moveCommitment(k.id,{...body,kind:'CONSUME_STRUCTURE'}),facts));
       section.append(block);
     }
     return section;
@@ -438,8 +441,8 @@
         const model=await fetchV7V6Model(workspace,context,periodStart);
         if(disposed||request!==generation)return false;
         currentModel=model;
-        const mutate=async(path,body)=>{
-          if(disposed||request!==generation||currentModel!==model||model.central!==true)throw new Error('Périmètre économique obsolète.');
+        const mutate=async(action,path,body)=>{
+          if(disposed||request!==generation||currentModel!==model||!canCost(model,action))throw new Error('Périmètre économique obsolète.');
           const endpoint=workspace.endpointFor({requestedMarket:context.requestedMarket});
           const result=await workspace.jsonRequest(context.fetch,endpoint+'/cost-centers'+path,{method:'POST',body});
           if(!disposed&&request===generation){
@@ -449,11 +452,11 @@
           return result;
         };
         const actions={centerState,
-          reviseBudget:(id,body)=>mutate('/posts/'+encodeURIComponent(id)+'/budget-revisions',body),
-          openCommitment:(id,body)=>mutate('/posts/'+encodeURIComponent(id)+'/commitments',body),
-          recordActual:(id,body)=>mutate('/posts/'+encodeURIComponent(id)+'/actuals',body),
-          createPost:(id,body)=>mutate('/families/'+encodeURIComponent(id)+'/posts',body),
-          moveCommitment:(id,body)=>mutate('/commitments/'+encodeURIComponent(id)+'/movements',body)
+          reviseBudget:(id,body)=>mutate('budget','/posts/'+encodeURIComponent(id)+'/budget-revisions',body),
+          openCommitment:(id,body)=>mutate('commitment','/posts/'+encodeURIComponent(id)+'/commitments',body),
+          recordActual:(id,body)=>mutate('actual','/posts/'+encodeURIComponent(id)+'/actuals',body),
+          createPost:(id,body)=>mutate('reference','/families/'+encodeURIComponent(id)+'/posts',body),
+          moveCommitment:(id,body)=>mutate(body.kind==='CONSUME_STRUCTURE'?'consume':'commitment','/commitments/'+encodeURIComponent(id)+'/movements',body)
         };
         content.append(createV7V6Tabs(doc,model,active,key=>{active=key;},actions));
         status.textContent='';

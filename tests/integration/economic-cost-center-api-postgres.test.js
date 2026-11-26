@@ -254,6 +254,23 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     const row=(await get(fx.central,fx.marketA.code)).body.posts.find(p=>p.id===created.body.post.id);
     expect(row).toMatchObject({budget:null,actual:null,acceptsStructureActual:true});
   });
+  test('delegated market manager can write locally, never group or foreign market',async()=>{
+    const post=(actor,code,path,body)=>request(app).post(endpoint(code)+path).set('Authorization',actor.token).send(body);
+    const own=await get(fx.managerA,fx.marketA.code);
+    expect(own.body.costCapabilities).toMatchObject({budget:true,commitment:true,consume:true,actual:true,reference:true});
+    const viewer=await get(fx.viewerA,fx.marketA.code);
+    expect(viewer.body.costCapabilities).toMatchObject({budget:false,commitment:false,actual:false,reference:false});
+    const body={periodStart:'2026-03-01',expectedRevision:0,currency:'EUR',amountNative:'100',reason:'CI local budget',requestKey:tag+'LOCAL'};
+    const path='/posts/'+a.post+'/budget-revisions';
+    expect((await post(fx.managerA,fx.marketA.code,path,body)).status).toBe(201);
+    expect((await post(fx.managerA,fx.marketB.code,path,body)).status).toBe(403);
+    expect((await post(fx.managerA,null,path,body)).status).toBe(403);
+    expect((await post(fx.viewerA,fx.marketA.code,path,body)).status).toBe(403);
+    const k=await post(fx.managerA,fx.marketA.code,'/posts/'+a.post+'/commitments',{periodStart:month,currency:'EUR',amountNative:'10',evidenceRef:'CI local commitment',requestKey:tag+'LOCAL-K'});
+    expect(k.status).toBe(201);
+    const actual=await post(fx.managerA,fx.marketA.code,'/posts/'+a.post+'/actuals',{periodStart:month,currency:'KMF',amountNative:'10',evidenceRef:tag+'LOCAL-FACT'});
+    expect(actual.status).toBe(201);
+  });
   test('browser authority injection and invalid period rejected',async()=>{
     expect((await request(app).get(endpoint(fx.marketA.code)).query({periodStart:month,market_id:fx.marketB.id}).set('Authorization',fx.viewerA.token)).status).toBe(400);
     expect((await get(fx.central,fx.marketA.code,'2026-01-02')).status).toBe(400);

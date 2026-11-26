@@ -86,6 +86,7 @@ module.exports = {
       'services/economic-cost-commitment-service.js',
       'services/economic-cost-post-actual-service.js',
       'services/economic-cost-reference-service.js',
+      'services/economic-cost-write-authority.js',
       'services/pricing-apply.js',
       'services/cost-component-admin-service.js',
       'services/cost-component-market-service.js',

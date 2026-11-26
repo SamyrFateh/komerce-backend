@@ -4,9 +4,9 @@
  * @domain        economic-engine
  * @layer         service
  * @criticality   high
- * @inputs        authenticated_central_actor, explicit_scope, post_or_commitment_ref, period, native_amount, evidence, request_key
+ * @inputs        authenticated_actor, explicit_scope, post_or_commitment_ref, period, native_amount, evidence, request_key
  * @outputs       immutable_commitment_or_movement, idempotent_replay
- * @depends       db.js, middleware/require-pricing-global-authority.js, services/fx-authority.js
+ * @depends       db.js, services/economic-cost-write-authority.js, services/fx-authority.js
  * @used-by       routes/admin-pricing-workspace.js
  * @db-read       markets, economic_cost_centers, economic_cost_posts, economic_cost_commitments, economic_cost_commitment_movements
  * @db-write      economic_cost_commitments, economic_cost_commitment_movements
@@ -18,7 +18,7 @@
 'use strict';
 const db=require('../db');
 const fx=require('./fx-authority');
-const {hasPricingGlobalAuthority}=require('../middleware/require-pricing-global-authority');
+const costAuthority=require('./economic-cost-write-authority');
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function fail(code,status,message){return Object.assign(new Error(message),{code,status});}
 const invalid=field=>fail('economic_commitment_invalid',400,field+' invalide');
@@ -42,11 +42,7 @@ function parseMovement(raw){
   if(raw.kind==='RELEASE'&&raw.structureEventId!=null)throw invalid('Fait de consommation');
   return {...c,commitmentId:ref(raw.commitmentId,'Engagement'),kind:raw.kind,structureEventId:raw.kind==='CONSUME_STRUCTURE'?ref(raw.structureEventId,'Fait canonique'):null,rawAmount:raw.amountNative};
 }
-async function assertCentral(actor){
-  if(!actor?.id)throw fail('AUTH_REQUIRED',401,'Authentification requise');
-  if(actor.role!=='admin'||!await hasPricingGlobalAuthority(actor.id))throw fail('pricing_global_access_denied',403,'Autorité globale requise');
-}
-async function transaction(input,work){
+async function transaction(input,actor,central,action,work){
   const client=await db.getClient();
   try{
     await client.query('BEGIN ISOLATION LEVEL READ COMMITTED');
@@ -56,6 +52,7 @@ async function transaction(input,work){
       if(!rows.length)throw fail('market_not_found',404,'Marché introuvable');
       marketId=rows[0].id;
     }
+    await costAuthority.check(client,actor,input.marketCode,marketId,central,action,{record:true});
     const result=await work(client,marketId);
     await client.query('COMMIT');return result;
   }catch(e){
@@ -66,9 +63,8 @@ async function transaction(input,work){
 }
 function conflict(){return fail('economic_commitment_idempotency_conflict',409,'Rejeu avec données différentes');}
 async function openCommitment(actor,raw){
-  await assertCentral(actor);
-  const x=parseOpen(raw);
-  return transaction(x,async(client,marketId)=>{
+  const x=parseOpen(raw),central=await costAuthority.classifyActor(actor,x.marketCode);
+  return transaction(x,actor,central,'commitment',async(client,marketId)=>{
     const {rows:posts}=await client.query('SELECT p.id FROM economic_cost_posts p JOIN economic_cost_centers c ON c.id=p.center_id WHERE p.id=$1 AND c.market_id IS NOT DISTINCT FROM $2::uuid FOR UPDATE OF p',[x.postId,marketId]);
     if(!posts.length)throw fail('economic_commitment_post_not_found',404,'Poste introuvable dans ce périmètre');
     const {rows:prior}=await client.query('SELECT *, period_start::text AS period_start, amount_native::text AS amount_native, amount_eur::text AS amount_eur FROM economic_cost_commitments WHERE post_id=$1 AND request_key=$2',[x.postId,x.requestKey]);
@@ -85,9 +81,8 @@ async function openCommitment(actor,raw){
   });
 }
 async function moveCommitment(actor,raw){
-  await assertCentral(actor);
-  const x=parseMovement(raw);
-  return transaction(x,async(client,marketId)=>{
+  const x=parseMovement(raw),central=await costAuthority.classifyActor(actor,x.marketCode);
+  return transaction(x,actor,central,x.kind==='CONSUME_STRUCTURE'?'consume':'commitment',async(client,marketId)=>{
     const {rows:ks}=await client.query('SELECT k.id,k.currency FROM economic_cost_commitments k JOIN economic_cost_posts p ON p.id=k.post_id JOIN economic_cost_centers c ON c.id=p.center_id WHERE k.id=$1 AND c.market_id IS NOT DISTINCT FROM $2::uuid AND k.period_start=$3::date FOR UPDATE OF k',[x.commitmentId,marketId,x.periodStart]);
     if(!ks.length)throw fail('economic_commitment_not_found',404,'Engagement introuvable dans ce périmètre et cette période');
     const native=amount(x.rawAmount,ks[0].currency);
