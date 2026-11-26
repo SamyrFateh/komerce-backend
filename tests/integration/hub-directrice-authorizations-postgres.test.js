@@ -154,7 +154,7 @@ if (!process.env.DATABASE_URL) {
     const candidate=await draftPo(10);
     await changeCommercialState(candidate,status,paymentStatus);
     const before=await purchaseSnapshot(candidate);
-    await expect(auth.decide({purchaseOrderId:candidate,authorizationType:'purchase_commitment',actor:directrice,body:{proof_ref:'P0-'+label}})).rejects.toMatchObject({status:409});
+    await expect(auth.decide({purchaseOrderId:candidate,authorizationType:'purchase_commitment',actor:directrice,body:{proof_ref:'P0-'+label}})).rejects.toMatchObject({status:409,code:status==='pending'?'ORDER_PAYMENT_NOT_CONFIRMED':'ORDER_CANCELLED'});
     expect(await purchaseSnapshot(candidate)).toEqual(before);
   });
   test.each(commercialCases)('P0 soumission refusée après engagement valide : %s, preuve conservée',async(label,status,paymentStatus)=>{
@@ -163,8 +163,21 @@ if (!process.env.DATABASE_URL) {
     await changeCommercialState(candidate,status,paymentStatus);
     const before=await purchaseSnapshot(candidate);
     expect(before.decisions.map(x=>x.id)).toEqual([approval.id]);
-    await expect(engagement.submitPurchaseOrder(candidate,{actor:agent})).rejects.toMatchObject({status:409});
+    await expect(engagement.submitPurchaseOrder(candidate,{actor:agent})).rejects.toMatchObject({status:409,code:status==='pending'?'ORDER_PAYMENT_NOT_CONFIRMED':'ORDER_CANCELLED'});
     expect(await purchaseSnapshot(candidate)).toEqual(before);
+  });
+
+  test('P0 : modification concurrente du paiement => refus rapide, aucun engagement',async()=>{
+    const candidate=await draftPo(10);
+    const {rows:[row]}=await q('SELECT oi.order_id FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id WHERE pl.purchase_order_id=$1',[candidate]);
+    const before=await purchaseSnapshot(candidate);
+    const writer=await db.getClient();
+    try{
+      await writer.query('BEGIN');
+      await writer.query("UPDATE orders SET payment_status='pending' WHERE id=$1",[row.order_id]);
+      await expect(auth.decide({purchaseOrderId:candidate,authorizationType:'purchase_commitment',actor:directrice,body:{proof_ref:'P0-CONCURRENT'}})).rejects.toMatchObject({status:409,code:'PURCHASE_COMMERCIAL_STATE_BUSY'});
+      expect(await purchaseSnapshot(candidate)).toEqual(before);
+    }finally{await writer.query('ROLLBACK');writer.release();}
   });
 
   test('révocation : motif obligatoire, le détenteur perd immédiatement le pouvoir, les décisions passées restent', async () => {
