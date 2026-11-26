@@ -717,7 +717,7 @@
     // Poste PO opérationnel par défaut ; ancienne lecture accessible en secours.
     // Les ateliers canoniques restent les seuls writers. Aucun état métier local.
     const visualPO = canOperate && new URLSearchParams(safe(location?.search)).get('ux')!=='legacy';
-    let visualHost, visualTabs, visualBoard, visualPanels, visualChrome, visualControls, visualMarketSelect, visualLogistics, visualActive=null,visualMarket='ALL',visualView='board',visualMarkets=[];
+    let visualHost, visualTabs, visualBoard, visualPanels, visualChrome, visualControls, visualMarketSelect, visualActive=null,visualMarket='ALL',visualView='board',visualMarkets=[];
     const visualOpen=new Map();
     const initialParams=new URLSearchParams(safe(location?.search));
     const initialPO=/^po:[A-Za-z0-9-]{1,128}$/.test(initialParams.get('sel')||'')?initialParams.get('sel').slice(3):null;
@@ -725,6 +725,7 @@
     const initialMarket=initialParams.get('market');
     let initialSelectionHandled=false;
     const visualLanes=['Engagement','Soumission','Envoi fournisseur','Confirmation & suivi','Réception & QR','Bilan PO'];
+    const workLanes=[{label:'Validation',stages:[0]},{label:'Achats',stages:[1,2,3]},{label:'Réception',stages:[4]},{label:'Emballage',kind:'boxes'},{label:'Expédition',kind:'departure'}];
     const visualStage=p=>{
       if(p.physical_settled===true)return 5;
       if(p.reception_complete)return 4;
@@ -767,28 +768,28 @@
     };
     // Un dossier logistique porte sur un marché, et non sur une PO.
     // Les groupes relais/rail sont construits par les adaptateurs canoniques.
-    const openLogistics=(market,kind)=>{
-      const id='logistics:'+market+':'+kind;
+    const openLogistics=(market,kind,railFilter)=>{
+      const id='logistics:'+market+':'+kind+(railFilter===undefined?'':':'+railFilter);
       if(!visualOpen.has(id)){
         const panel=make(doc,'section','kmc-hub-po-v8-panel');
         const summary=make(doc,'div','kmc-hub-po-v8-summary');
         const actions=make(doc,'div','kmc-hub-po-v8-actions');
         panel.append(summary,actions);visualPanels.appendChild(panel);
-        visualOpen.set(id,{kind,market,panel,summary,actions,handle:null,loading:false,
-          po:{reference:(kind==='boxes'?'COMBOX':'Expédition')+' · '+market}});
+        visualOpen.set(id,{kind,market,railFilter,id,panel,summary,actions,handle:null,loading:false,
+          po:{reference:(kind==='boxes'?'COMBOX':'Expédition')+' · '+market+(railFilter===undefined?'':railFilter==='SEA_STANDARD'?' · Maritime':railFilter==='AIR_EXPRESS'?' · Aérien':' · À affecter')}});
       }
       visualSelect(id);
     };
     function renderLogistics(entry){
       entry.summary.replaceChildren(make(doc,'h2','',entry.po.reference));
-      if(visualActive!=='logistics:'+entry.market+':'+entry.kind||entry.loading||entry.handle)return;
+      if(visualActive!==entry.id||entry.loading||entry.handle)return;
       const module=global.KomerceCanonicalOperationsWorkspace;
       const mount=entry.kind==='boxes'?module?.mountBoxActions:module?.mountDepartureActions;
       if(!mount){entry.actions.replaceChildren(make(doc,'p','','Atelier canonique indisponible.'));return;}
       entry.loading=true;
       entry.actions.replaceChildren(make(doc,'p','','Chargement…'));
       Promise.resolve().then(()=>mount(entry.actions,{document:doc,fetch:fetchFn,user,
-        marketCode:entry.market,marketWide:true,boxCreateKeys,hubVerifiedBoxes,
+        marketCode:entry.market,marketWide:true,railFilter:entry.railFilter,boxCreateKeys,hubVerifiedBoxes,
         onChange:async()=>{await visualRefresh();}}))
         .then(handle=>{entry.handle=handle;})
         .catch(error=>{entry.actions.replaceChildren(make(doc,'p','','Action indisponible : '+error.message));})
@@ -821,15 +822,13 @@
         visualChrome=make(doc,'section','kmc-hub-po-v8-chrome');
         const top=make(doc,'div','kmc-hub-po-v8-topline');
         const heading=make(doc,'div','kmc-hub-po-v8-heading');
-        heading.append(make(doc,'small','kmc-hub-po-v8-eyebrow','Hub / poste de travail'),make(doc,'h2','','Kanban opérationnel'),make(doc,'p','kmc-hub-po-v8-muted','Achats fournisseurs · Chaque PO avance indépendamment.'));
+        heading.append(make(doc,'small','kmc-hub-po-v8-eyebrow','Hub / poste de travail'),make(doc,'h2','','Kanban opérationnel'),make(doc,'p','kmc-hub-po-v8-muted','Cinq postes de travail · Chaque dossier avance indépendamment.'));
         top.appendChild(heading);
         visualControls=make(doc,'div','kmc-hub-po-v8-board-controls');top.appendChild(visualControls);
         const toolbar=make(doc,'div','kmc-hub-po-v8-toolbar');
         visualMarketSelect=make(doc,'select','');visualMarketSelect.setAttribute('aria-label','Filtrer les PO par marché');visualMarketSelect.setAttribute('data-hub-v8-market','');
         visualMarketSelect.addEventListener('change',()=>{visualMarket=visualMarketSelect.value;renderVisualPO();});
         search.remove();toolbar.append(visualMarketSelect,search);
-        visualLogistics=make(doc,'details','kmc-hub-po-v8-log-access');
-        toolbar.appendChild(visualLogistics);
         visualChrome.append(top,toolbar,headerCount);
         visualHost.append(visualTabs,visualChrome,visualBoard,visualPanels);
         root.insertBefore(visualHost,scroll);
@@ -854,10 +853,10 @@
       visualMarketSelect.value=visualMarket;
       const exceptionPOs=filtered.filter(p=>p.anomalies>0||(p.exceptions||[]).length||visualStage(p)<0);
       const archived=filtered.filter(p=>p.physical_settled===true);
-      headerCount.textContent=visualView==='board'?'Achats · '+filtered.filter(p=>visualStage(p)>=0&&visualStage(p)<5).length+' PO actives':visualView==='exceptions'?'Exceptions · '+exceptionPOs.length+' PO':'Historique · '+archived.length+' PO soldée(s)';
+      headerCount.textContent=visualView==='board'?'Opérations · '+filtered.filter(p=>visualStage(p)>=0&&visualStage(p)<5).length+' PO actives':visualView==='exceptions'?'Exceptions · '+exceptionPOs.length+' PO':'Historique · '+archived.length+' PO soldée(s)';
       visualChrome.hidden=Boolean(visualActive);
       visualControls.replaceChildren();
-      for(const [view,label] of [['board','Achats'],['exceptions','Exceptions'+(exceptionPOs.length?' ('+exceptionPOs.length+')':'')],['archive','Historique PO soldées']]){
+      for(const [view,label] of [['board','Kanban'],['exceptions','Exceptions'+(exceptionPOs.length?' ('+exceptionPOs.length+')':'')],['archive','Historique PO soldées']]){
         if(view==='board'&&visualView==='board')continue;
         const button=make(doc,'button','kmc-hub-app-branch',label);button.type='button';button.setAttribute('data-hub-v8-view',view);button.setAttribute('aria-pressed',String(visualView===view));
         button.addEventListener('click',()=>{visualView=view;renderVisualPO();});visualControls.appendChild(button);
@@ -889,21 +888,6 @@
           refreshTab.disabled=true;try{await visualRefresh();}catch(error){if(entry?.summary)entry.summary.appendChild(make(doc,'p','','Actualisation indisponible : '+error.message));}finally{refreshTab.disabled=false;}
         });visualTabs.appendChild(refreshTab);
       }
-      // Menu logistique unique, dans la barre du Kanban (pas de panneau permanent).
-      // Les dossiers restent indépendants des PO et utilisent les adapters réels.
-      const wasOpen=visualLogistics.open;
-      visualLogistics.replaceChildren(make(doc,'summary','','Logistique'));
-      const logMenu=make(doc,'div','kmc-hub-po-v8-log-menu');
-      for(const market of markets.filter(m=>visualMarket==='ALL'||m===visualMarket)){
-        const group=make(doc,'div','kmc-hub-po-v8-log-group');group.appendChild(make(doc,'strong','',market));
-        for(const [kind,label] of [['boxes','COMBOX · préparation'],['departure','Départ · expédition']]){
-          const button=make(doc,'button','kmc-hub-po-v8-log-item',label);button.type='button';
-          button.addEventListener('click',()=>{visualLogistics.open=false;openLogistics(market,kind);});group.appendChild(button);
-        }
-        logMenu.appendChild(group);
-      }
-      if(!markets.length)logMenu.appendChild(make(doc,'p','kmc-hub-po-v8-muted','Aucun marché disponible.'));
-      visualLogistics.appendChild(logMenu);visualLogistics.open=wasOpen;
       visualBoard.hidden=Boolean(visualActive);
       visualBoard.className='kmc-hub-po-v8-board'+(visualView==='board'?'':' is-list');
       visualBoard.replaceChildren();
@@ -919,15 +903,35 @@
         });return card;
       }
       if(visualView==='board'){
-        for(const [i,label] of visualLanes.entries()){
+        for(const [i,work] of workLanes.entries()){
           const lane=make(doc,'section','kmc-hub-po-v8-lane');
-          const list=filtered.filter(p=>visualStage(p)===i);
           lane.setAttribute('data-hub-v8-lane',String(i));
           const title=make(doc,'h3','kmc-hub-po-v8-lanehead');
-          title.append(make(doc,'span','',i===5?'Bilan · soldées':label),make(doc,'span','kmc-hub-po-v8-count',String(list.length)));
+          title.appendChild(make(doc,'span','',work.label));
           lane.appendChild(title);
-          for(const p of list)lane.appendChild(ticket(p,i));
-          if(!list.length)lane.appendChild(make(doc,'p','kmc-hub-po-v8-empty','Aucun dossier'));
+          if(work.kind){
+            // Accès direct aux ateliers : aucune quantité inventée sur le Kanban.
+            const available=markets.filter(m=>visualMarket==='ALL'||m===visualMarket);
+            const rails=work.kind==='departure'?[['SEA_STANDARD','Maritime'],['AIR_EXPRESS','Aérien'],[null,'À affecter']]:[[undefined,'Préparation COMBOX']];
+            for(const [rail,label] of rails){
+              const group=make(doc,'div','kmc-hub-po-v8-log-group');
+              group.appendChild(make(doc,'strong','',label));
+              for(const market of available){
+                const card=make(doc,'button','kmc-hub-po-v8-card');
+                card.type='button';card.setAttribute('data-hub-workshop',work.kind);
+                card.append(make(doc,'strong','',market),make(doc,'small','kmc-hub-po-v8-muted','Ouvrir l’atelier'));
+                card.addEventListener('click',()=>openLogistics(market,work.kind,rail));
+                group.appendChild(card);
+              }
+              if(!available.length)group.appendChild(make(doc,'p','kmc-hub-po-v8-empty','Aucun marché disponible'));
+              lane.appendChild(group);
+            }
+          }else{
+            const list=filtered.filter(p=>work.stages.includes(visualStage(p)));
+            title.appendChild(make(doc,'span','kmc-hub-po-v8-count',String(list.length)));
+            for(const p of list)lane.appendChild(ticket(p,visualStage(p)));
+            if(!list.length)lane.appendChild(make(doc,'p','kmc-hub-po-v8-empty','Aucun dossier'));
+          }
           visualBoard.appendChild(lane);
         }
       }else{
@@ -951,7 +955,8 @@
           const metric=make(doc,'div','kmc-hub-po-v8-metric');metric.append(make(doc,'small','',label),make(doc,'strong','',String(value)));metrics.appendChild(metric);
         }entry.summary.appendChild(metrics);
         const progress=make(doc,'div','kmc-hub-po-v8-progress');
-        visualLanes.forEach((label,i)=>{const item=make(doc,'span',i===stage?'is-current':i<stage?'is-done':'',(i<stage?'✓ ':'')+(i+1)+'. '+label);if(i===stage)item.setAttribute('aria-current','step');progress.appendChild(item);});
+        const workStage=stage===0?0:stage>=1&&stage<=3?1:stage===4?2:stage===5?3:-1;
+        workLanes.slice(0,3).forEach(({label},i)=>{const item=make(doc,'span',i===workStage?'is-current':i<workStage?'is-done':'',(i<workStage?'✓ ':'')+(i+1)+'. '+label);if(i===workStage)item.setAttribute('aria-current','step');progress.appendChild(item);});
         entry.summary.appendChild(progress);
         if(p.reception_complete&&stage!==5)entry.summary.appendChild(make(doc,'p','kmc-hub-po-v8-muted','Réception complète · contrôle qualité, QR et bilan à vérifier.'));
         const previousOpen=new Set(entry.openOrders||[]);
@@ -986,11 +991,11 @@
         if(entry.loading||entry.handle?.busy?.())continue;
         if(entry.mode===mode && entry.handle){
           if(entry.actionTitle)entry.actionTitle.textContent=actionLabel;
-          if(entry.actionEyebrow)entry.actionEyebrow.textContent='Étape active · '+(stage+1)+'/6';
+          if(entry.actionEyebrow)entry.actionEyebrow.textContent='Action en cours';
           continue;
         }
         entry.mode=mode;entry.handle=null;
-        entry.actionEyebrow=make(doc,'small','kmc-hub-po-v8-eyebrow','Étape active · '+(stage+1)+'/6');
+        entry.actionEyebrow=make(doc,'small','kmc-hub-po-v8-eyebrow','Action en cours');
         entry.actionTitle=make(doc,'h3','',actionLabel);
         entry.actions.replaceChildren(entry.actionEyebrow,entry.actionTitle);
         const actionHost=make(doc,'div','kmc-hub-po-v8-action-host');entry.actions.appendChild(actionHost);
