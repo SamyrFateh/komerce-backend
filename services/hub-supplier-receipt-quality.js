@@ -7,8 +7,8 @@
  * @inputs server market and actor, PO, stable reference, explicit physical observations
  * @outputs immutable receipt and return attestations, canonical conforming placements
  * @depends services/hub-reception-quality-plan.js, services/hub-physical-identity.js
- * @used-by pending canonical route integration (#5298)
- * @db-read hub_supplier_receipt_checks, hub_supplier_receipt_check_lines, hub_supplier_return_attestations
+ * @used-by routes/admin-operations-workspace.js
+ * @db-read purchase_orders, hub_supplier_receipt_checks, hub_supplier_receipt_check_lines, hub_supplier_return_attestations
  * @db-write hub_supplier_receipt_checks, hub_supplier_receipt_check_lines, hub_supplier_return_attestations
  * @db-txn caller-owned transaction; reference advisory lock then PO/line locks
  * @doctrine no_rejected_client_stock_no_implicit_supplier_return
@@ -97,4 +97,22 @@ async function attestSupplierReturn(client,{checkLineId,marketId,actorId,referen
     [reference,checkLineId,quantity,actorId]);
   return {attestation,replayed:false};
 }
-module.exports={observeSupplierReceipt,attestSupplierReturn,conformingContents};
+async function listSupplierReceiptChecks(client,{purchaseOrderId,marketId}={}){
+  if(!uuid.test(purchaseOrderId||'')||!uuid.test(marketId||''))fail('HUB_QUALITY_SCOPE_INVALID');
+  const {rows:[po]}=await client.query('SELECT id,order_id FROM purchase_orders WHERE id=$1 AND market_id=$2',[purchaseOrderId,marketId]);
+  if(!po)fail('HUB_QUALITY_PO_SCOPE',404);
+  if(po.order_id!==null)return {eligible:false,checks:[]};
+  const {rows}=await client.query(
+    `SELECT c.id AS check_id,c.reference,c.observed_at,c.conforming_unit_id,
+            l.id AS line_id,l.product_sku_id,l.expected_quantity,l.received_quantity,l.rejected_quantity,
+            l.conforming_quantity,l.missing_quantity,
+            COALESCE(r.returned,0)::int AS returned_quantity,
+            (l.rejected_quantity-COALESCE(r.returned,0))::int AS to_return_quantity
+       FROM hub_supplier_receipt_checks c
+       JOIN hub_supplier_receipt_check_lines l ON l.check_id=c.id
+       LEFT JOIN LATERAL (SELECT SUM(quantity) AS returned FROM hub_supplier_return_attestations WHERE check_line_id=l.id) r ON true
+      WHERE c.purchase_order_id=$1 AND c.market_id=$2
+      ORDER BY c.observed_at DESC,c.id,l.product_sku_id`,[purchaseOrderId,marketId]);
+  return {eligible:true,checks:rows};
+}
+module.exports={observeSupplierReceipt,attestSupplierReturn,conformingContents,listSupplierReceiptChecks};
