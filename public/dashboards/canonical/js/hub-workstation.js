@@ -717,7 +717,7 @@
     // Poste PO opérationnel par défaut ; ancienne lecture accessible en secours.
     // Les ateliers canoniques restent les seuls writers. Aucun état métier local.
     const visualPO = canOperate && new URLSearchParams(safe(location?.search)).get('ux')!=='legacy';
-    let visualHost, visualTabs, visualBoard, visualPanels, visualChrome, visualControls, visualMarketSelect, visualActive=null,visualMarket='ALL',visualView='board',visualMarkets=[];
+    let visualHost, visualTabs, visualBoard, visualPanels, visualChrome, visualControls, visualMarketSelect, visualActive=null,visualMarket='ALL',visualView='board',visualMarkets=[],visualWork=null;
     const visualOpen=new Map();
     const initialParams=new URLSearchParams(safe(location?.search));
     const initialPO=/^po:[A-Za-z0-9-]{1,128}$/.test(initialParams.get('sel')||'')?initialParams.get('sel').slice(3):null;
@@ -746,13 +746,14 @@
         const data=await requestJSON(fetchFn,'/api/hub/board?view=po');
         if(data.scope!=='HUB_GLOBAL'||!Array.isArray(data.purchase_orders))throw Error('Projection PO indisponible');
         if(root.isConnected===false)return null;
-        const signature=JSON.stringify([data.purchase_orders,data.markets||[]]);
+        const signature=JSON.stringify([data.purchase_orders,data.markets||[],data.logistics_work??null]);
         if(background&&signature===visualSignature&&!headerCount.hasAttribute('data-hub-v8-stale')&&!root.hasAttribute('data-hub-v8-access-denied'))return data;
         // Ne pas remplacer les actions pendant une saisie ou une mutation.
         const active=visualOpen.get(visualActive);
         if(background&&(active?.loading||active?.handle?.busy?.()||editingPO()))return null;
         poRows=data.purchase_orders;
         visualMarkets=Array.isArray(data.markets)?data.markets:[];
+        visualWork=Array.isArray(data.logistics_work)?data.logistics_work:null;
         renderVisualPO();
         if(background&&active?.handle&&!active.loading&&!active.handle.busy?.()){
           await active.handle.reload?.();
@@ -768,15 +769,15 @@
     };
     // Un dossier logistique porte sur un marché, et non sur une PO.
     // Les groupes relais/rail sont construits par les adaptateurs canoniques.
-    const openLogistics=(market,kind,railFilter)=>{
-      const id='logistics:'+market+':'+kind+(railFilter===undefined?'':':'+railFilter);
+    const openLogistics=(market,kind,railFilter,work)=>{
+      const id='logistics:'+market+':'+kind+(railFilter===undefined?'':':'+railFilter)+(work?':'+work.group_key:'');
       if(!visualOpen.has(id)){
         const panel=make(doc,'section','kmc-hub-po-v8-panel');
         const summary=make(doc,'div','kmc-hub-po-v8-summary');
         const actions=make(doc,'div','kmc-hub-po-v8-actions');
         panel.append(summary,actions);visualPanels.appendChild(panel);
-        visualOpen.set(id,{kind,market,railFilter,id,panel,summary,actions,handle:null,loading:false,
-          po:{reference:(kind==='boxes'?'COMBOX':'Expédition')+' · '+market+(railFilter===undefined?'':railFilter==='SEA_STANDARD'?' · Maritime':railFilter==='AIR_EXPRESS'?' · Aérien':' · À affecter')}});
+        visualOpen.set(id,{kind,market,railFilter,groupKey:work?.group_key,id,panel,summary,actions,handle:null,loading:false,
+          po:{reference:(kind==='boxes'?'COMBOX':'Expédition')+' · '+market+(work?' · '+work.relay_code:'')+(railFilter===undefined?'':railFilter==='SEA_STANDARD'?' · Maritime':railFilter==='AIR_EXPRESS'?' · Aérien':' · À affecter')}});
       }
       visualSelect(id);
     };
@@ -789,7 +790,7 @@
       entry.loading=true;
       entry.actions.replaceChildren(make(doc,'p','','Chargement…'));
       Promise.resolve().then(()=>mount(entry.actions,{document:doc,fetch:fetchFn,user,
-        marketCode:entry.market,marketWide:true,railFilter:entry.railFilter,boxCreateKeys,hubVerifiedBoxes,
+        marketCode:entry.market,marketWide:true,railFilter:entry.railFilter,groupKey:entry.groupKey,boxCreateKeys,hubVerifiedBoxes,
         onChange:async()=>{await visualRefresh();}}))
         .then(handle=>{entry.handle=handle;})
         .catch(error=>{entry.actions.replaceChildren(make(doc,'p','','Action indisponible : '+error.message));})
@@ -916,14 +917,36 @@
             for(const [rail,label] of rails){
               const group=make(doc,'div','kmc-hub-po-v8-log-group');
               group.appendChild(make(doc,'strong','',label));
-              for(const market of available){
-                const card=make(doc,'button','kmc-hub-po-v8-card');
-                card.type='button';card.setAttribute('data-hub-workshop',work.kind);
-                card.append(make(doc,'strong','',market),make(doc,'small','kmc-hub-po-v8-muted','Ouvrir l’atelier'));
-                card.addEventListener('click',()=>openLogistics(market,work.kind,rail));
-                group.appendChild(card);
+              if(visualWork!==null){
+                const tasks=visualWork.filter(w=>available.includes(w.market)&&(rail===undefined||w.rail===rail)
+                  &&(work.kind==='boxes'?w.to_pack+w.boxes_in_progress>0:w.boxes_to_dispatch+w.boxes_to_attach+w.boxes_to_handover>0)
+                  &&(!term||[w.market,w.relay_code].some(v=>safe(v).toLocaleLowerCase('fr').includes(term))));
+                for(const task of tasks){
+                  const card=make(doc,'button','kmc-hub-po-v8-card');
+                  card.type='button';card.setAttribute('data-hub-workshop',work.kind);
+                  card.append(make(doc,'strong','',task.market+' · '+task.relay_code));
+                  if(work.kind==='boxes'){
+                    card.appendChild(make(doc,'small','',task.to_pack+' article(s) à emballer · '+task.boxes_in_progress+' COMBOX en cours'));
+                    card.appendChild(make(doc,'small','',task.rail==='SEA_STANDARD'?'Maritime':task.rail==='AIR_EXPRESS'?'Aérien':'À affecter'));
+                  }else{
+                    card.appendChild(make(doc,'small','',(task.boxes_to_dispatch+task.boxes_to_attach+task.boxes_to_handover)+' COMBOX à traiter'));
+                    card.appendChild(make(doc,'small','',task.boxes_to_dispatch+' sortie · '+task.boxes_to_attach+' à rattacher · '+task.boxes_to_handover+' à remettre'));
+                  }
+                  card.addEventListener('click',()=>openLogistics(task.market,work.kind,rail,task));
+                  group.appendChild(card);
+                }
+                if(!tasks.length)group.appendChild(make(doc,'p','kmc-hub-po-v8-empty','Aucune tâche dans ce périmètre'));
+              }else{
+                // Compatibilité pendant déploiement : accès sans compteur, jamais faux zéro.
+                group.appendChild(make(doc,'p','kmc-hub-po-v8-muted','Charge non disponible'));
+                for(const market of available){
+                  const card=make(doc,'button','kmc-hub-po-v8-card');
+                  card.type='button';card.setAttribute('data-hub-workshop',work.kind);
+                  card.append(make(doc,'strong','',market),make(doc,'small','kmc-hub-po-v8-muted','Ouvrir l’atelier'));
+                  card.addEventListener('click',()=>openLogistics(market,work.kind,rail));
+                  group.appendChild(card);
+                }
               }
-              if(!available.length)group.appendChild(make(doc,'p','kmc-hub-po-v8-empty','Aucun marché disponible'));
               lane.appendChild(group);
             }
           }else{
