@@ -94,3 +94,13 @@ test('le client demande une prévisualisation serveur et ne recalcule pas le co�
   expect(file).toContain('row.contribution_at_proposed_local');
   expect(file).not.toMatch(/input\.max\s*=/);
 });
+
+test('le tableau desktop tient dans le shell et sa CSS est cache-bustée', () => {
+  const fs=require('fs');
+  const path=require('path');
+  const html=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/market-catalog.html'),'utf8');
+  const css=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/css/market-catalog-pricing-list.css'),'utf8');
+  expect(html).toContain('market-catalog-pricing-list.css?v=261126-desktop-fit-1');
+  expect(css).toContain('@media(min-width:960px)');
+  expect(css).toContain('table-layout:fixed');
+});
