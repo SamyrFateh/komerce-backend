@@ -13,7 +13,7 @@ test('Atelier économique charge la surface cockpit fidèle au mock approuvé', 
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-economic-cockpit.js'), 'utf8');
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-economic-cockpit.css'), 'utf8');
 
-  expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=261125-centers-1');
+  expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=261126-v7v6-1');
   expect(index).toContain('/dashboards/canonical/css/pricing-economic-cockpit.css?v=261122-equilibrium-mobile-1');
   expect(source).toContain('Charges structurelles à couvrir');
   expect(source).toContain('Coûts variables');
@@ -35,18 +35,20 @@ test('Atelier économique charge la surface cockpit fidèle au mock approuvé', 
   expect(css).toContain('MOCK PARITY FINAL');
   expect(css).toContain('background: #0b84f3');
   expect(source).toContain('options.root.replaceChildren(cockpit)');
-  expect(source).toContain('KomercePricingEquilibriumPanel.buildPanel');
   expect(source).toContain('styleEquilibriumForCockpit');
-  expect(source).toContain("cockpit.insertBefore(equilibrium, firstCosts)");
   expect(source).toContain("options.root.dataset.pricingMockContract = 'exclusive'");
   expect(source).not.toContain('outerAdvancedNodes');
   expect(source).not.toContain('pricingCockpitLegacyHidden');
   expect(source).not.toContain('createAdvancedDetails');
   expect(source).not.toContain('advanced.open');
-  // Au refresh, l'ancien pricing-workspace ne doit jamais peindre le root visible.
-  expect(source).toContain("const stagingRoot = options.document.createElement('div')");
-  expect(source).toContain('const payload = await originalMount({ ...options, root: stagingRoot })');
-  expect(source).toContain('await enhance(rootObject, workspace, options, payload)');
+  // Le nouveau cockpit ne charge plus le workspace historique, même détaché.
+  expect(source).toContain('workspace.mount=options=>enhance(rootObject,workspace,options)');
+  expect(source).toContain('workspace.__economicV7V6Installed=true');
+  expect(source).toContain('createV7V6Session(doc,workspace,options,selected)');
+  for(const file of ['pricing-workspace-decision.js','pricing-product-focus.js','pricing-atelier-views.js']){
+    const wrapper=fs.readFileSync(path.join(CANONICAL,'js',file),'utf8');
+    expect(wrapper).toContain('if (workspace?.__economicV7V6Installed) return false;');
+  }
   expect(source).not.toContain('const payload = await originalMount(options)');
   expect(source).not.toContain('findWorkshop');
 });
@@ -157,7 +159,7 @@ test('trois colonnes : un libellé, la dernière valeur, une action ou un état 
   expect(css).toContain('grid-column: auto;');
   expect(css).toContain('overflow-x: auto;');
   expect(index).toContain('pricing-atelier-views.css?v=261031-fixed-label-1');
-  expect(index).toContain('pricing-economic-cockpit.js?v=261125-centers-1');
+  expect(index).toContain('pricing-economic-cockpit.js?v=261126-v7v6-1');
 });
 
 test('ajustements : enregistrement automatique (prix à la validation, coûts par champ), jamais à la frappe ni vide', () => {

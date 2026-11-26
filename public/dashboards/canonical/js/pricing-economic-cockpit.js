@@ -35,9 +35,7 @@
     return node;
   }
 
-  // ECO-2a: first persistent V7 consultation component. It is exported for
-  // isolated verification, not mounted into the exclusive cockpit until its
-  // three-tab contract and server reconciliation are ready. No business math.
+  // V7 consultation reads the persistent server model; no business math.
   function v7Money(value, currency = 'EUR') {
     if (typeof value !== 'string' || !(/^-?\d+(?:\.\d+)?$/).test(value)) return 'Non disponible';
     const [integer, fraction=''] = value.split('.');
@@ -270,8 +268,7 @@
     cards.append(result,structure);host.append(cards);return host;
   }
 
-  // Shared candidate contract. Exported for integration and desktop proof;
-  // not activated in enhance() until the complete approved surface is ready.
+  // Exclusive three-tab contract: one server snapshot for all views.
   function createV7V6Tabs(doc, model, initial='centers', onTabChange){
     const shell=el(doc,'section','kmc-v7v6-tabs'),nav=el(doc,'nav','kmc-v7-families'),content=el(doc,'div','kmc-v7v6-content');
     nav.setAttribute('aria-label','Atelier économique');
@@ -308,17 +305,19 @@
     status.setAttribute('role','status');
     const content=el(doc,'div','kmc-v7v6-session-content');
     host.append(status,content);
-    let generation=0, active='centers', disposed=false;
+    let generation=0, active='centers', disposed=false, currentModel=null;
     const context={...options,requestedMarket:options.requestedMarket||null};
     async function refresh(periodStart=initialPeriod){
       if(disposed)return false;
       const request=++generation;
+      currentModel=null;
       content.replaceChildren();
       status.textContent='Chargement de la période '+periodStart+'…';
       host.setAttribute('aria-busy','true');
       try{
         const model=await fetchV7V6Model(workspace,context,periodStart);
         if(disposed||request!==generation)return false;
+        currentModel=model;
         content.append(createV7V6Tabs(doc,model,active,key=>{active=key;}));
         status.textContent='';
         return true;
@@ -332,12 +331,12 @@
       }
     }
     function dispose(){
-      disposed=true;generation++;
+      disposed=true;generation++;currentModel=null;
       content.replaceChildren();
       status.textContent='';
       host.setAttribute('aria-busy','false');
     }
-    return {element:host,refresh,dispose};
+    return {element:host,refresh,dispose,get model(){return currentModel;}};
   }
 
   function finite(value) {
@@ -1888,56 +1887,48 @@
     });
   }
 
-  async function enhance(rootObject, workspace, options, payload) {
-    if (!options?.requestedMarket || !options.root || !options.document || !payload) return false;
-    if (!options.refreshEconomicCockpit && options.root.querySelector('[data-pricing-economic-cockpit]')) return true;
-    // Contrat exclusif : le cockpit ne dépend plus d'un DOM Legacy préalable.
-    // Le payload serveur suffit à construire la surface approuvée ; cela
-    // permet un premier rendu atomique sans jamais exposer l'ancien workspace.
-    let decision = null;
-    try { decision = await fetchDecision(workspace, options); } catch (_) { decision = null; }
-    const cockpit = buildCockpit(options.document, options.root, payload, options.requestedMarket || payload.scope?.market_code || 'Marché', decision, options.user);
-
-    // Le workspace historique a été monté sur un root détaché : son panneau
-    // d'équilibre peut donc ne pas être présent sur le root visible. Ne jamais
-    // le perdre pendant le swap atomique. Le même résultat serveur, y compris
-    // NOT_DECISIONAL, est affiché sans soustraction économique côté navigateur.
-    if (!cockpit.querySelector('[data-pricing-flow-equilibrium]') &&
-        rootObject.KomercePricingEquilibriumPanel?.buildPanel) {
-      const equilibrium = styleEquilibriumForCockpit(
-        rootObject.KomercePricingEquilibriumPanel.buildPanel(options.document, workspace, decision)
-      );
-      const firstCosts = cockpit.querySelector('.kmc-cockpit-costs');
-      if (firstCosts) cockpit.insertBefore(equilibrium, firstCosts);
-      else cockpit.appendChild(equilibrium);
+  // Approved V7/V6 replaces the previous economic cockpit, rather than
+  // wrapping it or mounting its write controls on a detached root.
+  async function enhance(rootObject, workspace, options) {
+    if (!options?.root || !options.document) return null;
+    const doc=options.document, rootNode=options.root;
+    rootNode.__economicV7V6Session?.dispose();
+    const cockpit=el(doc,'div','kmc-economic-cockpit');
+    cockpit.dataset[COCKPIT_ATTR]='';
+    const header=el(doc,'div','kmc-cockpit-page-header');
+    const copy=el(doc,'div','kmc-cockpit-page-header-left');
+    copy.append(el(doc,'h2','kmc-cockpit-page-title','Atelier économique'),
+      el(doc,'p','kmc-cockpit-page-subtitle',options.requestedMarket?'Marché '+options.requestedMarket:'Périmètre groupe · consolidation à rapprocher'));
+    const controls=el(doc,'label','kmc-cockpit-period-wrap','Période');
+    const period=el(doc,'select','kmc-cockpit-period-select');
+    period.dataset.cockpitPeriod='';
+    period.setAttribute('aria-label','Période économique');
+    const now=new Date();
+    const selected=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),1)).toISOString().slice(0,10);
+    for(let i=0;i<12;i++){
+      const d=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth()-i,1));
+      const opt=el(doc,'option','',new Intl.DateTimeFormat('fr-FR',{month:'long',year:'numeric',timeZone:'UTC'}).format(d));
+      opt.value=d.toISOString().slice(0,10);
+      period.append(opt);
     }
-
-    // Contrat exclusif : le mock approuvé EST l'Atelier économique.
-    // pricing-workspace.js reste un fournisseur de données/actions serveur,
-    // jamais une seconde surface visible ni un tiroir avancé.
+    period.value=selected;
+    controls.append(period);header.append(copy,controls);
+    const session=createV7V6Session(doc,workspace,options,selected);
+    rootNode.__economicV7V6Session=session;
+    period.addEventListener('change',()=>session.refresh(period.value));
+    cockpit.append(header,session.element);
     options.root.replaceChildren(cockpit);
     options.root.dataset.pricingMockContract = 'exclusive';
-    bindCockpit(rootObject, workspace, options, payload, cockpit);
-    const portfolio = cockpit.querySelector('[data-cockpit-portfolio]');
-    if (portfolio?.__activeCategory) await loadCategory(options.document, workspace, options, payload, portfolio, portfolio.__activeCategory);
-    return true;
+    await session.refresh(selected);
+    return session.model;
   }
 
   function install(rootObject) {
-    const workspace = rootObject && rootObject.KomerceCanonicalPricingWorkspace;
-    if (!workspace || workspace.__economicCockpitInstalled || typeof workspace.mount !== 'function') return false;
-    const originalMount = workspace.mount.bind(workspace);
-    workspace.mount = async function economicCockpitAwareMount(options) {
-      // pricing-workspace et ses anciens wrappers restent utiles comme
-      // fournisseurs de payload/actions, mais leur DOM ne doit jamais être
-      // peint dans la surface visible. On les exécute dans un root détaché,
-      // puis on construit le mock sur le vrai root en un swap atomique.
-      const stagingRoot = options.document.createElement('div');
-      const payload = await originalMount({ ...options, root: stagingRoot });
-      await enhance(rootObject, workspace, options, payload);
-      return payload;
-    };
-    workspace.__economicCockpitInstalled = true;
+    const workspace=rootObject && rootObject.KomerceCanonicalPricingWorkspace;
+    if(!workspace||workspace.__economicCockpitInstalled||typeof workspace.mount!=='function')return false;
+    workspace.mount=options=>enhance(rootObject,workspace,options);
+    workspace.__economicCockpitInstalled=true;
+    workspace.__economicV7V6Installed=true;
     return true;
   }
 

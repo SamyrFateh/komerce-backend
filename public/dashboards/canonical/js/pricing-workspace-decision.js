@@ -351,6 +351,7 @@
   function install(rootObject) {
     const workspace = rootObject && rootObject.KomerceCanonicalPricingWorkspace;
     const decisionUi = rootObject && rootObject.KomerceDecisionUI;
+    if (workspace?.__economicV7V6Installed) return false;
     if (!workspace || !decisionUi || workspace.__decisionOverviewInstalled || typeof workspace.mount !== 'function') return false;
     const originalMount = workspace.mount.bind(workspace);
     workspace.mount = async function decisionOverviewMount(options) {

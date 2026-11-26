@@ -1219,6 +1219,7 @@
 
   function install(rootObject) {
     const workspace = rootObject && rootObject.KomerceCanonicalPricingWorkspace;
+    if (workspace?.__economicV7V6Installed) return false;
     if (!workspace || workspace.__atelierViewsInstalled || typeof workspace.mount !== 'function') return false;
     const originalMount = workspace.mount.bind(workspace);
     workspace.mount = async function atelierViewsMount(options) {

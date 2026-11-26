@@ -16,7 +16,7 @@ test('L5 : l’avis « politique de marché absente » est un bloc d’informati
   expect(css).not.toMatch(/kmc-pricing-configuration[^{]*\{[^}]*cursor:\s*pointer/);
 });
 
-const {v7Money,createV7CostCenters,createV6Activity,createV6Profitability,createV7V6Tabs,fetchV7V6Model,createV7V6Session}=require('../../public/dashboards/canonical/js/pricing-economic-cockpit');
+const {v7Money,createV7CostCenters,createV6Activity,createV6Profitability,createV7V6Tabs,fetchV7V6Model,createV7V6Session,install}=require('../../public/dashboards/canonical/js/pricing-economic-cockpit');
 function node(tag){
   return {tag,children:[],dataset:{},attrs:{},textContent:'',append(...xs){this.children.push(...xs);},appendChild(x){this.children.push(x);return x;},replaceChildren(){this.children=[];},addEventListener(e,fn){this[e]=fn;},setAttribute(k,v){this.attrs[k]=v;}};
 }
@@ -111,4 +111,23 @@ test('shared economic session rejects stale period replies, preserves active tab
   pending[4].resolve({...activityModel,periodStart:'2026-05-01'});
   await expect(last).resolves.toBe(false);
   expect(find(session.element,'Activité')).toBeUndefined();
+});
+
+test('exclusive V7/V6 mount replaces legacy DOM without invoking old mount, for group and market',async()=>{
+  const root=node('div');root.append(node('legacy'));
+  const original=jest.fn();
+  const workspace={mount:original,endpointFor:jest.fn(({requestedMarket})=>'/pricing'+(requestedMarket?'/market/'+requestedMarket:'')),jsonRequest:jest.fn(async(_fetch,url)=>{
+    const periodStart=url.split('periodStart=')[1];const marketCode=url.includes('/market/CM')?'CM':null;
+    return {...activityModel,scope:marketCode?'MARKET':'GROUP',marketCode,periodStart};
+  })};
+  expect(install({KomerceCanonicalPricingWorkspace:workspace})).toBe(true);
+  for(const requestedMarket of ['CM',null]){
+    await workspace.mount({root,document:doc,requestedMarket,fetch:jest.fn()});
+    expect(root.children).toHaveLength(1);
+    expect(root.children[0].dataset.pricingEconomicCockpit).toBe('');
+    expect(all(root).filter(x=>x.tag==='button').map(x=>x.textContent)).toEqual(['Centres de coûts','Activité','Rentabilité']);
+    expect(all(root).some(x=>x.tag==='legacy')).toBe(false);
+  }
+  expect(original).not.toHaveBeenCalled();
+  expect(workspace.__economicV7V6Installed).toBe(true);
 });
