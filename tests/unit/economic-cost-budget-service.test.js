@@ -36,6 +36,7 @@ test('writes one version with canonical conversion and server clock',async()=>{
   await expect(reviseBudget(actor,{...input,currency:'KMF',amountNative:'1000'})).resolves.toEqual({outcome:'created',revision:{id:'revision'}});
   expect(mockConvert).toHaveBeenCalledWith({amount:'1000.0000',from:'KMF',to:'EUR',at:asOf,client});
   expect(mockQuery.mock.calls[5][1]).toEqual([postId,input.periodStart,1,null,'KMF','1000.0000','2.03',JSON.stringify(legs),asOf,input.reason,input.requestKey,actor.id]);
+  expect(mockQuery.mock.calls[5][0]).toContain('RETURNING *, amount_native::text AS amount_native, amount_eur::text AS amount_eur');
   expect(mockQuery.mock.calls[6][0]).toBe('COMMIT');
   expect(mockRelease).toHaveBeenCalledTimes(1);
 });
@@ -45,6 +46,8 @@ test('idempotent replay keeps original FX snapshot, rejects changed payload',asy
   arrange();await expect(reviseBudget(actor,input)).resolves.toEqual({outcome:'replayed',revision});
   arrange();await expect(reviseBudget(actor,{...input,amountNative:'101'})).rejects.toMatchObject({code:'economic_budget_idempotency_conflict'});
   expect(mockConvert).not.toHaveBeenCalled();
+  expect(mockQuery.mock.calls[2][0]).toContain('amount_native::text AS amount_native');
+  expect(mockQuery.mock.calls[2][0]).toContain('amount_eur::text AS amount_eur');
 });
 test('optimistic revision conflict prevents lost update',async()=>{
   mockQuery.mockResolvedValueOnce(ok()).mockResolvedValueOnce(ok([{id:postId}])).mockResolvedValueOnce(ok()).mockResolvedValueOnce(ok([{revision:2}])).mockResolvedValueOnce(ok());

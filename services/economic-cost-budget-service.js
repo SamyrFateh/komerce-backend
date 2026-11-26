@@ -71,7 +71,7 @@ async function reviseBudget(actor, raw) {
       [input.postId,marketId]);
     if (!posts.length) throw fail('economic_budget_post_not_found',404,'Poste introuvable dans ce périmètre');
     const { rows: prior } = await client.query(
-      'SELECT * FROM economic_cost_budget_revisions WHERE post_id=$1 AND period_start=$2 AND idempotency_key=$3',
+      'SELECT *, amount_native::text AS amount_native, amount_eur::text AS amount_eur FROM economic_cost_budget_revisions WHERE post_id=$1 AND period_start=$2 AND idempotency_key=$3',
       [input.postId,input.periodStart,input.requestKey]);
     if (prior.length) {
       const b=prior[0];
@@ -90,7 +90,7 @@ async function reviseBudget(actor, raw) {
     const asOf=clock[0].as_of;
     const converted=await fx.convert({amount:input.amountNative,from:input.currency,to:'EUR',at:asOf,client});
     const { rows }=await client.query(
-      'INSERT INTO economic_cost_budget_revisions (post_id,period_start,revision,previous_revision,currency,amount_native,amount_eur,fx_legs,fx_as_of,reason,idempotency_key,recorded_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,$12) RETURNING *',
+      'INSERT INTO economic_cost_budget_revisions (post_id,period_start,revision,previous_revision,currency,amount_native,amount_eur,fx_legs,fx_as_of,reason,idempotency_key,recorded_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,$12) RETURNING *, amount_native::text AS amount_native, amount_eur::text AS amount_eur',
       [input.postId,input.periodStart,current+1,current||null,input.currency,input.amountNative,converted.amount_text,JSON.stringify(converted.legs),asOf,input.reason,input.requestKey,actor.id]);
     await client.query('COMMIT');
     return {outcome:'created',revision:rows[0]};
