@@ -1916,15 +1916,15 @@
   function packingBoxMatches(box,group){
     return !(box.contents||[]).length||(box.contents||[]).every(row=>matchesPackingGroup(row,group));
   }
-  async function mountBoxActions(host,{document:doc,fetch:fetchFn,user,marketCode,poId,onChange,boxCreateKeys=new Map(),hubVerifiedBoxes={},marketWide=false}={}){
+  async function mountBoxActions(host,{document:doc,fetch:fetchFn,user,marketCode,poId,onChange,boxCreateKeys=new Map(),hubVerifiedBoxes={},marketWide=false,groupKey}={}){
     if(!['admin','agent_hub'].includes(user?.role)||(!poId&&!marketWide)|| (marketWide&&!/^[A-Z]{2}$/.test(String(marketCode||''))))throw Error('Accès COMBOX Hub requis');
     const feedback=text(doc,'p','kmc-workspace-feedback','');feedback.setAttribute('data-workspace-feedback','');feedback.setAttribute('role','status');
     const slot=doc.createElement('div');host.replaceChildren(feedback,slot);
-    let pending=false,selectedKey=null,dossier;
+    let pending=false,selectedKey=groupKey??null,dossier;
     const context={root:host,fetch:fetchFn,marketCode,boxCreateKeys,hubVerifiedBoxes,confirm:message=>doc.defaultView.confirm(message)};
     function paint(){
       slot.replaceChildren();
-      const groups=packingGroups(dossier,poId,{marketWide});
+      const groups=packingGroups(dossier,poId,{marketWide}).filter(g=>groupKey===undefined||g.key===groupKey);
       if(!groups.length){slot.appendChild(text(doc,'p','kmc-workspace-note',marketWide?'Aucun article reçu avec un relais identifié pour ce marché.':'Aucun article reçu avec un relais identifié pour cette PO.'));return;}
       const selection=doc.createElement('select');selection.setAttribute('aria-label','Relais puis rail demandé');
       for(const g of groups)selection.appendChild(Object.assign(doc.createElement('option'),{value:g.key,textContent:g.relayCode+' · '+(g.rail||'Rail non affecté (UNASSIGNED)')}));
@@ -1968,26 +1968,35 @@
     return [...new Set(departureBoxes(dossier,poId).map(box=>box.shipment_ref).filter(Boolean))];
   }
 
-  async function mountDepartureActions(host,{document:doc,fetch:fetchFn,user,marketCode,poId,onChange,hubVerifiedBoxes={},marketWide=false}={}){
+  function departureGroups(dossier,poId,{marketWide=false,railFilter,groupKey}={}){
+    if(railFilter!==undefined&&![null,'SEA_STANDARD','AIR_EXPRESS'].includes(railFilter))throw Error('Rail de départ invalide');
+    return packingGroups(dossier,poId,{marketWide}).filter(g=>(railFilter===undefined||g.rail===railFilter)&&(groupKey===undefined||g.key===groupKey));
+  }
+
+  async function mountDepartureActions(host,{document:doc,fetch:fetchFn,user,marketCode,poId,onChange,hubVerifiedBoxes={},marketWide=false,railFilter,groupKey}={}){
     if(!['admin','agent_hub'].includes(user?.role)||(!poId&&!marketWide)|| (marketWide&&!/^[A-Z]{2}$/.test(String(marketCode||''))))throw Error('Accès départ Hub requis');
+    if(railFilter!==undefined&&![null,'SEA_STANDARD','AIR_EXPRESS'].includes(railFilter))throw Error('Rail de départ invalide');
+    const railLabel=railFilter==='SEA_STANDARD'?'Maritime':railFilter==='AIR_EXPRESS'?'Aérien':'À affecter';
     const panel=globalThis.KomerceInternationalJourneyPanel;
     if(!panel?.renderHubHandover)throw Error('Module remise transitaire indisponible');
     const feedback=text(doc,'p','kmc-workspace-feedback','');feedback.setAttribute('data-workspace-feedback','');feedback.setAttribute('role','status');
     const slot=doc.createElement('div');host.replaceChildren(feedback,slot);
-    let pending=false,dossier,selectedGroupKey=null,selectedShipment=null,detail=null;
+    let pending=false,dossier,selectedGroupKey=groupKey??null,selectedShipment=null,detail=null;
     const picked=new Set();
     let newReference='',attachRef='';
     const context={root:host,fetch:fetchFn,user,marketCode,journeyTab:'transport',hubVerifiedBoxes,confirm:message=>doc.defaultView.confirm(message)};
     const groupBoxes=group=>(dossier.boxes||[]).filter(b=>(b.contents||[]).length&&packingBoxMatches(b,group));
+    const visibleGroups=()=>departureGroups(dossier,poId,{marketWide,railFilter,groupKey});
     function paint(){
       // Preserve the current explicitly edited evidence form when a read-only
       // refresh occurs. Completed forms remove their own capture marker.
       const tasks=panel.capture(slot,doc);
       slot.replaceChildren();
-      const groups=packingGroups(dossier,poId,{marketWide});
-      if(!groups.length){slot.appendChild(text(doc,'p','kmc-workspace-note',marketWide?'Aucune destination identifiée pour ce marché.':'Aucune destination identifiée pour cette PO.'));return;}
-      const select=doc.createElement('select');select.setAttribute('aria-label','Relais puis rail de départ');
-      for(const g of groups)select.appendChild(Object.assign(doc.createElement('option'),{value:g.key,textContent:g.relayCode+' · '+(g.rail||'Rail non affecté (UNASSIGNED)')}));
+      const groups=visibleGroups();
+      if(railFilter!==undefined)slot.appendChild(text(doc,'h3','',railLabel+' · rail demandé'));
+      if(!groups.length){slot.appendChild(text(doc,'p','kmc-workspace-note',railFilter!==undefined?'Aucune destination pour ce rail dans ce marché.':marketWide?'Aucune destination identifiée pour ce marché.':'Aucune destination identifiée pour cette PO.'));return;}
+      const select=doc.createElement('select');select.setAttribute('aria-label',railFilter===undefined?'Relais puis rail de départ':'Relais de destination');
+      for(const g of groups)select.appendChild(Object.assign(doc.createElement('option'),{value:g.key,textContent:railFilter===undefined?g.relayCode+' · '+(g.rail||'Rail non affecté (UNASSIGNED)'):g.relayCode}));
       if(!groups.some(g=>g.key===selectedGroupKey))selectedGroupKey=groups[0].key;
       select.value=selectedGroupKey;
       select.addEventListener('change',()=>{if(pending)return;selectedGroupKey=select.value;picked.clear();newReference='';attachRef='';selectedShipment=null;detail=null;paint();});
@@ -2071,7 +2080,7 @@
       try{
         dossier=await jsonRequest(fetchFn,endpointFor(marketCode,'supply'));
         if(!dossier.cockpit?.viewer||(!marketWide&&!(dossier.purchase_orders||[]).some(p=>String(p.id)===String(poId))))throw Error('Dossier PO indisponible ou accès refusé');
-        const groups=packingGroups(dossier,poId,{marketWide});
+        const groups=visibleGroups();
         const group=groups.find(g=>g.key===selectedGroupKey)||groups[0];
         if(selectedShipment&&group&&groupBoxes(group).some(b=>b.shipment_ref===selectedShipment)){
           detail=await jsonRequest(fetchFn,panel.endpoint(context,encodeURIComponent(selectedShipment)));
@@ -3807,6 +3816,7 @@
     mountDepartureActions,
     departureBoxes,
     departureReady,
+    departureGroups,
     departureShipmentRefs,
     packingGroups,
     matchesPackingGroup,

@@ -256,6 +256,38 @@ function summarizePurchaseOrders(market, payload) {
   return result;
 }
 
+// Charge réelle du Hub, par marché / relais / rail demandé, sans identités client.
+// Les cartons fermés ou sortis ne deviennent jamais une preuve de remise.
+function summarizeLogisticsWork(market,payload) {
+  const groups=new Map(), seenBoxes=new Set();
+  const key=row=>row.relais_id?JSON.stringify([String(row.relais_id),row.requested_transport_rail||null]):null;
+  const get=row=>{
+    const k=key(row);
+    if(!k)return null;
+    if(!groups.has(k))groups.set(k,{market:market.code,relay:String(row.relais_id),relay_code:row.relais_code||'Relais à vérifier',rail:row.requested_transport_rail||null,group_key:k,to_pack:0,boxes_in_progress:0,boxes_to_dispatch:0,boxes_to_attach:0,boxes_to_handover:0});
+    return groups.get(k);
+  };
+  for(const row of payload.fillable||[]){
+    if(!['QUALITY_CHECKED','LOCATED','ALLOCATED','PICKED'].includes(row.source_state)||number(row.quantity)===0)continue;
+    const group=get(row);if(group)group.to_pack+=number(row.quantity);
+  }
+  for(const box of payload.boxes||[]){
+    if(!box.unit_id||seenBoxes.has(box.unit_id)||['QUARANTINED','SUPERSEDED'].includes(box.state))continue;
+    seenBoxes.add(box.unit_id);
+    const contents=box.contents||[];
+    if(!contents.length||!key(contents[0])||!contents.every(row=>key(row)===key(contents[0])))continue;
+    if(box.shipment_ref&&box.shipment_stage!=='hub_ready')continue;
+    if(!['RECEIVED','IDENTIFIED','QUALITY_CHECKED','LOCATED','ALLOCATED','PICKED','PACKED','DISPATCHED'].includes(box.state))continue;
+    const group=get(contents[0]);
+    if(box.state==='PACKED'&&!box.shipment_ref)group.boxes_to_dispatch++;
+    else if(box.state==='DISPATCHED'&&!box.shipment_ref)group.boxes_to_attach++;
+    else if(box.state==='DISPATCHED'&&box.shipment_stage==='hub_ready')group.boxes_to_handover++;
+    else if(!box.shipment_ref&&box.state!=='DISPATCHED'&&box.state!=='PACKED')group.boxes_in_progress++;
+  }
+  return [...groups.values()].filter(g=>g.to_pack+g.boxes_in_progress+g.boxes_to_dispatch+g.boxes_to_attach+g.boxes_to_handover>0)
+    .sort((a,b)=>a.relay_code.localeCompare(b.relay_code)||String(a.rail||'').localeCompare(String(b.rail||'')));
+}
+
 // La vérité Hub reste centrale. Le responsable marché ne reçoit qu'une projection
 // filtrée par ses market_id résolus côté serveur, AVANT lecture des dossiers.
 // Aucun filtrage client ne peut servir de garde de sécurité.
@@ -269,19 +301,23 @@ async function getGlobalBoard(query = db, dossierReader = (marketId) => dossier.
     : await query.query('SELECT id, code, name FROM markets WHERE is_active = TRUE ORDER BY code');
   const orders = [];
   const purchaseOrders = [];
+  const logisticsWork = [];
   for (const market of markets) {
     const payload = await dossierReader(market.id);
     orders.push(...summarizeMarket(market, payload));
     // Ne jamais exposer la projection fournisseurs à un responsable marché.
-    if (includePurchaseOrders && !scoped) purchaseOrders.push(...summarizePurchaseOrders(market, payload));
+    if (includePurchaseOrders && !scoped) {
+      purchaseOrders.push(...summarizePurchaseOrders(market, payload));
+      logisticsWork.push(...summarizeLogisticsWork(market,payload));
+    }
   }
   return {
     scope: 'HUB_GLOBAL',
     ...(scoped ? { audience: 'MARKET_SCOPED' } : {}),
     markets: markets.map(m => m.code),
-    ...(includePurchaseOrders && !scoped ? { purchase_orders: purchaseOrders.sort((a,b) => a.market.localeCompare(b.market) || a.reference.localeCompare(b.reference)) } : {}),
+    ...(includePurchaseOrders && !scoped ? { purchase_orders: purchaseOrders.sort((a,b) => a.market.localeCompare(b.market) || a.reference.localeCompare(b.reference)), logistics_work:logisticsWork } : {}),
     orders: orders.sort((a, b) => a.market.localeCompare(b.market) || a.reference.localeCompare(b.reference)),
   };
 }
 
-module.exports = { summarizeMarket, summarizePurchaseOrders, getGlobalBoard };
+module.exports = { summarizeMarket, summarizePurchaseOrders, summarizeLogisticsWork, getGlobalBoard };
