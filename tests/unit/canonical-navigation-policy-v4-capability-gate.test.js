@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 6096)
-Total output lines: 472
-
 'use strict';
 
 /**
@@ -245,7 +242,12 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
       'flow-finance': 'finance.read',
       'workspace-accounting': 'finance.read',
     };
-    const items = nav.sidebarGroupsFor({ role: 'market_operat…96 tokens truncated…gistics.read','operations.read']);
+    const items = nav.sidebarGroupsFor({ role: 'market_operator' }, null).flatMap(group => group.items);
+    items.filter(item => expected[item.id]).forEach(item => {
+      expect([item.id, item.capability]).toEqual([item.id, expected[item.id]]);
+    });
+    expect(items.map(item => item.id)).toEqual(expect.arrayContaining(Object.keys(expected)));
+    expect(items.find(item => item.id === 'workspace-shipping').capabilitiesAny).toEqual(['logistics.read','operations.read']);
   });
 
   test('Action Center reste visible en lecture seule et Expéditions via les deux lectures', () => {
