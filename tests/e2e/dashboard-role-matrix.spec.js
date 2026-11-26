@@ -136,7 +136,7 @@ test('navigation Chromium Responsable marché : mêmes menus, routes alternative
   expect(links['live-hub']).toBe('/admin/hub');
   expect(links.unsold).toBe('/dashboards/canonical/unsold.html');
   expect(links['admin-users']).toContain('#market-team');
-  expect(links['admin-providers']).toContain('#market-network');
+  expect(links['admin-providers']).toContain('#market-providers');
   expect(links.settings).toContain('#market-cash-control');
   expect(Object.values(links)).not.toContain('/admin/workspaces/purchasing');
   expect(Object.values(links)).not.toContain('/admin/import-runtime');

@@ -291,13 +291,13 @@
     async function readFresh() {
       try {
         const payload = await jsonRequest(fetchFn, endpoint);
-        if (rootNode.isConnected === false || rootNode.__dashboardViewIdentity !== identity) return {};
+        if (rootNode.__dashboardViewIdentity !== identity) return Object.freeze({ stale: true });
         render(doc, rootNode, payload, queueState);
         hasData = true;
         rootNode.removeAttribute?.('data-dashboard-stale');
         return Object.freeze({ payload, endpoint });
       } catch (error) {
-        if (rootNode.isConnected === false || rootNode.__dashboardViewIdentity !== identity) return {};
+        if (rootNode.__dashboardViewIdentity !== identity) return Object.freeze({ stale: true });
         if (!hasData || error.status === 401 || error.status === 403) {
           // Jamais afficher les commandes de l'ancien périmètre après un 401/403.
           rootNode.textContent = '';

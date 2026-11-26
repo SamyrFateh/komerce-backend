@@ -395,7 +395,7 @@
     }
   }
 
-  const sectionAnchors = new Set(['market-team', 'market-network', 'market-cash-control']);
+  const sectionAnchors = new Set(['market-team', 'market-network', 'market-providers', 'market-cash-control']);
   function scrollToRequestedSection() {
     let id = String(global.location.hash || '').replace(/^#/, '');
     try { id = decodeURIComponent(id); } catch (_) { return false; }
