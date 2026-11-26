@@ -15524,6 +15524,20 @@
       {
         "feature": "market-autonomy",
         "category": "dash",
+        "declared": "dashboards/canonical/js/market-client-case.js",
+        "resolvedPath": "public/dashboards/canonical/js/market-client-case.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/market-settlement.js",
+        "resolvedPath": "public/dashboards/canonical/js/market-settlement.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
         "declared": "dashboards/canonical/team-invite.html",
         "resolvedPath": "public/dashboards/canonical/team-invite.html",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -51150,7 +51164,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2407
+        "filesObserved": 2409
       },
       "boutique": {
         "filesObserved": 218,
