@@ -72,8 +72,8 @@ describeE2E('E2E-P0-PURCHASING — purchasing · anti-doublon de bon de commande
       [orderId, clientId, relaisId, reference]
     );
     await db.query(
-      `INSERT INTO order_items (id, order_id, product_id, quantity, price_kmf)
-       VALUES ($1, $2, $3, $4, 25000)`,
+      `INSERT INTO order_items (id, order_id, product_id, quantity, price_kmf, fulfillment_source)
+       VALUES ($1, $2, $3, $4, 25000, 'IMPORT')`,
       [uuid(), orderId, productId, quantity]
     );
     return { productId, productSupplierId, orderId, reference };

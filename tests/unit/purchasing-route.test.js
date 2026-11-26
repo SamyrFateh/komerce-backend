@@ -53,6 +53,7 @@ jest.mock('../../services/purchasing-admin-service', () => ({
 }));
 
 jest.mock('../../services/purchasing-grouped-service', () => ({
+  shared: jest.requireActual('../../services/purchasing-grouped-service').shared,
   listOpenLines: jest.fn(),
   getGroupedPurchaseOrder: jest.fn(),
   preparePurchaseOrder: jest.fn(),

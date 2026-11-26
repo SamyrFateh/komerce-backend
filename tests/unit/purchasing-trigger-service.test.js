@@ -38,6 +38,8 @@ function makeClient(script = []) {
       ) {
         return { rows: [], rowCount: 0 };
       }
+      // Canonical nominal fixture: the locked source is a paid IMPORT order.
+      if (normalized.includes('AS commercial_item_id') && normalized.includes('NOWAIT')) return { rows: [{fulfillment_source:'IMPORT',order_status:'ordered',payment_status:'paid'}], rowCount:1 };
       const next = queue.shift();
       if (!next) throw new Error(`No mock query result for SQL: ${normalized}`);
       if (typeof next === 'function') return next(sql);
