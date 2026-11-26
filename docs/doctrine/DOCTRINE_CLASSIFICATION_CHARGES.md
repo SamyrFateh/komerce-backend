@@ -1,6 +1,6 @@
 # Doctrine canonique — Classification des charges Komerce
 
-> **Version** : 2.0 — 2026-09-08  
+> **Version** : 2.1 — 2026-11-26
 > **Statut** : canonique / intangible  
 > **Objet** : définir la classification économique des charges sans niveaux N1/N2/N3 et séparer strictement nature, périmètre et allocation.  
 > **Complète** : `DOCTRINE_ECONOMIQUE_KOMERCE.md`, `DOCTRINE_FLUX_CONTRIBUTION_POINT_EQUILIBRE.md`, `DOCTRINE_PRICING_ANCRE_MARCHE_VIABILITE.md`, `DOCTRINE_ALLOCATION_COUTS.md`.
@@ -70,6 +70,8 @@ facturé ponctuellement ≠ automatiquement variable
 ```
 
 ---
+
+L'échelle d'activité est explicite : un montant forfaitaire par expédition ou par palier peut être direct à ce flux sans être variable par unité article. L'allocation unitaire dépend du dénominateur causal observé ; ne pas imputer un volume futur supposé comme fait.
 
 ## 3. Périmètre : direct ou mutualisé
 
@@ -143,6 +145,8 @@ Clés admissibles selon la causalité réelle :
 - GMV lorsqu'elle est défendable ;
 - socle fixe par marché + part marginale ;
 - autre clé gouvernée et justifiée.
+
+La conservation impose que la somme des allocations et du résidu non attribué égale le fait source. Le résidu reste visible, sans double comptage avec la charge initiale ; une période sans volume conserve ses coûts fixes. Une clé par chiffre d'affaires ne se substitue pas à une mesure causale physique disponible.
 
 Un fallback égalitaire n'est jamais implicite. S'il est utilisé faute de meilleure mesure, il doit être marqué comme hypothèse avec confiance dégradée.
 
@@ -309,6 +313,8 @@ ASSUMPTION → données suffisantes → MEASURED CALIBRATION
 Une modification d'une valeur pilotable doit provoquer un recalcul serveur des valeurs dérivées ; le navigateur ne réimplémente jamais le moteur économique.
 
 ---
+
+Les types techniques ci-dessus ne sont pas les statuts de connaissance. Afficher séparément certain (contrat ou fait connu), estimé (source/hypothèse explicite) ou constaté/réconcilié, avec période, preuve, suffisance et état provisoire/régularisé. Le budget est une enveloppe, l'engagement ouvert un montant non réalisé, la charge constatée un fait économique ; leur rapprochement évite le double compte. Les centres, familles et ressources structurent le pilotage sans créer de second journal de charges réelles. Les composantes mixtes identifiables restent séparées ; sinon signaler l'incertitude, ne pas classer arbitrairement tout le coût en fixe ou variable.
 
 ## 11. Vocabulaire UI canonique
 
