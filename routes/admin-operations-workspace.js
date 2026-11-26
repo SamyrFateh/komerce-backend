@@ -308,6 +308,20 @@ function requireSupplierQualityV3(req,res,next){
     return res.status(403).json({code:'HUB_QUALITY_HUB_ROLE_REQUIRED',error:'Action réservée au Hub'});
   return next();
 }
+router.get(
+  '/market/:marketCode/supply/receipt-checks',
+  requireHubSupplyReadAccess,
+  requireSupplierQualityV3,
+  async(req,res,next)=>{
+    try{
+      const result=await supplierReceiptQuality.listSupplierReceiptChecks(db,{
+        purchaseOrderId:req.query.purchase_order_id,marketId:req.workspaceMarket.id
+      });
+      res.set('Cache-Control','private, no-store');
+      return res.json(result);
+    }catch(err){return sendWorkspaceError(err,res,next);}
+  }
+);
 router.post(
   '/market/:marketCode/supply/receipt-checks',
   attachHubExecutionCapability('execution.parcel.receive'),
