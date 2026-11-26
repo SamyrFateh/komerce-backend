@@ -346,3 +346,13 @@ test('réception V3 : le formulaire réel ne remplace le parcours existant que s
   expect(SOURCE).toContain('if(dossier.supplier_quality_v3_enabled===true)quality=await jsonRequest');
   expect(SOURCE).toContain('busy:()=>pending||qualityDirty');
 });
+
+test('V3 desktop : une seule ligne de tableau par SKU et contrôle visible en colonnes',()=>{
+ const block=SOURCE.slice(SOURCE.indexOf('function renderQualityReceiptV3'),SOURCE.indexOf('function renderSupplierReturnsV3'));
+ expect(block).toContain("['Article','Attendu','Reçu / confirmé','Conforme','Retour','Identification']");
+ expect(block).toContain("const row=doc.createElement('tr');row.setAttribute('data-hub-quality-sku',line.sku)");
+ expect(block).toContain('tbody.appendChild(row)');
+ expect(block).toContain('receiveControls.append(received.wrap,confirmed.wrap)');
+ expect(block).not.toContain("row.className='kmc-workspace-receive-card'");
+ expect(block).toContain("footer.className='kmc-quality-v3-footer'");
+});
