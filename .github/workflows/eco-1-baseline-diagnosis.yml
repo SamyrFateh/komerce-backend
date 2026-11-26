@@ -1,0 +1,38 @@
+name: ECO-1 baseline regression and protection context (temporary)
+on:
+  push:
+    branches: [research/eco-centres-v6-preflight]
+    paths: ['.github/workflows/eco-1-baseline-diagnosis.yml']
+permissions:
+  contents: read
+  issues: write
+jobs:
+  diagnosis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: '473d7daaa6b24ed3350abcc5a80ec8239eab7faf'
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Infrastructure context and impact
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run agent:context -- --pack service --feature infrastructure
+          npm run arch:impact -- scripts/recette/staging-reset-classification.js
+      - name: Baseline exact SHA reproduction (no changes)
+        run: npx jest --runInBand --runTestsByPath tests/unit/operations-workspace.test.js tests/unit/hub-live-cockpit.test.js tests/unit/canonical-health-primitives.test.js tests/unit/canonical-orders.test.js tests/unit/market-autonomy-single-header.test.js tests/unit/unsold-workspace.test.js
+      - name: Report
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ job.status }}
+        run: |
+          gh issue comment 5280 --repo "$GITHUB_REPOSITORY" --body "ECO-1 baseline diagnosis: $RESULT. Base 473d7da (no ECO migrations). Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID. No reset, no deployment."
