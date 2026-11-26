@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 010eff92eb3a299c8a5a37af528b0d325763af67
+          ref: 0d3e3b78e6b0eb13ac60b632dbaa1895f682a9a3
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v4
@@ -26,4 +26,4 @@ jobs:
       - run: npm run arch:impact -- economic-engine
       - run: npm run arch:impact -- public/dashboards/canonical/js/pricing-economic-cockpit.js
 
-      - run: npx jest --runInBand --runTestsByPath tests/unit/pricing-economic-cockpit.test.js tests/unit/canonical-pricing-economic-cockpit.test.js tests/unit/canonical-pricing-atelier-views.test.js
+      - run: npx jest --runInBand --runTestsByPath tests/unit/economic-cost-budget-service.test.js tests/unit/pricing-economic-cockpit.test.js tests/unit/canonical-pricing-economic-cockpit.test.js tests/unit/canonical-pricing-atelier-views.test.js
