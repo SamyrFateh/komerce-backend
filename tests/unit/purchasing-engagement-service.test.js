@@ -70,7 +70,7 @@ const poRow = (extra = {}) => ({ id: PO, order_id: null, status: 'draft', suppli
 const submitLine = (extra = {}) => ({
   id: L1, product_sku_id: uuid(5), supplier_sku: 'SKU', supplier_unit_ref: 'U1',
   supplier_order_identity: { provider: 'noon', version: 1, payload: { a: 1 } },
-  quantity: 2, supplier_unit_price: '10.0000', supplier_currency: 'USD', product_name: null, ...extra,
+  quantity: 2, supplier_unit_price: '10.0000', supplier_currency: 'USD', product_name: null, fulfillment_source: 'IMPORT', order_status: 'confirmed', payment_status: 'paid', ...extra,
 });
 
 beforeEach(() => {
@@ -507,7 +507,7 @@ describe('settleLine — garde-fous', () => {
 
 describe('createManualLine', () => {
   const body = { order_item_id: uuid(20), product_supplier_id: uuid(21), quantity: 2, execution_mode: 'api' };
-  const item = { id: uuid(20), product_id: uuid(22), sku_id: uuid(23), fulfillment_source: 'IMPORT', order_status: 'confirmed' };
+  const item = { id: uuid(20), product_id: uuid(22), sku_id: uuid(23), fulfillment_source: 'IMPORT', order_status: 'confirmed', payment_status: 'paid' };
   const ps = { id: uuid(21), supplier_id: uuid(3), platform: 'Noon' };
   const handlers = (over = {}) => [
     [/FROM order_items oi/, { rows: [over.item === undefined ? item : over.item] }],
