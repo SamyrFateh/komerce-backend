@@ -48,7 +48,7 @@ test('Direction Hub : décisions hiérarchisées, PO ciblée et aucun geste fina
     const po = '11111111-1111-4111-8111-111111111111';
     const tasks = [
       { kind:'AWAIT_RECEIPT', owner:'agent_hub', market:{code:'KM'}, missing:'Réception fournisseur à suivre', age_hours:4 },
-      { kind:'AUTHORIZE_PAYMENT', owner:'responsable_hub', market:{code:'CM'}, subject:{po_id:po},
+      { kind:'AUTHORIZE_PAYMENT', owner:'responsable_hub', market:{code:'KM'}, subject:{po_id:po},
         missing:'Autorisation paiement', age_hours:52, overdue:true, viewer_can_act:false,
         blocked_reason:'Droit de paiement requis' },
       { kind:'BLOCKED_BY_SHORTFALL', owner:'responsable_hub', market:{code:'CG'},
@@ -64,9 +64,14 @@ test('Direction Hub : décisions hiérarchisées, PO ciblée et aucun geste fina
       document, fetch:fetchFn, user:{role:'agent_hub'}
     });
   });
-  await expect(page.locator('[data-hub-director-group]')).toHaveCount(4);
-  await expect(page.locator('[data-hub-director-group]').first()).toHaveAttribute('data-hub-director-group','commitment');
-  await expect(page.locator('[data-hub-director-group="payment"]')).toContainText('Autorisation paiement');
+  await expect(page.locator('[data-hub-v3-pilotage]')).toBeVisible();
+  await page.locator('[data-hub-v3-pilot-filter="decide"]').click();
+  await expect(page.locator('[data-hub-v3-dossier]')).toHaveCount(3);
+  const dossier=page.locator('[data-hub-v3-dossier]').filter({has:page.locator('[data-hub-director-task="AUTHORIZE_PAYMENT"]')});
+  await expect(dossier).toHaveCount(1);
+  await dossier.locator('summary').click();
+  await expect(dossier.locator('[data-hub-director-task="AUTHORIZE_COMMITMENT"]')).toBeVisible();
+  await expect(dossier).toContainText('Autorisation paiement');
   await expect(page.locator('[data-hub-director-task="AUTHORIZE_PAYMENT"]')).toContainText('Droit de paiement requis');
   await expect(page.locator('[data-hub-director-task="AUTHORIZE_PAYMENT"] a')).toHaveAttribute(
     'href', /branch=operations&sel=po%3A11111111-1111-4111-8111-111111111111&decision=payment/);
