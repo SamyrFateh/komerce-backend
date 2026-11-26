@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 2143,
-    "edges": 10680,
+    "edges": 10684,
     "dbTables": 254,
     "doctrines": 842,
     "impactAreas": 213,
@@ -19115,7 +19115,8 @@
         "db",
         "middleware/require-pricing-global-authority.js",
         "services/market-delegation-service.js",
-        "services/fx-authority.js"
+        "services/fx-authority.js",
+        "services/cost-allocation/real-margin-shadow.js"
       ],
       "usedBy": [
         "routes/admin-pricing-workspace.js"
@@ -19139,7 +19140,10 @@
         "hub_box_effective_placements",
         "hub_purchase_allocations",
         "order_items",
-        "orders"
+        "orders",
+        "purchase_lines",
+        "supplier_execution_payments",
+        "supplier_payment_settlements"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -76828,6 +76832,12 @@
       "label": "services/fx-authority.js"
     },
     {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "services/cost-allocation/real-margin-shadow.js",
+      "type": "depends",
+      "label": "services/cost-allocation/real-margin-shadow.js"
+    },
+    {
       "from": "routes/admin-pricing-workspace.js",
       "to": "services/economic-cost-center-read-model.js",
       "type": "uses",
@@ -76946,6 +76956,24 @@
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:purchase_lines",
+      "type": "db-read",
+      "label": "purchase_lines"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:supplier_execution_payments",
+      "type": "db-read",
+      "label": "supplier_execution_payments"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:supplier_payment_settlements",
+      "type": "db-read",
+      "label": "supplier_payment_settlements"
     },
     {
       "from": "services/economic-cost-center-read-model.js",
@@ -128781,6 +128809,7 @@
         "services/cost-allocation/canonical-margin-writer.js",
         "services/cost-allocation/cost-types.js",
         "services/cost-allocation/product-margin-steering.js",
+        "services/economic-cost-center-read-model.js",
         "services/finance-metrics/customs-unknown.js"
       ]
     },
@@ -131018,7 +131047,8 @@
         "db",
         "middleware/require-pricing-global-authority.js",
         "services/market-delegation-service.js",
-        "services/fx-authority.js"
+        "services/fx-authority.js",
+        "services/cost-allocation/real-margin-shadow.js"
       ],
       "directUsedBy": [
         "routes/admin-pricing-workspace.js"
@@ -131043,7 +131073,10 @@
         "hub_box_effective_placements",
         "hub_purchase_allocations",
         "order_items",
-        "orders"
+        "orders",
+        "purchase_lines",
+        "supplier_execution_payments",
+        "supplier_payment_settlements"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -131078,6 +131111,9 @@
         "db:markets",
         "db:order_items",
         "db:orders",
+        "db:purchase_lines",
+        "db:supplier_execution_payments",
+        "db:supplier_payment_settlements",
         "doctrine:budget_is_not_realized_cost",
         "doctrine:exact_market_scope",
         "doctrine:group_raw_not_delegated",
@@ -131087,6 +131123,7 @@
         "impact:market-authorization",
         "middleware/require-pricing-global-authority.js",
         "routes/admin-pricing-workspace.js",
+        "services/cost-allocation/real-margin-shadow.js",
         "services/fx-authority.js",
         "services/market-delegation-service.js"
       ]
