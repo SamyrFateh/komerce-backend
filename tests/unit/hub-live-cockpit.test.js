@@ -125,7 +125,7 @@ test('la file de la direction Hub garde une hauteur réservée et des groupes li
   expect(css).toContain('.hlc-director-body {\n  height: 220px;');
   expect(css).toContain('.hlc-director-group-heading');
   expect(css).toContain('.hlc-director-task.is-readonly');
-  expect(src).toContain("group.setAttribute('data-hub-director-group',spec.key)");
+  expect(src).toContain("dossier.setAttribute('data-hub-v3-dossier',d.key)");
   expect(src).toContain("task.viewer_can_act===false");
 });
 

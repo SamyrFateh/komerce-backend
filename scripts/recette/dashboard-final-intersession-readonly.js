@@ -103,17 +103,18 @@ async function login(browser,role,prefix){
 }
 async function readDirector(who){
  await who.page.goto('/admin/hub?branch=direction',{waitUntil:'domcontentloaded'});
- await who.page.locator('[data-hub-director-group]').first().waitFor({timeout:30000});
- const groups=await who.page.locator('[data-hub-director-group]').evaluateAll(nodes=>
-   Object.fromEntries(nodes.map(node=>[node.getAttribute('data-hub-director-group'),
-     Number(node.querySelector('.hlc-director-group-count')?.textContent||0)])));
- assert.deepEqual(Object.keys(groups).sort(),['arbitrage','commitment','execution','payment']);
+ await who.page.locator('[data-hub-v3-pilotage]').waitFor({timeout:30000});
+ await who.page.locator('[data-hub-v3-view="gestion"]').click();
+ const filters=await who.page.locator('[data-hub-v3-filter]').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-hub-v3-filter')).sort());
+ assert.deepEqual(filters,['all','control','decide','resolve']);
+ const groups=await who.page.locator('[data-hub-v3-dossier]').evaluateAll(nodes=>
+   Object.fromEntries(nodes.map(node=>[node.getAttribute('data-hub-v3-dossier'),node.querySelectorAll('[data-hub-director-task]').length])));
  const api=await who.page.request.get('/api/hub/director-todo');
  assert.equal(api.status(),200,'HUB_DIRECTOR_API_HTTP');
  const body=await api.json();
  assert.equal(body.scope,'ALL_MARKETS','DIRECTOR_SCOPE');
  assert.ok(Array.isArray(body.tasks),'DIRECTOR_TASKS_NOT_ARRAY');
- assert.equal(Object.values(groups).reduce((a,b)=>a+b,0),body.tasks.length,'DIRECTOR_KANBAN_COUNT_MISMATCH');
+ assert.equal(Object.values(groups).reduce((a,b)=>a+b,0),body.tasks.filter(t=>!['PREPARE_BAG','CLOSE_BAG','DEPOSIT_BAG','BOX_BAGS'].includes(t.kind)).length,'DIRECTOR_DOSSIER_COUNT_MISMATCH');
  return {groups,taskCount:body.tasks.length,poIds:[...new Set(body.tasks.map(t=>t.subject?.po_id).filter(x=>/^[a-f0-9-]{36}$/i.test(String(x))))].slice(0,12)};
 }
 async function pgProof(client,admin,hub){

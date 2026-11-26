@@ -1135,3 +1135,11 @@
  .kmc-hub-app [data-hub-active-branch="direction"] .hlc-director-task { grid-template-columns:40px minmax(0,1fr) 64px; }
  .kmc-hub-app [data-hub-active-branch="direction"] .hlc-director-open { grid-column:2 / -1; justify-self:start; }
 }
+
+/* Direction V3 : indicateurs de lecture et file de dossiers à largeur utile. */
+.kmc-hub-app [data-hub-active-branch="direction"] .hlc-director-list { max-height:none; overflow:visible; }
+.kmc-hub-app [data-hub-v3-pilotage] .kmc-hub-admin-stats { display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px; }
+.kmc-hub-app [data-hub-v3-pilot-filter] { cursor:pointer;text-align:left;font:inherit;color:inherit; }
+.kmc-hub-app [data-hub-v3-dossier] { margin-bottom:8px; }
+.kmc-hub-app [data-hub-v3-dossier]>summary { cursor:pointer;gap:12px; }
+.kmc-hub-app [data-hub-v3-dossier] .hlc-director-group-rows { padding:8px; }

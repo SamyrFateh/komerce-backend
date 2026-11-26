@@ -27,6 +27,7 @@ function el(tag) {
     replaceChildren(...nodes) { this.children=nodes; nodes.forEach(x=>x.parentNode=this); },
     setAttribute(k,v) { this.attrs[k]=String(v); },
     getAttribute(k) { return this.attrs[k] || null; },
+    hasAttribute(k) { return Object.prototype.hasOwnProperty.call(this.attrs,k); },
     removeAttribute(k) { delete this.attrs[k]; },
     contains(child) { for (let node=child; node; node=node.parentNode) if(node===this) return true; return false; },
     addEventListener(evt,fn) { handlers[evt]=fn; },
@@ -76,17 +77,17 @@ test('Direction Hub et Administration restent dans un seul poste de travail', as
   expect(root.querySelector('[data-hub-open-operations]')).toBeNull();
   expect(root.querySelector('[data-hub-branch="operations"]').children[0].children[0].textContent).toBe('Kanban');
   expect(root.children[1].querySelectorAll('[data-hub-branch]')).toHaveLength(2);
-  expect(root.querySelectorAll('[data-hub-director-todo]')).toHaveLength(1);
+  expect(root.querySelectorAll('[data-hub-director-todo]')).toHaveLength(0);
   expect(root.children[2].className).toContain('is-table');
   expect(root.querySelectorAll('[data-hub-case-list]')).toHaveLength(0);
   await Promise.resolve();
   expect(admin).toHaveBeenCalledTimes(1);
   expect(ops).not.toHaveBeenCalled();
   await api.reloadCases();
-  expect(admin).toHaveBeenCalledTimes(1);
+  expect(admin).toHaveBeenCalledTimes(2);
 });
 
-test('un agent Hub voit le Kanban et la Direction avec l’administration comme onglet', async () => {
+test('un agent Hub conserve l’accès administratif direct sans troisième onglet', async () => {
   const app=load(),root=el('main'),admin=jest.fn();
   const mounted=app.mount({root,user:{role:'agent_hub'},document:doc,location:{search:'?branch=administrative'},
     renderAdministrative:admin,renderOperations:jest.fn()});
@@ -295,10 +296,12 @@ test('Direction Hub : engagements, paiements, arbitrages, exécution séparés e
   expect(host.querySelectorAll('[data-hub-director-task="BOX_BAGS"]')).toHaveLength(0);
   expect(host.querySelector('[data-hub-legacy-review]').textContent).toContain('1 dossier(s) historiques');
   expect(host.querySelectorAll('[data-hub-director-list]')).toHaveLength(1);
-  expect(host.querySelectorAll('[data-hub-director-group="commitment"]')).toHaveLength(1);
-  expect(host.querySelectorAll('[data-hub-director-group="payment"]')).toHaveLength(1);
-  expect(host.querySelectorAll('[data-hub-director-group="arbitrage"]')).toHaveLength(1);
-  expect(host.querySelectorAll('[data-hub-director-group="execution"]')).toHaveLength(1);
+  expect(host.querySelectorAll('[data-hub-v3-dossier]')).toHaveLength(3);
+  const dossier=host.querySelector('[data-hub-v3-dossier="KM:po_id:'+po+'"]');
+  expect(dossier.querySelectorAll('[data-hub-director-task]')).toHaveLength(2);
+  host.querySelector('[data-hub-v3-pilot-filter="decide"]').click();
+  expect(host.querySelector('[data-hub-v3-gestion]').hidden).toBe(false);
+  expect(dossier.hidden).toBe(false);
   const payments=host.querySelectorAll('[data-hub-director-task="AUTHORIZE_PAYMENT"]');
   expect(payments).toHaveLength(1);
   expect(payments[0].className).toContain('is-readonly');
@@ -350,17 +353,17 @@ test('Direction Hub ne rend aucun workspace administratif ou physique concurrent
   expect(fetch).toHaveBeenCalledTimes(1);
 });
 
-test('Direction Hub Kanban : quatre colonnes stables, y compris sans tâches', async () => {
+test('Direction Hub  : quatre filtres stables, y compris sans tâches', async () => {
   const app=load(), host=el('section');
   const fetch=jest.fn(async () => ({ ok:true, json:async () => ({
     scope:'ALL_MARKETS', overdue_count:0, tasks:[],
   }) }));
   await app.renderDirectorQueue(host,{document:doc,fetch,user:{role:'admin'}});
-  for (const lane of ['commitment','payment','arbitrage','execution']) {
-    expect(host.querySelectorAll('[data-hub-director-group="'+lane+'"]')).toHaveLength(1);
+  for (const filter of ['all','decide','control','resolve']) {
+    expect(host.querySelectorAll('[data-hub-v3-filter="'+filter+'"]')).toHaveLength(1);
   }
   expect(host.querySelectorAll('[data-hub-director-task]')).toHaveLength(0);
-  expect(host.querySelectorAll('[data-hub-director-group]')).toHaveLength(4);
+  expect(host.querySelectorAll('[data-hub-v3-dossier]')).toHaveLength(0);
 });
 
 test('Direction Hub : relecture SSE ne duplique pas les cartes et suit les mutations ailleurs', async()=>{
@@ -688,4 +691,22 @@ test('C3 : la relecture PO ne réentre pas dans le refresh Kanban qui l’attend
  const changed=source.slice(source.indexOf('const changed=async()=>{'),source.indexOf('Promise.resolve().then(()=>mount(actionHost'));
  expect(changed).toContain('if(!visualRead)await visualRefresh();');
  expect(changed).toContain('if(poMode)renderVisualPO();');
+});
+
+
+test('Direction V3 : filtre et dossier ouvert conservés au refresh, marchés isolés',async()=>{
+ const app=load(),host=el('section'),id='11111111-1111-4111-8111-111111111111';
+ let tasks=[{kind:'AUTHORIZE_COMMITMENT',market:{code:'KM'},subject:{po_id:id},owner:'responsable_hub'},{kind:'AUTHORIZE_PAYMENT',market:{code:'KM'},subject:{po_id:id},owner:'responsable_hub'},{kind:'AUTHORIZE_PAYMENT',market:{code:'CM'},subject:{po_id:id},owner:'responsable_hub'}];
+ const fetch=jest.fn(async()=>({ok:true,json:async()=>({scope:'ALL_MARKETS',tasks,overdue_count:0})}));
+ await app.renderDirectorQueue(host,{document:doc,fetch,user:{role:'admin'}});
+ host.querySelector('[data-hub-v3-pilot-filter="decide"]').click();
+ const dossier=host.querySelector('[data-hub-v3-dossier="KM:po_id:'+id+'"]');
+ expect(host.querySelectorAll('[data-hub-v3-dossier]')).toHaveLength(2);
+ expect(dossier.querySelectorAll('[data-hub-director-task]')).toHaveLength(2);
+ host._directionOpened.add('KM:po_id:'+id);
+ tasks=tasks.slice(1);
+ await app.renderDirectorQueue(host,{document:doc,fetch,user:{role:'admin'}});
+ expect(host.querySelector('[data-hub-v3-gestion]').hidden).toBe(false);
+ expect(host.querySelector('[data-hub-v3-dossier="KM:po_id:'+id+'"]').open).toBe(true);
+ expect(host.querySelector('[data-hub-v3-proofs]').getAttribute('href')).toBe('/admin/hub?branch=administrative');
 });

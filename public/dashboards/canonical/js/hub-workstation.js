@@ -313,56 +313,81 @@
       heading.textContent='Direction Hub · Tous marchés · '+activeTasks.length+
         ' tâche(s) · '+activeTasks.filter(task=>task.overdue).length+' alerte(s) ≥ 48 h';
       body.replaceChildren();
-      // Une file vide rend les quatre colonnes : rien à traiter reste explicite.
-      // Regroupement visuel d'une projection déjà autorisée côté serveur :
-      // engagements et paiements sont DEUX décisions différentes. Aucune mutation ici.
-      const groupSpecs = [
-        { key:'commitment', title:'1 · Engagements à valider', hint:'Autoriser l’achat fournisseur avant soumission' },
-        { key:'payment', title:'2 · Paiements à autoriser', hint:'Autorisation distincte du paiement effectivement exécuté' },
-        { key:'arbitrage', title:'3 · Arbitrages et anomalies', hint:'Situations bloquées nécessitant une décision' },
-        { key:'execution', title:'4 · Suivi de l’exécution', hint:'Gestes confiés aux agents du Hub' },
-      ];
-      const groupOf = task => task.kind === 'AUTHORIZE_COMMITMENT' ? 'commitment'
-        : task.kind === 'AUTHORIZE_PAYMENT' ? 'payment'
-          : task.owner === 'responsable_hub' ? 'arbitrage' : 'execution';
-      const groups = new Map(groupSpecs.map(spec => [spec.key, []]));
-      activeTasks.forEach(task => groups.get(groupOf(task)).push(task));
-      const decisionCount = ['commitment','payment','arbitrage'].reduce((n,key) => n+groups.get(key).length,0);
-      const intro=make(doc,'div','hlc-director-intro');
-      intro.appendChild(make(doc,'strong','',decisionCount+' décision(s) à examiner'));
-      intro.appendChild(make(doc,'span','',
-        'Engagement, autorisation de paiement et réalisation financière restent séparés. Les liens ouvrent le dossier sans valider à votre place.'));
-      body.appendChild(intro);
-      if(legacyCount){
-        const notice=make(doc,'p','kmc-hub-action-explanation',legacyCount+' dossier(s) historiques à rapprocher. Consulter les preuves existantes ; aucun ancien geste de préparation n’est disponible.');
-        notice.setAttribute('data-hub-legacy-review','');
-        body.appendChild(notice);
-      }
+      // Une seule identité par dossier et marché ; les tâches restent distinctes.
+      const groupOf=task=>['AUTHORIZE_COMMITMENT','AUTHORIZE_PAYMENT'].includes(task.kind)?'decide'
+        : task.severity==='anomaly'||task.kind==='REVIEW_ANOMALY'||task.kind==='BLOCKED_BY_SHORTFALL'||task.owner==='responsable_hub'?'resolve':'control';
+      const cases=new Map();
+      activeTasks.forEach((task,index)=>{
+        const subject=task.subject||{}, market=safe(task.market?.code||'—');
+        const identity=['po_id','order_id','box_unit_id','parcel_unit_id','batch_key'].find(key=>subject[key]!=null&&safe(subject[key])!=='');
+        const key=market+':'+(identity?identity+':'+safe(subject[identity]):'task:'+safe(task.id||task.kind)+':'+index);
+        if(!cases.has(key))cases.set(key,{key,market,identity,ref:identity?safe(subject[identity]):'',tasks:[]});
+        cases.get(key).tasks.push(task);
+      });
+      const dossiers=[...cases.values()];
+      const specs=[['all','Tous'],['decide','À décider'],['control','À contrôler'],['resolve','À résoudre']];
+      const matches=(d,key)=>key==='all'||d.tasks.some(task=>groupOf(task)===key);
+      const pilot=make(doc,'section','kmc-hub-v3-pilotage');
+      pilot.setAttribute('data-hub-v3-pilotage','');
+      const metrics=make(doc,'div','kmc-hub-admin-stats');
+      const metric=make(doc,'div','kmc-hub-admin-stat');
+      metric.append(make(doc,'strong','',String(dossiers.length)),make(doc,'span','','Dossiers actifs'));
+      metrics.appendChild(metric);
+      const alertMetric=make(doc,'div','kmc-hub-admin-stat');
+      alertMetric.append(make(doc,'strong','',String(dossiers.filter(d=>d.tasks.some(t=>t.overdue)).length)),make(doc,'span','','Dossiers en alerte ≥ 48 h'));
+      metrics.appendChild(alertMetric);pilot.appendChild(metrics);
+      const gestion=make(doc,'section','kmc-hub-v3-gestion');
+      gestion.setAttribute('data-hub-v3-gestion','');
+      const tabs=make(doc,'nav','kmc-hub-admin-tabs kmc-hub-direction-tabs');
+      tabs.setAttribute('aria-label','Direction Hub');
+      const filters=make(doc,'div','kmc-hub-admin-tabs kmc-hub-director-filters');
       const list=make(doc,'div','hlc-director-list');
       list.setAttribute('data-hub-director-list','');
-      const filters=make(doc,'div','kmc-hub-admin-tabs kmc-hub-director-filters');
-      const filterButtons=[];
-      const sections=[];
-      let selectedGroup=host._directionGroup || 'commitment';
-      const applyGroup=()=>{
-        host._directionGroup=selectedGroup;
-        for(const [key,section] of sections) section.hidden=key!==selectedGroup;
+      const buttons=[],filterButtons=[],entries=[];
+      let selectedGroup=specs.some(([key])=>key===host._directionGroup)?host._directionGroup:'all';
+      let selectedView=host._directionView||'pilotage';
+      const apply=()=>{
+        host._directionView=selectedView;host._directionGroup=selectedGroup;
+        pilot.hidden=selectedView!=='pilotage';gestion.hidden=selectedView!=='gestion';
+        for(const [key,button] of buttons){button.classList.toggle('is-active',key===selectedView);button.setAttribute('aria-pressed',String(key===selectedView));}
         for(const [key,button] of filterButtons){button.classList.toggle('is-active',key===selectedGroup);button.setAttribute('aria-pressed',String(key===selectedGroup));}
+        for(const [d,node] of entries)node.hidden=!matches(d,selectedGroup);
+        empty.hidden=dossiers.some(d=>matches(d,selectedGroup));
       };
-      body.appendChild(filters);
-      for (const spec of groupSpecs) {
-        const tasks=groups.get(spec.key);
-        // Quatre colonnes stables, même si l'une ne contient aucune tâche.
-        const group=make(doc,'section','hlc-director-group');
-        group.setAttribute('data-hub-director-group',spec.key);
-        const groupHeading=make(doc,'div','hlc-director-group-heading');
-        groupHeading.appendChild(make(doc,'strong','',spec.title));
-        groupHeading.appendChild(make(doc,'span','hlc-director-group-count',String(tasks.length)));
-        group.appendChild(groupHeading);
-        group.appendChild(make(doc,'small','hlc-director-group-hint',spec.hint));
+      for(const [key,label] of [['pilotage','Pilotage'],['gestion','Gestion']]){
+        const b=make(doc,'button','kmc-hub-admin-tab',label);b.type='button';b.setAttribute('data-hub-v3-view',key);
+        b.addEventListener('click',()=>{selectedView=key;apply();});tabs.appendChild(b);buttons.push([key,b]);
+      }
+      for(const [key,label] of specs){
+        const count=dossiers.filter(d=>matches(d,key)).length;
+        const b=make(doc,'button','kmc-hub-admin-tab',label+' ('+count+')');b.type='button';b.setAttribute('data-hub-v3-filter',key);
+        b.addEventListener('click',()=>{selectedGroup=key;selectedView='gestion';apply();});filters.appendChild(b);filterButtons.push([key,b]);
+        if(key!=='all'){
+          const card=make(doc,'button','kmc-hub-admin-stat');card.type='button';card.setAttribute('data-hub-v3-pilot-filter',key);
+          card.append(make(doc,'strong','',String(count)),make(doc,'span','',label));
+          card.addEventListener('click',()=>{selectedGroup=key;selectedView='gestion';apply();});metrics.appendChild(card);
+        }
+      }
+      if(legacyCount){
+        const notice=make(doc,'p','kmc-hub-action-explanation',legacyCount+' dossier(s) historiques à rapprocher. Consulter les preuves existantes ; aucun ancien geste de préparation n’est disponible.');
+        notice.setAttribute('data-hub-legacy-review','');gestion.appendChild(notice);
+      }
+      const proofs=make(doc,'a','kmc-hub-app-branch','Preuves et documents administratifs');
+      proofs.setAttribute('href',HUB_PATH+'?branch=administrative');
+      proofs.setAttribute('data-hub-v3-proofs','');
+      gestion.append(filters,list,proofs);
+      const opened=host._directionOpened||(host._directionOpened=new Set());
+      for(const d of dossiers){
+        const dossier=make(doc,'details','hlc-director-group');
+        dossier.setAttribute('data-hub-v3-dossier',d.key);
+        dossier.open=opened.has(d.key);
+        dossier.addEventListener('toggle',()=>{if(dossier.open)opened.add(d.key);else opened.delete(d.key);});
+        const summary=make(doc,'summary','hlc-director-group-heading');
+        const identity=d.identity==='po_id'?'PO '+smallRef(d.ref):d.identity==='order_id'?'Commande '+smallRef(d.ref):d.tasks[0].missing||'Dossier Hub';
+        summary.append(make(doc,'strong','',d.market+' · '+identity),make(doc,'span','hlc-director-group-count',d.tasks.length+' tâche(s)'));
+        dossier.appendChild(summary);
         const rows=make(doc,'div','hlc-director-group-rows');
-        if (!tasks.length) rows.appendChild(make(doc,'p','hlc-director-empty','Aucune action en attente.'));
-        for(const task of tasks) {
+        for(const task of d.tasks){
           const row=make(doc,'div','hlc-director-task'+(task.overdue?' is-overdue':'')+
             (task.viewer_can_act===false?' is-readonly':''));
           row.setAttribute('data-hub-director-task',safe(task.kind||'TASK'));
@@ -385,24 +410,21 @@
               : (subject.order_id && /^[A-Za-z0-9-]{1,128}$/.test(String(subject.order_id)))
                 ? 'order:'+String(subject.order_id) : '';
             const link=make(doc,'a','hlc-director-open',
-              id.startsWith('po:')?'Examiner la PO':id.startsWith('order:')?'Examiner la commande':'Ouvrir le marché');
+              id.startsWith('po:')?(task.kind==='AUTHORIZE_COMMITMENT'?'Examiner l’engagement':task.kind==='AUTHORIZE_PAYMENT'?'Examiner le paiement':'Examiner la PO'):id.startsWith('order:')?'Examiner la commande':'Ouvrir le marché');
             const isDecision=['AUTHORIZE_COMMITMENT','AUTHORIZE_PAYMENT'].includes(task.kind)&&id.startsWith('po:');
             link.setAttribute('href',isDecision
               ? HUB_PATH+'?branch=operations&sel='+encodeURIComponent(id)+'&decision='+(task.kind==='AUTHORIZE_COMMITMENT'?'commitment':'payment')
               : '/admin/hub-live?view=execute&market='+encodeURIComponent(market)+(id?'&sel='+encodeURIComponent(id):''));
             row.appendChild(link);
           }
+
           rows.appendChild(row);
         }
-        group.appendChild(rows);
-        list.appendChild(group);
-        sections.push([spec.key,group]);
-        const filter=make(doc,'button','kmc-hub-admin-tab',spec.title.replace(/^\d · /,'')+' ('+tasks.length+')');
-        filter.type='button';filter.addEventListener('click',()=>{selectedGroup=spec.key;applyGroup();});
-        filterButtons.push([spec.key,filter]);filters.appendChild(filter);
+        dossier.appendChild(rows);list.appendChild(dossier);entries.push([d,dossier]);
       }
-      applyGroup();
-      body.appendChild(list);
+      const empty=make(doc,'p','hlc-director-empty','Aucun dossier dans ce filtre.');
+      list.appendChild(empty);
+      body.append(tabs,pilot,gestion);apply();
       return payload;
     } catch(error) {
       if (error.status === 401 || error.status === 403) {
@@ -1572,45 +1594,27 @@
     content.appendChild(host);
     layout.appendChild(content);
     root.appendChild(layout);
-    let directionView = requested === 'administrative' ? 'administration' : 'decisions';
-    let directorHost = host, adminHost = null, adminLoad = null;
-    if (branch === 'direction') {
-      const tabs=make(doc,'nav','kmc-hub-admin-tabs kmc-hub-direction-tabs');
-      tabs.setAttribute('aria-label','Gestion du Hub');
-      directorHost=make(doc,'div','kmc-hub-direction-decisions');
-      adminHost=make(doc,'div','kmc-hub-direction-administration');
-      const buttons=[];
-      const applyView=()=>{
-        directorHost.hidden=directionView!=='decisions';
-        adminHost.hidden=directionView!=='administration';
-        for(const [id,button] of buttons){
-          button.classList.toggle('is-active',directionView===id);
-          button.setAttribute('aria-pressed',String(directionView===id));
-        }
-        if(directionView==='administration' && !adminLoad){
-          adminLoad=Promise.resolve().then(()=>renderAdministrative(adminHost));
-          adminLoad.catch(()=>{adminLoad=null;});
-        }
-      };
-      for(const [id,label] of [['decisions','Pilotage et décisions'],['administration','Administration et finance']]){
-        const button=make(doc,'button','kmc-hub-admin-tab',label);
-        button.type='button';
-        button.addEventListener('click',()=>{directionView=id;applyView();});
-        buttons.push([id,button]);tabs.appendChild(button);
-      }
-      host.appendChild(tabs);host.appendChild(directorHost);host.appendChild(adminHost);
-      applyView();
+    // Ancien lien direct conservé pour les preuves historiques, jamais un troisième onglet.
+    const legacyAdministration=branch==='direction'&&requested==='administrative';
+    const adminHost=legacyAdministration?make(doc,'div','kmc-hub-direction-administration'):null;
+    const directorHost=make(doc,'div','kmc-hub-direction-decisions');
+    if(branch==='direction'){
+      if(legacyAdministration){
+        const back=make(doc,'a','kmc-hub-app-branch','Retour à Direction Hub');
+        back.setAttribute('href',HUB_PATH+'?branch=direction');
+        host.append(back,adminHost);
+      }else host.appendChild(directorHost);
     }
     const reloadCases=()=>Promise.resolve(
       branch === 'direction'
-        ? renderDirectorQueue(directorHost,{document:doc,fetch:fetchFn,user})
-        : renderOperations(host)
+        ? (legacyAdministration?renderAdministrative(adminHost):renderDirectorQueue(directorHost,{document:doc,fetch:fetchFn,user}))
+        :renderOperations(host)
     );
     const selected=reloadCases();
     const directorLoad=branch==='direction' ? selected : Promise.resolve(null);
     // Direction = vue read-only. SSE inter-instances + relecture de secours
     // restent strictement séparés des writers Achats/Opérations.
-    const liveSync = branch==='direction' && global.KomerceDashboardFreshness?.watch
+    const liveSync = branch==='direction' && !legacyAdministration && global.KomerceDashboardFreshness?.watch
       ? global.KomerceDashboardFreshness.watch({root:host, refresh:reloadCases, pollMs:60000})
       : null;
     selected.catch?.(()=>{});
