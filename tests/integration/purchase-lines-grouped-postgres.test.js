@@ -644,6 +644,21 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
       expect((await q('SELECT purchase_order_id, cancelled_at FROM purchase_lines WHERE id = $1', [other])).rows[0]).toMatchObject({ purchase_order_id: po.id, cancelled_at: null });
     });
 
+
+    it('P0 annulation après engagement, avant soumission : conserve lignes, autorisation et alerte',async()=>{
+      const supplier=await seedSupplier();
+      const {order,item}=await seedItem();
+      const mine=await seedLine({supplier,item});
+      const {purchase_order:po}=await grouped.preparePurchaseOrder({supplier_id:supplier,procurement_hub_ref:'DXB',line_ids:[mine]});
+      await q("INSERT INTO purchase_order_authorizations(purchase_order_id,authorization_type) VALUES($1,'purchase_commitment')",[po.id]);
+      const result=await cancelOrder(order);
+      expect(result).toMatchObject({lines_cancelled:0,blocking:1,auto_cancelled:0});
+      expect(result.blocking_pos[0]).toMatchObject({id:po.id,status:'draft',purchase_line_ids:[mine]});
+      expect((await q('SELECT purchase_order_id,cancelled_at FROM purchase_lines WHERE id=$1',[mine])).rows[0]).toEqual({purchase_order_id:po.id,cancelled_at:null});
+      expect((await q('SELECT authorization_type FROM purchase_order_authorizations WHERE purchase_order_id=$1',[po.id])).rows).toEqual([{authorization_type:'purchase_commitment'}]);
+      expect(mockCreateAlert).toHaveBeenCalledWith(expect.anything(),expect.objectContaining({type:'order_cancel_purchasing_blocked'}));
+    });
+
     it('PO regroupée déjà soumise : rien d\'annulé, alerte avec purchase_line_ids', async () => {
       const supplier = await seedSupplier();
       const { order, item } = await seedItem();
