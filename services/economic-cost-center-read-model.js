@@ -7,7 +7,7 @@
  * @inputs        authenticated_actor, explicit_market_scope, calendar_month
  * @outputs       scoped_centers_families_resources_posts, latest_budget_revisions, outstanding_commitments, explicit_actual_coverage_status
  * @depends       db, middleware/require-pricing-global-authority.js, services/market-delegation-service.js
- * @used-by       none
+ * @used-by       routes/admin-pricing-workspace.js
  * @db-read       markets, economic_cost_centers, economic_cost_families, economic_cost_resources, economic_cost_posts, economic_cost_budget_revisions, economic_cost_commitments, economic_cost_commitment_movements, economic_structure_cost_events
  * @db-write      none
  * @db-txn        service_owned_read_only_repeatable_read

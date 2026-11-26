@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        authenticated_pricing_operator, resolved_market_code, business_refs, pricing_payload, governed_market_decision_policy, structure_cost_event, allocation_policies, attribution_reason
  * @outputs       canonical_pricing_projection, market_cost_projection, read_only_p0_cost_audit, market_decision_projection, market_price_decisions, market_corridor_projection, activation_preview, action_results, structure_cost_event_fact, structure_cost_event_history, market_cost_attribution_journal
- * @depends       db.js, middleware/auth.js, middleware/require-pricing-global-authority.js, middleware/require-market-delegated-capability.js, services/pricing-workspace.js, services/cost-component-market-service.js, services/pricing-market-decision-policy.js, services/pricing-market-decision-projection.js, services/pricing-market-corridor.js, services/market-commercial-price-service.js, services/market-local-price-activation-service.js, services/pricing-period-structure.js, services/market-cost-attribution-service.js
+ * @depends       db.js, middleware/auth.js, middleware/require-pricing-global-authority.js, middleware/require-market-delegated-capability.js, services/pricing-workspace.js, services/cost-component-market-service.js, services/pricing-market-decision-policy.js, services/pricing-market-decision-projection.js, services/pricing-market-corridor.js, services/market-commercial-price-service.js, services/market-local-price-activation-service.js, services/pricing-period-structure.js, services/market-cost-attribution-service.js, services/economic-cost-center-read-model.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, products, product_market_exposure, pricing_global_access_grants, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, charges, economic_structure_cost_events, users
  * @db-write      none
@@ -39,6 +39,7 @@ const marketDelegationCatalog = require('../services/market-delegation-catalog-s
 const pricingPeriodStructure = require('../services/pricing-period-structure');
 const marketChargeReference = require('../services/market-structure-charge-reference');
 const marketCostAttribution = require('../services/market-cost-attribution-service');
+const { readCostCenters } = require('../services/economic-cost-center-read-model');
 const { decorateMarketDecision } = marketDecisionProjection;
 
 const MARKET_CODE = /^[A-Z]{2}$/;
@@ -235,6 +236,14 @@ router.use(
   resolveRequestedMarket,
   attachPricingAuthorityContext
 );
+
+// ECO-1f: existing canonical workspace; no alternate economic cockpit or writer.
+router.get('/market/:marketCode/cost-centers', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    res.json(await readCostCenters(req.user, { marketCode: req.workspaceMarket.code, periodStart: req.query.periodStart }));
+  } catch (error) { handleError(error, res, next); }
+});
 
 router.get('/market/:marketCode', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
   try {
@@ -672,6 +681,13 @@ function handleStructureEventError(error, res, next) {
 // Global Pricing remains a distinct central authority. A market_operator can
 // never fall through to these routes because the role guard is admin-only.
 router.use(authenticate, requireRole(['admin']), requirePricingGlobalAuthority, rejectBrowserAuthority);
+
+router.get('/cost-centers', async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    res.json(await readCostCenters(req.user, { marketCode: null, periodStart: req.query.periodStart }));
+  } catch (error) { handleError(error, res, next); }
+});
 
 // Ajustements de charge structurelle mutualisée (N3, scope GROUP) — admin
 // only : un fait GROUP affecte la quote-part de tous les marchés à la fois,

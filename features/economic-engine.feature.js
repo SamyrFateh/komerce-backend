@@ -208,6 +208,7 @@ module.exports = {
       'dashboards/admin/js/views/EconomicFlowView.js',
     ],
     tests: [
+      'tests/integration/economic-cost-center-api-postgres.test.js',
       'tests/unit/economic-cost-center-read-model.test.js',
       'tests/unit/economic-cost-budget-service.test.js',
       'tests/integration/economic-cost-commitments-postgres.test.js',
@@ -452,6 +453,8 @@ module.exports = {
       'POST /api/admin/workspaces/pricing/cost-components/:key/update',
       'POST /api/admin/workspaces/pricing/cost-components/:key/toggle',
       'GET /api/admin/workspaces/pricing/market/:marketCode',
+      'GET /api/admin/workspaces/pricing/market/:marketCode/cost-centers',
+      'GET /api/admin/workspaces/pricing/cost-centers',
       'GET /api/admin/workspaces/pricing/market/:marketCode/decision',
       'GET /api/admin/workspaces/pricing/market/:marketCode/decision-policy/history',
       'POST /api/admin/workspaces/pricing/market/:marketCode/decision-policy',
