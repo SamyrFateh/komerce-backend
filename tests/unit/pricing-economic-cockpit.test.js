@@ -70,3 +70,9 @@ test('V6 profitability windows display server coefficients, unavailable full res
  find(view,'Mois').click();expect(texts(view)).not.toContain('2026-01');expect(texts(view)).toContain('2026-02');expect(texts(view)).toContain('0 / 0 expéditions');
  find(view,'Année à date').click();expect(texts(view)).toContain('2026-01');
 });
+
+test('profitability distinguishes commercial sales cohort from shipment observation and never calculates result',()=>{
+ const obs={periodStart:'2026-01-01',coefficient:'1.1310',observations:1,physicalClosedCount:2,purchaseKmf:'1000.00',transportKmf:'131.00',measuredWeightCount:0};
+ const view=createV6Profitability(doc,{profitability:{points:[],ranges:{month:obs,quarter:obs,ytd:obs},salesEvidence:{observedNetSalesKmf:'20000.00',paidOrderCount:2,coveredOrderCount:2,pendingRefundOrders:1,terminalExceptions:0,invalidOrderCount:0}}});
+ expect(texts(view)).toContain('20\u202f000 KMF');expect(texts(view)).toContain('Ventes nettes observées');expect(texts(view).some(t=>t.includes('Cohorte distincte des expéditions'))).toBe(true);expect(texts(view)).toContain('Non disponible');
+});

@@ -232,8 +232,10 @@
     const metric=(label,value,sub)=>{const n=el(doc,'div','kmc-v7-metric');n.append(el(doc,'span','',label),el(doc,'strong','',value));if(sub)n.append(el(doc,'small','kmc-v7-coverage',sub));return n;};
     const fmt=v=>v==null?'Non disponible':String(v).replace('.',',');
     const kpis=el(doc,'div','kmc-v7-kpis');
-    kpis.append(metric('Ventes nettes','Non disponible'),metric('Contribution variable','Non disponible'),metric('Résultat économique','Non disponible'),metric('Coefficient complet du mois','Non disponible'));
+    const sales=data.salesEvidence;
+    kpis.append(metric('Ventes nettes observées',v7Money(sales?.observedNetSalesKmf,'KMF'),sales?sales.coveredOrderCount+' / '+sales.paidOrderCount+' commandes payées · cohorte commandes du mois':'Non disponible'),metric('Contribution variable','Non disponible'),metric('Résultat économique','Non disponible'),metric('Coefficient complet du mois','Non disponible'));
     host.append(kpis);
+    if(sales)host.append(el(doc,'p','kmc-v7-coverage','Ventes : commandes créées au mois, avoirs wallet réintégrés, remboursements terminés déduits. '+sales.pendingRefundOrders+' commande(s) avec remboursement pendant ; '+sales.terminalExceptions+' exception(s) terminale(s) ; '+sales.invalidOrderCount+' montant(s) non rapproché(s). Cohorte distincte des expéditions, aucun résultat par soustraction.'));
     const panel=el(doc,'section','kmc-v6-panel'),controls=el(doc,'div','kmc-v7-families'),focus=el(doc,'div','kmc-v7-kpis'),chart=el(doc,'div','kmc-v6-chart');
     panel.append(el(doc,'h4','','Observation partielle achat + transport — non décisionnelle'),controls,focus,chart);
     const defs=[['month','Mois'],['quarter','Trimestre à date'],['ytd','Année à date']];const buttons=[];

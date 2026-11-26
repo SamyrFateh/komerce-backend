@@ -4,13 +4,13 @@ const mockQuery=jest.fn(),mockRelease=jest.fn(),mockClient=jest.fn(),mockGrant=j
 jest.mock('../../db',()=>({getClient:(...a)=>mockClient(...a)}));
 jest.mock('../../middleware/require-pricing-global-authority',()=>({hasPricingGlobalAuthority:(...a)=>mockGrant(...a)}));
 jest.mock('../../services/market-delegation-service',()=>({resolveAuthorization:(...a)=>mockAuthz(...a)}));
-const {readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,shipmentPurchase,observedProfitability}=require('../../services/economic-cost-center-read-model');
+const {readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,shipmentPurchase,observedProfitability,periodSalesEvidence}=require('../../services/economic-cost-center-read-model');
 const client={query:mockQuery,release:mockRelease},actor={id:'actor',role:'admin'},month='2026-01-01';
 const ok=(rows=[])=>({rows});
 beforeEach(()=>{jest.resetAllMocks();mockClient.mockResolvedValue(client);mockGrant.mockResolvedValue(true);});
 function projection(postRows=[],commitmentRows=[],structureRows=[],market=false){
   mockQuery.mockResolvedValueOnce(ok([{id:'center'}])).mockResolvedValueOnce(ok([{id:'family'}])).mockResolvedValueOnce(ok([{id:'resource'}])).mockResolvedValueOnce(ok(postRows)).mockResolvedValueOnce(ok(commitmentRows)).mockResolvedValueOnce(ok(structureRows));
-  if(market)mockQuery.mockResolvedValueOnce(ok());
+  if(market)mockQuery.mockResolvedValueOnce(ok()).mockResolvedValueOnce(ok());
   mockQuery.mockResolvedValueOnce(ok());
 }
 test('reject unauthenticated and implicit scope',async()=>{
@@ -149,4 +149,13 @@ test('monthly, YTD and rolling observations weight the same receipt cohorts; emp
  expect(x.points[2].rolling3.coefficient).toBe('1.0655');
  expect(x.ranges.month.coefficient).toBe('1.1310');expect(x.ranges.quarter.coefficient).toBe('1.0655');
  expect(x).toMatchObject({decisional:false,netSalesKmf:null,economicResultKmf:null,fullCoefficient:null});
+});
+
+test('net commercial sales use paid cohort only, restore wallet, subtract completed refunds exactly',()=>{
+ const row={status:'collected',payment_status:'paid',total_kmf:'1000.10',wallet_kmf:'100.20',refunds_kmf:'50.05',pending_refunds:0};
+ expect(periodSalesEvidence([row])).toMatchObject({observedNetSalesKmf:'1050.25',checkoutSubtotalKmf:'1000.10',walletSubtotalKmf:'100.20',completedRefundSubtotalKmf:'50.05',coverage:'PAID_COHORT_RESTATED',decisional:false});
+ const x=periodSalesEvidence([row,{...row,status:'confirmed',payment_status:'pending'},{...row,status:'refunded',payment_status:'refunded',refunds_kmf:'0.00'},{...row,pending_refunds:1}]);
+ expect(x).toMatchObject({observedNetSalesKmf:'2100.50',paidOrderCount:3,coveredOrderCount:2,unpaidOrderCount:1,terminalExceptions:1,pendingRefundOrders:1,coverage:'PARTIAL'});
+ expect(periodSalesEvidence([])).toMatchObject({observedNetSalesKmf:null,coverage:'NO_PAID_ORDERS'});
+ expect(periodSalesEvidence([{...row,refunds_kmf:'9999.00'}])).toMatchObject({observedNetSalesKmf:null,invalidOrderCount:1});
 });

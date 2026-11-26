@@ -39,8 +39,8 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     await q("INSERT INTO suppliers(id,name,platform) VALUES($1,$2,'cj')",[supplier,ref]);
     await q(`INSERT INTO product_skus(id,product_id,sku,stock,is_active,source,supplier_sku,supplier_unit_ref,supplier_order_identity)
       VALUES($1,$2,$3,0,true,'SUPPLIER',$3,$3,$4::jsonb)`,[sku,product,ref,identity]);
-    await q(`INSERT INTO orders(id,user_id,relais_id,market_id,reference,status,payment_status,payment_mode,total_kmf,total_eur,simulation_scope)
-      VALUES($1,$2,$3,$4,$5,'confirmed','paid','cash_relais',10000,20,$6)`,[order,fx.viewerA.id,relay,market.id,ref,simulated?'G6-BUYER':null]);
+    await q(`INSERT INTO orders(id,user_id,relais_id,market_id,reference,status,payment_status,payment_mode,total_kmf,total_eur,simulation_scope,created_at)
+      VALUES($1,$2,$3,$4,$5,'confirmed','paid','cash_relais',10000,20,$6,'2026-01-05T10:00:00Z')`,[order,fx.viewerA.id,relay,market.id,ref,simulated?'G6-BUYER':null]);
     await q("INSERT INTO order_items(id,order_id,product_id,quantity,price_kmf,sku_id,fulfillment_source) VALUES($1,$2,$3,1,10000,$4,'IMPORT')",[item,order,product,sku]);
     if(purchase){
       await q(`INSERT INTO purchase_orders(id,order_id,supplier_id,market_id,status,trigger_mode,procurement_hub_ref,qty,supplier_sku) VALUES($1,NULL,$2,$3,'draft','auto','DXB',NULL,NULL)`,[po,supplier,market.id]);
@@ -138,6 +138,8 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect(response.body.activity).toMatchObject({boxCount:'2',expectedArticles:'2',receivedArticles:'2',volumeM3:'0.50000',volumeCoveredCount:2,minCostPerKgKmf:'13.10',maxCostPerKgKmf:'13.10',purchaseTransportObservation:{freightCustomsKmf:'120.10',otherTransportKmf:'10.90',documentedSubtotalKmf:'1131.00',fullEconomicCostKmf:null}});
     expect(response.body.activity).toMatchObject({purchaseKmf:null,purchaseSubtotalKmf:'1000.00',purchaseCoveredCount:1,purchaseTransportObservation:{purchaseKmf:'1000.00',transportKmf:'131.00',coefficient:'1.1310',observations:1,decisional:false,coverage:'PARTIAL'}});
     expect(response.body.profitability).toMatchObject({decisional:false,fullCoefficient:null,points:[{periodStart:'2026-01-01',monthly:{coefficient:'1.1310',observations:1,physicalClosedCount:2},rolling3:{coefficient:'1.1310'},cumulative:{coefficient:'1.1310'}}]});
+    expect(response.body.profitability.salesEvidence).toMatchObject({paidOrderCount:2,coveredOrderCount:2,observedNetSalesKmf:'20000.00',coverage:'PAID_COHORT_RESTATED',decisional:false});
+    expect(response.body.profitability.netSalesKmf).toBeNull();
     expect(closed.physicalClosedAt.slice(0,10)).toBe('2026-01-15');
     expect(closed.financialClosedAt.slice(0,10)).toBe('2026-02-10');
     expect(response.body.activity.shipments.find(s=>s.reference===activityRefs.pending)).toMatchObject({financialStatus:'NOT_RECONCILED',documentedTransportKmf:null});
@@ -147,6 +149,7 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect(own.body.activity.shipments.map(s=>s.reference).sort()).toEqual([activityRefs.closed,activityRefs.pending].sort());
     const foreign=await get(fx.central,fx.marketB.code);expect(foreign.status).toBe(200);
     expect(foreign.body.activity.shipments.map(s=>s.reference)).toEqual([activityRefs.foreign]);
+    expect(foreign.body.profitability.salesEvidence).toMatchObject({paidOrderCount:1,observedNetSalesKmf:'10000.00'});
     expect((await get(fx.viewerA,fx.marketB.code)).status).toBe(403);
     expect((await get(fx.viewerA,null)).status).toBe(403);
     expect((await get(fx.outsider,fx.marketA.code)).status).toBe(403);
@@ -161,6 +164,7 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect(next.status).toBe(200);
     expect(next.body.posts.find(p=>p.id===a.post)).toMatchObject({budget:null,commitments:[],actual:null});
     expect(next.body.activity).toMatchObject({physicalClosedCount:0,financialClosedCount:0,documentedTransportTotalKmf:null});
+    expect(next.body.profitability.salesEvidence).toMatchObject({paidOrderCount:0,observedNetSalesKmf:null});
     expect(next.body.profitability.points).toHaveLength(2);
     expect(next.body.profitability.points[1]).toMatchObject({monthly:{coefficient:null,observations:0},cumulative:{coefficient:'1.1310',observations:1},rolling3:{coefficient:'1.1310',observations:1}});
     expect(next.body.profitability.ranges.ytd).toMatchObject({coefficient:'1.1310',observations:1,physicalClosedCount:2});

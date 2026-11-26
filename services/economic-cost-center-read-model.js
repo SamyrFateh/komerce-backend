@@ -8,7 +8,7 @@
  * @outputs       scoped_centers_families_resources_posts, latest_budget_revisions, outstanding_commitments, explicit_actual_coverage_status
  * @depends       db, middleware/require-pricing-global-authority.js, services/market-delegation-service.js, services/fx-authority.js, services/cost-allocation/real-margin-shadow.js
  * @used-by       routes/admin-pricing-workspace.js
- * @db-read       markets, economic_cost_centers, economic_cost_families, economic_cost_resources, economic_cost_posts, economic_cost_budget_revisions, economic_cost_commitments, economic_cost_commitment_movements, economic_structure_cost_events, international_shipments, international_shipment_events, international_shipment_relay_receipts, international_shipment_hub_units, international_n1_reconciliations, hub_physical_units, hub_box_effective_placements, hub_purchase_allocations, order_items, orders, purchase_lines, supplier_execution_payments, supplier_payment_settlements
+ * @db-read       markets, economic_cost_centers, economic_cost_families, economic_cost_resources, economic_cost_posts, economic_cost_budget_revisions, economic_cost_commitments, economic_cost_commitment_movements, economic_structure_cost_events, international_shipments, international_shipment_events, international_shipment_relay_receipts, international_shipment_hub_units, international_n1_reconciliations, hub_physical_units, hub_box_effective_placements, hub_purchase_allocations, order_items, orders, purchase_lines, supplier_execution_payments, supplier_payment_settlements, refunds
  * @db-write      none
  * @db-txn        service_owned_read_only_repeatable_read
  * @doctrine      exact_market_scope, budget_is_not_realized_cost, no_fake_zero, group_raw_not_delegated
@@ -318,6 +318,50 @@ async function loadShipmentActivity(client,marketId,periodStart,{includeHistory=
   if(!includeHistory)return shipmentActivity(rows);
   return {activity:shipmentActivity(rows.filter(r=>new Date(r.physical_closed_at).toISOString().slice(0,10)>=periodStart)),profitability:observedProfitability(rows,periodStart)};
 }
+// Commercial order cohort, not the cash journal nor the shipment cohort.
+// Same net-sale identity as real-margin-shadow: checkout total is already
+// net of discounts and wallet; wallet is a payment instrument. Completed
+// refunds restate the originating cohort, pending refunds do not.
+function periodSalesEvidence(rows){
+  const money=v=>{if(typeof v!=='string'||!/^\d+(?:\.\d{1,2})?$/.test(v))return null;const [a,b='']=v.split('.');return BigInt(a+b.padEnd(2,'0'));};
+  const text=n=>{const s=(n<0n?-n:n).toString().padStart(3,'0');return (n<0n?'-':'')+s.slice(0,-2)+'.'+s.slice(-2);};
+  let paid=0,covered=0,invalid=0,pendingRefundOrders=0,terminalExceptions=0,unpaid=0,gross=0n,wallet=0n,refunds=0n;
+  for(const row of rows){
+    if(!['paid','refunded'].includes(row.payment_status)){unpaid++;continue;}
+    paid++;
+    if(row.pending_refunds>0)pendingRefundOrders++;
+    const amounts=[row.total_kmf,row.wallet_kmf,row.refunds_kmf].map(money);
+    if(amounts.some(x=>x===null)){invalid++;continue;}
+    const [total,w,refund]=amounts;
+    if(refund>total+w){invalid++;continue;}
+    if((row.status==='cancelled'||row.status==='refunded'||row.payment_status==='refunded')&&refund===0n){terminalExceptions++;continue;}
+    covered++;gross+=total;wallet+=w;refunds+=refund;
+  }
+  return {basis:'ORDER_CREATED_MONTH_UTC_CURRENT_STATE',scope:'EXACT_MARKET_NON_SIMULATED',
+    paidOrderCount:paid,coveredOrderCount:covered,unpaidOrderCount:unpaid,pendingRefundOrders,terminalExceptions,invalidOrderCount:invalid,
+    checkoutSubtotalKmf:covered?text(gross):null,walletSubtotalKmf:covered?text(wallet):null,completedRefundSubtotalKmf:covered?text(refunds):null,
+    observedNetSalesKmf:covered?text(gross+wallet-refunds):null,
+    coverage:!paid?'NO_PAID_ORDERS':covered===paid&&!pendingRefundOrders?'PAID_COHORT_RESTATED':'PARTIAL',
+    decisional:false,recognition:'COMMERCIAL_OBSERVATION_NOT_ACCOUNTING_PERIOD'};
+}
+async function loadPeriodSalesEvidence(client,marketId,periodStart){
+  if(marketId===null)return null;
+  const {rows}=await client.query(
+    `SELECT o.status::text AS status,o.payment_status::text AS payment_status,
+      o.total_kmf::text AS total_kmf,COALESCE(o.wallet_applied_kmf,0)::text AS wallet_kmf,
+      COALESCE(r.completed,0)::text AS refunds_kmf,COALESCE(r.pending,0)::int AS pending_refunds
+      FROM orders o
+      LEFT JOIN LATERAL (
+        SELECT SUM(x.amount_kmf) FILTER (WHERE x.status='completed') AS completed,
+          COUNT(*) FILTER (WHERE x.status='pending') AS pending
+        FROM refunds x WHERE x.order_id=o.id
+      ) r ON true
+      WHERE o.market_id=$1 AND o.simulation_scope IS NULL
+        AND o.created_at>=($2::date::timestamp AT TIME ZONE 'UTC')
+        AND o.created_at<(($2::date+interval '1 month') AT TIME ZONE 'UTC')
+      ORDER BY o.id`,[marketId,periodStart]);
+  return periodSalesEvidence(rows);
+}
 async function readCostCenters(actor,raw){
   if(!actor?.id)throw error('AUTH_REQUIRED',401,'Authentification requise');
   const input=validate(raw);
@@ -374,9 +418,11 @@ async function readCostCenters(actor,raw){
     const structureEvidence=await projectStructure(structureEvents);
     const history=await loadShipmentActivity(client,marketId,input.periodStart,{includeHistory:true});
     const activity=history?.activity??null,profitability=history?.profitability??null;
+    const salesEvidence=await loadPeriodSalesEvidence(client,marketId,input.periodStart);
+    if(profitability)profitability.salesEvidence=salesEvidence;
     await client.query('COMMIT');
     return {scope:input.marketCode===null?'GROUP':'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,central,readOnly:true,
       centers:centerModels,families,resources,posts:model,budgetSummary:budgetSummary(model),commitmentSummary:commitmentSummary(model),structureEvidence,activity,profitability,actualCoverage:'NOT_RECONCILED',available:null};
   }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
 }
-module.exports={readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,loadShipmentActivity,shipmentPurchase,observedProfitability};
+module.exports={readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,loadShipmentActivity,shipmentPurchase,observedProfitability,periodSalesEvidence};
