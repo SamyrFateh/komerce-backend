@@ -174,6 +174,21 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     expect(granted.capability).toBe('operations.read');
   });
 
+  test('les droits serveur validés par AdminContext alimentent le menu Invendus',()=>{
+    const nav=loadPolicy();
+    const context=require('../../public/dashboards/canonical/js/admin-context').validateAdminContext({
+      actor:{id:'operator-cm',role:'market_operator'},
+      access:{
+        mode:'market',allowedMarkets:['CM'],defaultMarket:'CM',capabilities:['pilotage.read'],
+        delegatedCapabilities:{CM:['operations.read']},
+      },
+    });
+    const links=nav.sidebarGroupsFor({role:'market_operator'},context)
+      .flatMap(group=>group.items);
+    expect(links.find(item=>item.id==='unsold')?.href)
+      .toBe('/dashboards/canonical/unsold.html');
+  });
+
   test('la topbar Hub expose le scope serveur du responsable pays', () => {
     const nav = loadPolicy();
     expect(nav.hubMarketScopeLabel(marketAdminContext([]))).toBe('Hub · CM');
