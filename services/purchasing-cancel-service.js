@@ -136,13 +136,16 @@ async function syncGroupedLinesOnOrderCancel(q, { orderId, orderReference, actor
   const poIds = peeked.map((r) => r.id);
   const { rows: poRows } = poIds.length
     ? await q.query(
-      `SELECT po.id, po.status, po.supplier_id, po.supplier_order_id,
-         EXISTS (SELECT 1 FROM purchase_order_authorizations a
-                  WHERE a.purchase_order_id=po.id AND a.authorization_type='purchase_commitment') AS commitment_authorized
-         FROM purchase_orders po WHERE po.id = ANY($1::uuid[]) ORDER BY po.id FOR UPDATE OF po`,
+      'SELECT id, status, supplier_id, supplier_order_id FROM purchase_orders WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE',
       [poIds]
     )
     : { rows: [] };
+  // Read authorizations AFTER acquiring PO locks: the statement which waited
+  // for a PO may have started before the decision transaction committed.
+  const { rows: commitments } = poIds.length
+    ? await q.query("SELECT purchase_order_id FROM purchase_order_authorizations WHERE purchase_order_id=ANY($1::uuid[]) AND authorization_type='purchase_commitment'", [poIds])
+    : { rows: [] };
+  const authorizedIds = new Set(commitments.map(row=>String(row.purchase_order_id)));
   const poById = new Map(poRows.map((po) => [po.id, po]));
 
   const { rows: lines } = await q.query(
@@ -161,7 +164,7 @@ async function syncGroupedLinesOnOrderCancel(q, { orderId, orderReference, actor
     const po = line.purchase_order_id ? poById.get(line.purchase_order_id) : null;
     if (!line.purchase_order_id) {
       cancellableIds.push(line.id);
-    } else if (po && po.status === 'draft' && !po.commitment_authorized) {
+    } else if (po && po.status === 'draft' && !authorizedIds.has(String(po.id))) {
       detachIds.push(line.id);
       cancellableIds.push(line.id);
       touchedDraftPos.add(po.id);
