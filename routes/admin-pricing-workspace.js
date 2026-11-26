@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        authenticated_pricing_operator, resolved_market_code, business_refs, pricing_payload, governed_market_decision_policy, structure_cost_event, allocation_policies, attribution_reason
  * @outputs       canonical_pricing_projection, market_cost_projection, read_only_p0_cost_audit, market_decision_projection, market_price_decisions, market_corridor_projection, activation_preview, action_results, structure_cost_event_fact, structure_cost_event_history, market_cost_attribution_journal
- * @depends       db.js, middleware/auth.js, middleware/require-pricing-global-authority.js, middleware/require-market-delegated-capability.js, services/pricing-workspace.js, services/cost-component-market-service.js, services/pricing-market-decision-policy.js, services/pricing-market-decision-projection.js, services/pricing-market-corridor.js, services/market-commercial-price-service.js, services/market-local-price-activation-service.js, services/pricing-period-structure.js, services/market-cost-attribution-service.js, services/economic-cost-center-read-model.js, services/economic-cost-budget-service.js, services/economic-cost-commitment-service.js, services/economic-cost-post-actual-service.js
+ * @depends       db.js, middleware/auth.js, middleware/require-pricing-global-authority.js, middleware/require-market-delegated-capability.js, services/pricing-workspace.js, services/cost-component-market-service.js, services/pricing-market-decision-policy.js, services/pricing-market-decision-projection.js, services/pricing-market-corridor.js, services/market-commercial-price-service.js, services/market-local-price-activation-service.js, services/pricing-period-structure.js, services/market-cost-attribution-service.js, services/economic-cost-center-read-model.js, services/economic-cost-budget-service.js, services/economic-cost-commitment-service.js, services/economic-cost-post-actual-service.js, services/economic-cost-reference-service.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, products, product_market_exposure, pricing_global_access_grants, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, charges, economic_structure_cost_events, users
  * @db-write      none
@@ -43,6 +43,7 @@ const { readCostCenters } = require('../services/economic-cost-center-read-model
 const { reviseBudget } = require('../services/economic-cost-budget-service');
 const { openCommitment, moveCommitment } = require('../services/economic-cost-commitment-service');
 const { recordPostActual } = require('../services/economic-cost-post-actual-service');
+const { createPost } = require('../services/economic-cost-reference-service');
 const { decorateMarketDecision, projectPeriodDecisionEvidence } = marketDecisionProjection;
 
 const MARKET_CODE = /^[A-Z]{2}$/;
@@ -298,6 +299,14 @@ async function recordCostPostActual(req,res,next){
   }catch(e){handleStructureEventError(e,res,next);}
 }
 router.post('/market/:marketCode/cost-centers/posts/:postId/actuals',requirePricingGlobalAuthority,recordCostPostActual);
+async function createCostReferencePost(req,res,next){
+  try{
+    const b=req.body||{};
+    const result=await createPost(req.user,{marketCode:req.workspaceMarket?.code||null,familyId:req.params.familyId,resourceId:b.resourceId,code:b.code,label:b.label,economicNature:b.economicNature,allocationPerimeter:b.allocationPerimeter,allocationBasis:b.allocationBasis,source:b.source,reason:b.reason});
+    res.set('Cache-Control','private, no-store');res.status(result.outcome==='created'?201:200).json(result);
+  }catch(e){handleError(e,res,next);}
+}
+router.post('/market/:marketCode/cost-centers/families/:familyId/posts',requirePricingGlobalAuthority,createCostReferencePost);
 
 router.get('/market/:marketCode', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
   try {
@@ -747,6 +756,7 @@ router.post('/cost-centers/posts/:postId/budget-revisions', reviseCostCenterBudg
 router.post('/cost-centers/posts/:postId/commitments',openCostCommitment);
 router.post('/cost-centers/commitments/:commitmentId/movements',recordCommitmentMovement);
 router.post('/cost-centers/posts/:postId/actuals',recordCostPostActual);
+router.post('/cost-centers/families/:familyId/posts',createCostReferencePost);
 
 // Ajustements de charge structurelle mutualisée (N3, scope GROUP) — admin
 // only : un fait GROUP affecte la quote-part de tous les marchés à la fois,

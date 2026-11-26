@@ -238,6 +238,22 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect(stored).toEqual({n:1,total:'250.00'});
     expect((await get(fx.central,fx.marketA.code)).body.posts.find(p=>p.id===a.post).structureEvidence.amountKmf).toBe('1250.00');
   });
+  test('reference creation is scoped and idempotent, creates no realized fact',async()=>{
+    const model=(await get(fx.central,fx.marketA.code)).body;
+    const family=model.families.find(x=>x.center_id===a.center);
+    const post=(actor,code,id,body)=>request(app).post(endpoint(code)+'/families/'+id+'/posts').set('Authorization',actor.token).send(body);
+    const input={code:'NEW_FIXED',label:tag+' fixed reference',economicNature:'FIXED',allocationPerimeter:'DIRECT',allocationBasis:'PERIOD',source:'STRUCTURE',reason:'CI metadata only'};
+    expect((await post(fx.viewerA,fx.marketA.code,family.id,input)).status).toBe(403);
+    expect((await post(fx.central,fx.marketB.code,family.id,input)).status).toBe(404);
+    const created=await post(fx.central,fx.marketA.code,family.id,input);
+    expect(created.status).toBe(201);
+    expect(created.body.post.structure_charge_id).toBeTruthy();
+    expect((await post(fx.central,fx.marketA.code,family.id,input)).body.outcome).toBe('replayed');
+    expect((await post(fx.central,fx.marketA.code,family.id,{...input,label:'Changed'})).status).toBe(409);
+    expect((await q('SELECT count(*)::int AS n FROM economic_structure_cost_events WHERE charge_id=$1',[created.body.post.structure_charge_id])).rows[0].n).toBe(0);
+    const row=(await get(fx.central,fx.marketA.code)).body.posts.find(p=>p.id===created.body.post.id);
+    expect(row).toMatchObject({budget:null,actual:null,acceptsStructureActual:true});
+  });
   test('browser authority injection and invalid period rejected',async()=>{
     expect((await request(app).get(endpoint(fx.marketA.code)).query({periodStart:month,market_id:fx.marketB.id}).set('Authorization',fx.viewerA.token)).status).toBe(400);
     expect((await get(fx.central,fx.marketA.code,'2026-01-02')).status).toBe(400);
