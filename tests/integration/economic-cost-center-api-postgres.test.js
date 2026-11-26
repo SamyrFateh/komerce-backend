@@ -188,6 +188,29 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect(group.status).toBe(201);
     expect((await post(fx.central,null,a.post,input)).status).toBe(404);
   });
+  test('commitment API opens, replays and partially releases without creating actual charges',async()=>{
+    const post=(actor,code,path,body)=>request(app).post(endpoint(code)+path).set('Authorization',actor.token).send(body);
+    const body={periodStart:month,currency:'EUR',amountNative:'100.50',evidenceRef:'CI contract',requestKey:tag+'OPEN'};
+    const path='/posts/'+a.post+'/commitments';
+    expect((await post(fx.viewerA,fx.marketA.code,path,body)).status).toBe(403);
+    expect((await post(fx.central,fx.marketB.code,path,body)).status).toBe(404);
+    const count=async()=>Number((await q('SELECT count(*) AS n FROM economic_structure_cost_events')).rows[0].n);
+    const before=await count();
+    const opened=await post(fx.central,fx.marketA.code,path,body);
+    expect(opened.status).toBe(201);
+    const k=opened.body.commitment;
+    expect(k).toMatchObject({currency:'EUR',amount_native:'100.5000',recorded_by:fx.central.id});
+    expect((await post(fx.central,fx.marketA.code,path,body)).body.outcome).toBe('replayed');
+    expect((await post(fx.central,fx.marketA.code,path,{...body,amountNative:'101'})).status).toBe(409);
+    const move='/commitments/'+k.id+'/movements',release={periodStart:month,kind:'RELEASE',amountNative:'40.25',evidenceRef:'CI release',requestKey:tag+'MOVE'};
+    expect((await post(fx.central,fx.marketB.code,move,release)).status).toBe(404);
+    expect((await post(fx.central,fx.marketA.code,move,release)).status).toBe(201);
+    expect((await post(fx.central,fx.marketA.code,move,release)).body.outcome).toBe('replayed');
+    expect((await post(fx.central,fx.marketA.code,move,{...release,amountNative:'60.26',requestKey:tag+'OVER'})).status).toBe(409);
+    const model=(await get(fx.central,fx.marketA.code)).body;
+    expect(model.posts.find(p=>p.id===a.post).commitments.find(x=>x.id===k.id)).toMatchObject({remaining_native:'60.2500'});
+    expect(await count()).toBe(before);
+  });
   test('browser authority injection and invalid period rejected',async()=>{
     expect((await request(app).get(endpoint(fx.marketA.code)).query({periodStart:month,market_id:fx.marketB.id}).set('Authorization',fx.viewerA.token)).status).toBe(400);
     expect((await get(fx.central,fx.marketA.code,'2026-01-02')).status).toBe(400);

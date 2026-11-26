@@ -389,6 +389,10 @@ const KNOWN_RESPONSES = {
   '/api/admin/workspaces/pricing/market/{marketCode}/cost-centers/posts/{postId}/budget-revisions': {
     post: { fields: ['outcome','revision'], source: 'test' }
   },
+  '/api/admin/workspaces/pricing/cost-centers/posts/{postId}/commitments': { post: { fields: ['outcome','commitment'], source: 'test' } },
+  '/api/admin/workspaces/pricing/cost-centers/commitments/{commitmentId}/movements': { post: { fields: ['outcome','movement'], source: 'test' } },
+  '/api/admin/workspaces/pricing/market/{marketCode}/cost-centers/posts/{postId}/commitments': { post: { fields: ['outcome','commitment'], source: 'test' } },
+  '/api/admin/workspaces/pricing/market/{marketCode}/cost-centers/commitments/{commitmentId}/movements': { post: { fields: ['outcome','movement'], source: 'test' } },
   // LOT 4F — réponses Pricing Workspace consommées par Canonical.
   // LOT 4V — décision économique market-scoped : formes lues dans les routes/services canoniques.
   // LOT 3 (2026-09) — tests/unit/admin-pricing-workspace-market-route.test.js
@@ -2846,6 +2850,10 @@ if (inventory.length < 150) {
 }
 
 const SUCCESS_STATUS_OVERRIDES = Object.freeze({
+  'POST /api/admin/workspaces/pricing/cost-centers/posts/{postId}/commitments': '201',
+  'POST /api/admin/workspaces/pricing/cost-centers/commitments/{commitmentId}/movements': '201',
+  'POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/posts/{postId}/commitments': '201',
+  'POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/commitments/{commitmentId}/movements': '201',
   'POST /api/admin/workspaces/pricing/cost-centers/posts/{postId}/budget-revisions': '201',
   'POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/posts/{postId}/budget-revisions': '201',
   'POST /api/relay/returns': '201',
