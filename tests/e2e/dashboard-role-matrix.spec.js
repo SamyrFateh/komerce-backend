@@ -26,12 +26,12 @@ const EXPECTED = Object.freeze({
   ],
   market_operator: [
     'control-tower', 'action-center',
-    'flow-commerce', 'flow-orders', 'entity-clients', 'workspace-pricing', 'workspace-catalog',
+    'flow-commerce', 'flow-orders', 'entity-clients', 'workspace-pricing',
     'flow-operations', 'workspace-shipping',
     'flow-finance', 'workspace-accounting',
     'live-hub',
-    'markets-home', 'market-autonomy', 'market-catalog', 'unsold',
-    'admin-users', 'admin-providers', 'settings',
+    'market-autonomy', 'market-catalog', 'unsold',
+    'admin-providers', 'settings',
   ],
   agent_hub: ['action-center', 'workspace-shipping', 'live-hub'],
   agent_relais: ['action-center', 'live-hub', 'live-relais'],
@@ -129,15 +129,18 @@ test('navigation Chromium Responsable marché : mêmes menus, routes alternative
   await mount(page,'market_operator');
   const links=Object.fromEntries(await page.$$eval('.kmc-admin-primary-link',
     els=>els.map(e=>[e.dataset.dashboard,e.getAttribute('href')])));
-  expect(links['workspace-catalog']).toBe('/dashboards/canonical/market-catalog.html');
+  expect(links['workspace-catalog']).toBeUndefined();
+  expect(links['markets-home']).toBeUndefined();
+  expect(links['admin-users']).toBeUndefined();
   expect(links['workspace-purchasing']).toBeUndefined();
   expect(links['live-import-runtime']).toBeUndefined();
   expect(links['live-relais']).toBeUndefined();
   expect(links['live-hub']).toBe('/admin/hub');
   expect(links.unsold).toBe('/dashboards/canonical/unsold.html');
-  expect(links['admin-users']).toContain('#market-team');
   expect(links['admin-providers']).toContain('#market-providers');
   expect(links.settings).toContain('#market-cash-control');
+  const hrefs=Object.values(links);
+  expect(new Set(hrefs).size).toBe(hrefs.length);
   expect(Object.values(links)).not.toContain('/admin/workspaces/purchasing');
   expect(Object.values(links)).not.toContain('/admin/import-runtime');
   expect(Object.values(links)).not.toContain('/admin/settings');
