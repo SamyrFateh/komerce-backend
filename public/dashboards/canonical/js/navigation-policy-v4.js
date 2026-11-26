@@ -1114,11 +1114,11 @@
       .filter(group => group.items.length > 0);
   }
 
-  function hubMarketScopeLabel(adminContext) {
+  function hubMarketScopeLabel(adminContext, user = global.KOMERCE_CANONICAL_AUTH_USER) {
+    if (['admin','agent_hub'].includes(user?.role)) return 'Global · Tous les marchés';
     const access = adminContext?.access;
     if (access?.mode === 'global' || access?.mode === 'hub') return 'Global · Tous les marchés';
-    // Compatibilité pendant le chargement du contexte : ne pas annoncer un
-    // scope global par le rôle lorsque le serveur a fourni un scope marché.
+    // Pour les autres rôles, le périmètre provient du contexte serveur.
     if (!access) return 'Hub · Périmètre non déterminé';
     const markets = Array.isArray(access.allowedMarkets) ? access.allowedMarkets : [];
     let requested = null;
