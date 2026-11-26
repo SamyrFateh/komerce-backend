@@ -1,0 +1,121 @@
+name: ECO-1 consolidated budget preflight retry (temporary)
+on:
+  push:
+    branches:
+      - research/eco-centres-v6-preflight
+    paths:
+      - '.github/workflows/eco-1-consolidated-preflight.yml'
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: eco-1-consolidated-preflight
+  cancel-in-progress: false
+env:
+  ECO_HEAD: 'e862cff70bbedcb3a3b2396d910cdabc9a583e4f'
+  ECO_BASE: 'a7df2352e08f3a0c9c74043a472cf255754d2906'
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 'e862cff70bbedcb3a3b2396d910cdabc9a583e4f'
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Verify exact candidate and diff
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$ECO_HEAD"
+          git diff --check "$ECO_BASE" HEAD
+          git diff --name-only "$ECO_BASE" HEAD
+      - name: Verify staging table classification without reset
+        run: npx jest --runInBand --runTestsByPath tests/unit/staging-reset-classification.test.js tests/unit/staging-reset-activity-scope.test.js
+      - name: Canonical preflight
+        env:
+          PR_BODY: |
+            ## Pourquoi
+            ECO-1 consolidated: référentiel, budget versionné et engagements partiels, sans journal parallèle.
+            ## Quoi
+            Migrations 430 à 432, carte, protection des tables et tests PostgreSQL ciblés.
+            ## Tests
+            PostgreSQL isolé, tests economic-cost-center-reference-postgres et economic-cost-budget-revisions-postgres.
+            ## Reprise
+            Aucun déploiement ni activation; revue de migration selon gouvernance.
+        run: npm run pr:preflight -- --base "$ECO_BASE"
+      - name: Report result
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ job.status }}
+        run: |
+          gh issue comment 5280 --repo "$GITHUB_REPOSITORY" --body "ECO-1 consolidated preflight: $RESULT. Candidate: $ECO_HEAD. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+  postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: ci-test-jwt-secret
+      ADMIN_PASSWORD: ci-test-admin-password
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+      QR_SECRET: ci-test-qr-secret
+      AUTHKEY_API_KEY: ci-test-authkey
+      PAYPAL_CLIENT_ID: ci-test-paypal-client
+      PAYPAL_CLIENT_SECRET: ci-test-paypal-secret
+      PAYPAL_WEBHOOK_ID: ci-test-paypal-webhook
+      META_WA_APP_SECRET: ci-test-meta-secret
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 'e862cff70bbedcb3a3b2396d910cdabc9a583e4f'
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Rebuild disposable PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$ECO_HEAD"
+          PGPASSWORD=komerce psql -v ON_ERROR_STOP=1 -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql
+          node scripts/ci-db-bootstrap.js
+      - name: Real database reference proof
+        run: |
+          set -euo pipefail
+          node scripts/run-integration-tests.js --files=tests/integration/economic-cost-center-reference-postgres.test.js
+          node scripts/run-integration-tests.js --files=tests/integration/economic-cost-budget-revisions-postgres.test.js
+          node scripts/run-integration-tests.js --files=tests/integration/economic-cost-commitments-postgres.test.js
+      - name: Report result
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ job.status }}
+        run: |
+          gh issue comment 5280 --repo "$GITHUB_REPOSITORY" --body "ECO-1 consolidated disposable PG: $RESULT. Candidate: $ECO_HEAD. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID. No staging or production writes."
