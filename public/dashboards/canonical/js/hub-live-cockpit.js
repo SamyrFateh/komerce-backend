@@ -648,7 +648,7 @@
         form.appendChild(el(doc, 'p', 'hlc-zone-hint', 'SIMULATION STAGING UNIQUEMENT — aucune commande, confirmation ou transmission vers un fournisseur extérieur. Les justificatifs et le vendeur sont fictifs.'));
       }
       form.setAttribute('data-hlc-form', kind);
-      if(ctx.compactPO===true)form.classList.add('hlc-form-compact-purchase');
+      if(ctx.compactPO===true)form.className+=' hlc-form-compact-purchase';
       form.addEventListener('click', (event) => event.stopPropagation());
       const close = button(doc, 'Fermer', 'close-form', 'is-link');
       close.addEventListener('click', () => { state.form = null; paint(); });
