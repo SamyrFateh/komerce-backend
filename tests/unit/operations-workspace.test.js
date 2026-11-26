@@ -259,7 +259,7 @@ describe('Hub: no old SAC and QR/PDF immediately reachable',()=>{
     expect(html).toContain('hub-label-center.js?v=261124-hub-domain-2');
     expect(html).toContain('operations-workspace.js?v=261126-hub-workshops-c1');
     expect(html).not.toContain('operations-workspace.js?v=261124-hub-po-inline-2');
-    expect(html).toContain('hub-live-cockpit.js?v=261125-v8-direction-1');
+    expect(html).toContain('hub-live-cockpit.js?v=261126-hub-workshops-c');
     expect(html).toContain('operations-workspace.css?v=261126-hub-workshops-c1');
     expect(html).not.toContain('operations-workspace.js?v=261113-director-h4');
     const hubVersion=html.match(/hub-workstation\.js\?v=([^"]+)"/)?.[1];
