@@ -559,20 +559,21 @@ test('aperçu PO V8 : deux dossiers distincts, retour Kanban et chargement par P
 test('styles V8 limités au nouveau poste, masquage des panneaux et cartes compactes',()=>{
   const css=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/css/hub-workstation.css'),'utf8');
   expect(css).toContain('.kmc-hub-po-visual [hidden]');
-  expect(css).toMatch(/\.kmc-hub-po-v8-board\{[^}]*grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
+  expect(css).toMatch(/\.kmc-hub-po-v8-board\{[^}]*grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
   expect(css).toMatch(/\.kmc-hub-po-v8-card\{[^}]*width:100%/);
 });
 
-test('V8 : filtre marché, six étapes du mock, exceptions et bilan non déduit de la réception',async()=>{
+test('V8 : filtre marché, cinq postes de travail, exceptions et bilan non déduit de la réception',async()=>{
  const app=load(),root=el('main');
  const base={market:'KM',supplier:'Fournisseur',order_count:1,order_references:[],ordered:2,expected:2,received:0,missing:2,purchase_step:'sent'};
  const pos=[{...base,id:'active',reference:'PO-A'},{...base,id:'received',reference:'PO-R',reception_complete:true,received:2,missing:0},
   {...base,id:'other',reference:'PO-CG',market:'CG',exceptions:[{kind:'PO_MISSING_QTY',reason:'Écart confirmé'}]}];
  const fetch=jest.fn(async url=>({ok:true,json:async()=>url==='/api/hub/board?view=po'?{scope:'HUB_GLOBAL',markets:['CG','KM'],purchase_orders:pos}:{scope:'HUB_GLOBAL',orders:[]}}));
  await app.renderGlobalBoard(root,{document:doc,fetch,user:{role:'admin'},location:{search:''}});
- expect(root.querySelectorAll('[data-hub-v8-lane]')).toHaveLength(6);
- expect(root.querySelector('[data-hub-v8-lane="4"]').querySelector('[data-hub-po-v8-card="received"]')).not.toBeNull();
- expect(root.querySelector('[data-hub-v8-lane="5"]').querySelectorAll('[data-hub-po-v8-card]')).toHaveLength(0);
+ expect(root.querySelectorAll('[data-hub-v8-lane]')).toHaveLength(5);
+ expect(root.querySelector('[data-hub-v8-lane="2"]').querySelector('[data-hub-po-v8-card="received"]')).not.toBeNull();
+ expect(root.querySelector('[data-hub-v8-lane="3"]').querySelectorAll('[data-hub-workshop="boxes"]')).toHaveLength(2);
+ expect(root.querySelector('[data-hub-v8-lane="4"]').querySelectorAll('[data-hub-workshop="departure"]')).toHaveLength(6);
  const filter=root.querySelector('[data-hub-v8-market]');filter.value='KM';filter.change(filter);
  expect(root.querySelector('[data-hub-po-v8-card="other"]')).toBeNull();
  expect(root.querySelector('[data-hub-po-v8-card="active"]')).not.toBeNull();
@@ -645,6 +646,6 @@ test('projection V8 indisponible : aucune bascule historique, puis récupératio
  const retry=root.querySelector('[data-hub-v8-retry]');expect(retry).not.toBeNull();
  available=true;await retry.click();
  expect(root.querySelector('[data-hub-po-v8]')).not.toBeNull();
- expect(root.querySelectorAll('[data-hub-v8-lane]')).toHaveLength(6);
+ expect(root.querySelectorAll('[data-hub-v8-lane]')).toHaveLength(5);
  expect(root.querySelectorAll('[data-hub-global-order]')).toHaveLength(0);
 });
