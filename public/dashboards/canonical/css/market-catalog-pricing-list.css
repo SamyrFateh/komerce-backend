@@ -41,6 +41,36 @@
 .kmc-price-list-empty { padding:28px; text-align:center; color:#75869c; }
 @media(max-width:1240px){ .kmc-price-list-table{min-width:1130px;} }
 
+/* Keep the full decision row visible in the desktop back-office shell. The
+   shell's fixed navigation leaves less width than the browser viewport. */
+@media(min-width:960px){
+  #market-catalog-root .kmc-price-list-scroll { min-width:0; }
+  #market-catalog-root .kmc-price-list-table {
+    width:100%; min-width:0; table-layout:fixed;
+  }
+  #market-catalog-root .kmc-price-list-table th,
+  #market-catalog-root .kmc-price-list-table td { box-sizing:border-box; padding-left:7px; padding-right:7px; }
+  #market-catalog-root .kmc-price-list-table th:nth-child(1) { width:19%; }
+  #market-catalog-root .kmc-price-list-table th:nth-child(2),
+  #market-catalog-root .kmc-price-list-table th:nth-child(3),
+  #market-catalog-root .kmc-price-list-table th:nth-child(4) { width:12%; }
+  #market-catalog-root .kmc-price-list-table th:nth-child(5) { width:15%; }
+  #market-catalog-root .kmc-price-list-table th:nth-child(6) { width:13%; }
+  #market-catalog-root .kmc-price-list-table th:nth-child(7) { width:17%; }
+  #market-catalog-root .kmc-price-product,
+  #market-catalog-root .kmc-price-market,
+  #market-catalog-root .kmc-price-edit,
+  #market-catalog-root .kmc-price-contribution,
+  #market-catalog-root .kmc-price-action { min-width:0; }
+  #market-catalog-root .kmc-price-readonly,
+  #market-catalog-root .kmc-price-market strong,
+  #market-catalog-root .kmc-price-contribution { white-space:normal; overflow-wrap:anywhere; }
+  #market-catalog-root .kmc-price-product-line { align-items:flex-start; gap:7px; }
+  #market-catalog-root .kmc-price-product-line img { width:36px; height:36px; }
+  #market-catalog-root .kmc-price-edit input { width:100%; min-width:0; padding:8px 6px; font-size:15px; }
+  #market-catalog-root .kmc-price-action-button { min-width:0; padding-left:6px; padding-right:6px; white-space:normal; }
+}
+
 .kmc-price-list-pagination { display:flex; justify-content:flex-end; align-items:center; gap:12px; padding:15px 4px 2px; color:#62768f; font-size:12px; }
 .kmc-price-list-pagination button { appearance:none; background:#fff; border:1px solid #cfdbe9; color:#1c4c86; padding:7px 12px; border-radius:8px; cursor:pointer; font:inherit; font-weight:700; }
 .kmc-price-list-pagination button:disabled { opacity:.4; cursor:default; }

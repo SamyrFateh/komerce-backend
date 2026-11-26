@@ -86,9 +86,11 @@ test.describe('Catalogue pays — Chromium desktop 1440', () => {
     const dimensions=await page.evaluate(()=>({
       width:window.innerWidth, scroll:document.documentElement.scrollWidth,
       table:document.querySelector('.kmc-price-list-scroll').clientWidth,
+      tableContent:document.querySelector('.kmc-price-list-scroll').scrollWidth,
     }));
     expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.width);
     expect(dimensions.table).toBeGreaterThan(900);
+    expect(dimensions.tableContent).toBeLessThanOrEqual(dimensions.table);
     await test.info().attach('market-catalog-desktop-1440',{body:await page.screenshot({fullPage:true}),contentType:'image/png'});
   });
 
