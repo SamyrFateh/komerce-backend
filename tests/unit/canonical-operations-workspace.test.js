@@ -327,3 +327,84 @@ test('V8 variance uses the existing guarded writer and explicit PO context',()=>
  expect(SOURCE).toContain('const id=context.poId||');
  expect(SOURCE).toContain('refresh:context.onVarianceChange||');
 });
+
+test('réception V3 : agrège les lignes d’une même variante, sans mélanger les SKU',()=>{
+  expect(workspace.qualityReceiptRows([
+    {product_sku_id:'sku-a',product_name:'Chargeur',remaining_quantity:2},
+    {product_sku_id:'sku-a',product_name:'Chargeur',remaining_quantity:3},
+    {product_sku_id:'sku-b',product_name:'Montre',remaining_quantity:1},
+    {product_sku_id:'sku-c',remaining_quantity:0},
+  ])).toEqual([{sku:'sku-a',name:'Chargeur',quantity:5},{sku:'sku-b',name:'Montre',quantity:1}]);
+  expect(()=>workspace.qualityReceiptRows([{remaining_quantity:2}])).toThrow('Variante attendue non identifiée');
+  expect(()=>workspace.qualityReceiptRows([{product_sku_id:'a',remaining_quantity:-1}])).toThrow('Quantité attendue invalide');
+});
+test('réception V3 : le formulaire réel ne remplace le parcours existant que sur activation explicite',()=>{
+  expect(SOURCE).toContain("if(error.code!=='HUB_QUALITY_V3_DISABLED')throw error;");
+  expect(SOURCE).toContain('quality?.eligible?renderQualityReceiptV3(doc,context,receipt):createReceptionCard');
+  expect(SOURCE).toContain('renderSupplierReturnsV3(doc,context,quality.checks,po)');
+  expect(SOURCE).toContain("physical_confirmed:true,observations");
+  expect(SOURCE).toContain('if(dossier.supplier_quality_v3_enabled===true)quality=await jsonRequest');
+  expect(SOURCE).toContain('busy:()=>pending||qualityDirty');
+});
+
+test('V3 desktop : une seule ligne de tableau par SKU et contrôle visible en colonnes',()=>{
+ const block=SOURCE.slice(SOURCE.indexOf('function renderQualityReceiptV3'),SOURCE.indexOf('function renderSupplierReturnsV3'));
+ expect(block).toContain("['Article','Attendu','Reçu / confirmé','Conforme','Retour','Identification']");
+ expect(block).toContain("const row=doc.createElement('tr');row.setAttribute('data-hub-quality-sku',line.sku)");
+ expect(block).toContain('tbody.appendChild(row)');
+ expect(block).toContain('receiveControls.append(received.wrap,confirmed.wrap)');
+ expect(block).not.toContain("row.className='kmc-workspace-receive-card'");
+ expect(block).toContain("footer.className='kmc-quality-v3-footer'");
+});
+
+
+test('départ : Maritime, Aérien et À affecter filtrent les groupes réels sans rail implicite',()=>{
+  const row=(po,relay,rail)=>({purchase_order_id:po,relais_id:relay,relais_code:relay,requested_transport_rail:rail,quantity:1});
+  const dossier={fillable:[row('p1','A','SEA_STANDARD'),row('p2','A','AIR_EXPRESS'),row('p2','B',null)],boxes:[{contents:[row('p3','C','SEA_STANDARD')]}]};
+  const groups=railFilter=>workspace.departureGroups(dossier,null,{marketWide:true,railFilter}).map(g=>[g.relay,g.rail]);
+  expect(groups('SEA_STANDARD')).toEqual([['A','SEA_STANDARD'],['C','SEA_STANDARD']]);
+  expect(groups('AIR_EXPRESS')).toEqual([['A','AIR_EXPRESS']]);
+  expect(groups(null)).toEqual([['B',null]]);
+  expect(groups(undefined)).toHaveLength(4);
+  expect(()=>groups('UNKNOWN')).toThrow('Rail de départ invalide');
+  expect(workspace.departureGroups(dossier,'p1',{railFilter:'AIR_EXPRESS'})).toEqual([]);
+  expect(workspace.departureGroups({fillable:[],boxes:[]},null,{marketWide:true,railFilter:'SEA_STANDARD'})).toEqual([]);
+});
+test('départ : filtre invalide refusé avant lecture ou mutation',async()=>{
+  const fetch=jest.fn();
+  await expect(workspace.mountDepartureActions({}, {user:{role:'agent_hub'},marketCode:'CM',marketWide:true,railFilter:'UNKNOWN',fetch})).rejects.toThrow('Rail de départ invalide');
+  expect(fetch).not.toHaveBeenCalled();
+});
+
+test('départ : le dossier ouvert ne bascule jamais silencieusement vers un autre relais',()=>{
+  const row=(relay,rail)=>({purchase_order_id:'p1',relais_id:relay,relais_code:relay,requested_transport_rail:rail,quantity:1});
+  const dossier={fillable:[row('A','AIR_EXPRESS'),row('B','AIR_EXPRESS'),row('A','SEA_STANDARD')],boxes:[]};
+  const exact=workspace.departureGroups(dossier,null,{marketWide:true,railFilter:'AIR_EXPRESS',groupKey:'["B","AIR_EXPRESS"]'});
+  expect(exact.map(g=>[g.relay,g.rail])).toEqual([['B','AIR_EXPRESS']]);
+  expect(workspace.departureGroups(dossier,null,{marketWide:true,railFilter:'AIR_EXPRESS',groupKey:'["A","SEA_STANDARD"]'})).toEqual([]);
+  expect(workspace.departureGroups({fillable:[row('A','AIR_EXPRESS')],boxes:[]},null,{marketWide:true,railFilter:'AIR_EXPRESS',groupKey:'["B","AIR_EXPRESS"]'})).toEqual([]);
+});
+
+test('C1 : la destination déjà choisie présente le rail demandé, sans choix arbitraire',()=>{
+  expect(workspace.workshopDestinationLabel({relayCode:'M01',rail:'SEA_STANDARD'})).toBe('M01 · Maritime (rail demandé)');
+  expect(workspace.workshopDestinationLabel({relayCode:'M01',rail:'AIR_EXPRESS'})).toBe('M01 · Aérien (rail demandé)');
+  expect(workspace.workshopDestinationLabel({relayCode:'M01',rail:null})).toBe('M01 · À affecter (rail demandé)');
+});
+test('C1 : le tableau COMBOX n’instancie que les actions de la ligne active',()=>{
+  const block=SOURCE.slice(SOURCE.indexOf('async function mountBoxActions'),SOURCE.indexOf('function departureBoxes'));
+  expect(block).toContain("if(marketWide&&groupKey!==undefined)");
+  expect(block).toContain("data-hub-compact-box-table");
+  expect(block).toContain("data-hub-compact-box-action");
+  expect(block).toContain("actionPanel.appendChild(composeCell(current))");
+  expect(block).toContain("if(!boxes.some(b=>String(b.unit_id)===selectedBoxId))");
+  expect(block).toContain("data-hub-inline-box");
+});
+
+test('C2 : le départ compact conserve sortie, sélection, rattachement unitaire et manifeste',()=>{
+ const block=SOURCE.slice(SOURCE.indexOf('async function mountDepartureActions'),SOURCE.indexOf('function renderSupplySection'));
+ expect(block).toContain("data-hub-compact-departure-table");
+ expect(block).toContain("actionPanel.appendChild(composeCell(current))");
+ expect(block).toContain("if(picked.size!==1||!target.value||!ids.has(id))return");
+ expect(block).toContain("body:{reference:newReference.trim(),hub_unit_ids:[...picked]}");
+ expect(block).toContain("panel.renderHubHandover(doc,slot,context,detail)");
+});

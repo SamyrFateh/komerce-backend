@@ -3,8 +3,8 @@
 > Fichier généré depuis `docs/contract/openapi.json` par `scripts/contract-debt-sync.js`.
 > Ne pas maintenir cette liste à la main.
 
-- Routes dans le contrat : **804**
-- Réponses 200 `UNKNOWN` : **120**
+- Routes dans le contrat : **807**
+- Réponses 200 `UNKNOWN` : **121**
 
 | # | Opération | Source route |
 |---:|---|---|
@@ -76,58 +76,59 @@
 | 66 | `POST /api/admin/workspaces/operations/market/{marketCode}/relay-shipments/{reference}/receive` | `routes/admin-operations-workspace.js` |
 | 67 | `GET /api/admin/workspaces/operations/market/{marketCode}/relay/labels/resolve` | `routes/admin-operations-workspace.js` |
 | 68 | `GET /api/admin/workspaces/operations/market/{marketCode}/supply/physical-code` | `routes/admin-operations-workspace.js` |
-| 69 | `POST /api/admin/workspaces/pricing/market/{marketCode}/decision-policy/preview` | `routes/admin-pricing-workspace.js` |
-| 70 | `GET /api/admin/workspaces/pricing/market/{marketCode}/economic-p0-audit` | `routes/admin-pricing-workspace.js` |
-| 71 | `POST /api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/forecast-preview` | `routes/admin-pricing-workspace.js` |
-| 72 | `POST /api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/change-active` | `routes/admin-pricing-workspace.js` |
-| 73 | `POST /api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/price-preview` | `routes/admin-pricing-workspace.js` |
-| 74 | `POST /api/admin/workspaces/pricing/market/{marketCode}/structure-charges` | `routes/admin-pricing-workspace.js` |
-| 75 | `PATCH /api/admin/workspaces/pricing/market/{marketCode}/structure-charges/{chargeId}/description` | `routes/admin-pricing-workspace.js` |
-| 76 | `POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/hold` | `routes/admin-shipping-customs-workspace.js` |
-| 77 | `POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/release` | `routes/admin-shipping-customs-workspace.js` |
-| 78 | `GET /api/admin/workspaces/shipping-customs/market/{marketCode}/international` | `routes/admin-shipping-customs-workspace.js` |
-| 79 | `GET /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}` | `routes/admin-shipping-customs-workspace.js` |
-| 80 | `POST /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}/box-scan` | `routes/admin-shipping-customs-workspace.js` |
-| 81 | `POST /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}/costs` | `routes/admin-shipping-customs-workspace.js` |
-| 82 | `POST /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}/customs-amount` | `routes/admin-shipping-customs-workspace.js` |
-| 83 | `POST /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}/freight` | `routes/admin-shipping-customs-workspace.js` |
-| 84 | `POST /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}/link-customs` | `routes/admin-shipping-customs-workspace.js` |
-| 85 | `POST /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}/reconcile-costs` | `routes/admin-shipping-customs-workspace.js` |
-| 86 | `POST /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}/tracking` | `routes/admin-shipping-customs-workspace.js` |
-| 87 | `POST /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}/transition` | `routes/admin-shipping-customs-workspace.js` |
-| 88 | `GET /api/admin/workspaces/sourcing/candidates/{candidateRef}/boutique-category-options` | `routes/admin-sourcing-workspace.js` |
-| 89 | `GET /api/admin/workspaces/sourcing/candidates/{candidateRef}/category-options` | `routes/admin-sourcing-workspace.js` |
-| 90 | `POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/confirm-boutique-category` | `routes/admin-sourcing-workspace.js` |
-| 91 | `POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/resolve-category` | `routes/admin-sourcing-workspace.js` |
-| 92 | `GET /api/hub-dash/dubai` | `routes/hub-dashboard.js` |
-| 93 | `POST /api/hub-dash/parcels/{id}/reassign-item` | `routes/hub-dashboard.js` |
-| 94 | `GET /api/hub/physical-codes/resolve` | `routes/hub.js` |
-| 95 | `GET /api/market-delegation/catalog/authorized-markets` | `routes/market-delegation-catalog.js` |
-| 96 | `GET /api/market-delegation/markets/{marketCode}/cash-custody` | `routes/market-delegation-cash-control.js` |
-| 97 | `POST /api/market-delegation/markets/{marketCode}/cash-custody/destinations` | `routes/market-delegation-cash-control.js` |
-| 98 | `POST /api/market-delegation/markets/{marketCode}/cash-custody/destinations/{destinationId}/{verb}` | `routes/market-delegation-cash-control.js` |
-| 99 | `GET /api/market-delegation/markets/{marketCode}/network/relais-agents` | `routes/market-delegation-network.js` |
-| 100 | `POST /api/market-delegation/markets/{marketCode}/network/relais/{relaisId}/agents` | `routes/market-delegation-network.js` |
-| 101 | `GET /api/markets/{marketCode}/local-stock` | `routes/market-local-stock.js` |
-| 102 | `PUT /api/markets/{marketCode}/local-stock/{productId}/exposure` | `routes/market-local-stock.js` |
-| 103 | `POST /api/markets/{marketCode}/local-stock/receipts` | `routes/market-local-stock.js` |
-| 104 | `POST /api/orders/{id}/close-g6-hub-recipe` | `routes/orders/cancel.js` |
-| 105 | `GET /api/public/markets` | `server.js` |
-| 106 | `GET /api/purchasing/authorizations/grants` | `routes/purchasing.js` |
-| 107 | `POST /api/purchasing/authorizations/grants` | `routes/purchasing.js` |
-| 108 | `POST /api/purchasing/authorizations/grants/{grant_id}/revoke` | `routes/purchasing.js` |
-| 109 | `POST /api/purchasing/lines/{id}/change-supplier` | `routes/purchasing.js` |
-| 110 | `POST /api/purchasing/po/{po_id}/authorize-commitment` | `routes/purchasing.js` |
-| 111 | `POST /api/purchasing/po/{po_id}/authorize-payment` | `routes/purchasing.js` |
-| 112 | `POST /api/purchasing/po/{po_id}/cancel-g6-recipe` | `routes/purchasing.js` |
-| 113 | `GET /api/purchasing/po/{po_id}/reconciliation` | `routes/purchasing.js` |
-| 114 | `POST /api/purchasing/po/{po_id}/variance-decision` | `routes/purchasing.js` |
-| 115 | `GET /api/relay/local-cash-refunds` | `routes/relay-dashboard.js` |
-| 116 | `POST /api/relay/orders/{id}/items/{itemId}/local-cash-handoffs/{authorizationId}/confirm` | `routes/relay-dashboard.js` |
-| 117 | `POST /api/relay/orders/{id}/items/{itemId}/local-cash-handoffs/{authorizationId}/start` | `routes/relay-dashboard.js` |
-| 118 | `POST /api/relay/returns/{id}/compensation` | `routes/relay-dashboard.js` |
-| 119 | `GET /api/relay/returns/{id}/compensation-proposal` | `routes/relay-dashboard.js` |
-| 120 | `GET /api/scans/hub/receivable` | `routes/scans.js` |
+| 69 | `POST /api/admin/workspaces/operations/market/{marketCode}/supply/receipts/{unitId}/quality` | `routes/admin-operations-workspace.js` |
+| 70 | `POST /api/admin/workspaces/pricing/market/{marketCode}/decision-policy/preview` | `routes/admin-pricing-workspace.js` |
+| 71 | `GET /api/admin/workspaces/pricing/market/{marketCode}/economic-p0-audit` | `routes/admin-pricing-workspace.js` |
+| 72 | `POST /api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/forecast-preview` | `routes/admin-pricing-workspace.js` |
+| 73 | `POST /api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/change-active` | `routes/admin-pricing-workspace.js` |
+| 74 | `POST /api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/price-preview` | `routes/admin-pricing-workspace.js` |
+| 75 | `POST /api/admin/workspaces/pricing/market/{marketCode}/structure-charges` | `routes/admin-pricing-workspace.js` |
+| 76 | `PATCH /api/admin/workspaces/pricing/market/{marketCode}/structure-charges/{chargeId}/description` | `routes/admin-pricing-workspace.js` |
+| 77 | `POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/hold` | `routes/admin-shipping-customs-workspace.js` |
+| 78 | `POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/release` | `routes/admin-shipping-customs-workspace.js` |
+| 79 | `GET /api/admin/workspaces/shipping-customs/market/{marketCode}/international` | `routes/admin-shipping-customs-workspace.js` |
+| 80 | `GET /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}` | `routes/admin-shipping-customs-workspace.js` |
+| 81 | `POST /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}/box-scan` | `routes/admin-shipping-customs-workspace.js` |
+| 82 | `POST /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}/costs` | `routes/admin-shipping-customs-workspace.js` |
+| 83 | `POST /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}/customs-amount` | `routes/admin-shipping-customs-workspace.js` |
+| 84 | `POST /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}/freight` | `routes/admin-shipping-customs-workspace.js` |
+| 85 | `POST /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}/link-customs` | `routes/admin-shipping-customs-workspace.js` |
+| 86 | `POST /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}/reconcile-costs` | `routes/admin-shipping-customs-workspace.js` |
+| 87 | `POST /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}/tracking` | `routes/admin-shipping-customs-workspace.js` |
+| 88 | `POST /api/admin/workspaces/shipping-customs/market/{marketCode}/international/{reference}/transition` | `routes/admin-shipping-customs-workspace.js` |
+| 89 | `GET /api/admin/workspaces/sourcing/candidates/{candidateRef}/boutique-category-options` | `routes/admin-sourcing-workspace.js` |
+| 90 | `GET /api/admin/workspaces/sourcing/candidates/{candidateRef}/category-options` | `routes/admin-sourcing-workspace.js` |
+| 91 | `POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/confirm-boutique-category` | `routes/admin-sourcing-workspace.js` |
+| 92 | `POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/resolve-category` | `routes/admin-sourcing-workspace.js` |
+| 93 | `GET /api/hub-dash/dubai` | `routes/hub-dashboard.js` |
+| 94 | `POST /api/hub-dash/parcels/{id}/reassign-item` | `routes/hub-dashboard.js` |
+| 95 | `GET /api/hub/physical-codes/resolve` | `routes/hub.js` |
+| 96 | `GET /api/market-delegation/catalog/authorized-markets` | `routes/market-delegation-catalog.js` |
+| 97 | `GET /api/market-delegation/markets/{marketCode}/cash-custody` | `routes/market-delegation-cash-control.js` |
+| 98 | `POST /api/market-delegation/markets/{marketCode}/cash-custody/destinations` | `routes/market-delegation-cash-control.js` |
+| 99 | `POST /api/market-delegation/markets/{marketCode}/cash-custody/destinations/{destinationId}/{verb}` | `routes/market-delegation-cash-control.js` |
+| 100 | `GET /api/market-delegation/markets/{marketCode}/network/relais-agents` | `routes/market-delegation-network.js` |
+| 101 | `POST /api/market-delegation/markets/{marketCode}/network/relais/{relaisId}/agents` | `routes/market-delegation-network.js` |
+| 102 | `GET /api/markets/{marketCode}/local-stock` | `routes/market-local-stock.js` |
+| 103 | `PUT /api/markets/{marketCode}/local-stock/{productId}/exposure` | `routes/market-local-stock.js` |
+| 104 | `POST /api/markets/{marketCode}/local-stock/receipts` | `routes/market-local-stock.js` |
+| 105 | `POST /api/orders/{id}/close-g6-hub-recipe` | `routes/orders/cancel.js` |
+| 106 | `GET /api/public/markets` | `server.js` |
+| 107 | `GET /api/purchasing/authorizations/grants` | `routes/purchasing.js` |
+| 108 | `POST /api/purchasing/authorizations/grants` | `routes/purchasing.js` |
+| 109 | `POST /api/purchasing/authorizations/grants/{grant_id}/revoke` | `routes/purchasing.js` |
+| 110 | `POST /api/purchasing/lines/{id}/change-supplier` | `routes/purchasing.js` |
+| 111 | `POST /api/purchasing/po/{po_id}/authorize-commitment` | `routes/purchasing.js` |
+| 112 | `POST /api/purchasing/po/{po_id}/authorize-payment` | `routes/purchasing.js` |
+| 113 | `POST /api/purchasing/po/{po_id}/cancel-g6-recipe` | `routes/purchasing.js` |
+| 114 | `GET /api/purchasing/po/{po_id}/reconciliation` | `routes/purchasing.js` |
+| 115 | `POST /api/purchasing/po/{po_id}/variance-decision` | `routes/purchasing.js` |
+| 116 | `GET /api/relay/local-cash-refunds` | `routes/relay-dashboard.js` |
+| 117 | `POST /api/relay/orders/{id}/items/{itemId}/local-cash-handoffs/{authorizationId}/confirm` | `routes/relay-dashboard.js` |
+| 118 | `POST /api/relay/orders/{id}/items/{itemId}/local-cash-handoffs/{authorizationId}/start` | `routes/relay-dashboard.js` |
+| 119 | `POST /api/relay/returns/{id}/compensation` | `routes/relay-dashboard.js` |
+| 120 | `GET /api/relay/returns/{id}/compensation-proposal` | `routes/relay-dashboard.js` |
+| 121 | `GET /api/scans/hub/receivable` | `routes/scans.js` |
 
 Chaque ligne doit être fermée par une preuve de forme de réponse (test, lecture de route/service fiable ou contrat explicite), jamais par une forme inventée.
 

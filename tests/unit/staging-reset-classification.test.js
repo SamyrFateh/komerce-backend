@@ -58,6 +58,11 @@ describe('staging reset classification : garde anti-derive', () => {
     expect(c.classOf('hub_box_custody_scans')).toBe('purge_via_fk');
     expect(c.isPurgeClass('hub_box_custody_scans', 'activity')).toBe(true);
     expect(c.PROTECTED.has('hub_box_custody_scans')).toBe(false);
+    for (const table of ['hub_supplier_receipt_checks','hub_supplier_receipt_check_lines','hub_supplier_return_attestations']) {
+      expect(c.classOf(table)).toBe('purge_via_fk');
+      expect(c.isPurgeClass(table, 'activity')).toBe(true);
+      expect(c.PROTECTED.has(table)).toBe(false);
+    }
   });
 
   test('referentiels critiques et comptes : jamais purges', () => {

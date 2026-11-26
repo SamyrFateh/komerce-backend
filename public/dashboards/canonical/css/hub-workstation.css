@@ -1029,7 +1029,7 @@
 .kmc-hub-po-v8-log-item{display:block;width:100%;text-align:left;border:0;background:white;color:#1765ad;padding:8px;cursor:pointer}
 .kmc-hub-po-v8-log-item:hover{background:#eef5fa}
 .kmc-hub-po-v8-chrome .kmc-hub-global-count{display:block;text-transform:uppercase;letter-spacing:.6px;font-size:11px;font-weight:750;color:#647588}
-.kmc-hub-po-v8-board{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;align-items:start;padding:8px 0}
+.kmc-hub-po-v8-board{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;align-items:start;padding:8px 0}
 .kmc-hub-po-v8-board.is-list{grid-template-columns:repeat(3,minmax(0,1fr))}
 .kmc-hub-po-v8-lane{min-width:0;background:#e8edf1;border:1px solid #dfe6eb;border-radius:8px;padding:9px;min-height:320px;max-height:68vh;overflow-y:auto}
 .kmc-hub-po-v8-lane h3{font-size:12px;font-weight:750;margin:0 0 8px;overflow-wrap:anywhere}
@@ -1047,7 +1047,7 @@
 .kmc-hub-po-v8-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:18px 0}
 .kmc-hub-po-v8-metric{padding:12px;background:#f4f7f9;border:1px solid #e9eef1;border-radius:7px}
 .kmc-hub-po-v8-metric strong{display:block;font-size:23px}
-.kmc-hub-po-v8-progress{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-top:20px}
+.kmc-hub-po-v8-progress{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:20px}
 .kmc-hub-po-v8-progress span{border-top:4px solid #dce4e9;border-radius:3px;padding:7px 0;font-size:11px;overflow-wrap:anywhere;color:#647588}
 .kmc-hub-po-v8-progress .is-current{border-color:#1765ad;color:#1765ad;font-weight:750}
 .kmc-hub-po-v8-progress .is-done{border-color:#36856a;color:#247c5c}
@@ -1130,8 +1130,16 @@
 .kmc-hub-app [data-hub-active-branch="direction"] .hlc-director-group-rows { max-height:none; overflow:visible; }
 .kmc-hub-app [data-hub-active-branch="direction"] .hlc-director-task { display:grid; grid-template-columns:48px minmax(0,1fr) 76px minmax(110px,160px); align-items:center; gap:10px; padding:8px 12px; }
 .kmc-hub-app [data-hub-active-branch="direction"] .hlc-director-detail { min-width:0; overflow-wrap:anywhere; }
-.kmc-hub-app [data-hub-active-branch="direction"] [hidden] { display:none !important; }
+.kmc-hub-app [data-hub-active-branch="direction"] [hidden][hidden] { display:none; }
 @media(max-width:900px) {
  .kmc-hub-app [data-hub-active-branch="direction"] .hlc-director-task { grid-template-columns:40px minmax(0,1fr) 64px; }
  .kmc-hub-app [data-hub-active-branch="direction"] .hlc-director-open { grid-column:2 / -1; justify-self:start; }
 }
+
+/* Direction V3 : indicateurs de lecture et file de dossiers à largeur utile. */
+.kmc-hub-app [data-hub-active-branch="direction"] .hlc-director-list { max-height:none; overflow:visible; }
+.kmc-hub-app [data-hub-v3-pilotage] .kmc-hub-admin-stats { display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px; }
+.kmc-hub-app [data-hub-v3-pilot-filter] { cursor:pointer;text-align:left;font:inherit;color:inherit; }
+.kmc-hub-app [data-hub-v3-dossier] { margin-bottom:8px; }
+.kmc-hub-app [data-hub-v3-dossier]>summary { cursor:pointer;gap:12px; }
+.kmc-hub-app [data-hub-v3-dossier] .hlc-director-group-rows { padding:8px; }

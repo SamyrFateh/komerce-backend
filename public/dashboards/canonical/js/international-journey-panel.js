@@ -197,8 +197,8 @@
   function renderCustodyTask(doc,ctx,dossier,detail,custodyStep,ref){
       const knownBoxes=(detail?.hub_units||[]).map(box=>box.reference).filter(Boolean);
       put(dossier,text(doc,'p','kmc-workspace-note',
-        'Scanner chaque COMBOX du manifeste : '+(knownBoxes.join(', ')||'consulter les cartons du dossier')+
-        '. Chaque scan est confirmé séparément ; il ne déclenche jamais une transition.'));
+        (ctx.compactWorkshop?'Scanner chaque COMBOX du tableau ci-dessus.':'Scanner chaque COMBOX du manifeste : '+(knownBoxes.join(', ')||'consulter les cartons du dossier')+'.')+
+        ' Chaque scan est confirmé séparément ; il ne déclenche jamais une transition.'));
       const custodyTitle={
         HUB_HANDOVER:'Hub · scanner et confirmer la remise de chaque COMBOX',
         CARRIER_ACCEPTED:'Transitaire · scanner et accepter chaque COMBOX',
@@ -244,7 +244,14 @@
     const host=put(root,doc.createElement('section'));
     host.setAttribute('data-hub-handover-manifest',s.reference);
     put(host,text(doc,'h3','','Manifeste complet · '+s.reference+' · '+boxes.length+' COMBOX'));
-    for(const box of boxes)put(host,text(doc,'p','kmc-workspace-note',box.reference+' · '+box.state));
+    if(ctx.compactWorkshop){
+      const viewport=put(host,doc.createElement('div'));viewport.className='kmc-hub-workshop-table-viewport';
+      const table=put(viewport,doc.createElement('table'));table.className='kmc-workspace-table kmc-hub-workshop-table';table.setAttribute('data-hub-compact-manifest','');
+      const head=put(table,doc.createElement('thead')),titles=put(head,doc.createElement('tr'));
+      for(const label of ['COMBOX','Sortie Hub']){const th=put(titles,text(doc,'th','',label));th.setAttribute('scope','col');}
+      const body=put(table,doc.createElement('tbody'));
+      for(const box of boxes){const row=put(body,doc.createElement('tr'));put(row,text(doc,'td','',box.reference));put(row,text(doc,'td','',box.state==='DISPATCHED'?'Attestée':'À contrôler · '+box.state));}
+    }else for(const box of boxes)put(host,text(doc,'p','kmc-workspace-note',box.reference+' · '+box.state));
     if(!boxes.length||boxes.some(box=>box.state!=='DISPATCHED')){
       put(host,text(doc,'p','kmc-workspace-note','Toutes les COMBOX du manifeste doivent être scannées en sortie du Hub avant la remise.'));
       return host;

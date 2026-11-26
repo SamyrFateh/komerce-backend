@@ -434,6 +434,12 @@ test('Navigation Hub : Kanban et Direction sans bouton cockpit concurrent',async
   await page.locator('[data-hub-branch="direction"]').click();
   await expect(page).toHaveURL(/branch=direction/);
   await expect(page.locator('[data-hub-director-todo]')).toBeVisible();
+  await expect(page.locator('[data-hub-v3-pilotage]')).toBeVisible();
+  await page.locator('[data-hub-v3-pilot-filter="decide"]').click();
+  await expect(page.locator('[data-hub-v3-gestion]')).toBeVisible();
+  const dossier=page.locator('[data-hub-v3-dossier]').filter({has:page.locator('[data-hub-director-task="AUTHORIZE_COMMITMENT"]')});
+  await expect(dossier).toHaveCount(1);
+  await dossier.locator('summary').click();
   await expect(page.locator('[data-hub-director-task="AUTHORIZE_COMMITMENT"]')).toBeVisible();
   await expect(page.locator('[data-hub-global-order]')).toHaveCount(0);
   await page.locator('[data-hub-branch="operations"]').click();
@@ -452,7 +458,7 @@ test('V8 : panne de projection, actualisation puis Kanban sans retour historique
   restoreProjection();
   await page.locator('[data-hub-v8-retry]').click();
   await expect(page.locator('[data-hub-po-v8]')).toBeVisible();
-  await expect(page.locator('[data-hub-v8-lane]')).toHaveCount(6);
+  await expect(page.locator('[data-hub-v8-lane]')).toHaveCount(5);
   await expect(page.locator('[data-hub-po-v8-card="'+PO+'"]')).toBeVisible();
   await expect(page.locator('[data-hub-global-order]')).toHaveCount(0);
   expect(reads.filter(url=>url==='/api/hub/board?view=po')).toHaveLength(2);
