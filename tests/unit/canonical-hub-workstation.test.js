@@ -27,6 +27,7 @@ function el(tag) {
     replaceChildren(...nodes) { this.children=nodes; nodes.forEach(x=>x.parentNode=this); },
     setAttribute(k,v) { this.attrs[k]=String(v); },
     getAttribute(k) { return this.attrs[k] || null; },
+    hasAttribute(k) { return Object.prototype.hasOwnProperty.call(this.attrs,k); },
     removeAttribute(k) { delete this.attrs[k]; },
     contains(child) { for (let node=child; node; node=node.parentNode) if(node===this) return true; return false; },
     addEventListener(evt,fn) { handlers[evt]=fn; },
@@ -72,10 +73,10 @@ test('Administration et Opérations occupent toute la largeur sans rail doublon'
   const api=app.mount({root,user:{role:'admin'},document:doc,
     location:{search:'?branch=administrative&market=KM'},fetch:mockFetch({}),
     renderAdministrative:admin,renderOperations:ops});
-  expect(api.branch).toBe('administrative');
+  expect(api.branch).toBe('direction');
   expect(root.querySelector('[data-hub-open-operations]')).toBeNull();
   expect(root.querySelector('[data-hub-branch="operations"]').children[0].children[0].textContent).toBe('Kanban');
-  expect(root.children[1].querySelectorAll('[data-hub-branch]')).toHaveLength(3);
+  expect(root.children[1].querySelectorAll('[data-hub-branch]')).toHaveLength(2);
   expect(root.querySelectorAll('[data-hub-director-todo]')).toHaveLength(0);
   expect(root.children[2].className).toContain('is-table');
   expect(root.querySelectorAll('[data-hub-case-list]')).toHaveLength(0);
@@ -89,8 +90,8 @@ test('un agent Hub voit les deux branches et la supervision dédiée, sans autor
   const app=load(),root=el('main'),admin=jest.fn();
   const mounted=app.mount({root,user:{role:'agent_hub'},document:doc,location:{search:'?branch=administrative'},
     renderAdministrative:admin,renderOperations:jest.fn()});
-  expect(mounted.branch).toBe('administrative');
-  expect(root.querySelectorAll('[data-hub-branch]')).toHaveLength(3);
+  expect(mounted.branch).toBe('direction');
+  expect(root.querySelectorAll('[data-hub-branch]')).toHaveLength(2);
   expect(admin).toHaveBeenCalledTimes(1);
 });
 
@@ -274,10 +275,12 @@ test('Direction Hub : engagements, paiements, arbitrages, exécution séparés e
   expect(host.querySelectorAll('[data-hub-director-task="BOX_BAGS"]')).toHaveLength(0);
   expect(host.querySelector('[data-hub-legacy-review]').textContent).toContain('1 dossier(s) historiques');
   expect(host.querySelectorAll('[data-hub-director-list]')).toHaveLength(1);
-  expect(host.querySelectorAll('[data-hub-director-group="commitment"]')).toHaveLength(1);
-  expect(host.querySelectorAll('[data-hub-director-group="payment"]')).toHaveLength(1);
-  expect(host.querySelectorAll('[data-hub-director-group="arbitrage"]')).toHaveLength(1);
-  expect(host.querySelectorAll('[data-hub-director-group="execution"]')).toHaveLength(1);
+  expect(host.querySelectorAll('[data-hub-v3-dossier]')).toHaveLength(3);
+  const dossier=host.querySelector('[data-hub-v3-dossier="KM:po_id:'+po+'"]');
+  expect(dossier.querySelectorAll('[data-hub-director-task]')).toHaveLength(2);
+  host.querySelector('[data-hub-v3-pilot-filter="decide"]').click();
+  expect(host.querySelector('[data-hub-v3-gestion]').hidden).toBe(false);
+  expect(dossier.hidden).toBe(false);
   const payments=host.querySelectorAll('[data-hub-director-task="AUTHORIZE_PAYMENT"]');
   expect(payments).toHaveLength(1);
   expect(payments[0].className).toContain('is-readonly');
@@ -335,11 +338,11 @@ test('Direction Hub Kanban : quatre colonnes stables, y compris sans tâches', a
     scope:'ALL_MARKETS', overdue_count:0, tasks:[],
   }) }));
   await app.renderDirectorQueue(host,{document:doc,fetch,user:{role:'admin'}});
-  for (const lane of ['commitment','payment','arbitrage','execution']) {
-    expect(host.querySelectorAll('[data-hub-director-group="'+lane+'"]')).toHaveLength(1);
+  for (const filter of ['all','decide','control','resolve']) {
+    expect(host.querySelectorAll('[data-hub-v3-filter="'+filter+'"]')).toHaveLength(1);
   }
   expect(host.querySelectorAll('[data-hub-director-task]')).toHaveLength(0);
-  expect(host.querySelectorAll('[data-hub-director-group]')).toHaveLength(4);
+  expect(host.querySelectorAll('[data-hub-v3-dossier]')).toHaveLength(0);
 });
 
 test('Direction Hub : relecture SSE ne duplique pas les cartes et suit les mutations ailleurs', async()=>{
