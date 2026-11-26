@@ -1,0 +1,50 @@
+name: ECO-0 branch context (temporary)
+on:
+  push:
+    branches:
+      - research/eco-centres-v6-preflight
+    paths:
+      - '.github/workflows/eco-centres-v6-context.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: eco-centres-v6-context
+  cancel-in-progress: true
+jobs:
+  context:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Compile canonical context and impact
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run agent:context -- --pack service --feature economic-engine | tee /tmp/eco-service.txt
+          npm run agent:context -- --pack ui --feature economic-engine | tee /tmp/eco-ui.txt
+          npm run arch:impact -- economic-engine | tee /tmp/eco-impact.txt
+      - name: Retain context output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eco-0-context
+          path: /tmp/eco-*.txt
+      - name: Report context run to chantier
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ job.status }}
+        shell: bash
+        run: |
+          printf 'ECO-0 context only — %s\nSHA: %s\nRun: %s/%s/actions/runs/%s\nNo runtime changes, no deployment.\n' "$RESULT" "$GITHUB_SHA" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > /tmp/eco-report.md
+          gh issue comment 5280 --repo "$GITHUB_REPOSITORY" --body-file /tmp/eco-report.md
