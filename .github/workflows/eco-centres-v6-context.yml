@@ -1,4 +1,4 @@
-name: ECO-0 branch context (temporary)
+name: ECO-0 documentation preflight (temporary)
 on:
   push:
     branches:
@@ -13,12 +13,16 @@ concurrency:
   group: eco-centres-v6-context
   cancel-in-progress: true
 jobs:
-  context:
+  preflight:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 40
+    env:
+      ECO_HEAD: '29a2b1be8b07e437d60284c7a467518712b28483'
+      ECO_BASE: '1741291220a734b05e8b065ccc55eb9868e3ff21'
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: '29a2b1be8b07e437d60284c7a467518712b28483'
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v4
@@ -26,25 +30,28 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - name: Compile canonical context and impact
+      - name: Verify exact documentation candidate
         shell: bash
         run: |
           set -euo pipefail
-          npm run agent:context -- --pack service --feature economic-engine | tee /tmp/eco-service.txt
-          npm run agent:context -- --pack ui --feature economic-engine | tee /tmp/eco-ui.txt
-          npm run arch:impact -- economic-engine | tee /tmp/eco-impact.txt
-      - name: Retain context output
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: eco-0-context
-          path: /tmp/eco-*.txt
-      - name: Report context run to chantier
+          test "$(git rev-parse HEAD)" = "$ECO_HEAD"
+          git diff --check "$ECO_BASE" HEAD
+          git diff --name-only "$ECO_BASE" HEAD
+          test "$(git diff --name-only "$ECO_BASE" HEAD | wc -l)" -eq 4
+          git diff --name-only "$ECO_BASE" HEAD | grep -v '^docs/doctrine/DOCTRINE_' && exit 1 || test "${PIPESTATUS[1]}" -eq 1
+      - name: Refresh canonical context
+        run: |
+          npm run agent:context -- --pack service --feature economic-engine
+          npm run agent:context -- --pack ui --feature economic-engine
+          npm run arch:impact -- economic-engine
+      - name: Canonical PR preflight
+        run: npm run pr:preflight -- --base "$ECO_BASE"
+      - name: Report result
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
           RESULT: ${{ job.status }}
         shell: bash
         run: |
-          printf 'ECO-0 context only — %s\nSHA: %s\nRun: %s/%s/actions/runs/%s\nNo runtime changes, no deployment.\n' "$RESULT" "$GITHUB_SHA" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > /tmp/eco-report.md
+          printf 'ECO-0 documentation preflight — %s\nCandidate SHA: %s\nBase: %s\nRun: %s/%s/actions/runs/%s\nNo runtime changes or deployment.\n' "$RESULT" "$ECO_HEAD" "$ECO_BASE" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > /tmp/eco-report.md
           gh issue comment 5280 --repo "$GITHUB_REPOSITORY" --body-file /tmp/eco-report.md
