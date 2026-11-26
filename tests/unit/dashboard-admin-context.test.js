@@ -37,13 +37,13 @@ beforeEach(() => {
 });
 
 describe('dashboard-admin-context', () => {
-  test('global = grant explicite + tous les marchés actifs, jamais le rôle seul', async () => {
-    mockHasGlobal.mockResolvedValue(true);
+  test('A1 : admin global sans grant explicite + tous les marchés actifs', async () => {
+    mockHasGlobal.mockResolvedValue(false);
     mockQuery.mockResolvedValueOnce({ rows: [{ code: 'CG' }, { code: 'CM' }, { code: 'KM' }] });
 
     const context = await resolveDashboardAdminContext({ id: 'hq-1', role: 'admin' });
 
-    expect(mockHasGlobal).toHaveBeenCalledWith('hq-1');
+    expect(mockHasGlobal).not.toHaveBeenCalled();
     expect(context).toEqual({
       actor: { id: 'hq-1', role: 'admin' },
       access: {
@@ -62,7 +62,7 @@ describe('dashboard-admin-context', () => {
     mockHasGlobal.mockResolvedValue(false);
     mockQuery.mockResolvedValueOnce({ rows: [{ code: 'CM' }, { code: 'CG' }] });
 
-    const context = await resolveDashboardAdminContext({ id: 'operator-1', role: 'admin' });
+    const context = await resolveDashboardAdminContext({ id: 'operator-1', role: 'market_operator' });
 
     expect(context.access).toEqual({
       mode: 'market',
@@ -78,11 +78,11 @@ describe('dashboard-admin-context', () => {
     expect(params).toEqual(['operator-1']);
   });
 
-  test('admin sans global et sans market grant est refusé — zéro scope ne signifie jamais central', async () => {
+  test('opérateur sans grant ni délégation est refusé — zéro scope ne signifie jamais central', async () => {
     mockHasGlobal.mockResolvedValue(false);
     mockQuery.mockResolvedValueOnce({ rows: [] });
 
-    await expect(resolveDashboardAdminContext({ id: 'admin-empty', role: 'admin' }))
+    await expect(resolveDashboardAdminContext({ id: 'operator-empty', role: 'market_operator' }))
       .rejects.toBeInstanceOf(DashboardAccessDeniedError);
   });
 
@@ -197,7 +197,7 @@ describe('dashboard-admin-context', () => {
     mockHasGlobal.mockResolvedValue(false);
     mockQuery.mockResolvedValueOnce({ rows: [{ code: 'CM' }] });
 
-    const context = await resolveDashboardAdminContext({ id: 'operator-1', role: 'admin' });
+    const context = await resolveDashboardAdminContext({ id: 'operator-1', role: 'market_operator' });
     const serialized = JSON.stringify(context);
 
     expect(serialized).not.toContain('market_id');
@@ -205,4 +205,15 @@ describe('dashboard-admin-context', () => {
     expect(context.access.allowedMarkets).toEqual(['CM']);
     expect(context.access.delegatedCapabilities).toEqual({ CM: [] });
   });
+});
+
+test('granular network delegate without legacy scope receives only its existing market',async()=>{
+  mockHasGlobal.mockResolvedValue(false);
+  mockQuery.mockResolvedValueOnce({rows:[]}).mockResolvedValueOnce({rows:[{code:'ZZ'}]});
+  mockListAuthorizedMarkets.mockImplementation(async(_db,{requiredCapability})=>requiredCapability==='network.read'?[{market_code:'ZZ'}]:[]);
+  mockResolveAuthorization.mockResolvedValue({capabilities:['network.read']});
+  const ctx=await resolveDashboardAdminContext({id:'network-only',role:'market_operator'});
+  expect(ctx.access).toMatchObject({mode:'market',allowedMarkets:['ZZ'],defaultMarket:'ZZ',delegatedCapabilities:{ZZ:['network.read']}});
+  expect(ctx.access.capabilities).not.toContain('dashboard.global.read');
+  expect(mockQuery.mock.calls[1][1]).toEqual([['ZZ']]);
 });

@@ -26,9 +26,10 @@ describe('market-delegation performance route', () => {
     expect(routeSource).not.toMatch(/body\.market_id|body\.marketId|query\.market_id/);
   });
 
-  test('capability-based, jamais un raccourci par rôle', () => {
+  test('A1 : rôle admin authentifié transmis seulement au service de lecture', () => {
     expect(routeSource).not.toMatch(/requireRole\(/);
-    expect(routeSource).not.toMatch(/req\.user\.role\s*===/);
+    expect(routeSource).toContain("req.user.role === 'admin' ? { actorRole: req.user.role }");
+    expect(routeSource).not.toMatch(/req\.(body|query)\.actorRole/);
   });
 
   test('montée exactement une fois à la racine de composition', () => {

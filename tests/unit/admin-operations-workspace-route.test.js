@@ -204,7 +204,8 @@ test('D3 retire complètement require-market-scope du Workspace Opérations', ()
   expect(routeSource).toContain('forceCapability: true');
 });
 
-test('admin lit CM uniquement avec operations.read ou autorité globale explicite', async () => {
+test('responsable lit CM uniquement avec operations.read ; admin lit CG sans grant', async () => {
+  mockUserRole = 'market_operator';
   const ok = await request(app()).get('/api/admin/workspaces/operations/market/CM');
   expect(ok.status).toBe(200);
   expect(mockResolveAuthorization).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
@@ -217,7 +218,8 @@ test('admin lit CM uniquement avec operations.read ou autorité globale explicit
   expect(denied.status).toBe(403);
   expect(denied.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
 
-  mockGlobalAllowed = true;
+  mockUserRole = 'admin';
+  mockGlobalAllowed = false;
   const global = await request(app()).get('/api/admin/workspaces/operations/market/CG');
   expect(global.status).toBe(200);
 });

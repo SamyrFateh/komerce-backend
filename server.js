@@ -199,6 +199,8 @@ app.get(['/', '/boutique', '/boutique/', '/boutique/index.html'], async (req, re
   }
 });
 
+require('./bootstrap/html-routes').mountCanonicalMarketCompatibilityRoutes(app);
+
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: staticSetHeaders,
 }));

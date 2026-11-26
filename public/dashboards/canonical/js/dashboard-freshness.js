@@ -47,7 +47,7 @@
       const next = new global.EventSource(ENDPOINT, { withCredentials:true });
       source = next;
       next.addEventListener('refresh', () => {
-        for (const watcher of [...watchers]) watcher.poke();
+        for (const watcher of [...watchers]) if (watcher.streamEnabled) watcher.poke();
       });
       next.onerror = () => {
         if (source !== next) return;

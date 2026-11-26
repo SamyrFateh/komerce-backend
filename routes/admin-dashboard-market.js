@@ -108,15 +108,11 @@ function parseFilters(req) {
 function requireDashboardMarketCapability(capability) {
   const delegated = requireMarketDelegatedCapability(capability, { audit: false });
   return function requireDashboardMarketCapabilityMiddleware(req, res, next) {
-    return hasDashboardGlobalAuthority(req.user && req.user.id)
-      .then(globalAllowed => {
-        if (globalAllowed) {
-          req.dashboardGlobalAuthority = true;
-          return next();
-        }
-        return delegated(req, res, next);
-      })
-      .catch(next);
+    if (req.user?.role === 'admin') {
+      req.dashboardGlobalAuthority = true;
+      return next();
+    }
+    return delegated(req, res, next);
   };
 }
 
@@ -128,7 +124,7 @@ const requireFinanceMarketRead = requireDashboardMarketCapability('finance.read'
 
 async function attachReferenceResolverAuthority(req, res, next) {
   try {
-    const globalAllowed = await hasDashboardGlobalAuthority(req.user && req.user.id);
+    const globalAllowed = req.user?.role === 'admin';
     if (globalAllowed) {
       req.dashboardGlobalAuthority = true;
       return next();

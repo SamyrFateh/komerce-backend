@@ -750,7 +750,13 @@
   function renderRelayLive(root, user, adminContext) {
     // Le comptoir de remise est une surface métier autonome mais réutilise
     // exactement le writer canonique /collect et ses autorisations serveur.
-    const relayView=new URLSearchParams(String(global.location?.search||'')).get('view');
+    const relayParams=new URLSearchParams(String(global.location?.search||''));
+    const relayView=relayParams.get('view');
+    if (user?.role === 'market_operator' && ['remises','execute','overview'].includes(relayView)) {
+      relayParams.delete('view'); relayParams.delete('focus');
+      global.location.replace('/admin/relais-live'+(relayParams.toString()?'?'+relayParams.toString():''));
+      return;
+    }
     if (relayView === 'remises') {
       return renderMarketSurfaceShell(root, user, adminContext, {
         surface: 'relais-live-remises',
@@ -769,7 +775,7 @@
       });
     }
     if (!global.KomerceCanonicalRelayLive) throw new Error('canonical_relay_live_module_missing');
-    return global.KomerceCanonicalRelayLive.mount({ root, user, document: global.document, fetch: global.fetch.bind(global) });
+    return global.KomerceCanonicalRelayLive.mount({ root, user, adminContext, document: global.document, fetch: global.fetch.bind(global) });
   }
 
   function renderPricingWorkspace(root, user, adminContext, requestedMarket) {
@@ -1065,8 +1071,13 @@
   // Paramètres migré dans le shell Canonical : KomerceCanonicalSettingsWorkspace
   // (public/dashboards/canonical/js/settings-workspace.js) est un module
   // Canonical natif — fetch direct, zéro dépendance au shell Legacy.
+  function isMarketAdministrationLens(user, adminContext, search = global.location?.search) {
+    return user?.role === 'market_operator' || (user?.role === 'admin'
+      && (adminContext?.access?.mode === 'market' || new URLSearchParams(String(search||'')).has('market')));
+  }
+
   async function renderSettingsWorkspace(root, user, adminContext) {
-    if (user?.role === 'market_operator') {
+    if (isMarketAdministrationLens(user, adminContext)) {
       return renderDelegatedAdministration(root, user, adminContext, 'settings', 'Paramètres du marché', [
         { key: 'market-config', api: global.KomerceMarketReadonlyViews, options: { viewKeys: ['market-config'] } },
         { key: 'cash-control', api: global.KomerceMarketCashControl },
@@ -1106,7 +1117,7 @@
 
   // Utilisateurs (Administration) : module Canonical natif, lecture seule.
   async function renderUsersAdmin(root, user, adminContext) {
-    if (user?.role === 'market_operator') {
+    if (isMarketAdministrationLens(user, adminContext)) {
       return renderDelegatedAdministration(root, user, adminContext, 'users-admin', 'Utilisateurs & équipe',
         [{ key: 'team', api: global.KomerceMarketTeam }]);
     }
@@ -1120,7 +1131,7 @@
 
   // Providers & certifications : module Canonical natif, lecture seule.
   async function renderProvidersAdmin(root, user, adminContext) {
-    if (user?.role === 'market_operator') {
+    if (isMarketAdministrationLens(user, adminContext)) {
       return renderDelegatedAdministration(root, user, adminContext, 'providers-admin', 'Relais & prestataires',
         [{ key: 'network', api: global.KomerceMarketNetwork }]);
     }
@@ -1163,6 +1174,38 @@
     return renderPilotageShell(root, user, adminContext);
   }
 
+  function legacyMarketAutonomyTarget(user, adminContext, search, hash) {
+    const params=new URLSearchParams(String(search||''));
+    if(params.get('legacy_market_autonomy')!=='1') return null;
+    params.delete('legacy_market_autonomy');
+    const anchor=String(hash||'').replace(/^#/,'');
+    const routes={
+      'market-team':'/admin/users',
+      'market-network':'/admin/providers','market-providers':'/admin/providers',
+      'market-cash-control':'/admin/settings',
+      'market-local-offer':'/admin/workspaces/catalog',
+      'market-local-prices':'/admin/workspaces/pricing',
+      'market-settlement':'/admin/finance',
+    };
+    const requested=params.get('market');
+    const access=adminContext?.access;
+    const code=requested||access?.defaultMarket;
+    const allowed=code&&access?.allowedMarkets?.includes(code);
+    const caps=allowed?(access?.delegatedCapabilities?.[code]||[]):[];
+    let destination=routes[anchor]||'/admin/workspaces/pricing';
+    if(!routes[anchor]&&user?.role==='market_operator'&&allowed&&!caps.includes('pricing.read')) {
+      const choices=[
+        ['network.read','/admin/providers'],['provider.manage','/admin/providers'],
+        ['team.read','/admin/users'],['catalog.read','/admin/workspaces/catalog'],
+        ['finance.read','/admin/finance'],['market_config.read','/admin/settings'],
+        ['client.read','/admin/clients'],['operations.read','/admin/operations'],
+        ['dashboard.market.read','/admin/pilotage'],
+      ];
+      destination=choices.find(([cap])=>caps.includes(cap))?.[1]||destination;
+    }
+    return destination+(params.toString()?'?'+params.toString():'')+(routes[anchor]?'#'+anchor:'');
+  }
+
   async function boot() {
     const root = document.getElementById('canonical-admin-root');
     if (!root) throw new Error('canonical_admin_root_missing');
@@ -1187,11 +1230,13 @@
       global.location.replace(operationsWorkspaceTarget(user));
       return user;
     }
-    const adminContext = ((surface === SURFACES.CATALOG_WORKSPACE && !isMarketCatalogLens(user)) || surface === SURFACES.SOURCING_WORKSPACE || surface === SURFACES.PURCHASING_WORKSPACE || surface === SURFACES.IMPORT_RUNTIME || (surface === SURFACES.HUB_WORKSTATION && user?.role !== 'market_operator') || surface === SURFACES.ACTION_CENTER || (surface === SURFACES.SETTINGS && user?.role !== 'market_operator'))
+    const adminContext = ((surface === SURFACES.CATALOG_WORKSPACE && !isMarketCatalogLens(user)) || surface === SURFACES.SOURCING_WORKSPACE || surface === SURFACES.PURCHASING_WORKSPACE || surface === SURFACES.IMPORT_RUNTIME || (surface === SURFACES.HUB_WORKSTATION && user?.role !== 'market_operator') || (surface === SURFACES.ACTION_CENTER && user?.role !== 'market_operator') || (surface === SURFACES.SETTINGS && !isMarketAdministrationLens(user, null)))
       ? null
       : await requireAdminContext();
     global.KOMERCE_CANONICAL_AUTH_USER = user;
     global.KOMERCE_CANONICAL_ADMIN_CONTEXT = adminContext;
+    const legacyTarget=legacyMarketAutonomyTarget(user,adminContext,global.location.search,global.location.hash);
+    if(legacyTarget){global.location.replace(legacyTarget);return user;}
 
     // La navigation se monte automatiquement sur DOMContentLoaded mais le
     // user n'est pas encore résolu à ce moment (session asynchrone). On la
@@ -1235,9 +1280,16 @@
         && typeof nav.canAccessSurface === 'function') {
         authorized = nav.canAccessSurface(user, surface);
       }
+      if (user?.role === 'market_operator' && typeof nav.canAccessSurface === 'function') {
+        authorized = nav.canAccessSurface(user, surface, adminContext);
+      }
       if (!authorized) {
-        const landing = defaultLandingSurface(user);
-        global.location.replace(landing);
+        const landing = user?.role === 'market_operator'
+          ? nav.sidebarGroupsFor?.(user,adminContext).flatMap(group=>group.items)
+              .find(item=>item.href!==global.location.pathname && (item.capability||item.capabilitiesAny))?.href
+          : defaultLandingSurface(user);
+        if (landing && landing !== global.location.pathname) global.location.replace(landing);
+        else { root.replaceChildren(textNode(global.document,'p','kmc-workspace-note','Aucun accès autorisé à cette rubrique.')); }
         return user;
       }
     }
@@ -1267,6 +1319,8 @@
     renderShippingCustomsWorkspace,
     renderCatalogWorkspace,
     isMarketCatalogLens,
+    isMarketAdministrationLens,
+    legacyMarketAutonomyTarget,
     renderSourcingWorkspace,
     renderImportRuntime,
     renderHubLive,

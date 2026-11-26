@@ -35,12 +35,10 @@ function translate(error) {
   return error;
 }
 
-async function listSettlements(executor, { marketCode, actorUserId }) {
+async function listSettlements(executor, { marketCode, actorUserId, actorRole = null }) {
   const db = requireExecutor(executor);
-  const authz = await resolveAuthorization(db, {
-    userId: actorUserId,
-    marketCode,
-    requiredCapability: 'finance.read',
+  const authz = await require('./market-delegation-read-authority').resolveCanonicalMarketRead(resolveAuthorization, db, {
+    userId: actorUserId, actorRole, marketCode, primaryCapability: 'finance.read',
   });
   const settlements = await settlement.listForAssignment(db, {
     marketId: authz.market_id,

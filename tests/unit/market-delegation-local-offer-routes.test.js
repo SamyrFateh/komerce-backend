@@ -48,3 +48,11 @@ test('les listes des offres sont lisibles avec catalog.read et ne délèguent pa
   expect(routeSource).toContain('setServiceExposure(client');
   expect(routeSource).toContain('setPhysicalOfferExposure(client');
 });
+
+test('canonical admin lens only opts into central READ for catalog.read',()=>{
+  const source=require('fs').readFileSync(require('path').join(__dirname,'../../routes/market-delegation-local-offer.js'),'utf8');
+  const firstGet=source.indexOf('router.get(\'/markets/:marketCode/');
+  const firstWrite=source.indexOf('router.post(',firstGet);
+  expect(source.slice(firstGet,firstWrite<0?undefined:firstWrite)).toContain('resolveCanonicalMarketRead(resolveAuthorization, client, {');
+  expect(source.slice(firstGet,firstWrite<0?undefined:firstWrite)).toContain("primaryCapability: 'catalog.read'");
+});

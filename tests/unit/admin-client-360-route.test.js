@@ -8,9 +8,10 @@
 
 let mockAllowedMarkets = new Set(['market-cm-id']);
 let mockGlobalAllowed = false;
+let mockRole = 'market_operator';
 
 jest.mock('../../middleware/auth', () => ({
-  authenticate: (req, res, next) => { req.user = { id: 'admin-1', role: 'admin' }; next(); },
+  authenticate: (req, res, next) => { req.user = { id: 'admin-1', role: mockRole }; next(); },
   requireRole: roles => (req, res, next) => roles.includes(req.user.role)
     ? next()
     : res.status(403).json({ code: 'role_forbidden' }),
@@ -69,6 +70,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockAllowedMarkets = new Set(['market-cm-id']);
   mockGlobalAllowed = false;
+  mockRole = 'market_operator';
   mockNormalizePhone.mockImplementation(value => {
     const phone = String(value || '').replace(/[\s().-]+/g, '');
     return /^\+?[0-9]{6,20}$/.test(phone) ? phone : null;
@@ -103,8 +105,9 @@ test('client existant uniquement hors périmètre reste indistinguable d’un cl
   expect(mockLoadClient360).not.toHaveBeenCalled();
 });
 
-test('autorité globale explicite voit la projection globale et les facettes compte', async () => {
-  mockGlobalAllowed = true;
+test('admin central sans grant explicite voit la projection globale et les facettes compte', async () => {
+  mockRole = 'admin';
+  mockGlobalAllowed = false;
 
   const res = await request(app()).get('/api/admin/entities/clients/%2B2691234567');
 

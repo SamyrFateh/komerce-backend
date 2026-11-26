@@ -88,7 +88,17 @@ async function getWorkspaceMarketCodes(user) {
     return rows.map(row => row.code);
   }
 
-  const capabilities = WORKSPACE_READ_CAPABILITIES[user.role];
+  let capabilities = WORKSPACE_READ_CAPABILITIES[user.role];
+  if (user.role === 'market_operator') {
+    // Preserve the established operator scope. Granular delegates without a
+    // legacy scope can now enter their canonical workspace through proven
+    // membership capabilities, never through an invented dashboard grant.
+    const existing = await getScopedMarketCodes(user.id);
+    if (existing.length) return existing;
+    capabilities = ['dashboard.market.read','operations.read','finance.read','catalog.read',
+      'pricing.read','client.read','team.read','network.read','market_config.read',
+      'provider.manage','client.case.handle','local_offer.manage'];
+  }
   if (!capabilities) return getScopedMarketCodes(user.id);
 
   const lists = await Promise.all(capabilities.map(requiredCapability =>
@@ -168,7 +178,7 @@ async function resolveDashboardAdminContext(user) {
   // subordinate of a country's market team. Never project dashboard-global
   // authority or delegated commercial capabilities onto this role.
   const centralHub = user.role === 'agent_hub';
-  const globalAuthority = !centralHub && await hasDashboardGlobalAuthority(user.id);
+  const globalAuthority = user.role === 'admin' || (!centralHub && user.role !== 'market_operator' && await hasDashboardGlobalAuthority(user.id));
   const allowedMarkets = globalAuthority
     ? await getAllActiveMarketCodes()
     : await getWorkspaceMarketCodes(user);

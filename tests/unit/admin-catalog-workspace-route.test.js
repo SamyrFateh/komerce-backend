@@ -7,11 +7,12 @@
  */
 
 let mockCatalogAllowed = true;
+let mockActorRole = 'admin';
 let mockSourcingAllowed = true;
 
 jest.mock('../../middleware/auth', () => ({
   authenticate: (req, res, next) => {
-    req.user = { id: 'admin-central', role: 'admin', full_name: 'Central Admin' };
+    req.user = { id: 'admin-central', role: mockActorRole, full_name: 'Central Admin' };
     next();
   },
   requireRole: roles => (req, res, next) => {
@@ -111,6 +112,7 @@ function app() {
 beforeEach(() => {
   jest.clearAllMocks();
   mockCatalogAllowed = true;
+  mockActorRole = 'admin';
   mockSourcingAllowed = true;
   mockBuildWorkspace.mockResolvedValue({ scope: { mode: 'global_commercial_catalog' }, summary: {}, categories: [], products: [], approval: [] });
   mockGetProductDossier.mockResolvedValue({product_ref:'KPR-000088',identity:{title_fr:'Produit français'},markets:[]});
@@ -136,6 +138,14 @@ test('admin central avec grant ouvre le Workspace global sans marché', async ()
   expect(res.status).toBe(200);
   expect(res.headers['cache-control']).toContain('no-store');
   expect(mockBuildWorkspace).toHaveBeenCalledWith(expect.objectContaining({}));
+});
+
+test('market_operator ne peut pas appeler le catalogue global même avec un grant simulé', async () => {
+  mockActorRole = 'market_operator';
+  const res = await request(app()).get('/api/admin/workspaces/catalog');
+  expect(res.status).toBe(403);
+  expect(res.body.code).toBe('role_forbidden');
+  expect(mockBuildWorkspace).not.toHaveBeenCalled();
 });
 
 test('role admin seul ne suffit pas sans grant catalogue', async () => {

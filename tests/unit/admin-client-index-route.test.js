@@ -7,10 +7,11 @@
  */
 
 let mockGlobalAllowed = false;
+let mockActorRole = 'market_operator';
 let mockClientReadGranted = true;
 
 jest.mock('../../middleware/auth', () => ({
-  authenticate: (req, res, next) => { req.user = { id: 'admin-1', role: 'admin' }; next(); },
+  authenticate: (req, res, next) => { req.user = { id: 'actor-1', role: mockActorRole }; next(); },
   requireAdmin: (req, res, next) => next(),
   requireRole: roles => (req, res, next) => roles.includes(req.user.role)
     ? next()
@@ -33,7 +34,7 @@ jest.mock('../../middleware/require-market-delegated-capability', () => ({
 
 jest.mock('../../middleware/require-dashboard-global-authority', () => ({
   hasDashboardGlobalAuthority: jest.fn(async () => mockGlobalAllowed),
-  requireDashboardGlobalAuthority: (req, res, next) => mockGlobalAllowed
+  requireDashboardGlobalAuthority: (req, res, next) => (req.user.role === 'admin' || mockGlobalAllowed)
     ? next()
     : res.status(403).json({ code: 'dashboard_global_authority_required' }),
 }));
@@ -60,6 +61,7 @@ function app() {
 beforeEach(() => {
   jest.clearAllMocks();
   mockGlobalAllowed = false;
+  mockActorRole = 'market_operator';
   mockClientReadGranted = true;
   db.query.mockResolvedValue({ rows: [{ id: 'market-km-id', code: 'KM', name: 'Comores', currency: 'KMF' }] });
   clientIndex.listClients.mockResolvedValue({ clients: [], pagination: { page: 1, total: 0 } });
@@ -84,20 +86,20 @@ test('sans client.read la lecture marché est refusée', async () => {
   expect(clientIndex.listClients).not.toHaveBeenCalled();
 });
 
-test('autorité globale explicite peut sélectionner un marché sans capability locale', async () => {
+test('A1 admin sans grant peut sélectionner un marché sans capability locale', async () => {
   mockClientReadGranted = false;
-  mockGlobalAllowed = true;
+  mockActorRole = 'admin';
   const res = await request(app()).get('/api/admin/entities/clients/market/KM');
   expect(res.status).toBe(200);
   expect(clientIndex.listClients).toHaveBeenCalled();
 });
 
-test('index global exige le grant global explicite', async () => {
+test('index global refuse opérateur et autorise admin sans grant', async () => {
   let res = await request(app()).get('/api/admin/entities/clients');
   expect(res.status).toBe(403);
   expect(clientIndex.listClients).not.toHaveBeenCalled();
 
-  mockGlobalAllowed = true;
+  mockActorRole = 'admin';
   res = await request(app()).get('/api/admin/entities/clients?search=269');
   expect(res.status).toBe(200);
   expect(clientIndex.listClients).toHaveBeenCalledWith(

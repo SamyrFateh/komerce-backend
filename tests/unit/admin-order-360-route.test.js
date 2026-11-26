@@ -93,13 +93,13 @@ beforeEach(() => {
   });
 });
 
-test('operations.read CM permet de lire une commande CM après résolution serveur', async () => {
+test('A1 : admin sans grant lit tous les achats et coûts', async () => {
   const res = await request(app()).get('/api/admin/entities/orders/CMD-CM-001');
 
   expect(res.status).toBe(200);
   expect(res.headers['cache-control']).toContain('no-store');
   expect(mockResolveOrder).toHaveBeenCalledWith('CMD-CM-001');
-  expect(mockLoadOrder360).toHaveBeenCalledWith(expect.objectContaining({ market_id: 'market-cm-id' }), { includePurchasing: true, includeCosts: false });
+  expect(mockLoadOrder360).toHaveBeenCalledWith(expect.objectContaining({ market_id: 'market-cm-id' }), { includePurchasing: true, includeCosts: true });
   expect(JSON.stringify(res.body)).not.toContain('market-cm-id');
 });
 
@@ -157,6 +157,7 @@ describe('section Coûts & écarts : finance.read exigé (fail-closed)', () => {
 });
 
 test('operations.read CM ne permet pas de lire une commande CG', async () => {
+  mockRole = 'market_operator';
   mockResolveOrder.mockResolvedValue({ invalid: false, order: resolvedOrder('market-cg-id', 'CG') });
 
   const res = await request(app()).get('/api/admin/entities/orders/CMD-CG-001');
@@ -190,6 +191,7 @@ test('référence invalide et commande absente sont arrêtées avant les facette
 });
 
 test('commande sans marché est fail-closed pour un opérateur pays', async () => {
+  mockRole = 'market_operator';
   mockResolveOrder.mockResolvedValue({ invalid: false, order: resolvedOrder(null, null) });
 
   const res = await request(app()).get('/api/admin/entities/orders/CMD-OLD-001');

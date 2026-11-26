@@ -119,12 +119,10 @@ async function loadPolicyForAssignment(executor, { assignmentId, marketId, marke
   });
 }
 
-async function readMarketCashPolicy(executor, { userId, marketCode }) {
+async function readMarketCashPolicy(executor, { userId, actorRole = null, marketCode }) {
   const db = requireExecutor(executor);
-  const authz = await resolveAuthorization(db, {
-    userId,
-    marketCode,
-    requiredCapability: 'finance.read',
+  const authz = await require('./market-delegation-read-authority').resolveCanonicalMarketRead(resolveAuthorization, db, {
+    userId: userId, actorRole, marketCode, primaryCapability: 'finance.read',
   });
   const policy = await loadPolicyForAssignment(db, {
     assignmentId: authz.assignment_id,

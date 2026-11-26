@@ -37,6 +37,7 @@ router.get('/markets/:marketCode/performance', authenticate, async (req, res, ne
     const view = await getMarketPerformance(db, {
       marketCode: req.params.marketCode,
       actorUserId: req.user.id,
+      ...(req.user.role === 'admin' ? { actorRole: req.user.role } : {}),
       period: req.query.period || null,
     });
     res.json(view);

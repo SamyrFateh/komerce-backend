@@ -451,4 +451,25 @@ function mountHtmlRoutes(app, rootDir, marketExecutor) {
   });
 }
 
-module.exports = { mountHtmlRoutes };
+// Mounted before express.static: the old catalogue entry is only a locator.
+// All data and permissions are resolved by the canonical workspace and its APIs.
+function mountCanonicalMarketCompatibilityRoutes(app) {
+  app.get('/dashboards/canonical/market-autonomy.html', (req,res) => {
+    const raw=String(req.originalUrl||'');
+    const at=raw.indexOf('?');
+    const params=new URLSearchParams(at<0?'':raw.slice(at+1));
+    params.set('legacy_market_autonomy','1');
+    res.setHeader('Cache-Control','private, no-store');
+    return res.redirect(302,'/admin/workspaces/pricing?'+params.toString());
+  });
+  app.get('/dashboards/canonical/market-catalog.html', (req, res) => {
+    const raw = String(req.originalUrl || '');
+    const at = raw.indexOf('?');
+    const params = new URLSearchParams(at < 0 ? '' : raw.slice(at + 1));
+    params.set('lens', 'market');
+    res.setHeader('Cache-Control', 'private, no-store');
+    return res.redirect(302, '/admin/workspaces/catalog?' + params.toString());
+  });
+}
+
+module.exports = { mountHtmlRoutes, mountCanonicalMarketCompatibilityRoutes };

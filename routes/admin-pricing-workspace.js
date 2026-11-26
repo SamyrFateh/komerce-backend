@@ -163,7 +163,8 @@ function requirePricingCapability(capability, options = {}) {
 // aucun consommateur réel. requires_audit=false au registre pour ces deux
 // capabilities (lecture), contrairement aux mutations ci-dessus.
 function requirePricingReadCapability(capability) {
-  return requirePricingCapability(capability, { audit: false });
+  const delegated = requirePricingCapability(capability, { audit: false });
+  return (req,res,next) => req.method === 'GET' && req.user?.role === 'admin' ? next() : delegated(req,res,next);
 }
 
 // Les observations et politiques locales restent aux mains des membres

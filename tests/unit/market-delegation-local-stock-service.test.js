@@ -133,12 +133,9 @@ describe('PUT exposure', () => {
 
 
 describe('CANON-MARKET — lecture centrale du stock, sans écriture W3', () => {
-  it('admin avec grant catalogue : un seul marché actif, aucun writer', async () => {
+  it('admin sans grant catalogue : un seul marché actif, aucun writer', async () => {
     global.__user = { id: 'adm', role: 'admin' };
     client.query.mockImplementation(async (sql, p) => {
-      if (/FROM catalog_global_access_grants/.test(sql)) {
-        expect(p).toEqual(['adm']); return { rows: [{ ok: 1 }] };
-      }
       if (/FROM markets WHERE code/.test(sql)) {
         expect(p).toEqual(['CM']); return { rows: [{ market_id: MARKET, market_code: 'CM' }] };
       }
@@ -159,18 +156,13 @@ describe('CANON-MARKET — lecture centrale du stock, sans écriture W3', () => 
     expect(delegation.audit).not.toHaveBeenCalled();
     expect((await post()).status).toBe(403);
   });
-  it('admin sans grant catalogue : 403 avant lecture métier', async () => {
+  it('admin avec marché inconnu/inactif : 404 sans lecture de stock', async () => {
     global.__user = { id: 'adm', role: 'admin' };
-    const res = await request(app()).get('/api/markets/CM/local-stock');
-    expect(res.status).toBe(403);
-    expect(client.query).toHaveBeenCalledTimes(1);
-    expect(client.query.mock.calls[0][0]).toContain('catalog_global_access_grants');
-  });
-  it('admin avec grant mais marché inconnu/inactif : 404 sans lecture de stock', async () => {
-    global.__user = { id: 'adm', role: 'admin' };
-    client.query.mockResolvedValueOnce({ rows: [{ ok: 1 }] }).mockResolvedValueOnce({ rows: [] });
+    client.query.mockResolvedValueOnce({ rows: [] });
     expect((await request(app()).get('/api/markets/CG/local-stock')).status).toBe(404);
-    expect(client.query).toHaveBeenCalledTimes(2);
+    expect(client.query).toHaveBeenCalledTimes(1);
+    expect(client.query.mock.calls[0][0]).toContain('FROM markets WHERE code');
+    expect(local.setLocalStock).not.toHaveBeenCalled();
   });
   it('lecture du responsable : garde local_offer.manage inchangé', async () => {
     const res = await request(app()).get('/api/markets/CM/local-stock');

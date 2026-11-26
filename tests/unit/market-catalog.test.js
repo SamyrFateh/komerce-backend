@@ -159,3 +159,14 @@ test('KM sélectionné mais sans catalog.read : message contextualisé et zéro 
   expect(descend(root, node => String(node.textContent).includes('KPR-000092'))).toBeTruthy();
   expect(marketCalls(calls)).toEqual([]);
 });
+
+test('CANON-MARKET : montage catalogue intégré refuse un marché hors périmètre, sans lecture commerciale', async () => {
+  await boot(monoCtx,'?market=CG',['CM']);
+  global.fetch.mockClear();
+  const host=fakeNode('div');
+  await global.KomerceMarketCatalog.mount({root:host});
+  const calls=global.fetch.mock.calls.map(([url])=>url);
+  expect(calls).toContain('/api/market-delegation/catalog/authorized-markets');
+  expect(marketCalls(calls)).toEqual([]);
+  expect(descend(host,node=>node.attributes?.['data-market-prompt']==='unauthorized')).toBeTruthy();
+});

@@ -176,7 +176,9 @@ test('canOpenEntity360 suit l’habilitation serveur (admin, market_operator) ; 
   require('../../public/dashboards/canonical/js/navigation-policy-v4.js');
   const nav = global.KomerceCanonicalNavigation;
   expect(nav.canOpenEntity360({ role: 'admin' })).toBe(true);
-  expect(nav.canOpenEntity360({ role: 'market_operator' })).toBe(true);
+  const marketCtx={access:{mode:'market',allowedMarkets:['CM'],defaultMarket:'CM',delegatedCapabilities:{CM:['operations.read']}}};
+  expect(nav.canOpenEntity360({ role: 'market_operator' },marketCtx)).toBe(true);
+  expect(nav.canOpenEntity360({ role: 'market_operator' },null)).toBe(false);
   ['agent_hub', 'agent_relais', 'agent_transitaire', 'finance', 'sourcing', 'support'].forEach(role => {
     expect(nav.canOpenEntity360({ role })).toBe(false);
   });
