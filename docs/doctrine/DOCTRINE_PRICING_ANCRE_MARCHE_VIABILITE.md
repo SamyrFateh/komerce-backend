@@ -1,6 +1,6 @@
 # Doctrine Pricing ancré marché & viabilité Komerce
 
-> **Version** : 1.3 — 2026-09-06
+> **Version** : 1.4 — 2026-11-26
 > **Statut** : doctrine fondamentale canonique du moteur économique à l'adoption de cette PR
 > **Complète** : `DOCTRINE_ECONOMIQUE_KOMERCE.md`, `DOCTRINE_ALLOCATION_COUTS.md`, `DOCTRINE_DENSITE_VALEUR.md`, `DOCTRINE_MOTEUR_ECONOMIQUE_STRATEGIE.md`, `DOCTRINE_REFACTURATION_RAILWAY.md`, `DOCTRINE_MUTUALISATION_HUB.md`
 
@@ -29,7 +29,7 @@ CDR complet = N1 + N2 + N3
 Contribution = prix décidé - coût variable complet
 ```
 
-Le **plancher économique** part toujours du coût variable complet réel ou réconcilié au niveau de confiance requis. Le marché ne fixe jamais ce plancher.
+Le **repère variable** part des coûts variables certains, estimés sourcés ou constatés, au niveau de confiance requis. Le marché ne fixe pas ce repère, et celui-ci ne fixe pas automatiquement le prix commercial. La référence complète observée est distincte du repère variable ; elle reste indicative, notamment lorsque la sous-activité n'est pas isolée.
 
 Une vente sous le coût variable complet est destructrice. Elle ne peut être autorisée qu'exceptionnellement avec validation humaine explicite, motif, durée, budget stratégique et traçabilité.
 
@@ -100,6 +100,12 @@ La fixation initiale du prix n'attend pas qu'un historique de volumes existe. Le
 Le plancher variable reste un repère nécessaire pour mesurer le risque de destruction de valeur, mais sa précision dépend des faits disponibles. Il peut être `PROVISOIRE` ou `NON_DECISIONNEL` avant rapprochement suffisant. Les règles de prix sous coût variable et leurs exceptions gouvernées restent applicables : cette incertitude ne transforme pas une vente destructrice en vente saine et ne fournit pas une autorisation implicite.
 
 Le prix commercial décidé ne change jamais automatiquement lorsque le volume, un coût ou une prévision évolue. Le système recalcule les indicateurs, explique l'écart et laisse une nouvelle décision explicite au responsable habilité.
+
+### 4.3 Double garde de sélection (décision #5280)
+
+Avant ouverture à la vente, une contribution variable estimée négative ou inférieure au seuil de prudence versionné par famille/périmètre entraîne observation/non-publication ou quantité limitée expressément autorisée. Une estimation documentée n'est pas un coût constaté ; une donnée insuffisante ne vaut pas feu vert. Après vente, une contribution variable constatée négative sur N observations comparables d'expéditions économiquement rapprochées entraîne retrait du périmètre de vente concerné ; une perte variable certaine impose une action immédiate sans attendre N. Les frais tardifs révisent l'observation, non le prix historique. N, seuils, confiance et quantités limites relèvent d'une politique versionnée, non de constantes arbitraires. Réévaluation possible avec nouvelles preuves. Toute exception est explicite, autorisée, budgétée, datée et auditée ; aucun contournement des autorisations de vente existantes.
+
+Ces deux gardes portent sur la sélection et l'exposition commerciale, pas sur le calcul automatique du tarif. Le coefficient complet pondéré et le plancher complet indicatif sont des sorties analytiques apprises des faits, distinctes du seuil de contribution variable. Leur lecture ne remplace ni les politiques de couverture ni les gardes existantes. La réalisation ECO-5 doit réutiliser les autorités sourcing/catalogue/pricing, sans créer une deuxième autorité ni affaiblir un gate. Cette clause fixe la cible et ne prétend pas qu'elle est déjà implémentée.
 
 ---
 
@@ -517,7 +523,7 @@ Ces gaps restants sont des préconditions de chantier, pas une invitation à les
 
 ## 21. Interdictions
 
-- Interdit : `prix = coût × coefficient` comme règle unique.
+- Interdit : `prix = coût × coefficient` comme règle automatique de fixation du tarif ; les coefficients observés sont des références analytiques.
 - Interdit : appeler « marge 300 % » un markup de 300 % ; les terminologies markup et marge sur vente restent distinctes.
 - Interdit : utiliser le marché pour définir le plancher économique.
 - Interdit : utiliser un objectif non réalisé comme dénominateur de référence N3.
