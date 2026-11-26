@@ -76,3 +76,9 @@ test('profitability distinguishes commercial sales cohort from shipment observat
  const view=createV6Profitability(doc,{profitability:{points:[],ranges:{month:obs,quarter:obs,ytd:obs},salesEvidence:{observedNetSalesKmf:'20000.00',paidOrderCount:2,coveredOrderCount:2,pendingRefundOrders:1,terminalExceptions:0,invalidOrderCount:0}}});
  expect(texts(view)).toContain('20\u202f000 KMF');expect(texts(view)).toContain('Ventes nettes observées');expect(texts(view).some(t=>t.includes('Cohorte distincte des expéditions'))).toBe(true);expect(texts(view)).toContain('Non disponible');
 });
+
+test('canonical mature cohort result never replaces complete cockpit KPI',()=>{
+ const o={periodStart:'2026-01-01',coefficient:'1.1310',observations:1,physicalClosedCount:2,purchaseKmf:'1000.00',transportKmf:'131.00',measuredWeightCount:0};
+ const view=createV6Profitability(doc,{profitability:{points:[],ranges:{month:o,quarter:o,ytd:o},periodDecisionEvidence:{status:'AVAILABLE_ON_MATURE_COHORT',matureOrderCount:4,revenueBasisKmf:'2000.00',variableCostsKmf:'1200.00',actualRiskKmf:'80.00',contributionKmf:'720.00',structureKmf:'1000.00',resultKmf:'-280.00',remainingKmf:'280.00',coverageRatio:'0.72'}}});
+ expect(texts(view)).toContain('Résultat de la cohorte mature');expect(texts(view)).toContain('Formation du résultat — cohorte mature');expect(texts(view)).toContain('Non disponible');expect(texts(view)).toContain('720 KMF');
+});

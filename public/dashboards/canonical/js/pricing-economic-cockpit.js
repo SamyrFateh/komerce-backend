@@ -256,8 +256,17 @@
     for(const [key,label] of defs){const b=el(doc,'button','kmc-v7-family',label);b.type='button';b.addEventListener('click',()=>render(key));buttons.push([key,b]);controls.append(b);}
     render('ytd');host.append(panel);
     const cards=el(doc,'div','kmc-v7-center-grid'),result=el(doc,'article','kmc-v6-panel'),structure=el(doc,'article','kmc-v6-panel');
-    result.append(el(doc,'h4','','Formation du résultat'),...['Ventes nettes','Achats du périmètre complet','Charges variables','Contribution variable','Charges de structure','Résultat économique'].map(k=>metric(k,'À rapprocher')));
-    structure.append(el(doc,'h4','','Couverture de structure'),metric('Couverture','Non calculable'),metric('Reste à couvrir','Non calculable'),el(doc,'p','kmc-v7-coverage','Sous-activité : référence insuffisante. Le coefficient partiel ne détermine pas les prix.'));
+    const decision=data.periodDecisionEvidence,available=decision?.status==='AVAILABLE_ON_MATURE_COHORT';
+    if(available){
+      result.append(el(doc,'h4','','Formation du résultat — cohorte mature'),el(doc,'p','kmc-v7-coverage','Évaluation distincte du moteur canonique : '+fmt(decision.matureOrderCount)+' commandes matures · ce n’est pas le résultat complet du cockpit.'),
+        metric('Ventes sur assiette du moteur',v7Money(decision.revenueBasisKmf,'KMF')),metric('Coûts variables transactionnels',v7Money(decision.variableCostsKmf,'KMF')),metric('Risque réel',v7Money(decision.actualRiskKmf,'KMF')),
+        metric('Contribution rapprochée',v7Money(decision.contributionKmf,'KMF')),metric('Charges structurelles du moteur',v7Money(decision.structureKmf,'KMF')),metric('Résultat de la cohorte mature',v7Money(decision.resultKmf,'KMF')));
+      structure.append(el(doc,'h4','','Couverture de structure — moteur canonique'),metric('Ratio de couverture',fmt(decision.coverageRatio)),metric('Reste à couvrir',v7Money(decision.remainingKmf,'KMF')),el(doc,'p','kmc-v7-coverage','Évaluation séparée de la cohorte expéditions. Aucun calcul de prix automatique.'));
+    }else{
+      result.append(el(doc,'h4','','Formation du résultat'),...['Ventes nettes','Achats du périmètre complet','Charges variables','Contribution variable','Charges de structure','Résultat économique'].map(k=>metric(k,'À rapprocher')));
+      structure.append(el(doc,'h4','','Couverture de structure'),metric('Couverture','Non calculable'),metric('Reste à couvrir','Non calculable'),el(doc,'p','kmc-v7-coverage','Sous-activité : référence insuffisante. Le coefficient partiel ne détermine pas les prix.'));
+      if(decision)structure.append(el(doc,'p','kmc-v7-coverage','Motif moteur : '+(decision.reason==='MARKET_DECISION_POLICY_REQUIRED'?'Politique de marché absente':decision.reason==='DECISION_SCOPE_MISMATCH'?'Périmètre de décision incohérent':'Rapprochement canonique indisponible')));
+    }
     cards.append(result,structure);host.append(cards);return host;
   }
 

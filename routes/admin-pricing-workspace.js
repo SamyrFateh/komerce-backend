@@ -40,7 +40,7 @@ const pricingPeriodStructure = require('../services/pricing-period-structure');
 const marketChargeReference = require('../services/market-structure-charge-reference');
 const marketCostAttribution = require('../services/market-cost-attribution-service');
 const { readCostCenters } = require('../services/economic-cost-center-read-model');
-const { decorateMarketDecision } = marketDecisionProjection;
+const { decorateMarketDecision, projectPeriodDecisionEvidence } = marketDecisionProjection;
 
 const MARKET_CODE = /^[A-Z]{2}$/;
 const FORBIDDEN_KEYS = new Set([
@@ -241,7 +241,17 @@ router.use(
 router.get('/market/:marketCode/cost-centers', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
-    res.json(await readCostCenters(req.user, { marketCode: req.workspaceMarket.code, periodStart: req.query.periodStart }));
+    const model = await readCostCenters(req.user, { marketCode: req.workspaceMarket.code, periodStart: req.query.periodStart });
+    // The existing market gate has its own read context and maturity cohort.
+    // Failure of this optional evidence must not remove the primary model.
+    let decision = null;
+    try {
+      decision = decorateMarketDecision(await marketDecisionPolicy.evaluateMarketDecision(req.workspaceMarket.id, { period: model.periodStart.slice(0,7) }));
+    } catch (error) {
+      console.warn('[economic-cockpit] canonical decision read unavailable', error.code || error.name || 'Error');
+    }
+    if (model.profitability) model.profitability.periodDecisionEvidence = projectPeriodDecisionEvidence(decision, req.workspaceMarket.id, model.periodStart);
+    res.json(model);
   } catch (error) { handleError(error, res, next); }
 });
 

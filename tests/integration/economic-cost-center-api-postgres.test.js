@@ -140,6 +140,7 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect(response.body.profitability).toMatchObject({decisional:false,fullCoefficient:null,points:[{periodStart:'2026-01-01',monthly:{coefficient:'1.1310',observations:1,physicalClosedCount:2},rolling3:{coefficient:'1.1310'},cumulative:{coefficient:'1.1310'}}]});
     expect(response.body.profitability.salesEvidence).toMatchObject({paidOrderCount:2,coveredOrderCount:2,observedNetSalesKmf:'20000.00',coverage:'PAID_COHORT_RESTATED',decisional:false});
     expect(response.body.profitability.netSalesKmf).toBeNull();
+    expect(response.body.profitability.periodDecisionEvidence).toMatchObject({basis:'CANONICAL_MATURE_ORDER_PERIOD_DECISION',periodStart:month,fullEconomicResult:false,status:'NOT_DECISIONAL',resultKmf:null});
     expect(closed.physicalClosedAt.slice(0,10)).toBe('2026-01-15');
     expect(closed.financialClosedAt.slice(0,10)).toBe('2026-02-10');
     expect(response.body.activity.shipments.find(s=>s.reference===activityRefs.pending)).toMatchObject({financialStatus:'NOT_RECONCILED',documentedTransportKmf:null});
