@@ -66,9 +66,14 @@
       if(summary.totalEur!=null)return v7Money(summary.totalEur);
       return summary.recordedEur==null?'Non renseigné':v7Money(summary.recordedEur)+' · partiel ('+summary.coveredPosts+'/'+summary.totalPosts+')';
     }
-    function metrics(summary){
+    function commitmentTotal(summary){
+      if(!summary)return 'À rapprocher';
+      if(summary.totalEur!=null)return v7Money(summary.totalEur);
+      return summary.recordedEur==null?'À rapprocher':v7Money(summary.recordedEur)+' · partiel ('+summary.coveredCommitments+'/'+summary.totalCommitments+')';
+    }
+    function metrics(summary,commitments){
       const row=el(doc,'div','kmc-v7-kpis');
-      row.append(metric('Budget enregistré (EUR)',budgetText(summary)),metric('Engagements ouverts','À rapprocher'),
+      row.append(metric('Budget enregistré (EUR)',budgetText(summary)),metric('Engagements ouverts (EUR)',commitmentTotal(commitments)),
         metric('Charges constatées','À rapprocher'),metric('Disponible','Non calculable'));return row;
     }
     function commitmentText(p){
@@ -83,13 +88,13 @@
       heading.append(el(doc,'h3','',center?center.label:'Centres de coûts'),
         el(doc,'p','',model?.scope==='GROUP'?'Centres groupe · '+(model.periodStart||''):('Marché '+(model?.marketCode||'')+' · '+(model?.periodStart||''))));
       if(center)heading.append(button('Tous les centres',()=>{state.centerId=null;state.familyId=null;state.postId=null;render();}));
-      host.append(heading,metrics(center?center.budgetSummary:model?.budgetSummary));
+      host.append(heading,metrics(center?center.budgetSummary:model?.budgetSummary,center?center.commitmentSummary:model?.commitmentSummary));
       if(!center){
         const grid=el(doc,'div','kmc-v7-center-grid');
         for(const c of centers){
           const card=el(doc,'article','kmc-v7-center-card');
           card.append(el(doc,'h4','',c.label),el(doc,'p','',c.is_active?'Centre actif':'Centre à configurer'),
-            metric('Charges constatées','À rapprocher'),metric('Budget enregistré (EUR)',budgetText(c.budgetSummary)),
+            metric('Charges constatées','À rapprocher'),metric('Budget enregistré (EUR)',budgetText(c.budgetSummary)),metric('Engagements ouverts (EUR)',commitmentTotal(c.commitmentSummary)),
             el(doc,'p','kmc-v7-coverage','Couverture économique non rapprochée'));
           card.append(button('Consulter',()=>{state.centerId=c.id;state.familyId=null;state.postId=null;render();}));
           grid.append(card);

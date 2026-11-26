@@ -56,6 +56,10 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     const actual=(await q('SELECT amount_eur::text AS eur FROM economic_cost_budget_revisions WHERE post_id=$1 AND revision=2',[a.post])).rows[0].eur;
     expect(p.budget.eur).toBe(actual);
     expect(p.commitments[0].remaining_native).toBe('70.0000');
+    expect(p.commitments[0].remaining_eur).toBe('70.00');
+    expect(response.body.commitmentSummary).toMatchObject({totalEur:'70.00',valuation:'FROZEN_OPENING_EUR'});
+    expect(response.body.centers.find(c=>c.id===a.center).commitmentSummary.totalEur).toBe('70.00');
+    expect(response.body.budgetSummary.totalEur).toBe(actual);
     expect(p.actual).toBeNull();expect(p.available).toBeNull();
   });
   test('market reader can read own scope only; group and foreign market refused',async()=>{

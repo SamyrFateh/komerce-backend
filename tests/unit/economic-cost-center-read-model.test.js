@@ -4,7 +4,7 @@ const mockQuery=jest.fn(),mockRelease=jest.fn(),mockClient=jest.fn(),mockGrant=j
 jest.mock('../../db',()=>({getClient:(...a)=>mockClient(...a)}));
 jest.mock('../../middleware/require-pricing-global-authority',()=>({hasPricingGlobalAuthority:(...a)=>mockGrant(...a)}));
 jest.mock('../../services/market-delegation-service',()=>({resolveAuthorization:(...a)=>mockAuthz(...a)}));
-const {readCostCenters,budgetSummary}=require('../../services/economic-cost-center-read-model');
+const {readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary}=require('../../services/economic-cost-center-read-model');
 const client={query:mockQuery,release:mockRelease},actor={id:'actor',role:'admin'},month='2026-01-01';
 const ok=(rows=[])=>({rows});
 beforeEach(()=>{jest.resetAllMocks();mockClient.mockResolvedValue(client);mockGrant.mockResolvedValue(true);});
@@ -51,4 +51,17 @@ test('budget subtotal preserves exact cents and distinguishes coverage from zero
   expect(budgetSummary([{budget:{eur:'99999999999999.99'}},{budget:{eur:'0.02'}}])).toEqual({recordedEur:'100000000000000.01',totalEur:'100000000000000.01',coveredPosts:2,totalPosts:2});
   expect(budgetSummary([{budget:{eur:'0.00'}},{budget:null}])).toEqual({recordedEur:'0.00',totalEur:null,coveredPosts:1,totalPosts:2});
   expect(budgetSummary([])).toEqual({recordedEur:null,totalEur:null,coveredPosts:0,totalPosts:0});
+});
+
+test('frozen EUR commitment valuation uses exact half-even rounding without revaluing FX',()=>{
+  expect(commitmentRemainingEur({initial_native:'100.0000',initial_eur:'100.00',remaining_native:'70.0000'})).toBe('70.00');
+  expect(commitmentRemainingEur({initial_native:'2',initial_eur:'0.01',remaining_native:'1'})).toBe('0.00');
+  expect(commitmentRemainingEur({initial_native:'2',initial_eur:'0.03',remaining_native:'1'})).toBe('0.02');
+  expect(commitmentRemainingEur({initial_native:'100',initial_eur:'25.00',remaining_native:'101'})).toBeNull();
+  expect(commitmentRemainingEur({initial_native:'100',initial_eur:'25.00',remaining_native:'20',requires_reconciliation:true})).toBeNull();
+});
+test('commitment aggregation distinguishes unknown correction, empty scope, and known zero',()=>{
+  expect(commitmentSummary([{commitments:[{remaining_eur:'70.00'},{remaining_eur:null}]}])).toMatchObject({recordedEur:'70.00',totalEur:null,coveredCommitments:1,totalCommitments:2});
+  expect(commitmentSummary([{commitments:[]}])).toMatchObject({recordedEur:'0.00',totalEur:'0.00'});
+  expect(commitmentSummary([])).toMatchObject({recordedEur:null,totalEur:null});
 });

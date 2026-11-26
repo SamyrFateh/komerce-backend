@@ -31,7 +31,7 @@ test('V7 renders exact amount text, preserves zero and never treats null as zero
 });
 test('V7 scoped center -> family -> post drill-down uses server data; one family only',()=>{
   const model={scope:'MARKET',marketCode:'CM',periodStart:'2026-01-01',budgetSummary:{totalEur:null,recordedEur:'10.00',coveredPosts:1,totalPosts:2},
-    centers:[{id:'a',label:'Relais',budgetSummary:{totalEur:'10.00'}}],
+    commitmentSummary:{totalEur:'7.00'},centers:[{id:'a',label:'Relais',budgetSummary:{totalEur:'10.00'},commitmentSummary:{totalEur:'7.00'}}],
     families:[{id:'f1',center_id:'a',label:'Personnel'},{id:'f2',center_id:'a',label:'Matériel'}],
     resources:[{id:'r',center_id:'a',label:'Équipe'}],
     posts:[{id:'p',center_id:'a',family_id:'f1',resource_id:'r',label:'Salaires',economic_nature:'FIXED',budget:{native:'6559',currency:'XAF'},commitments:[]},
@@ -39,6 +39,7 @@ test('V7 scoped center -> family -> post drill-down uses server data; one family
   const host=createV7CostCenters(doc,model);
   expect(texts(host)).toContain('Centres de coûts');
   expect(texts(host)).toContain('10,00 EUR · partiel (1/2)');
+  expect(texts(host)).toContain('7,00 EUR');
   find(host,'Consulter').click();
   expect(find(host,'Salaires')).toBeTruthy();expect(find(host,'Équipement')).toBeUndefined();
   find(host,'Salaires').click();expect(texts(host)).toContain('Équipe');

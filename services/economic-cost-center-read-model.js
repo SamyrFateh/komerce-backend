@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        authenticated_actor, explicit_market_scope, calendar_month
  * @outputs       scoped_centers_families_resources_posts, latest_budget_revisions, outstanding_commitments, explicit_actual_coverage_status
- * @depends       db, middleware/require-pricing-global-authority.js, services/market-delegation-service.js
+ * @depends       db, middleware/require-pricing-global-authority.js, services/market-delegation-service.js, services/fx-authority.js
  * @used-by       routes/admin-pricing-workspace.js
  * @db-read       markets, economic_cost_centers, economic_cost_families, economic_cost_resources, economic_cost_posts, economic_cost_budget_revisions, economic_cost_commitments, economic_cost_commitment_movements, economic_structure_cost_events
  * @db-write      none
@@ -17,6 +17,7 @@
  */
 'use strict';
 const db = require('../db');
+const {parseDecimal,roundHalfEven}=require('./fx-authority');
 const {hasPricingGlobalAuthority} = require('../middleware/require-pricing-global-authority');
 const {resolveAuthorization} = require('./market-delegation-service');
 function error(code,status,message){return Object.assign(new Error(message),{code,status});}
@@ -52,6 +53,30 @@ function budgetSummary(posts){
   const digits=eur.toString().padStart(3,'0');
   const recordedEur=covered?digits.slice(0,-2)+'.'+digits.slice(-2):null;
   return {recordedEur,totalEur:posts.length>0&&covered===posts.length?recordedEur:null,coveredPosts:covered,totalPosts:posts.length};
+}
+// Value the remaining administrative commitment at its frozen opening EUR
+// snapshot. This is neither an actual expense nor a fresh FX conversion.
+// Corrections of linked facts make the balance non-decisional until reconciled.
+function commitmentRemainingEur(k){
+  if(k.requires_reconciliation)return null;
+  const valid=(v)=>typeof v==='string'&&/^\d+(?:\.\d+)?$/.test(v);
+  if(![k.initial_native,k.initial_eur,k.remaining_native].every(valid))return null;
+  const a=parseDecimal(k.initial_eur), n=parseDecimal(k.remaining_native), d=parseDecimal(k.initial_native);
+  if(d.n<=0n||n.n*d.d>d.n*n.d)return null;
+  const cents=roundHalfEven(a.n*n.n*d.d,a.d*n.d*d.n,2);
+  const s=cents.toString().padStart(3,'0');
+  return s.slice(0,-2)+'.'+s.slice(-2);
+}
+function commitmentSummary(posts){
+  const items=posts.flatMap(p=>p.commitments||[]);
+  let cents=0n,covered=0;
+  for(const k of items){
+    if(k.remaining_eur===null||typeof k.remaining_eur!=='string'||!/^\d+\.\d{2}$/.test(k.remaining_eur))continue;
+    cents+=BigInt(k.remaining_eur.replace('.',''));covered++;
+  }
+  const s=cents.toString().padStart(3,'0');
+  const recordedEur=posts.length&&(covered||!items.length)?s.slice(0,-2)+'.'+s.slice(-2):null;
+  return {recordedEur,totalEur:covered===items.length?recordedEur:null,coveredCommitments:covered,totalCommitments:items.length,valuation:'FROZEN_OPENING_EUR'};
 }
 async function readCostCenters(actor,raw){
   if(!actor?.id)throw error('AUTH_REQUIRED',401,'Authentification requise');
@@ -90,12 +115,12 @@ async function readCostCenters(actor,raw){
        ) m ON true
        WHERE c.market_id IS NOT DISTINCT FROM $1::uuid AND k.period_start=$2::date ORDER BY k.id`,[marketId,input.periodStart]);
     const byPost=new Map();
-    for(const k of commitments){if(!byPost.has(k.post_id))byPost.set(k.post_id,[]);byPost.get(k.post_id).push(k);}
+    for(const k of commitments){if(!byPost.has(k.post_id))byPost.set(k.post_id,[]);byPost.get(k.post_id).push({...k,remaining_eur:commitmentRemainingEur(k)});}
     const model=posts.map(p=>({...p,budget:p.budget_revision===null?null:{revision:p.budget_revision,currency:p.budget_currency,native:p.budget_native,eur:p.budget_eur},
       commitments:byPost.get(p.id)||[],actual:null,available:null,coverage:'NOT_RECONCILED'}));
     await client.query('COMMIT');
     return {scope:input.marketCode===null?'GROUP':'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,central,readOnly:true,
-      centers:centers.map(c=>({...c,budgetSummary:budgetSummary(model.filter(p=>p.center_id===c.id))})),families,resources,posts:model,budgetSummary:budgetSummary(model),actualCoverage:'NOT_RECONCILED',available:null};
+      centers:centers.map(c=>({...c,budgetSummary:budgetSummary(model.filter(p=>p.center_id===c.id)),commitmentSummary:commitmentSummary(model.filter(p=>p.center_id===c.id))})),families,resources,posts:model,budgetSummary:budgetSummary(model),commitmentSummary:commitmentSummary(model),actualCoverage:'NOT_RECONCILED',available:null};
   }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
 }
-module.exports={readCostCenters,budgetSummary};
+module.exports={readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary};
