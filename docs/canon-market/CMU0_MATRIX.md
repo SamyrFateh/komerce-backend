@@ -1,0 +1,111 @@
+# CMU-0 — Inventaire préparatoire CANON-MARKET
+
+Responsable GPT · base `4937c8da271c6bc448a6154f62bb0f3bb6a225d3` · #5272.
+Plan Opus [7199903236](https://github.com/SamyrFateh/komerce-backend/issues/5272#issuecomment-7199903236).
+Arbitrage propriétaire [7200002546](https://github.com/SamyrFateh/komerce-backend/issues/5272#issuecomment-7200002546) : **5 PR dépendantes, une seule revue globale Opus, aucune fusion avant revue.**
+
+**BROUILLON — NON VALIDÉ, AUCUNE ROUTE À OUVRIR.** Ce document matérialise l'inventaire préparatoire du [commentaire 7199946553](https://github.com/SamyrFateh/komerce-backend/issues/5272#issuecomment-7199946553). Les lignes groupées, gardes non vérifiés, préfixes et hypothèses doivent être confirmés dans le checkout. Ne pas utiliser cette pré-matrice comme liste fermée du lot 3. A1/A2/A3, aucune écriture élargie, aucune nouvelle capability et maintien des gestes G6 restent impératifs.
+
+
+Référence impérative : [plan Opus 7199903236](https://github.com/SamyrFateh/komerce-backend/issues/5272#issuecomment-7199903236), [arbitrages A1/A2/A3](https://github.com/SamyrFateh/komerce-backend/issues/5272#issuecomment-7199832971). **5 lots, une PR par lot, revue Opus unique sur les cinq PR avant toute fusion.** Cette instruction remplace la proposition initiale de PR unique. Responsable GPT. Le lot 3 ne peut ouvrir aucune lecture absente de la liste fermée finalisée.
+
+Baseline code lu : [4937c8da](https://github.com/SamyrFateh/komerce-backend/commit/4937c8da271c6bc448a6154f62bb0f3bb6a225d3). Sources : bootstrap/html-routes.js, bootstrap/api-routes.js, navigation-policy-v4.js:917-1024, routes propriétaires et AGENTS.md.
+
+### Pré-matrice CMU-0 — premier inventaire, **NON VALIDÉ / NON ALLOWLIST**
+Abréviations : D=/api/admin/dashboard, E=/api/admin/entities, W=/api/admin/workspaces, M=/api/market-delegation/markets/:marketCode. Les GET ci-dessous sont des destinations/lectures repérées, **pas** une autorisation d'élargir un guard. C=central-only, M=market-scoped cible ou existant. Les guards d'écriture restent inchangés ; aucune capability créée. Pour les destinations mixtes, les routes globales et locales sont distinctes.
+
+| Destination HTML / composant | Lecture(s) repérées / garde actuel | Portée cible | READ / ACT actuel ou cible à valider | Suite |
+|---|---|---|---|---|
+| /admin/pilotage | GET D/context ; GET D/unified/market/:marketCode (requirePilotageMarketRead) | M | dashboard.market.read / — | même écran |
+| /admin/pilotage, vue groupe | GET D/unified (router historique / autorité globale) | C | autorité centrale | conserver |
+| /admin/action-center | GET /api/admin/action-center/market/:marketCode (admin/market_operator + autorité service) | M | dashboard.market.read / decision_signal.manage selon guard existant | conserver |
+| /admin/action-center, groupe | GET /api/admin/action-center (requireDecisionSignalGlobalAuthority) | C | central | conserver |
+| /admin/commerce | GET D/commerce/market/:marketCode (requireCommerceMarketRead) | M | dashboard.market.read / — | conserver |
+| /admin/orders | GET D/orders/market/:marketCode (requireOrdersMarketRead) | M | dashboard.market.read / — | conserver, vérifier autres actions |
+| /admin/clients | GET E/clients/market/:marketCode (requireClientIndexMarketRead, client.read) | M | client.read actuel ; A2 à arbitrer en regard de ce guard | même écran |
+| /admin/orders/:orderReference | GET E/orders/:orderReference (requireOrderMarketRead) | M | operations.read actuel ; finance.read pour coûts | conserver sections protégées ; A2 à réconcilier |
+| /admin/clients/:clientPhone | GET E/clients/:clientPhone (attachClientReadMarkets, resolveClientAccess) | M | client.read actuel | préserver frontière de données |
+| /admin/products/:productRef | GET E/products/:productRef (attachCatalogReadMarkets) | M | catalog.read | préserver includeCentral=false pour opérateur |
+| /admin/workspaces/pricing | GET W/pricing/market/:marketCode (pricing.read) | M | pricing.read / pricing.decide, pricing.activate, catalog.expose selon geste existant | préserver ECO #5280 |
+| /admin/workspaces/pricing, groupe | GET W/pricing/ ; GET W/pricing/strategy ; GET W/pricing/structure-events ; GET W/pricing/structure-events/:eventId/attributions (admin + requirePricingGlobalAuthority) | C | central | ne pas ouvrir |
+| /admin/workspaces/catalog, global | GET W/catalog/ ; GET W/catalog/products/:productRef/quality (admin + requireCatalogGlobalAuthority ; rejectMarketDimension) | C | central | garde intact |
+| /admin/workspaces/catalog, lentille marché (ancien market-catalog) | GET M/catalog/exposure (catalog.read) ; GET /api/market-delegation/catalog/authorized-markets | M | catalog.read / catalog.expose | réutiliser API locale, aucune mutation globale |
+| /admin/operations | GET D/operations/market/:marketCode (requireOperationsMarketRead) | M | operations.read | même écran |
+| /admin/workspaces/operations | GET W/operations/market/:marketCode ; GET .../supply ; GET .../supply/trace ; GET .../supply/receipt-checks ; GET .../relay-shipments (requireWorkspaceReadAccess/requireHubSupplyReadAccess, garde qualité si applicable) | M | operations.read / aucun geste physique Hub A3 | conserver |
+| /admin/workspaces/operations, étiquettes et codes physiques | GET .../supply/physical-code ; GET .../labels/index ; GET .../labels/articles/:id/print ; GET .../labels/boxes/:id/print ; GET .../labels/articles/:id/pdf ; GET .../labels/boxes/:id/pdf ; GET .../labels/resolve ; GET .../relay/labels/resolve ; GET .../relay-shipments/:reference/bags/:bagRef (guards spécialisés) | C pour responsable marché (agents spécialisés inchangés) | EXEC existant, non accordé à market_operator | **exclure du lot 3** ; GET n'implique pas lecture déléguable |
+| /admin/workspaces/shipping-customs | GET W/shipping-customs/market/:marketCode ; GET .../international ; GET .../international/:reference (router de lecture) | M | logistics.read actuel, operations.read selon A2 et preuve ; ACT inchangé | vérifier objets mixtes |
+| /admin/workspaces/purchasing | GET /api/purchasing/ ; GET /api/purchasing/open-lines ; GET /api/purchasing/po/:po_id ; GET /api/purchasing/po/:po_id/reconciliation (admin ou admin/agent_hub) | M candidat pour projection limitée, NON autorisé à basculer en l'état | operations.read cible / aucun geste | lignes propres au marché ; fournisseurs/grants/paiements et PDF d'engagement restent C sans arbitrage explicite |
+| /admin/hub, /admin/hub-live | GET /api/hub/board (hubBoardRead + attachHubReadAuthority) ; GET /api/hub-dash/dashboard ; GET /api/hub-dash/queue ; GET /api/hub-dash/orders/:id (hubRead, operations.read) | M | operations.read / aucun geste physique même avec execution.* | même Kanban PO-first |
+| /admin/relais-live | /api/relay : router relay-dashboard, lecture operations.read ; détails à compléter | M candidat | operations.read / guards existants | même cockpit, sans gestes non délégués |
+| /admin/finance | GET D/finance/market/:marketCode (requireFinanceMarketRead) | M | finance.read | même écran |
+| /admin/workspaces/accounting | GET W/accounting/market/:marketCode ; GET .../journal/:view(summary,movements,documents,reconciliation) (requireWorkspaceReadAccess/requireJournalReadAccess) | M | finance.read / finance.act et cash.custody.receive selon guard actuel | mêmes composants |
+| /admin/workspaces/sourcing ; /admin/import-runtime ; /admin/suppliers/:supplierId | workspace sourcing global et autorité fournisseur, endpoints détaillés à inventorier | C sauf nouvelle projection locale explicitement validée | central | aucune ouverture de secrets |
+| /dashboards/canonical/access.html | GET /api/admin/users/markets ; GET /api/admin/users/:id/market-scopes ; GET /api/market-delegation/central/team-matrix (admin global) | C | central | conserver gouvernance |
+| /admin/markets (legacy) | GET /api/admin/markets ; GET /api/admin/markets/:marketCode/control-plane ; GET .../central-authority ; GET .../:marketCode/exit-readiness ; GET .../:marketCode/transport-sale-rates (centralAdmin) | C | central | local via projection dédiée seulement |
+| /admin/users (et ancien market-team) | GET /api/admin/users (guard admin) ; GET M/team (service délégué) | C global / M local | team.read / team.invite, team.grant, team.revoke existants | même workspace, pas d'ouverture annuaire groupe |
+| /admin/providers (ancien market-network) | GET /api/admin/providers/capabilities (admin) ; GET M/network/providers (network.read ou provider.manage) ; GET M/network/relais ; GET M/network/relais-agents | C global / M local | network.read / provider.manage, network.* existants | même destination ; registre technique central protégé |
+| /admin/settings | /api/admin/rules/* et /api/admin/pricing-matrices/* admin ; config locale à inventorier | C global / M local | market_config.read pour configuration locale ; aucun élargissement UPDATE | séparer paramètres groupe/local |
+| Ancien market-client-case → Clients | GET M/client-cases/disputes (client.read ou client.case.handle) | M | existants | remonter module |
+| Ancien market-local-offer → Catalogue/Opérations | GET M/local-offer/services ; GET M/local-offer/physical-offers (catalog.read ou local_offer.manage) | M | catalog.read / local_offer.manage | remonter, garder W3 |
+| Ancien market-settlement et readonly → Finance | GET M/settlements ; GET M/payment-accounts (service délégué) | M | finance.read / guards existants, à relever exactement | remonter |
+| /dashboards/canonical/unsold.html | GET /api/unsold ; GET /api/unsold/stats/summary (attachUnsoldReadScope) ; GET /api/unsold/:id (requireAdmin seul) ; GET /api/unsold/:id/whatsapp (requireAdmin seul) | M liste/stats/détail ; WhatsApp à qualifier | operations.read / aucune mutation élargie | aligner détail, pas de fuite |
+| /admin/golden-e2e?guide=hub#extendedRecipe ; /admin/demo | routes de recette et preuves, GET E/golden-upstream ; GET E/orders/:orderReference/golden-evidence (admin) | C | central | hors UI marché |
+| /admin/documentation | GET HTML authenticate + documentationRequireRole | M / commun | rôle interne existant, pas de nouvelle capability | garder |
+
+Autres destinations à recenser une par une : aliases /admin-next, legacy ?legacy=1, /admin/customs, /admin/suppliers, /admin/sales, /admin/transitaire, /admin/sante, /admin/shared-carts, /admin/simulator, /portail ; sous-modales, exports, recherches, SSE, routes Hub et Relais détaillées, mutations existantes exactes des modules, registre ECO courant. **Toute route non inventoriée précisément demeure interdite d'élargissement.** Les endpoints groupés ou abrégés ici ne sont pas une liste fermée exploitable.
+
+### Trois points de revue à verrouiller AVANT lot 2/3
+1. A1 : le runtime actuel distingue dashboard_global_access_grants, catalog_global_access_grants, pricing_global_access_grants, sourcing_global_access_grants, decision_signal_global_access_grants. Le changement de sémantique admin est un arbitrage propriétaire, mais supprimer aveuglément ces guards pourrait élargir les écritures et contredire le garde-fou du plan. Garder les guards d'écriture intacts ; auditer les admins déjà présents sans grant avant changement de contexte ; expliciter transition de sécurité.
+2. A2 : client.read protège déjà index et fiche Client 360, operations.read protège actuellement Order 360, logistics.read protège transit/douane, et finance.read protège la sous-section coûts de commande. Ne pas substituer dashboard.market.read ou operations.read de manière à accorder des données aujourd'hui refusées sans validation explicite de la matrice. Aucune nouvelle capability nécessaire.
+3. Lot 2 avant lot 3/4 : une destination qui n'est pas encore lisible côté serveur ne doit pas devenir visible. Garder les gestes G6 W3 et activation prix local, ainsi que les routes historiques nécessaires, jusqu'à la preuve du remplacement ; pas de menu 403, pas de suppression prématurée.
+
+### Statut / blocage réel
+CMU-0 en cours, lecture API seulement. Pas de checkout exécutable dans cette session : le réseau GitHub du conteneur ne résout pas github.com ; GitHub connector lit les fichiers mais n'exécute pas npm. Les commandes carte-first agent:context, arch:impact et pr:preflight imposées par AGENTS.md ne sont donc pas exécutées. STATUS.md retourné tronqué par le connecteur (ne pas le réécrire à partir de cette réponse partielle). **Pas de PR ouverte, pas de commit, aucune modification runtime, aucun changement staging, aucune fusion.** À reprendre dans un checkout exécutable : compléter la matrice fermée dans docs/canon-market/CMU0_MATRIX.md, renseigner STATUS.md sans écraser les autres chantiers, lancer les contrôles docs, préparer PR lot 1 puis quatre PR dépendantes ; revue globale unique sur #5272.
+
+## Complément : déclarations GET exactes repérées le 26/11
+
+Préfixes montés dans `bootstrap/api-routes.js:172-190,206-208,238,255-278`. La présence d'un GET ne constitue pas un droit de lecture. Toutes les lignes ci-dessous nécessitent vérification de la projection et des guards avant inscription dans une liste fermée. Les accès existants des agents spécialisés sont inchangés.
+
+| Surface | Endpoint GET exact | Garde déclaré | Portée candidate |
+|---|---|---|---|
+| Hub | /api/hub/board | hubBoardRead, attachHubReadAuthority | MARKET_SCOPED |
+| Hub | /api/hub/dossier | hubRead | MARKET_SCOPED |
+| Hub | /api/hub/trace | hubRead | MARKET_SCOPED |
+| Hub | /api/hub/search | hubRead | MARKET_SCOPED |
+| Hub | /api/hub/stats/week | hubRead | MARKET_SCOPED |
+| Hub | /api/hub/pending | hubRead | MARKET_SCOPED |
+| Hub | /api/hub/today | hubRead | MARKET_SCOPED |
+| Hub | /api/hub/administration | admin, agent_hub | CENTRAL_ONLY pour market_operator |
+| Hub | /api/hub/director-todo | admin, agent_hub | CENTRAL_ONLY pour market_operator |
+| Hub | /api/hub/physical-codes/resolve | hubAuth | Ne pas ouvrir (A3) |
+| Hub | /api/hub-dash/dashboard | hubRead | MARKET_SCOPED |
+| Hub | /api/hub-dash/dubai | hubRead | MARKET_SCOPED |
+| Hub | /api/hub-dash/queue | hubRead | MARKET_SCOPED |
+| Hub | /api/hub-dash/orders/:id | hubRead | MARKET_SCOPED |
+| Hub | /api/hub-dash/validate/:id | hubRead | vérifier effets et garde, exclu provisoirement |
+| Relais | /api/relay/dashboard | relayRead | MARKET_SCOPED |
+| Relais | /api/relay/incidents | relayRead | MARKET_SCOPED |
+| Relais | /api/relay/orders | relayRead | MARKET_SCOPED |
+| Relais | /api/relay/orders/:id | relayRead | MARKET_SCOPED |
+| Relais | /api/relay/returns | relayReturnActors | MARKET_SCOPED à qualifier |
+| Relais | /api/relay/returns/eligible | relayReturnActors | ne pas ouvrir sans preuve |
+| Relais | /api/relay/returns/:id/compensation-proposal | admin | CENTRAL_ONLY |
+| Relais | /api/relay/local-cash-refunds | garde à relever | exclu provisoirement |
+| Invendus | /api/unsold/ | attachUnsoldReadScope | MARKET_SCOPED |
+| Invendus | /api/unsold/stats/summary | attachUnsoldReadScope | MARKET_SCOPED |
+| Invendus | /api/unsold/:id | requireAdmin | MARKET_SCOPED cible, correction lot 3 après validation |
+| Invendus | /api/unsold/:id/whatsapp | requireAdmin | exclu provisoirement, qualifier |
+| Catalogue local | /api/market-delegation/catalog/authorized-markets | authenticate + résolution service | MARKET_SCOPED |
+| Catalogue local | /api/market-delegation/markets/:marketCode/catalog/exposure | authenticate + résolution service | MARKET_SCOPED |
+
+Sources : `routes/hub.js:91,227-446`, `routes/hub-dashboard.js:120-160`, `routes/relay-dashboard.js:149-383`, `routes/unsold.js:47-159`, `routes/market-delegation-catalog.js:76-105`.
+
+## G6 — dépendances directement vérifiées
+
+- `scripts/recette/g6-local-stock-declare-chromium.js:65,113` : navigation réelle vers `market-autonomy.html?market=...`.
+- `scripts/recette/g6-central-hub-product-chromium.js:119,378,380,412` : navigation réelle, ligne prix et contrôle catalogue local. Conserver les gestes et adapter les runners dans la PR du changement de destination.
+- `public/dashboards/canonical/market-autonomy.html:44-52` : modules autonomy, cash-control, team, network, local-offer, client-case, settlement, readonly-views, decision-bootstrap. Tous à remonter avant retrait.
+
+## Statut de ce fichier
+
+Brouillon documentaire uniquement. Pas de preflight, pas de tests, pas de PR, pas de mise à jour STATUS.md sur contenu tronqué, pas de runtime. Ne pas fusionner ce brouillon. Compléter l'inventaire, les gardes et les appels UI via checkout exécutable, puis valider les gates de gouvernance.
