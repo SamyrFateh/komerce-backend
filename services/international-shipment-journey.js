@@ -209,6 +209,11 @@ async function recordFreight(market,actor,reference,body={},database=db){
   const invoice=str(body.invoice_ref,'invoice_ref',240);
   const volume=number(body.volume_m3,'volume_m3',{positive:true,scale:5});
   const rate=number(body.rate_kmf_per_m3,'rate_kmf_per_m3');
+  // Optional actual gross weight from a weighing document, never chargeable or catalogue weight.
+  const weight=number(body.actual_weight_kg,'actual_weight_kg',{positive:true,scale:3});
+  const weightProof=str(body.weight_proof_ref,'weight_proof_ref',240,false);
+  if((weight!==null)!==(weightProof!==null))fail(400,'JOURNEY_WEIGHT_PROOF_REQUIRED','Poids brut pesé et justificatif requis ensemble');
+  if(weight!==null&&!/^\d{1,9}(?:\.\d{1,3})?$/.test(weight))fail(400,'JOURNEY_INVALID_actual_weight_kg','Poids pesé hors limite');
   return transact(database,async client=>{
     const s=await get(client,market,reference,true);
     if(STAGES.indexOf(s.stage)<STAGES.indexOf('forwarder_received'))
@@ -217,8 +222,8 @@ async function recordFreight(market,actor,reference,body={},database=db){
     if(rate!=null&&s.transport_mode!=='sea')fail(400,'JOURNEY_SEA_RATE_ONLY','Tarif m³ incompatible');
     await client.query('UPDATE international_shipments SET freight_invoice_kmf=$3,freight_invoice_ref=$4,volume_m3=COALESCE($5,volume_m3),freight_rate_kmf_per_m3=COALESCE($6,freight_rate_kmf_per_m3),updated_at=now() WHERE id=$1 AND market_id=$2',
       [s.id,market.id,amount,invoice,volume,rate]);
-    await evidence(client,s,'freight_recorded',actor,invoice,s.stage,s.stage,{amount_kmf:amount,volume_m3:volume,rate});
-    return {reference:s.reference,amount_kmf:amount,invoice_ref:invoice,cost_reconciliation:'not_reconciled'};
+    await evidence(client,s,'freight_recorded',actor,invoice,s.stage,s.stage,{amount_kmf:amount,volume_m3:volume,rate,...(weight===null?{}:{actual_weight_kg:weight,weight_proof_ref:weightProof,weight_basis:'MEASURED_GROSS_KG'})});
+    return {reference:s.reference,amount_kmf:amount,invoice_ref:invoice,cost_reconciliation:'not_reconciled',...(weight===null?{}:{actual_weight_kg:weight,weight_proof_ref:weightProof})};
   });
 }
 async function linkCustoms(market,actor,reference,body={},database=db){

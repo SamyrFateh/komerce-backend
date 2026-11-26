@@ -136,7 +136,46 @@ function decorateMarketDecision(decision) {
   };
 }
 
+// Read-only bridge to the existing market decision truth. This is a separate
+// mature-order cohort evaluation, never a full result of the shipment cohort.
+// Preserve the gate's refusals; do not turn a policy threshold into proof of
+// complete commercial recognition or all-centers reconciliation.
+function projectPeriodDecisionEvidence(decision,marketId,periodStart){
+  const base={basis:'CANONICAL_MATURE_ORDER_PERIOD_DECISION',periodStart,
+    evaluationSnapshot:'SEPARATE_CANONICAL_DECISION_READ',fullEconomicResult:false,
+    status:'NOT_DECISIONAL',reason:'DECISION_UNAVAILABLE',contributionKmf:null,
+    structureKmf:null,resultKmf:null,coverageRatio:null,remainingKmf:null,
+    matureOrderCount:null,revenueBasisKmf:null,variableCostsKmf:null,actualRiskKmf:null};
+  if(!decision)return base;
+  if(decision.market_id!==marketId)return {...base,reason:'DECISION_SCOPE_MISMATCH'};
+  if(!decision.canonical_period)return {...base,reason:decision.reason||'DECISION_PERIOD_UNAVAILABLE'};
+  const start=new Date(periodStart+'T00:00:00.000Z'),end=new Date(start);end.setUTCMonth(end.getUTCMonth()+1);
+  const c=decision.coverage,p=decision.canonical_period;
+  const matches=x=>x?.from===start.toISOString()&&x?.to===end.toISOString();
+  if(p.source!=='calendar_month_selection'||!matches(p)||c&&(c.market_id!==marketId||!matches(c.period)))
+    return {...base,reason:'DECISION_SCOPE_MISMATCH'};
+  if(!c||!['COVERED','UNCOVERED'].includes(decision.decision_status)||
+    c.coverage_status!==decision.decision_status||c.threshold_applied!==true)
+    return {...base,reason:decision.reason||c?.reason||'DECISION_NOT_READY'};
+  const money=v=>{if(typeof v!=='number'||!Number.isFinite(v)||!Number.isSafeInteger(Math.round(v*100)))return null;return v.toFixed(2);};
+  const contribution=money(c.numerator_contribution_kmf),structure=money(c.structural_charges_kmf??c.denominator_n3_kmf);
+  const ratio=c.coverage_ratio;
+  if(contribution===null||structure===null||Number(structure)<=0||typeof ratio!=='number'||!Number.isFinite(ratio))
+    return {...base,reason:'DECISION_AMOUNTS_UNAVAILABLE'};
+  const flow=decision.flow_break_even,es=flow?.economic_state;
+  const result=flow?.status==='READY'&&es&&money(es.period_contribution_kmf)===contribution&&money(es.period_structural_charges_kmf)===structure
+    ?money(es.period_result_kmf):null;
+  const gap=flow?.status==='READY'&&es&&money(es.period_contribution_kmf)===contribution&&money(es.period_structural_charges_kmf)===structure
+    ?money(es.break_even_gap_kmf):null;
+  return {...base,status:'AVAILABLE_ON_MATURE_COHORT',reason:null,gateStatus:decision.decision_status,
+    evaluatedAt:decision.evaluated_at||null,contributionKmf:contribution,structureKmf:structure,resultKmf:result,remainingKmf:gap,
+    coverageRatio:String(ratio),matureOrderCount:Number.isSafeInteger(c.contribution?.mature_order_count)?c.contribution.mature_order_count:null,
+    revenueBasisKmf:money(c.contribution?.revenue_kmf),variableCostsKmf:money(c.contribution?.transaction_variable_cost_kmf),
+    actualRiskKmf:money(c.contribution?.reconciled_risk_cost_kmf)};
+}
+
 module.exports = {
+  projectPeriodDecisionEvidence,
   decorateMarketDecision,
   _ceilEquivalent: ceilEquivalent,
   _buildFlowVelocity: buildFlowVelocity,

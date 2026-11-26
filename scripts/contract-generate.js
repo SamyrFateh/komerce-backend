@@ -375,6 +375,14 @@ const KNOWN_RESPONSES = {
   '/api/admin/action-center/market/{marketCode}/signals/{signalRef}/acknowledge': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/action-center/market/{marketCode}/signals/{signalRef}/snooze': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/action-center/market/{marketCode}/signals/{signalRef}/resolve': { post: { fields: ['ok','action','result'], source: 'test' } },
+  // ECO — real PostgreSQL HTTP proof: economic-cost-center-api-postgres.test.js.
+  // Both routes share the read-only payload; GROUP is explicitly not all markets.
+  '/api/admin/workspaces/pricing/cost-centers': {
+    get: { fields: ['scope','marketCode','periodStart','central','readOnly','centers','families','resources','posts','budgetSummary','commitmentSummary','structureEvidence','activity','profitability','actualCoverage','available'], source: 'test' }
+  },
+  '/api/admin/workspaces/pricing/market/{marketCode}/cost-centers': {
+    get: { fields: ['scope','marketCode','periodStart','central','readOnly','centers','families','resources','posts','budgetSummary','commitmentSummary','structureEvidence','activity','profitability','actualCoverage','available'], source: 'test' }
+  },
   // LOT 4F — réponses Pricing Workspace consommées par Canonical.
   // LOT 4V — décision économique market-scoped : formes lues dans les routes/services canoniques.
   // LOT 3 (2026-09) — tests/unit/admin-pricing-workspace-market-route.test.js
