@@ -119,6 +119,17 @@
   gap: 10px;
 }
 
+.kmc-team-directory-controls {
+  display: grid;
+  grid-template-columns: minmax(220px, 420px) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.kmc-team-member[hidden] {
+  display: none;
+}
+
 .kmc-team-member-head,
 .kmc-team-pending-head {
   display: flex;
@@ -146,16 +157,22 @@
   line-height: 1.45;
 }
 
-.kmc-team-member details {
+.kmc-team-member details,
+.kmc-team-invite details {
   border-top: 1px solid var(--kmc-line, #e2e8f0);
   padding-top: 10px;
 }
 
-.kmc-team-member summary {
+.kmc-team-member summary,
+.kmc-team-invite summary {
   color: #1d4ed8;
   cursor: pointer;
   font-size: 13.5px;
   font-weight: 750;
+}
+
+.kmc-team-rights > .kmc-team-summary {
+  margin-top: 10px;
 }
 
 .kmc-team-member-editor {

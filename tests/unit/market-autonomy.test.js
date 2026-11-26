@@ -86,6 +86,24 @@ test('les ancres de navigation sont résolues après le montage asynchrone des s
   expect(source).toContain('anchorObserver?.observe(root, { childList: true, subtree: true })');
 });
 
+test('la page autonome invalide aussi le cache de son menu canonical', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const html = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/market-autonomy.html'), 'utf8');
+  expect(html).toContain('navigation-policy-v4.js?v=261126-market-dashboard-scope-menu-1');
+});
+
+test('un prix global nul ou absent est présenté comme non renseigné, jamais comme zéro KMF', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/js/market-autonomy.js'), 'utf8');
+  const html = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/market-autonomy.html'), 'utf8');
+  expect(source).toContain("? 'Non renseigné'");
+  expect(source).toContain('globalPrice <= 0');
+  expect(source).not.toContain('row.global_price_kmf || 0');
+  expect(html).toContain('market-autonomy.js?v=261126-market-global-price-1');
+});
+
 test('délégation réseau granulaire : contexte dashboard refusé, accès réseau serveur autorisé', async () => {
   const { root, calls } = await boot(monoCtx, '?market=KM', { deniedDashboard: true });
   expect(calls).toContain('/api/market-delegation/markets/KM/network/relais');

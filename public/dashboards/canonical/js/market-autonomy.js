@@ -216,7 +216,12 @@
       product.appendChild(el('strong', 'kmc-autonomy-product-title', row.name || row.category || 'Produit'));
       product.appendChild(el('small', 'kmc-autonomy-ref', row.product_ref));
       tr.appendChild(product);
-      tr.appendChild(el('td', '', `${new Intl.NumberFormat('fr-FR').format(row.global_price_kmf || 0)} KMF`));
+      const globalPrice = Number(row.global_price_kmf);
+      const globalPriceLabel = row.global_price_kmf == null || row.global_price_kmf === ''
+        || !Number.isFinite(globalPrice) || globalPrice <= 0
+        ? 'Non renseigné'
+        : `${new Intl.NumberFormat('fr-FR').format(globalPrice)} KMF`;
+      tr.appendChild(el('td', 'kmc-autonomy-global-price', globalPriceLabel));
 
       const localCell = el('td');
       localCell.appendChild(el('strong', 'kmc-autonomy-saved-price', row.local_price == null ? 'À définir' : fmt(row.local_price, pricePayload.market.currency)));

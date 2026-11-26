@@ -298,7 +298,7 @@
       }
       if (existing) {
         // Un clic en cours reste prioritaire : le prochain tick relira la vérité.
-        if (doc.activeElement && existing.contains?.(doc.activeElement)) {
+        if (doc.activeElement && existing.contains?.(doc.activeElement) && doc.activeElement.matches?.('input, textarea, select, [contenteditable="true"]')) {
           existing.setAttribute('data-hub-director-update-pending','true');
           return payload;
         }
@@ -340,6 +340,16 @@
       }
       const list=make(doc,'div','hlc-director-list');
       list.setAttribute('data-hub-director-list','');
+      const filters=make(doc,'div','kmc-hub-admin-tabs kmc-hub-director-filters');
+      const filterButtons=[];
+      const sections=[];
+      let selectedGroup=host._directionGroup || 'commitment';
+      const applyGroup=()=>{
+        host._directionGroup=selectedGroup;
+        for(const [key,section] of sections) section.hidden=key!==selectedGroup;
+        for(const [key,button] of filterButtons){button.classList.toggle('is-active',key===selectedGroup);button.setAttribute('aria-pressed',String(key===selectedGroup));}
+      };
+      body.appendChild(filters);
       for (const spec of groupSpecs) {
         const tasks=groups.get(spec.key);
         // Quatre colonnes stables, même si l'une ne contient aucune tâche.
@@ -386,7 +396,12 @@
         }
         group.appendChild(rows);
         list.appendChild(group);
+        sections.push([spec.key,group]);
+        const filter=make(doc,'button','kmc-hub-admin-tab',spec.title.replace(/^\d · /,'')+' ('+tasks.length+')');
+        filter.type='button';filter.addEventListener('click',()=>{selectedGroup=spec.key;applyGroup();});
+        filterButtons.push([spec.key,filter]);filters.appendChild(filter);
       }
+      applyGroup();
       body.appendChild(list);
       return payload;
     } catch(error) {
@@ -716,12 +731,35 @@
       if(p.received>0 || p.purchase_step==='received' || ['confirmed','partially_received','hub_received'].includes(p.purchase_stage))return 4;
       return ({draft:0,validation:1,engaged:2,sent:3})[p.purchase_step]??-1;
     };
-    const visualRefresh=async()=>{
-      const data=await requestJSON(fetchFn,'/api/hub/board?view=po');
-      if(data.scope!=='HUB_GLOBAL'||!Array.isArray(data.purchase_orders))throw Error('Projection PO indisponible');
-      poRows=data.purchase_orders;
-      visualMarkets=Array.isArray(data.markets)?data.markets:[];
-      renderVisualPO();
+    // Le focus d'un bouton ou d'un filtre ne doit jamais immobiliser le Kanban.
+    const editingPO=()=>{
+      const element=doc.activeElement;
+      return Boolean(element && root.contains?.(element) &&
+        element.closest?.('.kmc-hub-po-v8-actions') &&
+        element.matches?.('input:not([type="button"]):not([type="submit"]), textarea, select, [contenteditable="true"]'));
+    };
+    let visualSignature=null, visualRead=null;
+    const visualRefresh=async({background=false}={})=>{
+      if(visualRead)return visualRead;
+      visualRead=(async()=>{
+        const data=await requestJSON(fetchFn,'/api/hub/board?view=po');
+        if(data.scope!=='HUB_GLOBAL'||!Array.isArray(data.purchase_orders))throw Error('Projection PO indisponible');
+        if(root.isConnected===false)return null;
+        const signature=JSON.stringify([data.purchase_orders,data.markets||[]]);
+        if(background&&signature===visualSignature&&!headerCount.hasAttribute('data-hub-v8-stale')&&!root.hasAttribute('data-hub-v8-access-denied'))return data;
+        // Ne pas remplacer les actions pendant une saisie ou une mutation.
+        const active=visualOpen.get(visualActive);
+        if(background&&(active?.loading||active?.handle?.busy?.()||editingPO()))return null;
+        poRows=data.purchase_orders;
+        visualMarkets=Array.isArray(data.markets)?data.markets:[];
+        renderVisualPO();
+        if(background&&active?.handle&&!active.loading&&!active.handle.busy?.()){
+          await active.handle.reload?.();
+        }
+        visualSignature=signature;
+        return data;
+      })();
+      try{return await visualRead;}finally{visualRead=null;}
     };
     const visualSelect=id=>{
       visualActive=id;visualView='board';
@@ -1149,12 +1187,44 @@
       // Ouverture directe sur le Kanban PO depuis le menu normal.
       try{await visualRefresh();poMode=true;headerTitle.textContent='PO fournisseurs · Tous les marchés';search.placeholder='Rechercher une PO ou un fournisseur';search.setAttribute('aria-label',search.placeholder);renderVisualPO();
       }catch(error){if(visualHost)visualHost.hidden=true;scroll.hidden=true;header.hidden=false;search.hidden=true;headerTitle.textContent='Kanban opérationnel';headerCount.textContent='Vue PO indisponible : '+error.message;}
+      // Même signal inter-instances que la Direction, mais relecture ciblée
+      // du Kanban : aucun remontage du poste ni perte des onglets ouverts.
+      global.KomerceDashboardFreshness?.watch?.({
+        root, pollMs:30000,
+        isBusy:()=>Boolean(visualRead||visualOpen.get(visualActive)?.loading||visualOpen.get(visualActive)?.handle?.busy?.()||editingPO()),
+        refresh:async()=>{
+          try{
+            const data=await visualRefresh({background:true});
+            if(data){poMode=true;search.hidden=false;headerCount.removeAttribute('data-hub-v8-stale');root.removeAttribute('data-hub-v8-access-denied');}
+            return data;
+          }catch(error){
+            headerCount.setAttribute('data-hub-v8-stale','true');
+            headerCount.textContent='Actualisation indisponible — données potentiellement périmées.';
+            if(error.status===401||error.status===403){
+              if(visualHost)visualHost.hidden=true;
+              header.hidden=false;root.setAttribute('data-hub-v8-access-denied','true');
+            }
+            return null;
+          }
+        },
+      });
     }
     search.addEventListener('input', ()=>{closeMenu();renderRows();});
     try {
       const payload = await requestJSON(fetchFn, '/api/hub/board');
       if (payload.scope !== 'HUB_GLOBAL' || !Array.isArray(payload.orders)) {
         throw new Error('Réponse globale Hub invalide');
+      }
+      if (user?.role === 'market_operator'
+        && payload.audience === 'MARKET_SCOPED'
+        && Array.isArray(payload.markets)) {
+        const scopeLabel = doc.querySelector?.('.kmc-hub-global-scope');
+        if (scopeLabel) {
+          const markets = [...new Set(payload.markets.map(market => safe(market).trim()).filter(Boolean))];
+          scopeLabel.textContent = markets.length
+            ? 'Hub · ' + markets.join(', ')
+            : 'Hub · Aucun marché autorisé';
+        }
       }
       rows = payload.orders;
       renderRows();
@@ -1415,7 +1485,7 @@
       history.replaceState(null,'',HUB_PATH + (params.toString() ? '?' + params.toString() : ''));
     }
     const requested=parseBranch(safe(location?.search));
-    const branch=(requested === 'administrative' || requested === 'direction') && !administrativeAllowed ? 'operations' : requested;
+    const branch=(requested === 'administrative' || requested === 'direction') ? (administrativeAllowed ? 'direction' : 'operations') : requested;
     root.replaceChildren();
     root.className='kmc-hub-app';
     const header=make(doc,'header','kmc-hub-app-header');
@@ -1448,7 +1518,7 @@
     root.appendChild(header);
     const nav=make(doc,'nav','kmc-hub-app-branches');
     nav.setAttribute('aria-label','Postes de travail Hub');
-    for(const id of ['operations','administrative','direction']){
+    for(const id of ['operations','direction']){
       if(id !== 'operations' && !administrativeAllowed)continue;
       const spec=BRANCHES[id];
       const link=make(doc,'a','kmc-hub-app-branch');
@@ -1472,10 +1542,39 @@
     content.appendChild(host);
     layout.appendChild(content);
     root.appendChild(layout);
+    let directionView = requested === 'administrative' ? 'administration' : 'decisions';
+    let directorHost = host, adminHost = null, adminLoad = null;
+    if (branch === 'direction') {
+      const tabs=make(doc,'nav','kmc-hub-admin-tabs kmc-hub-direction-tabs');
+      tabs.setAttribute('aria-label','Gestion du Hub');
+      directorHost=make(doc,'div','kmc-hub-direction-decisions');
+      adminHost=make(doc,'div','kmc-hub-direction-administration');
+      const buttons=[];
+      const applyView=()=>{
+        directorHost.hidden=directionView!=='decisions';
+        adminHost.hidden=directionView!=='administration';
+        for(const [id,button] of buttons){
+          button.classList.toggle('is-active',directionView===id);
+          button.setAttribute('aria-pressed',String(directionView===id));
+        }
+        if(directionView==='administration' && !adminLoad){
+          adminLoad=Promise.resolve().then(()=>renderAdministrative(adminHost));
+          adminLoad.catch(()=>{adminLoad=null;});
+        }
+      };
+      for(const [id,label] of [['decisions','Pilotage et décisions'],['administration','Administration et finance']]){
+        const button=make(doc,'button','kmc-hub-admin-tab',label);
+        button.type='button';
+        button.addEventListener('click',()=>{directionView=id;applyView();});
+        buttons.push([id,button]);tabs.appendChild(button);
+      }
+      host.appendChild(tabs);host.appendChild(directorHost);host.appendChild(adminHost);
+      applyView();
+    }
     const reloadCases=()=>Promise.resolve(
       branch === 'direction'
-        ? renderDirectorQueue(host,{document:doc,fetch:fetchFn,user})
-        : branch === 'administrative' ? renderAdministrative(host) : renderOperations(host)
+        ? renderDirectorQueue(directorHost,{document:doc,fetch:fetchFn,user})
+        : renderOperations(host)
     );
     const selected=reloadCases();
     const directorLoad=branch==='direction' ? selected : Promise.resolve(null);
@@ -1486,8 +1585,8 @@
       : null;
     selected.catch?.(()=>{});
     const selectPO=id=>{
-      if(branch !== 'administrative')return;
-      const cells=host.querySelectorAll?.('[data-hub-admin-po]') || [];
+      if(branch !== 'direction' || !adminHost)return;
+      const cells=adminHost.querySelectorAll?.('[data-hub-admin-po]') || [];
       const row=[...cells].find(node=>node.getAttribute('data-hub-admin-po')===id);
       if(row?.scrollIntoView)row.scrollIntoView({block:'nearest'});
     };

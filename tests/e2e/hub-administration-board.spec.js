@@ -62,7 +62,7 @@ async function mount(page,role='admin',branch='administrative'){
 
 test('Admin — PO en deux marchés, tableau compact, paiement non autorisé fictivement',async({page})=>{
   const calls=await mount(page,'admin');
-  await expect(page.locator('[data-hub-active-branch="administrative"]')).toBeVisible();
+  await expect(page.locator('[data-hub-active-branch="direction"]')).toBeVisible();
   await expect(page.locator('[data-hub-admin-po]')).toHaveCount(2);
   await expect(page.locator('[data-hub-admin-po="'+PO1+'"]')).toContainText('Alpha Trading');
   await expect(page.locator('[data-hub-admin-po="'+PO2+'"]')).toContainText('CM');
@@ -70,9 +70,11 @@ test('Admin — PO en deux marchés, tableau compact, paiement non autorisé fic
   await expect(page.locator('.kmc-admin-domain-tabs')).toHaveCount(0);
   await expect(page.getByText('Sourcing live',{exact:true})).toHaveCount(0);
   // Le menu global peut contenir Relais live ; le poste Hub ne doit pas le dupliquer.
-  await expect(page.locator('[data-hub-active-branch="administrative"]').getByText('Relais live',{exact:true})).toHaveCount(0);
-  await expect(page.locator('[data-hub-branch]')).toHaveCount(3);
-  await expect(page.locator('[data-hub-director-todo]')).toHaveCount(0);
+  await expect(page.locator('[data-hub-active-branch="direction"]').getByText('Relais live',{exact:true})).toHaveCount(0);
+  await expect(page.locator('[data-hub-branch]')).toHaveCount(2);
+  await expect(page.locator('[data-hub-branch="administrative"]')).toHaveCount(0);
+  await expect(page.locator('.kmc-hub-direction-administration')).toBeVisible();
+  await expect(page.locator('.kmc-hub-direction-decisions')).toBeHidden();
   await expect(page.getByText('Global · Tous les marchés')).toBeVisible();
   await expect(page.locator('.kmc-market-context-select')).toHaveCount(0);
   await page.locator('[data-hub-admin-po="'+PO2+'"] [data-hub-admin-stage="Engagement"]').click({button:'right'});
@@ -87,13 +89,15 @@ test('Admin — PO en deux marchés, tableau compact, paiement non autorisé fic
   await page.screenshot({path:'test-results/hub-administration-1440.png',fullPage:true});
 });
 
-test('Agent Hub voit Administration, un relais ne peut pas ouvrir cette branche',async({page})=>{
+test('Agent Hub accède à Administration intégrée, un relais ne peut pas ouvrir Direction',async({page})=>{
   const hubCalls=await mount(page,'agent_hub');
-  await expect(page.locator('[data-hub-active-branch="administrative"]')).toBeVisible();
+  await expect(page.locator('[data-hub-active-branch="direction"]')).toBeVisible();
   expect(hubCalls).toEqual(['GET /api/hub/administration']);
   const relayCalls=await mount(page,'agent_relais');
   await expect(page.locator('[data-hub-active-branch="operations"]')).toBeVisible();
   await expect(page.locator('[data-hub-branch="administrative"]')).toHaveCount(0);
+  await expect(page.locator('[data-hub-branch="direction"]')).toHaveCount(0);
+  await expect(page.locator('.kmc-hub-direction-administration')).toHaveCount(0);
   expect(relayCalls).toEqual(['GET /api/hub/board']);
 });
 

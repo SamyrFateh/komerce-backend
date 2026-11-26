@@ -22,6 +22,21 @@
   <link rel="stylesheet" href="/dashboards/canonical/css/hero-first-shell-conformance-v1.css?v=261031-10" />
   <link rel="stylesheet" href="/dashboards/canonical/css/canonical-unified-chrome-v1.css?v=261014-1" />
   <style>
+    #unsold-root.unsold-workspace {
+      box-sizing: border-box;
+      width: min(calc(100% - 48px), 1180px);
+      max-width: 1180px;
+      margin: clamp(24px, 5vh, 56px) auto 40px;
+    }
+
+    @media (max-width: 680px) {
+      #unsold-root.unsold-workspace {
+        width: auto;
+        margin: 16px;
+        padding: 20px 16px;
+      }
+    }
+
     .unsold-feedback--error { color: #b3261e; font-weight: 600; }
     .unsold-table { width: 100%; border-collapse: collapse; }
     .unsold-table th, .unsold-table td { padding: 6px 8px; text-align: left; vertical-align: top; }
@@ -38,9 +53,9 @@
   <noscript>JavaScript est requis.</noscript>
   <script src="/dashboards/canonical/js/primitives.js?v=1204"></script>
   <script src="/dashboards/canonical/js/admin-context.js?v=261023-1"></script>
-  <script src="/dashboards/canonical/js/navigation-policy-v4.js?v=261117-docs"></script>
+  <script src="/dashboards/canonical/js/navigation-policy-v4.js?v=261126-market-dashboard-scope-menu-1"></script>
   <script src="/dashboards/canonical/js/navigation-shell-v4-sync.js?v=2102"></script>
-  <script src="/dashboards/canonical/js/unsold-workspace.js?v=1"></script>
+  <script src="/dashboards/canonical/js/unsold-workspace.js?v=261126-market-readonly-layout-1"></script>
   <script src="/dashboards/canonical/js/standalone-shell-bootstrap-v4.js?v=2301"></script>
 </body>
 </html>
