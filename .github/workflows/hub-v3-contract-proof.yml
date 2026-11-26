@@ -1,0 +1,71 @@
+name: Hub V3 — génération contrôlée du contrat (branche de travail)
+# Temporary branch-scoped proof, read-only token, no deployment.
+on:
+  push:
+    branches: [feat/hub-reception-v3-quality]
+permissions:
+  contents: read
+jobs:
+  generate-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      NODE_ENV: test
+      # P4-2 : bootstrap/env.js exige déjà toute cette liste (requiredEnv) —
+      # sans elles server.js fait process.exit(1) avant l'introspection
+      # runtime, donc ce job ne pouvait déjà pas booter l'app réellement.
+      # DATABASE_URL factice, non résolvable : volontaire (cf. commentaire
+      # ci-dessus, l'ECONNREFUSED qui en résulte est inoffensif ici).
+      DATABASE_URL: postgres://ci-dummy:ci-dummy@localhost:5432/ci-dummy
+      ADMIN_PASSWORD: ci-dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-dummy
+      JWT_SECRET: ci-dummy
+      SESSION_SECRET: ci-dummy
+      INTERNAL_API_KEY: ci-dummy
+      STRIPE_SECRET_KEY: sk_test_dummy
+      JWT_EXPIRES: 7d
+      APP_URL: http://localhost
+      PUBLIC_URL: http://localhost
+      PUBLIC_BASE_URL: http://localhost
+      ADMIN_RESET_KEY: ci-dummy
+      INVOICE_PUBLIC_LINK_SECRET: ci-dummy
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_TOKEN: ci-dummy
+      META_WA_PHONE_NUMBER_ID: ci-dummy
+      # P4-2 : routes/meta-whatsapp.js fait process.exit(1) si absente
+      # (cohérent avec JWT_SECRET) — l'app ne boote plus sans elle.
+      META_WA_APP_SECRET: ci-dummy
+
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Générer depuis les routes montées, sans connexion réelle
+        run: |
+          node scripts/gen-route-registry.js
+          npm run contract:generate
+          node scripts/contract-debt-sync.js --write
+      - name: Exporter uniquement les artefacts canoniques générés
+        run: |
+          mkdir -p test-artifacts/hub-v3-contract
+          git diff --binary -- docs/contract/openapi.json docs/contract/DEBT.md docs/_generated/route-registry.json > test-artifacts/hub-v3-contract/generated.patch
+          cp docs/contract/openapi.json docs/contract/DEBT.md docs/_generated/route-registry.json test-artifacts/hub-v3-contract/
+          git diff --stat -- docs/contract/openapi.json docs/contract/DEBT.md docs/_generated/route-registry.json
+          git rev-parse HEAD > test-artifacts/hub-v3-contract/source-sha.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hub-v3-contract-generated
+          path: test-artifacts/hub-v3-contract/
+          if-no-files-found: error
+      - name: Vérifier les tests V3 indépendamment du preflight
+        run: npx jest --config jest.unit.config.js --runInBand tests/unit/hub-reception-quality-plan.test.js tests/unit/hub-supplier-receipt-quality.test.js tests/unit/admin-operations-workspace-route.test.js tests/unit/canonical-operations-workspace.test.js tests/unit/operations-workspace-css.test.js
