@@ -223,6 +223,21 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect(Number(read.eligibleStructureFacts.find(x=>x.id===fact.id).remainingNative)).toBe(500);
     expect(await count()).toBe(before);
   });
+  test('actual posting uses canonical journal and rejects foreign scope and duplicate evidence',async()=>{
+    const post=(actor,code,id,body)=>request(app).post(endpoint(code)+'/posts/'+id+'/actuals').set('Authorization',actor.token).send(body);
+    const body={periodStart:month,currency:'KMF',amountNative:'250',evidenceRef:tag+'-INVOICE'};
+    expect((await post(fx.viewerA,fx.marketA.code,a.post,body)).status).toBe(403);
+    expect((await post(fx.central,fx.marketB.code,a.post,body)).status).toBe(404);
+    expect((await post(fx.central,null,g.post,body)).status).toBe(409);
+    const created=await post(fx.central,fx.marketA.code,a.post,body);
+    expect(created.status).toBe(201);
+    expect(created.body.outcome).toBe('created');
+    expect((await post(fx.central,fx.marketA.code,a.post,body)).body.outcome).toBe('replayed');
+    expect((await post(fx.central,fx.marketA.code,a.post,{...body,amountNative:'251'})).status).toBe(409);
+    const stored=(await q('SELECT count(*)::int AS n,SUM(amount_kmf)::text AS total FROM economic_structure_cost_events WHERE evidence_ref=$1',[body.evidenceRef])).rows[0];
+    expect(stored).toEqual({n:1,total:'250.00'});
+    expect((await get(fx.central,fx.marketA.code)).body.posts.find(p=>p.id===a.post).structureEvidence.amountKmf).toBe('1250.00');
+  });
   test('browser authority injection and invalid period rejected',async()=>{
     expect((await request(app).get(endpoint(fx.marketA.code)).query({periodStart:month,market_id:fx.marketB.id}).set('Authorization',fx.viewerA.token)).status).toBe(400);
     expect((await get(fx.central,fx.marketA.code,'2026-01-02')).status).toBe(400);

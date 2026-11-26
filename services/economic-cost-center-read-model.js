@@ -377,7 +377,7 @@ async function readCostCenters(actor,raw){
     const {rows:resources}=await client.query(
       'SELECT r.id,r.center_id,r.code,r.label,r.resource_kind FROM economic_cost_resources r JOIN economic_cost_centers c ON c.id=r.center_id WHERE c.market_id IS NOT DISTINCT FROM $1::uuid ORDER BY r.code,r.id',[marketId]);
     const {rows:posts}=await client.query(
-      `SELECT p.id,p.center_id,p.family_id,p.resource_id,p.code,p.label,p.economic_nature,p.allocation_perimeter,p.allocation_basis,
+      `SELECT p.id,p.center_id,p.family_id,p.resource_id,p.code,p.label,p.economic_nature,p.allocation_perimeter,p.allocation_basis,(p.structure_charge_id IS NOT NULL) AS "acceptsStructureActual",
         b.revision AS budget_revision,b.currency AS budget_currency,b.amount_native::text AS budget_native,b.amount_eur::text AS budget_eur
        FROM economic_cost_posts p JOIN economic_cost_centers c ON c.id=p.center_id
        LEFT JOIN LATERAL (
