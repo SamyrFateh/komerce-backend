@@ -1,0 +1,129 @@
+name: ECO-2e canonical API and PostgreSQL proof (temporary)
+on:
+  push:
+    branches: [research/eco-centres-v6-preflight]
+    paths: ['.github/workflows/eco-2e-v6-activity-assembly-proof.yml']
+permissions:
+  contents: write
+  issues: write
+concurrency:
+  group: eco-2e-v6-activity-assembly-proof
+  cancel-in-progress: false
+env:
+  ECO_HEAD: '6f4f163d2972e550bf7bd356b21847aed558dc3c'
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      ECO_SOURCE: '6f4f163d2972e550bf7bd356b21847aed558dc3c'
+      ECO_BASE: 'a7df2352e08f3a0c9c74043a472cf255754d2906'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: '6f4f163d2972e550bf7bd356b21847aed558dc3c'
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Targeted service proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$ECO_SOURCE"
+          npx jest --runInBand --runTestsByPath tests/unit/economic-cost-center-read-model.test.js tests/unit/economic-cost-budget-service.test.js tests/unit/require-pricing-global-authority.test.js tests/unit/admin-pricing-workspace-capability-mapping.test.js tests/unit/international-shipment-journey.test.js tests/unit/pricing-economic-cockpit.test.js tests/unit/canonical-pricing-economic-cockpit.test.js tests/unit/canonical-pricing-atelier-views.test.js
+      - name: Generate canonical architecture graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run arch:gen
+          git diff --stat
+          git diff --name-only | grep -v -E '^docs/(KOMERCE_ARCH_HEADER_GRAPH\.md|komerce-arch-header-graph\.json)$' && exit 1 || true
+          git add -- docs/KOMERCE_ARCH_HEADER_GRAPH.md docs/komerce-arch-header-graph.json
+          if ! git diff --cached --quiet; then
+            git -c user.name='Komerce ECO research' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'docs(arch): regenerate graph for ECO-2e'
+          fi
+          git diff --exit-code
+          git diff --check "$ECO_BASE" HEAD
+          echo "ECO_GENERATED=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          git push origin HEAD:refs/heads/wip/eco-2e-activity-graph-6f4f163
+      - name: Governance checks on generated candidate
+        run: |
+          set -euo pipefail
+          npm run arch:headers-sql
+          git diff --exit-code
+      - name: Report
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ job.status }}
+        shell: bash
+        run: |
+          gh issue comment 5280 --repo "$GITHUB_REPOSITORY" --body "ECO-2e proof: $RESULT. Source: $ECO_SOURCE. Graph candidate: ${ECO_GENERATED:-not-generated}. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID. WIP only; no PR/merge/deploy."
+  postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: ci-test-jwt-secret
+      ADMIN_PASSWORD: ci-test-admin-password
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+      QR_SECRET: ci-test-qr-secret
+      AUTHKEY_API_KEY: ci-test-authkey
+      PAYPAL_CLIENT_ID: ci-test-paypal-client
+      PAYPAL_CLIENT_SECRET: ci-test-paypal-secret
+      PAYPAL_WEBHOOK_ID: ci-test-paypal-webhook
+      META_WA_APP_SECRET: ci-test-meta-secret
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: '6f4f163d2972e550bf7bd356b21847aed558dc3c'
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Rebuild disposable PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$ECO_HEAD"
+          PGPASSWORD=komerce psql -v ON_ERROR_STOP=1 -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql
+          node scripts/ci-db-bootstrap.js
+      - name: Real database reference and HTTP proof
+        env:
+          ECO_DISPOSABLE_PG_PROOF: '1'
+        run: |
+          set -euo pipefail
+          node scripts/run-integration-tests.js --files=tests/integration/economic-cost-center-reference-postgres.test.js
+          node scripts/run-integration-tests.js --files=tests/integration/economic-cost-budget-revisions-postgres.test.js
+          node scripts/run-integration-tests.js --files=tests/integration/economic-cost-commitments-postgres.test.js
+          node scripts/run-integration-tests.js --files=tests/integration/economic-cost-center-api-postgres.test.js
+      - name: Report result
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ job.status }}
+        run: |
+          gh issue comment 5280 --repo "$GITHUB_REPOSITORY" --body "ECO-2e disposable PG: $RESULT. Candidate: $ECO_HEAD. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID. No staging or production writes."
