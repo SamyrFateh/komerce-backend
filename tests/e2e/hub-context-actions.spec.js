@@ -424,7 +424,8 @@ test.describe('Journal immuable par étape',()=>{
 
 test('Navigation Hub : Kanban et Direction sans bouton cockpit concurrent',async({page})=>{
   const {posts,reads}=await mount(page,{role:'admin',v8:true});
-  await expect(page.locator('[data-hub-branch]')).toHaveCount(3);
+  await expect(page.locator('[data-hub-branch]')).toHaveCount(2);
+  await expect(page.locator('[data-hub-branch="administrative"]')).toHaveCount(0);
   await expect(page.locator('[data-hub-open-operations]')).toHaveCount(0);
   await expect(page.locator('[data-hub-director-todo]')).toHaveCount(0);
   await expect(page.locator('[data-hub-po-v8]')).toBeVisible();
