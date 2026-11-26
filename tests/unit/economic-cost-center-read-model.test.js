@@ -4,12 +4,14 @@ const mockQuery=jest.fn(),mockRelease=jest.fn(),mockClient=jest.fn(),mockGrant=j
 jest.mock('../../db',()=>({getClient:(...a)=>mockClient(...a)}));
 jest.mock('../../middleware/require-pricing-global-authority',()=>({hasPricingGlobalAuthority:(...a)=>mockGrant(...a)}));
 jest.mock('../../services/market-delegation-service',()=>({resolveAuthorization:(...a)=>mockAuthz(...a)}));
-const {readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector}=require('../../services/economic-cost-center-read-model');
+const {readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity}=require('../../services/economic-cost-center-read-model');
 const client={query:mockQuery,release:mockRelease},actor={id:'actor',role:'admin'},month='2026-01-01';
 const ok=(rows=[])=>({rows});
 beforeEach(()=>{jest.resetAllMocks();mockClient.mockResolvedValue(client);mockGrant.mockResolvedValue(true);});
-function projection(postRows=[],commitmentRows=[],structureRows=[]){
-  mockQuery.mockResolvedValueOnce(ok([{id:'center'}])).mockResolvedValueOnce(ok([{id:'family'}])).mockResolvedValueOnce(ok([{id:'resource'}])).mockResolvedValueOnce(ok(postRows)).mockResolvedValueOnce(ok(commitmentRows)).mockResolvedValueOnce(ok(structureRows)).mockResolvedValueOnce(ok());
+function projection(postRows=[],commitmentRows=[],structureRows=[],market=false){
+  mockQuery.mockResolvedValueOnce(ok([{id:'center'}])).mockResolvedValueOnce(ok([{id:'family'}])).mockResolvedValueOnce(ok([{id:'resource'}])).mockResolvedValueOnce(ok(postRows)).mockResolvedValueOnce(ok(commitmentRows)).mockResolvedValueOnce(ok(structureRows));
+  if(market)mockQuery.mockResolvedValueOnce(ok());
+  mockQuery.mockResolvedValueOnce(ok());
 }
 test('reject unauthenticated and implicit scope',async()=>{
   await expect(readCostCenters(null,{marketCode:null,periodStart:month})).rejects.toMatchObject({status:401});
@@ -23,11 +25,11 @@ test('global grant required for group; role alone does not grant it',async()=>{
 });
 test('market delegation resolves exact market and no other scope is queried',async()=>{
   mockAuthz.mockResolvedValue({market_id:'market-CM'});
-  mockQuery.mockResolvedValueOnce(ok());projection();
+  mockQuery.mockResolvedValueOnce(ok());projection([],[],[],true);
   const result=await readCostCenters({id:'member',role:'market_operator'},{marketCode:'CM',periodStart:month});
   expect(mockAuthz).toHaveBeenCalledWith(client,{userId:'member',marketCode:'CM',requiredCapability:'pricing.read'});
   expect(result).toMatchObject({scope:'MARKET',marketCode:'CM',central:false,readOnly:true});
-  for(const call of mockQuery.mock.calls.slice(1,7))expect(call[1][0]).toBe('market-CM');
+  for(const call of mockQuery.mock.calls.slice(1,8))expect(call[1][0]).toBe('market-CM');
   expect(mockGrant).not.toHaveBeenCalled();
 });
 test('denied delegation never queries economic tables',async()=>{
@@ -85,4 +87,18 @@ test('structure EUR is projected via governed KMF parity, cached within read tra
 test('missing governed parity preserves KMF evidence and never fabricates EUR',async()=>{
   const project=structureEurProjector({query:jest.fn().mockResolvedValue({rows:[]})});
   expect(await project([{post_id:'p',whole_period:true,amount_kmf:'1000.00'}])).toMatchObject({amountKmf:'1000.00',amountEur:null,fxStatus:'FX_UNAVAILABLE'});
+});
+
+test('shipment cohort uses closed reconciled snapshot exactly once; unknown is not zero',()=>{
+  const closed={reference:'S1',rail:'sea',physical_closed_at:'2026-01-15T10:00:00Z',financial_closed_at:'2026-02-10T10:00:00Z',
+    financial_close_proof_ref:'proof',snapshot_hash:'a'.repeat(64),freight_known:true,allocation_rows:0,
+    freight_kmf:'100.10',customs_kmf:'20.00',arrival_kmf:'5.00',local_kmf:'4.90',customs_fees_kmf:'1.00',documented_kmf:'131.00'};
+  expect(shipmentActivity([closed])).toMatchObject({physicalClosedCount:1,financialClosedCount:1,
+    documentedTransportTotalKmf:'131.00',freightCustomsSubtotalKmf:'120.10',coverage:'TRANSPORT_DOCUMENTED'});
+  const pending={...closed,reference:'S2',financial_closed_at:null};
+  expect(shipmentActivity([closed,pending])).toMatchObject({physicalClosedCount:2,financialClosedCount:1,
+    documentedTransportSubtotalKmf:'131.00',documentedTransportTotalKmf:null,coverage:'PARTIAL'});
+  expect(shipmentActivity([{...closed,documented_kmf:'999.00'}])).toMatchObject({financialClosedCount:0,documentedTransportTotalKmf:null});
+  expect(shipmentActivity([{...closed,allocation_rows:1}])).toMatchObject({financialClosedCount:0});
+  expect(shipmentActivity([])).toMatchObject({coverage:'NO_OBSERVATIONS',documentedTransportTotalKmf:null,purchaseKmf:null});
 });

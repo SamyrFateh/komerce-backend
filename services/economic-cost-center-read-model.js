@@ -8,7 +8,7 @@
  * @outputs       scoped_centers_families_resources_posts, latest_budget_revisions, outstanding_commitments, explicit_actual_coverage_status
  * @depends       db, middleware/require-pricing-global-authority.js, services/market-delegation-service.js, services/fx-authority.js
  * @used-by       routes/admin-pricing-workspace.js
- * @db-read       markets, economic_cost_centers, economic_cost_families, economic_cost_resources, economic_cost_posts, economic_cost_budget_revisions, economic_cost_commitments, economic_cost_commitment_movements, economic_structure_cost_events
+ * @db-read       markets, economic_cost_centers, economic_cost_families, economic_cost_resources, economic_cost_posts, economic_cost_budget_revisions, economic_cost_commitments, economic_cost_commitment_movements, economic_structure_cost_events, international_shipments, international_shipment_events, international_shipment_relay_receipts, international_shipment_hub_units, international_n1_reconciliations, order_items, orders
  * @db-write      none
  * @db-txn        service_owned_read_only_repeatable_read
  * @doctrine      exact_market_scope, budget_is_not_realized_cost, no_fake_zero, group_raw_not_delegated
@@ -118,6 +118,67 @@ function structureEurProjector(client){
     return {...summary,...await cache.get(amount)};
   };
 }
+// Canonical shipment observation: physical relay receipt, not the date a
+// supplier invoice was recorded. Read the per-shipment reconciled snapshot;
+// never add historical per-order transport allocations to these amounts.
+function shipmentActivity(rows){
+  const money=v=>typeof v==='string'&&/^\d+\.\d{2}$/.test(v)?BigInt(v.replace('.','')):null;
+  const display=v=>{const s=v.toString().padStart(3,'0');return s.slice(0,-2)+'.'+s.slice(-2);};
+  let documented=0n,freightCustoms=0n,closed=0;
+  const shipments=rows.map(s=>{
+    const amounts=[s.freight_kmf,s.customs_kmf,s.arrival_kmf,s.local_kmf,s.customs_fees_kmf,s.documented_kmf].map(money);
+    const complete=Boolean(s.financial_closed_at&&s.financial_close_proof_ref&&s.snapshot_hash&&s.freight_known===true&&
+      s.allocation_rows===0&&new Date(s.financial_closed_at)>=new Date(s.physical_closed_at)&&amounts.every(v=>v!==null)&&
+      amounts.slice(0,5).reduce((sum,v)=>sum+v,0n)===amounts[5]);
+    const transport=complete?amounts[0]+amounts[1]:null;
+    if(complete){closed++;documented+=amounts[5];freightCustoms+=transport;}
+    return {reference:s.reference,rail:s.rail,physicalClosedAt:s.physical_closed_at,
+      financialClosedAt:s.financial_closed_at||null,financialStatus:complete?'DOCUMENTED_CLOSED':'NOT_RECONCILED',
+      volumeM3:s.volume_m3,boxCount:s.box_count,expectedArticles:s.expected_articles,receivedArticles:s.received_articles,
+      freightCustomsKmf:complete?display(transport):null,documentedTransportKmf:complete?display(amounts[5]):null,
+      freightKmf:complete?s.freight_kmf:null,customsKmf:complete?s.customs_kmf:null,
+      arrivalFeesKmf:complete?display(amounts[2]+amounts[4]):null,localTransportKmf:complete?s.local_kmf:null,
+      weightKg:null,purchaseKmf:null,costPerKgKmf:null};
+  });
+  return {cohort:'RELAY_RECEIPT_MONTH_UTC',scopeCoverage:'EXACT_MARKET_NON_SIMULATED',
+    physicalClosedCount:shipments.length,financialClosedCount:closed,
+    documentedTransportSubtotalKmf:closed?display(documented):null,
+    freightCustomsSubtotalKmf:closed?display(freightCustoms):null,
+    documentedTransportTotalKmf:shipments.length&&closed===shipments.length?display(documented):null,
+    coverage:!shipments.length?'NO_OBSERVATIONS':closed===shipments.length?'TRANSPORT_DOCUMENTED':'PARTIAL',
+    weightKg:null,purchaseKmf:null,costPerKgKmf:null,shipments};
+}
+async function loadShipmentActivity(client,marketId,periodStart){
+  if(marketId===null)return null; // GROUP-only centers are not all markets.
+  const {rows}=await client.query(
+    `SELECT s.reference,s.transport_mode AS rail,s.volume_m3::text AS volume_m3,
+      physical.closed_at AS physical_closed_at,receipt.expected_articles,receipt.received_articles,
+      (SELECT COUNT(*)::int FROM international_shipment_hub_units h WHERE h.shipment_id=s.id) AS box_count,
+      n.financial_closed_at,n.financial_close_proof_ref,n.snapshot_hash,n.freight_known,n.allocation_rows,
+      n.total_freight_kmf::text AS freight_kmf,n.total_customs_kmf::text AS customs_kmf,
+      n.total_arrival_kmf::text AS arrival_kmf,n.total_local_kmf::text AS local_kmf,
+      n.total_customs_fees_kmf::text AS customs_fees_kmf,n.documented_total_kmf::text AS documented_kmf
+     FROM international_shipments s
+     JOIN LATERAL (
+       SELECT MIN(e.occurred_at) AS closed_at FROM international_shipment_events e
+       WHERE e.shipment_id=s.id AND e.event_type='stage_changed' AND e.to_stage='relay_received'
+         AND e.payload->>'attested_by'='relay' AND length(btrim(e.proof_ref))>0
+     ) physical ON physical.closed_at IS NOT NULL
+     JOIN LATERAL (
+       SELECT COUNT(*)::int AS n, SUM(rr.expected_qty)::int AS expected_articles,
+         SUM(rr.received_qty)::int AS received_articles,MAX(rr.received_at) AS last_received,
+         BOOL_AND(o.id IS NOT NULL AND o.market_id IS NOT DISTINCT FROM s.market_id AND o.simulation_scope IS NULL) AS real_market
+       FROM international_shipment_relay_receipts rr
+       LEFT JOIN order_items oi ON oi.id=rr.order_item_id LEFT JOIN orders o ON o.id=oi.order_id
+       WHERE rr.shipment_id=s.id
+     ) receipt ON receipt.n>0 AND receipt.real_market IS TRUE AND receipt.last_received<=physical.closed_at
+     LEFT JOIN international_n1_reconciliations n ON n.shipment_id=s.id
+     WHERE s.market_id=$1 AND s.stage='relay_received'
+       AND physical.closed_at>=($2::date::timestamp AT TIME ZONE 'UTC')
+       AND physical.closed_at<(($2::date+interval '1 month') AT TIME ZONE 'UTC')
+     ORDER BY physical.closed_at,s.reference`,[marketId,periodStart]);
+  return shipmentActivity(rows);
+}
 async function readCostCenters(actor,raw){
   if(!actor?.id)throw error('AUTH_REQUIRED',401,'Authentification requise');
   const input=validate(raw);
@@ -172,9 +233,10 @@ async function readCostCenters(actor,raw){
       commitments:byPost.get(p.id)||[],structureEvidence:await projectStructure(structureEvents.filter(e=>e.post_id===p.id)),actual:null,available:null,coverage:'NOT_RECONCILED'})));
     const centerModels=await Promise.all(centers.map(async c=>({...c,budgetSummary:budgetSummary(model.filter(p=>p.center_id===c.id)),commitmentSummary:commitmentSummary(model.filter(p=>p.center_id===c.id)),structureEvidence:await projectStructure(structureEvents.filter(e=>e.center_id===c.id))})));
     const structureEvidence=await projectStructure(structureEvents);
+    const activity=await loadShipmentActivity(client,marketId,input.periodStart);
     await client.query('COMMIT');
     return {scope:input.marketCode===null?'GROUP':'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,central,readOnly:true,
-      centers:centerModels,families,resources,posts:model,budgetSummary:budgetSummary(model),commitmentSummary:commitmentSummary(model),structureEvidence,actualCoverage:'NOT_RECONCILED',available:null};
+      centers:centerModels,families,resources,posts:model,budgetSummary:budgetSummary(model),commitmentSummary:commitmentSummary(model),structureEvidence,activity,actualCoverage:'NOT_RECONCILED',available:null};
   }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
 }
-module.exports={readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector};
+module.exports={readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,loadShipmentActivity};
