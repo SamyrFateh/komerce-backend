@@ -480,6 +480,7 @@ async function discardPurchaseOrder(poId) {
 
   return withTransaction(async (client) => {
     const po = await lockGroupedPo(client, poId);
+    await assertCommitmentNotAuthorized(client, po.id);
     await client.query('SELECT id FROM purchase_lines WHERE purchase_order_id = $1 ORDER BY id FOR UPDATE', [po.id]);
     const { rows: detached } = await client.query(`
       UPDATE purchase_lines SET purchase_order_id = NULL, updated_at = NOW()
@@ -523,6 +524,7 @@ async function cancelLine(lineId, reason) {
     }
 
     if (po) {
+      await assertCommitmentNotAuthorized(client, po.id);
       await client.query('UPDATE purchase_lines SET purchase_order_id = NULL, updated_at = NOW() WHERE id = $1', [lineId]);
     }
     await client.query(
@@ -535,7 +537,7 @@ async function cancelLine(lineId, reason) {
 
 // Partagé avec purchasing-engagement-service (PR 5) : mêmes erreurs, même transaction, même ordre de verrouillage.
 const shared = {
-  fail, requireUuid, withTransaction, lockGroupedPo, assertCommercialPurchaseItem, commercialRead,
+  fail, requireUuid, withTransaction, lockGroupedPo, assertCommitmentNotAuthorized, assertCommercialPurchaseItem, commercialRead,
   loadPurchaseOrderLines, summarizeMarkets, shapeLine, LINE_COLUMNS, LINE_JOINS,
 };
 

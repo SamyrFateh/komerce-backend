@@ -167,6 +167,21 @@ if (!process.env.DATABASE_URL) {
     expect(await purchaseSnapshot(candidate)).toEqual(before);
   });
 
+  test('P0 : aucun geste de modification sur une PO draft déjà autorisée',async()=>{
+    const candidate=await draftPo(10);
+    const approval=await auth.decide({purchaseOrderId:candidate,authorizationType:'purchase_commitment',actor:directrice,body:{proof_ref:'P0-FROZEN'}});
+    const before=await purchaseSnapshot(candidate);
+    const line=before.lines[0].id;
+    const grouped=require('../../services/purchasing-grouped-service');
+    const deny={status:409,code:'PURCHASE_ORDER_COMMITMENT_FROZEN'};
+    await expect(grouped.detachLines(candidate,[line])).rejects.toMatchObject(deny);
+    await expect(grouped.discardPurchaseOrder(candidate)).rejects.toMatchObject(deny);
+    await expect(grouped.cancelLine(line,'Modification après engagement')).rejects.toMatchObject(deny);
+    await expect(engagement.changeLineSupplier(line,{product_supplier_id:id(),reason:'Modification après engagement'})).rejects.toMatchObject(deny);
+    expect(await purchaseSnapshot(candidate)).toEqual(before);
+    expect(before.decisions.map(x=>x.id)).toEqual([approval.id]);
+  });
+
   test('P0 : modification concurrente du paiement => refus rapide, aucun engagement',async()=>{
     const candidate=await draftPo(10);
     const {rows:[row]}=await q('SELECT oi.order_id FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id WHERE pl.purchase_order_id=$1',[candidate]);

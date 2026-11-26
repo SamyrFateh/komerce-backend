@@ -51,7 +51,7 @@ const {
   procurementHubLabel,
 } = require('./purchase-line-snapshot');
 const { shared } = require('./purchasing-grouped-service');
-const { assertCommercialPurchaseItem, commercialRead } = shared;
+const { assertCommitmentNotAuthorized, assertCommercialPurchaseItem, commercialRead } = shared;
 const { openSupplierShortage } = require('./supplier-shortage-service');
 const log = require('../utils/logger').child({ module: 'purchasing-engagement' });
 
@@ -984,11 +984,17 @@ async function changeLineSupplier(lineId, body = {}, { actor = null, context = {
   const newLineId = await withTransaction(async (client) => {
     const { rows: [peek] } = await client.query('SELECT id, purchase_order_id FROM purchase_lines WHERE id = $1', [lineId]);
     if (!peek) throw fail(404, 'PURCHASE_LINE_NOT_FOUND', 'Ligne d\'achat introuvable');
-    if (peek.purchase_order_id) await lockGroupedPo(client, peek.purchase_order_id, { requireDraft: true });
+    if (peek.purchase_order_id) {
+      const po = await lockGroupedPo(client, peek.purchase_order_id, { requireDraft: true });
+      await assertCommitmentNotAuthorized(client, po.id);
+    }
     const { rows: [line] } = await client.query(
       'SELECT id, order_item_id, quantity, supplier_id, purchase_order_id, cancelled_at, confirmed_quantity FROM purchase_lines WHERE id = $1 FOR UPDATE', [lineId]
     );
     if (line.cancelled_at) throw fail(409, 'PURCHASE_LINE_ALREADY_CANCELLED', 'Ligne déjà annulée');
+    if (String(line.purchase_order_id || '') !== String(peek.purchase_order_id || '')) {
+      throw fail(409, 'PURCHASE_LINE_CONCURRENT_CHANGE', 'La ligne a changé pendant l\'opération, réessayez');
+    }
     if (line.confirmed_quantity !== null) throw fail(409, 'PURCHASE_LINE_NOT_CANCELLABLE', 'Ligne déjà confirmée : changer le fournisseur de son reliquat');
     await client.query(
       'UPDATE purchase_lines SET purchase_order_id = NULL, updated_at = NOW() WHERE id = $1 AND purchase_order_id IS NOT NULL', [lineId]
