@@ -27,8 +27,7 @@ describeDb('ECO-1b budget revision integrity (REAL_DB)', () => {
   beforeAll(async () => {
     client = await db.getClient();
     await q('BEGIN');
-    actor = (await q('SELECT id FROM users ORDER BY id LIMIT 1')).rows[0]?.id;
-    if (!actor) throw new Error('CI bootstrap did not provide an actor');
+    actor = (await q("INSERT INTO users(email,full_name,phone,role,password_hash) VALUES ($1,'ECO budget CI',$2,'admin','not-a-login-hash') RETURNING id", [tag.toLowerCase()+'@test.invalid','+269'+(3000000+crypto.randomInt(6000000))])).rows[0].id;
     const center = (await q('INSERT INTO economic_cost_centers(code,label) VALUES ($1,$1) RETURNING id',[tag])).rows[0].id;
     const family = (await q("INSERT INTO economic_cost_families(center_id,code,label) VALUES ($1,'FAMILY','Famille') RETURNING id",[center])).rows[0].id;
     charge = (await q("INSERT INTO charges(family,name,amount_kmf,is_recurring,recurrence_period) VALUES ('operationnelle',$1,0,true,'monthly') RETURNING id",[tag])).rows[0].id;
