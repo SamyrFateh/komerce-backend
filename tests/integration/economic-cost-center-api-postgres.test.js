@@ -137,6 +137,7 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect(closed).toMatchObject({purchaseKmf:'1000.00',purchaseStatus:'SETTLEMENT_RECONCILED'});
     expect(response.body.activity).toMatchObject({boxCount:'2',expectedArticles:'2',receivedArticles:'2',volumeM3:'0.50000',volumeCoveredCount:2,minCostPerKgKmf:'13.10',maxCostPerKgKmf:'13.10',purchaseTransportObservation:{freightCustomsKmf:'120.10',otherTransportKmf:'10.90',documentedSubtotalKmf:'1131.00',fullEconomicCostKmf:null}});
     expect(response.body.activity).toMatchObject({purchaseKmf:null,purchaseSubtotalKmf:'1000.00',purchaseCoveredCount:1,purchaseTransportObservation:{purchaseKmf:'1000.00',transportKmf:'131.00',coefficient:'1.1310',observations:1,decisional:false,coverage:'PARTIAL'}});
+    expect(response.body.profitability).toMatchObject({decisional:false,fullCoefficient:null,points:[{periodStart:'2026-01-01',monthly:{coefficient:'1.1310',observations:1,physicalClosedCount:2},rolling3:{coefficient:'1.1310'},cumulative:{coefficient:'1.1310'}}]});
     expect(closed.physicalClosedAt.slice(0,10)).toBe('2026-01-15');
     expect(closed.financialClosedAt.slice(0,10)).toBe('2026-02-10');
     expect(response.body.activity.shipments.find(s=>s.reference===activityRefs.pending)).toMatchObject({financialStatus:'NOT_RECONCILED',documentedTransportKmf:null});
@@ -160,6 +161,9 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect(next.status).toBe(200);
     expect(next.body.posts.find(p=>p.id===a.post)).toMatchObject({budget:null,commitments:[],actual:null});
     expect(next.body.activity).toMatchObject({physicalClosedCount:0,financialClosedCount:0,documentedTransportTotalKmf:null});
+    expect(next.body.profitability.points).toHaveLength(2);
+    expect(next.body.profitability.points[1]).toMatchObject({monthly:{coefficient:null,observations:0},cumulative:{coefficient:'1.1310',observations:1},rolling3:{coefficient:'1.1310',observations:1}});
+    expect(next.body.profitability.ranges.ytd).toMatchObject({coefficient:'1.1310',observations:1,physicalClosedCount:2});
   });
   test('browser authority injection and invalid period rejected',async()=>{
     expect((await request(app).get(endpoint(fx.marketA.code)).query({periodStart:month,market_id:fx.marketB.id}).set('Authorization',fx.viewerA.token)).status).toBe(400);

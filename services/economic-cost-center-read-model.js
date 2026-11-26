@@ -231,8 +231,32 @@ function shipmentActivity(rows){
       observations:pairedCount,coefficient:pairedCount?(()=>{const n=roundHalfEven(pairedPurchase+pairedTransport,pairedPurchase,4).toString().padStart(5,'0');return n.slice(0,-4)+'.'+n.slice(-4);})():null,
       coverage:!pairedCount?'NO_OBSERVATIONS':pairedCount===shipments.length?'COMPLETE_FOR_PURCHASE_TRANSPORT_ONLY':'PARTIAL',scope:'PURCHASE_PLUS_DOCUMENTED_TRANSPORT_ONLY',decisional:false},shipments};
 }
-async function loadShipmentActivity(client,marketId,periodStart){
+// All series use the same receipt cohort and the same read snapshot.
+function monthShift(month,offset){
+  const d=new Date(month+'T00:00:00Z');d.setUTCMonth(d.getUTCMonth()+offset);return d.toISOString().slice(0,10);
+}
+function observedProfitability(rows,periodStart){
+  const year=periodStart.slice(0,4)+'-01-01';
+  const months=Number(periodStart.slice(5,7));
+  const select=(from,to)=>rows.filter(r=>{const t=new Date(r.physical_closed_at).toISOString().slice(0,10);return t>=from&&t<to;});
+  function observation(from,to){
+    const a=shipmentActivity(select(from,to)),o=a.purchaseTransportObservation;
+    return {...o,physicalClosedCount:a.physicalClosedCount,financialClosedCount:a.financialClosedCount,
+      measuredWeightKg:a.measuredWeightSubtotalKg,measuredWeightCount:a.measuredWeightCount,periodStart:from,periodEndExclusive:to};
+  }
+  const points=Array.from({length:months},(_,i)=>{
+    const start=monthShift(year,i),end=monthShift(start,1);
+    return {periodStart:start,monthly:observation(start,end),cumulative:observation(year,end),rolling3:observation(monthShift(start,-2),end)};
+  });
+  const end=monthShift(periodStart,1),quarter=monthShift(year,Math.floor((months-1)/3)*3);
+  return {basis:'PURCHASE_PLUS_DOCUMENTED_TRANSPORT_ONLY',decisional:false,periodStart,points,
+    ranges:{month:observation(periodStart,end),quarter:observation(quarter,end),ytd:observation(year,end)},
+    netSalesKmf:null,variableContributionKmf:null,economicResultKmf:null,fullCoefficient:null,structureCoverage:null};
+}
+async function loadShipmentActivity(client,marketId,periodStart,{includeHistory=false}={}){
   if(marketId===null)return null; // GROUP-only centers are not all markets.
+  const from=includeHistory?monthShift(periodStart.slice(0,4)+'-01-01',-2):periodStart;
+  const until=monthShift(periodStart,1);
   const {rows}=await client.query(
     `SELECT s.id AS shipment_id,s.reference,s.transport_mode AS rail,s.volume_m3::text AS volume_m3,
       physical.closed_at AS physical_closed_at,receipt.expected_articles,receipt.received_articles,
@@ -288,10 +312,11 @@ async function loadShipmentActivity(client,marketId,periodStart){
      ) weight ON true
      WHERE s.market_id=$1 AND s.stage='relay_received'
        AND physical.closed_at>=($2::date::timestamp AT TIME ZONE 'UTC')
-       AND physical.closed_at<(($2::date+interval '1 month') AT TIME ZONE 'UTC')
-     ORDER BY physical.closed_at,s.reference`,[marketId,periodStart]);
+       AND physical.closed_at<($3::date::timestamp AT TIME ZONE 'UTC')
+     ORDER BY physical.closed_at,s.reference`,[marketId,from,until]);
   for(const row of rows)row.purchase=await loadShipmentPurchase(client,row.shipment_id,marketId);
-  return shipmentActivity(rows);
+  if(!includeHistory)return shipmentActivity(rows);
+  return {activity:shipmentActivity(rows.filter(r=>new Date(r.physical_closed_at).toISOString().slice(0,10)>=periodStart)),profitability:observedProfitability(rows,periodStart)};
 }
 async function readCostCenters(actor,raw){
   if(!actor?.id)throw error('AUTH_REQUIRED',401,'Authentification requise');
@@ -347,10 +372,11 @@ async function readCostCenters(actor,raw){
       commitments:byPost.get(p.id)||[],structureEvidence:await projectStructure(structureEvents.filter(e=>e.post_id===p.id)),actual:null,available:null,coverage:'NOT_RECONCILED'})));
     const centerModels=await Promise.all(centers.map(async c=>({...c,budgetSummary:budgetSummary(model.filter(p=>p.center_id===c.id)),commitmentSummary:commitmentSummary(model.filter(p=>p.center_id===c.id)),structureEvidence:await projectStructure(structureEvents.filter(e=>e.center_id===c.id))})));
     const structureEvidence=await projectStructure(structureEvents);
-    const activity=await loadShipmentActivity(client,marketId,input.periodStart);
+    const history=await loadShipmentActivity(client,marketId,input.periodStart,{includeHistory:true});
+    const activity=history?.activity??null,profitability=history?.profitability??null;
     await client.query('COMMIT');
     return {scope:input.marketCode===null?'GROUP':'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,central,readOnly:true,
-      centers:centerModels,families,resources,posts:model,budgetSummary:budgetSummary(model),commitmentSummary:commitmentSummary(model),structureEvidence,activity,actualCoverage:'NOT_RECONCILED',available:null};
+      centers:centerModels,families,resources,posts:model,budgetSummary:budgetSummary(model),commitmentSummary:commitmentSummary(model),structureEvidence,activity,profitability,actualCoverage:'NOT_RECONCILED',available:null};
   }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
 }
-module.exports={readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,loadShipmentActivity,shipmentPurchase};
+module.exports={readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,loadShipmentActivity,shipmentPurchase,observedProfitability};

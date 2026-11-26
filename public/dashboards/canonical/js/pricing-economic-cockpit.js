@@ -195,6 +195,70 @@
     cards.append(rec,variation);host.append(cards);return host;
   }
 
+  // Only geometry is computed in the browser. All coefficient values and
+  // window totals are the authoritative server observations.
+  function createObservedCurve(doc,points){
+    if(typeof doc.createElementNS!=='function')return null;
+    const ns='http://www.w3.org/2000/svg',svg=doc.createElementNS(ns,'svg');
+    svg.setAttribute('viewBox','0 0 760 220');svg.setAttribute('role','img');
+    svg.setAttribute('aria-label','Courbes du coefficient partiel achat et transport ; valeurs détaillées dans le tableau.');
+    const series=[['monthly','#8795a1','5 4'],['cumulative','#157e78',''],['rolling3','#bd8b2f','']];
+    const value=(p,k)=>p[k]?.coefficient==null?null:Number(p[k].coefficient);
+    const all=points.flatMap(p=>series.map(([k])=>value(p,k))).filter(Number.isFinite);
+    if(!all.length)return null;
+    const low=Math.min(...all),high=Math.max(...all),span=Math.max(high-low,0.01),x=i=>40+i*680/Math.max(1,points.length-1),y=v=>170-(v-low)/span*140;
+    function elem(tag,attrs,content){
+      const n=doc.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,String(v));if(content!=null)n.textContent=content;svg.appendChild(n);return n;
+    }
+    elem('line',{x1:40,y1:170,x2:720,y2:170,stroke:'#dce3e9'});
+    elem('text',{x:4,y:26,fill:'#526577','font-size':11},high.toFixed(4));
+    elem('text',{x:4,y:168,fill:'#526577','font-size':11},low.toFixed(4));
+    points.forEach((p,i)=>elem('text',{x:x(i),y:196,'text-anchor':'middle',fill:'#526577','font-size':11},p.periodStart.slice(5,7)));
+    for(const [key,color,dash] of series){
+      let prev=null;points.forEach((p,i)=>{const v=value(p,key);if(!Number.isFinite(v)){prev=null;return;}
+        const point=[x(i),y(v)];if(prev)elem('line',{x1:prev[0],y1:prev[1],x2:point[0],y2:point[1],stroke:color,'stroke-width':2,'stroke-dasharray':dash});
+        elem('circle',{cx:point[0],cy:point[1],r:3,fill:color});prev=point;});
+    }
+    return svg;
+  }
+  function createV6Profitability(doc,model){
+    const host=el(doc,'section','kmc-v7-centers kmc-v6-profitability'),data=model?.profitability;
+    host.append(el(doc,'h3','','Rentabilité'),el(doc,'p','kmc-v7-coverage','Résultat économique non calculable : rapprochement des ventes, charges variables et structure à compléter.'));
+    if(!data){
+      const observation=model?.activity?.purchaseTransportObservation;
+      if(observation?.coefficient!=null)host.append(el(doc,'p','','Observation partielle achat + transport : '+observation.coefficient.replace('.',',')+' · non décisionnelle'));
+      return host;
+    }
+    const metric=(label,value,sub)=>{const n=el(doc,'div','kmc-v7-metric');n.append(el(doc,'span','',label),el(doc,'strong','',value));if(sub)n.append(el(doc,'small','kmc-v7-coverage',sub));return n;};
+    const fmt=v=>v==null?'Non disponible':String(v).replace('.',',');
+    const kpis=el(doc,'div','kmc-v7-kpis');
+    kpis.append(metric('Ventes nettes','Non disponible'),metric('Contribution variable','Non disponible'),metric('Résultat économique','Non disponible'),metric('Coefficient complet du mois','Non disponible'));
+    host.append(kpis);
+    const panel=el(doc,'section','kmc-v6-panel'),controls=el(doc,'div','kmc-v7-families'),focus=el(doc,'div','kmc-v7-kpis'),chart=el(doc,'div','kmc-v6-chart');
+    panel.append(el(doc,'h4','','Observation partielle achat + transport — non décisionnelle'),controls,focus,chart);
+    const defs=[['month','Mois'],['quarter','Trimestre à date'],['ytd','Année à date']];const buttons=[];
+    function render(key){
+      const o=data.ranges[key],from=o.periodStart;
+      for(const [k,b] of buttons)b.setAttribute('aria-pressed',String(k===key));
+      focus.replaceChildren();focus.append(metric('Coefficient observé',fmt(o.coefficient),o.observations+' / '+o.physicalClosedCount+' expéditions'),metric('Achats rapprochés',v7Money(o.purchaseKmf,'KMF')),metric('Transport documenté',v7Money(o.transportKmf,'KMF')),metric('Poids renseigné',fmt(o.measuredWeightKg)+(o.measuredWeightKg==null?'':' kg'),o.measuredWeightCount+' / '+o.physicalClosedCount+' expéditions'));
+      chart.replaceChildren();const points=data.points.filter(p=>p.periodStart>=from);
+      const svg=createObservedCurve(doc,points);if(svg)chart.append(svg);
+      chart.append(el(doc,'p','kmc-v7-coverage','Mensuel (gris) · cumul année (teal) · glissant 3 mois (or). Lacunes non interpolées.'));
+      const table=el(doc,'table','kmc-v7-posts'),head=el(doc,'thead',''),hr=el(doc,'tr','');
+      for(const label of ['Mois','Mensuel','Cumul année','Glissant 3 mois','Couverture mensuelle']){
+        const th=el(doc,'th','',label);th.scope='col';hr.append(th);}
+      head.append(hr);table.append(head);const body=el(doc,'tbody','');
+      for(const p of points){const tr=el(doc,'tr','');for(const v of [p.periodStart.slice(0,7),fmt(p.monthly.coefficient),fmt(p.cumulative.coefficient),fmt(p.rolling3.coefficient),p.monthly.observations+' / '+p.monthly.physicalClosedCount])tr.append(el(doc,'td','',v));body.append(tr);}
+      table.append(body);chart.append(table);
+    }
+    for(const [key,label] of defs){const b=el(doc,'button','kmc-v7-family',label);b.type='button';b.addEventListener('click',()=>render(key));buttons.push([key,b]);controls.append(b);}
+    render('ytd');host.append(panel);
+    const cards=el(doc,'div','kmc-v7-center-grid'),result=el(doc,'article','kmc-v6-panel'),structure=el(doc,'article','kmc-v6-panel');
+    result.append(el(doc,'h4','','Formation du résultat'),...['Ventes nettes','Achats du périmètre complet','Charges variables','Contribution variable','Charges de structure','Résultat économique'].map(k=>metric(k,'À rapprocher')));
+    structure.append(el(doc,'h4','','Couverture de structure'),metric('Couverture','Non calculable'),metric('Reste à couvrir','Non calculable'),el(doc,'p','kmc-v7-coverage','Sous-activité : référence insuffisante. Le coefficient partiel ne détermine pas les prix.'));
+    cards.append(result,structure);host.append(cards);return host;
+  }
+
   // Shared candidate contract. Exported for integration and desktop proof;
   // not activated in enhance() until the complete approved surface is ready.
   function createV7V6Tabs(doc, model, initial='centers'){
@@ -208,13 +272,7 @@
       content.replaceChildren();
       if(active==='centers')content.append(createV7CostCenters(doc,model));
       else if(active==='activity')content.append(createV6Activity(doc,model));
-      else {
-        const panel=el(doc,'section','kmc-v7-centers');
-        panel.append(el(doc,'h3','','Rentabilité'),el(doc,'p','kmc-v7-coverage','Résultat économique non calculable : rapprochement des ventes, charges variables et structure à compléter.'));
-        const observation=model?.activity?.purchaseTransportObservation;
-        if(observation?.coefficient!=null)panel.append(el(doc,'p','','Observation partielle achat + transport : '+observation.coefficient.replace('.',',')+' · non décisionnelle'));
-        content.append(panel);
-      }
+      else content.append(createV6Profitability(doc,model));
     }
     for(const [key,label] of defs){
       const btn=el(doc,'button','kmc-v7-family',label);btn.type='button';btn.addEventListener('click',()=>{active=key;render();});tabs.push([key,btn]);nav.append(btn);
@@ -1834,6 +1892,7 @@
   return {
     createV7CostCenters,
     createV6Activity,
+    createV6Profitability,
     createV7V6Tabs,
     fetchV7V6Model,
     v7Money,

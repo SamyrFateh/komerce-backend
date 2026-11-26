@@ -1279,3 +1279,7 @@
 .kmc-v6-shipments{table-layout:fixed;width:100%;}
 .kmc-v6-shipments td,.kmc-v6-shipments th{overflow-wrap:anywhere;vertical-align:top;}
 .kmc-v6-shipments tfoot{background:#e8f3f2;font-weight:600;}
+
+.kmc-v6-chart { display:grid; gap:8px; min-width:0; }
+.kmc-v6-chart svg { width:100%; height:auto; max-height:280px; }
+.kmc-v6-profitability .kmc-v7-kpis { min-width:0; }

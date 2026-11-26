@@ -4,7 +4,7 @@ const mockQuery=jest.fn(),mockRelease=jest.fn(),mockClient=jest.fn(),mockGrant=j
 jest.mock('../../db',()=>({getClient:(...a)=>mockClient(...a)}));
 jest.mock('../../middleware/require-pricing-global-authority',()=>({hasPricingGlobalAuthority:(...a)=>mockGrant(...a)}));
 jest.mock('../../services/market-delegation-service',()=>({resolveAuthorization:(...a)=>mockAuthz(...a)}));
-const {readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,shipmentPurchase}=require('../../services/economic-cost-center-read-model');
+const {readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,shipmentPurchase,observedProfitability}=require('../../services/economic-cost-center-read-model');
 const client={query:mockQuery,release:mockRelease},actor={id:'actor',role:'admin'},month='2026-01-01';
 const ok=(rows=[])=>({rows});
 beforeEach(()=>{jest.resetAllMocks();mockClient.mockResolvedValue(client);mockGrant.mockResolvedValue(true);});
@@ -137,4 +137,16 @@ test('activity totals keep cohort and coverage, separate documented subtotal fro
   expect(shipmentActivity([a,b])).toMatchObject({boxCount:'3',expectedArticles:'7',receivedArticles:'6',volumeM3:'1.00000',volumeCoveredCount:2,minCostPerKgKmf:'11.03',maxCostPerKgKmf:'13.10',costPerKgKmf:'11.55',purchaseTransportObservation:{purchaseKmf:'4000.00',freightCustomsKmf:'440.20',otherTransportKmf:'21.80',documentedSubtotalKmf:'4462.00',fullEconomicCostKmf:null,observations:2,decisional:false}});
   expect(shipmentActivity([a,{...b,volume_m3:null,financial_closed_at:null}])).toMatchObject({volumeM3:null,volumeSubtotalM3:'0.25000',volumeCoveredCount:1,minCostPerKgKmf:'13.10',maxCostPerKgKmf:'13.10',purchaseTransportObservation:{documentedSubtotalKmf:'1131.00',fullEconomicCostKmf:null,observations:1,coverage:'PARTIAL'}});
   expect(shipmentActivity([])).toMatchObject({boxCount:null,volumeM3:null,minCostPerKgKmf:null,purchaseTransportObservation:{documentedSubtotalKmf:null,fullEconomicCostKmf:null}});
+});
+
+test('monthly, YTD and rolling observations weight the same receipt cohorts; empty month remains unknown',()=>{
+ const base={rail:'sea',financial_closed_at:'2026-04-10T10:00:00Z',financial_close_proof_ref:'proof',snapshot_hash:'a'.repeat(64),freight_known:true,allocation_rows:0,freight_kmf:'100.10',customs_kmf:'20.00',arrival_kmf:'5.00',local_kmf:'4.90',customs_fees_kmf:'1.00',documented_kmf:'131.00',purchase:{amount:'1000.00',status:'SETTLEMENT_RECONCILED'}};
+ const a={...base,reference:'A',physical_closed_at:'2025-12-15T10:00:00Z'},b={...base,reference:'B',physical_closed_at:'2026-01-15T10:00:00Z',purchase:{amount:'3000.00',status:'SETTLEMENT_RECONCILED'}},c={...base,reference:'C',physical_closed_at:'2026-03-15T10:00:00Z'};
+ const x=observedProfitability([a,b,c],'2026-03-01');
+ expect(x.points.map(p=>p.monthly.coefficient)).toEqual(['1.0437',null,'1.1310']);
+ expect(x.points[0].rolling3).toMatchObject({purchaseKmf:'4000.00',transportKmf:'262.00',coefficient:'1.0655',observations:2});
+ expect(x.points[2].cumulative).toMatchObject({purchaseKmf:'4000.00',transportKmf:'262.00',coefficient:'1.0655',observations:2});
+ expect(x.points[2].rolling3.coefficient).toBe('1.0655');
+ expect(x.ranges.month.coefficient).toBe('1.1310');expect(x.ranges.quarter.coefficient).toBe('1.0655');
+ expect(x).toMatchObject({decisional:false,netSalesKmf:null,economicResultKmf:null,fullCoefficient:null});
 });

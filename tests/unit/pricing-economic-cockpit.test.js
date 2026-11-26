@@ -16,7 +16,7 @@ test('L5 : l’avis « politique de marché absente » est un bloc d’informati
   expect(css).not.toMatch(/kmc-pricing-configuration[^{]*\{[^}]*cursor:\s*pointer/);
 });
 
-const {v7Money,createV7CostCenters,createV6Activity,createV7V6Tabs,fetchV7V6Model}=require('../../public/dashboards/canonical/js/pricing-economic-cockpit');
+const {v7Money,createV7CostCenters,createV6Activity,createV6Profitability,createV7V6Tabs,fetchV7V6Model}=require('../../public/dashboards/canonical/js/pricing-economic-cockpit');
 function node(tag){
   return {tag,children:[],dataset:{},attrs:{},textContent:'',append(...xs){this.children.push(...xs);},appendChild(x){this.children.push(x);return x;},replaceChildren(){this.children=[];},addEventListener(e,fn){this[e]=fn;},setAttribute(k,v){this.attrs[k]=v;}};
 }
@@ -60,4 +60,13 @@ test('API model request uses canonical scope and rejects stale/wrong scope',asyn
   const workspace={endpointFor:jest.fn(()=>'/api/admin/workspaces/pricing/market/CM'),jsonRequest:jest.fn().mockResolvedValue(activityModel)};const options={requestedMarket:'CM',fetch:jest.fn()};
   await expect(fetchV7V6Model(workspace,options,'2026-01-01')).resolves.toBe(activityModel);expect(workspace.jsonRequest).toHaveBeenCalledWith(options.fetch,'/api/admin/workspaces/pricing/market/CM/cost-centers?periodStart=2026-01-01');
   await expect(fetchV7V6Model(workspace,options,'2026-02-01')).rejects.toThrow('Périmètre économique incohérent');
+});
+
+test('V6 profitability windows display server coefficients, unavailable full result and gaps',()=>{
+ const obs={periodStart:'2026-01-01',coefficient:'1.0655',observations:2,physicalClosedCount:3,purchaseKmf:'4000.00',transportKmf:'262.00',measuredWeightCount:0};
+ const feb={...obs,periodStart:'2026-02-01',coefficient:null,observations:0,physicalClosedCount:0};
+ const view=createV6Profitability(doc,{profitability:{points:[{periodStart:'2026-01-01',monthly:obs,cumulative:obs,rolling3:obs},{periodStart:'2026-02-01',monthly:feb,cumulative:obs,rolling3:obs}],ranges:{month:feb,quarter:obs,ytd:obs}}});
+ expect(texts(view)).toContain('1,0655');expect(texts(view)).toContain('2026-01');expect(texts(view)).toContain('Non disponible');
+ find(view,'Mois').click();expect(texts(view)).not.toContain('2026-01');expect(texts(view)).toContain('2026-02');expect(texts(view)).toContain('0 / 0 expéditions');
+ find(view,'Année à date').click();expect(texts(view)).toContain('2026-01');
 });
