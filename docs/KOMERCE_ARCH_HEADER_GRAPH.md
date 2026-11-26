@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 833
-- Files with full headers: 770
+- Scanned code files: 834
+- Files with full headers: 771
 - Files with lite headers: 63
-- Files with any headers: 833
+- Files with any headers: 834
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2135
-- Edges: 10648
-- DB tables: 250
-- Doctrines: 839
+- Graph nodes: 2143
+- Edges: 10667
+- DB tables: 254
+- Doctrines: 842
 - Impact areas: 213
-- Unresolved code edges: 1008
+- Unresolved code edges: 1009
 - Tables multi-écrivains directs (>=2): 100
 - Avertissements db-write / db-write-via en chevauchement: 13
 
@@ -38,7 +38,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - dashboard: 34
 - decision-signals: 14
 - documents: 16
-- economic-engine: 70
+- economic-engine: 71
 - external-provider-contracts: 1
 - finance: 3
 - incident-management: 5
@@ -93,7 +93,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 139
 - route-manifest: 1
 - schema: 1
-- service: 510
+- service: 511
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -475,6 +475,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/documents/pdf-renderer.js — private-document-pdf-renderer (documents, high, full)
 - services/economic-config.js — economic-config-canonical-bridge (economic-engine, high, full)
 - services/economic-cost-budget-service.js — economic-cost-budget-service (economic-engine, high, full)
+- services/economic-cost-center-read-model.js — economic-cost-center-read-model (economic-engine, high, full)
 - services/economic-engine-queries.js — economic-engine-calculation-service (economic-engine, high, full)
 - services/economic-price-audit-service.js — economic-engine-product-price-audit (economic-engine, high, full)
 - services/external-provider-onboarding-contracts.js — external-provider-onboarding-contracts (external-provider-contracts, high, full)

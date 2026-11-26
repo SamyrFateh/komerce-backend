@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 833,
-    "filesWithFullHeaders": 770,
+    "scannedCodeFiles": 834,
+    "filesWithFullHeaders": 771,
     "filesWithLiteHeaders": 63,
-    "filesWithAnyHeaders": 833,
+    "filesWithAnyHeaders": 834,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2135,
-    "edges": 10648,
-    "dbTables": 250,
-    "doctrines": 839,
+    "graphNodes": 2143,
+    "edges": 10667,
+    "dbTables": 254,
+    "doctrines": 842,
     "impactAreas": 213,
-    "unresolvedCodeEdges": 1008,
+    "unresolvedCodeEdges": 1009,
     "dbWriteViaOverlapWarnings": 13,
     "multiWriterTables": 100
   },
@@ -40,7 +40,7 @@
     "admin-dashboard": 39,
     "decision-signals": 14,
     "market": 10,
-    "economic-engine": 70,
+    "economic-engine": 71,
     "sourcing": 37,
     "logistics": 75,
     "boutique": 24,
@@ -113,7 +113,7 @@
     "schema": 1,
     "route": 139,
     "entrypoint": 1,
-    "service": 510,
+    "service": 511,
     "external-adapter": 2,
     "infrastructure": 1,
     "machine": 1,
@@ -125,7 +125,7 @@
   "byCriticality": {
     "critical": 133,
     "medium": 155,
-    "high": 472,
+    "high": 473,
     "low": 72,
     "unknown": 1
   },
@@ -19085,6 +19085,63 @@
         "economic-engine",
         "finance",
         "governance"
+      ],
+      "version": "2026-11"
+    },
+    {
+      "id": "services/economic-cost-center-read-model.js",
+      "file": "services/economic-cost-center-read-model.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-cost-center-read-model",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_actor",
+        "explicit_market_scope",
+        "calendar_month"
+      ],
+      "outputs": [
+        "scoped_centers_families_resources_posts",
+        "latest_budget_revisions",
+        "outstanding_commitments",
+        "explicit_actual_coverage_status"
+      ],
+      "depends": [
+        "db",
+        "middleware/require-pricing-global-authority.js",
+        "services/market-delegation-service.js"
+      ],
+      "usedBy": [],
+      "dbRead": [
+        "markets",
+        "economic_cost_centers",
+        "economic_cost_families",
+        "economic_cost_resources",
+        "economic_cost_posts",
+        "economic_cost_budget_revisions",
+        "economic_cost_commitments",
+        "economic_cost_commitment_movements",
+        "economic_structure_cost_events"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "service_owned_read_only_repeatable_read"
+      ],
+      "doctrine": [
+        "exact_market_scope",
+        "budget_is_not_realized_cost",
+        "no_fake_zero",
+        "group_raw_not_delegated"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "finance",
+        "market-authorization"
       ],
       "version": "2026-11"
     },
@@ -41474,6 +41531,26 @@
       "table": "economic_cost_budget_revisions"
     },
     {
+      "id": "db:economic_cost_families",
+      "type": "db-table",
+      "table": "economic_cost_families"
+    },
+    {
+      "id": "db:economic_cost_resources",
+      "type": "db-table",
+      "table": "economic_cost_resources"
+    },
+    {
+      "id": "db:economic_cost_commitments",
+      "type": "db-table",
+      "table": "economic_cost_commitments"
+    },
+    {
+      "id": "db:economic_cost_commitment_movements",
+      "type": "db-table",
+      "table": "economic_cost_commitment_movements"
+    },
+    {
       "id": "db:economic_variables",
       "type": "db-table",
       "table": "economic_variables"
@@ -43802,6 +43879,21 @@
       "id": "doctrine:immutable_budget_revision",
       "type": "doctrine",
       "doctrine": "immutable_budget_revision"
+    },
+    {
+      "id": "doctrine:exact_market_scope",
+      "type": "doctrine",
+      "doctrine": "exact_market_scope"
+    },
+    {
+      "id": "doctrine:no_fake_zero",
+      "type": "doctrine",
+      "doctrine": "no_fake_zero"
+    },
+    {
+      "id": "doctrine:group_raw_not_delegated",
+      "type": "doctrine",
+      "doctrine": "group_raw_not_delegated"
     },
     {
       "id": "doctrine:couts_repartis_par_commande",
@@ -76690,6 +76782,120 @@
       "to": "impact:governance",
       "type": "impact",
       "label": "governance"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "middleware/require-pricing-global-authority.js",
+      "type": "depends",
+      "label": "middleware/require-pricing-global-authority.js"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "services/market-delegation-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-service.js"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:economic_cost_centers",
+      "type": "db-read",
+      "label": "economic_cost_centers"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:economic_cost_families",
+      "type": "db-read",
+      "label": "economic_cost_families"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:economic_cost_resources",
+      "type": "db-read",
+      "label": "economic_cost_resources"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:economic_cost_posts",
+      "type": "db-read",
+      "label": "economic_cost_posts"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:economic_cost_budget_revisions",
+      "type": "db-read",
+      "label": "economic_cost_budget_revisions"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:economic_cost_commitments",
+      "type": "db-read",
+      "label": "economic_cost_commitments"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:economic_cost_commitment_movements",
+      "type": "db-read",
+      "label": "economic_cost_commitment_movements"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:economic_structure_cost_events",
+      "type": "db-read",
+      "label": "economic_structure_cost_events"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "doctrine:exact_market_scope",
+      "type": "doctrine",
+      "label": "exact_market_scope"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "doctrine:budget_is_not_realized_cost",
+      "type": "doctrine",
+      "label": "budget_is_not_realized_cost"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "doctrine:no_fake_zero",
+      "type": "doctrine",
+      "label": "no_fake_zero"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "doctrine:group_raw_not_delegated",
+      "type": "doctrine",
+      "label": "group_raw_not_delegated"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "impact:market-authorization",
+      "type": "impact",
+      "label": "market-authorization"
     },
     {
       "from": "services/economic-engine-queries.js",
@@ -112759,7 +112965,8 @@
         "impact:pricing",
         "routes/admin-pricing-workspace.js",
         "services/central-authority.js",
-        "services/economic-cost-budget-service.js"
+        "services/economic-cost-budget-service.js",
+        "services/economic-cost-center-read-model.js"
       ]
     },
     "middleware/require-recent-auth.js": {
@@ -130706,6 +130913,65 @@
         "services/fx-authority.js"
       ]
     },
+    "services/economic-cost-center-read-model.js": {
+      "role": "economic-cost-center-read-model",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "middleware/require-pricing-global-authority.js",
+        "services/market-delegation-service.js"
+      ],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [
+        "markets",
+        "economic_cost_centers",
+        "economic_cost_families",
+        "economic_cost_resources",
+        "economic_cost_posts",
+        "economic_cost_budget_revisions",
+        "economic_cost_commitments",
+        "economic_cost_commitment_movements",
+        "economic_structure_cost_events"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "exact_market_scope",
+        "budget_is_not_realized_cost",
+        "no_fake_zero",
+        "group_raw_not_delegated"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "finance",
+        "market-authorization"
+      ],
+      "mustCheck": [
+        "db:economic_cost_budget_revisions",
+        "db:economic_cost_centers",
+        "db:economic_cost_commitment_movements",
+        "db:economic_cost_commitments",
+        "db:economic_cost_families",
+        "db:economic_cost_posts",
+        "db:economic_cost_resources",
+        "db:economic_structure_cost_events",
+        "db:markets",
+        "doctrine:budget_is_not_realized_cost",
+        "doctrine:exact_market_scope",
+        "doctrine:group_raw_not_delegated",
+        "doctrine:no_fake_zero",
+        "impact:economic-engine",
+        "impact:finance",
+        "impact:market-authorization",
+        "middleware/require-pricing-global-authority.js",
+        "services/market-delegation-service.js"
+      ]
+    },
     "services/economic-engine-queries.js": {
       "role": "economic-engine-calculation-service",
       "domain": "economic-engine",
@@ -135426,6 +135692,7 @@
         "services/cash-custody-service.js",
         "services/cash-deposit-service.js",
         "services/dashboard-admin-context.js",
+        "services/economic-cost-center-read-model.js",
         "services/finance-accounting-workspace.js",
         "services/market-cash-control-policy-service.js",
         "services/market-control-plane.js",
@@ -156415,6 +156682,12 @@
     },
     {
       "from": "services/economic-cost-budget-service.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
       "to": "db",
       "type": "depends",
       "label": "db"
