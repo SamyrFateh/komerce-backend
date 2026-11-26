@@ -158,6 +158,7 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     } })).toBe('Hub · CM, CG');
     expect(nav.hubMarketScopeLabel({ access: { mode: 'global' } })).toBe('Global · Tous les marchés');
     expect(nav.hubMarketScopeLabel({ access: { mode: 'hub' } })).toBe('Global · Tous les marchés');
+    expect(nav.hubMarketScopeLabel(null, { role: 'admin' })).toBe('Global · Tous les marchés');
   });
 
   test('admin sees domain groups (Commerce / Opérations / Finance) with existing destinations only', () => {

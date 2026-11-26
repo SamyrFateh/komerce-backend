@@ -1102,10 +1102,9 @@
       .filter(group => group.items.length > 0);
   }
 
-  function hubMarketScopeLabel(adminContext) {
+  function hubMarketScopeLabel(adminContext, user = global.KOMERCE_CANONICAL_AUTH_USER) {
     const access = adminContext?.access;
-    if (access?.mode === 'global') return 'Global · Tous les marchés';
-    if (access?.mode === 'hub') return 'Global · Tous les marchés';
+    if (access?.mode === 'global' || access?.mode === 'hub' || roleOf(user) === 'admin') return 'Global · Tous les marchés';
     if (!access) return 'Hub · Périmètre non déterminé';
     const markets = Array.isArray(access.allowedMarkets) ? access.allowedMarkets : [];
     const selected = access.defaultMarket && markets.includes(access.defaultMarket)
