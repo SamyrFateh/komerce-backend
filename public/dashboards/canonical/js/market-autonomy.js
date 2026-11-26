@@ -394,7 +394,14 @@
       }
       renderPrices(marketCode, workspace, prices);
     } catch (error) {
-      if (embedded && error.status === 403) { root.replaceChildren(); return; }
+      if (embedded) {
+        root.replaceChildren();
+        if (error.status !== 403) {
+          const notice = el('p', 'kmc-workspace-note', 'Prix locaux indisponibles · '+error.message);
+          notice.setAttribute('role','status'); root.appendChild(notice);
+        }
+        return;
+      }
       if (!embedded && await renderAuthorizedNetworkOnly(error)) return;
       root.className = 'canonical-boot';
       root.replaceChildren();
