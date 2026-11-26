@@ -320,6 +320,25 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
   describe('purchasing-grouped-service', () => {
     beforeEach(() => newSchema());
 
+
+    it.each([
+      ['pending','pending','ORDER_PAYMENT_NOT_CONFIRMED'],
+      ['refunded','refunded','ORDER_CANCELLED'],
+      ['cancelled','paid','ORDER_CANCELLED'],
+    ])('P0 : refus préparation et rattachement après état %s/%s', async(status,payment,code)=>{
+      const supplier=await seedSupplier();
+      const source=await seedItem();
+      const line=await seedLine({supplier,item:source.item});
+      const eligible=await seedLine({supplier});
+      const {purchase_order:po}=await grouped.preparePurchaseOrder({supplier_id:supplier,procurement_hub_ref:'DXB',line_ids:[eligible]});
+      await q('UPDATE orders SET status=$2,payment_status=$3 WHERE id=$1',[source.order,status,payment]);
+      const count=await poCount();
+      await expect(grouped.preparePurchaseOrder({supplier_id:supplier,procurement_hub_ref:'DXB',line_ids:[line]})).rejects.toMatchObject({status:409,code});
+      await expect(grouped.attachDraftLines(po.id,[line])).rejects.toMatchObject({status:409,code});
+      expect(await poCount()).toBe(count);
+      expect((await q('SELECT purchase_order_id,cancelled_at FROM purchase_lines WHERE id=$1',[line])).rows[0]).toEqual({purchase_order_id:null,cancelled_at:null});
+    });
+
     it('open-lines regroupe par (fournisseur, hub) avec agrégat par supplier_unit_ref', async () => {
       const s1 = await seedSupplier({ name: 'Alpha' });
       const s2 = await seedSupplier({ name: 'Beta' });
