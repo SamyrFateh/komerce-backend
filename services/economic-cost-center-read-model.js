@@ -386,7 +386,7 @@ async function readCostCenters(actor,raw){
        ) b ON true
        WHERE c.market_id IS NOT DISTINCT FROM $1::uuid ORDER BY p.code,p.id`,[marketId,input.periodStart]);
     const {rows:commitments}=await client.query(
-      `SELECT k.id,k.post_id,k.currency,k.amount_native::text AS initial_native,k.amount_eur::text AS initial_eur,
+      `SELECT k.id,k.post_id,k.currency,k.evidence_ref,k.amount_native::text AS initial_native,k.amount_eur::text AS initial_eur,
          (k.amount_native-COALESCE(m.used,0))::text AS remaining_native,
          COALESCE(m.has_correction,false) AS requires_reconciliation
        FROM economic_cost_commitments k
@@ -400,6 +400,10 @@ async function readCostCenters(actor,raw){
        WHERE c.market_id IS NOT DISTINCT FROM $1::uuid AND k.period_start=$2::date ORDER BY k.id`,[marketId,input.periodStart]);
     const {rows:structureEvents}=await client.query(
       `SELECT e.id,p.id AS post_id,p.center_id,e.amount_kmf::text AS amount_kmf,
+        e.currency,e.evidence_ref,e.event_kind,
+        CASE WHEN e.event_kind='ACCRUAL' AND e.amount_original>0
+          AND NOT EXISTS (SELECT 1 FROM economic_structure_cost_events corr WHERE corr.adjusts_event_id=e.id)
+          THEN (e.amount_original-COALESCE((SELECT SUM(m.amount_native) FROM economic_cost_commitment_movements m WHERE m.structure_event_id=e.id),0))::text END AS consumable_native,
         (e.economic_from>=($2::date::timestamp AT TIME ZONE 'UTC')
           AND e.economic_to<=(($2::date+interval '1 month') AT TIME ZONE 'UTC')) AS whole_period
        FROM economic_structure_cost_events e
@@ -413,7 +417,7 @@ async function readCostCenters(actor,raw){
     for(const k of commitments){if(!byPost.has(k.post_id))byPost.set(k.post_id,[]);byPost.get(k.post_id).push({...k,remaining_eur:commitmentRemainingEur(k)});}
     const projectStructure=structureEurProjector(client);
     const model=await Promise.all(posts.map(async p=>({...p,budget:p.budget_revision===null?null:{revision:p.budget_revision,currency:p.budget_currency,native:p.budget_native,eur:p.budget_eur},
-      commitments:byPost.get(p.id)||[],structureEvidence:await projectStructure(structureEvents.filter(e=>e.post_id===p.id)),actual:null,available:null,coverage:'NOT_RECONCILED'})));
+      commitments:byPost.get(p.id)||[],eligibleStructureFacts:structureEvents.filter(e=>e.post_id===p.id&&e.whole_period&&e.consumable_native!=null&&/^[0-9]+(?:\.[0-9]+)?$/.test(e.consumable_native)&&/[1-9]/.test(e.consumable_native)).map(e=>({id:e.id,currency:e.currency,evidenceRef:e.evidence_ref,remainingNative:e.consumable_native})),structureEvidence:await projectStructure(structureEvents.filter(e=>e.post_id===p.id)),actual:null,available:null,coverage:'NOT_RECONCILED'})));
     const centerModels=await Promise.all(centers.map(async c=>({...c,budgetSummary:budgetSummary(model.filter(p=>p.center_id===c.id)),commitmentSummary:commitmentSummary(model.filter(p=>p.center_id===c.id)),structureEvidence:await projectStructure(structureEvents.filter(e=>e.center_id===c.id))})));
     const structureEvidence=await projectStructure(structureEvents);
     const history=await loadShipmentActivity(client,marketId,input.periodStart,{includeHistory:true});

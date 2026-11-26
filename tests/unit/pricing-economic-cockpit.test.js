@@ -142,3 +142,15 @@ test('budget form is contextual and hidden for non-central readers',()=>{
   const form=createV7BudgetForm(doc,base,base.posts[0],{reviseBudget:jest.fn()});
   expect(all(form).find(x=>x.name==='amountNative').value).toBe('100');
 });
+
+test('commitment forms expose only scoped canonical charge candidates and authorized actions',()=>{
+  const base={...activityModel,centers:[{id:'a',label:'Centre'}],families:[{id:'f',center_id:'a',label:'Famille'}],posts:[{id:'p',center_id:'a',family_id:'f',label:'Poste',commitments:[{id:'k',currency:'EUR',remaining_native:'10.0000',evidence_ref:'Contrat'}],eligibleStructureFacts:[{id:'fact',currency:'EUR',remainingNative:'5.00',evidenceRef:'Facture'},{id:'other',currency:'KMF',remainingNative:'10.00',evidenceRef:'Autre devise'}]}]};
+  for(const central of [false,true]){
+    const view=createV7CostCenters(doc,{...base,central},{openCommitment:jest.fn(),moveCommitment:jest.fn()});
+    find(view,'Consulter').click();find(view,'Poste').click();
+    expect(Boolean(find(view,'Enregistrer l’engagement'))).toBe(central);
+    expect(Boolean(find(view,'Libérer'))).toBe(central);
+    expect(Boolean(find(view,'Consommer l’engagement'))).toBe(central);
+    expect(all(view).some(x=>x.value==='other')).toBe(false);
+  }
+});

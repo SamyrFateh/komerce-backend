@@ -210,6 +210,18 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     const model=(await get(fx.central,fx.marketA.code)).body;
     expect(model.posts.find(p=>p.id===a.post).commitments.find(x=>x.id===k.id)).toMatchObject({remaining_native:'60.2500'});
     expect(await count()).toBe(before);
+    const fact=model.posts.find(p=>p.id===a.post).eligibleStructureFacts.find(x=>x.currency==='KMF');
+    expect(fact).toBeDefined();
+    const local=await post(fx.central,fx.marketA.code,path,{...body,currency:'KMF',amountNative:'1000',requestKey:tag+'KMF'});
+    expect(local.status).toBe(201);
+    const consume='/commitments/'+local.body.commitment.id+'/movements';
+    const used={periodStart:month,kind:'CONSUME_STRUCTURE',amountNative:'500',structureEventId:fact.id,evidenceRef:'CI matching',requestKey:tag+'USE'};
+    expect((await post(fx.central,fx.marketA.code,consume,used)).status).toBe(201);
+    expect((await post(fx.central,fx.marketA.code,consume,used)).body.outcome).toBe('replayed');
+    const read=(await get(fx.central,fx.marketA.code)).body.posts.find(p=>p.id===a.post);
+    expect(read.commitments.find(x=>x.id===local.body.commitment.id).remaining_native).toBe('500.0000');
+    expect(Number(read.eligibleStructureFacts.find(x=>x.id===fact.id).remainingNative)).toBe(500);
+    expect(await count()).toBe(before);
   });
   test('browser authority injection and invalid period rejected',async()=>{
     expect((await request(app).get(endpoint(fx.marketA.code)).query({periodStart:month,market_id:fx.marketB.id}).set('Authorization',fx.viewerA.token)).status).toBe(400);
