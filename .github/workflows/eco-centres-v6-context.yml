@@ -17,12 +17,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
-      ECO_HEAD: '29a2b1be8b07e437d60284c7a467518712b28483'
-      ECO_BASE: '1741291220a734b05e8b065ccc55eb9868e3ff21'
+      ECO_HEAD: 'f68f3b818b0842c6eca420e25270265d2d608eb3'
+      ECO_BASE: 'a3833cc1244577b4eec418357ccd3e4b7cea1ff4'
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: '29a2b1be8b07e437d60284c7a467518712b28483'
+          ref: 'f68f3b818b0842c6eca420e25270265d2d608eb3'
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v4
@@ -38,7 +38,7 @@ jobs:
           git diff --check "$ECO_BASE" HEAD
           git diff --name-only "$ECO_BASE" HEAD
           test "$(git diff --name-only "$ECO_BASE" HEAD | wc -l)" -eq 4
-          git diff --name-only "$ECO_BASE" HEAD | grep -v '^docs/doctrine/DOCTRINE_' && exit 1 || test "${PIPESTATUS[1]}" -eq 1
+          test -z "$(git diff --name-only "$ECO_BASE" HEAD | grep -v '^docs/doctrine/DOCTRINE_' || true)"
       - name: Refresh canonical context
         run: |
           npm run agent:context -- --pack service --feature economic-engine
