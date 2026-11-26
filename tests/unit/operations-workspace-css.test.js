@@ -86,3 +86,8 @@ test('C1 : tableau COMBOX borné et fiche d’action unique dans le poste',()=>{
   expect(css).toContain('.kmc-hub-po-v8-actions .kmc-hub-workshop-table thead th {position:sticky');
   expect(css).toContain('.kmc-hub-po-v8-actions .kmc-hub-workshop-action[hidden] {display:none;}');
 });
+
+test('C2 : actions de départ sur une ligne et tableau dimensionné',()=>{
+ expect(css).toContain('.kmc-hub-po-v8-actions .kmc-workshop-inline-actions {display:flex');
+ expect(css).toContain('.kmc-hub-po-v8-actions .kmc-hub-departure-table th:last-child {width:18%;}');
+});
