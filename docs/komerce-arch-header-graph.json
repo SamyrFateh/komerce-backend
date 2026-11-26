@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 2143,
-    "edges": 10667,
+    "edges": 10669,
     "dbTables": 254,
     "doctrines": 842,
     "impactAreas": 213,
@@ -7081,7 +7081,8 @@
         "services/market-commercial-price-service.js",
         "services/market-local-price-activation-service.js",
         "services/pricing-period-structure.js",
-        "services/market-cost-attribution-service.js"
+        "services/market-cost-attribution-service.js",
+        "services/economic-cost-center-read-model.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
@@ -19115,7 +19116,9 @@
         "middleware/require-pricing-global-authority.js",
         "services/market-delegation-service.js"
       ],
-      "usedBy": [],
+      "usedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
       "dbRead": [
         "markets",
         "economic_cost_centers",
@@ -57460,6 +57463,12 @@
       "label": "services/market-cost-attribution-service.js"
     },
     {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/economic-cost-center-read-model.js",
+      "type": "depends",
+      "label": "services/economic-cost-center-read-model.js"
+    },
+    {
       "from": "bootstrap/api-routes.js",
       "to": "routes/admin-pricing-workspace.js",
       "type": "uses",
@@ -76800,6 +76809,12 @@
       "to": "services/market-delegation-service.js",
       "type": "depends",
       "label": "services/market-delegation-service.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/economic-cost-center-read-model.js",
+      "type": "uses",
+      "label": "routes/admin-pricing-workspace.js"
     },
     {
       "from": "services/economic-cost-center-read-model.js",
@@ -118786,7 +118801,8 @@
         "services/market-commercial-price-service.js",
         "services/market-local-price-activation-service.js",
         "services/pricing-period-structure.js",
-        "services/market-cost-attribution-service.js"
+        "services/market-cost-attribution-service.js",
+        "services/economic-cost-center-read-model.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
@@ -118872,6 +118888,7 @@
         "middleware/require-market-delegated-capability.js",
         "middleware/require-pricing-global-authority.js",
         "services/cost-component-market-service.js",
+        "services/economic-cost-center-read-model.js",
         "services/market-commercial-price-service.js",
         "services/market-cost-attribution-service.js",
         "services/market-local-price-activation-service.js",
@@ -130925,7 +130942,9 @@
         "middleware/require-pricing-global-authority.js",
         "services/market-delegation-service.js"
       ],
-      "directUsedBy": [],
+      "directUsedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
       "ownedFiles": [],
       "dbRead": [
         "markets",
@@ -130969,6 +130988,7 @@
         "impact:finance",
         "impact:market-authorization",
         "middleware/require-pricing-global-authority.js",
+        "routes/admin-pricing-workspace.js",
         "services/market-delegation-service.js"
       ]
     },
