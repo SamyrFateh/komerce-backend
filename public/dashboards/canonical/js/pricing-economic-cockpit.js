@@ -72,7 +72,8 @@
       return summary.recordedEur==null?'À rapprocher':v7Money(summary.recordedEur)+' · partiel ('+summary.coveredCommitments+'/'+summary.totalCommitments+')';
     }
     function structureText(evidence){
-      return evidence?.amountKmf!=null?v7Money(evidence.amountKmf,'KMF')+' · structure partielle':'À rapprocher';
+      if(evidence?.amountEur!=null)return v7Money(evidence.amountEur,'EUR')+' · structure partielle';
+      return evidence?.amountKmf!=null?v7Money(evidence.amountKmf,'KMF')+' · structure partielle (EUR indisponible)':'À rapprocher';
     }
     function metrics(summary,commitments,evidence){
       const row=el(doc,'div','kmc-v7-kpis');

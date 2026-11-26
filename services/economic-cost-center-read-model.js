@@ -17,7 +17,7 @@
  */
 'use strict';
 const db = require('../db');
-const {parseDecimal,roundHalfEven}=require('./fx-authority');
+const {parseDecimal,roundHalfEven,convert,FxError}=require('./fx-authority');
 const {hasPricingGlobalAuthority} = require('../middleware/require-pricing-global-authority');
 const {resolveAuthorization} = require('./market-delegation-service');
 function error(code,status,message){return Object.assign(new Error(message),{code,status});}
@@ -93,6 +93,31 @@ function structureEvidenceSummary(events){
   const amountKmf=included?(cents<0n?'-':'')+abs.slice(0,-2)+'.'+abs.slice(-2):null;
   return {amountKmf,included,unmapped,crossPeriod,invalid,coverage:'STRUCTURE_EVIDENCE_ONLY'};
 }
+// Projection of the immutable KMF journal subtotal, not a second expense.
+ // The governed fixed parity is read within the same database snapshot.
+ // Explicitly identify the projection; never reinterpret original FX evidence.
+function structureEurProjector(client){
+  const cache=new Map();
+  return async function project(events){
+    const summary=structureEvidenceSummary(events);
+    const empty={...summary,amountEur:null,fxLegs:[],fxStatus:'NO_EVIDENCE'};
+    if(summary.amountKmf===null)return empty;
+    const amount=summary.amountKmf;
+    if(!cache.has(amount)){
+      cache.set(amount,(async()=>{
+        try{
+          const x=await convert({amount,from:'KMF',to:'EUR',client});
+          return {amountEur:x.amount_text,fxLegs:x.legs,fxStatus:'GOVERNED_FIXED_PARITY_PROJECTION'};
+        }catch(e){
+          if(e instanceof FxError&&e.code==='fx_rate_unavailable')
+            return {amountEur:null,fxLegs:[],fxStatus:'FX_UNAVAILABLE'};
+          throw e;
+        }
+      })());
+    }
+    return {...summary,...await cache.get(amount)};
+  };
+}
 async function readCostCenters(actor,raw){
   if(!actor?.id)throw error('AUTH_REQUIRED',401,'Authentification requise');
   const input=validate(raw);
@@ -142,11 +167,14 @@ async function readCostCenters(actor,raw){
        ORDER BY e.id`,[marketId,input.periodStart]);
     const byPost=new Map();
     for(const k of commitments){if(!byPost.has(k.post_id))byPost.set(k.post_id,[]);byPost.get(k.post_id).push({...k,remaining_eur:commitmentRemainingEur(k)});}
-    const model=posts.map(p=>({...p,budget:p.budget_revision===null?null:{revision:p.budget_revision,currency:p.budget_currency,native:p.budget_native,eur:p.budget_eur},
-      commitments:byPost.get(p.id)||[],structureEvidence:structureEvidenceSummary(structureEvents.filter(e=>e.post_id===p.id)),actual:null,available:null,coverage:'NOT_RECONCILED'}));
+    const projectStructure=structureEurProjector(client);
+    const model=await Promise.all(posts.map(async p=>({...p,budget:p.budget_revision===null?null:{revision:p.budget_revision,currency:p.budget_currency,native:p.budget_native,eur:p.budget_eur},
+      commitments:byPost.get(p.id)||[],structureEvidence:await projectStructure(structureEvents.filter(e=>e.post_id===p.id)),actual:null,available:null,coverage:'NOT_RECONCILED'})));
+    const centerModels=await Promise.all(centers.map(async c=>({...c,budgetSummary:budgetSummary(model.filter(p=>p.center_id===c.id)),commitmentSummary:commitmentSummary(model.filter(p=>p.center_id===c.id)),structureEvidence:await projectStructure(structureEvents.filter(e=>e.center_id===c.id))})));
+    const structureEvidence=await projectStructure(structureEvents);
     await client.query('COMMIT');
     return {scope:input.marketCode===null?'GROUP':'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,central,readOnly:true,
-      centers:centers.map(c=>({...c,budgetSummary:budgetSummary(model.filter(p=>p.center_id===c.id)),commitmentSummary:commitmentSummary(model.filter(p=>p.center_id===c.id)),structureEvidence:structureEvidenceSummary(structureEvents.filter(e=>e.center_id===c.id))})),families,resources,posts:model,budgetSummary:budgetSummary(model),commitmentSummary:commitmentSummary(model),structureEvidence:structureEvidenceSummary(structureEvents),actualCoverage:'NOT_RECONCILED',available:null};
+      centers:centerModels,families,resources,posts:model,budgetSummary:budgetSummary(model),commitmentSummary:commitmentSummary(model),structureEvidence,actualCoverage:'NOT_RECONCILED',available:null};
   }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
 }
-module.exports={readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary};
+module.exports={readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector};

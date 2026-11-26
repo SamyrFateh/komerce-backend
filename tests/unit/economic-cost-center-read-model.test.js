@@ -4,7 +4,7 @@ const mockQuery=jest.fn(),mockRelease=jest.fn(),mockClient=jest.fn(),mockGrant=j
 jest.mock('../../db',()=>({getClient:(...a)=>mockClient(...a)}));
 jest.mock('../../middleware/require-pricing-global-authority',()=>({hasPricingGlobalAuthority:(...a)=>mockGrant(...a)}));
 jest.mock('../../services/market-delegation-service',()=>({resolveAuthorization:(...a)=>mockAuthz(...a)}));
-const {readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary}=require('../../services/economic-cost-center-read-model');
+const {readCostCenters,budgetSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector}=require('../../services/economic-cost-center-read-model');
 const client={query:mockQuery,release:mockRelease},actor={id:'actor',role:'admin'},month='2026-01-01';
 const ok=(rows=[])=>({rows});
 beforeEach(()=>{jest.resetAllMocks();mockClient.mockResolvedValue(client);mockGrant.mockResolvedValue(true);});
@@ -70,4 +70,19 @@ test('structure evidence sums signed canonical amounts and excludes unmapped and
   expect(structureEvidenceSummary([{post_id:'p',whole_period:true,amount_kmf:'100.10'},{post_id:'p',whole_period:true,amount_kmf:'-10.01'},{post_id:'p',whole_period:false,amount_kmf:'500.00'},{post_id:null,whole_period:true,amount_kmf:'999.00'}])).toEqual({amountKmf:'90.09',included:2,unmapped:1,crossPeriod:1,invalid:0,coverage:'STRUCTURE_EVIDENCE_ONLY'});
   expect(structureEvidenceSummary([]).amountKmf).toBeNull();
   expect(structureEvidenceSummary([{post_id:'p',whole_period:true,amount_kmf:'-1.01'}]).amountKmf).toBe('-1.01');
+});
+
+test('structure EUR is projected via governed KMF parity, cached within read transaction',async()=>{
+  const query=jest.fn().mockResolvedValue({rows:[{rate:'491.96775',updated_at:'2026-01-01T00:00:00Z'}]});
+  const project=structureEurProjector({query});
+  const rows=[{post_id:'p',whole_period:true,amount_kmf:'1000.00'}];
+  const result=await project(rows);
+  expect(result).toMatchObject({amountKmf:'1000.00',amountEur:'2.03',fxStatus:'GOVERNED_FIXED_PARITY_PROJECTION'});
+  expect(result.fxLegs[0]).toMatchObject({pair:'EUR/KMF',rate:'491.96775',source:'currency_parities'});
+  await project(rows);expect(query).toHaveBeenCalledTimes(1);
+  expect(await project([])).toMatchObject({amountEur:null,fxStatus:'NO_EVIDENCE'});
+});
+test('missing governed parity preserves KMF evidence and never fabricates EUR',async()=>{
+  const project=structureEurProjector({query:jest.fn().mockResolvedValue({rows:[]})});
+  expect(await project([{post_id:'p',whole_period:true,amount_kmf:'1000.00'}])).toMatchObject({amountKmf:'1000.00',amountEur:null,fxStatus:'FX_UNAVAILABLE'});
 });

@@ -68,7 +68,9 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect(response.body.centers.find(c=>c.id===a.center).commitmentSummary.totalEur).toBe('70.00');
     expect(response.body.budgetSummary.totalEur).toBe(actual);
     expect(p.structureEvidence).toMatchObject({amountKmf:'1000.00',included:1,crossPeriod:1});
-    expect(response.body.structureEvidence).toMatchObject({amountKmf:'1000.00',included:1,crossPeriod:1});
+    expect(response.body.structureEvidence).toMatchObject({amountKmf:'1000.00',amountEur:'2.03',fxStatus:'GOVERNED_FIXED_PARITY_PROJECTION',included:1,crossPeriod:1});
+    expect(response.body.structureEvidence.fxLegs[0]).toMatchObject({pair:'EUR/KMF',source:'currency_parities'});
+    expect(response.body.centers.find(c=>c.id===a.center).structureEvidence.amountEur).toBe('2.03');
     expect(p.actual).toBeNull();expect(p.available).toBeNull();
   });
   test('market reader can read own scope only; group and foreign market refused',async()=>{
