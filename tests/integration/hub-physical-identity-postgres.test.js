@@ -166,6 +166,7 @@ beforeAll(async () => {
     await client.query(`
       CREATE TABLE markets (id uuid PRIMARY KEY);
       CREATE TABLE users (id uuid PRIMARY KEY);
+      CREATE TABLE relais (id uuid PRIMARY KEY);
       CREATE TABLE suppliers (id uuid PRIMARY KEY, system_key text);
       CREATE TABLE product_skus (id uuid PRIMARY KEY);
       CREATE TABLE orders (
@@ -247,7 +248,7 @@ beforeAll(async () => {
       ADD COLUMN order_id uuid, ADD COLUMN bag_plan jsonb`);
     await client.query(`ALTER TABLE hub_physical_unit_placements
       ADD COLUMN evidence_method text, ADD COLUMN evidence_code text, ADD COLUMN evidence_ref text`);
-    for (const name of ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql', '306_purchase_line_progress_physical.sql', '309_hub_placement_guard_exclude_outcomes.sql', '404_manual_purchase_executions.sql', '414_purchase_line_received_quantity.sql', '425_purchase_line_confirmed_currency.sql', '450_hub_supplier_receipt_quality.sql']) {
+    for (const name of ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql', '306_purchase_line_progress_physical.sql', '309_hub_placement_guard_exclude_outcomes.sql', '404_manual_purchase_executions.sql', '414_purchase_line_received_quantity.sql', '425_purchase_line_confirmed_currency.sql', '427_hub_opaque_scan_labels.sql', '450_hub_supplier_receipt_quality.sql']) {
       await client.query(fs.readFileSync(path.join(__dirname, '../../migrations', name), 'utf8').replace(/public\./g, `${schema}.`));
     }
   } finally {
