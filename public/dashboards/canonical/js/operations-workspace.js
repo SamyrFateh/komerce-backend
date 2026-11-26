@@ -1978,7 +1978,8 @@
           button.addEventListener('click',()=>{if(pending)return;if(selectedBoxId===id)return;selectedBoxId=id;showSelected();});
           cell.appendChild(button);row.appendChild(cell);body.appendChild(row);buttons.push([id,button,row]);
         }
-        list.append(table,actionPanel);showSelected();
+        const tableViewport=doc.createElement('div');tableViewport.className='kmc-hub-workshop-table-viewport';
+        tableViewport.appendChild(table);list.append(tableViewport,actionPanel);showSelected();
       }else for(const box of boxes){
         const details=doc.createElement('details');details.setAttribute('data-hub-inline-box',box.unit_id);
         details.appendChild(text(doc,'summary','',box.reference+' · '+(BOX_STATE_LABELS[box.state]||box.state)+' · '+(box.contents||[]).reduce((n,r)=>n+Number(r.qty||0),0)+' article(s)'));
