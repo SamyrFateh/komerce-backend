@@ -57,7 +57,7 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
         CREATE TABLE product_skus (id uuid PRIMARY KEY);
         CREATE TABLE products (id uuid PRIMARY KEY, name text);
         CREATE TABLE markets (id uuid PRIMARY KEY, code text NOT NULL UNIQUE, name text NOT NULL);
-        CREATE TABLE orders (id uuid PRIMARY KEY, reference text, market_id uuid REFERENCES markets(id), created_at timestamptz NOT NULL DEFAULT now());
+        CREATE TABLE orders (id uuid PRIMARY KEY, reference text, market_id uuid REFERENCES markets(id), created_at timestamptz NOT NULL DEFAULT now(), status text NOT NULL DEFAULT 'ordered', payment_status text NOT NULL DEFAULT 'paid');
         CREATE FUNCTION prevent_orders_market_id_mutation() RETURNS trigger AS $f$
         BEGIN
           IF NEW.market_id IS DISTINCT FROM OLD.market_id THEN RAISE EXCEPTION 'orders_market_id_immutable'; END IF;
@@ -69,7 +69,8 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
           id uuid PRIMARY KEY,
           order_id uuid NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
           product_id uuid,
-          quantity integer NOT NULL DEFAULT 1
+          quantity integer NOT NULL DEFAULT 1,
+          fulfillment_source text NOT NULL DEFAULT 'IMPORT'
         );
         -- Décisions d'autorisation (migration 380) : le contenu d'une PO engagée est figé, le service le vérifie.
         CREATE TABLE purchase_order_authorizations (purchase_order_id uuid NOT NULL, authorization_type text NOT NULL);
@@ -318,6 +319,25 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
   // ─── services ─────────────────────────────────────────────────────────────────────────────────
   describe('purchasing-grouped-service', () => {
     beforeEach(() => newSchema());
+
+
+    it.each([
+      ['pending','pending','ORDER_PAYMENT_NOT_CONFIRMED'],
+      ['refunded','refunded','ORDER_CANCELLED'],
+      ['cancelled','paid','ORDER_CANCELLED'],
+    ])('P0 : refus préparation et rattachement après état %s/%s', async(status,payment,code)=>{
+      const supplier=await seedSupplier();
+      const source=await seedItem();
+      const line=await seedLine({supplier,item:source.item});
+      const eligible=await seedLine({supplier});
+      const {purchase_order:po}=await grouped.preparePurchaseOrder({supplier_id:supplier,procurement_hub_ref:'DXB',line_ids:[eligible]});
+      await q('UPDATE orders SET status=$2,payment_status=$3 WHERE id=$1',[source.order,status,payment]);
+      const count=await poCount();
+      await expect(grouped.preparePurchaseOrder({supplier_id:supplier,procurement_hub_ref:'DXB',line_ids:[line]})).rejects.toMatchObject({status:409,code});
+      await expect(grouped.attachDraftLines(po.id,[line])).rejects.toMatchObject({status:409,code});
+      expect(await poCount()).toBe(count);
+      expect((await q('SELECT purchase_order_id,cancelled_at FROM purchase_lines WHERE id=$1',[line])).rows[0]).toEqual({purchase_order_id:null,cancelled_at:null});
+    });
 
     it('open-lines regroupe par (fournisseur, hub) avec agrégat par supplier_unit_ref', async () => {
       const s1 = await seedSupplier({ name: 'Alpha' });
@@ -622,6 +642,21 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
       await cancelOrder(order);
       expect((await q('SELECT status FROM purchase_orders WHERE id = $1', [po.id])).rows[0].status).toBe('draft');
       expect((await q('SELECT purchase_order_id, cancelled_at FROM purchase_lines WHERE id = $1', [other])).rows[0]).toMatchObject({ purchase_order_id: po.id, cancelled_at: null });
+    });
+
+
+    it('P0 annulation après engagement, avant soumission : conserve lignes, autorisation et alerte',async()=>{
+      const supplier=await seedSupplier();
+      const {order,item}=await seedItem();
+      const mine=await seedLine({supplier,item});
+      const {purchase_order:po}=await grouped.preparePurchaseOrder({supplier_id:supplier,procurement_hub_ref:'DXB',line_ids:[mine]});
+      await q("INSERT INTO purchase_order_authorizations(purchase_order_id,authorization_type) VALUES($1,'purchase_commitment')",[po.id]);
+      const result=await cancelOrder(order);
+      expect(result).toMatchObject({lines_cancelled:0,blocking:1,auto_cancelled:0});
+      expect(result.blocking_pos[0]).toMatchObject({id:po.id,status:'draft',purchase_line_ids:[mine]});
+      expect((await q('SELECT purchase_order_id,cancelled_at FROM purchase_lines WHERE id=$1',[mine])).rows[0]).toEqual({purchase_order_id:po.id,cancelled_at:null});
+      expect((await q('SELECT authorization_type FROM purchase_order_authorizations WHERE purchase_order_id=$1',[po.id])).rows).toEqual([{authorization_type:'purchase_commitment'}]);
+      expect(mockCreateAlert).toHaveBeenCalledWith(expect.anything(),expect.objectContaining({type:'order_cancel_purchasing_blocked'}));
     });
 
     it('PO regroupée déjà soumise : rien d\'annulé, alerte avec purchase_line_ids', async () => {

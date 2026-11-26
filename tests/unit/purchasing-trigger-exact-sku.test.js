@@ -44,6 +44,8 @@ function makeClient(handler) {
         /^SAVEPOINT /.test(normalized) || /^RELEASE SAVEPOINT/.test(normalized) ||
         /^ROLLBACK TO SAVEPOINT/.test(normalized)
       ) return { rows: [], rowCount: 0 };
+      // Canonical nominal fixture: the locked source is a paid IMPORT order.
+      if (normalized.includes('AS commercial_item_id') && normalized.includes('NOWAIT')) return { rows: [{fulfillment_source:'IMPORT',order_status:'ordered',payment_status:'paid'}], rowCount:1 };
       return handler(normalized, params);
     }),
     release: jest.fn(), on: jest.fn(), removeListener: jest.fn(),

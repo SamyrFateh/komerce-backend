@@ -8,7 +8,7 @@
  * @outputs       open-line groups, draft grouped purchase order, detach/discard/cancel results
  * @depends       db, services/purchase-line-snapshot.js, utils/logger.js
  * @used-by       routes/purchasing.js, services/purchasing-admin-service.js
- * @db-read       purchase_lines, purchase_orders, order_items, orders, markets, products, suppliers, v_purchase_line_market, v_purchase_line_progress, purchase_order_authorizations
+ * @db-read       purchase_lines, purchase_orders, order_items, orders, markets, products, suppliers, v_purchase_line_market, v_purchase_line_progress, purchase_order_authorizations, relay_return_compensations, disputes, relay_product_return_receipts
  * @db-write      purchase_lines, purchase_orders
  * @db-txn        owned
  * @doctrine      docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md
@@ -90,6 +90,53 @@ function mapDbError(err) {
     return fail(409, match[1].toUpperCase(), err.message);
   }
   return err;
+}
+
+// P0 #5281: fail closed on the current commercial source, never on a UI snapshot.
+// The caller holds its PO/line locks. NOWAIT on the order prevents a lock cycle
+// with cancellation/refund transactions which may already own the order.
+async function assertCommercialPurchaseItem(client, row) {
+  if (row.fulfillment_source !== 'IMPORT') throw fail(409, 'ORDER_ITEM_LOCAL_STOCK', 'Seul un article IMPORT relève des achats Hub');
+  if (['cancelled','refunded'].includes(row.order_status)) throw fail(409, 'ORDER_CANCELLED', 'Commande annulée ou remboursée : achat interdit');
+  // SAV is not a commercial sale. A payment-mode label is never sufficient:
+  // require the persisted compensation, actual return receipt and exact original item.
+  if (row.payment_mode === 'sav_replacement') {
+    const { rows } = await commercialRead(client, `
+      SELECT c.id FROM relay_return_compensations c
+      JOIN disputes d ON d.id=c.request_id AND d.type='product_return'
+      JOIN relay_product_return_receipts r ON r.request_id=c.request_id
+      JOIN order_items origin ON origin.id=d.return_order_item_id AND origin.order_id=c.order_id
+      JOIN order_items replacement ON replacement.id=$2 AND replacement.order_id=c.replacement_order_id
+      WHERE c.replacement_order_id=$1 AND c.movement='reship' AND c.amount=0
+        AND d.order_id=c.order_id AND replacement.replacement_source_item_id=origin.id
+        AND replacement.product_id=origin.product_id AND replacement.sku_id IS NOT DISTINCT FROM origin.sku_id
+        AND replacement.fulfillment_source=origin.fulfillment_source
+        AND replacement.quantity=r.quantity AND r.quantity=d.return_quantity
+        AND replacement.price_kmf=0
+      FOR SHARE OF c,d,r,origin NOWAIT
+    `, [row.commercial_order_id, row.commercial_item_id]);
+    if (rows.length !== 1) throw fail(409, 'PURCHASE_SAV_PROOF_REQUIRED', 'Remplacement SAV sans décision et reprise physique concordantes');
+    return;
+  }
+  if (row.payment_status !== 'paid') throw fail(409, 'ORDER_PAYMENT_NOT_CONFIRMED', 'Paiement client intégral non confirmé : achat commercial interdit');
+}
+async function commercialRead(client, sql, params) {
+  try { return await client.query(sql, params); }
+  catch (error) {
+    if (error.code === '55P03') throw fail(409, 'PURCHASE_COMMERCIAL_STATE_BUSY', 'Commande en cours de modification : réessayez après actualisation');
+    throw error;
+  }
+}
+async function assertEligiblePurchaseLines(client, ids) {
+  const { rows } = await commercialRead(client, `
+    SELECT pl.id, oi.id AS commercial_item_id, o.id AS commercial_order_id, oi.fulfillment_source,
+           o.status::text AS order_status, o.payment_status::text AS payment_status, to_jsonb(o)->>'payment_mode' AS payment_mode
+      FROM purchase_lines pl JOIN order_items oi ON oi.id=pl.order_item_id JOIN orders o ON o.id=oi.order_id
+     WHERE pl.id=ANY($1::uuid[]) AND pl.cancelled_at IS NULL
+     ORDER BY o.id, oi.id, pl.id FOR SHARE OF o,oi NOWAIT
+  `, [ids]);
+  if (rows.length !== ids.length) throw fail(409, 'PURCHASE_LINES_UNAVAILABLE', 'Ligne d’achat absente ou annulée');
+  for (const row of rows) await assertCommercialPurchaseItem(client, row);
 }
 
 // HB-11 : une PO regroupée se réceptionne par variante ; une ligne sans product_sku_id ne correspondrait à aucune réception.
@@ -345,6 +392,7 @@ async function preparePurchaseOrder({ supplier_id, procurement_hub_ref, line_ids
 
     await client.query('SELECT id FROM purchase_lines WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE', [ids]);
     await assertLinesHaveVariant(client, ids);
+    await assertEligiblePurchaseLines(client, ids);
     // I2 : rattachement uniquement depuis l'état ouvert ; tout écart de compte annule tout.
     const { rows: attached } = await client.query(`
       UPDATE purchase_lines
@@ -381,6 +429,7 @@ async function attachDraftLines(poId, lineIds) {
     await assertCommitmentNotAuthorized(client, po.id);
     await client.query('SELECT id FROM purchase_lines WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE', [ids]);
     await assertLinesHaveVariant(client, ids);
+    await assertEligiblePurchaseLines(client, ids);
     const { rows: attached } = await client.query(`
       UPDATE purchase_lines
          SET purchase_order_id = $1, updated_at = NOW()
@@ -431,6 +480,7 @@ async function discardPurchaseOrder(poId) {
 
   return withTransaction(async (client) => {
     const po = await lockGroupedPo(client, poId);
+    await assertCommitmentNotAuthorized(client, po.id);
     await client.query('SELECT id FROM purchase_lines WHERE purchase_order_id = $1 ORDER BY id FOR UPDATE', [po.id]);
     const { rows: detached } = await client.query(`
       UPDATE purchase_lines SET purchase_order_id = NULL, updated_at = NOW()
@@ -474,6 +524,7 @@ async function cancelLine(lineId, reason) {
     }
 
     if (po) {
+      await assertCommitmentNotAuthorized(client, po.id);
       await client.query('UPDATE purchase_lines SET purchase_order_id = NULL, updated_at = NOW() WHERE id = $1', [lineId]);
     }
     await client.query(
@@ -486,7 +537,7 @@ async function cancelLine(lineId, reason) {
 
 // Partagé avec purchasing-engagement-service (PR 5) : mêmes erreurs, même transaction, même ordre de verrouillage.
 const shared = {
-  fail, requireUuid, withTransaction, lockGroupedPo,
+  fail, requireUuid, withTransaction, lockGroupedPo, assertCommitmentNotAuthorized, assertCommercialPurchaseItem, commercialRead,
   loadPurchaseOrderLines, summarizeMarkets, shapeLine, LINE_COLUMNS, LINE_JOINS,
 };
 

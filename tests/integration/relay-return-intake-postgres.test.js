@@ -17,7 +17,7 @@ if (!process.env.DATABASE_URL) {
   const intake=require('../../services/relay-product-return-intake-service');
   const uid=()=>randomUUID();
   const tag='RETINT-'+randomBytes(6).toString('hex').toUpperCase();
-  const ids={orders:[],items:[],products:[],disputes:[],receipts:[],refunds:[],relais:[],users:[]};
+  const ids={orders:[],items:[],products:[],disputes:[],receipts:[],refunds:[],relais:[],users:[],suppliers:[],mappings:[]};
   let client,market,admin,relayA,relayB,reqA,reqB,prodA,agentA,agentB;
   const sql=(stmt,params)=>client.query(stmt,params);
   const receive=(requestId,actor=agentA,zone='A')=>intake.recordIntake({
@@ -92,9 +92,13 @@ if (!process.env.DATABASE_URL) {
           ['order_status_history','order_id',ids.orders],
           ['relay_product_return_receipts','request_id',ids.disputes],
           ['disputes','id',ids.disputes],
+          ['alerts','entity_id',ids.orders],
+          ['purchase_lines','order_item_id',ids.items],
           ['order_items','id',ids.items],
           ['orders','id',ids.orders],
+          ['product_suppliers','id',ids.mappings],
           ['products','id',ids.products],
+          ['suppliers','id',ids.suppliers],
           ['relais','id',ids.relais],
           ['users','id',ids.users],
         ];
@@ -183,6 +187,51 @@ if (!process.env.DATABASE_URL) {
     expect((await sql('SELECT qty_collected FROM order_items WHERE id=$1',[record.item_id])).rows[0].qty_collected).toBe(1);
 
     expect((await sql('SELECT status FROM orders WHERE id=$1',[original.order])).rows[0].status).toBe('collected');
+  });
+
+  test('remplacement IMPORT : achat canonique autorisé uniquement avec compensation et reprise persistées',async()=>{
+    const original=await makeCase('IMP',relayA,'IMPORT');
+    const invalid=await makeCase('IMP-NO-COMP',relayA,'IMPORT');
+    const supplier=uid();ids.suppliers.push(supplier);
+    await sql("INSERT INTO suppliers(id,name,platform,is_active) VALUES($1,$2,'local',true)",[supplier,tag+'-IMPORT']);
+    for(const source of [original,invalid]){
+      const mapping=uid();ids.mappings.push(mapping);
+      await sql(`INSERT INTO product_suppliers(id,product_id,supplier_id,supplier_sku,supplier_price_aed,min_order_qty,priority,is_active)
+        VALUES($1,$2,$3,$4,20,1,1,true)`,[mapping,source.product,supplier,tag+'-'+mapping.slice(0,8)]);
+    }
+    const actor={id:admin,role:'admin'};
+    const compensate=require('../../services/relay-return-compensation-service').decideCompensation;
+    const trigger=require('../../services/purchasing-trigger-service').triggerPurchasing;
+    const decision={actor,requestId:original.request,movement:'reship',reason:'Remplacement IMPORT après reprise physique',db};
+    await expect(compensate(decision)).rejects.toMatchObject({code:'COMPENSATION_RESHIP_RECEIPT_REQUIRED'});
+    await receive(original.request);
+    const accepted=await compensate(decision);
+    const replacement=accepted.compensation.replacement_order_id;
+    ids.orders.push(replacement);
+    const {rows:[item]}=await sql('SELECT id,price_kmf,replacement_source_item_id FROM order_items WHERE order_id=$1',[replacement]);
+    ids.items.unshift(item.id);
+    expect(item).toMatchObject({price_kmf:0,replacement_source_item_id:original.item});
+    expect(accepted.replacement_status).toBe('replacement_order_created');
+    expect((await trigger(replacement)).purchase_orders[0]).toMatchObject({status:'already_exists'});
+    const {rows:lines}=await sql('SELECT quantity,purchase_order_id FROM purchase_lines WHERE order_item_id=$1',[item.id]);
+    expect(lines).toEqual([{quantity:1,purchase_order_id:null}]);
+
+    // An actual replacement-shaped order without the authoritative compensation
+    // is deliberately created only in the isolated PG fixture.
+    const receipt=(await receive(invalid.request)).receipt;
+    const dossier={id:invalid.request,order_id:invalid.order,return_order_item_id:invalid.item,return_quantity:1,market_id:market};
+    let forged;
+    await sql('BEGIN');
+    try{
+      forged=await require('../../services/sav-replacement-order').create({client,dossier,receipt,actor});
+      await sql('COMMIT');
+    }catch(error){await sql('ROLLBACK');throw error;}
+    ids.orders.push(forged.id);
+    const {rows:[forgedItem]}=await sql('SELECT id FROM order_items WHERE order_id=$1',[forged.id]);
+    ids.items.unshift(forgedItem.id);
+    expect((await trigger(forged.id)).purchase_orders[0]).toMatchObject({status:'error',error:expect.stringMatching(/sans décision et reprise physique/)});
+    expect((await sql('SELECT count(*)::int AS n FROM purchase_lines WHERE order_item_id=$1',[forgedItem.id])).rows[0].n).toBe(0);
+    expect((await sql('SELECT count(*)::int AS n FROM relay_return_compensations WHERE replacement_order_id=$1',[forged.id])).rows[0].n).toBe(0);
   });
 
   test('ledger SAV : réserve sur PostgreSQL, rapproche le PSP simulé, écrit un seul remboursement et reçu', async()=>{
