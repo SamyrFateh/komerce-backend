@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 2143,
-    "edges": 10677,
+    "edges": 10680,
     "dbTables": 254,
     "doctrines": 842,
     "impactAreas": 213,
@@ -19135,6 +19135,9 @@
         "international_shipment_relay_receipts",
         "international_shipment_hub_units",
         "international_n1_reconciliations",
+        "hub_physical_units",
+        "hub_box_effective_placements",
+        "hub_purchase_allocations",
         "order_items",
         "orders"
       ],
@@ -41577,6 +41580,11 @@
       "table": "international_n1_reconciliations"
     },
     {
+      "id": "db:hub_box_effective_placements",
+      "type": "db-table",
+      "table": "hub_box_effective_placements"
+    },
+    {
       "id": "db:economic_variables",
       "type": "db-table",
       "table": "economic_variables"
@@ -41655,11 +41663,6 @@
       "id": "db:v_purchase_line_market",
       "type": "db-table",
       "table": "v_purchase_line_market"
-    },
-    {
-      "id": "db:hub_box_effective_placements",
-      "type": "db-table",
-      "table": "hub_box_effective_placements"
     },
     {
       "id": "db:order_delivery_waves",
@@ -76913,6 +76916,24 @@
       "to": "db:international_n1_reconciliations",
       "type": "db-read",
       "label": "international_n1_reconciliations"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:hub_physical_units",
+      "type": "db-read",
+      "label": "hub_physical_units"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:hub_box_effective_placements",
+      "type": "db-read",
+      "label": "hub_box_effective_placements"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:hub_purchase_allocations",
+      "type": "db-read",
+      "label": "hub_purchase_allocations"
     },
     {
       "from": "services/economic-cost-center-read-model.js",
@@ -131018,6 +131039,9 @@
         "international_shipment_relay_receipts",
         "international_shipment_hub_units",
         "international_n1_reconciliations",
+        "hub_physical_units",
+        "hub_box_effective_placements",
+        "hub_purchase_allocations",
         "order_items",
         "orders"
       ],
@@ -131043,6 +131067,9 @@
         "db:economic_cost_posts",
         "db:economic_cost_resources",
         "db:economic_structure_cost_events",
+        "db:hub_box_effective_placements",
+        "db:hub_physical_units",
+        "db:hub_purchase_allocations",
         "db:international_n1_reconciliations",
         "db:international_shipment_events",
         "db:international_shipment_hub_units",
