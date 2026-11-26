@@ -42531,6 +42531,10 @@
                 "targetFile": "services/relay-return-compensation-service.js"
               },
               {
+                "sourceFileId": "tests/integration/relay-return-intake-postgres.test.js",
+                "targetFile": "services/sav-replacement-order.js"
+              },
+              {
                 "sourceFileId": "tests/unit/order-physical-coverage-gate.test.js",
                 "targetFile": "services/order-status-machine.js"
               },
@@ -42675,6 +42679,10 @@
               {
                 "sourceFileId": "tests/integration/hub-physical-proof-postgres.test.js",
                 "targetFile": "services/purchasing-engagement-service.js"
+              },
+              {
+                "sourceFileId": "tests/integration/relay-return-intake-postgres.test.js",
+                "targetFile": "services/purchasing-trigger-service.js"
               }
             ]
           },
