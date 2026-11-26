@@ -560,3 +560,49 @@ for(const [width,height] of [[1280,720],[1366,768],[1920,1080]]){
   await page.screenshot({path:'test-results/hub-v3-density-'+width+'x'+height+'.png',fullPage:false});
  });
 }
+
+
+// UX-HUB-DENSITY-01 : 30 COMBOX réelles dans le DOM, un seul formulaire de geste.
+for(const [width,height] of [[1280,720],[1366,768],[1920,1080]]){
+ test('C1 emballage compact 30 COMBOX '+width+'x'+height,async({page})=>{
+  await page.setViewportSize({width,height});
+  const group={market:'KM',relay:'M01',relay_code:'M01',rail:'SEA_STANDARD',group_key:'["M01","SEA_STANDARD"]',
+    to_pack:30,boxes_in_progress:30,boxes_to_dispatch:0,boxes_to_attach:0,boxes_to_handover:0};
+  const item={purchase_order_id:'po-1',allocation_id:'alloc-1',relais_id:'M01',relais_code:'M01',
+    requested_transport_rail:'SEA_STANDARD',source_state:'QUALITY_CHECKED',product:'Chargeur',quantity:30,from_unit_id:'receipt-1',from_unit_ref:'RCV-1'};
+  const boxes=Array.from({length:30},(_,i)=>({unit_id:'box-'+i,reference:'KOM-BOX-'+String(i+1).padStart(3,'0'),state:'RECEIVED',contents:[]}));
+  boxes.push({unit_id:'foreign',reference:'KOM-BOX-AIR',state:'RECEIVED',contents:[{...item,requested_transport_rail:'AIR_EXPRESS',qty:1}]});
+  const board={...BOARD,purchase_orders:[],logistics_work:[group]};
+  const calls=await mount(page,'agent_hub','',board,true);
+  await page.route(ORIGIN+'/api/admin/workspaces/operations/market/KM/supply',route=>route.fulfill({json:{
+    purchase_orders:[],cockpit:{viewer:{role:'agent_hub'}},fillable:[item],boxes
+  }}));
+  await page.locator('[data-hub-workshop="boxes"]').click();
+  const table=page.locator('[data-hub-compact-box-table]');
+  await expect(table).toBeVisible();
+  await expect(table.locator('tbody tr')).toHaveCount(30);
+  await expect(table.getByText('KOM-BOX-AIR')).toHaveCount(0);
+  await expect(page.locator('[data-hub-workshop-destination]')).toHaveText('M01 · Maritime (rail demandé)');
+  await expect(page.getByLabel('Relais puis rail demandé')).toHaveCount(0);
+  const panel=page.locator('[data-hub-compact-box-action]');
+  await expect(panel).toBeHidden();
+  await table.getByRole('button',{name:'Préparer KOM-BOX-001'}).click();
+  await expect(panel.getByLabel('Scanner la référence de la COMBOX KOM-BOX-001')).toBeVisible();
+  await expect(panel.getByLabel('Article réceptionné à placer dans KOM-BOX-001')).toHaveCount(1);
+  await table.getByRole('button',{name:'Préparer KOM-BOX-002'}).click();
+  await expect(panel.getByLabel('Scanner la référence de la COMBOX KOM-BOX-002')).toBeVisible();
+  await expect(panel.getByLabel('Scanner la référence de la COMBOX KOM-BOX-001')).toHaveCount(0);
+  await expect(panel.getByRole('button',{name:'Placer l’article dans la COMBOX'})).toHaveCount(1);
+  const geometry=await table.evaluate(el=>{
+    const rows=[...el.querySelectorAll('tbody tr')],viewport=el.parentElement;
+    return {overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,tableOverflow:el.scrollWidth-el.clientWidth,
+      height:viewport.getBoundingClientRect().height,median:rows.map(r=>r.getBoundingClientRect().height).sort((a,b)=>a-b)[15]};
+  });
+  expect(geometry.overflow).toBeLessThanOrEqual(1);
+  expect(geometry.tableOverflow).toBeLessThanOrEqual(1);
+  expect(geometry.height).toBeLessThanOrEqual(302);
+  expect(geometry.median).toBeLessThanOrEqual(58);
+  expect(calls.filter(x=>x.startsWith('POST'))).toEqual([]);
+  await page.screenshot({path:'test-results/hub-c1-boxes-'+width+'x'+height+'.png',fullPage:false});
+ });
+}
