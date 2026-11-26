@@ -284,11 +284,29 @@
 
   // Capability d'un lien inter-espaces : autorité globale (le serveur re-valide) ou capability déléguée sur le marché.
   // Contexte absent ou marché non déterminé : lien masqué.
+  // Une sélection URL n'accorde aucun droit : elle choisit uniquement parmi
+  // les marchés déjà autorisés par le contexte serveur. Une sélection invalide
+  // ne doit jamais retomber silencieusement sur le marché par défaut.
+  function selectedCapabilityMarket(access, market) {
+    if (!access || !Array.isArray(access.allowedMarkets)) return null;
+    let requested = market;
+    if (requested === undefined || requested === null || requested === '') {
+      try {
+        requested = new URLSearchParams(String(global.location?.search || '')).get('market');
+      } catch (_) { return null; }
+    }
+    const code = requested === undefined || requested === null || requested === ''
+      ? access.defaultMarket
+      : String(requested).toUpperCase();
+    return typeof code === 'string' && CONTEXT_MARKET.test(code)
+      && access.allowedMarkets.includes(code) ? code : null;
+  }
+
   function hasCapability(adminContext, capability, market) {
     const access = adminContext && adminContext.access;
     if (!access || !capability) return false;
     if (access.mode === 'global') return true;
-    const code = market || access.defaultMarket;
+    const code = selectedCapabilityMarket(access, market);
     const granted = access.delegatedCapabilities && code ? access.delegatedCapabilities[code] : null;
     return Array.isArray(granted) && granted.includes(capability);
   }
@@ -1108,14 +1126,19 @@
       .filter(group => group.items.length > 0);
   }
 
-  function hubMarketScopeLabel(adminContext, user = global.KOMERCE_CANONICAL_AUTH_USER) {
+  function hubMarketScopeLabel(adminContext) {
     const access = adminContext?.access;
-    if (access?.mode === 'global' || access?.mode === 'hub' || roleOf(user) === 'admin') return 'Global · Tous les marchés';
+    if (access?.mode === 'global' || access?.mode === 'hub') return 'Global · Tous les marchés';
+    // Compatibilité pendant le chargement du contexte : ne pas annoncer un
+    // scope global par le rôle lorsque le serveur a fourni un scope marché.
     if (!access) return 'Hub · Périmètre non déterminé';
     const markets = Array.isArray(access.allowedMarkets) ? access.allowedMarkets : [];
-    const selected = access.defaultMarket && markets.includes(access.defaultMarket)
-      ? [access.defaultMarket]
-      : markets;
+    let requested = null;
+    try { requested = new URLSearchParams(String(global.location?.search || '')).get('market'); }
+    catch (_) { return 'Hub · Périmètre non déterminé'; }
+    const code = selectedCapabilityMarket(access);
+    if (requested && !code) return 'Hub · Périmètre non déterminé';
+    const selected = code ? [code] : markets;
     if (!selected.length) return 'Hub · Marché autorisé';
     return `Hub · ${selected.join(', ')}`;
   }
@@ -1196,7 +1219,7 @@
 
   // Une tab déclarant `capability` (ex. 'clients' → 'client.read') n'est
   // visible en mode market que si le marché courant (adminContext.access.
-  // defaultMarket) porte réellement cette capability dans
+  // sélectionné) porte réellement cette capability dans
   // adminContext.access.delegatedCapabilities — capability is the authority,
   // not role (cf. doctrine dashboard-admin-context.js). Un rôle sans
   // adminContext résolu (pages qui ne le passent pas encore, ou mode global
@@ -1206,9 +1229,7 @@
     const candidates = tab.capabilitiesAny || (tab.capability ? [tab.capability] : []);
     if (!candidates.length) return true;
     if (!adminContext || adminContext.access?.mode !== 'market') return true;
-    const market = adminContext.access.defaultMarket;
-    const granted = adminContext.access.delegatedCapabilities?.[market] || [];
-    return candidates.some(capability => granted.includes(capability));
+    return candidates.some(capability => hasCapability(adminContext, capability));
   }
 
   function localTabsFor(domainId, user, adminContext) {
