@@ -246,7 +246,8 @@ router.get(
         current_expected: row.current_expected, next_action: row.next_action,
         stage_states: row.stage_states, stage_notes: row.stage_notes, physical_focus: row.physical_focus,
       }));
-      return res.json({ market: { id: market.id, code: market.code }, ...dossier, hub_journeys });
+      return res.json({ market: { id: market.id, code: market.code }, ...dossier, hub_journeys,
+        supplier_quality_v3_enabled:process.env.HUB_SUPPLIER_QUALITY_V3_ENABLED==='true'&&['admin','agent_hub'].includes(req.user?.role) });
     } catch (err) {
       return sendWorkspaceError(err, res, next);
     }
