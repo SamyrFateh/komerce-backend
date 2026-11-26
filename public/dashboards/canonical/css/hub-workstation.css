@@ -1130,7 +1130,7 @@
 .kmc-hub-app [data-hub-active-branch="direction"] .hlc-director-group-rows { max-height:none; overflow:visible; }
 .kmc-hub-app [data-hub-active-branch="direction"] .hlc-director-task { display:grid; grid-template-columns:48px minmax(0,1fr) 76px minmax(110px,160px); align-items:center; gap:10px; padding:8px 12px; }
 .kmc-hub-app [data-hub-active-branch="direction"] .hlc-director-detail { min-width:0; overflow-wrap:anywhere; }
-.kmc-hub-app [data-hub-active-branch="direction"] [hidden] { display:none !important; }
+.kmc-hub-app [data-hub-active-branch="direction"] [hidden][hidden] { display:none; }
 @media(max-width:900px) {
  .kmc-hub-app [data-hub-active-branch="direction"] .hlc-director-task { grid-template-columns:40px minmax(0,1fr) 64px; }
  .kmc-hub-app [data-hub-active-branch="direction"] .hlc-director-open { grid-column:2 / -1; justify-self:start; }

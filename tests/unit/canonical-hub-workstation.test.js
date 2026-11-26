@@ -556,6 +556,13 @@ test('aperçu PO V8 : deux dossiers distincts, retour Kanban et chargement par P
     if(loc)Object.defineProperty(global,'location',loc);else delete global.location;
   }
 });
+test('Direction Hub : masquage des lignes filtrées sans !important, même avec la grille des tâches',()=>{
+  const css=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/css/hub-workstation.css'),'utf8');
+  expect(css).toContain('.kmc-hub-app [data-hub-active-branch="direction"] [hidden][hidden] { display:none; }');
+  expect(css).not.toContain('display:none !important');
+  expect(css).toContain('.kmc-hub-app [data-hub-active-branch="direction"] .hlc-director-task { display:grid;');
+});
+
 test('styles V8 limités au nouveau poste, masquage des panneaux et cartes compactes',()=>{
   const css=fs.readFileSync(path.join(__dirname,'../../public/dashboards/canonical/css/hub-workstation.css'),'utf8');
   expect(css).toContain('.kmc-hub-po-visual [hidden]');
