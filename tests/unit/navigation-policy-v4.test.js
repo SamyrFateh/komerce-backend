@@ -192,7 +192,7 @@ test('hasCapability : global = oui (le serveur re-valide) ; marché = capability
   require('../../public/dashboards/canonical/js/navigation-policy-v4.js');
   const nav = global.KomerceCanonicalNavigation;
   expect(nav.hasCapability({ access: { mode: 'global' } }, 'catalog.expose', 'CM')).toBe(true);
-  const ctx = { access: { mode: 'market', defaultMarket: 'KM', delegatedCapabilities: { KM: ['catalog.expose'], CM: [] } } };
+  const ctx = { access: { mode: 'market', allowedMarkets: ['KM', 'CM'], defaultMarket: 'KM', delegatedCapabilities: { KM: ['catalog.expose'], CM: [] } } };
   expect(nav.hasCapability(ctx, 'catalog.expose')).toBe(true);
   expect(nav.hasCapability(ctx, 'catalog.expose', 'CM')).toBe(false);
   expect(nav.hasCapability(null, 'catalog.expose', 'CM')).toBe(false);
