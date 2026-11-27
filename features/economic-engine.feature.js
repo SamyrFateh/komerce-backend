@@ -450,10 +450,10 @@ module.exports = {
   },
 
   security: {
-    status: 'CONFIRMED_MIXED',
-    authedRoutesDetected: 82,
+    status: 'CONFIRMED_PROTECTED',
+    authedRoutesDetected: 84,
     totalRoutes: 84,
-    note: "82/84 routes protégées (dont 11 routes Canonical Pricing 4F sous grant global explicite). 2 routes publiques par design : POST /api/pricing/calculate et /api/pricing/couture — configurateur de prix consommé par la boutique publique (aucun accès aux données client, calcul stateless). (+6 routes /api/admin/risk-provisions/* retaggées depuis dashboard, Lot O2)",
+    note: "84/84 routes protégées selon le périmètre historique du registre ; #5315 réserve les simulations et lectures globales legacy à admin, y compris calculate/couture (coûts internes). Le devis public canonique est distinct. Les droits ACT restent inchangés.",
   },
   contract: {
     exposes: [

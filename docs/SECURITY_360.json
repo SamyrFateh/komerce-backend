@@ -3,8 +3,8 @@
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
     "total": 899,
-    "protected": 840,
-    "public": 59,
+    "protected": 842,
+    "public": 57,
     "unprotected": 0,
     "admin_no_guard": 0,
     "unknown": 0
@@ -196,18 +196,6 @@
       "kind": "EXPECTED_PUBLIC",
       "evidence": "routes/payments-paypal.js; tests/unit/payments-paypal.test.js; features/payments.feature.js",
       "rationale": "Étape PayPal du checkout navigateur ; l’autorité montant/commande est résolue côté serveur, pas depuis le client."
-    },
-    {
-      "key": "POST /api/pricing/calculate",
-      "kind": "EXPECTED_PUBLIC",
-      "evidence": "routes/pricing.js",
-      "rationale": "Calculateur de prix public ; pas de mutation d’autorité métier."
-    },
-    {
-      "key": "POST /api/pricing/couture",
-      "kind": "EXPECTED_PUBLIC",
-      "evidence": "routes/pricing.js",
-      "rationale": "Calculateur couture public ; pas de mutation d’autorité métier."
     },
     {
       "key": "GET /api/products/{id}/detail",
@@ -5282,7 +5270,9 @@
     {
       "key": "GET /api/pricing/benchmarks-gap",
       "level": "PROTECTED",
-      "roles": []
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "DELETE /api/pricing/benchmarks/{category}/{cost_family}",
@@ -5294,7 +5284,9 @@
     {
       "key": "GET /api/pricing/benchmarks",
       "level": "PROTECTED",
-      "roles": []
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "PUT /api/pricing/benchmarks",
@@ -5305,18 +5297,24 @@
     },
     {
       "key": "POST /api/pricing/calculate",
-      "level": "PUBLIC",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "POST /api/pricing/couture",
-      "level": "PUBLIC",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "GET /api/pricing/dashboard",
       "level": "PROTECTED",
-      "roles": []
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "POST /api/pricing/flow",
@@ -5328,7 +5326,9 @@
     {
       "key": "GET /api/pricing/rates",
       "level": "PROTECTED",
-      "roles": []
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "PUT /api/pricing/rates",
@@ -5340,42 +5340,58 @@
     {
       "key": "POST /api/pricing/recommend-batch",
       "level": "PROTECTED",
-      "roles": []
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "POST /api/pricing/recommend",
       "level": "PROTECTED",
-      "roles": []
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "POST /api/pricing/strategy/apply",
       "level": "PROTECTED",
-      "roles": []
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "DELETE /api/pricing/strategy/competitors/{id}",
       "level": "PROTECTED",
-      "roles": []
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "GET /api/pricing/strategy/competitors",
       "level": "PROTECTED",
-      "roles": []
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "POST /api/pricing/strategy/competitors",
       "level": "PROTECTED",
-      "roles": []
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "GET /api/pricing/strategy/history",
       "level": "PROTECTED",
-      "roles": []
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "GET /api/pricing/strategy",
       "level": "PROTECTED",
-      "roles": []
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "GET /api/products/{id}/detail",
