@@ -1,0 +1,57 @@
+{
+  "is_test_data": true,
+  "campaign": "ECO-5280-PRIX-REVIENT",
+  "currency_basis": "KMF",
+  "observation_threshold": 3,
+  "window_days": 90,
+  "import": {
+    "market": "KM",
+    "rail": "sea",
+    "sku": "ECO5280-S1",
+    "shipments": ["ECO5280-E1", "ECO5280-E2", "ECO5280-E3"],
+    "per_shipment": {
+      "quantity": 10,
+      "sale_unit_kmf": "9000",
+      "purchase_currency": "EUR",
+      "purchase_amount": "100.00",
+      "expected_purchase_kmf_if_rate_491_96775": "49196.78",
+      "volume_m3_by_sku": {"ECO5280-S1": "0.60", "ECO5280-S2": "0.40"},
+      "freight_total_kmf": "30000",
+      "port_transitaire_total_kmf": "2000",
+      "customs_s1_kmf": "7000",
+      "payment_estimated_s1_kmf": "1500",
+      "payment_real_s1_kmf": "1800",
+      "relay_real_s1_kmf": "0"
+    },
+    "expected": {
+      "unit_cost_kmf_if_rate_491_96775": "7719.68",
+      "margin_per_shipment_kmf_if_rate_491_96775": "12803.22",
+      "late_freight_kmf": "3000",
+      "observations_after_late_freight": 2,
+      "status_after_late_freight": "INSUFFICIENT_OBSERVATIONS",
+      "missing_relay_reason": "cost_missing:relay"
+    }
+  },
+  "local": {
+    "market": "CM",
+    "rail": "LOCAL_STOCK",
+    "sku": "ECO5280-LOCAL-S1",
+    "receipt_lots": ["ECO5280-L1", "ECO5280-L2", "ECO5280-L3"],
+    "per_lot": {
+      "quantity": 10,
+      "sale_unit_kmf": "7000",
+      "product_purchase_real_kmf": "50000",
+      "payment_real_kmf": "800",
+      "relay_real_kmf": "1200"
+    },
+    "expected_unit_cost_kmf": "5200.00",
+    "display_currency": "XAF"
+  },
+  "negative_cases": [
+    {"case": "missing_relay", "expected": "incomplete"},
+    {"case": "explicit_zero_relay", "expected": "final"},
+    {"case": "customs_expected_unknown", "expected": "incomplete"},
+    {"case": "hub_invoice", "expected": "unit_cost_unchanged"},
+    {"case": "cm_reader_targets_km", "expected_http_status": 403}
+  ]
+}

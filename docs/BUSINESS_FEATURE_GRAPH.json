@@ -20598,9 +20598,23 @@
       },
       {
         "feature": "settlement",
+        "category": "migrations",
+        "declared": "migrations/452_hub_internal_invoices.sql",
+        "resolvedPath": "migrations/452_hub_internal_invoices.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "settlement",
         "category": "services",
         "declared": "services/market-settlement-service.js",
         "resolvedPath": "services/market-settlement-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "settlement",
+        "category": "services",
+        "declared": "services/hub-internal-invoice-service.js",
+        "resolvedPath": "services/hub-internal-invoice-service.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -20615,6 +20629,13 @@
         "category": "tests",
         "declared": "tests/unit/market-settlement-service.test.js",
         "resolvedPath": "tests/unit/market-settlement-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "settlement",
+        "category": "tests",
+        "declared": "tests/unit/hub-internal-invoice-service.test.js",
+        "resolvedPath": "tests/unit/hub-internal-invoice-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -27640,6 +27661,30 @@
         "method": "GET",
         "path": "/api/boutique/suggestions",
         "routeFile": "routes/boutique-suggestions.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "settlement",
+        "entry": "GET /api/admin/market-settlements/markets/:marketCode/hub-invoices",
+        "method": "GET",
+        "path": "/api/admin/market-settlements/markets/{id}/hub-invoices",
+        "routeFile": "routes/admin-market-settlement.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "settlement",
+        "entry": "POST /api/admin/market-settlements/markets/:marketCode/hub-invoices",
+        "method": "POST",
+        "path": "/api/admin/market-settlements/markets/{id}/hub-invoices",
+        "routeFile": "routes/admin-market-settlement.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "settlement",
+        "entry": "POST /api/admin/market-settlements/markets/:marketCode/hub-invoices/:invoiceId/payment",
+        "method": "POST",
+        "path": "/api/admin/market-settlements/markets/{id}/hub-invoices/{id}/payment",
+        "routeFile": "routes/admin-market-settlement.js",
         "status": "resolved-owned"
       },
       {
@@ -40305,6 +40350,10 @@
                 "targetFile": "services/market-operation-guard.js"
               },
               {
+                "sourceFileId": "routes/admin-costing.js",
+                "targetFile": "services/fx-authority.js"
+              },
+              {
                 "sourceFileId": "routes/admin-finance-config.js",
                 "targetFile": "services/fx-observation-service.js"
               },
@@ -40371,6 +40420,10 @@
               {
                 "sourceFileId": "routes/admin-pricing-workspace.js",
                 "targetFile": "services/market-delegation-catalog-service.js"
+              },
+              {
+                "sourceFileId": "routes/admin-costing.js",
+                "targetFile": "middleware/require-market-delegated-capability.js"
               }
             ]
           }
@@ -44370,6 +44423,10 @@
               {
                 "sourceFileId": "services/market-ready-to-sell-projection.js",
                 "targetFile": "utils/currency.js"
+              },
+              {
+                "sourceFileId": "services/market-delegation-cost-statement-service.js",
+                "targetFile": "services/fx-authority.js"
               },
               {
                 "sourceFileId": "routes/market-delegation-catalog.js",
@@ -49886,6 +49943,15 @@
         "to": "market",
         "channels": [
           {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/hub-internal-invoice-service.js",
+                "targetFile": "services/fx-authority.js"
+              }
+            ]
+          },
+          {
             "channel": "data-read",
             "evidence": [
               {
@@ -49905,8 +49971,16 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/hub-internal-invoice-service.js",
+                "targetFile": "services/market-delegation-cost-statement-service.js"
+              },
+              {
                 "sourceFileId": "routes/admin-market-settlement.js",
                 "targetFile": "services/market-delegation-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/hub-internal-invoice-service.test.js",
+                "targetFile": "services/market-delegation-cost-statement-service.js"
               }
             ]
           },
@@ -51548,7 +51622,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2423
+        "filesObserved": 2425
       },
       "boutique": {
         "filesObserved": 218,
@@ -55453,6 +55527,19 @@
       "lifecycleOwner": "refunds",
       "resolution": "single-writer"
     },
+    "hub_internal_invoices": {
+      "writers": [
+        {
+          "feature": "settlement",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "settlement",
+      "resolution": "declared-table-owner"
+    },
     "market_settlement_events": {
       "writers": [
         {
@@ -55767,8 +55854,8 @@
       "backend": {
         "manifestsDiscovered": 36,
         "manifestsConnected": 36,
-        "technicalNodesTotal": 735,
-        "technicalNodesOwned": 735,
+        "technicalNodesTotal": 736,
+        "technicalNodesOwned": 736,
         "technicalOrphans": 0
       },
       "dash": {

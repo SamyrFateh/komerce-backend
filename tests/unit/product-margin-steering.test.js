@@ -201,3 +201,39 @@ describe('summarizeProduct', () => {
     expect(strict.signal).toBe('review_suggested');
   });
 });
+
+
+describe('observed landed cost evidence', () => {
+  const { computeLandedCostEvidence, summarizeObservedLandedCost } = require('../../services/cost-allocation/product-margin-steering');
+  const real = amount => ({ state: 'real', amount_kmf: amount });
+  const result = { reason: null, reconciled_after_sale_margin_kmf: 12803.22, costs: {
+    product_purchase: real(49196.78), freight: real(18000), customs: real(7000),
+    port_transitaire: real(1200), payment: real(1800),
+  } };
+
+  test('an absent relay cost is incomplete; a documented zero is final', () => {
+    expect(computeLandedCostEvidence({ result, imported: true })).toMatchObject({
+      status: 'incomplete', reason: 'cost_missing:relay',
+    });
+    expect(computeLandedCostEvidence({
+      result, imported: true, real: { relay: { actual: 0, actual_count: 1 } },
+    })).toMatchObject({ status: 'final', costs: { relay: real(0) } });
+  });
+
+  test('unit cost and multiplier are weighted by the same cohort', () => {
+    const evidence = computeLandedCostEvidence({ result, imported: true, real: { relay: { actual: 0, actual_count: 1 } } });
+    const ids = ['first', 'second', 'third'];
+    const lines = ids.map(order_item_id => ({
+      order_item_id, sku_id: 'S1', quantity: 10, result, landed_cost_evidence: evidence,
+    }));
+    const shipments = new Map(ids.map(id => [id, {
+      shipment_id: id, rail: 'sea', financial_closed_at: '2026-11-01T00:00:00Z',
+    }]));
+    const [summary] = summarizeObservedLandedCost(lines, shipments, { since: 0, truncated: false });
+    expect(summary).toMatchObject({ unit_cost_kmf: 7719.68, observations: 3, status: 'DECISIONAL' });
+    expect(summary.observed_multiplier).toBeCloseTo(77196.78 / 49196.78);
+    shipments.delete('third');
+    expect(summarizeObservedLandedCost(lines, shipments, { since: 0, truncated: false })[0])
+      .toMatchObject({ observations: 2, status: 'INSUFFICIENT_OBSERVATIONS' });
+  });
+});

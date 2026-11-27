@@ -6,17 +6,17 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 841
-- Files with full headers: 778
+- Scanned code files: 842
+- Files with full headers: 779
 - Files with lite headers: 63
-- Files with any headers: 841
+- Files with any headers: 842
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2173
-- Edges: 10858
-- DB tables: 259
-- Doctrines: 860
+- Graph nodes: 2177
+- Edges: 10875
+- DB tables: 260
+- Doctrines: 862
 - Impact areas: 213
 - Unresolved code edges: 1016
 - Tables multi-écrivains directs (>=2): 100
@@ -63,7 +63,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - purchasing: 53
 - recommendations: 6
 - refunds: 13
-- settlement: 2
+- settlement: 3
 - shared: 1
 - shared-cart: 25
 - shared-cart-modal: 7
@@ -94,7 +94,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 139
 - route-manifest: 1
 - schema: 1
-- service: 518
+- service: 519
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -497,6 +497,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/hub-box-shipment-service.js — hub-box-shipment (logistics, high, full)
 - services/hub-dashboard-queries.js — dashboard-hub-dashboard-queries (dashboard, high, full)
 - services/hub-inbound-reconciliation.js — hub-inbound-reconciliation (logistics, high, full)
+- services/hub-internal-invoice-service.js — hub-internal-invoice-lifecycle (settlement, high, full)
 - services/hub-physical-codes.js — hub-physical-codes (logistics, high, full)
 - services/hub-procurement-dossier.js — hub-procurement-dossier (logistics, high, full)
 - services/hub-receive-idempotency.js — hub-receive-idempotency (logistics, high, full)
@@ -962,6 +963,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/market-structure-charge-reference.js -> economic_structure_cost_events (via pricing-period-structure)
 - WRITE services/g6-hub-recipe-closure.js -> hub_custody_events (via hub-physical-identity)
 - WRITE services/hub-operations.js -> hub_custody_events (via hub-physical-identity)
+- WRITE routes/admin-market-settlement.js -> hub_internal_invoices (via hub-internal-invoice-service)
 - WRITE services/hub-operations.js -> hub_physical_unit_placements (via hub-physical-identity)
 - WRITE services/g6-hub-recipe-closure.js -> hub_physical_units (via hub-physical-identity)
 - WRITE services/hub-operations.js -> hub_physical_units (via hub-physical-identity)
@@ -1044,7 +1046,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin-market-control-plane.js -> market_transport_sale_rates (via market-transport-sale-rate-command)
 - WRITE routes/admin-market-control-plane.js -> markets (via market-provisioning-service)
 - WRITE routes/admin-market-control-plane.js -> markets (via market-lifecycle-service)
-- WRITE services/market-provisioning-service.js -> markets (via market-lifecycle-service)
 
 ## Multi-Writer Tables (>=2 écrivains directs, hors délégations)
 

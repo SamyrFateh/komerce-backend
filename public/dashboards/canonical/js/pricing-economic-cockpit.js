@@ -400,6 +400,51 @@
     }
     return svg;
   }
+  function createObservedCostPanel(doc, load) {
+    const panel = el(doc, 'section', 'kmc-v6-panel');
+    const button = el(doc, 'button', 'kmc-v7-family', 'Afficher les prix de revient');
+    button.type = 'button';
+    const output = el(doc, 'div', '');
+    output.setAttribute('aria-live', 'polite');
+    panel.append(el(doc, 'h4', '', 'Prix de revient par SKU et rail'), button, output);
+    button.addEventListener('click', async () => {
+      if (button.disabled) return;
+      button.disabled = true;
+      output.textContent = 'Chargement…';
+      try {
+        const model = await load();
+        output.replaceChildren(el(doc, 'p', 'kmc-v7-coverage',
+          '90 derniers jours · 3 expéditions admissibles pour un coefficient décisionnel.'));
+        const rows = model.products.flatMap(product => product.observed_landed_cost.map(cost => ({ ...cost, product })));
+        if (!rows.length) output.append(el(doc, 'p', 'kmc-v7-empty', 'Aucune observation admissible sur ce marché.'));
+        for (const cost of rows) {
+          const card = el(doc, 'div', 'kmc-v7-metric');
+          const rail = { sea: 'Maritime', air: 'Aérien' }[cost.rail] || cost.rail;
+          card.append(el(doc, 'strong', '', cost.product.product_name + ' · ' + (cost.sku_reference || cost.sku_id) + ' · ' + rail));
+          card.append(el(doc, 'span', '', 'Prix de revient réel : ' + v7Money(cost.unit_cost_kmf == null ? null : String(cost.unit_cost_kmf), 'KMF')));
+          card.append(el(doc, 'span', '', 'Estimé avant vente : ' + v7Money(cost.estimated_unit_cost_kmf == null ? null : String(cost.estimated_unit_cost_kmf), 'KMF')));
+          if (cost.display_currency) {
+            const actual = v7Money(cost.unit_cost_local, cost.display_currency);
+            const estimated = v7Money(cost.estimated_unit_cost_local, cost.display_currency);
+            card.append(el(doc, 'span', '', cost.display_currency + ' · réel : ' + actual + ' · estimé : ' + estimated));
+          }
+          if (cost.observed_multiplier != null) card.append(el(doc, 'span', '',
+            'Coefficient observé : × ' + new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 4 }).format(cost.observed_multiplier)));
+          const status = cost.status === 'DECISIONAL' ? 'Décisionnel' : 'Indicatif';
+          card.append(el(doc, 'small', 'kmc-v7-coverage', status + ' · ' + cost.observations + ' expédition(s) · ' +
+            cost.incomplete_lines + ' ligne(s) incomplète(s) · ' + cost.provisional_lines + ' provisoire(s)'));
+          output.append(card);
+        }
+        if (model.truncated) output.append(el(doc, 'p', 'kmc-v7-coverage', 'Résultats tronqués. Coefficients indicatifs.'));
+      } catch (error) {
+        output.textContent = error.status === 403 ? 'Lecture des coûts non autorisée pour ce marché.' : 'Prix de revient indisponibles.';
+      } finally {
+        button.disabled = false;
+      }
+    });
+    return panel;
+  }
+
   function createV6Profitability(doc,model,actions){
     const host=el(doc,'section','kmc-v7-centers kmc-v6-profitability'),data=model?.profitability;
     const groupResult = data?.groupPeriodResult;
@@ -412,6 +457,7 @@
       : provisional
       ? 'Résultat provisoire sur les faits documentés. Clôture Direction en attente.'
       : 'Résultat économique non calculable : rapprochement des ventes, charges variables et structure à compléter.'));
+    if(actions?.loadObservedCost)host.append(createObservedCostPanel(doc,actions.loadObservedCost));
     if(!data){
       const observation=model?.activity?.purchaseTransportObservation;
       if(observation?.coefficient!=null)host.append(el(doc,'p','','Observation partielle achat + transport : '+observation.coefficient.replace('.',',')+' · non décisionnelle'));
@@ -587,6 +633,8 @@
           return result;
         };
         const actions={centerState,
+          loadObservedCost: context.requestedMarket ? () => workspace.jsonRequest(context.fetch,
+            '/api/admin/costing/products/margin-steering?market_code='+encodeURIComponent(context.requestedMarket)+'&since_days=90') : null,
           closePeriod:body=>mutate('closePeriod','/close-period',body),
           reviseBudget:(id,body)=>mutate('budget','/posts/'+encodeURIComponent(id)+'/budget-revisions',body),
           openCommitment:(id,body)=>mutate('commitment','/posts/'+encodeURIComponent(id)+'/commitments',body),

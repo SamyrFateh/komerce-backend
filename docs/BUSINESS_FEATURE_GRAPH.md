@@ -81,7 +81,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 36 | 36 | 735 | 735 | 0 |
+| backend | 36 | 36 | 736 | 736 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 106 | 106 | 0 |
 
@@ -632,13 +632,13 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Tracer de bout en bout le règlement dû à un opérateur pays : READY attesté centralement, REQUESTED par le pays, PAID centralement, RECEIVED par le pays.
 
-- migrations: 1
-- services: 1
+- migrations: 2
+- services: 2
 - routes: 1
-- tests: 4
-- tables owned (lifecycle): 2 — `market_settlements`, `market_settlement_events`
-- tables written: 2
-- interfaces exposed: 3
+- tests: 5
+- tables owned (lifecycle): 3 — `market_settlements`, `hub_internal_invoices`, `market_settlement_events`
+- tables written: 3
+- interfaces exposed: 6
 - internal APIs: 5
 - dependencies (consumes): 5 — market, market-delegation, auth, auth-identity, infrastructure
 - consumers: 1 — market-delegation
@@ -817,6 +817,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `hub_authorization_grants` | `purchasing` | declared-table-owner | purchasing | logistics |
 | `hub_box_bags` | `logistics` | declared-table-owner | logistics | — |
 | `hub_custody_events` | `logistics` | declared-table-owner | logistics | — |
+| `hub_internal_invoices` | `settlement` | declared-table-owner | settlement | — |
 | `hub_physical_unit_placements` | `logistics` | declared-table-owner | logistics | dashboard |
 | `hub_physical_units` | `logistics` | declared-table-owner | logistics | dashboard |
 | `hub_purchase_allocations` | `logistics` | declared-table-owner | logistics | dashboard |
@@ -1583,6 +1584,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/purchasing/lines` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `POST /api/purchasing/lines/{id}/settle` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `GET /api/boutique/suggestions` | recommendations | `routes/boutique-suggestions.js` (resolved-owned) |
+| `GET /api/admin/market-settlements/markets/{id}/hub-invoices` | settlement | `routes/admin-market-settlement.js` (resolved-owned) |
+| `POST /api/admin/market-settlements/markets/{id}/hub-invoices` | settlement | `routes/admin-market-settlement.js` (resolved-owned) |
+| `POST /api/admin/market-settlements/markets/{id}/hub-invoices/{id}/payment` | settlement | `routes/admin-market-settlement.js` (resolved-owned) |
 | `GET /api/admin/market-settlements/markets/{id}/settlements` | settlement | `routes/admin-market-settlement.js` (resolved-owned) |
 | `POST /api/admin/market-settlements/markets/{id}/settlements/ready` | settlement | `routes/admin-market-settlement.js` (resolved-owned) |
 | `POST /api/admin/market-settlements/settlements/{id}/paid` | settlement | `routes/admin-market-settlement.js` (resolved-owned) |
@@ -2367,7 +2371,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2423 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2425 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 218 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2490,9 +2494,9 @@ Meta Graph monté : oui.
 | economic-engine | local-stock | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | economic-engine | logistics | static-code, data-read | 8 | **DECLARED_AND_OBSERVED** |
 | economic-engine | loyalty | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| economic-engine | market | static-code | 13 | **DECLARED_AND_OBSERVED** |
+| economic-engine | market | static-code | 14 | **DECLARED_AND_OBSERVED** |
 | economic-engine | market-autonomy | static-code | 4 | **DECLARED_AND_OBSERVED** |
-| economic-engine | market-delegation | static-code | 5 | **DECLARED_AND_OBSERVED** |
+| economic-engine | market-delegation | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | economic-engine | orders | static-code, data-read, data-write | 6 | **DECLARED_AND_OBSERVED** |
 | economic-engine | platform-ops | data-read | 2 | **DECLARED_AND_OBSERVED** |
 | economic-engine | refunds | data-read | 1 | **DECLARED_AND_OBSERVED** |
@@ -2598,7 +2602,7 @@ Meta Graph monté : oui.
 | market-delegation | infrastructure | static-code | 25 | **DECLARED_AND_OBSERVED** |
 | market-delegation | local-stock | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | market-delegation | logistics | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
-| market-delegation | market | static-code, data-read | 8 | **DECLARED_AND_OBSERVED** |
+| market-delegation | market | static-code, data-read | 9 | **DECLARED_AND_OBSERVED** |
 | market-delegation | market-autonomy | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | market-delegation | market-operator-dashboard | static-code | 1 | **OBSERVED_UNDECLARED** |
 | market-delegation | orders | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
@@ -2720,8 +2724,8 @@ Meta Graph monté : oui.
 | settlement | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | settlement | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | settlement | infrastructure | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| settlement | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
-| settlement | market-delegation | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| settlement | market | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
+| settlement | market-delegation | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | shared-cart | auth | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | shared-cart | auth-identity | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | shared-cart | catalog | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |

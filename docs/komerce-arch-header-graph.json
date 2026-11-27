@@ -13,17 +13,17 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 841,
-    "filesWithFullHeaders": 778,
+    "scannedCodeFiles": 842,
+    "filesWithFullHeaders": 779,
     "filesWithLiteHeaders": 63,
-    "filesWithAnyHeaders": 841,
+    "filesWithAnyHeaders": 842,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2173,
-    "edges": 10858,
-    "dbTables": 259,
-    "doctrines": 860,
+    "graphNodes": 2177,
+    "edges": 10875,
+    "dbTables": 260,
+    "doctrines": 862,
     "impactAreas": 213,
     "unresolvedCodeEdges": 1016,
     "dbWriteViaOverlapWarnings": 13,
@@ -58,7 +58,7 @@
     "dashboard": 34,
     "loyalty": 3,
     "market-control-plane": 5,
-    "settlement": 2,
+    "settlement": 3,
     "business-rules": 1,
     "orders": 43,
     "documents": 16,
@@ -114,7 +114,7 @@
     "schema": 1,
     "route": 139,
     "entrypoint": 1,
-    "service": 518,
+    "service": 519,
     "external-adapter": 2,
     "infrastructure": 1,
     "machine": 1,
@@ -126,7 +126,7 @@
   "byCriticality": {
     "critical": 133,
     "medium": 155,
-    "high": 480,
+    "high": 481,
     "low": 72,
     "unknown": 1
   },
@@ -6796,7 +6796,8 @@
       "depends": [
         "middleware/auth.js",
         "services/market-delegation-service.js",
-        "services/market-settlement-service.js"
+        "services/market-settlement-service.js",
+        "services/hub-internal-invoice-service.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js",
@@ -6810,6 +6811,12 @@
           "tables": [
             "market_settlements",
             "market_settlement_events"
+          ]
+        },
+        {
+          "via": "hub-internal-invoice-service",
+          "tables": [
+            "hub_internal_invoices"
           ]
         }
       ],
@@ -16829,7 +16836,8 @@
         "international_shipment_relay_receipts",
         "international_shipments",
         "international_n1_reconciliations",
-        "international_shipment_charges"
+        "international_shipment_charges",
+        "product_skus"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -21318,6 +21326,55 @@
       "version": null
     },
     {
+      "id": "services/hub-internal-invoice-service.js",
+      "file": "services/hub-internal-invoice-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "hub-internal-invoice-lifecycle",
+      "domain": "settlement",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "market code",
+        "period",
+        "reviewed evidence hash",
+        "explicit payment attestation"
+      ],
+      "outputs": [
+        "frozen Hub invoice and traceable settlement"
+      ],
+      "depends": [
+        "services/market-delegation-cost-statement-service.js"
+      ],
+      "usedBy": [
+        "routes/admin-market-settlement.js"
+      ],
+      "dbRead": [
+        "markets",
+        "hub_internal_invoices"
+      ],
+      "dbWrite": [
+        "hub_internal_invoices"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller-owned",
+        "serializable on issue"
+      ],
+      "doctrine": [
+        "hub_charges_separate_from_relay_cash",
+        "no_payment_execution"
+      ],
+      "impactAreas": [
+        "settlement",
+        "finance",
+        "economic-engine"
+      ],
+      "version": null
+    },
+    {
       "id": "services/hub-label-pdf.js",
       "file": "services/hub-label-pdf.js",
       "type": "file-lite",
@@ -23740,7 +23797,8 @@
         "en lecture seule"
       ],
       "depends": [
-        "services/market-delegation-team-service.js"
+        "services/market-delegation-team-service.js",
+        "services/fx-authority.js"
       ],
       "usedBy": [
         "routes/market-delegation-cost-statement.js"
@@ -23748,7 +23806,10 @@
       "dbRead": [
         "economic_structure_cost_events",
         "market_cost_attributions",
-        "markets"
+        "markets",
+        "economic_cost_posts",
+        "economic_cost_centers",
+        "currency_parities"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -41357,6 +41418,11 @@
       "table": "market_settlement_events"
     },
     {
+      "id": "db:hub_internal_invoices",
+      "type": "db-table",
+      "table": "hub_internal_invoices"
+    },
+    {
       "id": "db:hub_physical_units",
       "type": "db-table",
       "table": "hub_physical_units"
@@ -44780,6 +44846,16 @@
       "id": "doctrine:docs/doctrine/DOCTRINE_LOGISTICS_CONTROL_CHAIN.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_LOGISTICS_CONTROL_CHAIN.md"
+    },
+    {
+      "id": "doctrine:hub_charges_separate_from_relay_cash",
+      "type": "doctrine",
+      "doctrine": "hub_charges_separate_from_relay_cash"
+    },
+    {
+      "id": "doctrine:no_payment_execution",
+      "type": "doctrine",
+      "doctrine": "no_payment_execution"
     },
     {
       "id": "doctrine:QR_is_identity_not_authorization; no_personal_data_or_commercial_reference_on_paper",
@@ -57523,6 +57599,12 @@
       "label": "services/market-settlement-service.js"
     },
     {
+      "from": "routes/admin-market-settlement.js",
+      "to": "services/hub-internal-invoice-service.js",
+      "type": "depends",
+      "label": "services/hub-internal-invoice-service.js"
+    },
+    {
       "from": "bootstrap/api-routes.js",
       "to": "routes/admin-market-settlement.js",
       "type": "uses",
@@ -57547,6 +57629,13 @@
       "type": "db-write-via",
       "label": "market_settlement_events",
       "via": "market-settlement-service"
+    },
+    {
+      "from": "routes/admin-market-settlement.js",
+      "to": "db:hub_internal_invoices",
+      "type": "db-write-via",
+      "label": "hub_internal_invoices",
+      "via": "hub-internal-invoice-service"
     },
     {
       "from": "routes/admin-market-settlement.js",
@@ -73700,6 +73789,12 @@
     },
     {
       "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
       "to": "doctrine:pricing_market_viability_cost_scope",
       "type": "doctrine",
       "label": "pricing_market_viability_cost_scope"
@@ -81733,6 +81828,66 @@
       "label": "incident-management"
     },
     {
+      "from": "services/hub-internal-invoice-service.js",
+      "to": "services/market-delegation-cost-statement-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-cost-statement-service.js"
+    },
+    {
+      "from": "routes/admin-market-settlement.js",
+      "to": "services/hub-internal-invoice-service.js",
+      "type": "uses",
+      "label": "routes/admin-market-settlement.js"
+    },
+    {
+      "from": "services/hub-internal-invoice-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/hub-internal-invoice-service.js",
+      "to": "db:hub_internal_invoices",
+      "type": "db-read",
+      "label": "hub_internal_invoices"
+    },
+    {
+      "from": "services/hub-internal-invoice-service.js",
+      "to": "db:hub_internal_invoices",
+      "type": "db-write",
+      "label": "hub_internal_invoices"
+    },
+    {
+      "from": "services/hub-internal-invoice-service.js",
+      "to": "doctrine:hub_charges_separate_from_relay_cash",
+      "type": "doctrine",
+      "label": "hub_charges_separate_from_relay_cash"
+    },
+    {
+      "from": "services/hub-internal-invoice-service.js",
+      "to": "doctrine:no_payment_execution",
+      "type": "doctrine",
+      "label": "no_payment_execution"
+    },
+    {
+      "from": "services/hub-internal-invoice-service.js",
+      "to": "impact:settlement",
+      "type": "impact",
+      "label": "settlement"
+    },
+    {
+      "from": "services/hub-internal-invoice-service.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
+    },
+    {
+      "from": "services/hub-internal-invoice-service.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
       "from": "services/hub-label-pdf.js",
       "to": "backend-core",
       "type": "owned-by",
@@ -86039,6 +86194,12 @@
       "label": "services/market-delegation-team-service.js"
     },
     {
+      "from": "services/market-delegation-cost-statement-service.js",
+      "to": "services/fx-authority.js",
+      "type": "depends",
+      "label": "services/fx-authority.js"
+    },
+    {
       "from": "routes/market-delegation-cost-statement.js",
       "to": "services/market-delegation-cost-statement-service.js",
       "type": "uses",
@@ -86061,6 +86222,24 @@
       "to": "db:markets",
       "type": "db-read",
       "label": "markets"
+    },
+    {
+      "from": "services/market-delegation-cost-statement-service.js",
+      "to": "db:economic_cost_posts",
+      "type": "db-read",
+      "label": "economic_cost_posts"
+    },
+    {
+      "from": "services/market-delegation-cost-statement-service.js",
+      "to": "db:economic_cost_centers",
+      "type": "db-read",
+      "label": "economic_cost_centers"
+    },
+    {
+      "from": "services/market-delegation-cost-statement-service.js",
+      "to": "db:currency_parities",
+      "type": "db-read",
+      "label": "currency_parities"
     },
     {
       "from": "services/market-delegation-cost-statement-service.js",
@@ -120266,7 +120445,8 @@
       "directDependsOn": [
         "middleware/auth.js",
         "services/market-delegation-service.js",
-        "services/market-settlement-service.js"
+        "services/market-settlement-service.js",
+        "services/hub-internal-invoice-service.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js",
@@ -120282,6 +120462,12 @@
             "market_settlements",
             "market_settlement_events"
           ]
+        },
+        {
+          "via": "hub-internal-invoice-service",
+          "tables": [
+            "hub_internal_invoices"
+          ]
         }
       ],
       "doctrines": [
@@ -120296,6 +120482,7 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:hub_internal_invoices",
         "db:market_settlement_events",
         "db:market_settlements",
         "doctrine:market_currency_server_derived",
@@ -120305,6 +120492,7 @@
         "impact:market-delegation",
         "impact:settlement",
         "middleware/auth.js",
+        "services/hub-internal-invoice-service.js",
         "services/market-delegation-service.js",
         "services/market-settlement-service.js"
       ]
@@ -130383,7 +130571,8 @@
         "international_shipment_relay_receipts",
         "international_shipments",
         "international_n1_reconciliations",
-        "international_shipment_charges"
+        "international_shipment_charges",
+        "product_skus"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -130409,6 +130598,7 @@
         "db:order_items",
         "db:orders",
         "db:parcel_items",
+        "db:product_skus",
         "db:products",
         "doctrine:pricing_market_viability_cost_scope",
         "impact:admin-costing",
@@ -133955,6 +134145,7 @@
         "services/financial-journal.js",
         "services/fx-chain-service.js",
         "services/fx-engine-rates.js",
+        "services/market-delegation-cost-statement-service.js",
         "services/market-transport-sale-rates.js",
         "services/order-fx-snapshot.js",
         "services/pricing-parameters-status.js",
@@ -135055,6 +135246,49 @@
         "impact:incident-management",
         "impact:logistics",
         "impact:purchasing"
+      ]
+    },
+    "services/hub-internal-invoice-service.js": {
+      "role": "hub-internal-invoice-lifecycle",
+      "domain": "settlement",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/market-delegation-cost-statement-service.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-market-settlement.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "markets",
+        "hub_internal_invoices"
+      ],
+      "dbWrite": [
+        "hub_internal_invoices"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "hub_charges_separate_from_relay_cash",
+        "no_payment_execution"
+      ],
+      "impactAreas": [
+        "settlement",
+        "finance",
+        "economic-engine"
+      ],
+      "mustCheck": [
+        "db:hub_internal_invoices",
+        "db:markets",
+        "doctrine:hub_charges_separate_from_relay_cash",
+        "doctrine:no_payment_execution",
+        "impact:economic-engine",
+        "impact:finance",
+        "impact:settlement",
+        "routes/admin-market-settlement.js",
+        "services/market-delegation-cost-statement-service.js"
       ]
     },
     "services/hub-label-pdf.js": {
@@ -137532,7 +137766,8 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "services/market-delegation-team-service.js"
+        "services/market-delegation-team-service.js",
+        "services/fx-authority.js"
       ],
       "directUsedBy": [
         "routes/market-delegation-cost-statement.js"
@@ -137541,7 +137776,10 @@
       "dbRead": [
         "economic_structure_cost_events",
         "market_cost_attributions",
-        "markets"
+        "markets",
+        "economic_cost_posts",
+        "economic_cost_centers",
+        "currency_parities"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -137557,6 +137795,9 @@
         "finance"
       ],
       "mustCheck": [
+        "db:currency_parities",
+        "db:economic_cost_centers",
+        "db:economic_cost_posts",
         "db:economic_structure_cost_events",
         "db:market_cost_attributions",
         "db:markets",
@@ -137568,6 +137809,8 @@
         "impact:finance",
         "impact:market",
         "routes/market-delegation-cost-statement.js",
+        "services/fx-authority.js",
+        "services/hub-internal-invoice-service.js",
         "services/market-delegation-team-service.js"
       ]
     },

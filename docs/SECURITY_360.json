@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-27T08:18:31.358Z",
+  "generatedAt": "2026-11-27T08:59:51.391Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
     "total": 896,
@@ -630,7 +630,8 @@
       "key": "GET /api/admin/costing/products/margin-steering",
       "level": "PROTECTED",
       "roles": [
-        "admin"
+        "admin",
+        "market_operator"
       ]
     },
     {

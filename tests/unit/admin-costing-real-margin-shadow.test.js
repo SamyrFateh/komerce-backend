@@ -10,6 +10,7 @@
 jest.mock('../../middleware/auth', () => ({
   authenticate: (req, res, next) => { req.user = req.user || { id: 'admin-1', role: 'admin' }; next(); },
   requireAdmin: (req, res, next) => { if (req.user?.role !== 'admin') return res.status(403).json({ error: 'Accès admin requis' }); next(); },
+  requireRole: roles => (req, res, next) => roles.includes(req.user?.role) ? next() : res.sendStatus(403),
 }));
 jest.mock('../../utils/logger', () => ({ child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }) }));
 jest.mock('../../db', () => ({ query: jest.fn() }));
@@ -89,7 +90,7 @@ describe('GET /products/margin-steering', () => {
     expect(r.status).toBe(200);
     expect(r.body.products).toEqual([]);
     expect(r.body.market_id).toBe(MID);
-    expect(mockSteering).toHaveBeenCalledWith({ marketId: MID, productId: OID, sinceDays: '30', limit: undefined });
+    expect(mockSteering).toHaveBeenCalledWith({ marketId: MID, productId: OID, sinceDays: '30', limit: undefined, includeObservedCost: true });
   });
 
   it('market_code résolu en uuid ; code inconnu → 400', async () => {
@@ -97,10 +98,40 @@ describe('GET /products/margin-steering', () => {
     mockSteering.mockResolvedValue({ products: [] });
     db.query.mockResolvedValueOnce({ rows: [{ id: MID }] });
     expect((await request(app).get('/api/admin/costing/products/margin-steering?market_code=km')).status).toBe(200);
-    expect(db.query).toHaveBeenCalledWith('SELECT id FROM markets WHERE code = $1', ['KM']);
+    expect(db.query).toHaveBeenCalledWith('SELECT id, currency FROM markets WHERE code = $1', ['KM']);
     expect(mockSteering).toHaveBeenLastCalledWith(expect.objectContaining({ marketId: MID }));
     db.query.mockResolvedValueOnce({ rows: [] });
     expect((await request(app).get('/api/admin/costing/products/margin-steering?market_code=zz')).status).toBe(400);
+  });
+
+  it('finance.read : un responsable CM ne peut pas cibler KM et reçoit uniquement les agrégats CM', async () => {
+    const cm = '22222222-2222-4222-8222-222222222222';
+    const db = require('../../db');
+    user = { id: 'operator-cm', role: 'market_operator' };
+    db.query.mockResolvedValueOnce({ rows: [{ market_id: cm }] });
+    expect((await request(app).get(`/api/admin/costing/products/margin-steering?market_id=${MID}`)).status).toBe(403);
+    expect(mockSteering).not.toHaveBeenCalled();
+    db.query.mockResolvedValueOnce({ rows: [{ market_id: cm }] });
+    mockSteering.mockResolvedValue({ market_id: cm, products: [{ product_id: OID, observed_landed_cost: [], sales_detail: ['private'] }] });
+    const response = await request(app).get(`/api/admin/costing/products/margin-steering?market_id=${cm}`);
+    expect(response.status).toBe(200);
+    expect(response.body.products[0]).not.toHaveProperty('sales_detail');
+  });
+
+  it('convertit les coûts de CM avec les parités canoniques', async () => {
+    const db = require('../../db');
+    db.query.mockResolvedValueOnce({ rows: [{ id: MID, currency: 'XAF' }] });
+    const observed = { unit_cost_kmf: 7719.68, estimated_unit_cost_kmf: 7000, observed_multiplier: 1.569 };
+    mockSteering.mockResolvedValue({ market_id: MID, products: [{ observed_landed_cost: [observed] }] });
+    for (let i = 0; i < 2; i++) {
+      db.query.mockResolvedValueOnce({ rows: [{ rate: '491.96775' }] });
+      db.query.mockResolvedValueOnce({ rows: [{ rate: '655.957' }] });
+    }
+    const response = await request(app).get('/api/admin/costing/products/margin-steering?market_code=CM');
+    expect(response.status).toBe(200);
+    expect(response.body.products[0].observed_landed_cost[0]).toMatchObject({
+      display_currency: 'XAF', unit_cost_local: '10293', estimated_unit_cost_local: '9333', observed_multiplier: 1.569,
+    });
   });
 
   it('non admin → 403', async () => {

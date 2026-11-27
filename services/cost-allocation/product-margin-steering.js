@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result
  * @depends       db, utils/rules.js, services/cost-allocation/cost-types.js, services/cost-allocation/_helpers.js, services/cost-allocation/real-margin-shadow.js, services/pricing-market-decision-policy.js
  * @used-by       routes/admin-costing.js
- * @db-read       orders, order_items, order_item_cost_imputations, order_item_real_cost_allocations, products, customs_categories, finance_config, customs_shipments, customs_shipment_parcels, parcel_items, business_rules, international_shipment_relay_receipts, international_shipments, international_n1_reconciliations, international_shipment_charges
+ * @db-read       orders, order_items, order_item_cost_imputations, order_item_real_cost_allocations, products, customs_categories, finance_config, customs_shipments, customs_shipment_parcels, parcel_items, business_rules, international_shipment_relay_receipts, international_shipments, international_n1_reconciliations, international_shipment_charges, product_skus
  * @db-write      none
  * @db-txn        @none
  * @doctrine      pricing_market_viability_cost_scope
@@ -55,6 +55,7 @@ const DEFAULT_RULES = Object.freeze({
   MARGIN_STEERING_CUSTOMS_IMPACT_PTS: 3,
 });
 
+const LANDED_VARIABLE_TYPES = new Set([...Object.values(SNAPSHOT_LANDED_TO_REAL_COST_TYPE), 'payment']);
 const LOGISTICS_REAL_TYPES = new Set(['freight', 'port_transitaire']);
 const NOT_SOLD_STATUSES = ['cancelled', 'refunded'];
 
@@ -120,6 +121,79 @@ function computeLineMargin(line) {
     margin_kmf: Math.round(margin * 100) / 100,
     margin_pct: sale > 0 ? pct2((margin / sale) * 100) : null,
   };
+}
+
+// Materialize cost coverage independently from the historical withdrawal signal.
+function computeLandedCostEvidence({ result, real = {}, imported }) {
+  const required = ['product_purchase', 'relay', 'payment'];
+  if (imported) required.push('freight', 'customs', 'port_transitaire');
+  const costs = { ...result.costs };
+  for (const [type, entry] of Object.entries(real)) {
+    if (type === 'customs' || !LANDED_VARIABLE_TYPES.has(type)) continue;
+    if (entry.actual_count > 0 && Number.isFinite(entry.actual)) {
+      costs[type] = { state: 'real', amount_kmf: entry.actual };
+    }
+  }
+  const missing = required.filter(type => {
+    const cost = costs[type];
+    return !cost || cost.amount_kmf === null || (cost.state === 'not_expected' && type !== 'customs');
+  });
+  for (const type of missing) {
+    if (!costs[type]) costs[type] = { state: 'missing', amount_kmf: null };
+  }
+  const reason = result.reason || (missing.length ? 'cost_missing:' + missing[0] : null);
+  const status = reason ? 'incomplete'
+    : Object.values(costs).some(cost => cost.state === 'estimated') ? 'provisional' : 'final';
+  return { status, reason, missing, costs };
+}
+
+function summarizeObservedLandedCost(lines, shipments, { since, truncated }) {
+  const cohorts = new Map();
+  for (const line of lines) {
+    const shipment = shipments.get(line.order_item_id);
+    const closed = Date.parse(shipment?.financial_closed_at);
+    if (!shipment?.rail || !line.sku_id || !Number.isFinite(closed) || closed < since || line.fulfillment_source === 'LOCAL_STOCK') continue;
+    const key = JSON.stringify([line.sku_id, shipment.rail]);
+    if (!cohorts.has(key)) cohorts.set(key, {
+      sku_id: line.sku_id, sku_reference: line.sku_reference, rail: shipment.rail, shipments: new Set(), last_closed_at: null,
+      quantity: 0, final_lines: 0, provisional_lines: 0, incomplete_lines: 0, costs: {},
+      estimated_cents: 0, estimated_lines: 0,
+    });
+    const cohort = cohorts.get(key);
+    const evidence = line.landed_cost_evidence;
+    if (evidence.status !== 'final' || !Number.isFinite(line.result.reconciled_after_sale_margin_kmf)) {
+      cohort[evidence.status === 'incomplete' ? 'incomplete_lines' : 'provisional_lines']++;
+      continue;
+    }
+    cohort.shipments.add(shipment.shipment_id);
+    const closedAt = new Date(shipment.financial_closed_at).toISOString();
+    if (!cohort.last_closed_at || closedAt > cohort.last_closed_at) cohort.last_closed_at = closedAt;
+    cohort.quantity += Number(line.quantity);
+    cohort.final_lines++;
+    if (Number.isFinite(line.frozen_estimated_cost_kmf)) {
+      cohort.estimated_cents += Math.round(line.frozen_estimated_cost_kmf * 100);
+      cohort.estimated_lines++;
+    }
+    for (const [type, cost] of Object.entries(evidence.costs)) {
+      if (cost.state !== 'real') continue;
+      cohort.costs[type] = (cohort.costs[type] || 0) + Math.round(cost.amount_kmf * 100);
+    }
+  }
+  return [...cohorts.values()].map(({ shipments: observed, costs, estimated_cents, estimated_lines, ...cohort }) => {
+    const total = Object.values(costs).reduce((sum, cents) => sum + cents, 0);
+    const purchase = costs.product_purchase || 0;
+    const status = truncated ? 'TRUNCATED'
+      : observed.size < 3 ? 'INSUFFICIENT_OBSERVATIONS'
+        : purchase <= 0 ? 'PURCHASE_COST_UNAVAILABLE' : 'DECISIONAL';
+    return {
+      ...cohort, status, observations: observed.size,
+      unit_cost_kmf: cohort.quantity > 0 ? pct2(total / 100 / cohort.quantity) : null,
+      estimated_unit_cost_kmf: estimated_lines === cohort.final_lines && cohort.quantity > 0
+        ? pct2(estimated_cents / 100 / cohort.quantity) : null,
+      observed_multiplier: purchase > 0 ? total / purchase : null,
+      cost_by_type_kmf: Object.fromEntries(Object.entries(costs).map(([type, cents]) => [type, cents / 100])),
+    };
+  });
 }
 
 /** Remplace achat/paiement estimés par le réel de la commande (shadow final), au prorata. */
@@ -220,8 +294,8 @@ function evaluateShipmentLosses(lines, selection, { since, truncated = false } =
   };
 }
 
-async function loadComparableSaleShipments(marketId, lines) {
-  const ids = lines.filter(({ result }) => Number.isFinite(result.reconciled_after_sale_margin_kmf))
+async function loadComparableSaleShipments(marketId, lines, { includeIncomplete = false } = {}) {
+  const ids = lines.filter(({ result }) => includeIncomplete || Number.isFinite(result.reconciled_after_sale_margin_kmf))
     .map(({ order_item_id }) => order_item_id);
   if (!ids.length) return new Map();
   const { rows } = await db.query(
@@ -344,7 +418,7 @@ function summarizeProduct(lines, rules) {
 /**
  * @param {{marketId: string, productId?: string, sinceDays?: number, limit?: number}} opts
  */
-async function listProductMarginSteering({ marketId, productId = null, sinceDays = 180, limit = 500 } = {}) {
+async function listProductMarginSteering({ marketId, productId = null, sinceDays = 180, limit = 500, includeObservedCost = false } = {}) {
   if (!marketId) throw Object.assign(new Error('marketId requis'), { status: 400 });
   const days = Math.min(730, Math.max(1, parseInt(sinceDays, 10) || 180));
   const lim = Math.min(2000, Math.max(1, parseInt(limit, 10) || 500));
@@ -353,7 +427,8 @@ async function listProductMarginSteering({ marketId, productId = null, sinceDays
 
   const [{ rows }, { rows: [fin] }] = await Promise.all([
     db.query(
-      `SELECT oi.id AS order_item_id, oi.order_id, oi.product_id, oi.quantity, oi.sku_id,
+      `SELECT oi.id AS order_item_id, oi.order_id, oi.product_id, oi.quantity, oi.sku_id, sku.sku AS sku_reference, imp.estimated_landed_relay_cost_kmf,
+              oi.fulfillment_source,
               (SELECT COUNT(*)::int FROM order_items basket WHERE basket.order_id = oi.order_id) AS order_item_count,
               (oi.fulfillment_source IS DISTINCT FROM 'LOCAL_STOCK') AS customs_expected,
               EXISTS (
@@ -368,6 +443,7 @@ async function listProductMarginSteering({ marketId, productId = null, sinceDays
          FROM order_items oi
          JOIN orders o ON o.id = oi.order_id
          JOIN order_item_cost_imputations imp ON imp.order_item_id = oi.id
+         LEFT JOIN product_skus sku ON sku.id = oi.sku_id
          LEFT JOIN products p ON p.id = oi.product_id
          LEFT JOIN customs_categories cc ON cc.key = p.category
         WHERE o.market_id = $1
@@ -393,6 +469,7 @@ async function listProductMarginSteering({ marketId, productId = null, sinceDays
     const { rows: alloc } = await db.query(
       `SELECT a.order_item_id, a.cost_type, a.shipment_id, cs.reference, cs.shipment_date, cs.status,
               COALESCE(SUM(a.amount_kmf) FILTER (WHERE ${justifiedRealSql('a')}), 0) AS actual,
+              COUNT(*) FILTER (WHERE ${justifiedRealSql('a')}) AS actual_count,
               COALESCE(SUM(a.amount_kmf) FILTER (WHERE NOT a.is_actual AND ${notLegacyUnjustifiedSql('a')}), 0) AS non_actual
          FROM order_item_real_cost_allocations a
          LEFT JOIN customs_shipments cs ON cs.id = a.shipment_id
@@ -402,7 +479,8 @@ async function listProductMarginSteering({ marketId, productId = null, sinceDays
     );
     for (const a of alloc) {
       const byType = realByItem.get(a.order_item_id) || {};
-      const slot = byType[a.cost_type] || { actual: 0, non_actual: 0 };
+      const slot = byType[a.cost_type] || { actual: 0, non_actual: 0, actual_count: 0 };
+      slot.actual_count += Number(a.actual_count || 0);
       slot.actual += Number(a.actual); slot.non_actual += Number(a.non_actual);
       byType[a.cost_type] = slot;
       realByItem.set(a.order_item_id, byType);
@@ -437,9 +515,14 @@ async function listProductMarginSteering({ marketId, productId = null, sinceDays
       order_item_count: r.order_item_count,
       order_item_id: r.order_item_id, order_id: r.order_id, product_id: r.product_id, product_name: r.product_name,
       product_target_pct: productTarget, sold_at: r.sold_at, quantity: r.quantity,
-      sku_id: r.sku_id, product_family: r.product_family,
+      sku_id: r.sku_id, sku_reference: r.sku_reference, product_family: r.product_family, fulfillment_source: r.fulfillment_source,
       target_pct: target, target_source: targetSource,
       shipments: [...(shipByItem.get(r.order_item_id) || new Map()).values()],
+      frozen_estimated_cost_kmf: (() => {
+        const landedTotal = num(r.estimated_landed_relay_cost_kmf);
+        const payment = num(r.cost_breakdown?.business?.payment);
+        return landedTotal === null || payment === null ? null : landedTotal + Number(r.quantity) * payment;
+      })(),
       result,
     };
   });
@@ -470,6 +553,15 @@ async function listProductMarginSteering({ marketId, productId = null, sinceDays
     : [];
   const shipments = await loadComparableSaleShipments(marketId, selectedLines);
   for (const line of selectedLines) line.sale_shipment = shipments.get(line.order_item_id);
+  const observedSince = at.getTime() - 90 * 86400000;
+  const observedShipments = includeObservedCost
+    ? await loadComparableSaleShipments(marketId, [...byProduct.values()].flat(), { includeIncomplete: true })
+    : new Map();
+  for (const line of includeObservedCost ? lines : []) {
+    line.landed_cost_evidence = computeLandedCostEvidence({
+      result: line.result, real: realByItem.get(line.order_item_id), imported: line.fulfillment_source !== 'LOCAL_STOCK',
+    });
+  }
   const since = Math.max(Date.parse(policy?.effective_from), at.getTime() - Number(policy?.window_days) * 86400000);
 
   const products = [...byProduct.entries()].map(([pid, pl]) => ({
@@ -478,6 +570,7 @@ async function listProductMarginSteering({ marketId, productId = null, sinceDays
     product_name: pl[0].product_name,
     product_target_pct: pl[0].product_target_pct,
     ...summarizeProduct(pl, rules),
+    ...(includeObservedCost ? { observed_landed_cost: summarizeObservedLandedCost(pl, observedShipments, { since: observedSince, truncated }) } : {}),
     after_sale_selection: {
       policy_version: policy?.version ?? null,
       ...evaluateShipmentLosses(pl, Object.hasOwn(selectionByFamily ?? {}, pl[0].product_family)
@@ -489,6 +582,7 @@ async function listProductMarginSteering({ marketId, productId = null, sinceDays
       margin_kmf: l.result.margin_kmf, margin_pct: l.result.margin_pct, target_pct: l.target_pct,
       target_source: l.target_source, gap_pts: l.result.gap_pts, costs: l.result.costs,
       reconciled_after_sale_margin_kmf: l.result.reconciled_after_sale_margin_kmf ?? null,
+      landed_cost_evidence: l.landed_cost_evidence,
     })),
   })).sort((a, b) => (a.gap_pts ?? Infinity) - (b.gap_pts ?? Infinity));
 
@@ -496,10 +590,11 @@ async function listProductMarginSteering({ marketId, productId = null, sinceDays
     market_id: marketId,
     evaluated_at: at.toISOString(),
     since_days: days,
+    ...(includeObservedCost ? { observed_landed_cost_window_days: 90 } : {}),
     rules,
     products,
     truncated,
   };
 }
 
-module.exports = { evaluateShipmentLosses, loadComparableSaleShipments, listProductMarginSteering, computeLineMargin, summarizeProduct, applyFinalOrderReal, DEFAULT_RULES };
+module.exports = { evaluateShipmentLosses, loadComparableSaleShipments, listProductMarginSteering, computeLineMargin, computeLandedCostEvidence, summarizeObservedLandedCost, summarizeProduct, applyFinalOrderReal, DEFAULT_RULES };

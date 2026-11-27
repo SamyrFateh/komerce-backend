@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-27T00:40:06.662Z",
+  "generatedAt": "2026-11-27T08:59:54.898Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 898,
+  "count": 901,
   "routes": [
     {
       "method": "GET",
@@ -1397,6 +1397,36 @@
       "mountPrefix": "/api/admin/market-payment-accounts",
       "localPath": "/markets/:marketCode",
       "routeFile": "routes/admin-market-payment-accounts.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/market-settlements/markets/:marketCode/hub-invoices",
+      "mountPrefix": "/api/admin/market-settlements",
+      "localPath": "/markets/:marketCode/hub-invoices",
+      "routeFile": "routes/admin-market-settlement.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/market-settlements/markets/:marketCode/hub-invoices",
+      "mountPrefix": "/api/admin/market-settlements",
+      "localPath": "/markets/:marketCode/hub-invoices",
+      "routeFile": "routes/admin-market-settlement.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/market-settlements/markets/:marketCode/hub-invoices/:invoiceId/payment",
+      "mountPrefix": "/api/admin/market-settlements",
+      "localPath": "/markets/:marketCode/hub-invoices/:invoiceId/payment",
+      "routeFile": "routes/admin-market-settlement.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]

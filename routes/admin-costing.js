@@ -51,11 +51,13 @@ const { realActivityByOrderIdSql, assignOrderSimulationScope } = require('../ser
 const costAllocation = require('../services/cost-allocation');
 const manualCostEntry = require('../services/cost-allocation/manual-cost-entry-service');
 const realMarginShadow = require('../services/cost-allocation/real-margin-shadow');
+const fxAuthority = require('../services/fx-authority');
 const productMarginSteering = require('../services/cost-allocation/product-margin-steering');
 const { recordSkuRailSelection } = require('../services/economic-sku-rail-selection');
 const { hasPricingGlobalAuthority } = require('../middleware/require-pricing-global-authority');
+const { resolveReadScope } = require('../middleware/require-market-delegated-capability');
 const dashboardCache = require('../services/dashboard-cache');
-const { authenticate, requireAdmin } = require('../middleware/auth');
+const { authenticate, requireAdmin, requireRole } = require('../middleware/auth');
 const log = require('../utils/logger').child({ module: 'admin-costing' });
 
 const router = express.Router();
@@ -717,21 +719,60 @@ router.get('/real-margin-shadow', authenticate, requireAdmin, async (req, res, n
 });
 
 // Pilotage par la marge, par produit (lecture seule ; aucun prix modifié, aucun blocage).
-router.get('/products/margin-steering', authenticate, requireAdmin, async (req, res, next) => {
+router.get('/products/margin-steering', authenticate, requireRole(['admin', 'market_operator']), async (req, res, next) => {
   try {
+    const scope = await resolveReadScope(req, 'finance.read');
+    let currency;
     let marketId = req.query.market_id ? String(req.query.market_id) : null;
     if (!marketId && req.query.market_code) {
-      const { rows: [m] } = await db.query('SELECT id FROM markets WHERE code = $1', [String(req.query.market_code).toUpperCase()]);
+      const { rows: [m] } = await db.query('SELECT id, currency FROM markets WHERE code = $1', [String(req.query.market_code).toUpperCase()]);
       marketId = m ? m.id : null;
+      currency = m?.currency;
     }
     if (!marketId || !_UUID_RE.test(marketId)) return res.status(400).json({ error: 'market_id (uuid) ou market_code requis' });
+    if (scope && !scope.includes(marketId)) return res.status(403).json({ code: 'MARKET_READ_CAPABILITY_REQUIRED' });
     const productId = req.query.product_id ? String(req.query.product_id) : null;
     if (productId && !_UUID_RE.test(productId)) return res.status(400).json({ error: 'product_id invalide' });
     const result = await productMarginSteering.listProductMarginSteering({
-      marketId, productId, sinceDays: req.query.since_days, limit: req.query.limit,
+      marketId, productId, sinceDays: req.query.since_days, limit: req.query.limit, includeObservedCost: true,
     });
+    if (!currency && result.products.some(product => product.observed_landed_cost?.length)) {
+      const { rows: [market] } = await db.query('SELECT currency FROM markets WHERE id = $1', [marketId]);
+      currency = market?.currency;
+    }
+    if (currency && currency !== 'KMF') {
+      const equivalents = new Map();
+      const convert = amount => {
+        if (amount == null) return null;
+        if (!equivalents.has(amount)) equivalents.set(amount, fxAuthority.convert({ amount, from: 'KMF', to: currency })
+          .then(value => value.amount_text)
+          .catch(error => {
+            if (error instanceof fxAuthority.FxError && ['fx_rate_unavailable', 'fx_currency_unsupported'].includes(error.code)) return null;
+            throw error;
+          }));
+        return equivalents.get(amount);
+      };
+      for (const product of result.products) {
+        for (const cost of product.observed_landed_cost || []) {
+          cost.display_currency = currency;
+          cost.unit_cost_local = await convert(cost.unit_cost_kmf);
+          cost.estimated_unit_cost_local = await convert(cost.estimated_unit_cost_kmf);
+        }
+      }
+    }
+    res.set('Cache-Control', 'private, no-store');
+    if (scope) {
+      return res.json({
+        market_id: result.market_id,
+        truncated: result.truncated,
+        products: result.products.map(({ product_id, product_name, observed_landed_cost }) => ({
+          product_id, product_name, observed_landed_cost,
+        })),
+      });
+    }
     res.json(result);
   } catch (err) {
+    if (err.status === 403) return res.status(403).json({ code: err.code });
     next(err);
   }
 });

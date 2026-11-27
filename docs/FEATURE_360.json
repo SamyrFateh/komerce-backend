@@ -21935,6 +21935,7 @@
           "consumer": "settlement",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         },
@@ -33138,11 +33139,16 @@
       "implementation": {
         "byCategory": {
           "migrations": {
-            "count": 1,
+            "count": 2,
             "files": [
               {
                 "declared": "migrations/208_market_settlement_foundation.sql",
                 "resolvedPath": "migrations/208_market_settlement_foundation.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/452_hub_internal_invoices.sql",
+                "resolvedPath": "migrations/452_hub_internal_invoices.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -33158,8 +33164,13 @@
             ]
           },
           "services": {
-            "count": 1,
+            "count": 2,
             "files": [
+              {
+                "declared": "services/hub-internal-invoice-service.js",
+                "resolvedPath": "services/hub-internal-invoice-service.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "services/market-settlement-service.js",
                 "resolvedPath": "services/market-settlement-service.js",
@@ -33168,7 +33179,7 @@
             ]
           },
           "tests": {
-            "count": 4,
+            "count": 5,
             "files": [
               {
                 "declared": "tests/e2e-api/settlement.state-machine.e2e.test.js",
@@ -33178,6 +33189,11 @@
               {
                 "declared": "tests/unit/admin-market-settlement-routes.test.js",
                 "resolvedPath": "tests/unit/admin-market-settlement-routes.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-internal-invoice-service.test.js",
+                "resolvedPath": "tests/unit/hub-internal-invoice-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -33193,7 +33209,7 @@
             ]
           }
         },
-        "totalFiles": 7,
+        "totalFiles": 10,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -33202,6 +33218,10 @@
       },
       "ownership": {
         "ownsTables": [
+          {
+            "table": "hub_internal_invoices",
+            "resolution": "declared-table-owner"
+          },
           {
             "table": "market_settlement_events",
             "resolution": "declared-table-owner"
@@ -33212,6 +33232,12 @@
           }
         ],
         "writesTables": [
+          {
+            "table": "hub_internal_invoices",
+            "mode": "RW",
+            "lifecycleOwner": "settlement",
+            "ownershipStatus": "owner"
+          },
           {
             "table": "market_settlement_events",
             "mode": "RW",
@@ -33243,6 +33269,10 @@
       "data": {
         "ownsTables": [
           {
+            "table": "hub_internal_invoices",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "market_settlement_events",
             "resolution": "declared-table-owner"
           },
@@ -33252,6 +33282,12 @@
           }
         ],
         "writesTables": [
+          {
+            "table": "hub_internal_invoices",
+            "mode": "RW",
+            "lifecycleOwner": "settlement",
+            "ownershipStatus": "owner"
+          },
           {
             "table": "market_settlement_events",
             "mode": "RW",
@@ -33309,7 +33345,7 @@
           }
         ],
         "httpInterfaces": {
-          "count": 3
+          "count": 6
         }
       },
       "businessDependencies": [
@@ -33338,6 +33374,7 @@
           "provider": "market",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         },
