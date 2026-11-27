@@ -5,6 +5,8 @@
 jest.mock('../../services/market-delegation-cost-statement-service', () => ({
   readHubStatement: jest.fn(),
   statementPeriod: jest.fn((from, to) => ({ fromIso: from, toIso: to })),
+  projectHubInvoiceBalance: jest.requireActual('../../services/market-delegation-cost-statement-service').projectHubInvoiceBalance,
+  hubInvoiceAdjustmentRequired: jest.requireActual('../../services/market-delegation-cost-statement-service').hubInvoiceAdjustmentRequired,
 }));
 const { readHubStatement } = require('../../services/market-delegation-cost-statement-service');
 const { preview, issue, recordPayment } = require('../../services/hub-internal-invoice-service');
@@ -33,7 +35,7 @@ test('active market issues only the reviewed statement and freezes currency equi
   expect(review.can_issue).toBe(true);
   const db = client([market], [], [balance]);
   await expect(issue(db, { ...dates, evidenceHash: review.evidence_hash, actorId: 'finance' }))
-    .resolves.toMatchObject({ ...balance, status: 'ISSUED' });
+    .resolves.toMatchObject({ ...balance, status: 'ISSUED',balance:{hub_receivable_kmf:'40000.00',market_payable_kmf:'40000.00'} });
   expect(db.query.mock.calls[0][0]).toContain('FOR UPDATE');
   expect(JSON.parse(db.query.mock.calls[2][1][5])).toEqual(statement);
 });
@@ -63,7 +65,7 @@ test('incoming payment is recorded only against the exact amount and a matching 
   const input = { marketCode: 'CM', invoiceId: balance.id, amountKmf: '40000', reference: 'BANK-1', actorId: 'finance' };
   const paid = { ...balance, paid_at: 'today', payment_reference: input.reference };
   await expect(recordPayment(client([market], [balance], [paid]), input))
-    .resolves.toMatchObject({ status: 'PAID', payment_reference: 'BANK-1' });
+    .resolves.toMatchObject({ status: 'PAID', payment_reference: 'BANK-1',balance:{hub_receivable_kmf:'0.00',market_payable_kmf:'0.00',settlement_status:'PAYMENT_ATTESTED'} });
   await expect(recordPayment(client([market], [paid]), input)).resolves.toMatchObject({ status: 'PAID' });
   await expect(recordPayment(client([market], [balance]), { ...input, amountKmf: '39999.99' }))
     .rejects.toMatchObject({ code: 'HUB_INVOICE_PAYMENT_MISMATCH' });

@@ -215,6 +215,10 @@
         result.appendChild(row('Facture interne du Hub', invoice.id));
         result.appendChild(row('Statut', invoice.status === 'PAID' ? 'Réglée' : 'À régler'));
         if (invoice.payment_reference) result.appendChild(row('Référence du règlement', invoice.payment_reference));
+        if (invoice.balance) {
+          result.appendChild(row(centralFinance?'Créance Hub':'Reste dû au Hub',kmf(centralFinance?invoice.balance.hub_receivable_kmf:invoice.balance.market_payable_kmf)));
+          if(invoice.balance.settlement_status==='PAYMENT_ATTESTED') result.appendChild(el('p','kmc-team-help','Règlement attesté par la finance, distinct des encaissements relais.'));
+        }
       }
       result.appendChild(pill(`Total Hub ${kmf(data.total_kmf)}`, true));
       const info = data.informational_totals;
