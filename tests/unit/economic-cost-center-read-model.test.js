@@ -4,7 +4,7 @@ const mockQuery=jest.fn(),mockRelease=jest.fn(),mockClient=jest.fn(),mockGrant=j
 jest.mock('../../db',()=>({getClient:(...a)=>mockClient(...a)}));
 jest.mock('../../middleware/require-pricing-global-authority',()=>({hasPricingGlobalAuthority:(...a)=>mockGrant(...a)}));
 jest.mock('../../services/market-delegation-service',()=>({resolveAuthorization:(...a)=>mockAuthz(...a)}));
-const {readCostCenters,budgetSummary,recordedPostBalance,recordedBalanceSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,shipmentPurchase,observedProfitability,periodSalesEvidence,projectGroupPeriodResult}=require('../../services/economic-cost-center-read-model');
+const {readCostCenters,budgetSummary,recordedPostBalance,recordedBalanceSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,shipmentPurchase,observedProfitability,periodSalesEvidence,projectGroupPeriodResult,completeCostParcelCount}=require('../../services/economic-cost-center-read-model');
 const client={query:mockQuery,release:mockRelease},actor={id:'actor',role:'admin'},month='2026-01-01';
 const ok=(rows=[])=>({rows});
 beforeEach(()=>{jest.resetAllMocks();mockClient.mockResolvedValue(client);mockGrant.mockResolvedValue(true);});
@@ -12,10 +12,10 @@ function projection(postRows=[],commitmentRows=[],structureRows=[],market=false)
   mockQuery.mockResolvedValueOnce(ok([{id:'center'}])).mockResolvedValueOnce(ok([{id:'family'}])).mockResolvedValueOnce(ok([{id:'resource'}])).mockResolvedValueOnce(ok(postRows)).mockResolvedValueOnce(ok(commitmentRows)).mockResolvedValueOnce(ok(structureRows));
   mockQuery.mockResolvedValueOnce(ok()).mockResolvedValueOnce(ok());
   mockQuery.mockResolvedValueOnce(ok([
-    {parcel_id:'parcel-a',pickup_method:'PICKUP_CODE',units:4},
-    {parcel_id:'parcel-a',pickup_method:'PICKUP_CODE',units:4},
-    {parcel_id:'parcel-b',pickup_method:'UNSUPPORTED',units:99},
-  ])).mockResolvedValueOnce(ok([{count:1,amount_kmf:'500.00'}])).mockResolvedValueOnce(ok([{covered_units:4,amount_kmf:'1000.00'}])).mockResolvedValueOnce(ok([{parcel_count:1,amount_kmf:'315.25'}]));
+    {parcel_id:'parcel-a',parcel_status:'collected',pickup_method:'PICKUP_CODE',units:4},
+    {parcel_id:'parcel-a',parcel_status:'collected',pickup_method:'PICKUP_CODE',units:4},
+    {parcel_id:'parcel-b',parcel_status:'collected',pickup_method:'UNSUPPORTED',units:99},
+  ])).mockResolvedValueOnce(ok([{count:1,amount_kmf:'500.00'}])).mockResolvedValueOnce(ok([{covered_units:4,amount_kmf:'1000.00'}])).mockResolvedValueOnce(ok([{parcel_count:1,amount_kmf:'315.25',line_evidence:[]}]));
   if(!market)mockQuery.mockResolvedValueOnce(ok()).mockResolvedValueOnce(ok());
   mockQuery.mockResolvedValueOnce(ok());
 }
@@ -36,8 +36,8 @@ test('market delegation resolves exact market and no other scope is queried',asy
   expect(mockAuthz).toHaveBeenCalledWith(client,{userId:'member',marketCode:'CM',requiredCapability:'pricing.read'});
   expect(result).toMatchObject({scope:'MARKET',marketCode:'CM',central:false,readOnly:true});
   for(const call of mockQuery.mock.calls.slice(1,8))expect(call[1][0]).toBe('market-CM');
-  expect(result.profitability.recognitionEvidence).toEqual({handoffParcelCount:1,attestedUnits:4,
-    confirmedRefundCount:1,confirmedRefundKmf:'500.00',pricedHandoffUnits:4,documentedHandoffSalesKmf:'1000.00',parcelCostEvidenceCount:1,
+  expect(result.profitability.recognitionEvidence).toEqual({candidateHandoffParcelCount:2,handoffParcelCount:1,attestedUnits:4,
+    confirmedRefundCount:1,confirmedRefundKmf:'500.00',pricedHandoffUnits:4,documentedHandoffSalesKmf:'1000.00',parcelCostEvidenceCount:1,fullyCoveredParcelCount:0,
     documentedParcelVariableCostKmf:'315.25',coverage:'DOCUMENTED_EVENTS_ONLY'});
   for (const call of mockQuery.mock.calls.filter(([sql]) => sql.includes('FROM scans s') || sql.includes('FROM refunds r JOIN'))) {
     expect(call[1]).toEqual(['market-CM','2026-01-01','2026-02-01']);
@@ -192,7 +192,7 @@ test('recorded balance conserves budget, remaining commitments and actual eviden
 
 test('group result conserves cents and stays provisional after risk review',()=>{
   const recognition={documentedHandoffSalesKmf:'1000.00',pricedHandoffUnits:2,attestedUnits:2,
-    documentedParcelVariableCostKmf:'315.25',parcelCostEvidenceCount:1,handoffParcelCount:1,
+    documentedParcelVariableCostKmf:'315.25',parcelCostEvidenceCount:1,fullyCoveredParcelCount:1,candidateHandoffParcelCount:1,handoffParcelCount:1,
     confirmedRefundCount:1,confirmedRefundKmf:'100.02'};
   const structure={recognizedKmf:200.12};
   expect(projectGroupPeriodResult(recognition,structure,{amountKmf:null})).toEqual({
@@ -202,6 +202,24 @@ test('group result conserves cents and stays provisional after risk review',()=>
     status:'PROVISIONAL',reasons:[],netSalesKmf:'899.98',variableCostKmf:'365.26',
     actualRiskKmf:'50.01',contributionKmf:'534.72',structureKmf:'200.12',resultKmf:'334.60',
   });
-  expect(projectGroupPeriodResult({...recognition,parcelCostEvidenceCount:0},structure,{amountKmf:'0.00'}))
+  expect(projectGroupPeriodResult({...recognition,fullyCoveredParcelCount:0},structure,{amountKmf:'0.00'}))
     .toMatchObject({status:'NOT_RECONCILED',reasons:['VARIABLE_COSTS_INCOMPLETE']});
+});
+
+test('a single cost, or a single fully covered line, cannot complete a parcel',()=>{
+  const base={parcel_id:'p',fulfillment_source:'LOCAL_STOCK',payment_mode:'cash_relais',
+    relay_beneficiary:true,hub_operation:false,full_parcel_line:true};
+  const all=['product_purchase','sourcing','packaging','local_distribution','relay'];
+  expect(completeCostParcelCount([{...base,types:['packaging']}])).toBe(0);
+  expect(completeCostParcelCount([{...base,types:all},{...base,types:['packaging']}])).toBe(0);
+  expect(completeCostParcelCount([{...base,types:all}])).toBe(1);
+  expect(completeCostParcelCount([{...base,types:all,full_parcel_line:false}])).toBe(0);
+  expect(completeCostParcelCount([{...base,types:all,fulfillment_source:null}])).toBe(0);
+  expect(completeCostParcelCount([{...base,types:[...all,'hub','freight','customs','port_transitaire'],fulfillment_source:'IMPORT',customs_known:false}])).toBe(0);
+});
+test('known empty handoff month retains fixed costs; missing proof never becomes zero',()=>{
+  const empty={candidateHandoffParcelCount:0,handoffParcelCount:0,pricedHandoffUnits:0,attestedUnits:0,
+    fullyCoveredParcelCount:0,confirmedRefundCount:0,documentedHandoffSalesKmf:null,documentedParcelVariableCostKmf:null};
+  expect(projectGroupPeriodResult(empty,{recognizedKmf:100},{amountKmf:'0.00'})).toMatchObject({status:'PROVISIONAL',resultKmf:'-100.00'});
+  expect(projectGroupPeriodResult({...empty,candidateHandoffParcelCount:1},{recognizedKmf:100},{amountKmf:'0.00'})).toMatchObject({status:'NOT_RECONCILED',reasons:expect.arrayContaining(['SALES_INCOMPLETE'])});
 });
