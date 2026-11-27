@@ -268,3 +268,7 @@ Brouillon documentaire uniquement. Pas de preflight, pas de tests, pas de PR, pa
 | Finance cash | `POST /api/market-delegation/markets/:marketCode/cash-custody/destinations/:destinationId/:verb` | [routes/market-delegation-cash-control.js:142](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/market-delegation-cash-control.js#L142) | authenticate | ÉCRITURE INCHANGÉE | — | cash_control.policy.manage |
 
 Pas d'erreur d'extraction pour ces fichiers.
+
+### Amendement proposé — parité de lecture centrale filtrée (lot 5)
+
+Le besoin de parité T2 ne requiert aucune nouvelle lecture opérateur. Les GET délégués existants du tableau B suivants peuvent réutiliser exactement leur projection marché pour tout admin authentifié (A1), sans synthétiser de membership ni ACT/EXEC : équipe, prestataires, litiges, offres locales, règlements, cash-control-policy, performance, relevé de coûts, douane, comptes de paiement, référentiel marché. L'admin lecteur obtient uniquement le marché résolu et les champs déjà projetés, pas de nouveau droit d'écriture. A1 : le rôle admin suffit en lecture. Les grants centraux restent applicables aux writers existants, sans élargissement. Les routes mutantes continuent de résoudre la délégation réelle. Cet amendement est soumis à la revue globale, pas validé par avance.

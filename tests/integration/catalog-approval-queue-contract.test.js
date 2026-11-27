@@ -94,7 +94,7 @@ if (!hasIntegrationEnv) {
     adminUser = await createUser({ role: 'admin' });
     clientUser = await createUser({ role: 'client' });
     ungrantedAdmin = await createUser({ role: 'admin' });
-    // Visual FR proof endpoints require an explicit global Catalogue grant.
+    // Visual FR review writes require an explicit global Catalogue grant; A1 reads do not.
     await db.query(`INSERT INTO catalog_global_access_grants (user_id, reason)
       VALUES ($1, 'catalog-approval-contract-visual-fr')`, [adminUser.id]);
   }, 30000);
@@ -158,11 +158,11 @@ if (!hasIntegrationEnv) {
       const client = await request(app).get(`${BASE}/${nilUuid}/visual-fr-proof`).set(...bearer(clientUser.token));
       expect([401,403]).toContain(client.status);
     });
-    test('403 admin without explicit global Catalogue grant', async () => {
+    test('A1: admin without Catalogue grant reaches the read-only proof lookup', async () => {
       const result = await request(app).get(`${BASE}/${nilUuid}/visual-fr-proof`)
         .set(...bearer(ungrantedAdmin.token));
-      expect(result.status).toBe(403);
-      expect(result.body.code).toBe('catalog_global_access_denied');
+      expect(result.status).toBe(404);
+      expect(result.body.code).toBe('PRODUCT_NOT_FOUND');
     });
     test('400 malformed id, 404 nonexistent product for admin', async () => {
       const malformed = await request(app).get(`${BASE}/not-uuid/visual-fr-proof`).set(...bearer(adminUser.token));

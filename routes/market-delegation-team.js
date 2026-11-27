@@ -25,6 +25,7 @@ const db = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { requireDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const { projectAssignment } = require('../services/market-scope-projector');
+const { resolveCanonicalMarketRead } = require('../services/market-delegation-read-authority');
 const {
   resolveAuthorization,
   listTeam,
@@ -93,9 +94,11 @@ router.get('/central/team-matrix', authenticate, requireAdmin, requireDashboardG
 router.get('/markets/:marketCode/team', authenticate, async (req, res, next) => {
   try {
     const result = await withTransaction(async (client) => {
-      const authz = await authorization(client, req, 'team.read');
+      const authz = await resolveCanonicalMarketRead(resolveAuthorization, client, {
+        userId: req.user.id, actorRole: req.user.role, marketCode: req.params.marketCode, primaryCapability: 'team.read',
+      });
       const team = await listTeam(client, { assignmentId: authz.assignment_id });
-      const grantable = await grantableCapabilitiesForActor(client, {
+      const grantable = authz.canonical_central_read ? [] : await grantableCapabilitiesForActor(client, {
         assignmentId: authz.assignment_id,
         actorUserId: req.user.id,
         actorIsCentral: false,

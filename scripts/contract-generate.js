@@ -377,6 +377,7 @@ const KNOWN_RESPONSES = {
   '/api/admin/action-center/market/{marketCode}/signals/{signalRef}/resolve': { post: { fields: ['ok','action','result'], source: 'test' } },
   // ECO — real PostgreSQL HTTP proof: economic-cost-center-api-postgres.test.js.
   // Both routes share the read-only payload; GROUP is explicitly not all markets.
+  '/api/admin/workspaces/pricing/cost-centers/close-period': { post: { fields: ['outcome','periodStart'], source: 'test' } },
   '/api/admin/workspaces/pricing/cost-centers': {
     get: { fields: ['scope','marketCode','periodStart','central','readOnly','centers','families','resources','posts','budgetSummary','commitmentSummary','structureEvidence','activity','profitability','actualCoverage','available'], source: 'test' }
   },

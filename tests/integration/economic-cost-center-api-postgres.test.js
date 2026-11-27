@@ -144,6 +144,11 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect(response.body.activity).toMatchObject({purchaseKmf:null,purchaseSubtotalKmf:'1000.00',purchaseCoveredCount:1,purchaseTransportObservation:{purchaseKmf:'1000.00',transportKmf:'131.00',coefficient:'1.1310',observations:1,decisional:false,coverage:'PARTIAL'}});
     expect(response.body.profitability).toMatchObject({decisional:false,fullCoefficient:null,points:[{periodStart:'2026-01-01',monthly:{coefficient:'1.1310',observations:1,physicalClosedCount:2},rolling3:{coefficient:'1.1310'},cumulative:{coefficient:'1.1310'}}]});
     expect(response.body.profitability.salesEvidence).toMatchObject({paidOrderCount:2,coveredOrderCount:2,observedNetSalesKmf:'20000.00',coverage:'PAID_COHORT_RESTATED',decisional:false});
+    expect(response.body.profitability.recognitionEvidence).toMatchObject({
+      handoffParcelCount:0,attestedUnits:0,confirmedRefundCount:0,confirmedRefundKmf:null,
+      parcelCostEvidenceCount:0,documentedParcelVariableCostKmf:null,
+      coverage:'DOCUMENTED_EVENTS_ONLY',
+    });
     expect(response.body.profitability.netSalesKmf).toBeNull();
     expect(response.body.profitability.periodDecisionEvidence).toMatchObject({basis:'CANONICAL_MATURE_ORDER_PERIOD_DECISION',periodStart:month,fullEconomicResult:false,status:'NOT_DECISIONAL',resultKmf:null});
     expect(closed.physicalClosedAt.slice(0,10)).toBe('2026-01-15');
@@ -437,4 +442,100 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect((await get(fx.central,fx.marketA.code,'2026-01-02')).status).toBe(400);
     expect((await request(app).get(endpoint(fx.marketA.code)).query({periodStart:month})).status).toBe(401);
   });
+  test('documented allocation follows the attested handoff month and excludes simulated cost facts',async()=>{
+    const {rows:[item]}=await q(
+      'SELECT oi.id,oi.order_id,oi.product_id,o.relais_id FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE o.reference=$1',
+      [activityRefs.closed]);
+    const parcelId=crypto.randomUUID();
+    const collectedAt='2026-02-01T00:00:00.000Z';
+    await q(`INSERT INTO parcels(id,order_id,reference,status,collected_at,relais_id)
+      VALUES($1,$2,$3,'collected',$4,$5)`,[parcelId,item.order_id,tag+'-HANDOFF',collectedAt,item.relais_id]);
+    await q(`INSERT INTO parcel_items(parcel_id,order_item_id,product_id,quantity,
+      qty_allocated,qty_packed,qty_shipped,qty_received,qty_collected)
+      VALUES($1,$2,$3,1,1,1,1,1,1)`,[parcelId,item.id,item.product_id]);
+    await q(`INSERT INTO scans(order_id,parcel_id,step,scan_code,pickup_method,pickup_relais_id,created_at)
+      VALUES($1,$2,'collected',$3,'PICKUP_CODE',$4,$5)`,[item.order_id,parcelId,tag+'-HANDOFF',item.relais_id,collectedAt]);
+    await q(`INSERT INTO order_item_real_cost_allocations
+      (order_id,order_item_id,parcel_id,cost_type,amount_kmf,allocation_method,source,provenance)
+      VALUES($1,$2,$3,'packaging',315.25,'by_quantity','test_documented','preuve'),
+      ($1,$2,$3,'hub',1000,'by_quantity','test_documented','FICTIF recette'),
+      ($1,$2,NULL,'payment',40.50,'by_quantity','test_documented','preuve'),
+      ($1,$2,NULL,'packaging',315.25,'by_quantity','test_documented','preuve')`,[item.order_id,item.id,parcelId]);
+    const january=await get(fx.central,fx.marketA.code,'2026-01-01');
+    const february=await get(fx.central,fx.marketA.code,'2026-02-01');
+    const foreign=await get(fx.central,fx.marketB.code,'2026-02-01');
+    expect(january.status).toBe(200);
+    expect(february.status).toBe(200);
+    expect(foreign.status).toBe(200);
+    expect(january.body.profitability.recognitionEvidence).toMatchObject({attestedUnits:0,documentedParcelVariableCostKmf:null});
+    expect(february.body.profitability.recognitionEvidence).toMatchObject({
+      attestedUnits:1,pricedHandoffUnits:1,documentedHandoffSalesKmf:'10000.00',
+      parcelCostEvidenceCount:1,documentedParcelVariableCostKmf:'355.75',
+    });
+    expect(foreign.body.profitability.recognitionEvidence).toMatchObject({attestedUnits:0,documentedParcelVariableCostKmf:null});
+
+    const discountOrder=crypto.randomUUID();
+    const discountItems=[crypto.randomUUID(),crypto.randomUUID()].sort();
+    await q(`INSERT INTO orders(id,user_id,relais_id,market_id,reference,status,payment_status,
+      payment_mode,total_kmf,discount_kmf,wallet_applied_kmf,total_eur,created_at)
+      VALUES($1,$2,$3,$4,$5,'confirmed','paid','cash_relais',27000,1000.01,1999.99,55,'2026-01-31')`,
+      [discountOrder,fx.viewerA.id,item.relais_id,fx.marketA.id,tag+'-DISCOUNT']);
+    for (const [at,quantity] of [['2026-04-01T00:00:00.000Z',1],['2026-05-01T00:00:00.000Z',2]]) {
+      const discountItem=discountItems[quantity-1];
+      await q(`INSERT INTO order_items(id,order_id,product_id,quantity,price_kmf,fulfillment_source)
+        VALUES($1,$2,$3,$4,10000,'LOCAL_STOCK')`,[discountItem,discountOrder,item.product_id,quantity]);
+      const parcel=crypto.randomUUID(),reference=tag+'-DISCOUNT-'+quantity;
+      await q(`INSERT INTO parcels(id,order_id,reference,status,collected_at,relais_id)
+        VALUES($1,$2,$3,'collected',$4,$5)`,[parcel,discountOrder,reference,at,item.relais_id]);
+      await q(`INSERT INTO parcel_items(parcel_id,order_item_id,product_id,quantity,
+        qty_allocated,qty_packed,qty_shipped,qty_received,qty_collected)
+        VALUES($1,$2,$3,$4,$4,$4,$4,$4,$4)`,[parcel,discountItem,item.product_id,quantity]);
+      await q(`INSERT INTO scans(order_id,parcel_id,step,scan_code,pickup_method,pickup_relais_id,created_at)
+        VALUES($1,$2,'collected',$3,'PICKUP_CODE',$4,$5)`,[discountOrder,parcel,reference,item.relais_id,at]);
+    }
+    const [firstHandoff,secondHandoff]=await Promise.all([
+      get(fx.central,fx.marketA.code,'2026-04-01'),get(fx.central,fx.marketA.code,'2026-05-01'),
+    ]);
+    expect(firstHandoff.body.profitability.recognitionEvidence).toMatchObject({
+      pricedHandoffUnits:1,documentedHandoffSalesKmf:'9666.66',documentedParcelVariableCostKmf:null,
+    });
+    expect(secondHandoff.body.profitability.recognitionEvidence).toMatchObject({
+      pricedHandoffUnits:2,documentedHandoffSalesKmf:'19333.33',documentedParcelVariableCostKmf:null,
+    });
+  });
+
+  test('Direction closes a reviewed month and a later charge reopens it',async()=>{
+    const period='2026-04-01';
+    const {rows:[line]}=await q(`SELECT o.id AS order_id,pi.order_item_id,p.id AS parcel_id
+      FROM parcels p JOIN orders o ON o.id=p.order_id JOIN parcel_items pi ON pi.parcel_id=p.id
+      WHERE p.reference=$1`,[tag+'-DISCOUNT-1']);
+    await q(`INSERT INTO order_item_real_cost_allocations
+      (order_id,order_item_id,parcel_id,cost_type,amount_kmf,allocation_method,source)
+      VALUES($1,$2,$3,'packaging',300,'by_quantity','fixture_revue')`,
+      [line.order_id,line.order_item_id,line.parcel_id]);
+    await q(`INSERT INTO economic_risk_watermark_events(market_id,closed_through,review_version,source,evidence_ref,recorded_by)
+      SELECT id,'2026-05-01','v1','fixture revue','preuves de revue',$1 FROM markets`,[fx.central.id]);
+    const {rows:[charge]}=await q('SELECT id FROM charges WHERE name=$1',[tag]);
+    const event={charge_id:charge.id,scope_kind:'MARKET_DIRECT',market_id:fx.marketA.id,event_kind:'ACCRUAL',
+      economic_from:'2026-04-01T00:00:00Z',economic_to:'2026-05-01T00:00:00Z',amount_original:50,currency:'KMF',
+      fx_rate_to_kmf:1,fx_source:'CI fixture',amount_kmf:50,source_kind:'MANUAL',evidence_ref:'Pièce initiale'};
+    await recordStructureCostEvent(event,fx.central.id);
+    const read=async()=> {
+      const reply=await get(fx.central,null,period);
+      expect(reply.status).toBe(200);
+      return reply.body.profitability.groupPeriodResult;
+    };
+    const initial=await read();
+    expect(initial).toMatchObject({status:'PROVISIONAL',resultKmf:'9316.66'});
+    const submit=(actor,hash)=>request(app).post(mount+'/cost-centers/close-period')
+      .set('Authorization',actor.token).send({periodStart:period,evidenceHash:hash,evidenceRef:'Revue Direction avril',attested:true});
+    expect((await submit(fx.viewerA,initial.evidenceHash)).status).toBe(403);
+    expect((await submit(fx.central,initial.evidenceHash)).status).toBe(201);
+    expect((await submit(fx.central,initial.evidenceHash)).status).toBe(200);
+    expect(await read()).toMatchObject({status:'CLOSED',resultKmf:'9316.66'});
+    await recordStructureCostEvent({...event,amount_original:20,amount_kmf:20,evidence_ref:'Facture tardive'},fx.central.id);
+    expect(await read()).toMatchObject({status:'REOPENED',resultKmf:'9296.66'});
+    expect((await submit(fx.central,initial.evidenceHash)).status).toBe(409);
+  });
+
 });

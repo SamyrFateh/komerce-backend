@@ -257,21 +257,30 @@ test('Le moteur Live évite un deuxième rail : cockpit propriétaire ou shell c
 
 describe('order360Link — lien direct vers la fiche Commande 360 avec retour vers le cockpit', () => {
   const navSource = fs.readFileSync(require.resolve('../../public/dashboards/canonical/js/navigation-policy-v4.js'), 'utf8');
-  function kitWithNav(search) {
-    const { kit, win } = loadKit({ location:{ pathname:'/admin/hub-live', search } });
+  function kitWithNav(search, adminContext) {
+    const { kit, win } = loadKit({ location:{ pathname:'/admin/hub-live', search }, KOMERCE_CANONICAL_ADMIN_CONTEXT: adminContext });
     vm.runInNewContext(navSource, win);
     return kit;
   }
 
   test('admin / market_operator : lien avec return_to = vue courante (view, tab, from, page conservés)', () => {
-    const kit = kitWithNav('?view=queue&tab=blocked&page=2');
+    const kit = kitWithNav('?view=queue&tab=blocked&from=hub&page=2');
     const html = kit.order360Link('KMC-0001', 'Retour au Hub live', { role:'admin' });
     const href = html.match(/href="([^"]+)"/)[1].replace(/&amp;/g, '&');
     const url = new URL(href, 'http://x.test');
     expect(url.pathname).toBe('/admin/orders/KMC-0001');
-    expect(url.searchParams.get('return_to')).toBe('/admin/hub-live?view=queue&tab=blocked&page=2');
+    expect(url.searchParams.get('return_to')).toBe('/admin/hub-live?view=queue&tab=blocked&from=hub&page=2');
     expect(url.searchParams.get('return_label')).toBe('Retour au Hub live');
-    expect(kit.order360Link('KMC-0001', 'x', { role:'market_operator' })).toContain('/admin/orders/KMC-0001');
+    const user = { role:'market_operator' };
+    expect(kit.order360Link('KMC-0001', 'x', user)).toBe('');
+    const context = { access: { mode:'market', allowedMarkets:['KM'], defaultMarket:'KM', delegatedCapabilities:{ KM:['operations.read'] } } };
+    const scopedKit = kitWithNav('?view=queue&tab=blocked&from=hub&page=2&market=KM', context);
+    const scopedHtml = scopedKit.order360Link('KMC-0001', 'x', user);
+    const scopedUrl = new URL(scopedHtml.match(/href="([^"]+)"/)[1].replace(/&amp;/g, '&'), 'http://x.test');
+    expect(scopedUrl.pathname).toBe('/admin/orders/KMC-0001');
+    expect(scopedUrl.searchParams.get('return_to')).toBe('/admin/hub-live?view=queue&tab=blocked&from=hub&page=2&market=KM');
+    expect(kitWithNav('?market=CG', context).order360Link('KMC-0001', 'x', user)).toBe('');
+    expect(kitWithNav('?market=KM', { access: { ...context.access, delegatedCapabilities: { KM: [] } } }).order360Link('KMC-0001', 'x', user)).toBe('');
   });
 
   test('agent_hub, agent_relais, sans utilisateur ou sans référence : aucun lien (habilitations inchangées)', () => {

@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 121,
-    "total_routes": 824,
+    "total_routes": 825,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -15400,6 +15400,39 @@
                       "x-observed": true
                     },
                     "available": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/cost-centers/close-period": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/cost-centers/close-period",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "outcome": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "periodStart": {
                       "type": "string",
                       "x-observed": true
                     }

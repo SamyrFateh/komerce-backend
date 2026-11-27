@@ -12664,6 +12664,10 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "economic_group_period_closures",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "economic_risk_cost_events",
             "resolution": "declared-table-owner"
           },
@@ -12845,6 +12849,12 @@
           },
           {
             "table": "economic_cost_resources",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "economic_group_period_closures",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "owner"
@@ -13148,6 +13158,10 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "economic_group_period_closures",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "economic_risk_cost_events",
             "resolution": "declared-table-owner"
           },
@@ -13329,6 +13343,12 @@
           },
           {
             "table": "economic_cost_resources",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "economic_group_period_closures",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "owner"
@@ -13587,7 +13607,7 @@
           }
         ],
         "httpInterfaces": {
-          "count": 127
+          "count": 128
         }
       },
       "businessDependencies": [

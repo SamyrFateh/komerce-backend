@@ -395,6 +395,7 @@ module.exports = {
       'economic_snapshots: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'economic_sku_rail_selection_events: RW!',
       'economic_structure_cost_events: RW!',
+      'economic_group_period_closures: RW!',
       'economic_cost_centers: RW!',
       'economic_cost_families: RW!',
       'economic_cost_resources: RW!',
@@ -465,6 +466,7 @@ module.exports = {
       'GET /api/admin/workspaces/pricing/market/:marketCode',
       'GET /api/admin/workspaces/pricing/market/:marketCode/cost-centers',
       'GET /api/admin/workspaces/pricing/cost-centers',
+      'POST /api/admin/workspaces/pricing/cost-centers/close-period',
       'POST /api/admin/workspaces/pricing/market/:marketCode/cost-centers/posts/:postId/budget-revisions',
       'POST /api/admin/workspaces/pricing/cost-centers/posts/:postId/budget-revisions',
       'POST /api/admin/workspaces/pricing/cost-centers/posts/:postId/actuals',

@@ -64,6 +64,8 @@ function requireWorkspaceReadAccess(req, res, next) {
   if (req.user && req.user.role === 'agent_relais') {
     return requireRelayMarketBinding(req, res, next);
   }
+  if (req.user?.role === 'admin') { req.workspaceGlobalAuthority = true; return next(); }
+  if (req.user?.role === 'market_operator') return requireFinanceRead(req, res, next);
   return hasDashboardGlobalAuthority(req.user && req.user.id)
     .then(globalAllowed => {
       if (globalAllowed) {

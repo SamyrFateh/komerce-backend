@@ -95,11 +95,30 @@ test('profitability distinguishes commercial sales cohort from shipment observat
  expect(texts(view)).toContain('20\u202f000 KMF');expect(texts(view)).toContain('Ventes nettes observées');expect(texts(view).some(t=>t.includes('Cohorte distincte des expéditions'))).toBe(true);expect(texts(view)).toContain('Non disponible');
 });
 
+test('profitability displays handoffs and refunds observed in their own month',()=>{
+ const period={periodStart:'2026-02-01',observations:0,physicalClosedCount:0};
+ const view=createV6Profitability(doc,{profitability:{points:[],ranges:{month:period,quarter:period,ytd:period},
+   recognitionEvidence:{handoffParcelCount:2,attestedUnits:4,confirmedRefundCount:1,confirmedRefundKmf:'500.00',pricedHandoffUnits:3,documentedHandoffSalesKmf:'8000.00',parcelCostEvidenceCount:1,documentedParcelVariableCostKmf:'315.25'}}});
+ expect(texts(view)).toEqual(expect.arrayContaining(['Articles remis avec preuve','4','2 colis documentés ce mois',
+   'Remboursements confirmés','500 KMF','Nombre ce mois · 1','3 / 4 articles remis avec prix rapproché','315,25 KMF','1 / 2 colis avec des coûts documentés','Non disponible']));
+});
+
 test('group profitability displays recognized structure evidence without inferring the economic result',()=>{
  const o={periodStart:'2026-01-01',observations:0,physicalClosedCount:0};
  const view=createV6Profitability(doc,{profitability:{points:[],ranges:{month:o,quarter:o,ytd:o},
    structureCoverage:{evidenceCount:2,groupSharedKmf:100,marketDirectKmf:50,recognizedKmf:150}}});
  expect(texts(view)).toEqual(expect.arrayContaining(['Charges de structure documentées','150 KMF','100 KMF','50 KMF','Non calculable']));
+});
+
+test('group result labels documented amounts provisional pending Direction closure',()=>{
+ const period={periodStart:'2026-01-01',observations:0,physicalClosedCount:0};
+ const view=createV6Profitability(doc,{profitability:{points:[],ranges:{month:period,quarter:period,ytd:period},
+   groupPeriodResult:{status:'PROVISIONAL',netSalesKmf:'899.98',variableCostKmf:'365.26',
+     actualRiskKmf:'50.01',contributionKmf:'534.72',structureKmf:'200.12',resultKmf:'334.60'}}});
+ expect(texts(view)).toEqual(expect.arrayContaining([
+   'Formation du résultat provisoire','334,6 KMF','50,01 KMF',
+   'Résultat provisoire sur les faits documentés. Clôture Direction en attente.',
+ ]));
 });
 
 test('canonical mature cohort result never replaces complete cockpit KPI',()=>{

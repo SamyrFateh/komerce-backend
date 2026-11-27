@@ -35,6 +35,7 @@ router.get('/markets/:marketCode/payment-accounts', authenticate, async (req, re
     res.json(await listMarketPaymentAccounts(db, {
       marketCode: req.params.marketCode,
       actorUserId: req.user.id,
+      ...(req.user.role === 'admin' ? { actorRole: req.user.role } : {}),
     }));
   } catch (error) {
     if (sendKnownError(res, error)) return;

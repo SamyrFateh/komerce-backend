@@ -65,6 +65,20 @@ describe('Canonical DashboardFreshness — intersession revalidation', () => {
     expect(streams[0].closed).toBe(true);
   });
 
+  it('un watcher marché ne reçoit aucun déclenchement du flux central', async () => {
+    const helper=global.KomerceDashboardFreshness;
+    const central=jest.fn(async()=>({}));
+    const local=jest.fn(async()=>({}));
+    active.push(helper.watch({root:{isConnected:true},refresh:central}));
+    active.push(helper.watch({root:{isConnected:true},refresh:local,streamEnabled:false,pollMs:30000}));
+    streams[0].emit('refresh');
+    await jest.advanceTimersByTimeAsync(2200);
+    expect(central).toHaveBeenCalledTimes(1);
+    expect(local).not.toHaveBeenCalled();
+    await jest.advanceTimersByTimeAsync(30000);
+    expect(local).toHaveBeenCalledTimes(1);
+  });
+
   it('ne lit pas un écran masqué et coupe un watcher démonté', async () => {
     const reload = jest.fn(async () => ({}));
     const root = { isConnected:true };

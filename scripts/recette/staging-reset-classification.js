@@ -131,6 +131,7 @@ supplier_execution_groups supplier_payment_settlements unsold_items`.split(/\s+/
   F('pricing_category_dims', 'dimensions pricing par categorie'), F('pricing_category_taxes', 'taxes pricing par categorie'),
   F('pricing_matrices_audit', 'audit matrices pricing'), F('pricing_market_decision_policy_events', 'politique de decision pricing', true),
   F('economic_structure_cost_events', 'structure de couts par periode (saisie admin)', true),
+  F('economic_group_period_closures', 'historique append-only des clotures groupe'),
   F('economic_cost_centers', 'referentiel des centres de couts'),
   F('economic_cost_families', 'familles de postes du referentiel'),
   F('economic_cost_resources', 'ressources du referentiel'),

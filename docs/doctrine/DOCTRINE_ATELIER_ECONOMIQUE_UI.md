@@ -26,6 +26,8 @@ L'Atelier économique est un workspace unique de gestion et de décision. Les va
 - Formation du résultat mensuel (ventes nettes, achats, charges variables, contribution, charges de structure, résultat), couverture de structure et reste à couvrir, coefficient glissant, mention sous-activité incluse/non isolée si référence insuffisante. Coefficient complet indicatif et non tarif automatique ; gardes détaillées dans sourcing/catalogue. Conserver présentation, structure, navigation et interactions V6. La séparation effective des coûts mixtes et la cohérence des cohortes doivent être garanties par le serveur ; les simplifications fictives du prototype ne deviennent pas des règles de calcul.
 - Ne pas modifier les onglets 2/3 sous prétexte d'optimisation du premier. Toute nécessité technique doit préserver le contrat UX et la vérité économique.
 
+Les périodes d'Activité et de Rentabilité utilisent respectivement la réception attestée au relais et la remise attestée au client. Les règles de ventilation, de remboursement et de régularisation figurent dans la [doctrine des centres de coûts](DOCTRINE_CENTRES_COUTS_V1.md#rattachement-mensuel-des-expéditions-et-des-ventes).
+
 **Critères supplémentaires ECO-2/ECO-6 :** vérification des cartes et totaux, drill-down centre → famille → poste → saisie → retour, filtre écarts, soldes partiels, droits lecture/écriture, synchronisation immédiate des trois onglets après opération et changement de périmètre, fidélité visuelle V7/V6. Captures Chromium aux trois largeurs desktop. Pas de régression fonctionnelle ni de faux PASS. La validation du mock est acquise, la certification technique reste à démontrer.
 
 ## 2. Nature, périmètre, allocation et connaissance

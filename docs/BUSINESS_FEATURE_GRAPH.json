@@ -24660,6 +24660,14 @@
       },
       {
         "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/cost-centers/close-period",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/cost-centers/close-period",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
         "entry": "POST /api/admin/workspaces/pricing/market/:marketCode/cost-centers/posts/:postId/budget-revisions",
         "method": "POST",
         "path": "/api/admin/workspaces/pricing/market/{id}/cost-centers/posts/{id}/budget-revisions",
@@ -40188,6 +40196,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/economic-cost-center-read-model.js",
+                "targetFile": "services/customer-handoff-reconciliation.js"
+              },
+              {
                 "sourceFileId": "services/transport-pricing.js",
                 "targetFile": "services/transport-rails.js"
               },
@@ -43701,6 +43713,10 @@
               {
                 "sourceFileId": "services/central-authority.js",
                 "targetFile": "middleware/require-dashboard-global-authority.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/market-control-plane.provision-to-first-order.e2e.test.js",
+                "targetFile": "services/dashboard-admin-context.js"
               }
             ]
           }
@@ -47095,6 +47111,10 @@
               {
                 "sourceFileId": "services/market-payment-account-service.js",
                 "targetFile": "services/market-delegation-team-service.js"
+              },
+              {
+                "sourceFileId": "services/market-payment-account-service.js",
+                "targetFile": "services/market-delegation-read-authority.js"
               },
               {
                 "sourceFileId": "tests/unit/market-payment-accounts.test.js",
@@ -53810,6 +53830,19 @@
       "readers": [
         "market-delegation"
       ],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
+    "economic_group_period_closures": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
       "lifecycleOwner": "economic-engine",
       "resolution": "declared-table-owner"
     },

@@ -56,12 +56,10 @@ function num(value) {
  * refus tel quel. Afficher un chiffre approximatif serait pire que de ne rien
  * afficher : c'est de l'argent.
  */
-async function getMarketPerformance(executor, { marketCode, actorUserId, period = null }) {
+async function getMarketPerformance(executor, { marketCode, actorUserId, actorRole = null, period = null }) {
   const db = requireExecutor(executor);
-  const authz = await resolveAuthorization(db, {
-    userId: actorUserId,
-    marketCode,
-    requiredCapability: 'finance.read',
+  const authz = await require('./market-delegation-read-authority').resolveCanonicalMarketRead(resolveAuthorization, db, {
+    userId: actorUserId, actorRole, marketCode, primaryCapability: 'finance.read',
   });
 
   let decision;

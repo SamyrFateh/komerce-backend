@@ -123,9 +123,9 @@ if (process.env.E2E_CHROMIUM_SPEC_FILTER === 'g8-refunds-readonly') {
   const markets=['KM','CM','CG'];
   const menu=[
     'control-tower','action-center','flow-commerce','flow-orders','entity-clients',
-    'workspace-pricing','flow-operations','workspace-shipping','flow-finance',
-    'workspace-accounting','live-hub','market-autonomy','market-catalog','unsold',
-    'admin-providers','settings','help-docs'
+    'workspace-pricing','workspace-catalog','flow-operations','workspace-shipping','flow-finance',
+    'workspace-accounting','live-hub','live-relais','unsold',
+    'admin-users','admin-providers','settings','help-docs'
   ];
   const expectedSha=String(process.env.E2E_EXPECTED_DEPLOY_SHA||'');
   const runId=String(process.env.GITHUB_RUN_ID||'NOT_ASSIGNED');
@@ -181,7 +181,7 @@ if (process.env.E2E_CHROMIUM_SPEC_FILTER === 'g8-refunds-readonly') {
       `Run : ${runId} (${runUrl})`,
       `Artefact : ${summary.artifact_name}`,
       `SHA staging stable : ${summary.sha}`,
-      `Rubriques : ${summary.rubric_count}/17 ; destinations HTTP 200 : ${summary.destination_count}`,
+      `Rubriques : ${summary.rubric_count}/${menu.length} ; destinations HTTP 200 : ${summary.destination_count}`,
       `Annuaire équipe : ${checks.team_directory?'complet, 12 cartes maximum au chargement':'FAIL'}`,
       `Marché autorisé : ${(summary.allowed_markets||[]).join(', ')||'NOT_PROVEN'}`,
       `Hub : ${summary.hub_orders===null?'NOT_PROVEN':summary.hub_orders+' commandes, vérifiées par oracle PG'}`,
@@ -200,7 +200,7 @@ if (process.env.E2E_CHROMIUM_SPEC_FILTER === 'g8-refunds-readonly') {
     `Verdict global : **${summary.status}** (PASS exige les trois marchés).`,
     `Run : ${runId} (${runUrl})`,`Artefact : ${summary.artifact_name}`,'',
     ...perMarket.flatMap(x=>[`## ${x.market} — ${x.status}`,
-      `SHA : ${x.sha} ; rubriques : ${x.rubric_count}/17 ; destinations HTTP 200 : ${x.destination_count}`,
+      `SHA : ${x.sha} ; rubriques : ${x.rubric_count}/${menu.length} ; destinations HTTP 200 : ${x.destination_count}`,
       `Refus directs : commande ${x.direct_order_refusals}, PO ${x.direct_po_refusals}, client ${x.direct_client_refusals}`,
       `Contrôles : ${Object.entries(x.checks).map(([k,v])=>`${k}=${v?'PASS':'FAIL'}`).join(', ')}`,'']),
     'Lecture seule uniquement : aucun GO production ni GO transactionnel.'

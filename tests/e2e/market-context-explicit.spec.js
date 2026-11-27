@@ -15,7 +15,7 @@ const ORIGIN = 'http://komerce.test';
 const MARKET_API = /\/api\/(?:admin\/workspaces\/[a-z-]+\/market\/|market-delegation\/markets\/|admin\/dashboard\/[a-z-]+\/market\/)([A-Z]{2})/;
 
 const GLOBAL_CTX = { actor: { id: 'hq', role: 'admin' }, access: { mode: 'global', allowedMarkets: ['CG', 'CM', 'KM'], defaultMarket: null, capabilities: ['dashboard.global.read'] } };
-const MONO_CTX = { actor: { id: 'op', role: 'market_operator' }, access: { mode: 'market', allowedMarkets: ['CM'], defaultMarket: 'CM', capabilities: ['dashboard.market.read'] } };
+const MONO_CTX = { actor: { id: 'op', role: 'market_operator' }, access: { mode: 'market', allowedMarkets: ['CM'], defaultMarket: 'CM', capabilities: [], delegatedCapabilities: {CM:['dashboard.market.read','operations.read','pricing.read','finance.read','logistics.read','catalog.read']} } };
 
 // Charge utile minimale du Workspace Operations (même forme que hub-live-execution.spec.js) :
 // permet de prouver la synchronisation de l'URL après un choix sur les surfaces Hub.

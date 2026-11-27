@@ -64,16 +64,14 @@ const LINES_SQL = `
   ORDER BY economic_from DESC, event_id
   LIMIT ${MAX_LINES + 1}`;
 
-async function getMarketCostStatement(executor, { marketCode, actorUserId, from = null, to = null }) {
+async function getMarketCostStatement(executor, { marketCode, actorUserId, actorRole = null, from = null, to = null }) {
   const db = requireExecutor(executor);
   const fromIso = parseBound(from, 'from');
   const toIso = parseBound(to, 'to');
   if (fromIso && toIso && toIso <= fromIso) throw statementError('COST_STATEMENT_PERIOD_INVALID', 'to doit être postérieur à from.', 400);
 
-  const authz = await resolveAuthorization(db, {
-    userId: actorUserId,
-    marketCode,
-    requiredCapability: 'finance.read',
+  const authz = await require('./market-delegation-read-authority').resolveCanonicalMarketRead(resolveAuthorization, db, {
+    userId: actorUserId, actorRole, marketCode, primaryCapability: 'finance.read',
   });
 
   const { rows } = await db.query(LINES_SQL, [authz.market_id, fromIso, toIso]);

@@ -272,7 +272,7 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
     const operatorEnv = loadNavigation('/admin/pilotage', 'pilotage');
     const operatorHeader = mountFor(operatorEnv, '/admin/pilotage', 'pilotage', { role: 'market_operator' });
     const operatorMarkets = operatorHeader.children[0].children[1].children.find(link => link.attributes['data-dashboard'] === 'markets');
-    expect(operatorMarkets.href).toBe('/dashboards/canonical/market-autonomy.html');
+    expect(operatorMarkets.href).toBe('/dashboards/canonical/unsold.html');
   });
 
   test('Catalogue : même destination canonique, lentille marché pour le responsable pays', () => {

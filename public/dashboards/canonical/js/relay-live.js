@@ -34,7 +34,9 @@
 
   const BASE = '/admin/relais-live';
   let relayViewer = null;
-  const canReportIncident=()=>Boolean(relayViewer && ['agent_relais','admin','market_operator'].includes(relayViewer.role));
+  let relayContext = null;
+  const marketReader=()=>relayViewer?.role==='market_operator';
+  const canReportIncident=(market)=>Boolean(relayViewer && (['agent_relais','admin'].includes(relayViewer.role) || (marketReader() && relayContext?.access?.delegatedCapabilities?.[market]?.includes('hub.supervise'))));
   const PAGE_SIZE = 25;
   const LISTS = Object.freeze({
     in_transit:'Colis en transit',
@@ -93,7 +95,7 @@
       {id:'history',name:'Historique',url:listUrl('collected')},
     ];
     return `<nav class="kmc-relay-main-nav" aria-label="Espaces de travail du Relais">
-      ${items.map(item=>`<a class="kmc-relay-main-tab${active===item.id?' is-active':''}"
+      ${items.filter(item=>!marketReader()||item.id!=='remises').map(item=>`<a class="kmc-relay-main-tab${active===item.id?' is-active':''}"
         href="${esc(item.url)}" ${item.id==='remises'?'':'data-cockpit-nav'}
         ${active===item.id?'aria-current="page"':''}>${esc(item.name)}</a>`).join('')}
     </nav>`;
@@ -360,7 +362,7 @@
     return {
       title:o.reference || 'Colis',
       copy:`${STATUS[o.status] || o.status || ''} · ${data?.client?.nom || 'client'} · ${relais.nom || 'relais non défini'}`,
-      body:`${relayMainNav(fromOf(p)==='incidents'?'incidents':fromOf(p)==='collected'?'history':'flux')}<div class="kmc-relay-order-toolbar"><div><strong>Dossier de commande · ${esc(o.reference||'—')}</strong><small>La remise se valide colis par colis avec justificatif.</small></div><a href="${o.status==='available'?remisesUrl(o.market_code):executionUrl(o.market_code)}">${o.status==='available'?'Ouvrir le comptoir Remises':'Ouvrir l’atelier Relais'} ↗</a></div><p class="lk-360-line">${order360Link(o.reference, 'Retour au Relais live')}</p><div class="lk-facts">
+      body:`${relayMainNav(fromOf(p)==='incidents'?'incidents':fromOf(p)==='collected'?'history':'flux')}<div class="kmc-relay-order-toolbar"><div><strong>Dossier de commande · ${esc(o.reference||'—')}</strong><small>La remise se valide colis par colis avec justificatif.</small></div>${marketReader()?'':`<a href="${o.status==='available'?remisesUrl(o.market_code):executionUrl(o.market_code)}">${o.status==='available'?'Ouvrir le comptoir Remises':'Ouvrir l’atelier Relais'} ↗</a>`}</div><p class="lk-360-line">${order360Link(o.reference, 'Retour au Relais live')}</p><div class="lk-facts">
           ${card(o.status === 'available' ? 'Attente au relais' : 'Âge', wait)}
           ${card('Relais', [relais.nom, relais.ile].filter(Boolean).join(' · ') || '—')}
           ${card('Articles', items.length)}
@@ -371,7 +373,7 @@
         </section>
         <section class="lk-block"><span class="kir-section-kicker">INCIDENTS</span>
           ${table(['Type', 'Article', 'Priorité', 'Statut', 'Information'], incidents.map(i => `<tr><td>${esc(INCIDENT[i.type] || i.type)}</td><td>${esc(i.product_name || '—')}</td><td>${esc(i.priority)}</td><td>${esc(i.status)}</td><td>${esc(i.description || '—')}</td></tr>`), { empty:'Aucun incident.' })}
-          ${canReportIncident()?`<details class="kmc-relay-report-disclosure"><summary>Signaler un incident sur cette commande</summary>
+          ${canReportIncident(o.market_code)?`<details class="kmc-relay-report-disclosure"><summary>Signaler un incident sur cette commande</summary>
             <form data-relay-incident-form data-order-id="${esc(o.id)}">
               <label>Nature du problème <select name="type" required>
                 <option value="">Choisir…</option>
@@ -445,7 +447,7 @@
         <details class="kmc-relay-v4-content"${scan?' open':''}><summary>Commandes (${orders.length})</summary>
         ${orders.map(o=>`<details class="kmc-relay-v4-nested"><summary><b>${esc(o.reference)}</b><span>${(o.items||[]).reduce((n,i)=>n+num(i.expected),0)} articles</span></summary>
           ${(o.items||[]).map(i=>`<div class="kmc-relay-v4-item"><span>${esc(i.product)}</span><b>${num(i.expected)}</b></div>`).join('')}</details>`).join('')}</details>
-        ${receivable?`<a class="kmc-relay-v4-button is-primary" href="${esc(executionUrl(market,'shipments'))}">Contrôler l’expédition</a>`:''}
+        ${receivable&&!marketReader()?`<a class="kmc-relay-v4-button is-primary" href="${esc(executionUrl(market,'shipments'))}">Contrôler l’expédition</a>`:''}
         ${scan?`<small class="kmc-relay-v4-muted">Expédition : ${esc(shipment)}. Ouverture du manifeste uniquement.</small>`:''}
         </article>`;
     };
@@ -458,10 +460,10 @@
         ${detail?`<details class="kmc-relay-v4-content"><summary>Articles de la commande</summary>
           ${(detail.items||[]).map(i=>`<div class="kmc-relay-v4-item"><span>${esc(i.produit||i.produit_nom||'Article')}</span><b>${num(i.quantity)} commandé(s)</b></div>`).join('')}
           </details>`:`<a class="kmc-relay-v4-button" href="${esc(v4Url(market,{sel:o.id,search:p.search||''}))}" data-cockpit-nav>Consulter les articles</a>`}
-        ${!handed?`<a class="kmc-relay-v4-button is-primary" href="${esc(remisesUrl(market))}">Ouvrir le comptoir</a>`:''}</article>`;
+        ${!handed&&!marketReader()?`<a class="kmc-relay-v4-button is-primary" href="${esc(remisesUrl(market))}">Ouvrir le comptoir</a>`:''}</article>`;
     };
     const lane=(key,label,items,empty)=>`<section class="kmc-relay-v4-lane" data-relay-v4-lane="${key}"><h3>${label} <small>${items.length}</small></h3>${items.join('')||'<p class="kmc-relay-v4-muted">'+empty+'</p>'}</section>`;
-    return {hero:`<header class="kmc-relay-v4-heading"><div><h1>Kanban Relais</h1><p class="kmc-relay-v4-muted">${esc(market||'Marché à sélectionner')} · COMBOX, commandes et remises</p></div><a class="kmc-relay-v4-button" href="${BASE}?view=overview">Vue de secours</a></header>`,
+    return {hero:`<header class="kmc-relay-v4-heading"><div><h1>Kanban Relais</h1><p class="kmc-relay-v4-muted">${esc(market||'Marché à sélectionner')} · COMBOX, commandes et remises</p></div>${marketReader()?'':`<a class="kmc-relay-v4-button" href="${BASE}?view=overview">Vue de secours</a>`}</header>`,
       body:`<section class="kmc-relay-v4" data-relay-v4>
         <div class="kmc-relay-v4-toolbar">
         <form method="get" action="${BASE}" role="search" class="kmc-relay-v4-search">
@@ -477,12 +479,13 @@
           ${lane('expected','COMBOX attendues',boxes.map(boxCard),'Aucune COMBOX à traiter')}
           ${lane('ready','À remettre',ready.map(o=>orderCard(o)),'Aucune commande prête')}
           ${lane('done','Remises',done.map(o=>orderCard(o,true)),'Aucune remise')}</div>
-          ${blocked.length?`<p class="kmc-relay-v4-muted">${blocked.length} commande(s) hors parcours prépayé. <a class="kmc-relay-v4-button" href="${esc(executionUrl(market,'cash'))}">Circuit historique</a></p>`:''}
+          ${blocked.length?`<p class="kmc-relay-v4-muted">${blocked.length} commande(s) hors parcours prépayé. ${marketReader()?'':`<a class="kmc-relay-v4-button" href="${esc(executionUrl(market,'cash'))}">Circuit historique</a>`}</p>`:''}
           ${data?.truncated?'<p class="kmc-relay-v4-muted">Affichage limité à 100 commandes par état ; recherchez une référence précise.</p>':''}
-          <div class="kmc-relay-v4-secondary"><a class="kmc-relay-v4-button" href="${esc(executionUrl(market,'receive'))}">Réception locale</a><a class="kmc-relay-v4-button" href="${esc(BASE+'?view=incidents&market='+market)}">Incidents et SAV</a></div>`}</section>`};
+          <div class="kmc-relay-v4-secondary">${marketReader()?'':`<a class="kmc-relay-v4-button" href="${esc(executionUrl(market,'receive'))}">Réception locale</a>`}<a class="kmc-relay-v4-button" href="${esc(BASE+'?view=incidents&market='+market)}">Incidents et SAV</a></div>`}</section>`};
   }
   async function loadV4(p,api){
-    const requestedMarket=v4Market(p);
+    const requestedMarket=v4Market(p)||(marketReader()&&relayContext?.access?.allowedMarkets?.length===1?relayContext.access.allowedMarkets[0]:'');
+    if(marketReader()&&requestedMarket&&!relayContext?.access?.allowedMarkets?.includes(requestedMarket)) return {orders:[],markets:[],selectedMarket:'',shipments:null,shipmentsError:true};
     const scopedQuery=market=>queryString({market,reference:String(p.search||'').slice(0,120),limit:100,projection:'live'});
     async function readOrders(market){
       const suffix=scopedQuery(market);
@@ -587,6 +590,7 @@
   global.KomerceCanonicalRelayLive = Object.freeze({
     mount:options => {
       relayViewer=options?.user||null;
+      relayContext=options?.adminContext||null;
       setViewer(relayViewer);
       attachIncidentReporting(options);
       return cockpit.mount(options);

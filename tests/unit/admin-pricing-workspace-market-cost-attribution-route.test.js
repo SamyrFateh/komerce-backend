@@ -18,7 +18,7 @@ jest.mock('../../middleware/require-market-scope', () => ({
 
 jest.mock('../../middleware/require-pricing-global-authority', () => ({
   hasPricingGlobalAuthority: jest.fn(async () => mockCentralPricing),
-  requirePricingGlobalAuthority: (req, res, next) => mockCentralPricing ? next() : res.status(403).json({ code: 'pricing_global_access_denied' }),
+  requirePricingGlobalAuthority: (req, res, next) => (mockCentralPricing || (req.method === 'GET' && req.user?.role === 'admin')) ? next() : res.status(403).json({ code: 'pricing_global_access_denied' }),
 }));
 
 jest.mock('../../services/market-delegation-service', () => ({
@@ -119,7 +119,7 @@ describe('autorité des routes d’attribution', () => {
     expect(res.body.code).toBe('role_forbidden');
   });
 
-  test.each(calls)('%s %s : refuse un admin sans autorité pricing globale', async (method, url) => {
+  test.each(calls.filter(([method]) => method !== 'GET'))('%s %s : refuse un admin sans autorité pricing globale', async (method, url) => {
     mockCentralPricing = false;
     const res = await request(app())[method.toLowerCase()](url).send({});
     expect(res.status).toBe(403);
@@ -146,7 +146,8 @@ describe('autorité des routes d’attribution', () => {
 });
 
 describe('GET /structure-events/:eventId/attributions', () => {
-  test('retourne le journal du fait, sans cache', async () => {
+  test('A1 : retourne le journal du fait sans grant et sans cache', async () => {
+    mockCentralPricing = false;
     const payload = { event_id: EVENT_ID, conserved: true, attributions: [] };
     attribution.listEventAttributions.mockResolvedValue(payload);
 

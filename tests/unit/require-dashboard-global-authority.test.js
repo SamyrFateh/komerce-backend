@@ -96,3 +96,16 @@ describe('requireDashboardGlobalAuthority', () => {
     expect(next).toHaveBeenCalledWith(err);
   });
 });
+
+test('A1: authenticated admin GET needs no separate grant, POST retains its guard',async()=>{
+  const {requireDashboardGlobalAuthority}=require('../../middleware/require-dashboard-global-authority');
+  mockDbQuery.mockReset();
+  const response=()=>({statusCode:200,status(code){this.statusCode=code;return this;},json(body){this.body=body;return this;}});
+  const readNext=jest.fn();
+  await requireDashboardGlobalAuthority({method:'GET',user:{id:'a',role:'admin'}},response(),readNext);
+  expect(readNext).toHaveBeenCalledTimes(1);expect(mockDbQuery).not.toHaveBeenCalled();
+  mockDbQuery.mockResolvedValueOnce({rows:[]});
+  const writeNext=jest.fn(),res=response();
+  await requireDashboardGlobalAuthority({method:'POST',user:{id:'a',role:'admin'}},res,writeNext);
+  expect(res.statusCode).toBe(403);expect(writeNext).not.toHaveBeenCalled();
+});

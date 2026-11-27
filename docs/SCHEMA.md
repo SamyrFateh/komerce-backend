@@ -1134,3 +1134,11 @@ migration: 434
 section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
 role: Retrait et réouverture versionnés, pour une variante, un marché et un rail, avec décision et preuve. Migration 435 ajoute `decision_source`. Une décision `MANUAL` exige un acteur humain. Une décision `POLICY_AUTOMATION` autorise uniquement un retrait et conserve `actor_id` à NULL.
 -->
+
+<!-- schema-pending
+object: economic_group_period_closures
+kind: table
+migration: 451
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Validation Direction append-only du mois groupe, avec empreinte des preuves, justificatif et acteur. Un changement de preuve rend la validation précédente obsolète.
+-->

@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-26T20:19:41.556Z",
+  "generatedAt": "2026-11-27T00:40:06.662Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 897,
+  "count": 898,
   "routes": [
     {
       "method": "GET",
@@ -3334,6 +3334,16 @@
       "fullPath": "/api/admin/workspaces/pricing/cost-centers",
       "mountPrefix": "/api/admin/workspaces/pricing",
       "localPath": "/cost-centers",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/cost-centers/close-period",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/cost-centers/close-period",
       "routeFile": "routes/admin-pricing-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

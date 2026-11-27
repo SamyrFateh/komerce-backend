@@ -400,9 +400,18 @@
     }
     return svg;
   }
-  function createV6Profitability(doc,model){
+  function createV6Profitability(doc,model,actions){
     const host=el(doc,'section','kmc-v7-centers kmc-v6-profitability'),data=model?.profitability;
-    host.append(el(doc,'h3','','Rentabilité'),el(doc,'p','kmc-v7-coverage','Résultat économique non calculable : rapprochement des ventes, charges variables et structure à compléter.'));
+    const groupResult = data?.groupPeriodResult;
+    const closed = groupResult?.status === 'CLOSED';
+    const reopened = groupResult?.status === 'REOPENED';
+    const provisional = groupResult?.status === 'PROVISIONAL' || reopened;
+    host.append(el(doc,'h3','','Rentabilité'),el(doc,'p','kmc-v7-coverage',closed
+      ? 'Résultat définitif. Période validée par la Direction.'
+      : reopened ? 'Rapprochement rouvert après modification des preuves.'
+      : provisional
+      ? 'Résultat provisoire sur les faits documentés. Clôture Direction en attente.'
+      : 'Résultat économique non calculable : rapprochement des ventes, charges variables et structure à compléter.'));
     if(!data){
       const observation=model?.activity?.purchaseTransportObservation;
       if(observation?.coefficient!=null)host.append(el(doc,'p','','Observation partielle achat + transport : '+observation.coefficient.replace('.',',')+' · non décisionnelle'));
@@ -412,9 +421,22 @@
     const fmt=v=>v==null?'Non disponible':String(v).replace('.',',');
     const kpis=el(doc,'div','kmc-v7-kpis');
     const sales=data.salesEvidence;
-    kpis.append(metric('Ventes nettes observées',v7Money(sales?.observedNetSalesKmf,'KMF'),sales?sales.coveredOrderCount+' / '+sales.paidOrderCount+' commandes payées · cohorte commandes du mois':'Non disponible'),metric('Contribution variable','Non disponible'),metric('Résultat économique','Non disponible'),metric('Coefficient complet du mois','Non disponible'));
+    kpis.append(metric('Ventes nettes observées',v7Money(sales?.observedNetSalesKmf,'KMF'),sales?sales.coveredOrderCount+' / '+sales.paidOrderCount+' commandes payées · cohorte commandes du mois':'Non disponible'),metric('Contribution variable',v7Money(groupResult?.contributionKmf,'KMF')),metric('Résultat économique',v7Money(groupResult?.resultKmf,'KMF')),metric('Coefficient complet du mois','Non disponible'));
     host.append(kpis);
     if(sales)host.append(el(doc,'p','kmc-v7-coverage','Ventes : commandes créées au mois, avoirs wallet réintégrés, remboursements terminés déduits. '+sales.pendingRefundOrders+' commande(s) avec remboursement pendant ; '+sales.terminalExceptions+' exception(s) terminale(s) ; '+sales.invalidOrderCount+' montant(s) non rapproché(s). Cohorte distincte des expéditions, aucun résultat par soustraction.'));
+    const recognition = data.recognitionEvidence;
+    if (recognition) {
+      const events = el(doc,'div','kmc-v7-kpis');
+      events.append(
+        metric('Articles remis avec preuve',String(recognition.attestedUnits),recognition.handoffParcelCount+' colis documentés ce mois'),
+        metric('Ventes documentées à la remise',v7Money(recognition.documentedHandoffSalesKmf,'KMF'),
+          recognition.pricedHandoffUnits+' / '+recognition.attestedUnits+' articles remis avec prix rapproché'),
+        metric('Remboursements confirmés',v7Money(recognition.confirmedRefundKmf,'KMF'),'Nombre ce mois · '+recognition.confirmedRefundCount),
+        metric('Coûts variables documentés des remises',v7Money(recognition.documentedParcelVariableCostKmf,'KMF'),
+          recognition.parcelCostEvidenceCount+' / '+recognition.handoffParcelCount+' colis avec des coûts documentés')
+      );
+      host.append(events);
+    }
     const panel=el(doc,'section','kmc-v6-panel'),controls=el(doc,'div','kmc-v7-families'),focus=el(doc,'div','kmc-v7-kpis'),chart=el(doc,'div','kmc-v6-chart');
     panel.append(el(doc,'h4','','Observation partielle achat + transport — non décisionnelle'),controls,focus,chart);
     const defs=[['month','Mois'],['quarter','Trimestre à date'],['ytd','Année à date']];const buttons=[];
@@ -450,6 +472,15 @@
         metric('Ventes sur assiette du moteur',v7Money(decision.revenueBasisKmf,'KMF')),metric('Coûts variables transactionnels',v7Money(decision.variableCostsKmf,'KMF')),metric('Risque réel',v7Money(decision.actualRiskKmf,'KMF')),
         metric('Contribution rapprochée',v7Money(decision.contributionKmf,'KMF')),metric('Charges structurelles du moteur',v7Money(decision.structureKmf,'KMF')),metric('Résultat de la cohorte mature',v7Money(decision.resultKmf,'KMF')));
       structure.append(el(doc,'h4','','Couverture de structure — moteur canonique'),metric('Ratio de couverture',fmt(decision.coverageRatio)),metric('Reste à couvrir',v7Money(decision.remainingKmf,'KMF')),el(doc,'p','kmc-v7-coverage','Évaluation séparée de la cohorte expéditions. Aucun calcul de prix automatique.'));
+    }else if(provisional||closed){
+      result.append(el(doc,'h4','',closed?'Formation du résultat définitif':'Formation du résultat provisoire'),
+        metric('Ventes nettes documentées',v7Money(groupResult.netSalesKmf,'KMF')),
+        metric('Charges variables documentées',v7Money(groupResult.variableCostKmf,'KMF')),
+        metric('Pertes sur périodes revues',v7Money(groupResult.actualRiskKmf,'KMF')),
+        metric('Contribution variable',v7Money(groupResult.contributionKmf,'KMF')),
+        metric('Charges de structure documentées',v7Money(groupResult.structureKmf,'KMF')),
+        metric(closed?'Résultat définitif':'Résultat provisoire',v7Money(groupResult.resultKmf,'KMF')));
+      structure.append(el(doc,'h4','','Couverture de structure'),metric('Clôture Direction',closed?'Validée':'À valider'));
     }else{
       result.append(el(doc,'h4','','Formation du résultat'),...['Ventes nettes','Achats du périmètre complet','Charges variables','Contribution variable','Charges de structure','Résultat économique'].map(k=>metric(k,'À rapprocher')));
       structure.append(el(doc,'h4','','Couverture de structure'),metric('Couverture','Non calculable'),metric('Reste à couvrir','Non calculable'),el(doc,'p','kmc-v7-coverage','Sous-activité : référence insuffisante. Le coefficient partiel ne détermine pas les prix.'));
@@ -460,6 +491,36 @@
         metric('Charges directes des marchés',v7Money(String(documented.marketDirectKmf),'KMF')),
         metric('Charges mutualisées du groupe',v7Money(String(documented.groupSharedKmf),'KMF')));
       if(decision)structure.append(el(doc,'p','kmc-v7-coverage','Motif moteur : '+(decision.reason==='MARKET_DECISION_POLICY_REQUIRED'?'Politique de marché absente':decision.reason==='DECISION_SCOPE_MISMATCH'?'Périmètre de décision incohérent':'Rapprochement canonique indisponible')));
+    }
+    if (provisional && model.central && actions?.closePeriod && groupResult.evidenceHash) {
+      const evidence = el(doc,'input','');
+      evidence.required = true;
+      evidence.maxLength = 1000;
+      const evidenceLabel = el(doc,'label','','Référence du justificatif');
+      evidenceLabel.append(evidence);
+      const attestation = el(doc,'input','');
+      attestation.type = 'checkbox';
+      const attestationLabel = el(doc,'label','',' Ventes, remboursements, coûts et pertes du mois vérifiés');
+      attestationLabel.append(attestation);
+      const close = el(doc,'button','kmc-v7-family','Valider la clôture');
+      close.type = 'button';
+      const feedback = el(doc,'p','kmc-v7-coverage');
+      feedback.setAttribute('role','status');
+      close.addEventListener('click',async()=>{
+        if (!attestation.checked || evidence.value.trim().length < 3) {
+          feedback.textContent='Confirmez la revue et renseignez le justificatif.';
+          return;
+        }
+        close.disabled = true;
+        try {
+          await actions.closePeriod({periodStart:model.periodStart,evidenceHash:groupResult.evidenceHash,
+            evidenceRef:evidence.value.trim(),attested:true});
+        } catch (error) {
+          feedback.textContent=error.message;
+          close.disabled = false;
+        }
+      });
+      result.append(evidenceLabel,attestationLabel,close,feedback);
     }
     cards.append(result,structure);host.append(cards);return host;
   }
@@ -476,7 +537,7 @@
       content.replaceChildren();
       if(active==='centers')content.append(createV7CostCenters(doc,model,actions));
       else if(active==='activity')content.append(createV6Activity(doc,model));
-      else content.append(createV6Profitability(doc,model));
+      else content.append(createV6Profitability(doc,model,actions));
     }
     for(const [key,label] of defs){
       const btn=el(doc,'button','kmc-v7-family',label);btn.type='button';btn.addEventListener('click',()=>{active=key;render();if(typeof onTabChange==='function')onTabChange(key);});tabs.push([key,btn]);nav.append(btn);
@@ -526,6 +587,7 @@
           return result;
         };
         const actions={centerState,
+          closePeriod:body=>mutate('closePeriod','/close-period',body),
           reviseBudget:(id,body)=>mutate('budget','/posts/'+encodeURIComponent(id)+'/budget-revisions',body),
           openCommitment:(id,body)=>mutate('commitment','/posts/'+encodeURIComponent(id)+'/commitments',body),
           recordActual:(id,body)=>mutate('actual','/posts/'+encodeURIComponent(id)+'/actuals',body),

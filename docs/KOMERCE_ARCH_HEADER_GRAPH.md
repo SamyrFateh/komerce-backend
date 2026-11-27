@@ -13,9 +13,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2172
-- Edges: 10846
-- DB tables: 258
+- Graph nodes: 2173
+- Edges: 10858
+- DB tables: 259
 - Doctrines: 860
 - Impact areas: 213
 - Unresolved code edges: 1016
@@ -904,6 +904,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/economic-cost-reference-service.js -> economic_cost_families
 - WRITE services/economic-cost-reference-service.js -> economic_cost_posts
 - WRITE services/economic-cost-reference-service.js -> economic_cost_resources
+- WRITE services/economic-cost-center-read-model.js -> economic_group_period_closures
 - WRITE services/pricing-risk-period.js -> economic_risk_cost_events
 - WRITE services/pricing-risk-period.js -> economic_risk_watermark_events
 - WRITE services/economic-sku-rail-selection.js -> economic_sku_rail_selection_events
@@ -921,7 +922,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/financial-journal.js -> financial_movement_documents
 - WRITE bootstrap/crons.js -> financial_movements
 - WRITE services/financial-journal-projectors.js -> financial_movements
-- WRITE services/financial-journal.js -> financial_movements
 
 ## DB Write-Via Edges (délégation déclarée)
 

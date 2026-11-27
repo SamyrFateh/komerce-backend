@@ -39,7 +39,7 @@ const marketDelegationCatalog = require('../services/market-delegation-catalog-s
 const pricingPeriodStructure = require('../services/pricing-period-structure');
 const marketChargeReference = require('../services/market-structure-charge-reference');
 const marketCostAttribution = require('../services/market-cost-attribution-service');
-const { readCostCenters } = require('../services/economic-cost-center-read-model');
+const { readCostCenters, closeGroupPeriod } = require('../services/economic-cost-center-read-model');
 const { reviseBudget } = require('../services/economic-cost-budget-service');
 const { openCommitment, moveCommitment } = require('../services/economic-cost-commitment-service');
 const { recordPostActual } = require('../services/economic-cost-post-actual-service');
@@ -168,7 +168,8 @@ function requirePricingCapability(capability, options = {}) {
 // aucun consommateur réel. requires_audit=false au registre pour ces deux
 // capabilities (lecture), contrairement aux mutations ci-dessus.
 function requirePricingReadCapability(capability) {
-  return requirePricingCapability(capability, { audit: false });
+  const delegated = requirePricingCapability(capability, { audit: false });
+  return (req,res,next) => req.method === 'GET' && req.user?.role === 'admin' ? next() : delegated(req,res,next);
 }
 
 // Les observations et politiques locales restent aux mains des membres
@@ -765,6 +766,14 @@ router.get('/cost-centers', async (req, res, next) => {
     res.set('Cache-Control', 'private, no-store');
     res.json(await readCostCenters(req.user, { marketCode: null, periodStart: req.query.periodStart }));
   } catch (error) { handleError(error, res, next); }
+});
+
+router.post('/cost-centers/close-period', async (req,res,next) => {
+  try {
+    const result=await closeGroupPeriod(req.user,req.body);
+    res.set('Cache-Control','private, no-store');
+    res.status(result.outcome==='closed'?201:200).json(result);
+  } catch(error) { handleError(error,res,next); }
 });
 
 router.post('/cost-centers/posts/:postId/budget-revisions', reviseCostCenterBudget);

@@ -737,3 +737,8 @@ test('Direction V3 : filtre et dossier ouvert conservés au refresh, marchés is
  expect(host.querySelector('[data-hub-v3-dossier="KM:po_id:'+id+'"]').open).toBe(true);
  expect(host.querySelector('[data-hub-v3-proofs]').getAttribute('href')).toBe('/admin/hub?branch=administrative');
 });
+
+test('la fraîcheur du Kanban marché reste sur le polling de ses lectures autorisées', () => {
+  const source=require('fs').readFileSync(require('path').join(__dirname,'../../public/dashboards/canonical/js/hub-workstation.js'),'utf8');
+  expect(source).toContain('streamEnabled: !marketReadOnly');
+});

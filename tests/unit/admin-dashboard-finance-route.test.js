@@ -8,9 +8,10 @@
 
 let mockAllowedMarkets = new Set(['market-cm-id']);
 let mockGlobalAllowed = false;
+let mockActorRole = 'market_operator';
 
 jest.mock('../../middleware/auth', () => ({
-  authenticate: (req, res, next) => { req.user = { id: 'admin-1', role: 'admin' }; next(); },
+  authenticate: (req, res, next) => { req.user = { id: 'actor-1', role: mockActorRole }; next(); },
   requireAdmin: (req, res, next) => next(),
   requireRole: () => (req, res, next) => next(),
 }));
@@ -34,7 +35,7 @@ jest.mock('../../middleware/require-market-delegated-capability', () => ({
 jest.mock('../../middleware/require-dashboard-global-authority', () => ({
   hasDashboardGlobalAuthority: jest.fn(async () => mockGlobalAllowed),
   requireDashboardGlobalAuthority: (req, res, next) => {
-    if (!mockGlobalAllowed) return res.status(403).json({ code: 'dashboard_global_access_denied' });
+    if (req.user.role !== 'admin' && !mockGlobalAllowed) return res.status(403).json({ code: 'dashboard_global_access_denied' });
     next();
   },
 }));
@@ -73,6 +74,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockAllowedMarkets = new Set(['market-cm-id']);
   mockGlobalAllowed = false;
+  mockActorRole = 'market_operator';
   mockMarketCapabilityGranted = true;
   mockGrantedMarketCodes = new Set(['CM']);
   mockQuery.mockImplementation(async (sql, params) => {
@@ -116,13 +118,13 @@ describe('routes Finance Canonical', () => {
     expect(mockBuildFinance).not.toHaveBeenCalled();
   });
 
-  test('Finance globale exige le grant global explicite', async () => {
+  test('A1 : opérateur sans grant refusé, admin sans grant autorisé', async () => {
     let res = await request(app()).get('/api/admin/dashboard/finance?period=7');
     expect(res.status).toBe(403);
     expect(res.body.code).toBe('dashboard_global_access_denied');
     expect(mockBuildFinance).not.toHaveBeenCalled();
 
-    mockGlobalAllowed = true;
+    mockActorRole = 'admin';
     res = await request(app()).get('/api/admin/dashboard/finance?period=7');
     expect(res.status).toBe(200);
     expect(mockBuildFinance).toHaveBeenCalledWith(expect.objectContaining({ period: '7' }));

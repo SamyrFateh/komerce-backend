@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-26T20:02:24.755Z",
+  "generatedAt": "2026-11-27T00:40:08.921Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 892,
-    "protected": 833,
+    "total": 893,
+    "protected": 834,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2657,6 +2657,13 @@
     },
     {
       "key": "POST /api/admin/workspaces/pricing/competitors",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/cost-centers/close-period",
       "level": "PROTECTED",
       "roles": [
         "admin"

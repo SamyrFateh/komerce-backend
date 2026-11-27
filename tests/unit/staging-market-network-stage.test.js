@@ -7,7 +7,7 @@ const { classifyNetworkStage, SCREEN_PATH } = require('../staging-canonical/mark
 describe('canonical Réseau local — verdicts sans PASS métier implicite', () => {
   const base = { workspaceVisible: true, sectionVisible: true, relaisStatus: 200, providersStatus: 403, accessRequired: true };
   test('pointe vers le parcours de marché existant', () => {
-    expect(SCREEN_PATH).toBe('/dashboards/canonical/market-autonomy.html');
+    expect(SCREEN_PATH).toBe('/admin/providers');
   });
   test('surface visible avec GET autorisé = preuve écran seulement', () => {
     expect(classifyNetworkStage(base)).toEqual({ verdict: 'SCREEN_PASS', reason: 'VISIBLE_WITH_SERVER_AUTHORITY' });
