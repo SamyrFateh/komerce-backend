@@ -54,14 +54,31 @@ async function review(db, { market, from, to }) {
   }
   const statement = await readHubStatement(db, { marketId: market.id, marketCode: market.code, fromIso, toIso });
   const evidence_hash = createHash('sha256').update(JSON.stringify(statement)).digest('hex');
-  const can_issue = market.lifecycle_status === 'ACTIVE' && !statement.truncated
-    && statement.total_kmf !== null && statement.informational_totals?.status === 'AVAILABLE';
+  const positive = statement.total_kmf!==null && parseDecimal(statement.total_kmf).n>0n;
+  const can_issue = market.lifecycle_status === 'ACTIVE' && !statement.truncated && positive
+    && statement.coverage?.status==='NO_CROSS_PERIOD_ATTRIBUTIONS'
+    && statement.informational_totals?.status === 'AVAILABLE';
   return { statement, evidence_hash, can_issue, invoice: null };
 }
 
+function statementFacts(statement) {
+  if(!statement || !Array.isArray(statement.lines))return null;
+  return JSON.stringify([statement.total_kmf,statement.lines.map(line=>[
+    line.attribution_id,line.event_id,line.amount_kmf,line.economic_from,line.economic_to,
+    line.allocation_key,line.policy_version
+  ]).sort((a,b)=>String(a[0]).localeCompare(String(b[0])))]);
+}
 async function preview(db, { marketCode, from, to }) {
   const market = await loadMarket(db, marketCode);
-  return review(db, { market, from, to });
+  const reviewed=await review(db, { market, from, to });
+  if(!reviewed.invoice)return reviewed;
+  const {fromIso,toIso}=statementPeriod(from,to,'hub');
+  const current=await readHubStatement(db,{marketId:market.id,marketCode:market.code,fromIso,toIso});
+  // The invoice and settlement stay immutable. Differences require a separate regularization.
+  const frozen=statementFacts(reviewed.invoice.statement_snapshot);
+  const adjustment_required=frozen===null || frozen!==statementFacts(current)
+    || current.truncated || current.coverage?.status!=='NO_CROSS_PERIOD_ATTRIBUTIONS';
+  return {...reviewed,adjustment_required};
 }
 
 async function issue(db, { marketCode, from, to, evidenceHash, actorId }) {

@@ -165,6 +165,30 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect((await get(fx.viewerA,null)).status).toBe(403);
     expect((await get(fx.outsider,fx.marketA.code)).status).toBe(403);
   });
+  test('A1 admin without pricing global grant reads group and both markets, but cannot write',async()=>{
+    // Use the isolated outsider fixture only, restore its identity in all outcomes.
+    const actor=fx.outsider;
+    await q("UPDATE users SET role='admin' WHERE id=$1",[actor.id]);
+    try {
+      expect((await q("SELECT 1 FROM pricing_global_access_grants WHERE user_id=$1 AND revoked_at IS NULL",[actor.id])).rows).toHaveLength(0);
+      for(const code of [null,fx.marketA.code,fx.marketB.code]){
+        const reply=await get(actor,code);
+        expect(reply.status).toBe(200);
+        expect(reply.body).toMatchObject({globalRead:true,central:false,readOnly:true,
+          costCapabilities:{budget:false,commitment:false,consume:false,actual:false,reference:false}});
+      }
+      const path=endpoint(null)+'/posts/'+g.post+'/budget-revisions';
+      const count=async()=>String((await q('SELECT count(*) FROM economic_cost_budget_revisions WHERE post_id=$1',[g.post])).rows[0].count);
+      const before=await count();
+      const refused=await request(app).post(path).set('Authorization',actor.token).send({periodStart:month,expectedRevision:0,currency:'EUR',amountNative:'1.00',reason:'must refuse',requestKey:tag+'A1DENY'});
+      expect(refused.status).toBe(403);
+      expect(await count()).toBe(before);
+      const marketDenied=await request(app).post(endpoint(fx.marketA.code)+'/posts/'+a.post+'/budget-revisions').set('Authorization',actor.token).send({periodStart:month,expectedRevision:2,currency:'EUR',amountNative:'1.00',reason:'must refuse',requestKey:tag+'A1MKT'});
+      expect(marketDenied.status).toBe(403);
+      const close=await request(app).post(endpoint(null)+'/close-period').set('Authorization',actor.token).send({periodStart:month,evidenceHash:'a'.repeat(64),evidenceRef:'must refuse',attested:true});
+      expect(close.status).toBe(403);
+    } finally {await q("UPDATE users SET role='client' WHERE id=$1",[actor.id]);}
+  });
   test('central group keeps central centers and consolidates market activity',async()=>{
     const result=await get(fx.central,null);expect(result.status).toBe(200);
     expect(result.body.centers.map(c=>c.id)).toContain(g.center);
@@ -525,6 +549,14 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
       expect(reply.status).toBe(200);
       return reply.body.profitability.groupPeriodResult;
     };
+    const incomplete=await read();
+    expect(incomplete).toMatchObject({status:'NOT_RECONCILED',reasons:expect.arrayContaining(['VARIABLE_COSTS_INCOMPLETE'])});
+    // Explicit confirmed zero for other applicable costs of this isolated local-stock line.
+    await q(`INSERT INTO order_item_real_cost_allocations
+      (order_id,order_item_id,parcel_id,cost_type,amount_kmf,allocation_method,source,provenance)
+      SELECT $1,$2,$3,kind,0,'by_quantity','fixture_revue','zero confirmed by CI evidence'
+        FROM unnest(ARRAY['product_purchase','sourcing','local_distribution','relay']::text[]) kind`,
+      [line.order_id,line.order_item_id,line.parcel_id]);
     const initial=await read();
     expect(initial).toMatchObject({status:'PROVISIONAL',resultKmf:'9316.66'});
     const submit=(actor,hash)=>request(app).post(mount+'/cost-centers/close-period')
