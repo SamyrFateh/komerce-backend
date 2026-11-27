@@ -225,6 +225,7 @@ describe('observed landed cost evidence', () => {
     const ids = ['first', 'second', 'third'];
     const lines = ids.map(order_item_id => ({
       order_item_id, sku_id: 'S1', quantity: 10, result, landed_cost_evidence: evidence,
+      frozen_estimated_cost_kmf: 70000,
     }));
     const shipments = new Map(ids.map(id => [id, {
       shipment_id: id, rail: 'sea', financial_closed_at: '2026-11-01T00:00:00Z',
@@ -232,6 +233,14 @@ describe('observed landed cost evidence', () => {
     const [summary] = summarizeObservedLandedCost(lines, shipments, { since: 0, truncated: false });
     expect(summary).toMatchObject({ unit_cost_kmf: 7719.68, observations: 3, status: 'DECISIONAL' });
     expect(summary.observed_multiplier).toBeCloseTo(77196.78 / 49196.78);
+    expect(summary).toMatchObject({ estimated_unit_cost_kmf: 7000, estimated_vs_real_pct: 10.28 });
+    // Missing estimate on any included sale invalidates only the comparison.
+    delete lines[0].frozen_estimated_cost_kmf;
+    expect(summarizeObservedLandedCost(lines, shipments, { since: 0, truncated: false })[0])
+      .toMatchObject({ unit_cost_kmf: 7719.68, estimated_unit_cost_kmf: null, estimated_vs_real_pct: null });
+    lines.forEach(line => { line.frozen_estimated_cost_kmf = 0; });
+    expect(summarizeObservedLandedCost(lines, shipments, { since: 0, truncated: false })[0])
+      .toMatchObject({ estimated_unit_cost_kmf: 0, estimated_vs_real_pct: null });
     shipments.delete('third');
     expect(summarizeObservedLandedCost(lines, shipments, { since: 0, truncated: false })[0])
       .toMatchObject({ observations: 2, status: 'INSUFFICIENT_OBSERVATIONS' });

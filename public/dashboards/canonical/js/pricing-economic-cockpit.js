@@ -430,7 +430,15 @@
           }
           if (cost.observed_multiplier != null) card.append(el(doc, 'span', '',
             'Coefficient observé : × ' + new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 4 }).format(cost.observed_multiplier)));
-          const status = cost.status === 'DECISIONAL' ? 'Décisionnel' : 'Indicatif';
+          const delta = cost.estimated_vs_real_pct;
+          card.append(el(doc, 'span', '', 'Écart réel / estimé : ' + (delta == null
+            ? 'Indisponible' : new Intl.NumberFormat('fr-FR', { style: 'percent', signDisplay: 'exceptZero', maximumFractionDigits: 2 }).format(delta / 100))));
+          const status = {
+            DECISIONAL: 'Décisionnel',
+            INSUFFICIENT_OBSERVATIONS: 'Indicatif — observations insuffisantes',
+            TRUNCATED: 'Indicatif — résultats tronqués',
+            PURCHASE_COST_UNAVAILABLE: 'Indicatif — achat non établi',
+          }[cost.status] || 'Indicatif — non certifié';
           card.append(el(doc, 'small', 'kmc-v7-coverage', status + ' · ' + cost.observations + ' expédition(s) · ' +
             cost.incomplete_lines + ' ligne(s) incomplète(s) · ' + cost.provisional_lines + ' provisoire(s)'));
           output.append(card);

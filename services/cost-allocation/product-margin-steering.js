@@ -190,6 +190,10 @@ function summarizeObservedLandedCost(lines, shipments, { since, truncated }) {
       unit_cost_kmf: cohort.quantity > 0 ? pct2(total / 100 / cohort.quantity) : null,
       estimated_unit_cost_kmf: estimated_lines === cohort.final_lines && cohort.quantity > 0
         ? pct2(estimated_cents / 100 / cohort.quantity) : null,
+      // Compare only the frozen pre-sale estimates of the actual observed lines.
+      // Do not divide by zero or substitute a current catalogue estimate.
+      estimated_vs_real_pct: estimated_lines === cohort.final_lines && estimated_cents > 0 && cohort.quantity > 0
+        ? pct2(100 * (total - estimated_cents) / estimated_cents) : null,
       observed_multiplier: purchase > 0 ? total / purchase : null,
       cost_by_type_kmf: Object.fromEntries(Object.entries(costs).map(([type, cents]) => [type, cents / 100])),
     };
