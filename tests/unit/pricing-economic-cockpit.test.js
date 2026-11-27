@@ -263,3 +263,17 @@ test('activity projection is read-only, scope currency and no KMF fallback when 
  expect(unavailable).toContain('Non disponible');
  expect(unavailable.filter(x=>/ KMF$/.test(x))).toEqual([]);
 });
+
+test('numeric structure evidence uses its projected amount, including zero, without fabricating a result',()=>{
+ const o={periodStart:'2026-01-01',observations:0,physicalClosedCount:0};
+ const model={activityCurrencyProjection:{currency:'EUR',fxStatus:'GOVERNED_KMF_PROJECTION',amounts:{'150':'0.30','100':'0.20','50':'0.10','0':'0.00'}},
+   profitability:{points:[],ranges:{month:o,quarter:o,ytd:o},structureCoverage:{evidenceCount:2,groupSharedKmf:100,marketDirectKmf:50,recognizedKmf:150}}};
+ const rendered=texts(createV6Profitability(doc,model));
+ expect(rendered).toEqual(expect.arrayContaining(['0,30 EUR','0,20 EUR','0,10 EUR','Non calculable']));
+ expect(rendered).not.toContain('150 KMF');
+ model.profitability.structureCoverage.recognizedKmf=0;
+ expect(texts(createV6Profitability(doc,model))).toContain('0,00 EUR');
+ model.activityCurrencyProjection={currency:'EUR',fxStatus:'FX_UNAVAILABLE',amounts:{}};
+ expect(texts(createV6Profitability(doc,model))).not.toContain('0,00 EUR');
+ expect(texts(createV6Profitability(doc,model))).not.toContain('100 KMF');
+});

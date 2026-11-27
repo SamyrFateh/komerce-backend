@@ -48,7 +48,7 @@
     const p=model?.activityCurrencyProjection;
     // The historical model is kept for compatibility with offline fixtures.
     // Once a projection is present, never display the KMF source as a fallback.
-    if(!p)return v7Money(value,'KMF');
+    if(!p)return v7Money(typeof value==='number'&&Number.isFinite(value)?String(value):value,'KMF');
     if(value==null||p.fxStatus==='FX_UNAVAILABLE'||!p.currency)return 'Non disponible';
     return v7Money(p.amounts?.[String(value)],p.currency);
   }
