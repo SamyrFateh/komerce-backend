@@ -92,3 +92,8 @@ describe('staging-e2e-verify-accounts : lecture seule', () => {
     expect(expectedFor(PROFILES.find((p) => p.key === 'finance'), ['CM', 'CG'])).toEqual(['KM']);
   });
 });
+
+test('global reset reserves the same staging lock as G6, through the provision chain',()=>{
+  expect(reset).toMatch(/^concurrency:\n(?:  #.*\n)*  group: komerce-g6-canonical-real-transaction\n  cancel-in-progress: false/m);
+  expect(reset).not.toMatch(/group: komerce-staging-reset/);
+});

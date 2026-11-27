@@ -609,62 +609,17 @@ describe('console recette isolée — outils staging fail-closed', () => {
     expect(fetch).toHaveBeenCalledWith('/health', expect.objectContaining({ method: 'GET' }));
   });
 
-  test('projette Reset / Seed uniquement quand le serveur annonce KOMERCE_ENV=staging', async () => {
-    const fetch = jest.fn().mockResolvedValueOnce({ok:true,json:async()=>({komerce_env:'staging'})})
+  test('admin staging voit uniquement un lien vers le workflow, aucun POST possible',async()=>{
+    const fetch=jest.fn().mockResolvedValueOnce({ok:true,json:async()=>({komerce_env:'staging'})})
       .mockResolvedValueOnce({ok:true,json:async()=>({role:'admin'})});
-    const env = loadNavigation('/admin/golden-e2e', 'golden-e2e', { window: { fetch } });
-    const group = fakeNode('div');
-
-    const mounted = await require('../../public/js/golden-recipe-staging-tools.js').mountStagingAdminTools(env.document, group);
-
-    expect(mounted).toBe(true);
-    const tools = group.children[0];
+    const env=loadNavigation('/admin/golden-e2e','golden-e2e',{window:{fetch}});
+    const group=fakeNode('div');
+    expect(await require('../../public/js/golden-recipe-staging-tools.js').mountStagingAdminTools(env.document,group)).toBe(true);
+    const tools=group.children[0];
     expect(tools.attributes['data-staging-tools']).toBe('true');
-    expect(tools.children.find(node => node.attributes['data-admin-action'] === 'reset-orders')).toBeDefined();
-    expect(tools.children.find(node => node.attributes['data-admin-action'] === 'seed-test')).toBeDefined();
-  });
-
-  test('Reset staging envoie une confirmation explicite et reste borné au mode orders', async () => {
-    const fetch = jest.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ komerce_env: 'staging' }) })
-      .mockResolvedValueOnce({ok:true,json:async()=>({role:'admin'})})
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ message: 'Reset ok' }) });
-    const confirm = jest.fn(() => true);
-    const env = loadNavigation('/admin/golden-e2e', 'golden-e2e', { window: { fetch, confirm } });
-    const group = fakeNode('div');
-
-    await require('../../public/js/golden-recipe-staging-tools.js').mountStagingAdminTools(env.document, group);
-    const tools = group.children[0];
-    const reset = tools.children.find(node => node.attributes['data-admin-action'] === 'reset-orders');
-    await reset.listeners.click();
-
-    expect(confirm).toHaveBeenCalled();
-    expect(fetch).toHaveBeenLastCalledWith('/api/admin/reset', expect.objectContaining({
-      method: 'POST',
-      credentials: 'include',
-      body: JSON.stringify({ mode: 'orders', confirm: true }),
-    }));
-  });
-
-  test('Seed staging exige confirmation et appelle le endpoint protégé existant', async () => {
-    const fetch = jest.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ komerce_env: 'staging' }) })
-      .mockResolvedValueOnce({ok:true,json:async()=>({role:'admin'})})
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ message: 'Seed ok' }) });
-    const confirm = jest.fn(() => true);
-    const env = loadNavigation('/admin/golden-e2e', 'golden-e2e', { window: { fetch, confirm } });
-    const group = fakeNode('div');
-
-    await require('../../public/js/golden-recipe-staging-tools.js').mountStagingAdminTools(env.document, group);
-    const tools = group.children[0];
-    const seed = tools.children.find(node => node.attributes['data-admin-action'] === 'seed-test');
-    await seed.listeners.click();
-
-    expect(confirm).toHaveBeenCalled();
-    expect(fetch).toHaveBeenLastCalledWith('/api/admin/seed-test', expect.objectContaining({
-      method: 'POST',
-      credentials: 'include',
-      body: JSON.stringify({ confirm: true }),
-    }));
+    expect(tools.children.some(node=>node.tagName==='BUTTON'||node.attributes['data-admin-action'])).toBe(false);
+    expect(tools.children.find(node=>node.tagName==='A').href).toContain('/actions/workflows/staging-reset.yml');
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch.mock.calls.some(([,options])=>options?.method==='POST')).toBe(false);
   });
 });

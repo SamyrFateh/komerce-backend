@@ -134,7 +134,9 @@ function failNth(matcher, n, err, successResp = { rows: [], rowCount: 0 }) {
 beforeEach(() => {
   jest.clearAllMocks();
   process.env = { ...ORIGINAL_ENV };
-  delete process.env.NODE_ENV;
+  process.env.NODE_ENV = 'test';
+  delete process.env.RAILWAY_ENVIRONMENT_ID;
+  delete process.env.RAILWAY_ENVIRONMENT_NAME;
   delete process.env.KOMERCE_ENV;
   delete process.env.ALLOW_FLUSH;
   delete process.env.ALLOW_SEED;
@@ -202,17 +204,19 @@ describe('admin/system — POST /reset', () => {
     expect(mockGetClient).not.toHaveBeenCalled();
   });
 
-  it('autorisé en production si ALLOW_FLUSH=true', async () => {
-    process.env.KOMERCE_ENV = 'production';
-    process.env.NODE_ENV = 'development';
-    process.env.ALLOW_FLUSH = 'true';
-    const client = makeClient([
-      ['SELECT COUNT(*)::int AS count FROM orders', { rows: [{ count: '3' }] }],
-    ]);
-    mockGetClient.mockResolvedValueOnce(client);
-
-    const res = await request(app).post('/api/admin/reset').send({ mode: 'orders', confirm: true });
-    expect(res.status).toBe(200);
+  it.each(['production','staging','unknown',''])('refuse reset distant/non identifié %s malgré ALLOW_FLUSH', async env=>{
+    process.env.KOMERCE_ENV=env;
+    if(!env)delete process.env.NODE_ENV;
+    process.env.ALLOW_FLUSH='true';
+    const res=await request(app).post('/api/admin/reset').send({mode:'orders',confirm:true});
+    expect(res.status).toBe(403);
+    expect(mockGetClient).not.toHaveBeenCalled();
+  });
+  it('refuse reset même NODE_ENV=test sur Railway',async()=>{
+    process.env.RAILWAY_ENVIRONMENT_ID='remote';
+    const res=await request(app).post('/api/admin/reset').send({mode:'orders',confirm:true});
+    expect(res.status).toBe(403);
+    expect(mockGetClient).not.toHaveBeenCalled();
   });
 
   it('400 si mode invalide', async () => {
@@ -422,13 +426,19 @@ describe('admin/system — POST /seed-test', () => {
     expect(mockGetClient).not.toHaveBeenCalled();
   });
 
-  it('autorisé en production si ALLOW_SEED=true', async () => {
-    process.env.NODE_ENV = 'production';
-    process.env.ALLOW_SEED = 'true';
-    const client = baseClient();
-    mockGetClient.mockResolvedValueOnce(client);
-    const res = await request(app).post('/api/admin/seed-test').send({ confirm: true });
-    expect(res.status).toBe(200);
+  it.each(['production','staging','unknown',''])('refuse seed distant/non identifié %s malgré ALLOW_SEED',async env=>{
+    process.env.KOMERCE_ENV=env;
+    if(!env)delete process.env.NODE_ENV;
+    process.env.ALLOW_SEED='true';
+    const res=await request(app).post('/api/admin/seed-test').send({confirm:true});
+    expect(res.status).toBe(403);
+    expect(mockGetClient).not.toHaveBeenCalled();
+  });
+  it('refuse seed même NODE_ENV=test sur Railway',async()=>{
+    process.env.RAILWAY_ENVIRONMENT_NAME='staging';
+    const res=await request(app).post('/api/admin/seed-test').send({confirm:true});
+    expect(res.status).toBe(403);
+    expect(mockGetClient).not.toHaveBeenCalled();
   });
 
   it('400 si confirm absent (client tout de même libéré via finally)', async () => {
