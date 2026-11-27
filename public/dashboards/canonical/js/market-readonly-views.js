@@ -204,6 +204,8 @@
       if (reply.adjustment_required) result.appendChild(el('p', 'kmc-team-help', 'Des preuves ont changé depuis l’émission. Régularisation nécessaire ; facture historique inchangée.'));
       if (data.coverage?.status === 'CROSS_PERIOD_RECONCILIATION_REQUIRED') {
         result.appendChild(el('p', 'kmc-team-help', 'Des charges chevauchent la période. Rapprochement nécessaire avant émission.'));
+      } else if (data.coverage?.status === 'POOL_RECONCILIATION_REQUIRED') {
+        result.appendChild(el('p','kmc-team-help','Ventilation Hub non rapprochée ou charge corrigée. Émission bloquée.'));
       } else if (data.coverage?.status === 'UNKNOWN') {
         result.appendChild(el('p', 'kmc-team-help', 'Couverture du relevé inconnue. Émission bloquée.'));
       }

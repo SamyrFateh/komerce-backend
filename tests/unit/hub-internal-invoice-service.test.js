@@ -75,6 +75,7 @@ test('incoming payment is recorded only against the exact amount and a matching 
 test('cross-period, unknown coverage and non-positive amounts cannot issue',async()=>{
   for(const candidate of [
     {...statement,coverage:{status:'CROSS_PERIOD_RECONCILIATION_REQUIRED',cross_period_attribution_count:1}},
+    {...statement,coverage:{status:'POOL_RECONCILIATION_REQUIRED',cross_period_attribution_count:0}},
     {...statement,coverage:undefined},
     {...statement,total_kmf:'0.00'},
   ]){

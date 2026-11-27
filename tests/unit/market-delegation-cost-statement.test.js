@@ -74,7 +74,7 @@ describe('relevé de coûts du marché (D7)', () => {
     const read = db.query.bind(db);
     db.query = (sql, params) => sql.includes('FROM currency_parities')
       ? Promise.resolve({ rows: [{ rate: params[0] === 'KMF' ? '491.96' : '655.957' }] })
-      : sql.includes('AS crossing_count') ? Promise.resolve({rows:[{crossing_count:0}]}) : sql.includes('FROM hub_internal_invoices') ? Promise.resolve({rows:[]}) : read(sql, params);
+      : sql.includes('AS crossing_count') ? Promise.resolve({rows:[{crossing_count:0,pool_unreconciled:false}]}) : sql.includes('FROM hub_internal_invoices') ? Promise.resolve({rows:[]}) : read(sql, params);
     const statement = await getMarketCostStatement(db, {
       marketCode: 'CM', actorUserId: 'u1', scope: 'hub', from: '2026-09-01', to: '2026-10-01',
     });
@@ -99,7 +99,7 @@ describe('relevé de coûts du marché (D7)', () => {
     const read = db.query.bind(db);
     db.query = (sql, params) => sql.includes('FROM currency_parities')
       ? Promise.resolve({ rows: [] })
-      : sql.includes('AS crossing_count') ? Promise.resolve({rows:[{crossing_count:0}]}) : sql.includes('FROM hub_internal_invoices') ? Promise.resolve({rows:[]}) : read(sql, params);
+      : sql.includes('AS crossing_count') ? Promise.resolve({rows:[{crossing_count:0,pool_unreconciled:false}]}) : sql.includes('FROM hub_internal_invoices') ? Promise.resolve({rows:[]}) : read(sql, params);
     const result = await getMarketCostStatement(db, {
       marketCode: 'CM', actorUserId: 'u1', scope: 'hub', from: '2026-09-01', to: '2026-10-01',
     });
@@ -110,7 +110,7 @@ describe('relevé de coûts du marché (D7)', () => {
     const db=dbWith([]);
     const read=db.query.bind(db);
     db.query=(sql,params)=>sql.includes('AS crossing_count')
-      ? Promise.resolve({rows:[{crossing_count:1}]}) : read(sql,params);
+      ? Promise.resolve({rows:[{crossing_count:1,pool_unreconciled:false}]}) : read(sql,params);
     const result=await getMarketCostStatement(db,{marketCode:'CM',actorUserId:'u1',scope:'hub',from:'2026-09-01',to:'2026-10-01'});
     expect(result).toMatchObject({total_kmf:null,lines:[],coverage:{
       cross_period_attribution_count:1,status:'CROSS_PERIOD_RECONCILIATION_REQUIRED'}});
@@ -158,7 +158,7 @@ test('market Hub invoice reads the exact server scope and exposes the frozen rec
       period:{from:'2026-09-01',to:'2026-10-01'},lines:[{attribution_id:'a1',amount_kmf:'40000.00',private:'do not expose'}],private:'internal'}};
   const db={query:jest.fn(async(sql,params)=>{
     if(sql.includes('FROM hub_internal_invoices'))return {rows:[invoice]};
-    if(sql.includes('AS crossing_count'))return {rows:[{crossing_count:0}]};
+    if(sql.includes('AS crossing_count'))return {rows:[{crossing_count:0,pool_unreconciled:false}]};
     if(sql.includes('FROM currency_parities'))return {rows:[]};
     return {rows:[{attribution_id:'a2',amount_kmf:'50000.00',total_kmf:'50000.00'}]};
   })};
@@ -176,4 +176,13 @@ test('market Hub invoice reads the exact server scope and exposes the frozen rec
   db.query.mockClear();
   await expect(getMarketCostStatement(db,{marketCode:'CG',actorUserId:'member',scope:'hub',from:'2026-09-01',to:'2026-10-01'})).rejects.toMatchObject({status:403});
   expect(db.query).not.toHaveBeenCalled();
+});
+
+test('Hub non ventilé ou corrigé : la couverture bloque l’émission sans révéler le total des autres marchés',async()=>{
+  const db=dbWith([]);
+  const read=db.query.bind(db);
+  db.query=(sql,params)=>sql.includes('AS crossing_count')?Promise.resolve({rows:[{crossing_count:0,pool_unreconciled:true}]}):read(sql,params);
+  const statement=await getMarketCostStatement(db,{marketCode:'CM',actorUserId:'u1',scope:'hub',from:'2026-09-01',to:'2026-10-01'});
+  expect(statement.coverage).toEqual({cross_period_attribution_count:0,status:'POOL_RECONCILIATION_REQUIRED'});
+  expect(statement.total_kmf).toBeNull();
 });

@@ -72,9 +72,10 @@ const HUB_LINES_SQL = `
          a.allocation_key, a.policy_version, SUM(a.amount_kmf) OVER ()::text AS total_kmf
     FROM market_cost_attributions a
     JOIN economic_structure_cost_events e ON e.id = a.source_event_id
-    JOIN economic_cost_posts p ON p.structure_charge_id = e.charge_id
-    JOIN economic_cost_centers c ON c.id = p.center_id
-   WHERE a.market_id = $1 AND c.market_id IS NULL AND c.code = 'HUB_CENTRAL'
+   WHERE a.market_id = $1 AND EXISTS (
+      SELECT 1 FROM economic_cost_posts p JOIN economic_cost_centers c ON c.id=p.center_id
+      WHERE p.structure_charge_id=e.charge_id AND c.market_id IS NULL AND c.code = 'HUB_CENTRAL'
+   )
      AND a.event_kind = 'ATTRIBUTION'
      AND e.economic_from >= $2::timestamptz AND e.economic_to <= $3::timestamptz
      AND NOT EXISTS (
@@ -85,16 +86,29 @@ const HUB_LINES_SQL = `
 
 // A charge crossing the requested bounds must be reconciled, not silently omitted.
 const HUB_CROSS_PERIOD_SQL = `
-  SELECT COUNT(DISTINCT a.id)::int AS crossing_count
-    FROM market_cost_attributions a
-    JOIN economic_structure_cost_events e ON e.id=a.source_event_id
-    JOIN economic_cost_posts p ON p.structure_charge_id=e.charge_id
-    JOIN economic_cost_centers c ON c.id=p.center_id
-   WHERE a.market_id=$1 AND c.market_id IS NULL AND c.code='HUB_CENTRAL'
-     AND a.event_kind='ATTRIBUTION'
-     AND e.economic_from < $3::timestamptz AND e.economic_to > $2::timestamptz
-     AND NOT (e.economic_from >= $2::timestamptz AND e.economic_to <= $3::timestamptz)
-     AND NOT EXISTS (SELECT 1 FROM market_cost_attributions reversal WHERE reversal.reverses_id=a.id)`;
+  WITH hub_events AS (
+    SELECT e.id,e.economic_from,e.economic_to,e.event_kind,e.amount_kmf
+      FROM economic_structure_cost_events e
+     WHERE e.scope_kind='GROUP'
+       AND e.economic_from < $3::timestamptz AND e.economic_to > $2::timestamptz
+       AND EXISTS (
+         SELECT 1 FROM economic_cost_posts p JOIN economic_cost_centers c ON c.id=p.center_id
+          WHERE p.structure_charge_id=e.charge_id AND c.market_id IS NULL AND c.code='HUB_CENTRAL'
+       )
+  ), active AS (
+    SELECT a.id,a.source_event_id,a.market_id,a.amount_kmf
+      FROM market_cost_attributions a JOIN hub_events e ON e.id=a.source_event_id
+     WHERE a.event_kind='ATTRIBUTION'
+       AND NOT EXISTS (SELECT 1 FROM market_cost_attributions r WHERE r.reverses_id=a.id)
+  )
+  SELECT (SELECT COUNT(*)::int FROM active a JOIN hub_events e ON e.id=a.source_event_id
+           WHERE a.market_id=$1
+             AND NOT(e.economic_from >= $2::timestamptz AND e.economic_to <= $3::timestamptz)) AS crossing_count,
+         EXISTS (SELECT 1 FROM hub_events e
+          WHERE e.event_kind<>'ACCRUAL'
+             OR EXISTS (SELECT 1 FROM economic_structure_cost_events adj WHERE adj.adjusts_event_id=e.id)
+             OR COALESCE((SELECT SUM(a.amount_kmf) FROM active a WHERE a.source_event_id=e.id),0)<>e.amount_kmf
+         ) AS pool_unreconciled`;
 
 async function hubInformationalTotals(client, amountKmf) {
   if (amountKmf === null) return null;
@@ -140,6 +154,7 @@ async function readHubStatement(db, { marketId, marketCode, fromIso, toIso }) {
   const totalKmf = rows[0]?.total_kmf ?? null;
   const {rows:[crossing]} = await db.query(HUB_CROSS_PERIOD_SQL, [marketId, fromIso, toIso]);
   const crossingCount=Number.isSafeInteger(crossing?.crossing_count)?crossing.crossing_count:null;
+  const poolUnreconciled=typeof crossing?.pool_unreconciled==='boolean'?crossing.pool_unreconciled:null;
   return {
     market_code: marketCode,
     scope: 'HUB_CENTRAL',
@@ -150,7 +165,7 @@ async function readHubStatement(db, { marketId, marketCode, fromIso, toIso }) {
     informational_totals: await hubInformationalTotals(db, totalKmf),
     truncated: rows.length > MAX_LINES,
     coverage: { cross_period_attribution_count: crossingCount,
-      status: crossingCount===0?'NO_CROSS_PERIOD_ATTRIBUTIONS':crossingCount===null?'UNKNOWN':'CROSS_PERIOD_RECONCILIATION_REQUIRED' },
+      status: crossingCount===null||poolUnreconciled===null?'UNKNOWN':crossingCount>0?'CROSS_PERIOD_RECONCILIATION_REQUIRED':poolUnreconciled?'POOL_RECONCILIATION_REQUIRED':'NO_CROSS_PERIOD_ATTRIBUTIONS' },
     lines: rows.slice(0, MAX_LINES).map(({ total_kmf, ...line }) => line),
   };
 }
