@@ -182,12 +182,38 @@ describe('L1 resolveExplicitMarket (contrat front)', () => {
   });
 });
 
+describe('V5.4 — projection de devise de contexte', () => {
+  const { withMarketCurrencyLabel } = require('../../public/dashboards/canonical/js/admin-context');
+  test('devise réelle dynamique, inconnue explicite, aucun droit supplémentaire', () => {
+    const context = validateAdminContext(scopedContext({
+      allowedMarkets:['CM','ZZ','CG'], marketCurrencies:{CM:'XAF',ZZ:'JPY'}
+    }));
+    expect(context.access.marketCurrencies).toEqual({CM:'XAF',ZZ:'JPY',CG:null});
+    expect(Object.isFrozen(context.access.marketCurrencies)).toBe(true);
+    expect(withMarketCurrencyLabel('CM',context,'CM')).toBe('CM · XAF');
+    expect(withMarketCurrencyLabel('ZZ',context,'ZZ')).toBe('ZZ · JPY');
+    expect(withMarketCurrencyLabel('CG',context,'CG')).toBe('CG · Devise non déterminée');
+    expect(withMarketCurrencyLabel('KM',context,'KM')).toBe('KM');
+    expect(() => resolveMarketView(context,'KM')).toThrow(/autorisés par le serveur/);
+  });
+  test('EUR réservé au périmètre groupe global et non au Hub logistique', () => {
+    const globalContext=validateAdminContext(scopedContext({mode:'global',defaultMarket:null,marketCurrencies:{CM:'XAF'}}));
+    const hubContext=validateAdminContext({...scopedContext({mode:'hub',marketCurrencies:{CM:'XAF'}}),actor:{id:'h',role:'agent_hub'}});
+    expect(withMarketCurrencyLabel('Global',globalContext,null)).toBe('Global · EUR');
+    expect(withMarketCurrencyLabel('Hub',hubContext,null)).toBe('Hub');
+  });
+  test.each([{KM:'KMF'},{CM:'xaf'},{CM:12},[]])('refuse la projection invalide %j', marketCurrencies => {
+    expect(() => validateAdminContext(scopedContext({marketCurrencies}))).toThrow(/AdminContext invalide/);
+  });
+});
+
 test('préparation : projection serveur bornée au marché autorisé', () => {
   const valid = { actor:{id:'lead',role:'market_operator'},access:{
-    mode:'market',allowedMarkets:['GA'],defaultMarket:'GA',capabilities:[],
+    mode:'market',allowedMarkets:['GA'],defaultMarket:'GA',capabilities:[],marketCurrencies:{GA:'XAF'},
     preparation:{GA:{items:[{id:'network',label:'Réseau',owner:'market',status:'blocked',blockers:['Aucun relais']}]}}
   }};
   expect(validateAdminContext(valid).access.preparation.GA.items[0].status).toBe('blocked');
+  expect(validateAdminContext(valid).access.marketCurrencies).toEqual({GA:'XAF'});
   expect(()=>validateAdminContext({...valid,access:{...valid.access,preparation:{CG:valid.access.preparation.GA}}})).toThrow(/périmètre/);
   expect(()=>validateAdminContext({...valid,actor:{id:'admin',role:'admin'}})).toThrow(/réservée/);
 });

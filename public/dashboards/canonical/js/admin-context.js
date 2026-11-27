@@ -106,6 +106,20 @@
       fail('access.defaultMarket doit appartenir aux marchés autorisés');
     }
 
+    // Métadonnées de présentation : elles ne changent ni allowedMarkets ni
+    // les capabilities. Compatibilité avec un ancien serveur sans projection.
+    const rawCurrencies = raw.access.marketCurrencies;
+    let marketCurrencies;
+    if (rawCurrencies !== undefined) {
+      if (!rawCurrencies || typeof rawCurrencies !== 'object' || Array.isArray(rawCurrencies))
+        fail('access.marketCurrencies doit être une projection par marché');
+      for (const [code, currency] of Object.entries(rawCurrencies)) {
+        if (!allowedMarkets.includes(code)) fail('access.marketCurrencies contient un marché non autorisé');
+        if (currency !== null && (typeof currency !== 'string' || !/^[A-Z]{3}$/.test(currency)))
+          fail('access.marketCurrencies contient une devise invalide');
+      }
+      marketCurrencies = Object.freeze(Object.fromEntries(allowedMarkets.map(code => [code, rawCurrencies[code] ?? null])));
+    }
     const rawPreparation = raw.access.preparation ?? {};
     if (!rawPreparation || typeof rawPreparation !== 'object' || Array.isArray(rawPreparation)) fail('access.preparation invalide');
     const prepEntries = Object.entries(rawPreparation);
@@ -127,6 +141,7 @@
     return Object.freeze({
       actor,
       access: Object.freeze({ mode, allowedMarkets, defaultMarket, capabilities, delegatedCapabilities,
+        ...(marketCurrencies === undefined ? {} : { marketCurrencies }),
         ...(prepEntries.length ? { preparation } : {}) }),
     });
   }
@@ -177,5 +192,17 @@
     return Object.freeze({ ...base, state: 'prompt', marketCode: null });
   }
 
-  return Object.freeze({ SCOPE_MODES, validateAdminContext, resolveMarketView, resolveExplicitMarket });
+  // Une devise affichée ne constitue ni une habilitation ni une conversion.
+  // Le Hub global est une vue logistique, pas une consolidation comptable.
+  function withMarketCurrencyLabel(label, adminContext, code) {
+    const access = adminContext?.access;
+    if (!access || access.marketCurrencies === undefined) return label;
+    if (code === null) return access.mode === 'global' ? label + ' · EUR' : label;
+    if (!access.allowedMarkets?.includes(code)) return label;
+    const currency = access.marketCurrencies?.[code];
+    return label + ' · ' + (typeof currency === 'string' && /^[A-Z]{3}$/.test(currency)
+      ? currency : 'Devise non déterminée');
+  }
+
+  return Object.freeze({ SCOPE_MODES, validateAdminContext, resolveMarketView, resolveExplicitMarket, withMarketCurrencyLabel });
 });

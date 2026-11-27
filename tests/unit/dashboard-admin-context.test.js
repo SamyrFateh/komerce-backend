@@ -33,7 +33,11 @@ const {
 } = require('../../services/dashboard-admin-context');
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  jest.resetAllMocks();
+  mockQuery.mockImplementation(async (sql) => {
+    if (String(sql).includes('SELECT code, currency FROM markets')) return { rows: [] };
+    throw new Error('unexpected query: ' + sql);
+  });
   mockResolveAuthorization.mockResolvedValue({ capabilities: [] });
   mockListAuthorizedMarkets.mockResolvedValue([]);
 });
@@ -51,6 +55,7 @@ describe('dashboard-admin-context', () => {
       access: {
         mode: 'global',
         allowedMarkets: ['CG', 'CM', 'KM'],
+        marketCurrencies: { CG: null, CM: null, KM: null },
         defaultMarket: null,
         capabilities: ['pilotage.read', 'dashboard.global.read'],
         delegatedCapabilities: {},
@@ -69,6 +74,7 @@ describe('dashboard-admin-context', () => {
     expect(context.access).toEqual({
       mode: 'market',
       allowedMarkets: ['CM', 'CG'],
+      marketCurrencies: { CM: null, CG: null },
       defaultMarket: 'CM',
       capabilities: ['pilotage.read'],
       delegatedCapabilities: { CM: [], CG: [] },
@@ -145,6 +151,7 @@ describe('dashboard-admin-context', () => {
     expect(ctx.access).toEqual({
       mode: 'hub',
       allowedMarkets: ['CG', 'CM', 'KM'],
+      marketCurrencies: { CG: null, CM: null, KM: null },
       defaultMarket: 'CG',
       capabilities: [],
       delegatedCapabilities: {},
@@ -220,9 +227,21 @@ test('granular network delegate without legacy scope receives only its existing 
   expect(mockQuery.mock.calls[1][1]).toEqual([['ZZ']]);
 });
 
+test('devises de présentation limitées au scope réel et sans fallback KMF', async () => {
+  mockHasGlobal.mockResolvedValue(false);
+  mockQuery.mockResolvedValueOnce({rows:[{code:'CM'},{code:'ZZ'},{code:'CG'}]})
+    .mockResolvedValueOnce({rows:[{code:'CM',currency:'XAF'},{code:'ZZ',currency:'JPY'},{code:'KM',currency:'KMF'}]});
+  const ctx=await resolveDashboardAdminContext({id:'operator',role:'market_operator'});
+  expect(ctx.access.marketCurrencies).toEqual({CM:'XAF',ZZ:'JPY',CG:null});
+  expect(Object.isFrozen(ctx.access.marketCurrencies)).toBe(true);
+  expect(mockQuery.mock.calls[1][0]).toContain('is_active = TRUE AND code = ANY($1::text[])');
+  expect(mockQuery.mock.calls[1][1]).toEqual([['CM','ZZ','CG']]);
+  expect(ctx.access.marketCurrencies.KM).toBeUndefined();
+});
+
 test('un responsable PROVISIONING reçoit uniquement la projection de préparation de son marché',async()=>{
   mockHasGlobal.mockResolvedValue(false);
-  mockQuery.mockResolvedValueOnce({rows:[]}).mockResolvedValueOnce({rows:[{code:'GA'}]});
+  mockQuery.mockResolvedValueOnce({rows:[]}).mockResolvedValueOnce({rows:[{code:'GA'}]}).mockResolvedValueOnce({rows:[{code:'GA',currency:'XAF'}]});
   mockListAuthorizedMarkets.mockImplementation(async(_db,{requiredCapability})=>requiredCapability==='team.read'?[{market_code:'GA'}]:[]);
   const authz = {market_code:'GA',lifecycle_status:'PROVISIONING',capabilities:['team.read','network.read']};
   mockResolveAuthorization.mockResolvedValue(authz);
@@ -230,6 +249,8 @@ test('un responsable PROVISIONING reçoit uniquement la projection de préparati
   mockPreparation.mockResolvedValue(checklist);
   const result = await resolveDashboardAdminContext({id:'lead',role:'market_operator'});
   expect(result.access.preparation).toEqual({GA:checklist});
+  expect(result.access.marketCurrencies).toEqual({GA:'XAF'});
+  expect(mockQuery.mock.calls[2][1]).toEqual([['GA'],['GA']]);
   expect(mockPreparation).toHaveBeenCalledWith(expect.anything(),authz);
   expect(result.access.delegatedCapabilities).toEqual({GA:['team.read','network.read']});
 });

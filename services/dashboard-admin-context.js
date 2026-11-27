@@ -176,6 +176,22 @@ async function delegatedCapabilitiesByMarket(userId, marketCodes, preparation = 
   return Object.fromEntries(entries);
 }
 
+// Métadonnées de présentation uniquement, sur le périmètre déjà résolu.
+// Aucun droit ni taux de change n'est déduit de ces devises.
+async function marketCurrenciesFor(allowedMarkets, preparationCodes = []) {
+  const { rows } = await db.query(
+    preparationCodes.length
+      ? `SELECT code, currency FROM markets WHERE (is_active = TRUE OR (lifecycle_status = 'PROVISIONING' AND code = ANY($2::text[]))) AND code = ANY($1::text[])`
+      : `SELECT code, currency FROM markets WHERE is_active = TRUE AND code = ANY($1::text[])`,
+    preparationCodes.length ? [allowedMarkets, preparationCodes] : [allowedMarkets]
+  );
+  const currencies = new Map(rows.map(row => [row.code, row.currency]));
+  return Object.freeze(Object.fromEntries(allowedMarkets.map(code => {
+    const currency = currencies.get(code);
+    return [code, typeof currency === 'string' && /^[A-Z]{3}$/.test(currency) ? currency : null];
+  })));
+}
+
 async function resolveDashboardAdminContext(user) {
   if (!user || !user.id || !user.role) throw new DashboardAccessDeniedError();
 
@@ -204,11 +220,14 @@ async function resolveDashboardAdminContext(user) {
     ? await delegatedCapabilitiesByMarket(user.id, allowedMarkets, user.role === 'market_operator' ? preparation : null)
     : {};
 
+  const marketCurrencies = await marketCurrenciesFor(allowedMarkets, Object.keys(preparation));
+
   return Object.freeze({
     actor: Object.freeze({ id: String(user.id), role: String(user.role) }),
     access: Object.freeze({
       mode,
       allowedMarkets: Object.freeze([...allowedMarkets]),
+      marketCurrencies,
       defaultMarket: mode === 'global' ? null : allowedMarkets[0],
       capabilities: Object.freeze(capabilitiesFor(mode)),
       ...(Object.keys(preparation).length ? { preparation: Object.freeze(preparation) } : {}),

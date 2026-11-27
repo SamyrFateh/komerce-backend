@@ -554,9 +554,11 @@
     const access = adminContext && adminContext.access;
     if (!access || !Array.isArray(access.allowedMarkets)) return [];
     const choices = [];
+    const labelFor = (label, code) =>
+      global.KomerceAdminContext?.withMarketCurrencyLabel?.(label, adminContext, code) ?? label;
     if ((access.mode === 'global' && (!requireMarket || allowOverview)) ||
-        (access.mode === 'hub' && allowOverview)) choices.push({ value: '', label: 'Tous les marchés' });
-    access.allowedMarkets.forEach(code => choices.push({ value: code, label: code }));
+        (access.mode === 'hub' && allowOverview)) choices.push({ value: '', label: labelFor('Tous les marchés', null) });
+    access.allowedMarkets.forEach(code => choices.push({ value: code, label: labelFor(code, code) }));
     return choices;
   }
 
