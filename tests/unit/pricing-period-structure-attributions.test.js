@@ -241,3 +241,14 @@ describe('pricing-period-structure — charges de structure mutualisées attribu
     expect(result.market_direct_kmf).toBe(20000);
   });
 });
+
+test('strict persisted monthly result uses the snapshot executor, blocks absent shares and cross-period events',async()=>{
+  const executor={query:jest.fn().mockResolvedValueOnce({rows:[groupEvent(),directEvent()]}).mockResolvedValueOnce({rows:[attribution('g1',CM,'40000.00'),attribution('g1',CG,'20000.00')]})};
+  db.query.mockReset();
+  expect(await run({executor,strictPersistedAttributions:true})).toMatchObject({market_n3_decisional:true,market_n3_total_kmf:60000});
+  expect(db.query).not.toHaveBeenCalled();
+  executor.query.mockReset().mockResolvedValueOnce({rows:[groupEvent(),directEvent()]}).mockResolvedValueOnce({rows:[]});
+  expect(await run({executor,strictPersistedAttributions:true})).toMatchObject({market_n3_decisional:false,market_n3_total_kmf:null});
+  executor.query.mockReset().mockResolvedValueOnce({rows:[groupEvent({economic_to:'2026-11-01T00:00:00Z'})]});
+  expect(await run({executor,strictPersistedAttributions:true})).toMatchObject({status:'NOT_DECISIONAL_CROSS_PERIOD_STRUCTURE',market_n3_total_kmf:null});
+});

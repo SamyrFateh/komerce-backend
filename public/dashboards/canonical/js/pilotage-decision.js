@@ -269,7 +269,7 @@
       const quality=economic.data_quality||{};
       const states={CLOSED:'Clôturé',PROVISIONAL:'Provisoire',REOPENED:'Réouvert — à rapprocher',NOT_RECONCILED:'Non rapproché',MARKET_RESULT_NOT_RECONCILED:'Résultat marché non rapproché',SIMULATION_EXCLUDED:'Hors simulation',UNAVAILABLE:'Indisponible'};
       const note=states[quality.status]||'Non certifié';
-      header.appendChild(text(doc,'p','kmc-dashboard-description',economic.label+' : '+display(base,economic)+' · '+note+(quality.fx_status==='GOVERNED_FIXED_PARITY_PROJECTION'?' · projection EUR du résultat KMF':'')));
+      header.appendChild(text(doc,'p','kmc-dashboard-description',economic.label+' : '+display(base,economic)+' · '+note+(quality.fx_status==='GOVERNED_FIXED_PARITY_PROJECTION'?' · projection EUR du résultat KMF':quality.fx_status==='GOVERNED_KMF_PROJECTION'?' · projection en devise marché du résultat KMF':'')));
     }
 
     const decisions = decisionItems(payload, base);

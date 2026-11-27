@@ -735,6 +735,74 @@ async function readGroupPeriodDecision(actor,periodStart){
   }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
 }
 
+// Market economics use exactly the same recognition and arithmetic as the
+// group. Internal attributions are read once; invoices are never an extra cost.
+async function marketPeriodDecision(client,marketId,periodStart,recognition){
+  const truth=await computePeriodStructureTruth({marketId,from:periodStart,to:monthShift(periodStart,1),executor:client,strictPersistedAttributions:true});
+  const structureCoverage={status:truth.status,recognizedKmf:truth.market_n3_decisional?truth.market_n3_total_kmf:null};
+  let result=projectGroupPeriodResult(recognition,structureCoverage,{amountKmf:null});
+  if(result.reasons.length===1&&result.reasons[0]==='RISK_REVIEW_INCOMPLETE'){
+    const risk=await computePeriodRiskTruth({marketId,from:periodStart,to:monthShift(periodStart,1),executor:client});
+    if(risk.status==='RISK_PERIOD_TRUTH_AVAILABLE'&&Number.isFinite(risk.actual_risk_cost_kmf))
+      result=projectGroupPeriodResult(recognition,structureCoverage,{amountKmf:risk.actual_risk_cost_kmf.toFixed(2)});
+  }
+  if(result.status==='PROVISIONAL'){
+    const {rows:[late]}=await client.query(
+      `WITH affected AS (
+         SELECT DISTINCT h.shipment_id
+         FROM parcels p JOIN orders o ON o.id=p.order_id
+         JOIN parcel_items pi ON pi.parcel_id=p.id
+         JOIN hub_purchase_allocations a ON a.order_item_id=pi.order_item_id
+         JOIN hub_box_effective_placements pl ON pl.allocation_id=a.id
+         JOIN international_shipment_hub_units h ON h.physical_unit_id=pl.box_unit_id
+         WHERE o.market_id=$1 AND o.simulation_scope IS NULL
+           AND p.collected_at>=($2::date::timestamp AT TIME ZONE 'UTC')
+           AND p.collected_at<($3::date::timestamp AT TIME ZONE 'UTC')
+       )
+       SELECT EXISTS(SELECT 1 FROM affected h
+         JOIN international_shipments s ON s.id=h.shipment_id
+         LEFT JOIN customs_shipments c ON c.id=s.customs_shipment_id AND c.market_id=s.market_id
+         LEFT JOIN international_n1_reconciliations n ON n.shipment_id=h.shipment_id
+         LEFT JOIN LATERAL (SELECT MAX(recorded_at) AS last_at FROM international_shipment_charges WHERE shipment_id=h.shipment_id) charges ON true
+         WHERE s.market_id IS DISTINCT FROM $1::uuid OR n.reconciled_at IS NULL
+           OR n.reconciled_at<GREATEST(s.updated_at,c.declared_at,charges.last_at)) AS late_charge`,[marketId,periodStart,monthShift(periodStart,1)]);
+    if(late?.late_charge!==false)result={status:'NOT_RECONCILED',reasons:['SHIPMENT_CHARGES_PENDING_RECONCILIATION'],resultKmf:null};
+  }
+  return {structureCoverage,result};
+}
+async function periodResultDisplay(client,result,currency){
+  const display={currency,fxStatus:'NO_RESULT',result:null,contribution:null,netSales:null,variableCost:null,actualRisk:null,structure:null};
+  if(result.resultKmf==null)return display;
+  try{
+    for(const key of ['result','contribution','netSales','variableCost','actualRisk','structure']){
+      const x=await convert({amount:result[key+'Kmf'],from:'KMF',to:currency,client});
+      display[key]=x.amount_text;
+    }
+    display.fxStatus=currency==='KMF'?'KMF_BASE_PROJECTION':'GOVERNED_KMF_PROJECTION';
+    return display;
+  }catch(e){
+    if(e instanceof FxError&&e.code==='fx_rate_unavailable')
+      return {currency,fxStatus:'FX_UNAVAILABLE',result:null,contribution:null,netSales:null,variableCost:null,actualRisk:null,structure:null};
+    throw e;
+  }
+}
+async function readMarketPeriodDecision(actor,marketCode,periodStart){
+  if(!actor?.id||marketCode==null)throw error('economic_reference_scope_invalid',403,'Périmètre marché requis');
+  const input=validate({marketCode,periodStart});
+  const client=await db.getClient();
+  try{
+    await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+    const marketId=await resolveScope(client,actor,input.marketCode,actor.role==='admin');
+    const {rows:[market]}=await client.query('SELECT currency FROM markets WHERE id=$1 AND code=$2',[marketId,input.marketCode]);
+    if(!market?.currency)throw error('market_not_found',404,'Marché introuvable');
+    const recognition=await loadPeriodRecognitionEvidence(client,marketId,input.periodStart);
+    const {result}=await marketPeriodDecision(client,marketId,input.periodStart,recognition);
+    const display=await periodResultDisplay(client,result,market.currency);
+    await client.query('COMMIT');
+    return {periodStart:input.periodStart,status:result.status,reasons:result.reasons,resultKmf:result.resultKmf,display};
+  }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
+}
+
 async function readCostCenters(actor,raw){
   if(!actor?.id)throw error('AUTH_REQUIRED',401,'Authentification requise');
   const input=validate(raw);
@@ -813,9 +881,14 @@ async function readCostCentersSnapshot(actor,input,client,central,globalRead){
       const decision=await groupPeriodDecision(client,input.periodStart,profitability.recognitionEvidence);
       profitability.structureCoverage=decision.structureCoverage;
       profitability.groupPeriodResult=decision.result;
+    }else if(marketId!==null&&profitability){
+      const decision=await marketPeriodDecision(client,marketId,input.periodStart,profitability.recognitionEvidence);
+      profitability.structureCoverage=decision.structureCoverage;
+      const {rows:[market]}=await client.query('SELECT currency FROM markets WHERE id=$1 AND code=$2',[marketId,input.marketCode]);
+      profitability.marketPeriodResult={...decision.result,display:await periodResultDisplay(client,decision.result,market?.currency||null)};
     }
     const responsibleCandidates=costCapabilities.reference?await listResponsibleCandidates(client,marketId):[];
     return {scope:input.marketCode===null?'GROUP':'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,globalRead,central,costCapabilities,readOnly:!Object.values(costCapabilities).some(Boolean),
       centers:centerModels,families,resources,responsibleCandidates,posts:model,recordedBalance:recordedBalanceSummary(model),budgetSummary:budgetSummary(model),commitmentSummary:commitmentSummary(model),structureEvidence,activity,profitability,actualCoverage:'NOT_RECONCILED',available:null};
 }
-module.exports={readGroupPeriodDecision,readCostCenters,closeGroupPeriod,budgetSummary,recordedPostBalance,recordedBalanceSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,loadShipmentActivity,shipmentPurchase,observedProfitability,periodSalesEvidence,projectGroupPeriodResult,completeCostParcelCount};
+module.exports={readMarketPeriodDecision,readGroupPeriodDecision,readCostCenters,closeGroupPeriod,budgetSummary,recordedPostBalance,recordedBalanceSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,loadShipmentActivity,shipmentPurchase,observedProfitability,periodSalesEvidence,projectGroupPeriodResult,completeCostParcelCount};

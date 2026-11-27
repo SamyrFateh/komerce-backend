@@ -32,6 +32,7 @@ jest.mock('../../utils/logger', () => ({
   child: jest.fn(() => ({ warn: jest.fn(), error: jest.fn(), info: jest.fn(), debug: jest.fn() })),
 }));
 
+jest.mock('../../services/economic-cost-center-read-model',()=>({readMarketPeriodDecision:jest.fn()}));
 const pilotage = require('../../services/dashboard-pilotage-market');
 
 beforeEach(() => {
@@ -150,4 +151,17 @@ describe('lot 7 — signaux de commandes simulées exclus (services/dashboard-pi
     expect(src).toMatch(/require\('[^']*signal-simulation-scope'\)/);
     expect(src).toMatch(/\$\{EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL\}/);
   });
+});
+
+test('market Pilotage consumes authorized scoped ECO result without fallback to legacy margin',async()=>{
+  const market={id:'market-cm-id',code:'CM',currency:'XAF'};
+  const actor={id:'member',role:'market_operator'};
+  const read=require('../../services/economic-cost-center-read-model').readMarketPeriodDecision;
+  read.mockResolvedValueOnce({status:'PROVISIONAL',reasons:[],display:{result:'12000',fxStatus:'GOVERNED_KMF_PROJECTION'}});
+  const result=await pilotage.buildMarketPilotage({market_id:market.id},market,actor);
+  expect(read).toHaveBeenCalledWith(actor,'CM',expect.stringMatching(/^\d{4}-\d{2}-01$/));
+  expect(result.kpis_global).toContainEqual(expect.objectContaining({key:'economic_period_result',value:'12000',unit:'XAF'}));
+  read.mockRejectedValueOnce(Object.assign(new Error('denied'),{status:403}));
+  const denied=await pilotage.buildMarketPilotage({market_id:market.id},market,actor);
+  expect(denied.kpis_global).toContainEqual(expect.objectContaining({key:'economic_period_result',value:null,data_quality:expect.objectContaining({status:'UNAVAILABLE'})}));
 });

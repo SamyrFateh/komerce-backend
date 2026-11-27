@@ -517,7 +517,9 @@
 
   function createV6Profitability(doc,model,actions){
     const host=el(doc,'section','kmc-v7-centers kmc-v6-profitability'),data=model?.profitability;
-    const groupResult = data?.groupPeriodResult;
+    const groupResult = data?.groupPeriodResult||data?.marketPeriodResult;
+    const marketResult=!!data?.marketPeriodResult;
+    const resultMoney=key=>marketResult?v7Money(groupResult?.display?.[key],groupResult?.display?.currency||''):v7Money(groupResult?.[key+'Kmf'],'KMF');
     const closed = groupResult?.status === 'CLOSED';
     const reopened = groupResult?.status === 'REOPENED';
     const provisional = groupResult?.status === 'PROVISIONAL' || reopened;
@@ -525,7 +527,7 @@
       ? 'Résultat définitif. Période validée par la Direction.'
       : reopened ? 'Rapprochement rouvert après modification des preuves.'
       : provisional
-      ? 'Résultat provisoire sur les faits documentés. Clôture Direction en attente.'
+      ? (marketResult?'Résultat marché provisoire sur faits documentés ; aucune clôture marché attestée. Projection en devise du marché.':'Résultat provisoire sur les faits documentés. Clôture Direction en attente.')
       : 'Résultat économique non calculable : rapprochement des ventes, charges variables et structure à compléter.'));
     if(actions?.loadObservedCost)host.append(createObservedCostPanel(doc,actions.loadObservedCost));
     if(actions?.loadLocalLots && actions?.writeLocalLot)host.append(createLocalLotPanel(doc,actions));
@@ -538,7 +540,7 @@
     const fmt=v=>v==null?'Non disponible':String(v).replace('.',',');
     const kpis=el(doc,'div','kmc-v7-kpis');
     const sales=data.salesEvidence;
-    kpis.append(metric('Ventes nettes observées',v7Money(sales?.observedNetSalesKmf,'KMF'),sales?sales.coveredOrderCount+' / '+sales.paidOrderCount+' commandes payées · cohorte commandes du mois':'Non disponible'),metric('Contribution variable',v7Money(groupResult?.contributionKmf,'KMF')),metric('Résultat économique',v7Money(groupResult?.resultKmf,'KMF')),metric('Coefficient complet du mois','Non disponible'));
+    kpis.append(metric('Ventes nettes observées',v7Money(sales?.observedNetSalesKmf,'KMF'),sales?sales.coveredOrderCount+' / '+sales.paidOrderCount+' commandes payées · cohorte commandes du mois':'Non disponible'),metric('Contribution variable',resultMoney('contribution')),metric('Résultat économique',resultMoney('result')),metric('Coefficient complet du mois','Non disponible'));
     host.append(kpis);
     if(sales)host.append(el(doc,'p','kmc-v7-coverage','Ventes : commandes créées au mois, avoirs wallet réintégrés, remboursements terminés déduits. '+sales.pendingRefundOrders+' commande(s) avec remboursement pendant ; '+sales.terminalExceptions+' exception(s) terminale(s) ; '+sales.invalidOrderCount+' montant(s) non rapproché(s). Cohorte distincte des expéditions, aucun résultat par soustraction.'));
     const recognition = data.recognitionEvidence;
@@ -591,13 +593,13 @@
       structure.append(el(doc,'h4','','Couverture de structure — moteur canonique'),metric('Ratio de couverture',fmt(decision.coverageRatio)),metric('Reste à couvrir',v7Money(decision.remainingKmf,'KMF')),el(doc,'p','kmc-v7-coverage','Évaluation séparée de la cohorte expéditions. Aucun calcul de prix automatique.'));
     }else if(provisional||closed){
       result.append(el(doc,'h4','',closed?'Formation du résultat définitif':'Formation du résultat provisoire'),
-        metric('Ventes nettes documentées',v7Money(groupResult.netSalesKmf,'KMF')),
-        metric('Charges variables documentées',v7Money(groupResult.variableCostKmf,'KMF')),
-        metric('Pertes sur périodes revues',v7Money(groupResult.actualRiskKmf,'KMF')),
-        metric('Contribution variable',v7Money(groupResult.contributionKmf,'KMF')),
-        metric('Charges de structure documentées',v7Money(groupResult.structureKmf,'KMF')),
-        metric(closed?'Résultat définitif':'Résultat provisoire',v7Money(groupResult.resultKmf,'KMF')));
-      structure.append(el(doc,'h4','','Couverture de structure'),metric('Clôture Direction',closed?'Validée':'À valider'));
+        metric('Ventes nettes documentées',resultMoney('netSales')),
+        metric('Charges variables documentées',resultMoney('variableCost')),
+        metric('Pertes sur périodes revues',resultMoney('actualRisk')),
+        metric('Contribution variable',resultMoney('contribution')),
+        metric('Charges de structure documentées',resultMoney('structure')),
+        metric(closed?'Résultat définitif':'Résultat provisoire',resultMoney('result')));
+      structure.append(el(doc,'h4','','Couverture de structure'),metric(marketResult?'Statut marché':'Clôture Direction',marketResult?'Provisoire':closed?'Validée':'À valider'));
     }else{
       result.append(el(doc,'h4','','Formation du résultat'),...['Ventes nettes','Achats du périmètre complet','Charges variables','Contribution variable','Charges de structure','Résultat économique'].map(k=>metric(k,'À rapprocher')));
       structure.append(el(doc,'h4','','Couverture de structure'),metric('Couverture','Non calculable'),metric('Reste à couvrir','Non calculable'),el(doc,'p','kmc-v7-coverage','Sous-activité : référence insuffisante. Le coefficient partiel ne détermine pas les prix.'));
@@ -609,7 +611,7 @@
         metric('Charges mutualisées du groupe',v7Money(String(documented.groupSharedKmf),'KMF')));
       if(decision)structure.append(el(doc,'p','kmc-v7-coverage','Motif moteur : '+(decision.reason==='MARKET_DECISION_POLICY_REQUIRED'?'Politique de marché absente':decision.reason==='DECISION_SCOPE_MISMATCH'?'Périmètre de décision incohérent':'Rapprochement canonique indisponible')));
     }
-    if (provisional && model.central && actions?.closePeriod && groupResult.evidenceHash) {
+    if (!marketResult && provisional && model.central && actions?.closePeriod && groupResult.evidenceHash) {
       const evidence = el(doc,'input','');
       evidence.required = true;
       evidence.maxLength = 1000;

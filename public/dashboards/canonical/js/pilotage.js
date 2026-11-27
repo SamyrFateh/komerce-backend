@@ -138,6 +138,7 @@
     if (metric.unit === 'KMF') return `${value} KMF`;
     if (metric.unit === 'EUR') return `${value} €`;
     if (metric.unit === '%') return `${value} %`;
+    if(metric.unit&&/^[A-Z]{3}$/.test(metric.unit))return `${value} ${metric.unit}`;
     return value;
   }
 
