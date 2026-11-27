@@ -77,7 +77,7 @@
   const kmf = value => {
     if (value == null || value === '') return '—';
     const n = Number(value);
-    return Number.isFinite(n) ? `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(n)} KMF` : '—';
+    return Number.isFinite(n) ? `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(value)} KMF` : '—';
   };
 
   function row(label, value) {
@@ -135,7 +135,59 @@
     if (data.evaluated_at) section.appendChild(el('div', 'kmc-team-help', `Évalué le ${day(data.evaluated_at)}`));
   }
 
-  function renderCostStatement(section, data) {
+  function appendHubStatement(section, marketCode) {
+    const details = el('details', 'kmc-team-item');
+    details.appendChild(el('summary', '', 'Relevé du Hub'));
+    details.appendChild(el('p', 'kmc-workspace-note',
+      'Quotes-parts actives des charges de structure du Hub central entièrement rattachées à la période. Relevé interne en KMF.'));
+    const form = el('form', 'kmc-team-summary');
+    const addDate = caption => {
+      const label = el('label', '', caption);
+      const input = el('input');
+      input.type = 'date';
+      input.required = true;
+      label.appendChild(input);
+      form.appendChild(label);
+      return input;
+    };
+    const from = addDate('Début inclus');
+    const to = addDate('Fin exclue');
+    const submit = el('button', 'kmc-workspace-nav-link', 'Afficher le relevé');
+    submit.type = 'submit';
+    form.appendChild(submit);
+    const result = el('div', 'kmc-team-list');
+    result.setAttribute('aria-live', 'polite');
+    details.append(form, result);
+    section.appendChild(details);
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (submit.disabled) return;
+      submit.disabled = true;
+      result.textContent = 'Chargement du relevé…';
+      try {
+        const query = new URLSearchParams({ scope: 'hub', from: from.value, to: to.value });
+        const data = await request(`/api/market-delegation/markets/${encodeURIComponent(marketCode)}/cost-statement?${query}`);
+        result.replaceChildren();
+        if (!data.lines.length) {
+          result.appendChild(el('p', 'kmc-team-empty', 'Aucune quote-part du Hub sur cette période.'));
+          return;
+        }
+        result.appendChild(pill(`Total Hub ${kmf(data.total_kmf)}`, true));
+        data.lines.forEach(line => result.appendChild(item(
+          `${dash(line.charge_name)} · ${kmf(line.amount_kmf)}`,
+          `${day(line.economic_from)} → ${day(line.economic_to)} · ${dash(line.allocation_key)} · ${dash(line.policy_version)}`,
+        )));
+        if (data.truncated) result.appendChild(el('p', 'kmc-team-help', 'Liste tronquée. Réduisez la période pour afficher toutes les lignes.'));
+      } catch (error) {
+        result.textContent = error.message;
+      } finally {
+        submit.disabled = false;
+      }
+    });
+  }
+
+  function renderCostStatement(section, data, marketCode) {
+    appendHubStatement(section, marketCode);
     const totals = data.totals || {};
     section.appendChild(el('p', 'kmc-workspace-note', `Relevé des charges du Market (base ${dash(data.currency_basis)}). Lecture seule : les corrections restent au siège.`));
     const summary = el('div', 'kmc-team-summary');
@@ -226,7 +278,7 @@
       section.appendChild(el('h2', 'kmc-section-title', view.title));
       try {
         const data = await request(`/api/market-delegation/markets/${encodeURIComponent(marketCode)}/${view.path}`);
-        view.render(section, data);
+        view.render(section, data, marketCode);
       } catch (error) {
         if (error.status === 403) { denied.add(view.key); return; } // capacité absente : section absente, jamais grisée
         section.appendChild(el('div', 'kmc-team-empty', `${error.message}${error.code ? ` · ${error.code}` : ''}`));

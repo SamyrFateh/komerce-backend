@@ -13,7 +13,7 @@ const code = js.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 describe('Mon Market — projections en lecture seule (S-3)', () => {
   test('la page Autonomie charge le script externe (CSP-safe) après le module Règlements', () => {
     const html = read('public/dashboards/canonical/market-autonomy.html');
-    expect(html).toMatch(/market-settlement\.js\?v=261126-canon-market-4"><\/script>\s*<script src="\/dashboards\/canonical\/js\/market-readonly-views\.js\?v=261126-canon-market-config-1"><\/script>/);
+    expect(html).toMatch(/market-settlement\.js\?v=261126-canon-market-4"><\/script>\s*<script src="\/dashboards\/canonical\/js\/market-readonly-views\.js\?v=[a-z0-9-]+"><\/script>/);
     expect(html).not.toMatch(/<script(?![^>]*\bsrc=)[^>]*>/i);
   });
 

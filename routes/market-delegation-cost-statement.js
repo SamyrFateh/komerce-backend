@@ -38,6 +38,7 @@ router.get('/markets/:marketCode/cost-statement', authenticate, async (req, res,
       ...(req.user.role === 'admin' ? { actorRole: req.user.role } : {}),
       from: req.query.from || null,
       to: req.query.to || null,
+      ...(req.query.scope === undefined ? {} : { scope: req.query.scope }),
     }));
   } catch (error) {
     if (sendKnownError(res, error)) return;
