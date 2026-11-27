@@ -131,7 +131,12 @@ test.describe('L1 — surfaces à shell marché (5)', () => {
       const calls = await mount(page, MONO_CTX);
       await go(page, target);
       await expect(page.locator('[data-market-prompt]')).toHaveCount(0);
-      await expect(page.locator('.kmc-admin-market-select')).toHaveValue('CM');
+      const fixed = page.locator('.kmc-admin-topbar .kmc-admin-market-fixed');
+      await expect(fixed).toBeVisible();
+      await expect(fixed).toHaveAttribute('data-fixed-market', 'CM');
+      await expect(page.locator('.kmc-admin-market-select')).toHaveCount(0);
+      await expect(page.locator('.kmc-market-context-select')).toHaveCount(0);
+      await expect(page.locator('#canonical-admin-topbar')).toHaveCount(1);
       await expect.poll(() => calls.length).toBeGreaterThan(0);
       expect(calls.every((c) => /\/CM(\/|$)/.test(c))).toBe(true);
     });
@@ -195,6 +200,10 @@ test.describe('L1 — pages autonomes (Autonomie marché, Catalogue pays)', () =
       const calls = await mount(page, MONO_CTX);
       await go(page, target);
       await expect(page.locator('[data-market-prompt]')).toHaveCount(0);
+      const fixed = page.locator('.kmc-admin-topbar .kmc-admin-market-fixed');
+      await expect(fixed).toBeVisible();
+      await expect(fixed).toHaveAttribute('data-fixed-market', 'CM');
+      await expect(page.locator('.kmc-admin-market-select')).toHaveCount(0);
       await expect.poll(() => calls.length).toBeGreaterThan(0);
       expect(calls.every((c) => /\/CM(\/|$)/.test(c))).toBe(true);
     });
