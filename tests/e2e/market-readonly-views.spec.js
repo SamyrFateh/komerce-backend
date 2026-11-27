@@ -48,6 +48,9 @@ async function mount(page, responses) {
     const url = new URL(route.request().url());
     calls.push({ method: route.request().method(), path: url.pathname });
     if (url.pathname === '/api/admin/dashboard/context') return route.fulfill({ json: CONTEXT });
+    if (url.pathname === BASE + '/cost-statement' && url.searchParams.get('scope') === 'hub') {
+      return route.fulfill({ json: { total_kmf:'250.50', lines:[{ charge_name:'Hébergement', amount_kmf:'250.50', economic_from:'2026-09-01', economic_to:'2026-10-01', allocation_key:'MARKET', policy_version:'V1' }] } });
+    }
     const hit = responses[url.pathname.replace(BASE + '/', '')];
     if (!hit) return route.fulfill({ status: 404, json: { error: 'inconnu' } });
     return route.fulfill({ status: hit.status || 200, json: hit.body });
@@ -94,7 +97,7 @@ test.describe('Mon Market — projections en lecture seule', () => {
     const statement=costs.locator('details').filter({hasText:'Relevé du Hub'});
     await expect(statement.locator('form')).toHaveCount(1);
     await expect(statement.locator('input[type=date]')).toHaveCount(2);
-    await expect(statement.getByRole('button',{name:'Afficher le relevé'})).toHaveCount(1);
+    await expect(statement.locator('button[type=submit]')).toHaveCount(1);
     await expect(page.locator('[data-market-readonly] form')).toHaveCount(1);
     await expect(page.locator('[data-market-readonly] button')).toHaveCount(1);
     await expect(page.getByRole('button',{name:'Valider et émettre la facture interne'})).toHaveCount(0);
@@ -105,6 +108,9 @@ test.describe('Mon Market — projections en lecture seule', () => {
     const req=page.waitForRequest(r=>r.url().includes('scope=hub'));
     await statement.getByRole('button',{name:'Afficher le relevé'}).click();
     expect((await req).method()).toBe('GET');
+    await expect(statement).toContainText('Total Hub 250,5 KMF');
+    await expect(statement.getByRole('button',{name:'Valider et émettre la facture interne'})).toHaveCount(0);
+    await expect(statement.getByRole('button',{name:'Confirmer le règlement reçu'})).toHaveCount(0);
     expect(calls.every(c => c.method === 'GET')).toBe(true);
     expect(calls.filter(c => c.path.endsWith('/payment-accounts'))).toHaveLength(1);
     expect(await page.content()).not.toMatch(/credentials_ref|vault\//);

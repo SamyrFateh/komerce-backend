@@ -597,9 +597,16 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect(result(response)).toMatchObject({rail:'LOCAL_STOCK',unit_cost_kmf:5200,observations:3,quantity:30,status:'DECISIONAL',display_currency:market.currency});
     expect(result(response).observed_multiplier).toBeCloseTo(1.04,8);
     expect(result(response).unit_cost_local).not.toBeNull();
-    const own=await read(fx.viewerA);expect(own.status).toBe(200);
+    // The shared delegation fixture uses client identities. The canonical
+    // finance read route additionally requires the real staff role. Prove the
+    // client denial first, then exercise the staff identity on the same
+    // read-only membership; do not broaden production permissions.
+    expect((await read(fx.viewerA)).status).toBe(403);
+    await q("UPDATE users SET role='market_operator' WHERE id=$1",[fx.viewerA.id]);
+    const marketReader={...fx.viewerA,role:'market_operator',token:require('../helpers/marketDelegationE2EKit').bearer(fx.viewerA.id,'market_operator')};
+    const own=await read(marketReader);expect(own.status).toBe(200);
     expect(result(own)).toMatchObject({observations:3,unit_cost_kmf:5200});
-    expect((await read(fx.viewerA,fx.marketB.code)).status).toBe(403);
+    expect((await read(marketReader,fx.marketB.code)).status).toBe(403);
     const {rows:[total]}=await q(`SELECT SUM(quantity)::int AS quantity,SUM(purchase_kmf)::text AS purchase
       FROM local_stock_economic_lot_lines WHERE receipt_id=ANY($1::uuid[])`,[receiptIds]);
     expect(total).toEqual({quantity:30,purchase:'150000.00'});
