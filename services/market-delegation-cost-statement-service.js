@@ -193,6 +193,22 @@ function hubInvoiceAdjustmentRequired(invoice,current) {
   return frozen===null || frozen!==statementFacts(current)
     || current.truncated || current.coverage?.status!=='NO_CROSS_PERIOD_ATTRIBUTIONS';
 }
+// A late change is a review proposal linked to the frozen invoice, not a new
+// invoice, credit note, cash movement or mutation of the settled balance.
+function projectHubAdjustment(invoice,current) {
+  if(!hubInvoiceAdjustmentRequired(invoice,current))return null;
+  const blocked={invoice_id:invoice.id,status:'RECONCILIATION_REQUIRED',currency:'KMF',delta_kmf:null};
+  if(current.truncated || current.coverage?.status!=='NO_CROSS_PERIOD_ATTRIBUTIONS' || current.total_kmf==null)return blocked;
+  function cents(value) {
+    const m=/^(\d+)(?:\.(\d{1,2}))?$/.exec(String(value));
+    return m?BigInt(m[1])*100n+BigInt((m[2]||'').padEnd(2,'0')):null;
+  }
+  const original=cents(invoice.amount_kmf),revised=cents(current.total_kmf);
+  if(original===null||revised===null)return blocked;
+  const delta=revised-original,abs=delta<0n?-delta:delta;
+  return {invoice_id:invoice.id,status:'REVIEW_REQUIRED',currency:'KMF',
+    delta_kmf:(delta<0n?'-':'')+(abs/100n).toString()+'.'+(abs%100n).toString().padStart(2,'0')};
+}
 // Explicit allowlist for the market reader: never expose central actors or arbitrary snapshot keys.
 function publicHubInvoice(invoice) {
   const frozen=invoice.statement_snapshot;
@@ -225,7 +241,7 @@ async function readMarketHubInvoice(db,{marketId,from,to,statement}) {
   if(!invoice)return {...statement,invoice:null};
   if(!invoice.exact_period)return {...statement,invoice:null,overlapping_invoice_id:invoice.id};
   return {...statement,invoice:publicHubInvoice(invoice),
-    adjustment_required:hubInvoiceAdjustmentRequired(invoice,statement)};
+    adjustment_required:hubInvoiceAdjustmentRequired(invoice,statement),adjustment:projectHubAdjustment(invoice,statement)};
 }
 
 async function getMarketCostStatement(executor, { marketCode, actorUserId, actorRole = null, from = null, to = null, scope = null }) {
@@ -271,4 +287,4 @@ async function getMarketCostStatement(executor, { marketCode, actorUserId, actor
   });
 }
 
-module.exports = { MAX_LINES, getMarketCostStatement, readHubStatement, statementPeriod, projectHubInvoiceBalance, hubInvoiceAdjustmentRequired };
+module.exports = { MAX_LINES, getMarketCostStatement, readHubStatement, statementPeriod, projectHubInvoiceBalance, hubInvoiceAdjustmentRequired, projectHubAdjustment };

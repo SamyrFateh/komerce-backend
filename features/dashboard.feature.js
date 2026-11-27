@@ -107,7 +107,7 @@ module.exports = {
       'order_incidents: RW',
       'order_item_cost_imputations: R',
       'order_item_real_cost_allocations: R',
-      'order_items: RW~',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — écriture limitée à routes/admin/system.js (POST /reset, POST /seed-test, dev/staging uniquement, bloqué en prod sauf ALLOW_SEED=true) ; propriétaire réel : orders
+      'order_items: RW~',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — écriture limitée à routes/admin/system.js (POST /reset, POST /seed-test, dev/test local uniquement ; staging via workflow gouverné) ; propriétaire réel : orders
       'order_status_history: RW',
       'orders: RW~',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — idem, routes/admin/system.js uniquement (reset/seed-test) ; propriétaire réel : orders
       'parcel_items: R',  // W-via logistics/parcel-item-mutation-service - LOT7
@@ -457,6 +457,7 @@ module.exports = {
       'services/golden-checkout-thread.js',
       'public/golden-e2e-cockpit.html',
       'public/js/golden-e2e-cockpit-journey.js',
+      'public/js/golden-recipe-staging-tools.js',
       'public/js/golden-recipe-scenarios.js',
       'services/supplier-360.js',
       'services/provider-certification-overview.js',

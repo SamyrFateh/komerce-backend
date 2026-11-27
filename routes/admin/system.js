@@ -28,7 +28,7 @@ const { appendOrderHistoryNote } = require('../../services/order-status-machine'
 const { seedIncident } = require('../../services/incident-write-service');
 const { deleteNonAdminUsers, releaseNonAdminUserReferences } = require('../../services/user-mutation-service');
 const { authenticate, requireRole } = require('../../middleware/auth');
-const { requireNonProduction } = require('../../middleware/require-non-production');
+const { resolveRuntimeEnvironment } = require('../../middleware/require-non-production');
 const { validate } = require('../../middleware/validate');
 const { admin } = require('../../validators');
 const log = require('../../utils/logger').child({ module: 'admin/system' });
@@ -36,8 +36,17 @@ const { deleteOrderCascade } = require('./delete-order-cascade');
 const { repairOrderedWithoutPurchaseOrders } = require('../../services/repair-ordered-without-purchase-orders');
 
 const guard = [authenticate, requireRole(['admin'])];
-const allowFlushOutsideProd = requireNonProduction('ALLOW_FLUSH');
-const allowSeedOutsideProd = requireNonProduction('ALLOW_SEED');
+// The remote global reset is owned exclusively by the pinned staging workflow.
+// Local dev/test endpoints cannot be enabled remotely by legacy ALLOW_* flags.
+function requireLocalMaintenance(req,res,next) {
+  const {env,source}=resolveRuntimeEnvironment();
+  if (env==='production') return res.status(403).json({error:'Endpoint désactivé en production',environment_source:source});
+  if (!['development','test'].includes(env) || process.env.RAILWAY_ENVIRONMENT_ID || process.env.RAILWAY_ENVIRONMENT_NAME) {
+    return res.status(403).json({code:'MAINTENANCE_WORKFLOW_REQUIRED',
+      error:'Maintenance distante réservée au workflow gouverné de staging.'});
+  }
+  next();
+}
 
 // ─── GET /api/admin/counts ─────────────────────────────────────────
 router.get('/counts', ...guard, async (req, res, next) => {
@@ -58,10 +67,9 @@ router.get('/counts', ...guard, async (req, res, next) => {
 });
 
 // ─── POST /api/admin/reset ─────────────────────────────────────────
-// CRIT-04 FIX: Disabled in production to prevent accidental data destruction.
-router.post('/reset', ...guard, validate(admin.reset), allowFlushOutsideProd, async (req, res, next) => {
-  // Production guard centralisé : KOMERCE_ENV est prioritaire sur NODE_ENV.
-  // ALLOW_FLUSH reste un bypass explicite distinct de ALLOW_SEED.
+// CRIT-04 / #5315: remote reset is governed by the staging workflow.
+router.post('/reset', ...guard, validate(admin.reset), requireLocalMaintenance, async (req, res, next) => {
+  // Local dev/test only; no remote destructive bypass.
 
   const mode = req.body.mode || 'orders';
   const validModes = ['orders', 'users', 'factory'];
@@ -214,8 +222,8 @@ router.post('/reset', ...guard, validate(admin.reset), allowFlushOutsideProd, as
 
 // ─── POST /api/admin/seed-test ─────────────────────────────────────
 // Rich seed v2: populates entire Control Tower dashboard with realistic data
-router.post('/seed-test', ...guard, allowSeedOutsideProd, async (req, res, next) => {
-  // Production guard centralisé : KOMERCE_ENV est prioritaire sur NODE_ENV.
+router.post('/seed-test', ...guard, requireLocalMaintenance, async (req, res, next) => {
+  // Local dev/test only; no remote destructive bypass.
 
   const client = await db.getClient();
 

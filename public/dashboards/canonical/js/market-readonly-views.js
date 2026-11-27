@@ -202,6 +202,8 @@
         return;
       }
       if (reply.adjustment_required) result.appendChild(el('p', 'kmc-team-help', 'Des preuves ont changé depuis l’émission. Régularisation nécessaire ; facture historique inchangée.'));
+      if (reply.adjustment?.status==='REVIEW_REQUIRED') result.appendChild(row('Écart à examiner (non facturé)',kmf(reply.adjustment.delta_kmf)));
+      if (reply.adjustment?.status==='RECONCILIATION_REQUIRED') result.appendChild(el('p','kmc-team-help','Écart non calculable : rapprochement préalable requis.'));
       if (data.coverage?.status === 'CROSS_PERIOD_RECONCILIATION_REQUIRED') {
         result.appendChild(el('p', 'kmc-team-help', 'Des charges chevauchent la période. Rapprochement nécessaire avant émission.'));
       } else if (data.coverage?.status === 'POOL_RECONCILIATION_REQUIRED') {

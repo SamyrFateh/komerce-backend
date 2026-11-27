@@ -18,7 +18,7 @@
 
 const { createHash } = require('node:crypto');
 const { parseDecimal } = require('./fx-authority');
-const { readHubStatement, statementPeriod, projectHubInvoiceBalance, hubInvoiceAdjustmentRequired } = require('./market-delegation-cost-statement-service');
+const { readHubStatement, statementPeriod, projectHubInvoiceBalance, hubInvoiceAdjustmentRequired, projectHubAdjustment } = require('./market-delegation-cost-statement-service');
 
 function failure(code, message, status = 409) {
   return Object.assign(new Error(message), { code, status });
@@ -69,7 +69,7 @@ async function preview(db, { marketCode, from, to }) {
   const current=await readHubStatement(db,{marketId:market.id,marketCode:market.code,fromIso,toIso});
   // The invoice and settlement stay immutable. Differences require a separate regularization.
   const adjustment_required=hubInvoiceAdjustmentRequired(reviewed.invoice,current);
-  return {...reviewed,adjustment_required};
+  return {...reviewed,adjustment_required,adjustment:projectHubAdjustment(reviewed.invoice,current)};
 }
 
 async function issue(db, { marketCode, from, to, evidenceHash, actorId }) {

@@ -7,6 +7,7 @@ jest.mock('../../services/market-delegation-cost-statement-service', () => ({
   statementPeriod: jest.fn((from, to) => ({ fromIso: from, toIso: to })),
   projectHubInvoiceBalance: jest.requireActual('../../services/market-delegation-cost-statement-service').projectHubInvoiceBalance,
   hubInvoiceAdjustmentRequired: jest.requireActual('../../services/market-delegation-cost-statement-service').hubInvoiceAdjustmentRequired,
+  projectHubAdjustment: jest.requireActual('../../services/market-delegation-cost-statement-service').projectHubAdjustment,
 }));
 const { readHubStatement } = require('../../services/market-delegation-cost-statement-service');
 const { preview, issue, recordPayment } = require('../../services/hub-internal-invoice-service');
@@ -94,4 +95,16 @@ test('late attribution changes are flagged, never silently rewrite an issued inv
   expect(result).toMatchObject({can_issue:false,adjustment_required:true,invoice:{id:balance.id}});
   readHubStatement.mockResolvedValue(statement);
   expect(await preview(client([market],[invoice],[invoice]),dates)).toMatchObject({adjustment_required:false});
+});
+
+test('linked adjustment is a signed proposal only; unknown amounts are not zero',async()=>{
+  const invoice={...balance,statement_snapshot:statement,evidence_hash:'a'.repeat(64),paid_at:'today'};
+  for(const [total,delta] of [['40001.01','1.01'],['39998.99','-1.01']]){
+    readHubStatement.mockResolvedValue({...statement,total_kmf:total});
+    const result=await preview(client([market],[invoice],[invoice]),dates);
+    expect(result).toMatchObject({invoice:{status:'PAID',amount_kmf:'40000.00'},adjustment:{invoice_id:balance.id,status:'REVIEW_REQUIRED',delta_kmf:delta}});
+  }
+  readHubStatement.mockResolvedValue({...statement,total_kmf:null});
+  const result=await preview(client([market],[invoice],[invoice]),dates);
+  expect(result.adjustment).toMatchObject({invoice_id:balance.id,status:'RECONCILIATION_REQUIRED',delta_kmf:null});
 });
