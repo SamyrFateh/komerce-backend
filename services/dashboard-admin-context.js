@@ -109,13 +109,13 @@ async function getWorkspaceMarketCodes(user) {
   ))];
   if (!delegatedCodes.length) return [];
 
-  // Workspaces reject inactive markets. Filter the context by that same
-  // lifecycle boundary; do not turn a suspended/inactive market into access.
+  // Only operators with preparation capabilities proven by the delegation
+  // service may enter a PROVISIONING workspace. Never include a suspended market.
   const { rows } = await db.query(
     `SELECT code FROM markets
-      WHERE is_active = TRUE AND code = ANY($1::text[])
+      WHERE (is_active = TRUE OR ($2::boolean AND lifecycle_status = 'PROVISIONING')) AND code = ANY($1::text[])
       ORDER BY code ASC`,
-    [delegatedCodes]
+    [delegatedCodes, user.role === 'market_operator']
   );
   return rows.map(row => row.code);
 }
@@ -161,7 +161,7 @@ async function delegatedCapabilitiesByMarket(userId, marketCodes) {
       // requiredCapability volontairement omis (null) : on veut la liste
       // complète des capabilities actives sur CE marché, pas la vérification
       // d'une capability précise.
-      const authz = await resolveAuthorization(db, { userId, marketCode: code, requiredCapability: null });
+      const authz = await resolveAuthorization(db, { userId, marketCode: code, requiredCapability: null, allowProvisioningProjection: true });
       return [code, authz.capabilities];
     } catch (error) {
       if (error && NO_DELEGATED_CAPABILITY_CODES.has(error.code)) return [code, []];

@@ -40,7 +40,14 @@ function normalizeMarketCode(value) {
   return /^[A-Z]{2}$/.test(code) ? code : null;
 }
 
-async function resolveActiveAssignmentByMarketCode(executor, marketCode) {
+// Closed list: preparation is not commercial or financial operation.
+const PREPARATION_CAPABILITIES = Object.freeze([
+  'team.read', 'team.invite', 'team.grant', 'team.revoke',
+  'network.read', 'network.create', 'network.update', 'network.suspend',
+  'market_config.read',
+]);
+
+async function resolveActiveAssignmentByMarketCode(executor, marketCode, { allowProvisioning = false } = {}) {
   const db = requireExecutor(executor);
   const code = normalizeMarketCode(marketCode);
   if (!code) throw delegationError('MARKET_CODE_INVALID', 'Code marché invalide.', 400);
@@ -57,12 +64,12 @@ async function resolveActiveAssignmentByMarketCode(executor, marketCode) {
        LEFT JOIN market_operating_assignments a
          ON a.market_id = m.id AND a.status = 'ACTIVE'
       WHERE m.code = $1
-        AND m.lifecycle_status IN ('ACTIVE','SUSPENDED')
+        AND (m.lifecycle_status IN ('ACTIVE','SUSPENDED') OR ($2::boolean AND m.lifecycle_status = 'PROVISIONING'))
       LIMIT 1`,
-    [code]
+    [code, allowProvisioning]
   );
   const row = rows[0];
-  if (!row) throw delegationError('MARKET_NOT_FOUND', `Marché ${code} introuvable ou inactif.`, 404);
+  if (!row || (row.lifecycle_status === 'PROVISIONING' && !allowProvisioning)) throw delegationError('MARKET_NOT_FOUND', `Marché ${code} introuvable ou inactif.`, 404);
   if (!row.assignment_id) {
     throw delegationError('MARKET_ASSIGNMENT_NOT_ACTIVE', `Aucun Market Operating Assignment actif pour ${code}.`, 409);
   }
@@ -263,7 +270,7 @@ async function listAuthorizedMarketsForCapability(executor, { userId, requiredCa
         AND a.status = 'ACTIVE'
        JOIN markets m
          ON m.id = a.market_id
-        AND m.lifecycle_status IN ('ACTIVE','SUSPENDED')
+        AND (m.lifecycle_status IN ('ACTIVE','SUSPENDED') OR ($3::boolean AND m.lifecycle_status = 'PROVISIONING'))
        JOIN membership_capabilities mc
          ON mc.membership_id = am.id
         AND mc.capability = $2
@@ -274,11 +281,11 @@ async function listAuthorizedMarketsForCapability(executor, { userId, requiredCa
         AND acc.revoked_at IS NULL
        JOIN capability_registry cr
          ON cr.capability = acc.capability
-        AND (m.lifecycle_status = 'ACTIVE' OR cr.effect = 'READ')
+        AND (m.lifecycle_status = 'ACTIVE' OR cr.effect = 'READ' OR ($3::boolean AND m.lifecycle_status = 'PROVISIONING'))
       WHERE am.user_id = $1::uuid
         AND am.status = 'ACTIVE'
       ORDER BY m.code`,
-    [userId, requiredCapability]
+    [userId, requiredCapability, PREPARATION_CAPABILITIES.includes(requiredCapability)]
   );
   return rows;
 }
@@ -348,16 +355,20 @@ async function resolveSingleMarketAuthorization(executor, { userId, requiredCapa
   return authorization;
 }
 
-async function resolveAuthorization(executor, { userId, marketCode, requiredCapability }) {
+async function resolveAuthorization(executor, { userId, marketCode, requiredCapability, allowProvisioningProjection = false }) {
   const db = requireExecutor(executor);
   if (!userId) throw delegationError('AUTH_REQUIRED', 'Authentification requise.', 401);
-  const assignment = await resolveActiveAssignmentByMarketCode(db, marketCode);
+  const allowProvisioning = PREPARATION_CAPABILITIES.includes(requiredCapability) ||
+    (!requiredCapability && allowProvisioningProjection === true);
+  const assignment = await resolveActiveAssignmentByMarketCode(db, marketCode, { allowProvisioning });
   const membership = await activeMembershipForUser(db, assignment.assignment_id, userId);
   if (!membership) {
     throw delegationError('MARKET_MEMBERSHIP_REQUIRED', 'Aucune membership active sur ce Market ID.', 403);
   }
 
-  const capabilities = await activeMembershipCapabilities(db, membership.id);
+  const granted = await activeMembershipCapabilities(db, membership.id);
+  const capabilities = assignment.lifecycle_status === 'PROVISIONING'
+    ? granted.filter(capability => PREPARATION_CAPABILITIES.includes(capability)) : granted;
   if (requiredCapability && !capabilities.includes(requiredCapability)) {
     throw delegationError(
       'MARKET_CAPABILITY_REQUIRED',

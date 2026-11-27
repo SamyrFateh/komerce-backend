@@ -48,3 +48,37 @@ describe('market-delegation-service — setAssignmentStatus (D2)', () => {
     expect(JSON.stringify(audit.params)).not.toContain('reason');
   });
 });
+
+describe('preparation authority #4370', () => {
+  function dbFor({ status = 'PROVISIONING', member = true, caps = ['team.read','network.create','execution.cash.confirm','catalog.expose'], ceiling = true } = {}) {
+    return { query: jest.fn(async sql => {
+      if (sql.includes('LEFT JOIN market_operating_assignments')) return { rows: [{ market_id:'m1', market_code:'GA', assignment_id:'a1', lifecycle_status:status }] };
+      if (sql.includes('FROM assignment_memberships')) return { rows: member ? [{ id:'mem1', user_id:'u1' }] : [] };
+      if (sql.includes('FROM membership_capabilities')) return { rows: caps.map(capability => ({capability})) };
+      if (sql.includes('FROM assignment_capability_ceiling')) return { rows: ceiling ? [{effect:'ACT'}] : [] };
+      return { rows:[] };
+    }) };
+  }
+  test('allows scoped network preparation with active ceiling', async () => {
+    await expect(delegation.resolveAuthorization(dbFor(),{userId:'u1',marketCode:'GA',requiredCapability:'network.create'}))
+      .resolves.toMatchObject({market_id:'m1',membership_id:'mem1'});
+  });
+  test.each(['execution.cash.confirm','catalog.expose','pricing.activate','finance.act','hub.supervise','operations.read',null])('denies non-preparation authority: %s', async requiredCapability => {
+    await expect(delegation.resolveAuthorization(dbFor(),{userId:'u1',marketCode:'GA',requiredCapability}))
+      .rejects.toMatchObject({code:'MARKET_NOT_FOUND'});
+  });
+  test('explicit UI projection strips commercial capabilities', async () => {
+    await expect(delegation.resolveAuthorization(dbFor(),{userId:'u1',marketCode:'GA',requiredCapability:null,allowProvisioningProjection:true}))
+      .resolves.toMatchObject({capabilities:['team.read','network.create']});
+  });
+  test('requires membership and ceiling', async () => {
+    await expect(delegation.resolveAuthorization(dbFor({member:false}),{userId:'u1',marketCode:'GA',requiredCapability:'network.create'}))
+      .rejects.toMatchObject({code:'MARKET_MEMBERSHIP_REQUIRED'});
+    await expect(delegation.resolveAuthorization(dbFor({ceiling:false}),{userId:'u1',marketCode:'GA',requiredCapability:'network.create'}))
+      .rejects.toMatchObject({code:'MARKET_CAPABILITY_OUTSIDE_CEILING'});
+  });
+  test('suspension still denies mutation', async () => {
+    await expect(delegation.resolveAuthorization(dbFor({status:'SUSPENDED'}),{userId:'u1',marketCode:'GA',requiredCapability:'network.create'}))
+      .rejects.toMatchObject({code:'MARKET_SUSPENDED'});
+  });
+});

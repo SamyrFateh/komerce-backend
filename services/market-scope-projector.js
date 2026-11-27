@@ -8,7 +8,7 @@
  * @outputs       desired market authorization projection
  * @depends       services/market-scope-admin-service.js
  * @used-by       market-delegation mutations
- * @db-read       market_operating_assignments, assignment_capability_ceiling, assignment_memberships, membership_capabilities, capability_registry
+ * @db-read       markets, market_operating_assignments, assignment_capability_ceiling, assignment_memberships, membership_capabilities, capability_registry
  * @db-write      none
  * @db-txn        caller-owned
  * @doctrine      operator_market_scopes_is_market_owned_projection, granular_members_fail_closed_on_legacy_roles
@@ -83,6 +83,7 @@ async function desiredScopesForAssignment(db, assignmentId) {
                  )
             ) THEN 'manager' ELSE 'viewer' END AS scope_role
        FROM market_operating_assignments a
+       JOIN markets m ON m.id = a.market_id AND m.lifecycle_status <> 'PROVISIONING'
        JOIN assignment_memberships am ON am.assignment_id = a.id
       WHERE a.id = $1::uuid
         AND a.status = 'ACTIVE'
