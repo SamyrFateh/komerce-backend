@@ -142,6 +142,22 @@ describe('formulaires et formats', () => {
     expect(peak).toBeLessThanOrEqual(2);
   });
 
+  test('V7/V6 reste le point d’entrée hors d’un dossier produit avec marché', async () => {
+    const mount = jest.fn().mockResolvedValue({ scope: 'GROUP' });
+    const workspace = { mount, __economicV7V6Installed: true };
+    const browser = { location: { search: '?product_ref=KPR-1' }, KomerceCanonicalPricingWorkspace: workspace };
+
+    expect(views.install(browser)).toBe(true);
+    const groupOptions = { root: {}, document: {} };
+    await expect(workspace.mount(groupOptions)).resolves.toEqual({ scope: 'GROUP' });
+    expect(mount).toHaveBeenCalledWith(groupOptions);
+
+    browser.location.search = '?market=KM';
+    const marketOptions = { ...groupOptions, requestedMarket: 'KM' };
+    await workspace.mount(marketOptions);
+    expect(mount).toHaveBeenLastCalledWith(marketOptions);
+  });
+
   test('install sans workspace ou déjà installé : sans effet', () => {
     expect(views.install(null)).toBe(false);
     expect(views.install({})).toBe(false);

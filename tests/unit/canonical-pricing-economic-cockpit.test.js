@@ -45,7 +45,7 @@ test('Atelier économique charge la surface cockpit fidèle au mock approuvé', 
   expect(source).toContain('workspace.mount=options=>enhance(rootObject,workspace,options)');
   expect(source).toContain('workspace.__economicV7V6Installed=true');
   expect(source).toContain('createV7V6Session(doc,workspace,options,selected)');
-  for(const file of ['pricing-workspace-decision.js','pricing-product-focus.js','pricing-atelier-views.js']){
+  for(const file of ['pricing-workspace-decision.js','pricing-product-focus.js']){
     const wrapper=fs.readFileSync(path.join(CANONICAL,'js',file),'utf8');
     expect(wrapper).toContain('if (workspace?.__economicV7V6Installed) return false;');
   }

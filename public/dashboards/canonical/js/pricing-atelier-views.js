@@ -870,7 +870,7 @@
     const section = el(doc, 'section', 'kmc-atelier-dossier');
     section.dataset.atelierDossier = corridor.product.product_ref;
     const head = el(doc, 'div', 'kmc-atelier-dossier-head');
-    head.appendChild(button(doc, '← Retour à la file', 'kmc-atelier-link-button', { atelierBack: '' }));
+    if (!ctx.focusedProductRef) head.appendChild(button(doc, '← Retour à la file', 'kmc-atelier-link-button', { atelierBack: '' }));
     const title = el(doc, 'div', 'kmc-atelier-dossier-title');
     title.appendChild(el(doc, 'h3', '', corridor.product.name || corridor.product.product_ref));
     const meta = el(doc, 'p', 'kmc-atelier-muted', `${corridor.product.product_ref} · marché ${ctx.marketCode}`);
@@ -943,32 +943,33 @@
       select('economic');
       return true;
     }
-    const cockpit = rootNode.querySelector('[data-pricing-economic-cockpit]');
+    const focusedProductRef = options.focusedProductRef;
+    const cockpit = focusedProductRef ? rootNode : rootNode.querySelector('[data-pricing-economic-cockpit]');
     const overview = rootNode.querySelector('[data-pricing-decision-overview]');
     if (!cockpit || rootNode.querySelector('[data-atelier-nav]')) return Boolean(cockpit);
     const portfolio = cockpit.querySelector('[data-cockpit-portfolio]');
     const costs = cockpit.querySelector('.kmc-cockpit-costs');
-    if (!portfolio || !costs) return false;
+    if (!focusedProductRef && (!portfolio || !costs)) return false;
 
     const loc = rootObject.location || { search: '', pathname: '' };
     const marketCode = options.requestedMarket;
     const endpoint = workspace.endpointFor({ requestedMarket: marketCode });
     const caps = payload.capabilities || {};
     const reasonLabels = workspace.MARKET_REASON_LABELS || {};
-    const corridors = portfolio.__corridors instanceof Map ? portfolio.__corridors : new Map();
+    const corridors = portfolio?.__corridors instanceof Map ? portfolio.__corridors : new Map();
     const products = (Array.isArray(payload.simulation_products) ? payload.simulation_products : []).filter(product => product && product.product_ref);
     const state = {
-      view: resolveView(loc.search), filter: 'todo', search: '', rows: [], failed: [], cursor: 0,
-      loading: false, error: '', decision: null, selected: new URLSearchParams(loc.search).get('product_ref') || null,
+      view: focusedProductRef ? 'products' : resolveView(loc.search), filter: 'todo', search: '', rows: [], failed: [], cursor: 0,
+      loading: false, error: '', decision: null, selected: focusedProductRef || new URLSearchParams(loc.search).get('product_ref') || null,
     };
     const returnTo = () => `${loc.pathname || ''}${loc.search || ''}`;
 
     // Blocs existants rattachés à une vue ; les handlers du cockpit restent propriétaires des coûts.
     const economicBlocks = [];
-    const costBlocks = [costs];
+    const costBlocks = costs ? [costs] : [];
     // The cost tab must start with actionable cost families. The educational
     // economic reading belongs to the overview and keeps its existing content.
-    const economicReading = costs.querySelector('.kmc-economic-reading');
+    const economicReading = costs?.querySelector('.kmc-economic-reading');
     if (economicReading) {
       cockpit.insertBefore(economicReading, costs);
       economicBlocks.push(economicReading);
@@ -979,8 +980,10 @@
     const footer = cockpit.querySelector('.kmc-cockpit-footer');
     if (equilibrium) economicBlocks.push(equilibrium);
     if (header) { header.dataset.atelierViews = 'economic costs'; header.classList.add('kmc-atelier-compact-header'); }
-    portfolio.hidden = true;
-    portfolio.dataset.atelierSuperseded = '';
+    if (portfolio) {
+      portfolio.hidden = true;
+      portfolio.dataset.atelierSuperseded = '';
+    }
     if (footer) footer.hidden = true;
 
     const prioritiesHost = el(doc, 'div', 'kmc-atelier-priorities-host');
@@ -994,7 +997,15 @@
     costBlocks.forEach(node => { node.dataset.atelierViews = 'costs'; });
     rootNode.classList.add('kmc-atelier-views');
 
-    const nav = buildNav(doc, state.view, null);
+    const nav = focusedProductRef
+      ? el(doc, 'nav', 'kmc-atelier-nav')
+      : buildNav(doc, state.view, null);
+    if (focusedProductRef) {
+      nav.setAttribute('aria-label', 'Navigation du dossier produit');
+      const back = el(doc, 'a', 'kmc-atelier-tab', '← Atelier économique');
+      back.href = '/admin/workspaces/pricing?market=' + encodeURIComponent(marketCode);
+      nav.appendChild(back);
+    }
     const catalogLink = el(doc, 'a', 'kmc-atelier-tab kmc-economic-catalog-link', 'Catalogue marché →');
     catalogLink.href = `/dashboards/canonical/market-catalog.html?market=${encodeURIComponent(marketCode)}`;
     nav.appendChild(catalogLink);
@@ -1021,6 +1032,7 @@
     }
 
     function renderPriorities() {
+      if (focusedProductRef) return;
       const items = priorityItems({
         decision: state.decision, components: payload.cost_components, counts: state.rows.length ? counts() : null,
         evaluated: state.rows.length, total: products.length, reasonLabels,
@@ -1092,7 +1104,8 @@
       } catch (error) {
         const failure = el(doc, 'div', 'kmc-atelier-alert', `Dossier indisponible : ${error && error.message ? error.message : 'erreur serveur'}`);
         failure.setAttribute('role', 'alert');
-        productsHost.replaceChildren(button(doc, '← Retour à la file', 'kmc-atelier-link-button', { atelierBack: '' }), failure);
+        productsHost.replaceChildren(failure);
+        if (!focusedProductRef) productsHost.prepend(button(doc, '← Retour à la file', 'kmc-atelier-link-button', { atelierBack: '' }));
         return;
       }
       upsertRow(products.find(item => item.product_ref === productRef) || corridor.product, corridor);
@@ -1107,7 +1120,7 @@
       const at = queue.indexOf(productRef);
       const position = at >= 0 ? { index: at + 1, total: queue.length, next: queue[at + 1] || null } : null;
       productsHost.replaceChildren(buildDossier(doc, corridor, {
-        position, marketCode, returnTo: returnTo(), decision: state.decision, reasonLabels, preview, previewError, message,
+        position, marketCode, focusedProductRef, returnTo: returnTo(), decision: state.decision, reasonLabels, preview, previewError, message,
         saved, canDraft: caps.local_price_drafts === true, canSimulate: caps.simulation === true,
         canObserve: caps.manage_market_price_observations === true, components: payload.cost_components,
       }));
@@ -1212,16 +1225,46 @@
       renderPriorities();
       if (state.view === 'products' && state.selected) openDossier(state.selected);
       else if (state.view === 'products') renderQueue();
-      await evaluateNext();
+      if (!focusedProductRef) await evaluateNext();
     })();
     return true;
   }
 
+  async function mountFocusedProduct(rootObject, workspace, options, productRef) {
+    const { document: doc, root, fetch, requestedMarket } = options;
+    const panel = el(doc, 'section', 'kmc-economic-cockpit');
+    panel.dataset.pricingEconomicCockpit = '';
+    const status = el(doc, 'p', 'kmc-atelier-note', 'Chargement du dossier…');
+    status.setAttribute('role', 'status');
+    panel.append(status);
+    root.__economicV7V6Session?.dispose();
+    root.replaceChildren(panel);
+    try {
+      const payload = await workspace.jsonRequest(fetch, workspace.endpointFor({ requestedMarket }));
+      status.remove();
+      enhance(rootObject, workspace, { ...options, root: panel, focusedProductRef: productRef }, payload);
+      return payload;
+    } catch (error) {
+      panel.replaceChildren(el(doc, 'p', 'kmc-atelier-alert', error.message || 'Dossier indisponible.'));
+      return null;
+    }
+  }
+
   function install(rootObject) {
     const workspace = rootObject && rootObject.KomerceCanonicalPricingWorkspace;
-    if (workspace?.__economicV7V6Installed) return false;
     if (!workspace || workspace.__atelierViewsInstalled || typeof workspace.mount !== 'function') return false;
     const originalMount = workspace.mount.bind(workspace);
+    if (workspace.__economicV7V6Installed) {
+      workspace.mount = options => {
+        const searchedRef = new URLSearchParams(rootObject.location?.search || '').get('product_ref');
+        const productRef = String(options?.requestedProductRef || searchedRef || '').trim();
+        return options?.requestedMarket && options.root && options.document && productRef
+          ? mountFocusedProduct(rootObject, workspace, options, productRef)
+          : originalMount(options);
+      };
+      workspace.__atelierViewsInstalled = true;
+      return true;
+    }
     workspace.mount = async function atelierViewsMount(options) {
       const payload = await originalMount(options);
       enhance(rootObject, workspace, options, payload);

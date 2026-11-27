@@ -36,7 +36,7 @@ const COMPONENTS = [
   { key: 'freight_kg', label: 'Fret maritime', family: 'landed_relay', category: 'freight', unit: 'kmf_per_kg', default_value: null, allocation_method: 'by_weight', inherited: true, is_active: true },
 ];
 
-async function mount(page, { caps = {}, access = null, posts = [], search = '', components = COMPONENTS, decision = FX.decision, corridorStatus = 200, preview = null } = {}) {
+async function mount(page, { caps = {}, access = null, posts = [], search = '', components = COMPONENTS, decision = FX.decision, corridorStatus = 200, preview = null, readySelector = '[data-atelier-nav]' } = {}) {
   const market = { ...FX.market, simulation_products: PRODUCTS, cost_components: components.map(item => ({ ...item })), access: access || FX.market.access, capabilities: { ...FX.market.capabilities, ...caps } };
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
@@ -96,7 +96,7 @@ async function mount(page, { caps = {}, access = null, posts = [], search = '', 
   });
   await page.goto(`${ORIGIN}/admin/workspaces/pricing${search}`);
   if (!/market=KM/.test(search)) await page.locator('select').first().selectOption({ label: 'KM · Comores' });
-  await expect(page.locator('[data-atelier-nav]')).toBeVisible();
+  await expect(page.locator(readySelector)).toBeVisible();
 }
 
 const shot = async (page, name, viewport) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `${name}-${viewport}.png`), fullPage: true }); };
@@ -176,7 +176,7 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
 
     test('Prévision avant vente : trois scénarios explicites, lecture seule, aucun prix choisi', async ({ page }) => {
       const posts = [];
-      await mount(page, { posts, search: '?market=KM&product_ref=KPR-900002' });
+      await mount(page, { posts, search: '?market=KM&product_ref=KPR-900002', readySelector: '[data-atelier-forecast]' });
       const detail = page.locator('[data-atelier-forecast]');
       await expect(detail).toHaveCount(1);
       await expect(detail).toContainText('NON VÉRIFIÉES');
