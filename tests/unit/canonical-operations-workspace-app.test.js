@@ -125,6 +125,8 @@ test('central ne reçoit jamais Global dans un Workspace : aucun marché implici
 
 test('opérateur CM/KM ne peut pas falsifier CG dans le sélecteur Workspace', async () => {
   const env = loadApp();
+  // Multi-marché : une cible d'action explicitement autorisée est requise.
+  env.window.location.search = '?view=execute&market=CM';
   const user = { id: 'operator-cm', role: 'admin' };
   const context = {
     actor: user,
