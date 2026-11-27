@@ -46,6 +46,9 @@ const GAP_MESSAGES = Object.freeze({
   NO_PAYMENT_PROVIDER: 'Aucun moyen de paiement admissible : activer le cash au relais ou configurer un fournisseur de paiement.',
   NO_CASH_POLICY: 'Aucune politique de contrôle de caisse n’est définie.',
   NO_RELAIS: 'Aucun relais actif n’est rattaché au marché.',
+  NO_DELIVERY_PROOF: 'Aucune liaison de livraison valide et attestée pour la première ouverture.',
+  NO_PREPARED_PRICE: 'Aucun prix local positif préparé pour un produit actif dans la devise du marché.',
+  NO_ECONOMIC_REFERENCES: 'Le référentiel économique initial du marché est incomplet.',
 });
 
 /** Pure : transforme un instantané en liste d'écarts ordonnée et stable. */
@@ -78,11 +81,22 @@ function computeGaps(snapshot) {
   if (!cashReady && !electronicReady) add('NO_PAYMENT_PROVIDER');
   if (!snapshot.cashPolicy) add('NO_CASH_POLICY');
   if (!snapshot.relaisActive) add('NO_RELAIS');
+  // New-market preparation is evaluated only for an initialized market.
+  // Existing active/suspended markets keep the established lifecycle rules.
+  if(snapshot.market.lifecycle_status==='PROVISIONING' && snapshot.preparation){
+    if(snapshot.deliveryProof?.proven!==true)add('NO_DELIVERY_PROOF');
+    const prices=snapshot.preparation.prices;
+    if(!prices || prices.drafts+prices.authorized+prices.active===0)add('NO_PREPARED_PRICE');
+    if(snapshot.preparation.economic?.ready!==true){
+      const missing=snapshot.preparation.economic?.missing||[];
+      gaps.push({code:'NO_ECONOMIC_REFERENCES',message:GAP_MESSAGES.NO_ECONOMIC_REFERENCES+(missing.length?' '+missing.join(' ; '):'')});
+    }
+  }
   return gaps;
 }
 
-const PLATFORM_BLOCKERS = new Set(['NO_CURRENCY_PARITY','NO_CENTRAL_REFERENT','EMPTY_CEILING','MISSING_AMOUNT_LIMIT','NO_PAYMENT_PROVIDER','NO_CASH_POLICY']);
-const OPERATIONS_BLOCKERS = new Set(['NO_ASSIGNMENT','ASSIGNMENT_NOT_ACTIVE','NO_ACTIVE_MEMBERSHIP','NO_TEAM_GRANT_HOLDER','NO_OPERATING_LEAD','NO_RELAIS']);
+const PLATFORM_BLOCKERS = new Set(['NO_CURRENCY_PARITY','NO_CENTRAL_REFERENT','EMPTY_CEILING','MISSING_AMOUNT_LIMIT','NO_PAYMENT_PROVIDER','NO_CASH_POLICY','NO_ECONOMIC_REFERENCES']);
+const OPERATIONS_BLOCKERS = new Set(['NO_ASSIGNMENT','ASSIGNMENT_NOT_ACTIVE','NO_ACTIVE_MEMBERSHIP','NO_TEAM_GRANT_HOLDER','NO_OPERATING_LEAD','NO_RELAIS','NO_DELIVERY_PROOF','NO_PREPARED_PRICE']);
 
 function readinessFromGaps(gaps) {
   const platform = gaps.filter(gap => PLATFORM_BLOCKERS.has(gap.code));
@@ -194,6 +208,10 @@ async function getControlPlane(executor, marketCode) {
     })),
   ];
   const snapshot = { market, assignment, ceiling, team, paymentProviders, cashPolicy, relaisActive, deliveryProof, centralCollectionModes, paymentAvailability };
+  if(market.lifecycle_status==='PROVISIONING' && assignment?.status==='ACTIVE'){
+    const [economic,prices]=await Promise.all([getCostReferenceReadiness(db,market.id),getPricePreparation(db,market)]);
+    snapshot.preparation={economic,prices};
+  }
   const gaps = computeGaps(snapshot);
   // Choix du transporteur pour l'attestation de livrabilité : fourni uniquement quand la preuve manque
   // (aucune nouvelle route, l'écran de gestion des marchés ne lit que /api/admin/markets).
@@ -259,11 +277,6 @@ async function getPreparationChecklist(executor, authorization) {
   if (control.market.lifecycle_status !== 'PROVISIONING' || control.market.id !== authorization.market_id ||
       control.assignment?.id !== authorization.assignment_id || control.assignment.status !== 'ACTIVE' ||
       !control.team.some(member => member.membership_id === authorization.membership_id && member.is_operating_lead)) return null;
-  const [economic,prices] = await Promise.all([
-    getCostReferenceReadiness(executor,control.market.id),
-    getPricePreparation(executor,control.market),
-  ]);
-  const pricePrepared = prices.drafts+prices.authorized+prices.active>0;
   function item(id, label, codes, owner) {
     const blockers = control.gaps.filter(gap => codes.includes(gap.code)).map(gap => gap.message);
     return { id, label, owner, status: blockers.length ? 'blocked' : 'ready', blockers };
@@ -274,12 +287,9 @@ async function getPreparationChecklist(executor, authorization) {
       item('team','Équipe locale',['NO_ACTIVE_MEMBERSHIP','NO_TEAM_GRANT_HOLDER','NO_OPERATING_LEAD'],'market'),
       item('network','Réseau de relais',['NO_RELAIS'],'market'),
       item('payments','Moyens de paiement',['NO_PAYMENT_PROVIDER','NO_CASH_POLICY'],'central'),
-      { id:'delivery', label:'Livrabilité', owner:'central', status:control.deliveryProof?.proven?'ready':'pending',
-        blockers:control.deliveryProof?.proven?[]:['Preuve de livrabilité à vérifier avec le Hub.'] },
-      { id:'commerce', label:'Préparation des prix locaux', owner:'market', status:pricePrepared?'pending':'blocked',
-        blockers:pricePrepared?[prices.drafts+' prix en brouillon, '+prices.authorized+' autorisés, '+prices.active+' actifs. La vente et l’exposition nécessitent leurs gardes propres.']:['Aucune décision de prix local positive dans la devise du marché.'] },
-      { id:'economic', label:'Raccordement des centres et familles de coûts', owner:'central', status:economic.ready?'ready':'blocked',
-        blockers:economic.missing.map(label=>'Référentiel manquant : '+label) },
+      item('delivery','Livrabilité',['NO_DELIVERY_PROOF'],'central'),
+      item('commerce','Préparation des prix locaux (brouillons uniquement avant ouverture)',['NO_PREPARED_PRICE'],'market'),
+      item('economic','Raccordement des centres et familles de coûts',['NO_ECONOMIC_REFERENCES'],'central'),
     ],
   };
 }

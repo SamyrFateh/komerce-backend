@@ -95,7 +95,7 @@ async function resolveRequestedMarket(req, res, next) {
     const { rows } = await db.query(
       `SELECT id, code, name, currency, lifecycle_status
          FROM markets
-        WHERE code = $1 AND ${preparationEndpoint ? "(is_active = TRUE OR lifecycle_status = 'PROVISIONING')" : 'is_active = TRUE'}
+        WHERE code = $1 AND ${preparationEndpoint ? "(is_active = TRUE OR (lifecycle_status = 'PROVISIONING' AND EXISTS (SELECT 1 FROM market_operating_assignments a JOIN assignment_memberships am ON am.assignment_id=a.id AND am.status='ACTIVE' AND am.is_operating_lead WHERE a.market_id=markets.id AND a.status='ACTIVE' AND a.central_referent_user_id IS NOT NULL)))" : 'is_active = TRUE'}
         LIMIT 1`,
       [code]
     );

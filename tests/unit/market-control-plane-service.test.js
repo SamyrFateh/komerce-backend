@@ -202,3 +202,20 @@ test('economic template readiness uses exact center/family pairs, not total coun
   db.query.mockResolvedValue({rows:rows.map(row=>row.family_code==='LIVRAISON'?{...row,family_code:'OTHER'}:row)});
   await expect(getCostReferenceReadiness(db,id)).resolves.toEqual({ready:false,missing:['Transport et douane — Livraison locale']});
 });
+
+test('initialized first opening requires delivery, positive prepared price and canonical references',()=>{
+  const s=healthy();
+  s.market.lifecycle_status='PROVISIONING';s.market.is_active=false;
+  s.deliveryProof={proven:false};
+  s.preparation={economic:{ready:false,missing:['Transport et douane — Livraison locale']},prices:{drafts:0,authorized:0,active:0}};
+  expect(codes(s)).toEqual(['MARKET_INACTIVE','NO_DELIVERY_PROOF','NO_PREPARED_PRICE','NO_ECONOMIC_REFERENCES']);
+  expect(readinessFromGaps(computeGaps(s)).ready_for_activation).toBe(false);
+  expect(computeGaps(s).find(g=>g.code==='NO_ECONOMIC_REFERENCES').message).toContain('Livraison locale');
+  s.deliveryProof={proven:true};
+  s.preparation.economic={ready:true,missing:[]};
+  s.preparation.prices.drafts=1;
+  expect(readinessFromGaps(computeGaps(s)).ready_for_activation).toBe(true);
+  s.market.lifecycle_status='SUSPENDED';s.market.is_active=true;
+  s.deliveryProof={proven:false};s.preparation.prices.drafts=0;
+  expect(codes(s)).toEqual([]);
+});

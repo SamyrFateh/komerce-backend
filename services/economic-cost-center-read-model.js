@@ -865,6 +865,19 @@ async function readCostCentersSnapshot(actor,input,client,central,globalRead,{pr
           WHERE post_id=p.id AND period_start=$2::date ORDER BY revision DESC LIMIT 1
        ) b ON true
        WHERE c.market_id IS NOT DISTINCT FROM $1::uuid ORDER BY p.code,p.id`,[marketId,input.periodStart]);
+    if(preparationOnly){
+      // A reference editor is not the historical financial/activity read model.
+      // No period calculation, FX conversion, or realized amount is inferred.
+      const responsibleCandidates=costCapabilities.reference?await listResponsibleCandidates(client,marketId):[];
+      const references=posts.map(({budget_revision,budget_currency,budget_native,budget_eur,...p})=>({
+        ...p,budget:null,commitments:[],eligibleStructureFacts:[],structureEvidence:null,actual:null,available:null,coverage:'NOT_RECONCILED'
+      }));
+      return {scope:'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,globalRead,central,
+        costCapabilities,preparationOnly:true,readOnly:!costCapabilities.reference,
+        centers,families,resources,responsibleCandidates,posts:references,
+        recordedBalance:null,budgetSummary:null,commitmentSummary:null,structureEvidence:null,
+        activity:null,profitability:null,activityCurrencyProjection:null,actualCoverage:'NOT_RECONCILED',available:null};
+    }
     const {rows:commitments}=await client.query(
       `SELECT k.id,k.post_id,k.currency,k.evidence_ref,k.amount_native::text AS initial_native,k.amount_eur::text AS initial_eur,
          (k.amount_native-COALESCE(m.used,0))::text AS remaining_native,

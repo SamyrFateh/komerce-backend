@@ -373,6 +373,28 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect((await q("SELECT is_active FROM markets WHERE code='DJ'")).rows[0].is_active).toBe(false);
   });
 
+  test('initialized preparation exposes references but not the financial period or foreign market',async()=>{
+    // Only the isolated fixture market, never the five reference markets.
+    const market=fx.marketA, assignment=fx.assignmentA;
+    await q("UPDATE market_operating_assignments SET central_referent_user_id=$2 WHERE id=$1",[assignment.id,fx.central.id]);
+    await q("UPDATE assignment_memberships SET is_operating_lead=true WHERE id=$1",[fx.managerAMembership.id]);
+    await q("UPDATE markets SET lifecycle_status='PROVISIONING',is_active=false WHERE id=$1",[market.id]);
+    try {
+      const own=await get(fx.managerA,market.code);
+      expect(own.status).toBe(200);
+      expect(own.body).toMatchObject({preparationOnly:true,marketCode:market.code,activity:null,profitability:null,
+        costCapabilities:{budget:false,commitment:false,consume:false,actual:false,reference:true}});
+      expect(own.body.centers.map(c=>c.id)).toContain(a.center);
+      expect(own.body.centers.map(c=>c.id)).not.toContain(b.center);
+      expect((await get(fx.managerB,market.code)).status).toBe(403);
+      const refused=await request(app).post(endpoint(market.code)+'/posts/'+a.post+'/commitments').set('Authorization',fx.managerA.token).send({});
+      expect(refused.status).toBe(404);
+    }finally{
+      await q("UPDATE markets SET lifecycle_status='ACTIVE',is_active=true WHERE id=$1",[market.id]);
+      await q("UPDATE assignment_memberships SET is_operating_lead=false WHERE id=$1",[fx.managerAMembership.id]);
+      await q("UPDATE market_operating_assignments SET central_referent_user_id=NULL WHERE id=$1",[assignment.id]);
+    }
+  });
   test('after-sale scope retains financially closed, nonsimulated shipments only', async () => {
     const { rows } = await q(
       'SELECT oi.id AS order_item_id, o.reference FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE o.reference=ANY($1::text[])',
