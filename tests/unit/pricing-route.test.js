@@ -83,6 +83,7 @@ describe('routes/pricing', () => {
     const endpoints = [
       ['get', '/benchmarks'], ['get', '/rates'], ['get', '/benchmarks-gap'],
       ['get', '/dashboard'], ['post', '/recommend'], ['post', '/recommend-batch'],
+      ['post', '/calculate'], ['post', '/couture'],
     ];
     test.each([null, 'client', 'market_operator', 'agent_hub', 'agent_relais', 'agent_transitaire', 'finance', 'sourcing'])('refuse le profil %s avant tout accès métier', async role => {
       mockUser = role ? { id: 'user-1', role } : null;
@@ -96,23 +97,27 @@ describe('routes/pricing', () => {
       expect(pricingDashboard.computeBenchmarksGap).not.toHaveBeenCalled();
       expect(pricingRecommend.computeRecommend).not.toHaveBeenCalled();
       expect(pricingRecommend.computeRecommendBatch).not.toHaveBeenCalled();
+      expect(pricingEngine.recommend).not.toHaveBeenCalled();
     });
   });
 
   describe('POST /calculate', () => {
     test('exige product_id', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       const res = await request(buildApp()).post('/api/pricing/calculate').send({});
       expect(res.status).toBe(400);
       expect(mockDbQuery).not.toHaveBeenCalled();
     });
 
     test('404 si produit introuvable', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       mockDbQuery.mockResolvedValueOnce({ rows: [] });
       const res = await request(buildApp()).post('/api/pricing/calculate').send({ product_id: 'p1' });
       expect(res.status).toBe(404);
     });
 
     test('calcule le prix pour un produit existant (cash_relais par défaut)', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'p1' }] });
       pricingEngine.recommend.mockResolvedValueOnce({ price_kmf: 5000 });
 
@@ -126,6 +131,7 @@ describe('routes/pricing', () => {
     });
 
     test('utilise le channel diaspora si is_diaspora=true', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'p1' }] });
       pricingEngine.recommend.mockResolvedValueOnce({ price_kmf: 5000 });
 
@@ -237,11 +243,13 @@ describe('routes/pricing', () => {
 
   describe('POST /couture', () => {
     test('exige fabric_id et model_id', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       const res = await request(buildApp()).post('/api/pricing/couture').send({});
       expect(res.status).toBe(400);
     });
 
     test('404 si tissu ou modèle introuvable', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       mockDbQuery
         .mockResolvedValueOnce({ rows: [] })
         .mockResolvedValueOnce({ rows: [{ id: 'm1' }] });
@@ -254,6 +262,7 @@ describe('routes/pricing', () => {
     });
 
     test('calcule le prix couture à partir du tissu et du modèle', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       mockDbQuery
         .mockResolvedValueOnce({ rows: [{ id: 'f1', name: 'Soie', price_per_meter_aed: '10' }] })
         .mockResolvedValueOnce({ rows: [{ id: 'm1', name: 'Robe', fabric_meters: '3', making_cost_aed: '20' }] });
