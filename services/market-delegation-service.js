@@ -64,12 +64,12 @@ async function resolveActiveAssignmentByMarketCode(executor, marketCode, { allow
        LEFT JOIN market_operating_assignments a
          ON a.market_id = m.id AND a.status = 'ACTIVE'
       WHERE m.code = $1
-        AND (m.lifecycle_status IN ('ACTIVE','SUSPENDED') OR ($2::boolean AND m.lifecycle_status = 'PROVISIONING'))
+        AND m.lifecycle_status IN ('ACTIVE','SUSPENDED'${allowProvisioning === true ? ",'PROVISIONING'" : ''})
       LIMIT 1`,
-    [code, allowProvisioning]
+    [code]
   );
   const row = rows[0];
-  if (!row || (row.lifecycle_status === 'PROVISIONING' && !allowProvisioning)) throw delegationError('MARKET_NOT_FOUND', `Marché ${code} introuvable ou inactif.`, 404);
+  if (!row || (row.lifecycle_status === 'PROVISIONING' && allowProvisioning !== true)) throw delegationError('MARKET_NOT_FOUND', `Marché ${code} introuvable ou inactif.`, 404);
   if (!row.assignment_id) {
     throw delegationError('MARKET_ASSIGNMENT_NOT_ACTIVE', `Aucun Market Operating Assignment actif pour ${code}.`, 409);
   }

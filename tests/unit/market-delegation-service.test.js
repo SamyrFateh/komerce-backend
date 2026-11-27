@@ -82,3 +82,14 @@ describe('preparation authority #4370', () => {
       .rejects.toMatchObject({code:'MARKET_SUSPENDED'});
   });
 });
+
+test('central default lookup preserves the historical SQL contract and denies provisioning by default', async () => {
+  const db = {query:jest.fn().mockResolvedValue({rows:[{assignment_id:'a1',lifecycle_status:'PROVISIONING'}]})};
+  await expect(delegation.resolveActiveAssignmentByMarketCode(db,'GA')).rejects.toMatchObject({code:'MARKET_NOT_FOUND'});
+  expect(db.query.mock.calls[0][1]).toEqual(['GA']);
+  expect(db.query.mock.calls[0][0]).toContain("m.lifecycle_status IN ('ACTIVE','SUSPENDED')");
+  await expect(delegation.resolveActiveAssignmentByMarketCode(db,'GA',{allowProvisioning:true})).resolves.toMatchObject({assignment_id:'a1'});
+  expect(db.query.mock.calls[1][1]).toEqual(['GA']);
+  expect(db.query.mock.calls[1][0]).toContain("m.lifecycle_status IN ('ACTIVE','SUSPENDED','PROVISIONING')");
+  await expect(delegation.resolveActiveAssignmentByMarketCode(db,'GA',{allowProvisioning:'true'})).rejects.toMatchObject({code:'MARKET_NOT_FOUND'});
+});

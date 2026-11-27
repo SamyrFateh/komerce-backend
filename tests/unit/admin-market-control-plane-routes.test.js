@@ -38,7 +38,8 @@ describe('admin market control plane — lecture centrale + provisioning', () =>
 
   test('la vue d’autorité centrale est admin, en lecture seule, déclarée avant la route paramétrée', () => {
     expect(source).toMatch(/router\.get\('\/central-authority', \.\.\.centralAdmin/);
-    expect(source).toContain('res.json(await centralAuthority.overview(db))');
+    expect(source).toContain('res.json({ ...(await centralAuthority.overview(db)), payment_options: paymentOptions() })');
+    expect(source).toContain("const { paymentOptions } = require('../services/market-payment-provider-config-service')");
     expect(source.indexOf("'/central-authority'")).toBeLessThan(source.indexOf("'/:marketCode/control-plane'"));
   });
 
