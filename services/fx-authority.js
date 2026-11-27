@@ -144,14 +144,15 @@ function product(legs) {
  * @param {boolean} [p.round=true] false = pleine précision (12 décimales, projection de compatibilité)
  * @returns {{amount:number, amount_text:string, from, to, pivot:'EUR', legs:object[], rounding:object}}
  */
-async function convert({ amount, from, to, at = null, client = db, maxAgeDays = fxChain.DEFAULT_MAX_AGE_DAYS, round = true }) {
+async function convertMany({ amounts, from, to, at = null, client = db, maxAgeDays = fxChain.DEFAULT_MAX_AGE_DAYS, round = true }) {
   const f = String(from || '').trim().toUpperCase();
   const t = String(to || '').trim().toUpperCase();
   assertSupported(f);
   assertSupported(t);
-  const a = parseDecimal(amount);
+  if(!Array.isArray(amounts))throw new FxError('Liste de montants invalide','fx_amount_invalid',422);
+  const values=amounts.map(amount=>parseDecimal(amount));
+  if(!values.length)return [];
   const minor = round ? MINOR_UNITS[t] : 12;
-
   let legsFrom = [];
   let legsTo = [];
   if (f !== t) {
@@ -161,20 +162,19 @@ async function convert({ amount, from, to, at = null, client = db, maxAgeDays = 
   }
   const uFrom = product(legsFrom);
   const uTo = product(legsTo);
-  // montant × U(to) / U(from)
-  const num = a.n * uTo.n * uFrom.d;
-  const den = a.d * uTo.d * uFrom.n;
-  const q = roundHalfEven(num, den, minor);
-  const text = formatScaled(q, minor);
-  return {
-    amount: Number(text),
-    amount_text: text,
-    from: f,
-    to: t,
-    pivot: 'EUR',
-    legs: [...legsFrom.map(l => ({ ...l, side: 'from' })), ...legsTo.map(l => ({ ...l, side: 'to' }))],
-    rounding: { mode: 'half_even', minor_unit: minor, currency: t },
-  };
+  const legs=[...legsFrom.map(l=>({...l,side:'from'})),...legsTo.map(l=>({...l,side:'to'}))];
+  return values.map(a=>{
+    const num=a.n*uTo.n*uFrom.d;
+    const den=a.d*uTo.d*uFrom.n;
+    const text=formatScaled(roundHalfEven(num,den,minor),minor);
+    return {amount:Number(text),amount_text:text,from:f,to:t,pivot:'EUR',
+      legs:legs.map(l=>({...l})),rounding:{mode:'half_even',minor_unit:minor,currency:t}};
+  });
+}
+
+async function convert({amount,...options}){
+  const [result]=await convertMany({...options,amounts:[amount]});
+  return result;
 }
 
 /**
@@ -201,4 +201,4 @@ async function fixedUnitsPerEur(ccy, client = db) {
   return Number((await fixedParityLeg(c, client)).rate);
 }
 
-module.exports = { convert, prorate, fixedUnitsPerEur, FxError, MINOR_UNITS, roundHalfEven, parseDecimal };
+module.exports = { convert, convertMany, prorate, fixedUnitsPerEur, FxError, MINOR_UNITS, roundHalfEven, parseDecimal };

@@ -7,7 +7,7 @@
  *
  * Arithmétique décimale exacte et arrondi half-even de l'autorité FX (aucun flottant).
  */
-const { roundHalfEven, parseDecimal, MINOR_UNITS, convert, FxError } = require('../../services/fx-authority');
+const { roundHalfEven, parseDecimal, MINOR_UNITS, convert, convertMany, FxError } = require('../../services/fx-authority');
 
 describe('fx-authority — décimal exact', () => {
   test('parseDecimal : exact, refuse non numérique / notation scientifique / vide', () => {
@@ -63,4 +63,14 @@ describe('fx-authority — décimal exact', () => {
     const eur = await convert({ amount: '10.005', from: 'EUR', to: 'EUR' });
     expect(eur.amount_text).toBe('10.00');
   });
+});
+
+test('batch uses one authoritative rate pair and exact rounding for every amount',async()=>{
+ const client={query:jest.fn(async(_sql,[currency])=>({rows:[{rate:currency==='KMF'?'491.96775':'655.957',updated_at:'2026-01-01'}]}))};
+ const values=await convertMany({amounts:['491.96775','0','-491.96775'],from:'KMF',to:'XAF',client});
+ expect(values.map(x=>x.amount_text)).toEqual(['656','0','-656']);
+ expect(client.query).toHaveBeenCalledTimes(2);
+ expect(values[0].legs).toEqual(values[2].legs);
+ await expect(convertMany({amounts:['NaN'],from:'KMF',to:'EUR',client})).rejects.toMatchObject({code:'fx_amount_invalid'});
+ expect(client.query).toHaveBeenCalledTimes(2);
 });

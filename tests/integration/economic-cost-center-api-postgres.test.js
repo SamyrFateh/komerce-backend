@@ -562,6 +562,9 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     const direction=require('../../services/economic-cost-center-read-model').readGroupPeriodDecision;
     const compact=await direction(fx.central,period);
     expect(initial.display).toEqual(compact.display);
+    const groupPresentation=(await get(fx.central,null,period)).body.activityCurrencyProjection;
+    expect(groupPresentation).toMatchObject({currency:'EUR',sourceCurrency:'KMF',fxStatus:'GOVERNED_KMF_PROJECTION'});
+    expect(groupPresentation.amounts['9666.66']).toBe((await require('../../services/fx-authority').convert({amount:'9666.66',from:'KMF',to:'EUR'})).amount_text);
     expect(initial.display).toMatchObject({currency:'EUR',result:compact.resultEur,fxStatus:'GOVERNED_FIXED_PARITY_PROJECTION'});
     expect(compact).toMatchObject({status:initial.status,resultKmf:initial.resultKmf,fxStatus:'GOVERNED_FIXED_PARITY_PROJECTION'});
     expect(compact).not.toHaveProperty('evidenceHash');

@@ -4,7 +4,7 @@ const mockQuery=jest.fn(),mockRelease=jest.fn(),mockClient=jest.fn(),mockGrant=j
 jest.mock('../../db',()=>({getClient:(...a)=>mockClient(...a)}));
 jest.mock('../../middleware/require-pricing-global-authority',()=>({hasPricingGlobalAuthority:(...a)=>mockGrant(...a)}));
 jest.mock('../../services/market-delegation-service',()=>({resolveAuthorization:(...a)=>mockAuthz(...a)}));
-const {readCostCenters,budgetSummary,recordedPostBalance,recordedBalanceSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,shipmentPurchase,observedProfitability,periodSalesEvidence,projectGroupPeriodResult,completeCostParcelCount}=require('../../services/economic-cost-center-read-model');
+const {projectActivityCurrency,readCostCenters,budgetSummary,recordedPostBalance,recordedBalanceSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,shipmentPurchase,observedProfitability,periodSalesEvidence,projectGroupPeriodResult,completeCostParcelCount}=require('../../services/economic-cost-center-read-model');
 const client={query:mockQuery,release:mockRelease},actor={id:'actor',role:'admin'},month='2026-01-01';
 const ok=(rows=[])=>({rows});
 beforeEach(()=>{jest.resetAllMocks();mockClient.mockResolvedValue(client);mockGrant.mockResolvedValue(true);});
@@ -18,7 +18,8 @@ function projection(postRows=[],commitmentRows=[],structureRows=[],market=false)
   ])).mockResolvedValueOnce(ok([{count:1,amount_kmf:'500.00'}])).mockResolvedValueOnce(ok([{covered_units:4,amount_kmf:'1000.00'}])).mockResolvedValueOnce(ok([{parcel_count:1,amount_kmf:'315.25',line_evidence:[]}]));
   if(!market)mockQuery.mockResolvedValueOnce(ok()).mockResolvedValueOnce(ok());
   else mockQuery.mockResolvedValueOnce(ok()).mockResolvedValueOnce(ok([{currency:'XAF'}]));
-  mockQuery.mockResolvedValueOnce(ok());
+  // FX rate unavailable on the synthetic read, then COMMIT.
+  mockQuery.mockResolvedValueOnce(ok()).mockResolvedValueOnce(ok());
 }
 test('reject unauthenticated and implicit scope',async()=>{
   await expect(readCostCenters(null,{marketCode:null,periodStart:month})).rejects.toMatchObject({status:401});
@@ -235,4 +236,17 @@ test('known empty handoff month retains fixed costs; missing proof never becomes
     fullyCoveredParcelCount:0,confirmedRefundCount:0,documentedHandoffSalesKmf:null,documentedParcelVariableCostKmf:null};
   expect(projectGroupPeriodResult(empty,{recognizedKmf:100},{amountKmf:'0.00'})).toMatchObject({status:'PROVISIONAL',resultKmf:'-100.00'});
   expect(projectGroupPeriodResult({...empty,candidateHandoffParcelCount:1},{recognizedKmf:100},{amountKmf:'0.00'})).toMatchObject({status:'NOT_RECONCILED',reasons:expect.arrayContaining(['SALES_INCOMPLETE'])});
+});
+
+test('activity FX projects only allowed facts, preserving zero/unknown and excluding coefficients and closure data',async()=>{
+ const client={query:jest.fn().mockResolvedValue({rows:[{rate:'491.96775',updated_at:'2026-01-01'}]})};
+ const activity={purchaseKmf:'491.96775',coefficient:'1.2345',costPerKgKmf:'0',shipments:[{purchaseKmf:null,reference:'K-1'}]};
+ const profitability={groupPeriodResult:{resultKmf:'999'},recognitionEvidence:{confirmedRefundKmf:'-491.96775'}};
+ const p=await projectActivityCurrency(client,'EUR',activity,profitability);
+ expect(p).toMatchObject({currency:'EUR',fxStatus:'GOVERNED_KMF_PROJECTION',amounts:{'491.96775':'1.00','0':'0.00','-491.96775':'-1.00'}});
+ expect(Object.keys(p.amounts)).toHaveLength(3);
+ expect(client.query).toHaveBeenCalledTimes(1);
+ expect(activity.purchaseKmf).toBe('491.96775');
+ client.query.mockResolvedValue({rows:[]});
+ expect(await projectActivityCurrency(client,'EUR',activity,profitability)).toMatchObject({fxStatus:'FX_UNAVAILABLE',amounts:{}});
 });
