@@ -79,20 +79,45 @@ describe('routes/pricing', () => {
     mockUser = { id: 'user-1', role: 'client' };
   });
 
+  describe('confidentialité des lectures économiques globales #5315', () => {
+    const endpoints = [
+      ['get', '/benchmarks'], ['get', '/rates'], ['get', '/benchmarks-gap'],
+      ['get', '/dashboard'], ['post', '/recommend'], ['post', '/recommend-batch'],
+      ['post', '/calculate'], ['post', '/couture'],
+    ];
+    test.each([null, 'client', 'market_operator', 'agent_hub', 'agent_relais', 'agent_transitaire', 'finance', 'sourcing'])('refuse le profil %s avant tout accès métier', async role => {
+      mockUser = role ? { id: 'user-1', role } : null;
+      for (const [method, path] of endpoints) {
+        const res = await request(buildApp())[method]('/api/pricing' + path);
+        expect(res.status).toBe(role ? 403 : 401);
+      }
+      expect(mockDbQuery).not.toHaveBeenCalled();
+      expect(pricingRates.getCurrentRates).not.toHaveBeenCalled();
+      expect(pricingDashboard.computeDashboard).not.toHaveBeenCalled();
+      expect(pricingDashboard.computeBenchmarksGap).not.toHaveBeenCalled();
+      expect(pricingRecommend.computeRecommend).not.toHaveBeenCalled();
+      expect(pricingRecommend.computeRecommendBatch).not.toHaveBeenCalled();
+      expect(pricingEngine.recommend).not.toHaveBeenCalled();
+    });
+  });
+
   describe('POST /calculate', () => {
     test('exige product_id', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       const res = await request(buildApp()).post('/api/pricing/calculate').send({});
       expect(res.status).toBe(400);
       expect(mockDbQuery).not.toHaveBeenCalled();
     });
 
     test('404 si produit introuvable', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       mockDbQuery.mockResolvedValueOnce({ rows: [] });
       const res = await request(buildApp()).post('/api/pricing/calculate').send({ product_id: 'p1' });
       expect(res.status).toBe(404);
     });
 
     test('calcule le prix pour un produit existant (cash_relais par défaut)', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'p1' }] });
       pricingEngine.recommend.mockResolvedValueOnce({ price_kmf: 5000 });
 
@@ -106,6 +131,7 @@ describe('routes/pricing', () => {
     });
 
     test('utilise le channel diaspora si is_diaspora=true', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'p1' }] });
       pricingEngine.recommend.mockResolvedValueOnce({ price_kmf: 5000 });
 
@@ -152,7 +178,8 @@ describe('routes/pricing', () => {
     // mort, a été supprimé de routes/pricing.js. Cette assertion reste en
     // place pour verrouiller le comportement : listBenchmarks ne doit jamais
     // être appelé depuis GET /benchmarks.
-    test('accessible à un client authentifié, lit cost_benchmarks', async () => {
+    test('accessible à un admin, lit cost_benchmarks', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       mockDbQuery.mockResolvedValueOnce({ rows: [{ category: 'all', cost_family: 'transport' }] });
 
       const res = await request(buildApp()).get('/api/pricing/benchmarks');
@@ -216,11 +243,13 @@ describe('routes/pricing', () => {
 
   describe('POST /couture', () => {
     test('exige fabric_id et model_id', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       const res = await request(buildApp()).post('/api/pricing/couture').send({});
       expect(res.status).toBe(400);
     });
 
     test('404 si tissu ou modèle introuvable', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       mockDbQuery
         .mockResolvedValueOnce({ rows: [] })
         .mockResolvedValueOnce({ rows: [{ id: 'm1' }] });
@@ -233,6 +262,7 @@ describe('routes/pricing', () => {
     });
 
     test('calcule le prix couture à partir du tissu et du modèle', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       mockDbQuery
         .mockResolvedValueOnce({ rows: [{ id: 'f1', name: 'Soie', price_per_meter_aed: '10' }] })
         .mockResolvedValueOnce({ rows: [{ id: 'm1', name: 'Robe', fabric_meters: '3', making_cost_aed: '20' }] });
@@ -261,6 +291,7 @@ describe('routes/pricing', () => {
     });
 
     test('renvoie les taux courants', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       pricingRates.getCurrentRates.mockResolvedValueOnce({ eur_kmf: 490, aed_kmf: 133 });
       const res = await request(buildApp()).get('/api/pricing/rates');
       expect(res.status).toBe(200);
@@ -293,6 +324,7 @@ describe('routes/pricing', () => {
     });
 
     test('renvoie la recommandation calculée', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       pricingRecommend.computeRecommend.mockResolvedValueOnce({ niveau1: {}, niveau2: {}, niveau3: {} });
       const res = await request(buildApp()).post('/api/pricing/recommend').send({ product_id: 'p1' });
       expect(res.status).toBe(200);
@@ -300,6 +332,7 @@ describe('routes/pricing', () => {
     });
 
     test('applique le statut porté par une erreur de service', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       pricingRecommend.computeRecommend.mockRejectedValueOnce(Object.assign(new Error('nope'), { status: 400, body: { error: 'nope' } }));
       const res = await request(buildApp()).post('/api/pricing/recommend').send({});
       expect(res.status).toBe(400);
@@ -308,6 +341,7 @@ describe('routes/pricing', () => {
 
   describe('POST /recommend-batch', () => {
     test('renvoie le résultat batch', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       pricingRecommend.computeRecommendBatch.mockResolvedValueOnce({ count: 2, items: [] });
       const res = await request(buildApp()).post('/api/pricing/recommend-batch').send({});
       expect(res.status).toBe(200);
@@ -380,6 +414,7 @@ describe('routes/pricing', () => {
 
   describe('GET /benchmarks-gap', () => {
     test('renvoie le gap benchmark', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       pricingDashboard.computeBenchmarksGap.mockResolvedValueOnce({ gaps: [] });
       const res = await request(buildApp()).get('/api/pricing/benchmarks-gap');
       expect(res.status).toBe(200);
@@ -395,6 +430,7 @@ describe('routes/pricing', () => {
 
   describe('GET /dashboard', () => {
     test('renvoie le dashboard pricing', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       pricingDashboard.computeDashboard.mockResolvedValueOnce({ kpis: {} });
       const res = await request(buildApp()).get('/api/pricing/dashboard');
       expect(res.status).toBe(200);

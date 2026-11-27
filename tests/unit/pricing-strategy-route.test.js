@@ -29,6 +29,10 @@ jest.mock('../../middleware/auth', () => ({
     req.user = mockUser;
     next();
   },
+  requireRole: roles => (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) return res.status(403).json({ error: 'Accès réservé' });
+    next();
+  },
 }));
 
 jest.mock('../../services/pricing-strategy-service', () => ({
@@ -57,8 +61,22 @@ describe('routes/pricing-strategy', () => {
     mockUser = { id: 'user-1', role: 'client' };
   });
 
+  describe('confidentialité des stratégies globales #5315', () => {
+    test.each([null, 'client', 'market_operator', 'agent_hub', 'agent_relais', 'agent_transitaire', 'finance', 'sourcing'])('refuse le profil %s avant accès métier', async role => {
+      mockUser = role ? { id: 'user-1', role } : null;
+      for (const path of ['', '/competitors', '/history']) {
+        const res = await request(buildApp()).get('/api/pricing/strategy' + path).query({product_id: 'p1'});
+        expect(res.status).toBe(role ? 403 : 401);
+      }
+      expect(svc.getStrategy).not.toHaveBeenCalled();
+      expect(svc.getCompetitors).not.toHaveBeenCalled();
+      expect(svc.getStrategyHistory).not.toHaveBeenCalled();
+    });
+  });
+
   describe('GET /competitors', () => {
-    test('accessible à un client authentifié', async () => {
+    test('accessible à un admin', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       svc.getCompetitors.mockResolvedValueOnce({ count: 1, competitors: [{ id: 'c1' }] });
 
       const res = await request(buildApp())
@@ -78,6 +96,7 @@ describe('routes/pricing-strategy', () => {
     });
 
     test('propage une erreur inattendue au handler global', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       svc.getCompetitors.mockRejectedValueOnce(new Error('db down'));
       const res = await request(buildApp()).get('/api/pricing/strategy/competitors');
       expect(res.status).toBe(500);
@@ -158,12 +177,14 @@ describe('routes/pricing-strategy', () => {
 
   describe('GET /', () => {
     test('exige product_id ou category', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       const res = await request(buildApp()).get('/api/pricing/strategy');
       expect(res.status).toBe(400);
       expect(svc.getStrategy).not.toHaveBeenCalled();
     });
 
     test('renvoie la stratégie pour un product_id', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       svc.getStrategy.mockResolvedValueOnce({ target: { product_id: 'p1' } });
 
       const res = await request(buildApp()).get('/api/pricing/strategy').query({ product_id: 'p1' });
@@ -173,6 +194,7 @@ describe('routes/pricing-strategy', () => {
     });
 
     test('renvoie 404 si le service lève une erreur status=404', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       svc.getStrategy.mockRejectedValueOnce(Object.assign(new Error('Product not found'), { status: 404 }));
 
       const res = await request(buildApp()).get('/api/pricing/strategy').query({ product_id: 'inconnu' });
@@ -182,6 +204,7 @@ describe('routes/pricing-strategy', () => {
     });
 
     test('propage une erreur non-404 au handler global', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       svc.getStrategy.mockRejectedValueOnce(new Error('db down'));
 
       const res = await request(buildApp()).get('/api/pricing/strategy').query({ product_id: 'p1' });
@@ -249,7 +272,8 @@ describe('routes/pricing-strategy', () => {
   });
 
   describe('GET /history', () => {
-    test('accessible à un client authentifié', async () => {
+    test('accessible à un admin', async () => {
+      mockUser = { id: 'admin-1', role: 'admin' };
       svc.getStrategyHistory.mockResolvedValueOnce({ count: 0, history: [] });
 
       const res = await request(buildApp())
