@@ -66,7 +66,7 @@ function handleServiceError(err, res, next) {
 // ═══════════════════════════════════════════════════════════════════
 // POST /api/pricing/calculate — calcul prix temps réel
 // ═══════════════════════════════════════════════════════════════════
-router.post('/calculate', async (req, res, next) => {
+router.post('/calculate', ...adminOnly, async (req, res, next) => {
   try {
     const { product_id, qty = 1, is_diaspora = false, relais_type = 'standard' } = req.body;
     if (!product_id) return res.status(400).json({ error: 'product_id requis' });
@@ -103,7 +103,7 @@ router.post('/flow', adminOnly, async (req, res, next) => {
 //                                              expected_share_pct, warn_ratio?, alert_ratio? }
 //   DELETE /api/pricing/benchmarks/:category/:cost_family
 // ═══════════════════════════════════════════════════════════════════
-router.get('/benchmarks', authenticate, async (req, res, next) => {
+router.get('/benchmarks', ...adminOnly, async (req, res, next) => {
   try {
     const { rows } = await db.query(
       'SELECT category, cost_family, expected_share_pct, warn_ratio, alert_ratio, is_active, updated_at FROM cost_benchmarks ORDER BY category, cost_family'
@@ -145,7 +145,7 @@ router.delete('/benchmarks/:category/:cost_family', adminOnly, async (req, res, 
 // ═══════════════════════════════════════════════════════════════════
 // POST /api/pricing/couture — calcul prix tenue couture
 // ═══════════════════════════════════════════════════════════════════
-router.post('/couture', async (req, res, next) => {
+router.post('/couture', ...adminOnly, async (req, res, next) => {
   try {
     const { fabric_id, model_id, qty = 1, is_diaspora = false } = req.body;
     if (!fabric_id || !model_id) return res.status(400).json({ error: 'fabric_id et model_id requis' });
@@ -186,7 +186,7 @@ router.post('/couture', async (req, res, next) => {
 // ═══════════════════════════════════════════════════════════════════
 // GET /api/pricing/rates — taux actuels
 // ═══════════════════════════════════════════════════════════════════
-router.get('/rates', authenticate, async (req, res, next) => {
+router.get('/rates', ...adminOnly, async (req, res, next) => {
   try {
     res.json(await pricingRates.getCurrentRates());
   } catch (e) { next(e); }
@@ -207,7 +207,7 @@ router.put('/rates', ...adminOnly, async (req, res, next) => {
 // ═══════════════════════════════════════════════════════════════════
 // POST /api/pricing/recommend — prix recommandé ADR-011 (3 niveaux)
 // ═══════════════════════════════════════════════════════════════════
-router.post('/recommend', authenticate, async (req, res, next) => {
+router.post('/recommend', ...adminOnly, async (req, res, next) => {
   try {
     res.json(await pricingRecommend.computeRecommend(req.body));
   } catch (e) { handleServiceError(e, res, next); }
@@ -216,7 +216,7 @@ router.post('/recommend', authenticate, async (req, res, next) => {
 // ═══════════════════════════════════════════════════════════════════
 // POST /api/pricing/recommend-batch — batch tous les produits actifs
 // ═══════════════════════════════════════════════════════════════════
-router.post('/recommend-batch', authenticate, async (req, res, next) => {
+router.post('/recommend-batch', ...adminOnly, async (req, res, next) => {
   try {
     res.json(await pricingRecommend.computeRecommendBatch(req.body));
   } catch (e) { handleServiceError(e, res, next); }
@@ -256,7 +256,7 @@ router.put('/apply-all', ...adminOnly, async (req, res, next) => {
 // ═══════════════════════════════════════════════════════════════════
 // GET /api/pricing/benchmarks-gap — gap benchmark vs config actuelle
 // ═══════════════════════════════════════════════════════════════════
-router.get('/benchmarks-gap', authenticate, async (req, res, next) => {
+router.get('/benchmarks-gap', ...adminOnly, async (req, res, next) => {
   try {
     res.json(await pricingDashboard.computeBenchmarksGap(req.query));
   } catch (e) { next(e); }
@@ -265,7 +265,7 @@ router.get('/benchmarks-gap', authenticate, async (req, res, next) => {
 // ═══════════════════════════════════════════════════════════════════
 // GET /api/pricing/dashboard — vue de pilotage pricing
 // ═══════════════════════════════════════════════════════════════════
-router.get('/dashboard', authenticate, async (req, res, next) => {
+router.get('/dashboard', ...adminOnly, async (req, res, next) => {
   try {
     res.json(await pricingDashboard.computeDashboard());
   } catch (e) { next(e); }
