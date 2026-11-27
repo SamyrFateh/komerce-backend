@@ -21,3 +21,6 @@ Relecture de main d93ac41f, arbre Git non tronqué. Le registre DASHBOARDS_360.j
 
 ## Finance — convergence ECO
 La synthèse Finance consomme `economic_period_result` via les mêmes lectures métier protégées que Pilotage/Prix & économie, pour le mois civil UTC courant, indépendant du filtre de commandes. Résultat EUR groupe / devise marché, aucun repli sur la marge historique. Diagnostics par commande conservés et explicitement distingués. Le registre de garde cash reste distinct. Cette étape ne reconstitue pas les flux historiques natifs, ne certifie pas staging et ne clôt pas l'inventaire exhaustif des consommateurs.
+
+## Finance — devise des diagnostics commandes
+Les KPI et détails historiques de Finance sont projetés en EUR groupe / devise marché par lot FX unique ; source KMF préservée, champs affichés explicites, zéro distinct de null. Les flux du journal, paiements fournisseurs natifs et résultat ECO déjà projeté ne sont pas retraités. Le rendu annonce la base de projection ; aucune prétention de reconstitution historique native. Les autres workspaces et la certification staging restent à vérifier.

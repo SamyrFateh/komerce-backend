@@ -543,3 +543,15 @@ test('Finance → Commande 360 : le lien d’une commande ouvre la section Coût
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/finance-decision.js'), 'utf8');
   expect(src).toContain("base.contextualHref(`/admin/orders/${encodeURIComponent(reference)}#couts`, returnTo, 'Retour à Finance')");
 });
+
+test('Finance display uses explicit currency and never reuses a KMF fact when projection is unavailable', () => {
+  expect(finance.metricValue({ unit: 'XAF', value: 100 })).toBe('100 XAF');
+  expect(finance.metricValue({ unit: 'KMF', value: 100, display: { unit: 'EUR', value: '0.20' } })).toBe('0,2 EUR');
+  expect(finance.metricValue({ unit: 'KMF', value: 100, display: { unit: 'EUR', value: null } })).toBe('—');
+  const row = { amount_kmf: 100, display_amounts: { currency: 'XAF', values: { amount_kmf: '0' } } };
+  expect(finance.displayAmount(row, 'amount_kmf')).toBe('0 XAF');
+  row.display_amounts.values.amount_kmf = '-2';
+  expect(finance.displayAmount(row, 'amount_kmf', true)).toBe('-2 XAF');
+  row.display_amounts.values.amount_kmf = null;
+  expect(finance.displayAmount(row, 'amount_kmf')).toBe('—');
+});
