@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*, services/cost-allocation/real-margin-shadow.js, services/cost-allocation/product-margin-steering.js
+ * @depends       db.js, middleware/auth.js, services/*, services/cost-allocation/real-margin-shadow.js, services/cost-allocation/product-margin-steering.js, services/economic-sku-rail-selection.js, middleware/require-pricing-global-authority.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       customs_shipments, finance_config, markets, order_item_cost_imputations, order_item_real_cost_allocations, order_items, orders, parcels, products, refunds, purchase_lines, relais, supplier_execution_payments
  * @db-write      finance_config
@@ -51,9 +51,14 @@ const { realActivityByOrderIdSql, assignOrderSimulationScope } = require('../ser
 const costAllocation = require('../services/cost-allocation');
 const manualCostEntry = require('../services/cost-allocation/manual-cost-entry-service');
 const realMarginShadow = require('../services/cost-allocation/real-margin-shadow');
+const fxAuthority = require('../services/fx-authority');
 const productMarginSteering = require('../services/cost-allocation/product-margin-steering');
+const localStockLots = require('../services/cost-allocation/local-stock-economic-lots');
+const { recordSkuRailSelection } = require('../services/economic-sku-rail-selection');
+const { hasPricingGlobalAuthority } = require('../middleware/require-pricing-global-authority');
+const { resolveReadScope } = require('../middleware/require-market-delegated-capability');
 const dashboardCache = require('../services/dashboard-cache');
-const { authenticate, requireAdmin } = require('../middleware/auth');
+const { authenticate, requireAdmin, requireRole } = require('../middleware/auth');
 const log = require('../utils/logger').child({ module: 'admin-costing' });
 
 const router = express.Router();
@@ -714,23 +719,114 @@ router.get('/real-margin-shadow', authenticate, requireAdmin, async (req, res, n
   }
 });
 
-// Pilotage par la marge, par produit (lecture seule ; aucun prix modifié, aucun blocage).
-router.get('/products/margin-steering', authenticate, requireAdmin, async (req, res, next) => {
+// Explicit local financial closure; never mutates stock, prices or market permissions.
+router.get('/local-stock/receipt-lots', authenticate, requireAdmin, async (req,res,next)=>{
   try {
+    const marketId=await localStockLots.marketForCode(db,req.query.market_code);
+    res.set('Cache-Control','private, no-store');
+    res.json(await localStockLots.list(db,marketId));
+  } catch(e) { if(e.status) return res.status(e.status).json({code:e.code,error:e.message}); next(e); }
+});
+function localLotCommand(action) {
+  return async(req,res,next)=>{
+    let client;
+    try {
+      client=await db.getClient();
+      await client.query('BEGIN');
+      const marketId=await localStockLots.marketForCode(client,req.body?.market_code);
+      const result=await localStockLots[action](client,{
+        marketId,receiptId:req.body?.receipt_id,actorId:req.user.id,
+        purchaseTotalKmf:req.body?.purchase_total_kmf,paymentProofRef:req.body?.payment_proof_ref,
+        orderItemId:req.body?.order_item_id,lotProofRef:req.body?.lot_proof_ref,quantity:req.body?.quantity ?? null,
+      });
+      await client.query('COMMIT');
+      res.json(result);
+    } catch(e) {
+      if(client) await client.query('ROLLBACK').catch(()=>{});
+      if(e.status) return res.status(e.status).json({code:e.code,error:e.message});
+      next(e);
+    } finally { if(client) client.release(); }
+  };
+}
+router.post('/local-stock/receipt-lots/close', authenticate, requireAdmin, localLotCommand('close'));
+router.post('/local-stock/receipt-lots/link', authenticate, requireAdmin, localLotCommand('link'));
+
+// Pilotage par la marge, par produit (lecture seule ; aucun prix modifié, aucun blocage).
+router.get('/products/margin-steering', authenticate, requireRole(['admin', 'market_operator']), async (req, res, next) => {
+  try {
+    const scope = await resolveReadScope(req, 'finance.read');
+    let currency;
     let marketId = req.query.market_id ? String(req.query.market_id) : null;
     if (!marketId && req.query.market_code) {
-      const { rows: [m] } = await db.query('SELECT id FROM markets WHERE code = $1', [String(req.query.market_code).toUpperCase()]);
+      const { rows: [m] } = await db.query('SELECT id, currency FROM markets WHERE code = $1', [String(req.query.market_code).toUpperCase()]);
       marketId = m ? m.id : null;
+      currency = m?.currency;
     }
     if (!marketId || !_UUID_RE.test(marketId)) return res.status(400).json({ error: 'market_id (uuid) ou market_code requis' });
+    if (scope && !scope.includes(marketId)) return res.status(403).json({ code: 'MARKET_READ_CAPABILITY_REQUIRED' });
     const productId = req.query.product_id ? String(req.query.product_id) : null;
     if (productId && !_UUID_RE.test(productId)) return res.status(400).json({ error: 'product_id invalide' });
     const result = await productMarginSteering.listProductMarginSteering({
-      marketId, productId, sinceDays: req.query.since_days, limit: req.query.limit,
+      marketId, productId, sinceDays: req.query.since_days, limit: req.query.limit, includeObservedCost: true,
     });
+    if (!currency && result.products.some(product => product.observed_landed_cost?.length)) {
+      const { rows: [market] } = await db.query('SELECT currency FROM markets WHERE id = $1', [marketId]);
+      currency = market?.currency;
+    }
+    if (currency && currency !== 'KMF') {
+      const equivalents = new Map();
+      const convert = amount => {
+        if (amount == null) return null;
+        if (!equivalents.has(amount)) equivalents.set(amount, fxAuthority.convert({ amount, from: 'KMF', to: currency })
+          .then(value => value.amount_text)
+          .catch(error => {
+            if (error instanceof fxAuthority.FxError && ['fx_rate_unavailable', 'fx_currency_unsupported'].includes(error.code)) return null;
+            throw error;
+          }));
+        return equivalents.get(amount);
+      };
+      for (const product of result.products) {
+        for (const cost of product.observed_landed_cost || []) {
+          cost.display_currency = currency;
+          cost.unit_cost_local = await convert(cost.unit_cost_kmf);
+          cost.estimated_unit_cost_local = await convert(cost.estimated_unit_cost_kmf);
+        }
+      }
+    }
+    res.set('Cache-Control', 'private, no-store');
+    if (scope) {
+      return res.json({
+        market_id: result.market_id,
+        truncated: result.truncated,
+        products: result.products.map(({ product_id, product_name, observed_landed_cost }) => ({
+          product_id, product_name, observed_landed_cost,
+        })),
+      });
+    }
     res.json(result);
   } catch (err) {
+    if (err.status === 403) return res.status(403).json({ code: err.code });
     next(err);
+  }
+});
+
+router.post('/products/:productId/sku-rail-selection', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    if (!await hasPricingGlobalAuthority(req.user.id)) {
+      return res.status(403).json({ code: 'ECONOMIC_SELECTION_AUTHORITY_REQUIRED' });
+    }
+    const { market_id: marketId, sku_id: skuId, rail, action, reason } = req.body || {};
+    const { productId } = req.params;
+    if (![marketId, productId, skuId].every((value) => typeof value === 'string' && _UUID_RE.test(value))) {
+      return res.status(400).json({ code: 'ECONOMIC_SELECTION_INVALID', error: 'Marché, produit et variante requis.' });
+    }
+    const result = await recordSkuRailSelection({ marketId, productId, skuId, rail, action, reason, actorId: req.user.id });
+    return res.status(result.outcome === 'replayed' ? 200 : 201).json(result);
+  } catch (error) {
+    if (/^ECONOMIC_SELECTION_/.test(error.code || '')) {
+      return res.status(error.status).json({ code: error.code, error: error.message });
+    }
+    return next(error);
   }
 });
 

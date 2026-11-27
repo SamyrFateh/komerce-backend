@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-26T14:29:05.204Z",
+  "generatedAt": "2026-11-27T08:59:51.391Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 875,
-    "protected": 816,
+    "total": 899,
+    "protected": 840,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -557,6 +557,27 @@
       ]
     },
     {
+      "key": "POST /api/admin/costing/local-stock/receipt-lots/close",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/costing/local-stock/receipt-lots/link",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/costing/local-stock/receipt-lots",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
       "key": "POST /api/admin/costing/monthly-fixed/{yearMonth}",
       "level": "PROTECTED",
       "roles": [
@@ -620,10 +641,18 @@
       ]
     },
     {
-      "key": "GET /api/admin/costing/products/margin-steering",
+      "key": "POST /api/admin/costing/products/{productId}/sku-rail-selection",
       "level": "PROTECTED",
       "roles": [
         "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/costing/products/margin-steering",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "market_operator"
       ]
     },
     {
@@ -1298,6 +1327,30 @@
       "level": "PROTECTED",
       "roles": [
         "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/market-settlements/markets/{marketCode}/hub-invoices/{invoiceId}/payment",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance"
+      ]
+    },
+    {
+      "key": "GET /api/admin/market-settlements/markets/{marketCode}/hub-invoices",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance"
+      ]
+    },
+    {
+      "key": "POST /api/admin/market-settlements/markets/{marketCode}/hub-invoices",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance"
       ]
     },
     {
@@ -2656,6 +2709,53 @@
       ]
     },
     {
+      "key": "POST /api/admin/workspaces/pricing/cost-centers/close-period",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/cost-centers/commitments/{commitmentId}/movements",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/cost-centers/families/{familyId}/posts",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/cost-centers/initialize",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/cost-centers/posts/{postId}/actuals",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/cost-centers/posts/{postId}/budget-revisions",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/cost-centers/posts/{postId}/commitments",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/cost-centers/references",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/admin/workspaces/pricing/cost-centers",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
       "key": "POST /api/admin/workspaces/pricing/cost-components/{key}/toggle",
       "level": "PROTECTED",
       "roles": []
@@ -2691,6 +2791,46 @@
     },
     {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/corridor",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/commitments/{commitmentId}/movements",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/families/{familyId}/posts",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/initialize",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/posts/{postId}/actuals",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/posts/{postId}/budget-revisions",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/posts/{postId}/commitments",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/references",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/cost-centers",
       "level": "PROTECTED",
       "roles": []
     },

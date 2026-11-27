@@ -103,6 +103,7 @@ const CI_ONLY = Object.freeze({
   'scripts/integration-impact-scope.js': 'calcule le rayon integration du job from-scratch ; la preuve s’exécute en CI sur la DB éphémère',
   'scripts/run-integration-tests.js': 'runner des preuves integration sur PostgreSQL éphémère (job from-scratch)',
   'test:integration': 'exige un PostgreSQL reconstruit (job from-scratch)',
+  'tests/integration/economic-cost-center-api-postgres.test.js': 'preuve HTTP/PostgreSQL ECO dédiée, exige une base PostgreSQL jetable recréée par le job from-scratch et ECO_DISPOSABLE_PG_PROOF=1 ; jamais sur une base partagée',
   'scripts/e2e-impact-scope.js': 'exige un PostgreSQL reconstruit (job from-scratch)',
   'scripts/run-e2e-feature-tests.js': 'exige un PostgreSQL reconstruit (job from-scratch)',
   'test:e2e:features': 'exige un PostgreSQL reconstruit (job from-scratch)',

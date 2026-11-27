@@ -13,18 +13,19 @@ const code = js.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 describe('Mon Market — projections en lecture seule (S-3)', () => {
   test('la page Autonomie charge le script externe (CSP-safe) après le module Règlements', () => {
     const html = read('public/dashboards/canonical/market-autonomy.html');
-    expect(html).toMatch(/market-settlement\.js\?v=261126-canon-market-4"><\/script>\s*<script src="\/dashboards\/canonical\/js\/market-readonly-views\.js\?v=261126-canon-market-config-1"><\/script>/);
+    expect(html).toMatch(/market-settlement\.js\?v=261126-canon-market-4"><\/script>\s*<script src="\/dashboards\/canonical\/js\/market-readonly-views\.js\?v=[a-z0-9-]+"><\/script>/);
     expect(html).not.toMatch(/<script(?![^>]*\bsrc=)[^>]*>/i);
   });
 
-  test('consomme les projections existantes, jamais d’écriture ni de Market ID navigateur', () => {
+  test('consomme les projections existantes et réserve les commandes Hub à la finance centrale', () => {
     for (const p of ['performance', 'cost-statement', 'customs-shipments', 'payment-accounts', 'config']) {
       expect(code).toContain(`path: '${p}'`);
     }
     expect(code).toContain('/api/market-delegation/markets/${encodeURIComponent(marketCode)}/${view.path}');
-    expect(code).toContain("method: 'GET'");
-    expect(code).not.toMatch(/method:\s*'(POST|PUT|PATCH|DELETE)'/);
-    expect(code).not.toMatch(/createElement\('(button|input|form|select|textarea)'\)|innerHTML|body:/);
+    expect(code).toContain("method: payload ? 'POST' : 'GET'");
+    expect(code).toContain('if (!centralFinance) return');
+    expect(code).toContain('/api/admin/market-settlements/markets/');
+    expect(code).not.toMatch(/innerHTML/);
     expect(code).not.toMatch(/market_id|marketId/);
     expect(code).toContain('contract.resolveExplicitMarket(context, search).marketCode');
   });

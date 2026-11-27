@@ -35,6 +35,713 @@
     return node;
   }
 
+  // V7 consultation reads the persistent server model; no business math.
+  function v7Money(value, currency = 'EUR') {
+    if (typeof value !== 'string' || !(/^-?\d+(?:\.\d+)?$/).test(value)) return 'Non disponible';
+    const [integer, fraction=''] = value.split('.');
+    const grouped=integer.replace(/\B(?=(\d{3})+(?!\d))/g,'\u202f');
+    const decimals=currency==='EUR'?fraction.slice(0,2).padEnd(2,'0'):fraction.replace(/0+$/,'');
+    return grouped+(decimals?','+decimals:'')+' '+currency;
+  }
+
+  function canCost(model,action){return model?.central===true||model?.costCapabilities?.[action]===true;}
+
+  function createV7CostCenters(doc, model, actions={}) {
+    const host=el(doc,'section','kmc-v7-centers');
+    host.dataset.v7Centers='';
+    const state=actions.centerState||{centerId:null,familyId:null,postId:null};
+    const centers=Array.isArray(model?.centers)?model.centers:[];
+    const families=Array.isArray(model?.families)?model.families:[];
+    const posts=Array.isArray(model?.posts)?model.posts:[];
+    const resources=Array.isArray(model?.resources)?model.resources:[];
+    function button(label,handler,className='kmc-v7-action'){
+      const node=el(doc,'button',className,label);node.type='button';node.addEventListener('click',handler);return node;
+    }
+    function metric(label,value){
+      const node=el(doc,'div','kmc-v7-metric');
+      node.append(el(doc,'span','',label),el(doc,'strong','',value));return node;
+    }
+    function budgetText(summary){
+      if(!summary)return 'Non disponible';
+      if(summary.totalEur!=null)return v7Money(summary.totalEur);
+      return summary.recordedEur==null?'Non renseigné':v7Money(summary.recordedEur)+' · partiel ('+summary.coveredPosts+'/'+summary.totalPosts+')';
+    }
+    function commitmentTotal(summary){
+      if(!summary)return 'À rapprocher';
+      if(summary.totalEur!=null)return v7Money(summary.totalEur);
+      return summary.recordedEur==null?'À rapprocher':v7Money(summary.recordedEur)+' · partiel ('+summary.coveredCommitments+'/'+summary.totalCommitments+')';
+    }
+    function structureText(evidence){
+      if(evidence?.amountEur!=null)return v7Money(evidence.amountEur,'EUR')+' · structure partielle';
+      return evidence?.amountKmf!=null?v7Money(evidence.amountKmf,'KMF')+' · structure partielle (EUR indisponible)':'À rapprocher';
+    }
+    function balanceText(balance){return balance?.recordedAvailableEur!=null?v7Money(balance.recordedAvailableEur)+' · sur faits enregistrés':'Non calculable';}
+    function metrics(summary,commitments,evidence,balance){
+      const row=el(doc,'div','kmc-v7-kpis');
+      row.append(metric('Budget enregistré (EUR)',budgetText(summary)),metric('Engagements ouverts (EUR)',commitmentTotal(commitments)),
+        metric('Charges constatées',structureText(evidence)),metric('Disponible',balanceText(balance)));return row;
+    }
+    function commitmentText(p){
+      const list=p.commitments||[];
+      if(!list.length)return 'Aucun engagement enregistré';
+      return list.map(k=>v7Money(k.remaining_native,k.currency)+(k.requires_reconciliation?' · correction à rapprocher':'')).join(' ; ');
+    }
+    function render(){
+      host.replaceChildren();
+      const center=centers.find(c=>c.id===state.centerId);
+      const heading=el(doc,'div','kmc-v7-heading');
+      heading.append(el(doc,'h3','',center?center.label:'Centres de coûts'),
+        el(doc,'p','',model?.scope==='GROUP'?'Centres groupe · '+(model.periodStart||''):('Marché '+(model?.marketCode||'')+' · '+(model?.periodStart||''))));
+      if(center)heading.append(button('Tous les centres',()=>{state.centerId=null;state.familyId=null;state.postId=null;render();}));
+      host.append(heading,metrics(center?center.budgetSummary:model?.budgetSummary,center?center.commitmentSummary:model?.commitmentSummary,center?center.structureEvidence:model?.structureEvidence,center?center.recordedBalance:model?.recordedBalance));
+      if(!center){
+        if(canCost(model,'reference')&&typeof actions.initializeReferences==='function'){
+          const feedback=el(doc,'p','kmc-v7-coverage');feedback.setAttribute('role','status');
+          const initialize=button('Initialiser les centres et familles',async()=>{
+            initialize.disabled=true;
+            try{await actions.initializeReferences();}catch(e){feedback.textContent=e.message||'Initialisation refusée.';}finally{initialize.disabled=false;}
+          });
+          host.append(initialize,feedback);
+          if(typeof actions.configureReference==='function')host.append(createV7ReferenceForm(doc,model,null,'CENTER',actions));
+        }
+        const overBudget=centers.filter(c=>c.recordedBalance?.status==='RECORDED_OVER_BUDGET');
+        if(!overBudget.length)state.onlyOverBudget=false;
+        if(overBudget.length){
+          host.append(button(state.onlyOverBudget?'Tous les centres':'Centres en écart',()=>{
+            state.onlyOverBudget=!state.onlyOverBudget;
+            render();
+          }));
+        }
+        const grid=el(doc,'div','kmc-v7-center-grid');
+        for(const c of state.onlyOverBudget?overBudget:centers){
+          const card=el(doc,'article','kmc-v7-center-card');
+          card.append(el(doc,'h4','',c.label),el(doc,'p','',c.is_active?'Centre actif':'Centre à configurer'),
+            metric('Charges constatées',structureText(c.structureEvidence)),metric('Budget enregistré (EUR)',budgetText(c.budgetSummary)),metric('Engagements ouverts (EUR)',commitmentTotal(c.commitmentSummary)),
+            metric('Disponible',balanceText(c.recordedBalance)),el(doc,'p','kmc-v7-coverage',c.recordedBalance?.status==='RECORDED_OVER_BUDGET'?'Écart sur faits enregistrés':'Couverture économique non rapprochée'));
+          card.append(button('Consulter',()=>{state.centerId=c.id;state.familyId=null;state.postId=null;render();}));
+          grid.append(card);
+        }
+        if(!centers.length)grid.append(el(doc,'p','kmc-v7-empty','Aucun centre enregistré dans ce périmètre.'));
+        host.append(grid);return;
+      }
+      host.append(metric('Responsable',center.responsible_label||'Non renseigné'));
+      if(canCost(model,'reference')&&typeof actions.configureReference==='function')for(const kind of ['FAMILY','RESOURCE','RESPONSIBLE'])host.append(createV7ReferenceForm(doc,model,center,kind,actions));
+      const fs=families.filter(f=>f.center_id===center.id);
+      const family=fs.find(f=>f.id===state.familyId)||fs[0];
+      state.familyId=family?.id||null;
+      const selectors=el(doc,'div','kmc-v7-families');
+      for(const f of fs){
+        const btn=button(f.label,()=>{state.familyId=f.id;state.postId=null;render();},'kmc-v7-family');
+        btn.setAttribute('aria-pressed',String(f.id===state.familyId));selectors.append(btn);
+      }
+      host.append(selectors);
+      if(!family){host.append(el(doc,'p','kmc-v7-empty','Aucune famille enregistrée.'));return;}
+      const ps=posts.filter(p=>p.center_id===center.id&&p.family_id===family.id);
+      const table=el(doc,'table','kmc-v7-posts');
+      const head=el(doc,'thead',''), hr=el(doc,'tr','');
+      for(const label of ['Poste','Budget','Engagement restant','Réel','Situation']){
+        const th=el(doc,'th','',label);th.scope='col';hr.append(th);
+      }
+      head.append(hr);table.append(head);
+      const body=el(doc,'tbody','');
+      for(const p of ps){
+        const tr=el(doc,'tr',''),cell=el(doc,'td','');
+        cell.append(button(p.label,()=>{state.postId=p.id;render();},'kmc-v7-post-button'));
+        tr.append(cell,el(doc,'td','',p.budget?v7Money(p.budget.native,p.budget.currency):'Non renseigné'),
+          el(doc,'td','',commitmentText(p)),el(doc,'td','',structureText(p.structureEvidence)),el(doc,'td','',p.recordedBalance?.status==='RECORDED_OVER_BUDGET'?'Écart enregistré':p.recordedBalance?.recordedAvailableEur!=null?balanceText(p.recordedBalance):'Non décisionnel'));
+        body.append(tr);
+      }
+      table.append(body);host.append(table);
+      if(canCost(model,'reference')&&typeof actions.createPost==='function')host.append(createV7PostForm(doc,model,family,resources.filter(r=>r.center_id===center.id),actions));
+      if(!ps.length)host.append(el(doc,'p','kmc-v7-empty','Aucun poste dans cette famille.'));
+      const post=ps.find(p=>p.id===state.postId);
+      if(post){
+        const detail=el(doc,'section','kmc-v7-post-detail');
+        const resource=resources.find(r=>r.id===post.resource_id&&r.center_id===center.id);
+        detail.append(el(doc,'h4','',post.label),metric('Ressource',resource?.label||'Non renseignée'),
+          metric('Nature',({FIXED:'Fixe',VARIABLE:'Variable',MIXED:'Mixte'})[post.economic_nature]||'À qualifier'),
+          metric('Périmètre',({DIRECT:'Direct',MUTUALIZED:'Mutualisé'})[post.allocation_perimeter]||'À qualifier'),
+          metric('Clé d’imputation',post.allocation_basis||'Non renseignée'),
+          metric('Budget',post.budget?v7Money(post.budget.native,post.budget.currency):'Non renseigné'),
+          metric('Engagements',commitmentText(post)),metric('Charges constatées',structureText(post.structureEvidence)),metric('Disponible',balanceText(post.recordedBalance)),
+          button('Fermer le détail',()=>{state.postId=null;render();}));
+        if(canCost(model,'budget')&&typeof actions.reviseBudget==='function')detail.append(createV7BudgetForm(doc,model,post,actions));
+        if((canCost(model,'commitment')||canCost(model,'actual'))&&typeof actions.openCommitment==='function'&&typeof actions.moveCommitment==='function')detail.append(createV7CommitmentForms(doc,model,post,actions));
+        host.append(detail);
+      }
+    }
+    render();return host;
+  }
+
+  function createV7ReferenceForm(doc,model,center,kind,actions){
+    const labels={CENTER:'Ajouter un centre',FAMILY:'Ajouter une famille',RESOURCE:'Ajouter une ressource',RESPONSIBLE:'Affecter le responsable'};
+    const details=el(doc,'details','kmc-v7-commitment'),form=el(doc,'form','kmc-v7-budget-form');
+    details.append(el(doc,'summary','',labels[kind]),form);
+    function field(label,name,choices){
+      const wrap=el(doc,'label','kmc-v7-metric',label),input=el(doc,choices?'select':'input','');
+      input.name=name;input.required=true;
+      if(choices){for(const [v,t] of choices){const option=el(doc,'option','',t);option.value=v;input.append(option);}input.value=choices[0][0];}
+      wrap.append(input);form.append(wrap);return input;
+    }
+    const fields={};
+    if(kind==='RESPONSIBLE'){
+      fields.responsibleUserId=field('Responsable','responsibleUserId',[['','Non affecté'],...(model.responsibleCandidates||[]).map(u=>[u.id,u.label||'Responsable'])]);
+      fields.responsibleUserId.required=false;fields.responsibleUserId.value=center.responsible_user_id||'';
+    }else{
+      fields.code=field('Code','code');fields.label=field('Libellé','label');
+      if(kind==='RESOURCE')fields.resourceKind=field('Nature','resourceKind');
+    }
+    fields.reason=field('Motif','reason');
+    const submit=el(doc,'button','kmc-v7-action','Enregistrer'),feedback=el(doc,'p','kmc-v7-coverage');
+    submit.type='submit';feedback.setAttribute('role','status');form.append(submit,feedback);
+    let busy=false;
+    form.addEventListener('submit',async e=>{
+      e.preventDefault();if(busy)return;
+      const body={kind,centerId:center?.id||null,reason:fields.reason.value.trim()};
+      if(kind==='RESPONSIBLE'){
+        body.responsibleUserId=fields.responsibleUserId.value||null;body.expectedResponsibleUserId=center.responsible_user_id||null;
+      }else{
+        body.code=fields.code.value.trim().toUpperCase();body.label=fields.label.value.trim();
+        if(kind==='RESOURCE')body.resourceKind=fields.resourceKind.value.trim();
+        if(!/^[A-Z][A-Z0-9_]{1,63}$/.test(body.code)||!body.label||(kind==='RESOURCE'&&!body.resourceKind)){feedback.textContent='Référence invalide.';return;}
+      }
+      if(body.reason.length<3){feedback.textContent='Motif obligatoire.';return;}
+      busy=true;submit.disabled=true;
+      try{await actions.configureReference(body);}catch(error){feedback.textContent=error.message||'Opération refusée.';}finally{busy=false;submit.disabled=false;}
+    });
+    return details;
+  }
+
+  function createV7PostForm(doc,model,family,resources,actions){
+    const details=el(doc,'details','kmc-v7-commitment'),form=el(doc,'form','kmc-v7-budget-form');
+    details.append(el(doc,'summary','','Ajouter un poste'),form);
+    function field(label,name,choices){
+      const wrap=el(doc,'label','kmc-v7-metric',label),input=el(doc,choices?'select':'input','');
+      input.name=name;input.required=true;
+      if(choices)for(const [value,title] of choices){const option=el(doc,'option','',title);option.value=value;input.append(option);}
+      if(choices)input.value=choices[0][0];
+      wrap.append(input);form.append(wrap);return input;
+    }
+    const label=field('Libellé','label'),code=field('Code','code'),nature=field('Nature','economicNature',[['FIXED','Fixe'],['VARIABLE','Variable'],['MIXED','Mixte']]);
+    const perimeter=field('Attribution','allocationPerimeter',model.scope==='GROUP'?[['MUTUALIZED','Mutualisé'],['DIRECT','Direct']]:[['DIRECT','Direct'],['MUTUALIZED','Mutualisé']]);
+    const basis=field('Clé d’imputation','allocationBasis');
+    const source=field('Source du réel','source',[['CANONICAL_SOURCE','Source métier propriétaire (pas de ressaisie)'],['STRUCTURE','Journal des charges de structure']]);
+    const resource=field('Ressource','resourceId',[['','Non renseignée'],...resources.map(r=>[r.id,r.label])]);resource.required=false;
+    const reason=field('Motif','reason'),submit=el(doc,'button','kmc-v7-action','Créer le poste'),feedback=el(doc,'p','kmc-v7-coverage');
+    submit.type='submit';feedback.setAttribute('role','status');form.append(submit,feedback);
+    let busy=false;
+    form.addEventListener('submit',async e=>{
+      e.preventDefault();if(busy)return;
+      const body={label:label.value.trim(),code:code.value.trim().toUpperCase(),economicNature:nature.value,allocationPerimeter:perimeter.value,allocationBasis:basis.value.trim(),source:source.value,resourceId:resource.value||null,reason:reason.value.trim()};
+      if(!/^[A-Z][A-Z0-9_]{1,63}$/.test(body.code)||body.label.length<3||!body.allocationBasis||body.reason.length<3){feedback.textContent='Libellé, code, clé ou motif invalide.';return;}
+      if(body.source==='STRUCTURE'&&(body.economicNature!=='FIXED'||body.allocationPerimeter!==(model.scope==='GROUP'?'MUTUALIZED':'DIRECT'))){feedback.textContent='La structure doit être fixe et respecter le périmètre du centre.';return;}
+      busy=true;submit.disabled=true;
+      try{await actions.createPost(family.id,body);feedback.textContent='Poste créé.';}catch(error){feedback.textContent=error.message||'Création refusée.';}finally{busy=false;submit.disabled=false;}
+    });
+    return details;
+  }
+
+  function createV7BudgetForm(doc,model,post,actions){
+    const form=el(doc,'form','kmc-v7-budget-form');
+    const heading=el(doc,'h4','','Réviser le budget du poste');
+    const field=(label,name,value,placeholder)=>{
+      const wrap=el(doc,'label','kmc-v7-metric',label);
+      const input=el(doc,'input','');input.name=name;input.value=value;input.placeholder=placeholder;input.required=true;
+      wrap.append(input);form.append(wrap);return input;
+    };
+    form.append(heading);
+    // Keep integer amounts intact; strip only insignificant fractional zeros.
+    const native=post.budget?.native||'';
+    const amount=field('Montant natif','amountNative',native.includes('.')?native.replace(/0+$/,'').replace(/\.$/,''):native,'0.00');
+    const currency=field('Devise ISO','currency',post.budget?.currency||'EUR','EUR');currency.maxLength=3;
+    const reason=field('Motif de la révision','reason','','Justification');
+    const submit=el(doc,'button','kmc-v7-action','Valider le budget');submit.type='submit';
+    const feedback=el(doc,'p','kmc-v7-coverage');feedback.setAttribute('role','status');
+    form.append(submit,feedback);
+    let key=null,fingerprint=null,busy=false;
+    form.addEventListener('submit',async event=>{
+      event.preventDefault();if(busy)return;
+      const body={periodStart:model.periodStart,expectedRevision:post.budget?.revision||0,currency:currency.value.trim().toUpperCase(),amountNative:amount.value.trim().replace(',','.'),reason:reason.value.trim()};
+      if(!/^(0|[1-9][0-9]{0,13})(\.[0-9]{1,4})?$/.test(body.amountNative)||!/^[A-Z]{3}$/.test(body.currency)||body.reason.length<3){feedback.textContent='Montant, devise ou motif invalide.';return;}
+      const nextFingerprint=JSON.stringify(body);
+      if(fingerprint!==nextFingerprint){key=null;fingerprint=nextFingerprint;}
+      if(!key){if(typeof globalThis.crypto?.randomUUID!=='function'){feedback.textContent='Identifiant de requête indisponible.';return;}key=globalThis.crypto.randomUUID();}
+      busy=true;submit.disabled=true;
+      try{await actions.reviseBudget(post.id,{...body,requestKey:key});feedback.textContent='Budget enregistré.';}
+      catch(error){feedback.textContent=error.message||'Révision refusée.';}
+      finally{busy=false;submit.disabled=false;}
+    });
+    return form;
+  }
+
+  function createV7CommitmentForms(doc,model,post,actions){
+    const section=el(doc,'section','kmc-v7-commitment-actions');
+    function operation(label,submitLabel,defaults,run,choices){
+      const form=el(doc,'form','kmc-v7-budget-form');
+      form.append(el(doc,'h4','',label));
+      function field(label,name,value,readOnly=false){
+        const wrap=el(doc,'label','kmc-v7-metric',label),input=el(doc,'input','');
+        input.name=name;input.value=value;input.required=true;input.readOnly=readOnly;wrap.append(input);form.append(wrap);return input;
+      }
+      const amount=field('Montant natif','amountNative',''),currency=field('Devise ISO','currency',defaults.currency||'EUR',Boolean(defaults.fixedCurrency));
+      currency.maxLength=3;
+      const evidence=field('Référence du justificatif','evidenceRef','');
+      let fact=null;
+      if(choices){
+        const wrap=el(doc,'label','kmc-v7-metric','Charge constatée à rapprocher');
+        fact=el(doc,'select','');fact.required=true;fact.name='structureEventId';
+        const empty=el(doc,'option','','Choisir une charge');empty.value='';fact.append(empty);
+        for(const row of choices){const option=el(doc,'option','',(row.evidenceRef||'Fait canonique')+' · '+v7Money(row.remainingNative,row.currency));option.value=row.id;fact.append(option);}
+        fact.value='';wrap.append(fact);form.append(wrap);
+      }
+      const submit=el(doc,'button','kmc-v7-action',submitLabel);submit.type='submit';
+      const feedback=el(doc,'p','kmc-v7-coverage');feedback.setAttribute('role','status');form.append(submit,feedback);
+      let key=null,fingerprint=null,busy=false;
+      form.addEventListener('submit',async e=>{
+        e.preventDefault();if(busy)return;
+        const body={periodStart:model.periodStart,amountNative:amount.value.trim().replace(',','.'),currency:currency.value.trim().toUpperCase(),evidenceRef:evidence.value.trim()};
+        if(fact)body.structureEventId=fact.value;
+        if(!/^(0|[1-9][0-9]{0,13})(\.[0-9]{1,4})?$/.test(body.amountNative)||!/[1-9]/.test(body.amountNative)||!/^[A-Z]{3}$/.test(body.currency)||body.evidenceRef.length<3||(fact&&!choices.some(f=>f.id===body.structureEventId))){feedback.textContent='Montant ou justificatif invalide.';return;}
+        const next=JSON.stringify(body);if(next!==fingerprint){key=null;fingerprint=next;}
+        if(!key){if(typeof globalThis.crypto?.randomUUID!=='function'){feedback.textContent='Identifiant de requête indisponible.';return;}key=globalThis.crypto.randomUUID();}
+        busy=true;submit.disabled=true;
+        try{await run({...body,requestKey:key});feedback.textContent='Opération enregistrée.';}catch(error){feedback.textContent=error.message||'Opération refusée.';}finally{busy=false;submit.disabled=false;}
+      });
+      return form;
+    }
+    if(canCost(model,'actual')&&post.acceptsStructureActual===true&&typeof actions.recordActual==='function'){
+      section.append(operation('Charge constatée','Enregistrer la charge',{currency:post.budget?.currency},({requestKey,...body})=>actions.recordActual(post.id,body)));
+    }else if(post.acceptsStructureActual===false){
+      section.append(el(doc,'p','kmc-v7-coverage','Réel alimenté par la source propriétaire ; aucune ressaisie.'));
+    }
+    if(!canCost(model,'commitment'))return section;
+    section.append(operation('Nouvel engagement','Enregistrer l’engagement',{currency:post.budget?.currency},body=>actions.openCommitment(post.id,body)));
+    for(const k of post.commitments||[]){
+      if(typeof k.remaining_native!=='string'||!/[1-9]/.test(k.remaining_native))continue;
+      const block=el(doc,'details','kmc-v7-commitment');
+      block.append(el(doc,'summary','',(k.evidence_ref||'Engagement')+' · reste '+v7Money(k.remaining_native,k.currency)));
+      if(k.requires_reconciliation)block.append(el(doc,'p','kmc-v7-coverage','Correction à rapprocher avant consommation.'));
+      block.append(operation('Libérer une partie','Libérer',{currency:k.currency,fixedCurrency:true},({currency,...body})=>actions.moveCommitment(k.id,{...body,kind:'RELEASE'})));
+      const facts=(post.eligibleStructureFacts||[]).filter(f=>f.currency===k.currency);
+      if(canCost(model,'consume')&&!k.requires_reconciliation&&facts.length)block.append(operation('Rapprocher une charge existante','Consommer l’engagement',{currency:k.currency,fixedCurrency:true},({currency,...body})=>actions.moveCommitment(k.id,{...body,kind:'CONSUME_STRUCTURE'}),facts));
+      section.append(block);
+    }
+    return section;
+  }
+
+  // V6 activity: display only server projections; no browser aggregation.
+  function createV6Activity(doc, model) {
+    const host=el(doc,'section','kmc-v7-centers kmc-v6-activity');
+    host.append(el(doc,'div','kmc-v7-heading','Activité'));
+    const a=model?.activity;
+    if(!a){host.append(el(doc,'p','kmc-v7-empty','Activité tous marchés non consolidée. Sélectionnez un marché autorisé.'));return host;}
+    const amount=x=>v7Money(x,'KMF');
+    const measure=(x,unit)=>typeof x==='string'?x.replace('.',',')+' '+unit:'Non disponible';
+    const count=x=>x==null?'Non disponible':String(x);
+    const coverage=(n,total)=>count(n)+' / '+count(total)+' expéditions';
+    function metric(label,value,sub){
+      const m=el(doc,'div','kmc-v7-metric');m.append(el(doc,'span','',label),el(doc,'strong','',value));
+      if(sub)m.append(el(doc,'small','kmc-v7-coverage',sub));return m;
+    }
+    const kpis=el(doc,'div','kmc-v7-kpis');
+    kpis.append(metric('Expéditions reçues',count(a.physicalClosedCount),count(a.financialClosedCount)+' clôturées financièrement'),
+      metric('Poids / volume',measure(a.weightKg??a.measuredWeightSubtotalKg,'kg'),measure(a.volumeM3??a.volumeSubtotalM3,'m³')+' · poids '+coverage(a.measuredWeightCount,a.physicalClosedCount)+' · volume renseigné '+coverage(a.volumeCoveredCount,a.physicalClosedCount)),
+      metric('Articles reçus / KOM-BOX',count(a.receivedArticles),count(a.expectedArticles)+' attendus · '+count(a.boxCount)+' KOM-BOX'),
+      metric('Fret + douane constatés',amount(a.freightCustomsSubtotalKmf),coverage(a.financialClosedCount,a.physicalClosedCount)));
+    host.append(kpis);
+    const panel=el(doc,'section','kmc-v6-panel');panel.append(el(doc,'h4','','Expéditions de la période'),el(doc,'p','kmc-v7-coverage','Cohorte par réception relais UTC · montants sources KMF · clôture financière distincte.'));
+    const table=el(doc,'table','kmc-v7-posts kmc-v6-shipments'),head=el(doc,'thead',''),hr=el(doc,'tr','');
+    for(const label of ['Référence / rail','Poids','Achats','Fret + douane','Coût transport/kg','Volume / articles','Clôture']){
+      const th=el(doc,'th','',label);th.scope='col';hr.append(th);
+    }
+    head.append(hr);table.append(head);
+    const body=el(doc,'tbody','');
+    for(const s of a.shipments||[]){
+      const row=el(doc,'tr','');
+      for(const value of [s.reference+' · '+({sea:'Maritime',air:'Aérien'}[s.rail]||'Rail non renseigné'),measure(s.weightKg,'kg'),amount(s.purchaseKmf),amount(s.freightCustomsKmf),amount(s.costPerKgKmf),measure(s.volumeM3,'m³')+' · '+count(s.receivedArticles)+' articles',s.financialStatus==='DOCUMENTED_CLOSED'?'Financièrement clôturée':'Financier à rapprocher'])row.append(el(doc,'td','',value));
+      body.append(row);
+    }
+    table.append(body);
+    const foot=el(doc,'tfoot',''),fr=el(doc,'tr','');
+    for(const value of ['Total / pondéré',measure(a.weightKg,'kg'),amount(a.purchaseKmf),amount(a.coverage==='TRANSPORT_DOCUMENTED'?a.freightCustomsSubtotalKmf:null),amount(a.costPerKgKmf),measure(a.volumeM3,'m³')+' · '+count(a.receivedArticles)+' articles',coverage(a.weightedShipmentCount,a.physicalClosedCount)])fr.append(el(doc,'td','',value));
+    foot.append(fr);table.append(foot);panel.append(table);
+    if(!(a.shipments||[]).length)panel.append(el(doc,'p','kmc-v7-empty','Aucune expédition attestée sur la période.'));
+    host.append(panel);
+    const cards=el(doc,'div','kmc-v7-center-grid'),rec=el(doc,'article','kmc-v6-panel'),variation=el(doc,'article','kmc-v6-panel');
+    const obs=a.purchaseTransportObservation||{};
+    rec.append(el(doc,'h4','','Rapprochement des coûts'),metric('Achats réels',amount(obs.purchaseKmf)),metric('Fret + douane',amount(obs.freightCustomsKmf)),metric('Autres frais de transport',amount(obs.otherTransportKmf)),metric('Sous-total documenté',amount(obs.documentedSubtotalKmf),coverage(obs.observations,a.physicalClosedCount)),metric('Coût complet de période',amount(obs.fullEconomicCostKmf),'Autres charges et imputations à rapprocher'));
+    variation.append(el(doc,'h4','','Variabilité du coût logistique/kg'),metric('Minimum',amount(a.minCostPerKgKmf)),metric('Maximum',amount(a.maxCostPerKgKmf)),metric('Pondéré',amount(a.costPerKgKmf),coverage(a.weightedShipmentCount,a.physicalClosedCount)),el(doc,'p','kmc-v7-coverage','Coût documenté / poids brut mesuré, sur la même cohorte.'));
+    cards.append(rec,variation);host.append(cards);return host;
+  }
+
+  // Only geometry is computed in the browser. All coefficient values and
+  // window totals are the authoritative server observations.
+  function createObservedCurve(doc,points){
+    if(typeof doc.createElementNS!=='function')return null;
+    const ns='http://www.w3.org/2000/svg',svg=doc.createElementNS(ns,'svg');
+    svg.setAttribute('viewBox','0 0 760 220');svg.setAttribute('role','img');
+    svg.setAttribute('aria-label','Courbes du coefficient partiel achat et transport ; valeurs détaillées dans le tableau.');
+    const series=[['monthly','#8795a1','5 4'],['cumulative','#157e78',''],['rolling3','#bd8b2f','']];
+    const value=(p,k)=>p[k]?.coefficient==null?null:Number(p[k].coefficient);
+    const all=points.flatMap(p=>series.map(([k])=>value(p,k))).filter(Number.isFinite);
+    if(!all.length)return null;
+    const low=Math.min(...all),high=Math.max(...all),span=Math.max(high-low,0.01),x=i=>40+i*680/Math.max(1,points.length-1),y=v=>170-(v-low)/span*140;
+    function elem(tag,attrs,content){
+      const n=doc.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,String(v));if(content!=null)n.textContent=content;svg.appendChild(n);return n;
+    }
+    elem('line',{x1:40,y1:170,x2:720,y2:170,stroke:'#dce3e9'});
+    elem('text',{x:4,y:26,fill:'#526577','font-size':11},high.toFixed(4));
+    elem('text',{x:4,y:168,fill:'#526577','font-size':11},low.toFixed(4));
+    points.forEach((p,i)=>elem('text',{x:x(i),y:196,'text-anchor':'middle',fill:'#526577','font-size':11},p.periodStart.slice(5,7)));
+    for(const [key,color,dash] of series){
+      let prev=null;points.forEach((p,i)=>{const v=value(p,key);if(!Number.isFinite(v)){prev=null;return;}
+        const point=[x(i),y(v)];if(prev)elem('line',{x1:prev[0],y1:prev[1],x2:point[0],y2:point[1],stroke:color,'stroke-width':2,'stroke-dasharray':dash});
+        elem('circle',{cx:point[0],cy:point[1],r:3,fill:color});prev=point;});
+    }
+    return svg;
+  }
+  function createObservedCostPanel(doc, load) {
+    const panel = el(doc, 'section', 'kmc-v6-panel');
+    const button = el(doc, 'button', 'kmc-v7-family', 'Afficher les prix de revient');
+    button.type = 'button';
+    const output = el(doc, 'div', '');
+    output.setAttribute('aria-live', 'polite');
+    panel.append(el(doc, 'h4', '', 'Prix de revient par SKU et rail'), button, output);
+    button.addEventListener('click', async () => {
+      if (button.disabled) return;
+      button.disabled = true;
+      output.textContent = 'Chargement…';
+      try {
+        const model = await load();
+        output.replaceChildren(el(doc, 'p', 'kmc-v7-coverage',
+          '90 derniers jours · 3 expéditions ou lots locaux clôturés admissibles pour un coefficient décisionnel.'));
+        const rows = model.products.flatMap(product => product.observed_landed_cost.map(cost => ({ ...cost, product })));
+        if (!rows.length) output.append(el(doc, 'p', 'kmc-v7-empty', 'Aucune observation admissible sur ce marché.'));
+        for (const cost of rows) {
+          const card = el(doc, 'div', 'kmc-v7-metric');
+          const rail = { sea: 'Maritime', air: 'Aérien', LOCAL_STOCK: 'Stock local' }[cost.rail] || cost.rail;
+          card.append(el(doc, 'strong', '', cost.product.product_name + ' · ' + (cost.sku_reference || cost.sku_id) + ' · ' + rail));
+          card.append(el(doc, 'span', '', 'Prix de revient réel : ' + v7Money(cost.unit_cost_kmf == null ? null : String(cost.unit_cost_kmf), 'KMF')));
+          card.append(el(doc, 'span', '', 'Estimé avant vente : ' + v7Money(cost.estimated_unit_cost_kmf == null ? null : String(cost.estimated_unit_cost_kmf), 'KMF')));
+          if (cost.display_currency) {
+            const actual = v7Money(cost.unit_cost_local, cost.display_currency);
+            const estimated = v7Money(cost.estimated_unit_cost_local, cost.display_currency);
+            card.append(el(doc, 'span', '', cost.display_currency + ' · réel : ' + actual + ' · estimé : ' + estimated));
+          }
+          if (cost.observed_multiplier != null) card.append(el(doc, 'span', '',
+            'Coefficient observé : × ' + new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 4 }).format(cost.observed_multiplier)));
+          const delta = cost.estimated_vs_real_pct;
+          card.append(el(doc, 'span', '', 'Écart réel / estimé : ' + (delta == null
+            ? 'Indisponible' : new Intl.NumberFormat('fr-FR', { style: 'percent', signDisplay: 'exceptZero', maximumFractionDigits: 2 }).format(delta / 100))));
+          const status = {
+            DECISIONAL: 'Décisionnel',
+            INSUFFICIENT_OBSERVATIONS: 'Indicatif — observations insuffisantes',
+            TRUNCATED: 'Indicatif — résultats tronqués',
+            PURCHASE_COST_UNAVAILABLE: 'Indicatif — achat non établi',
+          }[cost.status] || 'Indicatif — non certifié';
+          card.append(el(doc, 'small', 'kmc-v7-coverage', status + ' · ' + cost.observations + (cost.rail === 'LOCAL_STOCK' ? ' lot(s) · ' : ' expédition(s) · ') +
+            cost.incomplete_lines + ' ligne(s) incomplète(s) · ' + cost.provisional_lines + ' provisoire(s)'));
+          output.append(card);
+        }
+        if (model.truncated) output.append(el(doc, 'p', 'kmc-v7-coverage', 'Résultats tronqués. Coefficients indicatifs.'));
+      } catch (error) {
+        output.textContent = error.status === 403 ? 'Lecture des coûts non autorisée pour ce marché.' : 'Prix de revient indisponibles.';
+      } finally {
+        button.disabled = false;
+      }
+    });
+    return panel;
+  }
+
+  function createLocalLotPanel(doc, actions) {
+    const panel=el(doc,'section','kmc-v6-panel');
+    const load=el(doc,'button','kmc-v7-family','Rapprocher les lots locaux');
+    load.type='button';
+    const out=el(doc,'div','');out.setAttribute('aria-live','polite');
+    panel.append(el(doc,'h4','','Clôture des réceptions locales'),load,out);
+    async function refresh(){
+      load.disabled=true;
+      try {
+        const data=await actions.loadLocalLots();
+        out.replaceChildren();
+        const select=el(doc,'select');select.setAttribute('aria-label','Lot reçu');
+        const empty=el(doc,'option','','Choisir une réception SKU attestée');empty.value='';select.append(empty);
+        for(const row of data.receipts||[]){
+          const option=el(doc,'option','',row.product_name+' · '+row.sku_reference+' · '+row.receipt_proof_ref+' · '+row.linked_quantity+'/'+row.quantity);
+          option.value=row.receipt_id;select.append(option);
+        }
+        const detail=el(doc,'div','');
+        out.append(select,detail);
+        select.addEventListener('change',()=>{
+          detail.replaceChildren();
+          const receipt=data.receipts.find(row=>row.receipt_id===select.value);
+          if(!receipt)return;
+          const input=(name,placeholder,type='text')=>{const node=el(doc,'input');node.name=name;node.placeholder=placeholder;node.type=type;node.required=true;node.setAttribute('aria-label',placeholder);return node;};
+          const form=el(doc,'form','kmc-team-invite');
+          const submit=el(doc,'button','kmc-workspace-action',receipt.closed_at?'Rattacher la vente attestée':'Clôturer le coût d’achat du lot');
+          submit.type='submit';
+          const feedback=el(doc,'p','kmc-v7-coverage');
+          let body;
+          if(!receipt.closed_at){
+            const amount=input('purchase_total_kmf','Montant total réellement réglé (KMF)','number');amount.min='0';amount.step='0.01';
+            const proof=input('payment_proof_ref','Référence justificatif du règlement');
+            form.append(amount,proof);
+            body=()=>({purchase_total_kmf:amount.value,payment_proof_ref:proof.value});
+          }else{
+            detail.append(el(doc,'p','kmc-v7-coverage','Achat clôturé : '+receipt.purchase_total_kmf+' KMF. Rattacher uniquement une vente dont le lot est attesté.'));
+            const sale=el(doc,'select');sale.required=true;sale.setAttribute('aria-label','Vente du SKU');
+            for(const row of data.sales.filter(row=>row.sku_id===receipt.sku_id && Date.parse(row.sold_at)>=Date.parse(receipt.received_at))){
+              const option=el(doc,'option','',row.order_reference+' · '+row.remaining_quantity+' unité(s) à rattacher');option.value=row.order_item_id;sale.append(option);
+            }
+            const proof=input('lot_proof_ref','Justificatif du rattachement physique');
+            const qty=input('quantity','Quantité attestée de ce lot','number');qty.min='1';qty.step='1';
+            const setMax=()=>{const row=data.sales.find(row=>row.order_item_id===sale.value);qty.max=String(Math.min(Number(receipt.quantity)-Number(receipt.linked_quantity),Number(row?.remaining_quantity||0)));};
+            sale.addEventListener('change',setMax);setMax();
+            form.append(sale,qty,proof);
+            body=()=>({order_item_id:sale.value,quantity:Number(qty.value),lot_proof_ref:proof.value});
+          }
+          form.append(submit,feedback);
+          form.addEventListener('submit',async event=>{
+            event.preventDefault();submit.disabled=true;
+            try{await actions.writeLocalLot(receipt.receipt_id,receipt.closed_at?'link':'close',body());await refresh();}
+            catch(error){feedback.textContent=error.message||'Rapprochement refusé.';submit.disabled=false;}
+          });
+          detail.append(form);
+        });
+      } catch(error){out.textContent=error.message||'Lots indisponibles.';}
+      finally{load.disabled=false;}
+    }
+    load.addEventListener('click',refresh);
+    return panel;
+  }
+
+  function createV6Profitability(doc,model,actions){
+    const host=el(doc,'section','kmc-v7-centers kmc-v6-profitability'),data=model?.profitability;
+    const groupResult = data?.groupPeriodResult;
+    const closed = groupResult?.status === 'CLOSED';
+    const reopened = groupResult?.status === 'REOPENED';
+    const provisional = groupResult?.status === 'PROVISIONAL' || reopened;
+    host.append(el(doc,'h3','','Rentabilité'),el(doc,'p','kmc-v7-coverage',closed
+      ? 'Résultat définitif. Période validée par la Direction.'
+      : reopened ? 'Rapprochement rouvert après modification des preuves.'
+      : provisional
+      ? 'Résultat provisoire sur les faits documentés. Clôture Direction en attente.'
+      : 'Résultat économique non calculable : rapprochement des ventes, charges variables et structure à compléter.'));
+    if(actions?.loadObservedCost)host.append(createObservedCostPanel(doc,actions.loadObservedCost));
+    if(actions?.loadLocalLots && actions?.writeLocalLot)host.append(createLocalLotPanel(doc,actions));
+    if(!data){
+      const observation=model?.activity?.purchaseTransportObservation;
+      if(observation?.coefficient!=null)host.append(el(doc,'p','','Observation partielle achat + transport : '+observation.coefficient.replace('.',',')+' · non décisionnelle'));
+      return host;
+    }
+    const metric=(label,value,sub)=>{const n=el(doc,'div','kmc-v7-metric');n.append(el(doc,'span','',label),el(doc,'strong','',value));if(sub)n.append(el(doc,'small','kmc-v7-coverage',sub));return n;};
+    const fmt=v=>v==null?'Non disponible':String(v).replace('.',',');
+    const kpis=el(doc,'div','kmc-v7-kpis');
+    const sales=data.salesEvidence;
+    kpis.append(metric('Ventes nettes observées',v7Money(sales?.observedNetSalesKmf,'KMF'),sales?sales.coveredOrderCount+' / '+sales.paidOrderCount+' commandes payées · cohorte commandes du mois':'Non disponible'),metric('Contribution variable',v7Money(groupResult?.contributionKmf,'KMF')),metric('Résultat économique',v7Money(groupResult?.resultKmf,'KMF')),metric('Coefficient complet du mois','Non disponible'));
+    host.append(kpis);
+    if(sales)host.append(el(doc,'p','kmc-v7-coverage','Ventes : commandes créées au mois, avoirs wallet réintégrés, remboursements terminés déduits. '+sales.pendingRefundOrders+' commande(s) avec remboursement pendant ; '+sales.terminalExceptions+' exception(s) terminale(s) ; '+sales.invalidOrderCount+' montant(s) non rapproché(s). Cohorte distincte des expéditions, aucun résultat par soustraction.'));
+    const recognition = data.recognitionEvidence;
+    if (recognition) {
+      const events = el(doc,'div','kmc-v7-kpis');
+      events.append(
+        metric('Articles remis avec preuve',String(recognition.attestedUnits),recognition.handoffParcelCount+' colis documentés ce mois'),
+        metric('Ventes documentées à la remise',v7Money(recognition.documentedHandoffSalesKmf,'KMF'),
+          recognition.pricedHandoffUnits+' / '+recognition.attestedUnits+' articles remis avec prix rapproché'),
+        metric('Remboursements confirmés',v7Money(recognition.confirmedRefundKmf,'KMF'),'Nombre ce mois · '+recognition.confirmedRefundCount),
+        metric('Coûts variables documentés des remises',v7Money(recognition.documentedParcelVariableCostKmf,'KMF'),
+          recognition.parcelCostEvidenceCount+' / '+recognition.handoffParcelCount+' colis avec des coûts documentés')
+      );
+      host.append(events);
+    }
+    const panel=el(doc,'section','kmc-v6-panel'),controls=el(doc,'div','kmc-v7-families'),focus=el(doc,'div','kmc-v7-kpis'),chart=el(doc,'div','kmc-v6-chart');
+    panel.append(el(doc,'h4','','Observation partielle achat + transport — non décisionnelle'),controls,focus,chart);
+    const defs=[['month','Mois'],['quarter','Trimestre à date'],['ytd','Année à date']];const buttons=[];
+    function render(key){
+      const o=data.ranges[key],from=o.periodStart;
+      for(const [k,b] of buttons)b.setAttribute('aria-pressed',String(k===key));
+      const coverage=o.observations+' / '+o.physicalClosedCount+' expéditions';
+      const dispersion=o.minCoefficient!=null&&o.maxCoefficient!=null
+        ? coverage+' · min. '+fmt(o.minCoefficient)+' · max. '+fmt(o.maxCoefficient)
+        : coverage;
+      const weight=o.coefficientWeightKg;
+      focus.replaceChildren();
+      focus.append(metric('Coefficient observé',fmt(o.coefficient),dispersion),
+        metric('Achats rapprochés',v7Money(o.purchaseKmf,'KMF')),
+        metric('Transport documenté',v7Money(o.transportKmf,'KMF')),
+        metric('Poids renseigné',fmt(weight)+(weight==null?'':' kg'),(o.coefficientWeightCount??0)+' / '+o.observations+' expéditions du coefficient'));
+      chart.replaceChildren();const points=data.points.filter(p=>p.periodStart>=from);
+      const svg=createObservedCurve(doc,points);if(svg)chart.append(svg);
+      chart.append(el(doc,'p','kmc-v7-coverage','Mensuel (gris) · cumul année (teal) · glissant 3 mois (or). Lacunes non interpolées.'));
+      const table=el(doc,'table','kmc-v7-posts'),head=el(doc,'thead',''),hr=el(doc,'tr','');
+      for(const label of ['Mois','Mensuel','Cumul année','Glissant 3 mois','Couverture mensuelle']){
+        const th=el(doc,'th','',label);th.scope='col';hr.append(th);}
+      head.append(hr);table.append(head);const body=el(doc,'tbody','');
+      for(const p of points){const tr=el(doc,'tr','');for(const v of [p.periodStart.slice(0,7),fmt(p.monthly.coefficient),fmt(p.cumulative.coefficient),fmt(p.rolling3.coefficient),p.monthly.observations+' / '+p.monthly.physicalClosedCount])tr.append(el(doc,'td','',v));body.append(tr);}
+      table.append(body);chart.append(table);
+    }
+    for(const [key,label] of defs){const b=el(doc,'button','kmc-v7-family',label);b.type='button';b.addEventListener('click',()=>render(key));buttons.push([key,b]);controls.append(b);}
+    render('ytd');host.append(panel);
+    const cards=el(doc,'div','kmc-v7-center-grid'),result=el(doc,'article','kmc-v6-panel'),structure=el(doc,'article','kmc-v6-panel');
+    const decision=data.periodDecisionEvidence,available=decision?.status==='AVAILABLE_ON_MATURE_COHORT';
+    if(available){
+      result.append(el(doc,'h4','','Formation du résultat — cohorte mature'),el(doc,'p','kmc-v7-coverage','Évaluation distincte du moteur canonique : '+fmt(decision.matureOrderCount)+' commandes matures · ce n’est pas le résultat complet du cockpit.'),
+        metric('Ventes sur assiette du moteur',v7Money(decision.revenueBasisKmf,'KMF')),metric('Coûts variables transactionnels',v7Money(decision.variableCostsKmf,'KMF')),metric('Risque réel',v7Money(decision.actualRiskKmf,'KMF')),
+        metric('Contribution rapprochée',v7Money(decision.contributionKmf,'KMF')),metric('Charges structurelles du moteur',v7Money(decision.structureKmf,'KMF')),metric('Résultat de la cohorte mature',v7Money(decision.resultKmf,'KMF')));
+      structure.append(el(doc,'h4','','Couverture de structure — moteur canonique'),metric('Ratio de couverture',fmt(decision.coverageRatio)),metric('Reste à couvrir',v7Money(decision.remainingKmf,'KMF')),el(doc,'p','kmc-v7-coverage','Évaluation séparée de la cohorte expéditions. Aucun calcul de prix automatique.'));
+    }else if(provisional||closed){
+      result.append(el(doc,'h4','',closed?'Formation du résultat définitif':'Formation du résultat provisoire'),
+        metric('Ventes nettes documentées',v7Money(groupResult.netSalesKmf,'KMF')),
+        metric('Charges variables documentées',v7Money(groupResult.variableCostKmf,'KMF')),
+        metric('Pertes sur périodes revues',v7Money(groupResult.actualRiskKmf,'KMF')),
+        metric('Contribution variable',v7Money(groupResult.contributionKmf,'KMF')),
+        metric('Charges de structure documentées',v7Money(groupResult.structureKmf,'KMF')),
+        metric(closed?'Résultat définitif':'Résultat provisoire',v7Money(groupResult.resultKmf,'KMF')));
+      structure.append(el(doc,'h4','','Couverture de structure'),metric('Clôture Direction',closed?'Validée':'À valider'));
+    }else{
+      result.append(el(doc,'h4','','Formation du résultat'),...['Ventes nettes','Achats du périmètre complet','Charges variables','Contribution variable','Charges de structure','Résultat économique'].map(k=>metric(k,'À rapprocher')));
+      structure.append(el(doc,'h4','','Couverture de structure'),metric('Couverture','Non calculable'),metric('Reste à couvrir','Non calculable'),el(doc,'p','kmc-v7-coverage','Sous-activité : référence insuffisante. Le coefficient partiel ne détermine pas les prix.'));
+      const documented=data.structureCoverage;
+      if(documented?.recognizedKmf!=null)structure.append(
+        metric('Charges de structure documentées',v7Money(String(documented.recognizedKmf),'KMF'),
+          documented.evidenceCount+' événement(s) de période'),
+        metric('Charges directes des marchés',v7Money(String(documented.marketDirectKmf),'KMF')),
+        metric('Charges mutualisées du groupe',v7Money(String(documented.groupSharedKmf),'KMF')));
+      if(decision)structure.append(el(doc,'p','kmc-v7-coverage','Motif moteur : '+(decision.reason==='MARKET_DECISION_POLICY_REQUIRED'?'Politique de marché absente':decision.reason==='DECISION_SCOPE_MISMATCH'?'Périmètre de décision incohérent':'Rapprochement canonique indisponible')));
+    }
+    if (provisional && model.central && actions?.closePeriod && groupResult.evidenceHash) {
+      const evidence = el(doc,'input','');
+      evidence.required = true;
+      evidence.maxLength = 1000;
+      const evidenceLabel = el(doc,'label','','Référence du justificatif');
+      evidenceLabel.append(evidence);
+      const attestation = el(doc,'input','');
+      attestation.type = 'checkbox';
+      const attestationLabel = el(doc,'label','',' Ventes, remboursements, coûts et pertes du mois vérifiés');
+      attestationLabel.append(attestation);
+      const close = el(doc,'button','kmc-v7-family','Valider la clôture');
+      close.type = 'button';
+      const feedback = el(doc,'p','kmc-v7-coverage');
+      feedback.setAttribute('role','status');
+      close.addEventListener('click',async()=>{
+        if (!attestation.checked || evidence.value.trim().length < 3) {
+          feedback.textContent='Confirmez la revue et renseignez le justificatif.';
+          return;
+        }
+        close.disabled = true;
+        try {
+          await actions.closePeriod({periodStart:model.periodStart,evidenceHash:groupResult.evidenceHash,
+            evidenceRef:evidence.value.trim(),attested:true});
+        } catch (error) {
+          feedback.textContent=error.message;
+          close.disabled = false;
+        }
+      });
+      result.append(evidenceLabel,attestationLabel,close,feedback);
+    }
+    cards.append(result,structure);host.append(cards);return host;
+  }
+
+  // Exclusive three-tab contract: one server snapshot for all views.
+  function createV7V6Tabs(doc, model, initial='centers', onTabChange,actions){
+    const shell=el(doc,'section','kmc-v7v6-tabs'),nav=el(doc,'nav','kmc-v7-families'),content=el(doc,'div','kmc-v7v6-content');
+    nav.setAttribute('aria-label','Atelier économique');
+    const defs=[['centers','Centres de coûts'],['activity','Activité'],['profit','Rentabilité']];
+    let active=defs.some(d=>d[0]===initial)?initial:'centers';
+    const tabs=[];
+    function render(){
+      for(const [key,btn] of tabs)btn.setAttribute('aria-pressed',String(key===active));
+      content.replaceChildren();
+      if(active==='centers')content.append(createV7CostCenters(doc,model,actions));
+      else if(active==='activity')content.append(createV6Activity(doc,model));
+      else content.append(createV6Profitability(doc,model,actions));
+    }
+    for(const [key,label] of defs){
+      const btn=el(doc,'button','kmc-v7-family',label);btn.type='button';btn.addEventListener('click',()=>{active=key;render();if(typeof onTabChange==='function')onTabChange(key);});tabs.push([key,btn]);nav.append(btn);
+    }
+    shell.append(nav,content);render();return shell;
+  }
+
+  async function fetchV7V6Model(workspace, options, periodStart){
+    if(typeof periodStart!=='string'||!/^\d{4}-(0[1-9]|1[0-2])-01$/.test(periodStart))throw new Error('Période mensuelle invalide');
+    const endpoint=workspace.endpointFor({requestedMarket:options.requestedMarket});
+    const result=await workspace.jsonRequest(options.fetch,endpoint+'/cost-centers?periodStart='+encodeURIComponent(periodStart));
+    if(!result||result.periodStart!==periodStart||result.marketCode!==(options.requestedMarket||null))throw new Error('Périmètre économique incohérent');
+    return result;
+  }
+
+  // Common read controller for the approved three-tab cockpit. The outer
+  // workspace owns the market; never keep a model after a failed scope/period
+  // change. Only the server supplies economic values.
+  function createV7V6Session(doc, workspace, options, initialPeriod) {
+    const host=el(doc,'section','kmc-v7v6-session');
+    const status=el(doc,'p','kmc-v7-coverage');
+    status.setAttribute('role','status');
+    const content=el(doc,'div','kmc-v7v6-session-content');
+    host.append(status,content);
+    let generation=0, active='centers', disposed=false, currentModel=null;
+    const context={...options,requestedMarket:options.requestedMarket||null};
+    const centerState={centerId:null,familyId:null,postId:null};
+    async function refresh(periodStart=initialPeriod){
+      if(disposed)return false;
+      const request=++generation;
+      currentModel=null;
+      content.replaceChildren();
+      status.textContent='Chargement de la période '+periodStart+'…';
+      host.setAttribute('aria-busy','true');
+      try{
+        const model=await fetchV7V6Model(workspace,context,periodStart);
+        if(disposed||request!==generation)return false;
+        currentModel=model;
+        const mutate=async(action,path,body)=>{
+          if(disposed||request!==generation||currentModel!==model||!canCost(model,action))throw new Error('Périmètre économique obsolète.');
+          const endpoint=workspace.endpointFor({requestedMarket:context.requestedMarket});
+          const result=await workspace.jsonRequest(context.fetch,endpoint+'/cost-centers'+path,{method:'POST',body});
+          if(!disposed&&request===generation){
+            const refreshed=await refresh(model.periodStart);
+            if(refreshed)status.textContent='Opération enregistrée.';
+          }
+          return result;
+        };
+        const actions={centerState,
+          loadObservedCost: context.requestedMarket ? () => workspace.jsonRequest(context.fetch,
+            '/api/admin/costing/products/margin-steering?market_code='+encodeURIComponent(context.requestedMarket)+'&since_days=90') : null,
+          ...(context.requestedMarket && options.user?.role==='admin' ? {
+            loadLocalLots:()=>workspace.jsonRequest(context.fetch,'/api/admin/costing/local-stock/receipt-lots?market_code='+encodeURIComponent(context.requestedMarket),{method:'GET'}),
+            writeLocalLot:(id,action,body)=>action==='close'
+              ? workspace.jsonRequest(context.fetch,'/api/admin/costing/local-stock/receipt-lots/close',{method:'POST',body:{...body,receipt_id:id,market_code:context.requestedMarket}})
+              : workspace.jsonRequest(context.fetch,'/api/admin/costing/local-stock/receipt-lots/link',{method:'POST',body:{...body,receipt_id:id,market_code:context.requestedMarket}})
+          }:{}),
+          closePeriod:body=>mutate('closePeriod','/close-period',body),
+          reviseBudget:(id,body)=>mutate('budget','/posts/'+encodeURIComponent(id)+'/budget-revisions',body),
+          openCommitment:(id,body)=>mutate('commitment','/posts/'+encodeURIComponent(id)+'/commitments',body),
+          recordActual:(id,body)=>mutate('actual','/posts/'+encodeURIComponent(id)+'/actuals',body),
+          createPost:(id,body)=>mutate('reference','/families/'+encodeURIComponent(id)+'/posts',body),
+          initializeReferences:()=>mutate('reference','/initialize',{}),
+          configureReference:body=>mutate('reference','/references',body),
+          moveCommitment:(id,body)=>mutate(body.kind==='CONSUME_STRUCTURE'?'consume':'commitment','/commitments/'+encodeURIComponent(id)+'/movements',body)
+        };
+        content.append(createV7V6Tabs(doc,model,active,key=>{active=key;},actions));
+        status.textContent='';
+        return true;
+      }catch(error){
+        if(disposed||request!==generation)return false;
+        content.replaceChildren();
+        status.textContent='Données économiques indisponibles pour cette période.';
+        return false;
+      }finally{
+        if(!disposed&&request===generation)host.setAttribute('aria-busy','false');
+      }
+    }
+    function dispose(){
+      disposed=true;generation++;currentModel=null;
+      content.replaceChildren();
+      status.textContent='';
+      host.setAttribute('aria-busy','false');
+    }
+    return {element:host,refresh,dispose,get model(){return currentModel;}};
+  }
+
   function finite(value) {
     if (value == null || value === '') return null;
     const number = Number(value);
@@ -1583,60 +2290,98 @@
     });
   }
 
-  async function enhance(rootObject, workspace, options, payload) {
-    if (!options?.requestedMarket || !options.root || !options.document || !payload) return false;
-    if (!options.refreshEconomicCockpit && options.root.querySelector('[data-pricing-economic-cockpit]')) return true;
-    // Contrat exclusif : le cockpit ne dépend plus d'un DOM Legacy préalable.
-    // Le payload serveur suffit à construire la surface approuvée ; cela
-    // permet un premier rendu atomique sans jamais exposer l'ancien workspace.
-    let decision = null;
-    try { decision = await fetchDecision(workspace, options); } catch (_) { decision = null; }
-    const cockpit = buildCockpit(options.document, options.root, payload, options.requestedMarket || payload.scope?.market_code || 'Marché', decision, options.user);
+  // Approved V7/V6 replaces the previous economic cockpit, rather than
+  // wrapping it or mounting its write controls on a detached root.
+  function createHubEconomyLinks(doc, { user, adminContext, requestedMarket }) {
+    const role = user?.role;
+    if (!['admin', 'market_operator'].includes(role)) return null;
+    const nav = el(doc, 'nav', 'kmc-v7-families');
+    nav.setAttribute('aria-label', 'Activité du Hub et refacturation marchés');
+    const activity = el(doc, 'a', 'kmc-workspace-nav-link', 'Activité du Hub');
+    activity.href = '/admin/hub';
+    nav.append(activity);
 
-    // Le workspace historique a été monté sur un root détaché : son panneau
-    // d'équilibre peut donc ne pas être présent sur le root visible. Ne jamais
-    // le perdre pendant le swap atomique. Le même résultat serveur, y compris
-    // NOT_DECISIONAL, est affiché sans soustraction économique côté navigateur.
-    if (!cockpit.querySelector('[data-pricing-flow-equilibrium]') &&
-        rootObject.KomercePricingEquilibriumPanel?.buildPanel) {
-      const equilibrium = styleEquilibriumForCockpit(
-        rootObject.KomercePricingEquilibriumPanel.buildPanel(options.document, workspace, decision)
-      );
-      const firstCosts = cockpit.querySelector('.kmc-cockpit-costs');
-      if (firstCosts) cockpit.insertBefore(equilibrium, firstCosts);
-      else cockpit.appendChild(equilibrium);
+    if (role !== 'admin') return nav;
+    if (requestedMarket) {
+      const invoice = el(doc, 'a', 'kmc-workspace-nav-link', 'Refacturation marchés');
+      invoice.href = '#refacturation-marches';
+      nav.append(invoice);
+      return nav;
     }
 
-    // Contrat exclusif : le mock approuvé EST l'Atelier économique.
-    // pricing-workspace.js reste un fournisseur de données/actions serveur,
-    // jamais une seconde surface visible ni un tiroir avancé.
+    const markets = adminContext?.access?.allowedMarkets || [];
+    if (!markets.length) return nav;
+    const chooser = el(doc, 'details', '');
+    chooser.append(el(doc, 'summary', 'kmc-workspace-nav-link', 'Refacturation marchés'));
+    const links = el(doc, 'div', 'kmc-v7-families');
+    for (const market of markets) {
+      const link = el(doc, 'a', 'kmc-workspace-nav-link', market);
+      link.href = '/admin/workspaces/pricing?market=' + encodeURIComponent(market) + '#refacturation-marches';
+      links.append(link);
+    }
+    chooser.append(links);
+    nav.append(chooser);
+    return nav;
+  }
+
+  async function enhance(rootObject, workspace, options) {
+    if (!options?.root || !options.document) return null;
+    const doc=options.document, rootNode=options.root;
+    rootNode.__economicV7V6Session?.dispose();
+    const cockpit=el(doc,'div','kmc-economic-cockpit');
+    cockpit.dataset[COCKPIT_ATTR]='';
+    const header=el(doc,'div','kmc-cockpit-page-header');
+    const copy=el(doc,'div','kmc-cockpit-page-header-left');
+    copy.append(el(doc,'h2','kmc-cockpit-page-title','Atelier économique'),
+      el(doc,'p','kmc-cockpit-page-subtitle',options.requestedMarket?'Marché '+options.requestedMarket:'Périmètre groupe · consolidation à rapprocher'));
+    const controls=el(doc,'label','kmc-cockpit-period-wrap','Période');
+    const period=el(doc,'select','kmc-cockpit-period-select');
+    period.dataset.cockpitPeriod='';
+    period.setAttribute('aria-label','Période économique');
+    const now=new Date();
+    const selected=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),1)).toISOString().slice(0,10);
+    for(let i=0;i<12;i++){
+      const d=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth()-i,1));
+      const opt=el(doc,'option','',new Intl.DateTimeFormat('fr-FR',{month:'long',year:'numeric',timeZone:'UTC'}).format(d));
+      opt.value=d.toISOString().slice(0,10);
+      period.append(opt);
+    }
+    period.value=selected;
+    controls.append(period);header.append(copy,controls);
+    const session=createV7V6Session(doc,workspace,options,selected);
+    rootNode.__economicV7V6Session=session;
+    period.addEventListener('change',()=>session.refresh(period.value));
+    cockpit.append(header);
+    const hubLinks = createHubEconomyLinks(doc, options);
+    if (hubLinks) cockpit.append(hubLinks);
+    cockpit.append(session.element);
     options.root.replaceChildren(cockpit);
     options.root.dataset.pricingMockContract = 'exclusive';
-    bindCockpit(rootObject, workspace, options, payload, cockpit);
-    const portfolio = cockpit.querySelector('[data-cockpit-portfolio]');
-    if (portfolio?.__activeCategory) await loadCategory(options.document, workspace, options, payload, portfolio, portfolio.__activeCategory);
-    return true;
+    await session.refresh(selected);
+    return session.model;
   }
 
   function install(rootObject) {
-    const workspace = rootObject && rootObject.KomerceCanonicalPricingWorkspace;
-    if (!workspace || workspace.__economicCockpitInstalled || typeof workspace.mount !== 'function') return false;
-    const originalMount = workspace.mount.bind(workspace);
-    workspace.mount = async function economicCockpitAwareMount(options) {
-      // pricing-workspace et ses anciens wrappers restent utiles comme
-      // fournisseurs de payload/actions, mais leur DOM ne doit jamais être
-      // peint dans la surface visible. On les exécute dans un root détaché,
-      // puis on construit le mock sur le vrai root en un swap atomique.
-      const stagingRoot = options.document.createElement('div');
-      const payload = await originalMount({ ...options, root: stagingRoot });
-      await enhance(rootObject, workspace, options, payload);
-      return payload;
-    };
-    workspace.__economicCockpitInstalled = true;
+    const workspace=rootObject && rootObject.KomerceCanonicalPricingWorkspace;
+    if(!workspace||workspace.__economicCockpitInstalled||typeof workspace.mount!=='function')return false;
+    workspace.mount=options=>enhance(rootObject,workspace,options);
+    workspace.__economicCockpitInstalled=true;
+    workspace.__economicV7V6Installed=true;
     return true;
   }
 
   return {
+    createV7CostCenters,
+    createV7BudgetForm,
+    createV7PostForm,
+    createV7CommitmentForms,
+    createV6Activity,
+    createHubEconomyLinks,
+    createV6Profitability,
+    createV7V6Tabs,
+    fetchV7V6Model,
+    createV7V6Session,
+    v7Money,
     classifyComponents,
     economicNature,
     allocationPerimeter,

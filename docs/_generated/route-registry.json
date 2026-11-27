@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-26T14:22:28.722Z",
+  "generatedAt": "2026-11-27T08:59:54.898Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 864,
+  "count": 901,
   "routes": [
     {
       "method": "GET",
@@ -329,6 +329,176 @@
       "mountPrefix": "/api/admin/cost-components",
       "localPath": "/:id/toggle",
       "routeFile": "routes/admin-cost-components.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/costing/monthly-fixed/:yearMonth",
+      "mountPrefix": "/api/admin/costing",
+      "localPath": "/monthly-fixed/:yearMonth",
+      "routeFile": "routes/admin-costing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/costing/orders",
+      "mountPrefix": "/api/admin/costing",
+      "localPath": "/orders",
+      "routeFile": "routes/admin-costing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/costing/orders/:id/lock-purchase",
+      "mountPrefix": "/api/admin/costing",
+      "localPath": "/orders/:id/lock-purchase",
+      "routeFile": "routes/admin-costing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/costing/orders/:id/real-margin-shadow",
+      "mountPrefix": "/api/admin/costing",
+      "localPath": "/orders/:id/real-margin-shadow",
+      "routeFile": "routes/admin-costing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/costing/orders/:orderId",
+      "mountPrefix": "/api/admin/costing",
+      "localPath": "/orders/:orderId",
+      "routeFile": "routes/admin-costing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/costing/orders/:orderId/manual-costs",
+      "mountPrefix": "/api/admin/costing",
+      "localPath": "/orders/:orderId/manual-costs",
+      "routeFile": "routes/admin-costing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/costing/orders/:orderId/manual-costs/:costType/correct",
+      "mountPrefix": "/api/admin/costing",
+      "localPath": "/orders/:orderId/manual-costs/:costType/correct",
+      "routeFile": "routes/admin-costing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/costing/orders/:orderId/simulation-scope",
+      "mountPrefix": "/api/admin/costing",
+      "localPath": "/orders/:orderId/simulation-scope",
+      "routeFile": "routes/admin-costing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/costing/parcels/:id/allocate",
+      "mountPrefix": "/api/admin/costing",
+      "localPath": "/parcels/:id/allocate",
+      "routeFile": "routes/admin-costing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/costing/products",
+      "mountPrefix": "/api/admin/costing",
+      "localPath": "/products",
+      "routeFile": "routes/admin-costing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/costing/products/:productId/sku-rail-selection",
+      "mountPrefix": "/api/admin/costing",
+      "localPath": "/products/:productId/sku-rail-selection",
+      "routeFile": "routes/admin-costing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/costing/products/margin-steering",
+      "mountPrefix": "/api/admin/costing",
+      "localPath": "/products/margin-steering",
+      "routeFile": "routes/admin-costing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/costing/real-margin-shadow",
+      "mountPrefix": "/api/admin/costing",
+      "localPath": "/real-margin-shadow",
+      "routeFile": "routes/admin-costing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/costing/recalibration-apply",
+      "mountPrefix": "/api/admin/costing",
+      "localPath": "/recalibration-apply",
+      "routeFile": "routes/admin-costing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/costing/recalibration-proposal",
+      "mountPrefix": "/api/admin/costing",
+      "localPath": "/recalibration-proposal",
+      "routeFile": "routes/admin-costing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/costing/relais",
+      "mountPrefix": "/api/admin/costing",
+      "localPath": "/relais",
+      "routeFile": "routes/admin-costing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/costing/shipments/:id/allocate",
+      "mountPrefix": "/api/admin/costing",
+      "localPath": "/shipments/:id/allocate",
+      "routeFile": "routes/admin-costing.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]
@@ -1227,6 +1397,36 @@
       "mountPrefix": "/api/admin/market-payment-accounts",
       "localPath": "/markets/:marketCode",
       "routeFile": "routes/admin-market-payment-accounts.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/market-settlements/markets/:marketCode/hub-invoices",
+      "mountPrefix": "/api/admin/market-settlements",
+      "localPath": "/markets/:marketCode/hub-invoices",
+      "routeFile": "routes/admin-market-settlement.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/market-settlements/markets/:marketCode/hub-invoices",
+      "mountPrefix": "/api/admin/market-settlements",
+      "localPath": "/markets/:marketCode/hub-invoices",
+      "routeFile": "routes/admin-market-settlement.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/market-settlements/markets/:marketCode/hub-invoices/:invoiceId/payment",
+      "mountPrefix": "/api/admin/market-settlements",
+      "localPath": "/markets/:marketCode/hub-invoices/:invoiceId/payment",
+      "routeFile": "routes/admin-market-settlement.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]
@@ -3160,6 +3360,96 @@
       ]
     },
     {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/pricing/cost-centers",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/cost-centers",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/cost-centers/close-period",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/cost-centers/close-period",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/cost-centers/commitments/:commitmentId/movements",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/cost-centers/commitments/:commitmentId/movements",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/cost-centers/families/:familyId/posts",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/cost-centers/families/:familyId/posts",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/cost-centers/initialize",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/cost-centers/initialize",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/cost-centers/posts/:postId/actuals",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/cost-centers/posts/:postId/actuals",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/cost-centers/posts/:postId/budget-revisions",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/cost-centers/posts/:postId/budget-revisions",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/cost-centers/posts/:postId/commitments",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/cost-centers/posts/:postId/commitments",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/cost-centers/references",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/cost-centers/references",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
       "method": "POST",
       "fullPath": "/api/admin/workspaces/pricing/cost-components",
       "mountPrefix": "/api/admin/workspaces/pricing",
@@ -3234,6 +3524,86 @@
       "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/corridor",
       "mountPrefix": "/api/admin/workspaces/pricing",
       "localPath": "/market/:marketCode/corridor",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/cost-centers",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/cost-centers",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/cost-centers/commitments/:commitmentId/movements",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/cost-centers/commitments/:commitmentId/movements",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/cost-centers/families/:familyId/posts",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/cost-centers/families/:familyId/posts",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/cost-centers/initialize",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/cost-centers/initialize",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/cost-centers/posts/:postId/actuals",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/cost-centers/posts/:postId/actuals",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/cost-centers/posts/:postId/budget-revisions",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/cost-centers/posts/:postId/budget-revisions",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/cost-centers/posts/:postId/commitments",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/cost-centers/posts/:postId/commitments",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/market/:marketCode/cost-centers/references",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/market/:marketCode/cost-centers/references",
       "routeFile": "routes/admin-pricing-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

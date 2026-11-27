@@ -31,6 +31,7 @@
  */
 
 jest.mock('../../middleware/auth', () => ({
+  requireRole: () => (_req, _res, next) => next(),
   authenticate: (req, res, next) => { req.user = req.user || { id: 'admin-1', role: 'admin' }; next(); },
   requireAdmin: (req, res, next) => { if (req.user?.role !== 'admin') return res.status(403).json({ error: 'Accès admin requis' }); next(); },
 }));

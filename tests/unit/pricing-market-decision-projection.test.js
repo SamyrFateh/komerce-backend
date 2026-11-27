@@ -4,6 +4,7 @@
 const {
   decorateMarketDecision,
   _buildFlowVelocity,
+  projectPeriodDecisionEvidence,
 } = require('../../services/pricing-market-decision-projection');
 
 test('enrichit le même pool de contribution avec charges structurelles et seuils équivalents sans double comptage', () => {
@@ -177,4 +178,20 @@ test('zéro explicite est conservé, et résultat négatif calculé uniquement s
     period_result_kmf: -1200,
   });
   expect(projected.coverage.structural_charges_kmf).toBe(1200);
+});
+
+test('V6 canonical decision evidence stays separate and requires exact scope, period and gate',()=>{
+ const period={from:'2026-01-01T00:00:00.000Z',to:'2026-02-01T00:00:00.000Z',source:'calendar_month_selection',width_days:31};
+ const d={market_id:'M',canonical_period:period,decision_status:'UNCOVERED',coverage:{market_id:'M',period,coverage_status:'UNCOVERED',threshold_applied:true,numerator_contribution_kmf:720,denominator_n3_kmf:1000,coverage_ratio:0.72,contribution:{mature_order_count:4,revenue_kmf:2000,transaction_variable_cost_kmf:1200,reconciled_risk_cost_kmf:80}},flow_break_even:{status:'READY',observed_mix:{},economic_break_even:{gap_kmf:280}}};
+ const decorated=decorateMarketDecision(d);
+ const p=projectPeriodDecisionEvidence(decorated,'M','2026-01-01');
+ const flow=decorated.flow_break_even;
+ const inconsistent={...decorated,flow_break_even:{...flow,economic_state:{...flow.economic_state,period_result_kmf:280,break_even_gap_kmf:0}}};
+ expect(projectPeriodDecisionEvidence(inconsistent,'M','2026-01-01')).toMatchObject({contributionKmf:'720.00',structureKmf:'1000.00',resultKmf:null,remainingKmf:null});
+ expect(p).toMatchObject({status:'AVAILABLE_ON_MATURE_COHORT',fullEconomicResult:false,contributionKmf:'720.00',structureKmf:'1000.00',resultKmf:'-280.00',remainingKmf:'280.00',coverageRatio:'0.72',matureOrderCount:4,actualRiskKmf:'80.00'});
+ expect(projectPeriodDecisionEvidence(d,'OTHER','2026-01-01')).toMatchObject({status:'NOT_DECISIONAL',reason:'DECISION_SCOPE_MISMATCH',resultKmf:null});
+ expect(projectPeriodDecisionEvidence(d,'M','2026-02-01')).toMatchObject({status:'NOT_DECISIONAL',reason:'DECISION_SCOPE_MISMATCH',resultKmf:null});
+ expect(projectPeriodDecisionEvidence({...d,coverage:{...d.coverage,threshold_applied:false}},'M','2026-01-01')).toMatchObject({status:'NOT_DECISIONAL',contributionKmf:null});
+ expect(projectPeriodDecisionEvidence({...d,canonical_period:null,reason:'MARKET_DECISION_POLICY_REQUIRED'},'M','2026-01-01')).toMatchObject({status:'NOT_DECISIONAL',reason:'MARKET_DECISION_POLICY_REQUIRED'});
+ expect(projectPeriodDecisionEvidence({...d,flow_break_even:null},'M','2026-01-01')).toMatchObject({status:'AVAILABLE_ON_MATURE_COHORT',resultKmf:null,remainingKmf:null});
 });

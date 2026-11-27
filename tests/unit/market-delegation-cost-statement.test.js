@@ -68,6 +68,53 @@ describe('relevé de coûts du marché (D7)', () => {
     expect(resolveAuthorization).toHaveBeenCalledTimes(1);
   });
 
+  test('relevé Hub : quote-part active du centre central et total exact fourni par PostgreSQL', async () => {
+    const entry = { attribution_id: 'a1', amount_kmf: '40000.00', total_kmf: '40000.00' };
+    const db = dbWith([entry]);
+    const read = db.query.bind(db);
+    db.query = (sql, params) => sql.includes('FROM currency_parities')
+      ? Promise.resolve({ rows: [{ rate: params[0] === 'KMF' ? '491.96' : '655.957' }] })
+      : read(sql, params);
+    const statement = await getMarketCostStatement(db, {
+      marketCode: 'CM', actorUserId: 'u1', scope: 'hub', from: '2026-09-01', to: '2026-10-01',
+    });
+    expect(db.calls[0]).toMatchObject({ params: ['m-cm', '2026-09-01T00:00:00.000Z', '2026-10-01T00:00:00.000Z'] });
+    expect(db.calls[0].sql).toContain("c.market_id IS NULL AND c.code = 'HUB_CENTRAL'");
+    expect(db.calls[0].sql).toContain('reversal.reverses_id = a.id');
+    expect(db.calls[0].sql).toContain('e.economic_from >= $2::timestamptz AND e.economic_to <= $3::timestamptz');
+    expect(statement).toMatchObject({
+      scope: 'HUB_CENTRAL', status: 'INTERNAL_STATEMENT', total_kmf: '40000.00',
+      lines: [{ attribution_id: 'a1', amount_kmf: '40000.00' }],
+      informational_totals: {
+        status: 'AVAILABLE',
+        EUR: { amount: '81.31', legs: [{ pair: 'EUR/KMF', rate: '491.96' }] },
+        XAF: { amount: '53334', legs: [{ pair: 'EUR/KMF' }, { pair: 'EUR/XAF' }] },
+      },
+    });
+    expect(statement.lines[0]).not.toHaveProperty('total_kmf');
+  });
+
+  test('relevé Hub : les montants KMF restent disponibles sans parité', async () => {
+    const db = dbWith([{ total_kmf: '100.00' }]);
+    const read = db.query.bind(db);
+    db.query = (sql, params) => sql.includes('FROM currency_parities')
+      ? Promise.resolve({ rows: [] })
+      : read(sql, params);
+    const result = await getMarketCostStatement(db, {
+      marketCode: 'CM', actorUserId: 'u1', scope: 'hub', from: '2026-09-01', to: '2026-10-01',
+    });
+    expect(result).toMatchObject({ total_kmf: '100.00', informational_totals: { status: 'UNAVAILABLE' } });
+  });
+
+  test('relevé Hub : période obligatoire et date réelle', async () => {
+    const params = { marketCode: 'CM', actorUserId: 'u1', scope: 'hub' };
+    await expect(getMarketCostStatement(dbWith([]), params)).rejects.toMatchObject({ status: 400 });
+    await expect(getMarketCostStatement(dbWith([]), {
+      ...params, from: '2026-02-30', to: '2026-04-01',
+    })).rejects.toMatchObject({ status: 400 });
+    expect(resolveAuthorization).not.toHaveBeenCalled();
+  });
+
   test('exécuteur invalide : TypeError explicite', async () => {
     await expect(getMarketCostStatement(null, { marketCode: 'CM', actorUserId: 'u1' })).rejects.toThrow(TypeError);
   });

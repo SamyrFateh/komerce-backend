@@ -1,10 +1,10 @@
 # Security 360 — couverture des gardes (hybride runtime + statique)
 
-> 2026-11-26T14:29:05.204Z — 875 endpoints
+> 2026-11-27T08:59:51.391Z — 899 endpoints
 
 | Niveau | Compte |
 |---|---|
-| 🟢 PROTECTED | 816 |
+| 🟢 PROTECTED | 840 |
 | ⚪ PUBLIC (légitime) | 59 |
 | 🟠 UNPROTECTED | 0 |
 | 🔴 ADMIN_NO_GUARD | 0 |

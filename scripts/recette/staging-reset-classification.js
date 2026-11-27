@@ -63,6 +63,7 @@ const ENTRIES = [
   R('sourcing_canonical_entities', 'sourcing'),
   R('sourcing_canonical_entity_refs', 'sourcing'), R('products', 'catalogue produits (reconstruit par API)'),
   R('catalog_product_quality_notes', 'observations SAV et qualité historisées, purgées avec les produits de recette'),
+  V('economic_sku_rail_selection_events', 'retraits versionnes des variantes de recette, purges avec leurs SKU hors mode activity'),
   R('catalog_product_sale_holds', 'gel qualité de produits de recette, purgé sans toucher les référentiels globaux'),
   R('relay_product_return_receipts', 'preuves de retour SAV des commandes de recette, purgeables avec les litiges de test'),
   R('relay_return_compensations', 'compensations SAV, purgées avec les dossiers de retour de recette'),
@@ -98,7 +99,7 @@ const ENTRIES = [
   ...`basket_items cash_confirmation_controls cash_custody_provenance_edges catalog_enrichment_runs catalog_field_overrides catalog_media
 catalog_media_recovery_audit catalog_media_visual_fr_reviews catalog_publication_decision_audit catalog_stock_sync_state competitor_prices
 customs_shipment_parcels disputes economic_risk_cost_events import_runtime_item_events import_runtime_runs
-hub_box_bags hub_scan_labels hub_scan_label_box_scans international_shipment_hub_units international_shipment_relay_receipts local_stock local_stock_allocations loyalty_rewards
+hub_box_bags hub_scan_labels hub_scan_label_box_scans international_shipment_hub_units international_shipment_relay_receipts local_stock local_stock_allocations local_stock_economic_lots local_stock_economic_lot_lines loyalty_rewards
 market_price_observation_events market_price_observations mobile_money_transactions order_checkout_idempotency order_delivery_waves order_comments order_incidents
 order_item_cost_imputations order_item_real_cost_allocations order_items order_status_history parcel_events parcel_items
 pickup_code_generations pickup_print_tokens pickup_reveal_codes price_history pricing_maturity_disposition_events pricing_strategies pricing_strategy_history
@@ -130,6 +131,15 @@ supplier_execution_groups supplier_payment_settlements unsold_items`.split(/\s+/
   F('pricing_category_dims', 'dimensions pricing par categorie'), F('pricing_category_taxes', 'taxes pricing par categorie'),
   F('pricing_matrices_audit', 'audit matrices pricing'), F('pricing_market_decision_policy_events', 'politique de decision pricing', true),
   F('economic_structure_cost_events', 'structure de couts par periode (saisie admin)', true),
+  F('economic_group_period_closures', 'historique append-only des clotures groupe'),
+  F('hub_internal_invoices', 'factures internes Hub figees et preuve du reglement'),
+  F('economic_cost_centers', 'referentiel des centres de couts'),
+  F('economic_cost_families', 'familles de postes du referentiel'),
+  F('economic_cost_resources', 'ressources du referentiel'),
+  F('economic_cost_posts', 'postes de couts et liens aux charges canoniques'),
+  F('economic_cost_budget_revisions', 'historique budgetaire versionne protege; fixtures identifiees hors purge globale'),
+  F('economic_cost_commitments', 'engagements economiques et preuves proteges'),
+  F('economic_cost_commitment_movements', 'historique de consommation et liberation protege'),
   F('customs_categories', 'categories douane'), F('carriers', 'transporteurs'), F('suppliers', 'fournisseurs (achats)', true),
   F('boutique_categories', 'taxonomie boutique'), F('boutique_subcategories', 'taxonomie boutique'),
   F('catalog_exclusions', 'exclusions catalogue'), F('catalog_glossary', 'glossaire catalogue'),
@@ -197,9 +207,9 @@ const FIXTURE_ROOT_TABLES = Object.freeze(['users', 'relais', 'partners']);
 const ACTIVITY_PRESERVED_GROUPS = Object.freeze({
   catalogue: `products product_skus product_variants product_attributes product_suppliers product_content_profile product_content_sections
     product_sku_physical_codes catalog_field_overrides catalog_field_sync_state catalog_enrichment_runs catalog_publication_decision_audit
-    catalog_stock_sync_state catalog_product_sale_holds local_stock`,
+    catalog_stock_sync_state catalog_product_sale_holds local_stock local_stock_economic_lots`,
   medias: 'catalog_media catalog_media_recovery_audit catalog_media_visual_fr_reviews product_sku_media',
-  prix: `product_market_exposure product_market_price_drafts product_market_price_draft_events pricing_strategies pricing_strategy_history
+  prix: `product_market_exposure product_market_price_drafts product_market_price_draft_events economic_sku_rail_selection_events pricing_strategies pricing_strategy_history
     price_history competitor_prices market_price_observations market_price_observation_events`,
   sourcing: `supplier_catalog_imports supplier_catalog_sync_checkpoints supplier_catalog_import_rejections import_runtime_runs
     import_runtime_item_events sourcing_candidates sourcing_observations sourcing_candidate_events sourcing_canonical_entities

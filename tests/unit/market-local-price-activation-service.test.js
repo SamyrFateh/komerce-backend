@@ -4,6 +4,15 @@
 const { activationVerdict } = require('../../services/market-local-price-activation-service');
 
 describe('market local price activation verdict', () => {
+  test('enforces the versioned family contribution minimum and requires purchase evidence', () => {
+    const policy = { version: 'CM-V2', selection_by_family: { audio: { minimum_contribution_kmf: 150, loss_observation_count: 3 } } };
+    const priced = { category: 'audio', strategy_risk: 'contributive', contribution_kmf: 149, data_quality: { sources: { purchase_price: 'real' } } };
+    expect(activationVerdict(priced, { policy })).toEqual({ allowed: false, reason: 'ECONOMIC_SELECTION_BELOW_FAMILY_MINIMUM' });
+    expect(activationVerdict({ ...priced, contribution_kmf: 150 }, { policy }).allowed).toBe(true);
+    expect(activationVerdict({ ...priced, data_quality: null }, { policy })).toEqual({ allowed: false, reason: 'ECONOMIC_SELECTION_EVIDENCE_REQUIRED' });
+    expect(activationVerdict({ ...priced, category: 'clothing' }, { policy }).allowed).toBe(true);
+  });
+
   test('never activates a destructive price', () => {
     expect(activationVerdict(
       { strategy_risk: 'destructive' },

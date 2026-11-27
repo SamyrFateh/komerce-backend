@@ -83,6 +83,16 @@ if (!hasIntegrationEnv) {
       parcel_ids: [a.parcelId, b.parcelId, c.parcelId],
     }, null, { marketId });
     ids.shipments.push(shipment.id);
+    // These are synthetic, explicit zero-cost proofs for this isolated PG
+    // fixture only. Do not silently interpret an absent mandatory type as zero.
+    for (const sale of [a,b,c]) {
+      for (const type of ['relay','payment','port_transitaire']) {
+        await db.query(`INSERT INTO order_item_real_cost_allocations
+          (order_id,order_item_id,cost_type,amount_kmf,allocation_method,source,is_actual,confidence,provenance)
+          VALUES ($1,$2,$3,0,'manual','manual_entry',TRUE,'high',$4)`,
+          [sale.orderId,sale.itemId,type,RUN_TAG+' explicit zero test proof']);
+      }
+    }
     snapshotBefore = (await db.query(`SELECT order_item_id, cost_breakdown FROM order_item_cost_imputations WHERE order_id = ANY($1::uuid[]) ORDER BY order_item_id`, [ids.orders])).rows;
     result = await listProductMarginSteering({ marketId, sinceDays: 1, limit: 2000 });
   });
@@ -138,12 +148,29 @@ if (!hasIntegrationEnv) {
       expect(prod().signal).toBe('watch');
     });
 
-    it('stock local : douane non attendue, estimé théorique 500 ignoré', () => {
+    it('stock local historique : douane non attendue, achat sans preuve de lot non valorisé', () => {
       const s = localProd().sales_detail[0];
       expect(s.costs.customs.state).toBe('not_expected');
-      expect(s.margin_kmf).toBe(10000 - 4000 - 300);
+      expect(s).toMatchObject({status:'incomplete',reason:'cost_missing:product_purchase',margin_kmf:null});
+      expect(s.costs.product_purchase).toEqual({state:'missing',amount_kmf:null});
     });
 
+    it('retirer une preuve de coût réel (même zéro) invalide la marge, pas la douane constatée', async () => {
+      const row=prod().sales_detail.find(s=>s.status!=='incomplete');
+      const {rows:[removed]}=await db.query(`DELETE FROM order_item_real_cost_allocations
+        WHERE order_item_id=$1 AND cost_type='relay' AND source='manual_entry' RETURNING *`,[row.order_item_id]);
+      expect(removed).toBeDefined();
+      try {
+        const updated=await listProductMarginSteering({marketId,productId,sinceDays:1});
+        const line=updated.products.find(p=>p.product_id===productId).sales_detail.find(s=>s.order_item_id===row.order_item_id);
+        expect(line).toMatchObject({status:'incomplete',reason:'cost_missing:relay',margin_kmf:null,costs:{customs:{state:'real'},relay:{state:'missing',amount_kmf:null}}});
+      } finally {
+        await db.query(`INSERT INTO order_item_real_cost_allocations
+          (order_id,order_item_id,cost_type,amount_kmf,allocation_method,source,is_actual,confidence,provenance)
+          VALUES ($1,$2,'relay',0,'manual','manual_entry',TRUE,'high',$3)`,
+          [row.order_id,row.order_item_id,RUN_TAG+' restored zero test proof']);
+      }
+    });
     it('lecture seule : snapshots figés inchangés ; isolation par marché', async () => {
       const after = (await db.query(`SELECT order_item_id, cost_breakdown FROM order_item_cost_imputations WHERE order_id = ANY($1::uuid[]) ORDER BY order_item_id`, [ids.orders])).rows;
       expect(after).toEqual(snapshotBefore);

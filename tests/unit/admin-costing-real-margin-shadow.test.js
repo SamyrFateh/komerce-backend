@@ -10,6 +10,7 @@
 jest.mock('../../middleware/auth', () => ({
   authenticate: (req, res, next) => { req.user = req.user || { id: 'admin-1', role: 'admin' }; next(); },
   requireAdmin: (req, res, next) => { if (req.user?.role !== 'admin') return res.status(403).json({ error: 'Accès admin requis' }); next(); },
+  requireRole: roles => (req, res, next) => roles.includes(req.user?.role) ? next() : res.sendStatus(403),
 }));
 jest.mock('../../utils/logger', () => ({ child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }) }));
 jest.mock('../../db', () => ({ query: jest.fn() }));
@@ -28,6 +29,11 @@ jest.mock('../../services/cost-allocation/product-margin-steering', () => ({
   listProductMarginSteering: (...a) => mockSteering(...a),
 }));
 
+jest.mock('../../middleware/require-pricing-global-authority', () => ({ hasPricingGlobalAuthority: jest.fn() }));
+jest.mock('../../services/economic-sku-rail-selection', () => ({ recordSkuRailSelection: jest.fn() }));
+const { hasPricingGlobalAuthority } = require('../../middleware/require-pricing-global-authority');
+const { recordSkuRailSelection } = require('../../services/economic-sku-rail-selection');
+
 const express = require('express');
 const request = require('supertest');
 
@@ -40,6 +46,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   user = { id: 'admin-1', role: 'admin' };
   app = express();
+  app.use(express.json());
   app.use((req, res, next) => { req.user = user; next(); });
   app.use('/api/admin/costing', require('../../routes/admin-costing'));
   app.use((err, req, res, next) => { res.status(500).json({ error: err.message }); }); // eslint-disable-line no-unused-vars
@@ -83,7 +90,7 @@ describe('GET /products/margin-steering', () => {
     expect(r.status).toBe(200);
     expect(r.body.products).toEqual([]);
     expect(r.body.market_id).toBe(MID);
-    expect(mockSteering).toHaveBeenCalledWith({ marketId: MID, productId: OID, sinceDays: '30', limit: undefined });
+    expect(mockSteering).toHaveBeenCalledWith({ marketId: MID, productId: OID, sinceDays: '30', limit: undefined, includeObservedCost: true });
   });
 
   it('market_code résolu en uuid ; code inconnu → 400', async () => {
@@ -91,14 +98,70 @@ describe('GET /products/margin-steering', () => {
     mockSteering.mockResolvedValue({ products: [] });
     db.query.mockResolvedValueOnce({ rows: [{ id: MID }] });
     expect((await request(app).get('/api/admin/costing/products/margin-steering?market_code=km')).status).toBe(200);
-    expect(db.query).toHaveBeenCalledWith('SELECT id FROM markets WHERE code = $1', ['KM']);
+    expect(db.query).toHaveBeenCalledWith('SELECT id, currency FROM markets WHERE code = $1', ['KM']);
     expect(mockSteering).toHaveBeenLastCalledWith(expect.objectContaining({ marketId: MID }));
     db.query.mockResolvedValueOnce({ rows: [] });
     expect((await request(app).get('/api/admin/costing/products/margin-steering?market_code=zz')).status).toBe(400);
   });
 
+  it('finance.read : un responsable CM ne peut pas cibler KM et reçoit uniquement les agrégats CM', async () => {
+    const cm = '22222222-2222-4222-8222-222222222222';
+    const db = require('../../db');
+    user = { id: 'operator-cm', role: 'market_operator' };
+    db.query.mockResolvedValueOnce({ rows: [{ market_id: cm }] });
+    expect((await request(app).get(`/api/admin/costing/products/margin-steering?market_id=${MID}`)).status).toBe(403);
+    expect(mockSteering).not.toHaveBeenCalled();
+    db.query.mockResolvedValueOnce({ rows: [{ market_id: cm }] });
+    mockSteering.mockResolvedValue({ market_id: cm, products: [{ product_id: OID, observed_landed_cost: [], sales_detail: ['private'] }] });
+    const response = await request(app).get(`/api/admin/costing/products/margin-steering?market_id=${cm}`);
+    expect(response.status).toBe(200);
+    expect(response.body.products[0]).not.toHaveProperty('sales_detail');
+  });
+
+  it('convertit les coûts de CM avec les parités canoniques', async () => {
+    const db = require('../../db');
+    db.query.mockResolvedValueOnce({ rows: [{ id: MID, currency: 'XAF' }] });
+    const observed = { unit_cost_kmf: 7719.68, estimated_unit_cost_kmf: 7000, observed_multiplier: 1.569 };
+    mockSteering.mockResolvedValue({ market_id: MID, products: [{ observed_landed_cost: [observed] }] });
+    for (let i = 0; i < 2; i++) {
+      db.query.mockResolvedValueOnce({ rows: [{ rate: '491.96775' }] });
+      db.query.mockResolvedValueOnce({ rows: [{ rate: '655.957' }] });
+    }
+    const response = await request(app).get('/api/admin/costing/products/margin-steering?market_code=CM');
+    expect(response.status).toBe(200);
+    expect(response.body.products[0].observed_landed_cost[0]).toMatchObject({
+      display_currency: 'XAF', unit_cost_local: '10293', estimated_unit_cost_local: '9333', observed_multiplier: 1.569,
+    });
+  });
+
   it('non admin → 403', async () => {
     user = { id: 'u', role: 'client' };
     expect((await request(app).get(`/api/admin/costing/products/margin-steering?market_id=${MID}`)).status).toBe(403);
+  });
+});
+
+describe('POST /products/:productId/sku-rail-selection', () => {
+  const path = `/api/admin/costing/products/${OID}/sku-rail-selection`;
+  const body = { market_id: MID, sku_id: OID, rail: 'SEA_STANDARD', action: 'WITHDRAW', reason: 'Preuve rapprochée' };
+
+  it('requires the existing global pricing authority', async () => {
+    hasPricingGlobalAuthority.mockResolvedValue(false);
+    const result = await request(app).post(path).send(body);
+    expect(result.status).toBe(403);
+    expect(recordSkuRailSelection).not.toHaveBeenCalled();
+  });
+
+  it('uses the authenticated actor and surfaces domain refusals', async () => {
+    hasPricingGlobalAuthority.mockResolvedValue(true);
+    recordSkuRailSelection.mockRejectedValueOnce(Object.assign(new Error('Preuve insuffisante'), {
+      code: 'ECONOMIC_SELECTION_EVIDENCE_INSUFFICIENT', status: 409,
+    }));
+    expect((await request(app).post(path).send({ ...body, actorId: 'untrusted' })).status).toBe(409);
+    expect(recordSkuRailSelection).toHaveBeenCalledWith({
+      marketId: MID, productId: OID, skuId: OID, rail: body.rail, action: body.action,
+      reason: body.reason, actorId: 'admin-1',
+    });
+    recordSkuRailSelection.mockResolvedValueOnce({ outcome: 'recorded', event: { id: '1' } });
+    expect((await request(app).post(path).send(body)).status).toBe(201);
   });
 });

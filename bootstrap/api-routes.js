@@ -189,7 +189,8 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/admin/workspaces/pricing', adminPricingWorkspaceRouter);
   app.use('/api/admin/action-center', adminActionCenterRouter);
   app.use('/api/agent/action-center', agentActionCenterRouter);
-  app.use('/api/admin/costing',     require('../routes/admin-costing'));
+  const adminCostingRoutes = require('../routes/admin-costing');
+  app.use('/api/admin/costing', adminCostingRoutes);
   app.use('/api/admin',      catalogApprovalRouter);
   app.use('/api/admin',      adminRouter);
   app.use('/api/admin/rules', adminRulesRouter);

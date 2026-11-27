@@ -375,6 +375,33 @@ const KNOWN_RESPONSES = {
   '/api/admin/action-center/market/{marketCode}/signals/{signalRef}/acknowledge': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/action-center/market/{marketCode}/signals/{signalRef}/snooze': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/action-center/market/{marketCode}/signals/{signalRef}/resolve': { post: { fields: ['ok','action','result'], source: 'test' } },
+  // ECO — real PostgreSQL HTTP proof: economic-cost-center-api-postgres.test.js.
+  // Both routes share the read-only payload; GROUP is explicitly not all markets.
+  '/api/admin/workspaces/pricing/cost-centers/close-period': { post: { fields: ['outcome','periodStart'], source: 'test' } },
+  '/api/admin/workspaces/pricing/cost-centers': {
+    get: { fields: ['scope','marketCode','periodStart','central','readOnly','centers','families','resources','posts','budgetSummary','commitmentSummary','structureEvidence','activity','profitability','actualCoverage','available'], source: 'test' }
+  },
+  '/api/admin/workspaces/pricing/market/{marketCode}/cost-centers': {
+    get: { fields: ['scope','marketCode','periodStart','central','readOnly','centers','families','resources','posts','budgetSummary','commitmentSummary','structureEvidence','activity','profitability','actualCoverage','available'], source: 'test' }
+  },
+  '/api/admin/workspaces/pricing/cost-centers/posts/{postId}/budget-revisions': {
+    post: { fields: ['outcome','revision'], source: 'test' }
+  },
+  '/api/admin/workspaces/pricing/market/{marketCode}/cost-centers/posts/{postId}/budget-revisions': {
+    post: { fields: ['outcome','revision'], source: 'test' }
+  },
+  '/api/admin/workspaces/pricing/cost-centers/posts/{postId}/commitments': { post: { fields: ['outcome','commitment'], source: 'test' } },
+  '/api/admin/workspaces/pricing/cost-centers/commitments/{commitmentId}/movements': { post: { fields: ['outcome','movement'], source: 'test' } },
+  '/api/admin/workspaces/pricing/market/{marketCode}/cost-centers/posts/{postId}/commitments': { post: { fields: ['outcome','commitment'], source: 'test' } },
+  '/api/admin/workspaces/pricing/market/{marketCode}/cost-centers/commitments/{commitmentId}/movements': { post: { fields: ['outcome','movement'], source: 'test' } },
+  '/api/admin/workspaces/pricing/cost-centers/posts/{postId}/actuals': { post: { fields: ['outcome','fact'], source: 'test' } },
+  '/api/admin/workspaces/pricing/market/{marketCode}/cost-centers/posts/{postId}/actuals': { post: { fields: ['outcome','fact'], source: 'test' } },
+  '/api/admin/workspaces/pricing/cost-centers/families/{familyId}/posts': { post: { fields: ['outcome','post'], source: 'test' } },
+  '/api/admin/workspaces/pricing/market/{marketCode}/cost-centers/families/{familyId}/posts': { post: { fields: ['outcome','post'], source: 'test' } },
+  '/api/admin/workspaces/pricing/cost-centers/initialize': { post: { fields: ['centers','families'], source: 'test' } },
+  '/api/admin/workspaces/pricing/market/{marketCode}/cost-centers/initialize': { post: { fields: ['centers','families'], source: 'test' } },
+  '/api/admin/workspaces/pricing/cost-centers/references': { post: { fields: ['outcome','reference'], source: 'test' } },
+  '/api/admin/workspaces/pricing/market/{marketCode}/cost-centers/references': { post: { fields: ['outcome','reference'], source: 'test' } },
   // LOT 4F — réponses Pricing Workspace consommées par Canonical.
   // LOT 4V — décision économique market-scoped : formes lues dans les routes/services canoniques.
   // LOT 3 (2026-09) — tests/unit/admin-pricing-workspace-market-route.test.js
@@ -588,6 +615,13 @@ const KNOWN_RESPONSES = {
   '/api/admin/markets/central-authority': { get: { fields: ['domains','group_capabilities'], source: 'test' } },
   '/api/admin/markets/{marketCode}/control-plane': {
     get: { fields: ['market','assignment','ceiling','team','paymentProviders','cashPolicy','relaisActive','gaps'], source: 'test' }
+  },
+  '/api/admin/market-settlements/markets/{marketCode}/hub-invoices': {
+    get: { fields: ['invoice','can_issue','statement','evidence_hash','overlapping_invoice_id'], source: 'route-read' },
+    post: { fields: ['invoice'], source: 'route-read' }
+  },
+  '/api/admin/market-settlements/markets/{marketCode}/hub-invoices/{invoiceId}/payment': {
+    post: { fields: ['invoice'], source: 'route-read' }
   },
   '/api/admin/market-settlements/markets/{marketCode}/settlements': {
     get: { fields: ['market','assignment_id','settlements'], source: 'route-read' }
@@ -1132,6 +1166,18 @@ const KNOWN_RESPONSES = {
   },
   // Pilotage marge par produit (#2595/écran) : tests/unit/admin-costing-real-margin-shadow.test.js
   // asserte res.body.products / market_id → 'test'.
+  '/api/admin/costing/products/{productId}/sku-rail-selection': {
+    post: { fields: ['outcome', 'event'], source: 'test' },
+  },
+  '/api/admin/costing/local-stock/receipt-lots': {
+    get: { fields: ['receipts','sales'], source: 'route-read' }
+  },
+  '/api/admin/costing/local-stock/receipt-lots/close': {
+    post: { fields: ['receipt_id','sku_id','market_id','quantity','purchase_total_kmf','payment_proof_ref','closed_by','closed_at'], source: 'route-read' }
+  },
+  '/api/admin/costing/local-stock/receipt-lots/link': {
+    post: { fields: ['order_item_id','receipt_id','quantity','purchase_kmf','lot_proof_ref','linked_by','linked_at'], source: 'route-read' }
+  },
   '/api/admin/costing/products/margin-steering': {
     get: { fields: ['market_id','since_days','rules','products','truncated'], source: 'test' }
   },
@@ -2832,6 +2878,18 @@ if (inventory.length < 150) {
 }
 
 const SUCCESS_STATUS_OVERRIDES = Object.freeze({
+  'POST /api/admin/workspaces/pricing/cost-centers/references': '201',
+  'POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/references': '201',
+  'POST /api/admin/workspaces/pricing/cost-centers/families/{familyId}/posts': '201',
+  'POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/families/{familyId}/posts': '201',
+  'POST /api/admin/workspaces/pricing/cost-centers/posts/{postId}/actuals': '201',
+  'POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/posts/{postId}/actuals': '201',
+  'POST /api/admin/workspaces/pricing/cost-centers/posts/{postId}/commitments': '201',
+  'POST /api/admin/workspaces/pricing/cost-centers/commitments/{commitmentId}/movements': '201',
+  'POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/posts/{postId}/commitments': '201',
+  'POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/commitments/{commitmentId}/movements': '201',
+  'POST /api/admin/workspaces/pricing/cost-centers/posts/{postId}/budget-revisions': '201',
+  'POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/posts/{postId}/budget-revisions': '201',
   'POST /api/relay/returns': '201',
   'POST /api/relay/returns/remarks': '201',
   'POST /api/relay/returns/intake': '201',

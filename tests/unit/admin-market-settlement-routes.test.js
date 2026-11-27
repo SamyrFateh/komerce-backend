@@ -40,3 +40,10 @@ describe('admin settlement routes — central-only boundary', () => {
     expect(mounts).toHaveLength(1);
   });
 });
+
+test('la facture Hub et son règlement restent des actions de finance centrale', () => {
+  expect(source).toContain("router.post('/markets/:marketCode/hub-invoices', ...centralFinance");
+  expect(source).toContain("router.post('/markets/:marketCode/hub-invoices/:invoiceId/payment', ...centralFinance");
+  expect(source).toContain("assertAllowedBody(req.body, ['from', 'to', 'evidence_hash'])");
+  expect(source).toContain('BEGIN ISOLATION LEVEL SERIALIZABLE');
+});

@@ -103,6 +103,12 @@ describeE2E('Market Control Plane H — provisioning -> première commande',({db
 
     // Parent d'abord, enfants ensuite : cleanup LIFO.
     cleanup.track('markets','id',marketId);
+    // Provisioning now creates economic references as well. Delete only the
+    // new test market's descendants in LIFO order; never relax production FKs.
+    cleanup.trackSql('DELETE FROM economic_cost_centers WHERE market_id=$1',[marketId]);
+    cleanup.trackSql('DELETE FROM economic_cost_families WHERE center_id IN (SELECT id FROM economic_cost_centers WHERE market_id=$1)',[marketId]);
+    cleanup.trackSql('DELETE FROM economic_cost_resources WHERE center_id IN (SELECT id FROM economic_cost_centers WHERE market_id=$1)',[marketId]);
+    cleanup.trackSql('DELETE FROM economic_cost_posts WHERE center_id IN (SELECT id FROM economic_cost_centers WHERE market_id=$1)',[marketId]);
     cleanup.track('market_operating_assignments','id',assignmentId);
     cleanup.trackSql('DELETE FROM assignment_capability_ceiling WHERE assignment_id=$1',[assignmentId]);
     cleanup.trackSql('DELETE FROM assignment_memberships WHERE assignment_id=$1',[assignmentId]);
@@ -116,6 +122,8 @@ describeE2E('Market Control Plane H — provisioning -> première commande',({db
 
     const {rows:[stored]}=await db.query('SELECT lifecycle_status,is_active FROM markets WHERE id=$1',[marketId]);
     expect(stored).toEqual(expect.objectContaining({lifecycle_status:'PROVISIONING',is_active:false}));
+    const {rows:[references]}=await db.query('SELECT COUNT(*)::int AS centers FROM economic_cost_centers WHERE market_id=$1',[marketId]);
+    expect(references.centers).toBeGreaterThan(0);
   });
 
   it('1b — aucun contrat transporteur nécessaire quand un relais actif existe',async()=>{
