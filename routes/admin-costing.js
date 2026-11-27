@@ -737,7 +737,7 @@ function localLotCommand(action) {
       const result=await localStockLots[action](client,{
         marketId,receiptId:req.body?.receipt_id,actorId:req.user.id,
         purchaseTotalKmf:req.body?.purchase_total_kmf,paymentProofRef:req.body?.payment_proof_ref,
-        orderItemId:req.body?.order_item_id,lotProofRef:req.body?.lot_proof_ref,
+        orderItemId:req.body?.order_item_id,lotProofRef:req.body?.lot_proof_ref,quantity:req.body?.quantity ?? null,
       });
       await client.query('COMMIT');
       res.json(result);

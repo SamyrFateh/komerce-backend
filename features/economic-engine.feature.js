@@ -167,6 +167,7 @@ module.exports = {
       'migrations/434_economic_sku_rail_selection_events.sql',
       'migrations/435_economic_selection_decision_source.sql',
       'migrations/453_local_stock_economic_receipt_lots.sql',
+      'migrations/454_local_stock_economic_multi_lot.sql',
       'migrations/431_economic_cost_budget_revisions.sql',
       'migrations/430_economic_cost_center_reference.sql',
       'migrations/235_sourcing_pln_rate.sql',

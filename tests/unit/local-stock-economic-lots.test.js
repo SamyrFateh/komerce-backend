@@ -20,10 +20,25 @@ test('refuses sale beyond proven receipt quantity',async()=>{
   expect(q.query).toHaveBeenCalledTimes(4);
 });
 test('replays the exact existing sale attribution without rewriting it',async()=>{
-  const existing={receipt_id:receiptId,lot_proof_ref:'BL/lot'};
+  const existing={receipt_id:receiptId,quantity:4,lot_proof_ref:'BL/lot'};
   const q={query:jest.fn().mockResolvedValueOnce({rows:[{sku_id:'sku',quantity:10}]})
     .mockResolvedValueOnce({rows:[{id:orderItemId,quantity:4}]})
     .mockResolvedValueOnce({rows:[existing]})};
   await expect(lots.link(q,args)).resolves.toEqual(existing);
   expect(q.query).toHaveBeenCalledTimes(3);
+});
+
+test('partial links remain unpriced until exact sale coverage',()=>{
+ const row={order_item_id:'a',shipment_id:'L1',part_quantity:4,sale_quantity:10,purchase_kmf:'20000'};
+ expect(lots.groupCompleteSaleLots([row]).size).toBe(0);
+ const second={...row,shipment_id:'L2',part_quantity:6,purchase_kmf:'30000.01'};
+ expect(lots.groupCompleteSaleLots([row,second]).get('a')).toMatchObject({purchase_kmf:50000.01,parts:[row,second]});
+ expect(lots.groupCompleteSaleLots([row,second,second]).size).toBe(0);
+});
+test('refuses cumulative attribution exceeding the sale quantity',async()=>{
+ const q={query:jest.fn().mockResolvedValueOnce({rows:[{sku_id:'sku',quantity:10}]})
+ .mockResolvedValueOnce({rows:[{id:orderItemId,quantity:4}]})
+ .mockResolvedValueOnce({rows:[]}).mockResolvedValueOnce({rows:[{quantity:0}]})
+ .mockResolvedValueOnce({rows:[{quantity:3}]})};
+ await expect(lots.link(q,{...args,quantity:2})).rejects.toMatchObject({code:'LOCAL_LOT_SALE_QUANTITY_EXCEEDED'});
 });

@@ -491,11 +491,14 @@
             detail.append(el(doc,'p','kmc-v7-coverage','Achat clôturé : '+receipt.purchase_total_kmf+' KMF. Rattacher uniquement une vente dont le lot est attesté.'));
             const sale=el(doc,'select');sale.required=true;sale.setAttribute('aria-label','Vente du SKU');
             for(const row of data.sales.filter(row=>row.sku_id===receipt.sku_id && Date.parse(row.sold_at)>=Date.parse(receipt.received_at))){
-              const option=el(doc,'option','',row.order_reference+' · '+row.quantity+' unité(s)');option.value=row.order_item_id;sale.append(option);
+              const option=el(doc,'option','',row.order_reference+' · '+row.remaining_quantity+' unité(s) à rattacher');option.value=row.order_item_id;sale.append(option);
             }
             const proof=input('lot_proof_ref','Justificatif du rattachement physique');
-            form.append(sale,proof);
-            body=()=>({order_item_id:sale.value,lot_proof_ref:proof.value});
+            const qty=input('quantity','Quantité attestée de ce lot','number');qty.min='1';qty.step='1';
+            const setMax=()=>{const row=data.sales.find(row=>row.order_item_id===sale.value);qty.max=String(Math.min(Number(receipt.quantity)-Number(receipt.linked_quantity),Number(row?.remaining_quantity||0)));};
+            sale.addEventListener('change',setMax);setMax();
+            form.append(sale,qty,proof);
+            body=()=>({order_item_id:sale.value,quantity:Number(qty.value),lot_proof_ref:proof.value});
           }
           form.append(submit,feedback);
           form.addEventListener('submit',async event=>{

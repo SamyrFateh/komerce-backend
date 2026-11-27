@@ -1166,3 +1166,5 @@ migration: 453
 section: ### 4.8 Pricing et économie (tables live + objets visés)
 role: Rattachement explicite de la vente locale au lot clôturé, quantité et coût ventilé au centime ; preuve et acteur. Non live avant déploiement.
 -->
+
+La migration 454 (schéma visé, non live vérifié) étend la clé primaire de `local_stock_economic_lot_lines` à `(order_item_id, receipt_id)` pour permettre plusieurs lots par vente. Les sommes de quantités par lot et par vente sont plafonnées dans la transaction du writer.

@@ -191,17 +191,32 @@ function applyLandedCostCoverage(line, real) {
   result.margin_pct = result.sale_kmf > 0 ? pct2(100 * margin / result.sale_kmf) : null;
 }
 
-// A local order can be reconciled only from complete sale-line evidence, plus
-// the canonical order revenue/payment/refund oracle. A mixed basket remains
-// non-decisionable here until a common reconciliation can prove both rails.
+// A local or mixed order requires complete sale-line evidence and the canonical
+// revenue/payment/refund oracle. The settled supplier purchase belongs only to IMPORT.
 function reconcileLocalOrder(lines, shadow, orderItemCount) {
   if (!lines.length || lines.length !== orderItemCount || shadow?.status_order !== 'collected'
       || !Array.isArray(shadow.revenue?.flags)
       || shadow.revenue.flags.some(flag=>flag.startsWith('payment_status_') || flag.startsWith('refund_'))
-      || lines.some(line=>line.fulfillment_source !== 'LOCAL_STOCK' || !line.local_lot || line.landed_cost_evidence?.status !== 'final'
+      || lines.some(line=>(line.fulfillment_source === 'LOCAL_STOCK' ? !line.local_lot : line.fulfillment_source !== 'IMPORT') || line.landed_cost_evidence?.status !== 'final'
         || !Number.isFinite(line.result.cost_kmf) || !Number.isFinite(line.result.sale_kmf))) return false;
   const saleCents=lines.reduce((sum,line)=>sum+Math.round(line.result.sale_kmf*100),0);
   if (saleCents!==Math.round((shadow.revenue.net_kmf_exact ?? shadow.revenue.net_kmf)*100)) return false;
+  const imported=lines.filter(line=>line.fulfillment_source==='IMPORT');
+  if (imported.length) {
+    const by=shadow.costs?.by_type;
+    const purchase=by?.product_purchase;
+    if (purchase?.state!=='real'||purchase.real_source!=='supplier_payment_settlements') return false;
+    const cents=imported.reduce((sum,line)=>sum+Math.round(line.result.costs.product_purchase.amount_kmf*100),0);
+    if(cents!==Math.round((purchase.real_kmf_exact??purchase.real_kmf)*100))return false;
+    for(const type of LANDED_VARIABLE_TYPES) {
+      if(type==='product_purchase')continue;
+      const total=lines.reduce((sum,line)=>sum+Math.round((line.result.costs[type]?.amount_kmf||0)*100),0);
+      const entry=by[type];
+      if(entry?.state==='real'){
+        if(total!==Math.round((entry.real_kmf_exact??entry.real_kmf)*100))return false;
+      }else if(entry?.state!=='not_expected'||total!==0)return false;
+    }
+  }
   for (const { result } of lines) {
     result.status='final';
     result.reconciled_after_sale_margin_kmf=result.margin_kmf;
@@ -209,7 +224,41 @@ function reconcileLocalOrder(lines, shadow, orderItemCount) {
   return true;
 }
 
+// Expand a fully attributed line into quantity-weighted observations. The
+// purchase is exact per lot; other costs/revenue/estimate use largest remainder
+// in cents. A partial or unproven line never produces an admissible fragment.
+function expandLocalLotObservations(lines, shipments) {
+  const expanded=[], lookup=new Map(shipments);
+  for(const line of lines){
+    const lot=shipments.get(line.order_item_id);
+    if(line.fulfillment_source!=='LOCAL_STOCK'||!lot?.parts||lot.parts.length===1){expanded.push(line);continue;}
+    const weights=lot.parts.map(p=>({id:p.shipment_id,weight:Number(p.part_quantity)}));
+    const split=value=>new Map(shareByWeight(Math.round(value*100),weights).map(p=>[p.id,p.share]));
+    const original=line.landed_cost_evidence;
+    const final=original?.status==='final'&&Number.isFinite(line.result.reconciled_after_sale_margin_kmf);
+    const sale=split(line.result.sale_kmf||0);
+    const estimated=Number.isFinite(line.frozen_estimated_cost_kmf)?split(line.frozen_estimated_cost_kmf):null;
+    const other=Object.entries(original?.costs||{}).filter(([type,c])=>type!=='product_purchase'&&c.state==='real');
+    const allocated=other.map(([type,c])=>[type,split(c.amount_kmf)]);
+    lookup.delete(line.order_item_id);
+    for(const part of lot.parts){
+      const id=line.order_item_id+':'+part.shipment_id;
+      const costs={product_purchase:{state:'real',amount_kmf:Number(part.purchase_kmf)}};
+      for(const [type,values] of allocated)costs[type]={state:'real',amount_kmf:values.get(part.shipment_id)/100};
+      const rev=sale.get(part.shipment_id);
+      const cost=Object.values(costs).reduce((sum,c)=>sum+Math.round(c.amount_kmf*100),0);
+      expanded.push({...line,order_item_id:id,quantity:Number(part.part_quantity),
+        frozen_estimated_cost_kmf:estimated?estimated.get(part.shipment_id)/100:null,
+        landed_cost_evidence:{...original,status:final?'final':(original?.status||'incomplete'),costs},
+        result:{...line.result,sale_kmf:rev/100,reconciled_after_sale_margin_kmf:final?(rev-cost)/100:null}});
+      lookup.set(id,part);
+    }
+  }
+  return {lines:expanded,shipments:lookup};
+}
+
 function summarizeObservedLandedCost(lines, shipments, { since, truncated }) {
+  ({lines,shipments}=expandLocalLotObservations(lines,shipments));
   const cohorts = new Map();
   // A shipment counts once only if every line of that SKU in it is covered.
   // Never publish a partial shipment as an independent economic observation.
@@ -649,8 +698,20 @@ async function listProductMarginSteering({ marketId, productId = null, sinceDays
     const orderItemCount = orderLines[0].order_item_count;
     if (orderLines.length !== orderItemCount) continue;
     const shadow = await realMarginShadow.computeOrderRealMarginShadow(orderId, { marketId });
-    if (orderLines.every(l=>l.fulfillment_source==='LOCAL_STOCK')) localShadows.set(orderId,shadow);
-    else applyFinalOrderReal(orderLines, shadow, orderItemCount);
+    if (orderLines.some(l=>l.fulfillment_source==='LOCAL_STOCK')) {
+      localShadows.set(orderId,shadow);
+      const imported=orderLines.filter(l=>l.fulfillment_source==='IMPORT');
+      const purchase=shadow?.costs?.by_type?.product_purchase;
+      if(imported.length&&purchase?.state==='real'&&purchase.real_source==='supplier_payment_settlements'){
+        const amount=num(purchase.real_kmf_exact??purchase.real_kmf);
+        const weights=imported.map((line,id)=>({id,weight:line.result.costs.product_purchase?.amount_kmf||0}));
+        if(amount!==null&&(amount===0||weights.some(w=>w.weight>0))){
+          for(const part of shareByWeight(Math.round(amount*100),weights)){
+            imported[part.id].result.costs.product_purchase={state:'real',amount_kmf:part.share/100};
+          }
+        }
+      }
+    } else applyFinalOrderReal(orderLines, shadow, orderItemCount);
   }
 
   for (const l of lines) {
@@ -715,4 +776,4 @@ async function listProductMarginSteering({ marketId, productId = null, sinceDays
   };
 }
 
-module.exports = { evaluateShipmentLosses, loadComparableSaleShipments, listProductMarginSteering, computeLineMargin, computeLandedCostEvidence, applyLandedCostCoverage, reconcileLocalOrder, summarizeObservedLandedCost, summarizeProduct, applyFinalOrderReal, DEFAULT_RULES };
+module.exports = { evaluateShipmentLosses, loadComparableSaleShipments, listProductMarginSteering, computeLineMargin, computeLandedCostEvidence, applyLandedCostCoverage, reconcileLocalOrder, expandLocalLotObservations, summarizeObservedLandedCost, summarizeProduct, applyFinalOrderReal, DEFAULT_RULES };

@@ -321,3 +321,29 @@ describe('financially closed local receipt lots', () => {
     expect(reconcileLocalOrder([good],{...shadow,revenue:{...shadow.revenue,flags:['refund_not_completed_not_deducted']}},1)).toBe(false);
   });
 });
+
+describe('multi-lot and mixed orders',()=>{
+ const {applyLandedCostCoverage,reconcileLocalOrder,summarizeObservedLandedCost}=require('../../services/cost-allocation/product-margin-steering');
+ const real=amount=>({state:'real',amount_kmf:amount});
+ test('three lots on two sales conserve each cent and count each lot once',()=>{
+  const lot=(id,q,p)=>({shipment_id:id,rail:'LOCAL_STOCK',financial_closed_at:'2026-11-03T00:00:00Z',sku_line_count:1,part_quantity:q,purchase_kmf:p});
+  const make=(id,parts)=>({order_item_id:id,sku_id:'S1',quantity:10,fulfillment_source:'LOCAL_STOCK',local_lot:{parts},local_purchase_kmf:50000,
+    frozen_estimated_cost_kmf:51000,result:{status:'provisional',sale_kmf:70000,costs:{}}});
+  const a=make('a',[lot('L1',4,20000),lot('L2',6,30000)]),b=make('b',[lot('L3',10,50000)]);
+  for(const line of [a,b]){applyLandedCostCoverage(line,{relay:{actual:1200,actual_count:1},payment:{actual:800,actual_count:1}});
+    expect(reconcileLocalOrder([line],{status_order:'collected',revenue:{net_kmf:70000,flags:[]}},1)).toBe(true);}
+  const map=new Map([['a',{...a.local_lot.parts[0],parts:a.local_lot.parts}],['b',{...b.local_lot.parts[0],parts:b.local_lot.parts}]]);
+  expect(summarizeObservedLandedCost([a,b],map,{since:0,truncated:false})[0]).toMatchObject({observations:3,quantity:20,unit_cost_kmf:5200,observed_multiplier:1.04,cost_by_type_kmf:{product_purchase:100000,relay:2400,payment:1600}});
+ });
+ test('mixed basket keeps local purchase outside the import supplier settlement',()=>{
+  const local={fulfillment_source:'LOCAL_STOCK',local_lot:{},result:{sale_kmf:10000,cost_kmf:5200,margin_kmf:4800,costs:{product_purchase:real(5000),relay:real(100),payment:real(100)}},landed_cost_evidence:{status:'final'}};
+  const imported={fulfillment_source:'IMPORT',result:{sale_kmf:10000,cost_kmf:7100,margin_kmf:2900,costs:{product_purchase:real(6000),freight:real(800),customs:real(100),port_transitaire:real(0),relay:real(100),payment:real(100)}},landed_cost_evidence:{status:'final'}};
+  const entry=amount=>({state:'real',real_kmf:amount});
+  const by=Object.fromEntries(['sourcing','hub','packaging','local_distribution'].map(t=>[t,{state:'not_expected'}]));
+  Object.assign(by,{product_purchase:{...entry(6000),real_source:'supplier_payment_settlements'},freight:entry(800),customs:entry(100),port_transitaire:entry(0),relay:entry(200),payment:entry(200)});
+  const shadow={status_order:'collected',revenue:{net_kmf:20000,flags:[]},costs:{by_type:by}};
+  expect(reconcileLocalOrder([local,imported],shadow,2)).toBe(true);
+  by.product_purchase.real_kmf=11000;
+  expect(reconcileLocalOrder([local,imported],shadow,2)).toBe(false);
+ });
+});

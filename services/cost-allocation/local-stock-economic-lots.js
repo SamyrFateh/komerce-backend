@@ -64,10 +64,11 @@ async function list(q, marketId) {
       WHERE a.market_id=$1 AND a.action='LOCAL_STOCK_RECEIPT'
       ORDER BY a.occurred_at DESC, a.id LIMIT 200`, [marketId]);
   const { rows: sales } = await q.query(
-    `SELECT oi.id AS order_item_id, oi.sku_id, oi.quantity, o.reference AS order_reference, o.created_at AS sold_at
+    `SELECT oi.id AS order_item_id, oi.sku_id, oi.quantity, o.reference AS order_reference, o.created_at AS sold_at,
+       oi.quantity-(SELECT COALESCE(SUM(l.quantity),0)::int FROM local_stock_economic_lot_lines l WHERE l.order_item_id=oi.id) AS remaining_quantity
        FROM order_items oi JOIN orders o ON o.id=oi.order_id
       WHERE o.market_id=$1 AND ${saleEligible}
-        AND NOT EXISTS (SELECT 1 FROM local_stock_economic_lot_lines l WHERE l.order_item_id=oi.id)
+        AND oi.quantity>(SELECT COALESCE(SUM(l.quantity),0) FROM local_stock_economic_lot_lines l WHERE l.order_item_id=oi.id)
       ORDER BY o.created_at DESC, oi.id LIMIT 200`, [marketId]);
   return { receipts, sales };
 }
@@ -94,7 +95,7 @@ async function close(q, { marketId, receiptId, purchaseTotalKmf, paymentProofRef
   if (!existing) throw fail('LOCAL_LOT_CLOSED', 'Lot déjà clôturé avec des preuves différentes.', 409);
   return existing;
 }
-async function link(q, { marketId, receiptId, orderItemId, lotProofRef, actorId }) {
+async function link(q, { marketId, receiptId, orderItemId, lotProofRef, actorId, quantity = null }) {
   uuid(receiptId); uuid(orderItemId); const ref=proof(lotProofRef);
   const { rows: [lot] } = await q.query(
     `SELECT l.*, a.occurred_at AS received_at
@@ -106,35 +107,58 @@ async function link(q, { marketId, receiptId, orderItemId, lotProofRef, actorId 
       WHERE oi.id=$1 AND o.market_id=$2 AND oi.sku_id=$3 AND o.created_at >= $4
         AND ${saleEligible} FOR UPDATE OF oi,o`, [orderItemId,marketId,lot.sku_id,lot.received_at]);
   if (!sale) throw fail('LOCAL_LOT_SALE_UNPROVEN', 'Vente non admissible, SKU/marché différent ou antérieure à la réception.', 409);
-  const { rows: [existing] } = await q.query('SELECT * FROM local_stock_economic_lot_lines WHERE order_item_id=$1', [orderItemId]);
+  const qty=quantity===null ? Number(sale.quantity) : quantity;
+  if (!Number.isSafeInteger(qty) || qty<=0 || qty>Number(sale.quantity)) throw fail('LOCAL_LOT_LINK_QUANTITY_INVALID','Quantité attestée invalide.');
+  const { rows: [existing] } = await q.query('SELECT * FROM local_stock_economic_lot_lines WHERE order_item_id=$1 AND receipt_id=$2', [orderItemId,receiptId]);
   if (existing) {
-    if (existing.receipt_id===receiptId && existing.lot_proof_ref===ref) return existing;
-    throw fail('LOCAL_LOT_SALE_ALREADY_LINKED', 'Vente déjà rattachée à une preuve différente.', 409);
+    if (existing.receipt_id===receiptId && Number(existing.quantity)===qty && existing.lot_proof_ref===ref) return existing;
+    throw fail('LOCAL_LOT_SALE_ALREADY_LINKED', 'Ce couple vente/lot a déjà une preuve différente.', 409);
   }
   const { rows: [used] } = await q.query('SELECT COALESCE(SUM(quantity),0)::int AS quantity FROM local_stock_economic_lot_lines WHERE receipt_id=$1', [receiptId]);
-  if (Number(used.quantity)+Number(sale.quantity)>Number(lot.quantity)) throw fail('LOCAL_LOT_QUANTITY_EXCEEDED', 'Quantité du lot insuffisante ; aucun rapprochement partiel implicite.', 409);
+  if (Number(used.quantity)+qty>Number(lot.quantity)) throw fail('LOCAL_LOT_QUANTITY_EXCEEDED', 'Quantité du lot insuffisante.', 409);
+  const { rows: [assigned] } = await q.query('SELECT COALESCE(SUM(quantity),0)::int AS quantity FROM local_stock_economic_lot_lines WHERE order_item_id=$1',[orderItemId]);
+  if (Number(assigned.quantity)+qty>Number(sale.quantity)) throw fail('LOCAL_LOT_SALE_QUANTITY_EXCEEDED','Quantité vendue déjà attribuée.',409);
   // Cumulative rounding conserves the exact documented purchase total when the lot is fully attributed.
   const { rows: [linked] } = await q.query(
     `INSERT INTO local_stock_economic_lot_lines(order_item_id,receipt_id,quantity,purchase_kmf,lot_proof_ref,linked_by)
      SELECT $1,receipt_id,$3,ROUND(purchase_total_kmf*($4::numeric+$3::numeric)/quantity,2)
        -ROUND(purchase_total_kmf*$4::numeric/quantity,2),$5,$6
        FROM local_stock_economic_lots WHERE receipt_id=$2 RETURNING *`,
-    [orderItemId,receiptId,sale.quantity,used.quantity,ref,actorId]);
+    [orderItemId,receiptId,qty,used.quantity,ref,actorId]);
   return linked;
 }
 async function loadComparable(q, marketId, ids) {
   if (!ids.length) return new Map();
   const { rows } = await q.query(
     `SELECT x.order_item_id, x.receipt_id AS shipment_id, 'LOCAL_STOCK' AS rail,
-       l.closed_at AS financial_closed_at, x.purchase_kmf,
+       l.closed_at AS financial_closed_at, x.purchase_kmf, x.quantity AS part_quantity, oi.quantity AS sale_quantity,
        (SELECT COUNT(*)::int FROM local_stock_economic_lot_lines other WHERE other.receipt_id=l.receipt_id) AS sku_line_count
        FROM local_stock_economic_lot_lines x
        JOIN local_stock_economic_lots l ON l.receipt_id=x.receipt_id
        JOIN market_delegation_audit a ON a.id=l.receipt_id AND a.market_id=l.market_id
-       JOIN order_items oi ON oi.id=x.order_item_id AND oi.sku_id=l.sku_id AND oi.quantity=x.quantity
+       JOIN order_items oi ON oi.id=x.order_item_id AND oi.sku_id=l.sku_id
        JOIN orders o ON o.id=oi.order_id AND o.market_id=l.market_id
       WHERE x.order_item_id=ANY($1::uuid[]) AND l.market_id=$2 AND o.created_at>=a.occurred_at
         AND ${saleEligible}`, [ids,marketId]);
-  return new Map(rows.map(row=>[row.order_item_id,row]));
+  return groupCompleteSaleLots(rows);
 }
-module.exports = { marketForCode, list, close, link, loadComparable, money, proof };
+function groupCompleteSaleLots(rows) {
+  const groups=new Map();
+  for (const row of rows) {
+    const group=groups.get(row.order_item_id)||[];
+    group.push(row);groups.set(row.order_item_id,group);
+  }
+  const result=new Map();
+  for (const [id,parts] of groups) {
+    const saleQty=Number(parts[0].sale_quantity);
+    if (!Number.isSafeInteger(saleQty)||saleQty<=0 ||
+        new Set(parts.map(p=>p.shipment_id)).size!==parts.length ||
+        parts.some(p=>!Number.isSafeInteger(Number(p.part_quantity))||Number(p.part_quantity)<=0 ||
+          Number(p.sale_quantity)!==saleQty || p.purchase_kmf==null || !Number.isFinite(Number(p.purchase_kmf))) ||
+        parts.reduce((s,p)=>s+Number(p.part_quantity),0)!==saleQty) continue;
+    const purchase=parts.reduce((s,p)=>s+Math.round(Number(p.purchase_kmf)*100),0)/100;
+    result.set(id,{...parts[0],purchase_kmf:purchase,parts});
+  }
+  return result;
+}
+module.exports = { marketForCode, list, close, link, loadComparable, groupCompleteSaleLots, money, proof };
