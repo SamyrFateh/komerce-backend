@@ -179,3 +179,11 @@ describe('getControlPlane / listMarkets — lecture seule', () => {
     expect(db.calls.every(sql => /^\s*SELECT/i.test(sql))).toBe(true);
   });
 });
+
+test('checklist preparation is never exposed without scoped team-read membership',async()=>{
+  const { getPreparationChecklist } = require('../../services/market-control-plane');
+  const db = {query:jest.fn()};
+  await expect(getPreparationChecklist(db,{lifecycle_status:'ACTIVE',membership_id:'mem',capabilities:['team.read']})).resolves.toBeNull();
+  await expect(getPreparationChecklist(db,{lifecycle_status:'PROVISIONING',membership_id:'mem',capabilities:['network.read']})).resolves.toBeNull();
+  expect(db.query).not.toHaveBeenCalled();
+});

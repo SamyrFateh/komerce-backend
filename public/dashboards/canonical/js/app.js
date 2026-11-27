@@ -1143,8 +1143,54 @@
     await global.KomerceCanonicalProvidersAdmin.render(root);
   }
 
+  function selectedPreparationMarket(adminContext) {
+    const access = adminContext?.access;
+    if (!access?.preparation || adminContext.actor?.role !== 'market_operator') return null;
+    const requested = new URLSearchParams(String(global.location?.search || '')).get('market');
+    const code = requested ? requested.trim().toUpperCase() : access.defaultMarket;
+    return access.allowedMarkets.includes(code) && access.preparation[code] ? code : null;
+  }
+
+  function renderMarketPreparation(root, adminContext, code) {
+    const doc = global.document;
+    const data = adminContext.access.preparation[code];
+    const section = doc.createElement('section');
+    section.className = 'kmc-workspace';
+    section.appendChild(textNode(doc,'h1','','Préparer mon marché · '+code));
+    section.appendChild(textNode(doc,'p','kmc-workspace-note','La boutique reste fermée. Configurez votre marché, puis le central contrôlera les prérequis et décidera de l’ouverture.'));
+    const done = data.items.filter(item => item.status === 'ready').length;
+    section.appendChild(textNode(doc,'p','',''+done+' / '+data.items.length+' domaines vérifiés'));
+    const destinations = { team: '/admin/users', network: '/admin/providers' };
+    const caps = adminContext.access.delegatedCapabilities[code] || [];
+    const rights = { team:'team.read',network:'network.read' };
+    for (const item of data.items) {
+      const row = doc.createElement('section');
+      row.className = 'kmc-workspace';
+      row.appendChild(textNode(doc,'h3','',item.label));
+      const label = item.status === 'ready' ? 'Vérifié' : item.status === 'blocked' ? 'À corriger' : 'À vérifier';
+      row.appendChild(textNode(doc,'p','',label+' · '+(item.owner==='central'?'Central':'Responsable marché')));
+      for (const reason of item.blockers) row.appendChild(textNode(doc,'p','kmc-workspace-note',reason));
+      if (destinations[item.id] && caps.includes(rights[item.id])) {
+        const link = doc.createElement('a');
+        link.href = destinations[item.id]+'?market='+encodeURIComponent(code);
+        link.textContent = item.status === 'ready' ? 'Consulter' : 'Configurer';
+        row.appendChild(link);
+      }
+      section.appendChild(row);
+    }
+    const refresh = doc.createElement('button');
+    refresh.type = 'button'; refresh.textContent = 'Actualiser les prérequis';
+    refresh.addEventListener('click',()=>global.location.reload());
+    section.appendChild(refresh);
+    root.replaceChildren(section);
+  }
+
   function renderReady(root, user, adminContext) {
     const surface = surfaceForPath(global.location.pathname);
+    if (surface === SURFACES.PILOTAGE) {
+      const code = selectedPreparationMarket(adminContext);
+      if (code) return renderMarketPreparation(root, adminContext, code);
+    }
     watchPurposeBox(root, surface);
     if (surface === SURFACES.SETTINGS) return renderSettingsWorkspace(root, user, adminContext);
     if (surface === SURFACES.PROVIDERS_ADMIN) return renderProvidersAdmin(root, user, adminContext);
@@ -1346,6 +1392,7 @@
     renderPricingWorkspaceShell,
     renderDemo,
     renderReady,
+    renderMarketPreparation,
     mountPurposeBox,
     watchPurposeBox,
     SCREEN_PURPOSE,

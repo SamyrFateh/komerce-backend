@@ -181,3 +181,13 @@ describe('L1 resolveExplicitMarket (contrat front)', () => {
     expect(r.marketCode).toBe(code);
   });
 });
+
+test('préparation : projection serveur bornée au marché autorisé', () => {
+  const valid = { actor:{id:'lead',role:'market_operator'},access:{
+    mode:'market',allowedMarkets:['GA'],defaultMarket:'GA',capabilities:[],
+    preparation:{GA:{items:[{id:'network',label:'Réseau',owner:'market',status:'blocked',blockers:['Aucun relais']}]}}
+  }};
+  expect(validateAdminContext(valid).access.preparation.GA.items[0].status).toBe('blocked');
+  expect(()=>validateAdminContext({...valid,access:{...valid.access,preparation:{CG:valid.access.preparation.GA}}})).toThrow(/périmètre/);
+  expect(()=>validateAdminContext({...valid,actor:{id:'admin',role:'admin'}})).toThrow(/réservée/);
+});

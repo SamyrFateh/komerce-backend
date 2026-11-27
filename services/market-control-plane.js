@@ -247,4 +247,34 @@ async function getExitReadiness(executor, marketCode) {
   };
 }
 
-module.exports = { GAP_MESSAGES, computeGaps, readinessFromGaps, getControlPlane, getExitReadiness, listMarkets };
+// Projection for the authenticated operating lead only. The caller has
+// already resolved a canonical active membership; compare the exact scope
+// again against the current control-plane snapshot before exposing any item.
+async function getPreparationChecklist(executor, authorization) {
+  if (authorization?.lifecycle_status !== 'PROVISIONING' || !authorization.membership_id ||
+      !authorization.capabilities?.includes('team.read')) return null;
+  const control = await getControlPlane(executor, authorization.market_code);
+  if (control.market.lifecycle_status !== 'PROVISIONING' || control.market.id !== authorization.market_id ||
+      control.assignment?.id !== authorization.assignment_id || control.assignment.status !== 'ACTIVE' ||
+      !control.team.some(member => member.membership_id === authorization.membership_id && member.is_operating_lead)) return null;
+  function item(id, label, codes, owner) {
+    const blockers = control.gaps.filter(gap => codes.includes(gap.code)).map(gap => gap.message);
+    return { id, label, owner, status: blockers.length ? 'blocked' : 'ready', blockers };
+  }
+  return {
+    items: [
+      item('identity','Identité, devise et mandat',['NO_CURRENCY_PARITY','NO_ASSIGNMENT','ASSIGNMENT_NOT_ACTIVE','NO_CENTRAL_REFERENT','EMPTY_CEILING','MISSING_AMOUNT_LIMIT'],'central'),
+      item('team','Équipe locale',['NO_ACTIVE_MEMBERSHIP','NO_TEAM_GRANT_HOLDER','NO_OPERATING_LEAD'],'market'),
+      item('network','Réseau de relais',['NO_RELAIS'],'market'),
+      item('payments','Moyens de paiement',['NO_PAYMENT_PROVIDER','NO_CASH_POLICY'],'central'),
+      { id:'delivery', label:'Livrabilité', owner:'central', status:control.deliveryProof?.proven?'ready':'pending',
+        blockers:control.deliveryProof?.proven?[]:['Preuve de livrabilité à vérifier avec le Hub.'] },
+      { id:'commerce', label:'Assortiment et prix', owner:'market', status:'pending',
+        blockers:['Contrôle des offres et prix avant ouverture à raccorder.'] },
+      { id:'economic', label:'Raccordement économique', owner:'market', status:'pending',
+        blockers:['Contrôle des référentiels et ressources à raccorder.'] },
+    ],
+  };
+}
+
+module.exports = { GAP_MESSAGES, computeGaps, readinessFromGaps, getControlPlane, getExitReadiness, listMarkets, getPreparationChecklist };

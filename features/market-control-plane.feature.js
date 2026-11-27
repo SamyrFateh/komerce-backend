@@ -133,6 +133,7 @@ module.exports = {
     internalApi: [
       'listMarkets()',
       'getControlPlane()',
+      'getPreparationChecklist()',
       'computeGaps()',
       'readinessFromGaps()',
       'provisionMarket()',
