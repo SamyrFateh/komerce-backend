@@ -79,6 +79,23 @@ const GROUP_TEMPLATE=Object.freeze([
   {code:'HUB_CENTRAL',label:'Hub central',families:[['PERSONNEL','Personnel'],['LOCAUX','Locaux'],['EQUIPEMENTS','Équipements'],['CONSOMMABLES','Consommables']]},
   {code:'SERVICES_CENTRAUX',label:'Services centraux',families:[['PERSONNEL','Personnel'],['PLATEFORME','Plateforme'],['SERVICES','Services']]}
 ]);
+// Same template as provisioning; no assumption based on row counts alone.
+async function getCostReferenceReadiness(client,marketId){
+  if(!client?.query||!UUID.test(String(marketId)))throw invalid('Périmètre de préparation');
+  const {rows}=await client.query(
+    'SELECT c.code AS center_code,f.code AS family_code FROM economic_cost_centers c LEFT JOIN economic_cost_families f ON f.center_id=c.id WHERE c.market_id=$1::uuid',
+    [marketId]
+  );
+  const missing=[];
+  for(const definition of MARKET_TEMPLATE){
+    const families=rows.filter(row=>row.center_code===definition.code);
+    if(!families.length){missing.push(definition.label);continue;}
+    for(const [code,label] of definition.families){
+      if(!families.some(row=>row.family_code===code))missing.push(definition.label+' — '+label);
+    }
+  }
+  return {ready:missing.length===0,missing};
+}
 async function provisionCostReferences(client,{marketId,actorId}){
   if(!client?.query||!actorId||(marketId!==null&&!UUID.test(String(marketId))))throw invalid('Périmètre de provisioning');
   const template=marketId===null?GROUP_TEMPLATE:MARKET_TEMPLATE;
@@ -184,4 +201,4 @@ async function listResponsibleCandidates(client,marketId){
   if(marketId===null)return (await client.query("SELECT DISTINCT u.id,u.full_name AS label FROM users u JOIN pricing_global_access_grants g ON g.user_id=u.id WHERE u.role='admin' AND g.revoked_at IS NULL ORDER BY label,u.id")).rows;
   return (await client.query("SELECT DISTINCT u.id,u.full_name AS label FROM users u JOIN assignment_memberships am ON am.user_id=u.id AND am.status='ACTIVE' JOIN market_operating_assignments a ON a.id=am.assignment_id AND a.status='ACTIVE' WHERE a.market_id=$1 AND NOT EXISTS (SELECT 1 FROM unnest(ARRAY['pricing.read','pricing.cost_component.update']::text[]) AS required(capability) WHERE NOT EXISTS (SELECT 1 FROM membership_capabilities mc WHERE mc.membership_id=am.id AND mc.capability=required.capability AND mc.revoked_at IS NULL) OR NOT EXISTS (SELECT 1 FROM assignment_capability_ceiling acc WHERE acc.assignment_id=a.id AND acc.capability=required.capability AND acc.revoked_at IS NULL)) ORDER BY label,u.id",[marketId])).rows;
 }
-module.exports={createPost,parsePost,provisionCostReferences,initializeCostReferences,configureReference,listResponsibleCandidates};
+module.exports={createPost,parsePost,getCostReferenceReadiness,provisionCostReferences,initializeCostReferences,configureReference,listResponsibleCandidates};

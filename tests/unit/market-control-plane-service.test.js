@@ -187,3 +187,18 @@ test('checklist preparation is never exposed without scoped team-read membership
   await expect(getPreparationChecklist(db,{lifecycle_status:'PROVISIONING',membership_id:'mem',capabilities:['network.read']})).resolves.toBeNull();
   expect(db.query).not.toHaveBeenCalled();
 });
+
+test('economic template readiness uses exact center/family pairs, not total count',async()=>{
+  const {getCostReferenceReadiness}=require('../../services/economic-cost-reference-service');
+  const id='11111111-1111-4111-8111-111111111111';
+  const rows=[
+    ...['PERSONNEL','LOCAUX','EQUIPEMENTS','CONSOMMABLES'].map(family_code=>({center_code:'RELAIS_LOCAL',family_code})),
+    ...['TRANSPORT','DOUANE','LIVRAISON'].map(family_code=>({center_code:'TRANSPORT_DOUANE',family_code})),
+    ...['SERVICES','ADMINISTRATION'].map(family_code=>({center_code:'SERVICES_MARCHE',family_code})),
+  ];
+  const db={query:jest.fn().mockResolvedValue({rows})};
+  await expect(getCostReferenceReadiness(db,id)).resolves.toEqual({ready:true,missing:[]});
+  expect(db.query.mock.calls[0][1]).toEqual([id]);
+  db.query.mockResolvedValue({rows:rows.map(row=>row.family_code==='LIVRAISON'?{...row,family_code:'OTHER'}:row)});
+  await expect(getCostReferenceReadiness(db,id)).resolves.toEqual({ready:false,missing:['Transport et douane — Livraison locale']});
+});

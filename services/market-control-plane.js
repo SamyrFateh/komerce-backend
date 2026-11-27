@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        canonical market code (server-validated), read-only DB executor
  * @outputs       per-market control view (assignment, team, ceiling, payment, cash policy, relais) and gap report
- * @depends       services/market-payment-provider-config-service.js, db.js, services/market-delegation-service.js, services/market-delivery-proof-service.js
+ * @depends       services/economic-cost-reference-service.js, services/market-commercial-price-service.js, services/market-payment-provider-config-service.js, db.js, services/market-delegation-service.js, services/market-delivery-proof-service.js
  * @used-by       routes/admin-market-control-plane.js
  * @db-read       market_settlements, disputes, orders, markets, currency_parities, carriers, capability_registry, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, market_payment_providers, market_cash_control_policies, relais, market_delivery_attestations
  * @db-write      none
@@ -26,6 +26,8 @@
 
 const { delegationError, normalizeMarketCode } = require('./market-delegation-service');
 const { getDeliveryProof } = require('./market-delivery-proof-service');
+const { getCostReferenceReadiness } = require('./economic-cost-reference-service');
+const { getPricePreparation } = require('./market-commercial-price-service');
 const { listCentralCollectionModes, paymentOptions } = require('./market-payment-provider-config-service');
 
 const TEAM_GRANT = 'team.grant';
@@ -257,6 +259,11 @@ async function getPreparationChecklist(executor, authorization) {
   if (control.market.lifecycle_status !== 'PROVISIONING' || control.market.id !== authorization.market_id ||
       control.assignment?.id !== authorization.assignment_id || control.assignment.status !== 'ACTIVE' ||
       !control.team.some(member => member.membership_id === authorization.membership_id && member.is_operating_lead)) return null;
+  const [economic,prices] = await Promise.all([
+    getCostReferenceReadiness(executor,control.market.id),
+    getPricePreparation(executor,control.market),
+  ]);
+  const pricePrepared = prices.drafts+prices.authorized+prices.active>0;
   function item(id, label, codes, owner) {
     const blockers = control.gaps.filter(gap => codes.includes(gap.code)).map(gap => gap.message);
     return { id, label, owner, status: blockers.length ? 'blocked' : 'ready', blockers };
@@ -269,10 +276,10 @@ async function getPreparationChecklist(executor, authorization) {
       item('payments','Moyens de paiement',['NO_PAYMENT_PROVIDER','NO_CASH_POLICY'],'central'),
       { id:'delivery', label:'Livrabilité', owner:'central', status:control.deliveryProof?.proven?'ready':'pending',
         blockers:control.deliveryProof?.proven?[]:['Preuve de livrabilité à vérifier avec le Hub.'] },
-      { id:'commerce', label:'Assortiment et prix', owner:'market', status:'pending',
-        blockers:['Contrôle des offres et prix avant ouverture à raccorder.'] },
-      { id:'economic', label:'Raccordement économique', owner:'market', status:'pending',
-        blockers:['Contrôle des référentiels et ressources à raccorder.'] },
+      { id:'commerce', label:'Préparation des prix locaux', owner:'market', status:pricePrepared?'pending':'blocked',
+        blockers:pricePrepared?[prices.drafts+' prix en brouillon, '+prices.authorized+' autorisés, '+prices.active+' actifs. La vente et l’exposition nécessitent leurs gardes propres.']:['Aucune décision de prix local positive dans la devise du marché.'] },
+      { id:'economic', label:'Raccordement des centres et familles de coûts', owner:'central', status:economic.ready?'ready':'blocked',
+        blockers:economic.missing.map(label=>'Référentiel manquant : '+label) },
     ],
   };
 }
