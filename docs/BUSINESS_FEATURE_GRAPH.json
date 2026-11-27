@@ -37682,6 +37682,10 @@
                 "targetFile": "services/simulation-scope-service.js"
               },
               {
+                "sourceFileId": "routes/admin-dashboard.js",
+                "targetFile": "services/economic-cost-center-read-model.js"
+              },
+              {
                 "sourceFileId": "routes/admin-dashboard-market.js",
                 "targetFile": "services/simulation-scope-service.js"
               },
