@@ -605,12 +605,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 492 fichier(s) déclaré(s)
+**Implementation** : 493 fichier(s) déclaré(s)
   - dash : 197
   - middleware : 1
   - migrations : 3
   - routes : 29
-  - services : 47
+  - services : 48
   - tests : 215
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="dashboard"]_
