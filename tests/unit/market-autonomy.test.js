@@ -90,7 +90,13 @@ test('la page autonome invalide aussi le cache de son menu canonical', () => {
   const fs = require('fs');
   const path = require('path');
   const html = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/market-autonomy.html'), 'utf8');
-  expect(html).toContain('navigation-policy-v4.js?v=261127-l3a-return-context');
+  const index = fs.readFileSync(path.resolve(__dirname, '../../public/dashboards/canonical/index.html'), 'utf8');
+  const versions = content => [...content.matchAll(/navigation-policy-v4\.js\?v=([^"]+)"/g)].map(match=>match[1]);
+  const canonicalVersions = versions(index);
+  expect(canonicalVersions).toHaveLength(1);
+  expect(canonicalVersions[0]).toMatch(/^\d{6}-[a-z0-9-]+$/);
+  expect(Number(canonicalVersions[0].slice(0,6))).toBeGreaterThanOrEqual(261127);
+  expect(versions(html)).toEqual(canonicalVersions);
 });
 
 test('un prix global nul ou absent est présenté comme non renseigné, jamais comme zéro KMF', () => {
