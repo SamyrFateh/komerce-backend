@@ -2,8 +2,8 @@
   "generatedAt": "2026-11-27T08:59:51.391Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 896,
-    "protected": 837,
+    "total": 899,
+    "protected": 840,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -551,6 +551,27 @@
     },
     {
       "key": "POST /api/admin/cost-components",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/costing/local-stock/receipt-lots/close",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/costing/local-stock/receipt-lots/link",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/costing/local-stock/receipt-lots",
       "level": "PROTECTED",
       "roles": [
         "admin"

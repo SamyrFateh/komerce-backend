@@ -192,7 +192,7 @@ test.describe('Atelier économique V7/V6 — desktop 1440',()=>{
     expect(posts[0]).toMatchObject({path:'/api/admin/workspaces/pricing/market/KM/cost-centers/families/family1/posts',body:{label:'Entretien relais',economicNature:'FIXED',allocationPerimeter:'DIRECT',allocationBasis:'Mois',source:'STRUCTURE'}});
   });
   test('lecture seule : aucune action de configuration ni écriture de budget',async({page})=>{
-    const actor={...FX.auth_me,role:'market_operator'},context={...FX.context,actor:{...FX.context.actor,role:'market_operator'},access:{...FX.context.access,mode:'market',allowedMarkets:['KM'],defaultMarket:'KM',capabilities:['finance.read']}};
+    const actor={...FX.auth_me,role:'market_operator'},context={...FX.context,actor:{...FX.context.actor,role:'market_operator'},access:{...FX.context.access,mode:'market',allowedMarkets:['KM'],defaultMarket:'KM',capabilities:['finance.read','pricing.read'],delegatedCapabilities:{KM:['finance.read','pricing.read','dashboard.market.read']}}};
     await mount(page,{search:'?market=KM',actor,context,costModel:v7Fixture({central:false,costCapabilities:{}})});
     await expect(page.getByRole('button',{name:'Initialiser les centres et familles'})).toHaveCount(0);
     await openPost(page);
