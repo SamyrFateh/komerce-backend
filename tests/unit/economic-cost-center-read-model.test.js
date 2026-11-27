@@ -17,6 +17,7 @@ function projection(postRows=[],commitmentRows=[],structureRows=[],market=false)
     {parcel_id:'parcel-b',parcel_status:'collected',pickup_method:'UNSUPPORTED',units:99},
   ])).mockResolvedValueOnce(ok([{count:1,amount_kmf:'500.00'}])).mockResolvedValueOnce(ok([{covered_units:4,amount_kmf:'1000.00'}])).mockResolvedValueOnce(ok([{parcel_count:1,amount_kmf:'315.25',line_evidence:[]}]));
   if(!market)mockQuery.mockResolvedValueOnce(ok()).mockResolvedValueOnce(ok());
+  else mockQuery.mockResolvedValueOnce(ok()).mockResolvedValueOnce(ok([{currency:'XAF'}]));
   mockQuery.mockResolvedValueOnce(ok());
 }
 test('reject unauthenticated and implicit scope',async()=>{

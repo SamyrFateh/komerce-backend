@@ -74,7 +74,7 @@ async function fetchTopAlerts(filters, limit = 10) {
   }
 }
 
-async function buildMarketPilotage(filters, market) {
+async function buildMarketPilotage(filters, market, actor=null) {
   if (!market || !market.id || !market.code) {
     throw new Error('dashboard_market_not_resolved');
   }
@@ -105,11 +105,21 @@ async function buildMarketPilotage(filters, market) {
     controlChain.getControlChain({ market }),
   ]);
 
-  // Market result is not yet a certified economic projection; never use
-  // a group value or the old order-created cohort as a substitute.
-  const economicResult={key:'economic_period_result',label:'Résultat économique marché — non disponible',
+  const periodStart=new Date().toISOString().slice(0,7)+'-01';
+  const economicResult={key:'economic_period_result',label:'Résultat économique marché — '+periodStart.slice(0,7)+' UTC',
     value:null,unit:market.currency,delta:null,drill_to:'/admin/workspaces/pricing',
-    data_quality:{metric_id:'eco.period_result',status:'MARKET_RESULT_NOT_RECONCILED',completeness:'provisional'}};
+    data_quality:{metric_id:'eco.period_result',period_start:periodStart,status:filters.simulation_scope?'SIMULATION_EXCLUDED':'MARKET_RESULT_NOT_RECONCILED',completeness:'provisional'}};
+  if(actor?.id&&!filters.simulation_scope){
+    try{
+      const result=await require('./economic-cost-center-read-model').readMarketPeriodDecision(actor,market.code,periodStart);
+      economicResult.value=result.display.result;
+      economicResult.data_quality={...economicResult.data_quality,status:result.status,reasons:result.reasons,fx_status:result.display.fxStatus};
+    }catch(err){
+      // A dashboard reader without pricing.read does not gain access to ECO.
+      economicResult.data_quality.status=err.status===403?'UNAVAILABLE':'MARKET_RESULT_NOT_RECONCILED';
+      log.warn({err},'[dashboard-pilotage-market] economic period result unavailable');
+    }
+  }
   const view_blocks = [
     {
       view: 'control_tower',
@@ -121,7 +131,7 @@ async function buildMarketPilotage(filters, market) {
     {
       view: 'costing',
       title: 'Coûts & marge',
-      subtitle: 'Résultat ECO marché à rapprocher ; diagnostics de coûts',
+      subtitle: 'Résultat ECO marché du mois UTC ; diagnostics de coûts',
       url: '/admin/finance',
       kpis_summary: [ca, coutReel, economicResult, cmdsCoutIncomplet, coutMoyParCmd],
     },

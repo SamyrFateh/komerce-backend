@@ -187,7 +187,7 @@ router.get(
     try {
       res.set('Cache-Control', 'private, no-store');
       const filters = parseFilters(req);
-      const payload = await projectMarketPayload(await pilotage.buildMarketPilotage(filters, req.dashboardMarket), req.dashboardMarket);
+      const payload = await projectMarketPayload(await pilotage.buildMarketPilotage(filters, req.dashboardMarket, req.user), req.dashboardMarket);
       res.json(payload);
     } catch (err) {
       log.error({ err, market: req.dashboardMarket && req.dashboardMarket.code }, '[admin-dashboard-market] unified market error');

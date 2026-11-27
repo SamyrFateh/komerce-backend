@@ -574,6 +574,22 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     await recordStructureCostEvent({...event,amount_original:20,amount_kmf:20,evidence_ref:'Facture tardive'},fx.central.id);
     expect(await read()).toMatchObject({status:'REOPENED',resultKmf:'9296.66'});
     expect(await direction(fx.central,period)).toMatchObject({status:'REOPENED',resultKmf:'9296.66'});
+    const marketDecision=require('../../services/economic-cost-center-read-model').readMarketPeriodDecision;
+    const readMarket=()=>marketDecision(fx.viewerA,fx.marketA.code,period);
+    const marketBefore=await readMarket();
+    expect(marketBefore).toMatchObject({status:'PROVISIONAL',resultKmf:'9296.66'});
+    await expect(marketDecision(fx.viewerA,fx.marketB.code,period)).rejects.toMatchObject({status:403});
+    const groupCharge=(await q("INSERT INTO charges(family,name,amount_kmf,is_recurring,recurrence_period) VALUES('operationnelle',$1,0,true,'monthly') RETURNING id",[tag+'-APRIL-GROUP'])).rows[0].id;
+    const shared=await recordStructureCostEvent({...event,charge_id:groupCharge,scope_kind:'GROUP',market_id:null,amount_original:100,amount_kmf:100,evidence_ref:'Pool CI'},fx.central.id);
+    expect(await readMarket()).toMatchObject({status:'NOT_RECONCILED',resultKmf:null});
+    await q(`INSERT INTO market_cost_attributions(source_event_id,market_id,event_kind,amount_kmf,allocation_key,allocation_basis,policy_version,recorded_by)
+       VALUES($1,$2,'ATTRIBUTION',40,'CI_PROOF','{}','CI_V1',$4),($1,$3,'ATTRIBUTION',60,'CI_PROOF','{}','CI_V1',$4)`,[shared.id,fx.marketA.id,fx.marketB.id,fx.central.id]);
+    const marketAfter=await readMarket();
+    expect(marketAfter).toMatchObject({status:'PROVISIONAL',resultKmf:'9256.66'});
+    const cockpit=await get(fx.viewerA,fx.marketA.code,period);expect(cockpit.status).toBe(200);
+    expect(cockpit.body.profitability.marketPeriodResult).toMatchObject({resultKmf:marketAfter.resultKmf,display:marketAfter.display});
+    expect(cockpit.body.profitability.structureCoverage).not.toHaveProperty('groupSharedKmf');
+
     expect((await submit(fx.central,initial.evidenceHash)).status).toBe(409);
   });
 

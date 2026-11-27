@@ -840,9 +840,9 @@ function amountToCents(value) {
 // Attributions ACTIVES d'un lot d'événements GROUP : ATTRIBUTION qu'aucun
 // REVERSAL ne cible (même définition que market-cost-attribution-service).
 // Lecture seule ; la table reste écrite par ce seul service.
-async function loadActiveAttributions(eventIds) {
+async function loadActiveAttributions(eventIds,executor=db) {
   const byEvent = new Map();
-  const { rows } = await db.query(
+  const { rows } = await executor.query(
     `SELECT a.source_event_id, a.market_id, a.amount_kmf
        FROM market_cost_attributions a
       WHERE a.source_event_id = ANY($1::uuid[])
@@ -870,9 +870,9 @@ async function loadActiveAttributions(eventIds) {
 // qu'une attribution active existe, la table fait foi pour cet événement.
 // Une attribution active non conservée (somme ≠ montant de l'événement) rend
 // la lecture non décisionnelle, sans repli à la volée.
-async function resolveAttributedGroupShare(evidence, period, marketId) {
+async function resolveAttributedGroupShare(evidence, period, marketId,executor=db) {
   const groupRows = evidence.filter((row) => row.scope_kind === SCOPE_KINDS.GROUP);
-  const active = await loadActiveAttributions(groupRows.map((row) => row.event_id));
+  const active = await loadActiveAttributions(groupRows.map((row) => row.event_id),executor);
 
   const attributedEvents = [];
   const nonConserved = [];
@@ -947,11 +947,30 @@ async function computePeriodStructureTruth(options = {}) {
   );
 
   const truth = aggregateRows(rows, period, marketId);
+  // ECO monthly market result: only persisted, fully conserved allocations.
+  // Never infer that offsetting unallocated events form a valid zero pool.
+  // Cross-period or corrected group events need their own reconciliation.
+  if(marketId && options.strictPersistedAttributions===true){
+    const fail=status=>({...truth,status,market_n3_decisional:false,market_n3_total_kmf:null,market_shared_n3_kmf:null});
+    if(!truth.evidence_event_count)return fail('NOT_DECISIONAL_NO_PERIOD_TRUTH');
+    if(truth.evidence.some(e=>new Date(e.economic_from)<period.from||new Date(e.economic_to)>period.to))
+      return fail('NOT_DECISIONAL_CROSS_PERIOD_STRUCTURE');
+    const group=truth.evidence.filter(e=>e.scope_kind===SCOPE_KINDS.GROUP);
+    if(group.some(e=>e.event_kind!=='ACCRUAL'))return fail('NOT_DECISIONAL_GROUP_CORRECTION');
+    if(!group.length)return truth;
+    const attributed=await resolveAttributedGroupShare(truth.evidence,period,marketId,executor);
+    if(attributed.non_conserved.length)return fail('NOT_DECISIONAL_ATTRIBUTION_NOT_CONSERVED');
+    if(attributed.attributed_events.length!==group.length)return fail('NOT_DECISIONAL_SHARED_ALLOCATION_PENDING');
+    const share=attributed.summary.market_attributed_kmf;
+    return {...truth,status:'MARKET_PERIOD_TRUTH_ALLOCATED',market_n3_decisional:true,
+      shared_allocation_applied:true,market_shared_n3_kmf:share,
+      market_n3_total_kmf:roundKmf(truth.market_direct_kmf+share)};
+  }
   if (!marketId || Math.abs(truth.group_pool_kmf) === 0) {
     return truth;
   }
 
-  const attribution = await resolveAttributedGroupShare(truth.evidence, period, marketId);
+  const attribution = await resolveAttributedGroupShare(truth.evidence, period, marketId,executor);
   const hasAttributed = attribution.attributed_events.length > 0;
   const withAttribution = hasAttributed || attribution.non_conserved.length > 0
     ? { attribution: attribution.summary }
