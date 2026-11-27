@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-27T00:40:08.921Z",
+  "generatedAt": "2026-11-27T08:18:31.358Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 893,
-    "protected": 834,
+    "total": 896,
+    "protected": 837,
     "public": 59,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1305,6 +1305,30 @@
       "level": "PROTECTED",
       "roles": [
         "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/market-settlements/markets/{marketCode}/hub-invoices/{invoiceId}/payment",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance"
+      ]
+    },
+    {
+      "key": "GET /api/admin/market-settlements/markets/{marketCode}/hub-invoices",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance"
+      ]
+    },
+    {
+      "key": "POST /api/admin/market-settlements/markets/{marketCode}/hub-invoices",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "finance"
       ]
     },
     {
