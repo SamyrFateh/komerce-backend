@@ -24,10 +24,22 @@ test('reject unauthenticated and implicit scope',async()=>{
   await expect(readCostCenters(actor,{periodStart:month})).rejects.toMatchObject({status:400});
   expect(mockClient).not.toHaveBeenCalled();
 });
-test('global grant required for group; role alone does not grant it',async()=>{
-  mockGrant.mockResolvedValue(false);mockQuery.mockResolvedValueOnce(ok()).mockResolvedValueOnce(ok());
-  await expect(readCostCenters(actor,{marketCode:null,periodStart:month})).rejects.toMatchObject({status:403});
-  expect(mockQuery.mock.calls[1][0]).toBe('ROLLBACK');
+test('A1 admin without global ACT grant reads group without write controls',async()=>{
+  mockGrant.mockResolvedValue(false);mockQuery.mockResolvedValueOnce(ok());projection();
+  const model=await readCostCenters(actor,{marketCode:null,periodStart:month});
+  expect(model).toMatchObject({scope:'GROUP',globalRead:true,central:false,readOnly:true,
+    costCapabilities:{budget:false,commitment:false,consume:false,actual:false,reference:false}});
+  expect(mockAuthz).not.toHaveBeenCalled();
+  expect(mockQuery.mock.calls.some(([sql])=>/^INSERT|^UPDATE|^DELETE/.test(sql))).toBe(false);
+});
+test('A1 admin without global ACT grant reads exact market but has no ungranted write capabilities',async()=>{
+  mockGrant.mockResolvedValue(false);
+  mockAuthz.mockRejectedValue(Object.assign(new Error('no delegation'),{status:403}));
+  mockQuery.mockResolvedValueOnce(ok()).mockResolvedValueOnce(ok([{id:'market-CM'}]));projection([],[],[],true);
+  const model=await readCostCenters(actor,{marketCode:'CM',periodStart:month});
+  expect(model).toMatchObject({scope:'MARKET',marketCode:'CM',globalRead:true,central:false,readOnly:true,
+    costCapabilities:{budget:false,commitment:false,consume:false,actual:false,reference:false}});
+  expect(mockQuery.mock.calls[1]).toEqual(['SELECT id FROM markets WHERE code=$1',['CM']]);
 });
 test('market delegation resolves exact market and no other scope is queried',async()=>{
   mockAuthz.mockImplementation(async(_client,{requiredCapability})=>{if(requiredCapability!=='pricing.read')throw Object.assign(new Error('read only'),{status:403});return {market_id:'market-CM'};});
