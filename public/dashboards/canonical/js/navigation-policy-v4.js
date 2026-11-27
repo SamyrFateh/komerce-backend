@@ -176,6 +176,15 @@
     const target = String(value || '').trim();
     if (!target || !target.startsWith('/') || target.startsWith('//') || target.includes('\\')) return null;
     const pathname = target.split(/[?#]/, 1)[0];
+    // Refuse les segments ambigus avant toute résolution par le navigateur
+    // ou le routeur. Le retour ne doit jamais sortir de la coque canonique.
+    if (/[\u0000-\u0020\u007f]/.test(pathname)) return null;
+    try {
+      if (pathname.split('/').some(segment => {
+        const decoded = decodeURIComponent(segment);
+        return decoded === '.' || decoded === '..' || /[\/\\%\u0000-\u001f\u007f]/.test(decoded);
+      })) return null;
+    } catch (_) { return null; }
     if (pathname === '/admin' || pathname.startsWith('/admin/')) return target;
     if (pathname.startsWith('/dashboards/canonical/')) return target;
     return null;
@@ -231,8 +240,8 @@
 
   // Cible de retour = page courante avec sa query (contexte restauré au retour) ; repli sûr sinon.
   function currentReturnTarget(fallback, loc = global.location) {
-    const here = loc && typeof loc.pathname === 'string' ? `${loc.pathname}${loc.search || ''}` : '';
-    return safeReturnTarget(here) || fallback || null;
+    const here = loc && typeof loc.pathname === 'string' ? `${loc.pathname}${loc.search || ''}${loc.hash || ''}` : '';
+    return safeReturnTarget(here) || safeReturnTarget(fallback) || null;
   }
 
   // Reflète le contexte choisi dans l'URL (replaceState) pour que lien, retour et rechargement le conservent.
@@ -256,7 +265,12 @@
 
   function withEntityReturnTo(href, returnTo, label) {
     const value = String(href || '');
-    return ENTITY_HREF.test(value) && !/[?&]return_to=/.test(value) ? withReturnTo(value, returnTo, label) : value;
+    if (!ENTITY_HREF.test(value) || /[?&]return_to=/.test(value)) return value;
+    const target = safeReturnTarget(returnTo);
+    if (!target) return value;
+    const queryAt = target.indexOf('?');
+    const search = queryAt < 0 ? '' : target.slice(queryAt).split('#', 1)[0];
+    return withReturnTo(withContext(value, readContext(search)), target, label);
   }
 
   // Lien depuis un dashboard : fiche 360 / PO (retour vers la page courante, query comprise) ou autre dashboard
@@ -268,7 +282,7 @@
     const value = String(href);
     if (/[?&]return_to=/.test(value)) return value;
     const target = currentReturnTarget(null, loc);
-    if (ENTITY_HREF.test(value)) return target ? withReturnTo(value, target, label) : value;
+    if (ENTITY_HREF.test(value)) return target ? withEntityReturnTo(value, target, label) : value;
     if (DASHBOARD_HREF.test(value)) {
       const linked = withContext(value, readContext(loc && loc.search));
       return target ? withReturnTo(linked, target, label) : linked;

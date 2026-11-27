@@ -276,3 +276,37 @@ test('Recette guidée est visible uniquement dans la projection de menu admin',(
  expect(links('admin')[0].href).toBe('/admin/golden-e2e?guide=hub#extendedRecipe');
  for(const role of ['agent_hub','agent_relais','agent_transitaire','market_operator','finance','support'])expect(links(role)).toEqual([]);
 });
+
+// #5315 L3a — retour canonique et contexte de consultation, jamais autorité.
+describe('V5.4 — retour de dossier et contexte de navigation', () => {
+  let nav;
+  beforeEach(() => {
+    jest.resetModules();
+    delete global.KomerceCanonicalNavigation;
+    require('../../public/dashboards/canonical/js/navigation-policy-v4.js');
+    nav = global.KomerceCanonicalNavigation;
+  });
+  test.each(['/admin/../login.html', '/admin/%2e%2e/login.html', '/admin/%252e%252e/login.html', '/admin/%2f..%2flogin.html', '/admin/%5c..%5clogin.html', '/admin/%', '/dashboards/canonical/../../login.html', '//evil.test/admin', '/admin/\t../login.html'])('refuse le retour ambigu %s', target => {
+    expect(nav.safeReturnTarget(target)).toBeNull();
+    expect(nav.currentReturnTarget(target, { pathname: '/login.html' })).toBeNull();
+  });
+  test('un dossier hérite du contexte de sa liste et retourne exactement au filtre et à son ancre', () => {
+    const loc = { pathname: '/admin/operations', search: '?market=CM&period=7&simulation_scope=RCT1&phase=CUSTOMS&health=RED', hash: '#operations-control-chain' };
+    const href = nav.withNavContext('/admin/orders/K123ABC', 'Retour aux opérations', loc);
+    const url = new URL(href, 'https://komerce.test');
+    expect(url.searchParams.get('market')).toBe('CM');
+    expect(url.searchParams.get('period')).toBe('7');
+    expect(url.searchParams.get('simulation_scope')).toBe('RCT1');
+    expect(url.searchParams.get('return_to')).toBe(loc.pathname + loc.search + loc.hash);
+    expect(nav.resolveBackTarget('order-360', url.search).href).toBe(loc.pathname + loc.search + loc.hash);
+    expect(nav.withNavContext(href, 'Retour', loc)).toBe(href);
+  });
+  test('ne remplace jamais le marché explicite du dossier et conserve son ancre', () => {
+    const href = nav.withEntityReturnTo('/admin/workspaces/purchasing?po=PO-42&market=CG#receipt', '/admin/operations?market=CM&period=30', 'Retour');
+    const url = new URL(href, 'https://komerce.test');
+    expect(url.searchParams.get('market')).toBe('CG');
+    expect(url.searchParams.get('period')).toBe('30');
+    expect(url.searchParams.get('po')).toBe('PO-42');
+    expect(url.hash).toBe('#receipt');
+  });
+});
