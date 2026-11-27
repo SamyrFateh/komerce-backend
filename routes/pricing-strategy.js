@@ -36,19 +36,11 @@
 const express  = require('express');
 const router   = express.Router();
 const db       = require('../db');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireRole } = require('../middleware/auth');
 const svc      = require('../services/pricing-strategy-service');
 
 // Admin guard (admin only)
-const adminOnly = [
-  authenticate,
-  (req, res, next) => {
-    if (!['admin'].includes(req.user?.role)) {
-      return res.status(403).json({ error: 'Reserved to admin' });
-    }
-    next();
-  },
-];
+const adminOnly = [authenticate, requireRole(['admin'])];
 
 // ═══════════════════════════════════════════════════════════════════
 // PRIX CONCURRENTS
