@@ -173,6 +173,14 @@
           return;
         }
         result.appendChild(pill(`Total Hub ${kmf(data.total_kmf)}`, true));
+        const info = data.informational_totals;
+        if (info?.status === 'AVAILABLE') {
+          const eur = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(info.EUR.amount);
+          const xaf = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(info.XAF.amount);
+          result.appendChild(row('Équivalents indicatifs', `${eur} · ${xaf} XAF`));
+        } else if (info?.status === 'UNAVAILABLE') {
+          result.appendChild(el('p', 'kmc-team-help', 'Équivalents EUR et XAF indisponibles.'));
+        }
         data.lines.forEach(line => result.appendChild(item(
           `${dash(line.charge_name)} · ${kmf(line.amount_kmf)}`,
           `${day(line.economic_from)} → ${day(line.economic_to)} · ${dash(line.allocation_key)} · ${dash(line.policy_version)}`,

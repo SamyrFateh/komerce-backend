@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        authenticated market operator, market code, optional economic period (from/to)
  * @outputs       relevé de coûts du marché : charges directes + charges mutualisées attribuées, en lecture seule
- * @depends       services/market-delegation-team-service.js
+ * @depends       services/market-delegation-team-service.js, services/fx-authority.js
  * @used-by       routes/market-delegation-cost-statement.js
- * @db-read       economic_structure_cost_events, market_cost_attributions, markets, economic_cost_posts, economic_cost_centers
+ * @db-read       economic_structure_cost_events, market_cost_attributions, markets, economic_cost_posts, economic_cost_centers, currency_parities
  * @db-write      none
  * @db-txn        none
  * @doctrine      cost_statement_is_a_projection_never_a_new_truth, client_market_id_never_authority, hq_evidence_never_exposed_to_market
@@ -18,6 +18,7 @@
 'use strict';
 
 const { resolveAuthorization } = require('./market-delegation-team-service');
+const fxAuthority = require('./fx-authority');
 
 const MAX_LINES = 500;
 
@@ -82,6 +83,30 @@ const HUB_LINES_SQL = `
    ORDER BY e.economic_from DESC, a.id
    LIMIT ${MAX_LINES + 1}`;
 
+async function hubInformationalTotals(client, amountKmf) {
+  if (amountKmf === null) return null;
+  try {
+    const [eur, xaf] = await Promise.all(['EUR', 'XAF'].map(to =>
+      fxAuthority.convert({ client, amount: amountKmf, from: 'KMF', to })
+    ));
+    const kmfRate = eur.legs.find(leg => leg.side === 'from');
+    const xafKmfRate = xaf.legs.find(leg => leg.side === 'from');
+    if (kmfRate.id !== xafKmfRate.id || kmfRate.rate !== xafKmfRate.rate) {
+      return { status: 'UNAVAILABLE' };
+    }
+    return {
+      status: 'AVAILABLE',
+      EUR: { amount: eur.amount_text, legs: eur.legs, rounding: eur.rounding },
+      XAF: { amount: xaf.amount_text, legs: xaf.legs, rounding: xaf.rounding },
+    };
+  } catch (error) {
+    if (error instanceof fxAuthority.FxError && error.code === 'fx_rate_unavailable') {
+      return { status: 'UNAVAILABLE' };
+    }
+    throw error;
+  }
+}
+
 async function getMarketCostStatement(executor, { marketCode, actorUserId, actorRole = null, from = null, to = null, scope = null }) {
   const db = requireExecutor(executor);
   if (scope !== null && scope !== 'hub') {
@@ -104,13 +129,15 @@ async function getMarketCostStatement(executor, { marketCode, actorUserId, actor
 
   if (scope === 'hub') {
     const { rows } = await db.query(HUB_LINES_SQL, [authz.market_id, fromIso, toIso]);
+    const totalKmf = rows[0]?.total_kmf ?? null;
     return {
       market_code: authz.market_code || String(marketCode).toUpperCase(),
       scope: 'HUB_CENTRAL',
       status: 'INTERNAL_STATEMENT',
       period: { from: fromIso, to: toIso },
       currency_basis: 'KMF',
-      total_kmf: rows[0]?.total_kmf ?? null,
+      total_kmf: totalKmf,
+      informational_totals: await hubInformationalTotals(db, totalKmf),
       truncated: rows.length > MAX_LINES,
       lines: rows.slice(0, MAX_LINES).map(({ total_kmf, ...line }) => line),
     };

@@ -140,6 +140,8 @@ Le Hub prépare un relevé par marché sur la fenêtre économique canonique. Le
 
 Exemple de recette. Le Hub constate 100 000 KMF de charges de structure pour une fenêtre. La clé justifiée attribue 60 000 KMF à KM et 40 000 KMF à CM. Le relevé CM affiche 40 000 KMF, et la consolidation groupe conserve la dépense externe de 100 000 KMF. Si CM est facturable selon son contrat et que la facture correspond à cette quote-part, CM règle 40 000 KMF au Hub par un paiement séparé. Un encaissement client de 200 000 KMF au relais CM reste tracé intégralement au nom de CM.
 
+Le relevé et la facture interne affichent le total de référence en KMF et ses équivalents indicatifs en EUR et XAF. Les équivalents sont calculés sur le total en KMF via l’autorité de change Komerce. À l’émission, la facture fige ces équivalents, les références des parités et l’arrondi appliqué. Les montants indicatifs ne modifient pas la devise ni le solde du règlement.
+
 Une correction avant émission impose de relire la ventilation active et de revoir le relevé. Après émission, conserver la facture et son justificatif source. Rattacher toute régularisation à la facture initiale.
 
 **État de livraison.** La saisie des charges, les attributions et le relevé calculé existent dans le candidat #5314. La validation financière du relevé, l’émission et le rapprochement du règlement Hub restent à livrer. Le flux de règlements marché existant part d’une demande du marché et d’un paiement attesté par le siège, avec confirmation de réception par le marché. La recette Hub doit prouver le sens inverse pour la facture de prestation, du marché vers le Hub.
