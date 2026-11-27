@@ -519,7 +519,7 @@
     const host=el(doc,'section','kmc-v7-centers kmc-v6-profitability'),data=model?.profitability;
     const groupResult = data?.groupPeriodResult||data?.marketPeriodResult;
     const marketResult=!!data?.marketPeriodResult;
-    const resultMoney=key=>marketResult?v7Money(groupResult?.display?.[key],groupResult?.display?.currency||''):v7Money(groupResult?.[key+'Kmf'],'KMF');
+    const resultMoney=key=>groupResult?.display?v7Money(groupResult.display[key],groupResult.display.currency||''):v7Money(groupResult?.[key+'Kmf'],'KMF');
     const closed = groupResult?.status === 'CLOSED';
     const reopened = groupResult?.status === 'REOPENED';
     const provisional = groupResult?.status === 'PROVISIONAL' || reopened;
@@ -529,6 +529,8 @@
       : provisional
       ? (marketResult?'Résultat marché provisoire sur faits documentés ; aucune clôture marché attestée. Projection en devise du marché.':'Résultat provisoire sur les faits documentés. Clôture Direction en attente.')
       : 'Résultat économique non calculable : rapprochement des ventes, charges variables et structure à compléter.'));
+    if(groupResult?.display?.fxStatus==='GOVERNED_FIXED_PARITY_PROJECTION')host.append(el(doc,'p','kmc-v7-coverage','Résultat groupe en EUR : projection de la base KMF à parité gouvernée, pas une reconstitution native des flux historiques.'));
+    if(groupResult?.display?.fxStatus==='FX_UNAVAILABLE')host.append(el(doc,'p','kmc-v7-coverage','Projection monétaire indisponible : aucune substitution par la devise source.'));
     if(actions?.loadObservedCost)host.append(createObservedCostPanel(doc,actions.loadObservedCost));
     if(actions?.loadLocalLots && actions?.writeLocalLot)host.append(createLocalLotPanel(doc,actions));
     if(!data){

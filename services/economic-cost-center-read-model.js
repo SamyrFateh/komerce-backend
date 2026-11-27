@@ -722,16 +722,10 @@ async function readGroupPeriodDecision(actor,periodStart){
     await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
     const recognition=await loadPeriodRecognitionEvidence(client,null,input.periodStart);
     const {result}=await groupPeriodDecision(client,input.periodStart,recognition);
-    let amountEur=null,fxStatus='NO_RESULT',fxLegs=[];
-    if(result.resultKmf!=null){
-      try{
-        const fx=await convert({amount:result.resultKmf,from:'KMF',to:'EUR',client});
-        amountEur=fx.amount_text;fxLegs=fx.legs;fxStatus='GOVERNED_FIXED_PARITY_PROJECTION';
-      }catch(e){if(e instanceof FxError&&e.code==='fx_rate_unavailable')fxStatus='FX_UNAVAILABLE';else throw e;}
-    }
+    const display=await periodResultDisplay(client,result,'EUR');
     await client.query('COMMIT');
     return {periodStart:input.periodStart,status:result.status,reasons:result.reasons,
-      resultKmf:result.resultKmf,resultEur:amountEur,fxStatus,fxLegs};
+      resultKmf:result.resultKmf,resultEur:display.result,fxStatus:display.fxStatus,fxLegs:display.fxLegs,display};
   }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
 }
 
@@ -771,18 +765,19 @@ async function marketPeriodDecision(client,marketId,periodStart,recognition){
   return {structureCoverage,result};
 }
 async function periodResultDisplay(client,result,currency){
-  const display={currency,fxStatus:'NO_RESULT',result:null,contribution:null,netSales:null,variableCost:null,actualRisk:null,structure:null};
+  const display={currency,fxStatus:'NO_RESULT',fxLegs:[],result:null,contribution:null,netSales:null,variableCost:null,actualRisk:null,structure:null};
   if(result.resultKmf==null)return display;
   try{
     for(const key of ['result','contribution','netSales','variableCost','actualRisk','structure']){
       const x=await convert({amount:result[key+'Kmf'],from:'KMF',to:currency,client});
       display[key]=x.amount_text;
+      if(key==='result')display.fxLegs=x.legs;
     }
-    display.fxStatus=currency==='KMF'?'KMF_BASE_PROJECTION':'GOVERNED_KMF_PROJECTION';
+    display.fxStatus=currency==='KMF'?'KMF_BASE_PROJECTION':currency==='EUR'?'GOVERNED_FIXED_PARITY_PROJECTION':'GOVERNED_KMF_PROJECTION';
     return display;
   }catch(e){
     if(e instanceof FxError&&e.code==='fx_rate_unavailable')
-      return {currency,fxStatus:'FX_UNAVAILABLE',result:null,contribution:null,netSales:null,variableCost:null,actualRisk:null,structure:null};
+      return {currency,fxStatus:'FX_UNAVAILABLE',fxLegs:[],result:null,contribution:null,netSales:null,variableCost:null,actualRisk:null,structure:null};
     throw e;
   }
 }
@@ -880,7 +875,8 @@ async function readCostCentersSnapshot(actor,input,client,central,globalRead){
     if(marketId===null&&profitability){
       const decision=await groupPeriodDecision(client,input.periodStart,profitability.recognitionEvidence);
       profitability.structureCoverage=decision.structureCoverage;
-      profitability.groupPeriodResult=decision.result;
+      // Presentation is added after the evidence hash; it is not a new economic fact.
+      profitability.groupPeriodResult={...decision.result,display:await periodResultDisplay(client,decision.result,'EUR')};
     }else if(marketId!==null&&profitability){
       const decision=await marketPeriodDecision(client,marketId,input.periodStart,profitability.recognitionEvidence);
       profitability.structureCoverage=decision.structureCoverage;

@@ -405,3 +405,16 @@ describe('FIN-03 — rapport marge/vente des commandes finalisées', () => {
     expect(scope.eligible_margin_pct).toBeNull();
   });
 });
+
+test('Finance reads the identical documented customer cash projection as Commerce, exact dates and server scope',async()=>{
+ const reporting=require('../../services/financial-journal-reporting');
+ const spy=jest.spyOn(reporting,'customerCashSubtotal').mockResolvedValue({available:true,eur_net:'10.01',eur_partial:false,native_net:[],coverage:'DOCUMENTED_SUBTOTAL'});
+ try{
+   const window={from:'2026-01-01',to:'2026-01-31',filters:{}};
+   expect(await finance.loadCustomerCashSubtotal(window,{id:'CM'})).toMatchObject({eur_net:'10.01',coverage:'DOCUMENTED_SUBTOTAL'});
+   expect(spy).toHaveBeenLastCalledWith(expect.anything(),{marketId:'CM',from:window.from,to:window.to});
+   spy.mockClear();
+   expect(await finance.loadCustomerCashSubtotal({...window,filters:{simulation_scope:'RCT1'}},{id:'CM'})).toEqual({available:false,reason:'simulation_excluded'});
+   expect(spy).not.toHaveBeenCalled();
+ }finally{spy.mockRestore();}
+});

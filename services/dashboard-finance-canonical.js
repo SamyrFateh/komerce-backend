@@ -622,6 +622,13 @@ async function loadJournalProjection(window, market) {
   }
 }
 
+async function loadCustomerCashSubtotal(window,market){
+  if(window.filters?.simulation_scope)return Object.freeze({available:false,reason:'simulation_excluded'});
+  try{
+    return Object.freeze(await journalReporting.customerCashSubtotal(db,{marketId:market&&market.id,from:window.from,to:window.to}));
+  }catch(_){return Object.freeze({available:false,reason:'journal_unavailable'});}
+}
+
 async function buildFinance(query = {}, options = {}) {
   const market = options.market || null;
   const window = buildPeriod(query, market && market.id, options.now || new Date(), market);
@@ -647,6 +654,7 @@ async function buildFinance(query = {}, options = {}) {
     supplierPaymentReview,
     marginScope,
     journal,
+    customerCash,
   ] = await Promise.all([
     metrics.getCAEncaisse(window.filters),
     metrics.getCoutEstime(window.filters),
@@ -668,6 +676,7 @@ async function buildFinance(query = {}, options = {}) {
     getSupplierPaymentReview({ limit: 50, ...(market && market.id ? { market_id: market.id } : {}) }),
     getMarginScope(window.filters),
     loadJournalProjection(window, market),
+    loadCustomerCashSubtotal(window, market),
   ]);
 
   return Object.freeze({
@@ -705,6 +714,7 @@ async function buildFinance(query = {}, options = {}) {
     variance_summary: summarizeVariances(costingOrders),
     margin_scope: marginScope,
     journal,
+    customer_cash:customerCash,
     relay_profitability: Object.freeze(relayProfitability),
     payment_mix: Object.freeze(paymentMix),
     refunds: Object.freeze({
@@ -780,5 +790,6 @@ module.exports = {
   summarizeVariances,
   buildFollowUp,
   getMarginScope,
+  loadCustomerCashSubtotal,
   buildFinance,
 };

@@ -235,3 +235,15 @@ test('post creation is inside the selected family and absent for read-only reade
     expect(all(view).some(x=>x.value==='r2')).toBe(false);
   }
 });
+
+test('group profitability displays the server EUR result and never falls back to KMF when FX is unavailable',()=>{
+ const period={periodStart:'2026-01-01',observations:0,physicalClosedCount:0};
+ const groupPeriodResult={status:'PROVISIONAL',netSalesKmf:'899.98',variableCostKmf:'365.26',actualRiskKmf:'50.01',contributionKmf:'534.72',structureKmf:'200.12',resultKmf:'334.60',
+ display:{currency:'EUR',fxStatus:'GOVERNED_FIXED_PARITY_PROJECTION',netSales:'1.83',variableCost:'0.74',actualRisk:'0.10',contribution:'1.09',structure:'0.41',result:'0.68'}};
+ const model={profitability:{points:[],ranges:{month:period,quarter:period,ytd:period},groupPeriodResult}};
+ expect(texts(createV6Profitability(doc,model))).toContain('0,68 EUR');
+ expect(texts(createV6Profitability(doc,model))).not.toContain('334,6 KMF');
+ groupPeriodResult.display={currency:'EUR',fxStatus:'FX_UNAVAILABLE',result:null};
+ expect(texts(createV6Profitability(doc,model))).not.toContain('334,6 KMF');
+ expect(texts(createV6Profitability(doc,model))).toContain('Projection monétaire indisponible : aucune substitution par la devise source.');
+});

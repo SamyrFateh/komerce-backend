@@ -262,6 +262,8 @@ describeDb('journal financier — migration 360 (REAL_DB)', () => {
     await q('UPDATE orders SET payment_received_at=$1 WHERE id=ANY($2::uuid[])',[dated,[kmOrder,kmOrder2]]);
     const from=new Date(Date.now()-86400e3).toISOString(),to=new Date(Date.now()+86400e3).toISOString();
     const got=await commerce.getCollectedFromJournal({from,to},{id:km});
+    const finance=require('../../services/dashboard-finance-canonical');
+    expect(await finance.loadCustomerCashSubtotal({from,to,filters:{}},{id:km})).toEqual(got);
     expect(got).toMatchObject({available:true,coverage:'DOCUMENTED_SUBTOTAL'});
     const oracle=await q(`SELECT SUM(m.amount_eur)::text AS eur FROM financial_movements m
        JOIN orders o ON o.id::text=m.source_id WHERE m.source_kind='order_payment' AND m.facet='main'
