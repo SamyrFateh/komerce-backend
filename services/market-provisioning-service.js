@@ -15,7 +15,7 @@
  * @db-write-via:market-delegation-service market_operating_assignments, assignment_capability_ceiling, market_delegation_audit
  * @db-write-via:market-delegation-team-service market_team_invitations, assignment_memberships, membership_capabilities
  * @db-write-via:market-cash-control-policy-service market_cash_control_policies
- * @db-write-via:market-payment-provider-config-service market_payment_providers
+ * @db-write-via:market-payment-provider-config-service market_payment_providers, market_central_collection_modes
  * @db-write-via:relais-mutation-service relais
  * @db-write-via:economic-cost-reference-service economic_cost_centers, economic_cost_families
  * @db-txn        caller-owned
@@ -31,7 +31,7 @@ const { targetCapabilitiesForScope } = require('./market-operator-provisioning')
 const { inviteTeamMember } = require('./market-delegation-team-service');
 const { projectAssignment } = require('./market-scope-projector');
 const { initializeProvisioningCashPolicy } = require('./market-cash-control-policy-service');
-const { configureProvisioningProvider } = require('./market-payment-provider-config-service');
+const { configureProvisioningProvider, configureCentralCollectionModes, assertMobileMarketEligibility } = require('./market-payment-provider-config-service');
 const relaisMutation = require('./relais-mutation-service');
 const centralAuthority = require('./central-authority');
 const controlPlane = require('./market-control-plane');
@@ -142,6 +142,7 @@ async function configureProvisioningMarket(executor, {
   financialLimits = {},
   lead = {},
   paymentProvider = null,
+  centralCollectionModes = null,
   cashPolicy = null,
   initialRelais = null,
   correlationId = null,
@@ -206,6 +207,11 @@ async function configureProvisioningMarket(executor, {
     correlationId,
   });
 
+  if (identity && paymentProvider) assertMobileMarketEligibility(market.code, paymentProvider.provider);
+  const initialCentralModes = centralCollectionModes == null ? [] :
+    await configureCentralCollectionModes(executor, {
+      marketId: market.id, actorUserId, modes: centralCollectionModes,
+    });
   const initialPaymentProvider = paymentProvider
     ? await configureProvisioningProvider(executor, {
         marketId: market.id,
@@ -261,6 +267,7 @@ async function configureProvisioningMarket(executor, {
     central_referent_user_id: centralReferentUserId,
     lead: leadResult,
     initial_payment_provider: initialPaymentProvider,
+    initial_central_collection_modes: initialCentralModes,
     initial_cash_policy: initialCashPolicy,
     initial_relais: initialRelay,
     economic_references: economicReferences,
@@ -280,6 +287,7 @@ async function provisionMarket(executor, {
   financialLimits = {},
   lead = {},
   paymentProvider = null,
+  centralCollectionModes = null,
   cashPolicy = null,
   initialRelais = null,
   correlationId = null,
@@ -289,7 +297,7 @@ async function provisionMarket(executor, {
   });
   return configureProvisioningMarket(executor, {
     market, actorUserId, centralReferentUserId, financialLimits, lead,
-    paymentProvider, cashPolicy, initialRelais, correlationId,
+    paymentProvider, centralCollectionModes, cashPolicy, initialRelais, correlationId,
   });
 }
 
@@ -300,6 +308,7 @@ async function reprovisionMarket(executor, {
   financialLimits = {},
   lead = {},
   paymentProvider = null,
+  centralCollectionModes = null,
   cashPolicy = null,
   initialRelais = null,
   correlationId = null,
@@ -307,7 +316,7 @@ async function reprovisionMarket(executor, {
   const market = await loadProvisioningMarket(executor, { marketCode });
   return configureProvisioningMarket(executor, {
     market, actorUserId, centralReferentUserId, financialLimits, lead,
-    paymentProvider, cashPolicy, initialRelais, correlationId,
+    paymentProvider, centralCollectionModes, cashPolicy, initialRelais, correlationId,
   });
 }
 

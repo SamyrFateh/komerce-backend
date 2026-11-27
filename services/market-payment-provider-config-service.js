@@ -6,10 +6,10 @@
  * @criticality   high
  * @inputs        caller-owned transaction, provisioning market, provider config
  * @outputs       market_payment_providers configuration
- * @depends       none
+ * @depends       services/mobile-money/registry.js, services/market-payment-collection-gate.js
  * @used-by       services/market-provisioning-service.js
- * @db-read       markets
- * @db-write      market_payment_providers
+ * @db-read       markets, market_central_collection_modes
+ * @db-write      market_payment_providers, market_central_collection_modes
  * @db-txn        caller-owned
  * @doctrine      payment_provider_config_owned_by_payments, provisioning_only_writer
  * @impact-areas  payments, market-control-plane
@@ -17,7 +17,80 @@
  */
 'use strict';
 
-const ALLOWED_PROVIDERS = Object.freeze(['orange_money','mtn_momo']);
+const { listAdapters } = require('./mobile-money/registry');
+const { CENTRAL_MODES } = require('./market-payment-collection-gate');
+const ALLOWED_PROVIDERS = Object.freeze(listAdapters().map(adapter => adapter.name));
+
+function paymentOptions() {
+  // Presence of runtime configuration is not proof of merchant eligibility.
+  // Never project secrets: only names, supported market and boolean readiness.
+  const env = process.env;
+  return {
+    central: [
+      { mode: 'stripe_eur', label: 'Stripe (EUR)', configured: Boolean(env.STRIPE_SECRET_KEY && env.STRIPE_PUBLISHABLE_KEY && env.STRIPE_WEBHOOK_SECRET) },
+      { mode: 'paypal_eur', label: 'PayPal (EUR)', configured: Boolean(env.PAYPAL_CLIENT_ID && env.PAYPAL_CLIENT_SECRET && env.PAYPAL_WEBHOOK_ID) },
+    ],
+    mobile: listAdapters().map(adapter => ({
+      provider: adapter.name, market_code: adapter.marketCode, label: adapter.label,
+      configured: Boolean(adapter.isConfigured()),
+    })),
+  };
+}
+
+function assertMobileMarketEligibility(marketCode, provider) {
+  if (!listAdapters().some(adapter => adapter.name === provider && adapter.marketCode === marketCode)) {
+    throw configError('MARKET_PAYMENT_PROVIDER_INELIGIBLE', 'Aucun contrat mobile money compatible avec ce marché et ce fournisseur.', 409);
+  }
+}
+
+async function listCentralCollectionModes(executor, marketId) {
+  const { rows } = await requireExecutor(executor).query(
+    'SELECT payment_mode, evidence_ref, authorized_by FROM market_central_collection_modes WHERE market_id=$1::uuid AND revoked_at IS NULL ORDER BY payment_mode',
+    [marketId]
+  );
+  return rows;
+}
+
+// The existing payments table remains the only authorization. A central
+// administrator must attest the decision on the holder of funds, per mode.
+// No automatic grant based on country, currency or existence of credentials.
+async function configureCentralCollectionModes(executor, { marketId, actorUserId, modes }) {
+  const db = requireExecutor(executor);
+  if (!Array.isArray(modes) || !actorUserId || modes.length > CENTRAL_MODES.length) {
+    throw configError('MARKET_CENTRAL_MODES_INVALID', 'Autorisations centrales invalides.');
+  }
+  const normalized = modes.map(entry => {
+    const mode = entry?.payment_mode;
+    const evidence = typeof entry?.evidence_ref === 'string' ? entry.evidence_ref.trim() : '';
+    if (!CENTRAL_MODES.includes(mode) || evidence.length < 3 || evidence.length > 500) {
+      throw configError('MARKET_CENTRAL_EVIDENCE_REQUIRED', 'Référence de décision du titulaire des fonds requise pour chaque moyen central.');
+    }
+    return { mode, evidence };
+  });
+  if (new Set(normalized.map(x => x.mode)).size !== normalized.length) {
+    throw configError('MARKET_CENTRAL_MODES_INVALID', 'Moyen de paiement central dupliqué.');
+  }
+  const { rows: markets } = await db.query(
+    'SELECT id, lifecycle_status FROM markets WHERE id=$1::uuid FOR UPDATE', [marketId]
+  );
+  if (!markets[0] || markets[0].lifecycle_status !== 'PROVISIONING') {
+    throw configError('MARKET_CENTRAL_MODES_PROVISIONING_ONLY', 'Autorisation initiale réservée au marché en préparation.', 409);
+  }
+  // Existing authorizations are not silently revoked during a retry.
+  for (const entry of normalized) {
+    await db.query(
+      `INSERT INTO market_central_collection_modes (market_id, payment_mode, evidence_ref, authorized_by)
+       VALUES ($1::uuid,$2,$3,$4::uuid)
+       ON CONFLICT (market_id,payment_mode) DO UPDATE SET
+         evidence_ref=EXCLUDED.evidence_ref, authorized_by=EXCLUDED.authorized_by,
+         authorized_at=NOW(), revoked_at=NULL
+       WHERE market_central_collection_modes.revoked_at IS NOT NULL
+          OR market_central_collection_modes.evidence_ref IS DISTINCT FROM EXCLUDED.evidence_ref`,
+      [marketId, entry.mode, entry.evidence, actorUserId]
+    );
+  }
+  return listCentralCollectionModes(db, marketId);
+}
 
 function configError(code, message, status = 400) {
   const error = new Error(message || code);
@@ -78,4 +151,4 @@ async function configureProvisioningProvider(executor, {
   return rows[0];
 }
 
-module.exports = { ALLOWED_PROVIDERS, configureProvisioningProvider };
+module.exports = { ALLOWED_PROVIDERS, paymentOptions, assertMobileMarketEligibility, listCentralCollectionModes, configureCentralCollectionModes, configureProvisioningProvider };

@@ -99,6 +99,7 @@ module.exports = {
       'membership_capabilities: R',
       'assignment_capability_ceiling: R',
       'market_payment_providers: R',
+      'market_central_collection_modes: R',
       'market_cash_control_policies: R',
       'relais: R',
       'market_delivery_attestations: RW',

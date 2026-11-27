@@ -19,3 +19,28 @@ describe('market payment provider provisioning writer', () => {
     expect(db.query).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('central payment authorization during market preparation #4370', () => {
+  const { configureCentralCollectionModes, assertMobileMarketEligibility } = require('../../services/market-payment-provider-config-service');
+  test('incompatible mobile-money country is rejected', () => {
+    expect(() => assertMobileMarketEligibility('GA','orange_money')).toThrow(/compatible/);
+    expect(() => assertMobileMarketEligibility('CM','orange_money')).not.toThrow();
+  });
+  test('central payment needs named decision evidence before any query', async () => {
+    const db = {query:jest.fn()};
+    await expect(configureCentralCollectionModes(db,{marketId:'m1',actorUserId:'admin',modes:[{payment_mode:'stripe_eur'}]})).rejects.toMatchObject({code:'MARKET_CENTRAL_EVIDENCE_REQUIRED'});
+    expect(db.query).not.toHaveBeenCalled();
+  });
+  test('uses the existing grant table and canonical actor', async () => {
+    const mode = {payment_mode:'stripe_eur',evidence_ref:'DECISION-12'};
+    const db = {query:jest.fn().mockResolvedValueOnce({rows:[{lifecycle_status:'PROVISIONING'}]}).mockResolvedValueOnce({rows:[]}).mockResolvedValueOnce({rows:[mode]})};
+    await expect(configureCentralCollectionModes(db,{marketId:'m1',actorUserId:'admin',modes:[mode]})).resolves.toEqual([mode]);
+    expect(db.query.mock.calls[1][0]).toContain('INSERT INTO market_central_collection_modes');
+    expect(db.query.mock.calls[1][1]).toEqual(['m1','stripe_eur','DECISION-12','admin']);
+  });
+  test('cannot grant for an already active market via provisioning', async () => {
+    const db = {query:jest.fn().mockResolvedValueOnce({rows:[{lifecycle_status:'ACTIVE'}]})};
+    await expect(configureCentralCollectionModes(db,{marketId:'m1',actorUserId:'admin',modes:[{payment_mode:'paypal_eur',evidence_ref:'DECISION-12'}]})).rejects.toMatchObject({code:'MARKET_CENTRAL_MODES_PROVISIONING_ONLY'});
+    expect(db.query).toHaveBeenCalledTimes(1);
+  });
+});

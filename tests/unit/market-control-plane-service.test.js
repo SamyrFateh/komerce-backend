@@ -66,6 +66,16 @@ describe('computeGaps — rapport d’écarts du Control Plane', () => {
     expect(readinessFromGaps(computeGaps(s)).ready_for_activation).toBe(false);
   });
 
+  test('un moyen central disponible suffit sans cash ; non configuré ne suffit pas', () => {
+    const s = healthy();
+    s.cashPolicy.cash_enabled = false;
+    s.paymentProviders = [];
+    s.paymentAvailability = [{mode:'stripe_eur',ready:true}];
+    expect(codes(s)).not.toContain('NO_PAYMENT_PROVIDER');
+    s.paymentAvailability[0].ready = false;
+    expect(codes(s)).toContain('NO_PAYMENT_PROVIDER');
+  });
+
   test('relais actif suffit : aucune attestation ni livraison historique obligatoire', () => {
     const s = healthy();
     s.deliveryProof = { proven: false, basis: null };
@@ -153,7 +163,7 @@ describe('getControlPlane / listMarkets — lecture seule', () => {
     ]);
     const view = await getControlPlane(db, 'KM');
     expect(Object.keys(view).sort()).toEqual(
-      ['assignment', 'carriers', 'cashPolicy', 'ceiling', 'deliveryProof', 'gaps', 'market', 'paymentProviders', 'readiness', 'relaisActive', 'team']
+      ['assignment', 'carriers', 'cashPolicy', 'ceiling', 'centralCollectionModes', 'deliveryProof', 'gaps', 'market', 'paymentAvailability', 'paymentProviders', 'readiness', 'relaisActive', 'team']
     );
     expect(view.carriers).toEqual([]);
     expect(view.gaps).toEqual([]);

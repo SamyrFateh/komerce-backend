@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        canonical market code (server-validated), read-only DB executor
  * @outputs       per-market control view (assignment, team, ceiling, payment, cash policy, relais) and gap report
- * @depends       db.js, services/market-delegation-service.js, services/market-delivery-proof-service.js
+ * @depends       services/market-payment-provider-config-service.js, db.js, services/market-delegation-service.js, services/market-delivery-proof-service.js
  * @used-by       routes/admin-market-control-plane.js
  * @db-read       market_settlements, disputes, orders, markets, currency_parities, carriers, capability_registry, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, market_payment_providers, market_cash_control_policies, relais, market_delivery_attestations
  * @db-write      none
@@ -26,6 +26,7 @@
 
 const { delegationError, normalizeMarketCode } = require('./market-delegation-service');
 const { getDeliveryProof } = require('./market-delivery-proof-service');
+const { listCentralCollectionModes, paymentOptions } = require('./market-payment-provider-config-service');
 
 const TEAM_GRANT = 'team.grant';
 
@@ -69,7 +70,10 @@ function computeGaps(snapshot) {
   }
   // A documented cash-only market does not require an electronic provider.
   const cashReady = snapshot.cashPolicy?.cash_enabled === true;
-  if (!cashReady && !snapshot.paymentProviders.some(provider => provider.is_enabled)) add('NO_PAYMENT_PROVIDER');
+  const electronicReady = snapshot.paymentAvailability
+    ? snapshot.paymentAvailability.some(mode => mode.ready)
+    : snapshot.paymentProviders.some(provider => provider.is_enabled);
+  if (!cashReady && !electronicReady) add('NO_PAYMENT_PROVIDER');
   if (!snapshot.cashPolicy) add('NO_CASH_POLICY');
   if (!snapshot.relaisActive) add('NO_RELAIS');
   return gaps;
@@ -173,7 +177,21 @@ async function getControlPlane(executor, marketCode) {
   )).rows[0].n;
 
   const deliveryProof = await getDeliveryProof(db, market.id);
-  const snapshot = { market, assignment, ceiling, team, paymentProviders, cashPolicy, relaisActive, deliveryProof };
+  const centralCollectionModes = await listCentralCollectionModes(db, market.id);
+  const options = paymentOptions();
+  const paymentAvailability = [
+    ...centralCollectionModes.map(mode => ({
+      mode: mode.payment_mode,
+      ready: options.central.some(option => option.mode === mode.payment_mode && option.configured),
+    })),
+    // Use the same first enabled provider as the checkout runtime.
+    ...paymentProviders.filter(provider => provider.is_enabled).slice(0, 1).map(provider => ({
+      mode: 'mobile_money', provider: provider.provider,
+      ready: provider.currency === market.currency && options.mobile.some(option =>
+        option.provider === provider.provider && option.market_code === market.code && option.configured),
+    })),
+  ];
+  const snapshot = { market, assignment, ceiling, team, paymentProviders, cashPolicy, relaisActive, deliveryProof, centralCollectionModes, paymentAvailability };
   const gaps = computeGaps(snapshot);
   // Choix du transporteur pour l'attestation de livrabilité : fourni uniquement quand la preuve manque
   // (aucune nouvelle route, l'écran de gestion des marchés ne lit que /api/admin/markets).

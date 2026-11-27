@@ -190,6 +190,7 @@ module.exports = {
       'market_operating_assignments: R',
       'incidents: R',
       'market_payment_providers: RW!',
+      'market_central_collection_modes: RW!',
       'mobile_money_transactions: RW',
       'order_items: R',
       'orders: R',

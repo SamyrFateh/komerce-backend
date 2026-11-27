@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        central admin actor, canonical market code in path
  * @outputs       market list/control view, provisioning/reprovisioning/lifecycle and assignment-status mutations, exit-readiness read, central authority overview
- * @depends       db.js, middleware/auth.js, services/market-control-plane.js, services/market-delivery-proof-service.js, services/central-authority.js
+ * @depends       services/market-payment-provider-config-service.js, db.js, middleware/auth.js, services/market-control-plane.js, services/market-delivery-proof-service.js, services/central-authority.js
  * @used-by       bootstrap/api-routes.js, central admin workspace
  * @db-read       none
  * @db-write      none
@@ -32,6 +32,7 @@ const controlPlane = require('../services/market-control-plane');
 const deliveryProof = require('../services/market-delivery-proof-service');
 const transportSale = require('../services/market-transport-sale-rate-command');
 const centralAuthority = require('../services/central-authority');
+const { paymentOptions } = require('../services/market-payment-provider-config-service');
 const delegation = require('../services/market-delegation-service');
 const { updateMarketStorefront } = require('../services/market-lifecycle-service');
 const { provisionMarket, reprovisionMarket, setMarketLifecycle, setAssignmentLifecycle } = require('../services/market-provisioning-service');
@@ -74,6 +75,7 @@ router.post('/', ...centralAdmin, async (req, res, next) => {
       financialLimits: body.financial_limits || {},
       lead: body.lead || {},
       paymentProvider: body.payment_provider || null,
+      centralCollectionModes: body.central_collection_modes ?? null,
       cashPolicy: body.cash_policy || null,
       initialRelais: body.initial_relais || null,
       correlationId: req.headers['x-correlation-id'] ? String(req.headers['x-correlation-id']).slice(0, 200) : null,
@@ -94,6 +96,7 @@ router.post('/:marketCode/reprovision', ...centralAdmin, async (req, res, next) 
       financialLimits: body.financial_limits || {},
       lead: body.lead || {},
       paymentProvider: body.payment_provider || null,
+      centralCollectionModes: body.central_collection_modes ?? null,
       cashPolicy: body.cash_policy || null,
       initialRelais: body.initial_relais || null,
       correlationId: req.headers['x-correlation-id'] ? String(req.headers['x-correlation-id']).slice(0, 200) : null,
@@ -219,7 +222,7 @@ router.get('/', ...centralAdmin, async (req, res, next) => {
 // Autorité centrale (lecture seule) : qui détient une autorisation explicite active, par domaine.
 router.get('/central-authority', ...centralAdmin, async (req, res, next) => {
   try {
-    res.json(await centralAuthority.overview(db));
+    res.json({ ...(await centralAuthority.overview(db)), payment_options: paymentOptions() });
   } catch (error) {
     if (!sendKnownError(res, error)) next(error);
   }

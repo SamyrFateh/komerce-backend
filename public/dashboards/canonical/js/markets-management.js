@@ -203,8 +203,12 @@
     if (!email) throw new Error('Nom et prénom du responsable requis.');
     const cash = values.cash_enabled === 'true';
     const provider = values.provider || '';
-    if (!cash && !provider) throw new Error('Sélectionner au moins un moyen de paiement.');
-    if (provider && !['orange_money','mtn_momo'].includes(provider)) throw new Error('Fournisseur non pris en charge.');
+    const central = ['stripe_eur','paypal_eur'].filter(mode => values[mode] === 'true').map(mode => {
+      const evidence = String(values[mode + '_evidence'] || '').trim();
+      if (evidence.length < 3) throw new Error('Référence de décision requise pour ' + mode + '.');
+      return { payment_mode: mode, evidence_ref: evidence };
+    });
+    if (!cash && !provider && !central.length) throw new Error('Sélectionner au moins un moyen de paiement.');
     const relay = String(values.relay_name || '').trim();
     const relayFields = ['relay_phone','relay_address','relay_agent'];
     if ((relay || relayFields.some(key => String(values[key] || '').trim())) &&
@@ -220,6 +224,7 @@
       financial_limits: limits,
       lead: { last_name: values.last_name, first_name: values.first_name, phone: values.phone },
       payment_provider: provider ? { provider, currency: String(values.currency || '').trim().toUpperCase(), priority: 10 } : null,
+      central_collection_modes: central,
       cash_policy: { cash_enabled: cash, confirmation_mode: values.confirmation_mode },
       initial_relais: relay ? { name: relay, agent_name: values.relay_agent || null,
         phone: values.relay_phone, address: values.relay_address } : null,
@@ -276,8 +281,19 @@
     } else if (wizard.step === 3) {
       input('cash_enabled','Cash au relais',null,[{value:'',label:'Choisir…'},{value:'true',label:'Autorisé'},{value:'false',label:'Non autorisé'}]);
       input('confirmation_mode','Contrôle de caisse',null,[{value:'',label:'Choisir…'},{value:'SINGLE',label:'Confirmation simple'},{value:'DUAL_ALWAYS',label:'Double confirmation'}]);
-      input('provider','Fournisseur mobile money (facultatif)',null,[{value:'',label:'Aucun'},{value:'orange_money',label:'Orange Money'},{value:'mtn_momo',label:'MTN MoMo'}],false);
-      form.appendChild(el(doc,'p','kmc-access-muted','Stripe et PayPal : autorisation centrale selon éligibilité, non configurables par cette étape à ce stade. Le cash seul est possible.'));
+      const options = wizard.authority.payment_options || { central:[], mobile:[] };
+      const eligible = options.mobile.filter(option => option.market_code === String(wizard.values.code || '').toUpperCase());
+      if (!eligible.some(option => option.provider === wizard.values.provider)) wizard.values.provider = '';
+      input('provider','Fournisseur mobile money (facultatif)',null,[{value:'',label:'Aucun'}].concat(
+        eligible.map(option => ({ value:option.provider, label:option.label + (option.configured ? '' : ' — configuration technique manquante') }))),false);
+      if (!eligible.length) form.appendChild(el(doc,'p','kmc-access-muted','Aucun adaptateur mobile money disponible pour ce marché.'));
+      for (const option of options.central) {
+        input(option.mode,option.label + (option.configured ? '' : ' — configuration technique manquante'),null,[
+          {value:'false',label:'Non autorisé'},{value:'true',label:'Autorisé par décision centrale'},
+        ],false);
+        input(option.mode+'_evidence','Référence de décision du titulaire des fonds — '+option.label,'text',null,false);
+      }
+      form.appendChild(el(doc,'p','kmc-access-muted','Les moyens centraux exigent une décision du propriétaire. La configuration technique manquante bloque leur disponibilité. Le cash seul est possible.'));
     } else {
       const values = wizard.values;
       for (const line of [
@@ -285,7 +301,7 @@
         'Responsable : ' + values.last_name + ' ' + values.first_name,
         professionalAddress(values.last_name, values.first_name) + ' · ' + values.phone,
         'Premier relais : ' + (values.relay_name || 'à configurer localement'),
-        'Paiements : ' + [values.cash_enabled==='true'?'Cash au relais':'', values.provider||''].filter(Boolean).join(', '),
+        'Paiements : ' + [values.cash_enabled==='true'?'Cash au relais':'', values.provider||'',values.stripe_eur==='true'?'Stripe EUR':'',values.paypal_eur==='true'?'PayPal EUR':''].filter(Boolean).join(', '),
       ]) form.appendChild(el(doc,'p','',line));
       form.appendChild(el(doc,'p','kmc-access-muted','Les raccordements et prérequis sont contrôlés par le serveur. Cette action ne publie pas la boutique.'));
     }

@@ -195,3 +195,9 @@ describe('initialisation centrale #4370 — contrat nommé', () => {
     expect(() => mgmt.initialPayload({...values,relay_name:'Libreville'})).toThrow(/relais/);
   });
 });
+
+test('central collection needs separate evidence per selected method', () => {
+  const base = {code:'GA',name:'Gabon',currency:'XAF',minor_unit:'0',central_referent_user_id:'u1',last_name:'Diallo',first_name:'Jean',phone:'+24161234567',cash_enabled:'false',confirmation_mode:'SINGLE', 'limit_cash.custody.receive':'100','limit_execution.cash.confirm':'200','limit_settlement.receive':'300','limit_finance.act':'400'};
+  expect(() => mgmt.initialPayload({...base,stripe_eur:'true'})).toThrow(/décision/);
+  expect(mgmt.initialPayload({...base,stripe_eur:'true',stripe_eur_evidence:'DECISION-12'}).central_collection_modes).toEqual([{payment_mode:'stripe_eur',evidence_ref:'DECISION-12'}]);
+});
