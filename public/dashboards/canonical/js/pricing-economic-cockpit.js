@@ -414,12 +414,12 @@
       try {
         const model = await load();
         output.replaceChildren(el(doc, 'p', 'kmc-v7-coverage',
-          '90 derniers jours · 3 expéditions admissibles pour un coefficient décisionnel.'));
+          '90 derniers jours · 3 expéditions ou lots locaux clôturés admissibles pour un coefficient décisionnel.'));
         const rows = model.products.flatMap(product => product.observed_landed_cost.map(cost => ({ ...cost, product })));
         if (!rows.length) output.append(el(doc, 'p', 'kmc-v7-empty', 'Aucune observation admissible sur ce marché.'));
         for (const cost of rows) {
           const card = el(doc, 'div', 'kmc-v7-metric');
-          const rail = { sea: 'Maritime', air: 'Aérien' }[cost.rail] || cost.rail;
+          const rail = { sea: 'Maritime', air: 'Aérien', LOCAL_STOCK: 'Stock local' }[cost.rail] || cost.rail;
           card.append(el(doc, 'strong', '', cost.product.product_name + ' · ' + (cost.sku_reference || cost.sku_id) + ' · ' + rail));
           card.append(el(doc, 'span', '', 'Prix de revient réel : ' + v7Money(cost.unit_cost_kmf == null ? null : String(cost.unit_cost_kmf), 'KMF')));
           card.append(el(doc, 'span', '', 'Estimé avant vente : ' + v7Money(cost.estimated_unit_cost_kmf == null ? null : String(cost.estimated_unit_cost_kmf), 'KMF')));
@@ -439,7 +439,7 @@
             TRUNCATED: 'Indicatif — résultats tronqués',
             PURCHASE_COST_UNAVAILABLE: 'Indicatif — achat non établi',
           }[cost.status] || 'Indicatif — non certifié';
-          card.append(el(doc, 'small', 'kmc-v7-coverage', status + ' · ' + cost.observations + ' expédition(s) · ' +
+          card.append(el(doc, 'small', 'kmc-v7-coverage', status + ' · ' + cost.observations + (cost.rail === 'LOCAL_STOCK' ? ' lot(s) · ' : ' expédition(s) · ') +
             cost.incomplete_lines + ' ligne(s) incomplète(s) · ' + cost.provisional_lines + ' provisoire(s)'));
           output.append(card);
         }
@@ -450,6 +450,65 @@
         button.disabled = false;
       }
     });
+    return panel;
+  }
+
+  function createLocalLotPanel(doc, actions) {
+    const panel=el(doc,'section','kmc-v6-panel');
+    const load=el(doc,'button','kmc-v7-family','Rapprocher les lots locaux');
+    load.type='button';
+    const out=el(doc,'div','');out.setAttribute('aria-live','polite');
+    panel.append(el(doc,'h4','','Clôture des réceptions locales'),load,out);
+    async function refresh(){
+      load.disabled=true;
+      try {
+        const data=await actions.loadLocalLots();
+        out.replaceChildren();
+        const select=el(doc,'select');select.setAttribute('aria-label','Lot reçu');
+        const empty=el(doc,'option','','Choisir une réception SKU attestée');empty.value='';select.append(empty);
+        for(const row of data.receipts||[]){
+          const option=el(doc,'option','',row.product_name+' · '+row.sku_reference+' · '+row.receipt_proof_ref+' · '+row.linked_quantity+'/'+row.quantity);
+          option.value=row.receipt_id;select.append(option);
+        }
+        const detail=el(doc,'div','');
+        out.append(select,detail);
+        select.addEventListener('change',()=>{
+          detail.replaceChildren();
+          const receipt=data.receipts.find(row=>row.receipt_id===select.value);
+          if(!receipt)return;
+          const input=(name,placeholder,type='text')=>{const node=el(doc,'input');node.name=name;node.placeholder=placeholder;node.type=type;node.required=true;node.setAttribute('aria-label',placeholder);return node;};
+          const form=el(doc,'form','kmc-team-invite');
+          const submit=el(doc,'button','kmc-workspace-action',receipt.closed_at?'Rattacher la vente attestée':'Clôturer le coût d’achat du lot');
+          submit.type='submit';
+          const feedback=el(doc,'p','kmc-v7-coverage');
+          let body;
+          if(!receipt.closed_at){
+            const amount=input('purchase_total_kmf','Montant total réellement réglé (KMF)','number');amount.min='0';amount.step='0.01';
+            const proof=input('payment_proof_ref','Référence justificatif du règlement');
+            form.append(amount,proof);
+            body=()=>({purchase_total_kmf:amount.value,payment_proof_ref:proof.value});
+          }else{
+            detail.append(el(doc,'p','kmc-v7-coverage','Achat clôturé : '+receipt.purchase_total_kmf+' KMF. Rattacher uniquement une vente dont le lot est attesté.'));
+            const sale=el(doc,'select');sale.required=true;sale.setAttribute('aria-label','Vente du SKU');
+            for(const row of data.sales.filter(row=>row.sku_id===receipt.sku_id && Date.parse(row.sold_at)>=Date.parse(receipt.received_at))){
+              const option=el(doc,'option','',row.order_reference+' · '+row.quantity+' unité(s)');option.value=row.order_item_id;sale.append(option);
+            }
+            const proof=input('lot_proof_ref','Justificatif du rattachement physique');
+            form.append(sale,proof);
+            body=()=>({order_item_id:sale.value,lot_proof_ref:proof.value});
+          }
+          form.append(submit,feedback);
+          form.addEventListener('submit',async event=>{
+            event.preventDefault();submit.disabled=true;
+            try{await actions.writeLocalLot(receipt.receipt_id,receipt.closed_at?'link':'close',body());await refresh();}
+            catch(error){feedback.textContent=error.message||'Rapprochement refusé.';submit.disabled=false;}
+          });
+          detail.append(form);
+        });
+      } catch(error){out.textContent=error.message||'Lots indisponibles.';}
+      finally{load.disabled=false;}
+    }
+    load.addEventListener('click',refresh);
     return panel;
   }
 
@@ -466,6 +525,7 @@
       ? 'Résultat provisoire sur les faits documentés. Clôture Direction en attente.'
       : 'Résultat économique non calculable : rapprochement des ventes, charges variables et structure à compléter.'));
     if(actions?.loadObservedCost)host.append(createObservedCostPanel(doc,actions.loadObservedCost));
+    if(actions?.loadLocalLots && actions?.writeLocalLot)host.append(createLocalLotPanel(doc,actions));
     if(!data){
       const observation=model?.activity?.purchaseTransportObservation;
       if(observation?.coefficient!=null)host.append(el(doc,'p','','Observation partielle achat + transport : '+observation.coefficient.replace('.',',')+' · non décisionnelle'));
@@ -643,6 +703,11 @@
         const actions={centerState,
           loadObservedCost: context.requestedMarket ? () => workspace.jsonRequest(context.fetch,
             '/api/admin/costing/products/margin-steering?market_code='+encodeURIComponent(context.requestedMarket)+'&since_days=90') : null,
+          ...(context.requestedMarket && options.user?.role==='admin' ? {
+            loadLocalLots:()=>workspace.jsonRequest(context.fetch,'/api/admin/costing/local-stock/receipt-lots?market_code='+encodeURIComponent(context.requestedMarket)),
+            writeLocalLot:(id,action,body)=>workspace.jsonRequest(context.fetch,'/api/admin/costing/local-stock/receipt-lots/'+encodeURIComponent(id)+'/'+action,
+              {method:'POST',body:{...body,market_code:context.requestedMarket}})
+          }:{}),
           closePeriod:body=>mutate('closePeriod','/close-period',body),
           reviseBudget:(id,body)=>mutate('budget','/posts/'+encodeURIComponent(id)+'/budget-revisions',body),
           openCommitment:(id,body)=>mutate('commitment','/posts/'+encodeURIComponent(id)+'/commitments',body),

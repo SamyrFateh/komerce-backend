@@ -11,7 +11,7 @@
  * @db-write      none
  * @db-write-via:local-stock-service local_stock
  * @db-write-via:market-delegation-service market_delegation_audit
- * @db-txn        advisory_lock_session
+ * @db-txn        caller-owned-atomic
  * @doctrine      country_lead_only_local_stock_declaration, market_pool_stock_km_main, no_second_stock_writer
  * @impact-areas  market-delegation, local-stock
  * @version       2026-11
@@ -76,7 +76,7 @@ async function listMarketStock(db, { actorUserId, actorRole, marketCode }) {
 }
 
 async function declareReceipt(db, {
-  actorUserId, actorRole, marketCode, productId, relaisId, qtyReceived, proofRef, note = null, idempotencyKey,
+  actorUserId, actorRole, marketCode, productId, skuId = null, relaisId, qtyReceived, proofRef, note = null, idempotencyKey,
 }) {
   const authz = await authorize(db, { actorUserId, actorRole, marketCode });
   if (!idempotencyKey || String(idempotencyKey).length > 200) {
@@ -99,25 +99,37 @@ async function declareReceipt(db, {
   if (!product) throw err('LOCAL_STOCK_PRODUCT_NOT_FOUND', 'Produit introuvable.', 404);
   if (!product.is_active) throw err('LOCAL_STOCK_PRODUCT_INACTIVE', 'Produit inactif : réception refusée.', 422);
 
-  // Verrou advisory de session (setLocalStock écrit via le pool) : sérialise rejeu + lecture/écriture du pool.
+  if (skuId != null) {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(skuId))) {
+      throw err('LOCAL_STOCK_SKU_INVALID', 'Identifiant SKU invalide.', 400);
+    }
+    const { rows: [sku] } = await db.query('SELECT id FROM product_skus WHERE id=$1 AND product_id=$2', [skuId, productId]);
+    if (!sku) throw err('LOCAL_STOCK_SKU_MISMATCH', 'SKU étranger au produit.', 422);
+  }
+  // Serialize the idempotency key and lock the physical pool in the SAME transaction as its audit.
   const lockKey = `local_stock_receipt:${authz.market_id}:${productId}`;
-  await db.query('SELECT pg_advisory_lock(hashtext($1))', [lockKey]);
+  await db.query('BEGIN');
   try {
+    await db.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`local_stock_receipt_key:${authz.market_id}:${idempotencyKey}`]);
+    await db.query('SELECT pg_advisory_xact_lock(hashtext($1))', [lockKey]);
     const { rows: [prior] } = await db.query(
       `SELECT payload_after FROM market_delegation_audit
         WHERE market_id = $1::uuid AND action = 'LOCAL_STOCK_RECEIPT' AND correlation_id = $2 LIMIT 1`,
       [authz.market_id, idempotencyKey]
     );
-    if (prior) return { replayed: true, ...prior.payload_after };
+    if (prior) {
+      await db.query('COMMIT');
+      return { replayed: true, ...prior.payload_after };
+    }
 
-    const before = await localStock.getLocalStock(productId, authz.market_id, POOL_LOCATION);
+    const before = await localStock.getLocalStock(productId, authz.market_id, POOL_LOCATION, { executor: db, forUpdate: true });
     const previousQty = before ? Number(before.qty_physical) : 0;
     const row = await localStock.setLocalStock({
       productId, marketId: authz.market_id, location: POOL_LOCATION,
-      qtyPhysical: previousQty + qtyReceived, actorUserId,
+      qtyPhysical: previousQty + qtyReceived, actorUserId, executor: db,
     });
     const result = {
-      product_id: productId, relais_id: relaisId, qty_received: qtyReceived, proof_ref: proof, note: cleanNote,
+      product_id: productId, ...(skuId ? { sku_id: skuId } : {}), relais_id: relaisId, qty_received: qtyReceived, proof_ref: proof, note: cleanNote,
       location: POOL_LOCATION, qty_before: previousQty, qty_after: Number(row.qty_physical),
     };
     await audit(db, {
@@ -125,9 +137,11 @@ async function declareReceipt(db, {
       capability: CAPABILITY, action: 'LOCAL_STOCK_RECEIPT',
       before: { qty_physical: previousQty }, after: result, correlationId: idempotencyKey,
     });
+    await db.query('COMMIT');
     return { replayed: false, ...result, stock: row };
-  } finally {
-    await db.query('SELECT pg_advisory_unlock(hashtext($1))', [lockKey]).catch(() => {});
+  } catch (error) {
+    await db.query('ROLLBACK').catch(() => {});
+    throw error;
   }
 }
 

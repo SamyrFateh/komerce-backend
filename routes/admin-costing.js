@@ -53,6 +53,7 @@ const manualCostEntry = require('../services/cost-allocation/manual-cost-entry-s
 const realMarginShadow = require('../services/cost-allocation/real-margin-shadow');
 const fxAuthority = require('../services/fx-authority');
 const productMarginSteering = require('../services/cost-allocation/product-margin-steering');
+const localStockLots = require('../services/cost-allocation/local-stock-economic-lots');
 const { recordSkuRailSelection } = require('../services/economic-sku-rail-selection');
 const { hasPricingGlobalAuthority } = require('../middleware/require-pricing-global-authority');
 const { resolveReadScope } = require('../middleware/require-market-delegated-capability');
@@ -717,6 +718,36 @@ router.get('/real-margin-shadow', authenticate, requireAdmin, async (req, res, n
     next(err);
   }
 });
+
+// Explicit local financial closure; never mutates stock, prices or market permissions.
+router.get('/local-stock/receipt-lots', authenticate, requireAdmin, async (req,res,next)=>{
+  try {
+    const marketId=await localStockLots.marketForCode(db,req.query.market_code);
+    res.set('Cache-Control','private, no-store');
+    res.json(await localStockLots.list(db,marketId));
+  } catch(e) { if(e.status) return res.status(e.status).json({code:e.code,error:e.message}); next(e); }
+});
+for (const action of ['close','link']) {
+  router.post('/local-stock/receipt-lots/:receiptId/'+action, authenticate, requireAdmin, async(req,res,next)=>{
+    let client;
+    try {
+      client=await db.getClient();
+      await client.query('BEGIN');
+      const marketId=await localStockLots.marketForCode(client,req.body?.market_code);
+      const result=await localStockLots[action](client,{
+        marketId,receiptId:req.params.receiptId,actorId:req.user.id,
+        purchaseTotalKmf:req.body?.purchase_total_kmf,paymentProofRef:req.body?.payment_proof_ref,
+        orderItemId:req.body?.order_item_id,lotProofRef:req.body?.lot_proof_ref,
+      });
+      await client.query('COMMIT');
+      res.json(result);
+    } catch(e) {
+      if(client) await client.query('ROLLBACK').catch(()=>{});
+      if(e.status) return res.status(e.status).json({code:e.code,error:e.message});
+      next(e);
+    } finally { if(client) client.release(); }
+  });
+}
 
 // Pilotage par la marge, par produit (lecture seule ; aucun prix modifié, aucun blocage).
 router.get('/products/margin-steering', authenticate, requireRole(['admin', 'market_operator']), async (req, res, next) => {

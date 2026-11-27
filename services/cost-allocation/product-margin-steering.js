@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result
  * @depends       db, utils/rules.js, services/cost-allocation/cost-types.js, services/cost-allocation/_helpers.js, services/cost-allocation/real-margin-shadow.js, services/pricing-market-decision-policy.js
  * @used-by       routes/admin-costing.js
- * @db-read       orders, order_items, order_item_cost_imputations, order_item_real_cost_allocations, products, customs_categories, finance_config, customs_shipments, customs_shipment_parcels, parcel_items, business_rules, international_shipment_relay_receipts, international_shipments, international_n1_reconciliations, international_shipment_charges, product_skus
+ * @db-read       orders, order_items, order_item_cost_imputations, order_item_real_cost_allocations, products, customs_categories, finance_config, customs_shipments, customs_shipment_parcels, parcel_items, business_rules, international_shipment_relay_receipts, international_shipments, international_n1_reconciliations, international_shipment_charges, product_skus, local_stock_economic_lots, local_stock_economic_lot_lines
  * @db-write      none
  * @db-txn        @none
  * @doctrine      pricing_market_viability_cost_scope
@@ -46,6 +46,7 @@ const { getRuleNumber } = require('../../utils/rules');
 const { SNAPSHOT_LANDED_TO_REAL_COST_TYPE } = require('./cost-types');
 const { shareByWeight } = require('./_helpers');
 const realMarginShadow = require('./real-margin-shadow');
+const localStockLots = require('./local-stock-economic-lots');
 const { getCurrentMarketDecisionPolicy } = require('../pricing-market-decision-policy');
 
 const DEFAULT_RULES = Object.freeze({
@@ -124,15 +125,25 @@ function computeLineMargin(line) {
 }
 
 // Materialize cost coverage from the same real evidence for display and decision.
-function computeLandedCostEvidence({ result, real = {}, imported }) {
+function computeLandedCostEvidence({ result, real = {}, imported, localPurchase = null }) {
   const required = ['product_purchase', 'relay', 'payment'];
   if (imported) required.push('freight', 'customs', 'port_transitaire');
   const costs = { ...result.costs };
+  if (!imported) {
+    // The local lot is the sole source of acquisition; never use an import/catalogue estimate as actual.
+    delete costs.product_purchase;
+    for (const type of ['freight','port_transitaire']) if (costs[type]?.state === 'estimated') delete costs[type];
+  }
   for (const [type, entry] of Object.entries(real)) {
-    if (type === 'customs' || !LANDED_VARIABLE_TYPES.has(type)) continue;
+    if (type === 'customs' || (!imported && type === 'product_purchase') || !LANDED_VARIABLE_TYPES.has(type)) continue;
     if (entry.actual_count > 0 && Number.isFinite(entry.actual)) {
       costs[type] = { state: 'real', amount_kmf: entry.actual };
     }
+  }
+  const localConflict = !imported && localPurchase !== null && real.product_purchase?.actual_count > 0
+    && Math.round(real.product_purchase.actual * 100) !== Math.round(localPurchase * 100);
+  if (!imported && localPurchase !== null && Number.isFinite(localPurchase) && !localConflict) {
+    costs.product_purchase = { state: 'real', amount_kmf: localPurchase };
   }
   const missing = required.filter(type => {
     const cost = costs[type];
@@ -141,7 +152,7 @@ function computeLandedCostEvidence({ result, real = {}, imported }) {
   for (const type of missing) {
     if (!costs[type]) costs[type] = { state: 'missing', amount_kmf: null };
   }
-  const reason = result.reason || (missing.length ? 'cost_missing:' + missing[0] : null);
+  const reason = result.reason || (localConflict ? 'local_purchase_evidence_conflict' : null) || (missing.length ? 'cost_missing:' + missing[0] : null);
   const status = reason ? 'incomplete'
     : Object.values(costs).some(cost => cost.state === 'estimated') ? 'provisional' : 'final';
   return { status, reason, missing, costs };
@@ -153,7 +164,7 @@ function computeLandedCostEvidence({ result, real = {}, imported }) {
 function applyLandedCostCoverage(line, real) {
   const result = line.result;
   const evidence = computeLandedCostEvidence({
-    result, real, imported: line.fulfillment_source !== 'LOCAL_STOCK',
+    result, real, imported: line.fulfillment_source !== 'LOCAL_STOCK', localPurchase: line.local_purchase_kmf ?? null,
   });
   line.landed_cost_evidence = evidence;
   result.costs = evidence.costs;
@@ -176,6 +187,24 @@ function applyLandedCostCoverage(line, real) {
   result.margin_pct = result.sale_kmf > 0 ? pct2(100 * margin / result.sale_kmf) : null;
 }
 
+// A local order can be reconciled only from complete sale-line evidence, plus
+// the canonical order revenue/payment/refund oracle. A mixed basket remains
+// non-decisionable here until a common reconciliation can prove both rails.
+function reconcileLocalOrder(lines, shadow, orderItemCount) {
+  if (!lines.length || lines.length !== orderItemCount || shadow?.status_order !== 'collected'
+      || !Array.isArray(shadow.revenue?.flags)
+      || shadow.revenue.flags.some(flag=>flag.startsWith('payment_status_') || flag.startsWith('refund_'))
+      || lines.some(line=>line.fulfillment_source !== 'LOCAL_STOCK' || !line.local_lot || line.landed_cost_evidence?.status !== 'final'
+        || !Number.isFinite(line.result.cost_kmf) || !Number.isFinite(line.result.sale_kmf))) return false;
+  const saleCents=lines.reduce((sum,line)=>sum+Math.round(line.result.sale_kmf*100),0);
+  if (saleCents!==Math.round(shadow.revenue.net_kmf*100)) return false;
+  for (const { result } of lines) {
+    result.status='final';
+    result.reconciled_after_sale_margin_kmf=result.margin_kmf;
+  }
+  return true;
+}
+
 function summarizeObservedLandedCost(lines, shipments, { since, truncated }) {
   const cohorts = new Map();
   // A shipment counts once only if every line of that SKU in it is covered.
@@ -185,7 +214,7 @@ function summarizeObservedLandedCost(lines, shipments, { since, truncated }) {
   for (const line of lines) {
     const shipment = shipments.get(line.order_item_id);
     const closed = Date.parse(shipment?.financial_closed_at);
-    if (!shipment?.rail || !shipment.shipment_id || !line.sku_id || !Number.isFinite(closed) || closed < since || line.fulfillment_source === 'LOCAL_STOCK') continue;
+    if (!shipment?.rail || !shipment.shipment_id || !line.sku_id || !Number.isFinite(closed) || closed < since || (line.fulfillment_source === 'LOCAL_STOCK' && shipment.rail !== 'LOCAL_STOCK')) continue;
     if (seen.has(line.order_item_id)) continue;
     seen.add(line.order_item_id);
     const observationKey = JSON.stringify([line.sku_id, shipment.rail, shipment.shipment_id]);
@@ -231,6 +260,15 @@ function summarizeObservedLandedCost(lines, shipments, { since, truncated }) {
         cohort.costs[type] = (cohort.costs[type] || 0) + Math.round(cost.amount_kmf * 100);
       }
     }
+  }
+  // A local sale with no attested lot is visible as incomplete, not zero.
+  for (const line of lines) {
+    if (line.fulfillment_source !== 'LOCAL_STOCK' || !line.sku_id || shipments.has(line.order_item_id)
+        || !(Date.parse(line.sold_at)>=since)) continue;
+    const key=JSON.stringify([line.sku_id,'LOCAL_STOCK']);
+    if (!cohorts.has(key)) cohorts.set(key,{sku_id:line.sku_id,sku_reference:line.sku_reference,rail:'LOCAL_STOCK',
+      shipments:new Set(),last_closed_at:null,quantity:0,final_lines:0,provisional_lines:0,incomplete_lines:0,costs:{},estimated_cents:0,estimated_lines:0});
+    cohorts.get(key).incomplete_lines++;
   }
   return [...cohorts.values()].map(({ shipments: observed, costs, estimated_cents, estimated_lines, ...cohort }) => {
     const total = Object.values(costs).reduce((sum, cents) => sum + cents, 0);
@@ -584,20 +622,31 @@ async function listProductMarginSteering({ marketId, productId = null, sinceDays
     };
   });
 
+  const localLots=await localStockLots.loadComparable(db,marketId,lines.filter(l=>l.fulfillment_source==='LOCAL_STOCK').map(l=>l.order_item_id));
+  for (const line of lines) {
+    const lot=localLots.get(line.order_item_id);
+    if (lot) { line.local_lot=lot; line.local_purchase_kmf=num(lot.purchase_kmf); }
+  }
   // Statut final : uniquement si la marge shadow de la commande est final.
   const byOrder = new Map();
+  const localShadows=new Map();
   for (const l of lines) { if (l.result.status !== 'incomplete') (byOrder.get(l.order_id) || byOrder.set(l.order_id, []).get(l.order_id)).push(l); }
   for (const [orderId, orderLines] of byOrder) {
     const orderItemCount = orderLines[0].order_item_count;
     if (orderLines.length !== orderItemCount) continue;
     const shadow = await realMarginShadow.computeOrderRealMarginShadow(orderId, { marketId });
-    applyFinalOrderReal(orderLines, shadow, orderItemCount);
+    if (orderLines.every(l=>l.fulfillment_source==='LOCAL_STOCK')) localShadows.set(orderId,shadow);
+    else applyFinalOrderReal(orderLines, shadow, orderItemCount);
   }
 
   for (const l of lines) {
     applyLandedCostCoverage(l, realByItem.get(l.order_item_id));
-    l.result.gap_pts = l.result.margin_pct != null && l.target_pct != null ? pct2(l.result.margin_pct - l.target_pct) : null;
   }
+  for (const [orderId,shadow] of localShadows) {
+    const orderLines=byOrder.get(orderId);
+    reconcileLocalOrder(orderLines,shadow,orderLines[0].order_item_count);
+  }
+  for (const l of lines) l.result.gap_pts = l.result.margin_pct != null && l.target_pct != null ? pct2(l.result.margin_pct - l.target_pct) : null;
 
   const byProduct = new Map();
   for (const l of lines) {
@@ -615,6 +664,7 @@ async function listProductMarginSteering({ marketId, productId = null, sinceDays
   const observedShipments = includeObservedCost
     ? await loadComparableSaleShipments(marketId, [...byProduct.values()].flat(), { includeIncomplete: true })
     : new Map();
+  if (includeObservedCost) for (const [id,lot] of localLots) observedShipments.set(id,lot);
   // Coverage is already applied to every line, including withdrawal readers.
   const since = Math.max(Date.parse(policy?.effective_from), at.getTime() - Number(policy?.window_days) * 86400000);
 
@@ -651,4 +701,4 @@ async function listProductMarginSteering({ marketId, productId = null, sinceDays
   };
 }
 
-module.exports = { evaluateShipmentLosses, loadComparableSaleShipments, listProductMarginSteering, computeLineMargin, computeLandedCostEvidence, applyLandedCostCoverage, summarizeObservedLandedCost, summarizeProduct, applyFinalOrderReal, DEFAULT_RULES };
+module.exports = { evaluateShipmentLosses, loadComparableSaleShipments, listProductMarginSteering, computeLineMargin, computeLandedCostEvidence, applyLandedCostCoverage, reconcileLocalOrder, summarizeObservedLandedCost, summarizeProduct, applyFinalOrderReal, DEFAULT_RULES };

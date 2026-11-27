@@ -274,3 +274,36 @@ describe('observed landed cost evidence', () => {
       .toMatchObject({ observations: 0, unit_cost_kmf: null, incomplete_lines: 2 });
   });
 });
+
+describe('financially closed local receipt lots', () => {
+  const { applyLandedCostCoverage, reconcileLocalOrder, summarizeObservedLandedCost }=require('../../services/cost-allocation/product-margin-steering');
+  const mk=(id,lot)=>({order_item_id:id,sku_id:'S1',quantity:10,sold_at:'2026-11-02T00:00:00Z',
+    fulfillment_source:'LOCAL_STOCK',local_lot:lot,local_purchase_kmf:lot?50000:null,
+    result:{status:'provisional',reason:null,sale_kmf:70000,costs:{product_purchase:{state:'estimated',amount_kmf:49000},
+      freight:{state:'estimated',amount_kmf:999},customs:{state:'not_expected',amount_kmf:0}}}});
+  const actual={payment:{actual:800,actual_count:1},relay:{actual:1200,actual_count:1}};
+  const shadow={status_order:'collected',revenue:{net_kmf:70000,flags:[]}};
+  test('three separately closed local lots yield 5200 KMF and coefficient 1.04',()=>{
+    const observations=new Map(),lines=[];
+    for(const id of ['a','b','c']){
+      const lot={shipment_id:id,rail:'LOCAL_STOCK',financial_closed_at:'2026-11-03T00:00:00Z',sku_line_count:1};
+      const line=mk(id,lot);applyLandedCostCoverage(line,actual);
+      expect(reconcileLocalOrder([line],shadow,1)).toBe(true);
+      observations.set(id,lot);lines.push(line);
+    }
+    expect(summarizeObservedLandedCost(lines,observations,{since:0,truncated:false})[0])
+      .toMatchObject({rail:'LOCAL_STOCK',unit_cost_kmf:5200,observations:3,observed_multiplier:1.04,status:'DECISIONAL'});
+    const line=mk('unlinked',null);applyLandedCostCoverage(line,actual);
+    expect(line.result.status).toBe('incomplete');
+    expect(reconcileLocalOrder([line],shadow,1)).toBe(false);
+    expect(summarizeObservedLandedCost([line],new Map(),{since:0,truncated:false})[0])
+      .toMatchObject({rail:'LOCAL_STOCK',unit_cost_kmf:null,observations:0,incomplete_lines:1});
+  });
+  test('conflicting purchase evidence and refund flags never qualify',()=>{
+    const lot={shipment_id:'a',rail:'LOCAL_STOCK'};
+    const line=mk('a',lot);applyLandedCostCoverage(line,{...actual,product_purchase:{actual:51000,actual_count:1}});
+    expect(line.result.reason).toBe('local_purchase_evidence_conflict');
+    const good=mk('b',lot);applyLandedCostCoverage(good,actual);
+    expect(reconcileLocalOrder([good],{...shadow,revenue:{...shadow.revenue,flags:['refund_not_completed_not_deducted']}},1)).toBe(false);
+  });
+});
