@@ -121,7 +121,7 @@ async function link(q, { marketId, receiptId, orderItemId, lotProofRef, actorId,
   // Cumulative rounding conserves the exact documented purchase total when the lot is fully attributed.
   const { rows: [linked] } = await q.query(
     `INSERT INTO local_stock_economic_lot_lines(order_item_id,receipt_id,quantity,purchase_kmf,lot_proof_ref,linked_by)
-     SELECT $1,receipt_id,$3,ROUND(purchase_total_kmf*($4::numeric+$3::numeric)/quantity,2)
+     SELECT $1,receipt_id,$3::integer,ROUND(purchase_total_kmf*($4::numeric+($3::integer)::numeric)/quantity,2)
        -ROUND(purchase_total_kmf*$4::numeric/quantity,2),$5,$6
        FROM local_stock_economic_lots WHERE receipt_id=$2 RETURNING *`,
     [orderItemId,receiptId,qty,used.quantity,ref,actorId]);

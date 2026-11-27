@@ -90,7 +90,21 @@ test.describe('Mon Market — projections en lecture seule', () => {
     await expect(accounts).toContainText('Yves SARL');
     await expect(accounts).toContainText('Le Market');
     await expect(accounts).toContainText('contrat-2026-01');
-    await expect(page.locator('[data-market-readonly] button, [data-market-readonly] input, [data-market-readonly] form')).toHaveCount(0);
+    // The new Hub statement has an explicit date filter; it remains a GET-only consultation.
+    const statement=costs.locator('details').filter({hasText:'Relevé du Hub'});
+    await expect(statement.locator('form')).toHaveCount(1);
+    await expect(statement.locator('input[type=date]')).toHaveCount(2);
+    await expect(statement.getByRole('button',{name:'Afficher le relevé'})).toHaveCount(1);
+    await expect(page.locator('[data-market-readonly] form')).toHaveCount(1);
+    await expect(page.locator('[data-market-readonly] button')).toHaveCount(1);
+    await expect(page.getByRole('button',{name:'Valider et émettre la facture interne'})).toHaveCount(0);
+    await expect(page.getByRole('button',{name:'Confirmer le règlement reçu'})).toHaveCount(0);
+    await statement.locator('summary').click();
+    await statement.getByLabel('Début inclus').fill('2026-09-01');
+    await statement.getByLabel('Fin exclue').fill('2026-10-01');
+    const req=page.waitForRequest(r=>r.url().includes('scope=hub'));
+    await statement.getByRole('button',{name:'Afficher le relevé'}).click();
+    expect((await req).method()).toBe('GET');
     expect(calls.every(c => c.method === 'GET')).toBe(true);
     expect(calls.filter(c => c.path.endsWith('/payment-accounts'))).toHaveLength(1);
     expect(await page.content()).not.toMatch(/credentials_ref|vault\//);
