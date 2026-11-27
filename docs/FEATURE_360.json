@@ -11403,7 +11403,7 @@
             ]
           },
           "migrations": {
-            "count": 40,
+            "count": 42,
             "files": [
               {
                 "declared": "migrations/019_finance_columns.sql",
@@ -11604,6 +11604,16 @@
                 "declared": "migrations/435_economic_selection_decision_source.sql",
                 "resolvedPath": "migrations/435_economic_selection_decision_source.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/453_local_stock_economic_receipt_lots.sql",
+                "resolvedPath": "migrations/453_local_stock_economic_receipt_lots.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/454_local_stock_economic_multi_lot.sql",
+                "resolvedPath": "migrations/454_local_stock_economic_multi_lot.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -11678,7 +11688,7 @@
             ]
           },
           "services": {
-            "count": 63,
+            "count": 64,
             "files": [
               {
                 "declared": "scripts/market-cost-attribution-conservation-check.js",
@@ -11719,6 +11729,11 @@
                 "declared": "services/cost-allocation/index.js",
                 "resolvedPath": "services/cost-allocation/index.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/cost-allocation/local-stock-economic-lots.js",
+                "resolvedPath": "services/cost-allocation/local-stock-economic-lots.js",
+                "status": "resolved-on-disk-no-header"
               },
               {
                 "declared": "services/cost-allocation/manual-cost-entry-service.js",
@@ -11998,7 +12013,7 @@
             ]
           },
           "tests": {
-            "count": 115,
+            "count": 116,
             "files": [
               {
                 "declared": "tests/integration/canonical-margin-writer-real-db.test.js",
@@ -12306,6 +12321,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/local-stock-economic-lots.test.js",
+                "resolvedPath": "tests/unit/local-stock-economic-lots.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/manual-cost-entry-service.test.js",
                 "resolvedPath": "tests/unit/manual-cost-entry-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -12598,7 +12618,7 @@
             ]
           }
         },
-        "totalFiles": 241,
+        "totalFiles": 245,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -12705,6 +12725,14 @@
           },
           {
             "table": "international_n1_reconciliations",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "local_stock_economic_lot_lines",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "local_stock_economic_lots",
             "resolution": "declared-table-owner"
           },
           {
@@ -12915,6 +12943,18 @@
           },
           {
             "table": "international_n1_reconciliations",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "local_stock_economic_lot_lines",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "local_stock_economic_lots",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "owner"
@@ -13202,6 +13242,14 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "local_stock_economic_lot_lines",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "local_stock_economic_lots",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "market_cost_attributions",
             "resolution": "declared-table-owner"
           },
@@ -13414,6 +13462,18 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "local_stock_economic_lot_lines",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "local_stock_economic_lots",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "market_cost_attributions",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
@@ -13607,7 +13667,7 @@
           }
         ],
         "httpInterfaces": {
-          "count": 128
+          "count": 131
         }
       },
       "businessDependencies": [
