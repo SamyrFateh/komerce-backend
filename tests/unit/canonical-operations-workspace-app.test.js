@@ -123,14 +123,14 @@ test('central ne reçoit jamais Global dans un Workspace : aucun marché implici
   expect(env.workspaceMount).toHaveBeenLastCalledWith(expect.objectContaining({ requestedMarket: 'CG' }));
 });
 
-test('opérateur CM ne peut pas falsifier CG dans le sélecteur Workspace', async () => {
+test('opérateur CM/KM ne peut pas falsifier CG dans le sélecteur Workspace', async () => {
   const env = loadApp();
   const user = { id: 'operator-cm', role: 'admin' };
   const context = {
     actor: user,
     access: {
       mode: 'market',
-      allowedMarkets: ['CM'],
+      allowedMarkets: ['CM', 'KM'],
       defaultMarket: 'CM',
       capabilities: ['dashboard.market.read'],
     },
@@ -139,7 +139,7 @@ test('opérateur CM ne peut pas falsifier CG dans le sélecteur Workspace', asyn
 
   await env.api.renderRelayLive(env.root, user, context);
   const select = env.root.children[0].children[1].children[1];
-  expect(select.children.map(option => option.value)).toEqual(['CM']);
+  expect(select.children.map(option => option.value)).toEqual(['CM', 'KM']);
   expect(env.workspaceMount).toHaveBeenCalledTimes(1);
 
   select.value = 'CG';

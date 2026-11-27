@@ -433,9 +433,11 @@ describe('canonical admin navigation — zone utilitaire et marché', () => {
     const header = mountFor(env, '/admin/workspaces/pricing', 'pricing-workspace', { role: 'admin' }, {
       adminContext: { actor: { id: 'o', role: 'market_operator' }, access: { mode: 'market', defaultMarket: 'CM', allowedMarkets: ['CM'], capabilities: [] } },
     });
-    const select = utilitiesOf(header).children[0].children[1];
-    expect(select.value).toBe('CM');
-    expect(select.children.map(option => option.value)).toEqual(['CM']);
+    const label = utilitiesOf(header).children[0].children[1];
+    expect(label.tagName).toBe('SPAN');
+    expect(label.attributes['data-fixed-market']).toBe('CM');
+    expect(label.textContent).toBe('CM');
+    expect(label.listeners.change).toBeUndefined();
   });
 
   test('Catalogue pays et Autonomie marché exigent une cible d’action explicite (L1)', () => {
@@ -497,9 +499,10 @@ describe('canonical admin navigation — zone utilitaire et marché', () => {
       mode:'market',defaultMarket:'CM',allowedMarkets:['CM'],capabilities:[],
     }};
     const header=mountFor(env,pathname,'shipping-customs-workspace',{role:'admin'},{adminContext:scoped});
-    const select=utilitiesOf(header).children[0].children[1];
-    expect(select.children.map(x=>x.value)).toEqual(['CM']);
-    expect(select.value).toBe('CM');
+    const label=utilitiesOf(header).children[0].children[1];
+    expect(label.tagName).toBe('SPAN');
+    expect(label.attributes['data-fixed-market']).toBe('CM');
+    expect(label.listeners.change).toBeUndefined();
   });
 
   test('Hub live hors Exécution reste en vue Global (pas de marché exigé)', () => {
@@ -621,5 +624,35 @@ describe('console recette isolée — outils staging fail-closed', () => {
     expect(tools.children.find(node=>node.tagName==='A').href).toContain('/actions/workflows/staging-reset.yml');
     expect(fetch).toHaveBeenCalledTimes(2);
     expect(fetch.mock.calls.some(([,options])=>options?.method==='POST')).toBe(false);
+  });
+});
+
+describe('V5.4 L3a.2 — marché fixe sans choix artificiel', () => {
+  test.each(['KM','CM','CG','ZZ'])('libellé fixe issu du scope serveur : %s', code => {
+    const env=loadNavigation('/admin/pilotage','pilotage');
+    const ctx={actor:{id:'op',role:'market_operator'},access:{mode:'market',allowedMarkets:[code],defaultMarket:code,capabilities:[]}};
+    const header=mountFor(env,'/admin/pilotage','pilotage',ctx.actor,{adminContext:ctx});
+    const label=utilitiesOf(header).children[0].children[1];
+    expect(label.tagName).toBe('SPAN');
+    expect(label.attributes['data-fixed-market']).toBe(code);
+    expect(label.listeners.change).toBeUndefined();
+  });
+  test('un admin global avec un seul marché garde le choix de la consolidation', () => {
+    const env=loadNavigation('/admin/pilotage','pilotage');
+    const ctx={actor:{id:'a',role:'admin'},access:{mode:'global',allowedMarkets:['CM'],defaultMarket:null,capabilities:[]}};
+    const header=mountFor(env,'/admin/pilotage','pilotage',ctx.actor,{adminContext:ctx});
+    const select=utilitiesOf(header).children[0].children[1];
+    expect(select.tagName).toBe('SELECT');
+    expect(select.children.map(o=>o.value)).toEqual(['','CM']);
+  });
+  test('un lien d’action hors scope reste sans marché sélectionné, récupération CM uniquement', () => {
+    const pathname='/admin/workspaces/pricing';
+    const env=loadNavigation(pathname,'pricing-workspace',{window:{location:{pathname,search:'?market=CG',href:'https://komerce.test'+pathname+'?market=CG'}}});
+    const ctx={actor:{id:'op',role:'market_operator'},access:{mode:'market',allowedMarkets:['CM'],defaultMarket:'CM',capabilities:[]}};
+    const header=mountFor(env,pathname,'pricing-workspace',ctx.actor,{adminContext:ctx});
+    const select=utilitiesOf(header).children[0].children[1];
+    expect(select.tagName).toBe('SELECT');
+    expect(select.value).toBe('');
+    expect(select.children.map(o=>o.value)).toEqual(['','CM']);
   });
 });

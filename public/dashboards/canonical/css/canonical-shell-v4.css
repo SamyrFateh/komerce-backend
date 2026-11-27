@@ -302,6 +302,24 @@ a.kmc-admin-reference-result:focus-visible { background: #edf2ff; }
   font-size: 12.5px;
 }
 
+.kmc-admin-market-fixed {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  max-width: 260px;
+  padding: 0 12px;
+  color: #26385a;
+  border: 1px solid #dfe7f2;
+  border-radius: 7px;
+  background: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.kmc-admin-market-fixed.has-flag { padding-left: 40px; }
+body:has(.kmc-admin-market-fixed) .kmc-market-context[data-fixed-market] {
+  display: none;
+}
+
 .kmc-admin-topbar .kmc-admin-market-select:hover,
 .kmc-admin-topbar .kmc-admin-market-select:focus-visible {
   border-color: #cfd7ff;
