@@ -48,6 +48,7 @@ const PREPARATION_CAPABILITIES = Object.freeze([
 ]);
 
 const PREPARATION_PRICING_CAPABILITIES = Object.freeze(['pricing.read','pricing.decide']);
+const PREPARATION_REFERENCE_CAPABILITIES = Object.freeze(['pricing.read','pricing.cost_component.update','structure.event.record']);
 
 async function resolveActiveAssignmentByMarketCode(executor, marketCode, { allowProvisioning = false } = {}) {
   const db = requireExecutor(executor);
@@ -357,11 +358,12 @@ async function resolveSingleMarketAuthorization(executor, { userId, requiredCapa
   return authorization;
 }
 
-async function resolveAuthorization(executor, { userId, marketCode, requiredCapability, allowProvisioningProjection = false, allowPreparationPricing = false }) {
+async function resolveAuthorization(executor, { userId, marketCode, requiredCapability, allowProvisioningProjection = false, allowPreparationPricing = false, allowPreparationReference = false }) {
   const db = requireExecutor(executor);
   if (!userId) throw delegationError('AUTH_REQUIRED', 'Authentification requise.', 401);
   const preparationPricing = allowPreparationPricing === true && PREPARATION_PRICING_CAPABILITIES.includes(requiredCapability);
-  const allowProvisioning = PREPARATION_CAPABILITIES.includes(requiredCapability) || preparationPricing ||
+  const preparationReference = allowPreparationReference === true && PREPARATION_REFERENCE_CAPABILITIES.includes(requiredCapability);
+  const allowProvisioning = PREPARATION_CAPABILITIES.includes(requiredCapability) || preparationPricing || preparationReference ||
     (!requiredCapability && allowProvisioningProjection === true);
   const assignment = await resolveActiveAssignmentByMarketCode(db, marketCode, { allowProvisioning });
   const membership = await activeMembershipForUser(db, assignment.assignment_id, userId);
@@ -372,7 +374,8 @@ async function resolveAuthorization(executor, { userId, marketCode, requiredCapa
   const granted = await activeMembershipCapabilities(db, membership.id);
   const capabilities = assignment.lifecycle_status === 'PROVISIONING'
     ? granted.filter(capability => PREPARATION_CAPABILITIES.includes(capability) ||
-      ((preparationPricing || allowProvisioningProjection === true) && PREPARATION_PRICING_CAPABILITIES.includes(capability))) : granted;
+      ((preparationPricing || allowProvisioningProjection === true) && PREPARATION_PRICING_CAPABILITIES.includes(capability)) ||
+      (preparationReference && PREPARATION_REFERENCE_CAPABILITIES.includes(capability))) : granted;
   if (requiredCapability && !capabilities.includes(requiredCapability)) {
     throw delegationError(
       'MARKET_CAPABILITY_REQUIRED',

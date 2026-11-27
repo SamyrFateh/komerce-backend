@@ -109,3 +109,17 @@ test('pre-opening pricing requires an explicit route opt-in and never permits ac
     await expect(delegation.resolveAuthorization(fakeDb(),{...base,requiredCapability,allowPreparationPricing:true})).rejects.toMatchObject({code:'MARKET_NOT_FOUND'});
   }
 });
+
+test('preparation economic reference capability is opt-in and does not grant finance or exposure',async()=>{
+  const db={query:jest.fn(async sql=>{
+    if(sql.includes('LEFT JOIN market_operating_assignments'))return {rows:[{market_id:'m1',market_code:'GA',assignment_id:'a1',lifecycle_status:'PROVISIONING'}]};
+    if(sql.includes('FROM assignment_memberships'))return {rows:[{id:'mem',user_id:'u1'}]};
+    if(sql.includes('FROM membership_capabilities'))return {rows:['pricing.read','pricing.cost_component.update','structure.event.record','finance.act','catalog.expose'].map(capability=>({capability}))};
+    if(sql.includes('FROM assignment_capability_ceiling'))return {rows:[{effect:'ACT'}]};
+    return {rows:[]};
+  })};
+  const base={userId:'u1',marketCode:'GA',requiredCapability:'pricing.cost_component.update'};
+  await expect(delegation.resolveAuthorization(db,base)).rejects.toMatchObject({code:'MARKET_NOT_FOUND'});
+  await expect(delegation.resolveAuthorization(db,{...base,allowPreparationReference:true})).resolves.toMatchObject({capabilities:['pricing.read','pricing.cost_component.update','structure.event.record']});
+  await expect(delegation.resolveAuthorization(db,{...base,requiredCapability:'finance.act',allowPreparationReference:true})).rejects.toMatchObject({code:'MARKET_NOT_FOUND'});
+});

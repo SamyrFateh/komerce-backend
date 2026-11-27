@@ -38,7 +38,7 @@ function validate(raw){
     throw error('economic_reference_period_invalid',400,'Mois invalide');
   return {marketCode:raw.marketCode,periodStart:raw.periodStart};
 }
-async function resolveScope(client,actor,marketCode,globalRead){
+async function resolveScope(client,actor,marketCode,globalRead,{preparationOnly=false}={}){
   if(globalRead){
     if(marketCode===null)return null;
     const {rows}=await client.query('SELECT id FROM markets WHERE code=$1',[marketCode]);
@@ -46,7 +46,7 @@ async function resolveScope(client,actor,marketCode,globalRead){
     return rows[0].id;
   }
   if(marketCode===null)throw error('economic_reference_group_forbidden',403,'Périmètre groupe interdit');
-  const authz=await resolveAuthorization(client,{userId:actor.id,marketCode,requiredCapability:'pricing.read'});
+  const authz=await resolveAuthorization(client,{userId:actor.id,marketCode,requiredCapability:'pricing.read',...(preparationOnly?{allowPreparationReference:true}:{})});
   if(!authz.market_id)throw error('economic_reference_scope_missing',403,'Périmètre non résolu');
   return authz.market_id;
 }
@@ -834,7 +834,7 @@ async function readMarketPeriodDecision(actor,marketCode,periodStart){
   }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
 }
 
-async function readCostCenters(actor,raw){
+async function readCostCenters(actor,raw,{preparationOnly=false}={}){
   if(!actor?.id)throw error('AUTH_REQUIRED',401,'Authentification requise');
   const input=validate(raw);
   const globalRead=actor.role==='admin';
@@ -842,14 +842,14 @@ async function readCostCenters(actor,raw){
   const client=await db.getClient();
   try{
     await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
-    const model=await readCostCentersSnapshot(actor,input,client,central,globalRead);
+    const model=await readCostCentersSnapshot(actor,input,client,central,globalRead,{preparationOnly});
     await client.query('COMMIT');
     return model;
   }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
 }
-async function readCostCentersSnapshot(actor,input,client,central,globalRead){
-    const marketId=await resolveScope(client,actor,input.marketCode,globalRead);
-    const costCapabilities=await costAuthority.project(client,actor,input.marketCode,marketId,central);
+async function readCostCentersSnapshot(actor,input,client,central,globalRead,{preparationOnly=false}={}){
+    const marketId=await resolveScope(client,actor,input.marketCode,globalRead,{preparationOnly});
+    const costCapabilities=await costAuthority.project(client,actor,input.marketCode,marketId,central,{preparationOnly});
     const {rows:centers}=await client.query(
       'SELECT c.id,c.code,c.label,c.responsible_user_id,c.is_active,u.full_name AS responsible_label FROM economic_cost_centers c LEFT JOIN users u ON u.id=c.responsible_user_id WHERE c.market_id IS NOT DISTINCT FROM $1::uuid ORDER BY c.code,c.id',[marketId]);
     const {rows:families}=await client.query(
@@ -923,7 +923,7 @@ async function readCostCentersSnapshot(actor,input,client,central,globalRead){
     }
     const activityCurrencyProjection=await projectActivityCurrency(client,displayCurrency,activity,profitability);
     const responsibleCandidates=costCapabilities.reference?await listResponsibleCandidates(client,marketId):[];
-    return {scope:input.marketCode===null?'GROUP':'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,globalRead,central,costCapabilities,readOnly:!Object.values(costCapabilities).some(Boolean),
+    return {scope:input.marketCode===null?'GROUP':'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,globalRead,central,costCapabilities,...(preparationOnly?{preparationOnly:true}:{}),readOnly:!Object.values(costCapabilities).some(Boolean),
       centers:centerModels,families,resources,responsibleCandidates,posts:model,recordedBalance:recordedBalanceSummary(model),budgetSummary:budgetSummary(model),commitmentSummary:commitmentSummary(model),structureEvidence,activity,profitability,activityCurrencyProjection,actualCoverage:'NOT_RECONCILED',available:null};
 }
 module.exports={projectActivityCurrency,readMarketPeriodDecision,readGroupPeriodDecision,readCostCenters,closeGroupPeriod,budgetSummary,recordedPostBalance,recordedBalanceSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,loadShipmentActivity,shipmentPurchase,observedProfitability,periodSalesEvidence,projectGroupPeriodResult,completeCostParcelCount};

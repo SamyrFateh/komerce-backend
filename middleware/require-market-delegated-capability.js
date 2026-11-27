@@ -159,7 +159,8 @@ function requireMarketDelegatedCapability(capability, options = {}) {
         userId: req.user.id,
         marketCode: req.params.marketCode,
         requiredCapability: capability,
-        ...(options.allowPreparationPricing === true && req.marketPreparationOnly === true ? {allowPreparationPricing:true} : {}),
+        ...(options.allowPreparationPricing === true && req.marketPreparationOnly === true && req.marketPreparationReference !== true ? {allowPreparationPricing:true} : {}),
+        ...(options.allowPreparationReference === true && req.marketPreparationOnly === true && req.marketPreparationReference === true ? {allowPreparationReference:true} : {}),
       });
 
       if (req.workspaceMarket && String(authz.market_id) !== String(req.workspaceMarket.id)) {

@@ -78,13 +78,20 @@ function isPreparationPriceEndpoint(req) {
   return req.method === 'POST' && /^\/products\/[^/]+\/local-price(?:\/reset)?$/.test(path);
 }
 
+function isPreparationReferenceEndpoint(req) {
+  const path = req.path;
+  if(req.method==='GET')return path==='/cost-centers';
+  return req.method==='POST' && (/^\/cost-centers\/(?:initialize|references)$/.test(path) || /^\/cost-centers\/families\/[^/]+\/posts$/.test(path));
+}
+
 async function resolveRequestedMarket(req, res, next) {
   const code = String(req.params.marketCode || '').trim().toUpperCase();
   if (!MARKET_CODE.test(code)) {
     return res.status(400).json({ error: 'Code marché invalide', code: 'invalid_market_code' });
   }
   try {
-    const preparationEndpoint = isPreparationPriceEndpoint(req);
+    const preparationReference = isPreparationReferenceEndpoint(req);
+    const preparationEndpoint = isPreparationPriceEndpoint(req) || preparationReference;
     const { rows } = await db.query(
       `SELECT id, code, name, currency, lifecycle_status
          FROM markets
@@ -96,6 +103,7 @@ async function resolveRequestedMarket(req, res, next) {
     if (rows[0].lifecycle_status === 'PROVISIONING' && !preparationEndpoint) return res.status(409).json({error:'Ce geste nécessite un marché actif.',code:'MARKET_NOT_ACTIVE'});
     req.workspaceMarket = rows[0];
     req.marketPreparationOnly = rows[0].lifecycle_status === 'PROVISIONING';
+    req.marketPreparationReference = req.marketPreparationOnly && preparationReference;
     return next();
   } catch (error) { return next(error); }
 }
@@ -180,7 +188,7 @@ function requirePricingCapability(capability, options = {}) {
 // aucun consommateur réel. requires_audit=false au registre pour ces deux
 // capabilities (lecture), contrairement aux mutations ci-dessus.
 function requirePricingReadCapability(capability) {
-  const delegated = requirePricingCapability(capability, { audit: false, allowPreparationPricing: capability === 'pricing.read' });
+  const delegated = requirePricingCapability(capability, { audit: false, allowPreparationPricing: capability === 'pricing.read', allowPreparationReference: capability === 'pricing.read' });
   return (req,res,next) => req.method === 'GET' && req.user?.role === 'admin' ? next() : delegated(req,res,next);
 }
 
@@ -258,7 +266,8 @@ router.use(
 router.get('/market/:marketCode/cost-centers', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
-    const model = await readCostCenters(req.user, { marketCode: req.workspaceMarket.code, periodStart: req.query.periodStart });
+    const model = await readCostCenters(req.user, { marketCode: req.workspaceMarket.code, periodStart: req.query.periodStart }, ...(req.marketPreparationReference?[{preparationOnly:true}]:[]));
+    if(req.marketPreparationReference)return res.json(model);
     // The existing market gate has its own read context and maturity cohort.
     // Failure of this optional evidence must not remove the primary model.
     let decision = null;
@@ -315,26 +324,26 @@ router.post('/market/:marketCode/cost-centers/posts/:postId/actuals',requirePric
 async function createCostReferencePost(req,res,next){
   try{
     const b=req.body||{};
-    const result=await createPost(req.user,{marketCode:req.workspaceMarket?.code||null,familyId:req.params.familyId,resourceId:b.resourceId,code:b.code,label:b.label,economicNature:b.economicNature,allocationPerimeter:b.allocationPerimeter,allocationBasis:b.allocationBasis,source:b.source,reason:b.reason});
+    const result=await createPost(req.user,{marketCode:req.workspaceMarket?.code||null,familyId:req.params.familyId,resourceId:b.resourceId,code:b.code,label:b.label,economicNature:b.economicNature,allocationPerimeter:b.allocationPerimeter,allocationBasis:b.allocationBasis,source:b.source,reason:b.reason},...(req.marketPreparationReference?[{preparationOnly:true}]:[]));
     res.set('Cache-Control','private, no-store');res.status(result.outcome==='created'?201:200).json(result);
   }catch(e){handleError(e,res,next);}
 }
-router.post('/market/:marketCode/cost-centers/families/:familyId/posts',requirePricingCapability('pricing.cost_component.update'),createCostReferencePost);
+router.post('/market/:marketCode/cost-centers/families/:familyId/posts',requirePricingCapability('pricing.cost_component.update',{allowPreparationReference:true}),createCostReferencePost);
 async function initializeEconomicReferences(req,res,next){
   try{
-    const result=await initializeCostReferences(req.user,req.workspaceMarket?.code||null);
+    const result=await initializeCostReferences(req.user,req.workspaceMarket?.code||null,...(req.marketPreparationReference?[{preparationOnly:true}]:[]));
     res.set('Cache-Control','private, no-store');res.json(result);
   }catch(e){handleError(e,res,next);}
 }
-router.post('/market/:marketCode/cost-centers/initialize',requirePricingCapability('pricing.cost_component.update'),initializeEconomicReferences);
+router.post('/market/:marketCode/cost-centers/initialize',requirePricingCapability('pricing.cost_component.update',{allowPreparationReference:true}),initializeEconomicReferences);
 async function configureCostReference(req,res,next){
   try{
     const b=req.body||{};
-    const result=await configureReference(req.user,{marketCode:req.workspaceMarket?.code||null,kind:b.kind,centerId:b.centerId,code:b.code,label:b.label,resourceKind:b.resourceKind,responsibleUserId:b.responsibleUserId,expectedResponsibleUserId:b.expectedResponsibleUserId,reason:b.reason});
+    const result=await configureReference(req.user,{marketCode:req.workspaceMarket?.code||null,kind:b.kind,centerId:b.centerId,code:b.code,label:b.label,resourceKind:b.resourceKind,responsibleUserId:b.responsibleUserId,expectedResponsibleUserId:b.expectedResponsibleUserId,reason:b.reason},...(req.marketPreparationReference?[{preparationOnly:true}]:[]));
     res.set('Cache-Control','private, no-store');res.status(result.outcome==='created'?201:200).json(result);
   }catch(e){handleError(e,res,next);}
 }
-router.post('/market/:marketCode/cost-centers/references',requirePricingCapability('pricing.cost_component.update'),configureCostReference);
+router.post('/market/:marketCode/cost-centers/references',requirePricingCapability('pricing.cost_component.update',{allowPreparationReference:true}),configureCostReference);
 
 router.get('/market/:marketCode', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
   try {

@@ -778,17 +778,19 @@
     return global.KomerceCanonicalRelayLive.mount({ root, user, adminContext, document: global.document, fetch: global.fetch.bind(global) });
   }
 
-  function renderPricingWorkspace(root, user, adminContext, requestedMarket) {
+  async function renderPricingWorkspace(root, user, adminContext, requestedMarket) {
     if (user?.role === 'market_operator' && adminContext?.access?.preparation?.[requestedMarket]) {
       const doc = global.document;
       root.replaceChildren();
-      root.appendChild(textNode(doc,'h1','','Préparation des prix · '+requestedMarket));
+      root.appendChild(textNode(doc,'h1','','Préparation commerciale et économique · '+requestedMarket));
       root.appendChild(textNode(doc,'p','kmc-workspace-note','Brouillons uniquement. Le contrôle économique et la mise en vente suivent leurs gardes habituelles.'));
       const back = doc.createElement('a');
       back.href='/admin/pilotage?market='+encodeURIComponent(requestedMarket);
       back.textContent='Retour à Préparer mon marché';
       root.appendChild(back);
-      return mountDomainModules(root, requestedMarket, [{key:'local-prices',api:global.KomerceMarketLocalPrices}]);
+      await mountDomainModules(root, requestedMarket, [{key:'local-prices',api:global.KomerceMarketLocalPrices}]);
+      const economic=doc.createElement('div');economic.id='cost-centers';root.appendChild(economic);
+      return canonicalMount(global.KomerceCanonicalPricingWorkspace,'canonical_pricing_workspace_module_missing',economic,user,adminContext,requestedMarket);
     }
     return withMarketDomainModules(root, user, requestedMarket,
       host => canonicalMount(global.KomerceCanonicalPricingWorkspace,
@@ -1171,9 +1173,9 @@
     section.appendChild(textNode(doc,'p','kmc-workspace-note','La boutique reste fermée. Configurez votre marché, puis le central contrôlera les prérequis et décidera de l’ouverture.'));
     const done = data.items.filter(item => item.status === 'ready').length;
     section.appendChild(textNode(doc,'p','',''+done+' / '+data.items.length+' domaines vérifiés'));
-    const destinations = { team: '/admin/users', network: '/admin/providers', commerce:'/admin/workspaces/pricing' };
+    const destinations = { team: '/admin/users', network: '/admin/providers', commerce:'/admin/workspaces/pricing', economic:'/admin/workspaces/pricing' };
     const caps = adminContext.access.delegatedCapabilities[code] || [];
-    const rights = { team:'team.read',network:'network.read',commerce:'pricing.read' };
+    const rights = { team:'team.read',network:'network.read',commerce:'pricing.read', economic:'pricing.read' };
     for (const item of data.items) {
       const row = doc.createElement('section');
       row.className = 'kmc-workspace';
@@ -1183,7 +1185,7 @@
       for (const reason of item.blockers) row.appendChild(textNode(doc,'p','kmc-workspace-note',reason));
       if (destinations[item.id] && caps.includes(rights[item.id])) {
         const link = doc.createElement('a');
-        link.href = destinations[item.id]+'?market='+encodeURIComponent(code);
+        link.href = destinations[item.id]+'?market='+encodeURIComponent(code)+(item.id==='economic'?'#cost-centers':'');
         link.textContent = item.status === 'ready' ? 'Consulter' : 'Configurer';
         row.appendChild(link);
       }

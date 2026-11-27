@@ -59,7 +59,7 @@
     return 'montants en '+p.currency+' · projection de la base KMF, pas de reconstitution native historique';
   }
 
-  function canCost(model,action){return model?.central===true||model?.costCapabilities?.[action]===true;}
+  function canCost(model,action){return model?.preparationOnly===true? action==='reference'&&model?.costCapabilities?.reference===true : model?.central===true||model?.costCapabilities?.[action]===true;}
 
   function createV7CostCenters(doc, model, actions={}) {
     const host=el(doc,'section','kmc-v7-centers');
@@ -742,7 +742,10 @@
           configureReference:body=>mutate('reference','/references',body),
           moveCommitment:(id,body)=>mutate(body.kind==='CONSUME_STRUCTURE'?'consume':'commitment','/commitments/'+encodeURIComponent(id)+'/movements',body)
         };
-        content.append(createV7V6Tabs(doc,model,active,key=>{active=key;},actions));
+        if(model.preparationOnly){
+          content.append(el(doc,'p','kmc-workspace-note','Configuration des référentiels uniquement. Budgets, charges constatées et engagements restent fermés avant activation.'));
+          content.append(createV7CostCenters(doc,model,actions));
+        }else content.append(createV7V6Tabs(doc,model,active,key=>{active=key;},actions));
         status.textContent='';
         return true;
       }catch(error){
