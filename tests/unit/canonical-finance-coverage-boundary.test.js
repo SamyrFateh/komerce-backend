@@ -14,7 +14,7 @@ const SERVICE = path.join(ROOT, 'services', 'dashboard-finance-canonical.js');
 const UI = path.join(ROOT, 'public', 'dashboards', 'canonical', 'js', 'finance.js');
 
 describe('Finance Canonical coverage boundary', () => {
-  test('Finance ne consomme pas le moteur économique global ni les snapshots Legacy', () => {
+  test('Finance ne consomme pas les calculs économiques ni les snapshots Legacy', () => {
     const source = fs.readFileSync(SERVICE, 'utf8');
     expect(source).not.toContain("require('./economic-engine-queries')");
     expect(source).not.toContain("require('../services/economic-engine-queries')");
@@ -25,12 +25,20 @@ describe('Finance Canonical coverage boundary', () => {
     expect(source).not.toContain('FROM charges');
   });
 
-  test('les nouvelles projections sont toutes reliées à orders et au filtre serveur', () => {
+  test('les diagnostics commandes restent filtrés, distincts du résultat ECO mensuel', () => {
     const source = fs.readFileSync(SERVICE, 'utf8');
     expect(source).toContain("buildFiltersClause(filters, 'o')");
     expect(source).toContain('JOIN orders o ON o.id = alc.order_id');
     expect(source).toContain('EXPECTED_COST_TYPES');
-    expect(source).toContain('economic_global_engine_consumed: false');
+    expect(source).toContain("order_margin_basis: 'historical_order_creation_cohort_diagnostic_not_eco_period_result'");
+    expect(source).toContain('economic_global_engine_consumed: !market && economicPeriodResult.value != null');
+    expect(source).toContain("require('./economic-cost-center-read-model')");
+    expect(source).toContain('authority.readGroupPeriodDecision(actor, periodStart)');
+    expect(source).toContain('authority.readMarketPeriodDecision(actor, market.code, periodStart)');
+    expect(source).toContain('loadEconomicPeriodResult(options.actor, market, window,');
+    expect(source).toContain('economic_period_result: Object.freeze(economicPeriodResult)');
+    expect(source).toContain("return unavailable('SIMULATION_EXCLUDED')");
+    expect(source).toContain("if (!actor?.id) return unavailable('UNAVAILABLE')");
   });
 
   test('le frontend ne contacte aucun endpoint économique ou costing Legacy', () => {
