@@ -17,6 +17,7 @@ const statement = {
   informational_totals: { status: 'AVAILABLE', EUR: { amount: '81.31' }, XAF: { amount: '53334' } },
   lines: [{ attribution_id: 'allocation-1' }],
   truncated: false,
+  coverage: {status:'NO_CROSS_PERIOD_ATTRIBUTIONS',cross_period_attribution_count:0},
 };
 
 function client(...rows) {
@@ -67,4 +68,27 @@ test('incoming payment is recorded only against the exact amount and a matching 
   await expect(recordPayment(client([market], [balance]), { ...input, amountKmf: '39999.99' }))
     .rejects.toMatchObject({ code: 'HUB_INVOICE_PAYMENT_MISMATCH' });
   await expect(recordPayment(client([market], []), input)).rejects.toMatchObject({ status: 404 });
+});
+
+test('cross-period, unknown coverage and non-positive amounts cannot issue',async()=>{
+  for(const candidate of [
+    {...statement,coverage:{status:'CROSS_PERIOD_RECONCILIATION_REQUIRED',cross_period_attribution_count:1}},
+    {...statement,coverage:undefined},
+    {...statement,total_kmf:'0.00'},
+  ]){
+    readHubStatement.mockResolvedValue(candidate);
+    const reviewed=await preview(client([market],[]),dates);
+    expect(reviewed.can_issue).toBe(false);
+    const db=client([market],[]);
+    await expect(issue(db,{...dates,evidenceHash:reviewed.evidence_hash})).rejects.toMatchObject({code:'HUB_INVOICE_REVIEW_REQUIRED'});
+    expect(db.query).toHaveBeenCalledTimes(2);
+  }
+});
+test('late attribution changes are flagged, never silently rewrite an issued invoice',async()=>{
+  const invoice={...balance,statement_snapshot:statement,evidence_hash:'a'.repeat(64)};
+  readHubStatement.mockResolvedValue({...statement,lines:[{attribution_id:'allocation-2'}]});
+  const result=await preview(client([market],[invoice],[invoice]),dates);
+  expect(result).toMatchObject({can_issue:false,adjustment_required:true,invoice:{id:balance.id}});
+  readHubStatement.mockResolvedValue(statement);
+  expect(await preview(client([market],[invoice],[invoice]),dates)).toMatchObject({adjustment_required:false});
 });

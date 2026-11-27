@@ -201,6 +201,12 @@
         result.appendChild(el('p', 'kmc-team-help', 'Une facture couvre déjà une partie de cette période.'));
         return;
       }
+      if (reply.adjustment_required) result.appendChild(el('p', 'kmc-team-help', 'Des preuves ont changé depuis l’émission. Régularisation nécessaire ; facture historique inchangée.'));
+      if (data.coverage?.status === 'CROSS_PERIOD_RECONCILIATION_REQUIRED') {
+        result.appendChild(el('p', 'kmc-team-help', 'Des charges chevauchent la période. Rapprochement nécessaire avant émission.'));
+      } else if (data.coverage?.status === 'UNKNOWN') {
+        result.appendChild(el('p', 'kmc-team-help', 'Couverture du relevé inconnue. Émission bloquée.'));
+      }
       if (!data.lines?.length) {
         result.appendChild(el('p', 'kmc-team-empty', 'Aucune quote-part du Hub sur cette période.'));
         return;

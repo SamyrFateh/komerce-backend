@@ -549,6 +549,14 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
       expect(reply.status).toBe(200);
       return reply.body.profitability.groupPeriodResult;
     };
+    const incomplete=await read();
+    expect(incomplete).toMatchObject({status:'NOT_RECONCILED',reasons:expect.arrayContaining(['VARIABLE_COSTS_INCOMPLETE'])});
+    // Explicit confirmed zero for other applicable costs of this isolated local-stock line.
+    await q(`INSERT INTO order_item_real_cost_allocations
+      (order_id,order_item_id,parcel_id,cost_type,amount_kmf,allocation_method,source,provenance)
+      SELECT $1,$2,$3,kind,0,'by_quantity','fixture_revue','zero confirmed by CI evidence'
+        FROM unnest(ARRAY['product_purchase','sourcing','local_distribution','relay']::text[]) kind`,
+      [line.order_id,line.order_item_id,line.parcel_id]);
     const initial=await read();
     expect(initial).toMatchObject({status:'PROVISIONAL',resultKmf:'9316.66'});
     const submit=(actor,hash)=>request(app).post(mount+'/cost-centers/close-period')
