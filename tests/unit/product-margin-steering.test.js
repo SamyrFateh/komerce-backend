@@ -204,7 +204,7 @@ describe('summarizeProduct', () => {
 
 
 describe('observed landed cost evidence', () => {
-  const { computeLandedCostEvidence, summarizeObservedLandedCost } = require('../../services/cost-allocation/product-margin-steering');
+  const { computeLandedCostEvidence, applyLandedCostCoverage, summarizeObservedLandedCost } = require('../../services/cost-allocation/product-margin-steering');
   const real = amount => ({ state: 'real', amount_kmf: amount });
   const result = { reason: null, sale_kmf: 90000, reconciled_after_sale_margin_kmf: 12803.22, costs: {
     product_purchase: real(49196.78), freight: real(18000), customs: real(7000),
@@ -218,6 +218,21 @@ describe('observed landed cost evidence', () => {
     expect(computeLandedCostEvidence({
       result, imported: true, real: { relay: { actual: 0, actual_count: 1 } },
     })).toMatchObject({ status: 'final', costs: { relay: real(0) } });
+  });
+
+  test('coverage blocks incomplete margins for every reader, including withdrawal', () => {
+    const mk = () => ({ fulfillment_source: 'IMPORT', result: { ...result, status: 'final', cost_kmf: 77196.78 } });
+    const missing = mk();
+    applyLandedCostCoverage(missing, {});
+    expect(missing.result).toMatchObject({ status: 'incomplete', reason: 'cost_missing:relay', cost_kmf: null, margin_kmf: null });
+    expect(missing.result.reconciled_after_sale_margin_kmf).toBeUndefined();
+    const proven = mk();
+    applyLandedCostCoverage(proven, { relay: { actual: 0, actual_count: 1 } });
+    expect(proven.result).toMatchObject({ status: 'final', cost_kmf: 77196.78, reconciled_after_sale_margin_kmf: 12803.22 });
+    const inconsistent = mk();
+    applyLandedCostCoverage(inconsistent, { relay: { actual: 500, actual_count: 1 } });
+    expect(inconsistent.result).toMatchObject({ status: 'provisional', cost_kmf: 77696.78 });
+    expect(inconsistent.result.reconciled_after_sale_margin_kmf).toBeUndefined();
   });
 
   test('unit cost and multiplier are weighted by the same cohort', () => {

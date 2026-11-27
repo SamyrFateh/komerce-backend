@@ -123,7 +123,7 @@ function computeLineMargin(line) {
   };
 }
 
-// Materialize cost coverage independently from the historical withdrawal signal.
+// Materialize cost coverage from the same real evidence for display and decision.
 function computeLandedCostEvidence({ result, real = {}, imported }) {
   const required = ['product_purchase', 'relay', 'payment'];
   if (imported) required.push('freight', 'customs', 'port_transitaire');
@@ -145,6 +145,35 @@ function computeLandedCostEvidence({ result, real = {}, imported }) {
   const status = reason ? 'incomplete'
     : Object.values(costs).some(cost => cost.state === 'estimated') ? 'provisional' : 'final';
   return { status, reason, missing, costs };
+}
+
+// Never let an incomplete cost profile masquerade as a final margin.
+// Keep independently reconciled revenue and margin as prerequisites: coverage
+// does not certify payment, refund or order-level reconciliation by itself.
+function applyLandedCostCoverage(line, real) {
+  const result = line.result;
+  const evidence = computeLandedCostEvidence({
+    result, real, imported: line.fulfillment_source !== 'LOCAL_STOCK',
+  });
+  line.landed_cost_evidence = evidence;
+  result.costs = evidence.costs;
+  if (evidence.status === 'incomplete') {
+    result.status = 'incomplete';
+    result.reason = evidence.reason;
+    result.cost_kmf = result.margin_kmf = result.margin_pct = null;
+    delete result.reconciled_after_sale_margin_kmf;
+    return;
+  }
+  const total = Object.values(evidence.costs).reduce((sum, cost) => sum + Math.round(cost.amount_kmf * 100), 0);
+  const revenue = Math.round(result.sale_kmf * 100);
+  const margin = (revenue - total) / 100;
+  const reconciled = Number.isFinite(result.reconciled_after_sale_margin_kmf)
+    && Math.round(result.reconciled_after_sale_margin_kmf * 100) === revenue - total;
+  if (!reconciled || evidence.status !== 'final') delete result.reconciled_after_sale_margin_kmf;
+  result.status = evidence.status === 'final' && result.status === 'final' && reconciled ? 'final' : 'provisional';
+  result.cost_kmf = total / 100;
+  result.margin_kmf = margin;
+  result.margin_pct = result.sale_kmf > 0 ? pct2(100 * margin / result.sale_kmf) : null;
 }
 
 function summarizeObservedLandedCost(lines, shipments, { since, truncated }) {
@@ -566,6 +595,7 @@ async function listProductMarginSteering({ marketId, productId = null, sinceDays
   }
 
   for (const l of lines) {
+    applyLandedCostCoverage(l, realByItem.get(l.order_item_id));
     l.result.gap_pts = l.result.margin_pct != null && l.target_pct != null ? pct2(l.result.margin_pct - l.target_pct) : null;
   }
 
@@ -585,11 +615,7 @@ async function listProductMarginSteering({ marketId, productId = null, sinceDays
   const observedShipments = includeObservedCost
     ? await loadComparableSaleShipments(marketId, [...byProduct.values()].flat(), { includeIncomplete: true })
     : new Map();
-  for (const line of includeObservedCost ? lines : []) {
-    line.landed_cost_evidence = computeLandedCostEvidence({
-      result: line.result, real: realByItem.get(line.order_item_id), imported: line.fulfillment_source !== 'LOCAL_STOCK',
-    });
-  }
+  // Coverage is already applied to every line, including withdrawal readers.
   const since = Math.max(Date.parse(policy?.effective_from), at.getTime() - Number(policy?.window_days) * 86400000);
 
   const products = [...byProduct.entries()].map(([pid, pl]) => ({
@@ -610,7 +636,7 @@ async function listProductMarginSteering({ marketId, productId = null, sinceDays
       margin_kmf: l.result.margin_kmf, margin_pct: l.result.margin_pct, target_pct: l.target_pct,
       target_source: l.target_source, gap_pts: l.result.gap_pts, costs: l.result.costs,
       reconciled_after_sale_margin_kmf: l.result.reconciled_after_sale_margin_kmf ?? null,
-      landed_cost_evidence: l.landed_cost_evidence,
+      ...(includeObservedCost ? { landed_cost_evidence: l.landed_cost_evidence } : {}),
     })),
   })).sort((a, b) => (a.gap_pts ?? Infinity) - (b.gap_pts ?? Infinity));
 
@@ -625,4 +651,4 @@ async function listProductMarginSteering({ marketId, productId = null, sinceDays
   };
 }
 
-module.exports = { evaluateShipmentLosses, loadComparableSaleShipments, listProductMarginSteering, computeLineMargin, computeLandedCostEvidence, summarizeObservedLandedCost, summarizeProduct, applyFinalOrderReal, DEFAULT_RULES };
+module.exports = { evaluateShipmentLosses, loadComparableSaleShipments, listProductMarginSteering, computeLineMargin, computeLandedCostEvidence, applyLandedCostCoverage, summarizeObservedLandedCost, summarizeProduct, applyFinalOrderReal, DEFAULT_RULES };
