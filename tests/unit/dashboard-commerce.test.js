@@ -8,7 +8,7 @@
 
 jest.mock('../../db', () => ({ query: jest.fn() }));
 // Le journal financier a sa propre lecture bornée (m.market_id) et ses propres tests PG : ici seule la cohorte commandes est comptée.
-jest.mock('../../services/financial-journal-reporting', () => ({ projection: jest.fn(async () => ({ journal_empty: true, lines: [] })) }));
+jest.mock('../../services/financial-journal-reporting', () => ({ customerCashSubtotal: jest.fn(async () => ({ available:false,reason:'no_documented_customer_cash' })) }));
 
 const mockMetrics = {
   getCAEncaisse: jest.fn(),
@@ -169,7 +169,7 @@ describe('dashboard-commerce', () => {
     expect(result.kpis.map(item => item.key)).toEqual([
       'ca_encaisse', 'cmds_creees', 'panier_moyen', 'marge_consolidee', 'produits_actifs_vendus', 'quantites_vendues',
     ]);
-    expect(result.kpis[0]).toMatchObject({ key: 'ca_encaisse', label: 'Ventes payées (avoir inclus)', value: 120000, data_quality: { cash_basis: false } });
+    expect(result.kpis[0]).toMatchObject({ key: 'ca_encaisse', label: 'Ventes payées (avoir inclus)', value: 120000, data_quality: { cash_basis: false,metric_id:'commerce.paid_sales_wallet_included' } });
     expect(result.kpis[2]).toMatchObject({ key: 'panier_moyen', value: 10000 });
     expect(result.kpis[2].drill_to).toBe('/admin/operations');
     expect(result.kpis[4].unit).toBe('count');
@@ -379,16 +379,15 @@ describe('dashboard-commerce', () => {
     });
   });
 
-  test('encaissé net : journal vide → indisponible (jamais le CA) ; part des lignes calculée sur la même cohorte', async () => {
-    const reporting = require('../../services/financial-journal-reporting');
-    reporting.projection.mockResolvedValueOnce({ journal_empty: false, lines: [
-      { category: 'sale', state: 'observed', eur_total: 100, eur_unavailable: 0, native: [{ currency: 'KMF', total: '49200' }] },
-      { category: 'refund', state: 'settled', eur_total: 10, eur_unavailable: 1, native: [{ currency: 'KMF', total: '4920' }] },
-    ] });
-    expect(typeof commerce.getCollectedFromJournal).toBe('function');
-    const got = await commerce.getCollectedFromJournal({ from: 'a', to: 'b' }, { id: 'm1' });
-    expect(got).toMatchObject({ available: true, eur_net: 90, eur_partial: true, native_net: [{ currency: 'KMF', total: 44280 }] });
-    const empty = await commerce.getCollectedFromJournal({}, null);
-    expect(empty).toEqual({ available: false, reason: 'journal_empty' });
+  test('flux monétaires : lecture unique du journal et jamais un CA substitué',async()=>{
+    const reporting=require('../../services/financial-journal-reporting');
+    const subtotal={available:true,eur_net:'90.00',eur_partial:true,native_net:[{currency:'KMF',total:'44280'}],coverage:'DOCUMENTED_SUBTOTAL'};
+    reporting.customerCashSubtotal.mockResolvedValueOnce(subtotal);
+    expect(await commerce.getCollectedFromJournal({from:'a',to:'b'},{id:'m1'})).toEqual(subtotal);
+    expect(reporting.customerCashSubtotal).toHaveBeenLastCalledWith(expect.anything(),{marketId:'m1',from:'a',to:'b'});
+    expect(await commerce.getCollectedFromJournal({},null)).toEqual({available:false,reason:'no_documented_customer_cash'});
+    reporting.customerCashSubtotal.mockClear();
+    expect(await commerce.getCollectedFromJournal({simulation_scope:'RCT1'},null)).toEqual({available:false,reason:'simulation_excluded'});
+    expect(reporting.customerCashSubtotal).not.toHaveBeenCalled();
   });
 });

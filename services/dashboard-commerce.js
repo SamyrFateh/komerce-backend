@@ -101,7 +101,7 @@ async function getCommercePaidSales(filters) {
   const basis = { sales_basis: 'paid_order_total_plus_wallet', period_basis: 'orders.created_at', cash_basis: false };
   return {
     ca: makeKpi('ca_encaisse', 'Ventes payées (avoir inclus)', Number(row.sales_kmf) || 0, 'KMF', {
-      itemsTotal, itemsWithData: itemsTotal, extra: basis, drillTo: '/admin/operations',
+      itemsTotal, itemsWithData: itemsTotal, extra: {...basis,metric_id:'commerce.paid_sales_wallet_included'}, drillTo: '/admin/operations',
     }),
     panier: makeKpi('panier_moyen', 'Panier moyen des ventes payées',
       itemsTotal > 0 && row.basket_kmf != null ? Number(row.basket_kmf) : null, 'KMF', {
@@ -624,22 +624,9 @@ function publicScope(market) {
 async function getCollectedFromJournal(filters, market) {
   try {
     const reporting = require('./financial-journal-reporting');
-    const projection = await reporting.projection(db, { marketId: market && market.id, from: filters.from, to: filters.to });
-    if (projection.journal_empty) return Object.freeze({ available: false, reason: 'journal_empty' });
-    const pick = (category) => projection.lines.filter(line => line.category === category && line.state !== 'reversed');
-    const sum = (lines, key) => lines.reduce((total, line) => total + (Number(line[key]) || 0), 0);
-    const sales = pick('sale');
-    const refunds = pick('refund');
-    const native = new Map();
-    sales.forEach(line => line.native.forEach(item => native.set(item.currency, (native.get(item.currency) || 0) + Number(item.total))));
-    refunds.forEach(line => line.native.forEach(item => native.set(item.currency, (native.get(item.currency) || 0) - Number(item.total))));
-    return Object.freeze({
-      available: true,
-      eur_net: Math.round((sum(sales, 'eur_total') - sum(refunds, 'eur_total')) * 100) / 100,
-      eur_partial: sum(sales, 'eur_unavailable') + sum(refunds, 'eur_unavailable') > 0,
-      native_net: Object.freeze([...native.entries()].sort().map(([currency, total]) => Object.freeze({ currency, total: Math.round(total * 100) / 100 }))),
-      basis: 'financial_movements_sale_minus_refund_by_payment_date',
-    });
+    // The journal owns this projection. No sum of monetary movements in Commerce.
+    if (filters.simulation_scope) return Object.freeze({available:false,reason:'simulation_excluded'});
+    return Object.freeze(await reporting.customerCashSubtotal(db,{marketId:market&&market.id,from:filters.from,to:filters.to}));
   } catch (error) {
     return Object.freeze({ available: false, reason: 'journal_unavailable' });
   }

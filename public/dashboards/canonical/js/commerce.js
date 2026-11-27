@@ -74,7 +74,7 @@
       {
         id: 'top-produits',
         title: 'Top produits',
-        description: 'Les produits qui concentrent le plus de chiffre d’affaires encaissé.',
+        description: 'Les produits classés par montant des lignes de commandes payées.',
         type: 'table',
         source: 'commerce.top-products',
         columns: [
@@ -83,7 +83,7 @@
           { key: 'quantite', label: 'Qté', align: 'right' },
           { key: 'ca', label: 'CA', align: 'right' },
         ],
-        emptyText: 'Aucune vente encaissée sur la période.',
+        emptyText: 'Aucune ligne de commande payée sur la période.',
       },
       {
         id: 'rentabilite-produits',
@@ -105,7 +105,7 @@
       {
         id: 'categories',
         title: 'Performance par catégorie',
-        description: 'Volume et chiffre d’affaires encaissé par famille de produits.',
+        description: 'Volume et montant des lignes de commandes payées par famille de produits.',
         type: 'table',
         source: 'commerce.categories',
         columns: [

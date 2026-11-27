@@ -91,6 +91,52 @@ async function projection(client, scope = {}) {
   };
 }
 
+// Customer cash subtotal: a settled journal movement must still have a
+// dated monetary source. Do not mix wallet credits or commitments with cash.
+// No claim of exhaustive coverage: missing journal entries and dates require
+// reconciliation; journal native currencies are not a bank custody ledger.
+async function customerCashSubtotal(client,{marketId=null,from=null,to=null}={}) {
+  const {rows:[result]}=await client.query(`
+    WITH eligible AS (
+      SELECT m.currency,m.amount_native,m.amount_eur,1 AS sign
+        FROM financial_movements m
+        JOIN orders o ON o.id::text=m.source_id
+       WHERE m.source_kind='order_payment' AND m.facet='main'
+         AND m.category='sale' AND m.direction='inflow' AND m.state='settled'
+         AND m.market_id=o.market_id AND ($1::uuid IS NULL OR o.market_id=$1)
+         AND o.simulation_scope IS NULL AND o.payment_status IN ('paid','refunded')
+         AND o.total_kmf>0 AND o.payment_mode IN ('cash_relais','stripe_eur','mobile_money')
+         AND COALESCE(o.payment_received_at,o.cash_paid_at) IS NOT NULL
+         AND ($2::timestamptz IS NULL OR COALESCE(o.payment_received_at,o.cash_paid_at)>=$2)
+         AND ($3::timestamptz IS NULL OR COALESCE(o.payment_received_at,o.cash_paid_at)<=$3)
+      UNION ALL
+      SELECT m.currency,m.amount_native,m.amount_eur,-1
+        FROM financial_movements m
+        JOIN refunds r ON r.id::text=m.source_id
+        JOIN orders o ON o.id=r.order_id
+       WHERE m.source_kind='order_refund' AND m.facet='main'
+         AND m.category='refund' AND m.direction='outflow' AND m.state='settled'
+         AND m.market_id=o.market_id AND ($1::uuid IS NULL OR o.market_id=$1)
+         AND o.simulation_scope IS NULL AND r.status='completed'
+         AND r.refund_method IN ('cash','stripe','mobile_money')
+         AND r.completed_at IS NOT NULL
+         AND ($2::timestamptz IS NULL OR r.completed_at>=$2)
+         AND ($3::timestamptz IS NULL OR r.completed_at<=$3)
+    ), native AS (
+      SELECT currency,SUM(sign*amount_native)::text AS total FROM eligible GROUP BY currency
+    )
+    SELECT COUNT(*)::int AS movements,
+           SUM(sign*amount_eur)::text AS eur_net,
+           COUNT(*) FILTER(WHERE amount_eur IS NULL)::int AS eur_missing,
+           COALESCE((SELECT jsonb_agg(jsonb_build_object('currency',currency,'total',total) ORDER BY currency) FROM native),'[]'::jsonb) AS native_net
+      FROM eligible`,[marketId,from,to]);
+  if(!result || result.movements===0) return {available:false,reason:'no_documented_customer_cash'};
+  return {available:true,eur_net:result.eur_net,
+    eur_partial:result.eur_missing>0,native_net:result.native_net,
+    movements:result.movements,coverage:'DOCUMENTED_SUBTOTAL',
+    basis:'settled_journal_customer_monetary_movements_by_source_date'};
+}
+
 // Libellés métier : seule source (les écrans Finance et Comptabilité les lisent, ne les redéfinissent pas).
 const CATEGORY_LABELS = Object.freeze({
   sale: 'Encaissements clients', refund: 'Remboursements clients', supplier_purchase: 'Achats fournisseurs',
@@ -232,4 +278,4 @@ async function reconcileWithSources(client, scope = {}) {
   return { ok: checks.every(check => check.ok), checks };
 }
 
-module.exports = { summarize, projection, listMovements, listDocuments, reconcileWithSources };
+module.exports = { summarize, projection, customerCashSubtotal, listMovements, listDocuments, reconcileWithSources };
