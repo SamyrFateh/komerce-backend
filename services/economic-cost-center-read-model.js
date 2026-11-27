@@ -38,8 +38,8 @@ function validate(raw){
     throw error('economic_reference_period_invalid',400,'Mois invalide');
   return {marketCode:raw.marketCode,periodStart:raw.periodStart};
 }
-async function resolveScope(client,actor,marketCode,central){
-  if(central){
+async function resolveScope(client,actor,marketCode,globalRead){
+  if(globalRead){
     if(marketCode===null)return null;
     const {rows}=await client.query('SELECT id FROM markets WHERE code=$1',[marketCode]);
     if(!rows.length)throw error('market_not_found',404,'Marché introuvable');
@@ -648,11 +648,13 @@ async function closeGroupPeriod(actor, {periodStart,evidenceHash,evidenceRef,att
 async function readCostCenters(actor,raw){
   if(!actor?.id)throw error('AUTH_REQUIRED',401,'Authentification requise');
   const input=validate(raw);
-  const central=actor.role==='admin' && await hasPricingGlobalAuthority(actor.id);
+  // CANON-MARKET A1: admin has global READ, never implicit ACT.
+  const globalRead=actor.role==='admin';
+  const central=globalRead && await hasPricingGlobalAuthority(actor.id);
   const client=await db.getClient();
   try{
     await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
-    const marketId=await resolveScope(client,actor,input.marketCode,central);
+    const marketId=await resolveScope(client,actor,input.marketCode,globalRead);
     const costCapabilities=await costAuthority.project(client,actor,input.marketCode,marketId,central);
     const {rows:centers}=await client.query(
       'SELECT c.id,c.code,c.label,c.responsible_user_id,c.is_active,u.full_name AS responsible_label FROM economic_cost_centers c LEFT JOIN users u ON u.id=c.responsible_user_id WHERE c.market_id IS NOT DISTINCT FROM $1::uuid ORDER BY c.code,c.id',[marketId]);
@@ -733,7 +735,7 @@ async function readCostCenters(actor,raw){
     }
     const responsibleCandidates=costCapabilities.reference?await listResponsibleCandidates(client,marketId):[];
     await client.query('COMMIT');
-    return {scope:input.marketCode===null?'GROUP':'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,central,costCapabilities,readOnly:!Object.values(costCapabilities).some(Boolean),
+    return {scope:input.marketCode===null?'GROUP':'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,globalRead,central,costCapabilities,readOnly:!Object.values(costCapabilities).some(Boolean),
       centers:centerModels,families,resources,responsibleCandidates,posts:model,recordedBalance:recordedBalanceSummary(model),budgetSummary:budgetSummary(model),commitmentSummary:commitmentSummary(model),structureEvidence,activity,profitability,actualCoverage:'NOT_RECONCILED',available:null};
   }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
 }
