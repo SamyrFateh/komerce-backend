@@ -144,6 +144,15 @@ describe('POST /api/admin/reset', () => {
     expect(res.body.error).toMatch(/désactivé en production/);
   });
 
+  it('staging ne peut plus reset via API malgré un ancien bypass',async()=>{
+    const old=process.env.KOMERCE_ENV;
+    try{
+      process.env.KOMERCE_ENV='staging';process.env.ALLOW_FLUSH='true';
+      const res=await request(app).post('/api/admin/reset').send({mode:'orders',confirm:true});
+      expect(res.status).toBe(403);expect(res.body.code).toBe('MAINTENANCE_WORKFLOW_REQUIRED');
+      expect(db.getClient).not.toHaveBeenCalled();
+    }finally{if(old===undefined)delete process.env.KOMERCE_ENV;else process.env.KOMERCE_ENV=old;}
+  });
   it('mode invalide → 400 (rejete par le validateur Joi)', async () => {
     const res = await request(app).post('/api/admin/reset').send({ mode: 'bogus', confirm: true });
     expect(res.status).toBe(400);

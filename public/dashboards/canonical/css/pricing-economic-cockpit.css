@@ -1251,3 +1251,35 @@
     overflow-wrap: anywhere;
   }
 }
+
+/* ECO-2a V7 cost-center consultation component, isolated from existing cockpit. */
+.kmc-v7-centers { display:grid; gap:16px; min-width:0; color:#172d43; background:#f3f5f8; padding:18px; border-radius:14px; }
+.kmc-v7-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; }
+.kmc-v7-heading h3,.kmc-v7-heading p,.kmc-v7-center-card h4,.kmc-v7-center-card p { margin:0; overflow-wrap:anywhere; }
+.kmc-v7-heading p,.kmc-v7-coverage,.kmc-v7-empty { color:#526577; font-size:13px; }
+.kmc-v7-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.kmc-v7-metric { display:grid; gap:5px; min-width:0; padding:12px; background:#fff; border:1px solid #dce3e9; border-radius:10px; overflow-wrap:anywhere; }
+.kmc-v7-metric span { color:#526577; font-size:12px; }
+.kmc-v7-metric strong { font-size:16px; font-variant-numeric:tabular-nums; }
+.kmc-v7-center-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.kmc-v7-center-card { display:grid; gap:10px; min-width:0; background:#fff; padding:16px; border:1px solid #dce3e9; border-radius:12px; }
+.kmc-v7-action,.kmc-v7-family,.kmc-v7-post-button { font:inherit; cursor:pointer; color:#157e78; background:#fff; border:1px solid #157e78; border-radius:8px; padding:8px 12px; width:fit-content; max-width:100%; white-space:normal; overflow-wrap:anywhere; }
+.kmc-v7-family[aria-pressed="true"] { color:#fff; background:#157e78; }
+.kmc-v7-families { display:flex; flex-wrap:wrap; gap:8px; }
+.kmc-v7-posts { width:100%; table-layout:fixed; border-collapse:collapse; background:#fff; border-radius:10px; }
+.kmc-v7-posts th,.kmc-v7-posts td { padding:10px; text-align:left; overflow-wrap:anywhere; border-bottom:1px solid #dce3e9; font-size:13px; }
+.kmc-v7-posts th { color:#526577; }
+.kmc-v7-post-detail { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; padding:16px; background:#fff; border-radius:12px; }
+.kmc-v7-post-detail h4 { grid-column:1/-1; margin:0; }
+
+/* V6 activity uses existing canonical V7 card language; desktop no overflow. */
+.kmc-v7v6-tabs,.kmc-v7v6-content,.kmc-v6-activity{min-width:0;display:grid;gap:14px;}
+.kmc-v6-panel{min-width:0;display:grid;gap:10px;background:#fff;padding:16px;border:1px solid #dce3e9;border-radius:12px;}
+.kmc-v6-panel h4,.kmc-v6-panel p{margin:0;}
+.kmc-v6-shipments{table-layout:fixed;width:100%;}
+.kmc-v6-shipments td,.kmc-v6-shipments th{overflow-wrap:anywhere;vertical-align:top;}
+.kmc-v6-shipments tfoot{background:#e8f3f2;font-weight:600;}
+
+.kmc-v6-chart { display:grid; gap:8px; min-width:0; }
+.kmc-v6-chart svg { width:100%; height:auto; max-height:280px; }
+.kmc-v6-profitability .kmc-v7-kpis { min-width:0; }

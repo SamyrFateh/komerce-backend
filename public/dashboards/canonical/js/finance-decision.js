@@ -39,10 +39,16 @@
   }
 
   function displayMetric(base, item) {
+    if (base.metricValue) return base.metricValue(item);
     if (!item || item.value == null) return '—';
     if (item.unit === 'KMF') return base.formatKmf(item.value);
     if (item.unit === '%') return `${base.formatNumber(item.value)} %`;
     return base.formatNumber(item.value, 0);
+  }
+
+  function displayAmount(base, row, key, signed = false) {
+    if (base.displayAmount) return base.displayAmount(row, key, signed);
+    return signed ? base.formatSignedKmf(row && row[key]) : base.formatKmf(row && row[key]);
   }
 
   const CLASS_LABELS = Object.freeze({
@@ -110,6 +116,11 @@
   // Notes de définition : numérateur, dénominateur, périmètre — jamais un pourcentage orphelin.
   function indicatorNotes(payload, base) {
     const notes = [];
+    if (payload && payload.economic_period_result) notes.push({
+      key: 'economic-period-result',
+      title: 'Résultat économique ECO',
+      text: 'Mois civil UTC courant, indépendant de la période des commandes. Même autorité que Prix & économie et Pilotage. Un résultat indisponible ne signifie pas zéro.',
+    });
     const comp = kpi(payload, 'taux_completude_couts');
     const q = comp && comp.data_quality ? comp.data_quality : {};
     if (comp && comp.value != null && q.items_total != null) {
@@ -125,9 +136,9 @@
     if (real && real.value != null && split) {
       notes.push({
         key: 'real-cost',
-        title: `Coût réel : ${base.formatKmf(real.value)} — coûts partiels inclus`,
-        text: `${base.formatKmf(split.final.amount_kmf)} sur ${base.formatNumber(split.final.orders, 0)} commande(s) aux coûts finalisés `
-          + `+ ${base.formatKmf(split.partial.amount_kmf)} sur ${base.formatNumber(split.partial.orders, 0)} commande(s) aux coûts encore partiels. `
+        title: `Coût réel : ${displayMetric(base, real)} — coûts partiels inclus`,
+        text: `${displayAmount(base, split.final, 'amount_kmf')} sur ${base.formatNumber(split.final.orders, 0)} commande(s) aux coûts finalisés `
+          + `+ ${displayAmount(base, split.partial, 'amount_kmf')} sur ${base.formatNumber(split.partial.orders, 0)} commande(s) aux coûts encore partiels. `
           + 'Un coût partiel n’est pas un coût complet : ne pas en déduire une marge.',
       });
     }
@@ -138,8 +149,8 @@
       const excluded = (scope.excluded || []).map(e => `${base.formatNumber(e.count, 0)} · ${e.label.toLowerCase()}`).join(' ; ');
       notes.push({
         key: 'margin',
-        title: `Marge consolidée : ${base.formatKmf(margin.value)} — ${base.formatNumber(scope.eligible_orders, 0)} commande(s) éligible(s) sur ${base.formatNumber(scope.paid_orders, 0)} encaissée(s)`,
-        text: `Périmètre : ${refs} (seules commandes à marge réelle finale). Exclues : ${excluded || 'aucune'}.`,
+        title: `Marge des commandes finalisées : ${displayMetric(base, margin)} — ${base.formatNumber(scope.eligible_orders, 0)} commande(s) éligible(s) sur ${base.formatNumber(scope.paid_orders, 0)} payée(s)`,
+        text: `Diagnostic par date de création, distinct du résultat économique ECO. Périmètre : ${refs}. Exclues : ${excluded || 'aucune'}.`,
       });
     }
     return notes;
@@ -236,7 +247,7 @@
       card.appendChild(el(doc, 'strong', 'kmc-fin-class-title', CLASS_LABELS[key]));
       card.appendChild(el(doc, 'span', 'kmc-fin-class-value', `${base.formatNumber(entry.orders, 0)} commande(s)`));
       if (entry.orders > 0 && entry.amount_kmf != null && key !== 'none') {
-        card.appendChild(el(doc, 'span', 'kmc-fin-class-amount', `${base.formatSignedKmf(entry.amount_kmf)} d’écart de coût`));
+        card.appendChild(el(doc, 'span', 'kmc-fin-class-amount', `${displayAmount(base, entry, 'amount_kmf', true)} d’écart de coût`));
       }
       card.appendChild(el(doc, 'span', 'kmc-fin-class-help', CLASS_HELP[key]));
       grid.appendChild(card);
@@ -252,14 +263,14 @@
       summary.appendChild(el(doc, 'strong', 'kmc-fin-ref', row.reference || 'Commande'));
       summary.appendChild(el(doc, 'span', 'kmc-fin-meta', `${row.market_code || 'marché —'} · ${STATUS_LABELS[row.status] || row.status || '—'}`));
       summary.appendChild(el(doc, 'span', `kmc-fin-badge is-${v.class}`, CLASS_LABELS[v.class]));
-      summary.appendChild(el(doc, 'span', 'kmc-fin-count', v.cost_variance_kmf == null ? (REASON_LABELS[v.reason] || '—') : `${base.formatSignedKmf(v.cost_variance_kmf)}${v.class === 'provisional' ? ' (provisoire)' : ''}`));
+      summary.appendChild(el(doc, 'span', 'kmc-fin-count', v.cost_variance_kmf == null ? (REASON_LABELS[v.reason] || '—') : `${displayAmount(base, v, 'cost_variance_kmf', true)}${v.class === 'provisional' ? ' (provisoire)' : ''}`));
       details.appendChild(summary);
       const content = el(doc, 'div', 'kmc-fin-order-body');
       const facts = [
-        ['Prévision (snapshot figé)', base.formatKmf(v.estimated_variable_kmf)],
-        ['Constaté', base.formatKmf(v.real_variable_kmf)],
-        ['Écart de coût', v.cost_variance_kmf == null ? '—' : base.formatSignedKmf(v.cost_variance_kmf)],
-        ['Écart de marge variable', v.margin_variance_kmf == null ? '—' : base.formatSignedKmf(v.margin_variance_kmf)],
+        ['Prévision (snapshot figé)', displayAmount(base, v, 'estimated_variable_kmf')],
+        ['Constaté', displayAmount(base, v, 'real_variable_kmf')],
+        ['Écart de coût', v.cost_variance_kmf == null ? '—' : displayAmount(base, v, 'cost_variance_kmf', true)],
+        ['Écart de marge variable', v.margin_variance_kmf == null ? '—' : displayAmount(base, v, 'margin_variance_kmf', true)],
         ['Complétude', v.class === 'overrun' || v.class === 'saving' || v.class === 'none' ? 'Comparaison finale' : (v.class === 'provisional' ? 'Comparaison provisoire : coûts réels incomplets' : (REASON_LABELS[v.reason] || 'Non comparable'))],
         ['Explication', 'À analyser — aucune cause documentée dans les données'],
       ];
@@ -267,9 +278,9 @@
       content.appendChild(simpleTable(doc, ['Composante', 'État', 'Prévu', 'Constaté', 'Écart', 'Responsable'], (v.components || []).map(c => [
         c.label,
         STATE_LABELS[c.state] || c.state,
-        base.formatKmf(c.estimated_kmf),
-        c.real_kmf == null ? '—' : base.formatKmf(c.real_kmf),
-        c.delta_kmf == null ? '—' : base.formatSignedKmf(c.delta_kmf),
+        displayAmount(base, c, 'estimated_kmf'),
+        c.real_kmf == null ? '—' : displayAmount(base, c, 'real_kmf'),
+        c.delta_kmf == null ? '—' : displayAmount(base, c, 'delta_kmf', true),
         c.owner ? (actionLink(doc, ownerHref(base, c.owner), `${c.owner.label} →`) || c.owner.label) : '—',
       ]), 2));
       const link = actionLink(doc, orderHref(base, row.reference), 'Ouvrir la commande 360 →');
@@ -392,7 +403,7 @@
       {
         key: 'margin', title: 'Marge', tone: 'positive',
         // Rang 1 : consolidée (réelle) ; rang 2 : estimée, explicitement non définitive.
-        metrics: [pair(payload, base, 'marge_consolidee', 'Marge consolidée (réelle)'), pair(payload, base, 'marge_estimee', 'Marge estimée — non définitive')],
+        metrics: [pair(payload, base, 'marge_consolidee', 'Marge des commandes finalisées'), pair(payload, base, 'marge_estimee', 'Marge estimée — non définitive')],
       },
       {
         key: 'refunds', title: 'Remboursements', tone: 'violet',
@@ -419,7 +430,7 @@
   function trendItems(payload, base) {
     return (Array.isArray(payload && payload.trend) ? payload.trend : []).map(row => ({
       title: base.formatDate(row.bucket),
-      helper: `CA ${base.formatKmf(row.revenue_kmf)} · coût ${base.formatKmf(row.real_cost_kmf)} · marge ${base.formatKmf(row.consolidated_margin_kmf)}`,
+      helper: `CA ${displayAmount(base, row, 'revenue_kmf')} · coût ${displayAmount(base, row, 'real_cost_kmf')} · marge ${displayAmount(base, row, 'consolidated_margin_kmf')}`,
       value: row.cost_coverage_pct == null ? '—' : `${base.formatNumber(row.cost_coverage_pct, 1)} %`,
       tone: row.consolidated_margin_kmf != null && Number(row.consolidated_margin_kmf) < 0 ? 'critical' : 'neutral',
     }));
@@ -449,8 +460,8 @@
         const v = row.variance;
         return {
           title: row.reference || 'Commande',
-          helper: `${CLASS_LABELS[v.class]} · vente ${base.formatKmf(row.sale_total_kmf)} · réel ${base.formatKmf(row.real_cost_kmf)} · marge ${base.formatKmf(row.consolidated_margin_kmf)}`,
-          value: base.formatSignedKmf(v.cost_variance_kmf),
+          helper: `${CLASS_LABELS[v.class]} · vente ${displayAmount(base, row, 'sale_total_kmf')} · réel ${displayAmount(base, row, 'real_cost_kmf')} · marge ${displayAmount(base, row, 'consolidated_margin_kmf')}`,
+          value: displayAmount(base, v, 'cost_variance_kmf', true),
           tone: v.class === 'overrun' ? 'warning' : 'neutral',
         };
       });
@@ -484,7 +495,7 @@
     return (Array.isArray(payload && payload.incomplete_cost_orders) ? payload.incomplete_cost_orders : []).map(row => ({
       title: row.reference || 'Commande',
       helper: `${row.status || '—'} · paiement ${row.payment_status || '—'} · ${base.formatDate(row.created_at)}${costExplanationText(row)}`,
-      value: base.formatKmf(row.total_kmf),
+      value: displayAmount(base, row, 'total_kmf'),
       tone: 'warning',
     }));
   }
@@ -493,7 +504,7 @@
     return (Array.isArray(payload && payload.payment_mix) ? payload.payment_mix : []).map(row => ({
       title: row.payment_mode || 'Mode de paiement',
       helper: `${base.formatNumber(row.orders, 0)} commande(s)`,
-      value: base.formatKmf(row.total_kmf),
+      value: displayAmount(base, row, 'total_kmf'),
       tone: 'info',
     }));
   }
@@ -505,8 +516,8 @@
       const incomplete = realMargin == null || (coverage != null && Number(coverage) < 100);
       return {
         title: row.relais_name || 'Relais',
-        helper: `${base.formatNumber(row.orders, 0)} commande(s) · CA ${base.formatKmf(row.revenue_kmf)} · marge réelle ${base.formatKmf(realMargin)} · couverture ${coverage == null ? '—' : `${base.formatNumber(coverage, 1)} %`}`,
-        value: base.formatKmf(row.estimated_margin_kmf),
+        helper: `${base.formatNumber(row.orders, 0)} commande(s) · CA ${displayAmount(base, row, 'revenue_kmf')} · marge réelle ${displayAmount(base, row, 'consolidated_margin_kmf')} · couverture ${coverage == null ? '—' : `${base.formatNumber(coverage, 1)} %`}`,
+        value: displayAmount(base, row, 'estimated_margin_kmf'),
         tone: realMargin != null && Number(realMargin) < 0 ? 'critical' : (incomplete ? 'warning' : 'neutral'),
       };
     });
@@ -517,7 +528,7 @@
     return rows.map(row => ({
       title: row.order_reference || 'Commande remboursée',
       helper: `${row.refund_method || 'Méthode inconnue'} · ${base.formatDate(row.completed_at)}`,
-      value: base.formatKmf(row.amount_kmf),
+      value: displayAmount(base, row, 'amount_kmf'),
       tone: 'violet',
     }));
   }
@@ -772,7 +783,7 @@
         badge: scope && scope.eligible_orders > 0 ? 'Finalisée' : null,
       },
     ];
-    return cards
+    const diagnostics = cards
       .filter(card => projected[card.key])
       .map(card => {
         const value = projected[card.key].value;
@@ -782,6 +793,20 @@
         }
         return { ...card, value };
       });
+    const result = payload && payload.economic_period_result;
+    if (!result) return diagnostics;
+    const q = result.data_quality || {};
+    const status = ({ CLOSED: 'Clôturé', PROVISIONAL: 'Provisoire', REOPENED: 'Réouvert — à rapprocher',
+      NOT_RECONCILED: 'Non rapproché', MARKET_RESULT_NOT_RECONCILED: 'Marché non rapproché',
+      SIMULATION_EXCLUDED: 'Hors simulation', UNAVAILABLE: 'Indisponible' })[q.status] || 'Non certifié';
+    const known = result.value != null;
+    return [{ key: 'economic-period-result', label: result.label || 'Résultat économique ECO', icon: 'trend',
+      tone: !known || q.status !== 'CLOSED' ? 'warning' : Number(result.value) < 0 ? 'critical' : 'neutral',
+      value: known ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: result.unit }).format(Number(result.value)) : '—',
+      helper: [q.period_start && q.period_start.slice(0, 7) + ' UTC', status].filter(Boolean).join(' · '),
+      note: 'economic-period-result', unknown: !known },
+      ...diagnostics.map(card => card.key === 'marge' ? { ...card, label: 'Marge réelle finalisée — diagnostic commandes',
+        helper: [card.helper, 'Distincte du résultat ECO'].filter(Boolean).join(' · ') } : card)];
   }
 
   function renderKpiCard(doc, card, openHelp) {
@@ -1112,6 +1137,13 @@
     header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Performance financière'));
     header.appendChild(text(doc, 'p', 'kmc-dashboard-description', `Vue consolidée des commandes · ${period} jours${scopeLabel(payload)}`));
     header.appendChild(periodControl(doc, period, options.onPeriodChange));
+    if (payload.diagnostic_currency) header.appendChild(text(doc, 'p', 'kmc-dashboard-description', `Diagnostics commandes : projection KMF → ${payload.diagnostic_currency.currency}${payload.diagnostic_currency.status === 'unavailable' ? ' — conversion indisponible' : ''}, distincte des flux historiques natifs.`));
+    const cash=payload.customer_cash;
+    if(cash){
+      const amount=cash.available&&cash.eur_net!=null?base.formatNumber(cash.eur_net,2)+' €'+(cash.eur_partial?' (EUR partiel)':''):'EUR non disponible';
+      const native=cash.available&&Array.isArray(cash.native_net)?cash.native_net.map(x=>base.formatNumber(x.total,2)+' '+x.currency).join(' · '):'';
+      header.appendChild(text(doc,'p','kmc-dashboard-description','Sous-total des flux monétaires clients documentés : '+amount+(native?' · devises du journal '+native:'')+' · couverture intégrale non certifiée ; distinct des ventes payées.'));
+    }
     dashboard.appendChild(header);
 
     const notes = indicatorNotes(payload, base);

@@ -48,3 +48,18 @@ test('Finance : la section « Mouvements financiers (pivot EUR) » lit la projec
   expect(src).toContain('jamais additionné entre devises');
   expect(mod).toBeTruthy();
 });
+
+test('Finance distinguishes ECO monthly result from order diagnostics and keeps unknown distinct from zero', () => {
+  const mod = require('../../public/dashboards/canonical/js/finance-decision.js');
+  const base = { projectMetrics: () => ({ marge: { value: '500 KMF' } }), formatNumber: String };
+  const payload = { economic_period_result: { label: 'Résultat économique marché', unit: 'XAF', value: null,
+    data_quality: { period_start: '2026-11-01', status: 'UNAVAILABLE' } } };
+  const cards = mod.kpiCards(payload, base);
+  expect(cards[0]).toMatchObject({ key: 'economic-period-result', value: '—', unknown: true });
+  expect(cards[1].label).toContain('diagnostic commandes');
+  payload.economic_period_result.value = 0;
+  payload.economic_period_result.data_quality.status = 'PROVISIONAL';
+  expect(mod.kpiCards(payload, base)[0]).toMatchObject({ unknown: false, tone: 'warning' });
+  expect(mod.kpiCards(payload, base)[0].value).toContain('0');
+  expect(mod.indicatorNotes(payload, base)[0].key).toBe('economic-period-result');
+});

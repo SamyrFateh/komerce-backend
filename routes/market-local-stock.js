@@ -62,7 +62,7 @@ router.post('/:marketCode/local-stock/receipts', authenticate, async (req, res, 
     forbidMarketId(b);
     const out = await withClient(c => svc.declareReceipt(c, {
       actorUserId: req.user.id, actorRole: req.user.role, marketCode: req.params.marketCode,
-      productId: b.product_id, relaisId: b.relais_id, qtyReceived: b.qty_received,
+      productId: b.product_id, skuId: b.sku_id ?? null, relaisId: b.relais_id, qtyReceived: b.qty_received,
       proofRef: b.proof_ref, note: b.note, idempotencyKey: req.get('Idempotency-Key'),
     }));
     res.status(out.replayed ? 200 : 201).json(out);

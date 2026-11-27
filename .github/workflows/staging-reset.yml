@@ -57,7 +57,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: komerce-staging-reset
+  # Whole workflow holds G6 writer lock, including E2E reprovision after reset.
+  group: komerce-g6-canonical-real-transaction
   cancel-in-progress: false
 
 jobs:

@@ -99,9 +99,18 @@ describe('routes Finance Canonical', () => {
     expect(res.headers['cache-control']).toContain('no-store');
     expect(mockBuildFinance).toHaveBeenCalledWith(
       expect.objectContaining({ period: '30' }),
-      { market: expect.objectContaining({ id: 'market-cm-id', code: 'CM' }) }
+      { market: expect.objectContaining({ id: 'market-cm-id', code: 'CM' }), actor: { id: 'actor-1', role: 'market_operator' } }
     );
     expect(JSON.stringify(res.body)).not.toContain('market-cm-id');
+  });
+
+  test('l’acteur ECO provient de la session authentifiée, jamais des filtres client', async () => {
+    const res = await request(app()).get('/api/admin/dashboard/finance/market/CM?actor=admin&role=admin');
+    expect(res.status).toBe(200);
+    expect(mockBuildFinance).toHaveBeenCalledWith(
+      expect.objectContaining({ actor: 'admin', role: 'admin' }),
+      { market: expect.objectContaining({ id: 'market-cm-id', code: 'CM' }), actor: { id: 'actor-1', role: 'market_operator' } }
+    );
   });
 
   test('opérateur CM ne peut pas lire Finance CG', async () => {
@@ -127,6 +136,6 @@ describe('routes Finance Canonical', () => {
     mockActorRole = 'admin';
     res = await request(app()).get('/api/admin/dashboard/finance?period=7');
     expect(res.status).toBe(200);
-    expect(mockBuildFinance).toHaveBeenCalledWith(expect.objectContaining({ period: '7' }));
+    expect(mockBuildFinance).toHaveBeenCalledWith(expect.objectContaining({ period: '7' }), { actor: { id: 'actor-1', role: 'admin' } });
   });
 });

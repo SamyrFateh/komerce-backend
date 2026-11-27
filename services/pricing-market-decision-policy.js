@@ -43,6 +43,25 @@ function parseInstant(value, field) {
   return date;
 }
 
+function normalizeSelectionByFamily(value) {
+  if (value == null) return null;
+  if (typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('policy.selection_by_family must be an object');
+  }
+  const entries = Object.entries(value);
+  if (!entries.length) throw new Error('policy.selection_by_family must name at least one family');
+  return Object.fromEntries(entries.sort(([a], [b]) => a.localeCompare(b)).map(([family, rule]) => {
+    if (!family || family !== family.trim() || family.length > 120 || !rule || typeof rule !== 'object' || Array.isArray(rule)) {
+      throw new Error('policy.selection_by_family has an invalid family rule');
+    }
+    const { minimum_contribution_kmf: minimum, loss_observation_count: count } = rule;
+    if (!Number.isSafeInteger(minimum) || minimum < 0 || !Number.isSafeInteger(count) || count < 1) {
+      throw new Error('policy.selection_by_family requires a nonnegative KMF minimum and a positive loss observation count');
+    }
+    return [family, { minimum_contribution_kmf: minimum, loss_observation_count: count }];
+  }));
+}
+
 function normalizePolicyInput(input = {}, actorId, options = {}) {
   if (!actorId) throw new Error('policy actor is required');
 
@@ -94,6 +113,7 @@ function normalizePolicyInput(input = {}, actorId, options = {}) {
 
   return {
     version,
+    selection_by_family: normalizeSelectionByFamily(input.selection_by_family),
     window_days: windowDays,
     maturity_threshold: maturityThreshold,
     coverage_threshold: coverageThreshold,
@@ -111,6 +131,7 @@ function publicPolicy(row) {
   if (!row) return null;
   return {
     version: row.version,
+    selection_by_family: normalizeSelectionByFamily(row.selection_by_family),
     window_days: Number(row.window_days),
     maturity_threshold: Number(row.maturity_threshold),
     coverage_threshold: Number(row.coverage_threshold),
@@ -144,18 +165,18 @@ async function recordMarketDecisionPolicy(marketId, input = {}, actorId, options
         maturity_threshold, coverage_threshold, max_disposition_ratio,
         disposed_contribution_treatment,
         effective_from, effective_to,
-        source, evidence_ref, rationale, recorded_by
+        source, evidence_ref, rationale, recorded_by, selection_by_family
       ) VALUES (
         $1, $2, $3,
         $4, $5, $6,
         $7,
         $8, $9,
-        $10, $11, $12, $13
+        $10, $11, $12, $13, $14::jsonb
       )
       RETURNING version, window_days, maturity_threshold, coverage_threshold,
                 max_disposition_ratio, disposed_contribution_treatment,
                 effective_from, effective_to, source, evidence_ref, rationale,
-                recorded_at
+                recorded_at, selection_by_family
     `, [
       marketId,
       policy.version,
@@ -170,6 +191,7 @@ async function recordMarketDecisionPolicy(marketId, input = {}, actorId, options
       policy.evidence_ref,
       policy.rationale,
       actorId,
+      policy.selection_by_family === null ? null : JSON.stringify(policy.selection_by_family),
     ]);
 
     await client.query('COMMIT');
@@ -185,11 +207,12 @@ async function recordMarketDecisionPolicy(marketId, input = {}, actorId, options
 async function getCurrentMarketDecisionPolicy(marketId, options = {}) {
   if (!marketId) throw new Error('marketId is required');
   const at = parseInstant(options.at || new Date(), 'at').toISOString();
-  const { rows } = await db.query(`
+  const executor = options.executor || db;
+  const { rows } = await executor.query(`
     SELECT version, window_days, maturity_threshold, coverage_threshold,
            max_disposition_ratio, disposed_contribution_treatment,
            effective_from, effective_to, source, evidence_ref, rationale,
-           recorded_at
+           recorded_at, selection_by_family
       FROM pricing_market_decision_policy_events
      WHERE market_id = $1
        AND effective_from <= $2
@@ -207,7 +230,7 @@ async function listMarketDecisionPolicyHistory(marketId, options = {}) {
     SELECT version, window_days, maturity_threshold, coverage_threshold,
            max_disposition_ratio, disposed_contribution_treatment,
            effective_from, effective_to, source, evidence_ref, rationale,
-           recorded_at
+           recorded_at, selection_by_family
       FROM pricing_market_decision_policy_events
      WHERE market_id = $1
      ORDER BY effective_from DESC, recorded_at DESC, id DESC
@@ -518,7 +541,11 @@ async function previewMarketDecisionPolicy(marketId, input = {}, actorId, option
     persisted: false,
     candidate_policy: candidate,
     current_policy: base,
-    changed_fields: POLICY_COMPARED_FIELDS.filter(f => !base || Number(base[f]) !== Number(candidate[f])),
+    changed_fields: [
+      ...POLICY_COMPARED_FIELDS.filter(f => !base || Number(base[f]) !== Number(candidate[f])),
+      ...(JSON.stringify(base?.selection_by_family ?? null) !== JSON.stringify(candidate.selection_by_family)
+        ? ['selection_by_family'] : []),
+    ],
     current_decision: { decision_status: current.decision_status, authorization: current.authorization, reason: current.reason, canonical_period: current.canonical_period, coverage: current.coverage },
     candidate_decision: { decision_status: simulated.decision_status, authorization: simulated.authorization, reason: simulated.reason, canonical_period: simulated.canonical_period, coverage: simulated.coverage },
     evaluated_at: simulated.evaluated_at,

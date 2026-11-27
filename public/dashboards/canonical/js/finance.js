@@ -244,9 +244,25 @@
     return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short' }).format(date);
   }
 
+  function formatCurrencyValue(value, unit, signed = false) {
+    if (value == null || value === '' || !Number.isFinite(Number(value))) return '—';
+    const prefix = signed && Number(value) > 0 ? '+' : '';
+    const digits = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: unit }).resolvedOptions().maximumFractionDigits;
+    return prefix + formatNumber(value, digits) + ' ' + unit;
+  }
+
+  function displayAmount(row, key, signed = false) {
+    if (row && row.display_amounts && Object.hasOwn(row.display_amounts.values, key)) {
+      return formatCurrencyValue(row.display_amounts.values[key], row.display_amounts.currency, signed);
+    }
+    return signed ? formatSignedKmf(row && row[key]) : formatKmf(row && row[key]);
+  }
+
   function metricValue(metric) {
-    if (!metric || metric.value == null) return '—';
-    if (metric.unit === 'KMF') return formatKmf(metric.value);
+    if (!metric) return '—';
+    if (metric.display) return formatCurrencyValue(metric.display.value, metric.display.unit);
+    if (metric.value == null) return '—';
+    if (/^[A-Z]{3}$/.test(metric.unit || '')) return formatCurrencyValue(metric.value, metric.unit);
     if (metric.unit === '%') return `${formatNumber(metric.value)} %`;
     return formatNumber(metric.value, 0);
   }
@@ -290,9 +306,9 @@
     return (Array.isArray(payload && payload.trend) ? payload.trend : []).map(row => ({
       periode: formatDate(row.bucket),
       commandes: formatNumber(row.paid_orders, 0),
-      ca: formatKmf(row.revenue_kmf),
-      cout: formatKmf(row.real_cost_kmf),
-      marge: formatKmf(row.consolidated_margin_kmf),
+      ca: displayAmount(row, 'revenue_kmf'),
+      cout: displayAmount(row, 'real_cost_kmf'),
+      marge: displayAmount(row, 'consolidated_margin_kmf'),
       couverture: row.cost_coverage_pct == null ? '—' : `${formatNumber(row.cost_coverage_pct, 1)} %`,
     }));
   }
@@ -323,18 +339,18 @@
     const v = row && row.variance;
     if (!v) return '—';
     const label = VARIANCE_CLASS_LABELS[v.class] || '—';
-    return v.cost_variance_kmf == null ? label : `${formatSignedKmf(v.cost_variance_kmf)} · ${label}`;
+    return v.cost_variance_kmf == null ? label : `${displayAmount(v, 'cost_variance_kmf', true)} · ${label}`;
   }
 
   function projectCostingOrders(payload) {
     return (Array.isArray(payload && payload.costing_orders) ? payload.costing_orders : []).map(row => ({
       commande: row.reference || '—',
       costing: COST_STATUS_LABELS[row.cost_status] || row.cost_status || '—',
-      vente: formatKmf(row.sale_total_kmf),
-      estime: formatKmf(row.estimated_cost_kmf),
-      reel: formatKmf(row.real_cost_kmf),
+      vente: displayAmount(row, 'sale_total_kmf'),
+      estime: displayAmount(row, 'estimated_cost_kmf'),
+      reel: displayAmount(row, 'real_cost_kmf'),
       variance: varianceCell(row),
-      marge: formatKmf(row.consolidated_margin_kmf),
+      marge: displayAmount(row, 'consolidated_margin_kmf'),
     }));
   }
 
@@ -342,7 +358,7 @@
     return (Array.isArray(payload && payload.cost_families) ? payload.cost_families : []).map(row => ({
       famille: row.cost_type || '—',
       commandes: formatNumber(row.orders, 0),
-      montant: formatKmf(row.amount_kmf),
+      montant: displayAmount(row, 'amount_kmf'),
     }));
   }
 
@@ -350,9 +366,9 @@
     return (Array.isArray(payload && payload.relay_profitability) ? payload.relay_profitability : []).map(row => ({
       relais: row.relais_name || '—',
       commandes: formatNumber(row.orders, 0),
-      ca: formatKmf(row.revenue_kmf),
-      'marge-estimee': formatKmf(row.estimated_margin_kmf),
-      'marge-reelle': formatKmf(row.consolidated_margin_kmf),
+      ca: displayAmount(row, 'revenue_kmf'),
+      'marge-estimee': displayAmount(row, 'estimated_margin_kmf'),
+      'marge-reelle': displayAmount(row, 'consolidated_margin_kmf'),
       couverture: row.cost_coverage_pct == null ? '—' : `${formatNumber(row.cost_coverage_pct, 1)} %`,
     }));
   }
@@ -361,7 +377,7 @@
     return (Array.isArray(payload && payload.payment_mix) ? payload.payment_mix : []).map(row => ({
       mode: row.payment_mode || '—',
       commandes: formatNumber(row.orders, 0),
-      montant: formatKmf(row.total_kmf),
+      montant: displayAmount(row, 'total_kmf'),
     }));
   }
 
@@ -372,7 +388,7 @@
     return rows.map(row => ({
       commande: row.order_reference || '—',
       methode: row.refund_method || '—',
-      montant: formatKmf(row.amount_kmf),
+      montant: displayAmount(row, 'amount_kmf'),
       date: formatDate(row.completed_at),
     }));
   }
@@ -531,6 +547,9 @@
     formatKmf,
     formatSignedKmf,
     formatExactAmount,
+    formatCurrencyValue,
+    displayAmount,
+    metricValue,
     shortId,
     contextualHref,
     formatDate,

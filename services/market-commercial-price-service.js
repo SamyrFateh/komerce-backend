@@ -288,6 +288,16 @@ async function authorizeMarketPriceDraft({ market, productRef, authorizationSnap
       throw new MarketCommercialPriceError(409, 'market_price_not_pending_gate', 'La décision locale n’est plus en attente du gate.');
     }
 
+    if (authorizationSnapshot.activation_allowed !== true) {
+      throw new MarketCommercialPriceError(409, 'market_price_activation_not_allowed', 'La preuve économique n’autorise pas ce prix.');
+    }
+    if (authorizationSnapshot.product_ref !== product.product_ref
+        || authorizationSnapshot.market_code !== market.code
+        || Number(authorizationSnapshot.local_price) !== Number(current.amount)
+        || authorizationSnapshot.currency !== current.currency) {
+      throw new MarketCommercialPriceError(409, 'market_price_activation_snapshot_stale', 'La preuve économique ne correspond plus au brouillon courant.');
+    }
+
     const { rows } = await client.query(
       `UPDATE product_market_price_drafts
           SET status = 'LOCAL_AUTHORIZED_PENDING_CUTOVER',

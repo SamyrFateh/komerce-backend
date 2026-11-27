@@ -36,26 +36,18 @@
 const express  = require('express');
 const router   = express.Router();
 const db       = require('../db');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireRole } = require('../middleware/auth');
 const svc      = require('../services/pricing-strategy-service');
 
 // Admin guard (admin only)
-const adminOnly = [
-  authenticate,
-  (req, res, next) => {
-    if (!['admin'].includes(req.user?.role)) {
-      return res.status(403).json({ error: 'Reserved to admin' });
-    }
-    next();
-  },
-];
+const adminOnly = [authenticate, requireRole(['admin'])];
 
 // ═══════════════════════════════════════════════════════════════════
 // PRIX CONCURRENTS
 // ═══════════════════════════════════════════════════════════════════
 
 /** GET /competitors — lister prix concurrents */
-router.get('/competitors', authenticate, async (req, res, next) => {
+router.get('/competitors', ...adminOnly, async (req, res, next) => {
   try {
     const result = await svc.getCompetitors(db, {
       product_id: req.query.product_id,
@@ -91,7 +83,7 @@ router.delete('/competitors/:id', ...adminOnly, async (req, res, next) => {
 // ═══════════════════════════════════════════════════════════════════
 
 /** GET /strategy?product_id=xxx | ?category=yyy */
-router.get('/', authenticate, async (req, res, next) => {
+router.get('/', ...adminOnly, async (req, res, next) => {
   try {
     const { product_id, category } = req.query;
     if (!product_id && !category) {
@@ -130,7 +122,7 @@ router.post('/apply', ...adminOnly, async (req, res, next) => {
 // ═══════════════════════════════════════════════════════════════════
 
 /** GET /strategy/history?product_id=...|category=... */
-router.get('/history', authenticate, async (req, res, next) => {
+router.get('/history', ...adminOnly, async (req, res, next) => {
   try {
     const result = await svc.getStrategyHistory(db, {
       product_id: req.query.product_id,

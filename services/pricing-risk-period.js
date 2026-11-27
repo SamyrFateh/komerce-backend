@@ -348,8 +348,9 @@ function aggregateRiskRows(rows = []) {
 async function computePeriodRiskTruth(options = {}) {
   const marketId = requiredText(options.marketId, 'marketId', 1, 200);
   const period = parsePeriod(options.from, options.to);
+  const executor = options.executor || db;
 
-  const watermarkRes = await db.query(
+  const watermarkRes = await executor.query(
     `SELECT id, market_id, closed_through, review_version, source,
             evidence_ref, notes, recorded_by, recorded_at
        FROM economic_risk_watermark_events
@@ -373,7 +374,7 @@ async function computePeriodRiskTruth(options = {}) {
   }
 
   const watermark = watermarkRes.rows[0];
-  const { rows } = await db.query(
+  const { rows } = await executor.query(
     `SELECT id, market_id, order_id, risk_provision_id,
             risk_key_snapshot, risk_label_snapshot,
             event_kind, adjusts_event_id, economic_at,

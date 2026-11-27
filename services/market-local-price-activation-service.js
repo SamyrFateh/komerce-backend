@@ -50,6 +50,19 @@ function activationVerdict(pricing, marketEvaluation) {
     return { allowed: false, reason: 'PRICE_BELOW_VARIABLE_COST' };
   }
 
+  const families = marketEvaluation?.policy?.selection_by_family;
+  const selection = families && Object.hasOwn(families, pricing.category) ? families[pricing.category] : null;
+  if (selection) {
+    if (!Number.isFinite(pricing.contribution_kmf)
+        || !pricing.data_quality?.sources?.purchase_price
+        || pricing.data_quality.sources.purchase_price === 'missing') {
+      return { allowed: false, reason: 'ECONOMIC_SELECTION_EVIDENCE_REQUIRED' };
+    }
+    if (pricing.contribution_kmf < selection.minimum_contribution_kmf) {
+      return { allowed: false, reason: 'ECONOMIC_SELECTION_BELOW_FAMILY_MINIMUM' };
+    }
+  }
+
   // pricing-engine a canonisé la frontière en 2026-09 :
   // - contributive_low_buffer = au-dessus du coût variable, sous le plancher sûr ;
   // - contributive = au-dessus du plancher sûr.
@@ -118,7 +131,7 @@ async function previewLocalPriceActivation({ market, productRef, at = new Date()
     pricing_strategy: 'market_local',
   }, { config });
   const marketEvaluation = await evaluateMarketDecisionFailClosed(market.id, at);
-  const verdict = activationVerdict(pricing, marketEvaluation);
+  const verdict = activationVerdict({ ...pricing, category: product.category }, marketEvaluation);
 
   const snapshot = {
     product_ref: product.product_ref,
@@ -131,6 +144,8 @@ async function previewLocalPriceActivation({ market, productRef, at = new Date()
     cdr_complete_kmf: pricing.fully_loaded_cost_reference_kmf,
     strategy_risk: pricing.strategy_risk,
     estimated_margin_pct: pricing.estimated_margin_pct,
+    estimated_contribution_kmf: pricing.contribution_kmf ?? null,
+    selection_family: product.category,
     market_gate: compactMarketGate(marketEvaluation),
     activation_allowed: verdict.allowed,
     activation_reason: verdict.reason,
@@ -235,7 +250,12 @@ async function repriceActiveLocalPrice({
     );
   }
   const evaluation = await evaluateMarketDecisionFailClosed(market.id, new Date());
-  const verdict = activationVerdict({ strategy_risk: preview.strategy_risk }, evaluation);
+  const verdict = activationVerdict({
+    strategy_risk: preview.strategy_risk,
+    category: current.product.category,
+    contribution_kmf: preview.contribution_kmf,
+    data_quality: preview.cost_quality,
+  }, evaluation);
   if (!verdict.allowed) {
     throw new marketCommercialPrice.MarketCommercialPriceError(
       409, 'market_local_price_activation_denied',
@@ -250,6 +270,8 @@ async function repriceActiveLocalPrice({
     projected_price_kmf: preview.projected_price_kmf,
     variable_cost_complete_kmf: preview.variable_cost_kmf,
     strategy_risk: preview.strategy_risk,
+    estimated_contribution_kmf: preview.contribution_kmf ?? null,
+    selection_family: current.product.category,
     market_gate: compactMarketGate(evaluation),
     activation_allowed: true,
     activation_reason: verdict.reason,

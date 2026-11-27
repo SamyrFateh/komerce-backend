@@ -176,6 +176,15 @@
     const target = String(value || '').trim();
     if (!target || !target.startsWith('/') || target.startsWith('//') || target.includes('\\')) return null;
     const pathname = target.split(/[?#]/, 1)[0];
+    // Refuse les segments ambigus avant toute résolution par le navigateur
+    // ou le routeur. Le retour ne doit jamais sortir de la coque canonique.
+    if (/[\u0000-\u0020\u007f]/.test(pathname)) return null;
+    try {
+      if (pathname.split('/').some(segment => {
+        const decoded = decodeURIComponent(segment);
+        return decoded === '.' || decoded === '..' || /[\/\\%\u0000-\u001f\u007f]/.test(decoded);
+      })) return null;
+    } catch (_) { return null; }
     if (pathname === '/admin' || pathname.startsWith('/admin/')) return target;
     if (pathname.startsWith('/dashboards/canonical/')) return target;
     return null;
@@ -231,8 +240,8 @@
 
   // Cible de retour = page courante avec sa query (contexte restauré au retour) ; repli sûr sinon.
   function currentReturnTarget(fallback, loc = global.location) {
-    const here = loc && typeof loc.pathname === 'string' ? `${loc.pathname}${loc.search || ''}` : '';
-    return safeReturnTarget(here) || fallback || null;
+    const here = loc && typeof loc.pathname === 'string' ? `${loc.pathname}${loc.search || ''}${loc.hash || ''}` : '';
+    return safeReturnTarget(here) || safeReturnTarget(fallback) || null;
   }
 
   // Reflète le contexte choisi dans l'URL (replaceState) pour que lien, retour et rechargement le conservent.
@@ -256,7 +265,12 @@
 
   function withEntityReturnTo(href, returnTo, label) {
     const value = String(href || '');
-    return ENTITY_HREF.test(value) && !/[?&]return_to=/.test(value) ? withReturnTo(value, returnTo, label) : value;
+    if (!ENTITY_HREF.test(value) || /[?&]return_to=/.test(value)) return value;
+    const target = safeReturnTarget(returnTo);
+    if (!target) return value;
+    const queryAt = target.indexOf('?');
+    const search = queryAt < 0 ? '' : target.slice(queryAt).split('#', 1)[0];
+    return withReturnTo(withContext(value, readContext(search)), target, label);
   }
 
   // Lien depuis un dashboard : fiche 360 / PO (retour vers la page courante, query comprise) ou autre dashboard
@@ -268,7 +282,7 @@
     const value = String(href);
     if (/[?&]return_to=/.test(value)) return value;
     const target = currentReturnTarget(null, loc);
-    if (ENTITY_HREF.test(value)) return target ? withReturnTo(value, target, label) : value;
+    if (ENTITY_HREF.test(value)) return target ? withEntityReturnTo(value, target, label) : value;
     if (DASHBOARD_HREF.test(value)) {
       const linked = withContext(value, readContext(loc && loc.search));
       return target ? withReturnTo(linked, target, label) : linked;
@@ -461,111 +475,6 @@
 
   function createSpaceLink(doc, space, activeSpaceId) {
     return createLink(doc, space, space.href, space.id === activeSpaceId, 'kmc-admin-secondary-link');
-  }
-
-  function runtimeIsStaging(payload) {
-    return String(payload && payload.komerce_env || '').trim().toLowerCase() === 'staging';
-  }
-
-  async function postStagingAdminAction(path, body) {
-    const response = await global.fetch(path, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
-    let payload = {};
-    try { payload = await response.json(); } catch (_) { /* réponse non JSON */ }
-    if (!response.ok) {
-      throw new Error(payload.error || payload.message || `HTTP ${response.status}`);
-    }
-    return payload;
-  }
-
-  async function mountStagingAdminTools(doc, configurationGroup) {
-    if (!configurationGroup || typeof global.fetch !== 'function') return false;
-
-    try {
-      // Fail closed: les outils destructifs ne sont projetés que lorsque
-      // le serveur lui-même déclare KOMERCE_ENV=staging.
-      const response = await global.fetch('/health', {
-        method: 'GET',
-        credentials: 'same-origin',
-        headers: { Accept: 'application/json' },
-      });
-      if (!response.ok) return false;
-      const runtime = await response.json();
-      if (!runtimeIsStaging(runtime)) return false;
-
-      const tools = doc.createElement('div');
-      tools.className = 'kmc-admin-staging-tools';
-      tools.setAttribute('data-staging-tools', 'true');
-
-      const badge = textNode(doc, 'div', 'kmc-admin-staging-badge', 'STAGING');
-      tools.appendChild(badge);
-
-      const reset = textNode(doc, 'button', 'kmc-admin-staging-action is-danger', 'Reset commandes');
-      reset.type = 'button';
-      reset.setAttribute('data-admin-action', 'reset-orders');
-
-      const seed = textNode(doc, 'button', 'kmc-admin-staging-action is-seed', 'Seed test');
-      seed.type = 'button';
-      seed.setAttribute('data-admin-action', 'seed-test');
-
-      const status = textNode(doc, 'div', 'kmc-admin-staging-status', '');
-      status.setAttribute('aria-live', 'polite');
-
-      reset.addEventListener('click', async () => {
-        const confirmFn = typeof global.confirm === 'function' ? global.confirm.bind(global) : null;
-        if (!confirmFn || !confirmFn('Supprimer toutes les commandes et données de session de test sur STAGING ?')) return;
-        reset.disabled = true;
-        seed.disabled = true;
-        status.className = 'kmc-admin-staging-status';
-        status.textContent = 'Reset en cours…';
-        try {
-          const result = await postStagingAdminAction('/api/admin/reset', { mode: 'orders', confirm: true });
-          status.className = 'kmc-admin-staging-status is-success';
-          status.textContent = result.message || 'Reset terminé.';
-        } catch (error) {
-          status.className = 'kmc-admin-staging-status is-error';
-          status.textContent = error.message || 'Échec du reset.';
-        } finally {
-          reset.disabled = false;
-          seed.disabled = false;
-        }
-      });
-
-      seed.addEventListener('click', async () => {
-        const confirmFn = typeof global.confirm === 'function' ? global.confirm.bind(global) : null;
-        if (!confirmFn || !confirmFn('Injecter les données de test sur STAGING ?')) return;
-        reset.disabled = true;
-        seed.disabled = true;
-        status.className = 'kmc-admin-staging-status';
-        status.textContent = 'Seed en cours…';
-        try {
-          const result = await postStagingAdminAction('/api/admin/seed-test', { confirm: true });
-          status.className = 'kmc-admin-staging-status is-success';
-          status.textContent = result.message || 'Seed terminé.';
-        } catch (error) {
-          status.className = 'kmc-admin-staging-status is-error';
-          status.textContent = error.message || 'Échec du seed.';
-        } finally {
-          reset.disabled = false;
-          seed.disabled = false;
-        }
-      });
-
-      tools.appendChild(reset);
-      tools.appendChild(seed);
-      tools.appendChild(status);
-      configurationGroup.appendChild(tools);
-      return true;
-    } catch (_) {
-      return false;
-    }
   }
 
   function roleLabel(user) {
@@ -1596,8 +1505,6 @@
     canOpenEntity360,
     hasCapability,
     resolveBackTarget,
-    runtimeIsStaging,
-    mountStagingAdminTools,
     visibleDomainsFor,
     visibleSpacesFor,
     visibleNavigationFor,

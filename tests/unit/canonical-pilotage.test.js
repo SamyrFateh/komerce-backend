@@ -16,7 +16,7 @@ function payloadFixture() {
     kpis_global: [
       { key: 'ca_encaisse', value: 1250000, unit: 'KMF', data_quality: {} },
       { key: 'cmds_actives', value: 12, unit: 'count', data_quality: {} },
-      { key: 'marge_consolidee', value: 18.5, unit: '%', data_quality: { warning: 'Données partielles' } },
+      { key: 'economic_period_result', value: '18.50', unit: 'EUR', data_quality: { status:'PROVISIONAL', warning: 'Données partielles' } },
       { key: 'alertes_critiques', value: 2, unit: 'count', data_quality: {}, drill_to: '/admin/action-center?severity=critical,urgent' },
       { key: 'taux_completude_couts', value: 75, unit: '%', data_quality: {} },
       { key: 'points_attention', value: 1, unit: 'count', data_quality: {}, drill_to: '/admin/action-center?severity=warning' },
@@ -136,7 +136,8 @@ describe('LOT 2C-CANON — Pilotage vivant', () => {
     const sources = pilotage.resolveSources(payloadFixture());
 
     expect(sources['pilotage.metrics']['ca-encaisse'].value).toContain('KMF');
-    expect(sources['pilotage.metrics']['marge-consolidee'].tone).toBe('warning');
+    expect(sources['pilotage.metrics']['economic-period-result']).toMatchObject({tone:'warning',value:expect.stringContaining('€')});
+    expect(sources['pilotage.metrics']['marge-consolidee']).toBeUndefined();
     expect(sources['pilotage.metrics']['alertes-critiques'].tone).toBe('critical');
     expect(sources['pilotage.alerts'][0]).toEqual(expect.objectContaining({
       level: 'critical',

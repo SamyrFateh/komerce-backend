@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 831
-- Files with full headers: 768
+- Scanned code files: 842
+- Files with full headers: 779
 - Files with lite headers: 63
-- Files with any headers: 831
+- Files with any headers: 842
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2124
-- Edges: 10620
-- DB tables: 247
-- Doctrines: 833
+- Graph nodes: 2177
+- Edges: 10875
+- DB tables: 260
+- Doctrines: 862
 - Impact areas: 213
-- Unresolved code edges: 1006
+- Unresolved code edges: 1016
 - Tables multi-écrivains directs (>=2): 100
 - Avertissements db-write / db-write-via en chevauchement: 13
 
@@ -38,14 +38,15 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - dashboard: 34
 - decision-signals: 14
 - documents: 16
-- economic-engine: 69
+- economic-engine: 76
 - external-provider-contracts: 1
 - finance: 3
 - incident-management: 5
 - infrastructure: 25
 - inventory: 2
 - local-stock: 4
-- logistics: 74
+- logistics: 76
+- logistics,purchasing: 1
 - loyalty: 3
 - market: 10
 - market-autonomy: 4
@@ -62,7 +63,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - purchasing: 53
 - recommendations: 6
 - refunds: 13
-- settlement: 2
+- settlement: 3
 - shared: 1
 - shared-cart: 25
 - shared-cart-modal: 7
@@ -93,7 +94,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 139
 - route-manifest: 1
 - schema: 1
-- service: 508
+- service: 519
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -175,6 +176,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/hub-authorization-service.js — hub-authorization-service (purchasing, critical, full)
 - services/hub-bag-box-service.js — hub-bag-box (logistics, critical, full)
 - services/hub-box-custody-scans.js — hub-box-custody-scan-service (logistics, critical, full)
+- services/hub-combox-destination-guard.js — hub-combox-destination-guard (logistics, critical, full)
 - services/hub-opaque-labels.js — hub-opaque-scan-labels (logistics, critical, full)
 - services/hub-operations.js — hub-operations (logistics, critical, full)
 - services/hub-physical-identity.js — hub-physical-identity (logistics, critical, full)
@@ -473,8 +475,15 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/documents/customs-invoice.js — customs-invoice (documents, high, full)
 - services/documents/pdf-renderer.js — private-document-pdf-renderer (documents, high, full)
 - services/economic-config.js — economic-config-canonical-bridge (economic-engine, high, full)
+- services/economic-cost-budget-service.js — economic-cost-budget-service (economic-engine, high, full)
+- services/economic-cost-center-read-model.js — economic-cost-center-read-model (economic-engine, high, full)
+- services/economic-cost-commitment-service.js — economic-cost-commitment-service (economic-engine, high, full)
+- services/economic-cost-post-actual-service.js — economic-cost-post-actual-service (economic-engine, high, full)
+- services/economic-cost-reference-service.js — economic-cost-reference-service (economic-engine, high, full)
+- services/economic-cost-write-authority.js — economic-cost-write-authority (economic-engine, high, full)
 - services/economic-engine-queries.js — economic-engine-calculation-service (economic-engine, high, full)
 - services/economic-price-audit-service.js — economic-engine-product-price-audit (economic-engine, high, full)
+- services/economic-sku-rail-selection.js — economic-sku-rail-selection (economic-engine, high, full)
 - services/external-provider-onboarding-contracts.js — external-provider-onboarding-contracts (external-provider-contracts, high, full)
 - services/finance-accounting-workspace.js — canonical-finance-accounting-workspace-service (admin-dashboard, high, full)
 - services/finance-metrics/annulations.js — economic-engine-annulations-parcels (economic-engine, high, full)
@@ -488,10 +497,13 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/hub-box-shipment-service.js — hub-box-shipment (logistics, high, full)
 - services/hub-dashboard-queries.js — dashboard-hub-dashboard-queries (dashboard, high, full)
 - services/hub-inbound-reconciliation.js — hub-inbound-reconciliation (logistics, high, full)
+- services/hub-internal-invoice-service.js — hub-internal-invoice-lifecycle (settlement, high, full)
 - services/hub-physical-codes.js — hub-physical-codes (logistics, high, full)
 - services/hub-procurement-dossier.js — hub-procurement-dossier (logistics, high, full)
 - services/hub-receive-idempotency.js — hub-receive-idempotency (logistics, high, full)
+- services/hub-reception-quality-plan.js — hub-reception-quality-plan (logistics, high, full)
 - services/hub-reference.js — hub-reference (logistics, high, full)
+- services/hub-supplier-receipt-quality.js — hub-supplier-receipt-quality (logistics,purchasing, high, full)
 - services/import-lot-registry.js — import-lot-registry-projection (admin-dashboard, high, full)
 - services/import-runtime-runs.js — import-runtime-run-projection (sourcing, high, full)
 - services/incident-escalation.js — incident-sla-escalation (incident-management, high, full)
@@ -886,8 +898,17 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/customs-shipment-service.js -> customs_shipments
 - WRITE routes/admin/delete-order-cascade.js -> disputes
 - WRITE services/dispute-mutation-service.js -> disputes
+- WRITE services/economic-cost-budget-service.js -> economic_cost_budget_revisions
+- WRITE services/economic-cost-reference-service.js -> economic_cost_centers
+- WRITE services/economic-cost-commitment-service.js -> economic_cost_commitment_movements
+- WRITE services/economic-cost-commitment-service.js -> economic_cost_commitments
+- WRITE services/economic-cost-reference-service.js -> economic_cost_families
+- WRITE services/economic-cost-reference-service.js -> economic_cost_posts
+- WRITE services/economic-cost-reference-service.js -> economic_cost_resources
+- WRITE services/economic-cost-center-read-model.js -> economic_group_period_closures
 - WRITE services/pricing-risk-period.js -> economic_risk_cost_events
 - WRITE services/pricing-risk-period.js -> economic_risk_watermark_events
+- WRITE services/economic-sku-rail-selection.js -> economic_sku_rail_selection_events
 - WRITE bootstrap/crons.js -> economic_snapshots
 - WRITE services/economic-engine-queries.js -> economic_snapshots
 - WRITE services/pricing-period-structure.js -> economic_structure_cost_events
@@ -902,15 +923,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/financial-journal.js -> financial_movement_documents
 - WRITE bootstrap/crons.js -> financial_movements
 - WRITE services/financial-journal-projectors.js -> financial_movements
-- WRITE services/financial-journal.js -> financial_movements
-- WRITE bootstrap/crons.js -> fx_public_reference_quotes
-- WRITE services/fx-public-reference-feed.js -> fx_public_reference_quotes
-- WRITE routes/admin-finance-config.js -> fx_rate_observations
-- WRITE services/fx-observation-service.js -> fx_rate_observations
-- WRITE routes/modules.js -> garment_models
-- WRITE services/hub-authorization-service.js -> hub_authorization_grants
-- WRITE services/user-mutation-service.js -> hub_authorization_grants
-- WRITE services/hub-bag-box-service.js -> hub_box_bags
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -933,6 +945,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/sourcing-source-autopilot.js -> catalog_media (via sourcing-candidate-actions)
 - WRITE services/sourcing-workspace.js -> catalog_media (via sourcing-candidate-actions)
 - WRITE services/catalog-approval.js -> catalog_publication_decision_audit (via catalog-publication-decision-audit)
+- WRITE services/economic-cost-reference-service.js -> charges (via market-structure-charge-reference)
 - WRITE routes/admin-customs-shipments.js -> customs_shipment_fees (via customs-shipment-fee-service)
 - WRITE services/shipping-customs-workspace.js -> customs_shipment_parcels (via customs-shipment-service)
 - WRITE services/international-shipment-journey.js -> customs_shipments (via customs-shipment-service)
@@ -942,11 +955,15 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/market-delegation-client-case.js -> disputes (via dispute-mutation-service)
 - WRITE services/market-delegation-client-case-service.js -> disputes (via dispute-mutation-service)
 - WRITE services/relay-return-request-service.js -> disputes (via dispute-mutation-service)
+- WRITE services/market-provisioning-service.js -> economic_cost_centers (via economic-cost-reference-service)
+- WRITE services/market-provisioning-service.js -> economic_cost_families (via economic-cost-reference-service)
 - WRITE routes/market-delegation-structure-event.js -> economic_structure_cost_events (via pricing-period-structure)
+- WRITE services/economic-cost-post-actual-service.js -> economic_structure_cost_events (via pricing-period-structure)
 - WRITE services/market-delegation-structure-event-service.js -> economic_structure_cost_events (via pricing-period-structure)
 - WRITE services/market-structure-charge-reference.js -> economic_structure_cost_events (via pricing-period-structure)
 - WRITE services/g6-hub-recipe-closure.js -> hub_custody_events (via hub-physical-identity)
 - WRITE services/hub-operations.js -> hub_custody_events (via hub-physical-identity)
+- WRITE routes/admin-market-settlement.js -> hub_internal_invoices (via hub-internal-invoice-service)
 - WRITE services/hub-operations.js -> hub_physical_unit_placements (via hub-physical-identity)
 - WRITE services/g6-hub-recipe-closure.js -> hub_physical_units (via hub-physical-identity)
 - WRITE services/hub-operations.js -> hub_physical_units (via hub-physical-identity)
@@ -993,6 +1010,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/market-delegation-team.js -> market_delegation_audit (via market-delegation-team-service)
 - WRITE routes/market-local-stock.js -> market_delegation_audit (via market-delegation-local-stock-service)
 - WRITE services/cash-custody-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/economic-cost-reference-service.js -> market_delegation_audit (via market-delegation-service)
+- WRITE services/economic-cost-write-authority.js -> market_delegation_audit (via market-delegation-service)
 - WRITE services/finance-accounting-workspace.js -> market_delegation_audit (via market-delegation-service)
 - WRITE services/market-cash-control-policy-service.js -> market_delegation_audit (via market-delegation-service)
 - WRITE services/market-delegation-catalog-service.js -> market_delegation_audit (via market-delegation-service)
@@ -1027,13 +1046,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin-market-control-plane.js -> market_transport_sale_rates (via market-transport-sale-rate-command)
 - WRITE routes/admin-market-control-plane.js -> markets (via market-provisioning-service)
 - WRITE routes/admin-market-control-plane.js -> markets (via market-lifecycle-service)
-- WRITE services/market-provisioning-service.js -> markets (via market-lifecycle-service)
-- WRITE routes/admin-market-control-plane.js -> membership_capabilities (via market-provisioning-service)
-- WRITE routes/admin/users.js -> membership_capabilities (via market-operator-provisioning)
-- WRITE routes/market-delegation-team.js -> membership_capabilities (via market-delegation-team-service)
-- WRITE services/market-delegation-team-service.js -> membership_capabilities (via market-delegation-service)
-- WRITE services/market-operator-provisioning.js -> membership_capabilities (via market-delegation-service)
-- WRITE services/market-provisioning-service.js -> membership_capabilities (via market-delegation-team-service)
 
 ## Multi-Writer Tables (>=2 écrivains directs, hors délégations)
 

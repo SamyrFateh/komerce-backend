@@ -68,6 +68,63 @@ describe('relevé de coûts du marché (D7)', () => {
     expect(resolveAuthorization).toHaveBeenCalledTimes(1);
   });
 
+  test('relevé Hub : quote-part active du centre central et total exact fourni par PostgreSQL', async () => {
+    const entry = { attribution_id: 'a1', amount_kmf: '40000.00', total_kmf: '40000.00' };
+    const db = dbWith([entry]);
+    const read = db.query.bind(db);
+    db.query = (sql, params) => sql.includes('FROM currency_parities')
+      ? Promise.resolve({ rows: [{ rate: params[0] === 'KMF' ? '491.96' : '655.957' }] })
+      : sql.includes('AS crossing_count') ? Promise.resolve({rows:[{crossing_count:0,pool_unreconciled:false}]}) : sql.includes('FROM hub_internal_invoices') ? Promise.resolve({rows:[]}) : read(sql, params);
+    const statement = await getMarketCostStatement(db, {
+      marketCode: 'CM', actorUserId: 'u1', scope: 'hub', from: '2026-09-01', to: '2026-10-01',
+    });
+    expect(db.calls[0]).toMatchObject({ params: ['m-cm', '2026-09-01T00:00:00.000Z', '2026-10-01T00:00:00.000Z'] });
+    expect(db.calls[0].sql).toContain("c.market_id IS NULL AND c.code = 'HUB_CENTRAL'");
+    expect(db.calls[0].sql).toContain('reversal.reverses_id = a.id');
+    expect(db.calls[0].sql).toContain('e.economic_from >= $2::timestamptz AND e.economic_to <= $3::timestamptz');
+    expect(statement).toMatchObject({
+      scope: 'HUB_CENTRAL', status: 'INTERNAL_STATEMENT', total_kmf: '40000.00',
+      lines: [{ attribution_id: 'a1', amount_kmf: '40000.00' }],
+      informational_totals: {
+        status: 'AVAILABLE',
+        EUR: { amount: '81.31', legs: [{ pair: 'EUR/KMF', rate: '491.96' }] },
+        XAF: { amount: '53334', legs: [{ pair: 'EUR/KMF' }, { pair: 'EUR/XAF' }] },
+      },
+    });
+    expect(statement.lines[0]).not.toHaveProperty('total_kmf');
+  });
+
+  test('relevé Hub : les montants KMF restent disponibles sans parité', async () => {
+    const db = dbWith([{ total_kmf: '100.00' }]);
+    const read = db.query.bind(db);
+    db.query = (sql, params) => sql.includes('FROM currency_parities')
+      ? Promise.resolve({ rows: [] })
+      : sql.includes('AS crossing_count') ? Promise.resolve({rows:[{crossing_count:0,pool_unreconciled:false}]}) : sql.includes('FROM hub_internal_invoices') ? Promise.resolve({rows:[]}) : read(sql, params);
+    const result = await getMarketCostStatement(db, {
+      marketCode: 'CM', actorUserId: 'u1', scope: 'hub', from: '2026-09-01', to: '2026-10-01',
+    });
+    expect(result).toMatchObject({ total_kmf: '100.00', informational_totals: { status: 'UNAVAILABLE' } });
+  });
+
+  test('relevé Hub signale une attribution à cheval sur deux périodes même sans ligne facturable',async()=>{
+    const db=dbWith([]);
+    const read=db.query.bind(db);
+    db.query=(sql,params)=>sql.includes('AS crossing_count')
+      ? Promise.resolve({rows:[{crossing_count:1,pool_unreconciled:false}]}) : read(sql,params);
+    const result=await getMarketCostStatement(db,{marketCode:'CM',actorUserId:'u1',scope:'hub',from:'2026-09-01',to:'2026-10-01'});
+    expect(result).toMatchObject({total_kmf:null,lines:[],coverage:{
+      cross_period_attribution_count:1,status:'CROSS_PERIOD_RECONCILIATION_REQUIRED'}});
+  });
+
+  test('relevé Hub : période obligatoire et date réelle', async () => {
+    const params = { marketCode: 'CM', actorUserId: 'u1', scope: 'hub' };
+    await expect(getMarketCostStatement(dbWith([]), params)).rejects.toMatchObject({ status: 400 });
+    await expect(getMarketCostStatement(dbWith([]), {
+      ...params, from: '2026-02-30', to: '2026-04-01',
+    })).rejects.toMatchObject({ status: 400 });
+    expect(resolveAuthorization).not.toHaveBeenCalled();
+  });
+
   test('exécuteur invalide : TypeError explicite', async () => {
     await expect(getMarketCostStatement(null, { marketCode: 'CM', actorUserId: 'u1' })).rejects.toThrow(TypeError);
   });
@@ -92,4 +149,40 @@ describe('route', () => {
 test('A1: route transmet seulement le rôle admin authentifié et jamais un rôle client', () => {
   expect(routeSource).toContain("req.user.role === 'admin' ? { actorRole: req.user.role }");
   expect(routeSource).not.toMatch(/req\.(query|body)\.actorRole/);
+});
+
+test('market Hub invoice reads the exact server scope and exposes the frozen reciprocal balance, not internal actors',async()=>{
+  resolveAuthorization.mockResolvedValue({market_id:'market-CM',market_code:'CM'});
+  const invoice={id:'inv-cm',exact_period:true,amount_kmf:'40000.00',issued_at:'2026-10-01',paid_at:null,
+    issued_by:'private',statement_snapshot:{market_code:'CM',total_kmf:'40000.00',
+      period:{from:'2026-09-01',to:'2026-10-01'},lines:[{attribution_id:'a1',amount_kmf:'40000.00',private:'do not expose'}],private:'internal'}};
+  const db={query:jest.fn(async(sql,params)=>{
+    if(sql.includes('FROM hub_internal_invoices'))return {rows:[invoice]};
+    if(sql.includes('AS crossing_count'))return {rows:[{crossing_count:0,pool_unreconciled:false}]};
+    if(sql.includes('FROM currency_parities'))return {rows:[]};
+    return {rows:[{attribution_id:'a2',amount_kmf:'50000.00',total_kmf:'50000.00'}]};
+  })};
+  const reply=await getMarketCostStatement(db,{marketCode:'CM',actorUserId:'member',scope:'hub',from:'2026-09-01',to:'2026-10-01'});
+  expect(reply).toMatchObject({adjustment_required:true,invoice:{id:'inv-cm',status:'ISSUED',statement_snapshot:{total_kmf:'40000.00'},
+    balance:{currency:'KMF',hub_receivable_kmf:'40000.00',market_payable_kmf:'40000.00',settlement_status:'OUTSTANDING'}}});
+  expect(reply.invoice).not.toHaveProperty('issued_by');
+  expect(reply.invoice.statement_snapshot).not.toHaveProperty('private');
+  expect(reply.invoice.statement_snapshot.lines[0]).not.toHaveProperty('private');
+  expect(db.query.mock.calls.find(([sql])=>sql.includes('FROM hub_internal_invoices'))[1]).toEqual(['market-CM','2026-09-01','2026-10-01']);
+  invoice.paid_at='2026-10-02';
+  const paid=await getMarketCostStatement(db,{marketCode:'CM',actorUserId:'member',scope:'hub',from:'2026-09-01',to:'2026-10-01'});
+  expect(paid.invoice.balance).toMatchObject({hub_receivable_kmf:'0.00',market_payable_kmf:'0.00',settlement_status:'PAYMENT_ATTESTED'});
+  resolveAuthorization.mockRejectedValueOnce(Object.assign(new Error('denied'),{status:403}));
+  db.query.mockClear();
+  await expect(getMarketCostStatement(db,{marketCode:'CG',actorUserId:'member',scope:'hub',from:'2026-09-01',to:'2026-10-01'})).rejects.toMatchObject({status:403});
+  expect(db.query).not.toHaveBeenCalled();
+});
+
+test('Hub non ventilé ou corrigé : la couverture bloque l’émission sans révéler le total des autres marchés',async()=>{
+  const db=dbWith([]);
+  const read=db.query.bind(db);
+  db.query=(sql,params)=>sql.includes('AS crossing_count')?Promise.resolve({rows:[{crossing_count:0,pool_unreconciled:true}]}):read(sql,params);
+  const statement=await getMarketCostStatement(db,{marketCode:'CM',actorUserId:'u1',scope:'hub',from:'2026-09-01',to:'2026-10-01'});
+  expect(statement.coverage).toEqual({cross_period_attribution_count:0,status:'POOL_RECONCILIATION_REQUIRED'});
+  expect(statement.total_kmf).toBeNull();
 });

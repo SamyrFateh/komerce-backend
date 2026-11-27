@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        central admin, market identity, central referent, first operating lead
  * @outputs       PROVISIONING market, ACTIVE assignment, first lead invitation/membership, readiness
- * @depends       services/market-lifecycle-service.js, services/market-delegation-service.js, services/market-operator-provisioning.js, services/market-delegation-team-service.js, services/market-scope-projector.js, services/market-cash-control-policy-service.js, services/market-payment-provider-config-service.js, services/relais-mutation-service.js, services/central-authority.js, services/market-control-plane.js
+ * @depends       services/market-lifecycle-service.js, services/market-delegation-service.js, services/market-operator-provisioning.js, services/market-delegation-team-service.js, services/market-scope-projector.js, services/market-cash-control-policy-service.js, services/market-payment-provider-config-service.js, services/relais-mutation-service.js, services/central-authority.js, services/market-control-plane.js, services/economic-cost-reference-service.js
  * @used-by       routes/admin-market-control-plane.js
  * @db-read       catalog_global_access_grants, dashboard_global_access_grants, decision_signal_global_access_grants, pricing_global_access_grants, sourcing_global_access_grants, markets, market_operating_assignments
  * @db-write      none
@@ -16,6 +16,7 @@
  * @db-write-via:market-cash-control-policy-service market_cash_control_policies
  * @db-write-via:market-payment-provider-config-service market_payment_providers
  * @db-write-via:relais-mutation-service relais
+ * @db-write-via:economic-cost-reference-service economic_cost_centers, economic_cost_families
  * @db-txn        caller-owned
  * @doctrine      compose_existing_primitives, provisioning_is_not_activation, readiness_precedes_activation
  * @impact-areas  market, market-delegation, market-control-plane, authorization
@@ -33,6 +34,7 @@ const { configureProvisioningProvider } = require('./market-payment-provider-con
 const relaisMutation = require('./relais-mutation-service');
 const centralAuthority = require('./central-authority');
 const controlPlane = require('./market-control-plane');
+const {provisionCostReferences}=require('./economic-cost-reference-service');
 
 function provisionError(code, message, status = 400) {
   const error = new Error(message);
@@ -168,6 +170,7 @@ async function configureProvisioningMarket(executor, {
     });
   }
 
+  const economicReferences=await provisionCostReferences(executor,{marketId:market.id,actorId:actorUserId});
   const control = await controlPlane.getControlPlane(executor, market.code);
   return {
     market,
@@ -177,6 +180,7 @@ async function configureProvisioningMarket(executor, {
     initial_payment_provider: initialPaymentProvider,
     initial_cash_policy: initialCashPolicy,
     initial_relais: initialRelay,
+    economic_references: economicReferences,
     readiness: control.readiness,
     gaps: control.gaps,
   };

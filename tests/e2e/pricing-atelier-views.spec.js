@@ -1,9 +1,9 @@
 /**
  * @e2e   pricing-atelier-views.spec.js
  * @feature dashboard (Atelier des prix, /admin/workspaces/pricing, marché Comores) — lot UX A
- * @brief Deux onglets économiques, Catalogue marché propriétaire du prix, dossier produit historique en route ciblée,
- *        dossier produit (sources, simulation, brouillon distinct de l'activation, sortie vers le Catalogue pays), états droits/erreur/vide,
- *        aucun débordement horizontal (desktop et mobile). API simulée : aucun serveur, aucune base, aucune écriture réelle.
+ * @brief Cockpit économique V7/V6 validé : trois onglets exclusifs, centres et postes, budget/engagement/charges,
+ *        données serveur, droits, périodes, coefficient et rapprochement de lots. Desktop uniquement pour le backoffice.
+ *        La prévision produit ciblée demeure testée. API simulée, aucune preuve staging.
  */
 'use strict';
 const fs = require('fs');
@@ -36,7 +36,7 @@ const COMPONENTS = [
   { key: 'freight_kg', label: 'Fret maritime', family: 'landed_relay', category: 'freight', unit: 'kmf_per_kg', default_value: null, allocation_method: 'by_weight', inherited: true, is_active: true },
 ];
 
-async function mount(page, { caps = {}, access = null, posts = [], search = '', components = COMPONENTS, decision = FX.decision, corridorStatus = 200, preview = null } = {}) {
+async function mount(page, { caps = {}, access = null, posts = [], search = '', components = COMPONENTS, decision = FX.decision, corridorStatus = 200, preview = null, readySelector = '.kmc-v7v6-tabs', costModel = null, costStatus = 200, actor = FX.auth_me, context = FX.context, observed = null, lots = null } = {}) {
   const market = { ...FX.market, simulation_products: PRODUCTS, cost_components: components.map(item => ({ ...item })), access: access || FX.market.access, capabilities: { ...FX.market.capabilities, ...caps } };
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
@@ -73,8 +73,15 @@ async function mount(page, { caps = {}, access = null, posts = [], search = '', 
       if (url.pathname.endsWith('/simulate-impact')) return json({ baseline: { metrics: { minimum_safe_price_kmf: 17990, recommended_price_kmf: 26990 } }, scenario: { metrics: { minimum_safe_price_kmf: 18500, recommended_price_kmf: 27600 } }, delta: { minimum_safe_price_kmf: 510, recommended_price_kmf: 610 }, persisted: false });
       return json({ ok: true });
     }
-    if (url.pathname === '/api/auth/me') return json(FX.auth_me);
-    if (url.pathname === '/api/admin/dashboard/context') return json(FX.context);
+    if (url.pathname === '/api/auth/me') return json(actor);
+    if (url.pathname === '/api/admin/dashboard/context') return json(context);
+    if (url.pathname.endsWith('/cost-centers')) {
+      if(costStatus!==200)return json({error:'Indisponible'},costStatus);
+      const month=url.searchParams.get('periodStart');
+      return json({...clone(costModel||v7Fixture()),periodStart:month,marketCode:url.pathname.includes('/market/KM/')?'KM':null});
+    }
+    if(url.pathname.endsWith('/products/margin-steering'))return json(observed||{products:[],truncated:false});
+    if(url.pathname.endsWith('/local-stock/receipt-lots'))return json(lots||{receipts:[],sales:[]});
     if (url.pathname === '/api/admin/workspaces/pricing/market/KM') return json(market);
     if (url.pathname === '/api/admin/workspaces/pricing/market/KM/decision') return json(decision);
     if (url.pathname === '/api/admin/workspaces/pricing/market/KM/decision-policy/history') return json(FX.history);
@@ -96,7 +103,7 @@ async function mount(page, { caps = {}, access = null, posts = [], search = '', 
   });
   await page.goto(`${ORIGIN}/admin/workspaces/pricing${search}`);
   if (!/market=KM/.test(search)) await page.locator('select').first().selectOption({ label: 'KM · Comores' });
-  await expect(page.locator('[data-atelier-nav]')).toBeVisible();
+  await expect(page.locator(readySelector)).toBeVisible();
 }
 
 const shot = async (page, name, viewport) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `${name}-${viewport}.png`), fullPage: true }); };
@@ -105,78 +112,172 @@ const noOverflow = async (page) => {
   expect(widths.scroll).toBeLessThanOrEqual(widths.inner);
 };
 
-for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', { width: 390, height: 844 }]]) {
-  test.describe(`Atelier des prix · lot A — ${name}`, () => {
-    test.use({ viewport });
 
-    test('deux onglets, Vue d’ensemble par défaut : KPI et priorités, rien d’autre', async ({ page }) => {
-      await mount(page);
-      await expect(page.locator('[data-atelier-nav] [role="tab"]')).toHaveText(['Vue d’ensemble', 'Coûts et paramètres'].map(label => new RegExp(`^${label}`)));
-      await expect(page.locator('[data-atelier-nav] [aria-selected="true"]')).toContainText('Vue d’ensemble');
-      await expect(page.getByRole('link', { name: 'Catalogue marché →', exact: true })).toHaveAttribute('href', /market-catalog.html\?market=KM/);
-      await expect(page.locator('.kmc-metric-card')).toHaveCount(4);
-      await expect(page.locator('.kmc-cockpit-live-badge')).toContainText('Couverture non décisionnelle');
-      await expect(page.locator('.kmc-cockpit-live-badge')).not.toContainText('Données réelles');
-      await expect(page.locator('.kmc-cockpit-live-badge')).toHaveClass(/is-unavailable/);
-      // L'ancien workspace est rendu dans un root temporaire : le résultat
-      // doit néanmoins rester présent dans le cockpit final, même non décisionnel.
-      const equilibrium = page.locator('[data-pricing-flow-equilibrium]');
-      await expect(equilibrium).toBeVisible();
-      const analyticalResult = equilibrium.locator('.kmc-flow-equilibrium-metric').filter({
-        has: page.locator('.kmc-flow-equilibrium-label', { hasText: 'Résultat après charges fixes' }),
-      });
-      await expect(analyticalResult).toHaveCount(1);
-      await expect(analyticalResult.locator('.kmc-flow-equilibrium-value')).toHaveText('—');
-
-      await expect(page.locator('[data-atelier-priorities]')).toBeVisible();
-      await expect(page.locator('[data-atelier-priorities]')).toContainText('1 ligne du modèle de coûts sans valeur');
-      await expect(page.locator('[data-atelier-priorities]')).toContainText('1 produit sans coût d’achat');
-      await expect(page.locator('[data-atelier-priorities]')).toContainText('1 produit sous le plancher moteur');
-      await expect(page.locator('[data-atelier-priorities]')).toContainText('Couverture non décisionnelle');
-      await expect(page.locator('[data-atelier-policy]')).toContainText('Non décisionnelle');
-      await expect(page.locator('[data-atelier-policy]')).toContainText('Aucune version active');
-      await expect(page.locator('[data-atelier-products]')).toBeHidden();
-      await expect(page.locator('.kmc-cockpit-costs')).toBeHidden();
-      await expect(page.locator('[data-cockpit-portfolio]')).toBeHidden();
-      await expect(page.locator('[data-atelier-priorities] input, [data-atelier-priorities] form')).toHaveCount(0);
-      const body = await page.locator('body').innerText();
-      expect(body).not.toMatch(/\bnull\b|\bundefined\b|NaN/);
-      await noOverflow(page);
-      await shot(page, '1-vue-economique', name);
-    });
-
-
-    test('résultat économique réel : même valeur serveur affichée dans le cockpit, jamais recalculée', async ({ page }) => {
-      const decision = {
-        ...FX.decision,
-        decision_status: 'UNCOVERED',
-        coverage: {
-          coverage_status: 'UNCOVERED', numerator_contribution_kmf: 720,
-          denominator_n3_kmf: 1000, coverage_ratio: 0.72,
-        },
-        flow_break_even: {
-          status: 'READY',
-          economic_state: {
-            period_contribution_kmf: 720, period_structural_charges_kmf: 1000,
-            period_n3_kmf: 1000, period_result_kmf: -280,
-          },
-          observed_mix: { reconciled_contribution_kmf: 720 },
-          economic_break_even: { gap_kmf: 280 },
-        },
-      };
-      await mount(page, { search: '?market=KM', decision });
-      const result = page.locator('[data-pricing-flow-equilibrium] .kmc-flow-equilibrium-metric').filter({
-        has: page.locator('.kmc-flow-equilibrium-label', { hasText: 'Résultat après charges fixes' }),
-      });
-      await expect(result).toHaveCount(1);
-      await expect(result.locator('.kmc-flow-equilibrium-value')).toHaveText(/-280\s*KMF/);
-      // La valeur principale est celle du serveur ; pas de formule parallèle dans Chromium.
-      await expect(page.locator('[data-pricing-flow-equilibrium]')).toHaveCount(1);
-    });
-
+function v7Fixture(overrides={}) {
+  const periodStart='2026-11-01';
+  const budgetSummary={totalEur:'1200.00',totalPosts:1,coveredPosts:1};
+  const recordedBalance={status:'RECORDED_OVER_BUDGET',recordedAvailableEur:'-100.00'};
+  const structureEvidence={amountKmf:'640000',amountEur:'1300.00'};
+  const center={id:'center1',label:'Logistique locale',is_active:true,responsible_label:'Responsable local',budgetSummary,recordedBalance,structureEvidence};
+  const family={id:'family1',center_id:'center1',label:'Locaux'};
+  const post={id:'post1',center_id:'center1',family_id:'family1',label:'Loyer relais',economic_nature:'FIXED',allocation_perimeter:'DIRECT',allocation_basis:'Mois',
+    budget:{native:'1200.00',currency:'EUR',revision:2},acceptsStructureActual:true,commitments:[],structureEvidence,recordedBalance};
+  const range={periodStart,observations:3,physicalClosedCount:4,coefficient:'1.25',purchaseKmf:'400000',transportKmf:'100000',coefficientWeightKg:'20'};
+  return {periodStart,marketCode:'KM',scope:'MARKET',central:true,costCapabilities:{},centers:[center],families:[family],posts:[post],resources:[],
+    budgetSummary,recordedBalance,structureEvidence,
+    activity:{physicalClosedCount:4,financialClosedCount:3,weightKg:'20',volumeM3:'2',receivedArticles:30,expectedArticles:30,boxCount:4,freightCustomsSubtotalKmf:'100000',shipments:[
+      {reference:'ECO-E1',rail:'sea',weightKg:'10',volumeM3:'1',purchaseKmf:'40000',freightCustomsKmf:'10000',receivedArticles:10,financialStatus:'DOCUMENTED_CLOSED'},
+      {reference:'ECO-E2',rail:'air',weightKg:'10',volumeM3:'1',receivedArticles:20,financialStatus:'PENDING'}]},
+    profitability:{groupPeriodResult:{status:'PROVISIONAL',contributionKmf:'720',resultKmf:'-280',netSalesKmf:'2000',variableCostKmf:'1280',structureKmf:'1000',actualRiskKmf:'0',evidenceHash:'ECO_TEST_HASH'},
+      salesEvidence:{observedNetSalesKmf:'2000',coveredOrderCount:2,paidOrderCount:3,pendingRefundOrders:0,terminalExceptions:0,invalidOrderCount:0},
+      ranges:{month:range,quarter:range,ytd:range},points:[]},...overrides};
+}
+const nav=page=>page.getByRole('navigation',{name:'Atelier économique',exact:true});
+const tab=async(page,label)=>{await nav(page).getByRole('button',{name:label,exact:true}).click();};
+const openPost=async page=>{
+  await page.getByRole('button',{name:'Consulter',exact:true}).click();
+  await page.getByRole('button',{name:'Loyer relais',exact:true}).click();
+};
+test.describe('Atelier économique V7/V6 — desktop 1440',()=>{
+  test.use({viewport:{width:1440,height:900}});
+  test('trois onglets exclusifs, centres par défaut et aucun ancien cockpit',async({page})=>{
+    const posts=[];
+    await mount(page,{search:'?market=KM',posts});
+    await expect(nav(page).getByRole('button')).toHaveText(['Centres de coûts','Activité','Rentabilité']);
+    await expect(nav(page).getByRole('button',{name:'Centres de coûts'})).toHaveAttribute('aria-pressed','true');
+    await expect(page.locator('[data-v7-centers]')).toBeVisible();
+    await expect(page.locator('[data-atelier-nav], .kmc-economic-family-grid')).toHaveCount(0);
+    await expect(page.locator('.kmc-v7-center-card')).toContainText('Logistique locale');
+    expect(posts).toHaveLength(0);
+    await noOverflow(page);await shot(page,'v7-centres','1440');
+  });
+  test('centre et poste : détail contextualisé, responsable, nature et attribution',async({page})=>{
+    await mount(page,{search:'?market=KM'});
+    await openPost(page);
+    const detail=page.locator('.kmc-v7-post-detail');
+    await expect(detail).toContainText('Loyer relais');
+    await expect(detail).toContainText('Fixe');
+    await expect(detail).toContainText('Direct');
+    await expect(detail).toContainText('Mois');
+    await expect(page.locator('[data-v7-centers]')).toContainText('Responsable local');
+    await expect(detail.getByRole('button',{name:'Valider le budget'})).toBeVisible();
+    await detail.getByRole('button',{name:'Fermer le détail'}).click();
+    await expect(detail).toHaveCount(0);
+    await page.getByRole('button',{name:'Tous les centres'}).click();
+    await expect(page.locator('.kmc-v7-center-card')).toHaveCount(1);
+    await noOverflow(page);
+  });
+  test('filtre des centres en écart et retour',async({page})=>{
+    const model=v7Fixture();model.centers.push({...model.centers[0],id:'center2',label:'Centre conforme',recordedBalance:{status:'RECORDED',recordedAvailableEur:'100'}});
+    await mount(page,{search:'?market=KM',costModel:model});
+    await expect(page.locator('.kmc-v7-center-card')).toHaveCount(2);
+    await page.getByRole('button',{name:'Centres en écart'}).click();
+    await expect(page.locator('.kmc-v7-center-card')).toHaveCount(1);
+    await page.getByRole('button',{name:'Tous les centres'}).click();
+    await expect(page.locator('.kmc-v7-center-card')).toHaveCount(2);
+  });
+  test('ajout d’un poste : aucune écriture avant validation, périmètre et nature transmis',async({page})=>{
+    const posts=[];await mount(page,{search:'?market=KM',posts});
+    await page.getByRole('button',{name:'Consulter',exact:true}).click();
+    await page.getByText('Ajouter un poste',{exact:true}).click();
+    const form=page.locator('details').filter({has:page.getByText('Ajouter un poste',{exact:true})}).locator('form');
+    await form.locator('[name=label]').fill('Entretien relais');
+    await form.locator('[name=code]').fill('ENTRETIEN_RELAIS');
+    await form.locator('[name=allocationBasis]').fill('Mois');
+    await form.locator('[name=source]').selectOption('STRUCTURE');
+    await form.locator('[name=reason]').fill('Justificatif recette');
+    expect(posts).toHaveLength(0);
+    await form.getByRole('button',{name:'Créer le poste'}).click();
+    await expect.poll(()=>posts.length).toBe(1);
+    expect(posts[0]).toMatchObject({path:'/api/admin/workspaces/pricing/market/KM/cost-centers/families/family1/posts',body:{label:'Entretien relais',economicNature:'FIXED',allocationPerimeter:'DIRECT',allocationBasis:'Mois',source:'STRUCTURE'}});
+  });
+  test('lecture seule : aucune action de configuration ni écriture de budget',async({page})=>{
+    const actor={...FX.auth_me,role:'market_operator'},context={...FX.context,actor:{...FX.context.actor,role:'market_operator'},access:{...FX.context.access,mode:'market',allowedMarkets:['KM'],defaultMarket:'KM',capabilities:['finance.read','pricing.read'],delegatedCapabilities:{KM:['finance.read','pricing.read','dashboard.market.read']}}};
+    await mount(page,{search:'?market=KM',actor,context,costModel:v7Fixture({central:false,costCapabilities:{}})});
+    await expect(page.getByRole('button',{name:'Initialiser les centres et familles'})).toHaveCount(0);
+    await openPost(page);
+    await expect(page.getByRole('button',{name:'Valider le budget'})).toHaveCount(0);
+    await expect(page.getByRole('button',{name:'Enregistrer la charge'})).toHaveCount(0);
+    await tab(page,'Rentabilité');
+    await expect(page.getByRole('button',{name:'Rapprocher les lots locaux'})).toHaveCount(0);
+  });
+  test('activité : expéditions, poids, rails et clôture distincte',async({page})=>{
+    await mount(page,{search:'?market=KM'});
+    await tab(page,'Activité');
+    const activity=page.locator('.kmc-v6-activity');
+    await expect(activity).toContainText('ECO-E1 · Maritime');
+    await expect(activity).toContainText('ECO-E2 · Aérien');
+    await expect(activity).toContainText('Financièrement clôturée');
+    await expect(activity).toContainText('Financier à rapprocher');
+    await expect(page.locator('[data-v7-centers]')).toHaveCount(0);
+    await noOverflow(page);await shot(page,'v6-activite','1440');
+  });
+  test('rentabilité : résultat serveur négatif, distinct du coefficient partiel',async({page})=>{
+    await mount(page,{search:'?market=KM'});
+    await tab(page,'Rentabilité');
+    await expect(page.locator('.kmc-v6-profitability')).toContainText('-280 KMF');
+    await expect(page.locator('.kmc-v6-profitability')).toContainText('Observation partielle achat + transport — non décisionnelle');
+    await expect(page.getByRole('button',{name:'Année à date'})).toHaveAttribute('aria-pressed','true');
+    await page.getByRole('button',{name:'Mois',exact:true}).click();
+    await expect(page.getByRole('button',{name:'Mois',exact:true})).toHaveAttribute('aria-pressed','true');
+    await noOverflow(page);await shot(page,'v6-rentabilite','1440');
+  });
+  test('clôture du résultat : attestation et justificatif obligatoires',async({page})=>{
+    const posts=[];await mount(page,{search:'?market=KM',posts});
+    await tab(page,'Rentabilité');
+    const close=page.getByRole('button',{name:'Valider la clôture'});
+    await close.click();
+    await expect(page.getByText('Confirmez la revue et renseignez le justificatif.')).toBeVisible();
+    expect(posts).toHaveLength(0);
+    await page.getByLabel('Référence du justificatif',{exact:true}).fill('ECO-RECETTE');
+    await page.getByLabel('Ventes, remboursements, coûts et pertes du mois vérifiés').check();
+    await close.click();
+    await expect.poll(()=>posts.length).toBe(1);
+    expect(posts[0]).toMatchObject({path:'/api/admin/workspaces/pricing/market/KM/cost-centers/close-period',body:{evidenceHash:'ECO_TEST_HASH',evidenceRef:'ECO-RECETTE',attested:true}});
+  });
+  test('prix de revient : rails séparés, valeur réelle et statut serveur',async({page})=>{
+    const posts=[];await mount(page,{search:'?market=KM',posts,observed:{truncated:false,products:[{product_name:'SKU témoin',observed_landed_cost:[
+      {sku_reference:'SKU1',rail:'sea',unit_cost_kmf:7719.68,estimated_unit_cost_kmf:7000,observed_multiplier:1.5691,estimated_vs_real_pct:10.28,status:'DECISIONAL',observations:3,incomplete_lines:0,provisional_lines:0},
+      {sku_reference:'SKU1',rail:'LOCAL_STOCK',unit_cost_kmf:5200,estimated_unit_cost_kmf:null,observed_multiplier:1.04,status:'INSUFFICIENT_OBSERVATIONS',observations:2,incomplete_lines:1,provisional_lines:0}]}]}});
+    await tab(page,'Rentabilité');
+    await page.getByRole('button',{name:'Afficher les prix de revient'}).click();
+    const actual=page.locator('.kmc-v7-metric').filter({hasText:'SKU témoin · SKU1 · Maritime'});
+    await expect(actual).toContainText(/7\s*719,68 KMF/);
+    await expect(actual).toContainText('Décisionnel');
+    const local=page.locator('.kmc-v7-metric').filter({hasText:'SKU témoin · SKU1 · Stock local'});
+    await expect(local).toContainText('Indicatif');
+    await expect(local).toContainText('2 lot(s)');
+    expect(posts).toHaveLength(0);
+  });
+  test('lot local : rattachement quantifié, justificatif et marché explicite',async({page})=>{
+    const posts=[];await mount(page,{search:'?market=KM',posts,lots:{receipts:[{receipt_id:'L1',sku_id:'SKU1',product_name:'Produit local',sku_reference:'SKU1',quantity:10,linked_quantity:2,receipt_proof_ref:'BL-1',purchase_total_kmf:'50000',closed_at:'2026-11-01',received_at:'2026-11-01'}],sales:[{order_item_id:'OI1',sku_id:'SKU1',order_reference:'O1',quantity:10,remaining_quantity:6,sold_at:'2026-11-02'}]}});
+    await tab(page,'Rentabilité');await page.getByRole('button',{name:'Rapprocher les lots locaux'}).click();
+    await page.getByLabel('Lot reçu',{exact:true}).selectOption('L1');
+    await page.getByLabel('Quantité attestée de ce lot').fill('4');
+    await page.getByLabel('Justificatif du rattachement physique').fill('Scan lot 1');
+    await page.getByRole('button',{name:'Rattacher la vente attestée'}).click();
+    await expect.poll(()=>posts.length).toBe(1);
+    expect(posts[0]).toMatchObject({path:'/api/admin/costing/local-stock/receipt-lots/link',body:{receipt_id:'L1',order_item_id:'OI1',quantity:4,lot_proof_ref:'Scan lot 1',market_code:'KM'}});
+  });
+  test('absence de données : aucune valeur inventée, aucune ancienne vue',async({page})=>{
+    await mount(page,{search:'?market=KM',costStatus:503,readySelector:'.kmc-v7v6-session'});
+    await expect(page.getByText('Données économiques indisponibles pour cette période.')).toBeVisible();
+    await expect(nav(page)).toHaveCount(0);
+    await expect(page.locator('[data-atelier-nav]')).toHaveCount(0);
+  });
+  test('changement de mois : nouvelle requête et maintien de l’onglet actif',async({page})=>{
+    await mount(page,{search:'?market=KM'});
+    await tab(page,'Activité');
+    const select=page.getByLabel('Période économique');
+    const previous=await select.locator('option').nth(1).getAttribute('value');
+    const read=page.waitForRequest(r=>r.url().includes('/cost-centers?periodStart='+previous));
+    await select.selectOption(previous);await read;
+    await expect(nav(page).getByRole('button',{name:'Activité'})).toHaveAttribute('aria-pressed','true');
+    await expect(page.locator('.kmc-v6-activity')).toBeVisible();
+  });
     test('Prévision avant vente : trois scénarios explicites, lecture seule, aucun prix choisi', async ({ page }) => {
       const posts = [];
-      await mount(page, { posts, search: '?market=KM&product_ref=KPR-900002' });
+      await mount(page, { posts, search: '?market=KM&product_ref=KPR-900002', readySelector: '[data-atelier-forecast]' });
       const detail = page.locator('[data-atelier-forecast]');
       await expect(detail).toHaveCount(1);
       await expect(detail).toContainText('NON VÉRIFIÉES');
@@ -216,438 +317,5 @@ for (const [name, viewport] of [['1440', { width: 1440, height: 900 }], ['390', 
       await noOverflow(page);
     });
 
-    test('Produits à décider : file triée par urgence, une action principale par ligne', async ({ page }) => {
-      await mount(page);
-      await page.goto(`${ORIGIN}/admin/workspaces/pricing?market=KM&view=products`);
-      const rows = page.locator('[data-atelier-queue] .kmc-atelier-row:not(.is-head)');
-      await expect(rows).toHaveCount(5); // le produit actif n'est pas « à traiter »
-      await expect(rows.first()).toHaveAttribute('data-state', 'cost_missing');
-      await expect(rows.nth(1)).toHaveAttribute('data-state', 'under_floor');
-      await expect(rows.first().locator('.kmc-atelier-primary')).toHaveText('Compléter le coût');
-      await expect(rows.first()).toContainText('MANQUANT');
-      for (let i = 0; i < 5; i += 1) await expect(rows.nth(i).locator('.kmc-atelier-primary')).toHaveCount(1);
-      await expect(page).toHaveURL(/view=products/);
-      await page.locator('[data-atelier-filter-chip="active"]').click();
-      await expect(rows).toHaveCount(1);
-      await page.locator('[data-atelier-search]').fill('introuvable');
-      await expect(page.locator('.kmc-atelier-empty')).toContainText('Aucun produit ne correspond');
-      await noOverflow(page);
-      await page.locator('[data-atelier-search]').fill('');
-      await page.locator('[data-atelier-filter-chip="todo"]').click();
-      await shot(page, '2-produits-a-decider', name);
-    });
 
-    test('dossier : sources à gauche, décision à droite, brouillon distinct de l’activation, sortie Catalogue pays', async ({ page }) => {
-      const posts = [];
-      await mount(page, { caps: { local_price_drafts: true, simulation: true, manage_market_price_observations: true }, posts });
-      await page.goto(`${ORIGIN}/admin/workspaces/pricing?market=KM&view=products`);
-      await page.locator('[data-product-ref="KPR-900002"] [data-atelier-open]').click();
-      const dossier = page.locator('[data-atelier-dossier="KPR-900002"]');
-      await expect(dossier).toBeVisible();
-      await expect(page).toHaveURL(/product_ref=KPR-900002/);
-      await expect(dossier.locator('[data-atelier-sources]')).toContainText('Boutique Moroni');
-      await expect(dossier.locator('[data-atelier-decision]')).toContainText('Plancher moteur');
-      await expect(dossier.locator('[data-atelier-verdict]')).toContainText('Activation refusée par le serveur');
-      await expect(dossier.locator('[data-atelier-verdict]')).toContainText('Politique de marché requise');
-      // aucun bouton d'activation dans l'Atelier : le geste final est dans le Catalogue pays
-      await expect(dossier.getByRole('button', { name: /activer/i })).toHaveCount(0);
-      const link = dossier.locator('[data-atelier-catalogue]');
-      await expect(link).toHaveText('Activer dans le Catalogue pays →');
-      const href = await link.getAttribute('href');
-      expect(href).toContain('/dashboards/canonical/market-catalog.html?market=KM&product_ref=KPR-900002');
-      expect(href).toContain('return_to=');
-      await shot(page, '3-dossier-produit', name);
-      // simulation : lecture seule, aucune écriture de prix
-      await dossier.locator('details.kmc-atelier-sim > summary').click();
-      await dossier.locator('[data-atelier-sim-form] select[name="key"]').selectOption('cash_fee_kmf');
-      await dossier.locator('[data-atelier-sim-form] input[name="value"]').fill('600');
-      await dossier.locator('[data-atelier-sim-form] button[type="submit"]').click();
-      await expect(dossier.locator('[data-atelier-sim-result]')).toContainText('Aucune donnée n’est enregistrée');
-      expect(posts.map(post => post.path)).toEqual(['/api/admin/workspaces/pricing/market/KM/simulate-impact']);
-      expect(posts[0].body.overrides).toEqual([{ key: 'cash_fee_kmf', default_value: 600 }]);
-      // brouillon : étape explicite, jamais d'activation
-      await dossier.locator('[data-atelier-draft-form] input[name="amount"]').fill('31000');
-      await dossier.locator('[data-atelier-draft-form] button[type="submit"]').click();
-      await expect(page.locator('[data-atelier-feedback]')).toContainText('Brouillon enregistré');
-      await expect(page.locator('[data-atelier-result]')).toContainText('Ce qui change');
-      await expect(page.locator('[data-atelier-result] a[href*="market-catalog.html"]')).toBeVisible();
-      await expect(page.locator('[data-atelier-observations]')).toContainText('Boutique Moroni');
-      expect(posts.map(post => post.path)).toEqual([
-        '/api/admin/workspaces/pricing/market/KM/simulate-impact',
-        '/api/admin/workspaces/pricing/market/KM/products/KPR-900002/local-price',
-      ]);
-      expect(posts[1].body).toMatchObject({ amount: 31000, source: 'atelier_dossier' });
-      expect(posts.some(post => /\/activate$/.test(post.path))).toBe(false);
-      // observation sourcée
-      await page.locator('.kmc-atelier-observation-add > summary').click();
-      await page.locator('[data-atelier-observation-form] input[name="competitor_name"]').fill('Boutique Mitsamiouli');
-      await page.locator('[data-atelier-observation-form] input[name="amount"]').fill('29000');
-      await page.locator('[data-atelier-observation-form] input[name="source"]').fill('relevé terrain');
-      await page.locator('[data-atelier-observation-form] button[type="submit"]').click();
-      await expect(page.locator('[data-atelier-feedback]')).toContainText('Observation enregistrée');
-      expect(posts[2]).toMatchObject({ path: '/api/admin/workspaces/pricing/market/KM/price-observations', body: { product_ref: 'KPR-900002', competitor_name: 'Boutique Mitsamiouli', amount: 29000, source: 'relevé terrain' } });
-      await noOverflow(page);
-      await page.locator('[data-atelier-back]').click();
-      await expect(page.locator('[data-atelier-queue]')).toBeVisible();
-      await expect(page).not.toHaveURL(/product_ref=/);
-    });
-
-    test('sans droit de décision : simulation lisible, aucun formulaire de prix ni d’observation', async ({ page }) => {
-      await mount(page, { search: '?market=KM&product_ref=KPR-900005' });
-      await expect(page.locator('[data-atelier-dossier="KPR-900005"]')).toBeVisible();
-      await expect(page.locator('[data-atelier-nav] [aria-selected="true"]')).toContainText('Produits à décider');
-      await expect(page.locator('[data-atelier-draft-form], [data-atelier-observation-form]')).toHaveCount(0);
-      await expect(page.locator('[data-atelier-sim-form]')).toHaveCount(1);
-      await expect(page.locator('[data-atelier-decision]')).toContainText('Droit pricing.decide absent');
-      await expect(page.locator('[data-atelier-decision]')).toContainText('Enregistrez d’abord un prix pays en brouillon');
-      await expect(page.locator('[data-atelier-catalogue]')).toHaveCount(0);
-    });
-
-    test('coût absent : décision bloquée, aucun prix proposé, renvoi vers la fiche produit', async ({ page }) => {
-      await mount(page, { caps: { local_price_drafts: true, simulation: true }, search: '?market=KM&product_ref=KPR-900001' });
-      const decision = page.locator('[data-atelier-decision]');
-      await expect(decision).toContainText('Décision bloquée');
-      await expect(decision).toContainText('Indisponible');
-      await expect(page.locator('[data-atelier-draft-form], [data-atelier-sim-form]')).toHaveCount(0);
-    });
-
-    test('Modèle de coûts : trois colonnes et modification directe par ligne', async ({ page }) => {
-      const posts = [];
-      await mount(page, { posts });
-      await page.locator('[data-atelier-view="costs"]').click();
-      await expect(page).toHaveURL(/view=costs/);
-      await expect(page.locator('.kmc-cockpit-costs')).toBeVisible();
-      await expect(page.locator('[data-atelier-products]')).toBeHidden();
-      await expect(page.locator('.kmc-metric-card').first()).toBeHidden();
-      const costs = page.locator('.kmc-cockpit-costs');
-      await expect(costs).toHaveAttribute('data-cost-layout', 'columns');
-      await expect(page.locator('[data-cost-layout-button]')).toHaveCount(0);
-      const cards = page.locator('.kmc-economic-family-grid > .kmc-cockpit-cost-card');
-      await expect(cards).toHaveCount(3);
-      await expect(cards.nth(0)).toBeVisible();
-      await expect(cards.nth(1)).toBeVisible();
-      await expect(cards.nth(2)).toBeVisible();
-      await expect(page.locator('.kmc-cockpit-cost-card.is-variable [data-edit-inline-cost]')).toHaveCount(3);
-      await expect(page.locator('.kmc-cockpit-cost-card.is-variable [data-cost-family-preview]')).toContainText('Frais Stripe');
-      if (name === '1440') {
-        const widths = await page.evaluate(() => {
-          const rect = node => node.getBoundingClientRect();
-          const nodes = [...document.querySelectorAll('.kmc-economic-family-grid > .kmc-cockpit-cost-card')];
-          return nodes.map(node => ({x:rect(node).x, y:rect(node).y, width:rect(node).width}));
-        });
-        expect(widths[0].x).toBeLessThan(widths[1].x);
-        expect(widths[1].x).toBeLessThan(widths[2].x);
-        expect(Math.max(...widths.map(x => x.y)) - Math.min(...widths.map(x => x.y))).toBeLessThan(3);
-        expect(Math.min(...widths.map(x => x.width))).toBeGreaterThan(210);
-      }
-      // Le modèle n'invente pas des parts fixes/variables à partir d'unités non comparables.
-      const reading = page.locator('[data-economic-cost-reading]');
-      await expect(reading).toBeHidden();
-      await page.locator('[data-atelier-view="economic"]').click();
-      await expect(reading).toBeVisible();
-      await expect(reading.locator('.kmc-economic-reading-item')).toHaveCount(3);
-      await expect(reading).toContainText('Le produit contribue. Le portefeuille couvre.');
-      await expect(reading).toContainText('Prix − coûts variables (N1 + N2)');
-      await expect(reading).toContainText('Fixes directs + fixes mutualisés');
-      await expect(reading).toContainText('Non encore calculable');
-      const costMixLabel = await reading.locator('.kmc-economic-reading-item.is-mix').innerText();
-      expect(costMixLabel).not.toMatch(/\d+(?:[,.]\d+)?\s*%/);
-      await page.locator('[data-atelier-view="costs"]').click();
-      if (name === '1440') {
-        const widths = await page.evaluate(() => {
-          const section = document.querySelector('.kmc-cockpit-costs');
-          const reading = document.querySelector('[data-economic-cost-reading]');
-          return { section: section.getBoundingClientRect().width, readingInCostTab: section.contains(reading), readingInCockpit: Boolean(reading && reading.closest('[data-pricing-economic-cockpit]')) };
-        });
-        expect(widths.section).toBeGreaterThan(0);
-        expect(widths.readingInCostTab).toBe(false);
-        expect(widths.readingInCockpit).toBe(true);
-      }
-      await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toContainText('Base globale héritée');
-      await expect(page.locator('.kmc-cockpit-cost-card.is-variable')).toContainText('Base globale : 3,2 %');
-      await expect(page.locator('.kmc-cockpit-cost-card.is-variable [data-expand-cost-family]')).toHaveCount(0);
-      await expect(page.locator('.kmc-cockpit-cost-card.is-variable .kmc-cockpit-cost-table')).toHaveCount(0);
-      await expect(page.locator('.kmc-cockpit-cost-card.is-fixed-mutualized')).toHaveAttribute('data-read-only', 'false');
-      const principles = page.locator('details.kmc-economic-principles-detail');
-      await expect(principles).not.toHaveAttribute('open', '');
-      await principles.locator('summary').click();
-      await expect(principles).toHaveAttribute('open', '');
-      await expect(principles).toContainText('Toute quote-part mutualisée');
-      const row = page.locator('[data-inline-cost-row="cash_fee_kmf"]');
-      await expect(row).toContainText('500 KMF/commande');
-      await row.locator('[data-edit-inline-cost]').click();
-      const input = row.locator('[data-inline-cost-value]');
-      await expect(input).toHaveValue('500');
-      await expect(row).toContainText('Valeur actuelle : 500 KMF/commande');
-      if (name === '1440') {
-        const xy = await row.evaluate(node => {
-          const previous = node.querySelector('.kmc-inline-cost-last').getBoundingClientRect();
-          const input = node.querySelector('[data-inline-cost-value]').getBoundingClientRect();
-          return { previousX: previous.x, previousY: previous.y, inputX: input.x, inputY: input.y };
-        });
-        expect(xy.inputX).toBeGreaterThan(xy.previousX);
-        expect(Math.abs(xy.inputY - xy.previousY)).toBeLessThan(16);
-      }
-      await shot(page, '4-cout-en-mode-edition', name);
-      await input.fill('');
-      await row.locator('.kmc-inline-cost-save').click();
-      await expect(row.locator('[data-inline-cost-message]')).toContainText('Valeur invalide');
-      expect(posts).toHaveLength(0);
-      await input.fill('520');
-      await row.locator('.kmc-inline-cost-save').click();
-      await expect.poll(() => posts.some(post => post.path.endsWith('/market/KM/cost-components/cash_fee_kmf/update')
-        && post.body.default_value === 520)).toBe(true);
-      await expect(page.locator('[data-inline-cost-row="cash_fee_kmf"]')).toContainText('520 KMF/commande');
-      await expect(page.locator('[data-inline-cost-row="cash_fee_kmf"] [data-inline-cost-form]')).toHaveCount(0);
-      await page.locator('[data-inline-cost-row="stripe_fee_pct"] [data-edit-inline-cost]').click();
-      await page.locator('[data-inline-cost-row="stripe_fee_pct"] [data-cancel-inline-cost]').click();
-      await expect(page.locator('[data-inline-cost-row="stripe_fee_pct"] [data-inline-cost-form]')).toHaveCount(0);
-      await noOverflow(page);
-      await shot(page, '4-couts-edition-en-ligne', name);
-    });
-
-    test('priorité → file filtrée, retour conservé dans l’URL', async ({ page }) => {
-      await mount(page);
-      await page.locator('[data-atelier-go="products"][data-atelier-filter="under_floor"]').click();
-      await expect(page.locator('[data-atelier-queue] .kmc-atelier-row:not(.is-head)')).toHaveCount(1);
-      await expect(page.locator('[data-atelier-filter-chip="under_floor"]')).toHaveAttribute('aria-pressed', 'true');
-    });
-
-    test('erreur serveur : message explicite par ligne, aucune valeur inventée', async ({ page }) => {
-      await mount(page, { corridorStatus: 500 });
-      await page.goto(`${ORIGIN}/admin/workspaces/pricing?market=KM&view=products`);
-      await expect(page.locator('.kmc-atelier-alert-inline').first()).toContainText('Indisponible');
-      await expect(page.locator('[data-atelier-priorities]')).not.toContainText('produit sans');
-    });
-  });
-}
-
-test.describe('Moteur économique · détails et édition unifiés des trois colonnes — 1440', () => {
-  test.use({ viewport: { width: 1440, height: 900 } });
-
-  test('pas de tableau détail redondant : une seule liste et un ajout sur les fixes directs', async ({ page }) => {
-    await mount(page, { decision: DEMO.decision, caps: { can_manage_structure_events: true },
-      access: { ...FX.market.access, role:'global_admin' }, search:'?market=KM&view=costs' });
-    const cards=page.locator('.kmc-economic-family-grid [data-cost-summary]');
-    await expect(cards).toHaveCount(3);
-    await expect(page.locator('[data-expand-cost-family]')).toHaveCount(0);
-    await expect(page.locator('.kmc-economic-family-grid .kmc-cockpit-cost-table')).toHaveCount(0);
-    for(const type of ['variable','fixed-direct','fixed-mutualized']){
-      await expect(page.locator(`[data-cost-summary="${type}"] .kmc-economic-family-preview`)).toBeVisible();
-    }
-    await expect(page.locator('[data-cost-summary="fixed-direct"] [data-add-fixed-direct]')).toBeVisible();
-    await expect(page.locator('[data-cost-summary="fixed-mutualized"] [data-add-fixed-direct]')).toHaveCount(0);
-    await noOverflow(page);
-  });
-
-  test('nouveau fixe direct : un poste et un fait avec preuve, aucun POST avant validation', async ({ page }) => {
-    const posts=[];
-    await mount(page,{decision:DEMO.decision,caps:{can_manage_structure_events:true},posts,
-      search:'?market=KM&view=costs'});
-    await page.locator('[data-add-fixed-direct]').click();
-    const host=page.locator('[data-new-fixed-editor-host]');
-    await expect(host).toBeVisible();
-    await expect(host.locator('[data-new-fixed-reference]')).toBeVisible();
-    await host.locator('[data-new-fixed-name]').fill('Loyer local Moroni');
-    await host.locator('[data-new-fixed-description]').fill('Loyer mensuel exclusivement KM');
-    await host.locator('[name="amount_original"]').fill('85000');
-    await host.locator('.kmc-structure-panel-btn-primary').click();
-    await expect(host.locator('.kmc-structure-panel-error')).toContainText('période');
-    expect(posts.filter(x=>x.path.endsWith('/structure-charges'))).toHaveLength(0);
-    await host.locator('[name="economic_from"]').fill('2026-10-01');
-    await host.locator('[name="economic_to"]').fill('2026-11-01');
-    await host.locator('[name="evidence_ref"]').fill('contract://km/loyer-octobre');
-    await host.locator('.kmc-structure-panel-btn-primary').click();
-    await expect.poll(()=>posts.filter(x=>x.path.endsWith('/structure-charges')).length).toBe(1);
-    const posted=posts.find(x=>x.path.endsWith('/structure-charges'));
-    expect(posted.body.reference).toMatchObject({name:'Loyer local Moroni',
-      description:'Loyer mensuel exclusivement KM',recurrence_period:'monthly'});
-    expect(posted.body.event).toMatchObject({amount_original:85000,
-      event_kind:'ACCRUAL',evidence_ref:'contract://km/loyer-octobre'});
-    expect(posted.body.event.market_id).toBeUndefined();
-    expect(posted.body.event.scope_kind).toBeUndefined();
-  });
-
-
-  test('libellé et description : édition directe sur la même ligne, sans modifier le montant', async ({ page }) => {
-    const posts=[];
-    const decision=clone(DEMO.decision);
-    const charge=decision.coverage.structure.evidence
-      .find(item=>item.charge_id==='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1');
-    expect(charge).toBeTruthy();
-    charge.reference_is_market_owned=true;
-    charge.charge_name='Loyer local';
-    charge.charge_description='Ancienne description';
-    await mount(page,{decision,caps:{can_manage_structure_events:true},
-      posts,search:'?market=KM&view=costs'});
-    const row=page.locator('[data-inline-structure-row="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1"]');
-    await expect(row.locator('[data-edit-fixed-description]')).toHaveText('Modifier libellé et description');
-    await row.locator('[data-edit-fixed-description]').click();
-    const form=row.locator('[data-edit-fixed-description-form]');
-    await expect(form).toBeVisible();
-    await expect(form.locator('[data-edit-fixed-label]')).toHaveValue('Loyer local');
-    await expect(form.getByRole('textbox',{name:'Description du poste fixe'})).toHaveValue('Ancienne description');
-    await form.locator('[data-edit-fixed-label]').fill('Antenne commerciale KM');
-    await form.getByRole('textbox',{name:'Description du poste fixe'}).fill('Bureau Moroni, abonnement mensuel');
-    expect(posts).toHaveLength(0);
-    await form.getByRole('button',{name:'Enregistrer'}).click();
-    await expect.poll(()=>posts.filter(x=>x.method==='PATCH').length).toBe(1);
-    expect(posts.find(x=>x.method==='PATCH')).toMatchObject({
-      path:'/api/admin/workspaces/pricing/market/KM/structure-charges/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1/description',
-      body:{name:'Antenne commerciale KM',description:'Bureau Moroni, abonnement mensuel'},
-    });
-    expect(posts.filter(x=>x.path.endsWith('/structure-events'))).toHaveLength(0);
-  });
-
-  test('un opérateur marché ne peut pas renommer un coût mutualisé ou partagé', async ({ page }) => {
-    const posts=[];
-    await mount(page,{decision:DEMO.decision,caps:{can_manage_structure_events:true},
-      access:{...FX.market.access,role:'manager'},
-      posts,search:'?market=KM&view=costs'});
-    await expect(page.locator('[data-cost-summary="fixed-mutualized"] [data-edit-fixed-description]')).toHaveCount(0);
-    await expect(page.locator('[data-cost-summary="variable"] [data-edit-fixed-description]')).toHaveCount(0);
-    await expect(page.locator('[data-cost-summary="fixed-direct"] [data-edit-fixed-description]')).toHaveCount(0);
-    expect(posts).toHaveLength(0);
-  });
-
-  test('chaque famille conserve la même grille libellé / montant / action', async ({ page }) => {
-    await mount(page, { decision: DEMO.decision, caps: { can_manage_structure_events: true },
-      access: { ...FX.market.access, role: 'global_admin' }, search: '?market=KM&view=costs' });
-    const selectors = ['variable', 'fixed-direct', 'fixed-mutualized'];
-    for (const family of selectors) {
-      const row = page.locator(`[data-cost-summary="${family}"] .kmc-economic-family-preview-row`).first();
-      await expect(row.locator('.kmc-economic-family-preview-label')).toBeVisible();
-      await expect(row.locator('.kmc-economic-family-preview-value')).toBeVisible();
-      const button = row.locator('[data-edit-inline-cost], [data-edit-structure-charge]');
-      const readonly = row.locator('.kmc-inline-cost-readonly');
-      expect((await button.count()) + (await readonly.count())).toBe(1);
-      const positions = await row.evaluate(node => {
-        const label = node.querySelector('.kmc-economic-family-preview-label').getBoundingClientRect();
-        const value = node.querySelector('.kmc-economic-family-preview-value').getBoundingClientRect();
-        const action = node.querySelector('[data-edit-inline-cost], [data-edit-structure-charge], .kmc-inline-cost-readonly').getBoundingClientRect();
-        return { labelRight: label.right, valueLeft: value.left, valueRight: value.right, actionLeft: action.left };
-      });
-      expect(positions.labelRight).toBeLessThanOrEqual(positions.valueLeft + 2);
-      expect(positions.valueRight).toBeLessThanOrEqual(positions.actionLeft + 2);
-    }
-    await noOverflow(page);
-  });
-
-  test('fixe direct : modification sur ligne, valeur précédente à côté, période et preuve obligatoires', async ({ page }) => {
-    const posts = [];
-    await mount(page, { decision: DEMO.decision, caps: { can_manage_structure_events: true },
-      posts, search: '?market=KM&view=costs' });
-    const row = page.locator('[data-inline-structure-row="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1"]');
-    const edit = row.locator('[data-edit-structure-charge]');
-    await expect(edit).toHaveText('Modifier');
-    await edit.click();
-    const inline = row.locator('[data-structure-inline-editor]');
-    await expect(inline).toBeVisible();
-    await expect(inline).toContainText('250 000 KMF');
-    const from = inline.locator('[name="economic_from"]');
-    const to = inline.locator('[name="economic_to"]');
-    const amount = inline.locator('[name="amount_original"]');
-    await amount.fill('240000');
-    await inline.locator('.kmc-structure-panel-btn-primary').click();
-    await expect(inline.locator('.kmc-structure-panel-error')).toContainText('période');
-    expect(posts.filter(item => item.path.endsWith('/structure-events'))).toHaveLength(0);
-    await from.fill('2026-09-01');
-    await to.fill('2026-10-01');
-    await inline.locator('[name="evidence_ref"]').fill('invoice://km/demo-fixed');
-    const coords = await row.evaluate(node => {
-      const previous = node.querySelector('.kmc-structure-inline-previous').getBoundingClientRect();
-      const input = node.querySelector('[name="amount_original"]').getBoundingClientRect();
-      return { oldX: previous.x, oldY: previous.y, newX: input.x, newY: input.y };
-    });
-    expect(coords.newX).toBeGreaterThan(coords.oldX);
-    expect(Math.abs(coords.newY - coords.oldY)).toBeLessThan(60);
-    await shot(page, '8-charge-fixe-edition-ligne', '1440');
-    await inline.locator('.kmc-structure-panel-btn-primary').click();
-    await expect.poll(() => posts.filter(item => item.path.endsWith('/market/KM/structure-events')).length).toBe(1);
-    const item = posts.find(item => item.path.endsWith('/market/KM/structure-events'));
-    expect(item.body).toMatchObject({
-      charge_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',
-      amount_original: 240000, currency: 'KMF',
-      event_kind: 'ACCRUAL', evidence_ref: 'invoice://km/demo-fixed',
-    });
-  });
-
-  test('mutualisés : affichage identique, modification GROUP réservée à l’autorité globale', async ({ page }) => {
-    const posts = [];
-    await mount(page, { decision: DEMO.decision, caps: { can_manage_structure_events: true }, posts,
-      access: { ...FX.market.access, role: 'global_admin' }, search: '?market=KM&view=costs' });
-    const row = page.locator('[data-inline-structure-row="bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1"]');
-    await row.locator('[data-edit-structure-charge]').click();
-    const inline = row.locator('[data-structure-inline-editor]');
-    await expect(inline).toBeVisible();
-    await expect(inline).toContainText('Quote-part actuelle du marché');
-    await inline.locator('[data-structure-inline-cancel]').click();
-    await expect(row.locator('[data-structure-inline-editor]')).toHaveCount(0);
-    await expect(row.locator('[data-edit-structure-charge]')).toBeVisible();
-    expect(posts.filter(item => item.path.endsWith('/structure-events'))).toHaveLength(0);
-
-    await mount(page, { decision: DEMO.decision, caps: { can_manage_structure_events: true }, posts,
-      access: { ...FX.market.access, role: 'manager' }, search: '?market=KM&view=costs' });
-    await expect(page.locator('.kmc-cockpit-cost-card.is-fixed-mutualized [data-edit-structure-charge]')).toHaveCount(0);
-    await expect(page.locator('.kmc-cockpit-cost-card.is-fixed-mutualized')).toHaveAttribute('data-read-only', 'true');
-  });
-});
-
-test.describe('Moteur économique · démo illustrée desktop 1440 (API simulée, aucune donnée live)', () => {
-  test.use({ viewport: { width: 1440, height: 900 } });
-
-  test('rend contribution, couverture, fixes directs et mutualisés sur des valeurs d’exemple cohérentes', async ({ page }) => {
-    expect(DEMO.kind).toBe('CHROMIUM_DEMO_ONLY');
-    const posts = [];
-    await mount(page, { decision: DEMO.decision, components: DEMO.parameters.variable_components, posts,
-      caps: { can_manage_structure_events: true } });
-    await page.evaluate(() => {
-      const marker = document.createElement('div');
-      marker.dataset.chromiumDemoNotice = '';
-      marker.textContent = 'SCÉNARIO ILLUSTRATIF · DONNÉES FICTIVES · AUCUNE ÉCRITURE EN PRODUCTION';
-      Object.assign(marker.style, {
-        position: 'fixed', top: '5px', left: '50%', transform: 'translateX(-50%)',
-        background: '#183b65', color: '#fff', padding: '7px 16px', borderRadius: '8px',
-        fontWeight: '800', fontSize: '12px', zIndex: '99999',
-      });
-      document.body.appendChild(marker);
-    });
-
-    await expect(page.locator('.kmc-cockpit-live-badge')).toContainText('Couverture réconciliée');
-    await expect(page.locator('.kmc-cockpit-live-badge')).not.toHaveClass(/is-unavailable/);
-    await expect(page.locator('.kmc-metric-card').first()).toContainText('75');
-    await expect(page.locator('[data-atelier-policy]')).toContainText('Décisionnelle');
-    await expect(page.locator('[data-atelier-policy]')).toContainText('Ratio de couverture');
-    await expect(page.locator('[data-atelier-priorities]')).toContainText('Couverture insuffisante');
-    await expect(page.locator('[data-atelier-priorities]')).not.toContainText('Couverture non décisionnelle');
-    await expect(page.locator('[data-atelier-policy]')).not.toContainText('Aucun ratio affiché');
-    await expect(page.locator('.kmc-metric-card').nth(1)).toContainText('900');
-    await shot(page, '5-vue-economique-demo', '1440');
-
-    await page.locator('[data-atelier-view="costs"]').click();
-    const reading = page.locator('[data-economic-cost-reading]');
-    await expect(reading).toBeHidden();
-    await expect(page.locator('.kmc-cockpit-costs')).toHaveAttribute('data-cost-layout', 'columns');
-    const direct = page.locator('.kmc-cockpit-cost-card.is-fixed-direct');
-    await expect(direct).toContainText('Loyer local');
-    await expect(direct).toContainText('Équipe fixe du marché');
-    await expect(direct).toContainText('550');
-    const mutual = page.locator('.kmc-cockpit-cost-card.is-fixed-mutualized');
-    await expect(mutual).toContainText('Infrastructure plateforme');
-    await expect(mutual).toContainText('Loyer et équipe Hub');
-    await expect(mutual).toContainText('650');
-    await expect(mutual).toHaveAttribute('data-read-only', 'false');
-    const mix = reading.locator('.kmc-economic-reading-item.is-mix');
-    await expect(mix).toContainText('Variables 66,7 % · Fixes 33,3 %');
-    await expect(mix).toContainText('Directs 70,8 % · Mutualisés 29,2 %');
-    await expect(mix.locator('.kmc-economic-reading-mix-track')).toHaveAttribute('aria-label', /66,7/);
-    await expect(mix).not.toContainText('Non encore calculable');
-    await expect(page.locator('[data-chromium-demo-notice]')).toBeVisible();
-    await noOverflow(page);
-    await shot(page, '6-couts-mutualises-demo', '1440');
-    await expect(page.locator('[data-cost-layout-button]')).toHaveCount(0);
-    await expect(page.locator('.kmc-cockpit-cost-card.is-fixed-mutualized [data-edit-inline-cost]')).toHaveCount(0);
-    await shot(page, '7-couts-edition-en-ligne-demo', '1440');
-    expect(posts).toHaveLength(0);
-  });
 });

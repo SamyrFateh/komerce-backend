@@ -38,7 +38,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | dashboard | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | customs_shipment_holds, order_incidents, partners | auth, auth-identity, business-rules, catalog, customs, decision-signals, documents, economic-engine, external-provider-contracts, incident-management, infrastructure, inventory, local-stock, logistics, market, market-autonomy, market-delegation, notifications, orders, payments, purchasing, refunds, shared-cart, sourcing, supplier-connectivity, wallet | admin-dashboard, decision-signals, economic-engine, infrastructure, market-control-plane, market-delegation, orders, sourcing | 0 |
 | decision-signals | piloting-capability | 🟢 HEALTHY | 🟢 HEALTHY | signals | auth, business-rules, dashboard, economic-engine, infrastructure, logistics, market-delegation, payments, purchasing | admin-dashboard, dashboard, incident-management, market-control-plane, orders | 0 |
 | documents | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | invoices, transaction_documents | auth, auth-identity, catalog, customs, infrastructure, logistics, orders, refunds, wallet | admin-dashboard, auth-identity, customs, dashboard, logistics, orders, payments, platform-ops, purchasing, refunds, wallet | 0 |
-| economic-engine | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | charges, competitor_prices, cost_benchmarks, cost_component_events, cost_component_market_override_events, cost_component_market_overrides, cost_components, economic_risk_cost_events, economic_risk_watermark_events, economic_snapshots, economic_structure_cost_events, exchange_rates, finance_config, financial_movement_documents, financial_movements, international_n1_reconciliations, market_cost_attributions, market_price_observation_events, market_price_observations, order_cost_entry_events, order_item_real_cost_allocations, price_history, pricing_category_dims, pricing_category_taxes, pricing_components, pricing_market_decision_policy_events, pricing_matrices_audit, pricing_maturity_disposition_events, pricing_strategies, pricing_strategy_history, risk_provisions | auth, auth-identity, business-rules, catalog, customs, dashboard, infrastructure, local-stock, logistics, loyalty, market, market-autonomy, market-delegation, orders, platform-ops, refunds | admin-dashboard, catalog, customs, dashboard, decision-signals, infrastructure, loyalty, market-autonomy, market-control-plane, market-delegation, orders, platform-ops, purchasing, refunds, sourcing | 0 |
+| economic-engine | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | charges, competitor_prices, cost_benchmarks, cost_component_events, cost_component_market_override_events, cost_component_market_overrides, cost_components, economic_cost_budget_revisions, economic_cost_centers, economic_cost_commitment_movements, economic_cost_commitments, economic_cost_families, economic_cost_posts, economic_cost_resources, economic_group_period_closures, economic_risk_cost_events, economic_risk_watermark_events, economic_sku_rail_selection_events, economic_snapshots, economic_structure_cost_events, exchange_rates, finance_config, financial_movement_documents, financial_movements, international_n1_reconciliations, local_stock_economic_lot_lines, local_stock_economic_lots, market_cost_attributions, market_price_observation_events, market_price_observations, order_cost_entry_events, order_item_real_cost_allocations, price_history, pricing_category_dims, pricing_category_taxes, pricing_components, pricing_market_decision_policy_events, pricing_matrices_audit, pricing_maturity_disposition_events, pricing_strategies, pricing_strategy_history, risk_provisions | auth, auth-identity, business-rules, catalog, customs, dashboard, infrastructure, local-stock, logistics, loyalty, market, market-autonomy, market-delegation, orders, platform-ops, refunds | admin-dashboard, catalog, customs, dashboard, decision-signals, infrastructure, loyalty, market-autonomy, market-control-plane, market-delegation, orders, platform-ops, purchasing, refunds, sourcing | 0 |
 | external-provider-contracts | technical-transversal | 🟡 ATTENTION | 🟢 HEALTHY | _aucune_ | _aucune_ | catalog, dashboard, purchasing, supplier-connectivity | 1 |
 | incident-management | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | incidents | decision-signals, infrastructure, logistics, orders | dashboard, logistics, notifications, orders, payments, platform-ops, purchasing, refunds | 0 |
 | infrastructure | technical-foundation | 🟢 HEALTHY | 🟢 HEALTHY | outbox_events, physical_outcome_receipts, schema_migrations | auth, auth-identity, catalog, customs, dashboard, economic-engine, inventory, logistics, market, market-delegation, notifications, orders, payments, platform-ops, recommendations, shared-cart, wallet | auth, auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, decision-signals, documents, economic-engine, incident-management, inventory, local-stock, logistics, loyalty, market, market-autonomy, market-control-plane, market-delegation, market-operator-dashboard, notifications, orders, payments, platform-ops, providers-services, purchasing, recommendations, refunds, settlement, shared-cart, sourcing, unsold-resolution, wallet | 0 |
@@ -61,7 +61,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | purchasing | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | hub_authorization_grants, manual_purchase_executions, product_suppliers, purchase_lines, purchase_order_authorizations, purchase_orders, purchase_variance_decisions, supplier_execution_events, supplier_execution_fulfillments, supplier_execution_order_lines, supplier_execution_orders, supplier_execution_payment_proofs, supplier_execution_payments, supplier_payment_settlements, suppliers | auth, catalog, documents, economic-engine, external-provider-contracts, incident-management, infrastructure, logistics, notifications, orders, sourcing, supplier-connectivity | catalog, dashboard, decision-signals, logistics, orders, payments, platform-ops, refunds, sourcing | 0 |
 | recommendations | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | catalog, infrastructure, local-stock, logistics, market, market-autonomy, orders, platform-ops, providers-services | infrastructure, providers-services, shared-cart | 0 |
 | refunds | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | local_cash_refund_authorizations, local_cash_refund_payouts, local_item_refund_reservations, local_mobile_refund_handoffs, order_item_refund_reservations, refund_execution_intents, refunds | catalog, documents, economic-engine, incident-management, infrastructure, logistics, market, notifications, orders, payments, purchasing, wallet | dashboard, documents, economic-engine, logistics, orders, payments | 0 |
-| settlement | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | market_settlement_events, market_settlements | auth, auth-identity, infrastructure, market, market-delegation | market-delegation | 0 |
+| settlement | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | hub_internal_invoices, market_settlement_events, market_settlements | auth, auth-identity, infrastructure, market, market-delegation | market-delegation | 0 |
 | shared-cart | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | basket_items, baskets, cart_shares, shared_cart_events, shared_cart_items, shared_cart_saved_access, shared_carts | auth, auth-identity, catalog, infrastructure, market-autonomy, notifications, orders, platform-ops, recommendations | catalog, dashboard, infrastructure, orders | 0 |
 | sourcing | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | import_runtime_item_events, import_runtime_runs, provider_credentials, sourcing_candidate_events, sourcing_candidates, sourcing_canonical_entities, sourcing_canonical_entity_refs, sourcing_captures, sourcing_match_proposals, sourcing_observation_evidence, sourcing_observations, sourcing_provider_control_events, sourcing_resolution_bindings, sourcing_resolution_decisions, sourcing_source_provides, sourcing_source_requests, sourcing_sources, supplier_commercial_category_mappings | auth, catalog, customs, dashboard, economic-engine, infrastructure, purchasing | catalog, dashboard, market-control-plane, purchasing | 0 |
 | supplier-connectivity | integration-adapter | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | external-provider-contracts | catalog, dashboard, logistics, purchasing | 0 |
@@ -605,12 +605,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 492 fichier(s) déclaré(s)
+**Implementation** : 493 fichier(s) déclaré(s)
   - dash : 197
   - middleware : 1
   - migrations : 3
   - routes : 29
-  - services : 47
+  - services : 48
   - tests : 215
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="dashboard"]_
@@ -738,6 +738,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - audit des changements de prix produit dans price_history
   - allocation de cout
   - vérité des charges de structure de période issue de faits économiques append-only, distincte des configurations de charges
+  - référentiel administratif de centres/familles/postes/ressources, distinct des faits économiques
   - vérité du risque de période issue de faits append-only et d un watermark de revue explicite par marché
   - gate de couverture économique par marché, fail-closed sur maturité, risque et charges de structure attribuées
   - politique canonique de décision par marché : fenêtre, seuils de maturité/couverture et plafond de dispositions versionnés append-only
@@ -767,10 +768,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - un gate de couverture marché ne publie un ratio autorisant que sur commandes MATURE, charges de structure marché décisionnelles et vérité risque de période explicite
 - une référence globale de concurrence reste informative et ne devient jamais silencieusement une preuve marché locale
 
-**Owns** : `charges`, `competitor_prices`, `cost_benchmarks`, `cost_component_events`, `cost_component_market_override_events`, `cost_component_market_overrides`, `cost_components`, `economic_risk_cost_events`, `economic_risk_watermark_events`, `economic_snapshots`, `economic_structure_cost_events`, `exchange_rates`, `finance_config`, `financial_movement_documents`, `financial_movements`, `international_n1_reconciliations`, `market_cost_attributions`, `market_price_observation_events`, `market_price_observations`, `order_cost_entry_events`, `order_item_real_cost_allocations`, `price_history`, `pricing_category_dims`, `pricing_category_taxes`, `pricing_components`, `pricing_market_decision_policy_events`, `pricing_matrices_audit`, `pricing_maturity_disposition_events`, `pricing_strategies`, `pricing_strategy_history`, `risk_provisions`
+**Owns** : `charges`, `competitor_prices`, `cost_benchmarks`, `cost_component_events`, `cost_component_market_override_events`, `cost_component_market_overrides`, `cost_components`, `economic_cost_budget_revisions`, `economic_cost_centers`, `economic_cost_commitment_movements`, `economic_cost_commitments`, `economic_cost_families`, `economic_cost_posts`, `economic_cost_resources`, `economic_group_period_closures`, `economic_risk_cost_events`, `economic_risk_watermark_events`, `economic_sku_rail_selection_events`, `economic_snapshots`, `economic_structure_cost_events`, `exchange_rates`, `finance_config`, `financial_movement_documents`, `financial_movements`, `international_n1_reconciliations`, `local_stock_economic_lot_lines`, `local_stock_economic_lots`, `market_cost_attributions`, `market_price_observation_events`, `market_price_observations`, `order_cost_entry_events`, `order_item_real_cost_allocations`, `price_history`, `pricing_category_dims`, `pricing_category_taxes`, `pricing_components`, `pricing_market_decision_policy_events`, `pricing_matrices_audit`, `pricing_maturity_disposition_events`, `pricing_strategies`, `pricing_strategy_history`, `risk_provisions`
 **Writes (not owner)** : `orders` (writer-not-owner)
 
-**Exposes** : 2 internal API(s), 110 HTTP interface(s)
+**Exposes** : 2 internal API(s), 131 HTTP interface(s)
   - `recommend` (services/pricing-engine.js) — resolved
   - `recordProductPriceChange` (services/economic-price-audit-service.js) — resolved
 
@@ -787,13 +788,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 221 fichier(s) déclaré(s)
+**Implementation** : 245 fichier(s) déclaré(s)
   - dash : 6
   - middleware : 1
-  - migrations : 34
+  - migrations : 42
   - routes : 13
-  - services : 56
-  - tests : 108
+  - services : 64
+  - tests : 116
   - utils : 3
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="economic-engine"]_
@@ -2461,9 +2462,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - market_settlement_events est append-only : UPDATE et DELETE bloqués par trigger DB
 - la migration d’activation des capabilities ne crée ni ne modifie aucune vérité market_settlements
 
-**Owns** : `market_settlement_events`, `market_settlements`
+**Owns** : `hub_internal_invoices`, `market_settlement_events`, `market_settlements`
 
-**Exposes** : 5 internal API(s), 3 HTTP interface(s)
+**Exposes** : 5 internal API(s), 6 HTTP interface(s)
   - `confirmReceived()`  — documented-signature-no-file
   - `createReadySettlement()`  — documented-signature-no-file
   - `listForAssignment()`  — documented-signature-no-file
@@ -2483,11 +2484,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 7 fichier(s) déclaré(s)
-  - migrations : 1
+**Implementation** : 10 fichier(s) déclaré(s)
+  - migrations : 2
   - routes : 1
-  - services : 1
-  - tests : 4
+  - services : 2
+  - tests : 5
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="settlement"]_
 

@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        dashboard_period, server_resolved_market
  * @outputs       canonical_finance_projection
- * @depends       db, dashboard-metrics, dashboard-metrics/_helpers, supplier-payment-review, financial-journal-reporting
+ * @depends       db, dashboard-metrics, dashboard-metrics/_helpers, supplier-payment-review, financial-journal-reporting, economic-cost-center-read-model, fx-authority
  * @used-by       routes/admin-dashboard-market.js
  * @db-read       orders, refunds, order_items, order_item_cost_imputations, order_item_real_cost_allocations, relais, markets, parcel_items, parcels, customs_shipments, customs_shipment_parcels, financial_movements
  * @db-write      none
@@ -622,6 +622,87 @@ async function loadJournalProjection(window, market) {
   }
 }
 
+async function loadCustomerCashSubtotal(window,market){
+  if(window.filters?.simulation_scope)return Object.freeze({available:false,reason:'simulation_excluded'});
+  try{
+    return Object.freeze(await journalReporting.customerCashSubtotal(db,{marketId:market&&market.id,from:window.from,to:window.to}));
+  }catch(_){return Object.freeze({available:false,reason:'journal_unavailable'});}
+}
+
+// Same monthly ECO authority as Pilotage and Pricing. Never derive from order costing.
+async function loadEconomicPeriodResult(actor, market, window, now) {
+  const periodStart = now.toISOString().slice(0, 7) + '-01';
+  const base = { key: 'economic_period_result', value: null, unit: market ? market.currency : 'EUR',
+    label: 'Résultat économique ' + (market ? 'marché' : 'groupe'),
+    drill_to: '/admin/workspaces/pricing' };
+  const quality = { metric_id: 'eco.period_result', period_start: periodStart, completeness: 'provisional' };
+  const unavailable = status => ({ ...base, data_quality: { ...quality, status } });
+  if (window.filters?.simulation_scope) return unavailable('SIMULATION_EXCLUDED');
+  if (!actor?.id) return unavailable('UNAVAILABLE');
+  try {
+    const authority = require('./economic-cost-center-read-model');
+    const result = market
+      ? await authority.readMarketPeriodDecision(actor, market.code, periodStart)
+      : await authority.readGroupPeriodDecision(actor, periodStart);
+    const value = market ? result.display.result : result.resultEur;
+    return { ...base, value, data_quality: { ...quality, status: result.status, reasons: result.reasons,
+      fx_status: market ? result.display.fxStatus : result.fxStatus,
+      completeness: !market && result.status === 'CLOSED' && value != null ? 'complete' : 'provisional' } };
+  } catch (err) {
+    return unavailable(market && err.status !== 403 ? 'MARKET_RESULT_NOT_RECONCILED' : 'UNAVAILABLE');
+  }
+}
+
+// Presentation only: keep historic KMF facts and project a closed list of Finance
+// diagnostics through one FX batch. Never touch journal-native, custody or ECO facts.
+const FINANCE_DISPLAY_FIELDS = new Set([
+  'actual_revenue_kmf', 'amount_kmf', 'consolidated_margin_kmf', 'cost_variance_kmf',
+  'delta_kmf', 'eligible_revenue_kmf', 'estimated_business_complete_cost_kmf',
+  'estimated_cost_kmf', 'estimated_kmf', 'estimated_margin_kmf', 'estimated_variable_kmf',
+  'margin_variance_kmf', 'real_cost_kmf', 'real_kmf', 'real_variable_kmf', 'revenue_kmf',
+  'sale_total_kmf', 'store_credit_kmf', 'stripe_kmf', 'total_kmf', 'variable_total_kmf', 'variance_kmf',
+]);
+async function projectFinanceDiagnosticCurrency(payload, market, convert = require('./fx-authority').convertMany) {
+  const currency = market ? market.currency : 'EUR';
+  const projected = structuredClone(payload);
+  const slots = [];
+  const seen = new WeakSet();
+  function visit(node) {
+    if (!node || typeof node !== 'object' || seen.has(node)) return;
+    seen.add(node);
+    if (Array.isArray(node)) { node.forEach(visit); return; }
+    for (const [key, value] of Object.entries(node)) {
+      if (FINANCE_DISPLAY_FIELDS.has(key)) {
+        node.display_amounts ||= { currency, values: {} };
+        node.display_amounts.values[key] = null;
+        if (value != null && value !== '') slots.push({ value, set: v => { node.display_amounts.values[key] = v; } });
+      } else if (value && typeof value === 'object') visit(value);
+    }
+    if (node.unit === 'KMF' && Object.hasOwn(node, 'value')) {
+      const original = node.value;
+      node.display = { value: null, unit: currency };
+      // Keep existing market KPI API semantics while retaining the source.
+      if (market) { node.base_currency = 'KMF'; node.base_value_kmf = original; node.value = null; node.unit = currency; }
+      if (original != null && original !== '') slots.push({ value: original, set: v => {
+        node.display.value = v;
+        if (market) node.value = Number(v);
+      } });
+    }
+  }
+  for (const key of ['kpis', 'costing_kpis', 'trend', 'cost_families', 'costing_orders', 'variance_summary',
+    'margin_scope', 'relay_profitability', 'payment_mix', 'refunds', 'incomplete_cost_orders']) visit(projected[key]);
+  let status = 'available';
+  if (slots.length) {
+    try {
+      const results = await convert({ amounts: slots.map(s => s.value), from: 'KMF', to: currency });
+      if (results.length !== slots.length || results.some(r => r?.amount_text == null || !Number.isFinite(Number(r.amount_text)))) throw new Error('incomplete FX batch');
+      results.forEach((result, i) => slots[i].set(result.amount_text));
+    } catch (_) { status = 'unavailable'; }
+  }
+  projected.diagnostic_currency = { currency, status, basis: 'KMF_projection_not_native_history' };
+  return Object.freeze(projected);
+}
+
 async function buildFinance(query = {}, options = {}) {
   const market = options.market || null;
   const window = buildPeriod(query, market && market.id, options.now || new Date(), market);
@@ -647,6 +728,8 @@ async function buildFinance(query = {}, options = {}) {
     supplierPaymentReview,
     marginScope,
     journal,
+    customerCash,
+    economicPeriodResult,
   ] = await Promise.all([
     metrics.getCAEncaisse(window.filters),
     metrics.getCoutEstime(window.filters),
@@ -668,9 +751,11 @@ async function buildFinance(query = {}, options = {}) {
     getSupplierPaymentReview({ limit: 50, ...(market && market.id ? { market_id: market.id } : {}) }),
     getMarginScope(window.filters),
     loadJournalProjection(window, market),
+    loadCustomerCashSubtotal(window, market),
+    loadEconomicPeriodResult(options.actor, market, window, new Date(options.now || Date.now())),
   ]);
 
-  return Object.freeze({
+  const payload = Object.freeze({
     scope: publicScope(market),
     simulation: SIMULATION_VIEW(query),
     period: window.period,
@@ -705,6 +790,8 @@ async function buildFinance(query = {}, options = {}) {
     variance_summary: summarizeVariances(costingOrders),
     margin_scope: marginScope,
     journal,
+    customer_cash:customerCash,
+    economic_period_result: Object.freeze(economicPeriodResult),
     relay_profitability: Object.freeze(relayProfitability),
     payment_mix: Object.freeze(paymentMix),
     refunds: Object.freeze({
@@ -744,7 +831,8 @@ async function buildFinance(query = {}, options = {}) {
         }),
       }),
       relay_real_margin_basis: 'actual_cost_orders_only',
-      economic_global_engine_consumed: false,
+      economic_global_engine_consumed: !market && economicPeriodResult.value != null,
+      order_margin_basis: 'historical_order_creation_cohort_diagnostic_not_eco_period_result',
       supplier_payment_review_basis: supplierPaymentReview ? supplierPaymentReview.basis : null,
       source_tables: Object.freeze([
         'orders',
@@ -757,6 +845,7 @@ async function buildFinance(query = {}, options = {}) {
       ]),
     }),
   });
+  return options.actor ? projectFinanceDiagnosticCurrency(payload, market) : payload;
 }
 
 module.exports = {
@@ -780,5 +869,8 @@ module.exports = {
   summarizeVariances,
   buildFollowUp,
   getMarginScope,
+  loadCustomerCashSubtotal,
+  loadEconomicPeriodResult,
+  projectFinanceDiagnosticCurrency,
   buildFinance,
 };

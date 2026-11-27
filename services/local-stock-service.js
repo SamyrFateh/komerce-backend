@@ -102,15 +102,15 @@ const FULFILLMENT_SOURCE = Object.freeze({
  * @param {string} [location]
  * @returns {Promise<object|null>}
  */
-async function getLocalStock(productId, marketId, location = DEFAULT_LOCATION) {
+async function getLocalStock(productId, marketId, location = DEFAULT_LOCATION, { executor = db, forUpdate = false } = {}) {
   if (!productId || !marketId) {
     throw new Error('getLocalStock: product_id et market_id sont requis');
   }
-  const { rows } = await db.query(
+  const { rows } = await executor.query(
     `SELECT id, product_id, market_id, location, qty_physical, commercial_exposure,
             updated_by, created_at, updated_at
        FROM local_stock
-      WHERE product_id = $1 AND market_id = $2 AND location = $3`,
+      WHERE product_id = $1 AND market_id = $2 AND location = $3${forUpdate ? ' FOR UPDATE' : ''}`,
     [productId, marketId, location]
   );
   return rows[0] || null;
@@ -159,7 +159,7 @@ async function getAvailability(productId, marketId, location = DEFAULT_LOCATION)
  * @param {string} [params.actorUserId]
  * @returns {Promise<object>} la ligne local_stock résultante
  */
-async function setLocalStock({ productId, marketId, location = DEFAULT_LOCATION, qtyPhysical, actorUserId = null }) {
+async function setLocalStock({ productId, marketId, location = DEFAULT_LOCATION, qtyPhysical, actorUserId = null, executor = db }) {
   if (!productId || !marketId) {
     throw new Error('setLocalStock: product_id et market_id sont requis');
   }
@@ -167,7 +167,7 @@ async function setLocalStock({ productId, marketId, location = DEFAULT_LOCATION,
     throw new Error('setLocalStock: qty_physical doit être un entier >= 0');
   }
 
-  const { rows: productRows } = await db.query(
+  const { rows: productRows } = await executor.query(
     'SELECT id FROM products WHERE id = $1',
     [productId]
   );
@@ -175,7 +175,7 @@ async function setLocalStock({ productId, marketId, location = DEFAULT_LOCATION,
     throw new Error(`setLocalStock: produit introuvable (${productId})`);
   }
 
-  const { rows: marketRows } = await db.query(
+  const { rows: marketRows } = await executor.query(
     'SELECT id FROM markets WHERE id = $1 AND is_active = true',
     [marketId]
   );
@@ -183,7 +183,7 @@ async function setLocalStock({ productId, marketId, location = DEFAULT_LOCATION,
     throw new Error(`setLocalStock: marché introuvable ou inactif (${marketId})`);
   }
 
-  const { rows } = await db.query(
+  const { rows } = await executor.query(
     `INSERT INTO local_stock (product_id, market_id, location, qty_physical, updated_by)
      VALUES ($1, $2, $3, $4, $5)
      ON CONFLICT (product_id, market_id, location)

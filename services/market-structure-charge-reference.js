@@ -28,6 +28,22 @@ function referenceInput(raw = {}) {
   return {name,description,family,recurrence};
 }
 
+// The same reference writer serves V7 administrative provisioning. The
+// caller owns authorization and transaction; no amount is recognized here.
+async function insertStructureReference(executor, marketId, raw){
+  if(!executor||typeof executor.query!=='function')throw new TypeError('Transaction executor required');
+  const reference=referenceInput(raw);
+  const inserted=await executor.query(
+      `INSERT INTO charges (family, name, amount_kmf, is_recurring,
+                            recurrence_period, notes, market_owner_id)
+       VALUES ($1, $2, 0, $3, $4, $5, $6)
+       RETURNING id, family, name, recurrence_period, notes, market_owner_id`,
+      [reference.family,reference.name,reference.recurrence !== 'one_time',
+        reference.recurrence,reference.description || null,marketId]
+    );
+  return inserted.rows[0];
+}
+
 async function createMarketChargeAndFact(market, input, actorId, options = {}) {
   if (!market?.id || !actorId) throw new TypeError('Resolved market and actor required');
   const reference = referenceInput(input.reference || {});
@@ -38,15 +54,7 @@ async function createMarketChargeAndFact(market, input, actorId, options = {}) {
   const ownsTx = !options.executor;
   try {
     if (ownsTx) await client.query('BEGIN');
-    const inserted = await client.query(
-      `INSERT INTO charges (family, name, amount_kmf, is_recurring,
-                            recurrence_period, notes, market_owner_id)
-       VALUES ($1, $2, 0, $3, $4, $5, $6)
-       RETURNING id, family, name, recurrence_period, notes, market_owner_id`,
-      [reference.family,reference.name,reference.recurrence !== 'one_time',
-        reference.recurrence,reference.description || null,market.id]
-    );
-    const charge = inserted.rows[0];
+    const charge = await insertStructureReference(client,market.id,{name:reference.name,description:reference.description,family:reference.family,recurrence_period:reference.recurrence});
     const fact = await periodStructure.recordStructureCostEvent({
       ...event, charge_id:charge.id, scope_kind:'MARKET_DIRECT', market_id:market.id,
       event_kind:'ACCRUAL', adjusts_event_id:null,
@@ -107,4 +115,4 @@ async function updateMarketChargeDetails(market, chargeId, input = {}, options =
   }
 }
 
-module.exports={referenceInput,createMarketChargeAndFact,updateMarketChargeDescription,updateMarketChargeDetails};
+module.exports={insertStructureReference,referenceInput,createMarketChargeAndFact,updateMarketChargeDescription,updateMarketChargeDetails};

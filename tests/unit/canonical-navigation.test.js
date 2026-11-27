@@ -577,78 +577,49 @@ describe('canonical admin navigation — pas de Retour redondant sur les espaces
 });
 
 
-describe('canonical admin navigation — outils staging fail-closed', () => {
+describe('console recette isolée — outils staging fail-closed', () => {
+  test('aucun outil sur le shell métier, même en staging',async()=>{
+    const fetch=jest.fn();
+    const env=loadNavigation('/admin/pilotage','pilotage',{window:{fetch}});
+    const group=fakeNode('div');
+    expect(env.api.mountStagingAdminTools).toBeUndefined();
+    expect(await require('../../public/js/golden-recipe-staging-tools.js').mountStagingAdminTools(env.document,group)).toBe(false);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  test('refuse une session marché dans la console staging',async()=>{
+    const fetch=jest.fn().mockResolvedValueOnce({ok:true,json:async()=>({komerce_env:'staging'})})
+      .mockResolvedValueOnce({ok:true,json:async()=>({role:'market_operator'})});
+    const env=loadNavigation('/admin/golden-e2e','golden-e2e',{window:{fetch}});
+    const group=fakeNode('div');
+    expect(await require('../../public/js/golden-recipe-staging-tools.js').mountStagingAdminTools(env.document,group)).toBe(false);
+    expect(group.children).toHaveLength(0);
+  });
   test('ne projette jamais Reset / Seed hors staging', async () => {
     const fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ komerce_env: 'production' }),
     });
-    const env = loadNavigation('/admin/pilotage', 'pilotage', { window: { fetch } });
+    const env = loadNavigation('/admin/golden-e2e', 'golden-e2e', { window: { fetch } });
     const group = fakeNode('div');
 
-    const mounted = await env.api.mountStagingAdminTools(env.document, group);
+    const mounted = await require('../../public/js/golden-recipe-staging-tools.js').mountStagingAdminTools(env.document, group);
 
     expect(mounted).toBe(false);
     expect(group.children).toHaveLength(0);
     expect(fetch).toHaveBeenCalledWith('/health', expect.objectContaining({ method: 'GET' }));
   });
 
-  test('projette Reset / Seed uniquement quand le serveur annonce KOMERCE_ENV=staging', async () => {
-    const fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ komerce_env: 'staging' }),
-    });
-    const env = loadNavigation('/admin/pilotage', 'pilotage', { window: { fetch } });
-    const group = fakeNode('div');
-
-    const mounted = await env.api.mountStagingAdminTools(env.document, group);
-
-    expect(mounted).toBe(true);
-    const tools = group.children[0];
+  test('admin staging voit uniquement un lien vers le workflow, aucun POST possible',async()=>{
+    const fetch=jest.fn().mockResolvedValueOnce({ok:true,json:async()=>({komerce_env:'staging'})})
+      .mockResolvedValueOnce({ok:true,json:async()=>({role:'admin'})});
+    const env=loadNavigation('/admin/golden-e2e','golden-e2e',{window:{fetch}});
+    const group=fakeNode('div');
+    expect(await require('../../public/js/golden-recipe-staging-tools.js').mountStagingAdminTools(env.document,group)).toBe(true);
+    const tools=group.children[0];
     expect(tools.attributes['data-staging-tools']).toBe('true');
-    expect(tools.children.find(node => node.attributes['data-admin-action'] === 'reset-orders')).toBeDefined();
-    expect(tools.children.find(node => node.attributes['data-admin-action'] === 'seed-test')).toBeDefined();
-  });
-
-  test('Reset staging envoie une confirmation explicite et reste borné au mode orders', async () => {
-    const fetch = jest.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ komerce_env: 'staging' }) })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ message: 'Reset ok' }) });
-    const confirm = jest.fn(() => true);
-    const env = loadNavigation('/admin/pilotage', 'pilotage', { window: { fetch, confirm } });
-    const group = fakeNode('div');
-
-    await env.api.mountStagingAdminTools(env.document, group);
-    const tools = group.children[0];
-    const reset = tools.children.find(node => node.attributes['data-admin-action'] === 'reset-orders');
-    await reset.listeners.click();
-
-    expect(confirm).toHaveBeenCalled();
-    expect(fetch).toHaveBeenLastCalledWith('/api/admin/reset', expect.objectContaining({
-      method: 'POST',
-      credentials: 'include',
-      body: JSON.stringify({ mode: 'orders', confirm: true }),
-    }));
-  });
-
-  test('Seed staging exige confirmation et appelle le endpoint protégé existant', async () => {
-    const fetch = jest.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ komerce_env: 'staging' }) })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ message: 'Seed ok' }) });
-    const confirm = jest.fn(() => true);
-    const env = loadNavigation('/admin/pilotage', 'pilotage', { window: { fetch, confirm } });
-    const group = fakeNode('div');
-
-    await env.api.mountStagingAdminTools(env.document, group);
-    const tools = group.children[0];
-    const seed = tools.children.find(node => node.attributes['data-admin-action'] === 'seed-test');
-    await seed.listeners.click();
-
-    expect(confirm).toHaveBeenCalled();
-    expect(fetch).toHaveBeenLastCalledWith('/api/admin/seed-test', expect.objectContaining({
-      method: 'POST',
-      credentials: 'include',
-      body: JSON.stringify({ confirm: true }),
-    }));
+    expect(tools.children.some(node=>node.tagName==='BUTTON'||node.attributes['data-admin-action'])).toBe(false);
+    expect(tools.children.find(node=>node.tagName==='A').href).toContain('/actions/workflows/staging-reset.yml');
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch.mock.calls.some(([,options])=>options?.method==='POST')).toBe(false);
   });
 });

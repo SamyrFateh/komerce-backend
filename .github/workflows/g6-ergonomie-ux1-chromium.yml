@@ -33,7 +33,10 @@ jobs:
       - run: npm ci
       - name: Install Boutique test dependencies used by pr:preflight
         run: npm ci --prefix public/boutique
-      - run: npm run pr:preflight
+      - name: Run npm run pr:preflight
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: npm run pr:preflight
       - run: npx playwright install --with-deps chromium
       - name: Local mock Chromium 20 repeated runs, no staging
         run: npx playwright test tests/e2e/hub-live-execution.spec.js --grep 'UX1 — nouvelle ligne fournisseur' --repeat-each=20 --workers=1

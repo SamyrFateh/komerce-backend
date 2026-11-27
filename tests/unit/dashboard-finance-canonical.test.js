@@ -26,6 +26,8 @@ const mockMetrics = {
 };
 jest.mock('../../services/dashboard-metrics', () => mockMetrics);
 
+const mockEco = { readGroupPeriodDecision: jest.fn(), readMarketPeriodDecision: jest.fn() };
+jest.mock('../../services/economic-cost-center-read-model', () => mockEco);
 const finance = require('../../services/dashboard-finance-canonical');
 
 beforeEach(() => {
@@ -404,4 +406,66 @@ describe('FIN-03 — rapport marge/vente des commandes finalisées', () => {
     expect(scope.eligible_revenue_kmf).toBe(0);
     expect(scope.eligible_margin_pct).toBeNull();
   });
+});
+
+test('Finance reads the identical documented customer cash projection as Commerce, exact dates and server scope',async()=>{
+ const reporting=require('../../services/financial-journal-reporting');
+ const spy=jest.spyOn(reporting,'customerCashSubtotal').mockResolvedValue({available:true,eur_net:'10.01',eur_partial:false,native_net:[],coverage:'DOCUMENTED_SUBTOTAL'});
+ try{
+   const window={from:'2026-01-01',to:'2026-01-31',filters:{}};
+   expect(await finance.loadCustomerCashSubtotal(window,{id:'CM'})).toMatchObject({eur_net:'10.01',coverage:'DOCUMENTED_SUBTOTAL'});
+   expect(spy).toHaveBeenLastCalledWith(expect.anything(),{marketId:'CM',from:window.from,to:window.to});
+   spy.mockClear();
+   expect(await finance.loadCustomerCashSubtotal({...window,filters:{simulation_scope:'RCT1'}},{id:'CM'})).toEqual({available:false,reason:'simulation_excluded'});
+   expect(spy).not.toHaveBeenCalled();
+ }finally{spy.mockRestore();}
+});
+
+test('Finance ECO: same authority, scoped actor, UTC month, no legacy fallback', async () => {
+  const actor = { id: 1, role: 'admin' };
+  const market = { code: 'CM', currency: 'XAF' };
+  const now = new Date('2026-11-27T13:00:00Z');
+  const window = { filters: {} };
+  mockEco.readGroupPeriodDecision.mockResolvedValueOnce({ resultEur: -12, status: 'CLOSED', fxStatus: 'available', reasons: [] });
+  mockEco.readMarketPeriodDecision.mockResolvedValueOnce({ display: { result: 0, fxStatus: 'available' }, status: 'PROVISIONAL', reasons: [] });
+  expect(await finance.loadEconomicPeriodResult(actor, null, window, now)).toMatchObject({ value: -12, unit: 'EUR', data_quality: { status: 'CLOSED', completeness: 'complete' } });
+  expect(mockEco.readGroupPeriodDecision).toHaveBeenCalledWith(actor, '2026-11-01');
+  expect(await finance.loadEconomicPeriodResult(actor, market, window, now)).toMatchObject({ value: 0, unit: 'XAF', data_quality: { status: 'PROVISIONAL' } });
+  expect(mockEco.readMarketPeriodDecision).toHaveBeenCalledWith(actor, 'CM', '2026-11-01');
+  mockEco.readMarketPeriodDecision.mockRejectedValueOnce({ status: 403 }).mockRejectedValueOnce(new Error('database'));
+  expect(await finance.loadEconomicPeriodResult(actor, market, window, now)).toMatchObject({ value: null, data_quality: { status: 'UNAVAILABLE' } });
+  expect(await finance.loadEconomicPeriodResult(actor, market, window, now)).toMatchObject({ value: null, data_quality: { status: 'MARKET_RESULT_NOT_RECONCILED' } });
+  mockEco.readGroupPeriodDecision.mockRejectedValueOnce(new Error('database'));
+  expect(await finance.loadEconomicPeriodResult(actor, null, window, now)).toMatchObject({ value: null, data_quality: { status: 'UNAVAILABLE' } });
+  expect(await finance.loadEconomicPeriodResult(null, null, window, now)).toMatchObject({ value: null });
+  expect(await finance.loadEconomicPeriodResult(actor, market, { filters: { simulation_scope: 'test' } }, now)).toMatchObject({ value: null, data_quality: { status: 'SIMULATION_EXCLUDED' } });
+  expect(mockEco.readMarketPeriodDecision).toHaveBeenCalledTimes(3);
+});
+
+test('Finance diagnostic FX is one batch, exact scoped currency, no mutation or native conversion', async () => {
+  const payload = { kpis: [{ key: 'cout_reel', unit: 'KMF', value: 100 }, { key: 'count', unit: 'count', value: 4 }],
+    trend: [{ revenue_kmf: 0, real_cost_kmf: null, consolidated_margin_kmf: -100 }],
+    customer_cash: { native_net: [{ currency: 'XAF', total: '5' }] },
+    economic_period_result: { unit: 'EUR', value: 7 }, supplier_payment_review: { amount_kmf: 99 } };
+  const convert = jest.fn(async ({ amounts }) => amounts.map(v => ({ amount_text: String(v / 100) })));
+  const out = await finance.projectFinanceDiagnosticCurrency(payload, { currency: 'XAF' }, convert);
+  expect(convert).toHaveBeenCalledTimes(1);
+  expect(convert).toHaveBeenCalledWith({ amounts: [100, 0, -100], from: 'KMF', to: 'XAF' });
+  expect(out.kpis[0]).toMatchObject({ unit: 'XAF', value: 1, base_value_kmf: 100, display: { value: '1', unit: 'XAF' } });
+  expect(out.kpis[1]).toEqual(payload.kpis[1]);
+  expect(out.trend[0]).toMatchObject({ revenue_kmf: 0, consolidated_margin_kmf: -100, display_amounts: { currency: 'XAF', values: { revenue_kmf: '0', real_cost_kmf: null, consolidated_margin_kmf: '-1' } } });
+  expect(out.customer_cash).toEqual(payload.customer_cash);
+  expect(out.supplier_payment_review).toEqual(payload.supplier_payment_review);
+  expect(out.economic_period_result).toEqual(payload.economic_period_result);
+  expect(payload.kpis[0]).toEqual({ key: 'cout_reel', unit: 'KMF', value: 100 });
+  const group = await finance.projectFinanceDiagnosticCurrency(payload, null, convert);
+  expect(group.kpis[0]).toMatchObject({ value: 100, unit: 'KMF', display: { value: '1', unit: 'EUR' } });
+  convert.mockRejectedValueOnce(new Error('FX unavailable'));
+  const missing = await finance.projectFinanceDiagnosticCurrency(payload, { currency: 'XAF' }, convert);
+  expect(missing.kpis[0]).toMatchObject({ value: null, unit: 'XAF', base_value_kmf: 100, display: { value: null, unit: 'XAF' } });
+  expect(missing.trend[0].display_amounts.values.revenue_kmf).toBeNull();
+  expect(missing.diagnostic_currency.status).toBe('unavailable');
+  convert.mockResolvedValueOnce([]);
+  expect((await finance.projectFinanceDiagnosticCurrency(payload, null, convert)).diagnostic_currency.status).toBe('unavailable');
+  expect((await finance.projectFinanceDiagnosticCurrency({}, null, convert)).diagnostic_currency.status).toBe('available');
 });

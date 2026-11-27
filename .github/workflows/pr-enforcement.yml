@@ -652,6 +652,26 @@ jobs:
         run: |
           echo "No E2E API runtime impact: ${{ steps.e2e_scope.outputs.reason }}"
 
+      - name: ECO dedicated HTTP/PostgreSQL proof (fresh disposable database)
+        if: needs.changes.outputs.integration_required == 'true'
+        env:
+          BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
+          ECO_DISPOSABLE_PG_PROOF: '1'
+          PGPASSWORD: komerce
+        run: |
+          # Run only when the ECO implementation or its dedicated proof changes.
+          if git diff --quiet "$BASE_SHA" HEAD -- services/cost-allocation services/economic-cost-center-service.js routes/admin-costing.js routes/admin-pricing-workspace.js tests/integration/economic-cost-center-api-postgres.test.js; then
+            echo "No ECO proof impact"
+            exit 0
+          fi
+          # This job owns its local Postgres service; refuse any other target.
+          test "$DATABASE_URL" = 'postgresql://komerce:komerce@localhost:5432/komerce_test'
+          dropdb -h localhost -U komerce --force komerce_test
+          createdb -h localhost -U komerce komerce_test
+          psql -v ON_ERROR_STOP=1 -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql
+          node scripts/ci-db-bootstrap.js
+          npx jest --runInBand --forceExit tests/integration/economic-cost-center-api-postgres.test.js
+
   dashboard:
     name: Dashboard canonical gates
     needs: changes

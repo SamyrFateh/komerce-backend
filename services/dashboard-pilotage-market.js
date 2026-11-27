@@ -74,7 +74,7 @@ async function fetchTopAlerts(filters, limit = 10) {
   }
 }
 
-async function buildMarketPilotage(filters, market) {
+async function buildMarketPilotage(filters, market, actor=null) {
   if (!market || !market.id || !market.code) {
     throw new Error('dashboard_market_not_resolved');
   }
@@ -83,7 +83,7 @@ async function buildMarketPilotage(filters, market) {
   }
 
   const [
-    ca, cmdsActives, margeConsolidee, alertesCritiques, tauxCouts,
+    ca, cmdsActives, alertesCritiques, tauxCouts,
     coutReel, cmdsCoutIncomplet, coutMoyParCmd,
     cmdsAujourdhui, colisEnTransit, disponiblesRelais, retardsCritiques, tauxCompletudeScans,
     topAlerts,
@@ -91,7 +91,6 @@ async function buildMarketPilotage(filters, market) {
   ] = await Promise.all([
     metrics.getCAEncaisse(filters),
     metrics.getCmdsActives(filters),
-    metrics.getMargeConsolidee(filters),
     metrics.getAlertesCritiques(filters),
     metrics.getTauxCompletudeCouts(filters),
     metrics.getCoutReel(filters),
@@ -106,20 +105,35 @@ async function buildMarketPilotage(filters, market) {
     controlChain.getControlChain({ market }),
   ]);
 
+  const periodStart=new Date().toISOString().slice(0,7)+'-01';
+  const economicResult={key:'economic_period_result',label:'Résultat économique marché — '+periodStart.slice(0,7)+' UTC',
+    value:null,unit:market.currency,delta:null,drill_to:'/admin/workspaces/pricing',
+    data_quality:{metric_id:'eco.period_result',period_start:periodStart,status:filters.simulation_scope?'SIMULATION_EXCLUDED':'MARKET_RESULT_NOT_RECONCILED',completeness:'provisional'}};
+  if(actor?.id&&!filters.simulation_scope){
+    try{
+      const result=await require('./economic-cost-center-read-model').readMarketPeriodDecision(actor,market.code,periodStart);
+      economicResult.value=result.display.result;
+      economicResult.data_quality={...economicResult.data_quality,status:result.status,reasons:result.reasons,fx_status:result.display.fxStatus};
+    }catch(err){
+      // A dashboard reader without pricing.read does not gain access to ECO.
+      economicResult.data_quality.status=err.status===403?'UNAVAILABLE':'MARKET_RESULT_NOT_RECONCILED';
+      log.warn({err},'[dashboard-pilotage-market] economic period result unavailable');
+    }
+  }
   const view_blocks = [
     {
       view: 'control_tower',
       title: 'Tour de contrôle',
       subtitle: 'Voir, comprendre, décider',
       url: '/admin/pilotage',
-      kpis_summary: [ca, cmdsActives, alertesCritiques, margeConsolidee, tauxCouts],
+      kpis_summary: [ca, cmdsActives, alertesCritiques, economicResult, tauxCouts],
     },
     {
       view: 'costing',
       title: 'Coûts & marge',
-      subtitle: 'Dire la vérité économique',
+      subtitle: 'Résultat ECO marché du mois UTC ; diagnostics de coûts',
       url: '/admin/finance',
-      kpis_summary: [ca, coutReel, margeConsolidee, cmdsCoutIncomplet, coutMoyParCmd],
+      kpis_summary: [ca, coutReel, economicResult, cmdsCoutIncomplet, coutMoyParCmd],
     },
     {
       view: 'orders_logistics',
@@ -139,7 +153,7 @@ async function buildMarketPilotage(filters, market) {
         currency: market.currency,
       },
     },
-    kpis_global: [ca, cmdsActives, margeConsolidee, alertesCritiques, tauxCouts],
+    kpis_global: [ca, cmdsActives, economicResult, alertesCritiques, tauxCouts],
     view_blocks,
     economic_flow: {
       stages: [
@@ -148,7 +162,7 @@ async function buildMarketPilotage(filters, market) {
         { key: 'payment', label: 'Paiement', url: '/admin/operations' },
         { key: 'parcels_scans', label: 'Colis & scans', url: '/admin/operations#operations-control-chain' },
         { key: 'real_cost', label: 'Coût réel reventilé', url: '/admin/costing' },
-        { key: 'real_margin', label: 'Marge consolidée', url: '/admin/finance' },
+        { key: 'real_margin', label: 'Résultat économique mensuel', url: '/admin/workspaces/pricing' },
         { key: 'recalibration', label: 'Recalibrage pricing', url: '/admin/workspaces/pricing' },
       ],
     },

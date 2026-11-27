@@ -66,15 +66,18 @@ module.exports = {
   files: {
     migrations: [
       'migrations/208_market_settlement_foundation.sql',
+      'migrations/452_hub_internal_invoices.sql',
     ],
     services: [
       'services/market-settlement-service.js',
+      'services/hub-internal-invoice-service.js',
     ],
     routes: [
       'routes/admin-market-settlement.js',
     ],
     tests: [
       'tests/unit/market-settlement-service.test.js',
+      'tests/unit/hub-internal-invoice-service.test.js',
       'tests/unit/admin-market-settlement-routes.test.js',
       'tests/unit/market-settlement-migration.test.js',
       'tests/e2e-api/settlement.state-machine.e2e.test.js',
@@ -84,6 +87,7 @@ module.exports = {
   db: {
     tables: [
       'market_settlements: RW!',
+      'hub_internal_invoices: RW!',
       'market_settlement_events: RW!',
       'markets: R',
       'market_operating_assignments: R',
@@ -93,13 +97,16 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_PROTECTED',
-    authedRoutesDetected: 3,
-    totalRoutes: 3,
-    note: 'Les 3 routes centrales exigent authenticate + rôle admin/finance. Les routes pays et leur capability authorization appartiennent à market-delegation.',
+    authedRoutesDetected: 6,
+    totalRoutes: 6,
+    note: 'Les 6 routes centrales exigent authenticate + rôle admin/finance. Les routes pays et leur capability authorization appartiennent à market-delegation.',
   },
 
   contract: {
     exposes: [
+      'GET /api/admin/market-settlements/markets/:marketCode/hub-invoices',
+      'POST /api/admin/market-settlements/markets/:marketCode/hub-invoices',
+      'POST /api/admin/market-settlements/markets/:marketCode/hub-invoices/:invoiceId/payment',
       'GET /api/admin/market-settlements/markets/:marketCode/settlements', // admin/finance central
       'POST /api/admin/market-settlements/markets/:marketCode/settlements/ready', // attestation centrale
       'POST /api/admin/market-settlements/settlements/:settlementId/paid', // attestation centrale de paiement

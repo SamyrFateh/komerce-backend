@@ -6,11 +6,12 @@
  * @criticality   high
  * @inputs        central finance actor, canonical market code, attested amount, payment reference
  * @outputs       READY creation and central PAID transition
- * @depends       middleware/auth.js, services/market-delegation-service.js, services/market-settlement-service.js
+ * @depends       middleware/auth.js, services/market-delegation-service.js, services/market-settlement-service.js, services/hub-internal-invoice-service.js
  * @used-by       bootstrap/api-routes.js, central finance workspace
  * @db-read       none
  * @db-write      none
  * @db-write-via:market-settlement-service market_settlements, market_settlement_events
+ * @db-write-via:hub-internal-invoice-service hub_internal_invoices
  * @db-txn        explicit
  * @doctrine      ready_is_central_attestation, paid_is_central_only, market_currency_server_derived
  * @impact-areas  settlement, finance, market-delegation
@@ -24,6 +25,7 @@ const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { resolveActiveAssignmentByMarketCode } = require('../services/market-delegation-service');
 const settlement = require('../services/market-settlement-service');
+const hubInvoices = require('../services/hub-internal-invoice-service');
 
 const centralFinance = [authenticate, requireRole(['admin', 'finance'])];
 
@@ -32,10 +34,10 @@ function correlationId(req) {
   return raw ? String(raw).slice(0, 200) : null;
 }
 
-async function withTransaction(work) {
+async function withTransaction(work, isolation = 'BEGIN') {
   const client = await db.getClient();
   try {
-    await client.query('BEGIN');
+    await client.query(isolation);
     const result = await work(client);
     await client.query('COMMIT');
     return result;
@@ -126,6 +128,45 @@ router.post('/settlements/:settlementId/paid', ...centralFinance, async (req, re
     if (sendKnownError(res, error)) return;
     next(error);
   }
+});
+
+function sendInvoiceError(res, error, next) {
+  if (sendKnownError(res, error)) return;
+  if (error.code === '40001' || error.code === '23505') {
+    res.status(409).json({ code: 'HUB_INVOICE_CONFLICT', error: 'Opération concurrente ou référence déjà utilisée. Rechargez le relevé.' });
+    return;
+  }
+  next(error);
+}
+
+router.get('/markets/:marketCode/hub-invoices', ...centralFinance, async (req, res, next) => {
+  try {
+    const result = await hubInvoices.preview(db, { marketCode: req.params.marketCode, from: req.query.from, to: req.query.to });
+    res.set('Cache-Control', 'private, no-store');
+    res.json(result);
+  } catch (error) { sendInvoiceError(res, error, next); }
+});
+
+router.post('/markets/:marketCode/hub-invoices', ...centralFinance, async (req, res, next) => {
+  try {
+    assertAllowedBody(req.body, ['from', 'to', 'evidence_hash']);
+    const { from, to, evidence_hash: evidenceHash } = req.body || {};
+    const invoice = await withTransaction(client => hubInvoices.issue(client, {
+      marketCode: req.params.marketCode, from, to, evidenceHash, actorId: req.user.id,
+    }), 'BEGIN ISOLATION LEVEL SERIALIZABLE');
+    res.json({ invoice });
+  } catch (error) { sendInvoiceError(res, error, next); }
+});
+
+router.post('/markets/:marketCode/hub-invoices/:invoiceId/payment', ...centralFinance, async (req, res, next) => {
+  try {
+    assertAllowedBody(req.body, ['amount_kmf', 'reference']);
+    const { amount_kmf: amountKmf, reference } = req.body || {};
+    const invoice = await withTransaction(client => hubInvoices.recordPayment(client, {
+      marketCode: req.params.marketCode, invoiceId: req.params.invoiceId, amountKmf, reference, actorId: req.user.id,
+    }));
+    res.json({ invoice });
+  } catch (error) { sendInvoiceError(res, error, next); }
 });
 
 module.exports = router;

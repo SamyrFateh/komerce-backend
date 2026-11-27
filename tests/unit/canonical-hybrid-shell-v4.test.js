@@ -131,12 +131,9 @@ describe('Canonical Hybrid Shell V4 — doctrine + mock style contract', () => {
     const css = read('public/dashboards/canonical/css/canonical-shell-v4.css');
     const apiPaths = [...js.matchAll(/['"]((?:\/api\/)[^'"]+)['"]/g)].map(match => match[1]);
     // Hors resolver de référence (read-only), le fichier unique porte seulement
-    // les actions de session/staging historiques du header : déconnexion, et
-    // Reset/Seed projetés uniquement si le serveur annonce staging (fail-closed).
+    // la déconnexion ; les mutations de recette sont isolées du shell.
     expect(apiPaths.sort()).toEqual([
       '/api/admin/dashboard/reference/resolve',
-      '/api/admin/reset',
-      '/api/admin/seed-test',
       '/api/auth/logout',
     ].sort());
     expect(sync).not.toMatch(/\/api\//);

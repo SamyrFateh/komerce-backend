@@ -8100,7 +8100,7 @@
             ]
           },
           "services": {
-            "count": 47,
+            "count": 48,
             "files": [
               {
                 "declared": "config/central-transit-roles.js",
@@ -8120,6 +8120,11 @@
               {
                 "declared": "public/js/golden-recipe-scenarios.js",
                 "resolvedPath": "public/js/golden-recipe-scenarios.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "public/js/golden-recipe-staging-tools.js",
+                "resolvedPath": "public/js/golden-recipe-staging-tools.js",
                 "status": "resolved-on-disk-no-header"
               },
               {
@@ -9420,7 +9425,7 @@
             ]
           }
         },
-        "totalFiles": 492,
+        "totalFiles": 493,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -11324,6 +11329,7 @@
           "audit des changements de prix produit dans price_history",
           "allocation de cout",
           "vérité des charges de structure de période issue de faits économiques append-only, distincte des configurations de charges",
+          "référentiel administratif de centres/familles/postes/ressources, distinct des faits économiques",
           "vérité du risque de période issue de faits append-only et d un watermark de revue explicite par marché",
           "gate de couverture économique par marché, fail-closed sur maturité, risque et charges de structure attribuées",
           "politique canonique de décision par marché : fenêtre, seuils de maturité/couverture et plafond de dispositions versionnés append-only",
@@ -11402,7 +11408,7 @@
             ]
           },
           "migrations": {
-            "count": 34,
+            "count": 42,
             "files": [
               {
                 "declared": "migrations/019_finance_columns.sql",
@@ -11573,6 +11579,46 @@
                 "declared": "migrations/361_canonical_kom_box_shipment_costs.sql",
                 "resolvedPath": "migrations/361_canonical_kom_box_shipment_costs.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/430_economic_cost_center_reference.sql",
+                "resolvedPath": "migrations/430_economic_cost_center_reference.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/431_economic_cost_budget_revisions.sql",
+                "resolvedPath": "migrations/431_economic_cost_budget_revisions.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/432_economic_cost_commitments.sql",
+                "resolvedPath": "migrations/432_economic_cost_commitments.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/433_market_economic_selection_policy.sql",
+                "resolvedPath": "migrations/433_market_economic_selection_policy.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/434_economic_sku_rail_selection_events.sql",
+                "resolvedPath": "migrations/434_economic_sku_rail_selection_events.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/435_economic_selection_decision_source.sql",
+                "resolvedPath": "migrations/435_economic_selection_decision_source.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/453_local_stock_economic_receipt_lots.sql",
+                "resolvedPath": "migrations/453_local_stock_economic_receipt_lots.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/454_local_stock_economic_multi_lot.sql",
+                "resolvedPath": "migrations/454_local_stock_economic_multi_lot.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -11647,7 +11693,7 @@
             ]
           },
           "services": {
-            "count": 56,
+            "count": 64,
             "files": [
               {
                 "declared": "scripts/market-cost-attribution-conservation-check.js",
@@ -11690,6 +11736,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/cost-allocation/local-stock-economic-lots.js",
+                "resolvedPath": "services/cost-allocation/local-stock-economic-lots.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
                 "declared": "services/cost-allocation/manual-cost-entry-service.js",
                 "resolvedPath": "services/cost-allocation/manual-cost-entry-service.js",
                 "status": "resolved-in-technical-graph"
@@ -11730,6 +11781,36 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/economic-cost-budget-service.js",
+                "resolvedPath": "services/economic-cost-budget-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/economic-cost-center-read-model.js",
+                "resolvedPath": "services/economic-cost-center-read-model.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/economic-cost-commitment-service.js",
+                "resolvedPath": "services/economic-cost-commitment-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/economic-cost-post-actual-service.js",
+                "resolvedPath": "services/economic-cost-post-actual-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/economic-cost-reference-service.js",
+                "resolvedPath": "services/economic-cost-reference-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/economic-cost-write-authority.js",
+                "resolvedPath": "services/economic-cost-write-authority.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/economic-engine-queries.js",
                 "resolvedPath": "services/economic-engine-queries.js",
                 "status": "resolved-in-technical-graph"
@@ -11737,6 +11818,11 @@
               {
                 "declared": "services/economic-price-audit-service.js",
                 "resolvedPath": "services/economic-price-audit-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/economic-sku-rail-selection.js",
+                "resolvedPath": "services/economic-sku-rail-selection.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -11932,7 +12018,7 @@
             ]
           },
           "tests": {
-            "count": 108,
+            "count": 116,
             "files": [
               {
                 "declared": "tests/integration/canonical-margin-writer-real-db.test.js",
@@ -11942,6 +12028,26 @@
               {
                 "declared": "tests/integration/cost-allocation-conservation-real-db.test.js",
                 "resolvedPath": "tests/integration/cost-allocation-conservation-real-db.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/economic-cost-budget-revisions-postgres.test.js",
+                "resolvedPath": "tests/integration/economic-cost-budget-revisions-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/economic-cost-center-api-postgres.test.js",
+                "resolvedPath": "tests/integration/economic-cost-center-api-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/economic-cost-center-reference-postgres.test.js",
+                "resolvedPath": "tests/integration/economic-cost-center-reference-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/economic-cost-commitments-postgres.test.js",
+                "resolvedPath": "tests/integration/economic-cost-commitments-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -12120,6 +12226,16 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/economic-cost-budget-service.test.js",
+                "resolvedPath": "tests/unit/economic-cost-budget-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/economic-cost-center-read-model.test.js",
+                "resolvedPath": "tests/unit/economic-cost-center-read-model.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/economic-engine-queries.test.js",
                 "resolvedPath": "tests/unit/economic-engine-queries.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -12147,6 +12263,11 @@
               {
                 "declared": "tests/unit/economic-route.test.js",
                 "resolvedPath": "tests/unit/economic-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/economic-sku-rail-selection.test.js",
+                "resolvedPath": "tests/unit/economic-sku-rail-selection.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -12202,6 +12323,11 @@
               {
                 "declared": "tests/unit/international-n1-reconciliation.test.js",
                 "resolvedPath": "tests/unit/international-n1-reconciliation.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/local-stock-economic-lots.test.js",
+                "resolvedPath": "tests/unit/local-stock-economic-lots.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -12497,7 +12623,7 @@
             ]
           }
         },
-        "totalFiles": 221,
+        "totalFiles": 245,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -12535,11 +12661,47 @@
             "resolution": "single-writer"
           },
           {
+            "table": "economic_cost_budget_revisions",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "economic_cost_centers",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "economic_cost_commitment_movements",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "economic_cost_commitments",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "economic_cost_families",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "economic_cost_posts",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "economic_cost_resources",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "economic_group_period_closures",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "economic_risk_cost_events",
             "resolution": "declared-table-owner"
           },
           {
             "table": "economic_risk_watermark_events",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "economic_sku_rail_selection_events",
             "resolution": "declared-table-owner"
           },
           {
@@ -12568,6 +12730,14 @@
           },
           {
             "table": "international_n1_reconciliations",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "local_stock_economic_lot_lines",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "local_stock_economic_lots",
             "resolution": "declared-table-owner"
           },
           {
@@ -12675,6 +12845,54 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "economic_cost_budget_revisions",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "economic_cost_centers",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "economic_cost_commitment_movements",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "economic_cost_commitments",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "economic_cost_families",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "economic_cost_posts",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "economic_cost_resources",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "economic_group_period_closures",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "economic_risk_cost_events",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
@@ -12682,6 +12900,12 @@
           },
           {
             "table": "economic_risk_watermark_events",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "economic_sku_rail_selection_events",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "owner"
@@ -12724,6 +12948,18 @@
           },
           {
             "table": "international_n1_reconciliations",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "local_stock_economic_lot_lines",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "local_stock_economic_lots",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "owner"
@@ -12939,11 +13175,47 @@
             "resolution": "single-writer"
           },
           {
+            "table": "economic_cost_budget_revisions",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "economic_cost_centers",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "economic_cost_commitment_movements",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "economic_cost_commitments",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "economic_cost_families",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "economic_cost_posts",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "economic_cost_resources",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "economic_group_period_closures",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "economic_risk_cost_events",
             "resolution": "declared-table-owner"
           },
           {
             "table": "economic_risk_watermark_events",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "economic_sku_rail_selection_events",
             "resolution": "declared-table-owner"
           },
           {
@@ -12972,6 +13244,14 @@
           },
           {
             "table": "international_n1_reconciliations",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "local_stock_economic_lot_lines",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "local_stock_economic_lots",
             "resolution": "declared-table-owner"
           },
           {
@@ -13079,6 +13359,54 @@
             "ownershipStatus": "owner"
           },
           {
+            "table": "economic_cost_budget_revisions",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "economic_cost_centers",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "economic_cost_commitment_movements",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "economic_cost_commitments",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "economic_cost_families",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "economic_cost_posts",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "economic_cost_resources",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "economic_group_period_closures",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
             "table": "economic_risk_cost_events",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
@@ -13086,6 +13414,12 @@
           },
           {
             "table": "economic_risk_watermark_events",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "economic_sku_rail_selection_events",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "owner"
@@ -13128,6 +13462,18 @@
           },
           {
             "table": "international_n1_reconciliations",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "local_stock_economic_lot_lines",
+            "mode": "RW",
+            "lifecycleOwner": "economic-engine",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "local_stock_economic_lots",
             "mode": "RW",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "owner"
@@ -13326,7 +13672,7 @@
           }
         ],
         "httpInterfaces": {
-          "count": 110
+          "count": 131
         }
       },
       "businessDependencies": [
@@ -18611,7 +18957,7 @@
               {
                 "declared": "services/hub-combox-destination-guard.js",
                 "resolvedPath": "services/hub-combox-destination-guard.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/hub-dubai-projection.js",
@@ -18671,7 +19017,7 @@
               {
                 "declared": "services/hub-reception-quality-plan.js",
                 "resolvedPath": "services/hub-reception-quality-plan.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/hub-reference.js",
@@ -18681,7 +19027,7 @@
               {
                 "declared": "services/hub-supplier-receipt-quality.js",
                 "resolvedPath": "services/hub-supplier-receipt-quality.js",
-                "status": "resolved-on-disk-no-header"
+                "status": "resolved-in-technical-graph"
               },
               {
                 "declared": "services/international-shipment-journey.js",
@@ -21654,6 +22000,7 @@
           "consumer": "settlement",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         },
@@ -32857,11 +33204,16 @@
       "implementation": {
         "byCategory": {
           "migrations": {
-            "count": 1,
+            "count": 2,
             "files": [
               {
                 "declared": "migrations/208_market_settlement_foundation.sql",
                 "resolvedPath": "migrations/208_market_settlement_foundation.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/452_hub_internal_invoices.sql",
+                "resolvedPath": "migrations/452_hub_internal_invoices.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -32877,8 +33229,13 @@
             ]
           },
           "services": {
-            "count": 1,
+            "count": 2,
             "files": [
+              {
+                "declared": "services/hub-internal-invoice-service.js",
+                "resolvedPath": "services/hub-internal-invoice-service.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "services/market-settlement-service.js",
                 "resolvedPath": "services/market-settlement-service.js",
@@ -32887,7 +33244,7 @@
             ]
           },
           "tests": {
-            "count": 4,
+            "count": 5,
             "files": [
               {
                 "declared": "tests/e2e-api/settlement.state-machine.e2e.test.js",
@@ -32897,6 +33254,11 @@
               {
                 "declared": "tests/unit/admin-market-settlement-routes.test.js",
                 "resolvedPath": "tests/unit/admin-market-settlement-routes.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-internal-invoice-service.test.js",
+                "resolvedPath": "tests/unit/hub-internal-invoice-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -32912,7 +33274,7 @@
             ]
           }
         },
-        "totalFiles": 7,
+        "totalFiles": 10,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -32921,6 +33283,10 @@
       },
       "ownership": {
         "ownsTables": [
+          {
+            "table": "hub_internal_invoices",
+            "resolution": "declared-table-owner"
+          },
           {
             "table": "market_settlement_events",
             "resolution": "declared-table-owner"
@@ -32931,6 +33297,12 @@
           }
         ],
         "writesTables": [
+          {
+            "table": "hub_internal_invoices",
+            "mode": "RW",
+            "lifecycleOwner": "settlement",
+            "ownershipStatus": "owner"
+          },
           {
             "table": "market_settlement_events",
             "mode": "RW",
@@ -32962,6 +33334,10 @@
       "data": {
         "ownsTables": [
           {
+            "table": "hub_internal_invoices",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "market_settlement_events",
             "resolution": "declared-table-owner"
           },
@@ -32971,6 +33347,12 @@
           }
         ],
         "writesTables": [
+          {
+            "table": "hub_internal_invoices",
+            "mode": "RW",
+            "lifecycleOwner": "settlement",
+            "ownershipStatus": "owner"
+          },
           {
             "table": "market_settlement_events",
             "mode": "RW",
@@ -33028,7 +33410,7 @@
           }
         ],
         "httpInterfaces": {
-          "count": 3
+          "count": 6
         }
       },
       "businessDependencies": [
@@ -33057,6 +33439,7 @@
           "provider": "market",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         },

@@ -9,7 +9,7 @@
  * @depends       services/order-delivery-wave-service.js, services/market-transport-sale-rates.js, services/order-fx-snapshot.js, db.js, services/cart-share-service.js,
  *                services/order-post-commit-hooks.js, services/order-checkout-item-resolution.js,
  *                services/order-checkout-persistence.js, services/local-stock-service.js,
- *                services/market-local-price-resolution-service.js
+ *                services/market-local-price-resolution-service.js, services/economic-sku-rail-selection.js
  * @used-by       routes/orders/create.js
  * @db-read       market_transport_sale_rates, orders, product_skus, product_variants, products, recipients, relais, markets, shared_cart_items, shared_carts
  * @db-write      order_items, order_status_history, orders, recipients
@@ -74,6 +74,7 @@ const { wavesEnabled, reserveWaveReference } = require('./order-delivery-wave-se
 const walletService = require('./wallet-service');
 const { resolveRoutingFromRelais, RoutingError } = require('./routing');
 const { resolveOrderItemTransportRail, TransportPricingError } = require('./transport-pricing');
+const { findWithdrawnSkuRail } = require('./economic-sku-rail-selection');
 const { resolveDisplaySnapshot } = require('./order-display-snapshot');
 const { runOrderPostCommitHooks } = require('./order-post-commit-hooks');
 const { claimCheckout, completeCheckout } = require('./order-checkout-idempotency');
@@ -419,10 +420,18 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
     const transport_price_kmf = 0;
     const transportPricingSnapshot = null;
     try {
+      const railDemands = [];
       for (const item of items) {
-        if (item.requested_transport_rail || item._fulfillment_source === FULFILLMENT_SOURCE.IMPORT) {
-          resolveOrderItemTransportRail(item.requested_transport_rail ?? null);
+        const imported = item._fulfillment_source === FULFILLMENT_SOURCE.IMPORT;
+        if (item.requested_transport_rail || imported) {
+          const rail = resolveOrderItemTransportRail(item.requested_transport_rail ?? null);
+          if (imported && item._resolved_sku_id) railDemands.push({ skuId: item._resolved_sku_id, rail });
         }
+      }
+      const withdrawn = await findWithdrawnSkuRail(client, relais?.market_id, railDemands);
+      if (withdrawn) {
+        await client.query('ROLLBACK');
+        return fail(409, { error: 'Cette variante est indisponible avec ce mode de transport.', code: 'ECONOMIC_SELECTION_WITHDRAWN' });
       }
     } catch (e) {
       await client.query('ROLLBACK');

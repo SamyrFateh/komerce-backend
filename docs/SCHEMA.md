@@ -235,6 +235,71 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 
 ### 4.8 Pricing et économie (tables live + 2 objets visés)
 
+<!-- schema-pending
+object: economic_cost_commitments
+kind: table
+migration: 432
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Engagement administratif par poste et mois, montant natif et EUR figés, preuve et auteur.
+-->
+
+<!-- schema-pending
+object: economic_cost_commitment_movements
+kind: table
+migration: 432
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Mouvements append-only de libération ou consommation partielle liée au fait canonique, plafonds de conservation.
+-->
+
+**Migration 432 — intention uniquement :** aucun fait réel créé par un engagement. Premier lien limité aux ACCRUAL de structure non corrigés, même poste/devise/période. Projection décisionnelle et corrections, autres sources, FX et autorisations à raccorder avant activation. Aucune donnée live attestée.
+
+
+<!-- schema-pending
+object: economic_cost_budget_revisions
+kind: table
+migration: 431
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Versions append-only du budget mensuel par poste ; devise native et snapshot EUR sourcé, dernière révision seulement ; distinct des charges réelles et engagements.
+-->
+
+**Migration 431 — intention uniquement :** aucun budget initial, aucune conversion autonome ni écriture dans le journal réel. Service et habilitations restent à raccorder à l'autorité FX existante. Validation CI sur PostgreSQL jetable avant PR ; live non attesté.
+
+
+<!-- schema-pending
+object: economic_cost_centers
+kind: table
+migration: 430
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Référentiel de centres groupe ou marché, responsable explicite avant activation.
+-->
+
+<!-- schema-pending
+object: economic_cost_families
+kind: table
+migration: 430
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Familles extensibles par centre, sans source de dépenses.
+-->
+
+<!-- schema-pending
+object: economic_cost_resources
+kind: table
+migration: 430
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Ressources identifiées par centre, sans écriture de coût.
+-->
+
+<!-- schema-pending
+object: economic_cost_posts
+kind: table
+migration: 430
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Postes classés nature/périmètre/base causale, liens structure existants à scope identique, aucun journal de réel.
+-->
+
+**Migration 430 — intention uniquement :** référentiel administratif ECO-1a. Aucune donnée insérée, aucun fait réel créé. Validation PostgreSQL CI avant fusion, déploiement et vérification live séparés. Le retrait éventuel nécessite une migration compensatrice gouvernée, jamais la suppression de faits.
+
+
 | Table | Rôle |
 |---|---|
 | `finance_config` | **Singleton (id=1)** — source de vérité unique post-ADR-009. Intention migration 235 (non attestée live) : `taux_pln_kmf` (`NUMERIC(18,6)`) nullable, strictement positif lorsque renseigné, aucun taux par défaut. Colonne `provision_risque_pct NUMERIC(6,4) DEFAULT 0.01` ajoutée en migration 067 : taux de provision risque mensuel. **Migration 316 (2026-10-22, `intended_migration_schema`)** : `taux_change_eur_kmf` et `taux_aed_kmf` DÉPRÉCIÉES (plus de NOT NULL ni de valeur par défaut, COMMENT DEPRECATED) : jamais lues ni écrites, l'autorité FX est `services/fx-authority.js` (`currency_parities`, `fx_rate_observations`, `fx_pegs`). DROP dans une PR séparée. Les paramètres économiques de la table sont inchangés. |
@@ -260,7 +325,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `economic_structure_cost_events` | Journal append-only des charges structurelles de période avec preuve, devise/FX, périmètre GROUP ou MARKET_DIRECT et corrections par événements sans mutation historique. Ces charges sont couvertes collectivement par la contribution du portefeuille ; elles ne constituent pas une dette SKU. **Migration 166 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 | `economic_risk_cost_events` | Journal append-only des coûts de risque réellement constatés par marché, datés économiquement, avec preuve, devise/FX et corrections par événements ; l'absence de ligne ne vaut jamais zéro. **Migration 167 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 | `economic_risk_watermark_events` | Certifications append-only de revue du risque par marché ; closed_through permet de prouver une période revue à zéro et devient stale si un fait backdaté est enregistré après certification. **Migration 167 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
-| `pricing_market_decision_policy_events` | Journal append-only de la politique canonique de décision par marché : largeur de fenêtre, seuil de maturité, seuil de couverture, plafond de dispositions, source, preuve, justification et date d'effet ; aucune valeur numérique implicite. **Migration 168 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
+| `pricing_market_decision_policy_events` | Journal append-only de la politique canonique de décision par marché : largeur de fenêtre, seuil de maturité, seuil de couverture, plafond de dispositions, source, preuve, justification et date d'effet ; aucune valeur numérique implicite. **Migration 168 — promue le 2026-09-07 (schema-promote, dump live verifie).** Migration 433 ajoute `selection_by_family` pour les seuils de contribution et d’observation versionnés par famille. |
 | `product_market_price_drafts` | Décision commerciale de prix locale par market_id + product_id ; devise issue du marché serveur ; états DRAFT_PENDING_GATE, LOCAL_AUTHORIZED_PENDING_CUTOVER et LOCAL_ACTIVE. **Migration 170 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 | `product_market_price_draft_events` | Journal append-only des décisions prix pays SET, RESET, AUTHORIZE et ACTIVATE avec acteur, raison et snapshot économique. **Migration 170 — promue le 2026-09-07 (schema-promote, dump live verifie).** |
 | `market_price_observations` | Observations de prix locales market-scoped par produit, devise du marché, source, preuve et date d'observation ; source du corridor pays distincte de competitor_prices global. **Migration 192 — promue le 2026-09-08 (schema-promote, dump live verifie).** |
@@ -1061,3 +1126,45 @@ role: Preuves physiques de remise fournisseur, cumul borné au refusé, sans eff
 -->
 
 Déploiement prévu : migration additive avant activation du routeur V3 ; vérifier numéro disponible et graphe architecture avant fusion. Repli : désactiver le nouveau parcours sans effacer le journal ni les faits physiques déjà attestés. Aucun déploiement ou schéma live vérifié à ce stade.
+
+<!-- schema-pending
+object: economic_sku_rail_selection_events
+kind: table
+migration: 434
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Retrait et réouverture versionnés, pour une variante, un marché et un rail, avec décision et preuve. Migration 435 ajoute `decision_source`. Une décision `MANUAL` exige un acteur humain. Une décision `POLICY_AUTOMATION` autorise uniquement un retrait et conserve `actor_id` à NULL.
+-->
+
+<!-- schema-pending
+object: hub_internal_invoices
+kind: table
+migration: 452
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Factures internes du Hub, montants KMF et équivalents EUR/XAF figés dans le relevé source, avec attestation unique du règlement reçu.
+-->
+
+<!-- schema-pending
+object: economic_group_period_closures
+kind: table
+migration: 451
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Validation Direction append-only du mois groupe, avec empreinte des preuves, justificatif et acteur. Un changement de preuve rend la validation précédente obsolète.
+-->
+
+
+<!-- schema-pending
+object: local_stock_economic_lots
+kind: table
+migration: 453
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Clôture financière d'une réception W3 attestée par SKU et marché, quantité, coût d'achat réglé en KMF, justificatif et acteur. Non live avant déploiement.
+-->
+<!-- schema-pending
+object: local_stock_economic_lot_lines
+kind: table
+migration: 453
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Rattachement explicite de la vente locale au lot clôturé, quantité et coût ventilé au centime ; preuve et acteur. Non live avant déploiement.
+-->
+
+La migration 454 (schéma visé, non live vérifié) étend la clé primaire de `local_stock_economic_lot_lines` à `(order_item_id, receipt_id)` pour permettre plusieurs lots par vente. Les sommes de quantités par lot et par vente sont plafonnées dans la transaction du writer.

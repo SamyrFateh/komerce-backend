@@ -179,6 +179,8 @@
       return input;
     };
     const product = field('product_id', 'ID produit');
+    const sku = field('sku_id', 'ID SKU (traçabilité économique)');
+    sku.required = false;
     const relais = el('select');
     relais.name = 'relais_id'; relais.required = true;
     (data.relais || []).forEach((r) => { const o = el('option', '', r.name || r.id); o.value = r.id; relais.appendChild(o); });
@@ -199,7 +201,7 @@
         await request(`${base}/receipts`, {
           method: 'POST',
           headers: { 'Idempotency-Key': key },
-          body: { product_id: product.value.trim(), relais_id: relais.value, qty_received: Number(qty.value), proof_ref: proof.value.trim(), note: note.value.trim() || undefined },
+          body: { product_id: product.value.trim(), sku_id: sku.value.trim() || undefined, relais_id: relais.value, qty_received: Number(qty.value), proof_ref: proof.value.trim(), note: note.value.trim() || undefined },
         });
         key = null;
         await refresh();
