@@ -202,8 +202,12 @@
         return;
       }
       if (reply.adjustment_required) result.appendChild(el('p', 'kmc-team-help', 'Des preuves ont changé depuis l’émission. Régularisation nécessaire ; facture historique inchangée.'));
+      if (reply.adjustment?.status==='REVIEW_REQUIRED') result.appendChild(row('Écart à examiner (non facturé)',kmf(reply.adjustment.delta_kmf)));
+      if (reply.adjustment?.status==='RECONCILIATION_REQUIRED') result.appendChild(el('p','kmc-team-help','Écart non calculable : rapprochement préalable requis.'));
       if (data.coverage?.status === 'CROSS_PERIOD_RECONCILIATION_REQUIRED') {
         result.appendChild(el('p', 'kmc-team-help', 'Des charges chevauchent la période. Rapprochement nécessaire avant émission.'));
+      } else if (data.coverage?.status === 'POOL_RECONCILIATION_REQUIRED') {
+        result.appendChild(el('p','kmc-team-help','Ventilation Hub non rapprochée ou charge corrigée. Émission bloquée.'));
       } else if (data.coverage?.status === 'UNKNOWN') {
         result.appendChild(el('p', 'kmc-team-help', 'Couverture du relevé inconnue. Émission bloquée.'));
       }
@@ -215,6 +219,10 @@
         result.appendChild(row('Facture interne du Hub', invoice.id));
         result.appendChild(row('Statut', invoice.status === 'PAID' ? 'Réglée' : 'À régler'));
         if (invoice.payment_reference) result.appendChild(row('Référence du règlement', invoice.payment_reference));
+        if (invoice.balance) {
+          result.appendChild(row(centralFinance?'Créance Hub':'Reste dû au Hub',kmf(centralFinance?invoice.balance.hub_receivable_kmf:invoice.balance.market_payable_kmf)));
+          if(invoice.balance.settlement_status==='PAYMENT_ATTESTED') result.appendChild(el('p','kmc-team-help','Règlement attesté par la finance, distinct des encaissements relais.'));
+        }
       }
       result.appendChild(pill(`Total Hub ${kmf(data.total_kmf)}`, true));
       const info = data.informational_totals;

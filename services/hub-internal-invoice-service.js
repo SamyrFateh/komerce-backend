@@ -18,7 +18,7 @@
 
 const { createHash } = require('node:crypto');
 const { parseDecimal } = require('./fx-authority');
-const { readHubStatement, statementPeriod } = require('./market-delegation-cost-statement-service');
+const { readHubStatement, statementPeriod, projectHubInvoiceBalance, hubInvoiceAdjustmentRequired, projectHubAdjustment } = require('./market-delegation-cost-statement-service');
 
 function failure(code, message, status = 409) {
   return Object.assign(new Error(message), { code, status });
@@ -34,19 +34,19 @@ async function loadMarket(db, marketCode, lock = false) {
 }
 
 function present(invoice) {
-  return invoice ? { ...invoice, status: invoice.paid_at ? 'PAID' : 'ISSUED' } : null;
+  return invoice ? { ...invoice, status: invoice.paid_at ? 'PAID' : 'ISSUED', balance:projectHubInvoiceBalance(invoice) } : null;
 }
 
 async function review(db, { market, from, to }) {
   const { fromIso, toIso } = statementPeriod(from, to, 'hub');
   const { rows: [invoice] } = await db.query(
-    `SELECT * FROM hub_internal_invoices
+    `SELECT *, amount_kmf::text AS amount_kmf FROM hub_internal_invoices
       WHERE market_id=$1 AND period_from < $3::date AND period_to > $2::date
       ORDER BY period_from, id LIMIT 1`, [market.id, from, to]
   );
   if (invoice) {
     const exact = await db.query(
-      'SELECT * FROM hub_internal_invoices WHERE market_id=$1 AND period_from=$2::date AND period_to=$3::date',
+      'SELECT *, amount_kmf::text AS amount_kmf FROM hub_internal_invoices WHERE market_id=$1 AND period_from=$2::date AND period_to=$3::date',
       [market.id, from, to]
     );
     if (exact.rows[0]) return { invoice: present(exact.rows[0]), can_issue: false };
@@ -61,13 +61,6 @@ async function review(db, { market, from, to }) {
   return { statement, evidence_hash, can_issue, invoice: null };
 }
 
-function statementFacts(statement) {
-  if(!statement || !Array.isArray(statement.lines))return null;
-  return JSON.stringify([statement.total_kmf,statement.lines.map(line=>[
-    line.attribution_id,line.event_id,line.amount_kmf,line.economic_from,line.economic_to,
-    line.allocation_key,line.policy_version
-  ]).sort((a,b)=>String(a[0]).localeCompare(String(b[0])))]);
-}
 async function preview(db, { marketCode, from, to }) {
   const market = await loadMarket(db, marketCode);
   const reviewed=await review(db, { market, from, to });
@@ -75,10 +68,8 @@ async function preview(db, { marketCode, from, to }) {
   const {fromIso,toIso}=statementPeriod(from,to,'hub');
   const current=await readHubStatement(db,{marketId:market.id,marketCode:market.code,fromIso,toIso});
   // The invoice and settlement stay immutable. Differences require a separate regularization.
-  const frozen=statementFacts(reviewed.invoice.statement_snapshot);
-  const adjustment_required=frozen===null || frozen!==statementFacts(current)
-    || current.truncated || current.coverage?.status!=='NO_CROSS_PERIOD_ATTRIBUTIONS';
-  return {...reviewed,adjustment_required};
+  const adjustment_required=hubInvoiceAdjustmentRequired(reviewed.invoice,current);
+  return {...reviewed,adjustment_required,adjustment:projectHubAdjustment(reviewed.invoice,current)};
 }
 
 async function issue(db, { marketCode, from, to, evidenceHash, actorId }) {
@@ -94,7 +85,7 @@ async function issue(db, { marketCode, from, to, evidenceHash, actorId }) {
   const { rows: [invoice] } = await db.query(
     `INSERT INTO hub_internal_invoices
        (market_id, period_from, period_to, amount_kmf, evidence_hash, statement_snapshot, issued_by)
-     VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7) RETURNING *`,
+     VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7) RETURNING *, amount_kmf::text AS amount_kmf`,
     [market.id, from, to, checked.statement.total_kmf, evidenceHash, JSON.stringify(checked.statement), actorId]
   );
   return present(invoice);
@@ -108,7 +99,7 @@ async function recordPayment(db, { marketCode, invoiceId, amountKmf, reference, 
   }
   const market = await loadMarket(db, marketCode);
   const { rows: [invoice] } = await db.query(
-    'SELECT * FROM hub_internal_invoices WHERE id=$1 AND market_id=$2 FOR UPDATE', [invoiceId, market.id]
+    'SELECT *, amount_kmf::text AS amount_kmf FROM hub_internal_invoices WHERE id=$1 AND market_id=$2 FOR UPDATE', [invoiceId, market.id]
   );
   if (!invoice) throw failure('HUB_INVOICE_UNKNOWN', 'Facture Hub introuvable.', 404);
   const received = parseDecimal(amountKmf);
@@ -122,7 +113,7 @@ async function recordPayment(db, { marketCode, invoiceId, amountKmf, reference, 
   }
   const { rows: [paid] } = await db.query(
     `UPDATE hub_internal_invoices SET payment_reference=$2, paid_by=$3, paid_at=now()
-      WHERE id=$1 RETURNING *`, [invoiceId, reference.trim(), actorId]
+      WHERE id=$1 RETURNING *, amount_kmf::text AS amount_kmf`, [invoiceId, reference.trim(), actorId]
   );
   return present(paid);
 }
