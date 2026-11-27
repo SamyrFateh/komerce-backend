@@ -38,8 +38,8 @@ function validate(raw){
     throw error('economic_reference_period_invalid',400,'Mois invalide');
   return {marketCode:raw.marketCode,periodStart:raw.periodStart};
 }
-async function resolveScope(client,actor,marketCode,central){
-  if(central){
+async function resolveScope(client,actor,marketCode,globalRead){
+  if(globalRead){
     if(marketCode===null)return null;
     const {rows}=await client.query('SELECT id FROM markets WHERE code=$1',[marketCode]);
     if(!rows.length)throw error('market_not_found',404,'Marché introuvable');
@@ -678,7 +678,7 @@ async function closeGroupPeriod(actor, {periodStart,evidenceHash,evidenceRef,att
     // The reviewed snapshot and the append-only attestation share one transaction.
     // A fact committed later remains a new fact and reopens the period.
     await client.query('BEGIN ISOLATION LEVEL SERIALIZABLE');
-    const model=await readCostCentersSnapshot(actor,input,client,true);
+    const model=await readCostCentersSnapshot(actor,input,client,true,true);
     const result=model.profitability?.groupPeriodResult;
     if (result?.evidenceHash!==evidenceHash) {
       throw error('economic_close_evidence_changed',409,'Les preuves ont changé. Rechargez la période.');
@@ -698,17 +698,18 @@ async function closeGroupPeriod(actor, {periodStart,evidenceHash,evidenceRef,att
 async function readCostCenters(actor,raw){
   if(!actor?.id)throw error('AUTH_REQUIRED',401,'Authentification requise');
   const input=validate(raw);
-  const central=actor.role==='admin' && await hasPricingGlobalAuthority(actor.id);
+  const globalRead=actor.role==='admin';
+  const central=globalRead && await hasPricingGlobalAuthority(actor.id);
   const client=await db.getClient();
   try{
     await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
-    const model=await readCostCentersSnapshot(actor,input,client,central);
+    const model=await readCostCentersSnapshot(actor,input,client,central,globalRead);
     await client.query('COMMIT');
     return model;
   }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
 }
-async function readCostCentersSnapshot(actor,input,client,central){
-    const marketId=await resolveScope(client,actor,input.marketCode,central);
+async function readCostCentersSnapshot(actor,input,client,central,globalRead){
+    const marketId=await resolveScope(client,actor,input.marketCode,globalRead);
     const costCapabilities=await costAuthority.project(client,actor,input.marketCode,marketId,central);
     const {rows:centers}=await client.query(
       'SELECT c.id,c.code,c.label,c.responsible_user_id,c.is_active,u.full_name AS responsible_label FROM economic_cost_centers c LEFT JOIN users u ON u.id=c.responsible_user_id WHERE c.market_id IS NOT DISTINCT FROM $1::uuid ORDER BY c.code,c.id',[marketId]);
@@ -788,7 +789,7 @@ async function readCostCentersSnapshot(actor,input,client,central){
       }
     }
     const responsibleCandidates=costCapabilities.reference?await listResponsibleCandidates(client,marketId):[];
-    return {scope:input.marketCode===null?'GROUP':'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,central,costCapabilities,readOnly:!Object.values(costCapabilities).some(Boolean),
+    return {scope:input.marketCode===null?'GROUP':'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,globalRead,central,costCapabilities,readOnly:!Object.values(costCapabilities).some(Boolean),
       centers:centerModels,families,resources,responsibleCandidates,posts:model,recordedBalance:recordedBalanceSummary(model),budgetSummary:budgetSummary(model),commitmentSummary:commitmentSummary(model),structureEvidence,activity,profitability,actualCoverage:'NOT_RECONCILED',available:null};
 }
 module.exports={readCostCenters,closeGroupPeriod,budgetSummary,recordedPostBalance,recordedBalanceSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,loadShipmentActivity,shipmentPurchase,observedProfitability,periodSalesEvidence,projectGroupPeriodResult,completeCostParcelCount};
