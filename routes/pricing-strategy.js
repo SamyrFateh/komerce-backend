@@ -55,7 +55,7 @@ const adminOnly = [
 // ═══════════════════════════════════════════════════════════════════
 
 /** GET /competitors — lister prix concurrents */
-router.get('/competitors', authenticate, async (req, res, next) => {
+router.get('/competitors', ...adminOnly, async (req, res, next) => {
   try {
     const result = await svc.getCompetitors(db, {
       product_id: req.query.product_id,
@@ -91,7 +91,7 @@ router.delete('/competitors/:id', ...adminOnly, async (req, res, next) => {
 // ═══════════════════════════════════════════════════════════════════
 
 /** GET /strategy?product_id=xxx | ?category=yyy */
-router.get('/', authenticate, async (req, res, next) => {
+router.get('/', ...adminOnly, async (req, res, next) => {
   try {
     const { product_id, category } = req.query;
     if (!product_id && !category) {
@@ -130,7 +130,7 @@ router.post('/apply', ...adminOnly, async (req, res, next) => {
 // ═══════════════════════════════════════════════════════════════════
 
 /** GET /strategy/history?product_id=...|category=... */
-router.get('/history', authenticate, async (req, res, next) => {
+router.get('/history', ...adminOnly, async (req, res, next) => {
   try {
     const result = await svc.getStrategyHistory(db, {
       product_id: req.query.product_id,
