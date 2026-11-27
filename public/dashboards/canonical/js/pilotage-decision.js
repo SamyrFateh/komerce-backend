@@ -264,6 +264,13 @@
     header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', payload && payload.scope && payload.scope.mode === 'market' ? 'Situation du marché' : 'Situation Komerce'));
     header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Voir ce qui demande une décision maintenant, puis agir au bon endroit.'));
     dashboard.appendChild(header);
+    const economic=metric(payload,'economic_period_result');
+    if(economic){
+      const quality=economic.data_quality||{};
+      const states={CLOSED:'Clôturé',PROVISIONAL:'Provisoire',REOPENED:'Réouvert — à rapprocher',NOT_RECONCILED:'Non rapproché',MARKET_RESULT_NOT_RECONCILED:'Résultat marché non rapproché',SIMULATION_EXCLUDED:'Hors simulation',UNAVAILABLE:'Indisponible'};
+      const note=states[quality.status]||'Non certifié';
+      header.appendChild(text(doc,'p','kmc-dashboard-description',economic.label+' : '+display(base,economic)+' · '+note+(quality.fx_status==='GOVERNED_FIXED_PARITY_PROJECTION'?' · projection EUR du résultat KMF':'')));
+    }
 
     const decisions = decisionItems(payload, base);
     if (decisions.length) {

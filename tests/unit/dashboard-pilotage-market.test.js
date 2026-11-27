@@ -10,7 +10,7 @@ const mockQuery = jest.fn();
 jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
 
 const mockMetricNames = [
-  'getCAEncaisse', 'getCmdsActives', 'getMargeConsolidee', 'getAlertesCritiques',
+  'getCAEncaisse', 'getCmdsActives', 'getAlertesCritiques',
   'getTauxCompletudeCouts', 'getCoutReel', 'getCmdsCoutIncompletCount',
   'getCoutMoyParCmd', 'getCmdsAujourdhui', 'getColisEnTransit',
   'getDisponiblesRelais', 'getRetardsCritiques', 'getTauxCompletudeScans',
@@ -69,6 +69,7 @@ describe('dashboard-pilotage-market', () => {
     expect(result.data_quality.filters).toEqual({ from: '2026-08-01', status: 'confirmed' });
     expect(result.data_quality.filters.market_id).toBeUndefined();
     expect(result.kpis_global).toHaveLength(5);
+    expect(result.kpis_global).toContainEqual(expect.objectContaining({key:'economic_period_result',value:null,data_quality:expect.objectContaining({status:'MARKET_RESULT_NOT_RECONCILED'})}));
     expect(result.view_blocks).toHaveLength(3);
     expect(mockControlChain).toHaveBeenCalledWith({ market });
     expect(result.view_blocks.map(block => block.url)).toEqual([
@@ -82,7 +83,7 @@ describe('dashboard-pilotage-market', () => {
       '/admin/operations',
       '/admin/operations#operations-control-chain',
       '/admin/costing',
-      '/admin/finance',
+      '/admin/workspaces/pricing',
       '/admin/workspaces/pricing',
     ]);
   });

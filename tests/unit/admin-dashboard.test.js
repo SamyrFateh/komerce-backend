@@ -31,6 +31,7 @@ jest.mock('../../middleware/auth', () => ({
 const mockQuery = jest.fn();
 jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
 
+jest.mock('../../services/economic-cost-center-read-model',()=>({readGroupPeriodDecision:jest.fn().mockResolvedValue({status:'PROVISIONAL',resultEur:'42.01',fxStatus:'GOVERNED_FIXED_PARITY_PROJECTION',reasons:[]})}));
 jest.mock('../../services/dashboard-pilotage-markets', () => ({ getMarketsSupervision: jest.fn().mockResolvedValue([{ market_code: 'CM', market_name: 'Cameroun', orders_active: 2, cash_to_confirm: 0, open_incidents: 0 }]) }));
 jest.mock('../../services/dashboard-cache', () => ({
   cacheMiddleware: () => (req, res, next) => next(),
@@ -252,6 +253,8 @@ describe('GET /unified', () => {
     const res = await request(app).get('/api/admin/dashboard/unified');
     expect(res.status).toBe(200);
     expect(res.body.kpis_global).toHaveLength(6);
+    expect(res.body.kpis_global).toContainEqual(expect.objectContaining({key:'economic_period_result',value:'42.01',unit:'EUR',data_quality:expect.objectContaining({status:'PROVISIONAL',metric_id:'eco.period_result'})}));
+    expect(res.body.kpis_global.some(k=>k.key==='marge_consolidee')).toBe(false);
     expect(res.body.view_blocks).toHaveLength(3);
     expect(res.body.economic_flow.stages.length).toBeGreaterThan(0);
     expect(res.body.principles.length).toBeGreaterThan(0);

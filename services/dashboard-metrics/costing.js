@@ -229,7 +229,8 @@ async function getMargeVariableReelle(filters = {}) {
   const itemsTotal = Number(r.rows[0].items_total) || 0;
   const pct = revenue > 0 ? Number(((margin / revenue) * 100).toFixed(2)) : null;
 
-  return makeKpi('marge_variable_reelle', 'Marge variable réelle', margin, 'KMF', {
+  return makeKpi('marge_variable_reelle', 'Marge variable — cohorte commandes', margin, 'KMF', {
+    extra:{metric_id:'diagnostic.order_variable_margin',period_basis:'orders.created_at',economic_period_result:false},
     itemsTotal,
     itemsWithData,
     completeness: itemsTotal === 0 ? 'provisional' : (itemsWithData === itemsTotal ? 'complete' : 'partial'),
@@ -277,7 +278,8 @@ async function getMargeConsolidee(filters = {}) {
   const itemsTotal = Number(r.rows[0].items_total) || 0;
   const pct = revenue > 0 ? Number(((margin / revenue) * 100).toFixed(2)) : null;
 
-  return makeKpi('marge_consolidee', 'Marge consolidée', margin, 'KMF', {
+  return makeKpi('marge_consolidee', 'Marge des commandes finalisées — cohorte historique', margin, 'KMF', {
+    extra:{metric_id:'diagnostic.final_order_margin',period_basis:'orders.created_at',cash_basis:false,economic_period_result:false},
     itemsTotal,
     itemsWithData,
     completeness: itemsTotal === 0

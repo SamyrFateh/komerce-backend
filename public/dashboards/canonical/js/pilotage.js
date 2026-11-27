@@ -55,7 +55,7 @@
     payment: 'Opérations',
     parcels_scans: 'Opérations',
     real_cost: 'Finance',
-    real_margin: 'Finance',
+    real_margin: 'Prix & économie',
     recalibration: 'Pricing',
   });
 
@@ -68,7 +68,7 @@
       pick: [
         { key: 'ca-encaisse', label: 'Commandes payées — part hors avoir' },
         { key: 'commandes-actives', label: 'Commandes actives' },
-        { key: 'marge-consolidee', label: 'Marge consolidée' },
+        { key: 'economic-period-result', label: 'Résultat économique mensuel' },
         { key: 'alertes-critiques', label: 'Alertes critiques' },
         { key: 'completude-couts', label: 'Complétude coûts' },
       ],
@@ -111,7 +111,7 @@
   const KPI_KEYS = Object.freeze({
     ca_encaisse: 'ca-encaisse',
     cmds_actives: 'commandes-actives',
-    marge_consolidee: 'marge-consolidee',
+    economic_period_result: 'economic-period-result',
     alertes_critiques: 'alertes-critiques',
     taux_completude_couts: 'completude-couts',
   });
@@ -136,6 +136,7 @@
     if (!metric || metric.value == null) return '—';
     const value = formatNumber(metric.value);
     if (metric.unit === 'KMF') return `${value} KMF`;
+    if (metric.unit === 'EUR') return `${value} €`;
     if (metric.unit === '%') return `${value} %`;
     return value;
   }
