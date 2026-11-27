@@ -37678,6 +37678,10 @@
                 "targetFile": "services/financial-journal-reporting.js"
               },
               {
+                "sourceFileId": "services/dashboard-finance-canonical.js",
+                "targetFile": "services/economic-cost-center-read-model.js"
+              },
+              {
                 "sourceFileId": "services/dashboard-pilotage-market.js",
                 "targetFile": "services/economic-cost-center-read-model.js"
               },
