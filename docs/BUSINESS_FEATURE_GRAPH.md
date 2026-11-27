@@ -270,14 +270,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - utils: 3
 - middleware: 1
-- services: 63
+- services: 64
 - routes: 13
-- migrations: 40
+- migrations: 42
 - dash: 6
-- tests: 115
-- tables owned (lifecycle): 40 — `order_item_real_cost_allocations`, `exchange_rates`, `charges`, `competitor_prices`, `cost_benchmarks`, `cost_component_events`, `cost_component_market_override_events`, `cost_component_market_overrides`, `cost_components`, `economic_risk_cost_events`, `economic_risk_watermark_events`, `economic_snapshots`, `economic_sku_rail_selection_events`, `economic_structure_cost_events`, `economic_group_period_closures`, `economic_cost_centers`, `economic_cost_families`, `economic_cost_resources`, `economic_cost_posts`, `economic_cost_budget_revisions`, `economic_cost_commitments`, `economic_cost_commitment_movements`, `finance_config`, `international_n1_reconciliations`, `financial_movements`, `financial_movement_documents`, `market_price_observations`, `market_price_observation_events`, `price_history`, `pricing_category_dims`, `pricing_category_taxes`, `pricing_components`, `pricing_matrices_audit`, `pricing_market_decision_policy_events`, `pricing_maturity_disposition_events`, `pricing_strategies`, `pricing_strategy_history`, `risk_provisions`, `market_cost_attributions`, `order_cost_entry_events`
-- tables written: 41
-- interfaces exposed: 128
+- tests: 116
+- tables owned (lifecycle): 42 — `order_item_real_cost_allocations`, `exchange_rates`, `charges`, `competitor_prices`, `cost_benchmarks`, `cost_component_events`, `cost_component_market_override_events`, `cost_component_market_overrides`, `cost_components`, `economic_risk_cost_events`, `economic_risk_watermark_events`, `economic_snapshots`, `economic_sku_rail_selection_events`, `economic_structure_cost_events`, `economic_group_period_closures`, `economic_cost_centers`, `economic_cost_families`, `economic_cost_resources`, `economic_cost_posts`, `economic_cost_budget_revisions`, `economic_cost_commitments`, `economic_cost_commitment_movements`, `finance_config`, `international_n1_reconciliations`, `financial_movements`, `financial_movement_documents`, `market_price_observations`, `market_price_observation_events`, `local_stock_economic_lots`, `local_stock_economic_lot_lines`, `price_history`, `pricing_category_dims`, `pricing_category_taxes`, `pricing_components`, `pricing_matrices_audit`, `pricing_market_decision_policy_events`, `pricing_maturity_disposition_events`, `pricing_strategies`, `pricing_strategy_history`, `risk_provisions`, `market_cost_attributions`, `order_cost_entry_events`
+- tables written: 43
+- interfaces exposed: 131
 - internal APIs: 2
 - dependencies (consumes): 16 — local-stock, refunds, platform-ops, customs, business-rules, auth-identity, market, market-autonomy, market-delegation, infrastructure, logistics, catalog, auth, dashboard, orders, loyalty
 - consumers: 15 — catalog, customs, dashboard, infrastructure, loyalty, market-autonomy, market-control-plane, market-delegation, orders, platform-ops, purchasing, refunds, sourcing, admin-dashboard, decision-signals
@@ -842,6 +842,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `local_mobile_refund_handoffs` | `refunds` | single-writer | refunds | — |
 | `local_stock` | `local-stock` | single-writer | local-stock | logistics |
 | `local_stock_allocations` | `local-stock` | single-writer | local-stock | logistics |
+| `local_stock_economic_lot_lines` | `economic-engine` | declared-table-owner | economic-engine | — |
+| `local_stock_economic_lots` | `economic-engine` | declared-table-owner | economic-engine | — |
 | `loyalty_rewards` | `loyalty` | single-writer | loyalty | — |
 | `loyalty_tiers` | `loyalty` | single-writer | loyalty | auth-identity |
 | `manual_purchase_executions` | `purchasing` | declared-table-owner | purchasing | — |
@@ -1219,6 +1221,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/admin/workspaces/pricing/cost-centers/initialize` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
 | `POST /api/admin/workspaces/pricing/cost-centers/references` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
 | `POST /api/admin/costing/products/{id}/sku-rail-selection` | economic-engine | `routes/admin-costing.js` (resolved-owned) |
+| `GET /api/admin/costing/local-stock/receipt-lots` | economic-engine | `routes/admin-costing.js` (resolved-owned) |
+| `POST /api/admin/costing/local-stock/receipt-lots/close` | economic-engine | `routes/admin-costing.js` (resolved-owned) |
+| `POST /api/admin/costing/local-stock/receipt-lots/link` | economic-engine | `routes/admin-costing.js` (resolved-owned) |
 | `POST /api/admin/workspaces/pricing/market/{id}/cost-centers/references` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
 | `POST /api/admin/workspaces/pricing/market/{id}/cost-centers/initialize` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
 | `POST /api/admin/workspaces/pricing/market/{id}/cost-centers/families/{id}/posts` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
@@ -2371,7 +2376,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2425 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2427 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 218 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_

@@ -8874,6 +8874,13 @@
       {
         "feature": "economic-engine",
         "category": "services",
+        "declared": "services/cost-allocation/local-stock-economic-lots.js",
+        "resolvedPath": "services/cost-allocation/local-stock-economic-lots.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
         "declared": "services/economic-sku-rail-selection.js",
         "resolvedPath": "services/economic-sku-rail-selection.js",
         "status": "resolved-in-technical-graph"
@@ -9226,6 +9233,20 @@
         "category": "migrations",
         "declared": "migrations/435_economic_selection_decision_source.sql",
         "resolvedPath": "migrations/435_economic_selection_decision_source.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/453_local_stock_economic_receipt_lots.sql",
+        "resolvedPath": "migrations/453_local_stock_economic_receipt_lots.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/454_local_stock_economic_multi_lot.sql",
+        "resolvedPath": "migrations/454_local_stock_economic_multi_lot.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -9758,6 +9779,13 @@
         "category": "tests",
         "declared": "tests/unit/product-margin-steering.test.js",
         "resolvedPath": "tests/unit/product-margin-steering.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/local-stock-economic-lots.test.js",
+        "resolvedPath": "tests/unit/local-stock-economic-lots.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -24740,6 +24768,30 @@
         "entry": "POST /api/admin/costing/products/:productId/sku-rail-selection",
         "method": "POST",
         "path": "/api/admin/costing/products/{id}/sku-rail-selection",
+        "routeFile": "routes/admin-costing.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "GET /api/admin/costing/local-stock/receipt-lots",
+        "method": "GET",
+        "path": "/api/admin/costing/local-stock/receipt-lots",
+        "routeFile": "routes/admin-costing.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/costing/local-stock/receipt-lots/close",
+        "method": "POST",
+        "path": "/api/admin/costing/local-stock/receipt-lots/close",
+        "routeFile": "routes/admin-costing.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/costing/local-stock/receipt-lots/link",
+        "method": "POST",
+        "path": "/api/admin/costing/local-stock/receipt-lots/link",
         "routeFile": "routes/admin-costing.js",
         "status": "resolved-owned"
       },
@@ -51622,7 +51674,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2425
+        "filesObserved": 2427
       },
       "boutique": {
         "filesObserved": 218,
@@ -54127,6 +54179,32 @@
         {
           "feature": "economic-engine",
           "mode": "W",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
+    "local_stock_economic_lots": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "economic-engine",
+      "resolution": "declared-table-owner"
+    },
+    "local_stock_economic_lot_lines": {
+      "writers": [
+        {
+          "feature": "economic-engine",
+          "mode": "RW",
           "declaredOwner": true,
           "technical": false
         }
