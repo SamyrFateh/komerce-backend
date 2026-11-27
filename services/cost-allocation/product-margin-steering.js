@@ -149,34 +149,58 @@ function computeLandedCostEvidence({ result, real = {}, imported }) {
 
 function summarizeObservedLandedCost(lines, shipments, { since, truncated }) {
   const cohorts = new Map();
+  // A shipment counts once only if every line of that SKU in it is covered.
+  // Never publish a partial shipment as an independent economic observation.
+  const groups = new Map();
+  const seen = new Set();
   for (const line of lines) {
     const shipment = shipments.get(line.order_item_id);
     const closed = Date.parse(shipment?.financial_closed_at);
-    if (!shipment?.rail || !line.sku_id || !Number.isFinite(closed) || closed < since || line.fulfillment_source === 'LOCAL_STOCK') continue;
-    const key = JSON.stringify([line.sku_id, shipment.rail]);
-    if (!cohorts.has(key)) cohorts.set(key, {
-      sku_id: line.sku_id, sku_reference: line.sku_reference, rail: shipment.rail, shipments: new Set(), last_closed_at: null,
-      quantity: 0, final_lines: 0, provisional_lines: 0, incomplete_lines: 0, costs: {},
-      estimated_cents: 0, estimated_lines: 0,
-    });
-    const cohort = cohorts.get(key);
-    const evidence = line.landed_cost_evidence;
-    if (evidence.status !== 'final' || !Number.isFinite(line.result.reconciled_after_sale_margin_kmf)) {
-      cohort[evidence.status === 'incomplete' ? 'incomplete_lines' : 'provisional_lines']++;
-      continue;
-    }
-    cohort.shipments.add(shipment.shipment_id);
-    const closedAt = new Date(shipment.financial_closed_at).toISOString();
-    if (!cohort.last_closed_at || closedAt > cohort.last_closed_at) cohort.last_closed_at = closedAt;
-    cohort.quantity += Number(line.quantity);
-    cohort.final_lines++;
-    if (Number.isFinite(line.frozen_estimated_cost_kmf)) {
-      cohort.estimated_cents += Math.round(line.frozen_estimated_cost_kmf * 100);
-      cohort.estimated_lines++;
-    }
-    for (const [type, cost] of Object.entries(evidence.costs)) {
-      if (cost.state !== 'real') continue;
-      cohort.costs[type] = (cohort.costs[type] || 0) + Math.round(cost.amount_kmf * 100);
+    if (!shipment?.rail || !shipment.shipment_id || !line.sku_id || !Number.isFinite(closed) || closed < since || line.fulfillment_source === 'LOCAL_STOCK') continue;
+    if (seen.has(line.order_item_id)) continue;
+    seen.add(line.order_item_id);
+    const observationKey = JSON.stringify([line.sku_id, shipment.rail, shipment.shipment_id]);
+    const group = groups.get(observationKey) || [];
+    group.push({ line, shipment });
+    groups.set(observationKey, group);
+  }
+  for (const group of groups.values()) {
+    const isFinal = ({ line }) => {
+      const evidence = line.landed_cost_evidence;
+      if (evidence?.status !== 'final' || !Number.isFinite(line.result.reconciled_after_sale_margin_kmf)
+          || !Number.isFinite(line.result.sale_kmf) || !Number.isFinite(Number(line.quantity)) || Number(line.quantity) <= 0) return false;
+      const realCosts = Object.values(evidence.costs).filter(cost => cost.state === 'real');
+      if (realCosts.some(cost => !Number.isFinite(cost.amount_kmf))) return false;
+      const cents = realCosts.reduce((total, cost) => total + Math.round(cost.amount_kmf * 100), 0);
+      return Math.round(line.result.sale_kmf * 100) - cents === Math.round(line.result.reconciled_after_sale_margin_kmf * 100);
+    };
+    const complete = group.every(entry => Number(entry.shipment.sku_line_count) === group.length && isFinal(entry));
+    for (const { line, shipment } of group) {
+      const key = JSON.stringify([line.sku_id, shipment.rail]);
+      if (!cohorts.has(key)) cohorts.set(key, {
+        sku_id: line.sku_id, sku_reference: line.sku_reference, rail: shipment.rail, shipments: new Set(), last_closed_at: null,
+        quantity: 0, final_lines: 0, provisional_lines: 0, incomplete_lines: 0, costs: {},
+        estimated_cents: 0, estimated_lines: 0,
+      });
+      const cohort = cohorts.get(key);
+      const evidence = line.landed_cost_evidence;
+      if (!complete) {
+        cohort[evidence?.status === 'incomplete' || evidence?.status === 'final' ? 'incomplete_lines' : 'provisional_lines']++;
+        continue;
+      }
+      cohort.shipments.add(shipment.shipment_id);
+      const closedAt = new Date(shipment.financial_closed_at).toISOString();
+      if (!cohort.last_closed_at || closedAt > cohort.last_closed_at) cohort.last_closed_at = closedAt;
+      cohort.quantity += Number(line.quantity);
+      cohort.final_lines++;
+      if (Number.isFinite(line.frozen_estimated_cost_kmf)) {
+        cohort.estimated_cents += Math.round(line.frozen_estimated_cost_kmf * 100);
+        cohort.estimated_lines++;
+      }
+      for (const [type, cost] of Object.entries(evidence.costs)) {
+        if (cost.state !== 'real') continue;
+        cohort.costs[type] = (cohort.costs[type] || 0) + Math.round(cost.amount_kmf * 100);
+      }
     }
   }
   return [...cohorts.values()].map(({ shipments: observed, costs, estimated_cents, estimated_lines, ...cohort }) => {

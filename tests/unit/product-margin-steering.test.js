@@ -206,7 +206,7 @@ describe('summarizeProduct', () => {
 describe('observed landed cost evidence', () => {
   const { computeLandedCostEvidence, summarizeObservedLandedCost } = require('../../services/cost-allocation/product-margin-steering');
   const real = amount => ({ state: 'real', amount_kmf: amount });
-  const result = { reason: null, reconciled_after_sale_margin_kmf: 12803.22, costs: {
+  const result = { reason: null, sale_kmf: 90000, reconciled_after_sale_margin_kmf: 12803.22, costs: {
     product_purchase: real(49196.78), freight: real(18000), customs: real(7000),
     port_transitaire: real(1200), payment: real(1800),
   } };
@@ -228,7 +228,7 @@ describe('observed landed cost evidence', () => {
       frozen_estimated_cost_kmf: 70000,
     }));
     const shipments = new Map(ids.map(id => [id, {
-      shipment_id: id, rail: 'sea', financial_closed_at: '2026-11-01T00:00:00Z',
+      shipment_id: id, rail: 'sea', financial_closed_at: '2026-11-01T00:00:00Z', sku_line_count: 1,
     }]));
     const [summary] = summarizeObservedLandedCost(lines, shipments, { since: 0, truncated: false });
     expect(summary).toMatchObject({ unit_cost_kmf: 7719.68, observations: 3, status: 'DECISIONAL' });
@@ -244,5 +244,18 @@ describe('observed landed cost evidence', () => {
     shipments.delete('third');
     expect(summarizeObservedLandedCost(lines, shipments, { since: 0, truncated: false })[0])
       .toMatchObject({ observations: 2, status: 'INSUFFICIENT_OBSERVATIONS' });
+  });
+
+  test('never admits a partial SKU shipment, duplicate line or inconsistent reconciled margin', () => {
+    const evidence = computeLandedCostEvidence({ result, imported: true, real: { relay: { actual: 0, actual_count: 1 } } });
+    const first = { order_item_id: 'a', sku_id: 'S1', quantity: 10, result, landed_cost_evidence: evidence };
+    const second = { ...first, order_item_id: 'b' };
+    const shipment = { shipment_id: 'E1', rail: 'sea', financial_closed_at: '2026-11-01T00:00:00Z', sku_line_count: 2 };
+    const shipments = new Map([['a', shipment], ['b', shipment]]);
+    const summarize = lines => summarizeObservedLandedCost(lines, shipments, { since: 0, truncated: false })[0];
+    expect(summarize([first, first])).toMatchObject({ observations: 0, unit_cost_kmf: null, incomplete_lines: 1 });
+    expect(summarize([first, second, first])).toMatchObject({ observations: 1, quantity: 20, final_lines: 2, unit_cost_kmf: 7719.68 });
+    expect(summarize([first, { ...second, result: { ...result, reconciled_after_sale_margin_kmf: 12804 } }]))
+      .toMatchObject({ observations: 0, unit_cost_kmf: null, incomplete_lines: 2 });
   });
 });
