@@ -38498,6 +38498,10 @@
                 "targetFile": "utils/currency.js"
               },
               {
+                "sourceFileId": "services/dashboard-finance-canonical.js",
+                "targetFile": "services/fx-authority.js"
+              },
+              {
                 "sourceFileId": "routes/admin/users.js",
                 "targetFile": "services/market-scope-admin-service.js"
               },
