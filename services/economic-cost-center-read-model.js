@@ -18,7 +18,7 @@
 'use strict';
 const db = require('../db');
 const {createHash}=require('node:crypto');
-const {parseDecimal,roundHalfEven,convert,FxError}=require('./fx-authority');
+const {parseDecimal,roundHalfEven,convert,convertMany,FxError}=require('./fx-authority');
 const {computePurchaseReal}=require('./cost-allocation/real-margin-shadow');
 const {computePeriodStructureTruth}=require('./pricing-period-structure');
 const {computePeriodRiskTruth}=require('./pricing-risk-period');
@@ -764,15 +764,51 @@ async function marketPeriodDecision(client,marketId,periodStart,recognition){
   }
   return {structureCoverage,result};
 }
+// Only these displayed monetary observations are projected. No conversion
+// of counts, weights, coefficients, proof IDs, budgets or frozen invoices.
+const ACTIVITY_MONEY_FIELDS=new Set([
+  'freightCustomsSubtotalKmf','purchaseKmf','freightCustomsKmf','costPerKgKmf',
+  'otherTransportKmf','documentedSubtotalKmf','fullEconomicCostKmf','minCostPerKgKmf','maxCostPerKgKmf',
+  'observedNetSalesKmf','documentedHandoffSalesKmf','confirmedRefundKmf','documentedParcelVariableCostKmf',
+  'transportKmf','revenueBasisKmf','variableCostsKmf','actualRiskKmf','contributionKmf',
+  'structureKmf','resultKmf','remainingKmf','recognizedKmf','marketDirectKmf','groupSharedKmf'
+]);
+async function projectActivityCurrency(client,currency,activity,profitability){
+  const values=new Set();
+  function visit(node){
+    if(!node||typeof node!=='object')return;
+    if(Array.isArray(node)){node.forEach(visit);return;}
+    for(const [key,value] of Object.entries(node)){
+      if(ACTIVITY_MONEY_FIELDS.has(key)&&value!=null&&/^-?\d+(?:\.\d+)?$/.test(String(value)))values.add(String(value));
+      else if(value&&typeof value==='object')visit(value);
+    }
+  }
+  visit(activity);
+  // Only observations and diagnostics, not the result/closure payload.
+  for(const key of ['salesEvidence','recognitionEvidence','ranges','periodDecisionEvidence','structureCoverage'])visit(profitability?.[key]);
+  const source=[...values];
+  const base={currency,sourceCurrency:'KMF',fxStatus:'NO_EVIDENCE',fxLegs:[],amounts:{}};
+  if(!currency)return {...base,fxStatus:'FX_UNAVAILABLE'};
+  if(!source.length)return base;
+  try{
+    // One rate snapshot, one final rounding for each displayed value.
+    const converted=await convertMany({amounts:source,from:'KMF',to:currency,client});
+    return {...base,fxStatus:currency==='KMF'?'KMF_BASE_PROJECTION':'GOVERNED_KMF_PROJECTION',
+      fxLegs:converted[0].legs,amounts:Object.fromEntries(source.map((x,i)=>[x,converted[i].amount_text]))};
+  }catch(err){
+    if(err instanceof FxError&&['fx_rate_unavailable','fx_currency_unsupported'].includes(err.code))return {...base,fxStatus:'FX_UNAVAILABLE'};
+    throw err;
+  }
+}
+
 async function periodResultDisplay(client,result,currency){
   const display={currency,fxStatus:'NO_RESULT',fxLegs:[],result:null,contribution:null,netSales:null,variableCost:null,actualRisk:null,structure:null};
   if(result.resultKmf==null)return display;
   try{
-    for(const key of ['result','contribution','netSales','variableCost','actualRisk','structure']){
-      const x=await convert({amount:result[key+'Kmf'],from:'KMF',to:currency,client});
-      display[key]=x.amount_text;
-      if(key==='result')display.fxLegs=x.legs;
-    }
+    const keys=['result','contribution','netSales','variableCost','actualRisk','structure'];
+    const values=await convertMany({amounts:keys.map(key=>result[key+'Kmf']),from:'KMF',to:currency,client});
+    keys.forEach((key,i)=>{display[key]=values[i].amount_text;});
+    display.fxLegs=values[0].legs;
     display.fxStatus=currency==='KMF'?'KMF_BASE_PROJECTION':currency==='EUR'?'GOVERNED_FIXED_PARITY_PROJECTION':'GOVERNED_KMF_PROJECTION';
     return display;
   }catch(e){
@@ -872,6 +908,7 @@ async function readCostCentersSnapshot(actor,input,client,central,globalRead){
       profitability.salesEvidence = salesEvidence;
       profitability.recognitionEvidence = await loadPeriodRecognitionEvidence(client, marketId, input.periodStart);
     }
+    let displayCurrency=marketId===null?'EUR':null;
     if(marketId===null&&profitability){
       const decision=await groupPeriodDecision(client,input.periodStart,profitability.recognitionEvidence);
       profitability.structureCoverage=decision.structureCoverage;
@@ -881,10 +918,12 @@ async function readCostCentersSnapshot(actor,input,client,central,globalRead){
       const decision=await marketPeriodDecision(client,marketId,input.periodStart,profitability.recognitionEvidence);
       profitability.structureCoverage=decision.structureCoverage;
       const {rows:[market]}=await client.query('SELECT currency FROM markets WHERE id=$1 AND code=$2',[marketId,input.marketCode]);
-      profitability.marketPeriodResult={...decision.result,display:await periodResultDisplay(client,decision.result,market?.currency||null)};
+      displayCurrency=market?.currency||null;
+      profitability.marketPeriodResult={...decision.result,display:await periodResultDisplay(client,decision.result,displayCurrency)};
     }
+    const activityCurrencyProjection=await projectActivityCurrency(client,displayCurrency,activity,profitability);
     const responsibleCandidates=costCapabilities.reference?await listResponsibleCandidates(client,marketId):[];
     return {scope:input.marketCode===null?'GROUP':'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,globalRead,central,costCapabilities,readOnly:!Object.values(costCapabilities).some(Boolean),
-      centers:centerModels,families,resources,responsibleCandidates,posts:model,recordedBalance:recordedBalanceSummary(model),budgetSummary:budgetSummary(model),commitmentSummary:commitmentSummary(model),structureEvidence,activity,profitability,actualCoverage:'NOT_RECONCILED',available:null};
+      centers:centerModels,families,resources,responsibleCandidates,posts:model,recordedBalance:recordedBalanceSummary(model),budgetSummary:budgetSummary(model),commitmentSummary:commitmentSummary(model),structureEvidence,activity,profitability,activityCurrencyProjection,actualCoverage:'NOT_RECONCILED',available:null};
 }
-module.exports={readMarketPeriodDecision,readGroupPeriodDecision,readCostCenters,closeGroupPeriod,budgetSummary,recordedPostBalance,recordedBalanceSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,loadShipmentActivity,shipmentPurchase,observedProfitability,periodSalesEvidence,projectGroupPeriodResult,completeCostParcelCount};
+module.exports={projectActivityCurrency,readMarketPeriodDecision,readGroupPeriodDecision,readCostCenters,closeGroupPeriod,budgetSummary,recordedPostBalance,recordedBalanceSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,loadShipmentActivity,shipmentPurchase,observedProfitability,periodSalesEvidence,projectGroupPeriodResult,completeCostParcelCount};

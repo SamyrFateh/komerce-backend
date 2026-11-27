@@ -247,3 +247,33 @@ test('group profitability displays the server EUR result and never falls back to
  expect(texts(createV6Profitability(doc,model))).not.toContain('334,6 KMF');
  expect(texts(createV6Profitability(doc,model))).toContain('Projection monétaire indisponible : aucune substitution par la devise source.');
 });
+
+test('activity projection is read-only, scope currency and no KMF fallback when FX absent',()=>{
+ const model={...activityModel,activityCurrencyProjection:{currency:'XAF',fxStatus:'GOVERNED_KMF_PROJECTION',amounts:{}}};
+ const sources=activityModel.activity;
+ const source=sources.purchaseTransportObservation.purchaseKmf;
+ expect(typeof source).toBe('string');
+ model.activityCurrencyProjection.amounts[source]='12345';
+ const rendered=texts(createV6Activity(doc,model));
+ expect(rendered).toContain('12\u202f345 XAF');
+ expect(rendered.some(x=>/montants en XAF/.test(x))).toBe(true);
+ model.activityCurrencyProjection={currency:'XAF',fxStatus:'FX_UNAVAILABLE',amounts:{}};
+ const unavailable=texts(createV6Activity(doc,model));
+ expect(unavailable).not.toContain('12\u202f345 XAF');
+ expect(unavailable).toContain('Non disponible');
+ expect(unavailable.filter(x=>/ KMF$/.test(x))).toEqual([]);
+});
+
+test('numeric structure evidence uses its projected amount, including zero, without fabricating a result',()=>{
+ const o={periodStart:'2026-01-01',observations:0,physicalClosedCount:0};
+ const model={activityCurrencyProjection:{currency:'EUR',fxStatus:'GOVERNED_KMF_PROJECTION',amounts:{'150':'0.30','100':'0.20','50':'0.10','0':'0.00'}},
+   profitability:{points:[],ranges:{month:o,quarter:o,ytd:o},structureCoverage:{evidenceCount:2,groupSharedKmf:100,marketDirectKmf:50,recognizedKmf:150}}};
+ const rendered=texts(createV6Profitability(doc,model));
+ expect(rendered).toEqual(expect.arrayContaining(['0,30 EUR','0,20 EUR','0,10 EUR','Non calculable']));
+ expect(rendered).not.toContain('150 KMF');
+ model.profitability.structureCoverage.recognizedKmf=0;
+ expect(texts(createV6Profitability(doc,model))).toContain('0,00 EUR');
+ model.activityCurrencyProjection={currency:'EUR',fxStatus:'FX_UNAVAILABLE',amounts:{}};
+ expect(texts(createV6Profitability(doc,model))).not.toContain('0,00 EUR');
+ expect(texts(createV6Profitability(doc,model))).not.toContain('100 KMF');
+});
