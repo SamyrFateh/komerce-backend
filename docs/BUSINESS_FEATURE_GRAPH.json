@@ -40433,6 +40433,10 @@
                 "targetFile": "services/fx-observation-service.js"
               },
               {
+                "sourceFileId": "tests/integration/economic-cost-center-api-postgres.test.js",
+                "targetFile": "services/fx-authority.js"
+              },
+              {
                 "sourceFileId": "tests/integration/financial-journal-postgres.test.js",
                 "targetFile": "services/fx-authority.js"
               }
