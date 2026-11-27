@@ -37678,6 +37678,10 @@
                 "targetFile": "services/financial-journal-reporting.js"
               },
               {
+                "sourceFileId": "services/dashboard-pilotage-market.js",
+                "targetFile": "services/economic-cost-center-read-model.js"
+              },
+              {
                 "sourceFileId": "routes/admin-dashboard.js",
                 "targetFile": "services/simulation-scope-service.js"
               },
@@ -37708,6 +37712,10 @@
               {
                 "sourceFileId": "tests/unit/dashboard-commerce.test.js",
                 "targetFile": "services/financial-journal-reporting.js"
+              },
+              {
+                "sourceFileId": "tests/unit/dashboard-pilotage-market.test.js",
+                "targetFile": "services/economic-cost-center-read-model.js"
               },
               {
                 "sourceFileId": "tests/unit/dashboard-ops-queries.test.js",
