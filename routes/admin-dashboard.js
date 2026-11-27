@@ -301,6 +301,22 @@ router.get(
 );
 
 // ═══════════════════════════════════════════════════════════════════════
+// Independent monthly UTC period, explicitly not the order creation filters.
+async function periodResultKpi(actor,filters){
+  const periodStart=new Date().toISOString().slice(0,7)+'-01';
+  const base={key:'economic_period_result',label:'Résultat économique groupe — '+periodStart.slice(0,7)+' UTC',unit:'EUR',
+    delta:null,drill_to:'/admin/workspaces/pricing'};
+  if(filters.simulation_scope)return {...base,value:null,data_quality:{metric_id:'eco.period_result',period_start:periodStart,status:'SIMULATION_EXCLUDED',completeness:'provisional'}};
+  try{
+    const x=await require('../services/economic-cost-center-read-model').readGroupPeriodDecision(actor,periodStart);
+    return {...base,value:x.resultEur,data_quality:{metric_id:'eco.period_result',period_start:periodStart,status:x.status,
+      reasons:x.reasons,fx_status:x.fxStatus,completeness:x.status==='CLOSED'&&x.resultEur!=null?'complete':'provisional'}};
+  }catch(e){
+    log.warn('[admin-dashboard] economic period result unavailable:',e);
+    return {...base,value:null,data_quality:{metric_id:'eco.period_result',period_start:periodStart,status:'UNAVAILABLE',completeness:'provisional'}};
+  }
+}
+
 // GET /api/admin/dashboard/unified
 // ═══════════════════════════════════════════════════════════════════════
 router.get(
@@ -315,14 +331,14 @@ router.get(
       // Avant : 6 paralleles + 11 await sequentiels dans les array literals
       // Apres : 18 requetes 100% paralleles
       const [
-        ca, cmdsActives, margeConsolidee, alertesCritiques, tauxCouts,
+        ca, cmdsActives, economicResult, alertesCritiques, tauxCouts,
         coutReel, cmdsCoutIncomplet, coutMoyParCmd,
         cmdsAujourdhui, colisEnTransit, disponiblesRelais, retardsCritiques, tauxCompletudeScans,
         topAlerts, pointsAttention, controlChainProjection, marketsSupervision,
       ] = await Promise.all([
         metrics.getCAEncaisse(filters),
         metrics.getCmdsActives(filters),
-        metrics.getMargeConsolidee(filters),
+        periodResultKpi(req.user,filters),
         metrics.getAlertesCritiques(filters),
         metrics.getTauxCompletudeCouts(filters),
         metrics.getCoutReel(filters),
@@ -347,14 +363,14 @@ router.get(
           title: 'Tour de contrôle',
           subtitle: 'Voir, comprendre, décider',
           url: '/admin/control-tower',
-          kpis_summary: [ca, cmdsActives, alertesCritiques, margeConsolidee, tauxCouts],
+          kpis_summary: [ca, cmdsActives, alertesCritiques, economicResult, tauxCouts],
         },
         {
           view: 'costing',
           title: 'Coût rendu relais',
-          subtitle: 'Dire la vérité économique',
+          subtitle: 'Suivre le résultat ECO du mois UTC et les diagnostics de coûts',
           url: '/admin/costing',
-          kpis_summary: [ca, coutReel, margeConsolidee, cmdsCoutIncomplet, coutMoyParCmd],
+          kpis_summary: [ca, coutReel, economicResult, cmdsCoutIncomplet, coutMoyParCmd],
         },
         {
           view: 'orders_logistics',
@@ -372,7 +388,7 @@ router.get(
           { key: 'payment', label: 'Paiement', url: '/admin/orders-logistics?payment_status=paid' },
           { key: 'parcels_scans', label: 'Colis & scans', url: '/admin/orders-logistics?parcel_status=in_transit' },
           { key: 'real_cost', label: 'Coût réel reventilé', url: '/admin/costing' },
-          { key: 'real_margin', label: 'Marge consolidée', url: '/admin/costing?cost_status=actual' },
+          { key: 'real_margin', label: 'Résultat économique mensuel', url: '/admin/workspaces/pricing' },
           { key: 'recalibration', label: 'Recalibrage pricing', url: '/admin/costing/recalibration' },
         ],
       };
@@ -386,7 +402,7 @@ router.get(
       ];
 
       res.json({
-        kpis_global: [ca, cmdsActives, margeConsolidee, alertesCritiques, tauxCouts, pointsAttention],
+        kpis_global: [ca, cmdsActives, economicResult, alertesCritiques, tauxCouts, pointsAttention],
         view_blocks,
         economic_flow,
         principles,

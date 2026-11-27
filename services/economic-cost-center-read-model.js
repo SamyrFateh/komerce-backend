@@ -695,6 +695,46 @@ async function closeGroupPeriod(actor, {periodStart,evidenceHash,evidenceRef,att
     throw e;
   } finally {client.release();}
 }
+// Single result authority: the cockpit, the Direction read and period closure
+// use the identical recognition, fixed cost, reviewed risk and evidence hash.
+async function groupPeriodDecision(client,periodStart,recognition){
+  const truth=await computePeriodStructureTruth({from:periodStart,to:monthShift(periodStart,1),executor:client});
+  const structureCoverage={
+    status:truth.status,evidenceCount:truth.evidence_event_count,
+    groupSharedKmf:truth.evidence_event_count?truth.group_pool_kmf:null,
+    marketDirectKmf:truth.evidence_event_count?truth.other_market_direct_kmf:null,
+    recognizedKmf:truth.evidence_event_count?truth.recognized_total_kmf:null,
+  };
+  const provisional=projectGroupPeriodResult(recognition,structureCoverage,{amountKmf:null});
+  let result=provisional.reasons.length===1&&provisional.reasons[0]==='RISK_REVIEW_INCOMPLETE'
+    ?projectGroupPeriodResult(recognition,structureCoverage,await loadGroupPeriodRisk(client,periodStart)):provisional;
+  if(result.status==='PROVISIONAL')result=await loadGroupPeriodApproval(client,periodStart,result);
+  return {structureCoverage,result};
+}
+// No pricing ACT grant required to read. No full model (or closure hash)
+// escapes to the dashboard. EUR is a fixed-parity projection of the KMF
+// result, NOT a reconstruction of each historical native source valuation.
+async function readGroupPeriodDecision(actor,periodStart){
+  if(!actor?.id||actor.role!=='admin')throw error('economic_reference_group_forbidden',403,'Périmètre groupe interdit');
+  const input=validate({marketCode:null,periodStart});
+  const client=await db.getClient();
+  try{
+    await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+    const recognition=await loadPeriodRecognitionEvidence(client,null,input.periodStart);
+    const {result}=await groupPeriodDecision(client,input.periodStart,recognition);
+    let amountEur=null,fxStatus='NO_RESULT',fxLegs=[];
+    if(result.resultKmf!=null){
+      try{
+        const fx=await convert({amount:result.resultKmf,from:'KMF',to:'EUR',client});
+        amountEur=fx.amount_text;fxLegs=fx.legs;fxStatus='GOVERNED_FIXED_PARITY_PROJECTION';
+      }catch(e){if(e instanceof FxError&&e.code==='fx_rate_unavailable')fxStatus='FX_UNAVAILABLE';else throw e;}
+    }
+    await client.query('COMMIT');
+    return {periodStart:input.periodStart,status:result.status,reasons:result.reasons,
+      resultKmf:result.resultKmf,resultEur:amountEur,fxStatus,fxLegs};
+  }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
+}
+
 async function readCostCenters(actor,raw){
   if(!actor?.id)throw error('AUTH_REQUIRED',401,'Authentification requise');
   const input=validate(raw);
@@ -770,26 +810,12 @@ async function readCostCentersSnapshot(actor,input,client,central,globalRead){
       profitability.recognitionEvidence = await loadPeriodRecognitionEvidence(client, marketId, input.periodStart);
     }
     if(marketId===null&&profitability){
-      const truth=await computePeriodStructureTruth({
-        from:input.periodStart,to:monthShift(input.periodStart,1),executor:client,
-      });
-      profitability.structureCoverage={
-        status:truth.status,
-        evidenceCount:truth.evidence_event_count,
-        groupSharedKmf:truth.evidence_event_count?truth.group_pool_kmf:null,
-        marketDirectKmf:truth.evidence_event_count?truth.other_market_direct_kmf:null,
-        recognizedKmf:truth.evidence_event_count?truth.recognized_total_kmf:null,
-      };
-      const provisional = projectGroupPeriodResult(profitability.recognitionEvidence,profitability.structureCoverage,{amountKmf:null});
-      profitability.groupPeriodResult = provisional.reasons.length === 1 && provisional.reasons[0] === 'RISK_REVIEW_INCOMPLETE'
-        ? projectGroupPeriodResult(profitability.recognitionEvidence,profitability.structureCoverage,await loadGroupPeriodRisk(client,input.periodStart))
-        : provisional;
-      if (profitability.groupPeriodResult.status==='PROVISIONAL') {
-        profitability.groupPeriodResult=await loadGroupPeriodApproval(client,input.periodStart,profitability.groupPeriodResult);
-      }
+      const decision=await groupPeriodDecision(client,input.periodStart,profitability.recognitionEvidence);
+      profitability.structureCoverage=decision.structureCoverage;
+      profitability.groupPeriodResult=decision.result;
     }
     const responsibleCandidates=costCapabilities.reference?await listResponsibleCandidates(client,marketId):[];
     return {scope:input.marketCode===null?'GROUP':'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,globalRead,central,costCapabilities,readOnly:!Object.values(costCapabilities).some(Boolean),
       centers:centerModels,families,resources,responsibleCandidates,posts:model,recordedBalance:recordedBalanceSummary(model),budgetSummary:budgetSummary(model),commitmentSummary:commitmentSummary(model),structureEvidence,activity,profitability,actualCoverage:'NOT_RECONCILED',available:null};
 }
-module.exports={readCostCenters,closeGroupPeriod,budgetSummary,recordedPostBalance,recordedBalanceSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,loadShipmentActivity,shipmentPurchase,observedProfitability,periodSalesEvidence,projectGroupPeriodResult,completeCostParcelCount};
+module.exports={readGroupPeriodDecision,readCostCenters,closeGroupPeriod,budgetSummary,recordedPostBalance,recordedBalanceSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,loadShipmentActivity,shipmentPurchase,observedProfitability,periodSalesEvidence,projectGroupPeriodResult,completeCostParcelCount};

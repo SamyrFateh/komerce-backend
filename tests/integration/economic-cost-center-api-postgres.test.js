@@ -559,14 +559,21 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
       [line.order_id,line.order_item_id,line.parcel_id]);
     const initial=await read();
     expect(initial).toMatchObject({status:'PROVISIONAL',resultKmf:'9316.66'});
+    const direction=require('../../services/economic-cost-center-read-model').readGroupPeriodDecision;
+    const compact=await direction(fx.central,period);
+    expect(compact).toMatchObject({status:initial.status,resultKmf:initial.resultKmf,fxStatus:'GOVERNED_FIXED_PARITY_PROJECTION'});
+    expect(compact).not.toHaveProperty('evidenceHash');
+    await expect(direction(fx.viewerA,period)).rejects.toMatchObject({status:403});
     const submit=(actor,hash)=>request(app).post(mount+'/cost-centers/close-period')
       .set('Authorization',actor.token).send({periodStart:period,evidenceHash:hash,evidenceRef:'Revue Direction avril',attested:true});
     expect((await submit(fx.viewerA,initial.evidenceHash)).status).toBe(403);
     expect((await submit(fx.central,initial.evidenceHash)).status).toBe(201);
     expect((await submit(fx.central,initial.evidenceHash)).status).toBe(200);
     expect(await read()).toMatchObject({status:'CLOSED',resultKmf:'9316.66'});
+    expect(await direction(fx.central,period)).toMatchObject({status:'CLOSED',resultKmf:'9316.66'});
     await recordStructureCostEvent({...event,amount_original:20,amount_kmf:20,evidence_ref:'Facture tardive'},fx.central.id);
     expect(await read()).toMatchObject({status:'REOPENED',resultKmf:'9296.66'});
+    expect(await direction(fx.central,period)).toMatchObject({status:'REOPENED',resultKmf:'9296.66'});
     expect((await submit(fx.central,initial.evidenceHash)).status).toBe(409);
   });
 

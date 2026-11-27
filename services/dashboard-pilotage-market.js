@@ -83,7 +83,7 @@ async function buildMarketPilotage(filters, market) {
   }
 
   const [
-    ca, cmdsActives, margeConsolidee, alertesCritiques, tauxCouts,
+    ca, cmdsActives, alertesCritiques, tauxCouts,
     coutReel, cmdsCoutIncomplet, coutMoyParCmd,
     cmdsAujourdhui, colisEnTransit, disponiblesRelais, retardsCritiques, tauxCompletudeScans,
     topAlerts,
@@ -91,7 +91,6 @@ async function buildMarketPilotage(filters, market) {
   ] = await Promise.all([
     metrics.getCAEncaisse(filters),
     metrics.getCmdsActives(filters),
-    metrics.getMargeConsolidee(filters),
     metrics.getAlertesCritiques(filters),
     metrics.getTauxCompletudeCouts(filters),
     metrics.getCoutReel(filters),
@@ -106,20 +105,25 @@ async function buildMarketPilotage(filters, market) {
     controlChain.getControlChain({ market }),
   ]);
 
+  // Market result is not yet a certified economic projection; never use
+  // a group value or the old order-created cohort as a substitute.
+  const economicResult={key:'economic_period_result',label:'Résultat économique marché — non disponible',
+    value:null,unit:market.currency,delta:null,drill_to:'/admin/workspaces/pricing',
+    data_quality:{metric_id:'eco.period_result',status:'MARKET_RESULT_NOT_RECONCILED',completeness:'provisional'}};
   const view_blocks = [
     {
       view: 'control_tower',
       title: 'Tour de contrôle',
       subtitle: 'Voir, comprendre, décider',
       url: '/admin/pilotage',
-      kpis_summary: [ca, cmdsActives, alertesCritiques, margeConsolidee, tauxCouts],
+      kpis_summary: [ca, cmdsActives, alertesCritiques, economicResult, tauxCouts],
     },
     {
       view: 'costing',
       title: 'Coûts & marge',
-      subtitle: 'Dire la vérité économique',
+      subtitle: 'Résultat ECO marché à rapprocher ; diagnostics de coûts',
       url: '/admin/finance',
-      kpis_summary: [ca, coutReel, margeConsolidee, cmdsCoutIncomplet, coutMoyParCmd],
+      kpis_summary: [ca, coutReel, economicResult, cmdsCoutIncomplet, coutMoyParCmd],
     },
     {
       view: 'orders_logistics',
@@ -139,7 +143,7 @@ async function buildMarketPilotage(filters, market) {
         currency: market.currency,
       },
     },
-    kpis_global: [ca, cmdsActives, margeConsolidee, alertesCritiques, tauxCouts],
+    kpis_global: [ca, cmdsActives, economicResult, alertesCritiques, tauxCouts],
     view_blocks,
     economic_flow: {
       stages: [
@@ -148,7 +152,7 @@ async function buildMarketPilotage(filters, market) {
         { key: 'payment', label: 'Paiement', url: '/admin/operations' },
         { key: 'parcels_scans', label: 'Colis & scans', url: '/admin/operations#operations-control-chain' },
         { key: 'real_cost', label: 'Coût réel reventilé', url: '/admin/costing' },
-        { key: 'real_margin', label: 'Marge consolidée', url: '/admin/finance' },
+        { key: 'real_margin', label: 'Résultat économique mensuel', url: '/admin/workspaces/pricing' },
         { key: 'recalibration', label: 'Recalibrage pricing', url: '/admin/workspaces/pricing' },
       ],
     },

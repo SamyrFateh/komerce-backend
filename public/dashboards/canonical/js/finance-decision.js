@@ -138,8 +138,8 @@
       const excluded = (scope.excluded || []).map(e => `${base.formatNumber(e.count, 0)} · ${e.label.toLowerCase()}`).join(' ; ');
       notes.push({
         key: 'margin',
-        title: `Marge consolidée : ${base.formatKmf(margin.value)} — ${base.formatNumber(scope.eligible_orders, 0)} commande(s) éligible(s) sur ${base.formatNumber(scope.paid_orders, 0)} encaissée(s)`,
-        text: `Périmètre : ${refs} (seules commandes à marge réelle finale). Exclues : ${excluded || 'aucune'}.`,
+        title: `Marge des commandes finalisées : ${base.formatKmf(margin.value)} — ${base.formatNumber(scope.eligible_orders, 0)} commande(s) éligible(s) sur ${base.formatNumber(scope.paid_orders, 0)} payée(s)`,
+        text: `Diagnostic par date de création, distinct du résultat économique ECO. Périmètre : ${refs}. Exclues : ${excluded || 'aucune'}.`,
       });
     }
     return notes;
@@ -392,7 +392,7 @@
       {
         key: 'margin', title: 'Marge', tone: 'positive',
         // Rang 1 : consolidée (réelle) ; rang 2 : estimée, explicitement non définitive.
-        metrics: [pair(payload, base, 'marge_consolidee', 'Marge consolidée (réelle)'), pair(payload, base, 'marge_estimee', 'Marge estimée — non définitive')],
+        metrics: [pair(payload, base, 'marge_consolidee', 'Marge des commandes finalisées'), pair(payload, base, 'marge_estimee', 'Marge estimée — non définitive')],
       },
       {
         key: 'refunds', title: 'Remboursements', tone: 'violet',

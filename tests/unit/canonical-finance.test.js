@@ -320,7 +320,9 @@ describe('LOT 2F-CANON — Finance vivant', () => {
   test('notes de définition : numérateur/dénominateur, coût réel partiel vs final, périmètre de la marge', () => {
     const notes = financeDecision.indicatorNotes(payloadFixture(), finance);
     const byKey = Object.fromEntries(notes.map(n => [n.key, n]));
-    expect(byKey.margin.title).toContain('2 commande(s) éligible(s) sur 5 encaissée(s)');
+    expect(byKey.margin.title).toContain('2 commande(s) éligible(s) sur 5 payée(s)');
+    expect(byKey.margin.title).toContain('Marge des commandes finalisées');
+    expect(byKey.margin.text).toContain('distinct du résultat économique ECO');
     expect(byKey.margin.text).toContain('CMD-C + CMD-D');
     expect(byKey.margin.text).toContain('3');
     const flat = t => t.replace(/[\u00a0\u202f]/g, ' ');
@@ -463,7 +465,7 @@ describe('Finance — vérité d’affichage', () => {
       { key: 'marge_estimee', label: 'Marge estimée', value: 12000, unit: 'KMF' },
     ] };
     const card = financeDecision.overviewCards(payload, finance).find(item => item.key === 'margin');
-    expect(card.metrics.map(metric => metric.label)).toEqual(['Marge consolidée (réelle)', 'Marge estimée — non définitive']);
+    expect(card.metrics.map(metric => metric.label)).toEqual(['Marge des commandes finalisées', 'Marge estimée — non définitive']);
     expect(card.metrics[0].value).not.toMatch(/^0/);
   });
 });
