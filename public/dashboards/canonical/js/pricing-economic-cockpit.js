@@ -2167,6 +2167,38 @@
 
   // Approved V7/V6 replaces the previous economic cockpit, rather than
   // wrapping it or mounting its write controls on a detached root.
+  function createHubEconomyLinks(doc, { user, adminContext, requestedMarket }) {
+    const role = user?.role;
+    if (!['admin', 'market_operator'].includes(role)) return null;
+    const nav = el(doc, 'nav', 'kmc-v7-families');
+    nav.setAttribute('aria-label', 'Activité du Hub et refacturation marchés');
+    const activity = el(doc, 'a', 'kmc-workspace-nav-link', 'Activité du Hub');
+    activity.href = '/admin/hub';
+    nav.append(activity);
+
+    if (role !== 'admin') return nav;
+    if (requestedMarket) {
+      const invoice = el(doc, 'a', 'kmc-workspace-nav-link', 'Refacturation marchés');
+      invoice.href = '#refacturation-marches';
+      nav.append(invoice);
+      return nav;
+    }
+
+    const markets = adminContext?.access?.allowedMarkets || [];
+    if (!markets.length) return nav;
+    const chooser = el(doc, 'details', '');
+    chooser.append(el(doc, 'summary', 'kmc-workspace-nav-link', 'Refacturation marchés'));
+    const links = el(doc, 'div', 'kmc-v7-families');
+    for (const market of markets) {
+      const link = el(doc, 'a', 'kmc-workspace-nav-link', market);
+      link.href = '/admin/workspaces/pricing?market=' + encodeURIComponent(market) + '#refacturation-marches';
+      links.append(link);
+    }
+    chooser.append(links);
+    nav.append(chooser);
+    return nav;
+  }
+
   async function enhance(rootObject, workspace, options) {
     if (!options?.root || !options.document) return null;
     const doc=options.document, rootNode=options.root;
@@ -2194,7 +2226,10 @@
     const session=createV7V6Session(doc,workspace,options,selected);
     rootNode.__economicV7V6Session=session;
     period.addEventListener('change',()=>session.refresh(period.value));
-    cockpit.append(header,session.element);
+    cockpit.append(header);
+    const hubLinks = createHubEconomyLinks(doc, options);
+    if (hubLinks) cockpit.append(hubLinks);
+    cockpit.append(session.element);
     options.root.replaceChildren(cockpit);
     options.root.dataset.pricingMockContract = 'exclusive';
     await session.refresh(selected);
@@ -2216,6 +2251,7 @@
     createV7PostForm,
     createV7CommitmentForms,
     createV6Activity,
+    createHubEconomyLinks,
     createV6Profitability,
     createV7V6Tabs,
     fetchV7V6Model,

@@ -142,7 +142,11 @@
 
   function appendHubStatement(section, marketCode, centralFinance) {
     const details = el('details', 'kmc-team-item');
-    details.appendChild(el('summary', '', 'Relevé du Hub'));
+    if (centralFinance) {
+      details.id = 'refacturation-marches';
+      details.open = true;
+    }
+    details.appendChild(el('summary', '', centralFinance ? 'Refacturation marchés' : 'Relevé du Hub'));
     details.appendChild(el('p', 'kmc-workspace-note',
       'Quotes-parts actives des charges de structure du Hub central entièrement rattachées à la période. Relevé interne en KMF.'));
     const form = el('form', 'kmc-team-summary');
@@ -369,6 +373,13 @@
         }
       }
       root.appendChild(section);
+      if (global.location?.hash === '#refacturation-marches') {
+        const refacturation = section.querySelector('#refacturation-marches');
+        if (refacturation) {
+          refacturation.open = true;
+          refacturation.scrollIntoView?.({ block: 'start' });
+        }
+      }
     } finally {
       mounting.delete(view.key);
     }

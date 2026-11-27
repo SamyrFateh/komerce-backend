@@ -17,6 +17,22 @@ test('L5 : l’avis « politique de marché absente » est un bloc d’informati
 });
 
 const {v7Money,createV7CostCenters,createV6Activity,createV6Profitability,createV7V6Tabs,fetchV7V6Model,createV7V6Session,createV7BudgetForm,install}=require('../../public/dashboards/canonical/js/pricing-economic-cockpit');
+test('les accès Hub distinguent exploitation et refacturation par marché', () => {
+  const { createHubEconomyLinks } = require('../../public/dashboards/canonical/js/pricing-economic-cockpit');
+  const group = createHubEconomyLinks(doc, {
+    user: { role: 'admin' }, adminContext: { access: { allowedMarkets: ['KM', 'CM'] } },
+  });
+  expect(all(group).filter(x => x.tag === 'a').map(x => [x.textContent, x.href])).toEqual([
+    ['Activité du Hub', '/admin/hub'],
+    ['KM', '/admin/workspaces/pricing?market=KM#refacturation-marches'],
+    ['CM', '/admin/workspaces/pricing?market=CM#refacturation-marches'],
+  ]);
+  const market = createHubEconomyLinks(doc, { user: { role: 'admin' }, requestedMarket: 'CM' });
+  expect(all(market).find(x => x.textContent === 'Refacturation marchés').href).toBe('#refacturation-marches');
+  const operator = createHubEconomyLinks(doc, { user: { role: 'market_operator' }, requestedMarket: 'CM' });
+  expect(texts(operator)).not.toContain('Refacturation marchés');
+});
+
 function node(tag){
   return {tag,children:[],dataset:{},attrs:{},textContent:'',append(...xs){this.children.push(...xs);},appendChild(x){this.children.push(x);return x;},replaceChildren(...xs){this.children=[...xs];},addEventListener(e,fn){this[e]=fn;},setAttribute(k,v){this.attrs[k]=v;}};
 }
