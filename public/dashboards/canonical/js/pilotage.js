@@ -144,6 +144,7 @@
   function metricTone(metric) {
     if (!metric) return 'neutral';
     if (metric.key === 'alertes_critiques') return Number(metric.value) > 0 ? 'critical' : 'positive';
+    if(metric.key==='economic_period_result'&&metric.data_quality?.status!=='CLOSED')return 'warning';
     if (metric.data_quality && metric.data_quality.warning) return 'warning';
     return 'neutral';
   }
@@ -151,6 +152,7 @@
   function metricHelper(metric) {
     if (!metric) return undefined;
     if (metric.data_quality && metric.data_quality.warning) return String(metric.data_quality.warning);
+    if(metric.key==='economic_period_result')return ({CLOSED:'Clôturé',PROVISIONAL:'Provisoire',REOPENED:'Réouvert — à rapprocher',NOT_RECONCILED:'Non rapproché',MARKET_RESULT_NOT_RECONCILED:'Marché non rapproché',SIMULATION_EXCLUDED:'Hors simulation',UNAVAILABLE:'Indisponible'})[metric.data_quality?.status]||'Non certifié';
     if (metric.delta && metric.delta.is_comparable && metric.delta.value != null) {
       const sign = Number(metric.delta.value) > 0 ? '+' : '';
       return `${sign}${formatNumber(metric.delta.value)} % vs ${metric.delta.vs_period || 'période précédente'}`;

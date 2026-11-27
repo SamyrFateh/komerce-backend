@@ -463,7 +463,7 @@ describe('Finance — vérité d’affichage', () => {
       { key: 'marge_estimee', label: 'Marge estimée', value: 12000, unit: 'KMF' },
     ] };
     const card = financeDecision.overviewCards(payload, finance).find(item => item.key === 'margin');
-    expect(card.metrics.map(metric => metric.label)).toEqual(['Marge consolidée (réelle)', 'Marge estimée — non définitive']);
+    expect(card.metrics.map(metric => metric.label)).toEqual(['Marge des commandes finalisées', 'Marge estimée — non définitive']);
     expect(card.metrics[0].value).not.toMatch(/^0/);
   });
 });
