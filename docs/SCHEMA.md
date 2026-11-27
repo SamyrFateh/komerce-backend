@@ -1136,6 +1136,14 @@ role: Retrait et réouverture versionnés, pour une variante, un marché et un r
 -->
 
 <!-- schema-pending
+object: hub_internal_invoices
+kind: table
+migration: 452
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Factures internes du Hub, montants KMF et équivalents EUR/XAF figés dans le relevé source, avec attestation unique du règlement reçu.
+-->
+
+<!-- schema-pending
 object: economic_group_period_closures
 kind: table
 migration: 451

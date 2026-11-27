@@ -107,11 +107,7 @@ async function hubInformationalTotals(client, amountKmf) {
   }
 }
 
-async function getMarketCostStatement(executor, { marketCode, actorUserId, actorRole = null, from = null, to = null, scope = null }) {
-  const db = requireExecutor(executor);
-  if (scope !== null && scope !== 'hub') {
-    throw statementError('COST_STATEMENT_SCOPE_INVALID', 'Périmètre du relevé invalide.');
-  }
+function statementPeriod(from, to, scope) {
   const isDate = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
   if (scope === 'hub' && (!isDate(from) || !isDate(to))) {
     throw statementError('COST_STATEMENT_PERIOD_INVALID', 'Deux dates sont requises pour le relevé du Hub.');
@@ -123,24 +119,38 @@ async function getMarketCostStatement(executor, { marketCode, actorUserId, actor
   }
   if (fromIso && toIso && toIso <= fromIso) throw statementError('COST_STATEMENT_PERIOD_INVALID', 'to doit être postérieur à from.', 400);
 
+  return { fromIso, toIso };
+}
+
+async function readHubStatement(db, { marketId, marketCode, fromIso, toIso }) {
+  const { rows } = await db.query(HUB_LINES_SQL, [marketId, fromIso, toIso]);
+  const totalKmf = rows[0]?.total_kmf ?? null;
+  return {
+    market_code: marketCode,
+    scope: 'HUB_CENTRAL',
+    status: 'INTERNAL_STATEMENT',
+    period: { from: fromIso, to: toIso },
+    currency_basis: 'KMF',
+    total_kmf: totalKmf,
+    informational_totals: await hubInformationalTotals(db, totalKmf),
+    truncated: rows.length > MAX_LINES,
+    lines: rows.slice(0, MAX_LINES).map(({ total_kmf, ...line }) => line),
+  };
+}
+
+async function getMarketCostStatement(executor, { marketCode, actorUserId, actorRole = null, from = null, to = null, scope = null }) {
+  const db = requireExecutor(executor);
+  if (scope !== null && scope !== 'hub') {
+    throw statementError('COST_STATEMENT_SCOPE_INVALID', 'Périmètre du relevé invalide.');
+  }
+  const { fromIso, toIso } = statementPeriod(from, to, scope);
+
   const authz = await require('./market-delegation-read-authority').resolveCanonicalMarketRead(resolveAuthorization, db, {
     userId: actorUserId, actorRole, marketCode, primaryCapability: 'finance.read',
   });
 
   if (scope === 'hub') {
-    const { rows } = await db.query(HUB_LINES_SQL, [authz.market_id, fromIso, toIso]);
-    const totalKmf = rows[0]?.total_kmf ?? null;
-    return {
-      market_code: authz.market_code || String(marketCode).toUpperCase(),
-      scope: 'HUB_CENTRAL',
-      status: 'INTERNAL_STATEMENT',
-      period: { from: fromIso, to: toIso },
-      currency_basis: 'KMF',
-      total_kmf: totalKmf,
-      informational_totals: await hubInformationalTotals(db, totalKmf),
-      truncated: rows.length > MAX_LINES,
-      lines: rows.slice(0, MAX_LINES).map(({ total_kmf, ...line }) => line),
-    };
+    return readHubStatement(db, { marketId: authz.market_id, marketCode: authz.market_code || String(marketCode).toUpperCase(), fromIso, toIso });
   }
 
   const { rows } = await db.query(LINES_SQL, [authz.market_id, fromIso, toIso]);
@@ -170,4 +180,4 @@ async function getMarketCostStatement(executor, { marketCode, actorUserId, actor
   });
 }
 
-module.exports = { MAX_LINES, getMarketCostStatement };
+module.exports = { MAX_LINES, getMarketCostStatement, readHubStatement, statementPeriod };

@@ -17,14 +17,15 @@ describe('Mon Market — projections en lecture seule (S-3)', () => {
     expect(html).not.toMatch(/<script(?![^>]*\bsrc=)[^>]*>/i);
   });
 
-  test('consomme les projections existantes, jamais d’écriture ni de Market ID navigateur', () => {
+  test('consomme les projections existantes et réserve les commandes Hub à la finance centrale', () => {
     for (const p of ['performance', 'cost-statement', 'customs-shipments', 'payment-accounts', 'config']) {
       expect(code).toContain(`path: '${p}'`);
     }
     expect(code).toContain('/api/market-delegation/markets/${encodeURIComponent(marketCode)}/${view.path}');
-    expect(code).toContain("method: 'GET'");
-    expect(code).not.toMatch(/method:\s*'(POST|PUT|PATCH|DELETE)'/);
-    expect(code).not.toMatch(/createElement\('(button|input|form|select|textarea)'\)|innerHTML|body:/);
+    expect(code).toContain("method: payload ? 'POST' : 'GET'");
+    expect(code).toContain('if (!centralFinance) return');
+    expect(code).toContain('/api/admin/market-settlements/markets/');
+    expect(code).not.toMatch(/innerHTML/);
     expect(code).not.toMatch(/market_id|marketId/);
     expect(code).toContain('contract.resolveExplicitMarket(context, search).marketCode');
   });

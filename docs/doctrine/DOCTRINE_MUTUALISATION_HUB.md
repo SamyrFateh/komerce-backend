@@ -126,7 +126,7 @@ Aucun euro, AED ou KMF de structure Hub n'est créé ou détruit par la clé de 
 
 ---
 
-### Parcours opérationnel proposé pour la première version
+### Parcours opérationnel de la première version
 
 Le Hub prépare un relevé par marché sur la fenêtre économique canonique. Les relais continuent à encaisser et à reverser les ventes pour leur propre marché. Le relevé Hub suit son propre règlement.
 
@@ -135,7 +135,7 @@ Le Hub prépare un relevé par marché sur la fenêtre économique canonique. Le
 | 1. Constater la charge | Finance Hub | Enregistrer la dépense au poste du centre Hub central avec la pièce et sa période économique. |
 | 2. Ventiler | Finance Hub | Appliquer la clé versionnée, conserver les références des attributions et vérifier que leur somme correspond au montant source. Une charge sans ventilation justifiée reste à rapprocher. |
 | 3. Contrôler le relevé | Finance Hub et responsable marché | Ouvrir Relevé de coûts → Relevé du Hub. Vérifier période, attribution active, montant en KMF et clé de chaque ligne. Le relevé actuel montre les charges entièrement rattachées à la période choisie. |
-| 4. Valider et facturer | Direction et finance Hub | Figer les lignes et leur total après contrôle. Pour un marché interne, la quote-part reste une imputation. Pour un partenaire facturable, établir une facture séparée liée à la version validée et au contrat. |
+| 4. Valider et facturer | Direction et finance Hub | Figer les lignes et leur total après contrôle. Pour un marché déclaré en activité, émettre une facture interne séparée à partir du relevé validé. L’envoi d’une facture à une entité externe reste régi par son contrat. |
 | 5. Rapprocher le règlement | Finance Hub | Rattacher la preuve du paiement du partenaire à la facture. La facture est soldée après rapprochement du montant reçu. Les reversements des relais suivent le journal d’encaissement du marché. |
 
 Exemple de recette. Le Hub constate 100 000 KMF de charges de structure pour une fenêtre. La clé justifiée attribue 60 000 KMF à KM et 40 000 KMF à CM. Le relevé CM affiche 40 000 KMF, et la consolidation groupe conserve la dépense externe de 100 000 KMF. Si CM est facturable selon son contrat et que la facture correspond à cette quote-part, CM règle 40 000 KMF au Hub par un paiement séparé. Un encaissement client de 200 000 KMF au relais CM reste tracé intégralement au nom de CM.
@@ -144,7 +144,7 @@ Le relevé et la facture interne affichent le total de référence en KMF et ses
 
 Une correction avant émission impose de relire la ventilation active et de revoir le relevé. Après émission, conserver la facture et son justificatif source. Rattacher toute régularisation à la facture initiale.
 
-**État de livraison.** La saisie des charges, les attributions et le relevé calculé existent dans le candidat #5314. La validation financière du relevé, l’émission et le rapprochement du règlement Hub restent à livrer. Le flux de règlements marché existant part d’une demande du marché et d’un paiement attesté par le siège, avec confirmation de réception par le marché. La recette Hub doit prouver le sens inverse pour la facture de prestation, du marché vers le Hub.
+**Périmètre de la première version.** La finance valide et émet la facture interne depuis le relevé du Hub. Le statut de marché actif est contrôlé côté serveur. Le règlement est attesté en une fois avec le montant exact en KMF et la référence de la preuve du paiement reçu. Le système conserve la facture figée. Les paiements partiels et les régularisations après émission relèvent d’une évolution de ce flux.
 
 ---
 

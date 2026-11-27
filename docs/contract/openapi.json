@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 121,
-    "total_routes": 825,
+    "total_routes": 827,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -11023,6 +11023,145 @@
                       "x-observed": true
                     },
                     "settlement": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/market-settlements/markets/{marketCode}/hub-invoices": {
+      "get": {
+        "summary": "GET /api/admin/market-settlements/markets/{marketCode}/hub-invoices",
+        "x-route-file": "routes/admin-market-settlement.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "invoice": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "can_issue": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "statement": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "evidence_hash": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "overlapping_invoice_id": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      },
+      "post": {
+        "summary": "POST /api/admin/market-settlements/markets/{marketCode}/hub-invoices",
+        "x-route-file": "routes/admin-market-settlement.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "invoice": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/market-settlements/markets/{marketCode}/hub-invoices/{invoiceId}/payment": {
+      "post": {
+        "summary": "POST /api/admin/market-settlements/markets/{marketCode}/hub-invoices/{invoiceId}/payment",
+        "x-route-file": "routes/admin-market-settlement.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "invoiceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "invoice": {
                       "type": "string",
                       "x-observed": true
                     }

@@ -616,6 +616,13 @@ const KNOWN_RESPONSES = {
   '/api/admin/markets/{marketCode}/control-plane': {
     get: { fields: ['market','assignment','ceiling','team','paymentProviders','cashPolicy','relaisActive','gaps'], source: 'test' }
   },
+  '/api/admin/market-settlements/markets/{marketCode}/hub-invoices': {
+    get: { fields: ['invoice','can_issue','statement','evidence_hash','overlapping_invoice_id'], source: 'route-read' },
+    post: { fields: ['invoice'], source: 'route-read' }
+  },
+  '/api/admin/market-settlements/markets/{marketCode}/hub-invoices/{invoiceId}/payment': {
+    post: { fields: ['invoice'], source: 'route-read' }
+  },
   '/api/admin/market-settlements/markets/{marketCode}/settlements': {
     get: { fields: ['market','assignment_id','settlements'], source: 'route-read' }
   },
