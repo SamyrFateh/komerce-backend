@@ -414,10 +414,24 @@
         : scopeDescription(initialMarket));
     copy.appendChild(description);
 
-    const field = doc.createElement('label');
+    const fixed = adminContext?.access?.mode === 'market'
+      && adminContext.access.allowedMarkets.length === 1
+      && initialMarket === adminContext.access.allowedMarkets[0];
+    const field = doc.createElement(fixed ? 'div' : 'label');
     field.className = 'kmc-market-context-field';
     field.appendChild(textNode(doc, 'span', 'kmc-market-context-label',
       options.allowGlobalOverview || options.allowHubOverview ? 'Vue / marché d’action' : 'Marché'));
+
+    if (fixed) {
+      bar.setAttribute('data-fixed-market', initialMarket);
+      const label = textNode(doc, 'strong', 'kmc-market-context-fixed', marketDisplayName(initialMarket));
+      label.setAttribute('data-fixed-market', initialMarket);
+      field.appendChild(label);
+      bar.appendChild(copy);
+      bar.appendChild(field);
+      container.appendChild(bar);
+      return Object.freeze({ element: bar, select: null, initialMarket, choices });
+    }
 
     const select = doc.createElement('select');
     select.className = 'kmc-market-context-select';

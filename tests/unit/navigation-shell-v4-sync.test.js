@@ -151,6 +151,21 @@ describe('navigation-shell-v4-sync — le marché survit à la reconstruction de
     expect(shell.body.querySelector('.kmc-admin-topbar').querySelector('.kmc-admin-account')).toBe(shell.account);
   });
 
+  test.each(['kmc-admin-market-fixed', 'kmc-admin-market-select'])('chrome stable avec %s et un contexte marché résolu', className => {
+    const shell = makeShell();
+    shell.market.append(new Node(className));
+    shell.sandbox.KOMERCE_CANONICAL_ADMIN_CONTEXT = { access: {
+      mode: 'market', allowedMarkets: ['CM'], defaultMarket: 'CM',
+    } };
+    vm.runInNewContext(SOURCE, shell.sandbox);
+    const topbar = shell.applied[0].rebuilt;
+    shell.notifyMutation();
+    shell.notifyMutation();
+    expect(shell.applied).toHaveLength(1);
+    expect(shell.body.querySelector('.kmc-admin-topbar')).toBe(topbar);
+    expect(topbar.querySelector('.' + className)).not.toBeNull();
+  });
+
   test('ne fait rien sans header propriétaire', () => {
     const shell = makeShell();
     shell.header.remove();

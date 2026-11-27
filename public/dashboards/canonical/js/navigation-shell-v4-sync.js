@@ -38,7 +38,9 @@
     if (pathname === '/admin/hub') return !!topbars[0].querySelector?.('.kmc-hub-global-scope');
     const access = global.KOMERCE_CANONICAL_ADMIN_CONTEXT?.access;
     const marketExpected = Array.isArray(access?.allowedMarkets) && access.allowedMarkets.length > 0;
-    return !marketExpected || !!topbars[0].querySelector?.('.kmc-admin-market-select');
+    // Un contexte mono-marché fixe est aussi une topbar complète. Ne pas
+    // reconstruire le chrome à chaque mutation quand aucun select n'est attendu.
+    return !marketExpected || !!topbars[0].querySelector?.('.kmc-admin-market-select, .kmc-admin-market-fixed');
   }
 
   function synchronize() {

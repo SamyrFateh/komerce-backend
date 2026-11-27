@@ -394,14 +394,14 @@ describe('canonical admin app — market selector', () => {
     expect(select.disabled).toBe(false);
   });
 
-  test('opérateur pays ne reçoit jamais Global et un DOM falsifié CG est rejeté avant Pilotage', async () => {
+  test('opérateur multi-marché ne reçoit jamais Global et un DOM falsifié CG est rejeté avant Pilotage', async () => {
     const env = loadCanonicalApp();
     const user = { id: 'operator-cm', role: 'admin' };
     const adminContext = {
       actor: user,
       access: {
         mode: 'market',
-        allowedMarkets: ['CM'],
+        allowedMarkets: ['CM', 'KM'],
         defaultMarket: 'CM',
         capabilities: ['pilotage.read', 'dashboard.market.read'],
       },
@@ -411,7 +411,7 @@ describe('canonical admin app — market selector', () => {
     await env.api.renderPilotageShell(env.root, user, adminContext);
 
     const select = env.root.children[0].children[1].children[1];
-    expect(select.children.map(option => option.value)).toEqual(['CM']);
+    expect(select.children.map(option => option.value)).toEqual(['CM', 'KM']);
     expect(select.value).toBe('CM');
     expect(env.pilotageMount).toHaveBeenCalledTimes(1);
     expect(env.pilotageMount).toHaveBeenLastCalledWith(expect.objectContaining({ requestedMarket: 'CM' }));
@@ -726,15 +726,14 @@ describe('Global en lecture, marché ciblé uniquement pour les actes', () => {
     env.window.KomerceCanonicalOperations={mount:overview};
     env.window.KomerceCanonicalShippingCustomsWorkspace={mount:writer};
     await env.api.renderShippingCustomsWorkspaceShell(env.root,actor,ctx);
-    const select=env.root.children[0].children[1].children[1];
-    expect(select.children.map(o=>o.value)).toEqual(['CM']);
+    const label=env.root.children[0].children[1].children[1];
+    expect(label.tagName).toBe('STRONG');
+    expect(label.attributes['data-fixed-market']).toBe('CM');
+    expect(label.textContent).toContain('CM');
+    expect(label._listeners.change).toBeUndefined();
     expect(writer).toHaveBeenCalledWith(expect.objectContaining({requestedMarket:'CM'}));
     expect(overview).not.toHaveBeenCalled();
-    const spy=jest.spyOn(console,'error').mockImplementation(()=>{});
-    select.value='CG'; await select._listeners.change();
     expect(writer).toHaveBeenCalledTimes(1);
-    expect(select.value).toBe('CM');
-    spy.mockRestore();
   });
 
   test('un marché non autorisé dans l’URL ne déclenche même pas un GET global de repli',async()=>{
@@ -832,4 +831,32 @@ test('ancien lien d’achat d’une PO : ouvre V8 avec le contexte de marché',(
  env.api.renderHubLive(env.root,{role:'admin'},null);
  expect(env.replace).toHaveBeenCalledWith('/admin/hub?branch=operations&sel=po%3Ap1&market=KM');
  expect(env.fetch).not.toHaveBeenCalled();
+});
+
+describe('V5.4 L3a.2 — périmètre fixe mono-marché', () => {
+  test.each(['CM','KM','CG','ZZ'])('Pilotage : %s est un libellé et non un choix', async code => {
+    const env=loadCanonicalApp();
+    const actor={id:'op',role:'market_operator'};
+    const ctx={actor,access:{mode:'market',allowedMarkets:[code],defaultMarket:code,capabilities:[]}};
+    await env.api.renderPilotageShell(env.root,actor,ctx);
+    const bar=env.root.children[0];
+    const label=bar.children[1].children[1];
+    expect(bar.attributes['data-fixed-market']).toBe(code);
+    expect(label.tagName).toBe('STRONG');
+    expect(label.attributes['data-fixed-market']).toBe(code);
+    expect(label._listeners.change).toBeUndefined();
+    expect(env.pilotageMount).toHaveBeenCalledWith(expect.objectContaining({requestedMarket:code}));
+  });
+  test('mono-marché : une URL étrangère ne devient pas un poste d’action implicite', async () => {
+    const env=loadCanonicalApp();
+    const actor={id:'op',role:'market_operator'};
+    const ctx={actor,access:{mode:'market',allowedMarkets:['CM'],defaultMarket:'CM',capabilities:[]}};
+    env.window.location.search='?market=CG';
+    await env.api.renderPricingWorkspaceShell(env.root,actor,ctx);
+    expect(env.pricingMount).not.toHaveBeenCalled();
+    expect(env.root.children[1].children[0].attributes['data-market-prompt']).toBe('unauthorized');
+    const select=env.root.children[0].children[1].children[1];
+    expect(select.tagName).toBe('SELECT');
+    expect(select.children.map(o=>o.value)).toEqual(['','CM']);
+  });
 });
