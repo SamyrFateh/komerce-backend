@@ -29,6 +29,10 @@ jest.mock('../../middleware/auth', () => ({
     req.user = mockUser;
     next();
   },
+  requireRole: roles => (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) return res.status(403).json({ error: 'Accès réservé' });
+    next();
+  },
 }));
 
 jest.mock('../../services/pricing-strategy-service', () => ({
