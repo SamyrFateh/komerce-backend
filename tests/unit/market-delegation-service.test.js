@@ -93,3 +93,19 @@ test('central default lookup preserves the historical SQL contract and denies pr
   expect(db.query.mock.calls[1][0]).toContain("m.lifecycle_status IN ('ACTIVE','SUSPENDED','PROVISIONING')");
   await expect(delegation.resolveActiveAssignmentByMarketCode(db,'GA',{allowProvisioning:'true'})).rejects.toMatchObject({code:'MARKET_NOT_FOUND'});
 });
+
+test('pre-opening pricing requires an explicit route opt-in and never permits activation',async()=>{
+  function fakeDb(){return {query:jest.fn(async sql=>{
+    if(sql.includes('LEFT JOIN market_operating_assignments'))return {rows:[{market_id:'m1',market_code:'GA',assignment_id:'a1',lifecycle_status:'PROVISIONING'}]};
+    if(sql.includes('FROM assignment_memberships'))return {rows:[{id:'mem',user_id:'u1'}]};
+    if(sql.includes('FROM membership_capabilities'))return {rows:['pricing.read','pricing.decide','pricing.activate','catalog.expose','pricing.cost_component.update'].map(capability=>({capability}))};
+    if(sql.includes('FROM assignment_capability_ceiling'))return {rows:[{effect:'ACT'}]};
+    return {rows:[]};
+  })};}
+  const base={userId:'u1',marketCode:'GA',requiredCapability:'pricing.decide'};
+  await expect(delegation.resolveAuthorization(fakeDb(),base)).rejects.toMatchObject({code:'MARKET_NOT_FOUND'});
+  await expect(delegation.resolveAuthorization(fakeDb(),{...base,allowPreparationPricing:true})).resolves.toMatchObject({capabilities:['pricing.read','pricing.decide']});
+  for(const requiredCapability of ['pricing.activate','catalog.expose','pricing.cost_component.update']){
+    await expect(delegation.resolveAuthorization(fakeDb(),{...base,requiredCapability,allowPreparationPricing:true})).rejects.toMatchObject({code:'MARKET_NOT_FOUND'});
+  }
+});

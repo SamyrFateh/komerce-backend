@@ -779,6 +779,17 @@
   }
 
   function renderPricingWorkspace(root, user, adminContext, requestedMarket) {
+    if (user?.role === 'market_operator' && adminContext?.access?.preparation?.[requestedMarket]) {
+      const doc = global.document;
+      root.replaceChildren();
+      root.appendChild(textNode(doc,'h1','','Préparation des prix · '+requestedMarket));
+      root.appendChild(textNode(doc,'p','kmc-workspace-note','Brouillons uniquement. Le contrôle économique et la mise en vente suivent leurs gardes habituelles.'));
+      const back = doc.createElement('a');
+      back.href='/admin/pilotage?market='+encodeURIComponent(requestedMarket);
+      back.textContent='Retour à Préparer mon marché';
+      root.appendChild(back);
+      return mountDomainModules(root, requestedMarket, [{key:'local-prices',api:global.KomerceMarketLocalPrices}]);
+    }
     return withMarketDomainModules(root, user, requestedMarket,
       host => canonicalMount(global.KomerceCanonicalPricingWorkspace,
         'canonical_pricing_workspace_module_missing', host, user, adminContext, requestedMarket),
@@ -1160,9 +1171,9 @@
     section.appendChild(textNode(doc,'p','kmc-workspace-note','La boutique reste fermée. Configurez votre marché, puis le central contrôlera les prérequis et décidera de l’ouverture.'));
     const done = data.items.filter(item => item.status === 'ready').length;
     section.appendChild(textNode(doc,'p','',''+done+' / '+data.items.length+' domaines vérifiés'));
-    const destinations = { team: '/admin/users', network: '/admin/providers' };
+    const destinations = { team: '/admin/users', network: '/admin/providers', commerce:'/admin/workspaces/pricing' };
     const caps = adminContext.access.delegatedCapabilities[code] || [];
-    const rights = { team:'team.read',network:'network.read' };
+    const rights = { team:'team.read',network:'network.read',commerce:'pricing.read' };
     for (const item of data.items) {
       const row = doc.createElement('section');
       row.className = 'kmc-workspace';

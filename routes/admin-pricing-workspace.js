@@ -69,21 +69,33 @@ function rejectBrowserAuthority(req, res, next) {
   next();
 }
 
+// Express strips /market/:marketCode in this mounted middleware. Only the
+// existing draft editor's endpoints may resolve a PROVISIONING market.
+// All commercial, budget, commitment and other write routes stay closed.
+function isPreparationPriceEndpoint(req) {
+  const path = req.path;
+  if (req.method === 'GET') return path === '/' || path === '/commercial-prices';
+  return req.method === 'POST' && /^\/products\/[^/]+\/local-price(?:\/reset)?$/.test(path);
+}
+
 async function resolveRequestedMarket(req, res, next) {
   const code = String(req.params.marketCode || '').trim().toUpperCase();
   if (!MARKET_CODE.test(code)) {
     return res.status(400).json({ error: 'Code marché invalide', code: 'invalid_market_code' });
   }
   try {
+    const preparationEndpoint = isPreparationPriceEndpoint(req);
     const { rows } = await db.query(
-      `SELECT id, code, name, currency
+      `SELECT id, code, name, currency, lifecycle_status
          FROM markets
-        WHERE code = $1 AND is_active = TRUE
+        WHERE code = $1 AND ${preparationEndpoint ? "(is_active = TRUE OR lifecycle_status = 'PROVISIONING')" : 'is_active = TRUE'}
         LIMIT 1`,
       [code]
     );
     if (!rows.length) return res.status(404).json({ error: 'Marché introuvable ou inactif', code: 'market_not_found' });
+    if (rows[0].lifecycle_status === 'PROVISIONING' && !preparationEndpoint) return res.status(409).json({error:'Ce geste nécessite un marché actif.',code:'MARKET_NOT_ACTIVE'});
     req.workspaceMarket = rows[0];
+    req.marketPreparationOnly = rows[0].lifecycle_status === 'PROVISIONING';
     return next();
   } catch (error) { return next(error); }
 }
@@ -168,7 +180,7 @@ function requirePricingCapability(capability, options = {}) {
 // aucun consommateur réel. requires_audit=false au registre pour ces deux
 // capabilities (lecture), contrairement aux mutations ci-dessus.
 function requirePricingReadCapability(capability) {
-  const delegated = requirePricingCapability(capability, { audit: false });
+  const delegated = requirePricingCapability(capability, { audit: false, allowPreparationPricing: capability === 'pricing.read' });
   return (req,res,next) => req.method === 'GET' && req.user?.role === 'admin' ? next() : delegated(req,res,next);
 }
 
@@ -185,7 +197,7 @@ function requireLocalStrategyCapability(capability) {
 // pricing strategy, cost-policy, or market-delegation routes. Check the live
 // database role, not a browser claim (or a stale role in the session cache).
 function requireCatalogPriceCapability(capability) {
-  const delegatedGuard = requireMarketDelegatedCapability(capability, { audit: capability !== 'pricing.read' });
+  const delegatedGuard = requireMarketDelegatedCapability(capability, { audit: capability !== 'pricing.read', allowPreparationPricing: capability === 'pricing.decide' });
   return async (req, res, next) => {
     if (req.user && req.user.role === 'admin') {
       try {
@@ -327,6 +339,12 @@ router.post('/market/:marketCode/cost-centers/references',requirePricingCapabili
 router.get('/market/:marketCode', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
+    if (req.marketPreparationOnly) {
+      const access = marketAccessProjection(req);
+      return res.json({preparation_only:true, market:{code:req.workspaceMarket.code,name:req.workspaceMarket.name,currency:req.workspaceMarket.currency},
+        access:{...access,can_manage_costs:false,can_manage_structure_events:false,can_manage_decision_policy:false,can_activate_local_prices:false,can_manage_market_observations:false,local_strategy_owner:false},
+        capabilities:{local_price_drafts:access.can_draft_local_prices,local_price_activation:false,local_price_buyer_activation:false}});
+    }
     const projection = await workspace.buildMarketWorkspace({ market: req.workspaceMarket });
     const access = marketAccessProjection(req);
     res.json({

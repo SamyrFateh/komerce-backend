@@ -47,6 +47,8 @@ const PREPARATION_CAPABILITIES = Object.freeze([
   'market_config.read',
 ]);
 
+const PREPARATION_PRICING_CAPABILITIES = Object.freeze(['pricing.read','pricing.decide']);
+
 async function resolveActiveAssignmentByMarketCode(executor, marketCode, { allowProvisioning = false } = {}) {
   const db = requireExecutor(executor);
   const code = normalizeMarketCode(marketCode);
@@ -355,10 +357,11 @@ async function resolveSingleMarketAuthorization(executor, { userId, requiredCapa
   return authorization;
 }
 
-async function resolveAuthorization(executor, { userId, marketCode, requiredCapability, allowProvisioningProjection = false }) {
+async function resolveAuthorization(executor, { userId, marketCode, requiredCapability, allowProvisioningProjection = false, allowPreparationPricing = false }) {
   const db = requireExecutor(executor);
   if (!userId) throw delegationError('AUTH_REQUIRED', 'Authentification requise.', 401);
-  const allowProvisioning = PREPARATION_CAPABILITIES.includes(requiredCapability) ||
+  const preparationPricing = allowPreparationPricing === true && PREPARATION_PRICING_CAPABILITIES.includes(requiredCapability);
+  const allowProvisioning = PREPARATION_CAPABILITIES.includes(requiredCapability) || preparationPricing ||
     (!requiredCapability && allowProvisioningProjection === true);
   const assignment = await resolveActiveAssignmentByMarketCode(db, marketCode, { allowProvisioning });
   const membership = await activeMembershipForUser(db, assignment.assignment_id, userId);
@@ -368,7 +371,8 @@ async function resolveAuthorization(executor, { userId, marketCode, requiredCapa
 
   const granted = await activeMembershipCapabilities(db, membership.id);
   const capabilities = assignment.lifecycle_status === 'PROVISIONING'
-    ? granted.filter(capability => PREPARATION_CAPABILITIES.includes(capability)) : granted;
+    ? granted.filter(capability => PREPARATION_CAPABILITIES.includes(capability) ||
+      ((preparationPricing || allowProvisioningProjection === true) && PREPARATION_PRICING_CAPABILITIES.includes(capability))) : granted;
   if (requiredCapability && !capabilities.includes(requiredCapability)) {
     throw delegationError(
       'MARKET_CAPABILITY_REQUIRED',
