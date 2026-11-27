@@ -5,6 +5,9 @@
 jest.mock('../../services/market-delegation-cost-statement-service', () => ({
   readHubStatement: jest.fn(),
   statementPeriod: jest.fn((from, to) => ({ fromIso: from, toIso: to })),
+  projectHubInvoiceBalance: jest.requireActual('../../services/market-delegation-cost-statement-service').projectHubInvoiceBalance,
+  hubInvoiceAdjustmentRequired: jest.requireActual('../../services/market-delegation-cost-statement-service').hubInvoiceAdjustmentRequired,
+  projectHubAdjustment: jest.requireActual('../../services/market-delegation-cost-statement-service').projectHubAdjustment,
 }));
 const { readHubStatement } = require('../../services/market-delegation-cost-statement-service');
 const { preview, issue, recordPayment } = require('../../services/hub-internal-invoice-service');
@@ -33,8 +36,9 @@ test('active market issues only the reviewed statement and freezes currency equi
   expect(review.can_issue).toBe(true);
   const db = client([market], [], [balance]);
   await expect(issue(db, { ...dates, evidenceHash: review.evidence_hash, actorId: 'finance' }))
-    .resolves.toMatchObject({ ...balance, status: 'ISSUED' });
+    .resolves.toMatchObject({ ...balance, status: 'ISSUED',balance:{hub_receivable_kmf:'40000.00',market_payable_kmf:'40000.00'} });
   expect(db.query.mock.calls[0][0]).toContain('FOR UPDATE');
+  expect(db.query.mock.calls[2][0]).toContain('amount_kmf::text AS amount_kmf');
   expect(JSON.parse(db.query.mock.calls[2][1][5])).toEqual(statement);
 });
 
@@ -63,7 +67,7 @@ test('incoming payment is recorded only against the exact amount and a matching 
   const input = { marketCode: 'CM', invoiceId: balance.id, amountKmf: '40000', reference: 'BANK-1', actorId: 'finance' };
   const paid = { ...balance, paid_at: 'today', payment_reference: input.reference };
   await expect(recordPayment(client([market], [balance], [paid]), input))
-    .resolves.toMatchObject({ status: 'PAID', payment_reference: 'BANK-1' });
+    .resolves.toMatchObject({ status: 'PAID', payment_reference: 'BANK-1',balance:{hub_receivable_kmf:'0.00',market_payable_kmf:'0.00',settlement_status:'PAYMENT_ATTESTED'} });
   await expect(recordPayment(client([market], [paid]), input)).resolves.toMatchObject({ status: 'PAID' });
   await expect(recordPayment(client([market], [balance]), { ...input, amountKmf: '39999.99' }))
     .rejects.toMatchObject({ code: 'HUB_INVOICE_PAYMENT_MISMATCH' });
@@ -73,6 +77,7 @@ test('incoming payment is recorded only against the exact amount and a matching 
 test('cross-period, unknown coverage and non-positive amounts cannot issue',async()=>{
   for(const candidate of [
     {...statement,coverage:{status:'CROSS_PERIOD_RECONCILIATION_REQUIRED',cross_period_attribution_count:1}},
+    {...statement,coverage:{status:'POOL_RECONCILIATION_REQUIRED',cross_period_attribution_count:0}},
     {...statement,coverage:undefined},
     {...statement,total_kmf:'0.00'},
   ]){
@@ -91,4 +96,16 @@ test('late attribution changes are flagged, never silently rewrite an issued inv
   expect(result).toMatchObject({can_issue:false,adjustment_required:true,invoice:{id:balance.id}});
   readHubStatement.mockResolvedValue(statement);
   expect(await preview(client([market],[invoice],[invoice]),dates)).toMatchObject({adjustment_required:false});
+});
+
+test('linked adjustment is a signed proposal only; unknown amounts are not zero',async()=>{
+  const invoice={...balance,statement_snapshot:statement,evidence_hash:'a'.repeat(64),paid_at:'today'};
+  for(const [total,delta] of [['40001.01','1.01'],['39998.99','-1.01']]){
+    readHubStatement.mockResolvedValue({...statement,total_kmf:total});
+    const result=await preview(client([market],[invoice],[invoice]),dates);
+    expect(result).toMatchObject({invoice:{status:'PAID',amount_kmf:'40000.00'},adjustment:{invoice_id:balance.id,status:'REVIEW_REQUIRED',delta_kmf:delta}});
+  }
+  readHubStatement.mockResolvedValue({...statement,total_kmf:null});
+  const result=await preview(client([market],[invoice],[invoice]),dates);
+  expect(result.adjustment).toMatchObject({invoice_id:balance.id,status:'RECONCILIATION_REQUIRED',delta_kmf:null});
 });

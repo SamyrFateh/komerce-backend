@@ -645,4 +645,57 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect((await q('SELECT qty_physical FROM local_stock WHERE id=$1',[stock])).rows[0].qty_physical).toBe(0);
   });
 
+  test('Hub invoice: conserved pool, reciprocal scope, exact payment, late adjustment and no additional group expense',async()=>{
+    // Committed fixtures in the already guarded disposable DB only.
+    const from='2024-01-01',to='2024-02-01';
+    const marketApp=makeApp([
+      {mount:'/api/admin/market-settlements',modulePath:'../../routes/admin-market-settlement'},
+      {mount:'/api/market-delegation',modulePath:'../../routes/market-delegation-cost-statement'},
+    ]);
+    const centralPath=code=>'/api/admin/market-settlements/markets/'+code+'/hub-invoices';
+    const marketPath=code=>'/api/market-delegation/markets/'+code+'/cost-statement';
+    const preview=(code=fx.marketA.code)=>request(marketApp).get(centralPath(code)).query({from,to}).set('Authorization',fx.central.token);
+    const read=(actor,code)=>request(marketApp).get(marketPath(code)).query({scope:'hub',from,to}).set('Authorization',actor.token);
+    const groupTruth=()=>require('../../services/pricing-period-structure').computePeriodStructureTruth({from,to});
+    const center=(await q("INSERT INTO economic_cost_centers(code,label) VALUES('HUB_CENTRAL','Hub central') ON CONFLICT(market_id,code) DO UPDATE SET label=economic_cost_centers.label RETURNING id")).rows[0].id;
+    const family=(await q("INSERT INTO economic_cost_families(center_id,code,label) VALUES($1,$2,$2) RETURNING id",[center,tag+'HUB'])).rows[0].id;
+    const charge=(await q("INSERT INTO charges(family,name,amount_kmf,is_recurring,recurrence_period) VALUES('operationnelle',$1,0,true,'monthly') RETURNING id",[tag+'HUB'])).rows[0].id;
+    await q("INSERT INTO economic_cost_posts(center_id,family_id,code,label,economic_nature,allocation_perimeter,allocation_basis,structure_charge_id) VALUES($1,$2,'HUB_TEST','Hub test','FIXED','MUTUALIZED','PERIOD',$3)",[center,family,charge]);
+    const record=amount=>recordStructureCostEvent({charge_id:charge,scope_kind:'GROUP',event_kind:'ACCRUAL',economic_from:from+'T00:00:00Z',economic_to:to+'T00:00:00Z',amount_original:amount,currency:'KMF',fx_rate_to_kmf:1,fx_source:'CI fixture',amount_kmf:amount,source_kind:'MANUAL',evidence_ref:tag+'HUB'},fx.central.id);
+    const allocate=(event,partA,partB)=>q(`INSERT INTO market_cost_attributions(source_event_id,market_id,event_kind,amount_kmf,allocation_key,allocation_basis,policy_version,recorded_by)
+       VALUES($1,$2,'ATTRIBUTION',$4,'CI_PROOF','{}','CI_V1',$6),($1,$3,'ATTRIBUTION',$5,'CI_PROOF','{}','CI_V1',$6)`,[event.id,fx.marketA.id,fx.marketB.id,partA,partB,fx.central.id]);
+    const source=await record(100000);
+    let response=await preview();expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({can_issue:false,statement:{coverage:{status:'POOL_RECONCILIATION_REQUIRED'}}});
+    const issue=hash=>request(marketApp).post(centralPath(fx.marketA.code)).set('Authorization',fx.central.token).send({from,to,evidence_hash:hash});
+    expect((await issue(response.body.evidence_hash)).status).toBe(409);
+    await allocate(source,40000,60000);
+    response=await preview();expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({can_issue:true,statement:{total_kmf:'40000.00',coverage:{status:'NO_CROSS_PERIOD_ATTRIBUTIONS'}}});
+    const before=(await groupTruth()).recognized_total_kmf;
+    const issued=await issue(response.body.evidence_hash);expect(issued.status).toBe(200);
+    const invoice=issued.body.invoice;
+    expect(invoice.balance).toMatchObject({hub_receivable_kmf:'40000.00',market_payable_kmf:'40000.00'});
+    expect((await issue(response.body.evidence_hash)).body.invoice.id).toBe(invoice.id);
+    const own=await read(fx.viewerA,fx.marketA.code);expect(own.status).toBe(200);
+    expect(own.body.invoice).toMatchObject({id:invoice.id,amount_kmf:'40000.00',balance:invoice.balance});
+    expect(own.body.invoice).not.toHaveProperty('issued_by');
+    expect((await read(fx.viewerA,fx.marketB.code)).status).toBe(403);
+    expect((await read(fx.outsider,fx.marketA.code)).status).toBe(403);
+    const pay=amount=>request(marketApp).post(centralPath(fx.marketA.code)+'/'+invoice.id+'/payment').set('Authorization',fx.central.token).send({amount_kmf:amount,reference:tag+'-HUB-PAY'});
+    expect((await pay('39999.99')).status).toBe(409);
+    const paid=await pay('40000.00');expect(paid.status).toBe(200);
+    expect(paid.body.invoice.balance).toMatchObject({hub_receivable_kmf:'0.00',market_payable_kmf:'0.00',settlement_status:'PAYMENT_ATTESTED'});
+    expect((await groupTruth()).recognized_total_kmf).toBe(before);
+    const late=await record(10000);
+    expect((await preview()).body.adjustment).toMatchObject({invoice_id:invoice.id,status:'RECONCILIATION_REQUIRED',delta_kmf:null});
+    await allocate(late,4000,6000);
+    const updated=await preview();expect(updated.status).toBe(200);
+    expect(updated.body).toMatchObject({invoice:{id:invoice.id,status:'PAID',amount_kmf:'40000.00'},adjustment_required:true,adjustment:{invoice_id:invoice.id,delta_kmf:'4000.00',status:'REVIEW_REQUIRED'}});
+    expect((await read(fx.viewerA,fx.marketA.code)).body.adjustment).toEqual(updated.body.adjustment);
+    expect((await groupTruth()).recognized_total_kmf-before).toBe(10000);
+    const facts=(await q('SELECT COUNT(*)::int AS count,SUM(amount_kmf)::text AS total FROM hub_internal_invoices WHERE market_id=$1',[fx.marketA.id])).rows[0];
+    expect(facts).toEqual({count:1,total:'40000.00'});
+  });
+
 });
