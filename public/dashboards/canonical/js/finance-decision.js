@@ -110,6 +110,11 @@
   // Notes de définition : numérateur, dénominateur, périmètre — jamais un pourcentage orphelin.
   function indicatorNotes(payload, base) {
     const notes = [];
+    if (payload && payload.economic_period_result) notes.push({
+      key: 'economic-period-result',
+      title: 'Résultat économique ECO',
+      text: 'Mois civil UTC courant, indépendant de la période des commandes. Même autorité que Prix & économie et Pilotage. Un résultat indisponible ne signifie pas zéro.',
+    });
     const comp = kpi(payload, 'taux_completude_couts');
     const q = comp && comp.data_quality ? comp.data_quality : {};
     if (comp && comp.value != null && q.items_total != null) {
@@ -772,7 +777,7 @@
         badge: scope && scope.eligible_orders > 0 ? 'Finalisée' : null,
       },
     ];
-    return cards
+    const diagnostics = cards
       .filter(card => projected[card.key])
       .map(card => {
         const value = projected[card.key].value;
@@ -782,6 +787,20 @@
         }
         return { ...card, value };
       });
+    const result = payload && payload.economic_period_result;
+    if (!result) return diagnostics;
+    const q = result.data_quality || {};
+    const status = ({ CLOSED: 'Clôturé', PROVISIONAL: 'Provisoire', REOPENED: 'Réouvert — à rapprocher',
+      NOT_RECONCILED: 'Non rapproché', MARKET_RESULT_NOT_RECONCILED: 'Marché non rapproché',
+      SIMULATION_EXCLUDED: 'Hors simulation', UNAVAILABLE: 'Indisponible' })[q.status] || 'Non certifié';
+    const known = result.value != null;
+    return [{ key: 'economic-period-result', label: result.label || 'Résultat économique ECO', icon: 'trend',
+      tone: !known || q.status !== 'CLOSED' ? 'warning' : Number(result.value) < 0 ? 'critical' : 'neutral',
+      value: known ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: result.unit }).format(Number(result.value)) : '—',
+      helper: [q.period_start && q.period_start.slice(0, 7) + ' UTC', status].filter(Boolean).join(' · '),
+      note: 'economic-period-result', unknown: !known },
+      ...diagnostics.map(card => card.key === 'marge' ? { ...card, label: 'Marge réelle finalisée — diagnostic commandes',
+        helper: [card.helper, 'Distincte du résultat ECO'].filter(Boolean).join(' · ') } : card)];
   }
 
   function renderKpiCard(doc, card, openHelp) {

@@ -26,6 +26,8 @@ const mockMetrics = {
 };
 jest.mock('../../services/dashboard-metrics', () => mockMetrics);
 
+const mockEco = { readGroupPeriodDecision: jest.fn(), readMarketPeriodDecision: jest.fn() };
+jest.mock('../../services/economic-cost-center-read-model', () => mockEco);
 const finance = require('../../services/dashboard-finance-canonical');
 
 beforeEach(() => {
@@ -417,4 +419,25 @@ test('Finance reads the identical documented customer cash projection as Commerc
    expect(await finance.loadCustomerCashSubtotal({...window,filters:{simulation_scope:'RCT1'}},{id:'CM'})).toEqual({available:false,reason:'simulation_excluded'});
    expect(spy).not.toHaveBeenCalled();
  }finally{spy.mockRestore();}
+});
+
+test('Finance ECO: same authority, scoped actor, UTC month, no legacy fallback', async () => {
+  const actor = { id: 1, role: 'admin' };
+  const market = { code: 'CM', currency: 'XAF' };
+  const now = new Date('2026-11-27T13:00:00Z');
+  const window = { filters: {} };
+  mockEco.readGroupPeriodDecision.mockResolvedValueOnce({ resultEur: -12, status: 'CLOSED', fxStatus: 'available', reasons: [] });
+  mockEco.readMarketPeriodDecision.mockResolvedValueOnce({ display: { result: 0, fxStatus: 'available' }, status: 'PROVISIONAL', reasons: [] });
+  expect(await finance.loadEconomicPeriodResult(actor, null, window, now)).toMatchObject({ value: -12, unit: 'EUR', data_quality: { status: 'CLOSED', completeness: 'complete' } });
+  expect(mockEco.readGroupPeriodDecision).toHaveBeenCalledWith(actor, '2026-11-01');
+  expect(await finance.loadEconomicPeriodResult(actor, market, window, now)).toMatchObject({ value: 0, unit: 'XAF', data_quality: { status: 'PROVISIONAL' } });
+  expect(mockEco.readMarketPeriodDecision).toHaveBeenCalledWith(actor, 'CM', '2026-11-01');
+  mockEco.readMarketPeriodDecision.mockRejectedValueOnce({ status: 403 }).mockRejectedValueOnce(new Error('database'));
+  expect(await finance.loadEconomicPeriodResult(actor, market, window, now)).toMatchObject({ value: null, data_quality: { status: 'UNAVAILABLE' } });
+  expect(await finance.loadEconomicPeriodResult(actor, market, window, now)).toMatchObject({ value: null, data_quality: { status: 'MARKET_RESULT_NOT_RECONCILED' } });
+  mockEco.readGroupPeriodDecision.mockRejectedValueOnce(new Error('database'));
+  expect(await finance.loadEconomicPeriodResult(actor, null, window, now)).toMatchObject({ value: null, data_quality: { status: 'UNAVAILABLE' } });
+  expect(await finance.loadEconomicPeriodResult(null, null, window, now)).toMatchObject({ value: null });
+  expect(await finance.loadEconomicPeriodResult(actor, market, { filters: { simulation_scope: 'test' } }, now)).toMatchObject({ value: null, data_quality: { status: 'SIMULATION_EXCLUDED' } });
+  expect(mockEco.readMarketPeriodDecision).toHaveBeenCalledTimes(3);
 });

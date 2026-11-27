@@ -267,7 +267,7 @@ router.get(
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
-      const payload = await projectMarketPayload(await finance.buildFinance(req.query, { market: req.dashboardMarket }), req.dashboardMarket);
+      const payload = await projectMarketPayload(await finance.buildFinance(req.query, { market: req.dashboardMarket, actor: req.user }), req.dashboardMarket);
       res.json(payload);
     } catch (err) {
       log.error({ err, market: req.dashboardMarket && req.dashboardMarket.code }, '[admin-dashboard-market] finance market error');
@@ -376,7 +376,7 @@ router.get(
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
-      const payload = await finance.buildFinance(req.query);
+      const payload = await finance.buildFinance(req.query, { actor: req.user });
       res.json(payload);
     } catch (err) {
       log.error({ err }, '[admin-dashboard-market] finance global error');
