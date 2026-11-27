@@ -59,16 +59,14 @@ const SHIPMENTS_SQL = `
    ORDER BY s.shipment_date DESC, s.created_at DESC
    LIMIT ${MAX_SHIPMENTS + 1}`;
 
-async function listMarketCustomsShipments(executor, { marketCode, actorUserId, from = null, to = null }) {
+async function listMarketCustomsShipments(executor, { marketCode, actorUserId, actorRole = null, from = null, to = null }) {
   const db = requireExecutor(executor);
   const fromDay = parseDay(from, 'from');
   const toDay = parseDay(to, 'to');
   if (fromDay && toDay && toDay < fromDay) throw customsError('MARKET_CUSTOMS_PERIOD_INVALID', 'to doit être postérieur ou égal à from.', 400);
 
-  const authz = await resolveAuthorization(db, {
-    userId: actorUserId,
-    marketCode,
-    requiredCapability: 'operations.read',
+  const authz = await require('./market-delegation-read-authority').resolveCanonicalMarketRead(resolveAuthorization, db, {
+    userId: actorUserId, actorRole, marketCode, primaryCapability: 'operations.read',
   });
 
   const { rows } = await db.query(SHIPMENTS_SQL, [authz.market_id, fromDay, toDay]);

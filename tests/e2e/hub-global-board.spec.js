@@ -44,16 +44,17 @@ async function mount(page,role='agent_relais',search='',board=BOARD,visual=false
     if(url.pathname==='/api/auth/me') return route.fulfill({contentType:'application/json',body:JSON.stringify({role,id:'f761a3ed-0000-4000-8000-000000000001'})});
     if(url.pathname==='/api/hub/board') {
       calls.push('GET /api/hub/board'+url.search);
-      return route.fulfill({contentType:'application/json',body:JSON.stringify(board)});
+      return route.fulfill({contentType:'application/json',body:JSON.stringify(role==='market_operator'?{...board,audience:'MARKET_SCOPED'}:board)});
     }
     if(url.pathname==='/api/admin/dashboard/context') {
+      if(role==='market_operator') return route.fulfill({json:{actor:{id:'f761a3ed-0000-4000-8000-000000000001',role},access:{mode:'market',allowedMarkets:board.markets,defaultMarket:board.markets[0],capabilities:[],delegatedCapabilities:Object.fromEntries(board.markets.map(code=>[code,['operations.read']]))}}});
       calls.push('UNEXPECTED_ADMIN_CONTEXT');
       return route.fulfill({status:403,contentType:'application/json',body:JSON.stringify({error:'should not fetch admin context'})});
     }
     return route.fulfill({status:404,body:''});
   });
   const params=new URLSearchParams(search);
-  if(!visual && ['admin','agent_hub'].includes(role)) params.set('ux','legacy');
+  if(!visual && ['admin','agent_hub','market_operator'].includes(role)) params.set('ux','legacy');
   await page.goto(ORIGIN+'/admin/hub'+(params.size?'?'+params.toString():''));
   if(visual) await expect(page.locator('[data-hub-po-v8]')).toBeVisible();
   else await expect(page.locator('[data-hub-global-order]')).toHaveCount(board.orders.length);

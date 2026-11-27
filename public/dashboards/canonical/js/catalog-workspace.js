@@ -2515,7 +2515,7 @@
     }
     if (row.lifecycle_status === 'active' && row.is_active === true) {
       const marketLink = text(doc, 'a', 'kmc-workspace-action is-secondary', 'Décisions marchés');
-      marketLink.href = '/dashboards/canonical/market-catalog.html?product_ref=' +
+      marketLink.href = '/admin/workspaces/catalog?lens=market&product_ref=' +
         encodeURIComponent(row.product_ref);
       mgroup.appendChild(marketLink);
     }
@@ -3481,7 +3481,7 @@
         market: market.code,
         product_ref: handoff.product_ref,
       });
-      link.href = `/dashboards/canonical/market-catalog.html?${params.toString()}#market-ready-to-sell`;
+      link.href = `/admin/workspaces/catalog?lens=market&${params.toString()}#market-ready-to-sell`;
       action.appendChild(link);
       tr.appendChild(action);
       tbody.appendChild(tr);

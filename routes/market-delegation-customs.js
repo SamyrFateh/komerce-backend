@@ -35,6 +35,7 @@ router.get('/markets/:marketCode/customs-shipments', authenticate, async (req, r
     res.json(await listMarketCustomsShipments(db, {
       marketCode: req.params.marketCode,
       actorUserId: req.user.id,
+      ...(req.user.role === 'admin' ? { actorRole: req.user.role } : {}),
       from: req.query.from || null,
       to: req.query.to || null,
     }));

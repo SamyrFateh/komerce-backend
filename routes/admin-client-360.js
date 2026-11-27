@@ -31,7 +31,7 @@ const attachClientReadMarkets = attachAuthorizedMarketsForCapability('client.rea
 
 async function attachClient360Authority(req, res, next) {
   try {
-    const globalAllowed = await hasDashboardGlobalAuthority(req.user && req.user.id);
+    const globalAllowed = req.user?.role === 'admin';
     if (globalAllowed) {
       req.dashboardGlobalAuthority = true;
       return next();

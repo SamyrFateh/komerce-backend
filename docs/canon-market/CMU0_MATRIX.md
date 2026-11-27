@@ -1,0 +1,274 @@
+# CMU-0 — Périmètre de convergence CANON-MARKET
+
+## Décision de périmètre (proposition pour les cinq PR)
+
+Références : #5272, plan [7199903236](https://github.com/SamyrFateh/komerce-backend/issues/5272#issuecomment-7199903236), revue unique [7200002546](https://github.com/SamyrFateh/komerce-backend/issues/5272#issuecomment-7200002546). Base 4937c8da. Responsable GPT.
+
+**Liste fermée conservatoire :** les seules lectures existantes dont une évolution de scope est proposée au lot 3 sont celles du tableau A. Toutes les autres routes centrales demeurent protégées par leurs gardes actuels. Les routes du tableau B sont des lectures marché existantes à réutiliser, jamais des autorisations supplémentaires. Les destinations du tableau C convergent exclusivement par remontage des modules déjà autorisés (lot 4). Aucun GET non énuméré ne peut être élargi ; si une destination exige une nouvelle lecture, compléter cette matrice explicitement dans la pile avant revue globale. Aucune route d'écriture élargie, aucun nouveau droit, aucun geste physique Hub pour market_operator. Les qualifications du relevé historique ci-dessous sont informatives et ne remplacent pas cette règle.
+
+### A — Lecture à corriger (liste fermée de candidats, non validée)
+
+| Route exacte | READ existant/cible | Delta autorisé dans la proposition |
+|---|---|---|
+| GET /api/unsold/:id | operations.read | aligner détail sur liste/statistiques et scope avant réponse, 404 hors scope |
+| GET /api/hub/board | operations.read | projection PO limitée aux lignes autorisées ; aucun simple élargissement de includePurchaseOrders ; admin global et filtre explicite conservés |
+| GET /api/markets/:marketCode/local-stock | local_offer.manage (actuellement opérateur uniquement) | parité de lecture admin filtré ; service GET distinct si nécessaire, aucun changement de authorize partagé avec POST/PUT |
+
+**Exclusions explicites** : GET /api/purchasing, /api/purchasing/open-lines, /api/purchasing/po/:po_id, /api/purchasing/po/:po_id/reconciliation et /api/purchasing/po/:po_id/commitment-pdf ne sont pas ouverts en l'état. Le besoin de lecture PO marché est porté par /api/hub/board et une projection bornée, pas par l'API centrale brute. GET /api/hub/administration, /api/hub/director-todo, /api/unsold/:id/whatsapp, les retours/compensations centrales, scans, étiquettes, exports globaux et données fournisseurs confidentielles restent hors liste. Si une projection manque, le lot 3 doit le signaler et proposer un amendement explicite, non une autorisation implicite.
+
+### B — Lectures déjà disponibles à réutiliser
+
+| Destination | GET exact (préfixe inclus) | Droit / frontière |
+|---|---|---|
+| Pilotage | /api/admin/dashboard/context | contexte canonique, aucun accès métier implicite |
+| Pilotage | /api/admin/dashboard/unified/market/:marketCode | dashboard.market.read |
+| Commerce | /api/admin/dashboard/commerce/market/:marketCode | dashboard.market.read |
+| Commandes | /api/admin/dashboard/orders/market/:marketCode | dashboard.market.read |
+| Opérations | /api/admin/dashboard/operations/market/:marketCode | operations.read |
+| Finance | /api/admin/dashboard/finance/market/:marketCode | finance.read |
+| À traiter | /api/admin/action-center/market/:marketCode | garde/service actuel, à préserver |
+| Clients | /api/admin/entities/clients/market/:marketCode | client.read |
+| Client 360 | /api/admin/entities/clients/:clientPhone | client.read |
+| Commande 360 | /api/admin/entities/orders/:orderReference | operations.read ; finance.read pour coûts |
+| Produit 360 | /api/admin/entities/products/:productRef | catalog.read ; données centrales exclues |
+| Catalogue | /api/market-delegation/catalog/authorized-markets | résolution serveur existante |
+| Catalogue | /api/market-delegation/markets/:marketCode/catalog/exposure | catalog.read ; filtres et pages |
+| Économie | /api/admin/workspaces/pricing/market/:marketCode | pricing.read |
+| Économie | /api/admin/workspaces/pricing/market/:marketCode/commercial-prices | pricing.read |
+| Économie | /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/activation-preview | pricing.read ; garder G6 |
+| Opérations | /api/admin/workspaces/operations/market/:marketCode | garde lecture existant |
+| Opérations | /api/admin/workspaces/operations/market/:marketCode/supply | operations.read / garde existant |
+| Opérations | /api/admin/workspaces/operations/market/:marketCode/supply/trace | garde existant |
+| Opérations | /api/admin/workspaces/operations/market/:marketCode/supply/receipt-checks | garde existant + qualité |
+| Opérations | /api/admin/workspaces/operations/market/:marketCode/relay-shipments | garde existant |
+| Expéditions | /api/admin/workspaces/shipping-customs/market/:marketCode | logistics.read / garde existant |
+| Expéditions | /api/admin/workspaces/shipping-customs/market/:marketCode/international | garde existant |
+| Expéditions | /api/admin/workspaces/shipping-customs/market/:marketCode/international/:reference | garde existant |
+| Comptabilité | /api/admin/workspaces/accounting/market/:marketCode | finance.read / garde existant |
+| Comptabilité | /api/admin/workspaces/accounting/market/:marketCode/journal/:view(summary,movements,documents,reconciliation) | garde lecture journal existant |
+| Hub | /api/hub/dossier | operations.read + marché autorisé |
+| Hub | /api/hub/trace | operations.read + scope |
+| Hub | /api/hub/search | operations.read + scope |
+| Hub | /api/hub/stats/week | operations.read + scope |
+| Hub | /api/hub/pending | operations.read + scope |
+| Hub | /api/hub/today | operations.read + scope |
+| Hub | /api/hub-dash/dashboard | operations.read |
+| Hub | /api/hub-dash/dubai | operations.read |
+| Hub | /api/hub-dash/queue | operations.read |
+| Hub | /api/hub-dash/orders/:id | operations.read |
+| Hub | /api/hub-dash/validate/:id | operations.read ; lecture uniquement |
+| Relais | /api/relay/dashboard | operations.read ; liaison relais des agents conservée |
+| Relais | /api/relay/incidents | operations.read |
+| Relais | /api/relay/orders | operations.read |
+| Relais | /api/relay/orders/:id | operations.read |
+| Invendus | /api/unsold/ | operations.read |
+| Invendus | /api/unsold/stats/summary | operations.read |
+
+### C — Modules marchés à remonter sans élargissement
+
+| Module | Destination | Lectures existantes (préfixe /api/market-delegation/markets/:marketCode sauf stock W3) | Écriture |
+|---|---|---|---|
+| market-catalog | /admin/workspaces/catalog | /catalog/exposure | catalog.expose, garde inchangé |
+| market-autonomy | /admin/workspaces/pricing | workspace pricing listé B | prix local, activation/reset inchangés |
+| market-local-offer | Catalogue/Opérations | /local-offer/services ; /local-offer/physical-offers ; GET /api/markets/:marketCode/local-stock | local_offer.manage, writers W3 inchangés |
+| market-team | /admin/users | /team | droits existants team.* |
+| market-network | /admin/providers | /network/relais ; /network/relais-agents ; /network/providers | droits existants network.* / provider.manage |
+| market-cash-control | /admin/finance | /cash-control-policy ; /cash-custody | droits existants cash_control.policy.manage et service |
+| market-settlement | /admin/finance | /settlements | règlement existant |
+| market-client-case | /admin/clients | /client-cases/disputes | client.case.handle |
+| market-readonly-views | Commerce/Économie/Expéditions/Finance | /performance ; /cost-statement ; /customs-shipments ; /payment-accounts | aucune ; finance.read / operations.read |
+| Paramètres locaux | /admin/settings | lecture existante à qualifier, aucun élargissement central | market_config.update central-held |
+
+### D — Destinations HTML et contrôles de sortie
+
+Le menu cible est le menu canonique, avec catalogue local comme lentille du workspace central. Les destinations de A/B/C ne sont affichées qu'une fois le backend et les composants prêts ; conserver provisoirement les accès G6 historiques. Les destinations exclusivement centrales (sourcing/import, gestion globale catalogue, grants, administration groupe, recette, Direction Hub centrale) ne gagnent aucun droit. Les annexes donnent les références par fichier/ligne : [routes centrales](CMU0_CENTRAL_WORKSPACES.md), [délégations](CMU0_DELEGATIONS.md), [UI centrale](CMU0_CENTRAL_UI_CALLS.md), [UI marché](CMU0_MARKET_UI_CALLS.md). Le relevé historique ci-dessous documente les destinations, aliases à qualifier et limites. Ne pas traiter les candidats des annexes comme une allowlist.
+
+**Statut :** proposition conservatoire pour PR documentaire en brouillon. Complétude par rapport aux destinations dynamiques, règles A1/A2, gates carte-first et preflight restent à prouver. Aucune certification ni validation de sécurité. Revue globale des cinq PR, puis fusion uniquement après contrôles. Aucune écriture ni modification staging.
+
+---
+
+## Relevé historique (preuves et détails, non normatif)
+
+
+Responsable GPT · base `4937c8da271c6bc448a6154f62bb0f3bb6a225d3` · #5272.
+Plan Opus [7199903236](https://github.com/SamyrFateh/komerce-backend/issues/5272#issuecomment-7199903236).
+Arbitrage propriétaire [7200002546](https://github.com/SamyrFateh/komerce-backend/issues/5272#issuecomment-7200002546) : **5 PR dépendantes, une seule revue globale Opus, aucune fusion avant revue.**
+
+**BROUILLON — NON VALIDÉ, AUCUNE ROUTE À OUVRIR.** Ce document matérialise l'inventaire préparatoire du [commentaire 7199946553](https://github.com/SamyrFateh/komerce-backend/issues/5272#issuecomment-7199946553). Les lignes groupées, gardes non vérifiés, préfixes et hypothèses doivent être confirmés dans le checkout. Ne pas utiliser cette pré-matrice comme liste fermée du lot 3. A1/A2/A3, aucune écriture élargie, aucune nouvelle capability et maintien des gestes G6 restent impératifs.
+
+
+Référence impérative : [plan Opus 7199903236](https://github.com/SamyrFateh/komerce-backend/issues/5272#issuecomment-7199903236), [arbitrages A1/A2/A3](https://github.com/SamyrFateh/komerce-backend/issues/5272#issuecomment-7199832971). **5 lots, une PR par lot, revue Opus unique sur les cinq PR avant toute fusion.** Cette instruction remplace la proposition initiale de PR unique. Responsable GPT. Le lot 3 ne peut ouvrir aucune lecture absente de la liste fermée finalisée.
+
+Baseline code lu : [4937c8da](https://github.com/SamyrFateh/komerce-backend/commit/4937c8da271c6bc448a6154f62bb0f3bb6a225d3). Sources : bootstrap/html-routes.js, bootstrap/api-routes.js, navigation-policy-v4.js:917-1024, routes propriétaires et AGENTS.md.
+
+### Pré-matrice CMU-0 — premier inventaire, **NON VALIDÉ / NON ALLOWLIST**
+Abréviations : D=/api/admin/dashboard, E=/api/admin/entities, W=/api/admin/workspaces, M=/api/market-delegation/markets/:marketCode. Les GET ci-dessous sont des destinations/lectures repérées, **pas** une autorisation d'élargir un guard. C=central-only, M=market-scoped cible ou existant. Les guards d'écriture restent inchangés ; aucune capability créée. Pour les destinations mixtes, les routes globales et locales sont distinctes.
+
+| Destination HTML / composant | Lecture(s) repérées / garde actuel | Portée cible | READ / ACT actuel ou cible à valider | Suite |
+|---|---|---|---|---|
+| /admin/pilotage | GET D/context ; GET D/unified/market/:marketCode (requirePilotageMarketRead) | M | dashboard.market.read / — | même écran |
+| /admin/pilotage, vue groupe | GET D/unified (router historique / autorité globale) | C | autorité centrale | conserver |
+| /admin/action-center | GET /api/admin/action-center/market/:marketCode (admin/market_operator + autorité service) | M | dashboard.market.read / decision_signal.manage selon guard existant | conserver |
+| /admin/action-center, groupe | GET /api/admin/action-center (requireDecisionSignalGlobalAuthority) | C | central | conserver |
+| /admin/commerce | GET D/commerce/market/:marketCode (requireCommerceMarketRead) | M | dashboard.market.read / — | conserver |
+| /admin/orders | GET D/orders/market/:marketCode (requireOrdersMarketRead) | M | dashboard.market.read / — | conserver, vérifier autres actions |
+| /admin/clients | GET E/clients/market/:marketCode (requireClientIndexMarketRead, client.read) | M | client.read actuel ; A2 à arbitrer en regard de ce guard | même écran |
+| /admin/orders/:orderReference | GET E/orders/:orderReference (requireOrderMarketRead) | M | operations.read actuel ; finance.read pour coûts | conserver sections protégées ; A2 à réconcilier |
+| /admin/clients/:clientPhone | GET E/clients/:clientPhone (attachClientReadMarkets, resolveClientAccess) | M | client.read actuel | préserver frontière de données |
+| /admin/products/:productRef | GET E/products/:productRef (attachCatalogReadMarkets) | M | catalog.read | préserver includeCentral=false pour opérateur |
+| /admin/workspaces/pricing | GET W/pricing/market/:marketCode (pricing.read) | M | pricing.read / pricing.decide, pricing.activate, catalog.expose selon geste existant | préserver ECO #5280 |
+| /admin/workspaces/pricing, groupe | GET W/pricing/ ; GET W/pricing/strategy ; GET W/pricing/structure-events ; GET W/pricing/structure-events/:eventId/attributions (admin + requirePricingGlobalAuthority) | C | central | ne pas ouvrir |
+| /admin/workspaces/catalog, global | GET W/catalog/ ; GET W/catalog/products/:productRef/quality (admin + requireCatalogGlobalAuthority ; rejectMarketDimension) | C | central | garde intact |
+| /admin/workspaces/catalog, lentille marché (ancien market-catalog) | GET M/catalog/exposure (catalog.read) ; GET /api/market-delegation/catalog/authorized-markets | M | catalog.read / catalog.expose | réutiliser API locale, aucune mutation globale |
+| /admin/operations | GET D/operations/market/:marketCode (requireOperationsMarketRead) | M | operations.read | même écran |
+| /admin/workspaces/operations | GET W/operations/market/:marketCode ; GET .../supply ; GET .../supply/trace ; GET .../supply/receipt-checks ; GET .../relay-shipments (requireWorkspaceReadAccess/requireHubSupplyReadAccess, garde qualité si applicable) | M | operations.read / aucun geste physique Hub A3 | conserver |
+| /admin/workspaces/operations, étiquettes et codes physiques | GET .../supply/physical-code ; GET .../labels/index ; GET .../labels/articles/:id/print ; GET .../labels/boxes/:id/print ; GET .../labels/articles/:id/pdf ; GET .../labels/boxes/:id/pdf ; GET .../labels/resolve ; GET .../relay/labels/resolve ; GET .../relay-shipments/:reference/bags/:bagRef (guards spécialisés) | C pour responsable marché (agents spécialisés inchangés) | EXEC existant, non accordé à market_operator | **exclure du lot 3** ; GET n'implique pas lecture déléguable |
+| /admin/workspaces/shipping-customs | GET W/shipping-customs/market/:marketCode ; GET .../international ; GET .../international/:reference (router de lecture) | M | logistics.read actuel, operations.read selon A2 et preuve ; ACT inchangé | vérifier objets mixtes |
+| /admin/workspaces/purchasing | GET /api/purchasing/ ; GET /api/purchasing/open-lines ; GET /api/purchasing/po/:po_id ; GET /api/purchasing/po/:po_id/reconciliation (admin ou admin/agent_hub) | M candidat pour projection limitée, NON autorisé à basculer en l'état | operations.read cible / aucun geste | lignes propres au marché ; fournisseurs/grants/paiements et PDF d'engagement restent C sans arbitrage explicite |
+| /admin/hub, /admin/hub-live | GET /api/hub/board (hubBoardRead + attachHubReadAuthority) ; GET /api/hub-dash/dashboard ; GET /api/hub-dash/queue ; GET /api/hub-dash/orders/:id (hubRead, operations.read) | M | operations.read / aucun geste physique même avec execution.* | même Kanban PO-first |
+| /admin/relais-live | /api/relay : router relay-dashboard, lecture operations.read ; détails à compléter | M candidat | operations.read / guards existants | même cockpit, sans gestes non délégués |
+| /admin/finance | GET D/finance/market/:marketCode (requireFinanceMarketRead) | M | finance.read | même écran |
+| /admin/workspaces/accounting | GET W/accounting/market/:marketCode ; GET .../journal/:view(summary,movements,documents,reconciliation) (requireWorkspaceReadAccess/requireJournalReadAccess) | M | finance.read / finance.act et cash.custody.receive selon guard actuel | mêmes composants |
+| /admin/workspaces/sourcing ; /admin/import-runtime ; /admin/suppliers/:supplierId | workspace sourcing global et autorité fournisseur, endpoints détaillés à inventorier | C sauf nouvelle projection locale explicitement validée | central | aucune ouverture de secrets |
+| /dashboards/canonical/access.html | GET /api/admin/users/markets ; GET /api/admin/users/:id/market-scopes ; GET /api/market-delegation/central/team-matrix (admin global) | C | central | conserver gouvernance |
+| /admin/markets (legacy) | GET /api/admin/markets ; GET /api/admin/markets/:marketCode/control-plane ; GET .../central-authority ; GET .../:marketCode/exit-readiness ; GET .../:marketCode/transport-sale-rates (centralAdmin) | C | central | local via projection dédiée seulement |
+| /admin/users (et ancien market-team) | GET /api/admin/users (guard admin) ; GET M/team (service délégué) | C global / M local | team.read / team.invite, team.grant, team.revoke existants | même workspace, pas d'ouverture annuaire groupe |
+| /admin/providers (ancien market-network) | GET /api/admin/providers/capabilities (admin) ; GET M/network/providers (network.read ou provider.manage) ; GET M/network/relais ; GET M/network/relais-agents | C global / M local | network.read / provider.manage, network.* existants | même destination ; registre technique central protégé |
+| /admin/settings | /api/admin/rules/* et /api/admin/pricing-matrices/* admin ; config locale à inventorier | C global / M local | market_config.read pour configuration locale ; aucun élargissement UPDATE | séparer paramètres groupe/local |
+| Ancien market-client-case → Clients | GET M/client-cases/disputes (client.read ou client.case.handle) | M | existants | remonter module |
+| Ancien market-local-offer → Catalogue/Opérations | GET M/local-offer/services ; GET M/local-offer/physical-offers (catalog.read ou local_offer.manage) | M | catalog.read / local_offer.manage | remonter, garder W3 |
+| Ancien market-settlement et readonly → Finance | GET M/settlements ; GET M/payment-accounts (service délégué) | M | finance.read / guards existants, à relever exactement | remonter |
+| /dashboards/canonical/unsold.html | GET /api/unsold ; GET /api/unsold/stats/summary (attachUnsoldReadScope) ; GET /api/unsold/:id (requireAdmin seul) ; GET /api/unsold/:id/whatsapp (requireAdmin seul) | M liste/stats/détail ; WhatsApp à qualifier | operations.read / aucune mutation élargie | aligner détail, pas de fuite |
+| /admin/golden-e2e?guide=hub#extendedRecipe ; /admin/demo | routes de recette et preuves, GET E/golden-upstream ; GET E/orders/:orderReference/golden-evidence (admin) | C | central | hors UI marché |
+| /admin/documentation | GET HTML authenticate + documentationRequireRole | M / commun | rôle interne existant, pas de nouvelle capability | garder |
+
+Autres destinations à recenser une par une : aliases /admin-next, legacy ?legacy=1, /admin/customs, /admin/suppliers, /admin/sales, /admin/transitaire, /admin/sante, /admin/shared-carts, /admin/simulator, /portail ; sous-modales, exports, recherches, SSE, routes Hub et Relais détaillées, mutations existantes exactes des modules, registre ECO courant. **Toute route non inventoriée précisément demeure interdite d'élargissement.** Les endpoints groupés ou abrégés ici ne sont pas une liste fermée exploitable.
+
+### Trois points de revue à verrouiller AVANT lot 2/3
+1. A1 : le runtime actuel distingue dashboard_global_access_grants, catalog_global_access_grants, pricing_global_access_grants, sourcing_global_access_grants, decision_signal_global_access_grants. Le changement de sémantique admin est un arbitrage propriétaire, mais supprimer aveuglément ces guards pourrait élargir les écritures et contredire le garde-fou du plan. Garder les guards d'écriture intacts ; auditer les admins déjà présents sans grant avant changement de contexte ; expliciter transition de sécurité.
+2. A2 : client.read protège déjà index et fiche Client 360, operations.read protège actuellement Order 360, logistics.read protège transit/douane, et finance.read protège la sous-section coûts de commande. Ne pas substituer dashboard.market.read ou operations.read de manière à accorder des données aujourd'hui refusées sans validation explicite de la matrice. Aucune nouvelle capability nécessaire.
+3. Lot 2 avant lot 3/4 : une destination qui n'est pas encore lisible côté serveur ne doit pas devenir visible. Garder les gestes G6 W3 et activation prix local, ainsi que les routes historiques nécessaires, jusqu'à la preuve du remplacement ; pas de menu 403, pas de suppression prématurée.
+
+### Statut / blocage réel
+CMU-0 en cours, lecture API seulement. Pas de checkout exécutable dans cette session : le réseau GitHub du conteneur ne résout pas github.com ; GitHub connector lit les fichiers mais n'exécute pas npm. Les commandes carte-first agent:context, arch:impact et pr:preflight imposées par AGENTS.md ne sont donc pas exécutées. STATUS.md retourné tronqué par le connecteur (ne pas le réécrire à partir de cette réponse partielle). **Pas de PR ouverte, pas de commit, aucune modification runtime, aucun changement staging, aucune fusion.** À reprendre dans un checkout exécutable : compléter la matrice fermée dans docs/canon-market/CMU0_MATRIX.md, renseigner STATUS.md sans écraser les autres chantiers, lancer les contrôles docs, préparer PR lot 1 puis quatre PR dépendantes ; revue globale unique sur #5272.
+
+## Complément : déclarations GET exactes repérées le 26/11
+
+Préfixes montés dans `bootstrap/api-routes.js:172-190,206-208,238,255-278`. La présence d'un GET ne constitue pas un droit de lecture. Toutes les lignes ci-dessous nécessitent vérification de la projection et des guards avant inscription dans une liste fermée. Les accès existants des agents spécialisés sont inchangés.
+
+| Surface | Endpoint GET exact | Garde déclaré | Portée candidate |
+|---|---|---|---|
+| Hub | /api/hub/board | hubBoardRead, attachHubReadAuthority | MARKET_SCOPED |
+| Hub | /api/hub/dossier | hubRead | MARKET_SCOPED |
+| Hub | /api/hub/trace | hubRead | MARKET_SCOPED |
+| Hub | /api/hub/search | hubRead | MARKET_SCOPED |
+| Hub | /api/hub/stats/week | hubRead | MARKET_SCOPED |
+| Hub | /api/hub/pending | hubRead | MARKET_SCOPED |
+| Hub | /api/hub/today | hubRead | MARKET_SCOPED |
+| Hub | /api/hub/administration | admin, agent_hub | CENTRAL_ONLY pour market_operator |
+| Hub | /api/hub/director-todo | admin, agent_hub | CENTRAL_ONLY pour market_operator |
+| Hub | /api/hub/physical-codes/resolve | hubAuth | Ne pas ouvrir (A3) |
+| Hub | /api/hub-dash/dashboard | hubRead | MARKET_SCOPED |
+| Hub | /api/hub-dash/dubai | hubRead | MARKET_SCOPED |
+| Hub | /api/hub-dash/queue | hubRead | MARKET_SCOPED |
+| Hub | /api/hub-dash/orders/:id | hubRead | MARKET_SCOPED |
+| Hub | /api/hub-dash/validate/:id | hubRead | vérifier effets et garde, exclu provisoirement |
+| Relais | /api/relay/dashboard | relayRead | MARKET_SCOPED |
+| Relais | /api/relay/incidents | relayRead | MARKET_SCOPED |
+| Relais | /api/relay/orders | relayRead | MARKET_SCOPED |
+| Relais | /api/relay/orders/:id | relayRead | MARKET_SCOPED |
+| Relais | /api/relay/returns | relayReturnActors | MARKET_SCOPED à qualifier |
+| Relais | /api/relay/returns/eligible | relayReturnActors | ne pas ouvrir sans preuve |
+| Relais | /api/relay/returns/:id/compensation-proposal | admin | CENTRAL_ONLY |
+| Relais | /api/relay/local-cash-refunds | garde à relever | exclu provisoirement |
+| Invendus | /api/unsold/ | attachUnsoldReadScope | MARKET_SCOPED |
+| Invendus | /api/unsold/stats/summary | attachUnsoldReadScope | MARKET_SCOPED |
+| Invendus | /api/unsold/:id | requireAdmin | MARKET_SCOPED cible, correction lot 3 après validation |
+| Invendus | /api/unsold/:id/whatsapp | requireAdmin | exclu provisoirement, qualifier |
+| Catalogue local | /api/market-delegation/catalog/authorized-markets | authenticate + résolution service | MARKET_SCOPED |
+| Catalogue local | /api/market-delegation/markets/:marketCode/catalog/exposure | authenticate + résolution service | MARKET_SCOPED |
+
+Sources : `routes/hub.js:91,227-446`, `routes/hub-dashboard.js:120-160`, `routes/relay-dashboard.js:149-383`, `routes/unsold.js:47-159`, `routes/market-delegation-catalog.js:76-105`.
+
+## G6 — dépendances directement vérifiées
+
+- `scripts/recette/g6-local-stock-declare-chromium.js:65,113` : navigation réelle vers `market-autonomy.html?market=...`.
+- `scripts/recette/g6-central-hub-product-chromium.js:119,378,380,412` : navigation réelle, ligne prix et contrôle catalogue local. Conserver les gestes et adapter les runners dans la PR du changement de destination.
+- `public/dashboards/canonical/market-autonomy.html:44-52` : modules autonomy, cash-control, team, network, local-offer, client-case, settlement, readonly-views, decision-bootstrap. Tous à remonter avant retrait.
+
+## Statut de ce fichier
+
+Brouillon documentaire uniquement. Pas de preflight, pas de tests, pas de PR, pas de mise à jour STATUS.md sur contenu tronqué, pas de runtime. Ne pas fusionner ce brouillon. Compléter l'inventaire, les gardes et les appels UI via checkout exécutable, puis valider les gates de gouvernance.
+
+## Complément déclaratif 1 — catalogue, économie, offres et cash
+
+60 déclarations littérales relevées. Garde extrait de la déclaration uniquement (middleware de montage/service à contrôler). Les capacités de domaine ne remplacent pas les gardes propres à l'action. Préfixe stock local confirmé : /api/markets (bootstrap/api-routes.js:268). Voir [CMU0_MARKET_UI_CALLS.md](CMU0_MARKET_UI_CALLS.md). **Aucune ligne n'autorise une ouverture avant validation de la matrice fermée.**
+
+| Destination | Méthode et endpoint | Source | Garde déclaré | Portée candidate | READ | ACT |
+|---|---|---|---|---|---|---|
+| Catalogue | `GET /api/market-delegation/catalog/authorized-markets` | [routes/market-delegation-catalog.js:76](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/market-delegation-catalog.js#L76) | authenticate | MARKET_SCOPED candidat | catalog.read | — |
+| Catalogue | `GET /api/market-delegation/markets/:marketCode/catalog/exposure` | [routes/market-delegation-catalog.js:105](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/market-delegation-catalog.js#L105) | authenticate | MARKET_SCOPED candidat | catalog.read | — |
+| Catalogue | `POST /api/market-delegation/markets/:marketCode/catalog/review/:productId/validate` | [routes/market-delegation-catalog.js:166](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/market-delegation-catalog.js#L166) | authenticate | ÉCRITURE INCHANGÉE | — | catalog.expose |
+| Catalogue | `PUT /api/market-delegation/markets/:marketCode/catalog/exposure/:productId` | [routes/market-delegation-catalog.js:183](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/market-delegation-catalog.js#L183) | authenticate | ÉCRITURE INCHANGÉE | — | catalog.expose |
+| Offres locales | `GET /api/market-delegation/markets/:marketCode/local-offer/services` | [routes/market-delegation-local-offer.js:70](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/market-delegation-local-offer.js#L70) | authenticate | MARKET_SCOPED candidat | catalog.read | — |
+| Offres locales | `PUT /api/market-delegation/markets/:marketCode/local-offer/services/:serviceId` | [routes/market-delegation-local-offer.js:92](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/market-delegation-local-offer.js#L92) | authenticate | ÉCRITURE INCHANGÉE | — | local_offer.manage |
+| Offres locales | `GET /api/market-delegation/markets/:marketCode/local-offer/physical-offers` | [routes/market-delegation-local-offer.js:109](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/market-delegation-local-offer.js#L109) | authenticate | MARKET_SCOPED candidat | catalog.read | — |
+| Offres locales | `PUT /api/market-delegation/markets/:marketCode/local-offer/physical-offers/:physicalOfferId` | [routes/market-delegation-local-offer.js:131](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/market-delegation-local-offer.js#L131) | authenticate | ÉCRITURE INCHANGÉE | — | local_offer.manage |
+| Stock local W3 | `GET /api/markets/:marketCode/local-stock` | [routes/market-local-stock.js:44](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/market-local-stock.js#L44) | authenticate | MARKET_SCOPED candidat | à vérifier | — |
+| Stock local W3 | `POST /api/markets/:marketCode/local-stock/receipts` | [routes/market-local-stock.js:54](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/market-local-stock.js#L54) | authenticate | ÉCRITURE INCHANGÉE | — | à vérifier |
+| Stock local W3 | `PUT /api/markets/:marketCode/local-stock/:productId/exposure` | [routes/market-local-stock.js:67](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/market-local-stock.js#L67) | authenticate | ÉCRITURE INCHANGÉE | — | à vérifier |
+| Atelier économique | `GET /api/admin/workspaces/pricing/market/:marketCode` | [routes/admin-pricing-workspace.js:239](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L239) | requirePricingReadCapability('pricing.read') | MARKET_SCOPED candidat | pricing.read | — |
+| Atelier économique | `GET /api/admin/workspaces/pricing/market/:marketCode/economic-p0-audit` | [routes/admin-pricing-workspace.js:270](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L270) | requirePricingReadCapability('pricing.read') | MARKET_SCOPED candidat | pricing.read | — |
+| Atelier économique | `GET /api/admin/workspaces/pricing/market/:marketCode/decision` | [routes/admin-pricing-workspace.js:281](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L281) | requirePricingReadCapability('pricing.read') | MARKET_SCOPED candidat | pricing.read | — |
+| Atelier économique | `GET /api/admin/workspaces/pricing/market/:marketCode/decision-policy/history` | [routes/admin-pricing-workspace.js:295](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L295) | requirePricingReadCapability('pricing.read') | MARKET_SCOPED candidat | pricing.read | — |
+| Atelier économique | `POST /api/admin/workspaces/pricing/market/:marketCode/decision-policy/preview` | [routes/admin-pricing-workspace.js:305](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L305) | requirePricingCapability('pricing.policy.set') | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `POST /api/admin/workspaces/pricing/market/:marketCode/decision-policy` | [routes/admin-pricing-workspace.js:316](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L316) | requirePricingCapability('pricing.policy.set') | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `POST /api/admin/workspaces/pricing/market/:marketCode/simulate-impact` | [routes/admin-pricing-workspace.js:333](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L333) | requirePricingReadCapability('pricing.simulate') | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `GET /api/admin/workspaces/pricing/market/:marketCode/commercial-prices` | [routes/admin-pricing-workspace.js:338](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L338) | requirePricingReadCapability('pricing.read') | MARKET_SCOPED candidat | pricing.read | — |
+| Atelier économique | `GET /api/admin/workspaces/pricing/market/:marketCode/corridor` | [routes/admin-pricing-workspace.js:347](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L347) | requirePricingReadCapability('pricing.read') | MARKET_SCOPED candidat | pricing.read | — |
+| Atelier économique | `POST /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/forecast-preview` | [routes/admin-pricing-workspace.js:359](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L359) | requirePricingReadCapability('pricing.simulate') | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `POST /api/admin/workspaces/pricing/market/:marketCode/price-observations` | [routes/admin-pricing-workspace.js:389](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L389) | requireLocalStrategyCapability('market.observation.record') | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `POST /api/admin/workspaces/pricing/market/:marketCode/price-observations/:observationRef/deactivate` | [routes/admin-pricing-workspace.js:400](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L400) | requireLocalStrategyCapability('market.observation.record') | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `POST /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/price-preview` | [routes/admin-pricing-workspace.js:412](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L412) | requireCatalogPriceCapability('pricing.read') | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `GET /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/activation-preview` | [routes/admin-pricing-workspace.js:425](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L425) | requireCatalogPriceCapability('pricing.read') | MARKET_SCOPED candidat | pricing.read | — |
+| Atelier économique | `POST /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price` | [routes/admin-pricing-workspace.js:435](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L435) | requireCatalogPriceCapability('pricing.decide'), requireMarketOperation('local_price_draft') | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `POST /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/activate` | [routes/admin-pricing-workspace.js:448](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L448) | requireCatalogPriceCapability('pricing.activate'), requireCatalogPriceCapability('catalog.expose'), requireMarketOperation('local_price_activate') | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `POST /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/change-active` | [routes/admin-pricing-workspace.js:506](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L506) | requireCatalogPriceCapability('pricing.decide'),   requireCatalogPriceCapability('pricing.activate'),   requireCatalogPriceCapability('catalog.expose'),   requireMarketOperation('l | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `POST /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/reset` | [routes/admin-pricing-workspace.js:526](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L526) | requireCatalogPriceCapability('pricing.decide'), requireMarketOperation('local_price_reset') | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/update` | [routes/admin-pricing-workspace.js:538](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L538) | requirePricingCapability('pricing.cost_component.update') | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/toggle` | [routes/admin-pricing-workspace.js:549](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L549) | requirePricingCapability('pricing.cost_component.update') | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `POST /api/admin/workspaces/pricing/market/:marketCode/cost-components/:key/reset` | [routes/admin-pricing-workspace.js:559](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L559) | requirePricingCapability('pricing.cost_component.reset') | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `GET /api/admin/workspaces/pricing/market/:marketCode/charges` | [routes/admin-pricing-workspace.js:575](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L575) | requirePricingReadCapability('pricing.read') | MARKET_SCOPED candidat | pricing.read | — |
+| Atelier économique | `POST /api/admin/workspaces/pricing/market/:marketCode/structure-charges` | [routes/admin-pricing-workspace.js:592](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L592) | requirePricingCapability('structure.event.record') | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `PATCH /api/admin/workspaces/pricing/market/:marketCode/structure-charges/:chargeId/description` | [routes/admin-pricing-workspace.js:604](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L604) | requirePricingCapability('structure.event.record') | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `GET /api/admin/workspaces/pricing/market/:marketCode/structure-events` | [routes/admin-pricing-workspace.js:619](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L619) | requirePricingReadCapability('pricing.read') | MARKET_SCOPED candidat | pricing.read | — |
+| Atelier économique | `POST /api/admin/workspaces/pricing/market/:marketCode/structure-events` | [routes/admin-pricing-workspace.js:632](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L632) | requirePricingCapability('structure.event.record') | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `GET /api/admin/workspaces/pricing/structure-events` | [routes/admin-pricing-workspace.js:680](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L680) | — | CENTRAL_ONLY | — | — |
+| Atelier économique | `POST /api/admin/workspaces/pricing/structure-events` | [routes/admin-pricing-workspace.js:692](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L692) | — | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `GET /api/admin/workspaces/pricing/structure-events/:eventId/attributions` | [routes/admin-pricing-workspace.js:743](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L743) | — | CENTRAL_ONLY | — | — |
+| Atelier économique | `POST /api/admin/workspaces/pricing/structure-events/:eventId/attributions` | [routes/admin-pricing-workspace.js:750](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L750) | — | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `POST /api/admin/workspaces/pricing/structure-events/:eventId/attributions/reverse` | [routes/admin-pricing-workspace.js:762](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L762) | — | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `POST /api/admin/workspaces/pricing/structure-events/:eventId/attributions/correct` | [routes/admin-pricing-workspace.js:774](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L774) | — | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `GET /api/admin/workspaces/pricing/` | [routes/admin-pricing-workspace.js:788](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L788) | — | CENTRAL_ONLY | — | — |
+| Atelier économique | `POST /api/admin/workspaces/pricing/simulate` | [routes/admin-pricing-workspace.js:795](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L795) | — | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `POST /api/admin/workspaces/pricing/simulate-impact` | [routes/admin-pricing-workspace.js:800](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L800) | — | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `POST /api/admin/workspaces/pricing/flow` | [routes/admin-pricing-workspace.js:805](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L805) | — | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `POST /api/admin/workspaces/pricing/products/:productRef/apply-price` | [routes/admin-pricing-workspace.js:810](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L810) | — | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `GET /api/admin/workspaces/pricing/strategy` | [routes/admin-pricing-workspace.js:815](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L815) | — | CENTRAL_ONLY | — | — |
+| Atelier économique | `POST /api/admin/workspaces/pricing/strategy/apply` | [routes/admin-pricing-workspace.js:822](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L822) | — | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `POST /api/admin/workspaces/pricing/competitors` | [routes/admin-pricing-workspace.js:827](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L827) | — | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `POST /api/admin/workspaces/pricing/competitors/:competitorRef/deactivate` | [routes/admin-pricing-workspace.js:832](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L832) | — | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `POST /api/admin/workspaces/pricing/cost-components` | [routes/admin-pricing-workspace.js:837](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L837) | — | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `POST /api/admin/workspaces/pricing/cost-components/:key/update` | [routes/admin-pricing-workspace.js:842](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L842) | — | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Atelier économique | `POST /api/admin/workspaces/pricing/cost-components/:key/toggle` | [routes/admin-pricing-workspace.js:847](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/admin-pricing-workspace.js#L847) | — | ÉCRITURE INCHANGÉE | — | garde de chaque action |
+| Finance cash | `GET /api/market-delegation/markets/:marketCode/cash-control-policy` | [routes/market-delegation-cash-control.js:67](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/market-delegation-cash-control.js#L67) | authenticate | MARKET_SCOPED candidat | à vérifier | — |
+| Finance cash | `PUT /api/market-delegation/markets/:marketCode/cash-control-policy` | [routes/market-delegation-cash-control.js:88](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/market-delegation-cash-control.js#L88) | authenticate | ÉCRITURE INCHANGÉE | — | cash_control.policy.manage |
+| Finance cash | `GET /api/market-delegation/markets/:marketCode/cash-custody` | [routes/market-delegation-cash-control.js:113](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/market-delegation-cash-control.js#L113) | authenticate | MARKET_SCOPED candidat | à vérifier | — |
+| Finance cash | `POST /api/market-delegation/markets/:marketCode/cash-custody/destinations` | [routes/market-delegation-cash-control.js:129](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/market-delegation-cash-control.js#L129) | authenticate | ÉCRITURE INCHANGÉE | — | cash_control.policy.manage |
+| Finance cash | `POST /api/market-delegation/markets/:marketCode/cash-custody/destinations/:destinationId/:verb` | [routes/market-delegation-cash-control.js:142](https://github.com/SamyrFateh/komerce-backend/blob/4937c8da271c6bc448a6154f62bb0f3bb6a225d3/routes/market-delegation-cash-control.js#L142) | authenticate | ÉCRITURE INCHANGÉE | — | cash_control.policy.manage |
+
+Pas d'erreur d'extraction pour ces fichiers.
+
+### Amendement proposé — parité de lecture centrale filtrée (lot 5)
+
+Le besoin de parité T2 ne requiert aucune nouvelle lecture opérateur. Les GET délégués existants du tableau B suivants peuvent réutiliser exactement leur projection marché pour tout admin authentifié (A1), sans synthétiser de membership ni ACT/EXEC : équipe, prestataires, litiges, offres locales, règlements, cash-control-policy, performance, relevé de coûts, douane, comptes de paiement, référentiel marché. L'admin lecteur obtient uniquement le marché résolu et les champs déjà projetés, pas de nouveau droit d'écriture. A1 : le rôle admin suffit en lecture. Les grants centraux restent applicables aux writers existants, sans élargissement. Les routes mutantes continuent de résoudre la délégation réelle. Cet amendement est soumis à la revue globale, pas validé par avance.

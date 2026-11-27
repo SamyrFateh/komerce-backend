@@ -184,7 +184,7 @@ describe('route boundary invariants', () => {
     expect(source.match(/requireRole\(\['admin', 'agent_hub', 'market_operator'\]\)/g)).toHaveLength(2);
   });
 
-  test('Entity 360 market reads are capability-based and keep dashboard global authority explicit', () => {
+  test('Entity 360 A1 admin READ, market reads stay capability-based', () => {
     const clientIndex = read('routes/admin-client-index.js');
     const client360 = read('routes/admin-client-360.js');
     const product360 = read('routes/admin-product-360.js');
@@ -192,7 +192,7 @@ describe('route boundary invariants', () => {
 
     for (const source of [clientIndex, client360, product360, order360]) {
       expect(source).not.toContain('require-market-scope');
-      expect(source).toContain('hasDashboardGlobalAuthority');
+      expect(source).toMatch(/req\.user\??\.role === 'admin'/);
     }
     expect(clientIndex).toContain("requireMarketDelegatedCapability('client.read'");
     expect(client360).toContain("attachAuthorizedMarketsForCapability('client.read'");

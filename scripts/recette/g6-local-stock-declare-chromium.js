@@ -62,7 +62,7 @@ async function toggleExposure(actor,productId,target,key){
   if(req.method()==='PUT'&&put++===0&&body?.commercial_exposure===target)return route.continue();
   actor.blocked.push({method:req.method(),path:'/local-stock/:id/exposure'});return route.abort('blockedbyclient');
  });
- await humanGoto(actor.page,'/dashboards/canonical/market-autonomy.html?market='+MK.code,{waitUntil:'domcontentloaded'});
+ await humanGoto(actor.page,'/admin/workspaces/catalog?market='+MK.code,{waitUntil:'domcontentloaded'});
  const card=actor.page.locator('[data-market-local-offer] [data-local-stock-card="'+productId+'"]');
  try{await card.first().waitFor({state:'visible',timeout:30000})}
  catch(_){report.verdict='SCREEN_MISSING_STOCK_EXPOSURE';save();process.exitCode=3;return false}
@@ -110,7 +110,7 @@ async function main(){
     if(req.method()==='POST'&&calls++===0&&body?.qty_received===QTY&&body?.product_id===prod.id)return route.continue();
     actor.blocked.push({method:req.method(),path:'/local-stock/receipts'});return route.abort('blockedbyclient');
    });
-   await humanGoto(actor.page,'/dashboards/canonical/market-autonomy.html?market='+MK.code,{waitUntil:'domcontentloaded'});
+   await humanGoto(actor.page,'/admin/workspaces/catalog?market='+MK.code,{waitUntil:'domcontentloaded'});
    const form=actor.page.locator('[data-market-local-offer] form:has(input[name="qty_received"])');
    try{await form.waitFor({state:'visible',timeout:30000})}
    catch(_){report.verdict='SCREEN_MISSING_DECLARATION';save();process.exitCode=3;return}

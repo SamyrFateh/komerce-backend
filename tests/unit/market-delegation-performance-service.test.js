@@ -141,3 +141,15 @@ describe('market-delegation performance service', () => {
     expect(code).not.toMatch(/partner_share|revenue_share|commission_pct/i);
   });
 });
+
+
+test('A1 admin sans membership : moteur appelé sur le seul marché résolu', async () => {
+  const db=executor();
+  db.query.mockResolvedValueOnce({rows:[{market_id:'mkt-cm',market_code:'CM',assignment_id:'a-cm'}]});
+  evaluateMarketDecision.mockResolvedValueOnce(DECISIONAL);
+  const view=await performance.getMarketPerformance(db,{marketCode:'CM',actorUserId:'admin1',actorRole:'admin'});
+  expect(db.query).toHaveBeenCalledTimes(1);
+  expect(db.query.mock.calls[0][1]).toEqual(['CM']);
+  expect(evaluateMarketDecision).toHaveBeenCalledWith('mkt-cm',{});
+  expect(view.market.code).toBe('CM');
+});

@@ -103,5 +103,5 @@ test('Orders mount supports detached SPA stage roots and menu policy is cache-bu
   const html = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/index.html'), 'utf8');
   expect(src).not.toMatch(/rootNode\.isConnected\s*===\s*false/);
   expect(src).toContain('rootNode.__dashboardViewIdentity !== identity');
-  expect(html).toContain('navigation-policy-v4.js?v=261126-unsold-read-capability-1');
+  expect(html).toContain('navigation-policy-v4.js?v=261126-canon-market-final');
 });

@@ -90,3 +90,9 @@ describe('market-delegation market-config route — behavior', () => {
     expect(res.body.code).toBe('market_not_found');
   });
 });
+
+test('la lentille centrale ne change que le GET et utilise le résolveur de lecture',()=>{
+  expect(routeSource).toContain('resolveCanonicalMarketRead(resolveAuthorization,db');
+  expect(routeSource).toContain("if (req.user?.role !== 'admin') return delegatedRead(req,res,next)");
+  expect(routeSource).not.toMatch(/router\.(post|put|delete|patch)/);
+});

@@ -171,6 +171,8 @@ test.each(['admin', 'finance', 'agent_relais', 'market_operator'])('%s peut lire
   });
   if (role === 'agent_relais') {
     expect(mockResolveActorRelaisInMarket).toHaveBeenCalledWith('agent_relais-1', 'market-cm-id');
+  } else if (role === 'admin') {
+    expect(mockResolveAuthorization).not.toHaveBeenCalled();
   } else {
     expect(mockResolveAuthorization).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
       marketCode: 'CM',
@@ -251,9 +253,9 @@ test('révocation de finance.read retire immédiatement la lecture', async () =>
   expect(mockBuildWorkspace).not.toHaveBeenCalled();
 });
 
-test('admin et finance ne tirent aucun droit marché de leur rôle', async () => {
+test('finance et responsable marché ne tirent aucun droit marché de leur rôle', async () => {
   mockGrantedCapabilities = new Set();
-  for (const role of ['admin', 'finance']) {
+  for (const role of ['market_operator', 'finance']) {
     mockUserRole = role;
     const res = await request(app()).get('/api/admin/workspaces/accounting/market/CM');
     expect(res.status).toBe(403);
@@ -274,8 +276,9 @@ test('agent_relais lit uniquement le marché de son relais serveur, sans capabil
   expect(mockResolveAuthorization).not.toHaveBeenCalled();
 });
 
-test('autorité dashboard globale est un bypass de lecture explicite, jamais un rôle admin implicite', async () => {
-  mockGlobalAllowed = true;
+test('A1 : admin lit CG sans grant, sans membership', async () => {
+  mockUserRole = 'admin';
+  mockGlobalAllowed = false;
   mockGrantedCapabilities = new Set();
   const res = await request(app()).get('/api/admin/workspaces/accounting/market/CG');
   expect(res.status).toBe(200);

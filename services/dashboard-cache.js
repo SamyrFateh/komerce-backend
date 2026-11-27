@@ -133,6 +133,12 @@ function stats() {
  */
 function cacheMiddleware(endpointName) {
   return async function (req, res, next) {
+    // Seule la garde serveur globale peut autoriser le cache historique.
+    // Les lectures marché et les scopes inconnus ne lisent/écrivent jamais ce cache.
+    if (req.dashboardGlobalAuthority !== true || req.authorizedMarkets != null || req.marketDelegatedCapability != null) {
+      res.locals._cacheBypass = true;
+      return next();
+    }
     // Bypass cache si demande
     const refresh = req.query.refresh === '1' || req.query.refresh === 'true';
     const noCacheHeader = (req.headers['cache-control'] || '').includes('no-cache');

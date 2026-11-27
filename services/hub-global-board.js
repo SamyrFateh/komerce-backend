@@ -256,6 +256,31 @@ function summarizePurchaseOrders(market, payload) {
   return result;
 }
 
+// Lecture PO marché : le dossier canonique sélectionne les lignes de PO par
+// orders.market_id en SQL et les contenus de COMBOX par allocation.market_id.
+// Ne jamais retourner la projection centrale brute. Liste blanche de champs
+// opérationnels locaux ; fournisseur, prix, preuve, canal et décisions restent
+// centraux. Une PO mixte est représentée uniquement par sa portion du marché.
+function summarizeMarketPurchaseOrders(market, payload) {
+  return summarizePurchaseOrders(market, payload).filter(row => row.order_count > 0).map(row => ({
+    id: row.id, reference: row.reference, market: row.market,
+    order_references: row.order_references, order_count: row.order_count,
+    order_lines: row.order_lines.map(line => ({
+      order_ref: line.order_ref, product: line.product,
+      ordered: line.ordered, expected: line.expected,
+      received: line.received, missing: line.missing,
+    })),
+    ordered: row.ordered, expected: row.expected, received: row.received,
+    missing: row.missing, anomalies: row.anomalies,
+    purchase_stage: row.purchase_stage, cancelled: row.cancelled,
+    reception_complete: row.reception_complete,
+    boxed_quantity: row.boxed_quantity, dispatched_quantity: row.dispatched_quantity,
+    handed_quantity: row.handed_quantity, box_count: row.box_count,
+    shipment_count: row.shipment_count,
+    market_scoped: true,
+  }));
+}
+
 // Charge réelle du Hub, par marché / relais / rail demandé, sans identités client.
 // Les cartons fermés ou sortis ne deviennent jamais une preuve de remise.
 function summarizeLogisticsWork(market,payload) {
@@ -291,7 +316,7 @@ function summarizeLogisticsWork(market,payload) {
 // La vérité Hub reste centrale. Le responsable marché ne reçoit qu'une projection
 // filtrée par ses market_id résolus côté serveur, AVANT lecture des dossiers.
 // Aucun filtrage client ne peut servir de garde de sécurité.
-async function getGlobalBoard(query = db, dossierReader = (marketId) => dossier.getDossier({ marketId }, query), { marketIds = null, includePurchaseOrders = false } = {}) {
+async function getGlobalBoard(query = db, dossierReader = (marketId) => dossier.getDossier({ marketId }, query), { marketIds = null, includePurchaseOrders = false, includeMarketPurchaseOrders = false } = {}) {
   const scoped = Array.isArray(marketIds);
   const { rows: markets } = scoped
     ? await query.query(
@@ -301,14 +326,23 @@ async function getGlobalBoard(query = db, dossierReader = (marketId) => dossier.
     : await query.query('SELECT id, code, name FROM markets WHERE is_active = TRUE ORDER BY code');
   const orders = [];
   const purchaseOrders = [];
+  const marketPurchaseOrders = [];
+  const marketLogisticsWork = [];
   const logisticsWork = [];
   for (const market of markets) {
     const payload = await dossierReader(market.id);
     orders.push(...summarizeMarket(market, payload));
-    // Ne jamais exposer la projection fournisseurs à un responsable marché.
+    // Projection centrale inchangée. Un scope marché n'accède jamais à
+    // celle-ci, même si includePurchaseOrders est demandé.
     if (includePurchaseOrders && !scoped) {
       purchaseOrders.push(...summarizePurchaseOrders(market, payload));
       logisticsWork.push(...summarizeLogisticsWork(market,payload));
+    }
+    if (scoped && includeMarketPurchaseOrders) {
+      marketPurchaseOrders.push(...summarizeMarketPurchaseOrders(market, payload));
+      // Les quantités et groupes relais/rail sont calculés sur les allocations
+      // du seul dossier marché. Aucun atelier physique n'est autorisé par cette lecture.
+      marketLogisticsWork.push(...summarizeLogisticsWork(market, payload));
     }
   }
   return {
@@ -316,8 +350,9 @@ async function getGlobalBoard(query = db, dossierReader = (marketId) => dossier.
     ...(scoped ? { audience: 'MARKET_SCOPED' } : {}),
     markets: markets.map(m => m.code),
     ...(includePurchaseOrders && !scoped ? { purchase_orders: purchaseOrders.sort((a,b) => a.market.localeCompare(b.market) || a.reference.localeCompare(b.reference)), logistics_work:logisticsWork } : {}),
+    ...(scoped && includeMarketPurchaseOrders ? { purchase_orders: marketPurchaseOrders.sort((a,b) => a.market.localeCompare(b.market) || a.reference.localeCompare(b.reference)), logistics_work: marketLogisticsWork } : {}),
     orders: orders.sort((a, b) => a.market.localeCompare(b.market) || a.reference.localeCompare(b.reference)),
   };
 }
 
-module.exports = { summarizeMarket, summarizePurchaseOrders, summarizeLogisticsWork, getGlobalBoard };
+module.exports = { summarizeMarket, summarizePurchaseOrders, summarizeMarketPurchaseOrders, summarizeLogisticsWork, getGlobalBoard };

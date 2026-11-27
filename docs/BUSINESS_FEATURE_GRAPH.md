@@ -432,7 +432,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - services: 4
 - migrations: 3
-- dash: 25
+- dash: 27
 - tests: 11
 - tables owned (lifecycle): 2 — `product_market_price_drafts`, `product_market_price_draft_events`
 - tables written: 2
@@ -2340,7 +2340,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 2407 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 2409 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 218 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 79 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2553,7 +2553,7 @@ Meta Graph monté : oui.
 | market-autonomy | market-control-plane | static-code | 2 | **OBSERVED_UNDECLARED** |
 | market-control-plane | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | catalog | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| market-control-plane | dashboard | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | dashboard | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | decision-signals | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | infrastructure | static-code | 3 | **DECLARED_AND_OBSERVED** |
@@ -2623,7 +2623,7 @@ Meta Graph monté : oui.
 | payments | logistics | static-code, data-read | 17 | **DECLARED_AND_OBSERVED** |
 | payments | loyalty | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | payments | market | static-code | 4 | **DECLARED_AND_OBSERVED** |
-| payments | market-delegation | static-code, data-read | 8 | **DECLARED_AND_OBSERVED** |
+| payments | market-delegation | static-code, data-read | 9 | **DECLARED_AND_OBSERVED** |
 | payments | notifications | static-code | 18 | **DECLARED_AND_OBSERVED** |
 | payments | orders | static-code, data-read | 23 | **DECLARED_AND_OBSERVED** |
 | payments | platform-ops | static-code | 5 | **DECLARED_AND_OBSERVED** |

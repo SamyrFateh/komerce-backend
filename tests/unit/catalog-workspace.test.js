@@ -610,7 +610,8 @@ describe('C4 : un repli technique « autre » n’est pas une classification val
 test('Catalogue global : le prix local reste au Catalogue pays sans CTA Raffinerie', () => {
   const src=require('fs').readFileSync(require('path').join(__dirname,'..','..',
     'public/dashboards/canonical/js/catalog-workspace.js'),'utf8');
-  expect(src).toContain('/dashboards/canonical/market-catalog.html?product_ref=');
+  expect(src).toContain('/admin/workspaces/catalog?lens=market&product_ref=');
+  expect(src).not.toContain('/dashboards/canonical/market-catalog.html?product_ref=');
   expect(src).not.toContain('function renderApproval(');
 });
 

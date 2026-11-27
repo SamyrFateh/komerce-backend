@@ -78,8 +78,11 @@ if (!process.env.DATABASE_URL) {
 
   test('workspace Hub live : le marché vient de la route, jamais du client ; sans délégation, rien ne s\'ouvre', async () => {
     const base = '/api/admin/workspaces/operations/market/KM';
-    // Le marché KM de la base CI n'a pas d'assignation opérationnelle : la surface est fermée (409), jamais ouverte par défaut.
-    const closed = await request(app).get(`${base}/supply`).set(...bearer(admin));
+    // A1 : la lecture admin ne dépend pas d'une assignation opérationnelle.
+    const globalRead = await request(app).get(`${base}/supply`).set(...bearer(admin));
+    expect(globalRead.status).toBe(200);
+    // Le marché KM de la base CI n'a pas d'assignation opérationnelle : la surface reste fermée (409) pour un opérateur.
+    const closed = await request(app).get(`${base}/supply`).set(...bearer(operator));
     expect(closed.status).toBe(409);
     expect(closed.body.code).toBe('MARKET_ASSIGNMENT_NOT_ACTIVE');
     const clientMarket = await request(app).get(`${base}/supply?market_id=${nil}`).set(...bearer(admin));

@@ -18,8 +18,7 @@
 'use strict';
 
 (function bootMarketTeam(global) {
-  const root = global.document && global.document.getElementById('market-autonomy-root');
-  if (!root) return;
+  function createInstance(root, { embedded = false, selectedMarket = null } = {}) {
 
   const LABELS = Object.freeze({
     'pricing.read': 'Lire les prix',
@@ -107,12 +106,14 @@
   }
 
   function marketFromContext(context) {
-    const access = context && context.access || {};
-    const allowed = Array.isArray(access.allowedMarkets) ? access.allowedMarkets : [];
-    const requested = new URL(global.location.href).searchParams.get('market');
-    if (requested && allowed.includes(requested.toUpperCase())) return requested.toUpperCase();
-    if (access.defaultMarket && allowed.includes(access.defaultMarket)) return access.defaultMarket;
-    return allowed[0] || null;
+    const contract = global.KomerceAdminContext;
+    if (!contract || typeof contract.resolveExplicitMarket !== 'function') {
+      throw new Error('CANONICAL_MARKET_CONTEXT_UNAVAILABLE');
+    }
+    const search = embedded && selectedMarket != null
+      ? '?market=' + encodeURIComponent(selectedMarket)
+      : global.location.search;
+    return contract.resolveExplicitMarket(context, search).marketCode;
   }
 
   function capabilityLabel(capability) {
@@ -517,7 +518,20 @@
     }
   }
 
-  const observer = new MutationObserver(() => { void mountTeam(); });
-  observer.observe(root, { childList: true, attributes: true, attributeFilter: ['class'] });
-  void mountTeam();
+  if (!embedded) {
+    const observer = new MutationObserver(() => { void mountTeam(); });
+    observer.observe(root, { childList: true, attributes: true, attributeFilter: ['class'] });
+    void mountTeam();
+  }
+  return Object.freeze({ mount: mountTeam });
+  }
+
+  global.KomerceMarketTeam = Object.freeze({
+    mount: ({ root, marketCode = null } = {}) => {
+      if (!root) throw new Error('market-team_root_missing');
+      return createInstance(root, { embedded: true, selectedMarket: marketCode }).mount();
+    },
+  });
+  const standalone = global.document && global.document.getElementById('market-autonomy-root');
+  if (standalone) createInstance(standalone);
 })(window);

@@ -10,15 +10,15 @@ const SHA='b'.repeat(40);
 const MARKETS=['KM','CM','CG'];
 const MENU=[
  'control-tower','action-center','flow-commerce','flow-orders','entity-clients',
- 'workspace-pricing','flow-operations','workspace-shipping','flow-finance',
- 'workspace-accounting','live-hub','market-autonomy','market-catalog','unsold',
- 'admin-providers','settings','help-docs'
+ 'workspace-pricing','workspace-catalog','flow-operations','workspace-shipping','flow-finance',
+ 'workspace-accounting','live-hub','live-relais','unsold',
+ 'admin-users','admin-providers','settings','help-docs'
 ];
 function proof(market){return {
  market,result:'PASS',role:'market_operator',version:SHA,finalVersion:SHA,loginStatus:200,
  allowedMarkets:[market],hubMarkets:[market],hubOrderCount:1,
  oracle:{markets:MARKETS,hub:{count:1,market_codes:[market],active_match:true,active_refs:['ORDER-1'],board_refs:['ORDER-1']}},
- navigation:{items:MENU.slice(),visited:Array.from({length:17},(_,i)=>({href:`/admin/example-${i}`,http:200,path:`/admin/example-${i}`}))},
+ navigation:{items:MENU.slice(),visited:Array.from({length:MENU.length},(_,i)=>({href:`/admin/example-${i}`,http:200,path:`/admin/example-${i}`}))},
  teamDirectory:{total:101,visible:12},
  consultations:[{capability:'catalog.read',path:'/local-offer/services',http:200,market,collection:true}],
  order360:[{market,status:200,readOnly:true,poCount:1}],
@@ -54,7 +54,7 @@ test.each([
  ['scope CM supplémentaire',p=>p.allowedMarkets.push('CM')],
  ['destination manquante',p=>p.navigation.visited[0].http=403],
  ['rubrique manquante',p=>p.navigation.items.pop()],
- ['17e destination absente',p=>p.navigation.visited.pop()],
+ ['dernière destination absente',p=>p.navigation.visited.pop()],
  ['annuaire équipe non compacté',p=>p.teamDirectory.visible=101],
  ['client étranger exposé',p=>p.foreign_client_denials[0].status=200],
  ['bouton de mutation',p=>p.visible_mutation_controls.push({label:'Confirmer'})],

@@ -17,3 +17,5 @@ describe('market-local-offer.js — stock local (W3)', () => {
     expect(src).not.toMatch(/body: \{[^}]*market_id/);
   });
 });
+
+require('../helpers/canon-market-domain-modules').proveDeniedModule('market-local-offer','KomerceMarketLocalOffer');

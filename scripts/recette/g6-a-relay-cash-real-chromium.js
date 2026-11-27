@@ -149,10 +149,9 @@ async function attachByUI(code,o,actor,operator){
   const s=await openUI(operator.email,operator.password,p=>p===pathPrefix);
   try {
     const p=s.page;
-    await humanGoto(p,BASE+'/dashboards/canonical/market-autonomy.html?market='+code,{waitUntil:'domcontentloaded'});
-    // The canonical autonomy shell loads pricing workspace before mounting network.
-    // An operator needs pricing.read even when this test only mutates the network.
-    const root=p.locator('#market-autonomy-root');
+    await humanGoto(p,BASE+'/admin/providers?market='+code,{waitUntil:'domcontentloaded'});
+    // Network is mounted directly in the canonical provider workspace.
+    const root=p.locator('#canonical-admin-root');
     await root.waitFor({state:'attached',timeout:15000});
     try {
       await p.locator('[data-market-network]').waitFor({state:'visible',timeout:25000});

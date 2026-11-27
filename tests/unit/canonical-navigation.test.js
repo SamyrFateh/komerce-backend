@@ -188,7 +188,7 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
     expect(operatorIds.filter(id => id === 'settings')).toHaveLength(1);
     const operatorSettings = operatorEnv.api.sidebarGroupsFor({ role: 'market_operator' }, null)
       .flatMap(group => group.items).find(item => item.id === 'settings');
-    expect(operatorSettings.href).toBe('/dashboards/canonical/market-autonomy.html#market-cash-control');
+    expect(operatorSettings.href).toBe('/admin/settings');
   });
 
   test('Atelier économique est un domaine direct actif, sans bouton Retour parasite', () => {
@@ -272,10 +272,10 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
     const operatorEnv = loadNavigation('/admin/pilotage', 'pilotage');
     const operatorHeader = mountFor(operatorEnv, '/admin/pilotage', 'pilotage', { role: 'market_operator' });
     const operatorMarkets = operatorHeader.children[0].children[1].children.find(link => link.attributes['data-dashboard'] === 'markets');
-    expect(operatorMarkets.href).toBe('/dashboards/canonical/market-autonomy.html');
+    expect(operatorMarkets.href).toBe('/dashboards/canonical/unsold.html');
   });
 
-  test('Catalogue global est réservé à admin ; le responsable pays y accède via Marchés (Catalogue pays)', () => {
+  test('Catalogue : même destination canonique, lentille marché pour le responsable pays', () => {
     const adminEnv = loadNavigation('/admin/pilotage', 'pilotage');
     const adminHeader = mountFor(adminEnv, '/admin/pilotage', 'pilotage', { role: 'admin' });
     expect(findPrimaryLink(adminHeader, 'catalog').href).toBe('/admin/workspaces/catalog');
@@ -283,10 +283,9 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
     const operatorEnv = loadNavigation('/dashboards/canonical/market-catalog.html', 'market-catalog');
     const operatorHeader = mountFor(operatorEnv, '/dashboards/canonical/market-catalog.html', 'market-catalog', { role: 'market_operator' });
     const operatorLinks = operatorHeader.children[0].children[1].children;
-    expect(operatorLinks.find(link => link.attributes['data-dashboard'] === 'catalog')).toBeUndefined();
-    const markets = operatorLinks.find(link => link.attributes['data-dashboard'] === 'markets');
-    expect(markets.href).toBe('/dashboards/canonical/market-autonomy.html');
-    expect(markets.attributes['aria-current']).toBe('page');
+    const catalog = operatorLinks.find(link => link.attributes['data-dashboard'] === 'catalog');
+    expect(catalog.href).toBe('/admin/workspaces/catalog');
+    expect(catalog.attributes['aria-current']).toBe('page');
   });
 
   test('Dashboard reste actif pour les surfaces techniques non exposées dans le mock', () => {

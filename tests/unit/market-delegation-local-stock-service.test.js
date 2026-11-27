@@ -130,3 +130,46 @@ describe('PUT exposure', () => {
     expect(local.setLocalStockExposure).not.toHaveBeenCalled();
   });
 });
+
+
+describe('CANON-MARKET — lecture centrale du stock, sans écriture W3', () => {
+  it('admin sans grant catalogue : un seul marché actif, aucun writer', async () => {
+    global.__user = { id: 'adm', role: 'admin' };
+    client.query.mockImplementation(async (sql, p) => {
+      if (/FROM markets WHERE code/.test(sql)) {
+        expect(p).toEqual(['CM']); return { rows: [{ market_id: MARKET, market_code: 'CM' }] };
+      }
+      if (/FROM local_stock/.test(sql)) {
+        expect(p).toEqual([MARKET]); return { rows: [{ product_id: 'p1', qty_physical: 5 }] };
+      }
+      if (/FROM relais WHERE market_id/.test(sql)) {
+        expect(p).toEqual([MARKET]); return { rows: [{ id: 'r1' }] };
+      }
+      throw new Error('unexpected query ' + sql);
+    });
+    const res = await request(app()).get('/api/markets/CM/local-stock?market_id=foreign');
+    expect(res.status).toBe(200);
+    expect(res.body.stock).toEqual([{ product_id: 'p1', qty_physical: 5 }]);
+    expect(team.resolveAuthorization).not.toHaveBeenCalled();
+    expect(local.setLocalStock).not.toHaveBeenCalled();
+    expect(local.setLocalStockExposure).not.toHaveBeenCalled();
+    expect(delegation.audit).not.toHaveBeenCalled();
+    expect((await post()).status).toBe(403);
+  });
+  it('admin avec marché inconnu/inactif : 404 sans lecture de stock', async () => {
+    global.__user = { id: 'adm', role: 'admin' };
+    client.query.mockResolvedValueOnce({ rows: [] });
+    expect((await request(app()).get('/api/markets/CG/local-stock')).status).toBe(404);
+    expect(client.query).toHaveBeenCalledTimes(1);
+    expect(client.query.mock.calls[0][0]).toContain('FROM markets WHERE code');
+    expect(local.setLocalStock).not.toHaveBeenCalled();
+  });
+  it('lecture du responsable : garde local_offer.manage inchangé', async () => {
+    const res = await request(app()).get('/api/markets/CM/local-stock');
+    expect(res.status).toBe(200);
+    expect(team.resolveAuthorization).toHaveBeenCalledWith(client, expect.objectContaining({
+      marketCode: 'CM', requiredCapability: 'local_offer.manage',
+    }));
+    expect(local.setLocalStock).not.toHaveBeenCalled();
+  });
+});

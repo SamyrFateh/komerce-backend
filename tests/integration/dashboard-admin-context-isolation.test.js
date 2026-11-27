@@ -20,7 +20,7 @@ if (!hasIntegrationEnv) {
   let createdAssignmentId = null;
   const PFX = 'itest-admin-context+';
   const CI_PLACEHOLDER_HASH = '$2a$04$AYmAyvzy6sAbPHhY01nPau5qvXBxnD/DFrgbpUzd5QXDR3VgjkISm';
-  let adminCentral, adminCountry, adminNoScope, marketCM;
+  let adminCentral, adminCountry, adminNoScope, operatorNoScope, marketCM;
 
   beforeAll(async () => {
     db = require('../../db');
@@ -34,12 +34,12 @@ if (!hasIntegrationEnv) {
     const email = label => `${PFX}${label}.${Date.now()}.${Math.random().toString(36).slice(2, 8)}@test.local`;
     const phone = () => `+2694${Math.floor(1000000 + Math.random() * 8999999)}`;
 
-    async function createAdmin(label) {
+    async function createAdmin(label, role = 'admin') {
       const r = await db.query(
         `INSERT INTO users (email, full_name, phone, role, password_hash)
-         VALUES ($1, $2, $3, 'admin', $4)
+         VALUES ($1, $2, $3, $5, $4)
          RETURNING id`,
-        [email(label), `ITest AdminContext ${label}`, phone(), CI_PLACEHOLDER_HASH]
+        [email(label), `ITest AdminContext ${label}`, phone(), CI_PLACEHOLDER_HASH, role]
       );
       return r.rows[0].id;
     }
@@ -47,6 +47,7 @@ if (!hasIntegrationEnv) {
     adminCentral = await createAdmin('central');
     adminCountry = await createAdmin('country');
     adminNoScope = await createAdmin('noscope');
+    operatorNoScope = await createAdmin('operator-noscope', 'market_operator');
 
     await db.query(
       `INSERT INTO dashboard_global_access_grants (user_id, reason)
@@ -69,7 +70,7 @@ if (!hasIntegrationEnv) {
   });
 
   afterAll(async () => {
-    const ids = [adminCentral, adminCountry, adminNoScope].filter(Boolean);
+    const ids = [adminCentral, adminCountry, adminNoScope, operatorNoScope].filter(Boolean);
     if (ids.length) {
       await db.query(`DELETE FROM dashboard_global_access_grants WHERE user_id = ANY($1)`, [ids]);
       if (delegationMembershipId) {
@@ -98,7 +99,7 @@ if (!hasIntegrationEnv) {
   });
 
   test('opérateur CM => mode market enfermé dans CM', async () => {
-    const context = await resolveDashboardAdminContext({ id: adminCountry, role: 'admin' });
+    const context = await resolveDashboardAdminContext({ id: adminCountry, role: 'market_operator' });
 
     expect(context.access.mode).toBe('market');
     expect(context.access.allowedMarkets).toEqual(['CM']);
@@ -109,8 +110,17 @@ if (!hasIntegrationEnv) {
     expect(context.access.delegatedCapabilities.CM).toContain('dashboard.market.read');
   });
 
-  test('admin sans grant => aucun contexte — absence de scope != global', async () => {
-    await expect(resolveDashboardAdminContext({ id: adminNoScope, role: 'admin' }))
+  test('A1 : admin sans grant => mode global, sans délégation inventée', async () => {
+    const context = await resolveDashboardAdminContext({ id: adminNoScope, role: 'admin' });
+    expect(context.access.mode).toBe('global');
+    expect(context.access.defaultMarket).toBeNull();
+    expect(context.access.allowedMarkets).toEqual(expect.arrayContaining(['KM', 'CM', 'CG']));
+    expect(context.access.capabilities).toContain('dashboard.global.read');
+    expect(context.access.delegatedCapabilities).toEqual({});
+  });
+
+  test('opérateur sans grant => aucun contexte — absence de scope != global', async () => {
+    await expect(resolveDashboardAdminContext({ id: operatorNoScope, role: 'market_operator' }))
       .rejects.toMatchObject({ code: 'dashboard_access_denied' });
   });
 }

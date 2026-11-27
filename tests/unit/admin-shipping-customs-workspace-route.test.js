@@ -221,6 +221,7 @@ test('market_operator lit son flux mais ne reçoit aucun geste transit/douane sp
 });
 
 test('acteur sans logistics.read sur CG ne peut pas ouvrir CG', async () => {
+  mockUserRole = 'market_operator';
   const res = await request(app()).get('/api/admin/workspaces/shipping-customs/market/CG');
   expect(res.status).toBe(403);
   expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
@@ -278,8 +279,9 @@ test('autorité centrale explicite court-circuite la capability marché', async 
   expect(mockResolveAuthorization).not.toHaveBeenCalled();
 });
 
-test('autorité globale explicite peut entrer dans CG seulement après sélection explicite', async () => {
-  mockGlobalAllowed = true;
+test('A1 : admin lit CG sans grant seulement après sélection explicite', async () => {
+  mockUserRole = 'admin';
+  mockGlobalAllowed = false;
   const res = await request(app()).get('/api/admin/workspaces/shipping-customs/market/CG');
   expect(res.status).toBe(200);
   expect(mockBuildWorkspace).toHaveBeenCalledWith({

@@ -8,9 +8,10 @@
 
 let mockAllowedMarkets = new Set(['market-cm-id']);
 let mockGlobalAllowed = false;
+let mockRole = 'market_operator';
 
 jest.mock('../../middleware/auth', () => ({
-  authenticate: (req, res, next) => { req.user = { id: 'admin-1', role: 'admin' }; next(); },
+  authenticate: (req, res, next) => { req.user = { id: 'admin-1', role: mockRole }; next(); },
   requireRole: roles => (req, res, next) => roles.includes(req.user.role)
     ? next()
     : res.status(403).json({ code: 'role_forbidden' }),
@@ -72,6 +73,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockAllowedMarkets = new Set(['market-cm-id']);
   mockGlobalAllowed = false;
+  mockRole = 'market_operator';
   mockResolveProduct.mockResolvedValue({ invalid: false, product: resolvedProduct() });
   mockLoadProduct360.mockResolvedValue({
     product: { product_ref: 'KPR-000123', name: 'Golden Elite Pro' },
@@ -104,8 +106,9 @@ test('absence de catalog.read ferme la route avant les facettes', async () => {
   expect(mockLoadProduct360).not.toHaveBeenCalled();
 });
 
-test('autorité globale explicite ouvre sourcing et audit central', async () => {
-  mockGlobalAllowed = true;
+test('admin central sans grant explicite ouvre sourcing et audit central', async () => {
+  mockRole = 'admin';
+  mockGlobalAllowed = false;
 
   const res = await request(app()).get('/api/admin/entities/products/KPR-000123');
 

@@ -36,15 +36,19 @@ function spaceIds(nav, domainId, role) {
 }
 
 describe('Canonical Navigation Policy V3.1', () => {
-  test('Catalogue global reste une autorité admin ; le responsable pays pilote via Marchés', () => {
+  test('Catalogue : domaine commun, lecture marché limitée par catalog.read', () => {
     const nav = loadPolicy();
     expect(domainIds(nav, 'admin')).toEqual([
       'dashboard', 'pricing', 'catalog', 'orders', 'markets', 'operations', 'live', 'finance',
     ]);
     expect(domainIds(nav, 'market_operator')).toEqual([
-      'dashboard', 'pricing', 'orders', 'markets', 'operations', 'live', 'finance',
+      'dashboard', 'pricing', 'catalog', 'orders', 'markets', 'operations', 'live', 'finance',
     ]);
-    expect(domainIds(nav, 'market_operator')).not.toContain('catalog');
+    const user = { role: 'market_operator' };
+    const ctx = { access: { mode: 'market', allowedMarkets: ['KM'], defaultMarket: 'KM', delegatedCapabilities: { KM: ['catalog.read'] } } };
+    expect(nav.canAccessSurface(user, 'catalog-workspace', null)).toBe(false);
+    expect(nav.canAccessSurface(user, 'catalog-workspace', ctx, 'KM')).toBe(true);
+    expect(nav.canAccessSurface(user, 'catalog-workspace', ctx, 'CG')).toBe(false);
   });
 
   test('les rôles spécialisés ne reçoivent jamais un faux Dashboard', () => {
@@ -117,14 +121,14 @@ describe('Canonical Navigation Policy V3.1', () => {
     expect(nav.defaultLandingFor({ role: 'unknown' })).toBe('/');
   });
 
-  test('le responsable pays accède à son catalogue dans Marchés, pas via Catalogue global', () => {
+  test('le responsable pays accède à son catalogue via la destination canonique unique', () => {
     const nav = loadPolicy();
     const catalog = nav.DOMAINS.find(item => item.id === 'catalog');
     const markets = nav.DOMAINS.find(item => item.id === 'markets');
     expect(nav.landingForDomain(catalog, { role: 'market_operator' })).toBe('/admin/workspaces/catalog');
-    expect(nav.visibleDomainsFor({ role: 'market_operator' }).some(item => item.id === 'catalog')).toBe(false);
-    expect(nav.landingForDomain(markets, { role: 'market_operator' })).toBe('/dashboards/canonical/market-autonomy.html');
-    expect(nav.activePrimarySurface('market-catalog')).toBe('markets');
+    expect(nav.visibleDomainsFor({ role: 'market_operator' }).some(item => item.id === 'catalog')).toBe(true);
+    expect(nav.landingForDomain(markets, { role: 'market_operator' })).toBe('/dashboards/canonical/unsold.html');
+    expect(nav.activePrimarySurface('market-catalog')).toBe('catalog');
     expect(nav.landingForDomain(catalog, { role: 'admin' })).toBe('/admin/workspaces/catalog');
     expect(nav.landingForDomain(markets, { role: 'admin' })).toBe('/dashboards/canonical/access.html');
   });
@@ -138,7 +142,7 @@ describe('Canonical Navigation Policy V3.1', () => {
     expect(nav.activePrimarySurface('accounting-workspace')).toBe('finance');
     expect(nav.activePrimarySurface('client-360')).toBe('orders');
     expect(nav.activePrimarySurface('product-360')).toBe('catalog');
-    expect(nav.activePrimarySurface('market-catalog')).toBe('markets');
+    expect(nav.activePrimarySurface('market-catalog')).toBe('catalog');
     // Commandes : vue distincte sous la rubrique Commandes.
     expect(nav.activeSpaceFor('orders')).toBe('orders');
     expect(nav.activeSpaceFor('client-index')).toBe('commerce');
@@ -179,7 +183,12 @@ describe('Action Center — rôles terrain, sans autorité Dashboard', () => {
       expect(nav.canAccessSurface({ role }, 'action-center')).toBe(false);
     }
     expect(nav.canAccessSurface({ role: 'admin' }, 'action-center')).toBe(true);
-    expect(nav.canAccessSurface({ role: 'market_operator' }, 'action-center')).toBe(true);
+    const operator = { role: 'market_operator' };
+    const context = { access: { mode: 'market', allowedMarkets: ['KM'], defaultMarket: 'KM', delegatedCapabilities: { KM: ['dashboard.market.read'] } } };
+    expect(nav.canAccessSurface(operator, 'action-center', null)).toBe(false);
+    expect(nav.canAccessSurface(operator, 'action-center', context, 'KM')).toBe(true);
+    expect(nav.canAccessSurface(operator, 'action-center', context, 'CG')).toBe(false);
+    expect(nav.canAccessSurface(operator, 'action-center', { access: { ...context.access, delegatedCapabilities: { KM: [] } } })).toBe(false);
   });
 
   test('navigation client et démarrage direct utilisent le même garde', () => {

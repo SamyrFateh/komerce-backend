@@ -29,7 +29,7 @@ test('30 membres restent accessibles avec 12 cartes initiales, recherche et affi
     const pathname = new URL(request.url()).pathname;
     calls.push({ method: request.method(), pathname });
     if (pathname === '/api/admin/dashboard/context') {
-      return route.fulfill({ json: { access: { allowedMarkets: ['CM'], defaultMarket: 'CM' } } });
+      return route.fulfill({ json: { actor:{id:'op',role:'market_operator'}, access: { mode:'market', allowedMarkets: ['CM'], defaultMarket: 'CM', capabilities: [], delegatedCapabilities:{CM:['finance.read','operations.read','team.read']} } } });
     }
     if (pathname === '/api/market-delegation/markets/CM/team') {
       return route.fulfill({ json: {
@@ -46,6 +46,7 @@ test('30 membres restent accessibles avec 12 cartes initiales, recherche et affi
 
   await page.goto('http://localhost/blank');
   await page.setContent('<main id="market-autonomy-root" class="kmc-workspace"></main>');
+  await page.addScriptTag({ path: path.join(path.dirname(SCRIPT),'admin-context.js') });
   await page.addScriptTag({ path: SCRIPT });
 
   const cards = page.locator('[data-member-card]');

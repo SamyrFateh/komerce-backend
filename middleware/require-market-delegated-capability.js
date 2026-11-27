@@ -198,7 +198,39 @@ function requireMarketDelegatedCapability(capability, options = {}) {
   };
 }
 
+// CANON-MARKET: read-only scope for the exact endpoints listed in CMU-0.
+// null means the existing central admin authority; it never means empty scope.
+// No client-supplied market_id, no role projection, no mutation authorization.
+async function resolveReadScope(req, capability) {
+  if (!capability || typeof capability !== 'string') throw new TypeError('capability requise');
+  const user = req && req.user;
+  if (!user || !user.id) {
+    throw Object.assign(new Error('Authentification requise.'), {
+      status: 401, code: 'AUTH_REQUIRED',
+    });
+  }
+  if (user.role === 'admin') return null;
+  if (user.role !== 'market_operator') {
+    throw Object.assign(new Error('Lecture marché non autorisée.'), {
+      status: 403, code: 'MARKET_READ_CAPABILITY_REQUIRED',
+    });
+  }
+  const rows = await listAuthorizedMarketsForCapability(db, {
+    userId: user.id, requiredCapability: capability,
+  });
+  const marketIds = Array.isArray(rows)
+    ? [...new Set(rows.map(row => row && row.market_id).filter(Boolean))]
+    : [];
+  if (!marketIds.length) {
+    throw Object.assign(new Error('Lecture non autorisée sur un marché actif.'), {
+      status: 403, code: 'MARKET_READ_CAPABILITY_REQUIRED',
+    });
+  }
+  return marketIds;
+}
+
 module.exports = {
+  resolveReadScope,
   attachAuthorizedMarketsForCapability,
   requireMarketDelegatedCapability,
   requireSingleMarketDelegatedCapability,

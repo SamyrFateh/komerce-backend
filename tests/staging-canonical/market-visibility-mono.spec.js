@@ -20,9 +20,9 @@ const CODES=['KM','CM','CG','DJ','YT'];
 const ORIGIN=new URL(process.env.E2E_STAGING_BASE_URL||BASE).origin;
 const MENU=[
  'control-tower','action-center','flow-commerce','flow-orders','entity-clients',
- 'workspace-pricing','flow-operations','workspace-shipping','flow-finance',
- 'workspace-accounting','live-hub','market-autonomy','market-catalog','unsold',
- 'admin-providers','settings','help-docs'
+ 'workspace-pricing','workspace-catalog','flow-operations','workspace-shipping','flow-finance',
+ 'workspace-accounting','live-hub','live-relais','unsold',
+ 'admin-users','admin-providers','settings','help-docs'
 ];
 const MUTATION_LABEL=/\b(enregistrer|valider|annuler|créer|confirmer|recevoir|rattacher|payer|expédier|modifier|supprimer|encaisser|remettre|abandonner)\b/i;
 const apiPath=url=>{try{return new URL(url).pathname;}catch{return '';}};
@@ -248,10 +248,9 @@ for(const market of MARKETS){
      })));
      proof.navigation.items=menu.map(item=>item.id);
      expect(proof.navigation.items).toEqual(MENU);
-     expect(new Set(menu.map(item=>item.href)).size,'17 menu rubriques must resolve to 17 explicit market destinations').toBe(MENU.length);
+     expect(new Set(menu.map(item=>item.href)).size,'All canonical menu rubriques must resolve to distinct market destinations').toBe(MENU.length);
      for(const item of menu)expect(String(item.href||'').startsWith('/')).toBe(true);
-     const forbiddenCentral=['/admin/workspaces/catalog','/admin/workspaces/purchasing','/admin/import-runtime',
-       '/admin/relais-live','/admin/users','/admin/providers','/admin/settings'];
+     const forbiddenCentral=['/admin/workspaces/purchasing','/admin/import-runtime'];
      for(const item of menu)expect(forbiddenCentral).not.toContain(item.href);
      for(const href of [...new Set(menu.map(item=>item.href))]){
        const probe=await fetchJSON(page,href);
@@ -270,21 +269,22 @@ for(const market of MARKETS){
 
      // The market team remains complete in the DOM for search/accessibility,
      // while the desktop page initially exposes at most one 12-member batch.
-     await page.goto('/dashboards/canonical/market-autonomy.html',{waitUntil:'domcontentloaded'});
+     await page.goto('/admin/users',{waitUntil:'domcontentloaded'});
      await expect(page.locator('[data-member-card]').first()).toBeAttached({timeout:20000});
      const teamDirectory=await page.locator('[data-member-card]').evaluateAll(cards=>({
        total:cards.length,
        visible:cards.filter(card=>!card.hidden).length,
      }));
      proof.teamDirectory=teamDirectory;
-     expect(teamDirectory.total,'Autonomie marché must expose the complete team directory').toBeGreaterThan(0);
-     expect(teamDirectory.visible,'Autonomie marché must show at most the first desktop batch').toBeLessThanOrEqual(12);
+     expect(teamDirectory.total,'Utilisateurs canonique must expose the complete team directory').toBeGreaterThan(0);
+     expect(teamDirectory.visible,'Utilisateurs canonique must show at most the first desktop batch').toBeLessThanOrEqual(12);
      expect(teamDirectory.visible).toBe(Math.min(12,teamDirectory.total));
      if(teamDirectory.total>12){
        await expect(page.getByRole('searchbox',{name:'Rechercher un membre'})).toBeVisible();
        await expect(page.getByRole('button',{name:/^Afficher \d+ de plus$/})).toBeVisible();
      }
      await page.goto('/admin/hub',{waitUntil:'domcontentloaded'});
+     await page.getByRole('link',{name:'Vue commandes',exact:true}).click();
      await expect(page.locator('[data-hub-global-order]')).toHaveCount(board.body.orders.length,{timeout:20000});
 
      const consultations=[

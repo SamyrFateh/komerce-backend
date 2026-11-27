@@ -59,3 +59,11 @@ test('prestataires lisibles via network.read sans accorder provider.manage',()=>
   expect(routeSource).toContain('updateProvider(client');
   expect(routeSource).toContain('setProviderStatus(client');
 });
+
+test('canonical admin lens only opts into central READ for network.read',()=>{
+  const source=require('fs').readFileSync(require('path').join(__dirname,'../../routes/market-delegation-provider.js'),'utf8');
+  const firstGet=source.indexOf('router.get(\'/markets/:marketCode/');
+  const firstWrite=source.indexOf('router.post(',firstGet);
+  expect(source.slice(firstGet,firstWrite<0?undefined:firstWrite)).toContain('resolveCanonicalMarketRead(resolveAuthorization, client, {');
+  expect(source.slice(firstGet,firstWrite<0?undefined:firstWrite)).toContain("primaryCapability: 'network.read'");
+});

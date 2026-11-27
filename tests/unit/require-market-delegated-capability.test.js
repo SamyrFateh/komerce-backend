@@ -130,3 +130,18 @@ describe('require-market-delegated-capability — request-local capability proof
     expect(req.marketDelegatedCapability.capabilities).toEqual([]);
   });
 });
+
+describe('CANON-MARKET read authority', () => {
+  const {resolveReadScope}=require('../../middleware/require-market-delegated-capability');
+  test('central admin and local delegated reader are distinct scopes', async()=>{
+    expect(await resolveReadScope({user:{id:'a',role:'admin'}},'operations.read')).toBeNull();
+    mockListAuthorizedMarketsForCapability.mockResolvedValue([{market_id:'CM'},{market_id:'CM'}]);
+    expect(await resolveReadScope({user:{id:'m',role:'market_operator'},query:{market_id:'CG'}},'operations.read')).toEqual(['CM']);
+    expect(mockListAuthorizedMarketsForCapability).toHaveBeenCalledWith(expect.anything(),{userId:'m',requiredCapability:'operations.read'});
+  });
+  test('absence de droit et rôle étranger refusés',async()=>{
+    mockListAuthorizedMarketsForCapability.mockResolvedValue([]);
+    await expect(resolveReadScope({user:{id:'m',role:'market_operator'}},'operations.read')).rejects.toMatchObject({status:403});
+    await expect(resolveReadScope({user:{id:'c',role:'client'}},'operations.read')).rejects.toMatchObject({status:403});
+  });
+});

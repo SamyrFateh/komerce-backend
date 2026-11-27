@@ -15524,6 +15524,20 @@
       {
         "feature": "market-autonomy",
         "category": "dash",
+        "declared": "dashboards/canonical/js/market-client-case.js",
+        "resolvedPath": "public/dashboards/canonical/js/market-client-case.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/market-settlement.js",
+        "resolvedPath": "public/dashboards/canonical/js/market-settlement.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
         "declared": "dashboards/canonical/team-invite.html",
         "resolvedPath": "public/dashboards/canonical/team-invite.html",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -43331,6 +43345,10 @@
               {
                 "sourceFileId": "services/central-authority.js",
                 "targetFile": "middleware/require-dashboard-global-authority.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/market-control-plane.provision-to-first-order.e2e.test.js",
+                "targetFile": "services/dashboard-admin-context.js"
               }
             ]
           }
@@ -46717,6 +46735,10 @@
               {
                 "sourceFileId": "services/market-payment-account-service.js",
                 "targetFile": "services/market-delegation-team-service.js"
+              },
+              {
+                "sourceFileId": "services/market-payment-account-service.js",
+                "targetFile": "services/market-delegation-read-authority.js"
               },
               {
                 "sourceFileId": "tests/unit/market-payment-accounts.test.js",
@@ -50656,7 +50678,7 @@
             "evidence": [
               {
                 "sourceFileId": "routes/unsold.js",
-                "targetFile": "services/market-delegation-service.js"
+                "targetFile": "middleware/require-market-delegated-capability.js"
               }
             ]
           }
@@ -51150,7 +51172,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2407
+        "filesObserved": 2409
       },
       "boutique": {
         "filesObserved": 218,

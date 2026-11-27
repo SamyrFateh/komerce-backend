@@ -30,3 +30,32 @@ test('deux capabilities refusées donnent un refus serveur',async()=>{
   await expect(resolveReadAuthority(resolve,{},args)).rejects.toMatchObject({status:403,code:'MARKET_CAPABILITY_REQUIRED'});
   expect(resolve).toHaveBeenCalledTimes(2);
 });
+
+const {resolveCanonicalMarketRead}=require('../../services/market-delegation-read-authority');
+const mockDashboardGlobal=jest.fn(),mockCatalogGlobal=jest.fn(),mockAssignment=jest.fn();
+jest.mock('../../middleware/require-dashboard-global-authority',()=>({hasDashboardGlobalAuthority:(...a)=>mockDashboardGlobal(...a)}));
+jest.mock('../../middleware/require-catalog-global-authority',()=>({hasCatalogGlobalAuthority:(...a)=>mockCatalogGlobal(...a)}));
+jest.mock('../../services/market-delegation-service',()=>({resolveActiveAssignmentByMarketCode:(...a)=>mockAssignment(...a)}));
+beforeEach(()=>{mockDashboardGlobal.mockReset();mockCatalogGlobal.mockReset();mockAssignment.mockReset();});
+test('A1 : admin central sans grant, target market and READ only',async()=>{
+  mockDashboardGlobal.mockResolvedValue(false);mockAssignment.mockResolvedValue({market_id:'cm',market_code:'CM',assignment_id:'a'});
+  const delegate=jest.fn(),executor={};
+  expect(await resolveCanonicalMarketRead(delegate,executor,{...args,actorRole:'admin'})).toEqual({market_id:'cm',market_code:'CM',assignment_id:'a',membership_id:null,capabilities:['client.read'],canonical_central_read:true});
+  expect(mockAssignment).toHaveBeenCalledWith(executor,'CM');expect(delegate).not.toHaveBeenCalled();
+});
+test('operator never gets a central grant from role or a market locator',async()=>{
+  const delegate=jest.fn().mockRejectedValue(deny('MARKET_MEMBERSHIP_REQUIRED'));
+  await expect(resolveCanonicalMarketRead(delegate,{}, {...args,actorRole:'market_operator'})).rejects.toMatchObject({status:403});
+  expect(mockDashboardGlobal).not.toHaveBeenCalled();expect(mockAssignment).not.toHaveBeenCalled();
+});
+test('catalog READ does not require a separate central grant; no membership or ACT rights',async()=>{
+  mockCatalogGlobal.mockResolvedValue(false);
+  mockAssignment.mockResolvedValue({market_id:'cm',market_code:'CM',assignment_id:'a'});
+  const delegate=jest.fn().mockRejectedValue(deny('MARKET_MEMBERSHIP_REQUIRED'));
+  expect(await resolveCanonicalMarketRead(delegate,{}, {userId:'a',actorRole:'admin',marketCode:'CM',primaryCapability:'catalog.read'})).toMatchObject({market_id:'cm',membership_id:null,capabilities:['catalog.read']});
+  expect(mockCatalogGlobal).not.toHaveBeenCalled();expect(mockDashboardGlobal).not.toHaveBeenCalled();expect(delegate).not.toHaveBeenCalled();
+});
+test('no central market ACT capability can be manufactured by this helper',async()=>{
+  await expect(resolveCanonicalMarketRead(jest.fn(),{}, {...args,actorRole:'admin',primaryCapability:'client.case.handle'})).rejects.toThrow('READ capability');
+  expect(mockDashboardGlobal).not.toHaveBeenCalled();
+});

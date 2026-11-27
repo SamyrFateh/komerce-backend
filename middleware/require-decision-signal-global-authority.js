@@ -35,6 +35,8 @@ async function hasDecisionSignalGlobalAuthority(userId) {
 
 function requireDecisionSignalGlobalAuthority(req, res, next) {
   if (!req.user) return res.status(401).json({ error: 'Non authentifié' });
+  // A1 applies to authenticated read requests only. Mutation guards still require their existing grants.
+  if (req.method === 'GET' && req.user.role === 'admin') { req.decisionSignalGlobalAuthority = true; return next(); }
   if (req.decisionSignalGlobalAuthority === true) return next();
 
   return hasDecisionSignalGlobalAuthority(req.user.id)

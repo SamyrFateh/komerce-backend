@@ -71,3 +71,16 @@ test('autorité déjà résolue ne relit pas la base', async () => {
   expect(next).toHaveBeenCalledTimes(1);
   expect(mockQuery).not.toHaveBeenCalled();
 });
+
+test('A1: authenticated admin GET needs no separate grant, POST retains its guard',async()=>{
+  const {requireCatalogGlobalAuthority}=require('../../middleware/require-catalog-global-authority');
+  mockQuery.mockReset();
+  const response=()=>({statusCode:200,status(code){this.statusCode=code;return this;},json(body){this.body=body;return this;}});
+  const readNext=jest.fn();
+  await requireCatalogGlobalAuthority({method:'GET',user:{id:'a',role:'admin'}},response(),readNext);
+  expect(readNext).toHaveBeenCalledTimes(1);expect(mockQuery).not.toHaveBeenCalled();
+  mockQuery.mockResolvedValueOnce({rows:[]});
+  const writeNext=jest.fn(),res=response();
+  await requireCatalogGlobalAuthority({method:'POST',user:{id:'a',role:'admin'}},res,writeNext);
+  expect(res.statusCode).toBe(403);expect(writeNext).not.toHaveBeenCalled();
+});

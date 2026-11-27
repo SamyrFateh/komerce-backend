@@ -20,3 +20,5 @@ describe('market-team — libellés des capacités', () => {
     expect(src).toContain("section.id = 'market-team'");
   });
 });
+
+require('../helpers/canon-market-domain-modules').proveDeniedModule('market-team','KomerceMarketTeam');
