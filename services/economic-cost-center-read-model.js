@@ -10,7 +10,7 @@
  * @used-by       routes/admin-pricing-workspace.js
  * @db-read       markets, users, economic_cost_centers, economic_cost_families, economic_cost_resources, economic_cost_posts, economic_cost_budget_revisions, economic_cost_commitments, economic_cost_commitment_movements, economic_structure_cost_events, international_shipments, international_shipment_events, international_shipment_relay_receipts, international_shipment_hub_units, international_n1_reconciliations, hub_physical_units, hub_box_effective_placements, hub_purchase_allocations, order_items, orders, purchase_lines, supplier_execution_payments, supplier_payment_settlements, refunds, international_shipment_charges, customs_shipments, customs_shipment_parcels, parcels, parcel_items, scans, order_item_real_cost_allocations, economic_group_period_closures, economic_risk_cost_events, economic_risk_watermark_events
  * @db-write      economic_group_period_closures
- * @db-txn        service_owned_read_only_repeatable_read
+ * @db-txn        service_owned_read_only_repeatable_read_and_serializable_close
  * @doctrine      exact_market_scope, budget_is_not_realized_cost, no_fake_zero, group_raw_not_delegated
  * @impact-areas  economic-engine, finance, market-authorization
  * @version       2026-11
@@ -610,7 +610,7 @@ async function loadGroupPeriodApproval(client, periodStart, result) {
          SELECT $1::date::timestamp AT TIME ZONE 'UTC' AS lo,
                 ($1::date+interval '1 month') AT TIME ZONE 'UTC' AS hi
        ), handed_off AS (
-         SELECT p.id,p.order_id FROM parcels p JOIN orders o ON o.id=p.order_id CROSS JOIN bounds
+         SELECT p.id,p.order_id,p.collected_at,p.status FROM parcels p JOIN orders o ON o.id=p.order_id CROSS JOIN bounds
          WHERE p.collected_at>=lo AND p.collected_at<hi AND o.market_id IS NOT NULL
            AND o.simulation_scope IS NULL
        ), sold_items AS (
@@ -623,6 +623,7 @@ async function loadGroupPeriodApproval(client, periodStart, result) {
          JOIN international_shipment_hub_units h ON h.physical_unit_id=pl.box_unit_id
        ), facts AS (
          SELECT 'handoff' AS kind,to_jsonb(s) AS fact FROM scans s JOIN handed_off p ON p.id=s.parcel_id WHERE s.step='collected'
+         UNION ALL SELECT 'parcel-handoff',to_jsonb(p) FROM handed_off p
          UNION ALL SELECT 'order-price',jsonb_build_array(o.id,o.total_kmf,o.discount_kmf,o.wallet_applied_kmf,o.payment_status,o.market_id)
            FROM orders o WHERE EXISTS (SELECT 1 FROM handed_off p WHERE p.order_id=o.id)
          UNION ALL SELECT 'item-price',jsonb_build_array(i.id,i.order_id,i.price_kmf,i.quantity)
@@ -672,16 +673,27 @@ async function closeGroupPeriod(actor, {periodStart,evidenceHash,evidenceRef,att
   if (monthShift(input.periodStart,1)>new Date().toISOString().slice(0,10)) {
     throw error('economic_close_month_open',409,'Le mois est toujours en cours');
   }
-  const model=await readCostCenters(actor,input);
-  const result=model.profitability?.groupPeriodResult;
-  if (result?.evidenceHash!==evidenceHash) {
-    throw error('economic_close_evidence_changed',409,'Les preuves ont changé. Rechargez la période.');
-  }
-  const {rows}=await db.query(
-    `INSERT INTO economic_group_period_closures(period_start,evidence_hash,evidence_ref,actor_id)
-     VALUES ($1,$2,$3,$4) ON CONFLICT (period_start,evidence_hash) DO NOTHING RETURNING id`,
-    [input.periodStart,evidenceHash,evidenceRef.trim(),actor.id]);
-  return {outcome:rows.length?'closed':'replayed',periodStart:input.periodStart};
+  const client=await db.getClient();
+  try {
+    // The reviewed snapshot and the append-only attestation share one transaction.
+    // A fact committed later remains a new fact and reopens the period.
+    await client.query('BEGIN ISOLATION LEVEL SERIALIZABLE');
+    const model=await readCostCentersSnapshot(actor,input,client,true);
+    const result=model.profitability?.groupPeriodResult;
+    if (result?.evidenceHash!==evidenceHash) {
+      throw error('economic_close_evidence_changed',409,'Les preuves ont changé. Rechargez la période.');
+    }
+    const {rows}=await client.query(
+      `INSERT INTO economic_group_period_closures(period_start,evidence_hash,evidence_ref,actor_id)
+       VALUES ($1,$2,$3,$4) ON CONFLICT (period_start,evidence_hash) DO NOTHING RETURNING id`,
+      [input.periodStart,evidenceHash,evidenceRef.trim(),actor.id]);
+    await client.query('COMMIT');
+    return {outcome:rows.length?'closed':'replayed',periodStart:input.periodStart};
+  } catch(e) {
+    try{await client.query('ROLLBACK');}catch(_){}
+    if(e.code==='40001'||e.code==='40P01')throw error('economic_close_concurrent_change',409,'Les preuves ont changé ou une autre clôture est en cours. Rechargez la période.');
+    throw e;
+  } finally {client.release();}
 }
 async function readCostCenters(actor,raw){
   if(!actor?.id)throw error('AUTH_REQUIRED',401,'Authentification requise');
@@ -690,6 +702,12 @@ async function readCostCenters(actor,raw){
   const client=await db.getClient();
   try{
     await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+    const model=await readCostCentersSnapshot(actor,input,client,central);
+    await client.query('COMMIT');
+    return model;
+  }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
+}
+async function readCostCentersSnapshot(actor,input,client,central){
     const marketId=await resolveScope(client,actor,input.marketCode,central);
     const costCapabilities=await costAuthority.project(client,actor,input.marketCode,marketId,central);
     const {rows:centers}=await client.query(
@@ -770,9 +788,7 @@ async function readCostCenters(actor,raw){
       }
     }
     const responsibleCandidates=costCapabilities.reference?await listResponsibleCandidates(client,marketId):[];
-    await client.query('COMMIT');
     return {scope:input.marketCode===null?'GROUP':'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,central,costCapabilities,readOnly:!Object.values(costCapabilities).some(Boolean),
       centers:centerModels,families,resources,responsibleCandidates,posts:model,recordedBalance:recordedBalanceSummary(model),budgetSummary:budgetSummary(model),commitmentSummary:commitmentSummary(model),structureEvidence,activity,profitability,actualCoverage:'NOT_RECONCILED',available:null};
-  }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
 }
 module.exports={readCostCenters,closeGroupPeriod,budgetSummary,recordedPostBalance,recordedBalanceSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,loadShipmentActivity,shipmentPurchase,observedProfitability,periodSalesEvidence,projectGroupPeriodResult,completeCostParcelCount};
