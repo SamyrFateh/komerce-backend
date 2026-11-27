@@ -69,6 +69,7 @@ async function getCAEncaisse(filters = {}) {
     itemsTotal,
     itemsWithData: itemsTotal,
     completeness: 'complete',
+    extra:{metric_id:'commerce.paid_order_nonwallet',sales_basis:'paid_order_total_excluding_wallet',period_basis:'orders.created_at',cash_basis:false},
     drillTo: '/admin/costing',
   });
 }
