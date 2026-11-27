@@ -66,7 +66,7 @@ function handleServiceError(err, res, next) {
 // ═══════════════════════════════════════════════════════════════════
 // POST /api/pricing/calculate — calcul prix temps réel
 // ═══════════════════════════════════════════════════════════════════
-router.post('/calculate', async (req, res, next) => {
+router.post('/calculate', ...adminOnly, async (req, res, next) => {
   try {
     const { product_id, qty = 1, is_diaspora = false, relais_type = 'standard' } = req.body;
     if (!product_id) return res.status(400).json({ error: 'product_id requis' });
@@ -145,7 +145,7 @@ router.delete('/benchmarks/:category/:cost_family', adminOnly, async (req, res, 
 // ═══════════════════════════════════════════════════════════════════
 // POST /api/pricing/couture — calcul prix tenue couture
 // ═══════════════════════════════════════════════════════════════════
-router.post('/couture', async (req, res, next) => {
+router.post('/couture', ...adminOnly, async (req, res, next) => {
   try {
     const { fabric_id, model_id, qty = 1, is_diaspora = false } = req.body;
     if (!fabric_id || !model_id) return res.status(400).json({ error: 'fabric_id et model_id requis' });
