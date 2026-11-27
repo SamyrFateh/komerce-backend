@@ -74,7 +74,7 @@ describe('relevé de coûts du marché (D7)', () => {
     const read = db.query.bind(db);
     db.query = (sql, params) => sql.includes('FROM currency_parities')
       ? Promise.resolve({ rows: [{ rate: params[0] === 'KMF' ? '491.96' : '655.957' }] })
-      : read(sql, params);
+      : sql.includes('AS crossing_count') ? Promise.resolve({rows:[{crossing_count:0}]}) : read(sql, params);
     const statement = await getMarketCostStatement(db, {
       marketCode: 'CM', actorUserId: 'u1', scope: 'hub', from: '2026-09-01', to: '2026-10-01',
     });
@@ -99,11 +99,21 @@ describe('relevé de coûts du marché (D7)', () => {
     const read = db.query.bind(db);
     db.query = (sql, params) => sql.includes('FROM currency_parities')
       ? Promise.resolve({ rows: [] })
-      : read(sql, params);
+      : sql.includes('AS crossing_count') ? Promise.resolve({rows:[{crossing_count:0}]}) : read(sql, params);
     const result = await getMarketCostStatement(db, {
       marketCode: 'CM', actorUserId: 'u1', scope: 'hub', from: '2026-09-01', to: '2026-10-01',
     });
     expect(result).toMatchObject({ total_kmf: '100.00', informational_totals: { status: 'UNAVAILABLE' } });
+  });
+
+  test('relevé Hub signale une attribution à cheval sur deux périodes même sans ligne facturable',async()=>{
+    const db=dbWith([]);
+    const read=db.query.bind(db);
+    db.query=(sql,params)=>sql.includes('AS crossing_count')
+      ? Promise.resolve({rows:[{crossing_count:1}]}) : read(sql,params);
+    const result=await getMarketCostStatement(db,{marketCode:'CM',actorUserId:'u1',scope:'hub',from:'2026-09-01',to:'2026-10-01'});
+    expect(result).toMatchObject({total_kmf:null,lines:[],coverage:{
+      cross_period_attribution_count:1,status:'CROSS_PERIOD_RECONCILIATION_REQUIRED'}});
   });
 
   test('relevé Hub : période obligatoire et date réelle', async () => {

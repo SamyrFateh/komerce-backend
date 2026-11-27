@@ -83,6 +83,19 @@ const HUB_LINES_SQL = `
    ORDER BY e.economic_from DESC, a.id
    LIMIT ${MAX_LINES + 1}`;
 
+// A charge crossing the requested bounds must be reconciled, not silently omitted.
+const HUB_CROSS_PERIOD_SQL = `
+  SELECT COUNT(DISTINCT a.id)::int AS crossing_count
+    FROM market_cost_attributions a
+    JOIN economic_structure_cost_events e ON e.id=a.source_event_id
+    JOIN economic_cost_posts p ON p.structure_charge_id=e.charge_id
+    JOIN economic_cost_centers c ON c.id=p.center_id
+   WHERE a.market_id=$1 AND c.market_id IS NULL AND c.code='HUB_CENTRAL'
+     AND a.event_kind='ATTRIBUTION'
+     AND e.economic_from < $3::timestamptz AND e.economic_to > $2::timestamptz
+     AND NOT (e.economic_from >= $2::timestamptz AND e.economic_to <= $3::timestamptz)
+     AND NOT EXISTS (SELECT 1 FROM market_cost_attributions reversal WHERE reversal.reverses_id=a.id)`;
+
 async function hubInformationalTotals(client, amountKmf) {
   if (amountKmf === null) return null;
   try {
@@ -125,6 +138,8 @@ function statementPeriod(from, to, scope) {
 async function readHubStatement(db, { marketId, marketCode, fromIso, toIso }) {
   const { rows } = await db.query(HUB_LINES_SQL, [marketId, fromIso, toIso]);
   const totalKmf = rows[0]?.total_kmf ?? null;
+  const {rows:[crossing]} = await db.query(HUB_CROSS_PERIOD_SQL, [marketId, fromIso, toIso]);
+  const crossingCount=Number.isSafeInteger(crossing?.crossing_count)?crossing.crossing_count:null;
   return {
     market_code: marketCode,
     scope: 'HUB_CENTRAL',
@@ -134,6 +149,8 @@ async function readHubStatement(db, { marketId, marketCode, fromIso, toIso }) {
     total_kmf: totalKmf,
     informational_totals: await hubInformationalTotals(db, totalKmf),
     truncated: rows.length > MAX_LINES,
+    coverage: { cross_period_attribution_count: crossingCount,
+      status: crossingCount===0?'NO_CROSS_PERIOD_ATTRIBUTIONS':crossingCount===null?'UNKNOWN':'CROSS_PERIOD_RECONCILIATION_REQUIRED' },
     lines: rows.slice(0, MAX_LINES).map(({ total_kmf, ...line }) => line),
   };
 }

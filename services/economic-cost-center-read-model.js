@@ -8,9 +8,9 @@
  * @outputs       scoped_centers_families_resources_posts, latest_budget_revisions, outstanding_commitments, explicit_actual_coverage_status
  * @depends       db, middleware/require-pricing-global-authority.js, services/market-delegation-service.js, services/fx-authority.js, services/cost-allocation/real-margin-shadow.js, services/economic-cost-write-authority.js, services/economic-cost-reference-service.js, services/pricing-period-structure.js, services/customer-handoff-reconciliation.js, services/cost-allocation/cost-types.js, services/cost-allocation/cost-expectation.js, services/pricing-risk-period.js
  * @used-by       routes/admin-pricing-workspace.js
- * @db-read       markets, users, economic_cost_centers, economic_cost_families, economic_cost_resources, economic_cost_posts, economic_cost_budget_revisions, economic_cost_commitments, economic_cost_commitment_movements, economic_structure_cost_events, international_shipments, international_shipment_events, international_shipment_relay_receipts, international_shipment_hub_units, international_n1_reconciliations, hub_physical_units, hub_box_effective_placements, hub_purchase_allocations, order_items, orders, purchase_lines, supplier_execution_payments, supplier_payment_settlements, refunds, international_shipment_charges, customs_shipments, parcels, parcel_items, scans, order_item_real_cost_allocations, economic_group_period_closures, economic_risk_cost_events, economic_risk_watermark_events
+ * @db-read       markets, users, economic_cost_centers, economic_cost_families, economic_cost_resources, economic_cost_posts, economic_cost_budget_revisions, economic_cost_commitments, economic_cost_commitment_movements, economic_structure_cost_events, international_shipments, international_shipment_events, international_shipment_relay_receipts, international_shipment_hub_units, international_n1_reconciliations, hub_physical_units, hub_box_effective_placements, hub_purchase_allocations, order_items, orders, purchase_lines, supplier_execution_payments, supplier_payment_settlements, refunds, international_shipment_charges, customs_shipments, customs_shipment_parcels, parcels, parcel_items, scans, order_item_real_cost_allocations, economic_group_period_closures, economic_risk_cost_events, economic_risk_watermark_events
  * @db-write      economic_group_period_closures
- * @db-txn        service_owned_read_only_repeatable_read
+ * @db-txn        service_owned_read_only_repeatable_read_and_serializable_close
  * @doctrine      exact_market_scope, budget_is_not_realized_cost, no_fake_zero, group_raw_not_delegated
  * @impact-areas  economic-engine, finance, market-authorization
  * @version       2026-11
@@ -24,7 +24,7 @@ const {computePeriodStructureTruth}=require('./pricing-period-structure');
 const {computePeriodRiskTruth}=require('./pricing-risk-period');
 const {classifyProof}=require('./customer-handoff-reconciliation');
 const {RECONCILIABLE_VARIABLE_COST_TYPES}=require('./cost-allocation/cost-types');
-const {LEGACY_UNJUSTIFIED_SOURCE}=require('./cost-allocation/cost-expectation');
+const {LEGACY_UNJUSTIFIED_SOURCE,expectedTypes}=require('./cost-allocation/cost-expectation');
 const {hasPricingGlobalAuthority} = require('../middleware/require-pricing-global-authority');
 const {resolveAuthorization} = require('./market-delegation-service');
 const costAuthority=require('./economic-cost-write-authority');
@@ -415,26 +415,27 @@ async function loadPeriodSalesEvidence(client,marketId,periodStart){
 async function loadPeriodRecognitionEvidence(client, marketId, periodStart) {
   const bounds = [marketId, periodStart, monthShift(periodStart, 1)];
   const {rows: scans} = await client.query(
-    `SELECT s.parcel_id,s.pickup_method,s.authorization_version,s.document_checked,s.scan_code,s.notes,
+    `SELECT p.id AS parcel_id,p.status::text AS parcel_status,s.pickup_method,s.authorization_version,s.document_checked,s.scan_code,s.notes,
         items.units
-       FROM scans s
-       JOIN parcels p ON p.id=s.parcel_id AND p.order_id=s.order_id
+       FROM parcels p
        JOIN orders o ON o.id=p.order_id
-       JOIN LATERAL (
+       LEFT JOIN scans s ON s.parcel_id=p.id AND s.order_id=o.id
+         AND s.step='collected' AND NOT s.is_anomaly
+         AND s.created_at>=($2::date::timestamp AT TIME ZONE 'UTC')
+         AND s.created_at<($3::date::timestamp AT TIME ZONE 'UTC')
+       LEFT JOIN LATERAL (
          SELECT SUM(pi.qty_collected)::int AS units
          FROM parcel_items pi JOIN order_items oi ON oi.id=pi.order_item_id
          WHERE pi.parcel_id=p.id
          HAVING BOOL_AND(oi.order_id=o.id AND pi.qty_collected BETWEEN 0 AND pi.quantity)
-       ) items ON items.units>0
-       WHERE s.step='collected' AND NOT s.is_anomaly AND p.status='collected'
-         AND o.market_id IS NOT NULL AND ($1::uuid IS NULL OR o.market_id=$1) AND o.simulation_scope IS NULL
+       ) items ON true
+       WHERE o.market_id IS NOT NULL AND ($1::uuid IS NULL OR o.market_id=$1) AND o.simulation_scope IS NULL
          AND p.collected_at>=($2::date::timestamp AT TIME ZONE 'UTC')
-         AND p.collected_at<($3::date::timestamp AT TIME ZONE 'UTC')
-         AND s.created_at>=($2::date::timestamp AT TIME ZONE 'UTC')
-         AND s.created_at<($3::date::timestamp AT TIME ZONE 'UTC')`, bounds);
+         AND p.collected_at<($3::date::timestamp AT TIME ZONE 'UTC')`, bounds);
+  const candidates = new Set(scans.map(scan=>scan.parcel_id));
   const handoffs = new Map();
   for (const scan of scans) {
-    if (classifyProof(scan).valid) handoffs.set(scan.parcel_id, scan.units);
+    if (scan.parcel_status==='collected' && scan.units>0 && classifyProof(scan).valid) handoffs.set(scan.parcel_id, scan.units);
   }
   const {rows: [refunds]} = await client.query(
     `SELECT COUNT(*)::int AS count,SUM(r.amount_kmf)::text AS amount_kmf
@@ -482,6 +483,14 @@ async function loadPeriodRecognitionEvidence(client, marketId, periodStart) {
   const {rows: [costs]} = await client.query(
     `WITH handed_off_lines AS (
          SELECT pi.parcel_id,oi.id AS order_item_id,oi.order_id,
+                oi.fulfillment_source,o.payment_mode::text AS payment_mode,
+                o.relais_id IS NOT NULL AS relay_beneficiary,
+                o.hub_preparation_at IS NOT NULL AS hub_operation,
+                EXISTS (SELECT 1 FROM customs_shipment_parcels csp
+                  JOIN customs_shipments cs ON cs.id=csp.shipment_id
+                  WHERE csp.parcel_id=pi.parcel_id AND cs.is_active
+                    AND cs.status<>'pending' AND cs.customs_paid_kmf IS NOT NULL) AS customs_known,
+                BOOL_AND(pi.qty_collected=pi.quantity) AS full_parcel_line,
                 SUM(pi.quantity)=oi.quantity AND NOT EXISTS (
                   SELECT 1 FROM parcel_items other
                   WHERE other.order_item_id=oi.id AND other.parcel_id<>pi.parcel_id
@@ -489,31 +498,40 @@ async function loadPeriodRecognitionEvidence(client, marketId, periodStart) {
          FROM parcel_items pi
          JOIN order_items oi ON oi.id=pi.order_item_id
          JOIN parcels p ON p.id=pi.parcel_id AND p.order_id=oi.order_id
+         JOIN orders o ON o.id=oi.order_id
          WHERE pi.parcel_id=ANY($1::uuid[])
-         GROUP BY pi.parcel_id,oi.id
-         HAVING BOOL_AND(pi.qty_collected=pi.quantity)
+         GROUP BY pi.parcel_id,oi.id,o.id
+       ), eligible AS (
+         SELECT line.parcel_id,line.order_item_id,a.cost_type,a.amount_kmf
+         FROM handed_off_lines line
+         JOIN order_item_real_cost_allocations a
+           ON a.order_item_id=line.order_item_id AND a.order_id=line.order_id
+         WHERE line.full_parcel_line AND a.cost_type=ANY($2::text[])
+           AND a.is_actual AND a.allocation_method<>'estimated_fallback'
+           AND NULLIF(BTRIM(a.source),'') IS NOT NULL
+           AND a.source NOT IN ($3,'products.cost_kmf')
+           AND COALESCE(a.provenance,'') NOT ILIKE '%FICTIF%'
+           AND (
+             a.parcel_id=line.parcel_id
+             OR (a.parcel_id IS NULL AND a.shipment_id IS NULL AND line.whole_order_line
+               AND NOT EXISTS (
+                 SELECT 1 FROM order_item_real_cost_allocations scoped
+                 WHERE scoped.order_item_id=a.order_item_id AND scoped.order_id=a.order_id
+                   AND scoped.cost_type=a.cost_type
+                   AND (scoped.parcel_id IS NOT NULL OR scoped.shipment_id IS NOT NULL)
+               ))
+           )
+       ), coverage AS (
+         SELECT line.*,ARRAY(SELECT DISTINCT e.cost_type::text FROM eligible e
+           WHERE e.parcel_id=line.parcel_id AND e.order_item_id=line.order_item_id ORDER BY e.cost_type::text) AS types
+         FROM handed_off_lines line
        )
-       SELECT COUNT(DISTINCT line.parcel_id)::int AS parcel_count,
-              SUM(a.amount_kmf)::text AS amount_kmf
-       FROM handed_off_lines line
-       JOIN order_item_real_cost_allocations a
-         ON a.order_item_id=line.order_item_id AND a.order_id=line.order_id
-       WHERE a.cost_type=ANY($2::text[])
-         AND a.is_actual AND a.allocation_method<>'estimated_fallback'
-         AND NULLIF(BTRIM(a.source),'') IS NOT NULL
-         AND a.source NOT IN ($3,'products.cost_kmf')
-         AND COALESCE(a.provenance,'') NOT ILIKE '%FICTIF%'
-         AND (
-           a.parcel_id=line.parcel_id
-           OR (a.parcel_id IS NULL AND a.shipment_id IS NULL AND line.whole_order_line
-             AND NOT EXISTS (
-               SELECT 1 FROM order_item_real_cost_allocations scoped
-               WHERE scoped.order_item_id=a.order_item_id AND scoped.order_id=a.order_id
-                 AND scoped.cost_type=a.cost_type
-                 AND (scoped.parcel_id IS NOT NULL OR scoped.shipment_id IS NOT NULL)
-             ))
-         )`, [[...handoffs.keys()], RECONCILIABLE_VARIABLE_COST_TYPES, LEGACY_UNJUSTIFIED_SOURCE]);
+       SELECT COUNT(DISTINCT parcel_id)::int AS parcel_count,SUM(amount_kmf)::text AS amount_kmf,
+              (SELECT COALESCE(jsonb_agg(to_jsonb(c) ORDER BY c.parcel_id,c.order_item_id),'[]'::jsonb) FROM coverage c) AS line_evidence
+       FROM eligible`, [[...handoffs.keys()], RECONCILIABLE_VARIABLE_COST_TYPES, LEGACY_UNJUSTIFIED_SOURCE]);
+  const completeParcels=completeCostParcelCount(costs.line_evidence);
   return {
+    candidateHandoffParcelCount: candidates.size,
     handoffParcelCount: handoffs.size,
     attestedUnits: [...handoffs.values()].reduce((total, units) => total + units, 0),
     confirmedRefundCount: refunds.count,
@@ -521,19 +539,39 @@ async function loadPeriodRecognitionEvidence(client, marketId, periodStart) {
     pricedHandoffUnits: sales.covered_units,
     documentedHandoffSalesKmf: sales.amount_kmf,
     parcelCostEvidenceCount: costs.parcel_count,
+    fullyCoveredParcelCount: completeParcels,
     documentedParcelVariableCostKmf: costs.amount_kmf,
     coverage: 'DOCUMENTED_EVENTS_ONLY',
   };
 }
+// The existing canonical applicability rules are applied per handed-off line.
+// At final handoff an import needs customs evidence, even if its event is missing.
+function completeCostParcelCount(lines) {
+  if(!Array.isArray(lines))return null;
+  const parcels=new Map();
+  for(const line of lines){
+    const imported=line.fulfillment_source!=='LOCAL_STOCK';
+    const expected=expectedTypes({status:'collected',payment_mode:line.payment_mode,
+      imported,customs_event:imported,hub_route:imported||line.hub_operation,relay_beneficiary:line.relay_beneficiary});
+    const present=new Set(line.types||[]);
+    const complete=line.full_parcel_line===true && !!line.payment_mode
+      && ['IMPORT','LOCAL_STOCK'].includes(line.fulfillment_source)
+      && (!imported||line.customs_known===true) && expected.every(type=>present.has(type));
+    parcels.set(line.parcel_id,(parcels.get(line.parcel_id)??true)&&complete);
+  }
+  return [...parcels.values()].filter(Boolean).length;
+}
 function projectGroupPeriodResult(recognition, structure, reviewedRisk) {
-  const sales = cents(recognition.documentedHandoffSalesKmf);
-  const transactionCosts = cents(recognition.documentedParcelVariableCostKmf);
+  // A known empty handoff cohort is zero; an absent/incomplete denominator is not.
+  const noHandoffs=recognition.candidateHandoffParcelCount===0&&recognition.handoffParcelCount===0;
+  const sales = noHandoffs ? 0n : cents(recognition.documentedHandoffSalesKmf);
+  const transactionCosts = noHandoffs ? 0n : cents(recognition.documentedParcelVariableCostKmf);
   const refunds = recognition.confirmedRefundCount === 0 ? 0n : cents(recognition.confirmedRefundKmf);
   const fixed = Number.isFinite(structure.recognizedKmf) ? cents(structure.recognizedKmf.toFixed(2)) : null;
   const risk = reviewedRisk.amountKmf == null ? null : cents(reviewedRisk.amountKmf);
   const reasons = [];
-  if (sales === null || recognition.pricedHandoffUnits !== recognition.attestedUnits) reasons.push('SALES_INCOMPLETE');
-  if (transactionCosts === null || recognition.parcelCostEvidenceCount !== recognition.handoffParcelCount) reasons.push('VARIABLE_COSTS_INCOMPLETE');
+  if (recognition.candidateHandoffParcelCount !== recognition.handoffParcelCount || sales === null || recognition.pricedHandoffUnits !== recognition.attestedUnits) reasons.push('SALES_INCOMPLETE');
+  if (transactionCosts === null || recognition.fullyCoveredParcelCount !== recognition.handoffParcelCount) reasons.push('VARIABLE_COSTS_INCOMPLETE');
   if (refunds === null) reasons.push('REFUNDS_INCOMPLETE');
   if (fixed === null) reasons.push('STRUCTURE_INCOMPLETE');
   if (risk === null) reasons.push('RISK_REVIEW_INCOMPLETE');
@@ -572,7 +610,7 @@ async function loadGroupPeriodApproval(client, periodStart, result) {
          SELECT $1::date::timestamp AT TIME ZONE 'UTC' AS lo,
                 ($1::date+interval '1 month') AT TIME ZONE 'UTC' AS hi
        ), handed_off AS (
-         SELECT p.id,p.order_id FROM parcels p JOIN orders o ON o.id=p.order_id CROSS JOIN bounds
+         SELECT p.id,p.order_id,p.collected_at,p.status FROM parcels p JOIN orders o ON o.id=p.order_id CROSS JOIN bounds
          WHERE p.collected_at>=lo AND p.collected_at<hi AND o.market_id IS NOT NULL
            AND o.simulation_scope IS NULL
        ), sold_items AS (
@@ -585,6 +623,7 @@ async function loadGroupPeriodApproval(client, periodStart, result) {
          JOIN international_shipment_hub_units h ON h.physical_unit_id=pl.box_unit_id
        ), facts AS (
          SELECT 'handoff' AS kind,to_jsonb(s) AS fact FROM scans s JOIN handed_off p ON p.id=s.parcel_id WHERE s.step='collected'
+         UNION ALL SELECT 'parcel-handoff',to_jsonb(p) FROM handed_off p
          UNION ALL SELECT 'order-price',jsonb_build_array(o.id,o.total_kmf,o.discount_kmf,o.wallet_applied_kmf,o.payment_status,o.market_id)
            FROM orders o WHERE EXISTS (SELECT 1 FROM handed_off p WHERE p.order_id=o.id)
          UNION ALL SELECT 'item-price',jsonb_build_array(i.id,i.order_id,i.price_kmf,i.quantity)
@@ -634,26 +673,42 @@ async function closeGroupPeriod(actor, {periodStart,evidenceHash,evidenceRef,att
   if (monthShift(input.periodStart,1)>new Date().toISOString().slice(0,10)) {
     throw error('economic_close_month_open',409,'Le mois est toujours en cours');
   }
-  const model=await readCostCenters(actor,input);
-  const result=model.profitability?.groupPeriodResult;
-  if (result?.evidenceHash!==evidenceHash) {
-    throw error('economic_close_evidence_changed',409,'Les preuves ont changé. Rechargez la période.');
-  }
-  const {rows}=await db.query(
-    `INSERT INTO economic_group_period_closures(period_start,evidence_hash,evidence_ref,actor_id)
-     VALUES ($1,$2,$3,$4) ON CONFLICT (period_start,evidence_hash) DO NOTHING RETURNING id`,
-    [input.periodStart,evidenceHash,evidenceRef.trim(),actor.id]);
-  return {outcome:rows.length?'closed':'replayed',periodStart:input.periodStart};
+  const client=await db.getClient();
+  try {
+    // The reviewed snapshot and the append-only attestation share one transaction.
+    // A fact committed later remains a new fact and reopens the period.
+    await client.query('BEGIN ISOLATION LEVEL SERIALIZABLE');
+    const model=await readCostCentersSnapshot(actor,input,client,true,true);
+    const result=model.profitability?.groupPeriodResult;
+    if (result?.evidenceHash!==evidenceHash) {
+      throw error('economic_close_evidence_changed',409,'Les preuves ont changé. Rechargez la période.');
+    }
+    const {rows}=await client.query(
+      `INSERT INTO economic_group_period_closures(period_start,evidence_hash,evidence_ref,actor_id)
+       VALUES ($1,$2,$3,$4) ON CONFLICT (period_start,evidence_hash) DO NOTHING RETURNING id`,
+      [input.periodStart,evidenceHash,evidenceRef.trim(),actor.id]);
+    await client.query('COMMIT');
+    return {outcome:rows.length?'closed':'replayed',periodStart:input.periodStart};
+  } catch(e) {
+    try{await client.query('ROLLBACK');}catch(_){}
+    if(e.code==='40001'||e.code==='40P01')throw error('economic_close_concurrent_change',409,'Les preuves ont changé ou une autre clôture est en cours. Rechargez la période.');
+    throw e;
+  } finally {client.release();}
 }
 async function readCostCenters(actor,raw){
   if(!actor?.id)throw error('AUTH_REQUIRED',401,'Authentification requise');
   const input=validate(raw);
-  // CANON-MARKET A1: admin has global READ, never implicit ACT.
   const globalRead=actor.role==='admin';
   const central=globalRead && await hasPricingGlobalAuthority(actor.id);
   const client=await db.getClient();
   try{
     await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+    const model=await readCostCentersSnapshot(actor,input,client,central,globalRead);
+    await client.query('COMMIT');
+    return model;
+  }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
+}
+async function readCostCentersSnapshot(actor,input,client,central,globalRead){
     const marketId=await resolveScope(client,actor,input.marketCode,globalRead);
     const costCapabilities=await costAuthority.project(client,actor,input.marketCode,marketId,central);
     const {rows:centers}=await client.query(
@@ -734,9 +789,7 @@ async function readCostCenters(actor,raw){
       }
     }
     const responsibleCandidates=costCapabilities.reference?await listResponsibleCandidates(client,marketId):[];
-    await client.query('COMMIT');
     return {scope:input.marketCode===null?'GROUP':'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,globalRead,central,costCapabilities,readOnly:!Object.values(costCapabilities).some(Boolean),
       centers:centerModels,families,resources,responsibleCandidates,posts:model,recordedBalance:recordedBalanceSummary(model),budgetSummary:budgetSummary(model),commitmentSummary:commitmentSummary(model),structureEvidence,activity,profitability,actualCoverage:'NOT_RECONCILED',available:null};
-  }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
 }
-module.exports={readCostCenters,closeGroupPeriod,budgetSummary,recordedPostBalance,recordedBalanceSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,loadShipmentActivity,shipmentPurchase,observedProfitability,periodSalesEvidence,projectGroupPeriodResult};
+module.exports={readCostCenters,closeGroupPeriod,budgetSummary,recordedPostBalance,recordedBalanceSummary,commitmentRemainingEur,commitmentSummary,structureEvidenceSummary,structureEurProjector,shipmentActivity,loadShipmentActivity,shipmentPurchase,observedProfitability,periodSalesEvidence,projectGroupPeriodResult,completeCostParcelCount};
