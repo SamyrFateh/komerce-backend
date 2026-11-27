@@ -40,7 +40,7 @@ const GAP_MESSAGES = Object.freeze({
   NO_OPERATING_LEAD: 'Aucun responsable opérationnel actif n’est désigné.',
   NO_CENTRAL_REFERENT: 'Aucun référent central n’est désigné.',
   MISSING_AMOUNT_LIMIT: 'Au moins une capability financière du nouveau marché n’a pas de plafond explicite.',
-  NO_PAYMENT_PROVIDER: 'Aucun fournisseur de paiement activé pour ce marché.',
+  NO_PAYMENT_PROVIDER: 'Aucun moyen de paiement admissible : activer le cash au relais ou configurer un fournisseur de paiement.',
   NO_CASH_POLICY: 'Aucune politique de contrôle de caisse n’est définie.',
   NO_RELAIS: 'Aucun relais actif n’est rattaché au marché.',
 });
@@ -67,7 +67,9 @@ function computeGaps(snapshot) {
       if (!snapshot.team.some(member => member.is_operating_lead)) add('NO_OPERATING_LEAD');
     }
   }
-  if (!snapshot.paymentProviders.some(provider => provider.is_enabled)) add('NO_PAYMENT_PROVIDER');
+  // A documented cash-only market does not require an electronic provider.
+  const cashReady = snapshot.cashPolicy?.cash_enabled === true;
+  if (!cashReady && !snapshot.paymentProviders.some(provider => provider.is_enabled)) add('NO_PAYMENT_PROVIDER');
   if (!snapshot.cashPolicy) add('NO_CASH_POLICY');
   if (!snapshot.relaisActive) add('NO_RELAIS');
   return gaps;

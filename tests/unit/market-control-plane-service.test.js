@@ -54,6 +54,18 @@ describe('computeGaps — rapport d’écarts du Control Plane', () => {
     expect(codes(s)).toEqual(['NO_PAYMENT_PROVIDER', 'NO_CASH_POLICY', 'NO_RELAIS']);
   });
 
+  test('cash seul explicitement activé : aucun PSP imposé', () => {
+    const s = healthy();
+    s.market.lifecycle_status = 'PROVISIONING';
+    s.market.is_active = false;
+    s.paymentProviders = [];
+    expect(codes(s)).toEqual(['MARKET_INACTIVE']);
+    expect(readinessFromGaps(computeGaps(s)).ready_for_activation).toBe(true);
+    s.cashPolicy.cash_enabled = false;
+    expect(codes(s)).toContain('NO_PAYMENT_PROVIDER');
+    expect(readinessFromGaps(computeGaps(s)).ready_for_activation).toBe(false);
+  });
+
   test('relais actif suffit : aucune attestation ni livraison historique obligatoire', () => {
     const s = healthy();
     s.deliveryProof = { proven: false, basis: null };

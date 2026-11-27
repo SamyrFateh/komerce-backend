@@ -170,3 +170,28 @@ describe('markets-management — montage', () => {
     expect(src).not.toMatch(/\/api\/(?!admin\/markets)/);
   });
 });
+
+describe('initialisation centrale #4370 — contrat nommé', () => {
+  const values = {
+    code:'ga', name:'Gabon', currency:'xaf', minor_unit:'0',
+    central_referent_user_id:'u1', last_name:'Díallo', first_name:'Jean François', phone:'+24161234567',
+    cash_enabled:'true', confirmation_mode:'SINGLE',
+    'limit_cash.custody.receive':'100', 'limit_execution.cash.confirm':'200',
+    'limit_settlement.receive':'300', 'limit_finance.act':'400',
+  };
+  test('adresse générée et cash seul, aucun relais obligatoire', () => {
+    expect(mgmt.professionalAddress(values.last_name,values.first_name)).toBe('diallo.jean-francois@komerce.co');
+    expect(mgmt.initialPayload(values)).toMatchObject({
+      code:'GA', currency:'XAF', lead:{last_name:'Díallo',first_name:'Jean François',phone:'+24161234567'},
+      payment_provider:null, cash_policy:{cash_enabled:true,confirmation_mode:'SINGLE'},initial_relais:null,
+    });
+    expect(mgmt.initialPayload(values).lead.email).toBeUndefined();
+  });
+  test('refuse les plafonds non renseignés et aucun moyen de paiement', () => {
+    expect(() => mgmt.initialPayload({...values,'limit_finance.act':''})).toThrow(/plafond/);
+    expect(() => mgmt.initialPayload({...values,cash_enabled:'false'})).toThrow(/paiement/);
+  });
+  test('refuse un relais partiel plutôt que fabriquer ses données', () => {
+    expect(() => mgmt.initialPayload({...values,relay_name:'Libreville'})).toThrow(/relais/);
+  });
+});
