@@ -219,11 +219,11 @@
   function collectedText(payload, base) {
     const collected = payload && payload.collected;
     if (!collected || !collected.available) {
-      return 'Encaissé net (journal financier) : non disponible pour cette période — jamais remplacé par le CA.';
+      return 'Flux monétaires clients documentés : non disponibles pour cette période — jamais remplacés par les ventes payées.';
     }
     const native = (collected.native_net || []).map(item => `${base.formatNumber(item.total, 0)} ${item.currency}`).join(' · ');
-    const eur = `${base.formatNumber(collected.eur_net, 2)} €${collected.eur_partial ? ' (EUR partiel : taux indisponible sur certains paiements)' : ''}`;
-    return `Encaissé net (paiements constatés − remboursements, date de paiement) : ${eur}${native ? ` · natif ${native}` : ''}. Cohorte différente du CA.`;
+    const eur = collected.eur_net == null ? 'EUR non disponible' : `${base.formatNumber(collected.eur_net, 2)} €${collected.eur_partial ? ' (EUR partiel : taux indisponible sur certains mouvements)' : ''}`;
+    return `Sous-total des flux monétaires clients documentés (paiements réglés − remboursements monétaires confirmés, dates sources) : ${eur}${native ? ` · devises du journal ${native}` : ''}. Couverture intégrale non certifiée ; distinct des ventes payées.`;
   }
 
   function viabilityItems(payload, base) {
