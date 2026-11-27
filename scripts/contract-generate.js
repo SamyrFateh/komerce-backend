@@ -1169,6 +1169,15 @@ const KNOWN_RESPONSES = {
   '/api/admin/costing/products/{productId}/sku-rail-selection': {
     post: { fields: ['outcome', 'event'], source: 'test' },
   },
+  '/api/admin/costing/local-stock/receipt-lots': {
+    get: { fields: ['receipts','sales'], source: 'route-read' }
+  },
+  '/api/admin/costing/local-stock/receipt-lots/close': {
+    post: { fields: ['receipt_id','sku_id','market_id','quantity','purchase_total_kmf','payment_proof_ref','closed_by','closed_at'], source: 'route-read' }
+  },
+  '/api/admin/costing/local-stock/receipt-lots/link': {
+    post: { fields: ['order_item_id','receipt_id','quantity','purchase_kmf','lot_proof_ref','linked_by','linked_at'], source: 'route-read' }
+  },
   '/api/admin/costing/products/margin-steering': {
     get: { fields: ['market_id','since_days','rules','products','truncated'], source: 'test' }
   },

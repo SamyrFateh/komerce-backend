@@ -7,7 +7,7 @@
  * @inputs        actor user, market code, product_id, relais_id, qty_received, proof_ref, Idempotency-Key
  * @outputs       local_stock_row, receipt_audit, exposure_row
  * @depends       services/local-stock-service.js, services/market-delegation-service.js, services/market-delegation-team-service.js
- * @db-read       products, relais, local_stock, market_delegation_audit, catalog_global_access_grants, markets
+ * @db-read       products, product_skus, relais, local_stock, market_delegation_audit, catalog_global_access_grants, markets
  * @db-write      none
  * @db-write-via:local-stock-service local_stock
  * @db-write-via:market-delegation-service market_delegation_audit

@@ -1150,3 +1150,19 @@ migration: 451
 section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
 role: Validation Direction append-only du mois groupe, avec empreinte des preuves, justificatif et acteur. Un changement de preuve rend la validation précédente obsolète.
 -->
+
+
+<!-- schema-pending
+object: local_stock_economic_lots
+kind: table
+migration: 453
+section: ### 4.8 Pricing et économie (tables live + objets visés)
+role: Clôture financière d'une réception W3 attestée par SKU et marché, quantité, coût d'achat réglé en KMF, justificatif et acteur. Non live avant déploiement.
+-->
+<!-- schema-pending
+object: local_stock_economic_lot_lines
+kind: table
+migration: 453
+section: ### 4.8 Pricing et économie (tables live + objets visés)
+role: Rattachement explicite de la vente locale au lot clôturé, quantité et coût ventilé au centime ; preuve et acteur. Non live avant déploiement.
+-->

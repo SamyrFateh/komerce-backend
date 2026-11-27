@@ -705,8 +705,9 @@
             '/api/admin/costing/products/margin-steering?market_code='+encodeURIComponent(context.requestedMarket)+'&since_days=90') : null,
           ...(context.requestedMarket && options.user?.role==='admin' ? {
             loadLocalLots:()=>workspace.jsonRequest(context.fetch,'/api/admin/costing/local-stock/receipt-lots?market_code='+encodeURIComponent(context.requestedMarket)),
-            writeLocalLot:(id,action,body)=>workspace.jsonRequest(context.fetch,'/api/admin/costing/local-stock/receipt-lots/'+encodeURIComponent(id)+'/'+action,
-              {method:'POST',body:{...body,market_code:context.requestedMarket}})
+            writeLocalLot:(id,action,body)=>action==='close'
+              ? workspace.jsonRequest(context.fetch,'/api/admin/costing/local-stock/receipt-lots/close',{method:'POST',body:{...body,receipt_id:id,market_code:context.requestedMarket}})
+              : workspace.jsonRequest(context.fetch,'/api/admin/costing/local-stock/receipt-lots/link',{method:'POST',body:{...body,receipt_id:id,market_code:context.requestedMarket}})
           }:{}),
           closePeriod:body=>mutate('closePeriod','/close-period',body),
           reviseBudget:(id,body)=>mutate('budget','/posts/'+encodeURIComponent(id)+'/budget-revisions',body),
