@@ -96,7 +96,7 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
       throw new Error('Unexpected ECO proof cluster');
     fx=await createMarketDelegationFixture(db);
     await q("INSERT INTO pricing_global_access_grants(user_id,reason) VALUES ($1,'ECO isolated CI') ON CONFLICT DO NOTHING",[fx.central.id]);
-    app=makeApp([{mount,modulePath:'../../routes/admin-pricing-workspace'}]);
+    app=makeApp([{mount,modulePath:'../../routes/admin-pricing-workspace'},{mount:'/api/admin/costing',modulePath:'../../routes/admin-costing'}]);
     a=await seed(fx.marketA.id,'A'); b=await seed(fx.marketB.id,'B'); g=await seed(null,'G');
     const input={postId:a.post,marketCode:fx.marketA.code,periodStart:month,expectedRevision:0,currency:'XAF',amountNative:'655957',reason:'Budget test',requestKey:tag+'B1'};
     await reviseBudget(fx.central,input);
@@ -536,6 +536,74 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     await recordStructureCostEvent({...event,amount_original:20,amount_kmf:20,evidence_ref:'Facture tardive'},fx.central.id);
     expect(await read()).toMatchObject({status:'REOPENED',resultKmf:'9296.66'});
     expect((await submit(fx.central,initial.evidenceHash)).status).toBe(409);
+  });
+
+  test('LOCAL_STOCK: three actual receipt lots, partial coverage, cent conservation and market isolation (HTTP/PG)',async()=>{
+    // Historical synthetic facts on the guarded disposable DB only.
+    // These inserts are NOT a proof of W3 reception or checkout UI.
+    const fixture=require('../../scripts/recette/fixtures/sku-landed-cost.test-values.json').local;
+    const values=fixture.per_lot;
+    const id=()=>crypto.randomUUID();
+    const [product,sku,relay,stock]=Array.from({length:4},id);
+    const market=fx.marketA;
+    await q("INSERT INTO products(id,name,price_kmf,stock,weight_kg,cost_kmf) VALUES($1,$2,7000,0,1,5000)",[product,tag+'-LOCAL']);
+    await q("INSERT INTO product_skus(id,product_id,sku,stock,is_active) VALUES($1,$2,$3,0,TRUE)",[sku,product,tag+'-LOCAL-SKU']);
+    await q("INSERT INTO relais(id,name,agent_name,phone,address,market_id) VALUES($1,$2,'CI','+2693000001','CI',$3)",[relay,tag+'-LOCAL',market.id]);
+    await q("INSERT INTO local_stock(id,product_id,market_id,location,qty_physical) VALUES($1,$2,$3,'KM_MAIN',0)",[stock,product,market.id]);
+    const receiptIds=[];
+    for (let n=0;n<3;n++) {
+      const receipt=id();receiptIds.push(receipt);
+      await q(`INSERT INTO market_delegation_audit(id,market_id,actor_user_id,action,payload_after,occurred_at,correlation_id)
+        VALUES($1,$2,$3,'LOCAL_STOCK_RECEIPT',$4::jsonb,now()-interval '2 days',$5)`,
+        [receipt,market.id,fx.central.id,JSON.stringify({product_id:product,sku_id:sku,relais_id:relay,qty_received:10,proof_ref:tag+'-BL-'+n}),tag+'-LOCAL-'+n]);
+    }
+    const items=[];
+    for(let n=0;n<3;n++){
+      const order=id(),item=id();items.push(item);
+      await q(`INSERT INTO orders(id,reference,user_id,relais_id,market_id,total_kmf,payment_mode,payment_status,status,created_at,collected_at)
+        VALUES($1,$2,$3,$4,$5,70000,'cash_relais','paid','collected',now()-interval '1 day',now())`,[order,tag+'-LOCAL-O'+n,fx.viewerA.id,relay,market.id]);
+      await q(`INSERT INTO order_items(id,order_id,product_id,quantity,price_kmf,sku_id,fulfillment_source,qty_ordered,qty_allocated,qty_packed,qty_shipped,qty_received,qty_collected)
+        VALUES($1,$2,$3,10,7000,$4,'LOCAL_STOCK',10,10,10,10,10,10)`,[item,order,product,sku]);
+      await q("INSERT INTO local_stock_allocations(local_stock_id,order_id,quantity,consumed_at) VALUES($1,$2,10,now())",[stock,order]);
+      const breakdown={landed_relay:{product_purchase:5000,relay:120,freight:0,customs:0},business:{payment:80},target_margin_pct:20};
+      await q(`INSERT INTO order_item_cost_imputations(order_id,order_item_id,product_id,quantity,sale_unit_price_kmf,sale_total_kmf,
+        estimated_landed_relay_cost_kmf,estimated_business_variable_cost_kmf,estimated_business_complete_cost_kmf,cost_breakdown)
+        VALUES($1,$2,$3,10,7000,70000,51200,52000,52000,$4::jsonb)`,[order,item,product,JSON.stringify(breakdown)]);
+      for(const [type,amount] of [['relay',values.relay_real_kmf],['payment',values.payment_real_kmf]]){
+        await q(`INSERT INTO order_item_real_cost_allocations(order_id,order_item_id,cost_type,amount_kmf,allocation_method,source,is_actual,confidence,provenance)
+          VALUES($1,$2,$3,$4,'manual','manual_entry',TRUE,'high',$5)`,[order,item,type,amount,tag+' isolated synthetic proof']);
+      }
+    }
+    const base='/api/admin/costing/local-stock/receipt-lots';
+    const submit=(actor,action,body)=>request(app).post(base+'/'+action).set('Authorization',actor.token).send({market_code:market.code,...body});
+    const close=(receipt,overrides={})=>({receipt_id:receipt,purchase_total_kmf:values.product_purchase_real_kmf,payment_proof_ref:tag+'-BANK-'+receipt,...overrides});
+    const link=(receipt,item,quantity)=>({receipt_id:receipt,order_item_id:item,quantity,lot_proof_ref:tag+'-SCAN-'+receipt+'-'+item});
+    const read=async(actor=fx.central,code=market.code)=>request(app).get('/api/admin/costing/products/margin-steering')
+      .query({market_code:code,product_id:product,since_days:90}).set('Authorization',actor.token);
+    const result=response=>response.body.products.find(p=>p.product_id===product).observed_landed_cost.find(c=>c.rail==='LOCAL_STOCK');
+    expect((await submit(fx.viewerA,'close',close(receiptIds[0]))).status).toBe(403);
+    expect((await submit(fx.central,'close',close(receiptIds[0],{market_code:fx.marketB.code}))).status).toBe(404);
+    for(const receipt of receiptIds)expect((await submit(fx.central,'close',close(receipt))).status).toBe(200);
+    expect((await submit(fx.central,'link',link(receiptIds[0],items[0],4))).status).toBe(200);
+    let response=await read();expect(response.status).toBe(200);
+    expect(result(response)).toMatchObject({observations:0,unit_cost_kmf:null,status:'INSUFFICIENT_OBSERVATIONS'});
+    expect((await submit(fx.central,'link',link(receiptIds[1],items[0],6))).status).toBe(200);
+    expect((await submit(fx.central,'link',link(receiptIds[1],items[0],6))).status).toBe(200);
+    expect((await submit(fx.central,'link',link(receiptIds[2],items[0],1))).status).toBe(409);
+    expect((await submit(fx.central,'link',link(receiptIds[0],items[1],6))).status).toBe(200);
+    expect((await submit(fx.central,'link',link(receiptIds[1],items[1],4))).status).toBe(200);
+    expect((await submit(fx.central,'link',link(receiptIds[2],items[2],10))).status).toBe(200);
+    response=await read();expect(response.status).toBe(200);
+    expect(result(response)).toMatchObject({rail:'LOCAL_STOCK',unit_cost_kmf:5200,observations:3,quantity:30,status:'DECISIONAL',display_currency:market.currency});
+    expect(result(response).observed_multiplier).toBeCloseTo(1.04,8);
+    expect(result(response).unit_cost_local).not.toBeNull();
+    const own=await read(fx.viewerA);expect(own.status).toBe(200);
+    expect(result(own)).toMatchObject({observations:3,unit_cost_kmf:5200});
+    expect((await read(fx.viewerA,fx.marketB.code)).status).toBe(403);
+    const {rows:[total]}=await q(`SELECT SUM(quantity)::int AS quantity,SUM(purchase_kmf)::text AS purchase
+      FROM local_stock_economic_lot_lines WHERE receipt_id=ANY($1::uuid[])`,[receiptIds]);
+    expect(total).toEqual({quantity:30,purchase:'150000.00'});
+    expect((await q('SELECT qty_physical FROM local_stock WHERE id=$1',[stock])).rows[0].qty_physical).toBe(0);
   });
 
 });
