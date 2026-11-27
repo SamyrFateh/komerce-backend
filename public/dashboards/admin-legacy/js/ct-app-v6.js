@@ -33,8 +33,6 @@ CT.sidebar = [
   { id: 'orders',          emoji: '📋', label: 'Commandes' },
   { id: 'finances',        emoji: '💰', label: 'Finances' },
   { id: 'invoices',        emoji: '🧾', label: 'Factures' },
-  { divider: true },
-  { id: 'seed',            emoji: '🧪', label: 'Seed / Reset' },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -65,56 +63,8 @@ CT._updateSidebar = function(activeId) {
 // SEED / RESET VIEW
 // ═══════════════════════════════════════════════════════════════════════
 
-CT.views.seed = async function() {
-  const main = document.getElementById('ct-main');
-  main.innerHTML = `
-    <div style="max-width:600px;margin:0 auto">
-      <h2 style="font-size:22px;font-weight:800;margin:0 0 20px">🧪 Seed / Reset données test</h2>
-      
-      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:16px;margin-bottom:20px">
-        <strong>⚠️ Attention</strong> — Ces actions modifient la base de données de production.
-      </div>
-      
-      <div style="display:flex;gap:12px;margin-bottom:20px">
-        <button id="btn-reset"
-          style="flex:1;padding:14px;border:2px solid #dc2626;border-radius:12px;background:#fee2e2;color:#dc2626;font-size:15px;font-weight:700;cursor:pointer">
-          🗑️ Reset (tout supprimer)
-        </button>
-        <button id="btn-seed"
-          style="flex:1;padding:14px;border:2px solid #10b981;border-radius:12px;background:#d1fae5;color:#059669;font-size:15px;font-weight:700;cursor:pointer">
-          🌱 Seed (injecter test)
-        </button>
-      </div>
-      
-      <div id="seed-status" style="margin-top:12px;font-size:14px"></div>
-    </div>
-  `;
-  document.getElementById('btn-reset').addEventListener('click', function() { CT.views._doReset(); });
-  document.getElementById('btn-seed').addEventListener('click', function() { CT.views._doSeed(); });
-};
-
-CT.views._doReset = async function() {
-  if (!confirm('⚠️ Supprimer TOUTES les données ?')) return;
-  const status = document.getElementById('seed-status');
-  status.innerHTML = '⏳ Reset en cours...';
-  try {
-    const res = await CT.api.post('/api/admin/reset', { mode: 'orders' });
-    status.innerHTML = `<div style="color:#059669">✅ Reset terminé${res.message ? ': ' + res.message : ''}</div>`;
-  } catch (err) {
-    status.innerHTML = `<div style="color:#dc2626">❌ Erreur: ${err.message}</div>`;
-  }
-};
-
-CT.views._doSeed = async function() {
-  const status = document.getElementById('seed-status');
-  status.innerHTML = '⏳ Injection des données de test...';
-  try {
-    const res = await CT.api.post('/api/admin/seed-test', { confirm: true });
-    status.innerHTML = `<div style="color:#059669">✅ Seed terminé${res.message ? ': ' + res.message : ''}</div>`;
-  } catch (err) {
-    status.innerHTML = `<div style="color:#dc2626">❌ Erreur: ${err.message}</div>`;
-  }
-};
+// Historical deep link redirects to the isolated recipe console, never mutates data.
+CT.views.seed = function() { window.location.assign('/admin/golden-e2e#stagingAdminTools'); };
 
 // ═══════════════════════════════════════════════════════════════════════
 // INIT — Build sidebar + initial navigation
