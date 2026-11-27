@@ -181,3 +181,28 @@ describe('L1 resolveExplicitMarket (contrat front)', () => {
     expect(r.marketCode).toBe(code);
   });
 });
+
+describe('V5.4 — projection de devise de contexte', () => {
+  const { withMarketCurrencyLabel } = require('../../public/dashboards/canonical/js/admin-context');
+  test('devise réelle dynamique, inconnue explicite, aucun droit supplémentaire', () => {
+    const context = validateAdminContext(scopedContext({
+      allowedMarkets:['CM','ZZ','CG'], marketCurrencies:{CM:'XAF',ZZ:'JPY'}
+    }));
+    expect(context.access.marketCurrencies).toEqual({CM:'XAF',ZZ:'JPY',CG:null});
+    expect(Object.isFrozen(context.access.marketCurrencies)).toBe(true);
+    expect(withMarketCurrencyLabel('CM',context,'CM')).toBe('CM · XAF');
+    expect(withMarketCurrencyLabel('ZZ',context,'ZZ')).toBe('ZZ · JPY');
+    expect(withMarketCurrencyLabel('CG',context,'CG')).toBe('CG · Devise non déterminée');
+    expect(withMarketCurrencyLabel('KM',context,'KM')).toBe('KM');
+    expect(() => resolveMarketView(context,'KM')).toThrow(/autorisés par le serveur/);
+  });
+  test('EUR réservé au périmètre groupe global et non au Hub logistique', () => {
+    const globalContext=validateAdminContext(scopedContext({mode:'global',defaultMarket:null,marketCurrencies:{CM:'XAF'}}));
+    const hubContext=validateAdminContext({...scopedContext({mode:'hub',marketCurrencies:{CM:'XAF'}}),actor:{id:'h',role:'agent_hub'}});
+    expect(withMarketCurrencyLabel('Global',globalContext,null)).toBe('Global · EUR');
+    expect(withMarketCurrencyLabel('Hub',hubContext,null)).toBe('Hub');
+  });
+  test.each([{KM:'KMF'},{CM:'xaf'},{CM:12},[]])('refuse la projection invalide %j', marketCurrencies => {
+    expect(() => validateAdminContext(scopedContext({marketCurrencies}))).toThrow(/AdminContext invalide/);
+  });
+});

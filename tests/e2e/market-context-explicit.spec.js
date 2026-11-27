@@ -14,8 +14,8 @@ const CANONICAL = path.join(__dirname, '..', '..', 'public', 'dashboards', 'cano
 const ORIGIN = 'http://komerce.test';
 const MARKET_API = /\/api\/(?:admin\/workspaces\/[a-z-]+\/market\/|market-delegation\/markets\/|admin\/dashboard\/[a-z-]+\/market\/)([A-Z]{2})/;
 
-const GLOBAL_CTX = { actor: { id: 'hq', role: 'admin' }, access: { mode: 'global', allowedMarkets: ['CG', 'CM', 'KM'], defaultMarket: null, capabilities: ['dashboard.global.read'] } };
-const MONO_CTX = { actor: { id: 'op', role: 'market_operator' }, access: { mode: 'market', allowedMarkets: ['CM'], defaultMarket: 'CM', capabilities: [], delegatedCapabilities: {CM:['dashboard.market.read','operations.read','pricing.read','finance.read','logistics.read','catalog.read']} } };
+const GLOBAL_CTX = { actor: { id: 'hq', role: 'admin' }, access: { mode: 'global', allowedMarkets: ['CG', 'CM', 'KM'], marketCurrencies: { CG: 'XAF', CM: 'XAF', KM: 'KMF' }, defaultMarket: null, capabilities: ['dashboard.global.read'] } };
+const MONO_CTX = { actor: { id: 'op', role: 'market_operator' }, access: { mode: 'market', allowedMarkets: ['CM'], marketCurrencies: { CM: 'XAF' }, defaultMarket: 'CM', capabilities: [], delegatedCapabilities: {CM:['dashboard.market.read','operations.read','pricing.read','finance.read','logistics.read','catalog.read']} } };
 
 // Charge utile minimale du Workspace Operations (même forme que hub-live-execution.spec.js) :
 // permet de prouver la synchronisation de l'URL après un choix sur les surfaces Hub.
@@ -82,7 +82,7 @@ test.describe('L1 — surfaces à shell marché (5)', () => {
         await expect(page.locator('[data-market-global-overview]')).toBeVisible();
         await expect(page.locator('[data-market-prompt]')).toHaveCount(0);
         await expect(page.locator('.kmc-admin-market-select option').first())
-          .toContainText('Global');
+          .toContainText('EUR');
       } else {
         await expect(page.locator('[data-market-prompt="prompt"]')).toBeVisible();
         await expect(page.locator('.kmc-admin-market-select option').first())
@@ -104,6 +104,7 @@ test.describe('L1 — surfaces à shell marché (5)', () => {
       const calls = await mount(page, GLOBAL_CTX);
       await go(page, target);
       await page.locator('.kmc-admin-market-select').selectOption('KM');
+      await expect(page.locator('.kmc-admin-market-select option:checked')).toContainText('KMF');
       await expect.poll(() => calls.length).toBeGreaterThan(0);
       expect(calls.every((c) => /\/KM(\/|$)/.test(c))).toBe(true);
       if (OPS_SURFACES.has(label)) {
@@ -134,6 +135,7 @@ test.describe('L1 — surfaces à shell marché (5)', () => {
       const fixed = page.locator('.kmc-admin-topbar .kmc-admin-market-fixed');
       await expect(fixed).toBeVisible();
       await expect(fixed).toHaveAttribute('data-fixed-market', 'CM');
+      await expect(fixed).toContainText('XAF');
       await expect(page.locator('.kmc-admin-market-select')).toHaveCount(0);
       await expect(page.locator('.kmc-market-context-select')).toHaveCount(0);
       await expect(page.locator('#canonical-admin-topbar')).toHaveCount(1);
@@ -203,6 +205,7 @@ test.describe('L1 — pages autonomes (Autonomie marché, Catalogue pays)', () =
       const fixed = page.locator('.kmc-admin-topbar .kmc-admin-market-fixed');
       await expect(fixed).toBeVisible();
       await expect(fixed).toHaveAttribute('data-fixed-market', 'CM');
+      await expect(fixed).toContainText('XAF');
       await expect(page.locator('.kmc-admin-market-select')).toHaveCount(0);
       await expect.poll(() => calls.length).toBeGreaterThan(0);
       expect(calls.every((c) => /\/CM(\/|$)/.test(c))).toBe(true);

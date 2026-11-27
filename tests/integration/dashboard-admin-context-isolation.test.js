@@ -103,6 +103,8 @@ if (!hasIntegrationEnv) {
 
     expect(context.access.mode).toBe('market');
     expect(context.access.allowedMarkets).toEqual(['CM']);
+    const { rows } = await db.query("SELECT currency FROM markets WHERE code = 'CM'");
+    expect(context.access.marketCurrencies).toEqual({ CM: rows[0].currency });
     expect(context.access.defaultMarket).toBe('CM');
     expect(context.access.capabilities).toEqual(['pilotage.read']);
     // B2 : un scope actif n'est plus fabricable sans membership. Le contexte
