@@ -38,6 +38,7 @@ test('active market issues only the reviewed statement and freezes currency equi
   await expect(issue(db, { ...dates, evidenceHash: review.evidence_hash, actorId: 'finance' }))
     .resolves.toMatchObject({ ...balance, status: 'ISSUED',balance:{hub_receivable_kmf:'40000.00',market_payable_kmf:'40000.00'} });
   expect(db.query.mock.calls[0][0]).toContain('FOR UPDATE');
+  expect(db.query.mock.calls[2][0]).toContain('amount_kmf::text AS amount_kmf');
   expect(JSON.parse(db.query.mock.calls[2][1][5])).toEqual(statement);
 });
 

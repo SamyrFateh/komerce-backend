@@ -233,7 +233,7 @@ function publicHubInvoice(invoice) {
 }
 async function readMarketHubInvoice(db,{marketId,from,to,statement}) {
   const {rows:[invoice]}=await db.query(
-    `SELECT id,period_from,period_to,amount_kmf,issued_at,paid_at,statement_snapshot,
+    `SELECT id,period_from,period_to,amount_kmf::text AS amount_kmf,issued_at,paid_at,statement_snapshot,
             (period_from=$2::date AND period_to=$3::date) AS exact_period
        FROM hub_internal_invoices
       WHERE market_id=$1 AND period_from<$3::date AND period_to>$2::date
