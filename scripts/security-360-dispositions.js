@@ -168,14 +168,6 @@ const DISPOSITIONS = Object.freeze({
     evidence: 'routes/orders/create.js; services/public-cart-quote-service.js; tests/unit/public-cart-quote-service.test.js; tests/unit/cart-quote-pdf.test.js',
     rationale: 'Devis de panier non transactionnel et anonyme. Exposition et prix locaux contrôlés par le serveur, 1 à 30 lignes, zéro commande, zéro écriture persistée, globalLimiter et cache no-store. Même route JSON (aperçu) ou PDF (partage), jamais un checkout.',
   },
-  'POST /api/pricing/calculate': {
-    kind: 'EXPECTED_PUBLIC', evidence: 'routes/pricing.js',
-    rationale: 'Calculateur de prix public ; pas de mutation d’autorité métier.',
-  },
-  'POST /api/pricing/couture': {
-    kind: 'EXPECTED_PUBLIC', evidence: 'routes/pricing.js',
-    rationale: 'Calculateur couture public ; pas de mutation d’autorité métier.',
-  },
 
   // ── Intégrations fournisseur / callbacks OAuth ────────────────────────────
   'GET /api/integrations/aliexpress/oauth/callback': {
