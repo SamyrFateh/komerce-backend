@@ -321,6 +321,7 @@ function _revenue(o, refunds) {
     // (le coût 'freight' correspondant est un coût N1) → revenu Komerce identifiable.
     delivery_counted: delivery > 0,
     net_kmf: kmf(gross - discounts - refundsDone),
+    net_kmf_exact: pct2(gross - discounts - refundsDone),
     flags,
   };
 }
@@ -339,6 +340,7 @@ function _classifyTypes({ est, realSplit, customsUnknown, customsExpected = true
       if (purchaseReal.complete && purchaseReal.real_kmf != null) {
         entry.state = 'real';
         entry.real_kmf = kmf(purchaseReal.real_kmf);
+        entry.real_kmf_exact = pct2(purchaseReal.real_kmf);
         entry.real_source = 'supplier_payment_settlements';
       } else if (purchaseInfo.confirmedLines > 0 && estimated > 0) {
         entry.state = 'confirmed_unvalued'; // prix confirmé, taux supporté absent
@@ -359,16 +361,19 @@ function _classifyTypes({ est, realSplit, customsUnknown, customsExpected = true
       } else {
         entry.state = 'real';
         entry.real_kmf = kmf(slot ? slot.real : 0);
+        entry.real_kmf_exact = pct2(slot ? slot.real : 0);
         entry.real_source = slot && slot.sources.size ? [...slot.sources].join(',') : 'customs_shipment:zero_confirmed';
       }
-    } else if (t === PAYMENT && !(slot && slot.real > 0) && purchaseReal.complete && purchaseReal.fees_kmf > 0) {
+    } else if (t === PAYMENT && !(slot && slot.sources.size > 0) && purchaseReal.complete && purchaseReal.fees_kmf > 0) {
       // Frais réels (net des remboursements de frais) : REMPLACENT l'estimé, jamais additionnés.
       entry.state = 'real';
       entry.real_kmf = kmf(purchaseReal.fees_kmf);
+      entry.real_kmf_exact = pct2(purchaseReal.fees_kmf);
       entry.real_source = 'supplier_payment_settlements:fees';
-    } else if (slot && slot.real > 0) {
+    } else if (slot && slot.sources.size > 0) {
       entry.state = 'real';
       entry.real_kmf = kmf(slot.real);
+      entry.real_kmf_exact = pct2(slot.real);
       entry.real_source = [...slot.sources].join(',');
     } else if (estimated > 0) {
       entry.state = 'estimated_only';
@@ -444,6 +449,13 @@ async function computeOrderRealMarginShadow(orderId, opts = {}) {
 
   const unknownTypes = noImputations ? ['all_imputations'] : unknown;
   const margin = _margin(revenue.net_kmf, by, completeness);
+  // Preserve the established whole-KMF read model, but expose a cent-exact
+  // reconciliation oracle for SKU costing (no sum of individually rounded KMF).
+  if (margin.basis === 'real_only') {
+    const costCents=Object.entries(by).filter(([type,e])=>type!==RISK && e.state==='real')
+      .reduce((sum,[,e])=>sum+Math.round((e.real_kmf_exact ?? e.real_kmf)*100),0);
+    margin.shadow_kmf_exact=(Math.round(revenue.net_kmf_exact*100)-costCents)/100;
+  }
 
   // Prévisionnel : même CA net, coûts estimés figés (hors provision risque, période).
   const estTotal = Object.entries(by).filter(([t]) => t !== RISK).reduce((s, [, e]) => s + (e.estimated_kmf || 0), 0);

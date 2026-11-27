@@ -98,7 +98,7 @@ function computeLineMargin(line) {
       } else {
         costs.customs = { state: 'real', amount_kmf: r.actual };
       }
-    } else if (LOGISTICS_REAL_TYPES.has(type) && r.actual > 0) {
+    } else if (type !== 'product_purchase' && (r.actual_count > 0 || (LOGISTICS_REAL_TYPES.has(type) && r.actual > 0))) {
       costs[type] = { state: 'real', amount_kmf: r.actual };
     } else if (estimated > 0) {
       costs[type] = { state: 'estimated', amount_kmf: estimated };
@@ -106,7 +106,8 @@ function computeLineMargin(line) {
     }
   }
   const estPayment = qty * (num((bd.business || {}).payment) || 0);
-  if (estPayment > 0) { costs.payment = { state: 'estimated', amount_kmf: estPayment }; usedEstimate = true; }
+  if (real.payment?.actual_count > 0) costs.payment = { state: 'real', amount_kmf: real.payment.actual };
+  else if (estPayment > 0) { costs.payment = { state: 'estimated', amount_kmf: estPayment }; usedEstimate = true; }
 
   if (incompleteReason) {
     return { status: 'incomplete', reason: incompleteReason, sale_kmf: sale, costs, cost_kmf: null, margin_kmf: null, margin_pct: null };
@@ -140,6 +141,8 @@ function computeLandedCostEvidence({ result, real = {}, imported, localPurchase 
       costs[type] = { state: 'real', amount_kmf: entry.actual };
     }
   }
+  const purchaseConflict = imported && result.costs.product_purchase?.state === 'real' && real.product_purchase?.actual_count > 0
+    && Math.round(result.costs.product_purchase.amount_kmf*100) !== Math.round(real.product_purchase.actual*100);
   const localConflict = !imported && localPurchase !== null && real.product_purchase?.actual_count > 0
     && Math.round(real.product_purchase.actual * 100) !== Math.round(localPurchase * 100);
   if (!imported && localPurchase !== null && Number.isFinite(localPurchase) && !localConflict) {
@@ -152,7 +155,8 @@ function computeLandedCostEvidence({ result, real = {}, imported, localPurchase 
   for (const type of missing) {
     if (!costs[type]) costs[type] = { state: 'missing', amount_kmf: null };
   }
-  const reason = result.reason || (localConflict ? 'local_purchase_evidence_conflict' : null) || (missing.length ? 'cost_missing:' + missing[0] : null);
+  const reason = result.reason || (localConflict ? 'local_purchase_evidence_conflict' : null)
+    || (purchaseConflict ? 'purchase_evidence_conflict' : null) || (missing.length ? 'cost_missing:' + missing[0] : null);
   const status = reason ? 'incomplete'
     : Object.values(costs).some(cost => cost.state === 'estimated') ? 'provisional' : 'final';
   return { status, reason, missing, costs };
@@ -197,7 +201,7 @@ function reconcileLocalOrder(lines, shadow, orderItemCount) {
       || lines.some(line=>line.fulfillment_source !== 'LOCAL_STOCK' || !line.local_lot || line.landed_cost_evidence?.status !== 'final'
         || !Number.isFinite(line.result.cost_kmf) || !Number.isFinite(line.result.sale_kmf))) return false;
   const saleCents=lines.reduce((sum,line)=>sum+Math.round(line.result.sale_kmf*100),0);
-  if (saleCents!==Math.round(shadow.revenue.net_kmf*100)) return false;
+  if (saleCents!==Math.round((shadow.revenue.net_kmf_exact ?? shadow.revenue.net_kmf)*100)) return false;
   for (const { result } of lines) {
     result.status='final';
     result.reconciled_after_sale_margin_kmf=result.margin_kmf;
@@ -302,24 +306,33 @@ function applyFinalOrderReal(lines, shadow, orderItemCount) {
     const entry = shadow.costs.by_type[type];
     if (!entry || entry.state !== 'real') continue;
     const weights = lines.map((line, id) => ({ id, weight: line.result.costs[type]?.amount_kmf ?? 0 }));
-    const total = num(entry.real_kmf);
-    if (total === null || (total !== 0 && !weights.some(({ weight }) => weight > 0))) return;
-    allocations.set(type, shareByWeight(total, weights));
+    const total = num(entry.real_kmf_exact ?? entry.real_kmf);
+    if (total === null) return;
+    if (type==='payment' && lines.some(line=>line.result.costs.payment?.state==='real')) {
+      // A line-level actual PSP allocation is already authoritative. Do not
+      // redistribute it using checkout estimates or count it a second time.
+      if (lines.some(line=>line.result.costs.payment?.state!=='real')) return;
+      const direct=lines.reduce((sum,line)=>sum+Math.round(line.result.costs.payment.amount_kmf*100),0);
+      if (direct!==Math.round(total*100)) return;
+      continue;
+    }
+    if (total !== 0 && !weights.some(({ weight }) => weight > 0)) return;
+    allocations.set(type, shareByWeight(Math.round(total*100), weights).map(part=>({...part,share:part.share/100})));
   }
 
   for (const [type, parts] of allocations) {
     parts.forEach((p) => {
       const res = lines[p.id].result;
-      if (res.costs[type]) res.costs[type] = { state: 'real', amount_kmf: p.share };
+      if (res.costs[type] || (p.share===0 && type==='payment')) res.costs[type] = { state: 'real', amount_kmf: p.share };
     });
   }
   for (const l of lines) {
     const res = l.result;
     if (Object.values(res.costs).every((c) => c.state !== 'estimated')) {
-      const cost = Object.values(res.costs).reduce((s, c) => s + (c.amount_kmf || 0), 0);
+      const cost = Object.values(res.costs).reduce((s, c) => s + Math.round((c.amount_kmf || 0)*100), 0);
       res.status = 'final';
-      res.cost_kmf = cost;
-      res.margin_kmf = res.sale_kmf - cost;
+      res.cost_kmf = cost/100;
+      res.margin_kmf = (Math.round(res.sale_kmf*100)-cost)/100;
       res.margin_pct = res.sale_kmf > 0 ? pct2((res.margin_kmf / res.sale_kmf) * 100) : null;
     }
   }
@@ -331,9 +344,10 @@ function applyFinalOrderReal(lines, shadow, orderItemCount) {
       || !Array.isArray(revenue?.flags)
       || revenue.flags.some((flag) => flag.startsWith('payment_status_') || flag.startsWith('refund_'))
       || lines.some(({ result }) => result.status !== 'final')) return;
-  const saleTotal = lines.reduce((sum, { result }) => sum + result.sale_kmf, 0);
-  const marginTotal = lines.reduce((sum, { result }) => sum + result.margin_kmf, 0);
-  if (saleTotal !== revenue.net_kmf || marginTotal !== shadow.margin.shadow_kmf) return;
+  const saleTotal = lines.reduce((sum, { result }) => sum + Math.round(result.sale_kmf*100), 0);
+  const marginTotal = lines.reduce((sum, { result }) => sum + Math.round(result.margin_kmf*100), 0);
+  if (saleTotal !== Math.round((revenue.net_kmf_exact ?? revenue.net_kmf)*100)
+      || marginTotal !== Math.round((shadow.margin.shadow_kmf_exact ?? shadow.margin.shadow_kmf)*100)) return;
 
   for (const { result } of lines) result.reconciled_after_sale_margin_kmf = result.margin_kmf;
 }
@@ -563,8 +577,8 @@ async function listProductMarginSteering({ marketId, productId = null, sinceDays
   if (itemIds.length) {
     const { rows: alloc } = await db.query(
       `SELECT a.order_item_id, a.cost_type, a.shipment_id, cs.reference, cs.shipment_date, cs.status,
-              COALESCE(SUM(a.amount_kmf) FILTER (WHERE ${justifiedRealSql('a')}), 0) AS actual,
-              COUNT(*) FILTER (WHERE ${justifiedRealSql('a')}) AS actual_count,
+              COALESCE(SUM(a.amount_kmf) FILTER (WHERE ${justifiedRealSql('a')} AND COALESCE(a.source,'') <> 'products.cost_kmf'), 0) AS actual,
+              COUNT(*) FILTER (WHERE ${justifiedRealSql('a')} AND COALESCE(a.source,'') <> 'products.cost_kmf') AS actual_count,
               COALESCE(SUM(a.amount_kmf) FILTER (WHERE NOT a.is_actual AND ${notLegacyUnjustifiedSql('a')}), 0) AS non_actual
          FROM order_item_real_cost_allocations a
          LEFT JOIN customs_shipments cs ON cs.id = a.shipment_id

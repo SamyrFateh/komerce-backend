@@ -93,6 +93,20 @@ describe('applyFinalOrderReal', () => {
     expect(rows[0].result.reconciled_after_sale_margin_kmf).toBe(expected);
   });
 
+  it('conserves a cent-exact settled purchase and actual payment in the nominal import case', () => {
+    const row={ result:computeLineMargin({
+      quantity:10,sale_total_kmf:90000,customs_expected:true,customs_known:true,
+      cost_breakdown:{landed_relay:{product_purchase:4800,freight:1800,port_transitary:120,relay:0},business:{payment:150}},
+      real:{customs:{actual:7000,actual_count:1},freight:{actual:18000,actual_count:1},
+        port_transitaire:{actual:1200,actual_count:1},relay:{actual:0,actual_count:1},payment:{actual:1800,actual_count:1}}
+    })};
+    applyFinalOrderReal([row],{status_order:'collected',completeness:'final',revenue:{net_kmf:90000,flags:[]},
+      margin:{basis:'real_only',shadow_kmf:12803,shadow_kmf_exact:12803.22},
+      costs:{by_type:{product_purchase:{state:'real',real_kmf:49197,real_kmf_exact:49196.78},
+        payment:{state:'real',real_kmf:1800,real_kmf_exact:1800}}}},1);
+    expect(row.result).toMatchObject({status:'final',cost_kmf:77196.78,margin_kmf:12803.22,reconciled_after_sale_margin_kmf:12803.22});
+  });
+
   it('achat réel de la commande ventilé au prorata, conservé, statut final', () => {
     const lines = [{ result: computeLineMargin(line()) }, { result: computeLineMargin(line({ cost_breakdown: { ...BD, landed_relay: { ...BD.landed_relay, product_purchase: 2000 } } })) }];
     applyFinalOrderReal(lines, { completeness: 'final', costs: { by_type: { product_purchase: { state: 'real', real_kmf: 6001 }, payment: { state: 'not_expected' } } } }, 2);

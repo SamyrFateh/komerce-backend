@@ -727,8 +727,8 @@ router.get('/local-stock/receipt-lots', authenticate, requireAdmin, async (req,r
     res.json(await localStockLots.list(db,marketId));
   } catch(e) { if(e.status) return res.status(e.status).json({code:e.code,error:e.message}); next(e); }
 });
-for (const action of ['close','link']) {
-  router.post('/local-stock/receipt-lots/:receiptId/'+action, authenticate, requireAdmin, async(req,res,next)=>{
+function localLotCommand(action) {
+  return async(req,res,next)=>{
     let client;
     try {
       client=await db.getClient();
@@ -746,8 +746,10 @@ for (const action of ['close','link']) {
       if(e.status) return res.status(e.status).json({code:e.code,error:e.message});
       next(e);
     } finally { if(client) client.release(); }
-  });
+  };
 }
+router.post('/local-stock/receipt-lots/:receiptId/close', authenticate, requireAdmin, localLotCommand('close'));
+router.post('/local-stock/receipt-lots/:receiptId/link', authenticate, requireAdmin, localLotCommand('link'));
 
 // Pilotage par la marge, par produit (lecture seule ; aucun prix modifié, aucun blocage).
 router.get('/products/margin-steering', authenticate, requireRole(['admin', 'market_operator']), async (req, res, next) => {
