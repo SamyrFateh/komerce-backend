@@ -2450,7 +2450,7 @@ Meta Graph monté : oui.
 | dashboard | customs | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | dashboard | decision-signals | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | dashboard | documents | static-code, data-write, data-read | 3 | **DECLARED_AND_OBSERVED** |
-| dashboard | economic-engine | static-code, data-read | 27 | **DECLARED_AND_OBSERVED** |
+| dashboard | economic-engine | static-code, data-read | 28 | **DECLARED_AND_OBSERVED** |
 | dashboard | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | incident-management | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | dashboard | infrastructure | static-code | 113 | **DECLARED_AND_OBSERVED** |

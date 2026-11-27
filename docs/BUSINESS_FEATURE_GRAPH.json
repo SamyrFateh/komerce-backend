@@ -37714,6 +37714,10 @@
                 "targetFile": "services/financial-journal-reporting.js"
               },
               {
+                "sourceFileId": "tests/unit/dashboard-finance-canonical.test.js",
+                "targetFile": "services/financial-journal-reporting.js"
+              },
+              {
                 "sourceFileId": "tests/unit/dashboard-pilotage-market.test.js",
                 "targetFile": "services/economic-cost-center-read-model.js"
               },
