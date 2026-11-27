@@ -195,7 +195,7 @@ async function run(e=process.env){
     if(mutationAllowed(route.request().url(),route.request().method(),ref,before.id,'market_operator'))return route.continue();
     record.blocked_mutations.push({method:route.request().method(),path:new URL(route.request().url()).pathname});return route.abort();
    });
-   await page.goto(BASE+'/dashboards/canonical/market-autonomy.html?market=KM',{waitUntil:'domcontentloaded'});
+   await page.goto(BASE+'/admin/workspaces/pricing?market=KM',{waitUntil:'domcontentloaded'});
    const row=page.locator('tr.kmc-autonomy-row').filter({hasText:ref});await row.waitFor({state:'visible',timeout:25000});
    await row.getByRole('button',{name:'Gérer le prix',exact:true}).click();
    await row.locator('input[type="number"]').fill(String(amount));

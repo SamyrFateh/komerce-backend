@@ -74,7 +74,8 @@ function handleError(error, res, next) {
 async function resolveMarketAuthority(req, requiredCapability) {
   const marketCode = req.params.marketCode;
   if (req.user.role === 'admin') {
-    const allowed = await hasDecisionSignalGlobalAuthority(req.user.id);
+    const allowed = requiredCapability === 'dashboard.market.read' && req.method === 'GET'
+      ? true : await hasDecisionSignalGlobalAuthority(req.user.id);
     if (!allowed) {
       throw routeError(403, 'Accès refusé — autorité globale Centre d’actions requise', 'decision_signal_global_access_denied');
     }
@@ -91,7 +92,7 @@ async function resolveMarketAuthority(req, requiredCapability) {
 // Le droit d'agir (decision_signal.manage) est distinct du droit de lire : un délégué en lecture voit les
 // signaux sans qu'on lui propose des boutons que le serveur refuserait.
 async function canManageSignals(req) {
-  if (req.user.role === 'admin') return true;
+  if (req.user.role === 'admin') return hasDecisionSignalGlobalAuthority(req.user.id);
   try {
     await resolveMarketAuthority(req, 'decision_signal.manage');
     return true;

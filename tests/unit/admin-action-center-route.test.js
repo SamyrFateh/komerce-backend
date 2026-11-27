@@ -31,7 +31,7 @@ jest.mock('../../middleware/auth', () => ({
 const mockHasGlobalAuthority = jest.fn(() => Promise.resolve(mockAllowGrant));
 jest.mock('../../middleware/require-decision-signal-global-authority', () => ({
   hasDecisionSignalGlobalAuthority: (...args) => mockHasGlobalAuthority(...args),
-  requireDecisionSignalGlobalAuthority: (req, res, next) => mockAllowGrant ? next() : res.status(403).json({ code: 'decision_signal_global_access_denied' }),
+  requireDecisionSignalGlobalAuthority: (req, res, next) => (mockAllowGrant || (req.method === 'GET' && req.user?.role === 'admin')) ? next() : res.status(403).json({ code: 'decision_signal_global_access_denied' }),
 }));
 
 const mockResolveAssignment = jest.fn();
@@ -98,11 +98,12 @@ beforeEach(() => {
   mockAudit.mockResolvedValue(undefined);
 });
 
-test('authenticated admin without explicit global grant is denied on global Action Center', async () => {
+test('authenticated admin without explicit global grant reads global Action Center', async () => {
   mockAllowGrant = false;
+  mockWorkspace.buildWorkspace.mockResolvedValue({ signals: [] });
   const res = await request(app()).get('/api/admin/action-center');
-  expect(res.status).toBe(403);
-  expect(mockWorkspace.buildWorkspace).not.toHaveBeenCalled();
+  expect(res.status).toBe(200);
+  expect(mockWorkspace.buildWorkspace).toHaveBeenCalled();
 });
 
 test('global GET returns only the global Canonical projection and disables caching', async () => {
@@ -233,12 +234,16 @@ test('audit failure fails the whole market lifecycle transaction boundary', asyn
   expect(mockWithTransaction).toHaveBeenCalledTimes(1);
 });
 
-test('admin market view still requires explicit global decision-signal authority', async () => {
+test('admin market view is readable without explicit grant but offers no manage action', async () => {
   mockAllowGrant = false;
+  mockResolveAssignment.mockResolvedValue(MARKET_AUTHZ);
+  mockWorkspace.buildMarketWorkspace.mockResolvedValue({ signals: [] });
   const res = await request(app()).get('/api/admin/action-center/market/CM');
-  expect(res.status).toBe(403);
-  expect(res.body.code).toBe('decision_signal_global_access_denied');
-  expect(mockResolveAssignment).not.toHaveBeenCalled();
+  expect(res.status).toBe(200);
+  expect(mockWorkspace.buildMarketWorkspace).toHaveBeenCalledWith(expect.any(Object), expect.any(Object), { canManage: false });
+  const write = await request(app()).post('/api/admin/action-center/market/CM/signals/KSG-000001/acknowledge').send({});
+  expect(write.status).toBe(403);
+  expect(write.body.code).toBe('decision_signal_global_access_denied');
 });
 
 test('market route accepts market code only as route locator, never body/query authority', async () => {

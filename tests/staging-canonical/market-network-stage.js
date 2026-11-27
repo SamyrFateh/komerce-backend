@@ -12,7 +12,7 @@
 /** @test-kind e2e @test-runner playwright @test-requires staging */
 
 const MARKET_CODE = /^[A-Z]{2}$/;
-const SCREEN_PATH = '/dashboards/canonical/market-autonomy.html';
+const SCREEN_PATH = '/admin/providers';
 
 function classifyNetworkStage({ workspaceVisible, sectionVisible, relaisStatus, providersStatus, accessRequired }) {
   if (!workspaceVisible) return { verdict: 'BLOCKED', reason: 'MARKET_AUTONOMY_WORKSPACE_UNAVAILABLE' };
@@ -36,7 +36,7 @@ async function inspectMarketNetwork(page, { origin, market, accessRequired = fal
   // les GET suivants ne servent que d'oracles indépendants, jamais à muter le métier.
   const target = `${SCREEN_PATH}?market=${encodeURIComponent(market)}`;
   const entry = await page.goto(origin + target, { waitUntil: 'domcontentloaded', timeout: 20000 });
-  const workspace = page.locator('#market-autonomy-root.kmc-workspace');
+  const workspace = page.locator('[data-market-domain-module="network"]');
   await workspace.waitFor({ state: 'attached', timeout }).catch(() => null);
   const workspaceVisible = await workspace.isVisible().catch(() => false);
   const section = page.locator('[data-market-network]');

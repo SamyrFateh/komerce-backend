@@ -53,3 +53,11 @@ describe('market-delegation team routes', () => {
     expect(legacyMiddleware).not.toMatch(/market_operating_assignments/);
   });
 });
+
+test('canonical admin lens only opts into central READ for team.read',()=>{
+  const source=require('fs').readFileSync(require('path').join(__dirname,'../../routes/market-delegation-team.js'),'utf8');
+  const firstGet=source.indexOf('router.get(\'/markets/:marketCode/');
+  const firstWrite=source.indexOf('router.post(',firstGet);
+  expect(source.slice(firstGet,firstWrite<0?undefined:firstWrite)).toContain('resolveCanonicalMarketRead(resolveAuthorization, client, {');
+  expect(source.slice(firstGet,firstWrite<0?undefined:firstWrite)).toContain("primaryCapability: 'team.read'");
+});

@@ -24,7 +24,6 @@ const { authenticate, requireAdmin, requireRole } = require('../middleware/auth'
 const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
 const { requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
 const {
-  hasDashboardGlobalAuthority,
   requireDashboardGlobalAuthority,
 } = require('../middleware/require-dashboard-global-authority');
 const clientIndex = require('../services/client-index');
@@ -80,15 +79,11 @@ async function resolveRequestedMarket(req, res, next) {
 const requireClientReadCapability = requireMarketDelegatedCapability('client.read', { audit: false });
 
 function requireClientIndexMarketRead(req, res, next) {
-  return hasDashboardGlobalAuthority(req.user && req.user.id)
-    .then(globalAllowed => {
-      if (globalAllowed) {
-        req.dashboardGlobalAuthority = true;
-        return next();
-      }
-      return requireClientReadCapability(req, res, next);
-    })
-    .catch(next);
+  if (req.user?.role === 'admin') {
+    req.dashboardGlobalAuthority = true;
+    return next();
+  }
+  return requireClientReadCapability(req, res, next);
 }
 
 async function marketHandler(req, res, next) {

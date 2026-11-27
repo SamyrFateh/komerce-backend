@@ -73,6 +73,7 @@ router.get('/markets/:marketCode/settlements', authenticate, async (req, res, ne
     const result = await withTransaction(client => settlement.listSettlements(client, {
       marketCode: req.params.marketCode,
       actorUserId: req.user.id,
+      ...(req.user.role === 'admin' ? { actorRole: req.user.role } : {}),
     }));
     res.json({
       market: {

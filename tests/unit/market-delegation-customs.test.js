@@ -72,3 +72,9 @@ describe('route', () => {
     expect(routeSource).not.toMatch(/req\.(body|query)\.(market_id|marketId)/);
   });
 });
+
+
+test('A1: route transmet seulement le rôle admin authentifié et jamais un rôle client', () => {
+  expect(routeSource).toContain("req.user.role === 'admin' ? { actorRole: req.user.role }");
+  expect(routeSource).not.toMatch(/req\.(query|body)\.actorRole/);
+});

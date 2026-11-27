@@ -33,11 +33,27 @@ const log = require('../utils/logger').child({ module: 'market-delegation-market
 // route ne prétend pas exposer une "configuration" plus riche qu'elle ne
 // l'est réellement.
 const CAPABILITY = 'market_config.read';
+const delegatedRead = requireMarketDelegatedCapability(CAPABILITY, { audit: false });
+async function attachConfigRead(req, res, next) {
+  if (req.user?.role !== 'admin') return delegatedRead(req,res,next);
+  try {
+    const {resolveAuthorization}=require('../services/market-delegation-service');
+    const {resolveCanonicalMarketRead}=require('../services/market-delegation-read-authority');
+    const authz=await resolveCanonicalMarketRead(resolveAuthorization,db,{
+      userId:req.user.id, actorRole:req.user.role, marketCode:req.params.marketCode, primaryCapability:CAPABILITY,
+    });
+    req.marketDelegatedCapability=authz;
+    return next();
+  } catch(error) {
+    if(error.status&&error.code) return res.status(error.status).json({error:error.message,code:error.code});
+    return next(error);
+  }
+}
 
 router.get(
   '/markets/:marketCode/config',
   authenticate,
-  requireMarketDelegatedCapability(CAPABILITY, { audit: false }),
+  attachConfigRead,
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');

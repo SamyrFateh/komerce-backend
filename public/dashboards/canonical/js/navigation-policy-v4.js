@@ -73,7 +73,7 @@
       spaces: Object.freeze([
         Object.freeze({ id: 'import-runtime', label: 'Sourcing live', href: '/admin/import-runtime', roles: Object.freeze(['admin', 'sourcing']) }),
         Object.freeze({ id: 'hub-live', label: 'Hub · Tous les marchés', href: '/admin/hub', roles: Object.freeze(['admin', 'market_operator', 'finance', 'sourcing', 'agent_hub', 'agent_relais', 'support']) }),
-        Object.freeze({ id: 'relais-live', label: 'Relais live', href: '/admin/relais-live', roles: Object.freeze(['admin', 'agent_relais']) }),
+        Object.freeze({ id: 'relais-live', label: 'Relais live', href: '/admin/relais-live', roles: Object.freeze(['admin', 'agent_relais', 'market_operator']) }),
       ]),
     }),
     Object.freeze({
@@ -277,9 +277,8 @@
   }
 
   // Fiches 360 : le serveur les réserve à admin et market_operator ; le lien est masqué pour les autres rôles.
-  const ENTITY_360_ROLES = Object.freeze(['admin', 'market_operator']);
-  function canOpenEntity360(user) {
-    return Boolean(user && ENTITY_360_ROLES.includes(user.role));
+  function canOpenEntity360(user, adminContext = global.KOMERCE_CANONICAL_ADMIN_CONTEXT, capability = 'operations.read') {
+    return user?.role === 'admin' || (user?.role === 'market_operator' && hasCapability(adminContext, capability));
   }
 
   // Capability d'un lien inter-espaces : autorité globale (le serveur re-valide) ou capability déléguée sur le marché.
@@ -389,7 +388,7 @@
   function hrefFor(item, user) {
     const role = roleOf(user);
     if (item.id === 'markets' && role === 'market_operator') {
-      return '/dashboards/canonical/market-autonomy.html';
+      return '/dashboards/canonical/unsold.html';
     }
     return item.href;
   }
@@ -420,8 +419,19 @@
     'agent_hub', 'agent_relais', 'agent_transitaire',
   ]);
 
-  function canAccessSurface(user, surface) {
+  function canAccessSurface(user, surface, adminContext = global.KOMERCE_CANONICAL_ADMIN_CONTEXT, market = undefined) {
     const role = roleOf(user);
+    if (role === 'market_operator' && surface !== 'documentation') {
+      if (!adminContext?.access) return false;
+      if (surface === 'order-360') return hasCapability(adminContext, 'operations.read', market);
+      if (surface === 'client-360') return hasCapability(adminContext, 'client.read', market);
+      if (surface === 'product-360') return hasCapability(adminContext, 'catalog.read', market);
+      return SIDEBAR_GROUPS.flatMap(group => group.items).some(item => {
+        if (!(item.roles || []).includes(role) || !(item.surfaces || []).includes(surface)) return false;
+        const caps = item.capabilitiesAny || (item.capability ? [item.capability] : []);
+        return caps.length > 0 && caps.some(cap => hasCapability(adminContext, cap, market));
+      });
+    }
     if (surface === 'action-center' && FIELD_ACTION_CENTER_ROLES.includes(role)) return true;
     if (surface === 'documentation') return DOCUMENTATION_ROLES.includes(role);
     const domain = visibleDomainsFor(user).find(row => row.id === activePrimarySurface(surface));
@@ -972,7 +982,7 @@
         // Une seule entrée Sourcing : le cockpit LIVE est la porte principale ; les vues détaillées restent accessibles par leurs liens contextuels.
         Object.freeze({ id: 'live-import-runtime', label: 'Sourcing', href: '/admin/import-runtime', roles: ['admin', 'sourcing'], surfaces: ['import-runtime', 'sourcing-workspace', 'supplier-360'] }),
         Object.freeze({ id: 'live-hub', label: 'Hub · Tous les marchés', href: '/admin/hub', roles: ['admin', 'market_operator', 'finance', 'sourcing', 'agent_hub', 'agent_relais', 'support'], capability: 'operations.read', surfaces: ['hub-workstation', 'hub-live'] }),
-        Object.freeze({ id: 'live-relais', label: 'Relais live', href: '/admin/relais-live', roles: ['admin', 'agent_relais'], surfaces: ['relais-live'] }),
+        Object.freeze({ id: 'live-relais', label: 'Relais live', href: '/admin/relais-live', roles: ['admin', 'agent_relais', 'market_operator'], capability: 'operations.read', surfaces: ['relais-live'] }),
       ]),
     }),
     Object.freeze({
@@ -980,7 +990,6 @@
       label: 'Marchés',
       items: Object.freeze([
         Object.freeze({ id: 'markets-home', label: 'Responsables pays', href: '/dashboards/canonical/access.html', roles: ['admin'], surfaces: ['market-access'] }),
-        Object.freeze({ id: 'market-autonomy', label: 'Autonomie marché', href: '/dashboards/canonical/market-autonomy.html', roles: ['market_operator'], surfaces: ['market-autonomy'] }),
          Object.freeze({ id: 'unsold', label: 'Invendus', href: '/dashboards/canonical/unsold.html', roles: ['admin', 'market_operator'], capability: 'operations.read', requiresResolvedContext: true, surfaces: ['unsold'] }),
       ]),
     }),
@@ -991,7 +1000,7 @@
         Object.freeze({ id: 'admin-users', label: 'Utilisateurs', href: '/admin/users', roles: ['admin', 'market_operator'], capability: 'team.read', surfaces: ['users-admin'] }),
         Object.freeze({ id: 'admin-guided-recipe', label: 'Recette guidée', href: '/admin/golden-e2e?guide=hub#extendedRecipe', roles: ['admin'], surfaces: ['golden-e2e'] }),
         Object.freeze({ id: 'admin-providers', label: 'Relais & prestataires', href: '/admin/providers', roles: ['admin', 'market_operator'], capabilitiesAny: ['network.read', 'provider.manage'], surfaces: ['providers-admin'] }),
-        Object.freeze({ id: 'settings', label: 'Paramètres', href: '/admin/settings', roles: ['admin', 'market_operator'], capabilitiesAny: ['market_config.read', 'cash_control.policy.manage'], surfaces: ['settings'] }),
+        Object.freeze({ id: 'settings', label: 'Paramètres', href: '/admin/settings', roles: ['admin', 'market_operator'], capabilitiesAny: ['market_config.read', 'finance.read'], surfaces: ['settings'] }),
       ]),
     }),
     Object.freeze({
@@ -1023,7 +1032,6 @@
     ]),
     markets: Object.freeze([
       Object.freeze({ id: 'market-access', label: 'Accès pays', href: '/dashboards/canonical/access.html', roles: ['admin'] }),
-      Object.freeze({ id: 'market-autonomy', label: 'Autonomie marché', href: '/dashboards/canonical/market-autonomy.html', roles: ['market_operator'] }),
        Object.freeze({ id: 'unsold', label: 'Invendus', href: '/dashboards/canonical/unsold.html', roles: ['admin', 'market_operator'], capability: 'operations.read', requiresResolvedContext: true }),
     ]),
   });
@@ -1088,6 +1096,7 @@
     if (item.id === 'action-center' && FIELD_ACTION_CENTER_ROLES.includes(role)) return true;
     if (item.id === 'workspace-shipping' && ['agent_hub', 'agent_transitaire'].includes(role)) return true;
     if (role === 'finance' && item.id === 'workspace-accounting') return true;
+    if (role === 'agent_relais' && item.id === 'live-relais') return true;
     if (item.id === 'live-hub' && ['agent_hub', 'agent_relais', 'finance', 'sourcing', 'support'].includes(role)) return true;
     return tabCapabilityGranted(item, adminContext);
   }
@@ -1218,6 +1227,8 @@
 
   function localTabsFor(domainId, user, adminContext) {
     const role = roleOf(user);
+    // Live country tabs must use the same read authorization as the sidebar.
+    if (domainId === 'live' && role === 'market_operator' && !hasCapability(adminContext, 'operations.read')) return [];
     // One business entry: Sourcing Live. Sources, exceptions and runs are
     // contextual sections of the same cockpit, not four parallel tabs.
     if (domainId === 'live' && ['/admin/import-runtime', '/admin/workspaces/sourcing']
@@ -1278,7 +1289,6 @@
       return 'commerce';
     }
     if (domainId === 'markets') {
-      if (surface === 'market-catalog') return 'catalog-country';
       if (surface === 'unsold') return 'unsold';
       return surface === 'market-autonomy' ? 'market-autonomy' : 'market-access';
     }

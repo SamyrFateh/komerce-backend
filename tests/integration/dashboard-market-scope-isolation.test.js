@@ -25,7 +25,7 @@ if (!hasIntegrationEnv) {
 
   jest.mock('../../middleware/auth', () => ({
     authenticate: (req, res, next) => {
-      req.user = { id: mockUserId, role: 'admin' };
+      req.user = { id: mockUserId, role: 'market_operator' };
       next();
     },
     requireAdmin: (req, res, next) => {
@@ -81,7 +81,7 @@ if (!hasIntegrationEnv) {
     const unique = `${Date.now()}.${Math.random().toString(36).slice(2, 8)}`;
     const { rows } = await db.query(
       `INSERT INTO users (email, full_name, phone, role, password_hash)
-       VALUES ($1, 'ITest Dashboard Market Scope', $2, 'admin', $3)
+       VALUES ($1, 'ITest Dashboard Market Scope', $2, 'market_operator', $3)
        RETURNING id`,
       [`${PFX}${unique}@test.local`, `+2694${Math.floor(1000000 + Math.random() * 8999999)}`, CI_PLACEHOLDER_HASH]
     );

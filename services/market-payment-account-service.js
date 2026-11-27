@@ -221,9 +221,11 @@ async function listPaymentAccounts(executor, { marketCode }) {
   return { market_code: market.code, accounts: rows };
 }
 
-async function listMarketPaymentAccounts(executor, { marketCode, actorUserId }) {
+async function listMarketPaymentAccounts(executor, { marketCode, actorUserId, actorRole = null }) {
   const db = requireExecutor(executor);
-  const authz = await resolveAuthorization(db, { userId: actorUserId, marketCode, requiredCapability: 'finance.read' });
+  const authz = await require('./market-delegation-read-authority').resolveCanonicalMarketRead(resolveAuthorization, db, {
+    userId: actorUserId, actorRole, marketCode, primaryCapability: 'finance.read',
+  });
   const { rows } = await db.query(
     `SELECT ${MARKET_COLUMNS} FROM market_payment_accounts a WHERE a.market_id = $1::uuid ORDER BY a.created_at DESC`, [authz.market_id]
   );

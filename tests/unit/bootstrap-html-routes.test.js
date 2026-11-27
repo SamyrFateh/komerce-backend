@@ -602,3 +602,24 @@ describe('bootstrap/html-routes', () => {
     });
   });
 });
+
+test('CANON-MARKET : ancienne URL catalogue redirigée vers le workspace commun, sans repli global', () => {
+  const {mountCanonicalMarketCompatibilityRoutes}=require('../../bootstrap/html-routes');
+  const app=fakeApp();
+  mountCanonicalMarketCompatibilityRoutes(app);
+  const route=app._routes['/dashboards/canonical/market-catalog.html'];
+  for (const [query, expected] of [['','lens=market'],['?market=CG&price_search=abc','market=CG&price_search=abc&lens=market'],['?market=ZZ&lens=global','market=ZZ&lens=market']]) {
+    const res=fakeRes();
+    route({originalUrl:'/dashboards/canonical/market-catalog.html'+query},res);
+    expect(res.redirect).toHaveBeenCalledWith(302,'/admin/workspaces/catalog?'+expected);
+    expect(res.setHeader).toHaveBeenCalledWith('Cache-Control','private, no-store');
+  }
+});
+
+test('ancienne autonomie : redirection sans perte du code marché vers le résolveur canonique',()=>{
+  const {mountCanonicalMarketCompatibilityRoutes}=require('../../bootstrap/html-routes');
+  const app=fakeApp();mountCanonicalMarketCompatibilityRoutes(app);
+  const res=fakeRes();app._routes['/dashboards/canonical/market-autonomy.html']({originalUrl:'/dashboards/canonical/market-autonomy.html?market=ZZ'},res);
+  expect(res.redirect).toHaveBeenCalledWith(302,'/admin/workspaces/pricing?market=ZZ&legacy_market_autonomy=1');
+  expect(res.setHeader).toHaveBeenCalledWith('Cache-Control','private, no-store');
+});

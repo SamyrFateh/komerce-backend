@@ -214,10 +214,12 @@
   async function contextForSurface(app, surface, user, targetUrl) {
     // Le catalogue global garde son contexte historique ; sa lentille marché
     // exige un contexte serveur, comme les autres workspaces scopés.
+    if (user?.role === 'market_operator') return app.requireAdminContext();
     if (surface === 'catalog-workspace' && app.isMarketCatalogLens?.(user, targetUrl?.search)) {
       return app.requireAdminContext();
     }
-    if (surface === 'settings' && user?.role === 'market_operator') return app.requireAdminContext();
+    if (surface === 'settings' && app.isMarketAdministrationLens?.(user, null, targetUrl?.search)) return app.requireAdminContext();
+    if (surface === 'action-center' && user?.role === 'market_operator') return app.requireAdminContext();
     if (!requiresAdminContext(surface)) return null;
     if (global.KOMERCE_CANONICAL_ADMIN_CONTEXT) return global.KOMERCE_CANONICAL_ADMIN_CONTEXT;
     return app.requireAdminContext();
@@ -297,7 +299,7 @@
 
     const user = global.KOMERCE_CANONICAL_AUTH_USER || global.KOMERCE_AUTH_USER || null;
     const surface = app.surfaceForPath(targetUrl.pathname);
-    if (!authorized(nav, user, surface)) return false;
+    if (user?.role !== 'market_operator' && !authorized(nav, user, surface)) return false;
 
     const oldRoot = rootNode(doc);
     if (!oldRoot) return false;
@@ -310,6 +312,7 @@
     try {
       const adminContext = await contextForSurface(app, surface, user, targetUrl);
       if (seq !== navigationSeq) return false;
+      if (user?.role === 'market_operator' && nav?.canAccessSurface && !nav.canAccessSurface(user,surface,adminContext,targetUrl.searchParams.get('market'))) return false;
 
       if (options.history !== 'none') global.history.pushState({}, '', targetUrl.href);
       else if (global.location.href !== targetUrl.href) global.history.replaceState({}, '', targetUrl.href);

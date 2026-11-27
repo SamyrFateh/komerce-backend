@@ -71,3 +71,15 @@ describe('market-delegation settlement orchestration', () => {
     expect(source).toMatch(/requiredCapability: 'settlement\.receive'/);
   });
 });
+
+
+test('A1 admin : READ sans membership, borné à assignment, aucun ACT synthétique', async () => {
+  const db=executor();
+  db.query.mockResolvedValueOnce({rows:[{market_id:ids.market,market_code:'CM',assignment_id:ids.assignment}]}).mockResolvedValueOnce({rows:[]});
+  const result=await service.listSettlements(db,{marketCode:'CM',actorUserId:ids.user,actorRole:'admin'});
+  expect(result.authz.capabilities).toEqual(['finance.read']);
+  expect(result.authz.membership_id).toBeNull();
+  expect(db.query).toHaveBeenCalledTimes(2);
+  expect(db.query.mock.calls[1][1]).toEqual([ids.market,ids.assignment]);
+  expect(result.settlements).toEqual([]);
+});

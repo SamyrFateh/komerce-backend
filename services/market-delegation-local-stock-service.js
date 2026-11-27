@@ -45,16 +45,11 @@ async function authorize(db, { actorUserId, actorRole, marketCode }) {
 }
 
 // W3 writers retain authorize() exactly as before. Only the read model may
-// be consulted by a central admin with the existing catalogue-global grant,
+// be consulted by any authenticated central admin (A1),
 // for one explicitly selected active market. Never grant a W3 writer here.
 async function authorizeStockRead(db, actor) {
   if (actor.actorRole !== 'admin') return authorize(db, actor);
   if (!actor.actorUserId) throw err('AUTH_REQUIRED', 'Authentification requise.', 401);
-  const { rows: grants } = await db.query(
-    'SELECT 1 FROM catalog_global_access_grants WHERE user_id = $1 AND revoked_at IS NULL LIMIT 1',
-    [actor.actorUserId]
-  );
-  if (!grants.length) throw err('catalog_global_access_denied', 'Autorité catalogue globale requise.', 403);
   const code = String(actor.marketCode || '').trim().toUpperCase();
   if (!/^[A-Z]{2}$/.test(code)) throw err('MARKET_REQUIRED', 'Marché explicite requis.', 400);
   const { rows: markets } = await db.query(

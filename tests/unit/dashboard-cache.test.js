@@ -160,6 +160,7 @@ describe("cacheMiddleware", () => {
     return {
       query: {},
       headers: {},
+      dashboardGlobalAuthority: true,
       ...overrides,
     };
   }
@@ -280,4 +281,28 @@ describe("cacheMiddleware", () => {
     await mw(req, res, next);
     expect(cache.stats().size).toBe(0);
   });
+});
+
+test('CANON-MARKET : un scope local ou inconnu ne lit jamais le cache global', async () => {
+  const cache=loadCache();
+  const mw=cache.cacheMiddleware('unified');
+  const request = (overrides={}) => ({query:{},headers:{},...overrides});
+  const response = () => ({statusCode:200,locals:{},json:jest.fn()});
+  const globalRes=response();
+  await mw(request({dashboardGlobalAuthority:true}),globalRes,()=>globalRes.json({scope:'global',orders:99}));
+  expect(cache.stats().size).toBe(1);
+  for (const scope of [request(), request({dashboardGlobalAuthority:true,authorizedMarkets:new Set(['CM'])}),request({marketDelegatedCapability:{market_id:'CG'}})]) {
+    const res=response();
+    const next=jest.fn(()=>res.json({scope:'local',orders:1}));
+    await mw(scope,res,next);
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(res.json).toHaveBeenCalledWith({scope:'local',orders:1});
+    expect(res.locals._cacheBypass).toBe(true);
+    expect(cache.stats().size).toBe(1);
+  }
+  const again=response();
+  const next=jest.fn();
+  await mw(request({dashboardGlobalAuthority:true}),again,next);
+  expect(next).not.toHaveBeenCalled();
+  expect(again.json).toHaveBeenCalledWith(expect.objectContaining({scope:'global',orders:99}));
 });

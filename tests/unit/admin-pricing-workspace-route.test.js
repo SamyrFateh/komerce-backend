@@ -16,7 +16,7 @@ jest.mock('../../middleware/auth', () => ({
 
 jest.mock('../../middleware/require-pricing-global-authority', () => ({
   requirePricingGlobalAuthority: (req, res, next) => {
-    if (!mockPricingAllowed) return res.status(403).json({ code: 'pricing_global_access_denied' });
+    if (!mockPricingAllowed && !(req.method === 'GET' && req.user?.role === 'admin')) return res.status(403).json({ code: 'pricing_global_access_denied' });
     req.pricingGlobalAuthority = true;
     next();
   },
@@ -70,12 +70,15 @@ test('C1 : product_ref de la requête est transmis au service pour garder le bro
   expect(mockCalls.buildWorkspace).toHaveBeenCalledWith({ focusProductRef: 'KPR-DRAFT' });
 });
 
-test('rôle admin seul ne suffit pas sans grant pricing', async () => {
+test('A1 : admin lit sans grant pricing, mais ne peut pas appliquer une stratégie', async () => {
   mockPricingAllowed = false;
   const res = await request(app()).get('/api/admin/workspaces/pricing');
-  expect(res.status).toBe(403);
-  expect(res.body.code).toBe('pricing_global_access_denied');
-  expect(mockCalls.buildWorkspace).not.toHaveBeenCalled();
+  expect(res.status).toBe(200);
+  expect(mockCalls.buildWorkspace).toHaveBeenCalled();
+  const write = await request(app()).post('/api/admin/workspaces/pricing/strategy/apply').send({});
+  expect(write.status).toBe(403);
+  expect(write.body.code).toBe('pricing_global_access_denied');
+  expect(mockCalls.applyStrategy).not.toHaveBeenCalled();
 });
 
 test.each([

@@ -135,6 +135,24 @@ describeE2E('Market Control Plane H — provisioning -> première commande',({db
     expect(res.body.after).toMatchObject({lifecycle_status:'ACTIVE',is_active:true});
   });
 
+  it('2b — le marché provisionné obtient les écrans canoniques sans branche pays',async()=>{
+    const {resolveDashboardAdminContext}=require('../../services/dashboard-admin-context');
+    const fs=require('fs'), vm=require('vm'), path=require('path');
+    const actor={id:leadId,role:'market_operator'};
+    const context=await resolveDashboardAdminContext(actor);
+    expect(context.access.mode).toBe('market');
+    expect(context.access.allowedMarkets).toEqual([marketCode]);
+    expect(context.access.delegatedCapabilities[marketCode]).toEqual(expect.arrayContaining(['network.read','operations.read','pricing.read']));
+    const sandbox={URL,URLSearchParams,console};
+    vm.runInNewContext(fs.readFileSync(path.resolve(__dirname,'../../public/dashboards/canonical/js/navigation-policy-v4.js'),'utf8'),sandbox);
+    const nav=sandbox.KomerceCanonicalNavigation;
+    const items=nav.sidebarGroupsFor(actor,context).flatMap(group=>group.items);
+    expect(items.map(item=>item.href)).toEqual(expect.arrayContaining(['/admin/providers','/admin/relais-live','/admin/workspaces/pricing']));
+    expect(items.some(item=>item.id==='market-autonomy')).toBe(false);
+    expect(nav.canAccessSurface(actor,'order-360',context,marketCode)).toBe(true);
+    expect(nav.canAccessSurface(actor,'order-360',context,'KM')).toBe(false);
+  });
+
   it('3 — la première commande réelle est créée sur le nouveau marché',async()=>{
     await db.query(
       'INSERT INTO products (id,name,price_kmf,stock) VALUES ($1,$2,25000,50)',

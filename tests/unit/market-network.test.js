@@ -33,3 +33,5 @@ describe('market-network (Réseau local) — île et rattachement agent', () => 
     expect(ui).toContain("summary.id = 'market-providers'");
   });
 });
+
+require('../helpers/canon-market-domain-modules').proveDeniedModule('market-network','KomerceMarketNetwork');

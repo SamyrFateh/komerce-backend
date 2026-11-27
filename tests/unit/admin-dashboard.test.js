@@ -110,12 +110,8 @@ describe('admin-dashboard — accès', () => {
   });
 });
 
-describe('admin-dashboard — autorité globale explicite (dashboard_global_access_grants)', () => {
-  // requireDashboardGlobalAuthority interroge dashboard_global_access_grants ;
-  // on distingue cette requête du reste (mock générique par défaut) pour
-  // prouver qu'un role='admin' sans grant actif ne reçoit PAS les agrégats
-  // globaux legacy — cf. docs/contract/DASHBOARD_MARKET_SCOPE_2C.md ("un
-  // admin avec un scope marché mais sans grant global reçoit 403").
+describe('admin-dashboard — A1 lecture globale admin, mutation sous grant', () => {
+  // A1 : la lecture admin est globale ; le POST cache/clear garde le grant explicite.
   function mockGrant(hasGrant) {
     mockQuery.mockImplementation((sql) => {
       if (typeof sql === 'string' && sql.includes('dashboard_global_access_grants')) {
@@ -125,12 +121,11 @@ describe('admin-dashboard — autorité globale explicite (dashboard_global_acce
     });
   }
 
-  it('admin sans grant global → 403 sur les 4 agrégats + cache/clear', async () => {
+  it('admin sans grant global → 200 en lecture, 403 sur cache/clear', async () => {
     mockGrant(false);
     for (const path of ['/control-tower', '/costing', '/logistics', '/unified']) {
       const res = await request(app).get('/api/admin/dashboard' + path);
-      expect(res.status).toBe(403);
-      expect(res.body.code).toBe('dashboard_global_access_denied');
+      expect(res.status).toBe(200);
     }
     const clearRes = await request(app).post('/api/admin/dashboard/cache/clear').send({ prefix: 'unified' });
     expect(clearRes.status).toBe(403);

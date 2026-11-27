@@ -77,6 +77,9 @@ function requireWorkspaceMarketAccess(req, res, next) {
     req.workspaceCentralTransit = true;
     return next();
   }
+  // A1 applies to reads only; the existing write gate below is unchanged.
+  if (req.method === 'GET' && req.user?.role === 'admin') { req.workspaceGlobalAuthority = true; return next(); }
+  if (req.method === 'GET' && req.user?.role === 'market_operator') return requireMarketOperatorLogisticsRead(req, res, next);
   return hasDashboardGlobalAuthority(req.user && req.user.id)
     .then(globalAllowed => {
       if (globalAllowed) {

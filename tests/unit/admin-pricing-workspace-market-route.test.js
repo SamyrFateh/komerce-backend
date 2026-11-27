@@ -515,8 +515,10 @@ test('Admin sans autorité pricing globale peut prévisualiser un prix Catalogue
   const preview = await request(app()).get('/api/admin/workspaces/pricing/market/CM/products/KPR-1/local-price/activation-preview');
   expect(preview.status).toBe(200);
   expect(mockActivation.previewLocalPriceActivation).toHaveBeenCalled();
-  // La gestion économique globale ne devient pas accessible.
-  expect((await request(app()).get('/api/admin/workspaces/pricing/market/CM')).status).toBe(403);
+  // A1: lecture globale, sans élargir les actions économiques.
+  const read = await request(app()).get('/api/admin/workspaces/pricing/market/CM');
+  expect(read.status).toBe(200);
+  expect(read.body.access).toEqual(expect.objectContaining({ read_only: true, can_manage_costs: false }));
 });
 
 test('Un rôle non-Admin ne bénéficie jamais des droits du Catalogue pays sans membership', async () => {

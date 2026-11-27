@@ -42,7 +42,7 @@ jest.mock('../../services/market-delegation-service', () => ({
 jest.mock('../../middleware/require-dashboard-global-authority', () => ({
   hasDashboardGlobalAuthority: jest.fn(async () => mockGlobalAllowed),
   requireDashboardGlobalAuthority: (req, res, next) => {
-    if (!mockGlobalAllowed) {
+    if (!mockGlobalAllowed && !(req.method === 'GET' && req.user?.role === 'admin')) {
       return res.status(403).json({
         error: 'global denied',
         code: 'dashboard_global_access_denied',
@@ -278,7 +278,8 @@ describe('GET /api/admin/dashboard/unified/market/:marketCode', () => {
     expect(res.body.code).toBe('market_not_found');
   });
 
-  test('un admin sans grant market ni global reçoit 403', async () => {
+  test('un responsable sans grant market ni global reçoit 403', async () => {
+    mockCurrentUser = { id: 'operator-1', role: 'market_operator' };
     mockGrantedMarketCodes = new Set();
     mockGlobalAllowed = false;
     const res = await request(makeApp()).get('/api/admin/dashboard/unified/market/CG');
@@ -288,6 +289,7 @@ describe('GET /api/admin/dashboard/unified/market/:marketCode', () => {
   });
 
   test('un grant CM autorise l’agrégat CM même sans autorité globale (dashboard.market.read exact)', async () => {
+    mockCurrentUser = { id: 'operator-1', role: 'market_operator' };
     mockGlobalAllowed = false;
     mockGrantedMarketCodes = new Set(['CM']);
     const res = await request(makeApp())
@@ -311,9 +313,9 @@ describe('GET /api/admin/dashboard/unified/market/:marketCode', () => {
     });
   });
 
-  test('un grant global explicite autorise le drill d’un marché actif sans grant capability, et court-circuite avant resolveAuthorization', async () => {
+  test('admin sans grant explicite lit un marché actif sans grant capability, et court-circuite avant resolveAuthorization', async () => {
     mockGrantedMarketCodes = new Set();
-    mockGlobalAllowed = true;
+    mockGlobalAllowed = false;
     const res = await request(makeApp()).get('/api/admin/dashboard/unified/market/CG');
 
     expect(res.status).toBe(200);
@@ -358,22 +360,24 @@ describe('GET /api/admin/dashboard/reference/resolve', () => {
 });
 
 describe('verrou des agrégats globaux montés après le routeur market', () => {
-  test('role=admin ne suffit pas : /unified global est 403 sans grant explicite', async () => {
+  test('market_operator ne peut lire /unified global', async () => {
+    mockCurrentUser = { id: 'operator-1', role: 'market_operator' };
     mockGlobalAllowed = false;
     const res = await request(makeApp()).get('/api/admin/dashboard/unified');
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('dashboard_global_access_denied');
+    expect(res.body.error).toBe('forbidden');
   });
 
   test('le verrou couvre aussi les sous-agrégats globaux', async () => {
+    mockCurrentUser = { id: 'operator-1', role: 'market_operator' };
     mockGlobalAllowed = false;
     const res = await request(makeApp()).get('/api/admin/dashboard/control-tower');
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('dashboard_global_access_denied');
+    expect(res.body.error).toBe('forbidden');
   });
 
-  test('un grant global explicite laisse atteindre le routeur historique', async () => {
-    mockGlobalAllowed = true;
+  test('admin sans grant laisse atteindre le routeur historique', async () => {
+    mockGlobalAllowed = false;
     const res = await request(makeApp()).get('/api/admin/dashboard/unified');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ mode: 'global' });
@@ -433,9 +437,10 @@ describe('GET /api/admin/dashboard/orders/rct1 — strict authorization', () => 
     expect(res.body.orders[0].reference).toBe('RCT1-E1');
   });
 
-  test('admin sans grant global et market_operator sont refusés', async () => {
+  test('admin sans grant lit RCT1, market_operator reste refusé', async () => {
     mockGlobalAllowed = false;
-    expect((await request(makeApp()).get('/api/admin/dashboard/orders/rct1')).status).toBe(403);
+    expect((await request(makeApp()).get('/api/admin/dashboard/orders/rct1')).status).toBe(200);
+    mockBuildRct1Orders.mockClear();
     mockCurrentUser = { id: 'operator-1', role: 'market_operator' };
     expect((await request(makeApp()).get('/api/admin/dashboard/orders/rct1')).status).toBe(403);
     expect(mockBuildRct1Orders).not.toHaveBeenCalled();

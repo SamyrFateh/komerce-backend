@@ -68,6 +68,7 @@ router.get('/markets/:marketCode/cash-control-policy', authenticate, async (req,
   try {
     const result = await readMarketCashPolicy(db, {
       userId: req.user.id,
+      ...(req.user.role === 'admin' ? { actorRole: req.user.role } : {}),
       marketCode: req.params.marketCode,
     });
     res.json({

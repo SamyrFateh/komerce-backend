@@ -39,3 +39,10 @@ describe('route Market : comptes de paiement (lecture seule)', () => {
     expect(next).toHaveBeenCalledWith(failure);
   });
 });
+
+
+test('A1 admin authentifié transmet actorRole, pas un rôle fourni par le client', async () => {
+  listMarketPaymentAccounts.mockResolvedValue({accounts:[],read_only:true});
+  await handler()({params:{marketCode:'CM'},user:{id:'admin1',role:'admin'},query:{actorRole:'market_operator'}},res(),jest.fn());
+  expect(listMarketPaymentAccounts).toHaveBeenCalledWith(expect.anything(),{marketCode:'CM',actorUserId:'admin1',actorRole:'admin'});
+});

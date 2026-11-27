@@ -38,6 +38,8 @@ async function hasDashboardGlobalAuthority(userId) {
 function requireDashboardGlobalAuthority(req, res, next) {
   if (!req.user) return res.status(401).json({ error: 'Non authentifié' });
 
+  // A1 applies to authenticated read requests only. Mutation guards still require their existing grants.
+  if (req.method === 'GET' && req.user.role === 'admin') { req.dashboardGlobalAuthority = true; return next(); }
   if (req.dashboardGlobalAuthority === true) return next();
 
   return hasDashboardGlobalAuthority(req.user.id)

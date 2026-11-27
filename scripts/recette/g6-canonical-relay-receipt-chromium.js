@@ -96,10 +96,10 @@ async function attachDedicatedRelayByUI(browser,agentId,orderRelay){
  };
  try{
   await runtime();
-  await humanGoto(admin.page,'/dashboards/canonical/market-autonomy.html?market='+MK.code+'',{waitUntil:'domcontentloaded'});
+  await humanGoto(admin.page,'/admin/providers?market='+MK.code+'',{waitUntil:'domcontentloaded'});
   const panel=admin.page.locator('[data-market-network]');
   try{await panel.waitFor({state:'visible',timeout:15000})}catch(error){
-   const ui=await admin.page.locator('#market-autonomy-root').evaluate(e=>({
+   const ui=await admin.page.locator('#canonical-admin-root').evaluate(e=>({
     class_name:e.className,heading:e.querySelector('h1')?.textContent?.slice(0,90)||null,
     body:e.textContent?.trim().slice(0,180)||null
    })).catch(()=>({class_name:'ROOT_MISSING'}));

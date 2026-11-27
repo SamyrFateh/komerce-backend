@@ -10,6 +10,16 @@ Total output lines: 292
 > **Seul tableau de coordination actif** pour ChatGPT/GPT, Sonnet et Opus. Il remplace les journaux de tâches historiques ; il ne remplace ni le code, ni les données live, ni `AGENTS.md`, ni les cartes Feature First, ni les checks GitHub.
 > La PR et ses checks font foi pour l'état du code. Un nom d'agent n'est pas une preuve d'exécution.
 
+## CANON-MARKET — back-office unique et périmètre serveur (GPT, 26/11/2026)
+
+**Responsable :** GPT. **Statut :** cinq lots empilés, WIP NON CERTIFIÉ, aucune fusion. Ticket [#5272](https://github.com/SamyrFateh/komerce-backend/issues/5272), revue Opus globale unique. Lots 1–4 : #5304, #5305, #5306, #5307 ; lot 5 sur `feat/canon-market-lot5`.
+
+**Avancement :** inventaire conservatoire ; navigation commune ; lectures Invendus/PO/stock bornées ; Kanban V8 marché sans writers ; catalogue, modules équipe/réseau/finance/offres/litiges, prix locaux, relevé de coûts et paramètres remontés dans routes canoniques ; G6 stock/prix redirigés vers les écrans communs. Lot 5 : redirection catalogue historique vers lentille canonique, cache historique accessible seulement après autorité globale prouvée et jamais en présence d'un scope local, matrice de recette mono-marché adaptée sans suppression des négatifs. Le SSE historique reste admin/agent_hub seulement : signal global opaque, aucune donnée métier ; ne pas l'ouvrir aux marchés sans preuve d'isolation temporelle.
+
+**Suite lot 5 :** résolveur lecture centrale avec autorité globale du domaine, contrôles 360 et accès directs par capability, Relais commun sans gestes physiques pour le responsable marché, polling scoped sans SSE central, contexte délégation granulaire sans scope historique, redirection Autonomie vers domaines communs. Recettes G6 et matrice mono alignées ; test du marché dynamique ajouté au scénario de provisioning existant.
+
+**Restant / bloqueurs :** CI cumulative sur #5310 (base temporairement main après intégration du Hub), revue Opus globale unique puis certification Chromium/HTTP/PG. Aucun verdict vert présumé sur le nouveau SHA ; les preuves locales sont limitées à la syntaxe des modifications ciblées (checkout DNS GitHub indisponible). Vérifier exhaustivité READ/ACT, parité réelle des écrans et non-régression des autres rôles. Staging ECO #5280 non touché ; pas de GO.
+
 ## Orders/Logistics — référence unique marché–relais–destinataire temporaire–commande (GPT, 23/11/2026)
 
 **Responsable :** GPT. **Statut : code sur branche `feat/staging-order-wave-reference`, NON MERGÉ, NON CERTIFIÉ, NON ACTIVÉ ; préflight et impact non exécutés (pas de checkout exécutable dans cette session).** Issue de coordination [#5168](https://github.com/SamyrFateh/komerce-backend/issues/5168).
