@@ -704,7 +704,7 @@
           loadObservedCost: context.requestedMarket ? () => workspace.jsonRequest(context.fetch,
             '/api/admin/costing/products/margin-steering?market_code='+encodeURIComponent(context.requestedMarket)+'&since_days=90') : null,
           ...(context.requestedMarket && options.user?.role==='admin' ? {
-            loadLocalLots:()=>workspace.jsonRequest(context.fetch,'/api/admin/costing/local-stock/receipt-lots?market_code='+encodeURIComponent(context.requestedMarket)),
+            loadLocalLots:()=>workspace.jsonRequest(context.fetch,'/api/admin/costing/local-stock/receipt-lots?market_code='+encodeURIComponent(context.requestedMarket),{method:'GET'}),
             writeLocalLot:(id,action,body)=>action==='close'
               ? workspace.jsonRequest(context.fetch,'/api/admin/costing/local-stock/receipt-lots/close',{method:'POST',body:{...body,receipt_id:id,market_code:context.requestedMarket}})
               : workspace.jsonRequest(context.fetch,'/api/admin/costing/local-stock/receipt-lots/link',{method:'POST',body:{...body,receipt_id:id,market_code:context.requestedMarket}})

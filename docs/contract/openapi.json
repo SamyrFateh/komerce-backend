@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 121,
-    "total_routes": 827,
+    "total_routes": 830,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -17684,6 +17684,149 @@
                       "x-observed": true
                     },
                     "truncated": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/costing/local-stock/receipt-lots": {
+      "get": {
+        "summary": "GET /api/admin/costing/local-stock/receipt-lots",
+        "x-route-file": "routes/admin-costing.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "receipts": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "sales": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/costing/local-stock/receipt-lots/close": {
+      "post": {
+        "summary": "POST /api/admin/costing/local-stock/receipt-lots/close",
+        "x-route-file": "routes/admin-costing.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "receipt_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "sku_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "market_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "quantity": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "purchase_total_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "payment_proof_ref": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "closed_by": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "closed_at": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/costing/local-stock/receipt-lots/link": {
+      "post": {
+        "summary": "POST /api/admin/costing/local-stock/receipt-lots/link",
+        "x-route-file": "routes/admin-costing.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "order_item_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "receipt_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "quantity": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "purchase_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "lot_proof_ref": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "linked_by": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "linked_at": {
                       "type": "string",
                       "x-observed": true
                     }
