@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        dashboard_period, server_resolved_market
  * @outputs       canonical_finance_projection
- * @depends       db, dashboard-metrics, dashboard-metrics/_helpers, supplier-payment-review, financial-journal-reporting
+ * @depends       db, dashboard-metrics, dashboard-metrics/_helpers, supplier-payment-review, financial-journal-reporting, economic-cost-center-read-model
  * @used-by       routes/admin-dashboard-market.js
  * @db-read       orders, refunds, order_items, order_item_cost_imputations, order_item_real_cost_allocations, relais, markets, parcel_items, parcels, customs_shipments, customs_shipment_parcels, financial_movements
  * @db-write      none
@@ -629,6 +629,30 @@ async function loadCustomerCashSubtotal(window,market){
   }catch(_){return Object.freeze({available:false,reason:'journal_unavailable'});}
 }
 
+// Same monthly ECO authority as Pilotage and Pricing. Never derive from order costing.
+async function loadEconomicPeriodResult(actor, market, window, now) {
+  const periodStart = now.toISOString().slice(0, 7) + '-01';
+  const base = { key: 'economic_period_result', value: null, unit: market ? market.currency : 'EUR',
+    label: 'Résultat économique ' + (market ? 'marché' : 'groupe'),
+    drill_to: '/admin/workspaces/pricing' };
+  const quality = { metric_id: 'eco.period_result', period_start: periodStart, completeness: 'provisional' };
+  const unavailable = status => ({ ...base, data_quality: { ...quality, status } });
+  if (window.filters?.simulation_scope) return unavailable('SIMULATION_EXCLUDED');
+  if (!actor?.id) return unavailable('UNAVAILABLE');
+  try {
+    const authority = require('./economic-cost-center-read-model');
+    const result = market
+      ? await authority.readMarketPeriodDecision(actor, market.code, periodStart)
+      : await authority.readGroupPeriodDecision(actor, periodStart);
+    const value = market ? result.display.result : result.resultEur;
+    return { ...base, value, data_quality: { ...quality, status: result.status, reasons: result.reasons,
+      fx_status: market ? result.display.fxStatus : result.fxStatus,
+      completeness: !market && result.status === 'CLOSED' && value != null ? 'complete' : 'provisional' } };
+  } catch (err) {
+    return unavailable(market && err.status !== 403 ? 'MARKET_RESULT_NOT_RECONCILED' : 'UNAVAILABLE');
+  }
+}
+
 async function buildFinance(query = {}, options = {}) {
   const market = options.market || null;
   const window = buildPeriod(query, market && market.id, options.now || new Date(), market);
@@ -655,6 +679,7 @@ async function buildFinance(query = {}, options = {}) {
     marginScope,
     journal,
     customerCash,
+    economicPeriodResult,
   ] = await Promise.all([
     metrics.getCAEncaisse(window.filters),
     metrics.getCoutEstime(window.filters),
@@ -677,6 +702,7 @@ async function buildFinance(query = {}, options = {}) {
     getMarginScope(window.filters),
     loadJournalProjection(window, market),
     loadCustomerCashSubtotal(window, market),
+    loadEconomicPeriodResult(options.actor, market, window, new Date(options.now || Date.now())),
   ]);
 
   return Object.freeze({
@@ -715,6 +741,7 @@ async function buildFinance(query = {}, options = {}) {
     margin_scope: marginScope,
     journal,
     customer_cash:customerCash,
+    economic_period_result: Object.freeze(economicPeriodResult),
     relay_profitability: Object.freeze(relayProfitability),
     payment_mix: Object.freeze(paymentMix),
     refunds: Object.freeze({
@@ -754,7 +781,8 @@ async function buildFinance(query = {}, options = {}) {
         }),
       }),
       relay_real_margin_basis: 'actual_cost_orders_only',
-      economic_global_engine_consumed: false,
+      economic_global_engine_consumed: !market && economicPeriodResult.value != null,
+      order_margin_basis: 'historical_order_creation_cohort_diagnostic_not_eco_period_result',
       supplier_payment_review_basis: supplierPaymentReview ? supplierPaymentReview.basis : null,
       source_tables: Object.freeze([
         'orders',
@@ -791,5 +819,6 @@ module.exports = {
   buildFollowUp,
   getMarginScope,
   loadCustomerCashSubtotal,
+  loadEconomicPeriodResult,
   buildFinance,
 };
