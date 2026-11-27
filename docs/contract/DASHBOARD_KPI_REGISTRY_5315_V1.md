@@ -35,18 +35,42 @@ Statuts : PRESENT = source statique identifiée ; PARTIAL = projection existante
 | eco.hub_internal_balance | Facture figée, créance Hub = dette marché, zéro après règlement attesté ; écart tardif non facturé séparé | hub-internal-invoice-service / market-delegation-cost-statement-service (#5321 candidat) | Finance/Comptabilité ; PARTIAL, ne pas doubler charge source |
 | commerce.local_active_price | Prix commercial natif autorisé, marché/variante résolus serveur, LOCAL_ACTIVE seul | market-local-price-resolution-service | Commerce / Catalogue ; PRESENT, aucune écriture du moteur économique |
 
+| ops.orders_today | Commandes créées aujourd'hui, date création ; timezone explicite | dashboard-metrics/logistics#getCmdsAujourdhui | Opérations ; PRESENT, vérifier jour civil DB vs marché |
+| ops.active_orders | Stock des commandes dans ACTIVE_ORDER_STATUSES, sans filtre création pour stock global | dashboard-metrics/control-tower#getCmdsActives ; dashboard-orders#getStatusCounts | Opérations ; PARTIAL : isoler stock de cohorte Pilotage |
+| ops.pending_payments | payment_status pending, hors collectées/annulées/remboursées ; stock | dashboard-metrics/logistics#getPaiementsEnAttente | Finance/Opérations ; PRESENT |
+| ops.pending_cash_queue | Commandes cash éligibles à confirmation ; total distinct de liste limitée | dashboard-orders#getPendingCash/getWorkQueues | Commandes ; PRESENT |
+| ops.parcel_preparation | Colis status preparation, unité DB parcel ; stock | dashboard-metrics/logistics#getColisPreparation | Opérations ; PRESENT, pas COMBOX sans preuve |
+| ops.parcel_transit | Colis distincts dans TRANSIT_PARCEL_STATUSES ; stock | dashboard-metrics/control-tower#getColisEnTransit | Opérations ; PRESENT |
+| ops.parcel_available | Colis distincts disponibles au relais ; stock | dashboard-metrics/logistics#getDisponiblesRelais | Relais ; PRESENT, distinct des commandes et unités |
+| ops.critical_shipping_delays | Colis expédiés au-delà de shipped_late_days, non disponibles/collectés/annulés | dashboard-metrics/logistics#getRetardsCritiques + LATE_THRESHOLDS | Opérations ; PRESENT, version seuil à vérifier |
+| ops.blocked_paid_orders | Commandes payées non terminales avec alerte stock ou incident bloquant actif ; DISTINCT commande, motifs cumulables | dashboard-metrics/control-tower#getCmdsBloquees | À traiter ; PRESENT |
+| ops.scan_presence | Colis transit/disponibles/collectés avec au moins un scan / colis éligibles ; dénominateur vide NULL | dashboard-metrics/control-tower#getTauxCompletudeScans | Qualité ; PRESENT, libellé complétude trompeur |
+| ops.required_milestone_coverage | Jalons attestés / jalons exigibles par unité physique et état ; cohorte explicite | Flux COMBOX/transitaire/relais + scan-events, contrat recette | Opérations ; TARGET ; ne jamais déduire de scan_presence |
+| ops.relay_collection_ratio | Colis collectés / (disponibles + collectés) dans même population ; dénominateur vide NULL | dashboard-metrics/logistics#getTauxCollecteRelais | Relais ; PRESENT, pas taux de remise par délai |
+| ops.cost_stage_coverage | Commandes avec tous coûts attendus au stade / commandes ayant coûts attendus ; marge finale prête distincte | dashboard-metrics/control-tower#getTauxCompletudeCouts, cost-expectation | Qualité/Finance ; PARTIAL, ne prouve pas résultat ECO |
+| ops.critical_signals_open | Signaux critical/urgent open/acknowledged, stock hors simulation ; global actuel = market_id NULL, marché exact | dashboard-metrics/control-tower#getAlertesCritiques + Action Center | À traiter/Direction ; PRESENT, siège ≠ somme marchés |
+| ops.warning_signals_open | Même périmètre, sévérité warning | dashboard-metrics/control-tower#getPointsAttention | À traiter ; PRESENT |
+| ops.work_queue | Dossiers éligibles à prochaine action selon faits et couverture physique ; total distinct de liste | dashboard-orders#getWorkQueues/getParcelPipeline, dashboard-operations#buildOperations | Postes ; PARTIAL, vérifier avec Kanban Hub validé |
+| clients.known_ordering_accounts | Comptes identifiés ayant commandé dans scope serveur, hors simulations ; identité stable | client-index#listClients | Clients/Commerce ; PRESENT, pas acheteurs payants |
+| clients.paid_buyers | Comptes distincts ayant une commande payée éligible sur période explicite | Projection cible commandes payées | Commerce ; TARGET, pas identité téléphone+nom |
+| clients.valid_order_value | Total commandes hors annulées/remboursées par client, non nécessairement payé ; cohorte historique | client-index#listClients | Client 360 ; PRESENT, pas CA ni LTV réalisé |
+| clients.repeat_paid_buyers | Acheteurs payants avec au moins deux commandes payées, période/historique explicites | Projection cible sur identité stable | Commerce ; TARGET, ancien getClientsAnalysis non équivalent |
+| clients.lifecycle_segments | Segments activité sur événements payés, référence temporelle/seuils marché gouvernés ; chevauchements explicites | dashboard-clients-queries#getClientsAnalysis/getClientsList (historique), cible client-index/Client 360 | Commerce ; PARTIAL, VIP fixe KMF et at-risk >60 vs >=60 à harmoniser |
+
 ## Écarts et ordre du lot
 1. Dictionnaire IDs, libellés et fenêtres : même clé ca_encaisse sur Commerce et métrique historique avec base différente ; migrer consommateurs + contrats, aucun alias ambigu.
 2. Journal : getCollectedFromJournal filtre state !== reversed et inclut les remboursements pending/committed et store_credit ; paiement peut utiliser created_at faute de preuve. Projeter cash réellement attesté, séparer remboursements monétaires et avoirs, documenter rapprochement et FX. Vérifier snapshot marché vs wallet. Ne pas corriger le journal par estimation.
 3. Dédoublonner marges : dashboard-metrics/costing#getMargeConsolidee et SQL par produit/trend de dashboard-finance-canonical et dashboard-commerce sont des cohortes historiques de commande, pas le résultat mensuel ECO. Identifier les consommateurs utiles, les nommer honnêtement, retirer comme KPI direction seulement après parité avec les mesures requises. Source économique unique pour contribution et résultat.
 4. Mettre à niveau projection EUR groupe et devise marché, statut incomplet et bornes ; conserver observations/ratios distincts de plancher et politique de retrait. Le prix client reste LOCAL_ACTIVE.
-5. Tests table-driven : même ID + mêmes bornes/scope => centimes égaux ; commande avec wallet, partiels/refund/avoir, événements de mois différents, zéro connu/inconnu, mix devises, FX manquant, charge tardive, marchés isolés, simulation exclue. API + PG puis Chromium aux trois résolutions. Mock L3 valide missions, navigation et choix des KPI avant refonte.
+5. Opérations/clients : distinguer stocks et flux, parcel DB et COMBOX, scan présent et jalon exigible, signal siège et ensemble marchés, comptes commandants et acheteurs payants. Migrer segmentation historique téléphone+nom et seuils non gouvernés après preuve Client 360.
+6. Tests table-driven : même ID + mêmes bornes/scope => centimes égaux ; commande avec wallet, partiels/refund/avoir, événements de mois différents, zéro connu/inconnu, mix devises, FX manquant, charge tardive, marchés isolés, simulation exclue. API + PG puis Chromium aux trois résolutions. Mock L3 valide missions, navigation et choix des KPI avant refonte.
 
 ## Sources versionnées
 - docs/doctrine/DOCTRINE_CENTRES_COUTS_V1.md (25/11), docs/doctrine/DOCTRINE_MUTUALISATION_HUB.md
 - docs/FINANCIAL_JOURNAL_CONTRACT.md ; docs/contract/DASHBOARDS_CONTRACTS_0C.md ; docs/contract/DASHBOARD_FINANCE_2F.md (historique, A1 et ECO prévalent sur règles incompatibles)
 - services/dashboard-commerce.js, services/dashboard-pilotage-market.js, services/dashboard-finance-canonical.js, services/dashboard-metrics/control-tower.js, services/dashboard-metrics/costing.js
 - services/financial-journal-projectors.js, services/financial-journal-reporting.js, services/economic-cost-center-read-model.js, services/pricing-period-structure.js, services/cost-allocation/product-margin-steering.js, services/market-local-price-resolution-service.js
-- #5315 ; #5317–#5320 fusionnées ; #5321 en CI.
+- services/dashboard-operations.js, services/dashboard-orders.js, services/dashboard-metrics/logistics.js, services/client-index.js, services/dashboard-clients-queries.js
+- #5315 ; #5317–#5321 fusionnées ; complément relu au SHA 9b19d73e, test Hub 21/21 (46010049206).
 
-Ce candidat couvre les KPI économiques et financiers prioritaires de L2 ; l'inventaire détaillé des KPI opérationnels, délais/SLA, clients et signaux doit être complété avant gel global. Aucune modification runtime.
+Le registre couvre les 44 identités prioritaires. Il reste à relier chaque consommateur UI/API au registre exhaustif Dashboard 360, valider les définitions cibles, et exécuter les preuves avant gel global. Aucune modification runtime.
