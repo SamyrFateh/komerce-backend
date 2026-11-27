@@ -194,6 +194,10 @@ test.describe('Atelier économique V7/V6 — desktop 1440',()=>{
   test('lecture seule : aucune action de configuration ni écriture de budget',async({page})=>{
     const actor={...FX.auth_me,role:'market_operator'},context={...FX.context,actor:{...FX.context.actor,role:'market_operator'},access:{...FX.context.access,mode:'market',allowedMarkets:['KM'],defaultMarket:'KM',capabilities:['finance.read','pricing.read'],delegatedCapabilities:{KM:['finance.read','pricing.read','dashboard.market.read']}}};
     await mount(page,{search:'?market=KM',actor,context,costModel:v7Fixture({central:false,costCapabilities:{}})});
+    await expect(page.locator('.kmc-admin-topbar .kmc-admin-market-fixed')).toHaveAttribute('data-fixed-market','KM');
+    await expect(page.locator('.kmc-admin-topbar .kmc-admin-market-select')).toHaveCount(0);
+    await expect(page.locator('.kmc-market-context-select')).toHaveCount(0);
+    await expect(page.locator('#canonical-admin-topbar')).toHaveCount(1);
     await expect(page.getByRole('button',{name:'Initialiser les centres et familles'})).toHaveCount(0);
     await openPost(page);
     await expect(page.getByRole('button',{name:'Valider le budget'})).toHaveCount(0);

@@ -598,7 +598,16 @@
     const choices = marketChoices(adminContext, requireMarket, allowOverview);
     if (!choices.length) return null;
 
-    const wrap = doc.createElement('label');
+    const current = currentRequestedMarket(adminContext, requireMarket,
+      allowOverview && adminContext?.access?.mode === 'hub');
+    // La délégation mono-marché n'est pas un choix utilisateur. En cas de
+    // cible invalide sur un poste d'action, garder le contrôle de récupération
+    // existant : aucune substitution silencieuse à la demande interdite.
+    const fixed = adminContext?.access?.mode === 'market'
+      && adminContext.access.allowedMarkets.length === 1
+      && current === adminContext.access.allowedMarkets[0];
+
+    const wrap = doc.createElement(fixed ? 'span' : 'label');
     wrap.className = 'kmc-admin-market-control';
     wrap.setAttribute('aria-label', 'Marché actif');
 
@@ -607,11 +616,23 @@
     flag.alt = '';
     flag.setAttribute('aria-hidden', 'true');
 
+    if (fixed) {
+      const asset = marketFlagAsset(current);
+      flag.src = asset;
+      flag.hidden = !asset;
+      flag.setAttribute('data-market-flag', asset ? current : '');
+      const choice = choices.find(item => item.value === current);
+      const label = textNode(doc, 'span', 'kmc-admin-market-fixed' + (asset ? ' has-flag' : ''),
+        stripRegionalFlagPrefix(choice?.label || current));
+      label.setAttribute('data-fixed-market', current);
+      wrap.appendChild(flag);
+      wrap.appendChild(label);
+      return wrap;
+    }
+
     const select = doc.createElement('select');
     select.className = 'kmc-admin-market-select';
     select.setAttribute('aria-label', 'Sélectionner le marché');
-    const current = currentRequestedMarket(adminContext, requireMarket,
-      allowOverview && adminContext?.access?.mode === 'hub');
 
     const syncFlag = marketCode => {
       const asset = marketFlagAsset(marketCode);
