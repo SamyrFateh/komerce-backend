@@ -254,12 +254,30 @@ describeDb('journal financier — migration 360 (REAL_DB)', () => {
     expect(n1Movements).toBe(lines.reduce((n, line) => n + line.movements, 0));
   });
 
-  test('Commerce : encaissé net lu dans le journal = ventes − remboursements (EUR connu), natif par devise', async () => {
-    const commerce = require('../../services/dashboard-commerce');
-    const got = await commerce.getCollectedFromJournal({ from: new Date(Date.now() - 86400e3).toISOString(), to: new Date(Date.now() + 86400e3).toISOString() }, { id: km });
-    expect(got.available).toBe(true);
-    const proj = await reporting.projection(db, { marketId: km, from: new Date(Date.now() - 86400e3).toISOString(), to: new Date(Date.now() + 86400e3).toISOString() });
-    const eur = cat => proj.lines.filter(l => l.category === cat && l.state !== 'reversed').reduce((n, l) => n + l.eur_total, 0);
-    expect(got.eur_net).toBeCloseTo(eur('sale') - eur('refund'), 2);
+  test('Commerce : flux monétaires du journal datés, avoir exclu, scope exact',async()=>{
+    const commerce=require('../../services/dashboard-commerce');
+    // These are synthetic paid orders; deliberately supply an explicit payment date
+    // for the fixtures. The existing refund is completed store credit, not cash.
+    const dated=new Date().toISOString();
+    await q('UPDATE orders SET payment_received_at=$1 WHERE id=ANY($2::uuid[])',[dated,[kmOrder,kmOrder2]]);
+    const from=new Date(Date.now()-86400e3).toISOString(),to=new Date(Date.now()+86400e3).toISOString();
+    const got=await commerce.getCollectedFromJournal({from,to},{id:km});
+    expect(got).toMatchObject({available:true,coverage:'DOCUMENTED_SUBTOTAL'});
+    const oracle=await q(`SELECT SUM(m.amount_eur)::text AS eur FROM financial_movements m
+       JOIN orders o ON o.id::text=m.source_id WHERE m.source_kind='order_payment' AND m.facet='main'
+        AND m.state='settled' AND m.direction='inflow' AND m.category='sale'
+        AND o.market_id=$1 AND m.market_id=o.market_id AND o.simulation_scope IS NULL
+        AND o.payment_status IN ('paid','refunded') AND o.total_kmf>0
+        AND o.payment_mode IN ('cash_relais','stripe_eur','mobile_money')
+        AND COALESCE(o.payment_received_at,o.cash_paid_at)>=$2 AND COALESCE(o.payment_received_at,o.cash_paid_at)<=$3`,[km,from,to]);
+    const monetaryRefunds=await q(`SELECT COALESCE(SUM(m.amount_eur),0)::text AS eur FROM financial_movements m
+       JOIN refunds r ON r.id::text=m.source_id JOIN orders o ON o.id=r.order_id
+       WHERE m.source_kind='order_refund' AND m.facet='main' AND m.state='settled'
+        AND m.category='refund' AND m.direction='outflow' AND o.market_id=$1 AND m.market_id=o.market_id
+        AND o.simulation_scope IS NULL AND r.status='completed' AND r.refund_method IN ('cash','stripe','mobile_money')
+        AND r.completed_at>=$2 AND r.completed_at<=$3`,[km,from,to]);
+    expect(Number(got.eur_net)).toBeCloseTo(Number(oracle.rows[0].eur)-Number(monetaryRefunds.rows[0].eur),2);
+    expect(await commerce.getCollectedFromJournal({from,to},{id:id()})).toMatchObject({available:false});
+  
   });
 });
