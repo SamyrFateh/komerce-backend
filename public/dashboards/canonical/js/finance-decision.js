@@ -1112,6 +1112,12 @@
     header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Performance financière'));
     header.appendChild(text(doc, 'p', 'kmc-dashboard-description', `Vue consolidée des commandes · ${period} jours${scopeLabel(payload)}`));
     header.appendChild(periodControl(doc, period, options.onPeriodChange));
+    const cash=payload.customer_cash;
+    if(cash){
+      const amount=cash.available&&cash.eur_net!=null?base.formatNumber(cash.eur_net,2)+' €'+(cash.eur_partial?' (EUR partiel)':''):'EUR non disponible';
+      const native=cash.available&&Array.isArray(cash.native_net)?cash.native_net.map(x=>base.formatNumber(x.total,2)+' '+x.currency).join(' · '):'';
+      header.appendChild(text(doc,'p','kmc-dashboard-description','Sous-total des flux monétaires clients documentés : '+amount+(native?' · devises du journal '+native:'')+' · couverture intégrale non certifiée ; distinct des ventes payées.'));
+    }
     dashboard.appendChild(header);
 
     const notes = indicatorNotes(payload, base);
