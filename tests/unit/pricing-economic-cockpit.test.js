@@ -251,7 +251,7 @@ test('group profitability displays the server EUR result and never falls back to
 test('activity projection is read-only, scope currency and no KMF fallback when FX absent',()=>{
  const model={...activityModel,activityCurrencyProjection:{currency:'XAF',fxStatus:'GOVERNED_KMF_PROJECTION',amounts:{}}};
  const sources=activityModel.activity;
- const source=sources.purchaseKmf;
+ const source=sources.purchaseTransportObservation.purchaseKmf;
  expect(typeof source).toBe('string');
  model.activityCurrencyProjection.amounts[source]='12345';
  const rendered=texts(createV6Activity(doc,model));
