@@ -43345,6 +43345,10 @@
               {
                 "sourceFileId": "services/central-authority.js",
                 "targetFile": "middleware/require-dashboard-global-authority.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/market-control-plane.provision-to-first-order.e2e.test.js",
+                "targetFile": "services/dashboard-admin-context.js"
               }
             ]
           }
@@ -46731,6 +46735,10 @@
               {
                 "sourceFileId": "services/market-payment-account-service.js",
                 "targetFile": "services/market-delegation-team-service.js"
+              },
+              {
+                "sourceFileId": "services/market-payment-account-service.js",
+                "targetFile": "services/market-delegation-read-authority.js"
               },
               {
                 "sourceFileId": "tests/unit/market-payment-accounts.test.js",

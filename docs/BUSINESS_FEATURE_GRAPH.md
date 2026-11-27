@@ -2553,7 +2553,7 @@ Meta Graph monté : oui.
 | market-autonomy | market-control-plane | static-code | 2 | **OBSERVED_UNDECLARED** |
 | market-control-plane | auth | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | catalog | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| market-control-plane | dashboard | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| market-control-plane | dashboard | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | decision-signals | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | economic-engine | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | market-control-plane | infrastructure | static-code | 3 | **DECLARED_AND_OBSERVED** |
@@ -2623,7 +2623,7 @@ Meta Graph monté : oui.
 | payments | logistics | static-code, data-read | 17 | **DECLARED_AND_OBSERVED** |
 | payments | loyalty | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | payments | market | static-code | 4 | **DECLARED_AND_OBSERVED** |
-| payments | market-delegation | static-code, data-read | 8 | **DECLARED_AND_OBSERVED** |
+| payments | market-delegation | static-code, data-read | 9 | **DECLARED_AND_OBSERVED** |
 | payments | notifications | static-code | 18 | **DECLARED_AND_OBSERVED** |
 | payments | orders | static-code, data-read | 23 | **DECLARED_AND_OBSERVED** |
 | payments | platform-ops | static-code | 5 | **DECLARED_AND_OBSERVED** |
