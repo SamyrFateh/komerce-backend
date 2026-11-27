@@ -5206,6 +5206,13 @@
       {
         "feature": "dashboard",
         "category": "services",
+        "declared": "public/js/golden-recipe-staging-tools.js",
+        "resolvedPath": "public/js/golden-recipe-staging-tools.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
         "declared": "public/js/golden-recipe-scenarios.js",
         "resolvedPath": "public/js/golden-recipe-scenarios.js",
         "status": "resolved-on-disk-no-header"
@@ -51674,7 +51681,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2427
+        "filesObserved": 2428
       },
       "boutique": {
         "filesObserved": 218,

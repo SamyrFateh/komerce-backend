@@ -8100,7 +8100,7 @@
             ]
           },
           "services": {
-            "count": 47,
+            "count": 48,
             "files": [
               {
                 "declared": "config/central-transit-roles.js",
@@ -8120,6 +8120,11 @@
               {
                 "declared": "public/js/golden-recipe-scenarios.js",
                 "resolvedPath": "public/js/golden-recipe-scenarios.js",
+                "status": "resolved-on-disk-no-header"
+              },
+              {
+                "declared": "public/js/golden-recipe-staging-tools.js",
+                "resolvedPath": "public/js/golden-recipe-staging-tools.js",
                 "status": "resolved-on-disk-no-header"
               },
               {
@@ -9420,7 +9425,7 @@
             ]
           }
         },
-        "totalFiles": 492,
+        "totalFiles": 493,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
