@@ -152,6 +152,7 @@ module.exports = {
       'decision-signals (decision_signal_global_access_grants et son middleware : autorisation centrale explicite lue)',
       'economic-engine (pricing_global_access_grants et require-pricing-global-authority : autorisation centrale explicite lue)',
       'sourcing (sourcing_global_access_grants et require-sourcing-global-authority : autorisation centrale explicite lue)',
+      'auth-identity (création du compte professionnel par createAdminUser, writer canonique users ; contrôle de collisions avant rattachement)',
       'auth (garde des routes centrales)',
       'infrastructure (DB et bootstrap)',
     ],
