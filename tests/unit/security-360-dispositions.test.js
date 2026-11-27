@@ -10,7 +10,7 @@ const {
 
 describe('Security 360 route dispositions', () => {
   test('historical signal inventory is explicit and structurally valid', () => {
-    expect(Object.keys(DISPOSITIONS)).toHaveLength(52);
+    expect(Object.keys(DISPOSITIONS)).toHaveLength(50);
     expect(DISPOSITIONS['POST /api/orders/quote-pdf']).toMatchObject({
       kind: 'EXPECTED_PUBLIC',
     });
@@ -37,5 +37,8 @@ describe('Security 360 route dispositions', () => {
 
   test('an unlisted route has no implicit disposition', () => {
     expect(getDisposition('POST /api/future/public-mutation')).toBeNull();
+    // #5315: legacy calculators return internal costs; no public exemption.
+    expect(getDisposition('POST /api/pricing/calculate')).toBeNull();
+    expect(getDisposition('POST /api/pricing/couture')).toBeNull();
   });
 });
