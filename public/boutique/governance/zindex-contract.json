@@ -10,7 +10,7 @@
       ],
       "zIndexMin": 80,
       "zIndexMax": 100,
-      "reason": "Barre de navigation basse + FAB WhatsApp — chrome permanent, doit toujours rester sous tout overlay/modal."
+      "reason": "Barre de navigation basse + FAB conseiller Komerce — chrome permanent, sous tout overlay."
     },
     {
       "name": "modal-overlay",
@@ -20,6 +20,15 @@
       "zIndexMin": 250,
       "zIndexMax": 350,
       "reason": "Overlay de la modale produit (SIBLING_ORDER : doit envelopper #k-modal, cf. check-html-balance.js)."
+    },
+    {
+      "name": "on-demand-panel",
+      "selectors": [
+        ".k-on-demand"
+      ],
+      "zIndexMin": 1040,
+      "zIndexMax": 1040,
+      "reason": "Panneau conseiller desktop : au-dessus de la fiche produit, sous panier et checkout ; mobile dialog natif en top layer."
     },
     {
       "name": "cart-overlay",
@@ -63,6 +72,16 @@
       "below": "chrome-bottom",
       "above": "modal-overlay",
       "reason": "La nav basse et le FAB ne doivent jamais passer au-dessus d'une modale ouverte."
+    },
+    {
+      "below": "modal-overlay",
+      "above": "on-demand-panel",
+      "reason": "Le conseiller peut s'ouvrir depuis une fiche produit."
+    },
+    {
+      "below": "on-demand-panel",
+      "above": "cart-overlay",
+      "reason": "Le panier et le checkout restent prioritaires sur desktop."
     },
     {
       "below": "modal-overlay",

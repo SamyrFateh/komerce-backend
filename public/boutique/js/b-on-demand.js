@@ -37,17 +37,18 @@ const HINTS={auto_parts:'Photographiez la pièce et sa référence si elle est v
 const MAX=5*1024*1024;
 let cleanup=null,trigger=null;
 function dispose(){if(cleanup){cleanup();cleanup=null}}
-function button(text,fn,style='secondary'){const b=node('button',text,'k-od-btn k-od-'+style);b.type='button';b.addEventListener('click',fn);return b}
+function button(text,fn,style='secondary'){const b=node('button',text,'k-od-btn k-od-'+style);b.type='button';b.addEventListener('click',()=>fn());return b}
 function header(title,back,subtitle='Échange privé · Votre conseiller'){
  const h=node('header',null,'k-on-demand-head');
  if(back){const b=button('‹',back,'icon');b.setAttribute('aria-label','Retour');h.append(b)}
  const avatar=node('span','K','k-od-avatar');avatar.setAttribute('aria-hidden','true');
- const copy=node('div',null,'k-od-heading'),t=node('h2',title);t.id='k-on-demand-title';copy.append(t,node('small',subtitle));
+ const copy=node('div',null,'k-od-heading'),t=node('h2',title);t.id='k-on-demand-title';t.tabIndex=-1;copy.append(t,node('small',subtitle));
  const close=button('×',()=>shell().close(),'icon');close.setAttribute('aria-label','Fermer');h.append(avatar,copy,close);return h
 }
 function active(s){return session===s&&dialog?.open}
 function feedback(){const e=node('p',null,'k-on-demand-feedback');e.setAttribute('role','status');return e}
 function panel(){return node('div',null,'k-od-scroll')}
+function focusTitle(){shell().querySelector('#k-on-demand-title')?.focus({preventScroll:true})}
 function helper(text){const e=node('div',null,'k-od-helper');e.append(node('small','Aide à la demande'),node('p',text));return e}
 function field(label,placeholder,value,change){
  const wrap=node('label',label,'k-od-field'),input=node('input');input.type='text';input.placeholder=placeholder;input.maxLength=180;input.value=value||'';input.addEventListener('input',()=>change(input.value));wrap.append(input);return wrap
@@ -62,7 +63,7 @@ function ownDraft(d){dispose();cleanup=()=>{d.disposed=true;resetPhotos(d)}}
 function formatBody(d){return [d.body.trim(),...(QUESTIONS[d.motif]||[]).map(([k,l])=>d.answers[k]?.trim()?l+' : '+d.answers[k].trim():'')].filter(Boolean).join('\n')}
 async function preparePhoto(file){
  if(!file?.type?.startsWith('image/'))throw Error('Choisissez une image.');
- if(['image/jpeg','image/png','image/webp'].includes(file.type)&&file.size<=MAX)return file;
+ if(['image/jpeg','image/png','image/webp'].includes(file.type)&&file.size<=MAX){const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[file.type];return new File([file],'photo.'+ext,{type:file.type})}
  if(typeof createImageBitmap!=='function')throw Error('Choisissez une photo JPEG, PNG ou WebP de moins de 5 Mo.');
  let bitmap;try{bitmap=await createImageBitmap(file)}catch{throw Error('Photo non lisible. Essayez JPEG, PNG ou WebP.')}
  try{for(const [edge,quality] of [[2560,.92],[2048,.88],[1600,.84]]){
@@ -106,7 +107,7 @@ function startRequest(seed={}){
  function render(step){
   if(!active(s)||d.busy||d.photoBusy)return;const content=panel(),msg=feedback(),bottom=node('div',null,'k-od-bottom');
   shell().replaceChildren(header('Votre conseiller Komerce',step===1?()=>inbox():()=>render(step-1),'Nouvelle demande · '+(d.market||'Komerce')),content,bottom);
-  content.append(node('p','Étape '+step+' sur 3','k-od-progress'));
+  content.append(node('p','Étape '+step+' sur 3','k-od-progress'));focusTitle();
   if(step===1){
    content.append(helper('Bonjour ! Que recherchez-vous ? Décrivez votre besoin, ajoutez une photo ou choisissez un sujet.'));
    const choices=node('div',null,'k-od-choices'),hint=node('p',HINTS[d.motif],'k-od-muted');
@@ -149,7 +150,7 @@ function renderMessages(host,ref,messages,prepend=false){
 
 async function inbox(seed=null){
  stop();dispose();const s=++session,content=panel(),list=node('div',null,'k-on-demand-list'),msg=feedback(),create=button('Nouvelle demande',()=>startRequest(seed||{}),'primary');
- create.disabled=true;shell().replaceChildren(header('Votre conseiller Komerce'),content);
+ create.disabled=true;shell().replaceChildren(header('Votre conseiller Komerce'),content);focusTitle();
  content.append(helper('Un produit introuvable ? Une pièce à identifier ? Parlez-nous de votre besoin.'),create,node('h3','Mes conversations'),list,msg);
  let oldest=null;
  async function load(append=false){try{const data=await request(BASE+(append&&oldest?'?before='+encodeURIComponent(oldest):''));if(!active(s))return;create.disabled=false;const rows=data.requests||[];if(!append)list.replaceChildren();if(!rows.length&&!append)list.append(node('p','Aucune demande pour le moment.','k-od-muted'));list.querySelector('[data-more]')?.remove();for(const r of rows){const b=button('',()=>thread(r.reference),'conversation');b.append(node('strong',MOTIFS[r.motif]||r.motif),node('small',STATUS[r.status]||r.status),node('span','›'));list.append(b)}oldest=rows.at(-1)?.reference||null;if(rows.length===50){const more=button('Demandes précédentes',()=>load(true));more.dataset.more='1';list.append(more)}}catch(err){if(active(s))msg.textContent=err.message}}
@@ -158,7 +159,7 @@ async function inbox(seed=null){
 async function thread(ref){
   stop();dispose();const s=++session;const d=shell();const title=header('Votre conseiller Komerce',inbox);const state=node('p',null,'k-od-state');const log=node('div',null,'k-on-demand-thread');log.setAttribute('role','log');const msg=feedback();const controls=node('div',null,'k-od-bottom');let last='',older=false,loading=false;
   d.replaceChildren(title,state,button('Messages précédents',async()=>{const first=log.firstElementChild?.dataset.messageId;if(!first)return;try{const data=await request(path(ref)+'?before='+encodeURIComponent(first));if(active(s)){older=true;renderMessages(log,ref,data.messages||[],true)}}catch(err){msg.textContent=err.message}}),log,controls,msg);
-  const form=compose({submit:async data=>{await request(path(ref)+'/messages','POST',data);if(active(s))await load(true)}});controls.append(form);
+  focusTitle();const form=compose({submit:async data=>{await request(path(ref)+'/messages','POST',data);if(active(s))await load(true)}});controls.append(form);
   async function load(force=false){if(loading)return;loading=true;try{const data=await request(path(ref));if(!active(s))return;const r=data.request;state.textContent=(MOTIFS[r.motif]||r.motif)+' · '+(STATUS[r.status]||r.status);form.hidden=r.status==='closed';const messages=data.messages||[];const signature=JSON.stringify(messages.map(m=>[m.id,m.attachments?.map(a=>a.id)]));if(force||signature!==last){if(!older||force){renderMessages(log,ref,messages);older=false}else{const known=new Set([...log.children].map(e=>e.dataset.messageId));for(const m of messages.filter(m=>!known.has(m.id))){const temp=node('div');renderMessages(temp,ref,[m]);log.append(...temp.children)}}last=signature}msg.textContent=''}catch(err){if(active(s)){msg.textContent=err.message;if([401,403,404].includes(err.status)){stop();form.hidden=true;log.replaceChildren()}}}finally{loading=false}}
   await load();if(active(s))timer=setInterval(()=>{if(document.visibilityState==='visible')load()},30000);
 }
@@ -168,7 +169,7 @@ export async function openOnDemand(ref=null,origin=null,seed=null){
   const user=await requireIdentity({reason:'contacter un conseiller Komerce',title:'Confirmer votre identité',returnFocusTo:origin});if(!user)return;
   const d=shell();if(d.open&&!ref&&!seed){d.querySelector('[aria-label="Fermer"]')?.focus();return}trigger=origin;if(!d.open){if(typeof d.show==='function'&&window.matchMedia?.('(min-width: 900px)').matches)d.show();else d.showModal()}
   if(user.role!=='client'){
-   stop();dispose();session++;const content=panel();content.append(helper('Vous utilisez une session interne. Pour envoyer une demande commerciale, ouvrez la boutique dans une session client séparée.'));const link=node('a','Accéder à mon espace professionnel','k-od-btn k-od-primary');link.href='/admin';content.append(link);d.replaceChildren(header('Votre conseiller Komerce'),content);return
+   stop();dispose();session++;const content=panel();content.append(helper('Vous utilisez une session interne. Pour envoyer une demande commerciale, ouvrez la boutique dans une session client séparée.'));const link=node('a','Accéder à mon espace professionnel','k-od-btn k-od-primary');link.href='/admin';content.append(link);d.replaceChildren(header('Votre conseiller Komerce'),content);focusTitle();return
   }
   if(ref)await thread(ref);else await inbox(seed)
  }finally{opening=false}
