@@ -1,4 +1,4 @@
-name: 5356 responsive On Demand standard preflight
+name: 5356 responsive On Demand regenerate architecture and preflight
 on:
   push:
     branches: [test/5359-market-context-preflight]
@@ -7,19 +7,37 @@ permissions:
 jobs:
   preflight:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
           ref: d7b651c354a52e250b422e12c10533e64b7a9f12
           fetch-depth: 0
-          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm ci --prefix public/boutique --ignore-scripts --no-audit --no-fund
-      - name: Targeted unit regression
-        run: cd public/boutique && npx jest tests/unit/b-on-demand.test.js tests/unit/catalog-empty-states.test.js --runInBand
+      - name: Regenerate official architecture artifacts
+        run: |
+          set -euo pipefail
+          npm run audit:arch:live --prefix public/boutique
+          npm run audit:ownership --prefix public/boutique
+          git status --short
+          git diff --name-only | while read -r p; do
+            case "$p" in
+              public/boutique/docs/BOUTIQUE_ARCHITECTURE_LIVE.md|public/boutique/docs/BOUTIQUE_OWNERSHIP_LIVE.md) ;;
+              *) echo "Unexpected generated file: $p"; exit 1;;
+            esac
+          done
+          test "$(git ls-remote origin refs/heads/wip/5356-responsive-on-demand | cut -f1)" = "d7b651c354a52e250b422e12c10533e64b7a9f12"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/docs/BOUTIQUE_ARCHITECTURE_LIVE.md public/boutique/docs/BOUTIQUE_OWNERSHIP_LIVE.md
+          git commit -m "docs(on-demand): regenerate live boutique architecture and ownership"
+          git push origin HEAD:refs/heads/wip/5356-responsive-on-demand
+          echo "GENERATED_SHA=$(git rev-parse HEAD)"
       - name: Standard preflight
         run: npm run pr:preflight
