@@ -32,7 +32,7 @@ for (const row of MARKET_ROWS) {
   if (!name) continue;
   MARKETS[row.code] = Object.freeze({
     code: row.code, name, currency: row.currency, minor_unit: Number(row.minor_unit),
-    gentile: t.gentile || 'La boutique Komerce',
+    gentile: t.gentile || ('Komerce — ' + name),
     gentile_short: t.gentile_short || name,
     delivery_line: t.delivery_line || 'Découvrez les produits disponibles',
     payment_label: t.payment_label || 'Paiement selon les moyens disponibles',
@@ -53,30 +53,38 @@ for (const row of MARKET_ROWS) {
 const DEFAULT_MARKET = 'KM';
 const hasMarket = code => Object.prototype.hasOwnProperty.call(MARKETS, code);
 
-function getPathMarketCode() {
+function getRequestedPathCode() {
   const match = /^\/([a-z]{2})\/?$/i.exec(window.location.pathname || '');
-  const code = match ? match[1].toUpperCase() : '';
+  return match ? match[1].toUpperCase() : null;
+}
+
+function getPathMarketCode() {
+  const code = getRequestedPathCode();
   return hasMarket(code) ? code : null;
 }
 
 function getPreviewMarketOverride() {
-  const pathMarket = getPathMarketCode();
-  if (pathMarket) return pathMarket;
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const code = String(params.get('market') || '').trim().toUpperCase();
-    return hasMarket(code) ? code : null;
-  } catch (_) {
-    return null;
+  // A requested country is authoritative for navigation even when the
+  // registry is missing that country. Never substitute another market.
+  const pathMarket = getRequestedPathCode();
+  if (pathMarket) {
+    if (!hasMarket(pathMarket)) throw new Error('STORE_MARKET_UNAVAILABLE');
+    return pathMarket;
   }
+  const requested = new URLSearchParams(window.location.search).get('market');
+  if (requested !== null) {
+    const code = String(requested).trim().toUpperCase();
+    if (!hasMarket(code)) throw new Error('STORE_MARKET_UNAVAILABLE');
+    return code;
+  }
+  // Existing consumers use DEFAULT when this method returns null.
+  // Only allow that fallback when KM is actually present in the registry.
+  if (!hasMarket(DEFAULT_MARKET)) throw new Error('STORE_MARKET_UNAVAILABLE');
+  return null;
 }
 
 function getMarketContext() {
-  const market = MARKETS[getPreviewMarketOverride() || DEFAULT_MARKET];
-  // Missing registry or missing KM is a *failure*, not an implied permission
-  // to sell to a country not present in the canonical active-market list.
-  if (!market) throw new Error('STORE_MARKET_UNAVAILABLE');
-  return market;
+  return MARKETS[getPreviewMarketOverride() || DEFAULT_MARKET];
 }
 
 function getMarket(code) {

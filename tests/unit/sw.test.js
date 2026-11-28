@@ -10,11 +10,12 @@ function response({
   ok = true,
   type = 'basic',
   contentType = 'application/javascript',
+  cacheControl = '',
 } = {}) {
   return {
     ok,
     type,
-    headers: { get: jest.fn(() => contentType) },
+    headers: { get: jest.fn(name => name === 'Cache-Control' ? cacheControl : contentType) },
     clone: jest.fn(() => ({ cloned: true })),
   };
 }
@@ -114,6 +115,14 @@ test('ignore les requêtes non GET, API et externes', () => {
   expect(external.event.respondWith).not.toHaveBeenCalled();
 });
 
+test.each(['', '?v=old'])('ne sert ni ne mémorise le registre dynamique%s', query => {
+  const current = fetchEvent({ url: 'https://komerce.co/boutique/js/market-registry.js' + query });
+  global.__swTest.handlers.fetch(current.event);
+  expect(current.event.respondWith).not.toHaveBeenCalled();
+  expect(caches.match).not.toHaveBeenCalled();
+  expect(caches.open).not.toHaveBeenCalled();
+});
+
 test('met en cache un script sain après la réponse réseau', async () => {
   const networkResponse = response();
   fetch.mockResolvedValue(networkResponse);
@@ -135,6 +144,7 @@ test.each([
   ['réponse absente', null],
   ['statut en erreur', response({ ok: false })],
   ['réponse cross-origin', response({ type: 'cors' })],
+  ['réponse no-store', response({ cacheControl: 'private, no-store, max-age=0' })],
   ['HTML à la place du JS', response({ contentType: 'text/html' })],
   ['HTML à la place du CSS', response({ contentType: 'text/html' })],
 ])('ne met jamais en cache une %s', async (label, networkResponse) => {
