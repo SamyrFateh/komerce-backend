@@ -20,15 +20,15 @@
 
 const db = require('../db');
 
-async function hasDashboardGlobalAuthority(userId) {
+async function hasDashboardGlobalAuthority(userId, executor = db, { lock = false } = {}) {
   if (!userId) return false;
 
-  const { rows } = await db.query(
+  const { rows } = await executor.query(
     `SELECT 1
      FROM dashboard_global_access_grants
      WHERE user_id = $1
        AND revoked_at IS NULL
-     LIMIT 1`,
+     LIMIT 1${lock ? ' FOR SHARE' : ''}`,
     [userId]
   );
 

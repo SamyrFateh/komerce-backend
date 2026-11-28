@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        user_id, authorization_type, purchase_order_id, proof_ref
  * @outputs       hub_authorization_grants, purchase_order_authorizations
- * @depends       db, services/documents/pdf-renderer.js, services/purchasing-grouped-service.js
+ * @depends       db, services/documents/pdf-renderer.js, services/purchasing-grouped-service.js, middleware/require-dashboard-global-authority.js
  * @used-by       routes/purchasing.js, services/purchasing-engagement-service.js, services/supplier-payment-orchestrator.js
  * @db-read       hub_authorization_grants, purchase_lines, purchase_orders, purchase_order_authorizations, supplier_execution_payments, manual_purchase_executions, purchase_variance_decisions, users, suppliers, order_items, orders, products
  * @db-write      hub_authorization_grants, purchase_order_authorizations, purchase_variance_decisions
@@ -18,6 +18,7 @@
 'use strict';
 
 const db = require('../db');
+const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const { renderPdf } = require('./documents/pdf-renderer');
 const { shared: { assertCommercialPurchaseItem, commercialRead } } = require('./purchasing-grouped-service');
 
@@ -236,6 +237,15 @@ async function decideVariance({ purchaseOrderId, actor, body = {} }, database = 
 
 /** Garde d'écriture : un paiement fournisseur suppose l'autorisation de paiement, dans la devise et le plafond autorisés. */
 async function assertPaymentAuthorized(client, purchaseOrderId, expectedAmount, currency, opts = {}) {
+  const { requireFinanceExecution = false, financeActorId = null } = opts;
+  if (requireFinanceExecution) {
+    if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(String(financeActorId || ''))) {
+      fail(403, 'FINANCE_ACTOR_REQUIRED', 'Identité Finance authentifiée requise avant exécution');
+    }
+    if (!client || typeof client.query !== 'function' || typeof client.withTransaction === 'function') {
+      fail(500, 'SUPPLIER_PAYMENT_TRANSACTION_REQUIRED', 'L’exécution Finance exige la transaction de l’appelant');
+    }
+  }
   // Pool/module db reçu : le service ouvre sa propre transaction (contrôle de lecture atomique, sans écriture à sérialiser).
   if (client && typeof client.withTransaction === 'function') {
     return client.withTransaction((tx) => assertPaymentAuthorized(tx, purchaseOrderId, expectedAmount, currency, opts));
@@ -252,6 +262,14 @@ async function assertPaymentAuthorized(client, purchaseOrderId, expectedAmount, 
   if (!held.length) {
     fail(500, 'SUPPLIER_PAYMENT_TRANSACTION_REQUIRED', 'Le contrôle du plafond de paiement exige une transaction ouverte par l\'appelant (sérialisation par PO)');
   }
+  // Même autorité centrale explicite que le poste Finance : verrouiller le rôle
+  // et le grant actif sur la transaction qui sérialise la PO.
+  if (requireFinanceExecution) {
+    const { rows: [actor] } = await client.query('SELECT role FROM users WHERE id=$1 FOR SHARE', [financeActorId]);
+    if (actor?.role !== 'finance' || !(await hasDashboardGlobalAuthority(financeActorId, client, { lock: true }))) {
+      fail(403, 'FINANCE_CENTRAL_AUTHORITY_REQUIRED', 'Autorité Finance centrale explicite requise');
+    }
+  }
   const { rows: decisions } = await client.query(
     "SELECT authorization_type, amount, currency FROM purchase_order_authorizations WHERE purchase_order_id = $1 AND authorization_type IN ('supplier_payment','purchase_commitment')", [purchaseOrderId]);
   const auth = decisions.find((d) => d.authorization_type === 'supplier_payment');
@@ -263,6 +281,17 @@ async function assertPaymentAuthorized(client, purchaseOrderId, expectedAmount, 
   // Chaîne de plafonds : paiements ≤ autorisation ≤ engagement PO (même devise). Une autorisation héritée hors engagement est refusée.
   if (!commitment || commitment.currency !== auth.currency || Number(auth.amount) > Number(commitment.amount) + 0.0001) {
     fail(409, 'SUPPLIER_PAYMENT_AUTHORIZATION_EXCEEDS_COMMITMENT', 'L\'autorisation de paiement dépasse l\'engagement d\'achat (montant ou devise)');
+  }
+  if (requireFinanceExecution) {
+    const { rows: [b4] } = await client.query(`
+      SELECT c.decided_at < a.decided_at AS ordered,
+             (c.decided_by=$2::uuid OR a.decided_by=$2::uuid) AS same_actor
+        FROM purchase_order_authorizations c
+        JOIN purchase_order_authorizations a ON a.purchase_order_id=c.purchase_order_id
+       WHERE c.purchase_order_id=$1 AND c.authorization_type='purchase_commitment'
+         AND a.authorization_type='supplier_payment'`, [purchaseOrderId, financeActorId]);
+    if (b4?.same_actor) fail(403, 'FINANCE_B4_SEPARATION_REQUIRED', 'Le décideur Hub ne peut pas exécuter le paiement Finance');
+    if (b4?.ordered !== true) fail(409, 'FINANCE_B4_AUTHORIZATION_REQUIRED', 'Engagement puis autorisation Hub ordonnés requis');
   }
   // A2-ter : plafond cumulé (tranches/acomptes autorisés), pas égalité de chaque tranche au total de la PO.
   // Montant engagé d'un paiement = max(attendu, observé) : un observé supérieur ne libère jamais de marge.

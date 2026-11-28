@@ -146,3 +146,10 @@ test('readback never needs provider credentials or raw provider payloads', async
   expect(sql).toContain("proof_source = 'cj_wallet_billing_history'");
   expect(sql).not.toMatch(/token|credential|provider_facts/i);
 });
+
+test('B4: the canonical proof CLI cannot execute a prepared payment', async () => {
+  mockQuery.mockResolvedValueOnce({ rows: [row({ status: 'prepared', reconciliation_status: 'pending', real_debit_verified: false })] });
+  await expect(proof.run(env, { args: { paymentId }, db: { query: (...args) => mockQuery(...args) }, closeCjSupplierPayment: (...args) => mockClose(...args) }))
+    .rejects.toThrow('FINANCE_B4_AUTHENTICATED_EXECUTION_REQUIRED');
+  expect(mockClose).not.toHaveBeenCalled();
+});

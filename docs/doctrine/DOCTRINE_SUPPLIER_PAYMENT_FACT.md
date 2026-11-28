@@ -201,3 +201,7 @@ Le service cj-billing-history-reconciliation.js ne déclenche aucun paiement pro
 Flux canonique : paiement fournisseur succeeded + matched, résolution des sous-ordres CJ, lecture billingHistory, agrégation, preuve unique, vérification real debit, persistance de la preuve, puis promotion real_debit_verified.
 
 Règles : déjà vérifié = no-op ; état local non prêt = refus avant lecture ; zéro preuve = non vérifié ; plusieurs preuves = ambigu ; preuve rejetée = aucune persistance ; aucune mutation provider.
+
+## B4 — autorité en amont du débit
+
+Avant la préparation et l'appel fournisseur, l'orchestrateur exige une identité Finance issue du contexte authentifié du serveur. L'autorisation canonique Hub vérifie, sur la transaction de la PO, le rôle Finance persisté et le grant central actif, la chronologie des deux décisions, la séparation entre décideur Hub et exécutant Finance et les plafonds cumulés en devise autorisée. Un grant de lecture admin ou un simple booléen CLI ne vaut pas autorité d'exécution. Le script de preuve directe historique est retiré du chemin de débit ; la preuve canonique CLI permet uniquement de rapprocher un débit déjà exécuté. Les flags et certifications provider restent nécessaires et ne sont pas activés par cette évolution. La mise à disposition du geste authentifié d'exécution et sa certification restent distinctes de ce verrou serveur.

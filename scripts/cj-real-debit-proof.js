@@ -6,7 +6,7 @@
  * @layer         script
  * @criticality   critical
  * @inputs        exact CJ SKU, explicit real destination, hard debit cap, live CJ credentials
- * @outputs       one bounded real order + one payBalanceV2 + billingHistory debit observation
+ * @outputs       retired noncanonical entry point; no provider mutation
  * @depends       db.js, services/suppliers/connectors/cj-connector.js, services/suppliers/cj-purchasing-contract.js
  * @db-read       products, product_skus
  * @db-write      none
@@ -18,7 +18,6 @@
 
 const db = require('../db');
 const cj = require('../services/suppliers/connectors/cj-connector');
-const contract = require('../services/suppliers/cj-purchasing-contract');
 
 const ALLOW_FLAG = 'KOMERCE_ALLOW_CJ_REAL_DEBIT_PROOF';
 const PAYMENT_FLAG = 'KOMERCE_ALLOW_CJ_REAL_PAYMENT';
@@ -125,171 +124,10 @@ function cheapestRoute(body) {
     .sort((a,b) => a.logisticPrice - b.logisticPrice)[0] || null;
 }
 
-async function run(env=process.env,deps={}) {
-  const cap=guard(env);
-  const productRef=String(env.KOMERCE_CJ_REAL_PRODUCT_REF || DEFAULT_PRODUCT_REF).trim();
-  const sku=await (deps.selectExactSku || selectExactSku)(productRef);
-  const identity=contract.extractIdentity(sku.supplier_order_identity);
-  const accessToken=await cj.getAccessToken({env});
-  const call=deps.invoke || invoke;
-  const dest=destination(env);
-
-  const freightBody=await call(contract.ENDPOINTS.freight_calculate,{
-    method:'POST',
-    body:{
-      startCountryCode:'CN',
-      endCountryCode:dest.country_code,
-      products:[{quantity:1,vid:identity.vid}],
-    },
-    accessToken,
-  });
-  const route=cheapestRoute(freightBody);
-  if (!route) throw new Error('CJ_REAL_NO_LOGISTIC_ROUTE');
-
-  const orderNumber=req(env,'KOMERCE_CJ_REAL_ORDER_NUMBER').slice(0,50);
-  const createPayload=contract.buildCreateOrderV2Payload({
-    orderNumber,
-    identity:sku.supplier_order_identity,
-    quantity:1,
-    destination:dest,
-    logisticName:route.logisticName,
-    fromCountryCode:'CN',
-    platform:'Api',
-    storeLineItemId:String(sku.product_sku_id),
-    remark:'Komerce bounded real debit proof',
-    sandbox:false,
-  });
-  createPayload.iossType = 3;
-  if (Object.prototype.hasOwnProperty.call(createPayload,'isSandbox')) {
-    throw new Error('CJ_REAL_SANDBOX_FLAG_FORBIDDEN');
-  }
-
-  let created;
-  try {
-    const createBody=await call(contract.ENDPOINTS.create_order_v2,{
-      method:'POST',
-      body:createPayload,
-      accessToken,
-    });
-    created=contract.parseCreateOrderResponse(createBody);
-  } catch (error) {
-    if (!contract.isDuplicateCreateError(error)) throw error;
-    const duplicateDetail=await call(contract.ENDPOINTS.get_order_detail,{
-      method:'GET',
-      query:contract.buildOrderDetailQuery(orderNumber),
-      accessToken,
-    });
-    const duplicateFacts=contract.readOrderDetailFacts(duplicateDetail);
-    if (!duplicateFacts.order_id) throw new Error('CJ_REAL_DUPLICATE_NOT_RESOLVABLE');
-    created={
-      provider:'cj',
-      external_ref:String(duplicateFacts.order_id),
-      order_number:orderNumber,
-      shipment_order_id:duplicateFacts.shipment_order_id || null,
-      product_amount:null,
-      postage_amount:null,
-      currency:'USD',
-      commitment_verdict:'created_unpaid',
-    };
-  }
-
-  const detailBefore=await call(contract.ENDPOINTS.get_order_detail,{
-    method:'GET',
-    query:contract.buildOrderDetailQuery(created.external_ref),
-    accessToken,
-  });
-  const facts=contract.verifyOrderDetail({
-    created,
-    detail:detailBefore,
-    expectedOrderNumber:orderNumber,
-    expectedVid:identity.vid,
-    expectedQuantity:1,
-  });
-
-  const productAmount=Number(detailBefore?.data?.productAmount);
-  const postageAmount=Number(detailBefore?.data?.postageAmount);
-  const expectedTotal=Number(detailBefore?.data?.orderAmount);
-  const iossAmount=Number(detailBefore?.data?.iossAmount || 0);
-  const iossTaxHandlingFee=Number(detailBefore?.data?.iossTaxHandlingFee || 0);
-  if (!Number.isFinite(expectedTotal) || expectedTotal <= 0) {
-    throw new Error('CJ_REAL_ORDER_AMOUNT_INVALID');
-  }
-  if (expectedTotal > cap) {
-    const error=new Error('CJ_REAL_DEBIT_CAP_EXCEEDED');
-    error.amounts={
-      order_amount:expectedTotal,
-      product_amount:Number.isFinite(productAmount)?productAmount:null,
-      postage_amount:Number.isFinite(postageAmount)?postageAmount:null,
-      ioss_amount:Number.isFinite(iossAmount)?iossAmount:null,
-      ioss_tax_handling_fee:Number.isFinite(iossTaxHandlingFee)?iossTaxHandlingFee:null,
-      cap,
-    };
-    throw error;
-  }
-
-  await call(contract.ENDPOINTS.confirm_order,{
-    method:'POST',
-    body:contract.buildConfirmOrderPayload(created.external_ref),
-    accessToken,
-  });
-
-  const confirmedDetail=await call(contract.ENDPOINTS.get_order_detail,{
-    method:'GET',
-    query:contract.buildOrderDetailQuery(created.external_ref),
-    accessToken,
-  });
-  const confirmedFacts=contract.readOrderDetailFacts(confirmedDetail);
-  const shipmentOrderId=String(confirmedFacts.shipment_order_id || created.shipment_order_id || '').trim();
-  if (!shipmentOrderId) throw new Error('CJ_REAL_SHIPMENT_ORDER_ID_MISSING');
-
-  const payBody=await call(contract.ENDPOINTS.pay_balance_v2,{
-    method:'POST',
-    body:contract.buildPayBalanceV2Payload(shipmentOrderId),
-    accessToken,
-  });
-  const payment=contract.parsePayBalanceV2Response(payBody);
-
-  const afterPay=await call(contract.ENDPOINTS.get_order_detail,{
-    method:'GET',
-    query:contract.buildOrderDetailQuery(created.external_ref),
-    accessToken,
-  });
-  const paidFacts=contract.verifyPaidOrderDetail(afterPay,created.external_ref,orderNumber);
-
-  const billingBody=await call(contract.ENDPOINTS.billing_history,{
-    method:'POST',
-    body:contract.buildBillingHistoryQuery({orderId:created.external_ref}),
-    accessToken,
-  });
-
-  const evidence=contract.parseBillingHistoryDebitEvidence(billingBody,{
-    expectedOrderIds:[created.external_ref],
-    expectedAmount:expectedTotal,
-  });
-
-  const result={
-    proof:'CJ_REAL_DEBIT_BOUNDED',
-    sandbox:false,
-    product_ref:sku.product_ref,
-    product_sku_id:sku.product_sku_id,
-    cj_order_id:created.external_ref,
-    order_number:orderNumber,
-    shipment_order_id:shipmentOrderId,
-    logistic_name:route.logisticName,
-    product_amount:productAmount,
-    postage_amount:postageAmount,
-    ioss_amount:Number.isFinite(iossAmount)?iossAmount:null,
-    ioss_tax_handling_fee:Number.isFinite(iossTaxHandlingFee)?iossTaxHandlingFee:null,
-    expected_total:expectedTotal,
-    hard_cap_usd:cap,
-    prepay_status:facts.status,
-    paid_status:paidFacts.status,
-    payment_verdict:payment.payment_verdict,
-    billing_evidence_verified:evidence.verified,
-    billing_evidence:evidence.evidence,
-  };
-  console.log(`[cj-real-debit-proof] ${JSON.stringify(result)}`);
-  return result;
+async function run() {
+  // B4: a live proof script cannot bypass the persisted PO and Finance authority.
+  // Keep the command fail-closed; use the canonical reconciliation path for an existing debit.
+  throw new Error('FINANCE_B4_AUTHENTICATED_EXECUTION_REQUIRED');
 }
 
 if(require.main===module){
