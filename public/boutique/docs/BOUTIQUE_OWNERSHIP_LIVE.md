@@ -56,7 +56,7 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-modal-product-detail-bootstrap.js` | 9 | 0 | 2/2 | Modal produit |
 | `b-modal-social-proof.js` | 9 | 0 | 0/0 | Modal produit |
 | `b-nav.js` | 5 | 3 | 4/1 | Panier, Grille produits, Header, Hero, Panier groupe, Bottom-nav mobile, Section catalogue |
-| `b-notifications.js` | 8 | 0 | 0/1 | — |
+| `b-notifications.js` | 8 | 0 | 0/2 | — |
 | `hero-bootstrap.js` | 0 | 8 | 0/0 | Grille produits, Hero, Section catalogue |
 | `b-desktop-upgrade.js` | 3 | 4 | 0/0 | Side-cart desktop |
 | `b-modal-suggestions.js` | 6 | 0 | 3/2 | Modal produit |
@@ -80,6 +80,7 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `market-hydration.js` | 2 | 0 | 0/0 | Hero |
 | `b-desktop-global-cart-access.js` | 0 | 1 | 0/0 | Modal produit, Side-cart desktop, Panier |
 | `b-desktop-sidebar.js` | 1 | 0 | 0/1 | Chips catégories |
+| `b-on-demand.js` | 1 | 0 | 1/0 | — |
 | `b-store.js` | 0 | 1 | 1/2 | Modal produit, Panier, Grille produits, Hero |
 | `local-stock-badge-mount.js` | 1 | 0 | 2/0 | Modal produit |
 
@@ -113,6 +114,7 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | modal-product.css | 900px, 899px | 🔴 899px |
 | modal-shell.css | 900px, 899px, 1200px | 🔴 899px |
 | notifications.css | 899px | 🔴 899px |
+| on-demand.css | 899px | 🔴 899px |
 | products.css | 900px, 899px | 🔴 899px |
 | service-detail.css | 899px, 900px | 🔴 899px |
 | shared-list-lists-tab.css | 899px | 🔴 899px |
@@ -163,9 +165,9 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | Indicateur | Valeur | Cible |
 |------------|:------:|:-----:|
 | Composants en multipropriété CSS | 8 | 0 |
-| Modules JS écrivant le DOM | 47 | ≤ 5 |
+| Modules JS écrivant le DOM | 48 | ≤ 5 |
 | Breakpoints distincts | 5 | ≤ 2 |
-| Violations breakpoint | 25 | 0 |
+| Violations breakpoint | 26 | 0 |
 | `!important` | 17 | < 5 |
 
 *Quand toutes les cibles sont vertes, la boutique est sous contrôle : chaque composant a un owner unique et un seul système de breakpoints.*

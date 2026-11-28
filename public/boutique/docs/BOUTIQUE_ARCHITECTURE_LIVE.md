@@ -10,7 +10,7 @@
 
 ## 1. Inventaire CSS
 
-47 fichier(s) source sur disque, 0 orphelin(s), 0 source(s) bundle manquante(s).
+48 fichier(s) source sur disque, 0 orphelin(s), 0 source(s) bundle manquante(s).
 
 | Fichier | Lignes | Bundle(s) |
 |---|---:|---|
@@ -48,6 +48,7 @@
 | `modal-suggestion-card-polish.css` | 26 | components.css |
 | `modal-suggestion-filter.css` | 22 | components.css |
 | `notifications.css` | 64 | components.css |
+| `on-demand.css` | 19 | components.css |
 | `paypal.css` | 102 | components.css |
 | `product-image-loading.css` | 64 | components.css |
 | `products.css` | 998 | components.css |
@@ -69,8 +70,8 @@ Cascade réelle des bundles livrés :
 ```
  1. /boutique/css/dist/base.css?v=268
  2. /boutique/css/dist/critical-home.css?v=5
- 3. /boutique/css/dist/components.css?v=680
- 4. /boutique/css/dist/components.css?v=680
+ 3. /boutique/css/dist/components.css?v=681
+ 4. /boutique/css/dist/components.css?v=681
  5. /boutique/css/dist/desktop.css?v=157
 ```
 
