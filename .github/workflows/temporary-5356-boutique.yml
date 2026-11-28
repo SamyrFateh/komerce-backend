@@ -1,0 +1,53 @@
+name: On Demand canonical boutique and complete preflight
+on:
+  push:
+    branches: [diag/5356-boutique-0465317]
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 0465317aef6c6c381698fc023699fdf1ce6c72da
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix public/boutique
+      - name: Context and impact
+        run: |
+          npm run agent:context -- --pack authz --feature market-delegation
+          npm run arch:impact -- market-delegation
+      - name: Generate canonical CSS and documentation
+        run: |
+          npm --prefix public/boutique run deploy:css
+          npm --prefix public/boutique run audit:arch:live
+          npm --prefix public/boutique run audit:ownership
+      - name: Boutique fast gates first
+        run: npm --prefix public/boutique run check:fast
+      - name: Commit only generated assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/boutique/.cache-buster-state.json public/boutique/css/dist/components.css public/boutique/index.html public/boutique/docs/BOUTIQUE_ARCHITECTURE_LIVE.md public/boutique/docs/BOUTIQUE_OWNERSHIP_LIVE.md
+          git diff --cached --stat
+          git commit -m "chore: regenerate canonical boutique CSS and ownership"
+          git diff --exit-code
+      - name: Complete canonical preflight
+        run: npm run pr:preflight
+      - name: Publish verified candidate to isolated result branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$GITHUB_REF_NAME" = "diag/5356-boutique-0465317"
+          git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push origin HEAD:refs/heads/diag/5356-result-0465317
