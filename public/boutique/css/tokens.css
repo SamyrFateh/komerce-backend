@@ -596,3 +596,29 @@
   /* Gradient transparent sable (244,241,236) */
   --sand-gradient-0:       rgba(244,241,236,0);
 }
+
+/* Accents visuels uniquement : le marché est résolu par market-hydration. */
+[data-market-code="KM"] .k-hero {
+  --hero-market-accent: #176247;
+  --hero-market-stripe: linear-gradient(90deg, #15945b 0 20%, #ffc82d 20% 40%, #fff 40% 60%, #df2739 60% 80%, #3155a4 80%);
+}
+
+[data-market-code="CM"] .k-hero {
+  --hero-market-accent: #155239;
+  --hero-market-stripe: linear-gradient(90deg, #007a5e 0 33.33%, #ce1126 33.33% 66.67%, #fcd116 66.67%);
+}
+
+[data-market-code="CG"] .k-hero {
+  --hero-market-accent: #9d2536;
+  --hero-market-stripe: linear-gradient(110deg, #009543 0 33.33%, #fbde4a 33.33% 66.67%, #dc241f 66.67%);
+}
+
+[data-market-code="DJ"] .k-hero {
+  --hero-market-accent: #185779;
+  --hero-market-stripe: linear-gradient(90deg, #6ab2e7 0 45%, #77c35c 45% 90%, #d72738 90%);
+}
+
+[data-market-code="YT"] .k-hero {
+  --hero-market-accent: #233e74;
+  --hero-market-stripe: linear-gradient(90deg, #264b9b 0 33.33%, #fff 33.33% 66.67%, #e53743 66.67%);
+}
