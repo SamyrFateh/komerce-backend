@@ -472,32 +472,46 @@ async function oracleN38(db,{orderId,reference,dryRun}){
   failure_leg:'NOT_PROVEN_NO_FAULT_INJECTION_ON_STAGING',real_sends:0};
 }
 // N30 : Order 360 et KPI Commerce relus par l'admin, comparés à PG ; les commandes de recette ne doivent pas compter dans le KPI commercial.
-async function oracleN30(db,{orderId,order360,commerce}){
- ok(order360&&commerce,'G6_N30_SCREEN_MISSING_READS_NOT_PROVEN');
+async function oracleN30(db,{orderId,order360,commerce,marketCommerce,simulatedCommerce}){
+ ok(order360?.rendered===true&&commerce?.rendered===true&&marketCommerce?.rendered===true&&simulatedCommerce?.rendered===true,'G6_N30_SCREEN_MISSING_READS_NOT_PROVEN');
  const o=await orderRows(db,orderId);
- const {rows:[x]}=await db.query(`SELECT total_kmf::bigint AS total_kmf,simulation_scope,created_at,
-   (SELECT count(*)::int FROM parcels p WHERE p.order_id=o.id AND p.status::text<>'cancelled') AS parcels FROM orders o WHERE o.id=$1`,[orderId]);
+ const {rows:[x]}=await db.query(`SELECT o.total_kmf::bigint AS total_kmf,o.simulation_scope,o.created_at,o.reference,o.display_total_amount,o.display_currency,m.code AS market_code,m.currency AS market_currency,
+   (SELECT count(*)::int FROM parcels p WHERE p.order_id=o.id AND p.status::text<>'cancelled') AS parcels FROM orders o JOIN markets m ON m.id=o.market_id WHERE o.id=$1`,[orderId]);
  const bad=[];
+ if(order360.reference!==x.reference)bad.push('REFERENCE');
  if(order360.status!==o.status)bad.push('STATUS');
  if(order360.payment_status!==o.payment_status)bad.push('PAYMENT_STATUS');
- if(Number(order360.total_kmf)!==Number(x.total_kmf))bad.push('TOTAL_KMF');
+ if(order360.total_kmf==null||Number(order360.total_kmf)!==Number(x.total_kmf))bad.push('TOTAL_KMF');
  if(order360.items!==o.lines||order360.quantity!==o.qty)bad.push('ITEMS_QTY');
  if(order360.parcels!==x.parcels)bad.push('PARCELS');
+ const wantTotal=x.market_currency==='KMF'?x.total_kmf:x.display_total_amount;
+ if(order360.display_currency!==x.market_currency||order360.display_total==null||wantTotal==null||Number(order360.display_total)!==Number(wantTotal)||(x.market_currency!=='KMF'&&x.display_currency!==x.market_currency))bad.push('MARKET_DISPLAY');
  ok(!bad.length,'G6_N30_PRODUCT_GAP_ORDER_360_DIFFERS_FROM_PG_'+bad.join('_'));
- const win=[commerce.from,commerce.to];
- const sum=async scoped=>(await db.query(`SELECT COALESCE(SUM(o.total_kmf+COALESCE(o.wallet_applied_kmf,0)),0)::bigint AS v FROM orders o
-   WHERE o.created_at>=$1 AND o.created_at<=$2 AND o.payment_status='paid' AND o.status NOT IN ('cancelled','refunded')
-   AND o.simulation_scope IS ${scoped?'NOT ':''}NULL`,win)).rows[0].v;
- const real=Number(await sum(false)),simulated=Number(await sum(true));
- if(Number(commerce.ca_value)!==real){
-  const {rows:[q]}=await db.query('SELECT count(*)::int AS n FROM orders WHERE updated_at>$1',[commerce.to]);
-  ok(q.n===0,'G6_N30_PREREQ_MISSING_QUIET_WINDOW_'+q.n);
-  throw Error('G6_N30_PRODUCT_GAP_COMMERCE_KPI_'+commerce.ca_value+'_VS_PG_'+real);
+ ok(x.simulation_scope==='G6-BUYER'&&order360.simulation_scope===x.simulation_scope,'G6_N30_PREREQ_FIXTURE_SCOPE_MISSING');
+ const {rows:parities}=await db.query("SELECT currency,eur_rate::numeric AS rate FROM currency_parities WHERE currency IN ('KMF','XAF')");
+ const rate=c=>c==='EUR'?1:Number(parities.find(p=>p.currency===c)?.rate);
+ const sum=async (view,simulation)=>(await db.query(`SELECT COALESCE(SUM(o.total_kmf+COALESCE(o.wallet_applied_kmf,0)),0)::bigint AS v FROM orders o JOIN markets m ON m.id=o.market_id
+   WHERE o.created_at >= $1 AND o.created_at <= $2 AND o.payment_status='paid' AND o.status NOT IN ('cancelled','refunded')
+   AND ($3::text IS NULL OR m.code=$3) AND o.simulation_scope IS NOT DISTINCT FROM $4::text`,[view.from,view.to,view.market,simulation])).rows[0].v;
+ const views=[[commerce,null,'EUR',null],[marketCommerce,x.market_code,x.market_currency,null],[simulatedCommerce,x.market_code,x.market_currency,x.simulation_scope]];
+ const proof=[];
+ for(const [view,market,currency,simulation] of views){
+  ok(view.market===market&&view.unit===currency&&(view.simulation?.scope||null)===simulation,'G6_N30_PRODUCT_GAP_COMMERCE_SCOPE_OR_CURRENCY');
+  ok(view.ca_value!=null&&Number.isFinite(Number(view.ca_value))&&Number.isFinite(Date.parse(view.from))&&Number.isFinite(Date.parse(view.to))&&Date.parse(view.from)<=Date.parse(view.to),'G6_N30_COMMERCE_KPI_UNAVAILABLE');
+  const kmf=Number(await sum(view,simulation));
+  const digits=currency==='EUR'?2:0;
+  ok(rate('KMF')>0&&rate(currency)>0,'G6_N30_PREREQ_MISSING_PARITIES');
+  const expected=Math.round(kmf*rate(currency)/rate('KMF')*10**digits)/10**digits;
+  if(Number(view.ca_value)!==expected){
+   const {rows:[q]}=await db.query("SELECT count(*)::int AS n FROM orders WHERE updated_at>$1",[view.to]);
+   ok(q.n===0,'G6_N30_PREREQ_MISSING_QUIET_WINDOW_'+q.n);
+   throw Error('G6_N30_PRODUCT_GAP_COMMERCE_KPI_'+view.ca_value+'_VS_PG_'+expected);
+  }
+  proof.push({market,simulation,currency,base_kmf:kmf,expected_display:expected,api_display:Number(view.ca_value)});
  }
- const inWindow=new Date(x.created_at)>=new Date(commerce.from)&&new Date(x.created_at)<=new Date(commerce.to);
- const counted=inWindow&&o.payment_status==='paid'&&!['cancelled','refunded'].includes(o.status)&&x.simulation_scope==null;
- ok(!counted,'G6_N30_PRODUCT_GAP_FIXTURE_COUNTED_IN_COMMERCIAL_KPI');
- return {order_360_matches_pg:true,kpi_ca_pg:real,kpi_ca_api:Number(commerce.ca_value),scoped_fixtures_excluded_kmf:simulated,order_in_window:inWindow,order_simulation_scope:x.simulation_scope};
+ const inWindow=new Date(x.created_at)>=new Date(simulatedCommerce.from)&&new Date(x.created_at)<=new Date(simulatedCommerce.to);
+ ok(inWindow&&o.payment_status==='paid'&&!['cancelled','refunded'].includes(o.status),'G6_N30_PREREQ_FIXTURE_NOT_IN_PAID_SIMULATION_WINDOW');
+ return {order_360_matches_pg:true,rendered_screens:true,views:proof,kpi_ca_pg:proof[0].base_kmf,kpi_ca_api:proof[0].api_display,order_in_window:inWindow,order_simulation_scope:x.simulation_scope};
 }
 // N31 : snapshot monétaire d'affichage conservé dans la devise du marché, cohérent avec les parités fixes ; remboursement non joué dans cette séquence.
 async function oracleN31(db,{orderId,market}){

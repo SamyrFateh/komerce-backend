@@ -628,20 +628,29 @@ describe('G6-G5C N30 (Order 360 et dashboards vs PG) et N31 (snapshot monétaire
  const mk=rows=>{let i=0;return {query:async()=>({rows:rows[i++]||[]})}};
  const ord=(o={})=>({id:'o',user_id:'u',status:'available',payment_status:'paid',display_total_amount:1,lines:1,qty:1,cash_count:1,control_count:1,allocations:1,consumed_allocations:0,purchase_lines:0,collected_scans:0,parcels:1,...o});
  const t0='2026-11-20T00:00:00Z',t1='2026-11-21T12:00:00Z';
- const reads={order360:{status:'available',payment_status:'paid',total_kmf:100,items:1,quantity:1,parcels:1},commerce:{ca_value:500,from:t0,to:t1}};
- const x=(o={})=>({total_kmf:'100',simulation_scope:'RCT1',created_at:'2026-11-21T01:00:00Z',parcels:1,...o});
+ const reads={order360:{rendered:true,reference:'KTEST01',status:'available',payment_status:'paid',total_kmf:100,display_currency:'XAF',display_total:133,simulation_scope:'G6-BUYER',items:1,quantity:1,parcels:1},
+  commerce:{rendered:true,market:null,ca_value:1,unit:'EUR',from:t0,to:t1,simulation:null},
+  marketCommerce:{rendered:true,market:'CM',ca_value:400,unit:'XAF',from:t0,to:t1,simulation:null},
+  simulatedCommerce:{rendered:true,market:'CM',ca_value:200,unit:'XAF',from:t0,to:t1,simulation:{scope:'G6-BUYER'}}};
+ const x=(o={})=>({reference:'KTEST01',total_kmf:'100',display_total_amount:'133',display_currency:'XAF',market_currency:'XAF',market_code:'CM',simulation_scope:'G6-BUYER',created_at:'2026-11-21T01:00:00Z',parcels:1,...o});
+ const fx=[{currency:'KMF',rate:500},{currency:'XAF',rate:1000}];
  it('séquences : parcours M02 coupé ; M02 inchangé',()=>{
   expect(graphFor('N30').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','N30_TRUTH_COMPARE','N30_TRUTH_ORACLE']);
   expect(graphFor('N31').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','N31_FX_SNAPSHOT_ORACLE']);
   expect(graphFor('M02').order).toEqual(['BUYER','RELAY_CASH','LOCAL_RELAY_AVAILABLE','LOCAL_CLIENT_PICKUP']);
   expect(validateStageModuleSources()).toBeGreaterThan(0);
  });
- it('oracle N30 : 360 = PG, KPI = PG, fixture non comptée',async()=>{
-  await expect(N.oracleN30(mk([[ord()],[x()],[{v:'500'}],[{v:'40'}]]),{orderId:'o',...reads})).resolves.toMatchObject({order_360_matches_pg:true,kpi_ca_pg:500});
+ it('oracle N30 V5.4 : écran 360, groupe EUR, marché XAF, simulation strictement isolée',async()=>{
+  const data=[[ord()],[x()],fx,[{v:'500'}],[{v:'200'}],[{v:'100'}]];
+  await expect(N.oracleN30(mk(data),{orderId:'o',...reads})).resolves.toMatchObject({order_360_matches_pg:true,rendered_screens:true,kpi_ca_pg:500,kpi_ca_api:1});
+  await expect(N.oracleN30(mk([]),{orderId:'o',...reads,commerce:{...reads.commerce,rendered:false}})).rejects.toThrow('G6_N30_SCREEN_MISSING_READS_NOT_PROVEN');
   await expect(N.oracleN30(mk([[ord({status:'collected'})],[x()]]),{orderId:'o',...reads})).rejects.toThrow('G6_N30_PRODUCT_GAP_ORDER_360_DIFFERS_FROM_PG_STATUS');
-  await expect(N.oracleN30(mk([[ord()],[x()],[{v:'900'}],[{v:'0'}],[{n:0}]]),{orderId:'o',...reads})).rejects.toThrow('G6_N30_PRODUCT_GAP_COMMERCE_KPI_500_VS_PG_900');
-  await expect(N.oracleN30(mk([[ord()],[x()],[{v:'900'}],[{v:'0'}],[{n:3}]]),{orderId:'o',...reads})).rejects.toThrow('G6_N30_PREREQ_MISSING_QUIET_WINDOW_3');
-  await expect(N.oracleN30(mk([[ord()],[x({simulation_scope:null})],[{v:'500'}],[{v:'0'}]]),{orderId:'o',...reads})).rejects.toThrow('G6_N30_PRODUCT_GAP_FIXTURE_COUNTED_IN_COMMERCIAL_KPI');
+  await expect(N.oracleN30(mk([[ord()],[x()],fx,[{v:'900'}],[{n:0}]]),{orderId:'o',...reads})).rejects.toThrow('G6_N30_PRODUCT_GAP_COMMERCE_KPI_1_VS_PG_1.8');
+  await expect(N.oracleN30(mk([[ord()],[x()],fx,[{v:'900'}],[{n:3}]]),{orderId:'o',...reads})).rejects.toThrow('G6_N30_PREREQ_MISSING_QUIET_WINDOW_3');
+  await expect(N.oracleN30(mk([[ord()],[x({simulation_scope:null})]]),{orderId:'o',...reads})).rejects.toThrow('G6_N30_PREREQ_FIXTURE_SCOPE_MISSING');
+  await expect(N.oracleN30(mk(data),{orderId:'o',...reads,marketCommerce:{...reads.marketCommerce,unit:'KMF'}})).rejects.toThrow('G6_N30_PRODUCT_GAP_COMMERCE_SCOPE_OR_CURRENCY');
+  await expect(N.oracleN30(mk(data),{orderId:'o',...reads,simulatedCommerce:{...reads.simulatedCommerce,simulation:null}})).rejects.toThrow('G6_N30_PRODUCT_GAP_COMMERCE_SCOPE_OR_CURRENCY');
+  await expect(N.oracleN30(mk(data),{orderId:'o',...reads,commerce:{...reads.commerce,ca_value:null}})).rejects.toThrow('G6_N30_COMMERCE_KPI_UNAVAILABLE');
  });
  it('oracle N31 : devise du marché, snapshot, parité fixe, aucun remboursement',async()=>{
   const row={total_kmf:'655',shown:'1000',display_currency:'XAF',display_parity_snapshot:{eur:1}};
@@ -653,7 +662,7 @@ describe('G6-G5C N30 (Order 360 et dashboards vs PG) et N31 (snapshot monétaire
  });
  it('script et workflow : lectures GET seules, aucune capture, titres N30/N31',()=>{
   const a=read('scripts/recette/g6-negative-n30-chromium.js');
-  expect(a).toMatch(/ca_encaisse/);expect(a).not.toMatch(/\.post\(|screenshot/);expect(validateChromiumScriptSources()).toBeGreaterThan(0);
+  expect(a).toMatch(/ca_encaisse/);expect(a).toMatch(/humanGoto\(page,route/);expect(a).toMatch(/requireMetric\(dashboard,'ca-encaisse'/);expect(a).not.toMatch(/\.post\(|screenshot/);expect(validateChromiumScriptSources()).toBeGreaterThan(0);
   const wf=read('.github/workflows/staging-g6-dynamic-fresh-buyer-cash.yml');
   for(const id of ['N30','N31']){for(const m of ['KM','CM','CG'])expect(wf).toContain("'[staging-op] g6-dynamic-fresh-full-"+id+'-'+m+"'");expect(wf).toContain("'-full-"+id+"-') && '"+id+"'");expect(N.isNegative(id)).toBe(true)}
  });

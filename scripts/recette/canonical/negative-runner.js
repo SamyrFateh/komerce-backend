@@ -185,7 +185,7 @@ async function runNegativeScenario({scenario,env,db,adapters}){
   out.stages.push({stage_id:phase,steps_reached:g.steps_reached,page_events:g.page_events,attempts:g.attempts||null,tabs:g.tabs||null,intruder:g.intruder||null,control:g.control||null,reverse:g.reverse||null,ux_signal:g.ux_signal||null,
    legit_handoff_after_lock:g.legit_handoff_after_lock||null,after_http500:g.after_http500||null,order360:g.order360||null,commerce:g.commerce||null,after_lost_response:g.after_lost_response||null,access:g.access||null,dry_run:g.dry_run||null,screen:g.screen||null,probes:g.probes||null,director:g.director||null,
    candidate:g.candidate||null,request:g.request||null,reservation_response:g.reservation_response||null,execution_response:g.execution_response||null,before:g.before||null,after:g.after||null});
-  const o=scenario==='N30'?await N.oracleN30(db,{orderId:result.order_id,order360:g.order360,commerce:g.commerce})
+  const o=scenario==='N30'?await N.oracleN30(db,{orderId:result.order_id,order360:g.order360,commerce:g.commerce,marketCommerce:g.market_commerce,simulatedCommerce:g.simulated_commerce})
    :scenario==='N31'?await N.oracleN31(db,{orderId:result.order_id,market})
    :scenario==='N35'?await N.oracleN35(db,{orderId:result.order_id})
    :scenario==='N36'?await N.oracleN36(db,{orderId:result.order_id})
