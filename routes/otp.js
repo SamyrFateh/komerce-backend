@@ -227,36 +227,39 @@ router.post('/request', async (req, res, next) => {
     if (internal && !internalUser) return res.json({ok:true,success:true,message:'Code envoyé',expiresIn:OTP_EXPIRY_MIN*60,retryAfter:OTP_RESEND_COOLDOWN_SEC});
     if (internal) purpose = internalOtpPurpose(internalUser);
 
-    // G6 owner-provisioned buyer: the canonical OTP is already bcrypt-hashed
-    // in otp_codes by a protected staging-only runner. Never call WhatsApp,
-    // never echo its code, never fall through to the global test mode.
-    const g6 = internal ? null : await hasPreparedG6BuyerOtp(pool, {phone,purpose});
-    if (g6) {
-      if (!g6.prepared) return res.status(409).json({
-        ok:false,success:false,code:'G6_OTP_FIXTURE_MISSING',
-        error:'Code de recette absent ou expiré',
-      });
-      return res.json({
-        ok:true,success:true,message:'Code de recette préparé (aucun envoi externe)',
-        expiresIn:600,retryAfter:0,
-      });
-    }
+    // Keep the historical buyer path intact and unreachable for internal challenges.
+    if (!internal) {
+      // G6 owner-provisioned buyer: the canonical OTP is already bcrypt-hashed
+      // in otp_codes by a protected staging-only runner. Never call WhatsApp,
+      // never echo its code, never fall through to the global test mode.
+      const g6 = await hasPreparedG6BuyerOtp(pool, {phone,purpose});
+      if (g6) {
+        if (!g6.prepared) return res.status(409).json({
+          ok:false,success:false,code:'G6_OTP_FIXTURE_MISSING',
+          error:'Code de recette absent ou expiré',
+        });
+        return res.json({
+          ok:true,success:true,message:'Code de recette préparé (aucun envoi externe)',
+          expiresIn:600,retryAfter:0,
+        });
+      }
 
-    // ── TEST MODE : court-circuit, pas d'envoi WhatsApp, code maître ──
-    // Renvoie immédiatement le code maître pour que le test l'utilise.
-    // (jamais atteint en production : isOtpTestMode() y est toujours false)
-    if (!internal && isOtpTestMode()) {
-      log.warn(`[OTP][TEST] /request court-circuité pour ${phone} (code maître)`);
-      return res.json({
-        ok: true,
-        success: true,
-        message: 'Code envoyé (TEST MODE)',
-        expiresIn: OTP_EXPIRY_MIN * 60,
-        retryAfter: 0,
-        _test: { mode: true, code: getMasterCode() },
-      });
+      // ── TEST MODE : court-circuit, pas d'envoi WhatsApp, code maître ──
+      // Renvoie immédiatement le code maître pour que le test l'utilise.
+      // (jamais atteint en production : isOtpTestMode() y est toujours false)
+      if (isOtpTestMode()) {
+        log.warn(`[OTP][TEST] /request court-circuité pour ${phone} (code maître)`);
+        return res.json({
+          ok: true,
+          success: true,
+          message: 'Code envoyé (TEST MODE)',
+          expiresIn: OTP_EXPIRY_MIN * 60,
+          retryAfter: 0,
+          _test: { mode: true, code: getMasterCode() },
+        });
+      }
+      // ── /TEST MODE ────────────────────────────────────────────────────
     }
-    // ── /TEST MODE ────────────────────────────────────────────────────
 
     const recentOtp = await pool.query(
       `SELECT created_at
