@@ -449,10 +449,12 @@
   function buyerDrillUrl(payload, kind, page, endpoint) {
     const period = payload?.period_definition;
     const count = payload?.buyer_cohort?.[kind];
+    const token = payload?.buyer_cohort?.population_token;
     if (!BUYER_METRICS.some(([key])=>key===kind) || !Number.isSafeInteger(count) || count<0
         || !Number.isSafeInteger(page) || page<1 || !period?.from || !period?.to
-        || ![7,30,90].includes(Number(payload.period)) || !endpoint) return null;
-    const params = new URLSearchParams({period:String(payload.period),buyer_drill:kind,as_of:period.to,page:String(page)});
+        || ![7,30,90].includes(Number(payload.period)) || !endpoint
+        || typeof token!=='string' || !/^[a-f0-9]{32}$/.test(token)) return null;
+    const params = new URLSearchParams({period:String(payload.period),buyer_drill:kind,as_of:period.to,page:String(page),population_token:token});
     if (payload.simulation?.scope) params.set('simulation_scope',payload.simulation.scope);
     return endpoint + '?' + params.toString();
   }
@@ -464,6 +466,9 @@
     const other = result?.period_definition;
     const minOrders = kind === 'repeat_paid_buyers' ? 2 : 1;
     return Number.isSafeInteger(total) && total>=0 && result?.kind===kind
+      && typeof payload?.buyer_cohort?.population_token==='string'
+      && /^[a-f0-9]{32}$/.test(payload.buyer_cohort.population_token)
+      && result.population_token===payload.buyer_cohort.population_token
       && result.scope?.mode===payload.scope?.mode && result.scope?.market?.code===payload.scope?.market?.code
       && (result.simulation?.scope||null)===(payload.simulation?.scope||null)
       && other?.from===period?.from && other?.to===period?.to && other?.timezone===period?.timezone
@@ -515,6 +520,10 @@
       panel.appendChild(content);
       try {
         const response=await fetchFn(url,{method:'GET',credentials:'include',headers:{Accept:'application/json'}});
+        if (response.status===409) {
+          if(request===seq && host.isConnected) content.replaceChildren(text(doc,'p','kmc-decision-dashboard-section-copy','Population modifiée ou non réconciliée. Actualisez Commerce avant de consulter le détail.'));
+          return;
+        }
         if (!response.ok) throw new Error('buyer_drill_read_failed');
         const result=await response.json();
         if (request!==seq || !host.isConnected) return;

@@ -213,6 +213,7 @@ router.get(
         : await projectCommerceMarketPayload(await commerce.buildCommerce(req.query, { market: req.dashboardMarket }), req.dashboardMarket);
       res.json(payload);
     } catch (err) {
+      if ([400,409].includes(err.status) && ['invalid_buyer_drill','buyer_drill_population_changed'].includes(err.code)) return res.status(err.status).json({error:err.code,code:err.code});
       log.error({ err, market: req.dashboardMarket && req.dashboardMarket.code }, '[admin-dashboard-market] commerce market error');
       next(err);
     }
@@ -325,6 +326,7 @@ router.get(
         : await commerce.buildCommerce(req.query);
       res.json(payload);
     } catch (err) {
+      if ([400,409].includes(err.status) && ['invalid_buyer_drill','buyer_drill_population_changed'].includes(err.code)) return res.status(err.status).json({error:err.code,code:err.code});
       log.error({ err }, '[admin-dashboard-market] commerce global error');
       next(err);
     }
