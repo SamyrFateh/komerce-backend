@@ -202,7 +202,21 @@ async function resolvePickupForOrder(orderId, options) {
   return resolveOrderMilestones(orderId, options);
 }
 
+// A reply event is unique to the immutable message. It does not expose
+// the conversation body through the global notification feed.
+async function emitClientRequestReply({dbClient,userId,requestId,reference,messageId}) {
+  const q=dbClient||db;
+  const {rows}=await q.query(
+    `INSERT INTO client_notifications
+       (user_id,event_key,entity_type,entity_id,order_reference,severity,title,message,action_target,requires_ack)
+     VALUES($1,$2,'client_request',$3,$4,'important','Réponse de votre conseiller','Une réponse est disponible dans votre conversation.','client_requests',TRUE)
+     ON CONFLICT (user_id,event_key,entity_type,entity_id) DO NOTHING RETURNING id`,
+    [userId,'client_request.reply.'+messageId,requestId,reference]);
+  return rows[0]||null;
+}
+
 module.exports = {
+  emitClientRequestReply,
   PICKUP_READY_EVENT,
   ORDER_MILESTONES,
   emitOrderMilestone,
