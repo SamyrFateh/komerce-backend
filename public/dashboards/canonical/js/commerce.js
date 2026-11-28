@@ -276,8 +276,7 @@
     const search = options.location && typeof options.location.search === 'string'
       ? options.location.search
       : (typeof globalThis !== 'undefined' && globalThis.location ? globalThis.location.search : '');
-    const scope = new URLSearchParams(search || '').get('simulation_scope');
-    return scope && /^[A-Z][A-Z0-9-]{1,31}$/.test(scope) ? `&simulation_scope=${encodeURIComponent(scope)}` : '';
+    return new URLSearchParams(search || '').getAll('simulation_scope').map(scope=>`&simulation_scope=${encodeURIComponent(scope)}`).join('');
   }
 
   async function jsonRequest(fetchFn, url) {

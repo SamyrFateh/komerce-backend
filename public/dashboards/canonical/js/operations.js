@@ -236,8 +236,8 @@
 
   function simulationEndpoint(endpoint,options={}) {
     const search=options.location?.search ?? globalThis.location?.search ?? '';
-    const scope=new URLSearchParams(search).get('simulation_scope');
-    return scope===null ? endpoint : endpoint+'?simulation_scope='+encodeURIComponent(scope);
+    const scopes=new URLSearchParams(search).getAll('simulation_scope');
+    return scopes.length ? endpoint+'?'+scopes.map(scope=>'simulation_scope='+encodeURIComponent(scope)).join('&') : endpoint;
   }
 
   function mount(options) {

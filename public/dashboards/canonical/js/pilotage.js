@@ -274,8 +274,7 @@
     const period = requestedPeriod == null ? null : (['7','30','90'].includes(String(requestedPeriod)) ? String(requestedPeriod) : '30');
     const params = new URLSearchParams();
     if (period) params.set('period', period);
-    const scope = query.get('simulation_scope');
-    if (scope && /^[A-Z][A-Z0-9-]{1,31}$/.test(scope)) params.set('simulation_scope',scope);
+    query.getAll('simulation_scope').forEach(scope=>params.append('simulation_scope',scope));
     const requestUrl = params.size ? `${endpoint}?${params}` : endpoint;
 
     if (!rootNode) throw new Error('canonical_pilotage_root_missing');

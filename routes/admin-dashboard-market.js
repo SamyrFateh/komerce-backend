@@ -186,6 +186,7 @@ router.get(
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
+      if (req.query.simulation_scope !== undefined && !isValidScope(req.query.simulation_scope)) return res.status(400).json({error:'invalid_simulation_scope'});
       const filters = parseFilters(req);
       const flowPeriod = req.query.period === undefined ? null : commerce.buildPeriodFilters(req.query, req.dashboardMarket.id, new Date(), req.dashboardMarket);
       const payload = await projectMarketPayload(await pilotage.buildMarketPilotage(filters, req.dashboardMarket, req.user, flowPeriod), req.dashboardMarket);
@@ -208,6 +209,7 @@ router.get(
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
+      if (req.query.simulation_scope !== undefined && !isValidScope(req.query.simulation_scope)) return res.status(400).json({error:'invalid_simulation_scope'});
       const payload = Object.prototype.hasOwnProperty.call(req.query,'buyer_drill')
         ? await commerce.buildBuyerDrill(req.query,{market:req.dashboardMarket})
         : await projectCommerceMarketPayload(await commerce.buildCommerce(req.query, { market: req.dashboardMarket }), req.dashboardMarket);
@@ -321,6 +323,7 @@ router.get(
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
+      if (req.query.simulation_scope !== undefined && !isValidScope(req.query.simulation_scope)) return res.status(400).json({error:'invalid_simulation_scope'});
       const payload = Object.prototype.hasOwnProperty.call(req.query,'buyer_drill')
         ? await commerce.buildBuyerDrill(req.query)
         : await commerce.buildCommerce(req.query);

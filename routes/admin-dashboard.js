@@ -322,6 +322,10 @@ async function periodResultKpi(actor,filters){
 router.get(
   '/unified',
   authenticate, requireAdmin, requireDashboardGlobalAuthority,
+  (req,res,next)=> {
+    if (req.query.simulation_scope !== undefined && !isValidScope(req.query.simulation_scope)) return res.status(400).json({error:'invalid_simulation_scope'});
+    next();
+  },
   cache.cacheMiddleware('unified'),
   async (req, res, next) => {
     try {
@@ -354,7 +358,7 @@ router.get(
         metrics.getTauxCompletudeScans(filters),
         filters.simulation_scope ? null : _fetchTopAlerts(10),
         filters.simulation_scope ? unavailableSimulationSignal('points_attention','Points d’attention') : metrics.getPointsAttention(filters),
-        filters.simulation_scope ? null : controlChain.getControlChain({ market: null }),
+        controlChain.getControlChain({market:null,...(filters.simulation_scope?{simulationScope:filters.simulation_scope}:{})}),
         // null = lecture indisponible (affichée « Non disponible »), jamais converti en 0.
         getMarketsSupervision(pilotageStockFilters(filters)).catch((e) => { log.error('[admin-dashboard] markets_supervision:', e); return null; }),
       ]);
@@ -411,11 +415,11 @@ router.get(
         economic_flow,
         principles,
         markets_supervision: marketsSupervision,
-        control_chain: filters.simulation_scope ? null : summarizeControlChain(controlChainProjection),
+        control_chain: summarizeControlChain(controlChainProjection),
         system_alerts: filters.simulation_scope ? null : mergePilotageAlerts(topAlerts, controlChainProjection, 10),
         data_quality: makeDataQuality(filters, ['(toutes)'], filters.simulation_scope ? {
-          warnings:['Chaîne opérationnelle et signaux non certifiés pour ce périmètre de recette ; activité réelle exclue.'],
-          incompleteFields:['control_chain','system_alerts','alertes_critiques','points_attention'],
+          warnings:['Signaux transverses non certifiés pour ce périmètre de recette ; chaîne limitée aux commandes de la recette.'],
+          incompleteFields:['system_alerts','alertes_critiques','points_attention'],
         } : {}),
       });
     } catch (err) {

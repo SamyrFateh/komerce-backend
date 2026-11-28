@@ -53,9 +53,9 @@ describe('dashboard-pilotage-market', () => {
 
   test('recette marché : chaîne et signaux réels non lus et non déterminés',async()=>{
     const result=await pilotage.buildMarketPilotage({market_id:market.id,simulation_scope:'RCT1'},market);
-    expect(result.control_chain).toBeNull();
+    expect(result.control_chain).toBeDefined();
     expect(result.system_alerts).toBeNull();
-    expect(mockControlChain).not.toHaveBeenCalled();
+    expect(mockControlChain).toHaveBeenCalledWith({market,simulationScope:'RCT1'});
     expect(mockMetricFunctions.getAlertesCritiques).not.toHaveBeenCalled();
     expect(result.kpis_global).toContainEqual(expect.objectContaining({key:'alertes_critiques',value:null}));
   });

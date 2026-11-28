@@ -314,8 +314,8 @@
       if (payload.decision_clocks.stock?.simulation_scope) {
         reading.body.appendChild(text(doc,'p','kmc-decision-dashboard-section-copy',
           'Recette '+payload.decision_clocks.stock.simulation_scope+' · faits simulés, hors activité réelle.'));
-        if (payload.control_chain == null && payload.system_alerts == null) reading.body.appendChild(text(doc,'p','kmc-decision-dashboard-section-copy',
-          'Chaîne opérationnelle et signaux non certifiés pour cette recette.'));
+        if (payload.system_alerts == null) reading.body.appendChild(text(doc,'p','kmc-decision-dashboard-section-copy',
+          'Signaux transverses non certifiés pour cette recette.'));
       }
       if (payload.decision_clocks.flow?.period && decisionUi.PeriodControl) {
         reading.body.appendChild(decisionUi.PeriodControl.create(doc,{period:payload.decision_clocks.flow.period,

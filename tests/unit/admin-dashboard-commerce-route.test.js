@@ -93,6 +93,14 @@ beforeEach(() => {
 });
 
 describe('routes Commerce Canonical', () => {
+  test('un scope recette invalide ne retombe pas sur les données réelles',async()=>{
+    for(const suffix of ['simulation_scope=bad','simulation_scope=RCT1&simulation_scope=RCT2']) {
+      const res=await request(app()).get('/api/admin/dashboard/commerce/market/CM?'+suffix);
+      expect(res.status).toBe(400);
+    }
+    expect(mockBuildCommerce).not.toHaveBeenCalled();
+    expect(mockBuildBuyerDrill).not.toHaveBeenCalled();
+  });
   test('opérateur CM lit Commerce CM et le market est résolu côté serveur', async () => {
     const res = await request(app()).get('/api/admin/dashboard/commerce/market/cm?period=30');
 

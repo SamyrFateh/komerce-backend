@@ -65,13 +65,13 @@ describeE2E('E2E-DASHBOARD — Golden Logistics Control Chain', ({ db }) => {
   const q = (sql, params) => db.query(sql, params);
   const one = async (sql, params) => (await q(sql, params)).rows[0];
 
-  async function seedOrder(reference, status = 'confirmed') {
+  async function seedOrder(reference, status = 'confirmed', simulationScope = null) {
     const id = uuid();
     await q(
       `INSERT INTO orders
-         (id, user_id, relais_id, market_id, reference, status, payment_status, payment_mode, total_kmf, total_eur)
-       VALUES ($1,$2,$3,$4,$5,$6,'paid','cash_relais',25000,50)`,
-      [id, userId, relaisId, marketId, reference, status]
+         (id, user_id, relais_id, market_id, reference, status, payment_status, payment_mode, total_kmf, total_eur, simulation_scope)
+       VALUES ($1,$2,$3,$4,$5,$6,'paid','cash_relais',25000,50,$7)`,
+      [id, userId, relaisId, marketId, reference, status, simulationScope]
     );
     return id;
   }
@@ -454,6 +454,28 @@ describeE2E('E2E-DASHBOARD — Golden Logistics Control Chain', ({ db }) => {
     await seedOrder('CTG-'+RUN_TAG+'-NEW','confirmed');
     const old=projection.parseChainDrill({chain_drill:'ORDER',health:'GREEN',page:'1',token:census.token});
     await expect(projection.getControlChain({market:{id:marketId},drill:old})).rejects.toMatchObject({status:409});
+  });
+
+  it('recette : chaîne et drill isolent exactement le périmètre simulé',async()=>{
+    const scope='CTG-'+uuid().replace(/-/g,'').slice(0,20).toUpperCase();
+    const otherScope=scope+'-B';
+    const simRef=('CTG-'+RUN_TAG+'-SIM').toUpperCase();
+    const otherRef=('CTG-'+RUN_TAG+'-OTHER-SIM').toUpperCase();
+    await seedOrder(simRef,'confirmed',scope);
+    await seedOrder(otherRef,'confirmed',otherScope);
+    const market={id:marketId};
+    const overview=await projection.getControlChain({market,simulationScope:scope});
+    expect(overview.population).toMatchObject({simulation_scope:scope,total:1,shown:1});
+    expect(overview.orders.map(o=>o.order_reference)).toEqual([simRef]);
+    const drill=projection.parseChainDrill({chain_drill:'ALL',page:'1',token:overview.population_census.token,simulation_scope:scope});
+    const page=await projection.getControlChain({market,drill});
+    expect(page.drill.simulation_scope).toBe(scope);
+    expect(page.orders.map(o=>o.order_reference)).toEqual([simRef]);
+    const real=await projection.getControlChain({market,limit:500});
+    expect(real.orders.map(o=>o.order_reference)).not.toContain(simRef);
+    expect(real.orders.map(o=>o.order_reference)).not.toContain(otherRef);
+    const wrong=projection.parseChainDrill({chain_drill:'ALL',page:'1',token:overview.population_census.token,simulation_scope:otherScope});
+    await expect(projection.getControlChain({market,drill:wrong})).rejects.toMatchObject({status:409});
   });
 
   it('split : une seule commande reste sur la branche nécessaire la moins avancée', async () => {

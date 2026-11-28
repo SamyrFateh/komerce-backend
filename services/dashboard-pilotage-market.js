@@ -105,7 +105,7 @@ async function buildMarketPilotage(filters, market, actor=null, flowPeriod=null)
     metrics.getRetardsCritiques(filters),
     metrics.getTauxCompletudeScans(filters),
     filters.simulation_scope ? null : fetchTopAlerts(filters, 10),
-    filters.simulation_scope ? null : controlChain.getControlChain({ market }),
+    controlChain.getControlChain({market,...(filters.simulation_scope?{simulationScope:filters.simulation_scope}:{})}),
   ]);
 
   const periodStart=new Date().toISOString().slice(0,7)+'-01';
@@ -177,13 +177,13 @@ async function buildMarketPilotage(filters, market, actor=null, flowPeriod=null)
       'cost_status visible : estimated, partial_real, actual, incomplete',
       'Le dashboard doit aider à décider',
     ],
-    control_chain: filters.simulation_scope ? null : summarizeControlChain(controlChainProjection),
+    control_chain: summarizeControlChain(controlChainProjection),
     system_alerts: filters.simulation_scope ? null : mergePilotageAlerts(topAlerts, controlChainProjection, 10),
     data_quality: {
       generated_at: new Date().toISOString(),
       filters: publicFilters(filters),
-      warnings: filters.simulation_scope ? ['Chaîne opérationnelle et signaux non certifiés pour ce périmètre de recette ; activité réelle exclue.'] : [],
-      incomplete_fields: filters.simulation_scope ? ['control_chain','system_alerts','alertes_critiques'] : [],
+      warnings: filters.simulation_scope ? ['Signaux transverses non certifiés pour ce périmètre de recette ; chaîne limitée aux commandes de la recette.'] : [],
+      incomplete_fields: filters.simulation_scope ? ['system_alerts','alertes_critiques'] : [],
       source_tables: [
         'orders', 'parcels', 'scan_events', 'signals',
         'purchase_lines', 'purchase_orders', 'hub_purchase_allocations',

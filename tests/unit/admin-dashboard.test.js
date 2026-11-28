@@ -244,12 +244,20 @@ describe('GET /logistics', () => {
 });
 
 describe('GET /unified', () => {
+  it('refuse un périmètre de simulation invalide ou multiple avant lecture',async()=>{
+    for (const suffix of ['simulation_scope=bad','simulation_scope=RCT1&simulation_scope=RCT2']) {
+      const res=await request(app).get('/api/admin/dashboard/unified?'+suffix);
+      expect(res.status).toBe(400);
+    }
+    expect(mockPaidSales).not.toHaveBeenCalled();
+    expect(mockControlChain).not.toHaveBeenCalled();
+  });
   it('ne lit pas les signaux et la chaîne réels dans une vue recette',async()=>{
     const res=await request(app).get('/api/admin/dashboard/unified?period=7&simulation_scope=RCT1');
     expect(res.status).toBe(200);
-    expect(res.body.control_chain).toBeNull();
+    expect(res.body.control_chain).toBeDefined();
     expect(res.body.system_alerts).toBeNull();
-    expect(mockControlChain).not.toHaveBeenCalled();
+    expect(mockControlChain).toHaveBeenCalledWith({market:null,simulationScope:'RCT1'});
     const metrics=require('../../services/dashboard-metrics');
     expect(metrics.getAlertesCritiques).not.toHaveBeenCalled();
     expect(metrics.getPointsAttention).not.toHaveBeenCalled();
