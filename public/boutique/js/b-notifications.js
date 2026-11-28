@@ -79,9 +79,10 @@ function renderCurrent() {
   const view = document.createElement('button');
   view.type = 'button';
   view.className = 'k-client-notification__view';
-  view.textContent = 'Voir la commande';
+  view.textContent = notification.action_target === 'client_requests' ? 'Voir ma demande' : 'Voir la commande';
   view.addEventListener('click', () => {
-    bus.emit('nav:goto-track', { orderReference: notification.order_reference });
+    if (notification.action_target === 'client_requests') bus.emit('on-demand:open', { reference: notification.order_reference });
+    else bus.emit('nav:goto-track', { orderReference: notification.order_reference });
   });
 
   const ack = document.createElement('button');
