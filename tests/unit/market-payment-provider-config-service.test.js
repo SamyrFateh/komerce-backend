@@ -5,7 +5,7 @@ const { configureProvisioningProvider } = require('../../services/market-payment
 describe('market payment provider provisioning writer', () => {
   test('writes only for a PROVISIONING market and enforces market currency', async () => {
     const db={query:jest.fn()
-      .mockResolvedValueOnce({rows:[{id:'m1',currency:'XAF',lifecycle_status:'PROVISIONING'}]})
+      .mockResolvedValueOnce({rows:[{id:'m1',code:'CG',currency:'XAF',lifecycle_status:'PROVISIONING'}]})
       .mockResolvedValueOnce({rows:[{market_id:'m1',provider:'mtn_momo',currency:'XAF',is_enabled:true,priority:10}]})};
     await expect(configureProvisioningProvider(db,{marketId:'m1',provider:'mtn_momo',currency:'XAF'}))
       .resolves.toMatchObject({provider:'mtn_momo',is_enabled:true});
@@ -13,7 +13,7 @@ describe('market payment provider provisioning writer', () => {
   });
 
   test('currency mismatch fails before mutation', async () => {
-    const db={query:jest.fn().mockResolvedValueOnce({rows:[{id:'m1',currency:'XAF',lifecycle_status:'PROVISIONING'}]})};
+    const db={query:jest.fn().mockResolvedValueOnce({rows:[{id:'m1',code:'CG',currency:'XAF',lifecycle_status:'PROVISIONING'}]})};
     await expect(configureProvisioningProvider(db,{marketId:'m1',provider:'mtn_momo',currency:'KMF'}))
       .rejects.toMatchObject({code:'MARKET_PAYMENT_CURRENCY_MISMATCH'});
     expect(db.query).toHaveBeenCalledTimes(1);
@@ -43,4 +43,10 @@ describe('central payment authorization during market preparation #4370', () => 
     await expect(configureCentralCollectionModes(db,{marketId:'m1',actorUserId:'admin',modes:[{payment_mode:'paypal_eur',evidence_ref:'DECISION-12'}]})).rejects.toMatchObject({code:'MARKET_CENTRAL_MODES_PROVISIONING_ONLY'});
     expect(db.query).toHaveBeenCalledTimes(1);
   });
+});
+
+test('canonical provider writer refuses a different country even with the same currency',async()=>{
+  const db={query:jest.fn().mockResolvedValue({rows:[{id:'m1',code:'CG',currency:'XAF',lifecycle_status:'PROVISIONING'}]})};
+  await expect(configureProvisioningProvider(db,{marketId:'m1',provider:'orange_money',currency:'XAF'})).rejects.toMatchObject({code:'MARKET_PAYMENT_PROVIDER_INELIGIBLE',status:409});
+  expect(db.query).toHaveBeenCalledTimes(1);
 });

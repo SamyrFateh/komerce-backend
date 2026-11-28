@@ -124,7 +124,7 @@ async function configureProvisioningProvider(executor, {
   }
 
   const { rows: markets } = await db.query(
-    `SELECT id,currency,lifecycle_status FROM markets WHERE id=$1::uuid LIMIT 1 FOR UPDATE`,
+    `SELECT id,code,currency,lifecycle_status FROM markets WHERE id=$1::uuid LIMIT 1 FOR UPDATE`,
     [marketId]
   );
   const market = markets[0];
@@ -135,6 +135,8 @@ async function configureProvisioningProvider(executor, {
   if (market.currency !== c) {
     throw configError('MARKET_PAYMENT_CURRENCY_MISMATCH', 'La devise provider doit être celle du marché.', 409);
   }
+
+  assertMobileMarketEligibility(market.code,p);
 
   const { rows } = await db.query(
     `INSERT INTO market_payment_providers

@@ -31,7 +31,7 @@ const { targetCapabilitiesForScope } = require('./market-operator-provisioning')
 const { inviteTeamMember } = require('./market-delegation-team-service');
 const { projectAssignment } = require('./market-scope-projector');
 const { initializeProvisioningCashPolicy } = require('./market-cash-control-policy-service');
-const { configureProvisioningProvider, configureCentralCollectionModes, assertMobileMarketEligibility } = require('./market-payment-provider-config-service');
+const { configureProvisioningProvider, configureCentralCollectionModes } = require('./market-payment-provider-config-service');
 const relaisMutation = require('./relais-mutation-service');
 const centralAuthority = require('./central-authority');
 const controlPlane = require('./market-control-plane');
@@ -207,7 +207,6 @@ async function configureProvisioningMarket(executor, {
     correlationId,
   });
 
-  if (identity && paymentProvider) assertMobileMarketEligibility(market.code, paymentProvider.provider);
   const initialCentralModes = centralCollectionModes == null ? [] :
     await configureCentralCollectionModes(executor, {
       marketId: market.id, actorUserId, modes: centralCollectionModes,

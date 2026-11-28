@@ -83,7 +83,6 @@ describeE2E('Market Control Plane H — provisioning -> première commande',({db
         central_referent_user_id:centralId,
         financial_limits:limits,
         lead:{email:leadEmail,channel:'EMAIL'},
-        payment_provider:{provider:'mtn_momo',currency:'KMF',priority:10},
         cash_policy:{cash_enabled:true,confirmation_mode:'SINGLE'},
         initial_relais:{name:'E2E Relais',agent_name:'E2E Agent',phone:'+269000321',address:'E2E Address',island:'Ngazidja'},
         storefront_texts:{welcome:'Bienvenue E2E'},
