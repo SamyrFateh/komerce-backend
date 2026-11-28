@@ -303,6 +303,10 @@
     return String.fromCodePoint(...codePoints);
   }
 
+  function marketCurrencyLabel(label, adminContext, code) {
+    return global.KomerceAdminContext?.withMarketCurrencyLabel?.(label, adminContext, code) ?? label;
+  }
+
   function marketChoices(adminContext, options = {}) {
     const access = adminContext && adminContext.access;
     if (!access || !Array.isArray(access.allowedMarkets)) {
@@ -312,7 +316,8 @@
     const choices = [];
     if ((access.mode === 'global' && (!options.requireMarket || options.allowGlobalOverview)) ||
         (access.mode === 'hub' && options.allowHubOverview)) {
-      choices.push(Object.freeze({ value: '', marketCode: null, label: 'Global · Tous les marchés' }));
+      choices.push(Object.freeze({ value: '', marketCode: null,
+        label: marketCurrencyLabel('Global · Tous les marchés', adminContext, null) }));
     }
     if (options.requireMarket && options.withPlaceholder) {
       choices.push(Object.freeze({ value: '', marketCode: null, label: 'Choisir un marché…', placeholder: true }));
@@ -320,7 +325,7 @@
     access.allowedMarkets.forEach(code => {
       const flag = regionFlagEmoji(code);
       const label = flag ? `${flag} ${marketDisplayName(code)}` : marketDisplayName(code);
-      choices.push(Object.freeze({ value: code, marketCode: code, label }));
+      choices.push(Object.freeze({ value: code, marketCode: code, label: marketCurrencyLabel(label, adminContext, code) }));
     });
     return Object.freeze(choices);
   }
@@ -414,10 +419,25 @@
         : scopeDescription(initialMarket));
     copy.appendChild(description);
 
-    const field = doc.createElement('label');
+    const fixed = adminContext?.access?.mode === 'market'
+      && adminContext.access.allowedMarkets.length === 1
+      && initialMarket === adminContext.access.allowedMarkets[0];
+    const field = doc.createElement(fixed ? 'div' : 'label');
     field.className = 'kmc-market-context-field';
     field.appendChild(textNode(doc, 'span', 'kmc-market-context-label',
       options.allowGlobalOverview || options.allowHubOverview ? 'Vue / marché d’action' : 'Marché'));
+
+    if (fixed) {
+      bar.setAttribute('data-fixed-market', initialMarket);
+      const label = textNode(doc, 'strong', 'kmc-market-context-fixed',
+        marketCurrencyLabel(marketDisplayName(initialMarket), adminContext, initialMarket));
+      label.setAttribute('data-fixed-market', initialMarket);
+      field.appendChild(label);
+      bar.appendChild(copy);
+      bar.appendChild(field);
+      container.appendChild(bar);
+      return Object.freeze({ element: bar, select: null, initialMarket, choices });
+    }
 
     const select = doc.createElement('select');
     select.className = 'kmc-market-context-select';

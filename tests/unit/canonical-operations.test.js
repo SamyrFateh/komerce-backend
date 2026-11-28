@@ -138,11 +138,12 @@ describe('LOT 2E-CANON — Operations vivant', () => {
       tone: 'critical',
     }));
     expect(operationsDecision.controlChainColumns(payload)).toEqual([
-      { key: 'ORDER', label: 'Commande', meta: { icon: '▤', accent: 'blue' }, alerts: [], orders: [] },
+      { key: 'ORDER', label: 'Commande', meta: { icon: '▤', accent: 'blue' }, available: true, alerts: [], orders: [] },
       {
         key: 'HUB_CONTROL',
         label: 'Contrôle HUB',
         meta: { icon: '✓', accent: 'violet' },
+        available: true,
         alerts: [{
           health: 'RED',
           count: 3,
@@ -164,6 +165,7 @@ describe('LOT 2E-CANON — Operations vivant', () => {
         key: 'RELAY',
         label: 'Relais',
         meta: { icon: '●', accent: 'green' },
+        available: true,
         alerts: [],
         orders: [{
           reference: 'CMD-3',

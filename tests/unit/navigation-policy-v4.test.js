@@ -233,12 +233,14 @@ describe('L6 — autorité unique de navigation', () => {
     expect(owners['order-360']).toEqual(['flow-orders']);
   });
 
-  test('Économie regroupe Prix & économie et Catalogue global, sans Raffinerie doublon', () => {
+  test('V5.4 sépare les dossiers Catalogue de la gestion des prix et conserve les destinations', () => {
     const nav = loadNav();
     const ids = id => nav.SIDEBAR_GROUPS.find(group => group.id === id).items.map(item => item.id);
-    expect(ids('economy')).toEqual(['workspace-pricing', 'workspace-catalog']);
-    ['workspace-pricing', 'workspace-catalog'].forEach(id => expect(ids('commerce')).not.toContain(id));
-    expect(nav.SIDEBAR_GROUPS.find(group => group.id === 'economy').label).toBe('Économie');
+    expect(ids('records')).toEqual(['flow-orders','entity-clients','workspace-catalog']);
+    expect(ids('management')).toContain('workspace-pricing');
+    expect(ids('management')).not.toContain('workspace-catalog');
+    expect(ids('decision')).not.toContain('workspace-pricing');
+    expect(nav.SIDEBAR_GROUPS.find(group => group.id === 'management').label).toBe('Gestion');
   });
 
   test('le retour d’Order 360 est Commandes ; les liens de tête ne portent plus de flèche de retour', () => {

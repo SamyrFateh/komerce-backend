@@ -126,7 +126,7 @@ describe('navigation-policy-v4 — domaine Live (coque noire des cockpits opéra
 
 describe('navigation-policy-v4 — grouped sidebar information architecture', () => {
   test('toutes les pages Canonical invalident le cache du shell partagé', () => {
-    const version = 'v=261127-l3a-return-context';
+    const version = 'v=261128-l3a-sidebar-v54';
     const pages = ['index.html', 'market-autonomy.html', 'market-catalog.html', 'access.html', 'documentation.html', 'unsold.html'];
     for (const page of pages) {
       const html = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical', page), 'utf8');
@@ -139,7 +139,7 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     const groups=nav.sidebarGroupsFor({role:'market_operator'},marketAdminContext([
       'dashboard.market.read','client.read','pricing.read','operations.read','finance.read','logistics.read','catalog.read','team.read','network.read','market_config.read',
     ]));
-    expect(groups.map(g=>g.id)).toEqual(['pilot','commerce','economy','operations','finance','live','markets','administration','help']);
+    expect(groups.map(g=>g.id)).toEqual(['work','decision','records','management','help']);
     const links=Object.fromEntries(groups.flatMap(g=>g.items).map(i=>[i.id,i.href]));
     for(const id of ['control-tower','action-center','flow-commerce','flow-orders',
       'entity-clients','workspace-pricing','flow-operations',
@@ -155,7 +155,7 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     expect(links['workspace-purchasing']).toBeUndefined();
     expect(links['live-import-runtime']).toBeUndefined();
     expect(links['live-relais']).toBe('/admin/relais-live');
-    expect(groups.find(group => group.id === 'live').items.map(item => item.id)).toEqual(['live-hub','live-relais']);
+    expect(groups.find(group => group.id === 'work').items.map(item => item.id)).toEqual(['action-center','live-hub','workspace-shipping','live-relais']);
     expect(links['admin-providers']).toBe('/admin/providers');
     expect(links['settings']).toBe('/admin/settings');
     const marketHrefs = groups.flatMap(group => group.items).map(item => item.href);
@@ -212,19 +212,18 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
   test('admin sees domain groups (Commerce / Opérations / Finance) with existing destinations only', () => {
     const nav = loadPolicy();
     const groups = nav.sidebarGroupsFor({ role: 'admin' }, null);
-    expect(groups.map(group => group.id)).toEqual([
-      'pilot', 'commerce', 'economy', 'operations', 'finance', 'live', 'markets', 'administration', 'help',
+    expect(groups.map(group => [group.id,group.label])).toEqual([
+      ['work','Travail'], ['decision','Décision'], ['records','Dossiers'], ['management','Gestion'], ['help','Aide'],
     ]);
     const labels = id => groups.find(group => group.id === id).items.map(item => item.label);
-    expect(labels('pilot')).toEqual(['Tour de contrôle', 'À traiter']);
-    expect(labels('commerce')).toEqual(['Vue commerce', 'Commandes', 'Clients']);
-    expect(labels('economy')).toEqual(['Prix & économie', 'Catalogue global']);
-    expect(labels('operations')).toEqual(['Vue opérations', 'Expéditions & Douane', 'Achats fournisseurs']);
-    expect(labels('finance')).toEqual(['Vue finance', 'Comptabilité']);
-    expect(groups.find(group => group.id === 'live').items.map(item => item.href))
-      .toEqual(['/admin/import-runtime', '/admin/hub', '/admin/relais-live']);
-    expect(labels('markets')).toEqual(['Responsables pays', 'Invendus']);
-    expect(labels('help')).toEqual(['Documentation']);
+    const ids = id => groups.find(group => group.id === id).items.map(item => item.id);
+    expect(ids('work')).toEqual(['action-center','live-hub','workspace-shipping','live-relais','workspace-purchasing','live-import-runtime']);
+    expect(labels('decision')).toEqual(['Pilotage','Commerce','Opérations']);
+    expect(labels('records')).toEqual(['Commandes','Clients','Catalogue global']);
+    expect(ids('management')).toEqual(['workspace-pricing','flow-finance','workspace-accounting','unsold','markets-home','admin-users','admin-providers','settings']);
+    expect(labels('help')).toEqual(['Documentation','Recette guidée']);
+    expect(groups.flatMap(g=>g.items)).toHaveLength(22);
+    expect(new Set(groups.flatMap(g=>g.items.map(i=>i.href))).size).toBe(22);
     const all = groups.flatMap(group => group.items);
     expect(all.some(item => item.href === '/admin/suppliers')).toBe(false);
     // « Produits » n'est plus une entrée de menu : onglet local du Catalogue uniquement.
@@ -233,9 +232,9 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     // « Commandes » est une vue distincte : une seule entrée, l'ancien id entity-orders reste absent.
     expect(all.some(item => item.id === 'entity-orders')).toBe(false);
     expect(all.filter(item => item.href === '/admin/orders')).toHaveLength(1);
-    expect(labels('operations')).toContain('Vue opérations');
-    expect(groups.find(group => group.id === 'operations').items[0].surfaces).not.toContain('order-360');
-    expect(groups.find(group => group.id === 'commerce').items.find(item => item.id === 'flow-orders').surfaces).toContain('order-360');
+    expect(labels('decision')).toContain('Opérations');
+    expect(groups.find(group => group.id === 'decision').items.find(item=>item.id==='flow-operations').surfaces).not.toContain('order-360');
+    expect(groups.find(group => group.id === 'records').items.find(item => item.id === 'flow-orders').surfaces).toContain('order-360');
   });
 
   test('chaque entrée de menu d’un market_operator déclare la capability serveur qui la protège', () => {
@@ -313,10 +312,9 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     const nav = loadPolicy();
     const transitaire = nav.sidebarGroupsFor({ role: 'agent_transitaire' }, null);
     // Les agents voient l'Action Center canonique filtré par le serveur (périmètre + actions autorisées) et leur workspace.
-    expect(transitaire.map(group => group.id)).toEqual(['pilot', 'operations', 'help']);
-    expect(transitaire[0].items.map(item => item.id)).toEqual(['action-center']);
-    expect(transitaire[1].items.map(item => item.id)).toEqual(['workspace-shipping']);
-    expect(transitaire[2].items.map(item => item.id)).toEqual(['help-docs']);
+    expect(transitaire.map(group => group.id)).toEqual(['work', 'help']);
+    expect(transitaire[0].items.map(item => item.id)).toEqual(['action-center','workspace-shipping']);
+    expect(transitaire[1].items.map(item => item.id)).toEqual(['help-docs']);
 
     // Les cockpits Live restent accessibles depuis la sidebar, chacun à son seul rôle.
     const ids = role => nav.sidebarGroupsFor({ role }, null).flatMap(group => group.items.map(item => item.id));
@@ -324,11 +322,12 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     expect(ids('agent_hub')).not.toContain('live-relais');
     expect(ids('agent_relais')).toContain('live-relais');
     expect(ids('agent_transitaire').filter(id => id.startsWith('live-'))).toEqual([]);
-    expect(ids('sourcing').filter(id => id.startsWith('live-'))).toEqual(['live-import-runtime', 'live-hub']);
+    expect(ids('sourcing').filter(id => id.startsWith('live-'))).toEqual(['live-hub', 'live-import-runtime']);
 
     const finance = nav.sidebarGroupsFor({ role: 'finance' }, null);
-    expect(finance.map(group => group.id)).toEqual(['finance', 'live', 'help']);
-    expect(finance[0].items.map(item => item.id)).toEqual(['workspace-accounting']);
+    expect(finance.map(group => group.id)).toEqual(['work', 'management', 'help']);
+    expect(finance[0].items.map(item => item.id)).toEqual(['live-hub']);
+    expect(finance[1].items.map(item => item.id)).toEqual(['workspace-accounting']);
     expect(finance[2].items.map(item => item.id)).toEqual(['help-docs']);
   });
 });

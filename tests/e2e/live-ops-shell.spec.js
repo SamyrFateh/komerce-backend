@@ -48,15 +48,19 @@ async function mountShell(page, { role = 'admin', surface = 'import-runtime', pa
 const lum = (c) => c.match(/\d+/g).slice(0, 3).map(Number).reduce((a, b) => a + b, 0) / 3;
 
 test.describe('Coque Live — menu dédié, coque claire', () => {
-  test('le menu latéral porte une entrée « Live » distincte d’Opérations', async ({ page }) => {
+  test('Sourcing reste dans Travail, distinct du dashboard Opérations', async ({ page }) => {
     await mountShell(page);
     const links = await page.$$eval('.kmc-admin-primary-link', (els) => els.map((el) => ({
       id: el.getAttribute('data-dashboard'), label: el.textContent.trim(), active: el.classList.contains('is-active'), href: el.getAttribute('href'),
     })));
     const ids = links.map((l) => l.id);
     expect(ids).toContain('live-import-runtime');
-    // Le groupe Live suit immédiatement le groupe Finance (Vue finance, Comptabilité).
-    expect(ids.indexOf('live-import-runtime')).toBe(ids.indexOf('workspace-accounting') + 1);
+    const work = page.locator('[data-nav-group="work"]');
+    const decision = page.locator('[data-nav-group="decision"]');
+    await expect(work.locator('[data-dashboard="live-import-runtime"]')).toHaveCount(1);
+    await expect(decision.locator('[data-dashboard="flow-operations"]')).toHaveCount(1);
+    await expect(decision.locator('[data-dashboard="live-import-runtime"]')).toHaveCount(0);
+    expect(ids.indexOf('live-import-runtime')).toBeLessThan(ids.indexOf('workspace-accounting'));
     const live = links.find((l) => l.id === 'live-import-runtime');
     expect(live.active).toBe(true);
     expect(live.href).toBe('/admin/import-runtime');
@@ -127,6 +131,6 @@ test.describe('Coque Live — rôle sourcing', () => {
     const ids = await page.$$eval('.kmc-admin-primary-link', (els) => els.map((el) => el.getAttribute('data-dashboard')));
     // Le guide Aide est une destination documentaire autorisée,
     // sans donner accès aux domaines commerciaux ou financiers.
-    expect(ids).toEqual(['live-import-runtime', 'live-hub', 'help-docs']);
+    expect(ids).toEqual(['live-hub', 'live-import-runtime', 'help-docs']);
   });
 });
