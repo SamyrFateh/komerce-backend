@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 342,
+    "businessDependencies": 344,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -10214,6 +10214,13 @@
         },
         {
           "consumer": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "purchasing",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -22007,6 +22014,13 @@
           ]
         },
         {
+          "consumer": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "recommendations",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -30525,7 +30539,7 @@
       "implementation": {
         "byCategory": {
           "migrations": {
-            "count": 17,
+            "count": 18,
             "files": [
               {
                 "declared": "migrations/225_purchase_orders_exact_supplier_identity.sql",
@@ -30610,6 +30624,11 @@
               {
                 "declared": "migrations/411_hub_purchase_commitment_pdf.sql",
                 "resolvedPath": "migrations/411_hub_purchase_commitment_pdf.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/456_supplier_settlement_native_debit.sql",
+                "resolvedPath": "migrations/456_supplier_settlement_native_debit.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -31435,7 +31454,7 @@
             ]
           }
         },
-        "totalFiles": 177,
+        "totalFiles": 178,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -31892,6 +31911,13 @@
           ]
         },
         {
+          "provider": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "documents",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -31932,6 +31958,13 @@
           "channels": [
             "static-code",
             "data-read"
+          ]
+        },
+        {
+          "provider": "market",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
