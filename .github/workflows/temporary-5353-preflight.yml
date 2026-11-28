@@ -1,0 +1,33 @@
+name: Finance isolated complete preflight
+on:
+  push:
+    branches: [diag/5353-preflight-454d2a7]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 454d2a7c7186186d4d2edf8b12b625a350ebfe27
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix public/boutique
+      - name: Verify candidate context and impact
+        run: |
+          test "$(git rev-parse HEAD)" = "454d2a7c7186186d4d2edf8b12b625a350ebfe27"
+          npm run agent:context -- --pack authz --feature purchasing
+          npm run arch:impact -- purchasing
+      - name: Complete canonical preflight
+        run: npm run pr:preflight
