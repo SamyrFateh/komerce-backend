@@ -11,7 +11,7 @@
  */
 
 jest.mock('../../services/cost-allocation/canonical-margin-writer', () => ({ isEnabled: jest.fn().mockResolvedValue(false), refreshCanonicalMarginForOrders: jest.fn() }));
-const { recordSettlement, listSettlements } = require('../../services/supplier-payment-settlement-service');
+const { recordSettlement, listSettlements, _internals } = require('../../services/supplier-payment-settlement-service');
 
 const PAY = '11111111-1111-4111-8111-111111111111';
 
@@ -54,6 +54,24 @@ const base = (o = {}) => ({
   proof_ref: 'RELEVE-1', idempotency_key: 'k1', ...o,
 });
 const code = (p) => p.then(() => null, (e) => `${e.status}:${e.code}`);
+
+describe('B4 posting boundary',()=>{
+  const actor='22222222-2222-4222-8222-222222222222';
+  test.each([
+    [{authorized:false,same_actor:false,reconciliation_status:'matched'},'FINANCE_B4_AUTHORIZATION_REQUIRED'],
+    [{authorized:true,same_actor:true,reconciliation_status:'matched'},'FINANCE_B4_SEPARATION_REQUIRED'],
+    [{authorized:true,same_actor:false,reconciliation_status:'unverified'},'FINANCE_B4_RECONCILIATION_REQUIRED'],
+  ])('refuses incomplete or same-actor authority %j',async(row,expected)=>{
+    const client={query:jest.fn().mockResolvedValue({rows:[row]})};
+    await expect(_internals.assertB4Posting(client,PAY,actor)).rejects.toMatchObject({code:expected});
+    expect(client.query.mock.calls[0][0]).toContain('c.decided_at < a.decided_at');
+    expect(client.query.mock.calls[0][1]).toEqual([PAY,actor]);
+  });
+  test('ordered decisions, distinct Finance actor, matched evidence',async()=>{
+    const client={query:jest.fn().mockResolvedValue({rows:[{authorized:true,same_actor:false,reconciliation_status:'matched'}]})};
+    await expect(_internals.assertB4Posting(client,PAY,actor)).resolves.toBeUndefined();
+  });
+});
 
 describe('recordSettlement', () => {
   it('enregistre un règlement et normalise les montants', async () => {

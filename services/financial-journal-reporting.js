@@ -150,7 +150,7 @@ const CHECK_LABELS = Object.freeze({
   order_payments_origin_kmf: 'Encaissements : journal ↔ commandes payées (KMF)',
   order_refunds_kmf: 'Remboursements : journal ↔ table des remboursements (KMF)',
   cost_allocations_kmf: 'Coûts réels : journal ↔ allocations de coûts (KMF)',
-  supplier_settlements_native: 'Règlements fournisseurs : journal ↔ règlements prouvés (natif)',
+  supplier_settlements_native: 'Règlements fournisseurs : nombre d’écarts par pièce, montant et devise (doit être 0)',
   movements_without_provenance: 'Mouvements sans provenance (doit être 0)',
 });
 
@@ -259,20 +259,34 @@ async function reconcileWithSources(client, scope = {}) {
     scope.marketId ? [scope.marketId] : [])).rows[0];
   add('cost_allocations_kmf', cost.journal_kmf, cost.source_kmf);
 
+  // Match exact facts, not totals which can cancel differences or mix currencies.
   const sup = (await client.query(
-    `SELECT COALESCE(SUM(m.amount_native), 0)::text AS journal_native,
-            (SELECT COALESCE(SUM(s.amount_currency), 0)::text FROM supplier_payment_settlements s
-               JOIN supplier_execution_payments p ON p.id = s.supplier_execution_payment_id
-               JOIN purchase_orders po ON po.id = p.purchase_order_id
-              WHERE true ${scope.marketId ? `AND po.market_id = $1` : ''}) AS source_native
-       FROM financial_movements m WHERE m.source_kind = 'supplier_settlement' AND m.facet = 'main' ${scope.marketId ? `AND m.market_id = $1` : ''}`,
+    `WITH source AS (
+       SELECT s.id::text AS source_id,s.amount_currency AS amount,s.currency,
+              CASE WHEN s.kind='payment' THEN 'outflow' ELSE 'inflow' END AS direction,
+              po.market_id,s.proof_ref
+         FROM supplier_payment_settlements s JOIN supplier_execution_payments p ON p.id=s.supplier_execution_payment_id
+         JOIN purchase_orders po ON po.id=p.purchase_order_id
+        WHERE true ${scope.marketId ? 'AND po.market_id=$1' : ''}
+     ), journal AS (
+       SELECT m.id,m.source_id,m.amount_native AS amount,m.currency,m.direction,m.market_id,m.state
+         FROM financial_movements m
+        WHERE m.source_kind='supplier_settlement' AND m.facet='main' ${scope.marketId ? 'AND m.market_id=$1' : ''}
+     )
+     SELECT COUNT(*)::int AS mismatches
+       FROM source s FULL JOIN journal j ON j.source_id=s.source_id
+      WHERE s.source_id IS NULL OR j.source_id IS NULL OR
+            j.amount IS DISTINCT FROM s.amount OR j.currency IS DISTINCT FROM s.currency OR
+            j.direction IS DISTINCT FROM s.direction OR j.market_id IS DISTINCT FROM s.market_id OR
+            j.state IS DISTINCT FROM 'settled' OR NOT EXISTS (
+              SELECT 1 FROM financial_movement_documents d
+               WHERE d.movement_id=j.id AND d.doc_kind='supplier_payment_proof' AND d.doc_ref=s.proof_ref)`,
     scope.marketId ? [scope.marketId] : [])).rows[0];
-  // Montants natifs de devises différentes sommés ici uniquement pour la preuve d'égalité exacte source/journal (jamais affichés).
-  add('supplier_settlements_native', sup.journal_native, sup.source_native);
+  add('supplier_settlements_native', sup.mismatches, 0);
 
   const orphans = (await client.query(
     `SELECT COUNT(*)::int AS n FROM financial_movements m
-      WHERE jsonb_typeof(m.provenance) <> 'object' OR m.provenance->>'source' IS NULL`)).rows[0].n;
+      WHERE (jsonb_typeof(m.provenance) <> 'object' OR m.provenance->>'source' IS NULL) ${scope.marketId ? 'AND m.market_id=$1' : ''}`,scope.marketId?[scope.marketId]:[])).rows[0].n;
   add('movements_without_provenance', orphans, 0);
 
   return { ok: checks.every(check => check.ok), checks };

@@ -208,5 +208,76 @@
     return { reload: load };
   }
 
-  return Object.freeze({ endpointFor, mount, TABS });
+  // Central B4 workstation, separate from the market journal. No provider
+  // request is initiated here; the existing supplier settlement writer records
+  // a debit/refund already attested by its evidence.
+  async function mountSupplierPayments({root,document:doc,fetch:fetchFn,user}={}) {
+    if(user?.role!=='finance')return;
+    const prefix='/api/purchasing/supplier-payments';
+    let offset=0,pending=false,seq=0;
+    async function request(url,body) {
+      const r=await fetchFn(url,{method:body?'POST':'GET',credentials:'include',headers:{Accept:'application/json',...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});
+      const data=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(data.error||'HTTP '+r.status);
+      return data;
+    }
+    const identity={};root.__supplierFinanceIdentity=identity;
+    const current=()=>root.__supplierFinanceIdentity===identity&&root.isConnected!==false;
+    async function load(message='') {
+      const n=++seq;
+      const data=await request(prefix+'/finance-queue?limit=50&offset='+offset);
+      if(!current()||n!==seq)return;
+      root.replaceChildren();
+      root.appendChild(text(doc,'h2','kmc-workspace-title','Règlements fournisseurs — Finance centrale'));
+      root.appendChild(text(doc,'p','kmc-workspace-note','Constater un débit déjà vérifié, après engagement et autorisation Hub. Aucun paiement externe déclenché.'));
+      const feedback=text(doc,'p','kmc-workspace-note',message);feedback.setAttribute('role','status');root.appendChild(feedback);
+      for(const row of data.payments||[]) {
+        const card=doc.createElement('section');card.className='kmc-workspace-section';
+        card.appendChild(text(doc,'h3','kmc-workspace-subtitle',row.supplier_name+' · '+(row.payment_ref||row.id)));
+        card.appendChild(text(doc,'p','', 'Attendu : '+row.expected_amount+' '+row.currency+' · Consigné : '+row.recorded_amount+' '+row.currency));
+        const po=text(doc,'a','kmc-workspace-action','Dossier PO / preuves');
+        po.href='/admin/workspaces/purchasing?po='+encodeURIComponent(row.purchase_order_id);card.appendChild(po);
+        card.appendChild(text(doc,'p','kmc-workspace-note','Engagement : '+(row.commitment_proof||'absent')+' · Autorisation : '+(row.authorization_proof||'absente')));
+        if(row.can_record===true){
+          const form=doc.createElement('form');
+          const fields={};
+          const add=(name,label,opts={})=>{
+            const wrap=text(doc,'label','',label);
+            const el=doc.createElement(opts.choices?'select':'input');el.name=name;el.required=opts.required!==false;
+            if(opts.choices)for(const [v,l] of opts.choices){const option=text(doc,'option','',l);option.value=v;el.appendChild(option);}
+            else {el.type='text';if(opts.decimal)el.inputMode='decimal';}
+            wrap.appendChild(el);form.appendChild(wrap);fields[name]=el;
+          };
+          add('kind','Nature',{choices:[['payment','Débit'],['goods_refund','Remboursement marchandise'],['fee_refund','Remboursement frais'],['other_refund','Autre remboursement']]});
+          add('amount_currency','Montant '+row.currency,{decimal:true});
+          add('amount_kmf','Montant constaté KMF hors frais',{decimal:true});
+          add('fees_kmf','Frais KMF',{decimal:true,required:false});
+          add('proof_ref','Référence unique du relevé / reçu');
+          const submit=text(doc,'button','kmc-workspace-action','Consigner le règlement');submit.type='submit';form.appendChild(submit);
+          form.addEventListener('submit',async e=>{
+            e.preventDefault();if(pending||!current())return;
+            const proof=fields.proof_ref.value.trim();if(!proof)return;
+            pending=true;submit.disabled=true;
+            const body={kind:fields.kind.value,currency:row.currency,amount_currency:fields.amount_currency.value,amount_kmf:fields.amount_kmf.value,fees_kmf:fields.fees_kmf.value||'0',proof_ref:proof,idempotency_key:'finance-ui:'+proof};
+            try{await request(prefix+'/'+encodeURIComponent(row.id)+'/finance-settlements',body);
+              try{await load('Règlement enregistré.');}catch(_){feedback.textContent='Règlement enregistré ; actualisation indisponible.';}
+            }catch(err){feedback.textContent=err.message;}finally{pending=false;submit.disabled=false;}
+          });
+          card.appendChild(form);
+        }else card.appendChild(text(doc,'p','kmc-workspace-note','Action indisponible : autorisation, séparation des acteurs ou preuve de débit non établie.'));
+        root.appendChild(card);
+      }
+      const p=data.pagination||{};const count=(data.payments||[]).length;
+      const nav=doc.createElement('nav');
+      for(const [label,start,disabled] of [['Précédent',Math.max(0,offset-50),offset===0],['Suivant',offset+50,count<50||(p.total!=null&&offset+count>=p.total)]]) {
+        const b=text(doc,'button','kmc-workspace-action',label);b.type='button';b.disabled=disabled;
+        b.addEventListener('click',()=>{if(!pending){offset=start;load().catch(err=>{feedback.textContent=err.message;});}});nav.appendChild(b);
+      }
+      root.appendChild(nav);
+    }
+    try{await load();}catch(err){if(current()){root.replaceChildren();root.appendChild(text(doc,'p','kmc-workspace-note',err.message));}}
+    return {reload:load};
+  }
+
+  return Object.freeze({ endpointFor, mount, mountSupplierPayments, TABS });
 });

@@ -73,6 +73,7 @@ const engagement = require('../services/purchasing-engagement-service');
 const g6RecipePo = require('../services/g6-recipe-po-cancel-service');
 const settlements = require('../services/supplier-payment-settlement-service');
 const hubAuth = require('../services/hub-authorization-service');
+const {hasDashboardGlobalAuthority}=require('../middleware/require-dashboard-global-authority');
 
 const guard = [authenticate, requireRole(['admin'])];
 // Le Hub constitue et suit ses PO regroupées (mission #3247) ; le reste des achats reste réservé à l'admin.
@@ -234,6 +235,29 @@ router.post('/lines/:id/change-supplier', ...groupedGuard, async (req, res, next
 
 router.post('/lines/:id/settle', ...groupedGuard, async (req, res, next) => {
   try { res.json(await engagement.settleLine(req.params.id, req.body || {}, { actor: req.user })); } catch (err) { groupedError(err, res, next); }
+});
+
+// B4: central Finance only. This is a second entry to the SAME persistence
+// boundary, not a second writer. Admin's global READ is not ACT. The old
+// purchasing endpoint remains during the migration/parity gate.
+async function financePostingAuthority(req,res,next) {
+  try {
+    if(req.user?.role!=='finance'||!(await hasDashboardGlobalAuthority(req.user.id)))return res.status(403).json({code:'FINANCE_CENTRAL_AUTHORITY_REQUIRED',error:'Autorité Finance centrale explicite requise'});
+    if(['market_id','marketId','market','actor_id','user_id','recorded_by'].some(k=>Object.hasOwn(req.body||{},k)||Object.hasOwn(req.query||{},k)))return res.status(400).json({code:'CLIENT_AUTHORITY_FORBIDDEN',error:'Le périmètre et l’identité sont résolus côté serveur'});
+    return next();
+  } catch(err){return next(err);}
+}
+router.get('/supplier-payments/finance-queue',authenticate,financePostingAuthority,async(req,res,next)=>{
+  try{
+    res.set('Cache-Control','private, no-store');
+    res.json(await settlements.listFinanceQueue(db,req.user.id,{limit:req.query.limit,offset:req.query.offset}));
+  }catch(err){groupedError(err,res,next);}
+});
+router.post('/supplier-payments/:payment_id/finance-settlements',authenticate,financePostingAuthority,async(req,res,next)=>{
+  try{
+    const out=await settlements.recordSettlement(db,req.params.payment_id,req.body||{},req.user.id,{requireB4:true});
+    res.status(out.idempotent_replay?200:201).json(out);
+  }catch(err){groupedError(err,res,next);}
 });
 
 // Coût d'achat réel — règlements fournisseur en KMF (admin ; le marché n'est jamais lu du body :

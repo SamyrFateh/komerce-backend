@@ -142,7 +142,51 @@ const shape = (r) => ({
  * @param {object} database module db (withTransaction) OU client dont l'appelant possède la transaction
  * @returns {Promise<{settlement:object, idempotent_replay:boolean}>}
  */
-async function recordSettlement(database, paymentId, payload, userId) {
+// B4: a central Finance posting is not a supplier debit instruction. Both
+// immutable decisions must concern the exact PO, precede the posting and
+// belong to actors distinct from the recording Finance identity.
+const B4_JOINS = `
+ LEFT JOIN purchase_order_authorizations c ON c.purchase_order_id=p.purchase_order_id AND c.authorization_type='purchase_commitment'
+ LEFT JOIN purchase_order_authorizations a ON a.purchase_order_id=p.purchase_order_id AND a.authorization_type='supplier_payment'`;
+const B4_VALID = `c.id IS NOT NULL AND a.id IS NOT NULL
+ AND c.decided_at < a.decided_at AND a.currency=c.currency AND a.currency=p.currency
+ AND a.amount<=c.amount AND GREATEST(p.expected_amount,COALESCE(p.observed_amount,0))<=a.amount`;
+
+async function listFinanceQueue(database,userId,{limit=50,offset=0}={}) {
+  const size=Math.min(100,Math.max(1,Number.parseInt(limit,10)||50));
+  const start=Math.min(1000000,Math.max(0,Number.parseInt(offset,10)||0));
+  const {rows}=await database.query(`
+    SELECT p.id,p.purchase_order_id,p.provider,p.payment_ref,p.currency,p.status,p.reconciliation_status,
+           p.real_debit_verified,p.expected_amount::text,p.observed_amount::text,
+           s.name AS supplier_name,c.proof_ref AS commitment_proof,a.proof_ref AS authorization_proof,
+           COALESCE((${B4_VALID} AND c.decided_by<>$1::uuid AND a.decided_by<>$1::uuid
+             AND p.status='succeeded' AND p.real_debit_verified AND p.reconciliation_status='matched'),false) AS can_record,
+           COALESCE(t.paid,0)::text AS recorded_amount,
+           COUNT(*) OVER()::int AS total
+      FROM supplier_execution_payments p
+      JOIN purchase_orders po ON po.id=p.purchase_order_id
+      JOIN suppliers s ON s.id=po.supplier_id
+      ${B4_JOINS}
+      LEFT JOIN LATERAL (SELECT SUM(amount_currency) FILTER (WHERE kind='payment') AS paid
+        FROM supplier_payment_settlements WHERE supplier_execution_payment_id=p.id) t ON true
+     WHERE p.status IN ('prepared','requested','succeeded','ambiguous')
+     ORDER BY p.created_at DESC,p.id LIMIT $2 OFFSET $3`,[userId,size,start]);
+  return {payments:rows.map(({total,...row})=>row),pagination:{limit:size,offset:start,total:rows.length?Number(rows[0].total):null}};
+}
+
+async function assertB4Posting(client,paymentId,userId) {
+  if(!UUID_RE.test(String(userId||'')))throw fail(403,'FINANCE_ACTOR_REQUIRED','Identité Finance requise');
+  const {rows:[row]}=await client.query(`
+    SELECT COALESCE((${B4_VALID}),false) AS authorized,
+           COALESCE(c.decided_by=$2::uuid OR a.decided_by=$2::uuid,false) AS same_actor,
+           p.reconciliation_status
+      FROM supplier_execution_payments p ${B4_JOINS} WHERE p.id=$1`,[paymentId,userId]);
+  if(!row?.authorized)throw fail(409,'FINANCE_B4_AUTHORIZATION_REQUIRED','Engagement et autorisation Hub ordonnés requis sur cette PO');
+  if(row.same_actor)throw fail(403,'FINANCE_B4_SEPARATION_REQUIRED','Le responsable des décisions Hub ne peut pas consigner ce règlement Finance');
+  if(row.reconciliation_status!=='matched')throw fail(409,'FINANCE_B4_RECONCILIATION_REQUIRED','Rapprochement fournisseur non confirmé');
+}
+
+async function recordSettlement(database, paymentId, payload, userId, options = {}) {
   if (!UUID_RE.test(String(paymentId || ''))) throw fail(400, 'SUPPLIER_PAYMENT_ID_INVALID', 'payment_id (uuid) invalide');
   const n = normalizePayload(payload);
   const run = (fn) => (typeof database.withTransaction === 'function' ? database.withTransaction(fn) : fn(database));
@@ -151,6 +195,8 @@ async function recordSettlement(database, paymentId, payload, userId) {
       `SELECT id, purchase_order_id, currency, status, real_debit_verified, expected_amount, observed_amount
          FROM supplier_execution_payments WHERE id = $1 FOR UPDATE`, [paymentId]);
     if (!pay) throw fail(404, 'SUPPLIER_PAYMENT_NOT_FOUND', 'paiement fournisseur introuvable');
+
+    if(options.requireB4===true) await assertB4Posting(client,paymentId,userId);
 
     const { rows: [existing] } = await client.query(
       `SELECT * FROM supplier_payment_settlements WHERE supplier_execution_payment_id = $1 AND idempotency_key = $2`,
@@ -167,6 +213,14 @@ async function recordSettlement(database, paymentId, payload, userId) {
       throw fail(409, 'SUPPLIER_PAYMENT_NOT_VERIFIED', 'règlement refusé : paiement non succeeded avec débit réel vérifié', {
         current_status: pay.status,
       });
+    }
+    if(options.requireB4===true) {
+      // Same proof reference cannot identify two separate postings. Keep the
+      // proof lock in the transaction; exact idempotent replay returned above.
+      await client.query("SELECT pg_advisory_xact_lock(hashtextextended('finance-settlement-proof:'||$1::text,0))",[n.proofRef]);
+      const {rows:duplicate}=await client.query('SELECT id FROM supplier_payment_settlements WHERE proof_ref=$1 LIMIT 1',[n.proofRef]);
+      if(duplicate.length)throw fail(409,'FINANCE_SETTLEMENT_PROOF_ALREADY_USED','Référence de règlement déjà utilisée');
+      if(!(pay.status==='succeeded'&&pay.real_debit_verified===true))throw fail(409,'SUPPLIER_PAYMENT_NOT_VERIFIED','Débit réel non vérifié');
     }
     _assertCaps(n, pay, await _totals(client, paymentId));
 
@@ -198,4 +252,4 @@ async function listSettlements(database, paymentId) {
   return { payment_id: paymentId, settlements: rows.map(shape) };
 }
 
-module.exports = { recordSettlement, listSettlements, KINDS, _internals: { toUnits, normalizePayload } };
+module.exports = { recordSettlement, listSettlements, listFinanceQueue, KINDS, _internals: { toUnits, normalizePayload, assertB4Posting } };

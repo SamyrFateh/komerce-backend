@@ -1064,8 +1064,14 @@
       title: 'Workspace Finance / Comptabilité',
       requireMarket: true,
       render: renderFinanceAccountingWorkspace,
-      // Agrégat finance global existant ; aucune écriture comptable ici.
-      renderGlobalOverview: (host, actor, ctx) => renderFinance(host, actor, ctx, null),
+      // Central supplier posting has an explicit PO identity, never an implicit market.
+      renderGlobalOverview: async (host, actor, ctx) => {
+        if(actor?.role!=='finance'||!global.KomerceCanonicalFinanceJournalWorkspace?.mountSupplierPayments)return renderFinance(host,actor,ctx,null);
+        const queue=global.document.createElement('div');const overview=global.document.createElement('div');
+        host.appendChild(queue);host.appendChild(overview);
+        await global.KomerceCanonicalFinanceJournalWorkspace.mountSupplierPayments({root:queue,document:global.document,fetch:global.fetch.bind(global),user:actor});
+        return renderFinance(overview,actor,ctx,null);
+      },
     });
   }
 
