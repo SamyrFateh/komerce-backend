@@ -15083,6 +15083,13 @@
       {
         "feature": "market",
         "category": "migrations",
+        "declared": "migrations/455_market_business_timezone.sql",
+        "resolvedPath": "migrations/455_market_business_timezone.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "migrations",
         "declared": "migrations/311_fx_chain_eur_usd_djf.sql",
         "resolvedPath": "migrations/311_fx_chain_eur_usd_djf.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -28540,6 +28547,12 @@
       },
       {
         "feature": "economic-engine",
+        "fn": "getCostReferenceReadiness",
+        "file": "services/economic-cost-reference-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "economic-engine",
         "fn": "recommend",
         "file": "services/pricing-engine.js",
         "status": "resolved"
@@ -29019,6 +29032,12 @@
         "status": "resolved"
       },
       {
+        "feature": "market-autonomy",
+        "fn": "getPricePreparation",
+        "file": "services/market-commercial-price-service.js",
+        "status": "resolved"
+      },
+      {
         "feature": "market-control-plane",
         "fn": "listMarkets()",
         "file": null,
@@ -29027,6 +29046,12 @@
       {
         "feature": "market-control-plane",
         "fn": "getControlPlane()",
+        "file": null,
+        "status": "documented-signature-no-file"
+      },
+      {
+        "feature": "market-control-plane",
+        "fn": "getPreparationChecklist()",
         "file": null,
         "status": "documented-signature-no-file"
       },
@@ -29051,6 +29076,12 @@
       {
         "feature": "market-control-plane",
         "fn": "reprovisionMarket()",
+        "file": null,
+        "status": "documented-signature-no-file"
+      },
+      {
+        "feature": "market-control-plane",
+        "fn": "completeMarketTimezone()",
         "file": null,
         "status": "documented-signature-no-file"
       },
@@ -30144,6 +30175,12 @@
       },
       {
         "from": "dashboard",
+        "to": "market-control-plane",
+        "raw": "market-control-plane (projection de préparation du responsable, après autorisation de sa membership exacte)",
+        "resolved": true
+      },
+      {
+        "from": "dashboard",
         "to": "shared-cart",
         "raw": "shared-cart (suppression des paniers utilisateur via API interne lifecycle-owned)",
         "resolved": true
@@ -30865,7 +30902,7 @@
       {
         "from": "market-control-plane",
         "to": "logistics",
-        "raw": "logistics (relais lus)",
+        "raw": "logistics (relais lus ; isRelaisRoutable, même autorité de routage que le checkout)",
         "resolved": true
       },
       {
@@ -30888,14 +30925,26 @@
       },
       {
         "from": "market-control-plane",
+        "to": "market-autonomy",
+        "raw": "market-autonomy (lecture canonique du nombre de décisions de prix préparées, sans activation)",
+        "resolved": true
+      },
+      {
+        "from": "market-control-plane",
         "to": "economic-engine",
-        "raw": "economic-engine (pricing_global_access_grants et require-pricing-global-authority : autorisation centrale explicite lue)",
+        "raw": "economic-engine (référentiels de centres et familles lus via getCostReferenceReadiness ; pricing_global_access_grants et require-pricing-global-authority : autorisation centrale explicite lue)",
         "resolved": true
       },
       {
         "from": "market-control-plane",
         "to": "sourcing",
         "raw": "sourcing (sourcing_global_access_grants et require-sourcing-global-authority : autorisation centrale explicite lue)",
+        "resolved": true
+      },
+      {
+        "from": "market-control-plane",
+        "to": "auth-identity",
+        "raw": "auth-identity (création du compte professionnel par createAdminUser, writer canonique users ; contrôle de collisions avant rattachement)",
         "resolved": true
       },
       {
@@ -38557,6 +38606,22 @@
       },
       {
         "from": "dashboard",
+        "to": "market-control-plane",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/dashboard-admin-context.js",
+                "targetFile": "services/market-control-plane.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "dashboard",
         "to": "market-delegation",
         "channels": [
           {
@@ -40515,6 +40580,10 @@
               {
                 "sourceFileId": "routes/admin-costing.js",
                 "targetFile": "middleware/require-market-delegated-capability.js"
+              },
+              {
+                "sourceFileId": "tests/unit/admin-pricing-workspace-market-route.test.js",
+                "targetFile": "services/market-delegation-service.js"
               }
             ]
           }
@@ -43772,6 +43841,10 @@
               {
                 "sourceFileId": "tests/integration/market-dj-provisioning-postgres.test.js",
                 "targetFile": "middleware/require-market-scope.js"
+              },
+              {
+                "sourceFileId": "tests/integration/market-dj-provisioning-postgres.test.js",
+                "targetFile": "services/fx-authority.js"
               }
             ]
           },
@@ -43825,6 +43898,22 @@
               {
                 "sourceFileId": "tests/e2e-api/market-control-plane.provision-to-first-order.e2e.test.js",
                 "targetFile": "utils/auth-session.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-control-plane",
+        "to": "auth-identity",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/market-provisioning-service.js",
+                "targetFile": "services/user-mutation-service.js"
               }
             ]
           }
@@ -43891,12 +43980,24 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/market-control-plane.js",
+                "targetFile": "services/economic-cost-reference-service.js"
+              },
+              {
                 "sourceFileId": "services/central-authority.js",
                 "targetFile": "middleware/require-pricing-global-authority.js"
               },
               {
                 "sourceFileId": "services/market-provisioning-service.js",
                 "targetFile": "services/economic-cost-reference-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-control-plane-service.test.js",
+                "targetFile": "services/economic-cost-reference-service.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/market-control-plane.provision-to-first-order.e2e.test.js",
+                "targetFile": "routes/admin-pricing-workspace.js"
               }
             ]
           }
@@ -43919,6 +44020,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/market-provisioning-service.js",
+                "targetFile": "utils/phone.js"
+              },
+              {
                 "sourceFileId": "routes/admin-market-control-plane.js",
                 "targetFile": "db.js"
               }
@@ -43934,6 +44039,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "services/market-control-plane.js",
+                "targetFile": "services/routing.js"
+              },
               {
                 "sourceFileId": "services/market-provisioning-service.js",
                 "targetFile": "services/relais-mutation-service.js"
@@ -43968,8 +44077,16 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/market-control-plane.js",
+                "targetFile": "services/fx-authority.js"
+              },
+              {
                 "sourceFileId": "services/market-provisioning-service.js",
                 "targetFile": "services/market-lifecycle-service.js"
+              },
+              {
+                "sourceFileId": "routes/admin-market-control-plane.js",
+                "targetFile": "services/fx-authority.js"
               },
               {
                 "sourceFileId": "routes/admin-market-control-plane.js",
@@ -43983,6 +44100,22 @@
               {
                 "table": "markets",
                 "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-control-plane",
+        "to": "market-autonomy",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/market-control-plane.js",
+                "targetFile": "services/market-commercial-price-service.js"
               }
             ]
           }
@@ -44103,7 +44236,15 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/market-control-plane.js",
+                "targetFile": "services/market-payment-provider-config-service.js"
+              },
+              {
                 "sourceFileId": "services/market-provisioning-service.js",
+                "targetFile": "services/market-payment-provider-config-service.js"
+              },
+              {
+                "sourceFileId": "routes/admin-market-control-plane.js",
                 "targetFile": "services/market-payment-provider-config-service.js"
               }
             ]
@@ -44113,6 +44254,10 @@
             "evidence": [
               {
                 "table": "market_payment_providers",
+                "mode": "R"
+              },
+              {
+                "table": "market_central_collection_modes",
                 "mode": "R"
               }
             ]
@@ -55003,6 +55148,21 @@
       "resolution": "declared-table-owner"
     },
     "market_payment_providers": {
+      "writers": [
+        {
+          "feature": "payments",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "market-control-plane"
+      ],
+      "lifecycleOwner": "payments",
+      "resolution": "declared-table-owner"
+    },
+    "market_central_collection_modes": {
       "writers": [
         {
           "feature": "payments",
