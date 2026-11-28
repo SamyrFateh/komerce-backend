@@ -1,4 +1,4 @@
-name: '4370 — Candidate staging Chromium guarded provisioning'
+name: '4370 — Candidate staging QN fixture recovery'
 on:
   push:
     branches: [recette/4370-candidate-chromium-2ec819c]
@@ -44,7 +44,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Verify database and live staging identity
         run: node scripts/recette/target-guard.js
-      - name: Real Chromium provisioning with rollback cleanup rehearsal
+      - name: Recover exact QN fixture (canonical cleanup only)
         shell: bash
         run: |
           node <<'NODE'
@@ -57,7 +57,7 @@ jobs:
           const sha = 'c0e8fc53fd7bf0c3cd7211052697c04bdce8f0de';
           const output = 'test-results/4370';
           fs.mkdirSync(output, { recursive: true });
-          const proof = { target: origin, candidate: sha, viewport: '1440x900', browser: 'chromium', mode: 'GUARDED_PROVISIONING', outcome: 'NOT_PROVEN', blockedWrites: [] };
+          const proof = { target: origin, candidate: sha, viewport: '1440x900', browser: 'chromium', mode: 'EXACT_FIXTURE_RECOVERY', outcome: 'NOT_PROVEN', blockedWrites: [] };
           (async () => {
             let browser, page, actor, fixture, armed = false, writeAttempted = false;
             let code, phone, name;
@@ -76,21 +76,15 @@ jobs:
               if(!/^\d+$/.test(run)||!process.env.DATABASE_URL||!process.env.STAGING_DB_PIN) throw Error('STAGING_GUARDS_MISSING');
               const u = new URL(process.env.DATABASE_URL);
               if(u.hostname+':'+(u.port||'5432')+u.pathname!==process.env.STAGING_DB_PIN) throw Error('DB_PIN_MISMATCH');
-              // ISO user-assigned QM–QZ codes, never a real market code.
-              const poolCodes = Array.from({length:14},(_,i)=>'Q'+String.fromCharCode(77+i));
-              const existing = await db.query('SELECT code FROM markets WHERE code=ANY($1::text[])',[poolCodes]);
-              const busyCodes = new Set(existing.rows.map(r=>r.code));
-              code = poolCodes.find(x=>!busyCodes.has(x));
-              if(!code) throw Error('NO_RESERVED_FIXTURE_MARKET_FREE');
-              // NANP reserved fictional numbers 555-0100 to 555-0199; never send an OTP.
-              const phones = Array.from({length:100},(_,i)=>'+1202555'+String(100+i).padStart(4,'0'));
-              const users = await db.query('SELECT phone,whatsapp_phone FROM users WHERE lower(email)=$1 OR phone=ANY($2::text[]) OR whatsapp_phone=ANY($2::text[])',[email,phones]);
-              const busyPhones = new Set(users.rows.flatMap(r=>[r.phone,r.whatsapp_phone]));
-              phone = phones.find(x=>!busyPhones.has(x));
-              if(!phone) throw Error('NO_RESERVED_FIXTURE_PHONE_FREE');
-              name = 'RECETTE 4370 '+code+' '+run;
-              await absent(db);
-              proof.fixtureCode = code;
+              code='QN';
+              name='RECETTE 4370 QN 46135179574';
+              fixture=await owned();
+              if(!fixture||fixture.id!=='2005b740-dd23-4639-8126-22502f29b13f')throw Error('RECOVERY_OWNERSHIP_NOT_PROVEN');
+              proof.fixtureCode=code;
+              proof.marketId=fixture.id;
+              const a=await db.query('SELECT id,status FROM market_operating_assignments WHERE market_id=$1',[fixture.id]);
+              if(a.rowCount!==1||a.rows[0].id!=='326be9ce-d2c4-476c-b5a3-5eb190092d03')throw Error('RECOVERY_ASSIGNMENT_NOT_PROVEN');
+              if(fixture.is_active!==false||!['PROVISIONING','CLOSED'].includes(fixture.lifecycle_status))throw Error('RECOVERY_MARKET_NOT_SAFE');
               browser = await chromium.launch();
               page = await browser.newPage({ viewport: { width: 1440, height: 900 }, baseURL: origin });
               await page.route('**/*', route => {
@@ -124,157 +118,34 @@ jobs:
               proof.role = data.actor?.role;
               actor = data.actor?.id;
               if (!ctx.ok() || proof.role !== 'admin') throw Error('ADMIN_CONTEXT_NOT_PROVEN');
-              await page.goto('/dashboards/canonical/access.html', {waitUntil:'domcontentloaded'});
-              proof.stage = 'MARKET_REGISTRY';
-              proof.path = new URL(page.url()).pathname;
-              const create = page.locator('#markets-management').getByRole('button', {name:'Nouveau marché', exact:true});
-              await expect(create).toBeVisible({timeout:20000});
-              proof.stage = 'OPEN_WIZARD';
-              const authority = page.waitForResponse(r => new URL(r.url()).pathname === '/api/admin/markets/central-authority' && r.request().method() === 'GET');
-              await create.click();
-              proof.authorityHttp = (await authority).status();
-              if (proof.authorityHttp !== 200) throw Error('CENTRAL_AUTHORITY_REFUSED');
-              proof.stage = 'WIZARD_FIELDS';
-              const wizard = page.locator('.kmc-markets-onboarding');
-              await expect(wizard).toBeVisible({timeout:20000});
-              await expect(wizard.getByText('Initialiser un marché', {exact:true})).toBeVisible();
-              await expect(wizard.getByText(/La boutique restera fermée/)).toBeVisible();
-              await expect(wizard.locator('[name=code]')).toBeVisible();
-              await expect(wizard.locator('[name=currency]')).toBeVisible();
-              await expect(wizard.locator('[name=business_timezone]')).toBeVisible();
-              proof.entry = 'PASS';
-              proof.stage = 'IDENTITY';
-              const field = name => wizard.locator('[name="'+name+'"]');
-              const next = () => wizard.getByRole('button',{name:'Suivant',exact:true}).click();
-              const occupied = await page.locator('#markets-management tr[data-market-code]').evaluateAll(rows=>rows.map(row=>row.dataset.marketCode));
-              const choices = await field('currency').locator('option').evaluateAll(options=>options.map(o=>o.value).filter(Boolean));
-              const candidate = {code,currency:'XAF',timezone:'Africa/Libreville'};
-              if (occupied.includes(code)||!choices.includes(candidate.currency)) throw Error('FIXTURE_MARKET_OR_CURRENCY_UNAVAILABLE');
-              proof.dryRunMarket = candidate.code;
-              await field('code').fill(candidate.code);
-              await field('name').fill(name);
-              await field('currency').selectOption(candidate.currency);
-              await field('business_timezone').fill(candidate.timezone);
-              await expect(field('minor_unit')).not.toHaveValue('');
-              await next();
-              proof.stage = 'LEAD_AND_RIGHTS';
-              await expect(wizard.getByText(/Responsable et droits/)).toBeVisible();
-              const refs = await field('central_referent_user_id').locator('option').evaluateAll(options=>options.map(o=>o.value).filter(Boolean));
-              if (!refs.length) throw Error('NO_CENTRAL_REFERENT');
-              await field('central_referent_user_id').selectOption(refs[0]);
-              await field('last_name').fill('Recette');
-              await field('first_name').fill(first);
-              await expect(field('email_preview')).toHaveValue(email);
-              await field('phone').fill(phone);
-              const limits = wizard.locator('input[name^="limit_"]');
-              await expect(limits).toHaveCount(4);
-              for(let i=0;i<4;i++) await limits.nth(i).fill('0');
-              await next();
-              proof.stage = 'OPTIONAL_RELAY';
-              await expect(wizard.getByText(/Relais \(facultatif\)/)).toBeVisible();
-              await next();
-              proof.stage = 'CASH_ONLY';
-              await expect(wizard.getByText(/Étape 4 sur 5/)).toBeVisible();
-              await field('cash_enabled').selectOption('true');
-              await field('confirmation_mode').selectOption('SINGLE');
-              for (const mode of ['stripe_eur','paypal_eur']) {
-                if (await field(mode).count()) await field(mode).selectOption('false');
+              proof.stage='RECOVERY';
+              await versionNow();
+              const exit=await page.request.get('/api/admin/markets/'+code+'/exit-readiness');
+              const ex=await exit.json();
+              if(!exit.ok())throw Error('EXIT_READBACK_FAILED');
+              const headers={origin:origin,'x-correlation-id':'recette-4370-recovery-'+run};
+              if(ex.assignment){
+                if(ex.assignment.id!=='326be9ce-d2c4-476c-b5a3-5eb190092d03'||!ex.ready_to_end)throw Error('EXIT_NOT_READY');
+                const ended=await page.request.post('/api/admin/markets/'+code+'/assignment/status',{headers,data:{status:'ENDED',reason:'Clôture fixture recette 46135179574'}});
+                proof.assignmentEndHttp=ended.status();
+                if(!ended.ok()){const body=await ended.json().catch(()=>({}));proof.assignmentEndCode=body.code||null;throw Error('ASSIGNMENT_END_FAILED');}
               }
-              await next();
-              proof.stage = 'FINAL_REVIEW';
-              await expect(wizard.getByText(/Étape 5 sur 5/)).toBeVisible();
-              await expect(wizard.getByText(email+' · '+phone,{exact:true})).toBeVisible();
-              await expect(wizard.getByText(/Premier relais : à configurer localement/)).toBeVisible();
-              await expect(wizard.getByText('Paiements : Cash au relais',{exact:true})).toBeVisible();
-              await expect(wizard.getByRole('button',{name:'Initialiser le marché',exact:true})).toBeVisible();
-              await wizard.screenshot({path:output+'/wizard-review.png'});
-              proof.stage = 'ROLLBACK_CLEANUP_REHEARSAL';
               await versionNow();
-              // Rehearse canonical cleanup in a rolled-back transaction. Not UI evidence.
-              const tx = await db.pool.connect();
-              try {
-                await tx.query('BEGIN');
-                await tx.query("SET LOCAL statement_timeout = '20s'");
-                await absent(tx);
-                const rehearsal = await svc.provisionMarket(tx,{actorUserId:actor,code,name,currency:candidate.currency,minorUnit:0,businessTimezone:candidate.timezone,centralReferentUserId:refs[0],financialLimits:limitsPayload,lead:{last_name:'Recette',first_name:first,phone},cashPolicy:{cash_enabled:true,confirmation_mode:'SINGLE'},centralCollectionModes:[],correlationId:'rollback-4370-'+run});
-                if(rehearsal.market.lifecycle_status!=='PROVISIONING'||rehearsal.readiness.ready_for_activation!==false) throw Error('REHEARSAL_NOT_SAFE');
-                await svc.setAssignmentLifecycle(tx,{actorUserId:actor,marketCode:code,targetStatus:'ENDED',reason:'Rehearsal cleanup',correlationId:'rollback-4370-'+run});
-                await svc.setMarketLifecycle(tx,{actorUserId:actor,marketCode:code,targetStatus:'CLOSED',correlationId:'rollback-4370-'+run});
-                const closed=await tx.query("SELECT m.lifecycle_status,m.is_active,a.status FROM markets m JOIN market_operating_assignments a ON a.market_id=m.id WHERE m.id=$1",[rehearsal.market.id]);
-                if(closed.rows[0]?.lifecycle_status!=='CLOSED'||closed.rows[0]?.is_active!==false||closed.rows[0]?.status!=='ENDED') throw Error('REHEARSAL_CLEANUP_NOT_PROVEN');
-                proof.cleanupRehearsal='PASS';
-              } finally { try { await tx.query('ROLLBACK'); } finally { tx.release(); } }
-              await absent(db);
-              await versionNow();
-              proof.stage='CREATE_MARKET_UI';
-              const response=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/markets'&&r.request().method()==='POST');
-              armed=true;
-              await wizard.getByRole('button',{name:'Initialiser le marché',exact:true}).click();
-              const created=await response;
-              proof.createHttp=created.status();
-              const result=await created.json();
-              if(created.status()!==201) { proof.createErrorCode=String(result.code||'UNKNOWN').slice(0,100); throw Error('CREATE_REFUSED'); }
-              fixture=await owned();
-              if(!fixture||fixture.id!==result.market?.id||fixture.lifecycle_status!=='PROVISIONING'||fixture.is_active!==false) throw Error('PERSISTED_MARKET_MISMATCH');
-              proof.marketId=fixture.id;
-              proof.assignmentId=result.assignment_id;
-              const stored=await db.query("SELECT a.id,a.status,am.is_operating_lead,u.id AS lead_id FROM market_operating_assignments a JOIN assignment_memberships am ON am.assignment_id=a.id JOIN users u ON u.id=am.user_id WHERE a.market_id=$1 AND lower(u.email)=$2 AND u.phone=$3 AND am.status='ACTIVE' AND u.role='market_operator'",[fixture.id,email,phone]);
-              if(stored.rowCount!==1||stored.rows[0].id!==result.assignment_id||stored.rows[0].status!=='ACTIVE'||stored.rows[0].is_operating_lead!==true) throw Error('PERSISTED_LEAD_MISMATCH');
-              proof.leadId=stored.rows[0].lead_id;
-              const eco=await db.query('SELECT count(*)::int AS n FROM economic_cost_centers WHERE market_id=$1',[fixture.id]);
-              if(eco.rows[0].n<1)throw Error('ECONOMIC_REFERENCES_MISSING');
-              proof.economicCenters=eco.rows[0].n;
-              const read=await page.request.get('/api/admin/markets/'+code+'/control-plane');
-              const control=await read.json();
-              if(!read.ok()||control.market?.id!==fixture.id||control.readiness?.ready_for_activation!==false)throw Error('READINESS_NOT_SAFE');
-              proof.readiness='BLOCKED_AS_EXPECTED';
-              const row=page.locator('#markets-management tr[data-market-code="'+code+'"]');
-              await expect(row).toContainText('En préparation');
-              await row.screenshot({path:output+'/created-market.png'});
-              proof.stage='PREMATURE_ACTIVATION';
-              await versionNow();
-              page.once('dialog',async d=>{if(d.type()==='confirm'&&d.message().includes('ouvrir le marché '+code+' ('+name+')'))await d.accept();else await d.dismiss();});
-              const denied=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/markets/'+code+'/lifecycle'&&r.request().method()==='POST');
-              await row.getByRole('button',{name:'Ouvrir',exact:true}).click();
-              const denial=await denied;
-              proof.activationHttp=denial.status();
-              const denialBody=await denial.json();
-              proof.activationCode=denialBody.code;
-              if(denial.status()!==409||denialBody.code!=='MARKET_NOT_READY_FOR_ACTIVATION')throw Error('PREMATURE_ACTIVATION_NOT_REFUSED');
-              const after=await owned();
-              if(!after||after.id!==fixture.id||after.lifecycle_status!=='PROVISIONING'||after.is_active!==false)throw Error('MARKET_CHANGED_AFTER_REFUSAL');
-              proof.stage='DONE';
-              proof.outcome='PASS_INITIALIZATION_AND_PREMATURE_ACTIVATION_REFUSAL';
+              const close=await page.request.post('/api/admin/markets/'+code+'/lifecycle',{headers,data:{status:'CLOSED'}});
+              proof.closeHttp=close.status();
+              if(!close.ok()){const body=await close.json().catch(()=>({}));proof.closeCode=body.code||null;throw Error('MARKET_CLOSE_FAILED');}
+              const final=await db.query("SELECT m.lifecycle_status,m.is_active,a.status FROM markets m JOIN market_operating_assignments a ON a.market_id=m.id WHERE m.id=$1 AND a.id=$2",[fixture.id,'326be9ce-d2c4-476c-b5a3-5eb190092d03']);
+              if(final.rowCount!==1||final.rows[0].lifecycle_status!=='CLOSED'||final.rows[0].is_active!==false||final.rows[0].status!=='ENDED')throw Error('CLEANUP_READBACK_FAILED');
+              proof.cleanup='CLOSED_AND_ASSIGNMENT_ENDED_AUDIT_RETAINED';
+              proof.outcome='PASS_QN_RECOVERY_ONLY';
               proof.businessCertification='PARTIAL_LEAD_LOGIN_AND_ACTIVATION_NOT_PROVEN';
+              proof.stage='DONE';
             } catch (err) {
               proof.outcome = 'FAIL';
               proof.reason = /^[A-Z0-9_]{3,100}$/.test(err.message) ? err.message : (err.code || err.name || 'Error');
               console.error('Read-only candidate smoke failed:', proof.stage || 'PRE_ENTRY', proof.reason);
               process.exitCode = 1;
             } finally {
-              if(writeAttempted && page){
-                // Only the run's own name and code may be closed. Never delete rows or touch existing markets.
-                try {
-                  const own=await owned();
-                  if(own){
-                    if(fixture&&fixture.id!==own.id)throw Error('FIXTURE_OWNERSHIP_CHANGED');
-                    await versionNow();
-                    const exit=await page.request.get('/api/admin/markets/'+code+'/exit-readiness');
-                    const ex=await exit.json();
-                    if(!exit.ok())throw Error('EXIT_READBACK_FAILED');
-                    if(ex.assignment){
-                      if(!ex.ready_to_end)throw Error('EXIT_NOT_READY');
-                      const ended=await page.request.post('/api/admin/markets/'+code+'/assignment/status',{data:{status:'ENDED',reason:'Clôture fixture recette '+run}});
-                      if(!ended.ok())throw Error('ASSIGNMENT_END_FAILED');
-                    }
-                    const close=await page.request.post('/api/admin/markets/'+code+'/lifecycle',{data:{status:'CLOSED'}});
-                    if(!close.ok())throw Error('MARKET_CLOSE_FAILED');
-                    const final=await db.query("SELECT m.lifecycle_status,m.is_active,a.status FROM markets m JOIN market_operating_assignments a ON a.market_id=m.id WHERE m.id=$1",[own.id]);
-                    if(final.rowCount!==1||final.rows[0].lifecycle_status!=='CLOSED'||final.rows[0].is_active!==false||final.rows[0].status!=='ENDED')throw Error('CLEANUP_READBACK_FAILED');
-                    proof.cleanup='CLOSED_AND_ASSIGNMENT_ENDED_AUDIT_RETAINED';
-                  } else { proof.cleanup='NO_OWNED_MARKET_FOUND'; }
-                } catch(err){proof.cleanup='FAIL';proof.cleanupCode=err.message;proof.outcome='FAIL';process.exitCode=1;console.error('Fixture cleanup failed:',proof.cleanupCode);}
-              }
               if (browser) await browser.close();
               await db.pool.end();
               fs.writeFileSync(output+'/proof.json', JSON.stringify(proof,null,2));
