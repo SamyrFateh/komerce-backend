@@ -51,6 +51,12 @@ describe('dashboard-pilotage-market', () => {
     market_id: market.id,
   };
 
+  test('refuse une période commerciale résolue pour un autre marché',async()=>{
+    await expect(pilotage.buildMarketPilotage({market_id:market.id},market,null,{filters:{market_id:'other-market'}}))
+      .rejects.toThrow('dashboard_market_flow_filter_not_server_bound');
+    expect(mockPaidSales).not.toHaveBeenCalled();
+  });
+
   test('refuse un agrégat dont le market_id ne correspond pas au marché résolu serveur', async () => {
     await expect(pilotage.buildMarketPilotage({ market_id: 'other-market' }, market))
       .rejects.toThrow('dashboard_market_filter_not_server_bound');

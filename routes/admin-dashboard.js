@@ -326,6 +326,9 @@ router.get(
   async (req, res, next) => {
     try {
       const filters = parseFilters(req);
+      const commerce = require('../services/dashboard-commerce');
+      // L3b : la période commerciale ne modifie ni le stock ni les horloges ECO.
+      const flowPeriod = req.query.period === undefined ? null : commerce.buildPeriodFilters(req.query);
 
       // PERF : TOUS les 17 KPIs + alerts en UN SEUL Promise.all
       // Avant : 6 paralleles + 11 await sequentiels dans les array literals
@@ -336,7 +339,7 @@ router.get(
         cmdsAujourdhui, colisEnTransit, disponiblesRelais, retardsCritiques, tauxCompletudeScans,
         topAlerts, pointsAttention, controlChainProjection, marketsSupervision,
       ] = await Promise.all([
-        require('../services/dashboard-commerce').getPilotagePaidSales(filters),
+        commerce.getPilotagePaidSales(flowPeriod ? flowPeriod.filters : filters),
         metrics.getCmdsActives(pilotageStockFilters(filters)),
         periodResultKpi(req.user,filters),
         metrics.getAlertesCritiques(filters),
@@ -402,7 +405,7 @@ router.get(
       ];
 
       res.json({
-        decision_clocks: pilotageDecisionClocks(filters,economicResult,new Date().toISOString()),
+        decision_clocks: pilotageDecisionClocks(flowPeriod ? flowPeriod.filters : filters,economicResult,new Date().toISOString(),flowPeriod),
         kpis_global: [ca, cmdsActives, economicResult, alertesCritiques, tauxCouts, pointsAttention],
         view_blocks,
         economic_flow,

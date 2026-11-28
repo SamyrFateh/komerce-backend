@@ -251,7 +251,7 @@
     const states={CLOSED:'Clôturé',PROVISIONAL:'Provisoire',REOPENED:'Réouvert — à rapprocher',NOT_RECONCILED:'Non rapproché',MARKET_RESULT_NOT_RECONCILED:'Marché non rapproché',SIMULATION_EXCLUDED:'Hors simulation',UNAVAILABLE:'Indisponible'};
     const dates=clocks.flow||{};
     const bounds=dates.from||dates.to
-      ? 'Création : '+(dates.from||'sans borne de début')+' → '+(dates.to||'sans borne de fin')
+      ? (dates.period ? dates.period+' jours civils · '+dates.timezone+' · ' : '')+'Création : '+(dates.from||'sans borne de début')+' → '+(dates.to||'sans borne de fin')
       : 'Historique sans filtre de date de création';
     const stamp=clocks.stock?.observed_at;
     const canonicalSales=clocks.flow?.metric_id==='commerce.paid_sales_wallet_included'
@@ -313,6 +313,10 @@
       reading.section.setAttribute('data-dashboard-role','secondary');
       if (payload.decision_clocks.stock?.simulation_scope) reading.body.appendChild(text(doc,'p','kmc-decision-dashboard-section-copy',
         'Recette '+payload.decision_clocks.stock.simulation_scope+' · faits simulés, hors activité réelle.'));
+      if (payload.decision_clocks.flow?.period && decisionUi.PeriodControl) {
+        reading.body.appendChild(decisionUi.PeriodControl.create(doc,{period:payload.decision_clocks.flow.period,
+          label:'Période des ventes payées',ariaLabel:'Période Pilotage',onChange:options.onPeriodChange}));
+      }
       const strip=doc.createElement('div');
       strip.className='kmc-pilotage-clock-strip';
       strip.setAttribute('data-pilotage-clocks','');
@@ -400,10 +404,14 @@
   function enhance(base, decisionUi) {
     if (!base || typeof base.mount !== 'function') throw new Error('pilotage_decision_base_missing');
     const baseMount = base.mount;
-    return Object.freeze({
+    const enhanced = {
       ...base,
       mount(options) {
-        return baseMount(options).then(result => ({ ...result, result: render(options.root, result.payload, options, base, decisionUi), decisionFirst: true }));
+        const search=options.location?.search ?? globalThis.location?.search ?? '';
+        const period=options.period ?? new URLSearchParams(search).get('period') ?? '30';
+        const onPeriodChange=nextPeriod=>enhanced.mount({...options,period:nextPeriod});
+        return baseMount({...options,period,onPayload:payload=>render(options.root,payload,{...options,onPeriodChange},base,decisionUi)})
+          .then(result=>result?.stale||!result?.payload ? result : {...result,decisionFirst:true});
       },
       projectDecisionItems: payload => decisionItems(payload, base),
       projectSummaryCards: payload => summaryCards(payload, base),
@@ -413,7 +421,8 @@
       projectResidualActions: payload => residualActions(payload, base),
       projectPrinciples: principles,
       projectTrust: trust,
-    });
+    };
+    return Object.freeze(enhanced);
   }
 
   return Object.freeze({ HUMAN_LABELS, humanLabel, metric, incompleteCost, decisionItems, clockItems, summaryCards, flowStages, structuralCauses, controlStages, residualActions, principles, trust, render, enhance });

@@ -39,7 +39,7 @@ jest.mock('../../services/dashboard-cache', () => ({
 }));
 
 const mockPaidSales=jest.fn(async()=>({key:'ca_encaisse',label:'Ventes payées (avoir inclus)',value:42,unit:'EUR',data_quality:{metric_id:'commerce.paid_sales_wallet_included'}}));
-jest.mock('../../services/dashboard-commerce',()=>({getPilotagePaidSales:(...args)=>mockPaidSales(...args)}));
+jest.mock('../../services/dashboard-commerce',()=>({getPilotagePaidSales:(...args)=>mockPaidSales(...args),buildPeriodFilters:(...args)=>jest.requireActual('../../services/dashboard-commerce').buildPeriodFilters(...args)}));
 const mockControlChain = jest.fn();
 jest.mock('../../services/logistics-control-chain-projection', () => ({
   getControlChain: (...args) => mockControlChain(...args),
@@ -244,6 +244,16 @@ describe('GET /logistics', () => {
 });
 
 describe('GET /unified', () => {
+  it('réutilise les bornes civiles Commerce pour le flux, sans dater le stock', async () => {
+    const res=await request(app).get('/api/admin/dashboard/unified?period=7');
+    expect(res.status).toBe(200);
+    const flow=res.body.decision_clocks.flow;
+    expect(flow).toMatchObject({period:7,timezone:'UTC',timezone_source:'global_utc'});
+    const expected=require('../../services/dashboard-commerce').buildPeriodFilters({period:'7'},null,new Date(flow.to));
+    expect(mockPaidSales).toHaveBeenCalledWith(expected.filters);
+    expect(flow.from).toBe(expected.filters.from);
+    expect(require('../../services/dashboard-metrics').getCmdsActives).toHaveBeenCalledWith({});
+  });
   it('supervision des marchés indisponible → null (Non disponible), jamais 0 ni 500', async () => {
     require('../../services/dashboard-pilotage-markets').getMarketsSupervision.mockRejectedValueOnce(new Error('db down'));
     const res = await request(app).get('/api/admin/dashboard/unified');

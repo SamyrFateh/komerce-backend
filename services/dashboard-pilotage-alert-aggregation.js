@@ -49,11 +49,12 @@ function pilotageStockFilters(filters = {}) {
   };
 }
 
-function pilotageDecisionClocks(filters = {}, economicResult, observedAt) {
+function pilotageDecisionClocks(filters = {}, economicResult, observedAt, flowPeriod = null) {
   return Object.freeze({
     stock:Object.freeze({basis:'current_active_orders',observed_at:observedAt,simulation_scope:filters.simulation_scope||null}),
     flow:Object.freeze({basis:'orders.created_at',from:filters.from||null,to:filters.to||null,
-      simulation_scope:filters.simulation_scope||null,metric_id:'commerce.paid_sales_wallet_included'}),
+      simulation_scope:filters.simulation_scope||null,metric_id:'commerce.paid_sales_wallet_included',
+      ...(flowPeriod ? {period:flowPeriod.period,timezone:flowPeriod.timezone,timezone_source:flowPeriod.timezone_source} : {})}),
     economic:Object.freeze({basis:'utc_calendar_month',period_start:economicResult?.data_quality?.period_start||null,
       metric_id:'eco.period_result'}),
   });

@@ -310,33 +310,6 @@
     return { section, body };
   }
 
-  function periodControl(doc, period, onPeriodChange) {
-    const toolbar = doc.createElement('div');
-    toolbar.className = 'kmc-decision-toolbar';
-    const copy = doc.createElement('div');
-    copy.className = 'kmc-decision-toolbar-copy';
-    copy.appendChild(text(doc, 'span', 'kmc-decision-toolbar-label', 'Période observée'));
-    copy.appendChild(text(doc, 'strong', 'kmc-decision-toolbar-value', `${period} jours`));
-    toolbar.appendChild(copy);
-
-    const select = doc.createElement('select');
-    select.className = 'kmc-decision-toolbar-select';
-    select.setAttribute('aria-label', 'Période Commerce');
-    ['7', '30', '90'].forEach(value => {
-      const option = doc.createElement('option');
-      option.value = value;
-      option.textContent = `${value} jours`;
-      if (String(period) === value) option.selected = true;
-      select.appendChild(option);
-    });
-    if (typeof onPeriodChange === 'function') {
-      select.addEventListener('change', event => {
-        Promise.resolve(onPeriodChange(event.target.value)).catch(() => {});
-      });
-    }
-    toolbar.appendChild(select);
-    return toolbar;
-  }
 
   // Séries servies par le serveur (/commerce) : le navigateur ne fait que les dessiner.
   // Barres : hauteur = valeur / max affiché (mise à l'échelle graphique, pas un indicateur).
@@ -614,7 +587,7 @@
         `Recette ${payload.simulation.scope} — faits simulés, pas une activité réelle`));
       dashboard.setAttribute('data-simulation-scope', String(payload.simulation.scope));
     }
-    header.appendChild(periodControl(doc, options.period || payload.period || '30', options.onPeriodChange));
+    header.appendChild(decisionUi.PeriodControl.create(doc,{period:options.period || payload.period || '30',ariaLabel:'Période Commerce',onChange:options.onPeriodChange}));
     dashboard.appendChild(header);
 
     const decisions = decisionItems(payload, base);

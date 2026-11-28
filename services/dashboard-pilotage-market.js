@@ -74,7 +74,7 @@ async function fetchTopAlerts(filters, limit = 10) {
   }
 }
 
-async function buildMarketPilotage(filters, market, actor=null) {
+async function buildMarketPilotage(filters, market, actor=null, flowPeriod=null) {
   if (!market || !market.id || !market.code) {
     throw new Error('dashboard_market_not_resolved');
   }
@@ -82,6 +82,9 @@ async function buildMarketPilotage(filters, market, actor=null) {
     throw new Error('dashboard_market_filter_not_server_bound');
   }
 
+  if (flowPeriod && flowPeriod.filters?.market_id !== market.id) {
+    throw new Error('dashboard_market_flow_filter_not_server_bound');
+  }
   const [
     ca, cmdsActives, alertesCritiques, tauxCouts,
     coutReel, cmdsCoutIncomplet, coutMoyParCmd,
@@ -89,7 +92,7 @@ async function buildMarketPilotage(filters, market, actor=null) {
     topAlerts,
     controlChainProjection,
   ] = await Promise.all([
-    require('./dashboard-commerce').getPilotagePaidSales(filters,market),
+    require('./dashboard-commerce').getPilotagePaidSales(flowPeriod ? flowPeriod.filters : filters,market),
     metrics.getCmdsActives(pilotageStockFilters(filters)),
     metrics.getAlertesCritiques(filters),
     metrics.getTauxCompletudeCouts(filters),
@@ -153,7 +156,7 @@ async function buildMarketPilotage(filters, market, actor=null) {
         currency: market.currency,
       },
     },
-    decision_clocks: pilotageDecisionClocks(filters,economicResult,new Date().toISOString()),
+    decision_clocks: pilotageDecisionClocks(flowPeriod ? flowPeriod.filters : filters,economicResult,new Date().toISOString(),flowPeriod),
     kpis_global: [ca, cmdsActives, economicResult, alertesCritiques, tauxCouts],
     view_blocks,
     economic_flow: {
