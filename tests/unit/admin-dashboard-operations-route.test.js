@@ -51,8 +51,10 @@ jest.mock('../../services/dashboard-pilotage-market', () => ({ buildMarketPilota
 jest.mock('../../services/dashboard-commerce', () => ({ buildCommerce: jest.fn() }));
 
 const mockBuildOperations = jest.fn();
+const mockBuildControlChainDrill = jest.fn();
 jest.mock('../../services/dashboard-operations', () => ({
   buildOperations: (...args) => mockBuildOperations(...args),
+  buildControlChainDrill: (...args) => mockBuildControlChainDrill(...args),
 }));
 
 jest.mock('../../utils/logger', () => ({
@@ -111,6 +113,26 @@ describe('routes Operations Canonical', () => {
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('client_market_id_forbidden');
     expect(mockBuildOperations).not.toHaveBeenCalled();
+  });
+
+  test('drill et simulation conservent les gardes de lecture et le scope serveur',async()=>{
+    mockBuildControlChainDrill.mockResolvedValue({orders:[]});
+    const query='?chain_drill=ORDER&page=1&token='+'a'.repeat(32)+'&simulation_scope=RCT1';
+    const root='/api/admin/dashboard/operations';
+    let response=await request(app()).get(root+'/market/CM'+query);
+    expect(response.status).toBe(200);
+    expect(mockBuildControlChainDrill).toHaveBeenCalledWith(expect.objectContaining({chain_drill:'ORDER',simulation_scope:'RCT1'}),{market:expect.objectContaining({id:'market-cm-id'})});
+    mockBuildControlChainDrill.mockClear();
+    for(const [path,status] of [[root+'/market/CG'+query,403],[root+query,403],[root+'/market/CM'+query+'&market_id=market-cg-id',400],[root+'/market/CM'+query+'&simulation_scope=RCT2',400]]){
+      response=await request(app()).get(path);
+      expect(response.status).toBe(status);
+    }
+    expect(mockBuildControlChainDrill).not.toHaveBeenCalled();
+    expect(mockBuildOperations).not.toHaveBeenCalled();
+    mockBuildControlChainDrill.mockRejectedValueOnce(Object.assign(new Error('changed'),{status:409,code:'control_chain_population_changed'}));
+    response=await request(app()).get(root+'/market/CM'+query);
+    expect(response.status).toBe(409);
+    expect(response.body.code).toBe('control_chain_population_changed');
   });
 
   test('A1 : opérateur sans grant refusé, admin sans grant autorisé', async () => {

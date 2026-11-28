@@ -537,7 +537,37 @@
     },
   });
 
+  const PeriodControl = Object.freeze({
+    create(doc, {period='30', label='Période observée', ariaLabel='Période', onChange} = {}) {
+      const toolbar = doc.createElement('div');
+      toolbar.className = 'kmc-decision-toolbar';
+      const copy = doc.createElement('div');
+      copy.className = 'kmc-decision-toolbar-copy';
+      copy.appendChild(text(doc, 'span', 'kmc-decision-toolbar-label', label));
+      copy.appendChild(text(doc, 'strong', 'kmc-decision-toolbar-value', `${period} jours`));
+      toolbar.appendChild(copy);
+      const select = doc.createElement('select');
+      select.className = 'kmc-decision-toolbar-select';
+      select.setAttribute('aria-label', ariaLabel);
+      ['7', '30', '90'].forEach(value => {
+        const option = doc.createElement('option');
+        option.value = value;
+        option.textContent = `${value} jours`;
+        if (String(period) === value) option.selected = true;
+        select.appendChild(option);
+      });
+      if (typeof onChange === 'function') {
+        select.addEventListener('change', event => {
+          Promise.resolve(onChange(event.target.value)).catch(() => {});
+        });
+      } else select.disabled = true;
+      toolbar.appendChild(select);
+      return toolbar;
+    },
+  });
+
   return Object.freeze({
+    PeriodControl,
     DecisionStrip,
     SummaryCards,
     FlowStrip,

@@ -109,7 +109,8 @@ test('Commerce : drill acheteurs paginé, périmètre figé et refus de populati
     const period={from:'2026-10-13T23:00:00.000Z',to:'2026-10-20T12:00:00.000Z',timezone:'Africa/Douala'};
     const scope={mode:'market',market:{code:'CM'}};
     const simulation={scope:'RCT1'};
-    const payload={period:7,period_definition:period,scope,simulation,buyer_cohort:{paid_buyers:26,repeat_paid_buyers:1,completeness:'complete'}};
+    const token='a'.repeat(32);
+    const payload={period:7,period_definition:period,scope,simulation,buyer_cohort:{paid_buyers:26,repeat_paid_buyers:1,completeness:'complete',population_token:token}};
     window.buyerCalls=[];window.buyerChanged=false;
     const fetch=async(url,opts)=>{
       const p=new URL(url,'https://komerce.test').searchParams;
@@ -120,7 +121,8 @@ test('Commerce : drill acheteurs paginé, périmètre figé et refus de populati
         paid_orders:kind==='repeat_paid_buyers'?2:1,latest_order_reference:'K-'+(i+1+(pg-1)*25)
       }));
       return {ok:true,json:async()=>({kind,period:7,period_definition:period,scope,simulation,
-        pagination:{page:pg,page_size:25,total:window.buyerChanged?total+1:total,total_pages:Math.ceil(total/25)},accounts})};
+        population_token:window.buyerChanged?'b'.repeat(32):token,
+        pagination:{page:pg,page_size:25,total,total_pages:Math.ceil(total/25)},accounts})};
     };
     const host=window.module.exports.renderBuyerCohort(document,payload,{fetch,buyerEndpoint:'/api/admin/dashboard/commerce/market/CM'},{formatNumber:String});
     document.getElementById('root').appendChild(host);
@@ -152,6 +154,7 @@ test('Commerce : drill acheteurs paginé, périmètre figé et refus de populati
     expect(url.pathname).toBe('/api/admin/dashboard/commerce/market/CM');
     expect(url.searchParams.get('as_of')).toBe('2026-10-20T12:00:00.000Z');
     expect(url.searchParams.get('simulation_scope')).toBe('RCT1');
+    expect(url.searchParams.get('population_token')).toBe('a'.repeat(32));
     expect(call.method).toBe('GET');
   }
 });

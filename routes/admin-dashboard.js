@@ -46,7 +46,7 @@ const metrics = require('../services/dashboard-metrics');
 const cache = require('../services/dashboard-cache');
 const controlChain = require('../services/logistics-control-chain-projection');
 const { getMarketsSupervision } = require('../services/dashboard-pilotage-markets');
-const { mergePilotageAlerts, summarizeControlChain, pilotageStockFilters, pilotageDecisionClocks } = require('../services/dashboard-pilotage-alert-aggregation');
+const { mergePilotageAlerts, summarizeControlChain, pilotageStockFilters, pilotageDecisionClocks, unavailableSimulationSignal } = require('../services/dashboard-pilotage-alert-aggregation');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { requireDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const { EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL } = require('../services/signal-simulation-scope');
@@ -322,10 +322,17 @@ async function periodResultKpi(actor,filters){
 router.get(
   '/unified',
   authenticate, requireAdmin, requireDashboardGlobalAuthority,
+  (req,res,next)=> {
+    if (req.query.simulation_scope !== undefined && !isValidScope(req.query.simulation_scope)) return res.status(400).json({error:'invalid_simulation_scope'});
+    next();
+  },
   cache.cacheMiddleware('unified'),
   async (req, res, next) => {
     try {
       const filters = parseFilters(req);
+      const commerce = require('../services/dashboard-commerce');
+      // L3b : la période commerciale ne modifie ni le stock ni les horloges ECO.
+      const flowPeriod = req.query.period === undefined ? null : commerce.buildPeriodFilters(req.query);
 
       // PERF : TOUS les 17 KPIs + alerts en UN SEUL Promise.all
       // Avant : 6 paralleles + 11 await sequentiels dans les array literals
@@ -336,10 +343,10 @@ router.get(
         cmdsAujourdhui, colisEnTransit, disponiblesRelais, retardsCritiques, tauxCompletudeScans,
         topAlerts, pointsAttention, controlChainProjection, marketsSupervision,
       ] = await Promise.all([
-        require('../services/dashboard-commerce').getPilotagePaidSales(filters),
+        commerce.getPilotagePaidSales(flowPeriod ? flowPeriod.filters : filters),
         metrics.getCmdsActives(pilotageStockFilters(filters)),
         periodResultKpi(req.user,filters),
-        metrics.getAlertesCritiques(filters),
+        filters.simulation_scope ? unavailableSimulationSignal('alertes_critiques','Alertes critiques') : metrics.getAlertesCritiques(filters),
         metrics.getTauxCompletudeCouts(filters),
         metrics.getCoutReel(filters),
         metrics.getCmdsCoutIncompletCount(filters),
@@ -349,9 +356,9 @@ router.get(
         metrics.getDisponiblesRelais(filters),
         metrics.getRetardsCritiques(filters),
         metrics.getTauxCompletudeScans(filters),
-        _fetchTopAlerts(10),
-        metrics.getPointsAttention(filters),
-        controlChain.getControlChain({ market: null }),
+        filters.simulation_scope ? null : _fetchTopAlerts(10),
+        filters.simulation_scope ? unavailableSimulationSignal('points_attention','Points d’attention') : metrics.getPointsAttention(filters),
+        controlChain.getControlChain({market:null,...(filters.simulation_scope?{simulationScope:filters.simulation_scope}:{})}),
         // null = lecture indisponible (affichée « Non disponible »), jamais converti en 0.
         getMarketsSupervision(pilotageStockFilters(filters)).catch((e) => { log.error('[admin-dashboard] markets_supervision:', e); return null; }),
       ]);
@@ -402,15 +409,18 @@ router.get(
       ];
 
       res.json({
-        decision_clocks: pilotageDecisionClocks(filters,economicResult,new Date().toISOString()),
+        decision_clocks: pilotageDecisionClocks(flowPeriod ? flowPeriod.filters : filters,economicResult,new Date().toISOString(),flowPeriod),
         kpis_global: [ca, cmdsActives, economicResult, alertesCritiques, tauxCouts, pointsAttention],
         view_blocks,
         economic_flow,
         principles,
         markets_supervision: marketsSupervision,
         control_chain: summarizeControlChain(controlChainProjection),
-        system_alerts: mergePilotageAlerts(topAlerts, controlChainProjection, 10),
-        data_quality: makeDataQuality(filters, ['(toutes)']),
+        system_alerts: filters.simulation_scope ? null : mergePilotageAlerts(topAlerts, controlChainProjection, 10),
+        data_quality: makeDataQuality(filters, ['(toutes)'], filters.simulation_scope ? {
+          warnings:['Signaux transverses non certifiés pour ce périmètre de recette ; chaîne limitée aux commandes de la recette.'],
+          incompleteFields:['system_alerts','alertes_critiques','points_attention'],
+        } : {}),
       });
     } catch (err) {
       log.error('[admin-dashboard] /unified error:', err);

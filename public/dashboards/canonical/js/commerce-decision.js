@@ -40,7 +40,7 @@
 
   function metricDisplay(base, item) {
     if (!item || item.value == null) return '—';
-    if (item.unit === 'KMF') return base.formatKmf(item.value);
+    if (typeof item.unit==='string' && /^[A-Z]{3}$/.test(item.unit)) return base.formatMoney(item.value,item.unit,item.minor_unit);
     if (item.unit === '%') return `${base.formatNumber(item.value)} %`;
     return base.formatNumber(item.value, 0);
   }
@@ -86,7 +86,8 @@
       const severity = signal && signal.severity;
       const tone = severity === 'critical' ? 'critical' : (severity === 'warning' ? 'warning' : 'info');
       let value = signal && signal.value;
-      if (signal && signal.value_kmf != null) value = base.formatKmf(signal.value_kmf);
+      if (signal?.value_display) value=base.formatMoney(signal.value_display.value,signal.value_display.unit,signal.value_display.minor_unit);
+      else if (signal && signal.value_kmf != null) value = base.formatKmf(signal.value_kmf);
       else if (signal && signal.value_count != null) value = base.formatNumber(signal.value_count, 0);
       return {
         key: signal && signal.key ? signal.key : signal && signal.kind,
@@ -193,7 +194,7 @@
     return (Array.isArray(payload && payload.categories) ? payload.categories : []).map(row => ({
       title: row.category || 'Catégorie',
       helper: `${base.formatNumber(row.orders, 0)} commande(s) · ${base.formatNumber(row.quantity, 0)} unité(s)`,
-      value: row.revenue_display ? base.formatMoney(row.revenue_display.value, row.revenue_display.unit) : base.formatKmf(row.revenue_kmf),
+      value: row.revenue_display ? base.formatMoney(row.revenue_display.value, row.revenue_display.unit,row.revenue_display.minor_unit) : base.formatKmf(row.revenue_kmf),
       tone: 'info',
     }));
   }
@@ -210,7 +211,7 @@
       title: row.name || row.product_ref || 'Produit',
       ...(row.product_ref ? { href: productHref(row.product_ref), actionLabel: 'Fiche produit →' } : {}),
       helper: `${row.category || 'Sans catégorie'} · ${base.formatNumber(row.quantity, 0)} unité(s)${row.share_pct == null ? '' : ` · ${base.formatNumber(row.share_pct, 1)} % des lignes produit`}`,
-      value: row.revenue_display ? base.formatMoney(row.revenue_display.value, row.revenue_display.unit) : base.formatKmf(row.revenue_kmf),
+      value: row.revenue_display ? base.formatMoney(row.revenue_display.value, row.revenue_display.unit,row.revenue_display.minor_unit) : base.formatKmf(row.revenue_kmf),
       tone: 'neutral',
     }));
   }
@@ -310,33 +311,6 @@
     return { section, body };
   }
 
-  function periodControl(doc, period, onPeriodChange) {
-    const toolbar = doc.createElement('div');
-    toolbar.className = 'kmc-decision-toolbar';
-    const copy = doc.createElement('div');
-    copy.className = 'kmc-decision-toolbar-copy';
-    copy.appendChild(text(doc, 'span', 'kmc-decision-toolbar-label', 'Période observée'));
-    copy.appendChild(text(doc, 'strong', 'kmc-decision-toolbar-value', `${period} jours`));
-    toolbar.appendChild(copy);
-
-    const select = doc.createElement('select');
-    select.className = 'kmc-decision-toolbar-select';
-    select.setAttribute('aria-label', 'Période Commerce');
-    ['7', '30', '90'].forEach(value => {
-      const option = doc.createElement('option');
-      option.value = value;
-      option.textContent = `${value} jours`;
-      if (String(period) === value) option.selected = true;
-      select.appendChild(option);
-    });
-    if (typeof onPeriodChange === 'function') {
-      select.addEventListener('change', event => {
-        Promise.resolve(onPeriodChange(event.target.value)).catch(() => {});
-      });
-    }
-    toolbar.appendChild(select);
-    return toolbar;
-  }
 
   // Séries servies par le serveur (/commerce) : le navigateur ne fait que les dessiner.
   // Barres : hauteur = valeur / max affiché (mise à l'échelle graphique, pas un indicateur).
@@ -346,7 +320,7 @@
     return rows.map(r => ({
       day: r.day,
       label: String(r.day || '').slice(5).split('-').reverse().join('/'),
-      value: base.formatKmf(r.sales_kmf),
+      value: r.sales_display ? base.formatMoney(r.sales_display.value,r.sales_display.unit,r.sales_display.minor_unit) : base.formatKmf(r.sales_kmf),
       heightPct: max > 0 ? Math.max(2, Math.round(((Number(r.sales_kmf) || 0) / max) * 100)) : 0,
     }));
   }
@@ -370,7 +344,7 @@
     const rows = Array.isArray(payload && payload.sales_by_market) ? payload.sales_by_market : [];
     return rows.map((r, i) => ({
       code: r.market_code, name: r.market_name || r.market_code,
-      value: base.formatKmf(r.sales_kmf),
+      value: r.sales_display ? base.formatMoney(r.sales_display.value,r.sales_display.unit,r.sales_display.minor_unit) : base.formatKmf(r.sales_kmf),
       share: r.share_pct == null ? null : Number(r.share_pct),
       color: MARKET_COLORS[i % MARKET_COLORS.length],
     }));
@@ -476,10 +450,12 @@
   function buyerDrillUrl(payload, kind, page, endpoint) {
     const period = payload?.period_definition;
     const count = payload?.buyer_cohort?.[kind];
+    const token = payload?.buyer_cohort?.population_token;
     if (!BUYER_METRICS.some(([key])=>key===kind) || !Number.isSafeInteger(count) || count<0
         || !Number.isSafeInteger(page) || page<1 || !period?.from || !period?.to
-        || ![7,30,90].includes(Number(payload.period)) || !endpoint) return null;
-    const params = new URLSearchParams({period:String(payload.period),buyer_drill:kind,as_of:period.to,page:String(page)});
+        || ![7,30,90].includes(Number(payload.period)) || !endpoint
+        || typeof token!=='string' || !/^[a-f0-9]{32}$/.test(token)) return null;
+    const params = new URLSearchParams({period:String(payload.period),buyer_drill:kind,as_of:period.to,page:String(page),population_token:token});
     if (payload.simulation?.scope) params.set('simulation_scope',payload.simulation.scope);
     return endpoint + '?' + params.toString();
   }
@@ -491,6 +467,9 @@
     const other = result?.period_definition;
     const minOrders = kind === 'repeat_paid_buyers' ? 2 : 1;
     return Number.isSafeInteger(total) && total>=0 && result?.kind===kind
+      && typeof payload?.buyer_cohort?.population_token==='string'
+      && /^[a-f0-9]{32}$/.test(payload.buyer_cohort.population_token)
+      && result.population_token===payload.buyer_cohort.population_token
       && result.scope?.mode===payload.scope?.mode && result.scope?.market?.code===payload.scope?.market?.code
       && (result.simulation?.scope||null)===(payload.simulation?.scope||null)
       && other?.from===period?.from && other?.to===period?.to && other?.timezone===period?.timezone
@@ -542,6 +521,10 @@
       panel.appendChild(content);
       try {
         const response=await fetchFn(url,{method:'GET',credentials:'include',headers:{Accept:'application/json'}});
+        if (response.status===409) {
+          if(request===seq && host.isConnected) content.replaceChildren(text(doc,'p','kmc-decision-dashboard-section-copy','Population modifiée ou non réconciliée. Actualisez Commerce avant de consulter le détail.'));
+          return;
+        }
         if (!response.ok) throw new Error('buyer_drill_read_failed');
         const result=await response.json();
         if (request!==seq || !host.isConnected) return;
@@ -613,8 +596,9 @@
       header.appendChild(text(doc, 'p', 'canonical-eyebrow',
         `Recette ${payload.simulation.scope} — faits simulés, pas une activité réelle`));
       dashboard.setAttribute('data-simulation-scope', String(payload.simulation.scope));
+      if(payload.data_quality?.product_availability_basis==='simulation_unavailable') header.appendChild(text(doc,'p','kmc-dashboard-description','Viabilité et disponibilité locale non déterminées en recette : les sources réelles ne sont pas utilisées.'));
     }
-    header.appendChild(periodControl(doc, options.period || payload.period || '30', options.onPeriodChange));
+    header.appendChild(decisionUi.PeriodControl.create(doc,{period:options.period || payload.period || '30',ariaLabel:'Période Commerce',onChange:options.onPeriodChange}));
     dashboard.appendChild(header);
 
     const decisions = decisionItems(payload, base);
@@ -716,7 +700,8 @@
     const enhanced = {
       ...base,
       mount(options) {
-        return baseMount(options).then(result => {
+        const rerender = nextPeriod => enhanced.mount({ ...options, period: nextPeriod });
+        return baseMount({...options,onPayload:(payload,period,endpoint)=>render(options.root,payload,{...options,period,buyerEndpoint:endpoint,onPeriodChange:rerender},base,decisionUi)}).then(result => {
           // Le montage de base peut finir après qu'une nouvelle vue a remplacé
           // celle-ci. Dans ce cas, il n'y a ni payload ni rendu à enrichir.
           if (result?.stale) return result;
@@ -731,17 +716,7 @@
             });
             return result || Object.freeze({ stale: false, unavailable: true });
           }
-          const rerender = nextPeriod => enhanced.mount({ ...options, period: nextPeriod });
-          return {
-            ...result,
-            result: render(options.root, result.payload, {
-              ...options,
-              period: result.period,
-              buyerEndpoint: result.endpoint,
-              onPeriodChange: rerender,
-            }, base, decisionUi),
-            decisionFirst: true,
-          };
+          return {...result,decisionFirst:true};
         });
       },
       projectDecisionItems: payload => decisionItems(payload, base),
