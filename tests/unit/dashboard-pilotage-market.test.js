@@ -10,7 +10,7 @@ const mockQuery = jest.fn();
 jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
 
 const mockMetricNames = [
-  'getCAEncaisse', 'getCmdsActives', 'getAlertesCritiques',
+  'getCmdsActives', 'getAlertesCritiques',
   'getTauxCompletudeCouts', 'getCoutReel', 'getCmdsCoutIncompletCount',
   'getCoutMoyParCmd', 'getCmdsAujourdhui', 'getColisEnTransit',
   'getDisponiblesRelais', 'getRetardsCritiques', 'getTauxCompletudeScans',
@@ -22,6 +22,8 @@ const mockMetricFunctions = Object.fromEntries(mockMetricNames.map(name => [
 ]));
 
 jest.mock('../../services/dashboard-metrics', () => mockMetricFunctions);
+const mockPaidSales=jest.fn(async()=>({key:'ca_encaisse',label:'Ventes payées (avoir inclus)',value:42,unit:'XAF',data_quality:{metric_id:'commerce.paid_sales_wallet_included'}}));
+jest.mock('../../services/dashboard-commerce',()=>({getPilotagePaidSales:(...args)=>mockPaidSales(...args)}));
 
 const mockControlChain = jest.fn();
 jest.mock('../../services/logistics-control-chain-projection', () => ({
@@ -69,7 +71,11 @@ describe('dashboard-pilotage-market', () => {
     expect(result.data_quality.scope_enforced).toBe(true);
     expect(result.data_quality.filters).toEqual({ from: '2026-08-01', status: 'confirmed' });
     expect(result.data_quality.filters.market_id).toBeUndefined();
+    expect(mockPaidSales).toHaveBeenCalledTimes(1);
+    expect(mockPaidSales).toHaveBeenCalledWith(filters,market);
     expect(result.kpis_global).toHaveLength(5);
+    expect(result.kpis_global[0]).toMatchObject({key:'ca_encaisse',unit:'XAF',data_quality:{metric_id:'commerce.paid_sales_wallet_included'}});
+    expect(result.decision_clocks.flow.metric_id).toBe('commerce.paid_sales_wallet_included');
     expect(result.decision_clocks).toMatchObject({stock:{basis:'current_active_orders',simulation_scope:null},flow:{basis:'orders.created_at',from:'2026-08-01',to:null},economic:{basis:'utc_calendar_month',metric_id:'eco.period_result'}});
     expect(JSON.stringify(result.decision_clocks)).not.toContain(market.id);
     expect(result.kpis_global).toContainEqual(expect.objectContaining({key:'economic_period_result',value:null,data_quality:expect.objectContaining({status:'MARKET_RESULT_NOT_RECONCILED'})}));

@@ -38,6 +38,8 @@ jest.mock('../../services/dashboard-cache', () => ({
   clear: jest.fn(() => 3),
 }));
 
+const mockPaidSales=jest.fn(async()=>({key:'ca_encaisse',label:'Ventes payées (avoir inclus)',value:42,unit:'EUR',data_quality:{metric_id:'commerce.paid_sales_wallet_included'}}));
+jest.mock('../../services/dashboard-commerce',()=>({getPilotagePaidSales:(...args)=>mockPaidSales(...args)}));
 const mockControlChain = jest.fn();
 jest.mock('../../services/logistics-control-chain-projection', () => ({
   getControlChain: (...args) => mockControlChain(...args),
@@ -253,6 +255,9 @@ describe('GET /unified', () => {
     const res = await request(app).get('/api/admin/dashboard/unified');
     expect(res.status).toBe(200);
     expect(res.body.kpis_global).toHaveLength(6);
+    expect(mockPaidSales).toHaveBeenCalledWith(expect.objectContaining({from:null,to:null,simulation_scope:null}));
+    expect(res.body.kpis_global[0]).toMatchObject({unit:'EUR',data_quality:{metric_id:'commerce.paid_sales_wallet_included'}});
+    expect(res.body.decision_clocks.flow.metric_id).toBe('commerce.paid_sales_wallet_included');
     expect(res.body.decision_clocks).toMatchObject({stock:{basis:'current_active_orders'},flow:{basis:'orders.created_at'},economic:{basis:'utc_calendar_month'}});
     expect(res.body.kpis_global).toContainEqual(expect.objectContaining({key:'economic_period_result',value:'42.01',unit:'EUR',data_quality:expect.objectContaining({status:'PROVISIONAL',metric_id:'eco.period_result'})}));
     expect(res.body.kpis_global.some(k=>k.key==='marge_consolidee')).toBe(false);
