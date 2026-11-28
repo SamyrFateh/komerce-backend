@@ -367,28 +367,32 @@
   }
 
   async function runAction(context, button, path, body, successMessage) {
+    if(context.actionPending)return null;
+    context.actionPending=true;
     const previous = button.textContent;
     button.disabled = true;
     button.textContent = 'En cours…';
     setFeedback(context.root, 'Action en cours…');
     try {
       const result = await jsonRequest(context.fetch, path, { method: 'POST', body: body || {} });
-      setFeedback(context.root, successMessage, 'positive');
-      await context.reload();
+      if(context.root.__dashboardViewIdentity===context.identity){
+        try { await context.reload(); setFeedback(context.root, successMessage, 'positive'); }
+        catch (_) { setFeedback(context.root, 'Action enregistrée ; actualisation indisponible.', 'warning'); }
+      }
       return result;
     } catch (error) {
-      setFeedback(context.root, error.message, 'critical');
+      if(context.root.__dashboardViewIdentity===context.identity)setFeedback(context.root, error.message, 'critical');
       button.disabled = false;
       button.textContent = previous;
       return null;
-    }
+    } finally { context.actionPending=false; }
   }
 
   function bind(rootNode, context) {
     if (rootNode.__actionCenterClickHandler) rootNode.removeEventListener('click',rootNode.__actionCenterClickHandler);
     const handler = async event => {
       const button = event.target.closest('[data-action-center-action]');
-      if (!button || button.disabled || rootNode.__dashboardViewIdentity !== context.identity) return;
+      if (!button || button.disabled || context.actionPending || rootNode.__dashboardViewIdentity !== context.identity) return;
       const action = button.dataset.actionCenterAction;
       const signalRef = button.dataset.signalRef;
 
@@ -517,7 +521,7 @@
     let restorePending=true;
     const workspaceBusy = () => {
       const focused = context.document.activeElement;
-      return Boolean(rootNode.querySelector?.('[aria-modal="true"], details.kmc-action-group[open], [data-action-center-action]:disabled') ||
+      return Boolean(context.actionPending || rootNode.querySelector?.('[aria-modal="true"], details.kmc-action-group[open], [data-action-center-action]:disabled') ||
         (focused && rootNode.contains?.(focused) &&
          focused.matches?.('input,textarea,select,button,[contenteditable="true"]')));
     };
