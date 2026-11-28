@@ -55,7 +55,8 @@ function textField(value,change,placeholder){
  const wrap=node('label',null,'k-od-field'),input=node('textarea');input.name='body';input.rows=3;input.maxLength=2000;input.placeholder=placeholder;input.value=value;input.setAttribute('aria-label','Votre message');input.addEventListener('input',()=>change(input.value));wrap.append(input);return wrap
 }
 function draft(motif='other',body='',productId=null,skuId=null){return {motif,body,productId,skuId,market:marketCode(),answers:{},photos:[],busy:false,photoBusy:false,disposed:false}}
-function resetPhotos(d){for(const p of d.photos)URL.revokeObjectURL(p.url);d.photos=[]}
+function resetPhotos(d){d.photos=[]}
+function readPreview(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('Aperçu de la photo indisponible.'));reader.readAsDataURL(file)})}
 function ownDraft(d){dispose();cleanup=()=>{d.disposed=true;resetPhotos(d)}}
 function formatBody(d){return [d.body.trim(),...(QUESTIONS[d.motif]||[]).map(([k,l])=>d.answers[k]?.trim()?l+' : '+d.answers[k].trim():'')].filter(Boolean).join('\n')}
 async function preparePhoto(file){
@@ -77,11 +78,11 @@ function picker(d,msg,changed=()=>{}){
  gallery.setAttribute('aria-label','Choisir des photos');camera.setAttribute('aria-label','Prendre une photo');
  const choose=button('＋ Photos',()=>gallery.click()),take=button('📷 Appareil photo',()=>camera.click(),'camera');
  tools.append(choose,take);box.append(tools,gallery,camera,preview,node('small','3 photos maximum · 5 Mo chacune','k-od-muted'));
- const redraw=()=>{preview.replaceChildren();for(const item of d.photos){const tile=node('div',null,'k-od-preview'),img=node('img');img.src=item.url;img.alt='Photo à envoyer';const b=button('×',()=>{if(d.busy)return;d.photos=d.photos.filter(p=>p!==item);URL.revokeObjectURL(item.url);redraw();changed()},'remove');b.setAttribute('aria-label','Supprimer la photo');tile.append(img,b);preview.append(tile)}choose.disabled=take.disabled=d.photos.length>=3||d.busy||d.photoBusy};
+ const redraw=()=>{preview.replaceChildren();for(const item of d.photos){const tile=node('div',null,'k-od-preview'),img=node('img');img.src=item.url;img.alt='Photo à envoyer';const b=button('×',()=>{if(d.busy)return;d.photos=d.photos.filter(p=>p!==item);redraw();changed()},'remove');b.setAttribute('aria-label','Supprimer la photo');tile.append(img,b);preview.append(tile)}choose.disabled=take.disabled=d.photos.length>=3||d.busy||d.photoBusy};
  async function add(files){
   if(d.photoBusy||d.busy||d.disposed)return;d.photoBusy=true;redraw();changed();
   try{for(const file of files){if(d.disposed)break;if(d.photos.length>=3){msg.textContent='Maximum 3 photos par message.';break}
-    const result=await preparePhoto(file);if(d.disposed)break;d.photos.push({file:result,url:URL.createObjectURL(result)});msg.textContent=''
+    const result=await preparePhoto(file);const url=await readPreview(result);if(d.disposed)break;d.photos.push({file:result,url});msg.textContent=''
   }}catch(e){if(!d.disposed)msg.textContent=e.message}finally{d.photoBusy=false;if(!d.disposed){redraw();changed()}}
  }
  for(const input of [gallery,camera])input.addEventListener('change',()=>{const files=[...input.files];input.value='';void add(files)});
