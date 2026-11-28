@@ -131,7 +131,7 @@ async function transition(q,{actor,market,ref,target,reason=''}){
     closed_at=CASE WHEN $2='closed' THEN now() ELSE NULL END,
     closed_by=CASE WHEN $2='closed' THEN $3::uuid ELSE NULL END
     WHERE id=$1 RETURNING *`,[row.id,target,auth.userId]);
-  await conversations.setRetention(q,{requestId:row.id,closedAt:updated.closed_at,reopening:row.status==='closed'&&target==='in_progress'});
+  await conversations.setRetention(q,{requestId:row.id,reopening:row.status==='closed'&&target==='in_progress'});
   await conversations.append(q,{request:updated,actorId:auth.userId,scope:'market',visibility:'internal',body:reason,eventType});
   return {row:updated,request:projection(updated,'market'),changed:true};
 }

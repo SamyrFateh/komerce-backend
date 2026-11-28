@@ -104,10 +104,12 @@ async function purgeExpired(q){
     WHERE a.message_id=m.id AND m.subject_id=due.id AND a.purge_after<=now()`);
   return rowCount;
 }
-async function setRetention(q,{requestId,closedAt,reopening=false}){
+async function setRetention(q,{requestId,reopening=false}){
   if(reopening)await q.query(`DELETE FROM conversation_attachments a USING conversation_messages m
     WHERE a.message_id=m.id AND m.subject_id=$1 AND a.purge_after<=now()`,[requestId]);
-  await q.query(`UPDATE conversation_attachments a SET purge_after=CASE WHEN $2::timestamptz IS NULL THEN NULL ELSE $2::timestamptz+interval '180 days' END
-    FROM conversation_messages m WHERE a.message_id=m.id AND m.subject_id=$1`,[requestId,closedAt]);
+  // Use the locked database row directly: JS Date truncates PostgreSQL microseconds.
+  await q.query(`UPDATE conversation_attachments a SET purge_after=r.closed_at+interval '180 days'
+    FROM conversation_messages m JOIN client_requests r ON r.id=m.subject_id
+    WHERE a.message_id=m.id AND r.id=$1`,[requestId]);
 }
 module.exports={append,list,attachment,purgeExpired,prepare,setRetention};

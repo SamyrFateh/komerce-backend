@@ -74,8 +74,18 @@ test('private dossier lifecycle and cross-market/client/Hub isolation on real Po
   await expect(svc.post(q,{...as(owner,'client'),visibility:'client',body:'denied'})).rejects.toMatchObject({status:409});
   await expect(svc.post(q,{...as(agent,'market'),visibility:'client',body:'denied'})).rejects.toMatchObject({status:409});
   const retention=await q.query("SELECT a.purge_after=r.closed_at+interval '180 days' AS ok FROM conversation_attachments a JOIN conversation_messages c ON c.id=a.message_id JOIN client_requests r ON r.id=c.subject_id WHERE r.id=$1",[requestId]);
+  expect(retention.rows).toHaveLength(2);
   expect(retention.rows.every(r=>r.ok)).toBe(true);
+  // Deterministic regression: JS Date cannot round-trip this microsecond value.
+  await q.query("UPDATE client_requests SET closed_at='2026-11-28 12:00:00.123456+00'::timestamptz WHERE id=$1",[requestId]);
+  await conv.setRetention(q,{requestId});
+  const exact=await q.query("SELECT a.purge_after=r.closed_at+interval '180 days' AS ok FROM conversation_attachments a JOIN conversation_messages c ON c.id=a.message_id JOIN client_requests r ON r.id=c.subject_id WHERE r.id=$1",[requestId]);
+  expect(exact.rows).toHaveLength(2);
+  expect(exact.rows.every(r=>r.ok)).toBe(true);
   await svc.transition(q,{actor:agent,market:m.code,ref,target:'in_progress'});
+  const reopened=await q.query('SELECT purge_after FROM conversation_attachments WHERE id=ANY($1::uuid[])',[[clientPhoto,internalPhoto]]);
+  expect(reopened.rows).toHaveLength(2);
+  expect(reopened.rows.every(r=>r.purge_after===null)).toBe(true);
   expect((await svc.read(q,as(agent,'market'))).messages.some(x=>x.event_type==='reopened')).toBe(true);
   await svc.transition(q,{actor:agent,market:m.code,ref,target:'closed',reason:'Terminé'});
   await q.query("UPDATE conversation_attachments SET purge_after=now()-interval '1 second' WHERE id=ANY($1::uuid[])",[[clientPhoto,internalPhoto]]);

@@ -36,3 +36,14 @@ describe('conversation channel policy',()=>{
     expect(q.query.mock.calls[1][1][2]).toEqual(channels);
   });
 });
+test('retention uses the persisted SQL timestamp without a JS date round trip',async()=>{
+  const q={query:jest.fn().mockResolvedValue({rowCount:2})};
+  await svc.setRetention(q,{requestId:request.id});
+  expect(q.query).toHaveBeenCalledTimes(1);
+  expect(q.query.mock.calls[0][0]).toContain("r.closed_at+interval '180 days'");
+  expect(q.query.mock.calls[0][0]).toContain('JOIN client_requests r ON r.id=m.subject_id');
+  expect(q.query.mock.calls[0][1]).toEqual([request.id]);
+  await svc.setRetention(q,{requestId:request.id,reopening:true});
+  expect(q.query.mock.calls[1][0]).toContain('a.purge_after<=now()');
+  expect(q.query.mock.calls[2][1]).toEqual([request.id]);
+});
