@@ -47,11 +47,12 @@ test.describe('E-HOME — Page d\'accueil & structure', () => {
     );
   });
 
-  test('E26 — Le bouton WhatsApp FAB est présent', async ({ page }) => {
+  test('E26 — Le bouton conseiller Komerce est présent', async ({ page }) => {
     const fab = page.locator('#k-wa-fab');
     await expect(fab).toBeAttached({ timeout: 5_000 });
-    const href = await fab.getAttribute('href');
-    expect(href).toContain('wa.me');
+    await expect(fab).toHaveAttribute('data-on-demand', '');
+    await expect(fab).toHaveAttribute('aria-label', 'Votre conseiller Komerce');
+    expect(await fab.getAttribute('href')).toBeNull();
   });
 
   test('E26b — Le header contient le logo', async ({ page }) => {

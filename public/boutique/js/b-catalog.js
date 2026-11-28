@@ -459,7 +459,7 @@ function renderSearchEmptyState(query) {
     actionLabel: 'Réinitialiser la recherche',
     actionHref: null,
     actionId: 'k-catalog-empty-clear-search-btn',
-  });
+  }).replace(/<\/div>$/, '<button type="button" class="k-od-search-link" data-on-demand="search">Demander à votre conseiller</button></div>');
 }
 
 function _bindEmptyStateActions(reason) {
@@ -952,7 +952,7 @@ function setupSearch() {
 
 function renderSearchDropdown(results) {
   if (!results.length) {
-    dom.searchDrop.innerHTML = '<div class="k-search-empty">Aucun résultat</div>';
+    dom.searchDrop.innerHTML = '<div class="k-search-empty">Aucun résultat<button type="button" class="k-od-search-link" data-on-demand="search">Demander à votre conseiller</button></div>';
     dom.searchDrop.classList.add('open');
     return;
   }
