@@ -49,7 +49,7 @@ function photoUpload(req,res,next){
 function fail(code,status=400){throw Object.assign(new Error(code),{code,status});}
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function cursor(req,scope){const value=req.query.before;if(value==null)return null;if(typeof value!=='string'||value.length>80||(scope==='messages'&&!UUID.test(value)))fail('CLIENT_REQUEST_CURSOR_INVALID');return value}
-function actor(req){return {id:req.user.id,role:req.user.role}}
+function actor(req){return {id:req.user.id,role:req.user.role,verifiedOtpPhone:req.auth?.verifiedOtpPhone||null}}
 function params(req,scope){return {actor:actor(req),scope,market:req.params.code,ref:req.params.ref}}
 function verifyFields(req,allowed){
   if(Object.keys(req.body||{}).some(k=>!allowed.includes(k)))fail('CLIENT_REQUEST_FIELD_FORBIDDEN');
