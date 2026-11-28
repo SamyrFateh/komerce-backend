@@ -22,7 +22,15 @@ jobs:
           cache: npm
       - run: npm ci
       - run: node scripts/gen-route-registry.js
-      - run: npm run contract:generate
+      - name: Generate contract with isolated dummy credentials
+        run: |
+          export JWT_SECRET="$(openssl rand -hex 32)"
+          export STRIPE_SECRET_KEY=sk_test_contract_generation_dummy
+          export STRIPE_WEBHOOK_SECRET=whsec_contract_generation_dummy
+          export DATABASE_URL=postgres://unused:unused@127.0.0.1:5432/unused
+          export PAYPAL_CLIENT_ID=contract_generation_dummy
+          export PAYPAL_CLIENT_SECRET=contract_generation_dummy
+          npm run contract:generate
       - run: npm run contract:debt:check
       - name: Verify generated On Demand operations
         run: |
