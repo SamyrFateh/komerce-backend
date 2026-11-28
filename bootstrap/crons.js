@@ -194,6 +194,7 @@ function startOperationalCrons() {
   startCashRelaisCron({ processCashRelaisReminders, processBackorderReminders, getRuleNumber });
   startBackorderCron({ processBackorderReminders });
   startSnapshotRetentionCron();
+  startConversationPhotoRetentionCron();
   startPickupTokenCleanupCron(); // SEC-1 migration 070
   startJwtRevocationCleanupCron(); // N4 migration 072
   startMobileMoneyReconciliationCron(); // migration 169
@@ -204,6 +205,24 @@ function startOperationalCrons() {
   startFinancialJournalCron(); // Lot 5 — projection idempotente du journal financier
   startPurchasingCompletionSweepCron(); // H1 — rattrapage des commandes reçues restées ordered
   if (process.env.KOMERCE_ECONOMIC_SELECTION_AUTO_ENABLED === 'true') startEconomicSelectionCron();
+}
+
+function startConversationPhotoRetentionCron() {
+  let running=false;
+  async function run(){
+    if(running)return;
+    running=true;
+    try{
+      const db=require('../db');
+      const {purgeExpired}=require('../services/conversation-service');
+      const count=await db.withTransaction(q=>purgeExpired(q));
+      if(count)log.info({count},'Expired conversation photos purged');
+    }catch(err){
+      log.error({code:err?.code},'Conversation photo retention failed');
+    }finally{running=false}
+  }
+  setTimeout(run,60*1000).unref?.();
+  setInterval(run,60*60*1000).unref?.();
 }
 
 function startEconomicSelectionCron() {
