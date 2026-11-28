@@ -46,7 +46,7 @@ const metrics = require('../services/dashboard-metrics');
 const cache = require('../services/dashboard-cache');
 const controlChain = require('../services/logistics-control-chain-projection');
 const { getMarketsSupervision } = require('../services/dashboard-pilotage-markets');
-const { mergePilotageAlerts, summarizeControlChain, pilotageStockFilters, pilotageDecisionClocks } = require('../services/dashboard-pilotage-alert-aggregation');
+const { mergePilotageAlerts, summarizeControlChain, pilotageStockFilters, pilotageDecisionClocks, unavailableSimulationSignal } = require('../services/dashboard-pilotage-alert-aggregation');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { requireDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const { EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL } = require('../services/signal-simulation-scope');
@@ -342,7 +342,7 @@ router.get(
         commerce.getPilotagePaidSales(flowPeriod ? flowPeriod.filters : filters),
         metrics.getCmdsActives(pilotageStockFilters(filters)),
         periodResultKpi(req.user,filters),
-        metrics.getAlertesCritiques(filters),
+        filters.simulation_scope ? unavailableSimulationSignal('alertes_critiques','Alertes critiques') : metrics.getAlertesCritiques(filters),
         metrics.getTauxCompletudeCouts(filters),
         metrics.getCoutReel(filters),
         metrics.getCmdsCoutIncompletCount(filters),
@@ -352,9 +352,9 @@ router.get(
         metrics.getDisponiblesRelais(filters),
         metrics.getRetardsCritiques(filters),
         metrics.getTauxCompletudeScans(filters),
-        _fetchTopAlerts(10),
-        metrics.getPointsAttention(filters),
-        controlChain.getControlChain({ market: null }),
+        filters.simulation_scope ? null : _fetchTopAlerts(10),
+        filters.simulation_scope ? unavailableSimulationSignal('points_attention','Points d’attention') : metrics.getPointsAttention(filters),
+        filters.simulation_scope ? null : controlChain.getControlChain({ market: null }),
         // null = lecture indisponible (affichée « Non disponible »), jamais converti en 0.
         getMarketsSupervision(pilotageStockFilters(filters)).catch((e) => { log.error('[admin-dashboard] markets_supervision:', e); return null; }),
       ]);
@@ -411,9 +411,12 @@ router.get(
         economic_flow,
         principles,
         markets_supervision: marketsSupervision,
-        control_chain: summarizeControlChain(controlChainProjection),
-        system_alerts: mergePilotageAlerts(topAlerts, controlChainProjection, 10),
-        data_quality: makeDataQuality(filters, ['(toutes)']),
+        control_chain: filters.simulation_scope ? null : summarizeControlChain(controlChainProjection),
+        system_alerts: filters.simulation_scope ? null : mergePilotageAlerts(topAlerts, controlChainProjection, 10),
+        data_quality: makeDataQuality(filters, ['(toutes)'], filters.simulation_scope ? {
+          warnings:['Chaîne opérationnelle et signaux non certifiés pour ce périmètre de recette ; activité réelle exclue.'],
+          incompleteFields:['control_chain','system_alerts','alertes_critiques','points_attention'],
+        } : {}),
       });
     } catch (err) {
       log.error('[admin-dashboard] /unified error:', err);

@@ -104,7 +104,7 @@
     const activeOrders = metric(payload, 'cmds_actives');
     const incomplete = incompleteCost(payload);
 
-    if (critical) items.push({
+    if (critical && critical.data_quality?.status !== 'SIMULATION_UNAVAILABLE') items.push({
       key: 'critical-open', label: 'Critiques ouvertes', helper: 'Nécessitent une action immédiate',
       value: display(base, critical), tone: critical.value == null ? 'neutral' : Number(critical.value) > 0 ? 'critical' : 'positive', icon: '!',
       href: withReturn(critical.drill_to || '#pilotage-alerts'), actionLabel: 'Voir les critiques →',
@@ -311,8 +311,12 @@
     if (clocks.length) {
       const reading=cardSection(doc,'Trois horloges, trois lectures','Le stock actuel ne dépend pas de la période de création ; le résultat ECO suit son propre mois UTC.','pilotage-clocks');
       reading.section.setAttribute('data-dashboard-role','secondary');
-      if (payload.decision_clocks.stock?.simulation_scope) reading.body.appendChild(text(doc,'p','kmc-decision-dashboard-section-copy',
-        'Recette '+payload.decision_clocks.stock.simulation_scope+' · faits simulés, hors activité réelle.'));
+      if (payload.decision_clocks.stock?.simulation_scope) {
+        reading.body.appendChild(text(doc,'p','kmc-decision-dashboard-section-copy',
+          'Recette '+payload.decision_clocks.stock.simulation_scope+' · faits simulés, hors activité réelle.'));
+        if (payload.control_chain == null && payload.system_alerts == null) reading.body.appendChild(text(doc,'p','kmc-decision-dashboard-section-copy',
+          'Chaîne opérationnelle et signaux non certifiés pour cette recette.'));
+      }
       if (payload.decision_clocks.flow?.period && decisionUi.PeriodControl) {
         reading.body.appendChild(decisionUi.PeriodControl.create(doc,{period:payload.decision_clocks.flow.period,
           label:'Période des ventes payées',ariaLabel:'Période Pilotage',onChange:options.onPeriodChange}));

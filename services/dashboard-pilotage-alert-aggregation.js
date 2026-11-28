@@ -60,6 +60,13 @@ function pilotageDecisionClocks(filters = {}, economicResult, observedAt, flowPe
   });
 }
 
+// Les signaux transverses sans scope recette prouvé ne doivent jamais être mélangés au stock simulé.
+function unavailableSimulationSignal(key,label) {
+  return Object.freeze({key,label,value:null,unit:'count',drill_to:null,data_quality:Object.freeze({
+    completeness:'provisional',status:'SIMULATION_UNAVAILABLE',warning:'Signaux non certifiés pour cette recette',
+  })});
+}
+
 function summarizeControlChain(chain) {
   const stages = Array.isArray(chain && chain.stages) ? chain.stages : [];
   const byStage = chain && chain.by_stage && typeof chain.by_stage === 'object' ? chain.by_stage : {};
@@ -141,4 +148,5 @@ module.exports = {
   summarizeControlChain,
   pilotageStockFilters,
   pilotageDecisionClocks,
+  unavailableSimulationSignal,
 };

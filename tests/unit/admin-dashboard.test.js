@@ -244,6 +244,18 @@ describe('GET /logistics', () => {
 });
 
 describe('GET /unified', () => {
+  it('ne lit pas les signaux et la chaîne réels dans une vue recette',async()=>{
+    const res=await request(app).get('/api/admin/dashboard/unified?period=7&simulation_scope=RCT1');
+    expect(res.status).toBe(200);
+    expect(res.body.control_chain).toBeNull();
+    expect(res.body.system_alerts).toBeNull();
+    expect(mockControlChain).not.toHaveBeenCalled();
+    const metrics=require('../../services/dashboard-metrics');
+    expect(metrics.getAlertesCritiques).not.toHaveBeenCalled();
+    expect(metrics.getPointsAttention).not.toHaveBeenCalled();
+    expect(mockPaidSales).toHaveBeenCalledWith(expect.objectContaining({simulation_scope:'RCT1'}));
+    expect(res.body.kpis_global).toContainEqual(expect.objectContaining({key:'alertes_critiques',value:null,drill_to:null}));
+  });
   it('réutilise les bornes civiles Commerce pour le flux, sans dater le stock', async () => {
     const res=await request(app).get('/api/admin/dashboard/unified?period=7');
     expect(res.status).toBe(200);

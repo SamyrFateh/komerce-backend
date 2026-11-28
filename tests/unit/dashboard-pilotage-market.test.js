@@ -51,6 +51,15 @@ describe('dashboard-pilotage-market', () => {
     market_id: market.id,
   };
 
+  test('recette marché : chaîne et signaux réels non lus et non déterminés',async()=>{
+    const result=await pilotage.buildMarketPilotage({market_id:market.id,simulation_scope:'RCT1'},market);
+    expect(result.control_chain).toBeNull();
+    expect(result.system_alerts).toBeNull();
+    expect(mockControlChain).not.toHaveBeenCalled();
+    expect(mockMetricFunctions.getAlertesCritiques).not.toHaveBeenCalled();
+    expect(result.kpis_global).toContainEqual(expect.objectContaining({key:'alertes_critiques',value:null}));
+  });
+
   test('refuse une période commerciale résolue pour un autre marché',async()=>{
     await expect(pilotage.buildMarketPilotage({market_id:market.id},market,null,{filters:{market_id:'other-market'}}))
       .rejects.toThrow('dashboard_market_flow_filter_not_server_bound');
