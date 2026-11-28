@@ -13,3 +13,6 @@
 .k-on-demand-feedback{font-size:.875rem;min-height:1em}
 .k-on-demand [hidden]{display:none!important}
 @media(max-width:500px){.k-on-demand{padding:14px;width:calc(100% - 12px);max-height:94dvh}.k-on-demand-head{gap:6px}.k-on-demand-head h2{font-size:1rem}}
+
+.k-on-demand-entry{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px;margin:0 0 12px;border:1px solid #dfe4e1;border-radius:12px}
+.k-on-demand-entry div{display:grid;gap:4px;flex:1;min-width:180px}.k-on-demand-entry span{font-size:.875rem}
