@@ -181,8 +181,9 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     const firstLabel = firstGroup.locator('.kmc-admin-sidebar-group-label');
     const firstLink = firstGroup.locator('.kmc-admin-primary-link').first();
 
-    await expect(firstLabel).toHaveText('Piloter');
-    await expect(firstLink).toContainText('Tour de contrôle');
+    await expect(firstLabel).toHaveText('Travail');
+    await expect(firstLink).toContainText('À traiter');
+    await expect(page.locator('[data-nav-group="decision"] [data-dashboard="control-tower"]')).toContainText('Pilotage');
     await expect(firstGroup).toBeVisible();
 
     const metrics = await nav.evaluate(el => ({

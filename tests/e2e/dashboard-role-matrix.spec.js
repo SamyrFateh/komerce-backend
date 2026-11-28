@@ -14,30 +14,29 @@ const CANONICAL = path.join(__dirname, '..', '..', 'public', 'dashboards', 'cano
 const ORIGIN = 'http://komerce.test';
 const PAGE_PATH = '/admin/pilotage';
 
+// Oracle indépendant de la navigation du produit : droits ET ordre V5.4.
 const EXPECTED = Object.freeze({
   admin: [
-    'control-tower', 'action-center',
-    'flow-commerce', 'flow-orders', 'entity-clients', 'workspace-pricing', 'workspace-catalog',
-    'flow-operations', 'workspace-shipping', 'workspace-purchasing',
-    'flow-finance', 'workspace-accounting',
-    'live-import-runtime', 'live-hub', 'live-relais',
-    'markets-home', 'unsold',
-    'admin-users', 'admin-guided-recipe', 'admin-providers', 'settings',
+    'action-center', 'live-hub', 'workspace-shipping', 'live-relais', 'workspace-purchasing', 'live-import-runtime',
+    'control-tower', 'flow-commerce', 'flow-operations',
+    'flow-orders', 'entity-clients', 'workspace-catalog',
+    'workspace-pricing', 'flow-finance', 'workspace-accounting', 'unsold',
+    'markets-home', 'admin-users', 'admin-providers', 'settings',
+    'help-docs', 'admin-guided-recipe',
   ],
   market_operator: [
-    'control-tower', 'action-center',
-    'flow-commerce', 'flow-orders', 'entity-clients', 'workspace-pricing', 'workspace-catalog',
-    'flow-operations', 'workspace-shipping',
-    'flow-finance', 'workspace-accounting',
-    'live-hub', 'live-relais',
-    'unsold', 'admin-users', 'admin-providers', 'settings',
+    'action-center', 'live-hub', 'workspace-shipping', 'live-relais',
+    'control-tower', 'flow-commerce', 'flow-operations',
+    'flow-orders', 'entity-clients', 'workspace-catalog',
+    'workspace-pricing', 'flow-finance', 'workspace-accounting', 'unsold',
+    'admin-users', 'admin-providers', 'settings', 'help-docs',
   ],
-  agent_hub: ['action-center', 'workspace-shipping', 'live-hub'],
-  agent_relais: ['action-center', 'live-hub', 'live-relais'],
-  agent_transitaire: ['action-center', 'workspace-shipping'],
-  finance: ['workspace-accounting', 'live-hub'],
-  sourcing: ['live-import-runtime', 'live-hub'],
-  support: ['live-hub'],
+  agent_hub: ['action-center', 'live-hub', 'workspace-shipping', 'help-docs'],
+  agent_relais: ['action-center', 'live-hub', 'live-relais', 'help-docs'],
+  agent_transitaire: ['action-center', 'workspace-shipping', 'help-docs'],
+  finance: ['live-hub', 'workspace-accounting', 'help-docs'],
+  sourcing: ['live-hub', 'live-import-runtime', 'help-docs'],
+  support: ['live-hub', 'help-docs'],
 });
 
 const ROLE_HOME = Object.freeze({
@@ -86,7 +85,8 @@ test.describe('Navigation V4 — matrice des 8 rôles', () => {
       );
       // Documentation est un utilitaire Aide autorisé pour les huit rôles
       // professionnels. Les autres domaines restent ceux de la matrice métier.
-      expect(ids).toEqual([...expected, 'help-docs']);
+      expect(ids).toEqual(expected);
+      expect(new Set(ids).size).toBe(ids.length);
       await expect(page.locator('.kmc-admin-primary-link[data-dashboard="help-docs"]'))
         .toHaveAttribute('href', '/admin/documentation');
 
@@ -119,7 +119,9 @@ test.describe('Navigation V4 — matrice des 8 rôles', () => {
     const ids = await page.$$eval('.kmc-admin-primary-link', (links) =>
       links.map((link) => link.getAttribute('data-dashboard'))
     );
-    expect(ids).not.toEqual(expect.arrayContaining(['admin-users', 'admin-providers', 'settings', 'flow-finance']));
+    for (const forbidden of ['admin-users', 'admin-providers', 'settings', 'flow-finance']) {
+      expect(ids).not.toContain(forbidden);
+    }
     expect(ids).toContain('action-center');
     expect(ids).toContain('live-hub');
   });
