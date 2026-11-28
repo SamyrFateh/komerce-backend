@@ -52,7 +52,8 @@
  *   POST /api/purchasing/lines                        → créer une ligne ouverte manuellement (ex. reliquat chez un autre fournisseur)
  *   POST /api/purchasing/lines/:id/settle             → clôturer une ligne confirmée (reliquat en ligne ouverte)
  * Coût d'achat réel (migration 294) :
- *   POST /api/purchasing/supplier-payments/:payment_id/settlements → saisir un règlement/remboursement réellement débité (KMF, preuve, idempotent)
+ *   POST /api/purchasing/supplier-payments/:payment_id/finance-settlements → Finance uniquement, débit natif, preuve, B4
+ *   POST /api/purchasing/supplier-payments/:payment_id/settlements → alias historique, même garde Finance B4, aucun writer Achats
  *   GET  /api/purchasing/supplier-payments/:payment_id/settlements → lister les règlements du paiement
  */
 
@@ -73,6 +74,7 @@ const engagement = require('../services/purchasing-engagement-service');
 const g6RecipePo = require('../services/g6-recipe-po-cancel-service');
 const settlements = require('../services/supplier-payment-settlement-service');
 const hubAuth = require('../services/hub-authorization-service');
+const {hasDashboardGlobalAuthority}=require('../middleware/require-dashboard-global-authority');
 
 const guard = [authenticate, requireRole(['admin'])];
 // Le Hub constitue et suit ses PO regroupées (mission #3247) ; le reste des achats reste réservé à l'admin.
@@ -236,14 +238,32 @@ router.post('/lines/:id/settle', ...groupedGuard, async (req, res, next) => {
   try { res.json(await engagement.settleLine(req.params.id, req.body || {}, { actor: req.user })); } catch (err) { groupedError(err, res, next); }
 });
 
-// Coût d'achat réel — règlements fournisseur en KMF (admin ; le marché n'est jamais lu du body :
-// la portée est celle du paiement fournisseur, aucun champ market_id n'est accepté).
-router.post('/supplier-payments/:payment_id/settlements', ...guard, async (req, res, next) => {
+// B4: central Finance only. This is a second entry to the SAME persistence
+// boundary, not a second writer. Admin's global READ is not ACT. The old
+// purchasing endpoint remains during the migration/parity gate.
+async function financePostingAuthority(req,res,next) {
   try {
-    const out = await settlements.recordSettlement(db, req.params.payment_id, req.body || {}, req.user && req.user.id);
-    res.status(out.idempotent_replay ? 200 : 201).json(out);
-  } catch (err) { groupedError(err, res, next); }
+    if(req.user?.role!=='finance'||!(await hasDashboardGlobalAuthority(req.user.id)))return res.status(403).json({code:'FINANCE_CENTRAL_AUTHORITY_REQUIRED',error:'Autorité Finance centrale explicite requise'});
+    if(['market_id','marketId','market','actor_id','user_id','recorded_by'].some(k=>Object.hasOwn(req.body||{},k)||Object.hasOwn(req.query||{},k)))return res.status(400).json({code:'CLIENT_AUTHORITY_FORBIDDEN',error:'Le périmètre et l’identité sont résolus côté serveur'});
+    return next();
+  } catch(err){return next(err);}
+}
+router.get('/supplier-payments/finance-queue',authenticate,financePostingAuthority,async(req,res,next)=>{
+  try{
+    res.set('Cache-Control','private, no-store');
+    res.json(await settlements.listFinanceQueue(db,req.user.id,{limit:req.query.limit,offset:req.query.offset}));
+  }catch(err){groupedError(err,res,next);}
 });
+async function recordFinanceSettlement(req,res,next){
+  try{
+    const out=await settlements.recordSettlement(db,req.params.payment_id,req.body||{},req.user.id,{requireB4:true});
+    res.status(out.idempotent_replay?200:201).json(out);
+  }catch(err){groupedError(err,res,next);}
+}
+router.post('/supplier-payments/:payment_id/finance-settlements',authenticate,financePostingAuthority,recordFinanceSettlement);
+// Historical URI retained solely as an alias of the same guarded Finance handler.
+// An admin/Purchasing session can no longer invoke a settlement writer.
+router.post('/supplier-payments/:payment_id/settlements',authenticate,financePostingAuthority,recordFinanceSettlement);
 
 router.get('/supplier-payments/:payment_id/settlements', ...guard, async (req, res, next) => {
   try { res.json(await settlements.listSettlements(db, req.params.payment_id)); } catch (err) { groupedError(err, res, next); }

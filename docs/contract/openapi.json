@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 121,
-    "total_routes": 830,
+    "total_routes": 832,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -33590,6 +33590,82 @@
                       "x-observed": true
                     },
                     "multi_market": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/purchasing/supplier-payments/finance-queue": {
+      "get": {
+        "summary": "GET /api/purchasing/supplier-payments/finance-queue",
+        "x-route-file": "routes/purchasing.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "payments": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "pagination": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/purchasing/supplier-payments/{payment_id}/finance-settlements": {
+      "post": {
+        "summary": "POST /api/purchasing/supplier-payments/{payment_id}/finance-settlements",
+        "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "settlement": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "idempotent_replay": {
                       "type": "string",
                       "x-observed": true
                     }

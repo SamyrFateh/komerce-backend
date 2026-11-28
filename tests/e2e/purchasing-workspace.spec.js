@@ -273,7 +273,7 @@ test.describe('Achats fournisseurs — espace canonique', () => {
     expect(mutatingCalls(api,'/po/'+poId+'/cancel-g6-recipe')).toHaveLength(0);
   });
 
-  test('consigne uniquement un débit vérifié et clôture sur la quantité physique lue', async ({ page }) => {
+  test('Achats lit le règlement natif sans le consigner et clôture sur la quantité physique lue', async ({ page }) => {
     const api = createFakeApi();
     const poId = 'cccccccc-cccc-4ccc-8ccc-000000000001';
     const payment = {
@@ -290,6 +290,9 @@ test.describe('Achats fournisseurs — espace canonique', () => {
     const closurePath = `/lines/${line.line_id}/settle`;
     const handle = api.handle;
     api.handle = async (method, pathname, search, body) => {
+      if (method === 'GET' && pathname === `/api/purchasing${settlementPath}`) {
+        return { status: 200, json: {settlements:[{kind:'payment',amount_currency:'19.99',currency:'USD',debit_amount:'18.25',debit_currency:'EUR',fee_amount:'2.00',fee_currency:'AED',proof_ref:'RELEVE-19'}]} };
+      }
       if (method === 'POST' && [settlementPath, closurePath].some(path => pathname === `/api/purchasing${path}`)) {
         api.state.calls.push({ key: `POST ${pathname}`, body });
         if (pathname.endsWith('/settle')) line.settled_at = '2026-11-16T15:00:00Z';
@@ -301,16 +304,11 @@ test.describe('Achats fournisseurs — espace canonique', () => {
     await mountWorkspace(page, api, { search: `?po=${poId}` });
     await page.locator('[data-purchasing-execution-fold] > summary').click();
     await expect(page.getByText('Consigner le débit vérifié · PAY-AMBIGU')).toHaveCount(0);
-    await page.getByText('Consigner le débit vérifié · PAY-VERIFIE').click();
-    await page.getByLabel('Montant débité en USD').fill('19.99');
-    await page.getByLabel('Montant du débit hors frais (KMF)').fill('9000');
-    await page.getByLabel('Référence unique du débit (relevé ou reçu)').fill('RELEVE-19');
-    await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
-    await expect(page.getByText('Débit déjà effectué consigné dans les règlements fournisseur.')).toBeVisible();
-    expect(mutatingCalls(api, settlementPath)).toEqual([expect.objectContaining({ body: {
-      kind: 'payment', currency: 'USD', amount_currency: '19.99', amount_kmf: '9000',
-      fees_kmf: '0', proof_ref: 'RELEVE-19', idempotency_key: 'purchasing-ui:RELEVE-19',
-    } })]);
+    await expect(page.getByText('Consigner le débit vérifié · PAY-VERIFIE')).toHaveCount(0);
+    await expect(page.getByText('Le règlement est consigné exclusivement par Finance habilitée', {exact:false})).toBeVisible();
+    await page.getByRole('button',{name:'Voir les règlements consignés'}).click();
+    await expect(page.getByText('RELEVE-19',{exact:true})).toBeVisible();
+    expect(mutatingCalls(api, settlementPath)).toHaveLength(0);
 
     await page.getByText('Clôturer la ligne KOM-1001 · 2/5 reçu(s)').click();
     await page.getByLabel('Motif de clôture').fill('Rupture confirmée par le fournisseur');

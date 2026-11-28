@@ -860,3 +860,11 @@ describe('V5.4 L3a.2 — périmètre fixe mono-marché', () => {
     expect(select.children.map(o=>o.value)).toEqual(['','CM']);
   });
 });
+
+
+test('Finance centrale : le poste fournisseurs reste distinct du journal marché et des dashboards de lecture',()=>{
+ const src=require('fs').readFileSync(require('path').join(__dirname,'../../public/dashboards/canonical/js/app.js'),'utf8');
+ expect(src).toContain("actor?.role!=='finance'");
+ expect(src).toContain('KomerceCanonicalFinanceJournalWorkspace.mountSupplierPayments({root:queue');
+ expect(src).toContain('return renderFinance(overview,actor,ctx,null)');
+});

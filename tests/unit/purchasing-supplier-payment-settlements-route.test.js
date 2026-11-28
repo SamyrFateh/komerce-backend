@@ -15,6 +15,8 @@ const request = require('supertest');
 
 const mockRecord = jest.fn();
 const mockList = jest.fn();
+const mockQueue=jest.fn();const mockGlobal=jest.fn();
+jest.mock('../../middleware/require-dashboard-global-authority',()=>({hasDashboardGlobalAuthority:(...a)=>mockGlobal(...a)}));
 let mockRole = 'admin';
 
 jest.mock('../../db', () => ({ query: jest.fn(), withTransaction: jest.fn() }));
@@ -28,6 +30,7 @@ jest.mock('../../middleware/auth', () => ({
 jest.mock('../../services/supplier-payment-settlement-service', () => ({
   recordSettlement: (...a) => mockRecord(...a),
   listSettlements: (...a) => mockList(...a),
+  listFinanceQueue:(...a)=>mockQueue(...a),
 }));
 
 const router = require('../../routes/purchasing');
@@ -40,7 +43,29 @@ app.use((err, req, res, next) => res.status(500).json({ error: err.message })); 
 const PAY = '11111111-1111-4111-8111-111111111111';
 const URL = `/api/purchasing/supplier-payments/${PAY}/settlements`;
 
-beforeEach(() => { mockRecord.mockReset(); mockList.mockReset(); mockRole = 'admin'; });
+beforeEach(() => { mockRecord.mockReset(); mockList.mockReset(); mockQueue.mockReset();mockGlobal.mockReset().mockResolvedValue(false);mockRole = 'admin'; });
+
+describe('Finance B4 routes',()=>{
+  const queue='/api/purchasing/supplier-payments/finance-queue';
+  const post='/api/purchasing/supplier-payments/'+PAY+'/finance-settlements';
+  test('admin read role, unauthorized finance and client scope are refused',async()=>{
+    mockGlobal.mockResolvedValue(true);
+    expect((await request(app).get(queue)).status).toBe(403);
+    mockRole='finance';mockGlobal.mockResolvedValue(false);
+    expect((await request(app).post(post).send({})).status).toBe(403);
+    mockGlobal.mockResolvedValue(true);
+    expect((await request(app).post(post).send({market_id:'fake'})).status).toBe(400);
+    expect(mockRecord).not.toHaveBeenCalled();
+  });
+  test('central finance reaches the existing writer only with B4 policy',async()=>{
+    mockRole='finance';mockGlobal.mockResolvedValue(true);
+    mockQueue.mockResolvedValue({payments:[]});
+    expect((await request(app).get(queue)).status).toBe(200);
+    mockRecord.mockResolvedValue({settlement:{id:'s1'},idempotent_replay:false});
+    expect((await request(app).post(post).send({kind:'payment'})).status).toBe(201);
+    expect(mockRecord).toHaveBeenCalledWith(expect.anything(),PAY,{kind:'payment'},'admin-1',{requireB4:true});
+  });
+});
 
 describe('POST/GET settlements', () => {
   it('refuse un non-admin (403) sans appeler le service', async () => {
@@ -50,24 +75,30 @@ describe('POST/GET settlements', () => {
     expect(mockRecord).not.toHaveBeenCalled();
   });
 
-  it('201 à la création, 200 au rejeu idempotent ; l\'acteur est req.user.id', async () => {
+  it('admin/Achats ne peut plus consigner ; alias Finance soumis à la même garde B4', async () => {
+    mockGlobal.mockResolvedValue(true);
+    const body = { kind: 'payment', amount_currency: '1', debit_currency:'EUR',debit_amount:'1' };
+    expect((await request(app).post(URL).send(body)).status).toBe(403);
+    expect(mockRecord).not.toHaveBeenCalled();
+    mockRole='finance';
     mockRecord.mockResolvedValueOnce({ settlement: { id: 's1' }, idempotent_replay: false });
-    const body = { kind: 'payment', market_id: 'IGNORE', amount_currency: '1' };
-    const r1 = await request(app).post(URL).send(body);
-    expect(r1.status).toBe(201);
-    expect(mockRecord).toHaveBeenCalledWith(expect.anything(), PAY, body, 'admin-1');
+    expect((await request(app).post(URL).send(body)).status).toBe(201);
+    expect(mockRecord).toHaveBeenCalledWith(expect.anything(),PAY,body,'admin-1',{requireB4:true});
     mockRecord.mockResolvedValueOnce({ settlement: { id: 's1' }, idempotent_replay: true });
     expect((await request(app).post(URL).send(body)).status).toBe(200);
+    expect((await request(app).post(URL).send({...body,market_id:'fake'})).status).toBe(400);
   });
 
   it('propage les codes explicites du service (409 / 400 / 404)', async () => {
     const err = (status, code) => Object.assign(new Error(code), { status, code });
+    mockRole='finance';mockGlobal.mockResolvedValue(true);
     mockRecord.mockRejectedValueOnce(err(409, 'SETTLEMENT_IDEMPOTENCY_CONFLICT'));
     const r = await request(app).post(URL).send({});
     expect(r.status).toBe(409);
     expect(r.body.code).toBe('SETTLEMENT_IDEMPOTENCY_CONFLICT');
     mockRecord.mockRejectedValueOnce(err(400, 'SETTLEMENT_KIND_INVALID'));
     expect((await request(app).post(URL).send({})).status).toBe(400);
+    mockRole='admin';
     mockList.mockRejectedValueOnce(err(404, 'SUPPLIER_PAYMENT_NOT_FOUND'));
     expect((await request(app).get(URL)).status).toBe(404);
   });

@@ -41,9 +41,7 @@ test('persiste une preuve réelle et promeut le paiement exact', async () => {
 test('replay de la même preuve sur le même paiement est idempotent', async () => {
   const c=client([
     [],
-    [{id:'proof-1',supplier_payment_id:'pay-1'}],
-    [{id:'pay-1'}],
-    [],
+    [{id:'proof-1',supplier_payment_id:'pay-1',observed_amount:'62.0700',currency:'USD',debit_confirmed:true,sandbox:false,simulated:false,provider_order_id:null,payment_ref:null}],
   ]);
   await expect(persistSupplierPaymentProof(c,{
     supplierPaymentId:'pay-1',
@@ -54,6 +52,33 @@ test('replay de la même preuve sur le même paiement est idempotent', async () 
     currency:'USD',
     debitConfirmed:true,
   })).resolves.toMatchObject({id:'proof-1'});
+  expect(c.query).toHaveBeenCalledTimes(2);
+});
+
+test.each([
+  {observedAmount:63},
+  {currency:'EUR'},
+  {debitConfirmed:false},
+  {sandbox:true},
+  {simulated:true},
+  {providerOrderId:'OTHER'},
+  {paymentRef:'OTHER'},
+])('preuve native rejouée avec contenu différent %j : aucun débit ni événement',async(patch)=>{
+  const c=client([[],[{id:'proof-1',supplier_payment_id:'pay-1',observed_amount:'62.0700',currency:'USD',debit_confirmed:true,sandbox:false,simulated:false,provider_order_id:null,payment_ref:null}]]);
+  await expect(persistSupplierPaymentProof(c,{
+    supplierPaymentId:'pay-1',provider:'cj',proofSource:'cj_wallet_billing_history',
+    proofRef:'BILL-1',observedAmount:62.07,currency:'USD',debitConfirmed:true,...patch,
+  })).rejects.toThrow('SUPPLIER_PAYMENT_PROOF_REPLAY_CONFLICT');
+  expect(c.query).toHaveBeenCalledTimes(2);
+});
+
+test('une preuve sandbox existante ne devient jamais un débit réel au rejeu',async()=>{
+  const c=client([[],[{id:'proof-1',supplier_payment_id:'pay-1',observed_amount:'62.0700',currency:'USD',debit_confirmed:true,sandbox:true,simulated:false,provider_order_id:null,payment_ref:null}]]);
+  await expect(persistSupplierPaymentProof(c,{
+    supplierPaymentId:'pay-1',provider:'cj',proofSource:'sandbox',proofRef:'SBX-1',
+    observedAmount:62.07,currency:'USD',debitConfirmed:true,sandbox:false,
+  })).rejects.toThrow('SUPPLIER_PAYMENT_PROOF_REPLAY_CONFLICT');
+  expect(c.query).toHaveBeenCalledTimes(2);
 });
 
 test('rebind de preuve vers un autre paiement est refusé', async () => {

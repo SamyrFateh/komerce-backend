@@ -45,7 +45,7 @@ const NOT_JOURNALED = Object.freeze({
   order_payment: " AND NOT EXISTS (SELECT 1 FROM financial_movements fm WHERE fm.movement_key = 'order_payment:' || o.id::text || ':main' AND fm.fx_status <> 'unavailable')",
   order_refund: " AND NOT EXISTS (SELECT 1 FROM financial_movements fm WHERE fm.movement_key = 'order_refund:' || r.id::text || ':main' AND fm.fx_status <> 'unavailable' AND fm.state = 'settled')",
   cost_allocation: " AND NOT EXISTS (SELECT 1 FROM financial_movements fm WHERE fm.movement_key = 'cost_allocation:' || a.id::text || ':main' AND fm.fx_status <> 'unavailable')",
-  supplier_settlement: " AND NOT EXISTS (SELECT 1 FROM financial_movements fm WHERE fm.movement_key = 'supplier_settlement:' || s.id::text || ':main' AND fm.fx_status <> 'unavailable')",
+  supplier_settlement: " AND (NOT EXISTS (SELECT 1 FROM financial_movements fm WHERE fm.movement_key = 'supplier_settlement:' || s.id::text || ':main' AND fm.fx_status <> 'unavailable') OR (COALESCE(s.fee_amount,s.fees_kmf)>0 AND NOT EXISTS (SELECT 1 FROM financial_movements fm WHERE fm.movement_key='supplier_settlement:'||s.id::text||':fees' AND fm.fx_status<>'unavailable')))",
 });
 
 const marketFilter = (alias, marketId, params) => {
@@ -122,7 +122,7 @@ async function projectSupplierSettlements(client, { marketId = null } = {}) {
   const params = [];
   const { rows } = await client.query(
     `SELECT s.id, s.kind, s.amount_currency::text AS amount_currency, s.currency, s.amount_kmf::text AS amount_kmf, s.fees_kmf::text AS fees_kmf,
-            s.proof_ref, s.recorded_at, p.purchase_order_id, po.market_id, po.supplier_id
+            s.proof_ref, s.recorded_at, s.debit_amount::text, s.debit_currency, s.fee_amount::text, s.fee_currency, s.debit_at, s.debit_fx_snapshot, p.purchase_order_id, po.market_id, po.supplier_id
        FROM supplier_payment_settlements s
        JOIN supplier_execution_payments p ON p.id = s.supplier_execution_payment_id
        JOIN purchase_orders po ON po.id = p.purchase_order_id
@@ -133,15 +133,17 @@ async function projectSupplierSettlements(client, { marketId = null } = {}) {
     sourceKind: 'supplier_settlement', sourceId: row.id, direction: row.kind === 'payment' ? 'outflow' : 'inflow',
     category: row.kind === 'payment' ? 'supplier_purchase' : 'supplier_refund', state: 'settled',
     links: { marketId: row.market_id, purchaseOrderId: row.purchase_order_id, supplierId: row.supplier_id },
-    amountNative: row.amount_currency, currency: row.currency, occurredAt: row.recorded_at,
+    amountNative: row.debit_amount ?? row.amount_currency, currency: row.debit_currency ?? row.currency, occurredAt: row.debit_at ?? row.recorded_at,
+    eur: row.debit_fx_snapshot?.debit?.eur || null,
     documents: [{ kind: 'supplier_payment_proof', ref: row.proof_ref }],
-    provenance: { source: 'supplier_payment_settlements', kind: row.kind, origin_kmf: row.amount_kmf },
+    provenance: { source: 'supplier_payment_settlements', kind: row.kind, origin_kmf: row.amount_kmf, ...(row.debit_currency ? {obligation_currency:row.currency,obligation_amount:row.amount_currency,origin_kmf_basis:'historical_fx_projection'} : {origin_kmf_basis:'legacy_recorded'}) },
   }));
-  const withFees = rows.filter(row => Number(row.fees_kmf) > 0); // KMF natif : jamais « unavailable » (parité fixe)
+  const withFees = rows.filter(row => Number(row.fee_amount ?? row.fees_kmf) > 0);
   await feed(report, client, withFees, row => ({
     sourceKind: 'supplier_settlement', sourceId: row.id, facet: 'fees', direction: 'outflow', category: 'payment_fee', state: 'settled',
     links: { marketId: row.market_id, purchaseOrderId: row.purchase_order_id, supplierId: row.supplier_id },
-    amountNative: row.fees_kmf, currency: 'KMF', occurredAt: row.recorded_at,
+    amountNative: row.fee_amount ?? row.fees_kmf, currency: row.fee_currency ?? 'KMF', occurredAt: row.debit_at ?? row.recorded_at,
+    eur: row.debit_fx_snapshot?.fees?.eur || null,
     documents: [{ kind: 'supplier_payment_proof', ref: row.proof_ref }],
     provenance: { source: 'supplier_payment_settlements', origin_kmf: row.fees_kmf },
   }));

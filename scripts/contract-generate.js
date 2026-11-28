@@ -1346,6 +1346,12 @@ const KNOWN_RESPONSES = {
   },
   // Coût d'achat réel — règlements fournisseur KMF (#2559) : formes lues dans le service
   // (recordSettlement / listSettlements), 201 création, 200 rejeu idempotent.
+  '/api/purchasing/supplier-payments/finance-queue': {
+    get: { fields: ['payments', 'pagination'], source: 'route-read' },
+  },
+  '/api/purchasing/supplier-payments/{payment_id}/finance-settlements': {
+    post: { fields: ['settlement', 'idempotent_replay'], source: 'route-read' },
+  },
   '/api/purchasing/supplier-payments/{payment_id}/settlements': {
     post: { fields: ['settlement', 'idempotent_replay'], source: 'route-read' },
     get: { fields: ['payment_id', 'settlements'], source: 'route-read' },
