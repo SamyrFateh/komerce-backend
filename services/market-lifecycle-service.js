@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        central provisioning payload, caller-owned transaction
  * @outputs       canonical market row in PROVISIONING, audited lifecycle transitions
- * @depends       none
+ * @depends       services/fx-authority.js
  * @used-by       services/market-provisioning-service.js
  * @db-read       markets, market_operating_assignments
  * @db-write      markets
@@ -16,6 +16,8 @@
  * @version       2026-10-v1
  */
 'use strict';
+
+const { MINOR_UNITS } = require('./fx-authority');
 
 function lifecycleError(code, message, status = 400) {
   const error = new Error(message || code);
@@ -39,6 +41,13 @@ function requireExecutor(executor) {
 function normalizeCurrency(value) {
   const currency = String(value || '').trim().toUpperCase();
   return /^[A-Z]{3}$/.test(currency) ? currency : null;
+}
+
+function validateProvisioningCurrency(currency, minorUnit) {
+  const code = normalizeCurrency(currency);
+  if (!code || !Object.prototype.hasOwnProperty.call(MINOR_UNITS,code)) throw lifecycleError('MARKET_CURRENCY_UNSUPPORTED','Devise non prise en charge par le moteur de change canonique.',400);
+  if (minorUnit != null && (String(minorUnit).trim() === '' || Number(minorUnit) !== MINOR_UNITS[code])) throw lifecycleError('MARKET_MINOR_UNIT_INVALID','Nombre de décimales incompatible avec la devise canonique.',400);
+  return MINOR_UNITS[code];
 }
 
 async function createProvisioningMarket(executor, {
@@ -211,4 +220,5 @@ async function updateMarketStorefront(executor, { marketCode, storefrontTexts })
   return { changed: edited.length > 0, before: rows[0], after: edited[0] || rows[0] };
 }
 
-module.exports = { ALLOWED_TRANSITIONS, createProvisioningMarket, loadProvisioningMarket, normalizeCurrency, transitionMarketLifecycle, validateStorefrontTexts, updateMarketStorefront };
+module.exports = {
+  validateProvisioningCurrency, ALLOWED_TRANSITIONS, createProvisioningMarket, loadProvisioningMarket, normalizeCurrency, transitionMarketLifecycle, validateStorefrontTexts, updateMarketStorefront };

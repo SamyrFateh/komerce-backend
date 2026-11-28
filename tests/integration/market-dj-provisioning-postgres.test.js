@@ -46,10 +46,16 @@ if (!hasIntegrationEnv) {
       const control = await getControlPlane(db, 'DJ');
       const codes = control.gaps.map(g => g.code);
       expect(codes).toEqual(expect.arrayContaining([
-        'MARKET_INACTIVE', 'NO_CURRENCY_PARITY', 'NO_ASSIGNMENT', 'NO_PAYMENT_PROVIDER', 'NO_CASH_POLICY', 'NO_RELAIS',
+        'MARKET_INACTIVE', 'NO_ASSIGNMENT', 'NO_PAYMENT_PROVIDER', 'NO_CASH_POLICY', 'NO_RELAIS',
       ]));
       expect(control.readiness.ready_for_activation).toBe(false);
-      expect(control.readiness.platform.blockers.map(g => g.code)).toContain('NO_CURRENCY_PARITY');
+      const {convert,FxError}=require('../../services/fx-authority');
+      let fxReady;
+      try { fxReady=(await convert({amount:1,from:'EUR',to:'DJF',client:db,round:false})).amount>0; }
+      catch(error){ if(!(error instanceof FxError))throw error;fxReady=false; }
+      expect(control.market.fx_ready).toBe(fxReady);
+      expect(control.market.has_currency_parity).toBe(false);
+      expect(codes.includes('NO_CURRENCY_PARITY')).toBe(!fxReady);
     });
 
     test('les marchés à parité canonique n’ont pas cet écart (KM, CM, CG)', async () => {

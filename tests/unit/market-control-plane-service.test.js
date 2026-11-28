@@ -141,6 +141,7 @@ describe('getControlPlane / listMarkets — lecture seule', () => {
     const db = fakeDb([
       ['FROM markets WHERE code', [{ id: 'm1', code: 'CG', name: 'Congo', currency: 'XAF', minor_unit: 0, is_active: false, lifecycle_status:'PROVISIONING' }]],
       ['FROM relais', [{ n: 0 }]],
+      ['FROM currency_parities WHERE currency', [{rate:'655.957',updated_at:null}]],
     ]);
     const view = await getControlPlane(db, ' cg ');
     expect(view.assignment).toBeNull();
@@ -159,6 +160,7 @@ describe('getControlPlane / listMarkets — lecture seule', () => {
       ['FROM market_payment_providers', [{ provider: 'orange_money', currency: 'KMF', is_enabled: true, priority: 1 }]],
       ['FROM market_cash_control_policies', [{ cash_enabled: true, confirmation_mode: 'SINGLE' }]],
       ['FROM relais', [{ n: 3 }]],
+      ['FROM currency_parities WHERE currency', [{rate:'491.96775',updated_at:null}]],
       ['FROM market_delivery_attestations', [{ id: 'att1', mode: 'SEA', origin_ref: 'DXB', freight_rate: '2.5', rate_currency: 'USD', rate_unit: 'PER_KG', transit_days: 30, evidence_ref: 'CONTRAT-1', attested_at: 'x', valid_until: 'y', carrier_name: 'C' }]],
     ]);
     const view = await getControlPlane(db, 'KM');
@@ -218,4 +220,25 @@ test('initialized first opening requires delivery, positive prepared price and c
   s.market.lifecycle_status='SUSPENDED';s.market.is_active=true;
   s.deliveryProof={proven:false};s.preparation.prices.drafts=0;
   expect(codes(s)).toEqual([]);
+});
+
+test('FX readiness uses the canonical conversion, never a fabricated parity',async()=>{
+  const {resolveCurrencyReadiness}=require('../../services/market-control-plane');
+  const db={query:jest.fn().mockResolvedValue({rows:[]})};
+  await expect(resolveCurrencyReadiness(db,'EUR',2)).resolves.toEqual({fx_ready:true,currency_unit_valid:true});
+  expect(db.query).not.toHaveBeenCalled();
+  await expect(resolveCurrencyReadiness(db,'XAF',0)).resolves.toMatchObject({fx_ready:false,currency_unit_valid:true,fx_reason:'fx_rate_unavailable'});
+  db.query.mockResolvedValue({rows:[{rate:'655.957',updated_at:null}]});
+  await expect(resolveCurrencyReadiness(db,'XAF',0)).resolves.toEqual({fx_ready:true,currency_unit_valid:true});
+  await expect(resolveCurrencyReadiness(db,'XAF',2)).resolves.toEqual({fx_ready:true,currency_unit_valid:false});
+  await expect(resolveCurrencyReadiness(db,'ZZZ',0)).resolves.toMatchObject({fx_ready:false,currency_unit_valid:false,fx_reason:'fx_currency_unsupported'});
+  db.query.mockRejectedValue(new Error('database offline'));
+  await expect(resolveCurrencyReadiness(db,'XAF',0)).rejects.toThrow('database offline');
+});
+test('canonical FX readiness prevails over historical fixed-parity presence',()=>{
+  const s=healthy();s.market.lifecycle_status='PROVISIONING';s.market.has_currency_parity=false;s.market.fx_ready=true;s.market.currency_unit_valid=true;
+  expect(codes(s)).not.toContain('NO_CURRENCY_PARITY');
+  s.market.fx_ready=false;s.market.currency_unit_valid=false;s.market.has_currency_parity=true;
+  expect(codes(s)).toEqual(expect.arrayContaining(['NO_CURRENCY_PARITY','INVALID_CURRENCY_UNIT']));
+  expect(readinessFromGaps(computeGaps(s)).ready_for_activation).toBe(false);
 });

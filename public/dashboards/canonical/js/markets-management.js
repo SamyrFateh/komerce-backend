@@ -251,10 +251,17 @@
       const code = input('code','Code pays (ISO à 2 lettres)','text');
       code.maxLength = 2; code.pattern = '[A-Za-z]{2}';
       input('name','Nom du marché','text');
-      const currency = input('currency','Devise (ISO à 3 lettres)','text');
-      currency.maxLength = 3; currency.pattern = '[A-Za-z]{3}';
+      const currencies = wizard.authority.currency_options || [];
+      const currency = input('currency','Devise (moteur de change canonique)',null,[{value:'',label:'Choisir…'}].concat(currencies.map(c=>({value:c.code,label:c.code}))));
       const unit = input('minor_unit','Décimales de la devise','number');
-      unit.min = '0'; unit.max = '4'; unit.step = '1';
+      unit.readOnly = true;
+      function syncUnit(){
+        const selected = currencies.find(c=>c.code===currency.value);
+        unit.value = selected ? String(selected.minor_unit) : '';
+        wizard.values.minor_unit = unit.value;
+      }
+      currency.addEventListener('change',syncUnit);
+      syncUnit();
       form.appendChild(el(doc,'p','kmc-access-muted','La conversion EUR est contrôlée par le serveur. Langue initiale : français.'));
     } else if (wizard.step === 1) {
       input('central_referent_user_id','Référent central',null,referentChoices(wizard.authority));

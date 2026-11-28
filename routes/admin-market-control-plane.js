@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        central admin actor, canonical market code in path
  * @outputs       market list/control view, provisioning/reprovisioning/lifecycle and assignment-status mutations, exit-readiness read, central authority overview
- * @depends       services/market-payment-provider-config-service.js, db.js, middleware/auth.js, services/market-control-plane.js, services/market-delivery-proof-service.js, services/central-authority.js
+ * @depends       services/fx-authority.js, services/market-payment-provider-config-service.js, db.js, middleware/auth.js, services/market-control-plane.js, services/market-delivery-proof-service.js, services/central-authority.js
  * @used-by       bootstrap/api-routes.js, central admin workspace
  * @db-read       none
  * @db-write      none
@@ -33,6 +33,7 @@ const deliveryProof = require('../services/market-delivery-proof-service');
 const transportSale = require('../services/market-transport-sale-rate-command');
 const centralAuthority = require('../services/central-authority');
 const { paymentOptions } = require('../services/market-payment-provider-config-service');
+const { MINOR_UNITS } = require('../services/fx-authority');
 const delegation = require('../services/market-delegation-service');
 const { updateMarketStorefront } = require('../services/market-lifecycle-service');
 const { provisionMarket, reprovisionMarket, setMarketLifecycle, setAssignmentLifecycle } = require('../services/market-provisioning-service');
@@ -222,7 +223,7 @@ router.get('/', ...centralAdmin, async (req, res, next) => {
 // Autorité centrale (lecture seule) : qui détient une autorisation explicite active, par domaine.
 router.get('/central-authority', ...centralAdmin, async (req, res, next) => {
   try {
-    res.json({ ...(await centralAuthority.overview(db)), payment_options: paymentOptions() });
+    res.json({ ...(await centralAuthority.overview(db)), payment_options: paymentOptions(), currency_options: Object.entries(MINOR_UNITS).map(([code,minor_unit])=>({code,minor_unit})) });
   } catch (error) {
     if (!sendKnownError(res, error)) next(error);
   }

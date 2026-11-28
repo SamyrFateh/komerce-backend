@@ -25,7 +25,7 @@
  */
 'use strict';
 
-const { createProvisioningMarket, loadProvisioningMarket, transitionMarketLifecycle } = require('./market-lifecycle-service');
+const { createProvisioningMarket, loadProvisioningMarket, transitionMarketLifecycle, validateProvisioningCurrency } = require('./market-lifecycle-service');
 const delegation = require('./market-delegation-service');
 const { targetCapabilitiesForScope } = require('./market-operator-provisioning');
 const { inviteTeamMember } = require('./market-delegation-team-service');
@@ -281,7 +281,7 @@ async function provisionMarket(executor, {
   code,
   name,
   currency,
-  minorUnit = 0,
+  minorUnit,
   storefrontTexts = {},
   centralReferentUserId,
   financialLimits = {},
@@ -292,8 +292,9 @@ async function provisionMarket(executor, {
   initialRelais = null,
   correlationId = null,
 }) {
+  const canonicalUnit = lead.last_name != null || lead.first_name != null ? validateProvisioningCurrency(currency,minorUnit) : minorUnit;
   const market = await createProvisioningMarket(executor, {
-    code, name, currency, minorUnit, storefrontTexts, actorUserId, correlationId,
+    code, name, currency, minorUnit:canonicalUnit, storefrontTexts, actorUserId, correlationId,
   });
   return configureProvisioningMarket(executor, {
     market, actorUserId, centralReferentUserId, financialLimits, lead,

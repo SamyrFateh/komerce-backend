@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        canonical market code (server-validated), read-only DB executor
  * @outputs       per-market control view (assignment, team, ceiling, payment, cash policy, relais) and gap report
- * @depends       services/economic-cost-reference-service.js, services/market-commercial-price-service.js, services/market-payment-provider-config-service.js, db.js, services/market-delegation-service.js, services/market-delivery-proof-service.js
+ * @depends       services/fx-authority.js, services/economic-cost-reference-service.js, services/market-commercial-price-service.js, services/market-payment-provider-config-service.js, db.js, services/market-delegation-service.js, services/market-delivery-proof-service.js
  * @used-by       routes/admin-market-control-plane.js
  * @db-read       market_settlements, disputes, orders, markets, currency_parities, carriers, capability_registry, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, market_payment_providers, market_cash_control_policies, relais, market_delivery_attestations
  * @db-write      none
@@ -26,6 +26,7 @@
 
 const { delegationError, normalizeMarketCode } = require('./market-delegation-service');
 const { getDeliveryProof } = require('./market-delivery-proof-service');
+const { convert, FxError, MINOR_UNITS } = require('./fx-authority');
 const { getCostReferenceReadiness } = require('./economic-cost-reference-service');
 const { getPricePreparation } = require('./market-commercial-price-service');
 const { listCentralCollectionModes, paymentOptions } = require('./market-payment-provider-config-service');
@@ -34,7 +35,8 @@ const TEAM_GRANT = 'team.grant';
 
 const GAP_MESSAGES = Object.freeze({
   MARKET_INACTIVE: 'Le marché est inactif (is_active = false).',
-  NO_CURRENCY_PARITY: 'La devise du marché n’a pas de parité canonique vers EUR (currency_parities) : décision propriétaire requise.',
+  NO_CURRENCY_PARITY: 'La devise du marché n’a pas de conversion ni de parité canonique disponible vers EUR : décision propriétaire requise.',
+  INVALID_CURRENCY_UNIT: 'Le nombre de décimales du marché ne correspond pas à celui de la devise canonique.',
   NO_ASSIGNMENT: 'Aucune affectation d’exploitation n’existe pour ce marché.',
   ASSIGNMENT_NOT_ACTIVE: 'L’affectation d’exploitation n’est pas ACTIVE.',
   EMPTY_CEILING: 'Le plafond de capacités de l’affectation est vide.',
@@ -58,7 +60,8 @@ function computeGaps(snapshot) {
   if (!snapshot.market.is_active) add('MARKET_INACTIVE');
   // Devise sans parité canonique vers EUR (currency_parities) : aucun total affichable ni conversion fiable.
   // Explicite `=== false` : un snapshot sans l'information ne fabrique pas d'écart.
-  if (snapshot.market.has_currency_parity === false) add('NO_CURRENCY_PARITY');
+  if ((snapshot.market.fx_ready ?? snapshot.market.has_currency_parity) === false) add('NO_CURRENCY_PARITY');
+  if (snapshot.market.lifecycle_status === 'PROVISIONING' && snapshot.market.currency_unit_valid === false) add('INVALID_CURRENCY_UNIT');
   if (!snapshot.assignment) {
     add('NO_ASSIGNMENT');
   } else {
@@ -95,7 +98,7 @@ function computeGaps(snapshot) {
   return gaps;
 }
 
-const PLATFORM_BLOCKERS = new Set(['NO_CURRENCY_PARITY','NO_CENTRAL_REFERENT','EMPTY_CEILING','MISSING_AMOUNT_LIMIT','NO_PAYMENT_PROVIDER','NO_CASH_POLICY','NO_ECONOMIC_REFERENCES']);
+const PLATFORM_BLOCKERS = new Set(['INVALID_CURRENCY_UNIT','NO_CURRENCY_PARITY','NO_CENTRAL_REFERENT','EMPTY_CEILING','MISSING_AMOUNT_LIMIT','NO_PAYMENT_PROVIDER','NO_CASH_POLICY','NO_ECONOMIC_REFERENCES']);
 const OPERATIONS_BLOCKERS = new Set(['NO_ASSIGNMENT','ASSIGNMENT_NOT_ACTIVE','NO_ACTIVE_MEMBERSHIP','NO_TEAM_GRANT_HOLDER','NO_OPERATING_LEAD','NO_RELAIS','NO_DELIVERY_PROOF','NO_PREPARED_PRICE']);
 
 function readinessFromGaps(gaps) {
@@ -134,6 +137,20 @@ async function listMarkets(executor) {
   return rows;
 }
 
+async function resolveCurrencyReadiness(executor, currency, minorUnit) {
+  const validUnit = Object.prototype.hasOwnProperty.call(MINOR_UNITS,currency) &&
+    Number(minorUnit) === MINOR_UNITS[currency];
+  try {
+    const quote = await convert({amount:1,from:'EUR',to:currency,client:executor,round:false});
+    return {fx_ready:quote.amount > 0, currency_unit_valid:validUnit};
+  } catch(error) {
+    // Infrastructure failures remain failures; only the canonical FX domain
+    // refusal is turned into an explicit readiness gap.
+    if (!(error instanceof FxError)) throw error;
+    return {fx_ready:false,currency_unit_valid:validUnit,fx_reason:error.code};
+  }
+}
+
 async function getControlPlane(executor, marketCode) {
   const db = requireExecutor(executor);
   const code = normalizeMarketCode(marketCode);
@@ -145,6 +162,7 @@ async function getControlPlane(executor, marketCode) {
        FROM markets WHERE code = $1`, [code]
   )).rows[0];
   if (!market) throw delegationError('MARKET_NOT_FOUND', 'Marché introuvable.', 404);
+  Object.assign(market, await resolveCurrencyReadiness(db,market.currency,market.minor_unit));
 
   const assignment = (await db.query(
     `SELECT id, status, effective_from, effective_until, central_referent_user_id
@@ -283,7 +301,7 @@ async function getPreparationChecklist(executor, authorization) {
   }
   return {
     items: [
-      item('identity','Identité, devise et mandat',['NO_CURRENCY_PARITY','NO_ASSIGNMENT','ASSIGNMENT_NOT_ACTIVE','NO_CENTRAL_REFERENT','EMPTY_CEILING','MISSING_AMOUNT_LIMIT'],'central'),
+      item('identity','Identité, devise et mandat',['NO_CURRENCY_PARITY','INVALID_CURRENCY_UNIT','NO_ASSIGNMENT','ASSIGNMENT_NOT_ACTIVE','NO_CENTRAL_REFERENT','EMPTY_CEILING','MISSING_AMOUNT_LIMIT'],'central'),
       item('team','Équipe locale',['NO_ACTIVE_MEMBERSHIP','NO_TEAM_GRANT_HOLDER','NO_OPERATING_LEAD'],'market'),
       item('network','Réseau de relais',['NO_RELAIS'],'market'),
       item('payments','Moyens de paiement',['NO_PAYMENT_PROVIDER','NO_CASH_POLICY'],'central'),
@@ -294,4 +312,4 @@ async function getPreparationChecklist(executor, authorization) {
   };
 }
 
-module.exports = { GAP_MESSAGES, computeGaps, readinessFromGaps, getControlPlane, getExitReadiness, listMarkets, getPreparationChecklist };
+module.exports = { GAP_MESSAGES, computeGaps, readinessFromGaps, getControlPlane, getExitReadiness, listMarkets, getPreparationChecklist, resolveCurrencyReadiness };
