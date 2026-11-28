@@ -69,21 +69,41 @@ function rejectBrowserAuthority(req, res, next) {
   next();
 }
 
+// Express strips /market/:marketCode in this mounted middleware. Only the
+// existing draft editor's endpoints may resolve a PROVISIONING market.
+// Only explicitly allowlisted reference and budget planning writes may run in preparation. Actuals and commitments stay closed.
+function isPreparationPriceEndpoint(req) {
+  const path = req.path;
+  if (req.method === 'GET') return path === '/' || path === '/commercial-prices';
+  return req.method === 'POST' && /^\/products\/[^/]+\/local-price(?:\/reset)?$/.test(path);
+}
+
+function isPreparationReferenceEndpoint(req) {
+  const path = req.path;
+  if(req.method==='GET')return path==='/cost-centers';
+  return req.method==='POST' && (/^\/cost-centers\/(?:initialize|references)$/.test(path) || /^\/cost-centers\/families\/[^/]+\/posts$/.test(path) || /^\/cost-centers\/posts\/[^/]+\/budget-revisions$/.test(path));
+}
+
 async function resolveRequestedMarket(req, res, next) {
   const code = String(req.params.marketCode || '').trim().toUpperCase();
   if (!MARKET_CODE.test(code)) {
     return res.status(400).json({ error: 'Code marché invalide', code: 'invalid_market_code' });
   }
   try {
+    const preparationReference = isPreparationReferenceEndpoint(req);
+    const preparationEndpoint = isPreparationPriceEndpoint(req) || preparationReference;
     const { rows } = await db.query(
-      `SELECT id, code, name, currency
+      `SELECT id, code, name, currency, lifecycle_status
          FROM markets
-        WHERE code = $1 AND is_active = TRUE
+        WHERE code = $1 AND ${preparationEndpoint ? "(is_active = TRUE OR (lifecycle_status = 'PROVISIONING' AND EXISTS (SELECT 1 FROM market_operating_assignments a JOIN assignment_memberships am ON am.assignment_id=a.id AND am.status='ACTIVE' AND am.is_operating_lead WHERE a.market_id=markets.id AND a.status='ACTIVE' AND a.central_referent_user_id IS NOT NULL)))" : 'is_active = TRUE'}
         LIMIT 1`,
       [code]
     );
     if (!rows.length) return res.status(404).json({ error: 'Marché introuvable ou inactif', code: 'market_not_found' });
+    if (rows[0].lifecycle_status === 'PROVISIONING' && !preparationEndpoint) return res.status(409).json({error:'Ce geste nécessite un marché actif.',code:'MARKET_NOT_ACTIVE'});
     req.workspaceMarket = rows[0];
+    req.marketPreparationOnly = rows[0].lifecycle_status === 'PROVISIONING';
+    req.marketPreparationReference = req.marketPreparationOnly && preparationReference;
     return next();
   } catch (error) { return next(error); }
 }
@@ -168,7 +188,7 @@ function requirePricingCapability(capability, options = {}) {
 // aucun consommateur réel. requires_audit=false au registre pour ces deux
 // capabilities (lecture), contrairement aux mutations ci-dessus.
 function requirePricingReadCapability(capability) {
-  const delegated = requirePricingCapability(capability, { audit: false });
+  const delegated = requirePricingCapability(capability, { audit: false, allowPreparationPricing: capability === 'pricing.read', allowPreparationReference: capability === 'pricing.read' });
   return (req,res,next) => req.method === 'GET' && req.user?.role === 'admin' ? next() : delegated(req,res,next);
 }
 
@@ -185,7 +205,7 @@ function requireLocalStrategyCapability(capability) {
 // pricing strategy, cost-policy, or market-delegation routes. Check the live
 // database role, not a browser claim (or a stale role in the session cache).
 function requireCatalogPriceCapability(capability) {
-  const delegatedGuard = requireMarketDelegatedCapability(capability, { audit: capability !== 'pricing.read' });
+  const delegatedGuard = requireMarketDelegatedCapability(capability, { audit: capability !== 'pricing.read', allowPreparationPricing: capability === 'pricing.decide' });
   return async (req, res, next) => {
     if (req.user && req.user.role === 'admin') {
       try {
@@ -246,7 +266,8 @@ router.use(
 router.get('/market/:marketCode/cost-centers', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
-    const model = await readCostCenters(req.user, { marketCode: req.workspaceMarket.code, periodStart: req.query.periodStart });
+    const model = await readCostCenters(req.user, { marketCode: req.workspaceMarket.code, periodStart: req.query.periodStart }, ...(req.marketPreparationReference?[{preparationOnly:true}]:[]));
+    if(req.marketPreparationReference)return res.json(model);
     // The existing market gate has its own read context and maturity cohort.
     // Failure of this optional evidence must not remove the primary model.
     let decision = null;
@@ -269,12 +290,12 @@ async function reviseCostCenterBudget(req,res,next) {
       marketCode:req.workspaceMarket?.code||null,postId:req.params.postId,
       periodStart:body.periodStart,expectedRevision:body.expectedRevision,
       currency:body.currency,amountNative:body.amountNative,reason:body.reason,requestKey:body.requestKey
-    });
+    },...(req.marketPreparationReference?[{preparationOnly:true}]:[]));
     res.set('Cache-Control','private, no-store');
     res.status(result.outcome==='created'?201:200).json(result);
   } catch(error) { handleError(error,res,next); }
 }
-router.post('/market/:marketCode/cost-centers/posts/:postId/budget-revisions', requirePricingCapability('pricing.cost_component.update'), reviseCostCenterBudget);
+router.post('/market/:marketCode/cost-centers/posts/:postId/budget-revisions', requirePricingCapability('pricing.cost_component.update',{allowPreparationReference:true}), reviseCostCenterBudget);
 
 async function openCostCommitment(req,res,next){
   try{
@@ -303,30 +324,36 @@ router.post('/market/:marketCode/cost-centers/posts/:postId/actuals',requirePric
 async function createCostReferencePost(req,res,next){
   try{
     const b=req.body||{};
-    const result=await createPost(req.user,{marketCode:req.workspaceMarket?.code||null,familyId:req.params.familyId,resourceId:b.resourceId,code:b.code,label:b.label,economicNature:b.economicNature,allocationPerimeter:b.allocationPerimeter,allocationBasis:b.allocationBasis,source:b.source,reason:b.reason});
+    const result=await createPost(req.user,{marketCode:req.workspaceMarket?.code||null,familyId:req.params.familyId,resourceId:b.resourceId,code:b.code,label:b.label,economicNature:b.economicNature,allocationPerimeter:b.allocationPerimeter,allocationBasis:b.allocationBasis,source:b.source,reason:b.reason},...(req.marketPreparationReference?[{preparationOnly:true}]:[]));
     res.set('Cache-Control','private, no-store');res.status(result.outcome==='created'?201:200).json(result);
   }catch(e){handleError(e,res,next);}
 }
-router.post('/market/:marketCode/cost-centers/families/:familyId/posts',requirePricingCapability('pricing.cost_component.update'),createCostReferencePost);
+router.post('/market/:marketCode/cost-centers/families/:familyId/posts',requirePricingCapability('pricing.cost_component.update',{allowPreparationReference:true}),createCostReferencePost);
 async function initializeEconomicReferences(req,res,next){
   try{
-    const result=await initializeCostReferences(req.user,req.workspaceMarket?.code||null);
+    const result=await initializeCostReferences(req.user,req.workspaceMarket?.code||null,...(req.marketPreparationReference?[{preparationOnly:true}]:[]));
     res.set('Cache-Control','private, no-store');res.json(result);
   }catch(e){handleError(e,res,next);}
 }
-router.post('/market/:marketCode/cost-centers/initialize',requirePricingCapability('pricing.cost_component.update'),initializeEconomicReferences);
+router.post('/market/:marketCode/cost-centers/initialize',requirePricingCapability('pricing.cost_component.update',{allowPreparationReference:true}),initializeEconomicReferences);
 async function configureCostReference(req,res,next){
   try{
     const b=req.body||{};
-    const result=await configureReference(req.user,{marketCode:req.workspaceMarket?.code||null,kind:b.kind,centerId:b.centerId,code:b.code,label:b.label,resourceKind:b.resourceKind,responsibleUserId:b.responsibleUserId,expectedResponsibleUserId:b.expectedResponsibleUserId,reason:b.reason});
+    const result=await configureReference(req.user,{marketCode:req.workspaceMarket?.code||null,kind:b.kind,centerId:b.centerId,code:b.code,label:b.label,resourceKind:b.resourceKind,responsibleUserId:b.responsibleUserId,expectedResponsibleUserId:b.expectedResponsibleUserId,reason:b.reason},...(req.marketPreparationReference?[{preparationOnly:true}]:[]));
     res.set('Cache-Control','private, no-store');res.status(result.outcome==='created'?201:200).json(result);
   }catch(e){handleError(e,res,next);}
 }
-router.post('/market/:marketCode/cost-centers/references',requirePricingCapability('pricing.cost_component.update'),configureCostReference);
+router.post('/market/:marketCode/cost-centers/references',requirePricingCapability('pricing.cost_component.update',{allowPreparationReference:true}),configureCostReference);
 
 router.get('/market/:marketCode', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
+    if (req.marketPreparationOnly) {
+      const access = marketAccessProjection(req);
+      return res.json({preparation_only:true, market:{code:req.workspaceMarket.code,name:req.workspaceMarket.name,currency:req.workspaceMarket.currency},
+        access:{...access,can_manage_costs:false,can_manage_structure_events:false,can_manage_decision_policy:false,can_activate_local_prices:false,can_manage_market_observations:false,local_strategy_owner:false},
+        capabilities:{local_price_drafts:access.can_draft_local_prices,local_price_activation:false,local_price_buyer_activation:false}});
+    }
     const projection = await workspace.buildMarketWorkspace({ market: req.workspaceMarket });
     const access = marketAccessProjection(req);
     res.json({

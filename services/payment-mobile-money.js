@@ -86,8 +86,8 @@ async function getProviderForMarketCode(marketCode) {
          ON p.market_id = m.id
         AND p.is_enabled = TRUE
       WHERE m.code = $1
-        AND m.is_active = TRUE
-      ORDER BY p.priority ASC NULLS LAST
+        AND m.is_active = TRUE AND m.lifecycle_status = 'ACTIVE'
+      ORDER BY p.priority ASC NULLS LAST, p.provider ASC
       LIMIT 1`,
     [String(marketCode || '').trim().toUpperCase()]
   );
@@ -99,6 +99,9 @@ async function getProviderForMarketCode(marketCode) {
   }
 
   const adapter = getAdapter(row.provider);
+  if (adapter.marketCode !== row.market_code) {
+    return { ...row, available: false, reason: 'provider_market_mismatch', adapter };
+  }
   if (!adapter.isConfigured()) {
     return { ...row, available: false, reason: 'provider_not_configured', adapter };
   }
@@ -153,7 +156,7 @@ async function resolveOrderProvider(order) {
        JOIN markets m ON m.id = p.market_id
       WHERE p.market_id = $1
         AND p.is_enabled = TRUE
-      ORDER BY p.priority ASC
+      ORDER BY p.priority ASC, p.provider ASC
       LIMIT 1`,
     [order.market_id]
   );
@@ -174,6 +177,9 @@ async function resolveOrderProvider(order) {
     );
   }
   const adapter = getAdapter(provider.provider);
+  if (adapter.marketCode !== provider.market_code) {
+    throw new MobileMoneyError('mobile_money_provider_market_mismatch','Fournisseur Mobile Money incompatible avec le marché de la commande',409);
+  }
   if (!adapter.isConfigured()) {
     throw new MobileMoneyError(
       'mobile_money_provider_not_configured',

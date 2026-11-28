@@ -26,6 +26,7 @@ Les routes spécialisées (`/admin/workspaces/...`, Entity 360, etc.) restent de
 session absente ?
   ↓ oui
 authentification utilisateur + mot de passe
+  OU téléphone vérifié pour le responsable marché éligible (#4370)
   ↓
 session authentifiée
   ↓
@@ -151,7 +152,9 @@ Deux usages sont prévus :
 
 L’OTP est une **preuve supplémentaire d’identité**, jamais une source de rôle, de Market ID ou de capability.
 
-Le choix du canal OTP et la politique d’activation feront l’objet d’un chantier sécurité séparé. Le delta actuel ne doit pas dépendre de cette future étape.
+Le choix du canal OTP additionnel et la politique d’activation générale restent dans un chantier sécurité séparé.
+
+**Exception de bootstrap validée par le propriétaire dans #4370 (27/11/2026).** Le responsable marché désigné peut utiliser son téléphone enregistré sur la même porte `/admin`, sans boîte email active ni mot de passe partagé. L’identifiant professionnel reste `nom.prenom@komerce.co`. Le challenge OTP interne est distinct des usages boutique, lié à l'identifiant du compte existant, limité au responsable actif et à un marché non clôturé ; une identité ambiguë, un compte non éligible ou un mandat retiré ne produisent pas de session. Aucun compte ni droit n'est créé par cette connexion. Les droits restent résolus par les gardes canoniques, notamment pendant PROVISIONING. Le login email/mot de passe et les usages OTP boutique historiques ne sont pas modifiés. Le mode recette n'accepte pas le code maître pour ce challenge, mais exerce le stockage hashé et la consommation unique.
 
 ## 10. Legacy et anciennes entrées
 
@@ -202,7 +205,7 @@ La cible finale est : **un shell interne, une authentification, une politique de
 
 - `support` n’a pas encore de surface Canonical dédiée ni d’accès prouvé à un contexte métier utile : ne pas afficher un faux onglet ni élargir artificiellement un guard.
 - la projection serveur de capabilities reste trop grossière pour remplacer partout `ROLE_VISIBLE_TABS`; la migration capability-driven est une amélioration ultérieure.
-- l’OTP est prévu par cette doctrine mais constitue un chantier sécurité ultérieur.
+- l’OTP additionnel généralisé reste un chantier sécurité ultérieur ; le bootstrap téléphone du responsable est couvert par le delta #4370 ci-dessus.
 
 ## 13. Références
 

@@ -81,7 +81,7 @@ const { claimCheckout, completeCheckout } = require('./order-checkout-idempotenc
 const { resolveCheckoutItems } = require('./order-checkout-item-resolution');
 const { applyActiveMarketPricesToCheckoutItems } = require('./market-local-price-resolution-service');
 const { MarketCommercialPriceError } = require('./market-commercial-price-service');
-const { assertCentralCollectionAllowed } = require('./market-payment-collection-gate');
+const { assertCentralCollectionAllowed, CASH_COLLECTION_ALLOWED_SQL } = require('./market-payment-collection-gate');
 const { buildOrderFxSnapshot } = require('./order-fx-snapshot');
 const {
   FULFILLMENT_SOURCE,
@@ -253,7 +253,7 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
     }
 
     const { rows: [checkoutMarket] } = await client.query(
-      'SELECT lifecycle_status, code, currency, minor_unit FROM markets WHERE id=$1::uuid LIMIT 1',
+      `SELECT market.*, ${CASH_COLLECTION_ALLOWED_SQL} AS cash_enabled FROM (SELECT lifecycle_status, code, currency, minor_unit FROM markets WHERE id=$1::uuid LIMIT 1) market`,
       [relais.market_id]
     );
     if (!checkoutMarket || checkoutMarket.lifecycle_status !== 'ACTIVE') {
@@ -285,6 +285,11 @@ async function runOrderCheckout({ user, body, internalSimulation = null, preview
         return fail(409, { error: e.message, code: e.code });
       }
       throw e;
+    }
+
+    if(payment_mode==='cash_relais' && checkoutMarket.cash_enabled===false){
+      await client.query('ROLLBACK');
+      return fail(409,{error:'Le paiement cash au relais est désactivé pour ce marché.',code:'PAYMENT_MODE_NOT_ALLOWED_FOR_MARKET'});
     }
 
     let routing = { destination_island: null, routing_mode: null, transit_hub: null };

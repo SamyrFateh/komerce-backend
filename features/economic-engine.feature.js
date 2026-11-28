@@ -603,6 +603,7 @@ module.exports = {
     // explicites. Le moteur reste propriétaire de ses tables et les consumers
     // appellent ces APIs internes au lieu de porter leur SQL.
     internalApi: [
+      { fn: 'getCostReferenceReadiness', file: 'services/economic-cost-reference-service.js' },
       { fn: 'recommend', file: 'services/pricing-engine.js' },
       { fn: 'recordProductPriceChange', file: 'services/economic-price-audit-service.js' },
     ],

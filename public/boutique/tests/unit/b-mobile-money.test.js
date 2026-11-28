@@ -78,3 +78,14 @@ describe('Mobile Money boutique client', () => {
     expect(mobileMoney.isMobileMoneyFinalStatus(status)).toBe(true);
   });
 });
+
+test('checkout requests the explicit relay-based projection without changing legacy callers',async()=>{
+  apiGet.mockResolvedValueOnce({available:false,checkout_modes:{cash_relais:true}});
+  const result=await mobileMoney.getMobileMoneyAvailabilityForRelay('relay-cm',{checkout:true});
+  expect(apiGet).toHaveBeenCalledWith('/api/payments/mobile-money/availability?relais_id=relay-cm&checkout=1',expect.objectContaining({retries:0}));
+  expect(mobileMoney.checkoutModeAvailable(result,'cash_relais')).toBe(true);
+  expect(mobileMoney.checkoutModeAvailable(result,'stripe_eur')).toBe(false);
+  expect(mobileMoney.checkoutModeAvailable(null,'cash_relais')).toBe(false);
+  expect(mobileMoney.checkoutModeAvailable({available:true},'mobile_money')).toBe(false);
+  expect(mobileMoney.checkoutModeAvailable({available:false,checkout_modes:{mobile_money:true}},'mobile_money')).toBe(false);
+});

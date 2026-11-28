@@ -206,3 +206,14 @@ describe('V5.4 — projection de devise de contexte', () => {
     expect(() => validateAdminContext(scopedContext({marketCurrencies}))).toThrow(/AdminContext invalide/);
   });
 });
+
+test('préparation : projection serveur bornée au marché autorisé', () => {
+  const valid = { actor:{id:'lead',role:'market_operator'},access:{
+    mode:'market',allowedMarkets:['GA'],defaultMarket:'GA',capabilities:[],marketCurrencies:{GA:'XAF'},
+    preparation:{GA:{items:[{id:'network',label:'Réseau',owner:'market',status:'blocked',blockers:['Aucun relais']}]}}
+  }};
+  expect(validateAdminContext(valid).access.preparation.GA.items[0].status).toBe('blocked');
+  expect(validateAdminContext(valid).access.marketCurrencies).toEqual({GA:'XAF'});
+  expect(()=>validateAdminContext({...valid,access:{...valid.access,preparation:{CG:valid.access.preparation.GA}}})).toThrow(/périmètre/);
+  expect(()=>validateAdminContext({...valid,actor:{id:'admin',role:'admin'}})).toThrow(/réservée/);
+});

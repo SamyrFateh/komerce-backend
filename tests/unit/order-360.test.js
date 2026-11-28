@@ -14,7 +14,7 @@ describe('L3 — Order 360 : date au fuseau métier du marché', () => {
   test('le service expose le fuseau du marché de la commande (UTC signalé si marché non mappé)', () => {
     const src = fs.readFileSync(path.join(__dirname, '../../services/order-360.js'), 'utf8');
     expect(src).toContain("require('./market-business-day')");
-    expect(src).toContain('business_timezone: resolveBusinessTimezone({ code: order.market_code }).timezone');
+    expect(src).toContain('business_timezone: resolveBusinessTimezone({ code: order.market_code, business_timezone: order.market_timezone }).timezone');
   });
 
   test('le front formate avec le fuseau du serveur : 17/10 22:48Z = 18/10 01:48 aux Comores', () => {

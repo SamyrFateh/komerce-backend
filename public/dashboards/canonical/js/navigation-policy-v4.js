@@ -437,6 +437,7 @@
     const role = roleOf(user);
     if (role === 'market_operator' && surface !== 'documentation') {
       if (!adminContext?.access) return false;
+      if (surface === 'pilotage' && adminContext.access.preparation?.[selectedCapabilityMarket(adminContext.access,market)]) return true;
       if (surface === 'order-360') return hasCapability(adminContext, 'operations.read', market);
       if (surface === 'client-360') return hasCapability(adminContext, 'client.read', market);
       if (surface === 'product-360') return hasCapability(adminContext, 'catalog.read', market);
@@ -1000,6 +1001,7 @@
     // Les données affichées restent soumises aux capabilities READ du serveur.
     if (!(item.roles || []).includes(role)) return false;
     if (item.requiresResolvedContext && role === 'market_operator' && !adminContext?.access) return false;
+    if (item.id === 'control-tower' && role === 'market_operator' && adminContext?.access?.preparation?.[selectedCapabilityMarket(adminContext.access)]) return true;
     // Les agents terrain possèdent leur propre garde serveur /api/agent/action-center.
     // Une délégation commerciale de marché n'est pas l'autorité de cette page.
     if (item.id === 'action-center' && FIELD_ACTION_CENTER_ROLES.includes(role)) return true;
@@ -1021,6 +1023,7 @@
           .map(item => {
             if (roleOf(user) === 'admin' && item.id === 'workspace-catalog' && !market) return Object.freeze({...item,label:'Catalogue global'});
             if (!market) return item;
+            if (item.id === 'control-tower' && adminContext?.access?.preparation?.[selectedCapabilityMarket(adminContext.access)]) return Object.freeze({...item,label:'Préparer mon marché',market_scoped:true});
             if (item.id === 'live-hub') return Object.freeze({...item, label:'Hub · Mes marchés', market_scoped:true});
             return Object.freeze({...item, market_scoped:true});
           })),

@@ -260,3 +260,118 @@ describe('POST /test-reset', () => {
     expect(res.body.purged).toEqual({ phone: '+269111111', deletedUsers: 2 });
   });
 });
+
+
+describe('OTP du responsable marché — entrée interne canonique', () => {
+  const phone = '+12025550123';
+  const purpose = 'internal_market_login';
+  const lead = {id:'lead-1',full_name:'Recette Responsable',phone,email:'recette.responsable@komerce.co',role:'market_operator',eligible_lead:true,account_activation_required:false};
+  const post = (action, data={}) => request(app).post('/api/auth/otp/'+action).send({phone,purpose,...data});
+
+  test.each([
+    ['absent',[]],
+    ['client',[{...lead,role:'client'}]],
+    ['admin',[{...lead,role:'admin'}]],
+    ['ambigu',[lead,{...lead,id:'other'}]],
+    ['sans mandat',[{...lead,eligible_lead:false}]],
+    ['identité non professionnelle',[{...lead,email:'lead@example.org'}]],
+    ['activation requise',[{...lead,account_activation_required:true}]],
+    ['alias seul',[{...lead,phone:'+12025550124'}]],
+  ])('refuse %s sans révéler le compte ni envoyer de code',async (_label,rows)=>{
+    db.query.mockResolvedValueOnce({rows});
+    const response=await post('request');
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body._test).toBeUndefined();
+    expect(notif.sendOtpMessage).not.toHaveBeenCalled();
+    expect(db.query).toHaveBeenCalledTimes(1);
+    db.query.mockResolvedValueOnce({rows});
+    const denied=await post('verify',{code:'123456'});
+    expect(denied.status).toBe(401);
+    expect(denied.headers['set-cookie']).toBeUndefined();
+  });
+
+  test('demande éligible : code stocké pour le compte, envoi canonique sans code exposé',async()=>{
+    db.query.mockResolvedValueOnce({rows:[lead]})
+      .mockResolvedValueOnce({rows:[]})
+      .mockResolvedValueOnce({rows:[{count:0}]})
+      .mockResolvedValueOnce({rows:[]})
+      .mockResolvedValueOnce({rows:[]});
+    const response=await post('request');
+    expect(response.status).toBe(200);
+    expect(response.body._test).toBeUndefined();
+    expect(response.body._dev).toBeUndefined();
+    expect(notif.sendOtpMessage).toHaveBeenCalledWith(expect.objectContaining({phone,name:lead.full_name}));
+    const insert=db.query.mock.calls.find(([sql])=>sql.includes('INSERT INTO otp_codes'));
+    expect(insert[1].slice(0,3)).toEqual([phone,'hashed-code','internal_market_login:lead-1']);
+  });
+
+  test('mode test : challenge réellement hashé, aucun envoi externe',async()=>{
+    otpTestMode.isOtpTestMode.mockReturnValue(true);
+    db.query.mockResolvedValueOnce({rows:[lead]})
+      .mockResolvedValueOnce({rows:[]})
+      .mockResolvedValueOnce({rows:[{count:0}]})
+      .mockResolvedValueOnce({rows:[]})
+      .mockResolvedValueOnce({rows:[]});
+    const response=await post('request');
+    expect(response.status).toBe(200);
+    expect(response.body._test.code).toMatch(/^\d{6}$/);
+    expect(bcrypt.hash).toHaveBeenCalledWith(response.body._test.code,8);
+    expect(notif.sendOtpMessage).not.toHaveBeenCalled();
+  });
+
+  test('le code maître ne crée aucune session interne sans challenge',async()=>{
+    otpTestMode.isMasterCode.mockReturnValue(true);
+    db.query.mockResolvedValueOnce({rows:[lead]}).mockResolvedValueOnce({rows:[]});
+    const denied=await post('verify',{code:'424242'});
+    expect(denied.status).toBe(401);
+    expect(denied.headers['set-cookie']).toBeUndefined();
+    expect(otpTestMode.isMasterCode).not.toHaveBeenCalled();
+  });
+
+  test('OTP valide : une seule consommation et session du compte existant',async()=>{
+    db.query.mockResolvedValueOnce({rows:[lead]})
+      .mockResolvedValueOnce({rows:[{id:'otp-1',code:'hash'}]})
+      .mockResolvedValueOnce({rows:[{id:'otp-1'}]})
+      .mockResolvedValueOnce({rows:[lead]});
+    const response=await post('verify',{code:'123456'});
+    expect(response.status).toBe(200);
+    expect(response.body.user.id).toBe(lead.id);
+    expect(response.body.user.role).toBe('market_operator');
+    expect(response.body.created).toBe(false);
+    expect(response.headers['set-cookie'][0]).toMatch(/kmrc_jwt=/);
+    expect(db.query.mock.calls[1][1]).toEqual([phone,'internal_market_login:lead-1',5]);
+    expect(db.query.mock.calls[1][0]).toContain('attempts<$3');
+    expect(db.query.mock.calls[2][0]).toContain('verified=FALSE');
+    expect(db.query.mock.calls.some(([sql])=>sql.includes('INSERT INTO users'))).toBe(false);
+  });
+
+  test('consommation concurrente / replay refusé',async()=>{
+    db.query.mockResolvedValueOnce({rows:[lead]})
+      .mockResolvedValueOnce({rows:[{id:'otp-1',code:'hash'}]})
+      .mockResolvedValueOnce({rows:[]});
+    const denied=await post('verify',{code:'123456'});
+    expect(denied.status).toBe(401);
+    expect(denied.headers['set-cookie']).toBeUndefined();
+  });
+
+  test('mandat retiré entre tentative et consommation : pas de session',async()=>{
+    db.query.mockResolvedValueOnce({rows:[lead]})
+      .mockResolvedValueOnce({rows:[{id:'otp-1',code:'hash'}]})
+      .mockResolvedValueOnce({rows:[{id:'otp-1'}]})
+      .mockResolvedValueOnce({rows:[{...lead,eligible_lead:false}]});
+    const denied=await post('verify',{code:'123456'});
+    expect(denied.status).toBe(401);
+    expect(denied.headers['set-cookie']).toBeUndefined();
+  });
+
+  test('code incorrect : tentative consommée mais pas de session',async()=>{
+    db.query.mockResolvedValueOnce({rows:[lead]})
+      .mockResolvedValueOnce({rows:[{id:'otp-1',code:'hash'}]});
+    bcrypt.compare.mockResolvedValueOnce(false);
+    const denied=await post('verify',{code:'123456'});
+    expect(denied.status).toBe(401);
+    expect(denied.headers['set-cookie']).toBeUndefined();
+    expect(db.query).toHaveBeenCalledTimes(2);
+  });
+});

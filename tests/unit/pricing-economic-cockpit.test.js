@@ -277,3 +277,14 @@ test('numeric structure evidence uses its projected amount, including zero, with
  expect(texts(createV6Profitability(doc,model))).not.toContain('0,00 EUR');
  expect(texts(createV6Profitability(doc,model))).not.toContain('100 KMF');
 });
+
+test('preparation exposes budgets only by explicit server capability, not by central role',()=>{
+  const base={...activityModel,preparationOnly:true,central:true,centers:[{id:'a',label:'Centre'}],families:[{id:'f',center_id:'a',label:'Famille'}],posts:[{id:'p',center_id:'a',family_id:'f',label:'Poste',budget:null,commitments:[],acceptsStructureActual:true}]};
+  for(const budget of [true,false]){
+    const view=createV7CostCenters(doc,{...base,costCapabilities:{budget,reference:false,commitment:false,actual:false,consume:false}},{reviseBudget:jest.fn(),openCommitment:jest.fn(),moveCommitment:jest.fn(),recordActual:jest.fn()});
+    find(view,'Consulter').click();find(view,'Poste').click();
+    expect(Boolean(find(view,'Valider le budget'))).toBe(budget);
+    expect(find(view,'Enregistrer l’engagement')).toBeUndefined();
+    expect(find(view,'Enregistrer la charge')).toBeUndefined();
+  }
+});

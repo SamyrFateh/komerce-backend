@@ -56,7 +56,7 @@
     "healthy": 34,
     "attention": 6,
     "blocked": 0,
-    "businessDependencies": 339,
+    "businessDependencies": 342,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -1644,6 +1644,13 @@
           "channels": [
             "static-code",
             "data-read"
+          ]
+        },
+        {
+          "consumer": "market-control-plane",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -10080,6 +10087,13 @@
           ]
         },
         {
+          "provider": "market-control-plane",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "market-delegation",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -13660,6 +13674,11 @@
       },
       "interfaces": {
         "internalApis": [
+          {
+            "fn": "getCostReferenceReadiness",
+            "file": "services/economic-cost-reference-service.js",
+            "status": "resolved"
+          },
           {
             "fn": "recommend",
             "file": "services/pricing-engine.js",
@@ -21411,7 +21430,7 @@
       "implementation": {
         "byCategory": {
           "migrations": {
-            "count": 15,
+            "count": 16,
             "files": [
               {
                 "declared": "migrations/135_markets_foundation.sql",
@@ -21486,6 +21505,11 @@
               {
                 "declared": "migrations/420_market_storefront_editorial_seed.sql",
                 "resolvedPath": "migrations/420_market_storefront_editorial_seed.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/455_market_business_timezone.sql",
+                "resolvedPath": "migrations/455_market_business_timezone.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -21736,7 +21760,7 @@
             ]
           }
         },
-        "totalFiles": 61,
+        "totalFiles": 62,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -22504,7 +22528,13 @@
         ]
       },
       "interfaces": {
-        "internalApis": [],
+        "internalApis": [
+          {
+            "fn": "getPricePreparation",
+            "file": "services/market-commercial-price-service.js",
+            "status": "resolved"
+          }
+        ],
         "httpInterfaces": {
           "count": 0
         }
@@ -22559,6 +22589,13 @@
         },
         {
           "consumer": "economic-engine",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "market-control-plane",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -22683,7 +22720,7 @@
           "GET /api/admin/markets/:marketCode/control-plane : affectation, équipe et capacités, plafond, fournisseurs de paiement, politique de caisse, relais actifs, écarts",
           "POST /api/admin/markets/:marketCode/lifecycle : transition lifecycle centrale ; ACTIVE exige readiness plate-forme ET exploitation vertes",
           "PUT /api/admin/markets/:marketCode/storefront : édition des textes boutique par admin central, via market-lifecycle-service et audit",
-          "POST /api/admin/markets/:marketCode/reprovision : reconstruit la configuration opérationnelle d’un Market ID historique déjà remis en PROVISIONING, sans recréer son identité",
+          "POST /api/admin/markets/:marketCode/reprovision : reconstruit la configuration opérationnelle d’un Market ID historique déjà remis en PROVISIONING, sans recréer son identité ; operation=complete_timezone complète seulement un fuseau manquant, sans toucher au mandat",
           "rapport d’écarts calculé (computeGaps) + deux verdicts readiness indépendants : platform et operations ; MARKET_INACTIVE n’est pas un blocker de readiness pendant PROVISIONING"
         ],
         "out": [
@@ -22873,6 +22910,10 @@
             "lifecycleOwner": "market-delegation"
           },
           {
+            "table": "market_central_collection_modes",
+            "lifecycleOwner": "payments"
+          },
+          {
             "table": "market_operating_assignments",
             "lifecycleOwner": "market-delegation"
           },
@@ -22951,6 +22992,10 @@
             "lifecycleOwner": "market-delegation"
           },
           {
+            "table": "market_central_collection_modes",
+            "lifecycleOwner": "payments"
+          },
+          {
             "table": "market_operating_assignments",
             "lifecycleOwner": "market-delegation"
           },
@@ -22992,12 +23037,22 @@
             "status": "documented-signature-no-file"
           },
           {
+            "fn": "completeMarketTimezone()",
+            "file": null,
+            "status": "documented-signature-no-file"
+          },
+          {
             "fn": "computeGaps()",
             "file": null,
             "status": "documented-signature-no-file"
           },
           {
             "fn": "getControlPlane()",
+            "file": null,
+            "status": "documented-signature-no-file"
+          },
+          {
+            "fn": "getPreparationChecklist()",
             "file": null,
             "status": "documented-signature-no-file"
           },
@@ -23039,6 +23094,13 @@
       "businessDependencies": [
         {
           "provider": "auth",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "auth-identity",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -23096,6 +23158,13 @@
           ]
         },
         {
+          "provider": "market-autonomy",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "market-delegation",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -23127,7 +23196,15 @@
           ]
         }
       ],
-      "consumedBy": [],
+      "consumedBy": [
+        {
+          "consumer": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        }
+      ],
       "projections": {
         "projectedBy": []
       },
@@ -28121,6 +28198,10 @@
             "resolution": "single-writer"
           },
           {
+            "table": "market_central_collection_modes",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "market_payment_accounts",
             "resolution": "declared-table-owner"
           },
@@ -28180,6 +28261,12 @@
           },
           {
             "table": "market_cash_destinations",
+            "mode": "RW",
+            "lifecycleOwner": "payments",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "market_central_collection_modes",
             "mode": "RW",
             "lifecycleOwner": "payments",
             "ownershipStatus": "owner"
@@ -28285,6 +28372,10 @@
             "resolution": "single-writer"
           },
           {
+            "table": "market_central_collection_modes",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "market_payment_accounts",
             "resolution": "declared-table-owner"
           },
@@ -28344,6 +28435,12 @@
           },
           {
             "table": "market_cash_destinations",
+            "mode": "RW",
+            "lifecycleOwner": "payments",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "market_central_collection_modes",
             "mode": "RW",
             "lifecycleOwner": "payments",
             "ownershipStatus": "owner"

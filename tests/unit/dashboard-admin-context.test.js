@@ -18,6 +18,8 @@ jest.mock('../../middleware/require-dashboard-global-authority', () => ({
 // resolveAuthorization pour projeter delegatedCapabilities en mode market.
 // On le mocke ici — la couverture de resolveAuthorization lui-même vit dans
 // tests/unit/market-delegation-service*.test.js, pas ici.
+const mockPreparation = jest.fn();
+jest.mock('../../services/market-control-plane', () => ({ getPreparationChecklist: (...args) => mockPreparation(...args) }));
 const mockResolveAuthorization = jest.fn();
 const mockListAuthorizedMarkets = jest.fn();
 jest.mock('../../services/market-delegation-service', () => ({
@@ -235,4 +237,20 @@ test('devises de présentation limitées au scope réel et sans fallback KMF', a
   expect(mockQuery.mock.calls[1][0]).toContain('is_active = TRUE AND code = ANY($1::text[])');
   expect(mockQuery.mock.calls[1][1]).toEqual([['CM','ZZ','CG']]);
   expect(ctx.access.marketCurrencies.KM).toBeUndefined();
+});
+
+test('un responsable PROVISIONING reçoit uniquement la projection de préparation de son marché',async()=>{
+  mockHasGlobal.mockResolvedValue(false);
+  mockQuery.mockResolvedValueOnce({rows:[]}).mockResolvedValueOnce({rows:[{code:'GA'}]}).mockResolvedValueOnce({rows:[{code:'GA',currency:'XAF'}]});
+  mockListAuthorizedMarkets.mockImplementation(async(_db,{requiredCapability})=>requiredCapability==='team.read'?[{market_code:'GA'}]:[]);
+  const authz = {market_code:'GA',lifecycle_status:'PROVISIONING',capabilities:['team.read','network.read']};
+  mockResolveAuthorization.mockResolvedValue(authz);
+  const checklist = {items:[{id:'network',label:'Réseau',owner:'market',status:'blocked',blockers:['Aucun relais']}]};
+  mockPreparation.mockResolvedValue(checklist);
+  const result = await resolveDashboardAdminContext({id:'lead',role:'market_operator'});
+  expect(result.access.preparation).toEqual({GA:checklist});
+  expect(result.access.marketCurrencies).toEqual({GA:'XAF'});
+  expect(mockQuery.mock.calls[2][1]).toEqual([['GA'],['GA']]);
+  expect(mockPreparation).toHaveBeenCalledWith(expect.anything(),authz);
+  expect(result.access.delegatedCapabilities).toEqual({GA:['team.read','network.read']});
 });

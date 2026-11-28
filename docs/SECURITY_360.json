@@ -2,8 +2,8 @@
   "generatedAt": "2026-11-27T08:59:51.391Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 899,
-    "protected": 842,
+    "total": 901,
+    "protected": 844,
     "public": 57,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -5725,6 +5725,11 @@
       ]
     },
     {
+      "key": "POST /api/purchasing/supplier-payments/{payment_id}/finance-settlements",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
       "key": "GET /api/purchasing/supplier-payments/{payment_id}/settlements",
       "level": "PROTECTED",
       "roles": [
@@ -5734,9 +5739,12 @@
     {
       "key": "POST /api/purchasing/supplier-payments/{payment_id}/settlements",
       "level": "PROTECTED",
-      "roles": [
-        "admin"
-      ]
+      "roles": []
+    },
+    {
+      "key": "GET /api/purchasing/supplier-payments/finance-queue",
+      "level": "PROTECTED",
+      "roles": []
     },
     {
       "key": "POST /api/purchasing/suppliers/{id}/map",

@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        authenticated_admin, dashboard_global_access_grants, operator_market_scopes, markets, market_delegation_memberships
  * @outputs       server_resolved_admin_context
- * @depends       db.js, middleware/require-dashboard-global-authority.js, services/market-delegation-service.js
+ * @depends       services/market-control-plane.js, db.js, middleware/require-dashboard-global-authority.js, services/market-delegation-service.js
  * @used-by       routes/admin-dashboard-market.js
  * @db-read       dashboard_global_access_grants, operator_market_scopes, markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, users, relais
  * @db-write      none
@@ -22,6 +22,7 @@ const db = require('../db');
 const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const { CENTRAL_TRANSIT_ROLES } = require('../config/central-transit-roles');
 const { resolveAuthorization, listAuthorizedMarketsForCapability } = require('./market-delegation-service');
+const { getPreparationChecklist } = require('./market-control-plane');
 
 class DashboardAccessDeniedError extends Error {
   constructor() {
@@ -109,12 +110,12 @@ async function getWorkspaceMarketCodes(user) {
   ))];
   if (!delegatedCodes.length) return [];
 
-  // Workspaces reject inactive markets. Filter the context by that same
-  // lifecycle boundary; do not turn a suspended/inactive market into access.
+  // Only operators with preparation capabilities proven by the delegation
+  // service may enter a PROVISIONING workspace. Never include a suspended market.
   const { rows } = await db.query(
-    `SELECT code FROM markets
-      WHERE is_active = TRUE AND code = ANY($1::text[])
-      ORDER BY code ASC`,
+    user.role === 'market_operator'
+      ? `SELECT code FROM markets WHERE (is_active = TRUE OR lifecycle_status = 'PROVISIONING') AND code = ANY($1::text[]) ORDER BY code ASC`
+      : `SELECT code FROM markets WHERE is_active = TRUE AND code = ANY($1::text[]) ORDER BY code ASC`,
     [delegatedCodes]
   );
   return rows.map(row => row.code);
@@ -155,13 +156,17 @@ const NO_DELEGATED_CAPABILITY_CODES = new Set([
 //  - la projection reste strictement scoped à chaque `code` — on ne fabrique
 //    jamais une union qui ferait croire qu'une capability détenue sur un
 //    marché existe aussi sur un autre.
-async function delegatedCapabilitiesByMarket(userId, marketCodes) {
+async function delegatedCapabilitiesByMarket(userId, marketCodes, preparation = null) {
   const entries = await Promise.all(marketCodes.map(async code => {
     try {
       // requiredCapability volontairement omis (null) : on veut la liste
       // complète des capabilities actives sur CE marché, pas la vérification
       // d'une capability précise.
-      const authz = await resolveAuthorization(db, { userId, marketCode: code, requiredCapability: null });
+      const authz = await resolveAuthorization(db, { userId, marketCode: code, requiredCapability: null, allowProvisioningProjection: true });
+      if (preparation && authz.lifecycle_status === 'PROVISIONING') {
+        const checklist = await getPreparationChecklist(db, authz);
+        if (checklist) preparation[code] = checklist;
+      }
       return [code, authz.capabilities];
     } catch (error) {
       if (error && NO_DELEGATED_CAPABILITY_CODES.has(error.code)) return [code, []];
@@ -173,11 +178,12 @@ async function delegatedCapabilitiesByMarket(userId, marketCodes) {
 
 // Métadonnées de présentation uniquement, sur le périmètre déjà résolu.
 // Aucun droit ni taux de change n'est déduit de ces devises.
-async function marketCurrenciesFor(allowedMarkets) {
+async function marketCurrenciesFor(allowedMarkets, preparationCodes = []) {
   const { rows } = await db.query(
-    `SELECT code, currency FROM markets
-      WHERE is_active = TRUE AND code = ANY($1::text[])`,
-    [allowedMarkets]
+    preparationCodes.length
+      ? `SELECT code, currency FROM markets WHERE (is_active = TRUE OR (lifecycle_status = 'PROVISIONING' AND code = ANY($2::text[]))) AND code = ANY($1::text[])`
+      : `SELECT code, currency FROM markets WHERE is_active = TRUE AND code = ANY($1::text[])`,
+    preparationCodes.length ? [allowedMarkets, preparationCodes] : [allowedMarkets]
   );
   const currencies = new Map(rows.map(row => [row.code, row.currency]));
   return Object.freeze(Object.fromEntries(allowedMarkets.map(code => {
@@ -209,11 +215,12 @@ async function resolveDashboardAdminContext(user) {
   // Un admin global voit déjà tout (dashboard.global.read) : cette projection
   // ne sert qu'à décider une visibilité UI pour un opérateur scopé, donc on
   // ne la calcule (et n'interroge la DELEGATION) qu'en mode market.
+  const preparation = {};
   const delegatedCapabilities = mode === 'market' && !CENTRAL_TRANSIT_ROLES.includes(user.role)
-    ? await delegatedCapabilitiesByMarket(user.id, allowedMarkets)
+    ? await delegatedCapabilitiesByMarket(user.id, allowedMarkets, user.role === 'market_operator' ? preparation : null)
     : {};
 
-  const marketCurrencies = await marketCurrenciesFor(allowedMarkets);
+  const marketCurrencies = await marketCurrenciesFor(allowedMarkets, Object.keys(preparation));
 
   return Object.freeze({
     actor: Object.freeze({ id: String(user.id), role: String(user.role) }),
@@ -223,6 +230,7 @@ async function resolveDashboardAdminContext(user) {
       marketCurrencies,
       defaultMarket: mode === 'global' ? null : allowedMarkets[0],
       capabilities: Object.freeze(capabilitiesFor(mode)),
+      ...(Object.keys(preparation).length ? { preparation: Object.freeze(preparation) } : {}),
       delegatedCapabilities: Object.freeze(
         Object.fromEntries(
           Object.entries(delegatedCapabilities).map(([code, caps]) => [code, Object.freeze([...caps])])

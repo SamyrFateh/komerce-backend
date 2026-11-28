@@ -179,3 +179,71 @@ describe('markets-management — montage', () => {
     expect(src).not.toMatch(/\/api\/(?!admin\/markets)/);
   });
 });
+
+describe('initialisation centrale #4370 — contrat nommé', () => {
+  const values = {
+    code:'ga', name:'Gabon', currency:'xaf', minor_unit:'0', business_timezone:'Africa/Libreville',
+    central_referent_user_id:'u1', last_name:'Díallo', first_name:'Jean François', phone:'+24161234567',
+    cash_enabled:'true', confirmation_mode:'SINGLE',
+    'limit_cash.custody.receive':'100', 'limit_execution.cash.confirm':'200',
+    'limit_settlement.receive':'300', 'limit_finance.act':'400',
+  };
+  test('adresse générée et cash seul, aucun relais obligatoire', () => {
+    expect(mgmt.professionalAddress(values.last_name,values.first_name)).toBe('diallo.jean-francois@komerce.co');
+    expect(mgmt.initialPayload(values)).toMatchObject({
+      code:'GA', currency:'XAF', business_timezone:'Africa/Libreville', lead:{last_name:'Díallo',first_name:'Jean François',phone:'+24161234567'},
+      payment_provider:null, cash_policy:{cash_enabled:true,confirmation_mode:'SINGLE'},initial_relais:null,
+    });
+    expect(mgmt.initialPayload(values).lead.email).toBeUndefined();
+  });
+  test('refuse les plafonds non renseignés et aucun moyen de paiement', () => {
+    expect(() => mgmt.initialPayload({...values,'limit_finance.act':''})).toThrow(/plafond/);
+    expect(() => mgmt.initialPayload({...values,cash_enabled:'false'})).toThrow(/paiement/);
+  });
+  test('refuse un relais partiel plutôt que fabriquer ses données', () => {
+    expect(() => mgmt.initialPayload({...values,relay_name:'Libreville'})).toThrow(/relais/);
+  });
+});
+
+test('central collection needs separate evidence per selected method', () => {
+  const base = {code:'GA',name:'Gabon',currency:'XAF',minor_unit:'0',business_timezone:'Africa/Libreville',central_referent_user_id:'u1',last_name:'Diallo',first_name:'Jean',phone:'+24161234567',cash_enabled:'false',confirmation_mode:'SINGLE', 'limit_cash.custody.receive':'100','limit_execution.cash.confirm':'200','limit_settlement.receive':'300','limit_finance.act':'400'};
+  expect(() => mgmt.initialPayload({...base,stripe_eur:'true'})).toThrow(/décision/);
+  expect(mgmt.initialPayload({...base,stripe_eur:'true',stripe_eur_evidence:'DECISION-12'}).central_collection_modes).toEqual([{payment_mode:'stripe_eur',evidence_ref:'DECISION-12'}]);
+});
+
+test('resume an initialized market by completing its missing timezone without reprovisioning',async()=>{
+  const market={code:'GA',name:'Gabon',currency:'XAF',minor_unit:0,lifecycle_status:'PROVISIONING',business_timezone:null};
+  const fetchImpl=jest.fn((url,options)=>{
+    if(url.endsWith('/reprovision'))return response({changed:true,market:{...market,business_timezone:'Africa/Libreville'}});
+    if(url.endsWith('/control-plane'))return response({market,assignment:{status:'ACTIVE'},gaps:[{code:'NO_BUSINESS_TIMEZONE',message:'Fuseau requis'}]});
+    return response({markets:[market]});
+  });
+  const doc=fakeDoc(),host=doc.createElement('section');
+  await mgmt.mount(host,{document:doc,fetch:fetchImpl});
+  await walk(host).find(n=>n.textContent==='Voir les écarts').listeners.click();
+  const form=walk(host).find(n=>n.tag==='form'&&n.fields?.business_timezone);
+  expect(form).toBeTruthy();
+  expect(walk(host).some(n=>n.textContent==='Initialiser ce marché existant')).toBe(false);
+  form.fields.business_timezone.value='Africa/Libreville';
+  await form.listeners.submit({preventDefault(){}});
+  const mutations=fetchImpl.mock.calls.filter(([url,options])=>options.method==='POST');
+  expect(mutations).toHaveLength(1);
+  expect(mutations[0][0]).toBe('/api/admin/markets/GA/reprovision');
+  expect(JSON.parse(mutations[0][1].body)).toEqual({operation:'complete_timezone',business_timezone:'Africa/Libreville'});
+});
+test('historical market resumes its original identity in the wizard without creating a second market',async()=>{
+  const market={code:'GA',name:'Gabon',currency:'XAF',minor_unit:0,lifecycle_status:'PROVISIONING',business_timezone:null};
+  const fetchImpl=jest.fn(url=>url.endsWith('/control-plane')?response({market,assignment:null,gaps:[]}):
+    url.endsWith('/central-authority')?response({currency_options:[{code:'XAF',minor_unit:0}]}):response({markets:[market]}));
+  const doc=fakeDoc(),host=doc.createElement('section');
+  await mgmt.mount(host,{document:doc,fetch:fetchImpl});
+  await walk(host).find(n=>n.textContent==='Voir les écarts').listeners.click();
+  await walk(host).find(n=>n.textContent==='Initialiser ce marché existant').listeners.click();
+  const form=walk(host).find(n=>n.tag==='form'&&n.fields?.code);
+  expect(form.fields.code.value).toBe('GA');
+  expect(form.fields.code.readOnly).toBe(true);
+  expect(form.fields.name.value).toBe('Gabon');
+  expect(form.fields.currency.disabled).toBe(true);
+  expect(form.fields.minor_unit.value).toBe('0');
+  expect(fetchImpl.mock.calls.every(([,options])=>options.method==='GET')).toBe(true);
+});

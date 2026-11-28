@@ -61,3 +61,45 @@ test('la destination par défaut d\'admin et market_operator est le Pilotage Can
   expect(ROLE_DEFAULT_LANDING.market_operator).toBe('/admin/pilotage');
   expect(Object.values(ROLE_DEFAULT_LANDING)).not.toContain('/admin/control-tower');
 });
+
+
+test('parcours téléphone depuis la porte interne : demande, vérification, landing canonique', async () => {
+  const elements = new Map();
+  function element(id) {
+    if (!elements.has(id)) elements.set(id,{
+      value:'',hidden:false,disabled:false,textContent:'',handlers:{},
+      classList:{add(){},remove(){},toggle(){}},focus(){},
+      addEventListener(name,fn){this.handlers[name]=fn;}
+    });
+    return elements.get(id);
+  }
+  const redirect=jest.fn();
+  const fetch=jest.fn()
+    .mockResolvedValueOnce({ok:true,status:200,json:async()=>({success:true,retryAfter:0})})
+    .mockResolvedValueOnce({ok:true,status:200,json:async()=>({success:true,user:{role:'market_operator'}})});
+  const sandbox={document:{getElementById:element},window:{location:{search:'?next=/admin',replace:redirect}},fetch,URLSearchParams,Date,setTimeout,clearTimeout};
+  vm.runInNewContext(loginSource,sandbox);
+  element('btn-phone-mode').handlers.click();
+  expect(element('password-login').hidden).toBe(true);
+  expect(element('phone-login').hidden).toBe(false);
+  element('market-phone').value='+1 202 555 0123';
+  await element('market-otp-request').handlers.click();
+  expect(element('market-otp-step').hidden).toBe(false);
+  expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({purpose:'internal_market_login',phone:'+12025550123'});
+  element('market-otp').value='123456';
+  await element('market-otp-verify').handlers.click();
+  expect(JSON.parse(fetch.mock.calls[1][1].body)).toEqual({purpose:'internal_market_login',phone:'+12025550123',code:'123456'});
+  expect(redirect).toHaveBeenCalledWith('/admin/pilotage');
+  element('btn-password-mode').handlers.click();
+  expect(element('password-login').hidden).toBe(false);
+  expect(element('phone-login').hidden).toBe(true);
+  expect(element('market-otp').value).toBe('');
+});
+
+test('la page de connexion conserve les deux parcours sans script inline',()=>{
+  const html=fs.readFileSync(path.join(__dirname,'../../public/login.html'),'utf8');
+  for(const id of ['email','password','btn-submit','btn-phone-mode','market-phone','market-otp-request','market-otp','market-otp-verify','btn-password-mode']){
+    expect(html).toContain('id="'+id+'"');
+  }
+  expect(html).toContain('src="js/login.js?');
+});

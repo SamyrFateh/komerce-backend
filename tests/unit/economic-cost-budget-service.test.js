@@ -60,3 +60,13 @@ test('unavailable FX fails closed and rolls back',async()=>{
   await expect(reviseBudget(actor,{...input,currency:'KMF',amountNative:'1000'})).rejects.toMatchObject({code:'fx_rate_unavailable'});
   expect(mockQuery.mock.calls[5][0]).toBe('ROLLBACK');
 });
+
+test('preparation budget requires explicit market and refuses stale lifecycle before any post write',async()=>{
+  await expect(reviseBudget(actor,input,{preparationOnly:true})).rejects.toMatchObject({status:404});
+  expect(mockGetClient).not.toHaveBeenCalled();
+  mockQuery.mockResolvedValueOnce(ok()).mockResolvedValueOnce(ok()).mockResolvedValueOnce(ok());
+  await expect(reviseBudget(actor,{...input,marketCode:'GA'},{preparationOnly:true})).rejects.toMatchObject({status:404});
+  expect(mockQuery.mock.calls[1][0]).toContain("lifecycle_status='PROVISIONING' FOR SHARE");
+  expect(mockQuery.mock.calls[2][0]).toBe('ROLLBACK');
+  expect(mockConvert).not.toHaveBeenCalled();
+});
