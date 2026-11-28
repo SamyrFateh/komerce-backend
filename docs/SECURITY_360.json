@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-11-27T08:59:51.391Z",
+  "generatedAt": "2026-11-28T13:39:13.611Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 901,
-    "protected": 844,
+    "total": 918,
+    "protected": 861,
     "public": 57,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -3866,6 +3866,37 @@
       "roles": []
     },
     {
+      "key": "GET /api/client-requests/{ref}/attachments/{id}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/client-requests/{ref}/messages",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/client-requests/{ref}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/client-requests",
+      "level": "PROTECTED",
+      "roles": [
+        "client",
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/client-requests",
+      "level": "PROTECTED",
+      "roles": [
+        "client"
+      ]
+    },
+    {
       "key": "GET /api/client/invoices",
       "level": "PROTECTED",
       "roles": []
@@ -4227,6 +4258,39 @@
       "roles": [
         "admin",
         "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/hub/client-requests/{ref}/attachments/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub/client-requests/{ref}/messages",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/hub/client-requests/{ref}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/hub/client-requests",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "client"
       ]
     },
     {
@@ -4820,6 +4884,50 @@
       "key": "POST /api/market-delegation/team/invitations/{token}/accept",
       "level": "PROTECTED",
       "roles": []
+    },
+    {
+      "key": "GET /api/markets/{code}/client-requests/{ref}/attachments/{id}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/markets/{code}/client-requests/{ref}/close",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "DELETE /api/markets/{code}/client-requests/{ref}/hub-share",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/markets/{code}/client-requests/{ref}/hub-share",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/markets/{code}/client-requests/{ref}/messages",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/markets/{code}/client-requests/{ref}/reopen",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/markets/{code}/client-requests/{ref}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/markets/{code}/client-requests",
+      "level": "PROTECTED",
+      "roles": [
+        "client",
+        "admin",
+        "agent_hub"
+      ]
     },
     {
       "key": "PUT /api/markets/{marketCode}/local-stock/{productId}/exposure",
