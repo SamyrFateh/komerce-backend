@@ -1,8 +1,9 @@
 name: '4370 — Post-merge staging readonly entry and QN closure'
 on:
-  push:
-    branches: [recette/4370-candidate-chromium-2ec819c]
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/4370-candidate-chromium-readonly.yml']
 permissions:
   contents: read
 concurrency:
@@ -10,6 +11,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   onboarding-provisioning:
+    if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'recette/4370-candidate-chromium-2ec819c')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
@@ -52,7 +54,7 @@ jobs:
           const sha = 'caef653e13a2234151b1f3da1e0bff4c09cf6832';
           const output = 'test-results/4370';
           fs.mkdirSync(output, { recursive: true });
-          const proof = { target: origin, candidate: sha, viewport: '1440x900', browser: 'chromium', mode: 'POST_MERGE_READONLY', outcome: 'NOT_PROVEN', blockedWrites: [] };
+          const proof = { target: origin, candidate: sha, viewport: '1440x900', browser: 'chromium', mode: 'POST_MERGE_READONLY_AND_REVOKED_LOGIN_NEGATIVE', outcome: 'NOT_PROVEN', blockedWrites: [] };
           (async () => {
             let browser, page, actor, fixture, armed = false, writeAttempted = false;
             let code, phone, name;
@@ -119,8 +121,23 @@ jobs:
               await versionNow();
               const final=await db.query("SELECT m.lifecycle_status,m.is_active,a.status FROM markets m JOIN market_operating_assignments a ON a.market_id=m.id WHERE m.id=$1 AND a.id=$2",[fixture.id,'326be9ce-d2c4-476c-b5a3-5eb190092d03']);
               if(final.rowCount!==1||final.rows[0].lifecycle_status!=='CLOSED'||final.rows[0].is_active!==false||final.rows[0].status!=='ENDED')throw Error('CLEANUP_READBACK_FAILED');
+              // Negative login against the exact closed fixture, never request an OTP.
+              const identity=await db.query("SELECT u.id,u.phone FROM users u JOIN assignment_memberships am ON am.user_id=u.id WHERE u.id=$1 AND am.assignment_id=$2",['10c72734-5ab4-44c6-a524-9f824c445690','326be9ce-d2c4-476c-b5a3-5eb190092d03']);
+              if(identity.rowCount!==1||!/^\\+120255501[0-9]{2}$/.test(identity.rows[0].phone))throw Error('NEGATIVE_IDENTITY_NOT_PROVEN');
+              const lead=identity.rows[0];
+              const eligible=await db.query("SELECT 1 FROM users u JOIN assignment_memberships am ON am.user_id=u.id JOIN market_operating_assignments a ON a.id=am.assignment_id JOIN markets m ON m.id=a.market_id WHERE (u.phone=$1 OR u.whatsapp_phone=$1) AND am.status='ACTIVE' AND am.is_operating_lead=TRUE AND a.status='ACTIVE' AND m.lifecycle_status IN ('PROVISIONING','ACTIVE','SUSPENDED')",[lead.phone]);
+              if(eligible.rowCount!==0)throw Error('NEGATIVE_ACCOUNT_STILL_ELIGIBLE');
+              // A separate unauthenticated context proves that the revoked identity
+              // cannot obtain a cookie; no /request call or notification is permitted.
+              const deniedContext=await browser.newContext({baseURL:origin});
+              try {
+                const denied=await deniedContext.request.post('/api/auth/otp/verify',{headers:{origin},data:{phone:lead.phone,purpose:'internal_market_login',code:'000000'}});
+                proof.revokedLeadVerifyHttp=denied.status();
+                if(denied.status()!==401||(await deniedContext.cookies()).some(cookie=>cookie.name==='kmrc_jwt'))throw Error('REVOKED_LEAD_SESSION_NOT_DENIED');
+                proof.revokedLead='DENIED_NO_SESSION';
+              } finally {await deniedContext.close();}
               proof.cleanup='CLOSED_AND_ASSIGNMENT_ENDED_AUDIT_RETAINED';
-              proof.outcome='PASS_READONLY_ENTRY_AND_QN_CLOSED';
+              proof.outcome='PASS_ENTRY_QN_CLOSED_AND_REVOKED_LOGIN_DENIED';
               proof.businessCertification='PARTIAL_LEAD_LOGIN_AND_ACTIVATION_NOT_PROVEN';
               proof.stage='DONE';
             } catch (err) {
