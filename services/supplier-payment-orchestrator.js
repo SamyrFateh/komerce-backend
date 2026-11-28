@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        canonical payment fact + injected provider payment operation
  * @outputs       replay-safe supplier payment lifecycle result
- * @depends       services/supplier-payment-state.js
+ * @depends       services/supplier-payment-state.js, services/hub-authorization-service.js
  * @used-by       future provider payment adapters
  * @db-read       supplier_execution_payments
  * @db-write      supplier_execution_payments, supplier_execution_events
@@ -33,17 +33,23 @@ function boundedMessage(error) {
 
 async function executeSupplierPayment(client, {
   payment,
+  financeActorId,
   invokeProviderPayment,
   classifyProviderError = () => 'ambiguous',
 } = {}) {
   if (!payment || typeof payment !== 'object') throw new Error('SUPPLIER_PAYMENT_INPUT_REQUIRED');
   if (typeof invokeProviderPayment !== 'function') throw new Error('SUPPLIER_PAYMENT_PROVIDER_CALL_REQUIRED');
 
-  const prepared = await prepareSupplierPayment(client, payment);
-  // P04 : aucun appel fournisseur sans autorisation de paiement de la directrice (montant et devise bornés).
+  // B4 : autorité serveur et plafonds contrôlés avant toute mutation ou appel.
+  // financeActorId provient exclusivement du contexte authentifié du serveur.
+  if (!financeActorId) throw Object.assign(new Error('FINANCE_ACTOR_REQUIRED'), { code: 'FINANCE_ACTOR_REQUIRED', status: 403 });
+  if (!Number.isFinite(Number(payment.expectedAmount)) || Number(payment.expectedAmount) <= 0) {
+    throw new Error('SUPPLIER_PAYMENT_EXPECTED_AMOUNT_INVALID');
+  }
   await require('./hub-authorization-service').assertPaymentAuthorized(
-    client, payment.purchaseOrderId, prepared.expected_amount, prepared.currency,
-    { excludePaymentKey: prepared.payment_execution_key });
+    client, payment.purchaseOrderId, payment.expectedAmount, payment.currency,
+    { excludePaymentKey: String(payment.paymentExecutionKey || '').trim() || null, requireFinanceExecution: true, financeActorId });
+  const prepared = await prepareSupplierPayment(client, payment);
   const gate = await canInvokeProviderPayment(client, {
     provider: prepared.provider,
     paymentExecutionKey: prepared.payment_execution_key,

@@ -23,6 +23,8 @@ jest.mock('../../services/hub-authorization-service', () => ({
 const state = require('../../services/supplier-payment-state');
 const { executeSupplierPayment } = require('../../services/supplier-payment-orchestrator');
 
+const financeActorId = '12345678-1234-4234-8234-123456789abc';
+
 const prepared = {
   id:'pay-1',
   provider:'cj',
@@ -60,7 +62,7 @@ test('happy path marque requested avant appel provider puis succeeded', async ()
     real_debit_verified:false,
   }));
 
-  const out = await executeSupplierPayment({}, {
+  const out = await executeSupplierPayment({}, { financeActorId,
     payment:{
       purchaseOrderId:'po-1', provider:'cj', paymentExecutionKey:'PEK-1',
       supplierExecutionGroupId:'grp-1', expectedAmount:62.07, currency:'USD',
@@ -69,6 +71,10 @@ test('happy path marque requested avant appel provider puis succeeded', async ()
     invokeProviderPayment:invoke,
   });
 
+  expect(mockAssertPaymentAuthorized).toHaveBeenCalledWith({}, 'po-1', 62.07, 'USD', {
+    excludePaymentKey: 'PEK-1', requireFinanceExecution: true, financeActorId,
+  });
+  expect(mockAssertPaymentAuthorized.mock.invocationCallOrder[0]).toBeLessThan(state.prepareSupplierPayment.mock.invocationCallOrder[0]);
   expect(state.markPaymentRequested.mock.invocationCallOrder[0])
     .toBeLessThan(invoke.mock.invocationCallOrder[0]);
   expect(state.markPaymentSucceeded).toHaveBeenCalledWith({}, expect.objectContaining({
@@ -86,7 +92,7 @@ test('timeout/exception non classée devient ambiguous, jamais retry local', asy
   state.markPaymentAmbiguous.mockResolvedValue({ ...prepared, status:'ambiguous' });
   const invoke = jest.fn(async () => { throw new Error('socket timeout'); });
 
-  const out = await executeSupplierPayment({}, {
+  const out = await executeSupplierPayment({}, { financeActorId,
     payment:{
       purchaseOrderId:'po-1', provider:'cj', paymentExecutionKey:'PEK-1',
       supplierExecutionGroupId:'grp-1', expectedAmount:62.07, currency:'USD',
@@ -108,7 +114,7 @@ test('erreur explicitement rejetée devient rejected', async () => {
   state.markPaymentRejected.mockResolvedValue({ ...prepared, status:'rejected' });
   const invoke = jest.fn(async () => { throw new Error('insufficient balance'); });
 
-  const out = await executeSupplierPayment({}, {
+  const out = await executeSupplierPayment({}, { financeActorId,
     payment:{
       purchaseOrderId:'po-1', provider:'cj', paymentExecutionKey:'PEK-1',
       supplierExecutionGroupId:'grp-1', expectedAmount:62.07, currency:'USD',
@@ -125,7 +131,7 @@ test('erreur explicitement rejetée devient rejected', async () => {
 test('résultat provider non concluant devient ambiguous', async () => {
   state.markPaymentAmbiguous.mockResolvedValue({ ...prepared, status:'ambiguous' });
 
-  const out = await executeSupplierPayment({}, {
+  const out = await executeSupplierPayment({}, { financeActorId,
     payment:{
       purchaseOrderId:'po-1', provider:'cj', paymentExecutionKey:'PEK-1',
       supplierExecutionGroupId:'grp-1', expectedAmount:62.07, currency:'USD',
@@ -145,7 +151,7 @@ test('gate bloque tout nouvel appel si le paiement existe déjà en ambiguous', 
   });
   const invoke = jest.fn();
 
-  const out = await executeSupplierPayment({}, {
+  const out = await executeSupplierPayment({}, { financeActorId,
     payment:{
       purchaseOrderId:'po-1', provider:'cj', paymentExecutionKey:'PEK-1',
       supplierExecutionGroupId:'grp-1', expectedAmount:62.07, currency:'USD',
@@ -169,7 +175,7 @@ test('gate bloque tout nouvel appel si le paiement est déjà succeeded', async 
   });
   const invoke = jest.fn();
 
-  const out = await executeSupplierPayment({}, {
+  const out = await executeSupplierPayment({}, { financeActorId,
     payment:{
       purchaseOrderId:'po-1', provider:'cj', paymentExecutionKey:'PEK-1',
       supplierExecutionGroupId:'grp-1', expectedAmount:62.07, currency:'USD',
@@ -188,8 +194,18 @@ test('P04 : sans autorisation de paiement de la directrice, aucun appel fourniss
   state.prepareSupplierPayment.mockResolvedValue(prepared);
   mockAssertPaymentAuthorized.mockRejectedValueOnce(Object.assign(new Error('non autorisé'), { code: 'SUPPLIER_PAYMENT_NOT_AUTHORIZED' }));
   const invoke = jest.fn();
-  await expect(executeSupplierPayment({}, { payment: { purchaseOrderId: 'po-1' }, invokeProviderPayment: invoke }))
+  await expect(executeSupplierPayment({}, { financeActorId,
+    payment: { purchaseOrderId: 'po-1', expectedAmount: 62.07, currency: 'USD' }, invokeProviderPayment: invoke }))
     .rejects.toMatchObject({ code: 'SUPPLIER_PAYMENT_NOT_AUTHORIZED' });
   expect(invoke).not.toHaveBeenCalled();
   expect(state.markPaymentRequested).not.toHaveBeenCalled();
+});
+
+test('B4 : identité Finance absente, ni préparation ni appel fournisseur', async () => {
+  const invoke = jest.fn();
+  await expect(executeSupplierPayment({}, { payment: { purchaseOrderId: 'po-1', expectedAmount: 10, currency: 'USD' }, invokeProviderPayment: invoke }))
+    .rejects.toMatchObject({ code: 'FINANCE_ACTOR_REQUIRED' });
+  expect(state.prepareSupplierPayment).not.toHaveBeenCalled();
+  expect(state.markPaymentRequested).not.toHaveBeenCalled();
+  expect(invoke).not.toHaveBeenCalled();
 });

@@ -12,7 +12,6 @@ jest.mock('../../services/suppliers/connectors/cj-connector',()=>({
   getAccessToken:jest.fn(async()=> 'token'),
 }));
 
-const contract=require('../../services/suppliers/cj-purchasing-contract');
 const proof=require('../../scripts/cj-real-debit-proof');
 
 const envBase={
@@ -58,164 +57,11 @@ test('cheapestRoute prend la route valide la moins chère',()=>{
   ]})).toEqual({logisticName:'B',logisticPrice:3});
 });
 
-test('cap dépassé arrête avant confirm et payBalanceV2',async()=>{
-  const sku={
-    product_ref:'KPR-X',
-    product_sku_id:'sku-1',
-    supplier_order_identity:{
-      provider:'cj',
-      version:1,
-      payload:{pid:'P',vid:'V',variant_sku:'S'},
-    },
-  };
-
-  const calls=[];
-  const invoke=jest.fn(async(path,args)=>{
-    calls.push(path);
-    if(path===contract.ENDPOINTS.freight_calculate){
-      return {result:true,data:[{logisticName:'Cheap',logisticPrice:2}]};
-    }
-    if(path===contract.ENDPOINTS.create_order_v2){
-      expect(args.body.isSandbox).toBeUndefined();
-      expect(args.body.iossType).toBe(3);
-      return {result:true,data:{
-        orderId:'CJ-1',
-        orderNumber:'KOM-REAL-1',
-        productAmount:5,
-        postageAmount:2,
-        actualPayment:7,
-        iossAmount:0,
-        iossTaxHandlingFee:0,
-        actualPayment:21,
-        iossAmount:12,
-        iossTaxHandlingFee:2,
-      }};
-    }
-    if(path===contract.ENDPOINTS.get_order_detail){
-      return {result:true,data:{
-        orderId:'CJ-1',
-        orderNumber:'KOM-REAL-1',
-        orderStatus:'CREATED',
-        orderAmount:21,
-        productAmount:5,
-        postageAmount:2,
-        iossAmount:12,
-        iossTaxHandlingFee:2,
-        productList:[{vid:'V',quantity:1}],
-      }};
-    }
-    throw new Error('unexpected:'+path);
-  });
-
-  await expect(proof.run({
-    ...envBase,
-    KOMERCE_CJ_REAL_ORDER_NUMBER:'KOM-REAL-1',
-    KOMERCE_CJ_REAL_PRODUCT_REF:'KPR-X',
-  },{
-    selectExactSku:async()=>sku,
-    invoke,
-  })).rejects.toThrow('CJ_REAL_DEBIT_CAP_EXCEEDED');
-
-  expect(calls).not.toContain(contract.ENDPOINTS.confirm_order);
-  expect(calls).not.toContain(contract.ENDPOINTS.pay_balance_v2);
-});
-
-test('succès appelle payBalanceV2 exactement une fois puis billingHistory',async()=>{
-  const sku={
-    product_ref:'KPR-X',
-    product_sku_id:'sku-1',
-    supplier_order_identity:{
-      provider:'cj',
-      version:1,
-      payload:{pid:'P',vid:'V',variant_sku:'S'},
-    },
-  };
-
-  let detailCount=0;
-  const invoke=jest.fn(async(path,args)=>{
-    if(path===contract.ENDPOINTS.freight_calculate){
-      return {result:true,data:[{logisticName:'Cheap',logisticPrice:2}]};
-    }
-    if(path===contract.ENDPOINTS.create_order_v2){
-      expect(args.body.isSandbox).toBeUndefined();
-      expect(args.body.iossType).toBe(3);
-      return {result:true,data:{
-        orderId:'CJ-1',
-        orderNumber:'KOM-REAL-1',
-        productAmount:5,
-        postageAmount:2,
-        actualPayment:7,
-        iossAmount:0,
-        iossTaxHandlingFee:0,
-      }};
-    }
-    if(path===contract.ENDPOINTS.get_order_detail){
-      detailCount+=1;
-      if(detailCount===1){
-        return {result:true,data:{
-          orderId:'CJ-1',
-          orderNumber:'KOM-REAL-1',
-          orderStatus:'CREATED',
-          orderAmount:7,
-          productAmount:5,
-          postageAmount:2,
-          iossAmount:0,
-          iossTaxHandlingFee:0,
-          productList:[{vid:'V',quantity:1}],
-        }};
-      }
-      if(detailCount===2){
-        return {result:true,data:{
-          orderId:'CJ-1',
-          orderNumber:'KOM-REAL-1',
-          shipmentOrderId:'SHIP-1',
-          orderStatus:'UNPAID',
-          productList:[{vid:'V',quantity:1}],
-        }};
-      }
-      return {result:true,data:{
-        orderId:'CJ-1',
-        orderNumber:'KOM-REAL-1',
-        shipmentOrderId:'SHIP-1',
-        orderStatus:'UNSHIPPED',
-        productList:[{vid:'V',quantity:1}],
-      }};
-    }
-    if(path===contract.ENDPOINTS.confirm_order){
-      return {result:true,data:'CJ-1'};
-    }
-    if(path===contract.ENDPOINTS.pay_balance_v2){
-      return {result:true,data:true};
-    }
-    if(path===contract.ENDPOINTS.billing_history){
-      return {result:true,data:{list:[{
-        id:'BILL-1',
-        cjOrderId:'CJ-1',
-        typeDesc:'Order Payment',
-        paymentTypeDesc:'Balance',
-        status:'1',
-        copeMoney:7,
-        amount:'-$7.00',
-      }]}};
-    }
-    throw new Error('unexpected:'+path);
-  });
-
-  const out=await proof.run({
-    ...envBase,
-    KOMERCE_CJ_REAL_ORDER_NUMBER:'KOM-REAL-1',
-    KOMERCE_CJ_REAL_PRODUCT_REF:'KPR-X',
-  },{
-    selectExactSku:async()=>sku,
-    invoke,
-  });
-
-  expect(invoke.mock.calls.filter(([p])=>p===contract.ENDPOINTS.pay_balance_v2)).toHaveLength(1);
-  expect(out).toMatchObject({
-    sandbox:false,
-    expected_total:7,
-    hard_cap_usd:20,
-    payment_verdict:'paid',
-    billing_evidence_verified:true,
-  });
+test('B4 : preuve directe historique refusée avant toute requête fournisseur ou lecture SKU, même avec les flags', async () => {
+  const invoke=jest.fn();
+  const selectExactSku=jest.fn();
+  await expect(proof.run(envBase,{invoke,selectExactSku})).rejects.toThrow('FINANCE_B4_AUTHENTICATED_EXECUTION_REQUIRED');
+  expect(invoke).not.toHaveBeenCalled();
+  expect(selectExactSku).not.toHaveBeenCalled();
+  expect(require('../../services/suppliers/connectors/cj-connector').getAccessToken).not.toHaveBeenCalled();
 });

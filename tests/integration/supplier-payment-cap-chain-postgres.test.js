@@ -19,6 +19,7 @@ if (!process.env.DATABASE_URL) {
   const auth = require('../../services/hub-authorization-service');
   const { executeSupplierPayment } = require('../../services/supplier-payment-orchestrator');
   const { recordSettlement } = require('../../services/supplier-payment-settlement-service');
+  const { prepareSupplierPayment, markPaymentRequested, markPaymentSucceeded } = require('../../services/supplier-payment-state');
 
   const id = () => crypto.randomUUID();
   const q = (sql, params) => db.query(sql, params);
@@ -26,7 +27,7 @@ if (!process.env.DATABASE_URL) {
   let user; let financeUser; let supplier; let markets;
   const poIds = [];
 
-  async function seedPo({ market, commitment = 100, authorized = 100, currency = 'AED', withAuth = true, ordered = false }) {
+  async function seedPo({ market, commitment = 100, authorized = 100, currency = 'AED', withAuth = true, ordered = true, decisionActor = user }) {
     const poId = id(); const groupId = id();
     poIds.push(poId);
     await db.withTransaction(async (c) => {
@@ -34,18 +35,19 @@ if (!process.env.DATABASE_URL) {
       await c.query("INSERT INTO purchase_orders (id, supplier_id, status, qty, market_id) VALUES ($1,$2,'notified',NULL,$3)", [poId, supplier, market]);
       await c.query(
         `INSERT INTO purchase_order_authorizations (purchase_order_id, authorization_type, decided_by, amount, currency, proof_ref, decided_at)
-         VALUES ($1,'purchase_commitment',$2,$3,$4,'BC',now())`, [poId, user, commitment, currency]);
+         VALUES ($1,'purchase_commitment',$2,$3,$4,'BC',now())`, [poId, decisionActor, commitment, currency]);
       if (withAuth) {
         await c.query(
           `INSERT INTO purchase_order_authorizations (purchase_order_id, authorization_type, decided_by, amount, currency, proof_ref, decided_at)
-           VALUES ($1,'supplier_payment',$2,$3,$4,'VIR',now()+CASE WHEN $5::boolean THEN interval '1 millisecond' ELSE interval '0 milliseconds' END)`, [poId, user, authorized, currency, ordered]);
+           VALUES ($1,'supplier_payment',$2,$3,$4,'VIR',now()+CASE WHEN $5::boolean THEN interval '1 millisecond' ELSE interval '0 milliseconds' END)`, [poId, decisionActor, authorized, currency, ordered]);
       }
       await c.query("INSERT INTO supplier_execution_groups (id, purchase_order_id, provider, supplier_parent_order_id) VALUES ($1,$2,'cj',$3)", [groupId, poId, `P-${tag}-${poId}`]);
     });
     return { poId, groupId };
   }
 
-  const pay = (po, amount, { currency = 'AED', key = id(), delayMs = 0, observed } = {}) => db.withTransaction((client) => executeSupplierPayment(client, {
+  const pay = (po, amount, { currency = 'AED', key = id(), delayMs = 0, observed, actor = financeUser } = {}) => db.withTransaction((client) => executeSupplierPayment(client, {
+    financeActorId: actor,
     payment: { purchaseOrderId: po.poId, provider: 'cj', paymentExecutionKey: `${tag}-${key}`, supplierExecutionGroupId: po.groupId, expectedAmount: amount, currency },
     invokeProviderPayment: async () => {
       if (delayMs) await new Promise((r) => setTimeout(r, delayMs));
@@ -62,6 +64,7 @@ if (!process.env.DATABASE_URL) {
     financeUser = id();
     await q('INSERT INTO users(id,full_name,email,phone,role) VALUES($1,$2,$3,$4,$5)',
       [financeUser, `finance ${tag}`, `finance-${tag}@komerce.test`.toLowerCase(), `+2694${String(Math.floor(Math.random() * 1e7)).padStart(7, '0')}`, 'finance']);
+    await q('INSERT INTO dashboard_global_access_grants(user_id,reason) VALUES($1,$2)', [financeUser, tag]);
     supplier = id();
     await q("INSERT INTO suppliers(id,name,platform,is_active) VALUES($1,$2,'local',true)", [supplier, `S ${tag}`]);
   });
@@ -78,6 +81,7 @@ if (!process.env.DATABASE_URL) {
         await c.query(`DELETE FROM ${t} WHERE ${col} = ANY($1::uuid[])`, [poIds]).catch(() => {});
       }
       await c.query('DELETE FROM hub_authorization_grants WHERE user_id = $1 OR granted_by = $1', [user]).catch(() => {});
+      await c.query('DELETE FROM dashboard_global_access_grants WHERE user_id = $1', [financeUser]).catch(() => {});
       await c.query('DELETE FROM users WHERE id = ANY($1::uuid[])', [[user, financeUser]]).catch(() => {});
       await c.query('DELETE FROM suppliers WHERE id = $1', [supplier]).catch(() => {});
     } finally { await c.query("SET session_replication_role='origin'").catch(() => {}); c.release(); await db.pool.end().catch(() => {}); }
@@ -143,7 +147,15 @@ if (!process.env.DATABASE_URL) {
     const wrong = await seedPo({ market: markets[0], ordered: false });
     const p = (await pay(a, 50)).payment.id;
     const p2 = (await pay(b, 50)).payment.id;
-    const pWrong = (await pay(wrong, 50)).payment.id;
+    // Legacy fixture only: the new B4 execution boundary rejects this PO.
+    expect(await refused(pay(wrong, 50))).toBe('FINANCE_B4_AUTHORIZATION_REQUIRED');
+    const pWrong = await db.withTransaction(async (client) => {
+      const paymentExecutionKey = `${tag}-${id()}`;
+      const p = await prepareSupplierPayment(client, { purchaseOrderId: wrong.poId, provider:'cj', paymentExecutionKey, supplierExecutionGroupId:wrong.groupId, expectedAmount:50, currency:'AED' });
+      await markPaymentRequested(client,{provider:'cj',paymentExecutionKey});
+      await markPaymentSucceeded(client,{provider:'cj',paymentExecutionKey,observedAmount:50,reconciliationStatus:'matched',paymentRef:`legacy-${id()}`,realDebitVerified:true});
+      return p.id;
+    });
     const proof = 'B4-' + tag;
     const body = { kind: 'payment', currency: 'AED', amount_currency: '20', debit_currency:'KMF',debit_amount:'1000',fee_currency:'KMF',fee_amount:'0',debit_at:new Date(Date.now()-1000).toISOString(), proof_ref: proof, idempotency_key: 'b4-1' };
     const post = (paymentId, actor, payload = body) => recordSettlement(db, paymentId, payload, actor, {requireB4:true});
@@ -161,6 +173,19 @@ if (!process.env.DATABASE_URL) {
     expect(await refused(post(winner.paymentId, financeUser, {...body,debit_amount:'1001'}))).toBe('SETTLEMENT_IDEMPOTENCY_CONFLICT');
     const after = await q('SELECT count(*)::int AS n FROM supplier_payment_settlements WHERE proof_ref=$1', [proof]);
     expect(after.rows[0].n).toBe(1);
+  });
+
+  test('B4 : absence d’identité, rôle non Finance, grant révoqué ou même acteur refusés avant toute création de paiement', async () => {
+    const po = await seedPo({market:markets[0]});
+    expect(await refused(pay(po, 10, {actor:null}))).toBe('FINANCE_ACTOR_REQUIRED');
+    expect(await refused(pay(po, 10, {actor:user}))).toBe('FINANCE_CENTRAL_AUTHORITY_REQUIRED');
+    await q('UPDATE dashboard_global_access_grants SET revoked_at=now() WHERE user_id=$1 AND revoked_at IS NULL',[financeUser]);
+    try { expect(await refused(pay(po,10))).toBe('FINANCE_CENTRAL_AUTHORITY_REQUIRED'); }
+    finally { await q('INSERT INTO dashboard_global_access_grants(user_id,reason) VALUES($1,$2)', [financeUser,tag]); }
+    const same = await seedPo({market:markets[0],decisionActor:financeUser});
+    expect(await refused(pay(same,10))).toBe('FINANCE_B4_SEPARATION_REQUIRED');
+    const {rows:[result]}=await q('SELECT count(*)::int AS n FROM supplier_execution_payments WHERE purchase_order_id=ANY($1::uuid[])',[[po.poId,same.poId]]);
+    expect(result.n).toBe(0);
   });
 
   test('hors transaction : un client brut est refusé (fail-closed) ; le pool ouvre sa propre transaction', async () => {

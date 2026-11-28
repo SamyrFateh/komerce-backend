@@ -114,6 +114,11 @@ async function run(env = process.env, deps = {}) {
   const before = await readCanonicalProof(q, paymentId);
   if (!before) throw new Error('CJ_REAL_CANONICAL_PAYMENT_NOT_FOUND');
 
+  // Un CLI privilégié ne fournit pas une identité Finance authentifiée.
+  // Ce chemin reste disponible uniquement pour rapprocher un débit déjà exécuté.
+  if (before.status !== 'succeeded' || before.reconciliation_status !== 'matched') {
+    throw new Error('FINANCE_B4_AUTHENTICATED_EXECUTION_REQUIRED');
+  }
   const runtimeResult = await close(q, {
     supplierPaymentId: paymentId,
     context: {

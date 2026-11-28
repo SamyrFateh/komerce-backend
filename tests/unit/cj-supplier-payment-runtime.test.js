@@ -70,6 +70,7 @@ function certifiedContext(extra = {}) {
   return {
     env,
     operator_authorized: true,
+    financeActorId: '12345678-1234-4234-8234-123456789abc',
     certification_registry: certifiedRegistry,
     ...extra,
   };
@@ -106,7 +107,8 @@ test('certified real debit still requires explicit operator authorization and bo
 test('prepared payment executes one provider payment then requires billingHistory proof', async () => {
   const client = clientWithPayment(basePayment);
 
-  mockExecuteSupplierPayment.mockImplementation(async (_client, { invokeProviderPayment }) => {
+  mockExecuteSupplierPayment.mockImplementation(async (_client, { financeActorId, invokeProviderPayment }) => {
+    expect(financeActorId).toBe('12345678-1234-4234-8234-123456789abc');
     const providerResult = await invokeProviderPayment();
     return {
       invoked: true,

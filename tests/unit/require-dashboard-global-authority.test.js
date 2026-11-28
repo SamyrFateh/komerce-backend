@@ -109,3 +109,10 @@ test('A1: authenticated admin GET needs no separate grant, POST retains its guar
   await requireDashboardGlobalAuthority({method:'POST',user:{id:'a',role:'admin'}},res,writeNext);
   expect(res.statusCode).toBe(403);expect(writeNext).not.toHaveBeenCalled();
 });
+
+test('Finance B4 : le grant est lu et verrouillé sur la transaction fournie', async () => {
+  const executor={query:jest.fn().mockResolvedValue({rows:[{ok:1}]})};
+  await expect(hasDashboardGlobalAuthority('finance-1',executor,{lock:true})).resolves.toBe(true);
+  expect(executor.query).toHaveBeenCalledWith(expect.stringContaining('FOR SHARE'),['finance-1']);
+  expect(mockDbQuery).not.toHaveBeenCalled();
+});

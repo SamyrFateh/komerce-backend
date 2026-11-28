@@ -208,6 +208,7 @@ async function closeCjSupplierPayment(client, {
     guardAuthorization(context, payment);
 
     const execution = await executeSupplierPayment(client, {
+      financeActorId: context.financeActorId,
       payment: {
         purchaseOrderId: payment.purchase_order_id,
         provider: 'cj',
@@ -258,6 +259,5 @@ module.exports = {
   guardAuthorization,
   loadPayment,
   resolveShipmentOrderId,
-  invokeRealPayment,
   closeCjSupplierPayment,
 };
