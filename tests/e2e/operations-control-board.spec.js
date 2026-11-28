@@ -148,6 +148,11 @@ async function mount(page) {
   await expect(page.locator('[data-dashboard-id="operations"]')).toBeVisible();
 }
 
+async function openAll(page) {
+  await page.locator('.kmc-operations-all-drill').click();
+  await expect(page.locator('[data-operations-drill="ALL"]')).toBeVisible();
+}
+
 test.describe('Operations — logistics control board', () => {
   test.beforeEach(async ({ page }) => mount(page));
 
@@ -185,6 +190,7 @@ test.describe('Operations — logistics control board', () => {
   });
 
   test('les files redondantes sont retirées et le dossier s’ouvre sous le flux', async ({ page }) => {
+    await openAll(page);
     for (const id of ['orders-pending-cash', 'orders-to-order', 'orders-awaiting-hub-reception', 'orders-ready-for-parcel']) {
       await expect(page.locator(`#${id}`)).toHaveCount(0);
     }
@@ -242,8 +248,36 @@ test.describe('Operations — logistics control board', () => {
     await expect(phases.nth(2)).toHaveAttribute('href', /stage=HUB/);
     await expect(phases.nth(3)).toHaveAttribute('href', /stage=CUSTOMS/);
     await expect(phases.nth(5)).not.toHaveAttribute('href', /./);
-    await expect(page.locator('.kmc-control-stage')).toHaveCount(5);
-    await expect(page.locator('#operations-stage-hub')).toBeAttached();
+    await expect(page.locator('.kmc-control-stage')).toHaveCount(0);
+    await expect(page.locator('.kmc-control-order')).toHaveCount(0);
+    expect(await phases.locator('.kmc-flow-stage-index').allTextContents()).toEqual(['1','2','3','4','5','6']);
+    await expect(overview.locator('[data-compact-phase="HANDOFF"] [data-phase-health]')).toHaveCount(0);
+    const badges=await overview.locator('[data-phase-health]').allTextContents();
+    expect(badges.every(value=>Number(value)>0)).toBe(true);
+    expect(badges.reduce((sum,value)=>sum+Number(value),0)).toBe(21);
+    await overview.locator('[data-compact-phase="PURCHASING"] [data-phase-health="RED"]').click();
+    await expect(page.locator('[data-operations-drill="PURCHASING"] .kmc-control-order')).toHaveCount(3);
+    await expect(page.locator('.kmc-control-order.is-critical')).toHaveCount(3);
+    await expect(page.locator('.kmc-control-stage')).toHaveCount(1);
+    expect(new URL(page.url()).searchParams.get('health')).toBe('RED');
+    await page.locator('.kmc-control-order').first().click();
+    const href=await page.locator('.kmc-control-order-open').getAttribute('href');
+    expect(new URL(href,ORIGIN).searchParams.get('return_to')).toContain('stage=PURCHASING&health=RED');
+    await page.locator('.kmc-operations-stage-filter a').click();
+    await expect(page.locator('.kmc-control-order')).toHaveCount(0);
+    expect(new URL(page.url()).searchParams.has('health')).toBe(false);
+  });
+
+  test('une phase absente ne produit ni zéro, ni drill, ni santé globale inventée', async ({ page }) => {
+    const partial=JSON.parse(JSON.stringify(payload));
+    delete partial.control_chain.by_stage.CUSTOMS;
+    await page.route(`${ORIGIN}/api/admin/dashboard/operations`, route=>route.fulfill({contentType:'application/json',body:JSON.stringify(partial)}));
+    await page.locator('.kmc-operations-refresh').click();
+    const phase=page.locator('[data-compact-phase="CUSTOMS"]');
+    await expect(phase).toContainText('Position indisponible');
+    await expect(phase.locator('a')).toHaveCount(0);
+    expect(await page.locator('.kmc-control-health-summary-value').allTextContents()).toEqual(['—','—','—','—']);
+    await expect(page.locator('.kmc-operations-all-drill')).toHaveText('Voir les phases disponibles');
   });
 
   test('sur mobile le parcours est défilable sans retirer la Control Tower canonique', async ({ page }) => {
@@ -256,49 +290,34 @@ test.describe('Operations — logistics control board', () => {
     }));
     expect(size.scrollWidth).toBeGreaterThan(size.clientWidth);
     expect(size.overflowX).toBe('auto');
-    await expect(page.locator('.kmc-control-stage')).toHaveCount(5);
+    await expect(page.locator('.kmc-control-stage')).toHaveCount(0);
   });
 
-  test('affiche 5 phases, leurs sous-étapes et la légende santé', async ({ page }) => {
-    await expect(page.locator('.kmc-control-stage')).toHaveCount(5);
+  test('six phases, légende et sous-étapes à la demande', async ({ page }) => {
+    await expect(page.locator('[data-compact-phase]')).toHaveCount(6);
     await expect(page.locator('.kmc-control-chain-legend-item')).toHaveCount(4);
-    await expect(page.locator('.kmc-control-stage-icon')).toHaveCount(5);
+    await page.locator('[data-compact-phase="HUB"] .kmc-flow-stage').click();
+    await expect(page.locator('.kmc-control-stage')).toHaveCount(1);
+    await expect(page.locator('.kmc-control-order')).toHaveCount(5);
+    await expect(page.locator('.kmc-control-order-substage').first()).toContainText('Réception HUB');
+    await expect(page.locator('.kmc-control-stage-icon')).toHaveCount(0);
   });
 
-  test('les phases compactes exposent des cartes lisibles', async ({ page }) => {
-    const geometry = await page.locator('.kmc-control-stage').first().evaluate(el => {
-      const cs=getComputedStyle(el), r=el.getBoundingClientRect();
-      return { height:r.height, radius:cs.borderRadius, background:cs.backgroundColor };
+  for (const width of [1280,1440,1920]) {
+    test(`les six phases tiennent sur un desktop ${width}px`, async ({page})=>{
+      await page.setViewportSize({width,height:900});
+      const strip=page.locator('.kmc-operations-process-steps .kmc-flow-strip');
+      const geometry=await strip.evaluate(el=>({width:el.clientWidth,scroll:el.scrollWidth,height:el.getBoundingClientRect().height}));
+      expect(geometry.scroll).toBeLessThanOrEqual(geometry.width+2);
+      expect(geometry.height).toBeLessThanOrEqual(135);
+      await expect(strip.locator('[data-compact-phase]')).toHaveCount(6);
+      await expect(page.locator('.kmc-control-order')).toHaveCount(0);
+      expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width+2);
     });
-    expect(geometry.height).toBeGreaterThanOrEqual(110);
-    expect(geometry.radius).toBe('12px');
-    const icon = await page.locator('.kmc-control-stage-icon').first().evaluate(el => {
-      const r = el.getBoundingClientRect();
-      return { width:r.width, height:r.height };
-    });
-    expect(icon.width).toBeGreaterThanOrEqual(40);
-    expect(icon.height).toBeGreaterThanOrEqual(40);
-  });
-
-
-  test('les 5 phases tiennent ensemble sur le viewport desktop de référence', async ({ page }) => {
-    const board = page.locator('.kmc-control-chain');
-    const geometry = await board.evaluate(el => ({
-      clientWidth: el.clientWidth,
-      scrollWidth: el.scrollWidth,
-    }));
-    expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth + 2);
-
-    const stages = page.locator('.kmc-control-stage');
-    await expect(stages).toHaveCount(5);
-    const first = await stages.first().boundingBox();
-    const last = await stages.last().boundingBox();
-    expect(first).not.toBeNull();
-    expect(last).not.toBeNull();
-    expect(last.x + last.width).toBeLessThanOrEqual(1672);
-  });
+  }
 
   test('les cartes restent compactes puis révèlent l’objet précis au clic', async ({ page }) => {
+    await openAll(page);
     const warning = page.locator('.kmc-control-order.is-warning').filter({ hasText:'K-104816' });
     await expect(warning).toBeVisible();
     await expect(warning).toContainText('Point à surveiller');
@@ -326,6 +345,7 @@ test.describe('Operations — logistics control board', () => {
   });
 
   test('l’encapsulation distingue PO, unité HUB et colis avec le lineage serveur', async ({ page }) => {
+    await openAll(page);
     await page.locator('.kmc-control-order.is-critical').filter({ hasText:'K-104766' }).click();
     let detail = page.locator('.kmc-control-detail-dock:not([hidden]) .kmc-control-order-detail');
     await expect(detail).toContainText('Unité HUB · HU-104766');
@@ -352,6 +372,7 @@ test.describe('Operations — logistics control board', () => {
 
 
   test('pas de doublons structurels : les alertes restent dans les commandes et les compteurs', async ({ page }) => {
+    await openAll(page);
     // La fixture contient un agrégat commun à trois commandes ; pas de ligne
     // supplémentaire, ni d'en-tête avant les cartes de cette phase.
     const purchasing = page.locator('[data-control-phase="PURCHASING"]');
@@ -366,6 +387,7 @@ test.describe('Operations — logistics control board', () => {
   });
 
   test('la phase conserve la sous-étape et le résumé métier visibles sans ouvrir le dossier', async ({ page }) => {
+    await openAll(page);
     const supplier = page.locator('[data-control-phase="PURCHASING"] .kmc-control-order.is-warning');
     await expect(supplier.filter({ hasText:'K-104816' })).toContainText('Point à surveiller');
     await expect(supplier.filter({ hasText:'K-104816' })).toContainText('Fournisseur');
@@ -374,6 +396,7 @@ test.describe('Operations — logistics control board', () => {
   });
 
   test('une nouvelle lecture serveur fait évoluer la couleur sans inventer de statut', async ({ page }) => {
+    await openAll(page);
     const affected = page.locator('.kmc-control-order').filter({ hasText:'K-104829' });
     await expect(affected).toHaveClass(/is-critical/);
     const updated = JSON.parse(JSON.stringify(payload));
@@ -386,9 +409,11 @@ test.describe('Operations — logistics control board', () => {
     await expect(page.locator('.kmc-control-order').filter({ hasText:'K-104829' })).toHaveClass(/is-positive/);
   });
 
-  test('la vue desktop 1440×900 affiche cinq phases et les causes lisibles', async ({ page }, testInfo) => {
+  test('la vue desktop 1440×900 affiche six phases et les causes lisibles à la demande', async ({ page }, testInfo) => {
     await page.setViewportSize({ width:1440, height:900 });
-    await expect(page.locator('.kmc-control-stage')).toHaveCount(5);
+    await expect(page.locator('[data-compact-phase]')).toHaveCount(6);
+    await page.locator('[data-compact-phase="PURCHASING"] .kmc-flow-stage').click();
+    await expect(page.locator('.kmc-control-stage')).toHaveCount(1);
     await expect(page.locator('.kmc-control-order.is-warning').filter({hasText:'K-104816'}))
        .toContainText('Point à surveiller');
     await page.screenshot({ path:testInfo.outputPath('operations-living-flow-1440x900.png'), fullPage:false });
@@ -396,6 +421,7 @@ test.describe('Operations — logistics control board', () => {
 
 
   test('les alertes connues affichent le problème métier, le responsable et une preuve repliable', async ({ page }) => {
+    await openAll(page);
     const updated = JSON.parse(JSON.stringify(payload));
     updated.control_chain.by_stage.PURCHASING[0].exceptions = [{
       code:'ordered_without_purchase_order',

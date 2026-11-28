@@ -106,6 +106,9 @@ test('les six phases ne reprennent que les positions serveur et ne fabriquent au
     '1 commande positionnée', 'Non projetée ici · voir Order 360',
   ]);
   expect(admin.map(p => p.tone)).toEqual(Array(6).fill('neutral'));
+  expect(admin.slice(0,5).map(p=>p.count)).toEqual([2,2,1,2,1]);
+  expect(admin[3].healthCounts).toEqual({GREEN:0,ORANGE:0,RED:0,UNKNOWN:2});
+  expect(admin[5].healthCounts).toBeUndefined();
   expect(admin[1].href).toBe('?stage=PURCHASING');
   expect(admin[2].href).toBe('?stage=HUB');
   expect(admin[3].href).toBe('?stage=CUSTOMS');
@@ -132,6 +135,11 @@ test('données incomplètes : aucune fausse position zéro ni phase valide sans 
   expect(subset[1].helper).toBe('Position indisponible');
   expect(subset[1].href).toBeUndefined();
   expect(subset[5].helper).toContain('Non projetée');
+  const absentArray = view.projectProcessPhases({
+    control_chain:{stages:[{key:'ORDER',label:'Commande'}],by_stage:{}}
+  }, {role:'admin'},base);
+  expect(absentArray[0]).toMatchObject({observed:false,count:null,healthCounts:null});
+  expect(absentArray[0].href).toBeUndefined();
 });
 
 test('Opérations : le filtre stage est lu depuis l’URL, conserve marché et période, et ignore une valeur inconnue', () => {
@@ -142,6 +150,13 @@ test('Opérations : le filtre stage est lu depuis l’URL, conserve marché et p
     expect(mod.stageFilterKey()).toBe('CUSTOMS');
     expect(mod.stageHref('HUB')).toBe('/admin/operations?market=CM&period=90&stage=HUB');
     expect(mod.stageHref(null)).toBe('/admin/operations?market=CM&period=90');
+    expect(mod.stageHref('CUSTOMS','RED')).toBe('/admin/operations?market=CM&period=90&stage=CUSTOMS&health=RED');
+    globalThis.location.search += '&health=RED';
+    expect(mod.healthFilterKey()).toBe('RED');
+    expect(mod.stageHref('HUB')).toBe('/admin/operations?market=CM&period=90&stage=HUB');
+    globalThis.location.hash = '#operations-control-chain';
+    expect(mod.stageHref('ALL')).toBe('/admin/operations?market=CM&period=90&stage=ALL#operations-control-chain');
+    globalThis.location.hash = '';
     globalThis.location.search = '?stage=HANDOFF';
     expect(mod.stageFilterKey()).toBeNull();
     globalThis.location.search = '?stage=nimporte';
