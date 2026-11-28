@@ -1,0 +1,35 @@
+name: On Demand isolated complete preflight
+on:
+  push:
+    branches: [diag/5356-preflight-49b29eb]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 49b29eb9accdd4862fe6a74859e27c152a13acde
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix public/boutique
+      - name: Verify exact candidate context and impact
+        run: |
+          test "$(git rev-parse HEAD)" = "49b29eb9accdd4862fe6a74859e27c152a13acde"
+          npm run agent:context -- --pack authz --feature market-delegation
+          npm run arch:impact -- market-delegation
+      - name: Verify previously failing tests
+        run: npx jest --runInBand tests/unit/staging-reset-classification.test.js tests/unit/staging-reset-activity-scope.test.js tests/unit/canonical-unified-chrome.test.js
+      - name: Complete canonical preflight
+        run: npm run pr:preflight
