@@ -76,7 +76,7 @@ beforeEach(() => {
   });
 
   db.query
-    .mockResolvedValueOnce({ rows: [{ sales_kmf: '120000', basket_kmf: '10000', items_total: '12' }] })
+    .mockResolvedValueOnce({ rows: [{ sales_kmf: '120000', basket_kmf: '10000', items_total: '12', paid_buyers: '8', repeat_paid_buyers: '3', unidentified_orders: '1' }] })
     .mockResolvedValueOnce({ rows: [{ product_id: 'product-cm-1', product_ref: 'PRD-1', name: 'Téléphone', category: 'Électronique', quantity: '3', revenue_kmf: '90000' }] })
     .mockResolvedValueOnce({ rows: [{
       product_ref: 'PRD-1',
@@ -170,6 +170,7 @@ describe('dashboard-commerce', () => {
       'ca_encaisse', 'cmds_creees', 'panier_moyen', 'marge_consolidee', 'produits_actifs_vendus', 'quantites_vendues',
     ]);
     expect(result.kpis[0]).toMatchObject({ key: 'ca_encaisse', label: 'Ventes payées (avoir inclus)', value: 120000, data_quality: { cash_basis: false,metric_id:'commerce.paid_sales_wallet_included' } });
+    expect(result.buyer_cohort).toMatchObject({paid_buyers:8,repeat_paid_buyers:3,unidentified_paid_orders:1,paid_orders:12,completeness:'partial',identity:'orders.user_id',repeat_basis:'at_least_two_paid_orders_in_same_period'});
     expect(result.kpis[2]).toMatchObject({ key: 'panier_moyen', value: 10000 });
     expect(result.kpis[2].drill_to).toBe('/admin/operations');
     expect(result.kpis[4].unit).toBe('count');
@@ -240,6 +241,22 @@ describe('dashboard-commerce', () => {
     expect(sql).toContain("o.status NOT IN ('cancelled', 'refunded')");
     expect(sql).toContain('o.simulation_scope IS NULL');
     expect(params).toContain('market-cm-id');
+  });
+
+  test('acheteurs payants : même cohorte et identité stable, zéro prouvé distinct de l’inconnu', async () => {
+    db.query.mockReset().mockResolvedValueOnce({rows:[{sales_kmf:0,basket_kmf:null,items_total:0,paid_buyers:0,repeat_paid_buyers:0,unidentified_orders:0}]})
+      .mockResolvedValueOnce({rows:[{sales_kmf:9000,basket_kmf:4500,items_total:2}]})
+      .mockResolvedValueOnce({rows:[{sales_kmf:9000,basket_kmf:4500,items_total:2,paid_buyers:2,repeat_paid_buyers:2,unidentified_orders:0}]});
+    expect((await commerce.getCommercePaidSales({market_id:'market-cm-id',simulation_scope:'RCT1'})).buyerCohort)
+      .toMatchObject({paid_buyers:0,repeat_paid_buyers:0,completeness:'complete'});
+    const [sql,params]=db.query.mock.calls[0];
+    expect(sql).toContain('FROM paid WHERE user_id IS NOT NULL GROUP BY user_id');
+    expect(sql).toContain('WHERE order_count >= 2');
+    expect(sql).toContain("o.payment_status = 'paid'");
+    expect(sql).toContain("o.status NOT IN ('cancelled', 'refunded')");
+    expect(params).toEqual(['market-cm-id','RCT1']);
+    expect((await commerce.getCommercePaidSales({})).buyerCohort).toMatchObject({paid_buyers:null,completeness:'unknown'});
+    expect((await commerce.getCommercePaidSales({})).buyerCohort).toMatchObject({repeat_paid_buyers:null,completeness:'unknown'});
   });
 
   test('une rentabilité sans costing actual ne fabrique jamais de marge réelle', async () => {

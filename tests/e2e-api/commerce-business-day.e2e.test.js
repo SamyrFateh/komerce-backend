@@ -88,6 +88,18 @@ describeE2E('Commerce — journée commerciale du marché', ({ db }) => {
     expect(r.sales_series).toEqual([]);
   });
 
+  it('acheteurs payants et récurrents : identité stable, période et marché identiques aux ventes', async () => {
+    const km=await view('KM');
+    const cm=await view('CM');
+    const other=await view('KM','7',otherMarketId);
+    expect(km.buyer_cohort).toMatchObject({paid_buyers:1,repeat_paid_buyers:1,paid_orders:3,unidentified_paid_orders:0,completeness:'complete'});
+    expect(cm.buyer_cohort).toMatchObject({paid_buyers:1,repeat_paid_buyers:1,paid_orders:2});
+    expect(other.buyer_cohort).toMatchObject({paid_buyers:1,repeat_paid_buyers:0,paid_orders:1});
+    expect((await view('KM','7',uuid())).buyer_cohort).toMatchObject({paid_buyers:0,repeat_paid_buyers:0,paid_orders:0});
+    expect(km.buyer_cohort.paid_orders).toBe(km.kpis.find(k=>k.key==='ca_encaisse').data_quality.items_total);
+    expect(JSON.stringify(km.buyer_cohort)).not.toContain(userId);
+  });
+
   it('autre marché : aucune fuite entre périmètres', async () => {
     const r = await view('KM', '7', otherMarketId);
     expect(r.sales_series).toEqual([{ day: '2026-10-18', sales_kmf: 7777, orders: 1 }]);
