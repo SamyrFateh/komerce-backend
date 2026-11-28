@@ -137,6 +137,7 @@ module.exports = {
       'migrations/210_market_delegation_structure_event_record_live.sql',
       'migrations/212_market_delegation_execution_ceiling.sql',
       'migrations/390_retire_mark_ordered_capability.sql',
+      'migrations/457_on_demand_conversations.sql',
     ],
     config: [
       'config/market-delegation-capabilities.js',
@@ -162,6 +163,7 @@ module.exports = {
       'services/market-delegation-local-offer-service.js',
       'services/market-delegation-local-stock-service.js',
       'services/market-delegation-client-case-service.js',
+      'services/market-delegation-client-request-service.js',
       'services/market-delegation-settlement-service.js',
       'services/market-delegation-structure-event-service.js',
       'services/market-delegation-performance-service.js',
@@ -178,6 +180,7 @@ module.exports = {
       'routes/market-local-stock.js',
       'routes/market-delegation-client.js',
       'routes/market-delegation-client-case.js',
+      'routes/client-requests.js',
       'routes/market-delegation-settlement.js',
       'routes/market-delegation-structure-event.js',
       'routes/market-delegation-performance.js',
@@ -244,6 +247,8 @@ module.exports = {
   db: {
     tables: [
       'capability_registry: RW!',
+      'client_requests: RW!',
+      'product_skus: R',
       'market_operating_assignments: RW!',
       'assignment_capability_ceiling: RW!',
       'assignment_memberships: RW!',
@@ -278,6 +283,23 @@ module.exports = {
 
   contract: {
     exposes: [
+      'GET /api/client-requests',
+      'POST /api/client-requests',
+      'GET /api/client-requests/:ref',
+      'POST /api/client-requests/:ref/messages',
+      'GET /api/client-requests/:ref/attachments/:id',
+      'GET /api/markets/:code/client-requests',
+      'GET /api/markets/:code/client-requests/:ref',
+      'POST /api/markets/:code/client-requests/:ref/messages',
+      'GET /api/markets/:code/client-requests/:ref/attachments/:id',
+      'POST /api/markets/:code/client-requests/:ref/close',
+      'POST /api/markets/:code/client-requests/:ref/reopen',
+      'POST /api/markets/:code/client-requests/:ref/hub-share',
+      'DELETE /api/markets/:code/client-requests/:ref/hub-share',
+      'GET /api/hub/client-requests',
+      'GET /api/hub/client-requests/:ref',
+      'POST /api/hub/client-requests/:ref/messages',
+      'GET /api/hub/client-requests/:ref/attachments/:id',
       'GET /api/market-delegation/markets/:marketCode/team', // team.read
       'POST /api/market-delegation/markets/:marketCode/team/invitations', // team.invite
       'POST /api/market-delegation/team/invitations/:token/accept', // utilisateur authentifié correspondant à l’email invité
@@ -349,7 +371,7 @@ module.exports = {
       { fn: 'listStructureEvents', file: 'services/market-delegation-structure-event-service.js' },
       { fn: 'recordStructureEvent', file: 'services/market-delegation-structure-event-service.js' },
     ],
-    consumes: ['local-stock', 'market', 'auth', 'auth-identity', 'infrastructure', 'logistics', 'catalog', 'providers-services', 'orders', 'settlement', 'economic-engine', 'market-autonomy', 'dashboard', 'payments'],
+    consumes: ['notifications', 'decision-signals', 'local-stock', 'market', 'auth', 'auth-identity', 'infrastructure', 'logistics', 'catalog', 'providers-services', 'orders', 'settlement', 'economic-engine', 'market-autonomy', 'dashboard', 'payments'],
   },
 
   authority: 'backend-core — cette feature possède la délégation d’autorité marché et son équipe ; elle ne possède ni le référentiel market, ni operator_market_scopes, ni users.role, ni les règles GROUP, ni les fonctions terrain mutualisées, ni la vérité monétaire du settlement.',
