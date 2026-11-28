@@ -135,3 +135,17 @@ describe('P-05 — renderCatalogLoadErrorState', () => {
     expect(html).toMatch(/<button class="k-track-retry-btn" id="k-catalog-retry-btn" type="button">Réessayer<\/button>/);
   });
 });
+
+test('On Demand is a contextual internal action only for search without results', () => {
+  document.body.innerHTML = renderSearchEmptyState('alternateur');
+  const action = document.querySelector('[data-on-demand="search"]');
+  expect(action).not.toBeNull();
+  expect(action.tagName).toBe('BUTTON');
+  expect(action.type).toBe('button');
+  expect(action.textContent).toBe('Demander à votre conseiller');
+  expect(action.hasAttribute('href')).toBe(false);
+  expect(document.querySelector('#k-catalog-empty-clear-search-btn')).not.toBeNull();
+  for (const html of [renderCatalogEmptyState(),renderCategoryEmptyState(),renderCatalogLoadErrorState(new Error('x'))]) {
+    expect(html).not.toContain('data-on-demand="search"');
+  }
+});
