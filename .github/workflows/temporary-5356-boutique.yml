@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 20bbaf06f2db285c734376924c9bb9c9eb8ab7c8
+          ref: 5125ed99430db605a4cbf15dc4ea3c3d2e7db08d
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v4
@@ -50,4 +50,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           test "$GITHUB_REF_NAME" = "diag/5356-boutique-0465317"
-          git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push origin HEAD:refs/heads/diag/5356-result-20bbaf0
+          git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push origin HEAD:refs/heads/diag/5356-result-5125ed9
