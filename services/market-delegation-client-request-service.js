@@ -16,7 +16,7 @@
  */
 'use strict';
 const {randomUUID}=require('node:crypto');
-const {resolveAuthorization,resolveActiveAssignmentByMarketCode}=require('./market-delegation-service');
+const {resolveAuthorization}=require('./market-delegation-service');
 const {resolveCanonicalMarketRead}=require('./market-delegation-read-authority');
 const conversations=require('./conversation-service');
 const {normalizePhone}=require('../utils/phone');
@@ -34,8 +34,17 @@ async function authority(q,actor,scope,code,write=false){
   if(scope!=='market')fail('CLIENT_REQUEST_FORBIDDEN',403);
   const market=marketCode(code);
   const auth=await resolveCanonicalMarketRead(resolveAuthorization,q,{userId,actorRole:actor.role,marketCode:market,primaryCapability:'client.read'});
-  if(write&&actor.role!=='admin')await resolveAuthorization(q,{userId,marketCode:market,requiredCapability:'client.case.handle'});
-  return {scope,userId,marketId:auth.market_id,canHandle:actor.role==='admin'||auth.capabilities?.includes('client.case.handle')||write};
+  let canHandle=actor.role==='admin';
+  if(!canHandle&&(write||auth.capabilities?.includes('client.case.handle'))){
+    try{
+      const writer=await resolveAuthorization(q,{userId,marketCode:market,requiredCapability:'client.case.handle'});
+      canHandle=writer.market_id===auth.market_id;
+    }catch(err){
+      if(write||![403,409].includes(err.status))throw err;
+    }
+  }
+  if(write&&!canHandle)fail('CLIENT_REQUEST_FORBIDDEN',403);
+  return {scope,userId,marketId:auth.market_id,canHandle};
 }
 function predicate(auth){
   if(auth.scope==='client')return {sql:'r.user_id=$1',args:[auth.userId]};
@@ -122,13 +131,7 @@ async function transition(q,{actor,market,ref,target,reason=''}){
     closed_at=CASE WHEN $2='closed' THEN now() ELSE NULL END,
     closed_by=CASE WHEN $2='closed' THEN $3::uuid ELSE NULL END
     WHERE id=$1 RETURNING *`,[row.id,target,auth.userId]);
-  if(row.status==='closed'&&target==='in_progress'){
-    // Reopening never resurrects photos whose retention deadline passed.
-    await q.query(`DELETE FROM conversation_attachments a USING conversation_messages m
-      WHERE a.message_id=m.id AND m.subject_id=$1 AND a.purge_after<=now()`,[row.id]);
-  }
-  await q.query(`UPDATE conversation_attachments a SET purge_after=CASE WHEN $2::timestamptz IS NULL THEN NULL ELSE $2::timestamptz+interval '180 days' END
-    FROM conversation_messages m WHERE a.message_id=m.id AND m.subject_id=$1`,[row.id,updated.closed_at]);
+  await conversations.setRetention(q,{requestId:row.id,closedAt:updated.closed_at,reopening:row.status==='closed'&&target==='in_progress'});
   await conversations.append(q,{request:updated,actorId:auth.userId,scope:'market',visibility:'internal',body:reason,eventType});
   return {row:updated,request:projection(updated,'market'),changed:true};
 }
