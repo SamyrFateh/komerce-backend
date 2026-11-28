@@ -851,7 +851,18 @@ async function generateSignals(types) {
   return results;
 }
 
+// Resolve exactly one market-scoped subject inside its owning transaction.
+async function resolveSignalForEntity(sig, executor = db) {
+  if(!sig.market_id||!sig.entity_id||!sig.entity_type||!sig.signal_type)throw new TypeError('exact signal scope required');
+  const result=await executor.query(`UPDATE signals SET status='resolved',resolved_at=now(),snoozed_until=NULL,updated_at=now()
+    WHERE signal_type=$1 AND market_id=$2 AND entity_type=$3 AND entity_id=$4
+      AND status IN ('open','acknowledged','snoozed')`,
+    [sig.signal_type,sig.market_id,sig.entity_type,sig.entity_id]);
+  return result.rowCount;
+}
+
 module.exports = {
+  resolveSignalForEntity,
   upsertSignal,
   autoResolveSignals,
   expireOldSignals,
