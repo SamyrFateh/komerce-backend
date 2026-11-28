@@ -103,6 +103,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const orderApiV2Router = require('../routes/order-api-v2');
   const notificationApiRouter = require('../routes/notification-api');
   const clientNotificationsRouter = require('../routes/client-notifications');
+  const clientRequestsRouter = require('../routes/client-requests');
   const otpRouter = require('../routes/otp');
   const authPasskeyRouter = require('../routes/auth-passkey');
   const authStepUpOtpRouter = require('../routes/auth-step-up-otp');
@@ -229,6 +230,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/client', clientAuthRouter);
   app.use('/api/auth/me/documents', documentsRouter);
   app.use('/api/auth/me/notifications', clientNotificationsRouter);
+  app.use('/api', clientRequestsRouter);
   app.use('/api/invoices',   invoicesRouter);
   app.use('/api/pricing/strategy', pricingStrategyRouter);
   app.use('/api/pricing',    pricingRouter);
