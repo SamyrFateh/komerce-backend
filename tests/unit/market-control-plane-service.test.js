@@ -242,3 +242,12 @@ test('canonical FX readiness prevails over historical fixed-parity presence',()=
   expect(codes(s)).toEqual(expect.arrayContaining(['NO_CURRENCY_PARITY','INVALID_CURRENCY_UNIT']));
   expect(readinessFromGaps(computeGaps(s)).ready_for_activation).toBe(false);
 });
+
+test('first opening refuses missing explicit business timezone',()=>{
+  const s=healthy();s.market.lifecycle_status='PROVISIONING';s.market.is_active=false;s.market.business_timezone=null;
+  s.preparation={economic:{ready:true,missing:[]},prices:{drafts:1,authorized:0,active:0}};
+  expect(codes(s)).toEqual(['MARKET_INACTIVE','NO_BUSINESS_TIMEZONE']);
+  expect(readinessFromGaps(computeGaps(s)).ready_for_activation).toBe(false);
+  s.market.business_timezone='Africa/Libreville';
+  expect(readinessFromGaps(computeGaps(s)).ready_for_activation).toBe(true);
+});

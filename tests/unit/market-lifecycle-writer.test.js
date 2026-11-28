@@ -32,3 +32,14 @@ describe('market lifecycle writer — provisioning', () => {
     expect(db.query).toHaveBeenCalledTimes(1);
   });
 });
+
+test('validates and persists an explicit IANA timezone; no default is invented', async () => {
+  expect(lifecycle.validateBusinessTimezone('Africa/Libreville',{required:true})).toBe('Africa/Libreville');
+  expect(lifecycle.validateBusinessTimezone('UTC',{required:true})).toBe('UTC');
+  expect(() => lifecycle.validateBusinessTimezone(null,{required:true})).toThrow(/requis/);
+  expect(() => lifecycle.validateBusinessTimezone('Africa/Inconnue')).toThrow(/inconnu/);
+  expect(() => lifecycle.validateBusinessTimezone('+01:00')).toThrow(/invalide/);
+  const db={query:jest.fn().mockResolvedValueOnce({rows:[]}).mockResolvedValueOnce({rows:[{code:'GA',business_timezone:'Africa/Libreville'}]})};
+  await expect(lifecycle.createProvisioningMarket(db,{code:'GA',name:'Gabon',currency:'XAF',minorUnit:0,businessTimezone:'Africa/Libreville'})).resolves.toMatchObject({business_timezone:'Africa/Libreville'});
+  expect(db.query.mock.calls[1][1][5]).toBe('Africa/Libreville');
+});

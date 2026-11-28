@@ -173,7 +173,7 @@ describe('markets-management — montage', () => {
 
 describe('initialisation centrale #4370 — contrat nommé', () => {
   const values = {
-    code:'ga', name:'Gabon', currency:'xaf', minor_unit:'0',
+    code:'ga', name:'Gabon', currency:'xaf', minor_unit:'0', business_timezone:'Africa/Libreville',
     central_referent_user_id:'u1', last_name:'Díallo', first_name:'Jean François', phone:'+24161234567',
     cash_enabled:'true', confirmation_mode:'SINGLE',
     'limit_cash.custody.receive':'100', 'limit_execution.cash.confirm':'200',
@@ -182,7 +182,7 @@ describe('initialisation centrale #4370 — contrat nommé', () => {
   test('adresse générée et cash seul, aucun relais obligatoire', () => {
     expect(mgmt.professionalAddress(values.last_name,values.first_name)).toBe('diallo.jean-francois@komerce.co');
     expect(mgmt.initialPayload(values)).toMatchObject({
-      code:'GA', currency:'XAF', lead:{last_name:'Díallo',first_name:'Jean François',phone:'+24161234567'},
+      code:'GA', currency:'XAF', business_timezone:'Africa/Libreville', lead:{last_name:'Díallo',first_name:'Jean François',phone:'+24161234567'},
       payment_provider:null, cash_policy:{cash_enabled:true,confirmation_mode:'SINGLE'},initial_relais:null,
     });
     expect(mgmt.initialPayload(values).lead.email).toBeUndefined();
@@ -197,7 +197,7 @@ describe('initialisation centrale #4370 — contrat nommé', () => {
 });
 
 test('central collection needs separate evidence per selected method', () => {
-  const base = {code:'GA',name:'Gabon',currency:'XAF',minor_unit:'0',central_referent_user_id:'u1',last_name:'Diallo',first_name:'Jean',phone:'+24161234567',cash_enabled:'false',confirmation_mode:'SINGLE', 'limit_cash.custody.receive':'100','limit_execution.cash.confirm':'200','limit_settlement.receive':'300','limit_finance.act':'400'};
+  const base = {code:'GA',name:'Gabon',currency:'XAF',minor_unit:'0',business_timezone:'Africa/Libreville',central_referent_user_id:'u1',last_name:'Diallo',first_name:'Jean',phone:'+24161234567',cash_enabled:'false',confirmation_mode:'SINGLE', 'limit_cash.custody.receive':'100','limit_execution.cash.confirm':'200','limit_settlement.receive':'300','limit_finance.act':'400'};
   expect(() => mgmt.initialPayload({...base,stripe_eur:'true'})).toThrow(/décision/);
   expect(mgmt.initialPayload({...base,stripe_eur:'true',stripe_eur_evidence:'DECISION-12'}).central_collection_modes).toEqual([{payment_mode:'stripe_eur',evidence_ref:'DECISION-12'}]);
 });

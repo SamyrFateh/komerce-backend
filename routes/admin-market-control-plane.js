@@ -71,6 +71,7 @@ router.post('/', ...centralAdmin, async (req, res, next) => {
       name: body.name,
       currency: body.currency,
       minorUnit: body.minor_unit,
+      businessTimezone: body.business_timezone ?? null,
       storefrontTexts: body.storefront_texts || {},
       centralReferentUserId: body.central_referent_user_id,
       financialLimits: body.financial_limits || {},

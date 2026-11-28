@@ -25,7 +25,7 @@
  */
 'use strict';
 
-const { createProvisioningMarket, loadProvisioningMarket, transitionMarketLifecycle, validateProvisioningCurrency } = require('./market-lifecycle-service');
+const { createProvisioningMarket, loadProvisioningMarket, transitionMarketLifecycle, validateProvisioningCurrency, validateBusinessTimezone } = require('./market-lifecycle-service');
 const delegation = require('./market-delegation-service');
 const { targetCapabilitiesForScope } = require('./market-operator-provisioning');
 const { inviteTeamMember } = require('./market-delegation-team-service');
@@ -154,7 +154,7 @@ async function configureProvisioningMarket(executor, {
     actorUserId,
     marketId: market.id,
     action: 'MARKET_PROVISIONING_STARTED',
-    after: { code: market.code, currency: market.currency, lifecycle_status: market.lifecycle_status },
+    after: { code: market.code, currency: market.currency, lifecycle_status: market.lifecycle_status, business_timezone: market.business_timezone ?? null },
     correlationId,
   });
 
@@ -282,6 +282,7 @@ async function provisionMarket(executor, {
   name,
   currency,
   minorUnit,
+  businessTimezone = null,
   storefrontTexts = {},
   centralReferentUserId,
   financialLimits = {},
@@ -292,9 +293,11 @@ async function provisionMarket(executor, {
   initialRelais = null,
   correlationId = null,
 }) {
-  const canonicalUnit = lead.last_name != null || lead.first_name != null ? validateProvisioningCurrency(currency,minorUnit) : minorUnit;
+  const named = lead.last_name != null || lead.first_name != null;
+  const canonicalUnit = named ? validateProvisioningCurrency(currency,minorUnit) : minorUnit;
+  const timezone = validateBusinessTimezone(businessTimezone,{required:named});
   const market = await createProvisioningMarket(executor, {
-    code, name, currency, minorUnit:canonicalUnit, storefrontTexts, actorUserId, correlationId,
+    code, name, currency, minorUnit:canonicalUnit, businessTimezone:timezone, storefrontTexts, actorUserId, correlationId,
   });
   return configureProvisioningMarket(executor, {
     market, actorUserId, centralReferentUserId, financialLimits, lead,

@@ -191,6 +191,9 @@
   }
 
   function initialPayload(values) {
+    const timezone = String(values.business_timezone || '').trim();
+    if (!timezone) throw new Error('Fuseau horaire IANA du marché requis.');
+    try { new Intl.DateTimeFormat('fr-FR',{timeZone:timezone}); } catch (_) { throw new Error('Fuseau horaire IANA invalide.'); }
     const limits = {};
     for (const [cap] of INITIAL_LIMITS) {
       const value = values['limit_' + cap];
@@ -220,6 +223,7 @@
       name: String(values.name || '').trim(),
       currency: String(values.currency || '').trim().toUpperCase(),
       minor_unit: Number(values.minor_unit),
+      business_timezone: timezone,
       central_referent_user_id: values.central_referent_user_id,
       financial_limits: limits,
       lead: { last_name: values.last_name, first_name: values.first_name, phone: values.phone },
@@ -262,6 +266,8 @@
       }
       currency.addEventListener('change',syncUnit);
       syncUnit();
+      const timezone = input('business_timezone','Fuseau horaire IANA du marché','text');
+      timezone.placeholder = 'Ex. Africa/Libreville';
       form.appendChild(el(doc,'p','kmc-access-muted','La conversion EUR est contrôlée par le serveur. Langue initiale : français.'));
     } else if (wizard.step === 1) {
       input('central_referent_user_id','Référent central',null,referentChoices(wizard.authority));
@@ -304,7 +310,7 @@
     } else {
       const values = wizard.values;
       for (const line of [
-        values.name + ' (' + values.code + ') — ' + values.currency,
+        values.name + ' (' + values.code + ') — ' + values.currency + ' · ' + values.business_timezone,
         'Responsable : ' + values.last_name + ' ' + values.first_name,
         professionalAddress(values.last_name, values.first_name) + ' · ' + values.phone,
         'Premier relais : ' + (values.relay_name || 'à configurer localement'),

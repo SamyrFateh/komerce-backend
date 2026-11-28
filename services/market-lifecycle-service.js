@@ -50,14 +50,28 @@ function validateProvisioningCurrency(currency, minorUnit) {
   return MINOR_UNITS[code];
 }
 
+function validateBusinessTimezone(value, {required=false}={}) {
+  if (value == null || value === '') {
+    if (!required) return null;
+    throw lifecycleError('MARKET_TIMEZONE_REQUIRED','Fuseau horaire IANA du marché requis.',400);
+  }
+  if (typeof value !== 'string' || value.length > 100 || !/^(?:UTC|[A-Za-z][A-Za-z0-9_+-]*(?:\/[A-Za-z0-9_+-]+)+)$/.test(value)) {
+    throw lifecycleError('MARKET_TIMEZONE_INVALID','Fuseau horaire IANA invalide.',400);
+  }
+  try { new Intl.DateTimeFormat('fr-FR',{timeZone:value}); }
+  catch (_) { throw lifecycleError('MARKET_TIMEZONE_INVALID','Fuseau horaire IANA inconnu.',400); }
+  return value;
+}
+
 async function createProvisioningMarket(executor, {
-  code, name, currency, minorUnit = 0, storefrontTexts = {}, actorUserId = null, correlationId = null,
+  code, name, currency, minorUnit = 0, businessTimezone = null, storefrontTexts = {}, actorUserId = null, correlationId = null,
 }) {
   const db = requireExecutor(executor);
   const marketCode = normalizeMarketCode(code);
   const marketCurrency = normalizeCurrency(currency);
   const marketName = String(name || '').trim();
   const unit = Number(minorUnit);
+  const timezone = validateBusinessTimezone(businessTimezone);
 
   if (!marketCode) throw lifecycleError('MARKET_CODE_INVALID', 'Code marché invalide.', 400);
   if (!marketName) throw lifecycleError('MARKET_NAME_REQUIRED', 'Nom marché requis.', 400);
@@ -73,10 +87,10 @@ async function createProvisioningMarket(executor, {
   if (existing[0]) throw lifecycleError('MARKET_ALREADY_EXISTS', `Marché ${marketCode} déjà existant.`, 409);
 
   const { rows } = await db.query(
-    `INSERT INTO markets (code,name,currency,minor_unit,is_active,lifecycle_status,storefront_texts)
-     VALUES ($1,$2,$3,$4,FALSE,'PROVISIONING',$5::jsonb)
-     RETURNING id,code,name,currency,minor_unit,is_active,lifecycle_status,storefront_texts,created_at`,
-    [marketCode, marketName, marketCurrency, unit, JSON.stringify(storefrontTexts)]
+    `INSERT INTO markets (code,name,currency,minor_unit,is_active,lifecycle_status,storefront_texts,business_timezone)
+     VALUES ($1,$2,$3,$4,FALSE,'PROVISIONING',$5::jsonb,$6)
+     RETURNING id,code,name,currency,minor_unit,is_active,lifecycle_status,storefront_texts,created_at,business_timezone`,
+    [marketCode, marketName, marketCurrency, unit, JSON.stringify(storefrontTexts), timezone]
   );
   return rows[0];
 }
@@ -137,7 +151,7 @@ async function loadProvisioningMarket(executor, { marketCode }) {
   const code = normalizeMarketCode(marketCode);
   if (!code) throw lifecycleError('MARKET_CODE_INVALID', 'Code marché invalide.', 400);
   const { rows } = await db.query(
-    `SELECT id,code,name,currency,minor_unit,is_active,lifecycle_status,storefront_texts,created_at
+    `SELECT id,code,name,currency,minor_unit,is_active,lifecycle_status,storefront_texts,created_at,business_timezone
        FROM markets
       WHERE code=$1
       LIMIT 1
@@ -221,4 +235,4 @@ async function updateMarketStorefront(executor, { marketCode, storefrontTexts })
 }
 
 module.exports = {
-  validateProvisioningCurrency, ALLOWED_TRANSITIONS, createProvisioningMarket, loadProvisioningMarket, normalizeCurrency, transitionMarketLifecycle, validateStorefrontTexts, updateMarketStorefront };
+  validateBusinessTimezone, validateProvisioningCurrency, ALLOWED_TRANSITIONS, createProvisioningMarket, loadProvisioningMarket, normalizeCurrency, transitionMarketLifecycle, validateStorefrontTexts, updateMarketStorefront };

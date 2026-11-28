@@ -163,6 +163,7 @@ async function loadClient360(client, options = {}) {
       o.collected_at,
       o.cancelled_at,
       m.code AS market_code,
+      m.business_timezone AS market_timezone,
       m.name AS market_name,
       rl.name AS relais_name,
       rl.island AS relais_island
@@ -286,7 +287,7 @@ async function loadClient360(client, options = {}) {
   const orders = ordersResult.rows.map(row => Object.freeze({
     reference: row.reference,
     market: Object.freeze({ code: row.market_code || null, name: row.market_name || null }),
-    business_timezone: resolveBusinessTimezone({ code: row.market_code }).timezone,
+    business_timezone: resolveBusinessTimezone({ code: row.market_code, business_timezone: row.market_timezone }).timezone,
     status: row.status,
     payment_status: row.payment_status,
     payment_mode: row.payment_mode,

@@ -78,3 +78,13 @@ describe('market-business-day — journée commerciale du marché', () => {
     expect(businessDayOf('pas-une-date', 'UTC')).toBeNull();
   });
 });
+
+test('un nouveau marché utilise le fuseau enregistré, sans branche pays', () => {
+  const market={code:'GA',business_timezone:'Africa/Libreville'};
+  expect(resolveBusinessTimezone(market)).toEqual({timezone:'Africa/Libreville',source:'market'});
+  expect(businessDayOf('2026-10-17T23:30:00Z',resolveBusinessTimezone(market).timezone)).toBe('2026-10-18');
+  expect(civilDayPeriodBounds('2026-10-17T23:30:00Z',1,resolveBusinessTimezone(market).timezone).from.toISOString()).toBe('2026-10-17T23:00:00.000Z');
+  expect(resolveBusinessTimezone({code:'ZZ',business_timezone:'Europe/Paris'}).timezone).toBe('Europe/Paris');
+  expect(resolveBusinessTimezone({code:'CM',business_timezone:'Invalid/Zone'})).toEqual({timezone:'UTC',source:'unmapped_market_utc'});
+  expect(resolveBusinessTimezone(null)).toEqual({timezone:'UTC',source:'global_utc'});
+});

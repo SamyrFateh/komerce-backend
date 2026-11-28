@@ -36,6 +36,7 @@ const TEAM_GRANT = 'team.grant';
 const GAP_MESSAGES = Object.freeze({
   MARKET_INACTIVE: 'Le marché est inactif (is_active = false).',
   NO_CURRENCY_PARITY: 'La devise du marché n’a pas de conversion ni de parité canonique disponible vers EUR : décision propriétaire requise.',
+  NO_BUSINESS_TIMEZONE: 'Le fuseau horaire IANA du marché doit être renseigné avant ouverture.',
   INVALID_CURRENCY_UNIT: 'Le nombre de décimales du marché ne correspond pas à celui de la devise canonique.',
   NO_ASSIGNMENT: 'Aucune affectation d’exploitation n’existe pour ce marché.',
   ASSIGNMENT_NOT_ACTIVE: 'L’affectation d’exploitation n’est pas ACTIVE.',
@@ -87,6 +88,7 @@ function computeGaps(snapshot) {
   // New-market preparation is evaluated only for an initialized market.
   // Existing active/suspended markets keep the established lifecycle rules.
   if(snapshot.market.lifecycle_status==='PROVISIONING' && snapshot.preparation){
+    if(snapshot.market.business_timezone === null)add('NO_BUSINESS_TIMEZONE');
     if(snapshot.deliveryProof?.proven!==true)add('NO_DELIVERY_PROOF');
     const prices=snapshot.preparation.prices;
     if(!prices || prices.drafts+prices.authorized+prices.active===0)add('NO_PREPARED_PRICE');
@@ -98,7 +100,7 @@ function computeGaps(snapshot) {
   return gaps;
 }
 
-const PLATFORM_BLOCKERS = new Set(['INVALID_CURRENCY_UNIT','NO_CURRENCY_PARITY','NO_CENTRAL_REFERENT','EMPTY_CEILING','MISSING_AMOUNT_LIMIT','NO_PAYMENT_PROVIDER','NO_CASH_POLICY','NO_ECONOMIC_REFERENCES']);
+const PLATFORM_BLOCKERS = new Set(['NO_BUSINESS_TIMEZONE','INVALID_CURRENCY_UNIT','NO_CURRENCY_PARITY','NO_CENTRAL_REFERENT','EMPTY_CEILING','MISSING_AMOUNT_LIMIT','NO_PAYMENT_PROVIDER','NO_CASH_POLICY','NO_ECONOMIC_REFERENCES']);
 const OPERATIONS_BLOCKERS = new Set(['NO_ASSIGNMENT','ASSIGNMENT_NOT_ACTIVE','NO_ACTIVE_MEMBERSHIP','NO_TEAM_GRANT_HOLDER','NO_OPERATING_LEAD','NO_RELAIS','NO_DELIVERY_PROOF','NO_PREPARED_PRICE']);
 
 function readinessFromGaps(gaps) {
@@ -157,7 +159,7 @@ async function getControlPlane(executor, marketCode) {
   if (!code) throw delegationError('MARKET_CODE_INVALID', 'Code marché invalide.', 400);
 
   const market = (await db.query(
-    `SELECT id, code, name, currency, minor_unit, is_active, lifecycle_status, storefront_texts,
+    `SELECT id, code, name, currency, minor_unit, is_active, lifecycle_status, storefront_texts, business_timezone,
             EXISTS (SELECT 1 FROM currency_parities cp WHERE cp.currency = markets.currency) AS has_currency_parity
        FROM markets WHERE code = $1`, [code]
   )).rows[0];
@@ -301,7 +303,7 @@ async function getPreparationChecklist(executor, authorization) {
   }
   return {
     items: [
-      item('identity','Identité, devise et mandat',['NO_CURRENCY_PARITY','INVALID_CURRENCY_UNIT','NO_ASSIGNMENT','ASSIGNMENT_NOT_ACTIVE','NO_CENTRAL_REFERENT','EMPTY_CEILING','MISSING_AMOUNT_LIMIT'],'central'),
+      item('identity','Identité, devise, fuseau et mandat',['NO_BUSINESS_TIMEZONE','NO_CURRENCY_PARITY','INVALID_CURRENCY_UNIT','NO_ASSIGNMENT','ASSIGNMENT_NOT_ACTIVE','NO_CENTRAL_REFERENT','EMPTY_CEILING','MISSING_AMOUNT_LIMIT'],'central'),
       item('team','Équipe locale',['NO_ACTIVE_MEMBERSHIP','NO_TEAM_GRANT_HOLDER','NO_OPERATING_LEAD'],'market'),
       item('network','Réseau de relais',['NO_RELAIS'],'market'),
       item('payments','Moyens de paiement',['NO_PAYMENT_PROVIDER','NO_CASH_POLICY'],'central'),

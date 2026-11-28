@@ -67,7 +67,7 @@ async function resolveRequestedMarket(req, res, next) {
 
   try {
     const { rows } = await db.query(
-      `SELECT id, code, name, currency, minor_unit
+      `SELECT id, code, name, currency, minor_unit, business_timezone
        FROM markets
        WHERE code = $1 AND is_active = TRUE
        LIMIT 1`,

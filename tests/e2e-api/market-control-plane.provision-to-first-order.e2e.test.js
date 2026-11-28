@@ -79,7 +79,7 @@ describeE2E('Market Control Plane H — provisioning -> première commande',({db
     const res=await request(app).post('/api/admin/markets')
       .set('Authorization',`Bearer ${adminToken}`)
       .send({
-        code:marketCode,name:'E2E Nouveau Marché',currency:'KMF',minor_unit:0,
+        code:marketCode,name:'E2E Nouveau Marché',currency:'KMF',minor_unit:0,business_timezone:'Africa/Libreville',
         central_referent_user_id:centralId,
         financial_limits:limits,
         lead:{email:leadEmail,channel:'EMAIL'},
@@ -92,6 +92,7 @@ describeE2E('Market Control Plane H — provisioning -> première commande',({db
     if(res.status!==201) throw new Error(`PROVISION_FAILED:${res.status}:${JSON.stringify(res.body)}`);
     expect(res.status).toBe(201);
     expect(res.body.market.lifecycle_status).toBe('PROVISIONING');
+    expect(res.body.market.business_timezone).toBe('Africa/Libreville');
     // Le marché est créé, mais ni la livrabilité ni un prix préparé ne sont encore prouvés.
     marketId=res.body.market.id;
     assignmentId=res.body.assignment_id;
