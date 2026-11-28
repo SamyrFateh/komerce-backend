@@ -1,0 +1,35 @@
+name: Finance isolated complete preflight
+on:
+  push:
+    branches: [diag/5353-b4-b812a1c]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: b812a1c7f2cc25adbab25636e250f47b8d056f88
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix public/boutique
+      - name: Verify candidate context and impact
+        run: |
+          test "$(git rev-parse HEAD)" = "b812a1c7f2cc25adbab25636e250f47b8d056f88"
+          npm run agent:context -- --pack authz --feature purchasing
+          npm run arch:impact -- purchasing
+      - name: B4 authority targeted regression tests
+        run: npx jest --runInBand tests/unit/supplier-payment-orchestrator.test.js tests/unit/cj-supplier-payment-runtime.test.js tests/unit/require-dashboard-global-authority.test.js tests/unit/cj-real-debit-proof.test.js tests/unit/cj-real-debit-canonical-proof.test.js tests/unit/supplier-payment-settlement-service.test.js
+      - name: Complete canonical preflight
+        run: npm run pr:preflight
