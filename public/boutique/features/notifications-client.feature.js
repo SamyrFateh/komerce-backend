@@ -22,6 +22,7 @@ module.exports = {
   perimeter: {
     in: [
       'lecture silencieuse du flux authentifié',
+      'conversation On Demand authentifiée, photos privées et notification vers dossier',
       'bandeau compact, action Commandes et acquittement explicite',
       'trois jalons commande : préparation, expédition et disponibilité au relais',
       'mise en évidence d une commande disponible au relais',
@@ -34,8 +35,8 @@ module.exports = {
     ],
   },
   files: {
-    boutique: ['../js/b-notifications.js'],
-    css: ['../css/notifications.css'],
+    boutique: ['../js/b-notifications.js', '../js/b-on-demand.js'],
+    css: ['../css/notifications.css', '../css/on-demand.css'],
     tests: ['../tests/unit/b-notifications.test.js'],
   },
   docs: ['../../../docs/doctrine/DOCTRINE_NOTIFICATIONS_CLIENT_KOMERCE.md'],
@@ -43,6 +44,7 @@ module.exports = {
     exposes: [],
     internalApi: ['b-notifications.js / setupClientNotifications / refreshClientNotifications'],
     consumes: [
+      'market-delegation — dossiers client On Demand et pièces jointes privées',
       'notifications — flux ouvert et acquittement propriétaire',
       'orders-client — navigation vers la commande et statut disponible',
       'platform-ops — bus et client API',
