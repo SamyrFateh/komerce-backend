@@ -10,6 +10,7 @@
 'use strict';
 import {requireIdentity} from './b-identity.js';
 import {bus} from './b-bus.js';
+import {state} from './b-store.js';
 const BASE='/api/client-requests';
 const MOTIFS={auto_parts:'Pièces automobiles',express:'Livraison express',other:'Autre recherche'};
 const STATUS={new:'Nouvelle',in_progress:'En cours',closed:'Clôturée'};
@@ -175,8 +176,9 @@ export async function openOnDemand(ref=null,origin=null,seed=null){
 export function setupOnDemand(){
  if(installed)return;installed=true;
  document.addEventListener('click',e=>{const b=e.target.closest?.('[data-on-demand]');if(!b)return;e.preventDefault();
-  const seed=b.dataset.onDemand==='search'?{motif:'other',body:document.getElementById('k-search-input')?.value?.trim()||''}:null;
-  if(seed)document.getElementById('k-search-dropdown')?.classList.remove('open');
+  let seed=b.dataset.onDemand==='search'?{motif:'other',body:document.getElementById('k-search-input')?.value?.trim()||''}:null;
+  if(b.dataset.onDemand==='product'&&state.modalOpen&&state.modalProduct?.id){const p=state.modalProduct;seed={motif:'express',body:p.name||'',productId:String(p.id),skuId:state.modalSelection?.selected_sku_id||null}}
+  if(b.dataset.onDemand==='search')document.getElementById('k-search-dropdown')?.classList.remove('open');
   openOnDemand(null,b,seed).catch(()=>{})
  });
  bus.on('on-demand:open',payload=>openOnDemand(payload?.reference||null).catch(()=>{}));
