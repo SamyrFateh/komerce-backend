@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 5125ed99430db605a4cbf15dc4ea3c3d2e7db08d
+          ref: 9814492fa6be0d9ea77c9e0f841a8fa8bc12026a
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v4
@@ -33,6 +33,8 @@ jobs:
           npm --prefix public/boutique run deploy:css
           npm --prefix public/boutique run audit:arch:live
           npm --prefix public/boutique run audit:ownership
+      - name: Verify event registry before long tests
+        run: node scripts/gen-boutique-360.js --check
       - name: Boutique fast gates first
         run: npm --prefix public/boutique run check:fast
       - name: Commit only generated assets
@@ -50,4 +52,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           test "$GITHUB_REF_NAME" = "diag/5356-boutique-0465317"
-          git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push origin HEAD:refs/heads/diag/5356-result-5125ed9
+          git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push origin HEAD:refs/heads/diag/5356-result-9814492
