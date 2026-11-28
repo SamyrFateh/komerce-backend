@@ -54,7 +54,7 @@ function field(label,placeholder,value,change){
 function textField(value,change,placeholder){
  const wrap=node('label',null,'k-od-field'),input=node('textarea');input.name='body';input.rows=3;input.maxLength=2000;input.placeholder=placeholder;input.value=value;input.setAttribute('aria-label','Votre message');input.addEventListener('input',()=>change(input.value));wrap.append(input);return wrap
 }
-function draft(motif='other',body='',productId=null,skuId=null){return {motif,body,productId,skuId,answers:{},photos:[],busy:false,photoBusy:false,disposed:false}}
+function draft(motif='other',body='',productId=null,skuId=null){return {motif,body,productId,skuId,market:marketCode(),answers:{},photos:[],busy:false,photoBusy:false,disposed:false}}
 function resetPhotos(d){for(const p of d.photos)URL.revokeObjectURL(p.url);d.photos=[]}
 function ownDraft(d){dispose();cleanup=()=>{d.disposed=true;resetPhotos(d)}}
 function formatBody(d){return [d.body.trim(),...(QUESTIONS[d.motif]||[]).map(([k,l])=>d.answers[k]?.trim()?l+' : '+d.answers[k].trim():'')].filter(Boolean).join('\n')}
@@ -96,14 +96,14 @@ function payload(d,create){
  if(!body&&!d.photos.length)throw Error('Décrivez votre besoin ou ajoutez une photo.');
  if(body.length>2000)throw Error('Votre message est trop long (2 000 caractères maximum).');
  data.append('body',body);for(const item of d.photos)data.append('photos',item.file);
- if(create){const market=marketCode();if(!market)throw Error('Marché indisponible.');data.append('market',market);data.append('motif',d.motif);if(d.motif==='express'&&d.productId){data.append('product_id',d.productId);if(d.skuId)data.append('sku_id',d.skuId)}}
+ if(create){const market=d.market;if(!market||market!==marketCode())throw Error('Le marché a changé. Ouvrez une nouvelle demande.');data.append('market',market);data.append('motif',d.motif);if(d.motif==='express'&&d.productId){data.append('product_id',d.productId);if(d.skuId)data.append('sku_id',d.skuId)}}
  return data
 }
 function startRequest(seed={}){
  stop();const s=++session,d=draft(seed.motif||'other',seed.body||'',seed.productId||null,seed.skuId||null);ownDraft(d);
  function render(step){
   if(!active(s)||d.busy||d.photoBusy)return;const content=panel(),msg=feedback(),bottom=node('div',null,'k-od-bottom');
-  shell().replaceChildren(header('Votre conseiller Komerce',step===1?()=>inbox():()=>render(step-1),'Nouvelle demande · '+(marketCode()||'Komerce')),content,bottom);
+  shell().replaceChildren(header('Votre conseiller Komerce',step===1?()=>inbox():()=>render(step-1),'Nouvelle demande · '+(d.market||'Komerce')),content,bottom);
   content.append(node('p','Étape '+step+' sur 3','k-od-progress'));
   if(step===1){
    content.append(helper('Bonjour ! Que recherchez-vous ? Décrivez votre besoin, ajoutez une photo ou choisissez un sujet.'));
@@ -164,7 +164,7 @@ async function thread(ref){
 export async function openOnDemand(ref=null,origin=null,seed=null){
  if(opening)return;opening=true;try{
   const user=await requireIdentity({reason:'contacter un conseiller Komerce',title:'Confirmer votre identité',returnFocusTo:origin});if(!user)return;
-  trigger=origin;const d=shell();if(!d.open){if(typeof d.show==='function'&&window.matchMedia?.('(min-width: 900px)').matches)d.show();else d.showModal()}
+  const d=shell();if(d.open&&!ref&&!seed){d.querySelector('[aria-label="Fermer"]')?.focus();return}trigger=origin;if(!d.open){if(typeof d.show==='function'&&window.matchMedia?.('(min-width: 900px)').matches)d.show();else d.showModal()}
   if(user.role!=='client'){
    stop();dispose();session++;const content=panel();content.append(helper('Vous utilisez une session interne. Pour envoyer une demande commerciale, ouvrez la boutique dans une session client séparée.'));const link=node('a','Accéder à mon espace professionnel','k-od-btn k-od-primary');link.href='/admin';content.append(link);d.replaceChildren(header('Votre conseiller Komerce'),content);return
   }
