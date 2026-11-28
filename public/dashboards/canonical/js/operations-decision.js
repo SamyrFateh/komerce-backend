@@ -298,6 +298,29 @@
     });
   }
 
+  // Le serveur seul connaît le total avant LIMIT. Vérifier la réconciliation
+  // avec les neuf sous-étapes avant de qualifier la liste d'exhaustive.
+  function projectPopulation(payload) {
+    const phases = projectProcessPhases(payload).filter(phase => phase.observed);
+    const shown = phases.length === 5 ? phases.reduce((sum, phase) => sum + phase.count, 0) : null;
+    const raw = payload?.control_chain?.population;
+    const valid = shown !== null && raw && raw.clock === 'current_active_orders'
+      && raw.simulation_scope === 'real_only'
+      && Number.isSafeInteger(raw.shown) && raw.shown === shown
+      && Number.isSafeInteger(raw.limit) && raw.limit > 0 && raw.shown <= raw.limit
+      && Number.isSafeInteger(raw.total) && raw.total >= shown
+      && raw.complete === (raw.total === shown);
+    return Object.freeze({ shown, total: valid ? raw.total : null,
+      state: valid ? (raw.complete ? 'complete' : 'partial') : 'unknown' });
+  }
+
+  function populationLabel(population) {
+    if (population.state === 'complete') return population.shown + ' sur ' + population.total + ' commandes actives · projection exhaustive';
+    if (population.state === 'partial') return population.shown + ' sur ' + population.total + ' commandes actives · liste partielle';
+    return population.shown === null ? 'Population non déterminée · projection incomplète'
+      : population.shown + ' commandes projetées · total non déterminé';
+  }
+
   const HEALTH_LABELS = Object.freeze({ GREEN: 'Normal', ORANGE: 'À surveiller', RED: 'Action requise', UNKNOWN: 'Non déterminé' });
 
   function bindDrillLink(link, href, onFilter) {
@@ -317,8 +340,11 @@
     const wrapper = doc.createElement('div');
     wrapper.className = 'kmc-operations-process-overview';
     wrapper.setAttribute('data-process-source', 'control_chain');
-    wrapper.appendChild(text(doc, 'p', 'kmc-operations-process-caption',
-      'Une position par commande dans la projection chargée (liste serveur limitée, non total exhaustif) · cliquez sur une phase ou un état.'));
+    const population = projectPopulation(payload);
+    const caption = text(doc, 'p', 'kmc-operations-process-caption',
+      populationLabel(population) + ' · les compteurs par phase et état portent sur les commandes affichées.');
+    caption.setAttribute('data-population-state', population.state);
+    wrapper.appendChild(caption);
     const host = doc.createElement('div');
     host.className = 'kmc-operations-process-steps';
     const flow = doc.createElement('div');
@@ -1079,6 +1105,7 @@
     describeControlCause,
     PROCESS_PHASES,
     projectProcessPhases,
+    projectPopulation,
     renderProcessPhases,
     controlHealthSummary,
     renderControlHealthSummary,
