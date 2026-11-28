@@ -220,6 +220,8 @@ module.exports = {
       'tests/unit/market-delegation-client-routes.test.js',
       'tests/unit/market-delegation-market-config-route.test.js',
       'tests/unit/market-delegation-client-case-service.test.js',
+      'tests/unit/market-delegation-client-request-service.test.js',
+      'tests/integration/on-demand-conversations.test.js',
       'tests/unit/market-delegation-client-case-routes.test.js',
       'tests/unit/market-delegation-settlement-service.test.js',
       'tests/unit/market-delegation-settlement-routes.test.js',
