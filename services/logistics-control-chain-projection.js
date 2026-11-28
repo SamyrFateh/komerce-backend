@@ -452,6 +452,9 @@ async function getControlChain(options = {}) {
         LEFT JOIN signal_summary ss ON ss.order_id = so.id
     )
     SELECT order_reference,
+           -- Même snapshot et mêmes prédicats que la liste. La fenêtre précède
+           -- le LIMIT : le total décrit toute la population canonique éligible.
+           COUNT(*) OVER () AS population_total,
            current_stage,
            local_only,
            health,
@@ -485,8 +488,27 @@ async function getControlChain(options = {}) {
     if (byStage[order.stage]) byStage[order.stage].push(order);
   });
 
+  // La requête non paginée en offset et de limite >= 1 ne peut renvoyer
+  // zéro ligne que si sa population est vide. En cas de métadonnée absente
+  // ou incohérente, l'exhaustivité est indéterminée, jamais supposée.
+  const rawTotal = rows.length ? rows[0].population_total : 0;
+  const total = rawTotal !== null && rawTotal !== undefined && String(rawTotal).trim() !== ''
+    ? Number(rawTotal) : NaN;
+  const exact = Number.isSafeInteger(total) && total >= orders.length
+    && rows.every(row => Number(row.population_total) === total)
+    && orders.every(order => Object.prototype.hasOwnProperty.call(byStage, order.stage));
+  const population = Object.freeze({
+    total: exact ? total : null,
+    shown: orders.length,
+    limit,
+    complete: exact ? total === orders.length : null,
+    clock: 'current_active_orders',
+    simulation_scope: 'real_only',
+  });
+
   return Object.freeze({
     stages: STAGES,
+    population,
     orders: Object.freeze(orders),
     by_stage: Object.freeze(Object.fromEntries(
       Object.entries(byStage).map(([key, list]) => [key, Object.freeze(list)])

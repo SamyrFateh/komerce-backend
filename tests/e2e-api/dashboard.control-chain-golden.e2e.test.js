@@ -183,6 +183,27 @@ describeE2E('E2E-DASHBOARD — Golden Logistics Control Chain', ({ db }) => {
     if (cleanup) await cleanup.run();
   });
 
+  it('population : le total PostgreSQL est calculé avant le plafonnement et reste dans le scope', async () => {
+    const second = await seedOrder(`CTG-${RUN_TAG}-POP`.toUpperCase(), 'confirmed');
+    try {
+      const result = await projection.getControlChain({market:{id:marketId},limit:1});
+      expect(result.orders).toHaveLength(1);
+      expect(result.population).toMatchObject({shown:1,limit:1,complete:false,clock:'current_active_orders',simulation_scope:'real_only'});
+      expect(result.population.total).toBeGreaterThanOrEqual(2);
+      const full = await projection.getControlChain({market:{id:marketId},limit:500});
+      expect(full.population.total).toBe(result.population.total);
+      expect(full.population.shown).toBe(full.orders.length);
+      expect(full.population.complete).toBe(full.population.total === full.orders.length);
+      const oneOrder = await projection.getControlChain({market:{id:marketId},orderId:happyOrderId,limit:1});
+      expect(oneOrder.population).toMatchObject({total:1,shown:1,complete:true});
+      const wrongMarket = await projection.getControlChain({market:{id:uuid()},orderId:happyOrderId,limit:1});
+      expect(wrongMarket.population).toMatchObject({total:0,shown:0,complete:true});
+    } finally {
+      // La fixture ne doit pas contaminer les scénarios suivants.
+      await q("UPDATE orders SET status='cancelled' WHERE id=$1",[second]);
+    }
+  });
+
   it('happy path : une même commande traverse les 9 étapes puis sort au handover', async () => {
     let current = await snapshot(happyOrderId, HAPPY_REF);
     expect(current).toMatchObject({
