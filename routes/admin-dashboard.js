@@ -46,7 +46,7 @@ const metrics = require('../services/dashboard-metrics');
 const cache = require('../services/dashboard-cache');
 const controlChain = require('../services/logistics-control-chain-projection');
 const { getMarketsSupervision } = require('../services/dashboard-pilotage-markets');
-const { mergePilotageAlerts, summarizeControlChain } = require('../services/dashboard-pilotage-alert-aggregation');
+const { mergePilotageAlerts, summarizeControlChain, pilotageStockFilters, pilotageDecisionClocks } = require('../services/dashboard-pilotage-alert-aggregation');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { requireDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const { EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL } = require('../services/signal-simulation-scope');
@@ -337,7 +337,7 @@ router.get(
         topAlerts, pointsAttention, controlChainProjection, marketsSupervision,
       ] = await Promise.all([
         metrics.getCAEncaisse(filters),
-        metrics.getCmdsActives(filters),
+        metrics.getCmdsActives(pilotageStockFilters(filters)),
         periodResultKpi(req.user,filters),
         metrics.getAlertesCritiques(filters),
         metrics.getTauxCompletudeCouts(filters),
@@ -353,7 +353,7 @@ router.get(
         metrics.getPointsAttention(filters),
         controlChain.getControlChain({ market: null }),
         // null = lecture indisponible (affichée « Non disponible »), jamais converti en 0.
-        getMarketsSupervision(filters).catch((e) => { log.error('[admin-dashboard] markets_supervision:', e); return null; }),
+        getMarketsSupervision(pilotageStockFilters(filters)).catch((e) => { log.error('[admin-dashboard] markets_supervision:', e); return null; }),
       ]);
 
       // Resume par vue (5 KPIs chacune) — ZERO await ici
@@ -402,6 +402,7 @@ router.get(
       ];
 
       res.json({
+        decision_clocks: pilotageDecisionClocks(filters,economicResult,new Date().toISOString()),
         kpis_global: [ca, cmdsActives, economicResult, alertesCritiques, tauxCouts, pointsAttention],
         view_blocks,
         economic_flow,

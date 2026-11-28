@@ -80,7 +80,7 @@ const payload = {
   data_quality: { generated_at: '2026-10-08T18:00:00.000Z', warnings: [], scope_enforced: true },
 };
 
-async function mountControlTower(page) {
+async function mountControlTower(page, model = payload) {
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
 
@@ -110,7 +110,7 @@ async function mountControlTower(page) {
     }
 
     if (url.pathname === '/api/admin/dashboard/unified') {
-      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(payload) });
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(model) });
     }
 
     return route.fulfill({ status: 404, body: '' });
@@ -316,4 +316,26 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
       fullPage: false,
     });
   });
+});
+
+test('Pilotage : trois horloges distinctes et population opérationnelle partielle explicite', async ({page})=>{
+  const model=JSON.parse(JSON.stringify(payload));
+  model.decision_clocks={stock:{basis:'current_active_orders',observed_at:'2026-11-28T07:00:00.000Z',simulation_scope:null},
+    flow:{basis:'orders.created_at',from:'2026-11-01',to:'2026-11-28',metric_id:'commerce.paid_order_nonwallet'},
+    economic:{basis:'utc_calendar_month',period_start:'2026-11-01',metric_id:'eco.period_result'}};
+  model.kpis_global.push({key:'economic_period_result',value:null,unit:'EUR',data_quality:{status:'NOT_RECONCILED'}});
+  model.control_chain.population={shown:10,total:11,complete:false,limit:10};
+  await mountControlTower(page,model);
+  await page.setViewportSize({width:1280,height:900});
+  const clocks=page.locator('[data-pilotage-clocks]');
+  await expect(clocks).toBeVisible();
+  await expect(clocks).toContainText('Stock opérationnel');
+  await expect(clocks).toContainText('2026-11-01');
+  await expect(clocks).toContainText('Flux commercial');
+  await expect(clocks).toContainText('ni ventes totales ni encaissements');
+  await expect(clocks).toContainText('Résultat ECO');
+  await expect(clocks).toContainText('Non rapproché');
+  await expect(page.locator('#pilotage-flow-health')).toContainText('10 sur 11 commandes actives');
+  await expect(page.locator('#pilotage-flow-health')).toContainText('projection partielle');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(1282);
 });
