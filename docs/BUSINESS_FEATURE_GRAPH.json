@@ -37682,6 +37682,10 @@
                 "targetFile": "services/economic-cost-center-read-model.js"
               },
               {
+                "sourceFileId": "services/logistics-control-chain-projection.js",
+                "targetFile": "services/simulation-scope-service.js"
+              },
+              {
                 "sourceFileId": "services/dashboard-pilotage-market.js",
                 "targetFile": "services/economic-cost-center-read-model.js"
               },
