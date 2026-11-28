@@ -3,6 +3,9 @@ on:
   push:
     branches: [recette/4370-candidate-chromium-2ec819c]
   workflow_dispatch:
+  pull_request:
+    branches: [feat/4370-market-onboarding-v2]
+    paths: ['.github/workflows/4370-candidate-chromium-readonly.yml']
 permissions:
   contents: read
 concurrency:
@@ -10,6 +13,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   onboarding-readonly:
+    if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'recette/4370-candidate-chromium-2ec819c')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
