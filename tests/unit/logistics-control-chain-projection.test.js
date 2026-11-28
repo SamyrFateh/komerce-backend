@@ -340,6 +340,33 @@ describe('logistics-control-chain-projection', () => {
     expect(params[2]).toBe(500);
   });
 
+  test('le manifeste de population distingue la liste plafonnée du total scoped', async () => {
+    mockQuery.mockResolvedValue({rows:[
+      {order_reference:'K-CM-A',current_stage:'ORDER',health:'GREEN',population_total:'12'},
+      {order_reference:'K-CM-B',current_stage:'ORDER',health:'RED',population_total:'12'}
+    ]});
+    const result = await projection.getControlChain({market:{id:'cm'},limit:2});
+    const [sql, params] = mockQuery.mock.calls[0];
+    expect(sql).toContain('COUNT(*) OVER () AS population_total');
+    expect(sql.indexOf('COUNT(*) OVER () AS population_total')).toBeLessThan(sql.indexOf('LIMIT $3'));
+    expect(params[0]).toBe('cm');
+    expect(result.population).toEqual({total:12,shown:2,limit:2,complete:false,clock:'current_active_orders',simulation_scope:'real_only'});
+    expect(Object.isFrozen(result.population)).toBe(true);
+    expect(result.orders).toHaveLength(2);
+    expect(result.by_stage.ORDER).toHaveLength(2);
+  });
+
+  test('le total nul certifié et une métadonnée absente sont distincts', async () => {
+    mockQuery.mockResolvedValueOnce({rows:[]}).mockResolvedValueOnce({rows:[
+      {order_reference:'K1',current_stage:'ORDER',health:'UNKNOWN'}
+    ]}).mockResolvedValueOnce({rows:[
+      {order_reference:'K1',current_stage:'ORDER',health:'GREEN',population_total:'1'}
+    ]});
+    expect((await projection.getControlChain()).population).toMatchObject({total:0,shown:0,complete:true});
+    expect((await projection.getControlChain()).population).toMatchObject({total:null,shown:1,complete:null});
+    expect((await projection.getControlChain()).population).toMatchObject({total:1,shown:1,complete:true});
+  });
+
   test('le service reste strictement read-only', () => {
     const fs = require('fs');
     const src = fs.readFileSync(require.resolve('../../services/logistics-control-chain-projection'), 'utf8');
