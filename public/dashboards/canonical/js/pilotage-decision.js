@@ -334,7 +334,7 @@
       const flowSection = cardSection(
         doc,
         'Où ça bloque',
-        'Les étapes à surveiller ou bloquées dans la chaîne. Les états portent uniquement sur la projection chargée.',
+        payload.control_chain?.counts_exhaustive ? 'Les étapes à surveiller ou bloquées : compteurs exhaustifs, détail dans Opérations.' : 'Les étapes à surveiller ou bloquées dans la chaîne. Les états portent uniquement sur la projection chargée.',
         'pilotage-flow-health'
       );
       flowSection.section.className += ' is-control-tower-flow';

@@ -689,7 +689,8 @@
     const enhanced = {
       ...base,
       mount(options) {
-        return baseMount(options).then(result => {
+        const rerender = nextPeriod => enhanced.mount({ ...options, period: nextPeriod });
+        return baseMount({...options,onPayload:(payload,period,endpoint)=>render(options.root,payload,{...options,period,buyerEndpoint:endpoint,onPeriodChange:rerender},base,decisionUi)}).then(result => {
           // Le montage de base peut finir après qu'une nouvelle vue a remplacé
           // celle-ci. Dans ce cas, il n'y a ni payload ni rendu à enrichir.
           if (result?.stale) return result;
@@ -704,17 +705,7 @@
             });
             return result || Object.freeze({ stale: false, unavailable: true });
           }
-          const rerender = nextPeriod => enhanced.mount({ ...options, period: nextPeriod });
-          return {
-            ...result,
-            result: render(options.root, result.payload, {
-              ...options,
-              period: result.period,
-              buyerEndpoint: result.endpoint,
-              onPeriodChange: rerender,
-            }, base, decisionUi),
-            decisionFirst: true,
-          };
+          return {...result,decisionFirst:true};
         });
       },
       projectDecisionItems: payload => decisionItems(payload, base),

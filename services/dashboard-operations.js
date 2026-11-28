@@ -206,6 +206,9 @@ async function buildControlChainDrill(query, options = {}) {
 
 async function buildOperations(options = {}) {
   const market = options.market || null;
+  if (options.simulationScope) return Object.freeze({scope:publicScope(market),simulation:{scope:options.simulationScope,status:'UNAVAILABLE'},
+    control_chain:null,kpis:[],active_orders:[],critical_delays:[],signals:[],work_queues:null,
+    data_quality:{scope_mode:market?'market':'global',status:'SIMULATION_UNAVAILABLE'}});
   const filters = marketFilters(market);
 
   const [

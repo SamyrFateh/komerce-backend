@@ -1043,6 +1043,7 @@
     header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'OPÉRATIONS'));
     header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Où en sont les commandes ?'));
     header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Une commande, une position opérationnelle, une cause actionnable.'));
+    if(payload?.simulation?.status==='UNAVAILABLE') header.appendChild(text(doc,'p','kmc-dashboard-description','Recette '+payload.simulation.scope+' : projection opérationnelle non certifiée. Aucune activité réelle affichée.'));
     dashboard.appendChild(header);
 
     const controlColumns = controlChainColumns(payload);
@@ -1065,7 +1066,9 @@
         refresh.textContent = 'Actualisation…';
         try {
           const endpoint = base.endpointForContext(options.adminContext, options.contextContract, options.requestedMarket);
-          const updated = await base.jsonRequest(options.fetch, endpoint);
+          const identity=rootNode.__dashboardViewIdentity;
+           const updated = await base.jsonRequest(options.fetch, base.simulationEndpoint ? base.simulationEndpoint(endpoint,options) : endpoint);
+           if(rootNode.__dashboardViewIdentity!==identity || !rootNode.contains(refresh)) return;
           // Animation purement visuelle: les positions/couleurs restent celles
           // de l'API. Ne jamais inférer un événement métier depuis le DOM.
           const before = new Map();
@@ -1158,10 +1161,11 @@
       mount(options) {
         if (liveTimer !== null && timerWindow) timerWindow.clearInterval(liveTimer);
         liveTimer = null;
-        return baseMount(options).then(result => {
-          const rendered = render(options.root, result.payload, options, base, decisionUi);
+        return baseMount({...options,onPayload:payload=>render(options.root,payload,options,base,decisionUi)}).then(result => {
+          if(result?.stale || !result?.payload) return result;
+          const rendered = result.result;
           const win = options.document && options.document.defaultView;
-          if (win && typeof win.setInterval === 'function') {
+          if (!globalThis.KomerceDashboardFreshness && win && typeof win.setInterval === 'function') {
             timerWindow = win;
             // Une simple relecture canonique, aucune mutation ni statut déduit.
             // Suspendre pendant un dossier ouvert et quand la page est masquée.

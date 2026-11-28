@@ -332,7 +332,7 @@
         // only after this initial read resolves. isConnected is therefore false
         // for a valid mount; identity + request sequence are the stale guards.
         if (requestId !== requestSeq || rootNode.__dashboardViewIdentity !== identity) return Object.freeze({ stale: true });
-        const result = renderer.render(rootNode, schema, {
+        const result = typeof options.onPayload==='function' ? options.onPayload(payload,period,endpoint) : renderer.render(rootNode, schema, {
           data: resolveSources(payload),
           filters: { period },
           onFilterChange: (key, value) => {
@@ -362,8 +362,8 @@
       streamEnabled: options.user?.role === 'admin',
       isBusy: () => {
         const active = doc?.activeElement;
-        return Boolean(active && rootNode.contains?.(active)
-          && active.matches?.('input,textarea,select,[contenteditable="true"]'));
+        return Boolean(rootNode.querySelector?.('.kmc-commerce-buyer-detail:not([hidden])') || (active && rootNode.contains?.(active)
+          && active.matches?.('input,textarea,select,[contenteditable="true"]')));
       },
     });
     return initial;

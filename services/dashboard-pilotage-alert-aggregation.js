@@ -80,13 +80,16 @@ function summarizeControlChain(chain) {
       const health = ['GREEN', 'ORANGE', 'RED', 'UNKNOWN'].includes(order && order.health) ? order.health : 'UNKNOWN';
       counts[health] += 1;
     });
+    const censusCounts=chain?.population_census?.stage_counts?.[stage.key];
+    const exhaustive=!!censusCounts && Object.keys(counts).every(h=>Number.isSafeInteger(censusCounts[h])&&censusCounts[h]>=counts[h]);
+    if(exhaustive) Object.assign(counts,censusCounts);
     const health = counts.RED > 0 ? 'RED'
-      : (counts.ORANGE > 0 ? 'ORANGE' : (counts.UNKNOWN > 0 || !available || chain?.population?.complete !== true ? 'UNKNOWN' : 'GREEN'));
+      : (counts.ORANGE > 0 ? 'ORANGE' : (counts.UNKNOWN > 0 || !available || (!exhaustive && chain?.population?.complete !== true) ? 'UNKNOWN' : 'GREEN'));
     return Object.freeze({
       key: stage.key,
       label: stage.label,
       health,
-      order_count: available ? orders.length : null,
+      order_count: available ? Object.values(counts).reduce((sum,n)=>sum+n,0) : null,
       health_counts: available ? Object.freeze(counts) : null,
     });
   });
@@ -94,6 +97,7 @@ function summarizeControlChain(chain) {
   return Object.freeze({
     stages: Object.freeze(stage_health),
     population: chain?.population || null,
+    ...(chain?.population_census ? {counts_exhaustive:true} : {}),
     structural_alerts: Object.freeze(structural.map(row => Object.freeze({
       stage: row.stage || 'UNKNOWN',
       health: ['GREEN', 'ORANGE', 'RED', 'UNKNOWN'].includes(row.health) ? row.health : 'UNKNOWN',

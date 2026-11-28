@@ -84,6 +84,15 @@ describe('dashboard-operations signal vocabulary', () => {
 });
 
 describe('dashboard-operations', () => {
+  test('recette non certifiée : ne consulte aucune source réelle',async()=>{
+    const result=await operations.buildOperations({market:{id:'cm',code:'CM'},simulationScope:'RCT1'});
+    expect(result.simulation).toEqual({scope:'RCT1',status:'UNAVAILABLE'});
+    expect(result.control_chain).toBeNull();
+    expect(mockControlChain).not.toHaveBeenCalled();
+    expect(mockWorkQueues).not.toHaveBeenCalled();
+    expect(db.query).not.toHaveBeenCalled();
+    Object.values(mockMetrics).forEach(fn=>expect(fn).not.toHaveBeenCalled());
+  });
   test('la projection marché applique le market_id à toutes les sources sans exposer l’UUID', async () => {
     const market = { id: 'market-cm-id', code: 'CM', name: 'Cameroun', currency: 'XAF' };
     const result = await operations.buildOperations({ market, now: new Date('2026-08-24T12:00:00Z') });

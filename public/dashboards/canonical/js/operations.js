@@ -234,6 +234,12 @@
     return body;
   }
 
+  function simulationEndpoint(endpoint,options={}) {
+    const search=options.location?.search ?? globalThis.location?.search ?? '';
+    const scope=new URLSearchParams(search).get('simulation_scope');
+    return scope===null ? endpoint : endpoint+'?simulation_scope='+encodeURIComponent(scope);
+  }
+
   function mount(options) {
     const rootNode = options.root;
     const rendererContract = options.renderer;
@@ -255,14 +261,14 @@
     let hasData = false;
     async function readFresh() {
       try {
-        const payload = await jsonRequest(fetchFn, endpoint);
-        if (rootNode.isConnected === false || rootNode.__dashboardViewIdentity !== identity) return {};
-        const result = renderer.render(rootNode, schema, { data: resolveSources(payload) });
+        const payload = await jsonRequest(fetchFn, simulationEndpoint(endpoint,options));
+        if (rootNode.__dashboardViewIdentity !== identity) return {stale:true};
+        const result = typeof options.onPayload==='function' ? options.onPayload(payload) : renderer.render(rootNode, schema, { data: resolveSources(payload) });
         hasData = true;
         rootNode.removeAttribute?.('data-dashboard-stale');
         return Object.freeze({ payload, result, endpoint });
       } catch (error) {
-        if (rootNode.isConnected === false || rootNode.__dashboardViewIdentity !== identity) return {};
+        if (rootNode.__dashboardViewIdentity !== identity) return {stale:true};
         // Une révocation de session/droit efface le dernier instantané sensible.
         // Seules les pannes réseau/5xx conservent des valeurs marquées périmées.
         if (error.status === 401 || error.status === 403) {
@@ -277,6 +283,7 @@
     const initial = readFresh();
     globalThis.KomerceDashboardFreshness?.watch?.({
       root: rootNode, refresh: readFresh, pollMs: 60000,
+      isBusy:()=>Boolean(rootNode.querySelector?.('.kmc-control-detail-dock:not([hidden]),[data-chain-drill-loading]')), 
       streamEnabled: options.user?.role === 'admin',
     });
     return initial;
@@ -297,6 +304,7 @@
     resolveSources,
     endpointForContext,
     jsonRequest,
+    simulationEndpoint,
     mount,
   });
 });
