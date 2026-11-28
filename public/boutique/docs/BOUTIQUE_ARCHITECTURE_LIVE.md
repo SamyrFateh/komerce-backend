@@ -24,7 +24,7 @@
 | `critical-home.css` | 1580 | critical-home.css |
 | `discovery-desktop-v2.css` | 165 | discovery-desktop-v2.css |
 | `discovery-rail.css` | 280 | components.css |
-| `hero.css` | 980 | base.css |
+| `hero.css` | 994 | base.css |
 | `hero-cart-proxy.css` | 22 | components.css |
 | `hero-ultra-mobile.css` | 98 | base.css |
 | `identity.css` | 346 | components.css |
@@ -59,7 +59,7 @@
 | `shared-list-side-cart.css` | 935 | components.css |
 | `shared-list-side-cart-responsive.css` | 91 | components.css |
 | `side-cart-desktop-polish.css` | 323 | desktop.css |
-| `tokens.css` | 599 | base.css |
+| `tokens.css` | 625 | base.css |
 | `wallet.css` | 191 | components.css |
 
 ## 2. Ordre de chargement CSS (index.html)
@@ -67,7 +67,7 @@
 Cascade réelle des bundles livrés :
 
 ```
- 1. /boutique/css/dist/base.css?v=266
+ 1. /boutique/css/dist/base.css?v=268
  2. /boutique/css/dist/critical-home.css?v=5
  3. /boutique/css/dist/components.css?v=680
  4. /boutique/css/dist/components.css?v=680
