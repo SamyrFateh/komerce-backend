@@ -65,7 +65,7 @@ jobs:
               const body = await version.json();
               proof.observedSha = String(body.commit || body.sha || '');
               if (!version.ok() || !/^[a-f0-9]{8,40}$/.test(proof.observedSha) || !sha.startsWith(proof.observedSha)) throw Error('EXACT_CANDIDATE_SHA_NOT_OBSERVED');
-              await page.goto('/login.html?next='+encodeURIComponent('/admin/markets'), {waitUntil:'domcontentloaded'});
+              await page.goto('/login.html?next='+encodeURIComponent('/dashboards/canonical/access.html'), {waitUntil:'domcontentloaded'});
               await page.locator('#email').fill(process.env.E2E_ADMIN_EMAIL);
               await page.locator('#password').fill(process.env.E2E_ADMIN_PASSWORD);
               const login = page.waitForResponse(r => new URL(r.url()).pathname === '/api/auth/login' && r.request().method() === 'POST');
@@ -78,10 +78,17 @@ jobs:
               const data = await ctx.json();
               proof.role = data.actor?.role;
               if (!ctx.ok() || proof.role !== 'admin') throw Error('ADMIN_CONTEXT_NOT_PROVEN');
-              await page.goto('/admin/markets', {waitUntil:'domcontentloaded'});
-              const create = page.getByRole('button', {name:'Nouveau marché', exact:true});
+              await page.goto('/dashboards/canonical/access.html', {waitUntil:'domcontentloaded'});
+              proof.stage = 'MARKET_REGISTRY';
+              proof.path = new URL(page.url()).pathname;
+              const create = page.locator('#markets-management').getByRole('button', {name:'Nouveau marché', exact:true});
               await expect(create).toBeVisible({timeout:20000});
+              proof.stage = 'OPEN_WIZARD';
+              const authority = page.waitForResponse(r => new URL(r.url()).pathname === '/api/admin/markets/central-authority' && r.request().method() === 'GET');
               await create.click();
+              proof.authorityHttp = (await authority).status();
+              if (proof.authorityHttp !== 200) throw Error('CENTRAL_AUTHORITY_REFUSED');
+              proof.stage = 'WIZARD_FIELDS';
               const wizard = page.locator('.kmc-markets-onboarding');
               await expect(wizard).toBeVisible({timeout:20000});
               await expect(wizard.getByText('Initialiser un marché', {exact:true})).toBeVisible();
@@ -95,8 +102,8 @@ jobs:
               await wizard.screenshot({path:output+'/wizard.png'});
             } catch (err) {
               proof.outcome = 'FAIL';
-              proof.reason = err.name || 'Error';
-              console.error('Read-only candidate smoke failed:', proof.reason);
+              proof.reason = ['ADMIN_TEST_IDENTITY_MISSING','EXACT_CANDIDATE_SHA_NOT_OBSERVED','LOGIN_REFUSED','ADMIN_CONTEXT_NOT_PROVEN','CENTRAL_AUTHORITY_REFUSED'].includes(err.message) ? err.message : (err.name || 'Error');
+              console.error('Read-only candidate smoke failed:', proof.stage || 'PRE_ENTRY', proof.reason);
               process.exitCode = 1;
             } finally {
               if (browser) await browser.close();
