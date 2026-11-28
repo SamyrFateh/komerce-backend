@@ -1,4 +1,4 @@
-name: '4370 — Candidate staging Chromium read-only'
+name: '4370 — Candidate staging Chromium wizard dry run'
 on:
   push:
     branches: [recette/4370-candidate-chromium-2ec819c]
@@ -97,9 +97,64 @@ jobs:
               await expect(wizard.locator('[name=currency]')).toBeVisible();
               await expect(wizard.locator('[name=business_timezone]')).toBeVisible();
               proof.entry = 'PASS';
-              proof.outcome = 'PASS_READONLY_ENTRY_ONLY';
+              proof.stage = 'IDENTITY';
+              const field = name => wizard.locator('[name="'+name+'"]');
+              const next = () => wizard.getByRole('button',{name:'Suivant',exact:true}).click();
+              const occupied = await page.locator('#markets-management tr[data-market-code]').evaluateAll(rows=>rows.map(row=>row.dataset.marketCode));
+              const choices = await field('currency').locator('option').evaluateAll(options=>options.map(o=>o.value).filter(Boolean));
+              const candidates = [
+                {code:'GA',currency:'XAF',timezone:'Africa/Libreville'},
+                {code:'SN',currency:'XOF',timezone:'Africa/Dakar'},
+                {code:'BJ',currency:'XOF',timezone:'Africa/Porto-Novo'},
+                {code:'FR',currency:'EUR',timezone:'Europe/Paris'}
+              ];
+              const candidate = candidates.find(c=>!occupied.includes(c.code)&&choices.includes(c.currency));
+              if (!candidate) throw Error('NO_FREE_DRY_RUN_MARKET_CURRENCY');
+              proof.dryRunMarket = candidate.code;
+              await field('code').fill(candidate.code);
+              await field('name').fill('RECETTE 4370 — simulation');
+              await field('currency').selectOption(candidate.currency);
+              await field('business_timezone').fill(candidate.timezone);
+              await expect(field('minor_unit')).not.toHaveValue('');
+              await next();
+              proof.stage = 'LEAD_AND_RIGHTS';
+              await expect(wizard.getByText(/Responsable et droits/)).toBeVisible();
+              const refs = await field('central_referent_user_id').locator('option').evaluateAll(options=>options.map(o=>o.value).filter(Boolean));
+              if (!refs.length) throw Error('NO_CENTRAL_REFERENT');
+              await field('central_referent_user_id').selectOption(refs[0]);
+              await field('last_name').fill('Recette');
+              await field('first_name').fill('Épreuve');
+              await expect(field('email_preview')).toHaveValue('recette.epreuve@komerce.co');
+              await field('phone').fill('+12025550123');
+              const limits = wizard.locator('input[name^="limit_"]');
+              await expect(limits).toHaveCount(4);
+              for(let i=0;i<4;i++) await limits.nth(i).fill('0');
+              await next();
+              proof.stage = 'OPTIONAL_RELAY';
+              await expect(wizard.getByText(/Relais \(facultatif\)/)).toBeVisible();
+              await next();
+              proof.stage = 'CASH_ONLY';
+              await expect(wizard.getByText(/Étape 4 sur 5/)).toBeVisible();
+              await field('cash_enabled').selectOption('true');
+              await field('confirmation_mode').selectOption('SINGLE');
+              for (const mode of ['stripe_eur','paypal_eur']) {
+                if (await field(mode).count()) await field(mode).selectOption('false');
+              }
+              await next();
+              proof.stage = 'FINAL_REVIEW';
+              await expect(wizard.getByText(/Étape 5 sur 5/)).toBeVisible();
+              await expect(wizard.getByText(/recette.epreuve@komerce.co/)).toBeVisible();
+              await expect(wizard.getByText(/Premier relais : à configurer localement/)).toBeVisible();
+              await expect(wizard.getByText('Paiements : Cash au relais',{exact:true})).toBeVisible();
+              await expect(wizard.getByRole('button',{name:'Initialiser le marché',exact:true})).toBeVisible();
+              await wizard.screenshot({path:output+'/wizard-review.png'});
+              // Do not submit: no market fixture cleanup or isolated phone proof yet.
+              await wizard.getByRole('button',{name:'Fermer',exact:true}).click();
+              await expect(wizard).toHaveCount(0);
+              if(proof.blockedWrites.some(w=>w.method==='POST'&&w.path==='/api/admin/markets')) throw Error('UNEXPECTED_PROVISION_ATTEMPT');
+              proof.stage = 'DONE';
+              proof.outcome = 'PASS_WIZARD_DRY_RUN_ONLY';
               proof.businessCertification = 'NOT_PROVEN';
-              await wizard.screenshot({path:output+'/wizard.png'});
             } catch (err) {
               proof.outcome = 'FAIL';
               proof.reason = ['ADMIN_TEST_IDENTITY_MISSING','EXACT_CANDIDATE_SHA_NOT_OBSERVED','LOGIN_REFUSED','ADMIN_CONTEXT_NOT_PROVEN','CENTRAL_AUTHORITY_REFUSED'].includes(err.message) ? err.message : (err.name || 'Error');
