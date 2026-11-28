@@ -608,20 +608,27 @@ test('L1 requireMarket : ?market= autorisé retenu, jamais de repli implicite', 
 describe('L1 shell marché : aucune surface montée avant un choix explicite', () => {
   const admin = { id: 'hq', role: 'admin' };
   const ctx = { actor: admin, access: { mode: 'global', allowedMarkets: ['CG', 'CM', 'KM'], defaultMarket: null, capabilities: ['dashboard.global.read'] } };
-  const shells = [
-    ['renderPricingWorkspaceShell', 'pricingMount'],
-  ];
-
-  test.each(shells)('%s en Global : invite, aucun mount, sélecteur sur « Choisir un marché… »', async (shell, mountName) => {
+  test('Pricing admin global : même atelier canonique en groupe, sans sélection marché', async () => {
     const env = loadCanonicalApp();
-    await env.api[shell](env.root, admin, ctx);
-    expect(env[mountName]).not.toHaveBeenCalled();
-    const surface = env.root.children[1];
-    expect(surface.children[0].attributes['data-market-prompt']).toBe('prompt');
+    await env.api.renderPricingWorkspaceShell(env.root, admin, ctx);
+    expect(env.pricingMount).toHaveBeenCalledTimes(1);
+    expect(env.pricingMount).toHaveBeenCalledWith(expect.objectContaining({ requestedMarket: null }));
+    expect(env.root.children[1].children[0].textContent).toBe('global');
     const select = env.root.children[0].children[1].children[1];
     expect(select.value).toBe('');
-    expect(select.children[0].textContent).toBe('Choisir un marché…');
     expect(select.children.map(o => o.value)).toEqual(['', 'CG', 'CM', 'KM']);
+    expect(select.children[0].textContent).toMatch(/Global/);
+  });
+
+  test('Pricing opérateur multi-marché : cible obligatoire, jamais groupe', async () => {
+    const env = loadCanonicalApp();
+    const op = { id: 'op', role: 'market_operator' };
+    const limited = { actor: op, access: { mode: 'market', allowedMarkets: ['CM', 'CG'], defaultMarket: 'CM', capabilities: [] } };
+    await env.api.renderPricingWorkspaceShell(env.root, op, limited);
+    expect(env.pricingMount).not.toHaveBeenCalled();
+    const select = env.root.children[0].children[1].children[1];
+    expect(select.children[0].textContent).toBe('Choisir un marché…');
+    expect(select.children.map(o => o.value)).toEqual(['', 'CM', 'CG']);
   });
 
   test('?market=XX non autorisé : invite « non autorisé », aucun mount', async () => {
@@ -634,19 +641,24 @@ describe('L1 shell marché : aucune surface montée avant un choix explicite', (
     expect(JSON.stringify(prompt)).toContain('XX');
   });
 
-  test('le choix monte la surface et retire l’invite ; shell = surface', async () => {
+  test('le choix groupe → marché → groupe garde le même atelier et le swap atomique', async () => {
     const env = loadCanonicalApp();
     await env.api.renderPricingWorkspaceShell(env.root, admin, ctx);
     const surface = env.root.children[1];
     const select = env.root.children[0].children[1].children[1];
     select.value = 'KM';
     await select._listeners.change();
-    expect(env.pricingMount).toHaveBeenCalledTimes(1);
+    expect(env.pricingMount).toHaveBeenCalledTimes(2);
     expect(env.pricingMount).toHaveBeenCalledWith(expect.objectContaining({ requestedMarket: 'KM' }));
     expect(surface.children).toHaveLength(1);
     expect(surface.children[0].className).toBe('kmc-market-surface-stage');
     expect(surface.children[0].children[0].textContent).toBe('KM');
-    expect(select.children.map(o => o.value)).toEqual(['CG', 'CM', 'KM']);
+    expect(select.children.map(o => o.value)).toEqual(['', 'CG', 'CM', 'KM']);
+    select.value = '';
+    await select._listeners.change();
+    expect(env.pricingMount).toHaveBeenCalledTimes(3);
+    expect(env.pricingMount).toHaveBeenLastCalledWith(expect.objectContaining({ requestedMarket: null }));
+    expect(surface.children[0].children[0].textContent).toBe('global');
   });
 
   test('délégation mono-marché : monte directement, sans invite', async () => {

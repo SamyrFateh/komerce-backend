@@ -915,12 +915,13 @@
     surface.setAttribute('data-canonical-surface', options.surface);
 
     const accessMode = adminContext?.access?.mode;
-    const allowGlobalOverview = typeof options.renderGlobalOverview === 'function' &&
-      (accessMode === 'global' || (accessMode === 'hub' && options.allowHubOverview === true));
+    const allowGlobalOverview = (typeof options.renderGlobalOverview === 'function' &&
+      (accessMode === 'global' || (accessMode === 'hub' && options.allowHubOverview === true))) ||
+      (options.allowGlobalScope === true && accessMode === 'global');
     let promptShown = false;
     let overviewShown = false;
     const renderCurrent = requestedMarket => {
-      if (requestedMarket === null && allowGlobalOverview) {
+      if (requestedMarket === null && allowGlobalOverview && typeof options.renderGlobalOverview === 'function') {
         // Jamais de writer actionnel avec marketCode=null. La projection
         // consolidée appelle une route GET déjà autorisée côté serveur.
         surface.replaceChildren();
@@ -1096,8 +1097,11 @@
   function renderPricingWorkspaceShell(root, user, adminContext) {
     return renderMarketSurfaceShell(root, user, adminContext, {
       surface: 'pricing-workspace',
-      title: 'Workspace Pricing / Atelier des coûts',
+      title: 'Atelier économique',
       requireMarket: true,
+      // The group is a real economic scope, not an implicit market or a second cockpit.
+      // All group reads/writes keep the existing server-side pricing authority.
+      allowGlobalScope: true,
       atomicSwap: true,
       render: renderPricingWorkspace,
     });

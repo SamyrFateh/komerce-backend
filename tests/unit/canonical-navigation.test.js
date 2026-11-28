@@ -458,7 +458,7 @@ describe('canonical admin navigation — zone utilitaire et marché', () => {
   });
 
 
-  test('Global dans la topbar pour Douane/Comptabilité, pas pour Pricing ; aucun droit déduit du rôle', () => {
+  test('Global dans la topbar pour Douane/Comptabilité/Pricing ; aucun droit déduit du rôle', () => {
     const globalCtx={actor:{id:'g',role:'admin'},access:{
       mode:'global',defaultMarket:null,allowedMarkets:['KM','CM'],capabilities:['dashboard.global.read'],
     }};
@@ -475,7 +475,8 @@ describe('canonical admin navigation — zone utilitaire et marché', () => {
     }
     const pricing=loadNavigation('/admin/workspaces/pricing','pricing-workspace');
     const h=mountFor(pricing,'/admin/workspaces/pricing','pricing-workspace',{role:'admin'},{adminContext:globalCtx});
-    expect(utilitiesOf(h).children[0].children[1].children[0].textContent).toBe('Choisir un marché…');
+    expect(utilitiesOf(h).children[0].children[1].children[0].textContent).toBe('Global · Tous les marchés');
+    expect(utilitiesOf(h).children[0].children[1].children.map(x=>x.value)).toEqual(['','KM','CM']);
   });
 
   test('Hub central ne prend pas un premier marché arbitraire dans la topbar', () => {

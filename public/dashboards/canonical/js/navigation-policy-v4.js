@@ -736,7 +736,7 @@
       || ((surface === 'hub-live' || surface === 'relais-live') && new URLSearchParams(String((global.location && global.location.search) || '')).get('view') === 'execute');
     const accessMode = adminContext?.access?.mode;
     const consolidatedActionView =
-      ['shipping-customs-workspace', 'accounting-workspace'].includes(surface) ||
+      ['shipping-customs-workspace', 'accounting-workspace', 'pricing-workspace'].includes(surface) ||
       (surface === 'hub-live' &&
        new URLSearchParams(String(global.location?.search || '')).get('view') === 'execute');
     const allowOverview = consolidatedActionView &&
