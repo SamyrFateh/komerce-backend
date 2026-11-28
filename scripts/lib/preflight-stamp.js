@@ -21,6 +21,7 @@ const fs = require('fs');
 const path = require('path');
 
 const STAMP_NAME = 'komerce-preflight-green';
+const READY_STAMP_NAME = 'komerce-preflight-ready';
 
 /**
  * Le tampon n'est posé que si le preflight a validé exactement le commit qui
@@ -44,10 +45,13 @@ function assertFinalState({ expectedSha, actualSha, trackedDirtyCount }) {
   }
 }
 
-function writeGreen({ sha, gitPath, write = fs.writeFileSync }) {
-  const file = gitPath(STAMP_NAME);
+function writeStamp(name, { sha, gitPath, write = fs.writeFileSync }) {
+  const file = gitPath(name);
   write(path.resolve(file), `${sha}\n`);
   return file;
 }
 
-module.exports = { STAMP_NAME, refusal, assertFinalState, writeGreen };
+function writeGreen(options) { return writeStamp(STAMP_NAME, options); }
+function writeReady(options) { return writeStamp(READY_STAMP_NAME, options); }
+
+module.exports = { STAMP_NAME, READY_STAMP_NAME, refusal, assertFinalState, writeGreen, writeReady };

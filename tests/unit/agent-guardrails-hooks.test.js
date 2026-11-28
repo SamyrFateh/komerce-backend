@@ -61,7 +61,7 @@ describe('setup-hooks.sh : installation du pre-push léger', () => {
     fs.mkdirSync(path.dirname(hook), { recursive: true });
     fs.writeFileSync(hook, '#!/bin/sh\n# KOMERCE-HOOK ancien\nexit 1\n');
     expect(run()).toContain('tampon pr:preflight vert');
-    expect(fs.readFileSync(hook, 'utf8')).toContain('pre-push-stamp v2');
+    expect(fs.readFileSync(hook, 'utf8')).toContain('pre-push-stamp v3');
     if (process.platform !== 'win32') {
       expect(fs.statSync(hook).mode & 0o111).toBeTruthy();
     }
@@ -129,4 +129,20 @@ describe('preflight-stamp', () => {
     expect(file).toBe('/repo/.git/komerce-preflight-green');
     expect(write).toHaveBeenCalledWith(path.resolve('/repo/.git/komerce-preflight-green'), 'abc\n');
   });
+});
+
+test('quick stamp only authorizes the exact SHA on a PR branch, never main or a tag', () => {
+  const { dir, head } = tempRepo();
+  const line = remote => `refs/heads/b ${head} ${remote} ${'0'.repeat(40)}\n`;
+  fs.writeFileSync(path.join(dir, '.git', stamp.READY_STAMP_NAME), head+'\n');
+  expect(prePush(dir, line('refs/heads/feat/b')).status).toBe(0);
+  expect(prePush(dir, line('refs/heads/main')).status).toBe(1);
+  expect(prePush(dir, line('refs/tags/v1')).status).toBe(1);
+  fs.writeFileSync(path.join(dir, '.git', stamp.READY_STAMP_NAME), 'stale\n');
+  expect(prePush(dir, line('refs/heads/feat/b')).status).toBe(1);
+});
+test('quick publication proof never writes the full green stamp', () => {
+  const write = jest.fn();
+  expect(stamp.writeReady({sha:'abc',gitPath:name=>'/repo/.git/'+name,write})).toBe('/repo/.git/komerce-preflight-ready');
+  expect(write).toHaveBeenCalledWith(path.resolve('/repo/.git/komerce-preflight-ready'),'abc\n');
 });
