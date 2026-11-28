@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 842,
-    "filesWithFullHeaders": 779,
+    "scannedCodeFiles": 843,
+    "filesWithFullHeaders": 780,
     "filesWithLiteHeaders": 63,
-    "filesWithAnyHeaders": 842,
+    "filesWithAnyHeaders": 843,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 2177,
-    "edges": 10875,
-    "dbTables": 260,
-    "doctrines": 862,
+    "graphNodes": 2181,
+    "edges": 10937,
+    "dbTables": 262,
+    "doctrines": 863,
     "impactAreas": 213,
-    "unresolvedCodeEdges": 1016,
+    "unresolvedCodeEdges": 1019,
     "dbWriteViaOverlapWarnings": 13,
     "multiWriterTables": 100
   },
@@ -40,7 +40,7 @@
     "admin-dashboard": 39,
     "decision-signals": 14,
     "market": 10,
-    "economic-engine": 76,
+    "economic-engine": 77,
     "sourcing": 37,
     "logistics": 76,
     "boutique": 24,
@@ -114,7 +114,7 @@
     "schema": 1,
     "route": 139,
     "entrypoint": 1,
-    "service": 519,
+    "service": 520,
     "external-adapter": 2,
     "infrastructure": 1,
     "machine": 1,
@@ -126,7 +126,7 @@
   "byCriticality": {
     "critical": 133,
     "medium": 155,
-    "high": 481,
+    "high": 482,
     "low": 72,
     "unknown": 1
   },
@@ -6652,6 +6652,8 @@
         "central authority overview"
       ],
       "depends": [
+        "services/fx-authority.js",
+        "services/market-payment-provider-config-service.js",
         "db.js",
         "middleware/auth.js",
         "services/market-control-plane.js",
@@ -11475,7 +11477,10 @@
       ],
       "dbRead": [
         "otp_codes",
-        "users"
+        "users",
+        "assignment_memberships",
+        "market_operating_assignments",
+        "markets"
       ],
       "dbWrite": [
         "otp_codes",
@@ -16112,6 +16117,7 @@
         "services/market-control-plane.js"
       ],
       "dbRead": [
+        "users",
         "dashboard_global_access_grants",
         "catalog_global_access_grants",
         "decision_signal_global_access_grants",
@@ -16735,6 +16741,67 @@
       "version": "2026-07"
     },
     {
+      "id": "services/cost-allocation/local-stock-economic-lots.js",
+      "file": "services/cost-allocation/local-stock-economic-lots.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-local-stock-receipt-lots",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "existing W3 receipt",
+        "SKU",
+        "payment evidence",
+        "physical lot attribution"
+      ],
+      "outputs": [
+        "financially closed lot",
+        "attributed sale",
+        "comparable local observations"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "routes/admin-costing.js",
+        "services/cost-allocation/product-margin-steering.js"
+      ],
+      "dbRead": [
+        "market_delegation_audit",
+        "markets",
+        "product_skus",
+        "products",
+        "order_items",
+        "orders",
+        "local_stock",
+        "local_stock_allocations",
+        "refunds",
+        "disputes",
+        "purchase_lines",
+        "local_stock_economic_lots",
+        "local_stock_economic_lot_lines"
+      ],
+      "dbWrite": [
+        "local_stock_economic_lots",
+        "local_stock_economic_lot_lines"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller-owned-atomic"
+      ],
+      "doctrine": [
+        "explicit_receipt_and_financial_proof_no_stock_mutation_no_historical_guess"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "local-stock"
+      ],
+      "version": null
+    },
+    {
       "id": "services/cost-allocation/manual-cost-entry-service.js",
       "file": "services/cost-allocation/manual-cost-entry-service.js",
       "type": "file",
@@ -16837,7 +16904,9 @@
         "international_shipments",
         "international_n1_reconciliations",
         "international_shipment_charges",
-        "product_skus"
+        "product_skus",
+        "local_stock_economic_lots",
+        "local_stock_economic_lot_lines"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -17501,6 +17570,7 @@
         "server_resolved_admin_context"
       ],
       "depends": [
+        "services/market-control-plane.js",
         "db.js",
         "middleware/require-dashboard-global-authority.js",
         "services/market-delegation-service.js"
@@ -17713,7 +17783,9 @@
         "dashboard-metrics",
         "dashboard-metrics/_helpers",
         "supplier-payment-review",
-        "financial-journal-reporting"
+        "financial-journal-reporting",
+        "economic-cost-center-read-model",
+        "fx-authority"
       ],
       "usedBy": [
         "routes/admin-dashboard-market.js"
@@ -19180,6 +19252,7 @@
         "refunds",
         "international_shipment_charges",
         "customs_shipments",
+        "customs_shipment_parcels",
         "parcels",
         "parcel_items",
         "scans",
@@ -19193,7 +19266,7 @@
       ],
       "dbWriteVia": [],
       "dbTxn": [
-        "service_owned_read_only_repeatable_read"
+        "service_owned_read_only_repeatable_read_and_serializable_close"
       ],
       "doctrine": [
         "exact_market_scope",
@@ -23554,6 +23627,11 @@
         "relais) and gap report"
       ],
       "depends": [
+        "services/routing.js",
+        "services/fx-authority.js",
+        "services/economic-cost-reference-service.js",
+        "services/market-commercial-price-service.js",
+        "services/market-payment-provider-config-service.js",
         "db.js",
         "services/market-delegation-service.js",
         "services/market-delivery-proof-service.js"
@@ -23809,7 +23887,8 @@
         "markets",
         "economic_cost_posts",
         "economic_cost_centers",
-        "currency_parities"
+        "currency_parities",
+        "hub_internal_invoices"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -23965,6 +24044,7 @@
       "usedBy": [],
       "dbRead": [
         "products",
+        "product_skus",
         "relais",
         "local_stock",
         "market_delegation_audit",
@@ -23987,7 +24067,7 @@
         }
       ],
       "dbTxn": [
-        "advisory_lock_session"
+        "caller-owned-atomic"
       ],
       "doctrine": [
         "country_lead_only_local_stock_declaration",
@@ -24541,7 +24621,9 @@
         "canonical market row in PROVISIONING",
         "audited lifecycle transitions"
       ],
-      "depends": [],
+      "depends": [
+        "services/fx-authority.js"
+      ],
       "usedBy": [
         "services/market-provisioning-service.js"
       ],
@@ -24944,7 +25026,9 @@
         "routes/payments-paypal.js"
       ],
       "dbRead": [
-        "market_central_collection_modes"
+        "market_central_collection_modes",
+        "market_operating_assignments",
+        "market_cash_control_policies"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -24982,15 +25066,22 @@
       "outputs": [
         "market_payment_providers configuration"
       ],
-      "depends": [],
+      "depends": [
+        "services/mobile-money/registry.js",
+        "services/market-payment-collection-gate.js"
+      ],
       "usedBy": [
         "services/market-provisioning-service.js"
       ],
       "dbRead": [
-        "markets"
+        "markets",
+        "market_central_collection_modes",
+        "market_operating_assignments",
+        "market_cash_control_policies"
       ],
       "dbWrite": [
-        "market_payment_providers"
+        "market_payment_providers",
+        "market_central_collection_modes"
       ],
       "dbWriteVia": [],
       "dbTxn": [
@@ -25030,6 +25121,10 @@
         "readiness"
       ],
       "depends": [
+        "services/user-mutation-service.js",
+        "utils/phone.js",
+        "bcryptjs",
+        "crypto",
         "services/market-lifecycle-service.js",
         "services/market-delegation-service.js",
         "services/market-operator-provisioning.js",
@@ -25046,6 +25141,8 @@
         "routes/admin-market-control-plane.js"
       ],
       "dbRead": [
+        "users",
+        "assignment_memberships",
         "catalog_global_access_grants",
         "dashboard_global_access_grants",
         "decision_signal_global_access_grants",
@@ -25056,6 +25153,12 @@
       ],
       "dbWrite": [],
       "dbWriteVia": [
+        {
+          "via": "user-mutation-service",
+          "tables": [
+            "users"
+          ]
+        },
         {
           "via": "market-lifecycle-service",
           "tables": [
@@ -25087,7 +25190,8 @@
         {
           "via": "market-payment-provider-config-service",
           "tables": [
-            "market_payment_providers"
+            "market_payment_providers",
+            "market_central_collection_modes"
           ]
         },
         {
@@ -25250,6 +25354,7 @@
         "market-delegation mutations"
       ],
       "dbRead": [
+        "markets",
         "market_operating_assignments",
         "assignment_capability_ceiling",
         "assignment_memberships",
@@ -36526,7 +36631,8 @@
         "settlement_list"
       ],
       "depends": [
-        "services/cost-allocation/canonical-margin-writer.js (db injecté par l'appelant)"
+        "services/cost-allocation/canonical-margin-writer.js",
+        "services/fx-authority.js (db injecté par l'appelant)"
       ],
       "usedBy": [
         "routes/purchasing.js"
@@ -36534,6 +36640,9 @@
       "dbRead": [
         "order_items",
         "purchase_lines",
+        "purchase_order_authorizations",
+        "purchase_orders",
+        "suppliers",
         "supplier_execution_payments",
         "supplier_payment_settlements"
       ],
@@ -42033,6 +42142,21 @@
       "table": "webauthn_credentials"
     },
     {
+      "id": "db:local_stock_allocations",
+      "type": "db-table",
+      "table": "local_stock_allocations"
+    },
+    {
+      "id": "db:local_stock_economic_lots",
+      "type": "db-table",
+      "table": "local_stock_economic_lots"
+    },
+    {
+      "id": "db:local_stock_economic_lot_lines",
+      "type": "db-table",
+      "table": "local_stock_economic_lot_lines"
+    },
+    {
       "id": "db:order_cost_entry_events",
       "type": "db-table",
       "table": "order_cost_entry_events"
@@ -42261,11 +42385,6 @@
       "id": "db:hub_supplier_return_attestations",
       "type": "db-table",
       "table": "hub_supplier_return_attestations"
-    },
-    {
-      "id": "db:local_stock_allocations",
-      "type": "db-table",
-      "table": "local_stock_allocations"
     },
     {
       "id": "db:import_runtime_item_events",
@@ -44246,6 +44365,11 @@
       "id": "doctrine:docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_TRANSPORT_COST_ALLOCATION.md"
+    },
+    {
+      "id": "doctrine:explicit_receipt_and_financial_proof_no_stock_mutation_no_historical_guess",
+      "type": "doctrine",
+      "doctrine": "explicit_receipt_and_financial_proof_no_stock_mutation_no_historical_guess"
     },
     {
       "id": "doctrine:traceable_manual_entry",
@@ -57333,6 +57457,18 @@
     },
     {
       "from": "routes/admin-market-control-plane.js",
+      "to": "services/fx-authority.js",
+      "type": "depends",
+      "label": "services/fx-authority.js"
+    },
+    {
+      "from": "routes/admin-market-control-plane.js",
+      "to": "services/market-payment-provider-config-service.js",
+      "type": "depends",
+      "label": "services/market-payment-provider-config-service.js"
+    },
+    {
+      "from": "routes/admin-market-control-plane.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
@@ -64977,6 +65113,24 @@
     },
     {
       "from": "routes/otp.js",
+      "to": "db:assignment_memberships",
+      "type": "db-read",
+      "label": "assignment_memberships"
+    },
+    {
+      "from": "routes/otp.js",
+      "to": "db:market_operating_assignments",
+      "type": "db-read",
+      "label": "market_operating_assignments"
+    },
+    {
+      "from": "routes/otp.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "routes/otp.js",
       "to": "db:otp_codes",
       "type": "db-write",
       "label": "otp_codes"
@@ -72463,6 +72617,12 @@
     },
     {
       "from": "services/central-authority.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/central-authority.js",
       "to": "db:dashboard_global_access_grants",
       "type": "db-read",
       "label": "dashboard_global_access_grants"
@@ -73554,6 +73714,132 @@
       "label": "dashboard"
     },
     {
+      "from": "services/cost-allocation/local-stock-economic-lots.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/admin-costing.js",
+      "to": "services/cost-allocation/local-stock-economic-lots.js",
+      "type": "uses",
+      "label": "routes/admin-costing.js"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "services/cost-allocation/local-stock-economic-lots.js",
+      "type": "uses",
+      "label": "services/cost-allocation/product-margin-steering.js"
+    },
+    {
+      "from": "services/cost-allocation/local-stock-economic-lots.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-read",
+      "label": "market_delegation_audit"
+    },
+    {
+      "from": "services/cost-allocation/local-stock-economic-lots.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/cost-allocation/local-stock-economic-lots.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/cost-allocation/local-stock-economic-lots.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/cost-allocation/local-stock-economic-lots.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/cost-allocation/local-stock-economic-lots.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/cost-allocation/local-stock-economic-lots.js",
+      "to": "db:local_stock",
+      "type": "db-read",
+      "label": "local_stock"
+    },
+    {
+      "from": "services/cost-allocation/local-stock-economic-lots.js",
+      "to": "db:local_stock_allocations",
+      "type": "db-read",
+      "label": "local_stock_allocations"
+    },
+    {
+      "from": "services/cost-allocation/local-stock-economic-lots.js",
+      "to": "db:refunds",
+      "type": "db-read",
+      "label": "refunds"
+    },
+    {
+      "from": "services/cost-allocation/local-stock-economic-lots.js",
+      "to": "db:disputes",
+      "type": "db-read",
+      "label": "disputes"
+    },
+    {
+      "from": "services/cost-allocation/local-stock-economic-lots.js",
+      "to": "db:purchase_lines",
+      "type": "db-read",
+      "label": "purchase_lines"
+    },
+    {
+      "from": "services/cost-allocation/local-stock-economic-lots.js",
+      "to": "db:local_stock_economic_lots",
+      "type": "db-read",
+      "label": "local_stock_economic_lots"
+    },
+    {
+      "from": "services/cost-allocation/local-stock-economic-lots.js",
+      "to": "db:local_stock_economic_lot_lines",
+      "type": "db-read",
+      "label": "local_stock_economic_lot_lines"
+    },
+    {
+      "from": "services/cost-allocation/local-stock-economic-lots.js",
+      "to": "db:local_stock_economic_lots",
+      "type": "db-write",
+      "label": "local_stock_economic_lots"
+    },
+    {
+      "from": "services/cost-allocation/local-stock-economic-lots.js",
+      "to": "db:local_stock_economic_lot_lines",
+      "type": "db-write",
+      "label": "local_stock_economic_lot_lines"
+    },
+    {
+      "from": "services/cost-allocation/local-stock-economic-lots.js",
+      "to": "doctrine:explicit_receipt_and_financial_proof_no_stock_mutation_no_historical_guess",
+      "type": "doctrine",
+      "label": "explicit_receipt_and_financial_proof_no_stock_mutation_no_historical_guess"
+    },
+    {
+      "from": "services/cost-allocation/local-stock-economic-lots.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/cost-allocation/local-stock-economic-lots.js",
+      "to": "impact:local-stock",
+      "type": "impact",
+      "label": "local-stock"
+    },
+    {
       "from": "services/cost-allocation/manual-cost-entry-service.js",
       "to": "services/cost-allocation/_helpers.js",
       "type": "depends",
@@ -73792,6 +74078,18 @@
       "to": "db:product_skus",
       "type": "db-read",
       "label": "product_skus"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "db:local_stock_economic_lots",
+      "type": "db-read",
+      "label": "local_stock_economic_lots"
+    },
+    {
+      "from": "services/cost-allocation/product-margin-steering.js",
+      "to": "db:local_stock_economic_lot_lines",
+      "type": "db-read",
+      "label": "local_stock_economic_lot_lines"
     },
     {
       "from": "services/cost-allocation/product-margin-steering.js",
@@ -74758,6 +75056,12 @@
     },
     {
       "from": "services/dashboard-admin-context.js",
+      "to": "services/market-control-plane.js",
+      "type": "depends",
+      "label": "services/market-control-plane.js"
+    },
+    {
+      "from": "services/dashboard-admin-context.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
@@ -75199,6 +75503,18 @@
       "to": "services/financial-journal-reporting.js",
       "type": "depends",
       "label": "financial-journal-reporting"
+    },
+    {
+      "from": "services/dashboard-finance-canonical.js",
+      "to": "services/economic-cost-center-read-model.js",
+      "type": "depends",
+      "label": "economic-cost-center-read-model"
+    },
+    {
+      "from": "services/dashboard-finance-canonical.js",
+      "to": "services/fx-authority.js",
+      "type": "depends",
+      "label": "fx-authority"
     },
     {
       "from": "routes/admin-dashboard-market.js",
@@ -77818,6 +78134,12 @@
       "to": "db:customs_shipments",
       "type": "db-read",
       "label": "customs_shipments"
+    },
+    {
+      "from": "services/economic-cost-center-read-model.js",
+      "to": "db:customs_shipment_parcels",
+      "type": "db-read",
+      "label": "customs_shipment_parcels"
     },
     {
       "from": "services/economic-cost-center-read-model.js",
@@ -85764,6 +86086,36 @@
     },
     {
       "from": "services/market-control-plane.js",
+      "to": "services/routing.js",
+      "type": "depends",
+      "label": "services/routing.js"
+    },
+    {
+      "from": "services/market-control-plane.js",
+      "to": "services/fx-authority.js",
+      "type": "depends",
+      "label": "services/fx-authority.js"
+    },
+    {
+      "from": "services/market-control-plane.js",
+      "to": "services/economic-cost-reference-service.js",
+      "type": "depends",
+      "label": "services/economic-cost-reference-service.js"
+    },
+    {
+      "from": "services/market-control-plane.js",
+      "to": "services/market-commercial-price-service.js",
+      "type": "depends",
+      "label": "services/market-commercial-price-service.js"
+    },
+    {
+      "from": "services/market-control-plane.js",
+      "to": "services/market-payment-provider-config-service.js",
+      "type": "depends",
+      "label": "services/market-payment-provider-config-service.js"
+    },
+    {
+      "from": "services/market-control-plane.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
@@ -86243,6 +86595,12 @@
     },
     {
       "from": "services/market-delegation-cost-statement-service.js",
+      "to": "db:hub_internal_invoices",
+      "type": "db-read",
+      "label": "hub_internal_invoices"
+    },
+    {
+      "from": "services/market-delegation-cost-statement-service.js",
       "to": "doctrine:cost_statement_is_a_projection_never_a_new_truth",
       "type": "doctrine",
       "label": "cost_statement_is_a_projection_never_a_new_truth"
@@ -86453,6 +86811,12 @@
       "to": "db:products",
       "type": "db-read",
       "label": "products"
+    },
+    {
+      "from": "services/market-delegation-local-stock-service.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
     },
     {
       "from": "services/market-delegation-local-stock-service.js",
@@ -87341,6 +87705,12 @@
       "label": "logistics"
     },
     {
+      "from": "services/market-lifecycle-service.js",
+      "to": "services/fx-authority.js",
+      "type": "depends",
+      "label": "services/fx-authority.js"
+    },
+    {
       "from": "services/market-provisioning-service.js",
       "to": "services/market-lifecycle-service.js",
       "type": "uses",
@@ -88050,6 +88420,18 @@
     },
     {
       "from": "services/market-payment-collection-gate.js",
+      "to": "db:market_operating_assignments",
+      "type": "db-read",
+      "label": "market_operating_assignments"
+    },
+    {
+      "from": "services/market-payment-collection-gate.js",
+      "to": "db:market_cash_control_policies",
+      "type": "db-read",
+      "label": "market_cash_control_policies"
+    },
+    {
+      "from": "services/market-payment-collection-gate.js",
       "to": "doctrine:market_encaisse",
       "type": "doctrine",
       "label": "market_encaisse"
@@ -88085,6 +88467,18 @@
       "label": "checkout"
     },
     {
+      "from": "services/market-payment-provider-config-service.js",
+      "to": "services/mobile-money/registry.js",
+      "type": "depends",
+      "label": "services/mobile-money/registry.js"
+    },
+    {
+      "from": "services/market-payment-provider-config-service.js",
+      "to": "services/market-payment-collection-gate.js",
+      "type": "depends",
+      "label": "services/market-payment-collection-gate.js"
+    },
+    {
       "from": "services/market-provisioning-service.js",
       "to": "services/market-payment-provider-config-service.js",
       "type": "uses",
@@ -88098,9 +88492,33 @@
     },
     {
       "from": "services/market-payment-provider-config-service.js",
+      "to": "db:market_central_collection_modes",
+      "type": "db-read",
+      "label": "market_central_collection_modes"
+    },
+    {
+      "from": "services/market-payment-provider-config-service.js",
+      "to": "db:market_operating_assignments",
+      "type": "db-read",
+      "label": "market_operating_assignments"
+    },
+    {
+      "from": "services/market-payment-provider-config-service.js",
+      "to": "db:market_cash_control_policies",
+      "type": "db-read",
+      "label": "market_cash_control_policies"
+    },
+    {
+      "from": "services/market-payment-provider-config-service.js",
       "to": "db:market_payment_providers",
       "type": "db-write",
       "label": "market_payment_providers"
+    },
+    {
+      "from": "services/market-payment-provider-config-service.js",
+      "to": "db:market_central_collection_modes",
+      "type": "db-write",
+      "label": "market_central_collection_modes"
     },
     {
       "from": "services/market-payment-provider-config-service.js",
@@ -88125,6 +88543,30 @@
       "to": "impact:market-control-plane",
       "type": "impact",
       "label": "market-control-plane"
+    },
+    {
+      "from": "services/market-provisioning-service.js",
+      "to": "services/user-mutation-service.js",
+      "type": "depends",
+      "label": "services/user-mutation-service.js"
+    },
+    {
+      "from": "services/market-provisioning-service.js",
+      "to": "utils/phone.js",
+      "type": "depends",
+      "label": "utils/phone.js"
+    },
+    {
+      "from": "services/market-provisioning-service.js",
+      "to": "bcryptjs",
+      "type": "depends",
+      "label": "bcryptjs"
+    },
+    {
+      "from": "services/market-provisioning-service.js",
+      "to": "crypto",
+      "type": "depends",
+      "label": "crypto"
     },
     {
       "from": "services/market-provisioning-service.js",
@@ -88200,6 +88642,18 @@
     },
     {
       "from": "services/market-provisioning-service.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/market-provisioning-service.js",
+      "to": "db:assignment_memberships",
+      "type": "db-read",
+      "label": "assignment_memberships"
+    },
+    {
+      "from": "services/market-provisioning-service.js",
       "to": "db:catalog_global_access_grants",
       "type": "db-read",
       "label": "catalog_global_access_grants"
@@ -88239,6 +88693,13 @@
       "to": "db:market_operating_assignments",
       "type": "db-read",
       "label": "market_operating_assignments"
+    },
+    {
+      "from": "services/market-provisioning-service.js",
+      "to": "db:users",
+      "type": "db-write-via",
+      "label": "users",
+      "via": "user-mutation-service"
     },
     {
       "from": "services/market-provisioning-service.js",
@@ -88301,6 +88762,13 @@
       "to": "db:market_payment_providers",
       "type": "db-write-via",
       "label": "market_payment_providers",
+      "via": "market-payment-provider-config-service"
+    },
+    {
+      "from": "services/market-provisioning-service.js",
+      "to": "db:market_central_collection_modes",
+      "type": "db-write-via",
+      "label": "market_central_collection_modes",
       "via": "market-payment-provider-config-service"
     },
     {
@@ -88527,6 +88995,12 @@
       "to": "services/market-scope-projector.js",
       "type": "uses",
       "label": "market-delegation mutations"
+    },
+    {
+      "from": "services/market-scope-projector.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
     },
     {
       "from": "services/market-scope-projector.js",
@@ -106928,9 +107402,15 @@
     },
     {
       "from": "services/supplier-payment-settlement-service.js",
-      "to": "services/cost-allocation/canonical-margin-writer.js (db injecté par l'appelant)",
+      "to": "services/cost-allocation/canonical-margin-writer.js",
       "type": "depends",
-      "label": "services/cost-allocation/canonical-margin-writer.js (db injecté par l'appelant)"
+      "label": "services/cost-allocation/canonical-margin-writer.js"
+    },
+    {
+      "from": "services/supplier-payment-settlement-service.js",
+      "to": "services/fx-authority.js (db injecté par l'appelant)",
+      "type": "depends",
+      "label": "services/fx-authority.js (db injecté par l'appelant)"
     },
     {
       "from": "routes/purchasing.js",
@@ -106949,6 +107429,24 @@
       "to": "db:purchase_lines",
       "type": "db-read",
       "label": "purchase_lines"
+    },
+    {
+      "from": "services/supplier-payment-settlement-service.js",
+      "to": "db:purchase_order_authorizations",
+      "type": "db-read",
+      "label": "purchase_order_authorizations"
+    },
+    {
+      "from": "services/supplier-payment-settlement-service.js",
+      "to": "db:purchase_orders",
+      "type": "db-read",
+      "label": "purchase_orders"
+    },
+    {
+      "from": "services/supplier-payment-settlement-service.js",
+      "to": "db:suppliers",
+      "type": "db-read",
+      "label": "suppliers"
     },
     {
       "from": "services/supplier-payment-settlement-service.js",
@@ -119847,6 +120345,7 @@
         "middleware/auth.js",
         "middleware/require-pricing-global-authority.js",
         "services/cost-allocation/index.js",
+        "services/cost-allocation/local-stock-economic-lots.js",
         "services/cost-allocation/manual-cost-entry-service.js",
         "services/cost-allocation/product-margin-steering.js",
         "services/cost-allocation/real-margin-shadow.js",
@@ -120294,6 +120793,8 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
+        "services/fx-authority.js",
+        "services/market-payment-provider-config-service.js",
         "db.js",
         "middleware/auth.js",
         "services/market-control-plane.js",
@@ -120379,8 +120880,10 @@
         "impact:market-delegation",
         "middleware/auth.js",
         "services/central-authority.js",
+        "services/fx-authority.js",
         "services/market-control-plane.js",
         "services/market-delivery-proof-service.js",
+        "services/market-payment-provider-config-service.js",
         "services/market-provisioning-service.js",
         "services/market-transport-sale-rate-command.js"
       ]
@@ -125110,7 +125613,10 @@
       "ownedFiles": [],
       "dbRead": [
         "otp_codes",
-        "users"
+        "users",
+        "assignment_memberships",
+        "market_operating_assignments",
+        "markets"
       ],
       "dbWrite": [
         "otp_codes",
@@ -125132,6 +125638,9 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:assignment_memberships",
+        "db:market_operating_assignments",
+        "db:markets",
         "db:otp_codes",
         "db:users",
         "doctrine:otp_une_fois",
@@ -129807,6 +130316,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "users",
         "dashboard_global_access_grants",
         "catalog_global_access_grants",
         "decision_signal_global_access_grants",
@@ -129832,6 +130342,7 @@
         "db:decision_signal_global_access_grants",
         "db:pricing_global_access_grants",
         "db:sourcing_global_access_grants",
+        "db:users",
         "doctrine:admin_role_never_implies_canonical_authority",
         "doctrine:central_authority_is_explicit_grant",
         "doctrine:no_second_authorization_engine",
@@ -130481,6 +130992,69 @@
         "services/transport-cost-allocation.js"
       ]
     },
+    "services/cost-allocation/local-stock-economic-lots.js": {
+      "role": "economic-engine-local-stock-receipt-lots",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-costing.js",
+        "services/cost-allocation/product-margin-steering.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "market_delegation_audit",
+        "markets",
+        "product_skus",
+        "products",
+        "order_items",
+        "orders",
+        "local_stock",
+        "local_stock_allocations",
+        "refunds",
+        "disputes",
+        "purchase_lines",
+        "local_stock_economic_lots",
+        "local_stock_economic_lot_lines"
+      ],
+      "dbWrite": [
+        "local_stock_economic_lots",
+        "local_stock_economic_lot_lines"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "explicit_receipt_and_financial_proof_no_stock_mutation_no_historical_guess"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "local-stock"
+      ],
+      "mustCheck": [
+        "db:disputes",
+        "db:local_stock",
+        "db:local_stock_allocations",
+        "db:local_stock_economic_lot_lines",
+        "db:local_stock_economic_lots",
+        "db:market_delegation_audit",
+        "db:markets",
+        "db:order_items",
+        "db:orders",
+        "db:product_skus",
+        "db:products",
+        "db:purchase_lines",
+        "db:refunds",
+        "doctrine:explicit_receipt_and_financial_proof_no_stock_mutation_no_historical_guess",
+        "impact:economic-engine",
+        "impact:local-stock",
+        "routes/admin-costing.js",
+        "services/cost-allocation/product-margin-steering.js"
+      ]
+    },
     "services/cost-allocation/manual-cost-entry-service.js": {
       "role": "manual-cost-entry",
       "domain": "economic-engine",
@@ -130572,7 +131146,9 @@
         "international_shipments",
         "international_n1_reconciliations",
         "international_shipment_charges",
-        "product_skus"
+        "product_skus",
+        "local_stock_economic_lots",
+        "local_stock_economic_lot_lines"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -130593,6 +131169,8 @@
         "db:international_shipment_charges",
         "db:international_shipment_relay_receipts",
         "db:international_shipments",
+        "db:local_stock_economic_lot_lines",
+        "db:local_stock_economic_lots",
         "db:order_item_cost_imputations",
         "db:order_item_real_cost_allocations",
         "db:order_items",
@@ -130606,6 +131184,7 @@
         "routes/admin-costing.js",
         "services/cost-allocation/_helpers.js",
         "services/cost-allocation/cost-types.js",
+        "services/cost-allocation/local-stock-economic-lots.js",
         "services/cost-allocation/real-margin-shadow.js",
         "services/economic-sku-rail-selection.js",
         "services/pricing-market-decision-policy.js",
@@ -131230,6 +131809,7 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
+        "services/market-control-plane.js",
         "db.js",
         "middleware/require-dashboard-global-authority.js",
         "services/market-delegation-service.js"
@@ -131283,6 +131863,7 @@
         "impact:market-authorization",
         "middleware/require-dashboard-global-authority.js",
         "routes/admin-dashboard-market.js",
+        "services/market-control-plane.js",
         "services/market-delegation-service.js"
       ]
     },
@@ -131456,7 +132037,9 @@
         "dashboard-metrics",
         "dashboard-metrics/_helpers",
         "supplier-payment-review",
-        "services/financial-journal-reporting.js"
+        "services/financial-journal-reporting.js",
+        "services/economic-cost-center-read-model.js",
+        "services/fx-authority.js"
       ],
       "directUsedBy": [
         "routes/admin-dashboard-market.js"
@@ -131512,7 +132095,9 @@
         "impact:market-authorization",
         "impact:purchasing",
         "routes/admin-dashboard-market.js",
+        "services/economic-cost-center-read-model.js",
         "services/financial-journal-reporting.js",
+        "services/fx-authority.js",
         "services/supplier-payment-review.js"
       ]
     },
@@ -132956,6 +133541,7 @@
         "refunds",
         "international_shipment_charges",
         "customs_shipments",
+        "customs_shipment_parcels",
         "parcels",
         "parcel_items",
         "scans",
@@ -132980,6 +133566,7 @@
         "market-authorization"
       ],
       "mustCheck": [
+        "db:customs_shipment_parcels",
         "db:customs_shipments",
         "db:economic_cost_budget_revisions",
         "db:economic_cost_centers",
@@ -133026,6 +133613,7 @@
         "services/cost-allocation/cost-types.js",
         "services/cost-allocation/real-margin-shadow.js",
         "services/customer-handoff-reconciliation.js",
+        "services/dashboard-finance-canonical.js",
         "services/economic-cost-reference-service.js",
         "services/economic-cost-write-authority.js",
         "services/fx-authority.js",
@@ -133244,6 +133832,7 @@
         "routes/admin-pricing-workspace.js",
         "services/economic-cost-center-read-model.js",
         "services/economic-cost-write-authority.js",
+        "services/market-control-plane.js",
         "services/market-delegation-service.js",
         "services/market-provisioning-service.js",
         "services/market-structure-charge-reference.js"
@@ -134138,6 +134727,8 @@
         "impact:payments",
         "impact:pricing",
         "impact:transport",
+        "routes/admin-market-control-plane.js",
+        "services/dashboard-finance-canonical.js",
         "services/economic-cost-budget-service.js",
         "services/economic-cost-center-read-model.js",
         "services/economic-cost-commitment-service.js",
@@ -134145,7 +134736,9 @@
         "services/financial-journal.js",
         "services/fx-chain-service.js",
         "services/fx-engine-rates.js",
+        "services/market-control-plane.js",
         "services/market-delegation-cost-statement-service.js",
+        "services/market-lifecycle-service.js",
         "services/market-transport-sale-rates.js",
         "services/order-fx-snapshot.js",
         "services/pricing-parameters-status.js",
@@ -137498,6 +138091,7 @@
         "impact:market",
         "impact:pricing",
         "routes/admin-pricing-workspace.js",
+        "services/market-control-plane.js",
         "services/market-local-price-activation-service.js",
         "services/market-local-price-state-transition.js"
       ]
@@ -137510,6 +138104,11 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
+        "services/routing.js",
+        "services/fx-authority.js",
+        "services/economic-cost-reference-service.js",
+        "services/market-commercial-price-service.js",
+        "services/market-payment-provider-config-service.js",
         "db.js",
         "services/market-delegation-service.js",
         "services/market-delivery-proof-service.js"
@@ -137573,9 +138172,15 @@
         "impact:market-delegation",
         "routes/admin-market-control-plane.js",
         "services/central-authority.js",
+        "services/dashboard-admin-context.js",
+        "services/economic-cost-reference-service.js",
+        "services/fx-authority.js",
+        "services/market-commercial-price-service.js",
         "services/market-delegation-service.js",
         "services/market-delivery-proof-service.js",
-        "services/market-provisioning-service.js"
+        "services/market-payment-provider-config-service.js",
+        "services/market-provisioning-service.js",
+        "services/routing.js"
       ]
     },
     "services/market-cost-attribution-service.js": {
@@ -137779,7 +138384,8 @@
         "markets",
         "economic_cost_posts",
         "economic_cost_centers",
-        "currency_parities"
+        "currency_parities",
+        "hub_internal_invoices"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -137799,6 +138405,7 @@
         "db:economic_cost_centers",
         "db:economic_cost_posts",
         "db:economic_structure_cost_events",
+        "db:hub_internal_invoices",
         "db:market_cost_attributions",
         "db:markets",
         "doctrine:client_market_id_never_authority",
@@ -137934,6 +138541,7 @@
       "ownedFiles": [],
       "dbRead": [
         "products",
+        "product_skus",
         "relais",
         "local_stock",
         "market_delegation_audit",
@@ -137969,6 +138577,7 @@
         "db:local_stock",
         "db:market_delegation_audit",
         "db:markets",
+        "db:product_skus",
         "db:products",
         "db:relais",
         "doctrine:country_lead_only_local_stock_declaration",
@@ -138543,7 +139152,9 @@
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [],
+      "directDependsOn": [
+        "services/fx-authority.js"
+      ],
       "directUsedBy": [
         "services/market-provisioning-service.js"
       ],
@@ -138573,6 +139184,7 @@
         "impact:authorization",
         "impact:market",
         "impact:market-control-plane",
+        "services/fx-authority.js",
         "services/market-provisioning-service.js"
       ]
     },
@@ -138954,7 +139566,9 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "market_central_collection_modes"
+        "market_central_collection_modes",
+        "market_operating_assignments",
+        "market_cash_control_policies"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -138969,7 +139583,9 @@
         "checkout"
       ],
       "mustCheck": [
+        "db:market_cash_control_policies",
         "db:market_central_collection_modes",
+        "db:market_operating_assignments",
         "doctrine:fail_closed",
         "doctrine:market_encaisse",
         "doctrine:no_country_branch",
@@ -138978,6 +139594,7 @@
         "impact:payments",
         "routes/payments-paypal.js",
         "routes/payments.js",
+        "services/market-payment-provider-config-service.js",
         "services/order-checkout-service.js"
       ]
     },
@@ -138988,16 +139605,23 @@
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [],
+      "directDependsOn": [
+        "services/mobile-money/registry.js",
+        "services/market-payment-collection-gate.js"
+      ],
       "directUsedBy": [
         "services/market-provisioning-service.js"
       ],
       "ownedFiles": [],
       "dbRead": [
-        "markets"
+        "markets",
+        "market_central_collection_modes",
+        "market_operating_assignments",
+        "market_cash_control_policies"
       ],
       "dbWrite": [
-        "market_payment_providers"
+        "market_payment_providers",
+        "market_central_collection_modes"
       ],
       "dbWriteVia": [],
       "doctrines": [
@@ -139009,13 +139633,20 @@
         "market-control-plane"
       ],
       "mustCheck": [
+        "db:market_cash_control_policies",
+        "db:market_central_collection_modes",
+        "db:market_operating_assignments",
         "db:market_payment_providers",
         "db:markets",
         "doctrine:payment_provider_config_owned_by_payments",
         "doctrine:provisioning_only_writer",
         "impact:market-control-plane",
         "impact:payments",
-        "services/market-provisioning-service.js"
+        "routes/admin-market-control-plane.js",
+        "services/market-control-plane.js",
+        "services/market-payment-collection-gate.js",
+        "services/market-provisioning-service.js",
+        "services/mobile-money/registry.js"
       ]
     },
     "services/market-provisioning-service.js": {
@@ -139026,6 +139657,10 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
+        "services/user-mutation-service.js",
+        "utils/phone.js",
+        "bcryptjs",
+        "crypto",
         "services/market-lifecycle-service.js",
         "services/market-delegation-service.js",
         "services/market-operator-provisioning.js",
@@ -139043,6 +139678,8 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "users",
+        "assignment_memberships",
         "catalog_global_access_grants",
         "dashboard_global_access_grants",
         "decision_signal_global_access_grants",
@@ -139053,6 +139690,12 @@
       ],
       "dbWrite": [],
       "dbWriteVia": [
+        {
+          "via": "user-mutation-service",
+          "tables": [
+            "users"
+          ]
+        },
         {
           "via": "market-lifecycle-service",
           "tables": [
@@ -139084,7 +139727,8 @@
         {
           "via": "market-payment-provider-config-service",
           "tables": [
-            "market_payment_providers"
+            "market_payment_providers",
+            "market_central_collection_modes"
           ]
         },
         {
@@ -139121,6 +139765,7 @@
         "db:economic_cost_centers",
         "db:economic_cost_families",
         "db:market_cash_control_policies",
+        "db:market_central_collection_modes",
         "db:market_delegation_audit",
         "db:market_operating_assignments",
         "db:market_payment_providers",
@@ -139130,6 +139775,7 @@
         "db:pricing_global_access_grants",
         "db:relais",
         "db:sourcing_global_access_grants",
+        "db:users",
         "doctrine:compose_existing_primitives",
         "doctrine:provisioning_is_not_activation",
         "doctrine:readiness_precedes_activation",
@@ -139148,7 +139794,9 @@
         "services/market-operator-provisioning.js",
         "services/market-payment-provider-config-service.js",
         "services/market-scope-projector.js",
-        "services/relais-mutation-service.js"
+        "services/relais-mutation-service.js",
+        "services/user-mutation-service.js",
+        "utils/phone.js"
       ]
     },
     "services/market-ready-to-sell-projection.js": {
@@ -139260,6 +139908,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "markets",
         "market_operating_assignments",
         "assignment_capability_ceiling",
         "assignment_memberships",
@@ -139282,6 +139931,7 @@
         "db:assignment_memberships",
         "db:capability_registry",
         "db:market_operating_assignments",
+        "db:markets",
         "db:membership_capabilities",
         "doctrine:granular_members_fail_closed_on_legacy_roles",
         "doctrine:operator_market_scopes_is_market_owned_projection",
@@ -139703,6 +140353,7 @@
         "impact:checkout",
         "impact:payment",
         "routes/payments-mobile-money.js",
+        "services/market-payment-provider-config-service.js",
         "services/mobile-money/mtn-momo-cg.js",
         "services/mobile-money/orange-money-cm.js",
         "services/payment-mobile-money.js"
@@ -147277,6 +147928,7 @@
         "impact:unknown",
         "routes/orders/create.js",
         "server.js",
+        "services/market-control-plane.js",
         "services/shared-cart-lifecycle.js",
         "utils/logger.js"
       ]
@@ -150591,7 +151243,8 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "services/cost-allocation/canonical-margin-writer.js (db injecté par l'appelant)"
+        "services/cost-allocation/canonical-margin-writer.js",
+        "services/fx-authority.js (db injecté par l'appelant)"
       ],
       "directUsedBy": [
         "routes/purchasing.js"
@@ -150600,6 +151253,9 @@
       "dbRead": [
         "order_items",
         "purchase_lines",
+        "purchase_order_authorizations",
+        "purchase_orders",
+        "suppliers",
         "supplier_execution_payments",
         "supplier_payment_settlements"
       ],
@@ -150617,8 +151273,11 @@
       "mustCheck": [
         "db:order_items",
         "db:purchase_lines",
+        "db:purchase_order_authorizations",
+        "db:purchase_orders",
         "db:supplier_execution_payments",
         "db:supplier_payment_settlements",
+        "db:suppliers",
         "doctrine:pricing_market_viability_cost_scope",
         "impact:economic-engine",
         "impact:purchasing",
@@ -153361,7 +154020,8 @@
         "impact:dashboard",
         "impact:loyalty",
         "routes/loyalty.js",
-        "services/market-delegation-network-service.js"
+        "services/market-delegation-network-service.js",
+        "services/market-provisioning-service.js"
       ]
     },
     "services/verify-qr-collection.js": {
@@ -154770,7 +155430,8 @@
         "doctrine:resolve_before_behavior_change",
         "impact:unknown",
         "middleware/auth-guest.js",
-        "routes/otp.js"
+        "routes/otp.js",
+        "services/market-provisioning-service.js"
       ]
     },
     "utils/pickup-receipt-html.js": {
@@ -158813,6 +159474,12 @@
       "label": "../transport-cost-allocation"
     },
     {
+      "from": "services/cost-allocation/local-stock-economic-lots.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "services/cost-allocation/product-margin-steering.js",
       "to": "db",
       "type": "depends",
@@ -160047,6 +160714,18 @@
       "to": "services/market-operator-provisioning.js",
       "type": "uses",
       "label": "scripts/provision-market-operator.js"
+    },
+    {
+      "from": "services/market-provisioning-service.js",
+      "to": "bcryptjs",
+      "type": "depends",
+      "label": "bcryptjs"
+    },
+    {
+      "from": "services/market-provisioning-service.js",
+      "to": "crypto",
+      "type": "depends",
+      "label": "crypto"
     },
     {
       "from": "services/market-ready-to-sell-projection.js",
@@ -161424,9 +162103,9 @@
     },
     {
       "from": "services/supplier-payment-settlement-service.js",
-      "to": "services/cost-allocation/canonical-margin-writer.js (db injecté par l'appelant)",
+      "to": "services/fx-authority.js (db injecté par l'appelant)",
       "type": "depends",
-      "label": "services/cost-allocation/canonical-margin-writer.js (db injecté par l'appelant)"
+      "label": "services/fx-authority.js (db injecté par l'appelant)"
     },
     {
       "from": "future provider payment orchestration",

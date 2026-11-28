@@ -48,13 +48,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 243 | Vérifié sur le dump live Railway. |
+| Tables | 262 | Vérifié sur le dump live Railway. |
 | Vues | 21 | Vérifié sur le dump live Railway. |
 | ENUMs | 17 | Types métier présents dans le dump live Railway. |
-| Index | 544 | Performance + contraintes uniques |
-| Foreign keys | 504 | Cohérence relationnelle |
-| Fonctions | 151 | Fonctions présentes dans le dump live Railway. |
-| Triggers | 219 | Triggers présents dans le dump live Railway. |
+| Index | 559 | Performance + contraintes uniques |
+| Foreign keys | 560 | Cohérence relationnelle |
+| Fonctions | 162 | Fonctions présentes dans le dump live Railway. |
+| Triggers | 234 | Triggers présents dans le dump live Railway. |
 | Extensions | `pgcrypto`, `uuid-ossp` | UUID + chiffrement |
 
 ---
@@ -107,6 +107,9 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 | `order_checkout_idempotency` | Réservation transactionnelle UNIQUE(user_id, idempotency_key) et snapshot immuable du résultat du checkout ; réémission sans double création, stock ni débit wallet. Ne pas confondre avec une table live tant que le dump Railway ne confirme pas la migration. **Migration 408 — promue le 2026-11-13 (schema-promote, dump live verifie).** |
 | `pickup_collect_failures` | Compteur append-only des échecs de retrait par code (code inconnu ou incorrect) par agent et relais ; au-delà de 5 échecs en 15 minutes glissantes, collectByPickupCode répond 429. Colonnes agent_id, relais_id, created_at. Aucun code stocké. **Migration 413 — promue le 2026-11-13 (schema-promote, dump live verifie).** |
 | `pickup_code_generations` | Audit append-only des codes de retrait regénérés par le client propriétaire (POST /api/pickup/customer-regenerate/:orderId) ; sert aussi de quota 5 par commande et par 24 h. Colonnes order_id, user_id, created_at. Aucun code ni hash stocké. **Migration 412 — promue le 2026-11-13 (schema-promote, dump live verifie).** |
+| `hub_supplier_receipt_checks` | En-tête du constat qualité fournisseur, référence idempotente, acteur et lien unité conforme. **Migration 450 — promue le 2026-11-28 (schema-promote, dump live verifie).** |
+| `hub_supplier_receipt_check_lines` | Ventilation par SKU attendu/reçu/refusé, conforme et manquant calculés. **Migration 450 — promue le 2026-11-28 (schema-promote, dump live verifie).** |
+| `hub_supplier_return_attestations` | Preuves physiques de remise fournisseur, cumul borné au refusé, sans effet financier. **Migration 450 — promue le 2026-11-28 (schema-promote, dump live verifie).** |
 
 > **Ajouté** : migration 071 (A-BE-18, 26 mai 2026). Ces tables étaient auparavant créées au runtime par `ensureRelayTables()` dans `routes/relay-dashboard.js`. Elles sont désormais versionnées dans `migrations/071_relay_dashboard_tables.sql` (idempotent). Colonnes : voir migration pour le DDL complet (types incidents, priorités, statuts, résolution). Index : `idx_incidents_order`, `idx_incidents_status`, `idx_comments_order`.
 | `order_item_cost_imputations` | Imputations de coûts par item (audit). **Migration 164 (2026-09-06, `intended_migration_schema`)** : + `estimated_business_variable_cost_kmf` NUMERIC(12,2) nullable pour figer les coûts variables business (paiement + provision risque) et + `estimated_fixed_overhead_kmf` NUMERIC(12,2) nullable comme allocation analytique historique des charges fixes. `estimated_business_complete_cost_kmf` est conservé pour compatibilité legacy. Cette allocation fixe n'est jamais une dette intrinsèque du SKU ni une autorité de prix. Le backfill reste NULL lorsqu'un snapshot historique ne permet pas une reconstruction fiable ; aucune valeur 0 n'est inventée. |
@@ -235,67 +238,18 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 
 ### 4.8 Pricing et économie (tables live + 2 objets visés)
 
-<!-- schema-pending
-object: economic_cost_commitments
-kind: table
-migration: 432
-section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
-role: Engagement administratif par poste et mois, montant natif et EUR figés, preuve et auteur.
--->
 
-<!-- schema-pending
-object: economic_cost_commitment_movements
-kind: table
-migration: 432
-section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
-role: Mouvements append-only de libération ou consommation partielle liée au fait canonique, plafonds de conservation.
--->
 
 **Migration 432 — intention uniquement :** aucun fait réel créé par un engagement. Premier lien limité aux ACCRUAL de structure non corrigés, même poste/devise/période. Projection décisionnelle et corrections, autres sources, FX et autorisations à raccorder avant activation. Aucune donnée live attestée.
 
 
-<!-- schema-pending
-object: economic_cost_budget_revisions
-kind: table
-migration: 431
-section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
-role: Versions append-only du budget mensuel par poste ; devise native et snapshot EUR sourcé, dernière révision seulement ; distinct des charges réelles et engagements.
--->
 
 **Migration 431 — intention uniquement :** aucun budget initial, aucune conversion autonome ni écriture dans le journal réel. Service et habilitations restent à raccorder à l'autorité FX existante. Validation CI sur PostgreSQL jetable avant PR ; live non attesté.
 
 
-<!-- schema-pending
-object: economic_cost_centers
-kind: table
-migration: 430
-section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
-role: Référentiel de centres groupe ou marché, responsable explicite avant activation.
--->
 
-<!-- schema-pending
-object: economic_cost_families
-kind: table
-migration: 430
-section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
-role: Familles extensibles par centre, sans source de dépenses.
--->
 
-<!-- schema-pending
-object: economic_cost_resources
-kind: table
-migration: 430
-section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
-role: Ressources identifiées par centre, sans écriture de coût.
--->
 
-<!-- schema-pending
-object: economic_cost_posts
-kind: table
-migration: 430
-section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
-role: Postes classés nature/périmètre/base causale, liens structure existants à scope identique, aucun journal de réel.
--->
 
 **Migration 430 — intention uniquement :** référentiel administratif ECO-1a. Aucune donnée insérée, aucun fait réel créé. Validation PostgreSQL CI avant fusion, déploiement et vérification live séparés. Le retrait éventuel nécessite une migration compensatrice gouvernée, jamais la suppression de faits.
 
@@ -331,6 +285,18 @@ role: Postes classés nature/périmètre/base causale, liens structure existants
 | `market_price_observations` | Observations de prix locales market-scoped par produit, devise du marché, source, preuve et date d'observation ; source du corridor pays distincte de competitor_prices global. **Migration 192 — promue le 2026-09-08 (schema-promote, dump live verifie).** |
 | `market_price_observation_events` | Journal append-only des créations et désactivations d'observations de prix marché avec acteur, raison et snapshot ; aucune réécriture historique. **Migration 192 — promue le 2026-09-08 (schema-promote, dump live verifie).** |
 | `market_cost_attributions` | Journal append-only d'attribution des charges de structure mutualisées (economic_structure_cost_events scope_kind GROUP) aux marchés. Événements ATTRIBUTION/REVERSAL, FK source_event_id, gardes immutabilité et validation reversal. **Migration 267 — promue le 2026-10-16 (schema-promote, dump live verifie).** |
+| `economic_cost_commitments` | Engagement administratif par poste et mois, montant natif et EUR figés, preuve et auteur. **Migration 432 — promue le 2026-11-28 (schema-promote, dump live verifie).** |
+| `economic_cost_commitment_movements` | Mouvements append-only de libération ou consommation partielle liée au fait canonique, plafonds de conservation. **Migration 432 — promue le 2026-11-28 (schema-promote, dump live verifie).** |
+| `economic_cost_budget_revisions` | Versions append-only du budget mensuel par poste ; devise native et snapshot EUR sourcé, dernière révision seulement ; distinct des charges réelles et engagements. **Migration 431 — promue le 2026-11-28 (schema-promote, dump live verifie).** |
+| `economic_cost_centers` | Référentiel de centres groupe ou marché, responsable explicite avant activation. **Migration 430 — promue le 2026-11-28 (schema-promote, dump live verifie).** |
+| `economic_cost_families` | Familles extensibles par centre, sans source de dépenses. **Migration 430 — promue le 2026-11-28 (schema-promote, dump live verifie).** |
+| `economic_cost_resources` | Ressources identifiées par centre, sans écriture de coût. **Migration 430 — promue le 2026-11-28 (schema-promote, dump live verifie).** |
+| `economic_cost_posts` | Postes classés nature/périmètre/base causale, liens structure existants à scope identique, aucun journal de réel. **Migration 430 — promue le 2026-11-28 (schema-promote, dump live verifie).** |
+| `economic_sku_rail_selection_events` | Retrait et réouverture versionnés, pour une variante, un marché et un rail, avec décision et preuve. Migration 435 ajoute `decision_source`. Une décision `MANUAL` exige un acteur humain. Une décision `POLICY_AUTOMATION` autorise uniquement un retrait et conserve `actor_id` à NULL. **Migration 434 — promue le 2026-11-28 (schema-promote, dump live verifie).** |
+| `hub_internal_invoices` | Factures internes du Hub, montants KMF et équivalents EUR/XAF figés dans le relevé source, avec attestation unique du règlement reçu. **Migration 452 — promue le 2026-11-28 (schema-promote, dump live verifie).** |
+| `economic_group_period_closures` | Validation Direction append-only du mois groupe, avec empreinte des preuves, justificatif et acteur. Un changement de preuve rend la validation précédente obsolète. **Migration 451 — promue le 2026-11-28 (schema-promote, dump live verifie).** |
+| `local_stock_economic_lots` | Clôture financière d'une réception W3 attestée par SKU et marché, quantité, coût d'achat réglé en KMF, justificatif et acteur. Non live avant déploiement. **Migration 453 — promue le 2026-11-28 (schema-promote, dump live verifie).** |
+| `local_stock_economic_lot_lines` | Rattachement explicite de la vente locale au lot clôturé, quantité et coût ventilé au centime ; preuve et acteur. Non live avant déploiement. **Migration 453 — promue le 2026-11-28 (schema-promote, dump live verifie).** |
 
 
 
@@ -1103,69 +1069,13 @@ Ces événements n'avancent **jamais** un statut d'expédition au simple scan : 
 
 Les constats de réception et les attestations de retour sont append-only. Le lot conforme seul emprunte le writer physique canonique ; les refusés sont journalisés séparément et ne créent ni allocation client ni droit à compensation. La remise physique au fournisseur est un fait distinct, éventuellement partiel, plafonné par la quantité refusée. Le reliquat physique au constat ne vaut pas clôture de l'obligation fournisseur.
 
-<!-- schema-pending
-object: hub_supplier_receipt_checks
-kind: table
-migration: 450
-section: ### 4.1 Logistique commande (7 tables)
-role: En-tête du constat qualité fournisseur, référence idempotente, acteur et lien unité conforme.
--->
-<!-- schema-pending
-object: hub_supplier_receipt_check_lines
-kind: table
-migration: 450
-section: ### 4.1 Logistique commande (7 tables)
-role: Ventilation par SKU attendu/reçu/refusé, conforme et manquant calculés.
--->
-<!-- schema-pending
-object: hub_supplier_return_attestations
-kind: table
-migration: 450
-section: ### 4.1 Logistique commande (7 tables)
-role: Preuves physiques de remise fournisseur, cumul borné au refusé, sans effet financier.
--->
 
 Déploiement prévu : migration additive avant activation du routeur V3 ; vérifier numéro disponible et graphe architecture avant fusion. Repli : désactiver le nouveau parcours sans effacer le journal ni les faits physiques déjà attestés. Aucun déploiement ou schéma live vérifié à ce stade.
 
-<!-- schema-pending
-object: economic_sku_rail_selection_events
-kind: table
-migration: 434
-section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
-role: Retrait et réouverture versionnés, pour une variante, un marché et un rail, avec décision et preuve. Migration 435 ajoute `decision_source`. Une décision `MANUAL` exige un acteur humain. Une décision `POLICY_AUTOMATION` autorise uniquement un retrait et conserve `actor_id` à NULL.
--->
-
-<!-- schema-pending
-object: hub_internal_invoices
-kind: table
-migration: 452
-section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
-role: Factures internes du Hub, montants KMF et équivalents EUR/XAF figés dans le relevé source, avec attestation unique du règlement reçu.
--->
-
-<!-- schema-pending
-object: economic_group_period_closures
-kind: table
-migration: 451
-section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
-role: Validation Direction append-only du mois groupe, avec empreinte des preuves, justificatif et acteur. Un changement de preuve rend la validation précédente obsolète.
--->
 
 
-<!-- schema-pending
-object: local_stock_economic_lots
-kind: table
-migration: 453
-section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
-role: Clôture financière d'une réception W3 attestée par SKU et marché, quantité, coût d'achat réglé en KMF, justificatif et acteur. Non live avant déploiement.
--->
-<!-- schema-pending
-object: local_stock_economic_lot_lines
-kind: table
-migration: 453
-section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
-role: Rattachement explicite de la vente locale au lot clôturé, quantité et coût ventilé au centime ; preuve et acteur. Non live avant déploiement.
--->
+
+
 
 La migration 454 (schéma visé, non live vérifié) étend la clé primaire de `local_stock_economic_lot_lines` à `(order_item_id, receipt_id)` pour permettre plusieurs lots par vente. Les sommes de quantités par lot et par vente sont plafonnées dans la transaction du writer.
 
